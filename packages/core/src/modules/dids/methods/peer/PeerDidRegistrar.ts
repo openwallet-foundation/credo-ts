@@ -9,7 +9,7 @@ import { DidDocument } from '../../domain'
 import { DidDocumentRole } from '../../domain/DidDocumentRole'
 import { DidRepository, DidRecord } from '../../repository'
 
-import { PeerDidNumAlgo } from './didPeer'
+import { PeerDidNumAlgo, getAlternativeDidsForPeerDid } from './didPeer'
 import { keyToNumAlgo0DidDocument } from './peerDidNumAlgo0'
 import { didDocumentJsonToNumAlgo1Did } from './peerDidNumAlgo1'
 import { didDocumentToNumAlgo2Did } from './peerDidNumAlgo2'
@@ -98,7 +98,7 @@ export class PeerDidRegistrar implements DidRegistrar {
           // We need to save the recipientKeys, so we can find the associated did
           // of a key when we receive a message from another connection.
           recipientKeyFingerprints: didDocument.recipientKeys.map((key) => key.fingerprint),
-          alternativeDids: didDocument.alsoKnownAs,
+          alternativeDids: getAlternativeDidsForPeerDid(did),
         },
       })
       await didRepository.save(agentContext, didRecord)

@@ -28,6 +28,13 @@ const hashEncodedDocument = (encodedDocument: string) =>
     'base58btc'
   )
 
+export function getAlternativeDidsForNumAlgo4Did(did: string) {
+  const match = did.match(LONG_RE)
+  if (!match) return
+  const [, hash] = match
+  return [`did:peer:4${hash}`]
+}
+
 export function didToNumAlgo4DidDocument(did: string) {
   const parsed = parseDid(did)
 
@@ -127,7 +134,5 @@ export function outOfBandServiceToNumAlgo4Did(service: OutOfBandDidCommService) 
     )
     .build()
 
-  const did = didDocumentToNumAlgo4Did(didDocument)
-
-  return did
+  return didDocumentToNumAlgo4Did(didDocument)
 }

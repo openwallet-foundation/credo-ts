@@ -23,6 +23,9 @@ export interface DidRecordProps {
 
 export interface CustomDidTags extends TagsBase {
   recipientKeyFingerprints?: string[]
+
+  // Alternative forms of the did, allowed to be queried by them.
+  // Relationship must be verified both ways before setting this tag.
   alternativeDids?: string[]
 }
 

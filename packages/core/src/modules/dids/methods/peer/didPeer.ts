@@ -1,5 +1,7 @@
 import { AriesFrameworkError } from '../../../../error'
 
+import { getAlternativeDidsForNumAlgo4Did } from './peerDidNumAlgo4'
+
 const PEER_DID_REGEX = new RegExp(
   '^did:peer:(([01](z)([1-9a-km-zA-HJ-NP-Z]{5,200}))|(2((.[AEVID](z)([1-9a-km-zA-HJ-NP-Z]{5,200}))+(.(S)[0-9a-zA-Z=]*)?))|([4](z[1-9a-km-zA-HJ-NP-Z]{46})(:z[1-9a-km-zA-HJ-NP-Z]{6,}){0,1}))$'
 )
@@ -30,4 +32,16 @@ export function getNumAlgoFromPeerDid(did: string) {
   }
 
   return numAlgo as PeerDidNumAlgo
+}
+
+/**
+ * Given a peer did, returns any alternative forms equivalent to it.
+ *
+ * @param did
+ * @returns array of alternative dids or undefined if not applicable
+ */
+export function getAlternativeDidsForPeerDid(did: string) {
+  if (getNumAlgoFromPeerDid(did) === PeerDidNumAlgo.ShortFormAndLongForm) {
+    return getAlternativeDidsForNumAlgo4Did(did)
+  }
 }

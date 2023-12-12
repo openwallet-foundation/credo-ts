@@ -21,18 +21,18 @@ import { JsonTransformer } from '../../utils/JsonTransformer'
 import { base64ToBase64URL } from '../../utils/base64'
 import {
   DidDocument,
-  DidDocumentRole,
   createPeerDidDocumentFromServices,
   DidKey,
   getNumAlgoFromPeerDid,
   PeerDidNumAlgo,
   DidsApi,
   isValidPeerDid,
+  getAlternativeDidsForPeerDid,
 } from '../dids'
 import { getKeyFromVerificationMethod } from '../dids/domain/key-type'
 import { tryParseDid } from '../dids/domain/parse'
 import { didKeyToInstanceOfKey } from '../dids/helpers'
-import { DidRecord, DidRepository } from '../dids/repository'
+import { DidRepository } from '../dids/repository'
 import { OutOfBandRole } from '../oob/domain/OutOfBandRole'
 import { OutOfBandState } from '../oob/domain/OutOfBandState'
 import { MediationRecipientService } from '../routing/services/MediationRecipientService'
@@ -194,32 +194,31 @@ export class DidExchangeProtocol {
     // Get DID Document either from message (if it is a supported did:peer) or resolve it externally
     const didDocument = await this.resolveDidDocument(agentContext, message)
 
-    const didRecord = new DidRecord({
-      did: didDocument.id,
-      role: DidDocumentRole.Received,
-      // It is important to take the did document from the PeerDid class
-      // as it will have the id property
-      didDocument,
-      tags: {
-        // We need to save the recipientKeys, so we can find the associated did
-        // of a key when we receive a message from another connection.
-        recipientKeyFingerprints: didDocument.recipientKeys.map((key) => key.fingerprint),
+    if (isValidPeerDid(didDocument.id)) {
+      const didRecord = await this.didRepository.storeReceivedDid(messageContext.agentContext, {
+        did: didDocument.id,
+        // It is important to take the did document from the PeerDid class
+        // as it will have the id property
+        didDocument: getNumAlgoFromPeerDid(message.did) === PeerDidNumAlgo.GenesisDoc ? didDocument : undefined,
+        tags: {
+          // We need to save the recipientKeys, so we can find the associated did
+          // of a key when we receive a message from another connection.
+          recipientKeyFingerprints: didDocument.recipientKeys.map((key) => key.fingerprint),
 
-        // For did:peer, store any alternative dids (like short form did:peer:4),
-        // it may have in order to relate any message referencing it
-        alternativeDids: isValidPeerDid(didDocument.id) ? didDocument.alsoKnownAs : undefined,
-      },
-    })
+          // For did:peer, store any alternative dids (like short form did:peer:4),
+          // it may have in order to relate any message referencing it
+          alternativeDids: getAlternativeDidsForPeerDid(didDocument.id),
+        },
+      })
 
-    this.logger.debug('Saving DID record', {
-      id: didRecord.id,
-      did: didRecord.did,
-      role: didRecord.role,
-      tags: didRecord.getTags(),
-      didDocument: 'omitted...',
-    })
-
-    await this.didRepository.save(messageContext.agentContext, didRecord)
+      this.logger.debug('Saved DID record', {
+        id: didRecord.id,
+        did: didRecord.did,
+        role: didRecord.role,
+        tags: didRecord.getTags(),
+        didDocument: 'omitted...',
+      })
+    }
 
     const connectionRecord = await this.connectionService.createConnection(messageContext.agentContext, {
       protocol: HandshakeProtocol.DidExchange,
@@ -351,30 +350,29 @@ export class DidExchangeProtocol {
         .recipientKeyFingerprints.map((fingerprint) => Key.fromFingerprint(fingerprint).publicKeyBase58)
     )
 
-    const didRecord = new DidRecord({
-      did: didDocument.id,
-      role: DidDocumentRole.Received,
-      didDocument,
-      tags: {
-        // We need to save the recipientKeys, so we can find the associated did
-        // of a key when we receive a message from another connection.
-        recipientKeyFingerprints: didDocument.recipientKeys.map((key) => key.fingerprint),
+    if (isValidPeerDid(didDocument.id)) {
+      const didRecord = await this.didRepository.storeReceivedDid(messageContext.agentContext, {
+        did: didDocument.id,
+        didDocument: getNumAlgoFromPeerDid(message.did) === PeerDidNumAlgo.GenesisDoc ? didDocument : undefined,
+        tags: {
+          // We need to save the recipientKeys, so we can find the associated did
+          // of a key when we receive a message from another connection.
+          recipientKeyFingerprints: didDocument.recipientKeys.map((key) => key.fingerprint),
 
-        // For did:peer, store any alternative dids (like short form did:peer:4),
-        // it may have in order to relate any message referencing it
-        alternativeDids: isValidPeerDid(didDocument.id) ? didDocument.alsoKnownAs : undefined,
-      },
-    })
+          // For did:peer, store any alternative dids (like short form did:peer:4),
+          // it may have in order to relate any message referencing it
+          alternativeDids: getAlternativeDidsForPeerDid(didDocument.id),
+        },
+      })
 
-    this.logger.debug('Saving DID record', {
-      id: didRecord.id,
-      did: didRecord.did,
-      role: didRecord.role,
-      tags: didRecord.getTags(),
-      didDocument: 'omitted...',
-    })
-
-    await this.didRepository.save(messageContext.agentContext, didRecord)
+      this.logger.debug('Saved DID record', {
+        id: didRecord.id,
+        did: didRecord.did,
+        role: didRecord.role,
+        tags: didRecord.getTags(),
+        didDocument: 'omitted...',
+      })
+    }
 
     connectionRecord.theirDid = message.did
 
