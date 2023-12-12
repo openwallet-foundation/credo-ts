@@ -59,6 +59,7 @@ import {
   getRevocationRegistriesForProof,
 } from '../utils'
 import { isUnqualifiedCredentialDefinitionId, isUnqualifiedSchemaId } from '../utils/indyIdentifiers'
+import { dateToTimestamp } from '../utils/timestamp'
 
 const V2_INDY_PRESENTATION_PROPOSAL = 'hlindy/proof-req@v2.0'
 const V2_INDY_PRESENTATION_REQUEST = 'hlindy/proof-req@v2.0'
@@ -554,7 +555,7 @@ export class LegacyIndyProofFormatService implements ProofFormatService<LegacyIn
     const revocationStatusResult = await registry.getRevocationStatusList(
       agentContext,
       revocationRegistryId,
-      requestNonRevoked.to ?? Date.now()
+      requestNonRevoked.to ?? dateToTimestamp(new Date())
     )
 
     if (!revocationStatusResult.revocationStatusList) {

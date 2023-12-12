@@ -1,10 +1,28 @@
-import type { AnonCredsCredentialDefinition } from './models'
-
 export interface AnonCredsCreateLinkSecretOptions {
   linkSecretId?: string
   setAsDefault?: boolean
 }
 
-export type AnonCredsRegisterCredentialDefinitionOptions =
-  | Omit<AnonCredsCredentialDefinition, 'value' | 'type'>
-  | AnonCredsCredentialDefinition
+export interface AnonCredsRegisterCredentialDefinitionOptions {
+  issuerId: string
+  schemaId: string
+  tag: string
+}
+
+export interface AnonCredsRegisterRevocationRegistryDefinitionOptions {
+  issuerId: string
+  tag: string
+  credentialDefinitionId: string
+  maximumCredentialNumber: number
+}
+
+export interface AnonCredsRegisterRevocationStatusListOptions {
+  issuerId: string
+  revocationRegistryDefinitionId: string
+}
+
+export interface AnonCredsUpdateRevocationStatusListOptions {
+  revokedCredentialIndexes?: number[]
+  issuedCredentialIndexes?: number[]
+  revocationRegistryDefinitionId: string
+}

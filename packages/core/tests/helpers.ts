@@ -15,6 +15,7 @@ import type {
   ConnectionStateChangedEvent,
   Buffer,
   AgentMessageProcessedEvent,
+  RevocationNotificationReceivedEvent,
 } from '../src'
 import type { ConstructableAgentMessage } from '../src/agent/AgentMessage'
 import type { AgentModulesInput, EmptyModuleMap } from '../src/agent/AgentModules'
@@ -445,6 +446,47 @@ export async function waitForBasicMessage(agent: Agent, { content }: { content?:
 
     agent.events.on<BasicMessageStateChangedEvent>(BasicMessageEventTypes.BasicMessageStateChanged, listener)
   })
+}
+
+export async function waitForRevocationNotification(
+  agent: Agent,
+  options: {
+    threadId?: string
+    timeoutMs?: number
+  }
+) {
+  const observable = agent.events.observable<RevocationNotificationReceivedEvent>(
+    CredentialEventTypes.RevocationNotificationReceived
+  )
+
+  return waitForRevocationNotificationSubject(observable, options)
+}
+
+export function waitForRevocationNotificationSubject(
+  subject: ReplaySubject<RevocationNotificationReceivedEvent> | Observable<RevocationNotificationReceivedEvent>,
+  {
+    threadId,
+    timeoutMs = 10000,
+  }: {
+    threadId?: string
+    timeoutMs?: number
+  }
+) {
+  const observable = subject instanceof ReplaySubject ? subject.asObservable() : subject
+  return firstValueFrom(
+    observable.pipe(
+      filter((e) => threadId === undefined || e.payload.credentialRecord.threadId === threadId),
+      timeout(timeoutMs),
+      catchError(() => {
+        throw new Error(
+          `RevocationNotificationReceivedEvent event not emitted within specified timeout: {
+    threadId: ${threadId},
+  }`
+        )
+      }),
+      map((e) => e.payload.credentialRecord)
+    )
+  )
 }
 
 export function getMockConnection({

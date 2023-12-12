@@ -9,6 +9,8 @@ import type {
   RegisterCredentialDefinitionReturn,
   RegisterSchemaReturn,
   RegisterSchemaOptions,
+  RegisterRevocationRegistryDefinitionReturn,
+  RegisterRevocationStatusListReturn,
 } from '@aries-framework/anoncreds'
 import type { AgentContext } from '@aries-framework/core'
 
@@ -290,6 +292,10 @@ export class CheqdAnonCredsRegistry implements AnonCredsRegistry {
     }
   }
 
+  public async registerRevocationRegistryDefinition(): Promise<RegisterRevocationRegistryDefinitionReturn> {
+    throw new Error('Not implemented!')
+  }
+
   // FIXME: this method doesn't retrieve the revocation status list at a specified time, it just resolves the revocation registry definition
   public async getRevocationStatusList(
     agentContext: AgentContext,
@@ -343,5 +349,9 @@ export class CheqdAnonCredsRegistry implements AnonCredsRegistry {
         revocationStatusListMetadata: {},
       }
     }
+  }
+
+  public async registerRevocationStatusList(): Promise<RegisterRevocationStatusListReturn> {
+    throw new Error('Not implemented!')
   }
 }

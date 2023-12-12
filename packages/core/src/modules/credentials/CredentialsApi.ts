@@ -15,6 +15,7 @@ import type {
   ProposeCredentialOptions,
   SendCredentialProblemReportOptions,
   DeleteCredentialOptions,
+  SendRevocationNotificationOptions,
 } from './CredentialsApiOptions'
 import type { CredentialProtocol } from './protocol/CredentialProtocol'
 import type { CredentialFormatsFromProtocols } from './protocol/CredentialProtocolOptions'
@@ -60,6 +61,9 @@ export interface CredentialsApi<CPs extends CredentialProtocol[]> {
   // Issue Credential Methods
   acceptCredential(options: AcceptCredentialOptions): Promise<CredentialExchangeRecord>
 
+  // Revoke Credential Methods
+  sendRevocationNotification(options: SendRevocationNotificationOptions): Promise<void>
+
   // out of band
   createOffer(options: CreateCredentialOfferOptions<CPs>): Promise<{
     message: AgentMessage
@@ -96,6 +100,7 @@ export class CredentialsApi<CPs extends CredentialProtocol[]> implements Credent
   private credentialRepository: CredentialRepository
   private agentContext: AgentContext
   private didCommMessageRepository: DidCommMessageRepository
+  private revocationNotificationService: RevocationNotificationService
   private routingService: RoutingService
   private logger: Logger
 
@@ -107,9 +112,7 @@ export class CredentialsApi<CPs extends CredentialProtocol[]> implements Credent
     credentialRepository: CredentialRepository,
     mediationRecipientService: RoutingService,
     didCommMessageRepository: DidCommMessageRepository,
-    // only injected so the handlers will be registered
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    _revocationNotificationService: RevocationNotificationService,
+    revocationNotificationService: RevocationNotificationService,
     config: CredentialsModuleConfig<CPs>
   ) {
     this.messageSender = messageSender
@@ -118,6 +121,7 @@ export class CredentialsApi<CPs extends CredentialProtocol[]> implements Credent
     this.routingService = mediationRecipientService
     this.agentContext = agentContext
     this.didCommMessageRepository = didCommMessageRepository
+    this.revocationNotificationService = revocationNotificationService
     this.logger = logger
     this.config = config
   }
@@ -414,7 +418,7 @@ export class CredentialsApi<CPs extends CredentialProtocol[]> implements Credent
     }
     const offerMessage = await protocol.findOfferMessage(this.agentContext, credentialRecord.id)
     if (!offerMessage) {
-      throw new AriesFrameworkError(`No offer message found for proof record with id '${credentialRecord.id}'`)
+      throw new AriesFrameworkError(`No offer message found for credential record with id '${credentialRecord.id}'`)
     }
 
     const { message } = await protocol.acceptRequest(this.agentContext, {
@@ -483,6 +487,48 @@ export class CredentialsApi<CPs extends CredentialProtocol[]> implements Credent
     await this.messageSender.sendMessage(outboundMessageContext)
 
     return credentialRecord
+  }
+
+  /**
+   * Send a revocation notification for a credential exchange record. Currently Revocation Notification V2 protocol is supported
+   *
+   * @param credentialRecordId The id of the credential record for which to send revocation notification
+   */
+  public async sendRevocationNotification(options: SendRevocationNotificationOptions): Promise<void> {
+    const { credentialRecordId, revocationId, revocationFormat, comment, requestAck } = options
+
+    const credentialRecord = await this.getById(credentialRecordId)
+
+    const { message } = await this.revocationNotificationService.v2CreateRevocationNotification({
+      credentialId: revocationId,
+      revocationFormat,
+      comment,
+      requestAck,
+    })
+    const protocol = this.getProtocol(credentialRecord.protocolVersion)
+
+    const requestMessage = await protocol.findRequestMessage(this.agentContext, credentialRecord.id)
+    if (!requestMessage) {
+      throw new AriesFrameworkError(`No request message found for credential record with id '${credentialRecord.id}'`)
+    }
+
+    const offerMessage = await protocol.findOfferMessage(this.agentContext, credentialRecord.id)
+    if (!offerMessage) {
+      throw new AriesFrameworkError(`No offer message found for credential record with id '${credentialRecord.id}'`)
+    }
+
+    // Use connection if present
+    const connectionRecord = credentialRecord.connectionId
+      ? await this.connectionService.getById(this.agentContext, credentialRecord.connectionId)
+      : undefined
+    connectionRecord?.assertReady()
+
+    const outboundMessageContext = await getOutboundMessageContext(this.agentContext, {
+      message,
+      connectionRecord,
+      associatedRecord: credentialRecord,
+    })
+    await this.messageSender.sendMessage(outboundMessageContext)
   }
 
   /**
