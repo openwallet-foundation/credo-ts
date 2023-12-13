@@ -74,7 +74,7 @@ export class V2MessagePickupProtocol extends BaseMessagePickupProtocol {
     )
   }
 
-  public async pickupMessages(
+  public async createPickupMessage(
     agentContext: AgentContext,
     options: PickupMessagesProtocolOptions
   ): Promise<PickupMessagesProtocolReturnType<AgentMessage>> {
@@ -88,11 +88,11 @@ export class V2MessagePickupProtocol extends BaseMessagePickupProtocol {
     return { message }
   }
 
-  public async deliverMessages(
+  public async createDeliveryMessage(
     agentContext: AgentContext,
     options: DeliverMessagesProtocolOptions
   ): Promise<DeliverMessagesProtocolReturnType<AgentMessage> | void> {
-    const { connectionRecord, recipientKey } = options
+    const { connectionRecord, recipientKey, messages } = options
     connectionRecord.assertReady()
 
     const messagePickupRepository = agentContext.dependencyManager.resolve<MessagePickupRepository>(
@@ -100,18 +100,20 @@ export class V2MessagePickupProtocol extends BaseMessagePickupProtocol {
     )
 
     // Get available messages from queue, but don't delete them
-    const messages = await messagePickupRepository.takeFromQueue({
-      connectionId: connectionRecord.id,
-      recipientKey,
-      limit: 10, // TODO: Define as config parameter
-      keepMessages: true,
-    })
+    const messagesToDeliver =
+      messages ??
+      (await messagePickupRepository.takeFromQueue({
+        connectionId: connectionRecord.id,
+        recipientKey,
+        limit: 10, // TODO: Define as config parameter
+        keepMessages: true,
+      }))
 
-    if (messages.length === 0) {
+    if (messagesToDeliver.length === 0) {
       return
     }
 
-    const attachments = messages.map(
+    const attachments = messagesToDeliver.map(
       (msg) =>
         new Attachment({
           id: msg.id,

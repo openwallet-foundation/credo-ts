@@ -14,12 +14,12 @@ import type { DependencyManager } from '../../../plugins'
 export interface MessagePickupProtocol {
   readonly version: string
 
-  pickupMessages(
+  createPickupMessage(
     agentContext: AgentContext,
     options: PickupMessagesProtocolOptions
   ): Promise<PickupMessagesProtocolReturnType<AgentMessage>>
 
-  deliverMessages(
+  createDeliveryMessage(
     agentContext: AgentContext,
     options: DeliverMessagesProtocolOptions
   ): Promise<DeliverMessagesProtocolReturnType<AgentMessage> | void>

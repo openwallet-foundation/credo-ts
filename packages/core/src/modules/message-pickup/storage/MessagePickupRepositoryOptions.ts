@@ -1,10 +1,8 @@
-import type { QueuedMessageState } from './QueuedMessageState'
 import type { EncryptedMessage } from '../../../types'
 
 export interface GetAvailableMessageCountOptions {
   connectionId: string
   recipientKey?: string
-  state?: QueuedMessageState
 }
 
 export interface TakeFromQueueOptions {

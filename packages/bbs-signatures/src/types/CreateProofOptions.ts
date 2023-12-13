@@ -30,10 +30,6 @@ export interface CreateProofOptions {
    */
   documentLoader?: DocumentLoader
   /**
-   * Optional expansion map
-   */
-  expansionMap?: () => void
-  /**
    * Indicates whether to compact the resulting proof
    */
   readonly compactProof: boolean

@@ -9,7 +9,7 @@ import { CREDENTIALS_CONTEXT_V1_URL, SECURITY_CONTEXT_BBS_URL } from '../../core
 import { JsonTransformer } from '../../core/src/utils/JsonTransformer'
 import { waitForCredentialRecordSubject, setupJsonLdTests, testLogger } from '../../core/tests'
 
-import { describeSkipNode17And18 } from './util'
+import { describeSkipNode18 } from './util'
 
 let faberAgent: JsonLdTestsAgent
 let faberReplay: EventReplaySubject
@@ -52,7 +52,7 @@ const signCredentialOptions = {
   },
 }
 
-describeSkipNode17And18('credentials, BBS+ signature', () => {
+describeSkipNode18('credentials, BBS+ signature', () => {
   beforeAll(async () => {
     ;({
       issuerAgent: faberAgent,

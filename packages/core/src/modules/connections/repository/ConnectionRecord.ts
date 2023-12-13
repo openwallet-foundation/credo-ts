@@ -27,6 +27,8 @@ export interface ConnectionRecordProps {
   outOfBandId?: string
   invitationDid?: string
   connectionTypes?: Array<ConnectionType | string>
+  previousDids?: Array<string>
+  previousTheirDids?: Array<string>
 }
 
 export type CustomConnectionTags = TagsBase
@@ -40,6 +42,8 @@ export type DefaultConnectionTags = {
   outOfBandId?: string
   invitationDid?: string
   connectionTypes?: Array<ConnectionType | string>
+  previousDids?: Array<string>
+  previousTheirDids?: Array<string>
 }
 
 export class ConnectionRecord
@@ -66,6 +70,8 @@ export class ConnectionRecord
   public invitationDid?: string
 
   public connectionTypes: string[] = []
+  public previousDids: string[] = []
+  public previousTheirDids: string[] = []
 
   public static readonly type = 'ConnectionRecord'
   public readonly type = ConnectionRecord.type
@@ -92,6 +98,8 @@ export class ConnectionRecord
       this.protocol = props.protocol
       this.outOfBandId = props.outOfBandId
       this.connectionTypes = props.connectionTypes ?? []
+      this.previousDids = props.previousDids ?? []
+      this.previousTheirDids = props.previousTheirDids ?? []
     }
   }
 
@@ -107,6 +115,8 @@ export class ConnectionRecord
       outOfBandId: this.outOfBandId,
       invitationDid: this.invitationDid,
       connectionTypes: this.connectionTypes,
+      previousDids: this.previousDids,
+      previousTheirDids: this.previousTheirDids,
     }
   }
 

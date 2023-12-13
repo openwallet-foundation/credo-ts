@@ -19,12 +19,12 @@ import type { DependencyManager } from '../../../plugins'
 export abstract class BaseMessagePickupProtocol implements MessagePickupProtocol {
   public abstract readonly version: string
 
-  public abstract pickupMessages(
+  public abstract createPickupMessage(
     agentContext: AgentContext,
     options: PickupMessagesProtocolOptions
   ): Promise<PickupMessagesProtocolReturnType<AgentMessage>>
 
-  public abstract deliverMessages(
+  public abstract createDeliveryMessage(
     agentContext: AgentContext,
     options: DeliverMessagesProtocolOptions
   ): Promise<DeliverMessagesProtocolReturnType<AgentMessage> | void>

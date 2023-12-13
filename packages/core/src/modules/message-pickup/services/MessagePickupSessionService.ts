@@ -9,6 +9,7 @@ import { EventEmitter } from '../../../agent/EventEmitter'
 import { InjectionSymbols } from '../../../constants'
 import { injectable } from '../../../plugins'
 import { TransportEventTypes } from '../../../transport'
+import { uuid } from '../../../utils/uuid'
 import { MessagePickupEventTypes } from '../MessagePickupEvents'
 
 /**
@@ -42,7 +43,11 @@ export class MessagePickupSessionService {
       })
   }
 
-  public getLiveSession(
+  public getLiveSession(agentContext: AgentContext, sessionId: string) {
+    return this.sessions.find((session) => session.id === sessionId)
+  }
+
+  public getLiveSessionByConnectionId(
     agentContext: AgentContext,
     options: { connectionId: string; role?: MessagePickupSessionRole }
   ) {
@@ -63,6 +68,7 @@ export class MessagePickupSessionService {
     this.removeLiveSession(agentContext, { connectionId })
 
     const session = {
+      id: uuid(),
       connectionId,
       protocolVersion,
       role,

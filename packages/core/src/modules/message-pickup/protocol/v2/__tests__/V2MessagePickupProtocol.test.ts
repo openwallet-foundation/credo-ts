@@ -29,7 +29,7 @@ const mockConnection = getMockConnection({
 })
 
 // Mock classes
-jest.mock('../../../storage/InMemoryMessagePickupQueue')
+jest.mock('../../../storage/InMemoryMessagePickupRepository')
 jest.mock('../../../../../agent/EventEmitter')
 jest.mock('../../../../../agent/MessageSender')
 jest.mock('../../../../connections/services/ConnectionService')
@@ -71,7 +71,7 @@ const queuedMessages = [
   { id: '3', encryptedMessage },
 ]
 
-describe('V2MessagePickupService', () => {
+describe('V2MessagePickupProtocol', () => {
   let pickupProtocol: V2MessagePickupProtocol
 
   beforeEach(async () => {
@@ -299,9 +299,9 @@ describe('V2MessagePickupService', () => {
     })
   })
 
-  describe('pickupMessages', () => {
+  describe('createPickupMessage', () => {
     it('creates a status request message', async () => {
-      const { message: statusRequestMessage } = await pickupProtocol.pickupMessages(agentContext, {
+      const { message: statusRequestMessage } = await pickupProtocol.createPickupMessage(agentContext, {
         connectionRecord: mockConnection,
         recipientKey: 'a-key',
       })

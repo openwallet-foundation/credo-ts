@@ -7,9 +7,9 @@ import { Protocol } from '../../agent/models'
 import { ConnectionsApi } from './ConnectionsApi'
 import { ConnectionsModuleConfig } from './ConnectionsModuleConfig'
 import { DidExchangeProtocol } from './DidExchangeProtocol'
-import { ConnectionRole, DidExchangeRole } from './models'
+import { ConnectionRole, DidExchangeRole, DidRotateRole } from './models'
 import { ConnectionRepository } from './repository'
-import { ConnectionService, TrustPingService } from './services'
+import { ConnectionService, DidRotateService, TrustPingService } from './services'
 
 export class ConnectionsModule implements Module {
   public readonly config: ConnectionsModuleConfig
@@ -32,6 +32,7 @@ export class ConnectionsModule implements Module {
     // Services
     dependencyManager.registerSingleton(ConnectionService)
     dependencyManager.registerSingleton(DidExchangeProtocol)
+    dependencyManager.registerSingleton(DidRotateService)
     dependencyManager.registerSingleton(TrustPingService)
 
     // Repositories
@@ -44,8 +45,12 @@ export class ConnectionsModule implements Module {
         roles: [ConnectionRole.Invitee, ConnectionRole.Inviter],
       }),
       new Protocol({
-        id: 'https://didcomm.org/didexchange/1.0',
+        id: 'https://didcomm.org/didexchange/1.1',
         roles: [DidExchangeRole.Requester, DidExchangeRole.Responder],
+      }),
+      new Protocol({
+        id: 'https://didcomm.org/did-rotate/1.0',
+        roles: [DidRotateRole.RotatingParty, DidRotateRole.ObservingParty],
       })
     )
   }

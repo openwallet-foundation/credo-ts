@@ -1,5 +1,6 @@
 import type { AgentMessage } from '../../../agent/AgentMessage'
 import type { ConnectionRecord } from '../../connections'
+import type { QueuedMessage } from '../storage'
 
 export interface PickupMessagesProtocolOptions {
   connectionRecord: ConnectionRecord
@@ -9,6 +10,7 @@ export interface PickupMessagesProtocolOptions {
 
 export interface DeliverMessagesProtocolOptions {
   connectionRecord: ConnectionRecord
+  messages?: QueuedMessage[]
   recipientKey?: string
   batchSize?: number
 }

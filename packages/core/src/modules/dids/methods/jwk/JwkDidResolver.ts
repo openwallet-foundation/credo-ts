@@ -7,6 +7,11 @@ import { DidJwk } from './DidJwk'
 export class JwkDidResolver implements DidResolver {
   public readonly supportedMethods = ['jwk']
 
+  /**
+   * No remote resolving done, did document is dynamically constructed. To not pollute the cache we don't allow caching
+   */
+  public readonly allowsCaching = false
+
   public async resolve(agentContext: AgentContext, did: string): Promise<DidResolutionResult> {
     const didDocumentMetadata = {}
 

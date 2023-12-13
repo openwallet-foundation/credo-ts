@@ -44,7 +44,7 @@ export class V1MessagePickupProtocol extends BaseMessagePickupProtocol {
     )
   }
 
-  public async pickupMessages(
+  public async createPickupMessage(
     agentContext: AgentContext,
     options: PickupMessagesProtocolOptions
   ): Promise<PickupMessagesProtocolReturnType<AgentMessage>> {
@@ -59,23 +59,25 @@ export class V1MessagePickupProtocol extends BaseMessagePickupProtocol {
     return { message }
   }
 
-  public async deliverMessages(
+  public async createDeliveryMessage(
     agentContext: AgentContext,
     options: DeliverMessagesProtocolOptions
   ): Promise<DeliverMessagesProtocolReturnType<AgentMessage> | void> {
-    const { connectionRecord, batchSize } = options
+    const { connectionRecord, batchSize, messages } = options
     connectionRecord.assertReady()
 
     const pickupMessageQueue = agentContext.dependencyManager.resolve<MessagePickupRepository>(
       InjectionSymbols.MessagePickupRepository
     )
 
-    const messages = await pickupMessageQueue.takeFromQueue({
-      connectionId: connectionRecord.id,
-      limit: batchSize, // TODO: Define as config parameter for message holder side
-    })
+    const messagesToDeliver =
+      messages ??
+      (await pickupMessageQueue.takeFromQueue({
+        connectionId: connectionRecord.id,
+        limit: batchSize, // TODO: Define as config parameter for message holder side
+      }))
 
-    const batchMessages = messages.map(
+    const batchMessages = messagesToDeliver.map(
       (msg) =>
         new BatchMessageMessage({
           id: msg.id,
@@ -83,7 +85,7 @@ export class V1MessagePickupProtocol extends BaseMessagePickupProtocol {
         })
     )
 
-    if (messages.length > 0) {
+    if (messagesToDeliver.length > 0) {
       const message = new V1BatchMessage({
         messages: batchMessages,
       })

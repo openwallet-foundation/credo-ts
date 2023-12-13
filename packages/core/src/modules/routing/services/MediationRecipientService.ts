@@ -186,7 +186,10 @@ export class MediationRecipientService {
         // Only wait for first event that matches the criteria
         first(),
         // Do not wait for longer than specified timeout
-        timeout(timeoutMs)
+        timeout({
+          first: timeoutMs,
+          meta: 'MediationRecipientService.keylistUpdateAndAwait',
+        })
       )
       .subscribe(subject)
 

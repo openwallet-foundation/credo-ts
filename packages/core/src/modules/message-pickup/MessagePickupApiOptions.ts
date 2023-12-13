@@ -1,4 +1,5 @@
 import type { MessagePickupProtocol } from './protocol/MessagePickupProtocol'
+import type { QueuedMessage } from './storage'
 import type { EncryptedMessage } from '../../types'
 
 /**
@@ -12,10 +13,15 @@ export interface QueueMessageOptions {
   message: EncryptedMessage
 }
 
-export interface DeliverQueuedMessagesOptions {
-  connectionId: string
+export interface DeliverMessagesFromQueueOptions {
+  pickupSessionId: string
   recipientKey?: string
   batchSize?: number
+}
+
+export interface DeliverMessagesOptions {
+  pickupSessionId: string
+  messages: QueuedMessage[]
 }
 
 export interface PickupMessagesOptions<MPPs extends MessagePickupProtocol[] = MessagePickupProtocol[]> {

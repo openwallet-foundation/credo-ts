@@ -1,5 +1,6 @@
 import type {
-  DeliverQueuedMessagesOptions,
+  DeliverMessagesOptions,
+  DeliverMessagesFromQueueOptions,
   PickupMessagesOptions,
   PickupMessagesReturnType,
   QueueMessageOptions,
@@ -7,6 +8,7 @@ import type {
   SetLiveDeliveryModeOptions,
   SetLiveDeliveryModeReturnType,
 } from './MessagePickupApiOptions'
+import type { MessagePickupSessionRole } from './MessagePickupSession'
 import type { V1MessagePickupProtocol, V2MessagePickupProtocol } from './protocol'
 import type { MessagePickupProtocol } from './protocol/MessagePickupProtocol'
 import type { MessagePickupRepository } from './storage/MessagePickupRepository'
@@ -88,32 +90,79 @@ export class MessagePickupApi<MPPs extends MessagePickupProtocol[] = [V1MessageP
   }
 
   /**
-   * Deliver messages in the Message Pickup Queue for a given connection and key (if specified).
+   * Get current active live mode message pickup session for a given connection. Undefined if no active session found
    *
-   * Note that this is only available when there is an active session with the recipient. Message
-   * Pickup protocol messages themselves are not added to pickup queue
-   *
+   * @param options connection id and optional role
+   * @returns live mode session
    */
-  public async deliverQueuedMessages(options: DeliverQueuedMessagesOptions) {
-    this.logger.debug('Deliverying queued messages')
+  public async getLiveModeSession(options: { connectionId: string; role?: MessagePickupSessionRole }) {
+    const { connectionId, role } = options
+    return this.messagePickupSessionService.getLiveSessionByConnectionId(this.agentContext, { connectionId, role })
+  }
 
-    const { connectionId, recipientKey } = options
-    const connectionRecord = await this.connectionService.getById(this.agentContext, connectionId)
+  /**
+   * Deliver specific messages to an active live mode pickup session through message pickup protocol.
+   *
+   * This will deliver the messages regardless of the state of the message pickup queue, meaning that
+   * any message stuck there should be sent separately (e.g. using deliverQU).
+   *
+   * @param options: pickup session id and the messages to deliver
+   */
+  public async deliverMessages(options: DeliverMessagesOptions) {
+    const { pickupSessionId, messages } = options
 
-    const activePickupSession = this.messagePickupSessionService.getLiveSession(this.agentContext, {
-      connectionId: connectionRecord.id,
-    })
+    const session = this.messagePickupSessionService.getLiveSession(this.agentContext, pickupSessionId)
 
-    if (!activePickupSession) {
-      this.logger.debug('No active live mode session')
+    if (!session) {
+      this.logger.debug(`No active live mode session found with id ${pickupSessionId}`)
       return
     }
+    const connectionRecord = await this.connectionService.getById(this.agentContext, session.connectionId)
 
-    const protocol = this.getProtocol(activePickupSession.protocolVersion)
+    const protocol = this.getProtocol(session.protocolVersion)
 
-    const deliverMessagesReturn = await protocol.deliverMessages(this.agentContext, {
+    const createDeliveryReturn = await protocol.createDeliveryMessage(this.agentContext, {
+      connectionRecord,
+      messages,
+    })
+
+    if (createDeliveryReturn) {
+      await this.messageSender.sendMessage(
+        new OutboundMessageContext(createDeliveryReturn.message, {
+          agentContext: this.agentContext,
+          connection: connectionRecord,
+        })
+      )
+    }
+  }
+
+  /**
+   * Deliver messages in the Message Pickup Queue for a given live mode session and key (if specified).
+   *
+   * This will retrieve messages up to 'batchSize' messages from the queue and deliver it through the
+   * corresponding Message Pickup protocol. If there are more than 'batchSize' messages in the queue,
+   * the recipient may request remaining messages after receiving the first batch of messages.
+   *
+   */
+  public async deliverMessagesFromQueue(options: DeliverMessagesFromQueueOptions) {
+    this.logger.debug('Deliverying queued messages')
+
+    const { pickupSessionId, recipientKey, batchSize } = options
+
+    const session = this.messagePickupSessionService.getLiveSession(this.agentContext, pickupSessionId)
+
+    if (!session) {
+      this.logger.debug(`No active live mode session found with id ${pickupSessionId}`)
+      return
+    }
+    const connectionRecord = await this.connectionService.getById(this.agentContext, session.connectionId)
+
+    const protocol = this.getProtocol(session.protocolVersion)
+
+    const deliverMessagesReturn = await protocol.createDeliveryMessage(this.agentContext, {
       connectionRecord,
       recipientKey,
+      batchSize,
     })
 
     if (deliverMessagesReturn) {
@@ -136,7 +185,7 @@ export class MessagePickupApi<MPPs extends MessagePickupProtocol[] = [V1MessageP
     const connectionRecord = await this.connectionService.getById(this.agentContext, options.connectionId)
 
     const protocol = this.getProtocol(options.protocolVersion)
-    const { message } = await protocol.pickupMessages(this.agentContext, {
+    const { message } = await protocol.createPickupMessage(this.agentContext, {
       connectionRecord,
       batchSize: options.batchSize,
       recipientKey: options.recipientKey,

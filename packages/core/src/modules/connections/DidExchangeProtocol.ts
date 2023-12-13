@@ -4,7 +4,6 @@ import type { AgentContext } from '../../agent'
 import type { InboundMessageContext } from '../../agent/models/InboundMessageContext'
 import type { ParsedMessageType } from '../../utils/messageType'
 import type { ResolvedDidCommService } from '../didcomm'
-import type { PeerDidCreateOptions } from '../dids'
 import type { OutOfBandRecord } from '../oob/repository'
 
 import { InjectionSymbols } from '../../constants'
@@ -16,60 +15,59 @@ import { Attachment, AttachmentData } from '../../decorators/attachment/Attachme
 import { AriesFrameworkError } from '../../error'
 import { Logger } from '../../logger'
 import { inject, injectable } from '../../plugins'
-import { isDid } from '../../utils'
+import { TypedArrayEncoder, isDid, Buffer } from '../../utils'
 import { JsonEncoder } from '../../utils/JsonEncoder'
 import { JsonTransformer } from '../../utils/JsonTransformer'
 import { base64ToBase64URL } from '../../utils/base64'
 import {
   DidDocument,
-  DidRegistrarService,
-  DidDocumentRole,
-  createPeerDidDocumentFromServices,
   DidKey,
   getNumAlgoFromPeerDid,
   PeerDidNumAlgo,
+  DidsApi,
+  isValidPeerDid,
+  getAlternativeDidsForPeerDid,
 } from '../dids'
 import { getKeyFromVerificationMethod } from '../dids/domain/key-type'
 import { tryParseDid } from '../dids/domain/parse'
 import { didKeyToInstanceOfKey } from '../dids/helpers'
-import { DidRecord, DidRepository } from '../dids/repository'
+import { DidRepository } from '../dids/repository'
 import { OutOfBandRole } from '../oob/domain/OutOfBandRole'
 import { OutOfBandState } from '../oob/domain/OutOfBandState'
+import { getMediationRecordForDidDocument } from '../routing/services/helpers'
 
+import { ConnectionsModuleConfig } from './ConnectionsModuleConfig'
 import { DidExchangeStateMachine } from './DidExchangeStateMachine'
 import { DidExchangeProblemReportError, DidExchangeProblemReportReason } from './errors'
-import { DidExchangeCompleteMessage } from './messages/DidExchangeCompleteMessage'
-import { DidExchangeRequestMessage } from './messages/DidExchangeRequestMessage'
-import { DidExchangeResponseMessage } from './messages/DidExchangeResponseMessage'
+import { DidExchangeRequestMessage, DidExchangeResponseMessage, DidExchangeCompleteMessage } from './messages'
 import { DidExchangeRole, DidExchangeState, HandshakeProtocol } from './models'
 import { ConnectionService } from './services'
+import { createPeerDidFromServices, getDidDocumentForCreatedDid, routingToServices } from './services/helpers'
 
 interface DidExchangeRequestParams {
   label?: string
   alias?: string
   goal?: string
   goalCode?: string
-  routing: Routing
+  routing?: Routing
   autoAcceptConnection?: boolean
+  ourDid?: string
 }
 
 @injectable()
 export class DidExchangeProtocol {
   private connectionService: ConnectionService
-  private didRegistrarService: DidRegistrarService
   private jwsService: JwsService
   private didRepository: DidRepository
   private logger: Logger
 
   public constructor(
     connectionService: ConnectionService,
-    didRegistrarService: DidRegistrarService,
     didRepository: DidRepository,
     jwsService: JwsService,
     @inject(InjectionSymbols.Logger) logger: Logger
   ) {
     this.connectionService = connectionService
-    this.didRegistrarService = didRegistrarService
     this.didRepository = didRepository
     this.jwsService = jwsService
     this.logger = logger
@@ -84,13 +82,48 @@ export class DidExchangeProtocol {
       outOfBandRecord,
       params,
     })
+    const config = agentContext.dependencyManager.resolve(ConnectionsModuleConfig)
 
     const { outOfBandInvitation } = outOfBandRecord
-    const { alias, goal, goalCode, routing, autoAcceptConnection } = params
-
+    const { alias, goal, goalCode, routing, autoAcceptConnection, ourDid: did } = params
     // TODO: We should store only one did that we'll use to send the request message with success.
     // We take just the first one for now.
     const [invitationDid] = outOfBandInvitation.invitationDids
+
+    // Create message
+    const label = params.label ?? agentContext.config.label
+
+    let didDocument, mediatorId
+
+    // If our did is specified, make sure we have all key material for it
+    if (did) {
+      didDocument = await getDidDocumentForCreatedDid(agentContext, did)
+      mediatorId = (await getMediationRecordForDidDocument(agentContext, didDocument))?.id
+      // Otherwise, create a did:peer based on the provided routing
+    } else {
+      if (!routing) throw new AriesFrameworkError(`'routing' must be defined if 'ourDid' is not specified`)
+
+      didDocument = await createPeerDidFromServices(
+        agentContext,
+        routingToServices(routing),
+        config.peerNumAlgoForDidExchangeRequests
+      )
+      mediatorId = routing.mediatorId
+    }
+
+    const parentThreadId = outOfBandRecord.outOfBandInvitation.id
+
+    const message = new DidExchangeRequestMessage({ label, parentThreadId, did: didDocument.id, goal, goalCode })
+
+    // Create sign attachment containing didDoc
+    if (isValidPeerDid(didDocument.id) && getNumAlgoFromPeerDid(didDocument.id) === PeerDidNumAlgo.GenesisDoc) {
+      const didDocAttach = await this.createSignedAttachment(
+        agentContext,
+        didDocument.toJSON(),
+        didDocument.recipientKeys.map((key) => key.publicKeyBase58)
+      )
+      message.didDoc = didDocAttach
+    }
 
     const connectionRecord = await this.connectionService.createConnection(agentContext, {
       protocol: HandshakeProtocol.DidExchange,
@@ -98,7 +131,7 @@ export class DidExchangeProtocol {
       alias,
       state: DidExchangeState.InvitationReceived,
       theirLabel: outOfBandInvitation.label,
-      mediatorId: routing.mediatorId,
+      mediatorId,
       autoAcceptConnection: outOfBandRecord.autoAcceptConnection,
       outOfBandId: outOfBandRecord.id,
       invitationDid,
@@ -106,21 +139,6 @@ export class DidExchangeProtocol {
     })
 
     DidExchangeStateMachine.assertCreateMessageState(DidExchangeRequestMessage.type, connectionRecord)
-
-    // Create message
-    const label = params.label ?? agentContext.config.label
-    const didDocument = await this.createPeerDidDoc(agentContext, this.routingToServices(routing))
-    const parentThreadId = outOfBandRecord.outOfBandInvitation.id
-
-    const message = new DidExchangeRequestMessage({ label, parentThreadId, did: didDocument.id, goal, goalCode })
-
-    // Create sign attachment containing didDoc
-    if (getNumAlgoFromPeerDid(didDocument.id) === PeerDidNumAlgo.GenesisDoc) {
-      const didDocAttach = await this.createSignedAttachment(agentContext, didDocument, [
-        routing.recipientKey.publicKeyBase58,
-      ])
-      message.didDoc = didDocAttach
-    }
 
     connectionRecord.did = didDocument.id
     connectionRecord.threadId = message.id
@@ -141,7 +159,7 @@ export class DidExchangeProtocol {
     messageContext: InboundMessageContext<DidExchangeRequestMessage>,
     outOfBandRecord: OutOfBandRecord
   ): Promise<ConnectionRecord> {
-    this.logger.debug(`Process message ${DidExchangeRequestMessage.type.messageTypeUri} start`, {
+    this.logger.debug(`Process message ${messageContext.message.type} start`, {
       message: messageContext.message,
     })
 
@@ -150,7 +168,7 @@ export class DidExchangeProtocol {
 
     // TODO check there is no connection record for particular oob record
 
-    const { message } = messageContext
+    const { message, agentContext } = messageContext
 
     // Check corresponding invitation ID is the request's ~thread.pthid or pthid is a public did
     // TODO Maybe we can do it in handler, but that actually does not make sense because we try to find oob by parent thread ID there.
@@ -165,49 +183,37 @@ export class DidExchangeProtocol {
     }
 
     // If the responder wishes to continue the exchange, they will persist the received information in their wallet.
-    if (!isDid(message.did, 'peer')) {
-      throw new DidExchangeProblemReportError(
-        `Message contains unsupported did ${message.did}. Supported dids are [did:peer]`,
-        {
-          problemCode: DidExchangeProblemReportReason.RequestNotAccepted,
-        }
-      )
-    }
-    const numAlgo = getNumAlgoFromPeerDid(message.did)
-    if (numAlgo !== PeerDidNumAlgo.GenesisDoc) {
-      throw new DidExchangeProblemReportError(
-        `Unsupported numalgo ${numAlgo}. Supported numalgos are [${PeerDidNumAlgo.GenesisDoc}]`,
-        {
-          problemCode: DidExchangeProblemReportReason.RequestNotAccepted,
-        }
-      )
-    }
 
-    // TODO: Move this into the didcomm module, and add a method called store received did document.
-    // This can be called from both the did exchange and the connection protocol.
-    const didDocument = await this.extractDidDocument(messageContext.agentContext, message)
-    const didRecord = new DidRecord({
-      did: message.did,
-      role: DidDocumentRole.Received,
+    // Get DID Document either from message (if it is a supported did:peer) or resolve it externally
+    const didDocument = await this.resolveDidDocument(agentContext, message)
+
+    // A DID Record must be stored in order to allow for searching for its recipient keys when receiving a message
+    const didRecord = await this.didRepository.storeReceivedDid(messageContext.agentContext, {
+      did: didDocument.id,
       // It is important to take the did document from the PeerDid class
       // as it will have the id property
-      didDocument,
+      didDocument:
+        !isValidPeerDid(didDocument.id) || getNumAlgoFromPeerDid(message.did) === PeerDidNumAlgo.GenesisDoc
+          ? didDocument
+          : undefined,
       tags: {
         // We need to save the recipientKeys, so we can find the associated did
         // of a key when we receive a message from another connection.
         recipientKeyFingerprints: didDocument.recipientKeys.map((key) => key.fingerprint),
+
+        // For did:peer, store any alternative dids (like short form did:peer:4),
+        // it may have in order to relate any message referencing it
+        alternativeDids: isValidPeerDid(didDocument.id) ? getAlternativeDidsForPeerDid(didDocument.id) : undefined,
       },
     })
 
-    this.logger.debug('Saving DID record', {
+    this.logger.debug('Saved DID record', {
       id: didRecord.id,
       did: didRecord.did,
       role: didRecord.role,
       tags: didRecord.getTags(),
       didDocument: 'omitted...',
     })
-
-    await this.didRepository.save(messageContext.agentContext, didRecord)
 
     const connectionRecord = await this.connectionService.createConnection(messageContext.agentContext, {
       protocol: HandshakeProtocol.DidExchange,
@@ -236,15 +242,21 @@ export class DidExchangeProtocol {
     this.logger.debug(`Create message ${DidExchangeResponseMessage.type.messageTypeUri} start`, connectionRecord)
     DidExchangeStateMachine.assertCreateMessageState(DidExchangeResponseMessage.type, connectionRecord)
 
-    const { threadId } = connectionRecord
+    const { threadId, theirDid } = connectionRecord
+
+    const config = agentContext.dependencyManager.resolve(ConnectionsModuleConfig)
 
     if (!threadId) {
       throw new AriesFrameworkError('Missing threadId on connection record.')
     }
 
+    if (!theirDid) {
+      throw new AriesFrameworkError('Missing theirDid on connection record.')
+    }
+
     let services: ResolvedDidCommService[] = []
     if (routing) {
-      services = this.routingToServices(routing)
+      services = routingToServices(routing)
     } else if (outOfBandRecord) {
       const inlineServices = outOfBandRecord.outOfBandInvitation.getInlineServices()
       services = inlineServices.map((service) => ({
@@ -255,13 +267,18 @@ export class DidExchangeProtocol {
       }))
     }
 
-    const didDocument = await this.createPeerDidDoc(agentContext, services)
+    // Use the same num algo for response as received in request
+    const numAlgo = isValidPeerDid(theirDid)
+      ? getNumAlgoFromPeerDid(theirDid)
+      : config.peerNumAlgoForDidExchangeRequests
+
+    const didDocument = await createPeerDidFromServices(agentContext, services, numAlgo)
     const message = new DidExchangeResponseMessage({ did: didDocument.id, threadId })
 
-    if (getNumAlgoFromPeerDid(didDocument.id) === PeerDidNumAlgo.GenesisDoc) {
-      const didDocAttach = await this.createSignedAttachment(
+    if (numAlgo === PeerDidNumAlgo.GenesisDoc) {
+      message.didDoc = await this.createSignedAttachment(
         agentContext,
-        didDocument,
+        didDocument.toJSON(),
         Array.from(
           new Set(
             services
@@ -271,7 +288,20 @@ export class DidExchangeProtocol {
           )
         )
       )
-      message.didDoc = didDocAttach
+    } else {
+      // We assume any other case is a resolvable did (e.g. did:peer:2 or did:peer:4)
+      message.didRotate = await this.createSignedAttachment(
+        agentContext,
+        didDocument.id,
+        Array.from(
+          new Set(
+            services
+              .map((s) => s.recipientKeys)
+              .reduce((acc, curr) => acc.concat(curr), [])
+              .map((key) => key.publicKeyBase58)
+          )
+        )
+      )
     }
 
     connectionRecord.did = didDocument.id
@@ -292,7 +322,7 @@ export class DidExchangeProtocol {
       message: messageContext.message,
     })
 
-    const { connection: connectionRecord, message } = messageContext
+    const { connection: connectionRecord, message, agentContext } = messageContext
 
     if (!connectionRecord) {
       throw new AriesFrameworkError('No connection record in message context.')
@@ -306,51 +336,38 @@ export class DidExchangeProtocol {
       })
     }
 
-    if (!isDid(message.did, 'peer')) {
-      throw new DidExchangeProblemReportError(
-        `Message contains unsupported did ${message.did}. Supported dids are [did:peer]`,
-        {
-          problemCode: DidExchangeProblemReportReason.ResponseNotAccepted,
-        }
-      )
-    }
-    const numAlgo = getNumAlgoFromPeerDid(message.did)
-    if (numAlgo !== PeerDidNumAlgo.GenesisDoc) {
-      throw new DidExchangeProblemReportError(
-        `Unsupported numalgo ${numAlgo}. Supported numalgos are [${PeerDidNumAlgo.GenesisDoc}]`,
-        {
-          problemCode: DidExchangeProblemReportReason.ResponseNotAccepted,
-        }
-      )
-    }
-
-    const didDocument = await this.extractDidDocument(
-      messageContext.agentContext,
+    // Get DID Document either from message (if it is a did:peer) or resolve it externally
+    const didDocument = await this.resolveDidDocument(
+      agentContext,
       message,
       outOfBandRecord
         .getTags()
         .recipientKeyFingerprints.map((fingerprint) => Key.fromFingerprint(fingerprint).publicKeyBase58)
     )
-    const didRecord = new DidRecord({
-      did: message.did,
-      role: DidDocumentRole.Received,
-      didDocument,
-      tags: {
-        // We need to save the recipientKeys, so we can find the associated did
-        // of a key when we receive a message from another connection.
-        recipientKeyFingerprints: didDocument.recipientKeys.map((key) => key.fingerprint),
-      },
-    })
 
-    this.logger.debug('Saving DID record', {
-      id: didRecord.id,
-      did: didRecord.did,
-      role: didRecord.role,
-      tags: didRecord.getTags(),
-      didDocument: 'omitted...',
-    })
+    if (isValidPeerDid(didDocument.id)) {
+      const didRecord = await this.didRepository.storeReceivedDid(messageContext.agentContext, {
+        did: didDocument.id,
+        didDocument: getNumAlgoFromPeerDid(message.did) === PeerDidNumAlgo.GenesisDoc ? didDocument : undefined,
+        tags: {
+          // We need to save the recipientKeys, so we can find the associated did
+          // of a key when we receive a message from another connection.
+          recipientKeyFingerprints: didDocument.recipientKeys.map((key) => key.fingerprint),
 
-    await this.didRepository.save(messageContext.agentContext, didRecord)
+          // For did:peer, store any alternative dids (like short form did:peer:4),
+          // it may have in order to relate any message referencing it
+          alternativeDids: getAlternativeDidsForPeerDid(didDocument.id),
+        },
+      })
+
+      this.logger.debug('Saved DID record', {
+        id: didRecord.id,
+        did: didRecord.did,
+        role: didRecord.role,
+        tags: didRecord.getTags(),
+        didDocument: 'omitted...',
+      })
+    }
 
     connectionRecord.theirDid = message.did
 
@@ -433,36 +450,16 @@ export class DidExchangeProtocol {
     return this.connectionService.updateState(agentContext, connectionRecord, nextState)
   }
 
-  private async createPeerDidDoc(agentContext: AgentContext, services: ResolvedDidCommService[]) {
-    // Create did document without the id property
-    const didDocument = createPeerDidDocumentFromServices(services)
-
-    // Register did:peer document. This will generate the id property and save it to a did record
-    const result = await this.didRegistrarService.create<PeerDidCreateOptions>(agentContext, {
-      method: 'peer',
-      didDocument,
-      options: {
-        numAlgo: PeerDidNumAlgo.GenesisDoc,
-      },
-    })
-
-    if (result.didState?.state !== 'finished') {
-      throw new AriesFrameworkError(`Did document creation failed: ${JSON.stringify(result.didState)}`)
-    }
-
-    this.logger.debug(`Did document with did ${result.didState.did} created.`, {
-      did: result.didState.did,
-      didDocument: result.didState.didDocument,
-    })
-
-    return result.didState.didDocument
-  }
-
-  private async createSignedAttachment(agentContext: AgentContext, didDoc: DidDocument, verkeys: string[]) {
-    const didDocAttach = new Attachment({
-      mimeType: 'application/json',
+  private async createSignedAttachment(
+    agentContext: AgentContext,
+    data: string | Record<string, unknown>,
+    verkeys: string[]
+  ) {
+    const signedAttach = new Attachment({
+      mimeType: typeof data === 'string' ? undefined : 'application/json',
       data: new AttachmentData({
-        base64: JsonEncoder.toBase64(didDoc),
+        base64:
+          typeof data === 'string' ? TypedArrayEncoder.toBase64URL(Buffer.from(data)) : JsonEncoder.toBase64(data),
       }),
     })
 
@@ -470,7 +467,7 @@ export class DidExchangeProtocol {
       verkeys.map(async (verkey) => {
         const key = Key.fromPublicKeyBase58(verkey, KeyType.Ed25519)
         const kid = new DidKey(key).did
-        const payload = JsonEncoder.toBuffer(didDoc)
+        const payload = typeof data === 'string' ? TypedArrayEncoder.fromString(data) : JsonEncoder.toBuffer(data)
 
         const jws = await this.jwsService.createJws(agentContext, {
           payload,
@@ -483,11 +480,114 @@ export class DidExchangeProtocol {
             jwk: getJwkFromKey(key),
           },
         })
-        didDocAttach.addJws(jws)
+        signedAttach.addJws(jws)
       })
     )
 
-    return didDocAttach
+    return signedAttach
+  }
+
+  /**
+   * Resolves a did document from a given `request` or `response` message, verifying its signature or did rotate
+   * signature in case it is taken from message attachment.
+   *
+   * @param message DID request or DID response message
+   * @param invitationKeys array containing keys from connection invitation that could be used for signing of DID document
+   * @returns verified DID document content from message attachment
+   */
+
+  private async resolveDidDocument(
+    agentContext: AgentContext,
+    message: DidExchangeRequestMessage | DidExchangeResponseMessage,
+    invitationKeysBase58: string[] = []
+  ) {
+    // The only supported case where we expect to receive a did-document attachment is did:peer algo 1
+    return isDid(message.did, 'peer') && getNumAlgoFromPeerDid(message.did) === PeerDidNumAlgo.GenesisDoc
+      ? this.extractAttachedDidDocument(agentContext, message, invitationKeysBase58)
+      : this.extractResolvableDidDocument(agentContext, message, invitationKeysBase58)
+  }
+
+  /**
+   * Extracts DID document from message (resolving it externally if required) and verifies did-rotate attachment signature
+   * if applicable
+   */
+  private async extractResolvableDidDocument(
+    agentContext: AgentContext,
+    message: DidExchangeRequestMessage | DidExchangeResponseMessage,
+    invitationKeysBase58?: string[]
+  ) {
+    // Validate did-rotate attachment in case of DID Exchange response
+    if (message instanceof DidExchangeResponseMessage) {
+      const didRotateAttachment = message.didRotate
+
+      if (!didRotateAttachment) {
+        throw new DidExchangeProblemReportError('DID Rotate attachment is missing.', {
+          problemCode: DidExchangeProblemReportReason.ResponseNotAccepted,
+        })
+      }
+
+      const jws = didRotateAttachment.data.jws
+
+      if (!jws) {
+        throw new DidExchangeProblemReportError('DID Rotate signature is missing.', {
+          problemCode: DidExchangeProblemReportReason.ResponseNotAccepted,
+        })
+      }
+
+      if (!didRotateAttachment.data.base64) {
+        throw new AriesFrameworkError('DID Rotate attachment is missing base64 property for signed did.')
+      }
+
+      // JWS payload must be base64url encoded
+      const base64UrlPayload = base64ToBase64URL(didRotateAttachment.data.base64)
+      const signedDid = TypedArrayEncoder.fromBase64(base64UrlPayload).toString()
+
+      if (signedDid !== message.did) {
+        throw new AriesFrameworkError(
+          `DID Rotate attachment's did ${message.did} does not correspond to message did ${message.did}`
+        )
+      }
+
+      const { isValid, signerKeys } = await this.jwsService.verifyJws(agentContext, {
+        jws: {
+          ...jws,
+          payload: base64UrlPayload,
+        },
+        jwkResolver: ({ jws: { header } }) => {
+          if (typeof header.kid !== 'string' || !isDid(header.kid, 'key')) {
+            throw new AriesFrameworkError('JWS header kid must be a did:key DID.')
+          }
+
+          const didKey = DidKey.fromDid(header.kid)
+          return getJwkFromKey(didKey.key)
+        },
+      })
+
+      if (!isValid || !signerKeys.every((key) => invitationKeysBase58?.includes(key.publicKeyBase58))) {
+        throw new DidExchangeProblemReportError(
+          `DID Rotate signature is invalid. isValid: ${isValid} signerKeys: ${JSON.stringify(
+            signerKeys
+          )} invitationKeys:${JSON.stringify(invitationKeysBase58)}`,
+          {
+            problemCode: DidExchangeProblemReportReason.ResponseNotAccepted,
+          }
+        )
+      }
+    }
+
+    // Now resolve the document related to the did (which can be either a public did or an inline did)
+    try {
+      return await agentContext.dependencyManager.resolve(DidsApi).resolveDidDocument(message.did)
+    } catch (error) {
+      const problemCode =
+        message instanceof DidExchangeRequestMessage
+          ? DidExchangeProblemReportReason.RequestNotAccepted
+          : DidExchangeProblemReportReason.ResponseNotAccepted
+
+      throw new DidExchangeProblemReportError(error, {
+        problemCode,
+      })
+    }
   }
 
   /**
@@ -497,7 +597,7 @@ export class DidExchangeProtocol {
    * @param invitationKeys array containing keys from connection invitation that could be used for signing of DID document
    * @returns verified DID document content from message attachment
    */
-  private async extractDidDocument(
+  private async extractAttachedDidDocument(
     agentContext: AgentContext,
     message: DidExchangeRequestMessage | DidExchangeResponseMessage,
     invitationKeysBase58: string[] = []
@@ -526,7 +626,6 @@ export class DidExchangeProtocol {
 
     // JWS payload must be base64url encoded
     const base64UrlPayload = base64ToBase64URL(didDocumentAttachment.data.base64)
-    const json = JsonEncoder.fromBase64(didDocumentAttachment.data.base64)
 
     const { isValid, signerKeys } = await this.jwsService.verifyJws(agentContext, {
       jws: {
@@ -543,6 +642,7 @@ export class DidExchangeProtocol {
       },
     })
 
+    const json = JsonEncoder.fromBase64(didDocumentAttachment.data.base64)
     const didDocument = JsonTransformer.fromJSON(json, DidDocument)
     const didDocumentKeysBase58 = didDocument.authentication
       ?.map((authentication) => {
@@ -566,14 +666,5 @@ export class DidExchangeProtocol {
     }
 
     return didDocument
-  }
-
-  private routingToServices(routing: Routing): ResolvedDidCommService[] {
-    return routing.endpoints.map((endpoint, index) => ({
-      id: `#inline-${index}`,
-      serviceEndpoint: endpoint,
-      recipientKeys: [routing.recipientKey],
-      routingKeys: routing.routingKeys,
-    }))
   }
 }

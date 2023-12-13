@@ -7,6 +7,7 @@ import { CacheModule } from '../modules/cache'
 import { ConnectionsModule } from '../modules/connections'
 import { CredentialsModule } from '../modules/credentials'
 import { DidsModule } from '../modules/dids'
+import { DifPresentationExchangeModule } from '../modules/dif-presentation-exchange'
 import { DiscoverFeaturesModule } from '../modules/discover-features'
 import { GenericRecordsModule } from '../modules/generic-records'
 import { MessagePickupModule } from '../modules/message-pickup'
@@ -131,6 +132,7 @@ function getDefaultAgentModules() {
     oob: () => new OutOfBandModule(),
     w3cCredentials: () => new W3cCredentialsModule(),
     cache: () => new CacheModule(),
+    pex: () => new DifPresentationExchangeModule(),
   } as const
 }
 

@@ -9,6 +9,8 @@ import { buildDidDocument } from './didIndyUtil'
 export class IndyVdrIndyDidResolver implements DidResolver {
   public readonly supportedMethods = ['indy']
 
+  public readonly allowsCaching = true
+
   public async resolve(agentContext: AgentContext, did: string): Promise<DidResolutionResult> {
     const didDocumentMetadata = {}
     try {

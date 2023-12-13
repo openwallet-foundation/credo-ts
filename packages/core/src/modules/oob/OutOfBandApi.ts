@@ -77,6 +77,7 @@ interface BaseReceiveOutOfBandInvitationConfig {
   routing?: Routing
   acceptInvitationTimeoutMs?: number
   isImplicit?: boolean
+  ourDid?: string
 }
 
 export type ReceiveOutOfBandInvitationConfig = Omit<BaseReceiveOutOfBandInvitationConfig, 'isImplicit'>
@@ -479,6 +480,7 @@ export class OutOfBandApi {
         reuseConnection,
         routing,
         timeoutMs: config.acceptInvitationTimeoutMs,
+        ourDid: config.ourDid,
       })
     }
 
@@ -514,12 +516,13 @@ export class OutOfBandApi {
        */
       routing?: Routing
       timeoutMs?: number
+      ourDid?: string
     }
   ) {
     const outOfBandRecord = await this.outOfBandService.getById(this.agentContext, outOfBandId)
 
     const { outOfBandInvitation } = outOfBandRecord
-    const { label, alias, imageUrl, autoAcceptConnection, reuseConnection } = config
+    const { label, alias, imageUrl, autoAcceptConnection, reuseConnection, ourDid } = config
     const services = outOfBandInvitation.getServices()
     const messages = outOfBandInvitation.getRequests()
     const timeoutMs = config.timeoutMs ?? 20000
@@ -585,6 +588,7 @@ export class OutOfBandApi {
           autoAcceptConnection,
           protocol: handshakeProtocol,
           routing,
+          ourDid,
         })
       }
 
@@ -871,7 +875,10 @@ export class OutOfBandApi {
         ),
         // If the event is found, we return the value true
         map(() => true),
-        timeout(15000),
+        timeout({
+          first: 15000,
+          meta: 'OutOfBandApi.handleHandshakeReuse',
+        }),
         // If timeout is reached, we return false
         catchError(() => of(false))
       )

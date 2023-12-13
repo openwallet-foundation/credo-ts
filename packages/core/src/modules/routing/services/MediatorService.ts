@@ -15,7 +15,8 @@ import { injectable, inject } from '../../../plugins'
 import { ConnectionService } from '../../connections'
 import { ConnectionMetadataKeys } from '../../connections/repository/ConnectionMetadataTypes'
 import { didKeyToVerkey, isDidKey, verkeyToDidKey } from '../../dids/helpers'
-import { MessagePickupApi } from '../../message-pìckup'
+import { MessagePickupApi } from '../../message-pickup'
+import { MessagePickupSessionRole } from '../../message-pickup/MessagePickupSession'
 import { MediatorModuleConfig } from '../MediatorModuleConfig'
 import { MessageForwardingStrategy } from '../MessageForwardingStrategy'
 import { RoutingEventTypes } from '../RoutingEvents'
@@ -99,17 +100,24 @@ export class MediatorService {
           message: message.message,
         })
         break
-      case MessageForwardingStrategy.QueueAndDeliver:
+      case MessageForwardingStrategy.QueueAndDeliver: {
         await this.messagePickupApi.queueMessage({
           connectionId: mediationRecord.connectionId,
           recipientKeys: [verkeyToDidKey(message.to)],
           message: message.message,
         })
-        await this.messagePickupApi.deliverQueuedMessages({
+        const session = await this.messagePickupApi.getLiveModeSession({
           connectionId: mediationRecord.connectionId,
-          recipientKey: verkeyToDidKey(message.to),
+          role: MessagePickupSessionRole.MessageHolder,
         })
+        if (session) {
+          await this.messagePickupApi.deliverMessagesFromQueue({
+            pickupSessionId: session.id,
+            recipientKey: verkeyToDidKey(message.to),
+          })
+        }
         break
+      }
       case MessageForwardingStrategy.DeliverOnly:
         // The message inside the forward message is packed so we just send the packed
         // message to the connection associated with it

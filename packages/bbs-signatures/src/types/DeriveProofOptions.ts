@@ -34,11 +34,7 @@ export interface DeriveProofOptions {
    */
   // eslint-disable-next-line
   documentLoader?: DocumentLoader
-  /**
-   * Optional expansion map
-   */
-  // eslint-disable-next-line
-  expansionMap?: () => void
+
   /**
    * Nonce to include in the derived proof
    */

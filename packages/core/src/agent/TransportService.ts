@@ -27,7 +27,7 @@ export class TransportService {
     if (session.connectionId) {
       const oldSessions = this.getExistingSessionsForConnectionIdAndType(session.connectionId, session.type)
       oldSessions.forEach((oldSession) => {
-        if (oldSession) {
+        if (oldSession && oldSession.id !== session.id) {
           this.removeSession(oldSession)
         }
       })

@@ -20,8 +20,14 @@ export class ConnectionRepository extends Repository<ConnectionRecord> {
 
   public async findByDids(agentContext: AgentContext, { ourDid, theirDid }: { ourDid: string; theirDid: string }) {
     return this.findSingleByQuery(agentContext, {
-      did: ourDid,
-      theirDid,
+      $or: [
+        {
+          did: ourDid,
+          theirDid,
+        },
+        { did: ourDid, previousTheirDids: [theirDid] },
+        { previousDids: [ourDid], theirDid },
+      ],
     })
   }
 

@@ -6,6 +6,7 @@ export enum MessagePickupSessionRole {
   MessageHolder = 'MessageHolder',
 }
 export type MessagePickupSession<MPPs extends MessagePickupProtocol[] = MessagePickupProtocol[]> = {
+  id: string
   connectionId: string
   protocolVersion: MessagePickupProtocolVersionType<MPPs>
   role: MessagePickupSessionRole

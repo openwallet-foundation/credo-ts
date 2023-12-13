@@ -37,8 +37,4 @@ export interface VerifySignatureOptions {
    * Optional custom document loader
    */
   documentLoader?: DocumentLoader
-  /**
-   * Optional expansion map
-   */
-  expansionMap?: () => void
 }

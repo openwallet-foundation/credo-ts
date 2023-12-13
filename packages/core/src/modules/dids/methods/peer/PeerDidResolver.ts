@@ -9,9 +9,15 @@ import { DidRepository } from '../../repository'
 import { getNumAlgoFromPeerDid, isValidPeerDid, PeerDidNumAlgo } from './didPeer'
 import { didToNumAlgo0DidDocument } from './peerDidNumAlgo0'
 import { didToNumAlgo2DidDocument } from './peerDidNumAlgo2'
+import { didToNumAlgo4DidDocument, isShortFormDidPeer4 } from './peerDidNumAlgo4'
 
 export class PeerDidResolver implements DidResolver {
   public readonly supportedMethods = ['peer']
+
+  /**
+   * No remote resolving done, did document is fetched from storage. To not pollute the cache we don't allow caching
+   */
+  public readonly allowsCaching = false
 
   public async resolve(agentContext: AgentContext, did: string): Promise<DidResolutionResult> {
     const didRepository = agentContext.dependencyManager.resolve(DidRepository)
@@ -48,8 +54,21 @@ export class PeerDidResolver implements DidResolver {
         didDocument = didDocumentRecord.didDocument
       }
       // For Method 2, generate from did
-      else {
+      else if (numAlgo === PeerDidNumAlgo.MultipleInceptionKeyWithoutDoc) {
         didDocument = didToNumAlgo2DidDocument(did)
+      }
+      // For Method 4, if short form is received, attempt to get the didDocument from stored record
+      else {
+        if (isShortFormDidPeer4(did)) {
+          const [didRecord] = await didRepository.findAllByDid(agentContext, did)
+
+          if (!didRecord) {
+            throw new AriesFrameworkError(`No did record found for peer did ${did}.`)
+          }
+          didDocument = didToNumAlgo4DidDocument(didRecord.did)
+        } else {
+          didDocument = didToNumAlgo4DidDocument(did)
+        }
       }
 
       return {

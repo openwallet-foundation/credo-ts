@@ -113,7 +113,7 @@ export class BbsBlsSignature2020 extends LinkedDataProof {
    * @returns {Promise<object>} Resolves with the created proof object.
    */
   public async createProof(options: CreateProofOptions): Promise<Record<string, unknown>> {
-    const { document, purpose, documentLoader, expansionMap, compactProof } = options
+    const { document, purpose, documentLoader, compactProof } = options
 
     let proof: JsonObject
 
@@ -121,7 +121,6 @@ export class BbsBlsSignature2020 extends LinkedDataProof {
     if (this.proof) {
       proof = await jsonld.compact(this.proof, SECURITY_CONTEXT_URL, {
         documentLoader,
-        expansionMap,
         compactToRelative: true,
       })
     } else {
@@ -159,7 +158,6 @@ export class BbsBlsSignature2020 extends LinkedDataProof {
       document,
       suite: this,
       documentLoader,
-      expansionMap,
     })
 
     // create data to sign
@@ -168,7 +166,7 @@ export class BbsBlsSignature2020 extends LinkedDataProof {
         document,
         proof,
         documentLoader,
-        expansionMap,
+
         compactProof,
       })
     ).map((item) => new Uint8Array(TypedArrayEncoder.fromString(item)))
@@ -179,7 +177,6 @@ export class BbsBlsSignature2020 extends LinkedDataProof {
       document,
       proof,
       documentLoader,
-      expansionMap,
     })
     delete proof['@context']
 
@@ -192,7 +189,7 @@ export class BbsBlsSignature2020 extends LinkedDataProof {
    * @returns {Promise<{object}>} Resolves with the verification result.
    */
   public async verifyProof(options: VerifyProofOptions): Promise<Record<string, unknown>> {
-    const { proof, document, documentLoader, expansionMap, purpose } = options
+    const { proof, document, documentLoader, purpose } = options
 
     try {
       // create data to verify
@@ -201,7 +198,6 @@ export class BbsBlsSignature2020 extends LinkedDataProof {
           document,
           proof,
           documentLoader,
-          expansionMap,
           compactProof: false,
         })
       ).map((item) => new Uint8Array(TypedArrayEncoder.fromString(item)))
@@ -219,7 +215,6 @@ export class BbsBlsSignature2020 extends LinkedDataProof {
         document,
         proof,
         documentLoader,
-        expansionMap,
       })
       if (!verified) {
         throw new Error('Invalid signature.')
@@ -231,7 +226,6 @@ export class BbsBlsSignature2020 extends LinkedDataProof {
         suite: this,
         verificationMethod,
         documentLoader,
-        expansionMap,
       })
       if (!valid) {
         throw error
@@ -244,24 +238,22 @@ export class BbsBlsSignature2020 extends LinkedDataProof {
   }
 
   public async canonize(input: Record<string, unknown>, options: CanonizeOptions): Promise<string> {
-    const { documentLoader, expansionMap, skipExpansion } = options
+    const { documentLoader, skipExpansion } = options
     return jsonld.canonize(input, {
       algorithm: 'URDNA2015',
       format: 'application/n-quads',
       documentLoader,
-      expansionMap,
       skipExpansion,
       useNative: this.useNativeCanonize,
     })
   }
 
   public async canonizeProof(proof: Record<string, unknown>, options: CanonizeOptions): Promise<string> {
-    const { documentLoader, expansionMap } = options
+    const { documentLoader } = options
     proof = { ...proof }
     delete proof[this.proofSignatureKey]
     return this.canonize(proof, {
       documentLoader,
-      expansionMap,
       skipExpansion: false,
     })
   }
@@ -272,17 +264,15 @@ export class BbsBlsSignature2020 extends LinkedDataProof {
    * @returns {Promise<{string[]>}.
    */
   public async createVerifyData(options: CreateVerifyDataOptions): Promise<string[]> {
-    const { proof, document, documentLoader, expansionMap } = options
+    const { proof, document, documentLoader } = options
 
     const proof2 = { ...proof, '@context': document['@context'] }
 
     const proofStatements = await this.createVerifyProofData(proof2, {
       documentLoader,
-      expansionMap,
     })
     const documentStatements = await this.createVerifyDocumentData(document, {
       documentLoader,
-      expansionMap,
     })
 
     // concatenate c14n proof options and c14n document
@@ -297,11 +287,10 @@ export class BbsBlsSignature2020 extends LinkedDataProof {
    */
   public async createVerifyProofData(
     proof: Record<string, unknown>,
-    { documentLoader, expansionMap }: { documentLoader?: DocumentLoader; expansionMap?: () => void }
+    { documentLoader }: { documentLoader?: DocumentLoader }
   ): Promise<string[]> {
     const c14nProofOptions = await this.canonizeProof(proof, {
       documentLoader,
-      expansionMap,
     })
 
     return c14nProofOptions.split('\n').filter((_) => _.length > 0)
@@ -315,11 +304,10 @@ export class BbsBlsSignature2020 extends LinkedDataProof {
    */
   public async createVerifyDocumentData(
     document: Record<string, unknown>,
-    { documentLoader, expansionMap }: { documentLoader?: DocumentLoader; expansionMap?: () => void }
+    { documentLoader }: { documentLoader?: DocumentLoader }
   ): Promise<string[]> {
     const c14nDocument = await this.canonize(document, {
       documentLoader,
-      expansionMap,
     })
 
     return c14nDocument.split('\n').filter((_) => _.length > 0)
@@ -329,7 +317,6 @@ export class BbsBlsSignature2020 extends LinkedDataProof {
    * @param document {object} to be signed.
    * @param proof {object}
    * @param documentLoader {function}
-   * @param expansionMap {function}
    */
   public async getVerificationMethod({
     proof,

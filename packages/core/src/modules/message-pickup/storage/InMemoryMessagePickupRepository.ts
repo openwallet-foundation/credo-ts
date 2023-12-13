@@ -15,6 +15,7 @@ import { uuid } from '../../../utils/uuid'
 interface InMemoryQueuedMessage extends QueuedMessage {
   connectionId: string
   recipientKeys: string[]
+  state: 'pending' | 'sending'
 }
 
 @injectable()
@@ -37,16 +38,27 @@ export class InMemoryMessagePickupRepository implements MessagePickupRepository 
     return messages.length
   }
 
-  public takeFromQueue(options: TakeFromQueueOptions) {
+  public takeFromQueue(options: TakeFromQueueOptions): QueuedMessage[] {
     const { connectionId, recipientKey, limit, keepMessages } = options
 
-    const messages = this.messages.filter(
+    let messages = this.messages.filter(
       (msg) =>
-        msg.connectionId === connectionId && (recipientKey === undefined || msg.recipientKeys.includes(recipientKey))
+        msg.connectionId === connectionId &&
+        msg.state === 'pending' &&
+        (recipientKey === undefined || msg.recipientKeys.includes(recipientKey))
     )
 
     const messagesToTake = limit ?? messages.length
+
+    messages = messages.slice(0, messagesToTake)
+
     this.logger.debug(`Taking ${messagesToTake} messages from queue for connection ${connectionId}`)
+
+    // Mark taken messages in order to prevent them of being retrieved again
+    messages.forEach((msg) => {
+      const index = this.messages.findIndex((item) => item.id === msg.id)
+      if (index !== -1) this.messages[index].state = 'sending'
+    })
 
     if (!keepMessages) {
       this.removeMessages({ connectionId, messageIds: messages.map((msg) => msg.id) })
@@ -64,6 +76,7 @@ export class InMemoryMessagePickupRepository implements MessagePickupRepository 
       connectionId,
       encryptedMessage: payload,
       recipientKeys,
+      state: 'pending',
     })
 
     return id
