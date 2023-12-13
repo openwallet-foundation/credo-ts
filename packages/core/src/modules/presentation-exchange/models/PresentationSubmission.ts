@@ -1,4 +1,4 @@
-import type { W3cCredentialRecord, W3cVerifiableCredential } from '@aries-framework/core'
+import type { W3cCredentialRecord, W3cVerifiableCredential } from '../../vc'
 
 export interface PresentationSubmission {
   /**

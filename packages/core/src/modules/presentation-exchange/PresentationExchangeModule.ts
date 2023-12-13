@@ -1,6 +1,6 @@
-import type { DependencyManager, Module } from '@aries-framework/core'
+import type { DependencyManager, Module } from '../../plugins'
 
-import { AgentConfig } from '@aries-framework/core'
+import { AgentConfig } from '../../agent/AgentConfig'
 
 import { PresentationExchangeService } from './PresentationExchangeService'
 
@@ -16,7 +16,7 @@ export class PresentationExchangeModule implements Module {
     dependencyManager
       .resolve(AgentConfig)
       .logger.warn(
-        "The '@aries-framework/presentation-exchange' module is experimental and could have unexpected breaking changes. When using this module, make sure to use strict versions for all @aries-framework packages."
+        "The 'PresentationExchangeModule' module is experimental and could have unexpected breaking changes. When using this module, make sure to use strict versions for all @aries-framework packages."
       )
 
     // Services

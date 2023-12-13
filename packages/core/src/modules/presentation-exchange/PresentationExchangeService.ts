@@ -1,12 +1,8 @@
 import type { InputDescriptorToCredentials, PresentationSubmission } from './models'
-import type {
-  AgentContext,
-  Query,
-  VerificationMethod,
-  W3cCredentialRecord,
-  W3cVerifiableCredential,
-  W3cVerifiablePresentation,
-} from '@aries-framework/core'
+import type { AgentContext } from '../../agent'
+import type { Query } from '../../storage/StorageService'
+import type { VerificationMethod } from '../dids'
+import type { W3cCredentialRecord, W3cVerifiableCredential, W3cVerifiablePresentation } from '../vc'
 import type {
   IPresentationDefinition,
   PresentationSignCallBackParams,
@@ -19,19 +15,19 @@ import type {
 } from '@sphereon/pex-models'
 import type { OriginalVerifiableCredential } from '@sphereon/ssi-types'
 
-import {
-  getJwkFromKey,
-  JsonTransformer,
-  SignatureSuiteRegistry,
-  W3cPresentation,
-  W3cCredentialService,
-  ClaimFormat,
-  getKeyFromVerificationMethod,
-  DidsApi,
-  W3cCredentialRepository,
-} from '@aries-framework/core'
 import { PEVersion, PEX, PresentationSubmissionLocation } from '@sphereon/pex'
 import { injectable } from 'tsyringe'
+
+import { getJwkFromKey } from '../../crypto'
+import { JsonTransformer } from '../../utils'
+import { DidsApi, getKeyFromVerificationMethod } from '../dids'
+import {
+  ClaimFormat,
+  SignatureSuiteRegistry,
+  W3cCredentialRepository,
+  W3cCredentialService,
+  W3cPresentation,
+} from '../vc'
 
 import { PresentationExchangeError } from './PresentationExchangeError'
 import {
