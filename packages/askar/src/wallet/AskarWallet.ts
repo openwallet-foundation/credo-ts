@@ -302,7 +302,7 @@ export class AskarWallet extends AskarBaseWallet {
       const exportedWalletConfig = await this.getAskarWalletConfig({
         ...this.walletConfig,
         key: exportKey,
-        storage: { type: 'sqlite', path: destinationPath },
+        storage: { type: 'sqlite', config: { path: destinationPath } },
       })
 
       // Make sure destination path exists
