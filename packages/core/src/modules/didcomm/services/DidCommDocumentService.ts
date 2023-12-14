@@ -29,7 +29,7 @@ export class DidCommDocumentService {
     // FIXME: we currently retrieve did documents for all didcomm services in the did document, and we don't have caching
     // yet so this will re-trigger ledger resolves for each one. Should we only resolve the first service, then the second service, etc...?
     for (const didCommService of didCommServices) {
-      if (didCommService instanceof IndyAgentService) {
+      if (didCommService.type === IndyAgentService.type) {
         // IndyAgentService (DidComm v0) has keys encoded as raw publicKeyBase58 (verkeys)
         resolvedServices.push({
           id: didCommService.id,
@@ -37,7 +37,7 @@ export class DidCommDocumentService {
           routingKeys: didCommService.routingKeys?.map(verkeyToInstanceOfKey) || [],
           serviceEndpoint: didCommService.serviceEndpoint,
         })
-      } else if (didCommService instanceof DidCommV1Service) {
+      } else if (didCommService.type === DidCommV1Service.type) {
         // Resolve dids to DIDDocs to retrieve routingKeys
         const routingKeys = []
         for (const routingKey of didCommService.routingKeys ?? []) {

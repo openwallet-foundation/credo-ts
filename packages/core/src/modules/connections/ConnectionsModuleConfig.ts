@@ -1,3 +1,5 @@
+import { PeerDidNumAlgo } from '../dids'
+
 /**
  * ConnectionsModuleConfigOptions defines the interface for the options of the ConnectionsModuleConfig class.
  * This can contain optional parameters that have default values in the config class itself.
@@ -13,15 +15,26 @@ export interface ConnectionsModuleConfigOptions {
    * @default false
    */
   autoAcceptConnections?: boolean
+
+  /**
+   * Peer did num algo to use in requests for DID exchange protocol (RFC 0023). It will be also used by default
+   * in responses in case that the request does not use a peer did.
+   *
+   * @default PeerDidNumAlgo.GenesisDoc
+   */
+  peerNumAlgoForDidExchangeRequests?: PeerDidNumAlgo
 }
 
 export class ConnectionsModuleConfig {
   #autoAcceptConnections?: boolean
+  #peerNumAlgoForDidExchangeRequests?: PeerDidNumAlgo
+
   private options: ConnectionsModuleConfigOptions
 
   public constructor(options?: ConnectionsModuleConfigOptions) {
     this.options = options ?? {}
     this.#autoAcceptConnections = this.options.autoAcceptConnections
+    this.#peerNumAlgoForDidExchangeRequests = this.options.peerNumAlgoForDidExchangeRequests
   }
 
   /** See {@link ConnectionsModuleConfigOptions.autoAcceptConnections} */
@@ -32,5 +45,15 @@ export class ConnectionsModuleConfig {
   /** See {@link ConnectionsModuleConfigOptions.autoAcceptConnections} */
   public set autoAcceptConnections(autoAcceptConnections: boolean) {
     this.#autoAcceptConnections = autoAcceptConnections
+  }
+
+  /** See {@link ConnectionsModuleConfigOptions.peerNumAlgoForDidExchangeRequests} */
+  public get peerNumAlgoForDidExchangeRequests() {
+    return this.#peerNumAlgoForDidExchangeRequests ?? PeerDidNumAlgo.GenesisDoc
+  }
+
+  /** See {@link ConnectionsModuleConfigOptions.peerNumAlgoForDidExchangeRequests} */
+  public set peerNumAlgoForDidExchangeRequests(peerNumAlgoForDidExchangeRequests: PeerDidNumAlgo) {
+    this.#peerNumAlgoForDidExchangeRequests = peerNumAlgoForDidExchangeRequests
   }
 }

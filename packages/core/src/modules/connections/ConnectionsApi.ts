@@ -91,9 +91,14 @@ export class ConnectionsApi {
       imageUrl?: string
       protocol: HandshakeProtocol
       routing?: Routing
+      ourDid?: string
     }
   ) {
-    const { protocol, label, alias, imageUrl, autoAcceptConnection } = config
+    const { protocol, label, alias, imageUrl, autoAcceptConnection, ourDid } = config
+
+    if (ourDid && !config.routing) {
+      throw new AriesFrameworkError('If an external did is specified, routing configuration must be defined as well')
+    }
 
     const routing =
       config.routing ||
@@ -106,8 +111,13 @@ export class ConnectionsApi {
         alias,
         routing,
         autoAcceptConnection,
+        ourDid,
       })
     } else if (protocol === HandshakeProtocol.Connections) {
+      if (ourDid) {
+        throw new AriesFrameworkError('Using an externally defined did for connections protocol is unsupported')
+      }
+
       result = await this.connectionService.createRequest(this.agentContext, outOfBandRecord, {
         label,
         alias,
