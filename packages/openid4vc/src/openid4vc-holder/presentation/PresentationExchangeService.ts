@@ -109,10 +109,7 @@ export class PresentationExchangeService {
 
     // query the wallet ourselves first to avoid the need to query the pex library for all
     // credentials for every proof request
-    const credentialRecords = await w3cCredentialRepository.findByQuery(agentContext, {
-      $or: query,
-    })
-
+    const credentialRecords = await w3cCredentialRepository.findByQuery(agentContext, { $or: query })
     return credentialRecords
   }
 
@@ -387,19 +384,15 @@ export class PresentationExchangeService {
       )
     }
 
-    if (suitableSignatureSuites) {
-      if (suitableSignatureSuites.includes(supportedSignatureSuite.proofType) === false) {
-        throw new AriesFrameworkError(
-          [
-            'No possible signature suite found for the given verification method.',
-            `Verification method type: ${verificationMethod.type}`,
-            `SupportedSignatureSuite '${supportedSignatureSuite.proofType}'`,
-            `SuitableSignatureSuites: ${suitableSignatureSuites.join(', ')}`,
-          ].join('\n')
-        )
-      }
-
-      return supportedSignatureSuite.proofType
+    if (suitableSignatureSuites && suitableSignatureSuites.includes(supportedSignatureSuite.proofType) === false) {
+      throw new AriesFrameworkError(
+        [
+          'No possible signature suite found for the given verification method.',
+          `Verification method type: ${verificationMethod.type}`,
+          `SupportedSignatureSuite '${supportedSignatureSuite.proofType}'`,
+          `SuitableSignatureSuites: ${suitableSignatureSuites.join(', ')}`,
+        ].join('\n')
+      )
     }
 
     return supportedSignatureSuite.proofType
@@ -425,7 +418,7 @@ export class PresentationExchangeService {
       }
 
       // Clients MUST ignore any presentation_submission element included inside a Verifiable Presentation.
-      const presentationToSign = { ...presentationJson, presentation_submission: undefined }
+      delete presentationJson.presentation_submission
 
       let signedPresentation: W3cVerifiablePresentation<ClaimFormat.JwtVp | ClaimFormat.LdpVp>
       if (vpFormat === 'jwt_vp') {
@@ -433,7 +426,7 @@ export class PresentationExchangeService {
           format: ClaimFormat.JwtVp,
           alg: this.getSigningAlgorithmForJwtVc(presentationDefinition, verificationMethod),
           verificationMethod: verificationMethod.id,
-          presentation: JsonTransformer.fromJSON(presentationToSign, W3cPresentation),
+          presentation: JsonTransformer.fromJSON(presentationJson, W3cPresentation),
           challenge: challenge ?? nonce ?? (await agentContext.wallet.generateNonce()),
           domain,
         })
@@ -443,7 +436,7 @@ export class PresentationExchangeService {
           proofType: this.getProofTypeForLdpVc(agentContext, presentationDefinition, verificationMethod),
           proofPurpose: 'authentication',
           verificationMethod: verificationMethod.id,
-          presentation: JsonTransformer.fromJSON(presentationToSign, W3cPresentation),
+          presentation: JsonTransformer.fromJSON(presentationJson, W3cPresentation),
           challenge: challenge ?? nonce ?? (await agentContext.wallet.generateNonce()),
           domain,
         })

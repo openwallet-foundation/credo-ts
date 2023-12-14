@@ -3,7 +3,7 @@ import type { W3cCredentialRecord } from '@aries-framework/core'
 import type { IPresentationDefinition, SelectResults, SubmissionRequirementMatch } from '@sphereon/pex'
 import type { InputDescriptorV1, InputDescriptorV2, SubmissionRequirement } from '@sphereon/pex-models'
 
-import { AriesFrameworkError } from '@aries-framework/core'
+import { AriesFrameworkError, deepEquality } from '@aries-framework/core'
 import { PEX } from '@sphereon/pex'
 import { Rules } from '@sphereon/pex-models'
 import { default as jp } from 'jsonpath'
@@ -15,16 +15,12 @@ export async function selectCredentialsForRequest(
   credentialRecords: W3cCredentialRecord[],
   holderDIDs: string[]
 ): Promise<PresentationSubmission> {
-  const encodedCredentials = credentialRecords.map((c) => getSphereonOriginalVerifiableCredential(c.credential))
-
-  if (!presentationDefinition) {
-    throw new AriesFrameworkError('Presentation Definition is required to select credentials for submission.')
-  }
+  const sphereonEncodedCredentials = credentialRecords.map((c) => getSphereonOriginalVerifiableCredential(c.credential))
 
   const pex = new PEX()
 
   // FIXME: there is a function for this in the VP library, but it is not usable atm
-  const selectResultsRaw = pex.selectFrom(presentationDefinition, encodedCredentials, {
+  const selectResultsRaw = pex.selectFrom(presentationDefinition, sphereonEncodedCredentials, {
     holderDIDs,
     // limitDisclosureSignatureSuites: [],
     // restrictToDIDMethods,
@@ -35,7 +31,10 @@ export async function selectCredentialsForRequest(
     ...selectResultsRaw,
     // Map the encoded credential to their respective w3c credential record
     verifiableCredential: selectResultsRaw.verifiableCredential?.map((encoded) => {
-      const credentialIndex = encodedCredentials.indexOf(encoded)
+      const credentialIndex =
+        typeof encoded === 'string'
+          ? sphereonEncodedCredentials.indexOf(encoded)
+          : sphereonEncodedCredentials.findIndex((sphereonEncoded) => deepEquality(encoded, sphereonEncoded))
       const credentialRecord = credentialRecords[credentialIndex]
       if (!credentialRecord) throw new AriesFrameworkError('Unable to find credential in credential records.')
 

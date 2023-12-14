@@ -12,7 +12,9 @@ import nock from 'nock'
 import { OpenId4VcHolderModule } from '..'
 import { createAgentFromModules } from '../../../tests/utils'
 import {
+  openBadgeCredentialPresentationDefinitionLdpVc,
   combinePresentationDefinitions,
+  getOpenBadgeCredentialLdpVc,
   openBadgePresentationDefinition,
   staticOpOpenIdConfigEdDSA,
   universityDegreePresentationDefinition,
@@ -480,6 +482,126 @@ describe('OpenId4VcHolder | OpenID4VP', () => {
       idTokenPayload: expect.objectContaining(idTokenPayload),
       submission: expect.objectContaining(submission),
     })
+  })
+
+  it('expect vp request with single requested ldp_vc credential to succeed', async () => {
+    const credential = await getOpenBadgeCredentialLdpVc(
+      verifier.agent.context,
+      verifier.verificationMethod,
+      holder.verificationMethod
+    )
+    await holder.agent.w3cCredentials.storeCredential({
+      credential,
+    })
+
+    const createProofRequestOptions: CreateProofRequestOptions = {
+      verificationMethod: verifier.verificationMethod,
+      holderMetadata: staticOpOpenIdConfigEdDSA,
+      presentationDefinition: openBadgeCredentialPresentationDefinitionLdpVc,
+    }
+
+    const { proofRequest, proofRequestMetadata } = await verifier.agent.modules.openId4VcVerifier.createProofRequest(
+      createProofRequestOptions
+    )
+
+    //////////////////////////// OP (validate and parse the request) ////////////////////////////
+    const result = await holder.agent.modules.openId4VcHolder.resolveProofRequest(proofRequest)
+    if (result.proofType === 'authentication') throw new Error('Expected a proofRequest')
+
+    //////////////////////////// User (decide wheather or not to accept the request) ////////////////////////////
+    // Select the appropriate credentials
+
+    if (!result.presentationSubmission.areRequirementsSatisfied) {
+      throw new Error('Requirements are not satisfied.')
+    }
+
+    //////////////////////////// OP (accept the verified request) ////////////////////////////
+    const { submittedResponse, status } = await holder.agent.modules.openId4VcHolder.acceptPresentationRequest(
+      result.presentationRequest,
+      {
+        submission: result.presentationSubmission,
+        submissionEntryIndexes: [0],
+      }
+    )
+
+    expect(status).toBe(200)
+
+    // The RP MUST validate that the aud (audience) Claim contains the value of the client_id
+    // that the RP sent in the Authorization Request as an audience.
+    // When the request has been signed, the value might be an HTTPS URL, or a Decentralized Identifier.
+    const { idTokenPayload, submission } = await verifier.agent.modules.openId4VcVerifier.verifyProofResponse(
+      submittedResponse
+    )
+
+    const { state, challenge } = proofRequestMetadata
+    expect(idTokenPayload).toBeDefined()
+    expect(idTokenPayload.state).toMatch(state)
+    expect(idTokenPayload.nonce).toMatch(challenge)
+
+    expect(submission).toBeDefined()
+    expect(submission?.presentationDefinitions).toHaveLength(1)
+    expect(submission?.submissionData.definition_id).toBe('OpenBadgeCredential')
+    expect(submission?.presentations).toHaveLength(1)
+    expect(submission?.presentations[0].vcs[0].credential.type).toEqual(['VerifiableCredential', 'OpenBadgeCredential'])
+
+    await waitForMockFunction(mockFunction)
+    expect(mockFunction).toBeCalledWith({
+      idTokenPayload: expect.objectContaining(idTokenPayload),
+      submission: expect.objectContaining(submission),
+    })
+  })
+
+  it('expects the submission to fail if there are too few submission entry indexes, and also to fail when requesting two different presentation formats', async () => {
+    const credential = await getOpenBadgeCredentialLdpVc(
+      verifier.agent.context,
+      verifier.verificationMethod,
+      holder.verificationMethod
+    )
+
+    await holder.agent.w3cCredentials.storeCredential({ credential })
+
+    await holder.agent.w3cCredentials.storeCredential({
+      credential: W3cJwtVerifiableCredential.fromSerializedJwt(waltUniversityDegreeJwt),
+    })
+
+    const createProofRequestOptions: CreateProofRequestOptions = {
+      verificationMethod: verifier.verificationMethod,
+      holderMetadata: staticOpOpenIdConfigEdDSA,
+      presentationDefinition: combinePresentationDefinitions([
+        universityDegreePresentationDefinition,
+        openBadgeCredentialPresentationDefinitionLdpVc,
+      ]),
+    }
+
+    const { proofRequest } = await verifier.agent.modules.openId4VcVerifier.createProofRequest(
+      createProofRequestOptions
+    )
+
+    //////////////////////////// OP (validate and parse the request) ////////////////////////////
+    const result = await holder.agent.modules.openId4VcHolder.resolveProofRequest(proofRequest)
+    if (result.proofType === 'authentication') throw new Error('Expected a proofRequest')
+
+    //////////////////////////// User (decide wheather or not to accept the request) ////////////////////////////
+    // Select the appropriate credentials
+
+    if (!result.presentationSubmission.areRequirementsSatisfied) {
+      throw new Error('Requirements are not satisfied.')
+    }
+
+    //////////////////////////// OP (accept the verified request) ////////////////////////////
+    await expect(
+      holder.agent.modules.openId4VcHolder.acceptPresentationRequest(result.presentationRequest, {
+        submission: result.presentationSubmission,
+        submissionEntryIndexes: [0, 0],
+      })
+    ).rejects.toThrow()
+
+    await expect(
+      holder.agent.modules.openId4VcHolder.acceptPresentationRequest(result.presentationRequest, {
+        submission: result.presentationSubmission,
+        submissionEntryIndexes: [0],
+      })
+    ).rejects.toThrow()
   })
 
   // it('edited walt vp request', async () => {
