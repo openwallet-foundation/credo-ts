@@ -12,7 +12,7 @@ env:
   TEST_AGENT_PUBLIC_DID_SEED: 000000000000000000000000Trustee9
   ENDORSER_AGENT_PUBLIC_DID_SEED: 00000000000000000000000Endorser9
   GENESIS_TXN_PATH: network/genesis/local-genesis.txn
-  LIB_INDY_STRG_POSTGRES: /home/runner/work/aries-framework-javascript/indy-sdk/experimental/plugins/postgres_storage/target/release # for Linux
+  LIB_INDY_STRG_POSTGRES: /home/runner/work/agent-framework-javascript/indy-sdk/experimental/plugins/postgres_storage/target/release # for Linux
   NODE_OPTIONS: --max_old_space_size=6144
 
 # Make sure we're not running multiple release steps at the same time as this can give issues with determining the next npm version to release.
@@ -28,7 +28,7 @@ jobs:
   # validation scripts. To still be able to run the CI we can manually trigger it by adding the 'ci-test'
   # label to the pull request
   ci-trigger:
-    runs-on: aries-ubuntu-2004
+    runs-on: ubuntu-20.04
     outputs:
       triggered: ${{ steps.check.outputs.triggered }}
     steps:
@@ -47,10 +47,10 @@ jobs:
           echo triggered="${SHOULD_RUN}" >> "$GITHUB_OUTPUT"
 
   validate:
-    runs-on: aries-ubuntu-2004
+    runs-on: ubuntu-20.04
     name: Validate
     steps:
-      - name: Checkout aries-framework-javascript
+      - name: Checkout agent-framework-javascript
         uses: actions/checkout@v4
 
       # setup dependencies
@@ -79,7 +79,7 @@ jobs:
         run: yarn build
 
   integration-test:
-    runs-on: aries-ubuntu-2004
+    runs-on: ubuntu-20.04
     name: Integration Tests
 
     strategy:
@@ -126,12 +126,12 @@ jobs:
         if: always()
 
   version-stable:
-    runs-on: aries-ubuntu-2004
+    runs-on: ubuntu-20.04
     name: Release stable
     needs: [integration-test, validate]
     if: github.ref == 'refs/heads/main' && github.event_name == 'workflow_dispatch'
     steps:
-      - name: Checkout aries-framework-javascript
+      - name: Checkout agent-framework-javascript
         uses: actions/checkout@v4
         with:
           # pulls all commits (needed for lerna to correctly version)

@@ -1,7 +1,3 @@
-import type { Response } from 'node-fetch'
-
-import { Headers } from 'node-fetch'
-
 import { ConnectionInvitationMessage } from '../../modules/connections'
 import { InvitationType, OutOfBandInvitation } from '../../modules/oob'
 import { convertToNewInvitation } from '../../modules/oob/helpers'
@@ -51,7 +47,7 @@ const mockedResponseOobUrl = {
   url: 'https://wonderful-rabbit-5.tun2.indiciotech.io?oob=eyJAdHlwZSI6ICJkaWQ6c292OkJ6Q2JzTlloTXJqSGlxWkRUVUFTSGc7c3BlYy9vdXQtb2YtYmFuZC8xLjAvaW52aXRhdGlvbiIsICJAaWQiOiAiNzY0YWYyNTktOGJiNC00NTQ2LWI5MWEtOTI0YzkxMmQwYmI4IiwgImxhYmVsIjogIkFsaWNlIiwgImhhbmRzaGFrZV9wcm90b2NvbHMiOiBbImRpZDpzb3Y6QnpDYnNOWWhNcmpIaXFaRFRVQVNIZztzcGVjL2Nvbm5lY3Rpb25zLzEuMCJdLCAic2VydmljZXMiOiBbImRpZDpzb3Y6TXZUcVZYQ0VtSjg3dXNMOXVRVG83diJdfQ====',
 } as Response
 
-mockedResponseOobUrl.headers = dummyHeader
+dummyHeader.forEach(mockedResponseOobUrl.headers.append)
 
 const mockedResponseConnectionJson = {
   status: 200,
@@ -63,17 +59,15 @@ const mockedResponseConnectionJson = {
     serviceEndpoint: 'http://sour-cow-15.tun1.indiciotech.io',
     recipientKeys: ['5Gvpf9M4j7vWpHyeTyvBKbjYe7qWc72kGo6qZaLHkLrd'],
   }),
+  headers: header,
 } as Response
-
-mockedResponseConnectionJson['headers'] = header
 
 const mockedResponseConnectionUrl = {
   status: 200,
   ok: true,
   url: 'http://sour-cow-15.tun1.indiciotech.io?c_i=eyJAdHlwZSI6ICJkaWQ6c292OkJ6Q2JzTlloTXJqSGlxWkRUVUFTSGc7c3BlYy9jb25uZWN0aW9ucy8xLjAvaW52aXRhdGlvbiIsICJAaWQiOiAiMjA5NzFlZjAtMTAyOS00NmRiLWEyNWItYWY0YzQ2NWRkMTZiIiwgImxhYmVsIjogInRlc3QiLCAic2VydmljZUVuZHBvaW50IjogImh0dHA6Ly9zb3VyLWNvdy0xNS50dW4xLmluZGljaW90ZWNoLmlvIiwgInJlY2lwaWVudEtleXMiOiBbIjVHdnBmOU00ajd2V3BIeWVUeXZCS2JqWWU3cVdjNzJrR282cVphTEhrTHJkIl19',
+  headers: dummyHeader,
 } as Response
-
-mockedResponseConnectionUrl['headers'] = dummyHeader
 
 let outOfBandInvitationMock: OutOfBandInvitation
 let connectionInvitationMock: ConnectionInvitationMessage
@@ -126,7 +120,7 @@ describe('shortened urls resolving to connection invitations', () => {
       url: 'https://oob.lissi.io/ssi?oob=eyJAdHlwZSI6ImRpZDpzb3Y6QnpDYnNOWWhNcmpIaXFaRFRVQVNIZztzcGVjL2Nvbm5lY3Rpb25zLzEuMC9pbnZpdGF0aW9uIiwiQGlkIjoiMGU0NmEzYWEtMzUyOC00OTIxLWJmYjItN2JjYjk0NjVjNjZjIiwibGFiZWwiOiJTdGFkdCB8IExpc3NpLURlbW8iLCJzZXJ2aWNlRW5kcG9pbnQiOiJodHRwczovL2RlbW8tYWdlbnQuaW5zdGl0dXRpb25hbC1hZ2VudC5saXNzaS5pZC9kaWRjb21tLyIsImltYWdlVXJsIjoiaHR0cHM6Ly9yb3V0aW5nLmxpc3NpLmlvL2FwaS9JbWFnZS9kZW1vTXVzdGVyaGF1c2VuIiwicmVjaXBpZW50S2V5cyI6WyJEZlcxbzM2ekxuczlVdGlDUGQyalIyS2pvcnRvZkNhcFNTWTdWR2N2WEF6aCJdfQ',
     } as Response
 
-    mockedResponseConnectionInOobUrl.headers = dummyHeader
+    dummyHeader.forEach(mockedResponseConnectionInOobUrl.headers.append)
 
     const expectedOobMessage = convertToNewInvitation(
       JsonTransformer.fromJSON(

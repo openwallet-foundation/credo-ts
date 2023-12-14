@@ -2,7 +2,7 @@ import type {
   AnonCredsPresentationPreviewAttribute,
   AnonCredsPresentationPreviewPredicate,
 } from '../formats/AnonCredsProofFormat'
-import type { AnonCredsProofRequest } from '../models'
+import type { AnonCredsNonRevokedInterval, AnonCredsProofRequest } from '../models'
 
 import { utils } from '@aries-framework/core'
 
@@ -12,12 +12,14 @@ export function createRequestFromPreview({
   nonce,
   attributes,
   predicates,
+  nonRevokedInterval,
 }: {
   name: string
   version: string
   nonce: string
   attributes: AnonCredsPresentationPreviewAttribute[]
   predicates: AnonCredsPresentationPreviewPredicate[]
+  nonRevokedInterval?: AnonCredsNonRevokedInterval
 }): AnonCredsProofRequest {
   const proofRequest: AnonCredsProofRequest = {
     name,
@@ -83,6 +85,11 @@ export function createRequestFromPreview({
         },
       ],
     }
+  }
+
+  // TODO: local non_revoked?
+  if (nonRevokedInterval) {
+    proofRequest.non_revoked = nonRevokedInterval
   }
 
   return proofRequest

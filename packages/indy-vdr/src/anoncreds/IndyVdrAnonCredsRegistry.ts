@@ -7,6 +7,8 @@ import type {
   GetRevocationStatusListReturn,
   GetRevocationRegistryDefinitionReturn,
   AnonCredsRevocationRegistryDefinition,
+  RegisterRevocationRegistryDefinitionReturn,
+  RegisterRevocationStatusListReturn,
   AnonCredsSchema,
   AnonCredsCredentialDefinition,
   RegisterSchemaReturnStateFailed,
@@ -30,6 +32,7 @@ import {
   parseIndyRevocationRegistryId,
   parseIndySchemaId,
 } from '@aries-framework/anoncreds'
+import { AriesFrameworkError } from '@aries-framework/core'
 import {
   GetSchemaRequest,
   SchemaRequest,
@@ -312,7 +315,7 @@ export class IndyVdrAnonCredsRegistry implements AnonCredsRegistry {
     const { schemaId, issuerId, tag, value } = credentialDefinition
 
     try {
-      // This will throw an error if trying to register a credential defintion with a legacy indy identifier. We only support did:indy
+      // This will throw an error if trying to register a credential definition with a legacy indy identifier. We only support did:indy
       // identifiers for registering, that will allow us to extract the namespace and means all stored records will use did:indy identifiers.
       const { namespaceIdentifier, namespace } = parseIndyDid(issuerId)
       const { endorserDid, endorserMode } = options.options
@@ -549,6 +552,10 @@ export class IndyVdrAnonCredsRegistry implements AnonCredsRegistry {
     }
   }
 
+  public async registerRevocationRegistryDefinition(): Promise<RegisterRevocationRegistryDefinitionReturn> {
+    throw new AriesFrameworkError('Not implemented!')
+  }
+
   public async getRevocationStatusList(
     agentContext: AgentContext,
     revocationRegistryId: string,
@@ -651,6 +658,10 @@ export class IndyVdrAnonCredsRegistry implements AnonCredsRegistry {
         revocationStatusListMetadata: {},
       }
     }
+  }
+
+  public async registerRevocationStatusList(): Promise<RegisterRevocationStatusListReturn> {
+    throw new AriesFrameworkError('Not implemented!')
   }
 
   private async fetchIndySchemaWithSeqNo(agentContext: AgentContext, seqNo: number, did: string) {
