@@ -1,5 +1,5 @@
 import { Type, Expose } from 'class-transformer'
-import { IsString, ValidateNested } from 'class-validator'
+import { IsOptional, IsString, ValidateNested } from 'class-validator'
 
 import { AgentMessage } from '../../../agent/AgentMessage'
 import { Attachment } from '../../../decorators/attachment/Attachment'
@@ -36,13 +36,20 @@ export class DidExchangeResponseMessage extends AgentMessage {
 
   @IsValidMessageType(DidExchangeResponseMessage.type)
   public readonly type = DidExchangeResponseMessage.type.messageTypeUri
-  public static readonly type = parseMessageType('https://didcomm.org/didexchange/1.0/response')
+  public static readonly type = parseMessageType('https://didcomm.org/didexchange/1.1/response')
 
   @IsString()
   public readonly did!: string
 
   @Expose({ name: 'did_doc~attach' })
+  @IsOptional()
   @Type(() => Attachment)
   @ValidateNested()
   public didDoc?: Attachment
+
+  @Expose({ name: 'did_rotate~attach' })
+  @IsOptional()
+  @Type(() => Attachment)
+  @ValidateNested()
+  public didRotate?: Attachment
 }

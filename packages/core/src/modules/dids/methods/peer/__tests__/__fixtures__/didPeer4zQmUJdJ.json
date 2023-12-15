@@ -1,0 +1,24 @@
+{
+  "@context": ["https://w3id.org/did/v1"],
+  "verificationMethod": [
+    {
+      "id": "#41fb2ec7-1f8b-42bf-91a2-4ef9092ddc16",
+      "type": "Ed25519VerificationKey2018",
+      "publicKeyBase58": "7H8ScGrunfcGBwMhhRakDMYguLAWiNWhQ2maYH84J8fE",
+      "controller": "did:peer:4zQmUJdJN7h66RpdeNEkNQ1tpUpN9nr2LcDz4Ftd3xKSgmn4:zD6dcwCdYV2zR4EBGTpxfEaRDLEq3ncjbutZpYTrMcGqaWip2P8vT6LrSH4cCVWfTdZgpuzBV4qY3ZasBMAs8M12JWstLTQHRVtu5ongsGvHCaWdWGS5cQaK6KLABnpBB5KgjPAN391Eekn1Zm4e14atfuj6gKHGp6V41GEumQFGM3YDwijVH82prvah5CqhRx6gXh4CYXu8MJVKiY5HBFdWyNLBtzaPWasGSEdLXYx6FcDv21igJfpcVbwQHwbU43wszfPypKiL9GDyys2n5zAWek5nQFGmDwrF65Vqy74CMFt8fZcvfBc1PTXSexhEwZkUY5inmeBbLXjbJU33FpWK6GxyDANxq5opQeRtAzUCtqeWxdafK56LYUes1THq6DzEKN2VirvvqygtnfPSJUfQWcRYixXq6bGGk5bjt14YygT7mALy5Ne6APGysjnNfH1MA3hrfEM9Ho8tuGSA2JeDvqYebV41chQDfKWoJrsG2bdFwZGgnkb3aBPHd4qyPvEdWiFLawR4mNj8qrtTagX1CyWvcAiWMKbspo5mVvCqP1SJuuT451X4uRBXazC9JGD2k7P63p71HU25zff4LvYkLeU8izcdBva1Tu4RddJN7jMFg4ifkTeZscFfbLPejFTmEDNRFswK1e"
+    }
+  ],
+  "service": [
+    {
+      "id": "#service-0",
+      "serviceEndpoint": "https://example.com",
+      "type": "did-communication",
+      "priority": 0,
+      "recipientKeys": ["#41fb2ec7-1f8b-42bf-91a2-4ef9092ddc16"],
+      "accept": ["didcomm/aip2;env=rfc19"]
+    }
+  ],
+  "authentication": ["#41fb2ec7-1f8b-42bf-91a2-4ef9092ddc16"],
+  "id": "did:peer:4zQmUJdJN7h66RpdeNEkNQ1tpUpN9nr2LcDz4Ftd3xKSgmn4:zD6dcwCdYV2zR4EBGTpxfEaRDLEq3ncjbutZpYTrMcGqaWip2P8vT6LrSH4cCVWfTdZgpuzBV4qY3ZasBMAs8M12JWstLTQHRVtu5ongsGvHCaWdWGS5cQaK6KLABnpBB5KgjPAN391Eekn1Zm4e14atfuj6gKHGp6V41GEumQFGM3YDwijVH82prvah5CqhRx6gXh4CYXu8MJVKiY5HBFdWyNLBtzaPWasGSEdLXYx6FcDv21igJfpcVbwQHwbU43wszfPypKiL9GDyys2n5zAWek5nQFGmDwrF65Vqy74CMFt8fZcvfBc1PTXSexhEwZkUY5inmeBbLXjbJU33FpWK6GxyDANxq5opQeRtAzUCtqeWxdafK56LYUes1THq6DzEKN2VirvvqygtnfPSJUfQWcRYixXq6bGGk5bjt14YygT7mALy5Ne6APGysjnNfH1MA3hrfEM9Ho8tuGSA2JeDvqYebV41chQDfKWoJrsG2bdFwZGgnkb3aBPHd4qyPvEdWiFLawR4mNj8qrtTagX1CyWvcAiWMKbspo5mVvCqP1SJuuT451X4uRBXazC9JGD2k7P63p71HU25zff4LvYkLeU8izcdBva1Tu4RddJN7jMFg4ifkTeZscFfbLPejFTmEDNRFswK1e",
+  "alsoKnownAs": ["did:peer:4zQmUJdJN7h66RpdeNEkNQ1tpUpN9nr2LcDz4Ftd3xKSgmn4"]
+}
