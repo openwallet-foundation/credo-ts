@@ -49,8 +49,8 @@ function getOpenIdIssuerModules() {
     openId4VcIssuer: new OpenId4VcIssuerModule({
       issuerMetadata: {
         issuerBaseUrl: 'http://localhost:2000',
-        tokenEndpointPath: 'http://localhost:2000/token',
-        credentialEndpointPath: 'http://localhost:2000/credentials',
+        tokenEndpointPath: '/token',
+        credentialEndpointPath: '/credentials',
         credentialsSupported,
       },
     }),
