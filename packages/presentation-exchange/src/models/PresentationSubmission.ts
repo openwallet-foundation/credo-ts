@@ -1,6 +1,6 @@
 import type { W3cCredentialRecord, W3cVerifiableCredential } from '@aries-framework/core'
 
-export interface PresentationSubmission {
+export type PresentationSubmission = {
   /**
    * Whether all requirements have been satisfied by the credentials in the wallet.
    */
@@ -36,7 +36,7 @@ export interface PresentationSubmission {
  *
  * Each submission represents a input descriptor.
  */
-export interface PresentationSubmissionRequirement {
+export type PresentationSubmissionRequirement = {
   /**
    * Whether the requirement is satisfied.
    *
@@ -88,7 +88,7 @@ export interface PresentationSubmissionRequirement {
  * A submission entry that satisfies a specific input descriptor from the
  * presentation definition.
  */
-export interface SubmissionEntry {
+export type SubmissionEntry = {
   /**
    * The id of the input descriptor
    */

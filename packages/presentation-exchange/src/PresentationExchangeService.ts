@@ -1,3 +1,5 @@
+/* eslint-disable import/no-cycle */
+
 import type { InputDescriptorToCredentials, PresentationSubmission } from './models'
 import type {
   AgentContext,
@@ -10,14 +12,15 @@ import type {
 import type {
   IPresentationDefinition,
   PresentationSignCallBackParams,
+  Validated,
   VerifiablePresentationResult,
 } from '@sphereon/pex'
 import type {
   InputDescriptorV2,
-  PresentationSubmission as PexPresentationSubmission,
+  PresentationSubmission as SphereonPexPresentationSubmission,
   PresentationDefinitionV1,
 } from '@sphereon/pex-models'
-import type { OriginalVerifiableCredential } from '@sphereon/ssi-types'
+import type { IVerifiablePresentation, OriginalVerifiableCredential } from '@sphereon/ssi-types'
 
 import {
   getJwkFromKey,
@@ -30,7 +33,7 @@ import {
   DidsApi,
   W3cCredentialRepository,
 } from '@aries-framework/core'
-import { PEVersion, PEX, PresentationSubmissionLocation } from '@sphereon/pex'
+import { Status, PEVersion, PEX, PresentationSubmissionLocation } from '@sphereon/pex'
 import { injectable } from 'tsyringe'
 
 import { PresentationExchangeError } from './PresentationExchangeError'
@@ -42,7 +45,13 @@ import {
 } from './utils'
 
 export type ProofStructure = Record<string, Record<string, Array<W3cVerifiableCredential>>>
-export type PresentationDefinition = IPresentationDefinition
+
+// Record<string, unknown> is extended here so that we fulfill the requirements of generics that require it to be an object.
+export type PresentationDefinition = IPresentationDefinition & Record<string, unknown>
+
+export type PexPresentationSubmission = SphereonPexPresentationSubmission & Record<string, unknown>
+
+export type VerifiablePresentation = IVerifiablePresentation & Record<string, unknown>
 
 @injectable()
 export class PresentationExchangeService {
@@ -59,6 +68,50 @@ export class PresentationExchangeService {
     const holderDids = didRecords.map((didRecord) => didRecord.did)
 
     return selectCredentialsForRequest(presentationDefinition, credentialRecords, holderDids)
+  }
+
+  public validatePresentationDefinition(presentationDefinition: PresentationDefinition) {
+    const validation = PEX.validateDefinition(presentationDefinition)
+    const errorMessages = this.formatValidated(validation)
+    if (errorMessages.length > 0) {
+      throw new PresentationExchangeError(
+        `Invalid presentation definition. The following errors were found: ${errorMessages.join(', ')}`
+      )
+    }
+  }
+
+  public validatePresentationSubmission(presentationSubmission: PexPresentationSubmission) {
+    const validation = PEX.validateSubmission(presentationSubmission)
+    const errorMessages = this.formatValidated(validation)
+    if (errorMessages.length > 0) {
+      throw new PresentationExchangeError(
+        `Invalid presentation submission. The following errors were found: ${errorMessages.join(', ')}`
+      )
+    }
+  }
+
+  public validatePresentation(presentationDefinition: PresentationDefinition, presentation: VerifiablePresentation) {
+    const { errors } = this.pex.evaluatePresentation(presentationDefinition, presentation)
+
+    if (errors) {
+      const errorMessages = this.formatValidated(errors as Validated)
+      if (errorMessages.length > 0) {
+        throw new PresentationExchangeError(
+          `Invalid presentation. The following errors were found: ${errorMessages.join(', ')}`
+        )
+      }
+    }
+  }
+
+  private formatValidated(v: Validated) {
+    return Array.isArray(v)
+      ? (v
+          .filter((r) => r.tag === Status.ERROR)
+          .map((r) => r.message)
+          .filter((m) => Boolean(m)) as Array<string>)
+      : v.tag === Status.ERROR && typeof v.message === 'string'
+      ? [v.message]
+      : []
   }
 
   /**
@@ -426,7 +479,7 @@ export class PresentationExchangeService {
       if (vpFormat === 'jwt_vp') {
         signedPresentation = await w3cCredentialService.signPresentation(agentContext, {
           format: ClaimFormat.JwtVp,
-          alg: this.getSigningAlgorithmForJwtVc(presentationDefinition, verificationMethod),
+          alg: this.getSigningAlgorithmForJwtVc(presentationDefinition as PresentationDefinition, verificationMethod),
           verificationMethod: verificationMethod.id,
           presentation: JsonTransformer.fromJSON(presentationToSign, W3cPresentation),
           challenge: challenge ?? nonce ?? (await agentContext.wallet.generateNonce()),
@@ -435,7 +488,11 @@ export class PresentationExchangeService {
       } else if (vpFormat === 'ldp_vp') {
         signedPresentation = await w3cCredentialService.signPresentation(agentContext, {
           format: ClaimFormat.LdpVp,
-          proofType: this.getProofTypeForLdpVc(agentContext, presentationDefinition, verificationMethod),
+          proofType: this.getProofTypeForLdpVc(
+            agentContext,
+            presentationDefinition as PresentationDefinition,
+            verificationMethod
+          ),
           proofPurpose: 'authentication',
           verificationMethod: verificationMethod.id,
           presentation: JsonTransformer.fromJSON(presentationToSign, W3cPresentation),

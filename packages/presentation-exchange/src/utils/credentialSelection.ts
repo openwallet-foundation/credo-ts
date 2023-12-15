@@ -3,10 +3,11 @@ import type { W3cCredentialRecord } from '@aries-framework/core'
 import type { IPresentationDefinition, SelectResults, SubmissionRequirementMatch } from '@sphereon/pex'
 import type { InputDescriptorV1, InputDescriptorV2, SubmissionRequirement } from '@sphereon/pex-models'
 
-import { AriesFrameworkError } from '@aries-framework/core'
 import { PEX } from '@sphereon/pex'
 import { Rules } from '@sphereon/pex-models'
 import { default as jp } from 'jsonpath'
+
+import { PresentationExchangeError } from '../PresentationExchangeError'
 
 import { getSphereonOriginalVerifiableCredential } from './transform'
 
@@ -18,7 +19,7 @@ export async function selectCredentialsForRequest(
   const encodedCredentials = credentialRecords.map((c) => getSphereonOriginalVerifiableCredential(c.credential))
 
   if (!presentationDefinition) {
-    throw new AriesFrameworkError('Presentation Definition is required to select credentials for submission.')
+    throw new PresentationExchangeError('Presentation Definition is required to select credentials for submission')
   }
 
   const pex = new PEX()
@@ -37,7 +38,9 @@ export async function selectCredentialsForRequest(
     verifiableCredential: selectResultsRaw.verifiableCredential?.map((encoded) => {
       const credentialIndex = encodedCredentials.indexOf(encoded)
       const credentialRecord = credentialRecords[credentialIndex]
-      if (!credentialRecord) throw new AriesFrameworkError('Unable to find credential in credential records.')
+      if (!credentialRecord) {
+        throw new PresentationExchangeError('Unable to find credential in credential records')
+      }
 
       return credentialRecord
     }),
@@ -64,7 +67,7 @@ export async function selectCredentialsForRequest(
   // for now if a request is made that has no required requirements (but only e.g. min: 0, which means we don't need to disclose anything)
   // I see this more as the fault of the presentation definition, as it should have at least some requirements.
   if (presentationSubmission.requirements.length === 0) {
-    throw new AriesFrameworkError(
+    throw new PresentationExchangeError(
       'Presentation Definition does not require any credentials. Optional credentials are not included in the presentation submission.'
     )
   }
@@ -93,14 +96,14 @@ function getSubmissionRequirements(
   for (const submissionRequirement of presentationDefinition.submission_requirements ?? []) {
     // Check: if the submissionRequirement uses `from_nested`, as we don't support this yet
     if (submissionRequirement.from_nested) {
-      throw new AriesFrameworkError(
+      throw new PresentationExchangeError(
         "Presentation definition contains requirement using 'from_nested', which is not supported yet."
       )
     }
 
     // Check if there's a 'from'. If not the structure is not as we expect it
     if (!submissionRequirement.from) {
-      throw new AriesFrameworkError("Missing 'from' in submission requirement match")
+      throw new PresentationExchangeError("Missing 'from' in submission requirement match")
     }
 
     if (submissionRequirement.rule === Rules.All) {
@@ -154,7 +157,9 @@ function getSubmissionRequirementRuleAll(
   selectResults: W3cCredentialRecordSelectResults
 ) {
   // Check if there's a 'from'. If not the structure is not as we expect it
-  if (!submissionRequirement.from) throw new AriesFrameworkError("Missing 'from' in submission requirement match.")
+  if (!submissionRequirement.from) {
+    throw new PresentationExchangeError("Missing 'from' in submission requirement match.")
+  }
 
   const selectedSubmission: PresentationSubmissionRequirement = {
     rule: Rules.All,
@@ -192,7 +197,9 @@ function getSubmissionRequirementRulePick(
   selectResults: W3cCredentialRecordSelectResults
 ) {
   // Check if there's a 'from'. If not the structure is not as we expect it
-  if (!submissionRequirement.from) throw new AriesFrameworkError("Missing 'from' in submission requirement match.")
+  if (!submissionRequirement.from) {
+    throw new PresentationExchangeError("Missing 'from' in submission requirement match")
+  }
 
   const selectedSubmission: PresentationSubmissionRequirement = {
     rule: 'pick',
@@ -283,9 +290,11 @@ function extractCredentialsFromMatch(
   const verifiableCredentials: Array<W3cCredentialRecord> = []
 
   for (const vcPath of match.vc_path) {
-    const [verifiableCredential] = jp.query({ verifiableCredential: availableCredentials }, vcPath) as [
-      W3cCredentialRecord
-    ]
+    const [verifiableCredential] = jp.query(
+      { verifiableCredential: availableCredentials },
+      vcPath
+    ) as Array<W3cCredentialRecord>
+
     verifiableCredentials.push(verifiableCredential)
   }
 
