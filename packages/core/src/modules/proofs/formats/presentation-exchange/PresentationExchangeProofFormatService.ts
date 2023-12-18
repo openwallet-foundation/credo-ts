@@ -1,10 +1,8 @@
-/* eslint-disable import/no-extraneous-dependencies */
-/* eslint-disable import/no-cycle */
-/* eslint-disable workspaces/require-dependency */
-
 import type { PresentationExchangeProofFormat } from './PresentationExchangeProofFormat'
 import type { AgentContext } from '../../../../agent'
 import type { W3cCredentialRecord } from '../../../vc'
+import type { InputDescriptorToCredentials } from '../../models'
+import type { PresentationDefinition, VerifiablePresentation } from '../../services'
 import type { ProofFormatService } from '../ProofFormatService'
 import type {
   ProofFormatCreateProposalOptions,
@@ -20,19 +18,13 @@ import type {
   ProofFormatAutoRespondRequestOptions,
   ProofFormatAutoRespondPresentationOptions,
 } from '../ProofFormatServiceOptions'
-import type {
-  InputDescriptorToCredentials,
-  PexPresentationSubmission,
-  PresentationDefinition,
-  VerifiablePresentation,
-} from '@aries-framework/presentation-exchange'
-
-import { PresentationExchangeService } from '@aries-framework/presentation-exchange'
+import type { PresentationSubmission as PexPresentationSubmission } from '@sphereon/pex-models'
 
 import { Attachment, AttachmentData } from '../../../../decorators/attachment/Attachment'
 import { AriesFrameworkError } from '../../../../error'
 import { deepEquality } from '../../../../utils'
 import { ProofFormatSpec } from '../../models'
+import { PresentationExchangeService } from '../../services'
 
 const PRESENTATION_EXCHANGE_PRESENTATION_PROPOSAL = 'dif/presentation-exchange/definitions@v1.0'
 const PRESENTATION_EXCHANGE_PRESENTATION_REQUEST = 'dif/presentation-exchange/definitions@v1.0'

@@ -1,6 +1,6 @@
 import type { W3cCredentialRecord, W3cVerifiableCredential } from '../../../vc'
+import type { PresentationDefinition } from '../../services'
 import type { ProofFormat } from '../ProofFormat'
-import type { PresentationDefinition } from '@aries-framework/presentation-exchange'
 
 export interface PresentationExchangeProofFormat extends ProofFormat {
   formatKey: 'presentationExchange'
@@ -15,7 +15,9 @@ export interface PresentationExchangeProofFormat extends ProofFormat {
       version?: string
     }
 
-    createRequest: { presentationDefinition: PresentationDefinition }
+    createRequest: {
+      presentationDefinition: PresentationDefinition
+    }
 
     acceptRequest: {
       credentials: Record<string, Array<W3cVerifiableCredential>>

@@ -1,13 +1,12 @@
 import type { AgentContext } from '../../../../../agent'
+import type { PresentationDefinition } from '../../../services'
 import type { ProofFormatService } from '../../ProofFormatService'
 import type { PresentationExchangeProofFormat } from '../PresentationExchangeProofFormat'
-import type { PresentationDefinition } from '@aries-framework/presentation-exchange'
-
-import { PresentationExchangeModule } from '@aries-framework/presentation-exchange'
 
 import { getIndySdkModules } from '../../../../../../../indy-sdk/tests/setupIndySdkModule'
 import { getAgentOptions } from '../../../../../../tests'
 import { Agent } from '../../../../../agent/Agent'
+import { PresentationExchangeModule } from '../../../../presentation-exchange'
 import { ProofsModule } from '../../../ProofsModule'
 import { ProofState } from '../../../models'
 import { V2ProofProtocol } from '../../../protocol'
