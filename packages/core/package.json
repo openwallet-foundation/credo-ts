@@ -3,7 +3,9 @@
   "main": "build/index",
   "types": "build/index",
   "version": "0.4.2",
-  "files": ["build"],
+  "files": [
+    "build"
+  ],
   "license": "Apache-2.0",
   "publishConfig": {
     "access": "public"

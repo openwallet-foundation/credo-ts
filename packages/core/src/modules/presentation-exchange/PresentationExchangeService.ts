@@ -6,6 +6,7 @@ import type { W3cCredentialRecord, W3cVerifiableCredential, W3cVerifiablePresent
 import type {
   IPresentationDefinition,
   PresentationSignCallBackParams,
+  Validated,
   VerifiablePresentationResult,
 } from '@sphereon/pex'
 import type {
@@ -13,9 +14,9 @@ import type {
   PresentationSubmission as PexPresentationSubmission,
   PresentationDefinitionV1,
 } from '@sphereon/pex-models'
-import type { OriginalVerifiableCredential } from '@sphereon/ssi-types'
+import type { IVerifiablePresentation, OriginalVerifiableCredential } from '@sphereon/ssi-types'
 
-import { PEVersion, PEX, PresentationSubmissionLocation } from '@sphereon/pex'
+import { Status, PEVersion, PEX, PresentationSubmissionLocation } from '@sphereon/pex'
 import { injectable } from 'tsyringe'
 
 import { getJwkFromKey } from '../../crypto'
@@ -38,7 +39,9 @@ import {
 } from './utils'
 
 export type ProofStructure = Record<string, Record<string, Array<W3cVerifiableCredential>>>
-export type PresentationDefinition = IPresentationDefinition
+export type PresentationDefinition = IPresentationDefinition & Record<string, unknown>
+
+export type VerifiablePresentation = IVerifiablePresentation & Record<string, unknown>
 
 @injectable()
 export class PresentationExchangeService {
@@ -55,6 +58,50 @@ export class PresentationExchangeService {
     const holderDids = didRecords.map((didRecord) => didRecord.did)
 
     return selectCredentialsForRequest(presentationDefinition, credentialRecords, holderDids)
+  }
+
+  public validatePresentationDefinition(presentationDefinition: PresentationDefinition) {
+    const validation = PEX.validateDefinition(presentationDefinition)
+    const errorMessages = this.formatValidated(validation)
+    if (errorMessages.length > 0) {
+      throw new PresentationExchangeError(
+        `Invalid presentation definition. The following errors were found: ${errorMessages.join(', ')}`
+      )
+    }
+  }
+
+  public validatePresentationSubmission(presentationSubmission: PexPresentationSubmission) {
+    const validation = PEX.validateSubmission(presentationSubmission)
+    const errorMessages = this.formatValidated(validation)
+    if (errorMessages.length > 0) {
+      throw new PresentationExchangeError(
+        `Invalid presentation submission. The following errors were found: ${errorMessages.join(', ')}`
+      )
+    }
+  }
+
+  public validatePresentation(presentationDefinition: PresentationDefinition, presentation: VerifiablePresentation) {
+    const { errors } = this.pex.evaluatePresentation(presentationDefinition, presentation)
+
+    if (errors) {
+      const errorMessages = this.formatValidated(errors as Validated)
+      if (errorMessages.length > 0) {
+        throw new PresentationExchangeError(
+          `Invalid presentation. The following errors were found: ${errorMessages.join(', ')}`
+        )
+      }
+    }
+  }
+
+  private formatValidated(v: Validated) {
+    return Array.isArray(v)
+      ? (v
+          .filter((r) => r.tag === Status.ERROR)
+          .map((r) => r.message)
+          .filter((m) => Boolean(m)) as Array<string>)
+      : v.tag === Status.ERROR && typeof v.message === 'string'
+      ? [v.message]
+      : []
   }
 
   /**
@@ -100,9 +147,12 @@ export class PresentationExchangeService {
 
     // query the wallet ourselves first to avoid the need to query the pex library for all
     // credentials for every proof request
-    const credentialRecords = await w3cCredentialRepository.findByQuery(agentContext, {
-      $or: query,
-    })
+    const credentialRecords =
+      query.length > 0
+        ? await w3cCredentialRepository.findByQuery(agentContext, {
+            $or: query,
+          })
+        : await w3cCredentialRepository.getAll(agentContext)
 
     return credentialRecords
   }
@@ -237,15 +287,10 @@ export class PresentationExchangeService {
       throw new PresentationExchangeError('No verifiable presentations created.')
     }
 
-    if (!verifiablePresentationResultsWithFormat[0]) {
-      throw new PresentationExchangeError('No verifiable presentations created.')
-    }
-
     if (subjectToInputDescriptors.length !== verifiablePresentationResultsWithFormat.length) {
       throw new PresentationExchangeError('Invalid amount of verifiable presentations created.')
     }
 
-    verifiablePresentationResultsWithFormat[0].verifiablePresentationResult.presentationSubmission
     const presentationSubmission: PexPresentationSubmission = {
       id: verifiablePresentationResultsWithFormat[0].verifiablePresentationResult.presentationSubmission.id,
       definition_id:
@@ -416,13 +461,14 @@ export class PresentationExchangeService {
       }
 
       // Clients MUST ignore any presentation_submission element included inside a Verifiable Presentation.
-      const presentationToSign = { ...presentationJson, presentation_submission: undefined }
+      const presentationToSign = { ...presentationJson }
+      delete presentationToSign['presentation_submission']
 
       let signedPresentation: W3cVerifiablePresentation<ClaimFormat.JwtVp | ClaimFormat.LdpVp>
       if (vpFormat === 'jwt_vp') {
         signedPresentation = await w3cCredentialService.signPresentation(agentContext, {
           format: ClaimFormat.JwtVp,
-          alg: this.getSigningAlgorithmForJwtVc(presentationDefinition, verificationMethod),
+          alg: this.getSigningAlgorithmForJwtVc(presentationDefinition as PresentationDefinition, verificationMethod),
           verificationMethod: verificationMethod.id,
           presentation: JsonTransformer.fromJSON(presentationToSign, W3cPresentation),
           challenge: challenge ?? nonce ?? (await agentContext.wallet.generateNonce()),
@@ -431,7 +477,11 @@ export class PresentationExchangeService {
       } else if (vpFormat === 'ldp_vp') {
         signedPresentation = await w3cCredentialService.signPresentation(agentContext, {
           format: ClaimFormat.LdpVp,
-          proofType: this.getProofTypeForLdpVc(agentContext, presentationDefinition, verificationMethod),
+          proofType: this.getProofTypeForLdpVc(
+            agentContext,
+            presentationDefinition as PresentationDefinition,
+            verificationMethod
+          ),
           proofPurpose: 'authentication',
           verificationMethod: verificationMethod.id,
           presentation: JsonTransformer.fromJSON(presentationToSign, W3cPresentation),

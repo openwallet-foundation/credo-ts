@@ -1,12 +1,11 @@
-import type { AgentContext } from '../../../../../agent'
-import type { PresentationDefinition } from '../../../services'
+import type { PresentationDefinition } from '../../../../presentation-exchange'
 import type { ProofFormatService } from '../../ProofFormatService'
 import type { PresentationExchangeProofFormat } from '../PresentationExchangeProofFormat'
 
 import { getIndySdkModules } from '../../../../../../../indy-sdk/tests/setupIndySdkModule'
-import { getAgentOptions } from '../../../../../../tests'
+import { agentDependencies, getAgentConfig } from '../../../../../../tests'
 import { Agent } from '../../../../../agent/Agent'
-import { PresentationExchangeModule } from '../../../../presentation-exchange'
+import { PresentationExchangeModule, PresentationExchangeService } from '../../../../presentation-exchange'
 import { ProofsModule } from '../../../ProofsModule'
 import { ProofState } from '../../../models'
 import { V2ProofProtocol } from '../../../protocol'
@@ -45,35 +44,33 @@ const mockPresentationDefinition = (): PresentationDefinition => ({
 
 describe('Presentation Exchange ProofFormatService', () => {
   let pexFormatService: ProofFormatService<PresentationExchangeProofFormat>
-  let agentContext: AgentContext
+  let agent: Agent
 
-  beforeEach(async () => {
-    const agent = new Agent(
-      getAgentOptions(
-        'PresentationExchangeProofFormatService',
-        {},
-        {
-          pex: new PresentationExchangeModule(),
-          proofs: new ProofsModule({
-            proofProtocols: [new V2ProofProtocol({ proofFormats: [new PresentationExchangeProofFormatService()] })],
-          }),
-          ...getIndySdkModules(),
-        }
-      )
-    )
+  beforeAll(async () => {
+    agent = new Agent({
+      config: getAgentConfig('PresentationExchangeProofFormatService'),
+      modules: {
+        someModule: new PresentationExchangeModule(),
+        proofs: new ProofsModule({
+          proofProtocols: [new V2ProofProtocol({ proofFormats: [new PresentationExchangeProofFormatService()] })],
+        }),
+        ...getIndySdkModules(),
+      },
+      dependencies: agentDependencies,
+    })
 
     await agent.initialize()
 
-    agentContext = agent.context
+    agent.dependencyManager.resolve(PresentationExchangeService)
     pexFormatService = agent.dependencyManager.resolve(PresentationExchangeProofFormatService)
   })
 
   describe('Create Presentation Exchange Proof Proposal / Request', () => {
     test('Creates Presentation Exchange Proposal', async () => {
       const presentationDefinition = mockPresentationDefinition()
-      const { format, attachment } = await pexFormatService.createProposal(agentContext, {
+      const { format, attachment } = await pexFormatService.createProposal(agent.context, {
         proofRecord: mockProofRecord(),
-        proofFormats: { presentationExchange: { presentationDefinition: presentationDefinition } },
+        proofFormats: { presentationExchange: { presentationDefinition } },
       })
 
       expect(attachment).toMatchObject({
@@ -92,9 +89,9 @@ describe('Presentation Exchange ProofFormatService', () => {
 
     test('Creates Presentation Exchange Request', async () => {
       const presentationDefinition = mockPresentationDefinition()
-      const { format, attachment } = await pexFormatService.createRequest(agentContext, {
+      const { format, attachment } = await pexFormatService.createRequest(agent.context, {
         proofRecord: mockProofRecord(),
-        proofFormats: { presentationExchange: { presentationDefinition: presentationDefinition } },
+        proofFormats: { presentationExchange: { presentationDefinition } },
       })
 
       expect(attachment).toMatchObject({
@@ -115,15 +112,15 @@ describe('Presentation Exchange ProofFormatService', () => {
   describe('Accept Proof Request', () => {
     test('Accept a Presentation Exchange Proof Request', async () => {
       const presentationDefinition = mockPresentationDefinition()
-      const { attachment: requestAttachment } = await pexFormatService.createRequest(agentContext, {
+      const { attachment: requestAttachment } = await pexFormatService.createRequest(agent.context, {
         proofRecord: mockProofRecord(),
-        proofFormats: { presentationExchange: { presentationDefinition: presentationDefinition } },
+        proofFormats: { presentationExchange: { presentationDefinition } },
       })
 
-      const { attachment, format } = await pexFormatService.acceptRequest(agentContext, {
+      const { attachment, format } = await pexFormatService.acceptRequest(agent.context, {
         proofRecord: mockProofRecord(),
         requestAttachment,
-        proofFormats: { presentationExchange: { credentials: { none: [] } } },
+        proofFormats: { presentationExchange: { credentials: [] } },
       })
 
       expect(attachment).toMatchObject({

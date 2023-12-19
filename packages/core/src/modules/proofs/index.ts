@@ -12,6 +12,3 @@ export * from './ProofsApiOptions'
 // Module
 export * from './ProofsModule'
 export * from './ProofsModuleConfig'
-
-// Services
-export * from './services'

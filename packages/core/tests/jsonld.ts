@@ -5,6 +5,8 @@ import { BbsModule } from '../../bbs-signatures/src/BbsModule'
 import { IndySdkModule } from '../../indy-sdk/src'
 import { indySdk } from '../../indy-sdk/tests/setupIndySdkModule'
 import {
+  PresentationExchangeProofFormatService,
+  V2ProofProtocol,
   CacheModule,
   CredentialEventTypes,
   InMemoryLruCache,
@@ -16,6 +18,7 @@ import {
   V2CredentialProtocol,
   W3cCredentialsModule,
 } from '../src'
+import { PresentationExchangeModule } from '../src/modules/presentation-exchange'
 import { customDocumentLoader } from '../src/modules/vc/data-integrity/__tests__/documentLoader'
 
 import { setupEventReplaySubjects } from './events'
@@ -38,6 +41,7 @@ export const getJsonLdModules = ({
     }),
     proofs: new ProofsModule({
       autoAcceptProofs,
+      proofProtocols: [new V2ProofProtocol({ proofFormats: [new PresentationExchangeProofFormatService()] })],
     }),
     cache: new CacheModule({
       cache: new InMemoryLruCache({ limit: 100 }),
@@ -45,6 +49,7 @@ export const getJsonLdModules = ({
     indySdk: new IndySdkModule({
       indySdk,
     }),
+    pex: new PresentationExchangeModule(),
     bbs: new BbsModule(),
   } as const)
 

@@ -1,5 +1,5 @@
-import type { W3cCredentialRecord, W3cVerifiableCredential } from '../../../vc'
-import type { PresentationDefinition } from '../../services'
+import type { PresentationDefinition } from '../../../presentation-exchange'
+import type { W3cCredentialRecord } from '../../../vc'
 import type { ProofFormat } from '../ProofFormat'
 
 export interface PresentationExchangeProofFormat extends ProofFormat {
@@ -20,7 +20,7 @@ export interface PresentationExchangeProofFormat extends ProofFormat {
     }
 
     acceptRequest: {
-      credentials: Record<string, Array<W3cVerifiableCredential>>
+      credentials: Array<W3cCredentialRecord>
     }
 
     getCredentialsForRequest: {

@@ -7,6 +7,7 @@ import { PEX } from '@sphereon/pex'
 import { Rules } from '@sphereon/pex-models'
 import { default as jp } from 'jsonpath'
 
+import { deepEquality } from '../../../utils'
 import { PresentationExchangeError } from '../PresentationExchangeError'
 
 import { getSphereonOriginalVerifiableCredential } from './transform'
@@ -16,13 +17,13 @@ export async function selectCredentialsForRequest(
   credentialRecords: Array<W3cCredentialRecord>,
   holderDIDs: Array<string>
 ): Promise<PresentationSubmission> {
-  const encodedCredentials = credentialRecords.map((c) => getSphereonOriginalVerifiableCredential(c.credential))
-
   if (!presentationDefinition) {
     throw new PresentationExchangeError('Presentation Definition is required to select credentials for submission.')
   }
 
   const pex = new PEX()
+
+  const encodedCredentials = credentialRecords.map((c) => getSphereonOriginalVerifiableCredential(c.credential))
 
   // FIXME: there is a function for this in the VP library, but it is not usable atm
   const selectResultsRaw = pex.selectFrom(presentationDefinition, encodedCredentials, {
@@ -36,8 +37,11 @@ export async function selectCredentialsForRequest(
     ...selectResultsRaw,
     // Map the encoded credential to their respective w3c credential record
     verifiableCredential: selectResultsRaw.verifiableCredential?.map((encoded) => {
-      const credentialIndex = encodedCredentials.indexOf(encoded)
-      const credentialRecord = credentialRecords[credentialIndex]
+      const credentialRecord = credentialRecords.find((record) => {
+        const originalVc = getSphereonOriginalVerifiableCredential(record.credential)
+        return deepEquality(originalVc, encoded)
+      })
+
       if (!credentialRecord) {
         throw new PresentationExchangeError('Unable to find credential in credential records.')
       }
