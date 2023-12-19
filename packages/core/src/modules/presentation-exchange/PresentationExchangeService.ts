@@ -253,7 +253,7 @@ export class PresentationExchangeService {
 
       // Get all the credentials associated with the input descriptors
       const credentialsForSubject = Object.values(subjectInputDescriptorsToCredentials)
-        .flatMap((credentials) => credentials)
+        .flat()
         .map(getSphereonOriginalVerifiableCredential)
 
       const presentationDefinitionForSubject: PresentationDefinition = {

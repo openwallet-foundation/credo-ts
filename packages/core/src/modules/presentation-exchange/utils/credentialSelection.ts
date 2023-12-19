@@ -39,6 +39,7 @@ export async function selectCredentialsForRequest(
     verifiableCredential: selectResultsRaw.verifiableCredential?.map((encoded) => {
       const credentialRecord = credentialRecords.find((record) => {
         const originalVc = getSphereonOriginalVerifiableCredential(record.credential)
+
         return deepEquality(originalVc, encoded)
       })
 

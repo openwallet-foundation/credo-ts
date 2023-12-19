@@ -40,7 +40,6 @@ describe('Present Proof', () => {
   let issuerAgent: Agent<ReturnType<typeof getJsonLdModules>>
   let verifierAgent: Agent<ReturnType<typeof getJsonLdModules>>
 
-  let verifierProverConnectionId: string
   let issuerProverConnectionId: string
   let proverVerifierConnectionId: string
 
@@ -55,7 +54,6 @@ describe('Present Proof', () => {
       holderAgent: proverAgent,
       issuerAgent,
       verifierAgent,
-      verifierHolderConnectionId: verifierProverConnectionId,
       issuerHolderConnectionId: issuerProverConnectionId,
       holderVerifierConnectionId: proverVerifierConnectionId,
     } = await setupJsonLdTests({

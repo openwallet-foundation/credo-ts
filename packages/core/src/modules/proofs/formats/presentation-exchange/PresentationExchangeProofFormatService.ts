@@ -21,7 +21,7 @@ import type {
   ProofFormatAutoRespondRequestOptions,
   ProofFormatAutoRespondPresentationOptions,
 } from '../ProofFormatServiceOptions'
-import type { PresentationSubmission as PexPresentationSubmission, PresentationSubmission } from '@sphereon/pex-models'
+import type { PresentationSubmission } from '@sphereon/pex-models'
 
 import { Attachment, AttachmentData } from '../../../../decorators/attachment/Attachment'
 import { AriesFrameworkError } from '../../../../error'
@@ -158,7 +158,7 @@ export class PresentationExchangeProofFormatService implements ProofFormatServic
       attachmentId,
     })
 
-    const { presentation_definition: presentationDefinition } = requestAttachment.getDataAsJson<{
+    const { presentation_definition: presentationDefinition, options } = requestAttachment.getDataAsJson<{
       presentation_definition: PresentationDefinition
       options?: { challenge?: string; domain?: string }
     }>()
@@ -183,6 +183,8 @@ export class PresentationExchangeProofFormatService implements ProofFormatServic
     const presentation = await ps.createPresentation(agentContext, {
       presentationDefinition,
       credentialsForInputDescriptor: credentials,
+      challenge: options?.challenge,
+      domain: options?.domain,
     })
 
     if (presentation.verifiablePresentations.length > 1) {

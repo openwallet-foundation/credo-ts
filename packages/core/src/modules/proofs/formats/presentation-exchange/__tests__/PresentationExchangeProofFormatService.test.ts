@@ -6,6 +6,13 @@ import { getIndySdkModules } from '../../../../../../../indy-sdk/tests/setupIndy
 import { agentDependencies, getAgentConfig } from '../../../../../../tests'
 import { Agent } from '../../../../../agent/Agent'
 import { PresentationExchangeModule, PresentationExchangeService } from '../../../../presentation-exchange'
+import {
+  W3cJsonLdVerifiableCredential,
+  W3cCredentialRecord,
+  W3cCredentialRepository,
+  CREDENTIALS_CONTEXT_V1_URL,
+  W3cJsonLdVerifiablePresentation,
+} from '../../../../vc'
 import { ProofsModule } from '../../../ProofsModule'
 import { ProofState } from '../../../models'
 import { V2ProofProtocol } from '../../../protocol'
@@ -29,17 +36,51 @@ const mockPresentationDefinition = (): PresentationDefinition => ({
       constraints: {
         fields: [
           {
-            path: [
-              '$.credentialSubject.dateOfBirth',
-              '$.credentialSubject.dob',
-              '$.vc.credentialSubject.dateOfBirth',
-              '$.vc.credentialSubject.dob',
-            ],
+            path: ['$.credentialSubject.id'],
           },
         ],
       },
     },
   ],
+})
+
+const mockCredentialRecord = new W3cCredentialRecord({
+  tags: {},
+  credential: new W3cJsonLdVerifiableCredential({
+    id: 'did:some:id',
+    context: [CREDENTIALS_CONTEXT_V1_URL, 'https://www.w3.org/2018/credentials/examples/v1'],
+    type: ['VerifiableCredential', 'UniversityDegreeCredential'],
+    issuer: 'did:key:z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL',
+    issuanceDate: '2017-10-22T12:23:48Z',
+    credentialSubject: {
+      id: 'did:key:z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL',
+    },
+    proof: {
+      type: 'Ed25519Signature2020',
+      created: '2021-11-13T18:19:39Z',
+      verificationMethod: 'https://example.edu/issuers/14#key-1',
+      proofPurpose: 'assertionMethod',
+      proofValue: 'z58DAdFfa9SkqZMVPxAQpic7ndSayn1PzZs6ZjWp1CktyGesjuTSwRdoWhAfGFCF5bppETSTojQCrfFPP2oumHKtz',
+    },
+  }),
+})
+
+jest.spyOn(W3cCredentialRepository.prototype, 'getAll').mockResolvedValue([mockCredentialRecord])
+jest.spyOn(PresentationExchangeService.prototype, 'createPresentation').mockResolvedValue({
+  presentationSubmission: { id: 'did:id', definition_id: 'my-id', descriptor_map: [] },
+  verifiablePresentations: [
+    new W3cJsonLdVerifiablePresentation({
+      verifiableCredential: [mockCredentialRecord.credential],
+      proof: {
+        type: 'Ed25519Signature2020',
+        created: '2021-11-13T18:19:39Z',
+        verificationMethod: 'https://example.edu/issuers/14#key-1',
+        proofPurpose: 'assertionMethod',
+        proofValue: 'z58DAdFfa9SkqZMVPxAQpic7ndSayn1PzZs6ZjWp1CktyGesjuTSwRdoWhAfGFCF5bppETSTojQCrfFPP2oumHKtz',
+      },
+    }),
+  ],
+  presentationSubmissionLocation: 0,
 })
 
 describe('Presentation Exchange ProofFormatService', () => {
@@ -98,7 +139,12 @@ describe('Presentation Exchange ProofFormatService', () => {
         id: expect.any(String),
         mimeType: 'application/json',
         data: {
-          json: presentationDefinition,
+          json: {
+            options: {
+              challenge: 'TODO',
+            },
+            presentation_definition: presentationDefinition,
+          },
         },
       })
 
@@ -120,20 +166,41 @@ describe('Presentation Exchange ProofFormatService', () => {
       const { attachment, format } = await pexFormatService.acceptRequest(agent.context, {
         proofRecord: mockProofRecord(),
         requestAttachment,
-        proofFormats: { presentationExchange: { credentials: [] } },
+        proofFormats: { presentationExchange: { credentials: [mockCredentialRecord] } },
       })
 
       expect(attachment).toMatchObject({
         id: expect.any(String),
         mimeType: 'application/json',
         data: {
-          json: {},
+          json: {
+            presentation_submission: {
+              id: expect.any(String),
+              definition_id: expect.any(String),
+              descriptor_map: [],
+            },
+            context: expect.any(Array),
+            type: expect.any(Array),
+            verifiableCredential: [
+              {
+                context: expect.any(Array),
+                id: expect.any(String),
+                type: expect.any(Array),
+                issuer: expect.any(String),
+                issuanceDate: expect.any(String),
+                credentialSubject: {
+                  id: expect.any(String),
+                },
+                proof: expect.any(Object),
+              },
+            ],
+          },
         },
       })
 
       expect(format).toMatchObject({
         attachmentId: expect.any(String),
-        format: 'dif/presentation-exchange/definitions@v1.0',
+        format: 'dif/presentation-exchange/submission@v1.0',
       })
     })
   })
