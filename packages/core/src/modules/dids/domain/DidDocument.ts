@@ -186,12 +186,12 @@ export class DidDocument {
     let recipientKeys: Key[] = []
 
     for (const service of this.didCommServices) {
-      if (service instanceof IndyAgentService) {
+      if (service.type === IndyAgentService.type) {
         recipientKeys = [
           ...recipientKeys,
           ...service.recipientKeys.map((publicKeyBase58) => Key.fromPublicKeyBase58(publicKeyBase58, KeyType.Ed25519)),
         ]
-      } else if (service instanceof DidCommV1Service) {
+      } else if (service.type === DidCommV1Service.type) {
         recipientKeys = [
           ...recipientKeys,
           ...service.recipientKeys.map((recipientKey) => keyReferenceToKey(this, recipientKey)),
