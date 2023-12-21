@@ -166,7 +166,6 @@ describe('Presentation Exchange ProofFormatService', () => {
       const { attachment, format } = await pexFormatService.acceptRequest(agent.context, {
         proofRecord: mockProofRecord(),
         requestAttachment,
-        proofFormats: { presentationExchange: { credentials: [mockCredentialRecord] } },
       })
 
       expect(attachment).toMatchObject({

@@ -222,16 +222,8 @@ describe('Present Proof', () => {
       state: ProofState.PresentationReceived,
     })
 
-    const {
-      proofFormats: { presentationExchange },
-    } = await proverAgent.proofs.selectCredentialsForRequest({
-      proofRecordId: proverProofExchangeRecord.id,
-    })
-
     await proverAgent.proofs.acceptRequest({
       proofRecordId: proverProofExchangeRecord.id,
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      proofFormats: { presentationExchange: { credentials: presentationExchange! } },
     })
 
     // Verifier waits for the presentation from the Prover

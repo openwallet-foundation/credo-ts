@@ -19,9 +19,7 @@ export interface PresentationExchangeProofFormat extends ProofFormat {
       presentationDefinition: PresentationDefinition
     }
 
-    acceptRequest: {
-      credentials: Array<W3cCredentialRecord>
-    }
+    acceptRequest: never
 
     getCredentialsForRequest: {
       input: never

@@ -143,14 +143,8 @@ export class PresentationExchangeProofFormatService implements ProofFormatServic
 
   public async acceptRequest(
     agentContext: AgentContext,
-    { attachmentId, requestAttachment, proofFormats }: ProofFormatAcceptRequestOptions<PresentationExchangeProofFormat>
+    { attachmentId, requestAttachment }: ProofFormatAcceptRequestOptions<PresentationExchangeProofFormat>
   ): Promise<ProofFormatCreateReturn> {
-    const presentationExchangeFormat = proofFormats?.presentationExchange
-
-    if (!presentationExchangeFormat) {
-      throw Error('Missing presentation exchange format in create request attachment format')
-    }
-
     const ps = this.presentationExchangeService(agentContext)
 
     const format = new ProofFormatSpec({
