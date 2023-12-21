@@ -24,6 +24,6 @@
     "@types/ws": "^8.5.4",
     "class-validator": "0.14.0",
     "rxjs": "^7.2.0",
-    "@hyperledger/aries-askar-nodejs": "^0.2.0-dev.1"
+    "@hyperledger/aries-askar-nodejs": "^0.2.0-dev.4"
   }
 }

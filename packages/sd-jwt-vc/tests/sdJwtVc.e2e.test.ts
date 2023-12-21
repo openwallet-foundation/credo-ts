@@ -1,6 +1,5 @@
 import type { Key } from '@aries-framework/core'
 
-import { AskarModule } from '@aries-framework/askar'
 import {
   Agent,
   DidKey,
@@ -10,8 +9,8 @@ import {
   KeyType,
   TypedArrayEncoder,
 } from '@aries-framework/core'
-import { ariesAskar } from '@hyperledger/aries-askar-nodejs'
 
+import { askarModule } from '../../askar/tests/helpers'
 import { getAgentOptions } from '../../core/tests'
 import { SdJwtVcModule } from '../src'
 
@@ -22,7 +21,7 @@ const getAgent = (label: string) =>
       {},
       {
         sdJwt: new SdJwtVcModule(),
-        askar: new AskarModule({ ariesAskar }),
+        askar: askarModule,
         dids: new DidsModule({
           resolvers: [new KeyDidResolver()],
           registrars: [new KeyDidRegistrar()],

@@ -1222,23 +1222,23 @@
   resolved "https://registry.yarnpkg.com/@hyperledger/anoncreds-shared/-/anoncreds-shared-0.2.0-dev.5.tgz#1d6da9db5cc16ba8766fb4db1166dbe5af63e96e"
   integrity sha512-YtVju8WBKj3tdZbPWGjwdx7jkE5ePPfspPCvbcjIia00CWPES7UUkfjn8NVk82rq/Gi7IoWR3Jdpfv8rPe0fEA==
 
-"@hyperledger/aries-askar-nodejs@^0.2.0-dev.1":
-  version "0.2.0-dev.1"
-  resolved "https://registry.yarnpkg.com/@hyperledger/aries-askar-nodejs/-/aries-askar-nodejs-0.2.0-dev.1.tgz#5b0fffe88438108e7ae34ac2f1f59fd31b9f1bc0"
-  integrity sha512-Ie1lw/4GNI1sGwNZ5ak6yV2dnhRLs7tPf1Q3CLPTsq1NtjPofsAAcwTfwDE2pYIdxCTXalC2ecy3VvXgtpllFA==
+"@hyperledger/aries-askar-nodejs@^0.2.0-dev.4":
+  version "0.2.0-dev.4"
+  resolved "https://registry.yarnpkg.com/@hyperledger/aries-askar-nodejs/-/aries-askar-nodejs-0.2.0-dev.4.tgz#b43e396c5142aa84b5b2bfe2ab32245315d31265"
+  integrity sha512-0+UNnuHV2Tu1mN21JHuohvu47hqej8kp0dD3hk9usQMH7yAV0PW/Qkq4GVgqeoOuS3+lLuPFlnwCcsyNqMjhmg==
   dependencies:
     "@2060.io/ffi-napi" "4.0.8"
     "@2060.io/ref-napi" "3.0.6"
-    "@hyperledger/aries-askar-shared" "0.2.0-dev.1"
+    "@hyperledger/aries-askar-shared" "0.2.0-dev.4"
     "@mapbox/node-pre-gyp" "^1.0.10"
     node-cache "^5.1.2"
     ref-array-di "^1.2.2"
     ref-struct-di "^1.1.1"
 
-"@hyperledger/aries-askar-shared@0.2.0-dev.1", "@hyperledger/aries-askar-shared@^0.2.0-dev.1":
-  version "0.2.0-dev.1"
-  resolved "https://registry.yarnpkg.com/@hyperledger/aries-askar-shared/-/aries-askar-shared-0.2.0-dev.1.tgz#08c36f39355cc780cc3198e1cf5fc16d871ece91"
-  integrity sha512-I92Aflknb2HjDuT6UOcLqJjbZLQ6nP5E2Y4F9wreTIrk+nsN++UTvbuhuIz7PFddWfrT+mFtVG3E4cHaNU10pw==
+"@hyperledger/aries-askar-shared@0.2.0-dev.4", "@hyperledger/aries-askar-shared@^0.2.0-dev.4":
+  version "0.2.0-dev.4"
+  resolved "https://registry.yarnpkg.com/@hyperledger/aries-askar-shared/-/aries-askar-shared-0.2.0-dev.4.tgz#40e34d907ed4f8d59279dfba209066a1f656a9bf"
+  integrity sha512-GmjNH+aWCOKtw8KRaZW+MOFx8w32cIxeZ6JuB1vxpQCdH13Ac5+/rIj9T0IGgDN5u0sn9R1HV164F+LUKQjn4w==
   dependencies:
     buffer "^6.0.3"
 

@@ -1,18 +1,41 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import type { AgentContext } from '@aries-framework/core'
 import type {
-  AnonCredsCredentialDefinition, AnonCredsRegistry, AnonCredsRevocationRegistryDefinition, AnonCredsRevocationStatusList, AnonCredsSchema, GetCredentialDefinitionReturn, GetRevocationRegistryDefinitionReturn,
-  GetRevocationStatusListReturn, GetSchemaReturn, RegisterCredentialDefinitionOptions,
-  RegisterCredentialDefinitionReturn, RegisterRevocationRegistryDefinitionOptions,
-  RegisterRevocationRegistryDefinitionReturn, RegisterRevocationStatusListOptions, RegisterRevocationStatusListReturn, RegisterSchemaOptions,
-  RegisterSchemaReturn
+  AnonCredsCredentialDefinition,
+  AnonCredsRegistry,
+  AnonCredsRevocationRegistryDefinition,
+  AnonCredsRevocationStatusList,
+  AnonCredsSchema,
+  GetCredentialDefinitionReturn,
+  GetRevocationRegistryDefinitionReturn,
+  GetRevocationStatusListReturn,
+  GetSchemaReturn,
+  RegisterCredentialDefinitionOptions,
+  RegisterCredentialDefinitionReturn,
+  RegisterRevocationRegistryDefinitionOptions,
+  RegisterRevocationRegistryDefinitionReturn,
+  RegisterRevocationStatusListOptions,
+  RegisterRevocationStatusListReturn,
+  RegisterSchemaOptions,
+  RegisterSchemaReturn,
 } from '../src'
+import type { AgentContext } from '@aries-framework/core'
 
 import { Hasher, TypedArrayEncoder } from '@aries-framework/core'
 import BigNumber from 'bn.js'
 
-import { getDidIndyCredentialDefinitionId, getDidIndyRevocationRegistryId, getDidIndySchemaId } from '../../indy-vdr/src/anoncreds/utils/identifiers'
-import { getUnqualifiedCredentialDefinitionId, getUnqualifiedRevocationRegistryId, getUnqualifiedSchemaId, parseIndyCredentialDefinitionId, parseIndyDid, parseIndySchemaId } from '../src'
+import {
+  getDidIndyCredentialDefinitionId,
+  getDidIndyRevocationRegistryId,
+  getDidIndySchemaId,
+} from '../../indy-vdr/src/anoncreds/utils/identifiers'
+import {
+  getUnqualifiedCredentialDefinitionId,
+  getUnqualifiedRevocationRegistryId,
+  getUnqualifiedSchemaId,
+  parseIndyCredentialDefinitionId,
+  parseIndyDid,
+  parseIndySchemaId,
+} from '../src'
 import { dateToTimestamp } from '../src/utils/timestamp'
 
 /**

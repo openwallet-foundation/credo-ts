@@ -1,4 +1,5 @@
 import type { InitConfig } from '@aries-framework/core'
+import type { TenantRecord } from '@aries-framework/tenants'
 
 import { ConnectionsModule, Agent } from '@aries-framework/core'
 import { agentDependencies } from '@aries-framework/node'
@@ -70,17 +71,24 @@ describe('Tenants Sessions E2E', () => {
     const numberOfTenants = 20
     const numberOfSessions = 5
 
-    const tenantRecords = []
+    const tenantRecordPromises = []
     for (let tenantNo = 0; tenantNo < numberOfTenants; tenantNo++) {
-      const tenantRecord = await agent.modules.tenants.createTenant({
+      const tenantRecordPromise = agent.modules.tenants.createTenant({
         config: {
           label: 'Agent 1 Tenant 1',
         },
       })
 
-      tenantRecords.push(tenantRecord)
+      tenantRecordPromises.push(tenantRecordPromise)
     }
 
+    let tenantRecords: TenantRecord[] = []
+    try {
+      tenantRecords = await Promise.all(tenantRecordPromises)
+    } catch (error) {
+      console.log(error.cause.code)
+      throw error
+    }
     const tenantAgentPromises = []
     for (const tenantRecord of tenantRecords) {
       for (let session = 0; session < numberOfSessions; session++) {
