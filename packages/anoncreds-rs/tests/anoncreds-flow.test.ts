@@ -355,7 +355,7 @@ async function anonCredsFlowTest(options: { issuerId: string; revocable: boolean
     schemaId: schemaState.schemaId,
     credentialDefinitionId: credentialDefinitionState.credentialDefinitionId,
     revocationRegistryId: revocable ? revocationRegistryDefinitionId : null,
-    credentialRevocationId: revocable ? '1' : undefined,
+    credentialRevocationId: revocable ? '1' : null,
     methodName: 'inMemory',
   })
 
