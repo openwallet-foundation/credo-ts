@@ -285,7 +285,7 @@ describe('Legacy indy format services using anoncreds-rs', () => {
       schemaId: unqualifiedSchemaId,
       credentialDefinitionId: unqualifiedCredentialDefinitionId,
       revocationRegistryId: null,
-      credentialRevocationId: undefined, // FIXME: should be null?
+      credentialRevocationId: null,
       methodName: 'inMemory',
     })
 

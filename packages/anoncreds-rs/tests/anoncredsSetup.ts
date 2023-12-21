@@ -201,7 +201,7 @@ export async function issueAnonCredsCredential({
   holderReplay: EventReplaySubject
 
   issuerHolderConnectionId: string
-  revocationRegistryDefinitionId?: string
+  revocationRegistryDefinitionId: string | null
   offer: AnonCredsOfferCredentialFormat
 }) {
   let issuerCredentialExchangeRecord = await issuerAgent.credentials.offerCredential({
@@ -209,7 +209,11 @@ export async function issueAnonCredsCredential({
     connectionId: issuerHolderConnectionId,
     protocolVersion: 'v2',
     credentialFormats: {
-      anoncreds: { ...offer, revocationRegistryDefinitionId, revocationRegistryIndex: 1 },
+      anoncreds: {
+        ...offer,
+        revocationRegistryDefinitionId: revocationRegistryDefinitionId ?? undefined,
+        revocationRegistryIndex: 1,
+      },
     },
     autoAcceptCredential: AutoAcceptCredential.ContentApproved,
   })
@@ -267,7 +271,7 @@ interface SetupAnonCredsTestsReturn<VerifierName extends string | undefined, Cre
 
   schemaId: string
   credentialDefinitionId: string
-  revocationRegistryDefinitionId?: string
+  revocationRegistryDefinitionId: string | null
   revocationStatusListTimestamp?: number
 }
 

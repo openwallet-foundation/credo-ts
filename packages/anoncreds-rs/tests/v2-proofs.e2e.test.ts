@@ -28,7 +28,7 @@ describe('PP V2 AnonCreds Proofs', () => {
   let aliceAgent: AnonCredsTestsAgent
   let aliceReplay: EventReplaySubject
   let credentialDefinitionId: string
-  let revocationRegistryDefinitionId: string | undefined
+  let revocationRegistryDefinitionId: string | null
   let aliceConnectionId: string
   let faberConnectionId: string
   let faberProofExchangeRecord: ProofExchangeRecord

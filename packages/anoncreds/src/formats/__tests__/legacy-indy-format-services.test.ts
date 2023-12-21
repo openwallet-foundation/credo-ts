@@ -306,9 +306,8 @@ describe('Legacy indy format services', () => {
       },
       schemaId: legacySchemaId,
       credentialDefinitionId: legacyCredentialDefinitionId,
-      // FIXME: We should be consistent in using null vs undefined
       revocationRegistryId: null,
-      credentialRevocationId: undefined,
+      credentialRevocationId: null,
       methodName: 'inMemory',
     })
 

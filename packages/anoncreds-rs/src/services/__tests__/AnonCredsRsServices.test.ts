@@ -190,7 +190,7 @@ describe('AnonCredsRsServices', () => {
       schemaId: schemaState.schemaId,
       credentialDefinitionId: credentialDefinitionState.credentialDefinitionId,
       revocationRegistryId: null,
-      credentialRevocationId: undefined, // Should it be null in this case?
+      credentialRevocationId: null,
       methodName: 'inMemory',
     })
 
@@ -398,7 +398,7 @@ describe('AnonCredsRsServices', () => {
       schemaId: unqualifiedSchemaId,
       credentialDefinitionId: unqualifiedCredentialDefinitionId,
       revocationRegistryId: null,
-      credentialRevocationId: undefined, // Should it be null in this case?
+      credentialRevocationId: null,
       methodName: 'inMemory',
     })
 
