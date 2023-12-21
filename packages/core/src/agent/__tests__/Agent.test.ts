@@ -246,7 +246,7 @@ describe('Agent', () => {
         'https://didcomm.org/coordinate-mediation/1.0',
         'https://didcomm.org/issue-credential/2.0',
         'https://didcomm.org/present-proof/2.0',
-        'https://didcomm.org/didexchange/1.0',
+        'https://didcomm.org/didexchange/1.1',
         'https://didcomm.org/discover-features/1.0',
         'https://didcomm.org/discover-features/2.0',
         'https://didcomm.org/messagepickup/1.0',

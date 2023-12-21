@@ -1,0 +1,103 @@
+import type { AgentContext } from '../../../agent'
+import type {
+  DidRegistrar,
+  DidResolver,
+  DidDocument,
+  DidCreateOptions,
+  DidCreateResult,
+  DidUpdateResult,
+  DidDeactivateResult,
+  DidResolutionResult,
+} from '../../dids'
+
+import { DidRecord, DidDocumentRole, DidRepository } from '../../dids'
+
+export class InMemoryDidRegistry implements DidRegistrar, DidResolver {
+  public readonly supportedMethods = ['inmemory']
+
+  private dids: Record<string, DidDocument> = {}
+
+  public async create(agentContext: AgentContext, options: DidCreateOptions): Promise<DidCreateResult> {
+    const { did, didDocument } = options
+
+    if (!did || !didDocument) {
+      return {
+        didDocumentMetadata: {},
+        didRegistrationMetadata: {},
+        didState: {
+          state: 'failed',
+          reason: 'InMemoryDidRegistrar requires to specify both did and didDocument',
+        },
+      }
+    }
+
+    this.dids[did] = didDocument
+
+    // Save the did so we know we created it and can use it for didcomm
+    const didRecord = new DidRecord({
+      did: didDocument.id,
+      role: DidDocumentRole.Created,
+      didDocument,
+      tags: {
+        // We need to save the recipientKeys, so we can find the associated did
+        // of a key when we receive a message from another connection.
+        recipientKeyFingerprints: didDocument.recipientKeys.map((key) => key.fingerprint),
+      },
+    })
+    const didRepository = agentContext.dependencyManager.resolve(DidRepository)
+    await didRepository.save(agentContext, didRecord)
+
+    return {
+      didDocumentMetadata: {},
+      didRegistrationMetadata: {},
+      didState: {
+        state: 'finished',
+        did: didDocument.id,
+        didDocument,
+      },
+    }
+  }
+
+  public async update(): Promise<DidUpdateResult> {
+    return {
+      didDocumentMetadata: {},
+      didRegistrationMetadata: {},
+      didState: {
+        state: 'failed',
+        reason: `notImplemented: updating did:inmemory not implemented yet`,
+      },
+    }
+  }
+
+  public async deactivate(): Promise<DidDeactivateResult> {
+    return {
+      didDocumentMetadata: {},
+      didRegistrationMetadata: {},
+      didState: {
+        state: 'failed',
+        reason: `notImplemented: deactivating did:inmemory not implemented yet`,
+      },
+    }
+  }
+
+  public async resolve(agentContext: AgentContext, did: string): Promise<DidResolutionResult> {
+    const didDocument = this.dids[did]
+
+    if (!didDocument) {
+      return {
+        didDocument: null,
+        didDocumentMetadata: {},
+        didResolutionMetadata: {
+          error: 'notFound',
+          message: `resolver_error: Unable to resolve did '${did}'`,
+        },
+      }
+    }
+
+    return {
+      didDocument,
+      didDocumentMetadata: {},
+      didResolutionMetadata: { contentType: 'application/did+ld+json' },
+    }
+  }
+}

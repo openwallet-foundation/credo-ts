@@ -42,7 +42,7 @@ export class DidExchangeRequestMessage extends AgentMessage {
 
   @IsValidMessageType(DidExchangeRequestMessage.type)
   public readonly type = DidExchangeRequestMessage.type.messageTypeUri
-  public static readonly type = parseMessageType('https://didcomm.org/didexchange/1.0/request')
+  public static readonly type = parseMessageType('https://didcomm.org/didexchange/1.1/request')
 
   @IsString()
   public readonly label?: string
