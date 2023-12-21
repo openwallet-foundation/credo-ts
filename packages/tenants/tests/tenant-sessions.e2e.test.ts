@@ -1,5 +1,4 @@
 import type { InitConfig } from '@aries-framework/core'
-import type { TenantRecord } from '@aries-framework/tenants'
 
 import { ConnectionsModule, Agent } from '@aries-framework/core'
 import { agentDependencies } from '@aries-framework/node'
@@ -63,10 +62,6 @@ describe('Tenants Sessions E2E', () => {
     await Promise.all(tenantAgents.map((tenantAgent) => tenantAgent.endSession()))
   })
 
-  // FIXME: when creating the 100 tenants in parallel, it will error out with askar.
-  // For now I've fixed it by creating the tenants sequentially, but still opening all
-  // the sessions in parallel. However it should be fine to create the tenants in parallel
-  // as well, and this should be fixed in askar / AFJs wallet implementation around askar
   test('create 5 sessions each for 20 tenants in parallel and close them', async () => {
     const numberOfTenants = 20
     const numberOfSessions = 5
@@ -82,13 +77,7 @@ describe('Tenants Sessions E2E', () => {
       tenantRecordPromises.push(tenantRecordPromise)
     }
 
-    let tenantRecords: TenantRecord[] = []
-    try {
-      tenantRecords = await Promise.all(tenantRecordPromises)
-    } catch (error) {
-      console.log(error.cause.code)
-      throw error
-    }
+    const tenantRecords = await Promise.all(tenantRecordPromises)
     const tenantAgentPromises = []
     for (const tenantRecord of tenantRecords) {
       for (let session = 0; session < numberOfSessions; session++) {

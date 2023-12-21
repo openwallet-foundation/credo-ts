@@ -59,6 +59,7 @@ import { OutOfBandInvitation } from '../src/modules/oob/messages'
 import { OutOfBandRecord } from '../src/modules/oob/repository'
 import { KeyDerivationMethod } from '../src/types'
 import { supportsIncomingMessageType } from '../src/utils/messageType'
+import { sleep } from '../src/utils/sleep'
 import { uuid } from '../src/utils/uuid'
 
 import testLogger, { TestLogger } from './logger'
@@ -615,4 +616,27 @@ export function mockFunction<T extends (...args: any[]) => any>(fn: T): jest.Moc
 // eslint-disable-next-line @typescript-eslint/ban-types
 export function mockProperty<T extends {}, K extends keyof T>(object: T, property: K, value: T[K]) {
   Object.defineProperty(object, property, { get: () => value })
+}
+
+export async function retryUntilResult<T, M extends () => Promise<T | null>>(
+  method: M,
+  {
+    intervalMs = 500,
+    delay = 1000,
+    maxAttempts = 5,
+  }: {
+    intervalMs?: number
+    delay?: number
+    maxAttempts?: number
+  } = {}
+): Promise<T> {
+  await sleep(delay)
+
+  for (let i = 0; i < maxAttempts; i++) {
+    const result = await method()
+    if (result) return result
+    await sleep(intervalMs)
+  }
+
+  throw new Error(`Unable to get result from method in ${maxAttempts} attempts`)
 }
