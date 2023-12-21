@@ -239,6 +239,7 @@ describe('IC V2 AnonCreds credentials', () => {
         credentialDefinitionId: credentialDefinitionId,
         attributes: credentialPreview.attributes,
       },
+      revocationRegistryDefinitionId: null,
     })
 
     // test that delete credential removes from both repository and wallet
