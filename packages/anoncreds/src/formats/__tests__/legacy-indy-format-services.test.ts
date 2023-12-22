@@ -67,6 +67,7 @@ const wallet = new RegisteredAskarTestWallet(
   new agentDependencies.FileSystem(),
   new SigningProviderRegistry([])
 )
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const storageService = new AskarStorageService<any>()
 const eventEmitter = new EventEmitter(agentDependencies, new Subject())
 const anonCredsLinkSecretRepository = new AnonCredsLinkSecretRepository(storageService, eventEmitter)

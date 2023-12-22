@@ -67,6 +67,7 @@ import {
 
 // Helper type to get the type of the agents (with the custom modules) for the credential tests
 export type AnonCredsTestsAgent = Agent<
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   ReturnType<typeof getAskarAnonCredsIndyModules> & { mediationRecipient?: any; mediator?: any }
 >
 

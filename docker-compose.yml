@@ -12,7 +12,6 @@ services:
     build:
       context: .
       dockerfile: network/indy-pool.dockerfile
-      target: linux/amd64
     ports:
       - '9701-9708:9701-9708'
     # Start supervisord in bg, run commands, bring supervisor to fg

@@ -4,7 +4,7 @@ import type { ConnectionStateChangedEvent } from '../ConnectionEvents'
 import { firstValueFrom } from 'rxjs'
 import { filter, first, map, timeout } from 'rxjs/operators'
 
-import { getIndySdkModules } from '../../../../../indy-sdk/tests/setupIndySdkModule'
+import { askarModule } from '../../../../../askar/tests/helpers'
 import { setupSubjectTransports } from '../../../../tests'
 import { getAgentOptions } from '../../../../tests/helpers'
 import { Agent } from '../../../agent/Agent'
@@ -103,7 +103,7 @@ async function didExchangeNumAlgoBaseTest(options: {
       endpoints: ['rxjs:alice'],
     },
     {
-      ...getIndySdkModules(),
+      askar: askarModule,
       connections: new ConnectionsModule({
         autoAcceptConnections: false,
         peerNumAlgoForDidExchangeRequests: options.requesterNumAlgoSetting,
@@ -117,7 +117,7 @@ async function didExchangeNumAlgoBaseTest(options: {
       endpoints: ['rxjs:faber'],
     },
     {
-      ...getIndySdkModules(),
+      askar: askarModule,
       connections: new ConnectionsModule({
         autoAcceptConnections: false,
         peerNumAlgoForDidExchangeRequests: options.responderNumAlgoSetting,
