@@ -253,6 +253,8 @@ describe('mediator establishment', () => {
 
     expect(recipientMediator?.state).toBe(MediationState.Granted)
 
+    await recipientAgent.mediationRecipient.stopMessagePickup()
+
     // Restart recipient agent
     await recipientAgent.shutdown()
     recipientAgent = new Agent({

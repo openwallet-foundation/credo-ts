@@ -18,7 +18,7 @@ GENESIS_TXN_PATH=/work/network/genesis/local-genesis.txn
 
 ## Running tests
 
-Test are executed using jest. Some test require the **indy ledger**, **cheqd ledger** or **postgres database** to be running. 
+Test are executed using jest. Some test require the **indy ledger**, **cheqd ledger** or **postgres database** to be running.
 
 When running tests that require a connection to the indy ledger pool, you can set the `TEST_AGENT_PUBLIC_DID_SEED`, `ENDORSER_AGENT_PUBLIC_DID_SEED` and `GENESIS_TXN_PATH` environment variables.
 
