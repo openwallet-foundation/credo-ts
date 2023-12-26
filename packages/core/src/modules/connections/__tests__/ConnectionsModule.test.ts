@@ -6,6 +6,7 @@ import { ConnectionsModuleConfig } from '../ConnectionsModuleConfig'
 import { DidExchangeProtocol } from '../DidExchangeProtocol'
 import { ConnectionRepository } from '../repository'
 import { ConnectionService, TrustPingService } from '../services'
+import { DidRotateService } from '../services/DidRotateService'
 
 jest.mock('../../../plugins/DependencyManager')
 const DependencyManagerMock = DependencyManager as jest.Mock<DependencyManager>
@@ -32,6 +33,7 @@ describe('ConnectionsModule', () => {
     expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(ConnectionService)
     expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(DidExchangeProtocol)
     expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(TrustPingService)
+    expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(DidRotateService)
     expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(ConnectionRepository)
   })
 })

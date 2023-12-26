@@ -278,6 +278,22 @@ export class ConnectionsApi {
     return message
   }
 
+  public async rotate(options: { connectionId: string; did?: string }) {
+    // Create did if not specified
+
+    // Add new keys fingerprints to connection record and metadata to store old keys until we receive ack
+    // Create rotate message
+  }
+
+  public async hangup(options: { connectionId: string }) {
+    // TODO
+    const connection = await this.connectionService.getById(this.agentContext, options.connectionId)
+    // Create Hangup message
+
+    // Update Connection did to undefined?
+    connection.did = undefined
+  }
+
   public async returnWhenIsConnected(connectionId: string, options?: { timeoutMs: number }): Promise<ConnectionRecord> {
     return this.connectionService.returnWhenIsConnected(this.agentContext, connectionId, options?.timeoutMs)
   }
