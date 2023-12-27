@@ -59,4 +59,10 @@ export class Key {
   public get supportsSigning() {
     return isSigningSupportedForKeyType(this.keyType)
   }
+
+  // We return the fingerprint when this object is serialized to JSON
+  // This means it's nicely formatted when printing to the console
+  private toJSON() {
+    return this.fingerprint
+  }
 }
