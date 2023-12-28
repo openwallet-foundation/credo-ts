@@ -875,7 +875,10 @@ export class OutOfBandApi {
         ),
         // If the event is found, we return the value true
         map(() => true),
-        timeout(15000),
+        timeout({
+          first: 15000,
+          meta: 'OutOfBandApi.handleHandshakeReuse',
+        }),
         // If timeout is reached, we return false
         catchError(() => of(false))
       )

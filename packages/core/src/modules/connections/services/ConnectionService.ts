@@ -898,7 +898,10 @@ export class ConnectionService {
         filterContextCorrelationId(agentContext.contextCorrelationId),
         map((e) => e.payload.connectionRecord),
         first(isConnected), // Do not wait for longer than specified timeout
-        timeout(timeoutMs)
+        timeout({
+          first: timeoutMs,
+          meta: 'ConnectionService.returnWhenIsConnected',
+        })
       )
       .subscribe(subject)
 
