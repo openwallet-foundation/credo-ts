@@ -19,6 +19,7 @@ export class PresentationExchangeModule implements Module {
         "The 'PresentationExchangeModule' module is experimental and could have unexpected breaking changes. When using this module, make sure to use strict versions for all @aries-framework packages."
       )
 
+    // service
     dependencyManager.registerSingleton(PresentationExchangeService)
   }
 }

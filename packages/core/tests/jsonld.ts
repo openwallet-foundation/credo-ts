@@ -18,7 +18,6 @@ import {
   V2CredentialProtocol,
   W3cCredentialsModule,
 } from '../src'
-import { PresentationExchangeModule } from '../src/modules/presentation-exchange'
 import { customDocumentLoader } from '../src/modules/vc/data-integrity/__tests__/documentLoader'
 
 import { setupEventReplaySubjects } from './events'
@@ -49,7 +48,6 @@ export const getJsonLdModules = ({
     indySdk: new IndySdkModule({
       indySdk,
     }),
-    pex: new PresentationExchangeModule(),
     bbs: new BbsModule(),
   } as const)
 

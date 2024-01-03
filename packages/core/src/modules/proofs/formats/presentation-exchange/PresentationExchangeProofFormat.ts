@@ -1,5 +1,9 @@
-import type { PresentationDefinition } from '../../../presentation-exchange'
-import type { W3cCredentialRecord } from '../../../vc'
+import type { InputDescriptorToCredentials, PresentationDefinition } from '../../../presentation-exchange'
+import type {
+  PresentationExchangePresentation,
+  PresentationExchangeProposal,
+  PresentationExchangeRequest,
+} from '../../models/v2'
 import type { ProofFormat } from '../ProofFormat'
 
 export interface PresentationExchangeProofFormat extends ProofFormat {
@@ -17,24 +21,34 @@ export interface PresentationExchangeProofFormat extends ProofFormat {
 
     createRequest: {
       presentationDefinition: PresentationDefinition
+      options?: {
+        challenge?: string
+        domain?: string
+      }
     }
 
-    acceptRequest: never
+    acceptRequest: {
+      credentials?: InputDescriptorToCredentials
+    }
 
     getCredentialsForRequest: {
       input: never
-      output: Array<W3cCredentialRecord>
+      output: {
+        credentials: InputDescriptorToCredentials
+      }
     }
 
     selectCredentialsForRequest: {
       input: never
-      output: Array<W3cCredentialRecord>
+      output: {
+        credentials: InputDescriptorToCredentials
+      }
     }
   }
 
   formatData: {
-    proposal: unknown
-    request: unknown
-    presentation: unknown
+    proposal: PresentationExchangeProposal
+    request: PresentationExchangeRequest
+    presentation: PresentationExchangePresentation
   }
 }

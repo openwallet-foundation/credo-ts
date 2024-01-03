@@ -11,7 +11,7 @@ import type {
 } from '@sphereon/pex'
 import type {
   InputDescriptorV2,
-  PresentationSubmission as PexPresentationSubmission,
+  PresentationSubmission as PePresentationSubmission,
   PresentationDefinitionV1,
 } from '@sphereon/pex-models'
 import type { IVerifiablePresentation, OriginalVerifiableCredential } from '@sphereon/ssi-types'
@@ -40,8 +40,8 @@ import {
 
 export type ProofStructure = Record<string, Record<string, Array<W3cVerifiableCredential>>>
 export type PresentationDefinition = IPresentationDefinition & Record<string, unknown>
-
 export type VerifiablePresentation = IVerifiablePresentation & Record<string, unknown>
+export type PexPresentationSubmission = PePresentationSubmission & Record<string, unknown>
 
 @injectable()
 export class PresentationExchangeService {
@@ -64,9 +64,7 @@ export class PresentationExchangeService {
     const validation = PEX.validateDefinition(presentationDefinition)
     const errorMessages = this.formatValidated(validation)
     if (errorMessages.length > 0) {
-      throw new PresentationExchangeError(
-        `Invalid presentation definition. The following errors were found: ${errorMessages.join(', ')}`
-      )
+      throw new PresentationExchangeError(`Invalid presentation definition`, { additionalMessages: errorMessages })
     }
   }
 
@@ -74,9 +72,7 @@ export class PresentationExchangeService {
     const validation = PEX.validateSubmission(presentationSubmission)
     const errorMessages = this.formatValidated(validation)
     if (errorMessages.length > 0) {
-      throw new PresentationExchangeError(
-        `Invalid presentation submission. The following errors were found: ${errorMessages.join(', ')}`
-      )
+      throw new PresentationExchangeError(`Invalid presentation submission`, { additionalMessages: errorMessages })
     }
   }
 
@@ -86,22 +82,17 @@ export class PresentationExchangeService {
     if (errors) {
       const errorMessages = this.formatValidated(errors as Validated)
       if (errorMessages.length > 0) {
-        throw new PresentationExchangeError(
-          `Invalid presentation. The following errors were found: ${errorMessages.join(', ')}`
-        )
+        throw new PresentationExchangeError(`Invalid presentation`, { additionalMessages: errorMessages })
       }
     }
   }
 
   private formatValidated(v: Validated) {
-    return Array.isArray(v)
-      ? (v
-          .filter((r) => r.tag === Status.ERROR)
-          .map((r) => r.message)
-          .filter((m) => Boolean(m)) as Array<string>)
-      : v.tag === Status.ERROR && typeof v.message === 'string'
-      ? [v.message]
-      : []
+    const validated = Array.isArray(v) ? v : [v]
+    return validated
+      .filter((r) => r.tag === Status.ERROR)
+      .map((r) => r.message)
+      .filter((r): r is string => Boolean(r))
   }
 
   /**
@@ -118,9 +109,9 @@ export class PresentationExchangeService {
 
     if (!presentationDefinitionVersion.version) {
       throw new PresentationExchangeError(
-        `Unable to determine the Presentation Exchange version from the presentation definition. ${
-          presentationDefinitionVersion.error ?? 'Unknown error'
-        }`
+        `Unable to determine the Presentation Exchange version from the presentation definition
+        `,
+        presentationDefinitionVersion.error ? { additionalMessages: [presentationDefinitionVersion.error] } : {}
       )
     }
 
@@ -284,11 +275,11 @@ export class PresentationExchangeService {
     }
 
     if (!verifiablePresentationResultsWithFormat[0]) {
-      throw new PresentationExchangeError('No verifiable presentations created.')
+      throw new PresentationExchangeError('No verifiable presentations created')
     }
 
     if (subjectToInputDescriptors.length !== verifiablePresentationResultsWithFormat.length) {
-      throw new PresentationExchangeError('Invalid amount of verifiable presentations created.')
+      throw new PresentationExchangeError('Invalid amount of verifiable presentations created')
     }
 
     const presentationSubmission: PexPresentationSubmission = {
@@ -357,13 +348,13 @@ export class PresentationExchangeService {
       algorithmsSatisfyingPdAndDescriptorRestrictions.length === 0
     ) {
       throw new PresentationExchangeError(
-        `No signature algorithm found for satisfying restrictions of the presentation definition and input descriptors.`
+        `No signature algorithm found for satisfying restrictions of the presentation definition and input descriptors`
       )
     }
 
     if (allDescriptorAlgorithms.length > 0 && algorithmsSatisfyingDescriptors.length === 0) {
       throw new PresentationExchangeError(
-        `No signature algorithm found for satisfying restrictions of the input descriptors.`
+        `No signature algorithm found for satisfying restrictions of the input descriptors`
       )
     }
 
@@ -419,7 +410,7 @@ export class PresentationExchangeService {
     const supportedSignatureSuite = signatureSuiteRegistry.getByVerificationMethodType(verificationMethod.type)
     if (!supportedSignatureSuite) {
       throw new PresentationExchangeError(
-        `Couldn't find a supported signature suite for the given verification method type '${verificationMethod.type}'.`
+        `Couldn't find a supported signature suite for the given verification method type '${verificationMethod.type}'`
       )
     }
 
@@ -456,7 +447,7 @@ export class PresentationExchangeService {
 
       if (verificationMethodId && verificationMethodId !== verificationMethod.id) {
         throw new PresentationExchangeError(
-          `Verification method from signing options ${verificationMethodId} does not match verification method ${verificationMethod.id}.`
+          `Verification method from signing options ${verificationMethodId} does not match verification method ${verificationMethod.id}`
         )
       }
 
@@ -490,7 +481,7 @@ export class PresentationExchangeService {
         })
       } else {
         throw new PresentationExchangeError(
-          `Only JWT credentials or JSONLD credentials are supported for a single presentation.`
+          `Only JWT credentials or JSONLD credentials are supported for a single presentation`
         )
       }
 
