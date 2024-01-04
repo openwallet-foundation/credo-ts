@@ -57,7 +57,7 @@ describe('0.4-0.5 | W3cCredentialRecord', () => {
       expect(repository.update).toHaveBeenCalledTimes(1)
 
       const [, record] = mockFunction(repository.update).mock.calls[0]
-      expect(record.getTags().claimFormat).toEqual('ldp_vc')
+      expect(record.getTags().types).toEqual(['VerifiableCredential', 'UniversityDegreeCredential'])
     })
   })
 })
