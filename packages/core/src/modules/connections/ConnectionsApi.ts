@@ -30,6 +30,7 @@ import {
   ConnectionProblemReportHandler,
 } from './handlers'
 import { HandshakeProtocol } from './models'
+import { DidRotateService } from './services'
 import { ConnectionService } from './services/ConnectionService'
 import { TrustPingService } from './services/TrustPingService'
 
@@ -47,6 +48,7 @@ export class ConnectionsApi {
 
   private didExchangeProtocol: DidExchangeProtocol
   private connectionService: ConnectionService
+  private didRotateService: DidRotateService
   private outOfBandService: OutOfBandService
   private messageSender: MessageSender
   private trustPingService: TrustPingService
@@ -59,6 +61,7 @@ export class ConnectionsApi {
     messageHandlerRegistry: MessageHandlerRegistry,
     didExchangeProtocol: DidExchangeProtocol,
     connectionService: ConnectionService,
+    didRotateService: DidRotateService,
     outOfBandService: OutOfBandService,
     trustPingService: TrustPingService,
     routingService: RoutingService,
@@ -70,6 +73,7 @@ export class ConnectionsApi {
   ) {
     this.didExchangeProtocol = didExchangeProtocol
     this.connectionService = connectionService
+    this.didRotateService = didRotateService
     this.outOfBandService = outOfBandService
     this.trustPingService = trustPingService
     this.routingService = routingService
@@ -278,20 +282,47 @@ export class ConnectionsApi {
     return message
   }
 
-  public async rotate(options: { connectionId: string; did?: string }) {
-    // Create did if not specified
+  public async rotate(options: { connectionId: string; did?: string; routing?: Routing }) {
+    const { connectionId, did, routing } = options
+    const connection = await this.connectionService.getById(this.agentContext, connectionId)
 
-    // Add new keys fingerprints to connection record and metadata to store old keys until we receive ack
-    // Create rotate message
+    const message = await this.didRotateService.createRotate(this.agentContext, {
+      connection,
+      did,
+      routing,
+    })
+
+    const outboundMessageContext = new OutboundMessageContext(message, {
+      agentContext: this.agentContext,
+      connection,
+    })
+
+    await this.messageSender.sendMessage(outboundMessageContext)
   }
 
-  public async hangup(options: { connectionId: string }) {
-    // TODO
+  /**
+   * Terminate a connection by sending a hang-up message to the other party. The connection record itself and any
+   * keys used for mediation will only be deleted if `deleteAfterHangup` flag is set.
+   *
+   * @param options connectionId
+   */
+  public async hangup(options: { connectionId: string; deleteAfterHangup?: boolean }) {
     const connection = await this.connectionService.getById(this.agentContext, options.connectionId)
-    // Create Hangup message
 
-    // Update Connection did to undefined?
-    connection.did = undefined
+    // Create Hangup message and update did in connection record
+    const message = await this.didRotateService.createHangup(this.agentContext, { connection })
+
+    const outboundMessageContext = new OutboundMessageContext(message, {
+      agentContext: this.agentContext,
+      connection,
+    })
+
+    await this.messageSender.sendMessage(outboundMessageContext)
+
+    // After hang-up message submission, delete connection if required
+    if (options.deleteAfterHangup) {
+      await this.deleteById(connection.id)
+    }
   }
 
   public async returnWhenIsConnected(connectionId: string, options?: { timeoutMs: number }): Promise<ConnectionRecord> {
