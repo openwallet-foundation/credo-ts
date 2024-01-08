@@ -199,8 +199,6 @@ export class W3cJsonLdCredentialService {
       useNativeCanonize: false,
     })
 
-    console.log(JsonTransformer.toJSON(options.presentation), options.presentation)
-
     const result = await vc.signPresentation({
       presentation: JsonTransformer.toJSON(options.presentation),
       suite: suite,
