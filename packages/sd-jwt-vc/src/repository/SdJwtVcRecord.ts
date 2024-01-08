@@ -1,39 +1,38 @@
+import type { SdJwtVcHeader, SdJwtVcPayload } from '../SdJwtVcOptions'
 import type { TagsBase, Constructable } from '@aries-framework/core'
-import type { DisclosureItem, HasherAndAlgorithm } from 'jwt-sd'
+import type { DisclosureItem, HasherAndAlgorithm } from '@sd-jwt/core'
 
 import { JsonTransformer, Hasher, TypedArrayEncoder, BaseRecord, utils } from '@aries-framework/core'
-import { Disclosure, HasherAlgorithm, SdJwtVc } from 'jwt-sd'
+import { Disclosure, HasherAlgorithm, SdJwtVc } from '@sd-jwt/core'
 
-export type SdJwtVcRecordTags = TagsBase & {
+export type DefaultSdJwtVcRecordTags = {
   disclosureKeys?: Array<string>
 }
 
-export type SdJwt<
-  Header extends Record<string, unknown> = Record<string, unknown>,
-  Payload extends Record<string, unknown> = Record<string, unknown>
-> = {
+export type SdJwt<Header extends SdJwtVcHeader = SdJwtVcHeader, Payload extends SdJwtVcPayload = SdJwtVcPayload> = {
   disclosures?: Array<DisclosureItem>
   header: Header
   payload: Payload
+  // FIXME: serializing Uint8Array to and from JSON does not work. Can we just store the SD-JWT in it's compact version?
   signature: Uint8Array
 
   holderDidUrl: string
 }
 
 export type SdJwtVcRecordStorageProps<
-  Header extends Record<string, unknown> = Record<string, unknown>,
-  Payload extends Record<string, unknown> = Record<string, unknown>
+  Header extends SdJwtVcHeader = SdJwtVcHeader,
+  Payload extends SdJwtVcPayload = SdJwtVcPayload
 > = {
   id?: string
   createdAt?: Date
-  tags?: SdJwtVcRecordTags
+  tags?: TagsBase
   sdJwtVc: SdJwt<Header, Payload>
 }
 
 export class SdJwtVcRecord<
-  Header extends Record<string, unknown> = Record<string, unknown>,
-  Payload extends Record<string, unknown> = Record<string, unknown>
-> extends BaseRecord<SdJwtVcRecordTags> {
+  Header extends SdJwtVcHeader = SdJwtVcHeader,
+  Payload extends SdJwtVcPayload = SdJwtVcPayload
+> extends BaseRecord<DefaultSdJwtVcRecordTags> {
   public static readonly type = 'SdJwtVcRecord'
   public readonly type = SdJwtVcRecord.type
 

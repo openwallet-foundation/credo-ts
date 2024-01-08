@@ -4,9 +4,11 @@ import type {
   SdJwtVcPresentOptions,
   SdJwtVcFromSerializedJwtOptions,
   SdJwtVcVerifyOptions,
+  SdJwtVcPayload,
+  SdJwtVcHeader,
 } from './SdJwtVcOptions'
 import type { AgentContext, JwkJson, Query } from '@aries-framework/core'
-import type { Signer, SdJwtVcVerificationResult, Verifier, HasherAndAlgorithm } from 'jwt-sd'
+import type { Signer, SdJwtVcVerificationResult, Verifier, HasherAndAlgorithm } from '@sd-jwt/core'
 
 import {
   parseDid,
@@ -16,14 +18,11 @@ import {
   Key,
   getJwkFromKey,
   Hasher,
-  inject,
   injectable,
-  InjectionSymbols,
-  Logger,
   TypedArrayEncoder,
   Buffer,
 } from '@aries-framework/core'
-import { KeyBinding, SdJwtVc, HasherAlgorithm, Disclosure } from 'jwt-sd'
+import { KeyBinding, SdJwtVc, HasherAlgorithm, Disclosure } from '@sd-jwt/core'
 
 import { SdJwtVcError } from './SdJwtVcError'
 import { SdJwtVcRepository, SdJwtVcRecord } from './repository'
@@ -35,12 +34,10 @@ export { SdJwtVcVerificationResult }
  */
 @injectable()
 export class SdJwtVcService {
-  private logger: Logger
   private sdJwtVcRepository: SdJwtVcRepository
 
-  public constructor(sdJwtVcRepository: SdJwtVcRepository, @inject(InjectionSymbols.Logger) logger: Logger) {
+  public constructor(sdJwtVcRepository: SdJwtVcRepository) {
     this.sdJwtVcRepository = sdJwtVcRepository
-    this.logger = logger
   }
 
   private async resolveDidUrl(agentContext: AgentContext, didUrl: string) {
@@ -63,17 +60,14 @@ export class SdJwtVcService {
   /**
    * @todo validate the JWT header (alg)
    */
-  private signer<Header extends Record<string, unknown> = Record<string, unknown>>(
-    agentContext: AgentContext,
-    key: Key
-  ): Signer<Header> {
+  private signer<Header extends SdJwtVcHeader = SdJwtVcHeader>(agentContext: AgentContext, key: Key): Signer<Header> {
     return async (input: string) => agentContext.wallet.sign({ key, data: TypedArrayEncoder.fromString(input) })
   }
 
   /**
    * @todo validate the JWT header (alg)
    */
-  private verifier<Header extends Record<string, unknown> = Record<string, unknown>>(
+  private verifier<Header extends SdJwtVcHeader = SdJwtVcHeader>(
     agentContext: AgentContext,
     signerKey: Key
   ): Verifier<Header> {
@@ -99,7 +93,7 @@ export class SdJwtVcService {
     }
   }
 
-  public async signCredential<Payload extends Record<string, unknown> = Record<string, unknown>>(
+  public async signCredential<Payload extends SdJwtVcPayload>(
     agentContext: AgentContext,
     sdJwtCredential: SdJwtCredential<Payload>
   ): Promise<{ sdJwtVcRecord: SdJwtVcRecord; compact: string }> {
@@ -171,7 +165,7 @@ export class SdJwtVcService {
     }
   }
 
-  public async create<Payload extends Record<string, unknown> = Record<string, unknown>>(
+  public async create<Payload extends SdJwtVcPayload>(
     agentContext: AgentContext,
     payload: Payload,
     {
@@ -181,7 +175,7 @@ export class SdJwtVcService {
       hashingAlgorithm = 'sha2-256',
       jsonWebAlgorithm,
     }: SdJwtVcCreateOptions<Payload>
-  ): Promise<{ sdJwtVcRecord: SdJwtVcRecord; compact: string }> {
+  ) {
     if (hashingAlgorithm !== 'sha2-256') {
       throw new SdJwtVcError(`Unsupported hashing algorithm used: ${hashingAlgorithm}`)
     }
@@ -208,7 +202,7 @@ export class SdJwtVcService {
       alg: alg.toString(),
       typ: 'vc+sd-jwt',
       kid: parsedDid.fragment,
-    }
+    } as const
 
     const sdJwtVc = new SdJwtVc<typeof header, Payload>({}, { disclosureFrame })
       .withHasher(this.hasher)
@@ -249,13 +243,13 @@ export class SdJwtVcService {
   }
 
   public async fromSerializedJwt<
-    Header extends Record<string, unknown> = Record<string, unknown>,
-    Payload extends Record<string, unknown> = Record<string, unknown>
+    Header extends SdJwtVcHeader = SdJwtVcHeader,
+    Payload extends SdJwtVcPayload = SdJwtVcPayload
   >(
     agentContext: AgentContext,
     sdJwtVcCompact: string,
     { issuerDidUrl, holderDidUrl }: SdJwtVcFromSerializedJwtOptions
-  ): Promise<SdJwtVcRecord> {
+  ): Promise<SdJwtVcRecord<Header, Payload>> {
     const sdJwtVc = SdJwtVc.fromCompact<Header, Payload>(sdJwtVcCompact)
 
     let url: string | undefined
@@ -288,8 +282,8 @@ export class SdJwtVcService {
       throw new SdJwtVcError('sd-jwt-vc has an invalid signature from the issuer')
     }
 
-    const { verificationMethod: holderVerificiationMethod } = await this.resolveDidUrl(agentContext, holderDidUrl)
-    const holderKey = getKeyFromVerificationMethod(holderVerificiationMethod)
+    const { verificationMethod: holderVerificationMethod } = await this.resolveDidUrl(agentContext, holderDidUrl)
+    const holderKey = getKeyFromVerificationMethod(holderVerificationMethod)
     const holderKeyJwk = getJwkFromKey(holderKey).toJson()
 
     sdJwtVc.assertClaimInPayload('cnf', { jwk: holderKeyJwk })
@@ -307,16 +301,20 @@ export class SdJwtVcService {
     return sdJwtVcRecord
   }
 
-  public async storeCredential(agentContext: AgentContext, sdJwtVcRecord: SdJwtVcRecord): Promise<SdJwtVcRecord> {
+  public async storeCredential(agentContext: AgentContext, sdJwtVcRecord: SdJwtVcRecord) {
     await this.sdJwtVcRepository.save(agentContext, sdJwtVcRecord)
 
     return sdJwtVcRecord
   }
 
-  public async present(
+  public async present<
+    Header extends SdJwtVcHeader = SdJwtVcHeader,
+    Payload extends SdJwtVcPayload = SdJwtVcPayload,
+    Record extends SdJwtVcRecord<Header, Payload> = SdJwtVcRecord<Header, Payload>
+  >(
     agentContext: AgentContext,
-    sdJwtVcRecord: SdJwtVcRecord,
-    { includedDisclosureIndices, verifierMetadata, jsonWebAlgorithm }: SdJwtVcPresentOptions
+    sdJwtVcRecord: Record,
+    { presentationFrame, verifierMetadata, jsonWebAlgorithm }: SdJwtVcPresentOptions<Payload>
   ): Promise<string> {
     const { verificationMethod: holderVerificationMethod } = await this.resolveDidUrl(
       agentContext,
@@ -326,7 +324,7 @@ export class SdJwtVcService {
     const alg = jsonWebAlgorithm ?? getJwkFromKey(holderKey).supportedSignatureAlgorithms[0]
 
     const header = {
-      alg: alg.toString(),
+      alg,
       typ: 'kb+jwt',
     } as const
 
@@ -334,30 +332,29 @@ export class SdJwtVcService {
       iat: verifierMetadata.issuedAt,
       nonce: verifierMetadata.nonce,
       aud: verifierMetadata.verifierDid,
+      // FIXME: _sd_hash is missing. See
+      // https://github.com/berendsliedrecht/sd-jwt-ts/issues/8
     }
 
-    const keyBinding = new KeyBinding<Record<string, unknown>, Record<string, unknown>>({ header, payload }).withSigner(
-      this.signer(agentContext, holderKey)
-    )
+    const keyBinding = new KeyBinding({ header, payload }).withSigner(this.signer(agentContext, holderKey))
 
     const sdJwtVc = new SdJwtVc({
       header: sdJwtVcRecord.sdJwtVc.header,
       payload: sdJwtVcRecord.sdJwtVc.payload,
       signature: sdJwtVcRecord.sdJwtVc.signature,
       disclosures: sdJwtVcRecord.sdJwtVc.disclosures?.map(Disclosure.fromArray),
-    }).withKeyBinding(keyBinding)
+    })
+      .withKeyBinding(keyBinding)
+      .withHasher(this.hasher)
 
-    return await sdJwtVc.present(includedDisclosureIndices)
+    return sdJwtVc.present(presentationFrame === true ? undefined : presentationFrame)
   }
 
-  public async verify<
-    Header extends Record<string, unknown> = Record<string, unknown>,
-    Payload extends Record<string, unknown> = Record<string, unknown>
-  >(
+  public async verify<Header extends SdJwtVcHeader = SdJwtVcHeader, Payload extends SdJwtVcPayload = SdJwtVcPayload>(
     agentContext: AgentContext,
     sdJwtVcCompact: string,
     { challenge: { verifierDid }, requiredClaimKeys, holderDidUrl }: SdJwtVcVerifyOptions
-  ): Promise<{ sdJwtVcRecord: SdJwtVcRecord<Header, Payload>; validation: SdJwtVcVerificationResult }> {
+  ) {
     const sdJwtVc = SdJwtVc.fromCompact<Header, Payload>(sdJwtVcCompact)
 
     if (!sdJwtVc.signature) {
@@ -390,7 +387,7 @@ export class SdJwtVcService {
 
     const verificationResult = await sdJwtVc.verify(this.verifier(agentContext, issuerKey), requiredClaimKeys)
 
-    const sdJwtVcRecord = new SdJwtVcRecord({
+    const sdJwtVcRecord = new SdJwtVcRecord<Header, Payload>({
       sdJwtVc: {
         signature: sdJwtVc.signature,
         payload: sdJwtVc.payload,

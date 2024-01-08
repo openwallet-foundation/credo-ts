@@ -23,9 +23,6 @@ export class SdJwtVcModule implements Module {
         "The '@aries-framework/sd-jwt-vc' module is experimental and could have unexpected breaking changes. When using this module, make sure to use strict versions for all @aries-framework packages."
       )
 
-    // Api
-    dependencyManager.registerContextScoped(this.api)
-
     // Services
     dependencyManager.registerSingleton(SdJwtVcService)
 

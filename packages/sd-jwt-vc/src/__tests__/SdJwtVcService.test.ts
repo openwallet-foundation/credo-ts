@@ -87,7 +87,7 @@ describe('SdJwtVcService', () => {
         agent.context,
         {
           claim: 'some-claim',
-          type: 'IdentityCredential',
+          vct: 'IdentityCredential',
         },
         {
           issuerDidUrl,
@@ -105,7 +105,7 @@ describe('SdJwtVcService', () => {
 
       expect(sdJwtVcRecord.sdJwtVc.payload).toEqual({
         claim: 'some-claim',
-        type: 'IdentityCredential',
+        vct: 'IdentityCredential',
         iat: Math.floor(new Date().getTime() / 1000),
         iss: issuerDidUrl.split('#')[0],
         cnf: {
@@ -117,7 +117,7 @@ describe('SdJwtVcService', () => {
     test('Create sd-jwt-vc from a basic payload with a disclosure', async () => {
       const { compact, sdJwtVcRecord } = await sdJwtVcService.create(
         agent.context,
-        { claim: 'some-claim', type: 'IdentityCredential' },
+        { claim: 'some-claim', vct: 'IdentityCredential' },
         {
           issuerDidUrl,
           holderDidUrl,
@@ -134,7 +134,7 @@ describe('SdJwtVcService', () => {
       })
 
       expect(sdJwtVcRecord.sdJwtVc.payload).toEqual({
-        type: 'IdentityCredential',
+        vct: 'IdentityCredential',
         iat: Math.floor(new Date().getTime() / 1000),
         iss: issuerDidUrl.split('#')[0],
         _sd: ['vcvFU4DsFKTqQ1vl4nelJWXTb_-0dNoBks6iqNFptyg'],
@@ -155,7 +155,7 @@ describe('SdJwtVcService', () => {
       const { compact, sdJwtVcRecord } = await sdJwtVcService.create(
         agent.context,
         {
-          type: 'IdentityCredential',
+          vct: 'IdentityCredential',
           given_name: 'John',
           family_name: 'Doe',
           email: 'johndoe@example.com',
@@ -195,7 +195,7 @@ describe('SdJwtVcService', () => {
       })
 
       expect(sdJwtVcRecord.sdJwtVc.payload).toEqual({
-        type: 'IdentityCredential',
+        vct: 'IdentityCredential',
         iat: Math.floor(new Date().getTime() / 1000),
         address: {
           _sd: ['NJnmct0BqBME1JfBlC6jRQVRuevpEONiYw7A7MHuJyQ', 'om5ZztZHB-Gd00LG21CV_xM4FaENSoiaOXnTAJNczB4'],
@@ -266,7 +266,7 @@ describe('SdJwtVcService', () => {
 
       expect(sdJwtVcRecord.sdJwtVc.payload).toEqual({
         claim: 'some-claim',
-        type: 'IdentityCredential',
+        vct: 'IdentityCredential',
         iat: Math.floor(new Date().getTime() / 1000),
         iss: issuerDidUrl.split('#')[0],
         cnf: {
@@ -292,7 +292,7 @@ describe('SdJwtVcService', () => {
       })
 
       expect(sdJwtVcRecord.sdJwtVc.payload).toEqual({
-        type: 'IdentityCredential',
+        vct: 'IdentityCredential',
         iat: Math.floor(new Date().getTime() / 1000),
         iss: issuerDidUrl.split('#')[0],
         _sd: ['vcvFU4DsFKTqQ1vl4nelJWXTb_-0dNoBks6iqNFptyg'],
@@ -326,7 +326,7 @@ describe('SdJwtVcService', () => {
       })
 
       expect(sdJwtVcRecord.sdJwtVc.payload).toEqual({
-        type: 'IdentityCredential',
+        vct: 'IdentityCredential',
         iat: Math.floor(new Date().getTime() / 1000),
         family_name: 'Doe',
         iss: issuerDidUrl.split('#')[0],
@@ -390,6 +390,7 @@ describe('SdJwtVcService', () => {
       await sdJwtVcService.storeCredential(agent.context, sdJwtVcRecord)
 
       const presentation = await sdJwtVcService.present(agent.context, sdJwtVcRecord, {
+        presentationFrame: {},
         verifierMetadata: {
           issuedAt: new Date().getTime() / 1000,
           verifierDid,
@@ -411,12 +412,14 @@ describe('SdJwtVcService', () => {
       await sdJwtVcService.storeCredential(agent.context, sdJwtVcRecord)
 
       const presentation = await sdJwtVcService.present(agent.context, sdJwtVcRecord, {
+        presentationFrame: {
+          claim: true,
+        },
         verifierMetadata: {
           issuedAt: new Date().getTime() / 1000,
           verifierDid,
           nonce: await agent.context.wallet.generateNonce(),
         },
-        includedDisclosureIndices: [0],
       })
 
       expect(presentation).toStrictEqual(sdJwtVcWithSingleDisclosurePresentation)
@@ -425,7 +428,16 @@ describe('SdJwtVcService', () => {
     test('Present sd-jwt-vc from a basic payload with multiple (nested) disclosure', async () => {
       const sdJwtVc = complexSdJwtVc
 
-      const sdJwtVcRecord = await sdJwtVcService.fromSerializedJwt(agent.context, sdJwtVc, {
+      const sdJwtVcRecord = await sdJwtVcService.fromSerializedJwt<
+        Record<string, unknown>,
+        {
+          // FIXME: when not passing a payload, adding nested presentationFrame is broken
+          // Needs to be fixed in sd-jwt library
+          address: {
+            country: string
+          }
+        }
+      >(agent.context, sdJwtVc, {
         issuerDidUrl,
         holderDidUrl,
       })
@@ -438,7 +450,15 @@ describe('SdJwtVcService', () => {
           verifierDid,
           nonce: await agent.context.wallet.generateNonce(),
         },
-        includedDisclosureIndices: [0, 1, 4, 6, 7],
+        presentationFrame: {
+          is_over_65: true,
+          is_over_21: true,
+          email: true,
+          address: {
+            country: true,
+          },
+          given_name: true,
+        },
       })
 
       expect(presentation).toStrictEqual(complexSdJwtVcPresentation)
@@ -457,6 +477,8 @@ describe('SdJwtVcService', () => {
       await sdJwtVcService.storeCredential(agent.context, sdJwtVcRecord)
 
       const presentation = await sdJwtVcService.present(agent.context, sdJwtVcRecord, {
+        // no disclosures
+        presentationFrame: {},
         verifierMetadata: {
           issuedAt: new Date().getTime() / 1000,
           verifierDid,
@@ -495,13 +517,15 @@ describe('SdJwtVcService', () => {
           verifierDid,
           nonce: await agent.context.wallet.generateNonce(),
         },
-        includedDisclosureIndices: [0],
+        presentationFrame: {
+          claim: true,
+        },
       })
 
       const { validation } = await sdJwtVcService.verify(agent.context, presentation, {
         challenge: { verifierDid },
         holderDidUrl,
-        requiredClaimKeys: ['type', 'cnf', 'claim', 'iat'],
+        requiredClaimKeys: ['vct', 'cnf', 'claim', 'iat'],
       })
 
       expect(validation).toEqual({
@@ -523,20 +547,31 @@ describe('SdJwtVcService', () => {
 
       await sdJwtVcService.storeCredential(agent.context, sdJwtVcRecord)
 
-      const presentation = await sdJwtVcService.present(agent.context, sdJwtVcRecord, {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const presentation = await sdJwtVcService.present<any>(agent.context, sdJwtVcRecord, {
         verifierMetadata: {
           issuedAt: new Date().getTime() / 1000,
           verifierDid,
           nonce: await agent.context.wallet.generateNonce(),
         },
-        includedDisclosureIndices: [0, 1, 4, 6, 7],
+        presentationFrame: {
+          is_over_65: true,
+          is_over_21: true,
+          email: true,
+          address: {
+            country: true,
+          },
+          given_name: true,
+        },
       })
 
       const { validation } = await sdJwtVcService.verify(agent.context, presentation, {
         challenge: { verifierDid },
         holderDidUrl,
+        // FIXME: this should be a requiredFrame to be consistent with the other methods
+        // using frames
         requiredClaimKeys: [
-          'type',
+          'vct',
           'family_name',
           'phone_number',
           'address',

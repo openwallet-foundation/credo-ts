@@ -1,7 +1,8 @@
+import type { SdJwtVcPayload } from './SdJwtVcOptions'
 import type { HashName, JwaSignatureAlgorithm } from '@aries-framework/core'
-import type { DisclosureFrame } from 'jwt-sd'
+import type { DisclosureFrame } from '@sd-jwt/core'
 
-export interface SdJwtCredentialOptions<Payload extends Record<string, unknown> = Record<string, unknown>> {
+export interface SdJwtCredentialOptions<Payload extends SdJwtVcPayload = SdJwtVcPayload> {
   payload: Payload
   holderDidUrl: string
   issuerDidUrl: string
@@ -10,7 +11,7 @@ export interface SdJwtCredentialOptions<Payload extends Record<string, unknown> 
   hashingAlgorithm?: HashName
 }
 
-export class SdJwtCredential<Payload extends Record<string, unknown> = Record<string, unknown>> {
+export class SdJwtCredential<Payload extends SdJwtVcPayload = SdJwtVcPayload> {
   public constructor(options: SdJwtCredentialOptions<Payload>) {
     this.payload = options.payload
     this.holderDidUrl = options.holderDidUrl

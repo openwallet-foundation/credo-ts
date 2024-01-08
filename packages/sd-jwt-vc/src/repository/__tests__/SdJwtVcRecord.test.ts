@@ -1,5 +1,5 @@
 import { JsonTransformer } from '@aries-framework/core'
-import { SdJwtVc, SignatureAndEncryptionAlgorithm } from 'jwt-sd'
+import { SdJwtVc, SignatureAndEncryptionAlgorithm } from '@sd-jwt/core'
 
 import { SdJwtVcRecord } from '../SdJwtVcRecord'
 
@@ -67,7 +67,7 @@ describe('SdJwtVcRecord', () => {
       },
     })
 
-    const instance = JsonTransformer.fromJSON(json, SdJwtVcRecord)
+    const instance = JsonTransformer.deserialize(JSON.stringify(json), SdJwtVcRecord)
 
     expect(instance.type).toBe('SdJwtVcRecord')
     expect(instance.id).toBe('sdjwt-id')
@@ -75,6 +75,7 @@ describe('SdJwtVcRecord', () => {
     expect(instance.getTags()).toEqual({
       some: 'tag',
     })
+    expect(instance.sdJwtVc.signature).toBeInstanceOf(Uint8Array)
     expect(instance.sdJwtVc).toMatchObject({
       header: { alg: SignatureAndEncryptionAlgorithm.EdDSA },
       payload: { iss: 'did:key:123' },
@@ -84,7 +85,7 @@ describe('SdJwtVcRecord', () => {
 
   test('Get the pretty claims', async () => {
     const compactSdJwtVc =
-      'eyJhbGciOiJFZERTQSIsInR5cCI6InZjK3NkLWp3dCJ9.eyJ0eXBlIjoiSWRlbnRpdHlDcmVkZW50aWFsIiwiY25mIjp7Imp3ayI6eyJrdHkiOiJPS1AiLCJjcnYiOiJFZDI1NTE5IiwieCI6IlVXM3ZWRWp3UmYwSWt0Sm9jdktSbUdIekhmV0FMdF9YMkswd3ZsdVpJU3MifX0sImlzcyI6ImRpZDprZXk6MTIzIiwiaWF0IjoxNjk4MTUxNTMyLCJfc2RfYWxnIjoic2hhLTI1NiIsIl9zZCI6WyJ2Y3ZGVTREc0ZLVHFRMXZsNG5lbEpXWFRiXy0wZE5vQmtzNmlxTkZwdHlnIl19.IW6PaMTtxMNvqwrRac5nh7L9_ie4r-PUDL6Gqoey2O3axTm6RBrUv0ETLbdgALK6tU_HoIDuNE66DVrISQXaCw~WyJzYWx0IiwiY2xhaW0iLCJzb21lLWNsYWltIl0~'
+      'eyJhbGciOiJFZERTQSIsInR5cCI6InZjK3NkLWp3dCIsImtpZCI6Ino2TWt0cXRYTkc4Q0RVWTlQcnJ0b1N0RnplQ25ocE1tZ3hZTDFnaWtjVzNCenZOVyJ9.eyJ2Y3QiOiJJZGVudGl0eUNyZWRlbnRpYWwiLCJjbmYiOnsiandrIjp7Imt0eSI6Ik9LUCIsImNydiI6IkVkMjU1MTkiLCJ4Ijoib0VOVnN4T1VpSDU0WDh3SkxhVmtpY0NSazAwd0JJUTRzUmdiazU0TjhNbyJ9fSwiaXNzIjoiZGlkOmtleTp6Nk1rdHF0WE5HOENEVVk5UHJydG9TdEZ6ZUNuaHBNbWd4WUwxZ2lrY1czQnp2TlciLCJpYXQiOjE2OTgxNTE1MzIsIl9zZF9hbGciOiJzaGEtMjU2IiwiX3NkIjpbInZjdkZVNERzRktUcVExdmw0bmVsSldYVGJfLTBkTm9Ca3M2aXFORnB0eWciXX0.yUYqg_7fkgvh4vnoWW4L6OZpM1eAatAfKUUMhHt2xYdHtQYHdVOch1Om-mpN2lTsyw9L1sZ5KsuAx7-5T-jlDQ~WyJzYWx0IiwiY2xhaW0iLCJzb21lLWNsYWltIl0~'
 
     const sdJwtVc = SdJwtVc.fromCompact(compactSdJwtVc)
 
@@ -105,15 +106,15 @@ describe('SdJwtVcRecord', () => {
     const prettyClaims = await sdJwtVcRecord.getPrettyClaims()
 
     expect(prettyClaims).toEqual({
-      type: 'IdentityCredential',
+      vct: 'IdentityCredential',
       cnf: {
         jwk: {
           kty: 'OKP',
           crv: 'Ed25519',
-          x: 'UW3vVEjwRf0IktJocvKRmGHzHfWALt_X2K0wvluZISs',
+          x: 'oENVsxOUiH54X8wJLaVkicCRk00wBIQ4sRgbk54N8Mo',
         },
       },
-      iss: 'did:key:123',
+      iss: 'did:key:z6MktqtXNG8CDUY9PrrtoStFzeCnhpMmgxYL1gikcW3BzvNW',
       iat: 1698151532,
       claim: 'some-claim',
     })

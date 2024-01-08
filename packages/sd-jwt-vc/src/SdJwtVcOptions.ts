@@ -1,7 +1,11 @@
 import type { HashName, JwaSignatureAlgorithm } from '@aries-framework/core'
-import type { DisclosureFrame } from 'jwt-sd'
+import type { DisclosureFrame, PresentationFrame } from '@sd-jwt/core'
 
-export type SdJwtVcCreateOptions<Payload extends Record<string, unknown> = Record<string, unknown>> = {
+// TODO: extend with required claim names for input (e.g. vct)
+export type SdJwtVcPayload = Record<string, unknown>
+export type SdJwtVcHeader = Record<string, unknown>
+
+export type SdJwtVcCreateOptions<Payload extends SdJwtVcPayload = SdJwtVcPayload> = {
   holderDidUrl: string
   issuerDidUrl: string
   jsonWebAlgorithm?: JwaSignatureAlgorithm
@@ -14,12 +18,12 @@ export type SdJwtVcFromSerializedJwtOptions = {
   holderDidUrl: string
 }
 
-/**
- * `includedDisclosureIndices` is not the best API, but it is the best alternative until something like `PEX` is supported
- */
-export type SdJwtVcPresentOptions = {
+export type SdJwtVcPresentOptions<Payload extends SdJwtVcPayload = SdJwtVcPayload> = {
   jsonWebAlgorithm?: JwaSignatureAlgorithm
-  includedDisclosureIndices?: Array<number>
+  /**
+   * Use true to disclose everything
+   */
+  presentationFrame: PresentationFrame<Payload> | true
 
   /**
    * This information is received out-of-band from the verifier.
@@ -32,13 +36,11 @@ export type SdJwtVcPresentOptions = {
   }
 }
 
-/**
- * `requiredClaimKeys` is not the best API, but it is the best alternative until something like `PEX` is supported
- */
 export type SdJwtVcVerifyOptions = {
   holderDidUrl: string
   challenge: {
     verifierDid: string
   }
+  // TODO: update to requiredClaimFrame
   requiredClaimKeys?: Array<string>
 }

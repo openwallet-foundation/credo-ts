@@ -70,7 +70,7 @@ describe('sd-jwt-vc end to end test', () => {
 
   test('end to end flow', async () => {
     const credential = {
-      type: 'IdentityCredential',
+      vct: 'IdentityCredential',
       given_name: 'John',
       family_name: 'Doe',
       email: 'johndoe@example.com',
@@ -85,9 +85,9 @@ describe('sd-jwt-vc end to end test', () => {
       is_over_18: true,
       is_over_21: true,
       is_over_65: true,
-    }
+    } as const
 
-    const { compact } = await issuer.modules.sdJwt.create(credential, {
+    const { compact, sdJwtVcRecord: _sdJwtVcRecord } = await issuer.modules.sdJwt.create(credential, {
       holderDidUrl,
       issuerDidUrl,
       disclosureFrame: {
@@ -104,7 +104,10 @@ describe('sd-jwt-vc end to end test', () => {
       },
     })
 
-    const sdJwtVcRecord = await holder.modules.sdJwt.fromSerializedJwt(compact, {
+    type Payload = (typeof _sdJwtVcRecord)['sdJwtVc']['payload']
+    type Header = (typeof _sdJwtVcRecord)['sdJwtVc']['header']
+
+    const sdJwtVcRecord = await holder.modules.sdJwt.fromSerializedJwt<Header, Payload>(compact, {
       issuerDidUrl,
       holderDidUrl,
     })
@@ -120,7 +123,23 @@ describe('sd-jwt-vc end to end test', () => {
 
     const presentation = await holder.modules.sdJwt.present(sdJwtVcRecord, {
       verifierMetadata,
-      includedDisclosureIndices: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
+      presentationFrame: {
+        vct: true,
+        given_name: true,
+        family_name: true,
+        email: true,
+        phone_number: true,
+        address: {
+          street_address: true,
+          locality: true,
+          region: true,
+          country: true,
+        },
+        birthdate: true,
+        is_over_18: true,
+        is_over_21: true,
+        is_over_65: true,
+      },
     })
 
     const {

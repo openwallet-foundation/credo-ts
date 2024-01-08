@@ -2,10 +2,11 @@ import type { SdJwtCredential } from './SdJwtCredential'
 import type {
   SdJwtVcCreateOptions,
   SdJwtVcFromSerializedJwtOptions,
+  SdJwtVcHeader,
+  SdJwtVcPayload,
   SdJwtVcPresentOptions,
   SdJwtVcVerifyOptions,
 } from './SdJwtVcOptions'
-import type { SdJwtVcVerificationResult } from './SdJwtVcService'
 import type { SdJwtVcRecord } from './repository'
 import type { Query } from '@aries-framework/core'
 
@@ -26,16 +27,11 @@ export class SdJwtVcApi {
     this.sdJwtVcService = sdJwtVcService
   }
 
-  public async create<Payload extends Record<string, unknown> = Record<string, unknown>>(
-    payload: Payload,
-    options: SdJwtVcCreateOptions<Payload>
-  ): Promise<{ sdJwtVcRecord: SdJwtVcRecord; compact: string }> {
+  public async create<Payload extends SdJwtVcPayload>(payload: Payload, options: SdJwtVcCreateOptions<Payload>) {
     return await this.sdJwtVcService.create<Payload>(this.agentContext, payload, options)
   }
 
-  public async signCredential<Payload extends Record<string, unknown> = Record<string, unknown>>(
-    credential: SdJwtCredential<Payload>
-  ): Promise<{ sdJwtVcRecord: SdJwtVcRecord; compact: string }> {
+  public async signCredential<Payload extends SdJwtVcPayload>(credential: SdJwtCredential<Payload>) {
     return await this.sdJwtVcService.signCredential<Payload>(this.agentContext, credential)
   }
 
@@ -43,8 +39,11 @@ export class SdJwtVcApi {
    *
    * Get and validate a sd-jwt-vc from a serialized JWT.
    */
-  public async fromSerializedJwt(sdJwtVcCompact: string, options: SdJwtVcFromSerializedJwtOptions) {
-    return await this.sdJwtVcService.fromSerializedJwt(this.agentContext, sdJwtVcCompact, options)
+  public async fromSerializedJwt<Header extends SdJwtVcHeader, Payload extends SdJwtVcPayload>(
+    sdJwtVcCompact: string,
+    options: SdJwtVcFromSerializedJwtOptions
+  ) {
+    return await this.sdJwtVcService.fromSerializedJwt<Header, Payload>(this.agentContext, sdJwtVcCompact, options)
   }
 
   /**
@@ -52,7 +51,7 @@ export class SdJwtVcApi {
    * Stores and sd-jwt-vc record
    *
    */
-  public async storeCredential(sdJwtVcRecord: SdJwtVcRecord): Promise<SdJwtVcRecord> {
+  public async storeCredential(sdJwtVcRecord: SdJwtVcRecord) {
     return await this.sdJwtVcService.storeCredential(this.agentContext, sdJwtVcRecord)
   }
 
@@ -65,8 +64,11 @@ export class SdJwtVcApi {
    * Also, whether to include the holder key binding.
    *
    */
-  public async present(sdJwtVcRecord: SdJwtVcRecord, options: SdJwtVcPresentOptions): Promise<string> {
-    return await this.sdJwtVcService.present(this.agentContext, sdJwtVcRecord, options)
+  public async present<Header extends SdJwtVcHeader, Payload extends SdJwtVcPayload>(
+    sdJwtVcRecord: SdJwtVcRecord<Header, Payload>,
+    options: SdJwtVcPresentOptions<Payload>
+  ): Promise<string> {
+    return await this.sdJwtVcService.present<Header, Payload>(this.agentContext, sdJwtVcRecord, options)
   }
 
   /**
@@ -76,13 +78,10 @@ export class SdJwtVcApi {
    * For example, you might still want to continue with a flow if not all the claims are included, but the signature is valid.
    *
    */
-  public async verify<
-    Header extends Record<string, unknown> = Record<string, unknown>,
-    Payload extends Record<string, unknown> = Record<string, unknown>
-  >(
+  public async verify<Header extends SdJwtVcHeader, Payload extends SdJwtVcPayload>(
     sdJwtVcCompact: string,
     options: SdJwtVcVerifyOptions
-  ): Promise<{ sdJwtVcRecord: SdJwtVcRecord<Header, Payload>; validation: SdJwtVcVerificationResult }> {
+  ) {
     return await this.sdJwtVcService.verify<Header, Payload>(this.agentContext, sdJwtVcCompact, options)
   }
 
