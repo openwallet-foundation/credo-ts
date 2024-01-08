@@ -1,11 +1,13 @@
-import type { KeyDidCreateOptions, ModulesMap } from '@aries-framework/core'
+import type { BaseAgent, EmptyModuleMap, KeyDidCreateOptions, ModulesMap } from '@aries-framework/core'
 import type { TenantsModule } from '@aries-framework/tenants'
-import type { TenantAgent } from '@aries-framework/tenants/src/TenantAgent'
 
 import { Agent, DidKey, KeyType, TypedArrayEncoder, utils } from '@aries-framework/core'
 import { agentDependencies } from '@aries-framework/node'
 
-export async function createDidKidVerificationMethod(agent: Agent | TenantAgent, secretKey: string) {
+export async function createDidKidVerificationMethod<M extends EmptyModuleMap, A extends BaseAgent<M>>(
+  agent: A,
+  secretKey: string
+) {
   const didCreateResult = await agent.dids.create<KeyDidCreateOptions>({
     method: 'key',
     options: { keyType: KeyType.Ed25519 },
@@ -34,7 +36,7 @@ export async function createAgentFromModules<MM extends ModulesMap>(label: strin
   })
 
   await agent.initialize()
-  const data = await createDidKidVerificationMethod(agent, secretKey)
+  const data = await createDidKidVerificationMethod<MM, typeof agent>(agent, secretKey)
 
   return {
     ...data,
@@ -59,7 +61,7 @@ export async function createTenantForAgent<MM extends ModulesMap>(
   const secretKey = (nonce1 + nonce2).slice(0, 32)
 
   const tenant = await agent.modules.tenants.getTenantAgent({ tenantId: tenantRecord.id })
-  const data = await createDidKidVerificationMethod(tenant as any, secretKey)
+  const data = await createDidKidVerificationMethod<MM, typeof tenant>(tenant, secretKey)
   await tenant.endSession()
 
   return {
