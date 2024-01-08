@@ -1,15 +1,14 @@
 import type { W3cHolderOptions } from './W3cHolder'
 import type { JsonObject } from '../../../../types'
-import type { PexPresentationSubmission } from '../../../presentation-exchange'
 import type { W3cVerifiableCredential } from '../credential/W3cVerifiableCredential'
 import type { ValidationOptions } from 'class-validator'
 
-import { PresentationSubmission } from '@sphereon/ssi-types'
 import { Expose } from 'class-transformer'
 import { ValidateNested, buildMessage, IsOptional, ValidateBy } from 'class-validator'
 
 import { SingleOrArray } from '../../../../utils/type'
 import { IsUri, IsInstanceOrArrayOfInstances } from '../../../../utils/validators'
+import { PresentationSubmission } from '../../../presentation-exchange/models'
 import { CREDENTIALS_CONTEXT_V1_URL, VERIFIABLE_PRESENTATION_TYPE } from '../../constants'
 import { W3cJsonLdVerifiableCredential } from '../../data-integrity/models/W3cJsonLdVerifiableCredential'
 import { W3cJwtVerifiableCredential } from '../../jwt-vc/W3cJwtVerifiableCredential'
@@ -24,7 +23,7 @@ export interface W3cPresentationOptions {
   type?: Array<string>
   verifiableCredential: SingleOrArray<W3cVerifiableCredential>
   holder?: string | W3cHolderOptions
-  presentationSubmission?: PexPresentationSubmission
+  presentationSubmission?: PresentationSubmission
 }
 
 export class W3cPresentation {

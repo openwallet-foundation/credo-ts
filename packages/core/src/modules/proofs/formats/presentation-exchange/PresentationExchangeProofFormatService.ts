@@ -1,13 +1,13 @@
-import type { PresentationExchangeProofFormat } from './PresentationExchangeProofFormat'
-import type { AgentContext } from '../../../../agent'
-import type { JsonValue } from '../../../../types'
-import type { W3cVerifiablePresentation, W3cVerifyPresentationResult } from '../../../vc'
-import type { InputDescriptorToCredentials } from '../../models'
 import type {
   PresentationExchangePresentation,
+  PresentationExchangeProofFormat,
   PresentationExchangeProposal,
   PresentationExchangeRequest,
-} from '../../models/v2'
+} from './PresentationExchangeProofFormat'
+import type { AgentContext } from '../../../../agent'
+import type { JsonValue } from '../../../../types'
+import type { InputDescriptorToCredentials } from '../../../presentation-exchange'
+import type { W3cVerifiablePresentation, W3cVerifyPresentationResult } from '../../../vc'
 import type { ProofFormatService } from '../ProofFormatService'
 import type {
   ProofFormatCreateProposalOptions,
@@ -349,7 +349,7 @@ export class PresentationExchangeProofFormatService implements ProofFormatServic
     return true
   }
 
-  private getFormatData<T extends Record<string, unknown> | string>(data: T, id: string): Attachment {
+  private getFormatData(data: unknown, id: string): Attachment {
     const attachment = new Attachment({
       id,
       mimeType: 'application/json',

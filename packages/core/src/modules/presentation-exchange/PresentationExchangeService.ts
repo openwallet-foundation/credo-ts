@@ -1,25 +1,16 @@
-import type { InputDescriptorToCredentials, PexCredentialsForRequest } from './models'
+import type { InputDescriptorToCredentials, PexCredentialsForRequest, PresentationDefinition } from './models'
 import type { AgentContext } from '../../agent'
 import type { Query } from '../../storage/StorageService'
 import type { VerificationMethod } from '../dids'
 import type { W3cCredentialRecord, W3cVerifiableCredential, W3cVerifiablePresentation } from '../vc'
-import type {
-  IPresentationDefinition,
-  PresentationSignCallBackParams,
-  Validated,
-  VerifiablePresentationResult,
-} from '@sphereon/pex'
+import type { PresentationSignCallBackParams, Validated, VerifiablePresentationResult } from '@sphereon/pex'
 import type {
   InputDescriptorV2,
   PresentationSubmission,
   PresentationDefinitionV1,
   PresentationDefinitionV2,
 } from '@sphereon/pex-models'
-import type {
-  IVerifiablePresentation,
-  OriginalVerifiableCredential,
-  OriginalVerifiablePresentation,
-} from '@sphereon/ssi-types'
+import type { OriginalVerifiableCredential, OriginalVerifiablePresentation } from '@sphereon/ssi-types'
 
 import { Status, PEVersion, PEX, PresentationSubmissionLocation } from '@sphereon/pex'
 import { injectable } from 'tsyringe'
@@ -44,11 +35,7 @@ import {
   getW3cVerifiablePresentationInstance,
 } from './utils'
 
-// FIXME: Why are these Record<string, unknown> types used?
 export type ProofStructure = Record<string, Record<string, Array<W3cVerifiableCredential>>>
-export type PresentationDefinition = IPresentationDefinition & Record<string, unknown>
-export type VerifiablePresentation = IVerifiablePresentation & Record<string, unknown>
-export type PexPresentationSubmission = PresentationSubmission
 
 @injectable()
 export class PresentationExchangeService {
@@ -103,7 +90,7 @@ export class PresentationExchangeService {
     }
   }
 
-  public validatePresentationSubmission(presentationSubmission: PexPresentationSubmission) {
+  public validatePresentationSubmission(presentationSubmission: PresentationSubmission) {
     const validation = PEX.validateSubmission(presentationSubmission)
     const errorMessages = this.formatValidated(validation)
     if (errorMessages.length > 0) {
@@ -324,7 +311,7 @@ export class PresentationExchangeService {
       throw new PresentationExchangeError('Invalid amount of verifiable presentations created')
     }
 
-    const presentationSubmission: PexPresentationSubmission = {
+    const presentationSubmission: PresentationSubmission = {
       id: verifiablePresentationResultsWithFormat[0].verifiablePresentationResult.presentationSubmission.id,
       definition_id:
         verifiablePresentationResultsWithFormat[0].verifiablePresentationResult.presentationSubmission.definition_id,
