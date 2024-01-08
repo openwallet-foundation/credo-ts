@@ -32,18 +32,31 @@ export function getUnqualifiedSchemaId(unqualifiedDid: string, name: string, ver
   return `${unqualifiedDid}:2:${name}:${version}`
 }
 
-export function getUnqualifiedCredentialDefinitionId(unqualifiedDid: string, seqNo: string | number, tag: string) {
-  return `${unqualifiedDid}:3:CL:${seqNo}:${tag}`
+export function getUnqualifiedCredentialDefinitionId(
+  unqualifiedDid: string,
+  schemaSeqNo: string | number,
+  tag: string
+) {
+  return `${unqualifiedDid}:3:CL:${schemaSeqNo}:${tag}`
 }
 
 // TZQuLp43UcYTdtc3HewcDz:4:TZQuLp43UcYTdtc3HewcDz:3:CL:98158:BaustellenzertifikateNU1:CL_ACCUM:1-100
-export function getUnqualifiedRevocationRegistryId(
+export function getUnqualifiedRevocationRegistryDefinitionId(
   unqualifiedDid: string,
-  seqNo: string | number,
+  schemaSeqNo: string | number,
   credentialDefinitionTag: string,
   revocationRegistryTag: string
 ) {
-  return `${unqualifiedDid}:4:${unqualifiedDid}:3:CL:${seqNo}:${credentialDefinitionTag}:CL_ACCUM:${revocationRegistryTag}`
+  return `${unqualifiedDid}:4:${unqualifiedDid}:3:CL:${schemaSeqNo}:${credentialDefinitionTag}:CL_ACCUM:${revocationRegistryTag}`
+}
+
+export function getUnqualifiedRevocationRegistryEntryId(
+  unqualifiedDid: string,
+  schemaSeqNo: string | number,
+  credentialDefinitionTag: string,
+  revocationRegistryTag: string
+) {
+  return `${unqualifiedDid}:5:${unqualifiedDid}:3:CL:${schemaSeqNo}:${credentialDefinitionTag}:CL_ACCUM:${revocationRegistryTag}`
 }
 
 export function isUnqualifiedCredentialDefinitionId(credentialDefinitionId: string) {

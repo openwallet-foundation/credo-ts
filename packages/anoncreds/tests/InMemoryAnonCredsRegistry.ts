@@ -30,7 +30,7 @@ import {
 } from '../../indy-sdk/src/anoncreds/utils/identifiers'
 import {
   parseIndyCredentialDefinitionId,
-  getUnqualifiedRevocationRegistryId,
+  getUnqualifiedRevocationRegistryDefinitionId,
   getUnqualifiedCredentialDefinitionId,
   getUnqualifiedSchemaId,
   parseIndyDid,
@@ -259,7 +259,7 @@ export class InMemoryAnonCredsRegistry implements AnonCredsRegistry {
 
     this.revocationRegistryDefinitions[didIndyRevocationRegistryDefinitionId] = options.revocationRegistryDefinition
 
-    const legacyRevocationRegistryDefinitionId = getUnqualifiedRevocationRegistryId(
+    const legacyRevocationRegistryDefinitionId = getUnqualifiedRevocationRegistryDefinitionId(
       legacyIssuerId,
       indyLedgerSeqNo,
       parsedCredentialDefinition.tag,

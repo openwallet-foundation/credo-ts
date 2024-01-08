@@ -1,5 +1,11 @@
 import type { AnonCredsRevocationStatusList, AnonCredsRevocationRegistryDefinition } from '@aries-framework/anoncreds'
 
+type RevocRegDelta = {
+  accum: string
+  issued: number[]
+  revoked: number[]
+}
+
 export function anonCredsRevocationStatusListFromIndyVdr(
   revocationRegistryDefinitionId: string,
   revocationRegistryDefinition: AnonCredsRevocationRegistryDefinition,
@@ -28,12 +34,8 @@ export function anonCredsRevocationStatusListFromIndyVdr(
     currentAccumulator: delta.accum,
     revRegDefId: revocationRegistryDefinitionId,
     revocationList,
+    revoked: delta.revoked,
+    issued: delta.issued,
     timestamp,
   }
-}
-
-interface RevocRegDelta {
-  accum: string
-  issued: number[]
-  revoked: number[]
 }

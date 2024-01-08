@@ -103,6 +103,8 @@ export function anonCredsRevocationStatusListFromIndySdk(
   return {
     issuerId: revocationRegistryDefinition.issuerId,
     currentAccumulator: delta.value.accum,
+    revoked: delta.value.revoked,
+    issued: delta.value.issued,
     revRegDefId: revocationRegistryDefinitionId,
     revocationList,
     timestamp,

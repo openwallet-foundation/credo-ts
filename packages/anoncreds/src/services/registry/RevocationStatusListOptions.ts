@@ -4,6 +4,7 @@ import type {
   AnonCredsOperationStateFinished,
   AnonCredsResolutionMetadata,
   Extensible,
+  AnonCredsOperationStateAction,
 } from './base'
 import type { AnonCredsRevocationStatusList } from '../../models/registry'
 
@@ -20,7 +21,17 @@ export interface RegisterRevocationStatusListOptions {
   options: Extensible
 }
 
+export interface RegisterRevocationStatusListReturnStateAction extends AnonCredsOperationStateAction {
+  revocationStatusList: AnonCredsRevocationStatusList
+  timestamp: string
+}
+
 export interface RegisterRevocationStatusListReturnStateFailed extends AnonCredsOperationStateFailed {
+  revocationStatusList?: AnonCredsRevocationStatusList
+  timestamp?: string
+}
+
+export interface RegisterRevocationStatusListReturnStateWait extends AnonCredsOperationStateWait {
   revocationStatusList?: AnonCredsRevocationStatusList
   timestamp?: string
 }
@@ -30,17 +41,13 @@ export interface RegisterRevocationStatusListReturnStateFinished extends AnonCre
   timestamp: string
 }
 
-export interface RegisterRevocationStatusListReturnState extends AnonCredsOperationStateWait {
-  revocationStatusList?: AnonCredsRevocationStatusList
-  timestamp?: string
-}
-
 export interface RegisterRevocationStatusListReturn {
   jobId?: string
   revocationStatusListState:
+    | RegisterRevocationStatusListReturnStateWait
+    | RegisterRevocationStatusListReturnStateAction
     | RegisterRevocationStatusListReturnStateFailed
     | RegisterRevocationStatusListReturnStateFinished
-    | RegisterRevocationStatusListReturnState
   revocationStatusListMetadata: Extensible
   registrationMetadata: Extensible
 }
