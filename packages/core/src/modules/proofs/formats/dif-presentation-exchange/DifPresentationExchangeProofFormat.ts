@@ -2,7 +2,6 @@ import type {
   DifPexInputDescriptorToCredentials,
   DifPexCredentialsForRequest,
   DifPresentationExchangeDefinitionV1,
-  DifPresentationExchangeSubmission,
 } from '../../../dif-presentation-exchange'
 import type { W3cJsonPresentation } from '../../../vc/models/presentation/W3cJsonPresentation'
 import type { ProofFormat } from '../ProofFormat'
@@ -18,9 +17,7 @@ export type DifPresentationExchangeRequest = {
 }
 
 export type DifPresentationExchangePresentation =
-  | (W3cJsonPresentation & {
-      presentation_submission: DifPresentationExchangeSubmission
-    })
+  | W3cJsonPresentation
   // NOTE: this is not spec compliant, as it doesn't describe how to submit
   // JWT VPs but to support JWT VPs we also allow the value to be a string
   | string

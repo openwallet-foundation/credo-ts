@@ -74,7 +74,6 @@ jest.spyOn(DifPresentationExchangeService.prototype, 'createPresentation').mockR
   presentationSubmission,
   verifiablePresentations: [
     new W3cJsonLdVerifiablePresentation({
-      presentationSubmission,
       verifiableCredential: [mockCredentialRecord.credential],
       proof: {
         type: 'Ed25519Signature2020',
@@ -177,11 +176,6 @@ describe('Presentation Exchange ProofFormatService', () => {
         mimeType: 'application/json',
         data: {
           json: {
-            presentation_submission: {
-              id: expect.any(String),
-              definition_id: expect.any(String),
-              descriptor_map: [],
-            },
             '@context': expect.any(Array),
             type: expect.any(Array),
             verifiableCredential: [

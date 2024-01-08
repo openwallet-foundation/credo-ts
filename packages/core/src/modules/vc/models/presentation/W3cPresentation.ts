@@ -1,4 +1,5 @@
 import type { W3cHolderOptions } from './W3cHolder'
+import type { W3cJsonPresentation } from './W3cJsonPresentation'
 import type { JsonObject } from '../../../../types'
 import type { W3cVerifiableCredential } from '../credential/W3cVerifiableCredential'
 import type { ValidationOptions } from 'class-validator'
@@ -6,9 +7,9 @@ import type { ValidationOptions } from 'class-validator'
 import { Expose } from 'class-transformer'
 import { ValidateNested, buildMessage, IsOptional, ValidateBy } from 'class-validator'
 
+import { JsonTransformer } from '../../../../utils'
 import { SingleOrArray } from '../../../../utils/type'
 import { IsUri, IsInstanceOrArrayOfInstances } from '../../../../utils/validators'
-import { DifPresentationExchangeSubmission } from '../../../dif-presentation-exchange/models'
 import { CREDENTIALS_CONTEXT_V1_URL, VERIFIABLE_PRESENTATION_TYPE } from '../../constants'
 import { W3cJsonLdVerifiableCredential } from '../../data-integrity/models/W3cJsonLdVerifiableCredential'
 import { W3cJwtVerifiableCredential } from '../../jwt-vc/W3cJwtVerifiableCredential'
@@ -23,7 +24,6 @@ export interface W3cPresentationOptions {
   type?: Array<string>
   verifiableCredential: SingleOrArray<W3cVerifiableCredential>
   holder?: string | W3cHolderOptions
-  presentationSubmission?: DifPresentationExchangeSubmission
 }
 
 export class W3cPresentation {
@@ -33,7 +33,6 @@ export class W3cPresentation {
       this.context = options.context ?? [CREDENTIALS_CONTEXT_V1_URL]
       this.type = options.type ?? [VERIFIABLE_PRESENTATION_TYPE]
       this.verifiableCredential = options.verifiableCredential
-      this.presentationSubmission = options.presentationSubmission
 
       if (options.holder) {
         this.holder = typeof options.holder === 'string' ? options.holder : new W3cHolder(options.holder)
@@ -44,12 +43,6 @@ export class W3cPresentation {
   @Expose({ name: '@context' })
   @IsCredentialJsonLdContext()
   public context!: Array<string | JsonObject>
-
-  /**
-   * NOTE: not validated
-   */
-  @Expose({ name: 'presentation_submission' })
-  public presentationSubmission?: DifPresentationExchangeSubmission
 
   @IsOptional()
   @IsUri()
@@ -72,6 +65,10 @@ export class W3cPresentation {
     if (!this.holder) return null
 
     return this.holder instanceof W3cHolder ? this.holder.id : this.holder
+  }
+
+  public toJSON() {
+    return JsonTransformer.toJSON(this) as W3cJsonPresentation
   }
 }
 

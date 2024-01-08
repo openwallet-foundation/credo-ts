@@ -8,6 +8,7 @@ import type { AgentContext } from '../../../../agent'
 import type { JsonValue } from '../../../../types'
 import type { DifPexInputDescriptorToCredentials } from '../../../dif-presentation-exchange'
 import type { W3cVerifiablePresentation, W3cVerifyPresentationResult } from '../../../vc'
+import type { W3cJsonPresentation } from '../../../vc/models/presentation/W3cJsonPresentation'
 import type { ProofFormatService } from '../ProofFormatService'
 import type {
   ProofFormatCreateProposalOptions,
@@ -230,16 +231,19 @@ export class PresentationExchangeProofFormatService implements ProofFormatServic
     const request = requestAttachment.getDataAsJson<DifPresentationExchangeRequest>()
     const presentation = attachment.getDataAsJson<DifPresentationExchangePresentation>()
     let parsedPresentation: W3cVerifiablePresentation
+    let jsonPresentation: W3cJsonPresentation
 
     // TODO: we should probably move this transformation logic into the VC module, so it
     // can be reused in AFJ when we need to go from encoded -> parsed
     if (typeof presentation === 'string') {
       parsedPresentation = W3cJwtVerifiablePresentation.fromSerializedJwt(presentation)
+      jsonPresentation = parsedPresentation.presentation.toJSON()
     } else {
       parsedPresentation = JsonTransformer.fromJSON(presentation, W3cJsonLdVerifiablePresentation)
+      jsonPresentation = parsedPresentation.toJSON()
     }
 
-    if (!parsedPresentation.presentationSubmission) {
+    if (!jsonPresentation.presentation_submission) {
       agentContext.config.logger.error(
         'Received presentation in PEX proof format without presentation submission. This should not happen.'
       )
@@ -255,7 +259,7 @@ export class PresentationExchangeProofFormatService implements ProofFormatServic
 
     try {
       ps.validatePresentationDefinition(request.presentation_definition)
-      ps.validatePresentationSubmission(parsedPresentation.presentationSubmission)
+      ps.validatePresentationSubmission(jsonPresentation.presentation_submission)
       ps.validatePresentation(request.presentation_definition, parsedPresentation)
 
       let verificationResult: W3cVerifyPresentationResult
