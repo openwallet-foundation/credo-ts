@@ -1,4 +1,5 @@
-import type { Key, Logger } from '@aries-framework/core'
+import type { SdJwtVcHeader } from '../SdJwtVcOptions'
+import type { Key } from '@aries-framework/core'
 
 import { AskarModule } from '@aries-framework/askar'
 import {
@@ -39,7 +40,6 @@ const agent = new Agent({
   dependencies: agentDependencies,
 })
 
-const logger = jest.fn() as unknown as Logger
 agent.context.wallet.generateNonce = jest.fn(() => Promise.resolve('salt'))
 Date.prototype.getTime = jest.fn(() => 1698151532000)
 
@@ -78,7 +78,7 @@ describe('SdJwtVcService', () => {
     await agent.dids.import({ didDocument: holderDidDocument, did: holderDidDocument.id })
 
     const sdJwtVcRepositoryMock = new SdJwtVcRepositoryMock()
-    sdJwtVcService = new SdJwtVcService(sdJwtVcRepositoryMock, logger)
+    sdJwtVcService = new SdJwtVcService(sdJwtVcRepositoryMock)
   })
 
   describe('SdJwtVcService.create', () => {
@@ -540,15 +540,18 @@ describe('SdJwtVcService', () => {
     test('Verify sd-jwt-vc with multiple (nested) disclosure', async () => {
       const sdJwtVc = complexSdJwtVc
 
-      const sdJwtVcRecord = await sdJwtVcService.fromSerializedJwt(agent.context, sdJwtVc, {
-        issuerDidUrl,
-        holderDidUrl,
-      })
+      const sdJwtVcRecord = await sdJwtVcService.fromSerializedJwt<SdJwtVcHeader, { address: { country: string } }>(
+        agent.context,
+        sdJwtVc,
+        {
+          issuerDidUrl,
+          holderDidUrl,
+        }
+      )
 
       await sdJwtVcService.storeCredential(agent.context, sdJwtVcRecord)
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const presentation = await sdJwtVcService.present<any>(agent.context, sdJwtVcRecord, {
+      const presentation = await sdJwtVcService.present(agent.context, sdJwtVcRecord, {
         verifierMetadata: {
           issuedAt: new Date().getTime() / 1000,
           verifierDid,

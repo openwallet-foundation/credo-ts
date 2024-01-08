@@ -307,13 +307,9 @@ export class SdJwtVcService {
     return sdJwtVcRecord
   }
 
-  public async present<
-    Header extends SdJwtVcHeader = SdJwtVcHeader,
-    Payload extends SdJwtVcPayload = SdJwtVcPayload,
-    Record extends SdJwtVcRecord<Header, Payload> = SdJwtVcRecord<Header, Payload>
-  >(
+  public async present<Header extends SdJwtVcHeader = SdJwtVcHeader, Payload extends SdJwtVcPayload = SdJwtVcPayload>(
     agentContext: AgentContext,
-    sdJwtVcRecord: Record,
+    sdJwtVcRecord: SdJwtVcRecord<Header, Payload>,
     { presentationFrame, verifierMetadata, jsonWebAlgorithm }: SdJwtVcPresentOptions<Payload>
   ): Promise<string> {
     const { verificationMethod: holderVerificationMethod } = await this.resolveDidUrl(
