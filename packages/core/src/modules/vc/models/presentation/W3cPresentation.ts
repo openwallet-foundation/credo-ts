@@ -8,7 +8,7 @@ import { ValidateNested, buildMessage, IsOptional, ValidateBy } from 'class-vali
 
 import { SingleOrArray } from '../../../../utils/type'
 import { IsUri, IsInstanceOrArrayOfInstances } from '../../../../utils/validators'
-import { PresentationSubmission } from '../../../presentation-exchange/models'
+import { DifPresentationExchangeSubmission } from '../../../dif-presentation-exchange/models'
 import { CREDENTIALS_CONTEXT_V1_URL, VERIFIABLE_PRESENTATION_TYPE } from '../../constants'
 import { W3cJsonLdVerifiableCredential } from '../../data-integrity/models/W3cJsonLdVerifiableCredential'
 import { W3cJwtVerifiableCredential } from '../../jwt-vc/W3cJwtVerifiableCredential'
@@ -23,7 +23,7 @@ export interface W3cPresentationOptions {
   type?: Array<string>
   verifiableCredential: SingleOrArray<W3cVerifiableCredential>
   holder?: string | W3cHolderOptions
-  presentationSubmission?: PresentationSubmission
+  presentationSubmission?: DifPresentationExchangeSubmission
 }
 
 export class W3cPresentation {
@@ -49,7 +49,7 @@ export class W3cPresentation {
    * NOTE: not validated
    */
   @Expose({ name: 'presentation_submission' })
-  public presentationSubmission?: PresentationSubmission
+  public presentationSubmission?: DifPresentationExchangeSubmission
 
   @IsOptional()
   @IsUri()

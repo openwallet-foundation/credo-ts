@@ -1,6 +1,6 @@
 import { AriesFrameworkError } from '../../error'
 
-export class PresentationExchangeError extends AriesFrameworkError {
+export class DifPresentationExchangeError extends AriesFrameworkError {
   public additionalMessages?: Array<string>
 
   public constructor(

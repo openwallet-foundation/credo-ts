@@ -1,36 +1,36 @@
 import type {
-  InputDescriptorToCredentials,
-  PexCredentialsForRequest,
-  PresentationDefinitionV1,
-  PresentationSubmission,
-} from '../../../presentation-exchange'
+  DifPexInputDescriptorToCredentials,
+  DifPexCredentialsForRequest,
+  DifPresentationExchangeDefinitionV1,
+  DifPresentationExchangeSubmission,
+} from '../../../dif-presentation-exchange'
 import type { W3cJsonPresentation } from '../../../vc/models/presentation/W3cJsonPresentation'
 import type { ProofFormat } from '../ProofFormat'
 
-export type PresentationExchangeProposal = PresentationDefinitionV1
+export type DifPresentationExchangeProposal = DifPresentationExchangeDefinitionV1
 
-export type PresentationExchangeRequest = {
+export type DifPresentationExchangeRequest = {
   options?: {
     challenge?: string
     domain?: string
   }
-  presentation_definition: PresentationDefinitionV1
+  presentation_definition: DifPresentationExchangeDefinitionV1
 }
 
-export type PresentationExchangePresentation =
+export type DifPresentationExchangePresentation =
   | (W3cJsonPresentation & {
-      presentation_submission: PresentationSubmission
+      presentation_submission: DifPresentationExchangeSubmission
     })
   // NOTE: this is not spec compliant, as it doesn't describe how to submit
   // JWT VPs but to support JWT VPs we also allow the value to be a string
   | string
 
-export interface PresentationExchangeProofFormat extends ProofFormat {
+export interface DifPresentationExchangeProofFormat extends ProofFormat {
   formatKey: 'presentationExchange'
 
   proofFormats: {
     createProposal: {
-      presentationDefinition: PresentationDefinitionV1
+      presentationDefinition: DifPresentationExchangeDefinitionV1
     }
 
     acceptProposal: {
@@ -41,7 +41,7 @@ export interface PresentationExchangeProofFormat extends ProofFormat {
     }
 
     createRequest: {
-      presentationDefinition: PresentationDefinitionV1
+      presentationDefinition: DifPresentationExchangeDefinitionV1
       options?: {
         challenge?: string
         domain?: string
@@ -49,13 +49,13 @@ export interface PresentationExchangeProofFormat extends ProofFormat {
     }
 
     acceptRequest: {
-      credentials?: InputDescriptorToCredentials
+      credentials?: DifPexInputDescriptorToCredentials
     }
 
     getCredentialsForRequest: {
       input: never
       // Presentation submission details which the options that are available
-      output: PexCredentialsForRequest
+      output: DifPexCredentialsForRequest
     }
 
     selectCredentialsForRequest: {
@@ -63,14 +63,14 @@ export interface PresentationExchangeProofFormat extends ProofFormat {
       // Input descriptor to credentials specifically details which credentials
       // should be used for which input descriptor
       output: {
-        credentials: InputDescriptorToCredentials
+        credentials: DifPexInputDescriptorToCredentials
       }
     }
   }
 
   formatData: {
-    proposal: PresentationExchangeProposal
-    request: PresentationExchangeRequest
-    presentation: PresentationExchangePresentation
+    proposal: DifPresentationExchangeProposal
+    request: DifPresentationExchangeRequest
+    presentation: DifPresentationExchangePresentation
   }
 }

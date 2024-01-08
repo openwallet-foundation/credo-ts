@@ -1,13 +1,13 @@
-import type { PresentationDefinition } from '../../../../presentation-exchange'
+import type { DifPresentationExchangeDefinitionV1 } from '../../../../dif-presentation-exchange'
 import type { ProofFormatService } from '../../ProofFormatService'
-import type { PresentationExchangeProofFormat } from '../PresentationExchangeProofFormat'
+import type { DifPresentationExchangeProofFormat } from '../DifPresentationExchangeProofFormat'
 
 import { PresentationSubmissionLocation } from '@sphereon/pex'
 
 import { getIndySdkModules } from '../../../../../../../indy-sdk/tests/setupIndySdkModule'
 import { agentDependencies, getAgentConfig } from '../../../../../../tests'
 import { Agent } from '../../../../../agent/Agent'
-import { PresentationExchangeModule, PresentationExchangeService } from '../../../../presentation-exchange'
+import { DifPresentationExchangeModule, DifPresentationExchangeService } from '../../../../dif-presentation-exchange'
 import {
   W3cJsonLdVerifiableCredential,
   W3cCredentialRecord,
@@ -19,7 +19,7 @@ import { ProofsModule } from '../../../ProofsModule'
 import { ProofState } from '../../../models'
 import { V2ProofProtocol } from '../../../protocol'
 import { ProofExchangeRecord } from '../../../repository'
-import { PresentationExchangeProofFormatService } from '../PresentationExchangeProofFormatService'
+import { PresentationExchangeProofFormatService } from '../DifPresentationExchangeProofFormatService'
 
 const mockProofRecord = () =>
   new ProofExchangeRecord({
@@ -28,10 +28,11 @@ const mockProofRecord = () =>
     protocolVersion: 'v2',
   })
 
-const mockPresentationDefinition = (): PresentationDefinition => ({
+const mockPresentationDefinition = (): DifPresentationExchangeDefinitionV1 => ({
   id: '32f54163-7166-48f1-93d8-ff217bdb0653',
   input_descriptors: [
     {
+      schema: [{ uri: 'https://www.w3.org/2018/credentials/examples/v1' }],
       id: 'wa_driver_license',
       name: 'Washington State Business License',
       purpose: 'We can only allow licensed Washington State business representatives into the WA Business Conference',
@@ -68,8 +69,8 @@ const mockCredentialRecord = new W3cCredentialRecord({
 })
 
 const presentationSubmission = { id: 'did:id', definition_id: 'my-id', descriptor_map: [] }
-jest.spyOn(W3cCredentialRepository.prototype, 'getAll').mockResolvedValue([mockCredentialRecord])
-jest.spyOn(PresentationExchangeService.prototype, 'createPresentation').mockResolvedValue({
+jest.spyOn(W3cCredentialRepository.prototype, 'findByQuery').mockResolvedValue([mockCredentialRecord])
+jest.spyOn(DifPresentationExchangeService.prototype, 'createPresentation').mockResolvedValue({
   presentationSubmission,
   verifiablePresentations: [
     new W3cJsonLdVerifiablePresentation({
@@ -88,14 +89,14 @@ jest.spyOn(PresentationExchangeService.prototype, 'createPresentation').mockReso
 })
 
 describe('Presentation Exchange ProofFormatService', () => {
-  let pexFormatService: ProofFormatService<PresentationExchangeProofFormat>
+  let pexFormatService: ProofFormatService<DifPresentationExchangeProofFormat>
   let agent: Agent
 
   beforeAll(async () => {
     agent = new Agent({
       config: getAgentConfig('PresentationExchangeProofFormatService'),
       modules: {
-        someModule: new PresentationExchangeModule(),
+        someModule: new DifPresentationExchangeModule(),
         proofs: new ProofsModule({
           proofProtocols: [new V2ProofProtocol({ proofFormats: [new PresentationExchangeProofFormatService()] })],
         }),

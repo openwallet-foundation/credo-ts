@@ -11,7 +11,7 @@ import { DiscoverFeaturesModule } from '../modules/discover-features'
 import { GenericRecordsModule } from '../modules/generic-records'
 import { MessagePickupModule } from '../modules/message-pickup'
 import { OutOfBandModule } from '../modules/oob'
-import { PresentationExchangeModule } from '../modules/presentation-exchange'
+import { DifPresentationExchangeModule } from '../modules/dif-presentation-exchange'
 import { ProofsModule } from '../modules/proofs'
 import { MediationRecipientModule, MediatorModule } from '../modules/routing'
 import { W3cCredentialsModule } from '../modules/vc'
@@ -132,7 +132,7 @@ function getDefaultAgentModules() {
     oob: () => new OutOfBandModule(),
     w3cCredentials: () => new W3cCredentialsModule(),
     cache: () => new CacheModule(),
-    pex: () => new PresentationExchangeModule(),
+    pex: () => new DifPresentationExchangeModule(),
   } as const
 }
 

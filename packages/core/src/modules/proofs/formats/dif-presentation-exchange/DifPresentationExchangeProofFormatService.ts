@@ -1,12 +1,12 @@
 import type {
-  PresentationExchangePresentation,
-  PresentationExchangeProofFormat,
-  PresentationExchangeProposal,
-  PresentationExchangeRequest,
-} from './PresentationExchangeProofFormat'
+  DifPresentationExchangePresentation,
+  DifPresentationExchangeProofFormat,
+  DifPresentationExchangeProposal,
+  DifPresentationExchangeRequest,
+} from './DifPresentationExchangeProofFormat'
 import type { AgentContext } from '../../../../agent'
 import type { JsonValue } from '../../../../types'
-import type { InputDescriptorToCredentials } from '../../../presentation-exchange'
+import type { DifPexInputDescriptorToCredentials } from '../../../dif-presentation-exchange'
 import type { W3cVerifiablePresentation, W3cVerifyPresentationResult } from '../../../vc'
 import type { ProofFormatService } from '../ProofFormatService'
 import type {
@@ -27,7 +27,7 @@ import type {
 import { Attachment, AttachmentData } from '../../../../decorators/attachment/Attachment'
 import { AriesFrameworkError } from '../../../../error'
 import { deepEquality, JsonTransformer } from '../../../../utils'
-import { PresentationExchangeService } from '../../../presentation-exchange/PresentationExchangeService'
+import { DifPresentationExchangeService } from '../../../dif-presentation-exchange'
 import {
   W3cCredentialService,
   ClaimFormat,
@@ -40,17 +40,17 @@ const PRESENTATION_EXCHANGE_PRESENTATION_PROPOSAL = 'dif/presentation-exchange/d
 const PRESENTATION_EXCHANGE_PRESENTATION_REQUEST = 'dif/presentation-exchange/definitions@v1.0'
 const PRESENTATION_EXCHANGE_PRESENTATION = 'dif/presentation-exchange/submission@v1.0'
 
-export class PresentationExchangeProofFormatService implements ProofFormatService<PresentationExchangeProofFormat> {
+export class PresentationExchangeProofFormatService implements ProofFormatService<DifPresentationExchangeProofFormat> {
   public readonly formatKey = 'presentationExchange' as const
 
   private presentationExchangeService(agentContext: AgentContext) {
-    if (!agentContext.dependencyManager.isRegistered(PresentationExchangeService)) {
+    if (!agentContext.dependencyManager.isRegistered(DifPresentationExchangeService)) {
       throw new AriesFrameworkError(
-        'PresentationExchangeService is not registered on the Agent. Please provide the PresentationExchangeModule as a module on the agent'
+        'DifPresentationExchangeService is not registered on the Agent. Please provide the PresentationExchangeModule as a module on the agent'
       )
     }
 
-    return agentContext.dependencyManager.resolve(PresentationExchangeService)
+    return agentContext.dependencyManager.resolve(DifPresentationExchangeService)
   }
 
   public supportsFormat(formatIdentifier: string): boolean {
@@ -63,7 +63,7 @@ export class PresentationExchangeProofFormatService implements ProofFormatServic
 
   public async createProposal(
     agentContext: AgentContext,
-    { proofFormats, attachmentId }: ProofFormatCreateProposalOptions<PresentationExchangeProofFormat>
+    { proofFormats, attachmentId }: ProofFormatCreateProposalOptions<DifPresentationExchangeProofFormat>
   ): Promise<ProofFormatCreateReturn> {
     const ps = this.presentationExchangeService(agentContext)
 
@@ -85,7 +85,7 @@ export class PresentationExchangeProofFormatService implements ProofFormatServic
 
   public async processProposal(agentContext: AgentContext, { attachment }: ProofFormatProcessOptions): Promise<void> {
     const ps = this.presentationExchangeService(agentContext)
-    const proposal = attachment.getDataAsJson<PresentationExchangeProposal>()
+    const proposal = attachment.getDataAsJson<DifPresentationExchangeProposal>()
     ps.validatePresentationDefinition(proposal)
   }
 
@@ -95,7 +95,7 @@ export class PresentationExchangeProofFormatService implements ProofFormatServic
       attachmentId,
       proposalAttachment,
       proofFormats,
-    }: ProofFormatAcceptProposalOptions<PresentationExchangeProofFormat>
+    }: ProofFormatAcceptProposalOptions<DifPresentationExchangeProofFormat>
   ): Promise<ProofFormatCreateReturn> {
     const ps = this.presentationExchangeService(agentContext)
 
@@ -106,7 +106,7 @@ export class PresentationExchangeProofFormatService implements ProofFormatServic
       attachmentId,
     })
 
-    const presentationDefinition = proposalAttachment.getDataAsJson<PresentationExchangeProposal>()
+    const presentationDefinition = proposalAttachment.getDataAsJson<DifPresentationExchangeProposal>()
     ps.validatePresentationDefinition(presentationDefinition)
 
     const attachment = this.getFormatData(
@@ -117,7 +117,7 @@ export class PresentationExchangeProofFormatService implements ProofFormatServic
           challenge: presentationExchangeFormat?.options?.challenge ?? (await agentContext.wallet.generateNonce()),
           domain: presentationExchangeFormat?.options?.domain,
         },
-      } satisfies PresentationExchangeRequest,
+      } satisfies DifPresentationExchangeRequest,
       format.attachmentId
     )
 
@@ -126,7 +126,7 @@ export class PresentationExchangeProofFormatService implements ProofFormatServic
 
   public async createRequest(
     agentContext: AgentContext,
-    { attachmentId, proofFormats }: FormatCreateRequestOptions<PresentationExchangeProofFormat>
+    { attachmentId, proofFormats }: FormatCreateRequestOptions<DifPresentationExchangeProofFormat>
   ): Promise<ProofFormatCreateReturn> {
     const ps = this.presentationExchangeService(agentContext)
 
@@ -152,7 +152,7 @@ export class PresentationExchangeProofFormatService implements ProofFormatServic
           challenge: options?.challenge ?? (await agentContext.wallet.generateNonce()),
           domain: options?.domain,
         },
-      } satisfies PresentationExchangeRequest,
+      } satisfies DifPresentationExchangeRequest,
       format.attachmentId
     )
 
@@ -161,13 +161,18 @@ export class PresentationExchangeProofFormatService implements ProofFormatServic
 
   public async processRequest(agentContext: AgentContext, { attachment }: ProofFormatProcessOptions): Promise<void> {
     const ps = this.presentationExchangeService(agentContext)
-    const { presentation_definition: presentationDefinition } = attachment.getDataAsJson<PresentationExchangeRequest>()
+    const { presentation_definition: presentationDefinition } =
+      attachment.getDataAsJson<DifPresentationExchangeRequest>()
     ps.validatePresentationDefinition(presentationDefinition)
   }
 
   public async acceptRequest(
     agentContext: AgentContext,
-    { attachmentId, requestAttachment, proofFormats }: ProofFormatAcceptRequestOptions<PresentationExchangeProofFormat>
+    {
+      attachmentId,
+      requestAttachment,
+      proofFormats,
+    }: ProofFormatAcceptRequestOptions<DifPresentationExchangeProofFormat>
   ): Promise<ProofFormatCreateReturn> {
     const ps = this.presentationExchangeService(agentContext)
 
@@ -177,9 +182,9 @@ export class PresentationExchangeProofFormatService implements ProofFormatServic
     })
 
     const { presentation_definition: presentationDefinition, options } =
-      requestAttachment.getDataAsJson<PresentationExchangeRequest>()
+      requestAttachment.getDataAsJson<DifPresentationExchangeRequest>()
 
-    const credentials: InputDescriptorToCredentials = proofFormats?.presentationExchange?.credentials ?? {}
+    const credentials: DifPexInputDescriptorToCredentials = proofFormats?.presentationExchange?.credentials ?? {}
     if (Object.keys(credentials).length === 0) {
       const { areRequirementsSatisfied, requirements } = await ps.getCredentialsForRequest(
         agentContext,
@@ -209,7 +214,7 @@ export class PresentationExchangeProofFormatService implements ProofFormatServic
     }
 
     const firstPresentation = presentation.verifiablePresentations[0]
-    const attachmentData = firstPresentation.encoded as PresentationExchangePresentation
+    const attachmentData = firstPresentation.encoded as DifPresentationExchangePresentation
     const attachment = this.getFormatData(attachmentData, format.attachmentId)
 
     return { attachment, format }
@@ -222,8 +227,8 @@ export class PresentationExchangeProofFormatService implements ProofFormatServic
     const ps = this.presentationExchangeService(agentContext)
     const w3cCredentialService = agentContext.dependencyManager.resolve(W3cCredentialService)
 
-    const request = requestAttachment.getDataAsJson<PresentationExchangeRequest>()
-    const presentation = attachment.getDataAsJson<PresentationExchangePresentation>()
+    const request = requestAttachment.getDataAsJson<DifPresentationExchangeRequest>()
+    const presentation = attachment.getDataAsJson<DifPresentationExchangePresentation>()
     let parsedPresentation: W3cVerifiablePresentation
 
     // TODO: we should probably move this transformation logic into the VC module, so it
@@ -291,11 +296,11 @@ export class PresentationExchangeProofFormatService implements ProofFormatServic
 
   public async getCredentialsForRequest(
     agentContext: AgentContext,
-    { requestAttachment }: ProofFormatGetCredentialsForRequestOptions<PresentationExchangeProofFormat>
+    { requestAttachment }: ProofFormatGetCredentialsForRequestOptions<DifPresentationExchangeProofFormat>
   ) {
     const ps = this.presentationExchangeService(agentContext)
     const { presentation_definition: presentationDefinition } =
-      requestAttachment.getDataAsJson<PresentationExchangeRequest>()
+      requestAttachment.getDataAsJson<DifPresentationExchangeRequest>()
 
     ps.validatePresentationDefinition(presentationDefinition)
 
@@ -305,11 +310,11 @@ export class PresentationExchangeProofFormatService implements ProofFormatServic
 
   public async selectCredentialsForRequest(
     agentContext: AgentContext,
-    { requestAttachment }: ProofFormatSelectCredentialsForRequestOptions<PresentationExchangeProofFormat>
+    { requestAttachment }: ProofFormatSelectCredentialsForRequestOptions<DifPresentationExchangeProofFormat>
   ) {
     const ps = this.presentationExchangeService(agentContext)
     const { presentation_definition: presentationDefinition } =
-      requestAttachment.getDataAsJson<PresentationExchangeRequest>()
+      requestAttachment.getDataAsJson<DifPresentationExchangeRequest>()
 
     const credentialsForRequest = await ps.getCredentialsForRequest(agentContext, presentationDefinition)
     return { credentials: ps.selectCredentialsForRequest(credentialsForRequest) }
@@ -319,21 +324,22 @@ export class PresentationExchangeProofFormatService implements ProofFormatServic
     _agentContext: AgentContext,
     { requestAttachment, proposalAttachment }: ProofFormatAutoRespondProposalOptions
   ): Promise<boolean> {
-    const proposalData = proposalAttachment.getDataAsJson<PresentationExchangeProposal>()
-    const requestData = requestAttachment.getDataAsJson<PresentationExchangeRequest>()
+    const proposalData = proposalAttachment.getDataAsJson<DifPresentationExchangeProposal>()
+    const requestData = requestAttachment.getDataAsJson<DifPresentationExchangeRequest>()
 
-    return deepEquality(requestData, proposalData)
+    return deepEquality(requestData.presentation_definition, proposalData)
   }
 
   public async shouldAutoRespondToRequest(
     _agentContext: AgentContext,
     { requestAttachment, proposalAttachment }: ProofFormatAutoRespondRequestOptions
   ): Promise<boolean> {
-    const proposalData = proposalAttachment.getDataAsJson<PresentationExchangeProposal>()
-    const requestData = requestAttachment.getDataAsJson<PresentationExchangeRequest>()
+    const proposalData = proposalAttachment.getDataAsJson<DifPresentationExchangeProposal>()
+    const requestData = requestAttachment.getDataAsJson<DifPresentationExchangeRequest>()
 
-    return deepEquality(requestData, proposalData)
+    return deepEquality(requestData.presentation_definition, proposalData)
   }
+
   /**
    *
    * The presentation is already verified in processPresentation, so we can just return true here.

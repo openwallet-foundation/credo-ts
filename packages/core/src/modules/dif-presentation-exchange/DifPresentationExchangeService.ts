@@ -1,18 +1,20 @@
-import type { InputDescriptorToCredentials, PexCredentialsForRequest, PresentationDefinition } from './models'
+import type {
+  DifPexInputDescriptorToCredentials,
+  DifPexCredentialsForRequest,
+  DifPresentationExchangeDefinition,
+  DifPresentationExchangeDefinitionV1,
+  DifPresentationExchangeSubmission,
+  DifPresentationExchangeDefinitionV2,
+} from './models'
 import type { AgentContext } from '../../agent'
 import type { Query } from '../../storage/StorageService'
 import type { VerificationMethod } from '../dids'
 import type { W3cCredentialRecord, W3cVerifiableCredential, W3cVerifiablePresentation } from '../vc'
 import type { PresentationSignCallBackParams, Validated, VerifiablePresentationResult } from '@sphereon/pex'
-import type {
-  InputDescriptorV2,
-  PresentationSubmission,
-  PresentationDefinitionV1,
-  PresentationDefinitionV2,
-} from '@sphereon/pex-models'
+import type { InputDescriptorV2, PresentationDefinitionV1 } from '@sphereon/pex-models'
 import type { OriginalVerifiableCredential, OriginalVerifiablePresentation } from '@sphereon/ssi-types'
 
-import { Status, PEVersion, PEX, PresentationSubmissionLocation } from '@sphereon/pex'
+import { Status, PEVersion, PEX } from '@sphereon/pex'
 import { injectable } from 'tsyringe'
 
 import { getJwkFromKey } from '../../crypto'
@@ -27,7 +29,8 @@ import {
   W3cPresentation,
 } from '../vc'
 
-import { PresentationExchangeError } from './PresentationExchangeError'
+import { DifPresentationExchangeError } from './DifPresentationExchangeError'
+import { DifPresentationExchangeSubmissionLocation } from './models'
 import {
   getCredentialsForRequest,
   getSphereonOriginalVerifiableCredential,
@@ -38,13 +41,13 @@ import {
 export type ProofStructure = Record<string, Record<string, Array<W3cVerifiableCredential>>>
 
 @injectable()
-export class PresentationExchangeService {
+export class DifPresentationExchangeService {
   private pex = new PEX()
 
   public async getCredentialsForRequest(
     agentContext: AgentContext,
-    presentationDefinition: PresentationDefinition
-  ): Promise<PexCredentialsForRequest> {
+    presentationDefinition: DifPresentationExchangeDefinition
+  ): Promise<DifPexCredentialsForRequest> {
     const credentialRecords = await this.queryCredentialForPresentationDefinition(agentContext, presentationDefinition)
 
     // FIXME: why are we resolving all created dids here?
@@ -61,12 +64,14 @@ export class PresentationExchangeService {
    * Selects the credentials to use based on the output from `getCredentialsForRequest`
    * Use this method if you don't want to manually select the credentials yourself.
    */
-  public selectCredentialsForRequest(credentialsForRequest: PexCredentialsForRequest): InputDescriptorToCredentials {
+  public selectCredentialsForRequest(
+    credentialsForRequest: DifPexCredentialsForRequest
+  ): DifPexInputDescriptorToCredentials {
     if (!credentialsForRequest.areRequirementsSatisfied) {
       throw new AriesFrameworkError('Could not find the required credentials for the presentation submission')
     }
 
-    const credentials: InputDescriptorToCredentials = {}
+    const credentials: DifPexInputDescriptorToCredentials = {}
 
     for (const requirement of credentialsForRequest.requirements) {
       for (const submission of requirement.submissionEntry) {
@@ -82,23 +87,26 @@ export class PresentationExchangeService {
     return credentials
   }
 
-  public validatePresentationDefinition(presentationDefinition: PresentationDefinition) {
+  public validatePresentationDefinition(presentationDefinition: DifPresentationExchangeDefinition) {
     const validation = PEX.validateDefinition(presentationDefinition)
     const errorMessages = this.formatValidated(validation)
     if (errorMessages.length > 0) {
-      throw new PresentationExchangeError(`Invalid presentation definition`, { additionalMessages: errorMessages })
+      throw new DifPresentationExchangeError(`Invalid presentation definition`, { additionalMessages: errorMessages })
     }
   }
 
-  public validatePresentationSubmission(presentationSubmission: PresentationSubmission) {
+  public validatePresentationSubmission(presentationSubmission: DifPresentationExchangeSubmission) {
     const validation = PEX.validateSubmission(presentationSubmission)
     const errorMessages = this.formatValidated(validation)
     if (errorMessages.length > 0) {
-      throw new PresentationExchangeError(`Invalid presentation submission`, { additionalMessages: errorMessages })
+      throw new DifPresentationExchangeError(`Invalid presentation submission`, { additionalMessages: errorMessages })
     }
   }
 
-  public validatePresentation(presentationDefinition: PresentationDefinition, presentation: W3cVerifiablePresentation) {
+  public validatePresentation(
+    presentationDefinition: DifPresentationExchangeDefinition,
+    presentation: W3cVerifiablePresentation
+  ) {
     const { errors } = this.pex.evaluatePresentation(
       presentationDefinition,
       presentation.encoded as OriginalVerifiablePresentation
@@ -107,7 +115,7 @@ export class PresentationExchangeService {
     if (errors) {
       const errorMessages = this.formatValidated(errors as Validated)
       if (errorMessages.length > 0) {
-        throw new PresentationExchangeError(`Invalid presentation`, { additionalMessages: errorMessages })
+        throw new DifPresentationExchangeError(`Invalid presentation`, { additionalMessages: errorMessages })
       }
     }
   }
@@ -126,14 +134,14 @@ export class PresentationExchangeService {
    */
   private async queryCredentialForPresentationDefinition(
     agentContext: AgentContext,
-    presentationDefinition: PresentationDefinition
+    presentationDefinition: DifPresentationExchangeDefinition
   ): Promise<Array<W3cCredentialRecord>> {
     const w3cCredentialRepository = agentContext.dependencyManager.resolve(W3cCredentialRepository)
     const query: Array<Query<W3cCredentialRecord>> = []
     const presentationDefinitionVersion = PEX.definitionVersionDiscovery(presentationDefinition)
 
     if (!presentationDefinitionVersion.version) {
-      throw new PresentationExchangeError(
+      throw new DifPresentationExchangeError(
         `Unable to determine the Presentation Exchange version from the presentation definition
         `,
         presentationDefinitionVersion.error ? { additionalMessages: [presentationDefinitionVersion.error] } : {}
@@ -156,7 +164,7 @@ export class PresentationExchangeService {
       // For now we retrieve ALL credentials, as we did the same for V1 with JWT credentials. We probably need
       // to find some way to do initial filtering, hopefully if there's a filter on the `type` field or something.
     } else {
-      throw new PresentationExchangeError(
+      throw new DifPresentationExchangeError(
         `Unsupported presentation definition version ${presentationDefinitionVersion.version as unknown as string}`
       )
     }
@@ -188,7 +196,7 @@ export class PresentationExchangeService {
   }
 
   private getPresentationFormat(
-    presentationDefinition: PresentationDefinition,
+    presentationDefinition: DifPresentationExchangeDefinition,
     credentials: Array<OriginalVerifiableCredential>
   ): ClaimFormat.JwtVp | ClaimFormat.LdpVp {
     const allCredentialsAreJwtVc = credentials?.every((c) => typeof c === 'string')
@@ -215,7 +223,7 @@ export class PresentationExchangeService {
     ) {
       return ClaimFormat.LdpVp
     } else {
-      throw new PresentationExchangeError(
+      throw new DifPresentationExchangeError(
         'No suitable presentation format found for the given presentation definition, and credentials'
       )
     }
@@ -224,12 +232,12 @@ export class PresentationExchangeService {
   public async createPresentation(
     agentContext: AgentContext,
     options: {
-      credentialsForInputDescriptor: InputDescriptorToCredentials
-      presentationDefinition: PresentationDefinition
+      credentialsForInputDescriptor: DifPexInputDescriptorToCredentials
+      presentationDefinition: DifPresentationExchangeDefinition
       /**
-       * Defaults to {@link PresentationSubmissionLocation.PRESENTATION}
+       * Defaults to {@link DifPresentationExchangeSubmissionLocation.PRESENTATION}
        */
-      presentationSubmissionLocation?: PresentationSubmissionLocation
+      presentationSubmissionLocation?: DifPresentationExchangeSubmissionLocation
       challenge?: string
       domain?: string
       nonce?: string
@@ -243,7 +251,7 @@ export class PresentationExchangeService {
       credentials.forEach((credential) => {
         const subjectId = credential.credentialSubjectIds[0]
         if (!subjectId) {
-          throw new PresentationExchangeError('Missing required credential subject for creating the presentation.')
+          throw new DifPresentationExchangeError('Missing required credential subject for creating the presentation.')
         }
 
         this.addCredentialToSubjectInputDescriptor(proofStructure, subjectId, inputDescriptorId, credential)
@@ -261,7 +269,7 @@ export class PresentationExchangeService {
       const verificationMethod = await this.getVerificationMethodForSubjectId(agentContext, subjectId)
 
       if (!verificationMethod) {
-        throw new PresentationExchangeError(`No verification method found for subject id '${subjectId}'.`)
+        throw new DifPresentationExchangeError(`No verification method found for subject id '${subjectId}'.`)
       }
 
       // We create a presentation for each subject
@@ -276,7 +284,7 @@ export class PresentationExchangeService {
         .flat()
         .map(getSphereonOriginalVerifiableCredential)
 
-      const presentationDefinitionForSubject: PresentationDefinition = {
+      const presentationDefinitionForSubject: DifPresentationExchangeDefinition = {
         ...presentationDefinition,
         input_descriptors: inputDescriptorsForSubject,
 
@@ -296,7 +304,8 @@ export class PresentationExchangeService {
           holderDID: subjectId,
           proofOptions: { challenge, domain, nonce },
           signatureOptions: { verificationMethod: verificationMethod?.id },
-          presentationSubmissionLocation: presentationSubmissionLocation ?? PresentationSubmissionLocation.PRESENTATION,
+          presentationSubmissionLocation:
+            presentationSubmissionLocation ?? DifPresentationExchangeSubmissionLocation.PRESENTATION,
         }
       )
 
@@ -304,14 +313,14 @@ export class PresentationExchangeService {
     }
 
     if (!verifiablePresentationResultsWithFormat[0]) {
-      throw new PresentationExchangeError('No verifiable presentations created')
+      throw new DifPresentationExchangeError('No verifiable presentations created')
     }
 
     if (subjectToInputDescriptors.length !== verifiablePresentationResultsWithFormat.length) {
-      throw new PresentationExchangeError('Invalid amount of verifiable presentations created')
+      throw new DifPresentationExchangeError('Invalid amount of verifiable presentations created')
     }
 
-    const presentationSubmission: PresentationSubmission = {
+    const presentationSubmission: DifPresentationExchangeSubmission = {
       id: verifiablePresentationResultsWithFormat[0].verifiablePresentationResult.presentationSubmission.id,
       definition_id:
         verifiablePresentationResultsWithFormat[0].verifiablePresentationResult.presentationSubmission.definition_id,
@@ -343,7 +352,7 @@ export class PresentationExchangeService {
     if (suitableAlgorithms) {
       const possibleAlgorithms = jwk.supportedSignatureAlgorithms.filter((alg) => suitableAlgorithms?.includes(alg))
       if (!possibleAlgorithms || possibleAlgorithms.length === 0) {
-        throw new PresentationExchangeError(
+        throw new DifPresentationExchangeError(
           [
             `Found no suitable signing algorithm.`,
             `Algorithms supported by Verification method: ${jwk.supportedSignatureAlgorithms.join(', ')}`,
@@ -354,7 +363,7 @@ export class PresentationExchangeService {
     }
 
     const alg = jwk.supportedSignatureAlgorithms[0]
-    if (!alg) throw new PresentationExchangeError(`No supported algs for key type: ${key.keyType}`)
+    if (!alg) throw new DifPresentationExchangeError(`No supported algs for key type: ${key.keyType}`)
     return alg
   }
 
@@ -376,13 +385,13 @@ export class PresentationExchangeService {
       algorithmsSatisfyingDescriptors.length > 0 &&
       algorithmsSatisfyingPdAndDescriptorRestrictions.length === 0
     ) {
-      throw new PresentationExchangeError(
+      throw new DifPresentationExchangeError(
         `No signature algorithm found for satisfying restrictions of the presentation definition and input descriptors`
       )
     }
 
     if (allDescriptorAlgorithms.length > 0 && algorithmsSatisfyingDescriptors.length === 0) {
-      throw new PresentationExchangeError(
+      throw new DifPresentationExchangeError(
         `No signature algorithm found for satisfying restrictions of the input descriptors`
       )
     }
@@ -400,7 +409,7 @@ export class PresentationExchangeService {
   }
 
   private getSigningAlgorithmForJwtVc(
-    presentationDefinition: PresentationDefinitionV1 | PresentationDefinitionV2,
+    presentationDefinition: DifPresentationExchangeDefinitionV1 | DifPresentationExchangeDefinitionV2,
     verificationMethod: VerificationMethod
   ) {
     const algorithmsSatisfyingDefinition = presentationDefinition.format?.jwt_vc?.alg ?? []
@@ -419,7 +428,7 @@ export class PresentationExchangeService {
 
   private getProofTypeForLdpVc(
     agentContext: AgentContext,
-    presentationDefinition: PresentationDefinitionV1 | PresentationDefinitionV2,
+    presentationDefinition: DifPresentationExchangeDefinitionV1 | DifPresentationExchangeDefinitionV2,
     verificationMethod: VerificationMethod
   ) {
     const algorithmsSatisfyingDefinition = presentationDefinition.format?.ldp_vc?.proof_type ?? []
@@ -438,14 +447,14 @@ export class PresentationExchangeService {
 
     const supportedSignatureSuite = signatureSuiteRegistry.getByVerificationMethodType(verificationMethod.type)
     if (!supportedSignatureSuite) {
-      throw new PresentationExchangeError(
+      throw new DifPresentationExchangeError(
         `Couldn't find a supported signature suite for the given verification method type '${verificationMethod.type}'`
       )
     }
 
     if (suitableSignatureSuites) {
       if (suitableSignatureSuites.includes(supportedSignatureSuite.proofType) === false) {
-        throw new PresentationExchangeError(
+        throw new DifPresentationExchangeError(
           [
             'No possible signature suite found for the given verification method.',
             `Verification method type: ${verificationMethod.type}`,
@@ -475,7 +484,7 @@ export class PresentationExchangeService {
       const { verificationMethod: verificationMethodId } = options.signatureOptions ?? {}
 
       if (verificationMethodId && verificationMethodId !== verificationMethod.id) {
-        throw new PresentationExchangeError(
+        throw new DifPresentationExchangeError(
           `Verification method from signing options ${verificationMethodId} does not match verification method ${verificationMethod.id}`
         )
       }
@@ -501,7 +510,7 @@ export class PresentationExchangeService {
           domain,
         })
       } else {
-        throw new PresentationExchangeError(
+        throw new DifPresentationExchangeError(
           `Only JWT credentials or JSONLD credentials are supported for a single presentation`
         )
       }
@@ -514,7 +523,7 @@ export class PresentationExchangeService {
     const didsApi = agentContext.dependencyManager.resolve(DidsApi)
 
     if (!subjectId.startsWith('did:')) {
-      throw new PresentationExchangeError(
+      throw new DifPresentationExchangeError(
         `Only dids are supported as credentialSubject id. ${subjectId} is not a valid did`
       )
     }
@@ -522,7 +531,7 @@ export class PresentationExchangeService {
     const didDocument = await didsApi.resolveDidDocument(subjectId)
 
     if (!didDocument.authentication || didDocument.authentication.length === 0) {
-      throw new PresentationExchangeError(
+      throw new DifPresentationExchangeError(
         `No authentication verificationMethods found for did ${subjectId} in did document`
       )
     }
