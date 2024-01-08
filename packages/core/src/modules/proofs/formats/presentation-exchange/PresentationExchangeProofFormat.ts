@@ -1,4 +1,8 @@
-import type { InputDescriptorToCredentials, PresentationDefinition } from '../../../presentation-exchange'
+import type {
+  InputDescriptorToCredentials,
+  PresentationDefinition,
+  PexCredentialsForRequest,
+} from '../../../presentation-exchange'
 import type {
   PresentationExchangePresentation,
   PresentationExchangeProposal,
@@ -15,8 +19,10 @@ export interface PresentationExchangeProofFormat extends ProofFormat {
     }
 
     acceptProposal: {
-      name?: string
-      version?: string
+      options?: {
+        challenge?: string
+        domain?: string
+      }
     }
 
     createRequest: {
@@ -33,13 +39,14 @@ export interface PresentationExchangeProofFormat extends ProofFormat {
 
     getCredentialsForRequest: {
       input: never
-      output: {
-        credentials: InputDescriptorToCredentials
-      }
+      // Presentation submission details which the options that are available
+      output: PexCredentialsForRequest
     }
 
     selectCredentialsForRequest: {
       input: never
+      // Input descriptor to credentials specifically details which credentials
+      // should be used for which input descriptor
       output: {
         credentials: InputDescriptorToCredentials
       }

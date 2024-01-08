@@ -80,6 +80,10 @@ export class W3cJwtVerifiablePresentation {
     return this.presentation.holderId
   }
 
+  public get presentationSubmission() {
+    return this.presentation.presentationSubmission
+  }
+
   /**
    * The {@link ClaimFormat} of the presentation. For JWT presentations this is always `jwt_vp`.
    */

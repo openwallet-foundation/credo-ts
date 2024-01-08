@@ -1,4 +1,4 @@
-import type { InputDescriptorToCredentials, PresentationSubmission } from './models'
+import type { InputDescriptorToCredentials, PexCredentialsForRequest } from './models'
 import type { AgentContext } from '../../agent'
 import type { Query } from '../../storage/StorageService'
 import type { VerificationMethod } from '../dids'
@@ -11,15 +11,21 @@ import type {
 } from '@sphereon/pex'
 import type {
   InputDescriptorV2,
-  PresentationSubmission as PePresentationSubmission,
+  PresentationSubmission,
   PresentationDefinitionV1,
+  PresentationDefinitionV2,
 } from '@sphereon/pex-models'
-import type { IVerifiablePresentation, OriginalVerifiableCredential } from '@sphereon/ssi-types'
+import type {
+  IVerifiablePresentation,
+  OriginalVerifiableCredential,
+  OriginalVerifiablePresentation,
+} from '@sphereon/ssi-types'
 
 import { Status, PEVersion, PEX, PresentationSubmissionLocation } from '@sphereon/pex'
 import { injectable } from 'tsyringe'
 
 import { getJwkFromKey } from '../../crypto'
+import { AriesFrameworkError } from '../../error'
 import { JsonTransformer } from '../../utils'
 import { DidsApi, getKeyFromVerificationMethod } from '../dids'
 import {
@@ -32,32 +38,61 @@ import {
 
 import { PresentationExchangeError } from './PresentationExchangeError'
 import {
-  selectCredentialsForRequest,
+  getCredentialsForRequest,
   getSphereonOriginalVerifiableCredential,
   getSphereonW3cVerifiablePresentation,
   getW3cVerifiablePresentationInstance,
 } from './utils'
 
+// FIXME: Why are these Record<string, unknown> types used?
 export type ProofStructure = Record<string, Record<string, Array<W3cVerifiableCredential>>>
 export type PresentationDefinition = IPresentationDefinition & Record<string, unknown>
 export type VerifiablePresentation = IVerifiablePresentation & Record<string, unknown>
-export type PexPresentationSubmission = PePresentationSubmission & Record<string, unknown>
+export type PexPresentationSubmission = PresentationSubmission
 
 @injectable()
 export class PresentationExchangeService {
   private pex = new PEX()
 
-  public async selectCredentialsForRequest(
+  public async getCredentialsForRequest(
     agentContext: AgentContext,
     presentationDefinition: PresentationDefinition
-  ): Promise<PresentationSubmission> {
+  ): Promise<PexCredentialsForRequest> {
     const credentialRecords = await this.queryCredentialForPresentationDefinition(agentContext, presentationDefinition)
 
+    // FIXME: why are we resolving all created dids here?
+    // If we want to do this we should extract all dids from the credential records and only
+    // fetch the dids for the queried credential records
     const didsApi = agentContext.dependencyManager.resolve(DidsApi)
     const didRecords = await didsApi.getCreatedDids()
     const holderDids = didRecords.map((didRecord) => didRecord.did)
 
-    return selectCredentialsForRequest(presentationDefinition, credentialRecords, holderDids)
+    return getCredentialsForRequest(presentationDefinition, credentialRecords, holderDids)
+  }
+
+  /**
+   * Selects the credentials to use based on the output from `getCredentialsForRequest`
+   * Use this method if you don't want to manually select the credentials yourself.
+   */
+  public selectCredentialsForRequest(credentialsForRequest: PexCredentialsForRequest): InputDescriptorToCredentials {
+    if (!credentialsForRequest.areRequirementsSatisfied) {
+      throw new AriesFrameworkError('Could not find the required credentials for the presentation submission')
+    }
+
+    const credentials: InputDescriptorToCredentials = {}
+
+    for (const requirement of credentialsForRequest.requirements) {
+      for (const submission of requirement.submissionEntry) {
+        if (!credentials[submission.inputDescriptorId]) {
+          credentials[submission.inputDescriptorId] = []
+        }
+
+        // We pick the first matching VC if we are auto-selecting
+        credentials[submission.inputDescriptorId].push(submission.verifiableCredentials[0].credential)
+      }
+    }
+
+    return credentials
   }
 
   public validatePresentationDefinition(presentationDefinition: PresentationDefinition) {
@@ -76,8 +111,11 @@ export class PresentationExchangeService {
     }
   }
 
-  public validatePresentation(presentationDefinition: PresentationDefinition, presentation: VerifiablePresentation) {
-    const { errors } = this.pex.evaluatePresentation(presentationDefinition, presentation)
+  public validatePresentation(presentationDefinition: PresentationDefinition, presentation: W3cVerifiablePresentation) {
+    const { errors } = this.pex.evaluatePresentation(
+      presentationDefinition,
+      presentation.encoded as OriginalVerifiablePresentation
+    )
 
     if (errors) {
       const errorMessages = this.formatValidated(errors as Validated)
@@ -201,12 +239,16 @@ export class PresentationExchangeService {
     options: {
       credentialsForInputDescriptor: InputDescriptorToCredentials
       presentationDefinition: PresentationDefinition
+      /**
+       * Defaults to {@link PresentationSubmissionLocation.PRESENTATION}
+       */
+      presentationSubmissionLocation?: PresentationSubmissionLocation
       challenge?: string
       domain?: string
       nonce?: string
     }
   ) {
-    const { presentationDefinition, challenge, nonce, domain } = options
+    const { presentationDefinition, challenge, nonce, domain, presentationSubmissionLocation } = options
 
     const proofStructure: ProofStructure = {}
 
@@ -267,7 +309,7 @@ export class PresentationExchangeService {
           holderDID: subjectId,
           proofOptions: { challenge, domain, nonce },
           signatureOptions: { verificationMethod: verificationMethod?.id },
-          presentationSubmissionLocation: PresentationSubmissionLocation.EXTERNAL,
+          presentationSubmissionLocation: presentationSubmissionLocation ?? PresentationSubmissionLocation.PRESENTATION,
         }
       )
 
@@ -371,7 +413,7 @@ export class PresentationExchangeService {
   }
 
   private getSigningAlgorithmForJwtVc(
-    presentationDefinition: PresentationDefinition,
+    presentationDefinition: PresentationDefinitionV1 | PresentationDefinitionV2,
     verificationMethod: VerificationMethod
   ) {
     const algorithmsSatisfyingDefinition = presentationDefinition.format?.jwt_vc?.alg ?? []
@@ -390,7 +432,7 @@ export class PresentationExchangeService {
 
   private getProofTypeForLdpVc(
     agentContext: AgentContext,
-    presentationDefinition: PresentationDefinition,
+    presentationDefinition: PresentationDefinitionV1 | PresentationDefinitionV2,
     verificationMethod: VerificationMethod
   ) {
     const algorithmsSatisfyingDefinition = presentationDefinition.format?.ldp_vc?.proof_type ?? []
@@ -451,31 +493,23 @@ export class PresentationExchangeService {
         )
       }
 
-      // Clients MUST ignore any presentation_submission element included inside a Verifiable Presentation.
-      const presentationToSign = { ...presentationJson }
-      delete presentationToSign['presentation_submission']
-
       let signedPresentation: W3cVerifiablePresentation<ClaimFormat.JwtVp | ClaimFormat.LdpVp>
       if (vpFormat === 'jwt_vp') {
         signedPresentation = await w3cCredentialService.signPresentation(agentContext, {
           format: ClaimFormat.JwtVp,
-          alg: this.getSigningAlgorithmForJwtVc(presentationDefinition as PresentationDefinition, verificationMethod),
+          alg: this.getSigningAlgorithmForJwtVc(presentationDefinition, verificationMethod),
           verificationMethod: verificationMethod.id,
-          presentation: JsonTransformer.fromJSON(presentationToSign, W3cPresentation),
+          presentation: JsonTransformer.fromJSON(presentationJson, W3cPresentation),
           challenge: challenge ?? nonce ?? (await agentContext.wallet.generateNonce()),
           domain,
         })
       } else if (vpFormat === 'ldp_vp') {
         signedPresentation = await w3cCredentialService.signPresentation(agentContext, {
           format: ClaimFormat.LdpVp,
-          proofType: this.getProofTypeForLdpVc(
-            agentContext,
-            presentationDefinition as PresentationDefinition,
-            verificationMethod
-          ),
+          proofType: this.getProofTypeForLdpVc(agentContext, presentationDefinition, verificationMethod),
           proofPurpose: 'authentication',
           verificationMethod: verificationMethod.id,
-          presentation: JsonTransformer.fromJSON(presentationToSign, W3cPresentation),
+          presentation: JsonTransformer.fromJSON(presentationJson, W3cPresentation),
           challenge: challenge ?? nonce ?? (await agentContext.wallet.generateNonce()),
           domain,
         })

@@ -338,7 +338,7 @@ describe('Present Proof', () => {
           mimeType: 'application/json',
           data: {
             json: {
-              context: expect.any(Array),
+              '@context': expect.any(Array),
               type: expect.any(Array),
               presentation_submission: {
                 id: expect.any(String),
@@ -346,13 +346,8 @@ describe('Present Proof', () => {
                 descriptor_map: [
                   {
                     id: 'citizenship_input_1',
-                    format: 'ldp_vp',
-                    path: '$',
-                    path_nested: {
-                      id: 'citizenship_input_1',
-                      format: 'ldp_vc',
-                      path: '$.verifiableCredential[0]',
-                    },
+                    format: 'ldp_vc',
+                    path: '$.verifiableCredential[0]',
                   },
                 ],
               },

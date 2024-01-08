@@ -1,5 +1,9 @@
 import type { W3cCredentialRecord } from '../../vc'
-import type { PresentationSubmission, PresentationSubmissionRequirement, SubmissionEntry } from '../models'
+import type {
+  PexCredentialsForRequest,
+  PexCredentialsForRequestRequirement,
+  PexCredentialsForRequestSubmissionEntry,
+} from '../models'
 import type { IPresentationDefinition, SelectResults, SubmissionRequirementMatch } from '@sphereon/pex'
 import type { InputDescriptorV1, InputDescriptorV2, SubmissionRequirement } from '@sphereon/pex-models'
 
@@ -12,11 +16,11 @@ import { PresentationExchangeError } from '../PresentationExchangeError'
 
 import { getSphereonOriginalVerifiableCredential } from './transform'
 
-export async function selectCredentialsForRequest(
+export async function getCredentialsForRequest(
   presentationDefinition: IPresentationDefinition,
   credentialRecords: Array<W3cCredentialRecord>,
   holderDIDs: Array<string>
-): Promise<PresentationSubmission> {
+): Promise<PexCredentialsForRequest> {
   if (!presentationDefinition) {
     throw new PresentationExchangeError('Presentation Definition is required to select credentials for submission.')
   }
@@ -50,7 +54,7 @@ export async function selectCredentialsForRequest(
     }),
   }
 
-  const presentationSubmission: PresentationSubmission = {
+  const presentationSubmission: PexCredentialsForRequest = {
     requirements: [],
     areRequirementsSatisfied: false,
     name: presentationDefinition.name,
@@ -92,8 +96,8 @@ export async function selectCredentialsForRequest(
 function getSubmissionRequirements(
   presentationDefinition: IPresentationDefinition,
   selectResults: W3cCredentialRecordSelectResults
-): Array<PresentationSubmissionRequirement> {
-  const submissionRequirements: Array<PresentationSubmissionRequirement> = []
+): Array<PexCredentialsForRequestRequirement> {
+  const submissionRequirements: Array<PexCredentialsForRequestRequirement> = []
 
   // There are submission requirements, so we need to select the input_descriptors
   // based on the submission requirements
@@ -138,8 +142,8 @@ function getSubmissionRequirements(
 function getSubmissionRequirementsForAllInputDescriptors(
   inputDescriptors: Array<InputDescriptorV1> | Array<InputDescriptorV2>,
   selectResults: W3cCredentialRecordSelectResults
-): Array<PresentationSubmissionRequirement> {
-  const submissionRequirements: Array<PresentationSubmissionRequirement> = []
+): Array<PexCredentialsForRequestRequirement> {
+  const submissionRequirements: Array<PexCredentialsForRequestRequirement> = []
 
   for (const inputDescriptor of inputDescriptors) {
     const submission = getSubmissionForInputDescriptor(inputDescriptor, selectResults)
@@ -164,7 +168,7 @@ function getSubmissionRequirementRuleAll(
   if (!submissionRequirement.from)
     throw new PresentationExchangeError("Missing 'from' in submission requirement match.")
 
-  const selectedSubmission: PresentationSubmissionRequirement = {
+  const selectedSubmission: PexCredentialsForRequestRequirement = {
     rule: Rules.All,
     needsCount: 0,
     name: submissionRequirement.name,
@@ -204,7 +208,7 @@ function getSubmissionRequirementRulePick(
     throw new PresentationExchangeError("Missing 'from' in submission requirement match.")
   }
 
-  const selectedSubmission: PresentationSubmissionRequirement = {
+  const selectedSubmission: PexCredentialsForRequestRequirement = {
     rule: Rules.Pick,
     needsCount: submissionRequirement.count ?? submissionRequirement.min ?? 1,
     name: submissionRequirement.name,
@@ -215,8 +219,8 @@ function getSubmissionRequirementRulePick(
     isRequirementSatisfied: false,
   }
 
-  const satisfiedSubmissions: Array<SubmissionEntry> = []
-  const unsatisfiedSubmissions: Array<SubmissionEntry> = []
+  const satisfiedSubmissions: Array<PexCredentialsForRequestSubmissionEntry> = []
+  const unsatisfiedSubmissions: Array<PexCredentialsForRequestSubmissionEntry> = []
 
   for (const inputDescriptor of presentationDefinition.input_descriptors) {
     // We only want to get the submission if the input descriptor belongs to the group
@@ -254,7 +258,7 @@ function getSubmissionRequirementRulePick(
 function getSubmissionForInputDescriptor(
   inputDescriptor: InputDescriptorV1 | InputDescriptorV2,
   selectResults: W3cCredentialRecordSelectResults
-): SubmissionEntry {
+): PexCredentialsForRequestSubmissionEntry {
   // https://github.com/Sphereon-Opensource/PEX/issues/116
   // If the input descriptor doesn't contain a name, the name of the match will be the id of the input descriptor that satisfied it
   const matchesForInputDescriptor = selectResults.matches?.filter(
@@ -264,7 +268,7 @@ function getSubmissionForInputDescriptor(
       m.name === inputDescriptor.name
   )
 
-  const submissionEntry: SubmissionEntry = {
+  const submissionEntry: PexCredentialsForRequestSubmissionEntry = {
     inputDescriptorId: inputDescriptor.id,
     name: inputDescriptor.name,
     purpose: inputDescriptor.purpose,

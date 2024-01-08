@@ -1,9 +1,7 @@
 import type { PresentationExchangeProofFormat } from './PresentationExchangeProofFormat'
 import type { AgentContext } from '../../../../agent'
-import type {
-  PresentationDefinition,
-  VerifiablePresentation,
-} from '../../../presentation-exchange/PresentationExchangeService'
+import type { JsonValue } from '../../../../types'
+import type { W3cVerifiablePresentation, W3cVerifyPresentationResult } from '../../../vc'
 import type { InputDescriptorToCredentials } from '../../models'
 import type {
   PresentationExchangePresentation,
@@ -28,8 +26,14 @@ import type {
 
 import { Attachment, AttachmentData } from '../../../../decorators/attachment/Attachment'
 import { AriesFrameworkError } from '../../../../error'
-import { deepEquality } from '../../../../utils'
+import { deepEquality, JsonTransformer } from '../../../../utils'
 import { PresentationExchangeService } from '../../../presentation-exchange/PresentationExchangeService'
+import {
+  W3cCredentialService,
+  ClaimFormat,
+  W3cJsonLdVerifiablePresentation,
+  W3cJwtVerifiablePresentation,
+} from '../../../vc'
 import { ProofFormatSpec } from '../../models'
 
 const PRESENTATION_EXCHANGE_PRESENTATION_PROPOSAL = 'dif/presentation-exchange/definitions@v1.0'
@@ -87,9 +91,15 @@ export class PresentationExchangeProofFormatService implements ProofFormatServic
 
   public async acceptProposal(
     agentContext: AgentContext,
-    { attachmentId, proposalAttachment }: ProofFormatAcceptProposalOptions<PresentationExchangeProofFormat>
+    {
+      attachmentId,
+      proposalAttachment,
+      proofFormats,
+    }: ProofFormatAcceptProposalOptions<PresentationExchangeProofFormat>
   ): Promise<ProofFormatCreateReturn> {
     const ps = this.presentationExchangeService(agentContext)
+
+    const presentationExchangeFormat = proofFormats?.presentationExchange
 
     const format = new ProofFormatSpec({
       format: PRESENTATION_EXCHANGE_PRESENTATION_REQUEST,
@@ -97,10 +107,19 @@ export class PresentationExchangeProofFormatService implements ProofFormatServic
     })
 
     const presentationDefinition = proposalAttachment.getDataAsJson<PresentationExchangeProposal>()
-
     ps.validatePresentationDefinition(presentationDefinition)
 
-    const attachment = this.getFormatData({ presentation_definition: presentationDefinition }, format.attachmentId)
+    const attachment = this.getFormatData(
+      {
+        presentation_definition: presentationDefinition,
+        options: {
+          // NOTE: we always want to include a challenge to prevent replay attacks
+          challenge: presentationExchangeFormat?.options?.challenge ?? (await agentContext.wallet.generateNonce()),
+          domain: presentationExchangeFormat?.options?.domain,
+        },
+      } satisfies PresentationExchangeRequest,
+      format.attachmentId
+    )
 
     return { format, attachment }
   }
@@ -112,7 +131,6 @@ export class PresentationExchangeProofFormatService implements ProofFormatServic
     const ps = this.presentationExchangeService(agentContext)
 
     const presentationExchangeFormat = proofFormats.presentationExchange
-
     if (!presentationExchangeFormat) {
       throw Error('Missing presentation exchange format in create request attachment format')
     }
@@ -126,17 +144,14 @@ export class PresentationExchangeProofFormatService implements ProofFormatServic
       attachmentId,
     })
 
-    const challenge = options?.challenge ?? (await agentContext.wallet.generateNonce())
-
-    const optionsWithChallenge: PresentationExchangeRequest['options'] = {
-      challenge,
-      domain: options?.domain,
-    }
-
     const attachment = this.getFormatData(
       {
-        options: optionsWithChallenge,
         presentation_definition: presentationDefinition,
+        options: {
+          // NOTE: we always want to include a challenge to prevent replay attacks
+          challenge: options?.challenge ?? (await agentContext.wallet.generateNonce()),
+          domain: options?.domain,
+        },
       } satisfies PresentationExchangeRequest,
       format.attachmentId
     )
@@ -165,15 +180,14 @@ export class PresentationExchangeProofFormatService implements ProofFormatServic
       requestAttachment.getDataAsJson<PresentationExchangeRequest>()
 
     const credentials: InputDescriptorToCredentials = proofFormats?.presentationExchange?.credentials ?? {}
-
     if (Object.keys(credentials).length === 0) {
-      const { areRequirementsSatisfied, requirements } = await ps.selectCredentialsForRequest(
+      const { areRequirementsSatisfied, requirements } = await ps.getCredentialsForRequest(
         agentContext,
         presentationDefinition
       )
 
       if (!areRequirementsSatisfied) {
-        throw new AriesFrameworkError('Requirements of the presentation definition could not be satifsied')
+        throw new AriesFrameworkError('Requirements of the presentation definition could not be satisfied')
       }
 
       requirements.forEach((r) => {
@@ -194,17 +208,9 @@ export class PresentationExchangeProofFormatService implements ProofFormatServic
       throw new AriesFrameworkError('Invalid amount of verifiable presentations. Only one is allowed.')
     }
 
-    // TODO: how do we get the `proof` from this? It does not seem to be available on the JWT class
-    const { type, context, verifiableCredential } = presentation.verifiablePresentations[0]
-
-    const data: PresentationExchangePresentation = {
-      presentation_submission: presentation.presentationSubmission,
-      type,
-      context,
-      verifiableCredential,
-    }
-
-    const attachment = this.getFormatData(data, format.attachmentId)
+    const firstPresentation = presentation.verifiablePresentations[0]
+    const attachmentData = firstPresentation.encoded as PresentationExchangePresentation
+    const attachment = this.getFormatData(attachmentData, format.attachmentId)
 
     return { attachment, format }
   }
@@ -214,16 +220,66 @@ export class PresentationExchangeProofFormatService implements ProofFormatServic
     { requestAttachment, attachment }: ProofFormatProcessPresentationOptions
   ): Promise<boolean> {
     const ps = this.presentationExchangeService(agentContext)
-    const { presentation_definition: presentationDefinition } = requestAttachment.getDataAsJson<{
-      presentation_definition: PresentationDefinition
-    }>()
+    const w3cCredentialService = agentContext.dependencyManager.resolve(W3cCredentialService)
+
+    const request = requestAttachment.getDataAsJson<PresentationExchangeRequest>()
     const presentation = attachment.getDataAsJson<PresentationExchangePresentation>()
+    let parsedPresentation: W3cVerifiablePresentation
+
+    // TODO: we should probably move this transformation logic into the VC module, so it
+    // can be reused in AFJ when we need to go from encoded -> parsed
+    if (typeof presentation === 'string') {
+      parsedPresentation = W3cJwtVerifiablePresentation.fromSerializedJwt(presentation)
+    } else {
+      parsedPresentation = JsonTransformer.fromJSON(presentation, W3cJsonLdVerifiablePresentation)
+    }
+
+    if (!parsedPresentation.presentationSubmission) {
+      agentContext.config.logger.error(
+        'Received presentation in PEX proof format without presentation submission. This should not happen.'
+      )
+      return false
+    }
+
+    if (!request.options?.challenge) {
+      agentContext.config.logger.error(
+        'Received presentation in PEX proof format without challenge. This should not happen.'
+      )
+      return false
+    }
 
     try {
-      ps.validatePresentationDefinition(presentationDefinition)
-      ps.validatePresentationSubmission(presentation.presentation_submission)
+      ps.validatePresentationDefinition(request.presentation_definition)
+      ps.validatePresentationSubmission(parsedPresentation.presentationSubmission)
+      ps.validatePresentation(request.presentation_definition, parsedPresentation)
 
-      ps.validatePresentation(presentationDefinition, presentation as unknown as VerifiablePresentation)
+      let verificationResult: W3cVerifyPresentationResult
+
+      // FIXME: for some reason it won't accept the input if it doesn't know
+      // whether it's a JWT or JSON-LD VP even though the input is the same.
+      // Not sure how to fix
+      if (parsedPresentation.claimFormat === ClaimFormat.JwtVp) {
+        verificationResult = await w3cCredentialService.verifyPresentation(agentContext, {
+          presentation: parsedPresentation,
+          challenge: request.options.challenge,
+          domain: request.options.domain,
+        })
+      } else {
+        verificationResult = await w3cCredentialService.verifyPresentation(agentContext, {
+          presentation: parsedPresentation,
+          challenge: request.options.challenge,
+          domain: request.options.domain,
+        })
+      }
+
+      if (!verificationResult.isValid) {
+        agentContext.config.logger.error(
+          `Received presentation in PEX proof format that could not be verified: ${verificationResult.error}`,
+          { verificationResult }
+        )
+        return false
+      }
+
       return true
     } catch (e) {
       agentContext.config.logger.error(`Failed to verify presentation in PEX proof format service: ${e.message}`, {
@@ -236,53 +292,27 @@ export class PresentationExchangeProofFormatService implements ProofFormatServic
   public async getCredentialsForRequest(
     agentContext: AgentContext,
     { requestAttachment }: ProofFormatGetCredentialsForRequestOptions<PresentationExchangeProofFormat>
-  ): Promise<{ credentials: InputDescriptorToCredentials }> {
+  ) {
     const ps = this.presentationExchangeService(agentContext)
     const { presentation_definition: presentationDefinition } =
       requestAttachment.getDataAsJson<PresentationExchangeRequest>()
 
     ps.validatePresentationDefinition(presentationDefinition)
 
-    const presentationSubmission = await ps.selectCredentialsForRequest(agentContext, presentationDefinition)
-
-    if (!presentationSubmission.areRequirementsSatisfied) {
-      throw new AriesFrameworkError('Could not find the required credentials for the presentation submission')
-    }
-
-    const credentials: InputDescriptorToCredentials = {}
-
-    presentationSubmission.requirements.forEach((r) =>
-      r.submissionEntry.forEach((s) => {
-        credentials[s.inputDescriptorId] = s.verifiableCredentials.map((v) => v.credential)
-      })
-    )
-
-    return { credentials }
+    const presentationSubmission = await ps.getCredentialsForRequest(agentContext, presentationDefinition)
+    return presentationSubmission
   }
 
   public async selectCredentialsForRequest(
     agentContext: AgentContext,
     { requestAttachment }: ProofFormatSelectCredentialsForRequestOptions<PresentationExchangeProofFormat>
-  ): Promise<{ credentials: InputDescriptorToCredentials }> {
+  ) {
     const ps = this.presentationExchangeService(agentContext)
     const { presentation_definition: presentationDefinition } =
       requestAttachment.getDataAsJson<PresentationExchangeRequest>()
 
-    const presentationSubmission = await ps.selectCredentialsForRequest(agentContext, presentationDefinition)
-
-    if (!presentationSubmission.areRequirementsSatisfied) {
-      throw new AriesFrameworkError('Could not find the required credentials for the presentation submission')
-    }
-
-    const credentials: InputDescriptorToCredentials = {}
-
-    presentationSubmission.requirements.forEach((r) =>
-      r.submissionEntry.forEach((s) => {
-        credentials[s.inputDescriptorId] = s.verifiableCredentials.map((v) => v.credential)
-      })
-    )
-
-    return { credentials }
+    const credentialsForRequest = await ps.getCredentialsForRequest(agentContext, presentationDefinition)
+    return { credentials: ps.selectCredentialsForRequest(credentialsForRequest) }
   }
 
   public async shouldAutoRespondToProposal(
@@ -319,12 +349,12 @@ export class PresentationExchangeProofFormatService implements ProofFormatServic
     return true
   }
 
-  private getFormatData<T extends Record<string, unknown>>(data: T, id: string): Attachment {
+  private getFormatData<T extends Record<string, unknown> | string>(data: T, id: string): Attachment {
     const attachment = new Attachment({
       id,
       mimeType: 'application/json',
       data: new AttachmentData({
-        json: data,
+        json: data as JsonValue,
       }),
     })
 

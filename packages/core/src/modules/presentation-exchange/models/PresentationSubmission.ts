@@ -1,6 +1,6 @@
 import type { W3cCredentialRecord, W3cVerifiableCredential } from '../../vc'
 
-export interface PresentationSubmission {
+export interface PexCredentialsForRequest {
   /**
    * Whether all requirements have been satisfied by the credentials in the wallet.
    */
@@ -16,7 +16,7 @@ export interface PresentationSubmission {
    * combinations that are possible. The structure doesn't include all possible combinations yet that
    * could satisfy a presentation definition.
    */
-  requirements: PresentationSubmissionRequirement[]
+  requirements: PexCredentialsForRequestRequirement[]
 
   /**
    * Name of the presentation definition
@@ -36,7 +36,7 @@ export interface PresentationSubmission {
  *
  * Each submission represents a input descriptor.
  */
-export interface PresentationSubmissionRequirement {
+export interface PexCredentialsForRequestRequirement {
   /**
    * Whether the requirement is satisfied.
    *
@@ -56,7 +56,7 @@ export interface PresentationSubmissionRequirement {
   purpose?: string
 
   /**
-   * Array of objects, where each entry contains a credential that will be part
+   * Array of objects, where each entry contains one or more credentials that will be part
    * of the submission.
    *
    * NOTE: if the `isRequirementSatisfied` is `false` the submission list will
@@ -66,7 +66,7 @@ export interface PresentationSubmissionRequirement {
    * `isRequirementSatisfied` is `false`, make sure to check the `needsCount` value
    * to see how many of those submissions needed.
    */
-  submissionEntry: SubmissionEntry[]
+  submissionEntry: PexCredentialsForRequestSubmissionEntry[]
 
   /**
    * The number of submission entries that are needed to fulfill the requirement.
@@ -88,7 +88,7 @@ export interface PresentationSubmissionRequirement {
  * A submission entry that satisfies a specific input descriptor from the
  * presentation definition.
  */
-export interface SubmissionEntry {
+export interface PexCredentialsForRequestSubmissionEntry {
   /**
    * The id of the input descriptor
    */

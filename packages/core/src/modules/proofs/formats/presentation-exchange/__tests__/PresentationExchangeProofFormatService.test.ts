@@ -2,6 +2,8 @@ import type { PresentationDefinition } from '../../../../presentation-exchange'
 import type { ProofFormatService } from '../../ProofFormatService'
 import type { PresentationExchangeProofFormat } from '../PresentationExchangeProofFormat'
 
+import { PresentationSubmissionLocation } from '@sphereon/pex'
+
 import { getIndySdkModules } from '../../../../../../../indy-sdk/tests/setupIndySdkModule'
 import { agentDependencies, getAgentConfig } from '../../../../../../tests'
 import { Agent } from '../../../../../agent/Agent'
@@ -65,11 +67,13 @@ const mockCredentialRecord = new W3cCredentialRecord({
   }),
 })
 
+const presentationSubmission = { id: 'did:id', definition_id: 'my-id', descriptor_map: [] }
 jest.spyOn(W3cCredentialRepository.prototype, 'getAll').mockResolvedValue([mockCredentialRecord])
 jest.spyOn(PresentationExchangeService.prototype, 'createPresentation').mockResolvedValue({
-  presentationSubmission: { id: 'did:id', definition_id: 'my-id', descriptor_map: [] },
+  presentationSubmission,
   verifiablePresentations: [
     new W3cJsonLdVerifiablePresentation({
+      presentationSubmission,
       verifiableCredential: [mockCredentialRecord.credential],
       proof: {
         type: 'Ed25519Signature2020',
@@ -80,7 +84,7 @@ jest.spyOn(PresentationExchangeService.prototype, 'createPresentation').mockReso
       },
     }),
   ],
-  presentationSubmissionLocation: 0,
+  presentationSubmissionLocation: PresentationSubmissionLocation.PRESENTATION,
 })
 
 describe('Presentation Exchange ProofFormatService', () => {
@@ -102,7 +106,6 @@ describe('Presentation Exchange ProofFormatService', () => {
 
     await agent.initialize()
 
-    agent.dependencyManager.resolve(PresentationExchangeService)
     pexFormatService = agent.dependencyManager.resolve(PresentationExchangeProofFormatService)
   })
 
@@ -141,7 +144,7 @@ describe('Presentation Exchange ProofFormatService', () => {
         data: {
           json: {
             options: {
-              challenge: 'TODO',
+              challenge: expect.any(String),
             },
             presentation_definition: presentationDefinition,
           },
@@ -178,11 +181,11 @@ describe('Presentation Exchange ProofFormatService', () => {
               definition_id: expect.any(String),
               descriptor_map: [],
             },
-            context: expect.any(Array),
+            '@context': expect.any(Array),
             type: expect.any(Array),
             verifiableCredential: [
               {
-                context: expect.any(Array),
+                '@context': expect.any(Array),
                 id: expect.any(String),
                 type: expect.any(Array),
                 issuer: expect.any(String),
