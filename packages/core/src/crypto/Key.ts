@@ -60,9 +60,12 @@ export class Key {
     return isSigningSupportedForKeyType(this.keyType)
   }
 
-  // We return the fingerprint when this object is serialized to JSON
-  // This means it's nicely formatted when printing to the console
+  // We return an object structure based on the key, so that when this object is
+  // serialized to JSON it will be nicely formatted instead of the bytes printed
   private toJSON() {
-    return this.fingerprint
+    return {
+      keyType: this.keyType,
+      publicKeyBase58: this.publicKeyBase58,
+    }
   }
 }
