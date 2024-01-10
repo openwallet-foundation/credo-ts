@@ -1,15 +1,16 @@
-import type { InternalAccessTokenEndpointConfig, IssuanceRequest } from './OpenId4VcIEndpointConfiguration'
-import type { AgentContext, JwkJson, VerificationMethod } from '@aries-framework/core'
+import type { IssuanceRequest } from './requestContext'
+import type { AccessTokenEndpointConfig } from '../OpenId4VcIssuerServiceOptions'
+import type { AgentContext } from '@aries-framework/core'
 import type { JWTSignerCallback } from '@sphereon/oid4vci-common'
-import type { NextFunction, Response } from 'express'
+import type { NextFunction, Response, Router } from 'express'
 
 import {
+  getJwkFromKey,
   AriesFrameworkError,
   JwsService,
   JwtPayload,
   getJwkClassFromKeyType,
-  getJwkFromJson,
-  getKeyFromVerificationMethod,
+  Key,
 } from '@aries-framework/core'
 import {
   GrantTypes,
@@ -20,40 +21,44 @@ import {
 import { assertValidAccessTokenRequest, createAccessTokenResponse } from '@sphereon/oid4vci-issuer'
 
 import { getRequestContext, sendErrorResponse } from '../../shared/router'
+import { OpenId4VcIssuerModuleConfig } from '../OpenId4VcIssuerModuleConfig'
+import { OpenId4VcIssuerService } from '../OpenId4VcIssuerService'
 
-const getJwtSignerCallback = (
-  agentContext: AgentContext,
-  verificationMethod: VerificationMethod
-): JWTSignerCallback => {
+const getJwtSignerCallback = (agentContext: AgentContext, signerPublicKey: Key): JWTSignerCallback => {
   return async (jwt, _kid) => {
-    if (_kid) throw new AriesFrameworkError('Kid should not be supplied externally.')
+    if (_kid) {
+      throw new AriesFrameworkError('Kid should not be supplied externally.')
+    }
+    if (jwt.header.kid || jwt.header.jwk) {
+      throw new AriesFrameworkError('kid or jwk should not be present in access token header before signing')
+    }
 
     const jwsService = agentContext.dependencyManager.resolve(JwsService)
-    const key = getKeyFromVerificationMethod(verificationMethod)
 
-    const alg = getJwkClassFromKeyType(key.keyType)?.supportedSignatureAlgorithms[0]
-    if (!alg) throw new AriesFrameworkError(`No supported signature algorithms for key type: ${key.keyType}`)
+    const alg = getJwkClassFromKeyType(signerPublicKey.keyType)?.supportedSignatureAlgorithms[0]
+    if (!alg) {
+      throw new AriesFrameworkError(`No supported signature algorithms for key type: ${signerPublicKey.keyType}`)
+    }
 
-    const jwk = jwt.header.jwk ? getJwkFromJson(jwt.header.jwk as JwkJson) : undefined
-
-    const signedJwt: string = await jwsService.createJwsCompact(agentContext, {
-      protectedHeaderOptions: { ...jwt.header, jwk, kid: verificationMethod.id, alg },
+    const jwk = getJwkFromKey(signerPublicKey)
+    const signedJwt = await jwsService.createJwsCompact(agentContext, {
+      protectedHeaderOptions: { ...jwt.header, jwk, alg },
       payload: new JwtPayload(jwt.payload),
-      key,
+      key: signerPublicKey,
     })
 
     return signedJwt
   }
 }
 
-export const handleTokenRequest = (config: InternalAccessTokenEndpointConfig) => {
-  const { tokenExpiresIn, cNonceExpiresIn, interval } = config
+export const handleTokenRequest = (config: AccessTokenEndpointConfig) => {
+  const { tokenExpiresInSeconds, cNonceExpiresInSeconds, interval } = config
 
   return async (request: IssuanceRequest, response: Response) => {
     response.set({ 'Cache-Control': 'no-store', Pragma: 'no-cache' })
 
     const requestContext = getRequestContext(request)
-    const { agentContext, openId4vcIssuerService, logger } = requestContext
+    const { agentContext, issuer } = requestContext
 
     if (request.body.grant_type !== GrantTypes.PRE_AUTHORIZED_CODE) {
       return response.status(400).json({
@@ -62,46 +67,64 @@ export const handleTokenRequest = (config: InternalAccessTokenEndpointConfig) =>
       })
     }
 
+    const openId4VcIssuerConfig = agentContext.dependencyManager.resolve(OpenId4VcIssuerModuleConfig)
+    const openId4VcIssuerService = agentContext.dependencyManager.resolve(OpenId4VcIssuerService)
+    const issuerMetadata = openId4VcIssuerService.getIssuerMetadata(agentContext, issuer)
+    const accessTokenSigningKey = Key.fromFingerprint(issuer.accessTokenPublicKeyFingerprint)
+
     try {
       const accessTokenResponse = await createAccessTokenResponse(request.body, {
-        credentialOfferSessions:
-          openId4vcIssuerService.openId4VcIssuerModuleConfig.getCredentialOfferSessionStateManager(agentContext),
-        tokenExpiresIn,
-        accessTokenIssuer: openId4vcIssuerService.expandEndpointsWithBase(agentContext).issuerBaseUrl,
+        credentialOfferSessions: openId4VcIssuerConfig.getCredentialOfferSessionStateManager(agentContext),
+        tokenExpiresIn: tokenExpiresInSeconds,
+        accessTokenIssuer: issuerMetadata.issuerUrl,
         cNonce: await agentContext.wallet.generateNonce(),
-        cNonceExpiresIn,
-        cNonces: openId4vcIssuerService.openId4VcIssuerModuleConfig.getCNonceStateManager(agentContext),
-        accessTokenSignerCallback: getJwtSignerCallback(agentContext, config.verificationMethod),
+        cNonceExpiresIn: cNonceExpiresInSeconds,
+        cNonces: openId4VcIssuerConfig.getCNonceStateManager(agentContext),
+        accessTokenSignerCallback: getJwtSignerCallback(agentContext, accessTokenSigningKey),
         interval,
       })
       return response.status(200).json(accessTokenResponse)
     } catch (error) {
-      sendErrorResponse(response, logger, 400, TokenErrorResponse.invalid_request, error)
+      sendErrorResponse(response, agentContext.config.logger, 400, TokenErrorResponse.invalid_request, error)
     }
   }
 }
 
-export const verifyTokenRequest = (options: { preAuthorizedCodeExpirationDuration: number }) => {
-  const { preAuthorizedCodeExpirationDuration } = options
+export const verifyTokenRequest = (options: { preAuthorizedCodeExpirationInSeconds: number }) => {
+  const { preAuthorizedCodeExpirationInSeconds } = options
   return async (request: IssuanceRequest, response: Response, next: NextFunction) => {
-    const requestContext = getRequestContext(request)
-    const { agentContext, openId4vcIssuerService, logger } = requestContext
+    const { agentContext } = getRequestContext(request)
+    const openId4VcIssuerConfig = agentContext.dependencyManager.resolve(OpenId4VcIssuerModuleConfig)
 
     try {
       await assertValidAccessTokenRequest(request.body, {
         // we use seconds instead of milliseconds for consistency
-        expirationDuration: preAuthorizedCodeExpirationDuration * 1000,
-        credentialOfferSessions:
-          openId4vcIssuerService.openId4VcIssuerModuleConfig.getCredentialOfferSessionStateManager(agentContext),
+        expirationDuration: preAuthorizedCodeExpirationInSeconds * 1000,
+        credentialOfferSessions: openId4VcIssuerConfig.getCredentialOfferSessionStateManager(agentContext),
       })
     } catch (error) {
       if (error instanceof TokenError) {
-        sendErrorResponse(response, logger, error.statusCode, error.responseError + error.getDescription(), error)
+        sendErrorResponse(
+          response,
+          agentContext.config.logger,
+          error.statusCode,
+          error.responseError + error.getDescription(),
+          error
+        )
       } else {
-        sendErrorResponse(response, logger, 400, TokenErrorResponse.invalid_request, error)
+        sendErrorResponse(response, agentContext.config.logger, 400, TokenErrorResponse.invalid_request, error)
       }
     }
 
     return next()
   }
+}
+
+export function configureAccessTokenEndpoint(router: Router, config: AccessTokenEndpointConfig) {
+  const { preAuthorizedCodeExpirationInSeconds } = config
+  router.post(
+    config.endpointPath,
+    verifyTokenRequest({ preAuthorizedCodeExpirationInSeconds }),
+    handleTokenRequest(config)
+  )
 }

@@ -1,22 +1,8 @@
-import type { AgentContext, VerificationMethod, W3cCredential } from '@aries-framework/core'
-import type { SdJwtCredential } from '@aries-framework/sd-jwt-vc'
-import type {
-  CNonceState,
-  CredentialOfferFormat,
-  CredentialOfferPayloadV1_0_11,
-  CredentialOfferSession,
-  CredentialRequestV1_0_11,
-  CredentialSupported,
-  MetadataDisplay,
-  ProofOfPossession,
-} from '@sphereon/oid4vci-common'
-
-export type { MetadataDisplay, ProofOfPossession, CredentialSupported, CredentialOfferFormat }
-
-// If the entry is an object, the object contains the data related to a certain credential type
-// the Wallet MAY request. Each object MUST contain a format Claim determining the format
-// and further parameters characterizing by the format of the credential to be requested.
-export type OfferedCredential = CredentialOfferFormat | string
+import type { OpenId4VcIssuerRecordProps } from './repository/OpenId4VcIssuerRecord'
+import type { OpenId4VciCredentialOffer, OpenId4VciCredentialRequest, OpenId4VciCredentialSupported } from '../shared'
+import type { AgentContext, Jwk, W3cSignCredentialOptions } from '@aries-framework/core'
+import type { SdJwtVcSignOptions } from '@aries-framework/sd-jwt-vc'
+import type { CredentialOfferPayloadV1_0_11, CredentialSupported, MetadataDisplay } from '@sphereon/oid4vci-common'
 
 export type PreAuthorizedCodeFlowConfig = {
   preAuthorizedCode?: string
@@ -29,16 +15,24 @@ export type AuthorizationCodeFlowConfig = {
 
 export type IssuerMetadata = {
   // The Credential Issuer's identifier. (URL using the https scheme)
-  issuerBaseUrl: string
-  credentialEndpointPath: string
-  tokenEndpointPath: string
-  authorizationServerUrl?: string
-  issuerDisplay?: MetadataDisplay
+  issuerUrl: string
+  credentialEndpoint: string
+  tokenEndpoint: string
+  authorizationServer?: string
 
+  issuerDisplay?: MetadataDisplay[]
   credentialsSupported: CredentialSupported[]
 }
 
-export interface CreateCredentialOfferAndRequestOptions {
+export type CreateIssuerOptions = Pick<OpenId4VcIssuerRecordProps, 'credentialsSupported' | 'display'>
+
+export interface CreateCredentialOfferOptions {
+  // NOTE: v11 of OID4VCI supports both inline and referenced (to credentials_supported.id) credential offers.
+  // In draft 12 the inline credential offers have been removed and to make the migration to v12 easier
+  // we only support referenced credentials in an offer
+  offeredCredentials: string[]
+
+  // FIXME: can we simplify this?
   // The scheme used for the credentialIssuer. Default is https
   scheme?: 'http' | 'https' | 'openid-credential-offer' | string
 
@@ -51,34 +45,43 @@ export interface CreateCredentialOfferAndRequestOptions {
   credentialOfferUri?: string
 }
 
-export type CredentialOfferAndRequest = {
+// FIXME: this needs to be renamed, but will class with OpenId4VciCredentialOffer
+// Probably needs to be specific `XXReturn` type
+export type CredentialOffer = {
   credentialOfferPayload: CredentialOfferPayloadV1_0_11
-  credentialOfferRequest: string
+  credentialOfferUri: string
 }
 
-export interface CreateIssueCredentialResponseOptions {
-  credentialRequest: CredentialRequestV1_0_11
-  credential: W3cCredential | SdJwtCredential
-  verificationMethod: VerificationMethod
+export interface CreateCredentialResponseOptions {
+  credentialRequest: OpenId4VciCredentialRequest
+
+  /**
+   * You can optionally provide the input data for signing the credential.
+   * If not provided the `credentialRequestToCredentialMapper` from the module
+   * config will be called with needed data to construct the credential
+   * signing payload
+   */
+  // FIXME: credential.credential is not nice
+  credential?: OpenId4VciSignCredential
 }
 
-export { CredentialRequestV1_0_11 }
-
-export { CredentialResponse } from '@sphereon/oid4vci-common'
-
-export interface MetadataEndpointConfig {
+export type MetadataEndpointConfig = {
   /**
    * Configures the router to expose the metadata endpoint.
    */
-  enabled: boolean
+  enabled: true
 }
 
-export interface AccessTokenEndpointConfig {
+export type AccessTokenEndpointConfig = {
   /**
-   * Configures the router to expose the access token endpoint.
+   * The path at which the token endpoint should be made available. Note that it will be
+   * hosted at a subpath to take into account multiple tenants and issuers.
+   *
+   * @default /token
    */
-  enabled: boolean
+  endpointPath: string
 
+  // FIXME: rename, more specific
   /**
    * The minimum amount of time in seconds that the client SHOULD wait between polling requests to the Token Endpoint in the Pre-Authorized Code Flow.
    * If no value is provided, clients MUST use 5 as the default.
@@ -86,35 +89,35 @@ export interface AccessTokenEndpointConfig {
   interval?: number
 
   /**
-   * The verification method to be used to sign access token.
+   * The maximum amount of time in seconds that the pre-authorized code is valid.
+   * @default 360 (5 minutes) // FIXME: what should be the default value
    */
-  verificationMethod: VerificationMethod
+  preAuthorizedCodeExpirationInSeconds: number
 
   /**
-   * The maximum amount of time in seconds that the pre-authorized code is valid.
+   * The time after which the cNonce from the access token response will
+   * expire.
+   *
+   * @default 360 (5 minutes) // FIXME: what should be the default value?
    */
-  preAuthorizedCodeExpirationDuration: number
+  cNonceExpiresInSeconds: number
+
+  /**
+   * The time after which the token will expire.
+   *
+   * @default 360 (5 minutes) // FIXME: what should be the default value?
+   */
+  tokenExpiresInSeconds: number
 }
 
-export type CredentialRequestToCredentialMapper = (options: {
-  agentContext: AgentContext
-  credentialRequest: CredentialRequestV1_0_11
-  holderDid: string
-  holderDidUrl: string
-  cNonceState: CNonceState
-  credentialOfferSession: CredentialOfferSession
-}) => Promise<W3cCredential | SdJwtCredential>
-
-export interface CredentialEndpointConfig {
+export type CredentialEndpointConfig = {
   /**
-   * Configures the router to expose the credential endpoint.
+   * The path at which the credential endpoint should be made available. Note that it will be
+   * hosted at a subpath to take into account multiple tenants and issuers.
+   *
+   * @default /credential
    */
-  enabled: boolean
-
-  /**
-   * The verification method to be used to sign the credential.
-   */
-  verificationMethod: VerificationMethod
+  endpointPath: string
 
   /**
    * A function mapping a credential request to the credential to be issued.
@@ -122,9 +125,54 @@ export interface CredentialEndpointConfig {
   credentialRequestToCredentialMapper: CredentialRequestToCredentialMapper
 }
 
-export interface IssuerEndpointConfig {
-  basePath: string
-  metadataEndpointConfig?: MetadataEndpointConfig
-  accessTokenEndpointConfig?: AccessTokenEndpointConfig
-  credentialEndpointConfig?: CredentialEndpointConfig
+// FIXME: Flows:
+// - provide credential data at time of offer creation
+// - provide credential data dynamically using this method
+export type CredentialRequestToCredentialMapper = (options: {
+  agentContext: AgentContext
+
+  /**
+   * The credential request received from the wallet
+   */
+  credentialRequest: OpenId4VciCredentialRequest
+
+  /**
+   * The offer associated with the credential request
+   */
+  credentialOffer: OpenId4VciCredentialOffer
+
+  /**
+   * Verified key binding material that should be included in the credential
+   *
+   * Can either be bound to did or a JWK (in case of for ex. SD-JWT)
+   */
+  holderBinding: CredentialHolderBinding
+
+  /**
+   * The credentials supported entries from the issuer metadata that were offered
+   * and match the incoming request
+   *
+   * NOTE: in v12 this will probably become a single entry, as it will be matched on id
+   */
+  credentialsSupported: OpenId4VciCredentialSupported[]
+}) => Promise<OpenId4VciSignCredential>
+
+// FIXME: can we make these interfaces more uniform or is it okay
+// to have quite some differences between them? I think the nice
+// thing here is that they are based on the interface from the
+// w3c and sd-jwt services. However in that case you could also
+// ask why not just require the signed credential as output
+// as you can then just call the services yourself.
+export type OpenId4VciSignCredential = SdJwtVcSignOptions | W3cSignCredentialOptions
+
+export type CredentialHolderDidBinding = {
+  method: 'did'
+  didUrl: string
 }
+
+export type CredentialHolderJwkBinding = {
+  method: 'jwk'
+  jwk: Jwk
+}
+
+export type CredentialHolderBinding = CredentialHolderDidBinding | CredentialHolderJwkBinding

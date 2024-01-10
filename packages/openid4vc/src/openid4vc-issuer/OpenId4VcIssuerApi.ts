@@ -1,15 +1,14 @@
 import type {
-  CreateIssueCredentialResponseOptions,
-  CreateCredentialOfferAndRequestOptions,
-  CredentialOfferAndRequest,
-  OfferedCredential,
-  IssuerEndpointConfig,
+  CreateCredentialResponseOptions,
+  CreateCredentialOfferOptions,
+  CredentialOffer,
 } from './OpenId4VcIssuerServiceOptions'
+import type { OpenId4VcIssuerRecordProps } from './repository/OpenId4VcIssuerRecord'
 import type { CredentialOfferPayloadV1_0_11 } from '@sphereon/oid4vci-common'
-import type { Router } from 'express'
 
 import { injectable, AgentContext } from '@aries-framework/core'
 
+import { OpenId4VcIssuerModuleConfig } from './OpenId4VcIssuerModuleConfig'
 import { OpenId4VcIssuerService } from './OpenId4VcIssuerService'
 
 /**
@@ -20,43 +19,81 @@ import { OpenId4VcIssuerService } from './OpenId4VcIssuerService'
  */
 @injectable()
 export class OpenId4VcIssuerApi {
+  /**
+   * Configuration for the credentials module
+   */
+  public readonly config: OpenId4VcIssuerModuleConfig
+
   private agentContext: AgentContext
   private openId4VcIssuerService: OpenId4VcIssuerService
 
-  public constructor(agentContext: AgentContext, openId4VcIssuerService: OpenId4VcIssuerService) {
+  public constructor(
+    agentContext: AgentContext,
+    openId4VcIssuerService: OpenId4VcIssuerService,
+    config: OpenId4VcIssuerModuleConfig
+  ) {
     this.agentContext = agentContext
     this.openId4VcIssuerService = openId4VcIssuerService
+    this.config = config
+  }
+
+  public async getAllIssuers() {
+    return this.openId4VcIssuerService.getAllIssuers(this.agentContext)
+  }
+
+  public async getByIssuerId(issuerId: string) {
+    return this.openId4VcIssuerService.getByIssuerId(this.agentContext, issuerId)
   }
 
   /**
-   * Creates a credential offer, and credential offer request.
-   * Either the preAuthorizedCodeFlowConfig or the authorizationCodeFlowConfig must be provided.
-   *
-   * @param  offeredCredentials - The credentials to be offered.
-   * @param  options.issuerMetadata - Metadata about the issuer.
-   * @param  options.credentialOfferUri - The URI which references the created credential offer if the offer is passed by reference.
-   * @param  options.preAuthorizedCodeFlowConfig - The configuration for the pre-authorized code flow. This or the authorizationCodeFlowConfig must be provided.
-   * @param  options.authorizationCodeFlowConfig - The configuration for the authorization code flow. This or the preAuthorizedCodeFlowConfig must be provided.
-   * @param  options.scheme - The credential offer request scheme. Default is 'https'.
-   * @param  options.baseUri - The base URI of the credential offer request. Default is ''.
+   * Creates an issuer and stores the corresponding issuer metadata. Multiple issuers can be created, to allow different sets of
+   * credentials to be issued with each issuer.
+   */
+  public async createIssuer(options: Pick<OpenId4VcIssuerRecordProps, 'credentialsSupported' | 'display'>) {
+    return this.openId4VcIssuerService.createIssuer(this.agentContext, options)
+  }
+
+  /**
+   * Rotate the key used for signing access tokens for the issuer with the given issuerId.
+   */
+  public async rotateAccessTokenSigningKey(issuerId: string) {
+    const issuer = await this.openId4VcIssuerService.getByIssuerId(this.agentContext, issuerId)
+    return this.openId4VcIssuerService.rotateAccessTokenSigningKey(this.agentContext, issuer)
+  }
+
+  public async getIssuerMetadata(issuerId: string) {
+    const issuer = await this.openId4VcIssuerService.getByIssuerId(this.agentContext, issuerId)
+    return this.openId4VcIssuerService.getIssuerMetadata(this.agentContext, issuer)
+  }
+
+  public async updateIssuerMetadata(
+    options: Pick<OpenId4VcIssuerRecordProps, 'issuerId' | 'credentialsSupported' | 'display'>
+  ) {
+    const issuer = await this.openId4VcIssuerService.getByIssuerId(this.agentContext, options.issuerId)
+
+    issuer.credentialsSupported = options.credentialsSupported
+    issuer.display = options.display
+
+    return this.openId4VcIssuerService.updateIssuer(this.agentContext, issuer)
+  }
+
+  /**
+   * Creates a credential offer. Either the preAuthorizedCodeFlowConfig or the authorizationCodeFlowConfig must be provided.
    *
    * @returns Object containing the payload of the credential offer and the credential offer request, which can be sent to the wallet.
    */
-  public async createCredentialOfferAndRequest(
-    offeredCredentials: OfferedCredential[],
-    options: CreateCredentialOfferAndRequestOptions
-  ): Promise<CredentialOfferAndRequest> {
-    return await this.openId4VcIssuerService.createCredentialOfferAndRequest(
-      this.agentContext,
-      offeredCredentials,
-      options
-    )
+  public async createCredentialOffer(
+    options: CreateCredentialOfferOptions & { issuerId: string }
+  ): Promise<CredentialOffer> {
+    const { issuerId, ...rest } = options
+    const issuer = await this.openId4VcIssuerService.getByIssuerId(this.agentContext, issuerId)
+    return await this.openId4VcIssuerService.createCredentialOffer(this.agentContext, { ...rest, issuer })
   }
 
   /**
    * This function retrieves the credential offer referenced by the given URI.
    * Retrieving a credential offer from a URI is possible after a credential offer was created with
-   * @see createCredentialOfferAndRequest and the credentialOfferUri option.
+   * @see createCredentialOffer and the credentialOfferUri option.
    *
    * @throws if no credential offer can found for the given URI.
    * @param uri - The URI referencing the credential offer.
@@ -73,18 +110,9 @@ export class OpenId4VcIssuerApi {
    * @param options.credential - The credential to be issued.
    * @param options.verificationMethod - The verification method used for signing the credential.
    */
-  public async createIssueCredentialResponse(options: CreateIssueCredentialResponseOptions) {
-    return await this.openId4VcIssuerService.createIssueCredentialResponse(this.agentContext, options)
-  }
-
-  /**
-   * Configures the enabled endpoints for the given router, as specified in @link https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0.html
-   *
-   * @param router - The router to configure.
-   * @param endpointConfig - The endpoint configuration.
-   * @returns The configured router.
-   */
-  public async configureRouter(router: Router, endpointConfig: IssuerEndpointConfig) {
-    return this.openId4VcIssuerService.configureRouter(this.agentContext, router, endpointConfig)
+  public async createCredentialResponse(options: CreateCredentialResponseOptions & { issuerId: string }) {
+    const { issuerId, ...rest } = options
+    const issuer = await this.openId4VcIssuerService.getByIssuerId(this.agentContext, issuerId)
+    return await this.openId4VcIssuerService.createCredentialResponse(this.agentContext, { ...rest, issuer })
   }
 }

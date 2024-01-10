@@ -35,7 +35,7 @@ export interface SdJwtVcSignOptions<Payload extends SdJwtVcPayload = SdJwtVcPayl
   disclosureFrame?: DisclosureFrame<Payload>
 
   /**
-   * Default of sha2-256 will be used
+   * Default of sha2-256 will be used if not provided
    */
   hashingAlgorithm?: HashName
 }
