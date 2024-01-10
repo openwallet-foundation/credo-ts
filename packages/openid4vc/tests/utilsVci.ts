@@ -1,20 +1,20 @@
-import type { CredentialSupported } from '@sphereon/oid4vci-common'
+import type { OpenId4VciCredentialSupportedWithId } from '../src'
 
 import { OpenIdCredentialFormatProfile } from '../src'
 
-export const openBadgeCredential: CredentialSupported & { id: string } = {
+export const openBadgeCredential: OpenId4VciCredentialSupportedWithId = {
   id: `/credentials/OpenBadgeCredential`,
   format: OpenIdCredentialFormatProfile.JwtVcJson,
   types: ['VerifiableCredential', 'OpenBadgeCredential'],
 }
 
-export const universityDegreeCredential: CredentialSupported & { id: string } = {
+export const universityDegreeCredential: OpenId4VciCredentialSupportedWithId = {
   id: `/credentials/UniversityDegreeCredential`,
   format: OpenIdCredentialFormatProfile.JwtVcJson,
   types: ['VerifiableCredential', 'UniversityDegreeCredential'],
 }
 
-export const universityDegreeCredentialLd: CredentialSupported & { id: string } = {
+export const universityDegreeCredentialLd: OpenId4VciCredentialSupportedWithId = {
   id: `/credentials/UniversityDegreeCredentialLd`,
   format: OpenIdCredentialFormatProfile.JwtVcJsonLd,
   types: ['VerifiableCredential', 'UniversityDegreeCredential'],
@@ -24,18 +24,14 @@ export const universityDegreeCredentialLd: CredentialSupported & { id: string } 
 export const universityDegreeCredentialSdJwt = {
   id: 'https://openid4vc-issuer.com/credentials/UniversityDegreeCredentialSdJwt',
   format: OpenIdCredentialFormatProfile.SdJwtVc,
-  credential_definition: {
-    vct: 'UniversityDegreeCredential',
-  },
-} satisfies CredentialSupported & { id: string }
+  vct: 'UniversityDegreeCredential',
+} satisfies OpenId4VciCredentialSupportedWithId
 
 export const universityDegreeCredentialSdJwt2 = {
   id: 'https://openid4vc-issuer.com/credentials/UniversityDegreeCredentialSdJwt2',
   format: OpenIdCredentialFormatProfile.SdJwtVc,
-  credential_definition: {
-    vct: 'UniversityDegreeCredential2',
-  },
-} satisfies CredentialSupported & { id: string }
+  vct: 'UniversityDegreeCredential2',
+} satisfies OpenId4VciCredentialSupportedWithId
 
 export const allCredentialsSupported = [
   openBadgeCredential,
