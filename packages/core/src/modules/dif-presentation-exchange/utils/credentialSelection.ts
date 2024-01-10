@@ -1,5 +1,9 @@
 import type { W3cCredentialRecord } from '../../vc'
-import type { PresentationSubmission, PresentationSubmissionRequirement, SubmissionEntry } from '../models'
+import type {
+  DifPexCredentialsForRequest,
+  DifPexCredentialsForRequestRequirement,
+  DifPexCredentialsForRequestSubmissionEntry,
+} from '../models'
 import type { IPresentationDefinition, SelectResults, SubmissionRequirementMatch } from '@sphereon/pex'
 import type { InputDescriptorV1, InputDescriptorV2, SubmissionRequirement } from '@sphereon/pex-models'
 
@@ -7,22 +11,23 @@ import { PEX } from '@sphereon/pex'
 import { Rules } from '@sphereon/pex-models'
 import { default as jp } from 'jsonpath'
 
-import { PresentationExchangeError } from '../PresentationExchangeError'
+import { deepEquality } from '../../../utils'
+import { DifPresentationExchangeError } from '../DifPresentationExchangeError'
 
 import { getSphereonOriginalVerifiableCredential } from './transform'
 
-export async function selectCredentialsForRequest(
+export async function getCredentialsForRequest(
   presentationDefinition: IPresentationDefinition,
   credentialRecords: Array<W3cCredentialRecord>,
   holderDIDs: Array<string>
-): Promise<PresentationSubmission> {
-  const encodedCredentials = credentialRecords.map((c) => getSphereonOriginalVerifiableCredential(c.credential))
-
+): Promise<DifPexCredentialsForRequest> {
   if (!presentationDefinition) {
-    throw new PresentationExchangeError('Presentation Definition is required to select credentials for submission.')
+    throw new DifPresentationExchangeError('Presentation Definition is required to select credentials for submission.')
   }
 
   const pex = new PEX()
+
+  const encodedCredentials = credentialRecords.map((c) => getSphereonOriginalVerifiableCredential(c.credential))
 
   // FIXME: there is a function for this in the VP library, but it is not usable atm
   const selectResultsRaw = pex.selectFrom(presentationDefinition, encodedCredentials, {
@@ -36,17 +41,20 @@ export async function selectCredentialsForRequest(
     ...selectResultsRaw,
     // Map the encoded credential to their respective w3c credential record
     verifiableCredential: selectResultsRaw.verifiableCredential?.map((encoded) => {
-      const credentialIndex = encodedCredentials.indexOf(encoded)
-      const credentialRecord = credentialRecords[credentialIndex]
+      const credentialRecord = credentialRecords.find((record) => {
+        const originalVc = getSphereonOriginalVerifiableCredential(record.credential)
+        return deepEquality(originalVc, encoded)
+      })
+
       if (!credentialRecord) {
-        throw new PresentationExchangeError('Unable to find credential in credential records.')
+        throw new DifPresentationExchangeError('Unable to find credential in credential records.')
       }
 
       return credentialRecord
     }),
   }
 
-  const presentationSubmission: PresentationSubmission = {
+  const presentationSubmission: DifPexCredentialsForRequest = {
     requirements: [],
     areRequirementsSatisfied: false,
     name: presentationDefinition.name,
@@ -67,7 +75,7 @@ export async function selectCredentialsForRequest(
   // for now if a request is made that has no required requirements (but only e.g. min: 0, which means we don't need to disclose anything)
   // I see this more as the fault of the presentation definition, as it should have at least some requirements.
   if (presentationSubmission.requirements.length === 0) {
-    throw new PresentationExchangeError(
+    throw new DifPresentationExchangeError(
       'Presentation Definition does not require any credentials. Optional credentials are not included in the presentation submission.'
     )
   }
@@ -88,22 +96,22 @@ export async function selectCredentialsForRequest(
 function getSubmissionRequirements(
   presentationDefinition: IPresentationDefinition,
   selectResults: W3cCredentialRecordSelectResults
-): Array<PresentationSubmissionRequirement> {
-  const submissionRequirements: Array<PresentationSubmissionRequirement> = []
+): Array<DifPexCredentialsForRequestRequirement> {
+  const submissionRequirements: Array<DifPexCredentialsForRequestRequirement> = []
 
   // There are submission requirements, so we need to select the input_descriptors
   // based on the submission requirements
   for (const submissionRequirement of presentationDefinition.submission_requirements ?? []) {
     // Check: if the submissionRequirement uses `from_nested`, as we don't support this yet
     if (submissionRequirement.from_nested) {
-      throw new PresentationExchangeError(
+      throw new DifPresentationExchangeError(
         "Presentation definition contains requirement using 'from_nested', which is not supported yet."
       )
     }
 
     // Check if there's a 'from'. If not the structure is not as we expect it
     if (!submissionRequirement.from) {
-      throw new PresentationExchangeError("Missing 'from' in submission requirement match")
+      throw new DifPresentationExchangeError("Missing 'from' in submission requirement match")
     }
 
     if (submissionRequirement.rule === Rules.All) {
@@ -134,8 +142,8 @@ function getSubmissionRequirements(
 function getSubmissionRequirementsForAllInputDescriptors(
   inputDescriptors: Array<InputDescriptorV1> | Array<InputDescriptorV2>,
   selectResults: W3cCredentialRecordSelectResults
-): Array<PresentationSubmissionRequirement> {
-  const submissionRequirements: Array<PresentationSubmissionRequirement> = []
+): Array<DifPexCredentialsForRequestRequirement> {
+  const submissionRequirements: Array<DifPexCredentialsForRequestRequirement> = []
 
   for (const inputDescriptor of inputDescriptors) {
     const submission = getSubmissionForInputDescriptor(inputDescriptor, selectResults)
@@ -158,9 +166,9 @@ function getSubmissionRequirementRuleAll(
 ) {
   // Check if there's a 'from'. If not the structure is not as we expect it
   if (!submissionRequirement.from)
-    throw new PresentationExchangeError("Missing 'from' in submission requirement match.")
+    throw new DifPresentationExchangeError("Missing 'from' in submission requirement match.")
 
-  const selectedSubmission: PresentationSubmissionRequirement = {
+  const selectedSubmission: DifPexCredentialsForRequestRequirement = {
     rule: Rules.All,
     needsCount: 0,
     name: submissionRequirement.name,
@@ -197,10 +205,10 @@ function getSubmissionRequirementRulePick(
 ) {
   // Check if there's a 'from'. If not the structure is not as we expect it
   if (!submissionRequirement.from) {
-    throw new PresentationExchangeError("Missing 'from' in submission requirement match.")
+    throw new DifPresentationExchangeError("Missing 'from' in submission requirement match.")
   }
 
-  const selectedSubmission: PresentationSubmissionRequirement = {
+  const selectedSubmission: DifPexCredentialsForRequestRequirement = {
     rule: Rules.Pick,
     needsCount: submissionRequirement.count ?? submissionRequirement.min ?? 1,
     name: submissionRequirement.name,
@@ -211,8 +219,8 @@ function getSubmissionRequirementRulePick(
     isRequirementSatisfied: false,
   }
 
-  const satisfiedSubmissions: Array<SubmissionEntry> = []
-  const unsatisfiedSubmissions: Array<SubmissionEntry> = []
+  const satisfiedSubmissions: Array<DifPexCredentialsForRequestSubmissionEntry> = []
+  const unsatisfiedSubmissions: Array<DifPexCredentialsForRequestSubmissionEntry> = []
 
   for (const inputDescriptor of presentationDefinition.input_descriptors) {
     // We only want to get the submission if the input descriptor belongs to the group
@@ -250,7 +258,7 @@ function getSubmissionRequirementRulePick(
 function getSubmissionForInputDescriptor(
   inputDescriptor: InputDescriptorV1 | InputDescriptorV2,
   selectResults: W3cCredentialRecordSelectResults
-): SubmissionEntry {
+): DifPexCredentialsForRequestSubmissionEntry {
   // https://github.com/Sphereon-Opensource/PEX/issues/116
   // If the input descriptor doesn't contain a name, the name of the match will be the id of the input descriptor that satisfied it
   const matchesForInputDescriptor = selectResults.matches?.filter(
@@ -260,7 +268,7 @@ function getSubmissionForInputDescriptor(
       m.name === inputDescriptor.name
   )
 
-  const submissionEntry: SubmissionEntry = {
+  const submissionEntry: DifPexCredentialsForRequestSubmissionEntry = {
     inputDescriptorId: inputDescriptor.id,
     name: inputDescriptor.name,
     purpose: inputDescriptor.purpose,

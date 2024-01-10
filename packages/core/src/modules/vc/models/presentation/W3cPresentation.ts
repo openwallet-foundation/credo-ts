@@ -1,4 +1,5 @@
 import type { W3cHolderOptions } from './W3cHolder'
+import type { W3cJsonPresentation } from './W3cJsonPresentation'
 import type { JsonObject } from '../../../../types'
 import type { W3cVerifiableCredential } from '../credential/W3cVerifiableCredential'
 import type { ValidationOptions } from 'class-validator'
@@ -6,6 +7,7 @@ import type { ValidationOptions } from 'class-validator'
 import { Expose } from 'class-transformer'
 import { ValidateNested, buildMessage, IsOptional, ValidateBy } from 'class-validator'
 
+import { JsonTransformer } from '../../../../utils'
 import { SingleOrArray } from '../../../../utils/type'
 import { IsUri, IsInstanceOrArrayOfInstances } from '../../../../utils/validators'
 import { CREDENTIALS_CONTEXT_V1_URL, VERIFIABLE_PRESENTATION_TYPE } from '../../constants'
@@ -63,6 +65,10 @@ export class W3cPresentation {
     if (!this.holder) return null
 
     return this.holder instanceof W3cHolder ? this.holder.id : this.holder
+  }
+
+  public toJSON() {
+    return JsonTransformer.toJSON(this) as W3cJsonPresentation
   }
 }
 
