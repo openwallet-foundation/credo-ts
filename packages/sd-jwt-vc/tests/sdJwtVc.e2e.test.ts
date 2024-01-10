@@ -2,6 +2,7 @@ import type { Key } from '@aries-framework/core'
 
 import { AskarModule } from '@aries-framework/askar'
 import {
+  getJwkFromKey,
   Agent,
   DidKey,
   DidsModule,
@@ -37,7 +38,6 @@ describe('sd-jwt-vc end to end test', () => {
 
   const holder = getAgent('sdjwtvcholderagent')
   let holderKey: Key
-  let holderDidUrl: string
 
   const verifier = getAgent('sdjwtvcverifieragent')
   const verifierDid = 'did:key:zUC74VEqqhEHQcgv4zagSPkqFJxuNWuoBPKjJuHETEUeHLoSqWt92viSsmaWjy82y'
@@ -59,11 +59,6 @@ describe('sd-jwt-vc end to end test', () => {
       keyType: KeyType.Ed25519,
       seed: TypedArrayEncoder.fromString('00000000000000000000000000000001'),
     })
-
-    const holderDidKey = new DidKey(holderKey)
-    const holderDidDocument = holderDidKey.didDocument
-    holderDidUrl = (holderDidDocument.verificationMethod ?? [])[0].id
-    await holder.dids.import({ didDocument: holderDidDocument, did: holderDidDocument.id })
 
     await verifier.initialize()
   })
@@ -87,9 +82,23 @@ describe('sd-jwt-vc end to end test', () => {
       is_over_65: true,
     } as const
 
-    const { compact, sdJwtVcRecord: _sdJwtVcRecord } = await issuer.modules.sdJwt.create(credential, {
-      holderDidUrl,
-      issuerDidUrl,
+    const { compact, header, payload } = await issuer.modules.sdJwt.sign({
+      payload: credential,
+      // FIXME: sd-jwt library does not support did binding for holder yet
+      // issuance is fine, but in verification of KB the jwk will be extracted
+      // from the cnf claim which will be undefined.
+      // holder: {
+      //   method: 'did',
+      //   didUrl: holderDidUrl,
+      // },
+      holder: {
+        method: 'jwk',
+        jwk: getJwkFromKey(holderKey),
+      },
+      issuer: {
+        didUrl: issuerDidUrl,
+        method: 'did',
+      },
       disclosureFrame: {
         is_over_65: true,
         is_over_21: true,
@@ -104,24 +113,99 @@ describe('sd-jwt-vc end to end test', () => {
       },
     })
 
-    type Payload = (typeof _sdJwtVcRecord)['sdJwtVc']['payload']
-    type Header = (typeof _sdJwtVcRecord)['sdJwtVc']['header']
+    type Payload = typeof payload
+    type Header = typeof header
 
-    const sdJwtVcRecord = await holder.modules.sdJwt.fromSerializedJwt<Header, Payload>(compact, {
-      issuerDidUrl,
-      holderDidUrl,
+    // parse SD-JWT
+    const sdJwtVc = await holder.modules.sdJwt.fromCompact<Header, Payload>(compact)
+    expect(sdJwtVc).toEqual({
+      compact: expect.any(String),
+      header: {
+        alg: 'EdDSA',
+        kid: '#z6MktqtXNG8CDUY9PrrtoStFzeCnhpMmgxYL1gikcW3BzvNW',
+        typ: 'vc+sd-jwt',
+      },
+      payload: {
+        _sd: [
+          expect.any(String),
+          expect.any(String),
+          expect.any(String),
+          expect.any(String),
+          expect.any(String),
+          expect.any(String),
+          expect.any(String),
+          expect.any(String),
+          expect.any(String),
+          expect.any(String),
+        ],
+        _sd_alg: 'sha-256',
+        address: {
+          _sd: [
+            expect.any(String),
+            expect.any(String),
+            expect.any(String),
+            expect.any(String),
+            expect.any(String),
+            expect.any(String),
+          ],
+        },
+        cnf: {
+          jwk: {
+            crv: 'Ed25519',
+            kty: 'OKP',
+            x: 'oENVsxOUiH54X8wJLaVkicCRk00wBIQ4sRgbk54N8Mo',
+          },
+        },
+        iat: expect.any(Number),
+        iss: 'did:key:z6MktqtXNG8CDUY9PrrtoStFzeCnhpMmgxYL1gikcW3BzvNW',
+        vct: 'IdentityCredential',
+      },
+      prettyClaims: {
+        address: {
+          country: 'US',
+          locality: 'Anytown',
+          region: 'Anystate',
+          street_address: '123 Main St',
+        },
+        birthdate: '1940-01-01',
+        cnf: {
+          jwk: {
+            crv: 'Ed25519',
+            kty: 'OKP',
+            x: 'oENVsxOUiH54X8wJLaVkicCRk00wBIQ4sRgbk54N8Mo',
+          },
+        },
+        email: 'johndoe@example.com',
+        family_name: 'Doe',
+        given_name: 'John',
+        iat: expect.any(Number),
+        is_over_18: true,
+        is_over_21: true,
+        is_over_65: true,
+        iss: 'did:key:z6MktqtXNG8CDUY9PrrtoStFzeCnhpMmgxYL1gikcW3BzvNW',
+        phone_number: '+1-202-555-0101',
+        vct: 'IdentityCredential',
+      },
     })
 
-    await holder.modules.sdJwt.storeCredential(sdJwtVcRecord)
+    // Verify SD-JWT (does not require key binding)
+    const { verification } = await holder.modules.sdJwt.verify({
+      compactSdJwtVc: compact,
+    })
+    expect(verification.isValid).toBe(true)
+
+    // Store credential
+    await holder.modules.sdJwt.store(compact)
 
     // Metadata created by the verifier and send out of band by the verifier to the holder
     const verifierMetadata = {
-      verifierDid,
+      audience: verifierDid,
       issuedAt: new Date().getTime() / 1000,
       nonce: await verifier.wallet.generateNonce(),
     }
 
-    const presentation = await holder.modules.sdJwt.present(sdJwtVcRecord, {
+    const presentation = await holder.modules.sdJwt.present<Header, Payload>({
+      compactSdJwtVc: compact,
       verifierMetadata,
       presentationFrame: {
         vct: true,
@@ -142,11 +226,9 @@ describe('sd-jwt-vc end to end test', () => {
       },
     })
 
-    const {
-      validation: { isValid },
-    } = await verifier.modules.sdJwt.verify(presentation, {
-      holderDidUrl,
-      challenge: { verifierDid },
+    const { verification: presentationVerification } = await verifier.modules.sdJwt.verify({
+      compactSdJwtVc: presentation,
+      keyBinding: { audience: verifierDid, nonce: verifierMetadata.nonce },
       requiredClaimKeys: [
         'is_over_65',
         'is_over_21',
@@ -163,6 +245,6 @@ describe('sd-jwt-vc end to end test', () => {
       ],
     })
 
-    expect(isValid).toBeTruthy()
+    expect(presentationVerification.isValid).toBeTruthy()
   })
 })

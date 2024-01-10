@@ -1,88 +1,46 @@
-import type { SdJwtVcHeader, SdJwtVcPayload } from '../SdJwtVcOptions'
 import type { TagsBase, Constructable } from '@aries-framework/core'
-import type { DisclosureItem, HasherAndAlgorithm } from '@sd-jwt/core'
+import type { Disclosure } from '@sd-jwt/core'
 
-import { JsonTransformer, Hasher, TypedArrayEncoder, BaseRecord, utils } from '@aries-framework/core'
-import { Disclosure, HasherAlgorithm, SdJwtVc } from '@sd-jwt/core'
+import { JsonTransformer, BaseRecord, utils } from '@aries-framework/core'
+import { SdJwtVc } from '@sd-jwt/core'
 
 export type DefaultSdJwtVcRecordTags = {
   disclosureKeys?: Array<string>
 }
 
-export type SdJwt<Header extends SdJwtVcHeader = SdJwtVcHeader, Payload extends SdJwtVcPayload = SdJwtVcPayload> = {
-  disclosures?: Array<DisclosureItem>
-  header: Header
-  payload: Payload
-  // FIXME: serializing Uint8Array to and from JSON does not work. Can we just store the SD-JWT in it's compact version?
-  signature: Uint8Array
-
-  holderDidUrl: string
-}
-
-export type SdJwtVcRecordStorageProps<
-  Header extends SdJwtVcHeader = SdJwtVcHeader,
-  Payload extends SdJwtVcPayload = SdJwtVcPayload
-> = {
+export type SdJwtVcRecordStorageProps = {
   id?: string
   createdAt?: Date
   tags?: TagsBase
-  sdJwtVc: SdJwt<Header, Payload>
+  compactSdJwtVc: string
 }
 
-export class SdJwtVcRecord<
-  Header extends SdJwtVcHeader = SdJwtVcHeader,
-  Payload extends SdJwtVcPayload = SdJwtVcPayload
-> extends BaseRecord<DefaultSdJwtVcRecordTags> {
+export class SdJwtVcRecord extends BaseRecord<DefaultSdJwtVcRecordTags> {
   public static readonly type = 'SdJwtVcRecord'
   public readonly type = SdJwtVcRecord.type
 
-  public sdJwtVc!: SdJwt<Header, Payload>
+  // We store the sdJwtVc in compact format.
+  public compactSdJwtVc!: string
 
-  public constructor(props: SdJwtVcRecordStorageProps<Header, Payload>) {
+  // TODO: should we also store the pretty claims so it's not needed to
+  // re-calculate the hashes each time? I think for now it's fine to re-calculate
+
+  public constructor(props: SdJwtVcRecordStorageProps) {
     super()
 
     if (props) {
       this.id = props.id ?? utils.uuid()
       this.createdAt = props.createdAt ?? new Date()
-      this.sdJwtVc = props.sdJwtVc
+      this.compactSdJwtVc = props.compactSdJwtVc
       this._tags = props.tags ?? {}
     }
   }
 
-  private get hasher(): HasherAndAlgorithm {
-    return {
-      algorithm: HasherAlgorithm.Sha256,
-      hasher: (input: string) => {
-        const serializedInput = TypedArrayEncoder.fromString(input)
-        return Hasher.hash(serializedInput, 'sha2-256')
-      },
-    }
-  }
-
-  /**
-   * This function gets the claims from the payload and combines them with the claims in the disclosures.
-   *
-   * This can be used to display all claims included in the `sd-jwt-vc` to the holder or verifier.
-   */
-  public async getPrettyClaims<Claims extends Record<string, unknown> | Payload = Payload>(): Promise<Claims> {
-    const sdJwtVc = new SdJwtVc<Header, Payload>({
-      header: this.sdJwtVc.header,
-      payload: this.sdJwtVc.payload,
-      disclosures: this.sdJwtVc.disclosures?.map(Disclosure.fromArray),
-    }).withHasher(this.hasher)
-
-    // Assert that we only support `sha-256` as a hashing algorithm
-    if ('_sd_alg' in this.sdJwtVc.payload) {
-      sdJwtVc.assertClaimInPayload('_sd_alg', HasherAlgorithm.Sha256.toString())
-    }
-
-    return await sdJwtVc.getPrettyClaims<Claims>()
-  }
-
   public getTags() {
-    const disclosureKeys = this.sdJwtVc.disclosures
-      ?.filter((d): d is [string, string, unknown] => d.length === 3)
-      .map((d) => d[1])
+    const disclosures = SdJwtVc.fromCompact(this.compactSdJwtVc).disclosures
+    const disclosureKeys = disclosures
+      ?.filter((d): d is Disclosure & { decoded: [string, string, unknown] } => d.decoded.length === 3)
+      .map((d) => d.decoded[1])
 
     return {
       ...this._tags,

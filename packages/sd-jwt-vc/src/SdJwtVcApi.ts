@@ -1,7 +1,5 @@
-import type { SdJwtCredential } from './SdJwtCredential'
 import type {
-  SdJwtVcCreateOptions,
-  SdJwtVcFromSerializedJwtOptions,
+  SdJwtVcSignOptions,
   SdJwtVcHeader,
   SdJwtVcPayload,
   SdJwtVcPresentOptions,
@@ -27,32 +25,8 @@ export class SdJwtVcApi {
     this.sdJwtVcService = sdJwtVcService
   }
 
-  public async create<Payload extends SdJwtVcPayload>(payload: Payload, options: SdJwtVcCreateOptions<Payload>) {
-    return await this.sdJwtVcService.create<Payload>(this.agentContext, payload, options)
-  }
-
-  public async signCredential<Payload extends SdJwtVcPayload>(credential: SdJwtCredential<Payload>) {
-    return await this.sdJwtVcService.signCredential<Payload>(this.agentContext, credential)
-  }
-
-  /**
-   *
-   * Get and validate a sd-jwt-vc from a serialized JWT.
-   */
-  public async fromSerializedJwt<Header extends SdJwtVcHeader, Payload extends SdJwtVcPayload>(
-    sdJwtVcCompact: string,
-    options: SdJwtVcFromSerializedJwtOptions
-  ) {
-    return await this.sdJwtVcService.fromSerializedJwt<Header, Payload>(this.agentContext, sdJwtVcCompact, options)
-  }
-
-  /**
-   *
-   * Stores and sd-jwt-vc record
-   *
-   */
-  public async storeCredential(sdJwtVcRecord: SdJwtVcRecord) {
-    return await this.sdJwtVcService.storeCredential(this.agentContext, sdJwtVcRecord)
+  public async sign<Payload extends SdJwtVcPayload>(options: SdJwtVcSignOptions<Payload>) {
+    return await this.sdJwtVcService.sign<Payload>(this.agentContext, options)
   }
 
   /**
@@ -60,15 +34,12 @@ export class SdJwtVcApi {
    * Create a compact presentation of the sd-jwt.
    * This presentation can be send in- or out-of-band to the verifier.
    *
-   * Within the `options` field, you can supply the indicies of the disclosures you would like to share with the verifier.
    * Also, whether to include the holder key binding.
-   *
    */
   public async present<Header extends SdJwtVcHeader, Payload extends SdJwtVcPayload>(
-    sdJwtVcRecord: SdJwtVcRecord<Header, Payload>,
     options: SdJwtVcPresentOptions<Payload>
   ): Promise<string> {
-    return await this.sdJwtVcService.present<Header, Payload>(this.agentContext, sdJwtVcRecord, options)
+    return await this.sdJwtVcService.present<Header, Payload>(this.agentContext, options)
   }
 
   /**
@@ -78,30 +49,38 @@ export class SdJwtVcApi {
    * For example, you might still want to continue with a flow if not all the claims are included, but the signature is valid.
    *
    */
-  public async verify<Header extends SdJwtVcHeader, Payload extends SdJwtVcPayload>(
-    sdJwtVcCompact: string,
-    options: SdJwtVcVerifyOptions
-  ) {
-    return await this.sdJwtVcService.verify<Header, Payload>(this.agentContext, sdJwtVcCompact, options)
+  public async verify<Header extends SdJwtVcHeader, Payload extends SdJwtVcPayload>(options: SdJwtVcVerifyOptions) {
+    return await this.sdJwtVcService.verify<Header, Payload>(this.agentContext, options)
+  }
+
+  /**
+   * Get and validate a sd-jwt-vc from a serialized JWT.
+   */
+  public async fromCompact<Header extends SdJwtVcHeader, Payload extends SdJwtVcPayload>(sdJwtVcCompact: string) {
+    return await this.sdJwtVcService.fromCompact<Header, Payload>(sdJwtVcCompact)
+  }
+
+  public async store(compactSdJwtVc: string) {
+    return await this.sdJwtVcService.store(this.agentContext, compactSdJwtVc)
   }
 
   public async getById(id: string): Promise<SdJwtVcRecord> {
-    return await this.sdJwtVcService.getCredentialRecordById(this.agentContext, id)
+    return await this.sdJwtVcService.getById(this.agentContext, id)
   }
 
   public async getAll(): Promise<Array<SdJwtVcRecord>> {
-    return await this.sdJwtVcService.getAllCredentialRecords(this.agentContext)
+    return await this.sdJwtVcService.getAll(this.agentContext)
   }
 
   public async findAllByQuery(query: Query<SdJwtVcRecord>): Promise<Array<SdJwtVcRecord>> {
-    return await this.sdJwtVcService.findCredentialRecordsByQuery(this.agentContext, query)
+    return await this.sdJwtVcService.findByQuery(this.agentContext, query)
   }
 
-  public async remove(id: string) {
-    return await this.sdJwtVcService.removeCredentialRecord(this.agentContext, id)
+  public async deleteById(id: string) {
+    return await this.sdJwtVcService.deleteById(this.agentContext, id)
   }
 
   public async update(sdJwtVcRecord: SdJwtVcRecord) {
-    return await this.sdJwtVcService.updateCredentialRecord(this.agentContext, sdJwtVcRecord)
+    return await this.sdJwtVcService.update(this.agentContext, sdJwtVcRecord)
   }
 }

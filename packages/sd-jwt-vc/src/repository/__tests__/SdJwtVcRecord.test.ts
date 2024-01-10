@@ -1,12 +1,11 @@
 import { JsonTransformer } from '@aries-framework/core'
-import { SdJwtVc, SignatureAndEncryptionAlgorithm } from '@sd-jwt/core'
 
 import { SdJwtVcRecord } from '../SdJwtVcRecord'
 
 describe('SdJwtVcRecord', () => {
-  const holderDidUrl = 'did:key:zUC74VEqqhEHQcgv4zagSPkqFJxuNWuoBPKjJuHETEUeHLoSqWt92viSsmaWjy82y'
-
   test('sets the values passed in the constructor on the record', () => {
+    const compactSdJwtVc =
+      'eyJhbGciOiJFZERTQSIsInR5cCI6InZjK3NkLWp3dCIsImtpZCI6Ino2TWt0cXRYTkc4Q0RVWTlQcnJ0b1N0RnplQ25ocE1tZ3hZTDFnaWtjVzNCenZOVyJ9.eyJ2Y3QiOiJJZGVudGl0eUNyZWRlbnRpYWwiLCJmYW1pbHlfbmFtZSI6IkRvZSIsInBob25lX251bWJlciI6IisxLTIwMi01NTUtMDEwMSIsImFkZHJlc3MiOnsic3RyZWV0X2FkZHJlc3MiOiIxMjMgTWFpbiBTdCIsImxvY2FsaXR5IjoiQW55dG93biIsIl9zZCI6WyJOSm5tY3QwQnFCTUUxSmZCbEM2alJRVlJ1ZXZwRU9OaVl3N0E3TUh1SnlRIiwib201Wnp0WkhCLUdkMDBMRzIxQ1ZfeE00RmFFTlNvaWFPWG5UQUpOY3pCNCJdfSwiY25mIjp7Imp3ayI6eyJrdHkiOiJPS1AiLCJjcnYiOiJFZDI1NTE5IiwieCI6Im9FTlZzeE9VaUg1NFg4d0pMYVZraWNDUmswMHdCSVE0c1JnYms1NE44TW8ifX0sImlzcyI6ImRpZDprZXk6ejZNa3RxdFhORzhDRFVZOVBycnRvU3RGemVDbmhwTW1neFlMMWdpa2NXM0J6dk5XIiwiaWF0IjoxNjk4MTUxNTMyLCJfc2RfYWxnIjoic2hhLTI1NiIsIl9zZCI6WyIxQ3VyMmsyQTJvSUI1Q3NoU0lmX0FfS2ctbDI2dV9xS3VXUTc5UDBWZGFzIiwiUjF6VFV2T1lIZ2NlcGowakh5cEdIejlFSHR0VktmdDB5c3diYzlFVFBiVSIsImVEcVFwZFRYSlhiV2hmLUVzSTd6dzVYNk92WW1GTi1VWlFRTWVzWHdLUHciLCJwZERrMl9YQUtIbzdnT0Fmd0YxYjdPZENVVlRpdDJrSkhheFNFQ1E5eGZjIiwicHNhdUtVTldFaTA5bnUzQ2w4OXhLWGdtcFdFTlpsNXV5MU4xbnluX2pNayIsInNOX2dlMHBIWEY2cW1zWW5YMUE5U2R3SjhjaDhhRU5reGJPRHNUNzRZd0kiXX0.Yz5U__nC0Nccza-NNfqhp-GueKXqeFNjm_NNtC1AJ2KdmERhCHdO6KNjM7bOiruHlo4oAlj-xObuB9LRiKXeCw~WyJzYWx0IiwiaXNfb3Zlcl82NSIsdHJ1ZV0~WyJzYWx0IiwiaXNfb3Zlcl8yMSIsdHJ1ZV0~WyJzYWx0IiwiaXNfb3Zlcl8xOCIsdHJ1ZV0~WyJzYWx0IiwiYmlydGhkYXRlIiwiMTk0MC0wMS0wMSJd~WyJzYWx0IiwiZW1haWwiLCJqb2huZG9lQGV4YW1wbGUuY29tIl0~WyJzYWx0IiwicmVnaW9uIiwiQW55c3RhdGUiXQ~WyJzYWx0IiwiY291bnRyeSIsIlVTIl0~WyJzYWx0IiwiZ2l2ZW5fbmFtZSIsIkpvaG4iXQ~'
     const createdAt = new Date()
     const sdJwtVcRecord = new SdJwtVcRecord({
       id: 'sdjwt-id',
@@ -14,12 +13,7 @@ describe('SdJwtVcRecord', () => {
       tags: {
         some: 'tag',
       },
-      sdJwtVc: {
-        header: { alg: SignatureAndEncryptionAlgorithm.EdDSA },
-        payload: { iss: 'did:key:123' },
-        signature: new Uint8Array(32).fill(42),
-        holderDidUrl,
-      },
+      compactSdJwtVc,
     })
 
     expect(sdJwtVcRecord.type).toBe('SdJwtVcRecord')
@@ -27,16 +21,23 @@ describe('SdJwtVcRecord', () => {
     expect(sdJwtVcRecord.createdAt).toBe(createdAt)
     expect(sdJwtVcRecord.getTags()).toEqual({
       some: 'tag',
+      disclosureKeys: [
+        'is_over_65',
+        'is_over_21',
+        'is_over_18',
+        'birthdate',
+        'email',
+        'region',
+        'country',
+        'given_name',
+      ],
     })
-    expect(sdJwtVcRecord.sdJwtVc).toEqual({
-      header: { alg: SignatureAndEncryptionAlgorithm.EdDSA },
-      payload: { iss: 'did:key:123' },
-      signature: new Uint8Array(32).fill(42),
-      holderDidUrl,
-    })
+    expect(sdJwtVcRecord.compactSdJwtVc).toEqual(compactSdJwtVc)
   })
 
   test('serializes and deserializes', () => {
+    const compactSdJwtVc =
+      'eyJhbGciOiJFZERTQSIsInR5cCI6InZjK3NkLWp3dCIsImtpZCI6Ino2TWt0cXRYTkc4Q0RVWTlQcnJ0b1N0RnplQ25ocE1tZ3hZTDFnaWtjVzNCenZOVyJ9.eyJ2Y3QiOiJJZGVudGl0eUNyZWRlbnRpYWwiLCJmYW1pbHlfbmFtZSI6IkRvZSIsInBob25lX251bWJlciI6IisxLTIwMi01NTUtMDEwMSIsImFkZHJlc3MiOnsic3RyZWV0X2FkZHJlc3MiOiIxMjMgTWFpbiBTdCIsImxvY2FsaXR5IjoiQW55dG93biIsIl9zZCI6WyJOSm5tY3QwQnFCTUUxSmZCbEM2alJRVlJ1ZXZwRU9OaVl3N0E3TUh1SnlRIiwib201Wnp0WkhCLUdkMDBMRzIxQ1ZfeE00RmFFTlNvaWFPWG5UQUpOY3pCNCJdfSwiY25mIjp7Imp3ayI6eyJrdHkiOiJPS1AiLCJjcnYiOiJFZDI1NTE5IiwieCI6Im9FTlZzeE9VaUg1NFg4d0pMYVZraWNDUmswMHdCSVE0c1JnYms1NE44TW8ifX0sImlzcyI6ImRpZDprZXk6ejZNa3RxdFhORzhDRFVZOVBycnRvU3RGemVDbmhwTW1neFlMMWdpa2NXM0J6dk5XIiwiaWF0IjoxNjk4MTUxNTMyLCJfc2RfYWxnIjoic2hhLTI1NiIsIl9zZCI6WyIxQ3VyMmsyQTJvSUI1Q3NoU0lmX0FfS2ctbDI2dV9xS3VXUTc5UDBWZGFzIiwiUjF6VFV2T1lIZ2NlcGowakh5cEdIejlFSHR0VktmdDB5c3diYzlFVFBiVSIsImVEcVFwZFRYSlhiV2hmLUVzSTd6dzVYNk92WW1GTi1VWlFRTWVzWHdLUHciLCJwZERrMl9YQUtIbzdnT0Fmd0YxYjdPZENVVlRpdDJrSkhheFNFQ1E5eGZjIiwicHNhdUtVTldFaTA5bnUzQ2w4OXhLWGdtcFdFTlpsNXV5MU4xbnluX2pNayIsInNOX2dlMHBIWEY2cW1zWW5YMUE5U2R3SjhjaDhhRU5reGJPRHNUNzRZd0kiXX0.Yz5U__nC0Nccza-NNfqhp-GueKXqeFNjm_NNtC1AJ2KdmERhCHdO6KNjM7bOiruHlo4oAlj-xObuB9LRiKXeCw~WyJzYWx0IiwiaXNfb3Zlcl82NSIsdHJ1ZV0~WyJzYWx0IiwiaXNfb3Zlcl8yMSIsdHJ1ZV0~WyJzYWx0IiwiaXNfb3Zlcl8xOCIsdHJ1ZV0~WyJzYWx0IiwiYmlydGhkYXRlIiwiMTk0MC0wMS0wMSJd~WyJzYWx0IiwiZW1haWwiLCJqb2huZG9lQGV4YW1wbGUuY29tIl0~WyJzYWx0IiwicmVnaW9uIiwiQW55c3RhdGUiXQ~WyJzYWx0IiwiY291bnRyeSIsIlVTIl0~WyJzYWx0IiwiZ2l2ZW5fbmFtZSIsIkpvaG4iXQ~'
     const createdAt = new Date('2022-02-02')
     const sdJwtVcRecord = new SdJwtVcRecord({
       id: 'sdjwt-id',
@@ -44,12 +45,7 @@ describe('SdJwtVcRecord', () => {
       tags: {
         some: 'tag',
       },
-      sdJwtVc: {
-        header: { alg: SignatureAndEncryptionAlgorithm.EdDSA },
-        payload: { iss: 'did:key:123' },
-        signature: new Uint8Array(32).fill(42),
-        holderDidUrl,
-      },
+      compactSdJwtVc,
     })
 
     const json = sdJwtVcRecord.toJSON()
@@ -60,11 +56,7 @@ describe('SdJwtVcRecord', () => {
       _tags: {
         some: 'tag',
       },
-      sdJwtVc: {
-        header: { alg: SignatureAndEncryptionAlgorithm.EdDSA },
-        payload: { iss: 'did:key:123' },
-        signature: new Uint8Array(32).fill(42),
-      },
+      compactSdJwtVc,
     })
 
     const instance = JsonTransformer.deserialize(JSON.stringify(json), SdJwtVcRecord)
@@ -74,49 +66,17 @@ describe('SdJwtVcRecord', () => {
     expect(instance.createdAt.getTime()).toBe(createdAt.getTime())
     expect(instance.getTags()).toEqual({
       some: 'tag',
+      disclosureKeys: [
+        'is_over_65',
+        'is_over_21',
+        'is_over_18',
+        'birthdate',
+        'email',
+        'region',
+        'country',
+        'given_name',
+      ],
     })
-    expect(instance.sdJwtVc.signature).toBeInstanceOf(Uint8Array)
-    expect(instance.sdJwtVc).toMatchObject({
-      header: { alg: SignatureAndEncryptionAlgorithm.EdDSA },
-      payload: { iss: 'did:key:123' },
-      signature: new Uint8Array(32).fill(42),
-    })
-  })
-
-  test('Get the pretty claims', async () => {
-    const compactSdJwtVc =
-      'eyJhbGciOiJFZERTQSIsInR5cCI6InZjK3NkLWp3dCIsImtpZCI6Ino2TWt0cXRYTkc4Q0RVWTlQcnJ0b1N0RnplQ25ocE1tZ3hZTDFnaWtjVzNCenZOVyJ9.eyJ2Y3QiOiJJZGVudGl0eUNyZWRlbnRpYWwiLCJjbmYiOnsiandrIjp7Imt0eSI6Ik9LUCIsImNydiI6IkVkMjU1MTkiLCJ4Ijoib0VOVnN4T1VpSDU0WDh3SkxhVmtpY0NSazAwd0JJUTRzUmdiazU0TjhNbyJ9fSwiaXNzIjoiZGlkOmtleTp6Nk1rdHF0WE5HOENEVVk5UHJydG9TdEZ6ZUNuaHBNbWd4WUwxZ2lrY1czQnp2TlciLCJpYXQiOjE2OTgxNTE1MzIsIl9zZF9hbGciOiJzaGEtMjU2IiwiX3NkIjpbInZjdkZVNERzRktUcVExdmw0bmVsSldYVGJfLTBkTm9Ca3M2aXFORnB0eWciXX0.yUYqg_7fkgvh4vnoWW4L6OZpM1eAatAfKUUMhHt2xYdHtQYHdVOch1Om-mpN2lTsyw9L1sZ5KsuAx7-5T-jlDQ~WyJzYWx0IiwiY2xhaW0iLCJzb21lLWNsYWltIl0~'
-
-    const sdJwtVc = SdJwtVc.fromCompact(compactSdJwtVc)
-
-    const sdJwtVcRecord = new SdJwtVcRecord({
-      tags: {
-        some: 'tag',
-      },
-      sdJwtVc: {
-        header: sdJwtVc.header,
-        payload: sdJwtVc.payload,
-        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        signature: sdJwtVc.signature!,
-        disclosures: sdJwtVc.disclosures?.map((d) => d.decoded),
-        holderDidUrl,
-      },
-    })
-
-    const prettyClaims = await sdJwtVcRecord.getPrettyClaims()
-
-    expect(prettyClaims).toEqual({
-      vct: 'IdentityCredential',
-      cnf: {
-        jwk: {
-          kty: 'OKP',
-          crv: 'Ed25519',
-          x: 'oENVsxOUiH54X8wJLaVkicCRk00wBIQ4sRgbk54N8Mo',
-        },
-      },
-      iss: 'did:key:z6MktqtXNG8CDUY9PrrtoStFzeCnhpMmgxYL1gikcW3BzvNW',
-      iat: 1698151532,
-      claim: 'some-claim',
-    })
+    expect(instance.compactSdJwtVc).toBe(compactSdJwtVc)
   })
 })

@@ -1,8 +1,9 @@
 import type { SdJwtVcHeader } from '../SdJwtVcOptions'
-import type { Key } from '@aries-framework/core'
+import type { Jwk, Key } from '@aries-framework/core'
 
 import { AskarModule } from '@aries-framework/askar'
 import {
+  parseDid,
   getJwkFromKey,
   DidKey,
   DidsModule,
@@ -28,6 +29,12 @@ import {
   simpleJwtVcPresentation,
 } from './sdjwtvc.fixtures'
 
+const jwkJsonWithoutUse = (jwk: Jwk) => {
+  const jwkJson = jwk.toJson()
+  delete jwkJson.use
+  return jwkJson
+}
+
 const agent = new Agent({
   config: { label: 'sdjwtvcserviceagent', walletConfig: { id: utils.uuid(), key: utils.uuid() } },
   modules: {
@@ -49,7 +56,6 @@ const SdJwtVcRepositoryMock = SdJwtVcRepository as jest.Mock<SdJwtVcRepository>
 describe('SdJwtVcService', () => {
   const verifierDid = 'did:key:zUC74VEqqhEHQcgv4zagSPkqFJxuNWuoBPKjJuHETEUeHLoSqWt92viSsmaWjy82y'
   let issuerDidUrl: string
-  let holderDidUrl: string
   let issuerKey: Key
   let holderKey: Key
   let sdJwtVcService: SdJwtVcService
@@ -74,87 +80,108 @@ describe('SdJwtVcService', () => {
 
     const holderDidKey = new DidKey(holderKey)
     const holderDidDocument = holderDidKey.didDocument
-    holderDidUrl = (holderDidDocument.verificationMethod ?? [])[0].id
     await agent.dids.import({ didDocument: holderDidDocument, did: holderDidDocument.id })
 
     const sdJwtVcRepositoryMock = new SdJwtVcRepositoryMock()
     sdJwtVcService = new SdJwtVcService(sdJwtVcRepositoryMock)
   })
 
-  describe('SdJwtVcService.create', () => {
-    test('Create sd-jwt-vc from a basic payload without disclosures', async () => {
-      const { compact, sdJwtVcRecord } = await sdJwtVcService.create(
-        agent.context,
-        {
+  describe('SdJwtVcService.sign', () => {
+    test('Sign sd-jwt-vc from a basic payload without disclosures', async () => {
+      const { compact } = await sdJwtVcService.sign(agent.context, {
+        payload: {
           claim: 'some-claim',
           vct: 'IdentityCredential',
         },
-        {
-          issuerDidUrl,
-          holderDidUrl,
-        }
-      )
+        holder: {
+          // FIXME: is it nicer API to just pass either didUrl or JWK?
+          // Or none if you don't want to bind it?
+          method: 'jwk',
+          jwk: jwkJsonWithoutUse(getJwkFromKey(holderKey)),
+        },
+        issuer: {
+          method: 'did',
+          didUrl: issuerDidUrl,
+        },
+      })
 
       expect(compact).toStrictEqual(simpleJwtVc)
 
-      expect(sdJwtVcRecord.sdJwtVc.header).toEqual({
+      const sdJwtVc = await sdJwtVcService.fromCompact(compact)
+
+      expect(sdJwtVc.header).toEqual({
         alg: 'EdDSA',
         typ: 'vc+sd-jwt',
-        kid: 'z6MktqtXNG8CDUY9PrrtoStFzeCnhpMmgxYL1gikcW3BzvNW',
+        kid: '#z6MktqtXNG8CDUY9PrrtoStFzeCnhpMmgxYL1gikcW3BzvNW',
       })
 
-      expect(sdJwtVcRecord.sdJwtVc.payload).toEqual({
+      expect(sdJwtVc.prettyClaims).toEqual({
         claim: 'some-claim',
         vct: 'IdentityCredential',
         iat: Math.floor(new Date().getTime() / 1000),
-        iss: issuerDidUrl.split('#')[0],
+        iss: parseDid(issuerDidUrl).did,
         cnf: {
-          jwk: getJwkFromKey(holderKey).toJson(),
+          jwk: jwkJsonWithoutUse(getJwkFromKey(holderKey)),
         },
       })
     })
 
     test('Create sd-jwt-vc from a basic payload with a disclosure', async () => {
-      const { compact, sdJwtVcRecord } = await sdJwtVcService.create(
-        agent.context,
-        { claim: 'some-claim', vct: 'IdentityCredential' },
-        {
-          issuerDidUrl,
-          holderDidUrl,
-          disclosureFrame: { claim: true },
-        }
-      )
+      const { compact, header, prettyClaims, payload } = await sdJwtVcService.sign(agent.context, {
+        payload: { claim: 'some-claim', vct: 'IdentityCredential' },
+        disclosureFrame: { claim: true },
+        holder: {
+          method: 'jwk',
+          jwk: jwkJsonWithoutUse(getJwkFromKey(holderKey)),
+        },
+        issuer: {
+          method: 'did',
+          didUrl: issuerDidUrl,
+        },
+      })
 
       expect(compact).toStrictEqual(sdJwtVcWithSingleDisclosure)
 
-      expect(sdJwtVcRecord.sdJwtVc.header).toEqual({
+      expect(header).toEqual({
         alg: 'EdDSA',
         typ: 'vc+sd-jwt',
-        kid: 'z6MktqtXNG8CDUY9PrrtoStFzeCnhpMmgxYL1gikcW3BzvNW',
+        kid: '#z6MktqtXNG8CDUY9PrrtoStFzeCnhpMmgxYL1gikcW3BzvNW',
       })
 
-      expect(sdJwtVcRecord.sdJwtVc.payload).toEqual({
+      expect(payload).toEqual({
         vct: 'IdentityCredential',
         iat: Math.floor(new Date().getTime() / 1000),
         iss: issuerDidUrl.split('#')[0],
         _sd: ['vcvFU4DsFKTqQ1vl4nelJWXTb_-0dNoBks6iqNFptyg'],
         _sd_alg: 'sha-256',
         cnf: {
-          jwk: getJwkFromKey(holderKey).toJson(),
+          jwk: jwkJsonWithoutUse(getJwkFromKey(holderKey)),
         },
       })
 
-      expect(sdJwtVcRecord.sdJwtVc.payload).not.toContain({
+      expect(prettyClaims).toEqual({
+        vct: 'IdentityCredential',
+        iat: Math.floor(new Date().getTime() / 1000),
+        iss: issuerDidUrl.split('#')[0],
         claim: 'some-claim',
+        cnf: {
+          jwk: jwkJsonWithoutUse(getJwkFromKey(holderKey)),
+        },
       })
-
-      expect(sdJwtVcRecord.sdJwtVc.disclosures).toEqual(expect.arrayContaining([['salt', 'claim', 'some-claim']]))
     })
 
     test('Create sd-jwt-vc from a basic payload with multiple (nested) disclosure', async () => {
-      const { compact, sdJwtVcRecord } = await sdJwtVcService.create(
-        agent.context,
-        {
+      const { compact, header, payload, prettyClaims } = await sdJwtVcService.sign(agent.context, {
+        disclosureFrame: {
+          is_over_65: true,
+          is_over_21: true,
+          is_over_18: true,
+          birthdate: true,
+          email: true,
+          address: { region: true, country: true },
+          given_name: true,
+        },
+        payload: {
           vct: 'IdentityCredential',
           given_name: 'John',
           family_name: 'Doe',
@@ -171,30 +198,25 @@ describe('SdJwtVcService', () => {
           is_over_21: true,
           is_over_65: true,
         },
-        {
-          issuerDidUrl: issuerDidUrl,
-          holderDidUrl: holderDidUrl,
-          disclosureFrame: {
-            is_over_65: true,
-            is_over_21: true,
-            is_over_18: true,
-            birthdate: true,
-            email: true,
-            address: { region: true, country: true },
-            given_name: true,
-          },
-        }
-      )
+        holder: {
+          method: 'jwk',
+          jwk: jwkJsonWithoutUse(getJwkFromKey(holderKey)),
+        },
+        issuer: {
+          method: 'did',
+          didUrl: issuerDidUrl,
+        },
+      })
 
       expect(compact).toStrictEqual(complexSdJwtVc)
 
-      expect(sdJwtVcRecord.sdJwtVc.header).toEqual({
+      expect(header).toEqual({
         alg: 'EdDSA',
         typ: 'vc+sd-jwt',
-        kid: 'z6MktqtXNG8CDUY9PrrtoStFzeCnhpMmgxYL1gikcW3BzvNW',
+        kid: '#z6MktqtXNG8CDUY9PrrtoStFzeCnhpMmgxYL1gikcW3BzvNW',
       })
 
-      expect(sdJwtVcRecord.sdJwtVc.payload).toEqual({
+      expect(payload).toEqual({
         vct: 'IdentityCredential',
         iat: Math.floor(new Date().getTime() / 1000),
         address: {
@@ -215,117 +237,93 @@ describe('SdJwtVcService', () => {
         ],
         _sd_alg: 'sha-256',
         cnf: {
-          jwk: getJwkFromKey(holderKey).toJson(),
+          jwk: jwkJsonWithoutUse(getJwkFromKey(holderKey)),
         },
       })
 
-      expect(sdJwtVcRecord.sdJwtVc.payload).not.toContain({
-        family_name: 'Doe',
-        phone_number: '+1-202-555-0101',
+      expect(prettyClaims).toEqual({
+        vct: 'IdentityCredential',
+        iat: Math.floor(new Date().getTime() / 1000),
         address: {
           region: 'Anystate',
           country: 'US',
+          locality: 'Anytown',
+          street_address: '123 Main St',
         },
+        email: 'johndoe@example.com',
+        given_name: 'John',
+        phone_number: '+1-202-555-0101',
+        family_name: 'Doe',
+        iss: issuerDidUrl.split('#')[0],
         birthdate: '1940-01-01',
         is_over_18: true,
         is_over_21: true,
         is_over_65: true,
+        cnf: {
+          jwk: jwkJsonWithoutUse(getJwkFromKey(holderKey)),
+        },
       })
-
-      expect(sdJwtVcRecord.sdJwtVc.disclosures).toEqual(
-        expect.arrayContaining([
-          ['salt', 'is_over_65', true],
-          ['salt', 'is_over_21', true],
-          ['salt', 'is_over_18', true],
-          ['salt', 'birthdate', '1940-01-01'],
-          ['salt', 'email', 'johndoe@example.com'],
-          ['salt', 'region', 'Anystate'],
-          ['salt', 'country', 'US'],
-          ['salt', 'given_name', 'John'],
-        ])
-      )
     })
   })
 
   describe('SdJwtVcService.receive', () => {
     test('Receive sd-jwt-vc from a basic payload without disclosures', async () => {
-      const sdJwtVc = simpleJwtVc
+      const sdJwtVc = await sdJwtVcService.fromCompact(simpleJwtVc)
+      const sdJwtVcRecord = await sdJwtVcService.store(agent.context, sdJwtVc.compact)
+      expect(sdJwtVcRecord.compactSdJwtVc).toEqual(simpleJwtVc)
 
-      const sdJwtVcRecord = await sdJwtVcService.fromSerializedJwt(agent.context, sdJwtVc, {
-        issuerDidUrl,
-        holderDidUrl,
-      })
-
-      await sdJwtVcService.storeCredential(agent.context, sdJwtVcRecord)
-
-      expect(sdJwtVcRecord.sdJwtVc.header).toEqual({
+      expect(sdJwtVc.header).toEqual({
         alg: 'EdDSA',
         typ: 'vc+sd-jwt',
-        kid: 'z6MktqtXNG8CDUY9PrrtoStFzeCnhpMmgxYL1gikcW3BzvNW',
+        kid: '#z6MktqtXNG8CDUY9PrrtoStFzeCnhpMmgxYL1gikcW3BzvNW',
       })
 
-      expect(sdJwtVcRecord.sdJwtVc.payload).toEqual({
+      expect(sdJwtVc.payload).toEqual({
         claim: 'some-claim',
         vct: 'IdentityCredential',
         iat: Math.floor(new Date().getTime() / 1000),
         iss: issuerDidUrl.split('#')[0],
         cnf: {
-          jwk: getJwkFromKey(holderKey).toJson(),
+          jwk: jwkJsonWithoutUse(getJwkFromKey(holderKey)),
         },
       })
     })
 
     test('Receive sd-jwt-vc from a basic payload with a disclosure', async () => {
-      const sdJwtVc = sdJwtVcWithSingleDisclosure
+      const sdJwtVc = await sdJwtVcService.fromCompact(sdJwtVcWithSingleDisclosure)
 
-      const sdJwtVcRecord = await sdJwtVcService.fromSerializedJwt(agent.context, sdJwtVc, {
-        issuerDidUrl,
-        holderDidUrl,
-      })
-
-      await sdJwtVcService.storeCredential(agent.context, sdJwtVcRecord)
-
-      expect(sdJwtVcRecord.sdJwtVc.header).toEqual({
+      expect(sdJwtVc.header).toEqual({
         alg: 'EdDSA',
         typ: 'vc+sd-jwt',
-        kid: 'z6MktqtXNG8CDUY9PrrtoStFzeCnhpMmgxYL1gikcW3BzvNW',
+        kid: '#z6MktqtXNG8CDUY9PrrtoStFzeCnhpMmgxYL1gikcW3BzvNW',
       })
 
-      expect(sdJwtVcRecord.sdJwtVc.payload).toEqual({
+      expect(sdJwtVc.payload).toEqual({
         vct: 'IdentityCredential',
         iat: Math.floor(new Date().getTime() / 1000),
         iss: issuerDidUrl.split('#')[0],
         _sd: ['vcvFU4DsFKTqQ1vl4nelJWXTb_-0dNoBks6iqNFptyg'],
         _sd_alg: 'sha-256',
         cnf: {
-          jwk: getJwkFromKey(holderKey).toJson(),
+          jwk: jwkJsonWithoutUse(getJwkFromKey(holderKey)),
         },
       })
 
-      expect(sdJwtVcRecord.sdJwtVc.payload).not.toContain({
+      expect(sdJwtVc.payload).not.toContain({
         claim: 'some-claim',
       })
-
-      expect(sdJwtVcRecord.sdJwtVc.disclosures).toEqual(expect.arrayContaining([['salt', 'claim', 'some-claim']]))
     })
 
     test('Receive sd-jwt-vc from a basic payload with multiple (nested) disclosure', async () => {
-      const sdJwtVc = complexSdJwtVc
+      const sdJwtVc = await sdJwtVcService.fromCompact(complexSdJwtVc)
 
-      const sdJwtVcRecord = await sdJwtVcService.fromSerializedJwt(agent.context, sdJwtVc, {
-        issuerDidUrl,
-        holderDidUrl,
-      })
-
-      await sdJwtVcService.storeCredential(agent.context, sdJwtVcRecord)
-
-      expect(sdJwtVcRecord.sdJwtVc.header).toEqual({
+      expect(sdJwtVc.header).toEqual({
         alg: 'EdDSA',
         typ: 'vc+sd-jwt',
-        kid: 'z6MktqtXNG8CDUY9PrrtoStFzeCnhpMmgxYL1gikcW3BzvNW',
+        kid: '#z6MktqtXNG8CDUY9PrrtoStFzeCnhpMmgxYL1gikcW3BzvNW',
       })
 
-      expect(sdJwtVcRecord.sdJwtVc.payload).toEqual({
+      expect(sdJwtVc.payload).toEqual({
         vct: 'IdentityCredential',
         iat: Math.floor(new Date().getTime() / 1000),
         family_name: 'Doe',
@@ -335,6 +333,7 @@ describe('SdJwtVcService', () => {
           locality: 'Anytown',
           street_address: '123 Main St',
         },
+        _sd_alg: 'sha-256',
         phone_number: '+1-202-555-0101',
         _sd: [
           '1Cur2k2A2oIB5CshSIf_A_Kg-l26u_qKuWQ79P0Vdas',
@@ -344,56 +343,59 @@ describe('SdJwtVcService', () => {
           'psauKUNWEi09nu3Cl89xKXgmpWENZl5uy1N1nyn_jMk',
           'sN_ge0pHXF6qmsYnX1A9SdwJ8ch8aENkxbODsT74YwI',
         ],
-        _sd_alg: 'sha-256',
         cnf: {
-          jwk: getJwkFromKey(holderKey).toJson(),
+          jwk: jwkJsonWithoutUse(getJwkFromKey(holderKey)),
         },
       })
 
-      expect(sdJwtVcRecord.sdJwtVc.payload).not.toContain({
-        family_name: 'Doe',
-        phone_number: '+1-202-555-0101',
+      expect(sdJwtVc.payload).not.toContain({
         address: {
           region: 'Anystate',
           country: 'US',
         },
+        family_name: 'Doe',
+        phone_number: '+1-202-555-0101',
+        email: 'johndoe@example.com',
+        given_name: 'John',
         birthdate: '1940-01-01',
         is_over_18: true,
         is_over_21: true,
         is_over_65: true,
       })
 
-      expect(sdJwtVcRecord.sdJwtVc.disclosures).toEqual(
-        expect.arrayContaining([
-          ['salt', 'is_over_65', true],
-          ['salt', 'is_over_21', true],
-          ['salt', 'is_over_18', true],
-          ['salt', 'birthdate', '1940-01-01'],
-          ['salt', 'email', 'johndoe@example.com'],
-          ['salt', 'region', 'Anystate'],
-          ['salt', 'country', 'US'],
-          ['salt', 'given_name', 'John'],
-        ])
-      )
+      expect(sdJwtVc.prettyClaims).toEqual({
+        vct: 'IdentityCredential',
+        iat: Math.floor(new Date().getTime() / 1000),
+        family_name: 'Doe',
+        iss: issuerDidUrl.split('#')[0],
+        phone_number: '+1-202-555-0101',
+        email: 'johndoe@example.com',
+        given_name: 'John',
+        birthdate: '1940-01-01',
+        is_over_18: true,
+        is_over_21: true,
+        is_over_65: true,
+        address: {
+          region: 'Anystate',
+          country: 'US',
+          locality: 'Anytown',
+          street_address: '123 Main St',
+        },
+        cnf: {
+          jwk: jwkJsonWithoutUse(getJwkFromKey(holderKey)),
+        },
+      })
     })
   })
 
   describe('SdJwtVcService.present', () => {
     test('Present sd-jwt-vc from a basic payload without disclosures', async () => {
-      const sdJwtVc = simpleJwtVc
-
-      const sdJwtVcRecord = await sdJwtVcService.fromSerializedJwt(agent.context, sdJwtVc, {
-        issuerDidUrl,
-        holderDidUrl,
-      })
-
-      await sdJwtVcService.storeCredential(agent.context, sdJwtVcRecord)
-
-      const presentation = await sdJwtVcService.present(agent.context, sdJwtVcRecord, {
+      const presentation = await sdJwtVcService.present(agent.context, {
+        compactSdJwtVc: simpleJwtVc,
         presentationFrame: {},
         verifierMetadata: {
           issuedAt: new Date().getTime() / 1000,
-          verifierDid,
+          audience: verifierDid,
           nonce: await agent.context.wallet.generateNonce(),
         },
       })
@@ -402,22 +404,14 @@ describe('SdJwtVcService', () => {
     })
 
     test('Present sd-jwt-vc from a basic payload with a disclosure', async () => {
-      const sdJwtVc = sdJwtVcWithSingleDisclosure
-
-      const sdJwtVcRecord = await sdJwtVcService.fromSerializedJwt(agent.context, sdJwtVc, {
-        issuerDidUrl,
-        holderDidUrl,
-      })
-
-      await sdJwtVcService.storeCredential(agent.context, sdJwtVcRecord)
-
-      const presentation = await sdJwtVcService.present(agent.context, sdJwtVcRecord, {
+      const presentation = await sdJwtVcService.present(agent.context, {
+        compactSdJwtVc: sdJwtVcWithSingleDisclosure,
         presentationFrame: {
           claim: true,
         },
         verifierMetadata: {
           issuedAt: new Date().getTime() / 1000,
-          verifierDid,
+          audience: verifierDid,
           nonce: await agent.context.wallet.generateNonce(),
         },
       })
@@ -426,9 +420,7 @@ describe('SdJwtVcService', () => {
     })
 
     test('Present sd-jwt-vc from a basic payload with multiple (nested) disclosure', async () => {
-      const sdJwtVc = complexSdJwtVc
-
-      const sdJwtVcRecord = await sdJwtVcService.fromSerializedJwt<
+      const presentation = await sdJwtVcService.present<
         Record<string, unknown>,
         {
           // FIXME: when not passing a payload, adding nested presentationFrame is broken
@@ -437,17 +429,11 @@ describe('SdJwtVcService', () => {
             country: string
           }
         }
-      >(agent.context, sdJwtVc, {
-        issuerDidUrl,
-        holderDidUrl,
-      })
-
-      await sdJwtVcService.storeCredential(agent.context, sdJwtVcRecord)
-
-      const presentation = await sdJwtVcService.present(agent.context, sdJwtVcRecord, {
+      >(agent.context, {
+        compactSdJwtVc: complexSdJwtVc,
         verifierMetadata: {
           issuedAt: new Date().getTime() / 1000,
-          verifierDid,
+          audience: verifierDid,
           nonce: await agent.context.wallet.generateNonce(),
         },
         presentationFrame: {
@@ -467,34 +453,28 @@ describe('SdJwtVcService', () => {
 
   describe('SdJwtVcService.verify', () => {
     test('Verify sd-jwt-vc without disclosures', async () => {
-      const sdJwtVc = simpleJwtVc
-
-      const sdJwtVcRecord = await sdJwtVcService.fromSerializedJwt(agent.context, sdJwtVc, {
-        issuerDidUrl,
-        holderDidUrl,
-      })
-
-      await sdJwtVcService.storeCredential(agent.context, sdJwtVcRecord)
-
-      const presentation = await sdJwtVcService.present(agent.context, sdJwtVcRecord, {
+      const nonce = await agent.context.wallet.generateNonce()
+      const presentation = await sdJwtVcService.present(agent.context, {
+        compactSdJwtVc: simpleJwtVc,
         // no disclosures
         presentationFrame: {},
         verifierMetadata: {
           issuedAt: new Date().getTime() / 1000,
-          verifierDid,
-          nonce: await agent.context.wallet.generateNonce(),
+          audience: verifierDid,
+          nonce,
         },
       })
 
-      const { validation } = await sdJwtVcService.verify(agent.context, presentation, {
-        challenge: { verifierDid },
-        holderDidUrl,
+      const { verification } = await sdJwtVcService.verify(agent.context, {
+        compactSdJwtVc: presentation,
+        keyBinding: { audience: verifierDid, nonce },
         requiredClaimKeys: ['claim'],
       })
 
-      expect(validation).toEqual({
+      expect(verification).toEqual({
         isSignatureValid: true,
         containsRequiredVcProperties: true,
+        containsExpectedKeyBinding: true,
         areRequiredClaimsIncluded: true,
         isValid: true,
         isKeyBindingValid: true,
@@ -502,75 +482,63 @@ describe('SdJwtVcService', () => {
     })
 
     test('Verify sd-jwt-vc with a disclosure', async () => {
-      const sdJwtVc = sdJwtVcWithSingleDisclosure
+      const nonce = await agent.context.wallet.generateNonce()
 
-      const sdJwtVcRecord = await sdJwtVcService.fromSerializedJwt(agent.context, sdJwtVc, {
-        issuerDidUrl,
-        holderDidUrl,
-      })
-
-      await sdJwtVcService.storeCredential(agent.context, sdJwtVcRecord)
-
-      const presentation = await sdJwtVcService.present(agent.context, sdJwtVcRecord, {
+      const presentation = await sdJwtVcService.present(agent.context, {
+        compactSdJwtVc: sdJwtVcWithSingleDisclosure,
         verifierMetadata: {
           issuedAt: new Date().getTime() / 1000,
-          verifierDid,
-          nonce: await agent.context.wallet.generateNonce(),
+          audience: verifierDid,
+          nonce,
         },
         presentationFrame: {
           claim: true,
         },
       })
 
-      const { validation } = await sdJwtVcService.verify(agent.context, presentation, {
-        challenge: { verifierDid },
-        holderDidUrl,
+      const { verification } = await sdJwtVcService.verify(agent.context, {
+        compactSdJwtVc: presentation,
+        keyBinding: { audience: verifierDid, nonce },
         requiredClaimKeys: ['vct', 'cnf', 'claim', 'iat'],
       })
 
-      expect(validation).toEqual({
+      expect(verification).toEqual({
         isSignatureValid: true,
         containsRequiredVcProperties: true,
         areRequiredClaimsIncluded: true,
         isValid: true,
         isKeyBindingValid: true,
+        containsExpectedKeyBinding: true,
       })
     })
 
     test('Verify sd-jwt-vc with multiple (nested) disclosure', async () => {
-      const sdJwtVc = complexSdJwtVc
+      const nonce = await agent.context.wallet.generateNonce()
 
-      const sdJwtVcRecord = await sdJwtVcService.fromSerializedJwt<SdJwtVcHeader, { address: { country: string } }>(
+      const presentation = await sdJwtVcService.present<SdJwtVcHeader, { address: { country: string } }>(
         agent.context,
-        sdJwtVc,
         {
-          issuerDidUrl,
-          holderDidUrl,
+          compactSdJwtVc: complexSdJwtVc,
+          verifierMetadata: {
+            issuedAt: new Date().getTime() / 1000,
+            audience: verifierDid,
+            nonce,
+          },
+          presentationFrame: {
+            is_over_65: true,
+            is_over_21: true,
+            email: true,
+            address: {
+              country: true,
+            },
+            given_name: true,
+          },
         }
       )
 
-      await sdJwtVcService.storeCredential(agent.context, sdJwtVcRecord)
-
-      const presentation = await sdJwtVcService.present(agent.context, sdJwtVcRecord, {
-        verifierMetadata: {
-          issuedAt: new Date().getTime() / 1000,
-          verifierDid,
-          nonce: await agent.context.wallet.generateNonce(),
-        },
-        presentationFrame: {
-          is_over_65: true,
-          is_over_21: true,
-          email: true,
-          address: {
-            country: true,
-          },
-          given_name: true,
-        },
-      })
-
-      const { validation } = await sdJwtVcService.verify(agent.context, presentation, {
-        challenge: { verifierDid },
-        holderDidUrl,
+      const { verification } = await sdJwtVcService.verify(agent.context, {
+        compactSdJwtVc: presentation,
+        keyBinding: { audience: verifierDid, nonce },
         // FIXME: this should be a requiredFrame to be consistent with the other methods
         // using frames
         requiredClaimKeys: [
@@ -591,9 +559,10 @@ describe('SdJwtVcService', () => {
         ],
       })
 
-      expect(validation).toEqual({
+      expect(verification).toEqual({
         isSignatureValid: true,
         areRequiredClaimsIncluded: true,
+        containsExpectedKeyBinding: true,
         containsRequiredVcProperties: true,
         isValid: true,
         isKeyBindingValid: true,
