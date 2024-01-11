@@ -1,8 +1,11 @@
 import type { AccessTokenEndpointConfig, CredentialEndpointConfig } from './OpenId4VcIssuerServiceOptions'
 import type { AgentContext } from '@aries-framework/core'
 import type { CNonceState, CredentialOfferSession, IStateManager, StateType, URIState } from '@sphereon/oid4vci-common'
+import type { Router } from 'express'
 
 import { MemoryStates } from '@sphereon/oid4vci-issuer'
+
+import { importExpress } from './router/express'
 
 export type StateManagerFactory<T extends StateType> = () => IStateManager<T>
 
@@ -16,6 +19,15 @@ export interface OpenId4VcIssuerModuleConfigOptions {
    * this path as prefix.
    */
   baseUrl: string
+
+  /**
+   * Express router on which the openid4vci endpoints will be registered. If
+   * no router is provided, a new one will be created.
+   *
+   * NOTE: you must manually register the router on your express app and
+   * expose this on a public url that is reachable when `baseUrl` is called.
+   */
+  router?: Router
 
   endpoints: {
     // metadata endpoint does not have a config
@@ -40,12 +52,15 @@ export class OpenId4VcIssuerModuleConfig {
   private uriStateManagerMap: Map<string, IStateManager<URIState>>
   private credentialOfferSessionManagerMap: Map<string, IStateManager<CredentialOfferSession>>
   private cNonceStateManagerMap: Map<string, IStateManager<CNonceState>>
+  public readonly router: Router
 
   public constructor(options: OpenId4VcIssuerModuleConfigOptions) {
     this.uriStateManagerMap = new Map()
     this.credentialOfferSessionManagerMap = new Map()
     this.cNonceStateManagerMap = new Map()
     this.options = options
+
+    this.router = options.router ?? importExpress().Router()
   }
 
   public get baseUrl() {

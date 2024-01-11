@@ -1,13 +1,13 @@
-import type { BaseAgent, EmptyModuleMap, KeyDidCreateOptions, ModulesMap } from '@aries-framework/core'
+import type { TenantAgent } from '../../tenants/src/TenantAgent'
+import type { KeyDidCreateOptions, ModulesMap } from '@aries-framework/core'
 import type { TenantsModule } from '@aries-framework/tenants'
 
-import { Agent, DidKey, KeyType, TypedArrayEncoder, utils } from '@aries-framework/core'
+import { LogLevel, Agent, DidKey, KeyType, TypedArrayEncoder, utils } from '@aries-framework/core'
 import { agentDependencies } from '@aries-framework/node'
 
-export async function createDidKidVerificationMethod<M extends EmptyModuleMap, A extends BaseAgent<M>>(
-  agent: A,
-  secretKey: string
-) {
+import { TestLogger } from '../../core/tests/logger'
+
+export async function createDidKidVerificationMethod(agent: Agent | TenantAgent, secretKey: string) {
   const didCreateResult = await agent.dids.create<KeyDidCreateOptions>({
     method: 'key',
     options: { keyType: KeyType.Ed25519 },
@@ -30,13 +30,13 @@ export async function createDidKidVerificationMethod<M extends EmptyModuleMap, A
 
 export async function createAgentFromModules<MM extends ModulesMap>(label: string, modulesMap: MM, secretKey: string) {
   const agent = new Agent<MM>({
-    config: { label, walletConfig: { id: utils.uuid(), key: utils.uuid() } },
+    config: { label, walletConfig: { id: utils.uuid(), key: utils.uuid() }, logger: new TestLogger(LogLevel.off) },
     dependencies: agentDependencies,
     modules: modulesMap,
   })
 
   await agent.initialize()
-  const data = await createDidKidVerificationMethod<MM, typeof agent>(agent, secretKey)
+  const data = await createDidKidVerificationMethod(agent, secretKey)
 
   return {
     ...data,
@@ -46,8 +46,14 @@ export async function createAgentFromModules<MM extends ModulesMap>(label: strin
 
 export type AgentType<MM extends ModulesMap> = Awaited<ReturnType<typeof createAgentFromModules<MM>>>
 
-export async function createTenantForAgent<MM extends ModulesMap>(
-  agent: Agent<{ tenants: TenantsModule<MM> }>,
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type AgentWithTenantsModule = Agent<{ tenants: TenantsModule<any> }>
+
+export async function createTenantForAgent(
+  // FIXME: we need to make some improvements on the agent typing. It'a quite hard
+  // to get it right at the moment
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  agent: AgentWithTenantsModule & any,
   label: string
 ) {
   const tenantRecord = await agent.modules.tenants.createTenant({
@@ -61,7 +67,7 @@ export async function createTenantForAgent<MM extends ModulesMap>(
   const secretKey = (nonce1 + nonce2).slice(0, 32)
 
   const tenant = await agent.modules.tenants.getTenantAgent({ tenantId: tenantRecord.id })
-  const data = await createDidKidVerificationMethod<MM, typeof tenant>(tenant, secretKey)
+  const data = await createDidKidVerificationMethod(tenant, secretKey)
   await tenant.endSession()
 
   return {
@@ -70,4 +76,4 @@ export async function createTenantForAgent<MM extends ModulesMap>(
   }
 }
 
-export type TenantType<MM extends ModulesMap> = Awaited<ReturnType<typeof createTenantForAgent<MM>>>
+export type TenantType = Awaited<ReturnType<typeof createTenantForAgent>>

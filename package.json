@@ -62,7 +62,9 @@
     "ws": "^8.13.0"
   },
   "resolutions": {
-    "@types/node": "18.18.8"
+    "@types/node": "18.18.8",
+    "@sphereon/ssi-types": "^0.17.6-unstable.69",
+    "@sphereon/pex-models": "^2.1.2"
   },
   "engines": {
     "node": ">=18"

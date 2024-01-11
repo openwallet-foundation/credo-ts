@@ -6,14 +6,15 @@ import type {
   AcceptCredentialOfferOptions,
   CredentialOfferPayloadV1_0_11,
 } from './reception'
-import type { VerificationMethod, W3cCredentialRecord } from '@aries-framework/core'
-import type { SdJwtVcRecord } from '@aries-framework/sd-jwt-vc'
+import type { VerificationMethod } from '@aries-framework/core'
 
 import { injectable, AgentContext } from '@aries-framework/core'
 
 import { OpenId4VpHolderService } from './presentation'
 import { OpenId4VciHolderService } from './reception'
 
+// FIXME: the holder API is not really consistent with the issuer API
+// FIXME: it's not immediately clear which methods are for receiving vc proving
 /**
  * @public
  */
@@ -130,7 +131,7 @@ export class OpenId4VcHolderApi {
   public async acceptCredentialOfferUsingPreAuthorizedCode(
     resolvedCredentialOffer: ResolvedCredentialOffer,
     acceptCredentialOfferOptions: AcceptCredentialOfferOptions
-  ): Promise<(W3cCredentialRecord | SdJwtVcRecord)[]> {
+  ) {
     return this.openId4VciHolderService.acceptCredentialOffer(this.agentContext, {
       resolvedCredentialOffer,
       acceptCredentialOfferOptions,
@@ -150,7 +151,7 @@ export class OpenId4VcHolderApi {
     resolvedAuthorizationRequest: ResolvedAuthorizationRequest,
     code: string,
     acceptCredentialOfferOptions: AcceptCredentialOfferOptions
-  ): Promise<(W3cCredentialRecord | SdJwtVcRecord)[]> {
+  ) {
     return this.openId4VciHolderService.acceptCredentialOffer(this.agentContext, {
       resolvedCredentialOffer,
       resolvedAuthorizationRequestWithCode: { ...resolvedAuthorizationRequest, code },

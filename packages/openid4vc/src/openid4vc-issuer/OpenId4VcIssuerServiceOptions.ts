@@ -1,6 +1,11 @@
 import type { OpenId4VcIssuerRecordProps } from './repository/OpenId4VcIssuerRecord'
-import type { OpenId4VciCredentialOffer, OpenId4VciCredentialRequest, OpenId4VciCredentialSupported } from '../shared'
-import type { AgentContext, Jwk, W3cSignCredentialOptions } from '@aries-framework/core'
+import type {
+  CredentialHolderBinding,
+  OpenId4VciCredentialOffer,
+  OpenId4VciCredentialRequest,
+  OpenId4VciCredentialSupported,
+} from '../shared'
+import type { AgentContext, W3cCredential } from '@aries-framework/core'
 import type { SdJwtVcSignOptions } from '@aries-framework/sd-jwt-vc'
 import type { CredentialOfferPayloadV1_0_11, CredentialSupported, MetadataDisplay } from '@sphereon/oid4vci-common'
 
@@ -163,16 +168,9 @@ export type CredentialRequestToCredentialMapper = (options: {
 // w3c and sd-jwt services. However in that case you could also
 // ask why not just require the signed credential as output
 // as you can then just call the services yourself.
-export type OpenId4VciSignCredential = SdJwtVcSignOptions | W3cSignCredentialOptions
-
-export type CredentialHolderDidBinding = {
-  method: 'did'
-  didUrl: string
+export type OpenId4VciSignCredential = OpenId4VciSignSdJwtCredential | OpenId4VciSignW3cCredential
+export type OpenId4VciSignSdJwtCredential = SdJwtVcSignOptions
+export interface OpenId4VciSignW3cCredential {
+  verificationMethod: string
+  credential: W3cCredential
 }
-
-export type CredentialHolderJwkBinding = {
-  method: 'jwk'
-  jwk: Jwk
-}
-
-export type CredentialHolderBinding = CredentialHolderDidBinding | CredentialHolderJwkBinding

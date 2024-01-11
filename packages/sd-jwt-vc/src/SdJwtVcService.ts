@@ -158,7 +158,7 @@ export class SdJwtVcService {
     agentContext: AgentContext,
     { compactSdJwtVc, keyBinding, requiredClaimKeys }: SdJwtVcVerifyOptions
   ) {
-    const sdJwtVc = _SdJwtVc.fromCompact<Header, Payload>(compactSdJwtVc)
+    const sdJwtVc = _SdJwtVc.fromCompact<Header, Payload>(compactSdJwtVc).withHasher(this.hasher)
 
     const issuer = await this.extractKeyFromIssuer(agentContext, this.parseIssuerFromCredential(sdJwtVc))
     const holder = await this.extractKeyFromHolderBinding(agentContext, this.parseHolderBindingFromCredential(sdJwtVc))
@@ -198,6 +198,12 @@ export class SdJwtVcService {
 
     return {
       verification: verificationResult,
+      sdJwtVc: {
+        payload: sdJwtVc.payload,
+        header: sdJwtVc.header,
+        compact: compactSdJwtVc,
+        prettyClaims: await sdJwtVc.getPrettyClaims(),
+      } satisfies SdJwtVc<Header, Payload>,
     }
   }
 

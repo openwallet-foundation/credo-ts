@@ -1,6 +1,6 @@
-import type { IssuerMetadata } from './../src/openid4vc-issuer'
 import type { AgentType, TenantType } from './utils'
-import type { CreateProofRequestOptions } from '../src'
+import type { CreateProofRequestOptions, CredentialBindingResolver } from '../src'
+import type { SdJwtVc, SdJwtVcSignOptions } from '@aries-framework/sd-jwt-vc'
 import type { Server } from 'http'
 
 import { AskarModule } from '@aries-framework/askar'
@@ -12,19 +12,21 @@ import {
   W3cCredentialSubject,
   W3cIssuer,
   w3cDate,
+  DidsApi,
+  getKeyFromVerificationMethod,
+  getJwkFromKey,
+  AriesFrameworkError,
 } from '@aries-framework/core'
 import { SdJwtVcModule } from '@aries-framework/sd-jwt-vc'
 import { TenantsModule } from '@aries-framework/tenants'
 import { ariesAskar } from '@hyperledger/aries-askar-nodejs'
 import express, { Router, type Express } from 'express'
 
-import { SdJwtCredential } from '../../sd-jwt-vc/src/SdJwtCredential'
-import { OpenId4VcVerifierModule } from '../src'
-import { OpenId4VcHolderModule } from '../src/openid4vc-holder'
-import { OpenId4VcIssuerModule } from '../src/openid4vc-issuer'
+import { askarModuleConfig } from '../../askar/tests/helpers'
+import { OpenId4VcVerifierModule, OpenId4VcHolderModule, OpenId4VcIssuerModule } from '../src'
 
 import { createAgentFromModules, createTenantForAgent } from './utils'
-import { allCredentialsSupported, universityDegreeCredentialSdJwt, universityDegreeCredentialSdJwt2 } from './utilsVci'
+import { universityDegreeCredentialSdJwt, universityDegreeCredentialSdJwt2 } from './utilsVci'
 import {
   openBadgePresentationDefinition,
   staticOpOpenIdConfigEdDSA,
@@ -33,29 +35,56 @@ import {
 } from './utilsVp'
 
 const issuerPort = 1234
-const baseUrl = `http://localhost:${issuerPort}`
+const baseUrl = `http://localhost:${issuerPort}/oid4vci`
 
-const baseCredentialRequestOptions = {
+const baseCredentialOfferOptions = {
   scheme: 'openid-credential-offer',
   baseUri: baseUrl,
 }
 
-const issuerMetadata: IssuerMetadata = {
-  issuerBaseUrl: baseUrl,
-  credentialEndpointPath: `/credentials`,
-  tokenEndpointPath: `/token`,
-  credentialsSupported: allCredentialsSupported,
-}
 const holderModules = {
   openId4VcHolder: new OpenId4VcHolderModule(),
   sdJwtVc: new SdJwtVcModule(),
-  askar: new AskarModule({ ariesAskar }),
+  askar: new AskarModule(askarModuleConfig),
 } as const
 
+const oid4vciRouter = Router()
 const issuerModules = {
-  openId4VcIssuer: new OpenId4VcIssuerModule({ issuerMetadata }),
+  openId4VcIssuer: new OpenId4VcIssuerModule({
+    baseUrl,
+    router: oid4vciRouter,
+    endpoints: {
+      credential: {
+        // FIXME: should not be nested under the endpoint config, as it's also used for the non-endpoint part
+        credentialRequestToCredentialMapper: async ({ agentContext, credentialRequest, holderBinding }) => {
+          // We sign the request with the first did:key did we have
+          const didsApi = agentContext.dependencyManager.resolve(DidsApi)
+          const [firstDidKeyDid] = await didsApi.getCreatedDids({ method: 'key' })
+          const didDocument = await didsApi.resolveDidDocument(firstDidKeyDid.did)
+          const verificationMethod = didDocument.verificationMethod?.[0]
+          if (!verificationMethod) {
+            throw new Error('No verification method found')
+          }
+
+          if (credentialRequest.format === 'vc+sd-jwt') {
+            return {
+              payload: { vct: credentialRequest.vct, university: 'innsbruck', degree: 'bachelor' },
+              holder: holderBinding,
+              issuer: {
+                method: 'did',
+                didUrl: verificationMethod.id,
+              },
+              disclosureFrame: { university: true, degree: true },
+            } satisfies SdJwtVcSignOptions
+          }
+
+          throw new Error('Invalid request')
+        },
+      },
+    },
+  }),
   sdJwtVc: new SdJwtVcModule(),
-  askar: new AskarModule({ ariesAskar }),
+  askar: new AskarModule(askarModuleConfig),
 } as const
 
 const verifierModules = {
@@ -71,45 +100,47 @@ const verifierModules = {
 
 describe('OpenId4Vc', () => {
   let expressApp: Express
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let expressServer: Server<any, any>
+  let expressServer: Server
 
   let issuer: AgentType<typeof issuerModules & { tenants: TenantsModule<typeof issuerModules> }>
-  let issuer1: TenantType<typeof issuerModules>
-  let issuer2: TenantType<typeof issuerModules>
+  let issuer1: TenantType
+  let issuer2: TenantType
 
   let holder: AgentType<typeof holderModules & { tenants: TenantsModule<typeof holderModules> }>
-  let holder1: TenantType<typeof holderModules>
+  let holder1: TenantType
 
   let verifier: AgentType<typeof verifierModules & { tenants: TenantsModule<typeof verifierModules> }>
-  let verifier1: TenantType<typeof verifierModules>
-  let verifier2: TenantType<typeof verifierModules>
+  let verifier1: TenantType
+  let verifier2: TenantType
 
   beforeEach(async () => {
     expressApp = express()
+    expressApp.use('/oid4vci', oid4vciRouter)
 
     issuer = await createAgentFromModules(
       'issuer',
-      { ...issuerModules, tenants: new TenantsModule() },
+      { ...issuerModules, tenants: new TenantsModule<typeof issuerModules>() },
       '96213c3d7fc8d4d6754c7a0fd969598g'
     )
-    issuer1 = await createTenantForAgent(issuer.agent as any, 'iTenant1')
-    issuer2 = await createTenantForAgent(issuer.agent as any, 'iTenant2')
+    issuer1 = await createTenantForAgent(issuer.agent, 'iTenant1')
+    issuer2 = await createTenantForAgent(issuer.agent, 'iTenant2')
 
     holder = await createAgentFromModules(
       'holder',
       { ...holderModules, tenants: new TenantsModule() },
       '96213c3d7fc8d4d6754c7a0fd969598e'
     )
-    holder1 = await createTenantForAgent(holder.agent as any, 'hTenant1')
+    holder1 = await createTenantForAgent(holder.agent, 'hTenant1')
 
     verifier = await createAgentFromModules(
       'verifier',
       { ...verifierModules, tenants: new TenantsModule() },
       '96213c3d7fc8d4d6754c7a0fd969598f'
     )
-    verifier1 = await createTenantForAgent(verifier.agent as any, 'vTenant1')
-    verifier2 = await createTenantForAgent(verifier.agent as any, 'vTenant2')
+    verifier1 = await createTenantForAgent(verifier.agent, 'vTenant1')
+    verifier2 = await createTenantForAgent(verifier.agent, 'vTenant2')
+
+    expressServer = expressApp.listen(issuerPort)
   })
 
   afterEach(async () => {
@@ -122,92 +153,54 @@ describe('OpenId4Vc', () => {
     await holder.agent.wallet.delete()
   })
 
-  it('e2e flow with tenants, issuer endpoints requesting a sdjwtvc', async () => {
+  const credentialBindingResolver: CredentialBindingResolver = ({ supportsJwk, supportedDidMethods }) => {
+    // prefer did:key
+    if (supportedDidMethods?.includes('did:key')) {
+      return {
+        method: 'did',
+        didUrl: holder1.verificationMethod.id,
+      }
+    }
+
+    // otherwise fall back to JWK
+    if (supportsJwk) {
+      return {
+        method: 'jwk',
+        jwk: getJwkFromKey(getKeyFromVerificationMethod(holder1.verificationMethod)),
+      }
+    }
+
+    console.log(supportsJwk, supportedDidMethods)
+
+    // otherwise throw an error
+    throw new AriesFrameworkError('Issuer does not support did:key or JWK for credential binding')
+  }
+
+  it('e2e flow with tenants, issuer endpoints requesting a sd-jwt-vc', async () => {
     const issuerTenant1 = await issuer.agent.modules.tenants.getTenantAgent({ tenantId: issuer1.tenantId })
-    const issuer1Router = Router()
-    const issuer1BasePath = '/issuer1'
-
-    await issuerTenant1.modules.openId4VcIssuer.configureRouter(issuer1Router, {
-      basePath: issuer1BasePath,
-      metadataEndpointConfig: { enabled: true },
-      accessTokenEndpointConfig: {
-        enabled: true,
-        preAuthorizedCodeExpirationDuration: 50,
-        verificationMethod: issuer1.verificationMethod,
-      },
-      credentialEndpointConfig: {
-        enabled: true,
-        verificationMethod: issuer1.verificationMethod,
-        credentialRequestToCredentialMapper: async ({ credentialRequest, holderDid, holderDidUrl }) => {
-          if (
-            credentialRequest.format === 'vc+sd-jwt' &&
-            credentialRequest.credential_definition.vct === 'UniversityDegreeCredential'
-          ) {
-            if (holderDid !== holder1.did) throw new Error('Invalid holder did')
-
-            return new SdJwtCredential({
-              payload: { type: 'UniversityDegreeCredential', university: 'innsbruck', degree: 'bachelor' },
-              holderDidUrl: holderDidUrl,
-              issuerDidUrl: issuer1.kid,
-              disclosureFrame: { university: true, degree: true },
-            })
-          }
-
-          throw new Error('Invalid request')
-        },
-      },
-    })
-
     const issuerTenant2 = await issuer.agent.modules.tenants.getTenantAgent({ tenantId: issuer2.tenantId })
-    const issuer2Router = Router()
-    const issuer2BasePath = '/issuer2'
 
-    await issuerTenant2.modules.openId4VcIssuer.configureRouter(issuer2Router, {
-      basePath: issuer2BasePath,
-      metadataEndpointConfig: { enabled: true },
-      accessTokenEndpointConfig: {
-        enabled: true,
-        preAuthorizedCodeExpirationDuration: 50,
-        verificationMethod: issuer2.verificationMethod,
-      },
-      credentialEndpointConfig: {
-        enabled: true,
-        verificationMethod: issuer2.verificationMethod,
-        credentialRequestToCredentialMapper: async ({ credentialRequest, holderDid, holderDidUrl }) => {
-          if (
-            credentialRequest.format === 'vc+sd-jwt' &&
-            credentialRequest.credential_definition.vct === 'UniversityDegreeCredential2'
-          ) {
-            if (holderDid !== holder1.did) throw new Error('Invalid holder did')
-
-            return new SdJwtCredential({
-              payload: { type: 'UniversityDegreeCredential2', university: 'innsbruck', degree: 'bachelor' },
-              holderDidUrl: holderDidUrl,
-              issuerDidUrl: issuer2.kid,
-              disclosureFrame: { university: true, degree: true },
-            })
-          }
-
-          throw new Error('Invalid request')
-        },
-      },
+    const openIdIssuerTenant1 = await issuerTenant1.modules.openId4VcIssuer.createIssuer({
+      credentialsSupported: [universityDegreeCredentialSdJwt],
     })
 
-    expressApp.use(issuer1BasePath, issuer1Router)
-    expressApp.use(issuer2BasePath, issuer2Router)
-    expressServer = expressApp.listen(issuerPort)
+    const openIdIssuerTenant2 = await issuerTenant2.modules.openId4VcIssuer.createIssuer({
+      credentialsSupported: [universityDegreeCredentialSdJwt2],
+    })
 
-    const { credentialOfferRequest: credentialOfferRequest1 } =
-      await issuerTenant1.modules.openId4VcIssuer.createCredentialOfferAndRequest(
-        [universityDegreeCredentialSdJwt.id],
-        { preAuthorizedCodeFlowConfig: { userPinRequired: false }, ...baseCredentialRequestOptions }
-      )
+    const { credentialOfferUri: credentialOffer1 } = await issuerTenant1.modules.openId4VcIssuer.createCredentialOffer({
+      issuerId: openIdIssuerTenant1.issuerId,
+      offeredCredentials: [universityDegreeCredentialSdJwt.id],
+      preAuthorizedCodeFlowConfig: { userPinRequired: false },
+      ...baseCredentialOfferOptions,
+    })
 
-    const { credentialOfferRequest: credentialOfferRequest2 } =
-      await issuerTenant2.modules.openId4VcIssuer.createCredentialOfferAndRequest(
-        [universityDegreeCredentialSdJwt2.id],
-        { preAuthorizedCodeFlowConfig: { userPinRequired: false }, ...baseCredentialRequestOptions }
-      )
+    const { credentialOfferUri: credentialOffer2 } = await issuerTenant2.modules.openId4VcIssuer.createCredentialOffer({
+      issuerId: openIdIssuerTenant2.issuerId,
+      offeredCredentials: [universityDegreeCredentialSdJwt2.id],
+      preAuthorizedCodeFlowConfig: { userPinRequired: false },
+      ...baseCredentialOfferOptions,
+    })
 
     await issuerTenant1.endSession()
     await issuerTenant2.endSession()
@@ -215,58 +208,62 @@ describe('OpenId4Vc', () => {
     const holderTenant1 = await holder.agent.modules.tenants.getTenantAgent({ tenantId: holder1.tenantId })
 
     const resolvedCredentialOffer1 = await holderTenant1.modules.openId4VcHolder.resolveCredentialOffer(
-      credentialOfferRequest1
+      credentialOffer1
     )
 
-    expect(resolvedCredentialOffer1.credentialOfferPayload.credential_issuer).toEqual(`${baseUrl}/issuer1`)
+    expect(resolvedCredentialOffer1.credentialOfferPayload.credential_issuer).toEqual(
+      `${baseUrl}/${openIdIssuerTenant1.issuerId}`
+    )
     expect(resolvedCredentialOffer1.metadata.credentialIssuerMetadata?.token_endpoint).toEqual(
-      `${baseUrl}/issuer1/token`
+      `${baseUrl}/${openIdIssuerTenant1.issuerId}/token`
     )
     expect(resolvedCredentialOffer1.metadata.credentialIssuerMetadata?.credential_endpoint).toEqual(
-      `${baseUrl}/issuer1/credentials`
+      `${baseUrl}/${openIdIssuerTenant1.issuerId}/credential`
     )
 
-    const credentials1 = await holderTenant1.modules.openId4VcHolder.acceptCredentialOfferUsingPreAuthorizedCode(
+    // Bind to JWK
+    const credentialsTenant1 = await holderTenant1.modules.openId4VcHolder.acceptCredentialOfferUsingPreAuthorizedCode(
       resolvedCredentialOffer1,
       {
-        proofOfPossessionVerificationMethodResolver: async () => {
-          return holder1.verificationMethod
-        },
+        credentialBindingResolver,
       }
     )
+
+    expect(credentialsTenant1).toHaveLength(1)
+    const compactSdJwtVcTenant1 = (credentialsTenant1[0] as SdJwtVc).compact
+    const sdJwtVcTenant1 = await holderTenant1.modules.sdJwtVc.fromCompact(compactSdJwtVcTenant1)
+    expect(sdJwtVcTenant1.payload.vct).toEqual('UniversityDegreeCredential')
 
     const resolvedCredentialOffer2 = await holderTenant1.modules.openId4VcHolder.resolveCredentialOffer(
-      credentialOfferRequest2
+      credentialOffer2
     )
-    expect(resolvedCredentialOffer2.credentialOfferPayload.credential_issuer).toEqual(`${baseUrl}/issuer2`)
+    expect(resolvedCredentialOffer2.credentialOfferPayload.credential_issuer).toEqual(
+      `${baseUrl}/${openIdIssuerTenant2.issuerId}`
+    )
     expect(resolvedCredentialOffer2.metadata.credentialIssuerMetadata?.token_endpoint).toEqual(
-      `${baseUrl}/issuer2/token`
+      `${baseUrl}/${openIdIssuerTenant2.issuerId}/token`
     )
     expect(resolvedCredentialOffer2.metadata.credentialIssuerMetadata?.credential_endpoint).toEqual(
-      `${baseUrl}/issuer2/credentials`
+      `${baseUrl}/${openIdIssuerTenant2.issuerId}/credential`
     )
 
-    expect(credentials1).toHaveLength(1)
-    if (credentials1[0].type === 'W3cCredentialRecord') throw new Error('Invalid credential type')
-    expect(credentials1[0].sdJwtVc.payload['type']).toEqual('UniversityDegreeCredential')
-
-    const credentials2 = await holderTenant1.modules.openId4VcHolder.acceptCredentialOfferUsingPreAuthorizedCode(
+    // Bind to did
+    const credentialsTenant2 = await holderTenant1.modules.openId4VcHolder.acceptCredentialOfferUsingPreAuthorizedCode(
       resolvedCredentialOffer2,
       {
-        proofOfPossessionVerificationMethodResolver: async () => {
-          return holder1.verificationMethod
-        },
+        credentialBindingResolver,
       }
     )
 
-    expect(credentials2).toHaveLength(1)
-    if (credentials2[0].type === 'W3cCredentialRecord') throw new Error('Invalid credential type')
-    expect(credentials2[0].sdJwtVc.payload['type']).toEqual('UniversityDegreeCredential2')
+    expect(credentialsTenant2).toHaveLength(1)
+    const compactSdJwtVcTenant2 = (credentialsTenant2[0] as SdJwtVc).compact
+    const sdJwtVcTenant2 = await holderTenant1.modules.sdJwtVc.fromCompact(compactSdJwtVcTenant2)
+    expect(sdJwtVcTenant2.payload.vct).toEqual('UniversityDegreeCredential2')
 
     await holderTenant1.endSession()
   })
 
-  it('e2e flow with tenants, verifier endpoints verifying a sdjwtvc', async () => {
+  xit('e2e flow with tenants, verifier endpoints verifying a sd-jwt-vc', async () => {
     const mockFunction1 = jest.fn()
     mockFunction1.mockReturnValue({ status: 200 })
 

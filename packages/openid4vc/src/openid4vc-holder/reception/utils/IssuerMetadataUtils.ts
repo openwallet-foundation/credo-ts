@@ -1,7 +1,5 @@
 import type {
   AuthorizationDetails,
-  CommonCredentialOfferFormat,
-  CommonCredentialSupported,
   CredentialIssuerMetadata,
   CredentialOfferFormat,
   CredentialOfferFormatJwtVcJson,
@@ -35,43 +33,49 @@ export enum OfferedCredentialType {
   InlineCredentialOffer = 'InlineCredentialOffer',
 }
 
+export type InlineOfferedCredentialWithMetadata =
+  | {
+      offerType: OfferedCredentialType.InlineCredentialOffer
+      format: OpenIdCredentialFormatProfile.JwtVcJson
+      credentialOffer: CredentialOfferFormatJwtVcJson
+      types: string[]
+    }
+  | {
+      offerType: OfferedCredentialType.InlineCredentialOffer
+      format: OpenIdCredentialFormatProfile.JwtVcJsonLd | OpenIdCredentialFormatProfile.LdpVc
+      credentialOffer: CredentialOfferFormatJwtVcJsonLdAndLdpVc
+      types: string[]
+    }
+  | {
+      offerType: OfferedCredentialType.InlineCredentialOffer
+      format: OpenIdCredentialFormatProfile.SdJwtVc
+      credentialOffer: CredentialOfferFormatSdJwtVc
+      types: string[]
+    }
+
+export type ReferencedOfferedCredentialWithMetadata =
+  | {
+      offerType: OfferedCredentialType.CredentialSupported
+      format: OpenIdCredentialFormatProfile.JwtVcJson
+      credentialSupported: CredentialSupportedJwtVcJson
+      types: string[]
+    }
+  | {
+      offerType: OfferedCredentialType.CredentialSupported
+      format: OpenIdCredentialFormatProfile.JwtVcJsonLd | OpenIdCredentialFormatProfile.LdpVc
+      credentialSupported: CredentialSupportedJwtVcJsonLdAndLdpVc
+      types: string[]
+    }
+  | {
+      offerType: OfferedCredentialType.CredentialSupported
+      format: OpenIdCredentialFormatProfile.SdJwtVc
+      credentialSupported: CredentialSupportedSdJwtVc
+      types: string[]
+    }
+
 export type OfferedCredentialWithMetadata =
-  | {
-      offerType: OfferedCredentialType.CredentialSupported
-      format: OpenIdCredentialFormatProfile.JwtVcJson
-      credentialSupported: CommonCredentialSupported & CredentialSupportedJwtVcJson
-      types: string[]
-    }
-  | {
-      offerType: OfferedCredentialType.CredentialSupported
-      format: OpenIdCredentialFormatProfile.JwtVcJsonLd | OpenIdCredentialFormatProfile.LdpVc
-      credentialSupported: CommonCredentialSupported & CredentialSupportedJwtVcJsonLdAndLdpVc
-      types: string[]
-    }
-  | {
-      offerType: OfferedCredentialType.CredentialSupported
-      format: OpenIdCredentialFormatProfile.SdJwtVc
-      credentialSupported: CommonCredentialSupported & CredentialSupportedSdJwtVc
-      types: string[]
-    }
-  | {
-      offerType: OfferedCredentialType.InlineCredentialOffer
-      format: OpenIdCredentialFormatProfile.JwtVcJson
-      credentialOffer: CommonCredentialOfferFormat & CredentialOfferFormatJwtVcJson
-      types: string[]
-    }
-  | {
-      offerType: OfferedCredentialType.InlineCredentialOffer
-      format: OpenIdCredentialFormatProfile.JwtVcJsonLd | OpenIdCredentialFormatProfile.LdpVc
-      credentialOffer: CommonCredentialOfferFormat & CredentialOfferFormatJwtVcJsonLdAndLdpVc
-      types: string[]
-    }
-  | {
-      offerType: OfferedCredentialType.InlineCredentialOffer
-      format: OpenIdCredentialFormatProfile.SdJwtVc
-      credentialOffer: CommonCredentialOfferFormat & CredentialOfferFormatSdJwtVc
-      types: string[]
-    }
+  | ReferencedOfferedCredentialWithMetadata
+  | InlineOfferedCredentialWithMetadata
 
 /**
  * Returns all entries from the credential offer with the associated metadata resolved. For inline entries, the offered credential object
@@ -110,7 +114,7 @@ export function getOfferedCredentialsWithMetadata(
             offerType: OfferedCredentialType.CredentialSupported,
             credentialSupported: foundSupportedCredential,
             format: OpenIdCredentialFormatProfile.SdJwtVc,
-            types: [foundSupportedCredential.credential_definition.vct],
+            types: [foundSupportedCredential.vct],
           })
         } else {
           offeredCredentialsWithMetadata.push({
@@ -130,7 +134,7 @@ export function getOfferedCredentialsWithMetadata(
       } else if (offeredCredential.format === 'jwt_vc_json-ld' || offeredCredential.format === 'ldp_vc') {
         types = offeredCredential.credential_definition.types
       } else if (offeredCredential.format === 'vc+sd-jwt') {
-        types = [offeredCredential.credential_definition.vct]
+        types = [offeredCredential.vct]
       } else {
         throw new AriesFrameworkError(`Unknown format received ${JSON.stringify(offeredCredential.format)}`)
       }

@@ -117,18 +117,18 @@ export class HolderInquirer extends BaseInquirer {
       this.resolvedCredentialOffer.offeredCredentials
     )
 
-    console.log(greenText(`Received and stored the following credentials.`))
-    console.log(
-      greenText(
-        credentials
-          .map((credential) => {
-            if (credential.type === 'W3cCredentialRecord')
-              return credential.credential.type.join(', ') + `, CredentialType: 'W3CVerifiableCredential'`
-            else return credential.sdJwtVc.payload.type + `, CredentialType: 'SdJwtVc'`
-          })
-          .join('\n')
+    const credentialTypes = await Promise.all(
+      credentials.map((credential) =>
+        credential.type === 'W3cCredentialRecord'
+          ? `${credential.credential.type.join(', ')}, CredentialType: W3cVerifiableCredential`
+          : this.holder.agent.modules.sdJwtVc
+              .fromCompact(credential.compactSdJwtVc)
+              .then((a) => `${a.prettyClaims.vct}, CredentialType: SdJwtVc`)
       )
     )
+
+    console.log(greenText(`Received and stored the following credentials.`))
+    console.log(greenText(credentialTypes.join('\n')))
   }
 
   public async resolveProofRequest() {

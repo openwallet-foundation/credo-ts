@@ -31,7 +31,6 @@ export class IssuerInquirer extends BaseInquirer {
 
   public static async build(): Promise<IssuerInquirer> {
     const issuer = await Issuer.build()
-    await issuer.configureRouter()
     return new IssuerInquirer(issuer)
   }
 
@@ -60,9 +59,9 @@ export class IssuerInquirer extends BaseInquirer {
     const choice = await prompt([this.inquireOptions(credentialsSupported.map((credential) => credential.id))])
     const offeredCredential = credentialsSupported.find((credential) => credential.id === choice.options)
     if (!offeredCredential) throw new Error(`No credential of type ${choice.options} found, that can be offered.`)
-    const offerRequest = await this.issuer.createCredentialOffer([offeredCredential])
+    const offerRequest = await this.issuer.createCredentialOffer([offeredCredential.id])
 
-    console.log(purpleText(`credential offer request: '${offerRequest}'`))
+    console.log(purpleText(`credential offer: '${offerRequest}'`))
   }
 
   public async exit() {

@@ -1,12 +1,6 @@
 import type { OfferedCredentialWithMetadata } from './utils/IssuerMetadataUtils'
-import type {
-  AgentContext,
-  JwaSignatureAlgorithm,
-  VerificationMethod,
-  W3cVerifiableCredential,
-  W3cVerifyCredentialResult,
-} from '@aries-framework/core'
-import type { SdJwtVcRecord, SdJwtVcModule } from '@aries-framework/sd-jwt-vc'
+import type { AgentContext, JwaSignatureAlgorithm, W3cVerifiableCredential, Key, JwkJson } from '@aries-framework/core'
+import type { SdJwtVcModule, SdJwtVc } from '@aries-framework/sd-jwt-vc'
 import type {
   AccessTokenResponse,
   CredentialOfferPayloadV1_0_11,
@@ -20,16 +14,16 @@ import type {
 } from '@sphereon/oid4vci-common'
 
 import {
+  getJwkFromJson,
+  DidsApi,
   AriesFrameworkError,
   Hasher,
   InjectionSymbols,
   JsonEncoder,
-  JsonTransformer,
   JwsService,
   Logger,
   SignatureSuiteRegistry,
   TypedArrayEncoder,
-  W3cCredentialRecord,
   W3cCredentialService,
   W3cJsonLdVerifiableCredential,
   W3cJwtVerifiableCredential,
@@ -65,7 +59,7 @@ import {
   type AuthCodeFlowOptions,
   type AcceptCredentialOfferOptions,
   type ProofOfPossessionRequirements,
-  type ProofOfPossessionVerificationMethodResolver,
+  type CredentialBindingResolver,
   type ResolvedCredentialOffer,
   type ResolvedAuthorizationRequest,
   type ResolvedAuthorizationRequestWithCode,
@@ -82,6 +76,7 @@ import {
   OfferedCredentialType,
 } from './utils/IssuerMetadataUtils'
 
+// FIXME: remove support for draft 8
 function getV8CredentialType(offeredCredentialWithMetadata: OfferedCredentialWithMetadata, version: OpenId4VCIVersion) {
   if (offeredCredentialWithMetadata.offerType === OfferedCredentialType.InlineCredentialOffer) {
     throw new AriesFrameworkError(`Inline credential offers not supported for version < 11`)
@@ -263,15 +258,16 @@ export class OpenId4VciHolderService {
 
       return { type, format, locations, credential_definition }
     } else if (format === OpenIdCredentialFormatProfile.SdJwtVc) {
-      const credential_definition = {
+      return {
+        type,
+        format,
+        locations,
         vct: types[0],
         claims:
           offerType === OfferedCredentialType.InlineCredentialOffer
-            ? credentialWithMetadata.credentialOffer.credential_definition.claims
-            : credentialWithMetadata.credentialSupported.credential_definition.claims,
+            ? credentialWithMetadata.credentialOffer.claims
+            : credentialWithMetadata.credentialSupported.claims,
       }
-
-      return { type, format, locations, credential_definition }
     } else {
       throw new AriesFrameworkError(`Cannot create authorization_details. Unsupported credential format '${format}'.`)
     }
@@ -344,7 +340,7 @@ export class OpenId4VciHolderService {
     const { resolvedCredentialOffer, acceptCredentialOfferOptions, resolvedAuthorizationRequestWithCode } = options
     const { credentialOfferPayload, metadata: _metadata, version } = resolvedCredentialOffer
 
-    const { credentialsToRequest, userPin, proofOfPossessionVerificationMethodResolver, verifyCredentialStatus } =
+    const { credentialsToRequest, userPin, credentialBindingResolver, verifyCredentialStatus } =
       acceptCredentialOfferOptions
 
     if (credentialsToRequest?.length === 0) {
@@ -426,28 +422,32 @@ export class OpenId4VciHolderService {
       return credentialToRequest
     })
 
-    const receivedCredentials: (W3cCredentialRecord | SdJwtVcRecord)[] = []
+    const receivedCredentials: (W3cVerifiableCredential | SdJwtVc)[] = []
 
     let newCNonce: string | undefined
 
     for (const credentialWithMetadata of credentialsToRequestWithMetadata ?? offeredCredentialsWithMetadata) {
       // Get all options for the credential request (such as which kid to use, the signature algorithm, etc)
-      const { verificationMethod, signatureAlgorithm } = await this.getCredentialRequestOptions(agentContext, {
+      const { credentialBinding, signatureAlgorithm } = await this.getCredentialRequestOptions(agentContext, {
         possibleProofOfPossessionSignatureAlgorithms: possibleProofOfPossessionSigAlgs,
         offeredCredentialWithMetadata: credentialWithMetadata,
-        proofOfPossessionVerificationMethodResolver,
+        credentialBindingResolver,
       })
 
       // Create the proof of possession
       const proofOfPossessionBuilder = ProofOfPossessionBuilder.fromAccessTokenResponse({
         accessTokenResponse: accessToken,
-        callbacks: { signCallback: this.signCallback(agentContext, verificationMethod) },
+        callbacks: { signCallback: this.proofOfPossessionSignCallback(agentContext) },
         version,
       })
         .withEndpointMetadata(metadata)
         .withAlg(signatureAlgorithm)
-        .withClientId(verificationMethod.controller)
-        .withKid(verificationMethod.id)
+
+      if (credentialBinding.method === 'did') {
+        proofOfPossessionBuilder.withClientId(parseDid(credentialBinding.didUrl).did).withKid(credentialBinding.didUrl)
+      } else if (credentialBinding.method === 'jwk') {
+        proofOfPossessionBuilder.withJWK(credentialBinding.jwk.toJson())
+      }
 
       if (newCNonce) proofOfPossessionBuilder.withAccessTokenNonce(newCNonce)
 
@@ -482,14 +482,13 @@ export class OpenId4VciHolderService {
 
       newCNonce = credentialResponse.successBody?.c_nonce
 
-      // Create credential record, but we don't store it yet (only after the user has accepted the credential)
-      const credentialRecord = await this.handleCredentialResponse(agentContext, credentialResponse, {
+      // Create credential, but we don't store it yet (only after the user has accepted the credential)
+      const credential = await this.handleCredentialResponse(agentContext, credentialResponse, {
         verifyCredentialStatus: verifyCredentialStatus ?? false,
-        holderDidUrl: verificationMethod.id,
       })
 
-      this.logger.debug('Full credential', credentialRecord)
-      receivedCredentials.push(credentialRecord)
+      this.logger.debug('Full credential', credential)
+      receivedCredentials.push(credential)
     }
 
     return receivedCredentials
@@ -504,18 +503,16 @@ export class OpenId4VciHolderService {
   private async getCredentialRequestOptions(
     agentContext: AgentContext,
     options: {
-      proofOfPossessionVerificationMethodResolver: ProofOfPossessionVerificationMethodResolver
+      credentialBindingResolver: CredentialBindingResolver
       possibleProofOfPossessionSignatureAlgorithms: JwaSignatureAlgorithm[]
       offeredCredentialWithMetadata: OfferedCredentialWithMetadata
     }
   ) {
-    const { signatureAlgorithm, supportedDidMethods, supportsAllDidMethods } = this.getProofOfPossessionRequirements(
-      agentContext,
-      {
+    const { signatureAlgorithm, supportedDidMethods, supportsAllDidMethods, supportsJwk } =
+      this.getProofOfPossessionRequirements(agentContext, {
         credentialsToRequest: options.offeredCredentialWithMetadata,
         possibleProofOfPossessionSignatureAlgorithms: options.possibleProofOfPossessionSignatureAlgorithms,
-      }
-    )
+      })
 
     const JwkClass = getJwkClassFromJwaSignatureAlgorithm(signatureAlgorithm)
     if (!JwkClass) {
@@ -528,45 +525,51 @@ export class OpenId4VciHolderService {
 
     const format = options.offeredCredentialWithMetadata.format as SupportedCredentialFormats
 
-    // Now we need to determine the did method and alg based on the cryptographic suite
-    const verificationMethod = await options.proofOfPossessionVerificationMethodResolver({
+    // Now we need to determine how the credential will be bound to us
+    const credentialBinding = await options.credentialBindingResolver({
       credentialFormat: format,
-      proofOfPossessionSignatureAlgorithm: signatureAlgorithm,
+      signatureAlgorithm,
       supportedVerificationMethods,
       keyType: JwkClass.keyType,
-      supportedCredentialId: !(
-        options.offeredCredentialWithMetadata.offerType === OfferedCredentialType.InlineCredentialOffer
-      )
-        ? options.offeredCredentialWithMetadata.credentialSupported.id
-        : undefined,
+      supportedCredentialId:
+        options.offeredCredentialWithMetadata.offerType === OfferedCredentialType.CredentialSupported
+          ? options.offeredCredentialWithMetadata.credentialSupported.id
+          : undefined,
       supportsAllDidMethods,
       supportedDidMethods,
+      supportsJwk,
     })
 
-    // Make sure the verification method uses a supported did method
+    // Make sure the issuer of proof of possession is valid according to openid issuer metadata
     if (
+      credentialBinding.method === 'did' &&
       !supportsAllDidMethods &&
       // If supportedDidMethods is undefined, it means the issuer didn't include the binding methods in the metadata
       // The user can still select a verification method, but we can't validate it
       supportedDidMethods !== undefined &&
-      !supportedDidMethods.find((supportedDidMethod) => verificationMethod.id.startsWith(supportedDidMethod))
+      !supportedDidMethods.find((supportedDidMethod) => credentialBinding.didUrl.startsWith(supportedDidMethod))
     ) {
-      const { method } = parseDid(verificationMethod.id)
+      const { method } = parseDid(credentialBinding.didUrl)
       const supportedDidMethodsString = supportedDidMethods.join(', ')
       throw new AriesFrameworkError(
-        `Verification method uses did method '${method}', but issuer only supports '${supportedDidMethodsString}'`
+        `Resolved credential binding for proof of possession uses did method '${method}', but issuer only supports '${supportedDidMethodsString}'`
       )
-    }
-
-    // Make sure the verification method uses a supported verification method type
-    if (!supportedVerificationMethods.includes(verificationMethod.type)) {
-      const supportedVerificationMethodsString = supportedVerificationMethods.join(', ')
+    } else if (credentialBinding.method === 'jwk' && !supportsJwk) {
       throw new AriesFrameworkError(
-        `Verification method uses verification method type '${verificationMethod.type}', but only '${supportedVerificationMethodsString}' verification methods are supported for key type '${JwkClass.keyType}'`
+        `Resolved credential binding for proof of possession uses jwk, but openid issuer does not support 'jwk' cryptographic binding method`
       )
     }
 
-    return { verificationMethod, signatureAlgorithm }
+    // FIXME: we don't have the verification method here
+    // Make sure the verification method uses a supported verification method type
+    // if (!supportedVerificationMethods.includes(verificationMethod.type)) {
+    //   const supportedVerificationMethodsString = supportedVerificationMethods.join(', ')
+    //   throw new AriesFrameworkError(
+    //     `Verification method uses verification method type '${verificationMethod.type}', but only '${supportedVerificationMethodsString}' verification methods are supported for key type '${JwkClass.keyType}'`
+    //   )
+    // }
+
+    return { credentialBinding, signatureAlgorithm }
   }
 
   /**
@@ -648,27 +651,29 @@ export class OpenId4VciHolderService {
 
     const supportsAllDidMethods = issuerSupportedBindingMethods?.includes('did') ?? false
     const supportedDidMethods = issuerSupportedBindingMethods?.filter((method) => method.startsWith('did:'))
+    const supportsJwk = issuerSupportedBindingMethods?.includes('jwk') ?? false
 
     return {
       signatureAlgorithm,
       supportedDidMethods,
       supportsAllDidMethods,
+      supportsJwk,
     }
   }
+
   private async handleCredentialResponse(
     agentContext: AgentContext,
     credentialResponse: OpenIDResponse<CredentialResponse>,
-    options: { verifyCredentialStatus: boolean; holderDidUrl: string }
-  ): Promise<W3cCredentialRecord | SdJwtVcRecord> {
-    const { verifyCredentialStatus, holderDidUrl } = options
+    options: { verifyCredentialStatus: boolean }
+  ): Promise<SdJwtVc | W3cVerifiableCredential> {
+    const { verifyCredentialStatus } = options
     this.logger.debug('Credential request response', credentialResponse)
 
-    if (!credentialResponse.successBody) {
+    if (!credentialResponse.successBody || !credentialResponse.successBody.credential) {
       throw new AriesFrameworkError('Did not receive a successful credential response.')
     }
 
     const format = getUniformFormat(credentialResponse.successBody.format)
-
     if (format === OpenIdCredentialFormatProfile.SdJwtVc) {
       if (typeof credentialResponse.successBody.credential !== 'string')
         throw new AriesFrameworkError(
@@ -679,65 +684,105 @@ export class OpenId4VciHolderService {
 
       const sdJwtVcApi = getApiForModuleByName<SdJwtVcModule>(agentContext, 'SdJwtVcModule')
       if (!sdJwtVcApi) throw new AriesFrameworkError(`Could not find the SdJwtVcApi`)
-      const sdJwtVcRecord = await sdJwtVcApi.fromSerializedJwt(credentialResponse.successBody.credential, {
-        holderDidUrl,
+      const { verification, sdJwtVc } = await sdJwtVcApi.verify({
+        compactSdJwtVc: credentialResponse.successBody.credential,
       })
 
-      return sdJwtVcRecord
+      if (!verification.isValid) {
+        agentContext.config.logger.error('Failed to validate credential', { verification })
+        throw new AriesFrameworkError(
+          `Failed to validate sd-jwt-vc credential. Results = ${JSON.stringify(verification)}`
+        )
+      }
+
+      return sdJwtVc
+    } else if (
+      format === OpenIdCredentialFormatProfile.JwtVcJson ||
+      format === OpenIdCredentialFormatProfile.JwtVcJsonLd
+    ) {
+      const credential = W3cJwtVerifiableCredential.fromSerializedJwt(
+        credentialResponse.successBody.credential as string
+      )
+      const result = await this.w3cCredentialService.verifyCredential(agentContext, {
+        credential,
+        verifyCredentialStatus,
+      })
+      if (!result.isValid) {
+        agentContext.config.logger.error('Failed to validate credential', { result })
+        throw new AriesFrameworkError(`Failed to validate credential, error = ${result.error?.message ?? 'Unknown'}`)
+      }
+
+      return credential
+    } else if (format === OpenIdCredentialFormatProfile.LdpVc) {
+      const credential = W3cJsonLdVerifiableCredential.fromJson(
+        credentialResponse.successBody.credential as Record<string, unknown>
+      )
+      const result = await this.w3cCredentialService.verifyCredential(agentContext, {
+        credential,
+        verifyCredentialStatus,
+      })
+      if (!result.isValid) {
+        agentContext.config.logger.error('Failed to validate credential', { result })
+        throw new AriesFrameworkError(`Failed to validate credential, error = ${result.error?.message ?? 'Unknown'}`)
+      }
+
+      return credential
     }
 
-    let credential: W3cVerifiableCredential
-    let result: W3cVerifyCredentialResult
-    if (format === OpenIdCredentialFormatProfile.LdpVc || format === OpenIdCredentialFormatProfile.JwtVcJsonLd) {
-      // validate json-ld credentials
-      credential = JsonTransformer.fromJSON(credentialResponse.successBody.credential, W3cJsonLdVerifiableCredential)
-      result = await this.w3cCredentialService.verifyCredential(agentContext, { credential, verifyCredentialStatus })
-    } else if (format === OpenIdCredentialFormatProfile.JwtVcJson) {
-      // validate jwt credentials
-      credential = W3cJwtVerifiableCredential.fromSerializedJwt(credentialResponse.successBody.credential as string)
-      result = await this.w3cCredentialService.verifyCredential(agentContext, { credential, verifyCredentialStatus })
-    } else {
-      throw new AriesFrameworkError(`Unsupported credential format ${credentialResponse.successBody.format}`)
-    }
-
-    if (!result.isValid) {
-      agentContext.config.logger.error('Failed to validate credential', { result })
-      throw new AriesFrameworkError(`Failed to validate credential, error = ${result.error?.message ?? 'Unknown'}`)
-    }
-
-    return new W3cCredentialRecord({ credential, tags: { expandedTypes: [] } })
+    throw new AriesFrameworkError(`Unsupported credential format ${credentialResponse.successBody.format}`)
   }
 
-  private signCallback(agentContext: AgentContext, verificationMethod: VerificationMethod) {
+  private proofOfPossessionSignCallback(agentContext: AgentContext) {
     return async (jwt: Jwt, kid?: string) => {
       if (!jwt.header) throw new AriesFrameworkError('No header present on JWT')
       if (!jwt.payload) throw new AriesFrameworkError('No payload present on JWT')
-      if (!kid) throw new AriesFrameworkError('No KID is present in the callback')
-
-      // We have determined the verification method before and already passed that when creating the callback,
-      // however we just want to make sure that the kid matches the verification method id
-      if (verificationMethod.id !== kid) {
-        throw new AriesFrameworkError(`kid ${kid} does not match verification method id ${verificationMethod.id}`)
+      if (kid && jwt.header.jwk) {
+        throw new AriesFrameworkError('Both KID and JWK are present in the callback. Only one can be present')
       }
 
-      const key = getKeyFromVerificationMethod(verificationMethod)
+      let key: Key
+
+      if (kid) {
+        if (!kid.startsWith('did:')) {
+          throw new AriesFrameworkError(`kid '${kid}' is not a DID. Only dids are supported for kid`)
+        } else if (!kid.includes('#')) {
+          throw new AriesFrameworkError(
+            `kid '${kid}' does not contain a fragment. kid MUST point to a specific key in the did document.`
+          )
+        }
+
+        const didsApi = agentContext.dependencyManager.resolve(DidsApi)
+        const didDocument = await didsApi.resolveDidDocument(kid)
+        const verificationMethod = didDocument.dereferenceKey(kid, ['authentication'])
+
+        key = getKeyFromVerificationMethod(verificationMethod)
+      } else if (jwt.header.jwk) {
+        key = getJwkFromJson(jwt.header.jwk as JwkJson).key
+      } else {
+        throw new AriesFrameworkError('No KID or JWK is present in the callback')
+      }
+
       const jwk = getJwkFromKey(key)
       if (!jwk.supportsSignatureAlgorithm(jwt.header.alg)) {
         throw new AriesFrameworkError(
-          `kid ${kid} refers to a key of type '${jwk.keyType}', which does not support the JWS signature alg '${jwt.header.alg}'`
+          `key type '${jwk.keyType}', does not support the JWS signature alg '${jwt.header.alg}'`
         )
       }
 
       // We don't support these properties, remove them, so we can pass all other header properties to the JWS service
-      if (jwt.header.x5c || jwt.header.jwk) throw new AriesFrameworkError('x5c and jwk are not supported')
+      if (jwt.header.x5c) throw new AriesFrameworkError('x5c is not supported')
 
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const { x5c: _x5c, jwk: _jwk, ...supportedHeaderOptions } = jwt.header
+      const { x5c: _x5c, ...supportedHeaderOptions } = jwt.header
 
       const jws = await this.jwsService.createJwsCompact(agentContext, {
         key,
         payload: JsonEncoder.toBuffer(jwt.payload),
-        protectedHeaderOptions: supportedHeaderOptions,
+        protectedHeaderOptions: {
+          ...supportedHeaderOptions,
+          // only pass jwk if it was present in the header
+          jwk: jwt.header.jwk ? jwk : undefined,
+        },
       })
 
       return jws

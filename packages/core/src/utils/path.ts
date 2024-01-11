@@ -14,11 +14,21 @@ export function getDirFromFilePath(path: string) {
  * @param parts the parts to combine
  * @returns the combined url
  */
-export function joinUriParts(parts: string[]) {
-  let combined = ''
+export function joinUriParts(base: string, parts: string[]) {
+  if (parts.length === 0) return base
+
+  // take base without trailing /
+  let combined = base.endsWith('/') ? base.slice(0, base.length - 1) : base
 
   for (const part of parts) {
-    combined += part.endsWith('/') ? part : `${part}/`
+    // Remove leading and trailing /
+    let strippedPart = part.startsWith('/') ? part.slice(1) : part
+    strippedPart = strippedPart.endsWith('/') ? strippedPart.slice(0, strippedPart.length - 1) : strippedPart
+
+    // Don't want to add if empty
+    if (strippedPart === '') continue
+
+    combined += `/${strippedPart}`
   }
 
   return combined

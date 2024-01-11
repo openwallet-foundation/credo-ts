@@ -41,6 +41,10 @@ export class W3cJsonLdVerifiableCredential extends W3cCredential {
     return JsonTransformer.toJSON(this)
   }
 
+  public static fromJson(json: Record<string, unknown>) {
+    return JsonTransformer.fromJSON(json, W3cJsonLdVerifiableCredential)
+  }
+
   /**
    * The {@link ClaimFormat} of the credential. For JSON-LD credentials this is always `ldp_vc`.
    */

@@ -3,15 +3,17 @@ import type {
   CreateCredentialOfferOptions,
   CreateCredentialResponseOptions,
   CreateIssuerOptions,
-  CredentialHolderBinding,
   CredentialOffer,
   IssuerMetadata,
   OpenId4VciSignCredential,
+  OpenId4VciSignSdJwtCredential,
+  OpenId4VciSignW3cCredential,
   PreAuthorizedCodeFlowConfig,
 } from './OpenId4VcIssuerServiceOptions'
 import type { ReferencedOfferedCredentialWithMetadata } from '../openid4vc-holder/reception/utils/IssuerMetadataUtils'
-import type { AgentContext, DidDocument, Jwk, W3cSignCredentialOptions } from '@aries-framework/core'
-import type { SdJwtVcModule, SdJwtVcSignOptions } from '@aries-framework/sd-jwt-vc'
+import type { CredentialHolderBinding } from '../shared'
+import type { AgentContext, DidDocument } from '@aries-framework/core'
+import type { SdJwtVcModule } from '@aries-framework/sd-jwt-vc'
 import type {
   CredentialOfferPayloadV1_0_11,
   CredentialRequestV1_0_11,
@@ -28,6 +30,8 @@ import type {
 import type { ICredential } from '@sphereon/ssi-types'
 
 import {
+  ClaimFormat,
+  JsonEncoder,
   getJwkFromJson,
   KeyType,
   utils,
@@ -54,13 +58,14 @@ import {
   getOfferedCredentialsWithMetadata,
 } from '../openid4vc-holder/reception/utils/IssuerMetadataUtils'
 import { getSphereonW3cVerifiableCredential } from '../shared/transform'
+import { getProofTypeFromVerificationMethod } from '../shared/utils'
 
 import { OpenId4VcIssuerModuleConfig } from './OpenId4VcIssuerModuleConfig'
 import { OpenId4VcIssuerRecord } from './repository/OpenId4VcIssuerRecord'
 import { OpenId4VcIssuerRepository } from './repository/OpenId4VcIssuerRepository'
 import { storeIssuerIdForContextCorrelationId } from './router/requestContext'
 
-const W3cOpenId4VcFormats = [
+const w3cOpenId4VcFormats = [
   OpenIdCredentialFormatProfile.JwtVcJson,
   OpenIdCredentialFormatProfile.JwtVcJsonLd,
   OpenIdCredentialFormatProfile.LdpVc,
@@ -90,11 +95,11 @@ export class OpenId4VcIssuerService {
 
   public getIssuerMetadata(agentContext: AgentContext, issuerRecord: OpenId4VcIssuerRecord): IssuerMetadata {
     const config = agentContext.dependencyManager.resolve(OpenId4VcIssuerModuleConfig)
-    const issuerUrl = joinUriParts([config.baseUrl, issuerRecord.issuerId])
+    const issuerUrl = joinUriParts(config.baseUrl, [issuerRecord.issuerId])
     const issuerMetadata = {
       issuerUrl,
-      tokenEndpoint: joinUriParts([issuerUrl, config.accessTokenEndpoint.endpointPath]),
-      credentialEndpoint: joinUriParts([issuerUrl, config.credentialEndpoint.endpointPath]),
+      tokenEndpoint: joinUriParts(issuerUrl, [config.accessTokenEndpoint.endpointPath]),
+      credentialEndpoint: joinUriParts(issuerUrl, [config.credentialEndpoint.endpointPath]),
       credentialsSupported: issuerRecord.credentialsSupported,
       issuerDisplay: issuerRecord.display,
     } satisfies IssuerMetadata
@@ -238,45 +243,34 @@ export class OpenId4VcIssuerService {
 
   private getJwtVerifyCallback = (agentContext: AgentContext): JWTVerifyCallback<DidDocument> => {
     return async (opts) => {
-      const { jwt } = opts
+      let didDocument = undefined as DidDocument | undefined
+      const { isValid, jws } = await this.jwsService.verifyJws(agentContext, {
+        jws: opts.jwt,
+        // Only handles kid as did resolution. JWK is handled by jws service
+        jwkResolver: async ({ protectedHeader: { kid } }) => {
+          if (!kid) throw new AriesFrameworkError('Missing kid in protected header.')
+          if (!kid.startsWith('did:')) throw new AriesFrameworkError('Only did is supported for kid identifier')
 
-      const { header, payload } = Jwt.fromSerializedJwt(jwt)
-      const { alg, kid, jwk: jwkJson } = header
-
-      if (kid && jwkJson) {
-        throw new AriesFrameworkError('Either kid or jwk must be present, but not both')
-      }
-
-      let jwk: Jwk
-      let didDocument: DidDocument | undefined = undefined
-      if (kid) {
-        if (!kid.startsWith('did:')) {
-          throw new AriesFrameworkError("Only kid with 'did:' prefix is supported for JWT")
-        }
-        const didsApi = agentContext.dependencyManager.resolve(DidsApi)
-        didDocument = await didsApi.resolveDidDocument(kid)
-        const verificationMethod = didDocument.dereferenceKey(kid, ['authentication', 'assertionMethod'])
-        const key = getKeyFromVerificationMethod(verificationMethod)
-        jwk = getJwkFromKey(key)
-      } else if (jwkJson) {
-        jwk = getJwkFromJson(jwkJson)
-      } else {
-        throw new AriesFrameworkError('Either kid or jwk must be present')
-      }
-
-      const { isValid } = await this.jwsService.verifyJws(agentContext, {
-        jws: jwt,
-        jwkResolver: () => jwk,
+          const didsApi = agentContext.dependencyManager.resolve(DidsApi)
+          didDocument = await didsApi.resolveDidDocument(kid)
+          const verificationMethod = didDocument.dereferenceKey(kid, ['authentication', 'assertionMethod'])
+          const key = getKeyFromVerificationMethod(verificationMethod)
+          return getJwkFromKey(key)
+        },
       })
 
       if (!isValid) throw new AriesFrameworkError('Could not verify JWT signature.')
 
+      // FIXME: the jws service should return some better decoded metadata also from the resolver
+      // as currently is less useful if you afterwards need properties from the JWS
+      const firstJws = jws.signatures[0]
+      const protectedHeader = JsonEncoder.fromBase64(firstJws.protected)
       return {
-        jwt: { header, payload: payload.toJson() },
-        kid,
-        jwk: jwkJson,
-        did: kid,
-        alg,
+        jwt: { header: protectedHeader, payload: JsonEncoder.fromBase64(jws.payload) },
+        kid: protectedHeader.kid,
+        jwk: protectedHeader.jwk ? getJwkFromJson(protectedHeader.jwk) : undefined,
+        did: didDocument?.id,
+        alg: protectedHeader.alg,
         didDocument,
       }
     }
@@ -368,7 +362,7 @@ export class OpenId4VcIssuerService {
 
   private getSdJwtVcCredentialSigningCallback = (
     agentContext: AgentContext,
-    options: SdJwtVcSignOptions
+    options: OpenId4VciSignSdJwtCredential
   ): CredentialSignerCallback<DidDocument> => {
     return async () => {
       const sdJwtVcApi = getApiForModuleByName<SdJwtVcModule>(agentContext, 'SdJwtVcModule')
@@ -382,18 +376,22 @@ export class OpenId4VcIssuerService {
 
   private getW3cCredentialSigningCallback = (
     agentContext: AgentContext,
-    options: W3cSignCredentialOptions
+    options: OpenId4VciSignW3cCredential
   ): CredentialSignerCallback<DidDocument> => {
     return async (opts) => {
-      const { jwtVerifyResult } = opts
-
-      // FIXME: how certain can we be that the key is verified to
-      // be in the did document? Where is the did resolved?
-      // I think in the jwtVerifyCallback we provide
+      const { jwtVerifyResult, format } = opts
       const { kid, didDocument: holderDidDocument } = jwtVerifyResult
 
       if (!kid) throw new AriesFrameworkError('Missing Kid. Cannot create the holder binding')
       if (!holderDidDocument) throw new AriesFrameworkError('Missing did document. Cannot create the holder binding.')
+      if (!format) throw new AriesFrameworkError('Missing format. Cannot issue credential.')
+
+      const formatMap: Record<string, ClaimFormat.JwtVc | ClaimFormat.LdpVc> = {
+        [OpenIdCredentialFormatProfile.JwtVcJson]: ClaimFormat.JwtVc,
+        [OpenIdCredentialFormatProfile.JwtVcJsonLd]: ClaimFormat.JwtVc,
+        [OpenIdCredentialFormatProfile.LdpVc]: ClaimFormat.LdpVc,
+      }
+      const w3cServiceFormat = formatMap[format]
 
       // Set the binding on the first credential subject if not set yet
       // on any subject
@@ -404,20 +402,53 @@ export class OpenId4VcIssuerService {
         credentialSubject.id = holderDidDocument.id
       }
 
-      const signed = await this.w3cCredentialService.signCredential(agentContext, options)
+      const didsApi = agentContext.dependencyManager.resolve(DidsApi)
+      const issuerDidDocument = await didsApi.resolveDidDocument(options.verificationMethod)
+      const verificationMethod = issuerDidDocument.dereferenceVerificationMethod(options.verificationMethod)
 
-      return getSphereonW3cVerifiableCredential(signed)
+      if (w3cServiceFormat === ClaimFormat.JwtVc) {
+        const key = getKeyFromVerificationMethod(verificationMethod)
+        const alg = getJwkFromKey(key).supportedSignatureAlgorithms[0]
+
+        if (!alg) {
+          throw new AriesFrameworkError(`No supported JWA signature algorithms for key type ${key.keyType}`)
+        }
+
+        const signed = await this.w3cCredentialService.signCredential(agentContext, {
+          format: w3cServiceFormat,
+          credential: options.credential,
+          verificationMethod: options.verificationMethod,
+          alg,
+        })
+
+        return getSphereonW3cVerifiableCredential(signed)
+      } else {
+        const signed = await this.w3cCredentialService.signCredential(agentContext, {
+          format: w3cServiceFormat,
+          credential: options.credential,
+          verificationMethod: options.verificationMethod,
+          proofType: getProofTypeFromVerificationMethod(agentContext, verificationMethod),
+        })
+
+        return getSphereonW3cVerifiableCredential(signed)
+      }
     }
   }
 
-  private async getHolderBindingFromRequest(agentContext: AgentContext, credentialRequest: CredentialRequestV1_0_11) {
+  private async getHolderBindingFromRequest(credentialRequest: CredentialRequestV1_0_11) {
     if (!credentialRequest.proof?.jwt) throw new AriesFrameworkError('Received a credential request without a proof')
 
     const jwt = Jwt.fromSerializedJwt(credentialRequest.proof.jwt)
 
     if (jwt.header.kid) {
-      const didsApi = agentContext.dependencyManager.resolve(DidsApi)
-      await didsApi.resolveDidDocument(jwt.header.kid)
+      if (!jwt.header.kid.startsWith('did:')) {
+        throw new AriesFrameworkError("Only did is supported for 'kid' identifier")
+      } else if (!jwt.header.kid.includes('#')) {
+        throw new AriesFrameworkError(
+          `kid containing did MUST point to a specific key within the did document: ${jwt.header.kid}`
+        )
+      }
+
       return {
         method: 'did',
         didUrl: jwt.header.kid,
@@ -458,7 +489,7 @@ export class OpenId4VcIssuerService {
 
       let signOptions = options.credential
       if (!signOptions) {
-        const holderBinding = await this.getHolderBindingFromRequest(agentContext, credentialRequest)
+        const holderBinding = await this.getHolderBindingFromRequest(credentialRequest)
         signOptions = await this.openId4VcIssuerConfig.credentialEndpoint.credentialRequestToCredentialMapper({
           agentContext,
           holderBinding,
@@ -471,7 +502,7 @@ export class OpenId4VcIssuerService {
       }
 
       if (isW3cSignCredentialOptions(signOptions)) {
-        if (!W3cOpenId4VcFormats.includes(credentialRequest.format as OpenIdCredentialFormatProfile)) {
+        if (!w3cOpenId4VcFormats.includes(credentialRequest.format as OpenIdCredentialFormatProfile)) {
           throw new AriesFrameworkError(
             `The credential to be issued does not match the request. Cannot issue a W3cCredential if the client expects a credential of format '${credentialRequest.format}'.`
           )
@@ -497,7 +528,8 @@ export class OpenId4VcIssuerService {
         return {
           format: credentialRequest.format,
           // NOTE: we don't use the credential value here as we pass the credential directly to the singer
-          credential: null as unknown as CredentialIssuanceInput,
+          // FIXME: oid4vci adds `sub` property, but SD-JWT uses `cnf`
+          credential: { ...signOptions.payload } as unknown as CredentialIssuanceInput,
           signCallback: this.getSdJwtVcCredentialSigningCallback(agentContext, signOptions),
         }
       }
@@ -505,6 +537,6 @@ export class OpenId4VcIssuerService {
   }
 }
 
-function isW3cSignCredentialOptions(credential: OpenId4VciSignCredential): credential is W3cSignCredentialOptions {
+function isW3cSignCredentialOptions(credential: OpenId4VciSignCredential): credential is OpenId4VciSignW3cCredential {
   return 'credential' in credential && credential.credential instanceof W3cCredential
 }

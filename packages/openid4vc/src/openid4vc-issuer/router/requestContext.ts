@@ -18,7 +18,7 @@ export async function getAgentContextForIssuerId(rootAgentContext: AgentContext,
   // Check if multi-tenancy is enabled, and if so find the associated multi-tenant record
   // This is a bit hacky as it uses the tenants module to store the openid4vc issuer id
   // but this way we don't have to expose the contextCorrelationId in the issuer metadata
-  const tenantsApi = getApiForModuleByName<TenantsModule>(rootAgentContext, 'TenantsApi')
+  const tenantsApi = getApiForModuleByName<TenantsModule>(rootAgentContext, 'TenantsModule')
   if (tenantsApi) {
     const [tenant] = await tenantsApi.findTenantsByQuery({
       [OPENID4VC_ISSUER_IDS_METADATA_KEY]: [issuerId],
@@ -28,7 +28,7 @@ export async function getAgentContextForIssuerId(rootAgentContext: AgentContext,
       const agentContextProvider = rootAgentContext.dependencyManager.resolve<AgentContextProvider>(
         InjectionSymbols.AgentContextProvider
       )
-      await agentContextProvider.getAgentContextForContextCorrelationId(tenant.id)
+      return agentContextProvider.getAgentContextForContextCorrelationId(tenant.id)
     }
   }
 
@@ -49,13 +49,18 @@ export async function storeIssuerIdForContextCorrelationId(agentContext: AgentCo
   // It's kind of hacky, but we add support for the tenants module specifically here to map an issuerId to
   // a specific tenant. Otherwise we have to expose /:contextCorrelationId/:issuerId in all the public URLs
   // which is of course not so nice.
-  const tenantsApi = getApiForModuleByName<TenantsModule>(agentContext, 'TenantsApi')
+  // FIXME: it's maybe nicer to just depend on the tenants module
+  const tenantsApi = getApiForModuleByName<TenantsModule>(agentContext, 'TenantsModule')
+
   // We don't want to query the tenant record if the current context is the root context
   if (tenantsApi && tenantsApi.rootAgentContext.contextCorrelationId !== agentContext.contextCorrelationId) {
     const tenantRecord = await tenantsApi.getTenantById(agentContext.contextCorrelationId)
 
-    const openId4VcIssuerIds = tenantRecord.metadata.get<string[]>(OPENID4VC_ISSUER_IDS_METADATA_KEY) ?? []
-    tenantRecord.metadata.set(OPENID4VC_ISSUER_IDS_METADATA_KEY, [...openId4VcIssuerIds, issuerId])
+    const currentOpenId4VcIssuerIds = tenantRecord.metadata.get<string[]>(OPENID4VC_ISSUER_IDS_METADATA_KEY) ?? []
+    const openId4VcIssuerIds = [...currentOpenId4VcIssuerIds, issuerId]
+
+    tenantRecord.metadata.set(OPENID4VC_ISSUER_IDS_METADATA_KEY, openId4VcIssuerIds)
+    tenantRecord.setTag(OPENID4VC_ISSUER_IDS_METADATA_KEY, openId4VcIssuerIds)
     await tenantsApi.updateTenant(tenantRecord)
   }
 }

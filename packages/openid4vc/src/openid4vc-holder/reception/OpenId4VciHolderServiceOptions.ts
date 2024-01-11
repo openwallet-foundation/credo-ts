@@ -1,5 +1,6 @@
 import type { OfferedCredentialWithMetadata } from './utils/IssuerMetadataUtils'
-import type { JwaSignatureAlgorithm, KeyType, VerificationMethod } from '@aries-framework/core'
+import type { CredentialHolderBinding } from '../../shared'
+import type { JwaSignatureAlgorithm, KeyType } from '@aries-framework/core'
 import type {
   CredentialOfferPayloadV1_0_11,
   EndpointMetadataResult,
@@ -71,15 +72,19 @@ export interface AcceptCredentialOfferOptions {
   allowedProofOfPossessionSignatureAlgorithms?: JwaSignatureAlgorithm[]
 
   /**
-   * A function that should resolve a verification method based on the options passed.
+   * A function that should resolve key material for binding the to-be-issued credential
+   * to the holder based on the options passed. This key material will be used for signing
+   * the proof of possession included in the credential request.
+   *
    * This method will be called once for each of the credentials that are included
    * in the credential offer.
    *
    * Based on the credential format, JWA signature algorithm, verification method types
-   * and did methods, the resolver must return a verification method that will be used
+   * and binding methods (did methods, jwk), the resolver must return an object
+   * conformant to the `CredentialHolderBinding` interface, which will be used
    * for the proof of possession signature.
    */
-  proofOfPossessionVerificationMethodResolver: ProofOfPossessionVerificationMethodResolver
+  credentialBindingResolver: CredentialBindingResolver
 }
 
 /**
@@ -92,7 +97,7 @@ export interface AuthCodeFlowOptions {
   scope?: string[]
 }
 
-export interface ProofOfPossessionVerificationMethodResolverOptions {
+export interface CredentialBindingOptions {
   /**
    * The credential format that will be requested from the issuer.
    * E.g. `jwt_vc` or `ldp_vc`.
@@ -104,7 +109,7 @@ export interface ProofOfPossessionVerificationMethodResolverOptions {
    * This is based on the `allowedProofOfPossessionSignatureAlgorithms` passed
    * to the request credential method, and the supported signature algorithms.
    */
-  proofOfPossessionSignatureAlgorithm: JwaSignatureAlgorithm
+  signatureAlgorithm: JwaSignatureAlgorithm
 
   /**
    * This is a list of verification methods types that are supported
@@ -156,6 +161,12 @@ export interface ProofOfPossessionVerificationMethodResolverOptions {
    * is true, the value of this property MUST be ignored.
    */
   supportedDidMethods?: string[]
+
+  /**
+   * Whether the issuer supports the `jwk` cryptographic binding method,
+   * indicating they support proof of possession signatures bound to a jwk.
+   */
+  supportsJwk: boolean
 }
 
 /**
@@ -163,9 +174,9 @@ export interface ProofOfPossessionVerificationMethodResolverOptions {
  * user of the framework and allows them to determine which verification method should be used
  * for the proof of possession signature.
  */
-export type ProofOfPossessionVerificationMethodResolver = (
-  options: ProofOfPossessionVerificationMethodResolverOptions
-) => Promise<VerificationMethod> | VerificationMethod
+export type CredentialBindingResolver = (
+  options: CredentialBindingOptions
+) => Promise<CredentialHolderBinding> | CredentialHolderBinding
 
 /**
  * @internal
@@ -174,4 +185,5 @@ export interface ProofOfPossessionRequirements {
   signatureAlgorithm: JwaSignatureAlgorithm
   supportedDidMethods?: string[]
   supportsAllDidMethods: boolean
+  supportsJwk: boolean
 }

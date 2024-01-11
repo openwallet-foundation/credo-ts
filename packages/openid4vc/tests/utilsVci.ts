@@ -25,12 +25,15 @@ export const universityDegreeCredentialSdJwt = {
   id: 'https://openid4vc-issuer.com/credentials/UniversityDegreeCredentialSdJwt',
   format: OpenIdCredentialFormatProfile.SdJwtVc,
   vct: 'UniversityDegreeCredential',
+  cryptographic_binding_methods_supported: ['did:key'],
 } satisfies OpenId4VciCredentialSupportedWithId
 
 export const universityDegreeCredentialSdJwt2 = {
   id: 'https://openid4vc-issuer.com/credentials/UniversityDegreeCredentialSdJwt2',
   format: OpenIdCredentialFormatProfile.SdJwtVc,
   vct: 'UniversityDegreeCredential2',
+  // FIXME: should this be dynamically generated? I think static is fine for now
+  cryptographic_binding_methods_supported: ['jwk'],
 } satisfies OpenId4VciCredentialSupportedWithId
 
 export const allCredentialsSupported = [

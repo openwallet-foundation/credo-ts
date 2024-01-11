@@ -10,7 +10,7 @@ import { JwtPayload } from './JwtPayload'
 interface JwtHeader {
   alg: string
   kid?: string
-  jwk: JwkJson
+  jwk?: JwkJson
   [key: string]: unknown
 }
 

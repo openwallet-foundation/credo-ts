@@ -12,7 +12,9 @@ export function sendErrorResponse(response: Response, logger: Logger, code: numb
     error instanceof Error ? error.message : typeof error === 'string' ? error : 'An unknown error occurred.'
 
   const body = { error: message, error_description }
-  logger.warn(`[OID4VCI] Sending error response: ${JSON.stringify(body)}`)
+  logger.warn(`[OID4VCI] Sending error response: ${JSON.stringify(body)}`, {
+    error,
+  })
 
   return response.status(code).json(body)
 }
