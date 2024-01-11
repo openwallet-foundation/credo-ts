@@ -1,32 +1,37 @@
 import type { AnonCredsRevocationStatusList, AnonCredsRevocationRegistryDefinition } from '@aries-framework/anoncreds'
 
-type RevocRegDelta = {
+export type RevocationRegistryDelta = {
   accum: string
   issued: number[]
   revoked: number[]
+  txnTime: number
+}
+
+enum RevocationState {
+  Active,
+  Revoked,
 }
 
 export function anonCredsRevocationStatusListFromIndyVdr(
   revocationRegistryDefinitionId: string,
   revocationRegistryDefinition: AnonCredsRevocationRegistryDefinition,
-  delta: RevocRegDelta,
-  timestamp: number,
+  delta: RevocationRegistryDelta,
   isIssuanceByDefault: boolean
 ): AnonCredsRevocationStatusList {
   // 0 means unrevoked, 1 means revoked
-  const defaultState = isIssuanceByDefault ? 0 : 1
+  const defaultState = isIssuanceByDefault ? RevocationState.Active : RevocationState.Revoked
 
   // Fill with default value
   const revocationList = new Array(revocationRegistryDefinition.value.maxCredNum).fill(defaultState)
 
   // Set all `issuer` indexes to 0 (not revoked)
   for (const issued of delta.issued ?? []) {
-    revocationList[issued] = 0
+    revocationList[issued] = RevocationState.Active
   }
 
   // Set all `revoked` indexes to 1 (revoked)
   for (const revoked of delta.revoked ?? []) {
-    revocationList[revoked] = 1
+    revocationList[revoked] = RevocationState.Revoked
   }
 
   return {
@@ -34,8 +39,59 @@ export function anonCredsRevocationStatusListFromIndyVdr(
     currentAccumulator: delta.accum,
     revRegDefId: revocationRegistryDefinitionId,
     revocationList,
-    revoked: delta.revoked,
-    issued: delta.issued,
-    timestamp,
+    timestamp: delta.txnTime,
+  }
+}
+
+/**
+ *
+ * Transforms the previous deltas and the full revocation status list into the latest delta
+ *
+ * ## Example
+ *
+ * input:
+ *
+ * revocationStatusList: [0, 1, 1, 1, 0, 0, 0, 1, 1, 0]
+ * previousDelta:
+ *   - issued: [1, 2, 5, 8, 9]
+ *   - revoked: [0, 3, 4, 6, 7]
+ *
+ * output:
+ *   - issued: [5, 9]
+ *   - revoked: [3, 7]
+ *
+ */
+export function indyVdrCreateLatestRevocationDelta(
+  currentAccumulator: string,
+  revocationStatusList: Array<number>,
+  previousDelta?: RevocationRegistryDelta
+) {
+  const issued: Array<number> = []
+  const revoked: Array<number> = []
+
+  if (previousDelta) {
+    for (const issuedIdx of previousDelta.issued) {
+      if (revocationStatusList[issuedIdx] !== RevocationState.Active) {
+        issued.push(issuedIdx)
+      }
+    }
+
+    for (const revokedIdx of previousDelta.revoked) {
+      if (revocationStatusList[revokedIdx] !== RevocationState.Revoked) {
+        revoked.push(revokedIdx)
+      }
+    }
+  } else {
+    revocationStatusList.forEach((revocationStatus, idx) => {
+      if (revocationStatus === RevocationState.Active) issued.push(idx)
+      if (revocationStatus === RevocationState.Revoked) revoked.push(idx)
+    })
+  }
+
+  return {
+    issued,
+    revoked,
+    accum: currentAccumulator,
+    prevAccum: previousDelta?.accum,
   }
 }

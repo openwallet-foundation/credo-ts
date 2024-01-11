@@ -39,7 +39,5 @@ export interface AnonCredsRevocationStatusList {
   revRegDefId: string
   revocationList: Array<number>
   currentAccumulator: string
-  issued?: Array<number>
-  revoked?: Array<number>
   timestamp: number
 }

@@ -25,7 +25,7 @@ import BigNumber from 'bn.js'
 
 import {
   getDidIndyCredentialDefinitionId,
-  getDidIndyRevocationRegistryId,
+  getDidIndyRevocationRegistryDefinitionId,
   getDidIndySchemaId,
 } from '../../indy-sdk/src/anoncreds/utils/identifiers'
 import {
@@ -249,7 +249,7 @@ export class InMemoryAnonCredsRegistry implements AnonCredsRegistry {
 
     const { namespace, namespaceIdentifier } = parseIndyDid(options.revocationRegistryDefinition.issuerId)
     const legacyIssuerId = namespaceIdentifier
-    const didIndyRevocationRegistryDefinitionId = getDidIndyRevocationRegistryId(
+    const didIndyRevocationRegistryDefinitionId = getDidIndyRevocationRegistryDefinitionId(
       namespace,
       namespaceIdentifier,
       indyLedgerSeqNo,

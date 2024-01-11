@@ -50,15 +50,6 @@ export function getUnqualifiedRevocationRegistryDefinitionId(
   return `${unqualifiedDid}:4:${unqualifiedDid}:3:CL:${schemaSeqNo}:${credentialDefinitionTag}:CL_ACCUM:${revocationRegistryTag}`
 }
 
-export function getUnqualifiedRevocationRegistryEntryId(
-  unqualifiedDid: string,
-  schemaSeqNo: string | number,
-  credentialDefinitionTag: string,
-  revocationRegistryTag: string
-) {
-  return `${unqualifiedDid}:5:${unqualifiedDid}:3:CL:${schemaSeqNo}:${credentialDefinitionTag}:CL_ACCUM:${revocationRegistryTag}`
-}
-
 export function isUnqualifiedCredentialDefinitionId(credentialDefinitionId: string) {
   return unqualifiedCredentialDefinitionIdRegex.test(credentialDefinitionId)
 }
