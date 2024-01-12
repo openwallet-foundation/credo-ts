@@ -3,17 +3,17 @@ import { AriesFrameworkError, ClaimFormat } from '@aries-framework/core'
 import {
   fromDifClaimFormatToOpenIdCredentialFormatProfile,
   fromOpenIdCredentialFormatProfileToDifClaimFormat,
-  OpenIdCredentialFormatProfile,
+  OpenId4VciCredentialFormatProfile,
 } from '../claimFormatMapping'
 
 describe('claimFormatMapping', () => {
   it('should convert from openid credential format profile to DIF claim format', () => {
     expect(fromDifClaimFormatToOpenIdCredentialFormatProfile(ClaimFormat.LdpVc)).toStrictEqual(
-      OpenIdCredentialFormatProfile.LdpVc
+      OpenId4VciCredentialFormatProfile.LdpVc
     )
 
     expect(fromDifClaimFormatToOpenIdCredentialFormatProfile(ClaimFormat.JwtVc)).toStrictEqual(
-      OpenIdCredentialFormatProfile.JwtVcJson
+      OpenId4VciCredentialFormatProfile.JwtVcJson
     )
 
     expect(() => fromDifClaimFormatToOpenIdCredentialFormatProfile(ClaimFormat.Jwt)).toThrow(AriesFrameworkError)
@@ -26,15 +26,15 @@ describe('claimFormatMapping', () => {
   })
 
   it('should convert from DIF claim format to openid credential format profile', () => {
-    expect(fromOpenIdCredentialFormatProfileToDifClaimFormat(OpenIdCredentialFormatProfile.JwtVcJson)).toStrictEqual(
-      ClaimFormat.JwtVc
-    )
+    expect(
+      fromOpenIdCredentialFormatProfileToDifClaimFormat(OpenId4VciCredentialFormatProfile.JwtVcJson)
+    ).toStrictEqual(ClaimFormat.JwtVc)
 
-    expect(fromOpenIdCredentialFormatProfileToDifClaimFormat(OpenIdCredentialFormatProfile.JwtVcJsonLd)).toStrictEqual(
-      ClaimFormat.JwtVc
-    )
+    expect(
+      fromOpenIdCredentialFormatProfileToDifClaimFormat(OpenId4VciCredentialFormatProfile.JwtVcJsonLd)
+    ).toStrictEqual(ClaimFormat.JwtVc)
 
-    expect(fromOpenIdCredentialFormatProfileToDifClaimFormat(OpenIdCredentialFormatProfile.LdpVc)).toStrictEqual(
+    expect(fromOpenIdCredentialFormatProfileToDifClaimFormat(OpenId4VciCredentialFormatProfile.LdpVc)).toStrictEqual(
       ClaimFormat.LdpVc
     )
   })

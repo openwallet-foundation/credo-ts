@@ -66,7 +66,7 @@ import {
   type SupportedCredentialFormats,
   supportedCredentialFormats,
 } from './OpenId4VciHolderServiceOptions'
-import { OpenIdCredentialFormatProfile } from './utils'
+import { OpenId4VciCredentialFormatProfile } from './utils'
 import { getFormatForVersion, getUniformFormat } from './utils/Formats'
 import {
   getMetadataFromCredentialOffer,
@@ -243,9 +243,12 @@ export class OpenId4VciHolderService {
     }
 
     const locations = authDetailsLocation ? [authDetailsLocation] : undefined
-    if (format === OpenIdCredentialFormatProfile.JwtVcJson) {
+    if (format === OpenId4VciCredentialFormatProfile.JwtVcJson) {
       return { type, format, types, locations }
-    } else if (format === OpenIdCredentialFormatProfile.LdpVc || format === OpenIdCredentialFormatProfile.JwtVcJsonLd) {
+    } else if (
+      format === OpenId4VciCredentialFormatProfile.LdpVc ||
+      format === OpenId4VciCredentialFormatProfile.JwtVcJsonLd
+    ) {
       // Inline Credential Offers come with no context so we cannot create the authorization_details
       // This type of credentials can only be requested via scopes
       if (offerType === OfferedCredentialType.InlineCredentialOffer) return undefined
@@ -257,7 +260,7 @@ export class OpenId4VciHolderService {
       }
 
       return { type, format, locations, credential_definition }
-    } else if (format === OpenIdCredentialFormatProfile.SdJwtVc) {
+    } else if (format === OpenId4VciCredentialFormatProfile.SdJwtVc) {
       return {
         type,
         format,
@@ -618,14 +621,14 @@ export class OpenId4VciHolderService {
       signatureAlgorithm = options.possibleProofOfPossessionSignatureAlgorithms[0]
     } else {
       switch (credentialsToRequest.format) {
-        case OpenIdCredentialFormatProfile.JwtVcJson:
-        case OpenIdCredentialFormatProfile.JwtVcJsonLd:
-        case OpenIdCredentialFormatProfile.SdJwtVc:
+        case OpenId4VciCredentialFormatProfile.JwtVcJson:
+        case OpenId4VciCredentialFormatProfile.JwtVcJsonLd:
+        case OpenId4VciCredentialFormatProfile.SdJwtVc:
           signatureAlgorithm = options.possibleProofOfPossessionSignatureAlgorithms.find((signatureAlgorithm) =>
             issuerSupportedCryptographicSuites.includes(signatureAlgorithm)
           )
           break
-        case OpenIdCredentialFormatProfile.LdpVc:
+        case OpenId4VciCredentialFormatProfile.LdpVc:
           signatureAlgorithm = options.possibleProofOfPossessionSignatureAlgorithms.find((signatureAlgorithm) => {
             const JwkClass = getJwkClassFromJwaSignatureAlgorithm(signatureAlgorithm)
             if (!JwkClass) return false
@@ -674,11 +677,11 @@ export class OpenId4VciHolderService {
     }
 
     const format = getUniformFormat(credentialResponse.successBody.format)
-    if (format === OpenIdCredentialFormatProfile.SdJwtVc) {
+    if (format === OpenId4VciCredentialFormatProfile.SdJwtVc) {
       if (typeof credentialResponse.successBody.credential !== 'string')
         throw new AriesFrameworkError(
           `Received a credential of format ${
-            OpenIdCredentialFormatProfile.SdJwtVc
+            OpenId4VciCredentialFormatProfile.SdJwtVc
           }, but the credential is not a string. ${JSON.stringify(credentialResponse.successBody.credential)}`
         )
 
@@ -697,8 +700,8 @@ export class OpenId4VciHolderService {
 
       return sdJwtVc
     } else if (
-      format === OpenIdCredentialFormatProfile.JwtVcJson ||
-      format === OpenIdCredentialFormatProfile.JwtVcJsonLd
+      format === OpenId4VciCredentialFormatProfile.JwtVcJson ||
+      format === OpenId4VciCredentialFormatProfile.JwtVcJsonLd
     ) {
       const credential = W3cJwtVerifiableCredential.fromSerializedJwt(
         credentialResponse.successBody.credential as string
@@ -713,7 +716,7 @@ export class OpenId4VciHolderService {
       }
 
       return credential
-    } else if (format === OpenIdCredentialFormatProfile.LdpVc) {
+    } else if (format === OpenId4VciCredentialFormatProfile.LdpVc) {
       const credential = W3cJsonLdVerifiableCredential.fromJson(
         credentialResponse.successBody.credential as Record<string, unknown>
       )

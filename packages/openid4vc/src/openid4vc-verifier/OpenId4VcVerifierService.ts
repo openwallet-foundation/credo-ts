@@ -16,6 +16,7 @@ import type {
 import type { NextFunction, Response, Router } from 'express'
 
 import {
+  joinUriParts,
   InjectionSymbols,
   Logger,
   W3cCredentialService,
@@ -42,7 +43,7 @@ import {
 } from '@sphereon/did-auth-siop'
 import bodyParser from 'body-parser'
 
-import { getRequestContext, getEndpointUrl, initializeAgentFromContext } from '../shared/router'
+import { getRequestContext } from '../shared/router'
 import {
   generateRandomValues,
   getSupportedDidMethods,
@@ -158,11 +159,10 @@ export class OpenId4VcVerifierService {
 
     const redirectUri =
       verificationEndpointUrl ??
-      getEndpointUrl(
-        this.verifierMetadata.verifierBaseUrl,
+      joinUriParts(this.verifierMetadata.verifierBaseUrl, [
         this.openId4VcVerifierModuleConfig.getBasePath(agentContext),
-        this.verifierMetadata.verificationEndpointPath
-      )
+        this.verifierMetadata.verificationEndpointPath,
+      ])
 
     // Check: audience must be set to the issuer with dynamic disc otherwise self-issued.me/v2.
     const builder = RP.builder()
@@ -341,9 +341,8 @@ export class OpenId4VcVerifierService {
 
     // initialize the agent and set the request context
     router.use(async (req: VerificationRequest, _res: Response, next: NextFunction) => {
-      const agentContext = await initializeAgentFromContext(
-        initializationContext.contextCorrelationId,
-        this.agentContextProvider
+      const agentContext = await this.agentContextProvider.getAgentContextForContextCorrelationId(
+        initializationContext.contextCorrelationId
       )
 
       req.requestContext = {
@@ -361,7 +360,7 @@ export class OpenId4VcVerifierService {
         ...endpointConfig.verificationEndpointConfig,
       })
 
-      const endPointUrl = getEndpointUrl(this.verifierMetadata.verifierBaseUrl, basePath, verificationEndpointPath)
+      const endPointUrl = joinUriParts(this.verifierMetadata.verifierBaseUrl, [basePath, verificationEndpointPath])
       this.logger.info(`[OID4VP] Verification endpoint running at '${endPointUrl}'.`)
     }
 

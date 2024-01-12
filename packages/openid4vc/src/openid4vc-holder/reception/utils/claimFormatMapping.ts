@@ -1,6 +1,6 @@
 import { AriesFrameworkError, ClaimFormat } from '@aries-framework/core'
 
-export enum OpenIdCredentialFormatProfile {
+export enum OpenId4VciCredentialFormatProfile {
   JwtVcJson = 'jwt_vc_json',
   JwtVcJsonLd = 'jwt_vc_json-ld',
   LdpVc = 'ldp_vc',
@@ -9,12 +9,12 @@ export enum OpenIdCredentialFormatProfile {
 
 export const fromDifClaimFormatToOpenIdCredentialFormatProfile = (
   claimFormat: ClaimFormat
-): OpenIdCredentialFormatProfile => {
+): OpenId4VciCredentialFormatProfile => {
   switch (claimFormat) {
     case ClaimFormat.JwtVc:
-      return OpenIdCredentialFormatProfile.JwtVcJson
+      return OpenId4VciCredentialFormatProfile.JwtVcJson
     case ClaimFormat.LdpVc:
-      return OpenIdCredentialFormatProfile.LdpVc
+      return OpenId4VciCredentialFormatProfile.LdpVc
     default:
       throw new AriesFrameworkError(
         `Unsupported DIF claim format, ${claimFormat}, to map to an openid credential format profile`
@@ -23,14 +23,14 @@ export const fromDifClaimFormatToOpenIdCredentialFormatProfile = (
 }
 
 export const fromOpenIdCredentialFormatProfileToDifClaimFormat = (
-  openidCredentialFormatProfile: OpenIdCredentialFormatProfile
+  openidCredentialFormatProfile: OpenId4VciCredentialFormatProfile
 ): ClaimFormat => {
   switch (openidCredentialFormatProfile) {
-    case OpenIdCredentialFormatProfile.JwtVcJson:
+    case OpenId4VciCredentialFormatProfile.JwtVcJson:
       return ClaimFormat.JwtVc
-    case OpenIdCredentialFormatProfile.JwtVcJsonLd:
+    case OpenId4VciCredentialFormatProfile.JwtVcJsonLd:
       return ClaimFormat.JwtVc
-    case OpenIdCredentialFormatProfile.LdpVc:
+    case OpenId4VciCredentialFormatProfile.LdpVc:
       return ClaimFormat.LdpVc
     default:
       throw new AriesFrameworkError(

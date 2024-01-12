@@ -21,7 +21,7 @@ import { MetadataClient } from '@sphereon/oid4vci-client'
 import { OpenId4VCIVersion } from '@sphereon/oid4vci-common'
 
 import { getUniformFormat, getFormatForVersion } from './Formats'
-import { OpenIdCredentialFormatProfile } from './claimFormatMapping'
+import { OpenId4VciCredentialFormatProfile } from './claimFormatMapping'
 
 /**
  * The type of a credential offer entry. For each item in `credentials` array, the type MUST be one of the following:
@@ -36,19 +36,19 @@ export enum OfferedCredentialType {
 export type InlineOfferedCredentialWithMetadata =
   | {
       offerType: OfferedCredentialType.InlineCredentialOffer
-      format: OpenIdCredentialFormatProfile.JwtVcJson
+      format: OpenId4VciCredentialFormatProfile.JwtVcJson
       credentialOffer: CredentialOfferFormatJwtVcJson
       types: string[]
     }
   | {
       offerType: OfferedCredentialType.InlineCredentialOffer
-      format: OpenIdCredentialFormatProfile.JwtVcJsonLd | OpenIdCredentialFormatProfile.LdpVc
+      format: OpenId4VciCredentialFormatProfile.JwtVcJsonLd | OpenId4VciCredentialFormatProfile.LdpVc
       credentialOffer: CredentialOfferFormatJwtVcJsonLdAndLdpVc
       types: string[]
     }
   | {
       offerType: OfferedCredentialType.InlineCredentialOffer
-      format: OpenIdCredentialFormatProfile.SdJwtVc
+      format: OpenId4VciCredentialFormatProfile.SdJwtVc
       credentialOffer: CredentialOfferFormatSdJwtVc
       types: string[]
     }
@@ -56,19 +56,19 @@ export type InlineOfferedCredentialWithMetadata =
 export type ReferencedOfferedCredentialWithMetadata =
   | {
       offerType: OfferedCredentialType.CredentialSupported
-      format: OpenIdCredentialFormatProfile.JwtVcJson
+      format: OpenId4VciCredentialFormatProfile.JwtVcJson
       credentialSupported: CredentialSupportedJwtVcJson
       types: string[]
     }
   | {
       offerType: OfferedCredentialType.CredentialSupported
-      format: OpenIdCredentialFormatProfile.JwtVcJsonLd | OpenIdCredentialFormatProfile.LdpVc
+      format: OpenId4VciCredentialFormatProfile.JwtVcJsonLd | OpenId4VciCredentialFormatProfile.LdpVc
       credentialSupported: CredentialSupportedJwtVcJsonLdAndLdpVc
       types: string[]
     }
   | {
       offerType: OfferedCredentialType.CredentialSupported
-      format: OpenIdCredentialFormatProfile.SdJwtVc
+      format: OpenId4VciCredentialFormatProfile.SdJwtVc
       credentialSupported: CredentialSupportedSdJwtVc
       types: string[]
     }
@@ -113,7 +113,7 @@ export function getOfferedCredentialsWithMetadata(
           offeredCredentialsWithMetadata.push({
             offerType: OfferedCredentialType.CredentialSupported,
             credentialSupported: foundSupportedCredential,
-            format: OpenIdCredentialFormatProfile.SdJwtVc,
+            format: OpenId4VciCredentialFormatProfile.SdJwtVc,
             types: [foundSupportedCredential.vct],
           })
         } else {
@@ -225,17 +225,17 @@ export function credentialSupportedV8ToV11(
 
     let credentialSupported: CredentialSupported
     const v11Format = getUniformFormat(format)
-    if (v11Format === OpenIdCredentialFormatProfile.JwtVcJson) {
+    if (v11Format === OpenId4VciCredentialFormatProfile.JwtVcJson) {
       credentialSupported = {
-        format: OpenIdCredentialFormatProfile.JwtVcJson,
+        format: OpenId4VciCredentialFormatProfile.JwtVcJson,
         display: supportedV8.display,
         ...credentialSupportedV8,
         credentialSubject: supportedV8.claims,
         id,
       }
     } else if (
-      v11Format === OpenIdCredentialFormatProfile.JwtVcJsonLd ||
-      v11Format === OpenIdCredentialFormatProfile.LdpVc
+      v11Format === OpenId4VciCredentialFormatProfile.JwtVcJsonLd ||
+      v11Format === OpenId4VciCredentialFormatProfile.LdpVc
     ) {
       credentialSupported = {
         format: v11Format,

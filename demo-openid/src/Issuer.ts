@@ -16,7 +16,7 @@ import {
   W3cIssuer,
   w3cDate,
 } from '@aries-framework/core'
-import { OpenId4VcIssuerModule, OpenIdCredentialFormatProfile } from '@aries-framework/openid4vc'
+import { OpenId4VcIssuerModule, OpenId4VciCredentialFormatProfile } from '@aries-framework/openid4vc'
 import { SdJwtVcModule } from '@aries-framework/sd-jwt-vc'
 import { ariesAskar } from '@hyperledger/aries-askar-nodejs'
 import { Router } from 'express'
@@ -26,19 +26,19 @@ import { Output } from './OutputClass'
 
 export const universityDegreeCredential = {
   id: 'UniversityDegreeCredential',
-  format: OpenIdCredentialFormatProfile.JwtVcJson,
+  format: OpenId4VciCredentialFormatProfile.JwtVcJson,
   types: ['VerifiableCredential', 'UniversityDegreeCredential'],
 } satisfies OpenId4VciCredentialSupportedWithId
 
 export const openBadgeCredential = {
   id: 'OpenBadgeCredential',
-  format: OpenIdCredentialFormatProfile.JwtVcJson,
+  format: OpenId4VciCredentialFormatProfile.JwtVcJson,
   types: ['VerifiableCredential', 'OpenBadgeCredential'],
 } satisfies OpenId4VciCredentialSupportedWithId
 
 export const universityDegreeCredentialSdJwt = {
   id: 'UniversityDegreeCredential-sdjwt',
-  format: OpenIdCredentialFormatProfile.SdJwtVc,
+  format: OpenId4VciCredentialFormatProfile.SdJwtVc,
   vct: 'UniversityDegreeCredential',
 } satisfies OpenId4VciCredentialSupportedWithId
 
@@ -65,8 +65,6 @@ function getCredentialRequestToCredentialMapper({
           issuer: new W3cIssuer({
             id: issuerDidKey.did,
           }),
-          // NOTE: credentialSubject will be set at lower level as well, but we can also set it here
-          // FIXME: we should also set cnf like we set credentialSubject.id
           credentialSubject: new W3cCredentialSubject({
             id: parseDid(holderBinding.didUrl).did,
           }),
@@ -154,7 +152,7 @@ export class Issuer extends BaseAgent<{
 
   public async createCredentialOffer(offeredCredentials: string[]) {
     const { credentialOfferUri } = await this.agent.modules.openId4VcIssuer.createCredentialOffer({
-      issuerId: this.issuerRecord.id,
+      issuerId: this.issuerRecord.issuerId,
       offeredCredentials,
       scheme: 'openid-credential-offer',
       preAuthorizedCodeFlowConfig: { userPinRequired: false },

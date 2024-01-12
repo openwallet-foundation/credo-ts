@@ -52,7 +52,7 @@ import {
 import { IssueStatus } from '@sphereon/oid4vci-common'
 import { VcIssuerBuilder } from '@sphereon/oid4vci-issuer'
 
-import { OpenIdCredentialFormatProfile } from '../openid4vc-holder'
+import { OpenId4VciCredentialFormatProfile } from '../openid4vc-holder'
 import {
   OfferedCredentialType,
   getOfferedCredentialsWithMetadata,
@@ -66,9 +66,9 @@ import { OpenId4VcIssuerRepository } from './repository/OpenId4VcIssuerRepositor
 import { storeIssuerIdForContextCorrelationId } from './router/requestContext'
 
 const w3cOpenId4VcFormats = [
-  OpenIdCredentialFormatProfile.JwtVcJson,
-  OpenIdCredentialFormatProfile.JwtVcJsonLd,
-  OpenIdCredentialFormatProfile.LdpVc,
+  OpenId4VciCredentialFormatProfile.JwtVcJson,
+  OpenId4VciCredentialFormatProfile.JwtVcJsonLd,
+  OpenId4VciCredentialFormatProfile.LdpVc,
 ]
 
 /**
@@ -347,14 +347,14 @@ export class OpenId4VcIssuerService {
     return referencedOfferedCredentials.filter((offeredCredential) => {
       if (offeredCredential.format !== credentialRequest.format) return false
 
-      if (credentialRequest.format === OpenIdCredentialFormatProfile.JwtVcJson) {
+      if (credentialRequest.format === OpenId4VciCredentialFormatProfile.JwtVcJson) {
         return equalsIgnoreOrder(offeredCredential.types, credentialRequest.types)
       } else if (
-        credentialRequest.format === OpenIdCredentialFormatProfile.JwtVcJsonLd ||
-        credentialRequest.format === OpenIdCredentialFormatProfile.LdpVc
+        credentialRequest.format === OpenId4VciCredentialFormatProfile.JwtVcJsonLd ||
+        credentialRequest.format === OpenId4VciCredentialFormatProfile.LdpVc
       ) {
         return equalsIgnoreOrder(offeredCredential.types, credentialRequest.credential_definition.types)
-      } else if (credentialRequest.format === OpenIdCredentialFormatProfile.SdJwtVc) {
+      } else if (credentialRequest.format === OpenId4VciCredentialFormatProfile.SdJwtVc) {
         return equalsIgnoreOrder(offeredCredential.types, [credentialRequest.vct])
       }
     })
@@ -387,9 +387,9 @@ export class OpenId4VcIssuerService {
       if (!format) throw new AriesFrameworkError('Missing format. Cannot issue credential.')
 
       const formatMap: Record<string, ClaimFormat.JwtVc | ClaimFormat.LdpVc> = {
-        [OpenIdCredentialFormatProfile.JwtVcJson]: ClaimFormat.JwtVc,
-        [OpenIdCredentialFormatProfile.JwtVcJsonLd]: ClaimFormat.JwtVc,
-        [OpenIdCredentialFormatProfile.LdpVc]: ClaimFormat.LdpVc,
+        [OpenId4VciCredentialFormatProfile.JwtVcJson]: ClaimFormat.JwtVc,
+        [OpenId4VciCredentialFormatProfile.JwtVcJsonLd]: ClaimFormat.JwtVc,
+        [OpenId4VciCredentialFormatProfile.LdpVc]: ClaimFormat.LdpVc,
       }
       const w3cServiceFormat = formatMap[format]
 
@@ -502,7 +502,7 @@ export class OpenId4VcIssuerService {
       }
 
       if (isW3cSignCredentialOptions(signOptions)) {
-        if (!w3cOpenId4VcFormats.includes(credentialRequest.format as OpenIdCredentialFormatProfile)) {
+        if (!w3cOpenId4VcFormats.includes(credentialRequest.format as OpenId4VciCredentialFormatProfile)) {
           throw new AriesFrameworkError(
             `The credential to be issued does not match the request. Cannot issue a W3cCredential if the client expects a credential of format '${credentialRequest.format}'.`
           )
@@ -514,9 +514,9 @@ export class OpenId4VcIssuerService {
           signCallback: this.getW3cCredentialSigningCallback(agentContext, signOptions),
         }
       } else {
-        if (credentialRequest.format !== OpenIdCredentialFormatProfile.SdJwtVc) {
+        if (credentialRequest.format !== OpenId4VciCredentialFormatProfile.SdJwtVc) {
           throw new AriesFrameworkError(
-            `Invalid credential format. Expected '${OpenIdCredentialFormatProfile.SdJwtVc}', received '${credentialRequest.format}'.`
+            `Invalid credential format. Expected '${OpenId4VciCredentialFormatProfile.SdJwtVc}', received '${credentialRequest.format}'.`
           )
         }
         if (credentialRequest.vct !== signOptions.payload.vct) {

@@ -8,17 +8,17 @@ import type {
   AuthorizationDetails,
 } from '@sphereon/oid4vci-common'
 
-import { OpenIdCredentialFormatProfile } from './utils/claimFormatMapping'
+import { OpenId4VciCredentialFormatProfile } from './utils/claimFormatMapping'
 
 export type SupportedCredentialFormats =
-  | OpenIdCredentialFormatProfile.JwtVcJson
-  | OpenIdCredentialFormatProfile.JwtVcJsonLd
-  | OpenIdCredentialFormatProfile.SdJwtVc
+  | OpenId4VciCredentialFormatProfile.JwtVcJson
+  | OpenId4VciCredentialFormatProfile.JwtVcJsonLd
+  | OpenId4VciCredentialFormatProfile.SdJwtVc
 
 export const supportedCredentialFormats: SupportedCredentialFormats[] = [
-  OpenIdCredentialFormatProfile.JwtVcJson,
-  OpenIdCredentialFormatProfile.JwtVcJsonLd,
-  OpenIdCredentialFormatProfile.SdJwtVc,
+  OpenId4VciCredentialFormatProfile.JwtVcJson,
+  OpenId4VciCredentialFormatProfile.JwtVcJsonLd,
+  OpenId4VciCredentialFormatProfile.SdJwtVc,
 ]
 
 export type { OpenId4VCIVersion, EndpointMetadataResult, CredentialOfferPayloadV1_0_11, AuthorizationDetails }

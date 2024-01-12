@@ -3,28 +3,28 @@ import type { CredentialFormat } from '@sphereon/ssi-types'
 import { AriesFrameworkError } from '@aries-framework/core'
 import { OpenId4VCIVersion } from '@sphereon/oid4vci-common'
 
-import { OpenIdCredentialFormatProfile } from './claimFormatMapping'
+import { OpenId4VciCredentialFormatProfile } from './claimFormatMapping'
 
 // Based on https://github.com/Sphereon-Opensource/OID4VCI/pull/54/files
 
 // check if a string is a valid enum value of OpenIdCredentialFormatProfile
 
-const isUniformFormat = (format: string): format is OpenIdCredentialFormatProfile => {
-  return Object.values(OpenIdCredentialFormatProfile).includes(format as OpenIdCredentialFormatProfile)
+const isUniformFormat = (format: string): format is OpenId4VciCredentialFormatProfile => {
+  return Object.values(OpenId4VciCredentialFormatProfile).includes(format as OpenId4VciCredentialFormatProfile)
 }
 
 export function getUniformFormat(
-  format: string | OpenIdCredentialFormatProfile | CredentialFormat
-): OpenIdCredentialFormatProfile {
+  format: string | OpenId4VciCredentialFormatProfile | CredentialFormat
+): OpenId4VciCredentialFormatProfile {
   // Already valid format
   if (isUniformFormat(format)) return format
 
   // Older formats
   if (format === 'jwt_vc' || format === 'jwt') {
-    return OpenIdCredentialFormatProfile.JwtVcJson
+    return OpenId4VciCredentialFormatProfile.JwtVcJson
   }
   if (format === 'ldp_vc' || format === 'ldp') {
-    return OpenIdCredentialFormatProfile.LdpVc
+    return OpenId4VciCredentialFormatProfile.LdpVc
   }
 
   throw new AriesFrameworkError(`Invalid format: ${format}`)
