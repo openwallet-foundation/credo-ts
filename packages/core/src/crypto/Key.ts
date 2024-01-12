@@ -59,4 +59,13 @@ export class Key {
   public get supportsSigning() {
     return isSigningSupportedForKeyType(this.keyType)
   }
+
+  // We return an object structure based on the key, so that when this object is
+  // serialized to JSON it will be nicely formatted instead of the bytes printed
+  private toJSON() {
+    return {
+      keyType: this.keyType,
+      publicKeyBase58: this.publicKeyBase58,
+    }
+  }
 }
