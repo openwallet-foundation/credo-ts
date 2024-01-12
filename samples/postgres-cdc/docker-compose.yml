@@ -24,5 +24,3 @@ services:
     platform: linux/amd64
     ports:
       - 6379:6379
-
-
