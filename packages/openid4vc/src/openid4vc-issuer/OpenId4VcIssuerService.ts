@@ -58,7 +58,7 @@ import {
   getOfferedCredentialsWithMetadata,
 } from '../openid4vc-holder/reception/utils/IssuerMetadataUtils'
 import { getSphereonW3cVerifiableCredential } from '../shared/transform'
-import { getProofTypeFromVerificationMethod } from '../shared/utils'
+import { getProofTypeFromKey } from '../shared/utils'
 
 import { OpenId4VcIssuerModuleConfig } from './OpenId4VcIssuerModuleConfig'
 import { OpenId4VcIssuerRecord } from './repository/OpenId4VcIssuerRecord'
@@ -423,11 +423,14 @@ export class OpenId4VcIssuerService {
 
         return getSphereonW3cVerifiableCredential(signed)
       } else {
+        const key = getKeyFromVerificationMethod(verificationMethod)
+        const proofType = getProofTypeFromKey(agentContext, key)
+
         const signed = await this.w3cCredentialService.signCredential(agentContext, {
           format: w3cServiceFormat,
           credential: options.credential,
           verificationMethod: options.verificationMethod,
-          proofType: getProofTypeFromVerificationMethod(agentContext, verificationMethod),
+          proofType: proofType,
         })
 
         return getSphereonW3cVerifiableCredential(signed)

@@ -240,7 +240,10 @@ export class SdJwtVcService {
     const didResolver = agentContext.dependencyManager.resolve(DidResolverService)
     const didDocument = await didResolver.resolveDidDocument(agentContext, didUrl)
 
-    return { verificationMethod: didDocument.dereferenceKey(didUrl), didDocument }
+    return {
+      verificationMethod: didDocument.dereferenceKey(didUrl, ['assertionMethod']),
+      didDocument,
+    }
   }
 
   private get hasher(): HasherAndAlgorithm {

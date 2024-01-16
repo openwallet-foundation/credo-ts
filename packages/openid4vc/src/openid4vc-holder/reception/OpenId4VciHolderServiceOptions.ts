@@ -14,11 +14,13 @@ export type SupportedCredentialFormats =
   | OpenId4VciCredentialFormatProfile.JwtVcJson
   | OpenId4VciCredentialFormatProfile.JwtVcJsonLd
   | OpenId4VciCredentialFormatProfile.SdJwtVc
+  | OpenId4VciCredentialFormatProfile.LdpVc
 
 export const supportedCredentialFormats: SupportedCredentialFormats[] = [
   OpenId4VciCredentialFormatProfile.JwtVcJson,
   OpenId4VciCredentialFormatProfile.JwtVcJsonLd,
   OpenId4VciCredentialFormatProfile.SdJwtVc,
+  OpenId4VciCredentialFormatProfile.LdpVc,
 ]
 
 export type { OpenId4VCIVersion, EndpointMetadataResult, CredentialOfferPayloadV1_0_11, AuthorizationDetails }

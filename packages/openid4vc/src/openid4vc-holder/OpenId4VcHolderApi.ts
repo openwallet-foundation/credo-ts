@@ -1,4 +1,4 @@
-import type { AuthenticationRequest, PresentationRequest, PresentationSubmission } from './presentation'
+import type { AuthenticationRequest, PresentationRequest } from './presentation'
 import type {
   ResolvedCredentialOffer,
   ResolvedAuthorizationRequest,
@@ -6,7 +6,7 @@ import type {
   AcceptCredentialOfferOptions,
   CredentialOfferPayloadV1_0_11,
 } from './reception'
-import type { VerificationMethod } from '@aries-framework/core'
+import type { VerificationMethod, DifPexInputDescriptorToCredentials } from '@aries-framework/core'
 
 import { injectable, AgentContext } from '@aries-framework/core'
 
@@ -74,17 +74,11 @@ export class OpenId4VcHolderApi {
    * @returns @see ProofSubmissionResponse containing the status of the submission.
    */
   public async acceptPresentationRequest(
+    // FIXME: more unique interface names: OpenId4VpPresentationRequest
     presentationRequest: PresentationRequest,
-    presentation: {
-      submission: PresentationSubmission
-      submissionEntryIndexes: number[]
-    }
+    credentials: DifPexInputDescriptorToCredentials
   ) {
-    const { submission, submissionEntryIndexes } = presentation
-    return await this.openId4VpHolderService.acceptProofRequest(this.agentContext, presentationRequest, {
-      submission,
-      submissionEntryIndexes,
-    })
+    return await this.openId4VpHolderService.acceptProofRequest(this.agentContext, presentationRequest, credentials)
   }
 
   /**

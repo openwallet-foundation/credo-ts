@@ -1,6 +1,9 @@
-import type { PresentationSubmission } from './selection'
-import type { InputDescriptorToCredentials } from './selection/types'
-import type { AgentContext, VerificationMethod, W3cVerifiablePresentation } from '@aries-framework/core'
+import type {
+  AgentContext,
+  DifPexInputDescriptorToCredentials,
+  VerificationMethod,
+  W3cVerifiablePresentation,
+} from '@aries-framework/core'
 import type { W3CVerifiablePresentation } from '@sphereon/ssi-types'
 
 import {
@@ -13,6 +16,7 @@ import {
   InjectionSymbols,
   Logger,
   parseDid,
+  DifPresentationExchangeService,
 } from '@aries-framework/core'
 import {
   CheckLinkedDomain,
@@ -33,14 +37,14 @@ import {
   type ProofSubmissionResponse,
   type ResolvedProofRequest,
 } from './OpenId4VpHolderServiceOptions'
-import { PresentationExchangeService } from './PresentationExchangeService'
 
 @injectable()
 export class OpenId4VpHolderService {
   private logger: Logger
+
   public constructor(
     @inject(InjectionSymbols.Logger) logger: Logger,
-    private presentationExchangeService: PresentationExchangeService
+    private presentationExchangeService: DifPresentationExchangeService
   ) {
     this.logger = logger
   }
@@ -116,12 +120,12 @@ export class OpenId4VpHolderService {
       )
     }
 
-    const presentationSubmission = await this.presentationExchangeService.selectCredentialsForRequest(
+    const credentialsForRequest = await this.presentationExchangeService.getCredentialsForRequest(
       agentContext,
       verifiedAuthorizationRequest.presentationDefinitions[0].definition
     )
 
-    return { proofType: 'presentation', presentationRequest: verifiedAuthorizationRequest, presentationSubmission }
+    return { proofType: 'presentation', presentationRequest: verifiedAuthorizationRequest, credentialsForRequest }
   }
 
   /**
@@ -178,28 +182,8 @@ export class OpenId4VpHolderService {
   public async acceptProofRequest(
     agentContext: AgentContext,
     presentationRequest: PresentationRequest,
-    options: {
-      submission: PresentationSubmission
-      submissionEntryIndexes: number[]
-    }
+    credentialsForInputDescriptor: DifPexInputDescriptorToCredentials
   ): Promise<ProofSubmissionResponse> {
-    const { submission, submissionEntryIndexes } = options
-
-    const credentialsForInputDescriptor: InputDescriptorToCredentials = {}
-
-    submission.requirements
-      .flatMap((requirement) => requirement.submissionEntry)
-      .forEach((submissionEntry, index) => {
-        const verifiableCredential = submissionEntry.verifiableCredentials[submissionEntryIndexes[index]]
-
-        const inputDescriptor = credentialsForInputDescriptor[submissionEntry.inputDescriptorId]
-        if (!inputDescriptor) {
-          credentialsForInputDescriptor[submissionEntry.inputDescriptorId] = [verifiableCredential.credential]
-        } else {
-          inputDescriptor.push(verifiableCredential.credential)
-        }
-      })
-
     const { verifiablePresentations, presentationSubmission } =
       await this.presentationExchangeService.createPresentation(agentContext, {
         credentialsForInputDescriptor,

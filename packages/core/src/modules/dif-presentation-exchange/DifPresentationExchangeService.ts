@@ -40,6 +40,9 @@ import {
 
 export type ProofStructure = Record<string, Record<string, Array<W3cVerifiableCredential>>>
 
+/**
+ * @todo create a public api for using dif presentation exchange
+ */
 @injectable()
 export class DifPresentationExchangeService {
   private pex = new PEX()
@@ -445,29 +448,35 @@ export class DifPresentationExchangeService {
     // For each of the supported algs, find the key types, then find the proof types
     const signatureSuiteRegistry = agentContext.dependencyManager.resolve(SignatureSuiteRegistry)
 
-    const supportedSignatureSuite = signatureSuiteRegistry.getByVerificationMethodType(verificationMethod.type)
-    if (!supportedSignatureSuite) {
+    const key = getKeyFromVerificationMethod(verificationMethod)
+    const supportedSignatureSuites = signatureSuiteRegistry.getByKeyType(key.keyType)
+    if (supportedSignatureSuites.length === 0) {
       throw new DifPresentationExchangeError(
-        `Couldn't find a supported signature suite for the given verification method type '${verificationMethod.type}'`
+        `Couldn't find a supported signature suite for the given key type '${key.keyType}'`
       )
     }
 
     if (suitableSignatureSuites) {
-      if (suitableSignatureSuites.includes(supportedSignatureSuite.proofType) === false) {
+      const foundSignatureSuite = supportedSignatureSuites.find((suite) =>
+        suitableSignatureSuites.includes(suite.proofType)
+      )
+
+      if (!foundSignatureSuite) {
         throw new DifPresentationExchangeError(
           [
             'No possible signature suite found for the given verification method.',
             `Verification method type: ${verificationMethod.type}`,
-            `SupportedSignatureSuite '${supportedSignatureSuite.proofType}'`,
+            `Key type: ${key.keyType}`,
+            `SupportedSignatureSuites: '${supportedSignatureSuites.map((s) => s.proofType).join(', ')}'`,
             `SuitableSignatureSuites: ${suitableSignatureSuites.join(', ')}`,
           ].join('\n')
         )
       }
 
-      return supportedSignatureSuite.proofType
+      return supportedSignatureSuites[0].proofType
     }
 
-    return supportedSignatureSuite.proofType
+    return supportedSignatureSuites[0].proofType
   }
 
   public getPresentationSignCallback(

@@ -4,10 +4,11 @@ import type {
   OpenId4VciCredentialOffer,
   OpenId4VciCredentialRequest,
   OpenId4VciCredentialSupported,
+  OpenId4VciIssuerMetadataDisplay,
 } from '../shared'
 import type { AgentContext, W3cCredential } from '@aries-framework/core'
 import type { SdJwtVcSignOptions } from '@aries-framework/sd-jwt-vc'
-import type { CredentialOfferPayloadV1_0_11, CredentialSupported, MetadataDisplay } from '@sphereon/oid4vci-common'
+import type { CredentialOfferPayloadV1_0_11 } from '@sphereon/oid4vci-common'
 
 export type PreAuthorizedCodeFlowConfig = {
   preAuthorizedCode?: string
@@ -25,8 +26,8 @@ export type IssuerMetadata = {
   tokenEndpoint: string
   authorizationServer?: string
 
-  issuerDisplay?: MetadataDisplay[]
-  credentialsSupported: CredentialSupported[]
+  issuerDisplay?: OpenId4VciIssuerMetadataDisplay[]
+  credentialsSupported: OpenId4VciCredentialSupported[]
 }
 
 export type CreateIssuerOptions = Pick<OpenId4VcIssuerRecordProps, 'credentialsSupported' | 'display'>

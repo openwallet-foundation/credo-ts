@@ -3,7 +3,7 @@ import type { DependencyManager, Module } from '@aries-framework/core'
 import { AgentConfig } from '@aries-framework/core'
 
 import { OpenId4VcHolderApi } from './OpenId4VcHolderApi'
-import { OpenId4VpHolderService, PresentationExchangeService } from './presentation'
+import { OpenId4VpHolderService } from './presentation'
 import { OpenId4VciHolderService } from './reception'
 
 /**
@@ -21,7 +21,7 @@ export class OpenId4VcHolderModule implements Module {
     dependencyManager
       .resolve(AgentConfig)
       .logger.warn(
-        "The '@aries-framework/openid4vc-holder' module is experimental and could have unexpected breaking changes. When using this module, make sure to use strict versions for all @aries-framework packages. Multi-Tenancy is not supported."
+        "The '@aries-framework/openid4vc' Holder module is experimental and could have unexpected breaking changes. When using this module, make sure to use strict versions for all @aries-framework packages."
       )
 
     // Api
@@ -30,6 +30,5 @@ export class OpenId4VcHolderModule implements Module {
     // Services
     dependencyManager.registerSingleton(OpenId4VciHolderService)
     dependencyManager.registerSingleton(OpenId4VpHolderService)
-    dependencyManager.registerSingleton(PresentationExchangeService)
   }
 }

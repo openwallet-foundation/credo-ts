@@ -27,6 +27,9 @@ export class SignatureSuiteRegistry {
     return this.suiteMapping.map((x) => x.proofType)
   }
 
+  /**
+   * @deprecated recommended to always search by key type instead as that will have broader support
+   */
   public getByVerificationMethodType(verificationMethodType: string) {
     return this.suiteMapping.find((x) => x.verificationMethodTypes.includes(verificationMethodType))
   }

@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/unbound-method */
 import type { DependencyManager } from '@aries-framework/core'
 
-import { OpenId4VciHolderService, OpenId4VpHolderService, PresentationExchangeService } from '..'
+import { OpenId4VciHolderService, OpenId4VpHolderService } from '..'
 import { OpenId4VcHolderApi } from '../OpenId4VcHolderApi'
 import { OpenId4VcHolderModule } from '../OpenId4VcHolderModule'
 
@@ -20,9 +20,8 @@ describe('OpenId4VcHolderModule', () => {
     expect(dependencyManager.registerContextScoped).toHaveBeenCalledTimes(1)
     expect(dependencyManager.registerContextScoped).toHaveBeenCalledWith(OpenId4VcHolderApi)
 
-    expect(dependencyManager.registerSingleton).toHaveBeenCalledTimes(3)
+    expect(dependencyManager.registerSingleton).toHaveBeenCalledTimes(2)
     expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(OpenId4VciHolderService)
     expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(OpenId4VpHolderService)
-    expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(PresentationExchangeService)
   })
 })

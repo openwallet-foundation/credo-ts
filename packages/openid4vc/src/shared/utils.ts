@@ -1,4 +1,4 @@
-import type { AgentContext, VerificationMethod, JwaSignatureAlgorithm } from '@aries-framework/core'
+import type { AgentContext, VerificationMethod, JwaSignatureAlgorithm, Key } from '@aries-framework/core'
 import type { DIDDocument, SigningAlgo } from '@sphereon/did-auth-siop'
 
 import {
@@ -91,18 +91,13 @@ export async function generateRandomValues(agentContext: AgentContext, count: nu
   return await Promise.all(randomValuesPromises)
 }
 
-export const getProofTypeFromVerificationMethod = (
-  agentContext: AgentContext,
-  verificationMethod: VerificationMethod
-) => {
+export const getProofTypeFromKey = (agentContext: AgentContext, key: Key) => {
   const signatureSuiteRegistry = agentContext.dependencyManager.resolve(SignatureSuiteRegistry)
 
-  const supportedSignatureSuite = signatureSuiteRegistry.getByVerificationMethodType(verificationMethod.type)
-  if (!supportedSignatureSuite) {
-    throw new AriesFrameworkError(
-      `Couldn't find a supported signature suite for the given verification method type '${verificationMethod.type}'.`
-    )
+  const supportedSignatureSuites = signatureSuiteRegistry.getByKeyType(key.keyType)
+  if (supportedSignatureSuites.length === 0) {
+    throw new AriesFrameworkError(`Couldn't find a supported signature suite for the given key type '${key.keyType}'.`)
   }
 
-  return supportedSignatureSuite.proofType
+  return supportedSignatureSuites[0].proofType
 }

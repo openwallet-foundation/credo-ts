@@ -1,4 +1,4 @@
-import type { PresentationSubmission } from './selection'
+import type { DifPexCredentialsForRequest } from '@aries-framework/core/src'
 import type {
   AuthorizationResponsePayload,
   PresentationDefinitionWithLocation,
@@ -24,7 +24,7 @@ export function isVerifiedAuthorizationRequestWithPresentationDefinition(
 export type ResolvedPresentationRequest = {
   proofType: 'presentation'
   presentationRequest: PresentationRequest
-  presentationSubmission: PresentationSubmission
+  credentialsForRequest: DifPexCredentialsForRequest
 }
 
 export type ResolvedAuthenticationRequest = {

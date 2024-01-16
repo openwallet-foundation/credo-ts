@@ -26,10 +26,12 @@
   "dependencies": {
     "@aries-framework/askar": "^0.4.2",
     "@aries-framework/core": "0.4.2",
-    "@sphereon/ssi-types": "^0.17.6-unstable.69",
+    "@sphereon/ssi-types": "^0.18.0",
     "@sphereon/oid4vci-client": "0.8.2-next.26",
     "@sphereon/oid4vci-common": "0.8.2-next.26",
     "@sphereon/oid4vci-issuer": "0.8.2-next.26",
+    "@sphereon/did-auth-siop": "0.6.0-unstable.0",
+    "@sphereon/pex": "^3.0.0",
     "@sphereon/pex-models": "^2.1.2",
     "body-parser": "^1.20.2",
     "jsonpath": "^1.1.1"
