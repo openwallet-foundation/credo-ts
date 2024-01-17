@@ -1,5 +1,7 @@
 import type { AnonCredsRevocationStatusList, AnonCredsRevocationRegistryDefinition } from '@aries-framework/anoncreds'
 
+import { AriesFrameworkError } from '@aries-framework/core'
+
 export type RevocationRegistryDelta = {
   accum: string
   issued: number[]
@@ -18,6 +20,18 @@ export function anonCredsRevocationStatusListFromIndyVdr(
   delta: RevocationRegistryDelta,
   isIssuanceByDefault: boolean
 ): AnonCredsRevocationStatusList {
+  // Check whether the highest delta index is supported in the `maxCredNum` field of the
+  // revocation registry definition. This will likely also be checked on other levels as well
+  // by the ledger or the indy-vdr library itself
+  if (Math.max(...delta.issued, ...delta.revoked) >= revocationRegistryDefinition.value.maxCredNum) {
+    throw new AriesFrameworkError(
+      `Highest delta index '${Math.max(
+        ...delta.issued,
+        ...delta.revoked
+      )}' is too large for the Revocation registry maxCredNum '${revocationRegistryDefinition.value.maxCredNum}' `
+    )
+  }
+
   // 0 means unrevoked, 1 means revoked
   const defaultState = isIssuanceByDefault ? RevocationState.Active : RevocationState.Revoked
 
@@ -66,22 +80,46 @@ export function indyVdrCreateLatestRevocationDelta(
   revocationStatusList: Array<number>,
   previousDelta?: RevocationRegistryDelta
 ) {
+  if (previousDelta && Math.max(...previousDelta.issued, ...previousDelta.revoked) > revocationStatusList.length - 1) {
+    throw new AriesFrameworkError(
+      `Indy Vdr delta contains an index '${Math.max(
+        ...previousDelta.revoked,
+        ...previousDelta.issued
+      )}' that exceeds the length of the revocation status list '${revocationStatusList.length}'`
+    )
+  }
+
   const issued: Array<number> = []
   const revoked: Array<number> = []
 
   if (previousDelta) {
     for (const issuedIdx of previousDelta.issued) {
+      // Check whether the revocationStatusList has a different state compared to the delta
       if (revocationStatusList[issuedIdx] !== RevocationState.Active) {
         issued.push(issuedIdx)
       }
     }
 
     for (const revokedIdx of previousDelta.revoked) {
+      // Check whether the revocationStatusList has a different state compared to the delta
       if (revocationStatusList[revokedIdx] !== RevocationState.Revoked) {
         revoked.push(revokedIdx)
       }
     }
+
+    revocationStatusList.forEach((revocationStatus, idx) => {
+      // Check whether the revocationStatusList entry is not included in the previous delta issued indices
+      if (revocationStatus === RevocationState.Active && !previousDelta.issued.includes(idx)) {
+        issued.push(idx)
+      }
+
+      // Check whether the revocationStatusList entry is not included in the previous delta revoked indices
+      if (revocationStatus === RevocationState.Revoked && !previousDelta.revoked.includes(idx)) {
+        revoked.push(idx)
+      }
+    })
   } else {
+    // No delta is provided, initial state, so the entire revocation status list is converted to two list of indices
     revocationStatusList.forEach((revocationStatus, idx) => {
       if (revocationStatus === RevocationState.Active) issued.push(idx)
       if (revocationStatus === RevocationState.Revoked) revoked.push(idx)
