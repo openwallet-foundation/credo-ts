@@ -1,4 +1,3 @@
-/* eslint-disable no-console */
 import type { RevocationRegistryDelta } from './utils/transform'
 import type {
   AnonCredsRegistry,
@@ -25,11 +24,11 @@ import type {
   RegisterRevocationRegistryDefinitionReturnStateFailed,
   RegisterRevocationRegistryDefinitionReturnStateWait,
   RegisterRevocationRegistryDefinitionReturnStateAction,
-  AnonCredsRevocationStatusList,
   RegisterRevocationStatusListReturnStateFinished,
   RegisterRevocationStatusListReturnStateFailed,
   RegisterRevocationStatusListReturnStateWait,
   RegisterRevocationStatusListReturnStateAction,
+  RegisterRevocationStatusListOptions,
 } from '@aries-framework/anoncreds'
 import type { AgentContext } from '@aries-framework/core'
 import type { SchemaResponse } from '@hyperledger/indy-vdr-shared'
@@ -42,6 +41,7 @@ import {
   parseIndyDid,
   parseIndyRevocationRegistryId,
   parseIndySchemaId,
+  dateToTimestamp,
 } from '@aries-framework/anoncreds'
 import {
   RevocationRegistryEntryRequest,
@@ -380,6 +380,12 @@ export class IndyVdrAnonCredsRegistry implements AnonCredsRegistry {
         }
         schemaSeqNo = schemaMetadata.indyLedgerSeqNo
 
+        // FIXME: we need to check if schemaId has same namespace as issuerId and it should not be a legacy identifier
+        // FIXME: in the other methods we also need to add checks. E.g. when creating a revocation
+        // status list, you can only create a revocation status list for a credential definition registry that is created
+        // under the same namespace and by the same issuer id (you can create a cred def for a schema created by another issuer
+        // but you can't create a revocation registry based on a cred def created by another issuer. We need to add these checks
+        // to all register methods in this file)
         const legacyCredentialDefinitionId = getUnqualifiedCredentialDefinitionId(issuerId, schemaSeqNo, tag)
         didIndyCredentialDefinitionId = getDidIndyCredentialDefinitionId(
           namespace,
@@ -507,7 +513,7 @@ export class IndyVdrAnonCredsRegistry implements AnonCredsRegistry {
         return {
           resolutionMetadata: {
             error: 'notFound',
-            message: `unable to resolve revocation registry definition`,
+            message: 'unable to resolve revocation registry definition',
           },
           revocationRegistryDefinitionId,
           revocationRegistryDefinitionMetadata: {},
@@ -835,9 +841,8 @@ export class IndyVdrAnonCredsRegistry implements AnonCredsRegistry {
     { options, revocationStatusList }: IndyVdrRegisterRevocationStatusList
   ): Promise<IndyVdrRegisterRevocationStatusListReturn> {
     try {
-      // This will throw an error if trying to register a credential definition with a legacy indy identifier. We only support did:indy
+      // This will throw an error if trying to register a revocation status list with a legacy indy identifier. We only support did:indy
       // identifiers for registering, that will allow us to extract the namespace and means all stored records will use did:indy identifiers.
-
       const { endorsedTransaction, endorserDid, endorserMode } = options
       const { namespaceIdentifier, namespace } = parseIndyDid(revocationStatusList.issuerId)
       const indyVdrPoolService = agentContext.dependencyManager.resolve(IndyVdrPoolService)
@@ -850,71 +855,36 @@ export class IndyVdrAnonCredsRegistry implements AnonCredsRegistry {
 
       let writeRequest: CustomRequest
 
-      const { revocationRegistryDefinition } = await this.getRevocationRegistryDefinition(
-        agentContext,
-        revocationStatusList.revRegDefId
+      // Parse the revocation registry id
+      const {
+        schemaSeqNo,
+        credentialDefinitionTag,
+        namespaceIdentifier: revocationRegistryNamespaceIdentifier,
+        revocationRegistryTag,
+        namespace: revocationRegistryNamespace,
+      } = parseIndyRevocationRegistryId(revocationStatusList.revRegDefId)
+
+      const legacyRevocationRegistryDefinitionId = getUnqualifiedRevocationRegistryDefinitionId(
+        namespaceIdentifier,
+        schemaSeqNo,
+        credentialDefinitionTag,
+        revocationRegistryTag
       )
-
-      if (!revocationRegistryDefinition) {
-        return {
-          registrationMetadata: {},
-          revocationStatusListMetadata: {},
-          revocationStatusListState: {
-            revocationStatusList,
-            state: 'failed',
-            reason: `Unable to resolve revocation registry definition '${revocationStatusList.revRegDefId}'`,
-          },
-        }
-      }
-
-      const { credentialDefinition } = await this.getCredentialDefinition(
-        agentContext,
-        revocationRegistryDefinition.credDefId
-      )
-
-      if (!credentialDefinition) {
-        return {
-          registrationMetadata: {},
-          revocationStatusListMetadata: {},
-          revocationStatusListState: {
-            revocationStatusList,
-            state: 'failed',
-            reason: `Unable to resolve credential definition '${revocationRegistryDefinition.credDefId}'`,
-          },
-        }
-      }
-
-      const { schemaMetadata, resolutionMetadata } = await this.getSchema(agentContext, credentialDefinition.schemaId)
-
-      if (!schemaMetadata?.indyLedgerSeqNo || typeof schemaMetadata.indyLedgerSeqNo !== 'number') {
-        return {
-          registrationMetadata: {},
-          revocationStatusListMetadata: {
-            didIndyNamespace: pool.indyNamespace,
-          },
-          revocationStatusListState: {
-            revocationStatusList,
-            state: 'failed',
-            reason: `error resolving schema with id ${credentialDefinition.schemaId}: ${resolutionMetadata.error} ${resolutionMetadata.message}`,
-          },
-        }
-      }
-      const schemaSeqNo = schemaMetadata.indyLedgerSeqNo
 
       const didIndyRevocationRegistryEntryId = getDidIndyRevocationRegistryEntryId(
         namespace,
         namespaceIdentifier,
         schemaSeqNo,
-        credentialDefinition.tag,
-        revocationRegistryDefinition.tag
+        credentialDefinitionTag,
+        revocationRegistryTag
       )
 
-      const legacyRevocationRegistryDefinitionId = getUnqualifiedRevocationRegistryDefinitionId(
-        namespaceIdentifier,
-        schemaSeqNo,
-        credentialDefinition.tag,
-        revocationRegistryDefinition.tag
-      )
+      if (revocationRegistryNamespace && revocationRegistryNamespace !== namespace) {
+        // throw error
+      }
+      if (revocationRegistryNamespaceIdentifier !== namespaceIdentifier) {
+        // throw error
+      }
 
       if (endorsedTransaction) {
         agentContext.config.logger.debug(
@@ -927,7 +897,8 @@ export class IndyVdrAnonCredsRegistry implements AnonCredsRegistry {
         const previousDelta = await this.fetchIndyRevocationDelta(
           agentContext,
           legacyRevocationRegistryDefinitionId,
-          revocationStatusList.timestamp
+          // Fetch revocation delta for current timestamp
+          dateToTimestamp(new Date())
         )
 
         const revocationRegistryDefinitionEntryValue = indyVdrCreateLatestRevocationDelta(
@@ -961,7 +932,6 @@ export class IndyVdrAnonCredsRegistry implements AnonCredsRegistry {
               state: 'action',
               action: 'endorseIndyTransaction',
               revocationStatusList,
-              timestamp: revocationStatusList.timestamp.toString(),
               revocationStatusListRequest: writeRequest.body,
             },
             registrationMetadata: {},
@@ -975,7 +945,9 @@ export class IndyVdrAnonCredsRegistry implements AnonCredsRegistry {
         }
       }
 
-      const response = await pool.submitRequest(writeRequest)
+      const response = await pool.submitRequest<RevocationRegistryEntryRequest>(
+        writeRequest as RevocationRegistryEntryRequest
+      )
       agentContext.config.logger.debug(
         `Registered revocation status list '${didIndyRevocationRegistryEntryId}' on ledger '${pool.indyNamespace}'`,
         {
@@ -987,8 +959,10 @@ export class IndyVdrAnonCredsRegistry implements AnonCredsRegistry {
       return {
         revocationStatusListMetadata: {},
         revocationStatusListState: {
-          revocationStatusList,
-          timestamp: revocationStatusList.timestamp.toString(),
+          revocationStatusList: {
+            ...revocationStatusList,
+            timestamp: response.result.txnMetadata.txnTime,
+          },
           state: 'finished',
         },
         registrationMetadata: {},
@@ -1057,7 +1031,6 @@ export class IndyVdrAnonCredsRegistry implements AnonCredsRegistry {
 
     const { did, namespaceIdentifier, schemaSeqNo, credentialDefinitionTag, revocationRegistryTag } =
       parseIndyRevocationRegistryId(revocationRegistryDefinitionId)
-
     const { pool } = await indyVdrPoolService.getPoolForDid(agentContext, did)
 
     agentContext.config.logger.debug(
@@ -1073,7 +1046,7 @@ export class IndyVdrAnonCredsRegistry implements AnonCredsRegistry {
 
     const deltaRequest = new GetRevocationRegistryDeltaRequest({
       toTs,
-      submitterDid: did,
+      submitterDid: namespaceIdentifier,
       revocationRegistryId: legacyRevocationRegistryDefinitionId,
     })
 
@@ -1083,12 +1056,10 @@ export class IndyVdrAnonCredsRegistry implements AnonCredsRegistry {
       result: { data, type, txnTime },
     } = response
 
-    console.log(JSON.stringify(response))
-
     // Indicating there are no deltas
     if (type !== '117' || data === null || !txnTime) {
       agentContext.config.logger.warn(
-        `Could not get any deltas from ledger for revocation registry defintion '${revocationRegistryDefinitionId}' from ledger '${pool.indyNamespace}'`
+        `Could not get any deltas from ledger for revocation registry definition '${revocationRegistryDefinitionId}' from ledger '${pool.indyNamespace}'`
       )
       return null
     }
@@ -1221,18 +1192,15 @@ export type IndyVdrRegisterRevocationRegistryDefinition =
 
 export type IndyVdrRegisterRevocationRegistryDefinitionOptions = IndyVdrRegisterRevocationRegistryDefinition['options']
 
-export interface IndyVdrRegisterRevocationStatusListInternalOptions {
-  revocationStatusList: AnonCredsRevocationStatusList
+export interface IndyVdrRegisterRevocationStatusListInternalOptions extends RegisterRevocationStatusListOptions {
   options: InternalEndorsement
 }
 
-export interface IndyVdrRegisterRevocationStatusListExternalCreateOptions {
-  revocationStatusList: AnonCredsRevocationStatusList
+export interface IndyVdrRegisterRevocationStatusListExternalCreateOptions extends RegisterRevocationStatusListOptions {
   options: ExternalEndorsementCreate
 }
 
-export interface IndyVdrRegisterRevocationStatusListExternalSubmitOptions {
-  revocationStatusList: AnonCredsRevocationStatusList
+export interface IndyVdrRegisterRevocationStatusListExternalSubmitOptions extends RegisterRevocationStatusListOptions {
   options: ExternalEndorsementSubmit
 }
 

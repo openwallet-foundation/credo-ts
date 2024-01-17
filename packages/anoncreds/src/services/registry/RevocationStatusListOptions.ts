@@ -7,6 +7,7 @@ import type {
   AnonCredsOperationStateAction,
 } from './base'
 import type { AnonCredsRevocationStatusList } from '../../models/registry'
+import type { Optional } from '@aries-framework/core'
 
 export interface GetRevocationStatusListReturn {
   revocationStatusList?: AnonCredsRevocationStatusList
@@ -14,31 +15,30 @@ export interface GetRevocationStatusListReturn {
   revocationStatusListMetadata: Extensible
 }
 
+// Timestamp is often calculated by the ledger, otherwise method should just take current time
+// Return type does include the timestamp.
+export type AnonCredsRevocationStatusListWithoutTimestamp = Omit<AnonCredsRevocationStatusList, 'timestamp'>
+export type AnonCredsRevocationStatusListWithOptionalTimestamp = Optional<AnonCredsRevocationStatusList, 'timestamp'>
+
 export interface RegisterRevocationStatusListOptions {
-  // Timestamp is often calculated by the ledger, otherwise method should just take current time
-  // Return type does include the timestamp.
-  revocationStatusList: Omit<AnonCredsRevocationStatusList, 'timestamp'>
+  revocationStatusList: AnonCredsRevocationStatusListWithoutTimestamp
   options: Extensible
 }
 
 export interface RegisterRevocationStatusListReturnStateAction extends AnonCredsOperationStateAction {
-  revocationStatusList: AnonCredsRevocationStatusList
-  timestamp: string
+  revocationStatusList: AnonCredsRevocationStatusListWithOptionalTimestamp
 }
 
 export interface RegisterRevocationStatusListReturnStateFailed extends AnonCredsOperationStateFailed {
-  revocationStatusList?: AnonCredsRevocationStatusList
-  timestamp?: string
+  revocationStatusList?: AnonCredsRevocationStatusListWithOptionalTimestamp
 }
 
 export interface RegisterRevocationStatusListReturnStateWait extends AnonCredsOperationStateWait {
-  revocationStatusList?: AnonCredsRevocationStatusList
-  timestamp?: string
+  revocationStatusList?: AnonCredsRevocationStatusListWithOptionalTimestamp
 }
 
 export interface RegisterRevocationStatusListReturnStateFinished extends AnonCredsOperationStateFinished {
   revocationStatusList: AnonCredsRevocationStatusList
-  timestamp: string
 }
 
 export interface RegisterRevocationStatusListReturn {

@@ -1,9 +1,7 @@
-/* eslint-disable no-console */
-/* eslint-disable @typescript-eslint/no-non-null-assertion */
 import type { IndyVdrDidCreateOptions, IndyVdrDidCreateResult } from '../src/dids/IndyVdrIndyDidRegistrar'
 import type { RevocationRegistryEntryResponse } from '@hyperledger/indy-vdr-shared'
 
-import { getUnqualifiedRevocationRegistryDefinitionId, parseIndyDid } from '@aries-framework/anoncreds'
+import { parseIndyDid } from '@aries-framework/anoncreds'
 import { Agent, DidsModule, TypedArrayEncoder } from '@aries-framework/core'
 import { indyVdr } from '@hyperledger/indy-vdr-nodejs'
 import {
@@ -21,7 +19,7 @@ import { IndyVdrIndyDidRegistrar } from '../src/dids/IndyVdrIndyDidRegistrar'
 import { verificationKeyForIndyDid } from '../src/dids/didIndyUtil'
 import { IndyVdrPoolService } from '../src/pool'
 
-import { credentialDefinitionValue } from './__fixtures__/anoncreds'
+import { credentialDefinitionValue, revocationRegistryDefinitionValue } from './__fixtures__/anoncreds'
 import { indyVdrModuleConfig } from './helpers'
 
 const endorserConfig = getAgentConfig('IndyVdrAnonCredsRegistryEndorser')
@@ -739,7 +737,10 @@ describe('IndyVdrAnonCredsRegistry', () => {
     })
   })
 
-  test('register and resolve a schema and credential definition (external)', async () => {
+  test('register and resolve a schema, credential definition, revocation registry and status list (external)', async () => {
+    // ----
+    // CREATE DID
+    // ----
     const didCreateTxResult = (await agent.dids.create<IndyVdrDidCreateOptions>({
       method: 'indy',
       options: {
@@ -776,6 +777,9 @@ describe('IndyVdrAnonCredsRegistry', () => {
     const legacyIssuerId = namespaceIdentifier
     const didIndyIssuerId = agentDid
 
+    // ----
+    // CREATE SCHEMA
+    // ----
     const legacySchemaId = `${namespaceIdentifier}:2:test:${dynamicVersion}`
     const didIndySchemaId = `did:indy:pool:localtest:${namespaceIdentifier}/anoncreds/v0/SCHEMA/test/${dynamicVersion}`
 
@@ -860,6 +864,9 @@ describe('IndyVdrAnonCredsRegistry', () => {
       },
     })
 
+    // ----
+    // CREATE CREDENTIAL DEFINITION
+    // ----
     const legacyCredentialDefinitionId = `${namespaceIdentifier}:3:CL:${submitSchemaTxResult.schemaMetadata.indyLedgerSeqNo}:TAG`
     const didIndyCredentialDefinitionId = `did:indy:pool:localtest:${namespaceIdentifier}/anoncreds/v0/CLAIM_DEF/${submitSchemaTxResult.schemaMetadata.indyLedgerSeqNo}/TAG`
 
@@ -954,18 +961,13 @@ describe('IndyVdrAnonCredsRegistry', () => {
       resolutionMetadata: {},
     })
 
-    const revocationRegistryDefinitionValue = {
-      maxCredNum: 100,
-      publicKeys: {
-        accumKey: {
-          z: '1 1812B206EB395D3AEBD4BBF53EBB0FFC3371D8BD6175316AB32C1C5F65452051 1 22A079D49C5351EFDC1410C81A1F6D8B2E3B79CFF20A30690C118FE2050F72CB 1 0FFC28B923A4654E261DB4CB5B9BABEFCB4DB189B20F52412B0CC9CCCBB8A3B2 1 1EE967C43EF1A3F487061D21B07076A26C126AAF7712E7B5CF5A53688DDD5CC0 1 009ED4D65879CA81DA8227D34CEA3B759B4627E1E2FFB273E9645CD4F3B10F19 1 1CF070212E1E213AEB472F56EDFC9D48009796C77B2D8CC16F2836E37B8715C2 1 04954F0B7B468781BAAE3291DD0E6FFA7F1AF66CAA4094D37B24363CC34606FB 1 115367CB755E9DB18781B3825CB1AEE2C334558B2C038E13DF57BB57CE1CF847 1 110D37EC05862EE2757A7DF39E814876FC97376FF8105D2D29619CB575537BDE 1 13C559A9563FCE083B3B39AE7E8FCA4099BEF3A4C8C6672E543D521F9DA88F96 1 137D87CC22ACC1B6B8C20EABE59F6ED456A58FE4CBEEFDFC4FA9B87E3EF32D17 1 00A2A9711737AAF0404F35AE502887AC6172B2B57D236BD4A40B45F659BFC696',
-        },
-      },
-      tailsHash: 'HLKresYcDSZYSKogq8wive4zyXNY84669MygftLFBG1i',
-      tailsLocation: '/var/folders/l3/xy8jzyvj4p5_d9g1123rt4bw0000gn/T/HLKresYcDSZYSKogq8wive4zyXNY84669MygftLFBG1i',
-    }
+    // ----
+    // CREATE REVOCATION REGISTRY
+    // ----
+    const legacyRevocationRegistryDefinitionId = `${namespaceIdentifier}:4:${namespaceIdentifier}:3:CL:${submitSchemaTxResult.schemaMetadata.indyLedgerSeqNo}:TAG:CL_ACCUM:REV_TAG`
+    const didIndyRevocationRegistryDefinitionId = `did:indy:pool:localtest:${namespaceIdentifier}/anoncreds/v0/REV_REG_DEF/${submitSchemaTxResult.schemaMetadata.indyLedgerSeqNo}/TAG/REV_TAG`
 
-    const revRegDefResp = await indyVdrAnonCredsRegistry.registerRevocationRegistryDefinition(agent.context, {
+    const createRevRegDefTxResult = await indyVdrAnonCredsRegistry.registerRevocationRegistryDefinition(agent.context, {
       revocationRegistryDefinition: {
         tag: 'REV_TAG',
         revocDefType: 'CL_ACCUM',
@@ -979,23 +981,21 @@ describe('IndyVdrAnonCredsRegistry', () => {
       },
     })
 
+    const { revocationRegistryDefinitionState } = createRevRegDefTxResult
+
     if (
-      revRegDefResp.revocationRegistryDefinitionState.state !== 'action' ||
-      revRegDefResp.revocationRegistryDefinitionState.action !== 'endorseIndyTransaction'
+      revocationRegistryDefinitionState.state !== 'action' ||
+      revocationRegistryDefinitionState.action !== 'endorseIndyTransaction'
     ) {
       throw Error('unexpected revocation registry definition state')
     }
 
-    const didIndyRevocationRegistryDefinitionId =
-      revRegDefResp.revocationRegistryDefinitionState.revocationRegistryDefinitionId
-
     const endorsedRevRegDefTx = await endorser.modules.indyVdr.endorseTransaction(
-      revRegDefResp.revocationRegistryDefinitionState.revocationRegistryDefinitionRequest,
+      revocationRegistryDefinitionState.revocationRegistryDefinitionRequest,
       endorserDid
     )
-
     const submitRevRegDefTxResult = await indyVdrAnonCredsRegistry.registerRevocationRegistryDefinition(agent.context, {
-      revocationRegistryDefinition: revRegDefResp.revocationRegistryDefinitionState.revocationRegistryDefinition,
+      revocationRegistryDefinition: revocationRegistryDefinitionState.revocationRegistryDefinition,
       options: {
         endorserMode: 'external',
         endorsedTransaction: endorsedRevRegDefTx,
@@ -1019,13 +1019,6 @@ describe('IndyVdrAnonCredsRegistry', () => {
 
     await new Promise((res) => setTimeout(res, 1000))
 
-    const legacyRevocationRegistryDefinitionId = getUnqualifiedRevocationRegistryDefinitionId(
-      legacyIssuerId,
-      legacySchema.schemaMetadata.indyLedgerSeqNo as string,
-      'TAG',
-      'REV_TAG'
-    )
-
     const legacyRevocationRegistryDefinition = await indyVdrAnonCredsRegistry.getRevocationRegistryDefinition(
       agent.context,
       legacyRevocationRegistryDefinitionId
@@ -1047,15 +1040,38 @@ describe('IndyVdrAnonCredsRegistry', () => {
       resolutionMetadata: {},
     })
 
+    const didIndyRevocationRegistryDefinition = await indyVdrAnonCredsRegistry.getRevocationRegistryDefinition(
+      agent.context,
+      didIndyRevocationRegistryDefinitionId
+    )
+
+    expect(didIndyRevocationRegistryDefinition).toMatchObject({
+      revocationRegistryDefinitionId: didIndyRevocationRegistryDefinitionId,
+      revocationRegistryDefinition: {
+        issuerId: didIndyIssuerId,
+        revocDefType: 'CL_ACCUM',
+        value: revocationRegistryDefinitionValue,
+        tag: 'REV_TAG',
+        credDefId: didIndyCredentialDefinitionId,
+      },
+      revocationRegistryDefinitionMetadata: {
+        issuanceType: 'ISSUANCE_BY_DEFAULT',
+        didIndyNamespace: 'pool:localtest',
+      },
+      resolutionMetadata: {},
+    })
+
+    // ----
+    // CREATE REVOCATION STATUS LIST
+    // ----
     const revocationStatusListValue = {
       issuerId: didIndyIssuerId,
       revRegDefId: didIndyRevocationRegistryDefinitionId,
       revocationList: [1, 0, 1, 1, 1, 1, 0, 1, 1, 1, 0],
       currentAccumulator: '1',
-      timestamp: 1,
     }
 
-    const revStatusListResp = await indyVdrAnonCredsRegistry.registerRevocationStatusList(agent.context, {
+    const createRevStatusListTxResult = await indyVdrAnonCredsRegistry.registerRevocationStatusList(agent.context, {
       options: {
         endorserMode: 'external',
         endorserDid,
@@ -1063,20 +1079,19 @@ describe('IndyVdrAnonCredsRegistry', () => {
       revocationStatusList: revocationStatusListValue,
     })
 
-    if (
-      revStatusListResp.revocationStatusListState.state !== 'action' ||
-      revStatusListResp.revocationStatusListState.action !== 'endorseIndyTransaction'
-    ) {
+    const { revocationStatusListState } = createRevStatusListTxResult
+
+    if (revocationStatusListState.state !== 'action' || revocationStatusListState.action !== 'endorseIndyTransaction') {
       throw Error('unexpected revocation status list state')
     }
 
     const endorsedRevStatusListTx = await endorser.modules.indyVdr.endorseTransaction(
-      revStatusListResp.revocationStatusListState.revocationStatusListRequest,
+      revocationStatusListState.revocationStatusListRequest,
       endorserDid
     )
 
     const submitRevStatusListTxResult = await indyVdrAnonCredsRegistry.registerRevocationStatusList(agent.context, {
-      revocationStatusList: revStatusListResp.revocationStatusListState.revocationStatusList,
+      revocationStatusList: revocationStatusListState.revocationStatusList,
       options: {
         endorserMode: 'external',
         endorsedTransaction: endorsedRevStatusListTx,
@@ -1086,22 +1101,20 @@ describe('IndyVdrAnonCredsRegistry', () => {
     expect(submitRevStatusListTxResult).toMatchObject({
       revocationStatusListMetadata: {},
       revocationStatusListState: {
-        timestamp: '1',
-        revocationStatusList: revocationStatusListValue,
+        revocationStatusList: { ...revocationStatusListValue, timestamp: expect.any(Number) },
         state: 'finished',
       },
       registrationMetadata: {},
     })
 
-    await new Promise((res) => setTimeout(res, 5000))
+    // Wait some time before resolving status list
+    await new Promise((res) => setTimeout(res, 1000))
 
     const legacyRevocationStatusList = await indyVdrAnonCredsRegistry.getRevocationStatusList(
       agent.context,
       legacyRevocationRegistryDefinitionId,
-      1
+      submitRevStatusListTxResult.revocationStatusListState.revocationStatusList?.timestamp as number
     )
-
-    console.log(JSON.stringify(legacyRevocationStatusList))
 
     expect(legacyRevocationStatusList).toMatchObject({
       resolutionMetadata: {},
@@ -1110,7 +1123,27 @@ describe('IndyVdrAnonCredsRegistry', () => {
         currentAccumulator: '1',
         revRegDefId: legacyRevocationRegistryDefinitionId,
         revocationList: revocationStatusListValue.revocationList,
-        timestamp: '1',
+        timestamp: submitRevStatusListTxResult.revocationStatusListState.revocationStatusList?.timestamp,
+      },
+      revocationStatusListMetadata: {
+        didIndyNamespace: 'pool:localtest',
+      },
+    })
+
+    const didIndyRevocationStatusList = await indyVdrAnonCredsRegistry.getRevocationStatusList(
+      agent.context,
+      didIndyRevocationRegistryDefinitionId,
+      submitRevStatusListTxResult.revocationStatusListState.revocationStatusList?.timestamp as number
+    )
+
+    expect(didIndyRevocationStatusList).toMatchObject({
+      resolutionMetadata: {},
+      revocationStatusList: {
+        issuerId: didIndyIssuerId,
+        currentAccumulator: '1',
+        revRegDefId: didIndyRevocationRegistryDefinitionId,
+        revocationList: revocationStatusListValue.revocationList,
+        timestamp: submitRevStatusListTxResult.revocationStatusListState.revocationStatusList?.timestamp,
       },
       revocationStatusListMetadata: {
         didIndyNamespace: 'pool:localtest',
