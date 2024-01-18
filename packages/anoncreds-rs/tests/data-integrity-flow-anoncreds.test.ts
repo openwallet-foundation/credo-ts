@@ -1,12 +1,10 @@
-import type { AnonCredsCredentialRequest } from '@aries-framework/anoncreds'
-import type { Wallet } from '@aries-framework/core'
+import type { DataIntegrityCredentialRequest } from '@aries-framework/core'
 
 import {
   AnonCredsCredentialDefinitionPrivateRecord,
   AnonCredsCredentialDefinitionPrivateRepository,
   AnonCredsCredentialDefinitionRecord,
   AnonCredsCredentialDefinitionRepository,
-  AnonCredsCredentialFormatService,
   AnonCredsHolderServiceSymbol,
   AnonCredsIssuerServiceSymbol,
   AnonCredsKeyCorrectnessProofRecord,
@@ -25,7 +23,7 @@ import {
   AnonCredsVerifierServiceSymbol,
 } from '@aries-framework/anoncreds'
 import {
-  ConsoleLogger,
+  AgentContext,
   CredentialExchangeRecord,
   CredentialPreviewAttribute,
   CredentialState,
@@ -33,20 +31,28 @@ import {
   DidsModuleConfig,
   Ed25519Signature2018,
   InjectionSymbols,
+  KeyDidRegistrar,
+  KeyDidResolver,
   KeyType,
   ProofExchangeRecord,
   ProofState,
   SignatureSuiteToken,
+  SigningProviderRegistry,
   VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2018,
   VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2020,
+  W3cCredential,
+  W3cCredentialService,
+  W3cCredentialSubject,
   W3cCredentialsModuleConfig,
 } from '@aries-framework/core'
 import { Subject } from 'rxjs'
 
 import { InMemoryStorageService } from '../../../tests/InMemoryStorageService'
+import { DataIntegrityCredentialFormatService } from '../../anoncreds/src/formats/DataIntegrityCredentialFormatService'
 import { AnonCredsRegistryService } from '../../anoncreds/src/services/registry/AnonCredsRegistryService'
 import { dateToTimestamp } from '../../anoncreds/src/utils/timestamp'
 import { InMemoryAnonCredsRegistry } from '../../anoncreds/tests/InMemoryAnonCredsRegistry'
+import { RegisteredAskarTestWallet } from '../../askar/tests/helpers'
 import { agentDependencies, getAgentConfig, getAgentContext } from '../../core/tests/helpers'
 import { AnonCredsRsHolderService } from '../src/services/AnonCredsRsHolderService'
 import { AnonCredsRsIssuerService } from '../src/services/AnonCredsRsIssuerService'
@@ -66,23 +72,35 @@ const anonCredsVerifierService = new AnonCredsRsVerifierService()
 const anonCredsHolderService = new AnonCredsRsHolderService()
 const anonCredsIssuerService = new AnonCredsRsIssuerService()
 
-const wallet = { generateNonce: () => Promise.resolve('947121108704767252195123') } as Wallet
-
 const inMemoryStorageService = new InMemoryStorageService()
 
-const logger = new ConsoleLogger()
+const logger = agentConfig.logger
+
+const didsModuleConfig = new DidsModuleConfig({
+  registrars: [new KeyDidRegistrar()],
+  resolvers: [new KeyDidResolver()],
+})
+const fileSystem = new agentDependencies.FileSystem()
+
+const wallet = new RegisteredAskarTestWallet(
+  agentConfig.logger,
+  new agentDependencies.FileSystem(),
+  new SigningProviderRegistry([])
+)
 
 const agentContext = getAgentContext({
   registerInstances: [
     [InjectionSymbols.Stop$, new Subject<boolean>()],
     [InjectionSymbols.AgentDependencies, agentDependencies],
-    [InjectionSymbols.FileSystem, new agentDependencies.FileSystem()],
+    [InjectionSymbols.FileSystem, fileSystem],
     [InjectionSymbols.StorageService, inMemoryStorageService],
     [AnonCredsIssuerServiceSymbol, anonCredsIssuerService],
     [AnonCredsHolderServiceSymbol, anonCredsHolderService],
     [AnonCredsVerifierServiceSymbol, anonCredsVerifierService],
     [InjectionSymbols.Logger, logger],
-    [DidResolverService, new DidResolverService(logger, new DidsModuleConfig())],
+    [InjectionSymbols.Logger, logger],
+    [DidsModuleConfig, didsModuleConfig],
+    [DidResolverService, new DidResolverService(logger, didsModuleConfig)],
     [AnonCredsRegistryService, new AnonCredsRegistryService()],
     [AnonCredsModuleConfig, anonCredsModuleConfig],
     [W3cCredentialsModuleConfig, new W3cCredentialsModuleConfig()],
@@ -103,21 +121,27 @@ const agentContext = getAgentContext({
   wallet,
 })
 
-const anoncredsCredentialFormatService = new AnonCredsCredentialFormatService()
+agentContext.dependencyManager.registerInstance(AgentContext, agentContext)
+
+const dataIntegrityCredentialFormatService = new DataIntegrityCredentialFormatService()
 const anoncredsProofFormatService = new AnonCredsProofFormatService()
 
 const indyDid = 'did:indy:local:LjgpST2rjsoxYegQDRm7EL'
 
-describe('AnonCreds format services using anoncreds-rs', () => {
-  afterEach(() => {
+describe('data integrity format service (anoncreds)', () => {
+  beforeAll(async () => {
+    await wallet.createAndOpen(agentConfig.walletConfig)
+  })
+
+  afterEach(async () => {
     inMemoryStorageService.records = {}
   })
 
-  test('issuance and verification flow starting from proposal without negotiation and without revocation', async () => {
+  test('issuance and verification flow anoncreds starting from offer without negotiation and without revocation', async () => {
     await anonCredsFlowTest({ issuerId: indyDid, revocable: false })
   })
 
-  test('issuance and verification flow starting from proposal without negotiation and with revocation', async () => {
+  test('issuance and verification flow anoncreds starting from offer without negotiation and with revocation', async () => {
     await anonCredsFlowTest({ issuerId: indyDid, revocable: true })
   })
 })
@@ -152,7 +176,7 @@ async function anonCredsFlowTest(options: { issuerId: string; revocable: boolean
 
   const { credentialDefinition, credentialDefinitionPrivate, keyCorrectnessProof } =
     await anonCredsIssuerService.createCredentialDefinition(agentContext, {
-      issuerId: indyDid,
+      issuerId,
       schemaId: schemaState.schemaId as string,
       schema,
       tag: 'Employee Credential',
@@ -201,7 +225,7 @@ async function anonCredsFlowTest(options: { issuerId: string; revocable: boolean
   if (revocable) {
     const { revocationRegistryDefinition, revocationRegistryDefinitionPrivate } =
       await anonCredsIssuerService.createRevocationRegistryDefinition(agentContext, {
-        issuerId: indyDid,
+        issuerId: issuerId,
         credentialDefinition,
         credentialDefinitionId: credentialDefinitionState.credentialDefinitionId,
         maximumCredentialNumber: 100,
@@ -246,7 +270,7 @@ async function anonCredsFlowTest(options: { issuerId: string; revocable: boolean
     )
 
     const createdRevocationStatusList = await anonCredsIssuerService.createRevocationStatusList(agentContext, {
-      issuerId: indyDid,
+      issuerId: issuerId,
       revocationRegistryDefinition,
       revocationRegistryDefinitionId,
       tailsFilePath: localTailsFilePath,
@@ -286,79 +310,86 @@ async function anonCredsFlowTest(options: { issuerId: string; revocable: boolean
   })
 
   const credentialAttributes = [
-    new CredentialPreviewAttribute({
-      name: 'name',
-      value: 'John',
-    }),
-    new CredentialPreviewAttribute({
-      name: 'age',
-      value: '25',
-    }),
+    new CredentialPreviewAttribute({ name: 'name', value: 'John' }),
+    new CredentialPreviewAttribute({ name: 'age', value: '25' }),
   ]
 
-  // Holder creates proposal
-  holderCredentialRecord.credentialAttributes = credentialAttributes
-  const { attachment: proposalAttachment } = await anoncredsCredentialFormatService.createProposal(agentContext, {
-    credentialRecord: holderCredentialRecord,
-    credentialFormats: {
-      anoncreds: {
-        attributes: credentialAttributes,
-        credentialDefinitionId: credentialDefinitionState.credentialDefinitionId,
-      },
-    },
-  })
-
-  // Issuer processes and accepts proposal
-  await anoncredsCredentialFormatService.processProposal(agentContext, {
-    credentialRecord: issuerCredentialRecord,
-    attachment: proposalAttachment,
-  })
   // Set attributes on the credential record, this is normally done by the protocol service
+  holderCredentialRecord.credentialAttributes = credentialAttributes
   issuerCredentialRecord.credentialAttributes = credentialAttributes
 
-  // If revocable, specify revocation registry definition id and index
-  const credentialFormats = revocable
-    ? { anoncreds: { revocationRegistryDefinitionId, revocationRegistryIndex: 1 } }
-    : undefined
+  // --------------------------------------------------------------------------------------------------------
 
-  const { attachment: offerAttachment } = await anoncredsCredentialFormatService.acceptProposal(agentContext, {
+  const credential = new W3cCredential({
+    context: [
+      'https://www.w3.org/2018/credentials/v1',
+      'https://w3id.org/security/data-integrity/v2',
+      {
+        '@vocab': 'https://www.w3.org/ns/credentials/issuer-dependent#',
+      },
+    ],
+    type: ['VerifiableCredential'],
+    issuer: issuerId,
+    issuanceDate: new Date().toISOString(),
+    credentialSubject: new W3cCredentialSubject({ claims: { name: 'John', age: '25' } }),
+  })
+
+  const { attachment: offerAttachment } = await dataIntegrityCredentialFormatService.createOffer(agentContext, {
     credentialRecord: issuerCredentialRecord,
-    proposalAttachment: proposalAttachment,
-    credentialFormats,
+    credentialFormats: {
+      dataIntegrity: {
+        bindingRequired: true,
+        credential,
+        anonCredsLinkSecretBindingMethodOptions: {
+          credentialDefinitionId: credentialDefinitionState.credentialDefinitionId,
+          revocationRegistryDefinitionId,
+          revocationRegistryIndex: revocable ? 1 : undefined,
+        },
+        didCommSignedAttachmentBindingMethodOptions: {},
+      },
+    },
   })
 
   // Holder processes and accepts offer
-  await anoncredsCredentialFormatService.processOffer(agentContext, {
+  await dataIntegrityCredentialFormatService.processOffer(agentContext, {
     credentialRecord: holderCredentialRecord,
     attachment: offerAttachment,
   })
-  const { attachment: requestAttachment } = await anoncredsCredentialFormatService.acceptOffer(agentContext, {
-    credentialRecord: holderCredentialRecord,
-    offerAttachment,
-    credentialFormats: {
-      anoncreds: {
-        linkSecretId: linkSecret.linkSecretId,
+  const { attachment: requestAttachment, appendAttachments: requestAppendAttachments } =
+    await dataIntegrityCredentialFormatService.acceptOffer(agentContext, {
+      credentialRecord: holderCredentialRecord,
+      offerAttachment,
+      credentialFormats: {
+        dataIntegrity: {
+          dataModelVersion: '1.1',
+          anonCredsLinkSecretCredentialRequestOptions: {
+            linkSecretId: linkSecret.linkSecretId,
+          },
+        },
       },
-    },
-  })
+    })
 
   // Make sure the request contains an entropy and does not contain a prover_did field
-  expect((requestAttachment.getDataAsJson() as AnonCredsCredentialRequest).entropy).toBeDefined()
-  expect((requestAttachment.getDataAsJson() as AnonCredsCredentialRequest).prover_did).toBeUndefined()
+  expect(
+    (requestAttachment.getDataAsJson() as DataIntegrityCredentialRequest).binding_proof?.anoncreds_link_secret?.entropy
+  ).toBeDefined()
+  expect((requestAttachment.getDataAsJson() as any).prover_did).toBeUndefined()
 
   // Issuer processes and accepts request
-  await anoncredsCredentialFormatService.processRequest(agentContext, {
+  await dataIntegrityCredentialFormatService.processRequest(agentContext, {
     credentialRecord: issuerCredentialRecord,
     attachment: requestAttachment,
   })
-  const { attachment: credentialAttachment } = await anoncredsCredentialFormatService.acceptRequest(agentContext, {
+  const { attachment: credentialAttachment } = await dataIntegrityCredentialFormatService.acceptRequest(agentContext, {
     credentialRecord: issuerCredentialRecord,
     requestAttachment,
     offerAttachment,
+    requestAppendAttachments,
+    credentialFormats: { dataIntegrity: {} },
   })
 
   // Holder processes and accepts credential
-  await anoncredsCredentialFormatService.processCredential(agentContext, {
+  await dataIntegrityCredentialFormatService.processCredential(agentContext, {
     credentialRecord: holderCredentialRecord,
     attachment: credentialAttachment,
     requestAttachment,
@@ -368,7 +399,12 @@ async function anonCredsFlowTest(options: { issuerId: string; revocable: boolean
     { credentialRecordType: 'w3c', credentialRecordId: expect.any(String) },
   ])
 
-  const credentialId = holderCredentialRecord.credentials[0].credentialRecordId
+  const credentialRecordId = holderCredentialRecord.credentials[0].credentialRecordId
+  const w3cCredentialService = agentContext.dependencyManager.resolve(W3cCredentialService)
+  const credentialRecord = await w3cCredentialService.getCredentialRecordById(agentContext, credentialRecordId)
+  const credentialId = credentialRecord.getAnonCredsTags()?.credentialId
+  if (!credentialId) throw new Error('Credential ID not found')
+
   const anonCredsCredential = await anonCredsHolderService.getCredential(agentContext, {
     credentialId,
   })
@@ -388,26 +424,32 @@ async function anonCredsFlowTest(options: { issuerId: string; revocable: boolean
 
   const expectedCredentialMetadata = revocable
     ? {
-        schemaId: schemaState.schemaId,
-        credentialDefinitionId: credentialDefinitionState.credentialDefinitionId,
-        revocationRegistryId: revocationRegistryDefinitionId,
-        credentialRevocationId: '1',
+        linkSecretMetadata: {
+          schemaId: schemaState.schemaId,
+          credentialDefinitionId: credentialDefinitionState.credentialDefinitionId,
+          revocationRegistryId: revocationRegistryDefinitionId,
+          credentialRevocationId: '1',
+        },
       }
     : {
-        schemaId: schemaState.schemaId,
-        credentialDefinitionId: credentialDefinitionState.credentialDefinitionId,
+        linkSecretMetadata: {
+          schemaId: schemaState.schemaId,
+          credentialDefinitionId: credentialDefinitionState.credentialDefinitionId,
+        },
       }
   expect(holderCredentialRecord.metadata.data).toEqual({
-    '_anoncreds/credential': expectedCredentialMetadata,
-    '_anoncreds/credentialRequest': {
-      link_secret_blinding_data: expect.any(Object),
-      link_secret_name: expect.any(String),
-      nonce: expect.any(String),
+    '_dataIntegrity/credential': expectedCredentialMetadata,
+    '_dataIntegrity/credentialRequest': {
+      linkSecretRequestMetadata: {
+        link_secret_blinding_data: expect.any(Object),
+        link_secret_name: expect.any(String),
+        nonce: expect.any(String),
+      },
     },
   })
 
   expect(issuerCredentialRecord.metadata.data).toEqual({
-    '_anoncreds/credential': expectedCredentialMetadata,
+    '_dataIntegrity/credential': expectedCredentialMetadata,
   })
 
   const holderProofRecord = new ProofExchangeRecord({

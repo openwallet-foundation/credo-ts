@@ -5,6 +5,7 @@ import type { W3cJwtVerifiablePresentation } from './jwt-vc/W3cJwtVerifiablePres
 import type { ClaimFormat, W3cVerifiableCredential } from './models'
 import type { W3cCredential } from './models/credential/W3cCredential'
 import type { W3cPresentation } from './models/presentation/W3cPresentation'
+import type { AnonCredsCredentialRecordOptions } from './repository'
 import type { JwaSignatureAlgorithm } from '../../crypto/jose/jwa'
 import type { SingleOrArray } from '../../utils/type'
 
@@ -175,4 +176,5 @@ export interface W3cJsonLdVerifyPresentationOptions extends W3cVerifyPresentatio
 
 export interface StoreCredentialOptions {
   credential: W3cVerifiableCredential
+  anonCredsCredentialRecordOptions?: AnonCredsCredentialRecordOptions
 }

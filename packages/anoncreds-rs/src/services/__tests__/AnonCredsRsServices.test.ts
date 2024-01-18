@@ -1,31 +1,42 @@
 import type { AnonCredsProofRequest } from '@aries-framework/anoncreds'
 
 import {
-  getUnqualifiedSchemaId,
-  parseIndySchemaId,
-  getUnqualifiedCredentialDefinitionId,
-  parseIndyCredentialDefinitionId,
-  AnonCredsModuleConfig,
-  AnonCredsHolderServiceSymbol,
-  AnonCredsIssuerServiceSymbol,
-  AnonCredsVerifierServiceSymbol,
-  AnonCredsSchemaRepository,
-  AnonCredsSchemaRecord,
-  AnonCredsCredentialDefinitionRecord,
-  AnonCredsCredentialDefinitionRepository,
   AnonCredsCredentialDefinitionPrivateRecord,
   AnonCredsCredentialDefinitionPrivateRepository,
-  AnonCredsKeyCorrectnessProofRepository,
+  AnonCredsCredentialDefinitionRecord,
+  AnonCredsCredentialDefinitionRepository,
+  AnonCredsHolderServiceSymbol,
+  AnonCredsIssuerServiceSymbol,
   AnonCredsKeyCorrectnessProofRecord,
-  AnonCredsLinkSecretRepository,
+  AnonCredsKeyCorrectnessProofRepository,
   AnonCredsLinkSecretRecord,
+  AnonCredsLinkSecretRepository,
+  AnonCredsModuleConfig,
+  AnonCredsSchemaRecord,
+  AnonCredsSchemaRepository,
+  AnonCredsVerifierServiceSymbol,
+  getUnqualifiedCredentialDefinitionId,
+  getUnqualifiedSchemaId,
+  parseIndyCredentialDefinitionId,
+  parseIndySchemaId,
 } from '@aries-framework/anoncreds'
-import { InjectionSymbols } from '@aries-framework/core'
+import {
+  ConsoleLogger,
+  DidResolverService,
+  DidsModuleConfig,
+  Ed25519Signature2018,
+  InjectionSymbols,
+  KeyType,
+  SignatureSuiteToken,
+  VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2018,
+  VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2020,
+  W3cCredentialsModuleConfig,
+  encodeCredentialValue,
+} from '@aries-framework/core'
 import { anoncreds } from '@hyperledger/anoncreds-nodejs'
 import { Subject } from 'rxjs'
 
 import { InMemoryStorageService } from '../../../../../tests/InMemoryStorageService'
-import { encodeCredentialValue } from '../../../../anoncreds/src/utils/credential'
 import { InMemoryAnonCredsRegistry } from '../../../../anoncreds/tests/InMemoryAnonCredsRegistry'
 import { agentDependencies, getAgentConfig, getAgentContext } from '../../../../core/tests/helpers'
 import { AnonCredsRsHolderService } from '../AnonCredsRsHolderService'
@@ -38,6 +49,8 @@ const anonCredsHolderService = new AnonCredsRsHolderService()
 const anonCredsIssuerService = new AnonCredsRsIssuerService()
 const storageService = new InMemoryStorageService()
 const registry = new InMemoryAnonCredsRegistry()
+
+const logger = new ConsoleLogger()
 
 const agentContext = getAgentContext({
   registerInstances: [
@@ -52,6 +65,22 @@ const agentContext = getAgentContext({
       new AnonCredsModuleConfig({
         registries: [registry],
       }),
+    ],
+
+    [InjectionSymbols.Logger, logger],
+    [DidResolverService, new DidResolverService(logger, new DidsModuleConfig())],
+    [W3cCredentialsModuleConfig, new W3cCredentialsModuleConfig()],
+    [
+      SignatureSuiteToken,
+      {
+        suiteClass: Ed25519Signature2018,
+        proofType: 'Ed25519Signature2018',
+        verificationMethodTypes: [
+          VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2018,
+          VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2020,
+        ],
+        keyTypes: [KeyType.Ed25519],
+      },
     ],
   ],
   agentConfig,
@@ -184,12 +213,12 @@ describe('AnonCredsRsServices', () => {
     expect(credentialInfo).toEqual({
       credentialId,
       attributes: {
-        age: '25',
+        age: 25,
         name: 'John',
       },
       schemaId: schemaState.schemaId,
       credentialDefinitionId: credentialDefinitionState.credentialDefinitionId,
-      revocationRegistryId: null,
+      revocationRegistryId: undefined,
       credentialRevocationId: undefined, // Should it be null in this case?
       methodName: 'inMemory',
     })
@@ -397,7 +426,7 @@ describe('AnonCredsRsServices', () => {
       },
       schemaId: unqualifiedSchemaId,
       credentialDefinitionId: unqualifiedCredentialDefinitionId,
-      revocationRegistryId: null,
+      revocationRegistryId: undefined,
       credentialRevocationId: undefined, // Should it be null in this case?
       methodName: 'inMemory',
     })

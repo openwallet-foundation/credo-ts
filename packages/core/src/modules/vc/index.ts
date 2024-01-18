@@ -1,4 +1,5 @@
 export * from './W3cCredentialService'
+export * from './W3cCredentialsModuleConfig'
 export * from './W3cCredentialServiceOptions'
 export * from './repository'
 export * from './W3cCredentialsModule'

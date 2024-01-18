@@ -319,6 +319,7 @@ export class CredentialFormatCoordinator<CFs extends CredentialFormatService[]> 
     // create message. there are two arrays in each message, one for formats the other for attachments
     const formats: CredentialFormatSpec[] = []
     const requestAttachments: Attachment[] = []
+    const requestAppendAttachments: Attachment[] = []
 
     for (const formatService of formatServices) {
       const offerAttachment = this.getAttachmentForService(
@@ -327,7 +328,7 @@ export class CredentialFormatCoordinator<CFs extends CredentialFormatService[]> 
         offerMessage.offerAttachments
       )
 
-      const { attachment, format } = await formatService.acceptOffer(agentContext, {
+      const { attachment, format, appendAttachments } = await formatService.acceptOffer(agentContext, {
         offerAttachment,
         credentialRecord,
         credentialFormats,
@@ -335,6 +336,7 @@ export class CredentialFormatCoordinator<CFs extends CredentialFormatService[]> 
 
       requestAttachments.push(attachment)
       formats.push(format)
+      if (appendAttachments) requestAppendAttachments.push(...appendAttachments)
     }
 
     credentialRecord.credentialAttributes = offerMessage.credentialPreview?.attributes
@@ -343,6 +345,7 @@ export class CredentialFormatCoordinator<CFs extends CredentialFormatService[]> 
       formats,
       requestAttachments: requestAttachments,
       comment,
+      attachments: requestAppendAttachments,
     })
 
     message.setThread({ threadId: credentialRecord.threadId, parentThreadId: credentialRecord.parentThreadId })
@@ -486,6 +489,7 @@ export class CredentialFormatCoordinator<CFs extends CredentialFormatService[]> 
         offerAttachment,
         credentialRecord,
         credentialFormats,
+        requestAppendAttachments: requestMessage.appendedAttachments,
       })
 
       credentialAttachments.push(attachment)
@@ -538,6 +542,7 @@ export class CredentialFormatCoordinator<CFs extends CredentialFormatService[]> 
         attachment,
         requestAttachment,
         credentialRecord,
+        requestAppendAttachments: requestMessage.appendedAttachments,
       })
     }
 

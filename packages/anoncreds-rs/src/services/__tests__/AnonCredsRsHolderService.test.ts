@@ -1,28 +1,43 @@
 import type {
   AnonCredsCredentialDefinition,
+  AnonCredsCredentialRequestMetadata,
   AnonCredsProofRequest,
+  AnonCredsRevocationRegistryDefinition,
   AnonCredsRevocationStatusList,
-  AnonCredsCredential,
   AnonCredsSchema,
   AnonCredsSelectedCredentials,
-  AnonCredsRevocationRegistryDefinition,
-  AnonCredsCredentialRequestMetadata,
 } from '@aries-framework/anoncreds'
-import type { JsonObject } from '@hyperledger/anoncreds-nodejs'
+import type { JsonObject } from '@hyperledger/anoncreds-shared'
 
 import {
-  AnonCredsModuleConfig,
   AnonCredsHolderServiceSymbol,
   AnonCredsLinkSecretRecord,
-  AnonCredsCredentialRecord,
+  AnonCredsModuleConfig,
 } from '@aries-framework/anoncreds'
-import { anoncreds, RevocationRegistryDefinition } from '@hyperledger/anoncreds-nodejs'
+import {
+  ConsoleLogger,
+  DidResolverService,
+  DidsModuleConfig,
+  Ed25519Signature2018,
+  InjectionSymbols,
+  KeyType,
+  SignatureSuiteToken,
+  VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2018,
+  VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2020,
+  W3cCredentialRecord,
+  W3cCredentialRepository,
+  W3cCredentialSubject,
+  W3cCredentialsModuleConfig,
+  W3cJsonLdVerifiableCredential,
+} from '@aries-framework/core'
+import { RevocationRegistryDefinition, anoncreds } from '@hyperledger/anoncreds-nodejs'
+import { Subject } from 'rxjs'
 
+import { InMemoryStorageService } from '../../../../../tests/InMemoryStorageService'
 import { AnonCredsCredentialDefinitionRepository } from '../../../../anoncreds/src/repository/AnonCredsCredentialDefinitionRepository'
-import { AnonCredsCredentialRepository } from '../../../../anoncreds/src/repository/AnonCredsCredentialRepository'
 import { AnonCredsLinkSecretRepository } from '../../../../anoncreds/src/repository/AnonCredsLinkSecretRepository'
 import { InMemoryAnonCredsRegistry } from '../../../../anoncreds/tests/InMemoryAnonCredsRegistry'
-import { getAgentConfig, getAgentContext, mockFunction } from '../../../../core/tests/helpers'
+import { agentDependencies, getAgentConfig, getAgentContext, mockFunction } from '../../../../core/tests/helpers'
 import { AnonCredsRsHolderService } from '../AnonCredsRsHolderService'
 
 import {
@@ -44,15 +59,21 @@ jest.mock('../../../../anoncreds/src/repository/AnonCredsLinkSecretRepository')
 const AnonCredsLinkSecretRepositoryMock = AnonCredsLinkSecretRepository as jest.Mock<AnonCredsLinkSecretRepository>
 const anoncredsLinkSecretRepositoryMock = new AnonCredsLinkSecretRepositoryMock()
 
-jest.mock('../../../../anoncreds/src/repository/AnonCredsCredentialRepository')
-const AnonCredsCredentialRepositoryMock = AnonCredsCredentialRepository as jest.Mock<AnonCredsCredentialRepository>
-const anoncredsCredentialRepositoryMock = new AnonCredsCredentialRepositoryMock()
+jest.mock('../../../../core/src/modules/vc/repository/W3cCredentialRepository')
+const W3cCredentialRepositoryMock = W3cCredentialRepository as jest.Mock<W3cCredentialRepository>
+const w3cCredentialRepositoryMock = new W3cCredentialRepositoryMock()
+
+const inMemoryStorageService = new InMemoryStorageService()
+const logger = new ConsoleLogger()
 
 const agentContext = getAgentContext({
   registerInstances: [
+    [InjectionSymbols.AgentDependencies, agentDependencies],
+    [InjectionSymbols.StorageService, inMemoryStorageService],
+    [InjectionSymbols.Stop$, new Subject<boolean>()],
     [AnonCredsCredentialDefinitionRepository, credentialDefinitionRepositoryMock],
     [AnonCredsLinkSecretRepository, anoncredsLinkSecretRepositoryMock],
-    [AnonCredsCredentialRepository, anoncredsCredentialRepositoryMock],
+    [W3cCredentialRepository, w3cCredentialRepositoryMock],
     [AnonCredsHolderServiceSymbol, anonCredsHolderService],
     [
       AnonCredsModuleConfig,
@@ -60,13 +81,28 @@ const agentContext = getAgentContext({
         registries: [new InMemoryAnonCredsRegistry({})],
       }),
     ],
+    [InjectionSymbols.Logger, logger],
+    [DidResolverService, new DidResolverService(logger, new DidsModuleConfig())],
+    [W3cCredentialsModuleConfig, new W3cCredentialsModuleConfig()],
+    [
+      SignatureSuiteToken,
+      {
+        suiteClass: Ed25519Signature2018,
+        proofType: 'Ed25519Signature2018',
+        verificationMethodTypes: [
+          VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2018,
+          VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2020,
+        ],
+        keyTypes: [KeyType.Ed25519],
+      },
+    ],
   ],
   agentConfig,
 })
 
 describe('AnonCredsRsHolderService', () => {
-  const getByCredentialIdMock = jest.spyOn(anoncredsCredentialRepositoryMock, 'getByCredentialId')
-  const findByQueryMock = jest.spyOn(anoncredsCredentialRepositoryMock, 'findByQuery')
+  const getByCredentialIdMock = jest.spyOn(w3cCredentialRepositoryMock, 'getByCredentialId')
+  const findByQueryMock = jest.spyOn(w3cCredentialRepositoryMock, 'findByQuery')
 
   beforeEach(() => {
     getByCredentialIdMock.mockClear()
@@ -217,27 +253,37 @@ describe('AnonCredsRsHolderService', () => {
     }
 
     getByCredentialIdMock.mockResolvedValueOnce(
-      new AnonCredsCredentialRecord({
+      new W3cCredentialRecord({
         credential: personCredential,
-        credentialId: 'personCredId',
-        linkSecretId: 'linkSecretId',
-        issuerId: 'issuerDid',
-        schemaIssuerId: 'schemaIssuerDid',
-        schemaName: 'schemaName',
-        schemaVersion: 'schemaVersion',
-        methodName: 'inMemory',
+        tags: {},
+        anonCredsCredentialRecordOptions: {
+          credentialId: 'personCredId',
+          linkSecretId: 'linkSecretId',
+          schemaIssuerId: 'schemaIssuerDid',
+          schemaName: 'schemaName',
+          schemaVersion: 'schemaVersion',
+          methodName: 'inMemory',
+          schemaId: personCredentialInfo.schemaId,
+          credentialDefinitionId: personCredentialInfo.credentialDefinitionId,
+          revocationRegistryId: personCredentialInfo.revocationRegistryId,
+        },
       })
     )
     getByCredentialIdMock.mockResolvedValueOnce(
-      new AnonCredsCredentialRecord({
+      new W3cCredentialRecord({
         credential: phoneCredential,
-        credentialId: 'phoneCredId',
-        linkSecretId: 'linkSecretId',
-        issuerId: 'issuerDid',
-        schemaIssuerId: 'schemaIssuerDid',
-        schemaName: 'schemaName',
-        schemaVersion: 'schemaVersion',
-        methodName: 'inMemory',
+        tags: {},
+        anonCredsCredentialRecordOptions: {
+          credentialId: 'phoneCredId',
+          linkSecretId: 'linkSecretId',
+          schemaIssuerId: 'schemaIssuerDid',
+          schemaName: 'schemaName',
+          schemaVersion: 'schemaVersion',
+          methodName: 'inMemory',
+          schemaId: phoneCredentialInfo.schemaId,
+          credentialDefinitionId: phoneCredentialInfo.credentialDefinitionId,
+          revocationRegistryId: phoneCredentialInfo.revocationRegistryId,
+        },
       })
     )
 
@@ -278,7 +324,7 @@ describe('AnonCredsRsHolderService', () => {
   })
 
   describe('getCredentialsForProofRequest', () => {
-    const findByQueryMock = jest.spyOn(anoncredsCredentialRepositoryMock, 'findByQuery')
+    const findByQueryMock = jest.spyOn(w3cCredentialRepositoryMock, 'findByQuery')
 
     const proofRequest: AnonCredsProofRequest = {
       nonce: anoncreds.generateNonce(),
@@ -436,15 +482,20 @@ describe('AnonCredsRsHolderService', () => {
   test('deleteCredential', async () => {
     getByCredentialIdMock.mockRejectedValueOnce(new Error())
     getByCredentialIdMock.mockResolvedValueOnce(
-      new AnonCredsCredentialRecord({
-        credential: {} as AnonCredsCredential,
-        credentialId: 'personCredId',
-        linkSecretId: 'linkSecretId',
-        issuerId: 'issuerDid',
-        schemaIssuerId: 'schemaIssuerDid',
-        schemaName: 'schemaName',
-        schemaVersion: 'schemaVersion',
-        methodName: 'inMemory',
+      new W3cCredentialRecord({
+        credential: {} as W3cJsonLdVerifiableCredential,
+        tags: {},
+        anonCredsCredentialRecordOptions: {
+          credentialId: 'personCredId',
+          linkSecretId: 'linkSecretId',
+          schemaIssuerId: 'schemaIssuerDid',
+          schemaName: 'schemaName',
+          schemaVersion: 'schemaVersion',
+          methodName: 'inMemory',
+          schemaId: 'schemaId',
+          credentialDefinitionId: 'credDefId',
+          revocationRegistryId: 'revRegId',
+        },
       })
     )
 
@@ -455,29 +506,39 @@ describe('AnonCredsRsHolderService', () => {
     expect(getByCredentialIdMock).toHaveBeenCalledWith(agentContext, 'credentialId')
   })
 
-  test('getCredential', async () => {
+  test('get single Credential', async () => {
     getByCredentialIdMock.mockRejectedValueOnce(new Error())
 
     getByCredentialIdMock.mockResolvedValueOnce(
-      new AnonCredsCredentialRecord({
-        credential: {
-          cred_def_id: 'credDefId',
-          schema_id: 'schemaId',
-          signature: 'signature',
-          signature_correctness_proof: 'signatureCorrectnessProof',
-          values: { attr1: { raw: 'value1', encoded: 'encvalue1' }, attr2: { raw: 'value2', encoded: 'encvalue2' } },
-          rev_reg_id: 'revRegId',
-        } as AnonCredsCredential,
-        credentialId: 'myCredentialId',
-        credentialRevocationId: 'credentialRevocationId',
-        linkSecretId: 'linkSecretId',
-        issuerId: 'issuerDid',
-        schemaIssuerId: 'schemaIssuerDid',
-        schemaName: 'schemaName',
-        schemaVersion: 'schemaVersion',
-        methodName: 'inMemory',
+      new W3cCredentialRecord({
+        credential: new W3cJsonLdVerifiableCredential({
+          credentialSubject: new W3cCredentialSubject({ claims: { attr1: 'value1', attr2: 'value2' } }),
+          issuer: 'test',
+          issuanceDate: Date.now().toString(),
+          type: ['VerifiableCredential'],
+          proof: {
+            created: Date.now().toString(),
+            type: 'test',
+            proofPurpose: 'test',
+            verificationMethod: 'test',
+          },
+        }),
+        tags: {},
+        anonCredsCredentialRecordOptions: {
+          credentialId: 'myCredentialId',
+          credentialRevocationId: 'credentialRevocationId',
+          linkSecretId: 'linkSecretId',
+          schemaIssuerId: 'schemaIssuerDid',
+          schemaName: 'schemaName',
+          schemaVersion: 'schemaVersion',
+          methodName: 'inMemory',
+          schemaId: 'schemaId',
+          credentialDefinitionId: 'credDefId',
+          revocationRegistryId: 'revRegId',
+        },
       })
     )
+
     expect(
       anonCredsHolderService.getCredential(agentContext, { credentialId: 'myCredentialId' })
     ).rejects.toThrowError()
@@ -496,23 +557,32 @@ describe('AnonCredsRsHolderService', () => {
 
   test('getCredentials', async () => {
     findByQueryMock.mockResolvedValueOnce([
-      new AnonCredsCredentialRecord({
-        credential: {
-          cred_def_id: 'credDefId',
-          schema_id: 'schemaId',
-          signature: 'signature',
-          signature_correctness_proof: 'signatureCorrectnessProof',
-          values: { attr1: { raw: 'value1', encoded: 'encvalue1' }, attr2: { raw: 'value2', encoded: 'encvalue2' } },
-          rev_reg_id: 'revRegId',
-        } as AnonCredsCredential,
-        credentialId: 'myCredentialId',
-        credentialRevocationId: 'credentialRevocationId',
-        linkSecretId: 'linkSecretId',
-        issuerId: 'issuerDid',
-        schemaIssuerId: 'schemaIssuerDid',
-        schemaName: 'schemaName',
-        schemaVersion: 'schemaVersion',
-        methodName: 'inMemory',
+      new W3cCredentialRecord({
+        credential: new W3cJsonLdVerifiableCredential({
+          credentialSubject: new W3cCredentialSubject({ claims: { attr1: 'value1', attr2: 'value2' } }),
+          issuer: 'test',
+          issuanceDate: Date.now().toString(),
+          type: ['VerifiableCredential'],
+          proof: {
+            created: Date.now().toString(),
+            type: 'test',
+            proofPurpose: 'test',
+            verificationMethod: 'test',
+          },
+        }),
+        tags: {},
+        anonCredsCredentialRecordOptions: {
+          credentialId: 'myCredentialId',
+          credentialRevocationId: 'credentialRevocationId',
+          linkSecretId: 'linkSecretId',
+          schemaIssuerId: 'schemaIssuerDid',
+          schemaName: 'schemaName',
+          schemaVersion: 'schemaVersion',
+          methodName: 'inMemory',
+          schemaId: 'schemaId',
+          credentialDefinitionId: 'credDefId',
+          revocationRegistryId: 'revRegId',
+        },
       }),
     ])
 
@@ -561,7 +631,7 @@ describe('AnonCredsRsHolderService', () => {
 
     const schema: AnonCredsSchema = {
       attrNames: ['name', 'sex', 'height', 'age'],
-      issuerId: 'issuerId',
+      issuerId: 'did:indy:example:issuerId',
       name: 'schemaName',
       version: '1',
     }
@@ -584,11 +654,11 @@ describe('AnonCredsRsHolderService', () => {
       revocationRegistryDefinitionId: 'personrevregid:uri',
     })
 
-    const saveCredentialMock = jest.spyOn(anoncredsCredentialRepositoryMock, 'save')
+    const saveCredentialMock = jest.spyOn(w3cCredentialRepositoryMock, 'save')
 
     saveCredentialMock.mockResolvedValue()
 
-    const credentialId = await anonCredsHolderService.storeCredential(agentContext, {
+    const credentialId = await anonCredsHolderService.storeW3cCredential(agentContext, {
       credential,
       credentialDefinition,
       schema,
@@ -607,13 +677,14 @@ describe('AnonCredsRsHolderService', () => {
     expect(saveCredentialMock).toHaveBeenCalledWith(
       agentContext,
       expect.objectContaining({
+        anonCredsCredentialMetadata: expect.objectContaining({
+          credentialId: 'personCredId',
+          linkSecretId: 'linkSecretId',
+        }),
         // The stored credential is different from the one received originally
-        credentialId: 'personCredId',
-        linkSecretId: 'linkSecretId',
         _tags: expect.objectContaining({
-          issuerId: credentialDefinition.issuerId,
           schemaName: 'schemaName',
-          schemaIssuerId: 'issuerId',
+          schemaIssuerId: 'did:indy:example:issuerId',
           schemaVersion: '1',
         }),
       })

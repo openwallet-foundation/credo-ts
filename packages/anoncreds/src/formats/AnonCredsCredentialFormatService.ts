@@ -73,7 +73,7 @@ export class AnonCredsCredentialFormatService implements CredentialFormatService
    * credentialRecordType is the type of record that stores the credential. It is stored in the credential
    * record binding in the credential exchange record.
    */
-  public readonly credentialRecordType = 'anoncreds' as const
+  public readonly credentialRecordType = 'w3c' as const
 
   /**
    * Create a {@link AttachmentFormats} object dependent on the message type.
@@ -355,7 +355,7 @@ export class AnonCredsCredentialFormatService implements CredentialFormatService
 
       if (!revocationStatusListResult.revocationStatusList) {
         throw new AriesFrameworkError(
-          `Unable to resolve revocation status list for ${revocationRegistryDefinitionId}: 
+          `Unable to resolve revocation status list for ${revocationRegistryDefinitionId}:
           ${revocationStatusListResult.resolutionMetadata.error} ${revocationStatusListResult.resolutionMetadata.message}`
         )
       }

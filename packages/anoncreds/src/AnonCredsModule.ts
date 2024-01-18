@@ -14,6 +14,7 @@ import { AnonCredsCredentialDefinitionRepository } from './repository/AnonCredsC
 import { AnonCredsSchemaRepository } from './repository/AnonCredsSchemaRepository'
 import { AnonCredsRegistryService } from './services/registry/AnonCredsRegistryService'
 import { updateAnonCredsModuleV0_3_1ToV0_4 } from './updates/0.3.1-0.4'
+import { updateAnonCredsModuleV0_4_1ToV0_5 } from './updates/0.4-0.5'
 
 /**
  * @public
@@ -47,6 +48,11 @@ export class AnonCredsModule implements Module {
       fromVersion: '0.3.1',
       toVersion: '0.4',
       doUpdate: updateAnonCredsModuleV0_3_1ToV0_4,
+    },
+    {
+      fromVersion: '0.4.1',
+      toVersion: '0.5',
+      doUpdate: updateAnonCredsModuleV0_4_1ToV0_5,
     },
   ] satisfies Update[]
 }

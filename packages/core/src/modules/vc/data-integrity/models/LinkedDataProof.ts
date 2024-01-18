@@ -48,6 +48,7 @@ export class LinkedDataProof {
   public verificationMethod!: string
 
   @IsString()
+  @IsOptional()
   public created!: string
 
   @IsUri()

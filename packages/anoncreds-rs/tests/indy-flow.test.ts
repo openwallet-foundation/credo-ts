@@ -30,6 +30,16 @@ import {
   InjectionSymbols,
   ProofState,
   ProofExchangeRecord,
+  Ed25519Signature2018,
+  KeyType,
+  SignatureSuiteRegistry,
+  SignatureSuiteToken,
+  VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2018,
+  VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2020,
+  W3cCredentialsModuleConfig,
+  ConsoleLogger,
+  DidResolverService,
+  DidsModuleConfig,
 } from '@aries-framework/core'
 import { Subject } from 'rxjs'
 
@@ -53,6 +63,7 @@ const anonCredsIssuerService = new AnonCredsRsIssuerService()
 
 const wallet = { generateNonce: () => Promise.resolve('947121108704767252195123') } as Wallet
 
+const logger = new ConsoleLogger()
 const inMemoryStorageService = new InMemoryStorageService()
 const agentContext = getAgentContext({
   registerInstances: [
@@ -63,7 +74,22 @@ const agentContext = getAgentContext({
     [AnonCredsHolderServiceSymbol, anonCredsHolderService],
     [AnonCredsVerifierServiceSymbol, anonCredsVerifierService],
     [AnonCredsRegistryService, new AnonCredsRegistryService()],
+    [DidResolverService, new DidResolverService(logger, new DidsModuleConfig())],
+    [InjectionSymbols.Logger, logger],
+    [W3cCredentialsModuleConfig, new W3cCredentialsModuleConfig()],
     [AnonCredsModuleConfig, anonCredsModuleConfig],
+    [
+      SignatureSuiteToken,
+      {
+        suiteClass: Ed25519Signature2018,
+        proofType: 'Ed25519Signature2018',
+        verificationMethodTypes: [
+          VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2018,
+          VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2020,
+        ],
+        keyTypes: [KeyType.Ed25519],
+      },
+    ],
   ],
   agentConfig,
   wallet,
@@ -284,7 +310,7 @@ describe('Legacy indy format services using anoncreds-rs', () => {
       },
       schemaId: unqualifiedSchemaId,
       credentialDefinitionId: unqualifiedCredentialDefinitionId,
-      revocationRegistryId: null,
+      revocationRegistryId: undefined,
       credentialRevocationId: undefined, // FIXME: should be null?
       methodName: 'inMemory',
     })

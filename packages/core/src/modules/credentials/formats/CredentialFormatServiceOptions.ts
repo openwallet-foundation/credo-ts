@@ -43,6 +43,7 @@ export type ExtractCredentialFormats<CFs extends CredentialFormatService[]> = {
 export interface CredentialFormatCreateReturn {
   format: CredentialFormatSpec
   attachment: Attachment
+  appendAttachments?: Attachment[]
 }
 
 /**
@@ -55,6 +56,7 @@ export interface CredentialFormatProcessOptions {
 
 export interface CredentialFormatProcessCredentialOptions extends CredentialFormatProcessOptions {
   requestAttachment: Attachment
+  requestAppendAttachments?: Attachment[]
 }
 
 export interface CredentialFormatCreateProposalOptions<CF extends CredentialFormat> {
@@ -102,9 +104,9 @@ export interface CredentialFormatAcceptRequestOptions<CF extends CredentialForma
   credentialRecord: CredentialExchangeRecord
   credentialFormats?: CredentialFormatPayload<[CF], 'acceptRequest'>
   attachmentId?: string
-
-  requestAttachment: Attachment
   offerAttachment?: Attachment
+  requestAttachment: Attachment
+  requestAppendAttachments?: Attachment[]
 }
 
 // Auto accept method interfaces

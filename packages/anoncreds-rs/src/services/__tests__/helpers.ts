@@ -1,14 +1,12 @@
-import type {
-  AnonCredsCredential,
-  AnonCredsCredentialDefinition,
-  AnonCredsCredentialInfo,
-  AnonCredsCredentialOffer,
-} from '@aries-framework/anoncreds'
-import type { JsonObject } from '@hyperledger/anoncreds-nodejs'
+import type { JsonObject } from '@hyperledger/anoncreds-shared'
 
 import {
-  anoncreds,
-  Credential,
+  type AnonCredsCredentialDefinition,
+  type AnonCredsCredentialInfo,
+  type AnonCredsCredentialOffer,
+} from '@aries-framework/anoncreds'
+import { JsonTransformer, W3cJsonLdVerifiableCredential } from '@aries-framework/core'
+import {
   CredentialDefinition,
   CredentialOffer,
   CredentialRequest,
@@ -18,6 +16,8 @@ import {
   RevocationRegistryDefinitionPrivate,
   RevocationStatusList,
   Schema,
+  W3cCredential,
+  anoncreds,
 } from '@hyperledger/anoncreds-shared'
 
 /**
@@ -37,7 +37,7 @@ export function createCredentialDefinition(options: { attributeNames: string[]; 
   const { credentialDefinition, credentialDefinitionPrivate, keyCorrectnessProof } = CredentialDefinition.create({
     issuerId,
     schema,
-    schemaId: 'schema:uri',
+    schemaId: 'did:indy:sovrin:F72i3Y3Q4i466efjYJYCHM/anoncreds/v0/SCHEMA/npdb/4.3.4',
     signatureType: 'CL',
     supportRevocation: true, // FIXME: Revocation should not be mandatory but current anoncreds-rs is requiring it
     tag: 'TAG',
@@ -65,7 +65,7 @@ export function createCredentialOffer(keyCorrectnessProof: Record<string, unknow
   const credentialOffer = CredentialOffer.create({
     credentialDefinitionId: 'creddef:uri',
     keyCorrectnessProof,
-    schemaId: 'schema:uri',
+    schemaId: 'did:indy:sovrin:F72i3Y3Q4i466efjYJYCHM/anoncreds/v0/SCHEMA/npdb/4.3.4',
   })
   const credentialOfferJson = credentialOffer.toJson() as unknown as AnonCredsCredentialOffer
   credentialOffer.handle.clear()
@@ -138,7 +138,7 @@ export function createCredentialForHolder(options: {
     revocationRegistryDefinitionId: 'mock:uri',
   })
 
-  const credentialObj = Credential.create({
+  const credentialObj = W3cCredential.create({
     credentialDefinition,
     credentialDefinitionPrivate,
     credentialOffer,
@@ -154,6 +154,8 @@ export function createCredentialForHolder(options: {
     }),
   })
 
+  const w3cJsonLdCredential = JsonTransformer.fromJSON(credentialObj.toJson(), W3cJsonLdVerifiableCredential)
+
   const credentialInfo: AnonCredsCredentialInfo = {
     attributes,
     credentialDefinitionId,
@@ -162,7 +164,7 @@ export function createCredentialForHolder(options: {
     methodName: 'inMemory',
   }
   const returnObj = {
-    credential: credentialObj.toJson() as unknown as AnonCredsCredential,
+    credential: w3cJsonLdCredential,
     credentialInfo,
     revocationRegistryDefinition,
     tailsPath,

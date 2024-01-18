@@ -7,15 +7,16 @@ import type {
   AnonCredsCredential,
   AnonCredsCredentialOffer,
   AnonCredsCredentialRequest,
-  AnonCredsProofRequest,
   AnonCredsNonRevokedInterval,
+  AnonCredsProofRequest,
 } from '../models/exchange'
 import type {
   AnonCredsCredentialDefinition,
-  AnonCredsRevocationStatusList,
   AnonCredsRevocationRegistryDefinition,
+  AnonCredsRevocationStatusList,
   AnonCredsSchema,
 } from '../models/registry'
+import type { W3cJsonLdVerifiableCredential } from '@aries-framework/core'
 
 export interface AnonCredsAttributeInfo {
   name?: string
@@ -43,9 +44,8 @@ export interface CreateProofOptions {
   }
 }
 
-export interface StoreCredentialOptions {
+export interface BaseStoreCredentialOptions {
   credentialRequestMetadata: AnonCredsCredentialRequestMetadata
-  credential: AnonCredsCredential
   credentialDefinition: AnonCredsCredentialDefinition
   schema: AnonCredsSchema
   credentialDefinitionId: string
@@ -54,6 +54,14 @@ export interface StoreCredentialOptions {
     id: string
     definition: AnonCredsRevocationRegistryDefinition
   }
+}
+
+export interface StoreW3cCredentialOptions extends BaseStoreCredentialOptions {
+  credential: W3cJsonLdVerifiableCredential
+}
+
+export interface StoreCredentialOptions extends BaseStoreCredentialOptions {
+  credential: AnonCredsCredential
 }
 
 export interface GetCredentialOptions {

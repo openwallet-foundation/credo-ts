@@ -1,8 +1,8 @@
+import type { AnonCredsClaimRecord } from '@aries-framework/core'
+
 export interface AnonCredsCredentialInfo {
   credentialId: string
-  attributes: {
-    [key: string]: string
-  }
+  attributes: AnonCredsClaimRecord
   schemaId: string
   credentialDefinitionId: string
   revocationRegistryId?: string | undefined

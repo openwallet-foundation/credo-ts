@@ -42,6 +42,7 @@ import {
   JsonEncoder,
   ProofFormatSpec,
   JsonTransformer,
+  encodeCredentialValue,
 } from '@aries-framework/core'
 
 import { AnonCredsProofRequest as AnonCredsProofRequestClass } from '../models/AnonCredsProofRequest'
@@ -53,7 +54,6 @@ import {
   areAnonCredsProofRequestsEqual,
   assertBestPracticeRevocationInterval,
   checkValidCredentialValueEncoding,
-  encodeCredentialValue,
   assertNoDuplicateGroupsNamesInProofRequest,
   getRevocationRegistriesForRequest,
   getRevocationRegistriesForProof,

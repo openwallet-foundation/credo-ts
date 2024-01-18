@@ -138,9 +138,7 @@ describe('W3cCredential', () => {
   })
 
   test('throws an error when credentialSubject is present and it is not a valid credentialSubject object/array', () => {
-    expect(() => JsonTransformer.fromJSON({ ...validCredential, credentialSubject: [] }, W3cCredential)).toThrowError(
-      /credentialSubject has failed the following constraints: credentialSubject value must be an instance of, or an array of instances containing W3cCredentialSubject/
-    )
+    expect(() => JsonTransformer.fromJSON({ ...validCredential, credentialSubject: [] }, W3cCredential)).toThrow()
 
     expect(() =>
       JsonTransformer.fromJSON(
@@ -154,7 +152,51 @@ describe('W3cCredential', () => {
         },
         W3cCredential
       )
-    ).toThrowError(/property credentialSubject\[0\]\.id has failed the following constraints: id must be an URI/)
+    ).toThrow()
+
+    expect(() =>
+      JsonTransformer.fromJSON(
+        {
+          ...validCredential,
+          credentialSubject: { id: 'urn:uri' },
+        },
+        W3cCredential
+      )
+    ).not.toThrowError()
+
+    expect(() =>
+      JsonTransformer.fromJSON(
+        {
+          ...validCredential,
+          credentialSubject: { id: 'urn:uri', claims: { some: 'value', someOther: { nested: 'value' } } },
+        },
+        W3cCredential
+      )
+    ).not.toThrowError()
+
+    expect(() =>
+      JsonTransformer.fromJSON(
+        [
+          {
+            ...validCredential,
+            credentialSubject: { id: 'urn:uri', claims: { some: 'value1', someOther: { nested: 'value1' } } },
+          },
+        ],
+        W3cCredential
+      )
+    ).not.toThrowError()
+
+    expect(() =>
+      JsonTransformer.fromJSON(
+        [
+          {
+            ...validCredential,
+            credentialSubject: { id: 'urn:uri', claims: { some: 'value2', someOther: { nested: 'value2' } } },
+          },
+        ],
+        W3cCredential
+      )
+    ).not.toThrowError()
 
     expect(() =>
       JsonTransformer.fromJSON(

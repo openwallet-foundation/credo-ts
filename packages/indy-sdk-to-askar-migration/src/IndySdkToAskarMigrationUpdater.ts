@@ -1,5 +1,4 @@
-import type { AnonCredsCredentialValue } from '@aries-framework/anoncreds'
-import type { Agent, FileSystem, WalletConfig } from '@aries-framework/core'
+import type { Agent, FileSystem, WalletConfig, AnonCredsCredentialValue } from '@aries-framework/core'
 import type { EntryObject } from '@hyperledger/aries-askar-shared'
 
 import { AnonCredsCredentialRecord, AnonCredsLinkSecretRecord } from '@aries-framework/anoncreds'

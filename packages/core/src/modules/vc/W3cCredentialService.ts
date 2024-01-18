@@ -174,6 +174,7 @@ export class W3cCredentialService {
     const w3cCredentialRecord = new W3cCredentialRecord({
       tags: { expandedTypes },
       credential: options.credential,
+      anonCredsCredentialRecordOptions: options.anonCredsCredentialRecordOptions,
     })
 
     // Store the w3c credential record

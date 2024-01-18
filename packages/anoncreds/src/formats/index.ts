@@ -1,6 +1,7 @@
 export * from './AnonCredsCredentialFormat'
 export * from './LegacyIndyCredentialFormat'
 export { AnonCredsCredentialFormatService } from './AnonCredsCredentialFormatService'
+export { DataIntegrityCredentialFormatService } from './DataIntegrityCredentialFormatService'
 export { LegacyIndyCredentialFormatService } from './LegacyIndyCredentialFormatService'
 
 export * from './AnonCredsProofFormat'

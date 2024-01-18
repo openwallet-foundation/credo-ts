@@ -11,6 +11,7 @@ export interface V2RequestCredentialMessageOptions {
   formats: CredentialFormatSpec[]
   requestAttachments: Attachment[]
   comment?: string
+  attachments?: Attachment[]
 }
 
 export class V2RequestCredentialMessage extends AgentMessage {
@@ -21,6 +22,7 @@ export class V2RequestCredentialMessage extends AgentMessage {
       this.comment = options.comment
       this.formats = options.formats
       this.requestAttachments = options.requestAttachments
+      this.appendedAttachments = options.attachments
     }
   }
 
