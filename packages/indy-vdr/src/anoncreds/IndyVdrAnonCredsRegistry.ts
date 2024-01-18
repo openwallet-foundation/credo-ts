@@ -30,7 +30,7 @@ import type {
   RegisterRevocationStatusListReturnStateAction,
   RegisterRevocationStatusListOptions,
 } from '@aries-framework/anoncreds'
-import type { AgentContext } from '@aries-framework/core'
+import { AgentContext, AriesFrameworkError } from '@aries-framework/core'
 import type { SchemaResponse } from '@hyperledger/indy-vdr-shared'
 
 import {
@@ -601,42 +601,9 @@ export class IndyVdrAnonCredsRegistry implements AnonCredsRegistry {
       let writeRequest: CustomRequest
       let didIndyRevocationRegistryDefinitionId: string
 
-      // TODO: this will bypass caching if done on a higher level.
-      const { credentialDefinition, resolutionMetadata } = await this.getCredentialDefinition(
-        agentContext,
+      const { schemaSeqNo, tag: credentialDefinitionTag } = parseIndyCredentialDefinitionId(
         revocationRegistryDefinition.credDefId
       )
-
-      if (!credentialDefinition) {
-        return {
-          registrationMetadata: {},
-          revocationRegistryDefinitionMetadata: {
-            didIndyNamespace: pool.indyNamespace,
-          },
-          revocationRegistryDefinitionState: {
-            state: 'failed',
-            reason: `error resolving credential definition with id ${revocationRegistryDefinition.credDefId}: ${resolutionMetadata.error} ${resolutionMetadata.message}`,
-          },
-        }
-      }
-
-      const { schemaMetadata } = await this.getSchema(agentContext, credentialDefinition.schemaId)
-
-      if (!schemaMetadata?.indyLedgerSeqNo || typeof schemaMetadata.indyLedgerSeqNo !== 'number') {
-        return {
-          registrationMetadata: {},
-          revocationRegistryDefinitionMetadata: {
-            didIndyNamespace: pool.indyNamespace,
-          },
-          revocationRegistryDefinitionState: {
-            revocationRegistryDefinition,
-            state: 'failed',
-            reason: `error resolving schema with id ${credentialDefinition.schemaId}: ${resolutionMetadata.error} ${resolutionMetadata.message}`,
-          },
-        }
-      }
-
-      const schemaSeqNo = schemaMetadata.indyLedgerSeqNo
 
       const { endorsedTransaction, endorserDid, endorserMode } = options
       if (endorsedTransaction) {
@@ -649,14 +616,14 @@ export class IndyVdrAnonCredsRegistry implements AnonCredsRegistry {
           namespace,
           namespaceIdentifier,
           schemaSeqNo,
-          credentialDefinition.tag,
+          credentialDefinitionTag,
           revocationRegistryDefinition.tag
         )
       } else {
         const legacyRevocationRegistryDefinitionId = getUnqualifiedRevocationRegistryDefinitionId(
           namespaceIdentifier,
           schemaSeqNo,
-          credentialDefinition.tag,
+          credentialDefinitionTag,
           revocationRegistryDefinition.tag
         )
 
@@ -664,14 +631,14 @@ export class IndyVdrAnonCredsRegistry implements AnonCredsRegistry {
           namespace,
           namespaceIdentifier,
           schemaSeqNo,
-          credentialDefinition.tag,
+          credentialDefinitionTag,
           revocationRegistryDefinition.tag
         )
 
         const legacyCredentialDefinitionId = getUnqualifiedCredentialDefinitionId(
           namespaceIdentifier,
           schemaSeqNo,
-          credentialDefinition.tag
+          credentialDefinitionTag
         )
 
         const revocationRegistryDefinitionRequest = new RevocationRegistryDefinitionRequest({
@@ -880,10 +847,15 @@ export class IndyVdrAnonCredsRegistry implements AnonCredsRegistry {
       )
 
       if (revocationRegistryNamespace && revocationRegistryNamespace !== namespace) {
-        // throw error
+        throw new AriesFrameworkError(
+          `Issued id '${revocationStatusList.issuerId}' does not have the same namespace (${namespace}) as the revocation registry definition '${revocationRegistryNamespace}'`
+        )
       }
+
       if (revocationRegistryNamespaceIdentifier !== namespaceIdentifier) {
-        // throw error
+        throw new AriesFrameworkError(
+          `Cannot register revocation registry definition using a different DID. Revocation registry definition contains '${revocationRegistryNamespaceIdentifier}', but DID used was '${namespaceIdentifier}'`
+        )
       }
 
       if (endorsedTransaction) {

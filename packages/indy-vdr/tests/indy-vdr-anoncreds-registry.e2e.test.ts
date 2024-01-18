@@ -90,7 +90,7 @@ describe('IndyVdrAnonCredsRegistry', () => {
     await agent.wallet.delete()
   })
 
-  xtest('register and resolve a schema and credential definition (internal, issuerDid != endorserDid)', async () => {
+  test('register and resolve a schema and credential definition (internal, issuerDid != endorserDid)', async () => {
     const didCreateResult = (await endorser.dids.create<IndyVdrDidCreateOptions>({
       method: 'indy',
       options: {
@@ -424,7 +424,7 @@ describe('IndyVdrAnonCredsRegistry', () => {
     })
   })
 
-  xtest('register and resolve a schema and credential definition (internal, issuerDid == endorserDid)', async () => {
+  test('register and resolve a schema and credential definition (internal, issuerDid == endorserDid)', async () => {
     const dynamicVersion = `1.${Math.random() * 100}`
 
     const legacyIssuerId = 'DJKobikPAaYWAu9vfhEEo5'
