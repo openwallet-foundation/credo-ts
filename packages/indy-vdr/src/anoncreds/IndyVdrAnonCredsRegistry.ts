@@ -30,7 +30,7 @@ import type {
   RegisterRevocationStatusListReturnStateAction,
   RegisterRevocationStatusListOptions,
 } from '@aries-framework/anoncreds'
-import { AgentContext, AriesFrameworkError } from '@aries-framework/core'
+import type { AgentContext } from '@aries-framework/core'
 import type { SchemaResponse } from '@hyperledger/indy-vdr-shared'
 
 import {
@@ -43,6 +43,7 @@ import {
   parseIndySchemaId,
   dateToTimestamp,
 } from '@aries-framework/anoncreds'
+import { AriesFrameworkError } from '@aries-framework/core'
 import {
   RevocationRegistryEntryRequest,
   RevocationRegistryDefinitionRequest,
