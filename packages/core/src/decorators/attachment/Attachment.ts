@@ -4,6 +4,7 @@ import { Expose, Type } from 'class-transformer'
 import { IsDate, IsHash, IsInstance, IsInt, IsMimeType, IsOptional, IsString, ValidateNested } from 'class-validator'
 
 import { AriesFrameworkError } from '../../error'
+import { JsonValue } from '../../types'
 import { JsonEncoder } from '../../utils/JsonEncoder'
 import { uuid } from '../../utils/uuid'
 
@@ -19,7 +20,7 @@ export interface AttachmentOptions {
 
 export interface AttachmentDataOptions {
   base64?: string
-  json?: Record<string, unknown>
+  json?: JsonValue
   links?: string[]
   jws?: JwsDetachedFormat | JwsFlattenedDetachedFormat
   sha256?: string
@@ -40,7 +41,7 @@ export class AttachmentData {
    *  Directly embedded JSON data, when representing content inline instead of via links, and when the content is natively conveyable as JSON. Optional.
    */
   @IsOptional()
-  public json?: Record<string, unknown>
+  public json?: JsonValue
 
   /**
    * A list of zero or more locations at which the content may be fetched. Optional.

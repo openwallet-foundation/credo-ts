@@ -13,7 +13,7 @@ import {
   W3cJwtVerifiablePresentation,
   ClaimFormat,
 } from '../../vc'
-import { PresentationExchangeError } from '../PresentationExchangeError'
+import { DifPresentationExchangeError } from '../DifPresentationExchangeError'
 
 export function getSphereonOriginalVerifiableCredential(
   w3cVerifiableCredential: W3cVerifiableCredential
@@ -23,7 +23,7 @@ export function getSphereonOriginalVerifiableCredential(
   } else if (w3cVerifiableCredential.claimFormat === ClaimFormat.JwtVc) {
     return w3cVerifiableCredential.serializedJwt
   } else {
-    throw new PresentationExchangeError(
+    throw new DifPresentationExchangeError(
       `Unsupported claim format. Only ${ClaimFormat.LdpVc} and ${ClaimFormat.JwtVc} are supported.`
     )
   }
@@ -37,7 +37,7 @@ export function getSphereonW3cVerifiableCredential(
   } else if (w3cVerifiableCredential.claimFormat === ClaimFormat.JwtVc) {
     return w3cVerifiableCredential.serializedJwt
   } else {
-    throw new PresentationExchangeError(
+    throw new DifPresentationExchangeError(
       `Unsupported claim format. Only ${ClaimFormat.LdpVc} and ${ClaimFormat.JwtVc} are supported.`
     )
   }
@@ -51,7 +51,7 @@ export function getSphereonW3cVerifiablePresentation(
   } else if (w3cVerifiablePresentation instanceof W3cJwtVerifiablePresentation) {
     return w3cVerifiablePresentation.serializedJwt
   } else {
-    throw new PresentationExchangeError(
+    throw new DifPresentationExchangeError(
       `Unsupported claim format. Only ${ClaimFormat.LdpVc} and ${ClaimFormat.JwtVc} are supported.`
     )
   }
