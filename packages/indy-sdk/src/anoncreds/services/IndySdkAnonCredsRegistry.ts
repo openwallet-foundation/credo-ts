@@ -18,7 +18,7 @@ import type { Schema as IndySdkSchema } from 'indy-sdk'
 
 import {
   getUnqualifiedCredentialDefinitionId,
-  getUnqualifiedRevocationRegistryId,
+  getUnqualifiedRevocationRegistryDefinitionId,
   getUnqualifiedSchemaId,
   parseIndyCredentialDefinitionId,
   parseIndyDid,
@@ -394,7 +394,7 @@ export class IndySdkAnonCredsRegistry implements AnonCredsRegistry {
         `Using ledger '${pool.didIndyNamespace}' to retrieve revocation registry definition '${revocationRegistryDefinitionId}'`
       )
 
-      const legacyRevocationRegistryId = getUnqualifiedRevocationRegistryId(
+      const legacyRevocationRegistryId = getUnqualifiedRevocationRegistryDefinitionId(
         namespaceIdentifier,
         schemaSeqNo,
         credentialDefinitionTag,
@@ -492,7 +492,7 @@ export class IndySdkAnonCredsRegistry implements AnonCredsRegistry {
         `Using ledger '${pool.didIndyNamespace}' to retrieve revocation registry deltas with revocation registry definition id '${revocationRegistryId}' until ${timestamp}`
       )
 
-      const legacyRevocationRegistryId = getUnqualifiedRevocationRegistryId(
+      const legacyRevocationRegistryId = getUnqualifiedRevocationRegistryDefinitionId(
         namespaceIdentifier,
         schemaSeqNo,
         credentialDefinitionTag,

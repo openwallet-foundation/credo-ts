@@ -18,7 +18,7 @@ export const didIndyCredentialDefinitionIdRegex = new RegExp(
   `^${didIndyAnonCredsBase.source}/CLAIM_DEF/([1-9][0-9]*)/(.+)$`
 )
 
-// <namespaceIdentifier>:4:<schemaSeqNo>:3:CL:<credentialDefinitionTag>:CL_ACCUM:<revocationRegistryTag>
+// <namespaceIdentifier>:4:<namespaceIdentifier>:3:CL:<schemaSeqNo>:<credentialDefinitionTag>:CL_ACCUM:<revocationRegistryTag>
 export const unqualifiedRevocationRegistryIdRegex =
   /^([a-zA-Z0-9]{21,22}):4:[a-zA-Z0-9]{21,22}:3:CL:([1-9][0-9]*):(.+):CL_ACCUM:(.+)$/
 // did:indy:<namespace>:<namespaceIdentifier>/anoncreds/v0/REV_REG_DEF/<schemaSeqNo>/<credentialDefinitionTag>/<revocationRegistryTag>
@@ -32,18 +32,22 @@ export function getUnqualifiedSchemaId(unqualifiedDid: string, name: string, ver
   return `${unqualifiedDid}:2:${name}:${version}`
 }
 
-export function getUnqualifiedCredentialDefinitionId(unqualifiedDid: string, seqNo: string | number, tag: string) {
-  return `${unqualifiedDid}:3:CL:${seqNo}:${tag}`
+export function getUnqualifiedCredentialDefinitionId(
+  unqualifiedDid: string,
+  schemaSeqNo: string | number,
+  tag: string
+) {
+  return `${unqualifiedDid}:3:CL:${schemaSeqNo}:${tag}`
 }
 
 // TZQuLp43UcYTdtc3HewcDz:4:TZQuLp43UcYTdtc3HewcDz:3:CL:98158:BaustellenzertifikateNU1:CL_ACCUM:1-100
-export function getUnqualifiedRevocationRegistryId(
+export function getUnqualifiedRevocationRegistryDefinitionId(
   unqualifiedDid: string,
-  seqNo: string | number,
+  schemaSeqNo: string | number,
   credentialDefinitionTag: string,
   revocationRegistryTag: string
 ) {
-  return `${unqualifiedDid}:4:${unqualifiedDid}:3:CL:${seqNo}:${credentialDefinitionTag}:CL_ACCUM:${revocationRegistryTag}`
+  return `${unqualifiedDid}:4:${unqualifiedDid}:3:CL:${schemaSeqNo}:${credentialDefinitionTag}:CL_ACCUM:${revocationRegistryTag}`
 }
 
 export function isUnqualifiedCredentialDefinitionId(credentialDefinitionId: string) {
