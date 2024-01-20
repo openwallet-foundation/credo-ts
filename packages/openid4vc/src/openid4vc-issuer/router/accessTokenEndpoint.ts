@@ -1,5 +1,4 @@
-import type { IssuanceRequest } from './requestContext'
-import type { AccessTokenEndpointConfig } from '../OpenId4VcIssuerServiceOptions'
+import type { OpenId4VcIssuanceRequest } from './requestContext'
 import type { AgentContext } from '@aries-framework/core'
 import type { JWTSignerCallback } from '@sphereon/oid4vci-common'
 import type { NextFunction, Response, Router } from 'express'
@@ -24,7 +23,54 @@ import { getRequestContext, sendErrorResponse } from '../../shared/router'
 import { OpenId4VcIssuerModuleConfig } from '../OpenId4VcIssuerModuleConfig'
 import { OpenId4VcIssuerService } from '../OpenId4VcIssuerService'
 
-const getJwtSignerCallback = (agentContext: AgentContext, signerPublicKey: Key): JWTSignerCallback => {
+export interface AccessTokenEndpointConfig {
+  /**
+   * The path at which the token endpoint should be made available. Note that it will be
+   * hosted at a subpath to take into account multiple tenants and issuers.
+   *
+   * @default /token
+   */
+  endpointPath: string
+
+  // FIXME: rename, more specific
+  /**
+   * The minimum amount of time in seconds that the client SHOULD wait between polling requests to the Token Endpoint in the Pre-Authorized Code Flow.
+   * If no value is provided, clients MUST use 5 as the default.
+   */
+  interval?: number
+
+  /**
+   * The maximum amount of time in seconds that the pre-authorized code is valid.
+   * @default 360 (5 minutes) // FIXME: what should be the default value
+   */
+  preAuthorizedCodeExpirationInSeconds: number
+
+  /**
+   * The time after which the cNonce from the access token response will
+   * expire.
+   *
+   * @default 360 (5 minutes) // FIXME: what should be the default value?
+   */
+  cNonceExpiresInSeconds: number
+
+  /**
+   * The time after which the token will expire.
+   *
+   * @default 360 (5 minutes) // FIXME: what should be the default value?
+   */
+  tokenExpiresInSeconds: number
+}
+
+export function configureAccessTokenEndpoint(router: Router, config: AccessTokenEndpointConfig) {
+  const { preAuthorizedCodeExpirationInSeconds } = config
+  router.post(
+    config.endpointPath,
+    verifyTokenRequest({ preAuthorizedCodeExpirationInSeconds }),
+    handleTokenRequest(config)
+  )
+}
+
+function getJwtSignerCallback(agentContext: AgentContext, signerPublicKey: Key): JWTSignerCallback {
   return async (jwt, _kid) => {
     if (_kid) {
       throw new AriesFrameworkError('Kid should not be supplied externally.')
@@ -51,10 +97,10 @@ const getJwtSignerCallback = (agentContext: AgentContext, signerPublicKey: Key):
   }
 }
 
-export const handleTokenRequest = (config: AccessTokenEndpointConfig) => {
+export function handleTokenRequest(config: AccessTokenEndpointConfig) {
   const { tokenExpiresInSeconds, cNonceExpiresInSeconds, interval } = config
 
-  return async (request: IssuanceRequest, response: Response) => {
+  return async (request: OpenId4VcIssuanceRequest, response: Response) => {
     response.set({ 'Cache-Control': 'no-store', Pragma: 'no-cache' })
 
     const requestContext = getRequestContext(request)
@@ -90,9 +136,9 @@ export const handleTokenRequest = (config: AccessTokenEndpointConfig) => {
   }
 }
 
-export const verifyTokenRequest = (options: { preAuthorizedCodeExpirationInSeconds: number }) => {
+export function verifyTokenRequest(options: { preAuthorizedCodeExpirationInSeconds: number }) {
   const { preAuthorizedCodeExpirationInSeconds } = options
-  return async (request: IssuanceRequest, response: Response, next: NextFunction) => {
+  return async (request: OpenId4VcIssuanceRequest, response: Response, next: NextFunction) => {
     const { agentContext } = getRequestContext(request)
     const openId4VcIssuerConfig = agentContext.dependencyManager.resolve(OpenId4VcIssuerModuleConfig)
 
@@ -118,13 +164,4 @@ export const verifyTokenRequest = (options: { preAuthorizedCodeExpirationInSecon
 
     return next()
   }
-}
-
-export function configureAccessTokenEndpoint(router: Router, config: AccessTokenEndpointConfig) {
-  const { preAuthorizedCodeExpirationInSeconds } = config
-  router.post(
-    config.endpointPath,
-    verifyTokenRequest({ preAuthorizedCodeExpirationInSeconds }),
-    handleTokenRequest(config)
-  )
 }

@@ -86,11 +86,6 @@ export function getResolver(agentContext: AgentContext) {
   }
 }
 
-export async function generateRandomValues(agentContext: AgentContext, count: number) {
-  const randomValuesPromises = Array.from({ length: count }, () => agentContext.wallet.generateNonce())
-  return await Promise.all(randomValuesPromises)
-}
-
 export const getProofTypeFromKey = (agentContext: AgentContext, key: Key) => {
   const signatureSuiteRegistry = agentContext.dependencyManager.resolve(SignatureSuiteRegistry)
 

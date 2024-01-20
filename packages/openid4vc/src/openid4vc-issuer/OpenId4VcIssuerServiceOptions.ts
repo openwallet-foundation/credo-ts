@@ -10,16 +10,16 @@ import type { AgentContext, W3cCredential } from '@aries-framework/core'
 import type { SdJwtVcSignOptions } from '@aries-framework/sd-jwt-vc'
 import type { CredentialOfferPayloadV1_0_11 } from '@sphereon/oid4vci-common'
 
-export type PreAuthorizedCodeFlowConfig = {
+export interface OpenId4VciPreAuthorizedCodeFlowConfig {
   preAuthorizedCode?: string
   userPinRequired?: boolean
 }
 
-export type AuthorizationCodeFlowConfig = {
+export type OpenId4VciAuthorizationCodeFlowConfig = {
   issuerState?: string
 }
 
-export type IssuerMetadata = {
+export type OpenId4VcIssuerMetadata = {
   // The Credential Issuer's identifier. (URL using the https scheme)
   issuerUrl: string
   credentialEndpoint: string
@@ -30,9 +30,9 @@ export type IssuerMetadata = {
   credentialsSupported: OpenId4VciCredentialSupported[]
 }
 
-export type CreateIssuerOptions = Pick<OpenId4VcIssuerRecordProps, 'credentialsSupported' | 'display'>
+export type OpenId4VciCreateIssuerOptions = Pick<OpenId4VcIssuerRecordProps, 'credentialsSupported' | 'display'>
 
-export interface CreateCredentialOfferOptions {
+export interface OpenId4VciCreateCredentialOfferOptions {
   // NOTE: v11 of OID4VCI supports both inline and referenced (to credentials_supported.id) credential offers.
   // In draft 12 the inline credential offers have been removed and to make the migration to v12 easier
   // we only support referenced credentials in an offer
@@ -45,8 +45,8 @@ export interface CreateCredentialOfferOptions {
   // The base URI of the credential offer uri
   baseUri?: string
 
-  preAuthorizedCodeFlowConfig?: PreAuthorizedCodeFlowConfig
-  authorizationCodeFlowConfig?: AuthorizationCodeFlowConfig
+  preAuthorizedCodeFlowConfig?: OpenId4VciPreAuthorizedCodeFlowConfig
+  authorizationCodeFlowConfig?: OpenId4VciAuthorizationCodeFlowConfig
 
   credentialOfferUri?: string
 }
@@ -58,6 +58,7 @@ export type CredentialOffer = {
   credentialOfferUri: string
 }
 
+// FIXME: openid4vc prefix for all interfaces
 export interface CreateCredentialResponseOptions {
   credentialRequest: OpenId4VciCredentialRequest
 
@@ -71,70 +72,11 @@ export interface CreateCredentialResponseOptions {
   credential?: OpenId4VciSignCredential
 }
 
-export type MetadataEndpointConfig = {
-  /**
-   * Configures the router to expose the metadata endpoint.
-   */
-  enabled: true
-}
-
-export type AccessTokenEndpointConfig = {
-  /**
-   * The path at which the token endpoint should be made available. Note that it will be
-   * hosted at a subpath to take into account multiple tenants and issuers.
-   *
-   * @default /token
-   */
-  endpointPath: string
-
-  // FIXME: rename, more specific
-  /**
-   * The minimum amount of time in seconds that the client SHOULD wait between polling requests to the Token Endpoint in the Pre-Authorized Code Flow.
-   * If no value is provided, clients MUST use 5 as the default.
-   */
-  interval?: number
-
-  /**
-   * The maximum amount of time in seconds that the pre-authorized code is valid.
-   * @default 360 (5 minutes) // FIXME: what should be the default value
-   */
-  preAuthorizedCodeExpirationInSeconds: number
-
-  /**
-   * The time after which the cNonce from the access token response will
-   * expire.
-   *
-   * @default 360 (5 minutes) // FIXME: what should be the default value?
-   */
-  cNonceExpiresInSeconds: number
-
-  /**
-   * The time after which the token will expire.
-   *
-   * @default 360 (5 minutes) // FIXME: what should be the default value?
-   */
-  tokenExpiresInSeconds: number
-}
-
-export type CredentialEndpointConfig = {
-  /**
-   * The path at which the credential endpoint should be made available. Note that it will be
-   * hosted at a subpath to take into account multiple tenants and issuers.
-   *
-   * @default /credential
-   */
-  endpointPath: string
-
-  /**
-   * A function mapping a credential request to the credential to be issued.
-   */
-  credentialRequestToCredentialMapper: CredentialRequestToCredentialMapper
-}
-
+// FIXME: openid4vc prefix for all interfaces
 // FIXME: Flows:
 // - provide credential data at time of offer creation
 // - provide credential data dynamically using this method
-export type CredentialRequestToCredentialMapper = (options: {
+export type OpenId4VciCredentialRequestToCredentialMapper = (options: {
   agentContext: AgentContext
 
   /**

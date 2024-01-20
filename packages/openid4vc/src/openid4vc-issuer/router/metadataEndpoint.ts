@@ -1,4 +1,4 @@
-import type { IssuanceRequest } from './requestContext'
+import type { OpenId4VcIssuanceRequest } from './requestContext'
 import type { CredentialIssuerMetadata } from '@sphereon/oid4vci-common'
 import type { Router, Response } from 'express'
 
@@ -6,7 +6,7 @@ import { getRequestContext, sendErrorResponse } from '../../shared/router'
 import { OpenId4VcIssuerService } from '../OpenId4VcIssuerService'
 
 export function configureIssuerMetadataEndpoint(router: Router) {
-  router.get('/.well-known/openid-credential-issuer', (_request: IssuanceRequest, response: Response) => {
+  router.get('/.well-known/openid-credential-issuer', (_request: OpenId4VcIssuanceRequest, response: Response) => {
     const { agentContext, issuer } = getRequestContext(_request)
 
     const openId4VcIssuerService = agentContext.dependencyManager.resolve(OpenId4VcIssuerService)

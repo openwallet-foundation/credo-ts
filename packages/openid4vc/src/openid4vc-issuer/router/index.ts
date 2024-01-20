@@ -1,4 +1,4 @@
-export { configureAccessTokenEndpoint } from './accessTokenEndpoint'
-export { configureCredentialEndpoint } from './credentialEndpoint'
+export { configureAccessTokenEndpoint, AccessTokenEndpointConfig } from './accessTokenEndpoint'
+export { configureCredentialEndpoint, CredentialEndpointConfig } from './credentialEndpoint'
 export { configureIssuerMetadataEndpoint } from './metadataEndpoint'
-export { IssuanceRequest, IssuanceRequestContext } from './requestContext'
+export { OpenId4VcIssuanceRequest } from './requestContext'

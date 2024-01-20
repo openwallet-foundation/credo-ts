@@ -1,6 +1,6 @@
 import type {
   CreateCredentialResponseOptions,
-  CreateCredentialOfferOptions,
+  OpenId4VciCreateCredentialOfferOptions,
   CredentialOffer,
 } from './OpenId4VcIssuerServiceOptions'
 import type { OpenId4VcIssuerRecordProps } from './repository/OpenId4VcIssuerRecord'
@@ -19,23 +19,11 @@ import { OpenId4VcIssuerService } from './OpenId4VcIssuerService'
  */
 @injectable()
 export class OpenId4VcIssuerApi {
-  /**
-   * Configuration for the credentials module
-   */
-  public readonly config: OpenId4VcIssuerModuleConfig
-
-  private agentContext: AgentContext
-  private openId4VcIssuerService: OpenId4VcIssuerService
-
   public constructor(
-    agentContext: AgentContext,
-    openId4VcIssuerService: OpenId4VcIssuerService,
-    config: OpenId4VcIssuerModuleConfig
-  ) {
-    this.agentContext = agentContext
-    this.openId4VcIssuerService = openId4VcIssuerService
-    this.config = config
-  }
+    public readonly config: OpenId4VcIssuerModuleConfig,
+    private agentContext: AgentContext,
+    private openId4VcIssuerService: OpenId4VcIssuerService
+  ) {}
 
   public async getAllIssuers() {
     return this.openId4VcIssuerService.getAllIssuers(this.agentContext)
@@ -83,7 +71,7 @@ export class OpenId4VcIssuerApi {
    * @returns Object containing the payload of the credential offer and the credential offer request, which can be sent to the wallet.
    */
   public async createCredentialOffer(
-    options: CreateCredentialOfferOptions & { issuerId: string }
+    options: OpenId4VciCreateCredentialOfferOptions & { issuerId: string }
   ): Promise<CredentialOffer> {
     const { issuerId, ...rest } = options
     const issuer = await this.openId4VcIssuerService.getByIssuerId(this.agentContext, issuerId)

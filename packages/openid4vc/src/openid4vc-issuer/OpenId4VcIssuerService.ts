@@ -1,14 +1,14 @@
 import type {
-  AuthorizationCodeFlowConfig,
-  CreateCredentialOfferOptions,
+  OpenId4VciAuthorizationCodeFlowConfig,
+  OpenId4VciCreateCredentialOfferOptions,
   CreateCredentialResponseOptions,
-  CreateIssuerOptions,
+  OpenId4VciCreateIssuerOptions,
   CredentialOffer,
-  IssuerMetadata,
+  OpenId4VcIssuerMetadata,
   OpenId4VciSignCredential,
   OpenId4VciSignSdJwtCredential,
   OpenId4VciSignW3cCredential,
-  PreAuthorizedCodeFlowConfig,
+  OpenId4VciPreAuthorizedCodeFlowConfig,
 } from './OpenId4VcIssuerServiceOptions'
 import type { ReferencedOfferedCredentialWithMetadata } from '../openid4vc-holder/reception/utils/IssuerMetadataUtils'
 import type { CredentialHolderBinding } from '../shared'
@@ -57,13 +57,13 @@ import {
   OfferedCredentialType,
   getOfferedCredentialsWithMetadata,
 } from '../openid4vc-holder/reception/utils/IssuerMetadataUtils'
+import { storeActorIdForContextCorrelationId } from '../shared/router'
 import { getSphereonW3cVerifiableCredential } from '../shared/transform'
 import { getProofTypeFromKey } from '../shared/utils'
 
 import { OpenId4VcIssuerModuleConfig } from './OpenId4VcIssuerModuleConfig'
 import { OpenId4VcIssuerRecord } from './repository/OpenId4VcIssuerRecord'
 import { OpenId4VcIssuerRepository } from './repository/OpenId4VcIssuerRepository'
-import { storeIssuerIdForContextCorrelationId } from './router/requestContext'
 
 const w3cOpenId4VcFormats = [
   OpenId4VciCredentialFormatProfile.JwtVcJson,
@@ -93,23 +93,24 @@ export class OpenId4VcIssuerService {
     this.openId4VcIssuerRepository = openId4VcIssuerRepository
   }
 
-  public getIssuerMetadata(agentContext: AgentContext, issuerRecord: OpenId4VcIssuerRecord): IssuerMetadata {
+  public getIssuerMetadata(agentContext: AgentContext, issuerRecord: OpenId4VcIssuerRecord): OpenId4VcIssuerMetadata {
     const config = agentContext.dependencyManager.resolve(OpenId4VcIssuerModuleConfig)
     const issuerUrl = joinUriParts(config.baseUrl, [issuerRecord.issuerId])
+
     const issuerMetadata = {
       issuerUrl,
       tokenEndpoint: joinUriParts(issuerUrl, [config.accessTokenEndpoint.endpointPath]),
       credentialEndpoint: joinUriParts(issuerUrl, [config.credentialEndpoint.endpointPath]),
       credentialsSupported: issuerRecord.credentialsSupported,
       issuerDisplay: issuerRecord.display,
-    } satisfies IssuerMetadata
+    } satisfies OpenId4VcIssuerMetadata
 
     return issuerMetadata
   }
 
   public async createCredentialOffer(
     agentContext: AgentContext,
-    options: CreateCredentialOfferOptions & { issuer: OpenId4VcIssuerRecord }
+    options: OpenId4VciCreateCredentialOfferOptions & { issuer: OpenId4VcIssuerRecord }
   ): Promise<CredentialOffer> {
     const { preAuthorizedCodeFlowConfig, authorizationCodeFlowConfig, issuer, offeredCredentials } = options
 
@@ -190,7 +191,7 @@ export class OpenId4VcIssuerService {
     return this.openId4VcIssuerRepository.update(agentContext, issuer)
   }
 
-  public async createIssuer(agentContext: AgentContext, options: CreateIssuerOptions) {
+  public async createIssuer(agentContext: AgentContext, options: OpenId4VciCreateIssuerOptions) {
     // TODO: ideally we can store additional data with a key, such as:
     // - createdAt
     // - purpose
@@ -205,7 +206,7 @@ export class OpenId4VcIssuerService {
     })
 
     await this.openId4VcIssuerRepository.save(agentContext, openId4VcIssuer)
-    await storeIssuerIdForContextCorrelationId(agentContext, openId4VcIssuer.issuerId)
+    await storeActorIdForContextCorrelationId(agentContext, openId4VcIssuer.issuerId)
     return openId4VcIssuer
   }
 
@@ -306,8 +307,8 @@ export class OpenId4VcIssuerService {
 
   private async getGrantsFromConfig(
     agentContext: AgentContext,
-    preAuthorizedCodeFlowConfig?: PreAuthorizedCodeFlowConfig,
-    authorizationCodeFlowConfig?: AuthorizationCodeFlowConfig
+    preAuthorizedCodeFlowConfig?: OpenId4VciPreAuthorizedCodeFlowConfig,
+    authorizationCodeFlowConfig?: OpenId4VciAuthorizationCodeFlowConfig
   ) {
     if (!preAuthorizedCodeFlowConfig && !authorizationCodeFlowConfig) {
       throw new AriesFrameworkError(

@@ -1,18 +1,16 @@
 import type { OpenId4VcIssuerModuleConfigOptions } from './OpenId4VcIssuerModuleConfig'
-import type { IssuanceRequest } from './router/requestContext'
+import type { OpenId4VcIssuanceRequest } from './router'
 import type { AgentContext, DependencyManager, Module } from '@aries-framework/core'
 
 import { AgentConfig } from '@aries-framework/core'
 
-import { getRequestContext } from '../shared/router'
+import { getAgentContextForActorId, getRequestContext, importExpress } from '../shared/router'
 
 import { OpenId4VcIssuerApi } from './OpenId4VcIssuerApi'
 import { OpenId4VcIssuerModuleConfig } from './OpenId4VcIssuerModuleConfig'
 import { OpenId4VcIssuerService } from './OpenId4VcIssuerService'
 import { OpenId4VcIssuerRepository } from './repository/OpenId4VcIssuerRepository'
 import { configureAccessTokenEndpoint, configureCredentialEndpoint, configureIssuerMetadataEndpoint } from './router'
-import { importExpress } from './router/express'
-import { getAgentContextForIssuerId } from './router/requestContext'
 
 /**
  * @public
@@ -69,7 +67,7 @@ export class OpenId4VcIssuerModule implements Module {
     // parse application/json
     contextRouter.use(json())
 
-    contextRouter.param('issuerId', async (req: IssuanceRequest, _res, next, issuerId: string) => {
+    contextRouter.param('issuerId', async (req: OpenId4VcIssuanceRequest, _res, next, issuerId: string) => {
       if (!issuerId) {
         _res.status(404).send('Not found')
       }
@@ -77,7 +75,8 @@ export class OpenId4VcIssuerModule implements Module {
       let agentContext: AgentContext | undefined = undefined
 
       try {
-        agentContext = await getAgentContextForIssuerId(rootAgentContext, issuerId)
+        // FIXME: should we create combined openId actor record?
+        agentContext = await getAgentContextForActorId(rootAgentContext, issuerId)
         const issuerApi = agentContext.dependencyManager.resolve(OpenId4VcIssuerApi)
         const issuer = await issuerApi.getByIssuerId(issuerId)
 
@@ -108,7 +107,7 @@ export class OpenId4VcIssuerModule implements Module {
     configureCredentialEndpoint(endpointRouter, this.config.credentialEndpoint)
 
     // FIXME: Will this be called when an error occurs / 404 is returned earlier on?
-    contextRouter.use(async (req: IssuanceRequest, _res, next) => {
+    contextRouter.use(async (req: OpenId4VcIssuanceRequest, _res, next) => {
       const { agentContext } = getRequestContext(req)
       await agentContext.endSession()
       next()

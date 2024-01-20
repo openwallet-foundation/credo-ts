@@ -3,7 +3,11 @@ import type { Response, Request } from 'express'
 
 import { AriesFrameworkError } from '@aries-framework/core'
 
-export interface RequestContext {
+export interface OpenId4VcRequest<RC extends Record<string, unknown> = Record<string, never>> extends Request {
+  requestContext?: RC & OpenId4VcRequestContext
+}
+
+export interface OpenId4VcRequestContext {
   agentContext: AgentContext
 }
 
@@ -19,9 +23,8 @@ export function sendErrorResponse(response: Response, logger: Logger, code: numb
   return response.status(code).json(body)
 }
 
-export function getRequestContext<T extends Request & { requestContext?: RequestContext }>(
-  request: T
-): NonNullable<T['requestContext']> {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function getRequestContext<T extends OpenId4VcRequest<any>>(request: T): NonNullable<T['requestContext']> {
   const requestContext = request.requestContext
   if (!requestContext) throw new AriesFrameworkError('Request context not set.')
 

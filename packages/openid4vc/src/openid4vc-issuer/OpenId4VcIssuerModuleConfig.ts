@@ -1,11 +1,11 @@
-import type { AccessTokenEndpointConfig, CredentialEndpointConfig } from './OpenId4VcIssuerServiceOptions'
-import type { AgentContext } from '@aries-framework/core'
+import type { AccessTokenEndpointConfig, CredentialEndpointConfig } from './router'
+import type { AgentContext, Optional } from '@aries-framework/core'
 import type { CNonceState, CredentialOfferSession, IStateManager, StateType, URIState } from '@sphereon/oid4vci-common'
 import type { Router } from 'express'
 
 import { MemoryStates } from '@sphereon/oid4vci-issuer'
 
-import { importExpress } from './router/express'
+import { importExpress } from '../shared/router'
 
 export type StateManagerFactory<T extends StateType> = () => IStateManager<T>
 
@@ -45,14 +45,14 @@ export interface OpenId4VcIssuerModuleConfigOptions {
   uriStateManagerFactory?: StateManagerFactory<URIState>
 }
 
-type Optional<A, B extends keyof A> = Omit<A, B> & Partial<Pick<A, B>>
-
 export class OpenId4VcIssuerModuleConfig {
   private options: OpenId4VcIssuerModuleConfigOptions
-  private uriStateManagerMap: Map<string, IStateManager<URIState>>
-  private credentialOfferSessionManagerMap: Map<string, IStateManager<CredentialOfferSession>>
-  private cNonceStateManagerMap: Map<string, IStateManager<CNonceState>>
   public readonly router: Router
+
+  // FIXME: remove
+  private credentialOfferSessionManagerMap: Map<string, IStateManager<CredentialOfferSession>>
+  private uriStateManagerMap: Map<string, IStateManager<URIState>>
+  private cNonceStateManagerMap: Map<string, IStateManager<CNonceState>>
 
   public constructor(options: OpenId4VcIssuerModuleConfigOptions) {
     this.uriStateManagerMap = new Map()
