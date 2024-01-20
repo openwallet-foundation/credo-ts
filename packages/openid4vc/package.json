@@ -26,15 +26,11 @@
   "dependencies": {
     "@aries-framework/askar": "^0.4.2",
     "@aries-framework/core": "0.4.2",
-    "@sphereon/ssi-types": "^0.18.0",
-    "@sphereon/oid4vci-client": "0.8.2-next.26",
-    "@sphereon/oid4vci-common": "0.8.2-next.26",
-    "@sphereon/oid4vci-issuer": "0.8.2-next.26",
-    "@sphereon/did-auth-siop": "0.6.0-unstable.0",
-    "@sphereon/pex": "^3.0.0",
-    "@sphereon/pex-models": "^2.1.2",
-    "body-parser": "^1.20.2",
-    "jsonpath": "^1.1.1"
+    "@sphereon/ssi-types": "^0.18.1",
+    "@sphereon/oid4vci-client": "0.8.2-next.34",
+    "@sphereon/oid4vci-common": "0.8.2-next.34",
+    "@sphereon/oid4vci-issuer": "0.8.2-next.34",
+    "@sphereon/did-auth-siop": "0.6.0-unstable.0"
   },
   "devDependencies": {
     "@aries-framework/node": "^0.4.2",
@@ -42,7 +38,6 @@
     "@aries-framework/tenants": "^0.4.2",
     "@hyperledger/aries-askar-nodejs": "^0.2.0-dev.1",
     "@types/express": "^4.17.21",
-    "@types/jsonpath": "^0.2.4",
     "express": "^4.18.2",
     "nock": "^13.3.0",
     "rimraf": "^4.4.0",

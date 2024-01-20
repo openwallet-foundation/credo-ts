@@ -62,9 +62,7 @@
     "ws": "^8.13.0"
   },
   "resolutions": {
-    "@types/node": "18.18.8",
-    "@sphereon/ssi-types": "^0.18.0",
-    "@sd-jwt/core": "0.1.2-alpha.6"
+    "@types/node": "18.18.8"
   },
   "engines": {
     "node": ">=18"
