@@ -89,6 +89,8 @@ export { LinkedAttachment, LinkedAttachmentOptions } from './utils/LinkedAttachm
 import { parseInvitationUrl } from './utils/parseInvitation'
 import { uuid, isValidUuid } from './utils/uuid'
 
+export type { Optional } from './utils/type'
+
 const utils = {
   uuid,
   isValidUuid,
