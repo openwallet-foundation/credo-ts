@@ -490,19 +490,19 @@ export class OpenId4VcIssuerService {
         )
       }
 
-      let signOptions = options.credential
-      if (!signOptions) {
-        const holderBinding = await this.getHolderBindingFromRequest(credentialRequest)
-        signOptions = await this.openId4VcIssuerConfig.credentialEndpoint.credentialRequestToCredentialMapper({
-          agentContext,
-          holderBinding,
+      const holderBinding = await this.getHolderBindingFromRequest(credentialRequest)
+      const mapper =
+        options.credentialRequestToCredentialMapper ??
+        this.openId4VcIssuerConfig.credentialEndpoint.credentialRequestToCredentialMapper
+      const signOptions = await mapper({
+        agentContext,
+        holderBinding,
 
-          credentialOffer,
-          credentialRequest,
+        credentialOffer,
+        credentialRequest,
 
-          credentialsSupported: offeredCredentialsMatchingRequest,
-        })
-      }
+        credentialsSupported: offeredCredentialsMatchingRequest,
+      })
 
       if (isW3cSignCredentialOptions(signOptions)) {
         if (!w3cOpenId4VcFormats.includes(credentialRequest.format as OpenId4VciCredentialFormatProfile)) {

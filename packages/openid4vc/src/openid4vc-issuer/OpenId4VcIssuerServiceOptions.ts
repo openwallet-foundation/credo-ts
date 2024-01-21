@@ -63,13 +63,13 @@ export interface CreateCredentialResponseOptions {
   credentialRequest: OpenId4VciCredentialRequest
 
   /**
-   * You can optionally provide the input data for signing the credential.
-   * If not provided the `credentialRequestToCredentialMapper` from the module
-   * config will be called with needed data to construct the credential
-   * signing payload
+   * You can optionally provide a credential request to credential mapper that will be
+   * dynamically invoked to return credential data based on the credential request.
+   *
+   * If not provided, the `credentialRequestToCredentialMapper` from the agent config
+   * will be used.
    */
-  // FIXME: credential.credential is not nice
-  credential?: OpenId4VciSignCredential
+  credentialRequestToCredentialMapper?: OpenId4VciCredentialRequestToCredentialMapper
 }
 
 // FIXME: openid4vc prefix for all interfaces
@@ -103,7 +103,7 @@ export type OpenId4VciCredentialRequestToCredentialMapper = (options: {
    * NOTE: in v12 this will probably become a single entry, as it will be matched on id
    */
   credentialsSupported: OpenId4VciCredentialSupported[]
-}) => Promise<OpenId4VciSignCredential>
+}) => Promise<OpenId4VciSignCredential> | OpenId4VciSignCredential
 
 // FIXME: can we make these interfaces more uniform or is it okay
 // to have quite some differences between them? I think the nice
@@ -111,6 +111,7 @@ export type OpenId4VciCredentialRequestToCredentialMapper = (options: {
 // w3c and sd-jwt services. However in that case you could also
 // ask why not just require the signed credential as output
 // as you can then just call the services yourself.
+// FIMXE: add type for type of credential. Also to input of mapper. W3c can be returned for jwt + ldp. and sd-jwt for vc+sd-jwt
 export type OpenId4VciSignCredential = OpenId4VciSignSdJwtCredential | OpenId4VciSignW3cCredential
 export type OpenId4VciSignSdJwtCredential = SdJwtVcSignOptions
 export interface OpenId4VciSignW3cCredential {

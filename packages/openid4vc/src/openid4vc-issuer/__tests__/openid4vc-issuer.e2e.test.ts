@@ -1,9 +1,9 @@
+import type { OpenId4VciCredentialRequest, OpenId4VciCredentialSupportedWithId } from '../../shared'
 import type {
-  AuthorizationCodeFlowConfig,
-  CredentialSupported,
-  IssuerMetadata,
-  PreAuthorizedCodeFlowConfig,
+  OpenId4VcIssuerMetadata,
+  OpenId4VciCredentialRequestToCredentialMapper,
 } from '../OpenId4VcIssuerServiceOptions'
+import type { OpenId4VcIssuerRecord } from '../repository'
 import type {
   AgentContext,
   KeyDidCreateOptions,
@@ -11,11 +11,11 @@ import type {
   W3cVerifiableCredential,
   W3cVerifyCredentialResult,
 } from '@aries-framework/core'
-import type { CredentialRequestV1_0_11 } from '@sphereon/oid4vci-common'
 import type { OriginalVerifiableCredential as SphereonW3cVerifiableCredential } from '@sphereon/ssi-types'
 
 import { AskarModule } from '@aries-framework/askar'
 import {
+  JwtPayload,
   Agent,
   AriesFrameworkError,
   DidKey,
@@ -36,56 +36,54 @@ import {
   w3cDate,
 } from '@aries-framework/core'
 import { agentDependencies } from '@aries-framework/node'
-import { SdJwtCredential, SdJwtVcApi, SdJwtVcModule } from '@aries-framework/sd-jwt-vc'
+import { SdJwtVcApi, SdJwtVcModule } from '@aries-framework/sd-jwt-vc'
 import { ariesAskar } from '@hyperledger/aries-askar-nodejs'
-import { cleanAll, enableNetConnect } from 'nock'
 
-import { OpenId4VcIssuerModule, OpenId4VcIssuerModuleConfig } from '..'
-import { OpenIdCredentialFormatProfile } from '../../openid4vc-holder'
-
-type CredentialSupportedWithId = CredentialSupported & { id: string }
+import { OpenId4VciCredentialFormatProfile } from '../../shared'
+import { OpenId4VcIssuerModule } from '../OpenId4VcIssuerModule'
+import { OpenId4VcIssuerModuleConfig } from '../OpenId4VcIssuerModuleConfig'
 
 const openBadgeCredential = {
   id: 'https://openid4vc-issuer.com/credentials/OpenBadgeCredential',
-  format: OpenIdCredentialFormatProfile.JwtVcJson,
+  format: OpenId4VciCredentialFormatProfile.JwtVcJson,
   types: ['VerifiableCredential', 'OpenBadgeCredential'],
-} satisfies CredentialSupportedWithId
+} satisfies OpenId4VciCredentialSupportedWithId
 
 const universityDegreeCredential = {
   id: 'https://openid4vc-issuer.com/credentials/UniversityDegreeCredential',
-  format: OpenIdCredentialFormatProfile.JwtVcJson,
+  format: OpenId4VciCredentialFormatProfile.JwtVcJson,
   types: ['VerifiableCredential', 'UniversityDegreeCredential'],
-} satisfies CredentialSupportedWithId
+} satisfies OpenId4VciCredentialSupportedWithId
 
 const universityDegreeCredentialLd = {
   id: 'https://openid4vc-issuer.com/credentials/UniversityDegreeCredentialLd',
-  format: OpenIdCredentialFormatProfile.JwtVcJsonLd,
+  format: OpenId4VciCredentialFormatProfile.JwtVcJsonLd,
   '@context': [],
   types: ['VerifiableCredential', 'UniversityDegreeCredential'],
-} satisfies CredentialSupportedWithId
+} satisfies OpenId4VciCredentialSupportedWithId
 
 const universityDegreeCredentialSdJwt = {
   id: 'https://openid4vc-issuer.com/credentials/UniversityDegreeCredentialSdJwt',
-  format: OpenIdCredentialFormatProfile.SdJwtVc,
-  credential_definition: {
-    vct: 'UniversityDegreeCredential',
-  },
-} satisfies CredentialSupportedWithId
+  format: OpenId4VciCredentialFormatProfile.SdJwtVc,
+  vct: 'UniversityDegreeCredential',
+} satisfies OpenId4VciCredentialSupportedWithId
 
 const baseCredentialRequestOptions = {
   scheme: 'openid-credential-offer',
   baseUri: 'openid4vc-issuer.com',
 }
 
-const issuerMetadata: IssuerMetadata = {
-  issuerBaseUrl: 'https://openid4vc-issuer.com',
-  tokenEndpointPath: '/token',
-  credentialEndpointPath: '/credentials',
-  credentialsSupported: [openBadgeCredential, universityDegreeCredentialLd, universityDegreeCredentialSdJwt],
-}
-
 const modules = {
-  openId4VcIssuer: new OpenId4VcIssuerModule({ issuerMetadata }),
+  openId4VcIssuer: new OpenId4VcIssuerModule({
+    baseUrl: 'https://openid4vc-issuer.com',
+    endpoints: {
+      credential: {
+        credentialRequestToCredentialMapper: () => {
+          throw new Error('Not implemented')
+        },
+      },
+    },
+  }),
   sdJwtVc: new SdJwtVcModule(),
   askar: new AskarModule({ ariesAskar }),
 }
@@ -95,16 +93,14 @@ const jwsService = new JwsService()
 const createCredentialRequest = async (
   agentContext: AgentContext,
   options: {
-    issuerMetadata: IssuerMetadata
-    credentialSupported: CredentialSupportedWithId
+    issuerMetadata: OpenId4VcIssuerMetadata
+    credentialSupported: OpenId4VciCredentialSupportedWithId
     nonce: string
     kid: string
     clientId?: string // use with the authorization code flow,
   }
-): Promise<CredentialRequestV1_0_11> => {
+): Promise<OpenId4VciCredentialRequest> => {
   const { credentialSupported, kid, nonce, issuerMetadata, clientId } = options
-
-  const aud = issuerMetadata.issuerBaseUrl
 
   const didsApi = agentContext.dependencyManager.resolve(DidsApi)
   const didDocument = await didsApi.resolveDidDocument(kid)
@@ -115,77 +111,72 @@ const createCredentialRequest = async (
   const verificationMethod = didDocument.dereferenceKey(kid, ['authentication', 'assertionMethod'])
   const key = getKeyFromVerificationMethod(verificationMethod)
   const jwk = getJwkFromKey(key)
-  const alg = jwk.supportedSignatureAlgorithms[0]
-
-  const rawPayload = {
-    iat: Math.floor(Date.now() / 1000), // unix time
-    iss: clientId,
-    aud,
-    nonce,
-  }
-
-  const payload = TypedArrayEncoder.fromString(JSON.stringify(rawPayload))
-  const typ = 'openid4vci-proof+jwt'
 
   const jws = await jwsService.createJwsCompact(agentContext, {
-    protectedHeaderOptions: { alg, kid, typ },
-    payload,
+    protectedHeaderOptions: { alg: jwk.supportedSignatureAlgorithms[0], kid, typ: 'openid4vci-proof+jwt' },
+    payload: new JwtPayload({
+      iat: Math.floor(Date.now() / 1000), // unix time
+      iss: clientId,
+      aud: issuerMetadata.issuerUrl,
+      additionalClaims: {
+        nonce,
+      },
+    }),
     key,
   })
 
-  if (credentialSupported.format === OpenIdCredentialFormatProfile.JwtVcJson) {
+  if (credentialSupported.format === OpenId4VciCredentialFormatProfile.JwtVcJson) {
     return { ...credentialSupported, proof: { jwt: jws, proof_type: 'jwt' } }
   } else if (
-    credentialSupported.format === OpenIdCredentialFormatProfile.JwtVcJsonLd ||
-    credentialSupported.format === OpenIdCredentialFormatProfile.LdpVc
+    credentialSupported.format === OpenId4VciCredentialFormatProfile.JwtVcJsonLd ||
+    credentialSupported.format === OpenId4VciCredentialFormatProfile.LdpVc
   ) {
     return {
       format: credentialSupported.format,
       credential_definition: { '@context': credentialSupported['@context'], types: credentialSupported.types },
       proof: { jwt: jws, proof_type: 'jwt' },
     }
-  } else if (credentialSupported.format === OpenIdCredentialFormatProfile.SdJwtVc) {
+  } else if (credentialSupported.format === OpenId4VciCredentialFormatProfile.SdJwtVc) {
     return { ...credentialSupported, proof: { jwt: jws, proof_type: 'jwt' } }
   }
 
   throw new Error('Unsupported format')
 }
 
+const issuer = new Agent({
+  config: {
+    label: 'OpenId4VcIssuer Test323',
+    walletConfig: {
+      id: 'openid4vc-Issuer-test323',
+      key: 'openid4vc-Issuer-test323',
+    },
+  },
+  dependencies: agentDependencies,
+  modules,
+})
+
+const holder = new Agent({
+  config: {
+    label: 'OpenId4VciIssuer(Holder) Test323',
+    walletConfig: {
+      id: 'openid4vc-Issuer(Holder)-test323',
+      key: 'openid4vc-Issuer(Holder)-test323',
+    },
+  },
+  dependencies: agentDependencies,
+  modules,
+})
+
 describe('OpenId4VcIssuer', () => {
-  let issuer: Agent<typeof modules>
   let issuerVerificationMethod: VerificationMethod
   let issuerDid: string
+  let openId4VcIssuer: OpenId4VcIssuerRecord
 
-  let holder: Agent<typeof modules>
   let holderKid: string
   let holderVerificationMethod: VerificationMethod
   let holderDid: string
 
   beforeEach(async () => {
-    issuer = new Agent({
-      config: {
-        label: 'OpenId4VcIssuer Test323',
-        walletConfig: {
-          id: 'openid4vc-Issuer-test323',
-          key: 'openid4vc-Issuer-test323',
-        },
-      },
-      dependencies: agentDependencies,
-      modules,
-    })
-
-    holder = new Agent({
-      config: {
-        label: 'OpenId4VciIssuer(Holder) Test323',
-        walletConfig: {
-          id: 'openid4vc-Issuer(Holder)-test323',
-          key: 'openid4vc-Issuer(Holder)-test323',
-        },
-      },
-      dependencies: agentDependencies,
-      modules,
-    })
-
     await issuer.initialize()
     await holder.initialize()
 
@@ -219,6 +210,15 @@ describe('OpenId4VcIssuer', () => {
     ])
     if (!_issuerVerificationMethod) throw new Error('No verification method found')
     issuerVerificationMethod = _issuerVerificationMethod
+
+    openId4VcIssuer = await issuer.modules.openId4VcIssuer.createIssuer({
+      credentialsSupported: [
+        openBadgeCredential,
+        universityDegreeCredential,
+        universityDegreeCredentialLd,
+        universityDegreeCredentialSdJwt,
+      ],
+    })
   })
 
   afterEach(async () => {
@@ -227,19 +227,18 @@ describe('OpenId4VcIssuer', () => {
 
     await holder.shutdown()
     await holder.wallet.delete()
-
-    cleanAll()
-    enableNetConnect()
   })
 
+  // This method is available on the holder service,
+  // would be nice to reuse
   async function handleCredentialResponse(
     agentContext: AgentContext,
     sphereonVerifiableCredential: SphereonW3cVerifiableCredential,
-    credentialSupported: CredentialSupportedWithId
+    credentialSupported: OpenId4VciCredentialSupportedWithId
   ) {
     if (credentialSupported.format === 'vc+sd-jwt' && typeof sphereonVerifiableCredential === 'string') {
       const api = agentContext.dependencyManager.resolve(SdJwtVcApi)
-      await api.fromSerializedJwt(sphereonVerifiableCredential, { holderDidUrl: holderKid })
+      await api.verify({ compactSdJwtVc: sphereonVerifiableCredential })
       return
     }
 
@@ -275,54 +274,75 @@ describe('OpenId4VcIssuer', () => {
     return w3cVerifiableCredential
   }
 
-  it('pre authorized code flow (sdjwtvc)', async () => {
+  it('pre authorized code flow (sd-jwt-vc)', async () => {
     const cNonce = '1234'
     const preAuthorizedCode = '1234567890'
 
-    await issuer.context.dependencyManager
-      .resolve(OpenId4VcIssuerModuleConfig)
+    await issuer.modules.openId4VcIssuer.config
       .getCNonceStateManager(issuer.context)
       .set(cNonce, { cNonce: cNonce, createdAt: Date.now(), preAuthorizedCode })
 
-    const preAuthorizedCodeFlowConfig: PreAuthorizedCodeFlowConfig = { preAuthorizedCode, userPinRequired: false }
-
-    const result = await issuer.modules.openId4VcIssuer.createCredentialOfferAndRequest(
-      [universityDegreeCredentialSdJwt.id],
-      {
-        preAuthorizedCodeFlowConfig,
-        ...baseCredentialRequestOptions,
-      }
-    )
-
-    expect(result.credentialOfferRequest).toEqual(
-      'openid-credential-offer://openid4vc-issuer.com?credential_offer=%7B%22grants%22%3A%7B%22urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Apre-authorized_code%22%3A%7B%22pre-authorized_code%22%3A%221234567890%22%2C%22user_pin_required%22%3Afalse%7D%7D%2C%22credentials%22%3A%5B%22https%3A%2F%2Fopenid4vc-issuer.com%2Fcredentials%2FUniversityDegreeCredentialSdJwt%22%5D%2C%22credential_issuer%22%3A%22https%3A%2F%2Fopenid4vc-issuer.com%22%7D'
-    )
-
-    const sdJwtCredential = new SdJwtCredential({
-      payload: { type: 'UniversityDegreeCredential', university: 'innsbruck', degree: 'bachelor' },
-      holderDidUrl: holderVerificationMethod.id,
-      issuerDidUrl: issuerVerificationMethod.id,
-      disclosureFrame: { university: true, degree: true },
+    const result = await issuer.modules.openId4VcIssuer.createCredentialOffer({
+      issuerId: openId4VcIssuer.issuerId,
+      offeredCredentials: [universityDegreeCredentialSdJwt.id],
+      preAuthorizedCodeFlowConfig: {
+        preAuthorizedCode,
+        userPinRequired: false,
+      },
+      // FIXME: can we take the base uri from the config? Do we want to provide this?
+      ...baseCredentialRequestOptions,
     })
 
-    const issueCredentialResponse = await issuer.modules.openId4VcIssuer.createIssueCredentialResponse({
-      credential: sdJwtCredential,
-      verificationMethod: issuerVerificationMethod,
-      credentialRequest: await createCredentialRequest(holder.context, {
-        credentialSupported: universityDegreeCredentialSdJwt,
-        issuerMetadata,
-        kid: holderKid,
-        nonce: cNonce,
+    expect(result.credentialOfferPayload).toEqual({
+      credential_issuer: `https://openid4vc-issuer.com/${openId4VcIssuer.issuerId}`,
+      credentials: ['https://openid4vc-issuer.com/credentials/UniversityDegreeCredentialSdJwt'],
+      grants: {
+        authorization_code: undefined,
+        'urn:ietf:params:oauth:grant-type:pre-authorized_code': {
+          'pre-authorized_code': '1234567890',
+          user_pin_required: false,
+        },
+      },
+    })
+
+    expect(result.credentialOfferUri).toEqual(
+      `openid-credential-offer://openid4vc-issuer.com?credential_offer=%7B%22grants%22%3A%7B%22urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Apre-authorized_code%22%3A%7B%22pre-authorized_code%22%3A%221234567890%22%2C%22user_pin_required%22%3Afalse%7D%7D%2C%22credentials%22%3A%5B%22https%3A%2F%2Fopenid4vc-issuer.com%2Fcredentials%2FUniversityDegreeCredentialSdJwt%22%5D%2C%22credential_issuer%22%3A%22https%3A%2F%2Fopenid4vc-issuer.com%2F${openId4VcIssuer.issuerId}%22%7D`
+    )
+
+    const issuerMetadata = await issuer.modules.openId4VcIssuer.getIssuerMetadata(openId4VcIssuer.issuerId)
+    const credentialRequest = await createCredentialRequest(holder.context, {
+      credentialSupported: universityDegreeCredentialSdJwt,
+      issuerMetadata,
+      kid: holderKid,
+      nonce: cNonce,
+    })
+
+    const issueCredentialResponse = await issuer.modules.openId4VcIssuer.createCredentialResponse({
+      issuerId: openId4VcIssuer.issuerId,
+      credentialRequest,
+
+      credentialRequestToCredentialMapper: () => ({
+        payload: { vct: 'UniversityDegreeCredential', university: 'innsbruck', degree: 'bachelor' },
+        issuer: { method: 'did', didUrl: issuerVerificationMethod.id },
+        holder: { method: 'did', didUrl: holderVerificationMethod.id },
+        disclosureFrame: { university: true, degree: true },
       }),
     })
 
     const sphereonW3cCredential = issueCredentialResponse.credential
     if (!sphereonW3cCredential) throw new Error('No credential found')
 
+    expect(issueCredentialResponse).toEqual({
+      c_nonce: expect.any(String),
+      c_nonce_expires_in: 300000,
+      credential: expect.any(String),
+      format: 'vc+sd-jwt',
+    })
+
     await handleCredentialResponse(holder.context, sphereonW3cCredential, universityDegreeCredentialSdJwt)
   })
 
-  it('pre authorized code flow (jwtvcjson)', async () => {
+  it('pre authorized code flow (jwt-vc-json)', async () => {
     const cNonce = '1234'
     const preAuthorizedCode = '1234567890'
 
@@ -331,27 +351,32 @@ describe('OpenId4VcIssuer', () => {
       .getCNonceStateManager(issuer.context)
       .set(cNonce, { cNonce: cNonce, createdAt: Date.now(), preAuthorizedCode })
 
-    const preAuthorizedCodeFlowConfig: PreAuthorizedCodeFlowConfig = { preAuthorizedCode, userPinRequired: false }
-
-    const result = await issuer.modules.openId4VcIssuer.createCredentialOfferAndRequest([openBadgeCredential.id], {
-      preAuthorizedCodeFlowConfig,
+    const result = await issuer.modules.openId4VcIssuer.createCredentialOffer({
+      issuerId: openId4VcIssuer.issuerId,
+      offeredCredentials: [openBadgeCredential.id],
+      preAuthorizedCodeFlowConfig: {
+        preAuthorizedCode,
+        userPinRequired: false,
+      },
       ...baseCredentialRequestOptions,
     })
 
-    expect(result.credentialOfferRequest).toEqual(
-      'openid-credential-offer://openid4vc-issuer.com?credential_offer=%7B%22grants%22%3A%7B%22urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Apre-authorized_code%22%3A%7B%22pre-authorized_code%22%3A%221234567890%22%2C%22user_pin_required%22%3Afalse%7D%7D%2C%22credentials%22%3A%5B%22https%3A%2F%2Fopenid4vc-issuer.com%2Fcredentials%2FOpenBadgeCredential%22%5D%2C%22credential_issuer%22%3A%22https%3A%2F%2Fopenid4vc-issuer.com%22%7D'
+    expect(result.credentialOfferUri).toEqual(
+      `openid-credential-offer://openid4vc-issuer.com?credential_offer=%7B%22grants%22%3A%7B%22urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Apre-authorized_code%22%3A%7B%22pre-authorized_code%22%3A%221234567890%22%2C%22user_pin_required%22%3Afalse%7D%7D%2C%22credentials%22%3A%5B%22https%3A%2F%2Fopenid4vc-issuer.com%2Fcredentials%2FOpenBadgeCredential%22%5D%2C%22credential_issuer%22%3A%22https%3A%2F%2Fopenid4vc-issuer.com%2F${openId4VcIssuer.issuerId}%22%7D`
     )
 
-    const credential = new W3cCredential({
-      type: openBadgeCredential.types,
-      issuer: new W3cIssuer({ id: issuerDid }),
-      credentialSubject: new W3cCredentialSubject({ id: holderDid }),
-      issuanceDate: w3cDate(Date.now()),
-    })
-
-    const issueCredentialResponse = await issuer.modules.openId4VcIssuer.createIssueCredentialResponse({
-      credential,
-      verificationMethod: issuerVerificationMethod,
+    const issuerMetadata = await issuer.modules.openId4VcIssuer.getIssuerMetadata(openId4VcIssuer.issuerId)
+    const issueCredentialResponse = await issuer.modules.openId4VcIssuer.createCredentialResponse({
+      issuerId: openId4VcIssuer.issuerId,
+      credentialRequestToCredentialMapper: () => ({
+        credential: new W3cCredential({
+          type: openBadgeCredential.types,
+          issuer: new W3cIssuer({ id: issuerDid }),
+          credentialSubject: new W3cCredentialSubject({ id: holderDid }),
+          issuanceDate: w3cDate(Date.now()),
+        }),
+        verificationMethod: issuerVerificationMethod.id,
+      }),
       credentialRequest: await createCredentialRequest(holder.context, {
         credentialSupported: openBadgeCredential,
         issuerMetadata,
@@ -362,6 +387,13 @@ describe('OpenId4VcIssuer', () => {
 
     const sphereonW3cCredential = issueCredentialResponse.credential
     if (!sphereonW3cCredential) throw new Error('No credential found')
+
+    expect(issueCredentialResponse).toEqual({
+      c_nonce: expect.any(String),
+      c_nonce_expires_in: 300000,
+      credential: expect.any(String),
+      format: 'jwt_vc_json',
+    })
 
     await handleCredentialResponse(holder.context, sphereonW3cCredential, openBadgeCredential)
   })
@@ -375,18 +407,19 @@ describe('OpenId4VcIssuer', () => {
       .getCNonceStateManager(issuer.context)
       .set(cNonce, { cNonce: cNonce, createdAt: Date.now(), preAuthorizedCode })
 
-    const preAuthorizedCodeFlowConfig: PreAuthorizedCodeFlowConfig = { preAuthorizedCode, userPinRequired: false }
-
     await expect(
-      issuer.modules.openId4VcIssuer.createCredentialOfferAndRequest(['invalid id'], {
-        //issuerMetadata: {
-        //  ...baseIssuerMetadata,
-        //  credentialsSupported: [openBadgeCredential, universityDegreeCredential],
-        //},
-        preAuthorizedCodeFlowConfig,
+      issuer.modules.openId4VcIssuer.createCredentialOffer({
+        issuerId: openId4VcIssuer.issuerId,
+        offeredCredentials: ['invalid id'],
+        preAuthorizedCodeFlowConfig: {
+          preAuthorizedCode,
+          userPinRequired: false,
+        },
         ...baseCredentialRequestOptions,
       })
-    ).rejects.toThrowError()
+    ).rejects.toThrowError(
+      "Offered credential 'invalid id' is not part of credentials_supported of the issuer metadata."
+    )
   })
 
   it('issuing non offered credential errors', async () => {
@@ -398,36 +431,36 @@ describe('OpenId4VcIssuer', () => {
       .getCNonceStateManager(issuer.context)
       .set(cNonce, { cNonce: cNonce, createdAt: Date.now(), preAuthorizedCode })
 
-    const preAuthorizedCodeFlowConfig: PreAuthorizedCodeFlowConfig = { preAuthorizedCode, userPinRequired: false }
-
-    const result = await issuer.modules.openId4VcIssuer.createCredentialOfferAndRequest([openBadgeCredential.id], {
-      preAuthorizedCodeFlowConfig,
+    const result = await issuer.modules.openId4VcIssuer.createCredentialOffer({
+      issuerId: openId4VcIssuer.issuerId,
+      offeredCredentials: [openBadgeCredential.id],
+      preAuthorizedCodeFlowConfig: {
+        preAuthorizedCode,
+        userPinRequired: false,
+      },
       ...baseCredentialRequestOptions,
     })
 
-    expect(result.credentialOfferRequest).toEqual(
-      'openid-credential-offer://openid4vc-issuer.com?credential_offer=%7B%22grants%22%3A%7B%22urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Apre-authorized_code%22%3A%7B%22pre-authorized_code%22%3A%221234567890%22%2C%22user_pin_required%22%3Afalse%7D%7D%2C%22credentials%22%3A%5B%22https%3A%2F%2Fopenid4vc-issuer.com%2Fcredentials%2FOpenBadgeCredential%22%5D%2C%22credential_issuer%22%3A%22https%3A%2F%2Fopenid4vc-issuer.com%22%7D'
+    expect(result.credentialOfferUri).toEqual(
+      `openid-credential-offer://openid4vc-issuer.com?credential_offer=%7B%22grants%22%3A%7B%22urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Apre-authorized_code%22%3A%7B%22pre-authorized_code%22%3A%221234567890%22%2C%22user_pin_required%22%3Afalse%7D%7D%2C%22credentials%22%3A%5B%22https%3A%2F%2Fopenid4vc-issuer.com%2Fcredentials%2FOpenBadgeCredential%22%5D%2C%22credential_issuer%22%3A%22https%3A%2F%2Fopenid4vc-issuer.com%2F${openId4VcIssuer.issuerId}%22%7D`
     )
 
-    const credential = new W3cCredential({
-      type: universityDegreeCredential.types,
-      issuer: new W3cIssuer({ id: issuerDid }),
-      credentialSubject: new W3cCredentialSubject({ id: holderDid }),
-      issuanceDate: w3cDate(Date.now()),
-    })
-
+    const issuerMetadata = await issuer.modules.openId4VcIssuer.getIssuerMetadata(openId4VcIssuer.issuerId)
     await expect(
-      issuer.modules.openId4VcIssuer.createIssueCredentialResponse({
-        credential,
-        verificationMethod: issuerVerificationMethod,
+      issuer.modules.openId4VcIssuer.createCredentialResponse({
+        issuerId: openId4VcIssuer.issuerId,
+
         credentialRequest: await createCredentialRequest(holder.context, {
-          credentialSupported: openBadgeCredential,
+          credentialSupported: universityDegreeCredential,
           issuerMetadata,
           kid: holderKid,
           nonce: cNonce,
         }),
+        credentialRequestToCredentialMapper: () => {
+          throw new Error('Not implemented')
+        },
       })
-    ).rejects.toThrowError()
+    ).rejects.toThrowError('No offered credentials match the credential request.')
   })
 
   it('pre authorized code flow using multiple credentials_supported', async () => {
@@ -439,40 +472,49 @@ describe('OpenId4VcIssuer', () => {
       .getCNonceStateManager(issuer.context)
       .set(cNonce, { cNonce: cNonce, createdAt: Date.now(), preAuthorizedCode })
 
-    const preAuthorizedCodeFlowConfig: PreAuthorizedCodeFlowConfig = { preAuthorizedCode, userPinRequired: false }
-
-    const result = await issuer.modules.openId4VcIssuer.createCredentialOfferAndRequest(
-      [openBadgeCredential.id, universityDegreeCredentialLd.id],
-      {
-        preAuthorizedCodeFlowConfig,
-        ...baseCredentialRequestOptions,
-      }
-    )
-
-    expect(result.credentialOfferRequest).toEqual(
-      'openid-credential-offer://openid4vc-issuer.com?credential_offer=%7B%22grants%22%3A%7B%22urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Apre-authorized_code%22%3A%7B%22pre-authorized_code%22%3A%221234567890%22%2C%22user_pin_required%22%3Afalse%7D%7D%2C%22credentials%22%3A%5B%22https%3A%2F%2Fopenid4vc-issuer.com%2Fcredentials%2FOpenBadgeCredential%22%2C%22https%3A%2F%2Fopenid4vc-issuer.com%2Fcredentials%2FUniversityDegreeCredentialLd%22%5D%2C%22credential_issuer%22%3A%22https%3A%2F%2Fopenid4vc-issuer.com%22%7D'
-    )
-
-    const credential = new W3cCredential({
-      type: universityDegreeCredentialLd.types,
-      issuer: new W3cIssuer({ id: issuerDid }),
-      credentialSubject: new W3cCredentialSubject({ id: holderDid }),
-      issuanceDate: w3cDate(Date.now()),
+    const result = await issuer.modules.openId4VcIssuer.createCredentialOffer({
+      offeredCredentials: [openBadgeCredential.id, universityDegreeCredentialLd.id],
+      issuerId: openId4VcIssuer.issuerId,
+      preAuthorizedCodeFlowConfig: {
+        preAuthorizedCode,
+        userPinRequired: false,
+      },
+      ...baseCredentialRequestOptions,
     })
 
-    const issueCredentialResponse = await issuer.modules.openId4VcIssuer.createIssueCredentialResponse({
-      credential,
-      verificationMethod: issuerVerificationMethod,
+    expect(result.credentialOfferUri).toEqual(
+      `openid-credential-offer://openid4vc-issuer.com?credential_offer=%7B%22grants%22%3A%7B%22urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Apre-authorized_code%22%3A%7B%22pre-authorized_code%22%3A%221234567890%22%2C%22user_pin_required%22%3Afalse%7D%7D%2C%22credentials%22%3A%5B%22https%3A%2F%2Fopenid4vc-issuer.com%2Fcredentials%2FOpenBadgeCredential%22%2C%22https%3A%2F%2Fopenid4vc-issuer.com%2Fcredentials%2FUniversityDegreeCredentialLd%22%5D%2C%22credential_issuer%22%3A%22https%3A%2F%2Fopenid4vc-issuer.com%2F${openId4VcIssuer.issuerId}%22%7D`
+    )
+
+    const issuerMetadata = await issuer.modules.openId4VcIssuer.getIssuerMetadata(openId4VcIssuer.issuerId)
+    const issueCredentialResponse = await issuer.modules.openId4VcIssuer.createCredentialResponse({
+      issuerId: openId4VcIssuer.issuerId,
       credentialRequest: await createCredentialRequest(holder.context, {
         credentialSupported: universityDegreeCredentialLd,
         issuerMetadata,
         kid: holderKid,
         nonce: cNonce,
       }),
+      credentialRequestToCredentialMapper: () => ({
+        credential: new W3cCredential({
+          type: universityDegreeCredentialLd.types,
+          issuer: new W3cIssuer({ id: issuerDid }),
+          credentialSubject: new W3cCredentialSubject({ id: holderDid }),
+          issuanceDate: w3cDate(Date.now()),
+        }),
+        verificationMethod: issuerVerificationMethod.id,
+      }),
     })
 
     const sphereonW3cCredential = issueCredentialResponse.credential
     if (!sphereonW3cCredential) throw new Error('No credential found')
+
+    expect(issueCredentialResponse).toEqual({
+      c_nonce: expect.any(String),
+      c_nonce_expires_in: 300000,
+      credential: expect.any(String),
+      format: 'jwt_vc_json-ld',
+    })
 
     await handleCredentialResponse(holder.context, sphereonW3cCredential, universityDegreeCredentialLd)
   })
@@ -486,31 +528,24 @@ describe('OpenId4VcIssuer', () => {
       .getCNonceStateManager(issuer.context)
       .set(cNonce, { cNonce: cNonce, createdAt: Date.now(), preAuthorizedCode })
 
-    const preAuthorizedCodeFlowConfig: PreAuthorizedCodeFlowConfig = {
-      preAuthorizedCode,
-      userPinRequired: false,
-    }
-
-    const result = await issuer.modules.openId4VcIssuer.createCredentialOfferAndRequest([openBadgeCredential.id], {
-      preAuthorizedCodeFlowConfig,
+    const result = await issuer.modules.openId4VcIssuer.createCredentialOffer({
+      offeredCredentials: [openBadgeCredential.id],
+      issuerId: openId4VcIssuer.issuerId,
+      preAuthorizedCodeFlowConfig: {
+        preAuthorizedCode,
+        userPinRequired: false,
+      },
       ...baseCredentialRequestOptions,
     })
 
-    expect(result.credentialOfferRequest).toEqual(
-      'openid-credential-offer://openid4vc-issuer.com?credential_offer=%7B%22grants%22%3A%7B%22urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Apre-authorized_code%22%3A%7B%22pre-authorized_code%22%3A%221234567890%22%2C%22user_pin_required%22%3Afalse%7D%7D%2C%22credentials%22%3A%5B%22https%3A%2F%2Fopenid4vc-issuer.com%2Fcredentials%2FOpenBadgeCredential%22%5D%2C%22credential_issuer%22%3A%22https%3A%2F%2Fopenid4vc-issuer.com%22%7D'
+    expect(result.credentialOfferUri).toEqual(
+      `openid-credential-offer://openid4vc-issuer.com?credential_offer=%7B%22grants%22%3A%7B%22urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Apre-authorized_code%22%3A%7B%22pre-authorized_code%22%3A%221234567890%22%2C%22user_pin_required%22%3Afalse%7D%7D%2C%22credentials%22%3A%5B%22https%3A%2F%2Fopenid4vc-issuer.com%2Fcredentials%2FOpenBadgeCredential%22%5D%2C%22credential_issuer%22%3A%22https%3A%2F%2Fopenid4vc-issuer.com%2F${openId4VcIssuer.issuerId}%22%7D`
     )
 
-    const credential = new W3cCredential({
-      type: openBadgeCredential.types,
-      issuer: new W3cIssuer({ id: issuerDid }),
-      credentialSubject: new W3cCredentialSubject({ id: holderDid }),
-      issuanceDate: w3cDate(Date.now()),
-    })
-
+    const issuerMetadata = await issuer.modules.openId4VcIssuer.getIssuerMetadata(openId4VcIssuer.issuerId)
     await expect(
-      issuer.modules.openId4VcIssuer.createIssueCredentialResponse({
-        credential,
-        verificationMethod: issuerVerificationMethod,
+      issuer.modules.openId4VcIssuer.createCredentialResponse({
+        issuerId: openId4VcIssuer.issuerId,
         credentialRequest: await createCredentialRequest(holder.context, {
           credentialSupported: {
             id: 'someid',
@@ -521,8 +556,11 @@ describe('OpenId4VcIssuer', () => {
           kid: holderKid,
           nonce: cNonce,
         }),
+        credentialRequestToCredentialMapper: () => {
+          throw new Error('Not implemented')
+        },
       })
-    ).rejects.toThrowError()
+    ).rejects.toThrowError('No offered credentials match the credential request.')
   })
 
   it('authorization code flow', async () => {
@@ -534,27 +572,22 @@ describe('OpenId4VcIssuer', () => {
       .getCNonceStateManager(issuer.context)
       .set(cNonce, { cNonce: cNonce, createdAt: Date.now(), issuerState })
 
-    const authorizationCodeFlowConfig: AuthorizationCodeFlowConfig = { issuerState }
-
-    const result = await issuer.modules.openId4VcIssuer.createCredentialOfferAndRequest([openBadgeCredential.id], {
-      authorizationCodeFlowConfig,
+    const result = await issuer.modules.openId4VcIssuer.createCredentialOffer({
+      offeredCredentials: [openBadgeCredential.id],
+      issuerId: openId4VcIssuer.issuerId,
+      authorizationCodeFlowConfig: {
+        issuerState,
+      },
       ...baseCredentialRequestOptions,
     })
 
-    expect(result.credentialOfferRequest).toEqual(
-      `openid-credential-offer://openid4vc-issuer.com?credential_offer=%7B%22grants%22%3A%7B%22authorization_code%22%3A%7B%22issuer_state%22%3A%221234567890%22%7D%7D%2C%22credentials%22%3A%5B%22https%3A%2F%2Fopenid4vc-issuer.com%2Fcredentials%2FOpenBadgeCredential%22%5D%2C%22credential_issuer%22%3A%22https%3A%2F%2Fopenid4vc-issuer.com%22%7D`
+    expect(result.credentialOfferUri).toEqual(
+      `openid-credential-offer://openid4vc-issuer.com?credential_offer=%7B%22grants%22%3A%7B%22authorization_code%22%3A%7B%22issuer_state%22%3A%221234567890%22%7D%7D%2C%22credentials%22%3A%5B%22https%3A%2F%2Fopenid4vc-issuer.com%2Fcredentials%2FOpenBadgeCredential%22%5D%2C%22credential_issuer%22%3A%22https%3A%2F%2Fopenid4vc-issuer.com%2F${openId4VcIssuer.issuerId}%22%7D`
     )
 
-    const credential = new W3cCredential({
-      type: ['VerifiableCredential', 'OpenBadgeCredential'],
-      issuer: new W3cIssuer({ id: issuerDid }),
-      credentialSubject: new W3cCredentialSubject({ id: holderDid }),
-      issuanceDate: w3cDate(Date.now()),
-    })
-
-    const issueCredentialResponse = await issuer.modules.openId4VcIssuer.createIssueCredentialResponse({
-      credential,
-      verificationMethod: issuerVerificationMethod,
+    const issuerMetadata = await issuer.modules.openId4VcIssuer.getIssuerMetadata(openId4VcIssuer.issuerId)
+    const issueCredentialResponse = await issuer.modules.openId4VcIssuer.createCredentialResponse({
+      issuerId: openId4VcIssuer.issuerId,
       credentialRequest: await createCredentialRequest(holder.context, {
         credentialSupported: openBadgeCredential,
         issuerMetadata,
@@ -562,10 +595,26 @@ describe('OpenId4VcIssuer', () => {
         nonce: cNonce,
         clientId: 'required',
       }),
+      credentialRequestToCredentialMapper: () => ({
+        credential: new W3cCredential({
+          type: ['VerifiableCredential', 'OpenBadgeCredential'],
+          issuer: new W3cIssuer({ id: issuerDid }),
+          credentialSubject: new W3cCredentialSubject({ id: holderDid }),
+          issuanceDate: w3cDate(Date.now()),
+        }),
+        verificationMethod: issuerVerificationMethod.id,
+      }),
     })
 
     const sphereonW3cCredential = issueCredentialResponse.credential
     if (!sphereonW3cCredential) throw new Error('No credential found')
+
+    expect(issueCredentialResponse).toEqual({
+      c_nonce: expect.any(String),
+      c_nonce_expires_in: 300000,
+      credential: expect.any(String),
+      format: 'jwt_vc_json',
+    })
 
     await handleCredentialResponse(holder.context, sphereonW3cCredential, openBadgeCredential)
   })
@@ -573,45 +622,47 @@ describe('OpenId4VcIssuer', () => {
   it('create credential offer and retrieve it from the uri (pre authorized flow)', async () => {
     const preAuthorizedCode = '1234567890'
 
-    const preAuthorizedCodeFlowConfig: PreAuthorizedCodeFlowConfig = { preAuthorizedCode, userPinRequired: false }
+    const hostedCredentialOfferUri = 'https://openid4vc-issuer.com/credential-offer-uri'
 
-    const credentialOfferUri = 'https://openid4vc-issuer.com/credential-offer-uri'
+    const { credentialOfferUri, credentialOfferPayload } = await issuer.modules.openId4VcIssuer.createCredentialOffer({
+      ...baseCredentialRequestOptions,
+      issuerId: openId4VcIssuer.issuerId,
+      offeredCredentials: [openBadgeCredential.id],
+      credentialOfferUri: hostedCredentialOfferUri,
+      preAuthorizedCodeFlowConfig: {
+        preAuthorizedCode,
+        userPinRequired: false,
+      },
+    })
 
-    const { credentialOfferRequest, credentialOfferPayload } =
-      await issuer.modules.openId4VcIssuer.createCredentialOfferAndRequest([openBadgeCredential.id], {
-        ...baseCredentialRequestOptions,
-        credentialOfferUri,
-        preAuthorizedCodeFlowConfig,
-      })
-
-    expect(credentialOfferRequest).toEqual(
-      `openid-credential-offer://openid4vc-issuer.com?credential_offer_uri=${credentialOfferUri}`
+    expect(credentialOfferUri).toEqual(
+      `openid-credential-offer://openid4vc-issuer.com?credential_offer_uri=${hostedCredentialOfferUri}`
     )
 
     const credentialOfferReceivedByUri = await issuer.modules.openId4VcIssuer.getCredentialOfferFromUri(
-      credentialOfferUri
+      hostedCredentialOfferUri
     )
 
     expect(credentialOfferPayload).toEqual(credentialOfferReceivedByUri)
   })
 
   it('create credential offer and retrieve it from the uri (authorizationCodeFlow)', async () => {
-    const authorizationCodeFlowConfig: AuthorizationCodeFlowConfig = { issuerState: '1234567890' }
-    const credentialOfferUri = 'https://openid4vc-issuer.com/credential-offer-uri'
+    const hostedCredentialOfferUri = 'https://openid4vc-issuer.com/credential-offer-uri'
 
-    const { credentialOfferRequest, credentialOfferPayload } =
-      await issuer.modules.openId4VcIssuer.createCredentialOfferAndRequest([openBadgeCredential.id], {
-        ...baseCredentialRequestOptions,
-        credentialOfferUri,
-        authorizationCodeFlowConfig,
-      })
+    const { credentialOfferUri, credentialOfferPayload } = await issuer.modules.openId4VcIssuer.createCredentialOffer({
+      offeredCredentials: [openBadgeCredential.id],
+      issuerId: openId4VcIssuer.issuerId,
+      ...baseCredentialRequestOptions,
+      credentialOfferUri: hostedCredentialOfferUri,
+      authorizationCodeFlowConfig: { issuerState: '1234567890' },
+    })
 
-    expect(credentialOfferRequest).toEqual(
-      `openid-credential-offer://openid4vc-issuer.com?credential_offer_uri=${credentialOfferUri}`
+    expect(credentialOfferUri).toEqual(
+      `openid-credential-offer://openid4vc-issuer.com?credential_offer_uri=${hostedCredentialOfferUri}`
     )
 
     const credentialOfferReceivedByUri = await issuer.modules.openId4VcIssuer.getCredentialOfferFromUri(
-      credentialOfferUri
+      hostedCredentialOfferUri
     )
 
     expect(credentialOfferPayload).toEqual(credentialOfferReceivedByUri)
@@ -626,69 +677,79 @@ describe('OpenId4VcIssuer', () => {
       .getCNonceStateManager(issuer.context)
       .set(cNonce, { cNonce: cNonce, createdAt: Date.now(), preAuthorizedCode })
 
-    const preAuthorizedCodeFlowConfig: PreAuthorizedCodeFlowConfig = { preAuthorizedCode, userPinRequired: false }
-
-    const result = await issuer.modules.openId4VcIssuer.createCredentialOfferAndRequest(
-      [
-        openBadgeCredential.id,
-        {
-          format: universityDegreeCredential.format,
-          types: universityDegreeCredential.types,
-        },
-      ],
-      {
-        preAuthorizedCodeFlowConfig,
-        ...baseCredentialRequestOptions,
-      }
-    )
-
-    expect(result.credentialOfferRequest).toEqual(
-      'openid-credential-offer://openid4vc-issuer.com?credential_offer=%7B%22grants%22%3A%7B%22urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Apre-authorized_code%22%3A%7B%22pre-authorized_code%22%3A%221234567890%22%2C%22user_pin_required%22%3Afalse%7D%7D%2C%22credentials%22%3A%5B%22https%3A%2F%2Fopenid4vc-issuer.com%2Fcredentials%2FOpenBadgeCredential%22%2C%7B%22format%22%3A%22jwt_vc_json%22%2C%22types%22%3A%5B%22VerifiableCredential%22%2C%22UniversityDegreeCredential%22%5D%7D%5D%2C%22credential_issuer%22%3A%22https%3A%2F%2Fopenid4vc-issuer.com%22%7D'
-    )
-
-    const credential = new W3cCredential({
-      type: openBadgeCredential.types,
-      issuer: new W3cIssuer({ id: issuerDid }),
-      credentialSubject: new W3cCredentialSubject({ id: holderDid }),
-      issuanceDate: w3cDate(Date.now()),
+    const result = await issuer.modules.openId4VcIssuer.createCredentialOffer({
+      offeredCredentials: [openBadgeCredential.id, universityDegreeCredential.id],
+      issuerId: openId4VcIssuer.issuerId,
+      preAuthorizedCodeFlowConfig: {
+        preAuthorizedCode,
+        userPinRequired: false,
+      },
+      ...baseCredentialRequestOptions,
     })
 
-    const issueCredentialResponse = await issuer.modules.openId4VcIssuer.createIssueCredentialResponse({
-      credential,
-      verificationMethod: issuerVerificationMethod,
+    expect(result.credentialOfferUri).toEqual(
+      `openid-credential-offer://openid4vc-issuer.com?credential_offer=%7B%22grants%22%3A%7B%22urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Apre-authorized_code%22%3A%7B%22pre-authorized_code%22%3A%221234567890%22%2C%22user_pin_required%22%3Afalse%7D%7D%2C%22credentials%22%3A%5B%22https%3A%2F%2Fopenid4vc-issuer.com%2Fcredentials%2FOpenBadgeCredential%22%2C%22https%3A%2F%2Fopenid4vc-issuer.com%2Fcredentials%2FUniversityDegreeCredential%22%5D%2C%22credential_issuer%22%3A%22https%3A%2F%2Fopenid4vc-issuer.com%2F${openId4VcIssuer.issuerId}%22%7D`
+    )
+
+    const credentialRequestToCredentialMapper: OpenId4VciCredentialRequestToCredentialMapper = ({
+      credentialsSupported,
+    }) => ({
+      credential: new W3cCredential({
+        type:
+          credentialsSupported[0].id === openBadgeCredential.id
+            ? openBadgeCredential.types
+            : universityDegreeCredential.types,
+        issuer: new W3cIssuer({ id: issuerDid }),
+        credentialSubject: new W3cCredentialSubject({ id: holderDid }),
+        issuanceDate: w3cDate(Date.now()),
+      }),
+      verificationMethod: issuerVerificationMethod.id,
+    })
+
+    const issuerMetadata = await issuer.modules.openId4VcIssuer.getIssuerMetadata(openId4VcIssuer.issuerId)
+    const issueCredentialResponse = await issuer.modules.openId4VcIssuer.createCredentialResponse({
+      issuerId: openId4VcIssuer.issuerId,
       credentialRequest: await createCredentialRequest(holder.context, {
         credentialSupported: openBadgeCredential,
         issuerMetadata,
         kid: holderKid,
         nonce: cNonce,
       }),
+      credentialRequestToCredentialMapper,
     })
 
     const sphereonW3cCredential = issueCredentialResponse.credential
     if (!sphereonW3cCredential) throw new Error('No credential found')
 
-    await handleCredentialResponse(holder.context, sphereonW3cCredential, openBadgeCredential)
-
-    const credential2 = new W3cCredential({
-      type: universityDegreeCredential.types,
-      issuer: new W3cIssuer({ id: issuerDid }),
-      credentialSubject: new W3cCredentialSubject({ id: holderDid }),
-      issuanceDate: w3cDate(Date.now()),
+    expect(issueCredentialResponse).toEqual({
+      c_nonce: expect.any(String),
+      c_nonce_expires_in: 300000,
+      credential: expect.any(String),
+      format: 'jwt_vc_json',
     })
 
-    const issueCredentialResponse2 = await issuer.modules.openId4VcIssuer.createIssueCredentialResponse({
-      credential: credential2,
-      verificationMethod: issuerVerificationMethod,
+    await handleCredentialResponse(holder.context, sphereonW3cCredential, openBadgeCredential)
+
+    const issueCredentialResponse2 = await issuer.modules.openId4VcIssuer.createCredentialResponse({
+      issuerId: openId4VcIssuer.issuerId,
       credentialRequest: await createCredentialRequest(holder.context, {
         credentialSupported: universityDegreeCredential,
         issuerMetadata,
         kid: holderKid,
         nonce: issueCredentialResponse.c_nonce ?? cNonce,
       }),
+      credentialRequestToCredentialMapper,
     })
 
     const sphereonW3cCredential2 = issueCredentialResponse2.credential
     if (!sphereonW3cCredential2) throw new Error('No credential found')
+
+    expect(issueCredentialResponse2).toEqual({
+      c_nonce: expect.any(String),
+      c_nonce_expires_in: 300000,
+      credential: expect.any(String),
+      format: 'jwt_vc_json',
+    })
 
     await handleCredentialResponse(holder.context, sphereonW3cCredential2, universityDegreeCredential)
   })
