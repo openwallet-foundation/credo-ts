@@ -1,16 +1,19 @@
-import type { OfferedCredentialWithMetadata } from './utils/IssuerMetadataUtils'
+import type {
+  OpenId4VciCredentialOfferPayload,
+  OpenId4VciCredentialSupported,
+  OpenId4VciCredentialSupportedWithId,
+  OpenId4VciIssuerMetadata,
+} from '../shared'
 import type { AgentContext, JwaSignatureAlgorithm, W3cVerifiableCredential, Key, JwkJson } from '@aries-framework/core'
 import type { SdJwtVcModule, SdJwtVc } from '@aries-framework/sd-jwt-vc'
 import type {
   AccessTokenResponse,
-  CredentialOfferPayloadV1_0_11,
   CredentialResponse,
-  EndpointMetadataResult,
   Jwt,
   OpenIDResponse,
   PushedAuthorizationResponse,
-  UniformCredentialOfferPayload,
   AuthorizationDetails,
+  AuthorizationDetailsJwtVcJson,
 } from '@sphereon/oid4vci-common'
 
 import {
@@ -34,26 +37,24 @@ import {
   inject,
   injectable,
   parseDid,
-  equalsIgnoreOrder,
   getApiForModuleByName,
 } from '@aries-framework/core'
 import {
   AccessTokenClient,
-  CredentialOfferClient,
   CredentialRequestClientBuilder,
   ProofOfPossessionBuilder,
   formPost,
+  OpenID4VCIClient,
 } from '@sphereon/oid4vci-client'
-import {
-  OpenId4VCIVersion,
-  CodeChallengeMethod,
-  assertedUniformCredentialOffer,
-  ResponseType,
-  convertJsonToURI,
-  JsonURIMode,
-} from '@sphereon/oid4vci-common'
+import { CodeChallengeMethod, ResponseType, convertJsonToURI, JsonURIMode } from '@sphereon/oid4vci-common'
 
-import { getSupportedJwaSignatureAlgorithms } from '../../shared/utils'
+import { OpenId4VciCredentialFormatProfile } from '../shared'
+import {
+  getTypesFromCredentialSupported,
+  handleAuthorizationDetails,
+  getOfferedCredentials,
+} from '../shared/issuerMetadataUtils'
+import { getSupportedJwaSignatureAlgorithms } from '../shared/utils'
 
 import {
   type AuthCodeFlowOptions,
@@ -66,36 +67,11 @@ import {
   type SupportedCredentialFormats,
   supportedCredentialFormats,
 } from './OpenId4VciHolderServiceOptions'
-import { OpenId4VciCredentialFormatProfile } from './utils'
-import { getFormatForVersion, getUniformFormat } from './utils/Formats'
-import {
-  getMetadataFromCredentialOffer,
-  getOfferedCredentialsWithMetadata,
-  getSupportedCredentials,
-  handleAuthorizationDetails,
-  OfferedCredentialType,
-} from './utils/IssuerMetadataUtils'
 
-// FIXME: remove support for draft 8
-function getV8CredentialType(offeredCredentialWithMetadata: OfferedCredentialWithMetadata, version: OpenId4VCIVersion) {
-  if (offeredCredentialWithMetadata.offerType === OfferedCredentialType.InlineCredentialOffer) {
-    throw new AriesFrameworkError(`Inline credential offers not supported for version < 11`)
-  }
-
-  if (!offeredCredentialWithMetadata.credentialSupported.id) {
-    throw new AriesFrameworkError( // This should not happen
-      `No id provided for a credential supported entry in combination with the OpenId4VCI v8 draft`
-    )
-  }
-
-  const originalFormat = getFormatForVersion(offeredCredentialWithMetadata.format, version)
-  const credentialType = offeredCredentialWithMetadata.credentialSupported.id.split(`-${originalFormat}`)[0]
-  return credentialType
-}
-
+// FIXME: this is also defined in the sphereon lib, is there a reason we don't use that one?
 async function createAuthorizationRequestUri(options: {
-  credentialOffer: CredentialOfferPayloadV1_0_11
-  metadata: EndpointMetadataResult
+  credentialOffer: OpenId4VciCredentialOfferPayload
+  metadata: ResolvedCredentialOffer['metadata']
   clientId: string
   codeChallenge: string
   codeChallengeMethod: CodeChallengeMethod
@@ -115,7 +91,7 @@ async function createAuthorizationRequestUri(options: {
 
   // Authorization servers supporting PAR SHOULD include the URL of their pushed authorization request endpoint in their authorization server metadata document
   // Note that the presence of pushed_authorization_request_endpoint is sufficient for a client to determine that it may use the PAR flow.
-  const parEndpoint = metadata.credentialIssuerMetadata?.pushed_authorization_request_endpoint
+  const parEndpoint = metadata.credentialIssuerMetadata.pushed_authorization_request_endpoint
 
   const authorizationEndpoint = metadata.credentialIssuerMetadata?.authorization_endpoint
 
@@ -185,25 +161,23 @@ export class OpenId4VciHolderService {
     this.logger = logger
   }
 
-  public async resolveCredentialOffer(
-    credentialOffer: UniformCredentialOfferPayload | string,
-    opts?: { version?: OpenId4VCIVersion }
-  ): Promise<ResolvedCredentialOffer> {
-    let version = opts?.version ?? OpenId4VCIVersion.VER_1_0_11
+  public async resolveCredentialOffer(credentialOffer: string): Promise<ResolvedCredentialOffer> {
+    const client = await OpenID4VCIClient.fromURI({
+      uri: credentialOffer,
+      resolveOfferUri: true,
+      retrieveServerMetadata: true,
+    })
 
-    if (typeof credentialOffer === 'string' && URL.canParse(credentialOffer)) {
-      const credentialOfferWithBaseUrl = await CredentialOfferClient.fromURI(credentialOffer)
-      credentialOffer = credentialOfferWithBaseUrl.credential_offer
-      version = credentialOfferWithBaseUrl.version
+    if (!client.credentialOffer?.credential_offer) {
+      throw new AriesFrameworkError(`Could not resolve credential offer from '${credentialOffer}'`)
     }
+    const credentialOfferPayload: OpenId4VciCredentialOfferPayload = client.credentialOffer?.credential_offer
 
-    const uniformCredentialOffer = {
-      credential_offer: typeof credentialOffer === 'string' ? undefined : credentialOffer,
-      credential_offer_uri: typeof credentialOffer === 'string' ? credentialOffer : undefined,
+    const metadata = await client.retrieveServerMetadata()
+    if (!metadata.credentialIssuerMetadata) {
+      throw new AriesFrameworkError(`Could not retrieve issuer metadata from '${metadata.issuer}'`)
     }
-
-    const credentialOfferPayload = (await assertedUniformCredentialOffer(uniformCredentialOffer)).credential_offer
-    const { metadata, issuerMetadata } = await getMetadataFromCredentialOffer(credentialOfferPayload)
+    const issuerMetadata = metadata.credentialIssuerMetadata as OpenId4VciIssuerMetadata
 
     this.logger.info('Fetched server metadata', {
       issuer: metadata.issuer,
@@ -213,50 +187,38 @@ export class OpenId4VciHolderService {
 
     this.logger.debug('Full server metadata', metadata)
 
-    const credentialsSupported = getSupportedCredentials({ issuerMetadata, version })
-    const offeredCredentialsWithMetadata = getOfferedCredentialsWithMetadata(
-      credentialOfferPayload.credentials,
-      credentialsSupported
-    )
-
     return {
-      metadata,
+      metadata: {
+        ...metadata,
+        credentialIssuerMetadata: issuerMetadata,
+      },
       credentialOfferPayload,
-      offeredCredentials: offeredCredentialsWithMetadata,
-      version,
+      offeredCredentials: getOfferedCredentials(
+        credentialOfferPayload.credentials,
+        issuerMetadata.credentials_supported
+      ),
+      version: client.version(),
     }
   }
 
   private getAuthDetailsFromOfferedCredential(
-    credentialWithMetadata: OfferedCredentialWithMetadata,
-    authDetailsLocation: string | undefined,
-    version: OpenId4VCIVersion
+    offeredCredential: OpenId4VciCredentialSupported,
+    authDetailsLocation: string | undefined
   ): AuthorizationDetails | undefined {
-    const { format, types, offerType } = credentialWithMetadata
+    const { format } = offeredCredential
     const type = 'openid_credential'
-
-    if (version < OpenId4VCIVersion.VER_1_0_11) {
-      // TODO: this is valid 08
-      // const credentialType = getV8CredentialType(credentialWithMetadata, version)
-      // return { type, credential_type: credentialType, format }
-      return undefined
-    }
 
     const locations = authDetailsLocation ? [authDetailsLocation] : undefined
     if (format === OpenId4VciCredentialFormatProfile.JwtVcJson) {
-      return { type, format, types, locations }
+      return { type, format, types: offeredCredential.types, locations } satisfies AuthorizationDetailsJwtVcJson
     } else if (
       format === OpenId4VciCredentialFormatProfile.LdpVc ||
       format === OpenId4VciCredentialFormatProfile.JwtVcJsonLd
     ) {
-      // Inline Credential Offers come with no context so we cannot create the authorization_details
-      // This type of credentials can only be requested via scopes
-      if (offerType === OfferedCredentialType.InlineCredentialOffer) return undefined
-
       const credential_definition = {
-        '@context': credentialWithMetadata.credentialSupported['@context'],
-        credentialSubject: credentialWithMetadata.credentialSupported.credentialSubject,
-        types,
+        '@context': offeredCredential['@context'],
+        credentialSubject: offeredCredential.credentialSubject,
+        types: offeredCredential.types,
       }
 
       return { type, format, locations, credential_definition }
@@ -265,36 +227,26 @@ export class OpenId4VciHolderService {
         type,
         format,
         locations,
-        vct: types[0],
-        claims:
-          offerType === OfferedCredentialType.InlineCredentialOffer
-            ? credentialWithMetadata.credentialOffer.claims
-            : credentialWithMetadata.credentialSupported.claims,
+        vct: offeredCredential.vct,
+        claims: offeredCredential.claims,
       }
     } else {
       throw new AriesFrameworkError(`Cannot create authorization_details. Unsupported credential format '${format}'.`)
     }
   }
 
+  // FIXME: this is an oid4vci authorization request
+  // while we also support siop/oid4vp authorization requests
+  // need to make sure difference is clear
   public async resolveAuthorizationRequest(
     agentContext: AgentContext,
     resolvedCredentialOffer: ResolvedCredentialOffer,
     authCodeFlowOptions: AuthCodeFlowOptions
   ): Promise<ResolvedAuthorizationRequest> {
-    const { credentialOfferPayload, metadata: _metadata, version } = resolvedCredentialOffer
-    const codeVerifier = (
-      await Promise.all([agentContext.wallet.generateNonce(), agentContext.wallet.generateNonce()])
-    ).join('')
+    const { credentialOfferPayload, metadata, offeredCredentials } = resolvedCredentialOffer
+    const codeVerifier = `${await agentContext.wallet.generateNonce()}${await agentContext.wallet.generateNonce()}`
     const codeVerifierSha256 = Hasher.hash(TypedArrayEncoder.fromString(codeVerifier), 'sha2-256')
     const codeChallenge = TypedArrayEncoder.toBase64URL(codeVerifierSha256)
-
-    const { metadata, issuerMetadata } = await getMetadataFromCredentialOffer(credentialOfferPayload, _metadata)
-    const credentialsSupported = getSupportedCredentials({ issuerMetadata, version })
-
-    const offeredCredentialsWithMetadata = getOfferedCredentialsWithMetadata(
-      credentialOfferPayload.credentials,
-      credentialsSupported
-    )
 
     this.logger.debug('Converted code_verifier to code_challenge', {
       codeVerifier: codeVerifier,
@@ -302,13 +254,11 @@ export class OpenId4VciHolderService {
       base64Url: codeChallenge,
     })
 
-    let authDetailsLocation: string | undefined
-    if (issuerMetadata.authorization_server) {
-      authDetailsLocation = metadata.issuer
-    }
-
-    const authDetails = offeredCredentialsWithMetadata
-      .map((credential) => this.getAuthDetailsFromOfferedCredential(credential, authDetailsLocation, version))
+    const authDetailsLocation = metadata.credentialIssuerMetadata.authorization_server
+      ? metadata.credentialIssuerMetadata.authorization_server
+      : undefined
+    const authDetails = offeredCredentials
+      .map((credential) => this.getAuthDetailsFromOfferedCredential(credential, authDetailsLocation))
       .filter((authDetail): authDetail is AuthorizationDetails => authDetail !== undefined)
 
     const { clientId, redirectUri, scope } = authCodeFlowOptions
@@ -320,7 +270,7 @@ export class OpenId4VciHolderService {
       codeChallengeMethod: CodeChallengeMethod.SHA256,
       // TODO: Read HAIP SdJwtVc's should always be requested via scopes
       // TODO: should we now always use scopes instead of authDetails? or both????
-      scope: [...(scope ?? [])],
+      scope: scope ?? [],
       authDetails,
       metadata,
     })
@@ -341,7 +291,7 @@ export class OpenId4VciHolderService {
     }
   ) {
     const { resolvedCredentialOffer, acceptCredentialOfferOptions, resolvedAuthorizationRequestWithCode } = options
-    const { credentialOfferPayload, metadata: _metadata, version } = resolvedCredentialOffer
+    const { credentialOfferPayload, metadata, version, offeredCredentials } = resolvedCredentialOffer
 
     const { credentialsToRequest, userPin, credentialBindingResolver, verifyCredentialStatus } =
       acceptCredentialOfferOptions
@@ -353,7 +303,6 @@ export class OpenId4VciHolderService {
 
     this.logger.info(`Accepting the following credential offers '${credentialsToRequest}'`)
 
-    const { metadata, issuerMetadata } = await getMetadataFromCredentialOffer(credentialOfferPayload, _metadata)
     const supportedJwaSignatureAlgorithms = getSupportedJwaSignatureAlgorithms(agentContext)
 
     const allowedProofOfPossessionSigAlgs = acceptCredentialOfferOptions.allowedProofOfPossessionSignatureAlgorithms
@@ -378,7 +327,7 @@ export class OpenId4VciHolderService {
     if (resolvedAuthorizationRequestWithCode) {
       const { code, codeVerifier, redirectUri } = resolvedAuthorizationRequestWithCode
       accessTokenResponse = await accessTokenClient.acquireAccessToken({
-        metadata,
+        metadata: metadata,
         credentialOffer: { credential_offer: credentialOfferPayload },
         pin: userPin,
         code,
@@ -387,7 +336,7 @@ export class OpenId4VciHolderService {
       })
     } else {
       accessTokenResponse = await accessTokenClient.acquireAccessToken({
-        metadata,
+        metadata: metadata,
         credentialOffer: { credential_offer: credentialOfferPayload },
         pin: userPin,
       })
@@ -400,40 +349,14 @@ export class OpenId4VciHolderService {
     this.logger.debug('Requested OpenId4VCI Access Token.')
 
     const accessToken = accessTokenResponse.successBody
-
-    const credentialsSupported = getSupportedCredentials({ issuerMetadata, version })
-
-    const offeredCredentialsWithMetadata = getOfferedCredentialsWithMetadata(
-      credentialOfferPayload.credentials,
-      credentialsSupported
-    )
-
-    const credentialsToRequestWithMetadata = credentialsToRequest?.map((ctr) => {
-      const credentialToRequest = offeredCredentialsWithMetadata.find((offeredCredentialWithMetadata) => {
-        const { format, types } = offeredCredentialWithMetadata
-        return ctr.format === format && equalsIgnoreOrder(ctr.types, types)
-      })
-
-      if (!credentialToRequest)
-        throw new AriesFrameworkError(
-          [
-            `Could not find the the requested credential with format '${ctr.format}'`,
-            `and types '${ctr.types.join()}' in the offered credentials.`,
-          ].join(' ')
-        )
-
-      return credentialToRequest
-    })
-
-    const receivedCredentials: (W3cVerifiableCredential | SdJwtVc)[] = []
-
+    const receivedCredentials: Array<W3cVerifiableCredential | SdJwtVc> = []
     let newCNonce: string | undefined
 
-    for (const credentialWithMetadata of credentialsToRequestWithMetadata ?? offeredCredentialsWithMetadata) {
+    for (const offeredCredential of credentialsToRequest ?? offeredCredentials) {
       // Get all options for the credential request (such as which kid to use, the signature algorithm, etc)
       const { credentialBinding, signatureAlgorithm } = await this.getCredentialRequestOptions(agentContext, {
         possibleProofOfPossessionSignatureAlgorithms: possibleProofOfPossessionSigAlgs,
-        offeredCredentialWithMetadata: credentialWithMetadata,
+        offeredCredential,
         credentialBindingResolver,
       })
 
@@ -464,23 +387,11 @@ export class OpenId4VciHolderService {
         .withCredentialEndpoint(metadata.credential_endpoint)
         .withTokenFromResponse(accessToken)
 
-      const format = credentialWithMetadata.format
-
-      let credentialTypes: string | string[]
-      if (version < OpenId4VCIVersion.VER_1_0_11) {
-        if (credentialWithMetadata.offerType === OfferedCredentialType.InlineCredentialOffer) {
-          throw new AriesFrameworkError(`Inline credential offers not supported for version < 11`)
-        }
-        credentialTypes = getV8CredentialType(credentialWithMetadata, version)
-      } else {
-        credentialTypes = credentialWithMetadata.types
-      }
-
       const credentialRequestClient = credentialRequestBuilder.build()
       const credentialResponse = await credentialRequestClient.acquireCredentialsUsingProof({
         proofInput: proofOfPossession,
-        credentialTypes,
-        format: getFormatForVersion(format, version),
+        credentialTypes: getTypesFromCredentialSupported(offeredCredential),
+        format: offeredCredential.format,
       })
 
       newCNonce = credentialResponse.successBody?.c_nonce
@@ -508,12 +419,12 @@ export class OpenId4VciHolderService {
     options: {
       credentialBindingResolver: CredentialBindingResolver
       possibleProofOfPossessionSignatureAlgorithms: JwaSignatureAlgorithm[]
-      offeredCredentialWithMetadata: OfferedCredentialWithMetadata
+      offeredCredential: OpenId4VciCredentialSupportedWithId
     }
   ) {
     const { signatureAlgorithm, supportedDidMethods, supportsAllDidMethods, supportsJwk } =
       this.getProofOfPossessionRequirements(agentContext, {
-        credentialsToRequest: options.offeredCredentialWithMetadata,
+        credentialToRequest: options.offeredCredential,
         possibleProofOfPossessionSignatureAlgorithms: options.possibleProofOfPossessionSignatureAlgorithms,
       })
 
@@ -526,7 +437,7 @@ export class OpenId4VciHolderService {
 
     const supportedVerificationMethods = getSupportedVerificationMethodTypesFromKeyType(JwkClass.keyType)
 
-    const format = options.offeredCredentialWithMetadata.format as SupportedCredentialFormats
+    const format = options.offeredCredential.format as SupportedCredentialFormats
 
     // Now we need to determine how the credential will be bound to us
     const credentialBinding = await options.credentialBindingResolver({
@@ -534,10 +445,7 @@ export class OpenId4VciHolderService {
       signatureAlgorithm,
       supportedVerificationMethods,
       keyType: JwkClass.keyType,
-      supportedCredentialId:
-        options.offeredCredentialWithMetadata.offerType === OfferedCredentialType.CredentialSupported
-          ? options.offeredCredentialWithMetadata.credentialSupported.id
-          : undefined,
+      supportedCredentialId: options.offeredCredential.id,
       supportsAllDidMethods,
       supportedDidMethods,
       supportsJwk,
@@ -584,22 +492,20 @@ export class OpenId4VciHolderService {
   private getProofOfPossessionRequirements(
     agentContext: AgentContext,
     options: {
-      credentialsToRequest: OfferedCredentialWithMetadata
+      credentialToRequest: OpenId4VciCredentialSupportedWithId
       possibleProofOfPossessionSignatureAlgorithms: JwaSignatureAlgorithm[]
     }
   ): ProofOfPossessionRequirements {
-    const { credentialsToRequest } = options
+    const { credentialToRequest } = options
 
-    if (credentialsToRequest.offerType === OfferedCredentialType.CredentialSupported) {
-      if (!supportedCredentialFormats.includes(credentialsToRequest.format as SupportedCredentialFormats)) {
-        throw new AriesFrameworkError(
-          [
-            `Requested credential with format '${credentialsToRequest.format}',`,
-            `for the credential of type '${credentialsToRequest.types.join(', ')},`,
-            `but the wallet only supports the following formats '${supportedCredentialFormats.join(', ')}'`,
-          ].join('\n')
-        )
-      }
+    if (!supportedCredentialFormats.includes(credentialToRequest.format as SupportedCredentialFormats)) {
+      throw new AriesFrameworkError(
+        [
+          `Requested credential with format '${credentialToRequest.format}',`,
+          `for the credential with id '${credentialToRequest.id},`,
+          `but the wallet only supports the following formats '${supportedCredentialFormats.join(', ')}'`,
+        ].join('\n')
+      )
     }
 
     // For each of the supported algs, find the key types, then find the proof types
@@ -607,20 +513,15 @@ export class OpenId4VciHolderService {
 
     let signatureAlgorithm: JwaSignatureAlgorithm | undefined
 
-    const credentialSupported =
-      credentialsToRequest.offerType === OfferedCredentialType.CredentialSupported
-        ? credentialsToRequest.credentialSupported
-        : undefined
-
-    const issuerSupportedCryptographicSuites = credentialSupported?.cryptographic_suites_supported
-    const issuerSupportedBindingMethods = credentialSupported?.cryptographic_binding_methods_supported
+    const issuerSupportedCryptographicSuites = credentialToRequest.cryptographic_suites_supported
+    const issuerSupportedBindingMethods = credentialToRequest.cryptographic_binding_methods_supported
 
     // If undefined, it means the issuer didn't include the cryptographic suites in the metadata
     // We just guess that the first one is supported
     if (issuerSupportedCryptographicSuites === undefined) {
       signatureAlgorithm = options.possibleProofOfPossessionSignatureAlgorithms[0]
     } else {
-      switch (credentialsToRequest.format) {
+      switch (credentialToRequest.format) {
         case OpenId4VciCredentialFormatProfile.JwtVcJson:
         case OpenId4VciCredentialFormatProfile.JwtVcJsonLd:
         case OpenId4VciCredentialFormatProfile.SdJwtVc:
@@ -646,9 +547,7 @@ export class OpenId4VciHolderService {
 
     if (!signatureAlgorithm) {
       throw new AriesFrameworkError(
-        `Could not establish signature algorithm for format ${credentialsToRequest.format} and id ${
-          credentialSupported?.id ?? 'Inline credential offer'
-        }`
+        `Could not establish signature algorithm for format ${credentialToRequest.format} and id ${credentialToRequest.id}`
       )
     }
 
@@ -676,7 +575,7 @@ export class OpenId4VciHolderService {
       throw new AriesFrameworkError('Did not receive a successful credential response.')
     }
 
-    const format = getUniformFormat(credentialResponse.successBody.format)
+    const format = credentialResponse.successBody.format
     if (format === OpenId4VciCredentialFormatProfile.SdJwtVc) {
       if (typeof credentialResponse.successBody.credential !== 'string')
         throw new AriesFrameworkError(

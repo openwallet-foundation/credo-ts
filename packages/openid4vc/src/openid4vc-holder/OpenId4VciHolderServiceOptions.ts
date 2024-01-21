@@ -1,14 +1,13 @@
-import type { OfferedCredentialWithMetadata } from './utils/IssuerMetadataUtils'
-import type { CredentialHolderBinding } from '../../shared'
-import type { JwaSignatureAlgorithm, KeyType } from '@aries-framework/core'
 import type {
-  CredentialOfferPayloadV1_0_11,
-  EndpointMetadataResult,
-  OpenId4VCIVersion,
-  AuthorizationDetails,
-} from '@sphereon/oid4vci-common'
+  CredentialHolderBinding,
+  OpenId4VciCredentialOfferPayload,
+  OpenId4VciCredentialSupportedWithId,
+  OpenId4VciIssuerMetadata,
+} from '../shared'
+import type { JwaSignatureAlgorithm, KeyType } from '@aries-framework/core'
+import type { AuthorizationServerMetadata, EndpointMetadataResult, OpenId4VCIVersion } from '@sphereon/oid4vci-common'
 
-import { OpenId4VciCredentialFormatProfile } from './utils/claimFormatMapping'
+import { OpenId4VciCredentialFormatProfile } from '../shared/models/OpenId4VciCredentialFormatProfile'
 
 export type SupportedCredentialFormats =
   | OpenId4VciCredentialFormatProfile.JwtVcJson
@@ -23,13 +22,13 @@ export const supportedCredentialFormats: SupportedCredentialFormats[] = [
   OpenId4VciCredentialFormatProfile.LdpVc,
 ]
 
-export type { OpenId4VCIVersion, EndpointMetadataResult, CredentialOfferPayloadV1_0_11, AuthorizationDetails }
-
 export interface ResolvedCredentialOffer {
-  metadata: EndpointMetadataResult
-  credentialOfferPayload: CredentialOfferPayloadV1_0_11
+  metadata: EndpointMetadataResult & {
+    credentialIssuerMetadata: Partial<AuthorizationServerMetadata> & OpenId4VciIssuerMetadata
+  }
+  credentialOfferPayload: OpenId4VciCredentialOfferPayload
+  offeredCredentials: OpenId4VciCredentialSupportedWithId[]
   version: OpenId4VCIVersion
-  offeredCredentials: OfferedCredentialWithMetadata[]
 }
 
 export interface ResolvedAuthorizationRequest extends AuthCodeFlowOptions {
@@ -54,8 +53,9 @@ export interface AcceptCredentialOfferOptions {
   /**
    * This is the list of credentials that will be requested from the issuer.
    * If not provided all offered credentials will be requested.
+   * FIXME: should this be an list of ids?
    */
-  credentialsToRequest?: OfferedCredentialWithMetadata[]
+  credentialsToRequest?: OpenId4VciCredentialSupportedWithId[]
 
   verifyCredentialStatus?: boolean
 

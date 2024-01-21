@@ -1,6 +1,5 @@
-import type { OpenId4VciCredentialSupportedWithId } from '../../shared'
+import type { OpenId4VciCredentialSupportedWithId, OpenId4VciIssuerMetadataDisplay } from '../../shared'
 import type { RecordTags, TagsBase } from '@aries-framework/core'
-import type { CredentialSupported, MetadataDisplay } from '@sphereon/oid4vci-common'
 
 import { BaseRecord, utils } from '@aries-framework/core'
 
@@ -24,7 +23,7 @@ export interface OpenId4VcIssuerRecordProps {
   accessTokenPublicKeyFingerprint: string
 
   credentialsSupported: OpenId4VciCredentialSupportedWithId[]
-  display?: MetadataDisplay[]
+  display?: OpenId4VciIssuerMetadataDisplay[]
 }
 
 export class OpenId4VcIssuerRecord extends BaseRecord<DefaultOpenId4VcIssuerRecordTags> {
@@ -34,8 +33,8 @@ export class OpenId4VcIssuerRecord extends BaseRecord<DefaultOpenId4VcIssuerReco
   public issuerId!: string
   public accessTokenPublicKeyFingerprint!: string
 
-  public credentialsSupported!: CredentialSupported[]
-  public display?: MetadataDisplay[]
+  public credentialsSupported!: OpenId4VciCredentialSupportedWithId[]
+  public display?: OpenId4VciIssuerMetadataDisplay[]
 
   public constructor(props: OpenId4VcIssuerRecordProps) {
     super()

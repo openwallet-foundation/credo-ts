@@ -1,14 +1,13 @@
 import type {
-  CreateProofRequestOptions,
-  VerifierEndpointConfig,
-  ProofPayload,
-  ProofRequestWithMetadata,
-  VerifiedProofResponse,
+  OpenId4VcCreateAuthorizationRequestOptions,
+  OpenId4VcVerifyAuthorizationResponseOptions,
+  OpenId4VcAuthorizationRequestWithMetadata,
+  VerifiedOpenId4VcAuthorizationResponse,
 } from './OpenId4VcVerifierServiceOptions'
-import type { Router } from 'express'
 
 import { injectable, AgentContext } from '@aries-framework/core'
 
+import { OpenId4VcVerifierModuleConfig } from './OpenId4VcVerifierModuleConfig'
 import { OpenId4VcVerifierService } from './OpenId4VcVerifierService'
 
 /**
@@ -16,55 +15,73 @@ import { OpenId4VcVerifierService } from './OpenId4VcVerifierService'
  */
 @injectable()
 export class OpenId4VcVerifierApi {
-  private agentContext: AgentContext
-  private openId4VcVerifierService: OpenId4VcVerifierService
-
-  public constructor(agentContext: AgentContext, openId4VcVerifierService: OpenId4VcVerifierService) {
-    this.agentContext = agentContext
-    this.openId4VcVerifierService = openId4VcVerifierService
-  }
+  public constructor(
+    public readonly config: OpenId4VcVerifierModuleConfig,
+    private agentContext: AgentContext,
+    private openId4VcVerifierService: OpenId4VcVerifierService
+  ) {}
 
   /**
-   * Creates a proof request with the provided options.
-   * The proof request can be a SIOP request (authentication) or VP request (querying verifiable credentials).
-   * Metadata about the holder can be provided statically @see HolderClientMetadata or dynamically by providing the issuer URL.
-   * If the issuer URL is provided, the metadata will be retrieved from the issuer hosted OpenID configuration endpoint.
-   * If neither the holder metadata nor the issuer URL is provided, a static configuration defined in @link https://openid.net/specs/openid-connect-self-issued-v2-1_0.html#name-static-configuration-values
-   * If a presentation definition is provided, a VP request will be created, querying the holder verifiable credentials according to the specifics of the presentation definition.
-   *
-   * @param options.verificationMethod - The VerificationMethod used for signing the proof request.
-   * @param options.holderMetadata - Optional metadata about the holder.
-   * @param options.holderIdentifier - Optional the identifier of the holder (OpenId-Provider) provider for performing dynamic discovery. How to identifier is obtained is out of scope.
-   * @param options.presentationDefinition - Optional presentation definition for requesting the presentation of verifiable credentials.
-   * @param options.verificationEndpointUrl - Optional The URL to where the holder will send the response.
-   * @returns @see ProofRequestWithMetadata object containing the proof request and metadata for verifying the proof response.
+   * Retrieve all verifier records from storage
    */
-  public async createProofRequest(options: CreateProofRequestOptions): Promise<ProofRequestWithMetadata> {
-    return await this.openId4VcVerifierService.createProofRequest(this.agentContext, options)
+  public async getAllVerifiers() {
+    return this.openId4VcVerifierService.getAllVerifiers(this.agentContext)
   }
 
   /**
-   * Verifies a proof response with the provided options.
-   * The proof response validates the idToken, the signature of the received Verifiable Presentation,
+   * Retrieve a verifier record from storage by its verified id
+   */
+  public async getByVerifierId(verifierId: string) {
+    return this.openId4VcVerifierService.getByVerifierId(this.agentContext, verifierId)
+  }
+
+  /**
+   * Create a new verifier and store the new verifier record.
+   */
+  public async createVerifier() {
+    return this.openId4VcVerifierService.createVerifier(this.agentContext)
+  }
+
+  /**
+   * Create an authorization request, acting as a Relying Party (RP).
+   *
+   * Currently two types of requests are supported:
+   *  - SIOP Self-Issued ID Token request: request to a Self-Issued OP from an RP
+   *  - SIOP Verifiable Presentation Request: request to a Self-Issued OP from an RP, requesting a Verifiable Presentation using OpenID4VP
+   *
+   * Other flows (non-SIOP) are not supported at the moment, but can be added in the future.
+   *
+   * See {@link OpenId4VcCreateAuthorizationRequestOptions} for detailed documentation on the options.
+   */
+  public async createAuthorizationRequest({
+    verifiedId,
+    ...otherOptions
+  }: OpenId4VcCreateAuthorizationRequestOptions & {
+    verifiedId: string
+  }): Promise<OpenId4VcAuthorizationRequestWithMetadata> {
+    const verifier = await this.getByVerifierId(verifiedId)
+    return await this.openId4VcVerifierService.createAuthorizationRequest(this.agentContext, {
+      ...otherOptions,
+      verifier,
+    })
+  }
+
+  /**
+   * Verifies an authorization response, acting as a Relying Party (RP).
+   *
+   * It validates the ID Token, VP Token and the signature(s) of the received Verifiable Presentation(s)
    * as well as that the structure of the Verifiable Presentation matches the provided presentation definition.
-   *
-   * @param proofPayload - The payload of the proof response.
-   * @param options.createProofRequestOptions - The options used to create the proof request.
-   * @param options.proofRequestMetadata - Metadata about the proof request.
-   * @returns @see VerifiedProofResponse object containing the idTokenPayload and the verified submission.
    */
-  public async verifyProofResponse(proofPayload: ProofPayload): Promise<VerifiedProofResponse> {
-    return await this.openId4VcVerifierService.verifyProofResponse(this.agentContext, proofPayload)
-  }
-
-  /**
-   * Configures the enabled endpoints for the given router, as specified in @link https://openid.net/specs/openid-4-verifiable-presentations-1_0.html
-   *
-   * @param router - The router to configure.
-   * @param endpointConfig - The endpoint configuration.
-   * @returns The configured router.
-   */
-  public async configureRouter(router: Router, endpointConfig: VerifierEndpointConfig) {
-    return await this.openId4VcVerifierService.configureRouter(this.agentContext, router, endpointConfig)
+  public async verifyAuthorizationResponse({
+    verifierId,
+    ...otherOptions
+  }: OpenId4VcVerifyAuthorizationResponseOptions & {
+    verifierId: string
+  }): Promise<VerifiedOpenId4VcAuthorizationResponse> {
+    const verifier = await this.getByVerifierId(verifierId)
+    return await this.openId4VcVerifierService.verifyProofResponse(this.agentContext, {
+      ...otherOptions,
+      verifier,
+    })
   }
 }

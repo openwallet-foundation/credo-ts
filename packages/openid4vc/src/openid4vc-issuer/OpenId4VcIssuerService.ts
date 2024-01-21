@@ -1,26 +1,24 @@
 import type {
+  CreateCredentialResponseOptions,
+  CredentialOffer,
   OpenId4VciAuthorizationCodeFlowConfig,
   OpenId4VciCreateCredentialOfferOptions,
-  CreateCredentialResponseOptions,
   OpenId4VciCreateIssuerOptions,
-  CredentialOffer,
-  OpenId4VcIssuerMetadata,
+  OpenId4VciPreAuthorizedCodeFlowConfig,
   OpenId4VciSignCredential,
   OpenId4VciSignSdJwtCredential,
   OpenId4VciSignW3cCredential,
-  OpenId4VciPreAuthorizedCodeFlowConfig,
+  OpenId4VcIssuerMetadata,
 } from './OpenId4VcIssuerServiceOptions'
-import type { ReferencedOfferedCredentialWithMetadata } from '../openid4vc-holder/reception/utils/IssuerMetadataUtils'
-import type { CredentialHolderBinding } from '../shared'
+import type {
+  CredentialHolderBinding,
+  OpenId4VciCredentialOfferPayload,
+  OpenId4VciCredentialRequest,
+  OpenId4VciCredentialSupported,
+} from '../shared'
 import type { AgentContext, DidDocument } from '@aries-framework/core'
 import type { SdJwtVcModule } from '@aries-framework/sd-jwt-vc'
-import type {
-  CredentialOfferPayloadV1_0_11,
-  CredentialRequestV1_0_11,
-  Grant,
-  JWTVerifyCallback,
-  CredentialSupported,
-} from '@sphereon/oid4vci-common'
+import type { Grant, JWTVerifyCallback } from '@sphereon/oid4vci-common'
 import type {
   CredentialDataSupplier,
   CredentialDataSupplierArgs,
@@ -30,40 +28,35 @@ import type {
 import type { ICredential } from '@sphereon/ssi-types'
 
 import {
-  ClaimFormat,
-  JsonEncoder,
-  getJwkFromJson,
-  KeyType,
-  utils,
   AriesFrameworkError,
+  ClaimFormat,
   DidsApi,
-  JsonTransformer,
-  JwsService,
-  Jwt,
-  W3cCredential,
-  W3cCredentialService,
   equalsIgnoreOrder,
   getApiForModuleByName,
+  getJwkFromJson,
   getJwkFromKey,
   getKeyFromVerificationMethod,
   injectable,
   joinUriParts,
+  JsonEncoder,
+  JsonTransformer,
+  JwsService,
+  Jwt,
+  KeyType,
+  utils,
+  W3cCredential,
+  W3cCredentialService,
 } from '@aries-framework/core'
 import { IssueStatus } from '@sphereon/oid4vci-common'
 import { VcIssuerBuilder } from '@sphereon/oid4vci-issuer'
 
-import { OpenId4VciCredentialFormatProfile } from '../openid4vc-holder'
-import {
-  OfferedCredentialType,
-  getOfferedCredentialsWithMetadata,
-} from '../openid4vc-holder/reception/utils/IssuerMetadataUtils'
+import { getOfferedCredentials, OpenId4VciCredentialFormatProfile } from '../shared'
 import { storeActorIdForContextCorrelationId } from '../shared/router'
 import { getSphereonW3cVerifiableCredential } from '../shared/transform'
 import { getProofTypeFromKey } from '../shared/utils'
 
 import { OpenId4VcIssuerModuleConfig } from './OpenId4VcIssuerModuleConfig'
-import { OpenId4VcIssuerRecord } from './repository/OpenId4VcIssuerRecord'
-import { OpenId4VcIssuerRepository } from './repository/OpenId4VcIssuerRepository'
+import { OpenId4VcIssuerRepository, OpenId4VcIssuerRecord } from './repository'
 
 const w3cOpenId4VcFormats = [
   OpenId4VciCredentialFormatProfile.JwtVcJson,
@@ -118,7 +111,7 @@ export class OpenId4VcIssuerService {
 
     // this checks if the structure of the credentials is correct
     // it throws an error if a offered credential cannot be found in the credentialsSupported
-    getOfferedCredentialsWithMetadata(offeredCredentials, vcIssuer.issuerMetadata.credentials_supported)
+    getOfferedCredentials(options.offeredCredentials, vcIssuer.issuerMetadata.credentials_supported)
 
     const { uri, session } = await vcIssuer.createCredentialOfferURI({
       grants: await this.getGrantsFromConfig(agentContext, preAuthorizedCodeFlowConfig, authorizationCodeFlowConfig),
@@ -332,32 +325,38 @@ export class OpenId4VcIssuerService {
   }
 
   private findOfferedCredentialsMatchingRequest(
-    credentialOffer: CredentialOfferPayloadV1_0_11,
-    credentialRequest: CredentialRequestV1_0_11,
-    credentialsSupported: CredentialSupported[]
-  ): ReferencedOfferedCredentialWithMetadata[] {
-    const offeredCredentials = getOfferedCredentialsWithMetadata(credentialOffer.credentials, credentialsSupported)
+    credentialOffer: OpenId4VciCredentialOfferPayload,
+    credentialRequest: OpenId4VciCredentialRequest,
+    credentialsSupported: OpenId4VciCredentialSupported[]
+  ): OpenId4VciCredentialSupported[] {
+    const offeredCredentials = getOfferedCredentials(credentialOffer.credentials, credentialsSupported)
 
-    // NOTE: we only support referenced offered credentials
-    // Filter out inline offers (should not be present in the first case as we don't support them at issuance)
-    const referencedOfferedCredentials = offeredCredentials.filter(
-      (offeredCredential): offeredCredential is ReferencedOfferedCredentialWithMetadata =>
-        offeredCredential.offerType === OfferedCredentialType.CredentialSupported
-    )
-
-    return referencedOfferedCredentials.filter((offeredCredential) => {
+    return offeredCredentials.filter((offeredCredential) => {
       if (offeredCredential.format !== credentialRequest.format) return false
 
-      if (credentialRequest.format === OpenId4VciCredentialFormatProfile.JwtVcJson) {
+      if (
+        credentialRequest.format === OpenId4VciCredentialFormatProfile.JwtVcJson &&
+        offeredCredential.format === credentialRequest.format
+      ) {
         return equalsIgnoreOrder(offeredCredential.types, credentialRequest.types)
       } else if (
-        credentialRequest.format === OpenId4VciCredentialFormatProfile.JwtVcJsonLd ||
-        credentialRequest.format === OpenId4VciCredentialFormatProfile.LdpVc
+        credentialRequest.format === OpenId4VciCredentialFormatProfile.JwtVcJsonLd &&
+        offeredCredential.format === credentialRequest.format
       ) {
         return equalsIgnoreOrder(offeredCredential.types, credentialRequest.credential_definition.types)
-      } else if (credentialRequest.format === OpenId4VciCredentialFormatProfile.SdJwtVc) {
-        return equalsIgnoreOrder(offeredCredential.types, [credentialRequest.vct])
+      } else if (
+        credentialRequest.format === OpenId4VciCredentialFormatProfile.LdpVc &&
+        offeredCredential.format === credentialRequest.format
+      ) {
+        return equalsIgnoreOrder(offeredCredential.types, credentialRequest.credential_definition.types)
+      } else if (
+        credentialRequest.format === OpenId4VciCredentialFormatProfile.SdJwtVc &&
+        offeredCredential.format === credentialRequest.format
+      ) {
+        return offeredCredential.vct === credentialRequest.vct
       }
+
+      return false
     })
   }
 
@@ -439,7 +438,7 @@ export class OpenId4VcIssuerService {
     }
   }
 
-  private async getHolderBindingFromRequest(credentialRequest: CredentialRequestV1_0_11) {
+  private async getHolderBindingFromRequest(credentialRequest: OpenId4VciCredentialRequest) {
     if (!credentialRequest.proof?.jwt) throw new AriesFrameworkError('Received a credential request without a proof')
 
     const jwt = Jwt.fromSerializedJwt(credentialRequest.proof.jwt)
@@ -501,7 +500,7 @@ export class OpenId4VcIssuerService {
           credentialOffer,
           credentialRequest,
 
-          credentialsSupported: offeredCredentialsMatchingRequest.map((o) => o.credentialSupported),
+          credentialsSupported: offeredCredentialsMatchingRequest,
         })
       }
 

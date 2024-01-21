@@ -1,14 +1,14 @@
-import type { OpenId4VcIssuerRecordProps } from './repository/OpenId4VcIssuerRecord'
+import type { OpenId4VcIssuerRecordProps } from './repository'
 import type {
   CredentialHolderBinding,
   OpenId4VciCredentialOffer,
+  OpenId4VciCredentialOfferPayload,
   OpenId4VciCredentialRequest,
   OpenId4VciCredentialSupported,
   OpenId4VciIssuerMetadataDisplay,
 } from '../shared'
 import type { AgentContext, W3cCredential } from '@aries-framework/core'
 import type { SdJwtVcSignOptions } from '@aries-framework/sd-jwt-vc'
-import type { CredentialOfferPayloadV1_0_11 } from '@sphereon/oid4vci-common'
 
 export interface OpenId4VciPreAuthorizedCodeFlowConfig {
   preAuthorizedCode?: string
@@ -54,7 +54,7 @@ export interface OpenId4VciCreateCredentialOfferOptions {
 // FIXME: this needs to be renamed, but will class with OpenId4VciCredentialOffer
 // Probably needs to be specific `XXReturn` type
 export type CredentialOffer = {
-  credentialOfferPayload: CredentialOfferPayloadV1_0_11
+  credentialOfferPayload: OpenId4VciCredentialOfferPayload
   credentialOfferUri: string
 }
 

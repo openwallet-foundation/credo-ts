@@ -3,8 +3,8 @@ import type {
   OpenId4VciCreateCredentialOfferOptions,
   CredentialOffer,
 } from './OpenId4VcIssuerServiceOptions'
-import type { OpenId4VcIssuerRecordProps } from './repository/OpenId4VcIssuerRecord'
-import type { CredentialOfferPayloadV1_0_11 } from '@sphereon/oid4vci-common'
+import type { OpenId4VcIssuerRecordProps } from './repository'
+import type { OpenId4VciCredentialOfferPayload } from '../shared'
 
 import { injectable, AgentContext } from '@aries-framework/core'
 
@@ -87,7 +87,7 @@ export class OpenId4VcIssuerApi {
    * @param uri - The URI referencing the credential offer.
    * @returns The credential offer payload associated with the given URI.
    */
-  public async getCredentialOfferFromUri(uri: string): Promise<CredentialOfferPayloadV1_0_11> {
+  public async getCredentialOfferFromUri(uri: string): Promise<OpenId4VciCredentialOfferPayload> {
     return await this.openId4VcIssuerService.getCredentialOfferFromUri(this.agentContext, uri)
   }
 

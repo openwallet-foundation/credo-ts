@@ -12,9 +12,6 @@ import {
   injectable,
   W3cJsonLdVerifiablePresentation,
   asArray,
-  inject,
-  InjectionSymbols,
-  Logger,
   parseDid,
   DifPresentationExchangeService,
 } from '@aries-framework/core'
@@ -40,14 +37,7 @@ import {
 
 @injectable()
 export class OpenId4VpHolderService {
-  private logger: Logger
-
-  public constructor(
-    @inject(InjectionSymbols.Logger) logger: Logger,
-    private presentationExchangeService: DifPresentationExchangeService
-  ) {
-    this.logger = logger
-  }
+  public constructor(private presentationExchangeService: DifPresentationExchangeService) {}
 
   private async getOpenIdProvider(
     agentContext: AgentContext,
@@ -64,9 +54,6 @@ export class OpenId4VpHolderService {
       .withSupportedVersions([SupportedVersion.SIOPv2_D11, SupportedVersion.SIOPv2_D12_OID4VP_D18])
       .withCustomResolver(getResolver(agentContext))
       .withCheckLinkedDomain(CheckLinkedDomain.NEVER)
-    // .withPresentationSignCallback
-    // .withEventEmitter
-    // .withRegistration()
 
     if (verificationMethod) {
       const { signature, did, kid, alg } = await getSuppliedSignatureFromVerificationMethod(
@@ -99,8 +86,10 @@ export class OpenId4VpHolderService {
       },
     })
 
-    this.logger.debug(`verified SIOP Authorization Request for issuer '${verifiedAuthorizationRequest.issuer}'`)
-    this.logger.debug(`requestJwtOrUri '${requestJwtOrUri}'`)
+    agentContext.config.logger.debug(
+      `verified SIOP Authorization Request for issuer '${verifiedAuthorizationRequest.issuer}'`
+    )
+    agentContext.config.logger.debug(`requestJwtOrUri '${requestJwtOrUri}'`)
 
     // If the presentationDefinitions array property is present it means the op.verifyAuthorizationRequest
     // already has established that the Presentation Definition(s) itself were valid and present.

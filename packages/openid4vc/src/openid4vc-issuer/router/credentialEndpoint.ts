@@ -1,6 +1,6 @@
 import type { OpenId4VcIssuanceRequest } from './requestContext'
+import type { OpenId4VciCredentialRequest } from '../../shared'
 import type { OpenId4VciCredentialRequestToCredentialMapper } from '../OpenId4VcIssuerServiceOptions'
-import type { CredentialRequestV1_0_11 } from '@sphereon/oid4vci-common'
 import type { Router, Response } from 'express'
 
 import { getRequestContext, sendErrorResponse } from '../../shared/router'
@@ -27,7 +27,7 @@ export function configureCredentialEndpoint(router: Router, config: CredentialEn
     const openId4VcIssuerService = agentContext.dependencyManager.resolve(OpenId4VcIssuerService)
 
     try {
-      const credentialRequest = request.body as CredentialRequestV1_0_11
+      const credentialRequest = request.body as OpenId4VciCredentialRequest
       const issueCredentialResponse = await openId4VcIssuerService.createCredentialResponse(agentContext, {
         issuer,
         credentialRequest,

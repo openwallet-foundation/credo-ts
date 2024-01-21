@@ -1,17 +1,16 @@
-import type { AuthenticationRequest, PresentationRequest } from './presentation'
 import type {
   ResolvedCredentialOffer,
   ResolvedAuthorizationRequest,
   AuthCodeFlowOptions,
   AcceptCredentialOfferOptions,
-  CredentialOfferPayloadV1_0_11,
-} from './reception'
+} from './OpenId4VciHolderServiceOptions'
+import type { AuthenticationRequest, PresentationRequest } from './OpenId4VpHolderServiceOptions'
 import type { VerificationMethod, DifPexInputDescriptorToCredentials } from '@aries-framework/core'
 
 import { injectable, AgentContext } from '@aries-framework/core'
 
-import { OpenId4VpHolderService } from './presentation'
-import { OpenId4VciHolderService } from './reception'
+import { OpenId4VciHolderService } from './OpenId4VciHolderService'
+import { OpenId4VpHolderService } from './OpenId4VpHolderService'
 
 // FIXME: the holder API is not really consistent with the issuer API
 // FIXME: it's not immediately clear which methods are for receiving vc proving
@@ -82,13 +81,13 @@ export class OpenId4VcHolderApi {
   }
 
   /**
-   * Resolves a credential offer given as payload, credential offer URL, or issuance initiation URL,
+   * Resolves a credential offer given as credential offer URL, or issuance initiation URL,
    * into a unified format with metadata.
    *
    * @param credentialOffer the credential offer to resolve
    * @returns The uniform credential offer payload, the issuer metadata, protocol version, and the offered credentials with metadata.
    */
-  public async resolveCredentialOffer(credentialOffer: string | CredentialOfferPayloadV1_0_11) {
+  public async resolveCredentialOffer(credentialOffer: string) {
     return await this.openId4VciHolderService.resolveCredentialOffer(credentialOffer)
   }
 
@@ -99,7 +98,7 @@ export class OpenId4VcHolderApi {
    *
    * Authorization to request credentials can be requested via authorization_details or scopes.
    * This function automatically generates the authorization_details for all offered credentials.
-   * If scopes are provided, the provided scopes are send alongside the authorization_details.
+   * If scopes are provided, the provided scopes are sent alongside the authorization_details.
    *
    * @param resolvedCredentialOffer Obtained through @see resolveCredentialOffer
    * @param authCodeFlowOptions

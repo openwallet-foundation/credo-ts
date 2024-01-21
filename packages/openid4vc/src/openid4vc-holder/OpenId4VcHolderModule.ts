@@ -3,8 +3,8 @@ import type { DependencyManager, Module } from '@aries-framework/core'
 import { AgentConfig } from '@aries-framework/core'
 
 import { OpenId4VcHolderApi } from './OpenId4VcHolderApi'
-import { OpenId4VpHolderService } from './presentation'
-import { OpenId4VciHolderService } from './reception'
+import { OpenId4VciHolderService } from './OpenId4VciHolderService'
+import { OpenId4VpHolderService } from './OpenId4VpHolderService'
 
 /**
  * @public @module OpenId4VcHolderModule
