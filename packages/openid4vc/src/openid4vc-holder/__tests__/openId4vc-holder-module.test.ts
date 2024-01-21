@@ -1,9 +1,9 @@
-/* eslint-disable @typescript-eslint/unbound-method */
 import type { DependencyManager } from '@aries-framework/core'
 
-import { OpenId4VciHolderService, OpenId4VpHolderService } from '..'
 import { OpenId4VcHolderApi } from '../OpenId4VcHolderApi'
 import { OpenId4VcHolderModule } from '../OpenId4VcHolderModule'
+import { OpenId4VciHolderService } from '../OpenId4VciHolderService'
+import { OpenId4VpHolderService } from '../OpenId4VpHolderService'
 
 const dependencyManager = {
   registerInstance: jest.fn(),

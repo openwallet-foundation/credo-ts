@@ -28,6 +28,13 @@ export class WebDidResolver implements DidResolver {
     const result = await this.resolver[parsed.method](did, parsed, this._resolverInstance, didResolutionOptions)
 
     let didDocument = null
+
+    // If the did document uses the deprecated publicKey property
+    // we map it to the newer verificationMethod property
+    if (!result.didDocument?.verificationMethod && result.didDocument?.publicKey) {
+      result.didDocument.verificationMethod = result.didDocument.publicKey
+    }
+
     if (result.didDocument) {
       didDocument = JsonTransformer.fromJSON(result.didDocument, DidDocument)
     }

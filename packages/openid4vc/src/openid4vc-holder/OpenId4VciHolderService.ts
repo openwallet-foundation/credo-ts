@@ -343,7 +343,9 @@ export class OpenId4VciHolderService {
     }
 
     if (!accessTokenResponse.successBody) {
-      throw new AriesFrameworkError(`could not acquire access token from '${metadata.issuer}'.`)
+      throw new AriesFrameworkError(
+        `could not acquire access token from '${metadata.issuer}'. ${accessTokenResponse.errorBody?.error}: ${accessTokenResponse.errorBody?.error_description}`
+      )
     }
 
     this.logger.debug('Requested OpenId4VCI Access Token.')
@@ -572,7 +574,9 @@ export class OpenId4VciHolderService {
     this.logger.debug('Credential request response', credentialResponse)
 
     if (!credentialResponse.successBody || !credentialResponse.successBody.credential) {
-      throw new AriesFrameworkError('Did not receive a successful credential response.')
+      throw new AriesFrameworkError(
+        `Did not receive a successful credential response. ${credentialResponse.errorBody?.error}: ${credentialResponse.errorBody?.error_description}`
+      )
     }
 
     const format = credentialResponse.successBody.format

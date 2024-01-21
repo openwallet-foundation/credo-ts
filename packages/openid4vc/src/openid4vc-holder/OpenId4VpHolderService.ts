@@ -25,7 +25,7 @@ import {
   VerificationMode,
 } from '@sphereon/did-auth-siop'
 
-import { getResolver, getSuppliedSignatureFromVerificationMethod, getSupportedDidMethods } from '../../shared/utils'
+import { getResolver, getSuppliedSignatureFromVerificationMethod, getSupportedDidMethods } from '../shared/utils'
 
 import {
   isVerifiedAuthorizationRequestWithPresentationDefinition,

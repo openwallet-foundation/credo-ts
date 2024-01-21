@@ -79,7 +79,7 @@ export class OpenId4VcVerifierApi {
     verifierId: string
   }): Promise<VerifiedOpenId4VcAuthorizationResponse> {
     const verifier = await this.getByVerifierId(verifierId)
-    return await this.openId4VcVerifierService.verifyProofResponse(this.agentContext, {
+    return await this.openId4VcVerifierService.verifyAuthorizationResponse(this.agentContext, {
       ...otherOptions,
       verifier,
     })
