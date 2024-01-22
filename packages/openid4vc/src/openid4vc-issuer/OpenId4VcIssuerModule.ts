@@ -57,6 +57,13 @@ export class OpenId4VcIssuerModule implements Module {
   private configureRouter(rootAgentContext: AgentContext) {
     const { Router, json, urlencoded } = importExpress()
 
+    // FIXME: it is currently not possible to initialize an agent
+    // shut it down, and then start it again, as the
+    // express router is configured with a specific `AgentContext` instance
+    // and dependency manager. One option is to always create a new router
+    // but then users cannot pass their own router implementation.
+    // We need to find a proper way to fix this.
+
     // We use separate context router and endpoint router. Context router handles the linking of the request
     // to a specific agent context. Endpoint router only knows about a single context
     const endpointRouter = Router()
@@ -69,6 +76,7 @@ export class OpenId4VcIssuerModule implements Module {
 
     contextRouter.param('issuerId', async (req: OpenId4VcIssuanceRequest, _res, next, issuerId: string) => {
       if (!issuerId) {
+        rootAgentContext.config.logger.debug('No issuerId provided for incoming oid4vci request, returning 404')
         _res.status(404).send('Not found')
       }
 

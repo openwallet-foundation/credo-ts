@@ -1,5 +1,5 @@
 import type { AgentType, TenantType } from './utils'
-import type { CreateProofRequestOptions, CredentialBindingResolver } from '../src'
+import type { CredentialBindingResolver } from '../src/openid4vc-holder'
 import type { SdJwtVc, SdJwtVcSignOptions } from '@aries-framework/sd-jwt-vc'
 import type { Server } from 'http'
 
@@ -8,7 +8,6 @@ import {
   ClaimFormat,
   JwaSignatureAlgorithm,
   W3cCredential,
-  W3cCredentialService,
   W3cCredentialSubject,
   W3cIssuer,
   w3cDate,
@@ -16,11 +15,12 @@ import {
   getKeyFromVerificationMethod,
   getJwkFromKey,
   AriesFrameworkError,
+  DifPresentationExchangeService,
 } from '@aries-framework/core'
 import { SdJwtVcModule } from '@aries-framework/sd-jwt-vc'
 import { TenantsModule } from '@aries-framework/tenants'
 import { ariesAskar } from '@hyperledger/aries-askar-nodejs'
-import express, { Router, type Express } from 'express'
+import express, { type Express } from 'express'
 
 import { askarModuleConfig } from '../../askar/tests/helpers'
 import { OpenId4VcVerifierModule, OpenId4VcHolderModule, OpenId4VcIssuerModule } from '../src'
@@ -31,116 +31,122 @@ import {
   openBadgePresentationDefinition,
   staticOpOpenIdConfigEdDSA,
   universityDegreePresentationDefinition,
-  waitForMockFunction,
 } from './utilsVp'
 
-const issuerPort = 1234
-const baseUrl = `http://localhost:${issuerPort}/oid4vci`
+const serverPort = 1234
+const baseUrl = `http://localhost:${serverPort}`
+const issuanceBaseUrl = `${baseUrl}/oid4vci`
+const verificationBaseUrl = `${baseUrl}/oid4vp`
 
 const baseCredentialOfferOptions = {
   scheme: 'openid-credential-offer',
-  baseUri: baseUrl,
+  baseUri: issuanceBaseUrl,
 }
-
-const holderModules = {
-  openId4VcHolder: new OpenId4VcHolderModule(),
-  sdJwtVc: new SdJwtVcModule(),
-  askar: new AskarModule(askarModuleConfig),
-} as const
-
-const oid4vciRouter = Router()
-const issuerModules = {
-  openId4VcIssuer: new OpenId4VcIssuerModule({
-    baseUrl,
-    router: oid4vciRouter,
-    endpoints: {
-      credential: {
-        // FIXME: should not be nested under the endpoint config, as it's also used for the non-endpoint part
-        credentialRequestToCredentialMapper: async ({ agentContext, credentialRequest, holderBinding }) => {
-          // We sign the request with the first did:key did we have
-          const didsApi = agentContext.dependencyManager.resolve(DidsApi)
-          const [firstDidKeyDid] = await didsApi.getCreatedDids({ method: 'key' })
-          const didDocument = await didsApi.resolveDidDocument(firstDidKeyDid.did)
-          const verificationMethod = didDocument.verificationMethod?.[0]
-          if (!verificationMethod) {
-            throw new Error('No verification method found')
-          }
-
-          if (credentialRequest.format === 'vc+sd-jwt') {
-            return {
-              payload: { vct: credentialRequest.vct, university: 'innsbruck', degree: 'bachelor' },
-              holder: holderBinding,
-              issuer: {
-                method: 'did',
-                didUrl: verificationMethod.id,
-              },
-              disclosureFrame: { university: true, degree: true },
-            } satisfies SdJwtVcSignOptions
-          }
-
-          throw new Error('Invalid request')
-        },
-      },
-    },
-  }),
-  sdJwtVc: new SdJwtVcModule(),
-  askar: new AskarModule(askarModuleConfig),
-} as const
-
-const verifierModules = {
-  openId4VcVerifier: new OpenId4VcVerifierModule({
-    verifierMetadata: {
-      verifierBaseUrl: baseUrl,
-      verificationEndpointPath: '/verify',
-    },
-  }),
-  sdJwtVc: new SdJwtVcModule(),
-  askar: new AskarModule({ ariesAskar }),
-} as const
 
 describe('OpenId4Vc', () => {
   let expressApp: Express
   let expressServer: Server
 
-  let issuer: AgentType<typeof issuerModules & { tenants: TenantsModule<typeof issuerModules> }>
+  let issuer: AgentType<{
+    openId4VcIssuer: OpenId4VcIssuerModule
+    tenants: TenantsModule<{ openId4VcIssuer: OpenId4VcIssuerModule }>
+  }>
   let issuer1: TenantType
   let issuer2: TenantType
 
-  let holder: AgentType<typeof holderModules & { tenants: TenantsModule<typeof holderModules> }>
+  let holder: AgentType<{
+    openId4VcHolder: OpenId4VcHolderModule
+    sdJwtVc: SdJwtVcModule
+    tenants: TenantsModule<{ openId4VcHolder: OpenId4VcHolderModule; sdJwtVc: SdJwtVcModule }>
+  }>
   let holder1: TenantType
 
-  let verifier: AgentType<typeof verifierModules & { tenants: TenantsModule<typeof verifierModules> }>
+  let verifier: AgentType<{
+    openId4VcVerifier: OpenId4VcVerifierModule
+    tenants: TenantsModule<{ openId4VcVerifier: OpenId4VcVerifierModule }>
+  }>
   let verifier1: TenantType
   let verifier2: TenantType
 
   beforeEach(async () => {
     expressApp = express()
-    expressApp.use('/oid4vci', oid4vciRouter)
 
-    issuer = await createAgentFromModules(
+    issuer = (await createAgentFromModules(
       'issuer',
-      { ...issuerModules, tenants: new TenantsModule<typeof issuerModules>() },
+      {
+        openId4VcIssuer: new OpenId4VcIssuerModule({
+          baseUrl: issuanceBaseUrl,
+          endpoints: {
+            credential: {
+              // FIXME: should not be nested under the endpoint config, as it's also used for the non-endpoint part
+              credentialRequestToCredentialMapper: async ({ agentContext, credentialRequest, holderBinding }) => {
+                // We sign the request with the first did:key did we have
+                const didsApi = agentContext.dependencyManager.resolve(DidsApi)
+                const [firstDidKeyDid] = await didsApi.getCreatedDids({ method: 'key' })
+                const didDocument = await didsApi.resolveDidDocument(firstDidKeyDid.did)
+                const verificationMethod = didDocument.verificationMethod?.[0]
+                if (!verificationMethod) {
+                  throw new Error('No verification method found')
+                }
+
+                if (credentialRequest.format === 'vc+sd-jwt') {
+                  return {
+                    payload: { vct: credentialRequest.vct, university: 'innsbruck', degree: 'bachelor' },
+                    holder: holderBinding,
+                    issuer: {
+                      method: 'did',
+                      didUrl: verificationMethod.id,
+                    },
+                    disclosureFrame: { university: true, degree: true },
+                  } satisfies SdJwtVcSignOptions
+                }
+
+                throw new Error('Invalid request')
+              },
+            },
+          },
+        }),
+        sdJwtVc: new SdJwtVcModule(),
+        askar: new AskarModule(askarModuleConfig),
+        tenants: new TenantsModule(),
+      },
       '96213c3d7fc8d4d6754c7a0fd969598g'
-    )
+    )) as unknown as typeof issuer
     issuer1 = await createTenantForAgent(issuer.agent, 'iTenant1')
     issuer2 = await createTenantForAgent(issuer.agent, 'iTenant2')
 
-    holder = await createAgentFromModules(
+    holder = (await createAgentFromModules(
       'holder',
-      { ...holderModules, tenants: new TenantsModule() },
+      {
+        openId4VcHolder: new OpenId4VcHolderModule(),
+        sdJwtVc: new SdJwtVcModule(),
+        askar: new AskarModule(askarModuleConfig),
+        tenants: new TenantsModule(),
+      },
       '96213c3d7fc8d4d6754c7a0fd969598e'
-    )
+    )) as unknown as typeof holder
     holder1 = await createTenantForAgent(holder.agent, 'hTenant1')
 
-    verifier = await createAgentFromModules(
+    verifier = (await createAgentFromModules(
       'verifier',
-      { ...verifierModules, tenants: new TenantsModule() },
+      {
+        openId4VcVerifier: new OpenId4VcVerifierModule({
+          baseUrl: verificationBaseUrl,
+        }),
+        sdJwtVc: new SdJwtVcModule(),
+        askar: new AskarModule({ ariesAskar }),
+        tenants: new TenantsModule(),
+      },
       '96213c3d7fc8d4d6754c7a0fd969598f'
-    )
+    )) as unknown as typeof verifier
     verifier1 = await createTenantForAgent(verifier.agent, 'vTenant1')
     verifier2 = await createTenantForAgent(verifier.agent, 'vTenant2')
 
-    expressServer = expressApp.listen(issuerPort)
+    // We let AFJ create the router, so we have a fresh one each time
+    expressApp.use('/oid4vci', issuer.agent.modules.openId4VcIssuer.config.router)
+    expressApp.use('/oid4vp', verifier.agent.modules.openId4VcVerifier.config.router)
+
+    expressServer = expressApp.listen(serverPort)
   })
 
   afterEach(async () => {
@@ -169,8 +175,6 @@ describe('OpenId4Vc', () => {
         jwk: getJwkFromKey(getKeyFromVerificationMethod(holder1.verificationMethod)),
       }
     }
-
-    console.log(supportsJwk, supportedDidMethods)
 
     // otherwise throw an error
     throw new AriesFrameworkError('Issuer does not support did:key or JWK for credential binding')
@@ -212,13 +216,13 @@ describe('OpenId4Vc', () => {
     )
 
     expect(resolvedCredentialOffer1.credentialOfferPayload.credential_issuer).toEqual(
-      `${baseUrl}/${openIdIssuerTenant1.issuerId}`
+      `${issuanceBaseUrl}/${openIdIssuerTenant1.issuerId}`
     )
     expect(resolvedCredentialOffer1.metadata.credentialIssuerMetadata?.token_endpoint).toEqual(
-      `${baseUrl}/${openIdIssuerTenant1.issuerId}/token`
+      `${issuanceBaseUrl}/${openIdIssuerTenant1.issuerId}/token`
     )
     expect(resolvedCredentialOffer1.metadata.credentialIssuerMetadata?.credential_endpoint).toEqual(
-      `${baseUrl}/${openIdIssuerTenant1.issuerId}/credential`
+      `${issuanceBaseUrl}/${openIdIssuerTenant1.issuerId}/credential`
     )
 
     // Bind to JWK
@@ -238,13 +242,13 @@ describe('OpenId4Vc', () => {
       credentialOffer2
     )
     expect(resolvedCredentialOffer2.credentialOfferPayload.credential_issuer).toEqual(
-      `${baseUrl}/${openIdIssuerTenant2.issuerId}`
+      `${issuanceBaseUrl}/${openIdIssuerTenant2.issuerId}`
     )
     expect(resolvedCredentialOffer2.metadata.credentialIssuerMetadata?.token_endpoint).toEqual(
-      `${baseUrl}/${openIdIssuerTenant2.issuerId}/token`
+      `${issuanceBaseUrl}/${openIdIssuerTenant2.issuerId}/token`
     )
     expect(resolvedCredentialOffer2.metadata.credentialIssuerMetadata?.credential_endpoint).toEqual(
-      `${baseUrl}/${openIdIssuerTenant2.issuerId}/credential`
+      `${issuanceBaseUrl}/${openIdIssuerTenant2.issuerId}/credential`
     )
 
     // Bind to did
@@ -263,200 +267,210 @@ describe('OpenId4Vc', () => {
     await holderTenant1.endSession()
   })
 
-  xit('e2e flow with tenants, verifier endpoints verifying a sd-jwt-vc', async () => {
-    const mockFunction1 = jest.fn()
-    mockFunction1.mockReturnValue({ status: 200 })
+  it('e2e flow with tenants, verifier endpoints verifying a sd-jwt-vc', async () => {
+    const holderTenant = await holder.agent.modules.tenants.getTenantAgent({ tenantId: holder1.tenantId })
+    const verifierTenant1 = await verifier.agent.modules.tenants.getTenantAgent({ tenantId: verifier1.tenantId })
+    const verifierTenant2 = await verifier.agent.modules.tenants.getTenantAgent({ tenantId: verifier2.tenantId })
 
-    const mockFunction2 = jest.fn()
-    mockFunction2.mockReturnValue({ status: 200 })
+    const openIdVerifierTenant1 = await verifierTenant1.modules.openId4VcVerifier.createVerifier()
+    const openIdVerifierTenant2 = await verifierTenant2.modules.openId4VcVerifier.createVerifier()
 
-    const issuerTenant1 = await issuer.agent.modules.tenants.getTenantAgent({ tenantId: issuer1.tenantId })
-    const holderTenant1 = await holder.agent.modules.tenants.getTenantAgent({ tenantId: holder1.tenantId })
-    const verifierTenant1_1 = await verifier.agent.modules.tenants.getTenantAgent({ tenantId: verifier1.tenantId })
-    const verifierTenant2_1 = await verifier.agent.modules.tenants.getTenantAgent({ tenantId: verifier2.tenantId })
-    const verifier1Router = Router()
-    const verifier2Router = Router()
-    const verifier1BasePath = '/verifier1'
-    const verifier2BasePath = '/verifier2'
-
-    const credential1 = new W3cCredential({
-      type: ['VerifiableCredential', 'OpenBadgeCredential'],
-      issuer: new W3cIssuer({ id: issuer1.did }),
-      credentialSubject: new W3cCredentialSubject({ id: holder1.did }),
-      issuanceDate: w3cDate(Date.now()),
-    })
-
-    const credential2 = new W3cCredential({
-      type: ['VerifiableCredential', 'UniversityDegreeCredential'],
-      issuer: new W3cIssuer({ id: issuer1.did }),
-      credentialSubject: new W3cCredentialSubject({ id: holder1.did }),
-      issuanceDate: w3cDate(Date.now()),
-    })
-
-    const issuer1W3cCredentialService = issuerTenant1.dependencyManager.resolve(W3cCredentialService)
-
-    const signed1 = await issuer1W3cCredentialService.signCredential(issuerTenant1.context, {
+    const signedCredential1 = await issuer.agent.w3cCredentials.signCredential({
       format: ClaimFormat.JwtVc,
-      credential: credential1,
+      credential: new W3cCredential({
+        type: ['VerifiableCredential', 'OpenBadgeCredential'],
+        issuer: new W3cIssuer({ id: issuer.did }),
+        credentialSubject: new W3cCredentialSubject({ id: holder1.did }),
+        issuanceDate: w3cDate(Date.now()),
+      }),
       alg: JwaSignatureAlgorithm.EdDSA,
-      verificationMethod: issuer1.verificationMethod.id,
+      verificationMethod: issuer.verificationMethod.id,
     })
 
-    const signed2 = await issuer1W3cCredentialService.signCredential(issuerTenant1.context, {
+    const signedCredential2 = await issuer.agent.w3cCredentials.signCredential({
       format: ClaimFormat.JwtVc,
-      credential: credential2,
+      credential: new W3cCredential({
+        type: ['VerifiableCredential', 'UniversityDegreeCredential'],
+        issuer: new W3cIssuer({ id: issuer.did }),
+        credentialSubject: new W3cCredentialSubject({ id: holder1.did }),
+        issuanceDate: w3cDate(Date.now()),
+      }),
       alg: JwaSignatureAlgorithm.EdDSA,
-      verificationMethod: issuer1.verificationMethod.id,
+      verificationMethod: issuer.verificationMethod.id,
     })
 
-    await holderTenant1.w3cCredentials.storeCredential({ credential: signed1 })
-    await holderTenant1.w3cCredentials.storeCredential({ credential: signed2 })
+    await holderTenant.w3cCredentials.storeCredential({ credential: signedCredential1 })
+    await holderTenant.w3cCredentials.storeCredential({ credential: signedCredential2 })
 
-    await verifierTenant1_1.modules.openId4VcVerifier.configureRouter(verifier1Router, {
-      basePath: '/verifier1',
-      verificationEndpointConfig: {
-        enabled: true,
-        proofResponseHandler: mockFunction1,
-      },
-    })
+    const { authorizationRequestUri: authorizationRequestUri1, metadata: proofRequestMetadata1 } =
+      await verifierTenant1.modules.openId4VcVerifier.createAuthorizationRequest({
+        verificationMethod: verifier1.verificationMethod,
+        openIdProvider: staticOpOpenIdConfigEdDSA,
+        presentationDefinition: openBadgePresentationDefinition,
+        verifierId: openIdVerifierTenant1.verifierId,
+      })
 
-    await verifierTenant2_1.modules.openId4VcVerifier.configureRouter(verifier2Router, {
-      basePath: '/verifier2',
-      verificationEndpointConfig: {
-        enabled: true,
-        proofResponseHandler: mockFunction2,
-      },
-    })
-
-    expressApp.use(verifier1BasePath, verifier1Router)
-    expressApp.use(verifier2BasePath, verifier2Router)
-    expressServer = expressApp.listen(issuerPort)
-
-    const createProofRequestOptions1: CreateProofRequestOptions = {
-      verificationMethod: verifier1.verificationMethod,
-      holderMetadata: staticOpOpenIdConfigEdDSA,
-      presentationDefinition: openBadgePresentationDefinition,
-    }
-
-    const createProofRequestOptions2: CreateProofRequestOptions = {
-      verificationMethod: verifier2.verificationMethod,
-      holderMetadata: staticOpOpenIdConfigEdDSA,
-      presentationDefinition: universityDegreePresentationDefinition,
-    }
-
-    const { proofRequest: proofRequest1, proofRequestMetadata: proofRequestMetadata1 } =
-      await verifierTenant1_1.modules.openId4VcVerifier.createProofRequest(createProofRequestOptions1)
-
+    // FIXME: the presentation definition is in both top-level and request param?
     expect(
-      proofRequest1.startsWith(
-        `openid://?redirect_uri=http%3A%2F%2Flocalhost%3A1234%2Fverifier1%2Fverify&presentation_definition=%7B%22id%22%3A%22OpenBadgeCredential`
+      authorizationRequestUri1.startsWith(
+        `openid://?redirect_uri=http%3A%2F%2Flocalhost%3A1234%2Foid4vp%2F${openIdVerifierTenant1.verifierId}%2Fauthorize&presentation_definition=%7B%22id%22%3A%22OpenBadgeCredential`
       )
-    ).toBeTruthy()
+    ).toBe(true)
 
-    const { proofRequest: proofRequest2, proofRequestMetadata: proofRequestMetadata2 } =
-      await verifierTenant2_1.modules.openId4VcVerifier.createProofRequest(createProofRequestOptions2)
+    const { authorizationRequestUri: authorizationRequestUri2, metadata: proofRequestMetadata2 } =
+      await verifierTenant2.modules.openId4VcVerifier.createAuthorizationRequest({
+        verificationMethod: verifier2.verificationMethod,
+        openIdProvider: staticOpOpenIdConfigEdDSA,
+        presentationDefinition: universityDegreePresentationDefinition,
+        verifierId: openIdVerifierTenant2.verifierId,
+      })
 
+    // FIXME: we should set scheme based on the openid provider metadata
+    // Is the op set in the request?
+    // FIXME: did:peer should not be supported
     expect(
-      proofRequest2.startsWith(
-        `openid://?redirect_uri=http%3A%2F%2Flocalhost%3A1234%2Fverifier2%2Fverify&presentation_definition=%7B%22id%22%3A%22UniversityDegreeCredential`
+      authorizationRequestUri2.startsWith(
+        `openid://?redirect_uri=http%3A%2F%2Flocalhost%3A1234%2Foid4vp%2F${openIdVerifierTenant2.verifierId}%2Fauthorize&presentation_definition=%7B%22id%22%3A%22UniversityDegreeCredential`
       )
-    ).toBeTruthy()
+    ).toBe(true)
 
-    await verifierTenant1_1.endSession()
-    await verifierTenant2_1.endSession()
+    await verifierTenant1.endSession()
+    await verifierTenant2.endSession()
 
-    const result1 = await holderTenant1.modules.openId4VcHolder.resolveProofRequest(proofRequest1)
-    if (result1.proofType === 'authentication') throw new Error('Expected a proofRequest')
+    // FIXME: api already has resolve authorization request
+    // but it's used for oid4vci. We should have some improvements on the api
+    const resolvedProofRequest1 = await holderTenant.modules.openId4VcHolder.resolveProofRequest(
+      authorizationRequestUri1
+    )
+    if (resolvedProofRequest1.proofType === 'authentication') throw new Error('Expected a proofRequest')
 
-    result1.presentationSubmission.requirements[0]
-
-    if (!result1.presentationSubmission.areRequirementsSatisfied) {
+    if (!resolvedProofRequest1.credentialsForRequest.areRequirementsSatisfied) {
       throw new Error('Requirements are not satisfied.')
     }
 
     expect(
-      result1.presentationSubmission.requirements[0].submissionEntry[0].verifiableCredentials[0].credential.type
+      resolvedProofRequest1.credentialsForRequest.requirements[0].submissionEntry[0].verifiableCredentials[0].credential
+        .type
     ).toContain('OpenBadgeCredential')
 
-    const result2 = await holderTenant1.modules.openId4VcHolder.resolveProofRequest(proofRequest2)
-    if (result2.proofType === 'authentication') throw new Error('Expected a proofRequest')
+    const resolvedProofRequest2 = await holderTenant.modules.openId4VcHolder.resolveProofRequest(
+      authorizationRequestUri2
+    )
+    if (resolvedProofRequest2.proofType === 'authentication') throw new Error('Expected a proofRequest')
 
-    result2.presentationSubmission.requirements[0]
-
-    if (!result2.presentationSubmission.areRequirementsSatisfied) {
+    if (!resolvedProofRequest2.credentialsForRequest.areRequirementsSatisfied) {
       throw new Error('Requirements are not satisfied.')
     }
 
+    // FIXME: result MUST include SD-JWT as well
     expect(
-      result2.presentationSubmission.requirements[0].submissionEntry[0].verifiableCredentials[0].credential.type
+      resolvedProofRequest2.credentialsForRequest.requirements[0].submissionEntry[0].verifiableCredentials[0].credential
+        .type
     ).toContain('UniversityDegreeCredential')
 
+    const presentationExchangeService = holderTenant.dependencyManager.resolve(DifPresentationExchangeService)
+    const selectedCredentials = presentationExchangeService.selectCredentialsForRequest(
+      resolvedProofRequest1.credentialsForRequest
+    )
+
     const { status: status1, submittedResponse: submittedResponse1 } =
-      await holderTenant1.modules.openId4VcHolder.acceptPresentationRequest(result1.presentationRequest, {
-        submission: result1.presentationSubmission,
-        submissionEntryIndexes: [0],
-      })
+      await holderTenant.modules.openId4VcHolder.acceptPresentationRequest(
+        resolvedProofRequest1.presentationRequest,
+        selectedCredentials
+      )
+    expect(submittedResponse1).toEqual({
+      expires_in: 6000,
+      id_token: expect.any(String),
+      presentation_submission: {
+        definition_id: 'OpenBadgeCredential',
+        descriptor_map: [
+          {
+            format: 'jwt_vc',
+            id: 'OpenBadgeCredential',
+            path: '$.verifiableCredential[0]',
+          },
+        ],
+        id: expect.any(String),
+      },
+      state: expect.any(String),
+      vp_token: expect.any(String),
+    })
     expect(status1).toBe(200)
 
     // The RP MUST validate that the aud (audience) Claim contains the value of the client_id
     // that the RP sent in the Authorization Request as an audience.
     // When the request has been signed, the value might be an HTTPS URL, or a Decentralized Identifier.
     const verifierTenant1_2 = await verifier.agent.modules.tenants.getTenantAgent({ tenantId: verifier1.tenantId })
-    const { idTokenPayload: idTokenPayload1, submission: submission1 } =
-      await verifierTenant1_2.modules.openId4VcVerifier.verifyProofResponse(submittedResponse1)
+    const { idTokenPayload: idTokenPayload1, presentationExchange: presentationExchange1 } =
+      await verifierTenant1_2.modules.openId4VcVerifier.verifyAuthorizationResponse({
+        authorizationResponse: submittedResponse1,
+        verifierId: openIdVerifierTenant1.verifierId,
+      })
 
-    const { state: state1, challenge: challenge1 } = proofRequestMetadata1
-    expect(idTokenPayload1).toBeDefined()
-    expect(idTokenPayload1.state).toMatch(state1)
-    expect(idTokenPayload1.nonce).toMatch(challenge1)
-
-    expect(submission1).toBeDefined()
-    expect(submission1?.presentationDefinitions).toHaveLength(1)
-    expect(submission1?.submissionData.definition_id).toBe('OpenBadgeCredential')
-    expect(submission1?.presentations).toHaveLength(1)
-    expect(submission1?.presentations[0].vcs[0].credential.type).toEqual([
-      'VerifiableCredential',
-      'OpenBadgeCredential',
-    ])
-
-    await waitForMockFunction(mockFunction1)
-    expect(mockFunction1).toBeCalledWith({
-      idTokenPayload: expect.objectContaining(idTokenPayload1),
-      submission: expect.objectContaining(submission1),
+    const { state: state1, nonce: nonce1 } = proofRequestMetadata1
+    expect(idTokenPayload1).toMatchObject({
+      state: state1,
+      nonce: nonce1,
     })
 
+    expect(presentationExchange1).toMatchObject({
+      definitions: [openBadgePresentationDefinition],
+      submission: {
+        definition_id: 'OpenBadgeCredential',
+      },
+      presentations: [
+        {
+          verifiableCredential: [
+            {
+              type: ['VerifiableCredential', 'OpenBadgeCredential'],
+            },
+          ],
+        },
+      ],
+    })
+
+    const selectedCredentials2 = presentationExchangeService.selectCredentialsForRequest(
+      resolvedProofRequest2.credentialsForRequest
+    )
+
+    // FIXME: do we want to return the submitted response? And the status code?
+    // Also, do we get anything back for submitting this?
     const { status: status2, submittedResponse: submittedResponse2 } =
-      await holderTenant1.modules.openId4VcHolder.acceptPresentationRequest(result2.presentationRequest, {
-        submission: result2.presentationSubmission,
-        submissionEntryIndexes: [0],
-      })
+      await holderTenant.modules.openId4VcHolder.acceptPresentationRequest(
+        resolvedProofRequest2.presentationRequest,
+        selectedCredentials2
+      )
     expect(status2).toBe(200)
 
     // The RP MUST validate that the aud (audience) Claim contains the value of the client_id
     // that the RP sent in the Authorization Request as an audience.
     // When the request has been signed, the value might be an HTTPS URL, or a Decentralized Identifier.
     const verifierTenant2_2 = await verifier.agent.modules.tenants.getTenantAgent({ tenantId: verifier2.tenantId })
-    const { idTokenPayload: idTokenPayload2, submission: submission2 } =
-      await verifierTenant2_2.modules.openId4VcVerifier.verifyProofResponse(submittedResponse2)
+    const { idTokenPayload: idTokenPayload2, presentationExchange: presentationExchange2 } =
+      await verifierTenant2_2.modules.openId4VcVerifier.verifyAuthorizationResponse({
+        authorizationResponse: submittedResponse2,
+        verifierId: openIdVerifierTenant2.verifierId,
+      })
 
-    const { state: state2, challenge: challenge2 } = proofRequestMetadata2
-    expect(idTokenPayload2).toBeDefined()
-    expect(idTokenPayload2.state).toMatch(state2)
-    expect(idTokenPayload2.nonce).toMatch(challenge2)
+    expect(idTokenPayload2).toMatchObject({
+      state: proofRequestMetadata2.state,
+      nonce: proofRequestMetadata2.nonce,
+    })
 
-    expect(submission2).toBeDefined()
-    expect(submission2?.presentationDefinitions).toHaveLength(1)
-    expect(submission2?.submissionData.definition_id).toBe('UniversityDegreeCredential')
-    expect(submission2?.presentations).toHaveLength(1)
-    expect(submission2?.presentations[0].vcs[0].credential.type).toEqual([
-      'VerifiableCredential',
-      'UniversityDegreeCredential',
-    ])
-
-    await waitForMockFunction(mockFunction2)
-    expect(mockFunction2).toBeCalledWith({
-      idTokenPayload: expect.objectContaining(idTokenPayload2),
-      submission: expect.objectContaining(submission2),
+    expect(presentationExchange2).toMatchObject({
+      definitions: [universityDegreePresentationDefinition],
+      submission: {
+        definition_id: 'UniversityDegreeCredential',
+      },
+      presentations: [
+        {
+          verifiableCredential: [
+            {
+              type: ['VerifiableCredential', 'UniversityDegreeCredential'],
+            },
+          ],
+        },
+      ],
     })
   })
 })

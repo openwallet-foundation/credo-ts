@@ -182,7 +182,7 @@ export class OpenId4VpHolderService {
 
     const verificationMethod = await this.getVerificationMethodFromVerifiablePresentation(
       agentContext,
-      verifiablePresentations[0] as W3cVerifiablePresentation
+      verifiablePresentations[0]
     )
 
     const openidProvider = await this.getOpenIdProvider(agentContext, { verificationMethod })

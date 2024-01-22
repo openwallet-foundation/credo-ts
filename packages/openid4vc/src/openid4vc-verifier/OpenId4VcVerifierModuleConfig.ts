@@ -25,7 +25,7 @@ export interface OpenId4VcVerifierModuleConfigOptions {
    */
   router?: Router
 
-  endpoints: {
+  endpoints?: {
     // FIXME: interface name with openid4vc prefix
     authorization?: Optional<AuthorizationEndpointConfig, 'endpointPath'>
   }
@@ -55,7 +55,7 @@ export class OpenId4VcVerifierModuleConfig {
 
   public get authorizationEndpoint(): AuthorizationEndpointConfig {
     // Use user supplied options, or return defaults.
-    const userOptions = this.options.endpoints.authorization
+    const userOptions = this.options.endpoints?.authorization
 
     return {
       ...userOptions,

@@ -1,4 +1,10 @@
-import type { VerificationMethod } from '@aries-framework/core'
+import type {
+  DifPresentationExchangeDefinition,
+  DifPresentationExchangeSubmission,
+  VerificationMethod,
+  W3cVerifiablePresentation,
+} from '@aries-framework/core'
+import type { SdJwtVc } from '@aries-framework/sd-jwt-vc'
 import type {
   IDTokenPayload,
   VerifiedOpenID4VPSubmission,
@@ -73,7 +79,13 @@ export interface VerifyProofResponseOptions {
 
 export interface VerifiedOpenId4VcAuthorizationResponse {
   idTokenPayload: IDTokenPayload
-  submission: VerifiedOpenID4VPSubmission | undefined
+  presentationExchange:
+    | {
+        submission: DifPresentationExchangeSubmission
+        definitions: DifPresentationExchangeDefinition[]
+        presentations: Array<W3cVerifiablePresentation | SdJwtVc>
+      }
+    | undefined
 }
 
 export type OpenId4VcAuthorizationResponse = AuthorizationResponsePayload

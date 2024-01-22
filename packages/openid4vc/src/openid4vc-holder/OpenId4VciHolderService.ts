@@ -589,7 +589,10 @@ export class OpenId4VciHolderService {
         )
 
       const sdJwtVcApi = getApiForModuleByName<SdJwtVcModule>(agentContext, 'SdJwtVcModule')
-      if (!sdJwtVcApi) throw new AriesFrameworkError(`Could not find the SdJwtVcApi`)
+      if (!sdJwtVcApi)
+        throw new AriesFrameworkError(
+          `Could not find the SdJwtVcApi. Make sure the @aries-framework/sd-jwt-vc module is registered.`
+        )
       const { verification, sdJwtVc } = await sdJwtVcApi.verify({
         compactSdJwtVc: credentialResponse.successBody.credential,
       })

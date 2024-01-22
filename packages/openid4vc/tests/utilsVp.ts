@@ -13,8 +13,10 @@ import {
 } from '@aries-framework/core'
 import { SigningAlgo } from '@sphereon/did-auth-siop'
 
-import { staticOpOpenIdConfig } from '../src'
-import { staticOpSiopConfig } from '../src/openid4vc-verifier/OpenId4VcVerifierServiceOptions'
+import {
+  openidStaticOpConfiguration,
+  siopv2StaticOpConfiguration,
+} from '../src/openid4vc-verifier/staticOpConfiguration'
 import { getProofTypeFromKey } from '../src/shared/utils'
 
 export const waltPortalOpenBadgeJwt =
@@ -108,19 +110,19 @@ export const combinePresentationDefinitions = (
   }
 }
 
-export const staticOpOpenIdConfigEdDSA: HolderMetadata = {
-  ...staticOpOpenIdConfig,
+export const staticOpOpenIdConfigEdDSA = {
+  ...openidStaticOpConfiguration,
   idTokenSigningAlgValuesSupported: [SigningAlgo.EDDSA],
   requestObjectSigningAlgValuesSupported: [SigningAlgo.EDDSA],
   vpFormatsSupported: { jwt_vc: { alg: [SigningAlgo.EDDSA] }, jwt_vp: { alg: [SigningAlgo.EDDSA] } },
-}
+} satisfies HolderMetadata
 
-export const staticSiopConfigEDDSA: HolderMetadata = {
-  ...staticOpSiopConfig,
+export const staticSiopConfigEDDSA = {
+  ...siopv2StaticOpConfiguration,
   idTokenSigningAlgValuesSupported: [SigningAlgo.EDDSA],
   requestObjectSigningAlgValuesSupported: [SigningAlgo.EDDSA],
   vpFormatsSupported: { jwt_vc: { alg: [SigningAlgo.EDDSA] }, jwt_vp: { alg: [SigningAlgo.EDDSA] } },
-}
+} satisfies HolderMetadata
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function waitForMockFunction(mockFn: jest.Mock<any, any, any>) {

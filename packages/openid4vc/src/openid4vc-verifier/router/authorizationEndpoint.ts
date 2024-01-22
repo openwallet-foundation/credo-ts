@@ -17,17 +17,20 @@ export interface AuthorizationEndpointConfig {
 
 export function configureAuthorizationEndpoint(router: Router, config: AuthorizationEndpointConfig) {
   router.post(config.endpointPath, async (request: OpenId4VcVerificationRequest, response: Response) => {
-    const { agentContext } = getRequestContext(request)
+    const { agentContext, verifier } = getRequestContext(request)
 
     try {
       const openId4VcVerifierService = agentContext.dependencyManager.resolve(OpenId4VcVerifierService)
       const isVpRequest = request.body.presentation_submission !== undefined
 
-      // FIXME: body should be verified
       const authorizationResponse: AuthorizationResponsePayload = request.body
       if (isVpRequest) authorizationResponse.presentation_submission = JSON.parse(request.body.presentation_submission)
 
-      await openId4VcVerifierService.verifyAuthorizationResponse(agentContext, request.body)
+      // FIXME: we should emit an event here
+      await openId4VcVerifierService.verifyAuthorizationResponse(agentContext, {
+        authorizationResponse: request.body,
+        verifier,
+      })
       return response.status(200).send()
     } catch (error) {
       return sendErrorResponse(response, agentContext.config.logger, 500, 'invalid_request', error)

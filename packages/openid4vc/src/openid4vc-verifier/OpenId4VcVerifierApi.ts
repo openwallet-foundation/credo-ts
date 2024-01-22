@@ -54,12 +54,12 @@ export class OpenId4VcVerifierApi {
    * See {@link OpenId4VcCreateAuthorizationRequestOptions} for detailed documentation on the options.
    */
   public async createAuthorizationRequest({
-    verifiedId,
+    verifierId,
     ...otherOptions
   }: OpenId4VcCreateAuthorizationRequestOptions & {
-    verifiedId: string
+    verifierId: string
   }): Promise<OpenId4VcAuthorizationRequestWithMetadata> {
-    const verifier = await this.getByVerifierId(verifiedId)
+    const verifier = await this.getByVerifierId(verifierId)
     return await this.openId4VcVerifierService.createAuthorizationRequest(this.agentContext, {
       ...otherOptions,
       verifier,
