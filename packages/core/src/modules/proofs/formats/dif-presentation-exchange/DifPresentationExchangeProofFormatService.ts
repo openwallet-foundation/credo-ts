@@ -45,12 +45,6 @@ export class PresentationExchangeProofFormatService implements ProofFormatServic
   public readonly formatKey = 'presentationExchange' as const
 
   private presentationExchangeService(agentContext: AgentContext) {
-    if (!agentContext.dependencyManager.isRegistered(DifPresentationExchangeService)) {
-      throw new AriesFrameworkError(
-        'DifPresentationExchangeService is not registered on the Agent. Please provide the PresentationExchangeModule as a module on the agent'
-      )
-    }
-
     return agentContext.dependencyManager.resolve(DifPresentationExchangeService)
   }
 
