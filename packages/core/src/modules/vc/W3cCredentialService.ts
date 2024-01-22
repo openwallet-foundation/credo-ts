@@ -54,14 +54,16 @@ export class W3cCredentialService {
    * @param credential the credential to be signed
    * @returns the signed credential
    */
-  public async signCredential(
+  public async signCredential<Format extends ClaimFormat.JwtVc | ClaimFormat.LdpVc>(
     agentContext: AgentContext,
-    options: W3cSignCredentialOptions
-  ): Promise<W3cVerifiableCredential<W3cSignCredentialOptions['format']>> {
+    options: W3cSignCredentialOptions<Format>
+  ): Promise<W3cVerifiableCredential<Format>> {
     if (options.format === ClaimFormat.JwtVc) {
-      return this.w3cJwtCredentialService.signCredential(agentContext, options)
+      const signed = await this.w3cJwtCredentialService.signCredential(agentContext, options)
+      return signed as W3cVerifiableCredential<Format>
     } else if (options.format === ClaimFormat.LdpVc) {
-      return this.w3cJsonLdCredentialService.signCredential(agentContext, options)
+      const signed = await this.w3cJsonLdCredentialService.signCredential(agentContext, options)
+      return signed as W3cVerifiableCredential<Format>
     } else {
       throw new AriesFrameworkError(`Unsupported format in options. Format must be either 'jwt_vc' or 'ldp_vc'`)
     }
@@ -110,14 +112,16 @@ export class W3cCredentialService {
    * @param presentation the presentation to be signed
    * @returns the signed presentation
    */
-  public async signPresentation(
+  public async signPresentation<Format extends ClaimFormat.JwtVp | ClaimFormat.LdpVp>(
     agentContext: AgentContext,
-    options: W3cSignPresentationOptions
-  ): Promise<W3cVerifiablePresentation<W3cSignPresentationOptions['format']>> {
+    options: W3cSignPresentationOptions<Format>
+  ): Promise<W3cVerifiablePresentation<Format>> {
     if (options.format === ClaimFormat.JwtVp) {
-      return this.w3cJwtCredentialService.signPresentation(agentContext, options)
+      const signed = await this.w3cJwtCredentialService.signPresentation(agentContext, options)
+      return signed as W3cVerifiablePresentation<Format>
     } else if (options.format === ClaimFormat.LdpVp) {
-      return this.w3cJsonLdCredentialService.signPresentation(agentContext, options)
+      const signed = await this.w3cJsonLdCredentialService.signPresentation(agentContext, options)
+      return signed as W3cVerifiablePresentation<Format>
     } else {
       throw new AriesFrameworkError(`Unsupported format in options. Format must be either 'jwt_vp' or 'ldp_vp'`)
     }
