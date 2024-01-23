@@ -1,5 +1,4 @@
 import type { JsonObject } from '../../../..'
-import type { W3cVerifiableCredential } from '../../../vc'
 
 export type W3C_VC_DATA_MODEL_VERSION = '1.1' | '2.0'
 

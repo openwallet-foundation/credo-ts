@@ -77,7 +77,7 @@ import {
 } from '../repository'
 import { AnonCredsIssuerServiceSymbol, AnonCredsHolderServiceSymbol } from '../services'
 import { AnonCredsRegistryService } from '../services/registry/AnonCredsRegistryService'
-import { dateToTimestamp, fetchObjectsFromLedger, fetchQualifiedIds, legacyCredentialToW3cCredential } from '../utils'
+import { dateToTimestamp, fetchObjectsFromLedger, legacyCredentialToW3cCredential } from '../utils'
 import {
   convertAttributesToCredentialValues,
   assertAttributesMatch as assertAttributesMatchSchema,
