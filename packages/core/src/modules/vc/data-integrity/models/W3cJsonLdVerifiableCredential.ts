@@ -37,6 +37,13 @@ export class W3cJsonLdVerifiableCredential extends W3cCredential {
     return proofArray.map((proof) => proof.type)
   }
 
+  public get cryptoSuites(): Array<string> {
+    const proofArray = asArray(this.proof) ?? []
+    return proofArray
+      .map((proof) => proof.cryptosuite)
+      .filter((cryptosuite): cryptosuite is string => typeof cryptosuite === 'string')
+  }
+
   public toJson() {
     return JsonTransformer.toJSON(this)
   }

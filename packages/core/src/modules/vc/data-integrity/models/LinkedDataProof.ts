@@ -7,8 +7,11 @@ import { IsUri } from '../../../../utils'
 
 export interface LinkedDataProofOptions {
   type: string
+  // FIXME: cryptosuite is not optional when migrating to the new data integrity specification
+  cryptosuite?: string
   proofPurpose: string
   verificationMethod: string
+  // FIXME: created is optional when migrating to the new data integrity specification
   created: string
   domain?: string
   challenge?: string
@@ -27,6 +30,7 @@ export class LinkedDataProof {
   public constructor(options: LinkedDataProofOptions) {
     if (options) {
       this.type = options.type
+      this.cryptosuite = options.cryptosuite
       this.proofPurpose = options.proofPurpose
       this.verificationMethod = options.verificationMethod
       this.created = options.created
@@ -40,6 +44,10 @@ export class LinkedDataProof {
 
   @IsString()
   public type!: string
+
+  @IsString()
+  @IsOptional()
+  public cryptosuite: string | undefined
 
   @IsString()
   public proofPurpose!: string

@@ -25,6 +25,7 @@ describe('W3cCredentialRecord', () => {
         claimFormat: 'ldp_vc',
         issuerId: credential.issuerId,
         subjectIds: credential.credentialSubjectIds,
+        cryptosuites: [],
         schemaIds: credential.credentialSchemaIds,
         contexts: credential.contexts,
         proofTypes: credential.proofTypes,
@@ -98,6 +99,7 @@ describe('W3cCredentialRecord', () => {
         contexts: credential.contexts,
         proofTypes: credential.proofTypes,
         givenId: credential.id,
+        cryptosuites: [],
         expandedTypes: ['https://expanded.tag#1'],
         ...anoncredsCredentialTags,
       })

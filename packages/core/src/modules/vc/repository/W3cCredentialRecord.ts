@@ -47,6 +47,7 @@ export type DefaultW3cCredentialTags = {
   claimFormat: W3cVerifiableCredential['claimFormat']
 
   proofTypes?: Array<string>
+  cryptosuites?: Array<string>
   algs?: Array<string>
 }
 
@@ -142,6 +143,7 @@ export class W3cCredentialRecord extends BaseRecord<
     // Proof types is used for ldp_vc credentials
     if (this.credential.claimFormat === ClaimFormat.LdpVc) {
       tags.proofTypes = this.credential.proofTypes
+      tags.cryptosuites = this.credential.cryptoSuites
     }
 
     // Algs is used for jwt_vc credentials

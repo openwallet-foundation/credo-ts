@@ -65,6 +65,7 @@ import {
   JwtPayload,
   SignatureSuiteRegistry,
   parseDid,
+  ConnectionRepository,
 } from '@aries-framework/core'
 import { W3cCredential as AW3cCredential } from '@hyperledger/anoncreds-shared'
 
@@ -390,6 +391,12 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
         }
       } else {
         // TODO: If the issuer is not included in the credential in the offer, the aud MUST be the same as the did of the recipient did of the DIDComm message containing the request message.
+        const connectionRepository = agentContext.dependencyManager.resolve(ConnectionRepository)
+        credentialRecord.connectionId // fetch connection -> get did prop
+
+        const res = await connectionRepository.getByThreadId(agentContext, credentialRecord.threadId)
+        // ??? res.did
+
         throw new AriesFrameworkError('Wrong issuer format in credential offer')
       }
 
@@ -458,7 +465,6 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   public async processRequest(agentContext: AgentContext, options: CredentialFormatProcessOptions): Promise<void> {
     // not needed for dataIntegrity
-    // TODO: implement
   }
 
   private async createCredentialWithAnonCredsDataIntegrityProof(
@@ -532,7 +538,7 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
       revocationStatusList = revocationStatusListResult.revocationStatusList
     }
 
-    // TODO: bad abd bad
+    // TODO:
     const { credential } = await anonCredsIssuerService.createCredential(agentContext, {
       credentialOffer: {
         ...anonCredsLinkSecretBindingMethod,
@@ -612,7 +618,7 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
       const issuerKid = dataIntegrityFormat.didCommSignedAttachmentAcceptRequestOptions?.kid
       if (!issuerKid) throw new AriesFrameworkError('Missing kid')
 
-      // very bad
+      // TODO: for afj the offer is the issued credential
       const offeredCredential = JsonTransformer.fromJSON(credentialOffer.credential, W3cCredential)
 
       const { aud, nonce } = await this.getSignedAttachmentPayload(agentContext, bindingProofAttachment)
