@@ -1,11 +1,20 @@
-import type { TagsBase, Constructable } from '@aries-framework/core'
-import type { Disclosure } from '@sd-jwt/core'
+import type { TagsBase, Constructable, JwaSignatureAlgorithm } from '@aries-framework/core'
 
 import { JsonTransformer, BaseRecord, utils } from '@aries-framework/core'
 import { SdJwtVc } from '@sd-jwt/core'
 
 export type DefaultSdJwtVcRecordTags = {
-  disclosureKeys?: Array<string>
+  vct: string
+
+  /**
+   * The sdAlg is the alg used for creating digests for selective disclosures
+   */
+  sdAlg: string
+
+  /**
+   * The alg is the alg used to sign the SD-JWT
+   */
+  alg: JwaSignatureAlgorithm
 }
 
 export type SdJwtVcRecordStorageProps = {
@@ -24,7 +33,6 @@ export class SdJwtVcRecord extends BaseRecord<DefaultSdJwtVcRecordTags> {
 
   // TODO: should we also store the pretty claims so it's not needed to
   // re-calculate the hashes each time? I think for now it's fine to re-calculate
-
   public constructor(props: SdJwtVcRecordStorageProps) {
     super()
 
@@ -37,14 +45,13 @@ export class SdJwtVcRecord extends BaseRecord<DefaultSdJwtVcRecordTags> {
   }
 
   public getTags() {
-    const disclosures = SdJwtVc.fromCompact(this.compactSdJwtVc).disclosures
-    const disclosureKeys = disclosures
-      ?.filter((d): d is Disclosure & { decoded: [string, string, unknown] } => d.decoded.length === 3)
-      .map((d) => d.decoded[1])
+    const sdJwtVc = SdJwtVc.fromCompact(this.compactSdJwtVc)
 
     return {
       ...this._tags,
-      disclosureKeys,
+      vct: sdJwtVc.getClaimInPayload<string>('vct'),
+      sdAlg: (sdJwtVc.payload._sd_alg as string | undefined) ?? 'sha-256',
+      alg: sdJwtVc.getClaimInHeader<JwaSignatureAlgorithm>('alg'),
     }
   }
 
