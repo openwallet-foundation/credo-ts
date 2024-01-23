@@ -40,7 +40,6 @@ export async function storeActorIdForContextCorrelationId(agentContext: AgentCon
   // It's kind of hacky, but we add support for the tenants module specifically here to map an actorId to
   // a specific tenant. Otherwise we have to expose /:contextCorrelationId/:actorId in all the public URLs
   // which is of course not so nice.
-  // FIXME: it's maybe nicer to just depend on the tenants module
   const tenantsApi = getApiForModuleByName<TenantsModule>(agentContext, 'TenantsModule')
 
   // We don't want to query the tenant record if the current context is the root context

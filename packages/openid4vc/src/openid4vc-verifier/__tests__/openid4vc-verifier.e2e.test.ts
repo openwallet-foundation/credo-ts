@@ -44,7 +44,7 @@ describe('OpenId4VcVerifier', () => {
 
     it(`cannot sign authorization request with alg that isn't supported by the OpenId Provider`, async () => {
       await expect(
-        verifier.agent.modules.openId4VcVerifier.createProofRequest({
+        verifier.agent.modules.openId4VcVerifier.createAuthorizationRequest({
           verificationEndpointUrl: 'http://redirect-uri',
           verificationMethod: verifier.verificationMethod,
         })
@@ -52,21 +52,21 @@ describe('OpenId4VcVerifier', () => {
     })
 
     it(`check openid proof request format`, async () => {
-      const { proofRequest } = await verifier.agent.modules.openId4VcVerifier.createProofRequest({
+      const { authorizationRequestUri } = await verifier.agent.modules.openId4VcVerifier.createAuthorizationRequest({
         verificationEndpointUrl: 'http://redirect-uri',
         verificationMethod: verifier.verificationMethod,
-        holderMetadata: staticOpOpenIdConfigEdDSA,
+        openIdProvider: staticOpOpenIdConfigEdDSA,
         presentationDefinition: universityDegreePresentationDefinition,
       })
 
       const base =
         'openid://?redirect_uri=http%3A%2F%2Fredirect-uri&presentation_definition=%7B%22id%22%3A%22UniversityDegreeCredential%22%2C%22input_descriptors%22%3A%5B%7B%22id%22%3A%22UniversityDegree%22%2C%22format%22%3A%7B%22jwt_vc%22%3A%7B%22alg%22%3A%5B%22EdDSA%22%5D%7D%7D%2C%22constraints%22%3A%7B%22fields%22%3A%5B%7B%22path%22%3A%5B%22%24.vc.type.*%22%5D%2C%22filter%22%3A%7B%22type%22%3A%22string%22%2C%22pattern%22%3A%22UniversityDegree%22%7D%7D%5D%7D%7D%5D%7D&request='
-      expect(proofRequest.startsWith(base)).toBe(true)
+      expect(authorizationRequestUri.startsWith(base)).toBe(true)
 
-      const _jwt = proofRequest.substring(base.length)
+      const _jwt = authorizationRequestUri.substring(base.length)
       const jwt = Jwt.fromSerializedJwt(_jwt)
 
-      expect(proofRequest.startsWith(base)).toBe(true)
+      expect(authorizationRequestUri.startsWith(base)).toBe(true)
 
       expect(jwt.header.kid).toEqual(verifier.kid)
       expect(jwt.header.alg).toEqual(SigningAlgo.EDDSA)
@@ -83,17 +83,17 @@ describe('OpenId4VcVerifier', () => {
     })
 
     it(`check siop proof request format`, async () => {
-      const { proofRequest } = await verifier.agent.modules.openId4VcVerifier.createProofRequest({
+      const { authorizationRequestUri } = await verifier.agent.modules.openId4VcVerifier.createAuthorizationRequest({
         verificationEndpointUrl: 'http://redirect-uri',
         verificationMethod: verifier.verificationMethod,
-        holderMetadata: staticSiopConfigEDDSA,
+        openIdProvider: staticSiopConfigEDDSA,
       })
 
       // TODO: this should be siopv2
       const base = 'openid://?redirect_uri=http%3A%2F%2Fredirect-uri&request='
-      expect(proofRequest.startsWith(base)).toBe(true)
+      expect(authorizationRequestUri.startsWith(base)).toBe(true)
 
-      const _jwt = proofRequest.substring(base.length)
+      const _jwt = authorizationRequestUri.substring(base.length)
       const jwt = Jwt.fromSerializedJwt(_jwt)
 
       expect(jwt.header.kid).toEqual(verifier.kid)

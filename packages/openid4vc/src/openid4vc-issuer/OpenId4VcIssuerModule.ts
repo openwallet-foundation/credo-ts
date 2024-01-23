@@ -57,7 +57,7 @@ export class OpenId4VcIssuerModule implements Module {
   private configureRouter(rootAgentContext: AgentContext) {
     const { Router, json, urlencoded } = importExpress()
 
-    // FIXME: it is currently not possible to initialize an agent
+    // TODO: it is currently not possible to initialize an agent
     // shut it down, and then start it again, as the
     // express router is configured with a specific `AgentContext` instance
     // and dependency manager. One option is to always create a new router
@@ -101,6 +101,7 @@ export class OpenId4VcIssuerModule implements Module {
         )
         // If the opening failed
         await agentContext?.endSession()
+
         return _res.status(404).send('Not found')
       }
 
@@ -114,8 +115,16 @@ export class OpenId4VcIssuerModule implements Module {
     configureAccessTokenEndpoint(endpointRouter, this.config.accessTokenEndpoint)
     configureCredentialEndpoint(endpointRouter, this.config.credentialEndpoint)
 
-    // FIXME: Will this be called when an error occurs / 404 is returned earlier on?
-    contextRouter.use(async (req: OpenId4VcIssuanceRequest, _res, next) => {
+    // First one will be called for all requests (when next is called)
+    contextRouter.use(async (req: OpenId4VcIssuanceRequest, _res: unknown, next) => {
+      const { agentContext } = getRequestContext(req)
+      await agentContext.endSession()
+      next()
+    })
+
+    // This one will be called for all errors that are thrown
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    contextRouter.use(async (_error: unknown, req: OpenId4VcIssuanceRequest, _res: unknown, next: any) => {
       const { agentContext } = getRequestContext(req)
       await agentContext.endSession()
       next()

@@ -22,20 +22,23 @@ export interface CredentialEndpointConfig {
 }
 
 export function configureCredentialEndpoint(router: Router, config: CredentialEndpointConfig) {
-  router.post(config.endpointPath, async (request: OpenId4VcIssuanceRequest, response: Response) => {
+  router.post(config.endpointPath, async (request: OpenId4VcIssuanceRequest, response: Response, next) => {
     const { agentContext, issuer } = getRequestContext(request)
-    const openId4VcIssuerService = agentContext.dependencyManager.resolve(OpenId4VcIssuerService)
 
     try {
+      const openId4VcIssuerService = agentContext.dependencyManager.resolve(OpenId4VcIssuerService)
       const credentialRequest = request.body as OpenId4VciCredentialRequest
       const issueCredentialResponse = await openId4VcIssuerService.createCredentialResponse(agentContext, {
         issuer,
         credentialRequest,
       })
 
-      return response.send(issueCredentialResponse)
+      response.json(issueCredentialResponse)
     } catch (error) {
       sendErrorResponse(response, agentContext.config.logger, 500, 'invalid_request', error)
     }
+
+    // NOTE: if we don't call next, the agentContext session handler will NOT be called
+    next()
   })
 }

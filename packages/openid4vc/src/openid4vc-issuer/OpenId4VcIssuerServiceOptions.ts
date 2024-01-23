@@ -1,13 +1,12 @@
 import type { OpenId4VcIssuerRecordProps } from './repository'
 import type {
-  CredentialHolderBinding,
+  OpenId4VcCredentialHolderBinding,
   OpenId4VciCredentialOffer,
-  OpenId4VciCredentialOfferPayload,
   OpenId4VciCredentialRequest,
   OpenId4VciCredentialSupported,
   OpenId4VciIssuerMetadataDisplay,
 } from '../shared'
-import type { AgentContext, W3cCredential } from '@aries-framework/core'
+import type { AgentContext, ClaimFormat, W3cCredential } from '@aries-framework/core'
 import type { SdJwtVcSignOptions } from '@aries-framework/sd-jwt-vc'
 
 export interface OpenId4VciPreAuthorizedCodeFlowConfig {
@@ -38,28 +37,24 @@ export interface OpenId4VciCreateCredentialOfferOptions {
   // we only support referenced credentials in an offer
   offeredCredentials: string[]
 
-  // FIXME: can we simplify this?
-  // The scheme used for the credentialIssuer. Default is https
-  scheme?: 'http' | 'https' | 'openid-credential-offer' | string
-
-  // The base URI of the credential offer uri
+  /**
+   * baseUri for the credential offer uri. By default `openid-credential-offer://` will be used
+   * if no value is provided. If a value is provided, make sure it contains the scheme as well as `://`.
+   */
   baseUri?: string
 
   preAuthorizedCodeFlowConfig?: OpenId4VciPreAuthorizedCodeFlowConfig
   authorizationCodeFlowConfig?: OpenId4VciAuthorizationCodeFlowConfig
 
-  credentialOfferUri?: string
+  /**
+   * You can provide a `hostedCredentialOfferUrl` if the created credential offer
+   * should points to a hosted credential offer in the `credential_offer_uri` field
+   * of the credential offer.
+   */
+  hostedCredentialOfferUrl?: string
 }
 
-// FIXME: this needs to be renamed, but will class with OpenId4VciCredentialOffer
-// Probably needs to be specific `XXReturn` type
-export type CredentialOffer = {
-  credentialOfferPayload: OpenId4VciCredentialOfferPayload
-  credentialOfferUri: string
-}
-
-// FIXME: openid4vc prefix for all interfaces
-export interface CreateCredentialResponseOptions {
+export interface OpenId4VciCreateCredentialResponseOptions {
   credentialRequest: OpenId4VciCredentialRequest
 
   /**
@@ -72,9 +67,9 @@ export interface CreateCredentialResponseOptions {
   credentialRequestToCredentialMapper?: OpenId4VciCredentialRequestToCredentialMapper
 }
 
-// FIXME: openid4vc prefix for all interfaces
 // FIXME: Flows:
 // - provide credential data at time of offer creation
+// - provide credential data at time of calling createCredentialResponse
 // - provide credential data dynamically using this method
 export type OpenId4VciCredentialRequestToCredentialMapper = (options: {
   agentContext: AgentContext
@@ -94,7 +89,7 @@ export type OpenId4VciCredentialRequestToCredentialMapper = (options: {
    *
    * Can either be bound to did or a JWK (in case of for ex. SD-JWT)
    */
-  holderBinding: CredentialHolderBinding
+  holderBinding: OpenId4VcCredentialHolderBinding
 
   /**
    * The credentials supported entries from the issuer metadata that were offered
@@ -105,16 +100,13 @@ export type OpenId4VciCredentialRequestToCredentialMapper = (options: {
   credentialsSupported: OpenId4VciCredentialSupported[]
 }) => Promise<OpenId4VciSignCredential> | OpenId4VciSignCredential
 
-// FIXME: can we make these interfaces more uniform or is it okay
-// to have quite some differences between them? I think the nice
-// thing here is that they are based on the interface from the
-// w3c and sd-jwt services. However in that case you could also
-// ask why not just require the signed credential as output
-// as you can then just call the services yourself.
-// FIMXE: add type for type of credential. Also to input of mapper. W3c can be returned for jwt + ldp. and sd-jwt for vc+sd-jwt
 export type OpenId4VciSignCredential = OpenId4VciSignSdJwtCredential | OpenId4VciSignW3cCredential
-export type OpenId4VciSignSdJwtCredential = SdJwtVcSignOptions
+export interface OpenId4VciSignSdJwtCredential extends SdJwtVcSignOptions {
+  format: ClaimFormat.SdJwtVc | `${ClaimFormat.SdJwtVc}`
+}
+
 export interface OpenId4VciSignW3cCredential {
+  format: ClaimFormat.JwtVc | `${ClaimFormat.JwtVc}` | ClaimFormat.LdpVc | `${ClaimFormat.LdpVc}`
   verificationMethod: string
   credential: W3cCredential
 }

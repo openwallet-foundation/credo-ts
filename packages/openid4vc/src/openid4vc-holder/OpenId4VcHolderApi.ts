@@ -1,8 +1,8 @@
 import type {
-  ResolvedCredentialOffer,
-  ResolvedAuthorizationRequest,
-  AuthCodeFlowOptions,
-  AcceptCredentialOfferOptions,
+  OpenId4VciResolvedCredentialOffer,
+  OpenId4VciResolvedAuthorizationRequest,
+  OpenId4VciAuthCodeFlowOptions,
+  OpenId4VciAcceptCredentialOfferOptions,
 } from './OpenId4VciHolderServiceOptions'
 import type { AuthenticationRequest, PresentationRequest } from './OpenId4VpHolderServiceOptions'
 import type { VerificationMethod, DifPexInputDescriptorToCredentials } from '@aries-framework/core'
@@ -105,8 +105,8 @@ export class OpenId4VcHolderApi {
    * @returns The authorization request URI alongside the code verifier and original @param authCodeFlowOptions
    */
   public async resolveAuthorizationRequest(
-    resolvedCredentialOffer: ResolvedCredentialOffer,
-    authCodeFlowOptions: AuthCodeFlowOptions
+    resolvedCredentialOffer: OpenId4VciResolvedCredentialOffer,
+    authCodeFlowOptions: OpenId4VciAuthCodeFlowOptions
   ) {
     return await this.openId4VciHolderService.resolveAuthorizationRequest(
       this.agentContext,
@@ -122,8 +122,8 @@ export class OpenId4VcHolderApi {
    * @returns ( @see W3cCredentialRecord | @see SdJwtRecord )[]
    */
   public async acceptCredentialOfferUsingPreAuthorizedCode(
-    resolvedCredentialOffer: ResolvedCredentialOffer,
-    acceptCredentialOfferOptions: AcceptCredentialOfferOptions
+    resolvedCredentialOffer: OpenId4VciResolvedCredentialOffer,
+    acceptCredentialOfferOptions: OpenId4VciAcceptCredentialOfferOptions
   ) {
     return this.openId4VciHolderService.acceptCredentialOffer(this.agentContext, {
       resolvedCredentialOffer,
@@ -140,10 +140,10 @@ export class OpenId4VcHolderApi {
    * @returns ( @see W3cCredentialRecord | @see SdJwtRecord )[]
    */
   public async acceptCredentialOfferUsingAuthorizationCode(
-    resolvedCredentialOffer: ResolvedCredentialOffer,
-    resolvedAuthorizationRequest: ResolvedAuthorizationRequest,
+    resolvedCredentialOffer: OpenId4VciResolvedCredentialOffer,
+    resolvedAuthorizationRequest: OpenId4VciResolvedAuthorizationRequest,
     code: string,
-    acceptCredentialOfferOptions: AcceptCredentialOfferOptions
+    acceptCredentialOfferOptions: OpenId4VciAcceptCredentialOfferOptions
   ) {
     return this.openId4VciHolderService.acceptCredentialOffer(this.agentContext, {
       resolvedCredentialOffer,

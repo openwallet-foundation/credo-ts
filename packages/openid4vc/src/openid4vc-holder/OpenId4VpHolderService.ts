@@ -173,11 +173,23 @@ export class OpenId4VpHolderService {
     presentationRequest: PresentationRequest,
     credentialsForInputDescriptor: DifPexInputDescriptorToCredentials
   ): Promise<ProofSubmissionResponse> {
+    // FIXME: make sure nonce and clientId are also verified in the verify proof method
+    const nonce = await presentationRequest.authorizationRequest.getMergedProperty<string>('nonce')
+    if (!nonce) {
+      throw new AriesFrameworkError("Unable to extract 'nonce' from authorization request")
+    }
+
+    const clientId = await presentationRequest.authorizationRequest.getMergedProperty<string>('client_id')
+    if (!clientId) {
+      throw new AriesFrameworkError("Unable to extract 'client_id' from authorization request")
+    }
+
     const { verifiablePresentations, presentationSubmission } =
       await this.presentationExchangeService.createPresentation(agentContext, {
         credentialsForInputDescriptor,
         presentationDefinition: presentationRequest.presentationDefinitions[0].definition,
-        nonce: await presentationRequest.authorizationRequest.getMergedProperty<string>('nonce'),
+        challenge: nonce,
+        domain: clientId,
       })
 
     const verificationMethod = await this.getVerificationMethodFromVerifiablePresentation(

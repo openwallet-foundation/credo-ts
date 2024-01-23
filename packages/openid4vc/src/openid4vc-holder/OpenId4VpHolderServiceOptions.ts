@@ -39,5 +39,3 @@ export type ProofSubmissionResponse = {
   status: number
   submittedResponse: AuthorizationResponsePayload
 }
-
-export type VpFormat = 'jwt_vp' | 'ldp_vp'

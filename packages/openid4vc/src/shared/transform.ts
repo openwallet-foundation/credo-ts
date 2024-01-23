@@ -1,78 +1,58 @@
 import type { W3cVerifiableCredential, W3cVerifiablePresentation } from '@aries-framework/core'
+import type { SdJwtVc } from '@aries-framework/sd-jwt-vc'
 import type {
-  OriginalVerifiableCredential as SphereonOriginalVerifiableCredential,
   W3CVerifiableCredential as SphereonW3cVerifiableCredential,
-  W3CVerifiablePresentation as SphereonW3cVerifiablePresentation,
+  CompactSdJwtVc as SphereonCompactSdJwtVc,
+  WrappedVerifiablePresentation,
 } from '@sphereon/ssi-types'
 
 import {
-  ClaimFormat,
   JsonTransformer,
   AriesFrameworkError,
   W3cJsonLdVerifiablePresentation,
   W3cJwtVerifiablePresentation,
   W3cJwtVerifiableCredential,
   W3cJsonLdVerifiableCredential,
+  JsonEncoder,
 } from '@aries-framework/core'
 
-export function getSphereonOriginalVerifiableCredential(
-  w3cVerifiableCredential: W3cVerifiableCredential
-): SphereonOriginalVerifiableCredential {
-  if (w3cVerifiableCredential.claimFormat === ClaimFormat.LdpVc) {
-    return JsonTransformer.toJSON(w3cVerifiableCredential) as SphereonOriginalVerifiableCredential
-  } else if (w3cVerifiableCredential.claimFormat === ClaimFormat.JwtVc) {
-    return w3cVerifiableCredential.serializedJwt
+export function getSphereonVerifiableCredential(
+  verifiableCredential: W3cVerifiableCredential | SdJwtVc
+): SphereonW3cVerifiableCredential | SphereonCompactSdJwtVc {
+  // encoded sd-jwt or jwt
+  if (typeof verifiableCredential === 'string') {
+    return verifiableCredential
+  } else if (verifiableCredential instanceof W3cJsonLdVerifiableCredential) {
+    return JsonTransformer.toJSON(verifiableCredential) as SphereonW3cVerifiableCredential
+  } else if (verifiableCredential instanceof W3cJwtVerifiableCredential) {
+    return verifiableCredential.serializedJwt
   } else {
-    throw new AriesFrameworkError(
-      `Unsupported claim format. Only ${ClaimFormat.LdpVc} and ${ClaimFormat.JwtVc} are supported.`
-    )
+    return verifiableCredential.compact
   }
 }
 
-export function getSphereonW3cVerifiableCredential(
-  w3cVerifiableCredential: W3cVerifiableCredential
-): SphereonW3cVerifiableCredential {
-  if (w3cVerifiableCredential.claimFormat === ClaimFormat.LdpVc) {
-    return JsonTransformer.toJSON(w3cVerifiableCredential) as SphereonW3cVerifiableCredential
-  } else if (w3cVerifiableCredential.claimFormat === ClaimFormat.JwtVc) {
-    return w3cVerifiableCredential.serializedJwt
-  } else {
-    throw new AriesFrameworkError(
-      `Unsupported claim format. Only ${ClaimFormat.LdpVc} and ${ClaimFormat.JwtVc} are supported.`
-    )
-  }
-}
+export function getVerifiablePresentationFromSphereonWrapped(
+  wrappedVerifiablePresentation: WrappedVerifiablePresentation
+): W3cVerifiablePresentation | SdJwtVc {
+  if (wrappedVerifiablePresentation.format === 'jwt_vp') {
+    if (typeof wrappedVerifiablePresentation.original !== 'string') {
+      throw new AriesFrameworkError('Unable to transform JWT VP to W3C VP')
+    }
 
-export function getSphereonW3cVerifiablePresentation(
-  w3cVerifiablePresentation: W3cVerifiablePresentation
-): SphereonW3cVerifiablePresentation {
-  if (w3cVerifiablePresentation instanceof W3cJsonLdVerifiablePresentation) {
-    return JsonTransformer.toJSON(w3cVerifiablePresentation) as SphereonW3cVerifiablePresentation
-  } else if (w3cVerifiablePresentation instanceof W3cJwtVerifiablePresentation) {
-    return w3cVerifiablePresentation.serializedJwt
-  } else {
-    throw new AriesFrameworkError(
-      `Unsupported claim format. Only ${ClaimFormat.LdpVc} and ${ClaimFormat.JwtVc} are supported.`
-    )
+    return W3cJwtVerifiablePresentation.fromSerializedJwt(wrappedVerifiablePresentation.original)
+  } else if (wrappedVerifiablePresentation.format === 'ldp_vp') {
+    return JsonTransformer.fromJSON(wrappedVerifiablePresentation.original, W3cJsonLdVerifiablePresentation)
+  } else if (wrappedVerifiablePresentation.format === 'vc+sd-jwt') {
+    // We use some custom logic here so we don't have to re-process the encoded SD-JWT
+    const [encodedHeader] = wrappedVerifiablePresentation.presentation.compactSdJwtVc.split('.')
+    const header = JsonEncoder.fromBase64(encodedHeader)
+    return {
+      compact: wrappedVerifiablePresentation.presentation.compactSdJwtVc,
+      header,
+      payload: wrappedVerifiablePresentation.presentation.signedPayload,
+      prettyClaims: wrappedVerifiablePresentation.presentation.decodedPayload,
+    } satisfies SdJwtVc
   }
-}
 
-export function getW3cVerifiablePresentationInstance(
-  w3cVerifiablePresentation: SphereonW3cVerifiablePresentation
-): W3cVerifiablePresentation {
-  if (typeof w3cVerifiablePresentation === 'string') {
-    return W3cJwtVerifiablePresentation.fromSerializedJwt(w3cVerifiablePresentation)
-  } else {
-    return JsonTransformer.fromJSON(w3cVerifiablePresentation, W3cJsonLdVerifiablePresentation)
-  }
-}
-
-export function getW3cVerifiableCredentialInstance(
-  w3cVerifiableCredential: SphereonW3cVerifiableCredential
-): W3cVerifiableCredential {
-  if (typeof w3cVerifiableCredential === 'string') {
-    return W3cJwtVerifiableCredential.fromSerializedJwt(w3cVerifiableCredential)
-  } else {
-    return JsonTransformer.fromJSON(w3cVerifiableCredential, W3cJsonLdVerifiableCredential)
-  }
+  throw new AriesFrameworkError(`Unsupported presentation format: ${wrappedVerifiablePresentation.format}`)
 }

@@ -16,7 +16,7 @@ export interface AuthorizationEndpointConfig {
 }
 
 export function configureAuthorizationEndpoint(router: Router, config: AuthorizationEndpointConfig) {
-  router.post(config.endpointPath, async (request: OpenId4VcVerificationRequest, response: Response) => {
+  router.post(config.endpointPath, async (request: OpenId4VcVerificationRequest, response: Response, next) => {
     const { agentContext, verifier } = getRequestContext(request)
 
     try {
@@ -31,9 +31,12 @@ export function configureAuthorizationEndpoint(router: Router, config: Authoriza
         authorizationResponse: request.body,
         verifier,
       })
-      return response.status(200).send()
+      response.status(200).send()
     } catch (error) {
-      return sendErrorResponse(response, agentContext.config.logger, 500, 'invalid_request', error)
+      sendErrorResponse(response, agentContext.config.logger, 500, 'invalid_request', error)
     }
+
+    // NOTE: if we don't call next, the agentContext session handler will NOT be called
+    next()
   })
 }

@@ -57,21 +57,21 @@ import {
 import { getSupportedJwaSignatureAlgorithms } from '../shared/utils'
 
 import {
-  type AuthCodeFlowOptions,
-  type AcceptCredentialOfferOptions,
-  type ProofOfPossessionRequirements,
-  type CredentialBindingResolver,
-  type ResolvedCredentialOffer,
-  type ResolvedAuthorizationRequest,
-  type ResolvedAuthorizationRequestWithCode,
-  type SupportedCredentialFormats,
-  supportedCredentialFormats,
+  type OpenId4VciAuthCodeFlowOptions,
+  type OpenId4VciAcceptCredentialOfferOptions,
+  type OpenId4VciProofOfPossessionRequirements,
+  type OpenId4VciCredentialBindingResolver,
+  type OpenId4VciResolvedCredentialOffer,
+  type OpenId4VciResolvedAuthorizationRequest,
+  type OpenId4VciResolvedAuthorizationRequestWithCode,
+  type OpenId4VciSupportedCredentialFormats,
+  openId4VciSupportedCredentialFormats,
 } from './OpenId4VciHolderServiceOptions'
 
 // FIXME: this is also defined in the sphereon lib, is there a reason we don't use that one?
 async function createAuthorizationRequestUri(options: {
   credentialOffer: OpenId4VciCredentialOfferPayload
-  metadata: ResolvedCredentialOffer['metadata']
+  metadata: OpenId4VciResolvedCredentialOffer['metadata']
   clientId: string
   codeChallenge: string
   codeChallengeMethod: CodeChallengeMethod
@@ -161,7 +161,7 @@ export class OpenId4VciHolderService {
     this.logger = logger
   }
 
-  public async resolveCredentialOffer(credentialOffer: string): Promise<ResolvedCredentialOffer> {
+  public async resolveCredentialOffer(credentialOffer: string): Promise<OpenId4VciResolvedCredentialOffer> {
     const client = await OpenID4VCIClient.fromURI({
       uri: credentialOffer,
       resolveOfferUri: true,
@@ -240,9 +240,9 @@ export class OpenId4VciHolderService {
   // need to make sure difference is clear
   public async resolveAuthorizationRequest(
     agentContext: AgentContext,
-    resolvedCredentialOffer: ResolvedCredentialOffer,
-    authCodeFlowOptions: AuthCodeFlowOptions
-  ): Promise<ResolvedAuthorizationRequest> {
+    resolvedCredentialOffer: OpenId4VciResolvedCredentialOffer,
+    authCodeFlowOptions: OpenId4VciAuthCodeFlowOptions
+  ): Promise<OpenId4VciResolvedAuthorizationRequest> {
     const { credentialOfferPayload, metadata, offeredCredentials } = resolvedCredentialOffer
     const codeVerifier = `${await agentContext.wallet.generateNonce()}${await agentContext.wallet.generateNonce()}`
     const codeVerifierSha256 = Hasher.hash(TypedArrayEncoder.fromString(codeVerifier), 'sha2-256')
@@ -285,9 +285,9 @@ export class OpenId4VciHolderService {
   public async acceptCredentialOffer(
     agentContext: AgentContext,
     options: {
-      resolvedCredentialOffer: ResolvedCredentialOffer
-      acceptCredentialOfferOptions: AcceptCredentialOfferOptions
-      resolvedAuthorizationRequestWithCode?: ResolvedAuthorizationRequestWithCode
+      resolvedCredentialOffer: OpenId4VciResolvedCredentialOffer
+      acceptCredentialOfferOptions: OpenId4VciAcceptCredentialOfferOptions
+      resolvedAuthorizationRequestWithCode?: OpenId4VciResolvedAuthorizationRequestWithCode
     }
   ) {
     const { resolvedCredentialOffer, acceptCredentialOfferOptions, resolvedAuthorizationRequestWithCode } = options
@@ -354,7 +354,21 @@ export class OpenId4VciHolderService {
     const receivedCredentials: Array<W3cVerifiableCredential | SdJwtVc> = []
     let newCNonce: string | undefined
 
-    for (const offeredCredential of credentialsToRequest ?? offeredCredentials) {
+    const credentialsSupportedToRequest =
+      credentialsToRequest
+        ?.map((id) => offeredCredentials.find((credential) => credential.id === id))
+        .filter((c, i): c is OpenId4VciCredentialSupportedWithId => {
+          if (!c) {
+            const offeredCredentialIds = offeredCredentials.map((c) => c.id).join(', ')
+            throw new AriesFrameworkError(
+              `Credential to request '${credentialsToRequest[i]}' is not present in offered credentials. Offered credentials are ${offeredCredentialIds}`
+            )
+          }
+
+          return true
+        }) ?? offeredCredentials
+
+    for (const offeredCredential of credentialsSupportedToRequest) {
       // Get all options for the credential request (such as which kid to use, the signature algorithm, etc)
       const { credentialBinding, signatureAlgorithm } = await this.getCredentialRequestOptions(agentContext, {
         possibleProofOfPossessionSignatureAlgorithms: possibleProofOfPossessionSigAlgs,
@@ -419,7 +433,7 @@ export class OpenId4VciHolderService {
   private async getCredentialRequestOptions(
     agentContext: AgentContext,
     options: {
-      credentialBindingResolver: CredentialBindingResolver
+      credentialBindingResolver: OpenId4VciCredentialBindingResolver
       possibleProofOfPossessionSignatureAlgorithms: JwaSignatureAlgorithm[]
       offeredCredential: OpenId4VciCredentialSupportedWithId
     }
@@ -439,7 +453,7 @@ export class OpenId4VciHolderService {
 
     const supportedVerificationMethods = getSupportedVerificationMethodTypesFromKeyType(JwkClass.keyType)
 
-    const format = options.offeredCredential.format as SupportedCredentialFormats
+    const format = options.offeredCredential.format as OpenId4VciSupportedCredentialFormats
 
     // Now we need to determine how the credential will be bound to us
     const credentialBinding = await options.credentialBindingResolver({
@@ -497,15 +511,17 @@ export class OpenId4VciHolderService {
       credentialToRequest: OpenId4VciCredentialSupportedWithId
       possibleProofOfPossessionSignatureAlgorithms: JwaSignatureAlgorithm[]
     }
-  ): ProofOfPossessionRequirements {
+  ): OpenId4VciProofOfPossessionRequirements {
     const { credentialToRequest } = options
 
-    if (!supportedCredentialFormats.includes(credentialToRequest.format as SupportedCredentialFormats)) {
+    if (
+      !openId4VciSupportedCredentialFormats.includes(credentialToRequest.format as OpenId4VciSupportedCredentialFormats)
+    ) {
       throw new AriesFrameworkError(
         [
           `Requested credential with format '${credentialToRequest.format}',`,
           `for the credential with id '${credentialToRequest.id},`,
-          `but the wallet only supports the following formats '${supportedCredentialFormats.join(', ')}'`,
+          `but the wallet only supports the following formats '${openId4VciSupportedCredentialFormats.join(', ')}'`,
         ].join('\n')
       )
     }

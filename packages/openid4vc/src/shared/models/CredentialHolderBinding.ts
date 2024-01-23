@@ -1,13 +1,13 @@
 import type { Jwk } from '@aries-framework/core'
 
-export type CredentialHolderDidBinding = {
+export type OpenId4VcCredentialHolderDidBinding = {
   method: 'did'
   didUrl: string
 }
 
-export type CredentialHolderJwkBinding = {
+export type OpenId4VcCredentialHolderJwkBinding = {
   method: 'jwk'
   jwk: Jwk
 }
 
-export type CredentialHolderBinding = CredentialHolderDidBinding | CredentialHolderJwkBinding
+export type OpenId4VcCredentialHolderBinding = OpenId4VcCredentialHolderDidBinding | OpenId4VcCredentialHolderJwkBinding

@@ -1,17 +1,15 @@
 import type {
-  CreateCredentialResponseOptions,
-  CredentialOffer,
+  OpenId4VciCreateCredentialResponseOptions,
   OpenId4VciAuthorizationCodeFlowConfig,
   OpenId4VciCreateCredentialOfferOptions,
   OpenId4VciCreateIssuerOptions,
   OpenId4VciPreAuthorizedCodeFlowConfig,
-  OpenId4VciSignCredential,
+  OpenId4VcIssuerMetadata,
   OpenId4VciSignSdJwtCredential,
   OpenId4VciSignW3cCredential,
-  OpenId4VcIssuerMetadata,
 } from './OpenId4VcIssuerServiceOptions'
 import type {
-  CredentialHolderBinding,
+  OpenId4VcCredentialHolderBinding,
   OpenId4VciCredentialOfferPayload,
   OpenId4VciCredentialRequest,
   OpenId4VciCredentialSupported,
@@ -44,7 +42,6 @@ import {
   Jwt,
   KeyType,
   utils,
-  W3cCredential,
   W3cCredentialService,
 } from '@aries-framework/core'
 import { IssueStatus } from '@sphereon/oid4vci-common'
@@ -52,7 +49,7 @@ import { VcIssuerBuilder } from '@sphereon/oid4vci-issuer'
 
 import { getOfferedCredentials, OpenId4VciCredentialFormatProfile } from '../shared'
 import { storeActorIdForContextCorrelationId } from '../shared/router'
-import { getSphereonW3cVerifiableCredential } from '../shared/transform'
+import { getSphereonVerifiableCredential } from '../shared/transform'
 import { getProofTypeFromKey } from '../shared/utils'
 
 import { OpenId4VcIssuerModuleConfig } from './OpenId4VcIssuerModuleConfig'
@@ -104,7 +101,7 @@ export class OpenId4VcIssuerService {
   public async createCredentialOffer(
     agentContext: AgentContext,
     options: OpenId4VciCreateCredentialOfferOptions & { issuer: OpenId4VcIssuerRecord }
-  ): Promise<CredentialOffer> {
+  ) {
     const { preAuthorizedCodeFlowConfig, authorizationCodeFlowConfig, issuer, offeredCredentials } = options
 
     const vcIssuer = this.getVcIssuer(agentContext, issuer)
@@ -116,14 +113,14 @@ export class OpenId4VcIssuerService {
     const { uri, session } = await vcIssuer.createCredentialOfferURI({
       grants: await this.getGrantsFromConfig(agentContext, preAuthorizedCodeFlowConfig, authorizationCodeFlowConfig),
       credentials: offeredCredentials,
-      credentialOfferUri: options.credentialOfferUri,
-      scheme: options.scheme ?? 'https',
+      credentialOfferUri: options.hostedCredentialOfferUrl,
       baseUri: options.baseUri,
     })
 
+    const credentialOfferPayload: OpenId4VciCredentialOfferPayload = session.credentialOffer.credential_offer
     return {
-      credentialOfferPayload: session.credentialOffer.credential_offer,
-      credentialOfferUri: uri,
+      credentialOfferPayload,
+      credentialOffer: uri,
     }
   }
 
@@ -144,7 +141,7 @@ export class OpenId4VcIssuerService {
 
   public async createCredentialResponse(
     agentContext: AgentContext,
-    options: CreateCredentialResponseOptions & { issuer: OpenId4VcIssuerRecord }
+    options: OpenId4VciCreateCredentialResponseOptions & { issuer: OpenId4VcIssuerRecord }
   ) {
     const { credentialRequest, issuer } = options
     if (!credentialRequest.proof) throw new AriesFrameworkError('No proof defined in the credentialRequest.')
@@ -152,7 +149,6 @@ export class OpenId4VcIssuerService {
     const vcIssuer = this.getVcIssuer(agentContext, issuer)
     const issueCredentialResponse = await vcIssuer.issueCredential({
       credentialRequest,
-      // FIXME: move this to top-level config (or at least not endpoint config)
       tokenExpiresIn: this.openId4VcIssuerConfig.accessTokenEndpoint.tokenExpiresInSeconds,
 
       // This can just be combined with signing callback right?
@@ -255,7 +251,7 @@ export class OpenId4VcIssuerService {
 
       if (!isValid) throw new AriesFrameworkError('Could not verify JWT signature.')
 
-      // FIXME: the jws service should return some better decoded metadata also from the resolver
+      // TODO: the jws service should return some better decoded metadata also from the resolver
       // as currently is less useful if you afterwards need properties from the JWS
       const firstJws = jws.signatures[0]
       const protectedHeader = JsonEncoder.fromBase64(firstJws.protected)
@@ -278,7 +274,6 @@ export class OpenId4VcIssuerService {
       .withCredentialEndpoint(issuerMetadata.credentialEndpoint)
       .withTokenEndpoint(issuerMetadata.tokenEndpoint)
       .withCredentialsSupported(issuerMetadata.credentialsSupported)
-      // FIXME: need to create persistent state managers
       .withCNonceStateManager(this.openId4VcIssuerConfig.getCNonceStateManager(agentContext))
       .withCredentialOfferStateManager(this.openId4VcIssuerConfig.getCredentialOfferSessionStateManager(agentContext))
       .withCredentialOfferURIStateManager(this.openId4VcIssuerConfig.getUriStateManager(agentContext))
@@ -368,9 +363,8 @@ export class OpenId4VcIssuerService {
       const sdJwtVcApi = getApiForModuleByName<SdJwtVcModule>(agentContext, 'SdJwtVcModule')
       if (!sdJwtVcApi) throw new AriesFrameworkError(`Could not find the SdJwtVcApi`)
 
-      const { compact } = await sdJwtVcApi.sign(options)
-
-      return compact
+      const sdJwtVc = await sdJwtVcApi.sign(options)
+      return getSphereonVerifiableCredential(sdJwtVc)
     }
   }
 
@@ -421,7 +415,7 @@ export class OpenId4VcIssuerService {
           alg,
         })
 
-        return getSphereonW3cVerifiableCredential(signed)
+        return getSphereonVerifiableCredential(signed)
       } else {
         const key = getKeyFromVerificationMethod(verificationMethod)
         const proofType = getProofTypeFromKey(agentContext, key)
@@ -433,7 +427,7 @@ export class OpenId4VcIssuerService {
           proofType: proofType,
         })
 
-        return getSphereonW3cVerifiableCredential(signed)
+        return getSphereonVerifiableCredential(signed)
       }
     }
   }
@@ -455,12 +449,12 @@ export class OpenId4VcIssuerService {
       return {
         method: 'did',
         didUrl: jwt.header.kid,
-      } satisfies CredentialHolderBinding
+      } satisfies OpenId4VcCredentialHolderBinding
     } else if (jwt.header.jwk) {
       return {
         method: 'jwk',
         jwk: getJwkFromJson(jwt.header.jwk),
-      } satisfies CredentialHolderBinding
+      } satisfies OpenId4VcCredentialHolderBinding
     } else {
       throw new AriesFrameworkError('Either kid or jwk must be present in credential request proof header')
     }
@@ -468,7 +462,7 @@ export class OpenId4VcIssuerService {
 
   private getCredentialDataSupplier = (
     agentContext: AgentContext,
-    options: CreateCredentialResponseOptions & { issuer: OpenId4VcIssuerRecord }
+    options: OpenId4VciCreateCredentialResponseOptions & { issuer: OpenId4VcIssuerRecord }
   ): CredentialDataSupplier => {
     return async (args: CredentialDataSupplierArgs) => {
       const { credentialRequest, credentialOffer } = args
@@ -504,7 +498,7 @@ export class OpenId4VcIssuerService {
         credentialsSupported: offeredCredentialsMatchingRequest,
       })
 
-      if (isW3cSignCredentialOptions(signOptions)) {
+      if (signOptions.format === ClaimFormat.JwtVc || signOptions.format === ClaimFormat.LdpVc) {
         if (!w3cOpenId4VcFormats.includes(credentialRequest.format as OpenId4VciCredentialFormatProfile)) {
           throw new AriesFrameworkError(
             `The credential to be issued does not match the request. Cannot issue a W3cCredential if the client expects a credential of format '${credentialRequest.format}'.`
@@ -516,7 +510,7 @@ export class OpenId4VcIssuerService {
           credential: JsonTransformer.toJSON(signOptions.credential) as ICredential,
           signCallback: this.getW3cCredentialSigningCallback(agentContext, signOptions),
         }
-      } else {
+      } else if (signOptions.format === ClaimFormat.SdJwtVc) {
         if (credentialRequest.format !== OpenId4VciCredentialFormatProfile.SdJwtVc) {
           throw new AriesFrameworkError(
             `Invalid credential format. Expected '${OpenId4VciCredentialFormatProfile.SdJwtVc}', received '${credentialRequest.format}'.`
@@ -531,15 +525,12 @@ export class OpenId4VcIssuerService {
         return {
           format: credentialRequest.format,
           // NOTE: we don't use the credential value here as we pass the credential directly to the singer
-          // FIXME: oid4vci adds `sub` property, but SD-JWT uses `cnf`
           credential: { ...signOptions.payload } as unknown as CredentialIssuanceInput,
           signCallback: this.getSdJwtVcCredentialSigningCallback(agentContext, signOptions),
         }
+      } else {
+        throw new AriesFrameworkError(`Unsupported credential format`)
       }
     }
   }
-}
-
-function isW3cSignCredentialOptions(credential: OpenId4VciSignCredential): credential is OpenId4VciSignW3cCredential {
-  return 'credential' in credential && credential.credential instanceof W3cCredential
 }

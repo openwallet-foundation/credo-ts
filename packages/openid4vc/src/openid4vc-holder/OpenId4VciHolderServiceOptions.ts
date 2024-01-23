@@ -1,5 +1,5 @@
 import type {
-  CredentialHolderBinding,
+  OpenId4VcCredentialHolderBinding,
   OpenId4VciCredentialOfferPayload,
   OpenId4VciCredentialSupportedWithId,
   OpenId4VciIssuerMetadata,
@@ -9,20 +9,20 @@ import type { AuthorizationServerMetadata, EndpointMetadataResult, OpenId4VCIVer
 
 import { OpenId4VciCredentialFormatProfile } from '../shared/models/OpenId4VciCredentialFormatProfile'
 
-export type SupportedCredentialFormats =
+export type OpenId4VciSupportedCredentialFormats =
   | OpenId4VciCredentialFormatProfile.JwtVcJson
   | OpenId4VciCredentialFormatProfile.JwtVcJsonLd
   | OpenId4VciCredentialFormatProfile.SdJwtVc
   | OpenId4VciCredentialFormatProfile.LdpVc
 
-export const supportedCredentialFormats: SupportedCredentialFormats[] = [
+export const openId4VciSupportedCredentialFormats: OpenId4VciSupportedCredentialFormats[] = [
   OpenId4VciCredentialFormatProfile.JwtVcJson,
   OpenId4VciCredentialFormatProfile.JwtVcJsonLd,
   OpenId4VciCredentialFormatProfile.SdJwtVc,
   OpenId4VciCredentialFormatProfile.LdpVc,
 ]
 
-export interface ResolvedCredentialOffer {
+export interface OpenId4VciResolvedCredentialOffer {
   metadata: EndpointMetadataResult & {
     credentialIssuerMetadata: Partial<AuthorizationServerMetadata> & OpenId4VciIssuerMetadata
   }
@@ -31,19 +31,19 @@ export interface ResolvedCredentialOffer {
   version: OpenId4VCIVersion
 }
 
-export interface ResolvedAuthorizationRequest extends AuthCodeFlowOptions {
+export interface OpenId4VciResolvedAuthorizationRequest extends OpenId4VciAuthCodeFlowOptions {
   codeVerifier: string
   authorizationRequestUri: string
 }
 
-export interface ResolvedAuthorizationRequestWithCode extends ResolvedAuthorizationRequest {
+export interface OpenId4VciResolvedAuthorizationRequestWithCode extends OpenId4VciResolvedAuthorizationRequest {
   code: string
 }
 
 /**
  * Options that are used to accept a credential offer for both the pre-authorized code flow and authorization code flow.
  */
-export interface AcceptCredentialOfferOptions {
+export interface OpenId4VciAcceptCredentialOfferOptions {
   /**
    * String value containing a user PIN. This value MUST be present if user_pin_required was set to true in the Credential Offer.
    * This parameter MUST only be used, if the grant_type is urn:ietf:params:oauth:grant-type:pre-authorized_code.
@@ -52,10 +52,10 @@ export interface AcceptCredentialOfferOptions {
 
   /**
    * This is the list of credentials that will be requested from the issuer.
+   * Should be a list of ids of the credentials that are included in the credential offer.
    * If not provided all offered credentials will be requested.
-   * FIXME: should this be an list of ids?
    */
-  credentialsToRequest?: OpenId4VciCredentialSupportedWithId[]
+  credentialsToRequest?: string[]
 
   verifyCredentialStatus?: boolean
 
@@ -86,25 +86,25 @@ export interface AcceptCredentialOfferOptions {
    * conformant to the `CredentialHolderBinding` interface, which will be used
    * for the proof of possession signature.
    */
-  credentialBindingResolver: CredentialBindingResolver
+  credentialBindingResolver: OpenId4VciCredentialBindingResolver
 }
 
 /**
  * Options that are used for the authorization code flow.
  * Extends the pre-authorized code flow options.
  */
-export interface AuthCodeFlowOptions {
+export interface OpenId4VciAuthCodeFlowOptions {
   clientId: string
   redirectUri: string
   scope?: string[]
 }
 
-export interface CredentialBindingOptions {
+export interface OpenId4VciCredentialBindingOptions {
   /**
    * The credential format that will be requested from the issuer.
    * E.g. `jwt_vc` or `ldp_vc`.
    */
-  credentialFormat: SupportedCredentialFormats
+  credentialFormat: OpenId4VciSupportedCredentialFormats
 
   /**
    * The JWA Signature Algorithm that will be used in the proof of possession.
@@ -176,14 +176,14 @@ export interface CredentialBindingOptions {
  * user of the framework and allows them to determine which verification method should be used
  * for the proof of possession signature.
  */
-export type CredentialBindingResolver = (
-  options: CredentialBindingOptions
-) => Promise<CredentialHolderBinding> | CredentialHolderBinding
+export type OpenId4VciCredentialBindingResolver = (
+  options: OpenId4VciCredentialBindingOptions
+) => Promise<OpenId4VcCredentialHolderBinding> | OpenId4VcCredentialHolderBinding
 
 /**
  * @internal
  */
-export interface ProofOfPossessionRequirements {
+export interface OpenId4VciProofOfPossessionRequirements {
   signatureAlgorithm: JwaSignatureAlgorithm
   supportedDidMethods?: string[]
   supportsAllDidMethods: boolean

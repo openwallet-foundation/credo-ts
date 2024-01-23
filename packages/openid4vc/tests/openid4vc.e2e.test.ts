@@ -1,9 +1,8 @@
 import type { AgentType, TenantType } from './utils'
-import type { CredentialBindingResolver } from '../src/openid4vc-holder'
-import type { SdJwtVc, SdJwtVcSignOptions } from '@aries-framework/sd-jwt-vc'
+import type { OpenId4VciCredentialBindingResolver } from '../src/openid4vc-holder'
+import type { SdJwtVc } from '@aries-framework/sd-jwt-vc'
 import type { Server } from 'http'
 
-import { AskarModule } from '@aries-framework/askar'
 import {
   ClaimFormat,
   JwaSignatureAlgorithm,
@@ -17,12 +16,12 @@ import {
   AriesFrameworkError,
   DifPresentationExchangeService,
 } from '@aries-framework/core'
-import { SdJwtVcModule } from '@aries-framework/sd-jwt-vc'
-import { TenantsModule } from '@aries-framework/tenants'
-import { ariesAskar } from '@hyperledger/aries-askar-nodejs'
 import express, { type Express } from 'express'
 
+import { AskarModule } from '../../askar/src'
 import { askarModuleConfig } from '../../askar/tests/helpers'
+import { SdJwtVcModule } from '../../sd-jwt-vc/src'
+import { TenantsModule } from '../../tenants/src'
 import { OpenId4VcVerifierModule, OpenId4VcHolderModule, OpenId4VcIssuerModule } from '../src'
 
 import { createAgentFromModules, createTenantForAgent } from './utils'
@@ -91,6 +90,7 @@ describe('OpenId4Vc', () => {
 
                 if (credentialRequest.format === 'vc+sd-jwt') {
                   return {
+                    format: credentialRequest.format,
                     payload: { vct: credentialRequest.vct, university: 'innsbruck', degree: 'bachelor' },
                     holder: holderBinding,
                     issuer: {
@@ -98,7 +98,7 @@ describe('OpenId4Vc', () => {
                       didUrl: verificationMethod.id,
                     },
                     disclosureFrame: { university: true, degree: true },
-                  } satisfies SdJwtVcSignOptions
+                  }
                 }
 
                 throw new Error('Invalid request')
@@ -134,7 +134,7 @@ describe('OpenId4Vc', () => {
           baseUrl: verificationBaseUrl,
         }),
         sdJwtVc: new SdJwtVcModule(),
-        askar: new AskarModule({ ariesAskar }),
+        askar: new AskarModule(askarModuleConfig),
         tenants: new TenantsModule(),
       },
       '96213c3d7fc8d4d6754c7a0fd969598f'
@@ -159,7 +159,7 @@ describe('OpenId4Vc', () => {
     await holder.agent.wallet.delete()
   })
 
-  const credentialBindingResolver: CredentialBindingResolver = ({ supportsJwk, supportedDidMethods }) => {
+  const credentialBindingResolver: OpenId4VciCredentialBindingResolver = ({ supportsJwk, supportedDidMethods }) => {
     // prefer did:key
     if (supportedDidMethods?.includes('did:key')) {
       return {

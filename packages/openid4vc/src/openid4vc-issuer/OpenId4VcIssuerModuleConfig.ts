@@ -30,8 +30,6 @@ export interface OpenId4VcIssuerModuleConfigOptions {
   router?: Router
 
   endpoints: {
-    // metadata endpoint does not have a config
-    // metadata?: MetadataEndpointConfig
     credential: Optional<CredentialEndpointConfig, 'endpointPath'>
     accessToken?: Optional<
       AccessTokenEndpointConfig,
@@ -49,7 +47,6 @@ export class OpenId4VcIssuerModuleConfig {
   private options: OpenId4VcIssuerModuleConfigOptions
   public readonly router: Router
 
-  // FIXME: remove
   private credentialOfferSessionManagerMap: Map<string, IStateManager<CredentialOfferSession>>
   private uriStateManagerMap: Map<string, IStateManager<URIState>>
   private cNonceStateManagerMap: Map<string, IStateManager<CNonceState>>

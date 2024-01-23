@@ -32,16 +32,9 @@ export interface AccessTokenEndpointConfig {
    */
   endpointPath: string
 
-  // FIXME: rename, more specific
-  /**
-   * The minimum amount of time in seconds that the client SHOULD wait between polling requests to the Token Endpoint in the Pre-Authorized Code Flow.
-   * If no value is provided, clients MUST use 5 as the default.
-   */
-  interval?: number
-
   /**
    * The maximum amount of time in seconds that the pre-authorized code is valid.
-   * @default 360 (5 minutes) // FIXME: what should be the default value
+   * @default 360 (5 minutes)
    */
   preAuthorizedCodeExpirationInSeconds: number
 
@@ -49,23 +42,22 @@ export interface AccessTokenEndpointConfig {
    * The time after which the cNonce from the access token response will
    * expire.
    *
-   * @default 360 (5 minutes) // FIXME: what should be the default value?
+   * @default 360 (5 minutes)
    */
   cNonceExpiresInSeconds: number
 
   /**
    * The time after which the token will expire.
    *
-   * @default 360 (5 minutes) // FIXME: what should be the default value?
+   * @default 360 (5 minutes)
    */
   tokenExpiresInSeconds: number
 }
 
 export function configureAccessTokenEndpoint(router: Router, config: AccessTokenEndpointConfig) {
-  const { preAuthorizedCodeExpirationInSeconds } = config
   router.post(
     config.endpointPath,
-    verifyTokenRequest({ preAuthorizedCodeExpirationInSeconds }),
+    verifyTokenRequest({ preAuthorizedCodeExpirationInSeconds: config.preAuthorizedCodeExpirationInSeconds }),
     handleTokenRequest(config)
   )
 }
@@ -98,9 +90,9 @@ function getJwtSignerCallback(agentContext: AgentContext, signerPublicKey: Key):
 }
 
 export function handleTokenRequest(config: AccessTokenEndpointConfig) {
-  const { tokenExpiresInSeconds, cNonceExpiresInSeconds, interval } = config
+  const { tokenExpiresInSeconds, cNonceExpiresInSeconds } = config
 
-  return async (request: OpenId4VcIssuanceRequest, response: Response) => {
+  return async (request: OpenId4VcIssuanceRequest, response: Response, next: NextFunction) => {
     response.set({ 'Cache-Control': 'no-store', Pragma: 'no-cache' })
 
     const requestContext = getRequestContext(request)
@@ -127,25 +119,26 @@ export function handleTokenRequest(config: AccessTokenEndpointConfig) {
         cNonceExpiresIn: cNonceExpiresInSeconds,
         cNonces: openId4VcIssuerConfig.getCNonceStateManager(agentContext),
         accessTokenSignerCallback: getJwtSignerCallback(agentContext, accessTokenSigningKey),
-        interval,
       })
-      return response.status(200).json(accessTokenResponse)
+      response.status(200).json(accessTokenResponse)
     } catch (error) {
       sendErrorResponse(response, agentContext.config.logger, 400, TokenErrorResponse.invalid_request, error)
     }
+
+    // NOTE: if we don't call next, the agentContext session handler will NOT be called
+    next()
   }
 }
 
 export function verifyTokenRequest(options: { preAuthorizedCodeExpirationInSeconds: number }) {
-  const { preAuthorizedCodeExpirationInSeconds } = options
   return async (request: OpenId4VcIssuanceRequest, response: Response, next: NextFunction) => {
     const { agentContext } = getRequestContext(request)
-    const openId4VcIssuerConfig = agentContext.dependencyManager.resolve(OpenId4VcIssuerModuleConfig)
 
     try {
+      const openId4VcIssuerConfig = agentContext.dependencyManager.resolve(OpenId4VcIssuerModuleConfig)
       await assertValidAccessTokenRequest(request.body, {
         // we use seconds instead of milliseconds for consistency
-        expirationDuration: preAuthorizedCodeExpirationInSeconds * 1000,
+        expirationDuration: options.preAuthorizedCodeExpirationInSeconds * 1000,
         credentialOfferSessions: openId4VcIssuerConfig.getCredentialOfferSessionStateManager(agentContext),
       })
     } catch (error) {
@@ -162,6 +155,7 @@ export function verifyTokenRequest(options: { preAuthorizedCodeExpirationInSecon
       }
     }
 
-    return next()
+    // NOTE: if we don't call next, the agentContext session handler will NOT be called
+    next()
   }
 }

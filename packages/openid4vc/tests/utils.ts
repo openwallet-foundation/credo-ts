@@ -3,15 +3,14 @@ import type { KeyDidCreateOptions, ModulesMap } from '@aries-framework/core'
 import type { TenantsModule } from '@aries-framework/tenants'
 
 import { LogLevel, Agent, DidKey, KeyType, TypedArrayEncoder, utils } from '@aries-framework/core'
-import { agentDependencies } from '@aries-framework/node'
 
-import { TestLogger } from '../../core/tests/logger'
+import { agentDependencies, TestLogger } from '../../core/tests'
 
-export async function createDidKidVerificationMethod(agent: Agent | TenantAgent, secretKey: string) {
+export async function createDidKidVerificationMethod(agent: Agent | TenantAgent, secretKey?: string) {
   const didCreateResult = await agent.dids.create<KeyDidCreateOptions>({
     method: 'key',
     options: { keyType: KeyType.Ed25519 },
-    secret: { privateKey: TypedArrayEncoder.fromString(secretKey) },
+    secret: { privateKey: secretKey ? TypedArrayEncoder.fromString(secretKey) : undefined },
   })
 
   const did = didCreateResult.didState.did as string
@@ -62,12 +61,8 @@ export async function createTenantForAgent(
     },
   })
 
-  const nonce1 = await agent.wallet.generateNonce()
-  const nonce2 = await agent.wallet.generateNonce()
-  const secretKey = (nonce1 + nonce2).slice(0, 32)
-
   const tenant = await agent.modules.tenants.getTenantAgent({ tenantId: tenantRecord.id })
-  const data = await createDidKidVerificationMethod(tenant, secretKey)
+  const data = await createDidKidVerificationMethod(tenant)
   await tenant.endSession()
 
   return {

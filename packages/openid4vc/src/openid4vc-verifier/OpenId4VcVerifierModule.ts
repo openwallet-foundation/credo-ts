@@ -112,8 +112,15 @@ export class OpenId4VcVerifierModule implements Module {
     // Configure endpoints
     configureAuthorizationEndpoint(endpointRouter, this.config.authorizationEndpoint)
 
-    // FIXME: Will this be called when an error occurs / 404 is returned earlier on?
-    contextRouter.use(async (req: OpenId4VcVerificationRequest, _res, next) => {
+    // First one will be called for all requests (when next is called)
+    contextRouter.use(async (req: OpenId4VcVerificationRequest, _res: unknown, next) => {
+      const { agentContext } = getRequestContext(req)
+      await agentContext.endSession()
+      next()
+    })
+
+    // This one will be called for all errors that are thrown
+    contextRouter.use(async (_error: unknown, req: OpenId4VcVerificationRequest, _res: unknown, next: any) => {
       const { agentContext } = getRequestContext(req)
       await agentContext.endSession()
       next()

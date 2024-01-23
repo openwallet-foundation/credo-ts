@@ -16,7 +16,6 @@ export interface OpenId4VcVerifierRecordProps {
   verifierId: string
 }
 
-// FIXME: combine with issuer record?
 export class OpenId4VcVerifierRecord extends BaseRecord<DefaultOpenId4VcVerifierRecordTags> {
   public static readonly type = 'OpenId4VcVerifierRecord'
   public readonly type = OpenId4VcVerifierRecord.type

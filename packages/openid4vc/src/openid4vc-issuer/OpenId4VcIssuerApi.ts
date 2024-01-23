@@ -1,5 +1,5 @@
 import type {
-  CreateCredentialResponseOptions,
+  OpenId4VciCreateCredentialResponseOptions,
   OpenId4VciCreateCredentialOfferOptions,
   CredentialOffer,
 } from './OpenId4VcIssuerServiceOptions'
@@ -98,7 +98,7 @@ export class OpenId4VcIssuerApi {
    * @param options.credential - The credential to be issued.
    * @param options.verificationMethod - The verification method used for signing the credential.
    */
-  public async createCredentialResponse(options: CreateCredentialResponseOptions & { issuerId: string }) {
+  public async createCredentialResponse(options: OpenId4VciCreateCredentialResponseOptions & { issuerId: string }) {
     const { issuerId, ...rest } = options
     const issuer = await this.openId4VcIssuerService.getByIssuerId(this.agentContext, issuerId)
     return await this.openId4VcIssuerService.createCredentialResponse(this.agentContext, { ...rest, issuer })
