@@ -29,7 +29,6 @@ export async function getCredentialsForRequest(
 
   const encodedCredentials = credentialRecords.map((c) => getSphereonOriginalVerifiableCredential(c.credential))
 
-  // FIXME: there is a function for this in the VP library, but it is not usable atm
   const selectResultsRaw = pex.selectFrom(presentationDefinition, encodedCredentials, {
     holderDIDs,
     // limitDisclosureSignatureSuites: [],

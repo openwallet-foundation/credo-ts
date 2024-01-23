@@ -18,10 +18,20 @@ export type FetchLedgerObjectsInput = {
 }
 
 export type FetchLedgerObjectsReturn<T extends FetchLedgerObjectsInput> = {
-  credentialDefinitionReturn: T['credentialDefinitionId'] extends string ? GetCredentialDefinitionReturn : undefined
-  schemaReturn: T['schemaId'] extends string ? GetSchemaReturn : undefined
+  credentialDefinitionReturn: T['credentialDefinitionId'] extends string
+    ? GetCredentialDefinitionReturn
+    : T['credentialDefinitionId'] extends string | undefined
+    ? GetCredentialDefinitionReturn | undefined
+    : undefined
+  schemaReturn: T['schemaId'] extends string
+    ? GetSchemaReturn
+    : T['schemaId'] extends string | undefined
+    ? GetSchemaReturn | undefined
+    : undefined
   revocationRegistryDefinitionReturn: T['revocationRegistryId'] extends string
     ? GetRevocationRegistryDefinitionReturn
+    : T['revocationRegistryId'] extends string | undefined
+    ? GetRevocationRegistryDefinitionReturn | undefined
     : undefined
 }
 

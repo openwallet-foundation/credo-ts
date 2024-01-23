@@ -669,7 +669,7 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
 
   private async processLinkSecretBoundCredential(
     agentContext: AgentContext,
-    credential: W3cJsonLdVerifiableCredential,
+    credentialJson: JsonObject,
     credentialRecord: CredentialExchangeRecord,
     linkSecretRequestMetadata: DataIntegrityLinkSecretRequestMetadata
   ) {
@@ -679,23 +679,27 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
       )
     }
 
-    const aCredential = AW3cCredential.fromJson(JsonTransformer.toJSON(credential))
+    const aCredential = AW3cCredential.fromJson(credentialJson)
     const { schemaId, credentialDefinitionId, revocationRegistryId, revocationRegistryIndex } = aCredential.toLegacy()
 
-    const { schemaReturn } = await fetchObjectsFromLedger(agentContext, { schemaId })
-    if (!schemaReturn.schema) throw new AriesFrameworkError('Schema not found.')
-
-    const { credentialDefinitionId: qCredentialDefinitionId, revocationRegistryId: qRevocationRegistryId } =
-      await fetchQualifiedIds(agentContext, {
+    const { schemaReturn, credentialDefinitionReturn, revocationRegistryDefinitionReturn } =
+      await fetchObjectsFromLedger(agentContext, {
+        schemaId,
         credentialDefinitionId,
-        revocationRegistryId,
+        revocationRegistryId: revocationRegistryId as string | undefined,
       })
+    if (!schemaReturn.schema) throw new AriesFrameworkError('Schema not found.')
+    if (!credentialDefinitionReturn.credentialDefinition) {
+      throw new AriesFrameworkError('Credential definition not found.')
+    }
 
-    await this.assertCredentialAttributesMatchSchemaAttributes(agentContext, credential, schemaId)
+    if (revocationRegistryId && !revocationRegistryDefinitionReturn?.revocationRegistryDefinition) {
+      throw new AriesFrameworkError('Revoaction Registry definition not found.')
+    }
 
     const methodName = agentContext.dependencyManager
       .resolve(AnonCredsRegistryService)
-      .getRegistryForIdentifier(agentContext, credentialDefinitionId).methodName
+      .getRegistryForIdentifier(agentContext, credentialDefinitionReturn.credentialDefinitionId).methodName
 
     const linkSecretRecord = await agentContext.dependencyManager
       .resolve(AnonCredsLinkSecretRepository)
@@ -703,16 +707,24 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
 
     if (!linkSecretRecord.value) throw new AriesFrameworkError('Link Secret value not stored')
 
+    const processed = aCredential.process({
+      credentialRequestMetadata: linkSecretRequestMetadata as unknown as JsonObject,
+      credentialDefinition: credentialDefinitionReturn.credentialDefinition as unknown as JsonObject,
+      linkSecret: linkSecretRecord.value,
+      revocationRegistryDefinition:
+        revocationRegistryDefinitionReturn?.revocationRegistryDefinition as unknown as JsonObject,
+    })
+
     const anonCredsCredentialRecordOptions = {
       credentialId: utils.uuid(),
       linkSecretId: linkSecretRecord.linkSecretId,
-      credentialDefinitionId: qCredentialDefinitionId,
+      credentialDefinitionId: credentialDefinitionReturn.credentialDefinitionId,
       schemaId: schemaReturn.schemaId,
       schemaName: schemaReturn.schema.name,
       schemaIssuerId: schemaReturn.schema.issuerId,
       schemaVersion: schemaReturn.schema.version,
       methodName,
-      revocationRegistryId: qRevocationRegistryId,
+      revocationRegistryId: revocationRegistryDefinitionReturn?.revocationRegistryDefinitionId,
       credentialRevocationId: revocationRegistryIndex?.toString(),
     }
 
@@ -721,12 +733,13 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
       const metadata = credentialRecord.metadata.get<DataIntegrityMetadata>(DataIntegrityMetadataKey)
       if (!metadata?.linkSecretMetadata) throw new AriesFrameworkError('Missing link secret metadata')
 
-      metadata.linkSecretMetadata.revocationRegistryId = qRevocationRegistryId
+      metadata.linkSecretMetadata.revocationRegistryId =
+        revocationRegistryDefinitionReturn?.revocationRegistryDefinitionId
       metadata.linkSecretMetadata.credentialRevocationId = revocationRegistryIndex?.toString()
       credentialRecord.metadata.set<DataIntegrityMetadata>(DataIntegrityMetadataKey, metadata)
     }
 
-    return anonCredsCredentialRecordOptions
+    return { processed: processed.toJson(), anonCredsCredentialRecordOptions }
   }
 
   /**
@@ -756,21 +769,31 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
     }
 
     // TODO: validate credential structure
-    const { credential } = attachment.getDataAsJson<DataIntegrityCredential>()
-    const w3cJsonLdVerifiableCredential = JsonTransformer.fromJSON(credential, W3cJsonLdVerifiableCredential)
+    const { credential: credentialJson } = attachment.getDataAsJson<DataIntegrityCredential>()
 
     let anonCredsCredentialRecordOptions: AnonCredsCredentialRecordOptions | undefined
+    let w3cJsonLdVerifiableCredential: W3cJsonLdVerifiableCredential
     if (credentialRequest.binding_proof?.anoncreds_link_secret) {
       if (!credentialRequestMetadata.linkSecretRequestMetadata) {
         throw new AriesFrameworkError('Missing link secret request metadata')
       }
 
-      anonCredsCredentialRecordOptions = await this.processLinkSecretBoundCredential(
+      const { anonCredsCredentialRecordOptions: options, processed } = await this.processLinkSecretBoundCredential(
         agentContext,
-        w3cJsonLdVerifiableCredential,
+        credentialJson,
         credentialRecord,
         credentialRequestMetadata.linkSecretRequestMetadata
       )
+      anonCredsCredentialRecordOptions = options
+
+      w3cJsonLdVerifiableCredential = JsonTransformer.fromJSON(processed, W3cJsonLdVerifiableCredential)
+      await this.assertCredentialAttributesMatchSchemaAttributes(
+        agentContext,
+        w3cJsonLdVerifiableCredential,
+        anonCredsCredentialRecordOptions.schemaId
+      )
+    } else {
+      w3cJsonLdVerifiableCredential = JsonTransformer.fromJSON(credentialJson, W3cJsonLdVerifiableCredential)
     }
 
     const w3cCredentialService = agentContext.dependencyManager.resolve(W3cCredentialService)
@@ -970,7 +993,10 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
       throw new AriesFrameworkError('Credential subject must be an object.')
     }
 
-    const claims = (credential.credentialSubject.claims ?? {}) as AnonCredsClaimRecord
+    const claims = {
+      ...credential.credentialSubject.claims,
+      ...(credential.credentialSubject.id && { id: credential.credentialSubject.id }),
+    } as AnonCredsClaimRecord
     const attributes = Object.entries(claims).map(([key, value]): CredentialPreviewAttributeOptions => {
       return { name: key, value: value.toString() }
     })

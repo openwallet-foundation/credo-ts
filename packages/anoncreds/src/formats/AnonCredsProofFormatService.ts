@@ -239,13 +239,15 @@ export class AnonCredsProofFormatService implements ProofFormatService<AnonCreds
 
     const revocationRegistries = await getRevocationRegistriesForProof(agentContext, proofJson)
 
-    return await verifierService.verifyProof(agentContext, {
+    const verified = await verifierService.verifyProof(agentContext, {
       proofRequest: proofRequestJson,
       proof: proofJson,
       schemas,
       credentialDefinitions,
       revocationRegistries,
     })
+
+    return verified
   }
 
   public async getCredentialsForRequest(

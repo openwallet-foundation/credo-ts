@@ -77,5 +77,5 @@ export interface DidCommSignedAttachmentCredentialRequestOptions {
 }
 
 export interface DataIntegrityCredential {
-  credential: W3cVerifiableCredential
+  credential: JsonObject
 }
