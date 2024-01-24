@@ -1,13 +1,13 @@
+import type { SdJwtVcRecord } from '../../sd-jwt-vc'
 import type { W3cCredentialRecord } from '../../vc'
 import type {
   DifPexCredentialsForRequest,
   DifPexCredentialsForRequestRequirement,
   DifPexCredentialsForRequestSubmissionEntry,
 } from '../models'
-import type { IPresentationDefinition, SelectResults, SubmissionRequirementMatch } from '@sphereon/pex'
+import type { IPresentationDefinition, SelectResults, SubmissionRequirementMatch, PEX } from '@sphereon/pex'
 import type { InputDescriptorV1, InputDescriptorV2, SubmissionRequirement } from '@sphereon/pex-models'
 
-import { PEX } from '@sphereon/pex'
 import { Rules } from '@sphereon/pex-models'
 import { default as jp } from 'jsonpath'
 
@@ -17,40 +17,25 @@ import { DifPresentationExchangeError } from '../DifPresentationExchangeError'
 import { getSphereonOriginalVerifiableCredential } from './transform'
 
 export async function getCredentialsForRequest(
+  // PEX instance with hasher defined
+  pex: PEX,
   presentationDefinition: IPresentationDefinition,
-  credentialRecords: Array<W3cCredentialRecord>,
-  holderDIDs: Array<string>
+  credentialRecords: Array<W3cCredentialRecord | SdJwtVcRecord>
 ): Promise<DifPexCredentialsForRequest> {
-  if (!presentationDefinition) {
-    throw new DifPresentationExchangeError('Presentation Definition is required to select credentials for submission.')
-  }
-
-  const pex = new PEX()
-
-  const encodedCredentials = credentialRecords.map((c) => getSphereonOriginalVerifiableCredential(c.credential))
-
-  // FIXME: there is a function for this in the VP library, but it is not usable atm
-  const selectResultsRaw = pex.selectFrom(presentationDefinition, encodedCredentials, {
-    holderDIDs,
-    // limitDisclosureSignatureSuites: [],
-    // restrictToDIDMethods,
-    // restrictToFormats
-  })
+  const encodedCredentials = credentialRecords.map((c) => getSphereonOriginalVerifiableCredential(c))
+  const selectResultsRaw = pex.selectFrom(presentationDefinition, encodedCredentials)
 
   const selectResults = {
     ...selectResultsRaw,
     // Map the encoded credential to their respective w3c credential record
-    verifiableCredential: selectResultsRaw.verifiableCredential?.map((encoded) => {
-      const credentialRecord = credentialRecords.find((record) => {
-        const originalVc = getSphereonOriginalVerifiableCredential(record.credential)
-        return deepEquality(originalVc, encoded)
-      })
+    verifiableCredential: selectResultsRaw.verifiableCredential?.map((selectedEncoded) => {
+      const credentialRecordIndex = encodedCredentials.findIndex((encoded) => deepEquality(selectedEncoded, encoded))
 
-      if (!credentialRecord) {
+      if (credentialRecordIndex === -1) {
         throw new DifPresentationExchangeError('Unable to find credential in credential records.')
       }
 
-      return credentialRecord
+      return credentialRecords[credentialRecordIndex]
     }),
   }
 
@@ -95,7 +80,7 @@ export async function getCredentialsForRequest(
 
 function getSubmissionRequirements(
   presentationDefinition: IPresentationDefinition,
-  selectResults: W3cCredentialRecordSelectResults
+  selectResults: CredentialRecordSelectResults
 ): Array<DifPexCredentialsForRequestRequirement> {
   const submissionRequirements: Array<DifPexCredentialsForRequestRequirement> = []
 
@@ -141,7 +126,7 @@ function getSubmissionRequirements(
 
 function getSubmissionRequirementsForAllInputDescriptors(
   inputDescriptors: Array<InputDescriptorV1> | Array<InputDescriptorV2>,
-  selectResults: W3cCredentialRecordSelectResults
+  selectResults: CredentialRecordSelectResults
 ): Array<DifPexCredentialsForRequestRequirement> {
   const submissionRequirements: Array<DifPexCredentialsForRequestRequirement> = []
 
@@ -162,7 +147,7 @@ function getSubmissionRequirementsForAllInputDescriptors(
 function getSubmissionRequirementRuleAll(
   submissionRequirement: SubmissionRequirement,
   presentationDefinition: IPresentationDefinition,
-  selectResults: W3cCredentialRecordSelectResults
+  selectResults: CredentialRecordSelectResults
 ) {
   // Check if there's a 'from'. If not the structure is not as we expect it
   if (!submissionRequirement.from)
@@ -201,7 +186,7 @@ function getSubmissionRequirementRuleAll(
 function getSubmissionRequirementRulePick(
   submissionRequirement: SubmissionRequirement,
   presentationDefinition: IPresentationDefinition,
-  selectResults: W3cCredentialRecordSelectResults
+  selectResults: CredentialRecordSelectResults
 ) {
   // Check if there's a 'from'. If not the structure is not as we expect it
   if (!submissionRequirement.from) {
@@ -257,7 +242,7 @@ function getSubmissionRequirementRulePick(
 
 function getSubmissionForInputDescriptor(
   inputDescriptor: InputDescriptorV1 | InputDescriptorV2,
-  selectResults: W3cCredentialRecordSelectResults
+  selectResults: CredentialRecordSelectResults
 ): DifPexCredentialsForRequestSubmissionEntry {
   // https://github.com/Sphereon-Opensource/PEX/issues/116
   // If the input descriptor doesn't contain a name, the name of the match will be the id of the input descriptor that satisfied it
@@ -292,9 +277,9 @@ function getSubmissionForInputDescriptor(
 
 function extractCredentialsFromMatch(
   match: SubmissionRequirementMatch,
-  availableCredentials?: Array<W3cCredentialRecord>
+  availableCredentials?: Array<W3cCredentialRecord | SdJwtVcRecord>
 ) {
-  const verifiableCredentials: Array<W3cCredentialRecord> = []
+  const verifiableCredentials: Array<W3cCredentialRecord | SdJwtVcRecord> = []
 
   for (const vcPath of match.vc_path) {
     const [verifiableCredential] = jp.query({ verifiableCredential: availableCredentials }, vcPath) as [
@@ -307,8 +292,8 @@ function extractCredentialsFromMatch(
 }
 
 /**
- * Custom SelectResults that include the W3cCredentialRecord instead of the encoded verifiable credential
+ * Custom SelectResults that includes the AFJ records instead of the encoded verifiable credential
  */
-export type W3cCredentialRecordSelectResults = Omit<SelectResults, 'verifiableCredential'> & {
-  verifiableCredential?: Array<W3cCredentialRecord>
+type CredentialRecordSelectResults = Omit<SelectResults, 'verifiableCredential'> & {
+  verifiableCredential?: Array<W3cCredentialRecord | SdJwtVcRecord>
 }

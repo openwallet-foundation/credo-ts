@@ -6,8 +6,7 @@ import type {
   OpenId4VciCredentialSupported,
   OpenId4VciIssuerMetadataDisplay,
 } from '../shared'
-import type { AgentContext, ClaimFormat, W3cCredential } from '@aries-framework/core'
-import type { SdJwtVcSignOptions } from '@aries-framework/sd-jwt-vc'
+import type { AgentContext, ClaimFormat, W3cCredential, SdJwtVcSignOptions } from '@aries-framework/core'
 
 export interface OpenId4VciPreAuthorizedCodeFlowConfig {
   preAuthorizedCode?: string

@@ -1,5 +1,4 @@
-import type { W3cVerifiableCredential, W3cVerifiablePresentation } from '@aries-framework/core'
-import type { SdJwtVc } from '@aries-framework/sd-jwt-vc'
+import type { W3cVerifiableCredential, W3cVerifiablePresentation, SdJwtVc } from '@aries-framework/core'
 import type {
   W3CVerifiableCredential as SphereonW3cVerifiableCredential,
   CompactSdJwtVc as SphereonCompactSdJwtVc,

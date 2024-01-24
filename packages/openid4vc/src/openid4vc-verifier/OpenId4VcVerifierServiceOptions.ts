@@ -3,8 +3,8 @@ import type {
   DifPresentationExchangeSubmission,
   VerificationMethod,
   W3cVerifiablePresentation,
+  SdJwtVc,
 } from '@aries-framework/core'
-import type { SdJwtVc } from '@aries-framework/sd-jwt-vc'
 import type {
   IDTokenPayload,
   VerifiedOpenID4VPSubmission,
