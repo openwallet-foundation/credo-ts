@@ -13,8 +13,8 @@ import type {
 } from '@aries-framework/core'
 import type { OriginalVerifiableCredential as SphereonW3cVerifiableCredential } from '@sphereon/ssi-types'
 
-import { AskarModule } from '@aries-framework/askar'
 import {
+  SdJwtVcApi,
   JwtPayload,
   Agent,
   AriesFrameworkError,
@@ -35,10 +35,10 @@ import {
   getKeyFromVerificationMethod,
   w3cDate,
 } from '@aries-framework/core'
-import { agentDependencies } from '@aries-framework/node'
-import { SdJwtVcApi, SdJwtVcModule } from '@aries-framework/sd-jwt-vc'
-import { ariesAskar } from '@hyperledger/aries-askar-nodejs'
 
+import { AskarModule } from '../../../../askar/src'
+import { askarModuleConfig } from '../../../../askar/tests/helpers'
+import { agentDependencies } from '../../../../node/src'
 import { OpenId4VciCredentialFormatProfile } from '../../shared'
 import { OpenId4VcIssuerModule } from '../OpenId4VcIssuerModule'
 import { OpenId4VcIssuerModuleConfig } from '../OpenId4VcIssuerModuleConfig'
@@ -84,8 +84,7 @@ const modules = {
       },
     },
   }),
-  sdJwtVc: new SdJwtVcModule(),
-  askar: new AskarModule({ ariesAskar }),
+  askar: new AskarModule(askarModuleConfig),
 }
 
 const jwsService = new JwsService()

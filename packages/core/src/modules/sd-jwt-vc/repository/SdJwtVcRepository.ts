@@ -1,4 +1,8 @@
-import { EventEmitter, InjectionSymbols, inject, injectable, Repository, StorageService } from '@aries-framework/core'
+import { EventEmitter } from '../../../agent/EventEmitter'
+import { InjectionSymbols } from '../../../constants'
+import { inject, injectable } from '../../../plugins'
+import { Repository } from '../../../storage/Repository'
+import { StorageService } from '../../../storage/StorageService'
 
 import { SdJwtVcRecord } from './SdJwtVcRecord'
 

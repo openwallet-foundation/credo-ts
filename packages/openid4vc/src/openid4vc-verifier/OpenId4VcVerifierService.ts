@@ -268,7 +268,9 @@ export class OpenId4VcVerifierService {
       // FIXME: client metadata is the metadata of the RP
       // but it's being added as OP metadata
       // Is this both OP and Client metadata?
-      .withClientMetadata(openIdConfiguration)
+      // RP = Client = verifier
+      // OP = holder
+      .withClientMetadata(holderMetadata)
       .withCustomResolver(getResolver(agentContext))
       .withResponseMode(ResponseMode.POST)
       .withResponseType(isVpRequest ? [ResponseType.ID_TOKEN, ResponseType.VP_TOKEN] : ResponseType.ID_TOKEN)

@@ -1,4 +1,5 @@
-import type { HashName, Jwk, JwkJson } from '@aries-framework/core'
+import type { JwkJson, Jwk } from '../../crypto'
+import type { HashName } from '../../utils'
 import type { DisclosureFrame, PresentationFrame } from '@sd-jwt/core'
 
 // TODO: extend with required claim names for input (e.g. vct)

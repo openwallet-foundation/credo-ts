@@ -1,28 +1,26 @@
 import type { Key } from '@aries-framework/core'
 
-import { AskarModule } from '@aries-framework/askar'
+import { AskarModule } from '../../../../../askar/src'
+import { askarModuleConfig } from '../../../../../askar/tests/helpers'
+import { agentDependencies } from '../../../../tests'
+
 import {
-  getJwkFromKey,
   Agent,
   DidKey,
   DidsModule,
+  getJwkFromKey,
   KeyDidRegistrar,
   KeyDidResolver,
   KeyType,
   TypedArrayEncoder,
   utils,
 } from '@aries-framework/core'
-import { agentDependencies } from '@aries-framework/node'
-import { ariesAskar } from '@hyperledger/aries-askar-nodejs'
-
-import { SdJwtVcModule } from '../src'
 
 const getAgent = (label: string) =>
   new Agent({
     config: { label, walletConfig: { id: utils.uuid(), key: utils.uuid() } },
     modules: {
-      sdJwt: new SdJwtVcModule(),
-      askar: new AskarModule({ ariesAskar }),
+      askar: new AskarModule(askarModuleConfig),
       dids: new DidsModule({
         resolvers: [new KeyDidResolver()],
         registrars: [new KeyDidRegistrar()],
@@ -82,7 +80,7 @@ describe('sd-jwt-vc end to end test', () => {
       is_over_65: true,
     } as const
 
-    const { compact, header, payload } = await issuer.modules.sdJwt.sign({
+    const { compact, header, payload } = await issuer.sdJwtVc.sign({
       payload: credential,
       // FIXME: sd-jwt library does not support did binding for holder yet
       // issuance is fine, but in verification of KB the jwk will be extracted
@@ -117,7 +115,7 @@ describe('sd-jwt-vc end to end test', () => {
     type Header = typeof header
 
     // parse SD-JWT
-    const sdJwtVc = await holder.modules.sdJwt.fromCompact<Header, Payload>(compact)
+    const sdJwtVc = await holder.sdJwtVc.fromCompact<Header, Payload>(compact)
     expect(sdJwtVc).toEqual({
       compact: expect.any(String),
       header: {
@@ -189,13 +187,13 @@ describe('sd-jwt-vc end to end test', () => {
     })
 
     // Verify SD-JWT (does not require key binding)
-    const { verification } = await holder.modules.sdJwt.verify({
+    const { verification } = await holder.sdJwtVc.verify({
       compactSdJwtVc: compact,
     })
     expect(verification.isValid).toBe(true)
 
     // Store credential
-    await holder.modules.sdJwt.store(compact)
+    await holder.sdJwtVc.store(compact)
 
     // Metadata created by the verifier and send out of band by the verifier to the holder
     const verifierMetadata = {
@@ -204,7 +202,7 @@ describe('sd-jwt-vc end to end test', () => {
       nonce: await verifier.wallet.generateNonce(),
     }
 
-    const presentation = await holder.modules.sdJwt.present<Header, Payload>({
+    const presentation = await holder.sdJwtVc.present<Header, Payload>({
       compactSdJwtVc: compact,
       verifierMetadata,
       presentationFrame: {
@@ -226,7 +224,7 @@ describe('sd-jwt-vc end to end test', () => {
       },
     })
 
-    const { verification: presentationVerification } = await verifier.modules.sdJwt.verify({
+    const { verification: presentationVerification } = await verifier.modules.sdJwtVc.verify({
       compactSdJwtVc: presentation,
       keyBinding: { audience: verifierDid, nonce: verifierMetadata.nonce },
       requiredClaimKeys: [

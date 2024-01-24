@@ -62,6 +62,7 @@ export * from './modules/dids'
 export * from './modules/vc'
 export * from './modules/cache'
 export * from './modules/dif-presentation-exchange'
+export * from './modules/sd-jwt-vc'
 export {
   JsonEncoder,
   JsonTransformer,

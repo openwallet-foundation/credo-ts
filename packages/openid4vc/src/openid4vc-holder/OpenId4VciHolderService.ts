@@ -4,8 +4,14 @@ import type {
   OpenId4VciCredentialSupportedWithId,
   OpenId4VciIssuerMetadata,
 } from '../shared'
-import type { AgentContext, JwaSignatureAlgorithm, W3cVerifiableCredential, Key, JwkJson } from '@aries-framework/core'
-import type { SdJwtVcModule, SdJwtVc } from '@aries-framework/sd-jwt-vc'
+import type {
+  AgentContext,
+  JwaSignatureAlgorithm,
+  W3cVerifiableCredential,
+  Key,
+  JwkJson,
+  SdJwtVc,
+} from '@aries-framework/core'
 import type {
   AccessTokenResponse,
   CredentialResponse,
@@ -17,6 +23,7 @@ import type {
 } from '@sphereon/oid4vci-common'
 
 import {
+  SdJwtVcApi,
   getJwkFromJson,
   DidsApi,
   AriesFrameworkError,
@@ -37,7 +44,6 @@ import {
   inject,
   injectable,
   parseDid,
-  getApiForModuleByName,
 } from '@aries-framework/core'
 import {
   AccessTokenClient,
@@ -69,6 +75,7 @@ import {
 } from './OpenId4VciHolderServiceOptions'
 
 // FIXME: this is also defined in the sphereon lib, is there a reason we don't use that one?
+// We use this to get PAR working and because we don't use the oid4vci client in sphereon's lib
 async function createAuthorizationRequestUri(options: {
   credentialOffer: OpenId4VciCredentialOfferPayload
   metadata: OpenId4VciResolvedCredentialOffer['metadata']
@@ -604,11 +611,7 @@ export class OpenId4VciHolderService {
           }, but the credential is not a string. ${JSON.stringify(credentialResponse.successBody.credential)}`
         )
 
-      const sdJwtVcApi = getApiForModuleByName<SdJwtVcModule>(agentContext, 'SdJwtVcModule')
-      if (!sdJwtVcApi)
-        throw new AriesFrameworkError(
-          `Could not find the SdJwtVcApi. Make sure the @aries-framework/sd-jwt-vc module is registered.`
-        )
+      const sdJwtVcApi = agentContext.dependencyManager.resolve(SdJwtVcApi)
       const { verification, sdJwtVc } = await sdJwtVcApi.verify({
         compactSdJwtVc: credentialResponse.successBody.credential,
       })

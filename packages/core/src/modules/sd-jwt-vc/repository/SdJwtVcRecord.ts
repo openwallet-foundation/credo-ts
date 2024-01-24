@@ -1,7 +1,12 @@
-import type { TagsBase, Constructable, JwaSignatureAlgorithm } from '@aries-framework/core'
+import type { JwaSignatureAlgorithm } from '../../../crypto'
+import type { TagsBase } from '../../../storage/BaseRecord'
+import type { Constructable } from '../../../utils/mixins'
 
-import { JsonTransformer, BaseRecord, utils } from '@aries-framework/core'
 import { SdJwtVc } from '@sd-jwt/core'
+
+import { BaseRecord } from '../../../storage/BaseRecord'
+import { JsonTransformer } from '../../../utils'
+import { uuid } from '../../../utils/uuid'
 
 export type DefaultSdJwtVcRecordTags = {
   vct: string
@@ -37,7 +42,7 @@ export class SdJwtVcRecord extends BaseRecord<DefaultSdJwtVcRecordTags> {
     super()
 
     if (props) {
-      this.id = props.id ?? utils.uuid()
+      this.id = props.id ?? uuid()
       this.createdAt = props.createdAt ?? new Date()
       this.compactSdJwtVc = props.compactSdJwtVc
       this._tags = props.tags ?? {}

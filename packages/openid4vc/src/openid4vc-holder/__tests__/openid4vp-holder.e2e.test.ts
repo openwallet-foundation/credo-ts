@@ -1,5 +1,5 @@
 import type { AgentType } from '../../../tests/utils'
-import type { CreateProofRequestOptions } from '../../openid4vc-verifier'
+import type { OpenId4VcCreateAuthorizationRequestOptions } from '../../openid4vc-verifier'
 import type { Express } from 'express'
 import type { Server } from 'http'
 
@@ -81,18 +81,17 @@ describe('OpenId4VcHolder | OpenID4VP', () => {
   })
 
   it('siop request with static metadata', async () => {
-    const createProofRequestOptions: CreateProofRequestOptions = {
+    const createProofRequestOptions: OpenId4VcCreateAuthorizationRequestOptions = {
       verificationMethod: verifier.verificationMethod,
-      holderMetadata: staticOpOpenIdConfigEdDSA,
+      openIdProvider: staticOpOpenIdConfigEdDSA,
     }
 
     //////////////////////////// RP (create request) ////////////////////////////
-    const { proofRequest, proofRequestMetadata } = await verifier.agent.modules.openId4VcVerifier.createProofRequest(
-      createProofRequestOptions
-    )
+    const { authorizationRequestUri, metadata } =
+      await verifier.agent.modules.openId4VcVerifier.createAuthorizationRequest(createProofRequestOptions)
 
     //////////////////////////// OP (validate and parse the request) ////////////////////////////
-    const result = await holder.agent.modules.openId4VcHolder.resolveProofRequest(proofRequest)
+    const result = await holder.agent.modules.openId4VcHolder.resolveProofRequest(authorizationRequestUri)
 
     //////////////////////////// User (decide wheather or not to accept the request) ////////////////////////////
 
@@ -113,15 +112,15 @@ describe('OpenId4VcHolder | OpenID4VP', () => {
 
     //////////////////////////// RP (verify the response) ////////////////////////////
 
-    const { idTokenPayload, submission } = await verifier.agent.modules.openId4VcVerifier.verifyProofResponse(
+    const { idTokenPayload, submission } = await verifier.agent.modules.openId4VcVerifier.verifyAuthorizationResponse(
       submittedResponse
     )
 
-    const { state, challenge } = proofRequestMetadata
+    const { state, nonce } = metadata
     expect(submission).toBe(undefined)
     expect(idTokenPayload).toBeDefined()
     expect(idTokenPayload.state).toMatch(state)
-    expect(idTokenPayload.nonce).toMatch(challenge)
+    expect(idTokenPayload.nonce).toMatch(nonce)
 
     await waitForMockFunction(mockFunction)
     expect(mockFunction).toBeCalledWith({
@@ -142,19 +141,18 @@ describe('OpenId4VcHolder | OpenID4VP', () => {
       .get('/.well-known/openid-configuration')
       .reply(200, staticOpOpenIdConfigEdDSA)
 
-    const createProofRequestOptions: CreateProofRequestOptions = {
+    const createProofRequestOptions: OpenId4VcCreateAuthorizationRequestOptions = {
       verificationMethod: verifier.verificationMethod,
       // TODO: if provided this way client metadata is not resolved for the verification method
-      holderMetadata: 'https://helloworld.com',
+      openIdProvider: 'https://helloworld.com',
     }
 
     //////////////////////////// RP (create request) ////////////////////////////
-    const { proofRequest, proofRequestMetadata } = await verifier.agent.modules.openId4VcVerifier.createProofRequest(
-      createProofRequestOptions
-    )
+    const { authorizationRequestUri, metadata } =
+      await verifier.agent.modules.openId4VcVerifier.createAuthorizationRequest(createProofRequestOptions)
 
     //////////////////////////// OP (validate and parse the request) ////////////////////////////
-    const result = await holder.agent.modules.openId4VcHolder.resolveProofRequest(proofRequest)
+    const result = await holder.agent.modules.openId4VcHolder.resolveProofRequest(authorizationRequestUri)
 
     //////////////////////////// User (decide wheather or not to accept the request) ////////////////////////////
 
@@ -170,14 +168,14 @@ describe('OpenId4VcHolder | OpenID4VP', () => {
 
     //////////////////////////// RP (verify the response) ////////////////////////////
 
-    const { idTokenPayload, submission } = await verifier.agent.modules.openId4VcVerifier.verifyProofResponse(
+    const { idTokenPayload, submission } = await verifier.agent.modules.openId4VcVerifier.verifyAuthorizationResponse(
       submittedResponse
     )
 
-    const { state, challenge } = proofRequestMetadata
+    const { state, nonce } = metadata
     expect(idTokenPayload).toBeDefined()
     expect(idTokenPayload.state).toMatch(state)
-    expect(idTokenPayload.nonce).toMatch(challenge)
+    expect(idTokenPayload.nonce).toMatch(nonce)
 
     await waitForMockFunction(mockFunction)
     expect(mockFunction).toBeCalledWith({
@@ -187,22 +185,22 @@ describe('OpenId4VcHolder | OpenID4VP', () => {
   })
 
   it('resolving vp request with no credentials', async () => {
-    const createProofRequestOptions: CreateProofRequestOptions = {
+    const createProofRequestOptions: OpenId4VcCreateAuthorizationRequestOptions = {
       verificationMethod: verifier.verificationMethod,
-      holderMetadata: staticOpOpenIdConfigEdDSA,
+      openIdProvider: staticOpOpenIdConfigEdDSA,
       presentationDefinition: openBadgePresentationDefinition,
     }
 
-    const { proofRequest } = await verifier.agent.modules.openId4VcVerifier.createProofRequest(
+    const { authorizationRequestUri } = await verifier.agent.modules.openId4VcVerifier.createAuthorizationRequest(
       createProofRequestOptions
     )
 
     //////////////////////////// OP (validate and parse the request) ////////////////////////////
-    const result = await holder.agent.modules.openId4VcHolder.resolveProofRequest(proofRequest)
+    const result = await holder.agent.modules.openId4VcHolder.resolveProofRequest(authorizationRequestUri)
     if (result.proofType !== 'presentation') throw new Error('expected prooftype presentation')
 
-    expect(result.presentationSubmission.areRequirementsSatisfied).toBeFalsy()
-    expect(result.presentationSubmission.requirements.length).toBe(1)
+    expect(result.credentialsForRequest.areRequirementsSatisfied).toBeFalsy()
+    expect(result.credentialsForRequest.requirements.length).toBe(1)
   })
 
   it('resolving vp request with wrong credentials errors', async () => {
@@ -210,22 +208,22 @@ describe('OpenId4VcHolder | OpenID4VP', () => {
       credential: W3cJwtVerifiableCredential.fromSerializedJwt(waltUniversityDegreeJwt),
     })
 
-    const createProofRequestOptions: CreateProofRequestOptions = {
+    const createProofRequestOptions: OpenId4VcCreateAuthorizationRequestOptions = {
       verificationMethod: verifier.verificationMethod,
-      holderMetadata: staticOpOpenIdConfigEdDSA,
+      openIdProvider: staticOpOpenIdConfigEdDSA,
       presentationDefinition: openBadgePresentationDefinition,
     }
 
-    const { proofRequest } = await verifier.agent.modules.openId4VcVerifier.createProofRequest(
+    const { authorizationRequestUri } = await verifier.agent.modules.openId4VcVerifier.createAuthorizationRequest(
       createProofRequestOptions
     )
 
-    const result = await holder.agent.modules.openId4VcHolder.resolveProofRequest(proofRequest)
+    const result = await holder.agent.modules.openId4VcHolder.resolveProofRequest(authorizationRequestUri)
     if (result.proofType !== 'presentation') throw new Error('expected prooftype presentation')
 
     //////////////////////////// OP (validate and parse the request) ////////////////////////////
-    expect(result.presentationSubmission.areRequirementsSatisfied).toBeFalsy()
-    expect(result.presentationSubmission.requirements.length).toBe(1)
+    expect(result.credentialsForRequest.areRequirementsSatisfied).toBeFalsy()
+    expect(result.credentialsForRequest.requirements.length).toBe(1)
   })
 
   it('expect submitting a wrong submission to fail', async () => {
@@ -237,19 +235,19 @@ describe('OpenId4VcHolder | OpenID4VP', () => {
       credential: W3cJwtVerifiableCredential.fromSerializedJwt(waltPortalOpenBadgeJwt),
     })
 
-    const createProofRequestOptions: CreateProofRequestOptions = {
+    const createProofRequestOptions: OpenId4VcCreateAuthorizationRequestOptions = {
       verificationMethod: verifier.verificationMethod,
-      holderMetadata: staticOpOpenIdConfigEdDSA,
+      openIdProvider: staticOpOpenIdConfigEdDSA,
       presentationDefinition: openBadgePresentationDefinition,
     }
 
-    const { proofRequest: openBadge } = await verifier.agent.modules.openId4VcVerifier.createProofRequest(
-      createProofRequestOptions
-    )
-    const { proofRequest: university } = await verifier.agent.modules.openId4VcVerifier.createProofRequest({
-      ...createProofRequestOptions,
-      presentationDefinition: universityDegreePresentationDefinition,
-    })
+    const { authorizationRequestUri: openBadge } =
+      await verifier.agent.modules.openId4VcVerifier.createAuthorizationRequest(createProofRequestOptions)
+    const { authorizationRequestUri: university } =
+      await verifier.agent.modules.openId4VcVerifier.createAuthorizationRequest({
+        ...createProofRequestOptions,
+        presentationDefinition: universityDegreePresentationDefinition,
+      })
 
     //////////////////////////// OP (validate and parse the request) ////////////////////////////
 
@@ -260,7 +258,7 @@ describe('OpenId4VcHolder | OpenID4VP', () => {
 
     await expect(
       holder.agent.modules.openId4VcHolder.acceptPresentationRequest(resolvedOpenBadge.presentationRequest, {
-        submission: resolvedUniversityDegree.presentationSubmission,
+        submission: resolvedUniversityDegree.credentialsForRequest,
         submissionEntryIndexes: [0],
       })
     ).rejects.toThrow()
@@ -275,27 +273,27 @@ describe('OpenId4VcHolder | OpenID4VP', () => {
       credential: W3cJwtVerifiableCredential.fromSerializedJwt(waltPortalOpenBadgeJwt),
     })
 
-    const createProofRequestOptions: CreateProofRequestOptions = {
+    const createProofRequestOptions: OpenId4VcCreateAuthorizationRequestOptions = {
       verificationMethod: verifier.verificationMethod,
-      holderMetadata: staticOpOpenIdConfigEdDSA,
+      openIdProvider: staticOpOpenIdConfigEdDSA,
       presentationDefinition: openBadgePresentationDefinition,
     }
 
-    const { proofRequest } = await verifier.agent.modules.openId4VcVerifier.createProofRequest(
+    const { authorizationRequestUri } = await verifier.agent.modules.openId4VcVerifier.createAuthorizationRequest(
       createProofRequestOptions
     )
 
     //////////////////////////// OP (validate and parse the request) ////////////////////////////
 
-    const result = await holder.agent.modules.openId4VcHolder.resolveProofRequest(proofRequest)
+    const result = await holder.agent.modules.openId4VcHolder.resolveProofRequest(authorizationRequestUri)
     if (result.proofType !== 'presentation') throw new Error('expected prooftype presentation')
 
-    const { presentationRequest, presentationSubmission } = result
-    expect(presentationSubmission.areRequirementsSatisfied).toBeTruthy()
-    expect(presentationSubmission.requirements.length).toBe(1)
-    expect(presentationSubmission.requirements[0].needsCount).toBe(1)
-    expect(presentationSubmission.requirements[0].submissionEntry.length).toBe(1)
-    expect(presentationSubmission.requirements[0].submissionEntry[0].inputDescriptorId).toBe('OpenBadgeCredential')
+    const { presentationRequest, credentialsForRequest } = result
+    expect(credentialsForRequest.areRequirementsSatisfied).toBeTruthy()
+    expect(credentialsForRequest.requirements.length).toBe(1)
+    expect(credentialsForRequest.requirements[0].needsCount).toBe(1)
+    expect(credentialsForRequest.requirements[0].submissionEntry.length).toBe(1)
+    expect(credentialsForRequest.requirements[0].submissionEntry[0].inputDescriptorId).toBe('OpenBadgeCredential')
 
     expect(presentationRequest.presentationDefinitions[0].definition).toMatchObject(openBadgePresentationDefinition)
   })
@@ -309,45 +307,45 @@ describe('OpenId4VcHolder | OpenID4VP', () => {
       credential: W3cJwtVerifiableCredential.fromSerializedJwt(waltPortalOpenBadgeJwt),
     })
 
-    const createProofRequestOptions: CreateProofRequestOptions = {
+    const createProofRequestOptions: OpenId4VcCreateAuthorizationRequestOptions = {
       verificationMethod: verifier.verificationMethod,
-      holderMetadata: staticOpOpenIdConfigEdDSA,
+      openIdProvider: staticOpOpenIdConfigEdDSA,
       presentationDefinition: combinePresentationDefinitions([
         openBadgePresentationDefinition,
         universityDegreePresentationDefinition,
       ]),
     }
 
-    const { proofRequest } = await verifier.agent.modules.openId4VcVerifier.createProofRequest(
+    const { authorizationRequestUri } = await verifier.agent.modules.openId4VcVerifier.createAuthorizationRequest(
       createProofRequestOptions
     )
 
     //////////////////////////// OP (validate and parse the request) ////////////////////////////
 
-    const result = await holder.agent.modules.openId4VcHolder.resolveProofRequest(proofRequest)
+    const result = await holder.agent.modules.openId4VcHolder.resolveProofRequest(authorizationRequestUri)
     if (result.proofType !== 'presentation') throw new Error('expected prooftype presentation')
 
-    const { presentationSubmission } = result
-    expect(presentationSubmission.areRequirementsSatisfied).toBeTruthy()
-    expect(presentationSubmission.requirements.length).toBe(2)
-    expect(presentationSubmission.requirements[0].needsCount).toBe(1)
-    expect(presentationSubmission.requirements[0].submissionEntry.length).toBe(1)
-    expect(presentationSubmission.requirements[1].needsCount).toBe(1)
-    expect(presentationSubmission.requirements[1].submissionEntry.length).toBe(1)
-    expect(presentationSubmission.requirements[0].submissionEntry[0].inputDescriptorId).toBe('OpenBadgeCredential')
-    expect(presentationSubmission.requirements[1].submissionEntry[0].inputDescriptorId).toBe('UniversityDegree')
+    const { credentialsForRequest } = result
+    expect(credentialsForRequest.areRequirementsSatisfied).toBeTruthy()
+    expect(credentialsForRequest.requirements.length).toBe(2)
+    expect(credentialsForRequest.requirements[0].needsCount).toBe(1)
+    expect(credentialsForRequest.requirements[0].submissionEntry.length).toBe(1)
+    expect(credentialsForRequest.requirements[1].needsCount).toBe(1)
+    expect(credentialsForRequest.requirements[1].submissionEntry.length).toBe(1)
+    expect(credentialsForRequest.requirements[0].submissionEntry[0].inputDescriptorId).toBe('OpenBadgeCredential')
+    expect(credentialsForRequest.requirements[1].submissionEntry[0].inputDescriptorId).toBe('UniversityDegree')
 
     const { submittedResponse, status } = await holder.agent.modules.openId4VcHolder.acceptPresentationRequest(
       result.presentationRequest,
       {
-        submission: result.presentationSubmission,
+        submission: result.credentialsForRequest,
         submissionEntryIndexes: [0, 0],
       }
     )
 
     expect(status).toBe(200)
 
-    const { idTokenPayload, submission } = await verifier.agent.modules.openId4VcVerifier.verifyProofResponse(
+    const { idTokenPayload, submission } = await verifier.agent.modules.openId4VcVerifier.verifyAuthorizationResponse(
       submittedResponse
     )
 
@@ -394,27 +392,27 @@ describe('OpenId4VcHolder | OpenID4VP', () => {
       credential: W3cJwtVerifiableCredential.fromSerializedJwt(waltPortalOpenBadgeJwt),
     })
 
-    const createProofRequestOptions: CreateProofRequestOptions = {
+    const createProofRequestOptions: OpenId4VcCreateAuthorizationRequestOptions = {
       verificationMethod: verifier.verificationMethod,
-      holderMetadata: staticOpOpenIdConfigEdDSA,
+      openIdProvider: staticOpOpenIdConfigEdDSA,
       presentationDefinition: combinePresentationDefinitions([
         openBadgePresentationDefinition,
         universityDegreePresentationDefinition,
       ]),
     }
 
-    const { proofRequest } = await verifier.agent.modules.openId4VcVerifier.createProofRequest(
+    const { authorizationRequestUri } = await verifier.agent.modules.openId4VcVerifier.createAuthorizationRequest(
       createProofRequestOptions
     )
 
     //////////////////////////// OP (validate and parse the request) ////////////////////////////
 
-    const result = await holder.agent.modules.openId4VcHolder.resolveProofRequest(proofRequest)
+    const result = await holder.agent.modules.openId4VcHolder.resolveProofRequest(authorizationRequestUri)
     if (result.proofType !== 'presentation') throw new Error('expected prooftype presentation')
 
     await expect(
       holder.agent.modules.openId4VcHolder.acceptPresentationRequest(result.presentationRequest, {
-        submission: result.presentationSubmission,
+        submission: result.credentialsForRequest,
         submissionEntryIndexes: [0],
       })
     ).rejects.toThrow()
@@ -425,26 +423,25 @@ describe('OpenId4VcHolder | OpenID4VP', () => {
       credential: W3cJwtVerifiableCredential.fromSerializedJwt(waltPortalOpenBadgeJwt),
     })
 
-    const createProofRequestOptions: CreateProofRequestOptions = {
+    const createProofRequestOptions: OpenId4VcCreateAuthorizationRequestOptions = {
       verificationMethod: verifier.verificationMethod,
-      holderMetadata: staticOpOpenIdConfigEdDSA,
+      openIdProvider: staticOpOpenIdConfigEdDSA,
       presentationDefinition: openBadgePresentationDefinition,
     }
 
-    const { proofRequest, proofRequestMetadata } = await verifier.agent.modules.openId4VcVerifier.createProofRequest(
-      createProofRequestOptions
-    )
+    const { authorizationRequestUri, metadata } =
+      await verifier.agent.modules.openId4VcVerifier.createAuthorizationRequest(createProofRequestOptions)
 
     //////////////////////////// OP (validate and parse the request) ////////////////////////////
-    const result = await holder.agent.modules.openId4VcHolder.resolveProofRequest(proofRequest)
+    const result = await holder.agent.modules.openId4VcHolder.resolveProofRequest(authorizationRequestUri)
     if (result.proofType === 'authentication') throw new Error('Expected a proofRequest')
 
     //////////////////////////// User (decide wheather or not to accept the request) ////////////////////////////
     // Select the appropriate credentials
 
-    result.presentationSubmission.requirements[0]
+    result.credentialsForRequest.requirements[0]
 
-    if (!result.presentationSubmission.areRequirementsSatisfied) {
+    if (!result.credentialsForRequest.areRequirementsSatisfied) {
       throw new Error('Requirements are not satisfied.')
     }
 
@@ -452,7 +449,7 @@ describe('OpenId4VcHolder | OpenID4VP', () => {
     const { submittedResponse, status } = await holder.agent.modules.openId4VcHolder.acceptPresentationRequest(
       result.presentationRequest,
       {
-        submission: result.presentationSubmission,
+        submission: result.credentialsForRequest,
         submissionEntryIndexes: [0],
       }
     )
@@ -462,14 +459,14 @@ describe('OpenId4VcHolder | OpenID4VP', () => {
     // The RP MUST validate that the aud (audience) Claim contains the value of the client_id
     // that the RP sent in the Authorization Request as an audience.
     // When the request has been signed, the value might be an HTTPS URL, or a Decentralized Identifier.
-    const { idTokenPayload, submission } = await verifier.agent.modules.openId4VcVerifier.verifyProofResponse(
+    const { idTokenPayload, submission } = await verifier.agent.modules.openId4VcVerifier.verifyAuthorizationResponse(
       submittedResponse
     )
 
-    const { state, challenge } = proofRequestMetadata
+    const { state, nonce } = metadata
     expect(idTokenPayload).toBeDefined()
     expect(idTokenPayload.state).toMatch(state)
-    expect(idTokenPayload.nonce).toMatch(challenge)
+    expect(idTokenPayload.nonce).toMatch(nonce)
 
     expect(submission).toBeDefined()
     expect(submission?.presentationDefinitions).toHaveLength(1)
@@ -494,24 +491,23 @@ describe('OpenId4VcHolder | OpenID4VP', () => {
       credential,
     })
 
-    const createProofRequestOptions: CreateProofRequestOptions = {
+    const createProofRequestOptions: OpenId4VcCreateAuthorizationRequestOptions = {
       verificationMethod: verifier.verificationMethod,
-      holderMetadata: staticOpOpenIdConfigEdDSA,
+      openIdProvider: staticOpOpenIdConfigEdDSA,
       presentationDefinition: openBadgeCredentialPresentationDefinitionLdpVc,
     }
 
-    const { proofRequest, proofRequestMetadata } = await verifier.agent.modules.openId4VcVerifier.createProofRequest(
-      createProofRequestOptions
-    )
+    const { authorizationRequestUri, metadata } =
+      await verifier.agent.modules.openId4VcVerifier.createAuthorizationRequest(createProofRequestOptions)
 
     //////////////////////////// OP (validate and parse the request) ////////////////////////////
-    const result = await holder.agent.modules.openId4VcHolder.resolveProofRequest(proofRequest)
+    const result = await holder.agent.modules.openId4VcHolder.resolveProofRequest(authorizationRequestUri)
     if (result.proofType === 'authentication') throw new Error('Expected a proofRequest')
 
     //////////////////////////// User (decide wheather or not to accept the request) ////////////////////////////
     // Select the appropriate credentials
 
-    if (!result.presentationSubmission.areRequirementsSatisfied) {
+    if (!result.credentialsForRequest.areRequirementsSatisfied) {
       throw new Error('Requirements are not satisfied.')
     }
 
@@ -519,7 +515,7 @@ describe('OpenId4VcHolder | OpenID4VP', () => {
     const { submittedResponse, status } = await holder.agent.modules.openId4VcHolder.acceptPresentationRequest(
       result.presentationRequest,
       {
-        submission: result.presentationSubmission,
+        submission: result.credentialsForRequest,
         submissionEntryIndexes: [0],
       }
     )
@@ -529,14 +525,14 @@ describe('OpenId4VcHolder | OpenID4VP', () => {
     // The RP MUST validate that the aud (audience) Claim contains the value of the client_id
     // that the RP sent in the Authorization Request as an audience.
     // When the request has been signed, the value might be an HTTPS URL, or a Decentralized Identifier.
-    const { idTokenPayload, submission } = await verifier.agent.modules.openId4VcVerifier.verifyProofResponse(
+    const { idTokenPayload, submission } = await verifier.agent.modules.openId4VcVerifier.verifyAuthorizationResponse(
       submittedResponse
     )
 
-    const { state, challenge } = proofRequestMetadata
+    const { state, nonce } = metadata
     expect(idTokenPayload).toBeDefined()
     expect(idTokenPayload.state).toMatch(state)
-    expect(idTokenPayload.nonce).toMatch(challenge)
+    expect(idTokenPayload.nonce).toMatch(nonce)
 
     expect(submission).toBeDefined()
     expect(submission?.presentationDefinitions).toHaveLength(1)
@@ -564,41 +560,41 @@ describe('OpenId4VcHolder | OpenID4VP', () => {
       credential: W3cJwtVerifiableCredential.fromSerializedJwt(waltUniversityDegreeJwt),
     })
 
-    const createProofRequestOptions: CreateProofRequestOptions = {
+    const createProofRequestOptions: OpenId4VcCreateAuthorizationRequestOptions = {
       verificationMethod: verifier.verificationMethod,
-      holderMetadata: staticOpOpenIdConfigEdDSA,
+      openIdProvider: staticOpOpenIdConfigEdDSA,
       presentationDefinition: combinePresentationDefinitions([
         universityDegreePresentationDefinition,
         openBadgeCredentialPresentationDefinitionLdpVc,
       ]),
     }
 
-    const { proofRequest } = await verifier.agent.modules.openId4VcVerifier.createProofRequest(
+    const { authorizationRequestUri } = await verifier.agent.modules.openId4VcVerifier.createAuthorizationRequest(
       createProofRequestOptions
     )
 
     //////////////////////////// OP (validate and parse the request) ////////////////////////////
-    const result = await holder.agent.modules.openId4VcHolder.resolveProofRequest(proofRequest)
+    const result = await holder.agent.modules.openId4VcHolder.resolveProofRequest(authorizationRequestUri)
     if (result.proofType === 'authentication') throw new Error('Expected a proofRequest')
 
     //////////////////////////// User (decide wheather or not to accept the request) ////////////////////////////
     // Select the appropriate credentials
 
-    if (!result.presentationSubmission.areRequirementsSatisfied) {
+    if (!result.credentialsForRequest.areRequirementsSatisfied) {
       throw new Error('Requirements are not satisfied.')
     }
 
     //////////////////////////// OP (accept the verified request) ////////////////////////////
     await expect(
       holder.agent.modules.openId4VcHolder.acceptPresentationRequest(result.presentationRequest, {
-        submission: result.presentationSubmission,
+        submission: result.credentialsForRequest,
         submissionEntryIndexes: [0, 0],
       })
     ).rejects.toThrow()
 
     await expect(
       holder.agent.modules.openId4VcHolder.acceptPresentationRequest(result.presentationRequest, {
-        submission: result.presentationSubmission,
+        submission: result.credentialsForRequest,
         submissionEntryIndexes: [0],
       })
     ).rejects.toThrow()

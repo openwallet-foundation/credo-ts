@@ -7,22 +7,17 @@ import type {
   SdJwtVcHolderBinding,
   SdJwtVcIssuer,
 } from './SdJwtVcOptions'
-import type { AgentContext, JwkJson, Query, Key } from '@aries-framework/core'
+import type { AgentContext } from '../../agent'
+import type { JwkJson, Key } from '../../crypto'
+import type { Query } from '../../storage/StorageService'
 import type { Signer, SdJwtVcVerificationResult, Verifier, HasherAndAlgorithm, DisclosureItem } from '@sd-jwt/core'
 
-import {
-  Jwk,
-  parseDid,
-  DidResolverService,
-  getKeyFromVerificationMethod,
-  getJwkFromJson,
-  getJwkFromKey,
-  Hasher,
-  injectable,
-  TypedArrayEncoder,
-  Buffer,
-} from '@aries-framework/core'
 import { KeyBinding, SdJwtVc as _SdJwtVc, HasherAlgorithm } from '@sd-jwt/core'
+import { injectable } from 'tsyringe'
+
+import { Jwk, getJwkFromJson, getJwkFromKey } from '../../crypto'
+import { TypedArrayEncoder, Hasher, Buffer } from '../../utils'
+import { DidResolverService, parseDid, getKeyFromVerificationMethod } from '../dids'
 
 import { SdJwtVcError } from './SdJwtVcError'
 import { SdJwtVcRecord, SdJwtVcRepository } from './repository'
@@ -121,15 +116,18 @@ export class SdJwtVcService {
     agentContext: AgentContext,
     { compactSdJwtVc, presentationFrame, verifierMetadata }: SdJwtVcPresentOptions<Payload>
   ): Promise<string> {
-    const sdJwtVc = _SdJwtVc.fromCompact<Header, Payload>(compactSdJwtVc).withHasher(this.hasher)
+    const sdJwtVc = _SdJwtVc.fromCompact<Header>(compactSdJwtVc).withHasher(this.hasher)
     const holder = await this.extractKeyFromHolderBinding(agentContext, this.parseHolderBindingFromCredential(sdJwtVc))
 
     // FIXME: we create the SD-JWT in two steps as the _sd_hash is currently not included in the SD-JWT library
     // so we add it ourselves, but for that we need the contents of the derived SD-JWT first
-    let compactDerivedSdJwtVc = await sdJwtVc.present(presentationFrame === true ? undefined : presentationFrame)
-    // FIXME: can be removed once https://github.com/berendsliedrecht/sd-jwt-ts/pull/19 is released
-    if (!compactDerivedSdJwtVc.endsWith('~')) {
-      compactDerivedSdJwtVc = `${compactDerivedSdJwtVc}~`
+    const compactDerivedSdJwtVc = await sdJwtVc.present(presentationFrame === true ? undefined : presentationFrame)
+
+    let sdAlg: string
+    try {
+      sdAlg = sdJwtVc.getClaimInPayload<string>('_sd_alg')
+    } catch (error) {
+      sdAlg = 'sha-256'
     }
 
     const header = {
@@ -144,7 +142,7 @@ export class SdJwtVcService {
 
       // FIXME: _sd_hash is missing. See
       // https://github.com/berendsliedrecht/sd-jwt-ts/issues/8
-      _sd_hash: TypedArrayEncoder.toBase64URL(await this.hasher.hasher(compactDerivedSdJwtVc)),
+      _sd_hash: TypedArrayEncoder.toBase64URL(await this.hasher.hasher(compactDerivedSdJwtVc, sdAlg)),
     }
 
     const compactKbJwt = await new KeyBinding({ header, payload })
@@ -179,12 +177,19 @@ export class SdJwtVcService {
           throw new SdJwtVcError('Keybinding is required for verification of the sd-jwt-vc')
         }
 
+        let sdAlg: string
+        try {
+          sdAlg = sdJwtVc.getClaimInPayload<string>('_sd_alg')
+        } catch (error) {
+          sdAlg = 'sha-256'
+        }
+
         // FIXME: Calculate _sd_hash. can be removed once below is resolved
         // https://github.com/berendsliedrecht/sd-jwt-ts/issues/8
         const sdJwtParts = compactSdJwtVc.split('~')
         sdJwtParts.pop() // remove kb-jwt
         const sdJwtWithoutKbJwt = `${sdJwtParts.join('~')}~`
-        const sdHash = TypedArrayEncoder.toBase64URL(await this.hasher.hasher(sdJwtWithoutKbJwt))
+        const sdHash = TypedArrayEncoder.toBase64URL(await this.hasher.hasher(sdJwtWithoutKbJwt, sdAlg))
 
         // Assert `aud` and `nonce` claims
         sdJwtVc.keyBinding.assertClaimInPayload('aud', keyBinding.audience)
@@ -249,7 +254,10 @@ export class SdJwtVcService {
   private get hasher(): HasherAndAlgorithm {
     return {
       algorithm: HasherAlgorithm.Sha256,
-      hasher: (input: string) => {
+      hasher: (input: string, algorithm) => {
+        if (algorithm !== 'sha-256') {
+          throw new SdJwtVcError(`Unsupported hashing algorithm used: ${algorithm}. Only sha-256 is supported`)
+        }
         const serializedInput = TypedArrayEncoder.fromString(input)
         return Hasher.hash(serializedInput, 'sha2-256')
       },

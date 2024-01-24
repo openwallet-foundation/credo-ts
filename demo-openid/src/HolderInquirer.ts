@@ -121,7 +121,7 @@ export class HolderInquirer extends BaseInquirer {
       credentials.map((credential) =>
         credential.type === 'W3cCredentialRecord'
           ? `${credential.credential.type.join(', ')}, CredentialType: W3cVerifiableCredential`
-          : this.holder.agent.modules.sdJwtVc
+          : this.holder.agent.sdJwtVc
               .fromCompact(credential.compactSdJwtVc)
               .then((a) => `${a.prettyClaims.vct}, CredentialType: SdJwtVc`)
       )

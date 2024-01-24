@@ -17,7 +17,6 @@ import {
   w3cDate,
 } from '@aries-framework/core'
 import { OpenId4VcIssuerModule, OpenId4VciCredentialFormatProfile } from '@aries-framework/openid4vc'
-import { SdJwtVcModule } from '@aries-framework/sd-jwt-vc'
 import { ariesAskar } from '@hyperledger/aries-askar-nodejs'
 import { Router } from 'express'
 
@@ -109,7 +108,6 @@ function getCredentialRequestToCredentialMapper({
 }
 
 export class Issuer extends BaseAgent<{
-  sdJwtVc: SdJwtVcModule
   askar: AskarModule
   openId4VcIssuer: OpenId4VcIssuerModule
 }> {
@@ -122,7 +120,6 @@ export class Issuer extends BaseAgent<{
       port,
       name,
       modules: {
-        sdJwtVc: new SdJwtVcModule(),
         askar: new AskarModule({ ariesAskar }),
         openId4VcIssuer: new OpenId4VcIssuerModule({
           baseUrl: 'http://localhost:2000/oid4vci',

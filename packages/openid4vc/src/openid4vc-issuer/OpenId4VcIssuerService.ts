@@ -15,7 +15,6 @@ import type {
   OpenId4VciCredentialSupported,
 } from '../shared'
 import type { AgentContext, DidDocument } from '@aries-framework/core'
-import type { SdJwtVcModule } from '@aries-framework/sd-jwt-vc'
 import type { Grant, JWTVerifyCallback } from '@sphereon/oid4vci-common'
 import type {
   CredentialDataSupplier,
@@ -26,11 +25,11 @@ import type {
 import type { ICredential } from '@sphereon/ssi-types'
 
 import {
+  SdJwtVcApi,
   AriesFrameworkError,
   ClaimFormat,
   DidsApi,
   equalsIgnoreOrder,
-  getApiForModuleByName,
   getJwkFromJson,
   getJwkFromKey,
   getKeyFromVerificationMethod,
@@ -360,8 +359,7 @@ export class OpenId4VcIssuerService {
     options: OpenId4VciSignSdJwtCredential
   ): CredentialSignerCallback<DidDocument> => {
     return async () => {
-      const sdJwtVcApi = getApiForModuleByName<SdJwtVcModule>(agentContext, 'SdJwtVcModule')
-      if (!sdJwtVcApi) throw new AriesFrameworkError(`Could not find the SdJwtVcApi`)
+      const sdJwtVcApi = agentContext.dependencyManager.resolve(SdJwtVcApi)
 
       const sdJwtVc = await sdJwtVcApi.sign(options)
       return getSphereonVerifiableCredential(sdJwtVc)

@@ -1,22 +1,9 @@
 import type { SdJwtVcHeader } from '../SdJwtVcOptions'
 import type { Jwk, Key } from '@aries-framework/core'
 
-import { AskarModule } from '@aries-framework/askar'
-import {
-  parseDid,
-  getJwkFromKey,
-  DidKey,
-  DidsModule,
-  KeyDidRegistrar,
-  KeyDidResolver,
-  utils,
-  KeyType,
-  Agent,
-  TypedArrayEncoder,
-} from '@aries-framework/core'
-import { agentDependencies } from '@aries-framework/node'
-import { ariesAskar } from '@hyperledger/aries-askar-nodejs'
-
+import { AskarModule } from '../../../../../askar/src'
+import { askarModuleConfig } from '../../../../../askar/tests/helpers'
+import { agentDependencies } from '../../../../tests'
 import { SdJwtVcService } from '../SdJwtVcService'
 import { SdJwtVcRepository } from '../repository'
 
@@ -29,6 +16,19 @@ import {
   simpleJwtVcPresentation,
 } from './sdjwtvc.fixtures'
 
+import {
+  parseDid,
+  getJwkFromKey,
+  DidKey,
+  DidsModule,
+  KeyDidRegistrar,
+  KeyDidResolver,
+  utils,
+  KeyType,
+  Agent,
+  TypedArrayEncoder,
+} from '@aries-framework/core'
+
 const jwkJsonWithoutUse = (jwk: Jwk) => {
   const jwkJson = jwk.toJson()
   delete jwkJson.use
@@ -38,7 +38,7 @@ const jwkJsonWithoutUse = (jwk: Jwk) => {
 const agent = new Agent({
   config: { label: 'sdjwtvcserviceagent', walletConfig: { id: utils.uuid(), key: utils.uuid() } },
   modules: {
-    askar: new AskarModule({ ariesAskar }),
+    askar: new AskarModule(askarModuleConfig),
     dids: new DidsModule({
       resolvers: [new KeyDidResolver()],
       registrars: [new KeyDidRegistrar()],

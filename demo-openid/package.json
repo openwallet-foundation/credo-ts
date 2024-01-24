@@ -26,7 +26,6 @@
     "@aries-framework/askar": "*",
     "@aries-framework/core": "*",
     "@aries-framework/node": "*",
-    "@aries-framework/sd-jwt-vc": "^0.4.2",
     "@types/express": "^4.17.13",
     "@types/figlet": "^1.5.4",
     "@types/inquirer": "^8.2.6",

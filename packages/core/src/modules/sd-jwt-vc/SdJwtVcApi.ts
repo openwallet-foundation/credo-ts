@@ -6,9 +6,10 @@ import type {
   SdJwtVcVerifyOptions,
 } from './SdJwtVcOptions'
 import type { SdJwtVcRecord } from './repository'
-import type { Query } from '@aries-framework/core'
+import type { Query } from '../../storage/StorageService'
 
-import { AgentContext, injectable } from '@aries-framework/core'
+import { AgentContext } from '../../agent'
+import { injectable } from '../../plugins'
 
 import { SdJwtVcService } from './SdJwtVcService'
 

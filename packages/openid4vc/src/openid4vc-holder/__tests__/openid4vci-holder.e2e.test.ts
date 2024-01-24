@@ -1,7 +1,5 @@
-import type { Key } from '@aries-framework/core'
-import type { SdJwtVc } from '@aries-framework/sd-jwt-vc'
+import type { Key, SdJwtVc } from '@aries-framework/core'
 
-import { AskarModule } from '@aries-framework/askar'
 import {
   getJwkFromKey,
   Agent,
@@ -11,11 +9,11 @@ import {
   TypedArrayEncoder,
   W3cJwtVerifiableCredential,
 } from '@aries-framework/core'
-import { agentDependencies } from '@aries-framework/node'
-import { SdJwtVcModule } from '@aries-framework/sd-jwt-vc'
-import { ariesAskar } from '@hyperledger/aries-askar-nodejs'
 import nock, { cleanAll, enableNetConnect } from 'nock'
 
+import { AskarModule } from '../../../../askar/src'
+import { askarModuleConfig } from '../../../../askar/tests/helpers'
+import { agentDependencies } from '../../../../node/src'
 import { OpenId4VcHolderModule } from '../OpenId4VcHolderModule'
 
 import { animoOpenIdPlaygroundDraft11SdJwtVc, matrrLaunchpadDraft11JwtVcJson, waltIdDraft11JwtVcJson } from './fixtures'
@@ -28,8 +26,7 @@ const holder = new Agent({
   dependencies: agentDependencies,
   modules: {
     openId4VcHolder: new OpenId4VcHolderModule(),
-    sdJwtVc: new SdJwtVcModule(),
-    askar: new AskarModule({ ariesAskar }),
+    askar: new AskarModule(askarModuleConfig),
   },
 })
 

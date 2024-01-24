@@ -1,6 +1,6 @@
 import type { AgentType, TenantType } from './utils'
 import type { OpenId4VciCredentialBindingResolver } from '../src/openid4vc-holder'
-import type { SdJwtVc } from '@aries-framework/sd-jwt-vc'
+import type { SdJwtVc } from '@aries-framework/core'
 import type { Server } from 'http'
 
 import {
@@ -20,7 +20,6 @@ import express, { type Express } from 'express'
 
 import { AskarModule } from '../../askar/src'
 import { askarModuleConfig } from '../../askar/tests/helpers'
-import { SdJwtVcModule } from '../../sd-jwt-vc/src'
 import { TenantsModule } from '../../tenants/src'
 import { OpenId4VcVerifierModule, OpenId4VcHolderModule, OpenId4VcIssuerModule } from '../src'
 
@@ -55,8 +54,7 @@ describe('OpenId4Vc', () => {
 
   let holder: AgentType<{
     openId4VcHolder: OpenId4VcHolderModule
-    sdJwtVc: SdJwtVcModule
-    tenants: TenantsModule<{ openId4VcHolder: OpenId4VcHolderModule; sdJwtVc: SdJwtVcModule }>
+    tenants: TenantsModule<{ openId4VcHolder: OpenId4VcHolderModule }>
   }>
   let holder1: TenantType
 
@@ -106,7 +104,6 @@ describe('OpenId4Vc', () => {
             },
           },
         }),
-        sdJwtVc: new SdJwtVcModule(),
         askar: new AskarModule(askarModuleConfig),
         tenants: new TenantsModule(),
       },
@@ -119,7 +116,6 @@ describe('OpenId4Vc', () => {
       'holder',
       {
         openId4VcHolder: new OpenId4VcHolderModule(),
-        sdJwtVc: new SdJwtVcModule(),
         askar: new AskarModule(askarModuleConfig),
         tenants: new TenantsModule(),
       },
@@ -133,7 +129,6 @@ describe('OpenId4Vc', () => {
         openId4VcVerifier: new OpenId4VcVerifierModule({
           baseUrl: verificationBaseUrl,
         }),
-        sdJwtVc: new SdJwtVcModule(),
         askar: new AskarModule(askarModuleConfig),
         tenants: new TenantsModule(),
       },
@@ -235,7 +230,7 @@ describe('OpenId4Vc', () => {
 
     expect(credentialsTenant1).toHaveLength(1)
     const compactSdJwtVcTenant1 = (credentialsTenant1[0] as SdJwtVc).compact
-    const sdJwtVcTenant1 = await holderTenant1.modules.sdJwtVc.fromCompact(compactSdJwtVcTenant1)
+    const sdJwtVcTenant1 = await holderTenant1.sdJwtVc.fromCompact(compactSdJwtVcTenant1)
     expect(sdJwtVcTenant1.payload.vct).toEqual('UniversityDegreeCredential')
 
     const resolvedCredentialOffer2 = await holderTenant1.modules.openId4VcHolder.resolveCredentialOffer(
@@ -261,7 +256,7 @@ describe('OpenId4Vc', () => {
 
     expect(credentialsTenant2).toHaveLength(1)
     const compactSdJwtVcTenant2 = (credentialsTenant2[0] as SdJwtVc).compact
-    const sdJwtVcTenant2 = await holderTenant1.modules.sdJwtVc.fromCompact(compactSdJwtVcTenant2)
+    const sdJwtVcTenant2 = await holderTenant1.sdJwtVc.fromCompact(compactSdJwtVcTenant2)
     expect(sdJwtVcTenant2.payload.vct).toEqual('UniversityDegreeCredential2')
 
     await holderTenant1.endSession()

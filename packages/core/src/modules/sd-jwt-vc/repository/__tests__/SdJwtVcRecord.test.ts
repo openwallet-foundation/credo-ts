@@ -1,6 +1,6 @@
-import { JsonTransformer } from '@aries-framework/core'
-
 import { SdJwtVcRecord } from '../SdJwtVcRecord'
+
+import { JsonTransformer } from '@aries-framework/core'
 
 describe('SdJwtVcRecord', () => {
   test('sets the values passed in the constructor on the record', () => {

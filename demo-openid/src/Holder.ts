@@ -7,7 +7,6 @@ import type {
 import { AskarModule } from '@aries-framework/askar'
 import { W3cJwtVerifiableCredential, W3cJsonLdVerifiableCredential } from '@aries-framework/core'
 import { OpenId4VcHolderModule } from '@aries-framework/openid4vc'
-import { SdJwtVcModule } from '@aries-framework/sd-jwt-vc'
 import { ariesAskar } from '@hyperledger/aries-askar-nodejs'
 
 import { BaseAgent } from './BaseAgent'
@@ -17,7 +16,6 @@ function getOpenIdHolderModules() {
   return {
     askar: new AskarModule({ ariesAskar }),
     openId4VcHolder: new OpenId4VcHolderModule(),
-    sdJwtVc: new SdJwtVcModule(),
   } as const
 }
 
@@ -58,7 +56,7 @@ export class Holder extends BaseAgent<ReturnType<typeof getOpenIdHolderModules>>
         if (credential instanceof W3cJwtVerifiableCredential || credential instanceof W3cJsonLdVerifiableCredential) {
           return this.agent.w3cCredentials.storeCredential({ credential })
         } else {
-          return this.agent.modules.sdJwtVc.store(credential.compact)
+          return this.agent.sdJwtVc.store(credential.compact)
         }
       })
     )
