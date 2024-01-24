@@ -39,6 +39,7 @@ import type {
   AnonCredsCredentialRecordOptions,
   DataIntegrityLinkSecretRequestMetadata,
   DataIntegrityLinkSecretMetadata,
+  VerificationMethod,
 } from '@aries-framework/core'
 
 import {
@@ -64,8 +65,7 @@ import {
   ClaimFormat,
   JwtPayload,
   SignatureSuiteRegistry,
-  parseDid,
-  ConnectionRepository,
+  CredentialPreviewAttribute,
 } from '@aries-framework/core'
 import { W3cCredential as AW3cCredential } from '@hyperledger/anoncreds-shared'
 
@@ -168,21 +168,6 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
     return { format, attachment, previewAttributes }
   }
 
-  private enhanceCredentialOffer(credential: JsonObject, version: W3C_VC_DATA_MODEL_VERSION) {
-    // these modification ensure that the credential is valid
-    if (!credential.issuer) credential.issuer = 'https://example.issuer.com'
-
-    if (version === '1.1') {
-      if (!credential.issuanceDate) credential.issuanceDate = new Date().toISOString()
-    } else if (version === '2.0') {
-      // do nothing
-    } else {
-      throw new AriesFrameworkError(`Unsupported data model version: ${version}`)
-    }
-
-    return credential
-  }
-
   public async processOffer(
     agentContext: AgentContext,
     { attachment, credentialRecord }: CredentialFormatProcessOptions
@@ -195,8 +180,7 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
       attachment.getDataAsJson<DataIntegrityCredentialOffer>()
 
     // validate the credential
-    const credentialToBeValidated = this.enhanceCredentialOffer(credential, data_model_versions_supported[0])
-    JsonTransformer.fromJSON(credentialToBeValidated, W3cCredential)
+    JsonTransformer.fromJSON(credential, W3cCredential)
 
     const missingBindingMethod =
       binding_required && !binding_method?.anoncreds_link_secret && !binding_method?.didcomm_signed_attachment
@@ -232,7 +216,7 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
 
   private async createSignedAttachment(
     agentContext: AgentContext,
-    data: { aud: string; nonce: string },
+    data: { nonce: string },
     options: { alg?: string; kid: string },
     issuerSupportedAlgs: string[]
   ) {
@@ -265,7 +249,7 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
     const jws = await jwsService.createJws(agentContext, {
       key,
       header: {},
-      payload: new JwtPayload({ aud: data.aud, additionalClaims: { nonce: data.nonce } }),
+      payload: new JwtPayload({ additionalClaims: { nonce: data.nonce } }),
       protectedHeaderOptions: { alg: signingAlg, kid },
     })
 
@@ -306,8 +290,10 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
     })
 
     if (!isValid) throw new AriesFrameworkError('Failed to validate signature of signed attachment')
-    const payload = JsonEncoder.fromBase64(signedAttachment.data.base64) as { aud: string; nonce: string }
-    if (!payload.aud || !payload.nonce) throw new AriesFrameworkError('Invalid payload in signed attachment')
+    const payload = JsonEncoder.fromBase64(signedAttachment.data.base64) as { nonce: string }
+    if (!payload.nonce || typeof payload.nonce !== 'string') {
+      throw new AriesFrameworkError('Invalid payload in signed attachment')
+    }
 
     return payload
   }
@@ -378,36 +364,9 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
         throw new AriesFrameworkError('Cannot request credential with a binding method that was not offered.')
       }
 
-      const offeredCredential = credentialOffer.credential
-
-      let aud: string
-      if (offeredCredential?.issuer) {
-        if (typeof offeredCredential.issuer === 'string') aud = offeredCredential.issuer
-        else if (Array.isArray(offeredCredential.issuer)) throw new AriesFrameworkError('Issuer cannot be an array')
-        else if (typeof offeredCredential.issuer === 'object' && typeof offeredCredential.issuer.id === 'string')
-          aud = offeredCredential.issuer.id
-        else {
-          throw new AriesFrameworkError('Wrong issuer format in credential offer')
-        }
-      } else {
-        // TODO: If the issuer is not included in the credential in the offer, the aud MUST be the same as the did of the recipient did of the DIDComm message containing the request message.
-        const connectionRepository = agentContext.dependencyManager.resolve(ConnectionRepository)
-        credentialRecord.connectionId // fetch connection -> get did prop
-
-        const res = await connectionRepository.getByThreadId(agentContext, credentialRecord.threadId)
-        // ??? res.did
-
-        throw new AriesFrameworkError('Wrong issuer format in credential offer')
-      }
-
-      const holderDidMethod = parseDid(aud).method
-      if (!credentialOffer.binding_method.didcomm_signed_attachment.did_methods_supported.includes(holderDidMethod)) {
-        throw new AriesFrameworkError(`Holder did method ${holderDidMethod} not supported by the issuer`)
-      }
-
       didCommSignedAttachment = await this.createSignedAttachment(
         agentContext,
-        { aud, nonce: credentialOffer.binding_method.didcomm_signed_attachment.nonce },
+        { nonce: credentialOffer.binding_method.didcomm_signed_attachment.nonce },
         dataIntegrityFormat.didCommSignedAttachmentCredentialRequestOptions,
         credentialOffer.binding_method.didcomm_signed_attachment.algs_supported
       )
@@ -474,16 +433,26 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
       anonCredsLinkSecretBindingMethod: AnonCredsLinkSecretBindingMethod
       anonCredsLinkSecretBindingProof: AnonCredsLinkSecretDataIntegrityBindingProof
       linkSecretMetadata: DataIntegrityLinkSecretMetadata
+      credentialSubjectId?: string
     }
   ): Promise<W3cJsonLdVerifiableCredential> {
-    const { credentialRecord, anonCredsLinkSecretBindingMethod, anonCredsLinkSecretBindingProof, linkSecretMetadata } =
-      input
+    const {
+      credentialRecord,
+      anonCredsLinkSecretBindingMethod,
+      anonCredsLinkSecretBindingProof,
+      linkSecretMetadata,
+      credentialSubjectId,
+    } = input
 
     const credentialAttributes = credentialRecord.credentialAttributes
     if (!credentialAttributes) {
       throw new AriesFrameworkError(
         `Missing required credential attribute values on credential record with id ${credentialRecord.id}`
       )
+    }
+
+    if (credentialSubjectId && credentialAttributes.find((ca) => ca.name === 'id') === undefined) {
+      credentialAttributes.push(new CredentialPreviewAttribute({ name: 'id', value: credentialSubjectId }))
     }
 
     const anonCredsIssuerService =
@@ -538,7 +507,6 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
       revocationStatusList = revocationStatusListResult.revocationStatusList
     }
 
-    // TODO:
     const { credential } = await anonCredsIssuerService.createCredential(agentContext, {
       credentialOffer: {
         ...anonCredsLinkSecretBindingMethod,
@@ -554,6 +522,91 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
     return await legacyCredentialToW3cCredential(agentContext, credential)
   }
 
+  private async getSignatureMetadata(agentContext: AgentContext, offeredCredential: W3cCredential, issuerKid?: string) {
+    const didsApi = agentContext.dependencyManager.resolve(DidsApi)
+    const didDocument = await didsApi.resolveDidDocument(offeredCredential.issuerId)
+
+    let verificationMethod: VerificationMethod
+    if (issuerKid) {
+      verificationMethod = didDocument.dereferenceKey(issuerKid, ['authentication', 'assertionMethod'])
+    } else {
+      const vms = didDocument.authentication ?? didDocument.assertionMethod
+      if (!vms || vms.length === 0) {
+        throw new AriesFrameworkError('Missing authentication or assertionMethod in did document')
+      }
+
+      if (typeof vms[0] === 'string') {
+        verificationMethod = didDocument.dereferenceVerificationMethod(vms[0])
+      } else {
+        verificationMethod = vms[0]
+      }
+    }
+
+    const signatureSuiteRegistry = agentContext.dependencyManager.resolve(SignatureSuiteRegistry)
+    const signatureSuite = signatureSuiteRegistry.getByVerificationMethodType(verificationMethod.type)
+    if (!signatureSuite) {
+      throw new AriesFrameworkError(
+        `Could not find signature suite for verification method type ${verificationMethod.type}`
+      )
+    }
+
+    return { verificationMethod, signatureSuite, offeredCredential }
+  }
+
+  private async assertAndSetCredentialSubjectId(credential: W3cCredential, credentialSubjectId: string | undefined) {
+    if (credentialSubjectId) {
+      if (Array.isArray(credential.credentialSubject)) {
+        throw new AriesFrameworkError(
+          'Invalid credential subject relation. Cannot determine the subject to be updated.'
+        )
+      }
+
+      const subjectId = credential.credentialSubject.id
+      if (subjectId && credentialSubjectId !== subjectId) {
+        throw new AriesFrameworkError('Invalid credential subject id.')
+      }
+
+      if (!subjectId) {
+        credential.credentialSubject.id = credentialSubjectId
+      }
+    }
+
+    return credential
+  }
+
+  private async signCredential(
+    agentContext: AgentContext,
+    credential: W3cCredential | W3cJsonLdVerifiableCredential,
+    issuerKid?: string
+  ) {
+    const { signatureSuite, verificationMethod } = await this.getSignatureMetadata(agentContext, credential, issuerKid)
+    const w3cCredentialService = agentContext.dependencyManager.resolve(W3cCredentialService)
+
+    let credentialToBeSigned = credential
+    if (credential instanceof W3cJsonLdVerifiableCredential) {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { proof, ..._credentialToBeSigned } = credential
+      credentialToBeSigned = _credentialToBeSigned as W3cCredential
+    }
+
+    const signed = (await w3cCredentialService.signCredential(agentContext, {
+      format: ClaimFormat.LdpVc,
+      credential: credentialToBeSigned as W3cCredential,
+      proofType: signatureSuite.proofType,
+      verificationMethod: verificationMethod.id,
+    })) as W3cJsonLdVerifiableCredential
+
+    if (Array.isArray(signed.proof))
+      throw new AriesFrameworkError('A newly signed credential can not have multiple proofs')
+
+    if (credential instanceof W3cJsonLdVerifiableCredential) {
+      const combinedProofs = Array.isArray(credential.proof) ? credential.proof : [credential.proof]
+      combinedProofs.push(signed.proof)
+      signed.proof = combinedProofs
+    }
+    return signed
+  }
+
   public async acceptRequest(
     agentContext: AgentContext,
     {
@@ -565,19 +618,17 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
       requestAppendAttachments,
     }: CredentialFormatAcceptRequestOptions<DataIntegrityCredentialFormat>
   ): Promise<CredentialFormatCreateReturn> {
-    // Assert credential attributes
-    const credentialAttributes = credentialRecord.credentialAttributes
-    if (!credentialAttributes) {
-      throw new AriesFrameworkError(
-        `Missing required credential attribute values on credential record with id ${credentialRecord.id}`
-      )
-    }
-
     const dataIntegrityFormat = credentialFormats?.dataIntegrity
     if (!dataIntegrityFormat) throw new AriesFrameworkError('Missing data integrity credential format data')
 
     const credentialOffer = offerAttachment?.getDataAsJson<DataIntegrityCredentialOffer>()
     if (!credentialOffer) throw new AriesFrameworkError('Missing data integrity credential offer in createCredential')
+
+    const offeredCredential = JsonTransformer.fromJSON(credentialOffer.credential, W3cCredential)
+    const assertedCredential = await this.assertAndSetCredentialSubjectId(
+      offeredCredential,
+      dataIntegrityFormat.credentialSubjectId
+    )
 
     const credentialRequest = requestAttachment.getDataAsJson<DataIntegrityCredentialRequest>()
     if (!credentialRequest)
@@ -587,7 +638,7 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
     if (!dataIntegrityMetadata)
       throw new AriesFrameworkError('Missing data integrity credential metadata in createCredential')
 
-    let credential: W3cJsonLdVerifiableCredential | undefined
+    let signedCredential: W3cJsonLdVerifiableCredential | undefined
     if (credentialRequest.binding_proof?.anoncreds_link_secret) {
       if (!credentialOffer.binding_method?.anoncreds_link_secret) {
         throw new AriesFrameworkError('Cannot issue credential with a binding method that was not offered.')
@@ -597,12 +648,24 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
         throw new AriesFrameworkError('Missing anoncreds link secret metadata')
       }
 
-      credential = await this.createCredentialWithAnonCredsDataIntegrityProof(agentContext, {
+      signedCredential = await this.createCredentialWithAnonCredsDataIntegrityProof(agentContext, {
         credentialRecord,
         anonCredsLinkSecretBindingMethod: credentialOffer.binding_method.anoncreds_link_secret,
         linkSecretMetadata: dataIntegrityMetadata.linkSecretMetadata,
         anonCredsLinkSecretBindingProof: credentialRequest.binding_proof.anoncreds_link_secret,
+        credentialSubjectId: dataIntegrityFormat.credentialSubjectId,
       })
+
+      if (
+        dataIntegrityFormat.credentialSubjectId &&
+        Array.isArray(signedCredential.credentialSubject) === false &&
+        signedCredential.credentialSubject.id &&
+        dataIntegrityFormat.credentialSubjectId !== signedCredential.credentialSubject.id
+      ) {
+        throw new AriesFrameworkError('Invalid credential subject id.')
+      }
+
+      // TODO: check if any non integrity protected fields were on the offered credential. If so throw
     }
 
     if (credentialRequest.binding_proof?.didcomm_signed_attachment) {
@@ -610,58 +673,29 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
         throw new AriesFrameworkError('Cannot issue credential with a binding method that was not offered.')
       }
 
+      if (!dataIntegrityFormat.didCommSignedAttachmentAcceptRequestOptions) {
+        throw new AriesFrameworkError('Missing didCommSignedAttachmentAcceptRequestOptions')
+      }
+
       const bindingProofAttachment = requestAppendAttachments?.find(
         (attachments) => attachments.id === credentialRequest.binding_proof?.didcomm_signed_attachment?.attachment_id
       )
       if (!bindingProofAttachment) throw new AriesFrameworkError('Missing binding proof attachment')
 
-      const issuerKid = dataIntegrityFormat.didCommSignedAttachmentAcceptRequestOptions?.kid
-      if (!issuerKid) throw new AriesFrameworkError('Missing kid')
-
-      // TODO: for afj the offer is the issued credential
-      const offeredCredential = JsonTransformer.fromJSON(credentialOffer.credential, W3cCredential)
-
-      const { aud, nonce } = await this.getSignedAttachmentPayload(agentContext, bindingProofAttachment)
+      const { nonce } = await this.getSignedAttachmentPayload(agentContext, bindingProofAttachment)
       if (nonce !== credentialOffer.binding_method.didcomm_signed_attachment.nonce) {
         throw new AriesFrameworkError('Invalid nonce in signed attachment')
       }
 
-      const issuer =
-        typeof offeredCredential.issuer === 'string' ? offeredCredential.issuer : offeredCredential.issuer.id
-      if (issuer !== aud) throw new AriesFrameworkError('Invalid aud in signed attachment')
-
-      const didsApi = agentContext.dependencyManager.resolve(DidsApi)
-      const didDocument = await didsApi.resolveDidDocument(issuer)
-      const verificationMethod = didDocument.dereferenceVerificationMethod(issuerKid)
-
-      const signatureSuiteRegistry = agentContext.dependencyManager.resolve(SignatureSuiteRegistry)
-      const signatureSuite = signatureSuiteRegistry.getByVerificationMethodType(verificationMethod.type)
-      if (!signatureSuite) {
-        throw new AriesFrameworkError(
-          `Could not find signature suite for verification method type ${verificationMethod.type}`
-        )
-      }
-
-      if (credential) {
-        //TODO: in this case we already have a credential, so we can use that and just add another signature
-        throw new AriesFrameworkError('TODO: implement and remove this!')
-      } else {
-        const w3cCredentialService = agentContext.dependencyManager.resolve(W3cCredentialService)
-        credential = (await w3cCredentialService.signCredential(agentContext, {
-          format: ClaimFormat.LdpVc,
-          credential: offeredCredential,
-          proofType: signatureSuite.proofType,
-          verificationMethod: verificationMethod.id,
-        })) as W3cJsonLdVerifiableCredential
-      }
+      const issuerKid = dataIntegrityFormat.didCommSignedAttachmentAcceptRequestOptions.kid
+      signedCredential = await this.signCredential(agentContext, assertedCredential, issuerKid)
     }
 
     if (
       !credentialRequest.binding_proof?.anoncreds_link_secret &&
       !credentialRequest.binding_proof?.didcomm_signed_attachment
     ) {
-      // TODO: sign with an arbitrary cryptosuite, but cannot be anoncreds ....
-      throw new AriesFrameworkError('Not impelmented')
+      signedCredential = await this.signCredential(agentContext, assertedCredential)
     }
 
     const format = new CredentialFormatSpec({
@@ -669,7 +703,7 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
       format: W3C_DATA_INTEGRITY_CREDENTIAL,
     })
 
-    const attachment = this.getFormatData({ credential: JsonTransformer.toJSON(credential) }, format.attachmentId)
+    const attachment = this.getFormatData({ credential: JsonTransformer.toJSON(signedCredential) }, format.attachmentId)
     return { format, attachment }
   }
 
@@ -796,7 +830,8 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
       await this.assertCredentialAttributesMatchSchemaAttributes(
         agentContext,
         w3cJsonLdVerifiableCredential,
-        anonCredsCredentialRecordOptions.schemaId
+        anonCredsCredentialRecordOptions.schemaId,
+        true
       )
     } else {
       w3cJsonLdVerifiableCredential = JsonTransformer.fromJSON(credentialJson, W3cJsonLdVerifiableCredential)
@@ -902,8 +937,7 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
 
     // validate the credential and get the preview attributes
     const credentialJson = credential instanceof W3cCredential ? JsonTransformer.toJSON(credential) : credential
-    const validCredential = this.enhanceCredentialOffer(credentialJson, dataModelVersionsSupported[0])
-    const validW3cCredential = JsonTransformer.fromJSON(validCredential, W3cCredential)
+    const validW3cCredential = JsonTransformer.fromJSON(credentialJson, W3cCredential)
     const previewAttributes = this.previewAttributesFromCredential(validW3cCredential)
 
     const dataIntegrityMetadata: DataIntegrityMetadata = {}
@@ -942,7 +976,8 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
       await this.assertCredentialAttributesMatchSchemaAttributes(
         agentContext,
         validW3cCredential,
-        credentialDefinition.schemaId
+        credentialDefinition.schemaId,
+        false
       )
 
       const { schema_id, ..._anonCredsLinkSecretBindingMethod } = anoncredsCredentialOffer
@@ -969,7 +1004,6 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
         throw new AriesFrameworkError('No supported JWA signature algorithms found.')
       }
 
-      // TODO: this can be empty according to spec
       if (didCommSignedAttachmentBindingMethod.did_methods_supported.length === 0) {
         throw new AriesFrameworkError('No supported DID methods found.')
       }
@@ -1012,7 +1046,8 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
   private async assertCredentialAttributesMatchSchemaAttributes(
     agentContext: AgentContext,
     credential: W3cCredential,
-    schemaId: string
+    schemaId: string,
+    credentialSubjectIdMustBeSet: boolean
   ) {
     const attributes = this.previewAttributesFromCredential(credential)
 
@@ -1023,7 +1058,14 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
       )
     }
 
-    assertAttributesMatchSchema(schemaReturn.schema, attributes)
+    const enhancedAttributes = [...attributes]
+    if (
+      !credentialSubjectIdMustBeSet &&
+      schemaReturn.schema.attrNames.includes('id') &&
+      attributes.find((attr) => attr.name === 'id') === undefined
+    )
+      enhancedAttributes.push({ name: 'id', value: 'mock' })
+    assertAttributesMatchSchema(schemaReturn.schema, enhancedAttributes)
 
     return { attributes }
   }

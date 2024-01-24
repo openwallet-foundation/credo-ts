@@ -158,7 +158,7 @@ async function anonCredsFlowTest(options: {
   issuer: Awaited<ReturnType<typeof createDidKidVerificationMethod>>
   holder: Awaited<ReturnType<typeof createDidKidVerificationMethod>>
 }) {
-  const { issuer, holder } = options
+  const { issuer } = options
 
   const holderCredentialRecord = new CredentialExchangeRecord({
     protocolVersion: 'v1',
@@ -201,9 +201,8 @@ async function anonCredsFlowTest(options: {
     credentialRecord: issuerCredentialRecord,
     credentialFormats: {
       dataIntegrity: {
-        bindingRequired: true,
+        bindingRequired: false,
         credential,
-        didCommSignedAttachmentBindingMethodOptions: {},
       },
     },
   })
@@ -218,11 +217,7 @@ async function anonCredsFlowTest(options: {
       credentialRecord: holderCredentialRecord,
       offerAttachment,
       credentialFormats: {
-        dataIntegrity: {
-          didCommSignedAttachmentCredentialRequestOptions: {
-            kid: holder.kid,
-          },
-        },
+        dataIntegrity: {},
       },
     })
 
@@ -239,9 +234,6 @@ async function anonCredsFlowTest(options: {
     credentialFormats: {
       dataIntegrity: {
         credentialSubjectId: issuer.did,
-        didCommSignedAttachmentAcceptRequestOptions: {
-          kid: issuer.kid,
-        },
       },
     },
   })

@@ -46,6 +46,7 @@ export interface DataIntegrityOfferCredentialFormat {
  * method, so it's an empty object
  */
 export type DataIntegrityAcceptRequestFormat = {
+  credentialSubjectId?: string
   didCommSignedAttachmentAcceptRequestOptions?: {
     kid: string
   }
