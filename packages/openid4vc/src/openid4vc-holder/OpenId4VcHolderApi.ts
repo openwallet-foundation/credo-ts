@@ -4,80 +4,52 @@ import type {
   OpenId4VciAuthCodeFlowOptions,
   OpenId4VciAcceptCredentialOfferOptions,
 } from './OpenId4VciHolderServiceOptions'
-import type { AuthenticationRequest, PresentationRequest } from './OpenId4VpHolderServiceOptions'
-import type { VerificationMethod, DifPexInputDescriptorToCredentials } from '@aries-framework/core'
+import type { OpenId4VcSiopAcceptAuthorizationRequestOptions } from './OpenId4vcSiopHolderServiceOptions'
 
 import { injectable, AgentContext } from '@aries-framework/core'
 
 import { OpenId4VciHolderService } from './OpenId4VciHolderService'
-import { OpenId4VpHolderService } from './OpenId4VpHolderService'
+import { OpenId4VcSiopHolderService } from './OpenId4vcSiopHolderService'
 
-// FIXME: the holder API is not really consistent with the issuer API
-// FIXME: it's not immediately clear which methods are for receiving vc proving
 /**
  * @public
  */
 @injectable()
 export class OpenId4VcHolderApi {
-  private agentContext: AgentContext
-  private openId4VciHolderService: OpenId4VciHolderService
-  private openId4VpHolderService: OpenId4VpHolderService
-
   public constructor(
-    agentContext: AgentContext,
-    openId4VcHolderService: OpenId4VciHolderService,
-    openId4VpHolderService: OpenId4VpHolderService
-  ) {
-    this.agentContext = agentContext
-    this.openId4VciHolderService = openId4VcHolderService
-    this.openId4VpHolderService = openId4VpHolderService
-  }
+    private agentContext: AgentContext,
+    private openId4VciHolderService: OpenId4VciHolderService,
+    private openId4VcSiopHolderService: OpenId4VcSiopHolderService
+  ) {}
 
   /**
    * Resolves the authentication request given as URI or JWT to a unified format, and
    * verifies the validity of the request.
-   * The resolved request can be accepted with either @see acceptAuthenticationRequest if it is an
-   * authentication request or with @see acceptPresentationRequest if it is a proofRequest.
    *
-   * @param requestJwtOrUri JWT or an openid:// URI
-   * @returns the resolved and verified authentication request or presentation request alongside the data required to fulfill the presentation request if possible.
+   * The resolved request can be accepted with the @see acceptSiopAuthorizationRequest.
+   *
+   * If the authorization request uses OpenID4VP and included presentation definitions,
+   * a `presentationExchange` property will be defined with credentials that satisfy the
+   * incoming request. When `presentationExchange` is present, you MUST supply `presentationExchange`
+   * when calling `acceptSiopAuthorizationRequest` as well.
+   *
+   * @param requestJwtOrUri JWT or an SIOPv2 request URI
+   * @returns the resolved and verified authentication request.
    */
-  public async resolveProofRequest(requestJwtOrUri: string) {
-    return await this.openId4VpHolderService.resolveProofRequest(this.agentContext, requestJwtOrUri)
+  public async resolveSiopAuthorizationRequest(requestJwtOrUri: string) {
+    return this.openId4VcSiopHolderService.resolveAuthorizationRequest(this.agentContext, requestJwtOrUri)
   }
 
   /**
-   * Accepts the authentication request after it has been resolved and verified with @see resolveProofRequest.
+   * Accepts the authentication request after it has been resolved and verified with {@link resolveSiopAuthorizationRequest}.
    *
-   * @param authenticationRequest - The verified authorization request object.
-   * @param verificationMethod - The method used for creating the authentication proof.
-   * @returns @see ProofSubmissionResponse containing the status of the submission.
-   */
-  public async acceptAuthenticationRequest(
-    authenticationRequest: AuthenticationRequest,
-    verificationMethod: VerificationMethod
-  ) {
-    return await this.openId4VpHolderService.acceptAuthenticationRequest(
-      this.agentContext,
-      verificationMethod,
-      authenticationRequest
-    )
-  }
-
-  /**
-   * Accepts the proof request with a presentation after it has been resolved and verified @see resolveProofRequest.
+   * If the resolved authorization request included a `presentationExchange` property, you MUST supply `presentationExchange`
+   * in the `options` parameter.
    *
-   * @param presentationRequest - The verified authorization request object containing the presentation definition.
-   * @param presentation.submission - The presentation submission object obtained from @see resolveProofRequest
-   * @param presentation.submissionEntryIndexes - The indexes of the credentials in the presentation submission that should be send to the verifier.
-   * @returns @see ProofSubmissionResponse containing the status of the submission.
+   * If no `presentationExchange` property is present, you MUST supply `openIdTokenIssuer` in the `options` parameter.
    */
-  public async acceptPresentationRequest(
-    // FIXME: more unique interface names: OpenId4VpPresentationRequest
-    presentationRequest: PresentationRequest,
-    credentials: DifPexInputDescriptorToCredentials
-  ) {
-    return await this.openId4VpHolderService.acceptProofRequest(this.agentContext, presentationRequest, credentials)
+  public async acceptSiopAuthorizationRequest(options: OpenId4VcSiopAcceptAuthorizationRequestOptions) {
+    return await this.openId4VcSiopHolderService.acceptAuthorizationRequest(this.agentContext, options)
   }
 
   /**
@@ -92,7 +64,10 @@ export class OpenId4VcHolderApi {
   }
 
   /**
-   * This function is to be used with the Authorization Code Flow.
+   * This function is to be used to receive an credential in OpenID4VCI using the Authorization Code Flow.
+   *
+   * Not to be confused with the {@link resolveSiopAuthorizationRequest}, which is only used for SIOP requests.
+   *
    * It will generate the authorization request URI based on the provided options.
    * The authorization request URI is used to obtain the authorization code. Currently this needs to be done manually.
    *
@@ -104,7 +79,7 @@ export class OpenId4VcHolderApi {
    * @param authCodeFlowOptions
    * @returns The authorization request URI alongside the code verifier and original @param authCodeFlowOptions
    */
-  public async resolveAuthorizationRequest(
+  public async resolveIssuanceAuthorizationRequest(
     resolvedCredentialOffer: OpenId4VciResolvedCredentialOffer,
     authCodeFlowOptions: OpenId4VciAuthCodeFlowOptions
   ) {
@@ -119,7 +94,6 @@ export class OpenId4VcHolderApi {
    * Accepts a credential offer using the pre-authorized code flow.
    * @param resolvedCredentialOffer Obtained through @see resolveCredentialOffer
    * @param acceptCredentialOfferOptions
-   * @returns ( @see W3cCredentialRecord | @see SdJwtRecord )[]
    */
   public async acceptCredentialOfferUsingPreAuthorizedCode(
     resolvedCredentialOffer: OpenId4VciResolvedCredentialOffer,
@@ -134,10 +108,9 @@ export class OpenId4VcHolderApi {
   /**
    * Accepts a credential offer using the authorization code flow.
    * @param resolvedCredentialOffer Obtained through @see resolveCredentialOffer
-   * @param resolvedAuthorizationRequest Obtained through @see resolveAuthorizationRequest
+   * @param resolvedAuthorizationRequest Obtained through @see resolveIssuanceAuthorizationRequest
    * @param code The authorization code obtained via the authorization request URI
    * @param acceptCredentialOfferOptions
-   * @returns ( @see W3cCredentialRecord | @see SdJwtRecord )[]
    */
   public async acceptCredentialOfferUsingAuthorizationCode(
     resolvedCredentialOffer: OpenId4VciResolvedCredentialOffer,

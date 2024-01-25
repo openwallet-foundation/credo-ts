@@ -3,9 +3,9 @@ import type { AuthorizationResponsePayload } from '@sphereon/did-auth-siop'
 import type { Router, Response } from 'express'
 
 import { getRequestContext, sendErrorResponse } from '../../shared/router'
-import { OpenId4VcVerifierService } from '../OpenId4VcVerifierService'
+import { OpenId4VcSiopVerifierService } from '../OpenId4VcSiopVerifierService'
 
-export interface AuthorizationEndpointConfig {
+export interface OpenId4VcSiopAuthorizationEndpointConfig {
   /**
    * The path at which the authorization endpoint should be made available. Note that it will be
    * hosted at a subpath to take into account multiple tenants and verifiers.
@@ -15,18 +15,18 @@ export interface AuthorizationEndpointConfig {
   endpointPath: string
 }
 
-export function configureAuthorizationEndpoint(router: Router, config: AuthorizationEndpointConfig) {
+export function configureAuthorizationEndpoint(router: Router, config: OpenId4VcSiopAuthorizationEndpointConfig) {
   router.post(config.endpointPath, async (request: OpenId4VcVerificationRequest, response: Response, next) => {
     const { agentContext, verifier } = getRequestContext(request)
 
     try {
-      const openId4VcVerifierService = agentContext.dependencyManager.resolve(OpenId4VcVerifierService)
+      const openId4VcVerifierService = agentContext.dependencyManager.resolve(OpenId4VcSiopVerifierService)
       const isVpRequest = request.body.presentation_submission !== undefined
 
       const authorizationResponse: AuthorizationResponsePayload = request.body
       if (isVpRequest) authorizationResponse.presentation_submission = JSON.parse(request.body.presentation_submission)
 
-      // FIXME: we should emit an event here
+      // FIXME: we should emit an event here and in other places
       await openId4VcVerifierService.verifyAuthorizationResponse(agentContext, {
         authorizationResponse: request.body,
         verifier,

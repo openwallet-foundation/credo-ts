@@ -1,6 +1,7 @@
 import type { W3cVerifiableCredential, W3cVerifiablePresentation, SdJwtVc } from '@aries-framework/core'
 import type {
   W3CVerifiableCredential as SphereonW3cVerifiableCredential,
+  W3CVerifiablePresentation as SphereonW3cVerifiablePresentation,
   CompactSdJwtVc as SphereonCompactSdJwtVc,
   WrappedVerifiablePresentation,
 } from '@sphereon/ssi-types'
@@ -27,6 +28,21 @@ export function getSphereonVerifiableCredential(
     return verifiableCredential.serializedJwt
   } else {
     return verifiableCredential.compact
+  }
+}
+
+export function getSphereonVerifiablePresentation(
+  verifiablePresentation: W3cVerifiablePresentation | SdJwtVc
+): SphereonW3cVerifiablePresentation | SphereonCompactSdJwtVc {
+  // encoded sd-jwt or jwt
+  if (typeof verifiablePresentation === 'string') {
+    return verifiablePresentation
+  } else if (verifiablePresentation instanceof W3cJsonLdVerifiablePresentation) {
+    return JsonTransformer.toJSON(verifiablePresentation) as SphereonW3cVerifiablePresentation
+  } else if (verifiablePresentation instanceof W3cJwtVerifiablePresentation) {
+    return verifiablePresentation.serializedJwt
+  } else {
+    return verifiablePresentation.compact
   }
 }
 

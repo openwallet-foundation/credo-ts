@@ -266,11 +266,14 @@ describe('OpenId4VcHolder', () => {
 
       const resolved = await holder.modules.openId4VcHolder.resolveCredentialOffer(fixture.credentialOffer)
 
-      const resolvedAuthorizationRequest = await holder.modules.openId4VcHolder.resolveAuthorizationRequest(resolved, {
-        clientId: 'test-client',
-        redirectUri: 'http://example.com',
-        scope: ['openid', 'UniversityDegree'],
-      })
+      const resolvedAuthorizationRequest = await holder.modules.openId4VcHolder.resolveIssuanceAuthorizationRequest(
+        resolved,
+        {
+          clientId: 'test-client',
+          redirectUri: 'http://example.com',
+          scope: ['openid', 'UniversityDegree'],
+        }
+      )
 
       await expect(
         holder.modules.openId4VcHolder.acceptCredentialOfferUsingAuthorizationCode(

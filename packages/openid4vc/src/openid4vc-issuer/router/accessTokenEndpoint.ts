@@ -23,7 +23,7 @@ import { getRequestContext, sendErrorResponse } from '../../shared/router'
 import { OpenId4VcIssuerModuleConfig } from '../OpenId4VcIssuerModuleConfig'
 import { OpenId4VcIssuerService } from '../OpenId4VcIssuerService'
 
-export interface AccessTokenEndpointConfig {
+export interface OpenId4VciAccessTokenEndpointConfig {
   /**
    * The path at which the token endpoint should be made available. Note that it will be
    * hosted at a subpath to take into account multiple tenants and issuers.
@@ -54,7 +54,7 @@ export interface AccessTokenEndpointConfig {
   tokenExpiresInSeconds: number
 }
 
-export function configureAccessTokenEndpoint(router: Router, config: AccessTokenEndpointConfig) {
+export function configureAccessTokenEndpoint(router: Router, config: OpenId4VciAccessTokenEndpointConfig) {
   router.post(
     config.endpointPath,
     verifyTokenRequest({ preAuthorizedCodeExpirationInSeconds: config.preAuthorizedCodeExpirationInSeconds }),
@@ -89,7 +89,7 @@ function getJwtSignerCallback(agentContext: AgentContext, signerPublicKey: Key):
   }
 }
 
-export function handleTokenRequest(config: AccessTokenEndpointConfig) {
+export function handleTokenRequest(config: OpenId4VciAccessTokenEndpointConfig) {
   const { tokenExpiresInSeconds, cNonceExpiresInSeconds } = config
 
   return async (request: OpenId4VcIssuanceRequest, response: Response, next: NextFunction) => {

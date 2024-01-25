@@ -1,6 +1,4 @@
-import type { HolderMetadata } from '../src'
-import type { AgentContext, VerificationMethod } from '@aries-framework/core'
-import type { PresentationDefinitionV2 } from '@sphereon/pex-models'
+import type { AgentContext, DifPresentationExchangeDefinitionV2, VerificationMethod } from '@aries-framework/core'
 
 import {
   getKeyFromVerificationMethod,
@@ -11,12 +9,7 @@ import {
   ClaimFormat,
   CREDENTIALS_CONTEXT_V1_URL,
 } from '@aries-framework/core'
-import { SigningAlgo } from '@sphereon/did-auth-siop'
 
-import {
-  openidStaticOpConfiguration,
-  siopv2StaticOpConfiguration,
-} from '../src/openid4vc-verifier/staticOpConfiguration'
 import { getProofTypeFromKey } from '../src/shared/utils'
 
 export const waltPortalOpenBadgeJwt =
@@ -56,7 +49,7 @@ export const getOpenBadgeCredentialLdpVc = async (
 
   return signedLdpVc
 }
-export const openBadgeCredentialPresentationDefinitionLdpVc: PresentationDefinitionV2 = {
+export const openBadgeCredentialPresentationDefinitionLdpVc: DifPresentationExchangeDefinitionV2 = {
   id: 'OpenBadgeCredential',
   input_descriptors: [
     {
@@ -71,7 +64,7 @@ export const openBadgeCredentialPresentationDefinitionLdpVc: PresentationDefinit
   ],
 }
 
-export const universityDegreePresentationDefinition: PresentationDefinitionV2 = {
+export const universityDegreePresentationDefinition: DifPresentationExchangeDefinitionV2 = {
   id: 'UniversityDegreeCredential',
   input_descriptors: [
     {
@@ -86,7 +79,7 @@ export const universityDegreePresentationDefinition: PresentationDefinitionV2 = 
   ],
 }
 
-export const openBadgePresentationDefinition: PresentationDefinitionV2 = {
+export const openBadgePresentationDefinition: DifPresentationExchangeDefinitionV2 = {
   id: 'OpenBadgeCredential',
   input_descriptors: [
     {
@@ -102,27 +95,13 @@ export const openBadgePresentationDefinition: PresentationDefinitionV2 = {
 }
 
 export const combinePresentationDefinitions = (
-  presentationDefinitions: PresentationDefinitionV2[]
-): PresentationDefinitionV2 => {
+  presentationDefinitions: DifPresentationExchangeDefinitionV2[]
+): DifPresentationExchangeDefinitionV2 => {
   return {
     id: 'Combined',
     input_descriptors: presentationDefinitions.flatMap((p) => p.input_descriptors),
   }
 }
-
-export const staticOpOpenIdConfigEdDSA = {
-  ...openidStaticOpConfiguration,
-  idTokenSigningAlgValuesSupported: [SigningAlgo.EDDSA],
-  requestObjectSigningAlgValuesSupported: [SigningAlgo.EDDSA],
-  vpFormatsSupported: { jwt_vc: { alg: [SigningAlgo.EDDSA] }, jwt_vp: { alg: [SigningAlgo.EDDSA] } },
-} satisfies HolderMetadata
-
-export const staticSiopConfigEDDSA = {
-  ...siopv2StaticOpConfiguration,
-  idTokenSigningAlgValuesSupported: [SigningAlgo.EDDSA],
-  requestObjectSigningAlgValuesSupported: [SigningAlgo.EDDSA],
-  vpFormatsSupported: { jwt_vc: { alg: [SigningAlgo.EDDSA] }, jwt_vp: { alg: [SigningAlgo.EDDSA] } },
-} satisfies HolderMetadata
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function waitForMockFunction(mockFn: jest.Mock<any, any, any>) {

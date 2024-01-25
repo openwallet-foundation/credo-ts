@@ -1,14 +1,14 @@
 import type {
-  OpenId4VcCreateAuthorizationRequestOptions,
-  OpenId4VcVerifyAuthorizationResponseOptions,
-  OpenId4VcAuthorizationRequestWithMetadata,
-  VerifiedOpenId4VcAuthorizationResponse,
-} from './OpenId4VcVerifierServiceOptions'
+  OpenId4VcSiopCreateAuthorizationRequestOptions,
+  OpenId4VcSiopVerifyAuthorizationResponseOptions,
+  OpenId4VcSiopCreateAuthorizationRequestReturn,
+  OpenId4VcSiopVerifiedAuthorizationResponse,
+} from './OpenId4VcSiopVerifierServiceOptions'
 
 import { injectable, AgentContext } from '@aries-framework/core'
 
+import { OpenId4VcSiopVerifierService } from './OpenId4VcSiopVerifierService'
 import { OpenId4VcVerifierModuleConfig } from './OpenId4VcVerifierModuleConfig'
-import { OpenId4VcVerifierService } from './OpenId4VcVerifierService'
 
 /**
  * @public
@@ -18,28 +18,28 @@ export class OpenId4VcVerifierApi {
   public constructor(
     public readonly config: OpenId4VcVerifierModuleConfig,
     private agentContext: AgentContext,
-    private openId4VcVerifierService: OpenId4VcVerifierService
+    private openId4VcSiopVerifierService: OpenId4VcSiopVerifierService
   ) {}
 
   /**
    * Retrieve all verifier records from storage
    */
   public async getAllVerifiers() {
-    return this.openId4VcVerifierService.getAllVerifiers(this.agentContext)
+    return this.openId4VcSiopVerifierService.getAllVerifiers(this.agentContext)
   }
 
   /**
    * Retrieve a verifier record from storage by its verified id
    */
   public async getByVerifierId(verifierId: string) {
-    return this.openId4VcVerifierService.getByVerifierId(this.agentContext, verifierId)
+    return this.openId4VcSiopVerifierService.getByVerifierId(this.agentContext, verifierId)
   }
 
   /**
    * Create a new verifier and store the new verifier record.
    */
   public async createVerifier() {
-    return this.openId4VcVerifierService.createVerifier(this.agentContext)
+    return this.openId4VcSiopVerifierService.createVerifier(this.agentContext)
   }
 
   /**
@@ -51,16 +51,16 @@ export class OpenId4VcVerifierApi {
    *
    * Other flows (non-SIOP) are not supported at the moment, but can be added in the future.
    *
-   * See {@link OpenId4VcCreateAuthorizationRequestOptions} for detailed documentation on the options.
+   * See {@link OpenId4VcSiopCreateAuthorizationRequestOptions} for detailed documentation on the options.
    */
   public async createAuthorizationRequest({
     verifierId,
     ...otherOptions
-  }: OpenId4VcCreateAuthorizationRequestOptions & {
+  }: OpenId4VcSiopCreateAuthorizationRequestOptions & {
     verifierId: string
-  }): Promise<OpenId4VcAuthorizationRequestWithMetadata> {
+  }): Promise<OpenId4VcSiopCreateAuthorizationRequestReturn> {
     const verifier = await this.getByVerifierId(verifierId)
-    return await this.openId4VcVerifierService.createAuthorizationRequest(this.agentContext, {
+    return await this.openId4VcSiopVerifierService.createAuthorizationRequest(this.agentContext, {
       ...otherOptions,
       verifier,
     })
@@ -75,11 +75,11 @@ export class OpenId4VcVerifierApi {
   public async verifyAuthorizationResponse({
     verifierId,
     ...otherOptions
-  }: OpenId4VcVerifyAuthorizationResponseOptions & {
+  }: OpenId4VcSiopVerifyAuthorizationResponseOptions & {
     verifierId: string
-  }): Promise<VerifiedOpenId4VcAuthorizationResponse> {
+  }): Promise<OpenId4VcSiopVerifiedAuthorizationResponse> {
     const verifier = await this.getByVerifierId(verifierId)
-    return await this.openId4VcVerifierService.verifyAuthorizationResponse(this.agentContext, {
+    return await this.openId4VcSiopVerifierService.verifyAuthorizationResponse(this.agentContext, {
       ...otherOptions,
       verifier,
     })

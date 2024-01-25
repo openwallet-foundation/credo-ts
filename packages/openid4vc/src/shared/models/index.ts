@@ -1,4 +1,9 @@
 import type {
+  VerifiedAuthorizationRequest,
+  AuthorizationResponsePayload,
+  IDTokenPayload,
+} from '@sphereon/did-auth-siop'
+import type {
   AssertedUniformCredentialOffer,
   CredentialIssuerMetadata,
   CredentialOfferPayloadV1_0_11,
@@ -21,5 +26,10 @@ export type OpenId4VciCredentialRequestSdJwtVc = CredentialRequestSdJwtVc
 export type OpenId4VciCredentialOffer = AssertedUniformCredentialOffer
 export type OpenId4VciCredentialOfferPayload = CredentialOfferPayloadV1_0_11
 
+export type OpenId4VcSiopVerifiedAuthorizationRequest = VerifiedAuthorizationRequest
+export type OpenId4VcSiopAuthorizationResponsePayload = AuthorizationResponsePayload
+export type OpenId4VcSiopIdTokenPayload = IDTokenPayload
+
+export * from './OpenId4VcJwtIssuer'
 export * from './CredentialHolderBinding'
 export * from './OpenId4VciCredentialFormatProfile'

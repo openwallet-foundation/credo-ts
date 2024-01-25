@@ -1,13 +1,11 @@
-import type { AuthorizationEndpointConfig } from './router/authorizationEndpoint'
-import type { Optional, AgentContext } from '@aries-framework/core'
+import type { OpenId4VcSiopAuthorizationEndpointConfig } from './router/authorizationEndpoint'
+import type { Optional, AgentContext, AgentDependencies } from '@aries-framework/core'
+import type { IRPSessionManager } from '@sphereon/did-auth-siop'
 import type { Router } from 'express'
 
-import { AgentConfig } from '@aries-framework/core'
-import { EventEmitter } from 'events'
+import { InMemoryRPSessionManager } from '@sphereon/did-auth-siop'
 
 import { importExpress } from '../shared/router'
-
-import { InMemoryVerifierSessionManager, type IInMemoryVerifierSessionManager } from './InMemoryVerifierSessionManager'
 
 export interface OpenId4VcVerifierModuleConfigOptions {
   /**
@@ -26,20 +24,16 @@ export interface OpenId4VcVerifierModuleConfigOptions {
   router?: Router
 
   endpoints?: {
-    // FIXME: interface name with openid4vc prefix
-    authorization?: Optional<AuthorizationEndpointConfig, 'endpointPath'>
+    authorization?: Optional<OpenId4VcSiopAuthorizationEndpointConfig, 'endpointPath'>
   }
-
-  // FIXME: remove
-  sessionManagerFactory?: () => IInMemoryVerifierSessionManager
 }
 
 export class OpenId4VcVerifierModuleConfig {
   private options: OpenId4VcVerifierModuleConfigOptions
   public readonly router: Router
 
-  private eventEmitterMap: Map<string, EventEmitter>
-  private sessionManagerMap: Map<string, IInMemoryVerifierSessionManager>
+  private eventEmitterMap: Map<string, InstanceType<AgentDependencies['EventEmitterClass']>>
+  private sessionManagerMap: Map<string, IRPSessionManager>
 
   public constructor(options: OpenId4VcVerifierModuleConfigOptions) {
     this.options = options
@@ -53,7 +47,7 @@ export class OpenId4VcVerifierModuleConfig {
     return this.options.baseUrl
   }
 
-  public get authorizationEndpoint(): AuthorizationEndpointConfig {
+  public get authorizationEndpoint(): OpenId4VcSiopAuthorizationEndpointConfig {
     // Use user supplied options, or return defaults.
     const userOptions = this.options.endpoints?.authorization
 
@@ -63,25 +57,27 @@ export class OpenId4VcVerifierModuleConfig {
     }
   }
 
+  // FIXME: rework (no in-memory)
   public getSessionManager(agentContext: AgentContext) {
     const val = this.sessionManagerMap.get(agentContext.contextCorrelationId)
     if (val) return val
 
-    const logger = agentContext.dependencyManager.resolve(AgentConfig).logger
+    const eventEmitter = this.getEventEmitter(agentContext)
 
-    const newVal =
-      this.options.sessionManagerFactory?.() ??
-      new InMemoryVerifierSessionManager(this.getEventEmitter(agentContext), logger)
+    const newVal = new InMemoryRPSessionManager(eventEmitter)
     this.sessionManagerMap.set(agentContext.contextCorrelationId, newVal)
     return newVal
   }
 
-  public getEventEmitter(agentConext: AgentContext) {
-    const val = this.eventEmitterMap.get(agentConext.contextCorrelationId)
+  // FIXME: rework (no-memory)
+  public getEventEmitter(agentContext: AgentContext) {
+    const EventEmitterClass = agentContext.config.agentDependencies.EventEmitterClass
+
+    const val = this.eventEmitterMap.get(agentContext.contextCorrelationId)
     if (val) return val
 
-    const newVal = new EventEmitter()
-    this.eventEmitterMap.set(agentConext.contextCorrelationId, newVal)
+    const newVal = new EventEmitterClass()
+    this.eventEmitterMap.set(agentContext.contextCorrelationId, newVal)
     return newVal
   }
 }

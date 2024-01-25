@@ -14,6 +14,7 @@ type MultiHashCodeMap = {
 
 const multiHashNameMap: MultiHashNameMap = {
   'sha2-256': 0x12,
+  'sha-256': 0x12,
 }
 
 const multiHashCodeMap: MultiHashCodeMap = Object.entries(multiHashNameMap).reduce(
@@ -31,7 +32,7 @@ export class MultiHashEncoder {
    *
    * @returns a multihash
    */
-  public static encode(data: Uint8Array, hashName: 'sha2-256'): Buffer {
+  public static encode(data: Uint8Array, hashName: HashName): Buffer {
     const hash = Hasher.hash(data, hashName)
     const hashCode = multiHashNameMap[hashName]
 

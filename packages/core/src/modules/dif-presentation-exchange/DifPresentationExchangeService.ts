@@ -12,7 +12,6 @@ import type { Query } from '../../storage/StorageService'
 import type { VerificationMethod } from '../dids'
 import type { SdJwtVc, SdJwtVcRecord } from '../sd-jwt-vc'
 import type { W3cVerifiablePresentation, W3cCredentialRecord } from '../vc'
-import type { W3cJsonPresentation } from '../vc/models/presentation/W3cJsonPresentation'
 import type {
   PresentationSignCallBackParams,
   SdJwtDecodedVerifiableCredentialWithKbJwtInput,
@@ -41,6 +40,7 @@ import {
 import { DifPresentationExchangeError } from './DifPresentationExchangeError'
 import { DifPresentationExchangeSubmissionLocation } from './models'
 import {
+  getVerifiablePresentationFromEncoded,
   getSphereonOriginalVerifiablePresentation,
   getCredentialsForRequest,
   getPresentationsToCreate,
@@ -52,14 +52,7 @@ import {
  */
 @injectable()
 export class DifPresentationExchangeService {
-  private pex = new PEX({
-    hasher: (data, alg) => {
-      if (alg !== 'sha-256') {
-        throw new AriesFrameworkError('Only sha-256 is supported as hashing algorithm.')
-      }
-      return Hasher.hash(TypedArrayEncoder.fromString(data), 'sha2-256')
-    },
-  })
+  private pex = new PEX({ hasher: Hasher.hash })
 
   public constructor(private w3cCredentialService: W3cCredentialService) {}
 
@@ -221,9 +214,13 @@ export class DifPresentationExchangeService {
     }
 
     return {
-      verifiablePresentations: verifiablePresentationResultsWithFormat.map(
-        // Can be JSON or string (sd-jwt / jwt compact)
-        (r) => r.verifiablePresentationResult.verifiablePresentation as W3cJsonPresentation | string
+      verifiablePresentations: await Promise.all(
+        verifiablePresentationResultsWithFormat.map((resultWithFormat) =>
+          getVerifiablePresentationFromEncoded(
+            agentContext,
+            resultWithFormat.verifiablePresentationResult.verifiablePresentation
+          )
+        )
       ),
       presentationSubmission,
       presentationSubmissionLocation:
@@ -382,11 +379,14 @@ export class DifPresentationExchangeService {
           presentationToCreate.subjectIds[0]
         )
 
+        const w3cPresentation = JsonTransformer.fromJSON(presentationInput, W3cPresentation)
+        w3cPresentation.holder = verificationMethod.controller
+
         const signedPresentation = await this.w3cCredentialService.signPresentation<ClaimFormat.JwtVp>(agentContext, {
           format: ClaimFormat.JwtVp,
           alg: this.getSigningAlgorithmForJwtVc(presentationDefinition, verificationMethod),
           verificationMethod: verificationMethod.id,
-          presentation: JsonTransformer.fromJSON(presentationInput, W3cPresentation),
+          presentation: w3cPresentation,
           challenge,
           domain,
         })
@@ -399,6 +399,9 @@ export class DifPresentationExchangeService {
           presentationToCreate.subjectIds[0]
         )
 
+        const w3cPresentation = JsonTransformer.fromJSON(presentationInput, W3cPresentation)
+        w3cPresentation.holder = verificationMethod.controller
+
         const signedPresentation = await this.w3cCredentialService.signPresentation(agentContext, {
           format: ClaimFormat.LdpVp,
           // TODO: we should move the check for which proof to use for a presentation to earlier
@@ -407,7 +410,7 @@ export class DifPresentationExchangeService {
           proofType: this.getProofTypeForLdpVc(agentContext, presentationDefinition, verificationMethod),
           proofPurpose: 'authentication',
           verificationMethod: verificationMethod.id,
-          presentation: JsonTransformer.fromJSON(presentationInput, W3cPresentation),
+          presentation: w3cPresentation,
           challenge,
           domain,
         })

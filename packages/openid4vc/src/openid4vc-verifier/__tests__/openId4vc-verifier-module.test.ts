@@ -3,7 +3,7 @@ import type { DependencyManager } from '@aries-framework/core'
 
 import { OpenId4VcVerifierApi } from '../OpenId4VcVerifierApi'
 import { OpenId4VcVerifierModule } from '../OpenId4VcVerifierModule'
-import { OpenId4VcVerifierService } from '../OpenId4VcVerifierService'
+import { OpenId4VcSiopVerifierService } from '../OpenId4VcSiopVerifierService'
 
 const dependencyManager = {
   registerInstance: jest.fn(),
@@ -28,6 +28,6 @@ describe('OpenId4VcVerifierModule', () => {
     expect(dependencyManager.registerContextScoped).toHaveBeenCalledWith(OpenId4VcVerifierApi)
 
     expect(dependencyManager.registerSingleton).toHaveBeenCalledTimes(1)
-    expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(OpenId4VcVerifierService)
+    expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(OpenId4VcSiopVerifierService)
   })
 })

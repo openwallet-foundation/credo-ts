@@ -3,7 +3,7 @@ import type { DependencyManager } from '@aries-framework/core'
 import { OpenId4VcHolderApi } from '../OpenId4VcHolderApi'
 import { OpenId4VcHolderModule } from '../OpenId4VcHolderModule'
 import { OpenId4VciHolderService } from '../OpenId4VciHolderService'
-import { OpenId4VpHolderService } from '../OpenId4VpHolderService'
+import { OpenId4VcSiopHolderService } from '../OpenId4vcSiopHolderService'
 
 const dependencyManager = {
   registerInstance: jest.fn(),
@@ -22,6 +22,6 @@ describe('OpenId4VcHolderModule', () => {
 
     expect(dependencyManager.registerSingleton).toHaveBeenCalledTimes(2)
     expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(OpenId4VciHolderService)
-    expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(OpenId4VpHolderService)
+    expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(OpenId4VcSiopHolderService)
   })
 })

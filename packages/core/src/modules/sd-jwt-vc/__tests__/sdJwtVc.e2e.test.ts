@@ -224,7 +224,7 @@ describe('sd-jwt-vc end to end test', () => {
       },
     })
 
-    const { verification: presentationVerification } = await verifier.modules.sdJwtVc.verify({
+    const { verification: presentationVerification } = await verifier.sdJwtVc.verify({
       compactSdJwtVc: presentation,
       keyBinding: { audience: verifierDid, nonce: verifierMetadata.nonce },
       requiredClaimKeys: [

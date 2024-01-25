@@ -6,7 +6,7 @@ import type { Router, Response } from 'express'
 import { getRequestContext, sendErrorResponse } from '../../shared/router'
 import { OpenId4VcIssuerService } from '../OpenId4VcIssuerService'
 
-export interface CredentialEndpointConfig {
+export interface OpenId4VciCredentialEndpointConfig {
   /**
    * The path at which the credential endpoint should be made available. Note that it will be
    * hosted at a subpath to take into account multiple tenants and issuers.
@@ -21,7 +21,7 @@ export interface CredentialEndpointConfig {
   credentialRequestToCredentialMapper: OpenId4VciCredentialRequestToCredentialMapper
 }
 
-export function configureCredentialEndpoint(router: Router, config: CredentialEndpointConfig) {
+export function configureCredentialEndpoint(router: Router, config: OpenId4VciCredentialEndpointConfig) {
   router.post(config.endpointPath, async (request: OpenId4VcIssuanceRequest, response: Response, next) => {
     const { agentContext, issuer } = getRequestContext(request)
 

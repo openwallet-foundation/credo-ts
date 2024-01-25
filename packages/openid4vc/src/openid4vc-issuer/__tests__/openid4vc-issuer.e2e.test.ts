@@ -68,11 +68,6 @@ const universityDegreeCredentialSdJwt = {
   vct: 'UniversityDegreeCredential',
 } satisfies OpenId4VciCredentialSupportedWithId
 
-const baseCredentialRequestOptions = {
-  scheme: 'openid-credential-offer',
-  baseUri: 'openid4vc-issuer.com',
-}
-
 const modules = {
   openId4VcIssuer: new OpenId4VcIssuerModule({
     baseUrl: 'https://openid4vc-issuer.com',
@@ -288,8 +283,6 @@ describe('OpenId4VcIssuer', () => {
         preAuthorizedCode,
         userPinRequired: false,
       },
-      // FIXME: can we take the base uri from the config? Do we want to provide this?
-      ...baseCredentialRequestOptions,
     })
 
     expect(result.credentialOfferPayload).toEqual({
@@ -305,7 +298,7 @@ describe('OpenId4VcIssuer', () => {
     })
 
     expect(result.credentialOfferUri).toEqual(
-      `openid-credential-offer://openid4vc-issuer.com?credential_offer=%7B%22grants%22%3A%7B%22urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Apre-authorized_code%22%3A%7B%22pre-authorized_code%22%3A%221234567890%22%2C%22user_pin_required%22%3Afalse%7D%7D%2C%22credentials%22%3A%5B%22https%3A%2F%2Fopenid4vc-issuer.com%2Fcredentials%2FUniversityDegreeCredentialSdJwt%22%5D%2C%22credential_issuer%22%3A%22https%3A%2F%2Fopenid4vc-issuer.com%2F${openId4VcIssuer.issuerId}%22%7D`
+      `openid-credential-offer://?credential_offer=%7B%22grants%22%3A%7B%22urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Apre-authorized_code%22%3A%7B%22pre-authorized_code%22%3A%221234567890%22%2C%22user_pin_required%22%3Afalse%7D%7D%2C%22credentials%22%3A%5B%22https%3A%2F%2Fopenid4vc-issuer.com%2Fcredentials%2FUniversityDegreeCredentialSdJwt%22%5D%2C%22credential_issuer%22%3A%22https%3A%2F%2Fopenid4vc-issuer.com%2F${openId4VcIssuer.issuerId}%22%7D`
     )
 
     const issuerMetadata = await issuer.modules.openId4VcIssuer.getIssuerMetadata(openId4VcIssuer.issuerId)
@@ -321,6 +314,7 @@ describe('OpenId4VcIssuer', () => {
       credentialRequest,
 
       credentialRequestToCredentialMapper: () => ({
+        format: 'vc+sd-jwt',
         payload: { vct: 'UniversityDegreeCredential', university: 'innsbruck', degree: 'bachelor' },
         issuer: { method: 'did', didUrl: issuerVerificationMethod.id },
         holder: { method: 'did', didUrl: holderVerificationMethod.id },
@@ -357,17 +351,17 @@ describe('OpenId4VcIssuer', () => {
         preAuthorizedCode,
         userPinRequired: false,
       },
-      ...baseCredentialRequestOptions,
     })
 
     expect(result.credentialOfferUri).toEqual(
-      `openid-credential-offer://openid4vc-issuer.com?credential_offer=%7B%22grants%22%3A%7B%22urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Apre-authorized_code%22%3A%7B%22pre-authorized_code%22%3A%221234567890%22%2C%22user_pin_required%22%3Afalse%7D%7D%2C%22credentials%22%3A%5B%22https%3A%2F%2Fopenid4vc-issuer.com%2Fcredentials%2FOpenBadgeCredential%22%5D%2C%22credential_issuer%22%3A%22https%3A%2F%2Fopenid4vc-issuer.com%2F${openId4VcIssuer.issuerId}%22%7D`
+      `openid-credential-offer://?credential_offer=%7B%22grants%22%3A%7B%22urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Apre-authorized_code%22%3A%7B%22pre-authorized_code%22%3A%221234567890%22%2C%22user_pin_required%22%3Afalse%7D%7D%2C%22credentials%22%3A%5B%22https%3A%2F%2Fopenid4vc-issuer.com%2Fcredentials%2FOpenBadgeCredential%22%5D%2C%22credential_issuer%22%3A%22https%3A%2F%2Fopenid4vc-issuer.com%2F${openId4VcIssuer.issuerId}%22%7D`
     )
 
     const issuerMetadata = await issuer.modules.openId4VcIssuer.getIssuerMetadata(openId4VcIssuer.issuerId)
     const issueCredentialResponse = await issuer.modules.openId4VcIssuer.createCredentialResponse({
       issuerId: openId4VcIssuer.issuerId,
       credentialRequestToCredentialMapper: () => ({
+        format: 'jwt_vc',
         credential: new W3cCredential({
           type: openBadgeCredential.types,
           issuer: new W3cIssuer({ id: issuerDid }),
@@ -414,7 +408,6 @@ describe('OpenId4VcIssuer', () => {
           preAuthorizedCode,
           userPinRequired: false,
         },
-        ...baseCredentialRequestOptions,
       })
     ).rejects.toThrowError(
       "Offered credential 'invalid id' is not part of credentials_supported of the issuer metadata."
@@ -437,11 +430,10 @@ describe('OpenId4VcIssuer', () => {
         preAuthorizedCode,
         userPinRequired: false,
       },
-      ...baseCredentialRequestOptions,
     })
 
     expect(result.credentialOfferUri).toEqual(
-      `openid-credential-offer://openid4vc-issuer.com?credential_offer=%7B%22grants%22%3A%7B%22urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Apre-authorized_code%22%3A%7B%22pre-authorized_code%22%3A%221234567890%22%2C%22user_pin_required%22%3Afalse%7D%7D%2C%22credentials%22%3A%5B%22https%3A%2F%2Fopenid4vc-issuer.com%2Fcredentials%2FOpenBadgeCredential%22%5D%2C%22credential_issuer%22%3A%22https%3A%2F%2Fopenid4vc-issuer.com%2F${openId4VcIssuer.issuerId}%22%7D`
+      `openid-credential-offer://?credential_offer=%7B%22grants%22%3A%7B%22urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Apre-authorized_code%22%3A%7B%22pre-authorized_code%22%3A%221234567890%22%2C%22user_pin_required%22%3Afalse%7D%7D%2C%22credentials%22%3A%5B%22https%3A%2F%2Fopenid4vc-issuer.com%2Fcredentials%2FOpenBadgeCredential%22%5D%2C%22credential_issuer%22%3A%22https%3A%2F%2Fopenid4vc-issuer.com%2F${openId4VcIssuer.issuerId}%22%7D`
     )
 
     const issuerMetadata = await issuer.modules.openId4VcIssuer.getIssuerMetadata(openId4VcIssuer.issuerId)
@@ -478,11 +470,10 @@ describe('OpenId4VcIssuer', () => {
         preAuthorizedCode,
         userPinRequired: false,
       },
-      ...baseCredentialRequestOptions,
     })
 
     expect(result.credentialOfferUri).toEqual(
-      `openid-credential-offer://openid4vc-issuer.com?credential_offer=%7B%22grants%22%3A%7B%22urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Apre-authorized_code%22%3A%7B%22pre-authorized_code%22%3A%221234567890%22%2C%22user_pin_required%22%3Afalse%7D%7D%2C%22credentials%22%3A%5B%22https%3A%2F%2Fopenid4vc-issuer.com%2Fcredentials%2FOpenBadgeCredential%22%2C%22https%3A%2F%2Fopenid4vc-issuer.com%2Fcredentials%2FUniversityDegreeCredentialLd%22%5D%2C%22credential_issuer%22%3A%22https%3A%2F%2Fopenid4vc-issuer.com%2F${openId4VcIssuer.issuerId}%22%7D`
+      `openid-credential-offer://?credential_offer=%7B%22grants%22%3A%7B%22urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Apre-authorized_code%22%3A%7B%22pre-authorized_code%22%3A%221234567890%22%2C%22user_pin_required%22%3Afalse%7D%7D%2C%22credentials%22%3A%5B%22https%3A%2F%2Fopenid4vc-issuer.com%2Fcredentials%2FOpenBadgeCredential%22%2C%22https%3A%2F%2Fopenid4vc-issuer.com%2Fcredentials%2FUniversityDegreeCredentialLd%22%5D%2C%22credential_issuer%22%3A%22https%3A%2F%2Fopenid4vc-issuer.com%2F${openId4VcIssuer.issuerId}%22%7D`
     )
 
     const issuerMetadata = await issuer.modules.openId4VcIssuer.getIssuerMetadata(openId4VcIssuer.issuerId)
@@ -495,6 +486,7 @@ describe('OpenId4VcIssuer', () => {
         nonce: cNonce,
       }),
       credentialRequestToCredentialMapper: () => ({
+        format: 'jwt_vc',
         credential: new W3cCredential({
           type: universityDegreeCredentialLd.types,
           issuer: new W3cIssuer({ id: issuerDid }),
@@ -534,11 +526,10 @@ describe('OpenId4VcIssuer', () => {
         preAuthorizedCode,
         userPinRequired: false,
       },
-      ...baseCredentialRequestOptions,
     })
 
     expect(result.credentialOfferUri).toEqual(
-      `openid-credential-offer://openid4vc-issuer.com?credential_offer=%7B%22grants%22%3A%7B%22urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Apre-authorized_code%22%3A%7B%22pre-authorized_code%22%3A%221234567890%22%2C%22user_pin_required%22%3Afalse%7D%7D%2C%22credentials%22%3A%5B%22https%3A%2F%2Fopenid4vc-issuer.com%2Fcredentials%2FOpenBadgeCredential%22%5D%2C%22credential_issuer%22%3A%22https%3A%2F%2Fopenid4vc-issuer.com%2F${openId4VcIssuer.issuerId}%22%7D`
+      `openid-credential-offer://?credential_offer=%7B%22grants%22%3A%7B%22urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Apre-authorized_code%22%3A%7B%22pre-authorized_code%22%3A%221234567890%22%2C%22user_pin_required%22%3Afalse%7D%7D%2C%22credentials%22%3A%5B%22https%3A%2F%2Fopenid4vc-issuer.com%2Fcredentials%2FOpenBadgeCredential%22%5D%2C%22credential_issuer%22%3A%22https%3A%2F%2Fopenid4vc-issuer.com%2F${openId4VcIssuer.issuerId}%22%7D`
     )
 
     const issuerMetadata = await issuer.modules.openId4VcIssuer.getIssuerMetadata(openId4VcIssuer.issuerId)
@@ -577,11 +568,10 @@ describe('OpenId4VcIssuer', () => {
       authorizationCodeFlowConfig: {
         issuerState,
       },
-      ...baseCredentialRequestOptions,
     })
 
     expect(result.credentialOfferUri).toEqual(
-      `openid-credential-offer://openid4vc-issuer.com?credential_offer=%7B%22grants%22%3A%7B%22authorization_code%22%3A%7B%22issuer_state%22%3A%221234567890%22%7D%7D%2C%22credentials%22%3A%5B%22https%3A%2F%2Fopenid4vc-issuer.com%2Fcredentials%2FOpenBadgeCredential%22%5D%2C%22credential_issuer%22%3A%22https%3A%2F%2Fopenid4vc-issuer.com%2F${openId4VcIssuer.issuerId}%22%7D`
+      `openid-credential-offer://?credential_offer=%7B%22grants%22%3A%7B%22authorization_code%22%3A%7B%22issuer_state%22%3A%221234567890%22%7D%7D%2C%22credentials%22%3A%5B%22https%3A%2F%2Fopenid4vc-issuer.com%2Fcredentials%2FOpenBadgeCredential%22%5D%2C%22credential_issuer%22%3A%22https%3A%2F%2Fopenid4vc-issuer.com%2F${openId4VcIssuer.issuerId}%22%7D`
     )
 
     const issuerMetadata = await issuer.modules.openId4VcIssuer.getIssuerMetadata(openId4VcIssuer.issuerId)
@@ -595,6 +585,7 @@ describe('OpenId4VcIssuer', () => {
         clientId: 'required',
       }),
       credentialRequestToCredentialMapper: () => ({
+        format: 'jwt_vc',
         credential: new W3cCredential({
           type: ['VerifiableCredential', 'OpenBadgeCredential'],
           issuer: new W3cIssuer({ id: issuerDid }),
@@ -621,47 +612,41 @@ describe('OpenId4VcIssuer', () => {
   it('create credential offer and retrieve it from the uri (pre authorized flow)', async () => {
     const preAuthorizedCode = '1234567890'
 
-    const hostedCredentialOfferUri = 'https://openid4vc-issuer.com/credential-offer-uri'
+    const hostedCredentialOfferUrl = 'https://openid4vc-issuer.com/credential-offer-uri'
 
     const { credentialOfferUri, credentialOfferPayload } = await issuer.modules.openId4VcIssuer.createCredentialOffer({
-      ...baseCredentialRequestOptions,
       issuerId: openId4VcIssuer.issuerId,
       offeredCredentials: [openBadgeCredential.id],
-      credentialOfferUri: hostedCredentialOfferUri,
+      hostedCredentialOfferUrl,
       preAuthorizedCodeFlowConfig: {
         preAuthorizedCode,
         userPinRequired: false,
       },
     })
 
-    expect(credentialOfferUri).toEqual(
-      `openid-credential-offer://openid4vc-issuer.com?credential_offer_uri=${hostedCredentialOfferUri}`
-    )
+    expect(credentialOfferUri).toEqual(`openid-credential-offer://?credential_offer_uri=${hostedCredentialOfferUrl}`)
 
     const credentialOfferReceivedByUri = await issuer.modules.openId4VcIssuer.getCredentialOfferFromUri(
-      hostedCredentialOfferUri
+      hostedCredentialOfferUrl
     )
 
     expect(credentialOfferPayload).toEqual(credentialOfferReceivedByUri)
   })
 
   it('create credential offer and retrieve it from the uri (authorizationCodeFlow)', async () => {
-    const hostedCredentialOfferUri = 'https://openid4vc-issuer.com/credential-offer-uri'
+    const hostedCredentialOfferUrl = 'https://openid4vc-issuer.com/credential-offer-uri'
 
     const { credentialOfferUri, credentialOfferPayload } = await issuer.modules.openId4VcIssuer.createCredentialOffer({
       offeredCredentials: [openBadgeCredential.id],
       issuerId: openId4VcIssuer.issuerId,
-      ...baseCredentialRequestOptions,
-      credentialOfferUri: hostedCredentialOfferUri,
+      hostedCredentialOfferUrl,
       authorizationCodeFlowConfig: { issuerState: '1234567890' },
     })
 
-    expect(credentialOfferUri).toEqual(
-      `openid-credential-offer://openid4vc-issuer.com?credential_offer_uri=${hostedCredentialOfferUri}`
-    )
+    expect(credentialOfferUri).toEqual(`openid-credential-offer://?credential_offer_uri=${hostedCredentialOfferUrl}`)
 
     const credentialOfferReceivedByUri = await issuer.modules.openId4VcIssuer.getCredentialOfferFromUri(
-      hostedCredentialOfferUri
+      hostedCredentialOfferUrl
     )
 
     expect(credentialOfferPayload).toEqual(credentialOfferReceivedByUri)
@@ -683,16 +668,16 @@ describe('OpenId4VcIssuer', () => {
         preAuthorizedCode,
         userPinRequired: false,
       },
-      ...baseCredentialRequestOptions,
     })
 
     expect(result.credentialOfferUri).toEqual(
-      `openid-credential-offer://openid4vc-issuer.com?credential_offer=%7B%22grants%22%3A%7B%22urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Apre-authorized_code%22%3A%7B%22pre-authorized_code%22%3A%221234567890%22%2C%22user_pin_required%22%3Afalse%7D%7D%2C%22credentials%22%3A%5B%22https%3A%2F%2Fopenid4vc-issuer.com%2Fcredentials%2FOpenBadgeCredential%22%2C%22https%3A%2F%2Fopenid4vc-issuer.com%2Fcredentials%2FUniversityDegreeCredential%22%5D%2C%22credential_issuer%22%3A%22https%3A%2F%2Fopenid4vc-issuer.com%2F${openId4VcIssuer.issuerId}%22%7D`
+      `openid-credential-offer://?credential_offer=%7B%22grants%22%3A%7B%22urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Apre-authorized_code%22%3A%7B%22pre-authorized_code%22%3A%221234567890%22%2C%22user_pin_required%22%3Afalse%7D%7D%2C%22credentials%22%3A%5B%22https%3A%2F%2Fopenid4vc-issuer.com%2Fcredentials%2FOpenBadgeCredential%22%2C%22https%3A%2F%2Fopenid4vc-issuer.com%2Fcredentials%2FUniversityDegreeCredential%22%5D%2C%22credential_issuer%22%3A%22https%3A%2F%2Fopenid4vc-issuer.com%2F${openId4VcIssuer.issuerId}%22%7D`
     )
 
     const credentialRequestToCredentialMapper: OpenId4VciCredentialRequestToCredentialMapper = ({
       credentialsSupported,
     }) => ({
+      format: 'jwt_vc',
       credential: new W3cCredential({
         type:
           credentialsSupported[0].id === openBadgeCredential.id

@@ -142,7 +142,7 @@ export class SdJwtVcService {
 
       // FIXME: _sd_hash is missing. See
       // https://github.com/berendsliedrecht/sd-jwt-ts/issues/8
-      _sd_hash: TypedArrayEncoder.toBase64URL(await this.hasher.hasher(compactDerivedSdJwtVc, sdAlg)),
+      _sd_hash: TypedArrayEncoder.toBase64URL(Hasher.hash(compactDerivedSdJwtVc, sdAlg)),
     }
 
     const compactKbJwt = await new KeyBinding({ header, payload })
@@ -189,7 +189,7 @@ export class SdJwtVcService {
         const sdJwtParts = compactSdJwtVc.split('~')
         sdJwtParts.pop() // remove kb-jwt
         const sdJwtWithoutKbJwt = `${sdJwtParts.join('~')}~`
-        const sdHash = TypedArrayEncoder.toBase64URL(await this.hasher.hasher(sdJwtWithoutKbJwt, sdAlg))
+        const sdHash = TypedArrayEncoder.toBase64URL(Hasher.hash(sdJwtWithoutKbJwt, sdAlg))
 
         // Assert `aud` and `nonce` claims
         sdJwtVc.keyBinding.assertClaimInPayload('aud', keyBinding.audience)
@@ -254,13 +254,7 @@ export class SdJwtVcService {
   private get hasher(): HasherAndAlgorithm {
     return {
       algorithm: HasherAlgorithm.Sha256,
-      hasher: (input: string, algorithm) => {
-        if (algorithm !== 'sha-256') {
-          throw new SdJwtVcError(`Unsupported hashing algorithm used: ${algorithm}. Only sha-256 is supported`)
-        }
-        const serializedInput = TypedArrayEncoder.fromString(input)
-        return Hasher.hash(serializedInput, 'sha2-256')
-      },
+      hasher: Hasher.hash,
     }
   }
 

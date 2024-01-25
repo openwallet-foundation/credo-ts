@@ -1,13 +1,11 @@
-import type { AccessTokenEndpointConfig, CredentialEndpointConfig } from './router'
+import type { OpenId4VciAccessTokenEndpointConfig, OpenId4VciCredentialEndpointConfig } from './router'
 import type { AgentContext, Optional } from '@aries-framework/core'
-import type { CNonceState, CredentialOfferSession, IStateManager, StateType, URIState } from '@sphereon/oid4vci-common'
+import type { CNonceState, CredentialOfferSession, IStateManager, URIState } from '@sphereon/oid4vci-common'
 import type { Router } from 'express'
 
 import { MemoryStates } from '@sphereon/oid4vci-issuer'
 
 import { importExpress } from '../shared/router'
-
-export type StateManagerFactory<T extends StateType> = () => IStateManager<T>
 
 const DEFAULT_C_NONCE_EXPIRES_IN = 5 * 60 * 1000 // 5 minutes
 const DEFAULT_TOKEN_EXPIRES_IN = 3 * 60 * 1000 // 3 minutes
@@ -30,17 +28,12 @@ export interface OpenId4VcIssuerModuleConfigOptions {
   router?: Router
 
   endpoints: {
-    credential: Optional<CredentialEndpointConfig, 'endpointPath'>
+    credential: Optional<OpenId4VciCredentialEndpointConfig, 'endpointPath'>
     accessToken?: Optional<
-      AccessTokenEndpointConfig,
+      OpenId4VciAccessTokenEndpointConfig,
       'cNonceExpiresInSeconds' | 'endpointPath' | 'preAuthorizedCodeExpirationInSeconds' | 'tokenExpiresInSeconds'
     >
   }
-
-  // FIXME: remove
-  cNonceStateManagerFactory?: StateManagerFactory<CNonceState>
-  credentialOfferSessionManagerFactory?: StateManagerFactory<CredentialOfferSession>
-  uriStateManagerFactory?: StateManagerFactory<URIState>
 }
 
 export class OpenId4VcIssuerModuleConfig {
@@ -67,7 +60,7 @@ export class OpenId4VcIssuerModuleConfig {
   /**
    * Get the credential endpoint config, with default values set
    */
-  public get credentialEndpoint(): CredentialEndpointConfig {
+  public get credentialEndpoint(): OpenId4VciCredentialEndpointConfig {
     // Use user supplied options, or return defaults.
     const userOptions = this.options.endpoints.credential
 
@@ -80,7 +73,7 @@ export class OpenId4VcIssuerModuleConfig {
   /**
    * Get the access token endpoint config, with default values set
    */
-  public get accessTokenEndpoint(): AccessTokenEndpointConfig {
+  public get accessTokenEndpoint(): OpenId4VciAccessTokenEndpointConfig {
     // Use user supplied options, or return defaults.
     const userOptions = this.options.endpoints.accessToken ?? {}
 
@@ -94,29 +87,32 @@ export class OpenId4VcIssuerModuleConfig {
     }
   }
 
+  // FIXME: rework (no in-memory)
   public getUriStateManager(agentContext: AgentContext) {
     const value = this.uriStateManagerMap.get(agentContext.contextCorrelationId)
     if (value) return value
 
-    const newValue = this.options.uriStateManagerFactory?.() ?? new MemoryStates<URIState>()
+    const newValue = new MemoryStates<URIState>()
     this.uriStateManagerMap.set(agentContext.contextCorrelationId, newValue)
     return newValue
   }
 
+  // FIXME: rework (no in-memory)
   public getCredentialOfferSessionStateManager(agentContext: AgentContext) {
     const value = this.credentialOfferSessionManagerMap.get(agentContext.contextCorrelationId)
     if (value) return value
 
-    const newValue = this.options.credentialOfferSessionManagerFactory?.() ?? new MemoryStates<CredentialOfferSession>()
+    const newValue = new MemoryStates<CredentialOfferSession>()
     this.credentialOfferSessionManagerMap.set(agentContext.contextCorrelationId, newValue)
     return newValue
   }
 
+  // FIXME: rework (no in-memory)
   public getCNonceStateManager(agentContext: AgentContext) {
     const value = this.cNonceStateManagerMap.get(agentContext.contextCorrelationId)
     if (value) return value
 
-    const newValue = this.options.cNonceStateManagerFactory?.() ?? new MemoryStates<CNonceState>()
+    const newValue = new MemoryStates<CNonceState>()
     this.cNonceStateManagerMap.set(agentContext.contextCorrelationId, newValue)
     return newValue
   }

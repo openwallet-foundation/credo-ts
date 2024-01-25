@@ -1,5 +1,5 @@
 import type { AgentType } from '../../../tests/utils'
-import type { OpenId4VcCreateAuthorizationRequestOptions } from '../../openid4vc-verifier'
+import type { OpenId4VcSiopCreateAuthorizationRequestOptions } from '../../openid4vc-verifier'
 import type { Express } from 'express'
 import type { Server } from 'http'
 
@@ -81,7 +81,7 @@ describe('OpenId4VcHolder | OpenID4VP', () => {
   })
 
   it('siop request with static metadata', async () => {
-    const createProofRequestOptions: OpenId4VcCreateAuthorizationRequestOptions = {
+    const createProofRequestOptions: OpenId4VcSiopCreateAuthorizationRequestOptions = {
       verificationMethod: verifier.verificationMethod,
       openIdProvider: staticOpOpenIdConfigEdDSA,
     }
@@ -98,7 +98,7 @@ describe('OpenId4VcHolder | OpenID4VP', () => {
     if (result.proofType == 'presentation') throw new Error('Expected an authenticationRequest')
 
     //////////////////////////// OP (accept the verified request) ////////////////////////////
-    const { submittedResponse, status } = await holder.agent.modules.openId4VcHolder.acceptAuthenticationRequest(
+    const { submittedResponse, status } = await holder.agent.modules.openId4VcHolder.acceptSiopAuthorizationRequest(
       result.authenticationRequest,
       holder.verificationMethod
     )
@@ -141,7 +141,7 @@ describe('OpenId4VcHolder | OpenID4VP', () => {
       .get('/.well-known/openid-configuration')
       .reply(200, staticOpOpenIdConfigEdDSA)
 
-    const createProofRequestOptions: OpenId4VcCreateAuthorizationRequestOptions = {
+    const createProofRequestOptions: OpenId4VcSiopCreateAuthorizationRequestOptions = {
       verificationMethod: verifier.verificationMethod,
       // TODO: if provided this way client metadata is not resolved for the verification method
       openIdProvider: 'https://helloworld.com',
@@ -159,7 +159,7 @@ describe('OpenId4VcHolder | OpenID4VP', () => {
     if (result.proofType == 'presentation') throw new Error('Expected a proofType')
 
     //////////////////////////// OP (accept the verified request) ////////////////////////////
-    const { submittedResponse, status } = await holder.agent.modules.openId4VcHolder.acceptAuthenticationRequest(
+    const { submittedResponse, status } = await holder.agent.modules.openId4VcHolder.acceptSiopAuthorizationRequest(
       result.authenticationRequest,
       holder.verificationMethod
     )
@@ -185,7 +185,7 @@ describe('OpenId4VcHolder | OpenID4VP', () => {
   })
 
   it('resolving vp request with no credentials', async () => {
-    const createProofRequestOptions: OpenId4VcCreateAuthorizationRequestOptions = {
+    const createProofRequestOptions: OpenId4VcSiopCreateAuthorizationRequestOptions = {
       verificationMethod: verifier.verificationMethod,
       openIdProvider: staticOpOpenIdConfigEdDSA,
       presentationDefinition: openBadgePresentationDefinition,
@@ -208,7 +208,7 @@ describe('OpenId4VcHolder | OpenID4VP', () => {
       credential: W3cJwtVerifiableCredential.fromSerializedJwt(waltUniversityDegreeJwt),
     })
 
-    const createProofRequestOptions: OpenId4VcCreateAuthorizationRequestOptions = {
+    const createProofRequestOptions: OpenId4VcSiopCreateAuthorizationRequestOptions = {
       verificationMethod: verifier.verificationMethod,
       openIdProvider: staticOpOpenIdConfigEdDSA,
       presentationDefinition: openBadgePresentationDefinition,
@@ -235,7 +235,7 @@ describe('OpenId4VcHolder | OpenID4VP', () => {
       credential: W3cJwtVerifiableCredential.fromSerializedJwt(waltPortalOpenBadgeJwt),
     })
 
-    const createProofRequestOptions: OpenId4VcCreateAuthorizationRequestOptions = {
+    const createProofRequestOptions: OpenId4VcSiopCreateAuthorizationRequestOptions = {
       verificationMethod: verifier.verificationMethod,
       openIdProvider: staticOpOpenIdConfigEdDSA,
       presentationDefinition: openBadgePresentationDefinition,
@@ -273,7 +273,7 @@ describe('OpenId4VcHolder | OpenID4VP', () => {
       credential: W3cJwtVerifiableCredential.fromSerializedJwt(waltPortalOpenBadgeJwt),
     })
 
-    const createProofRequestOptions: OpenId4VcCreateAuthorizationRequestOptions = {
+    const createProofRequestOptions: OpenId4VcSiopCreateAuthorizationRequestOptions = {
       verificationMethod: verifier.verificationMethod,
       openIdProvider: staticOpOpenIdConfigEdDSA,
       presentationDefinition: openBadgePresentationDefinition,
@@ -307,7 +307,7 @@ describe('OpenId4VcHolder | OpenID4VP', () => {
       credential: W3cJwtVerifiableCredential.fromSerializedJwt(waltPortalOpenBadgeJwt),
     })
 
-    const createProofRequestOptions: OpenId4VcCreateAuthorizationRequestOptions = {
+    const createProofRequestOptions: OpenId4VcSiopCreateAuthorizationRequestOptions = {
       verificationMethod: verifier.verificationMethod,
       openIdProvider: staticOpOpenIdConfigEdDSA,
       presentationDefinition: combinePresentationDefinitions([
@@ -392,7 +392,7 @@ describe('OpenId4VcHolder | OpenID4VP', () => {
       credential: W3cJwtVerifiableCredential.fromSerializedJwt(waltPortalOpenBadgeJwt),
     })
 
-    const createProofRequestOptions: OpenId4VcCreateAuthorizationRequestOptions = {
+    const createProofRequestOptions: OpenId4VcSiopCreateAuthorizationRequestOptions = {
       verificationMethod: verifier.verificationMethod,
       openIdProvider: staticOpOpenIdConfigEdDSA,
       presentationDefinition: combinePresentationDefinitions([
@@ -423,7 +423,7 @@ describe('OpenId4VcHolder | OpenID4VP', () => {
       credential: W3cJwtVerifiableCredential.fromSerializedJwt(waltPortalOpenBadgeJwt),
     })
 
-    const createProofRequestOptions: OpenId4VcCreateAuthorizationRequestOptions = {
+    const createProofRequestOptions: OpenId4VcSiopCreateAuthorizationRequestOptions = {
       verificationMethod: verifier.verificationMethod,
       openIdProvider: staticOpOpenIdConfigEdDSA,
       presentationDefinition: openBadgePresentationDefinition,
@@ -491,7 +491,7 @@ describe('OpenId4VcHolder | OpenID4VP', () => {
       credential,
     })
 
-    const createProofRequestOptions: OpenId4VcCreateAuthorizationRequestOptions = {
+    const createProofRequestOptions: OpenId4VcSiopCreateAuthorizationRequestOptions = {
       verificationMethod: verifier.verificationMethod,
       openIdProvider: staticOpOpenIdConfigEdDSA,
       presentationDefinition: openBadgeCredentialPresentationDefinitionLdpVc,
@@ -560,7 +560,7 @@ describe('OpenId4VcHolder | OpenID4VP', () => {
       credential: W3cJwtVerifiableCredential.fromSerializedJwt(waltUniversityDegreeJwt),
     })
 
-    const createProofRequestOptions: OpenId4VcCreateAuthorizationRequestOptions = {
+    const createProofRequestOptions: OpenId4VcSiopCreateAuthorizationRequestOptions = {
       verificationMethod: verifier.verificationMethod,
       openIdProvider: staticOpOpenIdConfigEdDSA,
       presentationDefinition: combinePresentationDefinitions([

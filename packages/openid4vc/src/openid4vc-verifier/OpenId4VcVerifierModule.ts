@@ -8,7 +8,7 @@ import { getAgentContextForActorId, getRequestContext, importExpress } from '../
 
 import { OpenId4VcVerifierApi } from './OpenId4VcVerifierApi'
 import { OpenId4VcVerifierModuleConfig } from './OpenId4VcVerifierModuleConfig'
-import { OpenId4VcVerifierService } from './OpenId4VcVerifierService'
+import { OpenId4VcSiopVerifierService } from './OpenId4VcSiopVerifierService'
 import { OpenId4VcVerifierRepository } from './repository'
 import { configureAuthorizationEndpoint } from './router'
 
@@ -40,7 +40,7 @@ export class OpenId4VcVerifierModule implements Module {
     dependencyManager.registerContextScoped(OpenId4VcVerifierApi)
 
     // Services
-    dependencyManager.registerSingleton(OpenId4VcVerifierService)
+    dependencyManager.registerSingleton(OpenId4VcSiopVerifierService)
 
     // Repository
     dependencyManager.registerSingleton(OpenId4VcVerifierRepository)

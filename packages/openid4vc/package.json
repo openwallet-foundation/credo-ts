@@ -25,12 +25,11 @@
   },
   "dependencies": {
     "@aries-framework/core": "0.4.2",
-    "@aries-framework/openid4vc": "0.4.2",
     "@sphereon/ssi-types": "^0.18.1",
-    "@sphereon/oid4vci-client": "0.8.2-next.34",
-    "@sphereon/oid4vci-common": "0.8.2-next.34",
-    "@sphereon/oid4vci-issuer": "0.8.2-next.34",
-    "@sphereon/did-auth-siop": "0.6.0-unstable.0"
+    "@sphereon/oid4vci-client": "0.8.2-next.46",
+    "@sphereon/oid4vci-common": "0.8.2-next.46",
+    "@sphereon/oid4vci-issuer": "0.8.2-next.46",
+    "@sphereon/did-auth-siop": "0.6.0-unstable.3"
   },
   "devDependencies": {
     "@types/express": "^4.17.21",

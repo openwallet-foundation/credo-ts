@@ -67,9 +67,10 @@ export interface OpenId4VciCreateCredentialResponseOptions {
 }
 
 // FIXME: Flows:
-// - provide credential data at time of offer creation
-// - provide credential data at time of calling createCredentialResponse
-// - provide credential data dynamically using this method
+// - provide credential data at time of offer creation (NOT SUPPORTED)
+// - provide credential data at time of calling createCredentialResponse (partially supported by passing in mapper to this method -> preferred as it gives you request data dynamically)
+// - provide credential data dynamically using this method (SUPPORTED)
+// mapper should get input data passed (which is supplied to offer or create response) like credentialDataSupplierInput in sphereon lib
 export type OpenId4VciCredentialRequestToCredentialMapper = (options: {
   agentContext: AgentContext
 

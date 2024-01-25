@@ -112,6 +112,7 @@ export class OpenId4VcIssuerService {
     const { uri, session } = await vcIssuer.createCredentialOfferURI({
       grants: await this.getGrantsFromConfig(agentContext, preAuthorizedCodeFlowConfig, authorizationCodeFlowConfig),
       credentials: offeredCredentials,
+      // TODO: support hosting of credential offers within AFJ
       credentialOfferUri: options.hostedCredentialOfferUrl,
       baseUri: options.baseUri,
     })

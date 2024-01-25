@@ -4,7 +4,7 @@ import { AgentConfig } from '@aries-framework/core'
 
 import { OpenId4VcHolderApi } from './OpenId4VcHolderApi'
 import { OpenId4VciHolderService } from './OpenId4VciHolderService'
-import { OpenId4VpHolderService } from './OpenId4VpHolderService'
+import { OpenId4VcSiopHolderService } from './OpenId4vcSiopHolderService'
 
 /**
  * @public @module OpenId4VcHolderModule
@@ -29,6 +29,6 @@ export class OpenId4VcHolderModule implements Module {
 
     // Services
     dependencyManager.registerSingleton(OpenId4VciHolderService)
-    dependencyManager.registerSingleton(OpenId4VpHolderService)
+    dependencyManager.registerSingleton(OpenId4VcSiopHolderService)
   }
 }

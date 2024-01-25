@@ -212,7 +212,14 @@ export class PresentationExchangeProofFormatService implements ProofFormatServic
     }
 
     const firstPresentation = presentation.verifiablePresentations[0]
-    const attachment = this.getFormatData(firstPresentation, format.attachmentId)
+
+    // TODO: they should all have `encoded` property so it's easy to use the resulting VP
+    const encodedFirstPresentation =
+      firstPresentation instanceof W3cJwtVerifiablePresentation ||
+      firstPresentation instanceof W3cJsonLdVerifiablePresentation
+        ? firstPresentation.encoded
+        : firstPresentation?.compact
+    const attachment = this.getFormatData(encodedFirstPresentation, format.attachmentId)
 
     return { attachment, format }
   }

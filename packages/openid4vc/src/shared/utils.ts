@@ -1,5 +1,6 @@
-import type { AgentContext, VerificationMethod, JwaSignatureAlgorithm, Key } from '@aries-framework/core'
-import type { DIDDocument, SigningAlgo } from '@sphereon/did-auth-siop'
+import type { OpenId4VcJwtIssuer } from './models'
+import type { AgentContext, JwaSignatureAlgorithm, Key } from '@aries-framework/core'
+import type { DIDDocument, SigningAlgo, SuppliedSignature } from '@sphereon/did-auth-siop'
 
 import {
   AriesFrameworkError,
@@ -33,27 +34,33 @@ export function getSupportedJwaSignatureAlgorithms(agentContext: AgentContext): 
   return supportedJwaSignatureAlgorithms
 }
 
-export function getSupportedDidMethods(agentContext: AgentContext) {
-  const didsApi = agentContext.dependencyManager.resolve(DidsApi)
-  const supportedDidMethods: Set<string> = new Set()
+export async function getSphereonSuppliedSignatureFromJwtIssuer(
+  agentContext: AgentContext,
+  jwtIssuer: OpenId4VcJwtIssuer
+): Promise<SuppliedSignature> {
+  let key: Key
+  let alg: string
+  let kid: string | undefined
+  let did: string | undefined
 
-  for (const resolver of didsApi.config.resolvers) {
-    resolver.supportedMethods.forEach((method) => supportedDidMethods.add(method))
+  if (jwtIssuer.method === 'did') {
+    const didsApi = agentContext.dependencyManager.resolve(DidsApi)
+    const didDocument = await didsApi.resolveDidDocument(jwtIssuer.didUrl)
+    const verificationMethod = didDocument.dereferenceKey(jwtIssuer.didUrl, ['authentication'])
+
+    // get the key from the verification method and use the first supported signature algorithm
+    key = getKeyFromVerificationMethod(verificationMethod)
+    const _alg = getJwkClassFromKeyType(key.keyType)?.supportedSignatureAlgorithms[0]
+    if (!_alg) throw new AriesFrameworkError(`No supported signature algorithms for key type: ${key.keyType}`)
+
+    alg = _alg
+    kid = verificationMethod.id
+    did = verificationMethod.controller
+  } else {
+    throw new AriesFrameworkError("Unsupported jwt issuer method. Only 'did' is supported.")
   }
 
-  return Array.from(supportedDidMethods)
-}
-
-export async function getSuppliedSignatureFromVerificationMethod(
-  agentContext: AgentContext,
-  verificationMethod: VerificationMethod
-) {
-  // get the key from the verification method and use the first supported signature algorithm
-  const key = getKeyFromVerificationMethod(verificationMethod)
-  const alg = getJwkClassFromKeyType(key.keyType)?.supportedSignatureAlgorithms[0]
-  if (!alg) throw new AriesFrameworkError(`No supported signature algorithms for key type: ${key.keyType}`)
-
-  const suppliedSignature = {
+  return {
     signature: async (data: string | Uint8Array) => {
       if (typeof data !== 'string') throw new AriesFrameworkError("Expected string but received 'Uint8Array'")
       const signedData = await agentContext.wallet.sign({
@@ -65,14 +72,12 @@ export async function getSuppliedSignatureFromVerificationMethod(
       return signature
     },
     alg: alg as unknown as SigningAlgo,
-    did: verificationMethod.controller,
-    kid: verificationMethod.id,
+    did,
+    kid,
   }
-
-  return suppliedSignature
 }
 
-export function getResolver(agentContext: AgentContext) {
+export function getSphereonDidResolver(agentContext: AgentContext) {
   return {
     resolve: async (didUrl: string) => {
       const didsApi = agentContext.dependencyManager.resolve(DidsApi)
@@ -86,7 +91,7 @@ export function getResolver(agentContext: AgentContext) {
   }
 }
 
-export const getProofTypeFromKey = (agentContext: AgentContext, key: Key) => {
+export function getProofTypeFromKey(agentContext: AgentContext, key: Key) {
   const signatureSuiteRegistry = agentContext.dependencyManager.resolve(SignatureSuiteRegistry)
 
   const supportedSignatureSuites = signatureSuiteRegistry.getByKeyType(key.keyType)

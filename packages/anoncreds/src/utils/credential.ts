@@ -150,7 +150,7 @@ export function encodeCredentialValue(value: unknown) {
     value = 'None'
   }
 
-  return new BigNumber(Hasher.hash(Buffer.from(value as string), 'sha2-256')).toString()
+  return new BigNumber(Hasher.hash(String(value).toString(), 'sha2-256')).toString()
 }
 
 export function assertAttributesMatch(schema: AnonCredsSchema, attributes: CredentialPreviewAttributeOptions[]) {

@@ -74,84 +74,6 @@ import {
   openId4VciSupportedCredentialFormats,
 } from './OpenId4VciHolderServiceOptions'
 
-// FIXME: this is also defined in the sphereon lib, is there a reason we don't use that one?
-// We use this to get PAR working and because we don't use the oid4vci client in sphereon's lib
-async function createAuthorizationRequestUri(options: {
-  credentialOffer: OpenId4VciCredentialOfferPayload
-  metadata: OpenId4VciResolvedCredentialOffer['metadata']
-  clientId: string
-  codeChallenge: string
-  codeChallengeMethod: CodeChallengeMethod
-  authDetails?: AuthorizationDetails | AuthorizationDetails[]
-  redirectUri: string
-  scope?: string[]
-}) {
-  const { scope, authDetails, metadata, clientId, codeChallenge, codeChallengeMethod, redirectUri } = options
-  let nonEmptyScope = !scope || scope.length === 0 ? undefined : scope
-  const nonEmptyAuthDetails = !authDetails || authDetails.length === 0 ? undefined : authDetails
-
-  // Scope and authorization_details can be used in the same authorization request
-  // https://datatracker.ietf.org/doc/html/draft-ietf-oauth-rar-23#name-relationship-to-scope-param
-  if (!nonEmptyScope && !nonEmptyAuthDetails) {
-    throw new AriesFrameworkError(`Please provide a 'scope' or 'authDetails' via the options.`)
-  }
-
-  // Authorization servers supporting PAR SHOULD include the URL of their pushed authorization request endpoint in their authorization server metadata document
-  // Note that the presence of pushed_authorization_request_endpoint is sufficient for a client to determine that it may use the PAR flow.
-  const parEndpoint = metadata.credentialIssuerMetadata.pushed_authorization_request_endpoint
-
-  const authorizationEndpoint = metadata.credentialIssuerMetadata?.authorization_endpoint
-
-  if (!authorizationEndpoint && !parEndpoint) {
-    throw new AriesFrameworkError(
-      "Server metadata does not contain an 'authorization_endpoint' which is required for the 'Authorization Code Flow'"
-    )
-  }
-
-  // add 'openid' scope if not present
-  if (nonEmptyScope && !nonEmptyScope?.includes('openid')) {
-    nonEmptyScope = ['openid', ...nonEmptyScope]
-  }
-
-  const queryObj: Record<string, string> = {
-    client_id: clientId,
-    response_type: ResponseType.AUTH_CODE,
-    code_challenge_method: codeChallengeMethod,
-    code_challenge: codeChallenge,
-    redirect_uri: redirectUri,
-  }
-
-  if (nonEmptyScope) queryObj['scope'] = nonEmptyScope.join(' ')
-
-  if (nonEmptyAuthDetails)
-    queryObj['authorization_details'] = JSON.stringify(handleAuthorizationDetails(nonEmptyAuthDetails, metadata))
-
-  const issuerState = options.credentialOffer.grants?.authorization_code?.issuer_state
-  if (issuerState) queryObj['issuer_state'] = issuerState
-
-  if (parEndpoint) {
-    const body = new URLSearchParams(queryObj)
-    const response = await formPost<PushedAuthorizationResponse>(parEndpoint, body)
-    if (!response.successBody) {
-      throw new AriesFrameworkError(`Could not acquire the authorization request uri from '${parEndpoint}'`)
-    }
-    return convertJsonToURI(
-      { request_uri: response.successBody.request_uri, client_id: clientId, response_type: ResponseType.AUTH_CODE },
-      {
-        baseUrl: authorizationEndpoint,
-        uriTypeProperties: ['request_uri', 'client_id', 'response_type'],
-        mode: JsonURIMode.X_FORM_WWW_URLENCODED,
-      }
-    )
-  } else {
-    return convertJsonToURI(queryObj, {
-      baseUrl: authorizationEndpoint,
-      uriTypeProperties: ['redirect_uri', 'scope', 'authorization_details', 'issuer_state'],
-      mode: JsonURIMode.X_FORM_WWW_URLENCODED,
-    })
-  }
-}
-
 @injectable()
 export class OpenId4VciHolderService {
   private logger: Logger
@@ -242,9 +164,6 @@ export class OpenId4VciHolderService {
     }
   }
 
-  // FIXME: this is an oid4vci authorization request
-  // while we also support siop/oid4vp authorization requests
-  // need to make sure difference is clear
   public async resolveAuthorizationRequest(
     agentContext: AgentContext,
     resolvedCredentialOffer: OpenId4VciResolvedCredentialOffer,
@@ -252,7 +171,7 @@ export class OpenId4VciHolderService {
   ): Promise<OpenId4VciResolvedAuthorizationRequest> {
     const { credentialOfferPayload, metadata, offeredCredentials } = resolvedCredentialOffer
     const codeVerifier = `${await agentContext.wallet.generateNonce()}${await agentContext.wallet.generateNonce()}`
-    const codeVerifierSha256 = Hasher.hash(TypedArrayEncoder.fromString(codeVerifier), 'sha2-256')
+    const codeVerifierSha256 = Hasher.hash(codeVerifier, 'sha2-256')
     const codeChallenge = TypedArrayEncoder.toBase64URL(codeVerifierSha256)
 
     this.logger.debug('Converted code_verifier to code_challenge', {
@@ -715,5 +634,86 @@ export class OpenId4VciHolderService {
 
       return jws
     }
+  }
+}
+
+// NOTE: this is also defined in the sphereon lib, but we use
+// this custom method to get PAR working and because we don't
+// use the oid4vci client in sphereon's lib
+// Once PAR is supported in the sphereon lib, we should to try remove this
+// and use the one from the sphereon lib
+async function createAuthorizationRequestUri(options: {
+  credentialOffer: OpenId4VciCredentialOfferPayload
+  metadata: OpenId4VciResolvedCredentialOffer['metadata']
+  clientId: string
+  codeChallenge: string
+  codeChallengeMethod: CodeChallengeMethod
+  authDetails?: AuthorizationDetails | AuthorizationDetails[]
+  redirectUri: string
+  scope?: string[]
+}) {
+  const { scope, authDetails, metadata, clientId, codeChallenge, codeChallengeMethod, redirectUri } = options
+  let nonEmptyScope = !scope || scope.length === 0 ? undefined : scope
+  const nonEmptyAuthDetails = !authDetails || authDetails.length === 0 ? undefined : authDetails
+
+  // Scope and authorization_details can be used in the same authorization request
+  // https://datatracker.ietf.org/doc/html/draft-ietf-oauth-rar-23#name-relationship-to-scope-param
+  if (!nonEmptyScope && !nonEmptyAuthDetails) {
+    throw new AriesFrameworkError(`Please provide a 'scope' or 'authDetails' via the options.`)
+  }
+
+  // Authorization servers supporting PAR SHOULD include the URL of their pushed authorization request endpoint in their authorization server metadata document
+  // Note that the presence of pushed_authorization_request_endpoint is sufficient for a client to determine that it may use the PAR flow.
+  const parEndpoint = metadata.credentialIssuerMetadata.pushed_authorization_request_endpoint
+
+  const authorizationEndpoint = metadata.credentialIssuerMetadata?.authorization_endpoint
+
+  if (!authorizationEndpoint && !parEndpoint) {
+    throw new AriesFrameworkError(
+      "Server metadata does not contain an 'authorization_endpoint' which is required for the 'Authorization Code Flow'"
+    )
+  }
+
+  // add 'openid' scope if not present
+  if (nonEmptyScope && !nonEmptyScope?.includes('openid')) {
+    nonEmptyScope = ['openid', ...nonEmptyScope]
+  }
+
+  const queryObj: Record<string, string> = {
+    client_id: clientId,
+    response_type: ResponseType.AUTH_CODE,
+    code_challenge_method: codeChallengeMethod,
+    code_challenge: codeChallenge,
+    redirect_uri: redirectUri,
+  }
+
+  if (nonEmptyScope) queryObj['scope'] = nonEmptyScope.join(' ')
+
+  if (nonEmptyAuthDetails)
+    queryObj['authorization_details'] = JSON.stringify(handleAuthorizationDetails(nonEmptyAuthDetails, metadata))
+
+  const issuerState = options.credentialOffer.grants?.authorization_code?.issuer_state
+  if (issuerState) queryObj['issuer_state'] = issuerState
+
+  if (parEndpoint) {
+    const body = new URLSearchParams(queryObj)
+    const response = await formPost<PushedAuthorizationResponse>(parEndpoint, body)
+    if (!response.successBody) {
+      throw new AriesFrameworkError(`Could not acquire the authorization request uri from '${parEndpoint}'`)
+    }
+    return convertJsonToURI(
+      { request_uri: response.successBody.request_uri, client_id: clientId, response_type: ResponseType.AUTH_CODE },
+      {
+        baseUrl: authorizationEndpoint,
+        uriTypeProperties: ['request_uri', 'client_id', 'response_type'],
+        mode: JsonURIMode.X_FORM_WWW_URLENCODED,
+      }
+    )
+  } else {
+    return convertJsonToURI(queryObj, {
+      baseUrl: authorizationEndpoint,
+      uriTypeProperties: ['redirect_uri', 'scope', 'authorization_details', 'issuer_state'],
+      mode: JsonURIMode.X_FORM_WWW_URLENCODED,
+    })
   }
 }
