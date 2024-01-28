@@ -22,7 +22,6 @@ import { inject, injectable } from 'tsyringe'
 import { AskarErrorCode, isAskarError, keyDerivationMethodToStoreKeyMethod, uriFromWalletConfig } from '../utils'
 
 import { AskarBaseWallet } from './AskarBaseWallet'
-import { AskarProfileWallet } from './AskarProfileWallet'
 
 /**
  * @todo: rename after 0.5.0, as we now have multiple types of AskarWallet
@@ -85,14 +84,6 @@ export class AskarWallet extends AskarBaseWallet {
   public async create(walletConfig: WalletConfig): Promise<void> {
     await this.createAndOpen(walletConfig)
     await this.close()
-  }
-
-  /**
-   * TODO: we can add this method, and add custom logic in the tenants module
-   * or we can try to register the store on the agent context
-   */
-  public async getProfileWallet() {
-    return new AskarProfileWallet(this.store, this.logger, this.signingKeyProviderRegistry)
   }
 
   /**

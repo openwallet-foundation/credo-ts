@@ -1,5 +1,5 @@
 import type { TenantConfig } from '../models/TenantConfig'
-import type { AgentContext, Key } from '@aries-framework/core'
+import type { AgentContext, Key, Query } from '@aries-framework/core'
 
 import { injectable, utils, KeyDerivationMethod } from '@aries-framework/core'
 
@@ -58,6 +58,14 @@ export class TenantRecordService {
 
     // Delete tenant record
     await this.tenantRepository.delete(agentContext, tenantRecord)
+  }
+
+  public async updateTenant(agentContext: AgentContext, tenantRecord: TenantRecord) {
+    return this.tenantRepository.update(agentContext, tenantRecord)
+  }
+
+  public async findTenantsByQuery(agentContext: AgentContext, query: Query<TenantRecord>) {
+    return this.tenantRepository.findByQuery(agentContext, query)
   }
 
   public async findTenantRoutingRecordByRecipientKey(

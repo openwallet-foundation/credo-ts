@@ -1,4 +1,10 @@
-import type { Jws, JwsDetachedFormat, JwsGeneralFormat, JwsProtectedHeaderOptions } from './JwsTypes'
+import type {
+  Jws,
+  JwsDetachedFormat,
+  JwsFlattenedFormat,
+  JwsGeneralFormat,
+  JwsProtectedHeaderOptions,
+} from './JwsTypes'
 import type { Key } from './Key'
 import type { Jwk } from './jose/jwk'
 import type { JwkJson } from './jose/jwk/Jwk'
@@ -119,6 +125,11 @@ export class JwsService {
       throw new AriesFrameworkError('Unable to verify JWS, no signatures present in JWS.')
     }
 
+    const jwsFlattened = {
+      signatures,
+      payload,
+    } satisfies JwsFlattenedFormat
+
     const signerKeys: Key[] = []
     for (const jws of signatures) {
       const protectedJson = JsonEncoder.fromBase64(jws.protected)
@@ -159,6 +170,7 @@ export class JwsService {
           return {
             isValid: false,
             signerKeys: [],
+            jws: jwsFlattened,
           }
         }
       } catch (error) {
@@ -168,6 +180,7 @@ export class JwsService {
           return {
             isValid: false,
             signerKeys: [],
+            jws: jwsFlattened,
           }
         }
 
@@ -175,7 +188,7 @@ export class JwsService {
       }
     }
 
-    return { isValid: true, signerKeys }
+    return { isValid: true, signerKeys, jws: jwsFlattened }
   }
 
   private buildProtected(options: JwsProtectedHeaderOptions) {
@@ -268,10 +281,12 @@ export interface VerifyJwsOptions {
 export type JwsJwkResolver = (options: {
   jws: JwsDetachedFormat
   payload: string
-  protectedHeader: { alg: string; [key: string]: unknown }
+  protectedHeader: { alg: string; jwk?: string; kid?: string; [key: string]: unknown }
 }) => Promise<Jwk> | Jwk
 
 export interface VerifyJwsResult {
   isValid: boolean
   signerKeys: Key[]
+
+  jws: JwsFlattenedFormat
 }

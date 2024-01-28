@@ -1,4 +1,5 @@
 import type { Buffer } from '../../../utils'
+import type { JwkJson } from '../jwk'
 
 import { AriesFrameworkError } from '../../../error'
 import { JsonEncoder, TypedArrayEncoder } from '../../../utils'
@@ -9,6 +10,7 @@ import { JwtPayload } from './JwtPayload'
 interface JwtHeader {
   alg: string
   kid?: string
+  jwk?: JwkJson
   [key: string]: unknown
 }
 

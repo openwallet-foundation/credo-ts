@@ -1,7 +1,7 @@
 import type { AnonCredsSchema, AnonCredsCredentialValues } from '../models'
 import type { CredentialPreviewAttributeOptions, LinkedAttachment } from '@aries-framework/core'
 
-import { AriesFrameworkError, Hasher, encodeAttachment, Buffer } from '@aries-framework/core'
+import { AriesFrameworkError, Hasher, encodeAttachment } from '@aries-framework/core'
 import BigNumber from 'bn.js'
 
 const isString = (value: unknown): value is string => typeof value === 'string'
@@ -150,7 +150,7 @@ export function encodeCredentialValue(value: unknown) {
     value = 'None'
   }
 
-  return new BigNumber(Hasher.hash(Buffer.from(value as string), 'sha2-256')).toString()
+  return new BigNumber(Hasher.hash(String(value).toString(), 'sha2-256')).toString()
 }
 
 export function assertAttributesMatch(schema: AnonCredsSchema, attributes: CredentialPreviewAttributeOptions[]) {

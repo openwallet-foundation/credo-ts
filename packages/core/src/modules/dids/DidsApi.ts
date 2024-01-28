@@ -175,4 +175,12 @@ export class DidsApi {
       },
     })
   }
+
+  public get supportedResolverMethods() {
+    return this.didResolverService.supportedMethods
+  }
+
+  public get supportedRegistrarMethods() {
+    return this.didRegistrarService.supportedMethods
+  }
 }
