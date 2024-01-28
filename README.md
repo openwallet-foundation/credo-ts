@@ -193,10 +193,7 @@ Although Aries Framework JavaScript tries to follow the standards as described i
 
 If you would like to contribute to the framework, please read the [Framework Developers README](/DEVREADME.md) and the [CONTRIBUTING](/CONTRIBUTING.md) guidelines. These documents will provide more information to get you started!
 
-The Aries Framework JavaScript call takes place every week at Thursday, 6AM Pacific Time. See [World Time Buddy](https://www.worldtimebuddy.com/?qm=1&lid=5,2759794,8&h=5&date=2023-5-19&sln=9-10&hf=1) for the time in your timezone. The meeting is held on [Zoom](https://zoom.us/j/99751084865?pwd=TW1rU0FDVTBqUlhnWnY2NERkd1diZz09).
-This meeting is for contributors to groom and plan the backlog, and discuss issues.
-Meeting agendas and recordings can be found [here](https://wiki.hyperledger.org/display/ARIES/Framework+JS+Meetings).
-Feel free to join!
+There are regular community working groups to discuss ongoing efforts within the framework, showcase items you've built with Credo, or ask questions. See [Meeting Information](https://github.com/openwallet-foundation/credo-ts/wiki/Meeting-Information) for up to date information on the meeting schedule. Everyone is welcome to join!
 
 ## License
 
