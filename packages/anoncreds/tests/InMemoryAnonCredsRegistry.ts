@@ -20,7 +20,7 @@ import type {
 } from '../src'
 import type { AgentContext } from '@aries-framework/core'
 
-import { Hasher, TypedArrayEncoder } from '@aries-framework/core'
+import { Hasher } from '@aries-framework/core'
 import BigNumber from 'bn.js'
 
 import {

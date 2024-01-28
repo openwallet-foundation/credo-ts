@@ -80,7 +80,7 @@ export * from './wallet/error'
 export { parseMessageType, IsValidMessageType, replaceLegacyDidSovPrefix } from './utils/messageType'
 export type { Constructor, Constructable } from './utils/mixins'
 export * from './agent/Events'
-export * from './crypto/'
+export * from './crypto'
 
 // TODO: clean up util exports
 export { encodeAttachment, isLinkedAttachment } from './utils/attachment'
@@ -90,7 +90,7 @@ export { LinkedAttachment, LinkedAttachmentOptions } from './utils/LinkedAttachm
 import { parseInvitationUrl } from './utils/parseInvitation'
 import { uuid, isValidUuid } from './utils/uuid'
 
-export type { Optional } from './utils/type'
+export type { Optional } from './utils'
 
 const utils = {
   uuid,

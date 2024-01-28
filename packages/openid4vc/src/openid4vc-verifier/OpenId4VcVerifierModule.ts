@@ -1,6 +1,7 @@
 import type { OpenId4VcVerifierModuleConfigOptions } from './OpenId4VcVerifierModuleConfig'
 import type { OpenId4VcVerificationRequest } from './router'
 import type { AgentContext, DependencyManager, Module } from '@aries-framework/core'
+import type { NextFunction } from 'express'
 
 import { AgentConfig } from '@aries-framework/core'
 
@@ -120,7 +121,7 @@ export class OpenId4VcVerifierModule implements Module {
     })
 
     // This one will be called for all errors that are thrown
-    contextRouter.use(async (_error: unknown, req: OpenId4VcVerificationRequest, _res: unknown, next: any) => {
+    contextRouter.use(async (_error: unknown, req: OpenId4VcVerificationRequest, _res: unknown, next: NextFunction) => {
       const { agentContext } = getRequestContext(req)
       await agentContext.endSession()
       next()
