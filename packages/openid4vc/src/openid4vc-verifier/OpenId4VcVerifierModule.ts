@@ -6,9 +6,9 @@ import { AgentConfig } from '@aries-framework/core'
 
 import { getAgentContextForActorId, getRequestContext, importExpress } from '../shared/router'
 
+import { OpenId4VcSiopVerifierService } from './OpenId4VcSiopVerifierService'
 import { OpenId4VcVerifierApi } from './OpenId4VcVerifierApi'
 import { OpenId4VcVerifierModuleConfig } from './OpenId4VcVerifierModuleConfig'
-import { OpenId4VcSiopVerifierService } from './OpenId4VcSiopVerifierService'
 import { OpenId4VcVerifierRepository } from './repository'
 import { configureAuthorizationEndpoint } from './router'
 

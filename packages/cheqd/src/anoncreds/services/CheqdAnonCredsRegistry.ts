@@ -14,7 +14,7 @@ import type {
 } from '@aries-framework/anoncreds'
 import type { AgentContext } from '@aries-framework/core'
 
-import { AriesFrameworkError, Buffer, Hasher, JsonTransformer, TypedArrayEncoder, utils } from '@aries-framework/core'
+import { AriesFrameworkError, Hasher, JsonTransformer, TypedArrayEncoder, utils } from '@aries-framework/core'
 
 import { CheqdDidResolver, CheqdDidRegistrar } from '../../dids'
 import { cheqdSdkAnonCredsRegistryIdentifierRegex, parseCheqdDid } from '../utils/identifiers'

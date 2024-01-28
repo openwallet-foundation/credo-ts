@@ -1,9 +1,10 @@
-import { Hasher, TypedArrayEncoder } from '@aries-framework/core'
+import { Hasher } from '@aries-framework/core'
 
 const ATTRIB_TYPE = '100'
 const GET_ATTR_TYPE = '104'
 
 /// Generate the normalized form of a ledger transaction request for signing
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function serializeRequestForSignature(v: any): string {
   const type = v?.operation?.type
 
@@ -17,6 +18,7 @@ export function serializeRequestForSignature(v: any): string {
  *
  * @see https://github.com/hyperledger/indy-shared-rs/blob/6af1e939586d1f16341dc03b62970cf28b32d118/indy-utils/src/txn_signature.rs#L10
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function _serializeRequestForSignature(v: any, isTopLevel: boolean, _type?: string): string {
   const vType = typeof v
 
