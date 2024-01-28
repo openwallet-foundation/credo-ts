@@ -84,6 +84,7 @@ export class OpenId4VcSiopVerifierService {
 
     return {
       authorizationRequestUri: authorizationRequestUri.encodedUri,
+      authorizationRequestPayload: authorizationRequest.payload,
     }
   }
 
@@ -240,6 +241,11 @@ export class OpenId4VcSiopVerifierService {
       throw new AriesFrameworkError("Either 'requestSigner' or 'clientId' must be provided.")
     }
 
+    // FIXME: we now manually remove did:peer, we should probably allow the user to configure this
+    const supportedDidMethods = agentContext.dependencyManager
+      .resolve(DidsApi)
+      .supportedResolverMethods.filter((m) => m !== 'peer')
+
     builder
       .withRedirectUri(authorizationResponseUrl)
       .withIssuer(ResponseIss.SELF_ISSUED_V2)
@@ -250,6 +256,7 @@ export class OpenId4VcSiopVerifierService {
         passBy: PassBy.VALUE,
         idTokenSigningAlgValuesSupported: supportedAlgs as SigningAlgo[],
         responseTypesSupported: [ResponseType.VP_TOKEN, ResponseType.ID_TOKEN],
+        subject_syntax_types_supported: supportedDidMethods.map((m) => `did:${m}`),
         vpFormatsSupported: {
           jwt_vc: {
             alg: supportedAlgs,
@@ -276,6 +283,7 @@ export class OpenId4VcSiopVerifierService {
       .withResponseMode(ResponseMode.POST)
       .withResponseType(presentationDefinition ? [ResponseType.ID_TOKEN, ResponseType.VP_TOKEN] : ResponseType.ID_TOKEN)
       .withScope('openid')
+      .withHasher(Hasher.hash)
       // TODO: support hosting requests within AFJ and passing it by reference
       .withRequestBy(PassBy.VALUE)
       .withCheckLinkedDomain(CheckLinkedDomain.NEVER)
@@ -286,13 +294,9 @@ export class OpenId4VcSiopVerifierService {
       .withEventEmitter(this.config.getEventEmitter(agentContext))
 
     if (presentationDefinition) {
-      builder.withPresentationDefinition({ definition: presentationDefinition }, [
-        PropertyTarget.REQUEST_OBJECT,
-        PropertyTarget.AUTHORIZATION_REQUEST,
-      ])
+      builder.withPresentationDefinition({ definition: presentationDefinition }, [PropertyTarget.REQUEST_OBJECT])
     }
 
-    const supportedDidMethods = agentContext.dependencyManager.resolve(DidsApi).supportedResolverMethods
     for (const supportedDidMethod of supportedDidMethods) {
       builder.addDidMethod(supportedDidMethod)
     }
@@ -310,6 +314,8 @@ export class OpenId4VcSiopVerifierService {
 
       if (!encodedPresentation) throw new AriesFrameworkError('Did not receive a presentation for verification.')
 
+      let isValid: boolean
+
       // TODO: it might be better here to look at the presentation submission to know
       // If presentation includes a ~, we assume it's an SD-JWT-VC
       if (typeof encodedPresentation === 'string' && encodedPresentation.includes('~')) {
@@ -323,9 +329,7 @@ export class OpenId4VcSiopVerifierService {
           },
         })
 
-        return {
-          verified: verificationResult.verification.isValid,
-        }
+        isValid = verificationResult.verification.isValid
       } else if (typeof encodedPresentation === 'string') {
         const verificationResult = await this.w3cCredentialService.verifyPresentation(agentContext, {
           presentation: encodedPresentation,
@@ -333,9 +337,7 @@ export class OpenId4VcSiopVerifierService {
           domain: options.audience,
         })
 
-        return {
-          verified: verificationResult.isValid,
-        }
+        isValid = verificationResult.isValid
       } else {
         const verificationResult = await this.w3cCredentialService.verifyPresentation(agentContext, {
           presentation: JsonTransformer.fromJSON(encodedPresentation, W3cJsonLdVerifiablePresentation),
@@ -343,9 +345,19 @@ export class OpenId4VcSiopVerifierService {
           domain: options.audience,
         })
 
-        return {
-          verified: verificationResult.isValid,
-        }
+        isValid = verificationResult.isValid
+      }
+
+      // FIXME: we throw an error here as there's a bug in sphereon library where they
+      // don't check the returned 'verified' property and only catch errors thrown.
+      // Once https://github.com/Sphereon-Opensource/SIOP-OID4VP/pull/70 is merged we
+      // can remove this.
+      if (!isValid) {
+        throw new AriesFrameworkError('Presentation verification failed.')
+      }
+
+      return {
+        verified: isValid,
       }
     }
   }

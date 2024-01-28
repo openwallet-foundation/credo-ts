@@ -1,7 +1,6 @@
 import type {
   OpenId4VciCreateCredentialResponseOptions,
   OpenId4VciCreateCredentialOfferOptions,
-  CredentialOffer,
 } from './OpenId4VcIssuerServiceOptions'
 import type { OpenId4VcIssuerRecordProps } from './repository'
 import type { OpenId4VciCredentialOfferPayload } from '../shared'
@@ -70,9 +69,7 @@ export class OpenId4VcIssuerApi {
    *
    * @returns Object containing the payload of the credential offer and the credential offer request, which can be sent to the wallet.
    */
-  public async createCredentialOffer(
-    options: OpenId4VciCreateCredentialOfferOptions & { issuerId: string }
-  ): Promise<CredentialOffer> {
+  public async createCredentialOffer(options: OpenId4VciCreateCredentialOfferOptions & { issuerId: string }) {
     const { issuerId, ...rest } = options
     const issuer = await this.openId4VcIssuerService.getByIssuerId(this.agentContext, issuerId)
     return await this.openId4VcIssuerService.createCredentialOffer(this.agentContext, { ...rest, issuer })

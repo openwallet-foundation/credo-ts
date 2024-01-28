@@ -82,13 +82,6 @@ describe('sd-jwt-vc end to end test', () => {
 
     const { compact, header, payload } = await issuer.sdJwtVc.sign({
       payload: credential,
-      // FIXME: sd-jwt library does not support did binding for holder yet
-      // issuance is fine, but in verification of KB the jwk will be extracted
-      // from the cnf claim which will be undefined.
-      // holder: {
-      //   method: 'did',
-      //   didUrl: holderDidUrl,
-      // },
       holder: {
         method: 'jwk',
         jwk: getJwkFromKey(holderKey),
@@ -115,7 +108,7 @@ describe('sd-jwt-vc end to end test', () => {
     type Header = typeof header
 
     // parse SD-JWT
-    const sdJwtVc = await holder.sdJwtVc.fromCompact<Header, Payload>(compact)
+    const sdJwtVc = holder.sdJwtVc.fromCompact<Header, Payload>(compact)
     expect(sdJwtVc).toEqual({
       compact: expect.any(String),
       header: {

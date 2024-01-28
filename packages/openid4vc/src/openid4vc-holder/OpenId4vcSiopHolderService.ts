@@ -7,6 +7,7 @@ import type { AgentContext, SdJwtVc, W3cVerifiablePresentation } from '@aries-fr
 import type { VerifiedAuthorizationRequest, PresentationExchangeResponseOpts } from '@sphereon/did-auth-siop'
 
 import {
+  Hasher,
   W3cJwtVerifiablePresentation,
   parseDid,
   AriesFrameworkError,
@@ -15,6 +16,7 @@ import {
   W3cJsonLdVerifiablePresentation,
   asArray,
   DifPresentationExchangeService,
+  DifPresentationExchangeSubmissionLocation,
 } from '@aries-framework/core'
 import {
   CheckLinkedDomain,
@@ -112,6 +114,7 @@ export class OpenId4VcSiopHolderService {
           presentationDefinition: authorizationRequest.presentationDefinitions[0].definition,
           challenge: nonce,
           domain: clientId,
+          presentationSubmissionLocation: DifPresentationExchangeSubmissionLocation.EXTERNAL,
         })
 
       presentationExchangeOptions = {
@@ -179,6 +182,7 @@ export class OpenId4VcSiopHolderService {
       .withSupportedVersions([SupportedVersion.SIOPv2_D11, SupportedVersion.SIOPv2_D12_OID4VP_D18])
       .withCustomResolver(getSphereonDidResolver(agentContext))
       .withCheckLinkedDomain(CheckLinkedDomain.NEVER)
+      .withHasher(Hasher.hash)
 
     if (openIdTokenIssuer) {
       const suppliedSignature = await getSphereonSuppliedSignatureFromJwtIssuer(agentContext, openIdTokenIssuer)

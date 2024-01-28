@@ -26,7 +26,7 @@ import { injectable } from 'tsyringe'
 
 import { getJwkFromKey } from '../../crypto'
 import { AriesFrameworkError } from '../../error'
-import { Hasher, JsonTransformer, TypedArrayEncoder } from '../../utils'
+import { Hasher, JsonTransformer } from '../../utils'
 import { DidsApi, getKeyFromVerificationMethod } from '../dids'
 import { SdJwtVcApi } from '../sd-jwt-vc'
 import {
@@ -214,12 +214,10 @@ export class DifPresentationExchangeService {
     }
 
     return {
-      verifiablePresentations: await Promise.all(
-        verifiablePresentationResultsWithFormat.map((resultWithFormat) =>
-          getVerifiablePresentationFromEncoded(
-            agentContext,
-            resultWithFormat.verifiablePresentationResult.verifiablePresentation
-          )
+      verifiablePresentations: verifiablePresentationResultsWithFormat.map((resultWithFormat) =>
+        getVerifiablePresentationFromEncoded(
+          agentContext,
+          resultWithFormat.verifiablePresentationResult.verifiablePresentation
         )
       ),
       presentationSubmission,

@@ -37,7 +37,7 @@ export function getSphereonOriginalVerifiablePresentation(
 }
 
 // TODO: we might want to move this to some generic vc transformation util
-export async function getVerifiablePresentationFromEncoded(
+export function getVerifiablePresentationFromEncoded(
   agentContext: AgentContext,
   encodedVerifiablePresentation: string | W3cJsonPresentation | SphereonW3CVerifiablePresentation
 ) {

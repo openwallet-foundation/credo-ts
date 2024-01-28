@@ -1,5 +1,6 @@
 import type {
   OpenId4VcJwtIssuer,
+  OpenId4VcSiopAuthorizationRequestPayload,
   OpenId4VcSiopAuthorizationResponsePayload,
   OpenId4VcSiopIdTokenPayload,
 } from '../shared'
@@ -33,6 +34,7 @@ export interface OpenId4VcSiopVerifyAuthorizationResponseOptions {
 
 export interface OpenId4VcSiopCreateAuthorizationRequestReturn {
   authorizationRequestUri: string
+  authorizationRequestPayload: OpenId4VcSiopAuthorizationRequestPayload
 }
 
 /**

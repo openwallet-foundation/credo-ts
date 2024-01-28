@@ -57,8 +57,8 @@ export class SdJwtVcApi {
   /**
    * Get and validate a sd-jwt-vc from a serialized JWT.
    */
-  public async fromCompact<Header extends SdJwtVcHeader, Payload extends SdJwtVcPayload>(sdJwtVcCompact: string) {
-    return await this.sdJwtVcService.fromCompact<Header, Payload>(sdJwtVcCompact)
+  public fromCompact<Header extends SdJwtVcHeader, Payload extends SdJwtVcPayload>(sdJwtVcCompact: string) {
+    return this.sdJwtVcService.fromCompact<Header, Payload>(sdJwtVcCompact)
   }
 
   public async store(compactSdJwtVc: string) {

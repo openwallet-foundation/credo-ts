@@ -13,6 +13,7 @@ import type { Query } from '../../storage/StorageService'
 import type { Signer, SdJwtVcVerificationResult, Verifier, HasherAndAlgorithm, DisclosureItem } from '@sd-jwt/core'
 
 import { KeyBinding, SdJwtVc as _SdJwtVc, HasherAlgorithm } from '@sd-jwt/core'
+import { decodeSdJwtVc } from '@sd-jwt/decode'
 import { injectable } from 'tsyringe'
 
 import { Jwk, getJwkFromJson, getJwkFromKey } from '../../crypto'
@@ -93,22 +94,17 @@ export class SdJwtVcService {
     } satisfies SdJwtVc<typeof header, Payload>
   }
 
-  public async fromCompact<
-    Header extends SdJwtVcHeader = SdJwtVcHeader,
-    Payload extends SdJwtVcPayload = SdJwtVcPayload
-  >(compactSdJwtVc: string): Promise<SdJwtVc<Header, Payload>> {
-    const sdJwtVc = _SdJwtVc.fromCompact<Header, Payload>(compactSdJwtVc).withHasher(this.hasher)
-
-    if (!sdJwtVc.signature) {
-      throw new SdJwtVcError('A signature must be included for an sd-jwt-vc')
-    }
+  public fromCompact<Header extends SdJwtVcHeader = SdJwtVcHeader, Payload extends SdJwtVcPayload = SdJwtVcPayload>(
+    compactSdJwtVc: string
+  ): SdJwtVc<Header, Payload> {
+    // NOTE: we use decodeSdJwtVc so we can make this method sync
+    const { decodedPayload, header, signedPayload } = decodeSdJwtVc(compactSdJwtVc, Hasher.hash)
 
     return {
       compact: compactSdJwtVc,
-      header: sdJwtVc.header,
-      payload: sdJwtVc.payload,
-
-      prettyClaims: await sdJwtVc.getPrettyClaims(),
+      header: header as Header,
+      payload: signedPayload as Payload,
+      prettyClaims: decodedPayload as Payload,
     }
   }
 
@@ -161,11 +157,16 @@ export class SdJwtVcService {
     const issuer = await this.extractKeyFromIssuer(agentContext, this.parseIssuerFromCredential(sdJwtVc))
     const holder = await this.extractKeyFromHolderBinding(agentContext, this.parseHolderBindingFromCredential(sdJwtVc))
 
-    // FIXME: sdJwtVc library must support passing a custom jwk resolver based on the cnf claim
-    // or passing in the resolved key already. Currently the implementation assumes the cnf is always
-    // a jwk. But this won't work if we want to bind the cnf to a did
+    // FIXME: we currently pass in the required keys in the verification method and based on the header.typ we
+    // check if we need to use the issuer or holder key. Once better support in sd-jwt lib is available we can
+    // update this.
+    // See https://github.com/berendsliedrecht/sd-jwt-ts/pull/34
+    // See https://github.com/berendsliedrecht/sd-jwt-ts/issues/15
     const verificationResult = await sdJwtVc.verify(
-      this.verifier(agentContext, issuer.key),
+      this.verifier(agentContext, {
+        issuer: issuer.key,
+        holder: holder.key,
+      }),
       requiredClaimKeys,
       holder.cnf
     )
@@ -267,28 +268,33 @@ export class SdJwtVcService {
 
   /**
    * @todo validate the JWT header (alg)
-   * FIXME: also support kid (did) for cnf claim
    */
   private verifier<Header extends SdJwtVcHeader = SdJwtVcHeader>(
     agentContext: AgentContext,
-    signerKey: Key
+    verificationKeys: {
+      issuer: Key
+      holder: Key
+    }
   ): Verifier<Header> {
-    return async ({ message, signature, publicKeyJwk }) => {
-      let key = signerKey
+    return async ({ message, signature, publicKeyJwk, header }) => {
+      const keyFromPublicKeyJwk = publicKeyJwk ? getJwkFromJson(publicKeyJwk as JwkJson).key : undefined
 
-      if (publicKeyJwk) {
-        if (!('kty' in publicKeyJwk)) {
-          throw new SdJwtVcError(
-            'Key type (kty) claim could not be found in the JWK of the confirmation (cnf) claim. Only JWK is supported right now'
-          )
-        }
+      let key: Key
+      if (header.typ === 'kb+jwt') {
+        key = verificationKeys.holder
+      } else if (header.typ === 'vc+sd-jwt') {
+        key = verificationKeys.issuer
+      } else {
+        throw new SdJwtVcError(`Unsupported JWT type '${header.typ}'`)
+      }
 
-        key = getJwkFromJson(publicKeyJwk as JwkJson).key
+      if (keyFromPublicKeyJwk && key.fingerprint !== keyFromPublicKeyJwk.fingerprint) {
+        throw new SdJwtVcError('The key used to verify the signature does not match the expected key')
       }
 
       return await agentContext.wallet.verify({
         signature: Buffer.from(signature),
-        key: key,
+        key,
         data: TypedArrayEncoder.fromString(message),
       })
     }

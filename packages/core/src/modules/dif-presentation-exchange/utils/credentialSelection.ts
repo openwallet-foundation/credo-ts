@@ -29,7 +29,24 @@ export async function getCredentialsForRequest(
     ...selectResultsRaw,
     // Map the encoded credential to their respective w3c credential record
     verifiableCredential: selectResultsRaw.verifiableCredential?.map((selectedEncoded) => {
-      const credentialRecordIndex = encodedCredentials.findIndex((encoded) => deepEquality(selectedEncoded, encoded))
+      const credentialRecordIndex = encodedCredentials.findIndex((encoded) => {
+        if (
+          typeof selectedEncoded === 'string' &&
+          selectedEncoded.includes('~') &&
+          typeof encoded === 'string' &&
+          encoded.includes('~')
+        ) {
+          // FIXME: pex applies SD-JWT, so we actually can't match the record anymore :(
+          // We take the first part of the sd-jwt, as that will never change, and should
+          // be unique on it's own
+          const [encodedJwt] = encoded.split('~')
+          const [selectedEncodedJwt] = selectedEncoded.split('~')
+
+          return encodedJwt === selectedEncodedJwt
+        } else {
+          return deepEquality(selectedEncoded, encoded)
+        }
+      })
 
       if (credentialRecordIndex === -1) {
         throw new DifPresentationExchangeError('Unable to find credential in credential records.')

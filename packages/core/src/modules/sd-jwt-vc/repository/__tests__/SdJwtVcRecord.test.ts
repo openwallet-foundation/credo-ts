@@ -21,16 +21,9 @@ describe('SdJwtVcRecord', () => {
     expect(sdJwtVcRecord.createdAt).toBe(createdAt)
     expect(sdJwtVcRecord.getTags()).toEqual({
       some: 'tag',
-      disclosureKeys: [
-        'is_over_65',
-        'is_over_21',
-        'is_over_18',
-        'birthdate',
-        'email',
-        'region',
-        'country',
-        'given_name',
-      ],
+      alg: 'EdDSA',
+      sdAlg: 'sha-256',
+      vct: 'IdentityCredential',
     })
     expect(sdJwtVcRecord.compactSdJwtVc).toEqual(compactSdJwtVc)
   })
@@ -66,16 +59,9 @@ describe('SdJwtVcRecord', () => {
     expect(instance.createdAt.getTime()).toBe(createdAt.getTime())
     expect(instance.getTags()).toEqual({
       some: 'tag',
-      disclosureKeys: [
-        'is_over_65',
-        'is_over_21',
-        'is_over_18',
-        'birthdate',
-        'email',
-        'region',
-        'country',
-        'given_name',
-      ],
+      alg: 'EdDSA',
+      sdAlg: 'sha-256',
+      vct: 'IdentityCredential',
     })
     expect(instance.compactSdJwtVc).toBe(compactSdJwtVc)
   })

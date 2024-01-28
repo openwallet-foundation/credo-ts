@@ -568,5 +568,21 @@ describe('SdJwtVcService', () => {
         isKeyBindingValid: true,
       })
     })
+
+    test('Verify did holder-bound sd-jwt-vc with disclosures and kb-jwt', async () => {
+      const verificationResult = await sdJwtVcService.verify<SdJwtVcHeader, { address: { country: string } }>(
+        agent.context,
+        {
+          compactSdJwtVc:
+            'eyJhbGciOiJFZERTQSIsInR5cCI6InZjK3NkLWp3dCIsImtpZCI6IiN6Nk1rcnpRUEJyNHB5cUM3NzZLS3RyejEzU2NoTTVlUFBic3N1UHVRWmI1dDR1S1EifQ.eyJ2Y3QiOiJPcGVuQmFkZ2VDcmVkZW50aWFsIiwiZGVncmVlIjoiYmFjaGVsb3IiLCJjbmYiOnsia2lkIjoiZGlkOmtleTp6Nk1rcEdSNGdzNFJjM1pwaDR2ajh3Um5qbkF4Z0FQU3hjUjhNQVZLdXRXc3BRemMjejZNa3BHUjRnczRSYzNacGg0dmo4d1Juam5BeGdBUFN4Y1I4TUFWS3V0V3NwUXpjIn0sImlzcyI6ImRpZDprZXk6ejZNa3J6UVBCcjRweXFDNzc2S0t0cnoxM1NjaE01ZVBQYnNzdVB1UVpiNXQ0dUtRIiwiaWF0IjoxNzA2MjY0ODQwLCJfc2RfYWxnIjoic2hhLTI1NiIsIl9zZCI6WyJTSm81ME0xX3NUQWRPSjFObF82ekJzZWg3Ynd4czhhbDhleVotQl9nTXZFIiwiYTJjT2xWOXY4TUlWNTRvMVFrODdBMDRNZ0c3Q0hiaFZUN1lkb00zUnM4RSJdfQ.PrZtmLFPr8tBY0FKsv2yHJeqzds8m0Rlrof-Z36o7ksNvON3ZSrKHOD8fFDJaQ8oFJcZAnjpUS6pY9kwAgU1Ag~WyI5Mjg3NDM3NDQyMTg0ODk1NTU3OTA1NTkiLCJ1bml2ZXJzaXR5IiwiaW5uc2JydWNrIl0~eyJhbGciOiJFZERTQSIsInR5cCI6ImtiK2p3dCJ9.eyJpYXQiOjE3MDYyNjQ4NDAsIm5vbmNlIjoiODExNzMxNDIwNTMxODQ3NzAwNjM2ODUiLCJhdWQiOiJkaWQ6a2V5Ono2TWt0aVFRRXFtMnlhcFhCRHQxV0VWQjNkcWd2eXppOTZGdUZBTlltcmdUcktWOSIsIl9zZF9oYXNoIjoiSVd0cTEtOGUtLU9wWWpXa3Z1RTZrRjlaa2h5aDVfV3lOYXItaWtVT0FscyJ9.cJNnYH16lHn0PsF9tOQPofpONGoY19bQB5k6Ezux9TvQWS_Opnd-3m_fO9yKu8S0pmjyG2mu3Uzn1pUNqhL9AQ',
+          keyBinding: {
+            audience: 'did:key:z6MktiQQEqm2yapXBDt1WEVB3dqgvyzi96FuFANYmrgTrKV9',
+            nonce: '81173142053184770063685',
+          },
+        }
+      )
+
+      expect(verificationResult.verification.isValid).toBe(true)
+    })
   })
 })

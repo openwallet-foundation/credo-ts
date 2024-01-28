@@ -1,45 +1,37 @@
 import type { AgentType, TenantType } from './utils'
 import type { OpenId4VciCredentialBindingResolver } from '../src/openid4vc-holder'
-import type { SdJwtVc } from '@aries-framework/core'
+import type { DifPresentationExchangeDefinitionV2, SdJwtVc } from '@aries-framework/core'
 import type { Server } from 'http'
 
 import {
+  AriesFrameworkError,
   ClaimFormat,
+  DidsApi,
+  DifPresentationExchangeService,
+  getJwkFromKey,
+  getKeyFromVerificationMethod,
+  JsonEncoder,
   JwaSignatureAlgorithm,
   W3cCredential,
   W3cCredentialSubject,
-  W3cIssuer,
   w3cDate,
-  DidsApi,
-  getKeyFromVerificationMethod,
-  getJwkFromKey,
-  AriesFrameworkError,
-  DifPresentationExchangeService,
+  W3cIssuer,
 } from '@aries-framework/core'
 import express, { type Express } from 'express'
 
 import { AskarModule } from '../../askar/src'
 import { askarModuleConfig } from '../../askar/tests/helpers'
 import { TenantsModule } from '../../tenants/src'
-import { OpenId4VcVerifierModule, OpenId4VcHolderModule, OpenId4VcIssuerModule } from '../src'
+import { OpenId4VcHolderModule, OpenId4VcIssuerModule, OpenId4VcVerifierModule } from '../src'
 
 import { createAgentFromModules, createTenantForAgent } from './utils'
 import { universityDegreeCredentialSdJwt, universityDegreeCredentialSdJwt2 } from './utilsVci'
-import {
-  openBadgePresentationDefinition,
-  staticOpOpenIdConfigEdDSA,
-  universityDegreePresentationDefinition,
-} from './utilsVp'
+import { openBadgePresentationDefinition, universityDegreePresentationDefinition } from './utilsVp'
 
 const serverPort = 1234
 const baseUrl = `http://localhost:${serverPort}`
 const issuanceBaseUrl = `${baseUrl}/oid4vci`
 const verificationBaseUrl = `${baseUrl}/oid4vp`
-
-const baseCredentialOfferOptions = {
-  scheme: 'openid-credential-offer',
-  baseUri: issuanceBaseUrl,
-}
 
 describe('OpenId4Vc', () => {
   let expressApp: Express
@@ -75,7 +67,6 @@ describe('OpenId4Vc', () => {
           baseUrl: issuanceBaseUrl,
           endpoints: {
             credential: {
-              // FIXME: should not be nested under the endpoint config, as it's also used for the non-endpoint part
               credentialRequestToCredentialMapper: async ({ agentContext, credentialRequest, holderBinding }) => {
                 // We sign the request with the first did:key did we have
                 const didsApi = agentContext.dependencyManager.resolve(DidsApi)
@@ -187,18 +178,16 @@ describe('OpenId4Vc', () => {
       credentialsSupported: [universityDegreeCredentialSdJwt2],
     })
 
-    const { credentialOfferUri: credentialOffer1 } = await issuerTenant1.modules.openId4VcIssuer.createCredentialOffer({
+    const { credentialOffer: credentialOffer1 } = await issuerTenant1.modules.openId4VcIssuer.createCredentialOffer({
       issuerId: openIdIssuerTenant1.issuerId,
       offeredCredentials: [universityDegreeCredentialSdJwt.id],
       preAuthorizedCodeFlowConfig: { userPinRequired: false },
-      ...baseCredentialOfferOptions,
     })
 
-    const { credentialOfferUri: credentialOffer2 } = await issuerTenant2.modules.openId4VcIssuer.createCredentialOffer({
+    const { credentialOffer: credentialOffer2 } = await issuerTenant2.modules.openId4VcIssuer.createCredentialOffer({
       issuerId: openIdIssuerTenant2.issuerId,
       offeredCredentials: [universityDegreeCredentialSdJwt2.id],
       preAuthorizedCodeFlowConfig: { userPinRequired: false },
-      ...baseCredentialOfferOptions,
     })
 
     await issuerTenant1.endSession()
@@ -230,7 +219,7 @@ describe('OpenId4Vc', () => {
 
     expect(credentialsTenant1).toHaveLength(1)
     const compactSdJwtVcTenant1 = (credentialsTenant1[0] as SdJwtVc).compact
-    const sdJwtVcTenant1 = await holderTenant1.sdJwtVc.fromCompact(compactSdJwtVcTenant1)
+    const sdJwtVcTenant1 = holderTenant1.sdJwtVc.fromCompact(compactSdJwtVcTenant1)
     expect(sdJwtVcTenant1.payload.vct).toEqual('UniversityDegreeCredential')
 
     const resolvedCredentialOffer2 = await holderTenant1.modules.openId4VcHolder.resolveCredentialOffer(
@@ -256,13 +245,13 @@ describe('OpenId4Vc', () => {
 
     expect(credentialsTenant2).toHaveLength(1)
     const compactSdJwtVcTenant2 = (credentialsTenant2[0] as SdJwtVc).compact
-    const sdJwtVcTenant2 = await holderTenant1.sdJwtVc.fromCompact(compactSdJwtVcTenant2)
+    const sdJwtVcTenant2 = holderTenant1.sdJwtVc.fromCompact(compactSdJwtVcTenant2)
     expect(sdJwtVcTenant2.payload.vct).toEqual('UniversityDegreeCredential2')
 
     await holderTenant1.endSession()
   })
 
-  it('e2e flow with tenants, verifier endpoints verifying a sd-jwt-vc', async () => {
+  it('e2e flow with tenants, verifier endpoints verifying a jwt-vc', async () => {
     const holderTenant = await holder.agent.modules.tenants.getTenantAgent({ tenantId: holder1.tenantId })
     const verifierTenant1 = await verifier.agent.modules.tenants.getTenantAgent({ tenantId: verifier1.tenantId })
     const verifierTenant2 = await verifier.agent.modules.tenants.getTenantAgent({ tenantId: verifier2.tenantId })
@@ -297,82 +286,108 @@ describe('OpenId4Vc', () => {
     await holderTenant.w3cCredentials.storeCredential({ credential: signedCredential1 })
     await holderTenant.w3cCredentials.storeCredential({ credential: signedCredential2 })
 
-    const { authorizationRequestUri: authorizationRequestUri1, metadata: proofRequestMetadata1 } =
-      await verifierTenant1.modules.openId4VcVerifier.createAuthorizationRequest({
-        verificationMethod: verifier1.verificationMethod,
-        openIdProvider: staticOpOpenIdConfigEdDSA,
-        presentationDefinition: openBadgePresentationDefinition,
-        verifierId: openIdVerifierTenant1.verifierId,
-      })
+    const {
+      authorizationRequestUri: authorizationRequestUri1,
+      authorizationRequestPayload: authorizationRequestPayload1,
+    } = await verifierTenant1.modules.openId4VcVerifier.createAuthorizationRequest({
+      verifierId: openIdVerifierTenant1.verifierId,
+      requestSigner: {
+        method: 'did',
+        didUrl: verifier1.verificationMethod.id,
+      },
+      presentationDefinition: openBadgePresentationDefinition,
+    })
 
-    // FIXME: the presentation definition is in both top-level and request param?
     expect(
       authorizationRequestUri1.startsWith(
-        `openid://?redirect_uri=http%3A%2F%2Flocalhost%3A1234%2Foid4vp%2F${openIdVerifierTenant1.verifierId}%2Fauthorize&presentation_definition=%7B%22id%22%3A%22OpenBadgeCredential`
+        `openid://?redirect_uri=http%3A%2F%2Flocalhost%3A1234%2Foid4vp%2F${openIdVerifierTenant1.verifierId}%2Fauthorize`
       )
     ).toBe(true)
 
-    const { authorizationRequestUri: authorizationRequestUri2, metadata: proofRequestMetadata2 } =
-      await verifierTenant2.modules.openId4VcVerifier.createAuthorizationRequest({
-        verificationMethod: verifier2.verificationMethod,
-        openIdProvider: staticOpOpenIdConfigEdDSA,
-        presentationDefinition: universityDegreePresentationDefinition,
-        verifierId: openIdVerifierTenant2.verifierId,
-      })
+    const {
+      authorizationRequestUri: authorizationRequestUri2,
+      authorizationRequestPayload: authorizationRequestPayload2,
+    } = await verifierTenant2.modules.openId4VcVerifier.createAuthorizationRequest({
+      requestSigner: {
+        method: 'did',
+        didUrl: verifier2.verificationMethod.id,
+      },
+      presentationDefinition: universityDegreePresentationDefinition,
+      verifierId: openIdVerifierTenant2.verifierId,
+    })
 
-    // FIXME: we should set scheme based on the openid provider metadata
-    // Is the op set in the request?
-    // FIXME: did:peer should not be supported
     expect(
       authorizationRequestUri2.startsWith(
-        `openid://?redirect_uri=http%3A%2F%2Flocalhost%3A1234%2Foid4vp%2F${openIdVerifierTenant2.verifierId}%2Fauthorize&presentation_definition=%7B%22id%22%3A%22UniversityDegreeCredential`
+        `openid://?redirect_uri=http%3A%2F%2Flocalhost%3A1234%2Foid4vp%2F${openIdVerifierTenant2.verifierId}%2Fauthorize`
       )
     ).toBe(true)
 
     await verifierTenant1.endSession()
     await verifierTenant2.endSession()
 
-    // FIXME: api already has resolve authorization request
-    // but it's used for oid4vci. We should have some improvements on the api
-    const resolvedProofRequest1 = await holderTenant.modules.openId4VcHolder.resolveProofRequest(
+    const resolvedProofRequest1 = await holderTenant.modules.openId4VcHolder.resolveSiopAuthorizationRequest(
       authorizationRequestUri1
     )
-    if (resolvedProofRequest1.proofType === 'authentication') throw new Error('Expected a proofRequest')
 
-    if (!resolvedProofRequest1.credentialsForRequest.areRequirementsSatisfied) {
-      throw new Error('Requirements are not satisfied.')
-    }
+    expect(resolvedProofRequest1.presentationExchange?.credentialsForRequest).toMatchObject({
+      areRequirementsSatisfied: true,
+      requirements: [
+        {
+          submissionEntry: [
+            {
+              verifiableCredentials: [
+                {
+                  credential: {
+                    type: ['VerifiableCredential', 'OpenBadgeCredential'],
+                  },
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    })
 
-    expect(
-      resolvedProofRequest1.credentialsForRequest.requirements[0].submissionEntry[0].verifiableCredentials[0].credential
-        .type
-    ).toContain('OpenBadgeCredential')
-
-    const resolvedProofRequest2 = await holderTenant.modules.openId4VcHolder.resolveProofRequest(
+    const resolvedProofRequest2 = await holderTenant.modules.openId4VcHolder.resolveSiopAuthorizationRequest(
       authorizationRequestUri2
     )
-    if (resolvedProofRequest2.proofType === 'authentication') throw new Error('Expected a proofRequest')
 
-    if (!resolvedProofRequest2.credentialsForRequest.areRequirementsSatisfied) {
-      throw new Error('Requirements are not satisfied.')
+    expect(resolvedProofRequest2.presentationExchange?.credentialsForRequest).toMatchObject({
+      areRequirementsSatisfied: true,
+      requirements: [
+        {
+          submissionEntry: [
+            {
+              verifiableCredentials: [
+                {
+                  credential: {
+                    type: ['VerifiableCredential', 'UniversityDegreeCredential'],
+                  },
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    })
+
+    if (!resolvedProofRequest1.presentationExchange || !resolvedProofRequest2.presentationExchange) {
+      throw new Error('Presentation exchange not defined')
     }
-
-    // FIXME: result MUST include SD-JWT as well
-    expect(
-      resolvedProofRequest2.credentialsForRequest.requirements[0].submissionEntry[0].verifiableCredentials[0].credential
-        .type
-    ).toContain('UniversityDegreeCredential')
 
     const presentationExchangeService = holderTenant.dependencyManager.resolve(DifPresentationExchangeService)
     const selectedCredentials = presentationExchangeService.selectCredentialsForRequest(
-      resolvedProofRequest1.credentialsForRequest
+      resolvedProofRequest1.presentationExchange.credentialsForRequest
     )
 
     const { status: status1, submittedResponse: submittedResponse1 } =
-      await holderTenant.modules.openId4VcHolder.acceptPresentationRequest(
-        resolvedProofRequest1.presentationRequest,
-        selectedCredentials
-      )
+      await holderTenant.modules.openId4VcHolder.acceptSiopAuthorizationRequest({
+        authorizationRequest: resolvedProofRequest1.authorizationRequest,
+        presentationExchange: {
+          credentials: selectedCredentials,
+        },
+      })
+
     expect(submittedResponse1).toEqual({
       expires_in: 6000,
       id_token: expect.any(String),
@@ -396,20 +411,20 @@ describe('OpenId4Vc', () => {
     // that the RP sent in the Authorization Request as an audience.
     // When the request has been signed, the value might be an HTTPS URL, or a Decentralized Identifier.
     const verifierTenant1_2 = await verifier.agent.modules.tenants.getTenantAgent({ tenantId: verifier1.tenantId })
-    const { idTokenPayload: idTokenPayload1, presentationExchange: presentationExchange1 } =
+    const { idToken: idToken1, presentationExchange: presentationExchange1 } =
       await verifierTenant1_2.modules.openId4VcVerifier.verifyAuthorizationResponse({
         authorizationResponse: submittedResponse1,
         verifierId: openIdVerifierTenant1.verifierId,
       })
 
-    const { state: state1, nonce: nonce1 } = proofRequestMetadata1
-    expect(idTokenPayload1).toMatchObject({
-      state: state1,
-      nonce: nonce1,
+    const requestObjectPayload1 = JsonEncoder.fromBase64(authorizationRequestPayload1.request?.split('.')[1] as string)
+    expect(idToken1?.payload).toMatchObject({
+      state: requestObjectPayload1.state,
+      nonce: requestObjectPayload1.nonce,
     })
 
     expect(presentationExchange1).toMatchObject({
-      definitions: [openBadgePresentationDefinition],
+      definition: openBadgePresentationDefinition,
       submission: {
         definition_id: 'OpenBadgeCredential',
       },
@@ -425,35 +440,36 @@ describe('OpenId4Vc', () => {
     })
 
     const selectedCredentials2 = presentationExchangeService.selectCredentialsForRequest(
-      resolvedProofRequest2.credentialsForRequest
+      resolvedProofRequest2.presentationExchange.credentialsForRequest
     )
 
-    // FIXME: do we want to return the submitted response? And the status code?
-    // Also, do we get anything back for submitting this?
     const { status: status2, submittedResponse: submittedResponse2 } =
-      await holderTenant.modules.openId4VcHolder.acceptPresentationRequest(
-        resolvedProofRequest2.presentationRequest,
-        selectedCredentials2
-      )
+      await holderTenant.modules.openId4VcHolder.acceptSiopAuthorizationRequest({
+        authorizationRequest: resolvedProofRequest2.authorizationRequest,
+        presentationExchange: {
+          credentials: selectedCredentials2,
+        },
+      })
     expect(status2).toBe(200)
 
     // The RP MUST validate that the aud (audience) Claim contains the value of the client_id
     // that the RP sent in the Authorization Request as an audience.
     // When the request has been signed, the value might be an HTTPS URL, or a Decentralized Identifier.
     const verifierTenant2_2 = await verifier.agent.modules.tenants.getTenantAgent({ tenantId: verifier2.tenantId })
-    const { idTokenPayload: idTokenPayload2, presentationExchange: presentationExchange2 } =
+    const { idToken: idToken2, presentationExchange: presentationExchange2 } =
       await verifierTenant2_2.modules.openId4VcVerifier.verifyAuthorizationResponse({
         authorizationResponse: submittedResponse2,
         verifierId: openIdVerifierTenant2.verifierId,
       })
 
-    expect(idTokenPayload2).toMatchObject({
-      state: proofRequestMetadata2.state,
-      nonce: proofRequestMetadata2.nonce,
+    const requestObjectPayload2 = JsonEncoder.fromBase64(authorizationRequestPayload2.request?.split('.')[1] as string)
+    expect(idToken2?.payload).toMatchObject({
+      state: requestObjectPayload2.state,
+      nonce: requestObjectPayload2.nonce,
     })
 
     expect(presentationExchange2).toMatchObject({
-      definitions: [universityDegreePresentationDefinition],
+      definition: universityDegreePresentationDefinition,
       submission: {
         definition_id: 'UniversityDegreeCredential',
       },
@@ -464,6 +480,195 @@ describe('OpenId4Vc', () => {
               type: ['VerifiableCredential', 'UniversityDegreeCredential'],
             },
           ],
+        },
+      ],
+    })
+  })
+
+  // FIXME: test whether did-based binding for holder works with sd-jwt-vc library in verification
+  // issuance is fine, but in verification of KB the jwk will be extracted
+  // from the cnf claim which will be undefined.
+  it('e2e flow with verifier endpoints verifying a sd-jwt-vc with selective disclosure', async () => {
+    const openIdVerifier = await verifier.agent.modules.openId4VcVerifier.createVerifier()
+
+    const signedSdJwtVc = await issuer.agent.sdJwtVc.sign({
+      holder: {
+        method: 'did',
+        didUrl: holder.kid,
+      },
+      issuer: {
+        method: 'did',
+        didUrl: issuer.kid,
+      },
+      payload: {
+        vct: 'OpenBadgeCredential',
+        university: 'innsbruck',
+        degree: 'bachelor',
+        name: 'John Doe',
+      },
+      disclosureFrame: {
+        university: true,
+        name: true,
+      },
+    })
+
+    await holder.agent.sdJwtVc.store(signedSdJwtVc.compact)
+
+    const presentationDefinition = {
+      id: 'OpenBadgeCredential',
+      input_descriptors: [
+        {
+          id: 'OpenBadgeCredential',
+          // FIXME: https://github.com/Sphereon-Opensource/pex-openapi/issues/32
+          // format: {
+          //   'vc+sd-jwt': {
+          //     'sd-jwt_alg_values': ['EdDSA'],
+          //   },
+          // },
+          constraints: {
+            limit_disclosure: 'required',
+            fields: [
+              {
+                path: ['$.vct'],
+                filter: {
+                  type: 'string',
+                  const: 'OpenBadgeCredential',
+                },
+              },
+              {
+                path: ['$.university'],
+              },
+            ],
+          },
+        },
+      ],
+    } satisfies DifPresentationExchangeDefinitionV2
+
+    const { authorizationRequestUri, authorizationRequestPayload } =
+      await verifier.agent.modules.openId4VcVerifier.createAuthorizationRequest({
+        verifierId: openIdVerifier.verifierId,
+        requestSigner: {
+          method: 'did',
+          didUrl: verifier.kid,
+        },
+        presentationDefinition,
+      })
+
+    expect(
+      authorizationRequestUri.startsWith(
+        `openid://?redirect_uri=http%3A%2F%2Flocalhost%3A1234%2Foid4vp%2F${openIdVerifier.verifierId}%2Fauthorize`
+      )
+    ).toBe(true)
+
+    const resolvedAuthorizationRequest = await holder.agent.modules.openId4VcHolder.resolveSiopAuthorizationRequest(
+      authorizationRequestUri
+    )
+
+    expect(resolvedAuthorizationRequest.presentationExchange?.credentialsForRequest).toMatchObject({
+      areRequirementsSatisfied: true,
+      requirements: [
+        {
+          submissionEntry: [
+            {
+              verifiableCredentials: [
+                {
+                  // FIXME: because we have the record, we don't know which fields will be disclosed
+                  // Can we temp-assign these to the record?
+                  compactSdJwtVc: signedSdJwtVc.compact,
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    })
+
+    if (!resolvedAuthorizationRequest.presentationExchange) {
+      throw new Error('Presentation exchange not defined')
+    }
+
+    // TODO: better way to auto-select
+    const presentationExchangeService = holder.agent.dependencyManager.resolve(DifPresentationExchangeService)
+    const selectedCredentials = presentationExchangeService.selectCredentialsForRequest(
+      resolvedAuthorizationRequest.presentationExchange.credentialsForRequest
+    )
+
+    const { status, submittedResponse } = await holder.agent.modules.openId4VcHolder.acceptSiopAuthorizationRequest({
+      authorizationRequest: resolvedAuthorizationRequest.authorizationRequest,
+      presentationExchange: {
+        credentials: selectedCredentials,
+      },
+    })
+
+    expect(submittedResponse).toEqual({
+      expires_in: 6000,
+      id_token: expect.any(String),
+      presentation_submission: {
+        definition_id: 'OpenBadgeCredential',
+        descriptor_map: [
+          {
+            format: 'vc+sd-jwt',
+            id: 'OpenBadgeCredential',
+            path: '$',
+            // FIXME: sd-jwt should not use path_nested
+            path_nested: {
+              format: 'vc+sd-jwt',
+              id: 'OpenBadgeCredential',
+              path: '$',
+            },
+          },
+        ],
+        id: expect.any(String),
+      },
+      state: expect.any(String),
+      vp_token: expect.any(String),
+    })
+    expect(status).toBe(200)
+
+    // FIXME: we need https://github.com/Sphereon-Opensource/SIOP-OID4VP/pull/70
+    // to be released as verification currently doesn't work
+
+    // The RP MUST validate that the aud (audience) Claim contains the value of the client_id
+    // that the RP sent in the Authorization Request as an audience.
+    // When the request has been signed, the value might be an HTTPS URL, or a Decentralized Identifier.
+    const { idToken, presentationExchange } =
+      await verifier.agent.modules.openId4VcVerifier.verifyAuthorizationResponse({
+        authorizationResponse: submittedResponse,
+        verifierId: openIdVerifier.verifierId,
+      })
+
+    const requestObjectPayload = JsonEncoder.fromBase64(authorizationRequestPayload.request?.split('.')[1] as string)
+    expect(idToken?.payload).toMatchObject({
+      state: requestObjectPayload.state,
+      nonce: requestObjectPayload.nonce,
+    })
+
+    const presentation = presentationExchange?.presentations[0] as SdJwtVc
+
+    // name SHOULD NOT be disclosed
+    expect(presentation.prettyClaims).not.toHaveProperty('name')
+
+    // university and name SHOULD NOT be in the signed payload
+    expect(presentation.payload).not.toHaveProperty('university')
+    expect(presentation.payload).not.toHaveProperty('name')
+
+    // FIXME: we use definition here, but presentationDefinition elsewhere
+    expect(presentationExchange).toMatchObject({
+      definition: presentationDefinition,
+      submission: {
+        definition_id: 'OpenBadgeCredential',
+      },
+      presentations: [
+        {
+          payload: {
+            vct: 'OpenBadgeCredential',
+            degree: 'bachelor',
+          },
+          // university SHOULD be disclosed
+          prettyClaims: {
+            degree: 'bachelor',
+            university: 'innsbruck',
+          },
         },
       ],
     })
