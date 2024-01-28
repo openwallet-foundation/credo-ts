@@ -31,7 +31,6 @@ export class VerifierInquirer extends BaseInquirer {
 
   public static async build(): Promise<VerifierInquirer> {
     const verifier = await Verifier.build()
-    await verifier.configureVerifierRouter()
     return new VerifierInquirer(verifier)
   }
 

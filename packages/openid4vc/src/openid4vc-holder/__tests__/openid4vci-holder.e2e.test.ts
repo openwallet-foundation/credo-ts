@@ -101,7 +101,7 @@ describe('OpenId4VcHolder', () => {
         // We only allow EdDSa, as we've created a did with keyType ed25519. If we create
         // or determine the did dynamically we could use any signature algorithm
         allowedProofOfPossessionSignatureAlgorithms: [JwaSignatureAlgorithm.EdDSA],
-        credentialsToRequest: resolved.offeredCredentials.filter((c) => c.format === 'jwt_vc_json'),
+        credentialsToRequest: resolved.offeredCredentials.filter((c) => c.format === 'jwt_vc_json').map((m) => m.id),
         credentialBindingResolver: () => ({ method: 'did', didUrl: holderVerificationMethod }),
       })
 
@@ -144,7 +144,7 @@ describe('OpenId4VcHolder', () => {
           // We only allow EdDSa, as we've created a did with keyType ed25519. If we create
           // or determine the did dynamically we could use any signature algorithm
           allowedProofOfPossessionSignatureAlgorithms: [JwaSignatureAlgorithm.EdDSA],
-          credentialsToRequest: resolved.offeredCredentials.filter((c) => c.format === 'jwt_vc_json'),
+          credentialsToRequest: resolved.offeredCredentials.filter((c) => c.format === 'jwt_vc_json').map((m) => m.id),
           credentialBindingResolver: () => ({ method: 'did', didUrl: holderVerificationMethod }),
         })
       )
@@ -181,7 +181,7 @@ describe('OpenId4VcHolder', () => {
         // We only allow EdDSa, as we've created a did with keyType ed25519. If we create
         // or determine the did dynamically we could use any signature algorithm
         allowedProofOfPossessionSignatureAlgorithms: [JwaSignatureAlgorithm.EdDSA],
-        credentialsToRequest: resolved.offeredCredentials.filter((c) => c.format === 'vc+sd-jwt'),
+        credentialsToRequest: resolved.offeredCredentials.filter((c) => c.format === 'vc+sd-jwt').map((m) => m.id),
         credentialBindingResolver: () => ({ method: 'jwk', jwk: getJwkFromKey(holderKey) }),
       })
 

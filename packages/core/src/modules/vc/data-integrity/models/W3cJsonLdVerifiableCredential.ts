@@ -1,5 +1,6 @@
 import type { LinkedDataProofOptions } from './LinkedDataProof'
 import type { W3cCredentialOptions } from '../../models/credential/W3cCredential'
+import type { W3cJsonCredential } from '../../models/credential/W3cJsonCredential'
 
 import { ValidateNested } from 'class-validator'
 
@@ -58,5 +59,9 @@ export class W3cJsonLdVerifiableCredential extends W3cCredential {
    */
   public get encoded() {
     return this.toJson()
+  }
+
+  public get jsonCredential(): W3cJsonCredential {
+    return this.toJson() as W3cJsonCredential
   }
 }

@@ -1,14 +1,15 @@
 import type { DidKey } from '@aries-framework/core'
 import type {
-  CredentialHolderBinding,
-  CredentialHolderDidBinding,
-  CredentialRequestToCredentialMapper,
+  OpenId4VcCredentialHolderBinding,
+  OpenId4VcCredentialHolderDidBinding,
+  OpenId4VciCredentialRequestToCredentialMapper,
   OpenId4VciCredentialSupportedWithId,
   OpenId4VcIssuerRecord,
 } from '@aries-framework/openid4vc'
 
 import { AskarModule } from '@aries-framework/askar'
 import {
+  ClaimFormat,
   parseDid,
   AriesFrameworkError,
   W3cCredential,
@@ -51,7 +52,7 @@ function getCredentialRequestToCredentialMapper({
   issuerDidKey,
 }: {
   issuerDidKey: DidKey
-}): CredentialRequestToCredentialMapper {
+}): OpenId4VciCredentialRequestToCredentialMapper {
   return async ({ holderBinding, credentialsSupported }) => {
     const credentialSupported = credentialsSupported[0]
 
@@ -59,6 +60,7 @@ function getCredentialRequestToCredentialMapper({
       assertDidBasedHolderBinding(holderBinding)
 
       return {
+        format: ClaimFormat.JwtVc,
         credential: new W3cCredential({
           type: universityDegreeCredential.types,
           issuer: new W3cIssuer({
@@ -77,6 +79,7 @@ function getCredentialRequestToCredentialMapper({
       assertDidBasedHolderBinding(holderBinding)
 
       return {
+        format: ClaimFormat.JwtVc,
         credential: new W3cCredential({
           type: openBadgeCredential.types,
           issuer: new W3cIssuer({
@@ -93,6 +96,7 @@ function getCredentialRequestToCredentialMapper({
 
     if (credentialSupported.id === universityDegreeCredentialSdJwt.id) {
       return {
+        format: ClaimFormat.SdJwtVc,
         payload: { vct: universityDegreeCredentialSdJwt.vct, university: 'innsbruck', degree: 'bachelor' },
         holder: holderBinding,
         issuer: {
@@ -131,7 +135,7 @@ export class Issuer extends BaseAgent<{
             },
           },
         }),
-      } as const,
+      },
     })
 
     this.app.use('/oid4vci', openId4VciRouter)
@@ -148,14 +152,13 @@ export class Issuer extends BaseAgent<{
   }
 
   public async createCredentialOffer(offeredCredentials: string[]) {
-    const { credentialOfferUri } = await this.agent.modules.openId4VcIssuer.createCredentialOffer({
+    const { credentialOffer } = await this.agent.modules.openId4VcIssuer.createCredentialOffer({
       issuerId: this.issuerRecord.issuerId,
       offeredCredentials,
-      scheme: 'openid-credential-offer',
       preAuthorizedCodeFlowConfig: { userPinRequired: false },
     })
 
-    return credentialOfferUri
+    return credentialOffer
   }
 
   public async exit() {
@@ -170,7 +173,9 @@ export class Issuer extends BaseAgent<{
 }
 
 function assertDidBasedHolderBinding(
-  holderBinding: CredentialHolderBinding
-): asserts holderBinding is CredentialHolderDidBinding {
-  throw new AriesFrameworkError('Only did based holder bindings supported for this credential type')
+  holderBinding: OpenId4VcCredentialHolderBinding
+): asserts holderBinding is OpenId4VcCredentialHolderDidBinding {
+  if (holderBinding.method !== 'did') {
+    throw new AriesFrameworkError('Only did based holder bindings supported for this credential type')
+  }
 }

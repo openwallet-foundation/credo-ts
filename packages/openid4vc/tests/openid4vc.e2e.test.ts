@@ -384,7 +384,7 @@ describe('OpenId4Vc', () => {
       resolvedProofRequest1.presentationExchange.credentialsForRequest
     )
 
-    const { status: status1, submittedResponse: submittedResponse1 } =
+    const { submittedResponse: submittedResponse1, serverResponse: serverResponse1 } =
       await holderTenant.modules.openId4VcHolder.acceptSiopAuthorizationRequest({
         authorizationRequest: resolvedProofRequest1.authorizationRequest,
         presentationExchange: {
@@ -414,7 +414,9 @@ describe('OpenId4Vc', () => {
       state: expect.any(String),
       vp_token: expect.any(String),
     })
-    expect(status1).toBe(200)
+    expect(serverResponse1).toMatchObject({
+      status: 200,
+    })
 
     // The RP MUST validate that the aud (audience) Claim contains the value of the client_id
     // that the RP sent in the Authorization Request as an audience.
@@ -452,14 +454,16 @@ describe('OpenId4Vc', () => {
       resolvedProofRequest2.presentationExchange.credentialsForRequest
     )
 
-    const { status: status2, submittedResponse: submittedResponse2 } =
+    const { serverResponse: serverResponse2, submittedResponse: submittedResponse2 } =
       await holderTenant.modules.openId4VcHolder.acceptSiopAuthorizationRequest({
         authorizationRequest: resolvedProofRequest2.authorizationRequest,
         presentationExchange: {
           credentials: selectedCredentials2,
         },
       })
-    expect(status2).toBe(200)
+    expect(serverResponse2).toMatchObject({
+      status: 200,
+    })
 
     // The RP MUST validate that the aud (audience) Claim contains the value of the client_id
     // that the RP sent in the Authorization Request as an audience.
@@ -601,12 +605,13 @@ describe('OpenId4Vc', () => {
       resolvedAuthorizationRequest.presentationExchange.credentialsForRequest
     )
 
-    const { status, submittedResponse } = await holder.agent.modules.openId4VcHolder.acceptSiopAuthorizationRequest({
-      authorizationRequest: resolvedAuthorizationRequest.authorizationRequest,
-      presentationExchange: {
-        credentials: selectedCredentials,
-      },
-    })
+    const { serverResponse, submittedResponse } =
+      await holder.agent.modules.openId4VcHolder.acceptSiopAuthorizationRequest({
+        authorizationRequest: resolvedAuthorizationRequest.authorizationRequest,
+        presentationExchange: {
+          credentials: selectedCredentials,
+        },
+      })
 
     // path_nested should not be used for sd-jwt
     expect(submittedResponse.presentation_submission?.descriptor_map[0].path_nested).toBeUndefined()
@@ -627,7 +632,9 @@ describe('OpenId4Vc', () => {
       state: expect.any(String),
       vp_token: expect.any(String),
     })
-    expect(status).toBe(200)
+    expect(serverResponse).toMatchObject({
+      status: 200,
+    })
 
     // The RP MUST validate that the aud (audience) Claim contains the value of the client_id
     // that the RP sent in the Authorization Request as an audience.

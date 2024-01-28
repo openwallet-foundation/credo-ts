@@ -90,7 +90,7 @@ export class OpenId4VcSiopHolderService {
     let presentationExchangeOptions: PresentationExchangeResponseOpts | undefined = undefined
 
     // Handle presentation exchange part
-    if (authorizationRequest.presentationDefinitions) {
+    if (authorizationRequest.presentationDefinitions && authorizationRequest.presentationDefinitions.length > 0) {
       if (!presentationExchange) {
         throw new AriesFrameworkError(
           'Authorization request included presentation definition. `presentationExchange` MUST be supplied to accept authorization requests.'
@@ -127,7 +127,7 @@ export class OpenId4VcSiopHolderService {
       }
     } else if (options.presentationExchange) {
       throw new AriesFrameworkError(
-        '`presentationExchange` was supplied, but no presentation definition was found in the presentaiton request.'
+        '`presentationExchange` was supplied, but no presentation definition was found in the presentation request.'
       )
     }
 
@@ -159,9 +159,21 @@ export class OpenId4VcSiopHolderService {
     )
 
     const response = await openidProvider.submitAuthorizationResponse(authorizationResponseWithCorrelationId)
+    let responseDetails: string | Record<string, unknown> | undefined = undefined
+    try {
+      responseDetails = await response.text()
+      if (responseDetails.includes('{')) {
+        responseDetails = JSON.parse(responseDetails)
+      }
+    } catch (error) {
+      // no-op
+    }
+
     return {
-      ok: response.status === 200,
-      status: response.status,
+      serverResponse: {
+        status: response.status,
+        body: responseDetails,
+      },
       submittedResponse: authorizationResponseWithCorrelationId.response.payload,
     }
   }

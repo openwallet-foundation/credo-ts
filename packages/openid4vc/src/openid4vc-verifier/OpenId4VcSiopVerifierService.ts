@@ -135,7 +135,7 @@ export class OpenId4VcSiopVerifierService {
     }
 
     const relyingParty = await this.getRelyingParty(agentContext, options.verifier, {
-      presentationDefinition: presentationDefinitionsWithLocation?.[0].definition,
+      presentationDefinition: presentationDefinitionsWithLocation?.[0]?.definition,
       clientId: requestClientId,
     })
 
@@ -156,10 +156,10 @@ export class OpenId4VcSiopVerifierService {
       },
     })
 
-    const presentationExchange = response.oid4vpSubmission
+    const presentationExchange = response.oid4vpSubmission?.submissionData
       ? {
           submission: response.oid4vpSubmission.submissionData,
-          definition: response.oid4vpSubmission.presentationDefinitions[0].definition,
+          definition: response.oid4vpSubmission.presentationDefinitions[0]?.definition,
           presentations: response.oid4vpSubmission?.presentations.map(getVerifiablePresentationFromSphereonWrapped),
         }
       : undefined

@@ -1,13 +1,8 @@
-import type {
-  ProofResponseHandler,
-  CreateProofRequestOptions,
-  VerifierEndpointConfig,
-  PresentationDefinitionV2,
-} from '@aries-framework/openid4vc'
-import type e from 'express'
+import type { DifPresentationExchangeDefinitionV2 } from '@aries-framework/core/src'
+import type { OpenId4VcVerifierRecord } from '@aries-framework/openid4vc'
 
 import { AskarModule } from '@aries-framework/askar'
-import { SigningAlgo, OpenId4VcVerifierModule, staticOpOpenIdConfig } from '@aries-framework/openid4vc'
+import { OpenId4VcVerifierModule } from '@aries-framework/openid4vc'
 import { ariesAskar } from '@hyperledger/aries-askar-nodejs'
 import { Router } from 'express'
 
@@ -19,12 +14,18 @@ const universityDegreePresentationDefinition = {
   purpose: 'Present your UniversityDegreeCredential to verify your education level.',
   input_descriptors: [
     {
-      id: 'UniversityDegreeCredential',
-      // changed jwt_vc_json to jwt_vc
-      format: { jwt_vc: { alg: ['EdDSA'] } },
-      // changed $.type to $.vc.type
+      id: 'UniversityDegreeCredentialDescriptor',
       constraints: {
-        fields: [{ path: ['$.vc.type.*'], filter: { type: 'string', pattern: 'UniversityDegree' } }],
+        fields: [
+          {
+            // Works for JSON-LD, SD-JWT and JWT
+            path: ['$.vc.type.*', '$.vct', '$.type'],
+            filter: {
+              type: 'string',
+              pattern: 'UniversityDegree',
+            },
+          },
+        ],
       },
     },
   ],
@@ -35,12 +36,18 @@ const openBadgeCredentialPresentationDefinition = {
   purpose: 'Provide proof of employment to confirm your employment status.',
   input_descriptors: [
     {
-      id: 'OpenBadgeCredential',
-      // changed jwt_vc_json to jwt_vc
-      format: { jwt_vc: { alg: ['EdDSA'] } },
-      // changed $.type to $.vc.type
+      id: 'OpenBadgeCredentialDescriptor',
       constraints: {
-        fields: [{ path: ['$.vc.type.*'], filter: { type: 'string', pattern: 'OpenBadgeCredential' } }],
+        fields: [
+          {
+            // Works for JSON-LD, SD-JWT and JWT
+            path: ['$.vc.type.*', '$.vct', '$.type'],
+            filter: {
+              type: 'string',
+              pattern: 'OpenBadgeCredential',
+            },
+          },
+        ],
       },
     },
   ],
@@ -51,64 +58,48 @@ export const presentationDefinitions = [
   openBadgeCredentialPresentationDefinition,
 ]
 
-function getOpenIdVerifierModules() {
-  return {
-    askar: new AskarModule({ ariesAskar }),
-    openId4VcVerifier: new OpenId4VcVerifierModule({
-      verifierMetadata: {
-        verifierBaseUrl: 'http://localhost:4000',
-        verificationEndpointPath: '/verify',
-      },
-    }),
-  } as const
-}
+export class Verifier extends BaseAgent<{ askar: AskarModule; openId4VcVerifier: OpenId4VcVerifierModule }> {
+  public verifierRecord!: OpenId4VcVerifierRecord
 
-export class Verifier extends BaseAgent<ReturnType<typeof getOpenIdVerifierModules>> {
   public constructor(port: number, name: string) {
-    super({ port, name, modules: getOpenIdVerifierModules() })
+    const openId4VcSiopRouter = Router()
+
+    super({
+      port,
+      name,
+      modules: {
+        askar: new AskarModule({ ariesAskar }),
+        openId4VcVerifier: new OpenId4VcVerifierModule({
+          baseUrl: 'http://localhost:4000/siop',
+        }),
+      },
+    })
+
+    this.app.use('/siop', openId4VcSiopRouter)
   }
 
   public static async build(): Promise<Verifier> {
     const verifier = new Verifier(4000, 'OpenId4VcVerifier ' + Math.random().toString())
     await verifier.initializeAgent('96213c3d7fc8d4d6754c7a0fd969598g')
+    verifier.verifierRecord = await verifier.agent.modules.openId4VcVerifier.createVerifier()
 
     return verifier
   }
 
-  public async configureVerifierRouter(): Promise<e.Router> {
-    const endpointConfig: VerifierEndpointConfig = {
-      basePath: '/',
-      verificationEndpointConfig: {
-        enabled: true,
-        proofResponseHandler: Verifier.proofResponseHandler,
+  // TODO: add method to show the received presentation submission
+  public async createProofRequest(presentationDefinition: DifPresentationExchangeDefinitionV2) {
+    const { authorizationRequestUri } = await this.agent.modules.openId4VcVerifier.createAuthorizationRequest({
+      requestSigner: {
+        method: 'did',
+        didUrl: this.verificationMethod.id,
       },
-    }
-
-    const router = await this.agent.modules.openId4VcVerifier.configureRouter(Router(), endpointConfig)
-    this.app.use('/', router)
-    return router
-  }
-
-  public async createProofRequest(presentationDefinition: PresentationDefinitionV2) {
-    const createProofRequestOptions: CreateProofRequestOptions = {
-      verificationMethod: this.verificationMethod,
-      presentationDefinition,
-      holderMetadata: {
-        ...staticOpOpenIdConfig,
-        idTokenSigningAlgValuesSupported: [SigningAlgo.EDDSA],
-        requestObjectSigningAlgValuesSupported: [SigningAlgo.EDDSA],
-        vpFormatsSupported: { jwt_vc: { alg: [SigningAlgo.EDDSA] }, jwt_vp: { alg: [SigningAlgo.EDDSA] } },
+      verifierId: this.verifierRecord.verifierId,
+      presentationExchange: {
+        definition: presentationDefinition,
       },
-    }
+    })
 
-    const { proofRequest } = await this.agent.modules.openId4VcVerifier.createProofRequest(createProofRequestOptions)
-
-    return proofRequest
-  }
-
-  private static proofResponseHandler: ProofResponseHandler = async (payload) => {
-    console.log('Received a valid proof response', payload)
-    return { status: 200 }
+    return authorizationRequestUri
   }
 
   public async exit() {

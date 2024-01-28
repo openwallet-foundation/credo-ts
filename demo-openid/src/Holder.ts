@@ -1,11 +1,14 @@
 import type {
-  OfferedCredentialWithMetadata,
-  ResolvedPresentationRequest,
-  ResolvedCredentialOffer,
+  OpenId4VciResolvedCredentialOffer,
+  OpenId4VcSiopResolvedAuthorizationRequest,
 } from '@aries-framework/openid4vc'
 
 import { AskarModule } from '@aries-framework/askar'
-import { W3cJwtVerifiableCredential, W3cJsonLdVerifiableCredential } from '@aries-framework/core'
+import {
+  W3cJwtVerifiableCredential,
+  W3cJsonLdVerifiableCredential,
+  DifPresentationExchangeService,
+} from '@aries-framework/core'
 import { OpenId4VcHolderModule } from '@aries-framework/openid4vc'
 import { ariesAskar } from '@hyperledger/aries-askar-nodejs'
 
@@ -36,8 +39,8 @@ export class Holder extends BaseAgent<ReturnType<typeof getOpenIdHolderModules>>
   }
 
   public async requestAndStoreCredentials(
-    resolvedCredentialOffer: ResolvedCredentialOffer,
-    credentialsToRequest: OfferedCredentialWithMetadata[]
+    resolvedCredentialOffer: OpenId4VciResolvedCredentialOffer,
+    credentialsToRequest: string[]
   ) {
     const credentials = await this.agent.modules.openId4VcHolder.acceptCredentialOfferUsingPreAuthorizedCode(
       resolvedCredentialOffer,
@@ -65,25 +68,28 @@ export class Holder extends BaseAgent<ReturnType<typeof getOpenIdHolderModules>>
   }
 
   public async resolveProofRequest(proofRequest: string) {
-    const resolvedProofRequest = await this.agent.modules.openId4VcHolder.resolveProofRequest(proofRequest)
-
-    if (resolvedProofRequest.proofType === 'authentication')
-      throw new Error('We only support presentation requests for now.')
+    const resolvedProofRequest = await this.agent.modules.openId4VcHolder.resolveSiopAuthorizationRequest(proofRequest)
 
     return resolvedProofRequest
   }
 
-  public async acceptPresentationRequest(
-    resolvedPresentationRequest: ResolvedPresentationRequest,
-    submissionEntryIndexes: number[]
-  ) {
-    const { presentationRequest, presentationSubmission } = resolvedPresentationRequest
-    const submissionResult = await this.agent.modules.openId4VcHolder.acceptPresentationRequest(presentationRequest, {
-      submission: presentationSubmission,
-      submissionEntryIndexes,
+  public async acceptPresentationRequest(resolvedPresentationRequest: OpenId4VcSiopResolvedAuthorizationRequest) {
+    const presentationExchangeService = this.agent.dependencyManager.resolve(DifPresentationExchangeService)
+
+    if (!resolvedPresentationRequest.presentationExchange) {
+      throw new Error('Missing presentation exchange on resolved authorization request')
+    }
+
+    const submissionResult = await this.agent.modules.openId4VcHolder.acceptSiopAuthorizationRequest({
+      authorizationRequest: resolvedPresentationRequest.authorizationRequest,
+      presentationExchange: {
+        credentials: presentationExchangeService.selectCredentialsForRequest(
+          resolvedPresentationRequest.presentationExchange.credentialsForRequest
+        ),
+      },
     })
 
-    return submissionResult.status
+    return submissionResult.serverResponse
   }
 
   public async exit() {

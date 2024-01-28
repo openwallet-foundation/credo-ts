@@ -1,6 +1,11 @@
-import type { ResolvedCredentialOffer, ResolvedPresentationRequest } from '@aries-framework/openid4vc'
+import type { SdJwtVcRecord, W3cCredentialRecord } from '@aries-framework/core/src'
+import type {
+  OpenId4VcSiopResolvedAuthorizationRequest,
+  OpenId4VciResolvedCredentialOffer,
+} from '@aries-framework/openid4vc'
 
-import { clear } from 'console'
+import { DifPresentationExchangeService } from '@aries-framework/core/src'
+import console, { clear } from 'console'
 import { textSync } from 'figlet'
 import { prompt } from 'inquirer'
 
@@ -26,8 +31,8 @@ enum PromptOptions {
 
 export class HolderInquirer extends BaseInquirer {
   public holder: Holder
-  public resolvedCredentialOffer?: ResolvedCredentialOffer
-  public resolvedPresentationRequest?: ResolvedPresentationRequest
+  public resolvedCredentialOffer?: OpenId4VciResolvedCredentialOffer
+  public resolvedPresentationRequest?: OpenId4VcSiopResolvedAuthorizationRequest
 
   public constructor(holder: Holder) {
     super()
@@ -89,9 +94,7 @@ export class HolderInquirer extends BaseInquirer {
     this.resolvedCredentialOffer = resolvedCredentialOffer
 
     console.log(greenText(`Received credential offer for the following credentials.`))
-    console.log(
-      greenText(resolvedCredentialOffer.offeredCredentials.map((credential) => credential.types.join(', ')).join('\n'))
-    )
+    console.log(greenText(resolvedCredentialOffer.offeredCredentials.map((credential) => credential.id).join('\n')))
   }
 
   public async requestCredential() {
@@ -99,49 +102,49 @@ export class HolderInquirer extends BaseInquirer {
       throw new Error('No credential offer resolved yet.')
     }
 
-    const credentialsThatCanBeRequested = this.resolvedCredentialOffer.offeredCredentials.map((credential) =>
-      credential.types.join(', ')
+    const credentialsThatCanBeRequested = this.resolvedCredentialOffer.offeredCredentials.map(
+      (credential) => credential.id
     )
 
     const choice = await prompt([this.inquireOptions(credentialsThatCanBeRequested)])
 
     const credentialToRequest = this.resolvedCredentialOffer.offeredCredentials.find(
-      (credential) => credential.types.join(', ') == choice.options
+      (credential) => credential.id === choice.options
     )
     if (!credentialToRequest) throw new Error('Credential to request not found.')
 
-    console.log(greenText(`Requesting the following credential '${credentialToRequest.types.join(', ')}'`))
+    console.log(greenText(`Requesting the following credential '${credentialToRequest.id}'`))
 
     const credentials = await this.holder.requestAndStoreCredentials(
       this.resolvedCredentialOffer,
-      this.resolvedCredentialOffer.offeredCredentials
-    )
-
-    const credentialTypes = await Promise.all(
-      credentials.map((credential) =>
-        credential.type === 'W3cCredentialRecord'
-          ? `${credential.credential.type.join(', ')}, CredentialType: W3cVerifiableCredential`
-          : this.holder.agent.sdJwtVc
-              .fromCompact(credential.compactSdJwtVc)
-              .then((a) => `${a.prettyClaims.vct}, CredentialType: SdJwtVc`)
-      )
+      this.resolvedCredentialOffer.offeredCredentials.map((o) => o.id)
     )
 
     console.log(greenText(`Received and stored the following credentials.`))
-    console.log(greenText(credentialTypes.join('\n')))
+    console.log('')
+    credentials.forEach(this.printCredential)
   }
 
   public async resolveProofRequest() {
     const proofRequestUri = await prompt([this.inquireInput('Enter proof request: ')])
     this.resolvedPresentationRequest = await this.holder.resolveProofRequest(proofRequestUri.input)
 
-    const presentationDefinition =
-      this.resolvedPresentationRequest.presentationRequest.presentationDefinitions[0].definition
+    const presentationDefinition = this.resolvedPresentationRequest?.presentationExchange?.definition
+    console.log(greenText(`Presentation Purpose: '${presentationDefinition?.purpose}'`))
 
-    console.log(greenText(`Presentation Purpose: '${presentationDefinition.purpose}'`))
-
-    if (this.resolvedPresentationRequest.presentationSubmission.areRequirementsSatisfied) {
-      console.log(greenText(`All requirements for creating the presentation are satisfied.`))
+    if (this.resolvedPresentationRequest?.presentationExchange?.credentialsForRequest.areRequirementsSatisfied) {
+      const selectedCredentials = Object.values(
+        this.holder.agent.dependencyManager
+          .resolve(DifPresentationExchangeService)
+          .selectCredentialsForRequest(this.resolvedPresentationRequest.presentationExchange.credentialsForRequest)
+      ).flatMap((e) => e)
+      console.log(
+        greenText(
+          `All requirements for creating the presentation are satisfied. The following credentials will be shared`,
+          true
+        )
+      )
+      selectedCredentials.forEach(this.printCredential)
     } else {
       console.log(redText(`No credentials available that satisfy the proof request.`))
     }
@@ -150,22 +153,14 @@ export class HolderInquirer extends BaseInquirer {
   public async acceptPresentationRequest() {
     if (!this.resolvedPresentationRequest) throw new Error('No presentation request resolved yet.')
 
-    // we know that only one credential is in the wallet and it satisfies the proof request.
-    // The submission entry index for this credential is 0.
-    const credential =
-      this.resolvedPresentationRequest.presentationSubmission.requirements[0].submissionEntry[0]
-        .verifiableCredentials[0]
-    const submissionEntryIndexes = [0]
+    console.log(greenText(`Accepting the presentation request.`))
 
-    console.log(greenText(`Accepting the presentation request, with the following credential.`))
-    console.log(greenText(credential.credential.type.join(', ')))
+    const serverResponse = await this.holder.acceptPresentationRequest(this.resolvedPresentationRequest)
 
-    const status = await this.holder.acceptPresentationRequest(this.resolvedPresentationRequest, submissionEntryIndexes)
-
-    if (status >= 200 && status < 300) {
-      console.log(`received success status code '${status}'`)
+    if (serverResponse.status >= 200 && serverResponse.status < 300) {
+      console.log(`received success status code '${serverResponse.status}'`)
     } else {
-      console.log(`received error status code '${status}'`)
+      console.log(`received error status code '${serverResponse.status}'`)
     }
   }
 
@@ -186,6 +181,19 @@ export class HolderInquirer extends BaseInquirer {
     } else if (confirm.options === ConfirmOptions.Yes) {
       await this.holder.restart()
       await runHolder()
+    }
+  }
+
+  private printCredential = (credential: W3cCredentialRecord | SdJwtVcRecord) => {
+    if (credential.type === 'W3cCredentialRecord') {
+      console.log(greenText(`W3cCredentialRecord with claim format ${credential.credential.claimFormat}`, true))
+      console.log(JSON.stringify(credential.credential.jsonCredential, null, 2))
+      console.log('')
+    } else {
+      console.log(greenText(`SdJwtVcRecord`, true))
+      const prettyClaims = this.holder.agent.sdJwtVc.fromCompact(credential.compactSdJwtVc).prettyClaims
+      console.log(JSON.stringify(prettyClaims, null, 2))
+      console.log('')
     }
   }
 }
