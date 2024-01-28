@@ -28,6 +28,10 @@ import {
   TrustPingMessageHandler,
   TrustPingResponseMessageHandler,
   ConnectionProblemReportHandler,
+  DidRotateHandler,
+  DidRotateAckHandler,
+  DidRotateProblemReportHandler,
+  HangupHandler,
 } from './handlers'
 import { HandshakeProtocol } from './models'
 import { DidRotateService } from './services'
@@ -100,8 +104,8 @@ export class ConnectionsApi {
   ) {
     const { protocol, label, alias, imageUrl, autoAcceptConnection, ourDid } = config
 
-    if (ourDid && !config.routing) {
-      throw new AriesFrameworkError('If an external did is specified, routing configuration must be defined as well')
+    if (ourDid && config.routing) {
+      throw new AriesFrameworkError(`'routing' is disallowed when defining 'ourDid'`)
     }
 
     const routing =
@@ -286,10 +290,14 @@ export class ConnectionsApi {
     const { connectionId, did, routing } = options
     const connection = await this.connectionService.getById(this.agentContext, connectionId)
 
+    if (did && routing) {
+      throw new AriesFrameworkError(`'routing' is disallowed when defining 'did'`)
+    }
+
     const message = await this.didRotateService.createRotate(this.agentContext, {
       connection,
       did,
-      routing,
+      routing: routing || (await this.routingService.getRouting(this.agentContext, {})),
     })
 
     const outboundMessageContext = new OutboundMessageContext(message, {
@@ -298,6 +306,8 @@ export class ConnectionsApi {
     })
 
     await this.messageSender.sendMessage(outboundMessageContext)
+
+    return { did: message.did }
   }
 
   /**
@@ -507,5 +517,13 @@ export class ConnectionsApi {
     messageHandlerRegistry.registerMessageHandler(
       new DidExchangeCompleteHandler(this.didExchangeProtocol, this.outOfBandService)
     )
+
+    messageHandlerRegistry.registerMessageHandler(new DidRotateHandler(this.didRotateService, this.connectionService))
+
+    messageHandlerRegistry.registerMessageHandler(new DidRotateAckHandler(this.didRotateService))
+
+    messageHandlerRegistry.registerMessageHandler(new HangupHandler(this.didRotateService))
+
+    messageHandlerRegistry.registerMessageHandler(new DidRotateProblemReportHandler(this.didRotateService))
   }
 }

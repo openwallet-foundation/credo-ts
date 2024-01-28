@@ -29,13 +29,13 @@ export interface ConnectionsModuleConfigOptions {
    *
    * @default PeerDidNumAlgo.ShortFormAndLongForm
    */
-  peerNumAlgoForDidRotation?: PeerDidNumAlgo
+  peerNumAlgoForDidRotation?: PeerDidNumAlgo.MultipleInceptionKeyWithoutDoc | PeerDidNumAlgo.ShortFormAndLongForm
 }
 
 export class ConnectionsModuleConfig {
   #autoAcceptConnections?: boolean
   #peerNumAlgoForDidExchangeRequests?: PeerDidNumAlgo
-  #peerNumAlgoForDidRotation?: PeerDidNumAlgo
+  #peerNumAlgoForDidRotation?: PeerDidNumAlgo.MultipleInceptionKeyWithoutDoc | PeerDidNumAlgo.ShortFormAndLongForm
 
   private options: ConnectionsModuleConfigOptions
 
@@ -68,11 +68,13 @@ export class ConnectionsModuleConfig {
 
   /** See {@link ConnectionsModuleConfigOptions.peerNumAlgoForDidRotation} */
   public get peerNumAlgoForDidRotation() {
-    return this.#peerNumAlgoForDidRotation ?? PeerDidNumAlgo.GenesisDoc
+    return this.#peerNumAlgoForDidRotation ?? PeerDidNumAlgo.ShortFormAndLongForm
   }
 
   /** See {@link ConnectionsModuleConfigOptions.peerNumAlgoForDidRotation} */
-  public set peerNumAlgoForDidRotation(peerNumAlgoForDidRotation: PeerDidNumAlgo) {
+  public set peerNumAlgoForDidRotation(
+    peerNumAlgoForDidRotation: PeerDidNumAlgo.MultipleInceptionKeyWithoutDoc | PeerDidNumAlgo.ShortFormAndLongForm
+  ) {
     this.#peerNumAlgoForDidRotation = peerNumAlgoForDidRotation
   }
 }

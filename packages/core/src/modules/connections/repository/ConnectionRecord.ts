@@ -1,4 +1,5 @@
 import type { ConnectionMetadata } from './ConnectionMetadataTypes'
+import type { TagsBase } from '../../../storage/BaseRecord'
 import type { HandshakeProtocol } from '../models'
 import type { ConnectionType } from '../models/ConnectionType'
 
@@ -28,10 +29,7 @@ export interface ConnectionRecordProps {
   connectionTypes?: Array<ConnectionType | string>
 }
 
-export type CustomConnectionTags = {
-  previousDids?: string[]
-  previousTheirDids?: string[]
-}
+export type CustomConnectionTags = TagsBase
 
 export type DefaultConnectionTags = {
   state: DidExchangeState
@@ -43,6 +41,8 @@ export type DefaultConnectionTags = {
   outOfBandId?: string
   invitationDid?: string
   connectionTypes?: Array<ConnectionType | string>
+  previousDids?: string[]
+  previousTheirDids?: string[]
 }
 
 export class ConnectionRecord
@@ -69,6 +69,8 @@ export class ConnectionRecord
   public invitationDid?: string
 
   public connectionTypes: string[] = []
+  public previousDids: string[] = []
+  public previousTheirDids: string[] = []
 
   public static readonly type = 'ConnectionRecord'
   public readonly type = ConnectionRecord.type
@@ -110,6 +112,8 @@ export class ConnectionRecord
       outOfBandId: this.outOfBandId,
       invitationDid: this.invitationDid,
       connectionTypes: this.connectionTypes,
+      previousDids: this.previousDids,
+      previousTheirDids: this.previousTheirDids,
     }
   }
 

@@ -97,8 +97,6 @@ export class DidExchangeProtocol {
 
     // If our did is specified, make sure we have all key material for it
     if (did) {
-      if (routing) throw new AriesFrameworkError(`'routing' is disallowed when defining 'ourDid'`)
-
       didDocument = await getDidDocumentForCreatedDid(agentContext, did)
       mediatorId = (await getMediationRecordForDidDocument(agentContext, didDocument))?.id
       // Otherwise, create a did:peer based on the provided routing
@@ -194,7 +192,10 @@ export class DidExchangeProtocol {
       did: didDocument.id,
       // It is important to take the did document from the PeerDid class
       // as it will have the id property
-      didDocument: getNumAlgoFromPeerDid(message.did) === PeerDidNumAlgo.GenesisDoc ? didDocument : undefined,
+      didDocument:
+        !isValidPeerDid(didDocument.id) || getNumAlgoFromPeerDid(message.did) === PeerDidNumAlgo.GenesisDoc
+          ? didDocument
+          : undefined,
       tags: {
         // We need to save the recipientKeys, so we can find the associated did
         // of a key when we receive a message from another connection.

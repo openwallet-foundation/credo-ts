@@ -44,7 +44,7 @@ export class DidRotateService {
 
   public async createRotate(
     agentContext: AgentContext,
-    options: { connection: ConnectionRecord; did?: string; routing?: Routing }
+    options: { connection: ConnectionRecord; did?: string; routing: Routing }
   ) {
     const { connection, did, routing } = options
 
@@ -58,17 +58,13 @@ export class DidRotateService {
     }
 
     let didDocument, mediatorId
-    // If our did is specified, make sure we have all key material for it
+    // If did is specified, make sure we have all key material for it
     if (did) {
-      if (routing) throw new AriesFrameworkError(`'routing' is disallowed when specifying a did`)
-
       didDocument = await getDidDocumentForCreatedDid(agentContext, did)
       mediatorId = (await getMediationRecordForDidDocument(agentContext, didDocument))?.id
 
       // Otherwise, create a did:peer based on the provided routing
     } else {
-      if (!routing) throw new AriesFrameworkError(`'routing' must be defined if did is not specified`)
-
       didDocument = await createPeerDidFromServices(
         agentContext,
         routingToServices(routing),
@@ -87,6 +83,8 @@ export class DidRotateService {
       mediatorId,
     })
 
+    await agentContext.dependencyManager.resolve(ConnectionService).update(agentContext, connection)
+
     return message
   }
 
@@ -104,6 +102,32 @@ export class DidRotateService {
   }
 
   /**
+   * Process a Hangup message and mark connection's theirDid as undefined so it is effectively terminated.
+   * Connection Record itself is not deleted (TODO: config parameter to automatically do so)
+   *
+   * Its previous did will be stored as a tag in order to be able to recognize any message received
+   * afterwards.
+   *
+   * @param messageContext
+   */
+  public async processHangup(messageContext: InboundMessageContext<RotateAckMessage>) {
+    const connection = messageContext.assertReadyConnection()
+    const { agentContext } = messageContext
+
+    const previousTheirDids = connection.getTag('previousTheirDids')
+    if (connection.theirDid) {
+      connection.setTag(
+        'previousTheirDids',
+        Array.isArray(previousTheirDids) ? [...previousTheirDids, connection.theirDid] : [connection.theirDid]
+      )
+    }
+
+    connection.theirDid = undefined
+
+    await agentContext.dependencyManager.resolve(ConnectionService).update(agentContext, connection)
+  }
+
+  /**
    * Process an incoming DID Rotate message and update connection if success. Any acknowledge
    * or problem report will be sent to the prior DID, so the created context will take former
    * connection record data
@@ -112,10 +136,10 @@ export class DidRotateService {
    * @param connection
    * @returns
    */
-  public async processRotate(
-    { message, agentContext }: InboundMessageContext<RotateMessage>,
-    connection: ConnectionRecord
-  ) {
+  public async processRotate(messageContext: InboundMessageContext<RotateMessage>) {
+    const connection = messageContext.assertReadyConnection()
+    const { message, agentContext } = messageContext
+
     // Check and store their new did
     const newDid = message.did
 
@@ -172,12 +196,8 @@ export class DidRotateService {
       },
     })
 
-    const previousTheirDids = connection.getTag('previousTheirDids')
     if (connection.theirDid) {
-      connection.setTag(
-        'previousDids',
-        Array.isArray(previousTheirDids) ? [...previousTheirDids, connection.theirDid] : [connection.theirDid]
-      )
+      connection.previousTheirDids = [...connection.previousTheirDids, connection.theirDid]
     }
 
     connection.theirDid = newDid
@@ -205,16 +225,12 @@ export class DidRotateService {
       )
     }
 
+    // Store previous did in order to still accept out-of-order messages that arrived later using it
+    if (connection.did) connection.previousDids = [...connection.previousDids, connection.did]
+
     connection.did = didRotateMetadata.did
     connection.mediatorId = didRotateMetadata.mediatorId
     connection.metadata.delete(ConnectionMetadataKeys.DidRotate)
-
-    // Store previous did in order to still accept out-of-order messages that arrived later using it
-    const previousDids = connection.getTag('previousDids')
-    connection.setTag(
-      'previousDids',
-      Array.isArray(previousDids) ? [...previousDids, didRotateMetadata.did] : [didRotateMetadata.did]
-    )
 
     await agentContext.dependencyManager.resolve(ConnectionService).update(agentContext, connection)
   }
