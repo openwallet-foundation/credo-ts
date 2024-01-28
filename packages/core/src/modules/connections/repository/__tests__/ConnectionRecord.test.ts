@@ -25,6 +25,8 @@ describe('ConnectionRecord', () => {
         outOfBandId: 'a-out-of-band-id',
         invitationDid: 'a-invitation-did',
         connectionTypes: [],
+        previousDids: [],
+        previousTheirDids: [],
       })
     })
   })

@@ -15,6 +15,7 @@ import { DidResolverService } from '../dids'
 import { DidRepository } from '../dids/repository'
 import { OutOfBandService } from '../oob/OutOfBandService'
 import { RoutingService } from '../routing/services/RoutingService'
+import { getMediationRecordForDidDocument } from '../routing/services/helpers'
 
 import { ConnectionsModuleConfig } from './ConnectionsModuleConfig'
 import { DidExchangeProtocol } from './DidExchangeProtocol'
@@ -451,6 +452,36 @@ export class ConnectionsApi {
     }
 
     return this.connectionService.deleteById(this.agentContext, connectionId)
+  }
+
+  /**
+   * Remove any did previously related to a given connection. It will remove routing keys in case
+   * of using a mediator
+   *
+   * Note: this will delete both ours and theirs previous dids
+   *
+   * @param connectionId
+   */
+  public async removePreviousDids(options: { connectionId: string }) {
+    const connection = await this.connectionService.getById(this.agentContext, options.connectionId)
+
+    for (const previousDid of connection.previousDids) {
+      const did = await this.didResolverService.resolve(this.agentContext, previousDid)
+      if (!did.didDocument) break
+      const mediatorRecord = await getMediationRecordForDidDocument(this.agentContext, did.didDocument)
+
+      if (mediatorRecord) {
+        await this.routingService.removeRouting(this.agentContext, {
+          recipientKeys: did.didDocument.recipientKeys,
+          mediatorId: mediatorRecord.id,
+        })
+      }
+    }
+
+    connection.previousDids = []
+    connection.previousTheirDids = []
+
+    await this.connectionService.update(this.agentContext, connection)
   }
 
   public async findAllByOutOfBandId(outOfBandId: string) {

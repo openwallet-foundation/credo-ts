@@ -27,10 +27,11 @@ export interface ConnectionRecordProps {
   outOfBandId?: string
   invitationDid?: string
   connectionTypes?: Array<ConnectionType | string>
+  previousDids?: Array<string>
+  previousTheirDids?: Array<string>
 }
 
 export type CustomConnectionTags = TagsBase
-
 export type DefaultConnectionTags = {
   state: DidExchangeState
   role: DidExchangeRole
@@ -41,8 +42,8 @@ export type DefaultConnectionTags = {
   outOfBandId?: string
   invitationDid?: string
   connectionTypes?: Array<ConnectionType | string>
-  previousDids?: string[]
-  previousTheirDids?: string[]
+  previousDids?: Array<string>
+  previousTheirDids?: Array<string>
 }
 
 export class ConnectionRecord
@@ -97,6 +98,8 @@ export class ConnectionRecord
       this.protocol = props.protocol
       this.outOfBandId = props.outOfBandId
       this.connectionTypes = props.connectionTypes ?? []
+      this.previousDids = props.previousDids ?? []
+      this.previousTheirDids = props.previousTheirDids ?? []
     }
   }
 

@@ -29,7 +29,7 @@ describe('ConnectionsModule', () => {
     expect(dependencyManager.registerInstance).toHaveBeenCalledTimes(1)
     expect(dependencyManager.registerInstance).toHaveBeenCalledWith(ConnectionsModuleConfig, connectionsModule.config)
 
-    expect(dependencyManager.registerSingleton).toHaveBeenCalledTimes(4)
+    expect(dependencyManager.registerSingleton).toHaveBeenCalledTimes(5)
     expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(ConnectionService)
     expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(DidExchangeProtocol)
     expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(TrustPingService)

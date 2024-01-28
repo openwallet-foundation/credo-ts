@@ -9,7 +9,7 @@ import { ConnectionsModuleConfig } from './ConnectionsModuleConfig'
 import { DidExchangeProtocol } from './DidExchangeProtocol'
 import { ConnectionRole, DidExchangeRole, DidRotateRole } from './models'
 import { ConnectionRepository } from './repository'
-import { ConnectionService, DidRotateService } from './services'
+import { ConnectionService, DidRotateService, TrustPingService } from './services'
 
 export class ConnectionsModule implements Module {
   public readonly config: ConnectionsModuleConfig
@@ -33,6 +33,7 @@ export class ConnectionsModule implements Module {
     dependencyManager.registerSingleton(ConnectionService)
     dependencyManager.registerSingleton(DidExchangeProtocol)
     dependencyManager.registerSingleton(DidRotateService)
+    dependencyManager.registerSingleton(TrustPingService)
 
     // Repositories
     dependencyManager.registerSingleton(ConnectionRepository)
