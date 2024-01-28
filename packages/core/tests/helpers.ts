@@ -16,6 +16,7 @@ import type {
   Buffer,
   RevocationNotificationReceivedEvent,
   AgentMessageProcessedEvent,
+  AgentMessageReceivedEvent,
 } from '../src'
 import type { AgentModulesInput, EmptyModuleMap } from '../src/agent/AgentModules'
 import type { TrustPingReceivedEvent, TrustPingResponseReceivedEvent } from '../src/modules/connections/TrustPingEvents'
@@ -220,7 +221,7 @@ const isTrustPingReceivedEvent = (e: BaseEvent): e is TrustPingReceivedEvent =>
   e.type === TrustPingEventTypes.TrustPingReceivedEvent
 const isTrustPingResponseReceivedEvent = (e: BaseEvent): e is TrustPingResponseReceivedEvent =>
   e.type === TrustPingEventTypes.TrustPingResponseReceivedEvent
-const isAgentMessageProcessedeEvent = (e: BaseEvent): e is AgentMessageProcessedEvent =>
+const isAgentMessageProcessedEvent = (e: BaseEvent): e is AgentMessageProcessedEvent =>
   e.type === AgentEventTypes.AgentMessageProcessed
 
 export function waitForProofExchangeRecordSubject(
@@ -376,7 +377,7 @@ export function waitForAgentMessageProcessedEventSubject(
   const observable = subject instanceof ReplaySubject ? subject.asObservable() : subject
   return firstValueFrom(
     observable.pipe(
-      filter(isAgentMessageProcessedeEvent),
+      filter(isAgentMessageProcessedEvent),
       filter((e) => threadId === undefined || e.payload.message.threadId === threadId),
       filter((e) => messageType === undefined || e.payload.message.type === messageType),
       timeout(timeoutMs),

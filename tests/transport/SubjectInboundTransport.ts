@@ -48,7 +48,16 @@ export class SubjectInboundTransport implements InboundTransport {
           })
         }
 
-        await messageReceiver.receiveMessage(message, { session })
+        // This emits a custom error in order to easily catch in E2E tests when a message
+        // reception throws an error. TODO: Remove as soon as agent throws errors automatically
+        try {
+          await messageReceiver.receiveMessage(message, { session })
+        } catch (error) {
+          agent.events.emit(agent.context, {
+            type: 'AgentReceiveMessageError',
+            payload: error,
+          })
+        }
       },
     })
   }

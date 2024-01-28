@@ -319,12 +319,14 @@ export class ConnectionsApi {
   public async hangup(options: { connectionId: string; deleteAfterHangup?: boolean }) {
     const connection = await this.connectionService.getById(this.agentContext, options.connectionId)
 
+    const connectionBeforeHangup = connection.clone()
+
     // Create Hangup message and update did in connection record
     const message = await this.didRotateService.createHangup(this.agentContext, { connection })
 
     const outboundMessageContext = new OutboundMessageContext(message, {
       agentContext: this.agentContext,
-      connection,
+      connection: connectionBeforeHangup,
     })
 
     await this.messageSender.sendMessage(outboundMessageContext)

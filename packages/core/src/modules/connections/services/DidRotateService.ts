@@ -94,6 +94,10 @@ export class DidRotateService {
     const message = new HangupMessage({})
 
     // Remove did to indicate termination status for this connection
+    if (connection.did) {
+      connection.previousDids = [...connection.previousDids, connection.did]
+    }
+
     connection.did = undefined
 
     await agentContext.dependencyManager.resolve(ConnectionService).update(agentContext, connection)
@@ -105,21 +109,17 @@ export class DidRotateService {
    * Process a Hangup message and mark connection's theirDid as undefined so it is effectively terminated.
    * Connection Record itself is not deleted (TODO: config parameter to automatically do so)
    *
-   * Its previous did will be stored as a tag in order to be able to recognize any message received
+   * Its previous did will be stored in record in order to be able to recognize any message received
    * afterwards.
    *
    * @param messageContext
    */
-  public async processHangup(messageContext: InboundMessageContext<RotateAckMessage>) {
+  public async processHangup(messageContext: InboundMessageContext<HangupMessage>) {
     const connection = messageContext.assertReadyConnection()
     const { agentContext } = messageContext
 
-    const previousTheirDids = connection.getTag('previousTheirDids')
     if (connection.theirDid) {
-      connection.setTag(
-        'previousTheirDids',
-        Array.isArray(previousTheirDids) ? [...previousTheirDids, connection.theirDid] : [connection.theirDid]
-      )
+      connection.previousTheirDids = [...connection.previousTheirDids, connection.theirDid]
     }
 
     connection.theirDid = undefined
@@ -173,7 +173,7 @@ export class DidRotateService {
       return new OutboundMessageContext(response, { agentContext, connection })
     }
 
-    // Send acknowledge to previous did and persist new did. Previous did will be stored in connection tags in
+    // Send acknowledge to previous did and persist new did. Previous did will be stored in connection record in
     // order to still accept messages from it
     const outboundMessageContext = new OutboundMessageContext(
       new RotateAckMessage({
