@@ -295,7 +295,9 @@ describe('OpenId4Vc', () => {
         method: 'did',
         didUrl: verifier1.verificationMethod.id,
       },
-      presentationDefinition: openBadgePresentationDefinition,
+      presentationExchange: {
+        definition: openBadgePresentationDefinition,
+      },
     })
 
     expect(
@@ -312,7 +314,9 @@ describe('OpenId4Vc', () => {
         method: 'did',
         didUrl: verifier2.verificationMethod.id,
       },
-      presentationDefinition: universityDegreePresentationDefinition,
+      presentationExchange: {
+        definition: universityDegreePresentationDefinition,
+      },
       verifierId: openIdVerifierTenant2.verifierId,
     })
 
@@ -395,9 +399,14 @@ describe('OpenId4Vc', () => {
         definition_id: 'OpenBadgeCredential',
         descriptor_map: [
           {
-            format: 'jwt_vc',
-            id: 'OpenBadgeCredential',
-            path: '$.verifiableCredential[0]',
+            format: 'jwt_vp',
+            id: 'OpenBadgeCredentialDescriptor',
+            path: '$',
+            path_nested: {
+              format: 'jwt_vc',
+              id: 'OpenBadgeCredentialDescriptor',
+              path: '$.vp.verifiableCredential[0]',
+            },
           },
         ],
         id: expect.any(String),
@@ -485,9 +494,6 @@ describe('OpenId4Vc', () => {
     })
   })
 
-  // FIXME: test whether did-based binding for holder works with sd-jwt-vc library in verification
-  // issuance is fine, but in verification of KB the jwk will be extracted
-  // from the cnf claim which will be undefined.
   it('e2e flow with verifier endpoints verifying a sd-jwt-vc with selective disclosure', async () => {
     const openIdVerifier = await verifier.agent.modules.openId4VcVerifier.createVerifier()
 
@@ -518,7 +524,7 @@ describe('OpenId4Vc', () => {
       id: 'OpenBadgeCredential',
       input_descriptors: [
         {
-          id: 'OpenBadgeCredential',
+          id: 'OpenBadgeCredentialDescriptor',
           // FIXME: https://github.com/Sphereon-Opensource/pex-openapi/issues/32
           // format: {
           //   'vc+sd-jwt': {
@@ -551,7 +557,9 @@ describe('OpenId4Vc', () => {
           method: 'did',
           didUrl: verifier.kid,
         },
-        presentationDefinition,
+        presentationExchange: {
+          definition: presentationDefinition,
+        },
       })
 
     expect(
@@ -600,6 +608,8 @@ describe('OpenId4Vc', () => {
       },
     })
 
+    // path_nested should not be used for sd-jwt
+    expect(submittedResponse.presentation_submission?.descriptor_map[0].path_nested).toBeUndefined()
     expect(submittedResponse).toEqual({
       expires_in: 6000,
       id_token: expect.any(String),
@@ -608,14 +618,8 @@ describe('OpenId4Vc', () => {
         descriptor_map: [
           {
             format: 'vc+sd-jwt',
-            id: 'OpenBadgeCredential',
+            id: 'OpenBadgeCredentialDescriptor',
             path: '$',
-            // FIXME: sd-jwt should not use path_nested
-            path_nested: {
-              format: 'vc+sd-jwt',
-              id: 'OpenBadgeCredential',
-              path: '$',
-            },
           },
         ],
         id: expect.any(String),
@@ -624,9 +628,6 @@ describe('OpenId4Vc', () => {
       vp_token: expect.any(String),
     })
     expect(status).toBe(200)
-
-    // FIXME: we need https://github.com/Sphereon-Opensource/SIOP-OID4VP/pull/70
-    // to be released as verification currently doesn't work
 
     // The RP MUST validate that the aud (audience) Claim contains the value of the client_id
     // that the RP sent in the Authorization Request as an audience.
@@ -652,7 +653,6 @@ describe('OpenId4Vc', () => {
     expect(presentation.payload).not.toHaveProperty('university')
     expect(presentation.payload).not.toHaveProperty('name')
 
-    // FIXME: we use definition here, but presentationDefinition elsewhere
     expect(presentationExchange).toMatchObject({
       definition: presentationDefinition,
       submission: {

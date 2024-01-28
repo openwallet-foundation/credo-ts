@@ -83,7 +83,7 @@ export const openBadgePresentationDefinition: DifPresentationExchangeDefinitionV
   id: 'OpenBadgeCredential',
   input_descriptors: [
     {
-      id: 'OpenBadgeCredential',
+      id: 'OpenBadgeCredentialDescriptor',
       // changed jwt_vc_json to jwt_vc
       format: { jwt_vc: { alg: ['EdDSA'] } },
       // changed $.type to $.vc.type

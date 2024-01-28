@@ -145,7 +145,9 @@ export class DifPresentationExchangeService {
       domain?: string
     }
   ) {
-    const { presentationDefinition, domain, challenge, presentationSubmissionLocation } = options
+    const { presentationDefinition, domain, challenge } = options
+    const presentationSubmissionLocation =
+      options.presentationSubmissionLocation ?? DifPresentationExchangeSubmissionLocation.PRESENTATION
 
     const verifiablePresentationResultsWithFormat: Array<{
       verifiablePresentationResult: VerifiablePresentationResult
@@ -208,10 +210,31 @@ export class DifPresentationExchangeService {
       descriptor_map: [],
     }
 
-    for (const vpf of verifiablePresentationResultsWithFormat) {
-      const { verifiablePresentationResult } = vpf
-      presentationSubmission.descriptor_map.push(...verifiablePresentationResult.presentationSubmission.descriptor_map)
-    }
+    verifiablePresentationResultsWithFormat.forEach(({ verifiablePresentationResult }, index) => {
+      // FIXME: path_nested should not be used for sd-jwt.
+      // Can be removed once https://github.com/Sphereon-Opensource/PEX/pull/140 is released
+      const descriptorMap = verifiablePresentationResult.presentationSubmission.descriptor_map.map((d) => {
+        const descriptor = { ...d }
+
+        // when multiple presentations are submitted, path should be $[0], $[1]
+        // FIXME: this should be addressed in the PEX/OID4VP lib.
+        // See https://github.com/Sphereon-Opensource/SIOP-OID4VP/issues/62
+        if (
+          presentationSubmissionLocation === DifPresentationExchangeSubmissionLocation.EXTERNAL &&
+          verifiablePresentationResultsWithFormat.length > 1
+        ) {
+          descriptor.path = `$[${index}]`
+        }
+
+        if (descriptor.format === 'vc+sd-jwt' && descriptor.path_nested) {
+          delete descriptor.path_nested
+        }
+
+        return descriptor
+      })
+
+      presentationSubmission.descriptor_map.push(...descriptorMap)
+    })
 
     return {
       verifiablePresentations: verifiablePresentationResultsWithFormat.map((resultWithFormat) =>

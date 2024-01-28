@@ -97,7 +97,6 @@ export class OpenId4VcSiopHolderService {
         )
       }
 
-      // FIXME: make sure nonce and clientId are also verified in the verify proof method
       const nonce = await authorizationRequest.authorizationRequest.getMergedProperty<string>('nonce')
       if (!nonce) {
         throw new AriesFrameworkError("Unable to extract 'nonce' from authorization request")

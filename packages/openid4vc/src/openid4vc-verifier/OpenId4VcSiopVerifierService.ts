@@ -70,7 +70,7 @@ export class OpenId4VcSiopVerifierService {
     const correlationId = utils.uuid()
 
     const relyingParty = await this.getRelyingParty(agentContext, options.verifier, {
-      presentationDefinition: options.presentationDefinition,
+      presentationDefinition: options.presentationExchange?.definition,
       requestSigner: options.requestSigner,
     })
 

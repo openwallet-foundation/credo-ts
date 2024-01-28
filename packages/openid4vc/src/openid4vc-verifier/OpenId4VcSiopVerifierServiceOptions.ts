@@ -22,7 +22,9 @@ export interface OpenId4VcSiopCreateAuthorizationRequestOptions {
   /**
    * A DIF Presentation Definition (v2) can be provided to request a Verifiable Presentation using OpenID4VP.
    */
-  presentationDefinition?: DifPresentationExchangeDefinitionV2
+  presentationExchange?: {
+    definition: DifPresentationExchangeDefinitionV2
+  }
 }
 
 export interface OpenId4VcSiopVerifyAuthorizationResponseOptions {
