@@ -6,7 +6,7 @@
     height="250px"
   />
 </p>
-<h1 align="center"><b>Aries Framework JavaScript - Cheqd</b></h1>
+<h1 align="center"><b>Credo - Cheqd</b></h1>
 <p align="center">
   <a
     href="https://raw.githubusercontent.com/hyperledger/aries-framework-javascript/main/LICENSE"

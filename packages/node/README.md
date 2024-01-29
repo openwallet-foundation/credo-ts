@@ -6,7 +6,7 @@
     height="250px"
   />
 </p>
-<h1 align="center"><b>Aries Framework JavaScript - Node</b></h1>
+<h1 align="center"><b>Credo - Node</b></h1>
 <p align="center">
   <a
     href="https://raw.githubusercontent.com/hyperledger/aries-framework-javascript/main/LICENSE"
@@ -28,4 +28,4 @@
 </p>
 <br />
 
-Aries Framework JavaScript Node provides platform specific dependencies to run Aries Framework JavaScript in [Node.JS](https://nodejs.org). See the [Getting Started Guide](https://github.com/hyperledger/aries-framework-javascript#getting-started) for installation instructions.
+Credo Node provides platform specific dependencies to run Credo in [Node.JS](https://nodejs.org). See the [Getting Started Guide](https://github.com/hyperledger/aries-framework-javascript#getting-started) for installation instructions.

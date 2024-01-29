@@ -6,7 +6,7 @@
     height="250px"
   />
 </p>
-<h1 align="center"><b>Aries Framework JavaScript - Tenant Module</b></h1>
+<h1 align="center"><b>Credo - Tenant Module</b></h1>
 <p align="center">
   <a
     href="https://raw.githubusercontent.com/hyperledger/aries-framework-javascript/main/LICENSE"
@@ -28,4 +28,4 @@
 </p>
 <br />
 
-Aries Framework JavaScript Tenant Module provides an optional addon to Aries Framework JavaScript to use an agent with multiple tenants.
+Credo Tenant Module provides an optional addon to Credo to use an agent with multiple tenants.

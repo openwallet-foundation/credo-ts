@@ -6,7 +6,7 @@
     height="250px"
   />
 </p>
-<h1 align="center"><b>Aries Framework JavaScript Askar Module</b></h1>
+<h1 align="center"><b>Credo Askar Module</b></h1>
 <p align="center">
   <a
     href="https://raw.githubusercontent.com/hyperledger/aries-framework-javascript/main/LICENSE"
@@ -28,4 +28,4 @@
 </p>
 <br />
 
-Askar module for [Aries Framework JavaScript](https://github.com/hyperledger/aries-framework-javascript.git).
+Askar module for [Credo](https://github.com/hyperledger/aries-framework-javascript.git).

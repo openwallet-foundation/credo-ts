@@ -1,6 +1,6 @@
 <h1 align="center"><b>Extension module example</b></h1>
 
-This example shows how an extension module can be written and injected to an Aries Framework Javascript `Agent` instance. Its structure is similar to the one of regular modules, although is not strictly needed to follow it to achieve this goal.
+This example shows how an extension module can be written and injected to an Credo `Agent` instance. Its structure is similar to the one of regular modules, although is not strictly needed to follow it to achieve this goal.
 
 An extension module could be used for different purposes, such as storing data in an Identity Wallet, supporting custom protocols over Didcomm or implementing new [Aries RFCs](https://github.com/hyperledger/aries-rfcs/tree/main/features) without the need of embed them right into AFJ's Core package. Injected modules can access to other core modules and services and trigger events, so in practice they work much in the same way as if they were included statically.
 

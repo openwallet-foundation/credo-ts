@@ -6,7 +6,7 @@
     height="250px"
   />
 </p>
-<h1 align="center"><b>Aries Framework JavaScript - React Native</b></h1>
+<h1 align="center"><b>Credo - React Native</b></h1>
 <p align="center">
   <a
     href="https://raw.githubusercontent.com/hyperledger/aries-framework-javascript/main/LICENSE"
@@ -28,4 +28,4 @@
 </p>
 <br />
 
-Aries Framework JavaScript React Native provides platform specific dependencies to run Aries Framework JavaScript in [React Native](https://reactnative.dev). See the [Getting Started Guide](https://github.com/hyperledger/aries-framework-javascript#getting-started) for installation instructions.
+Credo React Native provides platform specific dependencies to run Credo in [React Native](https://reactnative.dev). See the [Getting Started Guide](https://github.com/hyperledger/aries-framework-javascript#getting-started) for installation instructions.

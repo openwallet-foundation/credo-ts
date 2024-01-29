@@ -6,7 +6,7 @@
     height="250px"
   />
 </p>
-<h1 align="center"><b>Aries Framework JavaScript</b></h1>
+<h1 align="center"><b>Credo</b></h1>
 <p align="center">
   <img
     alt="Pipeline Status"
@@ -38,11 +38,11 @@
   <a href="#license">License</a> 
 </p>
 
-Aries Framework JavaScript is a framework written in TypeScript for building **SSI Agents and DIDComm services** that aims to be **compliant and interoperable** with the standards defined in the [Aries RFCs](https://github.com/hyperledger/aries-rfcs).
+Credo is a framework written in TypeScript for building **SSI Agents and DIDComm services** that aims to be **compliant and interoperable** with the standards defined in the [Aries RFCs](https://github.com/hyperledger/aries-rfcs).
 
 > **Note**
 > The Aries Framework JavaScript project has recently been moved from the Hyperledger Foundation to the Open Wallet Foundation.
-> We are currently in the process of changing the name of the project, and updating all the documentation and links to reflect this change.
+> We are currently in the process of changing the name of the project to Credo, and updating all the documentation and links to reflect this change.
 > You may encounter some broken links, or references to the old name, but we are working hard to fix this. Once the new name has been decided
 > we will update this README and all the documentation to reflect this change.
 > You can follow this discussion for updates about the name: https://github.com/openwallet-foundation/agent-framework-javascript/discussions/1668
@@ -172,7 +172,7 @@ Aries Framework JavaScript is a framework written in TypeScript for building **S
 
 ## Getting Started
 
-Documentation on how to get started with Aries Framework JavaScript can be found at https://aries.js.org
+Documentation on how to get started with Credo can be found at https://aries.js.org
 
 ### Demo
 
@@ -182,12 +182,12 @@ To get to know the AFJ flow, we built a demo to walk through it yourself togethe
 
 ### Divergence from Aries RFCs
 
-Although Aries Framework JavaScript tries to follow the standards as described in the Aries RFCs as much as possible, some features in AFJ slightly diverge from the written spec. Below is an overview of the features that diverge from the spec, their impact and the reasons for diverging.
+Although Credo tries to follow the standards as described in the Aries RFCs as much as possible, some features in AFJ slightly diverge from the written spec. Below is an overview of the features that diverge from the spec, their impact and the reasons for diverging.
 
 | Feature                                                                                                                                                        | Impact                                                                                                                                                                                                                                                                                                                                                                                                                          | Reason                                                                                                                                                                  |
 | -------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Support for `imageUrl` attribute in connection invitation and connection request                                                                               | Properties that are not recognized should be ignored, meaning this shouldn't limit interoperability between agents. As the image url is self-attested it could give a false sense of trust. Better, credential based, method for visually identifying an entity are not present yet.                                                                                                                                            | Even though not documented, almost all agents support this feature. Not including this feature means AFJ is lacking in features in comparison to other implementations. |
-| Revocation Notification v1 uses a different `thread_id` format ( `indy::<revocation_registry_id>::<credential_revocation_id>`) than specified in the Aries RFC | Any agents adhering to the [revocation notification v1 RFC](https://github.com/hyperledger/aries-rfcs/tree/main/features/0183-revocation-notification) will not be interoperable with Aries Framework Javascript. However, revocation notification is considered an optional portion of revocation, therefore this will not break core revocation behavior. Ideally agents should use and implement revocation notification v2. | Actual implementations (ACA-Py) of revocation notification v1 so far have implemented this different format, so this format change was made to remain interoperable.    |
+| Revocation Notification v1 uses a different `thread_id` format ( `indy::<revocation_registry_id>::<credential_revocation_id>`) than specified in the Aries RFC | Any agents adhering to the [revocation notification v1 RFC](https://github.com/hyperledger/aries-rfcs/tree/main/features/0183-revocation-notification) will not be interoperable with Credo. However, revocation notification is considered an optional portion of revocation, therefore this will not break core revocation behavior. Ideally agents should use and implement revocation notification v2. | Actual implementations (ACA-Py) of revocation notification v1 so far have implemented this different format, so this format change was made to remain interoperable.    |
 
 ## Contributing
 
@@ -197,4 +197,4 @@ There are regular community working groups to discuss ongoing efforts within the
 
 ## License
 
-Hyperledger Aries Framework JavaScript is licensed under the [Apache License Version 2.0 (Apache-2.0)](/LICENSE).
+OpenWallet Foundation Credo is licensed under the [Apache License Version 2.0 (Apache-2.0)](/LICENSE).

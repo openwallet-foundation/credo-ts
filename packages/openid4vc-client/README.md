@@ -6,7 +6,7 @@
     height="250px"
   />
 </p>
-<h1 align="center"><b>Aries Framework JavaScript Open ID Connect For Verifiable Credentials Client Module</b></h1>
+<h1 align="center"><b>Credo Open ID Connect For Verifiable Credentials Client Module</b></h1>
 <p align="center">
   <a
     href="https://raw.githubusercontent.com/hyperledger/aries-framework-javascript/main/LICENSE"
@@ -28,11 +28,11 @@
 </p>
 <br />
 
-Open ID Connect For Verifiable Credentials Client Module for [Aries Framework JavaScript](https://github.com/hyperledger/aries-framework-javascript).
+Open ID Connect For Verifiable Credentials Client Module for [Credo](https://github.com/hyperledger/aries-framework-javascript).
 
 ### Installation
 
-Make sure you have set up the correct version of Aries Framework JavaScript according to the AFJ repository.
+Make sure you have set up the correct version of Credo according to the AFJ repository.
 
 ```sh
 yarn add @credo-ts/openid4vc-client

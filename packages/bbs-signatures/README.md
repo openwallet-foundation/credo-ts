@@ -6,7 +6,7 @@
     height="250px"
   />
 </p>
-<h1 align="center"><b>Aries Framework JavaScript - BBS Module</b></h1>
+<h1 align="center"><b>Credo - BBS Module</b></h1>
 <p align="center">
   <a
     href="https://raw.githubusercontent.com/hyperledger/aries-framework-javascript/main/LICENSE"
@@ -28,7 +28,7 @@
 </p>
 <br />
 
-Aries Framework JavaScript BBS Module provides an optional addon to Aries Framework JavaScript to use BBS signatures in W3C VC exchange.
+Credo BBS Module provides an optional addon to Credo to use BBS signatures in W3C VC exchange.
 
 ## Installation
 

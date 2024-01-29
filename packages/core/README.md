@@ -6,7 +6,7 @@
     height="250px"
   />
 </p>
-<h1 align="center"><b>Aries Framework JavaScript - Core</b></h1>
+<h1 align="center"><b>Credo - Core</b></h1>
 <p align="center">
   <a
     href="https://raw.githubusercontent.com/hyperledger/aries-framework-javascript/main/LICENSE"
@@ -28,4 +28,4 @@
 </p>
 <br />
 
-Aries Framework JavaScript Core provides the core functionality of Aries Framework JavaScript. See the [Getting Started Guide](https://github.com/hyperledger/aries-framework-javascript#getting-started) for installation instructions.
+Credo Core provides the core functionality of Credo. See the [Getting Started Guide](https://github.com/hyperledger/aries-framework-javascript#getting-started) for installation instructions.

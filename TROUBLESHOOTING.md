@@ -1,6 +1,6 @@
 # Troubleshooting
 
-This document contains the most common errors that arise when first installing libindy and Aries Framework JavaScript. If you encounter a problem that is not listed here and manage to fix it, please open a PR describing the steps taken to resolve the issue.
+This document contains the most common errors that arise when first installing libindy and Credo. If you encounter a problem that is not listed here and manage to fix it, please open a PR describing the steps taken to resolve the issue.
 
 - [macOS](#macos)
   - [Unable to find `libindy.dylib`](#unable-to-find-libindydylib)

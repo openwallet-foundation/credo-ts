@@ -1,6 +1,6 @@
 <h1 align="center"><b>DEMO</b></h1>
 
-This is the Aries Framework Javascript demo. Walk through the AFJ flow yourself together with agents Alice and Faber.
+This is the Credo demo. Walk through the AFJ flow yourself together with agents Alice and Faber.
 
 Alice, a former student of Faber College, connects with the College, is issued a credential about her degree and then is asked by the College for a proof.
 
@@ -15,7 +15,7 @@ Alice, a former student of Faber College, connects with the College, is issued a
 
 ### Platform Specific Setup
 
-In order to use Aries Framework JavaScript some platform specific dependencies and setup is required. See our guides below to quickly set up you project with Aries Framework JavaScript for NodeJS, React Native and Electron.
+In order to use Credo some platform specific dependencies and setup is required. See our guides below to quickly set up you project with Credo for NodeJS, React Native and Electron.
 
 - [NodeJS](https://aries.js.org/guides/getting-started/installation/nodejs)
 
