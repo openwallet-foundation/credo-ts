@@ -287,17 +287,17 @@ export class ConnectionsApi {
     return message
   }
 
-  public async rotate(options: { connectionId: string; did?: string; routing?: Routing }) {
-    const { connectionId, did, routing } = options
+  public async rotate(options: { connectionId: string; toDid?: string; routing?: Routing }) {
+    const { connectionId, toDid, routing } = options
     const connection = await this.connectionService.getById(this.agentContext, connectionId)
 
-    if (did && routing) {
-      throw new AriesFrameworkError(`'routing' is disallowed when defining 'did'`)
+    if (toDid && routing) {
+      throw new AriesFrameworkError(`'routing' is disallowed when defining 'toDid'`)
     }
 
     const message = await this.didRotateService.createRotate(this.agentContext, {
       connection,
-      did,
+      toDid,
       routing: routing || (await this.routingService.getRouting(this.agentContext, {})),
     })
 
@@ -308,7 +308,7 @@ export class ConnectionsApi {
 
     await this.messageSender.sendMessage(outboundMessageContext)
 
-    return { did: message.did }
+    return { newDid: message.toDid }
   }
 
   /**
@@ -455,10 +455,13 @@ export class ConnectionsApi {
   }
 
   /**
-   * Remove any did previously related to a given connection. It will remove routing keys in case
-   * of using a mediator
+   * Remove relationship of a connection with any previous did (either ours or theirs), preventing it from accepting
+   * messages from them. This is usually called when a DID Rotation flow has been succesful and we are sure that no
+   * more messages with older keys will arrive.
    *
-   * Note: this will delete both ours and theirs previous dids
+   * It will remove routing keys from mediator if applicable.
+   *
+   * Note: this will not actually delete any DID from the wallet.
    *
    * @param connectionId
    */
@@ -467,7 +470,7 @@ export class ConnectionsApi {
 
     for (const previousDid of connection.previousDids) {
       const did = await this.didResolverService.resolve(this.agentContext, previousDid)
-      if (!did.didDocument) break
+      if (!did.didDocument) continue
       const mediatorRecord = await getMediationRecordForDidDocument(this.agentContext, did.didDocument)
 
       if (mediatorRecord) {

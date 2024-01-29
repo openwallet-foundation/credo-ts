@@ -20,7 +20,7 @@ import { uuid } from '../../../utils/uuid'
 import { BasicMessage } from '../../basic-messages'
 import { createPeerDidDocumentFromServices } from '../../dids'
 import { ConnectionsModule } from '../ConnectionsModule'
-import { DidRotateProblemReportMessage, HangupMessage, RotateAckMessage } from '../messages'
+import { DidRotateProblemReportMessage, HangupMessage, DidRotateAckMessage } from '../messages'
 
 import { InMemoryDidRegistry } from './InMemoryDidRegistry'
 
@@ -88,10 +88,10 @@ describe('Rotation E2E tests', () => {
       await waitForBasicMessage(aliceAgent, { content: 'Hello initial did' })
 
       // Do did rotate
-      const { did: newDid } = await aliceAgent.connections.rotate({ connectionId: aliceBobConnection!.id })
+      const { newDid } = await aliceAgent.connections.rotate({ connectionId: aliceBobConnection!.id })
 
       // Wait for acknowledge
-      await waitForAgentMessageProcessedEvent(aliceAgent, { messageType: RotateAckMessage.type.messageTypeUri })
+      await waitForAgentMessageProcessedEvent(aliceAgent, { messageType: DidRotateAckMessage.type.messageTypeUri })
 
       // Check that new did is taken into account by both parties
       const newAliceBobConnection = await aliceAgent.connections.getById(aliceBobConnection!.id)
@@ -125,7 +125,7 @@ describe('Rotation E2E tests', () => {
       await aliceAgent.connections.rotate({ connectionId: aliceBobConnection!.id })
 
       // Wait for acknowledge
-      await waitForAgentMessageProcessedEvent(aliceAgent, { messageType: RotateAckMessage.type.messageTypeUri })
+      await waitForAgentMessageProcessedEvent(aliceAgent, { messageType: DidRotateAckMessage.type.messageTypeUri })
 
       // Send message to previous did
       await bobAgent.dependencyManager.resolve(MessageSender).sendMessage(messageToPreviousDid)
@@ -174,13 +174,13 @@ describe('Rotation E2E tests', () => {
       })
 
       // Do did rotate
-      const { did: newDid } = await aliceAgent.connections.rotate({
+      const { newDid } = await aliceAgent.connections.rotate({
         connectionId: aliceBobConnection!.id,
-        did,
+        toDid: did,
       })
 
       // Wait for acknowledge
-      await waitForAgentMessageProcessedEvent(aliceAgent, { messageType: RotateAckMessage.type.messageTypeUri })
+      await waitForAgentMessageProcessedEvent(aliceAgent, { messageType: DidRotateAckMessage.type.messageTypeUri })
 
       // Check that new did is taken into account by both parties
       const newAliceBobConnection = await aliceAgent.connections.getById(aliceBobConnection!.id)
@@ -237,10 +237,10 @@ describe('Rotation E2E tests', () => {
       })
 
       // Do did rotate
-      await aliceAgent.connections.rotate({ connectionId: aliceBobConnection!.id, did })
+      await aliceAgent.connections.rotate({ connectionId: aliceBobConnection!.id, toDid: did })
 
       // Wait for acknowledge
-      await waitForAgentMessageProcessedEvent(aliceAgent, { messageType: RotateAckMessage.type.messageTypeUri })
+      await waitForAgentMessageProcessedEvent(aliceAgent, { messageType: DidRotateAckMessage.type.messageTypeUri })
 
       // Send message to previous did
       await bobAgent.dependencyManager.resolve(MessageSender).sendMessage(messageToPreviousDid)
@@ -287,7 +287,7 @@ describe('Rotation E2E tests', () => {
       })
 
       // Do did rotate
-      await aliceAgent.connections.rotate({ connectionId: aliceBobConnection!.id, did })
+      await aliceAgent.connections.rotate({ connectionId: aliceBobConnection!.id, toDid: did })
 
       // Wait for a problem report
       await waitForAgentMessageProcessedEvent(aliceAgent, {

@@ -3,7 +3,6 @@ import type { AgentContext } from '../../../agent'
 import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import type { ConnectionRecord } from '../repository/ConnectionRecord'
 
-import { EventEmitter } from '../../../agent/EventEmitter'
 import { OutboundMessageContext } from '../../../agent/models'
 import { InjectionSymbols } from '../../../constants'
 import { AriesFrameworkError } from '../../../error'
@@ -20,7 +19,7 @@ import {
 } from '../../dids'
 import { getMediationRecordForDidDocument } from '../../routing/services/helpers'
 import { ConnectionsModuleConfig } from '../ConnectionsModuleConfig'
-import { RotateMessage, RotateAckMessage, DidRotateProblemReportMessage, HangupMessage } from '../messages'
+import { DidRotateMessage, DidRotateAckMessage, DidRotateProblemReportMessage, HangupMessage } from '../messages'
 import { ConnectionMetadataKeys } from '../repository/ConnectionMetadataTypes'
 
 import { ConnectionService } from './ConnectionService'
@@ -28,25 +27,19 @@ import { createPeerDidFromServices, getDidDocumentForCreatedDid, routingToServic
 
 @injectable()
 export class DidRotateService {
-  private eventEmitter: EventEmitter
   private didResolverService: DidResolverService
   private logger: Logger
 
-  public constructor(
-    eventEmitter: EventEmitter,
-    didResolverService: DidResolverService,
-    @inject(InjectionSymbols.Logger) logger: Logger
-  ) {
-    this.eventEmitter = eventEmitter
+  public constructor(didResolverService: DidResolverService, @inject(InjectionSymbols.Logger) logger: Logger) {
     this.didResolverService = didResolverService
     this.logger = logger
   }
 
   public async createRotate(
     agentContext: AgentContext,
-    options: { connection: ConnectionRecord; did?: string; routing: Routing }
+    options: { connection: ConnectionRecord; toDid?: string; routing: Routing }
   ) {
-    const { connection, did, routing } = options
+    const { connection, toDid, routing } = options
 
     const config = agentContext.dependencyManager.resolve(ConnectionsModuleConfig)
 
@@ -54,13 +47,15 @@ export class DidRotateService {
     const didRotateMetadata = connection.metadata.get(ConnectionMetadataKeys.DidRotate)
 
     if (didRotateMetadata) {
-      this.logger.warn(`There is already an existing opened did rotation flow for connection id ${connection.id}`)
+      throw new AriesFrameworkError(
+        `There is already an existing opened did rotation flow for connection id ${connection.id}`
+      )
     }
 
     let didDocument, mediatorId
     // If did is specified, make sure we have all key material for it
-    if (did) {
-      didDocument = await getDidDocumentForCreatedDid(agentContext, did)
+    if (toDid) {
+      didDocument = await getDidDocumentForCreatedDid(agentContext, toDid)
       mediatorId = (await getMediationRecordForDidDocument(agentContext, didDocument))?.id
 
       // Otherwise, create a did:peer based on the provided routing
@@ -73,7 +68,7 @@ export class DidRotateService {
       mediatorId = routing.mediatorId
     }
 
-    const message = new RotateMessage({ did: didDocument.id })
+    const message = new DidRotateMessage({ toDid: didDocument.id })
 
     // We set new info into connection metadata for further 'sealing' it once we receive an acknowledge
     // All messages sent in-between will be using previous connection information
@@ -136,12 +131,12 @@ export class DidRotateService {
    * @param connection
    * @returns
    */
-  public async processRotate(messageContext: InboundMessageContext<RotateMessage>) {
+  public async processRotate(messageContext: InboundMessageContext<DidRotateMessage>) {
     const connection = messageContext.assertReadyConnection()
     const { message, agentContext } = messageContext
 
     // Check and store their new did
-    const newDid = message.did
+    const newDid = message.toDid
 
     // DID Rotation not supported for peer:1 dids, as we need explicit did document information
     if (isValidPeerDid(newDid) && getNumAlgoFromPeerDid(newDid) === PeerDidNumAlgo.GenesisDoc) {
@@ -176,7 +171,7 @@ export class DidRotateService {
     // Send acknowledge to previous did and persist new did. Previous did will be stored in connection record in
     // order to still accept messages from it
     const outboundMessageContext = new OutboundMessageContext(
-      new RotateAckMessage({
+      new DidRotateAckMessage({
         threadId: message.threadId,
         status: AckStatus.OK,
       }),
@@ -207,7 +202,7 @@ export class DidRotateService {
     return outboundMessageContext
   }
 
-  public async processRotateAck(inboundMessage: InboundMessageContext<RotateAckMessage>) {
+  public async processRotateAck(inboundMessage: InboundMessageContext<DidRotateAckMessage>) {
     const { agentContext, message } = inboundMessage
 
     const connection = inboundMessage.assertReadyConnection()
@@ -252,6 +247,18 @@ export class DidRotateService {
     this.logger.debug(`Processing problem report with id ${message.id}`)
 
     // Delete any existing did rotation metadata in order to 'reset' the connection
+    const didRotateMetadata = connection.metadata.get(ConnectionMetadataKeys.DidRotate)
+
+    if (!didRotateMetadata) {
+      throw new AriesFrameworkError(`No did rotation data found for connection with id '${connection.id}'`)
+    }
+
+    connection.metadata.delete(ConnectionMetadataKeys.DidRotate)
+
+    await agentContext.dependencyManager.resolve(ConnectionService).update(agentContext, connection)
+  }
+
+  public async clearDidRotationData(agentContext: AgentContext, connection: ConnectionRecord) {
     const didRotateMetadata = connection.metadata.get(ConnectionMetadataKeys.DidRotate)
 
     if (!didRotateMetadata) {

@@ -4,9 +4,9 @@ import { IsString } from 'class-validator'
 import { AgentMessage } from '../../../agent/AgentMessage'
 import { IsValidMessageType, parseMessageType } from '../../../utils/messageType'
 
-export interface RotateMessageOptions {
+export interface DidRotateMessageOptions {
   id?: string
-  did: string
+  toDid: string
 }
 
 /**
@@ -14,25 +14,25 @@ export interface RotateMessageOptions {
  *
  * @see https://github.com/hyperledger/aries-rfcs/tree/main/features/0794-did-rotate#rotate
  */
-export class RotateMessage extends AgentMessage {
+export class DidRotateMessage extends AgentMessage {
   /**
    * Create new RotateMessage instance.
    * @param options
    */
-  public constructor(options: RotateMessageOptions) {
+  public constructor(options: DidRotateMessageOptions) {
     super()
 
     if (options) {
       this.id = options.id || this.generateId()
-      this.did = options.did
+      this.toDid = options.toDid
     }
   }
 
-  @IsValidMessageType(RotateMessage.type)
-  public readonly type = RotateMessage.type.messageTypeUri
+  @IsValidMessageType(DidRotateMessage.type)
+  public readonly type = DidRotateMessage.type.messageTypeUri
   public static readonly type = parseMessageType('https://didcomm.org/did-rotate/1.0/rotate')
 
   @Expose({ name: 'to_did' })
   @IsString()
-  public readonly did!: string
+  public readonly toDid!: string
 }

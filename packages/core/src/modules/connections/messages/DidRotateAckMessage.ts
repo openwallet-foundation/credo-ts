@@ -3,18 +3,18 @@ import type { AckMessageOptions } from '../../common/messages/AckMessage'
 import { IsValidMessageType, parseMessageType } from '../../../utils/messageType'
 import { AckMessage } from '../../common/messages/AckMessage'
 
-export type RotateAckMessageOptions = AckMessageOptions
+export type DidRotateAckMessageOptions = AckMessageOptions
 
-export class RotateAckMessage extends AckMessage {
+export class DidRotateAckMessage extends AckMessage {
   /**
    * Create new CredentialAckMessage instance.
    * @param options
    */
-  public constructor(options: RotateAckMessageOptions) {
+  public constructor(options: DidRotateAckMessageOptions) {
     super(options)
   }
 
-  @IsValidMessageType(RotateAckMessage.type)
-  public readonly type = RotateAckMessage.type.messageTypeUri
+  @IsValidMessageType(DidRotateAckMessage.type)
+  public readonly type = DidRotateAckMessage.type.messageTypeUri
   public static readonly type = parseMessageType('https://didcomm.org/did-rotate/1.0/ack')
 }

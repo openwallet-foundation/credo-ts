@@ -3,12 +3,12 @@ import type { DidRotateService } from '../services'
 import type { ConnectionService } from '../services/ConnectionService'
 
 import { AriesFrameworkError } from '../../../error'
-import { RotateMessage } from '../messages'
+import { DidRotateMessage } from '../messages'
 
 export class DidRotateHandler implements MessageHandler {
   private didRotateService: DidRotateService
   private connectionService: ConnectionService
-  public supportedMessages = [RotateMessage]
+  public supportedMessages = [DidRotateMessage]
 
   public constructor(didRotateService: DidRotateService, connectionService: ConnectionService) {
     this.didRotateService = didRotateService

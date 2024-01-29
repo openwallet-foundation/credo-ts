@@ -1,11 +1,11 @@
 import type { MessageHandler, MessageHandlerInboundMessage } from '../../../agent/MessageHandler'
 import type { DidRotateService } from '../services'
 
-import { RotateAckMessage } from '../messages'
+import { DidRotateAckMessage } from '../messages'
 
 export class DidRotateAckHandler implements MessageHandler {
   private didRotateService: DidRotateService
-  public supportedMessages = [RotateAckMessage]
+  public supportedMessages = [DidRotateAckMessage]
 
   public constructor(didRotateService: DidRotateService) {
     this.didRotateService = didRotateService
