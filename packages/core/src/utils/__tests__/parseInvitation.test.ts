@@ -131,7 +131,7 @@ describe('legacy connectionless', () => {
     expect(parsed.toJSON()).toMatchObject({
       '@id': expect.any(String),
       '@type': 'https://didcomm.org/out-of-band/1.1/invitation',
-      label: '',
+      label: undefined,
       'requests~attach': [
         {
           '@id': expect.any(String),
@@ -159,7 +159,7 @@ describe('legacy connectionless', () => {
     expect(parsed.toJSON()).toMatchObject({
       '@id': expect.any(String),
       '@type': 'https://didcomm.org/out-of-band/1.1/invitation',
-      label: '',
+      label: undefined,
       'requests~attach': [
         {
           '@id': expect.any(String),
