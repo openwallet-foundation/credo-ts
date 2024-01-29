@@ -39,6 +39,6 @@ export class MediatorModuleConfig {
 
   /** See {@link MediatorModuleConfigOptions.messageForwardingStrategy} */
   public get messageForwardingStrategy() {
-    return this.options.messageForwardingStrategy ?? MessageForwardingStrategy.QueueAndDeliver
+    return this.options.messageForwardingStrategy ?? MessageForwardingStrategy.DeliverOnly
   }
 }

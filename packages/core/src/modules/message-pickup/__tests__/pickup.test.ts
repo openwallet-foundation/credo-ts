@@ -143,7 +143,6 @@ describe('E2E Pick Up protocol', () => {
     const basicMessagePromise = waitForBasicMessage(recipientAgent, {
       content: message,
     })
-    const trustPingPromise = waitForTrustPingReceivedEvent(mediatorAgent, {})
     await recipientAgent.messagePickup.pickupMessages({
       connectionId: recipientMediatorConnection.id,
       protocolVersion: 'v2',
@@ -152,8 +151,6 @@ describe('E2E Pick Up protocol', () => {
     const basicMessage = await basicMessagePromise
     expect(basicMessage.content).toBe(message)
 
-    // Wait for trust ping to be received and stop message pickup
-    await trustPingPromise
     await recipientAgent.mediationRecipient.stopMessagePickup()
   })
 })
