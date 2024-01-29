@@ -16,7 +16,7 @@ import {
   MediatorModule,
   MediatorPickupStrategy,
   MediationRecipientModule,
-} from '@aries-framework/core'
+} from '@credo-ts/core'
 
 const recipientAgentOptions = getAgentOptions(
   'E2E Subject Recipient',

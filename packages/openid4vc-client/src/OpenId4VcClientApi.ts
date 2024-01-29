@@ -3,9 +3,9 @@ import type {
   PreAuthCodeFlowOptions,
   AuthCodeFlowOptions,
 } from './OpenId4VcClientServiceOptions'
-import type { W3cCredentialRecord } from '@aries-framework/core'
+import type { W3cCredentialRecord } from '@credo-ts/core'
 
-import { AgentContext, injectable } from '@aries-framework/core'
+import { AgentContext, injectable } from '@credo-ts/core'
 
 import { OpenId4VcClientService } from './OpenId4VcClientService'
 import { AuthFlowType } from './OpenId4VcClientServiceOptions'

@@ -1,10 +1,10 @@
-import { TypedArrayEncoder } from '@aries-framework/core'
+import { TypedArrayEncoder } from '@credo-ts/core'
 import nock, { cleanAll, enableNetConnect } from 'nock'
 import path from 'path'
 
 import { NodeFileSystem } from '../src/NodeFileSystem'
 
-describe('@aries-framework/file-system-node', () => {
+describe('@credo-ts/file-system-node', () => {
   describe('NodeFileSystem', () => {
     const fileSystem = new NodeFileSystem()
 

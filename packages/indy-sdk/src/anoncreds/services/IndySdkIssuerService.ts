@@ -11,11 +11,11 @@ import type {
   CreateCredentialDefinitionReturn,
   CreateRevocationRegistryDefinitionReturn,
   AnonCredsRevocationStatusList,
-} from '@aries-framework/anoncreds'
-import type { AgentContext } from '@aries-framework/core'
+} from '@credo-ts/anoncreds'
+import type { AgentContext } from '@credo-ts/core'
 
-import { parseIndyDid, getUnqualifiedSchemaId, generateLegacyProverDidLikeString } from '@aries-framework/anoncreds'
-import { injectable, AriesFrameworkError, inject } from '@aries-framework/core'
+import { parseIndyDid, getUnqualifiedSchemaId, generateLegacyProverDidLikeString } from '@credo-ts/anoncreds'
+import { injectable, AriesFrameworkError, inject } from '@credo-ts/core'
 
 import { IndySdkError, isIndyError } from '../../error'
 import { IndySdk, IndySdkSymbol } from '../../types'

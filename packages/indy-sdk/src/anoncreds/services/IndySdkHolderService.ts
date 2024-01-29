@@ -13,8 +13,8 @@ import type {
   CreateLinkSecretOptions,
   CreateLinkSecretReturn,
   GetCredentialsOptions,
-} from '@aries-framework/anoncreds'
-import type { AgentContext } from '@aries-framework/core'
+} from '@credo-ts/anoncreds'
+import type { AgentContext } from '@credo-ts/core'
 import type {
   CredentialDefs,
   IndyRequestedCredentials,
@@ -29,8 +29,8 @@ import {
   AnonCredsLinkSecretRepository,
   generateLegacyProverDidLikeString,
   storeLinkSecret,
-} from '@aries-framework/anoncreds'
-import { AriesFrameworkError, injectable, inject, utils } from '@aries-framework/core'
+} from '@credo-ts/anoncreds'
+import { AriesFrameworkError, injectable, inject, utils } from '@credo-ts/core'
 
 import { IndySdkModuleConfig } from '../../IndySdkModuleConfig'
 import { IndySdkError, isIndyError } from '../../error'

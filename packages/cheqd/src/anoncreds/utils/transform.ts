@@ -6,7 +6,7 @@ import type {
   AnonCredsRevocationRegistryDefinition,
   AnonCredsRevocationStatusList,
   AnonCredsSchema,
-} from '@aries-framework/anoncreds'
+} from '@credo-ts/anoncreds'
 
 import { Type } from 'class-transformer'
 import {

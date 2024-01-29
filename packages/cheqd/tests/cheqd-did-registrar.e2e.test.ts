@@ -1,7 +1,7 @@
 import type { CheqdDidCreateOptions } from '../src'
-import type { DidDocument } from '@aries-framework/core'
+import type { DidDocument } from '@credo-ts/core'
 
-import { Agent, TypedArrayEncoder } from '@aries-framework/core'
+import { Agent, TypedArrayEncoder } from '@credo-ts/core'
 import { generateKeyPairFromSeed } from '@stablelib/ed25519'
 
 import { getAgentOptions } from '../../core/tests/helpers'

@@ -5,11 +5,7 @@ const config: Config.InitialOptions = {
   testEnvironment: 'node',
   testMatch: ['**/?(*.)+(spec|test).[tj]s?(x)'],
   moduleNameMapper: {
-    '@aries-framework/(.+)': [
-      '<rootDir>/../../packages/$1/src',
-      '<rootDir>/../packages/$1/src',
-      '<rootDir>/packages/$1/src',
-    ],
+    '@credo-ts/(.+)': ['<rootDir>/../../packages/$1/src', '<rootDir>/../packages/$1/src', '<rootDir>/packages/$1/src'],
   },
   transform: {
     '^.+\\.tsx?$': [

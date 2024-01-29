@@ -1,6 +1,6 @@
 import type { IndyError } from './indyError'
 
-import { AriesFrameworkError } from '@aries-framework/core'
+import { AriesFrameworkError } from '@credo-ts/core'
 
 export class IndySdkError extends AriesFrameworkError {
   public constructor(indyError: IndyError, message?: string) {

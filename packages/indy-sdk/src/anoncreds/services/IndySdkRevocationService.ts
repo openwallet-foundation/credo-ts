@@ -5,12 +5,12 @@ import type {
   AnonCredsSelectedCredentials,
   AnonCredsCredentialInfo,
   AnonCredsNonRevokedInterval,
-} from '@aries-framework/anoncreds'
-import type { AgentContext } from '@aries-framework/core'
+} from '@credo-ts/anoncreds'
+import type { AgentContext } from '@credo-ts/core'
 import type { RevStates } from 'indy-sdk'
 
-import { assertBestPracticeRevocationInterval } from '@aries-framework/anoncreds'
-import { AriesFrameworkError, inject, injectable } from '@aries-framework/core'
+import { assertBestPracticeRevocationInterval } from '@credo-ts/anoncreds'
+import { AriesFrameworkError, inject, injectable } from '@credo-ts/core'
 
 import { IndySdkError, isIndyError } from '../../error'
 import { IndySdk, IndySdkSymbol } from '../../types'

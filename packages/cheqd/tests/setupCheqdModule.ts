@@ -1,7 +1,7 @@
 import type { CheqdModuleConfigOptions } from '../src'
 
-import { DidsModule } from '@aries-framework/core'
-import { IndySdkModule, IndySdkModuleConfig } from '@aries-framework/indy-sdk'
+import { DidsModule } from '@credo-ts/core'
+import { IndySdkModule, IndySdkModuleConfig } from '@credo-ts/indy-sdk'
 import indySdk from 'indy-sdk'
 
 import { CheqdModule, CheqdDidRegistrar, CheqdDidResolver } from '../src'

@@ -7,7 +7,7 @@ import type {
   AnonCredsOperationStateAction,
 } from './base'
 import type { AnonCredsRevocationStatusList } from '../../models/registry'
-import type { Optional } from '@aries-framework/core'
+import type { Optional } from '@credo-ts/core'
 
 export interface GetRevocationStatusListReturn {
   revocationStatusList?: AnonCredsRevocationStatusList

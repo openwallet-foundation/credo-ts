@@ -1,4 +1,4 @@
-import type { AgentContext } from '@aries-framework/core'
+import type { AgentContext } from '@credo-ts/core'
 
 import {
   getKeyFromVerificationMethod,
@@ -7,7 +7,7 @@ import {
   DidDocumentBuilder,
   DidsApi,
   TypedArrayEncoder,
-} from '@aries-framework/core'
+} from '@credo-ts/core'
 
 // Create a base DIDDoc template according to https://hyperledger.github.io/indy-did-method/#base-diddoc-template
 export function indyDidDocumentFromDid(did: string, publicKeyBase58: string) {

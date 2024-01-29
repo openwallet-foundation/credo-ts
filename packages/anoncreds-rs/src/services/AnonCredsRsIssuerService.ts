@@ -16,8 +16,8 @@ import type {
   CreateRevocationStatusListOptions,
   AnonCredsRevocationStatusList,
   UpdateRevocationStatusListOptions,
-} from '@aries-framework/anoncreds'
-import type { AgentContext } from '@aries-framework/core'
+} from '@credo-ts/anoncreds'
+import type { AgentContext } from '@credo-ts/core'
 import type { CredentialDefinitionPrivate, JsonObject, KeyCorrectnessProof } from '@hyperledger/anoncreds-shared'
 
 import {
@@ -31,8 +31,8 @@ import {
   AnonCredsRevocationRegistryDefinitionRepository,
   AnonCredsRevocationRegistryDefinitionPrivateRepository,
   AnonCredsRevocationRegistryState,
-} from '@aries-framework/anoncreds'
-import { injectable, AriesFrameworkError } from '@aries-framework/core'
+} from '@credo-ts/anoncreds'
+import { injectable, AriesFrameworkError } from '@credo-ts/core'
 import {
   RevocationStatusList,
   RevocationRegistryDefinitionPrivate,

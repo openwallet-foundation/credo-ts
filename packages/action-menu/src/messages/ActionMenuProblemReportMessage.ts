@@ -1,6 +1,6 @@
-import type { ProblemReportMessageOptions } from '@aries-framework/core'
+import type { ProblemReportMessageOptions } from '@credo-ts/core'
 
-import { IsValidMessageType, parseMessageType, ProblemReportMessage } from '@aries-framework/core'
+import { IsValidMessageType, parseMessageType, ProblemReportMessage } from '@credo-ts/core'
 
 export type ActionMenuProblemReportMessageOptions = ProblemReportMessageOptions
 

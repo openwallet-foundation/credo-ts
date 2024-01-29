@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 
-import type { JsonObject, DocumentLoader } from '@aries-framework/core'
+import type { JsonObject, DocumentLoader } from '@credo-ts/core'
 
 /**
  * Options for creating a proof

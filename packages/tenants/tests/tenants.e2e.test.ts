@@ -1,14 +1,14 @@
-import type { InitConfig } from '@aries-framework/core'
+import type { InitConfig } from '@credo-ts/core'
 
-import { ConnectionsModule, OutOfBandRecord, Agent, CacheModule, InMemoryLruCache } from '@aries-framework/core'
-import { agentDependencies } from '@aries-framework/node'
+import { ConnectionsModule, OutOfBandRecord, Agent, CacheModule, InMemoryLruCache } from '@credo-ts/core'
+import { agentDependencies } from '@credo-ts/node'
 
 import { SubjectInboundTransport } from '../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutboundTransport'
 import { testLogger, indySdk } from '../../core/tests'
 import { IndySdkModule } from '../../indy-sdk/src'
 
-import { TenantsModule } from '@aries-framework/tenants'
+import { TenantsModule } from '@credo-ts/tenants'
 
 const agent1Config: InitConfig = {
   label: 'Tenant Agent 1',

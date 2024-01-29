@@ -1,4 +1,4 @@
-import type { DependencyManager } from '@aries-framework/core'
+import type { DependencyManager } from '@credo-ts/core'
 
 import { indyVdr } from '@hyperledger/indy-vdr-nodejs'
 

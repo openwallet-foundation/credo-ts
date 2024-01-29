@@ -1,7 +1,7 @@
 import type { AnonCredsCredentialDefinition } from '../../models'
-import type { BaseAgent } from '@aries-framework/core'
+import type { BaseAgent } from '@credo-ts/core'
 
-import { AriesFrameworkError } from '@aries-framework/core'
+import { AriesFrameworkError } from '@credo-ts/core'
 
 import { AnonCredsCredentialDefinitionRepository } from '../../repository'
 import { AnonCredsRegistryService } from '../../services/registry/AnonCredsRegistryService'

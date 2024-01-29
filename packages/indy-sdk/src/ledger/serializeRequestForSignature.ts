@@ -1,4 +1,4 @@
-import { Hasher, TypedArrayEncoder } from '@aries-framework/core'
+import { Hasher, TypedArrayEncoder } from '@credo-ts/core'
 
 const ATTRIB_TYPE = '100'
 const GET_ATTR_TYPE = '104'

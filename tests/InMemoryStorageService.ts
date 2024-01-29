@@ -2,7 +2,7 @@ import type { AgentContext } from '../packages/core/src/agent'
 import type { BaseRecord, TagsBase } from '../packages/core/src/storage/BaseRecord'
 import type { StorageService, BaseRecordConstructor, Query } from '../packages/core/src/storage/StorageService'
 
-import { RecordNotFoundError, RecordDuplicateError, JsonTransformer, injectable } from '@aries-framework/core'
+import { RecordNotFoundError, RecordDuplicateError, JsonTransformer, injectable } from '@credo-ts/core'
 
 interface StorageRecord {
   value: Record<string, unknown>

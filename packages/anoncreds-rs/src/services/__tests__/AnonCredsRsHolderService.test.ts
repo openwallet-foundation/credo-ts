@@ -7,7 +7,7 @@ import type {
   AnonCredsSelectedCredentials,
   AnonCredsRevocationRegistryDefinition,
   AnonCredsCredentialRequestMetadata,
-} from '@aries-framework/anoncreds'
+} from '@credo-ts/anoncreds'
 import type { JsonObject } from '@hyperledger/anoncreds-nodejs'
 
 import {
@@ -15,7 +15,7 @@ import {
   AnonCredsHolderServiceSymbol,
   AnonCredsLinkSecretRecord,
   AnonCredsCredentialRecord,
-} from '@aries-framework/anoncreds'
+} from '@credo-ts/anoncreds'
 import { anoncreds, RevocationRegistryDefinition } from '@hyperledger/anoncreds-nodejs'
 
 import { AnonCredsCredentialDefinitionRepository } from '../../../../anoncreds/src/repository/AnonCredsCredentialDefinitionRepository'

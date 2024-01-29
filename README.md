@@ -66,105 +66,105 @@ Aries Framework JavaScript is a framework written in TypeScript for building **S
     <th><b>Version</b></th>
   </tr>
   <tr>
-    <td>@aries-framework/core</td>
+    <td>@credo-ts/core</td>
     <td>
-      <a href="https://npmjs.com/package/@aries-framework/core">
-        <img alt="@aries-framework/core version" src="https://img.shields.io/npm/v/@aries-framework/core"/>
+      <a href="https://npmjs.com/package/@credo-ts/core">
+        <img alt="@credo-ts/core version" src="https://img.shields.io/npm/v/@credo-ts/core"/>
       </a>
     </td>
   </tr>
   <tr>
-    <td>@aries-framework/node</td>
+    <td>@credo-ts/node</td>
     <td>
-      <a href="https://npmjs.com/package/@aries-framework/node">
-        <img alt="@aries-framework/node version" src="https://img.shields.io/npm/v/@aries-framework/node"/>
+      <a href="https://npmjs.com/package/@credo-ts/node">
+        <img alt="@credo-ts/node version" src="https://img.shields.io/npm/v/@credo-ts/node"/>
       </a>
     </td>
   </tr>
   <tr>
-    <td>@aries-framework/react-native</td>
+    <td>@credo-ts/react-native</td>
     <td>
-      <a href="https://npmjs.com/package/@aries-framework/react-native">
-        <img alt="@aries-framework/react-native version" src="https://img.shields.io/npm/v/@aries-framework/react-native"/>
+      <a href="https://npmjs.com/package/@credo-ts/react-native">
+        <img alt="@credo-ts/react-native version" src="https://img.shields.io/npm/v/@credo-ts/react-native"/>
       </a>
     </td>
   </tr>
   <tr>
-    <td>@aries-framework/indy-sdk</td>
+    <td>@credo-ts/indy-sdk</td>
     <td>
-      <a href="https://npmjs.com/package/@aries-framework/indy-sdk">
-        <img alt="@aries-framework/indy-sdk version" src="https://img.shields.io/npm/v/@aries-framework/indy-sdk"/>
+      <a href="https://npmjs.com/package/@credo-ts/indy-sdk">
+        <img alt="@credo-ts/indy-sdk version" src="https://img.shields.io/npm/v/@credo-ts/indy-sdk"/>
       </a>
     </td>
   </tr>
   <tr>
-    <td>@aries-framework/indy-vdr</td>
+    <td>@credo-ts/indy-vdr</td>
     <td>
-      <a href="https://npmjs.com/package/@aries-framework/indy-vdr">
-        <img alt="@aries-framework/indy-vdr version" src="https://img.shields.io/npm/v/@aries-framework/indy-vdr"/>
+      <a href="https://npmjs.com/package/@credo-ts/indy-vdr">
+        <img alt="@credo-ts/indy-vdr version" src="https://img.shields.io/npm/v/@credo-ts/indy-vdr"/>
       </a>
     </td>
   </tr>
   <tr>
-    <td>@aries-framework/cheqd</td>
+    <td>@credo-ts/cheqd</td>
     <td>
-      <a href="https://npmjs.com/package/@aries-framework/cheqd">
-        <img alt="@aries-framework/cheqd version" src="https://img.shields.io/npm/v/@aries-framework/cheqd"/>
+      <a href="https://npmjs.com/package/@credo-ts/cheqd">
+        <img alt="@credo-ts/cheqd version" src="https://img.shields.io/npm/v/@credo-ts/cheqd"/>
       </a>
     </td>
   </tr>  
   <tr>
-    <td>@aries-framework/askar</td>
+    <td>@credo-ts/askar</td>
     <td>
-      <a href="https://npmjs.com/package/@aries-framework/askar">
-        <img alt="@aries-framework/askar version" src="https://img.shields.io/npm/v/@aries-framework/askar"/>
+      <a href="https://npmjs.com/package/@credo-ts/askar">
+        <img alt="@credo-ts/askar version" src="https://img.shields.io/npm/v/@credo-ts/askar"/>
       </a>
     </td>
   </tr>
   <tr>
-    <td>@aries-framework/anoncreds</td>
+    <td>@credo-ts/anoncreds</td>
     <td>
-      <a href="https://npmjs.com/package/@aries-framework/anoncreds">
-        <img alt="@aries-framework/anoncreds version" src="https://img.shields.io/npm/v/@aries-framework/anoncreds"/>
+      <a href="https://npmjs.com/package/@credo-ts/anoncreds">
+        <img alt="@credo-ts/anoncreds version" src="https://img.shields.io/npm/v/@credo-ts/anoncreds"/>
       </a>
     </td>
   </tr>
   <tr>
-    <td>@aries-framework/anoncreds-rs</td>
+    <td>@credo-ts/anoncreds-rs</td>
     <td>
-      <a href="https://npmjs.com/package/@aries-framework/anoncreds-rs">
-        <img alt="@aries-framework/anoncreds-rs version" src="https://img.shields.io/npm/v/@aries-framework/anoncreds-rs"/>
+      <a href="https://npmjs.com/package/@credo-ts/anoncreds-rs">
+        <img alt="@credo-ts/anoncreds-rs version" src="https://img.shields.io/npm/v/@credo-ts/anoncreds-rs"/>
       </a>
     </td>
   </tr>
   <tr>
-    <td>@aries-framework/openid4vc-client</td>
+    <td>@credo-ts/openid4vc-client</td>
     <td>
-      <a href="https://npmjs.com/package/@aries-framework/openid4vc-client">
-        <img alt="@aries-framework/openid4vc-client version" src="https://img.shields.io/npm/v/@aries-framework/openid4vc-client"/>
+      <a href="https://npmjs.com/package/@credo-ts/openid4vc-client">
+        <img alt="@credo-ts/openid4vc-client version" src="https://img.shields.io/npm/v/@credo-ts/openid4vc-client"/>
       </a>
     </td>
   </tr>
    <tr>
-    <td>@aries-framework/action-menu</td>
+    <td>@credo-ts/action-menu</td>
     <td>
-      <a href="https://npmjs.com/package/@aries-framework/action-menu">
-        <img alt="@aries-framework/action-menu version" src="https://img.shields.io/npm/v/@aries-framework/action-menu"/>
+      <a href="https://npmjs.com/package/@credo-ts/action-menu">
+        <img alt="@credo-ts/action-menu version" src="https://img.shields.io/npm/v/@credo-ts/action-menu"/>
       </a>
     </td>
   </tr>
-    <td>@aries-framework/question-answer</td>
+    <td>@credo-ts/question-answer</td>
     <td>
-      <a href="https://npmjs.com/package/@aries-framework/question-answer">
-        <img alt="@aries-framework/question-answer version" src="https://img.shields.io/npm/v/@aries-framework/question-answer"/>
+      <a href="https://npmjs.com/package/@credo-ts/question-answer">
+        <img alt="@credo-ts/question-answer version" src="https://img.shields.io/npm/v/@credo-ts/question-answer"/>
       </a>
     </td>
   </tr>
   <tr>
-    <td>@aries-framework/tenants</td>
+    <td>@credo-ts/tenants</td>
     <td>
-      <a href="https://npmjs.com/package/@aries-framework/tenants">
-        <img alt="@aries-framework/tenants version" src="https://img.shields.io/npm/v/@aries-framework/tenants"/>
+      <a href="https://npmjs.com/package/@credo-ts/tenants">
+        <img alt="@credo-ts/tenants version" src="https://img.shields.io/npm/v/@credo-ts/tenants"/>
       </a>
     </td>
   </tr>

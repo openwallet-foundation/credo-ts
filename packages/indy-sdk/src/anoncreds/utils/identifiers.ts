@@ -11,7 +11,7 @@ import {
   didIndyRevocationRegistryIdRegex,
   didIndySchemaIdRegex,
   didIndyRegex,
-} from '@aries-framework/anoncreds'
+} from '@credo-ts/anoncreds'
 
 // combines both legacy and did:indy anoncreds identifiers and also the issuer id
 const indySdkAnonCredsRegexes = [

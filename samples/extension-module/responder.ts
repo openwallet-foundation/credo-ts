@@ -1,8 +1,8 @@
 import type { DummyStateChangedEvent } from './dummy'
 import type { Socket } from 'net'
 
-import { Agent, ConnectionsModule, ConsoleLogger, LogLevel } from '@aries-framework/core'
-import { agentDependencies, HttpInboundTransport, WsInboundTransport } from '@aries-framework/node'
+import { Agent, ConnectionsModule, ConsoleLogger, LogLevel } from '@credo-ts/core'
+import { agentDependencies, HttpInboundTransport, WsInboundTransport } from '@credo-ts/node'
 import express from 'express'
 import { Server } from 'ws'
 

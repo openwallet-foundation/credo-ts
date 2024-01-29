@@ -1,6 +1,6 @@
-import type { StorageService, EventEmitter } from '@aries-framework/core'
+import type { StorageService, EventEmitter } from '@credo-ts/core'
 
-import { Key } from '@aries-framework/core'
+import { Key } from '@credo-ts/core'
 
 import { getAgentContext, mockFunction } from '../../../../core/tests/helpers'
 import { TenantRoutingRecord } from '../TenantRoutingRecord'
