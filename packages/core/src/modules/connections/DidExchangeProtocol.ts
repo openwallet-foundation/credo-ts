@@ -21,7 +21,6 @@ import { JsonTransformer } from '../../utils/JsonTransformer'
 import { base64ToBase64URL } from '../../utils/base64'
 import {
   DidDocument,
-  createPeerDidDocumentFromServices,
   DidKey,
   getNumAlgoFromPeerDid,
   PeerDidNumAlgo,
@@ -35,7 +34,7 @@ import { didKeyToInstanceOfKey } from '../dids/helpers'
 import { DidRepository } from '../dids/repository'
 import { OutOfBandRole } from '../oob/domain/OutOfBandRole'
 import { OutOfBandState } from '../oob/domain/OutOfBandState'
-import { MediationRecipientService } from '../routing/services/MediationRecipientService'
+import { getMediationRecordForDidDocument } from '../routing/services/helpers'
 
 import { ConnectionsModuleConfig } from './ConnectionsModuleConfig'
 import { DidExchangeStateMachine } from './DidExchangeStateMachine'
@@ -43,6 +42,7 @@ import { DidExchangeProblemReportError, DidExchangeProblemReportReason } from '.
 import { DidExchangeRequestMessage, DidExchangeResponseMessage, DidExchangeCompleteMessage } from './messages'
 import { DidExchangeRole, DidExchangeState, HandshakeProtocol } from './models'
 import { ConnectionService } from './services'
+import { createPeerDidFromServices, getDidDocumentForCreatedDid, routingToServices } from './services/helpers'
 
 interface DidExchangeRequestParams {
   label?: string
@@ -97,22 +97,15 @@ export class DidExchangeProtocol {
 
     // If our did is specified, make sure we have all key material for it
     if (did) {
-      if (routing) throw new AriesFrameworkError(`'routing' is disallowed when defining 'ourDid'`)
-
-      didDocument = await this.getDidDocumentForCreatedDid(agentContext, did)
-      const [mediatorRecord] = await agentContext.dependencyManager
-        .resolve(MediationRecipientService)
-        .findAllMediatorsByQuery(agentContext, {
-          recipientKeys: didDocument.recipientKeys.map((key) => key.publicKeyBase58),
-        })
-      mediatorId = mediatorRecord?.id
+      didDocument = await getDidDocumentForCreatedDid(agentContext, did)
+      mediatorId = (await getMediationRecordForDidDocument(agentContext, didDocument))?.id
       // Otherwise, create a did:peer based on the provided routing
     } else {
       if (!routing) throw new AriesFrameworkError(`'routing' must be defined if 'ourDid' is not specified`)
 
-      didDocument = await this.createPeerDidDoc(
+      didDocument = await createPeerDidFromServices(
         agentContext,
-        this.routingToServices(routing),
+        routingToServices(routing),
         config.peerNumAlgoForDidExchangeRequests
       )
       mediatorId = routing.mediatorId
@@ -194,31 +187,33 @@ export class DidExchangeProtocol {
     // Get DID Document either from message (if it is a supported did:peer) or resolve it externally
     const didDocument = await this.resolveDidDocument(agentContext, message)
 
-    if (isValidPeerDid(didDocument.id)) {
-      const didRecord = await this.didRepository.storeReceivedDid(messageContext.agentContext, {
-        did: didDocument.id,
-        // It is important to take the did document from the PeerDid class
-        // as it will have the id property
-        didDocument: getNumAlgoFromPeerDid(message.did) === PeerDidNumAlgo.GenesisDoc ? didDocument : undefined,
-        tags: {
-          // We need to save the recipientKeys, so we can find the associated did
-          // of a key when we receive a message from another connection.
-          recipientKeyFingerprints: didDocument.recipientKeys.map((key) => key.fingerprint),
+    // A DID Record must be stored in order to allow for searching for its recipient keys when receiving a message
+    const didRecord = await this.didRepository.storeReceivedDid(messageContext.agentContext, {
+      did: didDocument.id,
+      // It is important to take the did document from the PeerDid class
+      // as it will have the id property
+      didDocument:
+        !isValidPeerDid(didDocument.id) || getNumAlgoFromPeerDid(message.did) === PeerDidNumAlgo.GenesisDoc
+          ? didDocument
+          : undefined,
+      tags: {
+        // We need to save the recipientKeys, so we can find the associated did
+        // of a key when we receive a message from another connection.
+        recipientKeyFingerprints: didDocument.recipientKeys.map((key) => key.fingerprint),
 
-          // For did:peer, store any alternative dids (like short form did:peer:4),
-          // it may have in order to relate any message referencing it
-          alternativeDids: getAlternativeDidsForPeerDid(didDocument.id),
-        },
-      })
+        // For did:peer, store any alternative dids (like short form did:peer:4),
+        // it may have in order to relate any message referencing it
+        alternativeDids: isValidPeerDid(didDocument.id) ? getAlternativeDidsForPeerDid(didDocument.id) : undefined,
+      },
+    })
 
-      this.logger.debug('Saved DID record', {
-        id: didRecord.id,
-        did: didRecord.did,
-        role: didRecord.role,
-        tags: didRecord.getTags(),
-        didDocument: 'omitted...',
-      })
-    }
+    this.logger.debug('Saved DID record', {
+      id: didRecord.id,
+      did: didRecord.did,
+      role: didRecord.role,
+      tags: didRecord.getTags(),
+      didDocument: 'omitted...',
+    })
 
     const connectionRecord = await this.connectionService.createConnection(messageContext.agentContext, {
       protocol: HandshakeProtocol.DidExchange,
@@ -261,7 +256,7 @@ export class DidExchangeProtocol {
 
     let services: ResolvedDidCommService[] = []
     if (routing) {
-      services = this.routingToServices(routing)
+      services = routingToServices(routing)
     } else if (outOfBandRecord) {
       const inlineServices = outOfBandRecord.outOfBandInvitation.getInlineServices()
       services = inlineServices.map((service) => ({
@@ -277,7 +272,7 @@ export class DidExchangeProtocol {
       ? getNumAlgoFromPeerDid(theirDid)
       : config.peerNumAlgoForDidExchangeRequests
 
-    const didDocument = await this.createPeerDidDoc(agentContext, services, numAlgo)
+    const didDocument = await createPeerDidFromServices(agentContext, services, numAlgo)
     const message = new DidExchangeResponseMessage({ did: didDocument.id, threadId })
 
     if (numAlgo === PeerDidNumAlgo.GenesisDoc) {
@@ -453,46 +448,6 @@ export class DidExchangeProtocol {
     this.logger.debug(`Updating state`, { connectionRecord })
     const nextState = DidExchangeStateMachine.nextState(messageType, connectionRecord)
     return this.connectionService.updateState(agentContext, connectionRecord, nextState)
-  }
-
-  private async createPeerDidDoc(
-    agentContext: AgentContext,
-    services: ResolvedDidCommService[],
-    numAlgo: PeerDidNumAlgo
-  ) {
-    const didsApi = agentContext.dependencyManager.resolve(DidsApi)
-
-    // Create did document without the id property
-    const didDocument = createPeerDidDocumentFromServices(services)
-    // Register did:peer document. This will generate the id property and save it to a did record
-
-    const result = await didsApi.create({
-      method: 'peer',
-      didDocument,
-      options: {
-        numAlgo,
-      },
-    })
-
-    if (result.didState?.state !== 'finished') {
-      throw new AriesFrameworkError(`Did document creation failed: ${JSON.stringify(result.didState)}`)
-    }
-
-    this.logger.debug(`Did document with did ${result.didState.did} created.`, {
-      did: result.didState.did,
-      didDocument: result.didState.didDocument,
-    })
-
-    return result.didState.didDocument
-  }
-
-  private async getDidDocumentForCreatedDid(agentContext: AgentContext, did: string) {
-    const didRecord = await this.didRepository.findCreatedDid(agentContext, did)
-
-    if (!didRecord?.didDocument) {
-      throw new AriesFrameworkError(`Could not get DidDocument for created did ${did}`)
-    }
-    return didRecord.didDocument
   }
 
   private async createSignedAttachment(
@@ -711,14 +666,5 @@ export class DidExchangeProtocol {
     }
 
     return didDocument
-  }
-
-  private routingToServices(routing: Routing): ResolvedDidCommService[] {
-    return routing.endpoints.map((endpoint, index) => ({
-      id: `#inline-${index}`,
-      serviceEndpoint: endpoint,
-      recipientKeys: [routing.recipientKey],
-      routingKeys: routing.routingKeys,
-    }))
   }
 }

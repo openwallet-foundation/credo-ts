@@ -15,6 +15,8 @@ import type {
   ConnectionStateChangedEvent,
   Buffer,
   RevocationNotificationReceivedEvent,
+  AgentMessageProcessedEvent,
+  AgentMessageReceivedEvent,
 } from '../src'
 import type { AgentModulesInput, EmptyModuleMap } from '../src/agent/AgentModules'
 import type { TrustPingReceivedEvent, TrustPingResponseReceivedEvent } from '../src/modules/connections/TrustPingEvents'
@@ -45,6 +47,7 @@ import {
   InjectionSymbols,
   ProofEventTypes,
   TrustPingEventTypes,
+  AgentEventTypes,
 } from '../src'
 import { Key, KeyType } from '../src/crypto'
 import { DidKey } from '../src/modules/dids/methods/key'
@@ -218,6 +221,8 @@ const isTrustPingReceivedEvent = (e: BaseEvent): e is TrustPingReceivedEvent =>
   e.type === TrustPingEventTypes.TrustPingReceivedEvent
 const isTrustPingResponseReceivedEvent = (e: BaseEvent): e is TrustPingResponseReceivedEvent =>
   e.type === TrustPingEventTypes.TrustPingResponseReceivedEvent
+const isAgentMessageProcessedEvent = (e: BaseEvent): e is AgentMessageProcessedEvent =>
+  e.type === AgentEventTypes.AgentMessageProcessed
 
 export function waitForProofExchangeRecordSubject(
   subject: ReplaySubject<BaseEvent> | Observable<BaseEvent>,
@@ -344,6 +349,50 @@ export function waitForTrustPingResponseReceivedEventSubject(
   )
 }
 
+export async function waitForAgentMessageProcessedEvent(
+  agent: Agent,
+  options: {
+    threadId?: string
+    messageType?: string
+    timeoutMs?: number
+  }
+) {
+  const observable = agent.events.observable<AgentMessageProcessedEvent>(AgentEventTypes.AgentMessageProcessed)
+
+  return waitForAgentMessageProcessedEventSubject(observable, options)
+}
+
+export function waitForAgentMessageProcessedEventSubject(
+  subject: ReplaySubject<BaseEvent> | Observable<BaseEvent>,
+  {
+    threadId,
+    timeoutMs = 10000,
+    messageType,
+  }: {
+    threadId?: string
+    messageType?: string
+    timeoutMs?: number
+  }
+) {
+  const observable = subject instanceof ReplaySubject ? subject.asObservable() : subject
+  return firstValueFrom(
+    observable.pipe(
+      filter(isAgentMessageProcessedEvent),
+      filter((e) => threadId === undefined || e.payload.message.threadId === threadId),
+      filter((e) => messageType === undefined || e.payload.message.type === messageType),
+      timeout(timeoutMs),
+      catchError(() => {
+        throw new Error(
+          `AgentMessageProcessedEvent event not emitted within specified timeout: ${timeoutMs}
+  threadId: ${threadId}, messageType: ${messageType}
+}`
+        )
+      }),
+      map((e) => e.payload.message)
+    )
+  )
+}
+
 export function waitForCredentialRecordSubject(
   subject: ReplaySubject<BaseEvent> | Observable<BaseEvent>,
   {
@@ -440,12 +489,17 @@ export async function waitForConnectionRecord(
   return waitForConnectionRecordSubject(observable, options)
 }
 
-export async function waitForBasicMessage(agent: Agent, { content }: { content?: string }): Promise<BasicMessage> {
+export async function waitForBasicMessage(
+  agent: Agent,
+  { content, connectionId }: { content?: string; connectionId?: string }
+): Promise<BasicMessage> {
   return new Promise((resolve) => {
     const listener = (event: BasicMessageStateChangedEvent) => {
       const contentMatches = content === undefined || event.payload.message.content === content
+      const connectionIdMatches =
+        connectionId === undefined || event.payload.basicMessageRecord.connectionId === connectionId
 
-      if (contentMatches) {
+      if (contentMatches && connectionIdMatches) {
         agent.events.off<BasicMessageStateChangedEvent>(BasicMessageEventTypes.BasicMessageStateChanged, listener)
 
         resolve(event.payload.message)

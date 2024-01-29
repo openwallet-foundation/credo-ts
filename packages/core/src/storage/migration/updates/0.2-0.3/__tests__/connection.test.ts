@@ -104,6 +104,8 @@ describe('0.2-0.3 | Connection', () => {
         _tags: {
           connectionType: undefined,
         },
+        previousDids: [],
+        previousTheirDids: [],
         metadata: {},
       })
     })
@@ -128,6 +130,8 @@ describe('0.2-0.3 | Connection', () => {
         _tags: {
           connectionType: undefined,
         },
+        previousDids: [],
+        previousTheirDids: [],
         metadata: {},
       })
     })
@@ -146,6 +150,8 @@ describe('0.2-0.3 | Connection', () => {
       expect(connectionRecord.toJSON()).toEqual({
         ...connectionRecordProps,
         connectionTypes: [],
+        previousDids: [],
+        previousTheirDids: [],
         _tags: {
           connectionType: undefined,
         },
@@ -174,6 +180,8 @@ describe('0.2-0.3 | Connection', () => {
           connectionType: undefined,
         },
         metadata: {},
+        previousDids: [],
+        previousTheirDids: [],
       })
     })
   })
