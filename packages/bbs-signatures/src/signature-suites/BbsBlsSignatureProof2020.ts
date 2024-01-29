@@ -62,7 +62,7 @@ export class BbsBlsSignatureProof2020 extends LinkedDataProof {
    * @returns {Promise<object>} Resolves with the derived proof object.
    */
   public async deriveProof(options: DeriveProofOptions): Promise<Record<string, unknown>> {
-    const { document, proof, revealDocument, documentLoader, expansionMap } = options
+    const { document, proof, revealDocument, documentLoader } = options
     let { nonce } = options
 
     const proofType = proof.type
@@ -98,7 +98,6 @@ export class BbsBlsSignatureProof2020 extends LinkedDataProof {
       // use proof JSON-LD document passed to API
       derivedProof = await jsonld.compact(this.proof, SECURITY_CONTEXT_URL, {
         documentLoader,
-        expansionMap,
         compactToRelative: false,
       })
     } else {
@@ -112,13 +111,11 @@ export class BbsBlsSignatureProof2020 extends LinkedDataProof {
     // Get the input document statements
     const documentStatements = await suite.createVerifyDocumentData(document, {
       documentLoader,
-      expansionMap,
     })
 
     // Get the proof statements
     const proofStatements = await suite.createVerifyProofData(proof, {
       documentLoader,
-      expansionMap,
     })
 
     // Transform any blank node identifiers for the input
@@ -137,7 +134,6 @@ export class BbsBlsSignatureProof2020 extends LinkedDataProof {
     // Canonicalize the resulting reveal document
     const revealDocumentStatements = await suite.createVerifyDocumentData(revealDocumentResult, {
       documentLoader,
-      expansionMap,
     })
 
     //Get the indicies of the revealed statements from the transformed input document offset
@@ -216,7 +212,7 @@ export class BbsBlsSignatureProof2020 extends LinkedDataProof {
    * @returns {Promise<{object}>} Resolves with the verification result.
    */
   public async verifyProof(options: VerifyProofOptions): Promise<VerifyProofResult> {
-    const { document, documentLoader, expansionMap, purpose } = options
+    const { document, documentLoader, purpose } = options
     const { proof } = options
 
     try {
@@ -227,13 +223,11 @@ export class BbsBlsSignatureProof2020 extends LinkedDataProof {
       // Get the proof statements
       const proofStatements = await this.createVerifyProofData(proofIncludingDocumentContext, {
         documentLoader,
-        expansionMap,
       })
 
       // Get the document statements
       const documentStatements = await this.createVerifyProofData(document, {
         documentLoader,
-        expansionMap,
       })
 
       // Transform the blank node identifier placeholders for the document statements
@@ -278,7 +272,6 @@ export class BbsBlsSignatureProof2020 extends LinkedDataProof {
         suite: this,
         verificationMethod,
         documentLoader,
-        expansionMap,
       })
       if (!valid) {
         throw error
@@ -291,19 +284,18 @@ export class BbsBlsSignatureProof2020 extends LinkedDataProof {
   }
 
   public async canonize(input: JsonObject, options: CanonizeOptions): Promise<string> {
-    const { documentLoader, expansionMap, skipExpansion } = options
+    const { documentLoader, skipExpansion } = options
     return jsonld.canonize(input, {
       algorithm: 'URDNA2015',
       format: 'application/n-quads',
       documentLoader,
-      expansionMap,
       skipExpansion,
       useNative: this.useNativeCanonize,
     })
   }
 
   public async canonizeProof(proof: JsonObject, options: CanonizeOptions): Promise<string> {
-    const { documentLoader, expansionMap } = options
+    const { documentLoader } = options
     proof = { ...proof }
 
     delete proof.nonce
@@ -311,7 +303,6 @@ export class BbsBlsSignatureProof2020 extends LinkedDataProof {
 
     return this.canonize(proof, {
       documentLoader,
-      expansionMap,
       skipExpansion: false,
     })
   }
@@ -322,15 +313,13 @@ export class BbsBlsSignatureProof2020 extends LinkedDataProof {
    * @returns {Promise<{string[]>}.
    */
   public async createVerifyData(options: CreateVerifyDataOptions): Promise<string[]> {
-    const { proof, document, documentLoader, expansionMap } = options
+    const { proof, document, documentLoader } = options
 
     const proofStatements = await this.createVerifyProofData(proof, {
       documentLoader,
-      expansionMap,
     })
     const documentStatements = await this.createVerifyDocumentData(document, {
       documentLoader,
-      expansionMap,
     })
 
     // concatenate c14n proof options and c14n document
@@ -345,11 +334,10 @@ export class BbsBlsSignatureProof2020 extends LinkedDataProof {
    */
   public async createVerifyProofData(
     proof: JsonObject,
-    { documentLoader, expansionMap }: { documentLoader?: DocumentLoader; expansionMap?: () => void }
+    { documentLoader }: { documentLoader?: DocumentLoader }
   ): Promise<string[]> {
     const c14nProofOptions = await this.canonizeProof(proof, {
       documentLoader,
-      expansionMap,
     })
 
     return c14nProofOptions.split('\n').filter((_) => _.length > 0)
@@ -363,11 +351,10 @@ export class BbsBlsSignatureProof2020 extends LinkedDataProof {
    */
   public async createVerifyDocumentData(
     document: JsonObject,
-    { documentLoader, expansionMap }: { documentLoader?: DocumentLoader; expansionMap?: () => void }
+    { documentLoader }: { documentLoader?: DocumentLoader }
   ): Promise<string[]> {
     const c14nDocument = await this.canonize(document, {
       documentLoader,
-      expansionMap,
     })
 
     return c14nDocument.split('\n').filter((_) => _.length > 0)

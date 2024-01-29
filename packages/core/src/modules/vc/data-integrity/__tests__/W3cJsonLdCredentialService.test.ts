@@ -156,6 +156,27 @@ describe('W3cJsonLdCredentialsService', () => {
             vcJs: {
               isValid: true,
               results: expect.any(Array),
+              log: [
+                {
+                  id: 'expiration',
+                  valid: true,
+                },
+                {
+                  id: 'valid_signature',
+                  valid: true,
+                },
+                {
+                  id: 'issuer_did_resolves',
+                  valid: true,
+                },
+                {
+                  id: 'revocation_status',
+                  valid: true,
+                },
+              ],
+              statusResult: {
+                verified: true,
+              },
             },
           },
         })

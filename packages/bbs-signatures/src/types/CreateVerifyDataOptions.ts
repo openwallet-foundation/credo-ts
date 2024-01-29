@@ -21,20 +21,17 @@ export interface CreateVerifyDataOptions {
    * Document to create the proof for
    */
   readonly document: JsonObject
+
   /**
    * The proof
    */
   readonly proof: JsonObject
+
   /**
    * Optional custom document loader
    */
-
   documentLoader?: DocumentLoader
-  /**
-   * Optional expansion map
-   */
 
-  expansionMap?: () => void
   /**
    * Indicates whether to compact the proof
    */

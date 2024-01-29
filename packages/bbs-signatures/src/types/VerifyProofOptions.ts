@@ -33,8 +33,4 @@ export interface VerifyProofOptions {
    * Optional custom document loader
    */
   documentLoader?: DocumentLoader
-  /**
-   * Optional expansion map
-   */
-  expansionMap?: () => void
 }
