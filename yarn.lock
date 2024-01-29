@@ -1249,7 +1249,7 @@
   dependencies:
     buffer "^6.0.3"
 
-"@hyperledger/indy-vdr-nodejs@^0.2.0-dev.6":
+"@hyperledger/indy-vdr-nodejs@^0.2.0-dev.5", "@hyperledger/indy-vdr-nodejs@^0.2.0-dev.6":
   version "0.2.0-dev.6"
   resolved "https://registry.yarnpkg.com/@hyperledger/indy-vdr-nodejs/-/indy-vdr-nodejs-0.2.0-dev.6.tgz#c21916600e17cf6ee46fc78a054cb904f9156594"
   integrity sha512-yOmfOqJJJapJRWdKSJQG7q/frKGUrntoae4fiYnwdQEWy4rdRiyZPo0ht9R6uuZ/AQwxtNMMRylvQZBfHA+vKA==

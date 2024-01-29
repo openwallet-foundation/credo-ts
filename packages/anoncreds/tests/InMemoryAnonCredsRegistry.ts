@@ -351,7 +351,7 @@ export class InMemoryAnonCredsRegistry implements AnonCredsRegistry {
  * Does this by hashing the schema id, transforming the hash to a number and taking the first 6 digits.
  */
 function getSeqNoFromSchemaId(schemaId: string) {
-  const seqNo = Number(new BigNumber(Hasher.hash(schemaId, 'sha2-256')).toString().slice(0, 5))
+  const seqNo = Number(new BigNumber(Hasher.hash(schemaId, 'sha-256')).toString().slice(0, 5))
 
   return seqNo
 }

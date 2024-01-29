@@ -2,15 +2,13 @@ import { hash as sha256 } from '@stablelib/sha256'
 
 import { TypedArrayEncoder } from './TypedArrayEncoder'
 
-// TODO: use JWA Hashing Algorithm names
-export type HashName = 'sha2-256' | 'sha-256'
+export type HashName = 'sha-256'
 
 type HashingMap = {
   [key in HashName]: (data: Uint8Array) => Uint8Array
 }
 
 const hashingMap: HashingMap = {
-  'sha2-256': (data) => sha256(data),
   'sha-256': (data) => sha256(data),
 }
 

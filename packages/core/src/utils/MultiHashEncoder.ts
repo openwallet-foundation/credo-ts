@@ -13,7 +13,6 @@ type MultiHashCodeMap = {
 }
 
 const multiHashNameMap: MultiHashNameMap = {
-  'sha2-256': 0x12,
   'sha-256': 0x12,
 }
 
@@ -28,7 +27,7 @@ export class MultiHashEncoder {
    * Encodes a buffer into a hash
    *
    * @param buffer the buffer that has to be encoded
-   * @param hashName the hashing algorithm, 'sha2-256'
+   * @param hashName the hashing algorithm, 'sha-256'
    *
    * @returns a multihash
    */

@@ -171,7 +171,7 @@ export class OpenId4VciHolderService {
   ): Promise<OpenId4VciResolvedAuthorizationRequest> {
     const { credentialOfferPayload, metadata, offeredCredentials } = resolvedCredentialOffer
     const codeVerifier = `${await agentContext.wallet.generateNonce()}${await agentContext.wallet.generateNonce()}`
-    const codeVerifierSha256 = Hasher.hash(codeVerifier, 'sha2-256')
+    const codeVerifierSha256 = Hasher.hash(codeVerifier, 'sha-256')
     const codeChallenge = TypedArrayEncoder.toBase64URL(codeVerifierSha256)
 
     this.logger.debug('Converted code_verifier to code_challenge', {

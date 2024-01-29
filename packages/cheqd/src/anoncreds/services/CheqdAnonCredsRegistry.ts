@@ -142,7 +142,7 @@ export class CheqdAnonCredsRegistry implements AnonCredsRegistry {
       }
 
       const credDefName = `${schema.schema.name}-${credentialDefinition.tag}`
-      const credDefNameHashBuffer = Hasher.hash(credDefName, 'sha2-256')
+      const credDefNameHashBuffer = Hasher.hash(credDefName, 'sha-256')
 
       const credDefResource = {
         id: utils.uuid(),

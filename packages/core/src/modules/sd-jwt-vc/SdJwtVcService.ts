@@ -51,8 +51,8 @@ export class SdJwtVcService {
   public async sign<Payload extends SdJwtVcPayload>(agentContext: AgentContext, options: SdJwtVcSignOptions<Payload>) {
     const { payload, disclosureFrame, hashingAlgorithm } = options
 
-    // default is sha2-256
-    if (hashingAlgorithm && hashingAlgorithm !== 'sha2-256') {
+    // default is sha-256
+    if (hashingAlgorithm && hashingAlgorithm !== 'sha-256') {
       throw new SdJwtVcError(`Unsupported hashing algorithm used: ${hashingAlgorithm}`)
     }
 

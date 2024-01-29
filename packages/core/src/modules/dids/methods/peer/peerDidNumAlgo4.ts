@@ -24,7 +24,7 @@ export const isLongFormDidPeer4 = (did: string) => LONG_RE.test(did)
 
 const hashEncodedDocument = (encodedDocument: string) =>
   MultiBaseEncoder.encode(
-    MultiHashEncoder.encode(TypedArrayEncoder.fromString(encodedDocument), 'sha2-256'),
+    MultiHashEncoder.encode(TypedArrayEncoder.fromString(encodedDocument), 'sha-256'),
     'base58btc'
   )
 

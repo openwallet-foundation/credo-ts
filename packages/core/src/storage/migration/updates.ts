@@ -48,8 +48,8 @@ export const supportedUpdates = [
     doUpdate: updateV0_3_1ToV0_4,
   },
   {
-    fromVersion: '0.3.1',
-    toVersion: '0.4',
+    fromVersion: '0.4',
+    toVersion: '0.5',
     doUpdate: updateV0_4ToV0_5,
   },
 ] as const

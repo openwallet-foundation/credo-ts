@@ -48,7 +48,7 @@ function _serializeRequestForSignature(v: any, isTopLevel: boolean, _type?: stri
       if ((_type == ATTRIB_TYPE || _type == GET_ATTR_TYPE) && (vKey == 'raw' || vKey == 'hash' || vKey == 'enc')) {
         // do it only for attribute related request
         if (typeof value !== 'string') throw new Error('Value must be a string for hash')
-        const hash = Hasher.hash(value, 'sha2-256')
+        const hash = Hasher.hash(value, 'sha-256')
         value = Buffer.from(hash).toString('hex')
       }
 
