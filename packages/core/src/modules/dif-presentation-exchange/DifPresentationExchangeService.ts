@@ -390,7 +390,7 @@ export class DifPresentationExchangeService {
       const { challenge, domain } = options.proofOptions ?? {}
 
       if (!challenge) {
-        throw new AriesFrameworkError('challenge MUST be provided when signing a VP')
+        throw new AriesFrameworkError('challenge MUST be provided when signing a Verifiable Presentation')
       }
 
       if (presentationToCreate.claimFormat === ClaimFormat.JwtVp) {
