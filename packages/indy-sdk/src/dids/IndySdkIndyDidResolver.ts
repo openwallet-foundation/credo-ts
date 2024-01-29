@@ -16,6 +16,8 @@ import { addServicesFromEndpointsAttrib } from './didSovUtil'
 export class IndySdkIndyDidResolver implements DidResolver {
   public readonly supportedMethods = ['indy']
 
+  public readonly allowsCaching = true
+
   public async resolve(agentContext: AgentContext, did: string): Promise<DidResolutionResult> {
     const didDocumentMetadata = {}
 

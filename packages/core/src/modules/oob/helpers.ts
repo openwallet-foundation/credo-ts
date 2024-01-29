@@ -45,7 +45,8 @@ export function convertToOldInvitation(newInvitation: OutOfBandInvitation) {
   if (typeof service === 'string') {
     options = {
       id: newInvitation.id,
-      label: newInvitation.label,
+      // label is optional
+      label: newInvitation.label ?? '',
       did: service,
       imageUrl: newInvitation.imageUrl,
       appendedAttachments: newInvitation.appendedAttachments,
@@ -53,7 +54,8 @@ export function convertToOldInvitation(newInvitation: OutOfBandInvitation) {
   } else {
     options = {
       id: newInvitation.id,
-      label: newInvitation.label,
+      // label is optional
+      label: newInvitation.label ?? '',
       recipientKeys: service.recipientKeys.map(didKeyToVerkey),
       routingKeys: service.routingKeys?.map(didKeyToVerkey),
       serviceEndpoint: service.serviceEndpoint,

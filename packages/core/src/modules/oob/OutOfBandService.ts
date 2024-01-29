@@ -67,7 +67,6 @@ export class OutOfBandService {
     // initiating the flow
     const outOfBandInvitation = new OutOfBandInvitation({
       id: did,
-      label: '',
       services: [did],
       handshakeProtocols,
     })
