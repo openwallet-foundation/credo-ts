@@ -49,7 +49,7 @@ Before a credential can be requested, you need the issuer URI. This URI starts w
 In order to get this module to work, we need to inject it into the agent. This makes the module's functionality accessible through the agent's `modules` api.
 
 ```ts
-import { OpenId4VcHolderModule } from '@aries-framework/openid4vc-holder'
+import { OpenId4VcHolderModule } from '@aries-framework/openid4vc'
 
 const agent = new Agent({
   config: {
