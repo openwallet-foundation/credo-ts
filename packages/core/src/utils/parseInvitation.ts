@@ -59,6 +59,9 @@ export const parseInvitationJson = (invitationJson: Record<string, unknown>): Ou
     const outOfBandInvitation = convertToNewInvitation(invitation)
     outOfBandInvitation.invitationType = InvitationType.Connection
     return outOfBandInvitation
+  } else if (invitationJson['~service']) {
+    // This is probably a legacy connectionless invitation
+    return transformLegacyConnectionlessInvitationToOutOfBandInvitation(invitationJson)
   } else {
     throw new AriesFrameworkError(`Invitation with '@type' ${parsedMessageType.messageTypeUri} not supported.`)
   }
@@ -105,6 +108,30 @@ export const oobInvitationFromShortUrl = async (response: Response): Promise<Out
   throw new AriesFrameworkError('HTTP request time out or did not receive valid response')
 }
 
+export function transformLegacyConnectionlessInvitationToOutOfBandInvitation(messageJson: Record<string, unknown>) {
+  const agentMessage = JsonTransformer.fromJSON(messageJson, AgentMessage)
+
+  // ~service is required for legacy connectionless invitations
+  if (!agentMessage.service) {
+    throw new AriesFrameworkError('Invalid legacy connectionless invitation url. Missing ~service decorator.')
+  }
+
+  // This destructuring removes the ~service property from the message, and
+  // we can can use messageWithoutService to create the out of band invitation
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { '~service': service, ...messageWithoutService } = messageJson
+
+  // transform into out of band invitation
+  const invitation = new OutOfBandInvitation({
+    services: [OutOfBandDidCommService.fromResolvedDidCommService(agentMessage.service.resolvedDidCommService)],
+  })
+
+  invitation.invitationType = InvitationType.Connectionless
+  invitation.addRequest(JsonTransformer.fromJSON(messageWithoutService, AgentMessage))
+
+  return invitation
+}
+
 /**
  * Parses URL containing encoded invitation and returns invitation message. Compatible with
  * parsing short Urls
@@ -126,27 +153,7 @@ export const parseInvitationShortUrl = async (
   // Legacy connectionless invitation
   else if (parsedUrl['d_m']) {
     const messageJson = JsonEncoder.fromBase64(parsedUrl['d_m'] as string)
-    const agentMessage = JsonTransformer.fromJSON(messageJson, AgentMessage)
-
-    // ~service is required for legacy connectionless invitations
-    if (!agentMessage.service) {
-      throw new AriesFrameworkError('Invalid legacy connectionless invitation url. Missing ~service decorator.')
-    }
-
-    // This destructuring removes the ~service property from the message, and
-    // we can can use messageWithoutService to create the out of band invitation
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { '~service': service, ...messageWithoutService } = messageJson
-
-    // transform into out of band invitation
-    const invitation = new OutOfBandInvitation({
-      services: [OutOfBandDidCommService.fromResolvedDidCommService(agentMessage.service.resolvedDidCommService)],
-    })
-
-    invitation.invitationType = InvitationType.Connectionless
-    invitation.addRequest(JsonTransformer.fromJSON(messageWithoutService, AgentMessage))
-
-    return invitation
+    return transformLegacyConnectionlessInvitationToOutOfBandInvitation(messageJson)
   } else {
     try {
       const outOfBandInvitation = await oobInvitationFromShortUrl(await fetchShortUrl(invitationUrl, dependencies))

@@ -4,6 +4,7 @@ import { DidsApi } from '@aries-framework/core'
 
 export class LocalDidResolver implements DidResolver {
   public readonly supportedMethods = ['sov', 'indy']
+  public readonly allowsCaching = false
 
   public async resolve(agentContext: AgentContext, did: string): Promise<DidResolutionResult> {
     const didDocumentMetadata = {}
