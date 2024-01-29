@@ -37,7 +37,7 @@ export class DidRotateService {
 
   public async createRotate(
     agentContext: AgentContext,
-    options: { connection: ConnectionRecord; toDid?: string; routing: Routing }
+    options: { connection: ConnectionRecord; toDid?: string; routing?: Routing }
   ) {
     const { connection, toDid, routing } = options
 
@@ -60,6 +60,10 @@ export class DidRotateService {
 
       // Otherwise, create a did:peer based on the provided routing
     } else {
+      if (!routing) {
+        throw new AriesFrameworkError('Routing configuration must be defined when rotating to a new peer did')
+      }
+
       didDocument = await createPeerDidFromServices(
         agentContext,
         routingToServices(routing),

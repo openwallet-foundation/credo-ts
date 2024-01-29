@@ -287,18 +287,35 @@ export class ConnectionsApi {
     return message
   }
 
+  /**
+   * Rotate the DID used for a given connection, notifying the other party immediately.
+   *
+   *  If `toDid` is not specified, a new peer did will be created. Optionally, routing
+   * configuration can be set.
+   *
+   * Note: any did created or imported in agent wallet can be used as `toDid`, as long as
+   * there are valid DIDComm services in its DID Document.
+   *
+   * @param options connectionId and optional target did and routing configuration
+   * @returns object containing the new did
+   */
   public async rotate(options: { connectionId: string; toDid?: string; routing?: Routing }) {
-    const { connectionId, toDid, routing } = options
+    const { connectionId, toDid } = options
     const connection = await this.connectionService.getById(this.agentContext, connectionId)
 
-    if (toDid && routing) {
+    if (toDid && options.routing) {
       throw new AriesFrameworkError(`'routing' is disallowed when defining 'toDid'`)
+    }
+
+    let routing = options.routing
+    if (!toDid && !routing) {
+      routing = await this.routingService.getRouting(this.agentContext, {})
     }
 
     const message = await this.didRotateService.createRotate(this.agentContext, {
       connection,
       toDid,
-      routing: routing || (await this.routingService.getRouting(this.agentContext, {})),
+      routing,
     })
 
     const outboundMessageContext = new OutboundMessageContext(message, {
