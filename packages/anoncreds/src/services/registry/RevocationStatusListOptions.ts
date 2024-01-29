@@ -1,5 +1,13 @@
-import type { AnonCredsResolutionMetadata, Extensible } from './base'
+import type {
+  AnonCredsOperationStateWait,
+  AnonCredsOperationStateFailed,
+  AnonCredsOperationStateFinished,
+  AnonCredsResolutionMetadata,
+  Extensible,
+  AnonCredsOperationStateAction,
+} from './base'
 import type { AnonCredsRevocationStatusList } from '../../models/registry'
+import type { Optional } from '@aries-framework/core'
 
 export interface GetRevocationStatusListReturn {
   revocationStatusList?: AnonCredsRevocationStatusList
@@ -7,12 +15,39 @@ export interface GetRevocationStatusListReturn {
   revocationStatusListMetadata: Extensible
 }
 
-// TODO: Support for issuance of revocable credentials
-// export interface RegisterRevocationListOptions {
-//   // Timestamp is often calculated by the ledger, otherwise method should just take current time
-//   // Return type does include the timestamp.
-//   revocationList: Omit<AnonCredsRevocationList, 'timestamp'>
-// }
-// export interface RegisterRevocationListReturn {
-//   timestamp: string
-// }
+// Timestamp is often calculated by the ledger, otherwise method should just take current time
+// Return type does include the timestamp.
+export type AnonCredsRevocationStatusListWithoutTimestamp = Omit<AnonCredsRevocationStatusList, 'timestamp'>
+export type AnonCredsRevocationStatusListWithOptionalTimestamp = Optional<AnonCredsRevocationStatusList, 'timestamp'>
+
+export interface RegisterRevocationStatusListOptions {
+  revocationStatusList: AnonCredsRevocationStatusListWithoutTimestamp
+  options: Extensible
+}
+
+export interface RegisterRevocationStatusListReturnStateAction extends AnonCredsOperationStateAction {
+  revocationStatusList: AnonCredsRevocationStatusListWithOptionalTimestamp
+}
+
+export interface RegisterRevocationStatusListReturnStateFailed extends AnonCredsOperationStateFailed {
+  revocationStatusList?: AnonCredsRevocationStatusListWithOptionalTimestamp
+}
+
+export interface RegisterRevocationStatusListReturnStateWait extends AnonCredsOperationStateWait {
+  revocationStatusList?: AnonCredsRevocationStatusListWithOptionalTimestamp
+}
+
+export interface RegisterRevocationStatusListReturnStateFinished extends AnonCredsOperationStateFinished {
+  revocationStatusList: AnonCredsRevocationStatusList
+}
+
+export interface RegisterRevocationStatusListReturn {
+  jobId?: string
+  revocationStatusListState:
+    | RegisterRevocationStatusListReturnStateWait
+    | RegisterRevocationStatusListReturnStateAction
+    | RegisterRevocationStatusListReturnStateFailed
+    | RegisterRevocationStatusListReturnStateFinished
+  revocationStatusListMetadata: Extensible
+  registrationMetadata: Extensible
+}

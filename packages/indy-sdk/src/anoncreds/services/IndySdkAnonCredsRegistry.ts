@@ -10,19 +10,22 @@ import type {
   RegisterCredentialDefinitionReturn,
   RegisterSchemaOptions,
   RegisterSchemaReturn,
+  RegisterRevocationRegistryDefinitionReturn,
+  RegisterRevocationStatusListReturn,
 } from '@aries-framework/anoncreds'
 import type { AgentContext } from '@aries-framework/core'
 import type { Schema as IndySdkSchema } from 'indy-sdk'
 
 import {
   getUnqualifiedCredentialDefinitionId,
-  getUnqualifiedRevocationRegistryId,
+  getUnqualifiedRevocationRegistryDefinitionId,
   getUnqualifiedSchemaId,
   parseIndyCredentialDefinitionId,
   parseIndyDid,
   parseIndyRevocationRegistryId,
   parseIndySchemaId,
 } from '@aries-framework/anoncreds'
+import { AriesFrameworkError } from '@aries-framework/core'
 
 import { verificationKeyForIndyDid } from '../../dids/didIndyUtil'
 import { IndySdkError, isIndyError } from '../../error'
@@ -391,7 +394,7 @@ export class IndySdkAnonCredsRegistry implements AnonCredsRegistry {
         `Using ledger '${pool.didIndyNamespace}' to retrieve revocation registry definition '${revocationRegistryDefinitionId}'`
       )
 
-      const legacyRevocationRegistryId = getUnqualifiedRevocationRegistryId(
+      const legacyRevocationRegistryId = getUnqualifiedRevocationRegistryDefinitionId(
         namespaceIdentifier,
         schemaSeqNo,
         credentialDefinitionTag,
@@ -468,6 +471,10 @@ export class IndySdkAnonCredsRegistry implements AnonCredsRegistry {
     }
   }
 
+  public async registerRevocationRegistryDefinition(): Promise<RegisterRevocationRegistryDefinitionReturn> {
+    throw new AriesFrameworkError('Not implemented!')
+  }
+
   public async getRevocationStatusList(
     agentContext: AgentContext,
     revocationRegistryId: string,
@@ -485,7 +492,7 @@ export class IndySdkAnonCredsRegistry implements AnonCredsRegistry {
         `Using ledger '${pool.didIndyNamespace}' to retrieve revocation registry deltas with revocation registry definition id '${revocationRegistryId}' until ${timestamp}`
       )
 
-      const legacyRevocationRegistryId = getUnqualifiedRevocationRegistryId(
+      const legacyRevocationRegistryId = getUnqualifiedRevocationRegistryDefinitionId(
         namespaceIdentifier,
         schemaSeqNo,
         credentialDefinitionTag,
@@ -567,6 +574,10 @@ export class IndySdkAnonCredsRegistry implements AnonCredsRegistry {
         revocationStatusListMetadata: {},
       }
     }
+  }
+
+  public async registerRevocationStatusList(): Promise<RegisterRevocationStatusListReturn> {
+    throw new AriesFrameworkError('Not implemented!')
   }
 
   private async fetchIndySchemaWithSeqNo(agentContext: AgentContext, pool: IndySdkPool, seqNo: number) {

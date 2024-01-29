@@ -2,7 +2,7 @@
   "name": "@aries-framework/node",
   "main": "build/index",
   "types": "build/index",
-  "version": "0.4.0",
+  "version": "0.4.2",
   "files": [
     "build"
   ],
@@ -24,19 +24,15 @@
     "test": "jest"
   },
   "dependencies": {
-    "@aries-framework/core": "0.4.0",
+    "@2060.io/ffi-napi": "^4.0.8",
+    "@2060.io/ref-napi": "^3.0.6",
+    "@aries-framework/core": "0.4.2",
     "@types/express": "^4.17.15",
     "express": "^4.17.1",
-    "ffi-napi": "^4.0.3",
-    "node-fetch": "^2.6.1",
-    "ref-napi": "^3.0.3",
     "ws": "^8.13.0"
   },
   "devDependencies": {
-    "@types/ffi-napi": "^4.0.5",
-    "@types/node": "^16.11.7",
-    "@types/node-fetch": "2.6.2",
-    "@types/ref-napi": "^3.0.4",
+    "@types/node": "^18.18.8",
     "@types/ws": "^8.5.4",
     "nock": "^13.3.0",
     "rimraf": "^4.4.0",

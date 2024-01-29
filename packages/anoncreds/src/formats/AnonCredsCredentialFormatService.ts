@@ -43,8 +43,14 @@ import {
 
 import { AnonCredsError } from '../error'
 import { AnonCredsCredentialProposal } from '../models/AnonCredsCredentialProposal'
+import {
+  AnonCredsCredentialDefinitionRepository,
+  AnonCredsRevocationRegistryDefinitionPrivateRepository,
+  AnonCredsRevocationRegistryState,
+} from '../repository'
 import { AnonCredsIssuerServiceSymbol, AnonCredsHolderServiceSymbol } from '../services'
 import { AnonCredsRegistryService } from '../services/registry/AnonCredsRegistryService'
+import { dateToTimestamp } from '../utils'
 import {
   convertAttributesToCredentialValues,
   assertCredentialValuesMatch,
@@ -160,6 +166,8 @@ export class AnonCredsCredentialFormatService implements CredentialFormatService
       attachmentId,
       attributes,
       credentialDefinitionId,
+      revocationRegistryDefinitionId: anoncredsFormat?.revocationRegistryDefinitionId,
+      revocationRegistryIndex: anoncredsFormat?.revocationRegistryIndex,
       linkedAttachments: anoncredsFormat?.linkedAttachments,
     })
 
@@ -188,6 +196,8 @@ export class AnonCredsCredentialFormatService implements CredentialFormatService
       attachmentId,
       attributes: anoncredsFormat.attributes,
       credentialDefinitionId: anoncredsFormat.credentialDefinitionId,
+      revocationRegistryDefinitionId: anoncredsFormat.revocationRegistryDefinitionId,
+      revocationRegistryIndex: anoncredsFormat.revocationRegistryIndex,
       linkedAttachments: anoncredsFormat.linkedAttachments,
     })
 
@@ -303,22 +313,64 @@ export class AnonCredsCredentialFormatService implements CredentialFormatService
     const credentialRequest = requestAttachment.getDataAsJson<AnonCredsCredentialRequest>()
     if (!credentialRequest) throw new AriesFrameworkError('Missing anoncreds credential request in createCredential')
 
-    const { credential, credentialRevocationId } = await anonCredsIssuerService.createCredential(agentContext, {
+    // We check locally for credential definition info. If it supports revocation, we need to search locally for
+    // an active revocation registry
+    const credentialDefinition = (
+      await agentContext.dependencyManager
+        .resolve(AnonCredsCredentialDefinitionRepository)
+        .getByCredentialDefinitionId(agentContext, credentialRequest.cred_def_id)
+    ).credentialDefinition.value
+
+    let revocationRegistryDefinitionId
+    let revocationRegistryIndex
+    let revocationStatusList
+
+    if (credentialDefinition.revocation) {
+      const credentialMetadata =
+        credentialRecord.metadata.get<AnonCredsCredentialMetadata>(AnonCredsCredentialMetadataKey)
+      revocationRegistryDefinitionId = credentialMetadata?.revocationRegistryId
+      if (credentialMetadata?.credentialRevocationId) {
+        revocationRegistryIndex = Number(credentialMetadata.credentialRevocationId)
+      }
+
+      if (!revocationRegistryDefinitionId || !revocationRegistryIndex) {
+        throw new AriesFrameworkError(
+          'Revocation registry definition id and revocation index are mandatory to issue AnonCreds revocable credentials'
+        )
+      }
+      const revocationRegistryDefinitionPrivateRecord = await agentContext.dependencyManager
+        .resolve(AnonCredsRevocationRegistryDefinitionPrivateRepository)
+        .getByRevocationRegistryDefinitionId(agentContext, revocationRegistryDefinitionId)
+
+      if (revocationRegistryDefinitionPrivateRecord.state !== AnonCredsRevocationRegistryState.Active) {
+        throw new AriesFrameworkError(
+          `Revocation registry ${revocationRegistryDefinitionId} is in ${revocationRegistryDefinitionPrivateRecord.state} state`
+        )
+      }
+
+      const registryService = agentContext.dependencyManager.resolve(AnonCredsRegistryService)
+      const revocationStatusListResult = await registryService
+        .getRegistryForIdentifier(agentContext, revocationRegistryDefinitionId)
+        .getRevocationStatusList(agentContext, revocationRegistryDefinitionId, dateToTimestamp(new Date()))
+
+      if (!revocationStatusListResult.revocationStatusList) {
+        throw new AriesFrameworkError(
+          `Unable to resolve revocation status list for ${revocationRegistryDefinitionId}: 
+          ${revocationStatusListResult.resolutionMetadata.error} ${revocationStatusListResult.resolutionMetadata.message}`
+        )
+      }
+
+      revocationStatusList = revocationStatusListResult.revocationStatusList
+    }
+
+    const { credential } = await anonCredsIssuerService.createCredential(agentContext, {
       credentialOffer,
       credentialRequest,
       credentialValues: convertAttributesToCredentialValues(credentialAttributes),
+      revocationRegistryDefinitionId,
+      revocationRegistryIndex,
+      revocationStatusList,
     })
-
-    if (credential.rev_reg_id) {
-      credentialRecord.metadata.add<AnonCredsCredentialMetadata>(AnonCredsCredentialMetadataKey, {
-        credentialRevocationId: credentialRevocationId,
-        revocationRegistryId: credential.rev_reg_id,
-      })
-      credentialRecord.setTags({
-        anonCredsRevocationRegistryId: credential.rev_reg_id,
-        anonCredsCredentialRevocationId: credentialRevocationId,
-      })
-    }
 
     const format = new CredentialFormatSpec({
       attachmentId,
@@ -524,10 +576,14 @@ export class AnonCredsCredentialFormatService implements CredentialFormatService
       credentialRecord,
       attachmentId,
       credentialDefinitionId,
+      revocationRegistryDefinitionId,
+      revocationRegistryIndex,
       attributes,
       linkedAttachments,
     }: {
       credentialDefinitionId: string
+      revocationRegistryDefinitionId?: string
+      revocationRegistryIndex?: number
       credentialRecord: CredentialExchangeRecord
       attachmentId?: string
       attributes: CredentialPreviewAttributeOptions[]
@@ -554,9 +610,34 @@ export class AnonCredsCredentialFormatService implements CredentialFormatService
 
     await this.assertPreviewAttributesMatchSchemaAttributes(agentContext, offer, previewAttributes)
 
+    // We check locally for credential definition info. If it supports revocation, revocationRegistryIndex
+    // and revocationRegistryDefinitionId are mandatory
+    const credentialDefinition = (
+      await agentContext.dependencyManager
+        .resolve(AnonCredsCredentialDefinitionRepository)
+        .getByCredentialDefinitionId(agentContext, offer.cred_def_id)
+    ).credentialDefinition.value
+
+    if (credentialDefinition.revocation) {
+      if (!revocationRegistryDefinitionId || !revocationRegistryIndex) {
+        throw new AriesFrameworkError(
+          'AnonCreds revocable credentials require revocationRegistryDefinitionId and revocationRegistryIndex'
+        )
+      }
+
+      // Set revocation tags
+      credentialRecord.setTags({
+        anonCredsRevocationRegistryId: revocationRegistryDefinitionId,
+        anonCredsCredentialRevocationId: revocationRegistryIndex.toString(),
+      })
+    }
+
+    // Set the metadata
     credentialRecord.metadata.set<AnonCredsCredentialMetadata>(AnonCredsCredentialMetadataKey, {
       schemaId: offer.schema_id,
       credentialDefinitionId: offer.cred_def_id,
+      credentialRevocationId: revocationRegistryIndex?.toString(),
+      revocationRegistryId: revocationRegistryDefinitionId,
     })
 
     const attachment = this.getFormatData(offer, format.attachmentId)

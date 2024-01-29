@@ -26,5 +26,5 @@ export class DidExchangeCompleteMessage extends AgentMessage {
 
   @IsValidMessageType(DidExchangeCompleteMessage.type)
   public readonly type = DidExchangeCompleteMessage.type.messageTypeUri
-  public static readonly type = parseMessageType('https://didcomm.org/didexchange/1.0/complete')
+  public static readonly type = parseMessageType('https://didcomm.org/didexchange/1.1/complete')
 }

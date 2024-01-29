@@ -1,9 +1,9 @@
+import type { V2CreateRevocationNotificationMessageOptions } from './RevocationNotificationServiceOptions'
 import type { AgentContext } from '../../../../../agent'
 import type { InboundMessageContext } from '../../../../../agent/models/InboundMessageContext'
 import type { ConnectionRecord } from '../../../../connections'
 import type { RevocationNotificationReceivedEvent } from '../../../CredentialEvents'
 import type { V1RevocationNotificationMessage } from '../messages/V1RevocationNotificationMessage'
-import type { V2RevocationNotificationMessage } from '../messages/V2RevocationNotificationMessage'
 
 import { EventEmitter } from '../../../../../agent/EventEmitter'
 import { MessageHandlerRegistry } from '../../../../../agent/MessageHandlerRegistry'
@@ -15,7 +15,14 @@ import { CredentialEventTypes } from '../../../CredentialEvents'
 import { RevocationNotification } from '../../../models/RevocationNotification'
 import { CredentialRepository } from '../../../repository'
 import { V1RevocationNotificationHandler, V2RevocationNotificationHandler } from '../handlers'
-import { v1ThreadRegex, v2IndyRevocationFormat, v2IndyRevocationIdentifierRegex } from '../util/revocationIdentifier'
+import { V2RevocationNotificationMessage } from '../messages/V2RevocationNotificationMessage'
+import {
+  v1ThreadRegex,
+  v2AnonCredsRevocationFormat,
+  v2AnonCredsRevocationIdentifierRegex,
+  v2IndyRevocationFormat,
+  v2IndyRevocationIdentifierRegex,
+} from '../util/revocationIdentifier'
 
 @injectable()
 export class RevocationNotificationService {
@@ -101,6 +108,26 @@ export class RevocationNotificationService {
   }
 
   /**
+   * Create a V2 Revocation Notification message
+   */
+
+  public async v2CreateRevocationNotification(
+    options: V2CreateRevocationNotificationMessageOptions
+  ): Promise<{ message: V2RevocationNotificationMessage }> {
+    const { credentialId, revocationFormat, comment, requestAck } = options
+    const message = new V2RevocationNotificationMessage({
+      credentialId,
+      revocationFormat,
+      comment,
+    })
+    if (requestAck) {
+      message.setPleaseAck()
+    }
+
+    return { message }
+  }
+
+  /**
    * Process a received {@link V2RevocationNotificationMessage}. This will create a
    * {@link RevocationNotification} and store it in the corresponding {@link CredentialRecord}
    *
@@ -113,14 +140,15 @@ export class RevocationNotificationService {
 
     const credentialId = messageContext.message.credentialId
 
-    if (messageContext.message.revocationFormat !== v2IndyRevocationFormat) {
+    if (![v2IndyRevocationFormat, v2AnonCredsRevocationFormat].includes(messageContext.message.revocationFormat)) {
       throw new AriesFrameworkError(
-        `Unknown revocation format: ${messageContext.message.revocationFormat}. Supported formats are indy-anoncreds`
+        `Unknown revocation format: ${messageContext.message.revocationFormat}. Supported formats are indy-anoncreds and anoncreds`
       )
     }
 
     try {
-      const credentialIdGroups = credentialId.match(v2IndyRevocationIdentifierRegex)
+      const credentialIdGroups =
+        credentialId.match(v2IndyRevocationIdentifierRegex) ?? credentialId.match(v2AnonCredsRevocationIdentifierRegex)
       if (!credentialIdGroups) {
         throw new AriesFrameworkError(
           `Incorrect revocation notification credentialId format: \n${credentialId}\ndoes not match\n"<revocation_registry_id>::<credential_revocation_id>"`

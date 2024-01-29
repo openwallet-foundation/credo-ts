@@ -347,7 +347,6 @@ describe('credentialProtocol', () => {
       // then
       expect(credentialRepository.findSingleByQuery).toHaveBeenNthCalledWith(1, agentContext, {
         threadId: 'somethreadid',
-        connectionId: connection.id,
       })
       expect(credentialRepository.update).toHaveBeenCalledTimes(1)
       expect(returnedCredentialRecord.state).toEqual(CredentialState.RequestReceived)
@@ -368,15 +367,9 @@ describe('credentialProtocol', () => {
       const returnedCredentialRecord = await credentialProtocol.processRequest(messageContext)
 
       // then
-      expect(credentialRepository.findSingleByQuery).toHaveBeenNthCalledWith(
-        1,
-        agentContext,
-
-        {
-          threadId: 'somethreadid',
-          connectionId: connection.id,
-        }
-      )
+      expect(credentialRepository.findSingleByQuery).toHaveBeenNthCalledWith(1, agentContext, {
+        threadId: 'somethreadid',
+      })
       expect(eventListenerMock).toHaveBeenCalled()
       expect(returnedCredentialRecord.state).toEqual(CredentialState.RequestReceived)
     })
@@ -617,7 +610,7 @@ describe('credentialProtocol', () => {
 
       expect(credentialRepository.getSingleByQuery).toHaveBeenNthCalledWith(1, agentContext, {
         threadId: 'somethreadid',
-        connectionId: connection.id,
+        connectionId: '123',
       })
 
       expect(returnedCredentialRecord.state).toBe(CredentialState.Done)
@@ -685,7 +678,7 @@ describe('credentialProtocol', () => {
 
       expect(credentialRepository.getSingleByQuery).toHaveBeenNthCalledWith(1, agentContext, {
         threadId: 'somethreadid',
-        connectionId: connection.id,
+        connectionId: '123',
       })
       expect(credentialRepository.update).toHaveBeenCalled()
       expect(returnedCredentialRecord.errorMessage).toBe('issuance-abandoned: Indy error')

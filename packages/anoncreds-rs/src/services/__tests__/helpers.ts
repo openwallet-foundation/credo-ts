@@ -127,6 +127,10 @@ export function createCredentialForHolder(options: {
 
   const timeCreateRevStatusList = 12
   const revocationStatusList = RevocationStatusList.create({
+    credentialDefinition,
+    revocationRegistryDefinitionPrivate: new RevocationRegistryDefinitionPrivate(
+      revocationRegistryDefinitionPrivate.handle
+    ),
     issuerId: credentialDefinition.issuerId as string,
     timestamp: timeCreateRevStatusList,
     issuanceByDefault: true,
@@ -143,10 +147,10 @@ export function createCredentialForHolder(options: {
     revocationRegistryId: revocationRegistryDefinitionId,
     revocationStatusList,
     revocationConfiguration: new CredentialRevocationConfig({
+      statusList: revocationStatusList,
       registryDefinition: new RevocationRegistryDefinition(revocationRegistryDefinition.handle),
       registryDefinitionPrivate: new RevocationRegistryDefinitionPrivate(revocationRegistryDefinitionPrivate.handle),
       registryIndex: 9,
-      tailsPath,
     }),
   })
 

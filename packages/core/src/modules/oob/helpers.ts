@@ -4,7 +4,7 @@ import { ConnectionInvitationMessage, HandshakeProtocol } from '../connections'
 import { didKeyToVerkey, verkeyToDidKey } from '../dids/helpers'
 
 import { OutOfBandDidCommService } from './domain/OutOfBandDidCommService'
-import { OutOfBandInvitation } from './messages'
+import { InvitationType, OutOfBandInvitation } from './messages'
 
 export function convertToNewInvitation(oldInvitation: ConnectionInvitationMessage) {
   let service
@@ -32,7 +32,9 @@ export function convertToNewInvitation(oldInvitation: ConnectionInvitationMessag
     handshakeProtocols: [HandshakeProtocol.Connections],
   }
 
-  return new OutOfBandInvitation(options)
+  const outOfBandInvitation = new OutOfBandInvitation(options)
+  outOfBandInvitation.invitationType = InvitationType.Connection
+  return outOfBandInvitation
 }
 
 export function convertToOldInvitation(newInvitation: OutOfBandInvitation) {
@@ -43,7 +45,8 @@ export function convertToOldInvitation(newInvitation: OutOfBandInvitation) {
   if (typeof service === 'string') {
     options = {
       id: newInvitation.id,
-      label: newInvitation.label,
+      // label is optional
+      label: newInvitation.label ?? '',
       did: service,
       imageUrl: newInvitation.imageUrl,
       appendedAttachments: newInvitation.appendedAttachments,
@@ -51,7 +54,8 @@ export function convertToOldInvitation(newInvitation: OutOfBandInvitation) {
   } else {
     options = {
       id: newInvitation.id,
-      label: newInvitation.label,
+      // label is optional
+      label: newInvitation.label ?? '',
       recipientKeys: service.recipientKeys.map(didKeyToVerkey),
       routingKeys: service.routingKeys?.map(didKeyToVerkey),
       serviceEndpoint: service.serviceEndpoint,

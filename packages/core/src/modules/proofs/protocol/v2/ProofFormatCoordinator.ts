@@ -328,7 +328,7 @@ export class ProofFormatCoordinator<PFs extends ProofFormatService[]> {
       goalCode,
     })
 
-    message.setThread({ threadId: proofRecord.threadId })
+    message.setThread({ threadId: proofRecord.threadId, parentThreadId: proofRecord.parentThreadId })
     message.setPleaseAck()
 
     await didCommMessageRepository.saveOrUpdateAgentMessage(agentContext, {
@@ -463,7 +463,7 @@ export class ProofFormatCoordinator<PFs extends ProofFormatService[]> {
       requestMessage: V2RequestPresentationMessage
       formatServices: ProofFormatService[]
     }
-  ) {
+  ): Promise<{ isValid: true; message: undefined } | { isValid: false; message: string }> {
     const didCommMessageRepository = agentContext.dependencyManager.resolve(DidCommMessageRepository)
 
     const formatVerificationResults: boolean[] = []
@@ -476,13 +476,21 @@ export class ProofFormatCoordinator<PFs extends ProofFormatService[]> {
         requestMessage.requestAttachments
       )
 
-      const isValid = await formatService.processPresentation(agentContext, {
-        attachment,
-        requestAttachment,
-        proofRecord,
-      })
+      try {
+        // TODO: this should return a more complex object explaining why it is invalid
+        const isValid = await formatService.processPresentation(agentContext, {
+          attachment,
+          requestAttachment,
+          proofRecord,
+        })
 
-      formatVerificationResults.push(isValid)
+        formatVerificationResults.push(isValid)
+      } catch (error) {
+        return {
+          message: error.message,
+          isValid: false,
+        }
+      }
     }
 
     await didCommMessageRepository.saveOrUpdateAgentMessage(agentContext, {
@@ -491,7 +499,19 @@ export class ProofFormatCoordinator<PFs extends ProofFormatService[]> {
       associatedRecordId: proofRecord.id,
     })
 
-    return formatVerificationResults.every((isValid) => isValid === true)
+    const isValid = formatVerificationResults.every((isValid) => isValid === true)
+
+    if (isValid) {
+      return {
+        isValid,
+        message: undefined,
+      }
+    } else {
+      return {
+        isValid,
+        message: 'Not all presentations are valid',
+      }
+    }
   }
 
   public getAttachmentForService(

@@ -9,10 +9,12 @@ import type {
   RegisterCredentialDefinitionReturn,
   RegisterSchemaReturn,
   RegisterSchemaOptions,
+  RegisterRevocationRegistryDefinitionReturn,
+  RegisterRevocationStatusListReturn,
 } from '@aries-framework/anoncreds'
 import type { AgentContext } from '@aries-framework/core'
 
-import { AriesFrameworkError, JsonTransformer, utils } from '@aries-framework/core'
+import { AriesFrameworkError, Buffer, Hasher, JsonTransformer, TypedArrayEncoder, utils } from '@aries-framework/core'
 
 import { CheqdDidResolver, CheqdDidRegistrar } from '../../dids'
 import { cheqdSdkAnonCredsRegistryIdentifierRegex, parseCheqdDid } from '../utils/identifiers'
@@ -135,9 +137,16 @@ export class CheqdAnonCredsRegistry implements AnonCredsRegistry {
       const cheqdDidRegistrar = agentContext.dependencyManager.resolve(CheqdDidRegistrar)
       const { credentialDefinition } = options
       const schema = await this.getSchema(agentContext, credentialDefinition.schemaId)
+      if (!schema.schema) {
+        throw new Error(`Schema not found for schemaId: ${credentialDefinition.schemaId}`)
+      }
+
+      const credDefName = `${schema.schema.name}-${credentialDefinition.tag}`
+      const credDefNameHashBuffer = Hasher.hash(Buffer.from(credDefName), 'sha2-256')
+
       const credDefResource = {
         id: utils.uuid(),
-        name: `${schema.schema?.name}-${credentialDefinition.tag}-CredDef`,
+        name: TypedArrayEncoder.toHex(credDefNameHashBuffer),
         resourceType: 'anonCredsCredDef',
         data: {
           type: credentialDefinition.type,
@@ -283,6 +292,10 @@ export class CheqdAnonCredsRegistry implements AnonCredsRegistry {
     }
   }
 
+  public async registerRevocationRegistryDefinition(): Promise<RegisterRevocationRegistryDefinitionReturn> {
+    throw new Error('Not implemented!')
+  }
+
   // FIXME: this method doesn't retrieve the revocation status list at a specified time, it just resolves the revocation registry definition
   public async getRevocationStatusList(
     agentContext: AgentContext,
@@ -336,5 +349,9 @@ export class CheqdAnonCredsRegistry implements AnonCredsRegistry {
         revocationStatusListMetadata: {},
       }
     }
+  }
+
+  public async registerRevocationStatusList(): Promise<RegisterRevocationStatusListReturn> {
+    throw new Error('Not implemented!')
   }
 }

@@ -34,6 +34,21 @@ export class IndyVdrApi {
   }
 
   /**
+   * This method refreshes the pool connection and ensures the pool is up to date with the ledger.
+   */
+  public refreshPoolConnections() {
+    return this.indyVdrPoolService.refreshPoolConnections()
+  }
+
+  /**
+   * This method gets the updated transactions of the pool.
+   * @returns The transactions of the pool ledger
+   */
+  public getAllPoolTransactions() {
+    return this.indyVdrPoolService.getAllPoolTransactions()
+  }
+
+  /**
    * This method endorses a transaction. The transaction can be either a string or a JSON object.
    * If the transaction has a signature, it means the transaction was created by another author and will be endorsed.
    * This requires the `endorser` on the transaction to be equal to the unqualified variant of the `endorserDid`.

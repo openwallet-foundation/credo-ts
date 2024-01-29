@@ -318,17 +318,110 @@ describe('DidRegistrar', () => {
       })
     })
 
-    it('should return an error state if an unsupported numAlgo is provided', async () => {
-      const result = await peerDidRegistrar.create(
-        agentContext,
-        // @ts-expect-error - this is not a valid numAlgo
-        {
+    describe('did:peer:4', () => {
+      const key = Key.fromFingerprint('z6LShxJc8afmt8L1HKjUE56hXwmAkUhdQygrH1VG2jmb1WRz')
+      const verificationMethod = getEd25519VerificationKey2018({
+        key,
+        controller: '#id',
+        // Use relative id for peer dids
+        id: '#41fb2ec7-1f8b-42bf-91a2-4ef9092ddc16',
+      })
+
+      const didDocument = new DidDocumentBuilder('')
+        .addVerificationMethod(verificationMethod)
+        .addAuthentication(verificationMethod.id)
+        .addService(
+          new DidCommV1Service({
+            id: '#service-0',
+            recipientKeys: [verificationMethod.id],
+            serviceEndpoint: 'https://example.com',
+            accept: ['didcomm/aip2;env=rfc19'],
+          })
+        )
+        .build()
+
+      it('should correctly create a did:peer:4 document from a did document', async () => {
+        const result = await peerDidRegistrar.create(agentContext, {
           method: 'peer',
+          didDocument: didDocument,
           options: {
-            numAlgo: 4,
+            numAlgo: PeerDidNumAlgo.ShortFormAndLongForm,
           },
-        }
-      )
+        })
+
+        const longFormDid =
+          'did:peer:4zQmUJdJN7h66RpdeNEkNQ1tpUpN9nr2LcDz4Ftd3xKSgmn4:zD6dcwCdYV2zR4EBGTpxfEaRDLEq3ncjbutZpYTrMcGqaWip2P8vT6LrSH4cCVWfTdZgpuzBV4qY3ZasBMAs8M12JWstLTQHRVtu5ongsGvHCaWdWGS5cQaK6KLABnpBB5KgjPAN391Eekn1Zm4e14atfuj6gKHGp6V41GEumQFGM3YDwijVH82prvah5CqhRx6gXh4CYXu8MJVKiY5HBFdWyNLBtzaPWasGSEdLXYx6FcDv21igJfpcVbwQHwbU43wszfPypKiL9GDyys2n5zAWek5nQFGmDwrF65Vqy74CMFt8fZcvfBc1PTXSexhEwZkUY5inmeBbLXjbJU33FpWK6GxyDANxq5opQeRtAzUCtqeWxdafK56LYUes1THq6DzEKN2VirvvqygtnfPSJUfQWcRYixXq6bGGk5bjt14YygT7mALy5Ne6APGysjnNfH1MA3hrfEM9Ho8tuGSA2JeDvqYebV41chQDfKWoJrsG2bdFwZGgnkb3aBPHd4qyPvEdWiFLawR4mNj8qrtTagX1CyWvcAiWMKbspo5mVvCqP1SJuuT451X4uRBXazC9JGD2k7P63p71HU25zff4LvYkLeU8izcdBva1Tu4RddJN7jMFg4ifkTeZscFfbLPejFTmEDNRFswK1e'
+        const shortFormDid = 'did:peer:4zQmUJdJN7h66RpdeNEkNQ1tpUpN9nr2LcDz4Ftd3xKSgmn4'
+        expect(JsonTransformer.toJSON(result)).toMatchObject({
+          didDocumentMetadata: {},
+          didRegistrationMetadata: {},
+          didState: {
+            state: 'finished',
+            did: longFormDid,
+            didDocument: {
+              '@context': ['https://w3id.org/did/v1'],
+              id: longFormDid,
+              alsoKnownAs: [shortFormDid],
+              service: [
+                {
+                  serviceEndpoint: 'https://example.com',
+                  type: 'did-communication',
+                  priority: 0,
+                  recipientKeys: ['#41fb2ec7-1f8b-42bf-91a2-4ef9092ddc16'],
+                  accept: ['didcomm/aip2;env=rfc19'],
+                  id: '#service-0',
+                },
+              ],
+              verificationMethod: [
+                {
+                  id: '#41fb2ec7-1f8b-42bf-91a2-4ef9092ddc16',
+                  type: 'Ed25519VerificationKey2018',
+                  controller: '#id',
+                  publicKeyBase58: '7H8ScGrunfcGBwMhhRakDMYguLAWiNWhQ2maYH84J8fE',
+                },
+              ],
+              authentication: ['#41fb2ec7-1f8b-42bf-91a2-4ef9092ddc16'],
+            },
+            secret: {},
+          },
+        })
+      })
+
+      it('should store the did without the did document', async () => {
+        const longFormDid =
+          'did:peer:4zQmUJdJN7h66RpdeNEkNQ1tpUpN9nr2LcDz4Ftd3xKSgmn4:zD6dcwCdYV2zR4EBGTpxfEaRDLEq3ncjbutZpYTrMcGqaWip2P8vT6LrSH4cCVWfTdZgpuzBV4qY3ZasBMAs8M12JWstLTQHRVtu5ongsGvHCaWdWGS5cQaK6KLABnpBB5KgjPAN391Eekn1Zm4e14atfuj6gKHGp6V41GEumQFGM3YDwijVH82prvah5CqhRx6gXh4CYXu8MJVKiY5HBFdWyNLBtzaPWasGSEdLXYx6FcDv21igJfpcVbwQHwbU43wszfPypKiL9GDyys2n5zAWek5nQFGmDwrF65Vqy74CMFt8fZcvfBc1PTXSexhEwZkUY5inmeBbLXjbJU33FpWK6GxyDANxq5opQeRtAzUCtqeWxdafK56LYUes1THq6DzEKN2VirvvqygtnfPSJUfQWcRYixXq6bGGk5bjt14YygT7mALy5Ne6APGysjnNfH1MA3hrfEM9Ho8tuGSA2JeDvqYebV41chQDfKWoJrsG2bdFwZGgnkb3aBPHd4qyPvEdWiFLawR4mNj8qrtTagX1CyWvcAiWMKbspo5mVvCqP1SJuuT451X4uRBXazC9JGD2k7P63p71HU25zff4LvYkLeU8izcdBva1Tu4RddJN7jMFg4ifkTeZscFfbLPejFTmEDNRFswK1e'
+        const shortFormDid = 'did:peer:4zQmUJdJN7h66RpdeNEkNQ1tpUpN9nr2LcDz4Ftd3xKSgmn4'
+        await peerDidRegistrar.create(agentContext, {
+          method: 'peer',
+          didDocument,
+          options: {
+            numAlgo: PeerDidNumAlgo.ShortFormAndLongForm,
+          },
+        })
+
+        expect(didRepositoryMock.save).toHaveBeenCalledTimes(1)
+        const [, didRecord] = mockFunction(didRepositoryMock.save).mock.calls[0]
+
+        expect(didRecord).toMatchObject({
+          did: longFormDid,
+          role: DidDocumentRole.Created,
+          _tags: {
+            recipientKeyFingerprints: didDocument.recipientKeys.map((key) => key.fingerprint),
+            alternativeDids: [shortFormDid],
+          },
+          didDocument: undefined,
+        })
+      })
+    })
+
+    it('should return an error state if an unsupported numAlgo is provided', async () => {
+      // @ts-expect-error - this is not a valid numAlgo
+      const result = await peerDidRegistrar.create(agentContext, {
+        method: 'peer',
+        options: {
+          numAlgo: 5,
+        },
+      })
 
       expect(JsonTransformer.toJSON(result)).toMatchObject({
         didDocumentMetadata: {},

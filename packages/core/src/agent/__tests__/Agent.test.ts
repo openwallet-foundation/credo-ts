@@ -13,7 +13,7 @@ import { ConnectionService } from '../../modules/connections/services/Connection
 import { TrustPingService } from '../../modules/connections/services/TrustPingService'
 import { CredentialRepository } from '../../modules/credentials'
 import { CredentialsApi } from '../../modules/credentials/CredentialsApi'
-import { MessagePickupApi } from '../../modules/message-pìckup'
+import { MessagePickupApi } from '../../modules/message-pickup'
 import { ProofRepository } from '../../modules/proofs'
 import { ProofsApi } from '../../modules/proofs/ProofsApi'
 import {
@@ -246,7 +246,7 @@ describe('Agent', () => {
         'https://didcomm.org/coordinate-mediation/1.0',
         'https://didcomm.org/issue-credential/2.0',
         'https://didcomm.org/present-proof/2.0',
-        'https://didcomm.org/didexchange/1.0',
+        'https://didcomm.org/didexchange/1.1',
         'https://didcomm.org/discover-features/1.0',
         'https://didcomm.org/discover-features/2.0',
         'https://didcomm.org/messagepickup/1.0',

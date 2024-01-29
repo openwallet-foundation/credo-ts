@@ -20,7 +20,6 @@ import { ServiceDecorator } from '../../decorators/service/ServiceDecorator'
 import { AriesFrameworkError } from '../../error'
 import { Logger } from '../../logger'
 import { inject, injectable } from '../../plugins'
-import { DidCommMessageRepository } from '../../storage'
 import { JsonEncoder, JsonTransformer } from '../../utils'
 import { parseMessageType, supportsIncomingMessageType } from '../../utils/messageType'
 import { parseInvitationShortUrl } from '../../utils/parseInvitation'
@@ -37,7 +36,8 @@ import { OutOfBandState } from './domain/OutOfBandState'
 import { HandshakeReuseHandler } from './handlers'
 import { HandshakeReuseAcceptedHandler } from './handlers/HandshakeReuseAcceptedHandler'
 import { convertToNewInvitation, convertToOldInvitation } from './helpers'
-import { OutOfBandInvitation } from './messages'
+import { InvitationType, OutOfBandInvitation } from './messages'
+import { OutOfBandRepository } from './repository'
 import { OutOfBandRecord } from './repository/OutOfBandRecord'
 import { OutOfBandRecordMetadataKeys } from './repository/outOfBandRecordMetadataTypes'
 
@@ -77,6 +77,7 @@ interface BaseReceiveOutOfBandInvitationConfig {
   routing?: Routing
   acceptInvitationTimeoutMs?: number
   isImplicit?: boolean
+  ourDid?: string
 }
 
 export type ReceiveOutOfBandInvitationConfig = Omit<BaseReceiveOutOfBandInvitationConfig, 'isImplicit'>
@@ -92,7 +93,6 @@ export class OutOfBandApi {
   private outOfBandService: OutOfBandService
   private routingService: RoutingService
   private connectionsApi: ConnectionsApi
-  private didCommMessageRepository: DidCommMessageRepository
   private messageHandlerRegistry: MessageHandlerRegistry
   private didCommDocumentService: DidCommDocumentService
   private messageSender: MessageSender
@@ -106,7 +106,6 @@ export class OutOfBandApi {
     outOfBandService: OutOfBandService,
     routingService: RoutingService,
     connectionsApi: ConnectionsApi,
-    didCommMessageRepository: DidCommMessageRepository,
     messageSender: MessageSender,
     eventEmitter: EventEmitter,
     @inject(InjectionSymbols.Logger) logger: Logger,
@@ -119,7 +118,6 @@ export class OutOfBandApi {
     this.outOfBandService = outOfBandService
     this.routingService = routingService
     this.connectionsApi = connectionsApi
-    this.didCommMessageRepository = didCommMessageRepository
     this.messageSender = messageSender
     this.eventEmitter = eventEmitter
     this.registerMessageHandlers(messageHandlerRegistry)
@@ -249,6 +247,14 @@ export class OutOfBandApi {
       ...config,
       handshakeProtocols: [HandshakeProtocol.Connections],
     })
+
+    // Set legacy invitation type
+    outOfBandRecord.metadata.set(OutOfBandRecordMetadataKeys.LegacyInvitation, {
+      legacyInvitationType: InvitationType.Connection,
+    })
+    const outOfBandRepository = this.agentContext.dependencyManager.resolve(OutOfBandRepository)
+    await outOfBandRepository.update(this.agentContext, outOfBandRecord)
+
     return { outOfBandRecord, invitation: convertToOldInvitation(outOfBandRecord.outOfBandInvitation) }
   }
 
@@ -267,6 +273,13 @@ export class OutOfBandApi {
       messages: [config.message],
       routing: config.routing,
     })
+
+    // Set legacy invitation type
+    outOfBandRecord.metadata.set(OutOfBandRecordMetadataKeys.LegacyInvitation, {
+      legacyInvitationType: InvitationType.Connectionless,
+    })
+    const outOfBandRepository = this.agentContext.dependencyManager.resolve(OutOfBandRepository)
+    await outOfBandRepository.update(this.agentContext, outOfBandRecord)
 
     // Resolve the service and set it on the message
     const resolvedService = await this.outOfBandService.getResolvedServiceForOutOfBandServices(
@@ -448,6 +461,13 @@ export class OutOfBandApi {
       })
     }
 
+    // If the invitation was converted from another legacy format, we store this, as its needed for some flows
+    if (outOfBandInvitation.invitationType && outOfBandInvitation.invitationType !== InvitationType.OutOfBand) {
+      outOfBandRecord.metadata.set(OutOfBandRecordMetadataKeys.LegacyInvitation, {
+        legacyInvitationType: outOfBandInvitation.invitationType,
+      })
+    }
+
     await this.outOfBandService.save(this.agentContext, outOfBandRecord)
     this.outOfBandService.emitStateChangedEvent(this.agentContext, outOfBandRecord, null)
 
@@ -460,6 +480,7 @@ export class OutOfBandApi {
         reuseConnection,
         routing,
         timeoutMs: config.acceptInvitationTimeoutMs,
+        ourDid: config.ourDid,
       })
     }
 
@@ -495,12 +516,13 @@ export class OutOfBandApi {
        */
       routing?: Routing
       timeoutMs?: number
+      ourDid?: string
     }
   ) {
     const outOfBandRecord = await this.outOfBandService.getById(this.agentContext, outOfBandId)
 
     const { outOfBandInvitation } = outOfBandRecord
-    const { label, alias, imageUrl, autoAcceptConnection, reuseConnection } = config
+    const { label, alias, imageUrl, autoAcceptConnection, reuseConnection, ourDid } = config
     const services = outOfBandInvitation.getServices()
     const messages = outOfBandInvitation.getRequests()
     const timeoutMs = config.timeoutMs ?? 20000
@@ -566,18 +588,19 @@ export class OutOfBandApi {
           autoAcceptConnection,
           protocol: handshakeProtocol,
           routing,
+          ourDid,
         })
       }
 
       if (messages) {
         this.logger.debug('Out of band message contains request messages.')
         if (connectionRecord.isReady) {
-          await this.emitWithConnection(connectionRecord, messages)
+          await this.emitWithConnection(outOfBandRecord, connectionRecord, messages)
         } else {
           // Wait until the connection is ready and then pass the messages to the agent for further processing
           this.connectionsApi
             .returnWhenIsConnected(connectionRecord.id, { timeoutMs })
-            .then((connectionRecord) => this.emitWithConnection(connectionRecord, messages))
+            .then((connectionRecord) => this.emitWithConnection(outOfBandRecord, connectionRecord, messages))
             .catch((error) => {
               if (error instanceof EmptyError) {
                 this.logger.warn(
@@ -595,9 +618,9 @@ export class OutOfBandApi {
       this.logger.debug('Out of band message contains only request messages.')
       if (existingConnection) {
         this.logger.debug('Connection already exists.', { connectionId: existingConnection.id })
-        await this.emitWithConnection(existingConnection, messages)
+        await this.emitWithConnection(outOfBandRecord, existingConnection, messages)
       } else {
-        await this.emitWithServices(services, messages)
+        await this.emitWithServices(outOfBandRecord, services, messages)
       }
     }
     return { outOfBandRecord }
@@ -740,7 +763,11 @@ export class OutOfBandApi {
     }
   }
 
-  private async emitWithConnection(connectionRecord: ConnectionRecord, messages: PlaintextMessage[]) {
+  private async emitWithConnection(
+    outOfBandRecord: OutOfBandRecord,
+    connectionRecord: ConnectionRecord,
+    messages: PlaintextMessage[]
+  ) {
     const supportedMessageTypes = this.messageHandlerRegistry.supportedMessageTypes
     const plaintextMessage = messages.find((message) => {
       const parsedMessageType = parseMessageType(message['@type'])
@@ -750,6 +777,9 @@ export class OutOfBandApi {
     if (!plaintextMessage) {
       throw new AriesFrameworkError('There is no message in requests~attach supported by agent.')
     }
+
+    // Make sure message has correct parent thread id
+    this.ensureParentThreadId(outOfBandRecord, plaintextMessage)
 
     this.logger.debug(`Message with type ${plaintextMessage['@type']} can be processed.`)
 
@@ -763,7 +793,11 @@ export class OutOfBandApi {
     })
   }
 
-  private async emitWithServices(services: Array<OutOfBandDidCommService | string>, messages: PlaintextMessage[]) {
+  private async emitWithServices(
+    outOfBandRecord: OutOfBandRecord,
+    services: Array<OutOfBandDidCommService | string>,
+    messages: PlaintextMessage[]
+  ) {
     if (!services || services.length === 0) {
       throw new AriesFrameworkError(`There are no services. We can not emit messages`)
     }
@@ -778,6 +812,9 @@ export class OutOfBandApi {
       throw new AriesFrameworkError('There is no message in requests~attach supported by agent.')
     }
 
+    // Make sure message has correct parent thread id
+    this.ensureParentThreadId(outOfBandRecord, plaintextMessage)
+
     this.logger.debug(`Message with type ${plaintextMessage['@type']} can be processed.`)
 
     this.eventEmitter.emit<AgentMessageReceivedEvent>(this.agentContext, {
@@ -787,6 +824,35 @@ export class OutOfBandApi {
         contextCorrelationId: this.agentContext.contextCorrelationId,
       },
     })
+  }
+
+  private ensureParentThreadId(outOfBandRecord: OutOfBandRecord, plaintextMessage: PlaintextMessage) {
+    const legacyInvitationMetadata = outOfBandRecord.metadata.get(OutOfBandRecordMetadataKeys.LegacyInvitation)
+
+    // We need to set the parent thread id to the invitation id, according to RFC 0434.
+    // So if it already has a pthid and it is not the same as the invitation id, we throw an error
+    if (
+      plaintextMessage['~thread']?.pthid &&
+      plaintextMessage['~thread'].pthid !== outOfBandRecord.outOfBandInvitation.id
+    ) {
+      throw new AriesFrameworkError(
+        `Out of band invitation requests~attach message contains parent thread id ${plaintextMessage['~thread'].pthid} that does not match the invitation id ${outOfBandRecord.outOfBandInvitation.id}`
+      )
+    }
+
+    // If the invitation is created from a legacy connectionless invitation, we don't need to set the pthid
+    // as that's not expected, and it's generated on our side only
+    if (legacyInvitationMetadata?.legacyInvitationType === InvitationType.Connectionless) {
+      return
+    }
+
+    if (!plaintextMessage['~thread']) {
+      plaintextMessage['~thread'] = {}
+    }
+
+    // The response to an out-of-band message MUST set its ~thread.pthid equal to the @id property of the out-of-band message.
+    // By adding the pthid to the message, we ensure that the response will take over this pthid
+    plaintextMessage['~thread'].pthid = outOfBandRecord.outOfBandInvitation.id
   }
 
   private async handleHandshakeReuse(outOfBandRecord: OutOfBandRecord, connectionRecord: ConnectionRecord) {
@@ -809,7 +875,10 @@ export class OutOfBandApi {
         ),
         // If the event is found, we return the value true
         map(() => true),
-        timeout(15000),
+        timeout({
+          first: 15000,
+          meta: 'OutOfBandApi.handleHandshakeReuse',
+        }),
         // If timeout is reached, we return false
         catchError(() => of(false))
       )

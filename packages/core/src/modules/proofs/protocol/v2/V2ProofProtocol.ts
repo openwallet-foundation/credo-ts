@@ -42,10 +42,11 @@ import { ProofsModuleConfig } from '../../ProofsModuleConfig'
 import { PresentationProblemReportReason } from '../../errors/PresentationProblemReportReason'
 import { AutoAcceptProof, ProofState } from '../../models'
 import { ProofExchangeRecord, ProofRepository } from '../../repository'
-import { composeAutoAccept } from '../../utils/composeAutoAccept'
+import { composeAutoAccept } from '../../utils'
 import { BaseProofProtocol } from '../BaseProofProtocol'
 
 import { ProofFormatCoordinator } from './ProofFormatCoordinator'
+import { V2PresentationProblemReportError } from './errors'
 import { V2PresentationAckHandler } from './handlers/V2PresentationAckHandler'
 import { V2PresentationHandler } from './handlers/V2PresentationHandler'
 import { V2PresentationProblemReportHandler } from './handlers/V2PresentationProblemReportHandler'
@@ -642,11 +643,7 @@ export class V2ProofProtocol<PFs extends ProofFormatService[] = ProofFormatServi
 
     agentContext.config.logger.debug(`Processing presentation with id ${presentationMessage.id}`)
 
-    const proofRecord = await this.getByThreadAndConnectionId(
-      messageContext.agentContext,
-      presentationMessage.threadId,
-      connection?.id
-    )
+    const proofRecord = await this.getByThreadAndConnectionId(messageContext.agentContext, presentationMessage.threadId)
 
     const lastSentMessage = await didCommMessageRepository.getAgentMessage(messageContext.agentContext, {
       associatedRecordId: proofRecord.id,
@@ -666,20 +663,43 @@ export class V2ProofProtocol<PFs extends ProofFormatService[] = ProofFormatServi
       lastSentMessage,
     })
 
-    const formatServices = this.getFormatServicesFromMessage(presentationMessage.formats)
-    if (formatServices.length === 0) {
-      throw new AriesFrameworkError(`Unable to process presentation. No supported formats`)
+    // This makes sure that the sender of the incoming message is authorized to do so.
+    if (!proofRecord.connectionId) {
+      await connectionService.matchIncomingMessageToRequestMessageInOutOfBandExchange(messageContext, {
+        expectedConnectionId: proofRecord.connectionId,
+      })
+
+      proofRecord.connectionId = connection?.id
     }
 
-    const isValid = await this.proofFormatCoordinator.processPresentation(messageContext.agentContext, {
+    const formatServices = this.getFormatServicesFromMessage(presentationMessage.formats)
+    // Abandon if no supported formats
+    if (formatServices.length === 0) {
+      proofRecord.errorMessage = `Unable to process presentation. No supported formats`
+      await this.updateState(messageContext.agentContext, proofRecord, ProofState.Abandoned)
+      throw new V2PresentationProblemReportError(proofRecord.errorMessage, {
+        problemCode: PresentationProblemReportReason.Abandoned,
+      })
+    }
+
+    const result = await this.proofFormatCoordinator.processPresentation(messageContext.agentContext, {
       proofRecord,
       formatServices,
       requestMessage: lastSentMessage,
       message: presentationMessage,
     })
 
-    proofRecord.isVerified = isValid
-    await this.updateState(messageContext.agentContext, proofRecord, ProofState.PresentationReceived)
+    proofRecord.isVerified = result.isValid
+    if (result.isValid) {
+      await this.updateState(messageContext.agentContext, proofRecord, ProofState.PresentationReceived)
+    } else {
+      proofRecord.errorMessage = result.message
+      proofRecord.isVerified = false
+      await this.updateState(messageContext.agentContext, proofRecord, ProofState.Abandoned)
+      throw new V2PresentationProblemReportError(proofRecord.errorMessage, {
+        problemCode: PresentationProblemReportReason.Abandoned,
+      })
+    }
 
     return proofRecord
   }
@@ -708,6 +728,11 @@ export class V2ProofProtocol<PFs extends ProofFormatService[] = ProofFormatServi
     const message = new V2PresentationAckMessage({
       threadId: proofRecord.threadId,
       status: AckStatus.OK,
+    })
+
+    message.setThread({
+      threadId: proofRecord.threadId,
+      parentThreadId: proofRecord.parentThreadId,
     })
 
     await this.updateState(agentContext, proofRecord, ProofState.Done)

@@ -1,4 +1,4 @@
-type NodeVersions = 14 | 16 | 17 | 18
+type NodeVersions = 18 | 20
 
 export function describeRunInNodeVersion(versions: NodeVersions[], ...parameters: Parameters<typeof describe>) {
   const runtimeVersion = process.version

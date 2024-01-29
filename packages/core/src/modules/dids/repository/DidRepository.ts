@@ -48,22 +48,28 @@ export class DidRepository extends Repository<DidRecord> {
   }
 
   public findAllByDid(agentContext: AgentContext, did: string) {
-    return this.findByQuery(agentContext, { did })
+    return this.findByQuery(agentContext, { $or: [{ alternativeDids: [did] }, { did }] })
   }
 
   public findReceivedDid(agentContext: AgentContext, receivedDid: string) {
-    return this.findSingleByQuery(agentContext, { did: receivedDid, role: DidDocumentRole.Received })
+    return this.findSingleByQuery(agentContext, {
+      $or: [{ alternativeDids: [receivedDid] }, { did: receivedDid }],
+      role: DidDocumentRole.Received,
+    })
   }
 
   public findCreatedDid(agentContext: AgentContext, createdDid: string) {
-    return this.findSingleByQuery(agentContext, { did: createdDid, role: DidDocumentRole.Created })
+    return this.findSingleByQuery(agentContext, {
+      $or: [{ alternativeDids: [createdDid] }, { did: createdDid }],
+      role: DidDocumentRole.Created,
+    })
   }
 
   public getCreatedDids(agentContext: AgentContext, { method, did }: { method?: string; did?: string }) {
     return this.findByQuery(agentContext, {
       role: DidDocumentRole.Created,
       method,
-      did,
+      $or: did ? [{ alternativeDids: [did] }, { did }] : undefined,
     })
   }
 

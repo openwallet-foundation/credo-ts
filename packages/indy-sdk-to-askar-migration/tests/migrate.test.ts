@@ -9,12 +9,10 @@ import { registerAriesAskar } from '@hyperledger/aries-askar-shared'
 import indy from 'indy-sdk'
 import { homedir } from 'os'
 
-import { describeRunInNodeVersion } from '../../../tests/runInVersion'
 import { IndySdkToAskarMigrationUpdater } from '../src'
 import { IndySdkToAskarMigrationError } from '../src/errors/IndySdkToAskarMigrationError'
 
-// FIXME: Re-include in tests when NodeJS wrapper performance is improved
-describeRunInNodeVersion([18], 'Indy SDK To Askar Migration', () => {
+describe('Indy SDK To Askar Migration', () => {
   beforeAll(() => {
     registerAriesAskar({ askar: ariesAskar })
   })

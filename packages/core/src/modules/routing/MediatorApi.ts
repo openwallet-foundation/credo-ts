@@ -7,7 +7,7 @@ import { MessageSender } from '../../agent/MessageSender'
 import { OutboundMessageContext } from '../../agent/models'
 import { injectable } from '../../plugins'
 import { ConnectionService } from '../connections/services'
-import { MessagePickupApi } from '../message-pìckup'
+import { MessagePickupApi } from '../message-pickup'
 
 import { MediatorModuleConfig } from './MediatorModuleConfig'
 import { ForwardHandler, KeylistUpdateHandler } from './handlers'

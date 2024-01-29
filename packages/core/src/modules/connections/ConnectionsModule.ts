@@ -44,7 +44,7 @@ export class ConnectionsModule implements Module {
         roles: [ConnectionRole.Invitee, ConnectionRole.Inviter],
       }),
       new Protocol({
-        id: 'https://didcomm.org/didexchange/1.0',
+        id: 'https://didcomm.org/didexchange/1.1',
         roles: [DidExchangeRole.Requester, DidExchangeRole.Responder],
       })
     )

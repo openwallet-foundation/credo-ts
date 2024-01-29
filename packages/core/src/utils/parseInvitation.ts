@@ -1,5 +1,4 @@
 import type { AgentDependencies } from '../agent/AgentDependencies'
-import type { Response } from 'node-fetch'
 
 import { AbortController } from 'abort-controller'
 import { parseUrl } from 'query-string'
@@ -9,7 +8,7 @@ import { AriesFrameworkError } from '../error'
 import { ConnectionInvitationMessage } from '../modules/connections'
 import { OutOfBandDidCommService } from '../modules/oob/domain/OutOfBandDidCommService'
 import { convertToNewInvitation } from '../modules/oob/helpers'
-import { OutOfBandInvitation } from '../modules/oob/messages'
+import { InvitationType, OutOfBandInvitation } from '../modules/oob/messages'
 
 import { JsonEncoder } from './JsonEncoder'
 import { JsonTransformer } from './JsonTransformer'
@@ -36,6 +35,36 @@ const fetchShortUrl = async (invitationUrl: string, dependencies: AgentDependenc
 }
 
 /**
+ * Parses a JSON containing an invitation message and returns an OutOfBandInvitation instance
+ *
+ * @param invitationJson JSON object containing message
+ * @returns OutOfBandInvitation
+ */
+export const parseInvitationJson = (invitationJson: Record<string, unknown>): OutOfBandInvitation => {
+  const messageType = invitationJson['@type'] as string
+
+  if (!messageType) {
+    throw new AriesFrameworkError('Invitation is not a valid DIDComm message')
+  }
+
+  const parsedMessageType = parseMessageType(messageType)
+  if (supportsIncomingMessageType(parsedMessageType, OutOfBandInvitation.type)) {
+    const invitation = JsonTransformer.fromJSON(invitationJson, OutOfBandInvitation)
+    MessageValidator.validateSync(invitation)
+    invitation.invitationType = InvitationType.OutOfBand
+    return invitation
+  } else if (supportsIncomingMessageType(parsedMessageType, ConnectionInvitationMessage.type)) {
+    const invitation = JsonTransformer.fromJSON(invitationJson, ConnectionInvitationMessage)
+    MessageValidator.validateSync(invitation)
+    const outOfBandInvitation = convertToNewInvitation(invitation)
+    outOfBandInvitation.invitationType = InvitationType.Connection
+    return outOfBandInvitation
+  } else {
+    throw new AriesFrameworkError(`Invitation with '@type' ${parsedMessageType.messageTypeUri} not supported.`)
+  }
+}
+
+/**
  * Parses URL containing encoded invitation and returns invitation message.
  *
  * @param invitationUrl URL containing encoded invitation
@@ -44,12 +73,12 @@ const fetchShortUrl = async (invitationUrl: string, dependencies: AgentDependenc
  */
 export const parseInvitationUrl = (invitationUrl: string): OutOfBandInvitation => {
   const parsedUrl = parseUrl(invitationUrl).query
-  if (parsedUrl['oob']) {
-    const outOfBandInvitation = OutOfBandInvitation.fromUrl(invitationUrl)
-    return outOfBandInvitation
-  } else if (parsedUrl['c_i'] || parsedUrl['d_m']) {
-    const invitation = ConnectionInvitationMessage.fromUrl(invitationUrl)
-    return convertToNewInvitation(invitation)
+
+  const encodedInvitation = parsedUrl['oob'] ?? parsedUrl['c_i'] ?? parsedUrl['d_m']
+
+  if (typeof encodedInvitation === 'string') {
+    const invitationJson = JsonEncoder.fromBase64(encodedInvitation) as Record<string, unknown>
+    return parseInvitationJson(invitationJson)
   }
   throw new AriesFrameworkError(
     'InvitationUrl is invalid. It needs to contain one, and only one, of the following parameters: `oob`, `c_i` or `d_m`.'
@@ -60,19 +89,8 @@ export const parseInvitationUrl = (invitationUrl: string): OutOfBandInvitation =
 export const oobInvitationFromShortUrl = async (response: Response): Promise<OutOfBandInvitation> => {
   if (response) {
     if (response.headers.get('Content-Type')?.startsWith('application/json') && response.ok) {
-      const invitationJson = await response.json()
-      const parsedMessageType = parseMessageType(invitationJson['@type'])
-      if (supportsIncomingMessageType(parsedMessageType, OutOfBandInvitation.type)) {
-        const invitation = JsonTransformer.fromJSON(invitationJson, OutOfBandInvitation)
-        MessageValidator.validateSync(invitation)
-        return invitation
-      } else if (supportsIncomingMessageType(parsedMessageType, ConnectionInvitationMessage.type)) {
-        const invitation = JsonTransformer.fromJSON(invitationJson, ConnectionInvitationMessage)
-        MessageValidator.validateSync(invitation)
-        return convertToNewInvitation(invitation)
-      } else {
-        throw new AriesFrameworkError(`Invitation with '@type' ${parsedMessageType.messageTypeUri} not supported.`)
-      }
+      const invitationJson = (await response.json()) as Record<string, unknown>
+      return parseInvitationJson(invitationJson)
     } else if (response['url']) {
       // The following if else is for here for trinsic shorten urls
       // Because the redirect targets a deep link the automatic redirect does not occur
@@ -102,12 +120,8 @@ export const parseInvitationShortUrl = async (
   dependencies: AgentDependencies
 ): Promise<OutOfBandInvitation> => {
   const parsedUrl = parseUrl(invitationUrl).query
-  if (parsedUrl['oob']) {
-    const outOfBandInvitation = OutOfBandInvitation.fromUrl(invitationUrl)
-    return outOfBandInvitation
-  } else if (parsedUrl['c_i']) {
-    const invitation = ConnectionInvitationMessage.fromUrl(invitationUrl)
-    return convertToNewInvitation(invitation)
+  if (parsedUrl['oob'] || parsedUrl['c_i']) {
+    return parseInvitationUrl(invitationUrl)
   }
   // Legacy connectionless invitation
   else if (parsedUrl['d_m']) {
@@ -126,18 +140,18 @@ export const parseInvitationShortUrl = async (
 
     // transform into out of band invitation
     const invitation = new OutOfBandInvitation({
-      // The label is currently required by the OutOfBandInvitation class, but not according to the specification.
-      // FIXME: In 0.5.0 we will make this optional: https://github.com/hyperledger/aries-framework-javascript/issues/1524
-      label: '',
       services: [OutOfBandDidCommService.fromResolvedDidCommService(agentMessage.service.resolvedDidCommService)],
     })
 
+    invitation.invitationType = InvitationType.Connectionless
     invitation.addRequest(JsonTransformer.fromJSON(messageWithoutService, AgentMessage))
 
     return invitation
   } else {
     try {
-      return oobInvitationFromShortUrl(await fetchShortUrl(invitationUrl, dependencies))
+      const outOfBandInvitation = await oobInvitationFromShortUrl(await fetchShortUrl(invitationUrl, dependencies))
+      outOfBandInvitation.invitationType = InvitationType.OutOfBand
+      return outOfBandInvitation
     } catch (error) {
       throw new AriesFrameworkError(
         'InvitationUrl is invalid. It needs to contain one, and only one, of the following parameters: `oob`, `c_i` or `d_m`, or be valid shortened URL'

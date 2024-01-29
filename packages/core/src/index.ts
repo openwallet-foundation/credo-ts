@@ -61,18 +61,27 @@ export * from './modules/oob'
 export * from './modules/dids'
 export * from './modules/vc'
 export * from './modules/cache'
-export { JsonEncoder, JsonTransformer, isJsonObject, isValidJweStructure, TypedArrayEncoder, Buffer } from './utils'
+export {
+  JsonEncoder,
+  JsonTransformer,
+  isJsonObject,
+  isValidJweStructure,
+  TypedArrayEncoder,
+  Buffer,
+  deepEquality,
+} from './utils'
 export * from './logger'
 export * from './error'
 export * from './wallet/error'
 export { parseMessageType, IsValidMessageType, replaceLegacyDidSovPrefix } from './utils/messageType'
-export type { Constructor } from './utils/mixins'
+export type { Constructor, Constructable } from './utils/mixins'
 export * from './agent/Events'
 export * from './crypto/'
 
 // TODO: clean up util exports
 export { encodeAttachment, isLinkedAttachment } from './utils/attachment'
-export { Hasher } from './utils/Hasher'
+export type { Optional } from './utils'
+export { Hasher, HashName } from './utils/Hasher'
 export { MessageValidator } from './utils/MessageValidator'
 export { LinkedAttachment, LinkedAttachmentOptions } from './utils/LinkedAttachment'
 import { parseInvitationUrl } from './utils/parseInvitation'

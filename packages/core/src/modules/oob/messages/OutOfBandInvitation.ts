@@ -1,7 +1,7 @@
 import type { PlaintextMessage } from '../../../types'
 import type { HandshakeProtocol } from '../../connections'
 
-import { Expose, Transform, TransformationType, Type } from 'class-transformer'
+import { Exclude, Expose, Transform, TransformationType, Type } from 'class-transformer'
 import { ArrayNotEmpty, IsArray, IsInstance, IsOptional, IsUrl, ValidateNested } from 'class-validator'
 import { parseUrl } from 'query-string'
 
@@ -17,7 +17,7 @@ import { OutOfBandDidCommService } from '../domain/OutOfBandDidCommService'
 
 export interface OutOfBandInvitationOptions {
   id?: string
-  label: string
+  label?: string
   goalCode?: string
   goal?: string
   accept?: string[]
@@ -43,6 +43,13 @@ export class OutOfBandInvitation extends AgentMessage {
       this.appendedAttachments = options.appendedAttachments
     }
   }
+
+  /**
+   * The original type of the invitation. This is not part of the RFC, but allows to identify
+   * from what the oob invitation was originally created (e.g. legacy connectionless invitation).
+   */
+  @Exclude()
+  public invitationType?: InvitationType
 
   public addRequest(message: AgentMessage) {
     if (!this.requests) this.requests = []
@@ -117,7 +124,7 @@ export class OutOfBandInvitation extends AgentMessage {
   public readonly type = OutOfBandInvitation.type.messageTypeUri
   public static readonly type = parseMessageType('https://didcomm.org/out-of-band/1.1/invitation')
 
-  public readonly label!: string
+  public readonly label?: string
 
   @Expose({ name: 'goal_code' })
   public readonly goalCode?: string
@@ -143,7 +150,6 @@ export class OutOfBandInvitation extends AgentMessage {
   @ArrayNotEmpty()
   @OutOfBandServiceTransformer()
   @IsStringOrInstance(OutOfBandDidCommService, { each: true })
-  @ValidateNested({ each: true })
   // eslint-disable-next-line @typescript-eslint/ban-types
   private services!: Array<OutOfBandDidCommService | string | String>
 
@@ -178,4 +184,13 @@ function OutOfBandServiceTransformer() {
     // PLAIN_TO_PLAIN
     return value
   })
+}
+
+/**
+ * The original invitation an out of band invitation was derived from.
+ */
+export enum InvitationType {
+  OutOfBand = 'out-of-band/1.x',
+  Connection = 'connections/1.x',
+  Connectionless = 'connectionless',
 }

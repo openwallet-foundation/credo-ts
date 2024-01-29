@@ -5,6 +5,7 @@ import { BaseRecord, utils } from '@aries-framework/core'
 
 export interface AnonCredsCredentialRecordProps {
   id?: string
+  createdAt?: Date
   credential: AnonCredsCredential
   credentialId: string
   credentialRevocationId?: string
@@ -60,6 +61,7 @@ export class AnonCredsCredentialRecord extends BaseRecord<
 
     if (props) {
       this.id = props.id ?? utils.uuid()
+      this.createdAt = props.createdAt ?? new Date()
       this.credentialId = props.credentialId
       this.credential = props.credential
       this.credentialRevocationId = props.credentialRevocationId

@@ -150,6 +150,20 @@ export class IndyVdrPoolService {
   }
 
   /**
+   * Refresh the pool connections asynchronously
+   */
+  public refreshPoolConnections() {
+    return Promise.allSettled(this.pools.map((pool) => pool.refreshConnection()))
+  }
+
+  /**
+   * Get all pool transactions
+   */
+  public getAllPoolTransactions() {
+    return Promise.allSettled(this.pools.map((pool) => pool.transactions))
+  }
+
+  /**
    * Get the most appropriate pool for the given indyNamespace
    */
   public getPoolForNamespace(indyNamespace: string) {

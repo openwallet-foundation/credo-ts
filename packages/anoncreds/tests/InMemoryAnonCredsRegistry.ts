@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import type {
   AnonCredsRegistry,
   GetSchemaReturn,
@@ -13,14 +12,30 @@ import type {
   AnonCredsRevocationRegistryDefinition,
   AnonCredsSchema,
   AnonCredsCredentialDefinition,
+  RegisterRevocationRegistryDefinitionOptions,
+  RegisterRevocationRegistryDefinitionReturn,
+  RegisterRevocationStatusListReturn,
+  RegisterRevocationStatusListOptions,
 } from '../src'
 import type { AgentContext } from '@aries-framework/core'
 
 import { Hasher, TypedArrayEncoder } from '@aries-framework/core'
 import BigNumber from 'bn.js'
 
-import { getDidIndyCredentialDefinitionId, getDidIndySchemaId } from '../../indy-sdk/src/anoncreds/utils/identifiers'
-import { getUnqualifiedCredentialDefinitionId, getUnqualifiedSchemaId, parseIndyDid, parseIndySchemaId } from '../src'
+import {
+  getDidIndyCredentialDefinitionId,
+  getDidIndyRevocationRegistryDefinitionId,
+  getDidIndySchemaId,
+} from '../../indy-sdk/src/anoncreds/utils/identifiers'
+import {
+  parseIndyCredentialDefinitionId,
+  getUnqualifiedRevocationRegistryDefinitionId,
+  getUnqualifiedCredentialDefinitionId,
+  getUnqualifiedSchemaId,
+  parseIndyDid,
+  parseIndySchemaId,
+} from '../src'
+import { dateToTimestamp } from '../src/utils/timestamp'
 
 /**
  * In memory implementation of the {@link AnonCredsRegistry} interface. Useful for testing.
@@ -55,7 +70,7 @@ export class InMemoryAnonCredsRegistry implements AnonCredsRegistry {
     this.revocationStatusLists = existingRevocationStatusLists
   }
 
-  public async getSchema(agentContext: AgentContext, schemaId: string): Promise<GetSchemaReturn> {
+  public async getSchema(_agentContext: AgentContext, schemaId: string): Promise<GetSchemaReturn> {
     const schema = this.schemas[schemaId]
 
     const parsed = parseIndySchemaId(schemaId)
@@ -87,7 +102,7 @@ export class InMemoryAnonCredsRegistry implements AnonCredsRegistry {
   }
 
   public async registerSchema(
-    agentContext: AgentContext,
+    _agentContext: AgentContext,
     options: RegisterSchemaOptions
   ): Promise<RegisterSchemaReturn> {
     const { namespace, namespaceIdentifier } = parseIndyDid(options.schema.issuerId)
@@ -124,7 +139,7 @@ export class InMemoryAnonCredsRegistry implements AnonCredsRegistry {
   }
 
   public async getCredentialDefinition(
-    agentContext: AgentContext,
+    _agentContext: AgentContext,
     credentialDefinitionId: string
   ): Promise<GetCredentialDefinitionReturn> {
     const credentialDefinition = this.credentialDefinitions[credentialDefinitionId]
@@ -149,7 +164,7 @@ export class InMemoryAnonCredsRegistry implements AnonCredsRegistry {
   }
 
   public async registerCredentialDefinition(
-    agentContext: AgentContext,
+    _agentContext: AgentContext,
     options: RegisterCredentialDefinitionOptions
   ): Promise<RegisterCredentialDefinitionReturn> {
     const parsedSchema = parseIndySchemaId(options.credentialDefinition.schemaId)
@@ -195,7 +210,7 @@ export class InMemoryAnonCredsRegistry implements AnonCredsRegistry {
   }
 
   public async getRevocationRegistryDefinition(
-    agentContext: AgentContext,
+    _agentContext: AgentContext,
     revocationRegistryDefinitionId: string
   ): Promise<GetRevocationRegistryDefinitionReturn> {
     const revocationRegistryDefinition = this.revocationRegistryDefinitions[revocationRegistryDefinitionId]
@@ -219,14 +234,62 @@ export class InMemoryAnonCredsRegistry implements AnonCredsRegistry {
     }
   }
 
+  public async registerRevocationRegistryDefinition(
+    _agentContext: AgentContext,
+    options: RegisterRevocationRegistryDefinitionOptions
+  ): Promise<RegisterRevocationRegistryDefinitionReturn> {
+    const parsedCredentialDefinition = parseIndyCredentialDefinitionId(options.revocationRegistryDefinition.credDefId)
+    const legacyCredentialDefinitionId = getUnqualifiedCredentialDefinitionId(
+      parsedCredentialDefinition.namespaceIdentifier,
+      parsedCredentialDefinition.schemaSeqNo,
+      parsedCredentialDefinition.tag
+    )
+    const indyLedgerSeqNo = getSeqNoFromSchemaId(legacyCredentialDefinitionId)
+
+    const { namespace, namespaceIdentifier } = parseIndyDid(options.revocationRegistryDefinition.issuerId)
+    const legacyIssuerId = namespaceIdentifier
+    const didIndyRevocationRegistryDefinitionId = getDidIndyRevocationRegistryDefinitionId(
+      namespace,
+      namespaceIdentifier,
+      indyLedgerSeqNo,
+      parsedCredentialDefinition.tag,
+      options.revocationRegistryDefinition.tag
+    )
+
+    this.revocationRegistryDefinitions[didIndyRevocationRegistryDefinitionId] = options.revocationRegistryDefinition
+
+    const legacyRevocationRegistryDefinitionId = getUnqualifiedRevocationRegistryDefinitionId(
+      legacyIssuerId,
+      indyLedgerSeqNo,
+      parsedCredentialDefinition.tag,
+      options.revocationRegistryDefinition.tag
+    )
+
+    this.revocationRegistryDefinitions[legacyRevocationRegistryDefinitionId] = {
+      ...options.revocationRegistryDefinition,
+      issuerId: legacyIssuerId,
+      credDefId: legacyCredentialDefinitionId,
+    }
+
+    return {
+      registrationMetadata: {},
+      revocationRegistryDefinitionMetadata: {},
+      revocationRegistryDefinitionState: {
+        state: 'finished',
+        revocationRegistryDefinition: options.revocationRegistryDefinition,
+        revocationRegistryDefinitionId: didIndyRevocationRegistryDefinitionId,
+      },
+    }
+  }
+
   public async getRevocationStatusList(
-    agentContext: AgentContext,
+    _agentContext: AgentContext,
     revocationRegistryId: string,
     timestamp: number
   ): Promise<GetRevocationStatusListReturn> {
     const revocationStatusLists = this.revocationStatusLists[revocationRegistryId]
 
-    if (!revocationStatusLists || !revocationStatusLists[timestamp]) {
+    if (!revocationStatusLists || Object.entries(revocationStatusLists).length === 0) {
       return {
         resolutionMetadata: {
           error: 'notFound',
@@ -236,10 +299,48 @@ export class InMemoryAnonCredsRegistry implements AnonCredsRegistry {
       }
     }
 
+    const previousTimestamps = Object.keys(revocationStatusLists)
+      .filter((ts) => Number(ts) <= timestamp)
+      .sort()
+
+    if (!previousTimestamps) {
+      return {
+        resolutionMetadata: {
+          error: 'notFound',
+          message: `No active Revocation status list found at ${timestamp} for revocation registry with id ${revocationRegistryId}`,
+        },
+        revocationStatusListMetadata: {},
+      }
+    }
+
     return {
       resolutionMetadata: {},
-      revocationStatusList: revocationStatusLists[timestamp],
+      revocationStatusList: revocationStatusLists[previousTimestamps[previousTimestamps.length - 1]],
       revocationStatusListMetadata: {},
+    }
+  }
+
+  public async registerRevocationStatusList(
+    _agentContext: AgentContext,
+    options: RegisterRevocationStatusListOptions
+  ): Promise<RegisterRevocationStatusListReturn> {
+    const timestamp = (options.options.timestamp as number) ?? dateToTimestamp(new Date())
+    const revocationStatusList = {
+      ...options.revocationStatusList,
+      timestamp,
+    } satisfies AnonCredsRevocationStatusList
+    if (!this.revocationStatusLists[options.revocationStatusList.revRegDefId]) {
+      this.revocationStatusLists[options.revocationStatusList.revRegDefId] = {}
+    }
+
+    this.revocationStatusLists[revocationStatusList.revRegDefId][timestamp.toString()] = revocationStatusList
+    return {
+      registrationMetadata: {},
+      revocationStatusListMetadata: {},
+      revocationStatusListState: {
+        state: 'finished',
+        revocationStatusList,
+      },
     }
   }
 }

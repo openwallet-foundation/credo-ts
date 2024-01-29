@@ -13,6 +13,14 @@ export class TransportService {
   public transportSessionTable: TransportSessionTable = {}
 
   public saveSession(session: TransportSession) {
+    if (session.connectionId) {
+      const oldSessions = this.getExistingSessionsForConnectionIdAndType(session.connectionId, session.type)
+      oldSessions.forEach((oldSession) => {
+        if (oldSession) {
+          this.removeSession(oldSession)
+        }
+      })
+    }
     this.transportSessionTable[session.id] = session
   }
 
@@ -39,6 +47,12 @@ export class TransportService {
 
   public removeSession(session: TransportSession) {
     delete this.transportSessionTable[session.id]
+  }
+
+  private getExistingSessionsForConnectionIdAndType(connectionId: string, type: string) {
+    return Object.values(this.transportSessionTable).filter(
+      (session) => session?.connectionId === connectionId && session.type === type
+    )
   }
 }
 

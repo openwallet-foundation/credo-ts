@@ -9,6 +9,8 @@ import type {
   AnonCredsCredentialOffer,
   AnonCredsSchema,
   CreateCredentialDefinitionReturn,
+  CreateRevocationRegistryDefinitionReturn,
+  AnonCredsRevocationStatusList,
 } from '@aries-framework/anoncreds'
 import type { AgentContext } from '@aries-framework/core'
 
@@ -24,7 +26,6 @@ import {
   assertUnqualifiedCredentialRequest,
   assertUnqualifiedRevocationRegistryId,
 } from '../utils/assertUnqualified'
-import { createTailsReader } from '../utils/tails'
 import { indySdkSchemaFromAnonCreds } from '../utils/transform'
 
 @injectable()
@@ -33,6 +34,18 @@ export class IndySdkIssuerService implements AnonCredsIssuerService {
 
   public constructor(@inject(IndySdkSymbol) indySdk: IndySdk) {
     this.indySdk = indySdk
+  }
+
+  public async createRevocationStatusList(): Promise<AnonCredsRevocationStatusList> {
+    throw new AriesFrameworkError('Method not implemented.')
+  }
+
+  public async updateRevocationStatusList(): Promise<AnonCredsRevocationStatusList> {
+    throw new AriesFrameworkError('Method not implemented.')
+  }
+
+  public async createRevocationRegistryDefinition(): Promise<CreateRevocationRegistryDefinitionReturn> {
+    throw new AriesFrameworkError('Method not implemented.')
   }
 
   public async createSchema(agentContext: AgentContext, options: CreateSchemaOptions): Promise<AnonCredsSchema> {
@@ -117,20 +130,23 @@ export class IndySdkIssuerService implements AnonCredsIssuerService {
     agentContext: AgentContext,
     options: CreateCredentialOptions
   ): Promise<CreateCredentialReturn> {
-    const { tailsFilePath, credentialOffer, credentialRequest, credentialValues, revocationRegistryId } = options
+    const {
+      revocationStatusList,
+      credentialOffer,
+      credentialRequest,
+      credentialValues,
+      revocationRegistryDefinitionId,
+    } = options
 
     assertIndySdkWallet(agentContext.wallet)
     assertUnqualifiedCredentialOffer(options.credentialOffer)
     assertUnqualifiedCredentialRequest(options.credentialRequest)
-    if (options.revocationRegistryId) {
-      assertUnqualifiedRevocationRegistryId(options.revocationRegistryId)
+    if (options.revocationRegistryDefinitionId) {
+      assertUnqualifiedRevocationRegistryId(options.revocationRegistryDefinitionId)
     }
 
     try {
-      // Indy SDK requires tailsReaderHandle. Use null if no tailsFilePath is present
-      const tailsReaderHandle = tailsFilePath ? await createTailsReader(agentContext, tailsFilePath) : 0
-
-      if (revocationRegistryId || tailsFilePath) {
+      if (revocationRegistryDefinitionId || revocationStatusList) {
         throw new AriesFrameworkError('Revocation not supported yet')
       }
 
@@ -142,8 +158,8 @@ export class IndySdkIssuerService implements AnonCredsIssuerService {
         credentialOffer,
         { ...credentialRequest, prover_did: proverDid },
         credentialValues,
-        revocationRegistryId ?? null,
-        tailsReaderHandle
+        revocationRegistryDefinitionId ?? null,
+        0
       )
 
       return {

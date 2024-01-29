@@ -23,9 +23,9 @@ import { ConnectionService } from '../connections/services'
 import { DidsApi } from '../dids'
 import { verkeyToDidKey } from '../dids/helpers'
 import { DiscoverFeaturesApi } from '../discover-features'
-import { MessagePickupApi } from '../message-pìckup/MessagePickupApi'
-import { V1BatchPickupMessage } from '../message-pìckup/protocol/v1'
-import { V2StatusMessage } from '../message-pìckup/protocol/v2'
+import { MessagePickupApi } from '../message-pickup/MessagePickupApi'
+import { V1BatchPickupMessage } from '../message-pickup/protocol/v1'
+import { V2StatusMessage } from '../message-pickup/protocol/v2'
 
 import { MediationRecipientModuleConfig } from './MediationRecipientModuleConfig'
 import { MediatorPickupStrategy } from './MediatorPickupStrategy'
@@ -428,7 +428,10 @@ export class MediationRecipientApi {
         // Only wait for first event that matches the criteria
         first(),
         // Do not wait for longer than specified timeout
-        timeout(timeoutMs)
+        timeout({
+          first: timeoutMs,
+          meta: 'MediationRecipientApi.requestAndAwaitGrant',
+        })
       )
       .subscribe(subject)
 

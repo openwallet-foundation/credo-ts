@@ -26,7 +26,7 @@ interface DidDocumentOptions {
   context?: string | string[]
   id: string
   alsoKnownAs?: string[]
-  controller?: string[]
+  controller?: string | string[]
   verificationMethod?: VerificationMethod[]
   service?: DidDocumentService[]
   authentication?: Array<string | VerificationMethod>
@@ -178,7 +178,7 @@ export class DidDocument {
     >
 
     // Sort services based on indicated priority
-    return services.sort((a, b) => b.priority - a.priority)
+    return services.sort((a, b) => a.priority - b.priority)
   }
 
   // TODO: it would probably be easier if we add a utility to each service so we don't have to handle logic for all service types here
@@ -186,12 +186,12 @@ export class DidDocument {
     let recipientKeys: Key[] = []
 
     for (const service of this.didCommServices) {
-      if (service instanceof IndyAgentService) {
+      if (service.type === IndyAgentService.type) {
         recipientKeys = [
           ...recipientKeys,
           ...service.recipientKeys.map((publicKeyBase58) => Key.fromPublicKeyBase58(publicKeyBase58, KeyType.Ed25519)),
         ]
-      } else if (service instanceof DidCommV1Service) {
+      } else if (service.type === DidCommV1Service.type) {
         recipientKeys = [
           ...recipientKeys,
           ...service.recipientKeys.map((recipientKey) => keyReferenceToKey(this, recipientKey)),

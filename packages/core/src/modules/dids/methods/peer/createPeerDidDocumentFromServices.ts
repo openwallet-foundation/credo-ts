@@ -5,7 +5,6 @@ import { convertPublicKeyToX25519 } from '@stablelib/ed25519'
 import { Key } from '../../../../crypto/Key'
 import { KeyType } from '../../../../crypto/KeyType'
 import { AriesFrameworkError } from '../../../../error'
-import { uuid } from '../../../../utils/uuid'
 import { getEd25519VerificationKey2018, getX25519KeyAgreementKey2019 } from '../../domain'
 import { DidDocumentBuilder } from '../../domain/DidDocumentBuilder'
 import { DidCommV1Service } from '../../domain/service/DidCommV1Service'
@@ -30,13 +29,14 @@ export function createPeerDidDocumentFromServices(services: ResolvedDidCommServi
       }
       const x25519Key = Key.fromPublicKey(convertPublicKeyToX25519(recipientKey.publicKey), KeyType.X25519)
 
+      // Remove prefix from id as it is not included in did peer identifiers
       const ed25519VerificationMethod = getEd25519VerificationKey2018({
-        id: `#${uuid()}`,
+        id: `#${recipientKey.fingerprint.substring(1)}`,
         key: recipientKey,
         controller: '#id',
       })
       const x25519VerificationMethod = getX25519KeyAgreementKey2019({
-        id: `#${uuid()}`,
+        id: `#${x25519Key.fingerprint.substring(1)}`,
         key: x25519Key,
         controller: '#id',
       })
