@@ -14,6 +14,11 @@ import { didToNumAlgo4DidDocument, isShortFormDidPeer4 } from './peerDidNumAlgo4
 export class PeerDidResolver implements DidResolver {
   public readonly supportedMethods = ['peer']
 
+  /**
+   * No remote resolving done, did document is fetched from storage. To not pollute the cache we don't allow caching
+   */
+  public readonly allowsCaching = false
+
   public async resolve(agentContext: AgentContext, did: string): Promise<DidResolutionResult> {
     const didRepository = agentContext.dependencyManager.resolve(DidRepository)
 
