@@ -4,6 +4,7 @@ import type {
   AnonCredsOperationStateFinished,
   AnonCredsResolutionMetadata,
   Extensible,
+  AnonCredsOperationStateAction,
 } from './base'
 import type { AnonCredsRevocationRegistryDefinition } from '../../models/registry'
 
@@ -19,7 +20,17 @@ export interface RegisterRevocationRegistryDefinitionOptions {
   options: Extensible
 }
 
+export interface RegisterRevocationRegistryDefinitionReturnStateAction extends AnonCredsOperationStateAction {
+  revocationRegistryDefinition: AnonCredsRevocationRegistryDefinition
+  revocationRegistryDefinitionId: string
+}
+
 export interface RegisterRevocationRegistryDefinitionReturnStateFailed extends AnonCredsOperationStateFailed {
+  revocationRegistryDefinition?: AnonCredsRevocationRegistryDefinition
+  revocationRegistryDefinitionId?: string
+}
+
+export interface RegisterRevocationRegistryDefinitionReturnStateWait extends AnonCredsOperationStateWait {
   revocationRegistryDefinition?: AnonCredsRevocationRegistryDefinition
   revocationRegistryDefinitionId?: string
 }
@@ -29,17 +40,13 @@ export interface RegisterRevocationRegistryDefinitionReturnStateFinished extends
   revocationRegistryDefinitionId: string
 }
 
-export interface RegisterRevocationRegistryDefinitionReturnState extends AnonCredsOperationStateWait {
-  revocationRegistryDefinition?: AnonCredsRevocationRegistryDefinition
-  revocationRegistryDefinitionId?: string
-}
-
 export interface RegisterRevocationRegistryDefinitionReturn {
   jobId?: string
   revocationRegistryDefinitionState:
+    | RegisterRevocationRegistryDefinitionReturnStateWait
+    | RegisterRevocationRegistryDefinitionReturnStateAction
     | RegisterRevocationRegistryDefinitionReturnStateFailed
     | RegisterRevocationRegistryDefinitionReturnStateFinished
-    | RegisterRevocationRegistryDefinitionReturnState
   revocationRegistryDefinitionMetadata: Extensible
   registrationMetadata: Extensible
 }

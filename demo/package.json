@@ -14,7 +14,7 @@
     "refresh": "rm -rf ./node_modules ./yarn.lock && yarn"
   },
   "dependencies": {
-    "@hyperledger/indy-vdr-nodejs": "^0.2.0-dev.5",
+    "@hyperledger/indy-vdr-nodejs": "^0.2.0-dev.6",
     "@hyperledger/anoncreds-nodejs": "^0.2.0-dev.5",
     "@hyperledger/aries-askar-nodejs": "^0.2.0-dev.5",
     "inquirer": "^8.2.5"

@@ -12,7 +12,7 @@ env:
   TEST_AGENT_PUBLIC_DID_SEED: 000000000000000000000000Trustee9
   ENDORSER_AGENT_PUBLIC_DID_SEED: 00000000000000000000000Endorser9
   GENESIS_TXN_PATH: network/genesis/local-genesis.txn
-  LIB_INDY_STRG_POSTGRES: /home/runner/work/agent-framework-javascript/indy-sdk/experimental/plugins/postgres_storage/target/release # for Linux
+  LIB_INDY_STRG_POSTGRES: /home/runner/work/credo-ts/indy-sdk/experimental/plugins/postgres_storage/target/release # for Linux
   NODE_OPTIONS: --max_old_space_size=6144
 
 # Make sure we're not running multiple release steps at the same time as this can give issues with determining the next npm version to release.
@@ -50,7 +50,7 @@ jobs:
     runs-on: ubuntu-20.04
     name: Validate
     steps:
-      - name: Checkout agent-framework-javascript
+      - name: Checkout credo-ts
         uses: actions/checkout@v4
 
       # setup dependencies
@@ -58,7 +58,7 @@ jobs:
         uses: ./.github/actions/setup-libindy
 
       - name: Setup NodeJS
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: 18
           cache: 'yarn'
@@ -111,7 +111,7 @@ jobs:
         uses: ./.github/actions/setup-postgres-wallet-plugin
 
       - name: Setup NodeJS
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
           cache: 'yarn'
@@ -143,7 +143,7 @@ jobs:
         uses: ./.github/actions/setup-libindy
 
       - name: Setup NodeJS
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: 18
           cache: 'yarn'

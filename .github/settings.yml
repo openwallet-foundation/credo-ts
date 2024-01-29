@@ -3,9 +3,9 @@
 #
 
 repository:
-  name: agent-framework-javascript
+  name: credo-ts
   description: Extension libraries for Aries Framework JavaScript
-  homepage: https://github.com/openwallet-foundation/agent-framework-javascript
+  homepage: https://github.com/openwallet-foundation/credo-ts
   default_branch: main
   has_downloads: false
   has_issues: true
