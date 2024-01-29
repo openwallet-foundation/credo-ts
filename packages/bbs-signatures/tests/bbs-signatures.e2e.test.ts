@@ -31,7 +31,7 @@ import { indySdk } from '../../indy-sdk/tests/setupIndySdkModule'
 import { BbsBlsSignature2020, BbsBlsSignatureProof2020, Bls12381g2SigningProvider } from '../src'
 
 import { BbsBlsSignature2020Fixtures } from './fixtures'
-import { describeSkipNode17And18 } from './util'
+import { describeSkipNode18 } from './util'
 
 const { jsonldSignatures } = vcLibraries
 const { purposes } = jsonldSignatures
@@ -61,7 +61,7 @@ const signingProviderRegistry = new SigningProviderRegistry([new Bls12381g2Signi
 
 const agentConfig = getAgentConfig('BbsSignaturesE2eTest')
 
-describeSkipNode17And18('BBS W3cCredentialService', () => {
+describeSkipNode18('BBS W3cCredentialService', () => {
   let wallet: Wallet
   let agentContext: AgentContext
   let w3cJsonLdCredentialService: W3cJsonLdCredentialService

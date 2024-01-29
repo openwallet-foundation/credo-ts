@@ -25,10 +25,7 @@ export interface SuiteSignOptions {
    * Optional custom document loader
    */
   documentLoader?: DocumentLoader
-  /**
-   * Optional expansion map
-   */
-  expansionMap?: () => void
+
   /**
    * The array of statements to sign
    */

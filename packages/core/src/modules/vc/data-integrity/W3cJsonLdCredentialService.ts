@@ -9,6 +9,7 @@ import type {
   W3cJsonLdVerifyPresentationOptions,
 } from '../W3cCredentialServiceOptions'
 import type { W3cVerifyCredentialResult, W3cVerifyPresentationResult } from '../models'
+import type { W3cJsonCredential } from '../models/credential/W3cJsonCredential'
 
 import { createWalletKeyPairClass } from '../../../crypto/WalletKeyPair'
 import { AriesFrameworkError } from '../../../error'
@@ -108,8 +109,9 @@ export class W3cJsonLdCredentialService {
         credential: JsonTransformer.toJSON(options.credential),
         suite: suites,
         documentLoader: this.w3cCredentialsModuleConfig.documentLoader(agentContext),
-        checkStatus: () => {
-          if (verifyCredentialStatus) {
+        checkStatus: ({ credential }: { credential: W3cJsonCredential }) => {
+          // Only throw error if credentialStatus is present
+          if (verifyCredentialStatus && 'credentialStatus' in credential) {
             throw new AriesFrameworkError(
               'Verifying credential status for JSON-LD credentials is currently not supported'
             )
