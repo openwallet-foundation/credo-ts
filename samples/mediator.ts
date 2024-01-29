@@ -46,7 +46,7 @@ const logger = new TestLogger(LogLevel.info)
 
 const agentConfig: InitConfig = {
   endpoints,
-  label: process.env.AGENT_LABEL || 'Aries Framework JavaScript Mediator',
+  label: process.env.AGENT_LABEL || 'Credo Mediator',
   walletConfig: {
     id: process.env.WALLET_NAME || 'AriesFrameworkJavaScript',
     key: process.env.WALLET_KEY || 'AriesFrameworkJavaScript',

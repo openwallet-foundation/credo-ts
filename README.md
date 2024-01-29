@@ -41,7 +41,7 @@
 Credo is a framework written in TypeScript for building **SSI Agents and DIDComm services** that aims to be **compliant and interoperable** with the standards defined in the [Aries RFCs](https://github.com/hyperledger/aries-rfcs).
 
 > **Note**
-> The Aries Framework JavaScript project has recently been moved from the Hyperledger Foundation to the Open Wallet Foundation.
+> The Aries Framework JavaScript project has recently been rebranded to "Credo" was moved from the Hyperledger Foundation to the Open Wallet Foundation.
 > We are currently in the process of changing the name of the project to Credo, and updating all the documentation and links to reflect this change.
 > You may encounter some broken links, or references to the old name, but we are working hard to fix this. Once the new name has been decided
 > we will update this README and all the documentation to reflect this change.

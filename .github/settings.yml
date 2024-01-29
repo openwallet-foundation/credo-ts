@@ -4,7 +4,7 @@
 
 repository:
   name: credo-ts
-  description: Extension libraries for Aries Framework JavaScript
+  description: The Credo Core Repository
   homepage: https://github.com/openwallet-foundation/credo-ts
   default_branch: main
   has_downloads: false
