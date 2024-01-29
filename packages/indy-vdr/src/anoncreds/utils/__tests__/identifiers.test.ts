@@ -1,6 +1,6 @@
 import {
   getDidIndyCredentialDefinitionId,
-  getDidIndyRevocationRegistryId,
+  getDidIndyRevocationRegistryDefinitionId,
   getDidIndySchemaId,
   indyVdrAnonCredsRegistryIdentifierRegex,
 } from '../identifiers'
@@ -72,7 +72,7 @@ describe('identifiers', () => {
     const credentialDefinitionTag = 'someTag'
     const tag = 'anotherTag'
 
-    expect(getDidIndyRevocationRegistryId(namespace, did, seqNo, credentialDefinitionTag, tag)).toEqual(
+    expect(getDidIndyRevocationRegistryDefinitionId(namespace, did, seqNo, credentialDefinitionTag, tag)).toEqual(
       'did:indy:sovrin:test:12345/anoncreds/v0/REV_REG_DEF/420/someTag/anotherTag'
     )
   })

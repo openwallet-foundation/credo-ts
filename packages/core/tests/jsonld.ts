@@ -5,6 +5,8 @@ import { BbsModule } from '../../bbs-signatures/src/BbsModule'
 import { IndySdkModule } from '../../indy-sdk/src'
 import { indySdk } from '../../indy-sdk/tests/setupIndySdkModule'
 import {
+  PresentationExchangeProofFormatService,
+  V2ProofProtocol,
   CacheModule,
   CredentialEventTypes,
   InMemoryLruCache,
@@ -38,6 +40,7 @@ export const getJsonLdModules = ({
     }),
     proofs: new ProofsModule({
       autoAcceptProofs,
+      proofProtocols: [new V2ProofProtocol({ proofFormats: [new PresentationExchangeProofFormatService()] })],
     }),
     cache: new CacheModule({
       cache: new InMemoryLruCache({ limit: 100 }),
