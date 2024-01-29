@@ -7,6 +7,11 @@ import { DidKey } from './DidKey'
 export class KeyDidResolver implements DidResolver {
   public readonly supportedMethods = ['key']
 
+  /**
+   * No remote resolving done, did document is dynamically constructed. To not pollute the cache we don't allow caching
+   */
+  public readonly allowsCaching = false
+
   public async resolve(agentContext: AgentContext, did: string): Promise<DidResolutionResult> {
     const didDocumentMetadata = {}
 

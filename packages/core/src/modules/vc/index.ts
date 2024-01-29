@@ -1,6 +1,6 @@
 export * from './W3cCredentialService'
 export * from './W3cCredentialServiceOptions'
-export * from './repository/W3cCredentialRecord'
+export * from './repository'
 export * from './W3cCredentialsModule'
 export * from './W3cCredentialsApi'
 export * from './models'

@@ -1,6 +1,6 @@
 import type { InitConfig } from '@aries-framework/core'
 
-import { ConnectionsModule, OutOfBandRecord, Agent } from '@aries-framework/core'
+import { ConnectionsModule, OutOfBandRecord, Agent, CacheModule, InMemoryLruCache } from '@aries-framework/core'
 import { agentDependencies } from '@aries-framework/node'
 
 import { SubjectInboundTransport } from '../../../tests/transport/SubjectInboundTransport'
@@ -39,6 +39,9 @@ const agent1 = new Agent({
     connections: new ConnectionsModule({
       autoAcceptConnections: true,
     }),
+    cache: new CacheModule({
+      cache: new InMemoryLruCache({ limit: 500 }),
+    }),
   },
   dependencies: agentDependencies,
 })
@@ -50,6 +53,9 @@ const agent2 = new Agent({
     indySdk: new IndySdkModule({ indySdk }),
     connections: new ConnectionsModule({
       autoAcceptConnections: true,
+    }),
+    cache: new CacheModule({
+      cache: new InMemoryLruCache({ limit: 500 }),
     }),
   },
   dependencies: agentDependencies,

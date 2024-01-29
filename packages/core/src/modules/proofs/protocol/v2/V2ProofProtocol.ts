@@ -42,7 +42,7 @@ import { ProofsModuleConfig } from '../../ProofsModuleConfig'
 import { PresentationProblemReportReason } from '../../errors/PresentationProblemReportReason'
 import { AutoAcceptProof, ProofState } from '../../models'
 import { ProofExchangeRecord, ProofRepository } from '../../repository'
-import { composeAutoAccept } from '../../utils/composeAutoAccept'
+import { composeAutoAccept } from '../../utils'
 import { BaseProofProtocol } from '../BaseProofProtocol'
 
 import { ProofFormatCoordinator } from './ProofFormatCoordinator'

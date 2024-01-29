@@ -230,7 +230,7 @@ async function anonCredsFlowTest(options: { issuerId: string; revocable: boolean
       options: {},
     })
 
-    if (!revocationStatusListState.revocationStatusList || !revocationStatusListState.timestamp) {
+    if (!revocationStatusListState.revocationStatusList) {
       throw new Error('Failed to create revocation status list')
     }
   }

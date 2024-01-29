@@ -40,6 +40,13 @@
 
 Aries Framework JavaScript is a framework written in TypeScript for building **SSI Agents and DIDComm services** that aims to be **compliant and interoperable** with the standards defined in the [Aries RFCs](https://github.com/hyperledger/aries-rfcs).
 
+> **Note**
+> The Aries Framework JavaScript project has recently been moved from the Hyperledger Foundation to the Open Wallet Foundation.
+> We are currently in the process of changing the name of the project, and updating all the documentation and links to reflect this change.
+> You may encounter some broken links, or references to the old name, but we are working hard to fix this. Once the new name has been decided
+> we will update this README and all the documentation to reflect this change.
+> You can follow this discussion for updates about the name: https://github.com/openwallet-foundation/agent-framework-javascript/discussions/1668
+
 ## Features
 
 - 🏃 Runs in React Native & Node.JS
@@ -186,10 +193,7 @@ Although Aries Framework JavaScript tries to follow the standards as described i
 
 If you would like to contribute to the framework, please read the [Framework Developers README](/DEVREADME.md) and the [CONTRIBUTING](/CONTRIBUTING.md) guidelines. These documents will provide more information to get you started!
 
-The Aries Framework JavaScript call takes place every week at Thursday, 6AM Pacific Time. See [World Time Buddy](https://www.worldtimebuddy.com/?qm=1&lid=5,2759794,8&h=5&date=2023-5-19&sln=9-10&hf=1) for the time in your timezone. The meeting is held on [Zoom](https://zoom.us/j/99751084865?pwd=TW1rU0FDVTBqUlhnWnY2NERkd1diZz09).
-This meeting is for contributors to groom and plan the backlog, and discuss issues.
-Meeting agendas and recordings can be found [here](https://wiki.hyperledger.org/display/ARIES/Framework+JS+Meetings).
-Feel free to join!
+There are regular community working groups to discuss ongoing efforts within the framework, showcase items you've built with Credo, or ask questions. See [Meeting Information](https://github.com/openwallet-foundation/credo-ts/wiki/Meeting-Information) for up to date information on the meeting schedule. Everyone is welcome to join!
 
 ## License
 

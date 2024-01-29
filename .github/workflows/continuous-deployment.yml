@@ -10,11 +10,11 @@ env:
 
 jobs:
   release-canary:
-    runs-on: aries-ubuntu-2004
+    runs-on: ubuntu-20.04
     name: Release Canary
     if: "!startsWith(github.event.head_commit.message, 'chore(release): v')"
     steps:
-      - name: Checkout aries-framework-javascript
+      - name: Checkout credo-ts
         uses: actions/checkout@v4
         with:
           # pulls all commits (needed for lerna to correctly version)
@@ -25,7 +25,7 @@ jobs:
         uses: ./.github/actions/setup-libindy
 
       - name: Setup NodeJS
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: 18
           cache: 'yarn'
@@ -40,8 +40,8 @@ jobs:
           export NEXT_VERSION_BUMP=$(./node_modules/.bin/ts-node ./scripts/get-next-bump.ts)
           yarn lerna publish --loglevel=verbose --canary $NEXT_VERSION_BUMP --exact --force-publish --yes --no-verify-access --dist-tag alpha
         env:
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_PUBLISH }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_PUBLISH }}
 
       - name: Get version number
         id: get-version
@@ -61,7 +61,7 @@ jobs:
           git push origin v${{ steps.get-version.outputs.version }} --no-verify
 
   release-stable:
-    runs-on: aries-ubuntu-2004
+    runs-on: ubuntu-20.04
     name: Create Stable Release
     # Only run if the last pushed commit is a release commit
     if: "startsWith(github.event.head_commit.message, 'chore(release): v')"
@@ -74,7 +74,7 @@ jobs:
         uses: ./.github/actions/setup-libindy
 
       - name: Setup NodeJS
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: 18
           cache: 'yarn'
@@ -109,5 +109,5 @@ jobs:
       - name: Release to NPM
         run: yarn lerna publish from-package --loglevel=verbose --yes --no-verify-access
         env:
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_PUBLISH }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_PUBLISH }}

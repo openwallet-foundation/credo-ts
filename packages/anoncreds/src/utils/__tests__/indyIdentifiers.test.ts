@@ -1,6 +1,6 @@
 import {
   getUnqualifiedCredentialDefinitionId,
-  getUnqualifiedRevocationRegistryId,
+  getUnqualifiedRevocationRegistryDefinitionId,
   getUnqualifiedSchemaId,
   parseIndyCredentialDefinitionId,
   parseIndyRevocationRegistryId,
@@ -67,7 +67,7 @@ describe('Legacy Indy Identifier Regex', () => {
     const credentialDefinitionTag = 'someTag'
     const tag = 'anotherTag'
 
-    expect(getUnqualifiedRevocationRegistryId(did, seqNo, credentialDefinitionTag, tag)).toEqual(
+    expect(getUnqualifiedRevocationRegistryDefinitionId(did, seqNo, credentialDefinitionTag, tag)).toEqual(
       '12345:4:12345:3:CL:420:someTag:CL_ACCUM:anotherTag'
     )
   })
