@@ -21,11 +21,7 @@ export interface CanonizeOptions {
    * Optional custom document loader
    */
   documentLoader?: DocumentLoader
-  /**
-   * Optional expansion map
-   */
-  // eslint-disable-next-line
-  expansionMap?: () => void
+
   /**
    * Indicates whether to skip expansion during canonization
    */

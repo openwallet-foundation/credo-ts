@@ -23,13 +23,10 @@
     "prepublishOnly": "yarn run build"
   },
   "dependencies": {
-    "@digitalcredentials/jsonld": "^5.2.1",
-    "@digitalcredentials/jsonld-signatures": "^9.3.1",
-    "@digitalcredentials/vc": "^1.1.2",
+    "@digitalcredentials/jsonld": "^6.0.0",
+    "@digitalcredentials/jsonld-signatures": "^9.4.0",
+    "@digitalcredentials/vc": "^6.0.1",
     "@multiformats/base-x": "^4.0.1",
-    "@sphereon/pex": "^2.2.2",
-    "@sphereon/pex-models": "^2.1.2",
-    "@sphereon/ssi-types": "^0.17.5",
     "@stablelib/ed25519": "^1.0.2",
     "@stablelib/random": "^1.0.1",
     "@stablelib/sha256": "^1.0.1",
