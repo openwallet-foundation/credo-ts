@@ -1,7 +1,7 @@
 import type { V1ProofProtocol } from '../V1ProofProtocol'
-import type { MessageHandler, MessageHandlerInboundMessage, ProofExchangeRecord } from '@aries-framework/core'
+import type { MessageHandler, MessageHandlerInboundMessage, ProofExchangeRecord } from '@credo-ts/core'
 
-import { AriesFrameworkError, getOutboundMessageContext } from '@aries-framework/core'
+import { AriesFrameworkError, getOutboundMessageContext } from '@credo-ts/core'
 
 import { V1PresentationMessage } from '../messages'
 

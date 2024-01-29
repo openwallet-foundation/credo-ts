@@ -20,7 +20,7 @@ import type {
   SuiteSignOptions,
   VerifySignatureOptions,
 } from '../types'
-import type { VerificationMethod, JsonObject, DocumentLoader, Proof } from '@aries-framework/core'
+import type { VerificationMethod, JsonObject, DocumentLoader, Proof } from '@credo-ts/core'
 
 import {
   AriesFrameworkError,
@@ -29,7 +29,7 @@ import {
   SECURITY_CONTEXT_URL,
   w3cDate,
   vcLibraries,
-} from '@aries-framework/core'
+} from '@credo-ts/core'
 
 const { jsonld, jsonldSignatures } = vcLibraries
 const LinkedDataProof = jsonldSignatures.suites.LinkedDataProof

@@ -1,10 +1,10 @@
-import type { ActionMenuStateChangedEvent, ActionMenuRole, ActionMenuState } from '@aries-framework/action-menu'
-import type { Agent } from '@aries-framework/core'
+import type { ActionMenuStateChangedEvent, ActionMenuRole, ActionMenuState } from '@credo-ts/action-menu'
+import type { Agent } from '@credo-ts/core'
 import type { Observable } from 'rxjs'
 
 import { catchError, filter, firstValueFrom, map, ReplaySubject, timeout } from 'rxjs'
 
-import { ActionMenuEventTypes } from '@aries-framework/action-menu'
+import { ActionMenuEventTypes } from '@credo-ts/action-menu'
 
 export async function waitForActionMenuRecord(
   agent: Agent,

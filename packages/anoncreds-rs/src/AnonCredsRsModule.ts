@@ -1,12 +1,12 @@
 import type { AnonCredsRsModuleConfigOptions } from './AnonCredsRsModuleConfig'
-import type { DependencyManager, Module } from '@aries-framework/core'
+import type { DependencyManager, Module } from '@credo-ts/core'
 
 import {
   AnonCredsHolderServiceSymbol,
   AnonCredsIssuerServiceSymbol,
   AnonCredsVerifierServiceSymbol,
-} from '@aries-framework/anoncreds'
-import { AgentConfig } from '@aries-framework/core'
+} from '@credo-ts/anoncreds'
+import { AgentConfig } from '@credo-ts/core'
 
 import { AnonCredsRsModuleConfig } from './AnonCredsRsModuleConfig'
 import { AnonCredsRsHolderService, AnonCredsRsIssuerService, AnonCredsRsVerifierService } from './services'
@@ -23,7 +23,7 @@ export class AnonCredsRsModule implements Module {
     dependencyManager
       .resolve(AgentConfig)
       .logger.warn(
-        "The '@aries-framework/anoncreds-rs' module is experimental and could have unexpected breaking changes. When using this module, make sure to use strict versions for all @aries-framework packages."
+        "The '@credo-ts/anoncreds-rs' module is experimental and could have unexpected breaking changes. When using this module, make sure to use strict versions for all @aries-framework packages."
       )
 
     dependencyManager.registerInstance(AnonCredsRsModuleConfig, this.config)

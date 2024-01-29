@@ -1,4 +1,4 @@
-import { Agent, Key, KeyType, TypedArrayEncoder } from '@aries-framework/core'
+import { Agent, Key, KeyType, TypedArrayEncoder } from '@credo-ts/core'
 
 import {
   agentDependencies,

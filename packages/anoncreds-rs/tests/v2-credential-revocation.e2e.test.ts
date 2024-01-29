@@ -8,7 +8,7 @@ import {
   CredentialExchangeRecord,
   V2CredentialPreview,
   V2OfferCredentialMessage,
-} from '@aries-framework/core'
+} from '@credo-ts/core'
 
 import { InMemoryAnonCredsRegistry } from '../../anoncreds/tests/InMemoryAnonCredsRegistry'
 import { waitForCredentialRecordSubject } from '../../core/tests'

@@ -1,6 +1,6 @@
-import type { RecordTags, TagsBase } from '@aries-framework/core'
+import type { RecordTags, TagsBase } from '@credo-ts/core'
 
-import { BaseRecord, utils } from '@aries-framework/core'
+import { BaseRecord, utils } from '@credo-ts/core'
 
 export type TenantRoutingRecordTags = RecordTags<TenantRoutingRecord>
 

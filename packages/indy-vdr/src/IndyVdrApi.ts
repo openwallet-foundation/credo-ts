@@ -1,8 +1,8 @@
-import type { Key } from '@aries-framework/core'
+import type { Key } from '@credo-ts/core'
 import type { IndyVdrRequest } from '@hyperledger/indy-vdr-shared'
 
-import { parseIndyDid } from '@aries-framework/anoncreds'
-import { AgentContext, injectable } from '@aries-framework/core'
+import { parseIndyDid } from '@credo-ts/anoncreds'
+import { AgentContext, injectable } from '@credo-ts/core'
 import { CustomRequest } from '@hyperledger/indy-vdr-shared'
 
 import { verificationKeyForIndyDid } from './dids/didIndyUtil'

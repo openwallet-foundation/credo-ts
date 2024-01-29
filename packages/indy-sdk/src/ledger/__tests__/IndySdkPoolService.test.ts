@@ -8,7 +8,7 @@ import {
   AriesFrameworkError,
   Key,
   KeyType,
-} from '@aries-framework/core'
+} from '@credo-ts/core'
 import indySdk from 'indy-sdk'
 import { Subject } from 'rxjs'
 

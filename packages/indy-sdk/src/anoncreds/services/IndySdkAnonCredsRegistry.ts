@@ -12,8 +12,8 @@ import type {
   RegisterSchemaReturn,
   RegisterRevocationRegistryDefinitionReturn,
   RegisterRevocationStatusListReturn,
-} from '@aries-framework/anoncreds'
-import type { AgentContext } from '@aries-framework/core'
+} from '@credo-ts/anoncreds'
+import type { AgentContext } from '@credo-ts/core'
 import type { Schema as IndySdkSchema } from 'indy-sdk'
 
 import {
@@ -24,8 +24,8 @@ import {
   parseIndyDid,
   parseIndyRevocationRegistryId,
   parseIndySchemaId,
-} from '@aries-framework/anoncreds'
-import { AriesFrameworkError } from '@aries-framework/core'
+} from '@credo-ts/anoncreds'
+import { AriesFrameworkError } from '@credo-ts/core'
 
 import { verificationKeyForIndyDid } from '../../dids/didIndyUtil'
 import { IndySdkError, isIndyError } from '../../error'

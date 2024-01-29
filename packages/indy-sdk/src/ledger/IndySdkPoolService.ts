@@ -1,9 +1,9 @@
 import type { AcceptanceMechanisms, AuthorAgreement } from './IndySdkPool'
 import type { IndySdk } from '../types'
-import type { AgentContext, Key } from '@aries-framework/core'
+import type { AgentContext, Key } from '@credo-ts/core'
 import type { GetNymResponse, LedgerReadReplyResponse, LedgerRequest, LedgerWriteReplyResponse } from 'indy-sdk'
 
-import { didIndyRegex } from '@aries-framework/anoncreds'
+import { didIndyRegex } from '@credo-ts/anoncreds'
 import {
   TypedArrayEncoder,
   CacheModuleConfig,
@@ -12,7 +12,7 @@ import {
   injectable,
   inject,
   FileSystem,
-} from '@aries-framework/core'
+} from '@credo-ts/core'
 import { Subject } from 'rxjs'
 
 import { IndySdkModuleConfig } from '../IndySdkModuleConfig'

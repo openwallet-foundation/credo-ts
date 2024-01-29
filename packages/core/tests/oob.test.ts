@@ -2,7 +2,7 @@
 import type { SubjectMessage } from '../../../tests/transport/SubjectInboundTransport'
 import type { V1CredentialProtocol } from '../../anoncreds/src'
 import type { CreateCredentialOfferOptions } from '../src/modules/credentials'
-import type { AgentMessage, AgentMessageReceivedEvent } from '@aries-framework/core'
+import type { AgentMessage, AgentMessageReceivedEvent } from '@credo-ts/core'
 
 import { Subject } from 'rxjs'
 
@@ -22,7 +22,7 @@ import { JsonEncoder, JsonTransformer } from '../src/utils'
 import { TestMessage } from './TestMessage'
 import { getAgentOptions, waitForCredentialRecord } from './helpers'
 
-import { AgentEventTypes, AriesFrameworkError, AutoAcceptCredential, CredentialState } from '@aries-framework/core'
+import { AgentEventTypes, AriesFrameworkError, AutoAcceptCredential, CredentialState } from '@credo-ts/core'
 
 const faberAgentOptions = getAgentOptions(
   'Faber Agent OOB',

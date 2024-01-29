@@ -4,8 +4,8 @@ import {
   getUnqualifiedRevocationRegistryDefinitionId,
   parseIndyDid,
   parseIndyRevocationRegistryId,
-} from '@aries-framework/anoncreds'
-import { Agent, DidsModule, TypedArrayEncoder } from '@aries-framework/core'
+} from '@credo-ts/anoncreds'
+import { Agent, DidsModule, TypedArrayEncoder } from '@credo-ts/core'
 import { indyVdr } from '@hyperledger/indy-vdr-nodejs'
 
 import { agentDependencies, getAgentConfig, importExistingIndyDidFromPrivateKey } from '../../core/tests/helpers'

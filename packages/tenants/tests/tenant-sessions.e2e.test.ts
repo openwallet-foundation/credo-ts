@@ -1,12 +1,12 @@
-import type { InitConfig } from '@aries-framework/core'
+import type { InitConfig } from '@credo-ts/core'
 
-import { ConnectionsModule, Agent } from '@aries-framework/core'
-import { agentDependencies } from '@aries-framework/node'
+import { ConnectionsModule, Agent } from '@credo-ts/core'
+import { agentDependencies } from '@credo-ts/node'
 
 import { testLogger, indySdk } from '../../core/tests'
 import { IndySdkModule } from '../../indy-sdk/src'
 
-import { TenantsModule } from '@aries-framework/tenants'
+import { TenantsModule } from '@credo-ts/tenants'
 
 const agentConfig: InitConfig = {
   label: 'Tenant Agent 1',

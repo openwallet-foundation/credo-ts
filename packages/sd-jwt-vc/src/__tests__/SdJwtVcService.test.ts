@@ -1,6 +1,6 @@
-import type { Key, Logger } from '@aries-framework/core'
+import type { Key, Logger } from '@credo-ts/core'
 
-import { AskarModule } from '@aries-framework/askar'
+import { AskarModule } from '@credo-ts/askar'
 import {
   getJwkFromKey,
   DidKey,
@@ -11,7 +11,7 @@ import {
   KeyType,
   Agent,
   TypedArrayEncoder,
-} from '@aries-framework/core'
+} from '@credo-ts/core'
 import { ariesAskar } from '@hyperledger/aries-askar-nodejs'
 
 import { agentDependencies } from '../../../core/tests'

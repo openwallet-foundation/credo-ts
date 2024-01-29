@@ -1,5 +1,5 @@
 {
-  "name": "@aries-framework/react-native",
+  "name": "@credo-ts/react-native",
   "main": "build/index",
   "types": "build/index",
   "version": "0.4.2",
@@ -24,7 +24,7 @@
     "test": "jest"
   },
   "dependencies": {
-    "@aries-framework/core": "0.4.2",
+    "@credo-ts/core": "0.4.2",
     "@azure/core-asynciterator-polyfill": "^1.0.2",
     "events": "^3.3.0"
   },

@@ -12,7 +12,7 @@
  * to the mediator, request mediation and set the mediator as default.
  */
 
-import type { InitConfig } from '@aries-framework/core'
+import type { InitConfig } from '@credo-ts/core'
 import type { Socket } from 'net'
 
 import { ariesAskar } from '@hyperledger/aries-askar-nodejs'
@@ -21,7 +21,7 @@ import { Server } from 'ws'
 
 import { TestLogger } from '../packages/core/tests/logger'
 
-import { AskarModule } from '@aries-framework/askar'
+import { AskarModule } from '@credo-ts/askar'
 import {
   ConnectionsModule,
   MediatorModule,
@@ -30,8 +30,8 @@ import {
   ConnectionInvitationMessage,
   LogLevel,
   WsOutboundTransport,
-} from '@aries-framework/core'
-import { HttpInboundTransport, agentDependencies, WsInboundTransport } from '@aries-framework/node'
+} from '@credo-ts/core'
+import { HttpInboundTransport, agentDependencies, WsInboundTransport } from '@credo-ts/node'
 
 const port = process.env.AGENT_PORT ? Number(process.env.AGENT_PORT) : 3001
 

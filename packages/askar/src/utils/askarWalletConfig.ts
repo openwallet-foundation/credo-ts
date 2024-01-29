@@ -1,7 +1,7 @@
 import type { AskarWalletPostgresStorageConfig } from '../wallet/AskarWalletPostgresStorageConfig'
-import type { WalletConfig } from '@aries-framework/core'
+import type { WalletConfig } from '@credo-ts/core'
 
-import { KeyDerivationMethod, WalletError } from '@aries-framework/core'
+import { KeyDerivationMethod, WalletError } from '@credo-ts/core'
 import { KdfMethod, StoreKeyMethod } from '@hyperledger/aries-askar-shared'
 
 export const keyDerivationMethodToStoreKeyMethod = (keyDerivationMethod: KeyDerivationMethod) => {

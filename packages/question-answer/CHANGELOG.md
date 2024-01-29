@@ -5,7 +5,7 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 
 ## [0.4.2](https://github.com/hyperledger/aries-framework-javascript/compare/v0.4.1...v0.4.2) (2023-10-05)
 
-**Note:** Version bump only for package @aries-framework/question-answer
+**Note:** Version bump only for package @credo-ts/question-answer
 
 ## [0.4.1](https://github.com/hyperledger/aries-framework-javascript/compare/v0.4.0...v0.4.1) (2023-08-28)
 
@@ -43,11 +43,11 @@ Signed-off-by: Ariel Gentile <gentilester@gmail.com>
 
 ## [0.3.2](https://github.com/hyperledger/aries-framework-javascript/compare/v0.3.1...v0.3.2) (2023-01-04)
 
-**Note:** Version bump only for package @aries-framework/question-answer
+**Note:** Version bump only for package @credo-ts/question-answer
 
 ## [0.3.1](https://github.com/hyperledger/aries-framework-javascript/compare/v0.3.0...v0.3.1) (2022-12-27)
 
-**Note:** Version bump only for package @aries-framework/question-answer
+**Note:** Version bump only for package @credo-ts/question-answer
 
 # [0.3.0](https://github.com/hyperledger/aries-framework-javascript/compare/v0.2.5...v0.3.0) (2022-12-22)
 

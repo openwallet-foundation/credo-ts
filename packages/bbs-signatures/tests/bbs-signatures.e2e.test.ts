@@ -1,5 +1,5 @@
 import type { W3cCredentialRepository } from '../../core/src/modules/vc/repository/W3cCredentialRepository'
-import type { AgentContext, W3cJwtCredentialService, Wallet } from '@aries-framework/core'
+import type { AgentContext, W3cJwtCredentialService, Wallet } from '@credo-ts/core'
 
 import {
   ClaimFormat,
@@ -18,7 +18,7 @@ import {
   Ed25519Signature2018,
   TypedArrayEncoder,
   W3cJsonLdVerifiableCredential,
-} from '@aries-framework/core'
+} from '@credo-ts/core'
 
 import { W3cCredentialsModuleConfig } from '../../core/src/modules/vc/W3cCredentialsModuleConfig'
 import { SignatureSuiteRegistry } from '../../core/src/modules/vc/data-integrity/SignatureSuiteRegistry'

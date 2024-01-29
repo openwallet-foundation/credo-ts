@@ -1,4 +1,4 @@
-import type { DependencyManager } from '@aries-framework/core'
+import type { DependencyManager } from '@credo-ts/core'
 
 import { SdJwtVcApi } from '../SdJwtVcApi'
 import { SdJwtVcModule } from '../SdJwtVcModule'

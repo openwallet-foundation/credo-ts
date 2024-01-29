@@ -1,13 +1,13 @@
-import type { InitConfig } from '@aries-framework/core'
+import type { InitConfig } from '@credo-ts/core'
 
-import { Agent } from '@aries-framework/core'
-import { agentDependencies } from '@aries-framework/node'
+import { Agent } from '@credo-ts/core'
+import { agentDependencies } from '@credo-ts/node'
 
 import { AskarModule, AskarMultiWalletDatabaseScheme, AskarProfileWallet, AskarWallet } from '../../askar/src'
 import { askarModuleConfig } from '../../askar/tests/helpers'
 import { testLogger } from '../../core/tests'
 
-import { TenantsModule } from '@aries-framework/tenants'
+import { TenantsModule } from '@credo-ts/tenants'
 
 describe('Tenants Askar database schemes E2E', () => {
   test('uses AskarWallet for all wallets and tenants when database schema is DatabasePerWallet', async () => {

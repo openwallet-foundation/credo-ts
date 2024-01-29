@@ -19,10 +19,10 @@
       alt="typescript"
       src="https://img.shields.io/badge/%3C%2F%3E-TypeScript-%230074c1.svg"
   /></a>
-    <a href="https://www.npmjs.com/package/@aries-framework/action-menu"
+    <a href="https://www.npmjs.com/package/@credo-ts/action-menu"
     ><img
-      alt="@aries-framework/action-menu version"
-      src="https://img.shields.io/npm/v/@aries-framework/action-menu"
+      alt="@credo-ts/action-menu version"
+      src="https://img.shields.io/npm/v/@credo-ts/action-menu"
   /></a>
 
 </p>
@@ -32,16 +32,16 @@ Action Menu module for [Aries Framework JavaScript](https://github.com/hyperledg
 
 ### Installation
 
-Make sure you have set up the correct version of Aries Framework JavaScript according to the AFJ repository. To find out which version of AFJ you need to have installed you can run the following command. This will list the required peer dependency for `@aries-framework/core`.
+Make sure you have set up the correct version of Aries Framework JavaScript according to the AFJ repository. To find out which version of AFJ you need to have installed you can run the following command. This will list the required peer dependency for `@credo-ts/core`.
 
 ```sh
-npm info "@aries-framework/action-menu" peerDependencies
+npm info "@credo-ts/action-menu" peerDependencies
 ```
 
 Then add the action-menu module to your project.
 
 ```sh
-yarn add @aries-framework/action-menu
+yarn add @credo-ts/action-menu
 ```
 
 ### Quick start
@@ -51,7 +51,7 @@ In order for this module to work, we have to inject it into the agent to access 
 ### Example of usage
 
 ```ts
-import { ActionMenuModule } from '@aries-framework/action-menu'
+import { ActionMenuModule } from '@credo-ts/action-menu'
 
 const agent = new Agent({
   config: {

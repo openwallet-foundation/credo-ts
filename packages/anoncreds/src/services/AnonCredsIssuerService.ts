@@ -12,7 +12,7 @@ import type {
 } from './AnonCredsIssuerServiceOptions'
 import type { AnonCredsCredentialOffer } from '../models/exchange'
 import type { AnonCredsRevocationStatusList, AnonCredsSchema } from '../models/registry'
-import type { AgentContext } from '@aries-framework/core'
+import type { AgentContext } from '@credo-ts/core'
 
 export const AnonCredsIssuerServiceSymbol = Symbol('AnonCredsIssuerService')
 

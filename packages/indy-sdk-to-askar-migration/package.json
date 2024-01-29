@@ -1,5 +1,5 @@
 {
-  "name": "@aries-framework/indy-sdk-to-askar-migration",
+  "name": "@credo-ts/indy-sdk-to-askar-migration",
   "main": "build/index",
   "types": "build/index",
   "version": "0.4.2",
@@ -24,13 +24,13 @@
     "test": "jest"
   },
   "dependencies": {
-    "@aries-framework/anoncreds": "0.4.2",
-    "@aries-framework/askar": "0.4.2",
-    "@aries-framework/core": "0.4.2",
-    "@aries-framework/node": "0.4.2"
+    "@credo-ts/anoncreds": "0.4.2",
+    "@credo-ts/askar": "0.4.2",
+    "@credo-ts/core": "0.4.2",
+    "@credo-ts/node": "0.4.2"
   },
   "devDependencies": {
-    "@aries-framework/indy-sdk": "0.4.2",
+    "@credo-ts/indy-sdk": "0.4.2",
     "@hyperledger/aries-askar-nodejs": "^0.2.0-dev.5",
     "@hyperledger/aries-askar-shared": "^0.2.0-dev.5",
     "indy-sdk": "^1.16.0-dev-1655",

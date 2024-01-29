@@ -19,10 +19,10 @@
       alt="typescript"
       src="https://img.shields.io/badge/%3C%2F%3E-TypeScript-%230074c1.svg"
   /></a>
-    <a href="https://www.npmjs.com/package/@aries-framework/react-native"
+    <a href="https://www.npmjs.com/package/@credo-ts/react-native"
     ><img
-      alt="@aries-framework/react-native version"
-      src="https://img.shields.io/npm/v/@aries-framework/react-native"
+      alt="@credo-ts/react-native version"
+      src="https://img.shields.io/npm/v/@credo-ts/react-native"
   /></a>
 
 </p>

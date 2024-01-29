@@ -1,7 +1,7 @@
 import type { TenantConfig } from '../models/TenantConfig'
-import type { AgentContext, Key } from '@aries-framework/core'
+import type { AgentContext, Key } from '@credo-ts/core'
 
-import { injectable, utils, KeyDerivationMethod } from '@aries-framework/core'
+import { injectable, utils, KeyDerivationMethod } from '@credo-ts/core'
 
 import { TenantRepository, TenantRecord, TenantRoutingRepository, TenantRoutingRecord } from '../repository'
 

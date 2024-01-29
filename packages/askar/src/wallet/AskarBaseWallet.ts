@@ -11,7 +11,7 @@ import type {
   WalletExportImportConfig,
   Logger,
   SigningProviderRegistry,
-} from '@aries-framework/core'
+} from '@credo-ts/core'
 import type { KeyEntryObject, Session } from '@hyperledger/aries-askar-shared'
 
 import {
@@ -26,7 +26,7 @@ import {
   WalletError,
   Key,
   TypedArrayEncoder,
-} from '@aries-framework/core'
+} from '@credo-ts/core'
 import { KeyAlgs, CryptoBox, Store, Key as AskarKey, keyAlgFromString } from '@hyperledger/aries-askar-shared'
 // eslint-disable-next-line import/order
 import BigNumber from 'bn.js'

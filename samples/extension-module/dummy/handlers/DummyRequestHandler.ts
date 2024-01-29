@@ -1,7 +1,7 @@
 import type { DummyService } from '../services'
-import type { MessageHandler, MessageHandlerInboundMessage } from '@aries-framework/core'
+import type { MessageHandler, MessageHandlerInboundMessage } from '@credo-ts/core'
 
-import { getOutboundMessageContext } from '@aries-framework/core'
+import { getOutboundMessageContext } from '@credo-ts/core'
 
 import { DummyRequestMessage } from '../messages'
 

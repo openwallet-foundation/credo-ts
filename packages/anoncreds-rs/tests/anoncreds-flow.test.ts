@@ -1,5 +1,5 @@
-import type { AnonCredsCredentialRequest } from '@aries-framework/anoncreds'
-import type { Wallet } from '@aries-framework/core'
+import type { AnonCredsCredentialRequest } from '@credo-ts/anoncreds'
+import type { Wallet } from '@credo-ts/core'
 
 import {
   AnonCredsRevocationRegistryDefinitionPrivateRecord,
@@ -23,7 +23,7 @@ import {
   AnonCredsLinkSecretRecord,
   AnonCredsProofFormatService,
   AnonCredsCredentialFormatService,
-} from '@aries-framework/anoncreds'
+} from '@credo-ts/anoncreds'
 import {
   CredentialState,
   CredentialExchangeRecord,
@@ -31,7 +31,7 @@ import {
   InjectionSymbols,
   ProofState,
   ProofExchangeRecord,
-} from '@aries-framework/core'
+} from '@credo-ts/core'
 import { Subject } from 'rxjs'
 
 import { InMemoryStorageService } from '../../../tests/InMemoryStorageService'

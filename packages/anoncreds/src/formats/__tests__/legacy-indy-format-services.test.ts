@@ -9,7 +9,7 @@ import {
   ProofExchangeRecord,
   ProofState,
   EventEmitter,
-} from '@aries-framework/core'
+} from '@credo-ts/core'
 import * as indySdk from 'indy-sdk'
 import { Subject } from 'rxjs'
 

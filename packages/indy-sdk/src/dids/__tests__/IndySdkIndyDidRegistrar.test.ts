@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
 import type { IndySdkPool } from '../../ledger/IndySdkPool'
-import type { DidRecord, RecordSavedEvent } from '@aries-framework/core'
+import type { DidRecord, RecordSavedEvent } from '@credo-ts/core'
 
 import {
   SigningProviderRegistry,
@@ -15,7 +15,7 @@ import {
   DidDocumentRole,
   EventEmitter,
   RepositoryEventTypes,
-} from '@aries-framework/core'
+} from '@credo-ts/core'
 import { Subject } from 'rxjs'
 
 import { InMemoryStorageService } from '../../../../../tests/InMemoryStorageService'

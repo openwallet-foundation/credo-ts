@@ -1,4 +1,4 @@
-import { AriesFrameworkError } from '@aries-framework/core'
+import { AriesFrameworkError } from '@credo-ts/core'
 
 const didIndyAnonCredsBase =
   /(did:indy:((?:[a-z][_a-z0-9-]*)(?::[a-z][_a-z0-9-]*)?):([1-9A-HJ-NP-Za-km-z]{21,22}))\/anoncreds\/v0/

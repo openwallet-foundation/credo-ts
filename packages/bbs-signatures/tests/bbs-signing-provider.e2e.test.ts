@@ -1,12 +1,6 @@
-import type { Wallet, WalletConfig } from '@aries-framework/core'
+import type { Wallet, WalletConfig } from '@credo-ts/core'
 
-import {
-  KeyDerivationMethod,
-  KeyType,
-  WalletError,
-  TypedArrayEncoder,
-  SigningProviderRegistry,
-} from '@aries-framework/core'
+import { KeyDerivationMethod, KeyType, WalletError, TypedArrayEncoder, SigningProviderRegistry } from '@credo-ts/core'
 import { BBS_SIGNATURE_LENGTH } from '@mattrglobal/bbs-signatures'
 
 import testLogger from '../../core/tests/logger'

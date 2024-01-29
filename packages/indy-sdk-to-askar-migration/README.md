@@ -19,10 +19,10 @@
       alt="typescript"
       src="https://img.shields.io/badge/%3C%2F%3E-TypeScript-%230074c1.svg"
   /></a>
-    <a href="https://www.npmjs.com/package/@aries-framework/indy-sdk-to-askar-migration"
+    <a href="https://www.npmjs.com/package/@credo-ts/indy-sdk-to-askar-migration"
     ><img
-      alt="@aries-framework/indy-sdk-to-askar-migration version"
-      src="https://img.shields.io/npm/v/@aries-framework/indy-sdk-to-askar-migration"
+      alt="@credo-ts/indy-sdk-to-askar-migration version"
+      src="https://img.shields.io/npm/v/@credo-ts/indy-sdk-to-askar-migration"
   /></a>
 
 </p>

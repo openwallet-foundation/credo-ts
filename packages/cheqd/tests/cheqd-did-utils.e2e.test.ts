@@ -1,6 +1,6 @@
 import type { DIDDocument } from '@cheqd/sdk'
 
-import { DidDocument } from '@aries-framework/core'
+import { DidDocument } from '@credo-ts/core'
 
 import {
   createMsgCreateDidDocPayloadToSign,

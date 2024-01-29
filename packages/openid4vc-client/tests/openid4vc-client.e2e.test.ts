@@ -1,4 +1,4 @@
-import type { KeyDidCreateOptions } from '@aries-framework/core'
+import type { KeyDidCreateOptions } from '@credo-ts/core'
 
 import {
   ClaimFormat,
@@ -9,7 +9,7 @@ import {
   W3cCredentialRecord,
   W3cCredentialsModule,
   DidKey,
-} from '@aries-framework/core'
+} from '@credo-ts/core'
 import nock, { cleanAll, enableNetConnect } from 'nock'
 
 import { AskarModule } from '../../askar/src'
@@ -19,7 +19,7 @@ import { getAgentOptions } from '../../core/tests'
 
 import { mattrLaunchpadJsonLd, waltIdJffJwt } from './fixtures'
 
-import { OpenId4VcClientModule } from '@aries-framework/openid4vc-client'
+import { OpenId4VcClientModule } from '@credo-ts/openid4vc-client'
 
 const modules = {
   openId4VcClient: new OpenId4VcClientModule(),

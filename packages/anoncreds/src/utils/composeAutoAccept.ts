@@ -1,4 +1,4 @@
-import { AutoAcceptCredential, AutoAcceptProof } from '@aries-framework/core'
+import { AutoAcceptCredential, AutoAcceptProof } from '@credo-ts/core'
 
 /**
  * Returns the credential auto accept config based on priority:

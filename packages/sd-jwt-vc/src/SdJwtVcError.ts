@@ -1,3 +1,3 @@
-import { AriesFrameworkError } from '@aries-framework/core'
+import { AriesFrameworkError } from '@credo-ts/core'
 
 export class SdJwtVcError extends AriesFrameworkError {}

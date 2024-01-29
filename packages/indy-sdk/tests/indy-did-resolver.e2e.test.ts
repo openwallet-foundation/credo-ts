@@ -1,6 +1,6 @@
 import type { IndySdkIndyDidCreateOptions } from '../src'
 
-import { Agent, AriesFrameworkError, JsonTransformer, TypedArrayEncoder } from '@aries-framework/core'
+import { Agent, AriesFrameworkError, JsonTransformer, TypedArrayEncoder } from '@credo-ts/core'
 
 import { getAgentOptions, importExistingIndyDidFromPrivateKey, publicDidSeed } from '../../core/tests/helpers'
 

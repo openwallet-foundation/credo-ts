@@ -13,8 +13,8 @@
     "responder": "ts-node responder.ts"
   },
   "devDependencies": {
-    "@aries-framework/core": "*",
-    "@aries-framework/node": "*",
+    "@credo-ts/core": "*",
+    "@credo-ts/node": "*",
     "ts-node": "^10.4.0"
   },
   "dependencies": {
