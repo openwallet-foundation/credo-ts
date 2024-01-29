@@ -2,11 +2,34 @@ import type { DidDocument } from './domain'
 import type { DIDDocumentMetadata, DIDResolutionMetadata, DIDResolutionOptions, ParsedDID } from 'did-resolver'
 
 export type ParsedDid = ParsedDID
-export type DidResolutionOptions = DIDResolutionOptions
 export type DidDocumentMetadata = DIDDocumentMetadata
+
+export interface DidResolutionOptions extends DIDResolutionOptions {
+  /**
+   * Whether to resolve the did document from the cache.
+   *
+   * @default true
+   */
+  useCache?: boolean
+
+  /**
+   * Whether to persist the did document in the cache.
+   *
+   * @default true
+   */
+  persistInCache?: boolean
+
+  /**
+   * How many seconds to persist the resolved document
+   *
+   * @default 3600
+   */
+  cacheDurationInSeconds?: number
+}
 
 export interface DidResolutionMetadata extends DIDResolutionMetadata {
   message?: string
+  servedFromCache?: boolean
 }
 
 export interface DidResolutionResult {

@@ -19,6 +19,7 @@ import { filterResourcesByNameAndType, getClosestResourceVersion, renderResource
 
 export class CheqdDidResolver implements DidResolver {
   public readonly supportedMethods = ['cheqd']
+  public readonly allowsCaching = true
 
   public async resolve(agentContext: AgentContext, did: string, parsed: ParsedDid): Promise<DidResolutionResult> {
     const didDocumentMetadata = {}

@@ -12,6 +12,8 @@ import { addServicesFromEndpointsAttrib, sovDidDocumentFromDid } from './didSovU
 export class IndySdkSovDidResolver implements DidResolver {
   public readonly supportedMethods = ['sov']
 
+  public readonly allowsCaching = true
+
   public async resolve(agentContext: AgentContext, did: string, parsed: ParsedDid): Promise<DidResolutionResult> {
     const didDocumentMetadata = {}
 

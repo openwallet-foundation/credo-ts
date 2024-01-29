@@ -1,9 +1,11 @@
+import { agentDependencies } from '../../../tests'
 import { ConnectionInvitationMessage } from '../../modules/connections'
 import { InvitationType, OutOfBandInvitation } from '../../modules/oob'
 import { convertToNewInvitation } from '../../modules/oob/helpers'
+import { JsonEncoder } from '../JsonEncoder'
 import { JsonTransformer } from '../JsonTransformer'
 import { MessageValidator } from '../MessageValidator'
-import { oobInvitationFromShortUrl } from '../parseInvitation'
+import { oobInvitationFromShortUrl, parseInvitationShortUrl } from '../parseInvitation'
 
 const mockOobInvite = {
   '@type': 'did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/out-of-band/1.0/invitation',
@@ -19,6 +21,16 @@ const mockConnectionInvite = {
   label: 'test',
   serviceEndpoint: 'http://sour-cow-15.tun1.indiciotech.io',
   recipientKeys: ['5Gvpf9M4j7vWpHyeTyvBKbjYe7qWc72kGo6qZaLHkLrd'],
+}
+
+const mockLegacyConnectionless = {
+  '@id': '035b6404-f496-4cb6-a2b5-8bd09e8c92c1',
+  '@type': 'https://didcomm.org/some-protocol/1.0/some-message',
+  '~service': {
+    recipientKeys: ['5Gvpf9M4j7vWpHyeTyvBKbjYe7qWc72kGo6qZaLHkLrd'],
+    routingKeys: ['5Gvpf9M4j7vWpHyeTyvBKbjYe7qWc72kGo6qZaLHkLrd'],
+    serviceEndpoint: 'https://example.com/endpoint',
+  },
 }
 
 const header = new Headers()
@@ -48,6 +60,13 @@ const mockedResponseOobUrl = {
 } as Response
 
 dummyHeader.forEach(mockedResponseOobUrl.headers.append)
+
+const mockedLegacyConnectionlessInvitationJson = {
+  status: 200,
+  ok: true,
+  json: async () => mockLegacyConnectionless,
+  headers: header,
+} as Response
 
 const mockedResponseConnectionJson = {
   status: 200,
@@ -103,15 +122,78 @@ describe('shortened urls resolving to oob invitations', () => {
   })
 })
 
+describe('legacy connectionless', () => {
+  test('parse url containing d_m ', async () => {
+    const parsed = await parseInvitationShortUrl(
+      `https://example.com?d_m=${JsonEncoder.toBase64URL(mockLegacyConnectionless)}`,
+      agentDependencies
+    )
+    expect(parsed.toJSON()).toMatchObject({
+      '@id': expect.any(String),
+      '@type': 'https://didcomm.org/out-of-band/1.1/invitation',
+      label: undefined,
+      'requests~attach': [
+        {
+          '@id': expect.any(String),
+          data: {
+            base64:
+              'eyJAaWQiOiIwMzViNjQwNC1mNDk2LTRjYjYtYTJiNS04YmQwOWU4YzkyYzEiLCJAdHlwZSI6Imh0dHBzOi8vZGlkY29tbS5vcmcvc29tZS1wcm90b2NvbC8xLjAvc29tZS1tZXNzYWdlIn0=',
+          },
+          'mime-type': 'application/json',
+        },
+      ],
+      services: [
+        {
+          id: expect.any(String),
+          recipientKeys: ['did:key:z6MkijBsFPbW4fQyvnpM9Yt2AhHYTh7N1zH6xp1mPrJJfZe1'],
+          routingKeys: ['did:key:z6MkijBsFPbW4fQyvnpM9Yt2AhHYTh7N1zH6xp1mPrJJfZe1'],
+          serviceEndpoint: 'https://example.com/endpoint',
+          type: 'did-communication',
+        },
+      ],
+    })
+  })
+
+  test('parse short url returning legacy connectionless invitation to out of band invitation', async () => {
+    const parsed = await oobInvitationFromShortUrl(mockedLegacyConnectionlessInvitationJson)
+    expect(parsed.toJSON()).toMatchObject({
+      '@id': expect.any(String),
+      '@type': 'https://didcomm.org/out-of-band/1.1/invitation',
+      label: undefined,
+      'requests~attach': [
+        {
+          '@id': expect.any(String),
+          data: {
+            base64:
+              'eyJAaWQiOiIwMzViNjQwNC1mNDk2LTRjYjYtYTJiNS04YmQwOWU4YzkyYzEiLCJAdHlwZSI6Imh0dHBzOi8vZGlkY29tbS5vcmcvc29tZS1wcm90b2NvbC8xLjAvc29tZS1tZXNzYWdlIn0=',
+          },
+          'mime-type': 'application/json',
+        },
+      ],
+      services: [
+        {
+          id: expect.any(String),
+          recipientKeys: ['did:key:z6MkijBsFPbW4fQyvnpM9Yt2AhHYTh7N1zH6xp1mPrJJfZe1'],
+          routingKeys: ['did:key:z6MkijBsFPbW4fQyvnpM9Yt2AhHYTh7N1zH6xp1mPrJJfZe1'],
+          serviceEndpoint: 'https://example.com/endpoint',
+          type: 'did-communication',
+        },
+      ],
+    })
+  })
+})
+
 describe('shortened urls resolving to connection invitations', () => {
   test('Resolve a mocked response in the form of a connection invitation as a json object', async () => {
     const short = await oobInvitationFromShortUrl(mockedResponseConnectionJson)
     expect(short).toEqual(connectionInvitationToNew)
   })
+
   test('Resolve a mocked Response in the form of a connection invitation encoded in an url c_i query parameter', async () => {
     const short = await oobInvitationFromShortUrl(mockedResponseConnectionUrl)
     expect(short).toEqual(connectionInvitationToNew)
   })
+
   test('Resolve a mocked Response in the form of a connection invitation encoded in an url oob query parameter', async () => {
     const mockedResponseConnectionInOobUrl = {
       status: 200,
