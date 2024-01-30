@@ -6,13 +6,13 @@ import { Subject } from 'rxjs'
 import { SubjectInboundTransport } from '../../../../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from '../../../../../../tests/transport/SubjectOutboundTransport'
 import { getIndySdkModules } from '../../../../../indy-sdk/tests/setupIndySdkModule'
-import { getAgentOptions, waitForBasicMessage, waitForTrustPingReceivedEvent } from '../../../../tests/helpers'
+import { getAgentOptions, waitForBasicMessage } from '../../../../tests/helpers'
 import { Agent } from '../../../agent/Agent'
 import { HandshakeProtocol } from '../../connections'
 
 const recipientOptions = getAgentOptions('Mediation: Recipient Pickup', {}, getIndySdkModules())
 const mediatorOptions = getAgentOptions(
-  'Mediation: Mediator Pickup',
+  'Mediation: Message Pickup',
   {
     endpoints: ['wss://mediator'],
   },
@@ -30,7 +30,7 @@ describe('E2E Pick Up protocol', () => {
     await mediatorAgent.wallet.delete()
   })
 
-  test('E2E Pick Up V1 protocol', async () => {
+  test('E2E manual Pick Up V1 loop', async () => {
     const mediatorMessages = new Subject<SubjectMessage>()
 
     const subjectMap = {
@@ -92,7 +92,7 @@ describe('E2E Pick Up protocol', () => {
     expect(basicMessage.content).toBe(message)
   })
 
-  test('E2E Pick Up V2 protocol', async () => {
+  test('E2E manual Pick Up V2 loop', async () => {
     const mediatorMessages = new Subject<SubjectMessage>()
 
     // FIXME: we harcoded that pickup of messages MUST be using ws(s) scheme when doing implicit pickup

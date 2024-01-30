@@ -11,6 +11,8 @@ export interface V2LiveDeliveryChangeMessageOptions {
 }
 
 export class V2LiveDeliveryChangeMessage extends AgentMessage {
+  public readonly allowQueueTransport = false
+
   public constructor(options: V2LiveDeliveryChangeMessageOptions) {
     super()
 

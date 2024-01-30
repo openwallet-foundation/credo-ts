@@ -323,7 +323,7 @@ export class MessageSender {
 
     // We didn't succeed to send the message over open session, or directly to serviceEndpoint
     // If the other party shared a queue service endpoint in their did doc we queue the message
-    if (queueService) {
+    if (queueService && message.allowQueueTransport) {
       this.logger.debug(`Queue message for connection ${connection.id} (${connection.theirLabel})`)
 
       const keys = {

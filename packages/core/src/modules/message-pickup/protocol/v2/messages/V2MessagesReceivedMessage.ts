@@ -11,6 +11,8 @@ export interface V2MessagesReceivedMessageOptions {
 }
 
 export class V2MessagesReceivedMessage extends AgentMessage {
+  public readonly allowQueueTransport = false
+
   public constructor(options: V2MessagesReceivedMessageOptions) {
     super()
 
