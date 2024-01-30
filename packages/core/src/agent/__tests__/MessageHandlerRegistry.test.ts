@@ -1,6 +1,6 @@
 import type { MessageHandler } from '../MessageHandler'
 
-import { parseMessageType } from '../../utils/messageType'
+import { parseDidCommProtocolUri, parseMessageType } from '../../utils/messageType'
 import { AgentMessage } from '../AgentMessage'
 import { MessageHandlerRegistry } from '../MessageHandlerRegistry'
 
@@ -74,36 +74,36 @@ describe('MessageHandlerRegistry', () => {
 
   describe('supportedProtocols', () => {
     test('return all supported message protocols URIs', async () => {
-      const messageTypes = messageHandlerRegistry.supportedProtocols
+      const messageTypes = messageHandlerRegistry.supportedProtocolUris
 
       expect(messageTypes).toEqual([
-        'https://didcomm.org/connections/1.0',
-        'https://didcomm.org/notification/1.0',
-        'https://didcomm.org/issue-credential/1.0',
-        'https://didcomm.org/fake-protocol/1.5',
+        parseDidCommProtocolUri('https://didcomm.org/connections/1.0'),
+        parseDidCommProtocolUri('https://didcomm.org/notification/1.0'),
+        parseDidCommProtocolUri('https://didcomm.org/issue-credential/1.0'),
+        parseDidCommProtocolUri('https://didcomm.org/fake-protocol/1.5'),
       ])
     })
   })
 
-  describe('filterSupportedProtocolsByMessageFamilies', () => {
+  describe('filterSupportedProtocolsByProtocolUris', () => {
     it('should return empty array when input is empty array', async () => {
-      const supportedProtocols = messageHandlerRegistry.filterSupportedProtocolsByMessageFamilies([])
+      const supportedProtocols = messageHandlerRegistry.filterSupportedProtocolsByProtocolUris([])
       expect(supportedProtocols).toEqual([])
     })
 
     it('should return empty array when input contains only unsupported protocol', async () => {
-      const supportedProtocols = messageHandlerRegistry.filterSupportedProtocolsByMessageFamilies([
-        'https://didcomm.org/unsupported-protocol/1.0',
+      const supportedProtocols = messageHandlerRegistry.filterSupportedProtocolsByProtocolUris([
+        parseDidCommProtocolUri('https://didcomm.org/unsupported-protocol/1.0'),
       ])
       expect(supportedProtocols).toEqual([])
     })
 
     it('should return array with only supported protocol when input contains supported and unsupported protocol', async () => {
-      const supportedProtocols = messageHandlerRegistry.filterSupportedProtocolsByMessageFamilies([
-        'https://didcomm.org/connections',
-        'https://didcomm.org/didexchange',
+      const supportedProtocols = messageHandlerRegistry.filterSupportedProtocolsByProtocolUris([
+        parseDidCommProtocolUri('https://didcomm.org/connections/1.0'),
+        parseDidCommProtocolUri('https://didcomm.org/didexchange/1.0'),
       ])
-      expect(supportedProtocols).toEqual(['https://didcomm.org/connections/1.0'])
+      expect(supportedProtocols).toEqual([parseDidCommProtocolUri('https://didcomm.org/connections/1.0')])
     })
   })
 

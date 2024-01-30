@@ -195,7 +195,7 @@ describe('out of band', () => {
       const { outOfBandInvitation } = await faberAgent.oob.createInvitation(makeConnectionConfig)
 
       // expect supported handshake protocols
-      expect(outOfBandInvitation.handshakeProtocols).toContain(HandshakeProtocol.DidExchange)
+      expect(outOfBandInvitation.handshakeProtocols).toContain('https://didcomm.org/didexchange/1.1')
       expect(outOfBandInvitation.getRequests()).toBeUndefined()
 
       // expect contains services
@@ -243,7 +243,7 @@ describe('out of band', () => {
       })
 
       // expect supported handshake protocols
-      expect(outOfBandInvitation.handshakeProtocols).toContain(HandshakeProtocol.Connections)
+      expect(outOfBandInvitation.handshakeProtocols).toContain('https://didcomm.org/connections/1.0')
       expect(outOfBandInvitation.getRequests()).toHaveLength(1)
 
       // expect contains services
@@ -692,7 +692,7 @@ describe('out of band', () => {
 
       await expect(aliceAgent.oob.receiveInvitation(outOfBandInvitation, receiveInvitationConfig)).rejects.toEqual(
         new AriesFrameworkError(
-          `Handshake protocols [${unsupportedProtocol}] are not supported. Supported protocols are [https://didcomm.org/didexchange/1.1,https://didcomm.org/connections/1.0]`
+          `Handshake protocols [${unsupportedProtocol}] are not supported. Supported protocols are [https://didcomm.org/didexchange/1.x,https://didcomm.org/connections/1.x]`
         )
       )
     })
