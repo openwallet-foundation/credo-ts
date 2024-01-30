@@ -1,7 +1,7 @@
 import type { EventReplaySubject } from '../../../../../../core/tests'
 import type { AnonCredsTestsAgent } from '../../../../../tests/legacyAnonCredsSetup'
 
-import { AutoAcceptCredential, CredentialState, CredentialExchangeRecord, JsonTransformer } from '@aries-framework/core'
+import { AutoAcceptCredential, CredentialState, CredentialExchangeRecord, JsonTransformer } from '@credo-ts/core'
 
 import { waitForCredentialRecord, waitForCredentialRecordSubject, testLogger } from '../../../../../../core/tests'
 import { setupAnonCredsTests } from '../../../../../tests/legacyAnonCredsSetup'

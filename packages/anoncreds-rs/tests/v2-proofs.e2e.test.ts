@@ -1,7 +1,7 @@
 import type { AnonCredsTestsAgent } from './anoncredsSetup'
 import type { EventReplaySubject } from '../../core/tests'
-import type { AnonCredsRequestProofFormat } from '@aries-framework/anoncreds'
-import type { CredentialExchangeRecord } from '@aries-framework/core'
+import type { AnonCredsRequestProofFormat } from '@credo-ts/anoncreds'
+import type { CredentialExchangeRecord } from '@credo-ts/core'
 
 import {
   Attachment,
@@ -12,7 +12,7 @@ import {
   V2ProposePresentationMessage,
   V2RequestPresentationMessage,
   V2PresentationMessage,
-} from '@aries-framework/core'
+} from '@credo-ts/core'
 
 import { dateToTimestamp } from '../../anoncreds/src/utils/timestamp'
 import { InMemoryAnonCredsRegistry } from '../../anoncreds/tests/InMemoryAnonCredsRegistry'

@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 
-import type { JsonObject, DocumentLoader } from '@aries-framework/core'
+import type { JsonObject, DocumentLoader } from '@credo-ts/core'
 
 /**
  * Options for signing using a signature suite
@@ -25,10 +25,7 @@ export interface SuiteSignOptions {
    * Optional custom document loader
    */
   documentLoader?: DocumentLoader
-  /**
-   * Optional expansion map
-   */
-  expansionMap?: () => void
+
   /**
    * The array of statements to sign
    */

@@ -5,6 +5,7 @@ import { CacheModule } from '../../modules/cache'
 import { ConnectionsModule } from '../../modules/connections'
 import { CredentialsModule } from '../../modules/credentials'
 import { DidsModule } from '../../modules/dids'
+import { DifPresentationExchangeModule } from '../../modules/dif-presentation-exchange'
 import { DiscoverFeaturesModule } from '../../modules/discover-features'
 import { GenericRecordsModule } from '../../modules/generic-records'
 import { MessagePickupModule } from '../../modules/message-pickup'
@@ -62,6 +63,7 @@ describe('AgentModules', () => {
         mediationRecipient: expect.any(MediationRecipientModule),
         messagePickup: expect.any(MessagePickupModule),
         basicMessages: expect.any(BasicMessagesModule),
+        pex: expect.any(DifPresentationExchangeModule),
         genericRecords: expect.any(GenericRecordsModule),
         discovery: expect.any(DiscoverFeaturesModule),
         dids: expect.any(DidsModule),
@@ -86,6 +88,7 @@ describe('AgentModules', () => {
         mediationRecipient: expect.any(MediationRecipientModule),
         messagePickup: expect.any(MessagePickupModule),
         basicMessages: expect.any(BasicMessagesModule),
+        pex: expect.any(DifPresentationExchangeModule),
         genericRecords: expect.any(GenericRecordsModule),
         discovery: expect.any(DiscoverFeaturesModule),
         dids: expect.any(DidsModule),
@@ -113,6 +116,7 @@ describe('AgentModules', () => {
         mediationRecipient: expect.any(MediationRecipientModule),
         messagePickup: expect.any(MessagePickupModule),
         basicMessages: expect.any(BasicMessagesModule),
+        pex: expect.any(DifPresentationExchangeModule),
         genericRecords: expect.any(GenericRecordsModule),
         discovery: expect.any(DiscoverFeaturesModule),
         dids: expect.any(DidsModule),

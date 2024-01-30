@@ -1,19 +1,13 @@
-import type { ConnectionRecord } from '@aries-framework/core'
+import type { ConnectionRecord } from '@credo-ts/core'
 
-import { Agent } from '@aries-framework/core'
+import { Agent } from '@credo-ts/core'
 
 import { askarModule } from '../../askar/tests/helpers'
 import { getAgentOptions, makeConnection, testLogger, setupSubjectTransports } from '../../core/tests'
 
 import { waitForActionMenuRecord } from './helpers'
 
-import {
-  ActionMenu,
-  ActionMenuModule,
-  ActionMenuRecord,
-  ActionMenuRole,
-  ActionMenuState,
-} from '@aries-framework/action-menu'
+import { ActionMenu, ActionMenuModule, ActionMenuRecord, ActionMenuRole, ActionMenuState } from '@credo-ts/action-menu'
 
 const modules = {
   actionMenu: new ActionMenuModule(),

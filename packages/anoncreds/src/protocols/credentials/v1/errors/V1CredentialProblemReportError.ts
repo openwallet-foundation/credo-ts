@@ -1,6 +1,6 @@
-import type { ProblemReportErrorOptions, CredentialProblemReportReason } from '@aries-framework/core'
+import type { ProblemReportErrorOptions, CredentialProblemReportReason } from '@credo-ts/core'
 
-import { ProblemReportError } from '@aries-framework/core'
+import { ProblemReportError } from '@credo-ts/core'
 
 import { V1CredentialProblemReportMessage } from '../messages'
 

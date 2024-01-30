@@ -4,9 +4,9 @@ export SEED=${1?"Seed missing\nUsage: $0 SEED ROLE"}
 export ROLE=$2
 
 echo "
-wallet open afj-wallet key=password
+wallet open credo-wallet key=password
 
-pool connect afj-pool
+pool connect credo-pool
 
 did new seed=${SEED}" >/etc/indy/command.txt
 

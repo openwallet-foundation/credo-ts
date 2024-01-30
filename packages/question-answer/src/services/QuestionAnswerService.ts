@@ -1,8 +1,8 @@
 import type { QuestionAnswerStateChangedEvent } from '../QuestionAnswerEvents'
 import type { ValidResponse } from '../models'
-import type { AgentContext, InboundMessageContext, Query } from '@aries-framework/core'
+import type { AgentContext, InboundMessageContext, Query } from '@credo-ts/core'
 
-import { AriesFrameworkError, EventEmitter, inject, injectable, InjectionSymbols, Logger } from '@aries-framework/core'
+import { AriesFrameworkError, EventEmitter, inject, injectable, InjectionSymbols, Logger } from '@credo-ts/core'
 
 import { QuestionAnswerEventTypes } from '../QuestionAnswerEvents'
 import { QuestionAnswerRole } from '../QuestionAnswerRole'

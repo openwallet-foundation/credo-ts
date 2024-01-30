@@ -1,7 +1,7 @@
-import type { BaseRecord, BaseRecordConstructor, Query, TagsBase } from '@aries-framework/core'
+import type { BaseRecord, BaseRecordConstructor, Query, TagsBase } from '@credo-ts/core'
 import type { EntryObject } from '@hyperledger/aries-askar-shared'
 
-import { JsonTransformer } from '@aries-framework/core'
+import { JsonTransformer } from '@credo-ts/core'
 
 export function recordToInstance<T extends BaseRecord>(record: EntryObject, recordClass: BaseRecordConstructor<T>): T {
   const instance = JsonTransformer.deserialize<T>(record.value as string, recordClass)
@@ -87,7 +87,7 @@ export function transformFromRecordTagValues(tags: TagsBase): { [key: string]: s
 /**
  * Transforms the search query into a wallet query compatible with Askar WQL.
  *
- * The format used by AFJ is almost the same as the WQL query, with the exception of
+ * The format used by Credo is almost the same as the WQL query, with the exception of
  * the encoding of values, however this is handled by the {@link AskarStorageServiceUtil.transformToRecordTagValues}
  * method.
  */

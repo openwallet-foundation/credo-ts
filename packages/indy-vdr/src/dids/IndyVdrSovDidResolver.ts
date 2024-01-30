@@ -1,6 +1,6 @@
 import type { GetNymResponseData, IndyEndpointAttrib } from './didSovUtil'
 import type { IndyVdrPool } from '../pool'
-import type { DidResolutionResult, ParsedDid, DidResolver, AgentContext } from '@aries-framework/core'
+import type { DidResolutionResult, ParsedDid, DidResolver, AgentContext } from '@credo-ts/core'
 
 import { GetAttribRequest, GetNymRequest } from '@hyperledger/indy-vdr-shared'
 
@@ -11,6 +11,8 @@ import { addServicesFromEndpointsAttrib, sovDidDocumentFromDid } from './didSovU
 
 export class IndyVdrSovDidResolver implements DidResolver {
   public readonly supportedMethods = ['sov']
+
+  public readonly allowsCaching = true
 
   public async resolve(agentContext: AgentContext, did: string, parsed: ParsedDid): Promise<DidResolutionResult> {
     const didDocumentMetadata = {}

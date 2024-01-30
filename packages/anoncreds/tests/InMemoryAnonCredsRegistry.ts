@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import type {
   AnonCredsCredentialDefinition,
   AnonCredsRegistry,
@@ -18,19 +17,19 @@ import type {
   RegisterSchemaOptions,
   RegisterSchemaReturn,
 } from '../src'
-import type { AgentContext } from '@aries-framework/core'
+import type { AgentContext } from '@credo-ts/core'
 
-import { Hasher, TypedArrayEncoder } from '@aries-framework/core'
+import { Hasher, TypedArrayEncoder } from '@credo-ts/core'
 import BigNumber from 'bn.js'
 
 import {
   getDidIndyCredentialDefinitionId,
-  getDidIndyRevocationRegistryId,
+  getDidIndyRevocationRegistryDefinitionId,
   getDidIndySchemaId,
 } from '../../indy-vdr/src/anoncreds/utils/identifiers'
 import {
+  getUnqualifiedRevocationRegistryDefinitionId,
   getUnqualifiedCredentialDefinitionId,
-  getUnqualifiedRevocationRegistryId,
   getUnqualifiedSchemaId,
   parseIndyCredentialDefinitionId,
   parseIndyDid,
@@ -68,7 +67,7 @@ export class InMemoryAnonCredsRegistry implements AnonCredsRegistry {
     this.revocationStatusLists = existingRevocationStatusLists
   }
 
-  public async getSchema(agentContext: AgentContext, schemaId: string): Promise<GetSchemaReturn> {
+  public async getSchema(_agentContext: AgentContext, schemaId: string): Promise<GetSchemaReturn> {
     const schema = this.schemas[schemaId]
 
     const parsed = parseIndySchemaId(schemaId)
@@ -100,7 +99,7 @@ export class InMemoryAnonCredsRegistry implements AnonCredsRegistry {
   }
 
   public async registerSchema(
-    agentContext: AgentContext,
+    _agentContext: AgentContext,
     options: RegisterSchemaOptions
   ): Promise<RegisterSchemaReturn> {
     const { namespace, namespaceIdentifier } = parseIndyDid(options.schema.issuerId)
@@ -137,7 +136,7 @@ export class InMemoryAnonCredsRegistry implements AnonCredsRegistry {
   }
 
   public async getCredentialDefinition(
-    agentContext: AgentContext,
+    _agentContext: AgentContext,
     credentialDefinitionId: string
   ): Promise<GetCredentialDefinitionReturn> {
     const credentialDefinition = this.credentialDefinitions[credentialDefinitionId]
@@ -162,7 +161,7 @@ export class InMemoryAnonCredsRegistry implements AnonCredsRegistry {
   }
 
   public async registerCredentialDefinition(
-    agentContext: AgentContext,
+    _agentContext: AgentContext,
     options: RegisterCredentialDefinitionOptions
   ): Promise<RegisterCredentialDefinitionReturn> {
     const parsedSchema = parseIndySchemaId(options.credentialDefinition.schemaId)
@@ -208,7 +207,7 @@ export class InMemoryAnonCredsRegistry implements AnonCredsRegistry {
   }
 
   public async getRevocationRegistryDefinition(
-    agentContext: AgentContext,
+    _agentContext: AgentContext,
     revocationRegistryDefinitionId: string
   ): Promise<GetRevocationRegistryDefinitionReturn> {
     const revocationRegistryDefinition = this.revocationRegistryDefinitions[revocationRegistryDefinitionId]
@@ -233,7 +232,7 @@ export class InMemoryAnonCredsRegistry implements AnonCredsRegistry {
   }
 
   public async registerRevocationRegistryDefinition(
-    agentContext: AgentContext,
+    _agentContext: AgentContext,
     options: RegisterRevocationRegistryDefinitionOptions
   ): Promise<RegisterRevocationRegistryDefinitionReturn> {
     const parsedCredentialDefinition = parseIndyCredentialDefinitionId(options.revocationRegistryDefinition.credDefId)
@@ -246,7 +245,7 @@ export class InMemoryAnonCredsRegistry implements AnonCredsRegistry {
 
     const { namespace, namespaceIdentifier } = parseIndyDid(options.revocationRegistryDefinition.issuerId)
     const legacyIssuerId = namespaceIdentifier
-    const didIndyRevocationRegistryDefinitionId = getDidIndyRevocationRegistryId(
+    const didIndyRevocationRegistryDefinitionId = getDidIndyRevocationRegistryDefinitionId(
       namespace,
       namespaceIdentifier,
       indyLedgerSeqNo,
@@ -256,7 +255,7 @@ export class InMemoryAnonCredsRegistry implements AnonCredsRegistry {
 
     this.revocationRegistryDefinitions[didIndyRevocationRegistryDefinitionId] = options.revocationRegistryDefinition
 
-    const legacyRevocationRegistryDefinitionId = getUnqualifiedRevocationRegistryId(
+    const legacyRevocationRegistryDefinitionId = getUnqualifiedRevocationRegistryDefinitionId(
       legacyIssuerId,
       indyLedgerSeqNo,
       parsedCredentialDefinition.tag,
@@ -281,7 +280,7 @@ export class InMemoryAnonCredsRegistry implements AnonCredsRegistry {
   }
 
   public async getRevocationStatusList(
-    agentContext: AgentContext,
+    _agentContext: AgentContext,
     revocationRegistryId: string,
     timestamp: number
   ): Promise<GetRevocationStatusListReturn> {
@@ -319,7 +318,7 @@ export class InMemoryAnonCredsRegistry implements AnonCredsRegistry {
   }
 
   public async registerRevocationStatusList(
-    agentContext: AgentContext,
+    _agentContext: AgentContext,
     options: RegisterRevocationStatusListOptions
   ): Promise<RegisterRevocationStatusListReturn> {
     const timestamp = (options.options.timestamp as number) ?? dateToTimestamp(new Date())
@@ -338,7 +337,6 @@ export class InMemoryAnonCredsRegistry implements AnonCredsRegistry {
       revocationStatusListState: {
         state: 'finished',
         revocationStatusList,
-        timestamp: timestamp.toString(),
       },
     }
   }

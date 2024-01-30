@@ -1,4 +1,4 @@
-import { EventEmitter, InjectionSymbols, inject, injectable, Repository, StorageService } from '@aries-framework/core'
+import { EventEmitter, InjectionSymbols, inject, injectable, Repository, StorageService } from '@credo-ts/core'
 
 import { SdJwtVcRecord } from './SdJwtVcRecord'
 

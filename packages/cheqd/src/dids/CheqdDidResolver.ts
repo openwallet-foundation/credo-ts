@@ -1,8 +1,8 @@
 import type { ParsedCheqdDid } from '../anoncreds/utils/identifiers'
-import type { AgentContext, DidResolutionResult, DidResolver, ParsedDid } from '@aries-framework/core'
 import type { Metadata } from '@cheqd/ts-proto/cheqd/resource/v2'
+import type { AgentContext, DidResolutionResult, DidResolver, ParsedDid } from '@credo-ts/core'
 
-import { DidDocument, AriesFrameworkError, utils, JsonTransformer } from '@aries-framework/core'
+import { DidDocument, AriesFrameworkError, utils, JsonTransformer } from '@credo-ts/core'
 
 import {
   cheqdDidMetadataRegex,
@@ -19,6 +19,7 @@ import { filterResourcesByNameAndType, getClosestResourceVersion, renderResource
 
 export class CheqdDidResolver implements DidResolver {
   public readonly supportedMethods = ['cheqd']
+  public readonly allowsCaching = true
 
   public async resolve(agentContext: AgentContext, did: string, parsed: ParsedDid): Promise<DidResolutionResult> {
     const didDocumentMetadata = {}

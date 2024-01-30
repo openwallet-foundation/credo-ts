@@ -1,8 +1,8 @@
 import type { SubjectMessage } from '../../../tests/transport/SubjectInboundTransport'
-import type { ConnectionRecord } from '@aries-framework/core'
+import type { ConnectionRecord } from '@credo-ts/core'
 
-import { AskarModule } from '@aries-framework/askar'
-import { Agent } from '@aries-framework/core'
+import { AskarModule } from '@credo-ts/askar'
+import { Agent } from '@credo-ts/core'
 import { ariesAskar } from '@hyperledger/aries-askar-nodejs'
 import { Subject } from 'rxjs'
 

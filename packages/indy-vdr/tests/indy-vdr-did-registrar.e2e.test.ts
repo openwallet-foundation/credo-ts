@@ -1,6 +1,6 @@
 import type { IndyVdrDidCreateOptions, IndyVdrDidCreateResult } from '../src/dids/IndyVdrIndyDidRegistrar'
 
-import { didIndyRegex } from '@aries-framework/anoncreds'
+import { didIndyRegex } from '@credo-ts/anoncreds'
 import {
   Key,
   JsonTransformer,
@@ -11,7 +11,7 @@ import {
   DidDocumentService,
   Agent,
   DidsModule,
-} from '@aries-framework/core'
+} from '@credo-ts/core'
 import { indyVdr } from '@hyperledger/indy-vdr-nodejs'
 import { convertPublicKeyToX25519, generateKeyPairFromSeed } from '@stablelib/ed25519'
 

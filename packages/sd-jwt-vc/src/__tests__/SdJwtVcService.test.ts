@@ -1,4 +1,4 @@
-import type { Key, Logger } from '@aries-framework/core'
+import type { Key, Logger } from '@credo-ts/core'
 
 import {
   getJwkFromKey,
@@ -9,7 +9,7 @@ import {
   KeyType,
   Agent,
   TypedArrayEncoder,
-} from '@aries-framework/core'
+} from '@credo-ts/core'
 
 import { askarModule } from '../../../askar/tests/helpers'
 import { getAgentOptions } from '../../../core/tests'

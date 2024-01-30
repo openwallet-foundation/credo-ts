@@ -1,6 +1,6 @@
 import type { CheqdModuleConfigOptions } from '../src'
 
-import { DidsModule } from '@aries-framework/core'
+import { DidsModule } from '@credo-ts/core'
 
 import { askarModule } from '../../askar/tests/helpers'
 import { CheqdModule, CheqdDidRegistrar, CheqdDidResolver } from '../src'

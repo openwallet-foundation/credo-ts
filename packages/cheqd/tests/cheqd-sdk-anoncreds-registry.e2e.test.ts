@@ -1,6 +1,6 @@
 import type { CheqdDidCreateOptions } from '../src'
 
-import { Agent, JsonTransformer, TypedArrayEncoder } from '@aries-framework/core'
+import { Agent, JsonTransformer, TypedArrayEncoder } from '@credo-ts/core'
 
 import { agentDependencies, getAgentConfig } from '../../core/tests/helpers'
 import { CheqdAnonCredsRegistry } from '../src/anoncreds'

@@ -18,7 +18,6 @@ import type {
   AgentMessageProcessedEvent,
   RevocationNotificationReceivedEvent,
 } from '../src'
-import type { ConstructableAgentMessage } from '../src/agent/AgentMessage'
 import type { AgentModulesInput, EmptyModuleMap } from '../src/agent/AgentModules'
 import type { TrustPingReceivedEvent, TrustPingResponseReceivedEvent } from '../src/modules/connections/TrustPingEvents'
 import type { ProofState } from '../src/modules/proofs/models/ProofState'
@@ -33,7 +32,6 @@ import { catchError, filter, map, take, timeout } from 'rxjs/operators'
 import { agentDependencies } from '../../node/src'
 import {
   AgentEventTypes,
-  parseMessageType,
   OutOfBandDidCommService,
   ConnectionsModule,
   ConnectionEventTypes,
@@ -58,7 +56,6 @@ import { OutOfBandState } from '../src/modules/oob/domain/OutOfBandState'
 import { OutOfBandInvitation } from '../src/modules/oob/messages'
 import { OutOfBandRecord } from '../src/modules/oob/repository'
 import { KeyDerivationMethod } from '../src/types'
-import { supportsIncomingMessageType } from '../src/utils/messageType'
 import { sleep } from '../src/utils/sleep'
 import { uuid } from '../src/utils/uuid'
 
@@ -201,6 +198,8 @@ const isTrustPingReceivedEvent = (e: BaseEvent): e is TrustPingReceivedEvent =>
   e.type === TrustPingEventTypes.TrustPingReceivedEvent
 const isTrustPingResponseReceivedEvent = (e: BaseEvent): e is TrustPingResponseReceivedEvent =>
   e.type === TrustPingEventTypes.TrustPingResponseReceivedEvent
+const isAgentMessageProcessedEvent = (e: BaseEvent): e is AgentMessageProcessedEvent =>
+  e.type === AgentEventTypes.AgentMessageProcessed
 
 export function waitForProofExchangeRecordSubject(
   subject: ReplaySubject<BaseEvent> | Observable<BaseEvent>,
@@ -327,32 +326,46 @@ export function waitForTrustPingResponseReceivedEventSubject(
   )
 }
 
-export function waitForMessageProcessedSubject(
+export async function waitForAgentMessageProcessedEvent(
+  agent: Agent,
+  options: {
+    threadId?: string
+    messageType?: string
+    timeoutMs?: number
+  }
+) {
+  const observable = agent.events.observable<AgentMessageProcessedEvent>(AgentEventTypes.AgentMessageProcessed)
+
+  return waitForAgentMessageProcessedEventSubject(observable, options)
+}
+
+export function waitForAgentMessageProcessedEventSubject(
   subject: ReplaySubject<BaseEvent> | Observable<BaseEvent>,
   {
     threadId,
-    messageClass,
     timeoutMs = 10000,
+    messageType,
   }: {
     threadId?: string
-    messageClass: ConstructableAgentMessage
+    messageType?: string
     timeoutMs?: number
   }
 ) {
   const observable = subject instanceof ReplaySubject ? subject.asObservable() : subject
-
   return firstValueFrom(
     observable.pipe(
-      filter((e): e is AgentMessageProcessedEvent => e.type === AgentEventTypes.AgentMessageProcessed),
+      filter(isAgentMessageProcessedEvent),
       filter((e) => threadId === undefined || e.payload.message.threadId === threadId),
-      filter((e) => supportsIncomingMessageType(parseMessageType(e.payload.message.type), messageClass.type)),
+      filter((e) => messageType === undefined || e.payload.message.type === messageType),
       timeout(timeoutMs),
       catchError(() => {
-        throw new Error(`AgentMessageProcessed event not emitted within specified timeout: {
-  previousState: ${messageClass.type.messageTypeUri},
-  threadId: ${threadId}
-}`)
-      })
+        throw new Error(
+          `AgentMessageProcessedEvent event not emitted within specified timeout: ${timeoutMs}
+  threadId: ${threadId}, messageType: ${messageType}
+}`
+        )
+      }),
+      map((e) => e.payload.message)
     )
   )
 }
@@ -453,12 +466,17 @@ export async function waitForConnectionRecord(
   return waitForConnectionRecordSubject(observable, options)
 }
 
-export async function waitForBasicMessage(agent: Agent, { content }: { content?: string }): Promise<BasicMessage> {
+export async function waitForBasicMessage(
+  agent: Agent,
+  { content, connectionId }: { content?: string; connectionId?: string }
+): Promise<BasicMessage> {
   return new Promise((resolve) => {
     const listener = (event: BasicMessageStateChangedEvent) => {
       const contentMatches = content === undefined || event.payload.message.content === content
+      const connectionIdMatches =
+        connectionId === undefined || event.payload.basicMessageRecord.connectionId === connectionId
 
-      if (contentMatches) {
+      if (contentMatches && connectionIdMatches) {
         agent.events.off<BasicMessageStateChangedEvent>(BasicMessageEventTypes.BasicMessageStateChanged, listener)
 
         resolve(event.payload.message)

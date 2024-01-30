@@ -14,14 +14,14 @@ jobs:
     name: Release Canary
     if: "!startsWith(github.event.head_commit.message, 'chore(release): v')"
     steps:
-      - name: Checkout agent-framework-javascript
+      - name: Checkout credo-ts
         uses: actions/checkout@v4
         with:
           # pulls all commits (needed for lerna to correctly version)
           fetch-depth: 0
 
       - name: Setup NodeJS
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: 18
           cache: 'yarn'
@@ -42,7 +42,7 @@ jobs:
       - name: Get version number
         id: get-version
         run: |
-          LAST_RELEASED_VERSION=$(npm view @aries-framework/core@alpha version)
+          LAST_RELEASED_VERSION=$(npm view @credo-ts/core@alpha version)
 
           echo version="${LAST_RELEASED_VERSION}" >> "$GITHUB_OUTPUT"
 
@@ -62,11 +62,11 @@ jobs:
     # Only run if the last pushed commit is a release commit
     if: "startsWith(github.event.head_commit.message, 'chore(release): v')"
     steps:
-      - name: Checkout aries-framework-javascript
+      - name: Checkout credo
         uses: actions/checkout@v4
 
       - name: Setup NodeJS
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: 18
           cache: 'yarn'

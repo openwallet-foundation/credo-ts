@@ -1,14 +1,14 @@
-import type { InitConfig } from '@aries-framework/core'
+import type { InitConfig } from '@credo-ts/core'
 
-import { ConnectionsModule, OutOfBandRecord, Agent } from '@aries-framework/core'
-import { agentDependencies } from '@aries-framework/node'
+import { ConnectionsModule, OutOfBandRecord, Agent, CacheModule, InMemoryLruCache } from '@credo-ts/core'
+import { agentDependencies } from '@credo-ts/node'
 
 import { SubjectInboundTransport } from '../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutboundTransport'
 import { askarModule } from '../../askar/tests/helpers'
 import { getAskarWalletConfig, testLogger } from '../../core/tests'
 
-import { TenantsModule } from '@aries-framework/tenants'
+import { TenantsModule } from '@credo-ts/tenants'
 
 const agent1Config: InitConfig = {
   label: 'Tenant Agent 1',
@@ -33,6 +33,9 @@ const agent1 = new Agent({
     connections: new ConnectionsModule({
       autoAcceptConnections: true,
     }),
+    cache: new CacheModule({
+      cache: new InMemoryLruCache({ limit: 500 }),
+    }),
   },
   dependencies: agentDependencies,
 })
@@ -44,6 +47,9 @@ const agent2 = new Agent({
     askar: askarModule,
     connections: new ConnectionsModule({
       autoAcceptConnections: true,
+    }),
+    cache: new CacheModule({
+      cache: new InMemoryLruCache({ limit: 500 }),
     }),
   },
   dependencies: agentDependencies,

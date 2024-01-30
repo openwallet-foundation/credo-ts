@@ -1,14 +1,14 @@
-import type { Agent } from '@aries-framework/core'
+import type { Agent } from '@credo-ts/core'
 import type {
   QuestionAnswerRole,
   QuestionAnswerState,
   QuestionAnswerStateChangedEvent,
-} from '@aries-framework/question-answer'
+} from '@credo-ts/question-answer'
 import type { Observable } from 'rxjs'
 
 import { catchError, filter, firstValueFrom, map, ReplaySubject, timeout } from 'rxjs'
 
-import { QuestionAnswerEventTypes } from '@aries-framework/question-answer'
+import { QuestionAnswerEventTypes } from '@credo-ts/question-answer'
 
 export async function waitForQuestionAnswerRecord(
   agent: Agent,

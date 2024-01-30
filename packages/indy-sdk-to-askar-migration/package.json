@@ -1,5 +1,5 @@
 {
-  "name": "@aries-framework/indy-sdk-to-askar-migration",
+  "name": "@credo-ts/indy-sdk-to-askar-migration",
   "main": "build/index",
   "types": "build/index",
   "version": "0.4.2",
@@ -10,10 +10,10 @@
   "publishConfig": {
     "access": "public"
   },
-  "homepage": "https://github.com/hyperledger/aries-framework-javascript/tree/main/packages/indy-sdk-to-askar-migration",
+  "homepage": "https://github.com/openwallet-foundation/credo-ts/tree/main/packages/indy-sdk-to-askar-migration",
   "repository": {
     "type": "git",
-    "url": "https://github.com/hyperledger/aries-framework-javascript",
+    "url": "https://github.com/openwallet-foundation/credo-ts",
     "directory": "packages/indy-sdk-to-askar-migration"
   },
   "scripts": {
@@ -24,10 +24,10 @@
     "test": "jest"
   },
   "dependencies": {
-    "@aries-framework/anoncreds": "0.4.2",
-    "@aries-framework/askar": "0.4.2",
-    "@aries-framework/core": "0.4.2",
-    "@aries-framework/node": "0.4.2"
+    "@credo-ts/anoncreds": "0.4.2",
+    "@credo-ts/askar": "0.4.2",
+    "@credo-ts/core": "0.4.2",
+    "@credo-ts/node": "0.4.2"
   },
   "devDependencies": {
     "@hyperledger/aries-askar-nodejs": "^0.2.0-dev.5",

@@ -1,6 +1,6 @@
-import type { AgentContext } from '@aries-framework/core'
+import type { AgentContext } from '@credo-ts/core'
 
-import { Repository, InjectionSymbols, StorageService, EventEmitter, injectable, inject } from '@aries-framework/core'
+import { Repository, InjectionSymbols, StorageService, EventEmitter, injectable, inject } from '@credo-ts/core'
 
 import { AnonCredsRevocationRegistryDefinitionRecord } from './AnonCredsRevocationRegistryDefinitionRecord'
 

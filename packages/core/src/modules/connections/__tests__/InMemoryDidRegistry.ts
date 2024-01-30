@@ -15,6 +15,8 @@ import { DidRecord, DidDocumentRole, DidRepository } from '../../dids'
 export class InMemoryDidRegistry implements DidRegistrar, DidResolver {
   public readonly supportedMethods = ['inmemory']
 
+  public readonly allowsCaching = false
+
   private dids: Record<string, DidDocument> = {}
 
   public async create(agentContext: AgentContext, options: DidCreateOptions): Promise<DidCreateResult> {

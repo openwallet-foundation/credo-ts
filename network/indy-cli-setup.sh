@@ -1,11 +1,11 @@
 #!/bin/bash
 
 echo '
-wallet create afj-wallet key=password
-wallet open afj-wallet key=password
+wallet create credo-wallet key=password
+wallet open credo-wallet key=password
 
-pool create afj-pool gen_txn_file=/etc/indy/genesis.txn
-pool connect afj-pool
+pool create credo-pool gen_txn_file=/etc/indy/genesis.txn
+pool connect credo-pool
 
 did new seed=000000000000000000000000Trustee1
 did use V4SGRU86Z58d6TV7PBUe6f

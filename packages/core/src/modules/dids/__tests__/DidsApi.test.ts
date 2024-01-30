@@ -10,7 +10,7 @@ import {
   PeerDidNumAlgo,
   TypedArrayEncoder,
   createPeerDidDocumentFromServices,
-} from '@aries-framework/core'
+} from '@credo-ts/core'
 
 const agentOptions = getAgentOptions(
   'DidsApi',

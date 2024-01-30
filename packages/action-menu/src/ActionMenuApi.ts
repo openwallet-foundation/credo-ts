@@ -13,7 +13,7 @@ import {
   MessageSender,
   injectable,
   getOutboundMessageContext,
-} from '@aries-framework/core'
+} from '@credo-ts/core'
 
 import { ActionMenuRole } from './ActionMenuRole'
 import {

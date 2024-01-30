@@ -74,7 +74,7 @@ describe('Did Exchange numalgo settings', () => {
     await didExchangeNumAlgoBaseTest({ requesterNumAlgoSetting: PeerDidNumAlgo.ShortFormAndLongForm })
   })
 
-  test.only('Connect using numalgo 4 for both requester and responder', async () => {
+  test('Connect using numalgo 4 for both requester and responder', async () => {
     await didExchangeNumAlgoBaseTest({
       requesterNumAlgoSetting: PeerDidNumAlgo.ShortFormAndLongForm,
       responderNumAlgoSetting: PeerDidNumAlgo.ShortFormAndLongForm,
@@ -143,20 +143,19 @@ async function didExchangeNumAlgoBaseTest(options: {
   let ourDid, routing
   if (options.createExternalDidForRequester) {
     // Create did externally
-    const routing = await aliceAgent.mediationRecipient.getRouting({})
-    const ourDid = `did:inmemory:${uuid()}`
+    const didRouting = await aliceAgent.mediationRecipient.getRouting({})
+    ourDid = `did:inmemory:${uuid()}`
     const didDocument = createPeerDidDocumentFromServices([
       {
         id: 'didcomm',
-        recipientKeys: [routing.recipientKey],
-        routingKeys: routing.routingKeys,
-        serviceEndpoint: routing.endpoints[0],
+        recipientKeys: [didRouting.recipientKey],
+        routingKeys: didRouting.routingKeys,
+        serviceEndpoint: didRouting.endpoints[0],
       },
     ])
     didDocument.id = ourDid
 
     await aliceAgent.dids.create({
-      method: 'inmemory',
       did: ourDid,
       didDocument,
     })

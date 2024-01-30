@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 
-import type { VerificationMethod, JsonObject, Proof, DocumentLoader } from '@aries-framework/core'
+import type { VerificationMethod, JsonObject, Proof, DocumentLoader } from '@credo-ts/core'
 
 /**
  * Options for verifying a signature
@@ -37,8 +37,4 @@ export interface VerifySignatureOptions {
    * Optional custom document loader
    */
   documentLoader?: DocumentLoader
-  /**
-   * Optional expansion map
-   */
-  expansionMap?: () => void
 }

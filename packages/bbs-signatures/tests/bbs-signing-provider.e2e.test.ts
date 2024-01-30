@@ -1,19 +1,13 @@
-import type { Wallet, WalletConfig } from '@aries-framework/core'
+import type { Wallet, WalletConfig } from '@credo-ts/core'
 
-import {
-  KeyDerivationMethod,
-  KeyType,
-  WalletError,
-  TypedArrayEncoder,
-  SigningProviderRegistry,
-} from '@aries-framework/core'
+import { KeyDerivationMethod, KeyType, WalletError, TypedArrayEncoder, SigningProviderRegistry } from '@credo-ts/core'
 import { BBS_SIGNATURE_LENGTH } from '@mattrglobal/bbs-signatures'
 
 import { RegisteredAskarTestWallet } from '../../askar/tests/helpers'
 import { testLogger, agentDependencies } from '../../core/tests'
 import { Bls12381g2SigningProvider } from '../src'
 
-import { describeSkipNode17And18 } from './util'
+import { describeSkipNode18 } from './util'
 
 // use raw key derivation method to speed up wallet creating / opening / closing between tests
 const walletConfig: WalletConfig = {
@@ -23,7 +17,7 @@ const walletConfig: WalletConfig = {
   keyDerivationMethod: KeyDerivationMethod.Raw,
 }
 
-describeSkipNode17And18('BBS Signing Provider', () => {
+describeSkipNode18('BBS Signing Provider', () => {
   let wallet: Wallet
   const seed = TypedArrayEncoder.fromString('sample-seed-min-of-32-bytes-long')
   const message = TypedArrayEncoder.fromString('sample-message')

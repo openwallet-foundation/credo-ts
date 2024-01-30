@@ -1,11 +1,11 @@
-import type { DependencyManager } from '@aries-framework/core'
+import type { DependencyManager } from '@credo-ts/core'
 
 import {
   KeyType,
   SigningProviderToken,
   VERIFICATION_METHOD_TYPE_BLS12381G2_KEY_2020,
   SignatureSuiteToken,
-} from '@aries-framework/core'
+} from '@credo-ts/core'
 
 import { BbsModule } from '../BbsModule'
 import { Bls12381g2SigningProvider } from '../Bls12381g2SigningProvider'

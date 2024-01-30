@@ -1,4 +1,4 @@
-import type { WalletConfig, WalletConfigRekey, WalletExportImportConfig } from '@aries-framework/core'
+import type { WalletConfig, WalletConfigRekey, WalletExportImportConfig } from '@credo-ts/core'
 
 import {
   WalletExportPathExistsError,
@@ -13,7 +13,7 @@ import {
   WalletNotFoundError,
   KeyDerivationMethod,
   WalletImportPathExistsError,
-} from '@aries-framework/core'
+} from '@credo-ts/core'
 // eslint-disable-next-line import/order
 import { Store } from '@hyperledger/aries-askar-shared'
 

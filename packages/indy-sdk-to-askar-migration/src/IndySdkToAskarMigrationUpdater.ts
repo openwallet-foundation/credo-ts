@@ -1,10 +1,10 @@
-import type { AnonCredsCredentialValue } from '@aries-framework/anoncreds'
-import type { Agent, FileSystem, WalletConfig } from '@aries-framework/core'
+import type { AnonCredsCredentialValue } from '@credo-ts/anoncreds'
+import type { Agent, FileSystem, WalletConfig } from '@credo-ts/core'
 import type { EntryObject } from '@hyperledger/aries-askar-shared'
 
-import { AnonCredsCredentialRecord, AnonCredsLinkSecretRecord } from '@aries-framework/anoncreds'
-import { AskarWallet } from '@aries-framework/askar'
-import { InjectionSymbols, KeyDerivationMethod, JsonTransformer, TypedArrayEncoder } from '@aries-framework/core'
+import { AnonCredsCredentialRecord, AnonCredsLinkSecretRecord } from '@credo-ts/anoncreds'
+import { AskarWallet } from '@credo-ts/askar'
+import { InjectionSymbols, KeyDerivationMethod, JsonTransformer, TypedArrayEncoder } from '@credo-ts/core'
 import { Migration, Key, KeyAlgs, Store } from '@hyperledger/aries-askar-shared'
 
 import { IndySdkToAskarMigrationError } from './errors/IndySdkToAskarMigrationError'
@@ -230,7 +230,7 @@ export class IndySdkToAskarMigrationUpdater {
       await this.updateMasterSecret()
       await this.updateCredentials()
 
-      // Move the migrated and updated file to the expected location for afj
+      // Move the migrated and updated file to the expected location for credo
       await this.moveToNewLocation()
     } catch (err) {
       this.agent.config.logger.error(`Migration failed. Restoring state. ${err.message}`)

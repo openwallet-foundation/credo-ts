@@ -1,7 +1,7 @@
 import type { AnonCredsCredential } from '../models'
-import type { Tags } from '@aries-framework/core'
+import type { Tags } from '@credo-ts/core'
 
-import { BaseRecord, utils } from '@aries-framework/core'
+import { BaseRecord, utils } from '@credo-ts/core'
 
 export interface AnonCredsCredentialRecordProps {
   id?: string

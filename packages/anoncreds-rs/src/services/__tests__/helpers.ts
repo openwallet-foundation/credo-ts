@@ -3,7 +3,7 @@ import type {
   AnonCredsCredentialDefinition,
   AnonCredsCredentialInfo,
   AnonCredsCredentialOffer,
-} from '@aries-framework/anoncreds'
+} from '@credo-ts/anoncreds'
 import type { JsonObject } from '@hyperledger/anoncreds-nodejs'
 
 import {

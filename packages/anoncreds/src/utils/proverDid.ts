@@ -1,4 +1,4 @@
-import { TypedArrayEncoder, utils } from '@aries-framework/core'
+import { TypedArrayEncoder, utils } from '@credo-ts/core'
 
 /**
  * generates a string that adheres to the format of a legacy indy did.

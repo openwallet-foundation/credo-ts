@@ -1,4 +1,4 @@
-import { Agent, AgentContext, InjectionSymbols } from '@aries-framework/core'
+import { Agent, AgentContext, InjectionSymbols } from '@credo-ts/core'
 
 import { askarModule } from '../../../askar/tests/helpers'
 import { getAgentContext, getAgentOptions, mockFunction } from '../../../core/tests'

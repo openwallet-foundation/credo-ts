@@ -10,7 +10,7 @@ import {
   ProofState,
   EventEmitter,
   InjectionSymbols,
-} from '@aries-framework/core'
+} from '@credo-ts/core'
 import { Subject } from 'rxjs'
 
 import {

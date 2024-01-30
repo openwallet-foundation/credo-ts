@@ -1,4 +1,4 @@
-import { Agent, AgentContext } from '@aries-framework/core'
+import { Agent, AgentContext } from '@credo-ts/core'
 
 import { askarModule } from '../../../askar/tests/helpers'
 import { agentDependencies, getAgentConfig, getAgentContext } from '../../../core/tests/helpers'

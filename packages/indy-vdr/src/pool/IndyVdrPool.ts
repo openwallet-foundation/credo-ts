@@ -1,8 +1,8 @@
-import type { AgentContext, Key } from '@aries-framework/core'
+import type { AgentContext, Key } from '@credo-ts/core'
 import type { IndyVdrRequest, RequestResponseType, IndyVdrPool as indyVdrPool } from '@hyperledger/indy-vdr-shared'
 
-import { parseIndyDid } from '@aries-framework/anoncreds'
-import { TypedArrayEncoder } from '@aries-framework/core'
+import { parseIndyDid } from '@credo-ts/anoncreds'
+import { TypedArrayEncoder } from '@credo-ts/core'
 import {
   GetTransactionAuthorAgreementRequest,
   GetAcceptanceMechanismsRequest,

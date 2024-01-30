@@ -11,7 +11,7 @@ import {
   Logger,
   WalletApi,
   WalletError,
-} from '@aries-framework/core'
+} from '@credo-ts/core'
 import { Mutex, withTimeout } from 'async-mutex'
 
 import { TenantsModuleConfig } from '../TenantsModuleConfig'

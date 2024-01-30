@@ -1,5 +1,5 @@
-import type { InitConfig } from '@aries-framework/core'
-import type { IndyVdrPoolConfig } from '@aries-framework/indy-vdr'
+import type { InitConfig } from '@credo-ts/core'
+import type { IndyVdrPoolConfig } from '@credo-ts/indy-vdr'
 
 import {
   AnonCredsCredentialFormatService,
@@ -9,16 +9,16 @@ import {
   LegacyIndyProofFormatService,
   V1CredentialProtocol,
   V1ProofProtocol,
-} from '@aries-framework/anoncreds'
-import { AnonCredsRsModule } from '@aries-framework/anoncreds-rs'
-import { AskarModule } from '@aries-framework/askar'
+} from '@credo-ts/anoncreds'
+import { AnonCredsRsModule } from '@credo-ts/anoncreds-rs'
+import { AskarModule } from '@credo-ts/askar'
 import {
   CheqdAnonCredsRegistry,
   CheqdDidRegistrar,
   CheqdDidResolver,
   CheqdModule,
   CheqdModuleConfig,
-} from '@aries-framework/cheqd'
+} from '@credo-ts/cheqd'
 import {
   ConnectionsModule,
   DidsModule,
@@ -30,9 +30,9 @@ import {
   CredentialsModule,
   Agent,
   HttpOutboundTransport,
-} from '@aries-framework/core'
-import { IndyVdrIndyDidResolver, IndyVdrAnonCredsRegistry, IndyVdrModule } from '@aries-framework/indy-vdr'
-import { agentDependencies, HttpInboundTransport } from '@aries-framework/node'
+} from '@credo-ts/core'
+import { IndyVdrIndyDidResolver, IndyVdrAnonCredsRegistry, IndyVdrModule } from '@credo-ts/indy-vdr'
+import { agentDependencies, HttpInboundTransport } from '@credo-ts/node'
 import { anoncreds } from '@hyperledger/anoncreds-nodejs'
 import { ariesAskar } from '@hyperledger/aries-askar-nodejs'
 import { indyVdr } from '@hyperledger/indy-vdr-nodejs'

@@ -27,7 +27,7 @@ import type {
   CredentialExchangeRecord,
   CredentialPreviewAttributeOptions,
   LinkedAttachment,
-} from '@aries-framework/core'
+} from '@credo-ts/core'
 
 import {
   ProblemReportError,
@@ -39,7 +39,7 @@ import {
   utils,
   CredentialProblemReportReason,
   JsonTransformer,
-} from '@aries-framework/core'
+} from '@credo-ts/core'
 
 import { AnonCredsError } from '../error'
 import { AnonCredsCredentialProposal } from '../models/AnonCredsCredentialProposal'

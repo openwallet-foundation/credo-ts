@@ -1,14 +1,6 @@
-import type { Key } from '@aries-framework/core'
+import type { Key } from '@credo-ts/core'
 
-import {
-  Agent,
-  DidKey,
-  DidsModule,
-  KeyDidRegistrar,
-  KeyDidResolver,
-  KeyType,
-  TypedArrayEncoder,
-} from '@aries-framework/core'
+import { Agent, DidKey, DidsModule, KeyDidRegistrar, KeyDidResolver, KeyType, TypedArrayEncoder } from '@credo-ts/core'
 
 import { askarModule } from '../../askar/tests/helpers'
 import { getAgentOptions } from '../../core/tests'

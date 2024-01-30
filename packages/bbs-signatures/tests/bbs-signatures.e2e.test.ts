@@ -1,5 +1,5 @@
 import type { W3cCredentialRepository } from '../../core/src/modules/vc/repository/W3cCredentialRepository'
-import type { AgentContext, W3cJwtCredentialService, Wallet } from '@aries-framework/core'
+import type { AgentContext, W3cJwtCredentialService, Wallet } from '@credo-ts/core'
 
 import {
   ClaimFormat,
@@ -18,7 +18,7 @@ import {
   Ed25519Signature2018,
   TypedArrayEncoder,
   W3cJsonLdVerifiableCredential,
-} from '@aries-framework/core'
+} from '@credo-ts/core'
 
 import { RegisteredAskarTestWallet } from '../../askar/tests/helpers'
 import { W3cCredentialsModuleConfig } from '../../core/src/modules/vc/W3cCredentialsModuleConfig'
@@ -30,7 +30,7 @@ import { agentDependencies, getAgentConfig, getAgentContext } from '../../core/t
 import { BbsBlsSignature2020, BbsBlsSignatureProof2020, Bls12381g2SigningProvider } from '../src'
 
 import { BbsBlsSignature2020Fixtures } from './fixtures'
-import { describeSkipNode17And18 } from './util'
+import { describeSkipNode18 } from './util'
 
 const { jsonldSignatures } = vcLibraries
 const { purposes } = jsonldSignatures
@@ -60,7 +60,7 @@ const signingProviderRegistry = new SigningProviderRegistry([new Bls12381g2Signi
 
 const agentConfig = getAgentConfig('BbsSignaturesE2eTest')
 
-describeSkipNode17And18('BBS W3cCredentialService', () => {
+describeSkipNode18('BBS W3cCredentialService', () => {
   let wallet: Wallet
   let agentContext: AgentContext
   let w3cJsonLdCredentialService: W3cJsonLdCredentialService

@@ -1,5 +1,5 @@
-import { parseIndyDid } from '@aries-framework/anoncreds'
-import { DidsModule, Agent, TypedArrayEncoder, JsonTransformer } from '@aries-framework/core'
+import { parseIndyDid } from '@credo-ts/anoncreds'
+import { DidsModule, Agent, TypedArrayEncoder, JsonTransformer } from '@credo-ts/core'
 import { indyVdr } from '@hyperledger/indy-vdr-nodejs'
 
 import { askarModule } from '../../askar/tests/helpers'

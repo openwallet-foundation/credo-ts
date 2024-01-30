@@ -3,14 +3,14 @@
 #
 
 repository:
-  name: agent-framework-javascript
-  description: Extension libraries for Aries Framework JavaScript
-  homepage: https://github.com/openwallet-foundation/agent-framework-javascript
+  name: credo-ts
+  description: Typescript framework for building decentralized identity and verifiable credential solutions
+  homepage: https://credo.js.org
   default_branch: main
   has_downloads: false
   has_issues: true
   has_projects: false
-  has_wiki: false
+  has_wiki: true
   archived: false
   private: false
   allow_squash_merge: true

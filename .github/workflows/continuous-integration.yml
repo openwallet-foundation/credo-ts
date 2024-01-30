@@ -46,11 +46,11 @@ jobs:
     runs-on: ubuntu-20.04
     name: Validate
     steps:
-      - name: Checkout agent-framework-javascript
+      - name: Checkout credo-ts
         uses: actions/checkout@v4
 
       - name: Setup NodeJS
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: 18
           cache: 'yarn'
@@ -79,7 +79,7 @@ jobs:
         node-version: [18.x, 20.x]
 
     steps:
-      - name: Checkout aries-framework-javascript
+      - name: Checkout credo
         uses: actions/checkout@v4
 
       # setup dependencies
@@ -87,7 +87,7 @@ jobs:
         run: docker compose up -d
 
       - name: Setup NodeJS
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
           cache: 'yarn'
@@ -115,7 +115,7 @@ jobs:
           persist-credentials: false
 
       - name: Setup NodeJS
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: 18
           cache: 'yarn'

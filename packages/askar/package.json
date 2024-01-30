@@ -1,5 +1,5 @@
 {
-  "name": "@aries-framework/askar",
+  "name": "@credo-ts/askar",
   "main": "build/index",
   "types": "build/index",
   "version": "0.4.2",
@@ -10,10 +10,10 @@
   "publishConfig": {
     "access": "public"
   },
-  "homepage": "https://github.com/hyperledger/aries-framework-javascript/tree/main/packages/askar",
+  "homepage": "https://github.com/openwallet-foundation/credo-ts/tree/main/packages/askar",
   "repository": {
     "type": "git",
-    "url": "https://github.com/hyperledger/aries-framework-javascript",
+    "url": "https://github.com/openwallet-foundation/credo-ts",
     "directory": "packages/askar"
   },
   "scripts": {
@@ -24,7 +24,7 @@
     "test": "jest"
   },
   "dependencies": {
-    "@aries-framework/core": "0.4.2",
+    "@credo-ts/core": "0.4.2",
     "bn.js": "^5.2.1",
     "class-transformer": "0.5.1",
     "class-validator": "0.14.0",

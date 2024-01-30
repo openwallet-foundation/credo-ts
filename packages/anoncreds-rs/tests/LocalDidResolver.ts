@@ -1,9 +1,10 @@
-import type { DidResolutionResult, DidResolver, AgentContext } from '@aries-framework/core'
+import type { DidResolutionResult, DidResolver, AgentContext } from '@credo-ts/core'
 
-import { DidsApi } from '@aries-framework/core'
+import { DidsApi } from '@credo-ts/core'
 
 export class LocalDidResolver implements DidResolver {
   public readonly supportedMethods = ['sov', 'indy']
+  public readonly allowsCaching = false
 
   public async resolve(agentContext: AgentContext, did: string): Promise<DidResolutionResult> {
     const didDocumentMetadata = {}

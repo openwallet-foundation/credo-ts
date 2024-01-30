@@ -12,7 +12,7 @@ import type {
   JwaSignatureAlgorithm,
   W3cCredentialRecord,
   W3cVerifyCredentialResult,
-} from '@aries-framework/core'
+} from '@credo-ts/core'
 import type { CredentialMetadata, CredentialResponse, Jwt, OpenIDResponse } from '@sphereon/openid4vci-client'
 
 import {
@@ -37,7 +37,7 @@ import {
   getJwkClassFromKeyType,
   parseDid,
   SignatureSuiteRegistry,
-} from '@aries-framework/core'
+} from '@credo-ts/core'
 import {
   AuthzFlowType,
   CodeChallengeMethod,

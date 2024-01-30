@@ -1,4 +1,4 @@
-import { Agent, KeyType, TypedArrayEncoder } from '@aries-framework/core'
+import { Agent, KeyType, TypedArrayEncoder } from '@credo-ts/core'
 
 import { AnonCredsRsModule } from '../../anoncreds-rs/src'
 import { anoncreds } from '../../anoncreds-rs/tests/helpers'
@@ -74,7 +74,7 @@ const existingRevocationStatusLists = {
 
 const agent = new Agent(
   getAgentOptions(
-    'aries-framework-anoncreds-package',
+    'credo-anoncreds-package',
     {},
     {
       anoncredsRs: new AnonCredsRsModule({ anoncreds, autoCreateLinkSecret: false }),

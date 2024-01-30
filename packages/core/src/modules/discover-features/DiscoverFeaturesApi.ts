@@ -121,7 +121,10 @@ export class DiscoverFeaturesApi<
           // Return disclosures
           map((e) => e.payload.disclosures),
           // If we don't have an answer in timeoutMs miliseconds (no response, not supported, etc...) error
-          timeout(options.awaitDisclosuresTimeoutMs ?? 7000), // TODO: Harmonize default timeouts across the framework
+          timeout({
+            first: options.awaitDisclosuresTimeoutMs ?? 7000,
+            meta: 'DiscoverFeaturesApi.queryFeatures',
+          }), // TODO: Harmonize default timeouts across the framework
           // We want to return false if an error occurred
           catchError(() => of([]))
         )

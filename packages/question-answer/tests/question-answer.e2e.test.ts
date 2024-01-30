@@ -1,13 +1,13 @@
-import type { ConnectionRecord } from '@aries-framework/core'
+import type { ConnectionRecord } from '@credo-ts/core'
 
-import { Agent } from '@aries-framework/core'
+import { Agent } from '@credo-ts/core'
 
 import { askarModule } from '../../askar/tests/helpers'
 import { setupSubjectTransports, testLogger, getAgentOptions, makeConnection } from '../../core/tests'
 
 import { waitForQuestionAnswerRecord } from './helpers'
 
-import { QuestionAnswerModule, QuestionAnswerRole, QuestionAnswerState } from '@aries-framework/question-answer'
+import { QuestionAnswerModule, QuestionAnswerRole, QuestionAnswerState } from '@credo-ts/question-answer'
 
 const modules = {
   questionAnswer: new QuestionAnswerModule(),

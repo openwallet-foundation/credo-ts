@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
-import type { DidRecord, RecordSavedEvent } from '@aries-framework/core'
+import type { DidRecord, RecordSavedEvent } from '@credo-ts/core'
 
 import {
   DidCommV1Service,
@@ -17,7 +17,7 @@ import {
   SigningProviderRegistry,
   TypedArrayEncoder,
   VerificationMethod,
-} from '@aries-framework/core'
+} from '@credo-ts/core'
 import { Subject } from 'rxjs'
 
 import { InMemoryStorageService } from '../../../../../tests/InMemoryStorageService'

@@ -1,4 +1,4 @@
-import type { WalletStorageConfig } from '@aries-framework/core'
+import type { WalletStorageConfig } from '@credo-ts/core'
 
 export interface AskarWalletPostgresConfig {
   host: string

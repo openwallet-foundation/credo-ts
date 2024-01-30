@@ -4,6 +4,8 @@ import type { AutoAcceptCredential, AutoAcceptProof, ConnectionRecord } from '..
 import { askarModule } from '../../askar/tests/helpers'
 import { BbsModule } from '../../bbs-signatures/src/BbsModule'
 import {
+  PresentationExchangeProofFormatService,
+  V2ProofProtocol,
   CacheModule,
   CredentialEventTypes,
   InMemoryLruCache,
@@ -37,6 +39,7 @@ export const getJsonLdModules = ({
     }),
     proofs: new ProofsModule({
       autoAcceptProofs,
+      proofProtocols: [new V2ProofProtocol({ proofFormats: [new PresentationExchangeProofFormatService()] })],
     }),
     cache: new CacheModule({
       cache: new InMemoryLruCache({ limit: 100 }),

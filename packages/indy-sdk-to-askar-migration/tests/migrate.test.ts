@@ -1,7 +1,7 @@
-import type { InitConfig } from '@aries-framework/core'
+import type { InitConfig } from '@credo-ts/core'
 
-import { KeyDerivationMethod, Agent } from '@aries-framework/core'
-import { agentDependencies } from '@aries-framework/node'
+import { KeyDerivationMethod, Agent } from '@credo-ts/core'
+import { agentDependencies } from '@credo-ts/node'
 import { copyFileSync, existsSync, mkdirSync, unlinkSync } from 'fs'
 import { homedir } from 'os'
 import path from 'path'
