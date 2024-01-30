@@ -1,25 +1,32 @@
 import type {
-  DifPexInputDescriptorToCredentials,
   DifPexCredentialsForRequest,
+  DifPexInputDescriptorToCredentials,
   DifPresentationExchangeDefinition,
   DifPresentationExchangeDefinitionV1,
-  DifPresentationExchangeSubmission,
   DifPresentationExchangeDefinitionV2,
+  DifPresentationExchangeSubmission,
 } from './models'
 import type { AgentContext } from '../../agent'
 import type { Query } from '../../storage/StorageService'
+import type { JsonObject } from '../../types'
+import type { AnonCredsVcDataIntegrityService } from '../credentials/formats/dataIntegrity/AnonCredsVcDataIntegrityService'
 import type { VerificationMethod } from '../dids'
-import type { W3cCredentialRecord, W3cVerifiableCredential, W3cVerifiablePresentation } from '../vc'
+import type { W3cCredentialRecord, W3cVerifiablePresentation } from '../vc'
 import type { PresentationSignCallBackParams, Validated, VerifiablePresentationResult } from '@sphereon/pex'
 import type { InputDescriptorV2, PresentationDefinitionV1 } from '@sphereon/pex-models'
-import type { OriginalVerifiableCredential, OriginalVerifiablePresentation } from '@sphereon/ssi-types'
+import type {
+  W3CVerifiablePresentation as SphereonW3cVerifiablePresentation,
+  OriginalVerifiableCredential,
+  OriginalVerifiablePresentation,
+} from '@sphereon/ssi-types'
 
-import { Status, PEVersion, PEX } from '@sphereon/pex'
+import { PEVersion, PEX, Status } from '@sphereon/pex'
 import { injectable } from 'tsyringe'
 
 import { getJwkFromKey } from '../../crypto'
 import { AriesFrameworkError } from '../../error'
 import { JsonTransformer } from '../../utils'
+import { anonCredsVcDataIntegrityServiceSymbol } from '../credentials/formats/dataIntegrity/AnonCredsVcDataIntegrityService'
 import { DidsApi, getKeyFromVerificationMethod } from '../dids'
 import {
   ClaimFormat,
@@ -38,7 +45,7 @@ import {
   getW3cVerifiablePresentationInstance,
 } from './utils'
 
-export type ProofStructure = Record<string, Record<string, Array<W3cVerifiableCredential>>>
+export type ProofStructure = Record<string, Record<string, Array<W3cCredentialRecord>>>
 
 @injectable()
 export class DifPresentationExchangeService {
@@ -80,7 +87,7 @@ export class DifPresentationExchangeService {
         }
 
         // We pick the first matching VC if we are auto-selecting
-        credentials[submission.inputDescriptorId].push(submission.verifiableCredentials[0].credential)
+        credentials[submission.inputDescriptorId].push(submission.verifiableCredentials[0])
       }
     }
 
@@ -109,7 +116,10 @@ export class DifPresentationExchangeService {
   ) {
     const { errors } = this.pex.evaluatePresentation(
       presentationDefinition,
-      presentation.encoded as OriginalVerifiablePresentation
+      presentation.encoded as OriginalVerifiablePresentation,
+      {
+        limitDisclosureSignatureSuites: ['BbsBlsSignatureProof2020', 'DataIntegrityProof.anoncredsvc-2023'],
+      }
     )
 
     if (errors) {
@@ -185,12 +195,12 @@ export class DifPresentationExchangeService {
     subjectsToInputDescriptors: ProofStructure,
     subjectId: string,
     inputDescriptorId: string,
-    credential: W3cVerifiableCredential
+    credentialRecord: W3cCredentialRecord
   ) {
     const inputDescriptorsToCredentials = subjectsToInputDescriptors[subjectId] ?? {}
     const credentials = inputDescriptorsToCredentials[inputDescriptorId] ?? []
 
-    credentials.push(credential)
+    credentials.push(credentialRecord)
     inputDescriptorsToCredentials[inputDescriptorId] = credentials
     subjectsToInputDescriptors[subjectId] = inputDescriptorsToCredentials
   }
@@ -198,10 +208,7 @@ export class DifPresentationExchangeService {
   private getPresentationFormat(
     presentationDefinition: DifPresentationExchangeDefinition,
     credentials: Array<OriginalVerifiableCredential>
-  ): ClaimFormat.JwtVp | ClaimFormat.LdpVp {
-    const allCredentialsAreJwtVc = credentials?.every((c) => typeof c === 'string')
-    const allCredentialsAreLdpVc = credentials?.every((c) => typeof c !== 'string')
-
+  ): ClaimFormat.JwtVp | ClaimFormat.LdpVp | ClaimFormat.DiVp {
     const inputDescriptorsNotSupportingJwtVc = (
       presentationDefinition.input_descriptors as Array<InputDescriptorV2>
     ).filter((d) => d.format && d.format.jwt_vc === undefined)
@@ -210,18 +217,31 @@ export class DifPresentationExchangeService {
       presentationDefinition.input_descriptors as Array<InputDescriptorV2>
     ).filter((d) => d.format && d.format.ldp_vc === undefined)
 
+    const inputDescriptorsNotSupportingDiVc = (
+      presentationDefinition.input_descriptors as Array<InputDescriptorV2>
+    ).filter((d) => d.format && d.format.di_vc === undefined)
+
+    const allCredentialsAreJwtVc = credentials?.every((c) => typeof c === 'string')
+    const allCredentialsAreLdpVc = credentials?.every((c) => typeof c !== 'string')
+
     if (
       allCredentialsAreJwtVc &&
-      (presentationDefinition.format === undefined || presentationDefinition.format.jwt_vc) &&
-      inputDescriptorsNotSupportingJwtVc.length === 0
+      inputDescriptorsNotSupportingJwtVc.length === 0 &&
+      (presentationDefinition.format === undefined || presentationDefinition.format.jwt_vc)
     ) {
       return ClaimFormat.JwtVp
     } else if (
       allCredentialsAreLdpVc &&
-      (presentationDefinition.format === undefined || presentationDefinition.format.ldp_vc) &&
-      inputDescriptorsNotSupportingLdpVc.length === 0
+      inputDescriptorsNotSupportingLdpVc.length === 0 &&
+      (presentationDefinition.format === undefined || presentationDefinition.format.ldp_vc)
     ) {
       return ClaimFormat.LdpVp
+    } else if (
+      allCredentialsAreLdpVc &&
+      inputDescriptorsNotSupportingDiVc.length === 0 &&
+      (presentationDefinition.format === undefined || presentationDefinition.format.di_vc)
+    ) {
+      return ClaimFormat.DiVp
     } else {
       throw new DifPresentationExchangeError(
         'No suitable presentation format found for the given presentation definition, and credentials'
@@ -248,19 +268,19 @@ export class DifPresentationExchangeService {
     const proofStructure: ProofStructure = {}
 
     Object.entries(options.credentialsForInputDescriptor).forEach(([inputDescriptorId, credentials]) => {
-      credentials.forEach((credential) => {
-        const subjectId = credential.credentialSubjectIds[0]
+      credentials.forEach((credentialRecord) => {
+        const subjectId = credentialRecord.credential.credentialSubjectIds[0]
         if (!subjectId) {
           throw new DifPresentationExchangeError('Missing required credential subject for creating the presentation.')
         }
 
-        this.addCredentialToSubjectInputDescriptor(proofStructure, subjectId, inputDescriptorId, credential)
+        this.addCredentialToSubjectInputDescriptor(proofStructure, subjectId, inputDescriptorId, credentialRecord)
       })
     })
 
     const verifiablePresentationResultsWithFormat: Array<{
       verifiablePresentationResult: VerifiablePresentationResult
-      format: ClaimFormat.LdpVp | ClaimFormat.JwtVp
+      format: ClaimFormat.LdpVp | ClaimFormat.JwtVp | ClaimFormat.DiVp
     }> = []
 
     const subjectToInputDescriptors = Object.entries(proofStructure)
@@ -279,9 +299,10 @@ export class DifPresentationExchangeService {
         (inputDescriptor) => inputDescriptor.id in subjectInputDescriptorsToCredentials
       )
 
+      const credentialRecordsForSubject = Object.values(subjectInputDescriptorsToCredentials).flat()
       // Get all the credentials associated with the input descriptors
-      const credentialsForSubject = Object.values(subjectInputDescriptorsToCredentials)
-        .flat()
+      const credentialsForSubject = credentialRecordsForSubject
+        .map((credentialRecord) => credentialRecord.credential)
         .map(getSphereonOriginalVerifiableCredential)
 
       const presentationDefinitionForSubject: DifPresentationExchangeDefinition = {
@@ -299,10 +320,16 @@ export class DifPresentationExchangeService {
       const verifiablePresentationResult = await this.pex.verifiablePresentationFrom(
         presentationDefinitionForSubject,
         credentialsForSubject,
-        this.getPresentationSignCallback(agentContext, verificationMethod, format),
+        this.getPresentationSignCallback(agentContext, verificationMethod, format, credentialRecordsForSubject),
         {
           holderDID: subjectId,
-          proofOptions: { challenge, domain, nonce },
+          proofOptions: {
+            challenge,
+            domain,
+            nonce,
+            typeSupportsSelectiveDisclosure: format === ClaimFormat.DiVp ? true : undefined,
+            type: format === ClaimFormat.DiVp ? 'DataIntegrityProof.anoncredsvc-2023' : undefined,
+          },
           signatureOptions: { verificationMethod: verificationMethod?.id },
           presentationSubmissionLocation:
             presentationSubmissionLocation ?? DifPresentationExchangeSubmissionLocation.PRESENTATION,
@@ -470,16 +497,44 @@ export class DifPresentationExchangeService {
     return supportedSignatureSuite.proofType
   }
 
+  private getDataIntegritySignatureSuite(
+    presentationDefinition: DifPresentationExchangeDefinitionV1 | DifPresentationExchangeDefinitionV2
+  ) {
+    const cryptoSuitesSatisfyingDefinition = presentationDefinition.format?.di_vc?.cryptosuite ?? []
+
+    const inputDescriptorCryptoSuites: Array<Array<string>> = presentationDefinition.input_descriptors
+      .map((descriptor) => (descriptor as InputDescriptorV2).format?.di_vc?.cryptosuite ?? [])
+      .filter((alg) => alg.length > 0)
+
+    const suitableCryptosuites = this.getSigningAlgorithmsForPresentationDefinitionAndInputDescriptors(
+      cryptoSuitesSatisfyingDefinition,
+      inputDescriptorCryptoSuites
+    )
+
+    if (!suitableCryptosuites)
+      throw new AriesFrameworkError('Could not find a suitable crypto suite for signing the presentation')
+    return suitableCryptosuites[0]
+
+    // TODO: check against the supported signatures suites of the verification method key
+  }
+
   public getPresentationSignCallback(
     agentContext: AgentContext,
     verificationMethod: VerificationMethod,
-    vpFormat: ClaimFormat.LdpVp | ClaimFormat.JwtVp
+    vpFormat: ClaimFormat.LdpVp | ClaimFormat.JwtVp | ClaimFormat.DiVp,
+    credentialRecordsForSubject: W3cCredentialRecord[]
   ) {
     const w3cCredentialService = agentContext.dependencyManager.resolve(W3cCredentialService)
 
     return async (callBackParams: PresentationSignCallBackParams) => {
       // The created partial proof and presentation, as well as original supplied options
-      const { presentation: presentationJson, options, presentationDefinition } = callBackParams
+      const {
+        presentation: presentationJson,
+        options,
+        presentationDefinition,
+        selectedCredentials,
+        presentationSubmission,
+      } = callBackParams
       const { challenge, domain, nonce } = options.proofOptions ?? {}
       const { verificationMethod: verificationMethodId } = options.signatureOptions ?? {}
 
@@ -489,9 +544,27 @@ export class DifPresentationExchangeService {
         )
       }
 
-      let signedPresentation: W3cVerifiablePresentation<ClaimFormat.JwtVp | ClaimFormat.LdpVp>
-      if (vpFormat === 'jwt_vp') {
-        signedPresentation = await w3cCredentialService.signPresentation(agentContext, {
+      if (vpFormat === ClaimFormat.DiVp) {
+        const cryptosuite = await this.getDataIntegritySignatureSuite(presentationDefinition)
+
+        if (cryptosuite === 'anoncredsvc-2023' || cryptosuite === 'anoncredspresvc-2023') {
+          const anonCredsVcDataIntegrityService =
+            agentContext.dependencyManager.resolve<AnonCredsVcDataIntegrityService>(
+              anonCredsVcDataIntegrityServiceSymbol
+            )
+          const presentation = await anonCredsVcDataIntegrityService.createPresentation(agentContext, {
+            presentationDefinition,
+            presentationSubmission,
+            selectedCredentials: selectedCredentials as JsonObject[],
+            selectedCredentialRecords: credentialRecordsForSubject,
+          })
+          presentation.presentation_submission = presentationSubmission as unknown as JsonObject
+          return presentation as unknown as SphereonW3cVerifiablePresentation
+        } else {
+          throw new DifPresentationExchangeError(`Unsupported cryptosuite ${cryptosuite} for Data Integrity Proof`)
+        }
+      } else if (vpFormat === ClaimFormat.JwtVp) {
+        const presentation = await w3cCredentialService.signPresentation(agentContext, {
           format: ClaimFormat.JwtVp,
           alg: this.getSigningAlgorithmForJwtVc(presentationDefinition, verificationMethod),
           verificationMethod: verificationMethod.id,
@@ -499,8 +572,9 @@ export class DifPresentationExchangeService {
           challenge: challenge ?? nonce ?? (await agentContext.wallet.generateNonce()),
           domain,
         })
-      } else if (vpFormat === 'ldp_vp') {
-        signedPresentation = await w3cCredentialService.signPresentation(agentContext, {
+        return getSphereonW3cVerifiablePresentation(presentation)
+      } else if (vpFormat === ClaimFormat.LdpVp) {
+        const presentation = await w3cCredentialService.signPresentation(agentContext, {
           format: ClaimFormat.LdpVp,
           proofType: this.getProofTypeForLdpVc(agentContext, presentationDefinition, verificationMethod),
           proofPurpose: 'authentication',
@@ -509,13 +583,12 @@ export class DifPresentationExchangeService {
           challenge: challenge ?? nonce ?? (await agentContext.wallet.generateNonce()),
           domain,
         })
+        return getSphereonW3cVerifiablePresentation(presentation)
       } else {
         throw new DifPresentationExchangeError(
           `Only JWT credentials or JSONLD credentials are supported for a single presentation`
         )
       }
-
-      return getSphereonW3cVerifiablePresentation(signedPresentation)
     }
   }
 

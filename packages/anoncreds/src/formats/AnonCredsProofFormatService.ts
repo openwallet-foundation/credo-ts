@@ -57,6 +57,7 @@ import {
   assertNoDuplicateGroupsNamesInProofRequest,
   getRevocationRegistriesForRequest,
   getRevocationRegistriesForProof,
+  fetchObjectsFromLedger,
 } from '../utils'
 import { dateToTimestamp } from '../utils/timestamp'
 
@@ -461,19 +462,15 @@ export class AnonCredsProofFormatService implements ProofFormatService<AnonCreds
    *
    */
   private async getSchemas(agentContext: AgentContext, schemaIds: Set<string>) {
-    const registryService = agentContext.dependencyManager.resolve(AnonCredsRegistryService)
-
     const schemas: { [key: string]: AnonCredsSchema } = {}
 
     for (const schemaId of schemaIds) {
-      const schemaRegistry = registryService.getRegistryForIdentifier(agentContext, schemaId)
-      const schemaResult = await schemaRegistry.getSchema(agentContext, schemaId)
-
-      if (!schemaResult.schema) {
-        throw new AriesFrameworkError(`Schema not found for id ${schemaId}: ${schemaResult.resolutionMetadata.message}`)
+      const { schemaReturn } = await fetchObjectsFromLedger(agentContext, { schemaId })
+      if (!schemaReturn.schema) {
+        throw new AriesFrameworkError(`Schema not found for id ${schemaId}: ${schemaReturn.resolutionMetadata.message}`)
       }
 
-      schemas[schemaId] = schemaResult.schema
+      schemas[schemaId] = schemaReturn.schema
     }
 
     return schemas
@@ -489,28 +486,17 @@ export class AnonCredsProofFormatService implements ProofFormatService<AnonCreds
    *
    */
   private async getCredentialDefinitions(agentContext: AgentContext, credentialDefinitionIds: Set<string>) {
-    const registryService = agentContext.dependencyManager.resolve(AnonCredsRegistryService)
-
     const credentialDefinitions: { [key: string]: AnonCredsCredentialDefinition } = {}
 
     for (const credentialDefinitionId of credentialDefinitionIds) {
-      const credentialDefinitionRegistry = registryService.getRegistryForIdentifier(
-        agentContext,
-        credentialDefinitionId
-      )
-
-      const credentialDefinitionResult = await credentialDefinitionRegistry.getCredentialDefinition(
-        agentContext,
-        credentialDefinitionId
-      )
-
-      if (!credentialDefinitionResult.credentialDefinition) {
+      const { credentialDefinitionReturn } = await fetchObjectsFromLedger(agentContext, { credentialDefinitionId })
+      if (!credentialDefinitionReturn.credentialDefinition) {
         throw new AriesFrameworkError(
-          `Credential definition not found for id ${credentialDefinitionId}: ${credentialDefinitionResult.resolutionMetadata.message}`
+          `Credential definition not found for id ${credentialDefinitionId}: ${credentialDefinitionReturn.resolutionMetadata.message}`
         )
       }
 
-      credentialDefinitions[credentialDefinitionId] = credentialDefinitionResult.credentialDefinition
+      credentialDefinitions[credentialDefinitionId] = credentialDefinitionReturn.credentialDefinition
     }
 
     return credentialDefinitions

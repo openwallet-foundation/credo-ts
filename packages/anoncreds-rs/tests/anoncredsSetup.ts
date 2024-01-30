@@ -31,11 +31,13 @@ import {
   V2CredentialProtocol,
   V2ProofProtocol,
   DidsModule,
+  PresentationExchangeProofFormatService,
 } from '@aries-framework/core'
 import { anoncreds } from '@hyperledger/anoncreds-nodejs'
 import { randomUUID } from 'crypto'
 
 import { AnonCredsCredentialFormatService, AnonCredsProofFormatService, AnonCredsModule } from '../../anoncreds/src'
+import { DataIntegrityCredentialFormatService } from '../../anoncreds/src/formats/DataIntegrityCredentialFormatService'
 import { InMemoryAnonCredsRegistry } from '../../anoncreds/tests/InMemoryAnonCredsRegistry'
 import { AskarModule } from '../../askar/src'
 import { askarModuleConfig } from '../../askar/tests/helpers'
@@ -67,15 +69,17 @@ export const getAnonCredsModules = ({
   autoAcceptProofs?: AutoAcceptProof
   registries?: [AnonCredsRegistry, ...AnonCredsRegistry[]]
 } = {}) => {
+  const dataIntegrityCredentialFormatService = new DataIntegrityCredentialFormatService()
   const anonCredsCredentialFormatService = new AnonCredsCredentialFormatService()
   const anonCredsProofFormatService = new AnonCredsProofFormatService()
+  const presentationExchangeProofFormatService = new PresentationExchangeProofFormatService()
 
   const modules = {
     credentials: new CredentialsModule({
       autoAcceptCredentials,
       credentialProtocols: [
         new V2CredentialProtocol({
-          credentialFormats: [anonCredsCredentialFormatService],
+          credentialFormats: [dataIntegrityCredentialFormatService, anonCredsCredentialFormatService],
         }),
       ],
     }),
@@ -83,7 +87,7 @@ export const getAnonCredsModules = ({
       autoAcceptProofs,
       proofProtocols: [
         new V2ProofProtocol({
-          proofFormats: [anonCredsProofFormatService],
+          proofFormats: [anonCredsProofFormatService, presentationExchangeProofFormatService],
         }),
       ],
     }),

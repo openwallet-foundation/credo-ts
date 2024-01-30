@@ -6,9 +6,10 @@ import {
   AnonCredsIssuerServiceSymbol,
   AnonCredsVerifierServiceSymbol,
 } from '@aries-framework/anoncreds'
-import { AgentConfig } from '@aries-framework/core'
+import { AgentConfig, anonCredsVcDataIntegrityServiceSymbol } from '@aries-framework/core'
 
 import { AnonCredsRsModuleConfig } from './AnonCredsRsModuleConfig'
+import { AnonCredsVc2023DataIntegrityService } from './AnonCredsVcDataIntegrityService'
 import { AnonCredsRsHolderService, AnonCredsRsIssuerService, AnonCredsRsVerifierService } from './services'
 
 export class AnonCredsRsModule implements Module {
@@ -32,5 +33,6 @@ export class AnonCredsRsModule implements Module {
     dependencyManager.registerSingleton(AnonCredsHolderServiceSymbol, AnonCredsRsHolderService)
     dependencyManager.registerSingleton(AnonCredsIssuerServiceSymbol, AnonCredsRsIssuerService)
     dependencyManager.registerSingleton(AnonCredsVerifierServiceSymbol, AnonCredsRsVerifierService)
+    dependencyManager.registerSingleton(anonCredsVcDataIntegrityServiceSymbol, AnonCredsVc2023DataIntegrityService)
   }
 }

@@ -31,7 +31,7 @@ export async function getCredentialsForRequest(
 
   const selectResultsRaw = pex.selectFrom(presentationDefinition, encodedCredentials, {
     holderDIDs,
-    // limitDisclosureSignatureSuites: [],
+    limitDisclosureSignatureSuites: ['BbsBlsSignatureProof2020', 'DataIntegrityProof.anoncredsvc-2023'],
     // restrictToDIDMethods,
     // restrictToFormats
   })

@@ -451,7 +451,14 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
       )
     }
 
-    if (credentialSubjectId && credentialAttributes.find((ca) => ca.name === 'id') === undefined) {
+    const credentialSubjectIdAttribute = credentialAttributes.find((ca) => ca.name === 'id')
+    if (
+      credentialSubjectId &&
+      credentialSubjectIdAttribute &&
+      credentialSubjectIdAttribute.value !== credentialSubjectId
+    ) {
+      throw new AriesFrameworkError('Invalid credential subject id.')
+    } else if (!credentialSubjectIdAttribute && credentialSubjectId) {
       credentialAttributes.push(new CredentialPreviewAttribute({ name: 'id', value: credentialSubjectId }))
     }
 
@@ -530,9 +537,11 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
     if (issuerKid) {
       verificationMethod = didDocument.dereferenceKey(issuerKid, ['authentication', 'assertionMethod'])
     } else {
-      const vms = didDocument.authentication ?? didDocument.assertionMethod
+      const vms = didDocument.authentication ?? didDocument.assertionMethod ?? didDocument.verificationMethod
       if (!vms || vms.length === 0) {
-        throw new AriesFrameworkError('Missing authentication or assertionMethod in did document')
+        throw new AriesFrameworkError(
+          'Missing authenticationMethod, assertionMethod, and verificationMethods in did document'
+        )
       }
 
       if (typeof vms[0] === 'string') {
@@ -656,25 +665,13 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
         credentialSubjectId: dataIntegrityFormat.credentialSubjectId,
       })
 
-      if (
-        dataIntegrityFormat.credentialSubjectId &&
-        Array.isArray(signedCredential.credentialSubject) === false &&
-        signedCredential.credentialSubject.id &&
-        dataIntegrityFormat.credentialSubjectId !== signedCredential.credentialSubject.id
-      ) {
-        throw new AriesFrameworkError('Invalid credential subject id.')
-      }
-
       // TODO: check if any non integrity protected fields were on the offered credential. If so throw
+      // TODO: assert issuer id is the same as the credential definition issuer id
     }
 
     if (credentialRequest.binding_proof?.didcomm_signed_attachment) {
       if (!credentialOffer.binding_method?.didcomm_signed_attachment) {
         throw new AriesFrameworkError('Cannot issue credential with a binding method that was not offered.')
-      }
-
-      if (!dataIntegrityFormat.didCommSignedAttachmentAcceptRequestOptions) {
-        throw new AriesFrameworkError('Missing didCommSignedAttachmentAcceptRequestOptions')
       }
 
       const bindingProofAttachment = requestAppendAttachments?.find(
@@ -687,8 +684,8 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
         throw new AriesFrameworkError('Invalid nonce in signed attachment')
       }
 
-      const issuerKid = dataIntegrityFormat.didCommSignedAttachmentAcceptRequestOptions.kid
-      signedCredential = await this.signCredential(agentContext, assertedCredential, issuerKid)
+      const issuerKid = dataIntegrityFormat.didCommSignedAttachmentAcceptRequestOptions?.kid
+      signedCredential = await this.signCredential(agentContext, signedCredential ?? assertedCredential, issuerKid)
     }
 
     if (
@@ -835,6 +832,7 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
       )
     } else {
       w3cJsonLdVerifiableCredential = JsonTransformer.fromJSON(credentialJson, W3cJsonLdVerifiableCredential)
+      // TODO: check if the credentials contains a data integrity proof
     }
 
     const w3cCredentialService = agentContext.dependencyManager.resolve(W3cCredentialService)

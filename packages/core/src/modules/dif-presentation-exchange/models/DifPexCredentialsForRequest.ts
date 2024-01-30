@@ -116,4 +116,4 @@ export interface DifPexCredentialsForRequestSubmissionEntry {
 /**
  * Mapping of selected credentials for an input descriptor
  */
-export type DifPexInputDescriptorToCredentials = Record<string, Array<W3cVerifiableCredential>>
+export type DifPexInputDescriptorToCredentials = Record<string, Array<W3cCredentialRecord>>
