@@ -25,6 +25,7 @@
   },
   "dependencies": {
     "@astronautlabs/jsonpath": "^1.1.2",
+    "big-integer": "^1.6.51",
     "@aries-framework/anoncreds": "0.4.2",
     "@aries-framework/core": "0.4.2",
     "class-transformer": "^0.5.1",

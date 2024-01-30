@@ -1,5 +1,5 @@
 export const presentationDefinition = {
-  id: '12345',
+  id: '5591656f-5b5d-40f8-ab5c-9041c8e3a6a0',
   name: 'Age Verification',
   purpose: 'We need to verify your age before entering a bar',
   input_descriptors: [

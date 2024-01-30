@@ -36,6 +36,8 @@ import {
   JsonTransformer,
   deepEquality,
   injectable,
+  Hasher,
+  TypedArrayEncoder,
 } from '@aries-framework/core'
 import { JSONPath } from '@astronautlabs/jsonpath'
 import {
@@ -45,6 +47,7 @@ import {
   RevocationRegistryDefinition,
   RevocationStatusList,
 } from '@hyperledger/anoncreds-shared'
+import BigNumber from 'bn.js'
 
 export interface CredentialWithMetadata {
   credential: JsonObject
@@ -395,10 +398,13 @@ export class AnonCredsVc2023DataIntegrityService implements AnonCredsVcDataInteg
     const linkSecretIds = new Set<string>()
     const credentialsWithMetadata: CredentialWithMetadata[] = []
 
+    const hash = Hasher.hash(TypedArrayEncoder.fromString(presentationDefinition.id), 'sha2-256')
+    const nonce = new BigNumber(hash).toString().slice(0, 32)
+
     const anonCredsProofRequest: AnonCredsProofRequest = {
       version: '1.0',
       name: presentationDefinition.name ?? 'Proof request',
-      nonce: presentationDefinition.id,
+      nonce,
       requested_attributes: {},
       requested_predicates: {},
     }
