@@ -30,20 +30,6 @@
 
 Action Menu module for [Credo](https://github.com/openwallet-foundation/credo-ts.git). Implements [Aries RFC 0509](https://github.com/hyperledger/aries-rfcs/blob/1795d5c2d36f664f88f5e8045042ace8e573808c/features/0509-action-menu/README.md).
 
-### Installation
-
-Make sure you have set up the correct version of Credo according to the Credo repository. To find out which version of Credo you need to have installed you can run the following command. This will list the required peer dependency for `@credo-ts/core`.
-
-```sh
-npm info "@credo-ts/action-menu" peerDependencies
-```
-
-Then add the action-menu module to your project.
-
-```sh
-yarn add @credo-ts/action-menu
-```
-
 ### Quick start
 
 In order for this module to work, we have to inject it into the agent to access agent functionality. See the example for more information.
