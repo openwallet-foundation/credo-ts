@@ -4,7 +4,7 @@ import {
   WalletExportPathExistsError,
   WalletInvalidKeyError,
   WalletDuplicateError,
-  AriesFrameworkError,
+  CredoError,
   Logger,
   WalletError,
   InjectionSymbols,
@@ -53,7 +53,7 @@ export class AskarWallet extends AskarBaseWallet {
 
   public get store() {
     if (!this._store) {
-      throw new AriesFrameworkError(
+      throw new CredoError(
         'Wallet has not been initialized yet. Make sure to await agent.initialize() before using the agent.'
       )
     }

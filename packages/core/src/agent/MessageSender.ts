@@ -12,7 +12,7 @@ import type { OutboundPackage, EncryptedMessage } from '../types'
 
 import { DID_COMM_TRANSPORT_QUEUE, InjectionSymbols } from '../constants'
 import { ReturnRouteTypes } from '../decorators/transport/TransportDecorator'
-import { AriesFrameworkError, MessageSendingError } from '../error'
+import { CredoError, MessageSendingError } from '../error'
 import { Logger } from '../logger'
 import { DidCommDocumentService } from '../modules/didcomm'
 import { getKeyFromVerificationMethod } from '../modules/dids/domain/key-type'
@@ -101,7 +101,7 @@ export class MessageSender {
   private async sendMessageToSession(agentContext: AgentContext, session: TransportSession, message: AgentMessage) {
     this.logger.debug(`Packing message and sending it via existing session ${session.type}...`)
     if (!session.keys) {
-      throw new AriesFrameworkError(`There are no keys for the given ${session.type} transport session.`)
+      throw new CredoError(`There are no keys for the given ${session.type} transport session.`)
     }
     const encryptedMessage = await this.envelopeService.packMessage(agentContext, message, session.keys)
     this.logger.debug('Sending message')
@@ -142,7 +142,7 @@ export class MessageSender {
     )
 
     if (this.outboundTransports.length === 0 && !queueService) {
-      throw new AriesFrameworkError('Agent has no outbound transport!')
+      throw new CredoError('Agent has no outbound transport!')
     }
 
     // Loop trough all available services and try to send the message
@@ -186,7 +186,7 @@ export class MessageSender {
       errors,
       connection,
     })
-    throw new AriesFrameworkError(`Message is undeliverable to connection ${connection.id} (${connection.theirLabel})`)
+    throw new CredoError(`Message is undeliverable to connection ${connection.id} (${connection.theirLabel})`)
   }
 
   public async sendMessage(
@@ -390,12 +390,12 @@ export class MessageSender {
     const { agentContext, message, serviceParams, connection } = outboundMessageContext
 
     if (!serviceParams) {
-      throw new AriesFrameworkError('No service parameters found in outbound message context')
+      throw new CredoError('No service parameters found in outbound message context')
     }
     const { service, senderKey, returnRoute } = serviceParams
 
     if (this.outboundTransports.length === 0) {
-      throw new AriesFrameworkError('Agent has no outbound transport!')
+      throw new CredoError('Agent has no outbound transport!')
     }
 
     this.logger.debug(`Sending outbound message to service:`, {

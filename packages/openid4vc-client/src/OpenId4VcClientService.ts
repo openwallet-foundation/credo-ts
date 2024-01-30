@@ -19,7 +19,7 @@ import {
   ClaimFormat,
   getJwkClassFromJwaSignatureAlgorithm,
   W3cJwtVerifiableCredential,
-  AriesFrameworkError,
+  CredoError,
   getKeyFromVerificationMethod,
   Hasher,
   inject,
@@ -81,7 +81,7 @@ export class OpenId4VcClientService {
     this.logger.debug('Generating authorization url')
 
     if (!options.scope || options.scope.length === 0) {
-      throw new AriesFrameworkError(
+      throw new CredoError(
         'Only scoped based authorization requests are supported at this time. Please provide at least one scope'
       )
     }
@@ -129,9 +129,7 @@ export class OpenId4VcClientService {
 
     const flowType = flowTypeMapping[options.flowType]
     if (!flowType) {
-      throw new AriesFrameworkError(
-        `Unsupported flowType ${options.flowType}. Valid values are ${Object.values(AuthFlowType)}`
-      )
+      throw new CredoError(`Unsupported flowType ${options.flowType}. Valid values are ${Object.values(AuthFlowType)}`)
     }
 
     const client = await OpenID4VCIClient.initiateFromURI({
@@ -247,9 +245,7 @@ export class OpenId4VcClientService {
     const JwkClass = getJwkClassFromJwaSignatureAlgorithm(signatureAlgorithm)
 
     if (!JwkClass) {
-      throw new AriesFrameworkError(
-        `Could not determine JWK key type based on JWA signature algorithm '${signatureAlgorithm}'`
-      )
+      throw new CredoError(`Could not determine JWK key type based on JWA signature algorithm '${signatureAlgorithm}'`)
     }
 
     const supportedVerificationMethods = getSupportedVerificationMethodTypesFromKeyType(JwkClass.keyType)
@@ -272,7 +268,7 @@ export class OpenId4VcClientService {
     ) {
       const { method } = parseDid(verificationMethod.id)
       const supportedDidMethodsString = supportedDidMethods.join(', ')
-      throw new AriesFrameworkError(
+      throw new CredoError(
         `Verification method uses did method '${method}', but issuer only supports '${supportedDidMethodsString}'`
       )
     }
@@ -280,7 +276,7 @@ export class OpenId4VcClientService {
     // Make sure the verification method uses a supported verification method type
     if (!supportedVerificationMethods.includes(verificationMethod.type)) {
       const supportedVerificationMethodsString = supportedVerificationMethods.join(', ')
-      throw new AriesFrameworkError(
+      throw new CredoError(
         `Verification method uses verification method type '${verificationMethod.type}', but only '${supportedVerificationMethodsString}' verification methods are supported for key type '${JwkClass.keyType}'`
       )
     }
@@ -312,7 +308,7 @@ export class OpenId4VcClientService {
     // DOES support one of the issuer formats, but it is not in the allowedFormats
     if (potentialCredentialFormats.length === 0) {
       const formatsString = Object.keys(options.credentialMetadata.formats).join(', ')
-      throw new AriesFrameworkError(
+      throw new CredoError(
         `Issuer only supports formats '${formatsString}' for credential type '${
           options.credentialType
         }', but the wallet only allows formats '${options.allowedCredentialFormats.join(', ')}'`
@@ -373,7 +369,7 @@ export class OpenId4VcClientService {
       }
     }
 
-    throw new AriesFrameworkError(
+    throw new CredoError(
       'Could not determine the correct credential format and signature algorithm to use for the proof of possession.'
     )
   }
@@ -411,7 +407,7 @@ export class OpenId4VcClientService {
     this.logger.debug('Credential request response', credentialResponse)
 
     if (!credentialResponse.successBody) {
-      throw new AriesFrameworkError('Did not receive a successful credential response')
+      throw new CredoError('Did not receive a successful credential response')
     }
 
     let credential: W3cVerifiableCredential
@@ -429,11 +425,11 @@ export class OpenId4VcClientService {
         verifyCredentialStatus: options.verifyCredentialStatus,
       })
     } else {
-      throw new AriesFrameworkError(`Unsupported credential format ${credentialResponse.successBody.format}`)
+      throw new CredoError(`Unsupported credential format ${credentialResponse.successBody.format}`)
     }
 
     if (!result || !result.isValid) {
-      throw new AriesFrameworkError(`Failed to validate credential, error = ${result.error}`)
+      throw new CredoError(`Failed to validate credential, error = ${result.error}`)
     }
 
     const storedCredential = await this.w3cCredentialService.storeCredential(agentContext, {
@@ -448,17 +444,17 @@ export class OpenId4VcClientService {
   private signCallback(agentContext: AgentContext, verificationMethod: VerificationMethod) {
     return async (jwt: Jwt, kid: string) => {
       if (!jwt.header) {
-        throw new AriesFrameworkError('No header present on JWT')
+        throw new CredoError('No header present on JWT')
       }
 
       if (!jwt.payload) {
-        throw new AriesFrameworkError('No payload present on JWT')
+        throw new CredoError('No payload present on JWT')
       }
 
       // We have determined the verification method before and already passed that when creating the callback,
       // however we just want to make sure that the kid matches the verification method id
       if (verificationMethod.id !== kid) {
-        throw new AriesFrameworkError(`kid ${kid} does not match verification method id ${verificationMethod.id}`)
+        throw new CredoError(`kid ${kid} does not match verification method id ${verificationMethod.id}`)
       }
 
       const key = getKeyFromVerificationMethod(verificationMethod)
@@ -466,13 +462,13 @@ export class OpenId4VcClientService {
 
       const payload = JsonEncoder.toBuffer(jwt.payload)
       if (!jwk.supportsSignatureAlgorithm(jwt.header.alg)) {
-        throw new AriesFrameworkError(
+        throw new CredoError(
           `kid ${kid} refers to a key of type '${jwk.keyType}', which does not support the JWS signature alg '${jwt.header.alg}'`
         )
       }
 
       // We don't support these properties, remove them, so we can pass all other header properties to the JWS service
-      if (jwt.header.x5c || jwt.header.jwk) throw new AriesFrameworkError('x5c and jwk are not supported')
+      if (jwt.header.x5c || jwt.header.jwk) throw new CredoError('x5c and jwk are not supported')
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { x5c: _x5c, jwk: _jwk, ...supportedHeaderOptions } = jwt.header
 

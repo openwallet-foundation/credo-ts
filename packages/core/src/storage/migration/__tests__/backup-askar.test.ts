@@ -9,7 +9,7 @@ import { askarModuleConfig } from '../../../../../askar/tests/helpers'
 import { getAgentOptions } from '../../../../tests/helpers'
 import { Agent } from '../../../agent/Agent'
 import { InjectionSymbols } from '../../../constants'
-import { AriesFrameworkError } from '../../../error'
+import { CredoError } from '../../../error'
 import { CredentialExchangeRecord, CredentialRepository } from '../../../modules/credentials'
 import { JsonTransformer } from '../../../utils'
 import { StorageUpdateService } from '../StorageUpdateService'
@@ -136,7 +136,7 @@ describe('UpdateAssistant | Backup | Aries Askar', () => {
         fromVersion: '0.1',
         toVersion: '0.2',
         doUpdate: async () => {
-          throw new AriesFrameworkError("Uh oh I'm broken")
+          throw new CredoError("Uh oh I'm broken")
         },
       },
     ])

@@ -1,4 +1,4 @@
-import { AriesFrameworkError } from '@credo-ts/core'
+import { CredoError } from '@credo-ts/core'
 
 export const indyErrors = {
   100: 'CommonInvalidParam1',
@@ -93,7 +93,7 @@ export function isIndyError(error: any, errorName?: IndyErrorValues): error is I
       return errorName === indyErrors[errorCode]
     }
 
-    throw new AriesFrameworkError(`Could not determine errorName of indyError ${error.message}`)
+    throw new CredoError(`Could not determine errorName of indyError ${error.message}`)
   }
 
   return error.indyName === errorName

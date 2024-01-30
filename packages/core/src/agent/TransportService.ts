@@ -5,7 +5,7 @@ import type { DidDocument } from '../modules/dids'
 import type { EncryptedMessage } from '../types'
 
 import { DID_COMM_TRANSPORT_QUEUE } from '../constants'
-import { AriesFrameworkError } from '../error'
+import { CredoError } from '../error'
 import { injectable } from '../plugins'
 
 @injectable()
@@ -31,7 +31,7 @@ export class TransportService {
   public setConnectionIdForSession(sessionId: string, connectionId: string) {
     const session = this.findSessionById(sessionId)
     if (!session) {
-      throw new AriesFrameworkError(`Session not found with id ${sessionId}`)
+      throw new CredoError(`Session not found with id ${sessionId}`)
     }
     session.connectionId = connectionId
     this.saveSession(session)

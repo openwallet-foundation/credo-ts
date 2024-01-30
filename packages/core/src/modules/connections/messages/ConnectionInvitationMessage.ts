@@ -5,7 +5,7 @@ import { ArrayNotEmpty, IsArray, IsOptional, IsString, IsUrl, ValidateIf } from 
 import { parseUrl } from 'query-string'
 
 import { AgentMessage } from '../../../agent/AgentMessage'
-import { AriesFrameworkError } from '../../../error'
+import { CredoError } from '../../../error'
 import { JsonEncoder } from '../../../utils/JsonEncoder'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
 import { IsValidMessageType, parseMessageType, replaceLegacyDidSovPrefix } from '../../../utils/messageType'
@@ -59,7 +59,7 @@ export class ConnectionInvitationMessage extends AgentMessage {
       // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-ignore
       if (options.did && (options.recipientKeys || options.routingKeys || options.serviceEndpoint)) {
-        throw new AriesFrameworkError(
+        throw new CredoError(
           'either the did or the recipientKeys/serviceEndpoint/routingKeys must be set, but not both'
         )
       }
@@ -140,7 +140,7 @@ export class ConnectionInvitationMessage extends AgentMessage {
 
       return invitation
     } else {
-      throw new AriesFrameworkError('InvitationUrl is invalid. Needs to be encoded with either c_i, d_m, or oob')
+      throw new CredoError('InvitationUrl is invalid. Needs to be encoded with either c_i, d_m, or oob')
     }
   }
 }

@@ -14,7 +14,7 @@ import { MessageSender } from '../../../../agent/MessageSender'
 import { OutboundMessageContext, Protocol } from '../../../../agent/models'
 import { InjectionSymbols } from '../../../../constants'
 import { Attachment } from '../../../../decorators/attachment/Attachment'
-import { AriesFrameworkError } from '../../../../error'
+import { CredoError } from '../../../../error'
 import { injectable } from '../../../../plugins'
 import { ConnectionService } from '../../../connections'
 import { ProblemReportError } from '../../../problem-reports'
@@ -87,7 +87,7 @@ export class V2MessagePickupProtocol extends BaseMessagePickupProtocol {
     )
 
     if (messageContext.message.recipientKey) {
-      throw new AriesFrameworkError('recipient_key parameter not supported')
+      throw new CredoError('recipient_key parameter not supported')
     }
 
     const statusMessage = new V2StatusMessage({
@@ -106,7 +106,7 @@ export class V2MessagePickupProtocol extends BaseMessagePickupProtocol {
     const connection = messageContext.assertReadyConnection()
 
     if (messageContext.message.recipientKey) {
-      throw new AriesFrameworkError('recipient_key parameter not supported')
+      throw new CredoError('recipient_key parameter not supported')
     }
 
     const { message } = messageContext

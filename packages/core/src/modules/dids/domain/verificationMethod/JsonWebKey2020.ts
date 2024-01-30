@@ -3,7 +3,7 @@ import type { Key } from '../../../../crypto/Key'
 import type { JwkJson } from '../../../../crypto/jose/jwk/Jwk'
 
 import { getJwkFromJson, getJwkFromKey } from '../../../../crypto/jose/jwk'
-import { AriesFrameworkError } from '../../../../error'
+import { CredoError } from '../../../../error'
 
 export const VERIFICATION_METHOD_TYPE_JSON_WEB_KEY_2020 = 'JsonWebKey2020'
 
@@ -45,7 +45,7 @@ export function isJsonWebKey2020(
  */
 export function getKeyFromJsonWebKey2020(verificationMethod: VerificationMethod & { type: 'JsonWebKey2020' }) {
   if (!verificationMethod.publicKeyJwk) {
-    throw new AriesFrameworkError(
+    throw new CredoError(
       `Missing publicKeyJwk on verification method with type ${VERIFICATION_METHOD_TYPE_JSON_WEB_KEY_2020}`
     )
   }

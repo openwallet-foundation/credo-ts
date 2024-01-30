@@ -6,14 +6,14 @@ import {
   unqualifiedIndyDidRegex,
   unqualifiedSchemaIdRegex,
 } from '@credo-ts/anoncreds'
-import { AriesFrameworkError } from '@credo-ts/core'
+import { CredoError } from '@credo-ts/core'
 
 /**
  * Assert that a credential definition id is unqualified.
  */
 export function assertUnqualifiedCredentialDefinitionId(credentialDefinitionId: string) {
   if (!unqualifiedCredentialDefinitionIdRegex.test(credentialDefinitionId)) {
-    throw new AriesFrameworkError(
+    throw new CredoError(
       `Credential definition id '${credentialDefinitionId}' is not an unqualified credential definition id. Indy SDK only supports unqualified identifiers.`
     )
   }
@@ -24,7 +24,7 @@ export function assertUnqualifiedCredentialDefinitionId(credentialDefinitionId: 
  */
 export function assertUnqualifiedSchemaId(schemaId: string) {
   if (!unqualifiedSchemaIdRegex.test(schemaId)) {
-    throw new AriesFrameworkError(
+    throw new CredoError(
       `Schema id '${schemaId}' is not an unqualified schema id. Indy SDK only supports unqualified identifiers.`
     )
   }
@@ -35,7 +35,7 @@ export function assertUnqualifiedSchemaId(schemaId: string) {
  */
 export function assertUnqualifiedRevocationRegistryId(revocationRegistryId: string) {
   if (!unqualifiedRevocationRegistryIdRegex.test(revocationRegistryId)) {
-    throw new AriesFrameworkError(
+    throw new CredoError(
       `Revocation registry id '${revocationRegistryId}' is not an unqualified revocation registry id. Indy SDK only supports unqualified identifiers.`
     )
   }
@@ -46,7 +46,7 @@ export function assertUnqualifiedRevocationRegistryId(revocationRegistryId: stri
  */
 export function assertUnqualifiedIssuerId(issuerId: string) {
   if (!unqualifiedIndyDidRegex.test(issuerId)) {
-    throw new AriesFrameworkError(
+    throw new CredoError(
       `Issuer id '${issuerId}' is not an unqualified issuer id. Indy SDK only supports unqualified identifiers.`
     )
   }

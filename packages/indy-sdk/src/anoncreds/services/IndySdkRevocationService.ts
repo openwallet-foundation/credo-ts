@@ -10,7 +10,7 @@ import type { AgentContext } from '@credo-ts/core'
 import type { RevStates } from 'indy-sdk'
 
 import { assertBestPracticeRevocationInterval } from '@credo-ts/anoncreds'
-import { AriesFrameworkError, inject, injectable } from '@credo-ts/core'
+import { CredoError, inject, injectable } from '@credo-ts/core'
 
 import { IndySdkError, isIndyError } from '../../error'
 import { IndySdk, IndySdkSymbol } from '../../types'
@@ -115,7 +115,7 @@ export class IndySdkRevocationService {
           // Extract revocation status list for the given timestamp
           const revocationStatusList = revocationStatusLists[timestamp]
           if (!revocationStatusList) {
-            throw new AriesFrameworkError(
+            throw new CredoError(
               `Revocation status list for revocation registry ${revocationRegistryId} and timestamp ${timestamp} not found in revocation status lists. All revocation status lists must be present.`
             )
           }

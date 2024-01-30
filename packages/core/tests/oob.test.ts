@@ -22,7 +22,7 @@ import { JsonEncoder, JsonTransformer } from '../src/utils'
 import { TestMessage } from './TestMessage'
 import { getAgentOptions, waitForCredentialRecord } from './helpers'
 
-import { AgentEventTypes, AriesFrameworkError, AutoAcceptCredential, CredentialState } from '@credo-ts/core'
+import { AgentEventTypes, CredoError, AutoAcceptCredential, CredentialState } from '@credo-ts/core'
 
 const faberAgentOptions = getAgentOptions(
   'Faber Agent OOB',
@@ -145,9 +145,7 @@ describe('out of band', () => {
   describe('createInvitation', () => {
     test('throw error when there is no handshake or message', async () => {
       await expect(faberAgent.oob.createInvitation({ label: 'test-connection', handshake: false })).rejects.toEqual(
-        new AriesFrameworkError(
-          'One or both of handshake_protocols and requests~attach MUST be included in the message.'
-        )
+        new CredoError('One or both of handshake_protocols and requests~attach MUST be included in the message.')
       )
     })
 
@@ -158,9 +156,7 @@ describe('out of band', () => {
           messages: [{} as AgentMessage],
           multiUseInvitation: true,
         })
-      ).rejects.toEqual(
-        new AriesFrameworkError("Attribute 'multiUseInvitation' can not be 'true' when 'messages' is defined.")
-      )
+      ).rejects.toEqual(new CredoError("Attribute 'multiUseInvitation' can not be 'true' when 'messages' is defined."))
     })
 
     test('handles empty messages array as no messages being passed', async () => {
@@ -170,9 +166,7 @@ describe('out of band', () => {
           handshake: false,
         })
       ).rejects.toEqual(
-        new AriesFrameworkError(
-          'One or both of handshake_protocols and requests~attach MUST be included in the message.'
-        )
+        new CredoError('One or both of handshake_protocols and requests~attach MUST be included in the message.')
       )
     })
 
@@ -613,7 +607,7 @@ describe('out of band', () => {
 
       // Try to receive the invitation again
       await expect(aliceAgent.oob.receiveInvitation(outOfBandInvitation)).rejects.toThrow(
-        new AriesFrameworkError(
+        new CredoError(
           `An out of band record with invitation ${outOfBandInvitation.id} has already been received. Invitations should have a unique id.`
         )
       )
@@ -691,8 +685,8 @@ describe('out of band', () => {
       outOfBandInvitation.handshakeProtocols = [unsupportedProtocol as HandshakeProtocol]
 
       await expect(aliceAgent.oob.receiveInvitation(outOfBandInvitation, receiveInvitationConfig)).rejects.toEqual(
-        new AriesFrameworkError(
-          `Handshake protocols [${unsupportedProtocol}] are not supported. Supported protocols are [https://didcomm.org/didexchange/1.x,https://didcomm.org/connections/1.x]`
+        new CredoError(
+          `Handshake protocols [${unsupportedProtocol}] are not supported. Supported protocols are [https://didcomm.org/didexchange/1.1,https://didcomm.org/connections/1.0]`
         )
       )
     })
@@ -701,9 +695,7 @@ describe('out of band', () => {
       const outOfBandInvitation = new OutOfBandInvitation({ label: 'test-connection', services: [] })
 
       await expect(aliceAgent.oob.receiveInvitation(outOfBandInvitation, receiveInvitationConfig)).rejects.toEqual(
-        new AriesFrameworkError(
-          'One or both of handshake_protocols and requests~attach MUST be included in the message.'
-        )
+        new CredoError('One or both of handshake_protocols and requests~attach MUST be included in the message.')
       )
     })
 
@@ -716,7 +708,7 @@ describe('out of band', () => {
       })
 
       await expect(aliceAgent.oob.receiveInvitation(outOfBandInvitation, receiveInvitationConfig)).rejects.toEqual(
-        new AriesFrameworkError('There is no message in requests~attach supported by agent.')
+        new CredoError('There is no message in requests~attach supported by agent.')
       )
     })
   })

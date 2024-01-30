@@ -26,7 +26,7 @@ import type {
 } from '../ProofFormatServiceOptions'
 
 import { Attachment, AttachmentData } from '../../../../decorators/attachment/Attachment'
-import { AriesFrameworkError } from '../../../../error'
+import { CredoError } from '../../../../error'
 import { deepEquality, JsonTransformer } from '../../../../utils'
 import { DifPresentationExchangeService } from '../../../dif-presentation-exchange'
 import {
@@ -64,7 +64,7 @@ export class PresentationExchangeProofFormatService implements ProofFormatServic
 
     const pexFormat = proofFormats.presentationExchange
     if (!pexFormat) {
-      throw new AriesFrameworkError('Missing Presentation Exchange format in create proposal attachment format')
+      throw new CredoError('Missing Presentation Exchange format in create proposal attachment format')
     }
 
     const { presentationDefinition } = pexFormat
@@ -187,7 +187,7 @@ export class PresentationExchangeProofFormatService implements ProofFormatServic
       )
 
       if (!areRequirementsSatisfied) {
-        throw new AriesFrameworkError('Requirements of the presentation definition could not be satisfied')
+        throw new CredoError('Requirements of the presentation definition could not be satisfied')
       }
 
       requirements.forEach((r) => {
@@ -205,7 +205,7 @@ export class PresentationExchangeProofFormatService implements ProofFormatServic
     })
 
     if (presentation.verifiablePresentations.length > 1) {
-      throw new AriesFrameworkError('Invalid amount of verifiable presentations. Only one is allowed.')
+      throw new CredoError('Invalid amount of verifiable presentations. Only one is allowed.')
     }
 
     const firstPresentation = presentation.verifiablePresentations[0]

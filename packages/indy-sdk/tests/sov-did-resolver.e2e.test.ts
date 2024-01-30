@@ -1,7 +1,7 @@
 import type { IndySdkIndyDidCreateOptions } from '../src'
 
 import { parseIndyDid } from '@credo-ts/anoncreds'
-import { Agent, AriesFrameworkError, JsonTransformer, TypedArrayEncoder } from '@credo-ts/core'
+import { Agent, CredoError, JsonTransformer, TypedArrayEncoder } from '@credo-ts/core'
 
 import { getAgentOptions, importExistingIndyDidFromPrivateKey, publicDidSeed } from '../../core/tests/helpers'
 
@@ -41,7 +41,7 @@ describe('Indy SDK Sov DID resolver', () => {
     // Terrible, but the did can't be immediately resolved, so we need to wait a bit
     await new Promise((res) => setTimeout(res, 1000))
 
-    if (!createResult.didState.did) throw new AriesFrameworkError('Unable to register did')
+    if (!createResult.didState.did) throw new CredoError('Unable to register did')
 
     const { namespaceIdentifier } = parseIndyDid(createResult.didState.did)
     const sovDid = `did:sov:${namespaceIdentifier}`

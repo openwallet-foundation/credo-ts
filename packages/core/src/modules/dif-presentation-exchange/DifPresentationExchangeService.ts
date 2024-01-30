@@ -18,7 +18,7 @@ import { Status, PEVersion, PEX } from '@sphereon/pex'
 import { injectable } from 'tsyringe'
 
 import { getJwkFromKey } from '../../crypto'
-import { AriesFrameworkError } from '../../error'
+import { CredoError } from '../../error'
 import { JsonTransformer } from '../../utils'
 import { DidsApi, getKeyFromVerificationMethod } from '../dids'
 import {
@@ -68,7 +68,7 @@ export class DifPresentationExchangeService {
     credentialsForRequest: DifPexCredentialsForRequest
   ): DifPexInputDescriptorToCredentials {
     if (!credentialsForRequest.areRequirementsSatisfied) {
-      throw new AriesFrameworkError('Could not find the required credentials for the presentation submission')
+      throw new CredoError('Could not find the required credentials for the presentation submission')
     }
 
     const credentials: DifPexInputDescriptorToCredentials = {}

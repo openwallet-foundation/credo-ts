@@ -2,7 +2,7 @@ import type { Key } from '../../../../crypto/Key'
 
 import { KeyType } from '../../../../crypto/KeyType'
 import { getJwkFromJson } from '../../../../crypto/jose/jwk'
-import { AriesFrameworkError } from '../../../../error'
+import { CredoError } from '../../../../error'
 import {
   VERIFICATION_METHOD_TYPE_MULTIKEY,
   isMultikey,
@@ -66,7 +66,7 @@ export function getKeyDidMappingByKeyType(keyType: KeyType) {
   const keyDid = keyDidMapping[keyType]
 
   if (!keyDid) {
-    throw new AriesFrameworkError(`Unsupported key did from key type '${keyType}'`)
+    throw new CredoError(`Unsupported key did from key type '${keyType}'`)
   }
 
   return keyDid
@@ -77,7 +77,7 @@ export function getKeyFromVerificationMethod(verificationMethod: VerificationMet
   if (isJsonWebKey2020(verificationMethod)) {
     // TODO: move this validation to another place
     if (!verificationMethod.publicKeyJwk) {
-      throw new AriesFrameworkError(
+      throw new CredoError(
         `Missing publicKeyJwk on verification method with type ${VERIFICATION_METHOD_TYPE_JSON_WEB_KEY_2020}`
       )
     }
@@ -97,7 +97,7 @@ export function getKeyFromVerificationMethod(verificationMethod: VerificationMet
 
   const keyDid = verificationMethodKeyDidMapping[verificationMethod.type]
   if (!keyDid) {
-    throw new AriesFrameworkError(`Unsupported key did from verification method type '${verificationMethod.type}'`)
+    throw new CredoError(`Unsupported key did from verification method type '${verificationMethod.type}'`)
   }
 
   return keyDid.getKeyFromVerificationMethod(verificationMethod)
@@ -107,7 +107,7 @@ export function getSupportedVerificationMethodTypesFromKeyType(keyType: KeyType)
   const keyDid = keyDidMapping[keyType]
 
   if (!keyDid) {
-    throw new AriesFrameworkError(`Unsupported key did from key type '${keyType}'`)
+    throw new CredoError(`Unsupported key did from key type '${keyType}'`)
   }
 
   return keyDid.supportedVerificationMethodTypes

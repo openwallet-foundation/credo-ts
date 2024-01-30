@@ -16,7 +16,7 @@ import type { OpenWalletCredentials, WalletConfig as IndySdkWalletConfig, Wallet
 
 // eslint-disable-next-line import/order
 import {
-  AriesFrameworkError,
+  CredoError,
   InjectionSymbols,
   isValidPrivateKey,
   isValidSeed,
@@ -71,7 +71,7 @@ export class IndySdkWallet implements Wallet {
 
   public get handle() {
     if (!this.walletHandle) {
-      throw new AriesFrameworkError(
+      throw new CredoError(
         'Wallet has not been initialized yet. Make sure to await agent.initialize() before using the agent.'
       )
     }
@@ -162,7 +162,7 @@ export class IndySdkWallet implements Wallet {
         })
       } else {
         if (!isError(error)) {
-          throw new AriesFrameworkError('Attempted to throw error, but it was not of type Error', { cause: error })
+          throw new CredoError('Attempted to throw error, but it was not of type Error', { cause: error })
         }
         const errorMessage = `Error creating wallet '${walletConfig.id}'`
         this.logger.error(errorMessage, {
@@ -247,7 +247,7 @@ export class IndySdkWallet implements Wallet {
         })
       } else {
         if (!isError(error)) {
-          throw new AriesFrameworkError('Attempted to throw error, but it was not of type Error', { cause: error })
+          throw new CredoError('Attempted to throw error, but it was not of type Error', { cause: error })
         }
         const errorMessage = `Error opening wallet '${walletConfig.id}': ${error.message}`
         this.logger.error(errorMessage, {
@@ -295,7 +295,7 @@ export class IndySdkWallet implements Wallet {
         })
       } else {
         if (!isError(error)) {
-          throw new AriesFrameworkError('Attempted to throw error, but it was not of type Error', { cause: error })
+          throw new CredoError('Attempted to throw error, but it was not of type Error', { cause: error })
         }
         const errorMessage = `Error deleting wallet '${this.walletConfig.id}': ${error.message}`
         this.logger.error(errorMessage, {
@@ -314,7 +314,7 @@ export class IndySdkWallet implements Wallet {
       await this.indySdk.exportWallet(this.handle, exportConfig)
     } catch (error) {
       if (!isError(error)) {
-        throw new AriesFrameworkError('Attempted to throw error, but it was not of type Error', { cause: error })
+        throw new CredoError('Attempted to throw error, but it was not of type Error', { cause: error })
       }
 
       // Export path already exists
@@ -344,7 +344,7 @@ export class IndySdkWallet implements Wallet {
       )
     } catch (error) {
       if (!isError(error)) {
-        throw new AriesFrameworkError('Attempted to throw error, but it was not of type Error', { cause: error })
+        throw new CredoError('Attempted to throw error, but it was not of type Error', { cause: error })
       }
       const errorMessage = `Error importing wallet': ${error.message}`
       this.logger.error(errorMessage, {
@@ -377,7 +377,7 @@ export class IndySdkWallet implements Wallet {
         })
       } else {
         if (!isError(error)) {
-          throw new AriesFrameworkError('Attempted to throw error, but it was not of type Error', { cause: error })
+          throw new CredoError('Attempted to throw error, but it was not of type Error', { cause: error })
         }
         const errorMessage = `Error closing wallet': ${error.message}`
         this.logger.error(errorMessage, {
@@ -450,7 +450,7 @@ export class IndySdkWallet implements Wallet {
       if (error instanceof WalletError) throw error
 
       if (!isError(error)) {
-        throw new AriesFrameworkError(`Attempted to throw error, but it was not of type Error: ${error}`, {
+        throw new CredoError(`Attempted to throw error, but it was not of type Error: ${error}`, {
           cause: error,
         })
       }
@@ -497,7 +497,7 @@ export class IndySdkWallet implements Wallet {
       }
     } catch (error) {
       if (!isError(error)) {
-        throw new AriesFrameworkError('Attempted to throw error, but it was not of type Error', { cause: error })
+        throw new CredoError('Attempted to throw error, but it was not of type Error', { cause: error })
       }
       throw new WalletError(`Error signing data with verkey ${key.publicKeyBase58}`, { cause: error })
     }
@@ -543,7 +543,7 @@ export class IndySdkWallet implements Wallet {
       }
     } catch (error) {
       if (!isError(error)) {
-        throw new AriesFrameworkError('Attempted to throw error, but it was not of type Error', { cause: error })
+        throw new CredoError('Attempted to throw error, but it was not of type Error', { cause: error })
       }
       throw new WalletError(`Error verifying signature of data signed with verkey ${key.publicKeyBase58}`, {
         cause: error,
@@ -563,7 +563,7 @@ export class IndySdkWallet implements Wallet {
       return JsonEncoder.fromBuffer(packedMessage)
     } catch (error) {
       if (!isError(error)) {
-        throw new AriesFrameworkError('Attempted to throw error, but it was not of type Error', { cause: error })
+        throw new CredoError('Attempted to throw error, but it was not of type Error', { cause: error })
       }
       throw new WalletError('Error packing message', { cause: error })
     }
@@ -580,7 +580,7 @@ export class IndySdkWallet implements Wallet {
       }
     } catch (error) {
       if (!isError(error)) {
-        throw new AriesFrameworkError('Attempted to throw error, but it was not of type Error', { cause: error })
+        throw new CredoError('Attempted to throw error, but it was not of type Error', { cause: error })
       }
       throw new WalletError('Error unpacking message', { cause: error })
     }
@@ -591,7 +591,7 @@ export class IndySdkWallet implements Wallet {
       return await this.indySdk.generateNonce()
     } catch (error) {
       if (!isError(error)) {
-        throw new AriesFrameworkError('Attempted to throw error, but it was not of type Error', { cause: error })
+        throw new CredoError('Attempted to throw error, but it was not of type Error', { cause: error })
       }
       throw new WalletError('Error generating nonce', { cause: error })
     }

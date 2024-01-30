@@ -2,7 +2,7 @@ import type { InboundTransport, Agent, TransportSession, EncryptedMessage, Agent
 import type { Express, Request, Response } from 'express'
 import type { Server } from 'http'
 
-import { DidCommMimeType, AriesFrameworkError, TransportService, utils, MessageReceiver } from '@credo-ts/core'
+import { DidCommMimeType, CredoError, TransportService, utils, MessageReceiver } from '@credo-ts/core'
 import express, { text } from 'express'
 
 const supportedContentTypes: string[] = [DidCommMimeType.V0, DidCommMimeType.V1]
@@ -95,7 +95,7 @@ export class HttpTransportSession implements TransportSession {
 
   public async send(agentContext: AgentContext, encryptedMessage: EncryptedMessage): Promise<void> {
     if (this.res.headersSent) {
-      throw new AriesFrameworkError(`${this.type} transport session has been closed.`)
+      throw new CredoError(`${this.type} transport session has been closed.`)
     }
 
     // By default we take the agent config's default DIDComm content-type

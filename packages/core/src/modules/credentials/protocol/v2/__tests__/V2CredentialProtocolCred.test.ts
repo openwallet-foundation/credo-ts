@@ -14,7 +14,7 @@ import type { CustomCredentialTags } from '../../../repository/CredentialExchang
 
 import { Subject } from 'rxjs'
 
-import { AriesFrameworkError, CredentialFormatSpec } from '../../../../..'
+import { CredoError, CredentialFormatSpec } from '../../../../..'
 import { getAgentConfig, getAgentContext, getMockConnection, mockFunction } from '../../../../../../tests/helpers'
 import { EventEmitter } from '../../../../../agent/EventEmitter'
 import { InboundMessageContext } from '../../../../../agent/models/InboundMessageContext'
@@ -174,7 +174,7 @@ const getAgentMessageMock = async (agentContext: AgentContext, options: GetAgent
     return credentialIssueMessage
   }
 
-  throw new AriesFrameworkError('Could not find message')
+  throw new CredoError('Could not find message')
 }
 
 // A record is deserialized to JSON when it's stored into the storage. We want to simulate this behaviour for `offer`

@@ -1,7 +1,7 @@
 import type { IndySdk } from '../../types'
 import type { AgentContext, FileSystem } from '@credo-ts/core'
 
-import { AriesFrameworkError, getDirFromFilePath, InjectionSymbols } from '@credo-ts/core'
+import { CredoError, getDirFromFilePath, InjectionSymbols } from '@credo-ts/core'
 
 import { IndySdkError, isIndyError } from '../../error'
 import { IndySdkSymbol } from '../../types'
@@ -25,7 +25,7 @@ export async function createTailsReader(agentContext: AgentContext, tailsFilePat
     const dirname = getDirFromFilePath(tailsFilePath)
 
     if (!tailsFileExists) {
-      throw new AriesFrameworkError(`Tails file does not exist at path ${tailsFilePath}`)
+      throw new CredoError(`Tails file does not exist at path ${tailsFilePath}`)
     }
 
     const tailsReaderConfig = {

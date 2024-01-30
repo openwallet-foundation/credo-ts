@@ -15,7 +15,7 @@ import type {
 import type { AgentContext } from '@credo-ts/core'
 
 import { parseIndyDid, getUnqualifiedSchemaId, generateLegacyProverDidLikeString } from '@credo-ts/anoncreds'
-import { injectable, AriesFrameworkError, inject } from '@credo-ts/core'
+import { injectable, CredoError, inject } from '@credo-ts/core'
 
 import { IndySdkError, isIndyError } from '../../error'
 import { IndySdk, IndySdkSymbol } from '../../types'
@@ -37,15 +37,15 @@ export class IndySdkIssuerService implements AnonCredsIssuerService {
   }
 
   public async createRevocationStatusList(): Promise<AnonCredsRevocationStatusList> {
-    throw new AriesFrameworkError('Method not implemented.')
+    throw new CredoError('Method not implemented.')
   }
 
   public async updateRevocationStatusList(): Promise<AnonCredsRevocationStatusList> {
-    throw new AriesFrameworkError('Method not implemented.')
+    throw new CredoError('Method not implemented.')
   }
 
   public async createRevocationRegistryDefinition(): Promise<CreateRevocationRegistryDefinitionReturn> {
-    throw new AriesFrameworkError('Method not implemented.')
+    throw new CredoError('Method not implemented.')
   }
 
   public async createSchema(agentContext: AgentContext, options: CreateSchemaOptions): Promise<AnonCredsSchema> {
@@ -82,8 +82,7 @@ export class IndySdkIssuerService implements AnonCredsIssuerService {
     // parse schema in a way that supports both unqualified and qualified identifiers
     const legacySchemaId = getUnqualifiedSchemaId(namespaceIdentifier, schema.name, schema.version)
 
-    if (!metadata)
-      throw new AriesFrameworkError('The metadata parameter is required when using Indy, but received undefined.')
+    if (!metadata) throw new CredoError('The metadata parameter is required when using Indy, but received undefined.')
 
     try {
       assertIndySdkWallet(agentContext.wallet)
@@ -147,7 +146,7 @@ export class IndySdkIssuerService implements AnonCredsIssuerService {
 
     try {
       if (revocationRegistryDefinitionId || revocationStatusList) {
-        throw new AriesFrameworkError('Revocation not supported yet')
+        throw new CredoError('Revocation not supported yet')
       }
 
       // prover_did is deprecated and thus if not provided we generate something on our side, as it's still required by the indy sdk

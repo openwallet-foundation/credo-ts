@@ -1,8 +1,8 @@
 import type { IndyError } from './indyError'
 
-import { AriesFrameworkError } from '@credo-ts/core'
+import { CredoError } from '@credo-ts/core'
 
-export class IndySdkError extends AriesFrameworkError {
+export class IndySdkError extends CredoError {
   public constructor(indyError: IndyError, message?: string) {
     const base = `${indyError.name}(${indyError.indyName}): ${indyError.message}`
 

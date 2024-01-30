@@ -5,7 +5,7 @@ import {
   DidCommV1Service,
   DidCommV2Service,
   convertPublicKeyToX25519,
-  AriesFrameworkError,
+  CredoError,
 } from '@credo-ts/core'
 
 export type CommEndpointType = 'endpoint' | 'did-communication' | 'DIDComm'
@@ -113,7 +113,7 @@ export function endpointsAttribFromServices(services: DidDocumentService[]): Ind
 
   // Check that all services use the same endpoint, as only one is accepted
   if (!commServices.every((item) => item.serviceEndpoint === services[0].serviceEndpoint)) {
-    throw new AriesFrameworkError('serviceEndpoint for all services must match')
+    throw new CredoError('serviceEndpoint for all services must match')
   }
 
   const types: CommEndpointType[] = []
@@ -122,7 +122,7 @@ export function endpointsAttribFromServices(services: DidDocumentService[]): Ind
   for (const commService of commServices) {
     const commServiceType = commService.type as CommEndpointType
     if (types.includes(commServiceType)) {
-      throw new AriesFrameworkError('Only a single communication service per type is supported')
+      throw new CredoError('Only a single communication service per type is supported')
     }
 
     types.push(commServiceType)

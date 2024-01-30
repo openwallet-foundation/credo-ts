@@ -7,7 +7,7 @@ import type { DidExchangeProtocol } from '../DidExchangeProtocol'
 
 import { TransportService } from '../../../agent/TransportService'
 import { OutboundMessageContext } from '../../../agent/models'
-import { AriesFrameworkError } from '../../../error/CredoError'
+import { CredoError } from '../../../error/CredoError'
 import { tryParseDid } from '../../dids/domain/parse'
 import { OutOfBandState } from '../../oob/domain/OutOfBandState'
 import { DidExchangeRequestMessage } from '../messages'
@@ -39,13 +39,13 @@ export class DidExchangeRequestHandler implements MessageHandler {
     const { agentContext, recipientKey, senderKey, message, connection, sessionId } = messageContext
 
     if (!recipientKey || !senderKey) {
-      throw new AriesFrameworkError('Unable to process connection request without senderKey or recipientKey')
+      throw new CredoError('Unable to process connection request without senderKey or recipientKey')
     }
 
     const parentThreadId = message.thread?.parentThreadId
 
     if (!parentThreadId) {
-      throw new AriesFrameworkError(`Message does not contain 'pthid' attribute`)
+      throw new CredoError(`Message does not contain 'pthid' attribute`)
     }
 
     const outOfBandRecord = tryParseDid(parentThreadId)
@@ -57,26 +57,22 @@ export class DidExchangeRequestHandler implements MessageHandler {
         })
       : await this.outOfBandService.findByCreatedInvitationId(agentContext, parentThreadId)
     if (!outOfBandRecord) {
-      throw new AriesFrameworkError(`OutOfBand record for message ID ${parentThreadId} not found!`)
+      throw new CredoError(`OutOfBand record for message ID ${parentThreadId} not found!`)
     }
 
     if (connection && !outOfBandRecord.reusable) {
-      throw new AriesFrameworkError(
-        `Connection record for non-reusable out-of-band ${outOfBandRecord.id} already exists.`
-      )
+      throw new CredoError(`Connection record for non-reusable out-of-band ${outOfBandRecord.id} already exists.`)
     }
 
     const receivedDidRecord = await this.didRepository.findReceivedDidByRecipientKey(agentContext, senderKey)
     if (receivedDidRecord) {
-      throw new AriesFrameworkError(`A received did record for sender key ${senderKey.fingerprint} already exists.`)
+      throw new CredoError(`A received did record for sender key ${senderKey.fingerprint} already exists.`)
     }
 
     // TODO Shouldn't we check also if the keys match the keys from oob invitation services?
 
     if (outOfBandRecord.state === OutOfBandState.Done) {
-      throw new AriesFrameworkError(
-        'Out-of-band record has been already processed and it does not accept any new requests'
-      )
+      throw new CredoError('Out-of-band record has been already processed and it does not accept any new requests')
     }
 
     const connectionRecord = await this.didExchangeProtocol.processRequest(messageContext, outOfBandRecord)

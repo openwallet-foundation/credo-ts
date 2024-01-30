@@ -6,7 +6,7 @@ import {
   AnonCredsIssuerServiceSymbol,
   AnonCredsVerifierServiceSymbol,
 } from '@credo-ts/anoncreds'
-import { AriesFrameworkError, InjectionSymbols } from '@credo-ts/core'
+import { CredoError, InjectionSymbols } from '@credo-ts/core'
 
 import { IndySdkModuleConfig } from './IndySdkModuleConfig'
 import { IndySdkHolderService, IndySdkIssuerService, IndySdkVerifierService } from './anoncreds'
@@ -29,13 +29,13 @@ export class IndySdkModule implements Module {
     dependencyManager.registerInstance(IndySdkModuleConfig, this.config)
 
     if (dependencyManager.isRegistered(InjectionSymbols.Wallet)) {
-      throw new AriesFrameworkError('There is an instance of Wallet already registered')
+      throw new CredoError('There is an instance of Wallet already registered')
     } else {
       dependencyManager.registerContextScoped(InjectionSymbols.Wallet, IndySdkWallet)
     }
 
     if (dependencyManager.isRegistered(InjectionSymbols.StorageService)) {
-      throw new AriesFrameworkError('There is an instance of StorageService already registered')
+      throw new CredoError('There is an instance of StorageService already registered')
     } else {
       dependencyManager.registerSingleton(InjectionSymbols.StorageService, IndySdkStorageService)
     }

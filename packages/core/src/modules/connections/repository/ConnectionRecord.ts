@@ -4,7 +4,7 @@ import type { ConnectionType } from '../models/ConnectionType'
 
 import { Transform } from 'class-transformer'
 
-import { AriesFrameworkError } from '../../../error'
+import { CredoError } from '../../../error'
 import { BaseRecord } from '../../../storage/BaseRecord'
 import { uuid } from '../../../utils/uuid'
 import { rfc0160StateFromDidExchangeState, DidExchangeRole, DidExchangeState, HandshakeProtocol } from '../models'
@@ -144,7 +144,7 @@ export class ConnectionRecord extends BaseRecord<DefaultConnectionTags, CustomCo
 
   public assertReady() {
     if (!this.isReady) {
-      throw new AriesFrameworkError(
+      throw new CredoError(
         `Connection record is not ready to be used. Expected ${DidExchangeState.ResponseSent}, ${DidExchangeState.ResponseReceived} or ${DidExchangeState.Completed}, found invalid state ${this.state}`
       )
     }
@@ -156,7 +156,7 @@ export class ConnectionRecord extends BaseRecord<DefaultConnectionTags, CustomCo
     }
 
     if (!expectedStates.includes(this.state)) {
-      throw new AriesFrameworkError(
+      throw new CredoError(
         `Connection record is in invalid state ${this.state}. Valid states are: ${expectedStates.join(', ')}.`
       )
     }
@@ -164,7 +164,7 @@ export class ConnectionRecord extends BaseRecord<DefaultConnectionTags, CustomCo
 
   public assertRole(expectedRole: DidExchangeRole) {
     if (this.role !== expectedRole) {
-      throw new AriesFrameworkError(`Connection record has invalid role ${this.role}. Expected role ${expectedRole}.`)
+      throw new CredoError(`Connection record has invalid role ${this.role}. Expected role ${expectedRole}.`)
     }
   }
 }

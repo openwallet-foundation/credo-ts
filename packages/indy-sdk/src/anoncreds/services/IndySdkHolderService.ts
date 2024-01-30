@@ -30,7 +30,7 @@ import {
   generateLegacyProverDidLikeString,
   storeLinkSecret,
 } from '@credo-ts/anoncreds'
-import { AriesFrameworkError, injectable, inject, utils } from '@credo-ts/core'
+import { CredoError, injectable, inject, utils } from '@credo-ts/core'
 
 import { IndySdkModuleConfig } from '../../IndySdkModuleConfig'
 import { IndySdkError, isIndyError } from '../../error'
@@ -137,7 +137,7 @@ export class IndySdkHolderService implements AnonCredsHolderService {
       const linkSecretRecord = await linkSecretRepository.findDefault(agentContext)
       if (!linkSecretRecord) {
         // No default link secret
-        throw new AriesFrameworkError(
+        throw new CredoError(
           'No default link secret found. Indy SDK requires a default link secret to be created before creating a proof.'
         )
       }
@@ -276,7 +276,7 @@ export class IndySdkHolderService implements AnonCredsHolderService {
     })
 
     if (!options.useLegacyProverDid) {
-      throw new AriesFrameworkError('Indy SDK only supports legacy prover did for credential requests')
+      throw new CredoError('Indy SDK only supports legacy prover did for credential requests')
     }
 
     const linkSecretRepository = agentContext.dependencyManager.resolve(AnonCredsLinkSecretRepository)
@@ -294,7 +294,7 @@ export class IndySdkHolderService implements AnonCredsHolderService {
     if (!linkSecretRecord) {
       const moduleConfig = agentContext.dependencyManager.resolve(IndySdkModuleConfig)
       if (!moduleConfig.autoCreateLinkSecret) {
-        throw new AriesFrameworkError(
+        throw new CredoError(
           'No link secret provided to createCredentialRequest and no default link secret has been found'
         )
       }

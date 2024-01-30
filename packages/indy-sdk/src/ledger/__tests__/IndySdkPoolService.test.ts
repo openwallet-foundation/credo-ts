@@ -1,14 +1,7 @@
 import type { IndySdkPoolConfig } from '../IndySdkPool'
 import type { CachedDidResponse } from '../IndySdkPoolService'
 
-import {
-  CacheModuleConfig,
-  InMemoryLruCache,
-  SigningProviderRegistry,
-  AriesFrameworkError,
-  Key,
-  KeyType,
-} from '@credo-ts/core'
+import { CacheModuleConfig, InMemoryLruCache, SigningProviderRegistry, CredoError, Key, KeyType } from '@credo-ts/core'
 import indySdk from 'indy-sdk'
 import { Subject } from 'rxjs'
 
@@ -96,7 +89,7 @@ describe('IndySdkPoolService', () => {
 
       poolService.pools.forEach((pool) => {
         const spy = jest.spyOn(pool, 'submitReadRequest')
-        spy.mockImplementationOnce(() => Promise.reject(new AriesFrameworkError('Something went wrong')))
+        spy.mockImplementationOnce(() => Promise.reject(new CredoError('Something went wrong')))
       })
 
       expect(poolService.getPoolForDid(agentContext, did)).rejects.toThrowError(IndySdkPoolError)

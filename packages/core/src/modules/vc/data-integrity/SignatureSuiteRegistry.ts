@@ -1,6 +1,6 @@
 import type { KeyType } from '../../../crypto'
 
-import { AriesFrameworkError } from '../../../error'
+import { CredoError } from '../../../error'
 import { injectable, injectAll } from '../../../plugins'
 
 import { suites } from './libraries/jsonld-signatures'
@@ -39,7 +39,7 @@ export class SignatureSuiteRegistry {
     const suiteInfo = this.suiteMapping.find((x) => x.proofType === proofType)
 
     if (!suiteInfo) {
-      throw new AriesFrameworkError(`No signature suite for proof type: ${proofType}`)
+      throw new CredoError(`No signature suite for proof type: ${proofType}`)
     }
 
     return suiteInfo
@@ -49,7 +49,7 @@ export class SignatureSuiteRegistry {
     const suiteInfo = this.suiteMapping.find((suiteInfo) => suiteInfo.proofType === proofType)
 
     if (!suiteInfo) {
-      throw new AriesFrameworkError(`No verification method type found for proof type: ${proofType}`)
+      throw new CredoError(`No verification method type found for proof type: ${proofType}`)
     }
 
     return suiteInfo.verificationMethodTypes

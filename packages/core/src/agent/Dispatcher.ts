@@ -3,7 +3,7 @@ import type { AgentMessageProcessedEvent } from './Events'
 import type { InboundMessageContext } from './models/InboundMessageContext'
 
 import { InjectionSymbols } from '../constants'
-import { AriesFrameworkError } from '../error/CredoError'
+import { CredoError } from '../error/CredoError'
 import { Logger } from '../logger'
 import { injectable, inject } from '../plugins'
 import { parseMessageType } from '../utils/messageType'
@@ -39,7 +39,7 @@ class Dispatcher {
     const messageHandler = this.messageHandlerRegistry.getHandlerForMessageType(message.type)
 
     if (!messageHandler) {
-      throw new AriesFrameworkError(`No handler for message type "${message.type}" found`)
+      throw new CredoError(`No handler for message type "${message.type}" found`)
     }
 
     let outboundMessage: OutboundMessageContext<AgentMessage> | void

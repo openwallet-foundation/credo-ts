@@ -9,7 +9,7 @@ import type {
 import type { ProofFormatSpec } from '../../models/ProofFormatSpec'
 import type { ProofExchangeRecord } from '../../repository'
 
-import { AriesFrameworkError } from '../../../../error'
+import { CredoError } from '../../../../error'
 import { DidCommMessageRepository, DidCommMessageRole } from '../../../../storage'
 
 import { V2PresentationMessage, V2ProposePresentationMessage, V2RequestPresentationMessage } from './messages'
@@ -523,7 +523,7 @@ export class ProofFormatCoordinator<PFs extends ProofFormatService[]> {
     const attachment = attachments.find((attachment) => attachment.id === attachmentId)
 
     if (!attachment) {
-      throw new AriesFrameworkError(`Attachment with id ${attachmentId} not found in attachments.`)
+      throw new CredoError(`Attachment with id ${attachmentId} not found in attachments.`)
     }
 
     return attachment
@@ -532,7 +532,7 @@ export class ProofFormatCoordinator<PFs extends ProofFormatService[]> {
   private getAttachmentIdForService(credentialFormatService: ProofFormatService, formats: ProofFormatSpec[]) {
     const format = formats.find((format) => credentialFormatService.supportsFormat(format.format))
 
-    if (!format) throw new AriesFrameworkError(`No attachment found for service ${credentialFormatService.formatKey}`)
+    if (!format) throw new CredoError(`No attachment found for service ${credentialFormatService.formatKey}`)
 
     return format.attachmentId
   }

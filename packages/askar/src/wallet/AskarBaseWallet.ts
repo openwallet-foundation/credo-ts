@@ -22,7 +22,7 @@ import {
   JsonEncoder,
   KeyType,
   Buffer,
-  AriesFrameworkError,
+  CredoError,
   WalletError,
   Key,
   TypedArrayEncoder,
@@ -66,7 +66,7 @@ export abstract class AskarBaseWallet implements Wallet {
 
   public get session() {
     if (!this._session) {
-      throw new AriesFrameworkError('No Wallet Session is opened')
+      throw new CredoError('No Wallet Session is opened')
     }
 
     return this._session
@@ -139,7 +139,7 @@ export abstract class AskarBaseWallet implements Wallet {
       if (error instanceof WalletError) throw error
 
       if (!isError(error)) {
-        throw new AriesFrameworkError('Attempted to throw error, but it was not of type Error', { cause: error })
+        throw new CredoError('Attempted to throw error, but it was not of type Error', { cause: error })
       }
       throw new WalletError(`Error creating key with key type '${keyType}': ${error.message}`, { cause: error })
     }
@@ -190,7 +190,7 @@ export abstract class AskarBaseWallet implements Wallet {
     } catch (error) {
       keyEntry?.key.handle.free()
       if (!isError(error)) {
-        throw new AriesFrameworkError('Attempted to throw error, but it was not of type Error', { cause: error })
+        throw new CredoError('Attempted to throw error, but it was not of type Error', { cause: error })
       }
       throw new WalletError(`Error signing data with verkey ${key.publicKeyBase58}. ${error.message}`, { cause: error })
     }
@@ -241,7 +241,7 @@ export abstract class AskarBaseWallet implements Wallet {
     } catch (error) {
       askarKey?.handle.free()
       if (!isError(error)) {
-        throw new AriesFrameworkError('Attempted to throw error, but it was not of type Error', { cause: error })
+        throw new CredoError('Attempted to throw error, but it was not of type Error', { cause: error })
       }
       throw new WalletError(`Error verifying signature of data signed with verkey ${key.publicKeyBase58}`, {
         cause: error,
@@ -467,7 +467,7 @@ export abstract class AskarBaseWallet implements Wallet {
       return new BigNumber(nonce).toString()
     } catch (error) {
       if (!isError(error)) {
-        throw new AriesFrameworkError('Attempted to throw error, but it was not of type Error', { cause: error })
+        throw new CredoError('Attempted to throw error, but it was not of type Error', { cause: error })
       }
       throw new WalletError('Error generating nonce', { cause: error })
     }

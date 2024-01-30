@@ -3,7 +3,7 @@ import type { FileSystem, Logger } from '@credo-ts/core'
 import type { LedgerReadReplyResponse, LedgerRequest, LedgerWriteReplyResponse } from 'indy-sdk'
 import type { Subject } from 'rxjs'
 
-import { AriesFrameworkError } from '@credo-ts/core'
+import { CredoError } from '@credo-ts/core'
 
 import { isIndyError, IndySdkError } from '../error'
 
@@ -105,7 +105,7 @@ export class IndySdkPool {
       })
       return this.poolConnected
     } else {
-      throw new AriesFrameworkError('Cannot attempt connection to ledger, already connecting.')
+      throw new CredoError('Cannot attempt connection to ledger, already connecting.')
     }
   }
 
@@ -114,7 +114,7 @@ export class IndySdkPool {
     const genesisPath = await this.getGenesisPath()
 
     if (!genesisPath) {
-      throw new AriesFrameworkError('Cannot connect to ledger without genesis file')
+      throw new CredoError('Cannot connect to ledger without genesis file')
     }
 
     this.logger.debug(`Connecting to ledger pool '${poolName}'`, { genesisPath })

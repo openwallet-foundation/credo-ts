@@ -4,7 +4,7 @@ import type { CredentialFormatPayload, CredentialFormatService, ExtractCredentia
 import type { CredentialFormatSpec } from '../../models'
 import type { CredentialExchangeRecord } from '../../repository/CredentialExchangeRecord'
 
-import { AriesFrameworkError } from '../../../../error/CredoError'
+import { CredoError } from '../../../../error/CredoError'
 import { DidCommMessageRepository, DidCommMessageRole } from '../../../../storage'
 
 import {
@@ -557,7 +557,7 @@ export class CredentialFormatCoordinator<CFs extends CredentialFormatService[]> 
     const attachment = attachments.find((attachment) => attachment.id === attachmentId)
 
     if (!attachment) {
-      throw new AriesFrameworkError(`Attachment with id ${attachmentId} not found in attachments.`)
+      throw new CredoError(`Attachment with id ${attachmentId} not found in attachments.`)
     }
 
     return attachment
@@ -566,7 +566,7 @@ export class CredentialFormatCoordinator<CFs extends CredentialFormatService[]> 
   private getAttachmentIdForService(credentialFormatService: CredentialFormatService, formats: CredentialFormatSpec[]) {
     const format = formats.find((format) => credentialFormatService.supportsFormat(format.format))
 
-    if (!format) throw new AriesFrameworkError(`No attachment found for service ${credentialFormatService.formatKey}`)
+    if (!format) throw new CredoError(`No attachment found for service ${credentialFormatService.formatKey}`)
 
     return format.attachmentId
   }

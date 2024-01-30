@@ -7,7 +7,7 @@ import { MessageSender } from '../../../../../agent/MessageSender'
 import { InboundMessageContext } from '../../../../../agent/models/InboundMessageContext'
 import { InjectionSymbols } from '../../../../../constants'
 import { Attachment } from '../../../../../decorators/attachment/Attachment'
-import { AriesFrameworkError } from '../../../../../error'
+import { CredoError } from '../../../../../error'
 import { InMemoryMessageRepository } from '../../../../../storage/InMemoryMessageRepository'
 import { uuid } from '../../../../../utils/uuid'
 import { DidExchangeState, TrustPingMessage } from '../../../../connections'
@@ -322,7 +322,7 @@ describe('V2MessagePickupService', () => {
       })
 
       await expect(pickupProtocol.processDelivery(messageContext)).rejects.toThrowError(
-        new AriesFrameworkError('Error processing attachments')
+        new CredoError('Error processing attachments')
       )
     })
 

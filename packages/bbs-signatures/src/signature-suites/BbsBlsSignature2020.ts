@@ -23,7 +23,7 @@ import type {
 import type { VerificationMethod, JsonObject, DocumentLoader, Proof } from '@credo-ts/core'
 
 import {
-  AriesFrameworkError,
+  CredoError,
   TypedArrayEncoder,
   SECURITY_CONTEXT_BBS_URL,
   SECURITY_CONTEXT_URL,
@@ -336,9 +336,7 @@ export class BbsBlsSignature2020 extends LinkedDataProof {
     }
 
     if (!documentLoader) {
-      throw new AriesFrameworkError(
-        'Missing custom document loader. This is required for resolving verification methods.'
-      )
+      throw new CredoError('Missing custom document loader. This is required for resolving verification methods.')
     }
 
     const { document } = await documentLoader(verificationMethod)

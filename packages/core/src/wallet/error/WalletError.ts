@@ -1,6 +1,6 @@
-import { AriesFrameworkError } from '../../error/CredoError'
+import { CredoError } from '../../error/CredoError'
 
-export class WalletError extends AriesFrameworkError {
+export class WalletError extends CredoError {
   public constructor(message: string, { cause }: { cause?: Error } = {}) {
     super(message, { cause })
   }

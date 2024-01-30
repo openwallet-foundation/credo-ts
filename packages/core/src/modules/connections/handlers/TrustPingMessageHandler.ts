@@ -2,7 +2,7 @@ import type { MessageHandler, MessageHandlerInboundMessage } from '../../../agen
 import type { ConnectionService } from '../services/ConnectionService'
 import type { TrustPingService } from '../services/TrustPingService'
 
-import { AriesFrameworkError } from '../../../error'
+import { CredoError } from '../../../error'
 import { TrustPingMessage } from '../messages'
 import { DidExchangeState } from '../models'
 
@@ -19,7 +19,7 @@ export class TrustPingMessageHandler implements MessageHandler {
   public async handle(messageContext: MessageHandlerInboundMessage<TrustPingMessageHandler>) {
     const { connection, recipientKey } = messageContext
     if (!connection) {
-      throw new AriesFrameworkError(`Connection for verkey ${recipientKey?.fingerprint} not found!`)
+      throw new CredoError(`Connection for verkey ${recipientKey?.fingerprint} not found!`)
     }
 
     // TODO: This is better addressed in a middleware of some kind because

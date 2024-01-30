@@ -25,7 +25,7 @@ import {
   parseIndyRevocationRegistryId,
   parseIndySchemaId,
 } from '@credo-ts/anoncreds'
-import { AriesFrameworkError } from '@credo-ts/core'
+import { CredoError } from '@credo-ts/core'
 
 import { verificationKeyForIndyDid } from '../../dids/didIndyUtil'
 import { IndySdkError, isIndyError } from '../../error'
@@ -472,7 +472,7 @@ export class IndySdkAnonCredsRegistry implements AnonCredsRegistry {
   }
 
   public async registerRevocationRegistryDefinition(): Promise<RegisterRevocationRegistryDefinitionReturn> {
-    throw new AriesFrameworkError('Not implemented!')
+    throw new CredoError('Not implemented!')
   }
 
   public async getRevocationStatusList(
@@ -577,7 +577,7 @@ export class IndySdkAnonCredsRegistry implements AnonCredsRegistry {
   }
 
   public async registerRevocationStatusList(): Promise<RegisterRevocationStatusListReturn> {
-    throw new AriesFrameworkError('Not implemented!')
+    throw new CredoError('Not implemented!')
   }
 
   private async fetchIndySchemaWithSeqNo(agentContext: AgentContext, pool: IndySdkPool, seqNo: number) {
