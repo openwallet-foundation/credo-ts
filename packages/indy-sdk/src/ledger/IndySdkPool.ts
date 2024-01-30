@@ -1,9 +1,9 @@
 import type { IndySdk } from '../types'
-import type { FileSystem, Logger } from '@aries-framework/core'
+import type { FileSystem, Logger } from '@credo-ts/core'
 import type { LedgerReadReplyResponse, LedgerRequest, LedgerWriteReplyResponse } from 'indy-sdk'
 import type { Subject } from 'rxjs'
 
-import { AriesFrameworkError } from '@aries-framework/core'
+import { AriesFrameworkError } from '@credo-ts/core'
 
 import { isIndyError, IndySdkError } from '../error'
 

@@ -5,7 +5,7 @@ import {
   DidCommV1Service,
   DidCommV2Service,
   convertPublicKeyToX25519,
-} from '@aries-framework/core'
+} from '@credo-ts/core'
 
 import { getFullVerkey } from '../utils/did'
 

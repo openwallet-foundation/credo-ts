@@ -1,6 +1,6 @@
-import type { TagsBase } from '@aries-framework/core'
+import type { TagsBase } from '@credo-ts/core'
 
-import { KeyDerivationMethod } from '@aries-framework/core'
+import { KeyDerivationMethod } from '@credo-ts/core'
 import { KdfMethod, StoreKeyMethod } from '@hyperledger/aries-askar-shared'
 
 /**

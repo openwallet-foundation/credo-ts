@@ -1,6 +1,6 @@
 import type { AnonCredsProof } from '../../../../models'
 
-import { Attachment, AgentMessage, IsValidMessageType, parseMessageType } from '@aries-framework/core'
+import { Attachment, AgentMessage, IsValidMessageType, parseMessageType } from '@credo-ts/core'
 import { Expose, Type } from 'class-transformer'
 import { IsArray, IsString, ValidateNested, IsOptional, IsInstance } from 'class-validator'
 

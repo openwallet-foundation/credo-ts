@@ -1,4 +1,4 @@
-import type { DependencyManager, Module } from '@aries-framework/core'
+import type { DependencyManager, Module } from '@credo-ts/core'
 
 import {
   AgentConfig,
@@ -6,7 +6,7 @@ import {
   SigningProviderToken,
   VERIFICATION_METHOD_TYPE_BLS12381G2_KEY_2020,
   SignatureSuiteToken,
-} from '@aries-framework/core'
+} from '@credo-ts/core'
 
 import { Bls12381g2SigningProvider } from './Bls12381g2SigningProvider'
 import { BbsBlsSignature2020, BbsBlsSignatureProof2020 } from './signature-suites'
@@ -20,7 +20,7 @@ export class BbsModule implements Module {
     dependencyManager
       .resolve(AgentConfig)
       .logger.warn(
-        "The '@aries-framework/bbs-signatures' module is experimental and could have unexpected breaking changes. When using this module, make sure to use strict versions for all @aries-framework packages."
+        "The '@credo-ts/bbs-signatures' module is experimental and could have unexpected breaking changes. When using this module, make sure to use strict versions for all @aries-framework packages."
       )
 
     // Signing providers.

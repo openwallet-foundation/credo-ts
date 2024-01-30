@@ -5,10 +5,10 @@ import type {
   AnonCredsSchema,
   AnonCredsCredentialRequestMetadata,
   AnonCredsLinkSecretBlindingData,
-} from '@aries-framework/anoncreds'
+} from '@credo-ts/anoncreds'
 import type { CredDef, CredReqMetadata, RevocReg, RevocRegDef, RevocRegDelta, Schema } from 'indy-sdk'
 
-import { parseIndyCredentialDefinitionId, parseIndySchemaId } from '@aries-framework/anoncreds'
+import { parseIndyCredentialDefinitionId, parseIndySchemaId } from '@credo-ts/anoncreds'
 
 export function anonCredsSchemaFromIndySdk(schema: Schema): AnonCredsSchema {
   const { did } = parseIndySchemaId(schema.id)

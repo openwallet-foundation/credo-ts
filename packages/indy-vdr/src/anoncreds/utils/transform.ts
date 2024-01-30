@@ -1,6 +1,6 @@
-import type { AnonCredsRevocationStatusList, AnonCredsRevocationRegistryDefinition } from '@aries-framework/anoncreds'
+import type { AnonCredsRevocationStatusList, AnonCredsRevocationRegistryDefinition } from '@credo-ts/anoncreds'
 
-import { AriesFrameworkError } from '@aries-framework/core'
+import { AriesFrameworkError } from '@credo-ts/core'
 
 export type RevocationRegistryDelta = {
   accum: string

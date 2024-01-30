@@ -19,10 +19,10 @@
       alt="typescript"
       src="https://img.shields.io/badge/%3C%2F%3E-TypeScript-%230074c1.svg"
   /></a>
-    <a href="https://www.npmjs.com/package/@aries-framework/node"
+    <a href="https://www.npmjs.com/package/@credo-ts/node"
     ><img
-      alt="@aries-framework/node version"
-      src="https://img.shields.io/npm/v/@aries-framework/node"
+      alt="@credo-ts/node version"
+      src="https://img.shields.io/npm/v/@credo-ts/node"
   /></a>
 
 </p>

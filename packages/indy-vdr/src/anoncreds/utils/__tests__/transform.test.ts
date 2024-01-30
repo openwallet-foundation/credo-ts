@@ -1,5 +1,5 @@
 import type { RevocationRegistryDelta } from '../transform'
-import type { AnonCredsRevocationRegistryDefinition } from '@aries-framework/anoncreds'
+import type { AnonCredsRevocationRegistryDefinition } from '@credo-ts/anoncreds'
 
 import { indyVdrCreateLatestRevocationDelta, anonCredsRevocationStatusListFromIndyVdr } from '../transform'
 

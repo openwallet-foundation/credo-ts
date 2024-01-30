@@ -4,7 +4,7 @@ import type {
   SdJwtVcReceiveOptions,
   SdJwtVcVerifyOptions,
 } from './SdJwtVcOptions'
-import type { AgentContext, JwkJson, Query } from '@aries-framework/core'
+import type { AgentContext, JwkJson, Query } from '@credo-ts/core'
 import type { Signer, SdJwtVcVerificationResult, Verifier, HasherAndAlgorithm } from 'jwt-sd'
 
 import {
@@ -21,7 +21,7 @@ import {
   Logger,
   TypedArrayEncoder,
   Buffer,
-} from '@aries-framework/core'
+} from '@credo-ts/core'
 import { KeyBinding, SdJwtVc, HasherAlgorithm, Disclosure } from 'jwt-sd'
 
 import { SdJwtVcError } from './SdJwtVcError'

@@ -1,4 +1,4 @@
-import type { WalletConfig } from '@aries-framework/core'
+import type { WalletConfig } from '@credo-ts/core'
 
 import {
   WalletDuplicateError,
@@ -7,7 +7,7 @@ import {
   Logger,
   SigningProviderRegistry,
   WalletError,
-} from '@aries-framework/core'
+} from '@credo-ts/core'
 import { Store } from '@hyperledger/aries-askar-shared'
 import { inject, injectable } from 'tsyringe'
 

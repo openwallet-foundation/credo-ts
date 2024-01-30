@@ -1,6 +1,6 @@
-import type { SigningProvider, CreateKeyPairOptions, KeyPair, SignOptions, VerifyOptions } from '@aries-framework/core'
+import type { SigningProvider, CreateKeyPairOptions, KeyPair, SignOptions, VerifyOptions } from '@credo-ts/core'
 
-import { KeyType, injectable, TypedArrayEncoder, SigningProviderError, Buffer } from '@aries-framework/core'
+import { KeyType, injectable, TypedArrayEncoder, SigningProviderError, Buffer } from '@credo-ts/core'
 import { bls12381toBbs, verify, sign, generateBls12381G2KeyPair } from '@mattrglobal/bbs-signatures'
 
 /**

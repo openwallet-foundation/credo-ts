@@ -4,7 +4,7 @@ import type {
   CredentialPreviewAttribute,
   AgentConfig,
   CredentialStateChangedEvent,
-} from '@aries-framework/core'
+} from '@credo-ts/core'
 
 import {
   EventEmitter,
@@ -24,7 +24,7 @@ import {
   CredentialEventTypes,
   AckStatus,
   CredentialProblemReportReason,
-} from '@aries-framework/core'
+} from '@credo-ts/core'
 import { Subject } from 'rxjs'
 
 import { ConnectionService } from '../../../../../../core/src/modules/connections/services/ConnectionService'

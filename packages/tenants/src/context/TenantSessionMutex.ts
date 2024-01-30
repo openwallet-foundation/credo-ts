@@ -1,7 +1,7 @@
-import type { Logger } from '@aries-framework/core'
+import type { Logger } from '@credo-ts/core'
 import type { MutexInterface } from 'async-mutex'
 
-import { AriesFrameworkError } from '@aries-framework/core'
+import { AriesFrameworkError } from '@credo-ts/core'
 import { withTimeout, Mutex } from 'async-mutex'
 
 /**

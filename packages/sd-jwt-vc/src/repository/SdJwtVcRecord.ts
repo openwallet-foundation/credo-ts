@@ -1,7 +1,7 @@
-import type { TagsBase, Constructable } from '@aries-framework/core'
+import type { TagsBase, Constructable } from '@credo-ts/core'
 import type { DisclosureItem, HasherAndAlgorithm } from 'jwt-sd'
 
-import { JsonTransformer, Hasher, TypedArrayEncoder, BaseRecord, utils } from '@aries-framework/core'
+import { JsonTransformer, Hasher, TypedArrayEncoder, BaseRecord, utils } from '@credo-ts/core'
 import { Disclosure, HasherAlgorithm, SdJwtVc } from 'jwt-sd'
 
 export type SdJwtVcRecordTags = TagsBase & {

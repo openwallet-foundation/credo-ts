@@ -1,13 +1,7 @@
 import type { DummyRecord } from './repository/DummyRecord'
-import type { Query } from '@aries-framework/core'
+import type { Query } from '@credo-ts/core'
 
-import {
-  getOutboundMessageContext,
-  AgentContext,
-  ConnectionService,
-  injectable,
-  MessageSender,
-} from '@aries-framework/core'
+import { getOutboundMessageContext, AgentContext, ConnectionService, injectable, MessageSender } from '@credo-ts/core'
 
 import { DummyRequestHandler, DummyResponseHandler } from './handlers'
 import { DummyState } from './repository'

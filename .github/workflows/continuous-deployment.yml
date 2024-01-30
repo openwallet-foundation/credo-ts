@@ -46,7 +46,7 @@ jobs:
       - name: Get version number
         id: get-version
         run: |
-          LAST_RELEASED_VERSION=$(npm view @aries-framework/core@alpha version)
+          LAST_RELEASED_VERSION=$(npm view @credo-ts/core@alpha version)
 
           echo version="${LAST_RELEASED_VERSION}" >> "$GITHUB_OUTPUT"
 

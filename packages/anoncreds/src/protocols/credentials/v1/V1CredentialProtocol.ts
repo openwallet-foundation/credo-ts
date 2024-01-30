@@ -9,7 +9,7 @@ import type {
   ProblemReportMessage,
   ExtractCredentialFormats,
   CredentialProtocol,
-} from '@aries-framework/core'
+} from '@credo-ts/core'
 
 import {
   Protocol,
@@ -30,7 +30,7 @@ import {
   DidCommMessageRole,
   BaseCredentialProtocol,
   isLinkedAttachment,
-} from '@aries-framework/core'
+} from '@credo-ts/core'
 
 import { AnonCredsCredentialProposal } from '../../../models/AnonCredsCredentialProposal'
 import { composeCredentialAutoAccept, areCredentialPreviewAttributesEqual } from '../../../utils'

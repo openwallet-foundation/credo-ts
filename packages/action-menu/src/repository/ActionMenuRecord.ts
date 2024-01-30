@@ -1,8 +1,8 @@
 import type { ActionMenuRole } from '../ActionMenuRole'
 import type { ActionMenuState } from '../ActionMenuState'
-import type { TagsBase } from '@aries-framework/core'
+import type { TagsBase } from '@credo-ts/core'
 
-import { AriesFrameworkError, BaseRecord, utils } from '@aries-framework/core'
+import { AriesFrameworkError, BaseRecord, utils } from '@credo-ts/core'
 import { Type } from 'class-transformer'
 
 import { ActionMenuSelection, ActionMenu } from '../models'

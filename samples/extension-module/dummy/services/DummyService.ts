@@ -1,7 +1,7 @@
 import type { DummyStateChangedEvent } from './DummyEvents'
-import type { Query, AgentContext, ConnectionRecord, InboundMessageContext } from '@aries-framework/core'
+import type { Query, AgentContext, ConnectionRecord, InboundMessageContext } from '@credo-ts/core'
 
-import { injectable, EventEmitter } from '@aries-framework/core'
+import { injectable, EventEmitter } from '@credo-ts/core'
 
 import { DummyModuleConfig } from '../DummyModuleConfig'
 import { DummyRequestMessage, DummyResponseMessage } from '../messages'

@@ -7,7 +7,7 @@
   "compilerOptions": {
     "baseUrl": ".",
     "paths": {
-      "@aries-framework/*": ["packages/*/src"]
+      "@credo-ts/*": ["packages/*/src"]
     },
     "types": ["jest", "node"]
   },

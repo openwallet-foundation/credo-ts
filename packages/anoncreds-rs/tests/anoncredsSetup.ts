@@ -13,7 +13,7 @@ import type {
   RegisterRevocationStatusListReturnStateFinished,
 } from '../../anoncreds/src'
 import type { EventReplaySubject } from '../../core/tests'
-import type { AutoAcceptProof, ConnectionRecord } from '@aries-framework/core'
+import type { AutoAcceptProof, ConnectionRecord } from '@credo-ts/core'
 
 import {
   DidDocumentBuilder,
@@ -31,7 +31,7 @@ import {
   V2CredentialProtocol,
   V2ProofProtocol,
   DidsModule,
-} from '@aries-framework/core'
+} from '@credo-ts/core'
 import { anoncreds } from '@hyperledger/anoncreds-nodejs'
 import { randomUUID } from 'crypto'
 

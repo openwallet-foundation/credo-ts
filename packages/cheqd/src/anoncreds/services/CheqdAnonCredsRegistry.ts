@@ -11,10 +11,10 @@ import type {
   RegisterSchemaOptions,
   RegisterRevocationRegistryDefinitionReturn,
   RegisterRevocationStatusListReturn,
-} from '@aries-framework/anoncreds'
-import type { AgentContext } from '@aries-framework/core'
+} from '@credo-ts/anoncreds'
+import type { AgentContext } from '@credo-ts/core'
 
-import { AriesFrameworkError, Buffer, Hasher, JsonTransformer, TypedArrayEncoder, utils } from '@aries-framework/core'
+import { AriesFrameworkError, Buffer, Hasher, JsonTransformer, TypedArrayEncoder, utils } from '@credo-ts/core'
 
 import { CheqdDidResolver, CheqdDidRegistrar } from '../../dids'
 import { cheqdSdkAnonCredsRegistryIdentifierRegex, parseCheqdDid } from '../utils/identifiers'

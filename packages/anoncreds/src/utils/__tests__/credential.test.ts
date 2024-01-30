@@ -1,4 +1,4 @@
-import { CredentialPreviewAttribute } from '@aries-framework/core'
+import { CredentialPreviewAttribute } from '@credo-ts/core'
 
 import {
   assertCredentialValuesMatch,

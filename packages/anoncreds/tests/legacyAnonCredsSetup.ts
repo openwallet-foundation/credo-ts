@@ -8,7 +8,7 @@ import type {
   RegisterCredentialDefinitionReturnStateFinished,
   RegisterSchemaReturnStateFinished,
 } from '../src'
-import type { AutoAcceptProof, ConnectionRecord } from '@aries-framework/core'
+import type { AutoAcceptProof, ConnectionRecord } from '@credo-ts/core'
 
 import {
   TypedArrayEncoder,
@@ -26,7 +26,7 @@ import {
   V2CredentialProtocol,
   V2ProofProtocol,
   DidsModule,
-} from '@aries-framework/core'
+} from '@credo-ts/core'
 import { randomUUID } from 'crypto'
 
 import { AnonCredsRsModule } from '../../anoncreds-rs/src'

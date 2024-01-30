@@ -2,13 +2,6 @@ import type { CheqdNetwork, DIDDocument, MethodSpecificIdAlgo, TVerificationKey 
 import type { Metadata } from '@cheqd/ts-proto/cheqd/resource/v2'
 
 import {
-  DidDocument,
-  AriesFrameworkError,
-  JsonEncoder,
-  TypedArrayEncoder,
-  JsonTransformer,
-} from '@aries-framework/core'
-import {
   createDidPayload,
   createDidVerificationMethod,
   createVerificationKeys,
@@ -18,6 +11,7 @@ import {
 import { MsgCreateDidDocPayload, MsgDeactivateDidDocPayload } from '@cheqd/ts-proto/cheqd/did/v2'
 import { EnglishMnemonic as _ } from '@cosmjs/crypto'
 import { DirectSecp256k1HdWallet, DirectSecp256k1Wallet } from '@cosmjs/proto-signing'
+import { DidDocument, AriesFrameworkError, JsonEncoder, TypedArrayEncoder, JsonTransformer } from '@credo-ts/core'
 
 export function validateSpecCompliantPayload(didDocument: DidDocument): SpecValidationResult {
   // id is required, validated on both compile and runtime

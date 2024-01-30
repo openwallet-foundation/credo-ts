@@ -1,6 +1,6 @@
 import type { AnonCredsNonRevokedInterval } from '../models'
 
-import { AriesFrameworkError } from '@aries-framework/core'
+import { AriesFrameworkError } from '@credo-ts/core'
 
 // This sets the `to` value to be required. We do this check in the `assertBestPracticeRevocationInterval` method,
 // and it makes it easier to work with the object in TS

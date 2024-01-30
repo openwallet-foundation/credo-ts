@@ -1,6 +1,6 @@
 import type { DummyState } from '../dummy/repository'
 import type { DummyStateChangedEvent } from '../dummy/services'
-import type { Agent } from '@aries-framework/core'
+import type { Agent } from '@credo-ts/core'
 import type { Observable } from 'rxjs'
 
 import { catchError, filter, firstValueFrom, map, ReplaySubject, timeout } from 'rxjs'

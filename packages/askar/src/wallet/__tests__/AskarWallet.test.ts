@@ -5,7 +5,7 @@ import type {
   KeyPair,
   SignOptions,
   VerifyOptions,
-} from '@aries-framework/core'
+} from '@credo-ts/core'
 
 import {
   WalletKeyExistsError,
@@ -19,7 +19,7 @@ import {
   TypedArrayEncoder,
   KeyDerivationMethod,
   Buffer,
-} from '@aries-framework/core'
+} from '@credo-ts/core'
 import { Store } from '@hyperledger/aries-askar-shared'
 
 import { encodeToBase58 } from '../../../../core/src/utils/base58'

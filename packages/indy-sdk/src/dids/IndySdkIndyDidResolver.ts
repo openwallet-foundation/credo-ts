@@ -1,9 +1,9 @@
 import type { IndyEndpointAttrib } from './didSovUtil'
 import type { IndySdkPool } from '../ledger'
 import type { IndySdk } from '../types'
-import type { DidResolutionResult, DidResolver, AgentContext } from '@aries-framework/core'
+import type { DidResolutionResult, DidResolver, AgentContext } from '@credo-ts/core'
 
-import { parseIndyDid } from '@aries-framework/anoncreds'
+import { parseIndyDid } from '@credo-ts/anoncreds'
 
 import { isIndyError, IndySdkError } from '../error'
 import { IndySdkPoolService } from '../ledger/IndySdkPoolService'

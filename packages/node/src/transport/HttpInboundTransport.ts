@@ -1,8 +1,8 @@
-import type { InboundTransport, Agent, TransportSession, EncryptedMessage, AgentContext } from '@aries-framework/core'
+import type { InboundTransport, Agent, TransportSession, EncryptedMessage, AgentContext } from '@credo-ts/core'
 import type { Express, Request, Response } from 'express'
 import type { Server } from 'http'
 
-import { DidCommMimeType, AriesFrameworkError, TransportService, utils, MessageReceiver } from '@aries-framework/core'
+import { DidCommMimeType, AriesFrameworkError, TransportService, utils, MessageReceiver } from '@credo-ts/core'
 import express, { text } from 'express'
 
 const supportedContentTypes: string[] = [DidCommMimeType.V0, DidCommMimeType.V1]

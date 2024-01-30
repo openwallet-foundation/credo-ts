@@ -19,10 +19,10 @@
       alt="typescript"
       src="https://img.shields.io/badge/%3C%2F%3E-TypeScript-%230074c1.svg"
   /></a>
-    <a href="https://www.npmjs.com/package/@aries-framework/cheqd"
+    <a href="https://www.npmjs.com/package/@credo-ts/cheqd"
     ><img
-      alt="@aries-framework/cheqd version"
-      src="https://img.shields.io/npm/v/@aries-framework/cheqd"
+      alt="@credo-ts/cheqd version"
+      src="https://img.shields.io/npm/v/@credo-ts/cheqd"
   /></a>
 
 </p>

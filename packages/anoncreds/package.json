@@ -1,5 +1,5 @@
 {
-  "name": "@aries-framework/anoncreds",
+  "name": "@credo-ts/anoncreds",
   "main": "build/index",
   "types": "build/index",
   "version": "0.4.2",
@@ -24,14 +24,14 @@
     "test": "jest"
   },
   "dependencies": {
-    "@aries-framework/core": "0.4.2",
+    "@credo-ts/core": "0.4.2",
     "bn.js": "^5.2.1",
     "class-transformer": "0.5.1",
     "class-validator": "0.14.0",
     "reflect-metadata": "^0.1.13"
   },
   "devDependencies": {
-    "@aries-framework/node": "0.4.2",
+    "@credo-ts/node": "0.4.2",
     "indy-sdk": "^1.16.0-dev-1636",
     "rimraf": "^4.4.0",
     "rxjs": "^7.8.0",

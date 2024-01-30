@@ -1,7 +1,7 @@
 import type { IndySdk } from '../../types'
-import type { AgentContext, FileSystem } from '@aries-framework/core'
+import type { AgentContext, FileSystem } from '@credo-ts/core'
 
-import { AriesFrameworkError, getDirFromFilePath, InjectionSymbols } from '@aries-framework/core'
+import { AriesFrameworkError, getDirFromFilePath, InjectionSymbols } from '@credo-ts/core'
 
 import { IndySdkError, isIndyError } from '../../error'
 import { IndySdkSymbol } from '../../types'

@@ -1,4 +1,4 @@
-import { AriesFrameworkError } from '@aries-framework/core'
+import { AriesFrameworkError } from '@credo-ts/core'
 
 export const indyErrors = {
   100: 'CommonInvalidParam1',

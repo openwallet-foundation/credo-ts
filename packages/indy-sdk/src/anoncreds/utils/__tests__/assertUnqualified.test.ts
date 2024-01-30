@@ -1,4 +1,4 @@
-import type { AnonCredsCredentialOffer, AnonCredsCredentialRequest } from '@aries-framework/anoncreds'
+import type { AnonCredsCredentialOffer, AnonCredsCredentialRequest } from '@credo-ts/anoncreds'
 
 import {
   assertUnqualifiedCredentialDefinitionId,

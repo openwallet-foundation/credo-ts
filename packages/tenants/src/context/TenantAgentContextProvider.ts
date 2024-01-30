@@ -1,4 +1,4 @@
-import type { AgentContextProvider, RoutingCreatedEvent, EncryptedMessage } from '@aries-framework/core'
+import type { AgentContextProvider, RoutingCreatedEvent, EncryptedMessage } from '@credo-ts/core'
 
 import {
   AriesFrameworkError,
@@ -14,7 +14,7 @@ import {
   isValidJweStructure,
   JsonEncoder,
   isJsonObject,
-} from '@aries-framework/core'
+} from '@credo-ts/core'
 
 import { TenantRecordService } from '../services'
 

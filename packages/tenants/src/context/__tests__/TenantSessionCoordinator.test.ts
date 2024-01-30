@@ -1,7 +1,7 @@
 import type { TenantAgentContextMapping } from '../TenantSessionCoordinator'
-import type { DependencyManager } from '@aries-framework/core'
+import type { DependencyManager } from '@credo-ts/core'
 
-import { AgentConfig, AgentContext, WalletApi } from '@aries-framework/core'
+import { AgentConfig, AgentContext, WalletApi } from '@credo-ts/core'
 import { Mutex, withTimeout } from 'async-mutex'
 
 import { getAgentConfig, getAgentContext, mockFunction } from '../../../../core/tests/helpers'
