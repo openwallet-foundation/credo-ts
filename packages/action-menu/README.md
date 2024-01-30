@@ -28,7 +28,7 @@
 </p>
 <br />
 
-Action Menu module for [Credo](https://github.com/hyperledger/aries-framework-javascript.git). Implements [Aries RFC 0509](https://github.com/hyperledger/aries-rfcs/blob/1795d5c2d36f664f88f5e8045042ace8e573808c/features/0509-action-menu/README.md).
+Action Menu module for [Credo](https://github.com/openwallet-foundation/credo-ts.git). Implements [Aries RFC 0509](https://github.com/hyperledger/aries-rfcs/blob/1795d5c2d36f664f88f5e8045042ace8e573808c/features/0509-action-menu/README.md).
 
 ### Installation
 

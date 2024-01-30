@@ -28,7 +28,7 @@
 </p>
 <br />
 
-Open ID Connect For Verifiable Credentials Client Module for [Credo](https://github.com/hyperledger/aries-framework-javascript).
+Open ID Connect For Verifiable Credentials Client Module for [Credo](https://github.com/openwallet-foundation/credo-ts).
 
 ### Installation
 

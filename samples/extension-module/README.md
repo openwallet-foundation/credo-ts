@@ -56,14 +56,14 @@ const record = await agent.modules.dummy.request(connection)
 
 ## Run demo
 
-This repository includes a demonstration of a requester and a responder controller using this module to exchange Dummy protocol messages. For environment set up, make sure you followed instructions for [NodeJS](https:/https://credo.js.org//guides/getting-started/prerequisites/nodejs).
+This repository includes a demonstration of a requester and a responder controller using this module to exchange Dummy protocol messages. For environment set up, make sure you followed instructions for [NodeJS](https:/https://credo.js.org/guides/getting-started/prerequisites/nodejs).
 
 These are the steps for running it:
 
 Clone the Credo git repository:
 
 ```sh
-git clone https://github.com/hyperledger/aries-framework-javascript.git
+git clone https://github.com/openwallet-foundation/credo-ts.git
 ```
 
 Open two different terminals and go to the extension-module directory:

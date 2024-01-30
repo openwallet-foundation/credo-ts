@@ -28,4 +28,4 @@
 </p>
 <br />
 
-Credo React Native provides platform specific dependencies to run Credo in [React Native](https://reactnative.dev). See the [Getting Started Guide](https://github.com/hyperledger/aries-framework-javascript#getting-started) for installation instructions.
+Credo React Native provides platform specific dependencies to run Credo in [React Native](https://reactnative.dev). See the [Getting Started Guide](https://github.com/openwallet-foundation/credo-ts#getting-started) for installation instructions.

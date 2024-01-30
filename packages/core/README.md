@@ -28,4 +28,4 @@
 </p>
 <br />
 
-Credo Core provides the core functionality of Credo. See the [Getting Started Guide](https://github.com/hyperledger/aries-framework-javascript#getting-started) for installation instructions.
+Credo Core provides the core functionality of Credo. See the [Getting Started Guide](https://github.com/openwallet-foundation/credo-ts#getting-started) for installation instructions.

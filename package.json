@@ -8,7 +8,7 @@
     "samples/*"
   ],
   "repository": {
-    "url": "https://github.com/hyperledger/aries-framework-javascript",
+    "url": "https://github.com/openwallet-foundation/credo-ts",
     "type": "git"
   },
   "scripts": {

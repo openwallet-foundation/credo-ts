@@ -28,4 +28,4 @@
 </p>
 <br />
 
-Indy SDK to Askar migration module for [Credo](https://github.com/hyperledger/aries-framework-javascript.git).
+Indy SDK to Askar migration module for [Credo](https://github.com/openwallet-foundation/credo-ts.git).

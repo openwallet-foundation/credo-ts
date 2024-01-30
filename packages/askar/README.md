@@ -28,4 +28,4 @@
 </p>
 <br />
 
-Askar module for [Credo](https://github.com/hyperledger/aries-framework-javascript.git).
+Askar module for [Credo](https://github.com/openwallet-foundation/credo-ts.git).

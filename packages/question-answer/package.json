@@ -10,10 +10,10 @@
   "publishConfig": {
     "access": "public"
   },
-  "homepage": "https://github.com/hyperledger/aries-framework-javascript/tree/main/packages/question-answer",
+  "homepage": "https://github.com/openwallet-foundation/credo-ts/tree/main/packages/question-answer",
   "repository": {
     "type": "git",
-    "url": "https://github.com/hyperledger/aries-framework-javascript",
+    "url": "https://github.com/openwallet-foundation/credo-ts",
     "directory": "packages/question-answer"
   },
   "scripts": {

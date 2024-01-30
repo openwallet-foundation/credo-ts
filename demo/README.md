@@ -17,7 +17,7 @@ Alice, a former student of Faber College, connects with the College, is issued a
 
 In order to use Credo some platform specific dependencies and setup is required. See our guides below to quickly set up you project with Credo for NodeJS, React Native and Electron.
 
-- [NodeJS](https://https://credo.js.org//guides/getting-started/installation/nodejs)
+- [NodeJS](https://https://credo.js.org/guides/getting-started/installation/nodejs)
 
 ### Run the demo
 
@@ -26,7 +26,7 @@ These are the steps for running the Credo demo:
 Clone the Credo git repository:
 
 ```sh
-git clone https://github.com/hyperledger/aries-framework-javascript.git
+git clone https://github.com/openwallet-foundation/credo-ts.git
 ```
 
 Open two different terminals next to each other and in both, go to the demo folder:

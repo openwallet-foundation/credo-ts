@@ -28,4 +28,4 @@
 </p>
 <br />
 
-AnonCreds RS module for [Credo](https://github.com/hyperledger/aries-framework-javascript.git).
+AnonCreds RS module for [Credo](https://github.com/openwallet-foundation/credo-ts.git).

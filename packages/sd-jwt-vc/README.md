@@ -37,7 +37,7 @@ yarn add @credo-ts/sd-jwt-vc
 
 ### Quick start
 
-After the installation you can follow the [guide to setup your agent](https://https://credo.js.org//guides/0.4/getting-started/set-up) and add the following to your agent modules.
+After the installation you can follow the [guide to setup your agent](https://https://credo.js.org/guides/0.4/getting-started/set-up) and add the following to your agent modules.
 
 ```ts
 import { SdJwtVcModule } from '@credo-ts/sd-jwt-vc'

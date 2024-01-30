@@ -28,4 +28,4 @@
 </p>
 <br />
 
-Credo Node provides platform specific dependencies to run Credo in [Node.JS](https://nodejs.org). See the [Getting Started Guide](https://github.com/hyperledger/aries-framework-javascript#getting-started) for installation instructions.
+Credo Node provides platform specific dependencies to run Credo in [Node.JS](https://nodejs.org). See the [Getting Started Guide](https://github.com/openwallet-foundation/credo-ts#getting-started) for installation instructions.

@@ -10,10 +10,10 @@
   "publishConfig": {
     "access": "public"
   },
-  "homepage": "https://github.com/hyperledger/aries-framework-javascript/tree/main/packages/cheqd",
+  "homepage": "https://github.com/openwallet-foundation/credo-ts/tree/main/packages/cheqd",
   "repository": {
     "type": "git",
-    "url": "https://github.com/hyperledger/aries-framework-javascript",
+    "url": "https://github.com/openwallet-foundation/credo-ts",
     "directory": "packages/cheqd"
   },
   "scripts": {

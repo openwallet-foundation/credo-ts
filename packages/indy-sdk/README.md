@@ -28,4 +28,4 @@
 </p>
 <br />
 
-IndySDK module for [Credo](https://github.com/hyperledger/aries-framework-javascript.git).
+IndySDK module for [Credo](https://github.com/openwallet-foundation/credo-ts.git).

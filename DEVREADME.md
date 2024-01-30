@@ -37,7 +37,7 @@ If you're using the setup as described in this document, you don't need to provi
 
 ### Setup Postgres
 
-> Note: Setup the postgres plugin first by following the [docs](https://https://credo.js.org//)
+> Note: Setup the postgres plugin first by following the [docs](https://https://credo.js.org/)
 
 ```sh
 # Get postgres docker image
