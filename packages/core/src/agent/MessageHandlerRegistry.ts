@@ -3,7 +3,6 @@ import type { MessageHandler } from './MessageHandler'
 import type { ParsedDidCommProtocolUri } from '../utils/messageType'
 
 import { injectable } from 'tsyringe'
-import { version } from 'uuid'
 
 import { supportsIncomingDidCommProtocolUri, canHandleMessageType, parseMessageType } from '../utils/messageType'
 
