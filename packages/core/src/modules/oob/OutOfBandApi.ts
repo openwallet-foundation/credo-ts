@@ -371,11 +371,15 @@ export class OutOfBandApi {
    * @returns out-of-band record and connection record if one has been created.
    */
   public async receiveImplicitInvitation(config: ReceiveOutOfBandImplicitInvitationConfig) {
+    const handshakeProtocols = this.getSupportedHandshakeProtocols(
+      config.handshakeProtocols ?? [HandshakeProtocol.DidExchange]
+    ).map((p) => p.parsedProtocolUri.protocolUri)
+
     const invitation = new OutOfBandInvitation({
       id: config.did,
       label: config.label ?? '',
       services: [config.did],
-      handshakeProtocols: config.handshakeProtocols ?? [HandshakeProtocol.DidExchange],
+      handshakeProtocols,
     })
 
     return this._receiveInvitation(invitation, { ...config, isImplicit: true })
