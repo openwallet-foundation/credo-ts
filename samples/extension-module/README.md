@@ -69,7 +69,7 @@ git clone https://github.com/openwallet-foundation/credo-ts.git
 Open two different terminals and go to the extension-module directory:
 
 ```sh
-cd aries-framework-javascript/samples/extension-module
+cd credo/samples/extension-module
 ```
 
 Install the project in one of the terminals:

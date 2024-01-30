@@ -14,8 +14,8 @@ This document contains the most common errors that arise when first installing l
 Installing Libindy on macOS can be tricky. If the the troubleshooting section of the NodeJS Wrapper documentation doesn't provide an answer and you're getting the following error:
 
 ```
-dlopen(/<absolute-path>/aries-framework-javascript/node_modules/indy-sdk/build/Release/indynodejs.node, 1): Library not loaded: /Users/jenkins/workspace/indy-sdk_indy-sdk-cd_master/libindy/target/release/deps/libindy.dylib
-     Referenced from: /<absolute-path>/aries-framework-javascript/node_modules/indy-sdk/build/Release/indynodejs.node
+dlopen(/<absolute-path>/credo/node_modules/indy-sdk/build/Release/indynodejs.node, 1): Library not loaded: /Users/jenkins/workspace/indy-sdk_indy-sdk-cd_master/libindy/target/release/deps/libindy.dylib
+     Referenced from: /<absolute-path>/credo/node_modules/indy-sdk/build/Release/indynodejs.node
      Reason: image not found
 ```
 
@@ -44,7 +44,7 @@ install_name_tool -change /Users/jenkins/workspace/indy-sdk_indy-sdk-cd_master/l
 Libindy makes use of OpenSSL 1.0, however macOS by default has OpenSSL version 1.1. The standard brew repo also doesn't contain version 1.0 anymore. So if you're getting something that looks like the following error:
 
 ```
-dlopen(/<absolute-path>/aries-framework-javascript/node_modules/indy-sdk/build/Release/indynodejs.node, 1): Library not loaded: /usr/local/opt/openssl/lib/libssl.1.0.0.dylib
+dlopen(/<absolute-path>/credo/node_modules/indy-sdk/build/Release/indynodejs.node, 1): Library not loaded: /usr/local/opt/openssl/lib/libssl.1.0.0.dylib
       Referenced from: /<absolute-path>/libindy_1.15.0/lib/libindy.dylib
       Reason: image not found
 ```

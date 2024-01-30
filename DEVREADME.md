@@ -122,8 +122,8 @@ Make sure you followed the [local ledger setup](#setup-indy-ledger) to setup a l
 
 ```sh
 # Builds the framework docker image with all dependencies installed
-docker build -t aries-framework-javascript .
+docker build -t credo .
 
 # Run test with ledger pool
-docker run -it --rm --network host aries-framework-javascript yarn test
+docker run -it --rm --network host credo yarn test
 ```

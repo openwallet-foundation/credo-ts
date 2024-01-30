@@ -32,7 +32,7 @@ git clone https://github.com/openwallet-foundation/credo-ts.git
 Open two different terminals next to each other and in both, go to the demo folder:
 
 ```sh
-cd aries-framework-javascript/demo
+cd credo/demo
 ```
 
 Install the project in one of the terminals:

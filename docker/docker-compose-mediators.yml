@@ -3,7 +3,7 @@ version: '3'
 services:
   mediator:
     build: ..
-    image: aries-framework-javascript
+    image: credo
     container_name: credo-mediator
     command: yarn run-mediator
     platform: linux/amd64
