@@ -108,10 +108,10 @@ Locally, you might want to run the tests without postgres tests. You can do that
 yarn test --testPathIgnorePatterns postgres.e2e.test.ts
 ```
 
-In case you run into trouble running the tests, e.g. complaining about snapshots not being up-to-date, you can try and remove the data stored for the indy-client or AFJ. Note this removes all wallets and data, so make sure you're okay with all data being removed. On a Unix system with default setup you achieve this by running:
+In case you run into trouble running the tests, e.g. complaining about snapshots not being up-to-date, you can try and remove the data stored for the indy-client or Credo. Note this removes all wallets and data, so make sure you're okay with all data being removed. On a Unix system with default setup you achieve this by running:
 
 ```sh
-rm -rf ~/.indy-client ~/.afj
+rm -rf ~/.indy-client ~/.credo
 ```
 
 ## Usage with Docker

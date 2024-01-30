@@ -19,16 +19,16 @@ export class NodeFileSystem implements FileSystem {
    * Create new NodeFileSystem class instance.
    *
    * @param baseDataPath The base path to use for reading and writing data files used within the framework.
-   * Files will be created under baseDataPath/.afj directory. If not specified, it will be set to homedir()
+   * Files will be created under baseDataPath/.credo directory. If not specified, it will be set to homedir()
    * @param baseCachePath The base path to use for reading and writing cache files used within the framework.
-   * Files will be created under baseCachePath/.afj directory. If not specified, it will be set to homedir()
+   * Files will be created under baseCachePath/.credo directory. If not specified, it will be set to homedir()
    * @param baseTempPath The base path to use for reading and writing temporary files within the framework.
-   * Files will be created under baseTempPath/.afj directory. If not specified, it will be set to tmpdir()
+   * Files will be created under baseTempPath/.credo directory. If not specified, it will be set to tmpdir()
    */
   public constructor(options?: { baseDataPath?: string; baseCachePath?: string; baseTempPath?: string }) {
-    this.dataPath = options?.baseDataPath ? `${options?.baseDataPath}/.afj` : `${homedir()}/.afj/data`
-    this.cachePath = options?.baseCachePath ? `${options?.baseCachePath}/.afj` : `${homedir()}/.afj/cache`
-    this.tempPath = `${options?.baseTempPath ?? tmpdir()}/.afj`
+    this.dataPath = options?.baseDataPath ? `${options?.baseDataPath}/.credo` : `${homedir()}/.credo/data`
+    this.cachePath = options?.baseCachePath ? `${options?.baseCachePath}/.credo` : `${homedir()}/.credo/cache`
+    this.tempPath = `${options?.baseTempPath ?? tmpdir()}/.credo`
   }
 
   public async exists(path: string) {

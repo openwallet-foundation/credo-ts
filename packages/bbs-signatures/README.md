@@ -38,7 +38,7 @@ yarn add @credo-ts/bbs-signatures
 
 ### React Native
 
-When using AFJ inside the React Native environment, temporarily, a dependency for creating keys, signing and verifying, with bbs keys must be swapped. Inside your `package.json` the following must be added. This is only needed for React Native environments
+When using Credo inside the React Native environment, temporarily, a dependency for creating keys, signing and verifying, with bbs keys must be swapped. Inside your `package.json` the following must be added. This is only needed for React Native environments
 
 #### yarn
 

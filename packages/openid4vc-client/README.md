@@ -32,7 +32,7 @@ Open ID Connect For Verifiable Credentials Client Module for [Credo](https://git
 
 ### Installation
 
-Make sure you have set up the correct version of Credo according to the AFJ repository.
+Make sure you have set up the correct version of Credo according to the Credo repository.
 
 ```sh
 yarn add @credo-ts/openid4vc-client

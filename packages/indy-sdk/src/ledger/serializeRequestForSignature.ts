@@ -12,7 +12,7 @@ export function serializeRequestForSignature(v: any): string {
 
 /**
  * Serialize an indy ledger request object for signing input. Based on the rust code. Indy SDK requires ledger requests to be signed using
- * a did, however in AFJ's the wallet only creates keys, and we create custom did records. This allows us to remove the legacy createDid and
+ * a did, however in Credo's the wallet only creates keys, and we create custom did records. This allows us to remove the legacy createDid and
  * publicDidSeed properties from the wallet, as we create the request payload ourselves.
  *
  * @see https://github.com/hyperledger/indy-shared-rs/blob/6af1e939586d1f16341dc03b62970cf28b32d118/indy-utils/src/txn_signature.rs#L10

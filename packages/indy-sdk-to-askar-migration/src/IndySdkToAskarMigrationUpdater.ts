@@ -230,7 +230,7 @@ export class IndySdkToAskarMigrationUpdater {
       await this.updateMasterSecret()
       await this.updateCredentials()
 
-      // Move the migrated and updated file to the expected location for afj
+      // Move the migrated and updated file to the expected location for credo
       await this.moveToNewLocation()
     } catch (err) {
       this.agent.config.logger.error(`Migration failed. Restoring state. ${err.message}`)

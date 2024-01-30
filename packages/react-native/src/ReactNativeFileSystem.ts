@@ -13,26 +13,26 @@ export class ReactNativeFileSystem implements FileSystem {
    * Create new ReactNativeFileSystem class instance.
    *
    * @param baseDataPath The base path to use for reading and writing data files used within the framework.
-   * Files will be created under baseDataPath/.afj directory. If not specified, it will be set to
+   * Files will be created under baseDataPath/.credo directory. If not specified, it will be set to
    * RNFS.DocumentDirectoryPath
    * @param baseCachePath The base path to use for reading and writing cache files used within the framework.
-   * Files will be created under baseCachePath/.afj directory. If not specified, it will be set to
+   * Files will be created under baseCachePath/.credo directory. If not specified, it will be set to
    * RNFS.CachesDirectoryPath
    * @param baseTempPath The base path to use for reading and writing temporary files within the framework.
-   * Files will be created under baseTempPath/.afj directory. If not specified, it will be set to
+   * Files will be created under baseTempPath/.credo directory. If not specified, it will be set to
    * RNFS.TemporaryDirectoryPath
    *
    * @see https://github.com/itinance/react-native-fs#constants
    */
   public constructor(options?: { baseDataPath?: string; baseCachePath?: string; baseTempPath?: string }) {
-    this.dataPath = `${options?.baseDataPath ?? RNFS.DocumentDirectoryPath}/.afj`
+    this.dataPath = `${options?.baseDataPath ?? RNFS.DocumentDirectoryPath}/.credo`
     // In Android, TemporaryDirectoryPath falls back to CachesDirectoryPath
     this.cachePath = options?.baseCachePath
-      ? `${options?.baseCachePath}/.afj`
-      : `${RNFS.CachesDirectoryPath}/.afj${Platform.OS === 'android' ? '/cache' : ''}`
+      ? `${options?.baseCachePath}/.credo`
+      : `${RNFS.CachesDirectoryPath}/.credo${Platform.OS === 'android' ? '/cache' : ''}`
     this.tempPath = options?.baseTempPath
-      ? `${options?.baseTempPath}/.afj`
-      : `${RNFS.TemporaryDirectoryPath}/.afj${Platform.OS === 'android' ? '/temp' : ''}`
+      ? `${options?.baseTempPath}/.credo`
+      : `${RNFS.TemporaryDirectoryPath}/.credo${Platform.OS === 'android' ? '/temp' : ''}`
   }
 
   public async exists(path: string): Promise<boolean> {

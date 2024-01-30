@@ -32,7 +32,7 @@ Action Menu module for [Credo](https://github.com/hyperledger/aries-framework-ja
 
 ### Installation
 
-Make sure you have set up the correct version of Credo according to the AFJ repository. To find out which version of AFJ you need to have installed you can run the following command. This will list the required peer dependency for `@credo-ts/core`.
+Make sure you have set up the correct version of Credo according to the Credo repository. To find out which version of Credo you need to have installed you can run the following command. This will list the required peer dependency for `@credo-ts/core`.
 
 ```sh
 npm info "@credo-ts/action-menu" peerDependencies

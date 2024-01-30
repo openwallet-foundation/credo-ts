@@ -95,7 +95,7 @@ export class IndySdkStorageService<T extends BaseRecord> implements StorageServi
   /**
    * Transforms the search query into a wallet query compatible with indy WQL.
    *
-   * The format used by AFJ is almost the same as the indy query, with the exception of
+   * The format used by Credo is almost the same as the indy query, with the exception of
    * the encoding of values, however this is handled by the {@link IndyStorageService.transformToRecordTagValues}
    * method.
    */

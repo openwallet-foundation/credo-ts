@@ -9,8 +9,8 @@ if [ -z "$ROLE" ]; then
 fi
 
 echo "
-wallet open afj-wallet key=password
-pool connect afj-pool
+wallet open credo-wallet key=password
+pool connect credo-pool
 did use V4SGRU86Z58d6TV7PBUe6f
 
 ledger nym did=${DID} verkey=${VERKEY} role=${ROLE}" >/etc/indy/command.txt

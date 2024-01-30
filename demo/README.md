@@ -1,6 +1,6 @@
 <h1 align="center"><b>DEMO</b></h1>
 
-This is the Credo demo. Walk through the AFJ flow yourself together with agents Alice and Faber.
+This is the Credo demo. Walk through the Credo flow yourself together with agents Alice and Faber.
 
 Alice, a former student of Faber College, connects with the College, is issued a credential about her degree and then is asked by the College for a proof.
 
@@ -21,9 +21,9 @@ In order to use Credo some platform specific dependencies and setup is required.
 
 ### Run the demo
 
-These are the steps for running the AFJ demo:
+These are the steps for running the Credo demo:
 
-Clone the AFJ git repository:
+Clone the Credo git repository:
 
 ```sh
 git clone https://github.com/hyperledger/aries-framework-javascript.git
