@@ -187,7 +187,7 @@ describe('IndySdkAnonCredsRegistry', () => {
       resolutionMetadata: {},
     })
 
-    // We don't support creating a revocation registry using AFJ yet, so we directly use indy-sdk to register the revocation registry
+    // We don't support creating a revocation registry using Credo yet, so we directly use indy-sdk to register the revocation registry
     const legacyRevocationRegistryId = `TL1EaPFCZ8Si5aUrqScBDt:4:TL1EaPFCZ8Si5aUrqScBDt:3:CL:${schemaResult.schemaMetadata.indyLedgerSeqNo}:TAG:CL_ACCUM:tag`
     const didIndyRevocationRegistryId = `did:indy:pool:localtest:TL1EaPFCZ8Si5aUrqScBDt/anoncreds/v0/REV_REG_DEF/${schemaResult.schemaMetadata.indyLedgerSeqNo}/TAG/tag`
     const revocationRegistryRequest = await indySdk.buildRevocRegDefRequest('TL1EaPFCZ8Si5aUrqScBDt', {

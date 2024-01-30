@@ -28,7 +28,7 @@ export class CheqdModule implements Module {
 
     // Cheqd module needs Buffer to be available globally
     // If it is not available yet, we overwrite it with the
-    // Buffer implementation from AFJ
+    // Buffer implementation from Credo
     global.Buffer = global.Buffer || Buffer
   }
 

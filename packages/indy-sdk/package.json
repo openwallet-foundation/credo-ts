@@ -2,6 +2,7 @@
   "name": "@credo-ts/indy-sdk",
   "main": "build/index",
   "types": "build/index",
+  "private": true,
   "version": "0.4.2",
   "files": [
     "build"
@@ -10,10 +11,10 @@
   "publishConfig": {
     "access": "public"
   },
-  "homepage": "https://github.com/hyperledger/aries-framework-javascript/tree/main/packages/indy-sdk",
+  "homepage": "https://github.com/openwallet-foundation/credo-ts/tree/main/packages/indy-sdk",
   "repository": {
     "type": "git",
-    "url": "https://github.com/hyperledger/aries-framework-javascript",
+    "url": "https://github.com/openwallet-foundation/credo-ts",
     "directory": "packages/indy-sdk"
   },
   "scripts": {

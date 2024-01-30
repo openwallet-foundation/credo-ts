@@ -2,14 +2,14 @@
   <br />
   <img
     alt="Hyperledger Aries logo"
-    src="https://raw.githubusercontent.com/hyperledger/aries-framework-javascript/aa31131825e3331dc93694bc58414d955dcb1129/images/aries-logo.png"
+    src="https://raw.githubusercontent.com/openwallet-foundation/credo-ts/aa31131825e3331dc93694bc58414d955dcb1129/images/aries-logo.png"
     height="250px"
   />
 </p>
-<h1 align="center"><b>Aries Framework JavaScript - BBS Module</b></h1>
+<h1 align="center"><b>Credo - BBS Module</b></h1>
 <p align="center">
   <a
-    href="https://raw.githubusercontent.com/hyperledger/aries-framework-javascript/main/LICENSE"
+    href="https://raw.githubusercontent.com/openwallet-foundation/credo-ts/main/LICENSE"
     ><img
       alt="License"
       src="https://img.shields.io/badge/License-Apache%202.0-blue.svg"
@@ -28,7 +28,7 @@
 </p>
 <br />
 
-Aries Framework JavaScript BBS Module provides an optional addon to Aries Framework JavaScript to use BBS signatures in W3C VC exchange.
+Credo BBS Module provides an optional addon to Credo to use BBS signatures in W3C VC exchange.
 
 ## Installation
 
@@ -38,7 +38,7 @@ yarn add @credo-ts/bbs-signatures
 
 ### React Native
 
-When using AFJ inside the React Native environment, temporarily, a dependency for creating keys, signing and verifying, with bbs keys must be swapped. Inside your `package.json` the following must be added. This is only needed for React Native environments
+When using Credo inside the React Native environment, temporarily, a dependency for creating keys, signing and verifying, with bbs keys must be swapped. Inside your `package.json` the following must be added. This is only needed for React Native environments
 
 #### yarn
 

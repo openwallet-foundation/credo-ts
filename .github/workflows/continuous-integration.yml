@@ -87,7 +87,7 @@ jobs:
         node-version: [18.x, 20.x]
 
     steps:
-      - name: Checkout aries-framework-javascript
+      - name: Checkout credo
         uses: actions/checkout@v4
 
       # setup dependencies

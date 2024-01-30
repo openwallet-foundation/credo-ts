@@ -2,14 +2,14 @@
   <br />
   <img
     alt="Hyperledger Aries logo"
-    src="https://raw.githubusercontent.com/hyperledger/aries-framework-javascript/aa31131825e3331dc93694bc58414d955dcb1129/images/aries-logo.png"
+    src="https://raw.githubusercontent.com/openwallet-foundation/credo-ts/aa31131825e3331dc93694bc58414d955dcb1129/images/aries-logo.png"
     height="250px"
   />
 </p>
-<h1 align="center"><b>Aries Framework JavaScript Selective Disclosure JWT VC Module</b></h1>
+<h1 align="center"><b>Credo Selective Disclosure JWT VC Module</b></h1>
 <p align="center">
   <a
-    href="https://raw.githubusercontent.com/hyperledger/aries-framework-javascript/main/LICENSE"
+    href="https://raw.githubusercontent.com/openwallet-foundation/credo-ts/main/LICENSE"
     ><img
       alt="License"
       src="https://img.shields.io/badge/License-Apache%202.0-blue.svg"
@@ -37,7 +37,7 @@ yarn add @credo-ts/sd-jwt-vc
 
 ### Quick start
 
-After the installation you can follow the [guide to setup your agent](https://aries.js.org/guides/0.4/getting-started/set-up) and add the following to your agent modules.
+After the installation you can follow the [guide to setup your agent](https://credo.js.org/guides/0.4/getting-started/set-up) and add the following to your agent modules.
 
 ```ts
 import { SdJwtVcModule } from '@credo-ts/sd-jwt-vc'

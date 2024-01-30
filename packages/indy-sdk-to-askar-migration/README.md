@@ -2,14 +2,14 @@
   <br />
   <img
     alt="Hyperledger Aries logo"
-    src="https://raw.githubusercontent.com/hyperledger/aries-framework-javascript/aa31131825e3331dc93694bc58414d955dcb1129/images/aries-logo.png"
+    src="https://raw.githubusercontent.com/openwallet-foundation/credo-ts/aa31131825e3331dc93694bc58414d955dcb1129/images/aries-logo.png"
     height="250px"
   />
 </p>
-<h1 align="center"><b>Aries Framework JavaScript Indy SDK To Askar Migration Module</b></h1>
+<h1 align="center"><b>Credo Indy SDK To Askar Migration Module</b></h1>
 <p align="center">
   <a
-    href="https://raw.githubusercontent.com/hyperledger/aries-framework-javascript/main/LICENSE"
+    href="https://raw.githubusercontent.com/openwallet-foundation/credo-ts/main/LICENSE"
     ><img
       alt="License"
       src="https://img.shields.io/badge/License-Apache%202.0-blue.svg"
@@ -28,4 +28,4 @@
 </p>
 <br />
 
-Indy SDK to Askar migration module for [Aries Framework JavaScript](https://github.com/hyperledger/aries-framework-javascript.git).
+Indy SDK to Askar migration module for [Credo](https://github.com/openwallet-foundation/credo-ts.git).

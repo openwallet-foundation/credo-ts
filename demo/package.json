@@ -1,10 +1,10 @@
 {
-  "name": "afj-demo",
+  "name": "credo-demo",
   "version": "1.0.0",
   "private": true,
   "repository": {
     "type": "git",
-    "url": "https://github.com/hyperledger/aries-framework-javascript",
+    "url": "https://github.com/openwallet-foundation/credo-ts",
     "directory": "demo/"
   },
   "license": "Apache-2.0",

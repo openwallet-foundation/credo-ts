@@ -81,7 +81,7 @@ export function isIndyError(error: any, errorName?: IndyErrorValues): error is I
 
   // NodeJS Wrapper is missing some type names. When a type is missing it will
   // only have the error code as string in the message field
-  // Until that is fixed we take that into account to make AFJ work with rn-indy-sdk
+  // Until that is fixed we take that into account to make Credo work with rn-indy-sdk
   // See: https://github.com/AbsaOSS/rn-indy-sdk/pull/24
   // See: https://github.com/hyperledger/indy-sdk/pull/2283
   if (!error.indyName) {
