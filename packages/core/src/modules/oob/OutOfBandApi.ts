@@ -21,14 +21,14 @@ import { AriesFrameworkError } from '../../error'
 import { Logger } from '../../logger'
 import { inject, injectable } from '../../plugins'
 import { JsonEncoder, JsonTransformer } from '../../utils'
-import { parseMessageType, supportsIncomingMessageType } from '../../utils/messageType'
-import { parseInvitationShortUrl } from '../../utils/parseInvitation'
 import {
-  getHandshakeProtocolWithoutMinorVersion,
-  ConnectionsApi,
-  DidExchangeState,
-  HandshakeProtocol,
-} from '../connections'
+  parseDidCommProtocolUri,
+  parseMessageType,
+  supportsIncomingDidCommProtocolUri,
+  supportsIncomingMessageType,
+} from '../../utils/messageType'
+import { parseInvitationShortUrl } from '../../utils/parseInvitation'
+import { ConnectionsApi, DidExchangeState, HandshakeProtocol } from '../connections'
 import { DidCommDocumentService } from '../didcomm'
 import { DidKey } from '../dids'
 import { RoutingService } from '../routing/services/RoutingService'
@@ -173,13 +173,14 @@ export class OutOfBandApi {
 
     let handshakeProtocols: string[] | undefined
     if (handshake) {
+      // Assert ALL custom handshake protocols are supported
       if (customHandshakeProtocols) {
         this.assertHandshakeProtocolsSupported(customHandshakeProtocols)
       }
 
       // Find supported handshake protocol preserving the order of handshake protocols defined by agent or in config
       handshakeProtocols = this.getSupportedHandshakeProtocols(customHandshakeProtocols).map(
-        ({ onlyMajorVersion }) => onlyMajorVersion
+        (p) => p.parsedProtocolUri.protocolUri
       )
     }
 
@@ -585,13 +586,13 @@ export class OutOfBandApi {
         this.logger.debug('Connection does not exist or reuse is disabled. Creating a new connection.')
         // Find first supported handshake protocol preserving the order of handshake protocols
         // defined by `handshake_protocols` attribute in the invitation message
-        const handshakeProtocol = this.getFirstSupportedProtocol(handshakeProtocols)
+        const firstSupportedProtocol = this.getFirstSupportedProtocol(handshakeProtocols)
         connectionRecord = await this.connectionsApi.acceptOutOfBandInvitation(outOfBandRecord, {
           label,
           alias,
           imageUrl,
           autoAcceptConnection,
-          protocol: handshakeProtocol.onlyMajorVersion,
+          protocol: firstSupportedProtocol.handshakeProtocol,
           routing,
           ourDid,
         })
@@ -706,7 +707,7 @@ export class OutOfBandApi {
 
   private assertHandshakeProtocolsSupported(handshakeProtocols: HandshakeProtocol[]) {
     if (!this.areHandshakeProtocolsSupported(handshakeProtocols)) {
-      const supportedProtocols = this.getSupportedHandshakeProtocols().map(({ onlyMajorVersion }) => onlyMajorVersion)
+      const supportedProtocols = this.getSupportedHandshakeProtocols().map((p) => p.handshakeProtocol)
       throw new AriesFrameworkError(
         `Handshake protocols [${handshakeProtocols}] are not supported. Supported protocols are [${supportedProtocols}]`
       )
@@ -714,38 +715,32 @@ export class OutOfBandApi {
   }
 
   private areHandshakeProtocolsSupported(handshakeProtocols: HandshakeProtocol[]) {
-    const supportedProtocols = this.getSupportedHandshakeProtocols().map(({ onlyMajorVersion }) => onlyMajorVersion)
-
-    return handshakeProtocols.every((p) => supportedProtocols.includes(p))
+    const supportedProtocols = this.getSupportedHandshakeProtocols(handshakeProtocols)
+    return supportedProtocols.length === handshakeProtocols.length
   }
 
   private getSupportedHandshakeProtocols(limitToHandshakeProtocols?: HandshakeProtocol[]) {
-    const handshakeProtocols = limitToHandshakeProtocols ?? Object.values(HandshakeProtocol)
+    const allHandshakeProtocols = limitToHandshakeProtocols ?? Object.values(HandshakeProtocol)
 
-    // Take all supported handshake protocols, and replace the version '<major>.x' with '<major>.'
-    const handshakeMessageFamilies = handshakeProtocols.map((protocol) => protocol.replace('.x', '.'))
+    // Replace .x in the handshake protocol with .0 to allow it to be parsed
+    const parsedHandshakeProtocolUris = allHandshakeProtocols.map((h) => ({
+      handshakeProtocol: h,
+      parsedProtocolUri: parseDidCommProtocolUri(h.replace('.x', '.0')),
+    }))
 
     // Now find all handshake protocols that start with the protocol uri without minor version '<base-uri>/<protocol-name>/<major-version>.'
-    const handshakeProtocolsWithMinorVersion =
-      this.messageHandlerRegistry.filterSupportedProtocolsByMessageFamilies(handshakeMessageFamilies)
+    const supportedHandshakeProtocols = this.messageHandlerRegistry.filterSupportedProtocolsByProtocolUris(
+      parsedHandshakeProtocolUris.map((p) => p.parsedProtocolUri)
+    )
 
-    if (handshakeProtocolsWithMinorVersion.length === 0) {
+    if (supportedHandshakeProtocols.length === 0) {
       throw new AriesFrameworkError('There is no handshake protocol supported. Agent can not create a connection.')
     }
 
-    // Order protocols according to `handshakeMessageFamilies` array
-    const orderedProtocols = handshakeMessageFamilies
-      .map((messageFamily) => {
-        const found = handshakeProtocolsWithMinorVersion.find((p) => p.startsWith(messageFamily))
-        return found
-          ? {
-              // Add back x as placeholder for the minor version
-              onlyMajorVersion: (messageFamily + 'x') as HandshakeProtocol,
-              withMinorVersion: found,
-            }
-          : undefined
-      })
-      .filter((item): item is NonNullable<typeof item> => !!item)
+    // Order protocols according to `parsedHandshakeProtocolUris` array (order of preference)
+    const orderedProtocols = parsedHandshakeProtocolUris.filter((p) =>
+      supportedHandshakeProtocols.find((s) => supportsIncomingDidCommProtocolUri(s, p.parsedProtocolUri))
+    )
 
     return orderedProtocols
   }
@@ -759,32 +754,25 @@ export class OutOfBandApi {
    * value is `https://didcomm.org/didexchange/1.0` and the agent supports `https://didcomm.org/didexchange/1.1`
    * this will be fine, and the returned value will be {@link HandshakeProtocol.DidExchange}.
    */
-  private getFirstSupportedProtocol(outOfBandInvitationSupportedProtocolsWithMinorVersion: string[]) {
+  private getFirstSupportedProtocol(protocolUris: string[]) {
     const supportedProtocols = this.getSupportedHandshakeProtocols()
-    const supportedProtocolsMajorOnly = supportedProtocols.map(({ onlyMajorVersion }) => onlyMajorVersion)
+    const parsedProtocolUris = protocolUris.map(parseDidCommProtocolUri)
 
-    // We transform the incoming message also to only contain the major version (not minor)
-    const incomingHandshakeProtocolsMajorOnly = outOfBandInvitationSupportedProtocolsWithMinorVersion.map(
-      getHandshakeProtocolWithoutMinorVersion
+    const firstSupportedProtocol = supportedProtocols.find((supportedProtocol) =>
+      parsedProtocolUris.find((parsedProtocol) =>
+        supportsIncomingDidCommProtocolUri(supportedProtocol.parsedProtocolUri, parsedProtocol)
+      )
     )
 
-    // We loop over the out of band invitation handshake protocols (as we want to prioritize the order the invitation used)
-    // and when we find a match with our supported handshake protocols, we return _OUR_ supported protocol.
-    // So e.g. if we receive an invitation with 1.1 and we support 1.0, we return 1.0
-    for (const incomingHandshakeProtocolOnlyMajor of incomingHandshakeProtocolsMajorOnly) {
-      const supportedProtocolIndex = supportedProtocolsMajorOnly.indexOf(
-        // I may not be a handshake protocol, but to make TS allow calling indexOf, it needs to be casted
-        incomingHandshakeProtocolOnlyMajor as HandshakeProtocol
+    if (!firstSupportedProtocol) {
+      throw new AriesFrameworkError(
+        `Handshake protocols [${protocolUris}] are not supported. Supported protocols are [${supportedProtocols.map(
+          (p) => p.handshakeProtocol
+        )}]`
       )
-
-      if (supportedProtocolIndex !== -1) {
-        return supportedProtocols[supportedProtocolIndex]
-      }
     }
 
-    throw new AriesFrameworkError(
-      `Handshake protocols [${incomingHandshakeProtocolsMajorOnly}] are not supported. Supported protocols are [${supportedProtocolsMajorOnly}]`
-    )
+    return firstSupportedProtocol
   }
 
   private async findExistingConnection(outOfBandInvitation: OutOfBandInvitation) {

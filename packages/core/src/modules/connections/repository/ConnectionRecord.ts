@@ -7,13 +7,7 @@ import { Transform } from 'class-transformer'
 import { AriesFrameworkError } from '../../../error'
 import { BaseRecord } from '../../../storage/BaseRecord'
 import { uuid } from '../../../utils/uuid'
-import {
-  rfc0160StateFromDidExchangeState,
-  DidExchangeRole,
-  DidExchangeState,
-  HandshakeProtocol,
-  getHandshakeProtocolWithoutMinorVersion,
-} from '../models'
+import { rfc0160StateFromDidExchangeState, DidExchangeRole, DidExchangeState, HandshakeProtocol } from '../models'
 
 export interface ConnectionRecordProps {
   id?: string
@@ -74,8 +68,11 @@ export class ConnectionRecord extends BaseRecord<DefaultConnectionTags, CustomCo
   // only store the major version, storing .x for the minor version. We have this
   // transformation so we don't have to migrate the data in the database.
   @Transform(
-    ({ value }) =>
-      typeof value === 'string' && !value.endsWith('.x') ? getHandshakeProtocolWithoutMinorVersion(value) : value,
+    ({ value }) => {
+      if (!value || typeof value !== 'string' || value.endsWith('.x')) return value
+      return value.split('.').slice(0, -1).join('.') + '.x'
+    },
+
     { toClassOnly: true }
   )
   public protocol?: HandshakeProtocol

@@ -1,11 +1,13 @@
 import { AgentMessage } from '../../agent/AgentMessage'
 import {
   canHandleMessageType,
+  parseDidCommProtocolUri,
   parseMessageType,
   replaceLegacyDidSovPrefix,
   replaceLegacyDidSovPrefixOnMessage,
   replaceNewDidCommPrefixWithLegacyDidSov,
   replaceNewDidCommPrefixWithLegacyDidSovOnMessage,
+  supportsIncomingDidCommProtocolUri,
   supportsIncomingMessageType,
 } from '../messageType'
 
@@ -120,6 +122,103 @@ describe('messageType', () => {
         protocolUri: `https://didcomm.org/issue-credential/4.5`,
         messageTypeUri: 'https://didcomm.org/issue-credential/4.5/propose-credential',
       })
+    })
+
+    test('throws error when invalid message type is passed', () => {
+      expect(() => parseMessageType('https://didcomm.org/connections/1.0/message-type/and-else')).toThrow()
+    })
+  })
+
+  describe('parseDidCommProtocolUri()', () => {
+    test('correctly parses the protocol uri', () => {
+      expect(parseDidCommProtocolUri('https://didcomm.org/connections/1.0')).toEqual({
+        documentUri: 'https://didcomm.org',
+        protocolName: 'connections',
+        protocolVersion: '1.0',
+        protocolMajorVersion: 1,
+        protocolMinorVersion: 0,
+        protocolUri: 'https://didcomm.org/connections/1.0',
+      })
+
+      expect(parseDidCommProtocolUri('https://didcomm.org/issue-credential/4.5')).toEqual({
+        documentUri: 'https://didcomm.org',
+        protocolName: 'issue-credential',
+        protocolVersion: '4.5',
+        protocolMajorVersion: 4,
+        protocolMinorVersion: 5,
+        protocolUri: `https://didcomm.org/issue-credential/4.5`,
+      })
+    })
+
+    test('throws error when message type is passed', () => {
+      expect(() => parseDidCommProtocolUri('https://didcomm.org/connections/1.0/message-type')).toThrow()
+    })
+  })
+
+  describe('supportsIncomingDidCommProtocolUri()', () => {
+    test('returns true when the document uri, protocol name, major version all match and the minor version is lower than the expected minor version', () => {
+      const incomingProtocolUri = parseDidCommProtocolUri('https://didcomm.org/connections/1.0')
+      const expectedProtocolUri = parseDidCommProtocolUri('https://didcomm.org/connections/1.4')
+
+      expect(supportsIncomingDidCommProtocolUri(incomingProtocolUri, expectedProtocolUri)).toBe(true)
+    })
+
+    test('returns true when the document uri, protocol name, major version all match and the minor version is higher than the expected minor version', () => {
+      const incomingProtocolUri = parseDidCommProtocolUri('https://didcomm.org/connections/1.8')
+      const expectedProtocolUri = parseDidCommProtocolUri('https://didcomm.org/connections/1.4')
+
+      expect(supportsIncomingDidCommProtocolUri(incomingProtocolUri, expectedProtocolUri)).toBe(true)
+    })
+
+    test('returns true when the document uri, protocol name, major version and minor version all match', () => {
+      const incomingProtocolUri = parseDidCommProtocolUri('https://didcomm.org/connections/1.4')
+      const expectedProtocolUri = parseDidCommProtocolUri('https://didcomm.org/connections/1.4')
+
+      expect(supportsIncomingDidCommProtocolUri(incomingProtocolUri, expectedProtocolUri)).toBe(true)
+    })
+
+    test('returns true when the protocol name, major version and minor version all match and the incoming protocol uri is using the legacy did sov prefix', () => {
+      const incomingProtocolUri = parseDidCommProtocolUri('did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/connections/1.4')
+      const expectedProtocolUri = parseDidCommProtocolUri('https://didcomm.org/connections/1.4')
+
+      expect(supportsIncomingDidCommProtocolUri(incomingProtocolUri, expectedProtocolUri)).toBe(true)
+    })
+
+    test('returns false when the protocol name, major version and minor version all match and the incoming protocol uri is using the legacy did sov prefix but allowLegacyDidSovPrefixMismatch is set to false', () => {
+      const incomingProtocolUri = parseDidCommProtocolUri('did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/connections/1.4')
+      const expectedProtocolUri = parseDidCommProtocolUri('https://didcomm.org/connections/1.4')
+
+      expect(
+        supportsIncomingDidCommProtocolUri(expectedProtocolUri, incomingProtocolUri, {
+          allowLegacyDidSovPrefixMismatch: false,
+        })
+      ).toBe(false)
+    })
+
+    test('returns false when the major version does not match', () => {
+      const incomingProtocolUri = parseDidCommProtocolUri('https://didcomm.org/connections/2.4')
+      const expectedProtocolUri = parseDidCommProtocolUri('https://didcomm.org/connections/1.4')
+
+      expect(supportsIncomingDidCommProtocolUri(incomingProtocolUri, expectedProtocolUri)).toBe(false)
+
+      const incomingProtocolUri2 = parseDidCommProtocolUri('https://didcomm.org/connections/2.0')
+      const expectedProtocolUri2 = parseDidCommProtocolUri('https://didcomm.org/connections/1.4')
+
+      expect(supportsIncomingDidCommProtocolUri(incomingProtocolUri2, expectedProtocolUri2)).toBe(false)
+    })
+
+    test('returns false when the protocol name does not match', () => {
+      const incomingProtocolUri = parseDidCommProtocolUri('https://didcomm.org/issue-credential/1.4')
+      const expectedProtocolUri = parseDidCommProtocolUri('https://didcomm.org/connections/1.4')
+
+      expect(supportsIncomingDidCommProtocolUri(incomingProtocolUri, expectedProtocolUri)).toBe(false)
+    })
+
+    test('returns false when the document uri does not match', () => {
+      const incomingProtocolUri = parseDidCommProtocolUri('https://my-protocol.org/connections/1.4')
+      const expectedProtocolUri = parseDidCommProtocolUri('https://didcomm.org/connections/1.4')
+
+      expect(supportsIncomingDidCommProtocolUri(incomingProtocolUri, expectedProtocolUri)).toBe(false)
     })
   })
 
