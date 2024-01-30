@@ -1,15 +1,8 @@
 import type { IndySdkWallet } from '../wallet/IndySdkWallet'
-import type {
-  BaseRecordConstructor,
-  AgentContext,
-  BaseRecord,
-  TagsBase,
-  Query,
-  StorageService,
-} from '@aries-framework/core'
+import type { BaseRecordConstructor, AgentContext, BaseRecord, TagsBase, Query, StorageService } from '@credo-ts/core'
 import type { WalletQuery, WalletRecord, WalletSearchOptions } from 'indy-sdk'
 
-import { RecordDuplicateError, RecordNotFoundError, injectable, inject, JsonTransformer } from '@aries-framework/core'
+import { RecordDuplicateError, RecordNotFoundError, injectable, inject, JsonTransformer } from '@credo-ts/core'
 
 import { isIndyError, IndySdkError } from '../error'
 import { IndySdk, IndySdkSymbol } from '../types'
@@ -102,7 +95,7 @@ export class IndySdkStorageService<T extends BaseRecord> implements StorageServi
   /**
    * Transforms the search query into a wallet query compatible with indy WQL.
    *
-   * The format used by AFJ is almost the same as the indy query, with the exception of
+   * The format used by Credo is almost the same as the indy query, with the exception of
    * the encoding of values, however this is handled by the {@link IndyStorageService.transformToRecordTagValues}
    * method.
    */

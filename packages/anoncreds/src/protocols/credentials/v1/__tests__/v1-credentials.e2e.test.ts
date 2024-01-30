@@ -1,11 +1,6 @@
 import type { AnonCredsTestsAgent } from '../../../../../tests/legacyAnonCredsSetup'
 
-import {
-  CredentialExchangeRecord,
-  CredentialState,
-  DidCommMessageRepository,
-  JsonTransformer,
-} from '@aries-framework/core'
+import { CredentialExchangeRecord, CredentialState, DidCommMessageRepository, JsonTransformer } from '@credo-ts/core'
 
 import { waitForCredentialRecord } from '../../../../../../core/tests/helpers'
 import testLogger from '../../../../../../core/tests/logger'

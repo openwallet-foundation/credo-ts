@@ -1,10 +1,10 @@
 {
-  "name": "afj-extension-module-sample",
+  "name": "credo-extension-module-sample",
   "version": "1.0.0",
   "private": true,
   "repository": {
     "type": "git",
-    "url": "https://github.com/hyperledger/aries-framework-javascript",
+    "url": "https://github.com/openwallet-foundation/credo-ts",
     "directory": "samples/extension-module/"
   },
   "license": "Apache-2.0",
@@ -13,8 +13,8 @@
     "responder": "ts-node responder.ts"
   },
   "devDependencies": {
-    "@aries-framework/core": "*",
-    "@aries-framework/node": "*",
+    "@credo-ts/core": "*",
+    "@credo-ts/node": "*",
     "ts-node": "^10.4.0"
   },
   "dependencies": {

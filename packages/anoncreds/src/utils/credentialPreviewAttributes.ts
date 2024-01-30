@@ -1,4 +1,4 @@
-import type { CredentialPreviewAttributeOptions } from '@aries-framework/core'
+import type { CredentialPreviewAttributeOptions } from '@credo-ts/core'
 
 export function areCredentialPreviewAttributesEqual(
   firstAttributes: CredentialPreviewAttributeOptions[],

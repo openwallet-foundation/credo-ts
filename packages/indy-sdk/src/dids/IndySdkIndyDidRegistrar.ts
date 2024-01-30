@@ -9,11 +9,11 @@ import type {
   DidDeactivateResult,
   DidRegistrar,
   DidUpdateResult,
-} from '@aries-framework/core'
+} from '@credo-ts/core'
 import type { NymRole } from 'indy-sdk'
 
-import { parseIndyDid } from '@aries-framework/anoncreds'
-import { DidDocumentRole, DidRecord, DidRepository, KeyType, Key } from '@aries-framework/core'
+import { parseIndyDid } from '@credo-ts/anoncreds'
+import { DidDocumentRole, DidRecord, DidRepository, KeyType, Key } from '@credo-ts/core'
 
 import { IndySdkError } from '../error'
 import { isIndyError } from '../error/indyError'

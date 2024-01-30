@@ -1,6 +1,6 @@
 import type { IndySdkIndyDidCreateOptions } from '../src'
 
-import { Agent, TypedArrayEncoder, convertPublicKeyToX25519, JsonTransformer } from '@aries-framework/core'
+import { Agent, TypedArrayEncoder, convertPublicKeyToX25519, JsonTransformer } from '@credo-ts/core'
 import { generateKeyPairFromSeed } from '@stablelib/ed25519'
 
 import { getAgentOptions, importExistingIndyDidFromPrivateKey, publicDidSeed } from '../../core/tests'

@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 
-import type { DocumentLoader } from '@aries-framework/core'
+import type { DocumentLoader } from '@credo-ts/core'
 
 /**
  * Options for canonizing a document

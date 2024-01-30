@@ -1,4 +1,4 @@
-import { EventEmitter, inject, injectable, InjectionSymbols, Repository, StorageService } from '@aries-framework/core'
+import { EventEmitter, inject, injectable, InjectionSymbols, Repository, StorageService } from '@credo-ts/core'
 
 import { QuestionAnswerRecord } from './QuestionAnswerRecord'
 

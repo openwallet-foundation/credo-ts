@@ -5,11 +5,11 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 
 ## [0.4.2](https://github.com/hyperledger/aries-framework-javascript/compare/v0.4.1...v0.4.2) (2023-10-05)
 
-**Note:** Version bump only for package @aries-framework/indy-sdk-to-askar-migration
+**Note:** Version bump only for package @credo-ts/indy-sdk-to-askar-migration
 
 ## [0.4.1](https://github.com/hyperledger/aries-framework-javascript/compare/v0.4.0...v0.4.1) (2023-08-28)
 
-**Note:** Version bump only for package @aries-framework/indy-sdk-to-askar-migration
+**Note:** Version bump only for package @credo-ts/indy-sdk-to-askar-migration
 
 # [0.4.0](https://github.com/hyperledger/aries-framework-javascript/compare/v0.3.3...v0.4.0) (2023-06-03)
 

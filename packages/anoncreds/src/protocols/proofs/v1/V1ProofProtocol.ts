@@ -10,7 +10,7 @@ import type {
   ProblemReportMessage,
   GetProofFormatDataReturn,
   ProofFormat,
-} from '@aries-framework/core'
+} from '@credo-ts/core'
 
 import {
   BaseProofProtocol,
@@ -31,7 +31,7 @@ import {
   AutoAcceptProof,
   JsonEncoder,
   utils,
-} from '@aries-framework/core'
+} from '@credo-ts/core'
 
 import { composeProofAutoAccept, createRequestFromPreview } from '../../../utils'
 

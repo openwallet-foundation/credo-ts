@@ -1,4 +1,4 @@
-import { Agent, JsonTransformer } from '@aries-framework/core'
+import { Agent, JsonTransformer } from '@credo-ts/core'
 
 import { getAgentOptions } from '../../core/tests/helpers'
 import { getClosestResourceVersion } from '../src/dids/didCheqdUtil'

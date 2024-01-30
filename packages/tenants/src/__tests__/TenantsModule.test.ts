@@ -1,4 +1,4 @@
-import { InjectionSymbols } from '@aries-framework/core'
+import { InjectionSymbols } from '@credo-ts/core'
 
 import { DependencyManager } from '../../../core/src/plugins/DependencyManager'
 import { mockFunction } from '../../../core/tests'

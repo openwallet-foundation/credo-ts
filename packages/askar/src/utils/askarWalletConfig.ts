@@ -1,7 +1,7 @@
 import type { AskarWalletPostgresStorageConfig } from '../wallet/AskarWalletPostgresStorageConfig'
-import type { WalletConfig } from '@aries-framework/core'
+import type { WalletConfig } from '@credo-ts/core'
 
-import { KeyDerivationMethod, WalletError } from '@aries-framework/core'
+import { KeyDerivationMethod, WalletError } from '@credo-ts/core'
 import { KdfMethod, StoreKeyMethod } from '@hyperledger/aries-askar-shared'
 
 export const keyDerivationMethodToStoreKeyMethod = (keyDerivationMethod: KeyDerivationMethod) => {
@@ -17,12 +17,12 @@ export const keyDerivationMethodToStoreKeyMethod = (keyDerivationMethod: KeyDeri
 /**
  * Creates a proper askar wallet URI value based on walletConfig
  * @param walletConfig WalletConfig object
- * @param afjDataPath framework data path (used in case walletConfig.storage.path is undefined)
+ * @param credoDataPath framework data path (used in case walletConfig.storage.path is undefined)
  * @returns string containing the askar wallet URI
  */
 export const uriFromWalletConfig = (
   walletConfig: WalletConfig,
-  afjDataPath: string
+  credoDataPath: string
 ): { uri: string; path?: string } => {
   let uri = ''
   let path
@@ -36,7 +36,7 @@ export const uriFromWalletConfig = (
     if (walletConfig.storage.inMemory) {
       uri = 'sqlite://:memory:'
     } else {
-      path = (walletConfig.storage.path as string) ?? `${afjDataPath}/wallet/${walletConfig.id}/sqlite.db`
+      path = (walletConfig.storage.path as string) ?? `${credoDataPath}/wallet/${walletConfig.id}/sqlite.db`
       uri = `sqlite://${path}`
     }
   } else if (walletConfig.storage.type === 'postgres') {

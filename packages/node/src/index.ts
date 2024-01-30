@@ -1,4 +1,4 @@
-import type { AgentDependencies } from '@aries-framework/core'
+import type { AgentDependencies } from '@credo-ts/core'
 
 import { EventEmitter } from 'events'
 import WebSocket from 'ws'

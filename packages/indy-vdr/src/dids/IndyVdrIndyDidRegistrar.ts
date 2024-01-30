@@ -11,10 +11,10 @@ import type {
   DidOperationStateActionBase,
   DidRegistrar,
   DidUpdateResult,
-} from '@aries-framework/core'
+} from '@credo-ts/core'
 import type { IndyVdrRequest } from '@hyperledger/indy-vdr-shared'
 
-import { parseIndyDid } from '@aries-framework/anoncreds'
+import { parseIndyDid } from '@credo-ts/anoncreds'
 import {
   DidCommV1Service,
   DidCommV2Service,
@@ -26,7 +26,7 @@ import {
   Key,
   KeyType,
   TypedArrayEncoder,
-} from '@aries-framework/core'
+} from '@credo-ts/core'
 import { AttribRequest, CustomRequest, NymRequest } from '@hyperledger/indy-vdr-shared'
 
 import { IndyVdrError } from '../error'

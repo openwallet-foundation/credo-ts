@@ -1,7 +1,7 @@
 import type { AskarModuleConfigOptions } from './AskarModuleConfig'
-import type { AgentContext, DependencyManager, Module } from '@aries-framework/core'
+import type { AgentContext, DependencyManager, Module } from '@credo-ts/core'
 
-import { AgentConfig, AriesFrameworkError, InjectionSymbols } from '@aries-framework/core'
+import { AgentConfig, AriesFrameworkError, InjectionSymbols } from '@credo-ts/core'
 import { Store } from '@hyperledger/aries-askar-shared'
 
 import { AskarMultiWalletDatabaseScheme, AskarModuleConfig } from './AskarModuleConfig'
@@ -21,7 +21,7 @@ export class AskarModule implements Module {
     dependencyManager
       .resolve(AgentConfig)
       .logger.warn(
-        "The '@aries-framework/askar' module is experimental and could have unexpected breaking changes. When using this module, make sure to use strict versions for all @aries-framework packages."
+        "The '@credo-ts/askar' module is experimental and could have unexpected breaking changes. When using this module, make sure to use strict versions for all @aries-framework packages."
       )
 
     dependencyManager.registerInstance(AskarModuleConfig, this.config)

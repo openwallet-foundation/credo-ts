@@ -1,7 +1,7 @@
 import type { IndyVdrModuleConfigOptions } from './IndyVdrModuleConfig'
-import type { AgentContext, DependencyManager, Module } from '@aries-framework/core'
+import type { AgentContext, DependencyManager, Module } from '@credo-ts/core'
 
-import { AgentConfig } from '@aries-framework/core'
+import { AgentConfig } from '@credo-ts/core'
 
 import { IndyVdrApi } from './IndyVdrApi'
 import { IndyVdrModuleConfig } from './IndyVdrModuleConfig'
@@ -23,7 +23,7 @@ export class IndyVdrModule implements Module {
     dependencyManager
       .resolve(AgentConfig)
       .logger.warn(
-        "The '@aries-framework/indy-vdr' module is experimental and could have unexpected breaking changes. When using this module, make sure to use strict versions for all @aries-framework packages."
+        "The '@credo-ts/indy-vdr' module is experimental and could have unexpected breaking changes. When using this module, make sure to use strict versions for all @aries-framework packages."
       )
 
     // Config

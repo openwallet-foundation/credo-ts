@@ -1,4 +1,4 @@
-import { DidsModule, utils } from '@aries-framework/core'
+import { DidsModule, utils } from '@credo-ts/core'
 import indySdk from 'indy-sdk'
 
 import { genesisPath, taaVersion, taaAcceptanceMechanism } from '../../core/tests/helpers'

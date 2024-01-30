@@ -1,4 +1,4 @@
-import type { CredentialPreviewOptions } from '@aries-framework/core'
+import type { CredentialPreviewOptions } from '@credo-ts/core'
 
 import {
   CredentialPreviewAttribute,
@@ -6,7 +6,7 @@ import {
   parseMessageType,
   JsonTransformer,
   replaceLegacyDidSovPrefix,
-} from '@aries-framework/core'
+} from '@credo-ts/core'
 import { Expose, Transform, Type } from 'class-transformer'
 import { ValidateNested, IsInstance } from 'class-validator'
 

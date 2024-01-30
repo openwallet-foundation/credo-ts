@@ -1,4 +1,4 @@
-import type { CredentialProtocolOptions, CredentialStateChangedEvent } from '@aries-framework/core'
+import type { CredentialProtocolOptions, CredentialStateChangedEvent } from '@credo-ts/core'
 
 import {
   EventEmitter,
@@ -11,7 +11,7 @@ import {
   CredentialEventTypes,
   JsonTransformer,
   InboundMessageContext,
-} from '@aries-framework/core'
+} from '@credo-ts/core'
 import { Subject } from 'rxjs'
 
 import { ConnectionService } from '../../../../../../core/src/modules/connections/services/ConnectionService'

@@ -8,7 +8,7 @@ import { Agent } from '../../../agent/Agent'
 import { KeyType } from '../../../crypto'
 import { PeerDidNumAlgo } from '../methods/peer/didPeer'
 
-import { JsonTransformer, TypedArrayEncoder } from '@aries-framework/core'
+import { JsonTransformer, TypedArrayEncoder } from '@credo-ts/core'
 
 const agentOptions = getAgentOptions(
   'Faber Dids Registrar',

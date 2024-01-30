@@ -1,4 +1,4 @@
-import { Agent, AgentContext } from '@aries-framework/core'
+import { Agent, AgentContext } from '@credo-ts/core'
 
 import { indySdk } from '../../../core/tests'
 import { agentDependencies, getAgentConfig, getAgentContext } from '../../../core/tests/helpers'

@@ -1,5 +1,5 @@
 {
-  "name": "@aries-framework/core",
+  "name": "@credo-ts/core",
   "main": "build/index",
   "types": "build/index",
   "version": "0.4.2",
@@ -10,10 +10,10 @@
   "publishConfig": {
     "access": "public"
   },
-  "homepage": "https://github.com/hyperledger/aries-framework-javascript/tree/main/packages/core",
+  "homepage": "https://github.com/openwallet-foundation/credo-ts/tree/main/packages/core",
   "repository": {
     "type": "git",
-    "url": "https://github.com/hyperledger/aries-framework-javascript",
+    "url": "https://github.com/openwallet-foundation/credo-ts",
     "directory": "packages/core"
   },
   "scripts": {

@@ -4,7 +4,7 @@ import type {
   SdJwtVcReceiveOptions,
   SdJwtVcVerifyOptions,
 } from './SdJwtVcOptions'
-import type { AgentContext, JwkJson, Query } from '@aries-framework/core'
+import type { AgentContext, JwkJson, Query } from '@credo-ts/core'
 import type { Signer, SdJwtVcVerificationResult, Verifier, HasherAndAlgorithm } from 'jwt-sd'
 
 import {
@@ -21,7 +21,7 @@ import {
   Logger,
   TypedArrayEncoder,
   Buffer,
-} from '@aries-framework/core'
+} from '@credo-ts/core'
 import { KeyBinding, SdJwtVc, HasherAlgorithm, Disclosure } from 'jwt-sd'
 
 import { SdJwtVcError } from './SdJwtVcError'
@@ -290,7 +290,7 @@ export class SdJwtVcService {
     const issuerKid = sdJwtVc.getClaimInHeader<string>('kid')
     const issuerDid = sdJwtVc.getClaimInPayload<string>('iss')
 
-    // TODO: is there a more AFJ way of doing this?
+    // TODO: is there a more Credo way of doing this?
     const issuerDidUrl = `${issuerDid}#${issuerKid}`
 
     const { verificationMethod: issuerVerificationMethod } = await this.resolveDidUrl(agentContext, issuerDidUrl)

@@ -18,8 +18,8 @@ import type {
   GetCredentialsForProofRequestReturn,
   GetCredentialsOptions,
   StoreCredentialOptions,
-} from '@aries-framework/anoncreds'
-import type { AgentContext, Query, SimpleQuery } from '@aries-framework/core'
+} from '@credo-ts/anoncreds'
+import type { AgentContext, Query, SimpleQuery } from '@credo-ts/core'
 import type {
   CredentialEntry,
   CredentialProve,
@@ -35,8 +35,8 @@ import {
   unqualifiedCredentialDefinitionIdRegex,
   AnonCredsRegistryService,
   storeLinkSecret,
-} from '@aries-framework/anoncreds'
-import { AriesFrameworkError, JsonTransformer, TypedArrayEncoder, injectable, utils } from '@aries-framework/core'
+} from '@credo-ts/anoncreds'
+import { AriesFrameworkError, JsonTransformer, TypedArrayEncoder, injectable, utils } from '@credo-ts/core'
 import {
   Credential,
   CredentialRequest,

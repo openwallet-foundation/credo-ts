@@ -1,14 +1,14 @@
 <h1 align="center"><b>Extension module example</b></h1>
 
-This example shows how an extension module can be written and injected to an Aries Framework Javascript `Agent` instance. Its structure is similar to the one of regular modules, although is not strictly needed to follow it to achieve this goal.
+This example shows how an extension module can be written and injected to an Credo `Agent` instance. Its structure is similar to the one of regular modules, although is not strictly needed to follow it to achieve this goal.
 
-An extension module could be used for different purposes, such as storing data in an Identity Wallet, supporting custom protocols over Didcomm or implementing new [Aries RFCs](https://github.com/hyperledger/aries-rfcs/tree/main/features) without the need of embed them right into AFJ's Core package. Injected modules can access to other core modules and services and trigger events, so in practice they work much in the same way as if they were included statically.
+An extension module could be used for different purposes, such as storing data in an Identity Wallet, supporting custom protocols over Didcomm or implementing new [Aries RFCs](https://github.com/hyperledger/aries-rfcs/tree/main/features) without the need of embed them right into Credo's Core package. Injected modules can access to other core modules and services and trigger events, so in practice they work much in the same way as if they were included statically.
 
 > **Note** the custom module API is in heavy development and can have regular breaking changes. This is an experimental feature, so use it at your own risk. Over time we will provide a stable API for extension modules.
 
 ## Dummy module
 
-This example consists of a module that implements a very simple request-response protocol called Dummy. In order to do so and be able to be injected into an AFJ instance, some steps were followed:
+This example consists of a module that implements a very simple request-response protocol called Dummy. In order to do so and be able to be injected into an Credo instance, some steps were followed:
 
 - Define Dummy protocol message classes (inherited from `AgentMessage`)
 - Create handlers for those messages (inherited from `MessageHandler`)
@@ -56,20 +56,20 @@ const record = await agent.modules.dummy.request(connection)
 
 ## Run demo
 
-This repository includes a demonstration of a requester and a responder controller using this module to exchange Dummy protocol messages. For environment set up, make sure you followed instructions for [NodeJS](https:/aries.js.org/guides/getting-started/prerequisites/nodejs).
+This repository includes a demonstration of a requester and a responder controller using this module to exchange Dummy protocol messages. For environment set up, make sure you followed instructions for [NodeJS](https://credo.js.org/guides/getting-started/prerequisites/nodejs).
 
 These are the steps for running it:
 
-Clone the AFJ git repository:
+Clone the Credo git repository:
 
 ```sh
-git clone https://github.com/hyperledger/aries-framework-javascript.git
+git clone https://github.com/openwallet-foundation/credo-ts.git
 ```
 
 Open two different terminals and go to the extension-module directory:
 
 ```sh
-cd aries-framework-javascript/samples/extension-module
+cd credo/samples/extension-module
 ```
 
 Install the project in one of the terminals:

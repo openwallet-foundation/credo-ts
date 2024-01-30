@@ -10,7 +10,7 @@ import {
   WalletDuplicateError,
   WalletInvalidKeyError,
   WalletNotFoundError,
-} from '@aries-framework/core'
+} from '@credo-ts/core'
 import { Store } from '@hyperledger/aries-askar-shared'
 import { tmpdir } from 'os'
 import path from 'path'

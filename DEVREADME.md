@@ -37,7 +37,7 @@ If you're using the setup as described in this document, you don't need to provi
 
 ### Setup Postgres
 
-> Note: Setup the postgres plugin first by following the [docs](https://aries.js.org/)
+> Note: Setup the postgres plugin first by following the [docs](https://https://credo.js.org/)
 
 ```sh
 # Get postgres docker image
@@ -108,7 +108,7 @@ Locally, you might want to run the tests without postgres tests. You can do that
 yarn test --testPathIgnorePatterns postgres.e2e.test.ts
 ```
 
-In case you run into trouble running the tests, e.g. complaining about snapshots not being up-to-date, you can try and remove the data stored for the indy-client or AFJ. Note this removes all wallets and data, so make sure you're okay with all data being removed. On a Unix system with default setup you achieve this by running:
+In case you run into trouble running the tests, e.g. complaining about snapshots not being up-to-date, you can try and remove the data stored for the indy-client or Credo. Note this removes all wallets and data, so make sure you're okay with all data being removed. On a Unix system with default setup you achieve this by running:
 
 ```sh
 rm -rf ~/.indy-client ~/.afj
@@ -122,8 +122,8 @@ Make sure you followed the [local ledger setup](#setup-indy-ledger) to setup a l
 
 ```sh
 # Builds the framework docker image with all dependencies installed
-docker build -t aries-framework-javascript .
+docker build -t credo .
 
 # Run test with ledger pool
-docker run -it --rm --network host aries-framework-javascript yarn test
+docker run -it --rm --network host credo yarn test
 ```

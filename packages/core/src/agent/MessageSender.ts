@@ -283,7 +283,7 @@ export class MessageSender {
     // other party can decrypt the message. https://github.com/sicpa-dlab/didcomm-rust/blob/9a24b3b60f07a11822666dda46e5616a138af056/src/message/pack_encrypted/mod.rs#L33-L44
     // This will become more relevant when we support different encrypt envelopes. One thing to take into account though is that currently we only store the recipientKeys
     // as defined in the didcomm services, while it could be for example that the first authentication key is not defined in the recipientKeys, in which case we wouldn't
-    // even be interoperable between two AFJ agents. So we should either pick the first key that is defined in the recipientKeys, or we should make sure to store all
+    // even be interoperable between two Credo agents. So we should either pick the first key that is defined in the recipientKeys, or we should make sure to store all
     // keys defined in the did document as tags so we can retrieve it, even if it's not defined in the recipientKeys. This, again, will become simpler once we use didcomm v2
     // as the `from` field in a received message will identity the did used so we don't have to store all keys in tags to be able to find the connections associated with
     // an incoming message.

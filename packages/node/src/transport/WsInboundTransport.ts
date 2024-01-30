@@ -1,13 +1,6 @@
-import type {
-  Agent,
-  InboundTransport,
-  Logger,
-  TransportSession,
-  EncryptedMessage,
-  AgentContext,
-} from '@aries-framework/core'
+import type { Agent, InboundTransport, Logger, TransportSession, EncryptedMessage, AgentContext } from '@credo-ts/core'
 
-import { AriesFrameworkError, TransportService, utils, MessageReceiver } from '@aries-framework/core'
+import { AriesFrameworkError, TransportService, utils, MessageReceiver } from '@credo-ts/core'
 import WebSocket, { Server } from 'ws'
 
 export class WsInboundTransport implements InboundTransport {

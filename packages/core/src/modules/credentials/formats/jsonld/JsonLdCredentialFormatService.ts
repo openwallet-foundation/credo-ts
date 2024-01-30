@@ -372,7 +372,7 @@ export class JsonLdCredentialFormatService implements CredentialFormatService<Js
       throw new AriesFrameworkError('Received credential does not match credential request')
     }
 
-    // TODO: add check for the credentialStatus once this is supported in AFJ
+    // TODO: add check for the credentialStatus once this is supported in Credo
   }
 
   public supportsFormat(format: string): boolean {

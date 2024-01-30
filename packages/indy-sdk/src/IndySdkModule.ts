@@ -1,12 +1,12 @@
 import type { IndySdkModuleConfigOptions } from './IndySdkModuleConfig'
-import type { AgentContext, DependencyManager, Module } from '@aries-framework/core'
+import type { AgentContext, DependencyManager, Module } from '@credo-ts/core'
 
 import {
   AnonCredsHolderServiceSymbol,
   AnonCredsIssuerServiceSymbol,
   AnonCredsVerifierServiceSymbol,
-} from '@aries-framework/anoncreds'
-import { AriesFrameworkError, InjectionSymbols } from '@aries-framework/core'
+} from '@credo-ts/anoncreds'
+import { AriesFrameworkError, InjectionSymbols } from '@credo-ts/core'
 
 import { IndySdkModuleConfig } from './IndySdkModuleConfig'
 import { IndySdkHolderService, IndySdkIssuerService, IndySdkVerifierService } from './anoncreds'

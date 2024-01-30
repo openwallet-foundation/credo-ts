@@ -1,8 +1,8 @@
 import type { AnonCredsTestsAgent } from './anoncredsSetup'
 import type { EventReplaySubject } from '../../core/tests'
-import type { AnonCredsHolderService, AnonCredsProposeCredentialFormat } from '@aries-framework/anoncreds'
+import type { AnonCredsHolderService, AnonCredsProposeCredentialFormat } from '@credo-ts/anoncreds'
 
-import { AnonCredsHolderServiceSymbol } from '@aries-framework/anoncreds'
+import { AnonCredsHolderServiceSymbol } from '@credo-ts/anoncreds'
 import {
   DidCommMessageRepository,
   JsonTransformer,
@@ -13,7 +13,7 @@ import {
   V2OfferCredentialMessage,
   V2ProposeCredentialMessage,
   V2RequestCredentialMessage,
-} from '@aries-framework/core'
+} from '@credo-ts/core'
 
 import { InMemoryAnonCredsRegistry } from '../../anoncreds/tests/InMemoryAnonCredsRegistry'
 import { waitForCredentialRecord, waitForCredentialRecordSubject } from '../../core/tests'

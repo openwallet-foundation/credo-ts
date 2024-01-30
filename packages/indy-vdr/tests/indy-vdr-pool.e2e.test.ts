@@ -1,6 +1,6 @@
-import type { Key } from '@aries-framework/core'
+import type { Key } from '@credo-ts/core'
 
-import { TypedArrayEncoder, KeyType, SigningProviderRegistry } from '@aries-framework/core'
+import { TypedArrayEncoder, KeyType, SigningProviderRegistry } from '@credo-ts/core'
 import { GetNymRequest, NymRequest, SchemaRequest, CredentialDefinitionRequest } from '@hyperledger/indy-vdr-shared'
 
 import { genesisTransactions, getAgentConfig, getAgentContext } from '../../core/tests/helpers'

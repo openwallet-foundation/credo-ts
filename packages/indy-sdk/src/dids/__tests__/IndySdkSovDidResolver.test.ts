@@ -2,7 +2,7 @@ import type { IndySdkPool } from '../../ledger'
 import type { IndyEndpointAttrib } from '../didSovUtil'
 import type { GetNymResponse } from 'indy-sdk'
 
-import { SigningProviderRegistry, JsonTransformer } from '@aries-framework/core'
+import { SigningProviderRegistry, JsonTransformer } from '@credo-ts/core'
 import indySdk from 'indy-sdk'
 
 import { parseDid } from '../../../../core/src/modules/dids/domain/parse'

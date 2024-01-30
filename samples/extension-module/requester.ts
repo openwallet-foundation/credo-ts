@@ -8,8 +8,8 @@ import {
   LogLevel,
   WsOutboundTransport,
   ConnectionsModule,
-} from '@aries-framework/core'
-import { agentDependencies } from '@aries-framework/node'
+} from '@credo-ts/core'
+import { agentDependencies } from '@credo-ts/node'
 import { filter, first, firstValueFrom, map, ReplaySubject, timeout } from 'rxjs'
 
 import { DummyEventTypes, DummyState, DummyModule } from './dummy'

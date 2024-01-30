@@ -1,6 +1,6 @@
-import type { DependencyManager, Module } from '@aries-framework/core'
+import type { DependencyManager, Module } from '@credo-ts/core'
 
-import { AgentConfig } from '@aries-framework/core'
+import { AgentConfig } from '@credo-ts/core'
 
 import { SdJwtVcApi } from './SdJwtVcApi'
 import { SdJwtVcService } from './SdJwtVcService'
@@ -20,7 +20,7 @@ export class SdJwtVcModule implements Module {
     dependencyManager
       .resolve(AgentConfig)
       .logger.warn(
-        "The '@aries-framework/sd-jwt-vc' module is experimental and could have unexpected breaking changes. When using this module, make sure to use strict versions for all @aries-framework packages."
+        "The '@credo-ts/sd-jwt-vc' module is experimental and could have unexpected breaking changes. When using this module, make sure to use strict versions for all @aries-framework packages."
       )
 
     // Api
