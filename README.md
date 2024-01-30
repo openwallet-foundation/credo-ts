@@ -172,7 +172,7 @@ Credo is a framework written in TypeScript for building **SSI Agents and DIDComm
 
 ## Getting Started
 
-Documentation on how to get started with Credo can be found at https://aries.js.org
+Documentation on how to get started with Credo can be found at https://https://credo.js.org/
 
 ### Demo
 
