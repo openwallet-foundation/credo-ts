@@ -8,6 +8,7 @@ const keyTypeToAskarAlg = {
   [KeyType.Bls12381g2]: KeyAlgs.Bls12381G2,
   [KeyType.Bls12381g1g2]: KeyAlgs.Bls12381G1G2,
   [KeyType.P256]: KeyAlgs.EcSecp256r1,
+  [KeyType.K256]: KeyAlgs.EcSecp256k1,
 } as const
 
 export const isKeyTypeSupportedByAskar = (keyType: KeyType) => keyType in keyTypeToAskarAlg

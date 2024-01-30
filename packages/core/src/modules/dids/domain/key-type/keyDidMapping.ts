@@ -10,6 +10,7 @@ import { keyDidBls12381g1 } from './bls12381g1'
 import { keyDidBls12381g1g2 } from './bls12381g1g2'
 import { keyDidBls12381g2 } from './bls12381g2'
 import { keyDidEd25519 } from './ed25519'
+import { keyDidK256 } from './k256'
 import { keyDidJsonWebKey } from './keyDidJsonWebKey'
 import { keyDidX25519 } from './x25519'
 
@@ -29,6 +30,7 @@ const keyDidMapping: Record<KeyType, KeyDidMapping> = {
   [KeyType.P256]: keyDidJsonWebKey,
   [KeyType.P384]: keyDidJsonWebKey,
   [KeyType.P521]: keyDidJsonWebKey,
+  [KeyType.K256]: keyDidK256,
 }
 
 /**
