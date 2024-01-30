@@ -1,5 +1,5 @@
-import { Agent, KeyDerivationMethod, KeyType, TypedArrayEncoder } from '@aries-framework/core'
-import { agentDependencies } from '@aries-framework/node'
+import { Agent, KeyDerivationMethod, KeyType, TypedArrayEncoder } from '@credo-ts/core'
+import { agentDependencies } from '@credo-ts/node'
 import * as indySdk from 'indy-sdk'
 
 import { IndySdkModule } from '../../indy-sdk/src/IndySdkModule'
@@ -73,9 +73,9 @@ const existingRevocationStatusLists = {
 
 const agent = new Agent({
   config: {
-    label: '@aries-framework/anoncreds',
+    label: '@credo-ts/anoncreds',
     walletConfig: {
-      id: '@aries-framework/anoncreds',
+      id: '@credo-ts/anoncreds',
       key: 'CwNJroKHTSSj3XvE7ZAnuKiTn2C4QkFvxEqfm5rzhNrb',
       keyDerivationMethod: KeyDerivationMethod.Raw,
     },

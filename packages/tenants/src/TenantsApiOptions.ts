@@ -1,6 +1,6 @@
 import type { TenantAgent } from './TenantAgent'
 import type { TenantConfig } from './models/TenantConfig'
-import type { ModulesMap } from '@aries-framework/core'
+import type { ModulesMap } from '@credo-ts/core'
 
 export interface GetTenantAgentOptions {
   tenantId: string

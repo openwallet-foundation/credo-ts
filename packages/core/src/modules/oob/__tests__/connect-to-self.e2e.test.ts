@@ -10,7 +10,7 @@ import { getAgentOptions } from '../../../../tests/helpers'
 import { HandshakeProtocol, DidExchangeState } from '../../connections'
 import { OutOfBandState } from '../domain/OutOfBandState'
 
-import { Agent } from '@aries-framework/core'
+import { Agent } from '@credo-ts/core'
 
 const faberAgentOptions = getAgentOptions(
   'Faber Agent OOB Connect to Self',

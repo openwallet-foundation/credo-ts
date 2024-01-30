@@ -1,5 +1,5 @@
 {
-  "name": "@aries-framework/indy-vdr",
+  "name": "@credo-ts/indy-vdr",
   "main": "build/index",
   "types": "build/index",
   "version": "0.4.2",
@@ -24,8 +24,8 @@
     "test": "jest"
   },
   "dependencies": {
-    "@aries-framework/anoncreds": "0.4.2",
-    "@aries-framework/core": "0.4.2"
+    "@credo-ts/anoncreds": "0.4.2",
+    "@credo-ts/core": "0.4.2"
   },
   "devDependencies": {
     "@hyperledger/indy-vdr-nodejs": "^0.2.0-dev.6",

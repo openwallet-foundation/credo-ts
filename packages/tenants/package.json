@@ -1,5 +1,5 @@
 {
-  "name": "@aries-framework/tenants",
+  "name": "@credo-ts/tenants",
   "main": "build/index",
   "types": "build/index",
   "version": "0.4.2",
@@ -24,11 +24,11 @@
     "test": "jest"
   },
   "dependencies": {
-    "@aries-framework/core": "0.4.2",
+    "@credo-ts/core": "0.4.2",
     "async-mutex": "^0.4.0"
   },
   "devDependencies": {
-    "@aries-framework/node": "0.4.2",
+    "@credo-ts/node": "0.4.2",
     "reflect-metadata": "^0.1.13",
     "rimraf": "^4.4.0",
     "typescript": "~4.9.5"

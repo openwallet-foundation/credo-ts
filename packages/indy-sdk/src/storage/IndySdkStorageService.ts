@@ -1,15 +1,8 @@
 import type { IndySdkWallet } from '../wallet/IndySdkWallet'
-import type {
-  BaseRecordConstructor,
-  AgentContext,
-  BaseRecord,
-  TagsBase,
-  Query,
-  StorageService,
-} from '@aries-framework/core'
+import type { BaseRecordConstructor, AgentContext, BaseRecord, TagsBase, Query, StorageService } from '@credo-ts/core'
 import type { WalletQuery, WalletRecord, WalletSearchOptions } from 'indy-sdk'
 
-import { RecordDuplicateError, RecordNotFoundError, injectable, inject, JsonTransformer } from '@aries-framework/core'
+import { RecordDuplicateError, RecordNotFoundError, injectable, inject, JsonTransformer } from '@credo-ts/core'
 
 import { isIndyError, IndySdkError } from '../error'
 import { IndySdk, IndySdkSymbol } from '../types'

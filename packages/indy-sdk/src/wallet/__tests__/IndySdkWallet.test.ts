@@ -1,4 +1,4 @@
-import type { SigningProvider, WalletConfig } from '@aries-framework/core'
+import type { SigningProvider, WalletConfig } from '@credo-ts/core'
 
 import {
   Key,
@@ -7,7 +7,7 @@ import {
   SigningProviderRegistry,
   TypedArrayEncoder,
   KeyDerivationMethod,
-} from '@aries-framework/core'
+} from '@credo-ts/core'
 import indySdk from 'indy-sdk'
 
 import testLogger from '../../../../core/tests/logger'

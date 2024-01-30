@@ -1,7 +1,7 @@
-import type { BaseRecord, BaseRecordConstructor, Query, TagsBase } from '@aries-framework/core'
+import type { BaseRecord, BaseRecordConstructor, Query, TagsBase } from '@credo-ts/core'
 import type { EntryObject } from '@hyperledger/aries-askar-shared'
 
-import { JsonTransformer } from '@aries-framework/core'
+import { JsonTransformer } from '@credo-ts/core'
 
 export function recordToInstance<T extends BaseRecord>(record: EntryObject, recordClass: BaseRecordConstructor<T>): T {
   const instance = JsonTransformer.deserialize<T>(record.value as string, recordClass)

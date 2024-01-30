@@ -1,4 +1,4 @@
-import { JsonTransformer, TypedArrayEncoder } from '@aries-framework/core'
+import { JsonTransformer, TypedArrayEncoder } from '@credo-ts/core'
 import { Expose, Type } from 'class-transformer'
 
 export class JweRecipient {

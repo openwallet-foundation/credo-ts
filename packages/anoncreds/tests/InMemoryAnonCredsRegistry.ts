@@ -17,9 +17,9 @@ import type {
   RegisterRevocationStatusListReturn,
   RegisterRevocationStatusListOptions,
 } from '../src'
-import type { AgentContext } from '@aries-framework/core'
+import type { AgentContext } from '@credo-ts/core'
 
-import { Hasher, TypedArrayEncoder } from '@aries-framework/core'
+import { Hasher, TypedArrayEncoder } from '@credo-ts/core'
 import BigNumber from 'bn.js'
 
 import {

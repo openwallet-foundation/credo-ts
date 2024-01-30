@@ -12,8 +12,8 @@ import {
   MediatorPickupStrategy,
   MediationRecipientModule,
   MediatorModule,
-} from '@aries-framework/core'
-import { HttpInboundTransport } from '@aries-framework/node'
+} from '@credo-ts/core'
+import { HttpInboundTransport } from '@credo-ts/node'
 
 const recipientAgentOptions = getAgentOptions(
   'E2E HTTP Recipient',

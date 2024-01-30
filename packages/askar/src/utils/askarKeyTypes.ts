@@ -1,4 +1,4 @@
-import { KeyType } from '@aries-framework/core'
+import { KeyType } from '@credo-ts/core'
 import { KeyAlgs } from '@hyperledger/aries-askar-shared'
 
 const keyTypeToAskarAlg = {

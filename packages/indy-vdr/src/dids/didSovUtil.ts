@@ -6,7 +6,7 @@ import {
   DidCommV2Service,
   convertPublicKeyToX25519,
   AriesFrameworkError,
-} from '@aries-framework/core'
+} from '@credo-ts/core'
 
 export type CommEndpointType = 'endpoint' | 'did-communication' | 'DIDComm'
 

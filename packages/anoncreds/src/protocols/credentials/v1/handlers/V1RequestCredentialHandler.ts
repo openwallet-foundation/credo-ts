@@ -1,7 +1,7 @@
 import type { V1CredentialProtocol } from '../V1CredentialProtocol'
-import type { CredentialExchangeRecord, MessageHandler, MessageHandlerInboundMessage } from '@aries-framework/core'
+import type { CredentialExchangeRecord, MessageHandler, MessageHandlerInboundMessage } from '@credo-ts/core'
 
-import { AriesFrameworkError, getOutboundMessageContext } from '@aries-framework/core'
+import { AriesFrameworkError, getOutboundMessageContext } from '@credo-ts/core'
 
 import { V1RequestCredentialMessage } from '../messages'
 

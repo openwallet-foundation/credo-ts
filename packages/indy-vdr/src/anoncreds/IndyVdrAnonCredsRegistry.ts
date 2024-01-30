@@ -29,8 +29,8 @@ import type {
   RegisterRevocationStatusListReturnStateWait,
   RegisterRevocationStatusListReturnStateAction,
   RegisterRevocationStatusListOptions,
-} from '@aries-framework/anoncreds'
-import type { AgentContext } from '@aries-framework/core'
+} from '@credo-ts/anoncreds'
+import type { AgentContext } from '@credo-ts/core'
 import type { SchemaResponse } from '@hyperledger/indy-vdr-shared'
 
 import {
@@ -42,8 +42,8 @@ import {
   parseIndyRevocationRegistryId,
   parseIndySchemaId,
   dateToTimestamp,
-} from '@aries-framework/anoncreds'
-import { AriesFrameworkError } from '@aries-framework/core'
+} from '@credo-ts/anoncreds'
+import { AriesFrameworkError } from '@credo-ts/core'
 import {
   RevocationRegistryEntryRequest,
   RevocationRegistryDefinitionRequest,

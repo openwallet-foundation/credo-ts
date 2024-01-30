@@ -1,7 +1,7 @@
 import type { AnonCredsSchema, AnonCredsCredentialValues } from '../models'
-import type { CredentialPreviewAttributeOptions, LinkedAttachment } from '@aries-framework/core'
+import type { CredentialPreviewAttributeOptions, LinkedAttachment } from '@credo-ts/core'
 
-import { AriesFrameworkError, Hasher, encodeAttachment, Buffer } from '@aries-framework/core'
+import { AriesFrameworkError, Hasher, encodeAttachment, Buffer } from '@credo-ts/core'
 import BigNumber from 'bn.js'
 
 const isString = (value: unknown): value is string => typeof value === 'string'

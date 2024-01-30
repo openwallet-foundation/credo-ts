@@ -1,4 +1,4 @@
-import { AgentMessage, IsValidMessageType, parseMessageType, ReturnRouteTypes } from '@aries-framework/core'
+import { AgentMessage, IsValidMessageType, parseMessageType, ReturnRouteTypes } from '@credo-ts/core'
 
 export interface DummyRequestMessageOptions {
   id?: string

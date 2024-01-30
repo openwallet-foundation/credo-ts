@@ -1,11 +1,6 @@
-import type { AgentContext, TagsBase } from '@aries-framework/core'
+import type { AgentContext, TagsBase } from '@credo-ts/core'
 
-import {
-  TypedArrayEncoder,
-  SigningProviderRegistry,
-  RecordDuplicateError,
-  RecordNotFoundError,
-} from '@aries-framework/core'
+import { TypedArrayEncoder, SigningProviderRegistry, RecordDuplicateError, RecordNotFoundError } from '@credo-ts/core'
 import { ariesAskar } from '@hyperledger/aries-askar-nodejs'
 
 import { TestRecord } from '../../../../core/src/storage/__tests__/TestRecord'

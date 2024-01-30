@@ -1,6 +1,6 @@
-import type { DownloadToFileOptions, FileSystem } from '@aries-framework/core'
+import type { DownloadToFileOptions, FileSystem } from '@credo-ts/core'
 
-import { AriesFrameworkError, TypedArrayEncoder } from '@aries-framework/core'
+import { AriesFrameworkError, TypedArrayEncoder } from '@credo-ts/core'
 import { createHash } from 'crypto'
 import fs, { promises } from 'fs'
 import http from 'http'

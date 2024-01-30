@@ -12,8 +12,8 @@ import {
   MediatorPickupStrategy,
   MediationRecipientModule,
   MediatorModule,
-} from '@aries-framework/core'
-import { WsInboundTransport } from '@aries-framework/node'
+} from '@credo-ts/core'
+import { WsInboundTransport } from '@credo-ts/node'
 
 const recipientAgentOptions = getAgentOptions(
   'E2E WS Recipient ',

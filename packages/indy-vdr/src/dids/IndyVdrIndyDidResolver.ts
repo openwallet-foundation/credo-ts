@@ -1,6 +1,6 @@
-import type { AgentContext, DidResolutionResult, DidResolver } from '@aries-framework/core'
+import type { AgentContext, DidResolutionResult, DidResolver } from '@credo-ts/core'
 
-import { parseIndyDid } from '@aries-framework/anoncreds'
+import { parseIndyDid } from '@credo-ts/anoncreds'
 
 import { IndyVdrPoolService } from '../pool'
 

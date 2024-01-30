@@ -1,4 +1,4 @@
-import type { AnonCredsProofRequest } from '@aries-framework/anoncreds'
+import type { AnonCredsProofRequest } from '@credo-ts/anoncreds'
 
 import {
   getUnqualifiedSchemaId,
@@ -19,8 +19,8 @@ import {
   AnonCredsKeyCorrectnessProofRecord,
   AnonCredsLinkSecretRepository,
   AnonCredsLinkSecretRecord,
-} from '@aries-framework/anoncreds'
-import { InjectionSymbols } from '@aries-framework/core'
+} from '@credo-ts/anoncreds'
+import { InjectionSymbols } from '@credo-ts/core'
 import { anoncreds } from '@hyperledger/anoncreds-nodejs'
 import { Subject } from 'rxjs'
 

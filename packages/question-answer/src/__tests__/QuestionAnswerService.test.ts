@@ -1,8 +1,8 @@
-import type { AgentConfig, AgentContext, Repository, Wallet } from '@aries-framework/core'
-import type { QuestionAnswerStateChangedEvent, ValidResponse } from '@aries-framework/question-answer'
+import type { AgentConfig, AgentContext, Repository, Wallet } from '@credo-ts/core'
+import type { QuestionAnswerStateChangedEvent, ValidResponse } from '@credo-ts/question-answer'
 
-import { EventEmitter, SigningProviderRegistry, InboundMessageContext, DidExchangeState } from '@aries-framework/core'
-import { agentDependencies } from '@aries-framework/node'
+import { EventEmitter, SigningProviderRegistry, InboundMessageContext, DidExchangeState } from '@credo-ts/core'
+import { agentDependencies } from '@credo-ts/node'
 import { Subject } from 'rxjs'
 
 import { getAgentConfig, getAgentContext, getMockConnection, mockFunction } from '../../../core/tests/helpers'
@@ -18,7 +18,7 @@ import {
   QuestionAnswerState,
   QuestionMessage,
   AnswerMessage,
-} from '@aries-framework/question-answer'
+} from '@credo-ts/question-answer'
 
 jest.mock('../repository/QuestionAnswerRepository')
 const QuestionAnswerRepositoryMock = QuestionAnswerRepository as jest.Mock<QuestionAnswerRepository>

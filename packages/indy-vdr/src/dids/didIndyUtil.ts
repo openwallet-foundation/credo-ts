@@ -1,8 +1,8 @@
 import type { GetNymResponseData, IndyEndpointAttrib } from './didSovUtil'
 import type { IndyVdrPool } from '../pool'
-import type { AgentContext } from '@aries-framework/core'
+import type { AgentContext } from '@credo-ts/core'
 
-import { parseIndyDid } from '@aries-framework/anoncreds'
+import { parseIndyDid } from '@credo-ts/anoncreds'
 import {
   AriesFrameworkError,
   DidDocument,
@@ -15,7 +15,7 @@ import {
   TypedArrayEncoder,
   convertPublicKeyToX25519,
   getKeyFromVerificationMethod,
-} from '@aries-framework/core'
+} from '@credo-ts/core'
 import { GetAttribRequest, GetNymRequest } from '@hyperledger/indy-vdr-shared'
 
 import { IndyVdrError, IndyVdrNotFoundError } from '../error'

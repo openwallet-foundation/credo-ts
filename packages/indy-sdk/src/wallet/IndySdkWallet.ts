@@ -11,7 +11,7 @@ import type {
   WalletExportImportConfig,
   WalletSignOptions,
   WalletVerifyOptions,
-} from '@aries-framework/core'
+} from '@credo-ts/core'
 import type { OpenWalletCredentials, WalletConfig as IndySdkWalletConfig, WalletStorageConfig } from 'indy-sdk'
 
 // eslint-disable-next-line import/order
@@ -33,7 +33,7 @@ import {
   WalletInvalidKeyError,
   WalletKeyExistsError,
   WalletNotFoundError,
-} from '@aries-framework/core'
+} from '@credo-ts/core'
 
 const isError = (error: unknown): error is Error => error instanceof Error
 

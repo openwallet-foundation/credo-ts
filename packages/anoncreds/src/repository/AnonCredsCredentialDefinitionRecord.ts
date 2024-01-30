@@ -1,8 +1,8 @@
 import type { AnonCredsCredentialDefinitionRecordMetadata } from './anonCredsCredentialDefinitionRecordMetadataTypes'
 import type { AnonCredsCredentialDefinition } from '../models'
-import type { TagsBase } from '@aries-framework/core'
+import type { TagsBase } from '@credo-ts/core'
 
-import { BaseRecord, utils } from '@aries-framework/core'
+import { BaseRecord, utils } from '@credo-ts/core'
 
 import {
   getUnqualifiedCredentialDefinitionId,

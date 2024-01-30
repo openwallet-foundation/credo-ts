@@ -1,7 +1,7 @@
 import type { IndySdk } from '../../types'
-import type { TagsBase } from '@aries-framework/core'
+import type { TagsBase } from '@credo-ts/core'
 
-import { RecordDuplicateError, RecordNotFoundError, SigningProviderRegistry } from '@aries-framework/core'
+import { RecordDuplicateError, RecordNotFoundError, SigningProviderRegistry } from '@credo-ts/core'
 import * as indySdk from 'indy-sdk'
 
 import { TestRecord } from '../../../../core/src/storage/__tests__/TestRecord'

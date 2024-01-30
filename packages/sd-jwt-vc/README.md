@@ -19,10 +19,10 @@
       alt="typescript"
       src="https://img.shields.io/badge/%3C%2F%3E-TypeScript-%230074c1.svg"
   /></a>
-    <a href="https://www.npmjs.com/package/@aries-framework/sd-jwt-vc"
+    <a href="https://www.npmjs.com/package/@credo-ts/sd-jwt-vc"
     ><img
-      alt="@aries-framework/sd-jwt-vc version"
-      src="https://img.shields.io/npm/v/@aries-framework/sd-jwt-vc"
+      alt="@credo-ts/sd-jwt-vc version"
+      src="https://img.shields.io/npm/v/@credo-ts/sd-jwt-vc"
   /></a>
 </p>
 <br />
@@ -32,7 +32,7 @@
 Add the `sd-jwt-vc` module to your project.
 
 ```sh
-yarn add @aries-framework/sd-jwt-vc
+yarn add @credo-ts/sd-jwt-vc
 ```
 
 ### Quick start
@@ -40,7 +40,7 @@ yarn add @aries-framework/sd-jwt-vc
 After the installation you can follow the [guide to setup your agent](https://aries.js.org/guides/0.4/getting-started/set-up) and add the following to your agent modules.
 
 ```ts
-import { SdJwtVcModule } from '@aries-framework/sd-jwt-vc'
+import { SdJwtVcModule } from '@credo-ts/sd-jwt-vc'
 
 const agent = new Agent({
   config: {

@@ -1,9 +1,9 @@
-import type { AnonCredsProof, AnonCredsVerifierService, VerifyProofOptions } from '@aries-framework/anoncreds'
-import type { AgentContext } from '@aries-framework/core'
+import type { AnonCredsProof, AnonCredsVerifierService, VerifyProofOptions } from '@credo-ts/anoncreds'
+import type { AgentContext } from '@credo-ts/core'
 import type { CredentialDefs, Schemas, RevocRegDefs, RevRegs, IndyProofRequest, IndyProof } from 'indy-sdk'
 
-import { parseIndyCredentialDefinitionId } from '@aries-framework/anoncreds'
-import { inject, injectable } from '@aries-framework/core'
+import { parseIndyCredentialDefinitionId } from '@credo-ts/anoncreds'
+import { inject, injectable } from '@credo-ts/core'
 
 import { IndySdkError, isIndyError } from '../../error'
 import { IndySdk, IndySdkSymbol } from '../../types'

@@ -19,10 +19,10 @@
       alt="typescript"
       src="https://img.shields.io/badge/%3C%2F%3E-TypeScript-%230074c1.svg"
   /></a>
-    <a href="https://www.npmjs.com/package/@aries-framework/bbs-signatures"
+    <a href="https://www.npmjs.com/package/@credo-ts/bbs-signatures"
     ><img
-      alt="@aries-framework/bbs-signatures version"
-      src="https://img.shields.io/npm/v/@aries-framework/bbs-signatures"
+      alt="@credo-ts/bbs-signatures version"
+      src="https://img.shields.io/npm/v/@credo-ts/bbs-signatures"
   /></a>
 
 </p>
@@ -33,7 +33,7 @@ Aries Framework JavaScript BBS Module provides an optional addon to Aries Framew
 ## Installation
 
 ```sh
-yarn add @aries-framework/bbs-signatures
+yarn add @credo-ts/bbs-signatures
 ```
 
 ### React Native
@@ -72,4 +72,4 @@ The added dependency is required for autolinking and should be the same as the o
 
 ### Issue with `node-bbs-signatures`
 
-Right now some platforms will see an "error" when installing the `@aries-framework/bbs-signatures` package. This is because the BBS signatures library that we use under the hood is built for Linux x86 and MacOS x86 (and not Windows and MacOS arm). This means that it will show that it could not download the binary. This is not an error for developers, the library that fails is `node-bbs-signatures` and is an optional dependency for performance improvements. It will fallback to a (slower) wasm build.
+Right now some platforms will see an "error" when installing the `@credo-ts/bbs-signatures` package. This is because the BBS signatures library that we use under the hood is built for Linux x86 and MacOS x86 (and not Windows and MacOS arm). This means that it will show that it could not download the binary. This is not an error for developers, the library that fails is `node-bbs-signatures` and is an optional dependency for performance improvements. It will fallback to a (slower) wasm build.

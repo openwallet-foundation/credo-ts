@@ -1,5 +1,5 @@
 {
-  "name": "@aries-framework/sd-jwt-vc",
+  "name": "@credo-ts/sd-jwt-vc",
   "main": "build/index",
   "types": "build/index",
   "version": "0.4.2",
@@ -24,8 +24,8 @@
     "test": "jest"
   },
   "dependencies": {
-    "@aries-framework/askar": "^0.4.2",
-    "@aries-framework/core": "^0.4.2",
+    "@credo-ts/askar": "^0.4.2",
+    "@credo-ts/core": "^0.4.2",
     "class-transformer": "0.5.1",
     "class-validator": "0.14.0",
     "jwt-sd": "^0.1.2"

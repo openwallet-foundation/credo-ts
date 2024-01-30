@@ -1,5 +1,5 @@
 {
-  "name": "@aries-framework/cheqd",
+  "name": "@credo-ts/cheqd",
   "main": "build/index",
   "types": "build/index",
   "version": "0.4.2",
@@ -24,8 +24,8 @@
     "test": "jest"
   },
   "dependencies": {
-    "@aries-framework/anoncreds": "0.4.2",
-    "@aries-framework/core": "0.4.2",
+    "@credo-ts/anoncreds": "0.4.2",
+    "@credo-ts/core": "0.4.2",
     "@cheqd/sdk": "cjs",
     "@cheqd/ts-proto": "cjs",
     "@cosmjs/crypto": "^0.29.5",
@@ -37,7 +37,7 @@
     "tsyringe": "^4.8.0"
   },
   "devDependencies": {
-    "@aries-framework/indy-sdk": "0.4.2",
+    "@credo-ts/indy-sdk": "0.4.2",
     "@types/indy-sdk": "*",
     "rimraf": "^4.0.7",
     "typescript": "~4.9.4"

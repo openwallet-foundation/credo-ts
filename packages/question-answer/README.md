@@ -19,10 +19,10 @@
       alt="typescript"
       src="https://img.shields.io/badge/%3C%2F%3E-TypeScript-%230074c1.svg"
   /></a>
-    <a href="https://www.npmjs.com/package/@aries-framework/question-answer"
+    <a href="https://www.npmjs.com/package/@credo-ts/question-answer"
     ><img
-      alt="@aries-framework/question-answer version"
-      src="https://img.shields.io/npm/v/@aries-framework/question-answer"
+      alt="@credo-ts/question-answer version"
+      src="https://img.shields.io/npm/v/@credo-ts/question-answer"
   /></a>
 
 </p>
@@ -32,16 +32,16 @@ Question Answer module for [Aries Framework JavaScript](https://github.com/hyper
 
 ### Installation
 
-Make sure you have set up the correct version of Aries Framework JavaScript according to the AFJ repository. To find out which version of AFJ you need to have installed you can run the following command. This will list the required peer dependency for `@aries-framework/core`.
+Make sure you have set up the correct version of Aries Framework JavaScript according to the AFJ repository. To find out which version of AFJ you need to have installed you can run the following command. This will list the required peer dependency for `@credo-ts/core`.
 
 ```sh
-npm info "@aries-framework/question-answer" peerDependencies
+npm info "@credo-ts/question-answer" peerDependencies
 ```
 
 Then add the question-answer module to your project.
 
 ```sh
-yarn add @aries-framework/question-answer
+yarn add @credo-ts/question-answer
 ```
 
 ### Quick start
@@ -51,7 +51,7 @@ In order for this module to work, we have to inject it into the agent to access 
 ### Example of usage
 
 ```ts
-import { QuestionAnswerModule } from '@aries-framework/question-answer'
+import { QuestionAnswerModule } from '@credo-ts/question-answer'
 
 const agent = new Agent({
   config: {

@@ -1,7 +1,7 @@
 import type { TenantsModuleConfigOptions } from './TenantsModuleConfig'
-import type { Constructor, ModulesMap, DependencyManager, Module, EmptyModuleMap } from '@aries-framework/core'
+import type { Constructor, ModulesMap, DependencyManager, Module, EmptyModuleMap } from '@credo-ts/core'
 
-import { AgentConfig, InjectionSymbols } from '@aries-framework/core'
+import { AgentConfig, InjectionSymbols } from '@credo-ts/core'
 
 import { TenantsApi } from './TenantsApi'
 import { TenantsModuleConfig } from './TenantsModuleConfig'
@@ -27,7 +27,7 @@ export class TenantsModule<AgentModules extends ModulesMap = EmptyModuleMap> imp
     dependencyManager
       .resolve(AgentConfig)
       .logger.warn(
-        "The '@aries-framework/tenants' module is experimental and could have unexpected breaking changes. When using this module, make sure to use strict versions for all @aries-framework packages."
+        "The '@credo-ts/tenants' module is experimental and could have unexpected breaking changes. When using this module, make sure to use strict versions for all @aries-framework packages."
       )
 
     // Api

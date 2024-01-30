@@ -1,7 +1,7 @@
 import type { SubjectMessage } from '../../../tests/transport/SubjectInboundTransport'
-import type { ConnectionRecord } from '@aries-framework/core'
+import type { ConnectionRecord } from '@credo-ts/core'
 
-import { Agent } from '@aries-framework/core'
+import { Agent } from '@credo-ts/core'
 import { Subject } from 'rxjs'
 
 import { indySdk } from '../../../packages/core/tests'

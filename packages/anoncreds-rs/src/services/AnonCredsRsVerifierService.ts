@@ -4,12 +4,12 @@ import type {
   AnonCredsProofRequest,
   AnonCredsVerifierService,
   VerifyProofOptions,
-} from '@aries-framework/anoncreds'
-import type { AgentContext } from '@aries-framework/core'
+} from '@credo-ts/anoncreds'
+import type { AgentContext } from '@credo-ts/core'
 import type { JsonObject, NonRevokedIntervalOverride } from '@hyperledger/anoncreds-shared'
 
-import { AnonCredsRegistryService } from '@aries-framework/anoncreds'
-import { injectable } from '@aries-framework/core'
+import { AnonCredsRegistryService } from '@credo-ts/anoncreds'
+import { injectable } from '@credo-ts/core'
 import { Presentation } from '@hyperledger/anoncreds-shared'
 
 @injectable()

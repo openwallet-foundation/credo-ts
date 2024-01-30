@@ -1,12 +1,6 @@
-import type { BaseRecordConstructor, AgentContext, BaseRecord, Query, StorageService } from '@aries-framework/core'
+import type { BaseRecordConstructor, AgentContext, BaseRecord, Query, StorageService } from '@credo-ts/core'
 
-import {
-  RecordDuplicateError,
-  WalletError,
-  RecordNotFoundError,
-  injectable,
-  JsonTransformer,
-} from '@aries-framework/core'
+import { RecordDuplicateError, WalletError, RecordNotFoundError, injectable, JsonTransformer } from '@credo-ts/core'
 import { Scan } from '@hyperledger/aries-askar-shared'
 
 import { AskarErrorCode, isAskarError } from '../utils/askarError'

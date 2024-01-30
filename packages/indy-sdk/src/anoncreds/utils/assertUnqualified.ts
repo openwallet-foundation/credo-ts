@@ -1,16 +1,12 @@
-import type {
-  AnonCredsCredentialOffer,
-  AnonCredsCredentialRequest,
-  AnonCredsProofRequest,
-} from '@aries-framework/anoncreds'
+import type { AnonCredsCredentialOffer, AnonCredsCredentialRequest, AnonCredsProofRequest } from '@credo-ts/anoncreds'
 
 import {
   unqualifiedRevocationRegistryIdRegex,
   unqualifiedCredentialDefinitionIdRegex,
   unqualifiedIndyDidRegex,
   unqualifiedSchemaIdRegex,
-} from '@aries-framework/anoncreds'
-import { AriesFrameworkError } from '@aries-framework/core'
+} from '@credo-ts/anoncreds'
+import { AriesFrameworkError } from '@credo-ts/core'
 
 /**
  * Assert that a credential definition id is unqualified.

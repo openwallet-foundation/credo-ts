@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
-import type { IndySdkIndyDidCreateOptions } from '@aries-framework/indy-sdk'
+import type { IndySdkIndyDidCreateOptions } from '@credo-ts/indy-sdk'
 
 import { getLegacyAnonCredsModules } from '../../../../../anoncreds/tests/legacyAnonCredsSetup'
 import { setupSubjectTransports } from '../../../../tests'
