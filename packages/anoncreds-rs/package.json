@@ -3,6 +3,7 @@
   "main": "build/index",
   "types": "build/index",
   "version": "0.4.2",
+  "private": true,
   "files": [
     "build"
   ],

@@ -2,6 +2,7 @@
   "name": "@credo-ts/indy-sdk",
   "main": "build/index",
   "types": "build/index",
+  "private": true,
   "version": "0.4.2",
   "files": [
     "build"
