@@ -7,7 +7,7 @@ import type { DidExchangeProtocol } from '../DidExchangeProtocol'
 
 import { TransportService } from '../../../agent/TransportService'
 import { OutboundMessageContext } from '../../../agent/models'
-import { AriesFrameworkError } from '../../../error/AriesFrameworkError'
+import { AriesFrameworkError } from '../../../error/CredoError'
 import { tryParseDid } from '../../dids/domain/parse'
 import { OutOfBandState } from '../../oob/domain/OutOfBandState'
 import { DidExchangeRequestMessage } from '../messages'

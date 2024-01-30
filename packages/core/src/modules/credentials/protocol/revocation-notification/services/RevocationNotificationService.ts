@@ -8,7 +8,7 @@ import type { V1RevocationNotificationMessage } from '../messages/V1RevocationNo
 import { EventEmitter } from '../../../../../agent/EventEmitter'
 import { MessageHandlerRegistry } from '../../../../../agent/MessageHandlerRegistry'
 import { InjectionSymbols } from '../../../../../constants'
-import { AriesFrameworkError } from '../../../../../error/AriesFrameworkError'
+import { AriesFrameworkError } from '../../../../../error/CredoError'
 import { Logger } from '../../../../../logger'
 import { inject, injectable } from '../../../../../plugins'
 import { CredentialEventTypes } from '../../../CredentialEvents'

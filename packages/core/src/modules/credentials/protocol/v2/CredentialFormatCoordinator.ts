@@ -4,7 +4,7 @@ import type { CredentialFormatPayload, CredentialFormatService, ExtractCredentia
 import type { CredentialFormatSpec } from '../../models'
 import type { CredentialExchangeRecord } from '../../repository/CredentialExchangeRecord'
 
-import { AriesFrameworkError } from '../../../../error/AriesFrameworkError'
+import { AriesFrameworkError } from '../../../../error/CredoError'
 import { DidCommMessageRepository, DidCommMessageRole } from '../../../../storage'
 
 import {

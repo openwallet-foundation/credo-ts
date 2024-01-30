@@ -1,7 +1,7 @@
 import type { DocumentLoader } from './jsonld'
 import type { AgentContext } from '../../../../agent/context/AgentContext'
 
-import { AriesFrameworkError } from '../../../../error/AriesFrameworkError'
+import { AriesFrameworkError } from '../../../../error/CredoError'
 import { isDid } from '../../../../utils'
 import { DidResolverService } from '../../../dids'
 

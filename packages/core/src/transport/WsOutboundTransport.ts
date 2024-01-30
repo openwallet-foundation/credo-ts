@@ -7,7 +7,7 @@ import type { OutboundPackage } from '../types'
 import type WebSocket from 'ws'
 
 import { AgentEventTypes } from '../agent/Events'
-import { AriesFrameworkError } from '../error/AriesFrameworkError'
+import { AriesFrameworkError } from '../error/CredoError'
 import { isValidJweStructure, JsonEncoder } from '../utils'
 import { Buffer } from '../utils/buffer'
 

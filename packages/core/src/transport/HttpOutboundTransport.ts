@@ -7,7 +7,7 @@ import type { OutboundPackage } from '../types'
 import { AbortController } from 'abort-controller'
 
 import { AgentEventTypes } from '../agent/Events'
-import { AriesFrameworkError } from '../error/AriesFrameworkError'
+import { AriesFrameworkError } from '../error/CredoError'
 import { isValidJweStructure, JsonEncoder } from '../utils'
 
 export class HttpOutboundTransport implements OutboundTransport {

@@ -3,7 +3,7 @@ import type { AgentMessageProcessedEvent } from './Events'
 import type { InboundMessageContext } from './models/InboundMessageContext'
 
 import { InjectionSymbols } from '../constants'
-import { AriesFrameworkError } from '../error/AriesFrameworkError'
+import { AriesFrameworkError } from '../error/CredoError'
 import { Logger } from '../logger'
 import { injectable, inject } from '../plugins'
 import { parseMessageType } from '../utils/messageType'

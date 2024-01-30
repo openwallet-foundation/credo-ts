@@ -7,7 +7,7 @@ import type { ConnectionService } from '../services/ConnectionService'
 
 import { TransportService } from '../../../agent/TransportService'
 import { OutboundMessageContext } from '../../../agent/models'
-import { AriesFrameworkError } from '../../../error/AriesFrameworkError'
+import { AriesFrameworkError } from '../../../error/CredoError'
 import { tryParseDid } from '../../dids/domain/parse'
 import { ConnectionRequestMessage } from '../messages'
 import { HandshakeProtocol } from '../models'

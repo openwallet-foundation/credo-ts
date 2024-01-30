@@ -1,4 +1,4 @@
-import { AriesFrameworkError } from '../../../error/AriesFrameworkError'
+import { AriesFrameworkError } from '../../../error/CredoError'
 import { ProblemReportMessage } from '../messages/ProblemReportMessage'
 
 export interface ProblemReportErrorOptions {

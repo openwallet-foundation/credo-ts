@@ -1,7 +1,7 @@
 import type { BaseName } from './MultiBaseEncoder'
 import type { Attachment } from '../decorators/attachment/Attachment'
 
-import { AriesFrameworkError } from '../error/AriesFrameworkError'
+import { AriesFrameworkError } from '../error/CredoError'
 
 import { HashlinkEncoder } from './HashlinkEncoder'
 import { TypedArrayEncoder } from './TypedArrayEncoder'

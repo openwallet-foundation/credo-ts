@@ -1,6 +1,6 @@
 import type { ValidationError } from 'class-validator'
 
-import { AriesFrameworkError } from './AriesFrameworkError'
+import { AriesFrameworkError } from './CredoError'
 
 export class ClassValidationError extends AriesFrameworkError {
   public validationErrors: ValidationError[]
