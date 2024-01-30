@@ -17,7 +17,7 @@ Alice, a former student of Faber College, connects with the College, is issued a
 
 In order to use Credo some platform specific dependencies and setup is required. See our guides below to quickly set up you project with Credo for NodeJS, React Native and Electron.
 
-- [NodeJS](https://https://credo.js.org/guides/getting-started/installation/nodejs)
+- [NodeJS](https://credo.js.org/guides/getting-started/installation/nodejs)
 
 ### Run the demo
 
