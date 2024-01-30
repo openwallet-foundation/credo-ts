@@ -111,7 +111,7 @@ yarn test --testPathIgnorePatterns postgres.e2e.test.ts
 In case you run into trouble running the tests, e.g. complaining about snapshots not being up-to-date, you can try and remove the data stored for the indy-client or Credo. Note this removes all wallets and data, so make sure you're okay with all data being removed. On a Unix system with default setup you achieve this by running:
 
 ```sh
-rm -rf ~/.indy-client ~/.credo
+rm -rf ~/.indy-client ~/.afj
 ```
 
 ## Usage with Docker
