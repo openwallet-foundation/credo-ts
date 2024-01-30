@@ -738,9 +738,16 @@ export class OutOfBandApi {
     }
 
     // Order protocols according to `parsedHandshakeProtocolUris` array (order of preference)
-    const orderedProtocols = parsedHandshakeProtocolUris.filter((p) =>
-      supportedHandshakeProtocols.find((s) => supportsIncomingDidCommProtocolUri(s, p.parsedProtocolUri))
-    )
+    const orderedProtocols = parsedHandshakeProtocolUris
+      .map((p) => {
+        const found = supportedHandshakeProtocols.find((s) =>
+          supportsIncomingDidCommProtocolUri(s, p.parsedProtocolUri)
+        )
+        // We need to override the parsedProtocolUri with the one from the supported protocols, as we used `.0` as the minor
+        // version before. But when we return it, we want to return the correct minor version that we actually support
+        return found ? { ...p, parsedProtocolUri: found } : null
+      })
+      .filter((p): p is NonNullable<typeof p> => p !== null)
 
     return orderedProtocols
   }
