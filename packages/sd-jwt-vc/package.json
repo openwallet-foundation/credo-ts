@@ -11,10 +11,10 @@
   "publishConfig": {
     "access": "public"
   },
-  "homepage": "https://github.com/hyperledger/aries-framework-javascript/tree/main/packages/sd-jwt-vc",
+  "homepage": "https://github.com/openwallet-foundation/credo-ts/tree/main/packages/sd-jwt-vc",
   "repository": {
     "type": "git",
-    "url": "https://github.com/hyperledger/aries-framework-javascript",
+    "url": "https://github.com/openwallet-foundation/credo-ts",
     "directory": "packages/sd-jwt-vc"
   },
   "scripts": {

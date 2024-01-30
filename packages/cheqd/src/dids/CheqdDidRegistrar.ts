@@ -83,7 +83,7 @@ export class CheqdDidRegistrar implements DidRegistrar {
         const contextUrl = contextMapping[verificationMethod.type]
 
         // Add the context to the did document
-        // NOTE: cheqd sdk uses https://www.w3.org/ns/did/v1 while AFJ did doc uses https://w3id.org/did/v1
+        // NOTE: cheqd sdk uses https://www.w3.org/ns/did/v1 while Credo did doc uses https://w3id.org/did/v1
         // We should align these at some point. For now we just return a consistent value.
         didDocument.context = ['https://www.w3.org/ns/did/v1', contextUrl]
       } else {

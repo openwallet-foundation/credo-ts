@@ -10,10 +10,10 @@
   "publishConfig": {
     "access": "public"
   },
-  "homepage": "https://github.com/hyperledger/aries-framework-javascript/tree/main/packages/openid4vc-client",
+  "homepage": "https://github.com/openwallet-foundation/credo-ts/tree/main/packages/openid4vc-client",
   "repository": {
     "type": "git",
-    "url": "https://github.com/hyperledger/aries-framework-javascript",
+    "url": "https://github.com/openwallet-foundation/credo-ts",
     "directory": "packages/openid4vc-client"
   },
   "scripts": {

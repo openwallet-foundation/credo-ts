@@ -55,7 +55,7 @@ RUN cargo build --release
 # set up library path for postgres plugin
 ENV LIB_INDY_STRG_POSTGRES="/indy-sdk/experimental/plugins/postgres_storage/target/release"
 
-## Stage 2: Build Aries Framework JavaScript
+## Stage 2: Build Credo
 
 FROM base as final
 

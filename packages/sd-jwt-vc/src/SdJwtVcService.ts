@@ -290,7 +290,7 @@ export class SdJwtVcService {
     const issuerKid = sdJwtVc.getClaimInHeader<string>('kid')
     const issuerDid = sdJwtVc.getClaimInPayload<string>('iss')
 
-    // TODO: is there a more AFJ way of doing this?
+    // TODO: is there a more Credo way of doing this?
     const issuerDidUrl = `${issuerDid}#${issuerKid}`
 
     const { verificationMethod: issuerVerificationMethod } = await this.resolveDidUrl(agentContext, issuerDidUrl)
