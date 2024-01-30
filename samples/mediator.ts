@@ -48,8 +48,8 @@ const agentConfig: InitConfig = {
   endpoints,
   label: process.env.AGENT_LABEL || 'Credo Mediator',
   walletConfig: {
-    id: process.env.WALLET_NAME || 'AriesFrameworkJavaScript',
-    key: process.env.WALLET_KEY || 'AriesFrameworkJavaScript',
+    id: process.env.WALLET_NAME || 'Credo',
+    key: process.env.WALLET_KEY || 'Credo',
   },
 
   logger,
