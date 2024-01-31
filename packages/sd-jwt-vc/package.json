@@ -32,7 +32,6 @@
     "jwt-sd": "^0.1.2"
   },
   "devDependencies": {
-    "@hyperledger/aries-askar-nodejs": "^0.2.0-dev.5",
     "reflect-metadata": "^0.1.13",
     "rimraf": "^4.4.0",
     "typescript": "~4.9.5"

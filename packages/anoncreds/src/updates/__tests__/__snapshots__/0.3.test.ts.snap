@@ -6,7 +6,7 @@ exports[`UpdateAssistant | AnonCreds | v0.3.1 - v0.4 should correctly update the
     "id": "1-4e4f-41d9-94c4-f49351b811f1",
     "tags": {
       "isDefault": true,
-      "linkSecretId": "Wallet: 0.3 Update AnonCreds - Holder",
+      "linkSecretId": "Wallet: 0.3 Update AnonCreds - Holder - static",
     },
     "type": "AnonCredsLinkSecretRecord",
     "value": {
@@ -14,7 +14,7 @@ exports[`UpdateAssistant | AnonCreds | v0.3.1 - v0.4 should correctly update the
         "isDefault": true,
       },
       "id": "1-4e4f-41d9-94c4-f49351b811f1",
-      "linkSecretId": "Wallet: 0.3 Update AnonCreds - Holder",
+      "linkSecretId": "Wallet: 0.3 Update AnonCreds - Holder - static",
       "metadata": {},
       "updatedAt": "2023-03-19T22:50:20.522Z",
       "value": undefined,
@@ -345,7 +345,7 @@ exports[`UpdateAssistant | AnonCreds | v0.3.1 - v0.4 should correctly update the
     "id": "1-4e4f-41d9-94c4-f49351b811f1",
     "tags": {
       "isDefault": true,
-      "linkSecretId": "Wallet: 0.3 Update AnonCreds - Issuer",
+      "linkSecretId": "Wallet: 0.3 Update AnonCreds - Issuer - static",
     },
     "type": "AnonCredsLinkSecretRecord",
     "value": {
@@ -353,7 +353,7 @@ exports[`UpdateAssistant | AnonCreds | v0.3.1 - v0.4 should correctly update the
         "isDefault": true,
       },
       "id": "1-4e4f-41d9-94c4-f49351b811f1",
-      "linkSecretId": "Wallet: 0.3 Update AnonCreds - Issuer",
+      "linkSecretId": "Wallet: 0.3 Update AnonCreds - Issuer - static",
       "metadata": {},
       "updatedAt": "2023-03-19T22:50:20.522Z",
       "value": undefined,

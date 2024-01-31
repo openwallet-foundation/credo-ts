@@ -5,8 +5,7 @@ import type { Routing } from '../services/ConnectionService'
 
 import { Subject } from 'rxjs'
 
-import { IndySdkWallet } from '../../../../../indy-sdk/src'
-import { indySdk } from '../../../../../indy-sdk/tests/setupIndySdkModule'
+import { InMemoryWallet } from '../../../../../../tests/InMemoryWallet'
 import {
   getAgentConfig,
   getAgentContext,
@@ -18,7 +17,6 @@ import { AgentMessage } from '../../../agent/AgentMessage'
 import { EventEmitter } from '../../../agent/EventEmitter'
 import { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import { Key, KeyType } from '../../../crypto'
-import { SigningProviderRegistry } from '../../../crypto/signing-provider'
 import { signData, unpackAndVerifySignatureDecorator } from '../../../decorators/signature/SignatureDecoratorUtils'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
 import { indyDidFromPublicKeyBase58 } from '../../../utils/did'
@@ -92,7 +90,7 @@ describe('ConnectionService', () => {
   let agentContext: AgentContext
 
   beforeAll(async () => {
-    wallet = new IndySdkWallet(indySdk, agentConfig.logger, new SigningProviderRegistry([]))
+    wallet = new InMemoryWallet()
     agentContext = getAgentContext({
       wallet,
       agentConfig,

@@ -317,8 +317,8 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
       credentialDefinitionId: credentialRecord.credential.cred_def_id,
       credentialId: credentialRecord.credentialId,
       schemaId: credentialRecord.credential.schema_id,
-      credentialRevocationId: credentialRecord.credentialRevocationId,
-      revocationRegistryId: credentialRecord.credential.rev_reg_id,
+      credentialRevocationId: credentialRecord.credentialRevocationId ?? null,
+      revocationRegistryId: credentialRecord.credential.rev_reg_id ?? null,
       methodName: credentialRecord.methodName,
     }
   }
@@ -346,8 +346,8 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
       credentialDefinitionId: credentialRecord.credential.cred_def_id,
       credentialId: credentialRecord.credentialId,
       schemaId: credentialRecord.credential.schema_id,
-      credentialRevocationId: credentialRecord.credentialRevocationId,
-      revocationRegistryId: credentialRecord.credential.rev_reg_id,
+      credentialRevocationId: credentialRecord.credentialRevocationId ?? null,
+      revocationRegistryId: credentialRecord.credential.rev_reg_id ?? null,
       methodName: credentialRecord.methodName,
     }))
   }
@@ -412,8 +412,8 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
           credentialDefinitionId: credentialRecord.credential.cred_def_id,
           credentialId: credentialRecord.credentialId,
           schemaId: credentialRecord.credential.schema_id,
-          credentialRevocationId: credentialRecord.credentialRevocationId,
-          revocationRegistryId: credentialRecord.credential.rev_reg_id,
+          credentialRevocationId: credentialRecord.credentialRevocationId ?? null,
+          revocationRegistryId: credentialRecord.credential.rev_reg_id ?? null,
           methodName: credentialRecord.methodName,
         },
         interval: proofRequest.non_revoked,

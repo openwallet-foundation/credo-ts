@@ -335,6 +335,7 @@ describe('MessageSender', () => {
       transportServiceFindSessionByIdMock.mockReturnValue(session)
       messageSender.registerOutboundTransport(outboundTransport)
       const sendMessageSpy = jest.spyOn(outboundTransport, 'sendMessage')
+      // @ts-ignore
       const sendMessageToServiceSpy = jest.spyOn(messageSender, 'sendMessageToService')
 
       const contextWithSessionId = new OutboundMessageContext(outboundMessageContext.message, {
@@ -521,7 +522,7 @@ describe('MessageSender', () => {
           service,
         },
       })
-      await expect(messageSender.sendMessageToService(outboundMessageContext)).rejects.toThrow(
+      await expect(messageSender.sendMessage(outboundMessageContext)).rejects.toThrow(
         `Agent has no outbound transport!`
       )
 
@@ -549,7 +550,7 @@ describe('MessageSender', () => {
         },
       })
 
-      await messageSender.sendMessageToService(outboundMessageContext)
+      await messageSender.sendMessage(outboundMessageContext)
 
       expect(eventListenerMock).toHaveBeenCalledWith({
         type: AgentEventTypes.AgentMessageSent,
@@ -585,7 +586,7 @@ describe('MessageSender', () => {
         },
       })
 
-      await messageSender.sendMessageToService(outboundMessageContext)
+      await messageSender.sendMessage(outboundMessageContext)
 
       expect(eventListenerMock).toHaveBeenCalledWith({
         type: AgentEventTypes.AgentMessageSent,
@@ -616,7 +617,7 @@ describe('MessageSender', () => {
         },
       })
 
-      await expect(messageSender.sendMessageToService(outboundMessageContext)).rejects.toThrow(
+      await expect(messageSender.sendMessage(outboundMessageContext)).rejects.toThrow(
         /Unable to send message to service/
       )
       expect(eventListenerMock).toHaveBeenCalledWith({

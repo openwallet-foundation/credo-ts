@@ -83,7 +83,7 @@ const indyDid = 'did:indy:local:LjgpST2rjsoxYegQDRm7EL'
 
 describe('AnonCreds format services using anoncreds-rs', () => {
   afterEach(() => {
-    inMemoryStorageService.records = {}
+    inMemoryStorageService.contextCorrelationIdToRecords = {}
   })
 
   test('issuance and verification flow starting from proposal without negotiation and without revocation', async () => {
@@ -355,7 +355,7 @@ async function anonCredsFlowTest(options: { issuerId: string; revocable: boolean
     schemaId: schemaState.schemaId,
     credentialDefinitionId: credentialDefinitionState.credentialDefinitionId,
     revocationRegistryId: revocable ? revocationRegistryDefinitionId : null,
-    credentialRevocationId: revocable ? '1' : undefined,
+    credentialRevocationId: revocable ? '1' : null,
     methodName: 'inMemory',
   })
 

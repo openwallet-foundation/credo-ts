@@ -2,11 +2,16 @@ import type { AnonCredsTestsAgent } from '../../../../../../../anoncreds/tests/l
 import type { EventReplaySubject } from '../../../../../../tests'
 
 import { setupAnonCredsTests } from '../../../../../../../anoncreds/tests/legacyAnonCredsSetup'
-import { waitForCredentialRecord, waitForCredentialRecordSubject } from '../../../../../../tests/helpers'
+import {
+  waitForCredentialRecord,
+  waitForCredentialRecordSubject,
+  waitForAgentMessageProcessedEventSubject,
+} from '../../../../../../tests/helpers'
 import testLogger from '../../../../../../tests/logger'
 import { AutoAcceptCredential } from '../../../models/CredentialAutoAcceptType'
 import { CredentialState } from '../../../models/CredentialState'
 import { CredentialExchangeRecord } from '../../../repository/CredentialExchangeRecord'
+import { V2ProposeCredentialMessage } from '../messages'
 import { V2CredentialPreview } from '../messages/V2CredentialPreview'
 
 describe('V2 Credentials Auto Accept', () => {
@@ -434,6 +439,13 @@ describe('V2 Credentials Auto Accept', () => {
       await waitForCredentialRecordSubject(faberReplay, {
         state: CredentialState.ProposalReceived,
         threadId: aliceCredentialRecord.threadId,
+      })
+
+      // ProposalReceived is emitted before the whole message is finished processing
+      // So to not get errors when shutting down the agent, we wait for the message to be processed
+      await waitForAgentMessageProcessedEventSubject(faberReplay, {
+        threadId: aliceCredentialRecord.threadId,
+        messageType: V2ProposeCredentialMessage.type.messageTypeUri,
       })
     })
   })

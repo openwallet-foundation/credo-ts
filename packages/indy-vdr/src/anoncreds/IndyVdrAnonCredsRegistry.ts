@@ -478,11 +478,11 @@ export class IndyVdrAnonCredsRegistry implements AnonCredsRegistry {
     revocationRegistryDefinitionId: string
   ): Promise<GetRevocationRegistryDefinitionReturn> {
     try {
-      const indySdkPoolService = agentContext.dependencyManager.resolve(IndyVdrPoolService)
+      const indyVdrPoolService = agentContext.dependencyManager.resolve(IndyVdrPoolService)
 
       const { did, namespaceIdentifier, credentialDefinitionTag, revocationRegistryTag, schemaSeqNo } =
         parseIndyRevocationRegistryId(revocationRegistryDefinitionId)
-      const { pool } = await indySdkPoolService.getPoolForDid(agentContext, did)
+      const { pool } = await indyVdrPoolService.getPoolForDid(agentContext, did)
 
       agentContext.config.logger.debug(
         `Using ledger '${pool.indyNamespace}' to retrieve revocation registry definition '${revocationRegistryDefinitionId}'`

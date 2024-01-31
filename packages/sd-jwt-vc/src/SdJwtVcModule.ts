@@ -20,7 +20,7 @@ export class SdJwtVcModule implements Module {
     dependencyManager
       .resolve(AgentConfig)
       .logger.warn(
-        "The '@credo-ts/sd-jwt-vc' module is experimental and could have unexpected breaking changes. When using this module, make sure to use strict versions for all @aries-framework packages."
+        "The '@credo-ts/sd-jwt-vc' module is experimental and could have unexpected breaking changes. When using this module, make sure to use strict versions for all @credo-ts packages."
       )
 
     // Api

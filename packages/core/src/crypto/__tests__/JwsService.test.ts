@@ -1,15 +1,14 @@
 import type { AgentContext } from '../../agent'
 import type { Key, Wallet } from '@credo-ts/core'
 
-import { RegisteredAskarTestWallet } from '../../../../askar/tests/helpers'
-import { agentDependencies, getAgentConfig, getAgentContext } from '../../../tests/helpers'
+import { InMemoryWallet } from '../../../../../tests/InMemoryWallet'
+import { getAgentConfig, getAgentContext } from '../../../tests/helpers'
 import { DidKey } from '../../modules/dids'
 import { JsonEncoder, TypedArrayEncoder } from '../../utils'
 import { JwsService } from '../JwsService'
 import { KeyType } from '../KeyType'
 import { JwaSignatureAlgorithm } from '../jose/jwa'
 import { getJwkFromKey } from '../jose/jwk'
-import { SigningProviderRegistry } from '../signing-provider'
 
 import * as didJwsz6Mkf from './__fixtures__/didJwsz6Mkf'
 import * as didJwsz6Mkv from './__fixtures__/didJwsz6Mkv'
@@ -25,11 +24,7 @@ describe('JwsService', () => {
 
   beforeAll(async () => {
     const config = getAgentConfig('JwsService')
-    wallet = new RegisteredAskarTestWallet(
-      config.logger,
-      new agentDependencies.FileSystem(),
-      new SigningProviderRegistry([])
-    )
+    wallet = new InMemoryWallet()
     agentContext = getAgentContext({
       wallet,
     })

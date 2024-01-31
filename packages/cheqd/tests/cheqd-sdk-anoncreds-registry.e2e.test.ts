@@ -2,21 +2,21 @@ import type { CheqdDidCreateOptions } from '../src'
 
 import { Agent, JsonTransformer, TypedArrayEncoder } from '@credo-ts/core'
 
-import { agentDependencies, getAgentConfig } from '../../core/tests/helpers'
+import { getInMemoryAgentOptions } from '../../core/tests/helpers'
 import { CheqdAnonCredsRegistry } from '../src/anoncreds'
 
 import { resolverAgent } from './cheqd-did-resolver.e2e.test'
 import { getCheqdModules } from './setupCheqdModule'
 
-const agentConfig = getAgentConfig('cheqdAnonCredsRegistry')
-
-const agent = new Agent({
-  config: agentConfig,
-  dependencies: agentDependencies,
-  modules: getCheqdModules(
-    'ugly dirt sorry girl prepare argue door man that manual glow scout bomb pigeon matter library transfer flower clown cat miss pluck drama dizzy'
-  ),
-})
+const agent = new Agent(
+  getInMemoryAgentOptions(
+    'cheqdAnonCredsRegistry',
+    {},
+    getCheqdModules(
+      'ugly dirt sorry girl prepare argue door man that manual glow scout bomb pigeon matter library transfer flower clown cat miss pluck drama dizzy'
+    )
+  )
+)
 
 const cheqdAnonCredsRegistry = new CheqdAnonCredsRegistry()
 

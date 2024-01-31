@@ -7,18 +7,18 @@ import { SubjectInboundTransport } from '../../../../../../../../tests/transport
 import { SubjectOutboundTransport } from '../../../../../../../../tests/transport/SubjectOutboundTransport'
 import { V1CredentialPreview } from '../../../../../../../anoncreds/src'
 import {
-  getLegacyAnonCredsModules,
+  getAnonCredsIndyModules,
   issueLegacyAnonCredsCredential,
   prepareForAnonCredsIssuance,
   setupAnonCredsTests,
 } from '../../../../../../../anoncreds/tests/legacyAnonCredsSetup'
 import {
   waitForProofExchangeRecordSubject,
-  getAgentOptions,
   makeConnection,
   testLogger,
   setupEventReplaySubjects,
   waitForProofExchangeRecord,
+  getInMemoryAgentOptions,
 } from '../../../../../../tests'
 import { Agent } from '../../../../../agent/Agent'
 import { Attachment, AttachmentData } from '../../../../../decorators/attachment/Attachment'
@@ -265,13 +265,13 @@ describe('V2 Connectionless Proofs - Indy', () => {
 
     const unique = uuid().substring(0, 4)
 
-    const mediatorOptions = getAgentOptions(
+    const mediatorOptions = getInMemoryAgentOptions(
       `Connectionless proofs with mediator Mediator-${unique}`,
       {
         endpoints: ['rxjs:mediator'],
       },
       {
-        ...getLegacyAnonCredsModules({
+        ...getAnonCredsIndyModules({
           autoAcceptProofs: AutoAcceptProof.Always,
         }),
         mediator: new MediatorModule({
@@ -299,11 +299,11 @@ describe('V2 Connectionless Proofs - Indy', () => {
       handshakeProtocols: [HandshakeProtocol.Connections],
     })
 
-    const faberOptions = getAgentOptions(
+    const faberOptions = getInMemoryAgentOptions(
       `Connectionless proofs with mediator Faber-${unique}`,
       {},
       {
-        ...getLegacyAnonCredsModules({
+        ...getAnonCredsIndyModules({
           autoAcceptProofs: AutoAcceptProof.Always,
         }),
         mediationRecipient: new MediationRecipientModule({
@@ -315,11 +315,11 @@ describe('V2 Connectionless Proofs - Indy', () => {
       }
     )
 
-    const aliceOptions = getAgentOptions(
+    const aliceOptions = getInMemoryAgentOptions(
       `Connectionless proofs with mediator Alice-${unique}`,
       {},
       {
-        ...getLegacyAnonCredsModules({
+        ...getAnonCredsIndyModules({
           autoAcceptProofs: AutoAcceptProof.Always,
         }),
         mediationRecipient: new MediationRecipientModule({
