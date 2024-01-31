@@ -5,8 +5,8 @@ export interface AnonCredsCredentialInfo {
   attributes: AnonCredsClaimRecord
   schemaId: string
   credentialDefinitionId: string
-  revocationRegistryId?: string | undefined
-  credentialRevocationId?: string | undefined
+  revocationRegistryId: string | null
+  credentialRevocationId: string | null
   methodName: string
 }
 

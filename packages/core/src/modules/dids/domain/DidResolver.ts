@@ -3,6 +3,8 @@ import type { ParsedDid, DidResolutionResult, DidResolutionOptions } from '../ty
 
 export interface DidResolver {
   readonly supportedMethods: string[]
+  readonly allowsCaching: boolean
+
   resolve(
     agentContext: AgentContext,
     did: string,

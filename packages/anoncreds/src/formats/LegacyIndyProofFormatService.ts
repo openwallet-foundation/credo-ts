@@ -33,7 +33,7 @@ import type {
   ProofFormatAutoRespondProposalOptions,
   ProofFormatAutoRespondRequestOptions,
   ProofFormatAutoRespondPresentationOptions,
-} from '@aries-framework/core'
+} from '@credo-ts/core'
 
 import {
   AriesFrameworkError,
@@ -43,7 +43,7 @@ import {
   ProofFormatSpec,
   JsonTransformer,
   encodeCredentialValue,
-} from '@aries-framework/core'
+} from '@credo-ts/core'
 
 import { AnonCredsProofRequest as AnonCredsProofRequestClass } from '../models/AnonCredsProofRequest'
 import { AnonCredsVerifierServiceSymbol, AnonCredsHolderServiceSymbol } from '../services'

@@ -1,20 +1,17 @@
-import type { Key, Logger } from '@aries-framework/core'
+import type { Key, Logger } from '@credo-ts/core'
 
-import { AskarModule } from '@aries-framework/askar'
 import {
   getJwkFromKey,
   DidKey,
   DidsModule,
   KeyDidRegistrar,
   KeyDidResolver,
-  utils,
   KeyType,
   Agent,
   TypedArrayEncoder,
-} from '@aries-framework/core'
-import { ariesAskar } from '@hyperledger/aries-askar-nodejs'
+} from '@credo-ts/core'
 
-import { agentDependencies } from '../../../core/tests'
+import { getInMemoryAgentOptions } from '../../../core/tests'
 import { SdJwtVcService } from '../SdJwtVcService'
 import { SdJwtVcRepository } from '../repository'
 
@@ -27,17 +24,18 @@ import {
   simpleJwtVcPresentation,
 } from './sdjwtvc.fixtures'
 
-const agent = new Agent({
-  config: { label: 'sdjwtvcserviceagent', walletConfig: { id: utils.uuid(), key: utils.uuid() } },
-  modules: {
-    askar: new AskarModule({ ariesAskar }),
-    dids: new DidsModule({
-      resolvers: [new KeyDidResolver()],
-      registrars: [new KeyDidRegistrar()],
-    }),
-  },
-  dependencies: agentDependencies,
-})
+const agent = new Agent(
+  getInMemoryAgentOptions(
+    'sdjwtvcserviceagent',
+    {},
+    {
+      dids: new DidsModule({
+        resolvers: [new KeyDidResolver()],
+        registrars: [new KeyDidRegistrar()],
+      }),
+    }
+  )
+)
 
 const logger = jest.fn() as unknown as Logger
 agent.context.wallet.generateNonce = jest.fn(() => Promise.resolve('salt'))

@@ -1,8 +1,3 @@
-/**
- * NOTE: this file is availalbe in both the indy-sdk and indy-vdr packages. If making changes to
- * this file, make sure to update both files if applicable.
- */
-
 import {
   unqualifiedSchemaIdRegex,
   unqualifiedCredentialDefinitionIdRegex,
@@ -11,7 +6,7 @@ import {
   didIndyRevocationRegistryIdRegex,
   didIndySchemaIdRegex,
   didIndyRegex,
-} from '@aries-framework/anoncreds'
+} from '@credo-ts/anoncreds'
 
 // combines both legacy and did:indy anoncreds identifiers and also the issuer id
 const indyVdrAnonCredsRegexes = [
@@ -46,18 +41,28 @@ export function getDidIndySchemaId(namespace: string, unqualifiedDid: string, na
 export function getDidIndyCredentialDefinitionId(
   namespace: string,
   unqualifiedDid: string,
-  seqNo: string | number,
+  schemaSeqNo: string | number,
   tag: string
 ) {
-  return `did:indy:${namespace}:${unqualifiedDid}/anoncreds/v0/CLAIM_DEF/${seqNo}/${tag}`
+  return `did:indy:${namespace}:${unqualifiedDid}/anoncreds/v0/CLAIM_DEF/${schemaSeqNo}/${tag}`
 }
 
-export function getDidIndyRevocationRegistryId(
+export function getDidIndyRevocationRegistryDefinitionId(
   namespace: string,
   unqualifiedDid: string,
-  seqNo: string | number,
+  schemaSeqNo: string | number,
   credentialDefinitionTag: string,
   revocationRegistryTag: string
 ) {
-  return `did:indy:${namespace}:${unqualifiedDid}/anoncreds/v0/REV_REG_DEF/${seqNo}/${credentialDefinitionTag}/${revocationRegistryTag}`
+  return `did:indy:${namespace}:${unqualifiedDid}/anoncreds/v0/REV_REG_DEF/${schemaSeqNo}/${credentialDefinitionTag}/${revocationRegistryTag}`
+}
+
+export function getDidIndyRevocationRegistryEntryId(
+  namespace: string,
+  unqualifiedDid: string,
+  schemaSeqNo: string | number,
+  credentialDefinitionTag: string,
+  revocationRegistryTag: string
+) {
+  return `did:indy:${namespace}:${unqualifiedDid}/anoncreds/v0/REV_REG_ENTRY/${schemaSeqNo}/${credentialDefinitionTag}/${revocationRegistryTag}`
 }

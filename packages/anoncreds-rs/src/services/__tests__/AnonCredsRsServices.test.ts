@@ -1,4 +1,4 @@
-import type { AnonCredsProofRequest } from '@aries-framework/anoncreds'
+import type { AnonCredsProofRequest } from '@credo-ts/anoncreds'
 
 import {
   AnonCredsCredentialDefinitionPrivateRecord,
@@ -15,12 +15,6 @@ import {
   AnonCredsSchemaRecord,
   AnonCredsSchemaRepository,
   AnonCredsVerifierServiceSymbol,
-  getUnqualifiedCredentialDefinitionId,
-  getUnqualifiedSchemaId,
-  parseIndyCredentialDefinitionId,
-  parseIndySchemaId,
-} from '@aries-framework/anoncreds'
-import {
   ConsoleLogger,
   DidResolverService,
   DidsModuleConfig,
@@ -32,11 +26,16 @@ import {
   VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2020,
   W3cCredentialsModuleConfig,
   encodeCredentialValue,
-} from '@aries-framework/core'
+  getUnqualifiedCredentialDefinitionId,
+  getUnqualifiedSchemaId,
+  parseIndyCredentialDefinitionId,
+  parseIndySchemaId,
+} from '@credo-ts/anoncreds'
 import { anoncreds } from '@hyperledger/anoncreds-nodejs'
 import { Subject } from 'rxjs'
 
 import { InMemoryStorageService } from '../../../../../tests/InMemoryStorageService'
+import { InMemoryWallet } from '../../../../../tests/InMemoryWallet'
 import { InMemoryAnonCredsRegistry } from '../../../../anoncreds/tests/InMemoryAnonCredsRegistry'
 import { agentDependencies, getAgentConfig, getAgentContext } from '../../../../core/tests/helpers'
 import { AnonCredsRsHolderService } from '../AnonCredsRsHolderService'
@@ -48,11 +47,13 @@ const anonCredsVerifierService = new AnonCredsRsVerifierService()
 const anonCredsHolderService = new AnonCredsRsHolderService()
 const anonCredsIssuerService = new AnonCredsRsIssuerService()
 const storageService = new InMemoryStorageService()
+const wallet = new InMemoryWallet()
 const registry = new InMemoryAnonCredsRegistry()
 
 const logger = new ConsoleLogger()
 
 const agentContext = getAgentContext({
+  wallet,
   registerInstances: [
     [InjectionSymbols.Stop$, new Subject<boolean>()],
     [InjectionSymbols.AgentDependencies, agentDependencies],
@@ -218,8 +219,8 @@ describe('AnonCredsRsServices', () => {
       },
       schemaId: schemaState.schemaId,
       credentialDefinitionId: credentialDefinitionState.credentialDefinitionId,
-      revocationRegistryId: undefined,
-      credentialRevocationId: undefined, // Should it be null in this case?
+      revocationRegistryId: null,
+      credentialRevocationId: null,
       methodName: 'inMemory',
     })
 
@@ -426,8 +427,8 @@ describe('AnonCredsRsServices', () => {
       },
       schemaId: unqualifiedSchemaId,
       credentialDefinitionId: unqualifiedCredentialDefinitionId,
-      revocationRegistryId: undefined,
-      credentialRevocationId: undefined, // Should it be null in this case?
+      revocationRegistryId: null,
+      credentialRevocationId: null,
       methodName: 'inMemory',
     })
 

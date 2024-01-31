@@ -1,4 +1,4 @@
-import type { AnonCredsCredential } from '@aries-framework/anoncreds'
+import type { AnonCredsCredential } from '@credo-ts/anoncreds'
 
 import { AnonCredsCredentialRecord } from '../AnonCredsCredentialRecord'
 

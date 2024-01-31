@@ -17,3 +17,4 @@ export { assertBestPracticeRevocationInterval } from './utils/revocationInterval
 export { storeLinkSecret } from './utils/linkSecret'
 export { legacyCredentialToW3cCredential, w3cToLegacyCredential } from './utils/w3cUtils'
 export { fetchObjectsFromLedger, fetchQualifiedIds } from './utils/ledgerObjects'
+export { dateToTimestamp } from './utils'

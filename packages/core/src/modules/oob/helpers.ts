@@ -1,6 +1,6 @@
 import type { OutOfBandInvitationOptions } from './messages'
 
-import { ConnectionInvitationMessage, HandshakeProtocol } from '../connections'
+import { ConnectionInvitationMessage } from '../connections'
 import { didKeyToVerkey, verkeyToDidKey } from '../dids/helpers'
 
 import { OutOfBandDidCommService } from './domain/OutOfBandDidCommService'
@@ -29,7 +29,9 @@ export function convertToNewInvitation(oldInvitation: ConnectionInvitationMessag
     appendedAttachments: oldInvitation.appendedAttachments,
     accept: ['didcomm/aip1', 'didcomm/aip2;env=rfc19'],
     services: [service],
-    handshakeProtocols: [HandshakeProtocol.Connections],
+    // NOTE: we hardcode it to 1.0, we won't see support for newer versions of the protocol
+    // and we also can process 1.0 if we support newer versions
+    handshakeProtocols: ['https://didcomm.org/connections/1.0'],
   }
 
   const outOfBandInvitation = new OutOfBandInvitation(options)
@@ -45,7 +47,8 @@ export function convertToOldInvitation(newInvitation: OutOfBandInvitation) {
   if (typeof service === 'string') {
     options = {
       id: newInvitation.id,
-      label: newInvitation.label,
+      // label is optional
+      label: newInvitation.label ?? '',
       did: service,
       imageUrl: newInvitation.imageUrl,
       appendedAttachments: newInvitation.appendedAttachments,
@@ -53,7 +56,8 @@ export function convertToOldInvitation(newInvitation: OutOfBandInvitation) {
   } else {
     options = {
       id: newInvitation.id,
-      label: newInvitation.label,
+      // label is optional
+      label: newInvitation.label ?? '',
       recipientKeys: service.recipientKeys.map(didKeyToVerkey),
       routingKeys: service.routingKeys?.map(didKeyToVerkey),
       serviceEndpoint: service.serviceEndpoint,

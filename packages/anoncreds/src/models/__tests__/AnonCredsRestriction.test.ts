@@ -1,4 +1,4 @@
-import { JsonTransformer } from '@aries-framework/core'
+import { JsonTransformer } from '@credo-ts/core'
 import { Type } from 'class-transformer'
 import { IsArray } from 'class-validator'
 

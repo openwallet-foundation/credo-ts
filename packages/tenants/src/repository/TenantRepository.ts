@@ -1,4 +1,4 @@
-import { Repository, StorageService, InjectionSymbols, EventEmitter, inject, injectable } from '@aries-framework/core'
+import { Repository, StorageService, InjectionSymbols, EventEmitter, inject, injectable } from '@credo-ts/core'
 
 import { TenantRecord } from './TenantRecord'
 

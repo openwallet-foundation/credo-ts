@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { ConsoleLogger, LogLevel } from '@aries-framework/core'
+import { ConsoleLogger, LogLevel } from '@credo-ts/core'
 import { createHash } from 'crypto'
 import express from 'express'
 import fs from 'fs'

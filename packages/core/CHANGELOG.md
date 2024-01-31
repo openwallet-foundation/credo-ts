@@ -195,7 +195,7 @@ Handler is now MessageHandler
 HandlerInboundMessage is now MessageHandlerInboundMessage
 Dispatcher.registerHandler is now Dispatcher.registerMessageHandlers
 
-- `useDidKeyInProtocols` configuration parameter is now enabled by default. If your agent only interacts with modern agents (e.g. AFJ 0.2.5 and newer) this will not represent any issue. Otherwise it is safer to explicitly set it to `false`. However, keep in mind that we expect this setting to be deprecated in the future, so we encourage you to update all your agents to use did:key.
+- `useDidKeyInProtocols` configuration parameter is now enabled by default. If your agent only interacts with modern agents (e.g. Credo 0.2.5 and newer) this will not represent any issue. Otherwise it is safer to explicitly set it to `false`. However, keep in mind that we expect this setting to be deprecated in the future, so we encourage you to update all your agents to use did:key.
 - action-menu module has been removed from the core and moved to a separate package. To integrate it in an Agent instance, it can be injected in constructor like this:
 
 ```ts

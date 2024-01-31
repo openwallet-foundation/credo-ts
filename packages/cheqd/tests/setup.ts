@@ -1,6 +1,6 @@
 jest.setTimeout(60000)
 
-import { DidDocument, DidDocumentService, VerificationMethod } from '@aries-framework/core'
+import { DidDocument, DidDocumentService, VerificationMethod } from '@credo-ts/core'
 
 export const validDid = 'did:cheqd:testnet:SiVQgrFZ7jFZFrTGstT4ZD'
 

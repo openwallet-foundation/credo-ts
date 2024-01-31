@@ -1,6 +1,6 @@
-import type { Wallet } from '@aries-framework/core'
+import type { Wallet } from '@credo-ts/core'
 
-import { Key } from '@aries-framework/core'
+import { Key } from '@credo-ts/core'
 
 import { getAgentContext, mockFunction } from '../../../../core/tests/helpers'
 import { TenantRecord, TenantRoutingRecord } from '../../repository'

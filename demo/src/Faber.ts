@@ -1,28 +1,22 @@
-import type { RegisterCredentialDefinitionReturnStateFinished } from '@aries-framework/anoncreds'
+import type { RegisterCredentialDefinitionReturnStateFinished } from '@credo-ts/anoncreds'
 import type {
   ConnectionRecord,
   ConnectionStateChangedEvent,
   CredentialStateChangedEvent,
   ProofStateChangedEvent,
-} from '@aries-framework/core'
-import type {
-  IndyVdrRegisterSchemaOptions,
-  IndyVdrRegisterCredentialDefinitionOptions,
-} from '@aries-framework/indy-vdr'
+} from '@credo-ts/core'
+import type { IndyVdrRegisterSchemaOptions, IndyVdrRegisterCredentialDefinitionOptions } from '@credo-ts/indy-vdr'
 import type BottomBar from 'inquirer/lib/ui/bottom-bar'
 
 import {
   CredentialState,
-  ConnectionEventTypes,
   CredentialEventTypes,
-  KeyType,
-  TypedArrayEncoder,
   W3cCredential,
   W3cCredentialSubject,
-  utils,
   ProofEventTypes,
   ProofState,
-} from '@aries-framework/core'
+} from '@crede-ts/core'
+import { ConnectionEventTypes, KeyType, TypedArrayEncoder, utils } from '@credo-ts/core'
 import { randomInt } from 'crypto'
 import { ui } from 'inquirer'
 
@@ -41,7 +35,7 @@ export class Faber extends BaseAgent {
   public ui: BottomBar
 
   public constructor(port: number, name: string) {
-    super({ port, name, useLegacyIndySdk: true })
+    super({ port, name })
     this.ui = new ui.BottomBar()
   }
 

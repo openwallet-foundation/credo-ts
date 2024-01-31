@@ -1,10 +1,10 @@
 import type {
   KeyDidCreateOptions,
+  CredentialStateChangedEvent,
   ConnectionRecord,
   CredentialExchangeRecord,
   ProofExchangeRecord,
-  CredentialStateChangedEvent,
-} from '@aries-framework/core'
+} from '@credo-ts/core'
 import type BottomBar from 'inquirer/lib/ui/bottom-bar'
 
 import {
@@ -14,7 +14,7 @@ import {
   DidsApi,
   KeyType,
   TypedArrayEncoder,
-} from '@aries-framework/core'
+} from '@credo-ts/core'
 import { randomInt } from 'crypto'
 import { ui } from 'inquirer'
 
@@ -28,7 +28,7 @@ export class Alice extends BaseAgent {
   public ui: BottomBar
 
   public constructor(port: number, name: string) {
-    super({ port, name, useLegacyIndySdk: true })
+    super({ port, name })
     this.connected = false
     this.ui = new ui.BottomBar()
   }

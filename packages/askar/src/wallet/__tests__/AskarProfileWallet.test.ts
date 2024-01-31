@@ -1,11 +1,6 @@
-import type { WalletConfig } from '@aries-framework/core'
+import type { WalletConfig } from '@credo-ts/core'
 
-import {
-  SigningProviderRegistry,
-  WalletDuplicateError,
-  WalletNotFoundError,
-  KeyDerivationMethod,
-} from '@aries-framework/core'
+import { SigningProviderRegistry, WalletDuplicateError, WalletNotFoundError, KeyDerivationMethod } from '@credo-ts/core'
 
 import { testLogger, agentDependencies } from '../../../../core/tests'
 import { AskarProfileWallet } from '../AskarProfileWallet'

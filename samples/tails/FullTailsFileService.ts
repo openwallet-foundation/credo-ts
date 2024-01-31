@@ -1,8 +1,8 @@
-import type { AnonCredsRevocationRegistryDefinition } from '@aries-framework/anoncreds'
-import type { AgentContext } from '@aries-framework/core'
+import type { AnonCredsRevocationRegistryDefinition } from '@credo-ts/anoncreds'
+import type { AgentContext } from '@credo-ts/core'
 
-import { BasicTailsFileService } from '@aries-framework/anoncreds'
-import { utils } from '@aries-framework/core'
+import { BasicTailsFileService } from '@credo-ts/anoncreds'
+import { utils } from '@credo-ts/core'
 import FormData from 'form-data'
 import fs from 'fs'
 

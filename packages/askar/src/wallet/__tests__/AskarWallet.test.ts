@@ -5,7 +5,7 @@ import type {
   KeyPair,
   SignOptions,
   VerifyOptions,
-} from '@aries-framework/core'
+} from '@credo-ts/core'
 
 import {
   WalletKeyExistsError,
@@ -19,7 +19,7 @@ import {
   TypedArrayEncoder,
   KeyDerivationMethod,
   Buffer,
-} from '@aries-framework/core'
+} from '@credo-ts/core'
 import { Store } from '@hyperledger/aries-askar-shared'
 
 import { encodeToBase58 } from '../../../../core/src/utils/base58'
@@ -59,6 +59,7 @@ describe('AskarWallet basic operations', () => {
       KeyType.Bls12381g2,
       KeyType.Bls12381g1g2,
       KeyType.P256,
+      KeyType.K256,
     ])
   })
 

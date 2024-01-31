@@ -1,10 +1,11 @@
+import type {
+  AnonCredsCredentialDefinition,
+  AnonCredsCredentialInfo,
+  AnonCredsCredentialOffer,
+} from '@credo-ts/anoncreds'
 import type { JsonObject } from '@hyperledger/anoncreds-shared'
 
-import {
-  type AnonCredsCredentialDefinition,
-  type AnonCredsCredentialInfo,
-  type AnonCredsCredentialOffer,
-} from '@aries-framework/anoncreds'
+import {} from '@aries-framework/anoncreds'
 import { JsonTransformer, W3cJsonLdVerifiableCredential } from '@aries-framework/core'
 import {
   CredentialDefinition,
@@ -162,6 +163,8 @@ export function createCredentialForHolder(options: {
     credentialId,
     schemaId,
     methodName: 'inMemory',
+    credentialRevocationId: null,
+    revocationRegistryId: null,
   }
   const returnObj = {
     credential: w3cJsonLdCredential,

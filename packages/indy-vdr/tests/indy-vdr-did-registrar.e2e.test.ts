@@ -1,6 +1,6 @@
 import type { IndyVdrDidCreateOptions, IndyVdrDidCreateResult } from '../src/dids/IndyVdrIndyDidRegistrar'
 
-import { didIndyRegex } from '@aries-framework/anoncreds'
+import { didIndyRegex } from '@credo-ts/anoncreds'
 import {
   Key,
   JsonTransformer,
@@ -11,14 +11,15 @@ import {
   DidDocumentService,
   Agent,
   DidsModule,
-} from '@aries-framework/core'
+} from '@credo-ts/core'
 import { indyVdr } from '@hyperledger/indy-vdr-nodejs'
 import { convertPublicKeyToX25519, generateKeyPairFromSeed } from '@stablelib/ed25519'
 
-import { sleep } from '../../core/src/utils/sleep'
-import { getAgentOptions, importExistingIndyDidFromPrivateKey } from '../../core/tests/helpers'
-import { IndySdkModule } from '../../indy-sdk/src'
-import { indySdk } from '../../indy-sdk/tests/setupIndySdkModule'
+import {
+  getInMemoryAgentOptions,
+  importExistingIndyDidFromPrivateKey,
+  retryUntilResult,
+} from '../../core/tests/helpers'
 import { IndyVdrModule, IndyVdrSovDidResolver } from '../src'
 import { IndyVdrIndyDidRegistrar } from '../src/dids/IndyVdrIndyDidRegistrar'
 import { IndyVdrIndyDidResolver } from '../src/dids/IndyVdrIndyDidResolver'
@@ -27,16 +28,13 @@ import { indyDidFromNamespaceAndInitialKey } from '../src/dids/didIndyUtil'
 import { indyVdrModuleConfig } from './helpers'
 
 const endorser = new Agent(
-  getAgentOptions(
+  getInMemoryAgentOptions(
     'Indy VDR Indy DID Registrar',
     {},
     {
       indyVdr: new IndyVdrModule({
         networks: indyVdrModuleConfig.networks,
         indyVdr,
-      }),
-      indySdk: new IndySdkModule({
-        indySdk,
       }),
       dids: new DidsModule({
         registrars: [new IndyVdrIndyDidRegistrar()],
@@ -46,16 +44,13 @@ const endorser = new Agent(
   )
 )
 const agent = new Agent(
-  getAgentOptions(
+  getInMemoryAgentOptions(
     'Indy VDR Indy DID Registrar',
     {},
     {
       indyVdr: new IndyVdrModule({
         indyVdr,
         networks: indyVdrModuleConfig.networks,
-      }),
-      indySdk: new IndySdkModule({
-        indySdk,
       }),
       dids: new DidsModule({
         registrars: [new IndyVdrIndyDidRegistrar()],
@@ -125,33 +120,31 @@ describe('Indy VDR Indy Did Registrar', () => {
     const did = didRegistrationResult.didState.did
     if (!did) throw Error('did not defined')
 
-    // Wait some time pass to let ledger settle the object
-    await sleep(1000)
+    // Tries to call it in an interval until it succeeds (with maxAttempts)
+    // As the ledger write is not always consistent in how long it takes
+    // to write the data, we need to retry until we get a result.
+    const didDocument = await retryUntilResult(async () => {
+      const result = await endorser.dids.resolve(did)
+      return result.didDocument
+    })
 
-    const didResolutionResult = await endorser.dids.resolve(did)
-    expect(JsonTransformer.toJSON(didResolutionResult)).toMatchObject({
-      didDocument: {
-        '@context': ['https://w3id.org/did/v1', 'https://w3id.org/security/suites/ed25519-2018/v1'],
-        id: did,
-        alsoKnownAs: undefined,
-        controller: undefined,
-        verificationMethod: [
-          {
-            type: 'Ed25519VerificationKey2018',
-            controller: did,
-            id: `${did}#verkey`,
-            publicKeyBase58: expect.any(String),
-          },
-        ],
-        capabilityDelegation: undefined,
-        capabilityInvocation: undefined,
-        authentication: [`${did}#verkey`],
-        service: undefined,
-      },
-      didDocumentMetadata: {},
-      didResolutionMetadata: {
-        contentType: 'application/did+ld+json',
-      },
+    expect(JsonTransformer.toJSON(didDocument)).toMatchObject({
+      '@context': ['https://w3id.org/did/v1', 'https://w3id.org/security/suites/ed25519-2018/v1'],
+      id: did,
+      alsoKnownAs: undefined,
+      controller: undefined,
+      verificationMethod: [
+        {
+          type: 'Ed25519VerificationKey2018',
+          controller: did,
+          id: `${did}#verkey`,
+          publicKeyBase58: expect.any(String),
+        },
+      ],
+      capabilityDelegation: undefined,
+      capabilityInvocation: undefined,
+      authentication: [`${did}#verkey`],
+      service: undefined,
     })
   })
 
@@ -210,6 +203,9 @@ describe('Indy VDR Indy Did Registrar', () => {
       secret: didState.secret,
     })
 
+    if (didCreateSubmitResult.didState.state !== 'finished') {
+      throw new Error(`Unexpected did state, ${JSON.stringify(didCreateSubmitResult.didState, null, 2)}`)
+    }
     expect(JsonTransformer.toJSON(didCreateSubmitResult)).toMatchObject({
       didDocumentMetadata: {},
       didRegistrationMetadata: {},
@@ -237,33 +233,31 @@ describe('Indy VDR Indy Did Registrar', () => {
       },
     })
 
-    // Wait some time pass to let ledger settle the object
-    await sleep(1000)
+    // Tries to call it in an interval until it succeeds (with maxAttempts)
+    // As the ledger write is not always consistent in how long it takes
+    // to write the data, we need to retry until we get a result.
+    const didDocument = await retryUntilResult(async () => {
+      const result = await endorser.dids.resolve(did)
+      return result.didDocument
+    })
 
-    const didResult = await endorser.dids.resolve(did)
-    expect(JsonTransformer.toJSON(didResult)).toMatchObject({
-      didDocument: {
-        '@context': ['https://w3id.org/did/v1', 'https://w3id.org/security/suites/ed25519-2018/v1'],
-        id: did,
-        alsoKnownAs: undefined,
-        controller: undefined,
-        verificationMethod: [
-          {
-            type: 'Ed25519VerificationKey2018',
-            controller: did,
-            id: `${did}#verkey`,
-            publicKeyBase58: ed25519PublicKeyBase58,
-          },
-        ],
-        capabilityDelegation: undefined,
-        capabilityInvocation: undefined,
-        authentication: [`${did}#verkey`],
-        service: undefined,
-      },
-      didDocumentMetadata: {},
-      didResolutionMetadata: {
-        contentType: 'application/did+ld+json',
-      },
+    expect(JsonTransformer.toJSON(didDocument)).toMatchObject({
+      '@context': ['https://w3id.org/did/v1', 'https://w3id.org/security/suites/ed25519-2018/v1'],
+      id: did,
+      alsoKnownAs: undefined,
+      controller: undefined,
+      verificationMethod: [
+        {
+          type: 'Ed25519VerificationKey2018',
+          controller: did,
+          id: `${did}#verkey`,
+          publicKeyBase58: ed25519PublicKeyBase58,
+        },
+      ],
+      capabilityDelegation: undefined,
+      capabilityInvocation: undefined,
+      authentication: [`${did}#verkey`],
+      service: undefined,
     })
   })
 
@@ -317,33 +311,31 @@ describe('Indy VDR Indy Did Registrar', () => {
       },
     })
 
-    // Wait some time pass to let ledger settle the object
-    await sleep(1000)
+    // Tries to call it in an interval until it succeeds (with maxAttempts)
+    // As the ledger write is not always consistent in how long it takes
+    // to write the data, we need to retry until we get a result.
+    const didDocument = await retryUntilResult(async () => {
+      const result = await endorser.dids.resolve(did)
+      return result.didDocument
+    })
 
-    const didResult = await endorser.dids.resolve(did)
-    expect(JsonTransformer.toJSON(didResult)).toMatchObject({
-      didDocument: {
-        '@context': ['https://w3id.org/did/v1', 'https://w3id.org/security/suites/ed25519-2018/v1'],
-        id: did,
-        alsoKnownAs: undefined,
-        controller: undefined,
-        verificationMethod: [
-          {
-            type: 'Ed25519VerificationKey2018',
-            controller: did,
-            id: `${did}#verkey`,
-            publicKeyBase58: ed25519PublicKeyBase58,
-          },
-        ],
-        capabilityDelegation: undefined,
-        capabilityInvocation: undefined,
-        authentication: [`${did}#verkey`],
-        service: undefined,
-      },
-      didDocumentMetadata: {},
-      didResolutionMetadata: {
-        contentType: 'application/did+ld+json',
-      },
+    expect(JsonTransformer.toJSON(didDocument)).toMatchObject({
+      '@context': ['https://w3id.org/did/v1', 'https://w3id.org/security/suites/ed25519-2018/v1'],
+      id: did,
+      alsoKnownAs: undefined,
+      controller: undefined,
+      verificationMethod: [
+        {
+          type: 'Ed25519VerificationKey2018',
+          controller: did,
+          id: `${did}#verkey`,
+          publicKeyBase58: ed25519PublicKeyBase58,
+        },
+      ],
+      capabilityDelegation: undefined,
+      capabilityInvocation: undefined,
+      authentication: [`${did}#verkey`],
+      service: undefined,
     })
   })
 
@@ -458,17 +450,15 @@ describe('Indy VDR Indy Did Registrar', () => {
       },
     })
 
-    // Wait some time pass to let ledger settle the object
-    await sleep(1000)
-
-    const didResult = await endorser.dids.resolve(did)
-    expect(JsonTransformer.toJSON(didResult)).toMatchObject({
-      didDocument: expectedDidDocument,
-      didDocumentMetadata: {},
-      didResolutionMetadata: {
-        contentType: 'application/did+ld+json',
-      },
+    // Tries to call it in an interval until it succeeds (with maxAttempts)
+    // As the ledger write is not always consistent in how long it takes
+    // to write the data, we need to retry until we get a result.
+    const didDocument = await retryUntilResult(async () => {
+      const result = await endorser.dids.resolve(did)
+      return result.didDocument
     })
+
+    expect(JsonTransformer.toJSON(didDocument)).toMatchObject(expectedDidDocument)
   })
 
   test('can register an endorsed did:indy with services - did and verkey specified - using attrib endpoint', async () => {
@@ -598,6 +588,10 @@ describe('Indy VDR Indy Did Registrar', () => {
       ],
     }
 
+    if (didCreateSubmitResult.didState.state !== 'finished') {
+      throw new Error(`Unexpected did state, ${JSON.stringify(didCreateSubmitResult.didState, null, 2)}`)
+    }
+
     expect(JsonTransformer.toJSON(didCreateSubmitResult)).toMatchObject({
       didDocumentMetadata: {},
       didRegistrationMetadata: {},
@@ -607,16 +601,15 @@ describe('Indy VDR Indy Did Registrar', () => {
         didDocument: expectedDidDocument,
       },
     })
-    // Wait some time pass to let ledger settle the object
-    await sleep(1000)
 
-    const didResult = await endorser.dids.resolve(did)
-    expect(JsonTransformer.toJSON(didResult)).toMatchObject({
-      didDocument: expectedDidDocument,
-      didDocumentMetadata: {},
-      didResolutionMetadata: {
-        contentType: 'application/did+ld+json',
-      },
+    // Tries to call it in an interval until it succeeds (with maxAttempts)
+    // As the ledger write is not always consistent in how long it takes
+    // to write the data, we need to retry until we get a result.
+    const didDocument = await retryUntilResult(async () => {
+      const result = await endorser.dids.resolve(did)
+      return result.didDocument
     })
+
+    expect(JsonTransformer.toJSON(didDocument)).toMatchObject(expectedDidDocument)
   })
 })

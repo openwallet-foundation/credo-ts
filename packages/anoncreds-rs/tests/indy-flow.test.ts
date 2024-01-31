@@ -1,5 +1,5 @@
-import type { AnonCredsCredentialRequest } from '@aries-framework/anoncreds'
-import type { Wallet } from '@aries-framework/core'
+import type { AnonCredsCredentialRequest } from '@credo-ts/anoncreds'
+import type { Wallet } from '@credo-ts/core'
 
 import {
   getUnqualifiedSchemaId,
@@ -22,7 +22,7 @@ import {
   AnonCredsLinkSecretRepository,
   AnonCredsLinkSecretRecord,
   LegacyIndyProofFormatService,
-} from '@aries-framework/anoncreds'
+} from '@credo-ts/anoncreds'
 import {
   CredentialState,
   CredentialExchangeRecord,
@@ -32,7 +32,6 @@ import {
   ProofExchangeRecord,
   Ed25519Signature2018,
   KeyType,
-  SignatureSuiteRegistry,
   SignatureSuiteToken,
   VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2018,
   VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2020,
@@ -40,7 +39,7 @@ import {
   ConsoleLogger,
   DidResolverService,
   DidsModuleConfig,
-} from '@aries-framework/core'
+} from '@credo-ts/core'
 import { Subject } from 'rxjs'
 
 import { InMemoryStorageService } from '../../../tests/InMemoryStorageService'
@@ -310,8 +309,8 @@ describe('Legacy indy format services using anoncreds-rs', () => {
       },
       schemaId: unqualifiedSchemaId,
       credentialDefinitionId: unqualifiedCredentialDefinitionId,
-      revocationRegistryId: undefined,
-      credentialRevocationId: undefined, // FIXME: should be null?
+      revocationRegistryId: null,
+      credentialRevocationId: null,
       methodName: 'inMemory',
     })
 

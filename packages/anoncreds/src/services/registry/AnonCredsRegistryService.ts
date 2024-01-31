@@ -1,7 +1,7 @@
 import type { AnonCredsRegistry } from '.'
-import type { AgentContext } from '@aries-framework/core'
+import type { AgentContext } from '@credo-ts/core'
 
-import { injectable } from '@aries-framework/core'
+import { injectable } from '@credo-ts/core'
 
 import { AnonCredsModuleConfig } from '../../AnonCredsModuleConfig'
 import { AnonCredsError } from '../../error'

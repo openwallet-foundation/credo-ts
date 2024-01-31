@@ -39,10 +39,6 @@ import {
 
 @injectable()
 export class V2MessagePickupProtocol extends BaseMessagePickupProtocol {
-  public constructor() {
-    super()
-  }
-
   /**
    * The version of the message pickup protocol this class supports
    */
@@ -99,7 +95,10 @@ export class V2MessagePickupProtocol extends BaseMessagePickupProtocol {
       messageCount: await messageRepository.getAvailableMessageCount(connection.id),
     })
 
-    return new OutboundMessageContext(statusMessage, { agentContext: messageContext.agentContext, connection })
+    return new OutboundMessageContext(statusMessage, {
+      agentContext: messageContext.agentContext,
+      connection,
+    })
   }
 
   public async processDeliveryRequest(messageContext: InboundMessageContext<V2DeliveryRequestMessage>) {
@@ -141,7 +140,10 @@ export class V2MessagePickupProtocol extends BaseMessagePickupProtocol {
             messageCount: 0,
           })
 
-    return new OutboundMessageContext(outboundMessageContext, { agentContext: messageContext.agentContext, connection })
+    return new OutboundMessageContext(outboundMessageContext, {
+      agentContext: messageContext.agentContext,
+      connection,
+    })
   }
 
   public async processMessagesReceived(messageContext: InboundMessageContext<V2MessagesReceivedMessage>) {
@@ -165,7 +167,10 @@ export class V2MessagePickupProtocol extends BaseMessagePickupProtocol {
       messageCount: await messageRepository.getAvailableMessageCount(connection.id),
     })
 
-    return new OutboundMessageContext(statusMessage, { agentContext: messageContext.agentContext, connection })
+    return new OutboundMessageContext(statusMessage, {
+      agentContext: messageContext.agentContext,
+      connection,
+    })
   }
 
   public async processStatus(messageContext: InboundMessageContext<V2StatusMessage>) {
@@ -187,7 +192,7 @@ export class V2MessagePickupProtocol extends BaseMessagePickupProtocol {
         }
       )
 
-      // FIXME: check where this flow fits, as it seems very particular for the AFJ-ACA-Py combination
+      // FIXME: check where this flow fits, as it seems very particular for the Credo-ACA-Py combination
       const websocketSchemes = ['ws', 'wss']
 
       await messageSender.sendMessage(

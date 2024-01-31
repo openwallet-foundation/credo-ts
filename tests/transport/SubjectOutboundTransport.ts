@@ -1,9 +1,9 @@
 import type { SubjectMessage } from './SubjectInboundTransport'
-import type { OutboundPackage, OutboundTransport, Agent, Logger } from '@aries-framework/core'
+import type { OutboundPackage, OutboundTransport, Agent, Logger } from '@credo-ts/core'
 
 import { takeUntil, Subject, take } from 'rxjs'
 
-import { MessageReceiver, InjectionSymbols, AriesFrameworkError } from '@aries-framework/core'
+import { MessageReceiver, InjectionSymbols, AriesFrameworkError } from '@credo-ts/core'
 
 export class SubjectOutboundTransport implements OutboundTransport {
   private logger!: Logger

@@ -52,7 +52,11 @@ describe('x25519', () => {
   })
 
   it('supports X25519KeyAgreementKey2019 verification method type', () => {
-    expect(keyDidX25519.supportedVerificationMethodTypes).toMatchObject(['X25519KeyAgreementKey2019', 'JsonWebKey2020'])
+    expect(keyDidX25519.supportedVerificationMethodTypes).toMatchObject([
+      'X25519KeyAgreementKey2019',
+      'JsonWebKey2020',
+      'Multikey',
+    ])
   })
 
   it('returns key for X25519KeyAgreementKey2019 verification method', () => {

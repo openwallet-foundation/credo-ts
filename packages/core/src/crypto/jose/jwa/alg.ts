@@ -12,6 +12,7 @@ export enum JwaSignatureAlgorithm {
   PS384 = 'PS384',
   PS512 = 'PS512',
   EdDSA = 'EdDSA',
+  ES256K = 'ES256K',
   None = 'none',
 }
 

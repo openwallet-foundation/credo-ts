@@ -1,12 +1,6 @@
-import type { WalletConfig } from '@aries-framework/core'
+import type { WalletConfig } from '@credo-ts/core'
 
-import {
-  JsonTransformer,
-  BasicMessage,
-  KeyType,
-  SigningProviderRegistry,
-  KeyDerivationMethod,
-} from '@aries-framework/core'
+import { JsonTransformer, BasicMessage, KeyType, SigningProviderRegistry, KeyDerivationMethod } from '@credo-ts/core'
 
 import { agentDependencies } from '../../../../core/tests/helpers'
 import testLogger from '../../../../core/tests/logger'

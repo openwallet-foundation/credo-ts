@@ -8,8 +8,7 @@ import { Subject } from 'rxjs'
 
 import { SubjectInboundTransport } from '../../../../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from '../../../../../../tests/transport/SubjectOutboundTransport'
-import { getIndySdkModules } from '../../../../../indy-sdk/tests/setupIndySdkModule'
-import { getAgentOptions, waitForBasicMessage } from '../../../../tests/helpers'
+import { getInMemoryAgentOptions, waitForBasicMessage } from '../../../../tests/helpers'
 import { Agent } from '../../../agent/Agent'
 import { sleep } from '../../../utils/sleep'
 import { ConnectionRecord, HandshakeProtocol } from '../../connections'
@@ -18,27 +17,22 @@ import { MediatorModule } from '../MediatorModule'
 import { MediatorPickupStrategy } from '../MediatorPickupStrategy'
 import { MediationState } from '../models/MediationState'
 
-const recipientAgentOptions = getAgentOptions('Mediation: Recipient', {}, getIndySdkModules())
-const mediatorAgentOptions = getAgentOptions(
+const recipientAgentOptions = getInMemoryAgentOptions('Mediation: Recipient')
+const mediatorAgentOptions = getInMemoryAgentOptions(
   'Mediation: Mediator',
   {
     endpoints: ['rxjs:mediator'],
   },
   {
-    ...getIndySdkModules(),
     mediator: new MediatorModule({
       autoAcceptMediationRequests: true,
     }),
   }
 )
 
-const senderAgentOptions = getAgentOptions(
-  'Mediation: Sender',
-  {
-    endpoints: ['rxjs:sender'],
-  },
-  getIndySdkModules()
-)
+const senderAgentOptions = getInMemoryAgentOptions('Mediation: Sender', {
+  endpoints: ['rxjs:sender'],
+})
 
 describe('mediator establishment', () => {
   let recipientAgent: Agent
@@ -245,22 +239,10 @@ describe('mediator establishment', () => {
 
     expect(recipientMediator?.state).toBe(MediationState.Granted)
 
+    await recipientAgent.mediationRecipient.stopMessagePickup()
+
     // Restart recipient agent
     await recipientAgent.shutdown()
-    recipientAgent = new Agent({
-      ...recipientAgentOptions,
-      modules: {
-        ...recipientAgentOptions.modules,
-        mediationRecipient: new MediationRecipientModule({
-          mediatorInvitationUrl: mediatorOutOfBandRecord.outOfBandInvitation.toUrl({
-            domain: 'https://example.com/ssi',
-          }),
-          mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
-        }),
-      },
-    })
-    recipientAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
-    recipientAgent.registerInboundTransport(new SubjectInboundTransport(recipientMessages))
     await recipientAgent.initialize()
 
     // Initialize sender agent

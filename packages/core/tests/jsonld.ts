@@ -1,9 +1,9 @@
 import type { EventReplaySubject } from './events'
 import type { AutoAcceptCredential, AutoAcceptProof, ConnectionRecord } from '../src'
 
+import { InMemoryWalletModule } from '../../../tests/InMemoryWalletModule'
+import { askarModule } from '../../askar/tests/helpers'
 import { BbsModule } from '../../bbs-signatures/src/BbsModule'
-import { IndySdkModule } from '../../indy-sdk/src'
-import { indySdk } from '../../indy-sdk/tests/setupIndySdkModule'
 import {
   PresentationExchangeProofFormatService,
   V2ProofProtocol,
@@ -29,7 +29,8 @@ export type JsonLdTestsAgent = Agent<ReturnType<typeof getJsonLdModules>>
 export const getJsonLdModules = ({
   autoAcceptCredentials,
   autoAcceptProofs,
-}: { autoAcceptCredentials?: AutoAcceptCredential; autoAcceptProofs?: AutoAcceptProof } = {}) =>
+  useBbs = false,
+}: { autoAcceptCredentials?: AutoAcceptCredential; autoAcceptProofs?: AutoAcceptProof; useBbs?: boolean } = {}) =>
   ({
     credentials: new CredentialsModule({
       credentialProtocols: [new V2CredentialProtocol({ credentialFormats: [new JsonLdCredentialFormatService()] })],
@@ -45,10 +46,15 @@ export const getJsonLdModules = ({
     cache: new CacheModule({
       cache: new InMemoryLruCache({ limit: 100 }),
     }),
-    indySdk: new IndySdkModule({
-      indySdk,
-    }),
-    bbs: new BbsModule(),
+    // We don't support signing provider in in memory wallet yet, so if BBS is used we need to use Askar
+    ...(useBbs
+      ? {
+          askar: askarModule,
+          bbs: new BbsModule(),
+        }
+      : {
+          inMemory: new InMemoryWalletModule(),
+        }),
   } as const)
 
 interface SetupJsonLdTestsReturn<VerifierName extends string | undefined, CreateConnections extends boolean> {
@@ -88,6 +94,7 @@ export async function setupJsonLdTests<
   autoAcceptCredentials,
   autoAcceptProofs,
   createConnections,
+  useBbs = false,
 }: {
   issuerName: string
   holderName: string
@@ -95,10 +102,12 @@ export async function setupJsonLdTests<
   autoAcceptCredentials?: AutoAcceptCredential
   autoAcceptProofs?: AutoAcceptProof
   createConnections?: CreateConnections
+  useBbs?: boolean
 }): Promise<SetupJsonLdTestsReturn<VerifierName, CreateConnections>> {
   const modules = getJsonLdModules({
     autoAcceptCredentials,
     autoAcceptProofs,
+    useBbs,
   })
 
   const issuerAgent = new Agent(

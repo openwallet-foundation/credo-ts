@@ -1,7 +1,7 @@
 import type { AnonCredsSchema, AnonCredsCredentialValues } from '../models'
-import type { CredentialPreviewAttributeOptions, LinkedAttachment } from '@aries-framework/core'
+import type { CredentialPreviewAttributeOptions, LinkedAttachment } from '@credo-ts/core'
 
-import { AriesFrameworkError, encodeAttachment, encodeCredentialValue } from '@aries-framework/core'
+import { AriesFrameworkError, encodeAttachment, encodeCredentialValue } from '@credo-ts/core'
 
 /**
  * Converts int value to string

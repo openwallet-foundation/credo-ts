@@ -1,20 +1,12 @@
-import type { VersionString } from './version'
 import type { PlaintextMessage } from '../types'
 import type { ValidationOptions, ValidationArguments } from 'class-validator'
 
 import { ValidateBy, buildMessage } from 'class-validator'
 
-import { rightSplit } from './string'
-import { parseVersionString } from './version'
+const PROTOCOL_URI_REGEX = /^(.+)\/([^/\\]+)\/(\d+).(\d+)$/
+const MESSAGE_TYPE_REGEX = /^(.+)\/([^/\\]+)\/(\d+).(\d+)\/([^/\\]+)$/
 
-export interface ParsedMessageType {
-  /**
-   * Message name
-   *
-   * @example request
-   */
-  messageName: string
-
+export interface ParsedDidCommProtocolUri {
   /**
    * Version of the protocol
    *
@@ -58,6 +50,15 @@ export interface ParsedMessageType {
    * @example https://didcomm.org/connections/1.0
    */
   protocolUri: string
+}
+
+export interface ParsedMessageType extends ParsedDidCommProtocolUri {
+  /**
+   * Message name
+   *
+   * @example request
+   */
+  messageName: string
 
   /**
    * Uri identifier of the message. Includes all parts
@@ -68,20 +69,93 @@ export interface ParsedMessageType {
   messageTypeUri: string
 }
 
+// TODO: rename to `parseDidCommMessageType` and `DidCommParsedProtocolUri`
+// in the future
 export function parseMessageType(messageType: string): ParsedMessageType {
-  const [documentUri, protocolName, protocolVersion, messageName] = rightSplit(messageType, '/', 3)
-  const [protocolMajorVersion, protocolMinorVersion] = parseVersionString(protocolVersion as VersionString)
+  const match = MESSAGE_TYPE_REGEX.exec(messageType)
+
+  if (!match) {
+    throw new Error(`Invalid message type: ${messageType}`)
+  }
+
+  const [, documentUri, protocolName, protocolVersionMajor, protocolVersionMinor, messageName] = match
 
   return {
     documentUri,
     protocolName,
-    protocolVersion,
-    protocolMajorVersion,
-    protocolMinorVersion,
+    protocolVersion: `${protocolVersionMajor}.${protocolVersionMinor}`,
+    protocolMajorVersion: parseInt(protocolVersionMajor),
+    protocolMinorVersion: parseInt(protocolVersionMinor),
     messageName,
-    protocolUri: `${documentUri}/${protocolName}/${protocolVersion}`,
+    protocolUri: `${documentUri}/${protocolName}/${protocolVersionMajor}.${protocolVersionMinor}`,
     messageTypeUri: messageType,
   }
+}
+
+export function parseDidCommProtocolUri(didCommProtocolUri: string): ParsedDidCommProtocolUri {
+  const match = PROTOCOL_URI_REGEX.exec(didCommProtocolUri)
+
+  if (!match) {
+    throw new Error(`Invalid protocol uri: ${didCommProtocolUri}`)
+  }
+
+  const [, documentUri, protocolName, protocolVersionMajor, protocolVersionMinor] = match
+
+  return {
+    documentUri,
+    protocolName,
+    protocolVersion: `${protocolVersionMajor}.${protocolVersionMinor}`,
+    protocolMajorVersion: parseInt(protocolVersionMajor),
+    protocolMinorVersion: parseInt(protocolVersionMinor),
+    protocolUri: `${documentUri}/${protocolName}/${protocolVersionMajor}.${protocolVersionMinor}`,
+  }
+}
+
+/**
+ * Check whether the incoming didcomm protocol uri is a protocol uri that can be handled by comparing it to the expected didcomm protocol uri.
+ * In this case the expected protocol uri is e.g. the handshake protocol supported (https://didcomm.org/connections/1.0), and the incoming protocol uri
+ * is the uri that is parsed from the incoming out of band invitation handshake_protocols.
+ *
+ * The method will make sure the following fields are equal:
+ *  - documentUri
+ *  - protocolName
+ *  - majorVersion
+ *
+ * If allowLegacyDidSovPrefixMismatch is true (default) it will allow for the case where the incoming protocol uri still has the legacy
+ * did:sov:BzCbsNYhMrjHiqZDTUASHg;spec did prefix, but the expected message type does not. This only works for incoming messages with a prefix
+ * of did:sov:BzCbsNYhMrjHiqZDTUASHg;spec and the expected message type having a prefix value of https:/didcomm.org
+ *
+ * @example
+ * const incomingProtocolUri = parseDidCommProtocolUri('https://didcomm.org/connections/1.0')
+ * const expectedProtocolUri = parseDidCommProtocolUri('https://didcomm.org/connections/1.4')
+ *
+ * // Returns true because the incoming protocol uri is equal to the expected protocol uri, except for
+ * // the minor version, which is lower
+ * const isIncomingProtocolUriSupported = supportsIncomingDidCommProtocolUri(incomingProtocolUri, expectedProtocolUri)
+ *
+ * @example
+ * const incomingProtocolUri = parseDidCommProtocolUri('did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/connections/1.0')
+ * const expectedProtocolUri = parseDidCommProtocolUri('https://didcomm.org/connections/1.0')
+ *
+ * // Returns true because the incoming protocol uri is equal to the expected protocol uri, except for
+ * // the legacy did sov prefix.
+ * const isIncomingProtocolUriSupported = supportsIncomingDidCommProtocolUri(incomingProtocolUri, expectedProtocolUri)
+ */
+export function supportsIncomingDidCommProtocolUri(
+  incomingProtocolUri: ParsedDidCommProtocolUri,
+  expectedProtocolUri: ParsedDidCommProtocolUri,
+  { allowLegacyDidSovPrefixMismatch = true }: { allowLegacyDidSovPrefixMismatch?: boolean } = {}
+) {
+  const incomingDocumentUri = allowLegacyDidSovPrefixMismatch
+    ? replaceLegacyDidSovPrefix(incomingProtocolUri.documentUri)
+    : incomingProtocolUri.documentUri
+
+  const documentUriMatches = expectedProtocolUri.documentUri === incomingDocumentUri
+  const protocolNameMatches = expectedProtocolUri.protocolName === incomingProtocolUri.protocolName
+  const majorVersionMatches = expectedProtocolUri.protocolMajorVersion === incomingProtocolUri.protocolMajorVersion
+
+  // Everything besides the minor version must match
+  return documentUriMatches && protocolNameMatches && majorVersionMatches
 }
 
 /**

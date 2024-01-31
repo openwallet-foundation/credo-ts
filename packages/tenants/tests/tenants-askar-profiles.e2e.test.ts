@@ -1,22 +1,19 @@
-import type { InitConfig } from '@aries-framework/core'
+import type { InitConfig } from '@credo-ts/core'
 
-import { Agent } from '@aries-framework/core'
-import { agentDependencies } from '@aries-framework/node'
+import { Agent } from '@credo-ts/core'
+import { agentDependencies } from '@credo-ts/node'
 
 import { AskarModule, AskarMultiWalletDatabaseScheme, AskarProfileWallet, AskarWallet } from '../../askar/src'
 import { askarModuleConfig } from '../../askar/tests/helpers'
-import { testLogger } from '../../core/tests'
+import { getAskarWalletConfig, testLogger } from '../../core/tests'
 
-import { TenantsModule } from '@aries-framework/tenants'
+import { TenantsModule } from '@credo-ts/tenants'
 
 describe('Tenants Askar database schemes E2E', () => {
   test('uses AskarWallet for all wallets and tenants when database schema is DatabasePerWallet', async () => {
     const agentConfig: InitConfig = {
       label: 'Tenant Agent 1',
-      walletConfig: {
-        id: 'Wallet: askar tenants without profiles e2e agent 1',
-        key: 'Wallet: askar tenants without profiles e2e agent 1',
-      },
+      walletConfig: getAskarWalletConfig('askar tenants without profiles e2e agent 1', { inMemory: false }),
       logger: testLogger,
     }
 
@@ -74,10 +71,7 @@ describe('Tenants Askar database schemes E2E', () => {
   test('uses AskarWallet for main agent, and ProfileAskarWallet for tenants', async () => {
     const agentConfig: InitConfig = {
       label: 'Tenant Agent 1',
-      walletConfig: {
-        id: 'Wallet: askar tenants with profiles e2e agent 1',
-        key: 'Wallet: askar tenants with profiles e2e agent 1',
-      },
+      walletConfig: getAskarWalletConfig('askar tenants with profiles e2e agent 1'),
       logger: testLogger,
     }
 

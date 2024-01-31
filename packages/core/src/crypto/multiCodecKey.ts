@@ -10,6 +10,7 @@ const multiCodecPrefixMap: Record<string, KeyType> = {
   4608: KeyType.P256,
   4609: KeyType.P384,
   4610: KeyType.P521,
+  231: KeyType.K256,
 }
 
 export function getKeyTypeByMultiCodecPrefix(multiCodecPrefix: number): KeyType {

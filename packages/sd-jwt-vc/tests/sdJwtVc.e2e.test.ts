@@ -1,34 +1,24 @@
-import type { Key } from '@aries-framework/core'
+import type { Key } from '@credo-ts/core'
 
-import { AskarModule } from '@aries-framework/askar'
-import {
-  Agent,
-  DidKey,
-  DidsModule,
-  KeyDidRegistrar,
-  KeyDidResolver,
-  KeyType,
-  TypedArrayEncoder,
-  utils,
-} from '@aries-framework/core'
-import { ariesAskar } from '@hyperledger/aries-askar-nodejs'
+import { Agent, DidKey, DidsModule, KeyDidRegistrar, KeyDidResolver, KeyType, TypedArrayEncoder } from '@credo-ts/core'
 
-import { agentDependencies } from '../../core/tests'
+import { getInMemoryAgentOptions } from '../../core/tests'
 import { SdJwtVcModule } from '../src'
 
 const getAgent = (label: string) =>
-  new Agent({
-    config: { label, walletConfig: { id: utils.uuid(), key: utils.uuid() } },
-    modules: {
-      sdJwt: new SdJwtVcModule(),
-      askar: new AskarModule({ ariesAskar }),
-      dids: new DidsModule({
-        resolvers: [new KeyDidResolver()],
-        registrars: [new KeyDidRegistrar()],
-      }),
-    },
-    dependencies: agentDependencies,
-  })
+  new Agent(
+    getInMemoryAgentOptions(
+      label,
+      {},
+      {
+        sdJwt: new SdJwtVcModule(),
+        dids: new DidsModule({
+          resolvers: [new KeyDidResolver()],
+          registrars: [new KeyDidRegistrar()],
+        }),
+      }
+    )
+  )
 
 describe('sd-jwt-vc end to end test', () => {
   const issuer = getAgent('sdjwtvcissueragent')

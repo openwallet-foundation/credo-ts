@@ -18,8 +18,8 @@ import type {
   GetCredentialsOptions,
   StoreCredentialOptions,
   StoreW3cCredentialOptions,
-} from '@aries-framework/anoncreds'
-import type { AgentContext, AnonCredsClaimRecord, Query, SimpleQuery, W3cCredentialRecord } from '@aries-framework/core'
+} from '@credo-ts/anoncreds'
+import type { AgentContext, AnonCredsClaimRecord, Query, SimpleQuery, W3cCredentialRecord } from '@credo-ts/core'
 import type {
   CredentialEntry,
   CredentialProve,
@@ -27,16 +27,6 @@ import type {
   JsonObject,
 } from '@hyperledger/anoncreds-shared'
 
-import {
-  AnonCredsLinkSecretRepository,
-  AnonCredsRegistryService,
-  AnonCredsRestrictionWrapper,
-  fetchQualifiedIds,
-  legacyCredentialToW3cCredential,
-  storeLinkSecret,
-  unqualifiedCredentialDefinitionIdRegex,
-  w3cToLegacyCredential,
-} from '@aries-framework/anoncreds'
 import {
   AriesFrameworkError,
   JsonTransformer,
@@ -47,6 +37,16 @@ import {
   injectable,
   utils,
 } from '@aries-framework/core'
+import {
+  AnonCredsLinkSecretRepository,
+  AnonCredsRegistryService,
+  AnonCredsRestrictionWrapper,
+  fetchQualifiedIds,
+  legacyCredentialToW3cCredential,
+  storeLinkSecret,
+  unqualifiedCredentialDefinitionIdRegex,
+  w3cToLegacyCredential,
+} from '@credo-ts/anoncreds'
 import {
   W3cCredential as AW3cCredential,
   CredentialRequest,
@@ -379,8 +379,8 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
       credentialId: anoncredsCredentialMetadata.credentialId,
       credentialDefinitionId: anonCredsTags.credentialDefinitionId,
       schemaId: anonCredsTags.schemaId,
-      credentialRevocationId: anoncredsCredentialMetadata.credentialRevocationId,
-      revocationRegistryId: anonCredsTags.revocationRegistryId,
+      credentialRevocationId: anoncredsCredentialMetadata.credentialRevocationId ?? null,
+      revocationRegistryId: anonCredsTags.revocationRegistryId ?? null,
       methodName: anoncredsCredentialMetadata.methodName,
     }
   }

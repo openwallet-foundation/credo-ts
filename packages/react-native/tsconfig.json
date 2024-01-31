@@ -1,7 +1,7 @@
 {
   "extends": "../../tsconfig.json",
   "compilerOptions": {
-    // FIXME https://github.com/hyperledger/aries-framework-javascript/pull/327
+    // FIXME https://github.com/openwallet-foundation/credo-ts/pull/327
     "skipLibCheck": true,
     "types": ["react-native", "jest"]
   }

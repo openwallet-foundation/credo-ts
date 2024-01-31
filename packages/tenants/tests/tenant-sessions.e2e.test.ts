@@ -1,18 +1,19 @@
-import type { InitConfig } from '@aries-framework/core'
+import type { InitConfig } from '@credo-ts/core'
 
-import { ConnectionsModule, Agent } from '@aries-framework/core'
-import { agentDependencies } from '@aries-framework/node'
+import { ConnectionsModule, Agent } from '@credo-ts/core'
+import { agentDependencies } from '@credo-ts/node'
 
-import { testLogger, indySdk } from '../../core/tests'
-import { IndySdkModule } from '../../indy-sdk/src'
+import { InMemoryWalletModule } from '../../../tests/InMemoryWalletModule'
+import { uuid } from '../../core/src/utils/uuid'
+import { testLogger } from '../../core/tests'
 
-import { TenantsModule } from '@aries-framework/tenants'
+import { TenantsModule } from '@credo-ts/tenants'
 
 const agentConfig: InitConfig = {
   label: 'Tenant Agent 1',
   walletConfig: {
-    id: 'Wallet: tenant sessions e2e agent 1',
-    key: 'Wallet: tenant sessions e2e agent 1',
+    id: `tenant sessions e2e agent 1 - ${uuid().slice(0, 4)}`,
+    key: `tenant sessions e2e agent 1`,
   },
   logger: testLogger,
   endpoints: ['rxjs:tenant-agent1'],
@@ -24,7 +25,7 @@ const agent = new Agent({
   dependencies: agentDependencies,
   modules: {
     tenants: new TenantsModule({ sessionAcquireTimeout: 10000 }),
-    indySdk: new IndySdkModule({ indySdk }),
+    inMemory: new InMemoryWalletModule(),
     connections: new ConnectionsModule({
       autoAcceptConnections: true,
     }),
@@ -67,17 +68,16 @@ describe('Tenants Sessions E2E', () => {
 
     const tenantRecordPromises = []
     for (let tenantNo = 0; tenantNo < numberOfTenants; tenantNo++) {
-      const tenantRecord = agent.modules.tenants.createTenant({
+      const tenantRecordPromise = agent.modules.tenants.createTenant({
         config: {
           label: 'Agent 1 Tenant 1',
         },
       })
 
-      tenantRecordPromises.push(tenantRecord)
+      tenantRecordPromises.push(tenantRecordPromise)
     }
 
     const tenantRecords = await Promise.all(tenantRecordPromises)
-
     const tenantAgentPromises = []
     for (const tenantRecord of tenantRecords) {
       for (let session = 0; session < numberOfSessions; session++) {

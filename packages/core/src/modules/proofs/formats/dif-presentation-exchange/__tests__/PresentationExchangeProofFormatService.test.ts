@@ -4,8 +4,7 @@ import type { DifPresentationExchangeProofFormat } from '../DifPresentationExcha
 
 import { PresentationSubmissionLocation } from '@sphereon/pex'
 
-import { getIndySdkModules } from '../../../../../../../indy-sdk/tests/setupIndySdkModule'
-import { agentDependencies, getAgentConfig } from '../../../../../../tests'
+import { getInMemoryAgentOptions } from '../../../../../../tests'
 import { Agent } from '../../../../../agent/Agent'
 import { DifPresentationExchangeModule, DifPresentationExchangeService } from '../../../../dif-presentation-exchange'
 import {
@@ -92,17 +91,18 @@ describe('Presentation Exchange ProofFormatService', () => {
   let agent: Agent
 
   beforeAll(async () => {
-    agent = new Agent({
-      config: getAgentConfig('PresentationExchangeProofFormatService'),
-      modules: {
-        someModule: new DifPresentationExchangeModule(),
-        proofs: new ProofsModule({
-          proofProtocols: [new V2ProofProtocol({ proofFormats: [new PresentationExchangeProofFormatService()] })],
-        }),
-        ...getIndySdkModules(),
-      },
-      dependencies: agentDependencies,
-    })
+    agent = new Agent(
+      getInMemoryAgentOptions(
+        'PresentationExchangeProofFormatService',
+        {},
+        {
+          pex: new DifPresentationExchangeModule(),
+          proofs: new ProofsModule({
+            proofProtocols: [new V2ProofProtocol({ proofFormats: [new PresentationExchangeProofFormatService()] })],
+          }),
+        }
+      )
+    )
 
     await agent.initialize()
 

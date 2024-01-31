@@ -1,4 +1,4 @@
-import type { HashName, JwaSignatureAlgorithm } from '@aries-framework/core'
+import type { HashName, JwaSignatureAlgorithm } from '@credo-ts/core'
 import type { DisclosureFrame } from 'jwt-sd'
 
 export type SdJwtVcCreateOptions<Payload extends Record<string, unknown> = Record<string, unknown>> = {

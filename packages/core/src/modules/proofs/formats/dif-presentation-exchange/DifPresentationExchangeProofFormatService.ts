@@ -47,12 +47,6 @@ export class PresentationExchangeProofFormatService implements ProofFormatServic
   public readonly formatKey = 'presentationExchange' as const
 
   private presentationExchangeService(agentContext: AgentContext) {
-    if (!agentContext.dependencyManager.isRegistered(DifPresentationExchangeService)) {
-      throw new AriesFrameworkError(
-        'DifPresentationExchangeService is not registered on the Agent. Please provide the PresentationExchangeModule as a module on the agent'
-      )
-    }
-
     return agentContext.dependencyManager.resolve(DifPresentationExchangeService)
   }
 
@@ -236,7 +230,7 @@ export class PresentationExchangeProofFormatService implements ProofFormatServic
     let jsonPresentation: W3cJsonPresentation
 
     // TODO: we should probably move this transformation logic into the VC module, so it
-    // can be reused in AFJ when we need to go from encoded -> parsed
+    // can be reused in Credo when we need to go from encoded -> parsed
     if (typeof presentation === 'string') {
       parsedPresentation = W3cJwtVerifiablePresentation.fromSerializedJwt(presentation)
       jsonPresentation = parsedPresentation.presentation.toJSON()

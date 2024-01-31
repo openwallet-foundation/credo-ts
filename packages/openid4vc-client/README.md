@@ -1,15 +1,15 @@
 <p align="center">
   <br />
   <img
-    alt="Hyperledger Aries logo"
-    src="https://raw.githubusercontent.com/hyperledger/aries-framework-javascript/aa31131825e3331dc93694bc58414d955dcb1129/images/aries-logo.png"
+    alt="Credo Logo"
+    src="https://github.com/openwallet-foundation/credo-ts/blob/c7886cb8377ceb8ee4efe8d264211e561a75072d/images/credo-logo.png"
     height="250px"
   />
 </p>
-<h1 align="center"><b>Aries Framework JavaScript Open ID Connect For Verifiable Credentials Client Module</b></h1>
+<h1 align="center"><b>Credo Open ID Connect For Verifiable Credentials Client Module</b></h1>
 <p align="center">
   <a
-    href="https://raw.githubusercontent.com/hyperledger/aries-framework-javascript/main/LICENSE"
+    href="https://raw.githubusercontent.com/openwallet-foundation/credo-ts/main/LICENSE"
     ><img
       alt="License"
       src="https://img.shields.io/badge/License-Apache%202.0-blue.svg"
@@ -19,23 +19,23 @@
       alt="typescript"
       src="https://img.shields.io/badge/%3C%2F%3E-TypeScript-%230074c1.svg"
   /></a>
-    <a href="https://www.npmjs.com/package/@aries-framework/openid4vc-client"
+    <a href="https://www.npmjs.com/package/@credo-ts/openid4vc-client"
     ><img
-      alt="@aries-framework/openid4vc-client version"
-      src="https://img.shields.io/npm/v/@aries-framework/openid4vc-client"
+      alt="@credo-ts/openid4vc-client version"
+      src="https://img.shields.io/npm/v/@credo-ts/openid4vc-client"
   /></a>
 
 </p>
 <br />
 
-Open ID Connect For Verifiable Credentials Client Module for [Aries Framework JavaScript](https://github.com/hyperledger/aries-framework-javascript).
+Open ID Connect For Verifiable Credentials Client Module for [Credo](https://github.com/openwallet-foundation/credo-ts).
 
 ### Installation
 
-Make sure you have set up the correct version of Aries Framework JavaScript according to the AFJ repository.
+Make sure you have set up the correct version of Credo according to the Credo repository.
 
 ```sh
-yarn add @aries-framework/openid4vc-client
+yarn add @credo-ts/openid4vc-client
 ```
 
 ### Quick start
@@ -49,7 +49,7 @@ Before a credential can be requested, you need the issuer URI. This URI starts w
 In order to get this module to work, we need to inject it into the agent. This makes the module's functionality accessible through the agent's `modules` api.
 
 ```ts
-import { OpenId4VcClientModule } from '@aries-framework/openid4vc-client'
+import { OpenId4VcClientModule } from '@credo-ts/openid4vc-client'
 
 const agent = new Agent({
   config: {
@@ -111,9 +111,9 @@ console.log(w3cCredentialRecord)
 #### Full example
 
 ```ts
-import { OpenId4VcClientModule } from '@aries-framework/openid4vc-client'
-import { agentDependencies } from '@aries-framework/node' // use @aries-framework/react-native for React Native
-import { Agent, KeyDidCreateOptions } from '@aries-framework/core'
+import { OpenId4VcClientModule } from '@credo-ts/openid4vc-client'
+import { agentDependencies } from '@credo-ts/node' // use @credo-ts/react-native for React Native
+import { Agent, KeyDidCreateOptions } from '@credo-ts/core'
 
 const run = async () => {
   const issuerUri = '' // The obtained issuer URI

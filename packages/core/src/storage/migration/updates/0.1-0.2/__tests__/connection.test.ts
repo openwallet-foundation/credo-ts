@@ -142,6 +142,8 @@ describe('0.1-0.2 | Connection', () => {
         theirDid: didPeer4kgVt6CidfKgo1MoWMqsQX.id,
         outOfBandId: expect.any(String),
         connectionTypes: [],
+        previousDids: [],
+        previousTheirDids: [],
       })
     })
   })
@@ -173,6 +175,8 @@ describe('0.1-0.2 | Connection', () => {
           label: 'test',
         },
         connectionTypes: [],
+        previousDids: [],
+        previousTheirDids: [],
       })
     })
   })
@@ -202,6 +206,8 @@ describe('0.1-0.2 | Connection', () => {
           label: 'test',
         },
         connectionTypes: [],
+        previousDids: [],
+        previousTheirDids: [],
       })
     })
 
@@ -275,6 +281,8 @@ describe('0.1-0.2 | Connection', () => {
         metadata: {},
         _tags: {},
         connectionTypes: [],
+        previousDids: [],
+        previousTheirDids: [],
       })
     })
 
@@ -346,6 +354,8 @@ describe('0.1-0.2 | Connection', () => {
           label: 'test',
         },
         connectionTypes: [],
+        previousDids: [],
+        previousTheirDids: [],
       })
     })
   })
@@ -373,6 +383,8 @@ describe('0.1-0.2 | Connection', () => {
         autoAcceptConnection: true,
         mediatorId: 'a-mediator-id',
         connectionTypes: [],
+        previousDids: [],
+        previousTheirDids: [],
       })
     })
 
@@ -499,6 +511,8 @@ describe('0.1-0.2 | Connection', () => {
         mediatorId: 'a-mediator-id',
         outOfBandId: outOfBandRecord.id,
         connectionTypes: [],
+        previousDids: [],
+        previousTheirDids: [],
       })
     })
 

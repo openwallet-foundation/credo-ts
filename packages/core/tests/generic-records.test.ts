@@ -1,18 +1,13 @@
 import type { GenericRecord } from '../src/modules/generic-records/repository/GenericRecord'
 
-import { getIndySdkModules } from '../../indy-sdk/tests/setupIndySdkModule'
 import { Agent } from '../src/agent/Agent'
 import { RecordNotFoundError } from '../src/error'
 
-import { getAgentOptions } from './helpers'
+import { getInMemoryAgentOptions } from './helpers'
 
-const aliceAgentOptions = getAgentOptions(
-  'Generic Records Alice',
-  {
-    endpoints: ['rxjs:alice'],
-  },
-  getIndySdkModules()
-)
+const aliceAgentOptions = getInMemoryAgentOptions('Generic Records Alice', {
+  endpoints: ['rxjs:alice'],
+})
 
 describe('genericRecords', () => {
   let aliceAgent: Agent

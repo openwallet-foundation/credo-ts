@@ -2,11 +2,12 @@ import type { DependencyManager, Module } from '../../plugins'
 
 import { injectable } from 'tsyringe'
 
-import { getIndySdkModules } from '../../../../indy-sdk/tests/setupIndySdkModule'
-import { getAgentOptions } from '../../../tests/helpers'
+import { InMemoryWalletModule } from '../../../../../tests/InMemoryWalletModule'
+import { getInMemoryAgentOptions } from '../../../tests/helpers'
 import { InjectionSymbols } from '../../constants'
 import { BasicMessageRepository, BasicMessageService } from '../../modules/basic-messages'
 import { BasicMessagesApi } from '../../modules/basic-messages/BasicMessagesApi'
+import { DidRotateService } from '../../modules/connections'
 import { ConnectionsApi } from '../../modules/connections/ConnectionsApi'
 import { ConnectionRepository } from '../../modules/connections/repository/ConnectionRepository'
 import { ConnectionService } from '../../modules/connections/services/ConnectionService'
@@ -33,7 +34,7 @@ import { FeatureRegistry } from '../FeatureRegistry'
 import { MessageReceiver } from '../MessageReceiver'
 import { MessageSender } from '../MessageSender'
 
-const agentOptions = getAgentOptions('Agent Class Test', {}, getIndySdkModules())
+const agentOptions = getInMemoryAgentOptions('Agent Class Test')
 
 const myModuleMethod = jest.fn()
 @injectable()
@@ -61,7 +62,7 @@ describe('Agent', () => {
         ...agentOptions,
         modules: {
           myModule: new MyModule(),
-          ...getIndySdkModules(),
+          inMemory: new InMemoryWalletModule(),
         },
       })
 
@@ -79,7 +80,7 @@ describe('Agent', () => {
           mediationRecipient: new MediationRecipientModule({
             maximumMessagePickup: 42,
           }),
-          ...getIndySdkModules(),
+          inMemory: new InMemoryWalletModule(),
         },
       })
 
@@ -158,6 +159,7 @@ describe('Agent', () => {
       expect(container.resolve(ConnectionsApi)).toBeInstanceOf(ConnectionsApi)
       expect(container.resolve(ConnectionService)).toBeInstanceOf(ConnectionService)
       expect(container.resolve(ConnectionRepository)).toBeInstanceOf(ConnectionRepository)
+      expect(container.resolve(DidRotateService)).toBeInstanceOf(DidRotateService)
       expect(container.resolve(TrustPingService)).toBeInstanceOf(TrustPingService)
 
       expect(container.resolve(ProofsApi)).toBeInstanceOf(ProofsApi)
@@ -197,6 +199,7 @@ describe('Agent', () => {
       expect(container.resolve(ConnectionService)).toBe(container.resolve(ConnectionService))
       expect(container.resolve(ConnectionRepository)).toBe(container.resolve(ConnectionRepository))
       expect(container.resolve(TrustPingService)).toBe(container.resolve(TrustPingService))
+      expect(container.resolve(DidRotateService)).toBe(container.resolve(DidRotateService))
 
       expect(container.resolve(ProofsApi)).toBe(container.resolve(ProofsApi))
       expect(container.resolve(ProofRepository)).toBe(container.resolve(ProofRepository))
@@ -247,6 +250,7 @@ describe('Agent', () => {
         'https://didcomm.org/issue-credential/2.0',
         'https://didcomm.org/present-proof/2.0',
         'https://didcomm.org/didexchange/1.1',
+        'https://didcomm.org/did-rotate/1.0',
         'https://didcomm.org/discover-features/1.0',
         'https://didcomm.org/discover-features/2.0',
         'https://didcomm.org/messagepickup/1.0',
@@ -256,6 +260,6 @@ describe('Agent', () => {
         'https://didcomm.org/revocation_notification/2.0',
       ])
     )
-    expect(protocols.length).toEqual(13)
+    expect(protocols.length).toEqual(14)
   })
 })

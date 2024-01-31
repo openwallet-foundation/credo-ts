@@ -1,7 +1,6 @@
-import { Agent, AgentContext, InjectionSymbols } from '@aries-framework/core'
+import { Agent, AgentContext, InjectionSymbols } from '@credo-ts/core'
 
-import { indySdk, getAgentContext, getAgentOptions, mockFunction } from '../../../core/tests'
-import { IndySdkModule } from '../../../indy-sdk/src'
+import { getAgentContext, getInMemoryAgentOptions, mockFunction } from '../../../core/tests'
 import { TenantAgent } from '../TenantAgent'
 import { TenantsApi } from '../TenantsApi'
 import { TenantAgentContextProvider } from '../context/TenantAgentContextProvider'
@@ -16,7 +15,7 @@ const AgentContextProviderMock = TenantAgentContextProvider as jest.Mock<TenantA
 
 const tenantRecordService = new TenantRecordServiceMock()
 const agentContextProvider = new AgentContextProviderMock()
-const agentOptions = getAgentOptions('TenantsApi', {}, { indySdk: new IndySdkModule({ indySdk }) })
+const agentOptions = getInMemoryAgentOptions('TenantsApi')
 const rootAgent = new Agent(agentOptions)
 rootAgent.dependencyManager.registerInstance(InjectionSymbols.AgentContextProvider, agentContextProvider)
 

@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
+import type { AskarWalletSqliteStorageConfig } from '../../askar/src/wallet'
 import type {
   AgentDependencies,
   BaseEvent,
@@ -14,6 +15,7 @@ import type {
   CredentialState,
   ConnectionStateChangedEvent,
   Buffer,
+  AgentMessageProcessedEvent,
   RevocationNotificationReceivedEvent,
 } from '../src'
 import type { AgentModulesInput, EmptyModuleMap } from '../src/agent/AgentModules'
@@ -27,8 +29,10 @@ import path from 'path'
 import { lastValueFrom, firstValueFrom, ReplaySubject } from 'rxjs'
 import { catchError, filter, map, take, timeout } from 'rxjs/operators'
 
-import { agentDependencies, IndySdkPostgresWalletScheme } from '../../node/src'
+import { InMemoryWalletModule } from '../../../tests/InMemoryWalletModule'
+import { agentDependencies } from '../../node/src'
 import {
+  AgentEventTypes,
   OutOfBandDidCommService,
   ConnectionsModule,
   ConnectionEventTypes,
@@ -53,6 +57,7 @@ import { OutOfBandState } from '../src/modules/oob/domain/OutOfBandState'
 import { OutOfBandInvitation } from '../src/modules/oob/messages'
 import { OutOfBandRecord } from '../src/modules/oob/repository'
 import { KeyDerivationMethod } from '../src/types'
+import { sleep } from '../src/utils/sleep'
 import { uuid } from '../src/utils/uuid'
 
 import testLogger, { TestLogger } from './logger'
@@ -68,6 +73,29 @@ export const taaVersion = (process.env.TEST_AGENT_TAA_VERSION ?? '1') as `${numb
 export const taaAcceptanceMechanism = process.env.TEST_AGENT_TAA_ACCEPTANCE_MECHANISM ?? 'accept'
 export { agentDependencies }
 
+export function getAskarWalletConfig(
+  name: string,
+  {
+    inMemory = true,
+    random = uuid().slice(0, 4),
+    maxConnections,
+  }: { inMemory?: boolean; random?: string; maxConnections?: number } = {}
+) {
+  return {
+    id: `Wallet: ${name} - ${random}`,
+    key: 'DZ9hPqFWTPxemcGea72C1X1nusqk5wFNLq6QPjwXGqAa', // generated using indy.generateWalletKey
+    keyDerivationMethod: KeyDerivationMethod.Raw,
+    // Use in memory by default
+    storage: {
+      type: 'sqlite',
+      config: {
+        inMemory,
+        maxConnections,
+      },
+    } satisfies AskarWalletSqliteStorageConfig,
+  } satisfies WalletConfig
+}
+
 export function getAgentOptions<AgentModules extends AgentModulesInput | EmptyModuleMap>(
   name: string,
   extraConfig: Partial<InitConfig> = {},
@@ -76,11 +104,7 @@ export function getAgentOptions<AgentModules extends AgentModulesInput | EmptyMo
   const random = uuid().slice(0, 4)
   const config: InitConfig = {
     label: `Agent: ${name} - ${random}`,
-    walletConfig: {
-      id: `Wallet: ${name} - ${random}`,
-      key: 'DZ9hPqFWTPxemcGea72C1X1nusqk5wFNLq6QPjwXGqAa', // generated using indy.generateWalletKey
-      keyDerivationMethod: KeyDerivationMethod.Raw,
-    },
+    walletConfig: getAskarWalletConfig(name, { inMemory: true, random }),
     // TODO: determine the log level based on an environment variable. This will make it
     // possible to run e.g. failed github actions in debug mode for extra logs
     logger: TestLogger.fromLogger(testLogger, name),
@@ -101,33 +125,20 @@ export function getAgentOptions<AgentModules extends AgentModulesInput | EmptyMo
   return { config, modules: modules as AgentModules, dependencies: agentDependencies } as const
 }
 
-export function getPostgresAgentOptions<AgentModules extends AgentModulesInput | EmptyModuleMap>(
+export function getInMemoryAgentOptions<AgentModules extends AgentModulesInput | EmptyModuleMap>(
   name: string,
   extraConfig: Partial<InitConfig> = {},
   inputModules?: AgentModules
-) {
+): { config: InitConfig; modules: AgentModules; dependencies: AgentDependencies } {
   const random = uuid().slice(0, 4)
   const config: InitConfig = {
     label: `Agent: ${name} - ${random}`,
     walletConfig: {
-      // NOTE: IndySDK Postgres database per wallet doesn't support special characters/spaces in the wallet name
-      id: `PostgresWallet${name}${random}`,
-      key: `Key${name}`,
-      storage: {
-        type: 'postgres_storage',
-        config: {
-          url: 'localhost:5432',
-          wallet_scheme: IndySdkPostgresWalletScheme.DatabasePerWallet,
-        },
-        credentials: {
-          account: 'postgres',
-          password: 'postgres',
-          admin_account: 'postgres',
-          admin_password: 'postgres',
-        },
-      },
+      id: `Wallet: ${name} - ${random}`,
+      key: `Wallet: ${name}`,
     },
-    autoUpdateStorageOnStartup: false,
+    // TODO: determine the log level based on an environment variable. This will make it
+    // possible to run e.g. failed github actions in debug mode for extra logs
     logger: TestLogger.fromLogger(testLogger, name),
     ...extraConfig,
   }
@@ -135,13 +146,16 @@ export function getPostgresAgentOptions<AgentModules extends AgentModulesInput |
   const m = (inputModules ?? {}) as AgentModulesInput
   const modules = {
     ...m,
+    inMemory: new InMemoryWalletModule(),
     // Make sure connections module is always defined so we can set autoAcceptConnections
-    connections: m.connections ?? new ConnectionsModule({}),
+    connections:
+      m.connections ??
+      new ConnectionsModule({
+        autoAcceptConnections: true,
+      }),
   }
 
-  modules.connections.config.autoAcceptConnections = true
-
-  return { config, dependencies: agentDependencies, modules: modules as AgentModules } as const
+  return { config, modules: modules as unknown as AgentModules, dependencies: agentDependencies } as const
 }
 
 export async function importExistingIndyDidFromPrivateKey(agent: Agent, privateKey: Buffer) {
@@ -218,6 +232,8 @@ const isTrustPingReceivedEvent = (e: BaseEvent): e is TrustPingReceivedEvent =>
   e.type === TrustPingEventTypes.TrustPingReceivedEvent
 const isTrustPingResponseReceivedEvent = (e: BaseEvent): e is TrustPingResponseReceivedEvent =>
   e.type === TrustPingEventTypes.TrustPingResponseReceivedEvent
+const isAgentMessageProcessedEvent = (e: BaseEvent): e is AgentMessageProcessedEvent =>
+  e.type === AgentEventTypes.AgentMessageProcessed
 
 export function waitForProofExchangeRecordSubject(
   subject: ReplaySubject<BaseEvent> | Observable<BaseEvent>,
@@ -344,6 +360,50 @@ export function waitForTrustPingResponseReceivedEventSubject(
   )
 }
 
+export async function waitForAgentMessageProcessedEvent(
+  agent: Agent,
+  options: {
+    threadId?: string
+    messageType?: string
+    timeoutMs?: number
+  }
+) {
+  const observable = agent.events.observable<AgentMessageProcessedEvent>(AgentEventTypes.AgentMessageProcessed)
+
+  return waitForAgentMessageProcessedEventSubject(observable, options)
+}
+
+export function waitForAgentMessageProcessedEventSubject(
+  subject: ReplaySubject<BaseEvent> | Observable<BaseEvent>,
+  {
+    threadId,
+    timeoutMs = 10000,
+    messageType,
+  }: {
+    threadId?: string
+    messageType?: string
+    timeoutMs?: number
+  }
+) {
+  const observable = subject instanceof ReplaySubject ? subject.asObservable() : subject
+  return firstValueFrom(
+    observable.pipe(
+      filter(isAgentMessageProcessedEvent),
+      filter((e) => threadId === undefined || e.payload.message.threadId === threadId),
+      filter((e) => messageType === undefined || e.payload.message.type === messageType),
+      timeout(timeoutMs),
+      catchError(() => {
+        throw new Error(
+          `AgentMessageProcessedEvent event not emitted within specified timeout: ${timeoutMs}
+  threadId: ${threadId}, messageType: ${messageType}
+}`
+        )
+      }),
+      map((e) => e.payload.message)
+    )
+  )
+}
+
 export function waitForCredentialRecordSubject(
   subject: ReplaySubject<BaseEvent> | Observable<BaseEvent>,
   {
@@ -440,12 +500,17 @@ export async function waitForConnectionRecord(
   return waitForConnectionRecordSubject(observable, options)
 }
 
-export async function waitForBasicMessage(agent: Agent, { content }: { content?: string }): Promise<BasicMessage> {
+export async function waitForBasicMessage(
+  agent: Agent,
+  { content, connectionId }: { content?: string; connectionId?: string }
+): Promise<BasicMessage> {
   return new Promise((resolve) => {
     const listener = (event: BasicMessageStateChangedEvent) => {
       const contentMatches = content === undefined || event.payload.message.content === content
+      const connectionIdMatches =
+        connectionId === undefined || event.payload.basicMessageRecord.connectionId === connectionId
 
-      if (contentMatches) {
+      if (contentMatches && connectionIdMatches) {
         agent.events.off<BasicMessageStateChangedEvent>(BasicMessageEventTypes.BasicMessageStateChanged, listener)
 
         resolve(event.payload.message)
@@ -603,4 +668,27 @@ export function mockFunction<T extends (...args: any[]) => any>(fn: T): jest.Moc
 // eslint-disable-next-line @typescript-eslint/ban-types
 export function mockProperty<T extends {}, K extends keyof T>(object: T, property: K, value: T[K]) {
   Object.defineProperty(object, property, { get: () => value })
+}
+
+export async function retryUntilResult<T, M extends () => Promise<T | null>>(
+  method: M,
+  {
+    intervalMs = 500,
+    delay = 1000,
+    maxAttempts = 5,
+  }: {
+    intervalMs?: number
+    delay?: number
+    maxAttempts?: number
+  } = {}
+): Promise<T> {
+  await sleep(delay)
+
+  for (let i = 0; i < maxAttempts; i++) {
+    const result = await method()
+    if (result) return result
+    await sleep(intervalMs)
+  }
+
+  throw new Error(`Unable to get result from method in ${maxAttempts} attempts`)
 }

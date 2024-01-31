@@ -1,6 +1,6 @@
-import type { JwaSignatureAlgorithm, KeyType, VerificationMethod } from '@aries-framework/core'
+import type { JwaSignatureAlgorithm, KeyType, VerificationMethod } from '@credo-ts/core'
 
-import { ClaimFormat } from '@aries-framework/core'
+import { ClaimFormat } from '@credo-ts/core'
 
 /**
  * The credential formats that are supported by the openid4vc client

@@ -6,29 +6,20 @@ import type {
 
 import { ReplaySubject } from 'rxjs'
 
-import { getIndySdkModules } from '../../../../../indy-sdk/tests/setupIndySdkModule'
 import { setupSubjectTransports } from '../../../../tests'
-import { getAgentOptions, makeConnection } from '../../../../tests/helpers'
+import { getInMemoryAgentOptions, makeConnection } from '../../../../tests/helpers'
 import { Agent } from '../../../agent/Agent'
 import { DiscoverFeaturesEventTypes } from '../DiscoverFeaturesEvents'
 
 import { waitForDisclosureSubject, waitForQuerySubject } from './helpers'
 
-const faberAgentOptions = getAgentOptions(
-  'Faber Discover Features V1 E2E',
-  {
-    endpoints: ['rxjs:faber'],
-  },
-  getIndySdkModules()
-)
+const faberAgentOptions = getInMemoryAgentOptions('Faber Discover Features V1 E2E', {
+  endpoints: ['rxjs:faber'],
+})
 
-const aliceAgentOptions = getAgentOptions(
-  'Alice Discover Features V1 E2E',
-  {
-    endpoints: ['rxjs:alice'],
-  },
-  getIndySdkModules()
-)
+const aliceAgentOptions = getInMemoryAgentOptions('Alice Discover Features V1 E2E', {
+  endpoints: ['rxjs:alice'],
+})
 
 describe('v1 discover features', () => {
   let faberAgent: Agent

@@ -6,14 +6,10 @@ import type {
   AnonCredsRevocationStatusList,
   AnonCredsSchema,
   AnonCredsSelectedCredentials,
-} from '@aries-framework/anoncreds'
+} from '@credo-ts/anoncreds'
 import type { JsonObject } from '@hyperledger/anoncreds-shared'
 
-import {
-  AnonCredsHolderServiceSymbol,
-  AnonCredsLinkSecretRecord,
-  AnonCredsModuleConfig,
-} from '@aries-framework/anoncreds'
+import { AnonCredsHolderServiceSymbol, AnonCredsLinkSecretRecord, AnonCredsModuleConfig } from '@credo-ts/anoncreds'
 import {
   ConsoleLogger,
   DidResolverService,
@@ -29,7 +25,7 @@ import {
   W3cCredentialSubject,
   W3cCredentialsModuleConfig,
   W3cJsonLdVerifiableCredential,
-} from '@aries-framework/core'
+} from '@credo-ts/core'
 import { RevocationRegistryDefinition, anoncreds } from '@hyperledger/anoncreds-nodejs'
 import { Subject } from 'rxjs'
 

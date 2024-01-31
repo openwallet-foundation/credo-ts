@@ -1,5 +1,5 @@
 import type { AnonCredsModuleConfigOptions } from './AnonCredsModuleConfig'
-import type { DependencyManager, Module, Update } from '@aries-framework/core'
+import type { DependencyManager, Module, Update } from '@credo-ts/core'
 
 import { AnonCredsApi } from './AnonCredsApi'
 import { AnonCredsModuleConfig } from './AnonCredsModuleConfig'
