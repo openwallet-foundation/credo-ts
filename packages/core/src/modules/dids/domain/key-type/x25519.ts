@@ -11,12 +11,16 @@ import {
   getKeyFromJsonWebKey2020,
   isJsonWebKey2020,
   VERIFICATION_METHOD_TYPE_JSON_WEB_KEY_2020,
+  VERIFICATION_METHOD_TYPE_MULTIKEY,
+  isMultikey,
+  getKeyFromMultikey,
 } from '../verificationMethod'
 
 export const keyDidX25519: KeyDidMapping = {
   supportedVerificationMethodTypes: [
     VERIFICATION_METHOD_TYPE_X25519_KEY_AGREEMENT_KEY_2019,
     VERIFICATION_METHOD_TYPE_JSON_WEB_KEY_2020,
+    VERIFICATION_METHOD_TYPE_MULTIKEY,
   ],
   getVerificationMethods: (did, key) => [
     getX25519KeyAgreementKey2019({ id: `${did}#${key.fingerprint}`, key, controller: did }),
@@ -28,6 +32,10 @@ export const keyDidX25519: KeyDidMapping = {
 
     if (isX25519KeyAgreementKey2019(verificationMethod)) {
       return getKeyFromX25519KeyAgreementKey2019(verificationMethod)
+    }
+
+    if (isMultikey(verificationMethod)) {
+      return getKeyFromMultikey(verificationMethod)
     }
 
     throw new AriesFrameworkError(

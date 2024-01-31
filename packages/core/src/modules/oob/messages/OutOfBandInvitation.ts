@@ -1,5 +1,4 @@
 import type { PlaintextMessage } from '../../../types'
-import type { HandshakeProtocol } from '../../connections'
 
 import { Exclude, Expose, Transform, TransformationType, Type } from 'class-transformer'
 import { ArrayNotEmpty, IsArray, IsInstance, IsOptional, IsUrl, ValidateNested } from 'class-validator'
@@ -21,7 +20,7 @@ export interface OutOfBandInvitationOptions {
   goalCode?: string
   goal?: string
   accept?: string[]
-  handshakeProtocols?: HandshakeProtocol[]
+  handshakeProtocols?: string[]
   services: Array<OutOfBandDidCommService | string>
   imageUrl?: string
   appendedAttachments?: Attachment[]
@@ -134,7 +133,7 @@ export class OutOfBandInvitation extends AgentMessage {
   public readonly accept?: string[]
   @Transform(({ value }) => value?.map(replaceLegacyDidSovPrefix), { toClassOnly: true })
   @Expose({ name: 'handshake_protocols' })
-  public handshakeProtocols?: HandshakeProtocol[]
+  public handshakeProtocols?: string[]
 
   @Expose({ name: 'requests~attach' })
   @Type(() => Attachment)

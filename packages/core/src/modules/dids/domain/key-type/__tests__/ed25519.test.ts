@@ -56,6 +56,7 @@ describe('ed25519', () => {
       'Ed25519VerificationKey2018',
       'Ed25519VerificationKey2020',
       'JsonWebKey2020',
+      'Multikey',
     ])
   })
 
