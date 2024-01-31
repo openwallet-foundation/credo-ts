@@ -665,8 +665,21 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
         credentialSubjectId: dataIntegrityFormat.credentialSubjectId,
       })
 
+      if (Array.isArray(signedCredential.proof)) {
+        throw new AriesFrameworkError('Credential cannot have multiple proofs at this point')
+      }
+
+      if (
+        signedCredential.issuerId !== offeredCredential.issuerId ||
+        !signedCredential.issuerId.startsWith(signedCredential.proof.verificationMethod)
+      ) {
+        throw new AriesFrameworkError('Invalid issuer in credential')
+      }
+
+      if (offeredCredential.type.length !== 1 || offeredCredential.type[0] !== 'VerifiableCredential') {
+        throw new AriesFrameworkError('Offered Invalid credential type')
+      }
       // TODO: check if any non integrity protected fields were on the offered credential. If so throw
-      // TODO: assert issuer id is the same as the credential definition issuer id
     }
 
     if (credentialRequest.binding_proof?.didcomm_signed_attachment) {
@@ -805,7 +818,6 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
       throw new AriesFrameworkError('Missing credential attributes on credential record.')
     }
 
-    // TODO: validate credential structure
     const { credential: credentialJson } = attachment.getDataAsJson<DataIntegrityCredential>()
 
     let anonCredsCredentialRecordOptions: AnonCredsCredentialRecordOptions | undefined
@@ -832,7 +844,6 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
       )
     } else {
       w3cJsonLdVerifiableCredential = JsonTransformer.fromJSON(credentialJson, W3cJsonLdVerifiableCredential)
-      // TODO: check if the credentials contains a data integrity proof
     }
 
     const w3cCredentialService = agentContext.dependencyManager.resolve(W3cCredentialService)
