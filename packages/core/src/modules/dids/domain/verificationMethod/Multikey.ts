@@ -1,4 +1,5 @@
 import type { VerificationMethod } from './VerificationMethod'
+
 import { Key } from '../../../../crypto/Key'
 import { AriesFrameworkError } from '../../../../error'
 

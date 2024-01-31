@@ -1,9 +1,14 @@
 import type { Key } from '../../../../crypto/Key'
-import { VERIFICATION_METHOD_TYPE_MULTIKEY, isMultikey, type VerificationMethod, getKeyFromMultikey } from '../verificationMethod'
 
 import { KeyType } from '../../../../crypto/KeyType'
 import { getJwkFromJson } from '../../../../crypto/jose/jwk'
 import { AriesFrameworkError } from '../../../../error'
+import {
+  VERIFICATION_METHOD_TYPE_MULTIKEY,
+  isMultikey,
+  type VerificationMethod,
+  getKeyFromMultikey,
+} from '../verificationMethod'
 import { isJsonWebKey2020, VERIFICATION_METHOD_TYPE_JSON_WEB_KEY_2020 } from '../verificationMethod/JsonWebKey2020'
 
 import { keyDidBls12381g1 } from './bls12381g1'
@@ -83,7 +88,7 @@ export function getKeyFromVerificationMethod(verificationMethod: VerificationMet
   if (isMultikey(verificationMethod)) {
     if (!verificationMethod.publicKeyMultibase) {
       throw new AriesFrameworkError(
-      `Missing publicKeyMultibase on verification method with type ${VERIFICATION_METHOD_TYPE_MULTIKEY}`
+        `Missing publicKeyMultibase on verification method with type ${VERIFICATION_METHOD_TYPE_MULTIKEY}`
       )
     }
 
