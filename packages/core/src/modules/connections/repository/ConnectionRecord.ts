@@ -1,12 +1,13 @@
 import type { ConnectionMetadata } from './ConnectionMetadataTypes'
 import type { TagsBase } from '../../../storage/BaseRecord'
-import type { HandshakeProtocol } from '../models'
 import type { ConnectionType } from '../models/ConnectionType'
+
+import { Transform } from 'class-transformer'
 
 import { AriesFrameworkError } from '../../../error'
 import { BaseRecord } from '../../../storage/BaseRecord'
 import { uuid } from '../../../utils/uuid'
-import { rfc0160StateFromDidExchangeState, DidExchangeRole, DidExchangeState } from '../models'
+import { rfc0160StateFromDidExchangeState, DidExchangeRole, DidExchangeState, HandshakeProtocol } from '../models'
 
 export interface ConnectionRecordProps {
   id?: string
@@ -46,10 +47,7 @@ export type DefaultConnectionTags = {
   previousTheirDids?: Array<string>
 }
 
-export class ConnectionRecord
-  extends BaseRecord<DefaultConnectionTags, CustomConnectionTags, ConnectionMetadata>
-  implements ConnectionRecordProps
-{
+export class ConnectionRecord extends BaseRecord<DefaultConnectionTags, CustomConnectionTags, ConnectionMetadata> {
   public state!: DidExchangeState
   public role!: DidExchangeRole
 
@@ -65,6 +63,18 @@ export class ConnectionRecord
   public threadId?: string
   public mediatorId?: string
   public errorMessage?: string
+
+  // We used to store connection record using major.minor version, but we now
+  // only store the major version, storing .x for the minor version. We have this
+  // transformation so we don't have to migrate the data in the database.
+  @Transform(
+    ({ value }) => {
+      if (!value || typeof value !== 'string' || value.endsWith('.x')) return value
+      return value.split('.').slice(0, -1).join('.') + '.x'
+    },
+
+    { toClassOnly: true }
+  )
   public protocol?: HandshakeProtocol
   public outOfBandId?: string
   public invitationDid?: string
