@@ -14,7 +14,7 @@ import { P521Jwk } from './P521Jwk'
 import { X25519Jwk } from './X25519Jwk'
 import { hasCrv } from './validate'
 
-const JwkClasses = [Ed25519Jwk, P256Jwk, P384Jwk, P521Jwk, X25519Jwk] as const
+const JwkClasses = [Ed25519Jwk, P256Jwk, P384Jwk, P521Jwk, X25519Jwk, K256Jwk] as const
 
 export function getJwkFromJson(jwkJson: JwkJson): Jwk {
   if (jwkJson.kty === JwaKeyType.OKP) {
