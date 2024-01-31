@@ -87,7 +87,7 @@ export function getKeyFromVerificationMethod(verificationMethod: VerificationMet
 
   if (isMultikey(verificationMethod)) {
     if (!verificationMethod.publicKeyMultibase) {
-      throw new AriesFrameworkError(
+      throw new CredoError(
         `Missing publicKeyMultibase on verification method with type ${VERIFICATION_METHOD_TYPE_MULTIKEY}`
       )
     }
