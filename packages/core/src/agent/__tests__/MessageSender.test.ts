@@ -335,6 +335,7 @@ describe('MessageSender', () => {
       transportServiceFindSessionByIdMock.mockReturnValue(session)
       messageSender.registerOutboundTransport(outboundTransport)
       const sendMessageSpy = jest.spyOn(outboundTransport, 'sendMessage')
+      // @ts-ignore
       const sendMessageToServiceSpy = jest.spyOn(messageSender, 'sendMessageToService')
 
       const contextWithSessionId = new OutboundMessageContext(outboundMessageContext.message, {
