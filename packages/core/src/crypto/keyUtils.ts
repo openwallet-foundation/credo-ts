@@ -60,7 +60,7 @@ export function isEncryptionSupportedForKeyType(keyType: KeyType): boolean {
     [KeyType.Bls12381g1]: false,
     [KeyType.Bls12381g2]: false,
     [KeyType.Bls12381g1g2]: false,
-    [KeyType.K256]: false,
+    [KeyType.K256]: true,
   } as const
 
   return keyTypeEncryptionSupportedMapping[keyType]
