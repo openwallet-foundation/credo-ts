@@ -23,7 +23,7 @@ export class AnonCredsRsModule implements Module {
     dependencyManager
       .resolve(AgentConfig)
       .logger.warn(
-        "The '@credo-ts/anoncreds-rs' module is experimental and could have unexpected breaking changes. When using this module, make sure to use strict versions for all @aries-framework packages."
+        "The '@credo-ts/anoncreds-rs' module is experimental and could have unexpected breaking changes. When using this module, make sure to use strict versions for all @credo-ts packages."
       )
 
     dependencyManager.registerInstance(AnonCredsRsModuleConfig, this.config)

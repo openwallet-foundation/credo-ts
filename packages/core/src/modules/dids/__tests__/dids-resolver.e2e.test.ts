@@ -1,20 +1,8 @@
-import { IndySdkModule } from '../../../../../indy-sdk/src'
-import { indySdk } from '../../../../tests'
-import { getAgentOptions } from '../../../../tests/helpers'
+import { getInMemoryAgentOptions } from '../../../../tests/helpers'
 import { Agent } from '../../../agent/Agent'
 import { JsonTransformer } from '../../../utils'
 
-const agent = new Agent(
-  getAgentOptions(
-    'Faber Dids',
-    {},
-    {
-      indySdk: new IndySdkModule({
-        indySdk,
-      }),
-    }
-  )
-)
+const agent = new Agent(getInMemoryAgentOptions('Faber Dids'))
 
 describe('dids', () => {
   beforeAll(async () => {

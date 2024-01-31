@@ -1,13 +1,12 @@
 import type { AgentConfig, AgentContext, Repository, Wallet } from '@credo-ts/core'
 import type { QuestionAnswerStateChangedEvent, ValidResponse } from '@credo-ts/question-answer'
 
-import { EventEmitter, SigningProviderRegistry, InboundMessageContext, DidExchangeState } from '@credo-ts/core'
+import { EventEmitter, InboundMessageContext, DidExchangeState } from '@credo-ts/core'
 import { agentDependencies } from '@credo-ts/node'
 import { Subject } from 'rxjs'
 
+import { InMemoryWallet } from '../../../../tests/InMemoryWallet'
 import { getAgentConfig, getAgentContext, getMockConnection, mockFunction } from '../../../core/tests/helpers'
-import { IndySdkWallet } from '../../../indy-sdk/src'
-import { indySdk } from '../../../indy-sdk/tests/setupIndySdkModule'
 
 import {
   QuestionAnswerRecord,
@@ -61,7 +60,7 @@ describe('QuestionAnswerService', () => {
 
   beforeAll(async () => {
     agentConfig = getAgentConfig('QuestionAnswerServiceTest')
-    wallet = new IndySdkWallet(indySdk, agentConfig.logger, new SigningProviderRegistry([]))
+    wallet = new InMemoryWallet()
     agentContext = getAgentContext()
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     await wallet.createAndOpen(agentConfig.walletConfig!)

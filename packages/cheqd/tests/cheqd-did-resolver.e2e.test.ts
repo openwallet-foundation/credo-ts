@@ -1,13 +1,13 @@
 import { Agent, JsonTransformer } from '@credo-ts/core'
 
-import { getAgentOptions } from '../../core/tests/helpers'
+import { getInMemoryAgentOptions } from '../../core/tests/helpers'
 import { getClosestResourceVersion } from '../src/dids/didCheqdUtil'
 import { DefaultRPCUrl } from '../src/ledger/CheqdLedgerService'
 
 import { getCheqdModules } from './setupCheqdModule'
 
 export const resolverAgent = new Agent(
-  getAgentOptions('Cheqd resolver', {}, getCheqdModules(undefined, DefaultRPCUrl.Testnet))
+  getInMemoryAgentOptions('Cheqd resolver', {}, getCheqdModules(undefined, DefaultRPCUrl.Testnet))
 )
 
 describe('Cheqd DID resolver', () => {

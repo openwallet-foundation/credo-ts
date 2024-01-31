@@ -1,24 +1,14 @@
 import type { KeyDidCreateOptions } from '../methods/key/KeyDidRegistrar'
 import type { PeerDidNumAlgo0CreateOptions } from '../methods/peer/PeerDidRegistrar'
 
-import { IndySdkModule } from '../../../../../indy-sdk/src'
-import { indySdk } from '../../../../tests'
-import { getAgentOptions } from '../../../../tests/helpers'
+import { getInMemoryAgentOptions } from '../../../../tests/helpers'
 import { Agent } from '../../../agent/Agent'
 import { KeyType } from '../../../crypto'
 import { PeerDidNumAlgo } from '../methods/peer/didPeer'
 
 import { JsonTransformer, TypedArrayEncoder } from '@credo-ts/core'
 
-const agentOptions = getAgentOptions(
-  'Faber Dids Registrar',
-  {},
-  {
-    indySdk: new IndySdkModule({
-      indySdk,
-    }),
-  }
-)
+const agentOptions = getInMemoryAgentOptions('Faber Dids Registrar')
 
 describe('dids', () => {
   let agent: Agent

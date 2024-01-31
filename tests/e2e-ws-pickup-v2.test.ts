@@ -1,6 +1,7 @@
 import type { AnonCredsTestsAgent } from '../packages/anoncreds/tests/legacyAnonCredsSetup'
 
-import { getLegacyAnonCredsModules } from '../packages/anoncreds/tests/legacyAnonCredsSetup'
+import { getAnonCredsIndyModules } from '../packages/anoncreds/tests/legacyAnonCredsSetup'
+import { askarModule } from '../packages/askar/tests/helpers'
 import { getAgentOptions } from '../packages/core/tests/helpers'
 
 import { e2eTest } from './e2e-test'
@@ -15,16 +16,19 @@ import {
 } from '@credo-ts/core'
 import { WsInboundTransport } from '@credo-ts/node'
 
+// FIXME: somehow if we use the in memory wallet and storage service in the WS test it will fail,
+// but it succeeds with Askar. We should look into this at some point
 const recipientOptions = getAgentOptions(
   'E2E WS Pickup V2 Recipient ',
   {},
   {
-    ...getLegacyAnonCredsModules({
+    ...getAnonCredsIndyModules({
       autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
     }),
     mediationRecipient: new MediationRecipientModule({
       mediatorPickupStrategy: MediatorPickupStrategy.PickUpV2,
     }),
+    askar: askarModule,
   }
 )
 
@@ -36,10 +40,11 @@ const mediatorOptions = getAgentOptions(
     endpoints: [`ws://localhost:${mediatorPort}`],
   },
   {
-    ...getLegacyAnonCredsModules({
+    ...getAnonCredsIndyModules({
       autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
     }),
     mediator: new MediatorModule({ autoAcceptMediationRequests: true }),
+    askar: askarModule,
   }
 )
 
@@ -50,13 +55,14 @@ const senderOptions = getAgentOptions(
     endpoints: [`ws://localhost:${senderPort}`],
   },
   {
-    ...getLegacyAnonCredsModules({
+    ...getAnonCredsIndyModules({
       autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
     }),
     mediationRecipient: new MediationRecipientModule({
       mediatorPollingInterval: 1000,
       mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
     }),
+    askar: askarModule,
   }
 )
 
@@ -66,9 +72,9 @@ describe('E2E WS Pickup V2 tests', () => {
   let senderAgent: AnonCredsTestsAgent
 
   beforeEach(async () => {
-    recipientAgent = new Agent(recipientOptions) as AnonCredsTestsAgent
-    mediatorAgent = new Agent(mediatorOptions) as AnonCredsTestsAgent
-    senderAgent = new Agent(senderOptions) as AnonCredsTestsAgent
+    recipientAgent = new Agent(recipientOptions) as unknown as AnonCredsTestsAgent
+    mediatorAgent = new Agent(mediatorOptions) as unknown as AnonCredsTestsAgent
+    senderAgent = new Agent(senderOptions) as unknown as AnonCredsTestsAgent
   })
 
   afterEach(async () => {

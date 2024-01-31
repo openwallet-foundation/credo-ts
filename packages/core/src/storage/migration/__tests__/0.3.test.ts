@@ -2,9 +2,7 @@ import { readFileSync } from 'fs'
 import path from 'path'
 
 import { InMemoryStorageService } from '../../../../../../tests/InMemoryStorageService'
-import { IndySdkWallet } from '../../../../../indy-sdk/src'
-import { IndySdkSymbol } from '../../../../../indy-sdk/src/types'
-import { indySdk } from '../../../../tests'
+import { RegisteredAskarTestWallet } from '../../../../../askar/tests/helpers'
 import { agentDependencies } from '../../../../tests/helpers'
 import { Agent } from '../../../agent/Agent'
 import { InjectionSymbols } from '../../../constants'
@@ -34,9 +32,8 @@ describe('UpdateAssistant | v0.3.1 - v0.4', () => {
     const dependencyManager = new DependencyManager()
     const storageService = new InMemoryStorageService()
     dependencyManager.registerInstance(InjectionSymbols.StorageService, storageService)
-    // If we register the IndySdkModule it will register the storage service, but we use in memory storage here
-    dependencyManager.registerContextScoped(InjectionSymbols.Wallet, IndySdkWallet)
-    dependencyManager.registerInstance(IndySdkSymbol, indySdk)
+    // If we register the AskarModule it will register the storage service, but we use in memory storage here
+    dependencyManager.registerContextScoped(InjectionSymbols.Wallet, RegisteredAskarTestWallet)
 
     const agent = new Agent(
       {
@@ -59,7 +56,12 @@ describe('UpdateAssistant | v0.3.1 - v0.4', () => {
 
     // Set storage after initialization. This mimics as if this wallet
     // is opened as an existing wallet instead of a new wallet
-    storageService.records = JSON.parse(aliceDidRecordsString)
+    storageService.contextCorrelationIdToRecords = {
+      default: {
+        records: JSON.parse(aliceDidRecordsString),
+        creationDate: new Date(),
+      },
+    }
 
     expect(await updateAssistant.isUpToDate()).toBe(false)
     expect(await updateAssistant.getNeededUpdates('0.4')).toEqual([
@@ -75,9 +77,7 @@ describe('UpdateAssistant | v0.3.1 - v0.4', () => {
     expect(await updateAssistant.isUpToDate()).toBe(true)
     expect(await updateAssistant.getNeededUpdates()).toEqual([])
 
-    // MEDIATOR_ROUTING_RECORD recipientKeys will be different every time, and is not what we're testing here
-    delete storageService.records.MEDIATOR_ROUTING_RECORD
-    expect(storageService.records).toMatchSnapshot()
+    expect(storageService.contextCorrelationIdToRecords[agent.context.contextCorrelationId].records).toMatchSnapshot()
 
     await agent.shutdown()
     await agent.wallet.delete()

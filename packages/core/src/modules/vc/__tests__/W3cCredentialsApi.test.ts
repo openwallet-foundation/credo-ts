@@ -1,5 +1,4 @@
-import { IndySdkModule } from '../../../../../indy-sdk/src'
-import { getAgentOptions, indySdk } from '../../../../tests'
+import { getInMemoryAgentOptions } from '../../../../tests'
 import { Agent } from '../../../agent/Agent'
 import { JsonTransformer } from '../../../utils'
 import { W3cCredentialService } from '../W3cCredentialService'
@@ -9,16 +8,15 @@ import { Ed25519Signature2018Fixtures } from '../data-integrity/__tests__/fixtur
 import { W3cJsonLdVerifiableCredential } from '../data-integrity/models'
 import { W3cCredentialRepository } from '../repository'
 
-const modules = {
-  indySdk: new IndySdkModule({
-    indySdk,
-  }),
-  w3cCredentials: new W3cCredentialsModule({
-    documentLoader: customDocumentLoader,
-  }),
-}
-
-const agentOptions = getAgentOptions('W3cCredentialsApi', {}, modules)
+const agentOptions = getInMemoryAgentOptions(
+  'W3cCredentialsApi',
+  {},
+  {
+    w3cCredentials: new W3cCredentialsModule({
+      documentLoader: customDocumentLoader,
+    }),
+  }
+)
 
 const agent = new Agent(agentOptions)
 

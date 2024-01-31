@@ -2,8 +2,7 @@ import type { ConnectionRecord } from '@credo-ts/core'
 
 import { Agent } from '@credo-ts/core'
 
-import { getAgentOptions, makeConnection, testLogger, setupSubjectTransports, indySdk } from '../../core/tests'
-import { IndySdkModule } from '../../indy-sdk/src'
+import { makeConnection, testLogger, setupSubjectTransports, getInMemoryAgentOptions } from '../../core/tests'
 
 import { waitForActionMenuRecord } from './helpers'
 
@@ -11,12 +10,9 @@ import { ActionMenu, ActionMenuModule, ActionMenuRecord, ActionMenuRole, ActionM
 
 const modules = {
   actionMenu: new ActionMenuModule(),
-  indySdk: new IndySdkModule({
-    indySdk,
-  }),
 }
 
-const faberAgentOptions = getAgentOptions(
+const faberAgentOptions = getInMemoryAgentOptions(
   'Faber Action Menu',
   {
     endpoints: ['rxjs:faber'],
@@ -24,7 +20,7 @@ const faberAgentOptions = getAgentOptions(
   modules
 )
 
-const aliceAgentOptions = getAgentOptions(
+const aliceAgentOptions = getInMemoryAgentOptions(
   'Alice Action Menu',
   {
     endpoints: ['rxjs:alice'],

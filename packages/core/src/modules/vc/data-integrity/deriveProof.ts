@@ -38,6 +38,7 @@ export interface W3cJsonLdDeriveProofOptions {
 export const deriveProof = async (
   proofDocument: JsonObject,
   revealDocument: JsonObject,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   { suite, skipProofCompaction, documentLoader, nonce }: any
 ): Promise<W3cJsonLdVerifiableCredential> => {
   if (!suite) {

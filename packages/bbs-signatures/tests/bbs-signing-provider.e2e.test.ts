@@ -3,9 +3,8 @@ import type { Wallet, WalletConfig } from '@credo-ts/core'
 import { KeyDerivationMethod, KeyType, WalletError, TypedArrayEncoder, SigningProviderRegistry } from '@credo-ts/core'
 import { BBS_SIGNATURE_LENGTH } from '@mattrglobal/bbs-signatures'
 
-import testLogger from '../../core/tests/logger'
-import { IndySdkWallet } from '../../indy-sdk/src'
-import { indySdk } from '../../indy-sdk/tests/setupIndySdkModule'
+import { RegisteredAskarTestWallet } from '../../askar/tests/helpers'
+import { testLogger, agentDependencies } from '../../core/tests'
 import { Bls12381g2SigningProvider } from '../src'
 
 import { describeSkipNode18 } from './util'
@@ -24,7 +23,11 @@ describeSkipNode18('BBS Signing Provider', () => {
   const message = TypedArrayEncoder.fromString('sample-message')
 
   beforeEach(async () => {
-    wallet = new IndySdkWallet(indySdk, testLogger, new SigningProviderRegistry([new Bls12381g2SigningProvider()]))
+    wallet = new RegisteredAskarTestWallet(
+      testLogger,
+      new agentDependencies.FileSystem(),
+      new SigningProviderRegistry([new Bls12381g2SigningProvider()])
+    )
     await wallet.createAndOpen(walletConfig)
   })
 
@@ -33,15 +36,24 @@ describeSkipNode18('BBS Signing Provider', () => {
   })
 
   test('Create bls12381g2 keypair', async () => {
-    await expect(wallet.createKey({ seed, keyType: KeyType.Bls12381g2 })).resolves.toMatchObject({
-      publicKeyBase58:
-        '25TvGExLTWRTgn9h2wZuohrQmmLafXiacY4dhv66wcbY8pLbuNTBRMTgWVcPKh2wsEyrRPmnhLdc4C7LEcJ2seoxzBkoydJEdQD8aqg5dw8wesBTS9Twg8EjuFG1WPRAiERd',
-      keyType: KeyType.Bls12381g2,
-    })
+    const key = await wallet.createKey({ seed, keyType: KeyType.Bls12381g2 })
+    expect(key.keyType).toStrictEqual(KeyType.Bls12381g2)
+    expect(key.publicKeyBase58).toStrictEqual(
+      'yVLZ92FeZ3AYco43LXtJgtM8kUD1WPUyQPw4VwxZ1iYSak85GYGSJwURhVJM4R6ASRGuM9vjjSU91pKbaqTWQgLjPJjFuK8HdDmAHi3thYun9QUGjarrK7BzC11LurcpYqD'
+    )
   })
 
-  test('Fail to create bls12381g1g2 keypair', async () => {
-    await expect(wallet.createKey({ seed, keyType: KeyType.Bls12381g1g2 })).rejects.toThrowError(WalletError)
+  test('Fail to sign with bls12381g1g2 keypair', async () => {
+    const key = await wallet.createKey({ seed, keyType: KeyType.Bls12381g1g2 })
+
+    await expect(
+      wallet.sign({
+        data: message,
+        key,
+      })
+    ).rejects.toThrow(
+      'Error signing data with verkey AeAihfn5UFf7y9oesemKE1oLmTwKMRv7fafTepespr3qceF4RUMggAbogkoC8n6rXgtJytq4oGy59DsVHxmNj9WGWwkiRnP3Sz2r924RLVbc2NdP4T7yEPsSFZPsWmLjgnP1vXHpj4bVXNcTmkUmF6mSXinF3HehnQVip14vRFuMzYVxMUh28ofTJzbtUqxMWZQRu. Unsupported keyType: bls12381g1g2'
+    )
   })
 
   test('Create a signature with a bls12381g2 keypair', async () => {

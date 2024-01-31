@@ -37,12 +37,10 @@ import { randomUUID } from 'crypto'
 
 import { AnonCredsCredentialFormatService, AnonCredsProofFormatService, AnonCredsModule } from '../../anoncreds/src'
 import { InMemoryAnonCredsRegistry } from '../../anoncreds/tests/InMemoryAnonCredsRegistry'
-import { AskarModule } from '../../askar/src'
-import { askarModuleConfig } from '../../askar/tests/helpers'
 import { sleep } from '../../core/src/utils/sleep'
 import { setupSubjectTransports, setupEventReplaySubjects } from '../../core/tests'
 import {
-  getAgentOptions,
+  getInMemoryAgentOptions,
   makeConnection,
   waitForCredentialRecordSubject,
   waitForProofExchangeRecordSubject,
@@ -55,6 +53,7 @@ import { LocalDidResolver } from './LocalDidResolver'
 
 // Helper type to get the type of the agents (with the custom modules) for the credential tests
 export type AnonCredsTestsAgent = Agent<
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   ReturnType<typeof getAnonCredsModules> & { mediationRecipient?: any; mediator?: any }
 >
 
@@ -97,7 +96,6 @@ export const getAnonCredsModules = ({
     dids: new DidsModule({
       resolvers: [new LocalDidResolver()],
     }),
-    askar: new AskarModule(askarModuleConfig),
     cache: new CacheModule({
       cache: new InMemoryLruCache({ limit: 100 }),
     }),
@@ -201,7 +199,7 @@ export async function issueAnonCredsCredential({
   holderReplay: EventReplaySubject
 
   issuerHolderConnectionId: string
-  revocationRegistryDefinitionId?: string
+  revocationRegistryDefinitionId: string | null
   offer: AnonCredsOfferCredentialFormat
 }) {
   let issuerCredentialExchangeRecord = await issuerAgent.credentials.offerCredential({
@@ -209,7 +207,11 @@ export async function issueAnonCredsCredential({
     connectionId: issuerHolderConnectionId,
     protocolVersion: 'v2',
     credentialFormats: {
-      anoncreds: { ...offer, revocationRegistryDefinitionId, revocationRegistryIndex: 1 },
+      anoncreds: {
+        ...offer,
+        revocationRegistryDefinitionId: revocationRegistryDefinitionId ?? undefined,
+        revocationRegistryIndex: 1,
+      },
     },
     autoAcceptCredential: AutoAcceptCredential.ContentApproved,
   })
@@ -267,7 +269,7 @@ interface SetupAnonCredsTestsReturn<VerifierName extends string | undefined, Cre
 
   schemaId: string
   credentialDefinitionId: string
-  revocationRegistryDefinitionId?: string
+  revocationRegistryDefinitionId: string | null
   revocationStatusListTimestamp?: number
 }
 
@@ -298,7 +300,7 @@ export async function setupAnonCredsTests<
   registries?: [AnonCredsRegistry, ...AnonCredsRegistry[]]
 }): Promise<SetupAnonCredsTestsReturn<VerifierName, CreateConnections>> {
   const issuerAgent = new Agent(
-    getAgentOptions(
+    getInMemoryAgentOptions(
       issuerName,
       {
         endpoints: ['rxjs:issuer'],
@@ -312,7 +314,7 @@ export async function setupAnonCredsTests<
   )
 
   const holderAgent = new Agent(
-    getAgentOptions(
+    getInMemoryAgentOptions(
       holderName,
       {
         endpoints: ['rxjs:holder'],
@@ -327,7 +329,7 @@ export async function setupAnonCredsTests<
 
   const verifierAgent = verifierName
     ? new Agent(
-        getAgentOptions(
+        getInMemoryAgentOptions(
           verifierName,
           {
             endpoints: ['rxjs:verifier'],

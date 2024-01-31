@@ -8,9 +8,7 @@ import {
 import { Agent, DidsModule, TypedArrayEncoder } from '@credo-ts/core'
 import { indyVdr } from '@hyperledger/indy-vdr-nodejs'
 
-import { agentDependencies, getAgentConfig, importExistingIndyDidFromPrivateKey } from '../../core/tests/helpers'
-import { IndySdkModule } from '../../indy-sdk/src'
-import { indySdk } from '../../indy-sdk/tests/setupIndySdkModule'
+import { getInMemoryAgentOptions, importExistingIndyDidFromPrivateKey } from '../../core/tests/helpers'
 import { IndyVdrIndyDidResolver, IndyVdrModule, IndyVdrSovDidResolver } from '../src'
 import { IndyVdrAnonCredsRegistry } from '../src/anoncreds/IndyVdrAnonCredsRegistry'
 import { IndyVdrIndyDidRegistrar } from '../src/dids/IndyVdrIndyDidRegistrar'
@@ -19,49 +17,45 @@ import { IndyVdrPoolService } from '../src/pool'
 import { credentialDefinitionValue, revocationRegistryDefinitionValue } from './__fixtures__/anoncreds'
 import { indyVdrModuleConfig } from './helpers'
 
-const endorserConfig = getAgentConfig('IndyVdrAnonCredsRegistryEndorser')
-const agentConfig = getAgentConfig('IndyVdrAnonCredsRegistryAgent')
-
 const indyVdrAnonCredsRegistry = new IndyVdrAnonCredsRegistry()
 
-const endorser = new Agent({
-  config: endorserConfig,
-  dependencies: agentDependencies,
-  modules: {
-    indyVdr: new IndyVdrModule({
-      indyVdr,
-      networks: indyVdrModuleConfig.networks,
-    }),
-    indySdk: new IndySdkModule({
-      indySdk,
-    }),
-    dids: new DidsModule({
-      registrars: [new IndyVdrIndyDidRegistrar()],
-      resolvers: [new IndyVdrSovDidResolver(), new IndyVdrIndyDidResolver()],
-    }),
-  },
-})
+const endorser = new Agent(
+  getInMemoryAgentOptions(
+    'IndyVdrAnonCredsRegistryEndorser',
+    {},
+    {
+      indyVdr: new IndyVdrModule({
+        indyVdr,
+        networks: indyVdrModuleConfig.networks,
+      }),
+      dids: new DidsModule({
+        registrars: [new IndyVdrIndyDidRegistrar()],
+        resolvers: [new IndyVdrSovDidResolver(), new IndyVdrIndyDidResolver()],
+      }),
+    }
+  )
+)
 
-const agent = new Agent({
-  config: agentConfig,
-  dependencies: agentDependencies,
-  modules: {
-    indyVdr: new IndyVdrModule({
-      indyVdr,
-      networks: indyVdrModuleConfig.networks,
-    }),
-    indySdk: new IndySdkModule({
-      indySdk,
-    }),
-    dids: new DidsModule({
-      registrars: [new IndyVdrIndyDidRegistrar()],
-      resolvers: [new IndyVdrSovDidResolver(), new IndyVdrIndyDidResolver()],
-    }),
-  },
-})
+const agent = new Agent(
+  getInMemoryAgentOptions(
+    'IndyVdrAnonCredsRegistryAgent',
+    {},
+    {
+      indyVdr: new IndyVdrModule({
+        indyVdr,
+        networks: indyVdrModuleConfig.networks,
+      }),
+      dids: new DidsModule({
+        registrars: [new IndyVdrIndyDidRegistrar()],
+        resolvers: [new IndyVdrSovDidResolver(), new IndyVdrIndyDidResolver()],
+      }),
+    }
+  )
+)
 
 const indyVdrPoolService = endorser.dependencyManager.resolve(IndyVdrPoolService)
 
+// FIXME: this test is very slow, probably due to the sleeps. Can we speed it up?
 describe('IndyVdrAnonCredsRegistry', () => {
   let endorserDid: string
   beforeAll(async () => {

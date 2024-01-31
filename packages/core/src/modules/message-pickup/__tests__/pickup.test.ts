@@ -5,19 +5,15 @@ import { Subject } from 'rxjs'
 
 import { SubjectInboundTransport } from '../../../../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from '../../../../../../tests/transport/SubjectOutboundTransport'
-import { getIndySdkModules } from '../../../../../indy-sdk/tests/setupIndySdkModule'
-import { getAgentOptions, waitForBasicMessage, waitForTrustPingReceivedEvent } from '../../../../tests/helpers'
+import { getInMemoryAgentOptions, waitForBasicMessage, waitForTrustPingReceivedEvent } from '../../../../tests/helpers'
 import { Agent } from '../../../agent/Agent'
 import { HandshakeProtocol } from '../../connections'
 
-const recipientOptions = getAgentOptions('Mediation: Recipient Pickup', {}, getIndySdkModules())
-const mediatorOptions = getAgentOptions(
-  'Mediation: Mediator Pickup',
-  {
-    endpoints: ['wss://mediator'],
-  },
-  getIndySdkModules()
-)
+const recipientOptions = getInMemoryAgentOptions('Mediation: Recipient Pickup')
+const mediatorOptions = getInMemoryAgentOptions('Mediation: Mediator Pickup', {
+  // Agent is shutdown during test, so we can't use in-memory wallet
+  endpoints: ['wss://mediator'],
+})
 
 describe('E2E Pick Up protocol', () => {
   let recipientAgent: Agent
@@ -72,9 +68,6 @@ describe('E2E Pick Up protocol', () => {
 
     // Now they are connected, reinitialize recipient agent in order to lose the session (as with SubjectTransport it remains open)
     await recipientAgent.shutdown()
-
-    recipientAgent = new Agent(recipientOptions)
-    recipientAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     await recipientAgent.initialize()
 
     const message = 'hello pickup V1'

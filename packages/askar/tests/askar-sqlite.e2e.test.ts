@@ -15,10 +15,10 @@ import { Store } from '@hyperledger/aries-askar-shared'
 import { tmpdir } from 'os'
 import path from 'path'
 
-import { getSqliteAgentOptions } from './helpers'
+import { getAskarSqliteAgentOptions } from './helpers'
 
-const aliceAgentOptions = getSqliteAgentOptions('AgentsAlice')
-const bobAgentOptions = getSqliteAgentOptions('AgentsBob')
+const aliceAgentOptions = getAskarSqliteAgentOptions('AgentsAlice')
+const bobAgentOptions = getAskarSqliteAgentOptions('AgentsBob')
 
 describe('Askar SQLite agents', () => {
   let aliceAgent: Agent

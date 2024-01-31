@@ -79,7 +79,7 @@ export class Agent<AgentModules extends AgentModulesInput = any> extends BaseAge
     // Register possibly already defined services
     if (!dependencyManager.isRegistered(InjectionSymbols.Wallet)) {
       throw new AriesFrameworkError(
-        "Missing required dependency: 'Wallet'. You can register it using one of the provided modules such as the AskarModule or the IndySdkModule, or implement your own."
+        "Missing required dependency: 'Wallet'. You can register it using the AskarModule, or implement your own."
       )
     }
     if (!dependencyManager.isRegistered(InjectionSymbols.Logger)) {
@@ -87,7 +87,7 @@ export class Agent<AgentModules extends AgentModulesInput = any> extends BaseAge
     }
     if (!dependencyManager.isRegistered(InjectionSymbols.StorageService)) {
       throw new AriesFrameworkError(
-        "Missing required dependency: 'StorageService'. You can register it using one of the provided modules such as the AskarModule or the IndySdkModule, or implement your own."
+        "Missing required dependency: 'StorageService'. You can register it using the AskarModule, or implement your own."
       )
     }
     if (!dependencyManager.isRegistered(InjectionSymbols.MessageRepository)) {

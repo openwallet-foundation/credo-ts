@@ -1,8 +1,3 @@
-/**
- * NOTE: this file is availalbe in both the indy-sdk and indy-vdr packages. If making changes to
- * this file, make sure to update both files if applicable.
- */
-
 import {
   unqualifiedSchemaIdRegex,
   unqualifiedCredentialDefinitionIdRegex,
