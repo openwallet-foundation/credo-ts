@@ -7,4 +7,5 @@ export enum KeyType {
   P256 = 'p256',
   P384 = 'p384',
   P521 = 'p521',
+  K256 = 'k256',
 }
