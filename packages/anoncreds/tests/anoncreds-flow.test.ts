@@ -2,6 +2,26 @@ import type { AnonCredsCredentialRequest } from '@credo-ts/anoncreds'
 import type { Wallet } from '@credo-ts/core'
 
 import {
+  CredentialState,
+  CredentialExchangeRecord,
+  CredentialPreviewAttribute,
+  InjectionSymbols,
+  ProofState,
+  ProofExchangeRecord,
+} from '@credo-ts/core'
+import { Subject } from 'rxjs'
+
+import { InMemoryStorageService } from '../../../tests/InMemoryStorageService'
+import { AnonCredsRegistryService } from '../../anoncreds/src/services/registry/AnonCredsRegistryService'
+import { dateToTimestamp } from '../../anoncreds/src/utils/timestamp'
+import { InMemoryAnonCredsRegistry } from '../../anoncreds/tests/InMemoryAnonCredsRegistry'
+import { agentDependencies, getAgentConfig, getAgentContext } from '../../core/tests/helpers'
+import { AnonCredsRsHolderService, AnonCredsRsIssuerService, AnonCredsRsVerifierService } from '../src/anoncreds-rs'
+
+import { InMemoryTailsFileService } from './InMemoryTailsFileService'
+import { anoncreds } from './helpers'
+
+import {
   AnonCredsRevocationRegistryDefinitionPrivateRecord,
   AnonCredsRevocationRegistryDefinitionPrivateRepository,
   AnonCredsRevocationRegistryDefinitionRecord,
@@ -24,32 +44,13 @@ import {
   AnonCredsProofFormatService,
   AnonCredsCredentialFormatService,
 } from '@credo-ts/anoncreds'
-import {
-  CredentialState,
-  CredentialExchangeRecord,
-  CredentialPreviewAttribute,
-  InjectionSymbols,
-  ProofState,
-  ProofExchangeRecord,
-} from '@credo-ts/core'
-import { Subject } from 'rxjs'
-
-import { InMemoryStorageService } from '../../../tests/InMemoryStorageService'
-import { AnonCredsRegistryService } from '../../anoncreds/src/services/registry/AnonCredsRegistryService'
-import { dateToTimestamp } from '../../anoncreds/src/utils/timestamp'
-import { InMemoryAnonCredsRegistry } from '../../anoncreds/tests/InMemoryAnonCredsRegistry'
-import { agentDependencies, getAgentConfig, getAgentContext } from '../../core/tests/helpers'
-import { AnonCredsRsHolderService } from '../src/services/AnonCredsRsHolderService'
-import { AnonCredsRsIssuerService } from '../src/services/AnonCredsRsIssuerService'
-import { AnonCredsRsVerifierService } from '../src/services/AnonCredsRsVerifierService'
-
-import { InMemoryTailsFileService } from './InMemoryTailsFileService'
 
 const registry = new InMemoryAnonCredsRegistry()
 const tailsFileService = new InMemoryTailsFileService()
 const anonCredsModuleConfig = new AnonCredsModuleConfig({
   registries: [registry],
   tailsFileService,
+  anoncreds,
 })
 
 const agentConfig = getAgentConfig('AnonCreds format services using anoncreds-rs')

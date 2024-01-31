@@ -2,6 +2,24 @@ import type { AnonCredsCredentialRequest } from '@credo-ts/anoncreds'
 import type { Wallet } from '@credo-ts/core'
 
 import {
+  CredentialState,
+  CredentialExchangeRecord,
+  CredentialPreviewAttribute,
+  InjectionSymbols,
+  ProofState,
+  ProofExchangeRecord,
+} from '@credo-ts/core'
+import { Subject } from 'rxjs'
+
+import { InMemoryStorageService } from '../../../tests/InMemoryStorageService'
+import { AnonCredsRegistryService } from '../../anoncreds/src/services/registry/AnonCredsRegistryService'
+import { InMemoryAnonCredsRegistry } from '../../anoncreds/tests/InMemoryAnonCredsRegistry'
+import { agentDependencies, getAgentConfig, getAgentContext } from '../../core/tests/helpers'
+import { AnonCredsRsVerifierService, AnonCredsRsIssuerService, AnonCredsRsHolderService } from '../src/anoncreds-rs'
+
+import { anoncreds } from './helpers'
+
+import {
   getUnqualifiedSchemaId,
   parseIndySchemaId,
   getUnqualifiedCredentialDefinitionId,
@@ -23,27 +41,11 @@ import {
   AnonCredsLinkSecretRecord,
   LegacyIndyProofFormatService,
 } from '@credo-ts/anoncreds'
-import {
-  CredentialState,
-  CredentialExchangeRecord,
-  CredentialPreviewAttribute,
-  InjectionSymbols,
-  ProofState,
-  ProofExchangeRecord,
-} from '@credo-ts/core'
-import { Subject } from 'rxjs'
-
-import { InMemoryStorageService } from '../../../tests/InMemoryStorageService'
-import { AnonCredsRegistryService } from '../../anoncreds/src/services/registry/AnonCredsRegistryService'
-import { InMemoryAnonCredsRegistry } from '../../anoncreds/tests/InMemoryAnonCredsRegistry'
-import { agentDependencies, getAgentConfig, getAgentContext } from '../../core/tests/helpers'
-import { AnonCredsRsHolderService } from '../src/services/AnonCredsRsHolderService'
-import { AnonCredsRsIssuerService } from '../src/services/AnonCredsRsIssuerService'
-import { AnonCredsRsVerifierService } from '../src/services/AnonCredsRsVerifierService'
 
 const registry = new InMemoryAnonCredsRegistry()
 const anonCredsModuleConfig = new AnonCredsModuleConfig({
   registries: [registry],
+  anoncreds,
 })
 
 const agentConfig = getAgentConfig('LegacyIndyCredentialFormatService using anoncreds-rs')

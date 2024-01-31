@@ -14,12 +14,12 @@ import {
   V2PresentationMessage,
 } from '@credo-ts/core'
 
-import { dateToTimestamp } from '../../anoncreds/src/utils/timestamp'
-import { InMemoryAnonCredsRegistry } from '../../anoncreds/tests/InMemoryAnonCredsRegistry'
 import { sleep } from '../../core/src/utils/sleep'
 import { waitForProofExchangeRecord } from '../../core/tests'
 import testLogger from '../../core/tests/logger'
+import { dateToTimestamp } from '../src/utils/timestamp'
 
+import { InMemoryAnonCredsRegistry } from './InMemoryAnonCredsRegistry'
 import { issueAnonCredsCredential, setupAnonCredsTests } from './anoncredsSetup'
 
 describe('PP V2 AnonCreds Proofs', () => {

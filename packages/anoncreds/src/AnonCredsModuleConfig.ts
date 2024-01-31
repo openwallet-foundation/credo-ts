@@ -1,5 +1,6 @@
 import type { AnonCredsRegistry } from './services'
 import type { TailsFileService } from './services/tails'
+import type { Anoncreds } from '@hyperledger/anoncreds-shared'
 
 import { BasicTailsFileService } from './services/tails'
 
@@ -18,6 +19,48 @@ export interface AnonCredsModuleConfigOptions {
    * @default BasicTailsFileService (only for downloading tails files)
    */
   tailsFileService?: TailsFileService
+
+  /**
+   *
+   * ## Node.JS
+   *
+   * ```ts
+   * import { anoncreds } from '@hyperledger/anoncreds-nodejs'
+   *
+   * const agent = new Agent({
+   *  config: {},
+   *  dependencies: agentDependencies,
+   *  modules: {
+   *   anoncredsRs: new AnoncredsRsModule({
+   *      anoncreds,
+   *   })
+   *  }
+   * })
+   * ```
+   *
+   * ## React Native
+   *
+   * ```ts
+   * import { anoncreds } from '@hyperledger/anoncreds-react-native'
+   *
+   * const agent = new Agent({
+   *  config: {},
+   *  dependencies: agentDependencies,
+   *  modules: {
+   *   anoncredsRs: new AnoncredsRsModule({
+   *      anoncreds,
+   *   })
+   *  }
+   * })
+   * ```
+   */
+  anoncreds: Anoncreds
+
+  /**
+   * Create a default link secret if there are no created link secrets.
+   * @defaultValue true
+   */
+  autoCreateLinkSecret?: boolean
 }
 
 /**
@@ -38,5 +81,14 @@ export class AnonCredsModuleConfig {
   /** See {@link AnonCredsModuleConfigOptions.tailsFileService} */
   public get tailsFileService() {
     return this.options.tailsFileService ?? new BasicTailsFileService()
+  }
+
+  public get anoncreds() {
+    return this.options.anoncreds
+  }
+
+  /** See {@link AnonCredsModuleConfigOptions.autoCreateLinkSecret} */
+  public get autoCreateLinkSecret() {
+    return this.options.autoCreateLinkSecret ?? true
   }
 }

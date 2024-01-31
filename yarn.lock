@@ -1515,40 +1515,40 @@
   resolved "https://registry.yarnpkg.com/@hutson/parse-repository-url/-/parse-repository-url-3.0.2.tgz#98c23c950a3d9b6c8f0daed06da6c3af06981340"
   integrity sha512-H9XAx3hc0BQHY6l+IFSWHDySypcXsvsuLhgYLUGywmJ5pswRVQJUHpOsobnLYp2ZUaUlKiKDrgWWhosOwAEM8Q==
 
-"@hyperledger/anoncreds-nodejs@^0.2.0-dev.5":
-  version "0.2.0-dev.5"
-  resolved "https://registry.yarnpkg.com/@hyperledger/anoncreds-nodejs/-/anoncreds-nodejs-0.2.0-dev.5.tgz#6464de1220d22b3a6db68286ba9c970f6f441adb"
-  integrity sha512-8Comk3hx1xqcsbmS3xRtm5XS8XKymAsNM7dQ3UQeirtBkiAl1AzexraTLq/tAer6Cnmo/UpnhbEjbnJCyp8V3g==
+"@hyperledger/anoncreds-nodejs@^0.2.0-dev.9":
+  version "0.2.0-dev.9"
+  resolved "https://registry.yarnpkg.com/@hyperledger/anoncreds-nodejs/-/anoncreds-nodejs-0.2.0-dev.9.tgz#f33385780485f97bb3122d90611cc584157d2be9"
+  integrity sha512-XrpaYNDJTpxzGMKJP7icePKnu0jhkCKP8U7LAS7cNxt5fgkJzW4zb4TPINLNKs28RFYwxm9fOss8R3mfCVEiuA==
   dependencies:
     "@2060.io/ffi-napi" "4.0.8"
     "@2060.io/ref-napi" "3.0.6"
-    "@hyperledger/anoncreds-shared" "0.2.0-dev.5"
+    "@hyperledger/anoncreds-shared" "0.2.0-dev.9"
     "@mapbox/node-pre-gyp" "^1.0.11"
     ref-array-di "1.2.2"
     ref-struct-di "1.1.1"
 
-"@hyperledger/anoncreds-shared@0.2.0-dev.5", "@hyperledger/anoncreds-shared@^0.2.0-dev.5":
-  version "0.2.0-dev.5"
-  resolved "https://registry.yarnpkg.com/@hyperledger/anoncreds-shared/-/anoncreds-shared-0.2.0-dev.5.tgz#1d6da9db5cc16ba8766fb4db1166dbe5af63e96e"
-  integrity sha512-YtVju8WBKj3tdZbPWGjwdx7jkE5ePPfspPCvbcjIia00CWPES7UUkfjn8NVk82rq/Gi7IoWR3Jdpfv8rPe0fEA==
+"@hyperledger/anoncreds-shared@0.2.0-dev.9", "@hyperledger/anoncreds-shared@^0.2.0-dev.9":
+  version "0.2.0-dev.9"
+  resolved "https://registry.yarnpkg.com/@hyperledger/anoncreds-shared/-/anoncreds-shared-0.2.0-dev.9.tgz#da6cbab72324b1185f97e3edaf8fef752117795b"
+  integrity sha512-2cK6x2jq98JjKJQRYGmhyPWLB0aYBYrUDM1J/kSQP2RCRoHj1hHV6Ok/DlUmxk+wO1o+71gvb8CYvoGPMI6C4Q==
 
-"@hyperledger/aries-askar-nodejs@^0.2.0-dev.5":
-  version "0.2.0-dev.5"
-  resolved "https://registry.yarnpkg.com/@hyperledger/aries-askar-nodejs/-/aries-askar-nodejs-0.2.0-dev.5.tgz#e831648d75ebde8e3f583e531710a21b08252f8d"
-  integrity sha512-C/17MpOP5jZdIHEAUnkQ0DymiQAPFACiw1tmBFOVhHTF7PZDtSXzzp+orewaKsXcFL5Qc1FoEyves5ougftAbw==
+"@hyperledger/aries-askar-nodejs@^0.2.0-dev.6":
+  version "0.2.0-dev.6"
+  resolved "https://registry.yarnpkg.com/@hyperledger/aries-askar-nodejs/-/aries-askar-nodejs-0.2.0-dev.6.tgz#0a86dc3215db8d147a4fef9404267a5e94e503a5"
+  integrity sha512-dnWcr31oOARRy0fhhw/CpfGhrxIg37UmZHJM0YB+fy30EmwXWHfZy8h1qy8D7uuyfD5FI1pXNDOlYgmMuLdJNQ==
   dependencies:
     "@2060.io/ffi-napi" "4.0.8"
     "@2060.io/ref-napi" "3.0.6"
-    "@hyperledger/aries-askar-shared" "0.2.0-dev.5"
+    "@hyperledger/aries-askar-shared" "0.2.0-dev.6"
     "@mapbox/node-pre-gyp" "^1.0.10"
     node-cache "^5.1.2"
     ref-array-di "^1.2.2"
     ref-struct-di "^1.1.1"
 
-"@hyperledger/aries-askar-shared@0.2.0-dev.5", "@hyperledger/aries-askar-shared@^0.2.0-dev.5":
-  version "0.2.0-dev.5"
-  resolved "https://registry.yarnpkg.com/@hyperledger/aries-askar-shared/-/aries-askar-shared-0.2.0-dev.5.tgz#81881eee427ee3f4ae2f56d248f83a6425ea79b8"
-  integrity sha512-H5yQEWDUL+G4rN85CyJe30dSeW7cSFHnFXaC1g9xkTXCom7eT4XxT8TpY5D/QBr3KWf26KECc/I1roZOTJQQJQ==
+"@hyperledger/aries-askar-shared@0.2.0-dev.6", "@hyperledger/aries-askar-shared@^0.2.0-dev.6":
+  version "0.2.0-dev.6"
+  resolved "https://registry.yarnpkg.com/@hyperledger/aries-askar-shared/-/aries-askar-shared-0.2.0-dev.6.tgz#c94eec01ecbf70709d8b62744873dd05cba06ad9"
+  integrity sha512-gJa28QNR5yZI2DAnfb6/wafVaI2upcT1fmt0g+Qe68IY+JJXQHzijP+zuxR3EF8pQxFEJLBmlFDn3hPHr4Kpiw==
   dependencies:
     buffer "^6.0.3"
 

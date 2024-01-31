@@ -1,16 +1,12 @@
-import type {
-  AnonCredsNonRevokedInterval,
-  AnonCredsProof,
-  AnonCredsProofRequest,
-  AnonCredsVerifierService,
-  VerifyProofOptions,
-} from '@credo-ts/anoncreds'
+import type { AnonCredsProof, AnonCredsProofRequest, AnonCredsNonRevokedInterval } from '../models'
+import type { AnonCredsVerifierService, VerifyProofOptions } from '../services'
 import type { AgentContext } from '@credo-ts/core'
 import type { JsonObject, NonRevokedIntervalOverride } from '@hyperledger/anoncreds-shared'
 
-import { AnonCredsRegistryService } from '@credo-ts/anoncreds'
 import { injectable } from '@credo-ts/core'
 import { Presentation } from '@hyperledger/anoncreds-shared'
+
+import { AnonCredsRegistryService } from '../services'
 
 @injectable()
 export class AnonCredsRsVerifierService implements AnonCredsVerifierService {

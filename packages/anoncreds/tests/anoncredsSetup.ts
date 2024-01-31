@@ -32,7 +32,6 @@ import {
   V2ProofProtocol,
   DidsModule,
 } from '@credo-ts/core'
-import { anoncreds } from '@hyperledger/anoncreds-nodejs'
 import { randomUUID } from 'crypto'
 
 import { AnonCredsCredentialFormatService, AnonCredsProofFormatService, AnonCredsModule } from '../../anoncreds/src'
@@ -46,10 +45,10 @@ import {
   waitForProofExchangeRecordSubject,
 } from '../../core/tests/helpers'
 import testLogger from '../../core/tests/logger'
-import { AnonCredsRsModule } from '../src'
 
 import { InMemoryTailsFileService } from './InMemoryTailsFileService'
 import { LocalDidResolver } from './LocalDidResolver'
+import { anoncreds } from './helpers'
 
 // Helper type to get the type of the agents (with the custom modules) for the credential tests
 export type AnonCredsTestsAgent = Agent<
@@ -89,8 +88,6 @@ export const getAnonCredsModules = ({
     anoncreds: new AnonCredsModule({
       registries: registries ?? [new InMemoryAnonCredsRegistry()],
       tailsFileService: new InMemoryTailsFileService(),
-    }),
-    anoncredsRs: new AnonCredsRsModule({
       anoncreds,
     }),
     dids: new DidsModule({

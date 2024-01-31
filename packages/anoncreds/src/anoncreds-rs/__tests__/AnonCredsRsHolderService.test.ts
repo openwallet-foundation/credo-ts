@@ -10,12 +10,6 @@ import type {
 } from '@credo-ts/anoncreds'
 import type { JsonObject } from '@hyperledger/anoncreds-nodejs'
 
-import {
-  AnonCredsModuleConfig,
-  AnonCredsHolderServiceSymbol,
-  AnonCredsLinkSecretRecord,
-  AnonCredsCredentialRecord,
-} from '@credo-ts/anoncreds'
 import { anoncreds, RevocationRegistryDefinition } from '@hyperledger/anoncreds-nodejs'
 
 import { AnonCredsCredentialDefinitionRepository } from '../../../../anoncreds/src/repository/AnonCredsCredentialDefinitionRepository'
@@ -31,6 +25,13 @@ import {
   createCredentialOffer,
   createLinkSecret,
 } from './helpers'
+
+import {
+  AnonCredsModuleConfig,
+  AnonCredsHolderServiceSymbol,
+  AnonCredsLinkSecretRecord,
+  AnonCredsCredentialRecord,
+} from '@credo-ts/anoncreds'
 
 const agentConfig = getAgentConfig('AnonCredsRsHolderServiceTest')
 const anonCredsHolderService = new AnonCredsRsHolderService()
@@ -58,6 +59,7 @@ const agentContext = getAgentContext({
       AnonCredsModuleConfig,
       new AnonCredsModuleConfig({
         registries: [new InMemoryAnonCredsRegistry({})],
+        anoncreds,
       }),
     ],
   ],
