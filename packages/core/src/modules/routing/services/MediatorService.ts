@@ -100,7 +100,7 @@ export class MediatorService {
           message: message.message,
         })
         break
-      case MessageForwardingStrategy.QueueAndDeliver: {
+      case MessageForwardingStrategy.QueueAndLiveModeDelivery: {
         await this.messagePickupApi.queueMessage({
           connectionId: mediationRecord.connectionId,
           recipientKeys: [verkeyToDidKey(message.to)],
@@ -118,7 +118,7 @@ export class MediatorService {
         }
         break
       }
-      case MessageForwardingStrategy.DeliverOnly:
+      case MessageForwardingStrategy.DirectDelivery:
         // The message inside the forward message is packed so we just send the packed
         // message to the connection associated with it
         await messageSender.sendPackage(agentContext, {

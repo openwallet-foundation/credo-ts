@@ -1,6 +1,7 @@
 import type { AnonCredsTestsAgent } from '../packages/anoncreds/tests/legacyAnonCredsSetup'
 
 import { getLegacyAnonCredsModules } from '../packages/anoncreds/tests/legacyAnonCredsSetup'
+import { MessageForwardingStrategy } from '../packages/core/src/modules/routing/MessageForwardingStrategy'
 import { getAgentOptions } from '../packages/core/tests/helpers'
 
 import { e2eTest } from './e2e-test'
@@ -15,19 +16,6 @@ import {
 } from '@credo-ts/core'
 import { WsInboundTransport } from '@credo-ts/node'
 
-const recipientOptions = getAgentOptions(
-  'E2E WS Pickup V2 Recipient ',
-  {},
-  {
-    ...getLegacyAnonCredsModules({
-      autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
-    }),
-    mediationRecipient: new MediationRecipientModule({
-      mediatorPickupStrategy: MediatorPickupStrategy.PickUpV2,
-    }),
-  }
-)
-
 // FIXME: port numbers should not depend on availability from other test suites that use web sockets
 const mediatorPort = 4100
 const mediatorOptions = getAgentOptions(
@@ -39,7 +27,10 @@ const mediatorOptions = getAgentOptions(
     ...getLegacyAnonCredsModules({
       autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
     }),
-    mediator: new MediatorModule({ autoAcceptMediationRequests: true }),
+    mediator: new MediatorModule({
+      autoAcceptMediationRequests: true,
+      messageForwardingStrategy: MessageForwardingStrategy.QueueAndLiveModeDelivery,
+    }),
   }
 )
 
@@ -66,7 +57,6 @@ describe('E2E WS Pickup V2 tests', () => {
   let senderAgent: AnonCredsTestsAgent
 
   beforeEach(async () => {
-    recipientAgent = new Agent(recipientOptions) as AnonCredsTestsAgent
     mediatorAgent = new Agent(mediatorOptions) as AnonCredsTestsAgent
     senderAgent = new Agent(senderOptions) as AnonCredsTestsAgent
   })
@@ -80,7 +70,60 @@ describe('E2E WS Pickup V2 tests', () => {
     await senderAgent.wallet.delete()
   })
 
-  test('Full WS flow (connect, request mediation, issue, verify) using Message Pickup V2', async () => {
+  test('Full WS flow (connect, request mediation, issue, verify) using Message Pickup V2 polling mode', async () => {
+    const recipientOptions = getAgentOptions(
+      'E2E WS Pickup V2 Recipient polling mode',
+      {},
+      {
+        ...getLegacyAnonCredsModules({
+          autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
+        }),
+        mediationRecipient: new MediationRecipientModule({
+          mediatorPickupStrategy: MediatorPickupStrategy.PickUpV2,
+          mediatorPollingInterval: 1000,
+        }),
+      }
+    )
+
+    recipientAgent = new Agent(recipientOptions) as AnonCredsTestsAgent
+
+    // Recipient Setup
+    recipientAgent.registerOutboundTransport(new WsOutboundTransport())
+    await recipientAgent.initialize()
+
+    // Mediator Setup
+    mediatorAgent.registerInboundTransport(new WsInboundTransport({ port: mediatorPort }))
+    mediatorAgent.registerOutboundTransport(new WsOutboundTransport())
+    await mediatorAgent.initialize()
+
+    // Sender Setup
+    senderAgent.registerInboundTransport(new WsInboundTransport({ port: senderPort }))
+    senderAgent.registerOutboundTransport(new WsOutboundTransport())
+    await senderAgent.initialize()
+
+    await e2eTest({
+      mediatorAgent,
+      senderAgent,
+      recipientAgent,
+    })
+  })
+
+  test('Full WS flow (connect, request mediation, issue, verify) using Message Pickup V2 live mode', async () => {
+    const recipientOptions = getAgentOptions(
+      'E2E WS Pickup V2 Recipient live mode',
+      {},
+      {
+        ...getLegacyAnonCredsModules({
+          autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
+        }),
+        mediationRecipient: new MediationRecipientModule({
+          mediatorPickupStrategy: MediatorPickupStrategy.PickUpV2LiveMode,
+        }),
+      }
+    )
+
+    recipientAgent = new Agent(recipientOptions) as AnonCredsTestsAgent
+
     // Recipient Setup
     recipientAgent.registerOutboundTransport(new WsOutboundTransport())
     await recipientAgent.initialize()

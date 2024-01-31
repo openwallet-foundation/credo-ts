@@ -111,7 +111,11 @@ export class V1MessagePickupProtocol extends BaseMessagePickupProtocol {
       InjectionSymbols.MessagePickupRepository
     )
 
-    const messages = await pickupMessageQueue.takeFromQueue({ connectionId: connection.id, limit: message.batchSize })
+    const messages = await pickupMessageQueue.takeFromQueue({
+      connectionId: connection.id,
+      limit: message.batchSize,
+      deleteMessages: true,
+    })
 
     const batchMessages = messages.map(
       (msg) =>

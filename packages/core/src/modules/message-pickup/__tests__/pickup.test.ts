@@ -6,17 +6,26 @@ import { Subject } from 'rxjs'
 import { SubjectInboundTransport } from '../../../../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from '../../../../../../tests/transport/SubjectOutboundTransport'
 import { getIndySdkModules } from '../../../../../indy-sdk/tests/setupIndySdkModule'
-import { getAgentOptions, waitForBasicMessage } from '../../../../tests/helpers'
+import { getAgentOptions, waitForAgentMessageProcessedEvent, waitForBasicMessage } from '../../../../tests/helpers'
 import { Agent } from '../../../agent/Agent'
 import { HandshakeProtocol } from '../../connections'
+import { MediatorModule } from '../../routing'
+import { MessageForwardingStrategy } from '../../routing/MessageForwardingStrategy'
+import { V2MessagesReceivedMessage, V2StatusMessage } from '../protocol'
 
-const recipientOptions = getAgentOptions('Mediation: Recipient Pickup', {}, getIndySdkModules())
+const recipientOptions = getAgentOptions('Mediation Pickup Loop Recipient', {}, getIndySdkModules())
 const mediatorOptions = getAgentOptions(
-  'Mediation: Message Pickup',
+  'Mediation Pickup Loop Mediator',
   {
     endpoints: ['wss://mediator'],
   },
-  getIndySdkModules()
+  {
+    ...getIndySdkModules(),
+    mediator: new MediatorModule({
+      autoAcceptMediationRequests: true,
+      messageForwardingStrategy: MessageForwardingStrategy.QueueAndLiveModeDelivery,
+    }),
+  }
 )
 
 describe('E2E Pick Up protocol', () => {
@@ -136,6 +145,13 @@ describe('E2E Pick Up protocol', () => {
 
     mediatorRecipientConnection = await mediatorAgent.connections.returnWhenIsConnected(mediatorRecipientConnection!.id)
 
+    // Now they are connected, reinitialize recipient agent in order to lose the session (as with SubjectTransport it remains open)
+    await recipientAgent.shutdown()
+
+    recipientAgent = new Agent(recipientOptions)
+    recipientAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
+    await recipientAgent.initialize()
+
     const message = 'hello pickup V2'
 
     await mediatorAgent.basicMessages.sendMessage(mediatorRecipientConnection.id, message)
@@ -147,9 +163,26 @@ describe('E2E Pick Up protocol', () => {
       connectionId: recipientMediatorConnection.id,
       protocolVersion: 'v2',
     })
+    const firstStatusMessage = await waitForAgentMessageProcessedEvent(recipientAgent, {
+      messageType: V2StatusMessage.type.messageTypeUri,
+    })
+
+    expect((firstStatusMessage as V2StatusMessage).messageCount).toBe(1)
 
     const basicMessage = await basicMessagePromise
     expect(basicMessage.content).toBe(message)
+
+    const messagesReceived = await waitForAgentMessageProcessedEvent(mediatorAgent, {
+      messageType: V2MessagesReceivedMessage.type.messageTypeUri,
+    })
+
+    expect((messagesReceived as V2MessagesReceivedMessage).messageIdList.length).toBe(1)
+
+    const secondStatusMessage = await waitForAgentMessageProcessedEvent(recipientAgent, {
+      messageType: V2StatusMessage.type.messageTypeUri,
+    })
+
+    expect((secondStatusMessage as V2StatusMessage).messageCount).toBe(0)
 
     await recipientAgent.mediationRecipient.stopMessagePickup()
   })

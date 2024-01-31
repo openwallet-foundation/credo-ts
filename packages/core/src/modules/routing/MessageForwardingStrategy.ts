@@ -1,13 +1,13 @@
 export enum MessageForwardingStrategy {
   // When a forward is received, simply queue encrypted message. MessagePickupRepository
-  // will be in charge of manually triggering MessagePickupApi.deliver()
+  // will be in charge of manually triggering MessagePickupApi.deliverMessages()
   QueueOnly = 'QueueOnly',
 
-  // Queue message into MessagePickupRepository and, if a live mode session si active,
+  // Queue message into MessagePickupRepository and, if a Message Pickup Live mode session is active,
   // deliver it along any other queued message
-  QueueAndDeliver = 'QueueAndDeliver',
+  QueueAndLiveModeDelivery = 'QueueAndLiveModeDelivery',
 
-  // Attempt to deliver message directly. Do not add into pickup queue (it might be manually
-  // added after, e.g. in case of failure)
-  DeliverOnly = 'DeliverOnly',
+  // Attempt to deliver message directly if a transport session is available. It will eventually added
+  // into pickup queue in case of failure on the delivery
+  DirectDelivery = 'DirectDelivery',
 }

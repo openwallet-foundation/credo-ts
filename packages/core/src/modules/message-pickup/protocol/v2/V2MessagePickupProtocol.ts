@@ -106,7 +106,6 @@ export class V2MessagePickupProtocol extends BaseMessagePickupProtocol {
         connectionId: connectionRecord.id,
         recipientKey,
         limit: 10, // TODO: Define as config parameter
-        keepMessages: true,
       }))
 
     if (messagesToDeliver.length === 0) {
@@ -183,7 +182,6 @@ export class V2MessagePickupProtocol extends BaseMessagePickupProtocol {
       connectionId: connection.id,
       recipientKey: recipientKey ? verkeyToDidKey(recipientKey) : undefined,
       limit: message.limit,
-      keepMessages: true,
     })
 
     const attachments = messages.map(

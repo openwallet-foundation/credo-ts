@@ -153,7 +153,6 @@ describe('V2MessagePickupProtocol', () => {
       expect(messagePickupRepository.takeFromQueue).toHaveBeenCalledWith({
         connectionId: mockConnection.id,
         limit: 10,
-        keepMessages: true,
       })
     })
 
@@ -185,7 +184,6 @@ describe('V2MessagePickupProtocol', () => {
       expect(messagePickupRepository.takeFromQueue).toHaveBeenCalledWith({
         connectionId: mockConnection.id,
         limit: 10,
-        keepMessages: true,
       })
     })
 
@@ -217,7 +215,6 @@ describe('V2MessagePickupProtocol', () => {
       expect(messagePickupRepository.takeFromQueue).toHaveBeenCalledWith({
         connectionId: mockConnection.id,
         limit: 2,
-        keepMessages: true,
       })
     })
 
@@ -237,7 +234,6 @@ describe('V2MessagePickupProtocol', () => {
         connectionId: mockConnection.id,
         limit: 10,
         recipientKey: verkeyToDidKey('recipientKey'),
-        keepMessages: true,
       })
     })
   })

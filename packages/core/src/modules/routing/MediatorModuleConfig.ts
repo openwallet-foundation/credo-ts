@@ -17,10 +17,11 @@ export interface MediatorModuleConfigOptions {
    *
    *
    * - `MessageForwardingStrategy.QueueOnly` - simply queue encrypted message into MessagePickupRepository. It will be in charge of manually trigering MessagePickupApi.deliver() afterwards.
-   * - `MessageForwardingStrategy.QueueAndDeliver` - Queue message into MessagePickupRepository and deliver it (along any other queued message).
-   * - `MessageForwardingStrategy.DeliverOnly` - Deliver message directly. Do not add into queue (it might be manually added after, e.g. in case of failure)
+   * - `MessageForwardingStrategy.QueueAndLiveModeDelivery` - Queue message into MessagePickupRepository and deliver it (along any other queued message).
+   * - `MessageForwardingStrategy.DirectDelivery` - Deliver message directly. Do not add into queue (it might be manually added after, e.g. in case of failure)
    *
-   * @default MessageForwardingStrategy.QueueAndDeliver
+   * @default MessageForwardingStrategy.DirectDelivery
+   * @todo Update default to QueueAndLiveModeDelivery
    */
   messageForwardingStrategy?: MessageForwardingStrategy
 }
@@ -39,6 +40,6 @@ export class MediatorModuleConfig {
 
   /** See {@link MediatorModuleConfigOptions.messageForwardingStrategy} */
   public get messageForwardingStrategy() {
-    return this.options.messageForwardingStrategy ?? MessageForwardingStrategy.DeliverOnly
+    return this.options.messageForwardingStrategy ?? MessageForwardingStrategy.DirectDelivery
   }
 }

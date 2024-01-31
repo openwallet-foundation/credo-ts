@@ -33,13 +33,15 @@ export class InMemoryMessagePickupRepository implements MessagePickupRepository 
 
     const messages = this.messages.filter(
       (msg) =>
-        msg.connectionId === connectionId && (recipientKey === undefined || msg.recipientKeys.includes(recipientKey))
+        msg.connectionId === connectionId &&
+        (recipientKey === undefined || msg.recipientKeys.includes(recipientKey)) &&
+        msg.state === 'pending'
     )
     return messages.length
   }
 
   public takeFromQueue(options: TakeFromQueueOptions): QueuedMessage[] {
-    const { connectionId, recipientKey, limit, keepMessages } = options
+    const { connectionId, recipientKey, limit, deleteMessages } = options
 
     let messages = this.messages.filter(
       (msg) =>
@@ -60,7 +62,7 @@ export class InMemoryMessagePickupRepository implements MessagePickupRepository 
       if (index !== -1) this.messages[index].state = 'sending'
     })
 
-    if (!keepMessages) {
+    if (deleteMessages) {
       this.removeMessages({ connectionId, messageIds: messages.map((msg) => msg.id) })
     }
 

@@ -8,7 +8,7 @@ import type {
   SetLiveDeliveryModeOptions,
   SetLiveDeliveryModeReturnType,
 } from './MessagePickupApiOptions'
-import type { MessagePickupSessionRole } from './MessagePickupSession'
+import type { MessagePickupSession, MessagePickupSessionRole } from './MessagePickupSession'
 import type { V1MessagePickupProtocol, V2MessagePickupProtocol } from './protocol'
 import type { MessagePickupProtocol } from './protocol/MessagePickupProtocol'
 import type { MessagePickupRepository } from './storage/MessagePickupRepository'
@@ -28,6 +28,12 @@ import { MessagePickupSessionService } from './services/MessagePickupSessionServ
 export interface MessagePickupApi<MPPs extends MessagePickupProtocol[]> {
   queueMessage(options: QueueMessageOptions): Promise<QueueMessageReturnType>
   pickupMessages(options: PickupMessagesOptions<MPPs>): Promise<PickupMessagesReturnType>
+  getLiveModeSession(options: {
+    connectionId: string
+    role?: MessagePickupSessionRole
+  }): Promise<MessagePickupSession | undefined>
+  deliverMessages(options: DeliverMessagesOptions): Promise<void>
+  deliverMessagesFromQueue(options: DeliverMessagesFromQueueOptions): Promise<void>
 }
 
 @injectable()

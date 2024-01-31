@@ -9,7 +9,7 @@ export interface TakeFromQueueOptions {
   connectionId: string
   recipientKey?: string
   limit?: number
-  keepMessages?: boolean
+  deleteMessages?: boolean
 }
 
 export interface AddMessageOptions {
