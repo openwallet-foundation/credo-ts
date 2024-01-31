@@ -12,7 +12,7 @@ import { hasKty, hasCrv, hasX, hasY, hasValidUse } from './validate'
 
 export class K256Jwk extends Jwk {
   public static readonly supportedEncryptionAlgorithms: JwaEncryptionAlgorithm[] = []
-  public static readonly supportedSignatureAlgorithms: JwaSignatureAlgorithm[] = [JwaSignatureAlgorithm.ES256]
+  public static readonly supportedSignatureAlgorithms: JwaSignatureAlgorithm[] = [JwaSignatureAlgorithm.ES256K]
   public static readonly keyType = KeyType.K256
 
   public readonly x: string
@@ -30,7 +30,7 @@ export class K256Jwk extends Jwk {
   }
 
   public get crv() {
-    return JwaCurve.SECP256K1 as const
+    return JwaCurve.Secp256k1 as const
   }
 
   /**
@@ -79,7 +79,7 @@ export class K256Jwk extends Jwk {
   }
 
   public static fromPublicKey(publicKey: Buffer) {
-    const expanded = expand(publicKey, JwaCurve.SECP256K1)
+    const expanded = expand(publicKey, JwaCurve.Secp256k1)
     const x = expanded.slice(0, expanded.length / 2)
     const y = expanded.slice(expanded.length / 2)
 
@@ -92,7 +92,7 @@ export class K256Jwk extends Jwk {
 
 export interface K256JwkJson extends JwkJson {
   kty: JwaKeyType.EC
-  crv: JwaCurve.SECP256K1
+  crv: JwaCurve.Secp256k1
   x: string
   y: string
   use?: 'sig' | 'enc'
@@ -101,7 +101,7 @@ export interface K256JwkJson extends JwkJson {
 export function isValidP256JwkPublicKey(jwk: JwkJson): jwk is K256JwkJson {
   return (
     hasKty(jwk, JwaKeyType.EC) &&
-    hasCrv(jwk, JwaCurve.SECP256K1) &&
+    hasCrv(jwk, JwaCurve.Secp256k1) &&
     hasX(jwk) &&
     hasY(jwk) &&
     hasValidUse(jwk, {

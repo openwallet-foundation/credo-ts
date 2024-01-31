@@ -6,12 +6,13 @@
 import bigInt from 'big-integer'
 
 import { Buffer } from '../../../utils/buffer'
+import { JwaCurve } from '../jwa'
 
 const curveToPointLength = {
-  'P-256': 64,
-  'P-384': 96,
-  'P-521': 132,
-  secp256k1: 64,
+  [JwaCurve.P256]: 64,
+  [JwaCurve.P384]: 96,
+  [JwaCurve.P521]: 132,
+  [JwaCurve.Secp256k1]: 64,
 }
 
 function getConstantsForCurve(curve: 'P-256' | 'P-384' | 'P-521' | 'secp256k1') {
@@ -44,7 +45,10 @@ function getConstantsForCurve(curve: 'P-256' | 'P-384' | 'P-521' | 'secp256k1') 
     pIdent = prime.add(1).divide(4)
   }
 
-  if (curve === 'secp256k1') {
+  // https://en.bitcoin.it/wiki/Secp256k1
+  // p = FFFFFFFF FFFFFFFF FFFFFFFF FFFFFFFF FFFFFFFF FFFFFFFF FFFFFFFE FFFFFC2F
+  // P = 2256 - 232 - 29 - 28 - 27 - 26 - 24 - 1
+  if (curve === JwaCurve.Secp256k1) {
     two = bigInt(2)
     prime = two
       .pow(256)
