@@ -7,7 +7,6 @@ import { filter, firstValueFrom, map, Subject, timeout } from 'rxjs'
 
 import { SubjectInboundTransport } from '../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutboundTransport'
-import { askarModule } from '../../askar/tests/helpers'
 import { Agent } from '../src/agent/Agent'
 import { AgentEventTypes } from '../src/agent/Events'
 import { DidExchangeState, HandshakeProtocol } from '../src/modules/connections'
@@ -22,35 +21,28 @@ import {
   MediatorModule,
 } from '../src/modules/routing'
 
-import { getAgentOptions, waitForBasicMessage } from './helpers'
+import { getInMemoryAgentOptions, waitForBasicMessage } from './helpers'
 
-const faberAgentOptions = getAgentOptions(
-  'OOB mediation - Faber Agent',
-  {
-    endpoints: ['rxjs:faber'],
-  },
-  { askar: askarModule }
-)
-const aliceAgentOptions = getAgentOptions(
+const faberAgentOptions = getInMemoryAgentOptions('OOB mediation - Faber Agent', {
+  endpoints: ['rxjs:faber'],
+})
+const aliceAgentOptions = getInMemoryAgentOptions(
   'OOB mediation - Alice Recipient Agent',
   {
     endpoints: ['rxjs:alice'],
   },
   {
-    askar: askarModule,
     mediationRecipient: new MediationRecipientModule({
-      // FIXME: discover features returns that we support this protocol, but we don't support all roles
-      // we should return that we only support the mediator role so we don't have to explicitly declare this
       mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
     }),
   }
 )
-const mediatorAgentOptions = getAgentOptions(
+const mediatorAgentOptions = getInMemoryAgentOptions(
   'OOB mediation - Mediator Agent',
   {
     endpoints: ['rxjs:mediator'],
   },
-  { askar: askarModule, mediator: new MediatorModule({ autoAcceptMediationRequests: true }) }
+  { mediator: new MediatorModule({ autoAcceptMediationRequests: true }) }
 )
 
 describe('out of band with mediation', () => {

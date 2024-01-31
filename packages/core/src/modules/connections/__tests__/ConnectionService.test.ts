@@ -5,9 +5,8 @@ import type { Routing } from '../services/ConnectionService'
 
 import { Subject } from 'rxjs'
 
-import { RegisteredAskarTestWallet } from '../../../../../askar/tests/helpers'
+import { InMemoryWallet } from '../../../../../../tests/InMemoryWallet'
 import {
-  agentDependencies,
   getAgentConfig,
   getAgentContext,
   getMockConnection,
@@ -18,7 +17,6 @@ import { AgentMessage } from '../../../agent/AgentMessage'
 import { EventEmitter } from '../../../agent/EventEmitter'
 import { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import { Key, KeyType } from '../../../crypto'
-import { SigningProviderRegistry } from '../../../crypto/signing-provider'
 import { signData, unpackAndVerifySignatureDecorator } from '../../../decorators/signature/SignatureDecoratorUtils'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
 import { indyDidFromPublicKeyBase58 } from '../../../utils/did'
@@ -92,11 +90,7 @@ describe('ConnectionService', () => {
   let agentContext: AgentContext
 
   beforeAll(async () => {
-    wallet = new RegisteredAskarTestWallet(
-      agentConfig.logger,
-      new agentDependencies.FileSystem(),
-      new SigningProviderRegistry([])
-    )
+    wallet = new InMemoryWallet()
     agentContext = getAgentContext({
       wallet,
       agentConfig,

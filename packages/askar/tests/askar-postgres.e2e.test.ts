@@ -7,12 +7,12 @@ import { Subject } from 'rxjs'
 import { SubjectInboundTransport } from '../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutboundTransport'
 
-import { askarPostgresStorageConfig, e2eTest, getPostgresAgentOptions } from './helpers'
+import { askarPostgresStorageConfig, e2eTest, getAskarPostgresAgentOptions } from './helpers'
 
-const alicePostgresAgentOptions = getPostgresAgentOptions('AgentsAlice', askarPostgresStorageConfig, {
+const alicePostgresAgentOptions = getAskarPostgresAgentOptions('AgentsAlice', askarPostgresStorageConfig, {
   endpoints: ['rxjs:alice'],
 })
-const bobPostgresAgentOptions = getPostgresAgentOptions('AgentsBob', askarPostgresStorageConfig, {
+const bobPostgresAgentOptions = getAskarPostgresAgentOptions('AgentsBob', askarPostgresStorageConfig, {
   endpoints: ['rxjs:bob'],
 })
 

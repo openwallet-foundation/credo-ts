@@ -3,23 +3,30 @@ import type { InitConfig } from '@credo-ts/core'
 import { ConnectionsModule, OutOfBandRecord, Agent, CacheModule, InMemoryLruCache } from '@credo-ts/core'
 import { agentDependencies } from '@credo-ts/node'
 
+import { InMemoryWalletModule } from '../../../tests/InMemoryWalletModule'
 import { SubjectInboundTransport } from '../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutboundTransport'
-import { askarModule } from '../../askar/tests/helpers'
-import { getAskarWalletConfig, testLogger } from '../../core/tests'
+import { uuid } from '../../core/src/utils/uuid'
+import { testLogger } from '../../core/tests'
 
 import { TenantsModule } from '@credo-ts/tenants'
 
 const agent1Config: InitConfig = {
   label: 'Tenant Agent 1',
-  walletConfig: getAskarWalletConfig('tenants e2e agent 1'),
+  walletConfig: {
+    id: `tenants e2e agent 1 - ${uuid().slice(0, 4)}`,
+    key: `tenants e2e agent 1`,
+  },
   logger: testLogger,
   endpoints: ['rxjs:tenant-agent1'],
 }
 
 const agent2Config: InitConfig = {
   label: 'Tenant Agent 2',
-  walletConfig: getAskarWalletConfig('tenants e2e agent 2'),
+  walletConfig: {
+    id: `tenants e2e agent 2 - ${uuid().slice(0, 4)}`,
+    key: `tenants e2e agent 2`,
+  },
   logger: testLogger,
   endpoints: ['rxjs:tenant-agent2'],
 }
@@ -29,7 +36,7 @@ const agent1 = new Agent({
   config: agent1Config,
   modules: {
     tenants: new TenantsModule(),
-    askar: askarModule,
+    inMemory: new InMemoryWalletModule(),
     connections: new ConnectionsModule({
       autoAcceptConnections: true,
     }),
@@ -44,7 +51,7 @@ const agent2 = new Agent({
   config: agent2Config,
   modules: {
     tenants: new TenantsModule(),
-    askar: askarModule,
+    inMemory: new InMemoryWalletModule(),
     connections: new ConnectionsModule({
       autoAcceptConnections: true,
     }),

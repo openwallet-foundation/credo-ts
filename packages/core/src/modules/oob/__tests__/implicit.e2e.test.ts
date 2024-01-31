@@ -1,10 +1,10 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 import type { IndyVdrDidCreateOptions } from '@credo-ts/indy-vdr'
 
-import { getAskarAnonCredsIndyModules } from '../../../../../anoncreds/tests/legacyAnonCredsSetup'
+import { getAnonCredsIndyModules } from '../../../../../anoncreds/tests/legacyAnonCredsSetup'
 import { setupSubjectTransports } from '../../../../tests'
 import {
-  getAgentOptions,
+  getInMemoryAgentOptions,
   importExistingIndyDidFromPrivateKey,
   publicDidSeed,
   waitForConnectionRecord,
@@ -15,19 +15,19 @@ import { sleep } from '../../../utils/sleep'
 import { DidExchangeState, HandshakeProtocol } from '../../connections'
 import { DidCommV1Service, DidCommV2Service, DidDocumentService } from '../../dids'
 
-const faberAgentOptions = getAgentOptions(
+const faberAgentOptions = getInMemoryAgentOptions(
   'Faber Agent OOB Implicit',
   {
     endpoints: ['rxjs:faber'],
   },
-  getAskarAnonCredsIndyModules()
+  getAnonCredsIndyModules()
 )
-const aliceAgentOptions = getAgentOptions(
+const aliceAgentOptions = getInMemoryAgentOptions(
   'Alice Agent OOB Implicit',
   {
     endpoints: ['rxjs:alice'],
   },
-  getAskarAnonCredsIndyModules()
+  getAnonCredsIndyModules()
 )
 
 describe('out of band implicit', () => {

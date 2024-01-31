@@ -8,8 +8,7 @@ import { Subject } from 'rxjs'
 
 import { SubjectInboundTransport } from '../../../../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from '../../../../../../tests/transport/SubjectOutboundTransport'
-import { askarModule } from '../../../../../askar/tests/helpers'
-import { getAgentOptions, getAskarWalletConfig, waitForBasicMessage } from '../../../../tests/helpers'
+import { getInMemoryAgentOptions, waitForBasicMessage } from '../../../../tests/helpers'
 import { Agent } from '../../../agent/Agent'
 import { sleep } from '../../../utils/sleep'
 import { ConnectionRecord, HandshakeProtocol } from '../../connections'
@@ -18,35 +17,22 @@ import { MediatorModule } from '../MediatorModule'
 import { MediatorPickupStrategy } from '../MediatorPickupStrategy'
 import { MediationState } from '../models/MediationState'
 
-const recipientAgentOptions = getAgentOptions(
-  'Mediation: Recipient',
-  {
-    walletConfig: getAskarWalletConfig('Mediation: Recipient', { inMemory: false }),
-  },
-  { askar: askarModule }
-)
-const mediatorAgentOptions = getAgentOptions(
+const recipientAgentOptions = getInMemoryAgentOptions('Mediation: Recipient')
+const mediatorAgentOptions = getInMemoryAgentOptions(
   'Mediation: Mediator',
   {
     endpoints: ['rxjs:mediator'],
-    walletConfig: getAskarWalletConfig('Mediation: Mediator', { inMemory: false }),
   },
   {
-    askar: askarModule,
     mediator: new MediatorModule({
       autoAcceptMediationRequests: true,
     }),
   }
 )
 
-const senderAgentOptions = getAgentOptions(
-  'Mediation: Sender',
-  {
-    endpoints: ['rxjs:sender'],
-    walletConfig: getAskarWalletConfig('Mediation: Sender', { inMemory: false }),
-  },
-  { askar: askarModule }
-)
+const senderAgentOptions = getInMemoryAgentOptions('Mediation: Sender', {
+  endpoints: ['rxjs:sender'],
+})
 
 describe('mediator establishment', () => {
   let recipientAgent: Agent
@@ -257,20 +243,6 @@ describe('mediator establishment', () => {
 
     // Restart recipient agent
     await recipientAgent.shutdown()
-    recipientAgent = new Agent({
-      ...recipientAgentOptions,
-      modules: {
-        ...recipientAgentOptions.modules,
-        mediationRecipient: new MediationRecipientModule({
-          mediatorInvitationUrl: mediatorOutOfBandRecord.outOfBandInvitation.toUrl({
-            domain: 'https://example.com/ssi',
-          }),
-          mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
-        }),
-      },
-    })
-    recipientAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
-    recipientAgent.registerInboundTransport(new SubjectInboundTransport(recipientMessages))
     await recipientAgent.initialize()
 
     // Initialize sender agent

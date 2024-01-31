@@ -63,6 +63,7 @@ describeSkipNode18('credentials, BBS+ signature', () => {
     } = await setupJsonLdTests({
       issuerName: 'Faber Agent Credentials LD BBS+',
       holderName: 'Alice Agent Credentials LD BBS+',
+      useBbs: true,
     }))
 
     await faberAgent.context.wallet.createKey({

@@ -39,7 +39,7 @@ export const askarPostgresStorageConfig: AskarWalletPostgresStorageConfig = {
   },
 }
 
-export function getPostgresAgentOptions(
+export function getAskarPostgresAgentOptions(
   name: string,
   storageConfig: AskarWalletPostgresStorageConfig,
   extraConfig: Partial<InitConfig> = {}
@@ -68,7 +68,7 @@ export function getPostgresAgentOptions(
   } as const
 }
 
-export function getSqliteAgentOptions(name: string, extraConfig: Partial<InitConfig> = {}, inMemory?: boolean) {
+export function getAskarSqliteAgentOptions(name: string, extraConfig: Partial<InitConfig> = {}, inMemory?: boolean) {
   const random = utils.uuid().slice(0, 4)
   const config: InitConfig = {
     label: `SQLiteAgent: ${name} - ${random}`,

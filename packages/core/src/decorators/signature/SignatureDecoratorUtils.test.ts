@@ -1,9 +1,8 @@
 import type { Wallet } from '../../wallet'
 
-import { RegisteredAskarTestWallet } from '../../../../askar/tests/helpers'
-import { agentDependencies, getAgentConfig } from '../../../tests/helpers'
+import { InMemoryWallet } from '../../../../../tests/InMemoryWallet'
+import { getAgentConfig } from '../../../tests/helpers'
 import { KeyType } from '../../crypto'
-import { SigningProviderRegistry } from '../../crypto/signing-provider'
 import { TypedArrayEncoder } from '../../utils'
 
 import { SignatureDecorator } from './SignatureDecorator'
@@ -46,11 +45,7 @@ describe('Decorators | Signature | SignatureDecoratorUtils', () => {
 
   beforeAll(async () => {
     const config = getAgentConfig('SignatureDecoratorUtilsTest')
-    wallet = new RegisteredAskarTestWallet(
-      config.logger,
-      new agentDependencies.FileSystem(),
-      new SigningProviderRegistry([])
-    )
+    wallet = new InMemoryWallet()
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     await wallet.createAndOpen(config.walletConfig!)
   })

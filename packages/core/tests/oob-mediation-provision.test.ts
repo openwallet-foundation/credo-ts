@@ -1,7 +1,6 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 import type { OutOfBandInvitation } from '../src/modules/oob/messages'
 
-import { askarModule } from '../../askar/tests/helpers'
 import { Agent } from '../src/agent/Agent'
 import { DidExchangeState, HandshakeProtocol } from '../src/modules/connections'
 import {
@@ -11,36 +10,29 @@ import {
   MediationRecipientModule,
 } from '../src/modules/routing'
 
-import { getAgentOptions, waitForBasicMessage } from './helpers'
+import { getInMemoryAgentOptions, waitForBasicMessage } from './helpers'
 import { setupSubjectTransports } from './transport'
 
-const faberAgentOptions = getAgentOptions(
-  'OOB mediation provision - Faber Agent',
-  {
-    endpoints: ['rxjs:faber'],
-  },
-  { askar: askarModule }
-)
-const aliceAgentOptions = getAgentOptions(
+const faberAgentOptions = getInMemoryAgentOptions('OOB mediation provision - Faber Agent', {
+  endpoints: ['rxjs:faber'],
+})
+const aliceAgentOptions = getInMemoryAgentOptions(
   'OOB mediation provision - Alice Recipient Agent',
   {
     endpoints: ['rxjs:alice'],
   },
   {
-    askar: askarModule,
     mediationRecipient: new MediationRecipientModule({
-      // FIXME: discover features returns that we support this protocol, but we don't support all roles
-      // we should return that we only support the mediator role so we don't have to explicitly declare this
       mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
     }),
   }
 )
-const mediatorAgentOptions = getAgentOptions(
+const mediatorAgentOptions = getInMemoryAgentOptions(
   'OOB mediation provision - Mediator Agent',
   {
     endpoints: ['rxjs:mediator'],
   },
-  { askar: askarModule, mediator: new MediatorModule({ autoAcceptMediationRequests: true }) }
+  { mediator: new MediatorModule({ autoAcceptMediationRequests: true }) }
 )
 
 describe('out of band with mediation set up with provision method', () => {

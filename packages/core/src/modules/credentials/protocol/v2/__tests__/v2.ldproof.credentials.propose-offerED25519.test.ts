@@ -7,13 +7,13 @@ import {
   V1ProofProtocol,
 } from '../../../../../../../anoncreds/src'
 import {
-  getAskarAnonCredsIndyModules,
+  getAnonCredsIndyModules,
   prepareForAnonCredsIssuance,
 } from '../../../../../../../anoncreds/tests/legacyAnonCredsSetup'
 import {
+  getInMemoryAgentOptions,
   setupEventReplaySubjects,
   setupSubjectTransports,
-  getAgentOptions,
   waitForCredentialRecordSubject,
   testLogger,
   makeConnection,
@@ -76,7 +76,7 @@ const indyProofFormat = new LegacyIndyProofFormatService()
 
 const getIndyJsonLdModules = () =>
   ({
-    ...getAskarAnonCredsIndyModules(),
+    ...getAnonCredsIndyModules(),
     credentials: new CredentialsModule({
       credentialProtocols: [
         new V1CredentialProtocol({ indyCredentialFormat }),
@@ -112,7 +112,7 @@ describe('V2 Credentials - JSON-LD - Ed25519', () => {
 
   beforeAll(async () => {
     faberAgent = new Agent(
-      getAgentOptions(
+      getInMemoryAgentOptions(
         'Faber Agent Indy/JsonLD',
         {
           endpoints: ['rxjs:faber'],
@@ -121,7 +121,7 @@ describe('V2 Credentials - JSON-LD - Ed25519', () => {
       )
     )
     aliceAgent = new Agent(
-      getAgentOptions(
+      getInMemoryAgentOptions(
         'Alice Agent Indy/JsonLD',
         {
           endpoints: ['rxjs:alice'],

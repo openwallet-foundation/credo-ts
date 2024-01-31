@@ -1,9 +1,9 @@
 import type { AgentContext } from '../../../agent'
 import type { Wallet } from '../../../wallet'
 
-import { RegisteredAskarTestWallet } from '../../../../../askar/tests/helpers'
-import { agentDependencies, getAgentConfig, getAgentContext, mockFunction } from '../../../../tests'
-import { SigningProviderRegistry, JwsService } from '../../../crypto'
+import { InMemoryWallet } from '../../../../../../tests/InMemoryWallet'
+import { getAgentConfig, getAgentContext, mockFunction } from '../../../../tests'
+import { JwsService } from '../../../crypto'
 import { JsonTransformer, asArray } from '../../../utils'
 import { W3cCredentialService } from '../W3cCredentialService'
 import { W3cCredentialsModuleConfig } from '../W3cCredentialsModuleConfig'
@@ -16,8 +16,6 @@ import jsonld from '../data-integrity/libraries/jsonld'
 import { W3cJwtCredentialService } from '../jwt-vc'
 import { W3cPresentation } from '../models'
 import { W3cCredentialRepository, W3cCredentialRecord } from '../repository'
-
-const signingProviderRegistry = new SigningProviderRegistry([])
 
 jest.mock('../repository/W3cCredentialRepository')
 const W3cCredentialsRepositoryMock = W3cCredentialRepository as jest.Mock<W3cCredentialRepository>
@@ -48,11 +46,7 @@ describe('W3cCredentialsService', () => {
   let w3cCredentialsRepository: W3cCredentialRepository
 
   beforeAll(async () => {
-    wallet = new RegisteredAskarTestWallet(
-      agentConfig.logger,
-      new agentDependencies.FileSystem(),
-      signingProviderRegistry
-    )
+    wallet = new InMemoryWallet()
     await wallet.createAndOpen(agentConfig.walletConfig)
     agentContext = getAgentContext({
       agentConfig,

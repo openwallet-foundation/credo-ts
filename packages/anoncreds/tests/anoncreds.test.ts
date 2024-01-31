@@ -2,8 +2,7 @@ import { Agent, KeyType, TypedArrayEncoder } from '@credo-ts/core'
 
 import { AnonCredsRsModule } from '../../anoncreds-rs/src'
 import { anoncreds } from '../../anoncreds-rs/tests/helpers'
-import { askarModule } from '../../askar/tests/helpers'
-import { getAgentOptions } from '../../core/tests'
+import { getInMemoryAgentOptions } from '../../core/tests'
 import { AnonCredsModule } from '../src'
 
 import { InMemoryAnonCredsRegistry } from './InMemoryAnonCredsRegistry'
@@ -73,12 +72,11 @@ const existingRevocationStatusLists = {
 }
 
 const agent = new Agent(
-  getAgentOptions(
+  getInMemoryAgentOptions(
     'credo-anoncreds-package',
     {},
     {
       anoncredsRs: new AnonCredsRsModule({ anoncreds, autoCreateLinkSecret: false }),
-      askar: askarModule,
       anoncreds: new AnonCredsModule({
         registries: [
           new InMemoryAnonCredsRegistry({

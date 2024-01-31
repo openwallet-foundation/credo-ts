@@ -1,7 +1,7 @@
 import type { AnonCredsTestsAgent } from '../packages/anoncreds/tests/legacyAnonCredsSetup'
 
-import { getAskarAnonCredsIndyModules } from '../packages/anoncreds/tests/legacyAnonCredsSetup'
-import { getAgentOptions } from '../packages/core/tests/helpers'
+import { getAnonCredsIndyModules } from '../packages/anoncreds/tests/legacyAnonCredsSetup'
+import { getInMemoryAgentOptions } from '../packages/core/tests/helpers'
 
 import { e2eTest } from './e2e-test'
 
@@ -15,11 +15,11 @@ import {
 } from '@credo-ts/core'
 import { WsInboundTransport } from '@credo-ts/node'
 
-const recipientOptions = getAgentOptions(
+const recipientOptions = getInMemoryAgentOptions(
   'E2E WS Pickup V2 Recipient ',
   {},
   {
-    ...getAskarAnonCredsIndyModules({
+    ...getAnonCredsIndyModules({
       autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
     }),
     mediationRecipient: new MediationRecipientModule({
@@ -30,13 +30,13 @@ const recipientOptions = getAgentOptions(
 
 // FIXME: port numbers should not depend on availability from other test suites that use web sockets
 const mediatorPort = 4100
-const mediatorOptions = getAgentOptions(
+const mediatorOptions = getInMemoryAgentOptions(
   'E2E WS Pickup V2 Mediator',
   {
     endpoints: [`ws://localhost:${mediatorPort}`],
   },
   {
-    ...getAskarAnonCredsIndyModules({
+    ...getAnonCredsIndyModules({
       autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
     }),
     mediator: new MediatorModule({ autoAcceptMediationRequests: true }),
@@ -44,13 +44,13 @@ const mediatorOptions = getAgentOptions(
 )
 
 const senderPort = 4101
-const senderOptions = getAgentOptions(
+const senderOptions = getInMemoryAgentOptions(
   'E2E WS Pickup V2 Sender',
   {
     endpoints: [`ws://localhost:${senderPort}`],
   },
   {
-    ...getAskarAnonCredsIndyModules({
+    ...getAnonCredsIndyModules({
       autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
     }),
     mediationRecipient: new MediationRecipientModule({

@@ -2,8 +2,8 @@ import type { DependencyManager, Module } from '../../plugins'
 
 import { injectable } from 'tsyringe'
 
-import { askarModule } from '../../../../askar/tests/helpers'
-import { getAgentOptions } from '../../../tests/helpers'
+import { InMemoryWalletModule } from '../../../../../tests/InMemoryWalletModule'
+import { getInMemoryAgentOptions } from '../../../tests/helpers'
 import { InjectionSymbols } from '../../constants'
 import { BasicMessageRepository, BasicMessageService } from '../../modules/basic-messages'
 import { BasicMessagesApi } from '../../modules/basic-messages/BasicMessagesApi'
@@ -34,7 +34,7 @@ import { FeatureRegistry } from '../FeatureRegistry'
 import { MessageReceiver } from '../MessageReceiver'
 import { MessageSender } from '../MessageSender'
 
-const agentOptions = getAgentOptions('Agent Class Test', {}, { askar: askarModule })
+const agentOptions = getInMemoryAgentOptions('Agent Class Test')
 
 const myModuleMethod = jest.fn()
 @injectable()
@@ -62,7 +62,7 @@ describe('Agent', () => {
         ...agentOptions,
         modules: {
           myModule: new MyModule(),
-          askar: askarModule,
+          inMemory: new InMemoryWalletModule(),
         },
       })
 
@@ -80,7 +80,7 @@ describe('Agent', () => {
           mediationRecipient: new MediationRecipientModule({
             maximumMessagePickup: 42,
           }),
-          askar: askarModule,
+          inMemory: new InMemoryWalletModule(),
         },
       })
 

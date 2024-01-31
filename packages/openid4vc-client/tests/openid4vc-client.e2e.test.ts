@@ -12,10 +12,9 @@ import {
 } from '@credo-ts/core'
 import nock, { cleanAll, enableNetConnect } from 'nock'
 
-import { AskarModule } from '../../askar/src'
-import { askarModuleConfig } from '../../askar/tests/helpers'
+import { InMemoryWalletModule } from '../../../tests/InMemoryWalletModule'
 import { customDocumentLoader } from '../../core/src/modules/vc/data-integrity/__tests__/documentLoader'
-import { getAgentOptions } from '../../core/tests'
+import { getInMemoryAgentOptions } from '../../core/tests'
 
 import { mattrLaunchpadJsonLd, waltIdJffJwt } from './fixtures'
 
@@ -26,23 +25,21 @@ const modules = {
   w3cCredentials: new W3cCredentialsModule({
     documentLoader: customDocumentLoader,
   }),
-  askar: new AskarModule(askarModuleConfig),
+  inMemory: new InMemoryWalletModule(),
 }
 
 describe('OpenId4VcClient', () => {
   let agent: Agent<typeof modules>
 
   beforeEach(async () => {
-    const agentOptions = getAgentOptions('OpenId4VcClient Agent', {}, modules)
-
+    const agentOptions = getInMemoryAgentOptions('OpenId4VcClient Agent', {}, modules)
     agent = new Agent(agentOptions)
-
     await agent.initialize()
   })
 
   afterEach(async () => {
-    await agent.shutdown()
     await agent.wallet.delete()
+    await agent.shutdown()
   })
 
   describe('Pre-authorized flow', () => {

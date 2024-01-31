@@ -2,15 +2,14 @@ import { parseIndyDid } from '@credo-ts/anoncreds'
 import { DidsModule, Agent, TypedArrayEncoder, JsonTransformer } from '@credo-ts/core'
 import { indyVdr } from '@hyperledger/indy-vdr-nodejs'
 
-import { askarModule } from '../../askar/tests/helpers'
-import { getAgentOptions, importExistingIndyDidFromPrivateKey } from '../../core/tests/helpers'
+import { getInMemoryAgentOptions, importExistingIndyDidFromPrivateKey } from '../../core/tests/helpers'
 import { IndyVdrModule } from '../src'
 import { IndyVdrIndyDidRegistrar, IndyVdrIndyDidResolver, IndyVdrSovDidResolver } from '../src/dids'
 
 import { createDidOnLedger, indyVdrModuleConfig } from './helpers'
 
 const agent = new Agent(
-  getAgentOptions(
+  getInMemoryAgentOptions(
     'Indy VDR Sov DID resolver',
     {},
     {
@@ -18,7 +17,6 @@ const agent = new Agent(
         indyVdr,
         networks: indyVdrModuleConfig.networks,
       }),
-      askar: askarModule,
       dids: new DidsModule({
         registrars: [new IndyVdrIndyDidRegistrar()],
         resolvers: [new IndyVdrIndyDidResolver(), new IndyVdrSovDidResolver()],

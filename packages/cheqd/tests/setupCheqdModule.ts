@@ -2,7 +2,6 @@ import type { CheqdModuleConfigOptions } from '../src'
 
 import { DidsModule } from '@credo-ts/core'
 
-import { askarModule } from '../../askar/tests/helpers'
 import { CheqdModule, CheqdDidRegistrar, CheqdDidResolver } from '../src'
 
 export const getCheqdModuleConfig = (seed?: string, rpcUrl?: string) =>
@@ -24,5 +23,4 @@ export const getCheqdModules = (seed?: string, rpcUrl?: string) => ({
     registrars: [new CheqdDidRegistrar()],
     resolvers: [new CheqdDidResolver()],
   }),
-  askarModule,
 })

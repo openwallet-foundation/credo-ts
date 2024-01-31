@@ -15,8 +15,11 @@ import {
 import { indyVdr } from '@hyperledger/indy-vdr-nodejs'
 import { convertPublicKeyToX25519, generateKeyPairFromSeed } from '@stablelib/ed25519'
 
-import { askarModule } from '../../askar/tests/helpers'
-import { getAgentOptions, importExistingIndyDidFromPrivateKey, retryUntilResult } from '../../core/tests/helpers'
+import {
+  getInMemoryAgentOptions,
+  importExistingIndyDidFromPrivateKey,
+  retryUntilResult,
+} from '../../core/tests/helpers'
 import { IndyVdrModule, IndyVdrSovDidResolver } from '../src'
 import { IndyVdrIndyDidRegistrar } from '../src/dids/IndyVdrIndyDidRegistrar'
 import { IndyVdrIndyDidResolver } from '../src/dids/IndyVdrIndyDidResolver'
@@ -25,7 +28,7 @@ import { indyDidFromNamespaceAndInitialKey } from '../src/dids/didIndyUtil'
 import { indyVdrModuleConfig } from './helpers'
 
 const endorser = new Agent(
-  getAgentOptions(
+  getInMemoryAgentOptions(
     'Indy VDR Indy DID Registrar',
     {},
     {
@@ -33,7 +36,6 @@ const endorser = new Agent(
         networks: indyVdrModuleConfig.networks,
         indyVdr,
       }),
-      askar: askarModule,
       dids: new DidsModule({
         registrars: [new IndyVdrIndyDidRegistrar()],
         resolvers: [new IndyVdrIndyDidResolver(), new IndyVdrSovDidResolver()],
@@ -42,7 +44,7 @@ const endorser = new Agent(
   )
 )
 const agent = new Agent(
-  getAgentOptions(
+  getInMemoryAgentOptions(
     'Indy VDR Indy DID Registrar',
     {},
     {
@@ -50,7 +52,6 @@ const agent = new Agent(
         indyVdr,
         networks: indyVdrModuleConfig.networks,
       }),
-      askar: askarModule,
       dids: new DidsModule({
         registrars: [new IndyVdrIndyDidRegistrar()],
         resolvers: [new IndyVdrIndyDidResolver(), new IndyVdrSovDidResolver()],

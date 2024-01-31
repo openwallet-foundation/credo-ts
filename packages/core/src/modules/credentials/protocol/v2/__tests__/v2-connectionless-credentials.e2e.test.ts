@@ -8,10 +8,10 @@ import { ReplaySubject, Subject } from 'rxjs'
 import { SubjectInboundTransport } from '../../../../../../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from '../../../../../../../../tests/transport/SubjectOutboundTransport'
 import {
-  getAskarAnonCredsIndyModules,
+  getAnonCredsIndyModules,
   prepareForAnonCredsIssuance,
 } from '../../../../../../../anoncreds/tests/legacyAnonCredsSetup'
-import { waitForCredentialRecordSubject, getAgentOptions } from '../../../../../../tests/helpers'
+import { waitForCredentialRecordSubject, getInMemoryAgentOptions } from '../../../../../../tests/helpers'
 import testLogger from '../../../../../../tests/logger'
 import { Agent } from '../../../../../agent/Agent'
 import { CredentialEventTypes } from '../../../CredentialEvents'
@@ -20,20 +20,20 @@ import { CredentialState } from '../../../models/CredentialState'
 import { CredentialExchangeRecord } from '../../../repository/CredentialExchangeRecord'
 import { V2CredentialPreview } from '../messages'
 
-const faberAgentOptions = getAgentOptions(
+const faberAgentOptions = getInMemoryAgentOptions(
   'Faber connection-less Credentials V2',
   {
     endpoints: ['rxjs:faber'],
   },
-  getAskarAnonCredsIndyModules()
+  getAnonCredsIndyModules()
 )
 
-const aliceAgentOptions = getAgentOptions(
+const aliceAgentOptions = getInMemoryAgentOptions(
   'Alice connection-less Credentials V2',
   {
     endpoints: ['rxjs:alice'],
   },
-  getAskarAnonCredsIndyModules()
+  getAnonCredsIndyModules()
 )
 
 const credentialPreview = V2CredentialPreview.fromRecord({

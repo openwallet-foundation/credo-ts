@@ -29,6 +29,7 @@ import path from 'path'
 import { lastValueFrom, firstValueFrom, ReplaySubject } from 'rxjs'
 import { catchError, filter, map, take, timeout } from 'rxjs/operators'
 
+import { InMemoryWalletModule } from '../../../tests/InMemoryWalletModule'
 import { agentDependencies } from '../../node/src'
 import {
   AgentEventTypes,
@@ -122,6 +123,39 @@ export function getAgentOptions<AgentModules extends AgentModulesInput | EmptyMo
   }
 
   return { config, modules: modules as AgentModules, dependencies: agentDependencies } as const
+}
+
+export function getInMemoryAgentOptions<AgentModules extends AgentModulesInput | EmptyModuleMap>(
+  name: string,
+  extraConfig: Partial<InitConfig> = {},
+  inputModules?: AgentModules
+): { config: InitConfig; modules: AgentModules; dependencies: AgentDependencies } {
+  const random = uuid().slice(0, 4)
+  const config: InitConfig = {
+    label: `Agent: ${name} - ${random}`,
+    walletConfig: {
+      id: `Wallet: ${name} - ${random}`,
+      key: `Wallet: ${name}`,
+    },
+    // TODO: determine the log level based on an environment variable. This will make it
+    // possible to run e.g. failed github actions in debug mode for extra logs
+    logger: TestLogger.fromLogger(testLogger, name),
+    ...extraConfig,
+  }
+
+  const m = (inputModules ?? {}) as AgentModulesInput
+  const modules = {
+    ...m,
+    inMemory: new InMemoryWalletModule(),
+    // Make sure connections module is always defined so we can set autoAcceptConnections
+    connections:
+      m.connections ??
+      new ConnectionsModule({
+        autoAcceptConnections: true,
+      }),
+  }
+
+  return { config, modules: modules as unknown as AgentModules, dependencies: agentDependencies } as const
 }
 
 export async function importExistingIndyDidFromPrivateKey(agent: Agent, privateKey: Buffer) {

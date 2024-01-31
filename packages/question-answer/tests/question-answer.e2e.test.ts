@@ -2,8 +2,7 @@ import type { ConnectionRecord } from '@credo-ts/core'
 
 import { Agent } from '@credo-ts/core'
 
-import { askarModule } from '../../askar/tests/helpers'
-import { setupSubjectTransports, testLogger, getAgentOptions, makeConnection } from '../../core/tests'
+import { setupSubjectTransports, testLogger, makeConnection, getInMemoryAgentOptions } from '../../core/tests'
 
 import { waitForQuestionAnswerRecord } from './helpers'
 
@@ -11,10 +10,9 @@ import { QuestionAnswerModule, QuestionAnswerRole, QuestionAnswerState } from '@
 
 const modules = {
   questionAnswer: new QuestionAnswerModule(),
-  askar: askarModule,
 }
 
-const bobAgentOptions = getAgentOptions(
+const bobAgentOptions = getInMemoryAgentOptions(
   'Bob Question Answer',
   {
     endpoints: ['rxjs:bob'],
@@ -22,7 +20,7 @@ const bobAgentOptions = getAgentOptions(
   modules
 )
 
-const aliceAgentOptions = getAgentOptions(
+const aliceAgentOptions = getInMemoryAgentOptions(
   'Alice Question Answer',
   {
     endpoints: ['rxjs:alice'],

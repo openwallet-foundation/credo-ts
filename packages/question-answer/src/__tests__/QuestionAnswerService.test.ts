@@ -1,13 +1,12 @@
 import type { AgentConfig, AgentContext, Repository, Wallet } from '@credo-ts/core'
 import type { QuestionAnswerStateChangedEvent, ValidResponse } from '@credo-ts/question-answer'
 
-import { EventEmitter, SigningProviderRegistry, InboundMessageContext, DidExchangeState } from '@credo-ts/core'
+import { EventEmitter, InboundMessageContext, DidExchangeState } from '@credo-ts/core'
 import { agentDependencies } from '@credo-ts/node'
 import { Subject } from 'rxjs'
 
-import { RegisteredAskarTestWallet } from '../../../askar/tests/helpers'
+import { InMemoryWallet } from '../../../../tests/InMemoryWallet'
 import { getAgentConfig, getAgentContext, getMockConnection, mockFunction } from '../../../core/tests/helpers'
-import { NodeFileSystem } from '../../../node/src/NodeFileSystem'
 
 import {
   QuestionAnswerRecord,
@@ -61,7 +60,7 @@ describe('QuestionAnswerService', () => {
 
   beforeAll(async () => {
     agentConfig = getAgentConfig('QuestionAnswerServiceTest')
-    wallet = new RegisteredAskarTestWallet(agentConfig.logger, new NodeFileSystem(), new SigningProviderRegistry([]))
+    wallet = new InMemoryWallet()
     agentContext = getAgentContext()
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     await wallet.createAndOpen(agentConfig.walletConfig!)

@@ -37,12 +37,10 @@ import { randomUUID } from 'crypto'
 
 import { AnonCredsCredentialFormatService, AnonCredsProofFormatService, AnonCredsModule } from '../../anoncreds/src'
 import { InMemoryAnonCredsRegistry } from '../../anoncreds/tests/InMemoryAnonCredsRegistry'
-import { AskarModule } from '../../askar/src'
-import { askarModuleConfig } from '../../askar/tests/helpers'
 import { sleep } from '../../core/src/utils/sleep'
 import { setupSubjectTransports, setupEventReplaySubjects } from '../../core/tests'
 import {
-  getAgentOptions,
+  getInMemoryAgentOptions,
   makeConnection,
   waitForCredentialRecordSubject,
   waitForProofExchangeRecordSubject,
@@ -98,7 +96,6 @@ export const getAnonCredsModules = ({
     dids: new DidsModule({
       resolvers: [new LocalDidResolver()],
     }),
-    askar: new AskarModule(askarModuleConfig),
     cache: new CacheModule({
       cache: new InMemoryLruCache({ limit: 100 }),
     }),
@@ -303,7 +300,7 @@ export async function setupAnonCredsTests<
   registries?: [AnonCredsRegistry, ...AnonCredsRegistry[]]
 }): Promise<SetupAnonCredsTestsReturn<VerifierName, CreateConnections>> {
   const issuerAgent = new Agent(
-    getAgentOptions(
+    getInMemoryAgentOptions(
       issuerName,
       {
         endpoints: ['rxjs:issuer'],
@@ -317,7 +314,7 @@ export async function setupAnonCredsTests<
   )
 
   const holderAgent = new Agent(
-    getAgentOptions(
+    getInMemoryAgentOptions(
       holderName,
       {
         endpoints: ['rxjs:holder'],
@@ -332,7 +329,7 @@ export async function setupAnonCredsTests<
 
   const verifierAgent = verifierName
     ? new Agent(
-        getAgentOptions(
+        getInMemoryAgentOptions(
           verifierName,
           {
             endpoints: ['rxjs:verifier'],

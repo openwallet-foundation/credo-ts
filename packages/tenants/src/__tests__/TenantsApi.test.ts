@@ -1,7 +1,6 @@
 import { Agent, AgentContext, InjectionSymbols } from '@credo-ts/core'
 
-import { askarModule } from '../../../askar/tests/helpers'
-import { getAgentContext, getAgentOptions, mockFunction } from '../../../core/tests'
+import { getAgentContext, getInMemoryAgentOptions, mockFunction } from '../../../core/tests'
 import { TenantAgent } from '../TenantAgent'
 import { TenantsApi } from '../TenantsApi'
 import { TenantAgentContextProvider } from '../context/TenantAgentContextProvider'
@@ -16,7 +15,7 @@ const AgentContextProviderMock = TenantAgentContextProvider as jest.Mock<TenantA
 
 const tenantRecordService = new TenantRecordServiceMock()
 const agentContextProvider = new AgentContextProviderMock()
-const agentOptions = getAgentOptions('TenantsApi', {}, { askar: askarModule })
+const agentOptions = getInMemoryAgentOptions('TenantsApi')
 const rootAgent = new Agent(agentOptions)
 rootAgent.dependencyManager.registerInstance(InjectionSymbols.AgentContextProvider, agentContextProvider)
 
@@ -47,9 +46,6 @@ describe('TenantsApi', () => {
       expect(tenantAgent.wallet.walletConfig).toEqual({
         id: 'Wallet: TenantsApi: tenant-id',
         key: 'Wallet: TenantsApi: tenant-id',
-        storage: {
-          type: 'sqlite',
-        },
       })
 
       expect(agentContextProvider.getAgentContextForContextCorrelationId).toBeCalledWith('tenant-id')
@@ -88,9 +84,6 @@ describe('TenantsApi', () => {
         expect(tenantAgent.wallet.walletConfig).toEqual({
           id: 'Wallet: TenantsApi: tenant-id',
           key: 'Wallet: TenantsApi: tenant-id',
-          storage: {
-            type: 'sqlite',
-          },
         })
 
         expect(agentContextProvider.getAgentContextForContextCorrelationId).toBeCalledWith('tenant-id')
@@ -130,9 +123,6 @@ describe('TenantsApi', () => {
           expect(tenantAgent.wallet.walletConfig).toEqual({
             id: 'Wallet: TenantsApi: tenant-id',
             key: 'Wallet: TenantsApi: tenant-id',
-            storage: {
-              type: 'sqlite',
-            },
           })
 
           expect(agentContextProvider.getAgentContextForContextCorrelationId).toBeCalledWith('tenant-id')

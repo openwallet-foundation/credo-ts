@@ -3,7 +3,6 @@ import type { AnonCredsCredentialRequest } from '../../models'
 import {
   CredentialState,
   CredentialExchangeRecord,
-  SigningProviderRegistry,
   KeyType,
   CredentialPreviewAttribute,
   ProofExchangeRecord,
@@ -13,6 +12,8 @@ import {
 } from '@credo-ts/core'
 import { Subject } from 'rxjs'
 
+import { InMemoryStorageService } from '../../../../../tests/InMemoryStorageService'
+import { InMemoryWallet } from '../../../../../tests/InMemoryWallet'
 import {
   AnonCredsRsHolderService,
   AnonCredsRsIssuerService,
@@ -20,9 +21,6 @@ import {
   AnonCredsRsVerifierService,
 } from '../../../../anoncreds-rs/src'
 import { anoncreds } from '../../../../anoncreds-rs/tests/helpers'
-import { AskarStorageService } from '../../../../askar/src'
-import { AskarModuleConfig } from '../../../../askar/src/AskarModuleConfig'
-import { askarModuleConfig, RegisteredAskarTestWallet } from '../../../../askar/tests/helpers'
 import { indyDidFromPublicKeyBase58 } from '../../../../core/src/utils/did'
 import { agentDependencies, getAgentConfig, getAgentContext } from '../../../../core/tests/helpers'
 import { InMemoryAnonCredsRegistry } from '../../../tests/InMemoryAnonCredsRegistry'
@@ -62,13 +60,9 @@ const agentConfig = getAgentConfig('LegacyIndyFormatServicesTest')
 const anonCredsVerifierService = new AnonCredsRsVerifierService()
 const anonCredsHolderService = new AnonCredsRsHolderService()
 const anonCredsIssuerService = new AnonCredsRsIssuerService()
-const wallet = new RegisteredAskarTestWallet(
-  agentConfig.logger,
-  new agentDependencies.FileSystem(),
-  new SigningProviderRegistry([])
-)
+const wallet = new InMemoryWallet()
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-const storageService = new AskarStorageService<any>()
+const storageService = new InMemoryStorageService<any>()
 const eventEmitter = new EventEmitter(agentDependencies, new Subject())
 const anonCredsLinkSecretRepository = new AnonCredsLinkSecretRepository(storageService, eventEmitter)
 const anonCredsCredentialDefinitionRepository = new AnonCredsCredentialDefinitionRepository(
@@ -93,7 +87,6 @@ const agentContext = getAgentContext({
     [AnonCredsCredentialDefinitionPrivateRepository, anonCredsCredentialDefinitionPrivateRepository],
     [AnonCredsCredentialRepository, anonCredsCredentialRepository],
     [AnonCredsKeyCorrectnessProofRepository, anonCredsKeyCorrectnessProofRepository],
-    [AskarModuleConfig, askarModuleConfig],
     [InjectionSymbols.StorageService, storageService],
     [
       AnonCredsRsModuleConfig,

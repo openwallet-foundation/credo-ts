@@ -4,9 +4,8 @@ import type { ConnectionStateChangedEvent } from '../ConnectionEvents'
 import { firstValueFrom } from 'rxjs'
 import { filter, first, map, timeout } from 'rxjs/operators'
 
-import { askarModule } from '../../../../../askar/tests/helpers'
 import { setupSubjectTransports } from '../../../../tests'
-import { getAgentOptions } from '../../../../tests/helpers'
+import { getInMemoryAgentOptions } from '../../../../tests/helpers'
 import { Agent } from '../../../agent/Agent'
 import { ConnectionEventTypes } from '../ConnectionEvents'
 import { ConnectionsModule } from '../ConnectionsModule'
@@ -46,39 +45,36 @@ describe('Manual Connection Flow', () => {
   // This test was added to reproduce a bug where all connections based on a reusable invitation would use the same keys
   // This was only present in the manual flow, which is almost never used.
   it('can connect multiple times using the same reusable invitation without manually using the connections api', async () => {
-    const aliceAgentOptions = getAgentOptions(
+    const aliceAgentOptions = getInMemoryAgentOptions(
       'Manual Connection Flow Alice',
       {
         label: 'alice',
         endpoints: ['rxjs:alice'],
       },
       {
-        askar: askarModule,
         connections: new ConnectionsModule({
           autoAcceptConnections: false,
         }),
       }
     )
-    const bobAgentOptions = getAgentOptions(
+    const bobAgentOptions = getInMemoryAgentOptions(
       'Manual Connection Flow Bob',
       {
         label: 'bob',
         endpoints: ['rxjs:bob'],
       },
       {
-        askar: askarModule,
         connections: new ConnectionsModule({
           autoAcceptConnections: false,
         }),
       }
     )
-    const faberAgentOptions = getAgentOptions(
+    const faberAgentOptions = getInMemoryAgentOptions(
       'Manual Connection Flow Faber',
       {
         endpoints: ['rxjs:faber'],
       },
       {
-        askar: askarModule,
         connections: new ConnectionsModule({
           autoAcceptConnections: false,
         }),

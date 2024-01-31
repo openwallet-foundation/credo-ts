@@ -6,34 +6,21 @@ import type {
 
 import { ReplaySubject } from 'rxjs'
 
-import { askarModule } from '../../../../../askar/tests/helpers'
 import { setupSubjectTransports } from '../../../../tests'
-import { getAgentOptions, makeConnection } from '../../../../tests/helpers'
+import { getInMemoryAgentOptions, makeConnection } from '../../../../tests/helpers'
 import { Agent } from '../../../agent/Agent'
 import { GoalCode, Feature } from '../../../agent/models'
 import { DiscoverFeaturesEventTypes } from '../DiscoverFeaturesEvents'
 
 import { waitForDisclosureSubject, waitForQuerySubject } from './helpers'
 
-const faberAgentOptions = getAgentOptions(
-  'Faber Discover Features V2 E2E',
-  {
-    endpoints: ['rxjs:faber'],
-  },
-  {
-    askar: askarModule,
-  }
-)
+const faberAgentOptions = getInMemoryAgentOptions('Faber Discover Features V2 E2E', {
+  endpoints: ['rxjs:faber'],
+})
 
-const aliceAgentOptions = getAgentOptions(
-  'Alice Discover Features V2 E2E',
-  {
-    endpoints: ['rxjs:alice'],
-  },
-  {
-    askar: askarModule,
-  }
-)
+const aliceAgentOptions = getInMemoryAgentOptions('Alice Discover Features V2 E2E', {
+  endpoints: ['rxjs:alice'],
+})
 
 describe('v2 discover features', () => {
   let faberAgent: Agent

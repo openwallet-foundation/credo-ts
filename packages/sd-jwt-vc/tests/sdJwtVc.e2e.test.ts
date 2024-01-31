@@ -2,18 +2,16 @@ import type { Key } from '@credo-ts/core'
 
 import { Agent, DidKey, DidsModule, KeyDidRegistrar, KeyDidResolver, KeyType, TypedArrayEncoder } from '@credo-ts/core'
 
-import { askarModule } from '../../askar/tests/helpers'
-import { getAgentOptions } from '../../core/tests'
+import { getInMemoryAgentOptions } from '../../core/tests'
 import { SdJwtVcModule } from '../src'
 
 const getAgent = (label: string) =>
   new Agent(
-    getAgentOptions(
+    getInMemoryAgentOptions(
       label,
       {},
       {
         sdJwt: new SdJwtVcModule(),
-        askar: askarModule,
         dids: new DidsModule({
           resolvers: [new KeyDidResolver()],
           registrars: [new KeyDidRegistrar()],

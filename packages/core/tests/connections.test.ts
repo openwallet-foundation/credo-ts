@@ -3,7 +3,6 @@ import type { AgentMessageProcessedEvent, KeylistUpdate } from '../src'
 
 import { filter, firstValueFrom, map, timeout } from 'rxjs'
 
-import { askarModule } from '../../askar/tests/helpers'
 import {
   MediatorModule,
   Key,
@@ -17,7 +16,7 @@ import { Agent } from '../src/agent/Agent'
 import { didKeyToVerkey } from '../src/modules/dids/helpers'
 import { OutOfBandState } from '../src/modules/oob/domain/OutOfBandState'
 
-import { getAgentOptions, waitForTrustPingResponseReceivedEvent } from './helpers'
+import { getInMemoryAgentOptions, waitForTrustPingResponseReceivedEvent } from './helpers'
 import { setupSubjectTransports } from './transport'
 
 describe('connections', () => {
@@ -27,34 +26,21 @@ describe('connections', () => {
   let mediatorAgent: Agent
 
   beforeEach(async () => {
-    const faberAgentOptions = getAgentOptions(
-      'Faber Agent Connections',
-      {
-        endpoints: ['rxjs:faber'],
-      },
-      { askar: askarModule }
-    )
-    const aliceAgentOptions = getAgentOptions(
-      'Alice Agent Connections',
-      {
-        endpoints: ['rxjs:alice'],
-      },
-      { askar: askarModule }
-    )
-    const acmeAgentOptions = getAgentOptions(
-      'Acme Agent Connections',
-      {
-        endpoints: ['rxjs:acme'],
-      },
-      { askar: askarModule }
-    )
-    const mediatorAgentOptions = getAgentOptions(
+    const faberAgentOptions = getInMemoryAgentOptions('Faber Agent Connections', {
+      endpoints: ['rxjs:faber'],
+    })
+    const aliceAgentOptions = getInMemoryAgentOptions('Alice Agent Connections', {
+      endpoints: ['rxjs:alice'],
+    })
+    const acmeAgentOptions = getInMemoryAgentOptions('Acme Agent Connections', {
+      endpoints: ['rxjs:acme'],
+    })
+    const mediatorAgentOptions = getInMemoryAgentOptions(
       'Mediator Agent Connections',
       {
         endpoints: ['rxjs:mediator'],
       },
       {
-        askar: askarModule,
         mediator: new MediatorModule({
           autoAcceptMediationRequests: true,
         }),

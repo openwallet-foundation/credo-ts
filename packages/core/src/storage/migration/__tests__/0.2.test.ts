@@ -56,7 +56,12 @@ describe('UpdateAssistant | v0.2 - v0.3.1', () => {
 
     // Set storage after initialization. This mimics as if this wallet
     // is opened as an existing wallet instead of a new wallet
-    storageService.records = JSON.parse(aliceCredentialRecordsString)
+    storageService.contextCorrelationIdToRecords = {
+      default: {
+        records: JSON.parse(aliceCredentialRecordsString),
+        creationDate: new Date(),
+      },
+    }
 
     expect(await updateAssistant.isUpToDate()).toBe(false)
     expect(await updateAssistant.getNeededUpdates('0.3.1')).toEqual([
@@ -76,10 +81,7 @@ describe('UpdateAssistant | v0.2 - v0.3.1', () => {
 
     expect(await updateAssistant.isUpToDate()).toBe(true)
     expect(await updateAssistant.getNeededUpdates()).toEqual([])
-
-    // MEDIATOR_ROUTING_RECORD recipientKeys will be different every time, and is not what we're testing here
-    delete storageService.records.MEDIATOR_ROUTING_RECORD
-    expect(storageService.records).toMatchSnapshot()
+    expect(storageService.contextCorrelationIdToRecords[agent.context.contextCorrelationId].records).toMatchSnapshot()
 
     await agent.shutdown()
     await agent.wallet.delete()
@@ -123,13 +125,15 @@ describe('UpdateAssistant | v0.2 - v0.3.1', () => {
 
     // Set storage after initialization. This mimics as if this wallet
     // is opened as an existing wallet instead of a new wallet
-    storageService.records = JSON.parse(aliceCredentialRecordsString)
+    storageService.contextCorrelationIdToRecords = {
+      default: {
+        records: JSON.parse(aliceCredentialRecordsString),
+        creationDate: new Date(),
+      },
+    }
 
     await agent.initialize()
-
-    // MEDIATOR_ROUTING_RECORD recipientKeys will be different every time, and is not what we're testing here
-    delete storageService.records.MEDIATOR_ROUTING_RECORD
-    expect(storageService.records).toMatchSnapshot()
+    expect(storageService.contextCorrelationIdToRecords[agent.context.contextCorrelationId].records).toMatchSnapshot()
 
     await agent.shutdown()
     await agent.wallet.delete()
@@ -170,14 +174,16 @@ describe('UpdateAssistant | v0.2 - v0.3.1', () => {
 
     // Set storage after initialization. This mimics as if this wallet
     // is opened as an existing wallet instead of a new wallet
-    storageService.records = JSON.parse(aliceDidRecordsString)
+    storageService.contextCorrelationIdToRecords = {
+      default: {
+        records: JSON.parse(aliceDidRecordsString),
+        creationDate: new Date(),
+      },
+    }
 
     await agent.initialize()
 
-    // MEDIATOR_ROUTING_RECORD recipientKeys will be different every time, and is not what we're testing here
-    delete storageService.records.MEDIATOR_ROUTING_RECORD
-
-    expect(storageService.records).toMatchSnapshot()
+    expect(storageService.contextCorrelationIdToRecords[agent.context.contextCorrelationId].records).toMatchSnapshot()
 
     await agent.shutdown()
     await agent.wallet.delete()

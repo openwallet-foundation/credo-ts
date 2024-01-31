@@ -1,27 +1,18 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 import type { ConnectionRecord } from '../src/modules/connections'
 
-import { askarModule } from '../../askar/tests/helpers'
 import { Agent } from '../src/agent/Agent'
 import { HandshakeProtocol } from '../src/modules/connections'
 
-import { waitForBasicMessage, getAgentOptions } from './helpers'
+import { waitForBasicMessage, getInMemoryAgentOptions } from './helpers'
 import { setupSubjectTransports } from './transport'
 
-const aliceAgentOptions = getAgentOptions(
-  'Agents Alice',
-  {
-    endpoints: ['rxjs:alice'],
-  },
-  { askar: askarModule }
-)
-const bobAgentOptions = getAgentOptions(
-  'Agents Bob',
-  {
-    endpoints: ['rxjs:bob'],
-  },
-  { askar: askarModule }
-)
+const aliceAgentOptions = getInMemoryAgentOptions('Agents Alice', {
+  endpoints: ['rxjs:alice'],
+})
+const bobAgentOptions = getInMemoryAgentOptions('Agents Bob', {
+  endpoints: ['rxjs:bob'],
+})
 
 describe('agents', () => {
   let aliceAgent: Agent

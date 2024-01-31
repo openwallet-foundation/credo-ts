@@ -32,12 +32,10 @@ import { randomUUID } from 'crypto'
 
 import { AnonCredsRsModule } from '../../anoncreds-rs/src'
 import { anoncreds } from '../../anoncreds-rs/tests/helpers'
-import { AskarModule } from '../../askar/src'
-import { askarModuleConfig } from '../../askar/tests/helpers'
 import { sleep } from '../../core/src/utils/sleep'
 import { setupSubjectTransports, setupEventReplaySubjects } from '../../core/tests'
 import {
-  getAgentOptions,
+  getInMemoryAgentOptions,
   importExistingIndyDidFromPrivateKey,
   makeConnection,
   publicDidSeed,
@@ -68,10 +66,10 @@ import {
 // Helper type to get the type of the agents (with the custom modules) for the credential tests
 export type AnonCredsTestsAgent = Agent<
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  ReturnType<typeof getAskarAnonCredsIndyModules> & { mediationRecipient?: any; mediator?: any }
+  ReturnType<typeof getAnonCredsIndyModules> & { mediationRecipient?: any; mediator?: any }
 >
 
-export const getAskarAnonCredsIndyModules = ({
+export const getAnonCredsIndyModules = ({
   autoAcceptCredentials,
   autoAcceptProofs,
 }: { autoAcceptCredentials?: AutoAcceptCredential; autoAcceptProofs?: AutoAcceptProof } = {}) => {
@@ -112,7 +110,6 @@ export const getAskarAnonCredsIndyModules = ({
       resolvers: [new IndyVdrSovDidResolver(), new IndyVdrIndyDidResolver()],
       registrars: [new IndyVdrIndyDidRegistrar()],
     }),
-    askar: new AskarModule(askarModuleConfig),
     cache: new CacheModule({
       cache: new InMemoryLruCache({ limit: 100 }),
     }),
@@ -303,12 +300,12 @@ export async function setupAnonCredsTests<
   createConnections?: CreateConnections
 }): Promise<SetupAnonCredsTestsReturn<VerifierName, CreateConnections>> {
   const issuerAgent = new Agent(
-    getAgentOptions(
+    getInMemoryAgentOptions(
       issuerName,
       {
         endpoints: ['rxjs:issuer'],
       },
-      getAskarAnonCredsIndyModules({
+      getAnonCredsIndyModules({
         autoAcceptCredentials,
         autoAcceptProofs,
       })
@@ -316,12 +313,12 @@ export async function setupAnonCredsTests<
   )
 
   const holderAgent = new Agent(
-    getAgentOptions(
+    getInMemoryAgentOptions(
       holderName,
       {
         endpoints: ['rxjs:holder'],
       },
-      getAskarAnonCredsIndyModules({
+      getAnonCredsIndyModules({
         autoAcceptCredentials,
         autoAcceptProofs,
       })
@@ -330,12 +327,12 @@ export async function setupAnonCredsTests<
 
   const verifierAgent = verifierName
     ? new Agent(
-        getAgentOptions(
+        getInMemoryAgentOptions(
           verifierName,
           {
             endpoints: ['rxjs:verifier'],
           },
-          getAskarAnonCredsIndyModules({
+          getAnonCredsIndyModules({
             autoAcceptCredentials,
             autoAcceptProofs,
           })

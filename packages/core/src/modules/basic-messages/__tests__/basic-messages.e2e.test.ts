@@ -6,29 +6,20 @@ import { Subject } from 'rxjs'
 
 import { SubjectInboundTransport } from '../../../../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from '../../../../../../tests/transport/SubjectOutboundTransport'
-import { askarModule } from '../../../../../askar/tests/helpers'
-import { getAgentOptions, makeConnection, waitForBasicMessage } from '../../../../tests/helpers'
+import { getInMemoryAgentOptions, makeConnection, waitForBasicMessage } from '../../../../tests/helpers'
 import testLogger from '../../../../tests/logger'
 import { Agent } from '../../../agent/Agent'
 import { MessageSendingError, RecordNotFoundError } from '../../../error'
 import { BasicMessage } from '../messages'
 import { BasicMessageRecord } from '../repository'
 
-const faberConfig = getAgentOptions(
-  'Faber Basic Messages',
-  {
-    endpoints: ['rxjs:faber'],
-  },
-  { askar: askarModule }
-)
+const faberConfig = getInMemoryAgentOptions('Faber Basic Messages', {
+  endpoints: ['rxjs:faber'],
+})
 
-const aliceConfig = getAgentOptions(
-  'Alice Basic Messages',
-  {
-    endpoints: ['rxjs:alice'],
-  },
-  { askar: askarModule }
-)
+const aliceConfig = getInMemoryAgentOptions('Alice Basic Messages', {
+  endpoints: ['rxjs:alice'],
+})
 
 describe('Basic Messages E2E', () => {
   let faberAgent: Agent

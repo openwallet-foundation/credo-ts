@@ -1,5 +1,4 @@
-import { askarModule } from '../../../../../askar/tests/helpers'
-import { getAgentOptions } from '../../../../tests/helpers'
+import { getInMemoryAgentOptions } from '../../../../tests/helpers'
 import { Agent } from '../../../agent/Agent'
 import { isLongFormDidPeer4, isShortFormDidPeer4 } from '../methods/peer/peerDidNumAlgo4'
 
@@ -12,13 +11,7 @@ import {
   createPeerDidDocumentFromServices,
 } from '@credo-ts/core'
 
-const agentOptions = getAgentOptions(
-  'DidsApi',
-  {},
-  {
-    askar: askarModule,
-  }
-)
+const agentOptions = getInMemoryAgentOptions('DidsApi')
 
 const agent = new Agent(agentOptions)
 
@@ -67,6 +60,8 @@ describe('DidsApi', () => {
       method: 'key',
       methodSpecificIdentifier: 'z6MkjEayvPpjVJKFLirX8SomBTPDboHm1XSCkUev2M4siQty',
       role: 'created',
+      alternativeDids: undefined,
+      recipientKeyFingerprints: [],
     })
 
     expect(createdDids[0].toJSON()).toMatchObject({
@@ -150,6 +145,8 @@ describe('DidsApi', () => {
       method: 'peer',
       methodSpecificIdentifier: '0z6Mkhu3G8viiebsWmCiSgWiQoCZrTeuX76oLDow81YNYvJQM',
       role: 'created',
+      alternativeDids: undefined,
+      recipientKeyFingerprints: [],
     })
 
     expect(createdDids[0].toJSON()).toMatchObject({

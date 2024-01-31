@@ -4,7 +4,6 @@ import type { DifPresentationExchangeProofFormat } from '../DifPresentationExcha
 
 import { PresentationSubmissionLocation } from '@sphereon/pex'
 
-import { getIndySdkModules } from '../../../../../../../indy-sdk/tests/setupIndySdkModule'
 import { agentDependencies, getAgentConfig } from '../../../../../../tests'
 import { Agent } from '../../../../../agent/Agent'
 import { DifPresentationExchangeModule, DifPresentationExchangeService } from '../../../../dif-presentation-exchange'
@@ -95,11 +94,10 @@ describe('Presentation Exchange ProofFormatService', () => {
     agent = new Agent({
       config: getAgentConfig('PresentationExchangeProofFormatService'),
       modules: {
-        someModule: new DifPresentationExchangeModule(),
+        pex: new DifPresentationExchangeModule(),
         proofs: new ProofsModule({
           proofProtocols: [new V2ProofProtocol({ proofFormats: [new PresentationExchangeProofFormatService()] })],
         }),
-        ...getIndySdkModules(),
       },
       dependencies: agentDependencies,
     })

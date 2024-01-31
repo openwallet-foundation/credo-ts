@@ -14,14 +14,13 @@ import {
   Key,
   KeyType,
   RepositoryEventTypes,
-  SigningProviderRegistry,
   TypedArrayEncoder,
   VerificationMethod,
 } from '@credo-ts/core'
 import { Subject } from 'rxjs'
 
 import { InMemoryStorageService } from '../../../../../tests/InMemoryStorageService'
-import { RegisteredAskarTestWallet } from '../../../../askar/tests/helpers'
+import { InMemoryWallet } from '../../../../../tests/InMemoryWallet'
 import { agentDependencies, getAgentConfig, getAgentContext, mockProperty } from '../../../../core/tests'
 import { IndyVdrPool, IndyVdrPoolService } from '../../pool'
 import { IndyVdrIndyDidRegistrar } from '../IndyVdrIndyDidRegistrar'
@@ -32,12 +31,7 @@ const poolMock = new IndyVdrPoolMock()
 mockProperty(poolMock, 'indyNamespace', 'ns1')
 
 const agentConfig = getAgentConfig('IndyVdrIndyDidRegistrar')
-
-const wallet = new RegisteredAskarTestWallet(
-  agentConfig.logger,
-  new agentDependencies.FileSystem(),
-  new SigningProviderRegistry([])
-)
+const wallet = new InMemoryWallet()
 
 jest
   .spyOn(wallet, 'createKey')

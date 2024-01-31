@@ -1,21 +1,14 @@
 import type { KeyDidCreateOptions } from '../methods/key/KeyDidRegistrar'
 import type { PeerDidNumAlgo0CreateOptions } from '../methods/peer/PeerDidRegistrar'
 
-import { askarModule } from '../../../../../askar/tests/helpers'
-import { getAgentOptions } from '../../../../tests/helpers'
+import { getInMemoryAgentOptions } from '../../../../tests/helpers'
 import { Agent } from '../../../agent/Agent'
 import { KeyType } from '../../../crypto'
 import { PeerDidNumAlgo } from '../methods/peer/didPeer'
 
 import { JsonTransformer, TypedArrayEncoder } from '@credo-ts/core'
 
-const agentOptions = getAgentOptions(
-  'Faber Dids Registrar',
-  {},
-  {
-    askar: askarModule,
-  }
-)
+const agentOptions = getInMemoryAgentOptions('Faber Dids Registrar')
 
 describe('dids', () => {
   let agent: Agent

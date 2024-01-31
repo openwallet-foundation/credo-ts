@@ -5,7 +5,7 @@ import { setupAnonCredsTests } from '../../../../../../../anoncreds/tests/legacy
 import {
   waitForCredentialRecord,
   waitForCredentialRecordSubject,
-  waitForMessageProcessedSubject,
+  waitForAgentMessageProcessedEventSubject,
 } from '../../../../../../tests/helpers'
 import testLogger from '../../../../../../tests/logger'
 import { AutoAcceptCredential } from '../../../models/CredentialAutoAcceptType'
@@ -443,9 +443,9 @@ describe('V2 Credentials Auto Accept', () => {
 
       // ProposalReceived is emitted before the whole message is finished processing
       // So to not get errors when shutting down the agent, we wait for the message to be processed
-      await waitForMessageProcessedSubject(faberReplay, {
+      await waitForAgentMessageProcessedEventSubject(faberReplay, {
         threadId: aliceCredentialRecord.threadId,
-        messageClass: V2ProposeCredentialMessage,
+        messageType: V2ProposeCredentialMessage.type.messageTypeUri,
       })
     })
   })

@@ -1,15 +1,13 @@
+import type { InMemoryStorageService } from '../../../../../../tests/InMemoryStorageService'
 import type { BaseRecord } from '../../BaseRecord'
 
-import { InMemoryStorageService } from '../../../../../../tests/InMemoryStorageService'
-import { RegisteredAskarTestWallet } from '../../../../../askar/tests/helpers'
-import { getAgentOptions } from '../../../../tests/helpers'
+import { getInMemoryAgentOptions } from '../../../../tests/helpers'
 import { Agent } from '../../../agent/Agent'
 import { InjectionSymbols } from '../../../constants'
-import { DependencyManager } from '../../../plugins'
 import { UpdateAssistant } from '../UpdateAssistant'
 import { CURRENT_FRAMEWORK_STORAGE_VERSION } from '../updates'
 
-const agentOptions = getAgentOptions('UpdateAssistant', {})
+const agentOptions = getInMemoryAgentOptions('UpdateAssistant', {})
 
 describe('UpdateAssistant', () => {
   let updateAssistant: UpdateAssistant
@@ -17,19 +15,15 @@ describe('UpdateAssistant', () => {
   let storageService: InMemoryStorageService<BaseRecord>
 
   beforeEach(async () => {
-    const dependencyManager = new DependencyManager()
-    storageService = new InMemoryStorageService()
-    // If we register the AskarModule it will register the storage service, but we use in memory storage here
-    dependencyManager.registerContextScoped(InjectionSymbols.Wallet, RegisteredAskarTestWallet)
-    dependencyManager.registerInstance(InjectionSymbols.StorageService, storageService)
-
-    agent = new Agent(agentOptions, dependencyManager)
+    agent = new Agent(agentOptions)
 
     updateAssistant = new UpdateAssistant(agent, {
       v0_1ToV0_2: {
         mediationRoleUpdateStrategy: 'allMediator',
       },
     })
+
+    storageService = agent.dependencyManager.resolve(InjectionSymbols.StorageService)
 
     await updateAssistant.initialize()
   })
@@ -41,10 +35,13 @@ describe('UpdateAssistant', () => {
 
   describe('upgrade()', () => {
     it('should not upgrade records when upgrading after a new wallet is created', async () => {
-      const beforeStorage = JSON.stringify(storageService.records)
+      const beforeStorage = JSON.stringify(storageService.contextCorrelationIdToRecords)
       await updateAssistant.update()
 
-      expect(JSON.parse(beforeStorage)).toEqual(storageService.records)
+      // We parse and stringify so the dates are equal (both string)
+      expect(JSON.parse(beforeStorage)).toEqual(
+        JSON.parse(JSON.stringify(storageService.contextCorrelationIdToRecords))
+      )
     })
   })
 

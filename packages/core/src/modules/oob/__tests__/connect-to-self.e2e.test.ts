@@ -5,22 +5,15 @@ import { Subject } from 'rxjs'
 
 import { SubjectInboundTransport } from '../../../../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from '../../../../../../tests/transport/SubjectOutboundTransport'
-import { askarModule } from '../../../../../askar/tests/helpers'
-import { getAgentOptions } from '../../../../tests/helpers'
+import { getInMemoryAgentOptions } from '../../../../tests/helpers'
 import { HandshakeProtocol, DidExchangeState } from '../../connections'
 import { OutOfBandState } from '../domain/OutOfBandState'
 
 import { Agent } from '@credo-ts/core'
 
-const faberAgentOptions = getAgentOptions(
-  'Faber Agent OOB Connect to Self',
-  {
-    endpoints: ['rxjs:faber'],
-  },
-  {
-    askar: askarModule,
-  }
-)
+const faberAgentOptions = getInMemoryAgentOptions('Faber Agent OOB Connect to Self', {
+  endpoints: ['rxjs:faber'],
+})
 
 describe('out of band', () => {
   let faberAgent: Agent

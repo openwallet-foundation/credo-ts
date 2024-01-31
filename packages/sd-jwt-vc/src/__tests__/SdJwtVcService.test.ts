@@ -11,8 +11,7 @@ import {
   TypedArrayEncoder,
 } from '@credo-ts/core'
 
-import { askarModule } from '../../../askar/tests/helpers'
-import { getAgentOptions } from '../../../core/tests'
+import { getInMemoryAgentOptions } from '../../../core/tests'
 import { SdJwtVcService } from '../SdJwtVcService'
 import { SdJwtVcRepository } from '../repository'
 
@@ -26,11 +25,10 @@ import {
 } from './sdjwtvc.fixtures'
 
 const agent = new Agent(
-  getAgentOptions(
+  getInMemoryAgentOptions(
     'sdjwtvcserviceagent',
     {},
     {
-      askar: askarModule,
       dids: new DidsModule({
         resolvers: [new KeyDidResolver()],
         registrars: [new KeyDidRegistrar()],

@@ -1,17 +1,8 @@
-import { askarModule } from '../../../../../askar/tests/helpers'
-import { getAgentOptions } from '../../../../tests/helpers'
+import { getInMemoryAgentOptions } from '../../../../tests/helpers'
 import { Agent } from '../../../agent/Agent'
 import { JsonTransformer } from '../../../utils'
 
-const agent = new Agent(
-  getAgentOptions(
-    'Faber Dids',
-    {},
-    {
-      askar: askarModule,
-    }
-  )
-)
+const agent = new Agent(getInMemoryAgentOptions('Faber Dids'))
 
 describe('dids', () => {
   beforeAll(async () => {

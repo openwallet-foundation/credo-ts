@@ -1,7 +1,7 @@
 import type { AnonCredsTestsAgent } from '../packages/anoncreds/tests/legacyAnonCredsSetup'
 
-import { getAskarAnonCredsIndyModules } from '../packages/anoncreds/tests/legacyAnonCredsSetup'
-import { getAgentOptions } from '../packages/core/tests/helpers'
+import { getAnonCredsIndyModules } from '../packages/anoncreds/tests/legacyAnonCredsSetup'
+import { getInMemoryAgentOptions } from '../packages/core/tests/helpers'
 
 import { e2eTest } from './e2e-test'
 
@@ -15,11 +15,11 @@ import {
 } from '@credo-ts/core'
 import { WsInboundTransport } from '@credo-ts/node'
 
-const recipientAgentOptions = getAgentOptions(
+const recipientAgentOptions = getInMemoryAgentOptions(
   'E2E WS Recipient ',
   {},
   {
-    ...getAskarAnonCredsIndyModules({
+    ...getAnonCredsIndyModules({
       autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
     }),
     mediationRecipient: new MediationRecipientModule({
@@ -29,13 +29,13 @@ const recipientAgentOptions = getAgentOptions(
 )
 
 const mediatorPort = 4000
-const mediatorAgentOptions = getAgentOptions(
+const mediatorAgentOptions = getInMemoryAgentOptions(
   'E2E WS Mediator',
   {
     endpoints: [`ws://localhost:${mediatorPort}`],
   },
   {
-    ...getAskarAnonCredsIndyModules({
+    ...getAnonCredsIndyModules({
       autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
     }),
     mediator: new MediatorModule({ autoAcceptMediationRequests: true }),
@@ -43,13 +43,13 @@ const mediatorAgentOptions = getAgentOptions(
 )
 
 const senderPort = 4001
-const senderAgentOptions = getAgentOptions(
+const senderAgentOptions = getInMemoryAgentOptions(
   'E2E WS Sender',
   {
     endpoints: [`ws://localhost:${senderPort}`],
   },
   {
-    ...getAskarAnonCredsIndyModules({
+    ...getAnonCredsIndyModules({
       autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
     }),
     mediationRecipient: new MediationRecipientModule({

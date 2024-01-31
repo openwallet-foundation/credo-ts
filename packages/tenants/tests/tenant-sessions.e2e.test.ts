@@ -3,15 +3,18 @@ import type { InitConfig } from '@credo-ts/core'
 import { ConnectionsModule, Agent } from '@credo-ts/core'
 import { agentDependencies } from '@credo-ts/node'
 
-import { AskarModule, AskarMultiWalletDatabaseScheme } from '../../askar/src'
-import { ariesAskar } from '../../askar/tests/helpers'
-import { getAskarWalletConfig, testLogger } from '../../core/tests'
+import { InMemoryWalletModule } from '../../../tests/InMemoryWalletModule'
+import { uuid } from '../../core/src/utils/uuid'
+import { testLogger } from '../../core/tests'
 
 import { TenantsModule } from '@credo-ts/tenants'
 
 const agentConfig: InitConfig = {
   label: 'Tenant Agent 1',
-  walletConfig: getAskarWalletConfig('tenant sessions e2e agent 1', { inMemory: false, maxConnections: 100 }),
+  walletConfig: {
+    id: `tenant sessions e2e agent 1 - ${uuid().slice(0, 4)}`,
+    key: `tenant sessions e2e agent 1`,
+  },
   logger: testLogger,
   endpoints: ['rxjs:tenant-agent1'],
 }
@@ -22,10 +25,7 @@ const agent = new Agent({
   dependencies: agentDependencies,
   modules: {
     tenants: new TenantsModule({ sessionAcquireTimeout: 10000 }),
-    askar: new AskarModule({
-      ariesAskar,
-      multiWalletDatabaseScheme: AskarMultiWalletDatabaseScheme.ProfilePerWallet,
-    }),
+    inMemory: new InMemoryWalletModule(),
     connections: new ConnectionsModule({
       autoAcceptConnections: true,
     }),

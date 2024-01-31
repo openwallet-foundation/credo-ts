@@ -69,6 +69,9 @@ describeSkipNode18('BBS W3cCredentialService', () => {
   const privateKey = TypedArrayEncoder.fromString('testseed000000000000000000000001')
 
   beforeAll(async () => {
+    // Use askar wallet so we can use the signing provider registry
+    // TODO: support signing provider registry in memory wallet
+    // so we don't have to use askar here
     wallet = new RegisteredAskarTestWallet(
       agentConfig.logger,
       new agentDependencies.FileSystem(),
