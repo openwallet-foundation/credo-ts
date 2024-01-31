@@ -96,14 +96,14 @@ export class MediatorService {
       case MessageForwardingStrategy.QueueOnly:
         await this.messagePickupApi.queueMessage({
           connectionId: mediationRecord.connectionId,
-          recipientKeys: [verkeyToDidKey(message.to)],
+          recipientDids: [verkeyToDidKey(message.to)],
           message: message.message,
         })
         break
       case MessageForwardingStrategy.QueueAndLiveModeDelivery: {
         await this.messagePickupApi.queueMessage({
           connectionId: mediationRecord.connectionId,
-          recipientKeys: [verkeyToDidKey(message.to)],
+          recipientDids: [verkeyToDidKey(message.to)],
           message: message.message,
         })
         const session = await this.messagePickupApi.getLiveModeSession({
@@ -113,7 +113,7 @@ export class MediatorService {
         if (session) {
           await this.messagePickupApi.deliverMessagesFromQueue({
             pickupSessionId: session.id,
-            recipientKey: verkeyToDidKey(message.to),
+            recipientDid: verkeyToDidKey(message.to),
           })
         }
         break

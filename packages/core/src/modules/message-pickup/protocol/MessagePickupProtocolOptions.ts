@@ -4,7 +4,7 @@ import type { QueuedMessage } from '../storage'
 
 export interface PickupMessagesProtocolOptions {
   connectionRecord: ConnectionRecord
-  recipientKey?: string
+  recipientDid?: string
   batchSize?: number
 }
 

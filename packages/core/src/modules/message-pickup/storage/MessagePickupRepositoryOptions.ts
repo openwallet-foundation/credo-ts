@@ -2,19 +2,19 @@ import type { EncryptedMessage } from '../../../types'
 
 export interface GetAvailableMessageCountOptions {
   connectionId: string
-  recipientKey?: string
+  recipientDid?: string
 }
 
 export interface TakeFromQueueOptions {
   connectionId: string
-  recipientKey?: string
+  recipientDid?: string
   limit?: number
   deleteMessages?: boolean
 }
 
 export interface AddMessageOptions {
   connectionId: string
-  recipientKeys: string[]
+  recipientDids: string[]
   payload: EncryptedMessage
 }
 

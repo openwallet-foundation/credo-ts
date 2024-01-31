@@ -94,10 +94,7 @@ export class V1MessagePickupProtocol extends BaseMessagePickupProtocol {
     }
   }
 
-  public async setLiveDeliveryMode(
-    agentContext: AgentContext,
-    options: SetLiveDeliveryModeProtocolOptions
-  ): Promise<SetLiveDeliveryModeProtocolReturnType<AgentMessage>> {
+  public async setLiveDeliveryMode(): Promise<SetLiveDeliveryModeProtocolReturnType<AgentMessage>> {
     throw new AriesFrameworkError('Live Delivery mode not supported in Message Pickup V1 protocol')
   }
 

@@ -78,7 +78,7 @@ export class V2MessagePickupProtocol extends BaseMessagePickupProtocol {
     agentContext: AgentContext,
     options: PickupMessagesProtocolOptions
   ): Promise<PickupMessagesProtocolReturnType<AgentMessage>> {
-    const { connectionRecord, recipientKey } = options
+    const { connectionRecord, recipientDid: recipientKey } = options
     connectionRecord.assertReady()
 
     const message = new V2StatusRequestMessage({
@@ -104,7 +104,7 @@ export class V2MessagePickupProtocol extends BaseMessagePickupProtocol {
       messages ??
       (await messagePickupRepository.takeFromQueue({
         connectionId: connectionRecord.id,
-        recipientKey,
+        recipientDid: recipientKey,
         limit: 10, // TODO: Define as config parameter
       }))
 
@@ -156,7 +156,7 @@ export class V2MessagePickupProtocol extends BaseMessagePickupProtocol {
       recipientKey,
       messageCount: await messagePickupRepository.getAvailableMessageCount({
         connectionId: connection.id,
-        recipientKey: recipientKey ? verkeyToDidKey(recipientKey) : undefined,
+        recipientDid: recipientKey ? verkeyToDidKey(recipientKey) : undefined,
       }),
     })
 
@@ -180,7 +180,7 @@ export class V2MessagePickupProtocol extends BaseMessagePickupProtocol {
     // Get available messages from queue, but don't delete them
     const messages = await messagePickupRepository.takeFromQueue({
       connectionId: connection.id,
-      recipientKey: recipientKey ? verkeyToDidKey(recipientKey) : undefined,
+      recipientDid: recipientKey ? verkeyToDidKey(recipientKey) : undefined,
       limit: message.limit,
     })
 

@@ -9,13 +9,13 @@ export type MessagePickupProtocolVersionType<MPPs extends MessagePickupProtocol[
 
 export interface QueueMessageOptions {
   connectionId: string
-  recipientKeys: string[]
+  recipientDids: string[]
   message: EncryptedMessage
 }
 
 export interface DeliverMessagesFromQueueOptions {
   pickupSessionId: string
-  recipientKey?: string
+  recipientDid?: string
   batchSize?: number
 }
 
@@ -27,7 +27,7 @@ export interface DeliverMessagesOptions {
 export interface PickupMessagesOptions<MPPs extends MessagePickupProtocol[] = MessagePickupProtocol[]> {
   connectionId: string
   protocolVersion: MessagePickupProtocolVersionType<MPPs>
-  recipientKey?: string
+  recipientDid?: string
   batchSize?: number
 }
 
@@ -42,5 +42,7 @@ export type QueueMessageReturnType = void
 export type PickupMessagesReturnType = void
 
 export type DeliverMessagesReturnType = void
+
+export type DeliverMessagesFromQueueReturnType = void
 
 export type SetLiveDeliveryModeReturnType = void

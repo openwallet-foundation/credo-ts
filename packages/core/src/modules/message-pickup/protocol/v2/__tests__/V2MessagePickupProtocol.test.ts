@@ -233,7 +233,7 @@ describe('V2MessagePickupProtocol', () => {
       expect(messagePickupRepository.takeFromQueue).toHaveBeenCalledWith({
         connectionId: mockConnection.id,
         limit: 10,
-        recipientKey: verkeyToDidKey('recipientKey'),
+        recipientDid: verkeyToDidKey('recipientKey'),
       })
     })
   })
@@ -299,7 +299,7 @@ describe('V2MessagePickupProtocol', () => {
     it('creates a status request message', async () => {
       const { message: statusRequestMessage } = await pickupProtocol.createPickupMessage(agentContext, {
         connectionRecord: mockConnection,
-        recipientKey: 'a-key',
+        recipientDid: 'a-key',
       })
 
       expect(statusRequestMessage).toMatchObject({

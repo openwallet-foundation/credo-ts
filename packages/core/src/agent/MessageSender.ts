@@ -5,7 +5,6 @@ import type { TransportSession } from './TransportService'
 import type { AgentContext } from './context'
 import type { ConnectionRecord } from '../modules/connections'
 import type { ResolvedDidCommService } from '../modules/didcomm'
-import type { DidDocument } from '../modules/dids'
 import type { OutOfBandRecord } from '../modules/oob/repository'
 import type { OutboundTransport } from '../transport/OutboundTransport'
 import type { EncryptedMessage, OutboundPackage } from '../types'
@@ -15,6 +14,7 @@ import { ReturnRouteTypes } from '../decorators/transport/TransportDecorator'
 import { AriesFrameworkError, MessageSendingError } from '../error'
 import { Logger } from '../logger'
 import { DidCommDocumentService } from '../modules/didcomm'
+import { DidKey, type DidDocument } from '../modules/dids'
 import { getKeyFromVerificationMethod } from '../modules/dids/domain/key-type'
 import { didKeyToInstanceOfKey, verkeyToDidKey } from '../modules/dids/helpers'
 import { DidResolverService } from '../modules/dids/services/DidResolverService'
@@ -180,7 +180,7 @@ export class MessageSender {
       this.logger.debug(`Queue packed message for connection ${connection.id} (${connection.theirLabel})`)
       await this.messagePickupRepository.addMessage({
         connectionId: connection.id,
-        recipientKeys: [recipientKey],
+        recipientDids: [verkeyToDidKey(recipientKey)],
         payload: encryptedMessage,
       })
       return
@@ -335,7 +335,7 @@ export class MessageSender {
       const encryptedMessage = await this.envelopeService.packMessage(agentContext, message, keys)
       await this.messagePickupRepository.addMessage({
         connectionId: connection.id,
-        recipientKeys: keys.recipientKeys.map((item) => verkeyToDidKey(item.publicKeyBase58)),
+        recipientDids: keys.recipientKeys.map((item) => new DidKey(item).did),
         payload: encryptedMessage,
       })
 

@@ -7,6 +7,8 @@ import type {
   QueueMessageReturnType,
   SetLiveDeliveryModeOptions,
   SetLiveDeliveryModeReturnType,
+  DeliverMessagesReturnType,
+  DeliverMessagesFromQueueReturnType,
 } from './MessagePickupApiOptions'
 import type { MessagePickupSession, MessagePickupSessionRole } from './MessagePickupSession'
 import type { V1MessagePickupProtocol, V2MessagePickupProtocol } from './protocol'
@@ -32,8 +34,9 @@ export interface MessagePickupApi<MPPs extends MessagePickupProtocol[]> {
     connectionId: string
     role?: MessagePickupSessionRole
   }): Promise<MessagePickupSession | undefined>
-  deliverMessages(options: DeliverMessagesOptions): Promise<void>
-  deliverMessagesFromQueue(options: DeliverMessagesFromQueueOptions): Promise<void>
+  deliverMessages(options: DeliverMessagesOptions): Promise<DeliverMessagesReturnType>
+  deliverMessagesFromQueue(options: DeliverMessagesFromQueueOptions): Promise<DeliverMessagesFromQueueReturnType>
+  setLiveDeliveryMode(options: SetLiveDeliveryModeOptions): Promise<SetLiveDeliveryModeReturnType>
 }
 
 @injectable()
@@ -85,14 +88,14 @@ export class MessagePickupApi<MPPs extends MessagePickupProtocol[] = [V1MessageP
    */
   public async queueMessage(options: QueueMessageOptions): Promise<QueueMessageReturnType> {
     this.logger.debug('Queuing message...')
-    const { connectionId, message, recipientKeys } = options
+    const { connectionId, message, recipientDids } = options
     const connectionRecord = await this.connectionService.getById(this.agentContext, connectionId)
 
     const messagePickupRepository = this.agentContext.dependencyManager.resolve<MessagePickupRepository>(
       InjectionSymbols.MessagePickupRepository
     )
 
-    await messagePickupRepository.addMessage({ connectionId: connectionRecord.id, recipientKeys, payload: message })
+    await messagePickupRepository.addMessage({ connectionId: connectionRecord.id, recipientDids, payload: message })
   }
 
   /**
@@ -153,13 +156,12 @@ export class MessagePickupApi<MPPs extends MessagePickupProtocol[] = [V1MessageP
   public async deliverMessagesFromQueue(options: DeliverMessagesFromQueueOptions) {
     this.logger.debug('Deliverying queued messages')
 
-    const { pickupSessionId, recipientKey, batchSize } = options
+    const { pickupSessionId, recipientDid: recipientKey, batchSize } = options
 
     const session = this.messagePickupSessionService.getLiveSession(this.agentContext, pickupSessionId)
 
     if (!session) {
-      this.logger.debug(`No active live mode session found with id ${pickupSessionId}`)
-      return
+      throw new AriesFrameworkError(`No active live mode session found with id ${pickupSessionId}`)
     }
     const connectionRecord = await this.connectionService.getById(this.agentContext, session.connectionId)
 
@@ -194,7 +196,7 @@ export class MessagePickupApi<MPPs extends MessagePickupProtocol[] = [V1MessageP
     const { message } = await protocol.createPickupMessage(this.agentContext, {
       connectionRecord,
       batchSize: options.batchSize,
-      recipientKey: options.recipientKey,
+      recipientDid: options.recipientDid,
     })
 
     await this.messageSender.sendMessage(

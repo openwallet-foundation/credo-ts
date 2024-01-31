@@ -14,7 +14,7 @@ import { uuid } from '../../../utils/uuid'
 
 interface InMemoryQueuedMessage extends QueuedMessage {
   connectionId: string
-  recipientKeys: string[]
+  recipientDids: string[]
   state: 'pending' | 'sending'
 }
 
@@ -29,25 +29,25 @@ export class InMemoryMessagePickupRepository implements MessagePickupRepository 
   }
 
   public getAvailableMessageCount(options: GetAvailableMessageCountOptions): number | Promise<number> {
-    const { connectionId, recipientKey } = options
+    const { connectionId, recipientDid } = options
 
     const messages = this.messages.filter(
       (msg) =>
         msg.connectionId === connectionId &&
-        (recipientKey === undefined || msg.recipientKeys.includes(recipientKey)) &&
+        (recipientDid === undefined || msg.recipientDids.includes(recipientDid)) &&
         msg.state === 'pending'
     )
     return messages.length
   }
 
   public takeFromQueue(options: TakeFromQueueOptions): QueuedMessage[] {
-    const { connectionId, recipientKey, limit, deleteMessages } = options
+    const { connectionId, recipientDid, limit, deleteMessages } = options
 
     let messages = this.messages.filter(
       (msg) =>
         msg.connectionId === connectionId &&
         msg.state === 'pending' &&
-        (recipientKey === undefined || msg.recipientKeys.includes(recipientKey))
+        (recipientDid === undefined || msg.recipientDids.includes(recipientDid))
     )
 
     const messagesToTake = limit ?? messages.length
@@ -70,14 +70,14 @@ export class InMemoryMessagePickupRepository implements MessagePickupRepository 
   }
 
   public addMessage(options: AddMessageOptions) {
-    const { connectionId, recipientKeys, payload } = options
+    const { connectionId, recipientDids, payload } = options
 
     const id = uuid()
     this.messages.push({
       id,
       connectionId,
       encryptedMessage: payload,
-      recipientKeys,
+      recipientDids,
       state: 'pending',
     })
 
