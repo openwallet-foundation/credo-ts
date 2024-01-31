@@ -284,21 +284,14 @@ export class PresentationExchangeProofFormatService implements ProofFormatServic
       const format = uniqueFormats[0]
 
       if (format === ClaimFormat.DiVp && parsedPresentation.claimFormat === ClaimFormat.LdpVp) {
-        const uniqueCryptosuites = Array.from(new Set(descriptorMap.map((descriptor) => descriptor.cryptosuite)))
-
-        if (uniqueCryptosuites.length == 0) {
-          agentContext.config.logger.error('Received an invalid presentation submission with no specified format.')
-          return false
+        if (Array.isArray(parsedPresentation.proof))
+          throw new AriesFrameworkError('Cannot process presentations with multiple proofs')
+        const cryptosuite = parsedPresentation.proof.cryptosuite
+        if (!cryptosuite) {
+          throw new AriesFrameworkError('Cannot process data integrity presentations without cryptosuites')
         }
 
-        if (uniqueCryptosuites.length > 1) {
-          agentContext.config.logger.error(
-            'Received presentation in PEX proof format with multiple formats. This is not supported.'
-          )
-          return false
-        }
-
-        if (uniqueCryptosuites.includes('anoncredsvc-2023') || uniqueCryptosuites.includes('anoncredspresvc-2023')) {
+        if (cryptosuite === 'anoncredsvc-2023' || cryptosuite === 'anoncredspresvc-2023') {
           const dataIntegrityService = agentContext.dependencyManager.resolve<AnonCredsVcDataIntegrityService>(
             anonCredsVcDataIntegrityServiceSymbol
           )
@@ -318,7 +311,7 @@ export class PresentationExchangeProofFormatService implements ProofFormatServic
             },
           }
         } else {
-          agentContext.config.logger.error(`Unsupported cryptosuites '${uniqueCryptosuites.join(', ')}'.`)
+          agentContext.config.logger.error(`Unsupported cryptosuite '${cryptosuite}'.`)
           return false
         }
       }
