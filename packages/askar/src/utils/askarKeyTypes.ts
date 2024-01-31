@@ -29,11 +29,11 @@ const keyTypeToAskarAlg = {
   },
   [KeyType.P256]: {
     keyAlg: KeyAlgs.EcSecp256r1,
-    purposes: [AskarKeyTypePurpose.KeyManagement],
+    purposes: [AskarKeyTypePurpose.KeyManagement, AskarKeyTypePurpose.Signing],
   },
   [KeyType.K256]: {
     keyAlg: KeyAlgs.EcSecp256k1,
-    purposes: [AskarKeyTypePurpose.KeyManagement],
+    purposes: [AskarKeyTypePurpose.KeyManagement, AskarKeyTypePurpose.Signing],
   },
 }
 
