@@ -26,7 +26,7 @@ export function getJwkFromJson(jwkJson: JwkJson): Jwk {
     if (hasCrv(jwkJson, JwaCurve.P256)) return P256Jwk.fromJson(jwkJson)
     if (hasCrv(jwkJson, JwaCurve.P384)) return P384Jwk.fromJson(jwkJson)
     if (hasCrv(jwkJson, JwaCurve.P521)) return P521Jwk.fromJson(jwkJson)
-    if (hasCrv(jwkJson, JwaCurve.SECP256K1)) return K256Jwk.fromJson(jwkJson)
+    if (hasCrv(jwkJson, JwaCurve.Secp256k1)) return K256Jwk.fromJson(jwkJson)
   }
 
   throw new Error(`Cannot create JWK from JSON. Unsupported JWK with kty '${jwkJson.kty}'.`)
