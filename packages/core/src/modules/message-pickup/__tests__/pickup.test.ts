@@ -25,7 +25,6 @@ const recipientOptions = getAgentOptions(
 const mediatorOptions = getAgentOptions(
   'Mediation Pickup Loop Mediator',
   {
-    // Agent is shutdown during test, so we can't use in-memory wallet
     endpoints: ['wss://mediator'],
   },
   {
