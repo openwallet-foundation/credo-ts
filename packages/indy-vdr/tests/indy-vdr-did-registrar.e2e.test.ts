@@ -203,6 +203,9 @@ describe('Indy VDR Indy Did Registrar', () => {
       secret: didState.secret,
     })
 
+    if (didCreateSubmitResult.didState.state !== 'finished') {
+      throw new Error(`Unexpected did state, ${JSON.stringify(didCreateSubmitResult.didState, null, 2)}`)
+    }
     expect(JsonTransformer.toJSON(didCreateSubmitResult)).toMatchObject({
       didDocumentMetadata: {},
       didRegistrationMetadata: {},
@@ -583,6 +586,10 @@ describe('Indy VDR Indy Did Registrar', () => {
           type: 'DIDComm',
         },
       ],
+    }
+
+    if (didCreateSubmitResult.didState.state !== 'finished') {
+      throw new Error(`Unexpected did state, ${JSON.stringify(didCreateSubmitResult.didState, null, 2)}`)
     }
 
     expect(JsonTransformer.toJSON(didCreateSubmitResult)).toMatchObject({

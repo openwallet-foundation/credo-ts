@@ -3,7 +3,7 @@ import path from 'path'
 
 import { InMemoryStorageService } from '../../../../../../tests/InMemoryStorageService'
 import { RegisteredAskarTestWallet } from '../../../../../askar/tests/helpers'
-import { Agent } from '../../../../src'
+import { Agent, MediatorRoutingRecord } from '../../../../src'
 import { agentDependencies } from '../../../../tests/helpers'
 import { InjectionSymbols } from '../../../constants'
 import { DependencyManager } from '../../../plugins'
@@ -133,6 +133,7 @@ describe('UpdateAssistant | v0.2 - v0.3.1', () => {
     }
 
     await agent.initialize()
+    await storageService.deleteById(agent.context, MediatorRoutingRecord, 'MEDIATOR_ROUTING_RECORD')
     expect(storageService.contextCorrelationIdToRecords[agent.context.contextCorrelationId].records).toMatchSnapshot()
 
     await agent.shutdown()
@@ -183,6 +184,7 @@ describe('UpdateAssistant | v0.2 - v0.3.1', () => {
 
     await agent.initialize()
 
+    await storageService.deleteById(agent.context, MediatorRoutingRecord, 'MEDIATOR_ROUTING_RECORD')
     expect(storageService.contextCorrelationIdToRecords[agent.context.contextCorrelationId].records).toMatchSnapshot()
 
     await agent.shutdown()

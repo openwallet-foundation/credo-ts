@@ -176,7 +176,6 @@ export class InMemoryWallet implements Wallet {
           keyType,
         }
 
-        key.handle.free()
         return Key.fromPublicKey(keyPublicBytes, keyType)
       } finally {
         key?.handle.free()
