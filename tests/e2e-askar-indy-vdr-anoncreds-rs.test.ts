@@ -3,10 +3,8 @@ import type { AnonCredsTestsAgent } from '../packages/anoncreds/tests/legacyAnon
 
 import { Subject } from 'rxjs'
 
-import {
-  getAskarAnonCredsIndyModules,
-  getLegacyAnonCredsModules,
-} from '../packages/anoncreds/tests/legacyAnonCredsSetup'
+import { getAnonCredsIndyModules } from '../packages/anoncreds/tests/legacyAnonCredsSetup'
+import { askarModule } from '../packages/askar/tests/helpers'
 import { getAgentOptions } from '../packages/core/tests/helpers'
 
 import { e2eTest } from './e2e-test'
@@ -25,12 +23,13 @@ const recipientAgentOptions = getAgentOptions(
   'E2E Askar Subject Recipient',
   {},
   {
-    ...getAskarAnonCredsIndyModules({
+    ...getAnonCredsIndyModules({
       autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
     }),
     mediationRecipient: new MediationRecipientModule({
       mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
     }),
+    askar: askarModule,
   }
 )
 const mediatorAgentOptions = getAgentOptions(
@@ -39,25 +38,27 @@ const mediatorAgentOptions = getAgentOptions(
     endpoints: ['rxjs:mediator'],
   },
   {
-    ...getAskarAnonCredsIndyModules({
+    ...getAnonCredsIndyModules({
       autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
     }),
     mediator: new MediatorModule({ autoAcceptMediationRequests: true }),
+    askar: askarModule,
   }
 )
 const senderAgentOptions = getAgentOptions(
-  'E2E Indy SDK Subject Sender',
+  'E2E Askar Subject Sender',
   {
     endpoints: ['rxjs:sender'],
   },
   {
-    ...getLegacyAnonCredsModules({
+    ...getAnonCredsIndyModules({
       autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
     }),
     mediationRecipient: new MediationRecipientModule({
       mediatorPollingInterval: 1000,
       mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
     }),
+    askar: askarModule,
   }
 )
 
@@ -67,9 +68,9 @@ describe('E2E Askar-AnonCredsRS-IndyVDR Subject tests', () => {
   let senderAgent: AnonCredsTestsAgent
 
   beforeEach(async () => {
-    recipientAgent = new Agent(recipientAgentOptions) as AnonCredsTestsAgent
-    mediatorAgent = new Agent(mediatorAgentOptions) as AnonCredsTestsAgent
-    senderAgent = new Agent(senderAgentOptions) as AnonCredsTestsAgent
+    recipientAgent = new Agent(recipientAgentOptions) as unknown as AnonCredsTestsAgent
+    mediatorAgent = new Agent(mediatorAgentOptions) as unknown as AnonCredsTestsAgent
+    senderAgent = new Agent(senderAgentOptions) as unknown as AnonCredsTestsAgent
   })
 
   afterEach(async () => {

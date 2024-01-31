@@ -28,7 +28,7 @@ describe('IC v2 credential revocation', () => {
   let faberAgent: AnonCredsTestsAgent
   let aliceAgent: AnonCredsTestsAgent
   let credentialDefinitionId: string
-  let revocationRegistryDefinitionId: string | undefined
+  let revocationRegistryDefinitionId: string | null
   let aliceConnectionId: string
 
   let faberReplay: EventReplaySubject
@@ -105,7 +105,7 @@ describe('IC v2 credential revocation', () => {
         anoncreds: {
           credentialDefinitionId: credentialDefinitionId,
           attributes: credentialPreview.attributes,
-          revocationRegistryDefinitionId,
+          revocationRegistryDefinitionId: revocationRegistryDefinitionId ?? undefined,
           revocationRegistryIndex: 1,
         },
       },

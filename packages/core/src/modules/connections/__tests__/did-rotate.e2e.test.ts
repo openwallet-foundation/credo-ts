@@ -5,10 +5,9 @@ import type { ConnectionRecord } from '../repository'
 import { ReplaySubject, first, firstValueFrom, timeout } from 'rxjs'
 
 import { MessageSender } from '../../..//agent/MessageSender'
-import { getIndySdkModules } from '../../../../../indy-sdk/tests/setupIndySdkModule'
 import { setupSubjectTransports, testLogger } from '../../../../tests'
 import {
-  getAgentOptions,
+  getInMemoryAgentOptions,
   makeConnection,
   waitForAgentMessageProcessedEvent,
   waitForBasicMessage,
@@ -32,7 +31,7 @@ describe('Rotation E2E tests', () => {
   let bobAliceConnection: ConnectionRecord | undefined
 
   beforeEach(async () => {
-    const aliceAgentOptions = getAgentOptions(
+    const aliceAgentOptions = getInMemoryAgentOptions(
       'DID Rotate Alice',
       {
         label: 'alice',
@@ -40,13 +39,12 @@ describe('Rotation E2E tests', () => {
         logger: testLogger,
       },
       {
-        ...getIndySdkModules(),
         connections: new ConnectionsModule({
           autoAcceptConnections: true,
         }),
       }
     )
-    const bobAgentOptions = getAgentOptions(
+    const bobAgentOptions = getInMemoryAgentOptions(
       'DID Rotate Bob',
       {
         label: 'bob',
@@ -54,7 +52,6 @@ describe('Rotation E2E tests', () => {
         logger: testLogger,
       },
       {
-        ...getIndySdkModules(),
         connections: new ConnectionsModule({
           autoAcceptConnections: true,
         }),

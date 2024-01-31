@@ -3,30 +3,39 @@ import type { AnonCredsCredentialRequest } from '../../models'
 import {
   CredentialState,
   CredentialExchangeRecord,
-  SigningProviderRegistry,
   KeyType,
   CredentialPreviewAttribute,
   ProofExchangeRecord,
   ProofState,
   EventEmitter,
+  InjectionSymbols,
 } from '@credo-ts/core'
-import * as indySdk from 'indy-sdk'
 import { Subject } from 'rxjs'
 
-import { agentDependencies, getAgentConfig, getAgentContext } from '../../../../core/tests/helpers'
+import { InMemoryStorageService } from '../../../../../tests/InMemoryStorageService'
+import { InMemoryWallet } from '../../../../../tests/InMemoryWallet'
 import {
-  IndySdkHolderService,
-  IndySdkIssuerService,
-  IndySdkModuleConfig,
-  IndySdkStorageService,
-  IndySdkVerifierService,
-  IndySdkWallet,
-} from '../../../../indy-sdk/src'
-import { IndySdkRevocationService } from '../../../../indy-sdk/src/anoncreds/services/IndySdkRevocationService'
-import { legacyIndyDidFromPublicKeyBase58 } from '../../../../indy-sdk/src/utils/did'
+  AnonCredsRsHolderService,
+  AnonCredsRsIssuerService,
+  AnonCredsRsModuleConfig,
+  AnonCredsRsVerifierService,
+} from '../../../../anoncreds-rs/src'
+import { anoncreds } from '../../../../anoncreds-rs/tests/helpers'
+import { indyDidFromPublicKeyBase58 } from '../../../../core/src/utils/did'
+import { agentDependencies, getAgentConfig, getAgentContext } from '../../../../core/tests/helpers'
 import { InMemoryAnonCredsRegistry } from '../../../tests/InMemoryAnonCredsRegistry'
 import { AnonCredsModuleConfig } from '../../AnonCredsModuleConfig'
-import { AnonCredsLinkSecretRecord, AnonCredsLinkSecretRepository } from '../../repository'
+import {
+  AnonCredsCredentialDefinitionPrivateRecord,
+  AnonCredsCredentialDefinitionPrivateRepository,
+  AnonCredsCredentialDefinitionRecord,
+  AnonCredsCredentialDefinitionRepository,
+  AnonCredsCredentialRepository,
+  AnonCredsKeyCorrectnessProofRecord,
+  AnonCredsKeyCorrectnessProofRepository,
+  AnonCredsLinkSecretRecord,
+  AnonCredsLinkSecretRepository,
+} from '../../repository'
 import {
   AnonCredsHolderServiceSymbol,
   AnonCredsIssuerServiceSymbol,
@@ -48,14 +57,24 @@ const anonCredsModuleConfig = new AnonCredsModuleConfig({
 })
 
 const agentConfig = getAgentConfig('LegacyIndyFormatServicesTest')
-const anonCredsRevocationService = new IndySdkRevocationService(indySdk)
-const anonCredsVerifierService = new IndySdkVerifierService(indySdk)
-const anonCredsHolderService = new IndySdkHolderService(anonCredsRevocationService, indySdk)
-const anonCredsIssuerService = new IndySdkIssuerService(indySdk)
-const wallet = new IndySdkWallet(indySdk, agentConfig.logger, new SigningProviderRegistry([]))
-const storageService = new IndySdkStorageService<AnonCredsLinkSecretRecord>(indySdk)
+const anonCredsVerifierService = new AnonCredsRsVerifierService()
+const anonCredsHolderService = new AnonCredsRsHolderService()
+const anonCredsIssuerService = new AnonCredsRsIssuerService()
+const wallet = new InMemoryWallet()
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const storageService = new InMemoryStorageService<any>()
 const eventEmitter = new EventEmitter(agentDependencies, new Subject())
 const anonCredsLinkSecretRepository = new AnonCredsLinkSecretRepository(storageService, eventEmitter)
+const anonCredsCredentialDefinitionRepository = new AnonCredsCredentialDefinitionRepository(
+  storageService,
+  eventEmitter
+)
+const anonCredsCredentialDefinitionPrivateRepository = new AnonCredsCredentialDefinitionPrivateRepository(
+  storageService,
+  eventEmitter
+)
+const anonCredsCredentialRepository = new AnonCredsCredentialRepository(storageService, eventEmitter)
+const anonCredsKeyCorrectnessProofRepository = new AnonCredsKeyCorrectnessProofRepository(storageService, eventEmitter)
 const agentContext = getAgentContext({
   registerInstances: [
     [AnonCredsIssuerServiceSymbol, anonCredsIssuerService],
@@ -64,7 +83,18 @@ const agentContext = getAgentContext({
     [AnonCredsRegistryService, new AnonCredsRegistryService()],
     [AnonCredsModuleConfig, anonCredsModuleConfig],
     [AnonCredsLinkSecretRepository, anonCredsLinkSecretRepository],
-    [IndySdkModuleConfig, new IndySdkModuleConfig({ indySdk, autoCreateLinkSecret: false })],
+    [AnonCredsCredentialDefinitionRepository, anonCredsCredentialDefinitionRepository],
+    [AnonCredsCredentialDefinitionPrivateRepository, anonCredsCredentialDefinitionPrivateRepository],
+    [AnonCredsCredentialRepository, anonCredsCredentialRepository],
+    [AnonCredsKeyCorrectnessProofRepository, anonCredsKeyCorrectnessProofRepository],
+    [InjectionSymbols.StorageService, storageService],
+    [
+      AnonCredsRsModuleConfig,
+      new AnonCredsRsModuleConfig({
+        anoncreds,
+        autoCreateLinkSecret: false,
+      }),
+    ],
   ],
   agentConfig,
   wallet,
@@ -87,15 +117,16 @@ describe('Legacy indy format services', () => {
   test('issuance and verification flow starting from proposal without negotiation and without revocation', async () => {
     // This is just so we don't have to register an actual indy did (as we don't have the indy did registrar configured)
     const key = await wallet.createKey({ keyType: KeyType.Ed25519 })
-    const unqualifiedIndyDid = legacyIndyDidFromPublicKeyBase58(key.publicKeyBase58)
+    const unqualifiedIndyDid = indyDidFromPublicKeyBase58(key.publicKeyBase58)
     const indyDid = `did:indy:pool1:${unqualifiedIndyDid}`
 
     // Create link secret
-    await anonCredsHolderService.createLinkSecret(agentContext, {
+    const { linkSecretValue } = await anonCredsHolderService.createLinkSecret(agentContext, {
       linkSecretId: 'link-secret-id',
     })
     const anonCredsLinkSecret = new AnonCredsLinkSecretRecord({
       linkSecretId: 'link-secret-id',
+      value: linkSecretValue,
     })
     anonCredsLinkSecret.setTag('isDefault', true)
     await anonCredsLinkSecretRepository.save(agentContext, anonCredsLinkSecret)
@@ -107,25 +138,19 @@ describe('Legacy indy format services', () => {
       version: '1.0.0',
     })
 
-    const { schemaState, schemaMetadata } = await registry.registerSchema(agentContext, {
+    const { schemaState } = await registry.registerSchema(agentContext, {
       schema,
       options: {},
     })
 
-    const { credentialDefinition } = await anonCredsIssuerService.createCredentialDefinition(
-      agentContext,
-      {
+    const { credentialDefinition, credentialDefinitionPrivate, keyCorrectnessProof } =
+      await anonCredsIssuerService.createCredentialDefinition(agentContext, {
         issuerId: indyDid,
         schemaId: schemaState.schemaId as string,
         schema,
         tag: 'Employee Credential',
         supportRevocation: false,
-      },
-      {
-        // Need to pass this as the indy-sdk MUST have the seqNo
-        indyLedgerSchemaSeqNo: schemaMetadata.indyLedgerSeqNo as number,
-      }
-    )
+      })
 
     const { credentialDefinitionState } = await registry.registerCredentialDefinition(agentContext, {
       credentialDefinition,
@@ -140,6 +165,35 @@ describe('Legacy indy format services', () => {
     ) {
       throw new Error('Failed to create schema or credential definition')
     }
+
+    await anonCredsCredentialDefinitionRepository.save(
+      agentContext,
+      new AnonCredsCredentialDefinitionRecord({
+        credentialDefinition,
+        credentialDefinitionId: credentialDefinitionState.credentialDefinitionId,
+        methodName: 'indy',
+      })
+    )
+
+    if (!keyCorrectnessProof || !credentialDefinitionPrivate) {
+      throw new Error('Failed to create credential definition private or key correctness proof')
+    }
+
+    await anonCredsKeyCorrectnessProofRepository.save(
+      agentContext,
+      new AnonCredsKeyCorrectnessProofRecord({
+        credentialDefinitionId: credentialDefinitionState.credentialDefinitionId,
+        value: keyCorrectnessProof,
+      })
+    )
+
+    await anonCredsCredentialDefinitionPrivateRepository.save(
+      agentContext,
+      new AnonCredsCredentialDefinitionPrivateRecord({
+        credentialDefinitionId: credentialDefinitionState.credentialDefinitionId,
+        value: credentialDefinitionPrivate,
+      })
+    )
 
     const holderCredentialRecord = new CredentialExchangeRecord({
       protocolVersion: 'v1',
@@ -248,7 +302,7 @@ describe('Legacy indy format services', () => {
       credentialDefinitionId: legacyCredentialDefinitionId,
       revocationRegistryId: null,
       credentialRevocationId: null,
-      methodName: 'indy',
+      methodName: 'inMemory',
     })
 
     expect(holderCredentialRecord.metadata.data).toEqual({

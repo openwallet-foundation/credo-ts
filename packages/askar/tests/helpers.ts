@@ -15,6 +15,8 @@ import { AskarWallet } from '../src/wallet'
 
 export const askarModuleConfig = new AskarModuleConfig({ ariesAskar })
 registerAriesAskar({ askar: askarModuleConfig.ariesAskar })
+export const askarModule = new AskarModule(askarModuleConfig)
+export { ariesAskar }
 
 // When using the AskarWallet directly, the native dependency won't be loaded by default.
 // So in tests depending on Askar, we import this wallet so we're sure the native dependency is loaded.
@@ -26,7 +28,18 @@ export const genesisPath = process.env.GENESIS_TXN_PATH
 
 export const publicDidSeed = process.env.TEST_AGENT_PUBLIC_DID_SEED ?? '000000000000000000000000Trustee9'
 
-export function getPostgresAgentOptions(
+export const askarPostgresStorageConfig: AskarWalletPostgresStorageConfig = {
+  type: 'postgres',
+  config: {
+    host: 'localhost:5432',
+  },
+  credentials: {
+    account: 'postgres',
+    password: 'postgres',
+  },
+}
+
+export function getAskarPostgresAgentOptions(
   name: string,
   storageConfig: AskarWalletPostgresStorageConfig,
   extraConfig: Partial<InitConfig> = {}
@@ -55,7 +68,7 @@ export function getPostgresAgentOptions(
   } as const
 }
 
-export function getSqliteAgentOptions(name: string, extraConfig: Partial<InitConfig> = {}, inMemory?: boolean) {
+export function getAskarSqliteAgentOptions(name: string, extraConfig: Partial<InitConfig> = {}, inMemory?: boolean) {
   const random = utils.uuid().slice(0, 4)
   const config: InitConfig = {
     label: `SQLiteAgent: ${name} - ${random}`,

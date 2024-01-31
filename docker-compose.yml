@@ -1,0 +1,31 @@
+version: '3'
+services:
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - '5432:5432'
+
+  indy-pool:
+    build:
+      context: .
+      dockerfile: network/indy-pool.dockerfile
+    ports:
+      - '9701-9708:9701-9708'
+    # Start supervisord in bg, run commands, bring supervisor to fg
+    command: >
+      /bin/bash -c "
+        /usr/bin/supervisord &
+        indy-cli-setup &&
+        add-did-from-seed 00000000000000000000000Endorser9 ENDORSER &&
+        add-did-from-seed 000000000000000000000000Trustee9 TRUSTEE &&
+        /usr/bin/supervisord -n
+      "
+
+  cheqd-ledger:
+    image: ghcr.io/cheqd/cheqd-testnet:latest
+    platform: linux/amd64
+    ports:
+      - '26657:26657'

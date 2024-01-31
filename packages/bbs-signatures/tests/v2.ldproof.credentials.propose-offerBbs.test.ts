@@ -63,15 +63,18 @@ describeSkipNode18('credentials, BBS+ signature', () => {
     } = await setupJsonLdTests({
       issuerName: 'Faber Agent Credentials LD BBS+',
       holderName: 'Alice Agent Credentials LD BBS+',
+      useBbs: true,
     }))
 
     await faberAgent.context.wallet.createKey({
       keyType: KeyType.Ed25519,
       privateKey: TypedArrayEncoder.fromString('testseed000000000000000000000001'),
     })
+    // FIXME: askar doesn't create the same privateKey based on the same seed as when generated used askar BBS library...
+    // See https://github.com/hyperledger/aries-askar/issues/219
     await faberAgent.context.wallet.createKey({
       keyType: KeyType.Bls12381g2,
-      seed: TypedArrayEncoder.fromString('testseed000000000000000000000001'),
+      privateKey: TypedArrayEncoder.fromBase58('2szQ7zB4tKLJPsGK3YTp9SNQ6hoWYFG5rGhmgfQM4nb7'),
     })
   })
 

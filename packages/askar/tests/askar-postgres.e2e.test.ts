@@ -1,6 +1,5 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 import type { SubjectMessage } from '../../../tests/transport/SubjectInboundTransport'
-import type { AskarWalletPostgresStorageConfig } from '../src/wallet'
 
 import { Agent } from '@credo-ts/core'
 import { Subject } from 'rxjs'
@@ -8,23 +7,12 @@ import { Subject } from 'rxjs'
 import { SubjectInboundTransport } from '../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutboundTransport'
 
-import { e2eTest, getPostgresAgentOptions } from './helpers'
+import { askarPostgresStorageConfig, e2eTest, getAskarPostgresAgentOptions } from './helpers'
 
-const storageConfig: AskarWalletPostgresStorageConfig = {
-  type: 'postgres',
-  config: {
-    host: 'localhost:5432',
-  },
-  credentials: {
-    account: 'postgres',
-    password: 'postgres',
-  },
-}
-
-const alicePostgresAgentOptions = getPostgresAgentOptions('AgentsAlice', storageConfig, {
+const alicePostgresAgentOptions = getAskarPostgresAgentOptions('AgentsAlice', askarPostgresStorageConfig, {
   endpoints: ['rxjs:alice'],
 })
-const bobPostgresAgentOptions = getPostgresAgentOptions('AgentsBob', storageConfig, {
+const bobPostgresAgentOptions = getAskarPostgresAgentOptions('AgentsBob', askarPostgresStorageConfig, {
   endpoints: ['rxjs:bob'],
 })
 

@@ -219,6 +219,7 @@ export class MessageSender {
 
     if (session) {
       this.logger.debug(`Found session with return routing for message '${message.id}' (connection '${connection.id}'`)
+
       try {
         await this.sendMessageToSession(agentContext, session, message)
         this.emitMessageSentEvent(outboundMessageContext, OutboundMessageSendStatus.SentToSession)
@@ -348,10 +349,7 @@ export class MessageSender {
     )
   }
 
-  /**
-   * @deprecated Use `sendMessage` directly instead. Will be made private in 0.5.0
-   */
-  public async sendMessageToService(outboundMessageContext: OutboundMessageContext) {
+  private async sendMessageToService(outboundMessageContext: OutboundMessageContext) {
     const session = this.findSessionForOutboundContext(outboundMessageContext)
 
     if (session) {

@@ -90,15 +90,7 @@ Credo is a framework written in TypeScript for building **SSI Agents and DIDComm
     </td>
   </tr>
   <tr>
-    <td>@credo-ts/indy-sdk</td>
-    <td>
-      <a href="https://npmjs.com/package/@credo-ts/indy-sdk">
-        <img alt="@credo-ts/indy-sdk version" src="https://img.shields.io/npm/v/@credo-ts/indy-sdk"/>
-      </a>
-    </td>
-  </tr>
-  <tr>
-    <td>@credo-ts/indy-vdr</td>
+    <td>@aries-framework/indy-vdr</td>
     <td>
       <a href="https://npmjs.com/package/@credo-ts/indy-vdr">
         <img alt="@credo-ts/indy-vdr version" src="https://img.shields.io/npm/v/@credo-ts/indy-vdr"/>
@@ -167,6 +159,14 @@ Credo is a framework written in TypeScript for building **SSI Agents and DIDComm
         <img alt="@credo-ts/tenants version" src="https://img.shields.io/npm/v/@credo-ts/tenants"/>
       </a>
     </td>
+  </tr>
+  <tr>
+      <td>~~@aries-framework/indy-sdk~~ (deprecated, unmaintained after 0.4.x)</td>
+      <td>
+        <a href="https://npmjs.com/package/@aries-framework/indy-sdk">
+          <img alt="@aries-framework/indy-sdk version" src="https://img.shields.io/npm/v/@aries-framework/indy-sdk"/>
+        </a>
+      </td>
   </tr>
 </table>
 
