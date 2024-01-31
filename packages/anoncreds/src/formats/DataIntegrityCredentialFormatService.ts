@@ -893,18 +893,54 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     agentContext: AgentContext,
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    input: CredentialFormatAutoRespondOfferOptions
+    { offerAttachment }: CredentialFormatAutoRespondOfferOptions
   ) {
+    const credentialOffer = offerAttachment.getDataAsJson<DataIntegrityCredentialOffer>()
+    if (!credentialOffer.binding_required) return true
     return false
   }
 
   public async shouldAutoRespondToRequest(
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     agentContext: AgentContext,
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     { offerAttachment, requestAttachment }: CredentialFormatAutoRespondRequestOptions
   ) {
-    return false
+    const credentialOffer = offerAttachment.getDataAsJson<DataIntegrityCredentialOffer>()
+    const credentialRequest = requestAttachment.getDataAsJson<DataIntegrityCredentialRequest>()
+
+    if (
+      !credentialOffer.binding_required &&
+      !credentialRequest.binding_proof?.anoncreds_link_secret &&
+      !credentialRequest.binding_proof?.didcomm_signed_attachment
+    ) {
+      return true
+    }
+
+    if (
+      credentialOffer.binding_required &&
+      !credentialRequest.binding_proof?.anoncreds_link_secret &&
+      !credentialRequest.binding_proof?.didcomm_signed_attachment
+    ) {
+      return false
+    }
+
+    // cannot auto response credential subject id must be set manually
+    const w3cCredential = JsonTransformer.fromJSON(credentialOffer.credential, W3cCredential)
+    const credentialHasSubjectId = Array.isArray(w3cCredential.credentialSubject) ? false : !!w3cCredential.id
+    if (credentialRequest.binding_proof?.anoncreds_link_secret && !credentialHasSubjectId) {
+      return false
+    }
+
+    const validLinkSecretRequest =
+      !credentialRequest.binding_proof?.anoncreds_link_secret ||
+      (credentialRequest.binding_proof?.anoncreds_link_secret && credentialOffer.binding_method?.anoncreds_link_secret)
+
+    const validDidCommSignedAttachmetRequest =
+      !credentialRequest.binding_proof?.didcomm_signed_attachment ||
+      (credentialRequest.binding_proof?.didcomm_signed_attachment &&
+        credentialOffer.binding_method?.didcomm_signed_attachment)
+
+    return !!(validLinkSecretRequest && validDidCommSignedAttachmetRequest)
   }
 
   public async shouldAutoRespondToCredential(
