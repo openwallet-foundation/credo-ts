@@ -65,7 +65,6 @@ describeSkipNode18('BBS W3cCredentialService', () => {
   let agentContext: AgentContext
   let w3cJsonLdCredentialService: W3cJsonLdCredentialService
   let w3cCredentialService: W3cCredentialService
-  const seed = TypedArrayEncoder.fromString('testseed000000000000000000000001')
   const privateKey = TypedArrayEncoder.fromString('testseed000000000000000000000001')
 
   beforeAll(async () => {
@@ -130,7 +129,13 @@ describeSkipNode18('BBS W3cCredentialService', () => {
     let verificationMethod: string
 
     beforeAll(async () => {
-      const key = await wallet.createKey({ keyType: KeyType.Bls12381g2, seed })
+      // FIXME: askar doesn't create the same privateKey based on the same seed as when generated used askar BBS library...
+      // See https://github.com/hyperledger/aries-askar/issues/219
+      const key = await wallet.createKey({
+        keyType: KeyType.Bls12381g2,
+        privateKey: TypedArrayEncoder.fromBase58('2szQ7zB4tKLJPsGK3YTp9SNQ6hoWYFG5rGhmgfQM4nb7'),
+      })
+
       issuerDidKey = new DidKey(key)
       verificationMethod = `${issuerDidKey.did}#${issuerDidKey.key.fingerprint}`
     })
@@ -146,7 +151,7 @@ describeSkipNode18('BBS W3cCredentialService', () => {
           format: ClaimFormat.LdpVc,
           credential,
           proofType: 'BbsBlsSignature2020',
-          verificationMethod: verificationMethod,
+          verificationMethod,
         })
 
         expect(vc).toBeInstanceOf(W3cJsonLdVerifiableCredential)

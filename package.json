@@ -28,6 +28,7 @@
   },
   "devDependencies": {
     "@hyperledger/aries-askar-nodejs": "^0.2.0-dev.5",
+    "@types/bn.js": "^5.1.5",
     "@types/cors": "^2.8.10",
     "@types/eslint": "^8.21.2",
     "@types/express": "^4.17.13",
@@ -38,6 +39,7 @@
     "@types/ws": "^8.5.4",
     "@typescript-eslint/eslint-plugin": "^5.48.1",
     "@typescript-eslint/parser": "^5.48.1",
+    "bn.js": "^5.2.1",
     "conventional-changelog-conventionalcommits": "^5.0.0",
     "conventional-recommended-bump": "^6.1.0",
     "cors": "^2.8.5",
