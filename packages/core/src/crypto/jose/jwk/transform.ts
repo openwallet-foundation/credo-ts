@@ -7,6 +7,7 @@ import { KeyType } from '../../KeyType'
 import { JwaCurve, JwaKeyType } from '../jwa'
 
 import { Ed25519Jwk } from './Ed25519Jwk'
+import { K256Jwk } from './K256Jwk'
 import { P256Jwk } from './P256Jwk'
 import { P384Jwk } from './P384Jwk'
 import { P521Jwk } from './P521Jwk'
@@ -25,6 +26,7 @@ export function getJwkFromJson(jwkJson: JwkJson): Jwk {
     if (hasCrv(jwkJson, JwaCurve.P256)) return P256Jwk.fromJson(jwkJson)
     if (hasCrv(jwkJson, JwaCurve.P384)) return P384Jwk.fromJson(jwkJson)
     if (hasCrv(jwkJson, JwaCurve.P521)) return P521Jwk.fromJson(jwkJson)
+    if (hasCrv(jwkJson, JwaCurve.SECP256K1)) return K256Jwk.fromJson(jwkJson)
   }
 
   throw new Error(`Cannot create JWK from JSON. Unsupported JWK with kty '${jwkJson.kty}'.`)
@@ -37,6 +39,8 @@ export function getJwkFromKey(key: Key) {
   if (key.keyType === KeyType.P256) return P256Jwk.fromPublicKey(key.publicKey)
   if (key.keyType === KeyType.P384) return P384Jwk.fromPublicKey(key.publicKey)
   if (key.keyType === KeyType.P521) return P521Jwk.fromPublicKey(key.publicKey)
+
+  if (key.keyType === KeyType.K256) return K256Jwk.fromPublicKey(key.publicKey)
 
   throw new AriesFrameworkError(`Cannot create JWK from key. Unsupported key with type '${key.keyType}'.`)
 }

@@ -4,4 +4,5 @@ export enum JwaCurve {
   P521 = 'P-521',
   Ed25519 = 'Ed25519',
   X25519 = 'X25519',
+  SECP256K1 = 'secp256k1',
 }

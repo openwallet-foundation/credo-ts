@@ -4,6 +4,7 @@ import didKeyBls12381g1 from '../../../__tests__/__fixtures__/didKeyBls12381g1.j
 import didKeyBls12381g1g2 from '../../../__tests__/__fixtures__/didKeyBls12381g1g2.json'
 import didKeyBls12381g2 from '../../../__tests__/__fixtures__/didKeyBls12381g2.json'
 import didKeyEd25519 from '../../../__tests__/__fixtures__/didKeyEd25519.json'
+import didKeyK256 from '../../../__tests__/__fixtures__/didKeyK256.json'
 import didKeyP256 from '../../../__tests__/__fixtures__/didKeyP256.json'
 import didKeyP384 from '../../../__tests__/__fixtures__/didKeyP384.json'
 import didKeyP521 from '../../../__tests__/__fixtures__/didKeyP521.json'
@@ -21,6 +22,7 @@ describe('DidKey', () => {
       didKeyP256,
       didKeyP384,
       didKeyP521,
+      didKeyK256,
     ]
 
     for (const documentType of documentTypes) {
