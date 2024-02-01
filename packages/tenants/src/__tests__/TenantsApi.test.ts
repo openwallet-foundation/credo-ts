@@ -48,7 +48,7 @@ describe('TenantsApi', () => {
         key: 'Wallet: TenantsApi: tenant-id',
       })
 
-      expect(agentContextProvider.getAgentContextForContextCorrelationId).toBeCalledWith('tenant-id')
+      expect(agentContextProvider.getAgentContextForContextCorrelationId).toHaveBeenCalledWith('tenant-id')
       expect(tenantAgent).toBeInstanceOf(TenantAgent)
       expect(tenantAgent.context).toBe(tenantAgentContext)
 
@@ -86,7 +86,7 @@ describe('TenantsApi', () => {
           key: 'Wallet: TenantsApi: tenant-id',
         })
 
-        expect(agentContextProvider.getAgentContextForContextCorrelationId).toBeCalledWith('tenant-id')
+        expect(agentContextProvider.getAgentContextForContextCorrelationId).toHaveBeenCalledWith('tenant-id')
         expect(tenantAgent).toBeInstanceOf(TenantAgent)
         expect(tenantAgent.context).toBe(tenantAgentContext)
 
@@ -125,7 +125,7 @@ describe('TenantsApi', () => {
             key: 'Wallet: TenantsApi: tenant-id',
           })
 
-          expect(agentContextProvider.getAgentContextForContextCorrelationId).toBeCalledWith('tenant-id')
+          expect(agentContextProvider.getAgentContextForContextCorrelationId).toHaveBeenCalledWith('tenant-id')
           expect(tenantAgent).toBeInstanceOf(TenantAgent)
           expect(tenantAgent.context).toBe(tenantAgentContext)
 
@@ -206,6 +206,18 @@ describe('TenantsApi', () => {
       expect(tenantAgentMock.wallet.delete).toHaveBeenCalled()
       expect(tenantAgentMock.endSession).toHaveBeenCalled()
       expect(tenantRecordService.deleteTenantById).toHaveBeenCalledWith(rootAgent.context, 'tenant-id')
+    })
+  })
+
+  describe('getAllTenants', () => {
+    test('calls get all tenants on tenant service', async () => {
+      const tenantRecords = jest.fn() as unknown as Array<TenantRecord>
+      mockFunction(tenantRecordService.getAllTenants).mockResolvedValue(tenantRecords)
+
+      const actualTenantRecords = await tenantsApi.getAllTenants()
+
+      expect(tenantRecordService.getAllTenants).toHaveBeenCalledWith(rootAgent.context)
+      expect(actualTenantRecords).toBe(tenantRecords)
     })
   })
 })

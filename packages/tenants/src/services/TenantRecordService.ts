@@ -42,6 +42,10 @@ export class TenantRecordService {
     return this.tenantRepository.getById(agentContext, tenantId)
   }
 
+  public async getAllTenants(agentContext: AgentContext) {
+    return this.tenantRepository.getAll(agentContext)
+  }
+
   public async deleteTenantById(agentContext: AgentContext, tenantId: string) {
     const tenantRecord = await this.getTenantById(agentContext, tenantId)
 
