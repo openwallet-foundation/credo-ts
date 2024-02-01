@@ -9,7 +9,6 @@ import type {
   DeliverMessagesProtocolReturnType,
   PickupMessagesProtocolOptions,
   PickupMessagesProtocolReturnType,
-  SetLiveDeliveryModeProtocolOptions,
   SetLiveDeliveryModeProtocolReturnType,
 } from '../MessagePickupProtocolOptions'
 
