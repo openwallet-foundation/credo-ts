@@ -31,7 +31,7 @@ export interface AnonCredsModuleConfigOptions {
    *  config: {},
    *  dependencies: agentDependencies,
    *  modules: {
-   *   anoncredsRs: new AnoncredsRsModule({
+   *   anoncreds: new AnoncredsModule({
    *      anoncreds,
    *   })
    *  }
@@ -47,7 +47,7 @@ export interface AnonCredsModuleConfigOptions {
    *  config: {},
    *  dependencies: agentDependencies,
    *  modules: {
-   *   anoncredsRs: new AnoncredsRsModule({
+   *   anoncreds: new AnoncredsModule({
    *      anoncreds,
    *   })
    *  }

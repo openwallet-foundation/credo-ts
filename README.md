@@ -153,7 +153,7 @@ Credo is a framework written in TypeScript for building **SSI Agents and DIDComm
     </td>
   </tr>
   <tr>
-    <td>~~@aries-framework/indy-sdk~~ (deprecated, unmaintained after 0.4.x)</td>
+    <td><s>@aries-framework/indy-sdk</s> (deprecated, unmaintained after 0.4.x)</td>
     <td>
       <a href="https://npmjs.com/package/@aries-framework/indy-sdk">
         <img alt="@aries-framework/indy-sdk version" src="https://img.shields.io/npm/v/@aries-framework/indy-sdk"/>
@@ -161,7 +161,7 @@ Credo is a framework written in TypeScript for building **SSI Agents and DIDComm
     </td>
   </tr>
   <tr>
-    <td>~~@aries-framework/anoncreds-rs~~ (deprecated and combined with `@credo-ts/anoncreds`)</td>
+    <td><s>@aries-framework/anoncreds-rs</s> (deprecated and combined with <code>@credo-ts/anoncreds</code>)</td>
     <td>
       <a href="https://npmjs.com/package/@aries-framework/anoncreds-rs">
         <img alt="@aries-framework/anoncreds-rs version" src="https://img.shields.io/npm/v/@aries-framework/anoncreds-rs"/>
