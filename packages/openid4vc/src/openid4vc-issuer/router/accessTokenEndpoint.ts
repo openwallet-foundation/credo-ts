@@ -1,16 +1,9 @@
 import type { OpenId4VcIssuanceRequest } from './requestContext'
-import type { AgentContext } from '@aries-framework/core'
+import type { AgentContext } from '@credo-ts/core'
 import type { JWTSignerCallback } from '@sphereon/oid4vci-common'
 import type { NextFunction, Response, Router } from 'express'
 
-import {
-  getJwkFromKey,
-  AriesFrameworkError,
-  JwsService,
-  JwtPayload,
-  getJwkClassFromKeyType,
-  Key,
-} from '@aries-framework/core'
+import { getJwkFromKey, AriesFrameworkError, JwsService, JwtPayload, getJwkClassFromKeyType, Key } from '@credo-ts/core'
 import {
   GrantTypes,
   PRE_AUTHORIZED_CODE_REQUIRED_ERROR,

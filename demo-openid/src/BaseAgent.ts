@@ -1,8 +1,8 @@
-import type { InitConfig, KeyDidCreateOptions, ModulesMap, VerificationMethod } from '@aries-framework/core'
+import type { InitConfig, KeyDidCreateOptions, ModulesMap, VerificationMethod } from '@credo-ts/core'
 import type { Express } from 'express'
 
-import { Agent, DidKey, HttpOutboundTransport, KeyType, TypedArrayEncoder } from '@aries-framework/core'
-import { HttpInboundTransport, agentDependencies } from '@aries-framework/node'
+import { Agent, DidKey, HttpOutboundTransport, KeyType, TypedArrayEncoder } from '@credo-ts/core'
+import { HttpInboundTransport, agentDependencies } from '@credo-ts/node'
 import express from 'express'
 
 import { greenText } from './OutputClass'

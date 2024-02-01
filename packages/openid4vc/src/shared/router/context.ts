@@ -1,7 +1,7 @@
-import type { AgentContext, Logger } from '@aries-framework/core'
+import type { AgentContext, Logger } from '@credo-ts/core'
 import type { Response, Request } from 'express'
 
-import { AriesFrameworkError } from '@aries-framework/core'
+import { AriesFrameworkError } from '@credo-ts/core'
 
 export interface OpenId4VcRequest<RC extends Record<string, unknown> = Record<string, never>> extends Request {
   requestContext?: RC & OpenId4VcRequestContext

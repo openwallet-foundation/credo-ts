@@ -1,13 +1,13 @@
-import type { DidKey } from '@aries-framework/core'
+import type { DidKey } from '@credo-ts/core'
 import type {
   OpenId4VcCredentialHolderBinding,
   OpenId4VcCredentialHolderDidBinding,
   OpenId4VciCredentialRequestToCredentialMapper,
   OpenId4VciCredentialSupportedWithId,
   OpenId4VcIssuerRecord,
-} from '@aries-framework/openid4vc'
+} from '@credo-ts/openid4vc'
 
-import { AskarModule } from '@aries-framework/askar'
+import { AskarModule } from '@credo-ts/askar'
 import {
   ClaimFormat,
   parseDid,
@@ -16,8 +16,8 @@ import {
   W3cCredentialSubject,
   W3cIssuer,
   w3cDate,
-} from '@aries-framework/core'
-import { OpenId4VcIssuerModule, OpenId4VciCredentialFormatProfile } from '@aries-framework/openid4vc'
+} from '@credo-ts/core'
+import { OpenId4VcIssuerModule, OpenId4VciCredentialFormatProfile } from '@credo-ts/openid4vc'
 import { ariesAskar } from '@hyperledger/aries-askar-nodejs'
 import { Router } from 'express'
 

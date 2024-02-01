@@ -7,10 +7,9 @@ import type {
 import type {
   DifPresentationExchangeDefinition,
   DifPresentationExchangeSubmission,
-  W3cVerifiablePresentation,
-  SdJwtVc,
   DifPresentationExchangeDefinitionV2,
-} from '@aries-framework/core'
+  VerifiablePresentation,
+} from '@credo-ts/core'
 
 export interface OpenId4VcSiopCreateAuthorizationRequestOptions {
   /**
@@ -50,6 +49,6 @@ export interface OpenId4VcSiopVerifiedAuthorizationResponse {
   presentationExchange?: {
     submission: DifPresentationExchangeSubmission
     definition: DifPresentationExchangeDefinition
-    presentations: Array<W3cVerifiablePresentation | SdJwtVc>
+    presentations: Array<VerifiablePresentation>
   }
 }

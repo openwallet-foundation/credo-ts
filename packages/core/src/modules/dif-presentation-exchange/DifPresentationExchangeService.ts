@@ -5,13 +5,14 @@ import type {
   DifPresentationExchangeDefinitionV1,
   DifPresentationExchangeSubmission,
   DifPresentationExchangeDefinitionV2,
+  VerifiablePresentation,
 } from './models'
 import type { PresentationToCreate } from './utils'
 import type { AgentContext } from '../../agent'
 import type { Query } from '../../storage/StorageService'
 import type { VerificationMethod } from '../dids'
-import type { SdJwtVc, SdJwtVcRecord } from '../sd-jwt-vc'
-import type { W3cVerifiablePresentation, W3cCredentialRecord } from '../vc'
+import type { SdJwtVcRecord } from '../sd-jwt-vc'
+import type { W3cCredentialRecord } from '../vc'
 import type {
   PresentationSignCallBackParams,
   SdJwtDecodedVerifiableCredentialWithKbJwtInput,
@@ -109,7 +110,7 @@ export class DifPresentationExchangeService {
 
   public validatePresentation(
     presentationDefinition: DifPresentationExchangeDefinition,
-    presentation: W3cVerifiablePresentation | SdJwtVc
+    presentation: VerifiablePresentation
   ) {
     const { errors } = this.pex.evaluatePresentation(
       presentationDefinition,
@@ -353,7 +354,7 @@ export class DifPresentationExchangeService {
     const signatureSuiteRegistry = agentContext.dependencyManager.resolve(SignatureSuiteRegistry)
 
     const key = getKeyFromVerificationMethod(verificationMethod)
-    const supportedSignatureSuites = signatureSuiteRegistry.getByKeyType(key.keyType)
+    const supportedSignatureSuites = signatureSuiteRegistry.getAllByKeyType(key.keyType)
     if (supportedSignatureSuites.length === 0) {
       throw new DifPresentationExchangeError(
         `Couldn't find a supported signature suite for the given key type '${key.keyType}'`

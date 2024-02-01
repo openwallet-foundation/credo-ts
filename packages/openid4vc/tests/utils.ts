@@ -1,8 +1,8 @@
 import type { TenantAgent } from '../../tenants/src/TenantAgent'
-import type { KeyDidCreateOptions, ModulesMap } from '@aries-framework/core'
-import type { TenantsModule } from '@aries-framework/tenants'
+import type { KeyDidCreateOptions, ModulesMap } from '@credo-ts/core'
+import type { TenantsModule } from '@credo-ts/tenants'
 
-import { LogLevel, Agent, DidKey, KeyType, TypedArrayEncoder, utils } from '@aries-framework/core'
+import { LogLevel, Agent, DidKey, KeyType, TypedArrayEncoder, utils } from '@credo-ts/core'
 
 import { agentDependencies, TestLogger } from '../../core/tests'
 

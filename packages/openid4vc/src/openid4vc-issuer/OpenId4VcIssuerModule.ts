@@ -1,8 +1,8 @@
 import type { OpenId4VcIssuerModuleConfigOptions } from './OpenId4VcIssuerModuleConfig'
 import type { OpenId4VcIssuanceRequest } from './router'
-import type { AgentContext, DependencyManager, Module } from '@aries-framework/core'
+import type { AgentContext, DependencyManager, Module } from '@credo-ts/core'
 
-import { AgentConfig } from '@aries-framework/core'
+import { AgentConfig } from '@credo-ts/core'
 
 import { getAgentContextForActorId, getRequestContext, importExpress } from '../shared/router'
 
@@ -31,7 +31,7 @@ export class OpenId4VcIssuerModule implements Module {
     dependencyManager
       .resolve(AgentConfig)
       .logger.warn(
-        "The '@aries-framework/openid4vc' Issuer module is experimental and could have unexpected breaking changes. When using this module, make sure to use strict versions for all @aries-framework packages."
+        "The '@credo-ts/openid4vc' Issuer module is experimental and could have unexpected breaking changes. When using this module, make sure to use strict versions for all @credo-ts packages."
       )
 
     // Register config

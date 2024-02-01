@@ -1,9 +1,9 @@
 import type { OpenId4VcVerifierModuleConfigOptions } from './OpenId4VcVerifierModuleConfig'
 import type { OpenId4VcVerificationRequest } from './router'
-import type { AgentContext, DependencyManager, Module } from '@aries-framework/core'
+import type { AgentContext, DependencyManager, Module } from '@credo-ts/core'
 import type { NextFunction } from 'express'
 
-import { AgentConfig } from '@aries-framework/core'
+import { AgentConfig } from '@credo-ts/core'
 
 import { getAgentContextForActorId, getRequestContext, importExpress } from '../shared/router'
 
@@ -31,7 +31,7 @@ export class OpenId4VcVerifierModule implements Module {
     // Warn about experimental module
     const logger = dependencyManager.resolve(AgentConfig).logger
     logger.warn(
-      "The '@aries-framework/openid4vc' Verifier module is experimental and could have unexpected breaking changes. When using this module, make sure to use strict versions for all @aries-framework packages."
+      "The '@credo-ts/openid4vc' Verifier module is experimental and could have unexpected breaking changes. When using this module, make sure to use strict versions for all @credo-ts packages."
     )
 
     // Register config

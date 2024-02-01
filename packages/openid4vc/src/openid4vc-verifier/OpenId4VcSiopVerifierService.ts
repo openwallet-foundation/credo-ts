@@ -5,7 +5,7 @@ import type {
   OpenId4VcSiopVerifyAuthorizationResponseOptions,
 } from './OpenId4VcSiopVerifierServiceOptions'
 import type { OpenId4VcJwtIssuer } from '../shared'
-import type { AgentContext, DifPresentationExchangeDefinition } from '@aries-framework/core'
+import type { AgentContext, DifPresentationExchangeDefinition } from '@credo-ts/core'
 import type { PresentationVerificationCallback, SigningAlgo } from '@sphereon/did-auth-siop'
 
 import {
@@ -23,7 +23,7 @@ import {
   W3cCredentialService,
   W3cJsonLdVerifiablePresentation,
   Hasher,
-} from '@aries-framework/core'
+} from '@credo-ts/core'
 import {
   AuthorizationResponse,
   CheckLinkedDomain,

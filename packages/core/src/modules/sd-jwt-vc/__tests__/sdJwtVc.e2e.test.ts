@@ -1,4 +1,4 @@
-import type { Key } from '@aries-framework/core'
+import type { Key } from '@credo-ts/core'
 
 import { AskarModule } from '../../../../../askar/src'
 import { askarModuleConfig } from '../../../../../askar/tests/helpers'
@@ -14,7 +14,7 @@ import {
   KeyType,
   TypedArrayEncoder,
   utils,
-} from '@aries-framework/core'
+} from '@credo-ts/core'
 
 const getAgent = (label: string) =>
   new Agent({

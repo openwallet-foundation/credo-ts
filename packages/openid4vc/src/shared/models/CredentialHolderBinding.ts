@@ -1,4 +1,4 @@
-import type { Jwk } from '@aries-framework/core'
+import type { Jwk } from '@credo-ts/core'
 
 export type OpenId4VcCredentialHolderDidBinding = {
   method: 'did'

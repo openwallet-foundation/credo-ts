@@ -5,7 +5,7 @@ import type {
   OpenId4VcSiopVerifiedAuthorizationResponse,
 } from './OpenId4VcSiopVerifierServiceOptions'
 
-import { injectable, AgentContext } from '@aries-framework/core'
+import { injectable, AgentContext } from '@credo-ts/core'
 
 import { OpenId4VcSiopVerifierService } from './OpenId4VcSiopVerifierService'
 import { OpenId4VcVerifierModuleConfig } from './OpenId4VcVerifierModuleConfig'

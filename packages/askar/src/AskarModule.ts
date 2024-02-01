@@ -17,13 +17,6 @@ export class AskarModule implements Module {
   }
 
   public register(dependencyManager: DependencyManager) {
-    // Warn about experimental module
-    dependencyManager
-      .resolve(AgentConfig)
-      .logger.warn(
-        "The '@credo-ts/askar' module is experimental and could have unexpected breaking changes. When using this module, make sure to use strict versions for all @credo-ts packages."
-      )
-
     dependencyManager.registerInstance(AskarModuleConfig, this.config)
 
     if (dependencyManager.isRegistered(InjectionSymbols.Wallet)) {

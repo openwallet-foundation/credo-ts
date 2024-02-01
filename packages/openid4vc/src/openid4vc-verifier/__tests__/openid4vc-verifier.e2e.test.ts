@@ -1,4 +1,4 @@
-import { Jwt } from '@aries-framework/core'
+import { Jwt } from '@credo-ts/core'
 import { SigningAlgo } from '@sphereon/did-auth-siop'
 import { cleanAll, enableNetConnect } from 'nock'
 

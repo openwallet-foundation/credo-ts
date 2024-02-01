@@ -7,7 +7,7 @@ import type {
   DifPexCredentialsForRequest,
   DifPexInputDescriptorToCredentials,
   DifPresentationExchangeDefinition,
-} from '@aries-framework/core'
+} from '@credo-ts/core'
 
 export interface OpenId4VcSiopResolvedAuthorizationRequest {
   /**

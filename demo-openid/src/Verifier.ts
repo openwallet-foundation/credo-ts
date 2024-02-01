@@ -1,8 +1,8 @@
-import type { DifPresentationExchangeDefinitionV2 } from '@aries-framework/core/src'
-import type { OpenId4VcVerifierRecord } from '@aries-framework/openid4vc'
+import type { DifPresentationExchangeDefinitionV2 } from '@credo-ts/core/src'
+import type { OpenId4VcVerifierRecord } from '@credo-ts/openid4vc'
 
-import { AskarModule } from '@aries-framework/askar'
-import { OpenId4VcVerifierModule } from '@aries-framework/openid4vc'
+import { AskarModule } from '@credo-ts/askar'
+import { OpenId4VcVerifierModule } from '@credo-ts/openid4vc'
 import { ariesAskar } from '@hyperledger/aries-askar-nodejs'
 import { Router } from 'express'
 

@@ -1,15 +1,12 @@
-import type {
-  OpenId4VciResolvedCredentialOffer,
-  OpenId4VcSiopResolvedAuthorizationRequest,
-} from '@aries-framework/openid4vc'
+import type { OpenId4VciResolvedCredentialOffer, OpenId4VcSiopResolvedAuthorizationRequest } from '@credo-ts/openid4vc'
 
-import { AskarModule } from '@aries-framework/askar'
+import { AskarModule } from '@credo-ts/askar'
 import {
   W3cJwtVerifiableCredential,
   W3cJsonLdVerifiableCredential,
   DifPresentationExchangeService,
-} from '@aries-framework/core'
-import { OpenId4VcHolderModule } from '@aries-framework/openid4vc'
+} from '@credo-ts/core'
+import { OpenId4VcHolderModule } from '@credo-ts/openid4vc'
 import { ariesAskar } from '@hyperledger/aries-askar-nodejs'
 
 import { BaseAgent } from './BaseAgent'

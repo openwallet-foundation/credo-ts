@@ -18,11 +18,13 @@ export function joinUriParts(base: string, parts: string[]) {
   if (parts.length === 0) return base
 
   // take base without trailing /
-  let combined = base.endsWith('/') ? base.slice(0, base.length - 1) : base
+  let combined = base.trim()
+  combined = base.endsWith('/') ? base.slice(0, base.length - 1) : base
 
   for (const part of parts) {
     // Remove leading and trailing /
-    let strippedPart = part.startsWith('/') ? part.slice(1) : part
+    let strippedPart = part.trim()
+    strippedPart = strippedPart.startsWith('/') ? strippedPart.slice(1) : strippedPart
     strippedPart = strippedPart.endsWith('/') ? strippedPart.slice(0, strippedPart.length - 1) : strippedPart
 
     // Don't want to add if empty

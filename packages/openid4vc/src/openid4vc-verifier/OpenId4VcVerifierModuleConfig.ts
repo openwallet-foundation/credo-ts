@@ -1,5 +1,5 @@
 import type { OpenId4VcSiopAuthorizationEndpointConfig } from './router/authorizationEndpoint'
-import type { Optional, AgentContext, AgentDependencies } from '@aries-framework/core'
+import type { Optional, AgentContext, AgentDependencies } from '@credo-ts/core'
 import type { IRPSessionManager } from '@sphereon/did-auth-siop'
 import type { Router } from 'express'
 

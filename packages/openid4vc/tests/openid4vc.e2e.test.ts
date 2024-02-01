@@ -1,6 +1,6 @@
 import type { AgentType, TenantType } from './utils'
 import type { OpenId4VciCredentialBindingResolver } from '../src/openid4vc-holder'
-import type { DifPresentationExchangeDefinitionV2, SdJwtVc } from '@aries-framework/core'
+import type { DifPresentationExchangeDefinitionV2, SdJwtVc } from '@credo-ts/core'
 import type { Server } from 'http'
 
 import {
@@ -16,7 +16,7 @@ import {
   W3cCredentialSubject,
   w3cDate,
   W3cIssuer,
-} from '@aries-framework/core'
+} from '@credo-ts/core'
 import express, { type Express } from 'express'
 
 import { AskarModule } from '../../askar/src'

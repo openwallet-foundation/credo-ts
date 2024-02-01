@@ -34,7 +34,7 @@ export class SignatureSuiteRegistry {
     return this.suiteMapping.find((x) => x.verificationMethodTypes.includes(verificationMethodType))
   }
 
-  public getByKeyType(keyType: KeyType) {
+  public getAllByKeyType(keyType: KeyType) {
     return this.suiteMapping.filter((x) => x.keyTypes.includes(keyType))
   }
 

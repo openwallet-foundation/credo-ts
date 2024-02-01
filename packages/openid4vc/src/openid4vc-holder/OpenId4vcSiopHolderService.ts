@@ -3,7 +3,7 @@ import type {
   OpenId4VcSiopResolvedAuthorizationRequest,
 } from './OpenId4vcSiopHolderServiceOptions'
 import type { OpenId4VcJwtIssuer } from '../shared'
-import type { AgentContext, SdJwtVc, W3cVerifiablePresentation } from '@aries-framework/core'
+import type { AgentContext, VerifiablePresentation } from '@credo-ts/core'
 import type { VerifiedAuthorizationRequest, PresentationExchangeResponseOpts } from '@sphereon/did-auth-siop'
 
 import {
@@ -17,7 +17,7 @@ import {
   asArray,
   DifPresentationExchangeService,
   DifPresentationExchangeSubmissionLocation,
-} from '@aries-framework/core'
+} from '@credo-ts/core'
 import {
   CheckLinkedDomain,
   OP,
@@ -212,7 +212,7 @@ export class OpenId4VcSiopHolderService {
   }
 
   private getOpenIdTokenIssuerFromVerifiablePresentation(
-    verifiablePresentation: W3cVerifiablePresentation | SdJwtVc
+    verifiablePresentation: VerifiablePresentation
   ): OpenId4VcJwtIssuer {
     let openIdTokenIssuer: OpenId4VcJwtIssuer
 

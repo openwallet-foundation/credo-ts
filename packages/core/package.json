@@ -40,7 +40,7 @@
     "borc": "^3.0.0",
     "buffer": "^6.0.3",
     "class-transformer": "0.5.1",
-    "class-validator": "0.14.0",
+    "class-validator": "0.14.1",
     "did-resolver": "^4.1.0",
     "jsonpath": "^1.1.1",
     "lru_map": "^0.4.1",

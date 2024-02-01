@@ -1,5 +1,5 @@
 import type { OpenId4VcJwtIssuer } from './models'
-import type { AgentContext, JwaSignatureAlgorithm, Key } from '@aries-framework/core'
+import type { AgentContext, JwaSignatureAlgorithm, Key } from '@credo-ts/core'
 import type { DIDDocument, SigningAlgo, SuppliedSignature } from '@sphereon/did-auth-siop'
 
 import {
@@ -9,7 +9,7 @@ import {
   getKeyFromVerificationMethod,
   getJwkClassFromKeyType,
   SignatureSuiteRegistry,
-} from '@aries-framework/core'
+} from '@credo-ts/core'
 
 /**
  * Returns the JWA Signature Algorithms that are supported by the wallet.
@@ -57,7 +57,9 @@ export async function getSphereonSuppliedSignatureFromJwtIssuer(
     kid = verificationMethod.id
     did = verificationMethod.controller
   } else {
-    throw new AriesFrameworkError("Unsupported jwt issuer method. Only 'did' is supported.")
+    throw new AriesFrameworkError(
+      `Unsupported jwt issuer method '${jwtIssuer.method as string}'. Only 'did' is supported.`
+    )
   }
 
   return {
@@ -94,7 +96,7 @@ export function getSphereonDidResolver(agentContext: AgentContext) {
 export function getProofTypeFromKey(agentContext: AgentContext, key: Key) {
   const signatureSuiteRegistry = agentContext.dependencyManager.resolve(SignatureSuiteRegistry)
 
-  const supportedSignatureSuites = signatureSuiteRegistry.getByKeyType(key.keyType)
+  const supportedSignatureSuites = signatureSuiteRegistry.getAllByKeyType(key.keyType)
   if (supportedSignatureSuites.length === 0) {
     throw new AriesFrameworkError(`Couldn't find a supported signature suite for the given key type '${key.keyType}'.`)
   }

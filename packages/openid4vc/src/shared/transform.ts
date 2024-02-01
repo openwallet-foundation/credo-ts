@@ -1,4 +1,4 @@
-import type { W3cVerifiableCredential, W3cVerifiablePresentation, SdJwtVc } from '@aries-framework/core'
+import type { SdJwtVc, VerifiablePresentation, VerifiableCredential } from '@credo-ts/core'
 import type {
   W3CVerifiableCredential as SphereonW3cVerifiableCredential,
   W3CVerifiablePresentation as SphereonW3cVerifiablePresentation,
@@ -14,10 +14,10 @@ import {
   W3cJwtVerifiableCredential,
   W3cJsonLdVerifiableCredential,
   JsonEncoder,
-} from '@aries-framework/core'
+} from '@credo-ts/core'
 
 export function getSphereonVerifiableCredential(
-  verifiableCredential: W3cVerifiableCredential | SdJwtVc
+  verifiableCredential: VerifiableCredential
 ): SphereonW3cVerifiableCredential | SphereonCompactSdJwtVc {
   // encoded sd-jwt or jwt
   if (typeof verifiableCredential === 'string') {
@@ -32,7 +32,7 @@ export function getSphereonVerifiableCredential(
 }
 
 export function getSphereonVerifiablePresentation(
-  verifiablePresentation: W3cVerifiablePresentation | SdJwtVc
+  verifiablePresentation: VerifiablePresentation
 ): SphereonW3cVerifiablePresentation | SphereonCompactSdJwtVc {
   // encoded sd-jwt or jwt
   if (typeof verifiablePresentation === 'string') {
@@ -48,7 +48,7 @@ export function getSphereonVerifiablePresentation(
 
 export function getVerifiablePresentationFromSphereonWrapped(
   wrappedVerifiablePresentation: WrappedVerifiablePresentation
-): W3cVerifiablePresentation | SdJwtVc {
+): VerifiablePresentation {
   if (wrappedVerifiablePresentation.format === 'jwt_vp') {
     if (typeof wrappedVerifiablePresentation.original !== 'string') {
       throw new AriesFrameworkError('Unable to transform JWT VP to W3C VP')

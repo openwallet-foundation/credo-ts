@@ -1,6 +1,6 @@
-import type { DependencyManager, Module } from '@aries-framework/core'
+import type { DependencyManager, Module } from '@credo-ts/core'
 
-import { AgentConfig } from '@aries-framework/core'
+import { AgentConfig } from '@credo-ts/core'
 
 import { OpenId4VcHolderApi } from './OpenId4VcHolderApi'
 import { OpenId4VciHolderService } from './OpenId4VciHolderService'
@@ -21,7 +21,7 @@ export class OpenId4VcHolderModule implements Module {
     dependencyManager
       .resolve(AgentConfig)
       .logger.warn(
-        "The '@aries-framework/openid4vc' Holder module is experimental and could have unexpected breaking changes. When using this module, make sure to use strict versions for all @aries-framework packages."
+        "The '@credo-ts/openid4vc' Holder module is experimental and could have unexpected breaking changes. When using this module, make sure to use strict versions for all @credo-ts packages."
       )
 
     // Api

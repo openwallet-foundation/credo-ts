@@ -1,4 +1,4 @@
-import type { Key, SdJwtVc } from '@aries-framework/core'
+import type { Key, SdJwtVc } from '@credo-ts/core'
 
 import {
   getJwkFromKey,
@@ -8,7 +8,7 @@ import {
   KeyType,
   TypedArrayEncoder,
   W3cJwtVerifiableCredential,
-} from '@aries-framework/core'
+} from '@credo-ts/core'
 import nock, { cleanAll, enableNetConnect } from 'nock'
 
 import { AskarModule } from '../../../../askar/src'

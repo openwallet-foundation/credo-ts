@@ -1,5 +1,5 @@
 import type { OpenId4VciAccessTokenEndpointConfig, OpenId4VciCredentialEndpointConfig } from './router'
-import type { AgentContext, Optional } from '@aries-framework/core'
+import type { AgentContext, Optional } from '@credo-ts/core'
 import type { CNonceState, CredentialOfferSession, IStateManager, URIState } from '@sphereon/oid4vci-common'
 import type { Router } from 'express'
 

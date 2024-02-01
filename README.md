@@ -90,7 +90,7 @@ Credo is a framework written in TypeScript for building **SSI Agents and DIDComm
     </td>
   </tr>
   <tr>
-    <td>@aries-framework/indy-vdr</td>
+    <td>@credo-ts/indy-vdr</td>
     <td>
       <a href="https://npmjs.com/package/@credo-ts/indy-vdr">
         <img alt="@credo-ts/indy-vdr version" src="https://img.shields.io/npm/v/@credo-ts/indy-vdr"/>
@@ -122,10 +122,10 @@ Credo is a framework written in TypeScript for building **SSI Agents and DIDComm
     </td>
   </tr>
   <tr>
-    <td>@credo-ts/openid4vc-client</td>
+    <td>@credo-ts/openid4vc</td>
     <td>
-      <a href="https://npmjs.com/package/@credo-ts/openid4vc-client">
-        <img alt="@credo-ts/openid4vc-client version" src="https://img.shields.io/npm/v/@credo-ts/openid4vc-client"/>
+      <a href="https://npmjs.com/package/@credo-ts/openid4vc">
+        <img alt="@credo-ts/openid4vc version" src="https://img.shields.io/npm/v/@credo-ts/openid4vc"/>
       </a>
     </td>
   </tr>
@@ -165,6 +165,14 @@ Credo is a framework written in TypeScript for building **SSI Agents and DIDComm
     <td>
       <a href="https://npmjs.com/package/@aries-framework/anoncreds-rs">
         <img alt="@aries-framework/anoncreds-rs version" src="https://img.shields.io/npm/v/@aries-framework/anoncreds-rs"/>
+      </a>
+    </td>
+  </tr>
+  <tr>
+    <td><s>@credo-ts/openid4vc-client</s> (deprecated in favour of <code>@credo-ts/openid4vc</code>)</td>
+    <td>
+      <a href="https://npmjs.com/package/@credo-ts/openid4vc-client">
+        <img alt="@credo-ts/openid4vc-client version" src="https://img.shields.io/npm/v/@credo-ts/openid4vc-client"/>
       </a>
     </td>
   </tr>

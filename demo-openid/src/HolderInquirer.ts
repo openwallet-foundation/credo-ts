@@ -1,10 +1,7 @@
-import type { SdJwtVcRecord, W3cCredentialRecord } from '@aries-framework/core/src'
-import type {
-  OpenId4VcSiopResolvedAuthorizationRequest,
-  OpenId4VciResolvedCredentialOffer,
-} from '@aries-framework/openid4vc'
+import type { SdJwtVcRecord, W3cCredentialRecord } from '@credo-ts/core/src'
+import type { OpenId4VcSiopResolvedAuthorizationRequest, OpenId4VciResolvedCredentialOffer } from '@credo-ts/openid4vc'
 
-import { DifPresentationExchangeService } from '@aries-framework/core/src'
+import { DifPresentationExchangeService } from '@credo-ts/core/src'
 import console, { clear } from 'console'
 import { textSync } from 'figlet'
 import { prompt } from 'inquirer'

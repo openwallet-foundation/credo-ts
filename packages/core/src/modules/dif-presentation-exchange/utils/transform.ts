@@ -2,6 +2,7 @@ import type { AgentContext } from '../../../agent'
 import type { SdJwtVcRecord, SdJwtVc } from '../../sd-jwt-vc'
 import type { W3cVerifiablePresentation } from '../../vc'
 import type { W3cJsonPresentation } from '../../vc/models/presentation/W3cJsonPresentation'
+import type { VerifiablePresentation } from '../models'
 import type {
   OriginalVerifiableCredential as SphereonOriginalVerifiableCredential,
   OriginalVerifiablePresentation as SphereonOriginalVerifiablePresentation,
@@ -24,7 +25,7 @@ export function getSphereonOriginalVerifiableCredential(
 }
 
 export function getSphereonOriginalVerifiablePresentation(
-  verifiablePresentation: W3cVerifiablePresentation | SdJwtVc
+  verifiablePresentation: VerifiablePresentation
 ): SphereonOriginalVerifiablePresentation {
   if (
     verifiablePresentation instanceof W3cJwtVerifiablePresentation ||

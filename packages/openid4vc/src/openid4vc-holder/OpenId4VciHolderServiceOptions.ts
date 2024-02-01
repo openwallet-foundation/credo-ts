@@ -4,7 +4,7 @@ import type {
   OpenId4VciCredentialSupportedWithId,
   OpenId4VciIssuerMetadata,
 } from '../shared'
-import type { JwaSignatureAlgorithm, KeyType } from '@aries-framework/core'
+import type { JwaSignatureAlgorithm, KeyType } from '@credo-ts/core'
 import type { AuthorizationServerMetadata, EndpointMetadataResult, OpenId4VCIVersion } from '@sphereon/oid4vci-common'
 
 import { OpenId4VciCredentialFormatProfile } from '../shared/models/OpenId4VciCredentialFormatProfile'

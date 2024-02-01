@@ -1,7 +1,7 @@
 import type { OpenId4VciCredentialSupported, OpenId4VciCredentialSupportedWithId } from './models'
 import type { AuthorizationDetails, CredentialOfferFormat, EndpointMetadataResult } from '@sphereon/oid4vci-common'
 
-import { AriesFrameworkError } from '@aries-framework/core'
+import { AriesFrameworkError } from '@credo-ts/core'
 
 /**
  * Get all `types` from a `CredentialSupported` object.

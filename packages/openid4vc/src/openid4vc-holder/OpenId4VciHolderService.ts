@@ -1,17 +1,20 @@
 import type {
+  OpenId4VciAuthCodeFlowOptions,
+  OpenId4VciAcceptCredentialOfferOptions,
+  OpenId4VciProofOfPossessionRequirements,
+  OpenId4VciCredentialBindingResolver,
+  OpenId4VciResolvedCredentialOffer,
+  OpenId4VciResolvedAuthorizationRequest,
+  OpenId4VciResolvedAuthorizationRequestWithCode,
+  OpenId4VciSupportedCredentialFormats,
+} from './OpenId4VciHolderServiceOptions'
+import type {
   OpenId4VciCredentialOfferPayload,
   OpenId4VciCredentialSupported,
   OpenId4VciCredentialSupportedWithId,
   OpenId4VciIssuerMetadata,
 } from '../shared'
-import type {
-  AgentContext,
-  JwaSignatureAlgorithm,
-  W3cVerifiableCredential,
-  Key,
-  JwkJson,
-  SdJwtVc,
-} from '@aries-framework/core'
+import type { AgentContext, JwaSignatureAlgorithm, Key, JwkJson, VerifiableCredential } from '@credo-ts/core'
 import type {
   AccessTokenResponse,
   CredentialResponse,
@@ -44,7 +47,7 @@ import {
   inject,
   injectable,
   parseDid,
-} from '@aries-framework/core'
+} from '@credo-ts/core'
 import {
   AccessTokenClient,
   CredentialRequestClientBuilder,
@@ -62,17 +65,7 @@ import {
 } from '../shared/issuerMetadataUtils'
 import { getSupportedJwaSignatureAlgorithms } from '../shared/utils'
 
-import {
-  type OpenId4VciAuthCodeFlowOptions,
-  type OpenId4VciAcceptCredentialOfferOptions,
-  type OpenId4VciProofOfPossessionRequirements,
-  type OpenId4VciCredentialBindingResolver,
-  type OpenId4VciResolvedCredentialOffer,
-  type OpenId4VciResolvedAuthorizationRequest,
-  type OpenId4VciResolvedAuthorizationRequestWithCode,
-  type OpenId4VciSupportedCredentialFormats,
-  openId4VciSupportedCredentialFormats,
-} from './OpenId4VciHolderServiceOptions'
+import { openId4VciSupportedCredentialFormats } from './OpenId4VciHolderServiceOptions'
 
 @injectable()
 export class OpenId4VciHolderService {
@@ -100,7 +93,7 @@ export class OpenId4VciHolderService {
     if (!client.credentialOffer?.credential_offer) {
       throw new AriesFrameworkError(`Could not resolve credential offer from '${credentialOffer}'`)
     }
-    const credentialOfferPayload: OpenId4VciCredentialOfferPayload = client.credentialOffer?.credential_offer
+    const credentialOfferPayload: OpenId4VciCredentialOfferPayload = client.credentialOffer.credential_offer
 
     const metadata = await client.retrieveServerMetadata()
     if (!metadata.credentialIssuerMetadata) {
@@ -170,7 +163,9 @@ export class OpenId4VciHolderService {
     authCodeFlowOptions: OpenId4VciAuthCodeFlowOptions
   ): Promise<OpenId4VciResolvedAuthorizationRequest> {
     const { credentialOfferPayload, metadata, offeredCredentials } = resolvedCredentialOffer
-    const codeVerifier = `${await agentContext.wallet.generateNonce()}${await agentContext.wallet.generateNonce()}`
+    const codeVerifier = (
+      await Promise.allSettled([agentContext.wallet.generateNonce(), agentContext.wallet.generateNonce()])
+    ).join()
     const codeVerifierSha256 = Hasher.hash(codeVerifier, 'sha-256')
     const codeChallenge = TypedArrayEncoder.toBase64URL(codeVerifierSha256)
 
@@ -277,7 +272,7 @@ export class OpenId4VciHolderService {
     this.logger.debug('Requested OpenId4VCI Access Token.')
 
     const accessToken = accessTokenResponse.successBody
-    const receivedCredentials: Array<W3cVerifiableCredential | SdJwtVc> = []
+    const receivedCredentials: Array<VerifiableCredential> = []
     let newCNonce: string | undefined
 
     const credentialsSupportedToRequest =
@@ -478,7 +473,7 @@ export class OpenId4VciHolderService {
             const JwkClass = getJwkClassFromJwaSignatureAlgorithm(signatureAlgorithm)
             if (!JwkClass) return false
 
-            const matchingSuite = signatureSuiteRegistry.getByKeyType(JwkClass.keyType)
+            const matchingSuite = signatureSuiteRegistry.getAllByKeyType(JwkClass.keyType)
             if (matchingSuite.length === 0) return false
 
             return issuerSupportedCryptographicSuites.includes(matchingSuite[0].proofType)
@@ -511,7 +506,7 @@ export class OpenId4VciHolderService {
     agentContext: AgentContext,
     credentialResponse: OpenIDResponse<CredentialResponse>,
     options: { verifyCredentialStatus: boolean }
-  ): Promise<SdJwtVc | W3cVerifiableCredential> {
+  ): Promise<VerifiableCredential> {
     const { verifyCredentialStatus } = options
     this.logger.debug('Credential request response', credentialResponse)
 

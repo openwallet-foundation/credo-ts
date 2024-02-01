@@ -1,5 +1,5 @@
 import type { OpenId4VcVerifierModuleConfigOptions } from '../OpenId4VcVerifierModuleConfig'
-import type { DependencyManager } from '@aries-framework/core'
+import type { DependencyManager } from '@credo-ts/core'
 
 import { Router } from 'express'
 

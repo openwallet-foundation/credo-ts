@@ -14,7 +14,7 @@ import type {
   OpenId4VciCredentialRequest,
   OpenId4VciCredentialSupported,
 } from '../shared'
-import type { AgentContext, DidDocument } from '@aries-framework/core'
+import type { AgentContext, DidDocument } from '@credo-ts/core'
 import type { Grant, JWTVerifyCallback } from '@sphereon/oid4vci-common'
 import type {
   CredentialDataSupplier,
@@ -42,7 +42,7 @@ import {
   KeyType,
   utils,
   W3cCredentialService,
-} from '@aries-framework/core'
+} from '@credo-ts/core'
 import { IssueStatus } from '@sphereon/oid4vci-common'
 import { VcIssuerBuilder } from '@sphereon/oid4vci-issuer'
 

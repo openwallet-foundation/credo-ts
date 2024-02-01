@@ -5,7 +5,7 @@ import type {
 import type { OpenId4VcIssuerRecordProps } from './repository'
 import type { OpenId4VciCredentialOfferPayload } from '../shared'
 
-import { injectable, AgentContext } from '@aries-framework/core'
+import { injectable, AgentContext } from '@credo-ts/core'
 
 import { OpenId4VcIssuerModuleConfig } from './OpenId4VcIssuerModuleConfig'
 import { OpenId4VcIssuerService } from './OpenId4VcIssuerService'

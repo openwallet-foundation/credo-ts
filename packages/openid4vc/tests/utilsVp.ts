@@ -1,4 +1,4 @@
-import type { AgentContext, DifPresentationExchangeDefinitionV2, VerificationMethod } from '@aries-framework/core'
+import type { AgentContext, DifPresentationExchangeDefinitionV2, VerificationMethod } from '@credo-ts/core'
 
 import {
   getKeyFromVerificationMethod,
@@ -8,7 +8,7 @@ import {
   W3cCredentialService,
   ClaimFormat,
   CREDENTIALS_CONTEXT_V1_URL,
-} from '@aries-framework/core'
+} from '@credo-ts/core'
 
 import { getProofTypeFromKey } from '../src/shared/utils'
 
