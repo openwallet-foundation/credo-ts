@@ -1,4 +1,4 @@
-import { JsonTransformer } from '@aries-framework/core'
+import { JsonTransformer } from '@credo-ts/core'
 
 import { getAgentConfig, getAgentContext, mockProperty } from '../../../../core/tests/helpers'
 import { IndyVdrPool, IndyVdrPoolService } from '../../pool'

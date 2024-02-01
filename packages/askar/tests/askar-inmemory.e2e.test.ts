@@ -1,22 +1,22 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 import type { SubjectMessage } from '../../../tests/transport/SubjectInboundTransport'
 
-import { Agent } from '@aries-framework/core'
+import { Agent } from '@credo-ts/core'
 import { Subject } from 'rxjs'
 
 import { SubjectInboundTransport } from '../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutboundTransport'
 
-import { e2eTest, getSqliteAgentOptions } from './helpers'
+import { e2eTest, getAskarSqliteAgentOptions } from './helpers'
 
-const aliceInMemoryAgentOptions = getSqliteAgentOptions(
+const aliceInMemoryAgentOptions = getAskarSqliteAgentOptions(
   'AgentsAlice',
   {
     endpoints: ['rxjs:alice'],
   },
   true
 )
-const bobInMemoryAgentOptions = getSqliteAgentOptions(
+const bobInMemoryAgentOptions = getAskarSqliteAgentOptions(
   'AgentsBob',
   {
     endpoints: ['rxjs:bob'],

@@ -1,4 +1,4 @@
-import { JsonTransformer } from '@aries-framework/core'
+import { JsonTransformer } from '@credo-ts/core'
 
 import { TenantRecord } from '../TenantRecord'
 

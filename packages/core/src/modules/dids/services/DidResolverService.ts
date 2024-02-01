@@ -6,7 +6,10 @@ import { InjectionSymbols } from '../../../constants'
 import { AriesFrameworkError } from '../../../error'
 import { Logger } from '../../../logger'
 import { injectable, inject } from '../../../plugins'
+import { JsonTransformer } from '../../../utils'
+import { CacheModuleConfig } from '../../cache'
 import { DidsModuleConfig } from '../DidsModuleConfig'
+import { DidDocument } from '../domain'
 import { parseDid } from '../domain/parse'
 
 @injectable()
@@ -53,9 +56,69 @@ export class DidResolverService {
       }
     }
 
-    return resolver.resolve(agentContext, parsed.did, parsed, options)
+    // extract caching options and set defaults
+    const { useCache = true, cacheDurationInSeconds = 300, persistInCache = true } = options
+    const cacheKey = `did:resolver:${parsed.did}`
+
+    if (resolver.allowsCaching && useCache) {
+      const cache = agentContext.dependencyManager.resolve(CacheModuleConfig).cache
+      // FIXME: in multi-tenancy it can be that the same cache is used for different agent contexts
+      // This may become a problem when resolving dids, as you can get back a cache hit for a different
+      // tenant. did:peer has disabled caching, and I think we should just recommend disabling caching
+      // for these private dids
+      // We could allow providing a custom cache prefix in the resolver options, so that the cache key
+      // can be recognized in the cache implementation
+      const cachedDidDocument = await cache.get<DidResolutionResult & { didDocument: Record<string, unknown> }>(
+        agentContext,
+        cacheKey
+      )
+
+      if (cachedDidDocument) {
+        return {
+          ...cachedDidDocument,
+          didDocument: JsonTransformer.fromJSON(cachedDidDocument.didDocument, DidDocument),
+          didResolutionMetadata: {
+            ...cachedDidDocument.didResolutionMetadata,
+            servedFromCache: true,
+          },
+        }
+      }
+    }
+
+    let resolutionResult = await resolver.resolve(agentContext, parsed.did, parsed, options)
+    // Avoid overwriting existing document
+    resolutionResult = {
+      ...resolutionResult,
+      didResolutionMetadata: {
+        ...resolutionResult.didResolutionMetadata,
+        resolutionTime: Date.now(),
+        // Did resolver implementation might use did method specific caching strategy
+        // We only set to false if not defined by the resolver
+        servedFromCache: resolutionResult.didResolutionMetadata.servedFromCache ?? false,
+      },
+    }
+
+    if (resolutionResult.didDocument && resolver.allowsCaching && persistInCache) {
+      const cache = agentContext.dependencyManager.resolve(CacheModuleConfig).cache
+      await cache.set(
+        agentContext,
+        cacheKey,
+        {
+          ...resolutionResult,
+          didDocument: resolutionResult.didDocument.toJSON(),
+        },
+        // Set cache duration
+        cacheDurationInSeconds
+      )
+    }
+
+    return resolutionResult
   }
 
+  /**
+   * Resolve a did document. This uses the default resolution options, and thus
+   * will use caching if available.
+   */
   public async resolveDidDocument(agentContext: AgentContext, did: string) {
     const {
       didDocument,

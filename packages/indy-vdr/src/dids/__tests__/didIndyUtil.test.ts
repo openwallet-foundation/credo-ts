@@ -1,4 +1,4 @@
-import { DidDocument, JsonTransformer } from '@aries-framework/core'
+import { DidDocument, JsonTransformer } from '@credo-ts/core'
 
 import { combineDidDocumentWithJson, didDocDiff } from '../didIndyUtil'
 

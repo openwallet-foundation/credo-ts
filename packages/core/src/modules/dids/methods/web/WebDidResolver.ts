@@ -11,6 +11,8 @@ import { DidDocument } from '../../domain'
 export class WebDidResolver implements DidResolver {
   public readonly supportedMethods
 
+  public readonly allowsCaching = true
+
   // FIXME: Would be nice if we don't have to provide a did resolver instance
   private _resolverInstance = new Resolver()
   private resolver = didWeb.getResolver()

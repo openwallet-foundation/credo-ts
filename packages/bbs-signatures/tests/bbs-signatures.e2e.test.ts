@@ -1,5 +1,5 @@
 import type { W3cCredentialRepository } from '../../core/src/modules/vc/repository/W3cCredentialRepository'
-import type { AgentContext, W3cJwtCredentialService, Wallet } from '@aries-framework/core'
+import type { AgentContext, W3cJwtCredentialService, Wallet } from '@credo-ts/core'
 
 import {
   ClaimFormat,
@@ -18,20 +18,19 @@ import {
   Ed25519Signature2018,
   TypedArrayEncoder,
   W3cJsonLdVerifiableCredential,
-} from '@aries-framework/core'
+} from '@credo-ts/core'
 
+import { RegisteredAskarTestWallet } from '../../askar/tests/helpers'
 import { W3cCredentialsModuleConfig } from '../../core/src/modules/vc/W3cCredentialsModuleConfig'
 import { SignatureSuiteRegistry } from '../../core/src/modules/vc/data-integrity/SignatureSuiteRegistry'
 import { W3cJsonLdCredentialService } from '../../core/src/modules/vc/data-integrity/W3cJsonLdCredentialService'
 import { customDocumentLoader } from '../../core/src/modules/vc/data-integrity/__tests__/documentLoader'
 import { LinkedDataProof } from '../../core/src/modules/vc/data-integrity/models/LinkedDataProof'
-import { getAgentConfig, getAgentContext } from '../../core/tests/helpers'
-import { IndySdkWallet } from '../../indy-sdk/src'
-import { indySdk } from '../../indy-sdk/tests/setupIndySdkModule'
+import { agentDependencies, getAgentConfig, getAgentContext } from '../../core/tests/helpers'
 import { BbsBlsSignature2020, BbsBlsSignatureProof2020, Bls12381g2SigningProvider } from '../src'
 
 import { BbsBlsSignature2020Fixtures } from './fixtures'
-import { describeSkipNode17And18 } from './util'
+import { describeSkipNode18 } from './util'
 
 const { jsonldSignatures } = vcLibraries
 const { purposes } = jsonldSignatures
@@ -61,16 +60,22 @@ const signingProviderRegistry = new SigningProviderRegistry([new Bls12381g2Signi
 
 const agentConfig = getAgentConfig('BbsSignaturesE2eTest')
 
-describeSkipNode17And18('BBS W3cCredentialService', () => {
+describeSkipNode18('BBS W3cCredentialService', () => {
   let wallet: Wallet
   let agentContext: AgentContext
   let w3cJsonLdCredentialService: W3cJsonLdCredentialService
   let w3cCredentialService: W3cCredentialService
-  const seed = TypedArrayEncoder.fromString('testseed000000000000000000000001')
   const privateKey = TypedArrayEncoder.fromString('testseed000000000000000000000001')
 
   beforeAll(async () => {
-    wallet = new IndySdkWallet(indySdk, agentConfig.logger, signingProviderRegistry)
+    // Use askar wallet so we can use the signing provider registry
+    // TODO: support signing provider registry in memory wallet
+    // so we don't have to use askar here
+    wallet = new RegisteredAskarTestWallet(
+      agentConfig.logger,
+      new agentDependencies.FileSystem(),
+      signingProviderRegistry
+    )
     await wallet.createAndOpen(agentConfig.walletConfig)
     agentContext = getAgentContext({
       agentConfig,
@@ -124,7 +129,13 @@ describeSkipNode17And18('BBS W3cCredentialService', () => {
     let verificationMethod: string
 
     beforeAll(async () => {
-      const key = await wallet.createKey({ keyType: KeyType.Bls12381g2, seed })
+      // FIXME: askar doesn't create the same privateKey based on the same seed as when generated used askar BBS library...
+      // See https://github.com/hyperledger/aries-askar/issues/219
+      const key = await wallet.createKey({
+        keyType: KeyType.Bls12381g2,
+        privateKey: TypedArrayEncoder.fromBase58('2szQ7zB4tKLJPsGK3YTp9SNQ6hoWYFG5rGhmgfQM4nb7'),
+      })
+
       issuerDidKey = new DidKey(key)
       verificationMethod = `${issuerDidKey.did}#${issuerDidKey.key.fingerprint}`
     })
@@ -140,7 +151,7 @@ describeSkipNode17And18('BBS W3cCredentialService', () => {
           format: ClaimFormat.LdpVc,
           credential,
           proofType: 'BbsBlsSignature2020',
-          verificationMethod: verificationMethod,
+          verificationMethod,
         })
 
         expect(vc).toBeInstanceOf(W3cJsonLdVerifiableCredential)

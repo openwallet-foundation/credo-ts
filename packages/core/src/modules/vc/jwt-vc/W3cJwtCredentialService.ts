@@ -40,7 +40,7 @@ export class W3cJwtCredentialService {
 
     // Warn about experimental module
     agentContext.config.logger.warn(
-      "The 'W3cJwtCredentialService' is experimental and could have unexpected breaking changes. When using this service, make sure to use strict versions for all @aries-framework packages."
+      "The 'W3cJwtCredentialService' is experimental and could have unexpected breaking changes. When using this service, make sure to use strict versions for all @credo-ts packages."
     )
 
     this.hasWarned = true

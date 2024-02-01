@@ -1,5 +1,5 @@
 import { Expose } from 'class-transformer'
-import { IsArray, IsOptional } from 'class-validator'
+import { IsArray } from 'class-validator'
 
 import { AgentMessage } from '../../../../../agent/AgentMessage'
 import { ReturnRouteTypes } from '../../../../../decorators/transport/TransportDecorator'
@@ -11,6 +11,8 @@ export interface V2MessagesReceivedMessageOptions {
 }
 
 export class V2MessagesReceivedMessage extends AgentMessage {
+  public readonly allowQueueTransport = false
+
   public constructor(options: V2MessagesReceivedMessageOptions) {
     super()
 
@@ -26,7 +28,6 @@ export class V2MessagesReceivedMessage extends AgentMessage {
   public static readonly type = parseMessageType('https://didcomm.org/messagepickup/2.0/messages-received')
 
   @IsArray()
-  @IsOptional()
   @Expose({ name: 'message_id_list' })
-  public messageIdList?: string[]
+  public messageIdList!: string[]
 }

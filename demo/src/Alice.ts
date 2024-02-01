@@ -1,4 +1,4 @@
-import type { ConnectionRecord, CredentialExchangeRecord, ProofExchangeRecord } from '@aries-framework/core'
+import type { ConnectionRecord, CredentialExchangeRecord, ProofExchangeRecord } from '@credo-ts/core'
 
 import { BaseAgent } from './BaseAgent'
 import { greenText, Output, redText } from './OutputClass'
@@ -8,7 +8,7 @@ export class Alice extends BaseAgent {
   public connectionRecordFaberId?: string
 
   public constructor(port: number, name: string) {
-    super({ port, name, useLegacyIndySdk: true })
+    super({ port, name })
     this.connected = false
   }
 

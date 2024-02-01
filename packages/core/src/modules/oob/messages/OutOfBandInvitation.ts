@@ -1,5 +1,4 @@
 import type { PlaintextMessage } from '../../../types'
-import type { HandshakeProtocol } from '../../connections'
 
 import { Exclude, Expose, Transform, TransformationType, Type } from 'class-transformer'
 import { ArrayNotEmpty, IsArray, IsInstance, IsOptional, IsUrl, ValidateNested } from 'class-validator'
@@ -17,11 +16,11 @@ import { OutOfBandDidCommService } from '../domain/OutOfBandDidCommService'
 
 export interface OutOfBandInvitationOptions {
   id?: string
-  label: string
+  label?: string
   goalCode?: string
   goal?: string
   accept?: string[]
-  handshakeProtocols?: HandshakeProtocol[]
+  handshakeProtocols?: string[]
   services: Array<OutOfBandDidCommService | string>
   imageUrl?: string
   appendedAttachments?: Attachment[]
@@ -124,7 +123,7 @@ export class OutOfBandInvitation extends AgentMessage {
   public readonly type = OutOfBandInvitation.type.messageTypeUri
   public static readonly type = parseMessageType('https://didcomm.org/out-of-band/1.1/invitation')
 
-  public readonly label!: string
+  public readonly label?: string
 
   @Expose({ name: 'goal_code' })
   public readonly goalCode?: string
@@ -134,7 +133,7 @@ export class OutOfBandInvitation extends AgentMessage {
   public readonly accept?: string[]
   @Transform(({ value }) => value?.map(replaceLegacyDidSovPrefix), { toClassOnly: true })
   @Expose({ name: 'handshake_protocols' })
-  public handshakeProtocols?: HandshakeProtocol[]
+  public handshakeProtocols?: string[]
 
   @Expose({ name: 'requests~attach' })
   @Type(() => Attachment)

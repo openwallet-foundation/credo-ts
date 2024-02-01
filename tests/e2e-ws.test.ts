@@ -1,6 +1,7 @@
 import type { AnonCredsTestsAgent } from '../packages/anoncreds/tests/legacyAnonCredsSetup'
 
-import { getLegacyAnonCredsModules } from '../packages/anoncreds/tests/legacyAnonCredsSetup'
+import { getAnonCredsIndyModules } from '../packages/anoncreds/tests/legacyAnonCredsSetup'
+import { askarModule } from '../packages/askar/tests/helpers'
 import { getAgentOptions } from '../packages/core/tests/helpers'
 
 import { e2eTest } from './e2e-test'
@@ -12,19 +13,22 @@ import {
   MediatorPickupStrategy,
   MediationRecipientModule,
   MediatorModule,
-} from '@aries-framework/core'
-import { WsInboundTransport } from '@aries-framework/node'
+} from '@credo-ts/core'
+import { WsInboundTransport } from '@credo-ts/node'
 
+// FIXME: somehow if we use the in memory wallet and storage service in the WS test it will fail,
+// but it succeeds with Askar. We should look into this at some point
 const recipientAgentOptions = getAgentOptions(
   'E2E WS Recipient ',
   {},
   {
-    ...getLegacyAnonCredsModules({
+    ...getAnonCredsIndyModules({
       autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
     }),
     mediationRecipient: new MediationRecipientModule({
       mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
     }),
+    askar: askarModule,
   }
 )
 
@@ -35,10 +39,11 @@ const mediatorAgentOptions = getAgentOptions(
     endpoints: [`ws://localhost:${mediatorPort}`],
   },
   {
-    ...getLegacyAnonCredsModules({
+    ...getAnonCredsIndyModules({
       autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
     }),
     mediator: new MediatorModule({ autoAcceptMediationRequests: true }),
+    askar: askarModule,
   }
 )
 
@@ -49,13 +54,14 @@ const senderAgentOptions = getAgentOptions(
     endpoints: [`ws://localhost:${senderPort}`],
   },
   {
-    ...getLegacyAnonCredsModules({
+    ...getAnonCredsIndyModules({
       autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
     }),
     mediationRecipient: new MediationRecipientModule({
       mediatorPollingInterval: 1000,
       mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
     }),
+    askar: askarModule,
   }
 )
 
@@ -65,9 +71,9 @@ describe('E2E WS tests', () => {
   let senderAgent: AnonCredsTestsAgent
 
   beforeEach(async () => {
-    recipientAgent = new Agent(recipientAgentOptions) as AnonCredsTestsAgent
-    mediatorAgent = new Agent(mediatorAgentOptions) as AnonCredsTestsAgent
-    senderAgent = new Agent(senderAgentOptions) as AnonCredsTestsAgent
+    recipientAgent = new Agent(recipientAgentOptions) as unknown as AnonCredsTestsAgent
+    mediatorAgent = new Agent(mediatorAgentOptions) as unknown as AnonCredsTestsAgent
+    senderAgent = new Agent(senderAgentOptions) as unknown as AnonCredsTestsAgent
   })
 
   afterEach(async () => {

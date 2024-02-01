@@ -19,9 +19,9 @@ import type {
   RegisterRevocationStatusListReturn,
 } from './services'
 import type { Extensible } from './services/registry/base'
-import type { SimpleQuery } from '@aries-framework/core'
+import type { SimpleQuery } from '@credo-ts/core'
 
-import { AgentContext, inject, injectable } from '@aries-framework/core'
+import { AgentContext, inject, injectable } from '@credo-ts/core'
 
 import { AnonCredsModuleConfig } from './AnonCredsModuleConfig'
 import { AnonCredsStoreRecordError } from './error'
@@ -278,6 +278,8 @@ export class AnonCredsApi {
             supportRevocation: options.options.supportRevocation,
             schema: schemaResult.schema,
           },
+          // NOTE: indy-sdk support has been removed from main repo, but keeping
+          // this in place to allow the indy-sdk to still be used as a custom package for some time
           // FIXME: Indy SDK requires the schema seq no to be passed in here. This is not ideal.
           {
             indyLedgerSchemaSeqNo: schemaResult.schemaMetadata.indyLedgerSeqNo,

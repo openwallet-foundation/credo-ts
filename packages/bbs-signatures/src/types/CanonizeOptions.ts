@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 
-import type { DocumentLoader } from '@aries-framework/core'
+import type { DocumentLoader } from '@credo-ts/core'
 
 /**
  * Options for canonizing a document
@@ -21,11 +21,7 @@ export interface CanonizeOptions {
    * Optional custom document loader
    */
   documentLoader?: DocumentLoader
-  /**
-   * Optional expansion map
-   */
-  // eslint-disable-next-line
-  expansionMap?: () => void
+
   /**
    * Indicates whether to skip expansion during canonization
    */

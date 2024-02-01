@@ -1,5 +1,5 @@
 {
-  "name": "@aries-framework/openid4vc",
+  "name": "@credo-ts/openid4vc",
   "main": "build/index",
   "types": "build/index",
   "version": "0.4.2",
@@ -10,10 +10,10 @@
   "publishConfig": {
     "access": "public"
   },
-  "homepage": "https://github.com/hyperledger/aries-framework-javascript/tree/main/packages/openid4vc",
+  "homepage": "https://github.com/openwallet-foundation/credo-ts/tree/main/packages/openid4vc",
   "repository": {
     "type": "git",
-    "url": "https://github.com/hyperledger/aries-framework-javascript",
+    "url": "https://github.com/openwallet-foundation/credo-ts",
     "directory": "packages/openid4vc"
   },
   "scripts": {
@@ -24,7 +24,7 @@
     "test": "jest --forceExit --detectOpenHandles"
   },
   "dependencies": {
-    "@aries-framework/core": "0.4.2",
+    "@credo-ts/core": "0.4.2",
     "@sphereon/ssi-types": "^0.18.1",
     "@sphereon/oid4vci-client": "0.8.2-next.46",
     "@sphereon/oid4vci-common": "0.8.2-next.46",
@@ -32,7 +32,7 @@
     "@sphereon/did-auth-siop": "0.6.0-unstable.3"
   },
   "devDependencies": {
-    "@aries-framework/tenants": "0.4.2",
+    "@credo-ts/tenants": "0.4.2",
     "@types/express": "^4.17.21",
     "express": "^4.18.2",
     "nock": "^13.3.0",

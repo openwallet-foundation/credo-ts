@@ -1,4 +1,4 @@
-import type { DependencyManager } from '@aries-framework/core'
+import type { DependencyManager } from '@credo-ts/core'
 
 import { OpenId4VcHolderApi } from '../OpenId4VcHolderApi'
 import { OpenId4VcHolderModule } from '../OpenId4VcHolderModule'

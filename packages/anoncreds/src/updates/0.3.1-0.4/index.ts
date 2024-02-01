@@ -1,4 +1,4 @@
-import type { BaseAgent } from '@aries-framework/core'
+import type { BaseAgent } from '@credo-ts/core'
 
 import { migrateAnonCredsCredentialDefinitionRecordToV0_4 } from './credentialDefinition'
 import { migrateCredentialExchangeRecordToV0_4 } from './credentialExchangeRecord'

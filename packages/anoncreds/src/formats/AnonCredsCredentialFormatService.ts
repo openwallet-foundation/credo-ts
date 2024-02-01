@@ -27,7 +27,7 @@ import type {
   CredentialExchangeRecord,
   CredentialPreviewAttributeOptions,
   LinkedAttachment,
-} from '@aries-framework/core'
+} from '@credo-ts/core'
 
 import {
   ProblemReportError,
@@ -39,7 +39,7 @@ import {
   utils,
   CredentialProblemReportReason,
   JsonTransformer,
-} from '@aries-framework/core'
+} from '@credo-ts/core'
 
 import { AnonCredsError } from '../error'
 import { AnonCredsCredentialProposal } from '../models/AnonCredsCredentialProposal'
@@ -468,8 +468,8 @@ export class AnonCredsCredentialFormatService implements CredentialFormatService
       const credential = await anonCredsHolderService.getCredential(agentContext, { credentialId })
 
       credentialRecord.metadata.add<AnonCredsCredentialMetadata>(AnonCredsCredentialMetadataKey, {
-        credentialRevocationId: credential.credentialRevocationId,
-        revocationRegistryId: credential.revocationRegistryId,
+        credentialRevocationId: credential.credentialRevocationId ?? undefined,
+        revocationRegistryId: credential.revocationRegistryId ?? undefined,
       })
       credentialRecord.setTags({
         anonCredsRevocationRegistryId: credential.revocationRegistryId,

@@ -1,8 +1,8 @@
-import type { AgentContext } from '@aries-framework/core'
+import type { AgentContext } from '@credo-ts/core'
 import type { GetNymResponse } from '@hyperledger/indy-vdr-shared'
 
-import { didIndyRegex } from '@aries-framework/anoncreds'
-import { Logger, InjectionSymbols, injectable, inject, CacheModuleConfig } from '@aries-framework/core'
+import { didIndyRegex } from '@credo-ts/anoncreds'
+import { Logger, InjectionSymbols, injectable, inject, CacheModuleConfig } from '@credo-ts/core'
 import { GetNymRequest } from '@hyperledger/indy-vdr-shared'
 
 import { IndyVdrModuleConfig } from '../IndyVdrModuleConfig'

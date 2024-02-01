@@ -1,22 +1,18 @@
-import type { ConnectionRecord } from '@aries-framework/core'
+import type { ConnectionRecord } from '@credo-ts/core'
 
-import { Agent } from '@aries-framework/core'
+import { Agent } from '@credo-ts/core'
 
-import { indySdk, setupSubjectTransports, testLogger, getAgentOptions, makeConnection } from '../../core/tests'
-import { IndySdkModule } from '../../indy-sdk/src'
+import { setupSubjectTransports, testLogger, makeConnection, getInMemoryAgentOptions } from '../../core/tests'
 
 import { waitForQuestionAnswerRecord } from './helpers'
 
-import { QuestionAnswerModule, QuestionAnswerRole, QuestionAnswerState } from '@aries-framework/question-answer'
+import { QuestionAnswerModule, QuestionAnswerRole, QuestionAnswerState } from '@credo-ts/question-answer'
 
 const modules = {
   questionAnswer: new QuestionAnswerModule(),
-  indySdk: new IndySdkModule({
-    indySdk,
-  }),
 }
 
-const bobAgentOptions = getAgentOptions(
+const bobAgentOptions = getInMemoryAgentOptions(
   'Bob Question Answer',
   {
     endpoints: ['rxjs:bob'],
@@ -24,7 +20,7 @@ const bobAgentOptions = getAgentOptions(
   modules
 )
 
-const aliceAgentOptions = getAgentOptions(
+const aliceAgentOptions = getInMemoryAgentOptions(
   'Alice Question Answer',
   {
     endpoints: ['rxjs:alice'],

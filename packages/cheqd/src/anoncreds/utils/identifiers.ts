@@ -1,6 +1,6 @@
-import type { ParsedDid } from '@aries-framework/core'
+import type { ParsedDid } from '@credo-ts/core'
 
-import { TypedArrayEncoder, utils } from '@aries-framework/core'
+import { TypedArrayEncoder, utils } from '@credo-ts/core'
 import { isBase58 } from 'class-validator'
 
 const ID_CHAR = '([a-z,A-Z,0-9,-])'

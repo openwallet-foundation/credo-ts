@@ -1,6 +1,6 @@
-import type { AgentContext } from '@aries-framework/core'
+import type { AgentContext } from '@credo-ts/core'
 
-import { Repository, InjectionSymbols, StorageService, EventEmitter, inject, injectable } from '@aries-framework/core'
+import { Repository, InjectionSymbols, StorageService, EventEmitter, inject, injectable } from '@credo-ts/core'
 
 import { AnonCredsSchemaRecord } from './AnonCredsSchemaRecord'
 

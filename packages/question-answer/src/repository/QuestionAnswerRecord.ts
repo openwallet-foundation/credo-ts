@@ -1,8 +1,8 @@
 import type { QuestionAnswerRole } from '../QuestionAnswerRole'
 import type { QuestionAnswerState, ValidResponse } from '../models'
-import type { RecordTags, TagsBase } from '@aries-framework/core'
+import type { RecordTags, TagsBase } from '@credo-ts/core'
 
-import { AriesFrameworkError, utils, BaseRecord } from '@aries-framework/core'
+import { AriesFrameworkError, utils, BaseRecord } from '@credo-ts/core'
 
 export type CustomQuestionAnswerTags = TagsBase
 export type DefaultQuestionAnswerTags = {

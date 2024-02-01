@@ -1,7 +1,7 @@
 import type { TenantAgentContextMapping } from '../TenantSessionCoordinator'
-import type { DependencyManager } from '@aries-framework/core'
+import type { DependencyManager } from '@credo-ts/core'
 
-import { AgentConfig, AgentContext, WalletApi } from '@aries-framework/core'
+import { AgentConfig, AgentContext, WalletApi } from '@credo-ts/core'
 import { Mutex, withTimeout } from 'async-mutex'
 
 import { getAgentConfig, getAgentContext, mockFunction } from '../../../../core/tests/helpers'
@@ -96,9 +96,15 @@ describe('TenantSessionCoordinator', () => {
 
       const tenantAgentContext = await tenantSessionCoordinator.getContextForSession(tenantRecord)
 
-      expect(wallet.initialize).toHaveBeenCalledWith(tenantRecord.config.walletConfig)
+      expect(wallet.initialize).toHaveBeenCalledWith({
+        ...tenantRecord.config.walletConfig,
+        storage: { config: { inMemory: true }, type: 'sqlite' },
+      })
       expect(tenantSessionMutexMock.acquireSession).toHaveBeenCalledTimes(1)
-      expect(extendSpy).toHaveBeenCalledWith(tenantRecord.config)
+      expect(extendSpy).toHaveBeenCalledWith({
+        ...tenantRecord.config,
+        walletConfig: { ...tenantRecord.config.walletConfig, storage: { config: { inMemory: true }, type: 'sqlite' } },
+      })
       expect(createChildSpy).toHaveBeenCalledWith()
       expect(tenantDependencyManager.registerInstance).toHaveBeenCalledWith(AgentContext, expect.any(AgentContext))
       expect(tenantDependencyManager.registerInstance).toHaveBeenCalledWith(AgentConfig, expect.any(AgentConfig))
@@ -136,7 +142,10 @@ describe('TenantSessionCoordinator', () => {
 
       await expect(tenantSessionCoordinator.getContextForSession(tenantRecord)).rejects.toThrowError('Test error')
 
-      expect(wallet.initialize).toHaveBeenCalledWith(tenantRecord.config.walletConfig)
+      expect(wallet.initialize).toHaveBeenCalledWith({
+        ...tenantRecord.config.walletConfig,
+        storage: { config: { inMemory: true }, type: 'sqlite' },
+      })
       expect(tenantSessionMutexMock.acquireSession).toHaveBeenCalledTimes(1)
       expect(tenantSessionMutexMock.releaseSession).toHaveBeenCalledTimes(1)
     })
@@ -192,7 +201,10 @@ describe('TenantSessionCoordinator', () => {
       })
 
       // Initialize should only be called once
-      expect(wallet.initialize).toHaveBeenCalledWith(tenantRecord.config.walletConfig)
+      expect(wallet.initialize).toHaveBeenCalledWith({
+        ...tenantRecord.config.walletConfig,
+        storage: { config: { inMemory: true }, type: 'sqlite' },
+      })
       expect(wallet.initialize).toHaveBeenCalledTimes(1)
 
       expect(tenantAgentContext1).toBe(tenantAgentContext2)

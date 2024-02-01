@@ -1,6 +1,6 @@
 import type { DummyState } from './DummyState'
 
-import { BaseRecord } from '@aries-framework/core'
+import { BaseRecord } from '@credo-ts/core'
 import { v4 as uuid } from 'uuid'
 
 export interface DummyStorageProps {

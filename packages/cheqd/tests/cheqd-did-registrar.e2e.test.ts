@@ -1,15 +1,15 @@
 import type { CheqdDidCreateOptions } from '../src'
-import type { DidDocument } from '@aries-framework/core'
+import type { DidDocument } from '@credo-ts/core'
 
-import { Agent, TypedArrayEncoder } from '@aries-framework/core'
+import { Agent, TypedArrayEncoder } from '@credo-ts/core'
 import { generateKeyPairFromSeed } from '@stablelib/ed25519'
 
-import { getAgentOptions } from '../../core/tests/helpers'
+import { getInMemoryAgentOptions } from '../../core/tests/helpers'
 
 import { validService } from './setup'
 import { getCheqdModules } from './setupCheqdModule'
 
-const agentOptions = getAgentOptions('Faber Dids Registrar', {}, getCheqdModules())
+const agentOptions = getInMemoryAgentOptions('Faber Dids Registrar', {}, getCheqdModules())
 
 describe('Cheqd DID registrar', () => {
   let agent: Agent<ReturnType<typeof getCheqdModules>>

@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
-import type { DidRecord, RecordSavedEvent } from '@aries-framework/core'
+import type { DidRecord, RecordSavedEvent } from '@credo-ts/core'
 
 import {
   DidCommV1Service,
@@ -14,15 +14,14 @@ import {
   Key,
   KeyType,
   RepositoryEventTypes,
-  SigningProviderRegistry,
   TypedArrayEncoder,
   VerificationMethod,
-} from '@aries-framework/core'
+} from '@credo-ts/core'
 import { Subject } from 'rxjs'
 
 import { InMemoryStorageService } from '../../../../../tests/InMemoryStorageService'
-import { agentDependencies, getAgentConfig, getAgentContext, indySdk, mockProperty } from '../../../../core/tests'
-import { IndySdkWallet } from '../../../../indy-sdk/src'
+import { InMemoryWallet } from '../../../../../tests/InMemoryWallet'
+import { agentDependencies, getAgentConfig, getAgentContext, mockProperty } from '../../../../core/tests'
 import { IndyVdrPool, IndyVdrPoolService } from '../../pool'
 import { IndyVdrIndyDidRegistrar } from '../IndyVdrIndyDidRegistrar'
 
@@ -32,8 +31,7 @@ const poolMock = new IndyVdrPoolMock()
 mockProperty(poolMock, 'indyNamespace', 'ns1')
 
 const agentConfig = getAgentConfig('IndyVdrIndyDidRegistrar')
-
-const wallet = new IndySdkWallet(indySdk, agentConfig.logger, new SigningProviderRegistry([]))
+const wallet = new InMemoryWallet()
 
 jest
   .spyOn(wallet, 'createKey')

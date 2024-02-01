@@ -10,28 +10,28 @@ export interface MediationRecipientModuleConfigOptions {
    * features protocol to determine the best strategy.
    *
    *
-   * - `MediatorPickupStrategy.PickUpV1` - explicitly pick up messages from the mediator according to [RFC 0212 Pickup Protocol](https://github.com/hyperledger/aries-rfcs/blob/main/features/0212-pickup/README.md)
-   * - `MediatorPickupStrategy.PickUpV2` - pick up messages from the mediator according to [RFC 0685 Pickup V2 Protocol](https://github.com/hyperledger/aries-rfcs/tree/main/features/0685-pickup-v2/README.md).
-   * - `MediatorPickupStrategy.Implicit` - Open a WebSocket with the mediator to implicitly receive messages. (currently used by Aries Cloud Agent Python)
-   * - `MediatorPickupStrategy.None`     - Do not retrieve messages from the mediator.
+   * - `MediatorPickupStrategy.PickUpV1`         - explicitly pick up messages from the mediator in periodic loops according to [RFC 0212 Pickup Protocol](https://github.com/hyperledger/aries-rfcs/blob/main/features/0212-pickup/README.md)
+   * - `MediatorPickupStrategy.PickUpV2`         - pick up messages from the mediator in periodic loops according to [RFC 0685 Pickup V2 Protocol](https://github.com/hyperledger/aries-rfcs/tree/main/features/0685-pickup-v2/README.md).
+   * - `MediatorPickupStrategy.PickUpV2LiveMode` - pick up messages from the mediator using Live Mode as specified in [RFC 0685 Pickup V2 Protocol](https://github.com/hyperledger/aries-rfcs/tree/main/features/0685-pickup-v2/README.md).
+   * - `MediatorPickupStrategy.Implicit`         - Open a WebSocket with the mediator to implicitly receive messages. (currently used by Aries Cloud Agent Python)
+   * - `MediatorPickupStrategy.None`             - Do not retrieve messages from the mediator automatically. You can launch manual pickup flows afterwards.
    *
    * @default undefined
    */
   mediatorPickupStrategy?: MediatorPickupStrategy
 
   /**
-   * Interval in milliseconds between picking up message from the mediator. This is only applicable when the pickup protocol v1
-   * is used.
+   * Interval in milliseconds between picking up message from the mediator. This is only applicable when the pickup protocol v1 or v2 in polling mode
+   * are used.
    *
    * @default 5000
    */
   mediatorPollingInterval?: number
 
   /**
-   * Maximum number of messages to retrieve from the mediator in a single batch. This is only applicable when the pickup protocol v2
+   * Maximum number of messages to retrieve from the mediator in a single batch. This is applicable for both pickup protocol v1 and v2
    * is used.
    *
-   * @todo integrate with pickup protocol v1
    * @default 10
    */
   maximumMessagePickup?: number

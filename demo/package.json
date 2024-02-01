@@ -1,10 +1,10 @@
 {
-  "name": "afj-demo",
+  "name": "credo-demo",
   "version": "1.0.0",
   "private": true,
   "repository": {
     "type": "git",
-    "url": "https://github.com/hyperledger/aries-framework-javascript",
+    "url": "https://github.com/openwallet-foundation/credo-ts",
     "directory": "demo/"
   },
   "license": "Apache-2.0",
@@ -15,21 +15,18 @@
   },
   "dependencies": {
     "@hyperledger/indy-vdr-nodejs": "^0.2.0-dev.6",
-    "@hyperledger/anoncreds-nodejs": "^0.2.0-dev.5",
-    "@hyperledger/aries-askar-nodejs": "^0.2.0-dev.5",
+    "@hyperledger/anoncreds-nodejs": "^0.2.0-dev.9",
+    "@hyperledger/aries-askar-nodejs": "^0.2.0-dev.6",
     "inquirer": "^8.2.5"
   },
   "devDependencies": {
-    "@aries-framework/anoncreds": "*",
-    "@aries-framework/anoncreds-rs": "*",
-    "@aries-framework/askar": "*",
-    "@aries-framework/core": "*",
-    "@aries-framework/indy-sdk": "*",
-    "@aries-framework/indy-vdr": "*",
-    "@aries-framework/cheqd": "*",
-    "@aries-framework/node": "*",
+    "@credo-ts/anoncreds": "*",
+    "@credo-ts/askar": "*",
+    "@credo-ts/core": "*",
+    "@credo-ts/indy-vdr": "*",
+    "@credo-ts/cheqd": "*",
+    "@credo-ts/node": "*",
     "@types/figlet": "^1.5.4",
-    "@types/indy-sdk": "^1.16.26",
     "@types/inquirer": "^8.2.6",
     "clear": "^0.1.0",
     "figlet": "^1.5.2",

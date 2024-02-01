@@ -1,6 +1,6 @@
-import type { Wallet } from '@aries-framework/core'
+import type { Wallet } from '@credo-ts/core'
 
-import { AriesFrameworkError } from '@aries-framework/core'
+import { AriesFrameworkError } from '@credo-ts/core'
 
 import { AskarWallet, AskarProfileWallet } from '../wallet'
 

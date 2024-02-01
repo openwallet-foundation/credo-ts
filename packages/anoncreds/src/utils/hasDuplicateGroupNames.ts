@@ -1,6 +1,6 @@
 import type { AnonCredsProofRequest } from '../models'
 
-import { AriesFrameworkError } from '@aries-framework/core'
+import { AriesFrameworkError } from '@credo-ts/core'
 
 function attributeNamesToArray(proofRequest: AnonCredsProofRequest) {
   // Attributes can contain either a `name` string value or an `names` string array. We reduce it to a single array

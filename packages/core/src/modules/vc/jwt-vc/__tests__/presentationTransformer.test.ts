@@ -4,7 +4,7 @@ import { W3cPresentation } from '../../models'
 import { W3cJwtVerifiableCredential } from '../W3cJwtVerifiableCredential'
 import { getJwtPayloadFromPresentation, getPresentationFromJwtPayload } from '../presentationTransformer'
 
-import { AfjEs256DidJwkJwtVc } from './fixtures/afj-jwt-vc'
+import { CredoEs256DidJwkJwtVc } from './fixtures/credo-jwt-vc'
 
 describe('presentationTransformer', () => {
   describe('getJwtPayloadFromPresentation', () => {
@@ -12,7 +12,7 @@ describe('presentationTransformer', () => {
       const presentation = new W3cPresentation({
         id: 'urn:123',
         holder: 'did:example:123',
-        verifiableCredential: [W3cJwtVerifiableCredential.fromSerializedJwt(AfjEs256DidJwkJwtVc)],
+        verifiableCredential: [W3cJwtVerifiableCredential.fromSerializedJwt(CredoEs256DidJwkJwtVc)],
       })
 
       const jwtPayload = getJwtPayloadFromPresentation(presentation)
@@ -21,7 +21,7 @@ describe('presentationTransformer', () => {
         vp: {
           '@context': ['https://www.w3.org/2018/credentials/v1'],
           type: ['VerifiablePresentation'],
-          verifiableCredential: [AfjEs256DidJwkJwtVc],
+          verifiableCredential: [CredoEs256DidJwkJwtVc],
         },
         iss: 'did:example:123',
         jti: 'urn:123',
@@ -38,7 +38,7 @@ describe('presentationTransformer', () => {
       const vp: Record<string, unknown> = {
         '@context': ['https://www.w3.org/2018/credentials/v1'],
         type: ['VerifiablePresentation'],
-        verifiableCredential: [AfjEs256DidJwkJwtVc],
+        verifiableCredential: [CredoEs256DidJwkJwtVc],
         id: 'urn:123',
         holder: 'did:example:123',
       }
@@ -61,7 +61,7 @@ describe('presentationTransformer', () => {
         type: ['VerifiablePresentation'],
         id: 'urn:123',
         holder: 'did:example:123',
-        verifiableCredential: [AfjEs256DidJwkJwtVc],
+        verifiableCredential: [CredoEs256DidJwkJwtVc],
       })
     })
 
@@ -110,7 +110,7 @@ describe('presentationTransformer', () => {
       const vp: Record<string, unknown> = {
         '@context': ['https://www.w3.org/2018/credentials/v1'],
         type: ['VerifiablePresentation2'],
-        verifiableCredential: [AfjEs256DidJwkJwtVc],
+        verifiableCredential: [CredoEs256DidJwkJwtVc],
       }
 
       const jwtPayload = new JwtPayload({

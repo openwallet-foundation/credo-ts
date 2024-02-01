@@ -1,12 +1,11 @@
-import type { Key } from '@aries-framework/core'
+import type { Key } from '@credo-ts/core'
 
-import { TypedArrayEncoder, KeyType, SigningProviderRegistry } from '@aries-framework/core'
+import { TypedArrayEncoder, KeyType } from '@credo-ts/core'
 import { GetNymRequest, NymRequest, SchemaRequest, CredentialDefinitionRequest } from '@hyperledger/indy-vdr-shared'
 
+import { InMemoryWallet } from '../../../tests/InMemoryWallet'
 import { genesisTransactions, getAgentConfig, getAgentContext } from '../../core/tests/helpers'
 import testLogger from '../../core/tests/logger'
-import { IndySdkWallet } from '../../indy-sdk/src'
-import { indySdk } from '../../indy-sdk/tests/setupIndySdkModule'
 import { IndyVdrPool } from '../src/pool'
 import { IndyVdrPoolService } from '../src/pool/IndyVdrPoolService'
 import { indyDidFromPublicKeyBase58 } from '../src/utils/did'
@@ -14,7 +13,7 @@ import { indyDidFromPublicKeyBase58 } from '../src/utils/did'
 import { indyVdrModuleConfig } from './helpers'
 
 const indyVdrPoolService = new IndyVdrPoolService(testLogger, indyVdrModuleConfig)
-const wallet = new IndySdkWallet(indySdk, testLogger, new SigningProviderRegistry([]))
+const wallet = new InMemoryWallet()
 const agentConfig = getAgentConfig('IndyVdrPoolService')
 const agentContext = getAgentContext({ wallet, agentConfig })
 

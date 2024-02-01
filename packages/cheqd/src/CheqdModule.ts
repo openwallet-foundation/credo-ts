@@ -1,7 +1,7 @@
 import type { CheqdModuleConfigOptions } from './CheqdModuleConfig'
-import type { AgentContext, DependencyManager, Module } from '@aries-framework/core'
+import type { AgentContext, DependencyManager, Module } from '@credo-ts/core'
 
-import { AgentConfig, Buffer } from '@aries-framework/core'
+import { AgentConfig, Buffer } from '@credo-ts/core'
 
 import { CheqdModuleConfig } from './CheqdModuleConfig'
 import { CheqdLedgerService } from './ledger'
@@ -18,7 +18,7 @@ export class CheqdModule implements Module {
     dependencyManager
       .resolve(AgentConfig)
       .logger.warn(
-        "The '@aries-framework/cheqd' module is experimental and could have unexpected breaking changes. When using this module, make sure to use strict versions for all @aries-framework packages."
+        "The '@credo-ts/cheqd' module is experimental and could have unexpected breaking changes. When using this module, make sure to use strict versions for all @credo-ts packages."
       )
 
     // Register config
@@ -28,7 +28,7 @@ export class CheqdModule implements Module {
 
     // Cheqd module needs Buffer to be available globally
     // If it is not available yet, we overwrite it with the
-    // Buffer implementation from AFJ
+    // Buffer implementation from Credo
     global.Buffer = global.Buffer || Buffer
   }
 

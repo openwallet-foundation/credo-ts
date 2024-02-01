@@ -2,13 +2,13 @@
 import type { SubjectMessage } from '../../../tests/transport/SubjectInboundTransport'
 import type { V1CredentialProtocol } from '../../anoncreds/src'
 import type { CreateCredentialOfferOptions } from '../src/modules/credentials'
-import type { AgentMessage, AgentMessageReceivedEvent } from '@aries-framework/core'
+import type { AgentMessage, AgentMessageReceivedEvent } from '@credo-ts/core'
 
 import { Subject } from 'rxjs'
 
 import { SubjectInboundTransport } from '../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutboundTransport'
-import { getLegacyAnonCredsModules, prepareForAnonCredsIssuance } from '../../anoncreds/tests/legacyAnonCredsSetup'
+import { getAnonCredsIndyModules, prepareForAnonCredsIssuance } from '../../anoncreds/tests/legacyAnonCredsSetup'
 import { Agent } from '../src/agent/Agent'
 import { Key } from '../src/crypto'
 import { DidExchangeState, HandshakeProtocol } from '../src/modules/connections'
@@ -20,25 +20,26 @@ import { OutOfBandInvitation } from '../src/modules/oob/messages'
 import { JsonEncoder, JsonTransformer } from '../src/utils'
 
 import { TestMessage } from './TestMessage'
-import { getAgentOptions, waitForCredentialRecord } from './helpers'
+import { getInMemoryAgentOptions, waitForCredentialRecord } from './helpers'
 
-import { AgentEventTypes, AriesFrameworkError, AutoAcceptCredential, CredentialState } from '@aries-framework/core'
+import { AgentEventTypes, AriesFrameworkError, AutoAcceptCredential, CredentialState } from '@credo-ts/core'
 
-const faberAgentOptions = getAgentOptions(
+// FIXME: oob.test doesn't need heavy AnonCreds / indy dependencies
+const faberAgentOptions = getInMemoryAgentOptions(
   'Faber Agent OOB',
   {
     endpoints: ['rxjs:faber'],
   },
-  getLegacyAnonCredsModules({
+  getAnonCredsIndyModules({
     autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
   })
 )
-const aliceAgentOptions = getAgentOptions(
+const aliceAgentOptions = getInMemoryAgentOptions(
   'Alice Agent OOB',
   {
     endpoints: ['rxjs:alice'],
   },
-  getLegacyAnonCredsModules({
+  getAnonCredsIndyModules({
     autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
   })
 )
@@ -63,8 +64,8 @@ describe('out of band', () => {
     autoAcceptConnection: false,
   }
 
-  let faberAgent: Agent<ReturnType<typeof getLegacyAnonCredsModules>>
-  let aliceAgent: Agent<ReturnType<typeof getLegacyAnonCredsModules>>
+  let faberAgent: Agent<ReturnType<typeof getAnonCredsIndyModules>>
+  let aliceAgent: Agent<ReturnType<typeof getAnonCredsIndyModules>>
   let credentialTemplate: CreateCredentialOfferOptions<[V1CredentialProtocol]>
 
   beforeAll(async () => {
@@ -195,7 +196,7 @@ describe('out of band', () => {
       const { outOfBandInvitation } = await faberAgent.oob.createInvitation(makeConnectionConfig)
 
       // expect supported handshake protocols
-      expect(outOfBandInvitation.handshakeProtocols).toContain(HandshakeProtocol.DidExchange)
+      expect(outOfBandInvitation.handshakeProtocols).toContain('https://didcomm.org/didexchange/1.1')
       expect(outOfBandInvitation.getRequests()).toBeUndefined()
 
       // expect contains services
@@ -243,7 +244,7 @@ describe('out of band', () => {
       })
 
       // expect supported handshake protocols
-      expect(outOfBandInvitation.handshakeProtocols).toContain(HandshakeProtocol.Connections)
+      expect(outOfBandInvitation.handshakeProtocols).toContain('https://didcomm.org/connections/1.0')
       expect(outOfBandInvitation.getRequests()).toHaveLength(1)
 
       // expect contains services
@@ -692,7 +693,7 @@ describe('out of band', () => {
 
       await expect(aliceAgent.oob.receiveInvitation(outOfBandInvitation, receiveInvitationConfig)).rejects.toEqual(
         new AriesFrameworkError(
-          `Handshake protocols [${unsupportedProtocol}] are not supported. Supported protocols are [https://didcomm.org/didexchange/1.1,https://didcomm.org/connections/1.0]`
+          `Handshake protocols [${unsupportedProtocol}] are not supported. Supported protocols are [https://didcomm.org/didexchange/1.x,https://didcomm.org/connections/1.x]`
         )
       )
     })

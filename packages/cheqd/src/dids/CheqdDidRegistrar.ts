@@ -1,3 +1,5 @@
+import type { CheqdNetwork, DIDDocument, DidStdFee, TVerificationKey, VerificationMethods } from '@cheqd/sdk'
+import type { SignInfo } from '@cheqd/ts-proto/cheqd/did/v2'
 import type {
   AgentContext,
   DidRegistrar,
@@ -5,10 +7,10 @@ import type {
   DidCreateResult,
   DidDeactivateResult,
   DidUpdateResult,
-} from '@aries-framework/core'
-import type { CheqdNetwork, DIDDocument, DidStdFee, TVerificationKey, VerificationMethods } from '@cheqd/sdk'
-import type { SignInfo } from '@cheqd/ts-proto/cheqd/did/v2'
+} from '@credo-ts/core'
 
+import { MethodSpecificIdAlgo, createDidVerificationMethod } from '@cheqd/sdk'
+import { MsgCreateResourcePayload } from '@cheqd/ts-proto/cheqd/resource/v2'
 import {
   DidDocument,
   DidDocumentRole,
@@ -22,9 +24,7 @@ import {
   getKeyFromVerificationMethod,
   JsonTransformer,
   VerificationMethod,
-} from '@aries-framework/core'
-import { MethodSpecificIdAlgo, createDidVerificationMethod } from '@cheqd/sdk'
-import { MsgCreateResourcePayload } from '@cheqd/ts-proto/cheqd/resource/v2'
+} from '@credo-ts/core'
 
 import { CheqdLedgerService } from '../ledger'
 
@@ -83,7 +83,7 @@ export class CheqdDidRegistrar implements DidRegistrar {
         const contextUrl = contextMapping[verificationMethod.type]
 
         // Add the context to the did document
-        // NOTE: cheqd sdk uses https://www.w3.org/ns/did/v1 while AFJ did doc uses https://w3id.org/did/v1
+        // NOTE: cheqd sdk uses https://www.w3.org/ns/did/v1 while Credo did doc uses https://w3id.org/did/v1
         // We should align these at some point. For now we just return a consistent value.
         didDocument.context = ['https://www.w3.org/ns/did/v1', contextUrl]
       } else {

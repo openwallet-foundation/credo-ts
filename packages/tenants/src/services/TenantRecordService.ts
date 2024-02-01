@@ -1,7 +1,7 @@
 import type { TenantConfig } from '../models/TenantConfig'
-import type { AgentContext, Key, Query } from '@aries-framework/core'
+import type { AgentContext, Key, Query } from '@credo-ts/core'
 
-import { injectable, utils, KeyDerivationMethod } from '@aries-framework/core'
+import { injectable, utils, KeyDerivationMethod } from '@credo-ts/core'
 
 import { TenantRepository, TenantRecord, TenantRoutingRepository, TenantRoutingRecord } from '../repository'
 
@@ -40,6 +40,10 @@ export class TenantRecordService {
 
   public async getTenantById(agentContext: AgentContext, tenantId: string) {
     return this.tenantRepository.getById(agentContext, tenantId)
+  }
+
+  public async getAllTenants(agentContext: AgentContext) {
+    return this.tenantRepository.getAll(agentContext)
   }
 
   public async deleteTenantById(agentContext: AgentContext, tenantId: string) {

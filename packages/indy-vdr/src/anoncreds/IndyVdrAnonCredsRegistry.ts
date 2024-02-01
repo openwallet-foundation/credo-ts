@@ -29,8 +29,8 @@ import type {
   RegisterRevocationStatusListReturnStateWait,
   RegisterRevocationStatusListReturnStateAction,
   RegisterRevocationStatusListOptions,
-} from '@aries-framework/anoncreds'
-import type { AgentContext } from '@aries-framework/core'
+} from '@credo-ts/anoncreds'
+import type { AgentContext } from '@credo-ts/core'
 import type { SchemaResponse } from '@hyperledger/indy-vdr-shared'
 
 import {
@@ -42,8 +42,8 @@ import {
   parseIndyRevocationRegistryId,
   parseIndySchemaId,
   dateToTimestamp,
-} from '@aries-framework/anoncreds'
-import { AriesFrameworkError } from '@aries-framework/core'
+} from '@credo-ts/anoncreds'
+import { AriesFrameworkError } from '@credo-ts/core'
 import {
   RevocationRegistryEntryRequest,
   RevocationRegistryDefinitionRequest,
@@ -478,11 +478,11 @@ export class IndyVdrAnonCredsRegistry implements AnonCredsRegistry {
     revocationRegistryDefinitionId: string
   ): Promise<GetRevocationRegistryDefinitionReturn> {
     try {
-      const indySdkPoolService = agentContext.dependencyManager.resolve(IndyVdrPoolService)
+      const indyVdrPoolService = agentContext.dependencyManager.resolve(IndyVdrPoolService)
 
       const { did, namespaceIdentifier, credentialDefinitionTag, revocationRegistryTag, schemaSeqNo } =
         parseIndyRevocationRegistryId(revocationRegistryDefinitionId)
-      const { pool } = await indySdkPoolService.getPoolForDid(agentContext, did)
+      const { pool } = await indyVdrPoolService.getPoolForDid(agentContext, did)
 
       agentContext.config.logger.debug(
         `Using ledger '${pool.indyNamespace}' to retrieve revocation registry definition '${revocationRegistryDefinitionId}'`

@@ -1,37 +1,37 @@
 import type {
+  AnonCredsCredentialDefinition,
   AnonCredsRegistry,
-  GetSchemaReturn,
-  RegisterSchemaOptions,
-  RegisterSchemaReturn,
+  AnonCredsRevocationRegistryDefinition,
+  AnonCredsRevocationStatusList,
+  AnonCredsSchema,
   GetCredentialDefinitionReturn,
-  RegisterCredentialDefinitionOptions,
-  RegisterCredentialDefinitionReturn,
   GetRevocationRegistryDefinitionReturn,
   GetRevocationStatusListReturn,
-  AnonCredsRevocationStatusList,
-  AnonCredsRevocationRegistryDefinition,
-  AnonCredsSchema,
-  AnonCredsCredentialDefinition,
+  GetSchemaReturn,
+  RegisterCredentialDefinitionOptions,
+  RegisterCredentialDefinitionReturn,
   RegisterRevocationRegistryDefinitionOptions,
   RegisterRevocationRegistryDefinitionReturn,
-  RegisterRevocationStatusListReturn,
   RegisterRevocationStatusListOptions,
+  RegisterRevocationStatusListReturn,
+  RegisterSchemaOptions,
+  RegisterSchemaReturn,
 } from '../src'
-import type { AgentContext } from '@aries-framework/core'
+import type { AgentContext } from '@credo-ts/core'
 
-import { Hasher } from '@aries-framework/core'
+import { Hasher } from '@credo-ts/core'
 import BigNumber from 'bn.js'
 
 import {
   getDidIndyCredentialDefinitionId,
   getDidIndyRevocationRegistryDefinitionId,
   getDidIndySchemaId,
-} from '../../indy-sdk/src/anoncreds/utils/identifiers'
+} from '../../indy-vdr/src/anoncreds/utils/identifiers'
 import {
-  parseIndyCredentialDefinitionId,
   getUnqualifiedRevocationRegistryDefinitionId,
   getUnqualifiedCredentialDefinitionId,
   getUnqualifiedSchemaId,
+  parseIndyCredentialDefinitionId,
   parseIndyDid,
   parseIndySchemaId,
 } from '../src'
@@ -43,9 +43,6 @@ import { dateToTimestamp } from '../src/utils/timestamp'
 export class InMemoryAnonCredsRegistry implements AnonCredsRegistry {
   public readonly methodName = 'inMemory'
 
-  // Roughly match that the identifier starts with an unqualified indy did. Once the
-  // anoncreds tests are not based on the indy-sdk anymore, we can use any identifier
-  // we want, but the indy-sdk is picky about the identifier format.
   public readonly supportedIdentifier = /.+/
 
   private schemas: Record<string, AnonCredsSchema>

@@ -231,7 +231,7 @@ export class PresentationExchangeProofFormatService implements ProofFormatServic
     let jsonPresentation: W3cJsonPresentation
 
     // TODO: we should probably move this transformation logic into the VC module, so it
-    // can be reused in AFJ when we need to go from encoded -> parsed
+    // can be reused in Credo when we need to go from encoded -> parsed
     if (typeof presentation === 'string' && presentation.includes('~')) {
       // NOTE: we need to define in the PEX RFC where to put the presentation_submission
       throw new AriesFrameworkError('Received SD-JWT VC in PEX proof format. This is not supported yet.')

@@ -1,15 +1,15 @@
 <p align="center">
   <br />
   <img
-    alt="Hyperledger Aries logo"
-    src="https://raw.githubusercontent.com/hyperledger/aries-framework-javascript/aa31131825e3331dc93694bc58414d955dcb1129/images/aries-logo.png"
+    alt="Credo Logo"
+    src="https://github.com/openwallet-foundation/credo-ts/blob/c7886cb8377ceb8ee4efe8d264211e561a75072d/images/credo-logo.png"
     height="250px"
   />
 </p>
-<h1 align="center"><b>Aries Framework JavaScript Question Answer Module</b></h1>
+<h1 align="center"><b>Credo Question Answer Module</b></h1>
 <p align="center">
   <a
-    href="https://raw.githubusercontent.com/hyperledger/aries-framework-javascript/main/LICENSE"
+    href="https://raw.githubusercontent.com/openwallet-foundation/credo-ts/main/LICENSE"
     ><img
       alt="License"
       src="https://img.shields.io/badge/License-Apache%202.0-blue.svg"
@@ -19,30 +19,16 @@
       alt="typescript"
       src="https://img.shields.io/badge/%3C%2F%3E-TypeScript-%230074c1.svg"
   /></a>
-    <a href="https://www.npmjs.com/package/@aries-framework/question-answer"
+    <a href="https://www.npmjs.com/package/@credo-ts/question-answer"
     ><img
-      alt="@aries-framework/question-answer version"
-      src="https://img.shields.io/npm/v/@aries-framework/question-answer"
+      alt="@credo-ts/question-answer version"
+      src="https://img.shields.io/npm/v/@credo-ts/question-answer"
   /></a>
 
 </p>
 <br />
 
-Question Answer module for [Aries Framework JavaScript](https://github.com/hyperledger/aries-framework-javascript.git). Implements [Aries RFC 0113](https://github.com/hyperledger/aries-rfcs/blob/1795d5c2d36f664f88f5e8045042ace8e573808c/features/0113-question-answer/README.md).
-
-### Installation
-
-Make sure you have set up the correct version of Aries Framework JavaScript according to the AFJ repository. To find out which version of AFJ you need to have installed you can run the following command. This will list the required peer dependency for `@aries-framework/core`.
-
-```sh
-npm info "@aries-framework/question-answer" peerDependencies
-```
-
-Then add the question-answer module to your project.
-
-```sh
-yarn add @aries-framework/question-answer
-```
+Question Answer module for [Credo](https://github.com/openwallet-foundation/credo-ts.git). Implements [Aries RFC 0113](https://github.com/hyperledger/aries-rfcs/blob/1795d5c2d36f664f88f5e8045042ace8e573808c/features/0113-question-answer/README.md).
 
 ### Quick start
 
@@ -51,7 +37,7 @@ In order for this module to work, we have to inject it into the agent to access 
 ### Example of usage
 
 ```ts
-import { QuestionAnswerModule } from '@aries-framework/question-answer'
+import { QuestionAnswerModule } from '@credo-ts/question-answer'
 
 const agent = new Agent({
   config: {

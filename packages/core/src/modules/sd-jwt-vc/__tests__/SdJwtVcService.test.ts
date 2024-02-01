@@ -1,9 +1,7 @@
 import type { SdJwtVcHeader } from '../SdJwtVcOptions'
-import type { Jwk, Key } from '@aries-framework/core'
+import type { Jwk, Key } from '@credo-ts/core'
 
-import { AskarModule } from '../../../../../askar/src'
-import { askarModuleConfig } from '../../../../../askar/tests/helpers'
-import { agentDependencies } from '../../../../tests'
+import { getInMemoryAgentOptions } from '../../../../tests'
 import { SdJwtVcService } from '../SdJwtVcService'
 import { SdJwtVcRepository } from '../repository'
 
@@ -23,11 +21,10 @@ import {
   DidsModule,
   KeyDidRegistrar,
   KeyDidResolver,
-  utils,
   KeyType,
   Agent,
   TypedArrayEncoder,
-} from '@aries-framework/core'
+} from '@credo-ts/core'
 
 const jwkJsonWithoutUse = (jwk: Jwk) => {
   const jwkJson = jwk.toJson()
@@ -35,17 +32,12 @@ const jwkJsonWithoutUse = (jwk: Jwk) => {
   return jwkJson
 }
 
-const agent = new Agent({
-  config: { label: 'sdjwtvcserviceagent', walletConfig: { id: utils.uuid(), key: utils.uuid() } },
-  modules: {
-    askar: new AskarModule(askarModuleConfig),
+const agent = new Agent(getInMemoryAgentOptions('sdjwtvcserviceagent', {}, {
     dids: new DidsModule({
       resolvers: [new KeyDidResolver()],
       registrars: [new KeyDidRegistrar()],
     }),
-  },
-  dependencies: agentDependencies,
-})
+  }))
 
 agent.context.wallet.generateNonce = jest.fn(() => Promise.resolve('salt'))
 Date.prototype.getTime = jest.fn(() => 1698151532000)

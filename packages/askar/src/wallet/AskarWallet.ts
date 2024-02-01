@@ -1,4 +1,4 @@
-import type { WalletConfig, WalletConfigRekey, WalletExportImportConfig } from '@aries-framework/core'
+import type { WalletConfig, WalletConfigRekey, WalletExportImportConfig } from '@credo-ts/core'
 
 import {
   WalletExportPathExistsError,
@@ -13,7 +13,7 @@ import {
   WalletNotFoundError,
   KeyDerivationMethod,
   WalletImportPathExistsError,
-} from '@aries-framework/core'
+} from '@credo-ts/core'
 // eslint-disable-next-line import/order
 import { Store } from '@hyperledger/aries-askar-shared'
 
@@ -22,6 +22,7 @@ import { inject, injectable } from 'tsyringe'
 import { AskarErrorCode, isAskarError, keyDerivationMethodToStoreKeyMethod, uriFromWalletConfig } from '../utils'
 
 import { AskarBaseWallet } from './AskarBaseWallet'
+import { isAskarWalletSqliteStorageConfig } from './AskarWalletStorageConfig'
 
 /**
  * @todo: rename after 0.5.0, as we now have multiple types of AskarWallet
@@ -209,7 +210,9 @@ export class AskarWallet extends AskarBaseWallet {
       if (
         isAskarError(error) &&
         (error.code === AskarErrorCode.NotFound ||
-          (error.code === AskarErrorCode.Backend && walletConfig.storage?.inMemory))
+          (error.code === AskarErrorCode.Backend &&
+            isAskarWalletSqliteStorageConfig(walletConfig.storage) &&
+            walletConfig.storage.config?.inMemory))
       ) {
         const errorMessage = `Wallet '${walletConfig.id}' not found`
         this.logger.debug(errorMessage)
@@ -272,6 +275,10 @@ export class AskarWallet extends AskarBaseWallet {
     const { path: destinationPath, key: exportKey } = exportConfig
 
     const { path: sourcePath } = uriFromWalletConfig(this.walletConfig, this.fileSystem.dataPath)
+
+    if (isAskarWalletSqliteStorageConfig(this.walletConfig.storage) && this.walletConfig.storage?.inMemory) {
+      throw new WalletError('Export is not supported for in memory wallet')
+    }
     if (!sourcePath) {
       throw new WalletError('Export is only supported for SQLite backend')
     }
@@ -286,7 +293,7 @@ export class AskarWallet extends AskarBaseWallet {
       const exportedWalletConfig = await this.getAskarWalletConfig({
         ...this.walletConfig,
         key: exportKey,
-        storage: { type: 'sqlite', path: destinationPath },
+        storage: { type: 'sqlite', config: { path: destinationPath } },
       })
 
       // Make sure destination path exists

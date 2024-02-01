@@ -7,9 +7,9 @@ import type {
 } from './ActionMenuServiceOptions'
 import type { ActionMenuStateChangedEvent } from '../ActionMenuEvents'
 import type { ActionMenuProblemReportMessage } from '../messages'
-import type { AgentContext, InboundMessageContext, Logger, Query } from '@aries-framework/core'
+import type { AgentContext, InboundMessageContext, Logger, Query } from '@credo-ts/core'
 
-import { AgentConfig, EventEmitter, AriesFrameworkError, injectable } from '@aries-framework/core'
+import { AgentConfig, EventEmitter, AriesFrameworkError, injectable } from '@credo-ts/core'
 
 import { ActionMenuEventTypes } from '../ActionMenuEvents'
 import { ActionMenuRole } from '../ActionMenuRole'

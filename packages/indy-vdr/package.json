@@ -1,5 +1,5 @@
 {
-  "name": "@aries-framework/indy-vdr",
+  "name": "@credo-ts/indy-vdr",
   "main": "build/index",
   "types": "build/index",
   "version": "0.4.2",
@@ -10,10 +10,10 @@
   "publishConfig": {
     "access": "public"
   },
-  "homepage": "https://github.com/hyperledger/aries-framework-javascript/tree/main/packages/indy-vdr",
+  "homepage": "https://github.com/openwallet-foundation/credo-ts/tree/main/packages/indy-vdr",
   "repository": {
     "type": "git",
-    "url": "https://github.com/hyperledger/aries-framework-javascript",
+    "url": "https://github.com/openwallet-foundation/credo-ts",
     "directory": "packages/indy-vdr"
   },
   "scripts": {
@@ -24,8 +24,8 @@
     "test": "jest"
   },
   "dependencies": {
-    "@aries-framework/anoncreds": "0.4.2",
-    "@aries-framework/core": "0.4.2"
+    "@credo-ts/anoncreds": "0.4.2",
+    "@credo-ts/core": "0.4.2"
   },
   "devDependencies": {
     "@hyperledger/indy-vdr-nodejs": "^0.2.0-dev.6",

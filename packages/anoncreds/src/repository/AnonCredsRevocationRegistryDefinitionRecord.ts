@@ -1,8 +1,8 @@
 import type { AnonCredsRevocationRegistryDefinitionRecordMetadata } from './anonCredsRevocationRegistryDefinitionRecordMetadataTypes'
 import type { AnonCredsRevocationRegistryDefinition } from '../models'
-import type { TagsBase } from '@aries-framework/core'
+import type { TagsBase } from '@credo-ts/core'
 
-import { BaseRecord, utils } from '@aries-framework/core'
+import { BaseRecord, utils } from '@credo-ts/core'
 
 export interface AnonCredsRevocationRegistryDefinitionRecordProps {
   id?: string

@@ -1,6 +1,6 @@
-import type { DependencyManager, FeatureRegistry } from '@aries-framework/core'
+import type { DependencyManager, FeatureRegistry } from '@credo-ts/core'
 
-import { Protocol } from '@aries-framework/core'
+import { Protocol } from '@credo-ts/core'
 
 import { ActionMenuApi } from '../ActionMenuApi'
 import { ActionMenuModule } from '../ActionMenuModule'

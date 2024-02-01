@@ -15,7 +15,7 @@
  *  https://github.com/hyperledger/aries-framework-dotnet/blob/f90eaf9db8548f6fc831abea917e906201755763/src/Hyperledger.Aries/Ledger/DefaultLedgerService.cs#L139-L147
  */
 
-import { TypedArrayEncoder } from '@aries-framework/core'
+import { TypedArrayEncoder } from '@credo-ts/core'
 
 export const ABBREVIATED_VERKEY_REGEX = /^~[1-9A-HJ-NP-Za-km-z]{21,22}$/
 

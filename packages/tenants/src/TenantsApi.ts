@@ -1,8 +1,8 @@
 import type { CreateTenantOptions, GetTenantAgentOptions, WithTenantAgentCallback } from './TenantsApiOptions'
 import type { TenantRecord } from './repository'
-import type { DefaultAgentModules, ModulesMap, Query } from '@aries-framework/core'
+import type { DefaultAgentModules, ModulesMap, Query } from '@credo-ts/core'
 
-import { AgentContext, inject, InjectionSymbols, AgentContextProvider, injectable, Logger } from '@aries-framework/core'
+import { AgentContext, inject, InjectionSymbols, AgentContextProvider, injectable, Logger } from '@credo-ts/core'
 
 import { TenantAgent } from './TenantAgent'
 import { TenantRecordService } from './services'
@@ -94,5 +94,10 @@ export class TenantsApi<AgentModules extends ModulesMap = DefaultAgentModules> {
 
   public async findTenantsByQuery(query: Query<TenantRecord>) {
     return this.tenantRecordService.findTenantsByQuery(this.rootAgentContext, query)
+  }
+
+  public async getAllTenants() {
+    this.logger.debug('Getting all tenants')
+    return this.tenantRecordService.getAllTenants(this.rootAgentContext)
   }
 }

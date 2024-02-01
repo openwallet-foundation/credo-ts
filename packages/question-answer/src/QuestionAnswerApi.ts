@@ -1,13 +1,7 @@
 import type { QuestionAnswerRecord } from './repository'
-import type { Query } from '@aries-framework/core'
+import type { Query } from '@credo-ts/core'
 
-import {
-  getOutboundMessageContext,
-  AgentContext,
-  ConnectionService,
-  injectable,
-  MessageSender,
-} from '@aries-framework/core'
+import { getOutboundMessageContext, AgentContext, ConnectionService, injectable, MessageSender } from '@credo-ts/core'
 
 import { AnswerMessageHandler, QuestionMessageHandler } from './handlers'
 import { ValidResponse } from './models'

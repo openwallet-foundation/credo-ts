@@ -2,29 +2,20 @@ import type { AgentMessageProcessedEvent } from '../src/agent/Events'
 
 import { filter, firstValueFrom, timeout } from 'rxjs'
 
-import { getIndySdkModules } from '../../indy-sdk/tests/setupIndySdkModule'
 import { parseMessageType, MessageSender, AgentMessage, IsValidMessageType } from '../src'
 import { Agent } from '../src/agent/Agent'
 import { AgentEventTypes } from '../src/agent/Events'
 import { OutboundMessageContext } from '../src/agent/models'
 
-import { getAgentOptions } from './helpers'
+import { getInMemoryAgentOptions } from './helpers'
 import { setupSubjectTransports } from './transport'
 
-const aliceAgentOptions = getAgentOptions(
-  'Multi Protocol Versions - Alice',
-  {
-    endpoints: ['rxjs:alice'],
-  },
-  getIndySdkModules()
-)
-const bobAgentOptions = getAgentOptions(
-  'Multi Protocol Versions - Bob',
-  {
-    endpoints: ['rxjs:bob'],
-  },
-  getIndySdkModules()
-)
+const aliceAgentOptions = getInMemoryAgentOptions('Multi Protocol Versions - Alice', {
+  endpoints: ['rxjs:alice'],
+})
+const bobAgentOptions = getInMemoryAgentOptions('Multi Protocol Versions - Bob', {
+  endpoints: ['rxjs:bob'],
+})
 
 describe('multi version protocols', () => {
   let aliceAgent: Agent

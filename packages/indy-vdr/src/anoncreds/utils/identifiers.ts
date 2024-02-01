@@ -1,8 +1,3 @@
-/**
- * NOTE: this file is availalbe in both the indy-sdk and indy-vdr packages. If making changes to
- * this file, make sure to update both files if applicable.
- */
-
 import {
   unqualifiedSchemaIdRegex,
   unqualifiedCredentialDefinitionIdRegex,
@@ -11,7 +6,7 @@ import {
   didIndyRevocationRegistryIdRegex,
   didIndySchemaIdRegex,
   didIndyRegex,
-} from '@aries-framework/anoncreds'
+} from '@credo-ts/anoncreds'
 
 // combines both legacy and did:indy anoncreds identifiers and also the issuer id
 const indyVdrAnonCredsRegexes = [

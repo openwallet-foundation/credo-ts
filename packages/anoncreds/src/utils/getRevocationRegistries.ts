@@ -1,8 +1,8 @@
 import type { AnonCredsProof, AnonCredsProofRequest, AnonCredsSelectedCredentials } from '../models'
 import type { CreateProofOptions, VerifyProofOptions } from '../services'
-import type { AgentContext } from '@aries-framework/core'
+import type { AgentContext } from '@credo-ts/core'
 
-import { AriesFrameworkError } from '@aries-framework/core'
+import { AriesFrameworkError } from '@credo-ts/core'
 
 import { AnonCredsModuleConfig } from '../AnonCredsModuleConfig'
 import { AnonCredsRegistryService } from '../services'

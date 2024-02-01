@@ -39,7 +39,7 @@ export const deriveProof = async (
   proofDocument: JsonObject,
   revealDocument: JsonObject,
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  { suite, skipProofCompaction, documentLoader, expansionMap, nonce }: any
+  { suite, skipProofCompaction, documentLoader, nonce }: any
 ): Promise<W3cJsonLdVerifiableCredential> => {
   if (!suite) {
     throw new TypeError('"options.suite" is required.')
@@ -53,7 +53,6 @@ export const deriveProof = async (
     document: proofDocument,
     proofType: suite.supportedDeriveProofType,
     documentLoader,
-    expansionMap,
   })
 
   if (proofs.length === 0) {
@@ -65,7 +64,7 @@ export const deriveProof = async (
     proof: proofs[0],
     revealDocument,
     documentLoader,
-    expansionMap,
+
     nonce,
   })
 
@@ -83,7 +82,6 @@ export const deriveProof = async (
         proof,
         revealDocument,
         documentLoader,
-        expansionMap,
       })
       derivedProof.proof.push(additionalDerivedProofValue.proof)
     }
@@ -100,7 +98,6 @@ export const deriveProof = async (
     // account for type-scoped `proof` definition by getting document types
     const { types, alias } = await getTypeInfo(derivedProof.document, {
       documentLoader,
-      expansionMap,
     })
 
     expandedProof['@type'] = types
@@ -109,7 +106,6 @@ export const deriveProof = async (
 
     const compactProof = await jsonld.compact(expandedProof, ctx, {
       documentLoader,
-      expansionMap,
       compactToRelative: false,
     })
 

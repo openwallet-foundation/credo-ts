@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 
-import type { DocumentLoader, ProofPurpose, JsonObject } from '@aries-framework/core'
+import type { DocumentLoader, ProofPurpose, JsonObject } from '@credo-ts/core'
 
 /**
  * Options for creating a proof
@@ -29,10 +29,6 @@ export interface CreateProofOptions {
    * Optional custom document loader
    */
   documentLoader?: DocumentLoader
-  /**
-   * Optional expansion map
-   */
-  expansionMap?: () => void
   /**
    * Indicates whether to compact the resulting proof
    */

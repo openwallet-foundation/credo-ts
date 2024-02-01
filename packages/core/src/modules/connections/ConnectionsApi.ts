@@ -15,6 +15,7 @@ import { DidResolverService } from '../dids'
 import { DidRepository } from '../dids/repository'
 import { OutOfBandService } from '../oob/OutOfBandService'
 import { RoutingService } from '../routing/services/RoutingService'
+import { getMediationRecordForDidDocument } from '../routing/services/helpers'
 
 import { ConnectionsModuleConfig } from './ConnectionsModuleConfig'
 import { DidExchangeProtocol } from './DidExchangeProtocol'
@@ -28,8 +29,13 @@ import {
   TrustPingMessageHandler,
   TrustPingResponseMessageHandler,
   ConnectionProblemReportHandler,
+  DidRotateHandler,
+  DidRotateAckHandler,
+  DidRotateProblemReportHandler,
+  HangupHandler,
 } from './handlers'
 import { HandshakeProtocol } from './models'
+import { DidRotateService } from './services'
 import { ConnectionService } from './services/ConnectionService'
 import { TrustPingService } from './services/TrustPingService'
 
@@ -47,6 +53,7 @@ export class ConnectionsApi {
 
   private didExchangeProtocol: DidExchangeProtocol
   private connectionService: ConnectionService
+  private didRotateService: DidRotateService
   private outOfBandService: OutOfBandService
   private messageSender: MessageSender
   private trustPingService: TrustPingService
@@ -59,6 +66,7 @@ export class ConnectionsApi {
     messageHandlerRegistry: MessageHandlerRegistry,
     didExchangeProtocol: DidExchangeProtocol,
     connectionService: ConnectionService,
+    didRotateService: DidRotateService,
     outOfBandService: OutOfBandService,
     trustPingService: TrustPingService,
     routingService: RoutingService,
@@ -70,6 +78,7 @@ export class ConnectionsApi {
   ) {
     this.didExchangeProtocol = didExchangeProtocol
     this.connectionService = connectionService
+    this.didRotateService = didRotateService
     this.outOfBandService = outOfBandService
     this.trustPingService = trustPingService
     this.routingService = routingService
@@ -96,8 +105,8 @@ export class ConnectionsApi {
   ) {
     const { protocol, label, alias, imageUrl, autoAcceptConnection, ourDid } = config
 
-    if (ourDid && !config.routing) {
-      throw new AriesFrameworkError('If an external did is specified, routing configuration must be defined as well')
+    if (ourDid && config.routing) {
+      throw new AriesFrameworkError(`'routing' is disallowed when defining 'ourDid'`)
     }
 
     const routing =
@@ -278,6 +287,74 @@ export class ConnectionsApi {
     return message
   }
 
+  /**
+   * Rotate the DID used for a given connection, notifying the other party immediately.
+   *
+   *  If `toDid` is not specified, a new peer did will be created. Optionally, routing
+   * configuration can be set.
+   *
+   * Note: any did created or imported in agent wallet can be used as `toDid`, as long as
+   * there are valid DIDComm services in its DID Document.
+   *
+   * @param options connectionId and optional target did and routing configuration
+   * @returns object containing the new did
+   */
+  public async rotate(options: { connectionId: string; toDid?: string; routing?: Routing }) {
+    const { connectionId, toDid } = options
+    const connection = await this.connectionService.getById(this.agentContext, connectionId)
+
+    if (toDid && options.routing) {
+      throw new AriesFrameworkError(`'routing' is disallowed when defining 'toDid'`)
+    }
+
+    let routing = options.routing
+    if (!toDid && !routing) {
+      routing = await this.routingService.getRouting(this.agentContext, {})
+    }
+
+    const message = await this.didRotateService.createRotate(this.agentContext, {
+      connection,
+      toDid,
+      routing,
+    })
+
+    const outboundMessageContext = new OutboundMessageContext(message, {
+      agentContext: this.agentContext,
+      connection,
+    })
+
+    await this.messageSender.sendMessage(outboundMessageContext)
+
+    return { newDid: message.toDid }
+  }
+
+  /**
+   * Terminate a connection by sending a hang-up message to the other party. The connection record itself and any
+   * keys used for mediation will only be deleted if `deleteAfterHangup` flag is set.
+   *
+   * @param options connectionId
+   */
+  public async hangup(options: { connectionId: string; deleteAfterHangup?: boolean }) {
+    const connection = await this.connectionService.getById(this.agentContext, options.connectionId)
+
+    const connectionBeforeHangup = connection.clone()
+
+    // Create Hangup message and update did in connection record
+    const message = await this.didRotateService.createHangup(this.agentContext, { connection })
+
+    const outboundMessageContext = new OutboundMessageContext(message, {
+      agentContext: this.agentContext,
+      connection: connectionBeforeHangup,
+    })
+
+    await this.messageSender.sendMessage(outboundMessageContext)
+
+    // After hang-up message submission, delete connection if required
+    if (options.deleteAfterHangup) {
+      await this.deleteById(connection.id)
+    }
+  }
+
   public async returnWhenIsConnected(connectionId: string, options?: { timeoutMs: number }): Promise<ConnectionRecord> {
     return this.connectionService.returnWhenIsConnected(this.agentContext, connectionId, options?.timeoutMs)
   }
@@ -394,6 +471,39 @@ export class ConnectionsApi {
     return this.connectionService.deleteById(this.agentContext, connectionId)
   }
 
+  /**
+   * Remove relationship of a connection with any previous did (either ours or theirs), preventing it from accepting
+   * messages from them. This is usually called when a DID Rotation flow has been succesful and we are sure that no
+   * more messages with older keys will arrive.
+   *
+   * It will remove routing keys from mediator if applicable.
+   *
+   * Note: this will not actually delete any DID from the wallet.
+   *
+   * @param connectionId
+   */
+  public async removePreviousDids(options: { connectionId: string }) {
+    const connection = await this.connectionService.getById(this.agentContext, options.connectionId)
+
+    for (const previousDid of connection.previousDids) {
+      const did = await this.didResolverService.resolve(this.agentContext, previousDid)
+      if (!did.didDocument) continue
+      const mediatorRecord = await getMediationRecordForDidDocument(this.agentContext, did.didDocument)
+
+      if (mediatorRecord) {
+        await this.routingService.removeRouting(this.agentContext, {
+          recipientKeys: did.didDocument.recipientKeys,
+          mediatorId: mediatorRecord.id,
+        })
+      }
+    }
+
+    connection.previousDids = []
+    connection.previousTheirDids = []
+
+    await this.connectionService.update(this.agentContext, connection)
+  }
+
   public async findAllByOutOfBandId(outOfBandId: string) {
     return this.connectionService.findAllByOutOfBandId(this.agentContext, outOfBandId)
   }
@@ -460,5 +570,13 @@ export class ConnectionsApi {
     messageHandlerRegistry.registerMessageHandler(
       new DidExchangeCompleteHandler(this.didExchangeProtocol, this.outOfBandService)
     )
+
+    messageHandlerRegistry.registerMessageHandler(new DidRotateHandler(this.didRotateService, this.connectionService))
+
+    messageHandlerRegistry.registerMessageHandler(new DidRotateAckHandler(this.didRotateService))
+
+    messageHandlerRegistry.registerMessageHandler(new HangupHandler(this.didRotateService))
+
+    messageHandlerRegistry.registerMessageHandler(new DidRotateProblemReportHandler(this.didRotateService))
   }
 }
