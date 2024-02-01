@@ -1,27 +1,45 @@
 import type { AgentMessage } from './AgentMessage'
 import type { EnvelopeKeys } from './EnvelopeService'
-import type { AgentContext } from './context'
 import type { DidDocument } from '../modules/dids'
+import type { TransportSessionRemovedEvent, TransportSessionSavedEvent } from '../transport'
 import type { EncryptedMessage } from '../types'
 
 import { DID_COMM_TRANSPORT_QUEUE } from '../constants'
 import { AriesFrameworkError } from '../error'
 import { injectable } from '../plugins'
+import { TransportEventTypes } from '../transport'
+
+import { EventEmitter } from './EventEmitter'
+import { AgentContext } from './context'
 
 @injectable()
 export class TransportService {
   public transportSessionTable: TransportSessionTable = {}
+  private agentContext: AgentContext
+  private eventEmitter: EventEmitter
+
+  public constructor(agentContext: AgentContext, eventEmitter: EventEmitter) {
+    this.agentContext = agentContext
+    this.eventEmitter = eventEmitter
+  }
 
   public saveSession(session: TransportSession) {
     if (session.connectionId) {
       const oldSessions = this.getExistingSessionsForConnectionIdAndType(session.connectionId, session.type)
       oldSessions.forEach((oldSession) => {
-        if (oldSession) {
+        if (oldSession && oldSession.id !== session.id) {
           this.removeSession(oldSession)
         }
       })
     }
     this.transportSessionTable[session.id] = session
+
+    this.eventEmitter.emit<TransportSessionSavedEvent>(this.agentContext, {
+      type: TransportEventTypes.TransportSessionSaved,
+      payload: {
+        session,
+      },
+    })
   }
 
   public findSessionByConnectionId(connectionId: string) {
@@ -47,6 +65,12 @@ export class TransportService {
 
   public removeSession(session: TransportSession) {
     delete this.transportSessionTable[session.id]
+    this.eventEmitter.emit<TransportSessionRemovedEvent>(this.agentContext, {
+      type: TransportEventTypes.TransportSessionRemoved,
+      payload: {
+        session,
+      },
+    })
   }
 
   private getExistingSessionsForConnectionIdAndType(connectionId: string, type: string) {

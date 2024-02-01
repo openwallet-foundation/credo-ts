@@ -10,6 +10,8 @@ export interface V2StatusRequestMessageOptions {
 }
 
 export class V2StatusRequestMessage extends AgentMessage {
+  public readonly allowQueueTransport = false
+
   public constructor(options: V2StatusRequestMessageOptions) {
     super()
 

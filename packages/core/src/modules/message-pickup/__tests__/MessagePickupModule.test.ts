@@ -1,9 +1,12 @@
 import { FeatureRegistry } from '../../../agent/FeatureRegistry'
 import { Protocol } from '../../../agent/models'
+import { InjectionSymbols } from '../../../constants'
 import { DependencyManager } from '../../../plugins/DependencyManager'
 import { MessagePickupApi } from '../MessagePickupApi'
 import { MessagePickupModule } from '../MessagePickupModule'
 import { MessagePickupModuleConfig } from '../MessagePickupModuleConfig'
+import { MessagePickupSessionService } from '../services'
+import { InMemoryMessagePickupRepository } from '../storage'
 
 jest.mock('../../../plugins/DependencyManager')
 const DependencyManagerMock = DependencyManager as jest.Mock<DependencyManager>
@@ -25,6 +28,12 @@ describe('MessagePickupModule', () => {
     expect(dependencyManager.registerInstance).toHaveBeenCalledTimes(1)
     expect(dependencyManager.registerInstance).toHaveBeenCalledWith(MessagePickupModuleConfig, module.config)
 
+    expect(dependencyManager.registerSingleton).toHaveBeenCalledTimes(2)
+    expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(
+      InjectionSymbols.MessagePickupRepository,
+      InMemoryMessagePickupRepository
+    )
+    expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(MessagePickupSessionService)
     expect(featureRegistry.register).toHaveBeenCalledTimes(2)
     expect(featureRegistry.register).toHaveBeenCalledWith(
       new Protocol({

@@ -33,6 +33,8 @@ export interface BatchMessageOptions {
  * @see https://github.com/hyperledger/aries-rfcs/blob/master/features/0212-pickup/README.md#batch
  */
 export class V1BatchMessage extends AgentMessage {
+  public readonly allowQueueTransport = false
+
   public constructor(options: BatchMessageOptions) {
     super()
 
