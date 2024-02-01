@@ -19,6 +19,7 @@ describe('Indy SDK To Askar Migration', () => {
         key: 'GfwU1DC7gEZNs3w41tjBiZYj7BNToDoFEqKY6wZXqs1A',
         keyDerivationMethod: KeyDerivationMethod.Raw,
       },
+      autoUpdateStorageOnStartup: true,
     }
 
     const indySdkAgentDbPath = `${homedir()}/.indy_client/wallet/${indySdkAndAskarConfig.walletConfig?.id}/sqlite.db`
@@ -90,7 +91,7 @@ describe('Indy SDK To Askar Migration', () => {
     mkdirSync(path.dirname(indySdkAgentDbPath), { recursive: true })
     copyFileSync(indySdkWalletTestPath, indySdkAgentDbPath)
 
-    await expect(updater.update()).rejects.toThrowError(IndySdkToAskarMigrationError)
+    await expect(updater.update()).rejects.toThrow(IndySdkToAskarMigrationError)
     expect(existsSync(indySdkWalletTestPath)).toBe(true)
   })
 })

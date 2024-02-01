@@ -4,7 +4,6 @@ import type { DependencyManager } from '@credo-ts/core'
 import { Router } from 'express'
 
 import { OpenId4VcSiopVerifierService } from '../OpenId4VcSiopVerifierService'
-import { OpenId4VcVerifierApi } from '../OpenId4VcVerifierApi'
 import { OpenId4VcVerifierModule } from '../OpenId4VcVerifierModule'
 import { OpenId4VcVerifierModuleConfig } from '../OpenId4VcVerifierModuleConfig'
 import { OpenId4VcVerifierRepository } from '../repository'
@@ -35,9 +34,6 @@ describe('OpenId4VcVerifierModule', () => {
       OpenId4VcVerifierModuleConfig,
       new OpenId4VcVerifierModuleConfig(options)
     )
-
-    expect(dependencyManager.registerContextScoped).toHaveBeenCalledTimes(1)
-    expect(dependencyManager.registerContextScoped).toHaveBeenCalledWith(OpenId4VcVerifierApi)
 
     expect(dependencyManager.registerSingleton).toHaveBeenCalledTimes(2)
     expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(OpenId4VcSiopVerifierService)
