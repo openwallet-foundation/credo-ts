@@ -6,7 +6,7 @@
     height="250px"
   />
 </p>
-<h1 align="center"><b>Credo - Indy Verifiable Data Registry (Indy-Vdr)</b></h1>
+<h1 align="center"><b>Credo - Indy Verifiable Data Registry (Indy VDR) Module</b></h1>
 <p align="center">
   <a
     href="https://raw.githubusercontent.com/openwallet-foundation/credo-ts/main/LICENSE"
