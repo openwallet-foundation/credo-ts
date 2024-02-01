@@ -4,9 +4,8 @@ import type { StorageUpdateError } from '../error/StorageUpdateError'
 import { readFileSync, unlinkSync } from 'fs'
 import path from 'path'
 
-import { AskarModule } from '../../../../../askar/src'
-import { askarModuleConfig } from '../../../../../askar/tests/helpers'
-import { getAgentOptions } from '../../../../tests/helpers'
+import { askarModule } from '../../../../../askar/tests/helpers'
+import { getAgentOptions, getAskarWalletConfig } from '../../../../tests/helpers'
 import { Agent } from '../../../agent/Agent'
 import { InjectionSymbols } from '../../../constants'
 import { CredoError } from '../../../error'
@@ -17,9 +16,11 @@ import { UpdateAssistant } from '../UpdateAssistant'
 
 const agentOptions = getAgentOptions(
   'UpdateAssistant | Backup | Aries Askar',
-  {},
   {
-    askar: new AskarModule(askarModuleConfig),
+    walletConfig: getAskarWalletConfig('UpdateAssistant | Backup | Aries Askar', { inMemory: false }),
+  },
+  {
+    askar: askarModule,
   }
 )
 

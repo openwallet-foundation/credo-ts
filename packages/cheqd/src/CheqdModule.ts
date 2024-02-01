@@ -18,7 +18,7 @@ export class CheqdModule implements Module {
     dependencyManager
       .resolve(AgentConfig)
       .logger.warn(
-        "The '@credo-ts/cheqd' module is experimental and could have unexpected breaking changes. When using this module, make sure to use strict versions for all @aries-framework packages."
+        "The '@credo-ts/cheqd' module is experimental and could have unexpected breaking changes. When using this module, make sure to use strict versions for all @credo-ts packages."
       )
 
     // Register config

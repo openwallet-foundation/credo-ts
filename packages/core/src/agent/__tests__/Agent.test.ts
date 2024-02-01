@@ -2,8 +2,8 @@ import type { DependencyManager, Module } from '../../plugins'
 
 import { injectable } from 'tsyringe'
 
-import { getIndySdkModules } from '../../../../indy-sdk/tests/setupIndySdkModule'
-import { getAgentOptions } from '../../../tests/helpers'
+import { InMemoryWalletModule } from '../../../../../tests/InMemoryWalletModule'
+import { getInMemoryAgentOptions } from '../../../tests/helpers'
 import { InjectionSymbols } from '../../constants'
 import { BasicMessageRepository, BasicMessageService } from '../../modules/basic-messages'
 import { BasicMessagesApi } from '../../modules/basic-messages/BasicMessagesApi'
@@ -14,7 +14,7 @@ import { ConnectionService } from '../../modules/connections/services/Connection
 import { TrustPingService } from '../../modules/connections/services/TrustPingService'
 import { CredentialRepository } from '../../modules/credentials'
 import { CredentialsApi } from '../../modules/credentials/CredentialsApi'
-import { MessagePickupApi } from '../../modules/message-pickup'
+import { MessagePickupApi, InMemoryMessagePickupRepository } from '../../modules/message-pickup'
 import { ProofRepository } from '../../modules/proofs'
 import { ProofsApi } from '../../modules/proofs/ProofsApi'
 import {
@@ -25,7 +25,6 @@ import {
   MediationRecipientApi,
   MediationRecipientModule,
 } from '../../modules/routing'
-import { InMemoryMessageRepository } from '../../storage/InMemoryMessageRepository'
 import { WalletError } from '../../wallet/error'
 import { Agent } from '../Agent'
 import { Dispatcher } from '../Dispatcher'
@@ -34,7 +33,7 @@ import { FeatureRegistry } from '../FeatureRegistry'
 import { MessageReceiver } from '../MessageReceiver'
 import { MessageSender } from '../MessageSender'
 
-const agentOptions = getAgentOptions('Agent Class Test', {}, getIndySdkModules())
+const agentOptions = getInMemoryAgentOptions('Agent Class Test')
 
 const myModuleMethod = jest.fn()
 @injectable()
@@ -62,7 +61,7 @@ describe('Agent', () => {
         ...agentOptions,
         modules: {
           myModule: new MyModule(),
-          ...getIndySdkModules(),
+          inMemory: new InMemoryWalletModule(),
         },
       })
 
@@ -80,7 +79,7 @@ describe('Agent', () => {
           mediationRecipient: new MediationRecipientModule({
             maximumMessagePickup: 42,
           }),
-          ...getIndySdkModules(),
+          inMemory: new InMemoryWalletModule(),
         },
       })
 
@@ -181,7 +180,9 @@ describe('Agent', () => {
 
       // Symbols, interface based
       expect(container.resolve(InjectionSymbols.Logger)).toBe(agentOptions.config.logger)
-      expect(container.resolve(InjectionSymbols.MessageRepository)).toBeInstanceOf(InMemoryMessageRepository)
+      expect(container.resolve(InjectionSymbols.MessagePickupRepository)).toBeInstanceOf(
+        InMemoryMessagePickupRepository
+      )
 
       // Agent
       expect(container.resolve(MessageSender)).toBeInstanceOf(MessageSender)
@@ -220,8 +221,8 @@ describe('Agent', () => {
 
       // Symbols, interface based
       expect(container.resolve(InjectionSymbols.Logger)).toBe(container.resolve(InjectionSymbols.Logger))
-      expect(container.resolve(InjectionSymbols.MessageRepository)).toBe(
-        container.resolve(InjectionSymbols.MessageRepository)
+      expect(container.resolve(InjectionSymbols.MessagePickupRepository)).toBe(
+        container.resolve(InjectionSymbols.MessagePickupRepository)
       )
       expect(container.resolve(InjectionSymbols.StorageService)).toBe(
         container.resolve(InjectionSymbols.StorageService)

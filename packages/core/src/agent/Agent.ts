@@ -16,7 +16,6 @@ import { JwsService } from '../crypto/JwsService'
 import { CredoError } from '../error'
 import { DependencyManager } from '../plugins'
 import { DidCommMessageRepository, StorageUpdateService, StorageVersionRepository } from '../storage'
-import { InMemoryMessageRepository } from '../storage/InMemoryMessageRepository'
 
 import { AgentConfig } from './AgentConfig'
 import { extendModulesWithDefaultModules } from './AgentModules'
@@ -79,7 +78,7 @@ export class Agent<AgentModules extends AgentModulesInput = any> extends BaseAge
     // Register possibly already defined services
     if (!dependencyManager.isRegistered(InjectionSymbols.Wallet)) {
       throw new CredoError(
-        "Missing required dependency: 'Wallet'. You can register it using one of the provided modules such as the AskarModule or the IndySdkModule, or implement your own."
+        "Missing required dependency: 'Wallet'. You can register it using the AskarModule, or implement your own."
       )
     }
     if (!dependencyManager.isRegistered(InjectionSymbols.Logger)) {
@@ -87,11 +86,8 @@ export class Agent<AgentModules extends AgentModulesInput = any> extends BaseAge
     }
     if (!dependencyManager.isRegistered(InjectionSymbols.StorageService)) {
       throw new CredoError(
-        "Missing required dependency: 'StorageService'. You can register it using one of the provided modules such as the AskarModule or the IndySdkModule, or implement your own."
+        "Missing required dependency: 'StorageService'. You can register it using the AskarModule, or implement your own."
       )
-    }
-    if (!dependencyManager.isRegistered(InjectionSymbols.MessageRepository)) {
-      dependencyManager.registerSingleton(InjectionSymbols.MessageRepository, InMemoryMessageRepository)
     }
 
     // TODO: contextCorrelationId for base wallet
@@ -197,6 +193,8 @@ export class Agent<AgentModules extends AgentModulesInput = any> extends BaseAge
       )
       await this.mediationRecipient.provision(mediationConnection)
     }
+
+    await this.messagePickup.initialize()
     await this.mediator.initialize()
     await this.mediationRecipient.initialize()
 

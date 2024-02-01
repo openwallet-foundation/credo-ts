@@ -4,8 +4,8 @@ import type { StorageUpdateError } from '../error/StorageUpdateError'
 import { readFileSync, unlinkSync } from 'fs'
 import path from 'path'
 
-import { getIndySdkModules } from '../../../../../indy-sdk/tests/setupIndySdkModule'
-import { getAgentOptions } from '../../../../tests/helpers'
+import { askarModule } from '../../../../../askar/tests/helpers'
+import { getAgentOptions, getAskarWalletConfig } from '../../../../tests/helpers'
 import { Agent } from '../../../agent/Agent'
 import { InjectionSymbols } from '../../../constants'
 import { CredoError } from '../../../error'
@@ -14,7 +14,17 @@ import { JsonTransformer } from '../../../utils'
 import { StorageUpdateService } from '../StorageUpdateService'
 import { UpdateAssistant } from '../UpdateAssistant'
 
-const agentOptions = getAgentOptions('UpdateAssistant | Backup', {}, getIndySdkModules())
+const agentOptions = getAgentOptions(
+  'UpdateAssistant | Backup',
+  {
+    walletConfig: getAskarWalletConfig('UpdateAssistant | Backup', {
+      inMemory: false,
+    }),
+  },
+  { askar: askarModule }
+)
+// eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+agentOptions.config.walletConfig!.storage!.inMemory = false
 
 const aliceCredentialRecordsString = readFileSync(
   path.join(__dirname, '__fixtures__/alice-4-credentials-0.1.json'),

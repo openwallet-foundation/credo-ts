@@ -462,8 +462,8 @@ export class AnonCredsCredentialFormatService implements CredentialFormatService
       const credential = await anonCredsHolderService.getCredential(agentContext, { credentialId })
 
       credentialRecord.metadata.add<AnonCredsCredentialMetadata>(AnonCredsCredentialMetadataKey, {
-        credentialRevocationId: credential.credentialRevocationId,
-        revocationRegistryId: credential.revocationRegistryId,
+        credentialRevocationId: credential.credentialRevocationId ?? undefined,
+        revocationRegistryId: credential.revocationRegistryId ?? undefined,
       })
       credentialRecord.setTags({
         anonCredsRevocationRegistryId: credential.revocationRegistryId,

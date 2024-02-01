@@ -1,11 +1,9 @@
 import type { AgentContext } from '../../../../agent'
 import type { Wallet } from '../../../../wallet'
 
-import { IndySdkWallet } from '../../../../../../indy-sdk/src'
-import { indySdk } from '../../../../../../indy-sdk/tests/setupIndySdkModule'
+import { InMemoryWallet } from '../../../../../../../tests/InMemoryWallet'
 import { getAgentConfig, getAgentContext } from '../../../../../tests/helpers'
 import { KeyType } from '../../../../crypto'
-import { SigningProviderRegistry } from '../../../../crypto/signing-provider'
 import { asArray, TypedArrayEncoder } from '../../../../utils'
 import { JsonTransformer } from '../../../../utils/JsonTransformer'
 import { WalletError } from '../../../../wallet/error'
@@ -41,7 +39,6 @@ const signatureSuiteRegistry = new SignatureSuiteRegistry([
   },
 ])
 
-const signingProviderRegistry = new SigningProviderRegistry([])
 const agentConfig = getAgentConfig('W3cJsonLdCredentialServiceTest')
 
 describe('W3cJsonLdCredentialsService', () => {
@@ -51,7 +48,7 @@ describe('W3cJsonLdCredentialsService', () => {
   const privateKey = TypedArrayEncoder.fromString('testseed000000000000000000000001')
 
   beforeAll(async () => {
-    wallet = new IndySdkWallet(indySdk, agentConfig.logger, signingProviderRegistry)
+    wallet = new InMemoryWallet()
     await wallet.createAndOpen(agentConfig.walletConfig)
     agentContext = getAgentContext({
       agentConfig,

@@ -1,7 +1,7 @@
-import { RegisteredAskarTestWallet } from '../../../../../../askar/tests/helpers'
-import { agentDependencies, getAgentConfig, getAgentContext, testLogger } from '../../../../../tests'
+import { InMemoryWallet } from '../../../../../../../tests/InMemoryWallet'
+import { getAgentConfig, getAgentContext, testLogger } from '../../../../../tests'
 import { InjectionSymbols } from '../../../../constants'
-import { JwsService, KeyType, SigningProviderRegistry } from '../../../../crypto'
+import { JwsService, KeyType } from '../../../../crypto'
 import { JwaSignatureAlgorithm } from '../../../../crypto/jose/jwa'
 import { getJwkFromKey } from '../../../../crypto/jose/jwk'
 import { CredoError, ClassValidationError } from '../../../../error'
@@ -23,11 +23,7 @@ import { didIonJwtVcPresentationProfileJwtVc } from './fixtures/jwt-vc-presentat
 import { didKeyTransmuteJwtVc, didKeyTransmuteJwtVp } from './fixtures/transmute-verifiable-data'
 
 const config = getAgentConfig('W3cJwtCredentialService')
-const wallet = new RegisteredAskarTestWallet(
-  config.logger,
-  new agentDependencies.FileSystem(),
-  new SigningProviderRegistry([])
-)
+const wallet = new InMemoryWallet()
 const agentContext = getAgentContext({
   wallet,
   registerInstances: [

@@ -90,15 +90,7 @@ Credo is a framework written in TypeScript for building **SSI Agents and DIDComm
     </td>
   </tr>
   <tr>
-    <td>@credo-ts/indy-sdk</td>
-    <td>
-      <a href="https://npmjs.com/package/@credo-ts/indy-sdk">
-        <img alt="@credo-ts/indy-sdk version" src="https://img.shields.io/npm/v/@credo-ts/indy-sdk"/>
-      </a>
-    </td>
-  </tr>
-  <tr>
-    <td>@credo-ts/indy-vdr</td>
+    <td>@aries-framework/indy-vdr</td>
     <td>
       <a href="https://npmjs.com/package/@credo-ts/indy-vdr">
         <img alt="@credo-ts/indy-vdr version" src="https://img.shields.io/npm/v/@credo-ts/indy-vdr"/>
@@ -126,14 +118,6 @@ Credo is a framework written in TypeScript for building **SSI Agents and DIDComm
     <td>
       <a href="https://npmjs.com/package/@credo-ts/anoncreds">
         <img alt="@credo-ts/anoncreds version" src="https://img.shields.io/npm/v/@credo-ts/anoncreds"/>
-      </a>
-    </td>
-  </tr>
-  <tr>
-    <td>@credo-ts/anoncreds-rs</td>
-    <td>
-      <a href="https://npmjs.com/package/@credo-ts/anoncreds-rs">
-        <img alt="@credo-ts/anoncreds-rs version" src="https://img.shields.io/npm/v/@credo-ts/anoncreds-rs"/>
       </a>
     </td>
   </tr>
@@ -168,6 +152,22 @@ Credo is a framework written in TypeScript for building **SSI Agents and DIDComm
       </a>
     </td>
   </tr>
+  <tr>
+    <td><s>@aries-framework/indy-sdk</s> (deprecated, unmaintained after 0.4.x)</td>
+    <td>
+      <a href="https://npmjs.com/package/@aries-framework/indy-sdk">
+        <img alt="@aries-framework/indy-sdk version" src="https://img.shields.io/npm/v/@aries-framework/indy-sdk"/>
+      </a>
+    </td>
+  </tr>
+  <tr>
+    <td><s>@aries-framework/anoncreds-rs</s> (deprecated and combined with <code>@credo-ts/anoncreds</code>)</td>
+    <td>
+      <a href="https://npmjs.com/package/@aries-framework/anoncreds-rs">
+        <img alt="@aries-framework/anoncreds-rs version" src="https://img.shields.io/npm/v/@aries-framework/anoncreds-rs"/>
+      </a>
+    </td>
+  </tr>
 </table>
 
 ## Getting Started
@@ -194,6 +194,8 @@ Although Credo tries to follow the standards as described in the Aries RFCs as m
 If you would like to contribute to the framework, please read the [Framework Developers README](/DEVREADME.md) and the [CONTRIBUTING](/CONTRIBUTING.md) guidelines. These documents will provide more information to get you started!
 
 There are regular community working groups to discuss ongoing efforts within the framework, showcase items you've built with Credo, or ask questions. See [Meeting Information](https://github.com/openwallet-foundation/credo-ts/wiki/Meeting-Information) for up to date information on the meeting schedule. Everyone is welcome to join!
+
+We welcome you to join our mailing list and Discord channel. See the [Wiki](https://github.com/openwallet-foundation/credo-ts/wiki/Communication) for up to date information.
 
 ## License
 

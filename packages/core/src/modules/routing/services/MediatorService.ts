@@ -1,12 +1,12 @@
 import type { AgentContext } from '../../../agent'
 import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import type { Query } from '../../../storage/StorageService'
-import type { EncryptedMessage } from '../../../types'
 import type { ConnectionRecord } from '../../connections'
 import type { MediationStateChangedEvent } from '../RoutingEvents'
 import type { ForwardMessage, MediationRequestMessage } from '../messages'
 
 import { EventEmitter } from '../../../agent/EventEmitter'
+import { MessageSender } from '../../../agent/MessageSender'
 import { InjectionSymbols } from '../../../constants'
 import { KeyType } from '../../../crypto'
 import { CredoError, RecordDuplicateError } from '../../../error'
@@ -15,6 +15,10 @@ import { injectable, inject } from '../../../plugins'
 import { ConnectionService } from '../../connections'
 import { ConnectionMetadataKeys } from '../../connections/repository/ConnectionMetadataTypes'
 import { didKeyToVerkey, isDidKey, verkeyToDidKey } from '../../dids/helpers'
+import { MessagePickupApi } from '../../message-pickup'
+import { MessagePickupSessionRole } from '../../message-pickup/MessagePickupSession'
+import { MediatorModuleConfig } from '../MediatorModuleConfig'
+import { MessageForwardingStrategy } from '../MessageForwardingStrategy'
 import { RoutingEventTypes } from '../RoutingEvents'
 import {
   KeylistUpdateMessage,
@@ -36,18 +40,21 @@ export class MediatorService {
   private logger: Logger
   private mediationRepository: MediationRepository
   private mediatorRoutingRepository: MediatorRoutingRepository
+  private messagePickupApi: MessagePickupApi
   private eventEmitter: EventEmitter
   private connectionService: ConnectionService
 
   public constructor(
     mediationRepository: MediationRepository,
     mediatorRoutingRepository: MediatorRoutingRepository,
+    messagePickupApi: MessagePickupApi,
     eventEmitter: EventEmitter,
     @inject(InjectionSymbols.Logger) logger: Logger,
     connectionService: ConnectionService
   ) {
     this.mediationRepository = mediationRepository
     this.mediatorRoutingRepository = mediatorRoutingRepository
+    this.messagePickupApi = messagePickupApi
     this.eventEmitter = eventEmitter
     this.logger = logger
     this.connectionService = connectionService
@@ -64,28 +71,61 @@ export class MediatorService {
     throw new CredoError(`Mediator has not been initialized yet.`)
   }
 
-  public async processForwardMessage(
-    messageContext: InboundMessageContext<ForwardMessage>
-  ): Promise<{ mediationRecord: MediationRecord; encryptedMessage: EncryptedMessage }> {
-    const { message } = messageContext
+  public async processForwardMessage(messageContext: InboundMessageContext<ForwardMessage>): Promise<void> {
+    const { message, agentContext } = messageContext
 
     // TODO: update to class-validator validation
     if (!message.to) {
       throw new CredoError('Invalid Message: Missing required attribute "to"')
     }
 
-    const mediationRecord = await this.mediationRepository.getSingleByRecipientKey(
-      messageContext.agentContext,
-      message.to
-    )
+    const mediationRecord = await this.mediationRepository.getSingleByRecipientKey(agentContext, message.to)
 
     // Assert mediation record is ready to be used
     mediationRecord.assertReady()
     mediationRecord.assertRole(MediationRole.Mediator)
 
-    return {
-      encryptedMessage: message.message,
-      mediationRecord,
+    const connection = await this.connectionService.getById(agentContext, mediationRecord.connectionId)
+    connection.assertReady()
+
+    const messageForwardingStrategy =
+      agentContext.dependencyManager.resolve(MediatorModuleConfig).messageForwardingStrategy
+    const messageSender = agentContext.dependencyManager.resolve(MessageSender)
+
+    switch (messageForwardingStrategy) {
+      case MessageForwardingStrategy.QueueOnly:
+        await this.messagePickupApi.queueMessage({
+          connectionId: mediationRecord.connectionId,
+          recipientDids: [verkeyToDidKey(message.to)],
+          message: message.message,
+        })
+        break
+      case MessageForwardingStrategy.QueueAndLiveModeDelivery: {
+        await this.messagePickupApi.queueMessage({
+          connectionId: mediationRecord.connectionId,
+          recipientDids: [verkeyToDidKey(message.to)],
+          message: message.message,
+        })
+        const session = await this.messagePickupApi.getLiveModeSession({
+          connectionId: mediationRecord.connectionId,
+          role: MessagePickupSessionRole.MessageHolder,
+        })
+        if (session) {
+          await this.messagePickupApi.deliverMessagesFromQueue({
+            pickupSessionId: session.id,
+            recipientDid: verkeyToDidKey(message.to),
+          })
+        }
+        break
+      }
+      case MessageForwardingStrategy.DirectDelivery:
+        // The message inside the forward message is packed so we just send the packed
+        // message to the connection associated with it
+        await messageSender.sendPackage(agentContext, {
+          connection,
+          recipientKey: verkeyToDidKey(message.to),
+          encryptedMessage: message.message,
+        })
     }
   }
 

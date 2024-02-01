@@ -90,6 +90,7 @@ export interface AnonCredsProof {
     predicates: Record<string, { sub_proof_index: number }>
   }
   // TODO: extend types for proof property
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   proof: any
   identifiers: Array<{
     schema_id: string

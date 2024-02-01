@@ -89,11 +89,7 @@ class Dispatcher {
         outboundMessage.inboundMessageContext = messageContext
       }
 
-      if (outboundMessage.isOutboundServiceMessage()) {
-        await this.messageSender.sendMessageToService(outboundMessage)
-      } else {
-        await this.messageSender.sendMessage(outboundMessage)
-      }
+      await this.messageSender.sendMessage(outboundMessage)
     }
     // Emit event that allows to hook into received messages
     this.eventEmitter.emit<AgentMessageProcessedEvent>(agentContext, {

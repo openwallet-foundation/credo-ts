@@ -34,6 +34,7 @@ const keyDidMapping: Record<KeyType, KeyDidMapping> = {
   [KeyType.P256]: keyDidJsonWebKey,
   [KeyType.P384]: keyDidJsonWebKey,
   [KeyType.P521]: keyDidJsonWebKey,
+  [KeyType.K256]: keyDidJsonWebKey,
 }
 
 /**

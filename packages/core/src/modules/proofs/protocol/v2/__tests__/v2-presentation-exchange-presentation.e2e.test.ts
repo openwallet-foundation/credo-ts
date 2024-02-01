@@ -110,7 +110,7 @@ describe('Present Proof', () => {
     const verifierProofExchangeRecord = await verifierPresentationRecordPromise
 
     const didCommMessageRepository =
-      proverAgent.dependencyManager.resolve<DidCommMessageRepository>(DidCommMessageRepository)
+      verifierAgent.dependencyManager.resolve<DidCommMessageRepository>(DidCommMessageRepository)
 
     const proposal = await didCommMessageRepository.findAgentMessage(verifierAgent.context, {
       associatedRecordId: verifierProofExchangeRecord.id,

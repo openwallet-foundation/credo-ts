@@ -27,6 +27,7 @@ const didDocumentKeyTypeMapping: Record<KeyType, (did: string, key: Key) => DidD
   [KeyType.P256]: getJsonWebKey2020DidDocument,
   [KeyType.P384]: getJsonWebKey2020DidDocument,
   [KeyType.P521]: getJsonWebKey2020DidDocument,
+  [KeyType.K256]: getJsonWebKey2020DidDocument,
 }
 
 export function getDidDocumentForKey(did: string, key: Key) {

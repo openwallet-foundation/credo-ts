@@ -8,7 +8,7 @@ import { Subject } from 'rxjs'
 
 import { SubjectInboundTransport } from '../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutboundTransport'
-import { getLegacyAnonCredsModules, prepareForAnonCredsIssuance } from '../../anoncreds/tests/legacyAnonCredsSetup'
+import { getAnonCredsIndyModules, prepareForAnonCredsIssuance } from '../../anoncreds/tests/legacyAnonCredsSetup'
 import { Agent } from '../src/agent/Agent'
 import { Key } from '../src/crypto'
 import { DidExchangeState, HandshakeProtocol } from '../src/modules/connections'
@@ -20,25 +20,26 @@ import { OutOfBandInvitation } from '../src/modules/oob/messages'
 import { JsonEncoder, JsonTransformer } from '../src/utils'
 
 import { TestMessage } from './TestMessage'
-import { getAgentOptions, waitForCredentialRecord } from './helpers'
+import { getInMemoryAgentOptions, waitForCredentialRecord } from './helpers'
 
 import { AgentEventTypes, CredoError, AutoAcceptCredential, CredentialState } from '@credo-ts/core'
 
-const faberAgentOptions = getAgentOptions(
+// FIXME: oob.test doesn't need heavy AnonCreds / indy dependencies
+const faberAgentOptions = getInMemoryAgentOptions(
   'Faber Agent OOB',
   {
     endpoints: ['rxjs:faber'],
   },
-  getLegacyAnonCredsModules({
+  getAnonCredsIndyModules({
     autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
   })
 )
-const aliceAgentOptions = getAgentOptions(
+const aliceAgentOptions = getInMemoryAgentOptions(
   'Alice Agent OOB',
   {
     endpoints: ['rxjs:alice'],
   },
-  getLegacyAnonCredsModules({
+  getAnonCredsIndyModules({
     autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
   })
 )
@@ -63,8 +64,8 @@ describe('out of band', () => {
     autoAcceptConnection: false,
   }
 
-  let faberAgent: Agent<ReturnType<typeof getLegacyAnonCredsModules>>
-  let aliceAgent: Agent<ReturnType<typeof getLegacyAnonCredsModules>>
+  let faberAgent: Agent<ReturnType<typeof getAnonCredsIndyModules>>
+  let aliceAgent: Agent<ReturnType<typeof getAnonCredsIndyModules>>
   let credentialTemplate: CreateCredentialOfferOptions<[V1CredentialProtocol]>
 
   beforeAll(async () => {

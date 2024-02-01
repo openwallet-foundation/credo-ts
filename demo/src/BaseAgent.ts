@@ -1,5 +1,4 @@
 import type { InitConfig } from '@credo-ts/core'
-import type { IndySdkPoolConfig } from '@credo-ts/indy-sdk'
 import type { IndyVdrPoolConfig } from '@credo-ts/indy-vdr'
 
 import {
@@ -11,7 +10,6 @@ import {
   V1CredentialProtocol,
   V1ProofProtocol,
 } from '@credo-ts/anoncreds'
-import { AnonCredsRsModule } from '@credo-ts/anoncreds-rs'
 import { AskarModule } from '@credo-ts/askar'
 import {
   CheqdAnonCredsRegistry,
@@ -32,14 +30,11 @@ import {
   Agent,
   HttpOutboundTransport,
 } from '@credo-ts/core'
-import { IndySdkAnonCredsRegistry, IndySdkModule, IndySdkSovDidResolver } from '@credo-ts/indy-sdk'
 import { IndyVdrIndyDidResolver, IndyVdrAnonCredsRegistry, IndyVdrModule } from '@credo-ts/indy-vdr'
 import { agentDependencies, HttpInboundTransport } from '@credo-ts/node'
 import { anoncreds } from '@hyperledger/anoncreds-nodejs'
 import { ariesAskar } from '@hyperledger/aries-askar-nodejs'
 import { indyVdr } from '@hyperledger/indy-vdr-nodejs'
-import { randomUUID } from 'crypto'
-import indySdk from 'indy-sdk'
 
 import { greenText } from './OutputClass'
 
@@ -49,13 +44,11 @@ const bcovrin = `{"reqSignature":{},"txn":{"data":{"data":{"alias":"Node1","blsk
 {"reqSignature":{},"txn":{"data":{"data":{"alias":"Node4","blskey":"2zN3bHM1m4rLz54MJHYSwvqzPchYp8jkHswveCLAEJVcX6Mm1wHQD1SkPYMzUDTZvWvhuE6VNAkK3KxVeEmsanSmvjVkReDeBEMxeDaayjcZjFGPydyey1qxBHmTvAnBKoPydvuTAqx5f7YNNRAdeLmUi99gERUU7TD8KfAa6MpQ9bw","blskey_pop":"RPLagxaR5xdimFzwmzYnz4ZhWtYQEj8iR5ZU53T2gitPCyCHQneUn2Huc4oeLd2B2HzkGnjAff4hWTJT6C7qHYB1Mv2wU5iHHGFWkhnTX9WsEAbunJCV2qcaXScKj4tTfvdDKfLiVuU2av6hbsMztirRze7LvYBkRHV3tGwyCptsrP","client_ip":"138.197.138.255","client_port":9708,"node_ip":"138.197.138.255","node_port":9707,"services":["VALIDATOR"]},"dest":"4PS3EDQ3dW1tci1Bp6543CfuuebjFrg36kLAUcskGfaA"},"metadata":{"from":"TWwCRQRZ2ZHMJFn9TzLp7W"},"type":"0"},"txnMetadata":{"seqNo":4,"txnId":"aa5e817d7cc626170eca175822029339a444eb0ee8f0bd20d3b0b76e566fb008"},"ver":"1"}`
 
 export const indyNetworkConfig = {
-  // Need unique network id as we will have multiple agent processes in the agent
-  id: randomUUID(),
   genesisTransactions: bcovrin,
   indyNamespace: 'bcovrin:test',
   isProduction: false,
   connectOnStartup: true,
-} satisfies IndySdkPoolConfig | IndyVdrPoolConfig
+} satisfies IndyVdrPoolConfig
 
 type DemoAgent = Agent<ReturnType<typeof getAskarAnonCredsIndyModules>>
 
@@ -64,17 +57,8 @@ export class BaseAgent {
   public name: string
   public config: InitConfig
   public agent: DemoAgent
-  public useLegacyIndySdk: boolean
 
-  public constructor({
-    port,
-    name,
-    useLegacyIndySdk = false,
-  }: {
-    port: number
-    name: string
-    useLegacyIndySdk?: boolean
-  }) {
+  public constructor({ port, name }: { port: number; name: string }) {
     this.name = name
     this.port = port
 
@@ -88,8 +72,6 @@ export class BaseAgent {
     } satisfies InitConfig
 
     this.config = config
-
-    this.useLegacyIndySdk = useLegacyIndySdk
 
     this.agent = new Agent({
       config,
@@ -139,8 +121,6 @@ function getAskarAnonCredsIndyModules() {
     }),
     anoncreds: new AnonCredsModule({
       registries: [new IndyVdrAnonCredsRegistry(), new CheqdAnonCredsRegistry()],
-    }),
-    anoncredsRs: new AnonCredsRsModule({
       anoncreds,
     }),
     indyVdr: new IndyVdrModule({
@@ -164,49 +144,6 @@ function getAskarAnonCredsIndyModules() {
     }),
     askar: new AskarModule({
       ariesAskar,
-    }),
-  } as const
-}
-
-function getLegacyIndySdkModules() {
-  const legacyIndyCredentialFormatService = new LegacyIndyCredentialFormatService()
-  const legacyIndyProofFormatService = new LegacyIndyProofFormatService()
-
-  return {
-    connections: new ConnectionsModule({
-      autoAcceptConnections: true,
-    }),
-    credentials: new CredentialsModule({
-      autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
-      credentialProtocols: [
-        new V1CredentialProtocol({
-          indyCredentialFormat: legacyIndyCredentialFormatService,
-        }),
-        new V2CredentialProtocol({
-          credentialFormats: [legacyIndyCredentialFormatService],
-        }),
-      ],
-    }),
-    proofs: new ProofsModule({
-      autoAcceptProofs: AutoAcceptProof.ContentApproved,
-      proofProtocols: [
-        new V1ProofProtocol({
-          indyProofFormat: legacyIndyProofFormatService,
-        }),
-        new V2ProofProtocol({
-          proofFormats: [legacyIndyProofFormatService],
-        }),
-      ],
-    }),
-    anoncreds: new AnonCredsModule({
-      registries: [new IndySdkAnonCredsRegistry()],
-    }),
-    indySdk: new IndySdkModule({
-      indySdk,
-      networks: [indyNetworkConfig],
-    }),
-    dids: new DidsModule({
-      resolvers: [new IndySdkSovDidResolver()],
     }),
   } as const
 }

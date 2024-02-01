@@ -5,18 +5,35 @@ import { Subject } from 'rxjs'
 
 import { SubjectInboundTransport } from '../../../../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from '../../../../../../tests/transport/SubjectOutboundTransport'
-import { getIndySdkModules } from '../../../../../indy-sdk/tests/setupIndySdkModule'
-import { getAgentOptions, waitForBasicMessage, waitForTrustPingReceivedEvent } from '../../../../tests/helpers'
+import { askarModule } from '../../../../../askar/tests/helpers'
+import { getAgentOptions, waitForAgentMessageProcessedEvent, waitForBasicMessage } from '../../../../tests/helpers'
 import { Agent } from '../../../agent/Agent'
 import { HandshakeProtocol } from '../../connections'
+import { MediatorModule } from '../../routing'
+import { MessageForwardingStrategy } from '../../routing/MessageForwardingStrategy'
+import { V2MessagesReceivedMessage, V2StatusMessage } from '../protocol'
 
-const recipientOptions = getAgentOptions('Mediation: Recipient Pickup', {}, getIndySdkModules())
+const recipientOptions = getAgentOptions(
+  'Mediation Pickup Loop Recipient',
+  {},
+  {
+    askar: askarModule,
+  },
+  // Agent is shutdown during test, so we can't use in-memory wallet
+  false
+)
 const mediatorOptions = getAgentOptions(
-  'Mediation: Mediator Pickup',
+  'Mediation Pickup Loop Mediator',
   {
     endpoints: ['wss://mediator'],
   },
-  getIndySdkModules()
+  {
+    askar: askarModule,
+    mediator: new MediatorModule({
+      autoAcceptMediationRequests: true,
+      messageForwardingStrategy: MessageForwardingStrategy.QueueAndLiveModeDelivery,
+    }),
+  }
 )
 
 describe('E2E Pick Up protocol', () => {
@@ -30,7 +47,7 @@ describe('E2E Pick Up protocol', () => {
     await mediatorAgent.wallet.delete()
   })
 
-  test('E2E Pick Up V1 protocol', async () => {
+  test('E2E manual Pick Up V1 loop', async () => {
     const mediatorMessages = new Subject<SubjectMessage>()
 
     const subjectMap = {
@@ -72,9 +89,6 @@ describe('E2E Pick Up protocol', () => {
 
     // Now they are connected, reinitialize recipient agent in order to lose the session (as with SubjectTransport it remains open)
     await recipientAgent.shutdown()
-
-    recipientAgent = new Agent(recipientOptions)
-    recipientAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     await recipientAgent.initialize()
 
     const message = 'hello pickup V1'
@@ -92,7 +106,7 @@ describe('E2E Pick Up protocol', () => {
     expect(basicMessage.content).toBe(message)
   })
 
-  test('E2E Pick Up V2 protocol', async () => {
+  test('E2E manual Pick Up V2 loop', async () => {
     const mediatorMessages = new Subject<SubjectMessage>()
 
     // FIXME: we harcoded that pickup of messages MUST be using ws(s) scheme when doing implicit pickup
@@ -136,6 +150,10 @@ describe('E2E Pick Up protocol', () => {
 
     mediatorRecipientConnection = await mediatorAgent.connections.returnWhenIsConnected(mediatorRecipientConnection!.id)
 
+    // Now they are connected, reinitialize recipient agent in order to lose the session (as with SubjectTransport it remains open)
+    await recipientAgent.shutdown()
+    await recipientAgent.initialize()
+
     const message = 'hello pickup V2'
 
     await mediatorAgent.basicMessages.sendMessage(mediatorRecipientConnection.id, message)
@@ -143,17 +161,31 @@ describe('E2E Pick Up protocol', () => {
     const basicMessagePromise = waitForBasicMessage(recipientAgent, {
       content: message,
     })
-    const trustPingPromise = waitForTrustPingReceivedEvent(mediatorAgent, {})
     await recipientAgent.messagePickup.pickupMessages({
       connectionId: recipientMediatorConnection.id,
       protocolVersion: 'v2',
     })
+    const firstStatusMessage = await waitForAgentMessageProcessedEvent(recipientAgent, {
+      messageType: V2StatusMessage.type.messageTypeUri,
+    })
+
+    expect((firstStatusMessage as V2StatusMessage).messageCount).toBe(1)
 
     const basicMessage = await basicMessagePromise
     expect(basicMessage.content).toBe(message)
 
-    // Wait for trust ping to be received and stop message pickup
-    await trustPingPromise
+    const messagesReceived = await waitForAgentMessageProcessedEvent(mediatorAgent, {
+      messageType: V2MessagesReceivedMessage.type.messageTypeUri,
+    })
+
+    expect((messagesReceived as V2MessagesReceivedMessage).messageIdList.length).toBe(1)
+
+    const secondStatusMessage = await waitForAgentMessageProcessedEvent(recipientAgent, {
+      messageType: V2StatusMessage.type.messageTypeUri,
+    })
+
+    expect((secondStatusMessage as V2StatusMessage).messageCount).toBe(0)
+
     await recipientAgent.mediationRecipient.stopMessagePickup()
   })
 })

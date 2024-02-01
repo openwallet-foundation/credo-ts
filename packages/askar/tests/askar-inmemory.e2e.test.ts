@@ -7,16 +7,16 @@ import { Subject } from 'rxjs'
 import { SubjectInboundTransport } from '../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutboundTransport'
 
-import { e2eTest, getSqliteAgentOptions } from './helpers'
+import { e2eTest, getAskarSqliteAgentOptions } from './helpers'
 
-const aliceInMemoryAgentOptions = getSqliteAgentOptions(
+const aliceInMemoryAgentOptions = getAskarSqliteAgentOptions(
   'AgentsAlice',
   {
     endpoints: ['rxjs:alice'],
   },
   true
 )
-const bobInMemoryAgentOptions = getSqliteAgentOptions(
+const bobInMemoryAgentOptions = getAskarSqliteAgentOptions(
   'AgentsBob',
   {
     endpoints: ['rxjs:bob'],

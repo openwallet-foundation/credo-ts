@@ -1,15 +1,8 @@
 import type { CheqdModuleConfigOptions } from '../src'
 
 import { DidsModule } from '@credo-ts/core'
-import { IndySdkModule, IndySdkModuleConfig } from '@credo-ts/indy-sdk'
-import indySdk from 'indy-sdk'
 
 import { CheqdModule, CheqdDidRegistrar, CheqdDidResolver } from '../src'
-
-export const getIndySdkModuleConfig = () =>
-  new IndySdkModuleConfig({
-    indySdk,
-  })
 
 export const getCheqdModuleConfig = (seed?: string, rpcUrl?: string) =>
   ({
@@ -30,5 +23,4 @@ export const getCheqdModules = (seed?: string, rpcUrl?: string) => ({
     registrars: [new CheqdDidRegistrar()],
     resolvers: [new CheqdDidResolver()],
   }),
-  indySdk: new IndySdkModule(getIndySdkModuleConfig()),
 })
