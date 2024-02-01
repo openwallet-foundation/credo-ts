@@ -15,9 +15,6 @@ export class BasicMessagesModule implements Module {
    * Registers the dependencies of the basic message module on the dependency manager.
    */
   public register(dependencyManager: DependencyManager, featureRegistry: FeatureRegistry) {
-    // Api
-    dependencyManager.registerContextScoped(BasicMessagesApi)
-
     // Services
     dependencyManager.registerSingleton(BasicMessageService)
 

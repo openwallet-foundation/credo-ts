@@ -4,7 +4,7 @@ import type { ClaimFormat } from '../ClaimFormat'
 
 export type W3cVerifiablePresentation<Format extends ClaimFormat.JwtVp | ClaimFormat.LdpVp | unknown = unknown> =
   Format extends ClaimFormat.JwtVp
-    ? W3cJsonLdVerifiablePresentation
-    : Format extends ClaimFormat.LdpVp
     ? W3cJwtVerifiablePresentation
+    : Format extends ClaimFormat.LdpVp
+    ? W3cJsonLdVerifiablePresentation
     : W3cJsonLdVerifiablePresentation | W3cJwtVerifiablePresentation

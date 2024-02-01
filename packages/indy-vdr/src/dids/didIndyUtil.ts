@@ -156,7 +156,7 @@ export function isSelfCertifiedIndyDid(did: string, verkey: string): boolean {
 }
 
 export function indyDidFromNamespaceAndInitialKey(namespace: string, initialKey: Key) {
-  const buffer = Hasher.hash(initialKey.publicKey, 'sha2-256')
+  const buffer = Hasher.hash(initialKey.publicKey, 'sha-256')
 
   const id = TypedArrayEncoder.toBase58(buffer.slice(0, 16))
   const verkey = initialKey.publicKeyBase58

@@ -37,7 +37,7 @@ export { Repository } from './storage/Repository'
 export * from './storage/RepositoryEvents'
 export { StorageService, Query, SimpleQuery, BaseRecordConstructor } from './storage/StorageService'
 export * from './storage/migration'
-export { getDirFromFilePath } from './utils/path'
+export { getDirFromFilePath, joinUriParts } from './utils/path'
 export { InjectionSymbols } from './constants'
 export * from './wallet'
 export type { TransportSession } from './agent/TransportService'
@@ -61,6 +61,8 @@ export * from './modules/oob'
 export * from './modules/dids'
 export * from './modules/vc'
 export * from './modules/cache'
+export * from './modules/dif-presentation-exchange'
+export * from './modules/sd-jwt-vc'
 export {
   JsonEncoder,
   JsonTransformer,
@@ -69,6 +71,8 @@ export {
   TypedArrayEncoder,
   Buffer,
   deepEquality,
+  asArray,
+  equalsIgnoreOrder,
 } from './utils'
 export * from './logger'
 export * from './error'
@@ -76,7 +80,7 @@ export * from './wallet/error'
 export { parseMessageType, IsValidMessageType, replaceLegacyDidSovPrefix } from './utils/messageType'
 export type { Constructor, Constructable } from './utils/mixins'
 export * from './agent/Events'
-export * from './crypto/'
+export * from './crypto'
 
 // TODO: clean up util exports
 export { encodeAttachment, isLinkedAttachment } from './utils/attachment'

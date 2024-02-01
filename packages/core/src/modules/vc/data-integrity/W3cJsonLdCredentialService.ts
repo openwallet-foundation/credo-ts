@@ -324,16 +324,6 @@ export class W3cJsonLdCredentialService {
     return this.signatureSuiteRegistry.getByProofType(proofType).keyTypes
   }
 
-  public getProofTypeByVerificationMethodType(verificationMethodType: string): string {
-    const suite = this.signatureSuiteRegistry.getByVerificationMethodType(verificationMethodType)
-
-    if (!suite) {
-      throw new CredoError(`No suite found for verification method type ${verificationMethodType}}`)
-    }
-
-    return suite.proofType
-  }
-
   public async getExpandedTypesForCredential(agentContext: AgentContext, credential: W3cJsonLdVerifiableCredential) {
     // Get the expanded types
     const expandedTypes: SingleOrArray<string> = (

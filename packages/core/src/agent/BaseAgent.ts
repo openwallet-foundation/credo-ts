@@ -18,6 +18,7 @@ import { MessagePickupApi } from '../modules/message-pickup/MessagePickupApi'
 import { OutOfBandApi } from '../modules/oob'
 import { ProofsApi } from '../modules/proofs'
 import { MediatorApi, MediationRecipientApi } from '../modules/routing'
+import { SdJwtVcApi } from '../modules/sd-jwt-vc'
 import { W3cCredentialsApi } from '../modules/vc/W3cCredentialsApi'
 import { StorageUpdateService } from '../storage'
 import { UpdateAssistant } from '../storage/migration/UpdateAssistant'
@@ -58,6 +59,7 @@ export abstract class BaseAgent<AgentModules extends ModulesMap = EmptyModuleMap
   public readonly wallet: WalletApi
   public readonly oob: OutOfBandApi
   public readonly w3cCredentials: W3cCredentialsApi
+  public readonly sdJwtVc: SdJwtVcApi
 
   public readonly modules: AgentApi<WithoutDefaultModules<AgentModules>>
 
@@ -106,6 +108,7 @@ export abstract class BaseAgent<AgentModules extends ModulesMap = EmptyModuleMap
     this.wallet = this.dependencyManager.resolve(WalletApi)
     this.oob = this.dependencyManager.resolve(OutOfBandApi)
     this.w3cCredentials = this.dependencyManager.resolve(W3cCredentialsApi)
+    this.sdJwtVc = this.dependencyManager.resolve(SdJwtVcApi)
 
     const defaultApis = [
       this.connections,
@@ -121,6 +124,7 @@ export abstract class BaseAgent<AgentModules extends ModulesMap = EmptyModuleMap
       this.wallet,
       this.oob,
       this.w3cCredentials,
+      this.sdJwtVc,
     ]
 
     // Set the api of the registered modules on the agent, excluding the default apis

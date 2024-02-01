@@ -28,7 +28,6 @@ export class W3cCredentialsModule implements Module {
   }
 
   public register(dependencyManager: DependencyManager) {
-    dependencyManager.registerContextScoped(W3cCredentialsApi)
     dependencyManager.registerSingleton(W3cCredentialService)
     dependencyManager.registerSingleton(W3cJwtCredentialService)
     dependencyManager.registerSingleton(W3cJsonLdCredentialService)

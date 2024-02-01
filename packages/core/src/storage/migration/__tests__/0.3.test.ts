@@ -75,7 +75,7 @@ describe('UpdateAssistant | v0.3.1 - v0.4', () => {
     await updateAssistant.update()
 
     expect(await updateAssistant.isUpToDate()).toBe(true)
-    expect(await updateAssistant.getNeededUpdates()).toEqual([])
+    expect(await updateAssistant.getNeededUpdates('0.4')).toEqual([])
 
     expect(storageService.contextCorrelationIdToRecords[agent.context.contextCorrelationId].records).toMatchSnapshot()
 

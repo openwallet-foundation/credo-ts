@@ -11,9 +11,6 @@ export class GenericRecordsModule implements Module {
    * Registers the dependencies of the generic records module on the dependency manager.
    */
   public register(dependencyManager: DependencyManager) {
-    // Api
-    dependencyManager.registerContextScoped(GenericRecordsApi)
-
     // Services
     dependencyManager.registerSingleton(GenericRecordService)
 

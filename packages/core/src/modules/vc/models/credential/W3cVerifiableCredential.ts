@@ -39,7 +39,7 @@ export function W3cVerifiableCredentialTransformer() {
 
 export type W3cVerifiableCredential<Format extends ClaimFormat.JwtVc | ClaimFormat.LdpVc | unknown = unknown> =
   Format extends ClaimFormat.JwtVc
-    ? W3cJsonLdVerifiableCredential
-    : Format extends ClaimFormat.LdpVc
     ? W3cJwtVerifiableCredential
+    : Format extends ClaimFormat.LdpVc
+    ? W3cJsonLdVerifiableCredential
     : W3cJsonLdVerifiableCredential | W3cJwtVerifiableCredential

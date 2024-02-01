@@ -14,9 +14,6 @@ export class QuestionAnswerModule implements Module {
    * Registers the dependencies of the question answer module on the dependency manager.
    */
   public register(dependencyManager: DependencyManager, featureRegistry: FeatureRegistry) {
-    // Api
-    dependencyManager.registerContextScoped(QuestionAnswerApi)
-
     // Services
     dependencyManager.registerSingleton(QuestionAnswerService)
 
