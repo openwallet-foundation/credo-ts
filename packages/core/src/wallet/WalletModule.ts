@@ -1,4 +1,4 @@
-import type { Module } from '../plugins'
+import type { DependencyManager, Module } from '../plugins'
 
 import { WalletApi } from './WalletApi'
 
@@ -9,7 +9,8 @@ export class WalletModule implements Module {
   /**
    * Registers the dependencies of the wallet module on the injection dependencyManager.
    */
-  public register() {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  public register(dependencyManager: DependencyManager) {
     // no-op, only API needs to be registered
   }
 }
