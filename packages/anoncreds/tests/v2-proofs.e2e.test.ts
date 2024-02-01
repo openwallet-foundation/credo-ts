@@ -857,8 +857,11 @@ describe('PP V2 AnonCreds Proofs', () => {
     // InMemoryAnonCredsRegistry would respect what we ask while actual VDRs will use their own
     await sleep(2000)
     await faberAgent.modules.anoncreds.updateRevocationStatusList({
-      revocationRegistryDefinitionId: credentialRevocationRegistryDefinitionId,
-      revokedCredentialIndexes: [Number(credentialRevocationIndex)],
+      revocationStatusList: {
+        revocationRegistryDefinitionId: credentialRevocationRegistryDefinitionId,
+        revokedCredentialIndexes: [Number(credentialRevocationIndex)],
+      },
+      options: {},
     })
 
     await aliceAgent.proofs.acceptRequest({
@@ -906,8 +909,11 @@ describe('PP V2 AnonCreds Proofs', () => {
     expect(credentialRevocationIndex).toBeDefined()
 
     const { revocationStatusListState } = await faberAgent.modules.anoncreds.updateRevocationStatusList({
-      revocationRegistryDefinitionId: credentialRevocationRegistryDefinitionId,
-      revokedCredentialIndexes: [Number(credentialRevocationIndex)],
+      revocationStatusList: {
+        revocationRegistryDefinitionId: credentialRevocationRegistryDefinitionId,
+        revokedCredentialIndexes: [Number(credentialRevocationIndex)],
+      },
+      options: {},
     })
 
     expect(revocationStatusListState.revocationStatusList).toBeDefined()

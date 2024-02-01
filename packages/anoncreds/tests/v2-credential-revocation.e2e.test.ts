@@ -219,8 +219,11 @@ describe('IC v2 credential revocation', () => {
     expect(credentialRevocationRegistryDefinitionId).toEqual(revocationRegistryDefinitionId)
 
     await faberAgent.modules.anoncreds.updateRevocationStatusList({
-      revocationRegistryDefinitionId: credentialRevocationRegistryDefinitionId,
-      revokedCredentialIndexes: [Number(credentialRevocationIndex)],
+      revocationStatusList: {
+        revocationRegistryDefinitionId: credentialRevocationRegistryDefinitionId,
+        revokedCredentialIndexes: [Number(credentialRevocationIndex)],
+      },
+      options: {},
     })
 
     await faberAgent.credentials.sendRevocationNotification({
