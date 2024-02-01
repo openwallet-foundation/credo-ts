@@ -3,6 +3,7 @@ import type {
   OpenId4VcSiopVerifyAuthorizationResponseOptions,
   OpenId4VcSiopCreateAuthorizationRequestReturn,
   OpenId4VcSiopVerifiedAuthorizationResponse,
+  OpenId4VcSiopCreateVerifierOptions,
 } from './OpenId4VcSiopVerifierServiceOptions'
 
 import { injectable, AgentContext } from '@credo-ts/core'
@@ -38,8 +39,8 @@ export class OpenId4VcVerifierApi {
   /**
    * Create a new verifier and store the new verifier record.
    */
-  public async createVerifier() {
-    return this.openId4VcSiopVerifierService.createVerifier(this.agentContext)
+  public async createVerifier(options?: OpenId4VcSiopCreateVerifierOptions) {
+    return this.openId4VcSiopVerifierService.createVerifier(this.agentContext, options)
   }
 
   /**

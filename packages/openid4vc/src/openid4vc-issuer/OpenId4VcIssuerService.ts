@@ -188,7 +188,7 @@ export class OpenId4VcIssuerService {
       keyType: KeyType.Ed25519,
     })
     const openId4VcIssuer = new OpenId4VcIssuerRecord({
-      issuerId: utils.uuid(),
+      issuerId: options.issuerId ?? utils.uuid(),
       display: options.display,
       accessTokenPublicKeyFingerprint: accessTokenSignerKey.fingerprint,
       credentialsSupported: options.credentialsSupported,

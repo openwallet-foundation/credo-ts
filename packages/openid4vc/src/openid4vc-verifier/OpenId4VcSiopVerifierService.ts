@@ -1,6 +1,7 @@
 import type {
   OpenId4VcSiopCreateAuthorizationRequestOptions,
   OpenId4VcSiopCreateAuthorizationRequestReturn,
+  OpenId4VcSiopCreateVerifierOptions,
   OpenId4VcSiopVerifiedAuthorizationResponse,
   OpenId4VcSiopVerifyAuthorizationResponseOptions,
 } from './OpenId4VcSiopVerifierServiceOptions'
@@ -193,9 +194,9 @@ export class OpenId4VcSiopVerifierService {
     return this.openId4VcVerifierRepository.update(agentContext, verifier)
   }
 
-  public async createVerifier(agentContext: AgentContext) {
+  public async createVerifier(agentContext: AgentContext, options?: OpenId4VcSiopCreateVerifierOptions) {
     const openId4VcVerifier = new OpenId4VcVerifierRecord({
-      verifierId: utils.uuid(),
+      verifierId: options?.verifierId ?? utils.uuid(),
     })
 
     await this.openId4VcVerifierRepository.save(agentContext, openId4VcVerifier)

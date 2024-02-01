@@ -1,6 +1,7 @@
 import type {
   OpenId4VciCreateCredentialResponseOptions,
   OpenId4VciCreateCredentialOfferOptions,
+  OpenId4VciCreateIssuerOptions,
 } from './OpenId4VcIssuerServiceOptions'
 import type { OpenId4VcIssuerRecordProps } from './repository'
 import type { OpenId4VciCredentialOfferPayload } from '../shared'
@@ -36,7 +37,7 @@ export class OpenId4VcIssuerApi {
    * Creates an issuer and stores the corresponding issuer metadata. Multiple issuers can be created, to allow different sets of
    * credentials to be issued with each issuer.
    */
-  public async createIssuer(options: Pick<OpenId4VcIssuerRecordProps, 'credentialsSupported' | 'display'>) {
+  public async createIssuer(options: OpenId4VciCreateIssuerOptions) {
     return this.openId4VcIssuerService.createIssuer(this.agentContext, options)
   }
 

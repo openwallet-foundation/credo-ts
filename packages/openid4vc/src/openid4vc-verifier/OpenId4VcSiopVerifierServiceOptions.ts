@@ -52,3 +52,10 @@ export interface OpenId4VcSiopVerifiedAuthorizationResponse {
     presentations: Array<VerifiablePresentation>
   }
 }
+
+export interface OpenId4VcSiopCreateVerifierOptions {
+  /**
+   * Id of the verifier, not the id of the verified record. Will be exposed publicly
+   */
+  verifierId?: string
+}

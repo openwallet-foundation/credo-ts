@@ -1,9 +1,9 @@
-import type { OpenId4VcIssuerRecordProps } from './repository'
 import type {
   OpenId4VcCredentialHolderBinding,
   OpenId4VciCredentialOffer,
   OpenId4VciCredentialRequest,
   OpenId4VciCredentialSupported,
+  OpenId4VciCredentialSupportedWithId,
   OpenId4VciIssuerMetadataDisplay,
 } from '../shared'
 import type { AgentContext, ClaimFormat, W3cCredential, SdJwtVcSignOptions } from '@credo-ts/core'
@@ -27,8 +27,6 @@ export type OpenId4VcIssuerMetadata = {
   issuerDisplay?: OpenId4VciIssuerMetadataDisplay[]
   credentialsSupported: OpenId4VciCredentialSupported[]
 }
-
-export type OpenId4VciCreateIssuerOptions = Pick<OpenId4VcIssuerRecordProps, 'credentialsSupported' | 'display'>
 
 export interface OpenId4VciCreateCredentialOfferOptions {
   // NOTE: v11 of OID4VCI supports both inline and referenced (to credentials_supported.id) credential offers.
@@ -109,4 +107,14 @@ export interface OpenId4VciSignW3cCredential {
   format: ClaimFormat.JwtVc | `${ClaimFormat.JwtVc}` | ClaimFormat.LdpVc | `${ClaimFormat.LdpVc}`
   verificationMethod: string
   credential: W3cCredential
+}
+
+export interface OpenId4VciCreateIssuerOptions {
+  /**
+   * Id of the issuer, not the id of the issuer record. Will be exposed publicly
+   */
+  issuerId?: string
+
+  credentialsSupported: OpenId4VciCredentialSupportedWithId[]
+  display?: OpenId4VciIssuerMetadataDisplay[]
 }
