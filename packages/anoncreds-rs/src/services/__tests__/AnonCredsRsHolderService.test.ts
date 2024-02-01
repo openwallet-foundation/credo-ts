@@ -261,7 +261,7 @@ describe('AnonCredsRsHolderService', () => {
           methodName: 'inMemory',
           schemaId: personCredentialInfo.schemaId,
           credentialDefinitionId: personCredentialInfo.credentialDefinitionId,
-          revocationRegistryId: personCredentialInfo.revocationRegistryId,
+          revocationRegistryId: personCredentialInfo.revocationRegistryId ?? undefined,
         },
       })
     )
@@ -278,7 +278,7 @@ describe('AnonCredsRsHolderService', () => {
           methodName: 'inMemory',
           schemaId: phoneCredentialInfo.schemaId,
           credentialDefinitionId: phoneCredentialInfo.credentialDefinitionId,
-          revocationRegistryId: phoneCredentialInfo.revocationRegistryId,
+          revocationRegistryId: phoneCredentialInfo.revocationRegistryId ?? undefined,
         },
       })
     )
@@ -381,7 +381,7 @@ describe('AnonCredsRsHolderService', () => {
             'attr::name::marker': true,
           },
           {
-            issuerId: 'issuer:uri',
+            unqualifiedIssuerId: 'issuer:uri',
           },
         ],
       })
@@ -414,7 +414,7 @@ describe('AnonCredsRsHolderService', () => {
             'attr::age::marker': true,
           },
           {
-            $or: [{ schemaId: 'schemaid:uri', schemaName: 'schemaName' }, { schemaVersion: '1.0' }],
+            $or: [{ unqualifiedSchemaId: 'schemaid:uri', schemaName: 'schemaName' }, { schemaVersion: '1.0' }],
           },
         ],
       })
@@ -433,8 +433,8 @@ describe('AnonCredsRsHolderService', () => {
             'attr::height::marker': true,
           },
           {
-            credentialDefinitionId: 'crededefid:uri',
-            issuerId: 'issuerid:uri',
+            unqualifiedCredentialDefinitionId: 'crededefid:uri',
+            unqualifiedIssuerId: 'issuerid:uri',
           },
         ],
       })
@@ -593,12 +593,12 @@ describe('AnonCredsRsHolderService', () => {
     })
 
     expect(findByQueryMock).toHaveBeenCalledWith(agentContext, {
-      credentialDefinitionId: 'credDefId',
-      schemaId: 'schemaId',
-      schemaIssuerId: 'schemaIssuerDid',
+      unqualifiedCredentialDefinitionId: 'credDefId',
+      unqualifiedSchemaId: 'schemaId',
+      unqualifiedSchemaIssuerId: 'schemaIssuerDid',
+      unqualifiedIssuerId: 'issuerDid',
       schemaName: 'schemaName',
       schemaVersion: 'schemaVersion',
-      issuerId: 'issuerDid',
       methodName: 'inMemory',
     })
     expect(credentialInfo).toMatchObject([
@@ -627,7 +627,7 @@ describe('AnonCredsRsHolderService', () => {
 
     const schema: AnonCredsSchema = {
       attrNames: ['name', 'sex', 'height', 'age'],
-      issuerId: 'did:indy:example:issuerId',
+      issuerId: 'did:indy:sovrin:7Tqg6BwSSWapxgUDm9KKgg',
       name: 'schemaName',
       version: '1',
     }
@@ -640,29 +640,29 @@ describe('AnonCredsRsHolderService', () => {
         age: '19',
       },
       credentialDefinition: credentialDefinition as unknown as JsonObject,
-      schemaId: 'personschema:uri',
-      credentialDefinitionId: 'personcreddef:uri',
+      schemaId: 'did:indy:bcovrin:test:SDqTzbVuCowusqGBNbNDjH/anoncreds/v0/SCHEMA/credentialDefinition-name/1.0',
+      credentialDefinitionId: 'did:indy:bcovrin:test:SDqTzbVuCowusqGBNbNDjH/anoncreds/v0/CLAIM_DEF/104/default',
       credentialDefinitionPrivate,
       keyCorrectnessProof,
       linkSecret,
       linkSecretId: 'linkSecretId',
       credentialId: 'personCredId',
-      revocationRegistryDefinitionId: 'personrevregid:uri',
+      revocationRegistryDefinitionId: 'did:indy:sovrin:test:12345/anoncreds/v0/REV_REG_DEF/420/someTag/anotherTag',
     })
 
     const saveCredentialMock = jest.spyOn(w3cCredentialRepositoryMock, 'save')
 
     saveCredentialMock.mockResolvedValue()
 
-    const credentialId = await anonCredsHolderService.storeW3cCredential(agentContext, {
+    const credentialId = await anonCredsHolderService.storeCredential(agentContext, {
       credential,
       credentialDefinition,
-      schema,
-      credentialDefinitionId: 'personcreddefid:uri',
+      credentialDefinitionId: 'did:indy:bcovrin:test:SDqTzbVuCowusqGBNbNDjH/anoncreds/v0/CLAIM_DEF/104/default',
       credentialRequestMetadata: credentialRequestMetadata.toJson() as unknown as AnonCredsCredentialRequestMetadata,
       credentialId: 'personCredId',
+      schema,
       revocationRegistry: {
-        id: 'personrevregid:uri',
+        id: 'did:indy:sovrin:test:12345/anoncreds/v0/REV_REG_DEF/420/someTag/anotherTag',
         definition: new RevocationRegistryDefinition(
           revocationRegistryDefinition.handle
         ).toJson() as unknown as AnonCredsRevocationRegistryDefinition,
@@ -680,7 +680,7 @@ describe('AnonCredsRsHolderService', () => {
         // The stored credential is different from the one received originally
         _tags: expect.objectContaining({
           schemaName: 'schemaName',
-          schemaIssuerId: 'did:indy:example:issuerId',
+          schemaIssuerId: 'did:indy:sovrin:7Tqg6BwSSWapxgUDm9KKgg',
           schemaVersion: '1',
         }),
       })

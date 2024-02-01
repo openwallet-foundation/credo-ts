@@ -1,26 +1,14 @@
-import type { AnonCredsCredential } from '../models'
+import type { AnonCredsCredential, AnonCredsCredentialDefinition } from '../models'
 import type { ProcessCredentialOptions } from '@hyperledger/anoncreds-shared'
 
-import {
-  JsonTransformer,
-  W3cJsonLdVerifiableCredential,
-  type AgentContext,
-  type JsonObject,
-} from '@aries-framework/core'
+import { JsonTransformer, W3cJsonLdVerifiableCredential, type JsonObject } from '@credo-ts/core'
 import { Credential, W3cCredential } from '@hyperledger/anoncreds-shared'
 
-import { fetchObjectsFromLedger } from './ledgerObjects'
-
 export async function legacyCredentialToW3cCredential(
-  agentContext: AgentContext,
   legacyCredential: AnonCredsCredential,
+  credentialDefinition: AnonCredsCredentialDefinition,
   process?: ProcessCredentialOptions
 ) {
-  const { credentialDefinitionReturn } = await fetchObjectsFromLedger(agentContext, {
-    credentialDefinitionId: legacyCredential.cred_def_id,
-  })
-  if (!credentialDefinitionReturn.credentialDefinition) throw new Error('Credential definition not found.')
-
   let credential: W3cJsonLdVerifiableCredential
   let anonCredsCredential: Credential | undefined
   let w3cCredentialObj: W3cCredential | undefined
@@ -29,11 +17,14 @@ export async function legacyCredentialToW3cCredential(
   try {
     anonCredsCredential = Credential.fromJson(legacyCredential as unknown as JsonObject)
     w3cCredentialObj = anonCredsCredential.toW3c({
-      credentialDefinition: credentialDefinitionReturn.credentialDefinition as unknown as JsonObject,
+      credentialDefinition: credentialDefinition as unknown as JsonObject,
       w3cVersion: '1.1',
     })
 
-    processed = process ? w3cCredentialObj.process(process) : w3cCredentialObj
+    processed = process
+      ? w3cCredentialObj.process({ ...process, credentialDefinition: credentialDefinition as unknown as JsonObject })
+      : w3cCredentialObj
+
     const jsonObject = processed.toJson()
     credential = JsonTransformer.fromJSON(jsonObject, W3cJsonLdVerifiableCredential)
   } finally {

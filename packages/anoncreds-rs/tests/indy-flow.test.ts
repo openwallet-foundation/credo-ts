@@ -304,11 +304,11 @@ describe('Legacy indy format services using anoncreds-rs', () => {
     expect(anonCredsCredential).toEqual({
       credentialId,
       attributes: {
-        age: '25',
+        age: 25,
         name: 'John',
       },
-      schemaId: unqualifiedSchemaId,
-      credentialDefinitionId: unqualifiedCredentialDefinitionId,
+      schemaId: schemaState.schemaId,
+      credentialDefinitionId: credentialDefinitionState.credentialDefinitionId,
       revocationRegistryId: null,
       credentialRevocationId: null,
       methodName: 'inMemory',

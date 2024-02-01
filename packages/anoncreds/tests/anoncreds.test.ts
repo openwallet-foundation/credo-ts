@@ -270,7 +270,9 @@ describe('AnonCreds API', () => {
 
     expect(credentialDefinitionResult).toEqual({
       resolutionMetadata: {},
-      credentialDefinitionMetadata: {},
+      credentialDefinitionMetadata: {
+        didIndyNamespace: 'pool:localhost',
+      },
       credentialDefinition: existingCredentialDefinitions['VsKV7grR1BUE29mG2Fm2kX:3:CL:75206:TAG'],
       credentialDefinitionId: 'VsKV7grR1BUE29mG2Fm2kX:3:CL:75206:TAG',
     })

@@ -15,8 +15,11 @@ import {
   W3cCredentialSubject,
   ProofEventTypes,
   ProofState,
-} from '@crede-ts/core'
-import { ConnectionEventTypes, KeyType, TypedArrayEncoder, utils } from '@credo-ts/core'
+  ConnectionEventTypes,
+  KeyType,
+  TypedArrayEncoder,
+  utils,
+} from '@credo-ts/core'
 import { randomInt } from 'crypto'
 import { ui } from 'inquirer'
 

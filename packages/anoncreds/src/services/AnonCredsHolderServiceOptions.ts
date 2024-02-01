@@ -16,7 +16,7 @@ import type {
   AnonCredsRevocationStatusList,
   AnonCredsSchema,
 } from '../models/registry'
-import type { W3cJsonLdVerifiableCredential } from '@aries-framework/core'
+import type { W3cJsonLdVerifiableCredential } from '@credo-ts/core'
 
 export interface AnonCredsAttributeInfo {
   name?: string
@@ -44,7 +44,8 @@ export interface CreateProofOptions {
   }
 }
 
-export interface BaseStoreCredentialOptions {
+export interface StoreCredentialOptions {
+  credential: W3cJsonLdVerifiableCredential | AnonCredsCredential
   credentialRequestMetadata: AnonCredsCredentialRequestMetadata
   credentialDefinition: AnonCredsCredentialDefinition
   schema: AnonCredsSchema
@@ -54,14 +55,6 @@ export interface BaseStoreCredentialOptions {
     id: string
     definition: AnonCredsRevocationRegistryDefinition
   }
-}
-
-export interface StoreW3cCredentialOptions extends BaseStoreCredentialOptions {
-  credential: W3cJsonLdVerifiableCredential
-}
-
-export interface StoreCredentialOptions extends BaseStoreCredentialOptions {
-  credential: AnonCredsCredential
 }
 
 export interface GetCredentialOptions {

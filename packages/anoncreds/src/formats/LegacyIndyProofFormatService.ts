@@ -57,8 +57,10 @@ import {
   assertNoDuplicateGroupsNamesInProofRequest,
   getRevocationRegistriesForRequest,
   getRevocationRegistriesForProof,
+  fetchSchema,
+  fetchCredentialDefinition,
 } from '../utils'
-import { isUnqualifiedCredentialDefinitionId, isUnqualifiedSchemaId } from '../utils/indyIdentifiers'
+import { getUnQualifiedId } from '../utils/ledgerObjects'
 import { dateToTimestamp } from '../utils/timestamp'
 
 const V2_INDY_PRESENTATION_PROPOSAL = 'hlindy/proof-req@v2.0'
@@ -463,23 +465,11 @@ export class LegacyIndyProofFormatService implements ProofFormatService<LegacyIn
    *
    */
   private async getSchemas(agentContext: AgentContext, schemaIds: Set<string>) {
-    const registryService = agentContext.dependencyManager.resolve(AnonCredsRegistryService)
-
     const schemas: { [key: string]: AnonCredsSchema } = {}
 
     for (const schemaId of schemaIds) {
-      if (!isUnqualifiedSchemaId(schemaId)) {
-        throw new AriesFrameworkError(`${schemaId} is not a valid legacy indy schema id`)
-      }
-
-      const schemaRegistry = registryService.getRegistryForIdentifier(agentContext, schemaId)
-      const schemaResult = await schemaRegistry.getSchema(agentContext, schemaId)
-
-      if (!schemaResult.schema) {
-        throw new AriesFrameworkError(`Schema not found for id ${schemaId}: ${schemaResult.resolutionMetadata.message}`)
-      }
-
-      schemas[schemaId] = schemaResult.schema
+      const schemaResult = await fetchSchema(agentContext, schemaId)
+      schemas[getUnQualifiedId(schemaId)] = schemaResult.unqualifiedSchema
     }
 
     return schemas
@@ -495,32 +485,12 @@ export class LegacyIndyProofFormatService implements ProofFormatService<LegacyIn
    *
    */
   private async getCredentialDefinitions(agentContext: AgentContext, credentialDefinitionIds: Set<string>) {
-    const registryService = agentContext.dependencyManager.resolve(AnonCredsRegistryService)
-
     const credentialDefinitions: { [key: string]: AnonCredsCredentialDefinition } = {}
 
     for (const credentialDefinitionId of credentialDefinitionIds) {
-      if (!isUnqualifiedCredentialDefinitionId(credentialDefinitionId)) {
-        throw new AriesFrameworkError(`${credentialDefinitionId} is not a valid legacy indy credential definition id`)
-      }
-
-      const credentialDefinitionRegistry = registryService.getRegistryForIdentifier(
-        agentContext,
-        credentialDefinitionId
-      )
-
-      const credentialDefinitionResult = await credentialDefinitionRegistry.getCredentialDefinition(
-        agentContext,
-        credentialDefinitionId
-      )
-
-      if (!credentialDefinitionResult.credentialDefinition) {
-        throw new AriesFrameworkError(
-          `Credential definition not found for id ${credentialDefinitionId}: ${credentialDefinitionResult.resolutionMetadata.message}`
-        )
-      }
-
-      credentialDefinitions[credentialDefinitionId] = credentialDefinitionResult.credentialDefinition
+      const credentialDefinitionResult = await fetchCredentialDefinition(agentContext, credentialDefinitionId)
+      credentialDefinitions[getUnQualifiedId(credentialDefinitionId)] =
+        credentialDefinitionResult.unqualifiedCredentialDefinition
     }
 
     return credentialDefinitions

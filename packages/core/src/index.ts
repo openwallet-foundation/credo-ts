@@ -69,6 +69,7 @@ export {
   TypedArrayEncoder,
   Buffer,
   deepEquality,
+  isDid,
 } from './utils'
 export * from './logger'
 export * from './error'

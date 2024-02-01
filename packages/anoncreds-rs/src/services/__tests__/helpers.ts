@@ -5,8 +5,7 @@ import type {
 } from '@credo-ts/anoncreds'
 import type { JsonObject } from '@hyperledger/anoncreds-shared'
 
-import {} from '@aries-framework/anoncreds'
-import { JsonTransformer, W3cJsonLdVerifiableCredential } from '@aries-framework/core'
+import { JsonTransformer, W3cJsonLdVerifiableCredential } from '@credo-ts/core'
 import {
   CredentialDefinition,
   CredentialOffer,

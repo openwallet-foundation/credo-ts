@@ -15,6 +15,12 @@ import {
   AnonCredsSchemaRecord,
   AnonCredsSchemaRepository,
   AnonCredsVerifierServiceSymbol,
+  getUnqualifiedCredentialDefinitionId,
+  getUnqualifiedSchemaId,
+  parseIndyCredentialDefinitionId,
+  parseIndySchemaId,
+} from '@credo-ts/anoncreds'
+import {
   ConsoleLogger,
   DidResolverService,
   DidsModuleConfig,
@@ -26,11 +32,7 @@ import {
   VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2020,
   W3cCredentialsModuleConfig,
   encodeCredentialValue,
-  getUnqualifiedCredentialDefinitionId,
-  getUnqualifiedSchemaId,
-  parseIndyCredentialDefinitionId,
-  parseIndySchemaId,
-} from '@credo-ts/anoncreds'
+} from '@credo-ts/core'
 import { anoncreds } from '@hyperledger/anoncreds-nodejs'
 import { Subject } from 'rxjs'
 
@@ -422,11 +424,11 @@ describe('AnonCredsRsServices', () => {
     expect(credentialInfo).toEqual({
       credentialId,
       attributes: {
-        age: '25',
+        age: 25,
         name: 'John',
       },
-      schemaId: unqualifiedSchemaId,
-      credentialDefinitionId: unqualifiedCredentialDefinitionId,
+      schemaId: schemaState.schemaId,
+      credentialDefinitionId: credentialDefinitionState.credentialDefinitionId,
       revocationRegistryId: null,
       credentialRevocationId: null,
       methodName: 'inMemory',

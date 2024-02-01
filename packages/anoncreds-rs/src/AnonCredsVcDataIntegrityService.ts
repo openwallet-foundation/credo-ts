@@ -4,42 +4,43 @@ import type {
   AnonCredsProofRequest,
   AnonCredsRequestedPredicate,
   AnonCredsSchema,
-} from '@aries-framework/anoncreds'
+} from '@credo-ts/anoncreds'
 import type {
   AgentContext,
   AnonCredsVcDataIntegrityService,
   AnonCredsVcVerificationOptions,
   JsonObject,
   W3cCredentialRecord,
-} from '@aries-framework/core'
-import type { W3cCredentialEntry, CredentialProve, NonRevokedIntervalOverride } from '@hyperledger/anoncreds-shared'
+} from '@credo-ts/core'
+import type { CredentialProve, NonRevokedIntervalOverride, W3cCredentialEntry } from '@hyperledger/anoncreds-shared'
 import type {
   Descriptor,
   FieldV2,
+  InputDescriptorV1,
+  InputDescriptorV2,
   PresentationDefinitionV1,
   PresentationDefinitionV2,
   PresentationSubmission,
-  InputDescriptorV2,
-  InputDescriptorV1,
 } from '@sphereon/pex-models'
 
+import { JSONPath } from '@astronautlabs/jsonpath'
 import {
   AnonCredsLinkSecretRepository,
   AnonCredsModuleConfig,
   AnonCredsRegistryService,
   assertBestPracticeRevocationInterval,
-  fetchObjectsFromLedger,
-} from '@aries-framework/anoncreds'
+  fetchCredentialDefinition,
+  fetchSchema,
+} from '@credo-ts/anoncreds'
 import {
-  W3cJsonLdVerifiableCredential,
   AriesFrameworkError,
+  Hasher,
   JsonTransformer,
+  TypedArrayEncoder,
+  W3cJsonLdVerifiableCredential,
   deepEquality,
   injectable,
-  Hasher,
-  TypedArrayEncoder,
-} from '@aries-framework/core'
-import { JSONPath } from '@astronautlabs/jsonpath'
+} from '@credo-ts/core'
 import {
   W3cCredential as AnonCredsW3cCredential,
   W3cPresentation as AnonCredsW3cPresentation,
@@ -239,11 +240,9 @@ export class AnonCredsVc2023DataIntegrityService implements AnonCredsVcDataInteg
     schemaIds: Set<string> | undefined,
     credentialDefinitionIds: Set<string>
   ) {
-    const schemaFetchPromises = [...(schemaIds ?? [])].map((schemaId) =>
-      fetchObjectsFromLedger(agentContext, { schemaId })
-    )
+    const schemaFetchPromises = [...(schemaIds ?? [])].map((schemaId) => fetchSchema(agentContext, schemaId))
     const credentialDefinitionFetchPromises = [...credentialDefinitionIds].map((credentialDefinitionId) =>
-      fetchObjectsFromLedger(agentContext, { credentialDefinitionId })
+      fetchCredentialDefinition(agentContext, credentialDefinitionId)
     )
 
     const schemas: Record<string, AnonCredsSchema> = {}
@@ -255,13 +254,9 @@ export class AnonCredsVc2023DataIntegrityService implements AnonCredsVcDataInteg
     ])
 
     const credentialDefinitionFetchResults = results[1]
-    for (const res of credentialDefinitionFetchResults) {
-      const credentialDefinitionId = res.credentialDefinitionReturn.credentialDefinitionId
-      const credentialDefinition = res.credentialDefinitionReturn.credentialDefinition
-      if (!credentialDefinition) {
-        throw new AriesFrameworkError('Credential definition not found')
-      }
-
+    for (const credentialDefinitionFetchResult of credentialDefinitionFetchResults) {
+      const credentialDefinitionId = credentialDefinitionFetchResult.id
+      const credentialDefinition = credentialDefinitionFetchResult.credentialDefinition
       credentialDefinitions[credentialDefinitionId] = credentialDefinition
     }
 
@@ -269,20 +264,12 @@ export class AnonCredsVc2023DataIntegrityService implements AnonCredsVcDataInteg
       schemaFetchPromises.length > 0
         ? results[0]
         : await Promise.all(
-            credentialDefinitionFetchResults.map((res) =>
-              fetchObjectsFromLedger(agentContext, {
-                schemaId: res.credentialDefinitionReturn.credentialDefinition?.schemaId as string,
-              })
-            )
+            credentialDefinitionFetchResults.map((res) => fetchSchema(agentContext, res.credentialDefinition.schemaId))
           )
 
     for (const schemaFetchResult of schemaFetchResults) {
-      const schemaId = schemaFetchResult.schemaReturn.schemaId
-      const schema = schemaFetchResult.schemaReturn.schema
-      if (!schema) {
-        throw new AriesFrameworkError('Credential definition not found')
-      }
-
+      const schemaId = schemaFetchResult.id
+      const schema = schemaFetchResult.schema
       schemas[schemaId] = schema
     }
 

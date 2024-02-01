@@ -9,6 +9,14 @@ import {
   ProofState,
   EventEmitter,
   InjectionSymbols,
+  Ed25519Signature2018,
+  SignatureSuiteToken,
+  VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2018,
+  VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2020,
+  W3cCredentialsModuleConfig,
+  ConsoleLogger,
+  DidResolverService,
+  DidsModuleConfig,
 } from '@credo-ts/core'
 import { Subject } from 'rxjs'
 
@@ -73,13 +81,22 @@ const anonCredsCredentialDefinitionPrivateRepository = new AnonCredsCredentialDe
   storageService,
   eventEmitter
 )
+
+const logger = new ConsoleLogger()
+const inMemoryStorageService = new InMemoryStorageService()
 const anonCredsCredentialRepository = new AnonCredsCredentialRepository(storageService, eventEmitter)
 const anonCredsKeyCorrectnessProofRepository = new AnonCredsKeyCorrectnessProofRepository(storageService, eventEmitter)
 const agentContext = getAgentContext({
   registerInstances: [
+    [InjectionSymbols.Stop$, new Subject<boolean>()],
+    [InjectionSymbols.AgentDependencies, agentDependencies],
+    [InjectionSymbols.FileSystem, new agentDependencies.FileSystem()],
+    [InjectionSymbols.StorageService, inMemoryStorageService],
+    [InjectionSymbols.Logger, logger],
     [AnonCredsIssuerServiceSymbol, anonCredsIssuerService],
     [AnonCredsHolderServiceSymbol, anonCredsHolderService],
     [AnonCredsVerifierServiceSymbol, anonCredsVerifierService],
+    [DidResolverService, new DidResolverService(logger, new DidsModuleConfig())],
     [AnonCredsRegistryService, new AnonCredsRegistryService()],
     [AnonCredsModuleConfig, anonCredsModuleConfig],
     [AnonCredsLinkSecretRepository, anonCredsLinkSecretRepository],
@@ -87,6 +104,7 @@ const agentContext = getAgentContext({
     [AnonCredsCredentialDefinitionPrivateRepository, anonCredsCredentialDefinitionPrivateRepository],
     [AnonCredsCredentialRepository, anonCredsCredentialRepository],
     [AnonCredsKeyCorrectnessProofRepository, anonCredsKeyCorrectnessProofRepository],
+    [W3cCredentialsModuleConfig, new W3cCredentialsModuleConfig()],
     [InjectionSymbols.StorageService, storageService],
     [
       AnonCredsRsModuleConfig,
@@ -94,6 +112,18 @@ const agentContext = getAgentContext({
         anoncreds,
         autoCreateLinkSecret: false,
       }),
+    ],
+    [
+      SignatureSuiteToken,
+      {
+        suiteClass: Ed25519Signature2018,
+        proofType: 'Ed25519Signature2018',
+        verificationMethodTypes: [
+          VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2018,
+          VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2020,
+        ],
+        keyTypes: [KeyType.Ed25519],
+      },
     ],
   ],
   agentConfig,
@@ -295,11 +325,11 @@ describe('Legacy indy format services', () => {
     expect(anonCredsCredential).toEqual({
       credentialId,
       attributes: {
-        age: '25',
+        age: 25,
         name: 'John',
       },
-      schemaId: legacySchemaId,
-      credentialDefinitionId: legacyCredentialDefinitionId,
+      schemaId: schemaState.schemaId,
+      credentialDefinitionId: credentialDefinitionState.credentialDefinitionId,
       revocationRegistryId: null,
       credentialRevocationId: null,
       methodName: 'inMemory',

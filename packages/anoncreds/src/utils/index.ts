@@ -17,4 +17,22 @@ export {
   unqualifiedSchemaVersionRegex,
 } from './indyIdentifiers'
 export { legacyCredentialToW3cCredential, w3cToLegacyCredential } from './w3cUtils'
-export { fetchObjectsFromLedger, fetchQualifiedIds } from './ledgerObjects'
+
+export {
+  fetchCredentialDefinition,
+  fetchRevocationRegistryDefinition,
+  fetchSchema,
+  getIndyNamespace,
+  isIndyDid,
+  getUnQualifiedId as getNonQualifiedId,
+  getQualifiedCredentialDefinition,
+  getQualifiedId,
+  getQualifiedRevocationRegistryDefinition,
+  getQualifiedSchema,
+  getUnqualifiedCredentialDefinition,
+  getUnqualifiedRevocationRegistryDefinition,
+  getUnqualifiedSchema,
+  isQualifiedCredentialDefinition,
+  isQualifiedRevocationRegistryDefinition,
+  isQualifiedSchema,
+} from './ledgerObjects'

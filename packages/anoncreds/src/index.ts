@@ -16,5 +16,23 @@ export * from './utils/indyIdentifiers'
 export { assertBestPracticeRevocationInterval } from './utils/revocationInterval'
 export { storeLinkSecret } from './utils/linkSecret'
 export { legacyCredentialToW3cCredential, w3cToLegacyCredential } from './utils/w3cUtils'
-export { fetchObjectsFromLedger, fetchQualifiedIds } from './utils/ledgerObjects'
+
 export { dateToTimestamp } from './utils'
+export {
+  fetchCredentialDefinition,
+  fetchRevocationRegistryDefinition,
+  fetchSchema,
+  getIndyNamespace,
+  isIndyDid,
+  getUnQualifiedId as getNonQualifiedId,
+  getQualifiedCredentialDefinition,
+  getQualifiedId,
+  getQualifiedRevocationRegistryDefinition,
+  getQualifiedSchema,
+  getUnqualifiedCredentialDefinition,
+  getUnqualifiedRevocationRegistryDefinition,
+  getUnqualifiedSchema,
+  isQualifiedCredentialDefinition,
+  isQualifiedRevocationRegistryDefinition,
+  isQualifiedSchema,
+} from './utils/ledgerObjects'

@@ -1,4 +1,4 @@
-import type { AnonCredsCredentialValue } from '@aries-framework/core'
+import type { AnonCredsCredentialValue } from '@credo-ts/core'
 
 export const anonCredsPredicateType = ['>=', '>', '<=', '<'] as const
 export type AnonCredsPredicateType = (typeof anonCredsPredicateType)[number]

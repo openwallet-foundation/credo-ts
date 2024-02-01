@@ -19,7 +19,7 @@ import type {
 } from '../src'
 import type { AgentContext } from '@credo-ts/core'
 
-import { Hasher, TypedArrayEncoder } from '@credo-ts/core'
+import { Hasher, TypedArrayEncoder, isDid } from '@credo-ts/core'
 import BigNumber from 'bn.js'
 
 import {
@@ -31,10 +31,16 @@ import {
   getUnqualifiedRevocationRegistryDefinitionId,
   getUnqualifiedCredentialDefinitionId,
   getUnqualifiedSchemaId,
-  parseIndyCredentialDefinitionId,
   parseIndyDid,
-  parseIndySchemaId,
+  getUnqualifiedSchema,
 } from '../src'
+import {
+  parseIndyCredentialDefinitionId,
+  parseIndyRevocationRegistryId,
+  parseIndySchemaId,
+  parseIndySchemaId,
+} from '../src/utils/indyIdentifiers'
+import { getQualifiedId, getUnQualifiedId } from '../src/utils/ledgerObjects'
 import { dateToTimestamp } from '../src/utils/timestamp'
 
 /**
@@ -71,7 +77,6 @@ export class InMemoryAnonCredsRegistry implements AnonCredsRegistry {
     const schema = this.schemas[schemaId]
 
     const parsed = parseIndySchemaId(schemaId)
-
     const legacySchemaId = getUnqualifiedSchemaId(parsed.namespaceIdentifier, parsed.schemaName, parsed.schemaVersion)
     const indyLedgerSeqNo = getSeqNoFromSchemaId(legacySchemaId)
 
@@ -86,6 +91,16 @@ export class InMemoryAnonCredsRegistry implements AnonCredsRegistry {
       }
     }
 
+    let didIndyNamespace
+    if (isDid(schemaId)) {
+      didIndyNamespace = parseIndySchemaId(schemaId).namespace
+    } else {
+      const qSchemaIdEnd = getQualifiedId(schemaId, 'mock').split('mock:')[1]
+      const qSchemaId = Object.keys(this.schemas).find((schemaId) => schemaId.endsWith(qSchemaIdEnd))
+      if (!qSchemaId) didIndyNamespace = undefined
+      else didIndyNamespace = parseIndySchemaId(qSchemaId).namespace
+    }
+
     return {
       resolutionMetadata: {},
       schema,
@@ -94,6 +109,7 @@ export class InMemoryAnonCredsRegistry implements AnonCredsRegistry {
         // NOTE: the seqNo is required by the indy-sdk even though not present in AnonCreds v1.
         // For this reason we return it in the metadata.
         indyLedgerSeqNo,
+        didIndyNamespace,
       },
     }
   }
@@ -103,7 +119,6 @@ export class InMemoryAnonCredsRegistry implements AnonCredsRegistry {
     options: RegisterSchemaOptions
   ): Promise<RegisterSchemaReturn> {
     const { namespace, namespaceIdentifier } = parseIndyDid(options.schema.issuerId)
-    const legacyIssuerId = namespaceIdentifier
     const didIndySchemaId = getDidIndySchemaId(
       namespace,
       namespaceIdentifier,
@@ -112,13 +127,10 @@ export class InMemoryAnonCredsRegistry implements AnonCredsRegistry {
     )
     this.schemas[didIndySchemaId] = options.schema
 
-    const legacySchemaId = getUnqualifiedSchemaId(legacyIssuerId, options.schema.name, options.schema.version)
+    const legacySchemaId = getUnQualifiedId(didIndySchemaId)
     const indyLedgerSeqNo = getSeqNoFromSchemaId(legacySchemaId)
 
-    this.schemas[legacySchemaId] = {
-      ...options.schema,
-      issuerId: legacyIssuerId,
-    }
+    this.schemas[legacySchemaId] = getUnqualifiedSchema(options.schema)
 
     return {
       registrationMetadata: {},
@@ -152,11 +164,23 @@ export class InMemoryAnonCredsRegistry implements AnonCredsRegistry {
       }
     }
 
+    let didIndyNamespace
+    if (isDid(credentialDefinitionId)) {
+      didIndyNamespace = parseIndyCredentialDefinitionId(credentialDefinitionId).namespace
+    } else {
+      const qCredDefEnd = getQualifiedId(credentialDefinitionId, 'mock').split('mock:')[1]
+      const qCredDefId = Object.keys(this.credentialDefinitions).find((credentialDefinitionid) =>
+        credentialDefinitionid.endsWith(qCredDefEnd)
+      )
+      if (!qCredDefId) didIndyNamespace = undefined
+      else didIndyNamespace = parseIndyCredentialDefinitionId(qCredDefId).namespace
+    }
+
     return {
       resolutionMetadata: {},
       credentialDefinition,
       credentialDefinitionId,
-      credentialDefinitionMetadata: {},
+      credentialDefinitionMetadata: { didIndyNamespace },
     }
   }
 
@@ -223,11 +247,23 @@ export class InMemoryAnonCredsRegistry implements AnonCredsRegistry {
       }
     }
 
+    let didIndyNamespace
+    if (isDid(revocationRegistryDefinitionId)) {
+      didIndyNamespace = parseIndyRevocationRegistryId(revocationRegistryDefinitionId).namespace
+    } else {
+      const qRevRegIdEnd = getQualifiedId(revocationRegistryDefinitionId, 'mock').split('mock:')[1]
+      const qRevRegId = Object.keys(this.revocationRegistryDefinitions).find((revRegId) =>
+        revRegId.endsWith(qRevRegIdEnd)
+      )
+      if (!qRevRegId) didIndyNamespace = undefined
+      else didIndyNamespace = parseIndyRevocationRegistryId(qRevRegId).namespace
+    }
+
     return {
       resolutionMetadata: {},
       revocationRegistryDefinition,
       revocationRegistryDefinitionId,
-      revocationRegistryDefinitionMetadata: {},
+      revocationRegistryDefinitionMetadata: { didIndyNamespace },
     }
   }
 

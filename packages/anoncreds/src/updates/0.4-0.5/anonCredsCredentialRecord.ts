@@ -1,25 +1,23 @@
 import type { AnonCredsCredentialRecord } from '../../repository'
-import type { AgentContext, BaseAgent } from '@aries-framework/core'
+import type { AgentContext, BaseAgent } from '@credo-ts/core'
 
-import { W3cCredentialService } from '@aries-framework/core'
+import { W3cCredentialService } from '@credo-ts/core'
 
 import { AnonCredsCredentialRepository } from '../../repository'
 import { legacyCredentialToW3cCredential } from '../../utils'
-import { fetchQualifiedIds } from '../../utils/ledgerObjects'
+import { getQualifiedId, fetchCredentialDefinition, getIndyNamespace } from '../../utils/ledgerObjects'
 
 async function migrateLegacyToW3cCredential(agentContext: AgentContext, legacyRecord: AnonCredsCredentialRecord) {
   const legacyCredential = legacyRecord.credential
   const legacyTags = legacyRecord.getTags()
 
-  const w3cJsonLdCredential = await legacyCredentialToW3cCredential(agentContext, legacyCredential)
+  // TODO: check if it is in cache
+  const credentialDefinitionReturn = await fetchCredentialDefinition(agentContext, legacyTags.credentialDefinitionId)
+  const namespace = getIndyNamespace(credentialDefinitionReturn.qualifiedId)
 
-  const { schemaId, schemaIssuerId, revocationRegistryId, credentialDefinitionId } = await fetchQualifiedIds(
-    agentContext,
-    {
-      schemaId: legacyTags.schemaId,
-      credentialDefinitionId: legacyTags.credentialDefinitionId,
-      revocationRegistryId: legacyTags.revocationRegistryId,
-    }
+  const w3cJsonLdCredential = await legacyCredentialToW3cCredential(
+    legacyCredential,
+    credentialDefinitionReturn.qualifiedCredentialDefinition
   )
 
   const w3cCredentialService = agentContext.dependencyManager.resolve(W3cCredentialService)
@@ -28,13 +26,13 @@ async function migrateLegacyToW3cCredential(agentContext: AgentContext, legacyRe
     anonCredsCredentialRecordOptions: {
       credentialId: legacyRecord.credentialId,
       linkSecretId: legacyRecord.linkSecretId,
-      credentialDefinitionId,
-      schemaId,
+      credentialDefinitionId: credentialDefinitionReturn.qualifiedId,
+      schemaId: getQualifiedId(legacyTags.schemaId, namespace),
       schemaName: legacyTags.schemaName,
-      schemaIssuerId,
+      schemaIssuerId: getQualifiedId(legacyTags.issuerId, namespace),
       schemaVersion: legacyTags.schemaVersion,
       methodName: legacyRecord.methodName,
-      revocationRegistryId: revocationRegistryId,
+      revocationRegistryId: getQualifiedId(legacyTags.credentialDefinitionId, namespace),
       credentialRevocationId: legacyTags.credentialRevocationId,
     },
   })

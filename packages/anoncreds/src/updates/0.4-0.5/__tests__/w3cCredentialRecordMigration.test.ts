@@ -1,4 +1,4 @@
-import type { Wallet } from '@aries-framework/core'
+import type { Wallet } from '@credo-ts/core'
 
 import {
   Agent,
@@ -14,7 +14,7 @@ import {
   VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2020,
   W3cCredentialRepository,
   W3cCredentialsModuleConfig,
-} from '@aries-framework/core'
+} from '@credo-ts/core'
 import { Subject } from 'rxjs'
 
 import { InMemoryStorageService } from '../../../../../../tests/InMemoryStorageService'

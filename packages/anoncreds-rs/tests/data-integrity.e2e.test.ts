@@ -1,6 +1,6 @@
 import type { AnonCredsTestsAgent } from './anoncredsSetup'
-import type { AgentContext, KeyDidCreateOptions } from '@aries-framework/core'
-import type { EventReplaySubject } from '@aries-framework/core/tests'
+import type { AgentContext, KeyDidCreateOptions } from '@credo-ts/core'
+import type { EventReplaySubject } from '@credo-ts/core/tests'
 import type { InputDescriptorV2, PresentationDefinitionV1 } from '@sphereon/pex-models'
 
 import {
@@ -15,7 +15,7 @@ import {
   W3cCredential,
   W3cCredentialService,
   W3cCredentialSubject,
-} from '@aries-framework/core'
+} from '@credo-ts/core'
 
 import { InMemoryAnonCredsRegistry } from '../../anoncreds/tests/InMemoryAnonCredsRegistry'
 import { waitForCredentialRecordSubject, waitForProofExchangeRecord } from '../../core/tests/helpers'
@@ -50,7 +50,7 @@ describe('data anoncreds w3c data integrity e2e tests', () => {
   let credentialDefinitionId: string
   let issuerHolderConnectionId: string
   let holderIssuerConnectionId: string
-  let revocationRegistryDefinitionId: string | undefined
+  let revocationRegistryDefinitionId: string | null
 
   let issuerReplay: EventReplaySubject
   let holderReplay: EventReplaySubject
@@ -132,7 +132,7 @@ async function anonCredsFlowTest(options: {
   holderIssuerConnectionId: string
   issuerReplay: EventReplaySubject
   holderReplay: EventReplaySubject
-  revocationRegistryDefinitionId: string | undefined
+  revocationRegistryDefinitionId: string | null
   credentialDefinitionId: string
 }) {
   const {
@@ -178,7 +178,7 @@ async function anonCredsFlowTest(options: {
         credential,
         anonCredsLinkSecretBindingMethodOptions: {
           credentialDefinitionId,
-          revocationRegistryDefinitionId,
+          revocationRegistryDefinitionId: revocationRegistryDefinitionId ?? undefined,
           revocationRegistryIndex: revocationRegistryDefinitionId ? 1 : undefined,
         },
         didCommSignedAttachmentBindingMethodOptions: {},

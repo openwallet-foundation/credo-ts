@@ -1,4 +1,4 @@
-import type { DataIntegrityCredentialRequest } from '@aries-framework/core'
+import type { DataIntegrityCredentialRequest } from '@credo-ts/core'
 
 import {
   AnonCredsCredentialDefinitionPrivateRecord,
@@ -21,7 +21,7 @@ import {
   AnonCredsSchemaRecord,
   AnonCredsSchemaRepository,
   AnonCredsVerifierServiceSymbol,
-} from '@aries-framework/anoncreds'
+} from '@credo-ts/anoncreds'
 import {
   AgentContext,
   CredentialExchangeRecord,
@@ -44,7 +44,7 @@ import {
   W3cCredentialService,
   W3cCredentialSubject,
   W3cCredentialsModuleConfig,
-} from '@aries-framework/core'
+} from '@credo-ts/core'
 import { Subject } from 'rxjs'
 
 import { InMemoryStorageService } from '../../../tests/InMemoryStorageService'
@@ -134,7 +134,7 @@ describe('data integrity format service (anoncreds)', () => {
   })
 
   afterEach(async () => {
-    inMemoryStorageService.records = {}
+    inMemoryStorageService.contextCorrelationIdToRecords = {}
   })
 
   test('issuance and verification flow anoncreds starting from offer without negotiation and without revocation', async () => {
@@ -281,7 +281,7 @@ async function anonCredsFlowTest(options: { issuerId: string; revocable: boolean
       options: {},
     })
 
-    if (!revocationStatusListState.revocationStatusList || !revocationStatusListState.timestamp) {
+    if (!revocationStatusListState.revocationStatusList) {
       throw new Error('Failed to create revocation status list')
     }
   }
@@ -417,8 +417,8 @@ async function anonCredsFlowTest(options: { issuerId: string; revocable: boolean
     },
     schemaId: schemaState.schemaId,
     credentialDefinitionId: credentialDefinitionState.credentialDefinitionId,
-    revocationRegistryId: revocable ? revocationRegistryDefinitionId : undefined,
-    credentialRevocationId: revocable ? '1' : undefined,
+    revocationRegistryId: revocable ? revocationRegistryDefinitionId : null,
+    credentialRevocationId: revocable ? '1' : null,
     methodName: 'inMemory',
   })
 

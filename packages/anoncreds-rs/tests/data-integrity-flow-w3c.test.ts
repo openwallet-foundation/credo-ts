@@ -1,11 +1,11 @@
-import type { KeyDidCreateOptions } from '@aries-framework/core'
+import type { KeyDidCreateOptions } from '@credo-ts/core'
 
 import {
   AnonCredsHolderServiceSymbol,
   AnonCredsIssuerServiceSymbol,
   AnonCredsModuleConfig,
   AnonCredsVerifierServiceSymbol,
-} from '@aries-framework/anoncreds'
+} from '@credo-ts/anoncreds'
 import {
   AgentContext,
   CredentialExchangeRecord,
@@ -29,7 +29,7 @@ import {
   W3cCredentialService,
   W3cCredentialSubject,
   W3cCredentialsModuleConfig,
-} from '@aries-framework/core'
+} from '@credo-ts/core'
 import { Subject } from 'rxjs'
 
 import { InMemoryStorageService } from '../../../tests/InMemoryStorageService'
@@ -122,7 +122,7 @@ describe('data integrity format service (w3c)', () => {
   })
 
   afterEach(async () => {
-    inMemoryStorageService.records = {}
+    inMemoryStorageService.contextCorrelationIdToRecords = {}
   })
 
   test('issuance and verification flow w3c starting from offer without negotiation and without revocation', async () => {

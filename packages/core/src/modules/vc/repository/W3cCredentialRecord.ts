@@ -26,6 +26,14 @@ export interface AnonCredsCredentialRecordOptions {
   schemaId: string
   credentialDefinitionId: string
   revocationRegistryId?: string
+
+  unqualifiedTags?: {
+    issuerId: string
+    schemaId: string
+    schemaIssuerId: string
+    credentialDefinitionId: string
+    revocationRegistryId?: string
+  }
 }
 
 export interface W3cCredentialRecordOptions {
@@ -54,10 +62,7 @@ export type DefaultW3cCredentialTags = {
 export type DefaultAnonCredsCredentialTags = {
   credentialId: string
   linkSecretId: string
-  credentialDefinitionId: string
   credentialRevocationId?: string
-  revocationRegistryId?: string
-  schemaId: string
   methodName: string
 
   // the following keys can be used for every `attribute name` in credential.
@@ -75,12 +80,18 @@ export type CustomW3cCredentialTags = TagsBase & {
 export type CustomAnonCredsCredentialTags = {
   schemaName: string
   schemaVersion: string
-  schemaIssuerId: string
 
   // TODO: derive from proof
   schemaId: string
+  schemaIssuerId: string
   credentialDefinitionId: string
   revocationRegistryId?: string
+
+  unqualifiedIssuerId: string | undefined
+  unqualifiedSchemaId: string | undefined
+  unqualifiedSchemaIssuerId: string | undefined
+  unqualifiedCredentialDefinitionId: string | undefined
+  unqualifiedRevocationRegistryId: string | undefined
 }
 
 export class W3cCredentialRecord extends BaseRecord<
@@ -121,6 +132,12 @@ export class W3cCredentialRecord extends BaseRecord<
         schemaId: props.anonCredsCredentialRecordOptions?.schemaId,
         credentialDefinitionId: props.anonCredsCredentialRecordOptions?.credentialDefinitionId,
         revocationRegistryId: props.anonCredsCredentialRecordOptions?.revocationRegistryId,
+        unqualifiedIssuerId: props.anonCredsCredentialRecordOptions?.unqualifiedTags?.issuerId,
+        unqualifiedSchemaIssuerId: props.anonCredsCredentialRecordOptions?.unqualifiedTags?.schemaIssuerId,
+        unqualifiedSchemaId: props.anonCredsCredentialRecordOptions?.unqualifiedTags?.schemaId,
+        unqualifiedCredentialDefinitionId:
+          props.anonCredsCredentialRecordOptions?.unqualifiedTags?.credentialDefinitionId,
+        unqualifiedRevocationRegistryId: props.anonCredsCredentialRecordOptions?.unqualifiedTags?.revocationRegistryId,
       })
     }
   }
@@ -162,14 +179,26 @@ export class W3cCredentialRecord extends BaseRecord<
 
     const { schemaId, schemaName, schemaVersion, schemaIssuerId, credentialDefinitionId } = this._tags
     if (!schemaId || !schemaName || !schemaVersion || !schemaIssuerId || !credentialDefinitionId) return undefined
+    const {
+      unqualifiedSchemaId,
+      unqualifiedSchemaIssuerId,
+      unqualifiedCredentialDefinitionId,
+      unqualifiedRevocationRegistryId,
+      unqualifiedIssuerId,
+    } = this._tags
 
     const anonCredsCredentialTags: Tags<DefaultAnonCredsCredentialTags, CustomAnonCredsCredentialTags> = {
+      schemaId,
       schemaIssuerId,
       schemaName,
       schemaVersion,
-      schemaId,
       credentialDefinitionId,
       revocationRegistryId: this._tags.revocationRegistryId,
+      unqualifiedIssuerId,
+      unqualifiedSchemaId,
+      unqualifiedSchemaIssuerId,
+      unqualifiedCredentialDefinitionId,
+      unqualifiedRevocationRegistryId,
       credentialId: this.anonCredsCredentialMetadata?.credentialId as string,
       credentialRevocationId: this.anonCredsCredentialMetadata?.credentialRevocationId as string,
       linkSecretId: this.anonCredsCredentialMetadata?.linkSecretId as string,

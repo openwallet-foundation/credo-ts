@@ -57,7 +57,8 @@ import {
   assertNoDuplicateGroupsNamesInProofRequest,
   getRevocationRegistriesForRequest,
   getRevocationRegistriesForProof,
-  fetchObjectsFromLedger,
+  fetchSchema,
+  fetchCredentialDefinition,
 } from '../utils'
 import { dateToTimestamp } from '../utils/timestamp'
 
@@ -465,12 +466,8 @@ export class AnonCredsProofFormatService implements ProofFormatService<AnonCreds
     const schemas: { [key: string]: AnonCredsSchema } = {}
 
     for (const schemaId of schemaIds) {
-      const { schemaReturn } = await fetchObjectsFromLedger(agentContext, { schemaId })
-      if (!schemaReturn.schema) {
-        throw new AriesFrameworkError(`Schema not found for id ${schemaId}: ${schemaReturn.resolutionMetadata.message}`)
-      }
-
-      schemas[schemaId] = schemaReturn.schema
+      const { schema } = await fetchSchema(agentContext, schemaId)
+      schemas[schemaId] = schema
     }
 
     return schemas
@@ -489,14 +486,8 @@ export class AnonCredsProofFormatService implements ProofFormatService<AnonCreds
     const credentialDefinitions: { [key: string]: AnonCredsCredentialDefinition } = {}
 
     for (const credentialDefinitionId of credentialDefinitionIds) {
-      const { credentialDefinitionReturn } = await fetchObjectsFromLedger(agentContext, { credentialDefinitionId })
-      if (!credentialDefinitionReturn.credentialDefinition) {
-        throw new AriesFrameworkError(
-          `Credential definition not found for id ${credentialDefinitionId}: ${credentialDefinitionReturn.resolutionMetadata.message}`
-        )
-      }
-
-      credentialDefinitions[credentialDefinitionId] = credentialDefinitionReturn.credentialDefinition
+      const { credentialDefinition } = await fetchCredentialDefinition(agentContext, credentialDefinitionId)
+      credentialDefinitions[credentialDefinitionId] = credentialDefinition
     }
 
     return credentialDefinitions

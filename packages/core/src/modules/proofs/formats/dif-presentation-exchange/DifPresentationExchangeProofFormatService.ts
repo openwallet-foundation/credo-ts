@@ -285,7 +285,11 @@ export class PresentationExchangeProofFormatService implements ProofFormatServic
           throw new AriesFrameworkError('Cannot process data integrity presentations without cryptosuites')
         }
 
-        if (cryptosuite === 'anoncredsvc-2023' || cryptosuite === 'anoncredspresvc-2023') {
+        if (
+          cryptosuite === 'anoncredsvc-2023' ||
+          cryptosuite === 'anoncredspresvc-2023' ||
+          cryptosuite === 'anoncredspresvp-2023'
+        ) {
           const dataIntegrityService = agentContext.dependencyManager.resolve<AnonCredsVcDataIntegrityService>(
             anonCredsVcDataIntegrityServiceSymbol
           )

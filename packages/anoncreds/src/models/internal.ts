@@ -1,4 +1,4 @@
-import type { AnonCredsClaimRecord } from '@aries-framework/core'
+import type { AnonCredsClaimRecord } from '@credo-ts/core'
 
 export interface AnonCredsCredentialInfo {
   credentialId: string
