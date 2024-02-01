@@ -5,7 +5,7 @@ import type { DidDocument, PeerDidNumAlgo } from '../../dids'
 import type { DidDoc, PublicKey } from '../models'
 
 import { Key, KeyType } from '../../../crypto'
-import { AriesFrameworkError } from '../../../error'
+import { CredoError } from '../../../error'
 import {
   IndyAgentService,
   DidCommV1Service,
@@ -110,7 +110,7 @@ function normalizeId(fullId: string): `#${string}` {
 
 function convertPublicKeyToVerificationMethod(publicKey: PublicKey) {
   if (!publicKey.value) {
-    throw new AriesFrameworkError(`Public key ${publicKey.id} does not have value property`)
+    throw new CredoError(`Public key ${publicKey.id} does not have value property`)
   }
   const publicKeyBase58 = publicKey.value
   const ed25519Key = Key.fromPublicKeyBase58(publicKeyBase58, KeyType.Ed25519)
@@ -134,7 +134,7 @@ export async function getDidDocumentForCreatedDid(agentContext: AgentContext, di
   const didRecord = await agentContext.dependencyManager.resolve(DidRepository).findCreatedDid(agentContext, did)
 
   if (!didRecord?.didDocument) {
-    throw new AriesFrameworkError(`Could not get DidDocument for created did ${did}`)
+    throw new CredoError(`Could not get DidDocument for created did ${did}`)
   }
   return didRecord.didDocument
 }
@@ -159,7 +159,7 @@ export async function createPeerDidFromServices(
   })
 
   if (result.didState?.state !== 'finished') {
-    throw new AriesFrameworkError(`Did document creation failed: ${JSON.stringify(result.didState)}`)
+    throw new CredoError(`Did document creation failed: ${JSON.stringify(result.didState)}`)
   }
 
   return result.didState.didDocument

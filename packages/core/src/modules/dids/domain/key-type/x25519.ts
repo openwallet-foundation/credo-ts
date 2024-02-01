@@ -2,7 +2,7 @@ import type { KeyDidMapping } from './keyDidMapping'
 import type { VerificationMethod } from '../verificationMethod'
 
 import { KeyType } from '../../../../crypto/KeyType'
-import { AriesFrameworkError } from '../../../../error'
+import { CredoError } from '../../../../error'
 import {
   getKeyFromX25519KeyAgreementKey2019,
   VERIFICATION_METHOD_TYPE_X25519_KEY_AGREEMENT_KEY_2019,
@@ -38,7 +38,7 @@ export const keyDidX25519: KeyDidMapping = {
       return getKeyFromMultikey(verificationMethod)
     }
 
-    throw new AriesFrameworkError(
+    throw new CredoError(
       `Verification method with type '${verificationMethod.type}' not supported for key type '${KeyType.X25519}'`
     )
   },

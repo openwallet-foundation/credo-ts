@@ -1,6 +1,6 @@
 import type { AgentContextProvider } from './AgentContextProvider'
 
-import { AriesFrameworkError } from '../../error'
+import { CredoError } from '../../error'
 import { injectable } from '../../plugins'
 
 import { AgentContext } from './AgentContext'
@@ -21,7 +21,7 @@ export class DefaultAgentContextProvider implements AgentContextProvider {
 
   public async getAgentContextForContextCorrelationId(contextCorrelationId: string): Promise<AgentContext> {
     if (contextCorrelationId !== this.agentContext.contextCorrelationId) {
-      throw new AriesFrameworkError(
+      throw new CredoError(
         `Could not get agent context for contextCorrelationId '${contextCorrelationId}'. Only contextCorrelationId '${this.agentContext.contextCorrelationId}' is supported.`
       )
     }
@@ -45,7 +45,7 @@ export class DefaultAgentContextProvider implements AgentContextProvider {
   public async endSessionForAgentContext(agentContext: AgentContext) {
     // Throw an error if the context correlation id does not match to prevent misuse.
     if (agentContext.contextCorrelationId !== this.agentContext.contextCorrelationId) {
-      throw new AriesFrameworkError(
+      throw new CredoError(
         `Could not end session for agent context with contextCorrelationId '${agentContext.contextCorrelationId}'. Only contextCorrelationId '${this.agentContext.contextCorrelationId}' is provided by this provider.`
       )
     }

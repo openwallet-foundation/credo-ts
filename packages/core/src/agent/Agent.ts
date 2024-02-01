@@ -13,7 +13,7 @@ import { concatMap, takeUntil } from 'rxjs/operators'
 import { InjectionSymbols } from '../constants'
 import { SigningProviderToken } from '../crypto'
 import { JwsService } from '../crypto/JwsService'
-import { AriesFrameworkError } from '../error'
+import { CredoError } from '../error'
 import { DependencyManager } from '../plugins'
 import { DidCommMessageRepository, StorageUpdateService, StorageVersionRepository } from '../storage'
 
@@ -77,7 +77,7 @@ export class Agent<AgentModules extends AgentModulesInput = any> extends BaseAge
 
     // Register possibly already defined services
     if (!dependencyManager.isRegistered(InjectionSymbols.Wallet)) {
-      throw new AriesFrameworkError(
+      throw new CredoError(
         "Missing required dependency: 'Wallet'. You can register it using the AskarModule, or implement your own."
       )
     }
@@ -85,7 +85,7 @@ export class Agent<AgentModules extends AgentModulesInput = any> extends BaseAge
       dependencyManager.registerInstance(InjectionSymbols.Logger, agentConfig.logger)
     }
     if (!dependencyManager.isRegistered(InjectionSymbols.StorageService)) {
-      throw new AriesFrameworkError(
+      throw new CredoError(
         "Missing required dependency: 'StorageService'. You can register it using the AskarModule, or implement your own."
       )
     }
@@ -236,7 +236,7 @@ export class Agent<AgentModules extends AgentModulesInput = any> extends BaseAge
       this.logger.debug(`Mediation invitation processed`, { outOfBandInvitation })
 
       if (!newConnection) {
-        throw new AriesFrameworkError('No connection record to provision mediation.')
+        throw new CredoError('No connection record to provision mediation.')
       }
 
       return this.connections.returnWhenIsConnected(newConnection.id)

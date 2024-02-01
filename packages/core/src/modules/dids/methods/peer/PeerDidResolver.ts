@@ -3,7 +3,7 @@ import type { DidDocument } from '../../domain'
 import type { DidResolver } from '../../domain/DidResolver'
 import type { DidResolutionResult } from '../../types'
 
-import { AriesFrameworkError } from '../../../../error'
+import { CredoError } from '../../../../error'
 import { DidRepository } from '../../repository'
 
 import { getNumAlgoFromPeerDid, isValidPeerDid, PeerDidNumAlgo } from './didPeer'
@@ -28,7 +28,7 @@ export class PeerDidResolver implements DidResolver {
       let didDocument: DidDocument
 
       if (!isValidPeerDid(did)) {
-        throw new AriesFrameworkError(`did ${did} is not a valid peer did`)
+        throw new CredoError(`did ${did} is not a valid peer did`)
       }
 
       const numAlgo = getNumAlgoFromPeerDid(did)
@@ -44,11 +44,11 @@ export class PeerDidResolver implements DidResolver {
         const [didDocumentRecord] = await didRepository.findAllByDid(agentContext, did)
 
         if (!didDocumentRecord) {
-          throw new AriesFrameworkError(`No did record found for peer did ${did}.`)
+          throw new CredoError(`No did record found for peer did ${did}.`)
         }
 
         if (!didDocumentRecord.didDocument) {
-          throw new AriesFrameworkError(`Found did record for method 1 peer did (${did}), but no did document.`)
+          throw new CredoError(`Found did record for method 1 peer did (${did}), but no did document.`)
         }
 
         didDocument = didDocumentRecord.didDocument
@@ -63,7 +63,7 @@ export class PeerDidResolver implements DidResolver {
           const [didRecord] = await didRepository.findAllByDid(agentContext, did)
 
           if (!didRecord) {
-            throw new AriesFrameworkError(`No did record found for peer did ${did}.`)
+            throw new CredoError(`No did record found for peer did ${did}.`)
           }
           didDocument = didToNumAlgo4DidDocument(didRecord.did)
         } else {

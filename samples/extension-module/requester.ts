@@ -3,7 +3,7 @@ import type { DummyRecord, DummyStateChangedEvent } from './dummy'
 import {
   HttpOutboundTransport,
   Agent,
-  AriesFrameworkError,
+  CredoError,
   ConsoleLogger,
   LogLevel,
   WsOutboundTransport,
@@ -52,7 +52,7 @@ const run = async () => {
   const invitationUrl = await (await agentDependencies.fetch(`http://localhost:${port}/invitation`)).text()
   const { connectionRecord } = await agent.oob.receiveInvitationFromUrl(invitationUrl)
   if (!connectionRecord) {
-    throw new AriesFrameworkError('Connection record for out-of-band invitation was not created.')
+    throw new CredoError('Connection record for out-of-band invitation was not created.')
   }
   await agent.connections.returnWhenIsConnected(connectionRecord.id)
 

@@ -4,7 +4,7 @@ import type { AgentContext } from '@credo-ts/core'
 
 import { parseIndyDid } from '@credo-ts/anoncreds'
 import {
-  AriesFrameworkError,
+  CredoError,
   DidDocument,
   DidDocumentBuilder,
   DidsApi,
@@ -168,7 +168,7 @@ export function indyDidFromNamespaceAndInitialKey(namespace: string, initialKey:
 /**
  * Fetches the verification key for a given did:indy did and returns the key as a {@link Key} object.
  *
- * @throws {@link AriesFrameworkError} if the did could not be resolved or the key could not be extracted
+ * @throws {@link CredoError} if the did could not be resolved or the key could not be extracted
  */
 export async function verificationKeyForIndyDid(agentContext: AgentContext, did: string) {
   // FIXME: we should store the didDocument in the DidRecord so we don't have to fetch our own did
@@ -177,7 +177,7 @@ export async function verificationKeyForIndyDid(agentContext: AgentContext, did:
   const didResult = await didsApi.resolve(did)
 
   if (!didResult.didDocument) {
-    throw new AriesFrameworkError(
+    throw new CredoError(
       `Could not resolve did ${did}. ${didResult.didResolutionMetadata.error} ${didResult.didResolutionMetadata.message}`
     )
   }

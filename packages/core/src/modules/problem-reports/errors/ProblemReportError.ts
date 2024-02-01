@@ -1,11 +1,11 @@
-import { AriesFrameworkError } from '../../../error/AriesFrameworkError'
+import { CredoError } from '../../../error/CredoError'
 import { ProblemReportMessage } from '../messages/ProblemReportMessage'
 
 export interface ProblemReportErrorOptions {
   problemCode: string
 }
 
-export class ProblemReportError extends AriesFrameworkError {
+export class ProblemReportError extends CredoError {
   public problemReport: ProblemReportMessage
 
   public constructor(message: string, { problemCode }: ProblemReportErrorOptions) {

@@ -19,7 +19,7 @@ import type {
 import type { AgentContext } from '../../agent/context'
 import type { Query } from '../../storage/StorageService'
 
-import { AriesFrameworkError } from '../../error'
+import { CredoError } from '../../error'
 import { injectable } from '../../plugins'
 
 import { CREDENTIALS_CONTEXT_V1_URL } from './constants'
@@ -63,7 +63,7 @@ export class W3cCredentialService {
     } else if (options.format === ClaimFormat.LdpVc) {
       return this.w3cJsonLdCredentialService.signCredential(agentContext, options)
     } else {
-      throw new AriesFrameworkError(`Unsupported format in options. Format must be either 'jwt_vc' or 'ldp_vc'`)
+      throw new CredoError(`Unsupported format in options. Format must be either 'jwt_vc' or 'ldp_vc'`)
     }
   }
 
@@ -79,7 +79,7 @@ export class W3cCredentialService {
     } else if (options.credential instanceof W3cJwtVerifiableCredential || typeof options.credential === 'string') {
       return this.w3cJwtCredentialService.verifyCredential(agentContext, options as W3cJwtVerifyCredentialOptions)
     } else {
-      throw new AriesFrameworkError(
+      throw new CredoError(
         `Unsupported credential type in options. Credential must be either a W3cJsonLdVerifiableCredential or a W3cJwtVerifiableCredential`
       )
     }
@@ -119,7 +119,7 @@ export class W3cCredentialService {
     } else if (options.format === ClaimFormat.LdpVp) {
       return this.w3cJsonLdCredentialService.signPresentation(agentContext, options)
     } else {
-      throw new AriesFrameworkError(`Unsupported format in options. Format must be either 'jwt_vp' or 'ldp_vp'`)
+      throw new CredoError(`Unsupported format in options. Format must be either 'jwt_vp' or 'ldp_vp'`)
     }
   }
 
@@ -144,7 +144,7 @@ export class W3cCredentialService {
     ) {
       return this.w3cJwtCredentialService.verifyPresentation(agentContext, options as W3cJwtVerifyPresentationOptions)
     } else {
-      throw new AriesFrameworkError(
+      throw new CredoError(
         'Unsupported credential type in options. Presentation must be either a W3cJsonLdVerifiablePresentation or a W3cJwtVerifiablePresentation'
       )
     }

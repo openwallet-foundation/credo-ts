@@ -1,4 +1,4 @@
-import { AriesFrameworkError } from '../../../../error'
+import { CredoError } from '../../../../error'
 
 import { getAlternativeDidsForNumAlgo4Did } from './peerDidNumAlgo4'
 
@@ -28,7 +28,7 @@ export function getNumAlgoFromPeerDid(did: string) {
     numAlgo !== PeerDidNumAlgo.MultipleInceptionKeyWithoutDoc &&
     numAlgo !== PeerDidNumAlgo.ShortFormAndLongForm
   ) {
-    throw new AriesFrameworkError(`Invalid peer did numAlgo: ${numAlgo}`)
+    throw new CredoError(`Invalid peer did numAlgo: ${numAlgo}`)
   }
 
   return numAlgo as PeerDidNumAlgo

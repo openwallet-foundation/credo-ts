@@ -4,7 +4,7 @@ import type { Cache } from '../Cache'
 
 import { LRUMap } from 'lru_map'
 
-import { AriesFrameworkError, RecordDuplicateError } from '../../../error'
+import { CredoError, RecordDuplicateError } from '../../../error'
 
 import { SingleContextLruCacheRecord } from './SingleContextLruCacheRecord'
 import { SingleContextLruCacheRepository } from './SingleContextLruCacheRepository'
@@ -163,7 +163,7 @@ export class SingleContextStorageLruCache implements Cache {
     }
 
     if (this._contextCorrelationId !== agentContext.contextCorrelationId) {
-      throw new AriesFrameworkError(
+      throw new CredoError(
         'SingleContextStorageLruCache can not be used with multiple agent context instances. Register a custom cache implementation in the CacheModule.'
       )
     }

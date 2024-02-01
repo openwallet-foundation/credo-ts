@@ -4,7 +4,7 @@ import type { Module } from '../../plugins'
 import type { FileSystem } from '../FileSystem'
 
 import { InjectionSymbols } from '../../constants'
-import { AriesFrameworkError } from '../../error'
+import { CredoError } from '../../error'
 import { isFirstVersionEqualToSecond, isFirstVersionHigherThanSecond, parseVersionString } from '../../utils/version'
 import { WalletExportPathExistsError } from '../../wallet/error'
 import { WalletError } from '../../wallet/error/WalletError'
@@ -30,7 +30,7 @@ export class UpdateAssistant<Agent extends BaseAgent<any> = BaseAgent> {
 
   public async initialize() {
     if (this.agent.isInitialized) {
-      throw new AriesFrameworkError("Can't initialize UpdateAssistant after agent is initialized")
+      throw new CredoError("Can't initialize UpdateAssistant after agent is initialized")
     }
 
     // Initialize the wallet if not already done
@@ -92,14 +92,14 @@ export class UpdateAssistant<Agent extends BaseAgent<any> = BaseAgent> {
       neededUpdates.length > 0 &&
       isFirstVersionHigherThanSecond(parseVersionString(neededUpdates[0].fromVersion), currentStorageVersion)
     ) {
-      throw new AriesFrameworkError(
+      throw new CredoError(
         `First fromVersion is higher than current storage version. You need to use an older version of the framework to update to at least version ${neededUpdates[0].fromVersion}`
       )
     }
 
     const lastUpdateToVersion = neededUpdates.length > 0 ? neededUpdates[neededUpdates.length - 1].toVersion : undefined
     if (toVersion && lastUpdateToVersion && lastUpdateToVersion !== toVersion) {
-      throw new AriesFrameworkError(
+      throw new CredoError(
         `No update found for toVersion ${toVersion}. Make sure the toVersion is a valid version you can update to`
       )
     }
@@ -237,7 +237,7 @@ export class UpdateAssistant<Agent extends BaseAgent<any> = BaseAgent> {
 
     const walletKey = this.agent.wallet.walletConfig?.key
     if (!walletKey) {
-      throw new AriesFrameworkError("Could not extract wallet key from wallet module. Can't create backup")
+      throw new CredoError("Could not extract wallet key from wallet module. Can't create backup")
     }
 
     await this.agent.wallet.export({ key: walletKey, path: backupPath })
@@ -251,7 +251,7 @@ export class UpdateAssistant<Agent extends BaseAgent<any> = BaseAgent> {
 
     const walletConfig = this.agent.wallet.walletConfig
     if (!walletConfig) {
-      throw new AriesFrameworkError('Could not extract wallet config from wallet module. Cannot restore backup')
+      throw new CredoError('Could not extract wallet config from wallet module. Cannot restore backup')
     }
 
     // Export and delete current wallet

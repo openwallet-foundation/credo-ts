@@ -1,6 +1,6 @@
 import { KeyType } from '../../../../crypto'
 import { Key } from '../../../../crypto/Key'
-import { AriesFrameworkError } from '../../../../error'
+import { CredoError } from '../../../../error'
 
 import { VerificationMethod } from './VerificationMethod'
 
@@ -35,12 +35,12 @@ export function isEd25519VerificationKey2020(
  */
 export function getKeyFromEd25519VerificationKey2020(verificationMethod: Ed25519VerificationKey2020) {
   if (!verificationMethod.publicKeyMultibase) {
-    throw new AriesFrameworkError('verification method is missing publicKeyMultibase')
+    throw new CredoError('verification method is missing publicKeyMultibase')
   }
 
   const key = Key.fromFingerprint(verificationMethod.publicKeyMultibase)
   if (key.keyType !== KeyType.Ed25519) {
-    throw new AriesFrameworkError(`Verification method publicKeyMultibase is for unexpected key type ${key.keyType}`)
+    throw new CredoError(`Verification method publicKeyMultibase is for unexpected key type ${key.keyType}`)
   }
 
   return key

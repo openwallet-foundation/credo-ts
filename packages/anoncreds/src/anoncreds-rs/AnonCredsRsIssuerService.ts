@@ -22,7 +22,7 @@ import type {
 import type { AgentContext } from '@credo-ts/core'
 import type { CredentialDefinitionPrivate, JsonObject, KeyCorrectnessProof } from '@hyperledger/anoncreds-shared'
 
-import { injectable, AriesFrameworkError } from '@credo-ts/core'
+import { injectable, CredoError } from '@credo-ts/core'
 import {
   RevocationStatusList,
   RevocationRegistryDefinitionPrivate,
@@ -281,7 +281,7 @@ export class AnonCredsRsIssuerService implements AnonCredsIssuerService {
       revocationRegistryIndex,
     ].filter((e) => e !== undefined)
     if (definedRevocationOptions.length > 0 && definedRevocationOptions.length < 3) {
-      throw new AriesFrameworkError(
+      throw new CredoError(
         'Revocation requires all of revocationRegistryDefinitionId, revocationRegistryIndex and revocationStatusList'
       )
     }

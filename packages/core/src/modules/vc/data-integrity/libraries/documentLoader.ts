@@ -1,7 +1,7 @@
 import type { DocumentLoader } from './jsonld'
 import type { AgentContext } from '../../../../agent/context/AgentContext'
 
-import { AriesFrameworkError } from '../../../../error/AriesFrameworkError'
+import { CredoError } from '../../../../error/CredoError'
 import { isDid } from '../../../../utils'
 import { DidResolverService } from '../../../dids'
 
@@ -18,7 +18,7 @@ export function defaultDocumentLoader(agentContext: AgentContext): DocumentLoade
       const result = await didResolver.resolve(agentContext, url)
 
       if (result.didResolutionMetadata.error || !result.didDocument) {
-        throw new AriesFrameworkError(`Unable to resolve DID: ${url}`)
+        throw new CredoError(`Unable to resolve DID: ${url}`)
       }
 
       const framed = await jsonld.frame(

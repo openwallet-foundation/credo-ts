@@ -1,6 +1,6 @@
 import type { Buffer } from '../../../utils'
 
-import { AriesFrameworkError } from '../../../error'
+import { CredoError } from '../../../error'
 import { JsonEncoder, TypedArrayEncoder } from '../../../utils'
 
 import { JwtPayload } from './JwtPayload'
@@ -42,7 +42,7 @@ export class Jwt {
 
   public static fromSerializedJwt(serializedJwt: string) {
     if (typeof serializedJwt !== 'string' || !Jwt.format.test(serializedJwt)) {
-      throw new AriesFrameworkError(`Invalid JWT. '${serializedJwt}' does not match JWT regex`)
+      throw new CredoError(`Invalid JWT. '${serializedJwt}' does not match JWT regex`)
     }
 
     const [header, payload, signature] = serializedJwt.split('.')
@@ -55,7 +55,7 @@ export class Jwt {
         serializedJwt,
       })
     } catch (error) {
-      throw new AriesFrameworkError(`Invalid JWT. ${error instanceof Error ? error.message : JSON.stringify(error)}`)
+      throw new CredoError(`Invalid JWT. ${error instanceof Error ? error.message : JSON.stringify(error)}`)
     }
   }
 }

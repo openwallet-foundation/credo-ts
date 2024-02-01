@@ -6,7 +6,7 @@ import type { ConnectionService } from '../services/ConnectionService'
 
 import { OutboundMessageContext } from '../../../agent/models'
 import { ReturnRouteTypes } from '../../../decorators/transport/TransportDecorator'
-import { AriesFrameworkError } from '../../../error'
+import { CredoError } from '../../../error'
 import { ConnectionResponseMessage } from '../messages'
 import { DidExchangeRole } from '../models'
 
@@ -34,7 +34,7 @@ export class ConnectionResponseHandler implements MessageHandler {
     const { recipientKey, senderKey, message } = messageContext
 
     if (!recipientKey || !senderKey) {
-      throw new AriesFrameworkError('Unable to process connection response without senderKey or recipientKey')
+      throw new CredoError('Unable to process connection response without senderKey or recipientKey')
     }
 
     // Query by both role and thread id to allow connecting to self
@@ -44,11 +44,11 @@ export class ConnectionResponseHandler implements MessageHandler {
       message.threadId
     )
     if (!connectionRecord) {
-      throw new AriesFrameworkError(`Connection for thread ID ${message.threadId} not found!`)
+      throw new CredoError(`Connection for thread ID ${message.threadId} not found!`)
     }
 
     if (!connectionRecord.did) {
-      throw new AriesFrameworkError(`Connection record ${connectionRecord.id} has no 'did'`)
+      throw new CredoError(`Connection record ${connectionRecord.id} has no 'did'`)
     }
 
     const ourDidDocument = await this.didResolverService.resolveDidDocument(
@@ -56,15 +56,13 @@ export class ConnectionResponseHandler implements MessageHandler {
       connectionRecord.did
     )
     if (!ourDidDocument) {
-      throw new AriesFrameworkError(`Did document for did ${connectionRecord.did} was not resolved!`)
+      throw new CredoError(`Did document for did ${connectionRecord.did} was not resolved!`)
     }
 
     // Validate if recipient key is included in recipient keys of the did document resolved by
     // connection record did
     if (!ourDidDocument.recipientKeys.find((key) => key.fingerprint === recipientKey.fingerprint)) {
-      throw new AriesFrameworkError(
-        `Recipient key ${recipientKey.fingerprint} not found in did document recipient keys.`
-      )
+      throw new CredoError(`Recipient key ${recipientKey.fingerprint} not found in did document recipient keys.`)
     }
 
     const outOfBandRecord =
@@ -72,7 +70,7 @@ export class ConnectionResponseHandler implements MessageHandler {
       (await this.outOfBandService.findById(messageContext.agentContext, connectionRecord.outOfBandId))
 
     if (!outOfBandRecord) {
-      throw new AriesFrameworkError(`Out-of-band record ${connectionRecord.outOfBandId} was not found.`)
+      throw new CredoError(`Out-of-band record ${connectionRecord.outOfBandId} was not found.`)
     }
 
     messageContext.connection = connectionRecord

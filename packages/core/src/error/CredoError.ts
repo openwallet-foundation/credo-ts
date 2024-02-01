@@ -1,8 +1,8 @@
 import { BaseError } from './BaseError'
 
-export class AriesFrameworkError extends BaseError {
+export class CredoError extends BaseError {
   /**
-   * Create base AriesFrameworkError.
+   * Create base CredoError.
    * @param message the error message
    * @param cause the error that caused this error to be created
    */

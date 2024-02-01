@@ -15,7 +15,7 @@ import type { DeriveProofOptions, VerifyProofOptions, CreateVerifyDataOptions, C
 import type { VerifyProofResult } from '../types/VerifyProofResult'
 import type { JsonObject, DocumentLoader, Proof } from '@credo-ts/core'
 
-import { AriesFrameworkError, TypedArrayEncoder, SECURITY_CONTEXT_URL, vcLibraries } from '@credo-ts/core'
+import { CredoError, TypedArrayEncoder, SECURITY_CONTEXT_URL, vcLibraries } from '@credo-ts/core'
 import { blsCreateProof, blsVerifyProof } from '@mattrglobal/bbs-signatures'
 import { Bls12381G2KeyPair } from '@mattrglobal/bls12381-key-pair'
 import { randomBytes } from '@stablelib/random'
@@ -255,7 +255,7 @@ export class BbsBlsSignatureProof2020 extends LinkedDataProof {
       const proofValue = proof.proofValue
 
       if (typeof proofValue !== 'string') {
-        throw new AriesFrameworkError(`Expected proof.proofValue to be of type 'string', got ${typeof proof}`)
+        throw new CredoError(`Expected proof.proofValue to be of type 'string', got ${typeof proof}`)
       }
 
       // Verify the proof
@@ -379,9 +379,7 @@ export class BbsBlsSignatureProof2020 extends LinkedDataProof {
     }
 
     if (!options.documentLoader) {
-      throw new AriesFrameworkError(
-        'Missing custom document loader. This is required for resolving verification methods.'
-      )
+      throw new CredoError('Missing custom document loader. This is required for resolving verification methods.')
     }
 
     const { document } = await options.documentLoader(verificationMethod)
