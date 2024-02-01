@@ -86,4 +86,9 @@ export class TenantsApi<AgentModules extends ModulesMap = DefaultAgentModules> {
 
     return this.tenantRecordService.deleteTenantById(this.agentContext, tenantId)
   }
+
+  public async getAllTenants() {
+    this.logger.debug('Getting all tenants')
+    return this.tenantRecordService.getAllTenants(this.agentContext)
+  }
 }
