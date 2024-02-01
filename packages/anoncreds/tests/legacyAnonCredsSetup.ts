@@ -30,8 +30,6 @@ import {
 } from '@credo-ts/core'
 import { randomUUID } from 'crypto'
 
-import { AnonCredsRsModule } from '../../anoncreds-rs/src'
-import { anoncreds } from '../../anoncreds-rs/tests/helpers'
 import { sleep } from '../../core/src/utils/sleep'
 import { setupSubjectTransports, setupEventReplaySubjects } from '../../core/tests'
 import {
@@ -62,6 +60,8 @@ import {
   LegacyIndyCredentialFormatService,
   LegacyIndyProofFormatService,
 } from '../src'
+
+import { anoncreds } from './helpers'
 
 // Helper type to get the type of the agents (with the custom modules) for the credential tests
 export type AnonCredsTestsAgent = Agent<
@@ -101,8 +101,6 @@ export const getAnonCredsIndyModules = ({
     }),
     anoncreds: new AnonCredsModule({
       registries: [new IndyVdrAnonCredsRegistry()],
-    }),
-    anoncredsRs: new AnonCredsRsModule({
       anoncreds,
     }),
     indyVdr: new IndyVdrModule(indyVdrModuleConfig),

@@ -10,11 +10,11 @@ import {
   V2OfferCredentialMessage,
 } from '@credo-ts/core'
 
-import { InMemoryAnonCredsRegistry } from '../../anoncreds/tests/InMemoryAnonCredsRegistry'
 import { waitForCredentialRecordSubject } from '../../core/tests'
 import { waitForRevocationNotification } from '../../core/tests/helpers'
 import testLogger from '../../core/tests/logger'
 
+import { InMemoryAnonCredsRegistry } from './InMemoryAnonCredsRegistry'
 import { setupAnonCredsTests } from './anoncredsSetup'
 
 const credentialPreview = V2CredentialPreview.fromRecord({

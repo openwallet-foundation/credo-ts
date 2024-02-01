@@ -6,6 +6,7 @@ import { InMemoryStorageService } from '../../../../../tests/InMemoryStorageServ
 import { RegisteredAskarTestWallet } from '../../../../askar/tests/helpers'
 import { agentDependencies, getAskarWalletConfig } from '../../../../core/tests'
 import { InMemoryAnonCredsRegistry } from '../../../tests/InMemoryAnonCredsRegistry'
+import { anoncreds } from '../../../tests/helpers'
 import { AnonCredsModule } from '../../AnonCredsModule'
 import {
   AnonCredsHolderServiceSymbol,
@@ -48,6 +49,7 @@ describe('UpdateAssistant | AnonCreds | v0.3.1 - v0.4', () => {
           // We need to include the AnonCredsModule to run the updates
           anoncreds: new AnonCredsModule({
             registries: [new InMemoryAnonCredsRegistry()],
+            anoncreds,
           }),
         },
       },
@@ -122,6 +124,7 @@ describe('UpdateAssistant | AnonCreds | v0.3.1 - v0.4', () => {
         modules: {
           // We need to include the AnonCredsModule to run the updates
           anoncreds: new AnonCredsModule({
+            anoncreds,
             registries: [
               // We need to be able to resolve the credential definition so we can correctly
               new InMemoryAnonCredsRegistry({

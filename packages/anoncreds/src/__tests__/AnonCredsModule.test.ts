@@ -1,8 +1,10 @@
 import type { AnonCredsRegistry } from '../services'
 import type { DependencyManager } from '@credo-ts/core'
 
+import { anoncreds } from '../../tests/helpers'
 import { AnonCredsModule } from '../AnonCredsModule'
 import { AnonCredsModuleConfig } from '../AnonCredsModuleConfig'
+import { AnonCredsRsHolderService, AnonCredsRsIssuerService, AnonCredsRsVerifierService } from '../anoncreds-rs'
 import {
   AnonCredsSchemaRepository,
   AnonCredsCredentialDefinitionRepository,
@@ -12,6 +14,7 @@ import {
   AnonCredsRevocationRegistryDefinitionPrivateRepository,
   AnonCredsRevocationRegistryDefinitionRepository,
 } from '../repository'
+import { AnonCredsHolderServiceSymbol, AnonCredsIssuerServiceSymbol, AnonCredsVerifierServiceSymbol } from '../services'
 import { AnonCredsRegistryService } from '../services/registry/AnonCredsRegistryService'
 
 const dependencyManager = {
@@ -25,10 +28,11 @@ describe('AnonCredsModule', () => {
   test('registers dependencies on the dependency manager', () => {
     const anonCredsModule = new AnonCredsModule({
       registries: [registry],
+      anoncreds,
     })
     anonCredsModule.register(dependencyManager)
 
-    expect(dependencyManager.registerSingleton).toHaveBeenCalledTimes(8)
+    expect(dependencyManager.registerSingleton).toHaveBeenCalledTimes(11)
     expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(AnonCredsRegistryService)
     expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(AnonCredsSchemaRepository)
     expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(AnonCredsCredentialDefinitionRepository)
@@ -38,6 +42,19 @@ describe('AnonCredsModule', () => {
     expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(AnonCredsRevocationRegistryDefinitionRepository)
     expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(
       AnonCredsRevocationRegistryDefinitionPrivateRepository
+    )
+
+    expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(
+      AnonCredsHolderServiceSymbol,
+      AnonCredsRsHolderService
+    )
+    expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(
+      AnonCredsIssuerServiceSymbol,
+      AnonCredsRsIssuerService
+    )
+    expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(
+      AnonCredsVerifierServiceSymbol,
+      AnonCredsRsVerifierService
     )
 
     expect(dependencyManager.registerInstance).toHaveBeenCalledTimes(1)

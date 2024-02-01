@@ -1,24 +1,26 @@
 import type {
-  AnonCredsCredential,
-  AnonCredsCredentialInfo,
-  AnonCredsCredentialRequest,
-  AnonCredsCredentialRequestMetadata,
-  AnonCredsHolderService,
   AnonCredsProof,
-  AnonCredsProofRequestRestriction,
   AnonCredsRequestedAttributeMatch,
   AnonCredsRequestedPredicateMatch,
-  CreateCredentialRequestOptions,
-  CreateCredentialRequestReturn,
+  AnonCredsCredentialRequest,
+  AnonCredsCredentialRequestMetadata,
+  AnonCredsCredential,
+  AnonCredsCredentialInfo,
+  AnonCredsProofRequestRestriction,
+} from '../models'
+import type {
+  AnonCredsHolderService,
   CreateLinkSecretOptions,
   CreateLinkSecretReturn,
   CreateProofOptions,
+  CreateCredentialRequestOptions,
+  CreateCredentialRequestReturn,
   GetCredentialOptions,
-  GetCredentialsForProofRequestOptions,
-  GetCredentialsForProofRequestReturn,
   GetCredentialsOptions,
   StoreCredentialOptions,
-} from '@credo-ts/anoncreds'
+  GetCredentialsForProofRequestOptions,
+  GetCredentialsForProofRequestReturn,
+} from '../services'
 import type { AgentContext, Query, SimpleQuery } from '@credo-ts/core'
 import type {
   CredentialEntry,
@@ -27,15 +29,6 @@ import type {
   JsonObject,
 } from '@hyperledger/anoncreds-shared'
 
-import {
-  AnonCredsCredentialRecord,
-  AnonCredsCredentialRepository,
-  AnonCredsLinkSecretRepository,
-  AnonCredsRestrictionWrapper,
-  unqualifiedCredentialDefinitionIdRegex,
-  AnonCredsRegistryService,
-  storeLinkSecret,
-} from '@credo-ts/anoncreds'
 import { AriesFrameworkError, JsonTransformer, TypedArrayEncoder, injectable, utils } from '@credo-ts/core'
 import {
   Credential,
@@ -48,8 +41,12 @@ import {
   anoncreds,
 } from '@hyperledger/anoncreds-shared'
 
-import { AnonCredsRsModuleConfig } from '../AnonCredsRsModuleConfig'
-import { AnonCredsRsError } from '../errors/AnonCredsRsError'
+import { AnonCredsModuleConfig } from '../AnonCredsModuleConfig'
+import { AnonCredsRsError } from '../error'
+import { AnonCredsRestrictionWrapper } from '../models'
+import { AnonCredsCredentialRepository, AnonCredsCredentialRecord, AnonCredsLinkSecretRepository } from '../repository'
+import { AnonCredsRegistryService } from '../services'
+import { storeLinkSecret, unqualifiedCredentialDefinitionIdRegex } from '../utils'
 
 @injectable()
 export class AnonCredsRsHolderService implements AnonCredsHolderService {
@@ -206,7 +203,7 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
 
       // No default link secret. Automatically create one if set on module config
       if (!linkSecretRecord) {
-        const moduleConfig = agentContext.dependencyManager.resolve(AnonCredsRsModuleConfig)
+        const moduleConfig = agentContext.dependencyManager.resolve(AnonCredsModuleConfig)
         if (!moduleConfig.autoCreateLinkSecret) {
           throw new AnonCredsRsError(
             'No link secret provided to createCredentialRequest and no default link secret has been found'

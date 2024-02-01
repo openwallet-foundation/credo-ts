@@ -1,5 +1,18 @@
 import type { AnonCredsProofRequest } from '@credo-ts/anoncreds'
 
+import { InjectionSymbols } from '@credo-ts/core'
+import { anoncreds } from '@hyperledger/anoncreds-nodejs'
+import { Subject } from 'rxjs'
+
+import { InMemoryStorageService } from '../../../../../tests/InMemoryStorageService'
+import { InMemoryWallet } from '../../../../../tests/InMemoryWallet'
+import { encodeCredentialValue } from '../../../../anoncreds/src/utils/credential'
+import { InMemoryAnonCredsRegistry } from '../../../../anoncreds/tests/InMemoryAnonCredsRegistry'
+import { agentDependencies, getAgentConfig, getAgentContext } from '../../../../core/tests/helpers'
+import { AnonCredsRsHolderService } from '../AnonCredsRsHolderService'
+import { AnonCredsRsIssuerService } from '../AnonCredsRsIssuerService'
+import { AnonCredsRsVerifierService } from '../AnonCredsRsVerifierService'
+
 import {
   getUnqualifiedSchemaId,
   parseIndySchemaId,
@@ -20,18 +33,6 @@ import {
   AnonCredsLinkSecretRepository,
   AnonCredsLinkSecretRecord,
 } from '@credo-ts/anoncreds'
-import { InjectionSymbols } from '@credo-ts/core'
-import { anoncreds } from '@hyperledger/anoncreds-nodejs'
-import { Subject } from 'rxjs'
-
-import { InMemoryStorageService } from '../../../../../tests/InMemoryStorageService'
-import { InMemoryWallet } from '../../../../../tests/InMemoryWallet'
-import { encodeCredentialValue } from '../../../../anoncreds/src/utils/credential'
-import { InMemoryAnonCredsRegistry } from '../../../../anoncreds/tests/InMemoryAnonCredsRegistry'
-import { agentDependencies, getAgentConfig, getAgentContext } from '../../../../core/tests/helpers'
-import { AnonCredsRsHolderService } from '../AnonCredsRsHolderService'
-import { AnonCredsRsIssuerService } from '../AnonCredsRsIssuerService'
-import { AnonCredsRsVerifierService } from '../AnonCredsRsVerifierService'
 
 const agentConfig = getAgentConfig('AnonCredsCredentialFormatServiceTest')
 const anonCredsVerifierService = new AnonCredsRsVerifierService()
@@ -54,6 +55,7 @@ const agentContext = getAgentContext({
       AnonCredsModuleConfig,
       new AnonCredsModuleConfig({
         registries: [registry],
+        anoncreds,
       }),
     ],
   ],
