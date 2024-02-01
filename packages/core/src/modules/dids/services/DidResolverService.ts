@@ -134,4 +134,11 @@ export class DidResolverService {
   private findResolver(parsed: ParsedDid): DidResolver | null {
     return this.didsModuleConfig.resolvers.find((r) => r.supportedMethods.includes(parsed.method)) ?? null
   }
+
+  /**
+   * Get all supported did methods for the did resolver.
+   */
+  public get supportedMethods() {
+    return Array.from(new Set(this.didsModuleConfig.resolvers.flatMap((r) => r.supportedMethods)))
+  }
 }

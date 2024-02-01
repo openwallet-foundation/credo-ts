@@ -1,3 +1,4 @@
+import type { HashName } from './Hasher'
 import type { BaseName } from './MultiBaseEncoder'
 import type { Attachment } from '../decorators/attachment/Attachment'
 
@@ -16,7 +17,7 @@ import { TypedArrayEncoder } from './TypedArrayEncoder'
  */
 export function encodeAttachment(
   attachment: Attachment,
-  hashAlgorithm: 'sha2-256' = 'sha2-256',
+  hashAlgorithm: HashName = 'sha-256',
   baseName: BaseName = 'base58btc'
 ) {
   if (attachment.data.sha256) {

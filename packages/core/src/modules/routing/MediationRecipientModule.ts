@@ -22,9 +22,6 @@ export class MediationRecipientModule implements Module {
    * Registers the dependencies of the mediator recipient module on the dependency manager.
    */
   public register(dependencyManager: DependencyManager, featureRegistry: FeatureRegistry) {
-    // Api
-    dependencyManager.registerContextScoped(MediationRecipientApi)
-
     // Config
     dependencyManager.registerInstance(MediationRecipientModuleConfig, this.config)
 

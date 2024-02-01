@@ -63,7 +63,7 @@ export class InMemoryWallet implements Wallet {
     return [KeyType.Ed25519, KeyType.P256]
   }
 
-  private get inMemoryKeys(): InMemoryKeys {
+  private getInMemoryKeys(): InMemoryKeys {
     if (!this.activeWalletId || !this.isInitialized) {
       throw new WalletError('No active wallet')
     }
@@ -170,7 +170,7 @@ export class InMemoryWallet implements Wallet {
 
         const keyPublicBytes = key.publicBytes
         // Store key
-        this.inMemoryKeys[TypedArrayEncoder.toBase58(keyPublicBytes)] = {
+        this.getInMemoryKeys()[TypedArrayEncoder.toBase58(keyPublicBytes)] = {
           publicKeyBytes: keyPublicBytes,
           secretKeyBytes: key.secretBytes,
           keyType,
@@ -200,7 +200,7 @@ export class InMemoryWallet implements Wallet {
    * @returns A signature for the data
    */
   public async sign({ data, key }: WalletSignOptions): Promise<Buffer> {
-    const inMemoryKey = this.inMemoryKeys[key.publicKeyBase58]
+    const inMemoryKey = this.getInMemoryKeys()[key.publicKeyBase58]
     if (!inMemoryKey) {
       throw new WalletError(`Key not found in wallet`)
     }
@@ -211,7 +211,7 @@ export class InMemoryWallet implements Wallet {
 
     let askarKey: AskarKey | undefined
     try {
-      const inMemoryKey = this.inMemoryKeys[key.publicKeyBase58]
+      const inMemoryKey = this.getInMemoryKeys()[key.publicKeyBase58]
       askarKey = AskarKey.fromSecretBytes({
         algorithm: keyAlgFromString(inMemoryKey.keyType),
         secretKey: inMemoryKey.secretKeyBytes,
@@ -267,7 +267,7 @@ export class InMemoryWallet implements Wallet {
     recipientKeys: string[],
     senderVerkey?: string // in base58
   ): Promise<EncryptedMessage> {
-    const senderKey = senderVerkey ? this.inMemoryKeys[senderVerkey] : undefined
+    const senderKey = senderVerkey ? this.getInMemoryKeys()[senderVerkey] : undefined
 
     if (senderVerkey && !senderKey) {
       throw new WalletError(`Sender key not found`)
@@ -300,7 +300,7 @@ export class InMemoryWallet implements Wallet {
     const recipientKids: string[] = protectedJson.recipients.map((r: any) => r.header.kid)
 
     for (const recipientKid of recipientKids) {
-      const recipientKey = this.inMemoryKeys[recipientKid]
+      const recipientKey = this.getInMemoryKeys()[recipientKid]
       const recipientAskarKey = recipientKey
         ? AskarKey.fromSecretBytes({
             algorithm: keyAlgFromString(recipientKey.keyType),

@@ -1,5 +1,12 @@
-import type { StoreCredentialOptions } from './W3cCredentialServiceOptions'
-import type { W3cVerifiableCredential } from './models'
+import type {
+  StoreCredentialOptions,
+  W3cCreatePresentationOptions,
+  W3cSignCredentialOptions,
+  W3cSignPresentationOptions,
+  W3cVerifyCredentialOptions,
+  W3cVerifyPresentationOptions,
+} from './W3cCredentialServiceOptions'
+import type { W3cVerifiableCredential, ClaimFormat } from './models'
 import type { W3cCredentialRecord } from './repository'
 import type { Query } from '../../storage/StorageService'
 
@@ -39,5 +46,29 @@ export class W3cCredentialsApi {
 
   public async findCredentialRecordsByQuery(query: Query<W3cCredentialRecord>): Promise<W3cVerifiableCredential[]> {
     return this.w3cCredentialService.findCredentialsByQuery(this.agentContext, query)
+  }
+
+  public async signCredential<Format extends ClaimFormat.JwtVc | ClaimFormat.LdpVc>(
+    options: W3cSignCredentialOptions<Format>
+  ) {
+    return this.w3cCredentialService.signCredential<Format>(this.agentContext, options)
+  }
+
+  public async verifyCredential(options: W3cVerifyCredentialOptions) {
+    return this.w3cCredentialService.verifyCredential(this.agentContext, options)
+  }
+
+  public async createPresentation(options: W3cCreatePresentationOptions) {
+    return this.w3cCredentialService.createPresentation(options)
+  }
+
+  public async signPresentation<Format extends ClaimFormat.JwtVp | ClaimFormat.LdpVp>(
+    options: W3cSignPresentationOptions<Format>
+  ) {
+    return this.w3cCredentialService.signPresentation<Format>(this.agentContext, options)
+  }
+
+  public async verifyPresentation(options: W3cVerifyPresentationOptions) {
+    return this.w3cCredentialService.verifyPresentation(this.agentContext, options)
   }
 }

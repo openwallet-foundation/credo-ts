@@ -1,8 +1,6 @@
 import type { IndyVdrModuleConfigOptions } from './IndyVdrModuleConfig'
 import type { AgentContext, DependencyManager, Module } from '@credo-ts/core'
 
-import { AgentConfig } from '@credo-ts/core'
-
 import { IndyVdrApi } from './IndyVdrApi'
 import { IndyVdrModuleConfig } from './IndyVdrModuleConfig'
 import { IndyVdrPoolService } from './pool/IndyVdrPoolService'
@@ -19,21 +17,11 @@ export class IndyVdrModule implements Module {
   }
 
   public register(dependencyManager: DependencyManager) {
-    // Warn about experimental module
-    dependencyManager
-      .resolve(AgentConfig)
-      .logger.warn(
-        "The '@credo-ts/indy-vdr' module is experimental and could have unexpected breaking changes. When using this module, make sure to use strict versions for all @credo-ts packages."
-      )
-
     // Config
     dependencyManager.registerInstance(IndyVdrModuleConfig, this.config)
 
     // Services
     dependencyManager.registerSingleton(IndyVdrPoolService)
-
-    // Api
-    dependencyManager.registerContextScoped(IndyVdrApi)
   }
 
   public async initialize(agentContext: AgentContext): Promise<void> {

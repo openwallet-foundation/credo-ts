@@ -45,9 +45,6 @@ export class CredentialsModule<CredentialProtocols extends CredentialProtocol[] 
    * Registers the dependencies of the credentials module on the dependency manager.
    */
   public register(dependencyManager: DependencyManager, featureRegistry: FeatureRegistry) {
-    // Api
-    dependencyManager.registerContextScoped(CredentialsApi)
-
     // Config
     dependencyManager.registerInstance(CredentialsModuleConfig, this.config)
 

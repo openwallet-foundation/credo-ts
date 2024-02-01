@@ -11,7 +11,7 @@
   <a
     href="https://raw.githubusercontent.com/openwallet-foundation/credo-ts/main/LICENSE"
     ><img
-      alt="License"
+      alt="License"k
       src="https://img.shields.io/badge/License-Apache%202.0-blue.svg"
   /></a>
   <a href="https://www.typescriptlang.org/"

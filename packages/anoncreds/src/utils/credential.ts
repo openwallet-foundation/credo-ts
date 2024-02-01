@@ -1,7 +1,7 @@
 import type { AnonCredsSchema, AnonCredsCredentialValues } from '../models'
 import type { CredentialPreviewAttributeOptions, LinkedAttachment } from '@credo-ts/core'
 
-import { CredoError, Hasher, encodeAttachment, Buffer } from '@credo-ts/core'
+import { CredoError, Hasher, encodeAttachment } from '@credo-ts/core'
 import BigNumber from 'bn.js'
 
 const isString = (value: unknown): value is string => typeof value === 'string'
@@ -150,7 +150,7 @@ export function encodeCredentialValue(value: unknown) {
     value = 'None'
   }
 
-  return new BigNumber(Hasher.hash(Buffer.from(value as string), 'sha2-256')).toString()
+  return new BigNumber(Hasher.hash(String(value).toString(), 'sha-256')).toString()
 }
 
 export function assertAttributesMatch(schema: AnonCredsSchema, attributes: CredentialPreviewAttributeOptions[]) {

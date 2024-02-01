@@ -34,6 +34,9 @@ export class DependencyManager {
       }
 
       this.registeredModules[moduleKey] = module
+      if (module.api) {
+        this.registerContextScoped(module.api)
+      }
       module.register(this, featureRegistry)
     }
   }

@@ -3,6 +3,9 @@ build
 .vscode
 yarn-error.log
 .idea
+credo-*.tgz
+# Keeping this one in for now to prevent accidental
+# old build still in the local repository getting pushed
 aries-framework-*.tgz
 coverage
 .DS_Store

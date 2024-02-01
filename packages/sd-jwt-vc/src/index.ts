@@ -1,5 +1,0 @@
-export * from './SdJwtVcApi'
-export * from './SdJwtVcModule'
-export * from './SdJwtVcService'
-export * from './SdJwtVcError'
-export * from './repository'
