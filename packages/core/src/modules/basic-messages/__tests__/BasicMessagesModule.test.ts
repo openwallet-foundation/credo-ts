@@ -1,6 +1,5 @@
 import { FeatureRegistry } from '../../../agent/FeatureRegistry'
 import { DependencyManager } from '../../../plugins/DependencyManager'
-import { BasicMessagesApi } from '../BasicMessagesApi'
 import { BasicMessagesModule } from '../BasicMessagesModule'
 import { BasicMessageRepository } from '../repository'
 import { BasicMessageService } from '../services'

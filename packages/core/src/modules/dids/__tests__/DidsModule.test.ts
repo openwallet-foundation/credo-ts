@@ -1,5 +1,4 @@
 import { DependencyManager } from '../../../plugins/DependencyManager'
-import { DidsApi } from '../DidsApi'
 import { DidsModule } from '../DidsModule'
 import { DidsModuleConfig } from '../DidsModuleConfig'
 import { DidRepository } from '../repository'

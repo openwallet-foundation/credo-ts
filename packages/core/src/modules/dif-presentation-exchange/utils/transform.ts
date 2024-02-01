@@ -1,6 +1,5 @@
 import type { AgentContext } from '../../../agent'
-import type { SdJwtVcRecord, SdJwtVc } from '../../sd-jwt-vc'
-import type { W3cVerifiablePresentation } from '../../vc'
+import type { SdJwtVcRecord } from '../../sd-jwt-vc'
 import type { W3cJsonPresentation } from '../../vc/models/presentation/W3cJsonPresentation'
 import type { VerifiablePresentation } from '../models'
 import type {

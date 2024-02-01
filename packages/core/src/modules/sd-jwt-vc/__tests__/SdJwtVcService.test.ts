@@ -32,12 +32,18 @@ const jwkJsonWithoutUse = (jwk: Jwk) => {
   return jwkJson
 }
 
-const agent = new Agent(getInMemoryAgentOptions('sdjwtvcserviceagent', {}, {
-    dids: new DidsModule({
-      resolvers: [new KeyDidResolver()],
-      registrars: [new KeyDidRegistrar()],
-    }),
-  }))
+const agent = new Agent(
+  getInMemoryAgentOptions(
+    'sdjwtvcserviceagent',
+    {},
+    {
+      dids: new DidsModule({
+        resolvers: [new KeyDidResolver()],
+        registrars: [new KeyDidRegistrar()],
+      }),
+    }
+  )
+)
 
 agent.context.wallet.generateNonce = jest.fn(() => Promise.resolve('salt'))
 Date.prototype.getTime = jest.fn(() => 1698151532000)
