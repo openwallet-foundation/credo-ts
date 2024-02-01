@@ -49,12 +49,15 @@ Credo is a framework written in TypeScript for building **SSI Agents and DIDComm
 
 ## Features
 
+See [Supported Features](https://credo.js.org/guides/features) on the Credo website for a full list of supported features.
+
 - 🏃 Runs in React Native & Node.JS
 - 🔒 DIDComm v1 support
 - 🌎 [Aries Interop Profile](https://github.com/hyperledger/aries-rfcs/blob/main/concepts/0302-aries-interop-profile/README.md) v1 & v2 support
   - With support for Chat, Mediator Coordination, Indy Credentials & and JSON-LD Credentials sub-targets
-- `did:sov`, `did:web`, `did:key` and `did:peer`, with pluggable interface for registering custom did methods.
-- OpenID for Verifiable Credential Issuance (only receiving JSON-LD credentials for now)
+- `did:web`, `did:key`, `did:jwk`, `did:peer`, `did:sov`, `did:indy` and `did:cheqd`, with pluggable interface for registering custom did methods.
+- OpenID for Verifiable Credentials
+- W3C Verifiable Credentials, SD-JWT VCs and AnonCreds
 - 💡 Smart Auto Acceptance of Connections, Credentials and Proofs
 - 🏢 Multi tenant module for managing multiple tenants under a single agent.
 
@@ -178,16 +181,7 @@ Documentation on how to get started with Credo can be found at https://credo.js.
 
 To get to know the Credo flow, we built a demo to walk through it yourself together with agents Alice and Faber.
 
-- [Demo](/demo)
-
-### Divergence from Aries RFCs
-
-Although Credo tries to follow the standards as described in the Aries RFCs as much as possible, some features in Credo slightly diverge from the written spec. Below is an overview of the features that diverge from the spec, their impact and the reasons for diverging.
-
-| Feature                                                                                                                                                        | Impact                                                                                                                                                                                                                                                                                                                                                                                                     | Reason                                                                                                                                                                    |
-| -------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Support for `imageUrl` attribute in connection invitation and connection request                                                                               | Properties that are not recognized should be ignored, meaning this shouldn't limit interoperability between agents. As the image url is self-attested it could give a false sense of trust. Better, credential based, method for visually identifying an entity are not present yet.                                                                                                                       | Even though not documented, almost all agents support this feature. Not including this feature means Credo is lacking in features in comparison to other implementations. |
-| Revocation Notification v1 uses a different `thread_id` format ( `indy::<revocation_registry_id>::<credential_revocation_id>`) than specified in the Aries RFC | Any agents adhering to the [revocation notification v1 RFC](https://github.com/hyperledger/aries-rfcs/tree/main/features/0183-revocation-notification) will not be interoperable with Credo. However, revocation notification is considered an optional portion of revocation, therefore this will not break core revocation behavior. Ideally agents should use and implement revocation notification v2. | Actual implementations (ACA-Py) of revocation notification v1 so far have implemented this different format, so this format change was made to remain interoperable.      |
+You can run the demo in the [`/demo`](/demo) directory of this repository.
 
 ## Contributing
 

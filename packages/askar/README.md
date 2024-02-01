@@ -28,4 +28,4 @@
 </p>
 <br />
 
-Askar module for [Credo](https://github.com/openwallet-foundation/credo-ts.git).
+Credo Askar provides secure storage and crypto capabilities of Credo. See the [Aries Askar Setup](https://credo.js.org/guides/getting-started/set-up/aries-askar) for installation instructions.
