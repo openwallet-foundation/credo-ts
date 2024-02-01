@@ -28,8 +28,4 @@
 </p>
 <br />
 
-### Installation
-
-### Quick start
-
-### Example of usage
+Credo Indy VDR provides integration of the Hyperledger Indy blockchain into Credo. See the [Indy VDR Setup](https://credo.js.org/guides/getting-started/set-up/indy-vdr) for installation instructions.

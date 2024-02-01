@@ -28,4 +28,4 @@
 </p>
 <br />
 
-Credo Core provides the core functionality of Credo. See the [Getting Started Guide](https://github.com/openwallet-foundation/credo-ts#getting-started) for installation instructions.
+Credo Core provides the core functionality of Credo. See the [Getting Started Guide](https://credo.js.org/guides/getting-started) for installation instructions.

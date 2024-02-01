@@ -28,8 +28,4 @@
 </p>
 <br />
 
-### Installation
-
-### Quick start
-
-### Example of usage
+Credo cheqd provides integration of the cheqd network into Credo. See the [Cheqd Setup](https://credo.js.org/guides/getting-started/set-up/cheqd) for installation instructions.

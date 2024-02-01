@@ -28,8 +28,4 @@
 </p>
 <br />
 
-### Installation
-
-### Quick start
-
-### Example of usage
+Credo AnonCreds provides AnonCreds capabilities of Credo. See the [AnonCreds Setup](https://credo.js.org/guides/getting-started/set-up/anoncreds) for installation instructions.

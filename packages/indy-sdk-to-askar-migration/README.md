@@ -28,4 +28,4 @@
 </p>
 <br />
 
-Indy SDK to Askar migration module for [Credo](https://github.com/openwallet-foundation/credo-ts.git).
+Credo Indy SDK to Askar migration provides migration from the legacy and deprecated Indy SDK to Aries Askar. See the [Indy SDK to Askar Migration Guide](https://credo.js.org/guides/updating/update-indy-sdk-to-askar) for instructions.
