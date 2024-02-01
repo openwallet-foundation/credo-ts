@@ -3,7 +3,6 @@ import type { DependencyManager } from '@credo-ts/core'
 import { Router } from 'express'
 
 import { getAgentContext } from '../../../../core/tests'
-import { OpenId4VcIssuerApi } from '../OpenId4VcIssuerApi'
 import { OpenId4VcIssuerModule } from '../OpenId4VcIssuerModule'
 import { OpenId4VcIssuerModuleConfig } from '../OpenId4VcIssuerModuleConfig'
 import { OpenId4VcIssuerService } from '../OpenId4VcIssuerService'
@@ -39,9 +38,6 @@ describe('OpenId4VcIssuerModule', () => {
       OpenId4VcIssuerModuleConfig,
       new OpenId4VcIssuerModuleConfig(options)
     )
-
-    expect(dependencyManager.registerContextScoped).toHaveBeenCalledTimes(1)
-    expect(dependencyManager.registerContextScoped).toHaveBeenCalledWith(OpenId4VcIssuerApi)
 
     expect(dependencyManager.registerSingleton).toHaveBeenCalledTimes(2)
     expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(OpenId4VcIssuerService)

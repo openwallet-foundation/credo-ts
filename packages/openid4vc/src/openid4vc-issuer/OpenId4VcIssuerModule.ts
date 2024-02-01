@@ -37,9 +37,6 @@ export class OpenId4VcIssuerModule implements Module {
     // Register config
     dependencyManager.registerInstance(OpenId4VcIssuerModuleConfig, this.config)
 
-    // Api
-    dependencyManager.registerContextScoped(OpenId4VcIssuerApi)
-
     // Services
     dependencyManager.registerSingleton(OpenId4VcIssuerService)
 

@@ -24,9 +24,6 @@ export class OpenId4VcHolderModule implements Module {
         "The '@credo-ts/openid4vc' Holder module is experimental and could have unexpected breaking changes. When using this module, make sure to use strict versions for all @credo-ts packages."
       )
 
-    // Api
-    dependencyManager.registerContextScoped(OpenId4VcHolderApi)
-
     // Services
     dependencyManager.registerSingleton(OpenId4VciHolderService)
     dependencyManager.registerSingleton(OpenId4VcSiopHolderService)

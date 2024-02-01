@@ -37,9 +37,6 @@ export class OpenId4VcVerifierModule implements Module {
     // Register config
     dependencyManager.registerInstance(OpenId4VcVerifierModuleConfig, this.config)
 
-    // Api
-    dependencyManager.registerContextScoped(OpenId4VcVerifierApi)
-
     // Services
     dependencyManager.registerSingleton(OpenId4VcSiopVerifierService)
 

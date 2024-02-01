@@ -1,4 +1,4 @@
-import type { DependencyManager, Module } from '../plugins'
+import type { Module } from '../plugins'
 
 import { WalletApi } from './WalletApi'
 
@@ -9,8 +9,7 @@ export class WalletModule implements Module {
   /**
    * Registers the dependencies of the wallet module on the injection dependencyManager.
    */
-  public register(dependencyManager: DependencyManager) {
-    // Api
-    dependencyManager.registerContextScoped(WalletApi)
+  public register() {
+    // no-op, only API needs to be registered
   }
 }

@@ -15,9 +15,6 @@ describe('DidsModule', () => {
     const didsModule = new DidsModule()
     didsModule.register(dependencyManager)
 
-    expect(dependencyManager.registerContextScoped).toHaveBeenCalledTimes(1)
-    expect(dependencyManager.registerContextScoped).toHaveBeenCalledWith(DidsApi)
-
     expect(dependencyManager.registerInstance).toHaveBeenCalledTimes(1)
     expect(dependencyManager.registerInstance).toHaveBeenCalledWith(DidsModuleConfig, didsModule.config)
 

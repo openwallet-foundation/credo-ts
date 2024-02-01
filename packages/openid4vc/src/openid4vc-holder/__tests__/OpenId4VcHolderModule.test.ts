@@ -1,6 +1,5 @@
 import type { DependencyManager } from '@credo-ts/core'
 
-import { OpenId4VcHolderApi } from '../OpenId4VcHolderApi'
 import { OpenId4VcHolderModule } from '../OpenId4VcHolderModule'
 import { OpenId4VciHolderService } from '../OpenId4VciHolderService'
 import { OpenId4VcSiopHolderService } from '../OpenId4vcSiopHolderService'
@@ -16,9 +15,6 @@ describe('OpenId4VcHolderModule', () => {
   test('registers dependencies on the dependency manager', () => {
     const openId4VcClientModule = new OpenId4VcHolderModule()
     openId4VcClientModule.register(dependencyManager)
-
-    expect(dependencyManager.registerContextScoped).toHaveBeenCalledTimes(1)
-    expect(dependencyManager.registerContextScoped).toHaveBeenCalledWith(OpenId4VcHolderApi)
 
     expect(dependencyManager.registerSingleton).toHaveBeenCalledTimes(2)
     expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(OpenId4VciHolderService)

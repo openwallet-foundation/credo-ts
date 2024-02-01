@@ -23,9 +23,6 @@ describe('ProofsModule', () => {
     })
     proofsModule.register(dependencyManager, featureRegistry)
 
-    expect(dependencyManager.registerContextScoped).toHaveBeenCalledTimes(1)
-    expect(dependencyManager.registerContextScoped).toHaveBeenCalledWith(ProofsApi)
-
     expect(dependencyManager.registerInstance).toHaveBeenCalledTimes(1)
     expect(dependencyManager.registerInstance).toHaveBeenCalledWith(ProofsModuleConfig, proofsModule.config)
 

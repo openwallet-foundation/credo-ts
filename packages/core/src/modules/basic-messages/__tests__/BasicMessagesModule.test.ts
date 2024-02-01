@@ -19,9 +19,6 @@ describe('BasicMessagesModule', () => {
   test('registers dependencies on the dependency manager', () => {
     new BasicMessagesModule().register(dependencyManager, featureRegistry)
 
-    expect(dependencyManager.registerContextScoped).toHaveBeenCalledTimes(1)
-    expect(dependencyManager.registerContextScoped).toHaveBeenCalledWith(BasicMessagesApi)
-
     expect(dependencyManager.registerSingleton).toHaveBeenCalledTimes(2)
     expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(BasicMessageService)
     expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(BasicMessageRepository)

@@ -1,8 +1,6 @@
 import type { IndyVdrModuleConfigOptions } from './IndyVdrModuleConfig'
 import type { AgentContext, DependencyManager, Module } from '@credo-ts/core'
 
-import { AgentConfig } from '@credo-ts/core'
-
 import { IndyVdrApi } from './IndyVdrApi'
 import { IndyVdrModuleConfig } from './IndyVdrModuleConfig'
 import { IndyVdrPoolService } from './pool/IndyVdrPoolService'
@@ -24,9 +22,6 @@ export class IndyVdrModule implements Module {
 
     // Services
     dependencyManager.registerSingleton(IndyVdrPoolService)
-
-    // Api
-    dependencyManager.registerContextScoped(IndyVdrApi)
   }
 
   public async initialize(agentContext: AgentContext): Promise<void> {
