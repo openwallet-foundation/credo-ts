@@ -4,7 +4,7 @@ import { InjectionSymbols } from '../../../../constants'
 import { JwsService, KeyType } from '../../../../crypto'
 import { JwaSignatureAlgorithm } from '../../../../crypto/jose/jwa'
 import { getJwkFromKey } from '../../../../crypto/jose/jwk'
-import { AriesFrameworkError, ClassValidationError } from '../../../../error'
+import { CredoError, ClassValidationError } from '../../../../error'
 import { JsonTransformer } from '../../../../utils'
 import { DidJwk, DidKey, DidsModuleConfig } from '../../../dids'
 import { CREDENTIALS_CONTEXT_V1_URL } from '../../constants'
@@ -232,7 +232,7 @@ describe('W3cJwtCredentialService', () => {
         validations: {
           dataModel: {
             isValid: false,
-            error: expect.any(AriesFrameworkError),
+            error: expect.any(CredoError),
           },
         },
       })
@@ -255,11 +255,11 @@ describe('W3cJwtCredentialService', () => {
           },
           signature: {
             isValid: false,
-            error: expect.any(AriesFrameworkError),
+            error: expect.any(CredoError),
           },
           issuerIsSigner: {
             isValid: false,
-            error: expect.any(AriesFrameworkError),
+            error: expect.any(CredoError),
           },
           credentialStatus: {
             isValid: true,
@@ -384,7 +384,7 @@ describe('W3cJwtCredentialService', () => {
                 },
                 credentialSubjectAuthentication: {
                   isValid: false,
-                  error: new AriesFrameworkError(
+                  error: new CredoError(
                     'Credential has one or more credentialSubject ids, but presentation does not authenticate credential subject'
                   ),
                 },

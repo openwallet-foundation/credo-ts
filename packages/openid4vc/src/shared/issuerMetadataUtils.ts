@@ -1,7 +1,7 @@
 import type { OpenId4VciCredentialSupported, OpenId4VciCredentialSupportedWithId } from './models'
 import type { AuthorizationDetails, CredentialOfferFormat, EndpointMetadataResult } from '@sphereon/oid4vci-common'
 
-import { AriesFrameworkError } from '@credo-ts/core'
+import { CredoError } from '@credo-ts/core'
 
 /**
  * Get all `types` from a `CredentialSupported` object.
@@ -36,7 +36,7 @@ export function getOfferedCredentials(
   for (const offeredCredential of offeredCredentials) {
     // In draft 12 inline credential offers are removed. It's easier to already remove support now.
     if (typeof offeredCredential !== 'string') {
-      throw new AriesFrameworkError(
+      throw new CredoError(
         'Only referenced credentials pointing to an id in credentials_supported issuer metadata are supported'
       )
     }

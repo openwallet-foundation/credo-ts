@@ -7,7 +7,7 @@ import type { MessagePickupModule } from '../modules/message-pickup'
 import type { ProofsModule } from '../modules/proofs'
 import type { DependencyManager } from '../plugins'
 
-import { AriesFrameworkError } from '../error'
+import { CredoError } from '../error'
 import { BasicMessagesApi } from '../modules/basic-messages'
 import { ConnectionsApi } from '../modules/connections'
 import { CredentialsApi } from '../modules/credentials'
@@ -139,7 +139,7 @@ export abstract class BaseAgent<AgentModules extends ModulesMap = EmptyModuleMap
     const { walletConfig } = this.agentConfig
 
     if (this._isInitialized) {
-      throw new AriesFrameworkError(
+      throw new CredoError(
         'Agent already initialized. Currently it is not supported to re-initialize an already initialized agent.'
       )
     }
@@ -168,7 +168,7 @@ export abstract class BaseAgent<AgentModules extends ModulesMap = EmptyModuleMap
       const currentVersion = await storageUpdateService.getCurrentStorageVersion(this.agentContext)
       // Close wallet to prevent un-initialized agent with initialized wallet
       await this.wallet.close()
-      throw new AriesFrameworkError(
+      throw new CredoError(
         // TODO: add link to where documentation on how to update can be found.
         `Current agent storage is not up to date. ` +
           `To prevent the framework state from getting corrupted the agent initialization is aborted. ` +

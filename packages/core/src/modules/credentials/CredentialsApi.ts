@@ -27,7 +27,7 @@ import { AgentContext } from '../../agent'
 import { MessageSender } from '../../agent/MessageSender'
 import { getOutboundMessageContext } from '../../agent/getOutboundMessageContext'
 import { InjectionSymbols } from '../../constants'
-import { AriesFrameworkError } from '../../error'
+import { CredoError } from '../../error'
 import { Logger } from '../../logger'
 import { inject, injectable } from '../../plugins'
 import { DidCommMessageRepository } from '../../storage/didcomm/DidCommMessageRepository'
@@ -130,7 +130,7 @@ export class CredentialsApi<CPs extends CredentialProtocol[]> implements Credent
     const credentialProtocol = this.config.credentialProtocols.find((protocol) => protocol.version === protocolVersion)
 
     if (!credentialProtocol) {
-      throw new AriesFrameworkError(`No credential protocol registered for protocol version ${protocolVersion}`)
+      throw new CredoError(`No credential protocol registered for protocol version ${protocolVersion}`)
     }
 
     return credentialProtocol
@@ -182,7 +182,7 @@ export class CredentialsApi<CPs extends CredentialProtocol[]> implements Credent
     const credentialRecord = await this.getById(options.credentialRecordId)
 
     if (!credentialRecord.connectionId) {
-      throw new AriesFrameworkError(
+      throw new CredoError(
         `No connectionId found for credential record '${credentialRecord.id}'. Connection-less issuance does not support credential proposal or negotiation.`
       )
     }
@@ -225,7 +225,7 @@ export class CredentialsApi<CPs extends CredentialProtocol[]> implements Credent
     const credentialRecord = await this.getById(options.credentialRecordId)
 
     if (!credentialRecord.connectionId) {
-      throw new AriesFrameworkError(
+      throw new CredoError(
         `No connection id for credential record ${credentialRecord.id} not found. Connection-less issuance does not support negotiation`
       )
     }
@@ -297,7 +297,7 @@ export class CredentialsApi<CPs extends CredentialProtocol[]> implements Credent
     this.logger.debug(`Got a credentialProtocol object for this version; version = ${protocol.version}`)
     const offerMessage = await protocol.findOfferMessage(this.agentContext, credentialRecord.id)
     if (!offerMessage) {
-      throw new AriesFrameworkError(`No offer message found for credential record with id '${credentialRecord.id}'`)
+      throw new CredoError(`No offer message found for credential record with id '${credentialRecord.id}'`)
     }
 
     // Use connection if present
@@ -339,7 +339,7 @@ export class CredentialsApi<CPs extends CredentialProtocol[]> implements Credent
     const credentialRecord = await this.getById(options.credentialRecordId)
 
     if (!credentialRecord.connectionId) {
-      throw new AriesFrameworkError(
+      throw new CredoError(
         `No connection id for credential record ${credentialRecord.id} not found. Connection-less issuance does not support negotiation`
       )
     }
@@ -414,11 +414,11 @@ export class CredentialsApi<CPs extends CredentialProtocol[]> implements Credent
 
     const requestMessage = await protocol.findRequestMessage(this.agentContext, credentialRecord.id)
     if (!requestMessage) {
-      throw new AriesFrameworkError(`No request message found for credential record with id '${credentialRecord.id}'`)
+      throw new CredoError(`No request message found for credential record with id '${credentialRecord.id}'`)
     }
     const offerMessage = await protocol.findOfferMessage(this.agentContext, credentialRecord.id)
     if (!offerMessage) {
-      throw new AriesFrameworkError(`No offer message found for credential record with id '${credentialRecord.id}'`)
+      throw new CredoError(`No offer message found for credential record with id '${credentialRecord.id}'`)
     }
 
     const { message } = await protocol.acceptRequest(this.agentContext, {
@@ -465,13 +465,11 @@ export class CredentialsApi<CPs extends CredentialProtocol[]> implements Credent
 
     const requestMessage = await protocol.findRequestMessage(this.agentContext, credentialRecord.id)
     if (!requestMessage) {
-      throw new AriesFrameworkError(`No request message found for credential record with id '${credentialRecord.id}'`)
+      throw new CredoError(`No request message found for credential record with id '${credentialRecord.id}'`)
     }
     const credentialMessage = await protocol.findCredentialMessage(this.agentContext, credentialRecord.id)
     if (!credentialMessage) {
-      throw new AriesFrameworkError(
-        `No credential message found for credential record with id '${credentialRecord.id}'`
-      )
+      throw new CredoError(`No credential message found for credential record with id '${credentialRecord.id}'`)
     }
 
     const { message } = await protocol.acceptCredential(this.agentContext, {
@@ -509,12 +507,12 @@ export class CredentialsApi<CPs extends CredentialProtocol[]> implements Credent
 
     const requestMessage = await protocol.findRequestMessage(this.agentContext, credentialRecord.id)
     if (!requestMessage) {
-      throw new AriesFrameworkError(`No request message found for credential record with id '${credentialRecord.id}'`)
+      throw new CredoError(`No request message found for credential record with id '${credentialRecord.id}'`)
     }
 
     const offerMessage = await protocol.findOfferMessage(this.agentContext, credentialRecord.id)
     if (!offerMessage) {
-      throw new AriesFrameworkError(`No offer message found for credential record with id '${credentialRecord.id}'`)
+      throw new CredoError(`No offer message found for credential record with id '${credentialRecord.id}'`)
     }
 
     // Use connection if present
@@ -540,7 +538,7 @@ export class CredentialsApi<CPs extends CredentialProtocol[]> implements Credent
   public async sendProblemReport(options: SendCredentialProblemReportOptions) {
     const credentialRecord = await this.getById(options.credentialRecordId)
     if (!credentialRecord.connectionId) {
-      throw new AriesFrameworkError(`No connectionId found for credential record '${credentialRecord.id}'.`)
+      throw new CredoError(`No connectionId found for credential record '${credentialRecord.id}'.`)
     }
     const connectionRecord = await this.connectionService.getById(this.agentContext, credentialRecord.connectionId)
 

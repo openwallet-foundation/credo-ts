@@ -12,7 +12,7 @@ import type { W3cVerifyCredentialResult, W3cVerifyPresentationResult } from '../
 import type { W3cJsonCredential } from '../models/credential/W3cJsonCredential'
 
 import { createWalletKeyPairClass } from '../../../crypto/WalletKeyPair'
-import { AriesFrameworkError } from '../../../error'
+import { CredoError } from '../../../error'
 import { injectable } from '../../../plugins'
 import { asArray, JsonTransformer } from '../../../utils'
 import { VerificationMethod } from '../../dids'
@@ -58,7 +58,7 @@ export class W3cJsonLdCredentialService {
     const suiteInfo = this.signatureSuiteRegistry.getByProofType(options.proofType)
 
     if (!suiteInfo.keyTypes.includes(signingKey.keyType)) {
-      throw new AriesFrameworkError('The key type of the verification method does not match the suite')
+      throw new CredoError('The key type of the verification method does not match the suite')
     }
 
     const keyPair = new WalletKeyPair({
@@ -112,9 +112,7 @@ export class W3cJsonLdCredentialService {
         checkStatus: ({ credential }: { credential: W3cJsonCredential }) => {
           // Only throw error if credentialStatus is present
           if (verifyCredentialStatus && 'credentialStatus' in credential) {
-            throw new AriesFrameworkError(
-              'Verifying credential status for JSON-LD credentials is currently not supported'
-            )
+            throw new CredoError('Verifying credential status for JSON-LD credentials is currently not supported')
           }
           return {
             verified: true,
@@ -175,13 +173,13 @@ export class W3cJsonLdCredentialService {
     const suiteInfo = this.signatureSuiteRegistry.getByProofType(options.proofType)
 
     if (!suiteInfo) {
-      throw new AriesFrameworkError(`The requested proofType ${options.proofType} is not supported`)
+      throw new CredoError(`The requested proofType ${options.proofType} is not supported`)
     }
 
     const signingKey = await this.getPublicKeyFromVerificationMethod(agentContext, options.verificationMethod)
 
     if (!suiteInfo.keyTypes.includes(signingKey.keyType)) {
-      throw new AriesFrameworkError('The key type of the verification method does not match the suite')
+      throw new CredoError('The key type of the verification method does not match the suite')
     }
 
     const documentLoader = this.w3cCredentialsModuleConfig.documentLoader(agentContext)

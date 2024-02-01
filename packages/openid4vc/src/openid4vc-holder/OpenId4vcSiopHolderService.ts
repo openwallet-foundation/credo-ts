@@ -10,7 +10,7 @@ import {
   Hasher,
   W3cJwtVerifiablePresentation,
   parseDid,
-  AriesFrameworkError,
+  CredoError,
   DidsApi,
   injectable,
   W3cJsonLdVerifiablePresentation,
@@ -60,7 +60,7 @@ export class OpenId4VcSiopHolderService {
       verifiedAuthorizationRequest.presentationDefinitions &&
       verifiedAuthorizationRequest.presentationDefinitions.length > 1
     ) {
-      throw new AriesFrameworkError('Only a single presentation definition is supported.')
+      throw new CredoError('Only a single presentation definition is supported.')
     }
 
     const presentationDefinition = verifiedAuthorizationRequest.presentationDefinitions?.[0]?.definition
@@ -92,19 +92,19 @@ export class OpenId4VcSiopHolderService {
     // Handle presentation exchange part
     if (authorizationRequest.presentationDefinitions && authorizationRequest.presentationDefinitions.length > 0) {
       if (!presentationExchange) {
-        throw new AriesFrameworkError(
+        throw new CredoError(
           'Authorization request included presentation definition. `presentationExchange` MUST be supplied to accept authorization requests.'
         )
       }
 
       const nonce = await authorizationRequest.authorizationRequest.getMergedProperty<string>('nonce')
       if (!nonce) {
-        throw new AriesFrameworkError("Unable to extract 'nonce' from authorization request")
+        throw new CredoError("Unable to extract 'nonce' from authorization request")
       }
 
       const clientId = await authorizationRequest.authorizationRequest.getMergedProperty<string>('client_id')
       if (!clientId) {
-        throw new AriesFrameworkError("Unable to extract 'client_id' from authorization request")
+        throw new CredoError("Unable to extract 'client_id' from authorization request")
       }
 
       const { verifiablePresentations, presentationSubmission } =
@@ -126,13 +126,13 @@ export class OpenId4VcSiopHolderService {
         openIdTokenIssuer = this.getOpenIdTokenIssuerFromVerifiablePresentation(verifiablePresentations[0])
       }
     } else if (options.presentationExchange) {
-      throw new AriesFrameworkError(
+      throw new CredoError(
         '`presentationExchange` was supplied, but no presentation definition was found in the presentation request.'
       )
     }
 
     if (!openIdTokenIssuer) {
-      throw new AriesFrameworkError(
+      throw new CredoError(
         'Unable to create authorization response. openIdTokenIssuer MUST be supplied when no presentation is active.'
       )
     }
@@ -218,10 +218,10 @@ export class OpenId4VcSiopHolderService {
 
     if (verifiablePresentation instanceof W3cJsonLdVerifiablePresentation) {
       const [firstProof] = asArray(verifiablePresentation.proof)
-      if (!firstProof) throw new AriesFrameworkError('Verifiable presentation does not contain a proof')
+      if (!firstProof) throw new CredoError('Verifiable presentation does not contain a proof')
 
       if (!firstProof.verificationMethod.startsWith('did:')) {
-        throw new AriesFrameworkError(
+        throw new CredoError(
           'Verifiable presentation proof verificationMethod is not a did. Unable to extract openIdTokenIssuer from verifiable presentation'
         )
       }
@@ -233,7 +233,7 @@ export class OpenId4VcSiopHolderService {
     } else if (verifiablePresentation instanceof W3cJwtVerifiablePresentation) {
       const kid = verifiablePresentation.jwt.header.kid
 
-      if (!kid) throw new AriesFrameworkError('Verifiable Presentation does not contain a kid in the jwt header')
+      if (!kid) throw new CredoError('Verifiable Presentation does not contain a kid in the jwt header')
       if (kid.startsWith('#') && verifiablePresentation.presentation.holderId) {
         openIdTokenIssuer = {
           didUrl: `${verifiablePresentation.presentation.holderId}${kid}`,
@@ -245,7 +245,7 @@ export class OpenId4VcSiopHolderService {
           method: 'did',
         }
       } else {
-        throw new AriesFrameworkError(
+        throw new CredoError(
           "JWT W3C Verifiable presentation does not include did in JWT header 'kid'. Unable to extract openIdTokenIssuer from verifiable presentation"
         )
       }
@@ -260,7 +260,7 @@ export class OpenId4VcSiopHolderService {
         !cnf.kid.startsWith('did:') ||
         !cnf.kid.includes('#')
       ) {
-        throw new AriesFrameworkError(
+        throw new CredoError(
           "SD-JWT Verifiable presentation has no 'cnf' claim or does not include 'cnf' claim where 'kid' is a didUrl pointing to a key. Unable to extract openIdTokenIssuer from verifiable presentation"
         )
       }
@@ -281,7 +281,7 @@ export class OpenId4VcSiopHolderService {
     // TODO: jwk thumbprint support
     const subjectSyntaxTypesSupported = authorizationRequest.registrationMetadataPayload.subject_syntax_types_supported
     if (!subjectSyntaxTypesSupported) {
-      throw new AriesFrameworkError(
+      throw new CredoError(
         'subject_syntax_types_supported is not supplied in the registration metadata. subject_syntax_types is REQUIRED.'
       )
     }
@@ -293,12 +293,12 @@ export class OpenId4VcSiopHolderService {
       // Either did:<method> or did (for all did methods) is allowed
       allowedSubjectSyntaxTypes = [`did:${parsedDid.method}`, 'did']
     } else {
-      throw new AriesFrameworkError("Only 'did' is supported as openIdTokenIssuer at the moment")
+      throw new CredoError("Only 'did' is supported as openIdTokenIssuer at the moment")
     }
 
     // At least one of the allowed subject syntax types must be supported by the RP
     if (!allowedSubjectSyntaxTypes.some((allowed) => subjectSyntaxTypesSupported.includes(allowed))) {
-      throw new AriesFrameworkError(
+      throw new CredoError(
         [
           'The provided openIdTokenIssuer is not supported by the relying party.',
           `Supported subject syntax types: '${subjectSyntaxTypesSupported.join(', ')}'`,

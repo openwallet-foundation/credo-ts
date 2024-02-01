@@ -2,7 +2,7 @@ import type { TagsBase } from '../../../storage/BaseRecord'
 import type { AutoAcceptProof } from '../models/ProofAutoAcceptType'
 import type { ProofState } from '../models/ProofState'
 
-import { AriesFrameworkError } from '../../../error'
+import { CredoError } from '../../../error'
 import { BaseRecord } from '../../../storage/BaseRecord'
 import { uuid } from '../../../utils/uuid'
 
@@ -76,7 +76,7 @@ export class ProofExchangeRecord extends BaseRecord<DefaultProofTags, CustomProo
     }
 
     if (!expectedStates.includes(this.state)) {
-      throw new AriesFrameworkError(
+      throw new CredoError(
         `Proof record is in invalid state ${this.state}. Valid states are: ${expectedStates.join(', ')}.`
       )
     }
@@ -84,7 +84,7 @@ export class ProofExchangeRecord extends BaseRecord<DefaultProofTags, CustomProo
 
   public assertProtocolVersion(version: string) {
     if (this.protocolVersion !== version) {
-      throw new AriesFrameworkError(
+      throw new CredoError(
         `Proof record has invalid protocol version ${this.protocolVersion}. Expected version ${version}`
       )
     }
@@ -92,11 +92,11 @@ export class ProofExchangeRecord extends BaseRecord<DefaultProofTags, CustomProo
 
   public assertConnection(currentConnectionId: string) {
     if (!this.connectionId) {
-      throw new AriesFrameworkError(
+      throw new CredoError(
         `Proof record is not associated with any connection. This is often the case with connection-less presentation exchange`
       )
     } else if (this.connectionId !== currentConnectionId) {
-      throw new AriesFrameworkError(
+      throw new CredoError(
         `Proof record is associated with connection '${this.connectionId}'. Current connection is '${currentConnectionId}'`
       )
     }

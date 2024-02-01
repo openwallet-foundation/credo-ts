@@ -9,7 +9,7 @@ import type {
   W3CVerifiablePresentation as SphereonW3CVerifiablePresentation,
 } from '@sphereon/ssi-types'
 
-import { AriesFrameworkError } from '../../../error'
+import { CredoError } from '../../../error'
 import { JsonTransformer } from '../../../utils'
 import { SdJwtVcApi } from '../../sd-jwt-vc'
 import { W3cCredentialRecord, W3cJsonLdVerifiablePresentation, W3cJwtVerifiablePresentation } from '../../vc'
@@ -50,6 +50,6 @@ export function getVerifiablePresentationFromEncoded(
   } else if (typeof encodedVerifiablePresentation === 'object' && '@context' in encodedVerifiablePresentation) {
     return JsonTransformer.fromJSON(encodedVerifiablePresentation, W3cJsonLdVerifiablePresentation)
   } else {
-    throw new AriesFrameworkError('Unsupported verifiable presentation format')
+    throw new CredoError('Unsupported verifiable presentation format')
   }
 }

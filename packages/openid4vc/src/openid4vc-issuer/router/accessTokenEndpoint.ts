@@ -3,7 +3,7 @@ import type { AgentContext } from '@credo-ts/core'
 import type { JWTSignerCallback } from '@sphereon/oid4vci-common'
 import type { NextFunction, Response, Router } from 'express'
 
-import { getJwkFromKey, AriesFrameworkError, JwsService, JwtPayload, getJwkClassFromKeyType, Key } from '@credo-ts/core'
+import { getJwkFromKey, CredoError, JwsService, JwtPayload, getJwkClassFromKeyType, Key } from '@credo-ts/core'
 import {
   GrantTypes,
   PRE_AUTHORIZED_CODE_REQUIRED_ERROR,
@@ -58,17 +58,17 @@ export function configureAccessTokenEndpoint(router: Router, config: OpenId4VciA
 function getJwtSignerCallback(agentContext: AgentContext, signerPublicKey: Key): JWTSignerCallback {
   return async (jwt, _kid) => {
     if (_kid) {
-      throw new AriesFrameworkError('Kid should not be supplied externally.')
+      throw new CredoError('Kid should not be supplied externally.')
     }
     if (jwt.header.kid || jwt.header.jwk) {
-      throw new AriesFrameworkError('kid or jwk should not be present in access token header before signing')
+      throw new CredoError('kid or jwk should not be present in access token header before signing')
     }
 
     const jwsService = agentContext.dependencyManager.resolve(JwsService)
 
     const alg = getJwkClassFromKeyType(signerPublicKey.keyType)?.supportedSignatureAlgorithms[0]
     if (!alg) {
-      throw new AriesFrameworkError(`No supported signature algorithms for key type: ${signerPublicKey.keyType}`)
+      throw new CredoError(`No supported signature algorithms for key type: ${signerPublicKey.keyType}`)
     }
 
     const jwk = getJwkFromKey(signerPublicKey)

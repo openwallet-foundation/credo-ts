@@ -4,7 +4,7 @@ import type { MutexInterface } from 'async-mutex'
 import {
   AgentConfig,
   AgentContext,
-  AriesFrameworkError,
+  CredoError,
   inject,
   injectable,
   InjectionSymbols,
@@ -122,7 +122,7 @@ export class TenantSessionCoordinator {
       this.logger.error(
         `Unknown agent context with contextCorrelationId '${agentContext.contextCorrelationId}'.  Cannot end session`
       )
-      throw new AriesFrameworkError(
+      throw new CredoError(
         `Unknown agent context with contextCorrelationId '${agentContext.contextCorrelationId}'. Cannot end session`
       )
     }
@@ -163,9 +163,7 @@ export class TenantSessionCoordinator {
         // be fast enough to not cause a problem. This wil also only be problem when the wallet is being created
         // for the first time or being acquired while wallet initialization is in progress.
         this.tenantsModuleConfig.sessionAcquireTimeout,
-        new AriesFrameworkError(
-          `Error acquiring lock for tenant ${tenantId}. Wallet initialization or shutdown took too long.`
-        )
+        new CredoError(`Error acquiring lock for tenant ${tenantId}. Wallet initialization or shutdown took too long.`)
       ),
     }
     this.tenantAgentContextMapping[tenantId] = tenantSessionMapping

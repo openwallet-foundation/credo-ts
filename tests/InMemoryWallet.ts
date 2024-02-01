@@ -21,7 +21,7 @@ import {
   isValidPrivateKey,
   KeyType,
   Buffer,
-  AriesFrameworkError,
+  CredoError,
   WalletError,
   Key,
   TypedArrayEncoder,
@@ -185,7 +185,7 @@ export class InMemoryWallet implements Wallet {
       if (error instanceof WalletError) throw error
 
       if (!isError(error)) {
-        throw new AriesFrameworkError('Attempted to throw error, but it was not of type Error', { cause: error })
+        throw new CredoError('Attempted to throw error, but it was not of type Error', { cause: error })
       }
       throw new WalletError(`Error creating key with key type '${keyType}': ${error.message}`, { cause: error })
     }
@@ -327,7 +327,7 @@ export class InMemoryWallet implements Wallet {
       return new BigNumber(nonce).toString()
     } catch (error) {
       if (!isError(error)) {
-        throw new AriesFrameworkError('Attempted to throw error, but it was not of type Error', { cause: error })
+        throw new CredoError('Attempted to throw error, but it was not of type Error', { cause: error })
       }
       throw new WalletError('Error generating nonce', { cause: error })
     }

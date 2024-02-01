@@ -3,7 +3,7 @@ import type { GetProofsResult } from './models/GetProofsResult'
 import type { GetTypeOptions } from './models/GetTypeOptions'
 import type { JsonObject, JsonValue } from '../../../types'
 
-import { AriesFrameworkError } from '../../../error'
+import { CredoError } from '../../../error'
 import { SECURITY_CONTEXT_URL } from '../constants'
 
 import jsonld from './libraries/jsonld'
@@ -38,7 +38,7 @@ export function assertOnlyW3cJsonLdVerifiableCredentials(
   credentials: unknown[]
 ): asserts credentials is W3cJsonLdVerifiableCredential[] {
   if (credentials.some((c) => !(c instanceof W3cJsonLdVerifiableCredential))) {
-    throw new AriesFrameworkError('JSON-LD VPs can only contain JSON-LD VCs')
+    throw new CredoError('JSON-LD VPs can only contain JSON-LD VCs')
   }
 }
 

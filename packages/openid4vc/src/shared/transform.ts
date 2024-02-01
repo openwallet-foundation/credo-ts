@@ -8,7 +8,7 @@ import type {
 
 import {
   JsonTransformer,
-  AriesFrameworkError,
+  CredoError,
   W3cJsonLdVerifiablePresentation,
   W3cJwtVerifiablePresentation,
   W3cJwtVerifiableCredential,
@@ -51,7 +51,7 @@ export function getVerifiablePresentationFromSphereonWrapped(
 ): VerifiablePresentation {
   if (wrappedVerifiablePresentation.format === 'jwt_vp') {
     if (typeof wrappedVerifiablePresentation.original !== 'string') {
-      throw new AriesFrameworkError('Unable to transform JWT VP to W3C VP')
+      throw new CredoError('Unable to transform JWT VP to W3C VP')
     }
 
     return W3cJwtVerifiablePresentation.fromSerializedJwt(wrappedVerifiablePresentation.original)
@@ -69,5 +69,5 @@ export function getVerifiablePresentationFromSphereonWrapped(
     } satisfies SdJwtVc
   }
 
-  throw new AriesFrameworkError(`Unsupported presentation format: ${wrappedVerifiablePresentation.format}`)
+  throw new CredoError(`Unsupported presentation format: ${wrappedVerifiablePresentation.format}`)
 }

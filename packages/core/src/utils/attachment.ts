@@ -2,7 +2,7 @@ import type { HashName } from './Hasher'
 import type { BaseName } from './MultiBaseEncoder'
 import type { Attachment } from '../decorators/attachment/Attachment'
 
-import { AriesFrameworkError } from '../error/AriesFrameworkError'
+import { CredoError } from '../error/CredoError'
 
 import { HashlinkEncoder } from './HashlinkEncoder'
 import { TypedArrayEncoder } from './TypedArrayEncoder'
@@ -25,11 +25,9 @@ export function encodeAttachment(
   } else if (attachment.data.base64) {
     return HashlinkEncoder.encode(TypedArrayEncoder.fromBase64(attachment.data.base64), hashAlgorithm, baseName)
   } else if (attachment.data.json) {
-    throw new AriesFrameworkError(
-      `Attachment: (${attachment.id}) has json encoded data. This is currently not supported`
-    )
+    throw new CredoError(`Attachment: (${attachment.id}) has json encoded data. This is currently not supported`)
   } else {
-    throw new AriesFrameworkError(`Attachment: (${attachment.id}) has no data to create a link with`)
+    throw new CredoError(`Attachment: (${attachment.id}) has no data to create a link with`)
   }
 }
 

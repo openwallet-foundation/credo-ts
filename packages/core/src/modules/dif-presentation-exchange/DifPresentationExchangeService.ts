@@ -26,7 +26,7 @@ import { Status, PEVersion, PEX } from '@sphereon/pex'
 import { injectable } from 'tsyringe'
 
 import { getJwkFromKey } from '../../crypto'
-import { AriesFrameworkError } from '../../error'
+import { CredoError } from '../../error'
 import { Hasher, JsonTransformer } from '../../utils'
 import { DidsApi, getKeyFromVerificationMethod } from '../dids'
 import { SdJwtVcApi } from '../sd-jwt-vc'
@@ -73,7 +73,7 @@ export class DifPresentationExchangeService {
     credentialsForRequest: DifPexCredentialsForRequest
   ): DifPexInputDescriptorToCredentials {
     if (!credentialsForRequest.areRequirementsSatisfied) {
-      throw new AriesFrameworkError('Could not find the required credentials for the presentation submission')
+      throw new CredoError('Could not find the required credentials for the presentation submission')
     }
 
     const credentials: DifPexInputDescriptorToCredentials = {}
@@ -391,7 +391,7 @@ export class DifPresentationExchangeService {
       const { challenge, domain } = options.proofOptions ?? {}
 
       if (!challenge) {
-        throw new AriesFrameworkError('challenge MUST be provided when signing a Verifiable Presentation')
+        throw new CredoError('challenge MUST be provided when signing a Verifiable Presentation')
       }
 
       if (presentationToCreate.claimFormat === ClaimFormat.JwtVp) {
@@ -442,9 +442,7 @@ export class DifPresentationExchangeService {
         const sdJwtInput = presentationInput as SdJwtDecodedVerifiableCredentialWithKbJwtInput
 
         if (!domain) {
-          throw new AriesFrameworkError(
-            "Missing 'domain' property, unable to set required 'aud' property in SD-JWT KB-JWT"
-          )
+          throw new CredoError("Missing 'domain' property, unable to set required 'aud' property in SD-JWT KB-JWT")
         }
 
         const sdJwtVcApi = this.getSdJwtVcApi(agentContext)

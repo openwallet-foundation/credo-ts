@@ -1,6 +1,6 @@
 import type { AnonCredsRevocationStatusList, AnonCredsRevocationRegistryDefinition } from '@credo-ts/anoncreds'
 
-import { AriesFrameworkError } from '@credo-ts/core'
+import { CredoError } from '@credo-ts/core'
 
 export type RevocationRegistryDelta = {
   accum: string
@@ -24,7 +24,7 @@ export function anonCredsRevocationStatusListFromIndyVdr(
   // revocation registry definition. This will likely also be checked on other levels as well
   // by the ledger or the indy-vdr library itself
   if (Math.max(...delta.issued, ...delta.revoked) >= revocationRegistryDefinition.value.maxCredNum) {
-    throw new AriesFrameworkError(
+    throw new CredoError(
       `Highest delta index '${Math.max(
         ...delta.issued,
         ...delta.revoked
@@ -81,7 +81,7 @@ export function indyVdrCreateLatestRevocationDelta(
   previousDelta?: RevocationRegistryDelta
 ) {
   if (previousDelta && Math.max(...previousDelta.issued, ...previousDelta.revoked) > revocationStatusList.length - 1) {
-    throw new AriesFrameworkError(
+    throw new CredoError(
       `Indy Vdr delta contains an index '${Math.max(
         ...previousDelta.revoked,
         ...previousDelta.issued

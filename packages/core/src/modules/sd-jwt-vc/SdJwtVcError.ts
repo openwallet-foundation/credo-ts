@@ -1,3 +1,3 @@
-import { AriesFrameworkError } from '../../error'
+import { CredoError } from '../../error'
 
-export class SdJwtVcError extends AriesFrameworkError {}
+export class SdJwtVcError extends CredoError {}

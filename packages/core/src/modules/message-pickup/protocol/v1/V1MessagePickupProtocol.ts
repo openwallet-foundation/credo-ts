@@ -9,13 +9,12 @@ import type {
   DeliverMessagesProtocolReturnType,
   PickupMessagesProtocolOptions,
   PickupMessagesProtocolReturnType,
-  SetLiveDeliveryModeProtocolOptions,
   SetLiveDeliveryModeProtocolReturnType,
 } from '../MessagePickupProtocolOptions'
 
 import { OutboundMessageContext, Protocol } from '../../../../agent/models'
 import { InjectionSymbols } from '../../../../constants'
-import { AriesFrameworkError } from '../../../../error'
+import { CredoError } from '../../../../error'
 import { injectable } from '../../../../plugins'
 import { MessagePickupModuleConfig } from '../../MessagePickupModuleConfig'
 import { BaseMessagePickupProtocol } from '../BaseMessagePickupProtocol'
@@ -95,7 +94,7 @@ export class V1MessagePickupProtocol extends BaseMessagePickupProtocol {
   }
 
   public async setLiveDeliveryMode(): Promise<SetLiveDeliveryModeProtocolReturnType<AgentMessage>> {
-    throw new AriesFrameworkError('Live Delivery mode not supported in Message Pickup V1 protocol')
+    throw new CredoError('Live Delivery mode not supported in Message Pickup V1 protocol')
   }
 
   public async processBatchPickup(messageContext: InboundMessageContext<V1BatchPickupMessage>) {

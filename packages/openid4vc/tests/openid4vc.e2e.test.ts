@@ -4,7 +4,7 @@ import type { DifPresentationExchangeDefinitionV2, SdJwtVc } from '@credo-ts/cor
 import type { Server } from 'http'
 
 import {
-  AriesFrameworkError,
+  CredoError,
   ClaimFormat,
   DidsApi,
   DifPresentationExchangeService,
@@ -163,7 +163,7 @@ describe('OpenId4Vc', () => {
     }
 
     // otherwise throw an error
-    throw new AriesFrameworkError('Issuer does not support did:key or JWK for credential binding')
+    throw new CredoError('Issuer does not support did:key or JWK for credential binding')
   }
 
   it('e2e flow with tenants, issuer endpoints requesting a sd-jwt-vc', async () => {

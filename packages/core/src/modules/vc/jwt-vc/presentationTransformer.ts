@@ -2,7 +2,7 @@ import type { JwtPayloadOptions } from '../../../crypto/jose/jwt'
 import type { W3cJsonPresentation } from '../models/presentation/W3cJsonPresentation'
 
 import { JwtPayload } from '../../../crypto/jose/jwt'
-import { AriesFrameworkError } from '../../../error'
+import { CredoError } from '../../../error'
 import { JsonTransformer, isJsonObject } from '../../../utils'
 import { W3cPresentation } from '../models/presentation/W3cPresentation'
 
@@ -40,14 +40,14 @@ export function getJwtPayloadFromPresentation(presentation: W3cPresentation) {
 
 export function getPresentationFromJwtPayload(jwtPayload: JwtPayload) {
   if (!('vp' in jwtPayload.additionalClaims) || !isJsonObject(jwtPayload.additionalClaims.vp)) {
-    throw new AriesFrameworkError("JWT does not contain a valid 'vp' claim")
+    throw new CredoError("JWT does not contain a valid 'vp' claim")
   }
 
   const jwtVp = jwtPayload.additionalClaims.vp
 
   // Validate vp.id and jti
   if (jwtVp.id && jwtPayload.jti !== jwtVp.id) {
-    throw new AriesFrameworkError('JWT jti and vp.id do not match')
+    throw new CredoError('JWT jti and vp.id do not match')
   }
 
   // Validate vp.holder and iss
@@ -55,7 +55,7 @@ export function getPresentationFromJwtPayload(jwtPayload: JwtPayload) {
     (typeof jwtVp.holder === 'string' && jwtPayload.iss !== jwtVp.holder) ||
     (isJsonObject(jwtVp.holder) && jwtVp.holder.id && jwtPayload.iss !== jwtVp.holder.id)
   ) {
-    throw new AriesFrameworkError('JWT iss and vp.holder(.id) do not match')
+    throw new CredoError('JWT iss and vp.holder(.id) do not match')
   }
 
   const dataModelVp = {

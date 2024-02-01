@@ -10,7 +10,7 @@ import type { AgentContext, DifPresentationExchangeDefinition } from '@credo-ts/
 import type { PresentationVerificationCallback, SigningAlgo } from '@sphereon/did-auth-siop'
 
 import {
-  AriesFrameworkError,
+  CredoError,
   DidsApi,
   inject,
   injectable,
@@ -94,7 +94,7 @@ export class OpenId4VcSiopVerifierService {
     options: OpenId4VcSiopVerifyAuthorizationResponseOptions & { verifier: OpenId4VcVerifierRecord }
   ): Promise<OpenId4VcSiopVerifiedAuthorizationResponse> {
     const authorizationResponse = await AuthorizationResponse.fromPayload(options.authorizationResponse).catch(() => {
-      throw new AriesFrameworkError(
+      throw new CredoError(
         `Unable to parse authorization response payload. ${JSON.stringify(options.authorizationResponse)}`
       )
     })
@@ -114,14 +114,12 @@ export class OpenId4VcSiopVerifierService {
       : undefined
 
     if (!correlationId) {
-      throw new AriesFrameworkError(
-        `Unable to find correlationId for nonce '${responseNonce}' or state '${responseState}'`
-      )
+      throw new CredoError(`Unable to find correlationId for nonce '${responseNonce}' or state '${responseState}'`)
     }
 
     const requestSessionState = await sessionManager.getRequestStateByCorrelationId(correlationId)
     if (!requestSessionState) {
-      throw new AriesFrameworkError(`Unable to find request state for correlationId '${correlationId}'`)
+      throw new CredoError(`Unable to find request state for correlationId '${correlationId}'`)
     }
 
     const requestClientId = await requestSessionState.request.getMergedProperty<string>('client_id')
@@ -130,7 +128,7 @@ export class OpenId4VcSiopVerifierService {
     const presentationDefinitionsWithLocation = await requestSessionState.request.getPresentationDefinitions()
 
     if (!requestNonce || !requestClientId || !requestState) {
-      throw new AriesFrameworkError(
+      throw new CredoError(
         `Unable to find nonce, state, or client_id in authorization request for correlationId '${correlationId}'`
       )
     }
@@ -239,7 +237,7 @@ export class OpenId4VcSiopVerifierService {
     }
 
     if (!_clientId) {
-      throw new AriesFrameworkError("Either 'requestSigner' or 'clientId' must be provided.")
+      throw new CredoError("Either 'requestSigner' or 'clientId' must be provided.")
     }
 
     // FIXME: we now manually remove did:peer, we should probably allow the user to configure this
@@ -313,7 +311,7 @@ export class OpenId4VcSiopVerifierService {
       this.logger.debug(`Presentation response`, JsonTransformer.toJSON(encodedPresentation))
       this.logger.debug(`Presentation submission`, presentationSubmission)
 
-      if (!encodedPresentation) throw new AriesFrameworkError('Did not receive a presentation for verification.')
+      if (!encodedPresentation) throw new CredoError('Did not receive a presentation for verification.')
 
       let isValid: boolean
 
@@ -354,7 +352,7 @@ export class OpenId4VcSiopVerifierService {
       // Once https://github.com/Sphereon-Opensource/SIOP-OID4VP/pull/70 is merged we
       // can remove this.
       if (!isValid) {
-        throw new AriesFrameworkError('Presentation verification failed.')
+        throw new CredoError('Presentation verification failed.')
       }
 
       return {

@@ -1,4 +1,4 @@
-import { AriesFrameworkError } from '../../../error'
+import { CredoError } from '../../../error'
 
 /**
  * The maximum allowed clock skew time in seconds. If an time based validation
@@ -128,26 +128,26 @@ export class JwtPayload {
 
     // Validate nbf
     if (typeof this.nbf !== 'number' && typeof this.nbf !== 'undefined') {
-      throw new AriesFrameworkError(`JWT payload 'nbf' must be a number if provided. Actual type is ${typeof this.nbf}`)
+      throw new CredoError(`JWT payload 'nbf' must be a number if provided. Actual type is ${typeof this.nbf}`)
     }
     if (typeof this.nbf === 'number' && this.nbf > nowSkewedFuture) {
-      throw new AriesFrameworkError(`JWT not valid before ${this.nbf}`)
+      throw new CredoError(`JWT not valid before ${this.nbf}`)
     }
 
     // Validate iat
     if (typeof this.iat !== 'number' && typeof this.iat !== 'undefined') {
-      throw new AriesFrameworkError(`JWT payload 'iat' must be a number if provided. Actual type is ${typeof this.iat}`)
+      throw new CredoError(`JWT payload 'iat' must be a number if provided. Actual type is ${typeof this.iat}`)
     }
     if (typeof this.iat === 'number' && this.iat > nowSkewedFuture) {
-      throw new AriesFrameworkError(`JWT issued in the future at ${this.iat}`)
+      throw new CredoError(`JWT issued in the future at ${this.iat}`)
     }
 
     // Validate exp
     if (typeof this.exp !== 'number' && typeof this.exp !== 'undefined') {
-      throw new AriesFrameworkError(`JWT payload 'exp' must be a number if provided. Actual type is ${typeof this.exp}`)
+      throw new CredoError(`JWT payload 'exp' must be a number if provided. Actual type is ${typeof this.exp}`)
     }
     if (typeof this.exp === 'number' && this.exp < nowSkewedPast) {
-      throw new AriesFrameworkError(`JWT expired at ${this.exp}`)
+      throw new CredoError(`JWT expired at ${this.exp}`)
     }
 
     // NOTE: nonce and aud are not validated in here. We could maybe add
@@ -172,37 +172,37 @@ export class JwtPayload {
 
     // Validate iss
     if (iss && typeof iss !== 'string') {
-      throw new AriesFrameworkError(`JWT payload iss must be a string`)
+      throw new CredoError(`JWT payload iss must be a string`)
     }
 
     // Validate sub
     if (sub && typeof sub !== 'string') {
-      throw new AriesFrameworkError(`JWT payload sub must be a string`)
+      throw new CredoError(`JWT payload sub must be a string`)
     }
 
     // Validate aud
     if (aud && typeof aud !== 'string' && !(Array.isArray(aud) && aud.every((aud) => typeof aud === 'string'))) {
-      throw new AriesFrameworkError(`JWT payload aud must be a string or an array of strings`)
+      throw new CredoError(`JWT payload aud must be a string or an array of strings`)
     }
 
     // Validate exp
     if (exp && (typeof exp !== 'number' || exp < 0)) {
-      throw new AriesFrameworkError(`JWT payload exp must be a positive number`)
+      throw new CredoError(`JWT payload exp must be a positive number`)
     }
 
     // Validate nbf
     if (nbf && (typeof nbf !== 'number' || nbf < 0)) {
-      throw new AriesFrameworkError(`JWT payload nbf must be a positive number`)
+      throw new CredoError(`JWT payload nbf must be a positive number`)
     }
 
     // Validate iat
     if (iat && (typeof iat !== 'number' || iat < 0)) {
-      throw new AriesFrameworkError(`JWT payload iat must be a positive number`)
+      throw new CredoError(`JWT payload iat must be a positive number`)
     }
 
     // Validate jti
     if (jti && typeof jti !== 'string') {
-      throw new AriesFrameworkError(`JWT payload jti must be a string`)
+      throw new CredoError(`JWT payload jti must be a string`)
     }
 
     const jwtPayload = new JwtPayload({

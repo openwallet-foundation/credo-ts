@@ -26,7 +26,7 @@ import type {
 } from '../ProofFormatServiceOptions'
 
 import { Attachment, AttachmentData } from '../../../../decorators/attachment/Attachment'
-import { AriesFrameworkError } from '../../../../error'
+import { CredoError } from '../../../../error'
 import { deepEquality, JsonTransformer } from '../../../../utils'
 import {
   DifPresentationExchangeService,
@@ -67,7 +67,7 @@ export class PresentationExchangeProofFormatService implements ProofFormatServic
 
     const pexFormat = proofFormats.presentationExchange
     if (!pexFormat) {
-      throw new AriesFrameworkError('Missing Presentation Exchange format in create proposal attachment format')
+      throw new CredoError('Missing Presentation Exchange format in create proposal attachment format')
     }
 
     const { presentationDefinition } = pexFormat
@@ -198,11 +198,11 @@ export class PresentationExchangeProofFormatService implements ProofFormatServic
     })
 
     if (presentation.verifiablePresentations.length > 1) {
-      throw new AriesFrameworkError('Invalid amount of verifiable presentations. Only one is allowed.')
+      throw new CredoError('Invalid amount of verifiable presentations. Only one is allowed.')
     }
 
     if (presentation.presentationSubmissionLocation === DifPresentationExchangeSubmissionLocation.EXTERNAL) {
-      throw new AriesFrameworkError('External presentation submission is not supported.')
+      throw new CredoError('External presentation submission is not supported.')
     }
 
     const firstPresentation = presentation.verifiablePresentations[0]
@@ -234,7 +234,7 @@ export class PresentationExchangeProofFormatService implements ProofFormatServic
     // can be reused in Credo when we need to go from encoded -> parsed
     if (typeof presentation === 'string' && presentation.includes('~')) {
       // NOTE: we need to define in the PEX RFC where to put the presentation_submission
-      throw new AriesFrameworkError('Received SD-JWT VC in PEX proof format. This is not supported yet.')
+      throw new CredoError('Received SD-JWT VC in PEX proof format. This is not supported yet.')
     } else if (typeof presentation === 'string') {
       // If it's a string, we expect it to be a JWT VP
       parsedPresentation = W3cJwtVerifiablePresentation.fromSerializedJwt(presentation)

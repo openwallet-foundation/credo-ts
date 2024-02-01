@@ -14,7 +14,7 @@ import { MessageHandlerRegistry } from '../../agent/MessageHandlerRegistry'
 import { MessageSender } from '../../agent/MessageSender'
 import { OutboundMessageContext } from '../../agent/models'
 import { InjectionSymbols } from '../../constants'
-import { AriesFrameworkError } from '../../error'
+import { CredoError } from '../../error'
 import { Logger } from '../../logger'
 import { inject, injectable } from '../../plugins'
 import { TransportEventTypes } from '../../transport'
@@ -130,7 +130,7 @@ export class MediationRecipientApi {
     const hasWebSocketTransport = services && services.some((s) => websocketSchemes.includes(s.protocolScheme))
 
     if (!hasWebSocketTransport) {
-      throw new AriesFrameworkError('Cannot open websocket to connection without websocket service endpoint')
+      throw new CredoError('Cannot open websocket to connection without websocket service endpoint')
     }
 
     await this.messageSender.sendMessage(
@@ -235,7 +235,7 @@ export class MediationRecipientApi {
     const { mediatorPollingInterval } = this.config
     const mediatorRecord = mediator ?? (await this.findDefaultMediator())
     if (!mediatorRecord) {
-      throw new AriesFrameworkError('There is no mediator to pickup messages from')
+      throw new CredoError('There is no mediator to pickup messages from')
     }
 
     const mediatorPickupStrategy = pickupStrategy ?? (await this.getPickupStrategyForMediator(mediatorRecord))

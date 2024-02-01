@@ -7,7 +7,7 @@ import type { OutboundPackage } from '../types'
 import { AbortController } from 'abort-controller'
 
 import { AgentEventTypes } from '../agent/Events'
-import { AriesFrameworkError } from '../error/AriesFrameworkError'
+import { CredoError } from '../error/CredoError'
 import { isValidJweStructure, JsonEncoder } from '../utils'
 
 export class HttpOutboundTransport implements OutboundTransport {
@@ -34,7 +34,7 @@ export class HttpOutboundTransport implements OutboundTransport {
     const { payload, endpoint } = outboundPackage
 
     if (!endpoint) {
-      throw new AriesFrameworkError(`Missing endpoint. I don't know how and where to send the message.`)
+      throw new CredoError(`Missing endpoint. I don't know how and where to send the message.`)
     }
 
     this.logger.debug(`Sending outbound message to endpoint '${outboundPackage.endpoint}'`, {
@@ -102,7 +102,7 @@ export class HttpOutboundTransport implements OutboundTransport {
         body: payload,
         didCommMimeType: this.agent.config.didCommMimeType,
       })
-      throw new AriesFrameworkError(`Error sending message to ${endpoint}: ${error.message}`, { cause: error })
+      throw new CredoError(`Error sending message to ${endpoint}: ${error.message}`, { cause: error })
     }
   }
 }

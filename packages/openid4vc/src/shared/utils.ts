@@ -3,7 +3,7 @@ import type { AgentContext, JwaSignatureAlgorithm, Key } from '@credo-ts/core'
 import type { DIDDocument, SigningAlgo, SuppliedSignature } from '@sphereon/did-auth-siop'
 
 import {
-  AriesFrameworkError,
+  CredoError,
   DidsApi,
   TypedArrayEncoder,
   getKeyFromVerificationMethod,
@@ -51,20 +51,18 @@ export async function getSphereonSuppliedSignatureFromJwtIssuer(
     // get the key from the verification method and use the first supported signature algorithm
     key = getKeyFromVerificationMethod(verificationMethod)
     const _alg = getJwkClassFromKeyType(key.keyType)?.supportedSignatureAlgorithms[0]
-    if (!_alg) throw new AriesFrameworkError(`No supported signature algorithms for key type: ${key.keyType}`)
+    if (!_alg) throw new CredoError(`No supported signature algorithms for key type: ${key.keyType}`)
 
     alg = _alg
     kid = verificationMethod.id
     did = verificationMethod.controller
   } else {
-    throw new AriesFrameworkError(
-      `Unsupported jwt issuer method '${jwtIssuer.method as string}'. Only 'did' is supported.`
-    )
+    throw new CredoError(`Unsupported jwt issuer method '${jwtIssuer.method as string}'. Only 'did' is supported.`)
   }
 
   return {
     signature: async (data: string | Uint8Array) => {
-      if (typeof data !== 'string') throw new AriesFrameworkError("Expected string but received 'Uint8Array'")
+      if (typeof data !== 'string') throw new CredoError("Expected string but received 'Uint8Array'")
       const signedData = await agentContext.wallet.sign({
         data: TypedArrayEncoder.fromString(data),
         key,
@@ -98,7 +96,7 @@ export function getProofTypeFromKey(agentContext: AgentContext, key: Key) {
 
   const supportedSignatureSuites = signatureSuiteRegistry.getAllByKeyType(key.keyType)
   if (supportedSignatureSuites.length === 0) {
-    throw new AriesFrameworkError(`Couldn't find a supported signature suite for the given key type '${key.keyType}'.`)
+    throw new CredoError(`Couldn't find a supported signature suite for the given key type '${key.keyType}'.`)
   }
 
   return supportedSignatureSuites[0].proofType

@@ -26,7 +26,7 @@ import type { ICredential } from '@sphereon/ssi-types'
 
 import {
   SdJwtVcApi,
-  AriesFrameworkError,
+  CredoError,
   ClaimFormat,
   DidsApi,
   equalsIgnoreOrder,
@@ -144,7 +144,7 @@ export class OpenId4VcIssuerService {
     options: OpenId4VciCreateCredentialResponseOptions & { issuer: OpenId4VcIssuerRecord }
   ) {
     const { credentialRequest, issuer } = options
-    if (!credentialRequest.proof) throw new AriesFrameworkError('No proof defined in the credentialRequest.')
+    if (!credentialRequest.proof) throw new CredoError('No proof defined in the credentialRequest.')
 
     const vcIssuer = this.getVcIssuer(agentContext, issuer)
     const issueCredentialResponse = await vcIssuer.issueCredential({
@@ -158,11 +158,11 @@ export class OpenId4VcIssuerService {
     })
 
     if (!issueCredentialResponse.credential) {
-      throw new AriesFrameworkError('No credential found in the issueCredentialResponse.')
+      throw new CredoError('No credential found in the issueCredentialResponse.')
     }
 
     if (issueCredentialResponse.acceptance_token) {
-      throw new AriesFrameworkError('Acceptance token not yet supported.')
+      throw new CredoError('Acceptance token not yet supported.')
     }
 
     return issueCredentialResponse
@@ -211,22 +211,18 @@ export class OpenId4VcIssuerService {
 
   private async getCredentialOfferSessionFromUri(agentContext: AgentContext, uri: string) {
     const uriState = await this.openId4VcIssuerConfig.getUriStateManager(agentContext).get(uri)
-    if (!uriState) throw new AriesFrameworkError(`Credential offer uri '${uri}' not found.`)
+    if (!uriState) throw new CredoError(`Credential offer uri '${uri}' not found.`)
 
     const credentialOfferSessionId = uriState.preAuthorizedCode ?? uriState.issuerState
     if (!credentialOfferSessionId) {
-      throw new AriesFrameworkError(
-        `Credential offer uri '${uri}' is not associated with a preAuthorizedCode or issuerState.`
-      )
+      throw new CredoError(`Credential offer uri '${uri}' is not associated with a preAuthorizedCode or issuerState.`)
     }
 
     const credentialOfferSession = await this.openId4VcIssuerConfig
       .getCredentialOfferSessionStateManager(agentContext)
       .get(credentialOfferSessionId)
     if (!credentialOfferSession)
-      throw new AriesFrameworkError(
-        `Credential offer session for '${uri}' with id '${credentialOfferSessionId}' not found.`
-      )
+      throw new CredoError(`Credential offer session for '${uri}' with id '${credentialOfferSessionId}' not found.`)
 
     return { credentialOfferSessionId, credentialOfferSession }
   }
@@ -238,8 +234,8 @@ export class OpenId4VcIssuerService {
         jws: opts.jwt,
         // Only handles kid as did resolution. JWK is handled by jws service
         jwkResolver: async ({ protectedHeader: { kid } }) => {
-          if (!kid) throw new AriesFrameworkError('Missing kid in protected header.')
-          if (!kid.startsWith('did:')) throw new AriesFrameworkError('Only did is supported for kid identifier')
+          if (!kid) throw new CredoError('Missing kid in protected header.')
+          if (!kid.startsWith('did:')) throw new CredoError('Only did is supported for kid identifier')
 
           const didsApi = agentContext.dependencyManager.resolve(DidsApi)
           didDocument = await didsApi.resolveDidDocument(kid)
@@ -249,7 +245,7 @@ export class OpenId4VcIssuerService {
         },
       })
 
-      if (!isValid) throw new AriesFrameworkError('Could not verify JWT signature.')
+      if (!isValid) throw new CredoError('Could not verify JWT signature.')
 
       // TODO: the jws service should return some better decoded metadata also from the resolver
       // as currently is less useful if you afterwards need properties from the JWS
@@ -279,7 +275,7 @@ export class OpenId4VcIssuerService {
       .withCredentialOfferURIStateManager(this.openId4VcIssuerConfig.getUriStateManager(agentContext))
       .withJWTVerifyCallback(this.getJwtVerifyCallback(agentContext))
       .withCredentialSignerCallback(() => {
-        throw new AriesFrameworkError('Credential signer callback should be overwritten. This is a no-op')
+        throw new CredoError('Credential signer callback should be overwritten. This is a no-op')
       })
 
     if (issuerMetadata.authorizationServer) {
@@ -299,9 +295,7 @@ export class OpenId4VcIssuerService {
     authorizationCodeFlowConfig?: OpenId4VciAuthorizationCodeFlowConfig
   ) {
     if (!preAuthorizedCodeFlowConfig && !authorizationCodeFlowConfig) {
-      throw new AriesFrameworkError(
-        `Either preAuthorizedCodeFlowConfig or authorizationCodeFlowConfig must be provided.`
-      )
+      throw new CredoError(`Either preAuthorizedCodeFlowConfig or authorizationCodeFlowConfig must be provided.`)
     }
 
     const grants: Grant = {
@@ -375,9 +369,9 @@ export class OpenId4VcIssuerService {
       const { jwtVerifyResult, format } = opts
       const { kid, didDocument: holderDidDocument } = jwtVerifyResult
 
-      if (!kid) throw new AriesFrameworkError('Missing Kid. Cannot create the holder binding')
-      if (!holderDidDocument) throw new AriesFrameworkError('Missing did document. Cannot create the holder binding.')
-      if (!format) throw new AriesFrameworkError('Missing format. Cannot issue credential.')
+      if (!kid) throw new CredoError('Missing Kid. Cannot create the holder binding')
+      if (!holderDidDocument) throw new CredoError('Missing did document. Cannot create the holder binding.')
+      if (!format) throw new CredoError('Missing format. Cannot issue credential.')
 
       const formatMap: Record<string, ClaimFormat.JwtVc | ClaimFormat.LdpVc> = {
         [OpenId4VciCredentialFormatProfile.JwtVcJson]: ClaimFormat.JwtVc,
@@ -404,7 +398,7 @@ export class OpenId4VcIssuerService {
         const alg = getJwkFromKey(key).supportedSignatureAlgorithms[0]
 
         if (!alg) {
-          throw new AriesFrameworkError(`No supported JWA signature algorithms for key type ${key.keyType}`)
+          throw new CredoError(`No supported JWA signature algorithms for key type ${key.keyType}`)
         }
 
         const signed = await this.w3cCredentialService.signCredential(agentContext, {
@@ -432,15 +426,15 @@ export class OpenId4VcIssuerService {
   }
 
   private async getHolderBindingFromRequest(credentialRequest: OpenId4VciCredentialRequest) {
-    if (!credentialRequest.proof?.jwt) throw new AriesFrameworkError('Received a credential request without a proof')
+    if (!credentialRequest.proof?.jwt) throw new CredoError('Received a credential request without a proof')
 
     const jwt = Jwt.fromSerializedJwt(credentialRequest.proof.jwt)
 
     if (jwt.header.kid) {
       if (!jwt.header.kid.startsWith('did:')) {
-        throw new AriesFrameworkError("Only did is supported for 'kid' identifier")
+        throw new CredoError("Only did is supported for 'kid' identifier")
       } else if (!jwt.header.kid.includes('#')) {
-        throw new AriesFrameworkError(
+        throw new CredoError(
           `kid containing did MUST point to a specific key within the did document: ${jwt.header.kid}`
         )
       }
@@ -455,7 +449,7 @@ export class OpenId4VcIssuerService {
         jwk: getJwkFromJson(jwt.header.jwk),
       } satisfies OpenId4VcCredentialHolderBinding
     } else {
-      throw new AriesFrameworkError('Either kid or jwk must be present in credential request proof header')
+      throw new CredoError('Either kid or jwk must be present in credential request proof header')
     }
   }
 
@@ -474,7 +468,7 @@ export class OpenId4VcIssuerService {
       )
 
       if (offeredCredentialsMatchingRequest.length === 0) {
-        throw new AriesFrameworkError('No offered credentials match the credential request.')
+        throw new CredoError('No offered credentials match the credential request.')
       }
 
       if (offeredCredentialsMatchingRequest.length > 1) {
@@ -499,7 +493,7 @@ export class OpenId4VcIssuerService {
 
       if (signOptions.format === ClaimFormat.JwtVc || signOptions.format === ClaimFormat.LdpVc) {
         if (!w3cOpenId4VcFormats.includes(credentialRequest.format as OpenId4VciCredentialFormatProfile)) {
-          throw new AriesFrameworkError(
+          throw new CredoError(
             `The credential to be issued does not match the request. Cannot issue a W3cCredential if the client expects a credential of format '${credentialRequest.format}'.`
           )
         }
@@ -511,12 +505,12 @@ export class OpenId4VcIssuerService {
         }
       } else if (signOptions.format === ClaimFormat.SdJwtVc) {
         if (credentialRequest.format !== OpenId4VciCredentialFormatProfile.SdJwtVc) {
-          throw new AriesFrameworkError(
+          throw new CredoError(
             `Invalid credential format. Expected '${OpenId4VciCredentialFormatProfile.SdJwtVc}', received '${credentialRequest.format}'.`
           )
         }
         if (credentialRequest.vct !== signOptions.payload.vct) {
-          throw new AriesFrameworkError(
+          throw new CredoError(
             `The types of the offered credentials do not match the types of the requested credential. Offered '${signOptions.payload.vct}' Requested '${credentialRequest.vct}'.`
           )
         }
@@ -528,7 +522,7 @@ export class OpenId4VcIssuerService {
           signCallback: this.getSdJwtVcCredentialSigningCallback(agentContext, signOptions),
         }
       } else {
-        throw new AriesFrameworkError(`Unsupported credential format`)
+        throw new CredoError(`Unsupported credential format`)
       }
     }
   }

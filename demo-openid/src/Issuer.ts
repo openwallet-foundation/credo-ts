@@ -11,7 +11,7 @@ import { AskarModule } from '@credo-ts/askar'
 import {
   ClaimFormat,
   parseDid,
-  AriesFrameworkError,
+  CredoError,
   W3cCredential,
   W3cCredentialSubject,
   W3cIssuer,
@@ -176,6 +176,6 @@ function assertDidBasedHolderBinding(
   holderBinding: OpenId4VcCredentialHolderBinding
 ): asserts holderBinding is OpenId4VcCredentialHolderDidBinding {
   if (holderBinding.method !== 'did') {
-    throw new AriesFrameworkError('Only did based holder bindings supported for this credential type')
+    throw new CredoError('Only did based holder bindings supported for this credential type')
   }
 }

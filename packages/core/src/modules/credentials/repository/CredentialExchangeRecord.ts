@@ -6,7 +6,7 @@ import type { RevocationNotification } from '../models/RevocationNotification'
 import { Type } from 'class-transformer'
 
 import { Attachment } from '../../../decorators/attachment/Attachment'
-import { AriesFrameworkError } from '../../../error'
+import { CredoError } from '../../../error'
 import { BaseRecord } from '../../../storage/BaseRecord'
 import { uuid } from '../../../utils/uuid'
 import { CredentialPreviewAttribute } from '../models/CredentialPreviewAttribute'
@@ -100,7 +100,7 @@ export class CredentialExchangeRecord extends BaseRecord<DefaultCredentialTags, 
 
   public assertProtocolVersion(version: string) {
     if (this.protocolVersion != version) {
-      throw new AriesFrameworkError(
+      throw new CredoError(
         `Credential record has invalid protocol version ${this.protocolVersion}. Expected version ${version}`
       )
     }
@@ -112,7 +112,7 @@ export class CredentialExchangeRecord extends BaseRecord<DefaultCredentialTags, 
     }
 
     if (!expectedStates.includes(this.state)) {
-      throw new AriesFrameworkError(
+      throw new CredoError(
         `Credential record is in invalid state ${this.state}. Valid states are: ${expectedStates.join(', ')}.`
       )
     }
@@ -120,11 +120,11 @@ export class CredentialExchangeRecord extends BaseRecord<DefaultCredentialTags, 
 
   public assertConnection(currentConnectionId: string) {
     if (!this.connectionId) {
-      throw new AriesFrameworkError(
+      throw new CredoError(
         `Credential record is not associated with any connection. This is often the case with connection-less credential exchange`
       )
     } else if (this.connectionId !== currentConnectionId) {
-      throw new AriesFrameworkError(
+      throw new CredoError(
         `Credential record is associated with connection '${this.connectionId}'. Current connection is '${currentConnectionId}'`
       )
     }

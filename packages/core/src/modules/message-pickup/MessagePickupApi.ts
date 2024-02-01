@@ -19,7 +19,7 @@ import { AgentContext } from '../../agent'
 import { MessageSender } from '../../agent/MessageSender'
 import { OutboundMessageContext } from '../../agent/models'
 import { InjectionSymbols } from '../../constants'
-import { AriesFrameworkError } from '../../error'
+import { CredoError } from '../../error'
 import { Logger } from '../../logger/Logger'
 import { inject, injectable } from '../../plugins'
 import { ConnectionService } from '../connections/services'
@@ -75,7 +75,7 @@ export class MessagePickupApi<MPPs extends MessagePickupProtocol[] = [V1MessageP
     const protocol = this.config.protocols.find((protocol) => protocol.version === protocolVersion)
 
     if (!protocol) {
-      throw new AriesFrameworkError(`No message pickup protocol registered for protocol version ${protocolVersion}`)
+      throw new CredoError(`No message pickup protocol registered for protocol version ${protocolVersion}`)
     }
 
     return protocol
@@ -161,7 +161,7 @@ export class MessagePickupApi<MPPs extends MessagePickupProtocol[] = [V1MessageP
     const session = this.messagePickupSessionService.getLiveSession(this.agentContext, pickupSessionId)
 
     if (!session) {
-      throw new AriesFrameworkError(`No active live mode session found with id ${pickupSessionId}`)
+      throw new CredoError(`No active live mode session found with id ${pickupSessionId}`)
     }
     const connectionRecord = await this.connectionService.getById(this.agentContext, session.connectionId)
 

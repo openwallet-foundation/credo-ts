@@ -25,7 +25,7 @@ import type {
 } from '../CredentialFormatServiceOptions'
 
 import { Attachment, AttachmentData } from '../../../../decorators/attachment/Attachment'
-import { AriesFrameworkError } from '../../../../error'
+import { CredoError } from '../../../../error'
 import { JsonEncoder, areObjectsEqual } from '../../../../utils'
 import { JsonTransformer } from '../../../../utils/JsonTransformer'
 import { findVerificationMethodByKeyType } from '../../../dids/domain/DidDocument'
@@ -60,7 +60,7 @@ export class JsonLdCredentialFormatService implements CredentialFormatService<Js
 
     const jsonLdFormat = credentialFormats.jsonld
     if (!jsonLdFormat) {
-      throw new AriesFrameworkError('Missing jsonld payload in createProposal')
+      throw new CredoError('Missing jsonld payload in createProposal')
     }
 
     // this does the validation
@@ -82,7 +82,7 @@ export class JsonLdCredentialFormatService implements CredentialFormatService<Js
     const credProposalJson = attachment.getDataAsJson<JsonLdFormatDataCredentialDetail>()
 
     if (!credProposalJson) {
-      throw new AriesFrameworkError('Missing jsonld credential proposal data payload')
+      throw new CredoError('Missing jsonld credential proposal data payload')
     }
 
     // validation is done in here
@@ -128,7 +128,7 @@ export class JsonLdCredentialFormatService implements CredentialFormatService<Js
 
     const jsonLdFormat = credentialFormats?.jsonld
     if (!jsonLdFormat) {
-      throw new AriesFrameworkError('Missing jsonld payload in createOffer')
+      throw new CredoError('Missing jsonld payload in createOffer')
     }
 
     // validate
@@ -143,7 +143,7 @@ export class JsonLdCredentialFormatService implements CredentialFormatService<Js
     const credentialOfferJson = attachment.getDataAsJson<JsonLdFormatDataCredentialDetail>()
 
     if (!credentialOfferJson) {
-      throw new AriesFrameworkError('Missing jsonld credential offer data payload')
+      throw new CredoError('Missing jsonld credential offer data payload')
     }
 
     JsonTransformer.fromJSON(credentialOfferJson, JsonLdCredentialDetail)
@@ -185,7 +185,7 @@ export class JsonLdCredentialFormatService implements CredentialFormatService<Js
     })
 
     if (!jsonLdFormat) {
-      throw new AriesFrameworkError('Missing jsonld payload in createRequest')
+      throw new CredoError('Missing jsonld payload in createRequest')
     }
 
     // this does the validation
@@ -203,7 +203,7 @@ export class JsonLdCredentialFormatService implements CredentialFormatService<Js
     const requestJson = attachment.getDataAsJson<JsonLdFormatDataCredentialDetail>()
 
     if (!requestJson) {
-      throw new AriesFrameworkError('Missing jsonld credential request data payload')
+      throw new CredoError('Missing jsonld credential request data payload')
     }
 
     // validate
@@ -225,7 +225,7 @@ export class JsonLdCredentialFormatService implements CredentialFormatService<Js
       (await this.deriveVerificationMethod(agentContext, credentialRequest.credential, credentialRequest))
 
     if (!verificationMethod) {
-      throw new AriesFrameworkError('Missing verification method in credential data')
+      throw new CredoError('Missing verification method in credential data')
     }
     const format = new CredentialFormatSpec({
       attachmentId,
@@ -239,9 +239,7 @@ export class JsonLdCredentialFormatService implements CredentialFormatService<Js
     const foundFields = unsupportedFields.filter((field) => options[field] !== undefined)
 
     if (foundFields.length > 0) {
-      throw new AriesFrameworkError(
-        `Some fields are not currently supported in credential options: ${foundFields.join(', ')}`
-      )
+      throw new CredoError(`Some fields are not currently supported in credential options: ${foundFields.join(', ')}`)
     }
 
     const credential = JsonTransformer.fromJSON(credentialRequest.credential, W3cCredential)
@@ -288,12 +286,12 @@ export class JsonLdCredentialFormatService implements CredentialFormatService<Js
     const keyType = w3cJsonLdCredentialService.getVerificationMethodTypesByProofType(proofType)
 
     if (!keyType || keyType.length === 0) {
-      throw new AriesFrameworkError(`No Key Type found for proofType ${proofType}`)
+      throw new CredoError(`No Key Type found for proofType ${proofType}`)
     }
 
     const verificationMethod = await findVerificationMethodByKeyType(keyType[0], issuerDidDocument)
     if (!verificationMethod) {
-      throw new AriesFrameworkError(`Missing verification method for key type ${keyType}`)
+      throw new CredoError(`Missing verification method for key type ${keyType}`)
     }
 
     return verificationMethod.id
@@ -319,7 +317,7 @@ export class JsonLdCredentialFormatService implements CredentialFormatService<Js
     // verify signatures of the credential
     const result = await w3cCredentialService.verifyCredential(agentContext, { credential })
     if (result && !result.isValid) {
-      throw new AriesFrameworkError(`Failed to validate credential, error = ${result.error}`)
+      throw new CredoError(`Failed to validate credential, error = ${result.error}`)
     }
 
     const verifiableCredential = await w3cCredentialService.storeCredential(agentContext, {
@@ -340,36 +338,32 @@ export class JsonLdCredentialFormatService implements CredentialFormatService<Js
     delete jsonCredential.proof
 
     if (Array.isArray(credential.proof)) {
-      throw new AriesFrameworkError('Credential proof arrays are not supported')
+      throw new CredoError('Credential proof arrays are not supported')
     }
 
     if (request.options.created && credential.proof.created !== request.options.created) {
-      throw new AriesFrameworkError('Received credential proof created does not match created from credential request')
+      throw new CredoError('Received credential proof created does not match created from credential request')
     }
 
     if (credential.proof.domain !== request.options.domain) {
-      throw new AriesFrameworkError('Received credential proof domain does not match domain from credential request')
+      throw new CredoError('Received credential proof domain does not match domain from credential request')
     }
 
     if (credential.proof.challenge !== request.options.challenge) {
-      throw new AriesFrameworkError(
-        'Received credential proof challenge does not match challenge from credential request'
-      )
+      throw new CredoError('Received credential proof challenge does not match challenge from credential request')
     }
 
     if (credential.proof.type !== request.options.proofType) {
-      throw new AriesFrameworkError('Received credential proof type does not match proof type from credential request')
+      throw new CredoError('Received credential proof type does not match proof type from credential request')
     }
 
     if (credential.proof.proofPurpose !== request.options.proofPurpose) {
-      throw new AriesFrameworkError(
-        'Received credential proof purpose does not match proof purpose from credential request'
-      )
+      throw new CredoError('Received credential proof purpose does not match proof purpose from credential request')
     }
 
     // Check whether the received credential (minus the proof) matches the credential request
     if (!areObjectsEqual(jsonCredential, request.credential)) {
-      throw new AriesFrameworkError('Received credential does not match credential request')
+      throw new CredoError('Received credential does not match credential request')
     }
 
     // TODO: add check for the credentialStatus once this is supported in Credo

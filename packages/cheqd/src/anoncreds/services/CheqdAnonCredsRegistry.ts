@@ -14,7 +14,7 @@ import type {
 } from '@credo-ts/anoncreds'
 import type { AgentContext } from '@credo-ts/core'
 
-import { AriesFrameworkError, Hasher, JsonTransformer, TypedArrayEncoder, utils } from '@credo-ts/core'
+import { CredoError, Hasher, JsonTransformer, TypedArrayEncoder, utils } from '@credo-ts/core'
 
 import { CheqdDidResolver, CheqdDidRegistrar } from '../../dids'
 import { cheqdSdkAnonCredsRegistryIdentifierRegex, parseCheqdDid } from '../utils/identifiers'
@@ -321,9 +321,7 @@ export class CheqdAnonCredsRegistry implements AnonCredsRegistry {
 
       const statusListTimestamp = response.resourceMetadata?.created?.getUTCSeconds()
       if (!statusListTimestamp) {
-        throw new AriesFrameworkError(
-          `Unable to extract revocation status list timestamp from resource ${revocationRegistryId}`
-        )
+        throw new CredoError(`Unable to extract revocation status list timestamp from resource ${revocationRegistryId}`)
       }
 
       return {

@@ -2,7 +2,7 @@ import type { JwkJson, Jwk } from './Jwk'
 import type { Key } from '../../Key'
 import type { JwaSignatureAlgorithm } from '../jwa'
 
-import { AriesFrameworkError } from '../../../error'
+import { CredoError } from '../../../error'
 import { KeyType } from '../../KeyType'
 import { JwaCurve, JwaKeyType } from '../jwa'
 
@@ -42,7 +42,7 @@ export function getJwkFromKey(key: Key) {
 
   if (key.keyType === KeyType.K256) return K256Jwk.fromPublicKey(key.publicKey)
 
-  throw new AriesFrameworkError(`Cannot create JWK from key. Unsupported key with type '${key.keyType}'.`)
+  throw new CredoError(`Cannot create JWK from key. Unsupported key with type '${key.keyType}'.`)
 }
 
 export function getJwkClassFromJwaSignatureAlgorithm(alg: JwaSignatureAlgorithm | string) {

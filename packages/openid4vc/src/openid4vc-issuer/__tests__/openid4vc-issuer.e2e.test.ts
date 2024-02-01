@@ -17,7 +17,7 @@ import {
   SdJwtVcApi,
   JwtPayload,
   Agent,
-  AriesFrameworkError,
+  CredoError,
   DidKey,
   DidsApi,
   JsonTransformer,
@@ -99,7 +99,7 @@ const createCredentialRequest = async (
   const didsApi = agentContext.dependencyManager.resolve(DidsApi)
   const didDocument = await didsApi.resolveDidDocument(kid)
   if (!didDocument.verificationMethod) {
-    throw new AriesFrameworkError(`No verification method found for kid ${kid}`)
+    throw new CredoError(`No verification method found for kid ${kid}`)
   }
 
   const verificationMethod = didDocument.dereferenceKey(kid, ['authentication', 'assertionMethod'])
@@ -254,12 +254,12 @@ describe('OpenId4VcIssuer', () => {
       w3cVerifiableCredential = JsonTransformer.fromJSON(sphereonVerifiableCredential, W3cJsonLdVerifiableCredential)
       result = await w3cCredentialService.verifyCredential(holder.context, { credential: w3cVerifiableCredential })
     } else {
-      throw new AriesFrameworkError(`Unsupported credential format`)
+      throw new CredoError(`Unsupported credential format`)
     }
 
     if (!result.isValid) {
       holder.context.config.logger.error('Failed to validate credential', { result })
-      throw new AriesFrameworkError(`Failed to validate credential, error = ${result.error?.message ?? 'Unknown'}`)
+      throw new CredoError(`Failed to validate credential, error = ${result.error?.message ?? 'Unknown'}`)
     }
 
     if (equalsIgnoreOrder(w3cVerifiableCredential.type, credentialSupported.types) === false) {

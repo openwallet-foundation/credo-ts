@@ -1,6 +1,6 @@
 import type { OutOfBandDidCommService } from '../../../oob/domain/OutOfBandDidCommService'
 
-import { AriesFrameworkError } from '../../../../error'
+import { CredoError } from '../../../../error'
 import {
   JsonEncoder,
   JsonTransformer,
@@ -40,17 +40,17 @@ export function didToNumAlgo4DidDocument(did: string) {
 
   const match = parsed.did.match(LONG_RE)
   if (!match) {
-    throw new AriesFrameworkError(`Invalid long form algo 4 did:peer: ${parsed.did}`)
+    throw new CredoError(`Invalid long form algo 4 did:peer: ${parsed.did}`)
   }
   const [, hash, encodedDocument] = match
   if (hash !== hashEncodedDocument(encodedDocument)) {
-    throw new AriesFrameworkError(`Hash is invalid for did: ${did}`)
+    throw new CredoError(`Hash is invalid for did: ${did}`)
   }
 
   const { data } = MultiBaseEncoder.decode(encodedDocument)
   const [multiCodecValue] = VarintEncoder.decode(data.subarray(0, 2))
   if (multiCodecValue !== JSON_MULTICODEC_VARINT) {
-    throw new AriesFrameworkError(`Not a JSON multicodec data`)
+    throw new CredoError(`Not a JSON multicodec data`)
   }
   const didDocumentJson = JsonEncoder.fromBuffer(data.subarray(2))
 

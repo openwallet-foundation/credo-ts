@@ -2,7 +2,7 @@ import type { QuestionAnswerRole } from '../QuestionAnswerRole'
 import type { QuestionAnswerState, ValidResponse } from '../models'
 import type { RecordTags, TagsBase } from '@credo-ts/core'
 
-import { AriesFrameworkError, utils, BaseRecord } from '@credo-ts/core'
+import { CredoError, utils, BaseRecord } from '@credo-ts/core'
 
 export type CustomQuestionAnswerTags = TagsBase
 export type DefaultQuestionAnswerTags = {
@@ -76,7 +76,7 @@ export class QuestionAnswerRecord extends BaseRecord<DefaultQuestionAnswerTags, 
 
   public assertRole(expectedRole: QuestionAnswerRole) {
     if (this.role !== expectedRole) {
-      throw new AriesFrameworkError(`Invalid question answer record role ${this.role}, expected is ${expectedRole}.`)
+      throw new CredoError(`Invalid question answer record role ${this.role}, expected is ${expectedRole}.`)
     }
   }
 
@@ -86,7 +86,7 @@ export class QuestionAnswerRecord extends BaseRecord<DefaultQuestionAnswerTags, 
     }
 
     if (!expectedStates.includes(this.state)) {
-      throw new AriesFrameworkError(
+      throw new CredoError(
         `Question answer record is in invalid state ${this.state}. Valid states are: ${expectedStates.join(', ')}.`
       )
     }
