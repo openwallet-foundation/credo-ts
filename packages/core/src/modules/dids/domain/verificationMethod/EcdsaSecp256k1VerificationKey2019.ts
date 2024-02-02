@@ -47,10 +47,5 @@ export function getKeyFromEcdsaSecp256k1VerificationKey2019(verificationMethod: 
     throw new CredoError('verification method is missing publicKeyBase58')
   }
 
-  const key = Key.fromPublicKeyBase58(verificationMethod.publicKeyBase58, KeyType.K256)
-  if (key.keyType !== KeyType.K256) {
-    throw new CredoError(`Verification method publicKeyBase58 is for unexpected key type ${key.keyType}`)
-  }
-
-  return key
+  return Key.fromPublicKeyBase58(verificationMethod.publicKeyBase58, KeyType.K256)
 }
