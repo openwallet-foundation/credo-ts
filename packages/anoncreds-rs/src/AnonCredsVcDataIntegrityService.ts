@@ -587,7 +587,7 @@ export class AnonCredsVc2023DataIntegrityService implements AnonCredsVcDataInteg
 
       for (const verifiableCredential of verifiableCredentials) {
         if (verifiableCredential instanceof W3cJsonLdVerifiableCredential) {
-          const proof = this.getDataIntegrityProof(verifiableCredential, 'anoncredspresvc-2023')
+          const proof = this.getDataIntegrityProof(verifiableCredential, 'anoncredsvc-2023')
           credentialDefinitionIds.add(proof.verificationMethod)
         } else {
           throw new AriesFrameworkError('Unsupported credential type')

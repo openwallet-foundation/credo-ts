@@ -547,7 +547,7 @@ export class DifPresentationExchangeService {
       if (vpFormat === ClaimFormat.DiVp) {
         const cryptosuite = await this.getDataIntegritySignatureSuite(presentationDefinition)
 
-        if (cryptosuite === 'anoncredsvc-2023' || cryptosuite === 'anoncredspresvc-2023') {
+        if (cryptosuite === 'anoncredsvc-2023' || cryptosuite === 'anoncredsvc-2023') {
           const anonCredsVcDataIntegrityService =
             agentContext.dependencyManager.resolve<AnonCredsVcDataIntegrityService>(
               anonCredsVcDataIntegrityServiceSymbol
