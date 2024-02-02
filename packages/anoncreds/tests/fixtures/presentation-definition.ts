@@ -50,7 +50,7 @@ export const presentationDefinition: PresentationDefinitionV1 = {
   format: {
     di_vc: {
       proof_type: ['DataIntegrityProof'],
-      cryptosuite: ['anoncredsvc-2023', 'eddsa-rdfc-2022'],
+      cryptosuite: ['anoncreds-2023', 'eddsa-rdfc-2022'],
     },
   },
 }

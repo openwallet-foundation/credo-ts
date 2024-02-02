@@ -583,7 +583,7 @@ export class AnonCredsVc2023DataIntegrityService implements AnonCredsVcDataInteg
 
       for (const verifiableCredential of verifiableCredentials) {
         if (verifiableCredential instanceof W3cJsonLdVerifiableCredential) {
-          const proof = this.getDataIntegrityProof(verifiableCredential, 'anoncredsvc-2023')
+          const proof = this.getDataIntegrityProof(verifiableCredential, 'anoncreds-2023')
           credentialDefinitionIds.add(proof.verificationMethod)
         } else {
           throw new CredoError('Unsupported credential type')

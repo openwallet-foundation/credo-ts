@@ -125,7 +125,7 @@ export class DifPresentationExchangeService {
       presentationDefinition,
       getSphereonOriginalVerifiablePresentation(presentation),
       {
-        limitDisclosureSignatureSuites: ['BbsBlsSignatureProof2020', 'DataIntegrityProof.anoncredsvc-2023'],
+        limitDisclosureSignatureSuites: ['BbsBlsSignatureProof2020', 'DataIntegrityProof.anoncreds-2023'],
       }
     )
 
@@ -441,7 +441,7 @@ export class DifPresentationExchangeService {
             (descriptor) => descriptor.id === verifiableCredentials.inputDescriptorId
           )?.format
           if (
-            format === 'DiVp' &&
+            format === 'di_vp' &&
             verifiableCredentials.credential.credential instanceof W3cJsonLdVerifiableCredential
           ) {
             return verifiableCredentials.credential.credential.cryptoSuites
@@ -452,7 +452,7 @@ export class DifPresentationExchangeService {
 
         const commonCryptoSuites = cryptosuites.reduce((a, b) => a.filter((c) => b.includes(c)))
         if (commonCryptoSuites.length > 0) {
-          if (commonCryptoSuites.includes('anoncredsvc-2023')) {
+          if (commonCryptoSuites.includes('anoncreds-2023')) {
             const anonCredsVcDataIntegrityService =
               agentContext.dependencyManager.resolve<AnonCredsVcDataIntegrityService>(
                 anonCredsVcDataIntegrityServiceSymbol
@@ -507,6 +507,7 @@ export class DifPresentationExchangeService {
           presentationFrame: true,
           verifierMetadata: {
             audience: domain,
+            nonce: challenge,
             // TODO: we should make this optional
             issuedAt: Math.floor(Date.now() / 1000),
           },

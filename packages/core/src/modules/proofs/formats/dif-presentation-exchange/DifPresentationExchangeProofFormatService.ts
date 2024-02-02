@@ -293,7 +293,7 @@ export class PresentationExchangeProofFormatService implements ProofFormatServic
           throw new CredoError('Cannot process data integrity presentations without cryptosuites')
         }
 
-        if (cryptosuite === 'anoncredsvc-2023') {
+        if (cryptosuite === 'anoncreds-2023') {
           const dataIntegrityService = agentContext.dependencyManager.resolve<AnonCredsVcDataIntegrityService>(
             anonCredsVcDataIntegrityServiceSymbol
           )

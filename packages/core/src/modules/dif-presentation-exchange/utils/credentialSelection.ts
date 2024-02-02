@@ -24,7 +24,7 @@ export async function getCredentialsForRequest(
 ): Promise<DifPexCredentialsForRequest> {
   const encodedCredentials = credentialRecords.map((c) => getSphereonOriginalVerifiableCredential(c))
   const selectResultsRaw = pex.selectFrom(presentationDefinition, encodedCredentials, {
-    limitDisclosureSignatureSuites: ['BbsBlsSignatureProof2020', 'DataIntegrityProof.anoncredsvc-2023'],
+    limitDisclosureSignatureSuites: ['BbsBlsSignatureProof2020', 'DataIntegrityProof.anoncreds-2023'],
   })
 
   const selectResults = {
