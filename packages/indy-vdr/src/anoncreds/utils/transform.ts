@@ -93,20 +93,6 @@ export function indyVdrCreateLatestRevocationDelta(
   const revoked: Array<number> = []
 
   if (previousDelta) {
-    for (const issuedIdx of previousDelta.issued) {
-      // Check whether the revocationStatusList has a different state compared to the delta
-      if (revocationStatusList[issuedIdx] !== RevocationState.Active) {
-        issued.push(issuedIdx)
-      }
-    }
-
-    for (const revokedIdx of previousDelta.revoked) {
-      // Check whether the revocationStatusList has a different state compared to the delta
-      if (revocationStatusList[revokedIdx] !== RevocationState.Revoked) {
-        revoked.push(revokedIdx)
-      }
-    }
-
     revocationStatusList.forEach((revocationStatus, idx) => {
       // Check whether the revocationStatusList entry is not included in the previous delta issued indices
       if (revocationStatus === RevocationState.Active && !previousDelta.issued.includes(idx)) {
