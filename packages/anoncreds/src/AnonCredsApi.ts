@@ -411,7 +411,10 @@ export class AnonCredsApi {
         options: options.options,
       })
 
-      await this.storeRevocationRegistryDefinitionRecord(result, revocationRegistryDefinitionPrivate)
+      //  To avoid having unregistered revocation registry definitions in the wallet, the revocation registry definition itself are stored only when the revocation registry definition status is finished, meaning that the revocation registry definition has been successfully registered.
+      if (result.revocationRegistryDefinitionState.state === 'finished') {
+        await this.storeRevocationRegistryDefinitionRecord(result, revocationRegistryDefinitionPrivate)
+      }
 
       return {
         ...result,
