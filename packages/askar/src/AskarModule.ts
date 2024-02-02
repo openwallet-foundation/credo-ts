@@ -1,7 +1,7 @@
 import type { AskarModuleConfigOptions } from './AskarModuleConfig'
 import type { AgentContext, DependencyManager, Module } from '@credo-ts/core'
 
-import { AgentConfig, AriesFrameworkError, InjectionSymbols } from '@credo-ts/core'
+import { CredoError, InjectionSymbols } from '@credo-ts/core'
 import { Store } from '@hyperledger/aries-askar-shared'
 
 import { AskarMultiWalletDatabaseScheme, AskarModuleConfig } from './AskarModuleConfig'
@@ -17,17 +17,10 @@ export class AskarModule implements Module {
   }
 
   public register(dependencyManager: DependencyManager) {
-    // Warn about experimental module
-    dependencyManager
-      .resolve(AgentConfig)
-      .logger.warn(
-        "The '@credo-ts/askar' module is experimental and could have unexpected breaking changes. When using this module, make sure to use strict versions for all @credo-ts packages."
-      )
-
     dependencyManager.registerInstance(AskarModuleConfig, this.config)
 
     if (dependencyManager.isRegistered(InjectionSymbols.Wallet)) {
-      throw new AriesFrameworkError('There is an instance of Wallet already registered')
+      throw new CredoError('There is an instance of Wallet already registered')
     } else {
       dependencyManager.registerContextScoped(InjectionSymbols.Wallet, AskarWallet)
 
@@ -38,7 +31,7 @@ export class AskarModule implements Module {
     }
 
     if (dependencyManager.isRegistered(InjectionSymbols.StorageService)) {
-      throw new AriesFrameworkError('There is an instance of StorageService already registered')
+      throw new CredoError('There is an instance of StorageService already registered')
     } else {
       dependencyManager.registerSingleton(InjectionSymbols.StorageService, AskarStorageService)
     }

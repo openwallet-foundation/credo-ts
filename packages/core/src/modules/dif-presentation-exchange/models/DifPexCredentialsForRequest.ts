@@ -1,4 +1,5 @@
-import type { W3cCredentialRecord, W3cVerifiableCredential } from '../../vc'
+import type { SdJwtVcRecord } from '../../sd-jwt-vc'
+import type { W3cCredentialRecord } from '../../vc'
 
 export interface DifPexCredentialsForRequest {
   /**
@@ -110,10 +111,10 @@ export interface DifPexCredentialsForRequestSubmissionEntry {
    * If the value is an empty list, it means the input descriptor could
    * not be satisfied.
    */
-  verifiableCredentials: W3cCredentialRecord[]
+  verifiableCredentials: Array<W3cCredentialRecord | SdJwtVcRecord>
 }
 
 /**
  * Mapping of selected credentials for an input descriptor
  */
-export type DifPexInputDescriptorToCredentials = Record<string, Array<W3cCredentialRecord>>
+export type DifPexInputDescriptorToCredentials = Record<string, Array<W3cCredentialRecord | SdJwtVcRecord>>

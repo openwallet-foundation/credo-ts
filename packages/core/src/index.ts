@@ -33,12 +33,11 @@ export { DidCommMimeType, KeyDerivationMethod } from './types'
 export type { FileSystem, DownloadToFileOptions } from './storage/FileSystem'
 export * from './storage/BaseRecord'
 export { DidCommMessageRecord, DidCommMessageRole, DidCommMessageRepository } from './storage/didcomm'
-export { InMemoryMessageRepository } from './storage/InMemoryMessageRepository'
 export { Repository } from './storage/Repository'
 export * from './storage/RepositoryEvents'
 export { StorageService, Query, SimpleQuery, BaseRecordConstructor } from './storage/StorageService'
 export * from './storage/migration'
-export { getDirFromFilePath } from './utils/path'
+export { getDirFromFilePath, joinUriParts } from './utils/path'
 export { InjectionSymbols } from './constants'
 export * from './wallet'
 export type { TransportSession } from './agent/TransportService'
@@ -53,6 +52,7 @@ export * from './modules/basic-messages'
 export * from './modules/common'
 export * from './modules/credentials'
 export * from './modules/discover-features'
+export * from './modules/message-pickup'
 export * from './modules/problem-reports'
 export * from './modules/proofs'
 export * from './modules/connections'
@@ -61,6 +61,8 @@ export * from './modules/oob'
 export * from './modules/dids'
 export * from './modules/vc'
 export * from './modules/cache'
+export * from './modules/dif-presentation-exchange'
+export * from './modules/sd-jwt-vc'
 export {
   JsonEncoder,
   JsonTransformer,
@@ -70,6 +72,8 @@ export {
   Buffer,
   deepEquality,
   isDid,
+  asArray,
+  equalsIgnoreOrder,
 } from './utils'
 export * from './logger'
 export * from './error'
@@ -77,7 +81,7 @@ export * from './wallet/error'
 export { parseMessageType, IsValidMessageType, replaceLegacyDidSovPrefix } from './utils/messageType'
 export type { Constructor, Constructable } from './utils/mixins'
 export * from './agent/Events'
-export * from './crypto/'
+export * from './crypto'
 
 // TODO: clean up util exports
 export { encodeAttachment, isLinkedAttachment } from './utils/attachment'

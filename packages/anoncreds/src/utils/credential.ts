@@ -1,7 +1,7 @@
 import type { AnonCredsSchema, AnonCredsCredentialValues } from '../models'
 import type { CredentialPreviewAttributeOptions, LinkedAttachment } from '@credo-ts/core'
 
-import { AriesFrameworkError, encodeAttachment, encodeCredentialValue } from '@credo-ts/core'
+import { CredoError, encodeAttachment, encodeCredentialValue } from '@credo-ts/core'
 
 /**
  * Converts int value to string
@@ -108,7 +108,7 @@ export function assertAttributesMatch(schema: AnonCredsSchema, attributes: Crede
     .concat(schemaAttributes.filter((x) => !credAttributes.includes(x)))
 
   if (difference.length > 0) {
-    throw new AriesFrameworkError(
+    throw new CredoError(
       `The credential preview attributes do not match the schema attributes (difference is: ${difference}, needs: ${schemaAttributes})`
     )
   }
@@ -131,7 +131,7 @@ export function createAndLinkAttachmentsToPreview(
 
   attachments.forEach((linkedAttachment) => {
     if (credentialPreviewAttributeNames.includes(linkedAttachment.attributeName)) {
-      throw new AriesFrameworkError(`linkedAttachment ${linkedAttachment.attributeName} already exists in the preview`)
+      throw new CredoError(`linkedAttachment ${linkedAttachment.attributeName} already exists in the preview`)
     } else {
       newPreviewAttributes.push({
         name: linkedAttachment.attributeName,

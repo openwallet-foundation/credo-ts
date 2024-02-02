@@ -5,7 +5,7 @@ import { IsArray, IsOptional, IsString, ValidateNested } from 'class-validator'
 
 import { Key } from '../../../crypto/Key'
 import { KeyType } from '../../../crypto/KeyType'
-import { AriesFrameworkError } from '../../../error'
+import { CredoError } from '../../../error'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
 import { IsStringOrStringArray } from '../../../utils/transformers'
 
@@ -117,7 +117,7 @@ export class DidDocument {
     const verificationMethod = this.verificationMethod?.find((key) => key.id.endsWith(keyId))
 
     if (!verificationMethod) {
-      throw new AriesFrameworkError(`Unable to locate verification method with id '${keyId}'`)
+      throw new CredoError(`Unable to locate verification method with id '${keyId}'`)
     }
 
     return verificationMethod
@@ -144,7 +144,7 @@ export class DidDocument {
       }
     }
 
-    throw new AriesFrameworkError(`Unable to locate verification method with id '${keyId}' in purposes ${purposes}`)
+    throw new CredoError(`Unable to locate verification method with id '${keyId}' in purposes ${purposes}`)
   }
 
   /**

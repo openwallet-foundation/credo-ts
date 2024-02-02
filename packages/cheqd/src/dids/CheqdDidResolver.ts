@@ -2,7 +2,7 @@ import type { ParsedCheqdDid } from '../anoncreds/utils/identifiers'
 import type { Metadata } from '@cheqd/ts-proto/cheqd/resource/v2'
 import type { AgentContext, DidResolutionResult, DidResolver, ParsedDid } from '@credo-ts/core'
 
-import { DidDocument, AriesFrameworkError, utils, JsonTransformer } from '@credo-ts/core'
+import { DidDocument, CredoError, utils, JsonTransformer } from '@credo-ts/core'
 
 import {
   cheqdDidMetadataRegex,
@@ -158,13 +158,13 @@ export class CheqdDidResolver implements DidResolver {
     const { did, id } = parsedDid
 
     if (!parsedDid.path) {
-      throw new AriesFrameworkError(`Missing path in did ${parsedDid.did}`)
+      throw new CredoError(`Missing path in did ${parsedDid.did}`)
     }
 
     const [, , resourceId] = parsedDid.path.split('/')
 
     if (!resourceId) {
-      throw new AriesFrameworkError(`Missing resource id in didUrl ${parsedDid.didUrl}`)
+      throw new CredoError(`Missing resource id in didUrl ${parsedDid.didUrl}`)
     }
 
     const metadata = await cheqdLedgerService.resolveResourceMetadata(did, id, resourceId)

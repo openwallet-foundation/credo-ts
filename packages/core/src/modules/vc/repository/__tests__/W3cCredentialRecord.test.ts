@@ -37,6 +37,7 @@ describe('W3cCredentialRecord', () => {
         schemaName: undefined,
         schemaVersion: undefined,
         expandedTypes: ['https://expanded.tag#1'],
+        types: ['VerifiableCredential', 'UniversityDegreeCredential'],
       })
 
       expect(w3cCredentialRecord.getAnonCredsTags()).toBeUndefined()

@@ -15,7 +15,7 @@ import { FeatureRegistry } from '../../../../agent/FeatureRegistry'
 import { MessageHandlerRegistry } from '../../../../agent/MessageHandlerRegistry'
 import { Protocol } from '../../../../agent/models'
 import { InjectionSymbols } from '../../../../constants'
-import { AriesFrameworkError } from '../../../../error'
+import { CredoError } from '../../../../error'
 import { Logger } from '../../../../logger'
 import { inject, injectable } from '../../../../plugins'
 import { DiscoverFeaturesEventTypes } from '../../DiscoverFeaturesEvents'
@@ -53,11 +53,11 @@ export class V1DiscoverFeaturesService extends DiscoverFeaturesService {
     options: CreateQueryOptions
   ): Promise<DiscoverFeaturesProtocolMsgReturnType<V1QueryMessage>> {
     if (options.queries.length > 1) {
-      throw new AriesFrameworkError('Discover Features V1 only supports a single query')
+      throw new CredoError('Discover Features V1 only supports a single query')
     }
 
     if (options.queries[0].featureType !== 'protocol') {
-      throw new AriesFrameworkError('Discover Features V1 only supports querying for protocol support')
+      throw new CredoError('Discover Features V1 only supports querying for protocol support')
     }
 
     const queryMessage = new V1QueryMessage({
@@ -100,11 +100,11 @@ export class V1DiscoverFeaturesService extends DiscoverFeaturesService {
     options: CreateDisclosureOptions
   ): Promise<DiscoverFeaturesProtocolMsgReturnType<V1DiscloseMessage>> {
     if (options.disclosureQueries.some((item) => item.featureType !== 'protocol')) {
-      throw new AriesFrameworkError('Discover Features V1 only supports protocols')
+      throw new CredoError('Discover Features V1 only supports protocols')
     }
 
     if (!options.threadId) {
-      throw new AriesFrameworkError('Thread Id is required for Discover Features V1 disclosure')
+      throw new CredoError('Thread Id is required for Discover Features V1 disclosure')
     }
 
     const matches = this.featureRegistry.query(...options.disclosureQueries)

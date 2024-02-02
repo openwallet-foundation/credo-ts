@@ -6,7 +6,7 @@ import { parseUrl } from 'query-string'
 
 import { AgentMessage } from '../../../agent/AgentMessage'
 import { Attachment, AttachmentData } from '../../../decorators/attachment/Attachment'
-import { AriesFrameworkError } from '../../../error'
+import { CredoError } from '../../../error'
 import { JsonEncoder } from '../../../utils/JsonEncoder'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
 import { IsValidMessageType, parseMessageType, replaceLegacyDidSovPrefix } from '../../../utils/messageType'
@@ -82,7 +82,7 @@ export class OutOfBandInvitation extends AgentMessage {
 
       return invitation
     } else {
-      throw new AriesFrameworkError(
+      throw new CredoError(
         'InvitationUrl is invalid. It needs to contain one, and only one, of the following parameters; `oob`'
       )
     }

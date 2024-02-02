@@ -4,7 +4,7 @@ import { setupJsonLdTests } from '../../../../../../tests'
 import { waitForCredentialRecord } from '../../../../../../tests/helpers'
 import testLogger from '../../../../../../tests/logger'
 import { KeyType } from '../../../../../crypto'
-import { AriesFrameworkError } from '../../../../../error/AriesFrameworkError'
+import { CredoError } from '../../../../../error/CredoError'
 import { TypedArrayEncoder } from '../../../../../utils'
 import { CREDENTIALS_CONTEXT_V1_URL } from '../../../../vc/constants'
 import { AutoAcceptCredential, CredentialState } from '../../../models'
@@ -242,7 +242,7 @@ describe('V2 Credentials - JSON-LD - Auto Accept Always', () => {
       })
       expect(aliceCredentialRecord.type).toBe(CredentialExchangeRecord.type)
       if (!aliceCredentialRecord.connectionId) {
-        throw new AriesFrameworkError('missing alice connection id')
+        throw new CredoError('missing alice connection id')
       }
 
       // we do not need to specify connection id in this object

@@ -4,7 +4,7 @@ import type { CredentialExchangeRecord } from '../../../repository/CredentialExc
 import type { V2CredentialProtocol } from '../V2CredentialProtocol'
 
 import { getOutboundMessageContext } from '../../../../../agent/getOutboundMessageContext'
-import { AriesFrameworkError } from '../../../../../error'
+import { CredoError } from '../../../../../error'
 import { V2IssueCredentialMessage } from '../messages/V2IssueCredentialMessage'
 
 export class V2IssueCredentialHandler implements MessageHandler {
@@ -42,7 +42,7 @@ export class V2IssueCredentialHandler implements MessageHandler {
       credentialRecord.id
     )
     if (!requestMessage) {
-      throw new AriesFrameworkError(`No request message found for credential record with id '${credentialRecord.id}'`)
+      throw new CredoError(`No request message found for credential record with id '${credentialRecord.id}'`)
     }
 
     return getOutboundMessageContext(messageContext.agentContext, {

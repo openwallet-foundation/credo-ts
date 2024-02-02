@@ -16,7 +16,7 @@ import {
   CacheModule,
   InMemoryLruCache,
   Agent,
-  AriesFrameworkError,
+  CredoError,
   AutoAcceptCredential,
   CredentialEventTypes,
   CredentialsModule,
@@ -30,8 +30,6 @@ import {
 } from '@credo-ts/core'
 import { randomUUID } from 'crypto'
 
-import { AnonCredsRsModule } from '../../anoncreds-rs/src'
-import { anoncreds } from '../../anoncreds-rs/tests/helpers'
 import { sleep } from '../../core/src/utils/sleep'
 import { setupSubjectTransports, setupEventReplaySubjects } from '../../core/tests'
 import {
@@ -62,6 +60,8 @@ import {
   LegacyIndyCredentialFormatService,
   LegacyIndyProofFormatService,
 } from '../src'
+
+import { anoncreds } from './helpers'
 
 // Helper type to get the type of the agents (with the custom modules) for the credential tests
 export type AnonCredsTestsAgent = Agent<
@@ -101,8 +101,6 @@ export const getAnonCredsIndyModules = ({
     }),
     anoncreds: new AnonCredsModule({
       registries: [new IndyVdrAnonCredsRegistry()],
-    }),
-    anoncredsRs: new AnonCredsRsModule({
       anoncreds,
     }),
     indyVdr: new IndyVdrModule(indyVdrModuleConfig),
@@ -453,9 +451,7 @@ async function registerSchema(
   testLogger.test(`created schema with id ${schemaState.schemaId}`, schema)
 
   if (schemaState.state !== 'finished') {
-    throw new AriesFrameworkError(
-      `Schema not created: ${schemaState.state === 'failed' ? schemaState.reason : 'Not finished'}`
-    )
+    throw new CredoError(`Schema not created: ${schemaState.state === 'failed' ? schemaState.reason : 'Not finished'}`)
   }
 
   return schemaState
@@ -474,7 +470,7 @@ async function registerCredentialDefinition(
   })
 
   if (credentialDefinitionState.state !== 'finished') {
-    throw new AriesFrameworkError(
+    throw new CredoError(
       `Credential definition not created: ${
         credentialDefinitionState.state === 'failed' ? credentialDefinitionState.reason : 'Not finished'
       }`

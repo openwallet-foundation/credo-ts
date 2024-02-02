@@ -1,7 +1,7 @@
 import type { AnonCredsCredentialDefinition, AnonCredsRevocationRegistryDefinition, AnonCredsSchema } from '../models'
 import type { AgentContext } from '@credo-ts/core'
 
-import { AriesFrameworkError, isDid } from '@credo-ts/core'
+import { isDid, CredoError } from '@credo-ts/core'
 
 import { AnonCredsRegistryService } from '../services'
 
@@ -30,18 +30,18 @@ type ReturnHelper<input, output extends object> = input extends string
   : undefined
 
 export function getIndyNamespace(identifier: string): string {
-  if (!isIndyDid(identifier)) throw new AriesFrameworkError(`Cannot get indy namespace of identifier '${identifier}'`)
+  if (!isIndyDid(identifier)) throw new CredoError(`Cannot get indy namespace of identifier '${identifier}'`)
   if (isDidIndySchemaId(identifier)) {
     const { namespace } = parseIndySchemaId(identifier)
-    if (!namespace) throw new AriesFrameworkError(`Cannot get indy namespace of identifier '${identifier}'`)
+    if (!namespace) throw new CredoError(`Cannot get indy namespace of identifier '${identifier}'`)
     return namespace
   } else if (isDidIndyCredentialDefinitionId(identifier)) {
     const { namespace } = parseIndyCredentialDefinitionId(identifier)
-    if (!namespace) throw new AriesFrameworkError(`Cannot get indy namespace of identifier '${identifier}'`)
+    if (!namespace) throw new CredoError(`Cannot get indy namespace of identifier '${identifier}'`)
     return namespace
   } else if (isDidIndyRevocationRegistryId(identifier)) {
     const { namespace } = parseIndyRevocationRegistryId(identifier)
-    if (!namespace) throw new AriesFrameworkError(`Cannot get indy namespace of identifier '${identifier}'`)
+    if (!namespace) throw new CredoError(`Cannot get indy namespace of identifier '${identifier}'`)
     return namespace
   }
 
@@ -51,7 +51,7 @@ export function getIndyNamespace(identifier: string): string {
 
 export function getUnQualifiedId(identifier: string): string {
   if (!isDid(identifier)) return identifier
-  if (!isIndyDid(identifier)) throw new AriesFrameworkError(`Cannot get unqualified id of identifier '${identifier}'`)
+  if (!isIndyDid(identifier)) throw new CredoError(`Cannot get unqualified id of identifier '${identifier}'`)
 
   if (isDidIndySchemaId(identifier)) {
     const { schemaName, schemaVersion, namespaceIdentifier } = parseIndySchemaId(identifier)
@@ -83,7 +83,7 @@ export function getQualifiedId(identifier: string, namespace: string) {
   if (isQualifiedDid) return identifier
 
   if (!namespace || typeof namespace !== 'string') {
-    throw new AriesFrameworkError('Missing required indy namespace')
+    throw new CredoError('Missing required indy namespace')
   }
 
   if (isUnqualifiedSchemaId(identifier)) {
@@ -143,7 +143,7 @@ export async function fetchSchema(
     .getRegistryForIdentifier(agentContext, schemaId)
     .getSchema(agentContext, schemaId)
   if (!result || !result.schema) {
-    throw new AriesFrameworkError(`Schema not found for id ${schemaId}: ${result.resolutionMetadata.message}`)
+    throw new CredoError(`Schema not found for id ${schemaId}: ${result.resolutionMetadata.message}`)
   }
 
   const indyNamespace = result.schemaMetadata.didIndyNamespace
@@ -209,9 +209,7 @@ export async function fetchCredentialDefinition(
     .getRegistryForIdentifier(agentContext, credentialDefinitionId)
     .getCredentialDefinition(agentContext, credentialDefinitionId)
   if (!result || !result.credentialDefinition) {
-    throw new AriesFrameworkError(
-      `Schema not found for id ${credentialDefinitionId}: ${result.resolutionMetadata.message}`
-    )
+    throw new CredoError(`Schema not found for id ${credentialDefinitionId}: ${result.resolutionMetadata.message}`)
   }
 
   const indyNamespace = result.credentialDefinitionMetadata.didIndyNamespace
@@ -280,7 +278,7 @@ export async function fetchRevocationRegistryDefinition(
     .getRegistryForIdentifier(agentContext, revocationRegistryDefinitionId)
     .getRevocationRegistryDefinition(agentContext, revocationRegistryDefinitionId)
   if (!result || !result.revocationRegistryDefinition) {
-    throw new AriesFrameworkError(
+    throw new CredoError(
       `RevocationRegistryDefinition not found for id ${revocationRegistryDefinitionId}: ${result.resolutionMetadata.message}`
     )
   }

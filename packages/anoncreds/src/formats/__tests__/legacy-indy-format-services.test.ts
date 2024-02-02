@@ -22,17 +22,12 @@ import { Subject } from 'rxjs'
 
 import { InMemoryStorageService } from '../../../../../tests/InMemoryStorageService'
 import { InMemoryWallet } from '../../../../../tests/InMemoryWallet'
-import {
-  AnonCredsRsHolderService,
-  AnonCredsRsIssuerService,
-  AnonCredsRsModuleConfig,
-  AnonCredsRsVerifierService,
-} from '../../../../anoncreds-rs/src'
-import { anoncreds } from '../../../../anoncreds-rs/tests/helpers'
+import { anoncreds } from '../../../../anoncreds/tests/helpers'
 import { indyDidFromPublicKeyBase58 } from '../../../../core/src/utils/did'
 import { agentDependencies, getAgentConfig, getAgentContext } from '../../../../core/tests/helpers'
 import { InMemoryAnonCredsRegistry } from '../../../tests/InMemoryAnonCredsRegistry'
 import { AnonCredsModuleConfig } from '../../AnonCredsModuleConfig'
+import { AnonCredsRsHolderService, AnonCredsRsIssuerService, AnonCredsRsVerifierService } from '../../anoncreds-rs'
 import {
   AnonCredsCredentialDefinitionPrivateRecord,
   AnonCredsCredentialDefinitionPrivateRepository,
@@ -62,6 +57,8 @@ import { LegacyIndyProofFormatService } from '../LegacyIndyProofFormatService'
 const registry = new InMemoryAnonCredsRegistry()
 const anonCredsModuleConfig = new AnonCredsModuleConfig({
   registries: [registry],
+  anoncreds,
+  autoCreateLinkSecret: false,
 })
 
 const agentConfig = getAgentConfig('LegacyIndyFormatServicesTest')
@@ -106,13 +103,6 @@ const agentContext = getAgentContext({
     [AnonCredsKeyCorrectnessProofRepository, anonCredsKeyCorrectnessProofRepository],
     [W3cCredentialsModuleConfig, new W3cCredentialsModuleConfig()],
     [InjectionSymbols.StorageService, storageService],
-    [
-      AnonCredsRsModuleConfig,
-      new AnonCredsRsModuleConfig({
-        anoncreds,
-        autoCreateLinkSecret: false,
-      }),
-    ],
     [
       SignatureSuiteToken,
       {

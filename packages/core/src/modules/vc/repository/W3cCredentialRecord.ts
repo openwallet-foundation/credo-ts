@@ -5,7 +5,7 @@ import type { Constructable } from '../../../utils/mixins'
 import { Type } from 'class-transformer'
 import { IsOptional } from 'class-validator'
 
-import { AriesFrameworkError } from '../../../error'
+import { CredoError } from '../../../error'
 import { BaseRecord } from '../../../storage/BaseRecord'
 import { JsonTransformer } from '../../../utils'
 import { uuid } from '../../../utils/uuid'
@@ -56,6 +56,7 @@ export type DefaultW3cCredentialTags = {
 
   proofTypes?: Array<string>
   cryptosuites?: Array<string>
+  types: Array<string>
   algs?: Array<string>
 }
 
@@ -155,6 +156,7 @@ export class W3cCredentialRecord extends BaseRecord<
       contexts: stringContexts,
       givenId: this.credential.id,
       claimFormat: this.credential.claimFormat,
+      types: this.credential.type,
     }
 
     // Proof types is used for ldp_vc credentials
@@ -206,7 +208,7 @@ export class W3cCredentialRecord extends BaseRecord<
     }
 
     if (Array.isArray(this.credential.credentialSubject)) {
-      throw new AriesFrameworkError('Credential subject must be an object, not an array.')
+      throw new CredoError('Credential subject must be an object, not an array.')
     }
 
     const values = mapAttributeRawValuesToAnonCredsCredentialValues(

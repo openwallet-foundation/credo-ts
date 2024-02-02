@@ -14,7 +14,7 @@ import {
   JsonEncoder,
   DidCommMessageRecord,
   DidCommMessageRole,
-  AriesFrameworkError,
+  CredoError,
   CredentialState,
   CredentialExchangeRecord,
   CredentialFormatSpec,
@@ -145,7 +145,7 @@ const getAgentMessageMock = async (agentContext: AgentContext, options: { messag
     return credentialIssueMessage
   }
 
-  throw new AriesFrameworkError('Could not find message')
+  throw new CredoError('Could not find message')
 }
 
 // A record is deserialized to JSON when it's stored into the storage. We want to simulate this behaviour for `offer`

@@ -1,6 +1,6 @@
 import bigInt from 'big-integer'
 
-import { AriesFrameworkError } from '../../../error'
+import { CredoError } from '../../../error'
 import { Buffer, Hasher, TypedArrayEncoder } from '../../../utils'
 
 export type AnonCredsClaimRecord = Record<string, string | number | boolean>
@@ -48,7 +48,7 @@ export const encodeCredentialValue = (data: unknown): string => {
   data = data === undefined || data === null ? 'None' : data
 
   const buffer = TypedArrayEncoder.fromString(String(data))
-  const hash = Hasher.hash(buffer, 'sha2-256')
+  const hash = Hasher.hash(buffer, 'sha-256')
   const hex = Buffer.from(hash).toString('hex')
 
   return bigInt(hex, 16).toString()
@@ -61,7 +61,7 @@ export const mapAttributeRawValuesToAnonCredsCredentialValues = (
 
   for (const [key, value] of Object.entries(record)) {
     if (typeof value === 'object') {
-      throw new AriesFrameworkError(`Unsupported value type: object for W3cAnonCreds Credential`)
+      throw new CredoError(`Unsupported value type: object for W3cAnonCreds Credential`)
     }
     credentialValues[key] = {
       raw: value.toString(),

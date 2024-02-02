@@ -2,7 +2,6 @@ import type { ProofProtocol } from '../protocol/ProofProtocol'
 
 import { FeatureRegistry } from '../../../agent/FeatureRegistry'
 import { DependencyManager } from '../../../plugins/DependencyManager'
-import { ProofsApi } from '../ProofsApi'
 import { ProofsModule } from '../ProofsModule'
 import { ProofsModuleConfig } from '../ProofsModuleConfig'
 import { V2ProofProtocol } from '../protocol/v2/V2ProofProtocol'
@@ -22,9 +21,6 @@ describe('ProofsModule', () => {
       proofProtocols: [],
     })
     proofsModule.register(dependencyManager, featureRegistry)
-
-    expect(dependencyManager.registerContextScoped).toHaveBeenCalledTimes(1)
-    expect(dependencyManager.registerContextScoped).toHaveBeenCalledWith(ProofsApi)
 
     expect(dependencyManager.registerInstance).toHaveBeenCalledTimes(1)
     expect(dependencyManager.registerInstance).toHaveBeenCalledWith(ProofsModuleConfig, proofsModule.config)

@@ -45,7 +45,6 @@ import type {
 import {
   ProblemReportError,
   CredentialFormatSpec,
-  AriesFrameworkError,
   Attachment,
   JsonEncoder,
   utils,
@@ -66,6 +65,7 @@ import {
   JwtPayload,
   SignatureSuiteRegistry,
   CredentialPreviewAttribute,
+  CredoError,
 } from '@credo-ts/core'
 import { W3cCredential as AW3cCredential } from '@hyperledger/anoncreds-shared'
 
@@ -116,7 +116,7 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     { credentialFormats, credentialRecord }: CredentialFormatCreateProposalOptions<DataIntegrityCredentialFormat>
   ): Promise<CredentialFormatCreateProposalReturn> {
-    throw new AriesFrameworkError('Not defined')
+    throw new CredoError('Not defined')
   }
 
   public async processProposal(
@@ -125,7 +125,7 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     { attachment }: CredentialFormatProcessOptions
   ): Promise<void> {
-    throw new AriesFrameworkError('Not defined')
+    throw new CredoError('Not defined')
   }
 
   public async acceptProposal(
@@ -134,7 +134,7 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     input: CredentialFormatAcceptProposalOptions<DataIntegrityCredentialFormat>
   ): Promise<CredentialFormatCreateOfferReturn> {
-    throw new AriesFrameworkError('Not defined')
+    throw new CredoError('Not defined')
   }
 
   /**
@@ -153,7 +153,7 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
     }: CredentialFormatCreateOfferOptions<DataIntegrityCredentialFormat>
   ): Promise<CredentialFormatCreateOfferReturn> {
     const dataIntegrityFormat = credentialFormats.dataIntegrity
-    if (!dataIntegrityFormat) throw new AriesFrameworkError('Missing data integrity credential format data')
+    if (!dataIntegrityFormat) throw new CredoError('Missing data integrity credential format data')
 
     const format = new CredentialFormatSpec({
       attachmentId: attachmentId,
@@ -161,7 +161,7 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
     })
 
     const credential = dataIntegrityFormat.credential
-    if ('proof' in credential) throw new AriesFrameworkError('Cannot offer a credential that already has a proof.')
+    if ('proof' in credential) throw new CredoError('Cannot offer a credential that already has a proof.')
 
     const { dataIntegrityCredentialOffer, previewAttributes } = await this.createDataIntegrityCredentialOffer(
       agentContext,
@@ -228,9 +228,9 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
     const { alg, kid } = options
 
     if (!kid.startsWith('did:')) {
-      throw new AriesFrameworkError(`kid '${kid}' is not a DID. Only dids are supported for kid`)
+      throw new CredoError(`kid '${kid}' is not a DID. Only dids are supported for kid`)
     } else if (!kid.includes('#')) {
-      throw new AriesFrameworkError(
+      throw new CredoError(
         `kid '${kid}' does not contain a fragment. kid MUST point to a specific key in the did document.`
       )
     }
@@ -242,13 +242,13 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
     const jwk = getJwkFromKey(key)
 
     if (alg && !jwk.supportsSignatureAlgorithm(alg)) {
-      throw new AriesFrameworkError(`key type '${jwk.keyType}', does not support the JWS signature alg '${alg}'`)
+      throw new CredoError(`key type '${jwk.keyType}', does not support the JWS signature alg '${alg}'`)
     }
 
     const signingAlg = issuerSupportedAlgs.find(
       (supportedAlg) => jwk.supportsSignatureAlgorithm(supportedAlg) && (alg === undefined || alg === supportedAlg)
     )
-    if (!signingAlg) throw new AriesFrameworkError('No signing algorithm supported by the issuer found')
+    if (!signingAlg) throw new CredoError('No signing algorithm supported by the issuer found')
 
     const jwsService = agentContext.dependencyManager.resolve(JwsService)
     const jws = await jwsService.createJws(agentContext, {
@@ -270,9 +270,9 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
 
   private async getSignedAttachmentPayload(agentContext: AgentContext, signedAttachment: Attachment) {
     const jws = signedAttachment.data.jws as JwsDetachedFormat
-    if (!jws) throw new AriesFrameworkError('Missing jws in signed attachment')
-    if (!jws.protected) throw new AriesFrameworkError('Missing protected header in signed attachment')
-    if (!signedAttachment.data.base64) throw new AriesFrameworkError('Missing payload in signed attachment')
+    if (!jws) throw new CredoError('Missing jws in signed attachment')
+    if (!jws.protected) throw new CredoError('Missing protected header in signed attachment')
+    if (!signedAttachment.data.base64) throw new CredoError('Missing payload in signed attachment')
 
     const jwsService = agentContext.dependencyManager.resolve(JwsService)
     const { isValid } = await jwsService.verifyJws(agentContext, {
@@ -283,8 +283,8 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
         payload: signedAttachment.data.base64,
       },
       jwkResolver: async ({ protectedHeader: { kid } }) => {
-        if (!kid || typeof kid !== 'string') throw new AriesFrameworkError('Missing kid in protected header.')
-        if (!kid.startsWith('did:')) throw new AriesFrameworkError('Only did is supported for kid identifier')
+        if (!kid || typeof kid !== 'string') throw new CredoError('Missing kid in protected header.')
+        if (!kid.startsWith('did:')) throw new CredoError('Only did is supported for kid identifier')
 
         const didsApi = agentContext.dependencyManager.resolve(DidsApi)
         const didDocument = await didsApi.resolveDidDocument(kid)
@@ -294,10 +294,10 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
       },
     })
 
-    if (!isValid) throw new AriesFrameworkError('Failed to validate signature of signed attachment')
+    if (!isValid) throw new CredoError('Failed to validate signature of signed attachment')
     const payload = JsonEncoder.fromBase64(signedAttachment.data.base64) as { nonce: string }
     if (!payload.nonce || typeof payload.nonce !== 'string') {
-      throw new AriesFrameworkError('Invalid payload in signed attachment')
+      throw new CredoError('Invalid payload in signed attachment')
     }
 
     return payload
@@ -313,7 +313,7 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
     }: CredentialFormatAcceptOfferOptions<DataIntegrityCredentialFormat>
   ): Promise<CredentialFormatCreateReturn> {
     const dataIntegrityFormat = credentialFormats?.dataIntegrity
-    if (!dataIntegrityFormat) throw new AriesFrameworkError('Missing data integrity credential format data')
+    if (!dataIntegrityFormat) throw new CredoError('Missing data integrity credential format data')
 
     const credentialOffer = offerAttachment.getDataAsJson<DataIntegrityCredentialOffer>()
 
@@ -324,7 +324,7 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
       undefined
     if (dataIntegrityFormat.anonCredsLinkSecretCredentialRequestOptions) {
       if (!credentialOffer.binding_method?.anoncreds_link_secret) {
-        throw new AriesFrameworkError('Cannot request credential with a binding method that was not offered.')
+        throw new CredoError('Cannot request credential with a binding method that was not offered.')
       }
 
       const anonCredsHolderService =
@@ -353,7 +353,7 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
       }
 
       if (!anonCredsCredentialRequest.entropy) {
-        throw new AriesFrameworkError('Missing entropy for anonCredsCredentialRequest')
+        throw new CredoError('Missing entropy for anonCredsCredentialRequest')
       }
       anonCredsLinkSecretDataIntegrityBindingProof =
         anonCredsCredentialRequest as AnonCredsLinkSecretDataIntegrityBindingProof
@@ -363,7 +363,7 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
     let didCommSignedAttachment: Attachment | undefined = undefined
     if (dataIntegrityFormat.didCommSignedAttachmentCredentialRequestOptions) {
       if (!credentialOffer.binding_method?.didcomm_signed_attachment) {
-        throw new AriesFrameworkError('Cannot request credential with a binding method that was not offered.')
+        throw new CredoError('Cannot request credential with a binding method that was not offered.')
       }
 
       didCommSignedAttachment = await this.createSignedAttachment(
@@ -385,12 +385,12 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
           }
 
     if (credentialOffer.binding_required && !bindingProof) {
-      throw new AriesFrameworkError('Missing required binding proof')
+      throw new CredoError('Missing required binding proof')
     }
 
     const dataModelVersion = dataIntegrityFormat.dataModelVersion ?? credentialOffer.data_model_versions_supported[0]
     if (!credentialOffer.data_model_versions_supported.includes(dataModelVersion)) {
-      throw new AriesFrameworkError('Cannot request credential with a data model version that was not offered.')
+      throw new CredoError('Cannot request credential with a data model version that was not offered.')
     }
 
     credentialRecord.metadata.set<DataIntegrityMetadata>(DataIntegrityMetadataKey, dataIntegrityMetadata)
@@ -417,7 +417,7 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
    * Starting from a request is not supported for anoncreds credentials, this method only throws an error.
    */
   public async createRequest(): Promise<CredentialFormatCreateReturn> {
-    throw new AriesFrameworkError('Starting from a request is not supported for w3c credentials')
+    throw new CredoError('Starting from a request is not supported for w3c credentials')
   }
 
   /**
@@ -448,7 +448,7 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
 
     const credentialAttributes = credentialRecord.credentialAttributes
     if (!credentialAttributes) {
-      throw new AriesFrameworkError(
+      throw new CredoError(
         `Missing required credential attribute values on credential record with id ${credentialRecord.id}`
       )
     }
@@ -459,7 +459,7 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
       credentialSubjectIdAttribute &&
       credentialSubjectIdAttribute.value !== credentialSubjectId
     ) {
-      throw new AriesFrameworkError('Invalid credential subject id.')
+      throw new CredoError('Invalid credential subject id.')
     } else if (!credentialSubjectIdAttribute && credentialSubjectId) {
       credentialAttributes.push(new CredentialPreviewAttribute({ name: 'id', value: credentialSubjectId }))
     }
@@ -483,7 +483,7 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
       const { credentialRevocationId, revocationRegistryId } = linkSecretMetadata
 
       if (!credentialRevocationId || !revocationRegistryId) {
-        throw new AriesFrameworkError(
+        throw new CredoError(
           'Revocation registry definition id and revocation index are mandatory to issue AnonCreds revocable credentials'
         )
       }
@@ -496,7 +496,7 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
         .getByRevocationRegistryDefinitionId(agentContext, revocationRegistryDefinitionId)
 
       if (revocationRegistryDefinitionPrivateRecord.state !== AnonCredsRevocationRegistryState.Active) {
-        throw new AriesFrameworkError(
+        throw new CredoError(
           `Revocation registry ${revocationRegistryDefinitionId} is in ${revocationRegistryDefinitionPrivateRecord.state} state`
         )
       }
@@ -507,7 +507,7 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
         .getRevocationStatusList(agentContext, revocationRegistryDefinitionId, dateToTimestamp(new Date()))
 
       if (!revocationStatusListResult.revocationStatusList) {
-        throw new AriesFrameworkError(
+        throw new CredoError(
           `Unable to resolve revocation status list for ${revocationRegistryDefinitionId}:
           ${revocationStatusListResult.resolutionMetadata.error} ${revocationStatusListResult.resolutionMetadata.message}`
         )
@@ -546,9 +546,7 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
     } else {
       const vms = didDocument.authentication ?? didDocument.assertionMethod ?? didDocument.verificationMethod
       if (!vms || vms.length === 0) {
-        throw new AriesFrameworkError(
-          'Missing authenticationMethod, assertionMethod, and verificationMethods in did document'
-        )
+        throw new CredoError('Missing authenticationMethod, assertionMethod, and verificationMethods in did document')
       }
 
       if (typeof vms[0] === 'string') {
@@ -561,9 +559,7 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
     const signatureSuiteRegistry = agentContext.dependencyManager.resolve(SignatureSuiteRegistry)
     const signatureSuite = signatureSuiteRegistry.getByVerificationMethodType(verificationMethod.type)
     if (!signatureSuite) {
-      throw new AriesFrameworkError(
-        `Could not find signature suite for verification method type ${verificationMethod.type}`
-      )
+      throw new CredoError(`Could not find signature suite for verification method type ${verificationMethod.type}`)
     }
 
     return { verificationMethod, signatureSuite, offeredCredential }
@@ -572,14 +568,12 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
   private async assertAndSetCredentialSubjectId(credential: W3cCredential, credentialSubjectId: string | undefined) {
     if (credentialSubjectId) {
       if (Array.isArray(credential.credentialSubject)) {
-        throw new AriesFrameworkError(
-          'Invalid credential subject relation. Cannot determine the subject to be updated.'
-        )
+        throw new CredoError('Invalid credential subject relation. Cannot determine the subject to be updated.')
       }
 
       const subjectId = credential.credentialSubject.id
       if (subjectId && credentialSubjectId !== subjectId) {
-        throw new AriesFrameworkError('Invalid credential subject id.')
+        throw new CredoError('Invalid credential subject id.')
       }
 
       if (!subjectId) {
@@ -612,8 +606,7 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
       verificationMethod: verificationMethod.id,
     })) as W3cJsonLdVerifiableCredential
 
-    if (Array.isArray(signed.proof))
-      throw new AriesFrameworkError('A newly signed credential can not have multiple proofs')
+    if (Array.isArray(signed.proof)) throw new CredoError('A newly signed credential can not have multiple proofs')
 
     if (credential instanceof W3cJsonLdVerifiableCredential) {
       const combinedProofs = Array.isArray(credential.proof) ? credential.proof : [credential.proof]
@@ -635,10 +628,10 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
     }: CredentialFormatAcceptRequestOptions<DataIntegrityCredentialFormat>
   ): Promise<CredentialFormatCreateReturn> {
     const dataIntegrityFormat = credentialFormats?.dataIntegrity
-    if (!dataIntegrityFormat) throw new AriesFrameworkError('Missing data integrity credential format data')
+    if (!dataIntegrityFormat) throw new CredoError('Missing data integrity credential format data')
 
     const credentialOffer = offerAttachment?.getDataAsJson<DataIntegrityCredentialOffer>()
-    if (!credentialOffer) throw new AriesFrameworkError('Missing data integrity credential offer in createCredential')
+    if (!credentialOffer) throw new CredoError('Missing data integrity credential offer in createCredential')
 
     const offeredCredential = JsonTransformer.fromJSON(credentialOffer.credential, W3cCredential)
     const assertedCredential = await this.assertAndSetCredentialSubjectId(
@@ -647,21 +640,19 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
     )
 
     const credentialRequest = requestAttachment.getDataAsJson<DataIntegrityCredentialRequest>()
-    if (!credentialRequest)
-      throw new AriesFrameworkError('Missing data integrity credential request in createCredential')
+    if (!credentialRequest) throw new CredoError('Missing data integrity credential request in createCredential')
 
     const dataIntegrityMetadata = credentialRecord.metadata.get<DataIntegrityMetadata>(DataIntegrityMetadataKey)
-    if (!dataIntegrityMetadata)
-      throw new AriesFrameworkError('Missing data integrity credential metadata in createCredential')
+    if (!dataIntegrityMetadata) throw new CredoError('Missing data integrity credential metadata in createCredential')
 
     let signedCredential: W3cJsonLdVerifiableCredential | undefined
     if (credentialRequest.binding_proof?.anoncreds_link_secret) {
       if (!credentialOffer.binding_method?.anoncreds_link_secret) {
-        throw new AriesFrameworkError('Cannot issue credential with a binding method that was not offered.')
+        throw new CredoError('Cannot issue credential with a binding method that was not offered.')
       }
 
       if (!dataIntegrityMetadata.linkSecretMetadata) {
-        throw new AriesFrameworkError('Missing anoncreds link secret metadata')
+        throw new CredoError('Missing anoncreds link secret metadata')
       }
 
       signedCredential = await this.createCredentialWithAnonCredsDataIntegrityProof(agentContext, {
@@ -674,35 +665,35 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
 
       const proofs = Array.isArray(signedCredential.proof) ? signedCredential.proof : [signedCredential.proof]
       if (proofs.length > 1) {
-        throw new AriesFrameworkError('Credential cannot have multiple proofs at this point')
+        throw new CredoError('Credential cannot have multiple proofs at this point')
       }
 
       if (
         signedCredential.issuerId !== offeredCredential.issuerId ||
         !proofs[0].verificationMethod.startsWith(signedCredential.issuerId)
       ) {
-        throw new AriesFrameworkError('Invalid issuer in credential')
+        throw new CredoError('Invalid issuer in credential')
       }
 
       if (offeredCredential.type.length !== 1 || offeredCredential.type[0] !== 'VerifiableCredential') {
-        throw new AriesFrameworkError('Offered Invalid credential type')
+        throw new CredoError('Offered Invalid credential type')
       }
       // TODO: check if any non integrity protected fields were on the offered credential. If so throw
     }
 
     if (credentialRequest.binding_proof?.didcomm_signed_attachment) {
       if (!credentialOffer.binding_method?.didcomm_signed_attachment) {
-        throw new AriesFrameworkError('Cannot issue credential with a binding method that was not offered.')
+        throw new CredoError('Cannot issue credential with a binding method that was not offered.')
       }
 
       const bindingProofAttachment = requestAppendAttachments?.find(
         (attachments) => attachments.id === credentialRequest.binding_proof?.didcomm_signed_attachment?.attachment_id
       )
-      if (!bindingProofAttachment) throw new AriesFrameworkError('Missing binding proof attachment')
+      if (!bindingProofAttachment) throw new CredoError('Missing binding proof attachment')
 
       const { nonce } = await this.getSignedAttachmentPayload(agentContext, bindingProofAttachment)
       if (nonce !== credentialOffer.binding_method.didcomm_signed_attachment.nonce) {
-        throw new AriesFrameworkError('Invalid nonce in signed attachment')
+        throw new CredoError('Invalid nonce in signed attachment')
       }
 
       const issuerKid = dataIntegrityFormat.didCommSignedAttachmentAcceptRequestOptions?.kid
@@ -732,9 +723,7 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
     linkSecretRequestMetadata: DataIntegrityLinkSecretRequestMetadata
   ) {
     if (!credentialRecord.credentialAttributes) {
-      throw new AriesFrameworkError(
-        'Missing credential attributes on credential record. Unable to check credential attributes'
-      )
+      throw new CredoError('Missing credential attributes on credential record. Unable to check credential attributes')
     }
 
     const aCredential = AW3cCredential.fromJson(credentialJson)
@@ -754,7 +743,7 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
       .resolve(AnonCredsLinkSecretRepository)
       .getByLinkSecretId(agentContext, linkSecretRequestMetadata.link_secret_name)
 
-    if (!linkSecretRecord.value) throw new AriesFrameworkError('Link Secret value not stored')
+    if (!linkSecretRecord.value) throw new CredoError('Link Secret value not stored')
 
     const processed = aCredential.process({
       credentialRequestMetadata: linkSecretRequestMetadata as unknown as JsonObject,
@@ -780,7 +769,7 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
     // If the credential is revocable, store the revocation identifiers in the credential record
     if (revocationRegistryId) {
       const metadata = credentialRecord.metadata.get<DataIntegrityMetadata>(DataIntegrityMetadataKey)
-      if (!metadata?.linkSecretMetadata) throw new AriesFrameworkError('Missing link secret metadata')
+      if (!metadata?.linkSecretMetadata) throw new CredoError('Missing link secret metadata')
 
       metadata.linkSecretMetadata.revocationRegistryId = revocationRegistryDefinitionReturn?.id
       metadata.linkSecretMetadata.credentialRevocationId = revocationRegistryIndex?.toString()
@@ -803,17 +792,14 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
       DataIntegrityRequestMetadataKey
     )
     if (!credentialRequestMetadata) {
-      throw new AriesFrameworkError(
-        `Missing request metadata for credential exchange with thread id ${credentialRecord.id}`
-      )
+      throw new CredoError(`Missing request metadata for credential exchange with thread id ${credentialRecord.id}`)
     }
 
     const credentialRequest = requestAttachment.getDataAsJson<DataIntegrityCredentialRequest>()
-    if (!credentialRequest)
-      throw new AriesFrameworkError('Missing data integrity credential request in createCredential')
+    if (!credentialRequest) throw new CredoError('Missing data integrity credential request in createCredential')
 
     if (!credentialRecord.credentialAttributes) {
-      throw new AriesFrameworkError('Missing credential attributes on credential record.')
+      throw new CredoError('Missing credential attributes on credential record.')
     }
 
     const { credential: credentialJson } = attachment.getDataAsJson<DataIntegrityCredential>()
@@ -822,7 +808,7 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
     let w3cJsonLdVerifiableCredential: W3cJsonLdVerifiableCredential
     if (credentialRequest.binding_proof?.anoncreds_link_secret) {
       if (!credentialRequestMetadata.linkSecretRequestMetadata) {
-        throw new AriesFrameworkError('Missing link secret request metadata')
+        throw new CredoError('Missing link secret request metadata')
       }
 
       const { anonCredsCredentialRecordOptions: options, processed } = await this.processLinkSecretBoundCredential(
@@ -894,7 +880,7 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     { offerAttachment, proposalAttachment }: CredentialFormatAutoRespondProposalOptions
   ) {
-    throw new AriesFrameworkError('Not implemented')
+    throw new CredoError('Not implemented')
     return false
   }
 
@@ -1004,7 +990,7 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
 
       if (credentialDefinition.value.revocation) {
         if (!revocationRegistryDefinitionId || !revocationRegistryIndex) {
-          throw new AriesFrameworkError(
+          throw new CredoError(
             'AnonCreds revocable credentials require revocationRegistryDefinitionId and revocationRegistryIndex'
           )
         }
@@ -1044,16 +1030,16 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
       }
 
       if (didCommSignedAttachmentBindingMethod.algs_supported.length === 0) {
-        throw new AriesFrameworkError('No supported JWA signature algorithms found.')
+        throw new CredoError('No supported JWA signature algorithms found.')
       }
 
       if (didCommSignedAttachmentBindingMethod.did_methods_supported.length === 0) {
-        throw new AriesFrameworkError('No supported DID methods found.')
+        throw new CredoError('No supported DID methods found.')
       }
     }
 
     if (bindingRequired && !anonCredsLinkSecretBindingMethod && !didCommSignedAttachmentBindingMethod) {
-      throw new AriesFrameworkError('Missing required binding method.')
+      throw new CredoError('Missing required binding method.')
     }
 
     const dataIntegrityCredentialOffer: DataIntegrityCredentialOffer = {
@@ -1073,7 +1059,7 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
 
   private previewAttributesFromCredential(credential: W3cCredential): CredentialPreviewAttributeOptions[] {
     if (Array.isArray(credential.credentialSubject)) {
-      throw new AriesFrameworkError('Credential subject must be an object.')
+      throw new CredoError('Credential subject must be an object.')
     }
 
     const claims = {

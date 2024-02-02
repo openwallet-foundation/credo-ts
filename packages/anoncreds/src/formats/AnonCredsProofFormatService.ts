@@ -36,13 +36,13 @@ import type {
 } from '@credo-ts/core'
 
 import {
-  AriesFrameworkError,
+  encodeCredentialValue,
+  CredoError,
   Attachment,
   AttachmentData,
   JsonEncoder,
   ProofFormatSpec,
   JsonTransformer,
-  encodeCredentialValue,
 } from '@credo-ts/core'
 
 import { AnonCredsProofRequest as AnonCredsProofRequestClass } from '../models/AnonCredsProofRequest'
@@ -213,7 +213,7 @@ export class AnonCredsProofFormatService implements ProofFormatService<AnonCreds
 
     for (const [referent, attribute] of Object.entries(proofJson.requested_proof.revealed_attrs)) {
       if (!checkValidCredentialValueEncoding(attribute.raw, attribute.encoded)) {
-        throw new AriesFrameworkError(
+        throw new CredoError(
           `The encoded value for '${referent}' is invalid. ` +
             `Expected '${encodeCredentialValue(attribute.raw)}'. ` +
             `Actual '${attribute.encoded}'`
@@ -224,7 +224,7 @@ export class AnonCredsProofFormatService implements ProofFormatService<AnonCreds
     for (const [, attributeGroup] of Object.entries(proofJson.requested_proof.revealed_attr_groups ?? {})) {
       for (const [attributeName, attribute] of Object.entries(attributeGroup.values)) {
         if (!checkValidCredentialValueEncoding(attribute.raw, attribute.encoded)) {
-          throw new AriesFrameworkError(
+          throw new CredoError(
             `The encoded value for '${attributeName}' is invalid. ` +
               `Expected '${encodeCredentialValue(attribute.raw)}'. ` +
               `Actual '${attribute.encoded}'`
@@ -421,7 +421,7 @@ export class AnonCredsProofFormatService implements ProofFormatService<AnonCreds
       const attributeArray = credentialsForRequest.attributes[attributeName]
 
       if (attributeArray.length === 0) {
-        throw new AriesFrameworkError('Unable to automatically select requested attributes.')
+        throw new CredoError('Unable to automatically select requested attributes.')
       }
 
       selectedCredentials.attributes[attributeName] = attributeArray[0]
@@ -429,7 +429,7 @@ export class AnonCredsProofFormatService implements ProofFormatService<AnonCreds
 
     Object.keys(credentialsForRequest.predicates).forEach((attributeName) => {
       if (credentialsForRequest.predicates[attributeName].length === 0) {
-        throw new AriesFrameworkError('Unable to automatically select requested predicates.')
+        throw new CredoError('Unable to automatically select requested predicates.')
       } else {
         selectedCredentials.predicates[attributeName] = credentialsForRequest.predicates[attributeName][0]
       }
@@ -526,7 +526,7 @@ export class AnonCredsProofFormatService implements ProofFormatService<AnonCreds
     )
 
     if (!revocationStatusResult.revocationStatusList) {
-      throw new AriesFrameworkError(
+      throw new CredoError(
         `Could not retrieve revocation status list for revocation registry ${revocationRegistryId}: ${revocationStatusResult.resolutionMetadata.message}`
       )
     }

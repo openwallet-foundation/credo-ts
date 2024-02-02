@@ -4,7 +4,7 @@ import {
   WalletExportPathExistsError,
   WalletInvalidKeyError,
   WalletDuplicateError,
-  AriesFrameworkError,
+  CredoError,
   Logger,
   WalletError,
   InjectionSymbols,
@@ -22,7 +22,6 @@ import { inject, injectable } from 'tsyringe'
 import { AskarErrorCode, isAskarError, keyDerivationMethodToStoreKeyMethod, uriFromWalletConfig } from '../utils'
 
 import { AskarBaseWallet } from './AskarBaseWallet'
-import { AskarProfileWallet } from './AskarProfileWallet'
 import { isAskarWalletSqliteStorageConfig } from './AskarWalletStorageConfig'
 
 /**
@@ -54,7 +53,7 @@ export class AskarWallet extends AskarBaseWallet {
 
   public get store() {
     if (!this._store) {
-      throw new AriesFrameworkError(
+      throw new CredoError(
         'Wallet has not been initialized yet. Make sure to await agent.initialize() before using the agent.'
       )
     }
@@ -86,14 +85,6 @@ export class AskarWallet extends AskarBaseWallet {
   public async create(walletConfig: WalletConfig): Promise<void> {
     await this.createAndOpen(walletConfig)
     await this.close()
-  }
-
-  /**
-   * TODO: we can add this method, and add custom logic in the tenants module
-   * or we can try to register the store on the agent context
-   */
-  public async getProfileWallet() {
-    return new AskarProfileWallet(this.store, this.logger, this.signingKeyProviderRegistry)
   }
 
   /**

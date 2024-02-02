@@ -4,26 +4,34 @@ import type { AgentMessageReceivedEvent } from '../../../../agent/Events'
 import type { FeatureRegistry } from '../../../../agent/FeatureRegistry'
 import type { InboundMessageContext } from '../../../../agent/models/InboundMessageContext'
 import type { DependencyManager } from '../../../../plugins'
-import type { MessageRepository } from '../../../../storage/MessageRepository'
 import type { EncryptedMessage } from '../../../../types'
-import type { PickupMessagesProtocolOptions, PickupMessagesProtocolReturnType } from '../MessagePickupProtocolOptions'
+import type { MessagePickupRepository } from '../../storage/MessagePickupRepository'
+import type {
+  DeliverMessagesProtocolOptions,
+  DeliverMessagesProtocolReturnType,
+  PickupMessagesProtocolOptions,
+  PickupMessagesProtocolReturnType,
+  SetLiveDeliveryModeProtocolOptions,
+  SetLiveDeliveryModeProtocolReturnType,
+} from '../MessagePickupProtocolOptions'
 
 import { EventEmitter } from '../../../../agent/EventEmitter'
 import { AgentEventTypes } from '../../../../agent/Events'
-import { MessageSender } from '../../../../agent/MessageSender'
 import { OutboundMessageContext, Protocol } from '../../../../agent/models'
 import { InjectionSymbols } from '../../../../constants'
 import { Attachment } from '../../../../decorators/attachment/Attachment'
-import { AriesFrameworkError } from '../../../../error'
 import { injectable } from '../../../../plugins'
-import { ConnectionService } from '../../../connections'
+import { verkeyToDidKey } from '../../../dids/helpers'
 import { ProblemReportError } from '../../../problem-reports'
 import { RoutingProblemReportReason } from '../../../routing/error'
 import { MessagePickupModuleConfig } from '../../MessagePickupModuleConfig'
+import { MessagePickupSessionRole } from '../../MessagePickupSession'
+import { MessagePickupSessionService } from '../../services'
 import { BaseMessagePickupProtocol } from '../BaseMessagePickupProtocol'
 
 import {
   V2DeliveryRequestHandler,
+  V2LiveDeliveryChangeHandler,
   V2MessageDeliveryHandler,
   V2MessagesReceivedHandler,
   V2StatusHandler,
@@ -35,6 +43,7 @@ import {
   V2DeliveryRequestMessage,
   V2MessagesReceivedMessage,
   V2StatusRequestMessage,
+  V2LiveDeliveryChangeMessage,
 } from './messages'
 
 @injectable()
@@ -54,6 +63,7 @@ export class V2MessagePickupProtocol extends BaseMessagePickupProtocol {
       new V2MessagesReceivedHandler(this),
       new V2StatusHandler(this),
       new V2MessageDeliveryHandler(this),
+      new V2LiveDeliveryChangeHandler(this),
     ])
 
     featureRegistry.register(
@@ -64,11 +74,11 @@ export class V2MessagePickupProtocol extends BaseMessagePickupProtocol {
     )
   }
 
-  public async pickupMessages(
+  public async createPickupMessage(
     agentContext: AgentContext,
     options: PickupMessagesProtocolOptions
   ): Promise<PickupMessagesProtocolReturnType<AgentMessage>> {
-    const { connectionRecord, recipientKey } = options
+    const { connectionRecord, recipientDid: recipientKey } = options
     connectionRecord.assertReady()
 
     const message = new V2StatusRequestMessage({
@@ -78,21 +88,76 @@ export class V2MessagePickupProtocol extends BaseMessagePickupProtocol {
     return { message }
   }
 
+  public async createDeliveryMessage(
+    agentContext: AgentContext,
+    options: DeliverMessagesProtocolOptions
+  ): Promise<DeliverMessagesProtocolReturnType<AgentMessage> | void> {
+    const { connectionRecord, recipientKey, messages } = options
+    connectionRecord.assertReady()
+
+    const messagePickupRepository = agentContext.dependencyManager.resolve<MessagePickupRepository>(
+      InjectionSymbols.MessagePickupRepository
+    )
+
+    // Get available messages from queue, but don't delete them
+    const messagesToDeliver =
+      messages ??
+      (await messagePickupRepository.takeFromQueue({
+        connectionId: connectionRecord.id,
+        recipientDid: recipientKey,
+        limit: 10, // TODO: Define as config parameter
+      }))
+
+    if (messagesToDeliver.length === 0) {
+      return
+    }
+
+    const attachments = messagesToDeliver.map(
+      (msg) =>
+        new Attachment({
+          id: msg.id,
+          data: {
+            json: msg.encryptedMessage,
+          },
+        })
+    )
+
+    return {
+      message: new V2MessageDeliveryMessage({
+        attachments,
+      }),
+    }
+  }
+
+  public async setLiveDeliveryMode(
+    agentContext: AgentContext,
+    options: SetLiveDeliveryModeProtocolOptions
+  ): Promise<SetLiveDeliveryModeProtocolReturnType<AgentMessage>> {
+    const { connectionRecord, liveDelivery } = options
+    connectionRecord.assertReady()
+    return {
+      message: new V2LiveDeliveryChangeMessage({
+        liveDelivery,
+      }),
+    }
+  }
+
   public async processStatusRequest(messageContext: InboundMessageContext<V2StatusRequestMessage>) {
     // Assert ready connection
     const connection = messageContext.assertReadyConnection()
+    const recipientKey = messageContext.message.recipientKey
 
-    const messageRepository = messageContext.agentContext.dependencyManager.resolve<MessageRepository>(
-      InjectionSymbols.MessageRepository
+    const messagePickupRepository = messageContext.agentContext.dependencyManager.resolve<MessagePickupRepository>(
+      InjectionSymbols.MessagePickupRepository
     )
-
-    if (messageContext.message.recipientKey) {
-      throw new AriesFrameworkError('recipient_key parameter not supported')
-    }
 
     const statusMessage = new V2StatusMessage({
       threadId: messageContext.message.threadId,
-      messageCount: await messageRepository.getAvailableMessageCount(connection.id),
+      recipientKey,
+      messageCount: await messagePickupRepository.getAvailableMessageCount({
+        connectionId: connection.id,
+        recipientDid: recipientKey ? verkeyToDidKey(recipientKey) : undefined,
+      }),
     })
 
     return new OutboundMessageContext(statusMessage, {
@@ -104,27 +169,27 @@ export class V2MessagePickupProtocol extends BaseMessagePickupProtocol {
   public async processDeliveryRequest(messageContext: InboundMessageContext<V2DeliveryRequestMessage>) {
     // Assert ready connection
     const connection = messageContext.assertReadyConnection()
-
-    if (messageContext.message.recipientKey) {
-      throw new AriesFrameworkError('recipient_key parameter not supported')
-    }
+    const recipientKey = messageContext.message.recipientKey
 
     const { message } = messageContext
 
-    const messageRepository = messageContext.agentContext.dependencyManager.resolve<MessageRepository>(
-      InjectionSymbols.MessageRepository
+    const messagePickupRepository = messageContext.agentContext.dependencyManager.resolve<MessagePickupRepository>(
+      InjectionSymbols.MessagePickupRepository
     )
 
     // Get available messages from queue, but don't delete them
-    const messages = await messageRepository.takeFromQueue(connection.id, message.limit, true)
+    const messages = await messagePickupRepository.takeFromQueue({
+      connectionId: connection.id,
+      recipientDid: recipientKey ? verkeyToDidKey(recipientKey) : undefined,
+      limit: message.limit,
+    })
 
-    // TODO: each message should be stored with an id. to be able to conform to the id property
-    // of delivery message
     const attachments = messages.map(
       (msg) =>
         new Attachment({
+          id: msg.id,
           data: {
-            json: msg,
+            json: msg.encryptedMessage,
           },
         })
     )
@@ -133,10 +198,12 @@ export class V2MessagePickupProtocol extends BaseMessagePickupProtocol {
       messages.length > 0
         ? new V2MessageDeliveryMessage({
             threadId: messageContext.message.threadId,
+            recipientKey,
             attachments,
           })
         : new V2StatusMessage({
             threadId: messageContext.message.threadId,
+            recipientKey,
             messageCount: 0,
           })
 
@@ -152,19 +219,17 @@ export class V2MessagePickupProtocol extends BaseMessagePickupProtocol {
 
     const { message } = messageContext
 
-    const messageRepository = messageContext.agentContext.dependencyManager.resolve<MessageRepository>(
-      InjectionSymbols.MessageRepository
+    const messageRepository = messageContext.agentContext.dependencyManager.resolve<MessagePickupRepository>(
+      InjectionSymbols.MessagePickupRepository
     )
 
-    // TODO: Add Queued Message ID
-    await messageRepository.takeFromQueue(
-      connection.id,
-      message.messageIdList ? message.messageIdList.length : undefined
-    )
+    if (message.messageIdList.length) {
+      await messageRepository.removeMessages({ connectionId: connection.id, messageIds: message.messageIdList })
+    }
 
     const statusMessage = new V2StatusMessage({
       threadId: messageContext.message.threadId,
-      messageCount: await messageRepository.getAvailableMessageCount(connection.id),
+      messageCount: await messageRepository.getAvailableMessageCount({ connectionId: connection.id }),
     })
 
     return new OutboundMessageContext(statusMessage, {
@@ -174,45 +239,13 @@ export class V2MessagePickupProtocol extends BaseMessagePickupProtocol {
   }
 
   public async processStatus(messageContext: InboundMessageContext<V2StatusMessage>) {
-    const connection = messageContext.assertReadyConnection()
     const { message: statusMessage } = messageContext
     const { messageCount, recipientKey } = statusMessage
 
-    const connectionService = messageContext.agentContext.dependencyManager.resolve(ConnectionService)
-    const messageSender = messageContext.agentContext.dependencyManager.resolve(MessageSender)
     const messagePickupModuleConfig = messageContext.agentContext.dependencyManager.resolve(MessagePickupModuleConfig)
 
-    //No messages to be sent
+    //No messages to be retrieved
     if (messageCount === 0) {
-      const { message, connectionRecord } = await connectionService.createTrustPing(
-        messageContext.agentContext,
-        connection,
-        {
-          responseRequested: false,
-        }
-      )
-
-      // FIXME: check where this flow fits, as it seems very particular for the Credo-ACA-Py combination
-      const websocketSchemes = ['ws', 'wss']
-
-      await messageSender.sendMessage(
-        new OutboundMessageContext(message, {
-          agentContext: messageContext.agentContext,
-          connection: connectionRecord,
-        }),
-        {
-          transportPriority: {
-            schemes: websocketSchemes,
-            restrictive: true,
-            // TODO: add keepAlive: true to enforce through the public api
-            // we need to keep the socket alive. It already works this way, but would
-            // be good to make more explicit from the public facing API.
-            // This would also make it easier to change the internal API later on.
-            // keepAlive: true,
-          },
-        }
-      )
-
       return null
     }
     const { maximumBatchSize: maximumMessagePickup } = messagePickupModuleConfig
@@ -224,6 +257,35 @@ export class V2MessagePickupProtocol extends BaseMessagePickupProtocol {
     })
 
     return deliveryRequestMessage
+  }
+
+  public async processLiveDeliveryChange(messageContext: InboundMessageContext<V2LiveDeliveryChangeMessage>) {
+    const { agentContext, message } = messageContext
+
+    const connection = messageContext.assertReadyConnection()
+
+    const messagePickupRepository = messageContext.agentContext.dependencyManager.resolve<MessagePickupRepository>(
+      InjectionSymbols.MessagePickupRepository
+    )
+    const sessionService = messageContext.agentContext.dependencyManager.resolve(MessagePickupSessionService)
+
+    if (message.liveDelivery) {
+      sessionService.saveLiveSession(agentContext, {
+        connectionId: connection.id,
+        protocolVersion: 'v2',
+        role: MessagePickupSessionRole.MessageHolder,
+      })
+    } else {
+      sessionService.removeLiveSession(agentContext, { connectionId: connection.id })
+    }
+
+    const statusMessage = new V2StatusMessage({
+      threadId: message.threadId,
+      liveDelivery: message.liveDelivery,
+      messageCount: await messagePickupRepository.getAvailableMessageCount({ connectionId: connection.id }),
+    })
+
+    return new OutboundMessageContext(statusMessage, { agentContext: messageContext.agentContext, connection })
   }
 
   public async processDelivery(messageContext: InboundMessageContext<V2MessageDeliveryMessage>) {

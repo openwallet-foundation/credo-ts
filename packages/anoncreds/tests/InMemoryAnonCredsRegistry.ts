@@ -19,7 +19,8 @@ import type {
 } from '../src'
 import type { AgentContext } from '@credo-ts/core'
 
-import { Hasher, TypedArrayEncoder, isDid } from '@credo-ts/core'
+import { isDid } from '@credo-ts/core'
+import { Hasher } from '@credo-ts/core'
 import BigNumber from 'bn.js'
 
 import {
@@ -37,7 +38,6 @@ import {
 import {
   parseIndyCredentialDefinitionId,
   parseIndyRevocationRegistryId,
-  parseIndySchemaId,
   parseIndySchemaId,
 } from '../src/utils/indyIdentifiers'
 import { getQualifiedId, getUnQualifiedId } from '../src/utils/ledgerObjects'
@@ -384,9 +384,7 @@ export class InMemoryAnonCredsRegistry implements AnonCredsRegistry {
  * Does this by hashing the schema id, transforming the hash to a number and taking the first 6 digits.
  */
 function getSeqNoFromSchemaId(schemaId: string) {
-  const seqNo = Number(
-    new BigNumber(Hasher.hash(TypedArrayEncoder.fromString(schemaId), 'sha2-256')).toString().slice(0, 5)
-  )
+  const seqNo = Number(new BigNumber(Hasher.hash(schemaId, 'sha-256')).toString().slice(0, 5))
 
   return seqNo
 }

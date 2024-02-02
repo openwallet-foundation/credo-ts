@@ -1,6 +1,6 @@
-import { AriesFrameworkError } from '../../error'
+import { CredoError } from '../../error'
 
-export class DifPresentationExchangeError extends AriesFrameworkError {
+export class DifPresentationExchangeError extends CredoError {
   public additionalMessages?: Array<string>
 
   public constructor(

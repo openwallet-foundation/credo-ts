@@ -27,10 +27,13 @@ import type {
 } from '../ProofFormatServiceOptions'
 
 import { Attachment, AttachmentData } from '../../../../decorators/attachment/Attachment'
-import { AriesFrameworkError } from '../../../../error'
+import { CredoError } from '../../../../error'
 import { deepEquality, JsonTransformer } from '../../../../utils'
 import { anonCredsVcDataIntegrityServiceSymbol } from '../../../credentials'
-import { DifPresentationExchangeService } from '../../../dif-presentation-exchange'
+import {
+  DifPresentationExchangeService,
+  DifPresentationExchangeSubmissionLocation,
+} from '../../../dif-presentation-exchange'
 import {
   W3cCredentialService,
   ClaimFormat,
@@ -66,7 +69,7 @@ export class PresentationExchangeProofFormatService implements ProofFormatServic
 
     const pexFormat = proofFormats.presentationExchange
     if (!pexFormat) {
-      throw new AriesFrameworkError('Missing Presentation Exchange format in create proposal attachment format')
+      throw new CredoError('Missing Presentation Exchange format in create proposal attachment format')
     }
 
     const { presentationDefinition } = pexFormat
@@ -181,38 +184,38 @@ export class PresentationExchangeProofFormatService implements ProofFormatServic
     const { presentation_definition: presentationDefinition, options } =
       requestAttachment.getDataAsJson<DifPresentationExchangeRequest>()
 
-    const credentials: DifPexInputDescriptorToCredentials = proofFormats?.presentationExchange?.credentials ?? {}
-    if (Object.keys(credentials).length === 0) {
-      const { areRequirementsSatisfied, requirements } = await ps.getCredentialsForRequest(
-        agentContext,
-        presentationDefinition
-      )
-
-      if (!areRequirementsSatisfied) {
-        throw new AriesFrameworkError('Requirements of the presentation definition could not be satisfied')
-      }
-
-      requirements.forEach((r) => {
-        r.submissionEntry.forEach((r) => {
-          credentials[r.inputDescriptorId] = r.verifiableCredentials
-        })
-      })
+    let credentials: DifPexInputDescriptorToCredentials
+    if (proofFormats?.presentationExchange?.credentials) {
+      credentials = proofFormats.presentationExchange.credentials
+    } else {
+      const credentialsForRequest = await ps.getCredentialsForRequest(agentContext, presentationDefinition)
+      credentials = ps.selectCredentialsForRequest(credentialsForRequest)
     }
 
     const presentation = await ps.createPresentation(agentContext, {
       presentationDefinition,
       credentialsForInputDescriptor: credentials,
-      challenge: options?.challenge,
+      challenge: options?.challenge ?? (await agentContext.wallet.generateNonce()),
       domain: options?.domain,
     })
 
     if (presentation.verifiablePresentations.length > 1) {
-      throw new AriesFrameworkError('Invalid amount of verifiable presentations. Only one is allowed.')
+      throw new CredoError('Invalid amount of verifiable presentations. Only one is allowed.')
+    }
+
+    if (presentation.presentationSubmissionLocation === DifPresentationExchangeSubmissionLocation.EXTERNAL) {
+      throw new CredoError('External presentation submission is not supported.')
     }
 
     const firstPresentation = presentation.verifiablePresentations[0]
-    const attachmentData = firstPresentation.encoded as DifPresentationExchangePresentation
-    const attachment = this.getFormatData(attachmentData, format.attachmentId)
+
+    // TODO: they should all have `encoded` property so it's easy to use the resulting VP
+    const encodedFirstPresentation =
+      firstPresentation instanceof W3cJwtVerifiablePresentation ||
+      firstPresentation instanceof W3cJsonLdVerifiablePresentation
+        ? firstPresentation.encoded
+        : firstPresentation?.compact
+    const attachment = this.getFormatData(encodedFirstPresentation, format.attachmentId)
 
     return { attachment, format }
   }
@@ -231,10 +234,15 @@ export class PresentationExchangeProofFormatService implements ProofFormatServic
 
     // TODO: we should probably move this transformation logic into the VC module, so it
     // can be reused in Credo when we need to go from encoded -> parsed
-    if (typeof presentation === 'string') {
+    if (typeof presentation === 'string' && presentation.includes('~')) {
+      // NOTE: we need to define in the PEX RFC where to put the presentation_submission
+      throw new CredoError('Received SD-JWT VC in PEX proof format. This is not supported yet.')
+    } else if (typeof presentation === 'string') {
+      // If it's a string, we expect it to be a JWT VP
       parsedPresentation = W3cJwtVerifiablePresentation.fromSerializedJwt(presentation)
       jsonPresentation = parsedPresentation.presentation.toJSON()
     } else {
+      // Otherwise we expect it to be a JSON-LD VP
       parsedPresentation = JsonTransformer.fromJSON(presentation, W3cJsonLdVerifiablePresentation)
       jsonPresentation = parsedPresentation.toJSON()
     }
@@ -279,10 +287,10 @@ export class PresentationExchangeProofFormatService implements ProofFormatServic
 
       if (format === ClaimFormat.DiVp && parsedPresentation.claimFormat === ClaimFormat.LdpVp) {
         if (Array.isArray(parsedPresentation.proof))
-          throw new AriesFrameworkError('Cannot process presentations with multiple proofs')
+          throw new CredoError('Cannot process presentations with multiple proofs')
         const cryptosuite = parsedPresentation.proof.cryptosuite
         if (!cryptosuite) {
-          throw new AriesFrameworkError('Cannot process data integrity presentations without cryptosuites')
+          throw new CredoError('Cannot process data integrity presentations without cryptosuites')
         }
 
         if (cryptosuite === 'anoncredsvc-2023') {

@@ -4,7 +4,7 @@ import { convertPublicKeyToX25519 } from '@stablelib/ed25519'
 
 import { Key } from '../../../../crypto/Key'
 import { KeyType } from '../../../../crypto/KeyType'
-import { AriesFrameworkError } from '../../../../error'
+import { CredoError } from '../../../../error'
 import { getEd25519VerificationKey2018, getX25519KeyAgreementKey2019 } from '../../domain'
 import { DidDocumentBuilder } from '../../domain/DidDocumentBuilder'
 import { DidCommV1Service } from '../../domain/service/DidCommV1Service'
@@ -23,7 +23,7 @@ export function createPeerDidDocumentFromServices(services: ResolvedDidCommServi
       if (recipientKeyIdMapping[recipientKey.fingerprint]) return recipientKeyIdMapping[recipientKey.fingerprint]
 
       if (recipientKey.keyType !== KeyType.Ed25519) {
-        throw new AriesFrameworkError(
+        throw new CredoError(
           `Unable to create did document from services. recipient key type ${recipientKey.keyType} is not supported. Supported key types are ${KeyType.Ed25519}`
         )
       }

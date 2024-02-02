@@ -99,12 +99,13 @@ export function getAskarWalletConfig(
 export function getAgentOptions<AgentModules extends AgentModulesInput | EmptyModuleMap>(
   name: string,
   extraConfig: Partial<InitConfig> = {},
-  inputModules?: AgentModules
-): { config: InitConfig; modules: AgentModules; dependencies: AgentDependencies } {
+  inputModules?: AgentModules,
+  inMemoryWallet = true
+): { config: InitConfig; modules: AgentModules; dependencies: AgentDependencies; inMemory?: boolean } {
   const random = uuid().slice(0, 4)
   const config: InitConfig = {
     label: `Agent: ${name} - ${random}`,
-    walletConfig: getAskarWalletConfig(name, { inMemory: true, random }),
+    walletConfig: getAskarWalletConfig(name, { inMemory: inMemoryWallet, random }),
     // TODO: determine the log level based on an environment variable. This will make it
     // possible to run e.g. failed github actions in debug mode for extra logs
     logger: TestLogger.fromLogger(testLogger, name),

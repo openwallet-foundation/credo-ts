@@ -2,7 +2,7 @@ import type { MediationRole } from '../models/MediationRole'
 
 import { Transform } from 'class-transformer'
 
-import { AriesFrameworkError } from '../../../error'
+import { CredoError } from '../../../error'
 import { BaseRecord } from '../../../storage/BaseRecord'
 import { uuid } from '../../../utils/uuid'
 import { MediatorPickupStrategy } from '../MediatorPickupStrategy'
@@ -106,7 +106,7 @@ export class MediationRecord
 
   public assertReady() {
     if (!this.isReady) {
-      throw new AriesFrameworkError(
+      throw new CredoError(
         `Mediation record is not ready to be used. Expected ${MediationState.Granted}, found invalid state ${this.state}`
       )
     }
@@ -118,7 +118,7 @@ export class MediationRecord
     }
 
     if (!expectedStates.includes(this.state)) {
-      throw new AriesFrameworkError(
+      throw new CredoError(
         `Mediation record is in invalid state ${this.state}. Valid states are: ${expectedStates.join(', ')}.`
       )
     }
@@ -126,7 +126,7 @@ export class MediationRecord
 
   public assertRole(expectedRole: MediationRole) {
     if (this.role !== expectedRole) {
-      throw new AriesFrameworkError(`Mediation record has invalid role ${this.role}. Expected role ${expectedRole}.`)
+      throw new CredoError(`Mediation record has invalid role ${this.role}. Expected role ${expectedRole}.`)
     }
   }
 }

@@ -12,7 +12,7 @@ import {
 import { EventEmitter } from '../../../agent/EventEmitter'
 import { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import { KeyType, Key } from '../../../crypto'
-import { AriesFrameworkError } from '../../../error'
+import { CredoError } from '../../../error'
 import { DidExchangeState } from '../../connections/models'
 import { OutOfBandService } from '../OutOfBandService'
 import { OutOfBandEventTypes } from '../domain/OutOfBandEvents'
@@ -59,7 +59,7 @@ describe('OutOfBandService', () => {
       })
 
       await expect(outOfBandService.processHandshakeReuse(messageContext)).rejects.toThrowError(
-        new AriesFrameworkError('handshake-reuse message must have a parent thread id')
+        new CredoError('handshake-reuse message must have a parent thread id')
       )
     })
 
@@ -75,7 +75,7 @@ describe('OutOfBandService', () => {
       })
 
       await expect(outOfBandService.processHandshakeReuse(messageContext)).rejects.toThrowError(
-        new AriesFrameworkError('No out of band record found for handshake-reuse message')
+        new CredoError('No out of band record found for handshake-reuse message')
       )
     })
 
@@ -98,13 +98,13 @@ describe('OutOfBandService', () => {
       mockFunction(outOfBandRepository.findSingleByQuery).mockResolvedValue(mockOob)
 
       await expect(outOfBandService.processHandshakeReuse(messageContext)).rejects.toThrowError(
-        new AriesFrameworkError('Invalid out-of-band record role receiver, expected is sender.')
+        new CredoError('Invalid out-of-band record role receiver, expected is sender.')
       )
 
       mockOob.state = OutOfBandState.PrepareResponse
       mockOob.role = OutOfBandRole.Sender
       await expect(outOfBandService.processHandshakeReuse(messageContext)).rejects.toThrowError(
-        new AriesFrameworkError('Invalid out-of-band record state prepare-response, valid states are: await-response.')
+        new CredoError('Invalid out-of-band record state prepare-response, valid states are: await-response.')
       )
     })
 
@@ -127,7 +127,7 @@ describe('OutOfBandService', () => {
       mockFunction(outOfBandRepository.findSingleByQuery).mockResolvedValue(mockOob)
 
       await expect(outOfBandService.processHandshakeReuse(messageContext)).rejects.toThrowError(
-        new AriesFrameworkError('Handshake reuse should only be used when no requests are present')
+        new CredoError('Handshake reuse should only be used when no requests are present')
       )
     })
 
@@ -149,7 +149,7 @@ describe('OutOfBandService', () => {
       mockFunction(outOfBandRepository.findSingleByQuery).mockResolvedValue(mockOob)
 
       await expect(outOfBandService.processHandshakeReuse(messageContext)).rejects.toThrowError(
-        new AriesFrameworkError(`No connection associated with incoming message ${reuseMessage.type}`)
+        new CredoError(`No connection associated with incoming message ${reuseMessage.type}`)
       )
     })
 
@@ -268,7 +268,7 @@ describe('OutOfBandService', () => {
       })
 
       await expect(outOfBandService.processHandshakeReuseAccepted(messageContext)).rejects.toThrowError(
-        new AriesFrameworkError('handshake-reuse-accepted message must have a parent thread id')
+        new CredoError('handshake-reuse-accepted message must have a parent thread id')
       )
     })
 
@@ -285,7 +285,7 @@ describe('OutOfBandService', () => {
       })
 
       await expect(outOfBandService.processHandshakeReuseAccepted(messageContext)).rejects.toThrowError(
-        new AriesFrameworkError('No out of band record found for handshake-reuse-accepted message')
+        new CredoError('No out of band record found for handshake-reuse-accepted message')
       )
     })
 
@@ -309,13 +309,13 @@ describe('OutOfBandService', () => {
       mockFunction(outOfBandRepository.findSingleByQuery).mockResolvedValue(mockOob)
 
       await expect(outOfBandService.processHandshakeReuseAccepted(messageContext)).rejects.toThrowError(
-        new AriesFrameworkError('Invalid out-of-band record role sender, expected is receiver.')
+        new CredoError('Invalid out-of-band record role sender, expected is receiver.')
       )
 
       mockOob.state = OutOfBandState.AwaitResponse
       mockOob.role = OutOfBandRole.Receiver
       await expect(outOfBandService.processHandshakeReuseAccepted(messageContext)).rejects.toThrowError(
-        new AriesFrameworkError('Invalid out-of-band record state await-response, valid states are: prepare-response.')
+        new CredoError('Invalid out-of-band record state await-response, valid states are: prepare-response.')
       )
     })
 
@@ -338,7 +338,7 @@ describe('OutOfBandService', () => {
       mockFunction(outOfBandRepository.findSingleByQuery).mockResolvedValue(mockOob)
 
       await expect(outOfBandService.processHandshakeReuseAccepted(messageContext)).rejects.toThrowError(
-        new AriesFrameworkError(`No connection associated with incoming message ${reuseAcceptedMessage.type}`)
+        new CredoError(`No connection associated with incoming message ${reuseAcceptedMessage.type}`)
       )
     })
 
@@ -363,7 +363,7 @@ describe('OutOfBandService', () => {
       mockFunction(outOfBandRepository.findSingleByQuery).mockResolvedValue(mockOob)
 
       await expect(outOfBandService.processHandshakeReuseAccepted(messageContext)).rejects.toThrowError(
-        new AriesFrameworkError(`handshake-reuse-accepted is not in response to a handshake-reuse message.`)
+        new CredoError(`handshake-reuse-accepted is not in response to a handshake-reuse message.`)
       )
     })
 

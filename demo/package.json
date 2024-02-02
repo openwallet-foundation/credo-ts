@@ -16,12 +16,11 @@
   "dependencies": {
     "@hyperledger/indy-vdr-nodejs": "^0.2.0-dev.6",
     "@hyperledger/anoncreds-nodejs": "^0.2.0-dev.10",
-    "@hyperledger/aries-askar-nodejs": "^0.2.0-dev.5",
+    "@hyperledger/aries-askar-nodejs": "^0.2.0-dev.6",
     "inquirer": "^8.2.5"
   },
   "devDependencies": {
     "@credo-ts/anoncreds": "*",
-    "@credo-ts/anoncreds-rs": "*",
     "@credo-ts/askar": "*",
     "@credo-ts/core": "*",
     "@credo-ts/indy-vdr": "*",

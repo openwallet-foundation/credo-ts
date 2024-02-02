@@ -1,11 +1,10 @@
 import { Agent, KeyType, TypedArrayEncoder } from '@credo-ts/core'
 
-import { AnonCredsRsModule } from '../../anoncreds-rs/src'
-import { anoncreds } from '../../anoncreds-rs/tests/helpers'
 import { getInMemoryAgentOptions } from '../../core/tests'
 import { AnonCredsModule } from '../src'
 
 import { InMemoryAnonCredsRegistry } from './InMemoryAnonCredsRegistry'
+import { anoncreds } from './helpers'
 
 const existingSchemas = {
   '7Cd2Yj9yEZNcmNoH54tq9i:2:Test Schema:1.0.0': {
@@ -76,8 +75,9 @@ const agent = new Agent(
     'credo-anoncreds-package',
     {},
     {
-      anoncredsRs: new AnonCredsRsModule({ anoncreds, autoCreateLinkSecret: false }),
       anoncreds: new AnonCredsModule({
+        autoCreateLinkSecret: false,
+        anoncreds,
         registries: [
           new InMemoryAnonCredsRegistry({
             existingSchemas,

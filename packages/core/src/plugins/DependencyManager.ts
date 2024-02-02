@@ -7,7 +7,7 @@ import { container as rootContainer, InjectionToken, Lifecycle } from 'tsyringe'
 
 import { FeatureRegistry } from '../agent/FeatureRegistry'
 import { MessageHandlerRegistry } from '../agent/MessageHandlerRegistry'
-import { AriesFrameworkError } from '../error'
+import { CredoError } from '../error'
 
 export { InjectionToken }
 
@@ -28,12 +28,15 @@ export class DependencyManager {
 
     for (const [moduleKey, module] of Object.entries(modules)) {
       if (this.registeredModules[moduleKey]) {
-        throw new AriesFrameworkError(
+        throw new CredoError(
           `Module with key ${moduleKey} has already been registered. Only a single module can be registered with the same key.`
         )
       }
 
       this.registeredModules[moduleKey] = module
+      if (module.api) {
+        this.registerContextScoped(module.api)
+      }
       module.register(this, featureRegistry)
     }
   }

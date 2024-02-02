@@ -2,7 +2,7 @@ import type { InitConfig } from '@credo-ts/core'
 import type { IndyVdrPoolConfig } from '@credo-ts/indy-vdr'
 
 import { AnonCredsModule, DataIntegrityCredentialFormatService } from '@credo-ts/anoncreds'
-import { AnonCredsRsModule } from '@credo-ts/anoncreds-rs'
+
 import { AskarModule } from '@credo-ts/askar'
 import {
   CheqdAnonCredsRegistry,
@@ -108,8 +108,6 @@ function getAskarAnonCredsIndyModules() {
     }),
     anoncreds: new AnonCredsModule({
       registries: [new IndyVdrAnonCredsRegistry(), new CheqdAnonCredsRegistry()],
-    }),
-    anoncredsRs: new AnonCredsRsModule({
       anoncreds,
     }),
     indyVdr: new IndyVdrModule({

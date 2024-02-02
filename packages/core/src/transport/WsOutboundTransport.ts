@@ -7,7 +7,7 @@ import type { OutboundPackage } from '../types'
 import type WebSocket from 'ws'
 
 import { AgentEventTypes } from '../agent/Events'
-import { AriesFrameworkError } from '../error/AriesFrameworkError'
+import { CredoError } from '../error/CredoError'
 import { isValidJweStructure, JsonEncoder } from '../utils'
 import { Buffer } from '../utils/buffer'
 
@@ -44,7 +44,7 @@ export class WsOutboundTransport implements OutboundTransport {
     })
 
     if (!endpoint) {
-      throw new AriesFrameworkError("Missing connection or endpoint. I don't know how and where to send the message.")
+      throw new CredoError("Missing connection or endpoint. I don't know how and where to send the message.")
     }
 
     const socketId = `${endpoint}-${connectionId}`
@@ -78,7 +78,7 @@ export class WsOutboundTransport implements OutboundTransport {
 
     if (!socket || socket.readyState === this.WebSocketClass.CLOSING) {
       if (!endpoint) {
-        throw new AriesFrameworkError(`Missing endpoint. I don't know how and where to send the message.`)
+        throw new CredoError(`Missing endpoint. I don't know how and where to send the message.`)
       }
       socket = await this.createSocketConnection({
         endpoint,
@@ -90,7 +90,7 @@ export class WsOutboundTransport implements OutboundTransport {
     }
 
     if (socket.readyState !== this.WebSocketClass.OPEN) {
-      throw new AriesFrameworkError('Socket is not open.')
+      throw new CredoError('Socket is not open.')
     }
 
     return socket

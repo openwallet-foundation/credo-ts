@@ -26,7 +26,7 @@ export function deepEquality(x: any, y: any): boolean {
 /**
  * @note This will only work for primitive array equality
  */
-function equalsIgnoreOrder<Item = string>(a: Array<Item>, b: Array<Item>): boolean {
+export function equalsIgnoreOrder<Item = string>(a: Array<Item>, b: Array<Item>): boolean {
   if (a.length !== b.length) return false
   return a.every((k) => b.includes(k))
 }

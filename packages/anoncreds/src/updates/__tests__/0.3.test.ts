@@ -6,6 +6,7 @@ import { InMemoryStorageService } from '../../../../../tests/InMemoryStorageServ
 import { RegisteredAskarTestWallet } from '../../../../askar/tests/helpers'
 import { agentDependencies, getAskarWalletConfig } from '../../../../core/tests'
 import { InMemoryAnonCredsRegistry } from '../../../tests/InMemoryAnonCredsRegistry'
+import { anoncreds } from '../../../tests/helpers'
 import { AnonCredsModule } from '../../AnonCredsModule'
 import {
   AnonCredsHolderServiceSymbol,
@@ -48,6 +49,7 @@ describe('UpdateAssistant | AnonCreds | v0.3.1 - v0.4', () => {
           // We need to include the AnonCredsModule to run the updates
           anoncreds: new AnonCredsModule({
             registries: [new InMemoryAnonCredsRegistry()],
+            anoncreds,
           }),
         },
       },
@@ -71,7 +73,7 @@ describe('UpdateAssistant | AnonCreds | v0.3.1 - v0.4', () => {
       },
     }
 
-    expect(await updateAssistant.isUpToDate()).toBe(false)
+    expect(await updateAssistant.isUpToDate('0.4')).toBe(false)
     expect(await updateAssistant.getNeededUpdates('0.4')).toEqual([
       {
         fromVersion: '0.3.1',
@@ -80,10 +82,10 @@ describe('UpdateAssistant | AnonCreds | v0.3.1 - v0.4', () => {
       },
     ])
 
-    await updateAssistant.update()
+    await updateAssistant.update('0.4')
 
-    expect(await updateAssistant.isUpToDate()).toBe(true)
-    expect(await updateAssistant.getNeededUpdates()).toEqual([])
+    expect(await updateAssistant.isUpToDate('0.4')).toBe(true)
+    expect(await updateAssistant.getNeededUpdates('0.4')).toEqual([])
 
     expect(storageService.contextCorrelationIdToRecords[agent.context.contextCorrelationId].records).toMatchSnapshot()
 
@@ -122,6 +124,7 @@ describe('UpdateAssistant | AnonCreds | v0.3.1 - v0.4', () => {
         modules: {
           // We need to include the AnonCredsModule to run the updates
           anoncreds: new AnonCredsModule({
+            anoncreds,
             registries: [
               // We need to be able to resolve the credential definition so we can correctly
               new InMemoryAnonCredsRegistry({
@@ -212,8 +215,8 @@ describe('UpdateAssistant | AnonCreds | v0.3.1 - v0.4', () => {
       },
     }
 
-    expect(await updateAssistant.isUpToDate()).toBe(false)
-    expect(await updateAssistant.getNeededUpdates()).toEqual([
+    expect(await updateAssistant.isUpToDate('0.4')).toBe(false)
+    expect(await updateAssistant.getNeededUpdates('0.4')).toEqual([
       {
         fromVersion: '0.3.1',
         toVersion: '0.4',
@@ -221,10 +224,10 @@ describe('UpdateAssistant | AnonCreds | v0.3.1 - v0.4', () => {
       },
     ])
 
-    await updateAssistant.update()
+    await updateAssistant.update('0.4')
 
-    expect(await updateAssistant.isUpToDate()).toBe(true)
-    expect(await updateAssistant.getNeededUpdates()).toEqual([])
+    expect(await updateAssistant.isUpToDate('0.4')).toBe(true)
+    expect(await updateAssistant.getNeededUpdates('0.4')).toEqual([])
 
     expect(storageService.contextCorrelationIdToRecords[agent.context.contextCorrelationId].records).toMatchSnapshot()
 

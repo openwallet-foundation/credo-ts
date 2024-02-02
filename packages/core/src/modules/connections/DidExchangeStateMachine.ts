@@ -1,7 +1,7 @@
 import type { ConnectionRecord } from './repository'
 import type { ParsedMessageType } from '../../utils/messageType'
 
-import { AriesFrameworkError } from '../../error'
+import { CredoError } from '../../error'
 import { canHandleMessageType } from '../../utils/messageType'
 
 import { DidExchangeRequestMessage, DidExchangeResponseMessage, DidExchangeCompleteMessage } from './messages'
@@ -53,10 +53,10 @@ export class DidExchangeStateMachine {
   public static assertCreateMessageState(messageType: ParsedMessageType, record: ConnectionRecord) {
     const rule = this.createMessageStateRules.find((r) => canHandleMessageType(r.message, messageType))
     if (!rule) {
-      throw new AriesFrameworkError(`Could not find create message rule for ${messageType}`)
+      throw new CredoError(`Could not find create message rule for ${messageType}`)
     }
     if (rule.state !== record.state || rule.role !== record.role) {
-      throw new AriesFrameworkError(
+      throw new CredoError(
         `Record with role ${record.role} is in invalid state ${record.state} to create ${messageType}. Expected state for role ${rule.role} is ${rule.state}.`
       )
     }
@@ -65,10 +65,10 @@ export class DidExchangeStateMachine {
   public static assertProcessMessageState(messageType: ParsedMessageType, record: ConnectionRecord) {
     const rule = this.processMessageStateRules.find((r) => canHandleMessageType(r.message, messageType))
     if (!rule) {
-      throw new AriesFrameworkError(`Could not find create message rule for ${messageType}`)
+      throw new CredoError(`Could not find create message rule for ${messageType}`)
     }
     if (rule.state !== record.state || rule.role !== record.role) {
-      throw new AriesFrameworkError(
+      throw new CredoError(
         `Record with role ${record.role} is in invalid state ${record.state} to process ${messageType.messageTypeUri}. Expected state for role ${rule.role} is ${rule.state}.`
       )
     }
@@ -79,7 +79,7 @@ export class DidExchangeStateMachine {
       .concat(this.processMessageStateRules)
       .find((r) => canHandleMessageType(r.message, messageType) && r.role === record.role)
     if (!rule) {
-      throw new AriesFrameworkError(
+      throw new CredoError(
         `Could not find create message rule for messageType ${messageType.messageTypeUri}, state ${record.state} and role ${record.role}`
       )
     }

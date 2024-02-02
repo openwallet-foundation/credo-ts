@@ -15,6 +15,8 @@ export interface BatchPickupMessageOptions {
  * @see https://github.com/hyperledger/aries-rfcs/blob/master/features/0212-pickup/README.md#batch-pickup
  */
 export class V1BatchPickupMessage extends AgentMessage {
+  public readonly allowQueueTransport = false
+
   /**
    * Create new BatchPickupMessage instance.
    *

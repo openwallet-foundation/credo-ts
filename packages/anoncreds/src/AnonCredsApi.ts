@@ -357,10 +357,9 @@ export class AnonCredsApi {
     }
   }
 
-  public async registerRevocationRegistryDefinition(options: {
-    revocationRegistryDefinition: AnonCredsRegisterRevocationRegistryDefinitionOptions
-    options: Extensible
-  }): Promise<RegisterRevocationRegistryDefinitionReturn> {
+  public async registerRevocationRegistryDefinition<T extends Extensible = Extensible>(
+    options: AnonCredsRegisterRevocationRegistryDefinition<T>
+  ): Promise<RegisterRevocationRegistryDefinitionReturn> {
     const { issuerId, tag, credentialDefinitionId, maximumCredentialNumber } = options.revocationRegistryDefinition
 
     const tailsFileService = this.agentContext.dependencyManager.resolve(AnonCredsModuleConfig).tailsFileService
@@ -409,8 +408,9 @@ export class AnonCredsApi {
 
       const result = await registry.registerRevocationRegistryDefinition(this.agentContext, {
         revocationRegistryDefinition,
-        options: {},
+        options: options.options,
       })
+
       await this.storeRevocationRegistryDefinitionRecord(result, revocationRegistryDefinitionPrivate)
 
       return {
@@ -465,10 +465,9 @@ export class AnonCredsApi {
     }
   }
 
-  public async registerRevocationStatusList(options: {
-    revocationStatusList: AnonCredsRegisterRevocationStatusListOptions
-    options: Extensible
-  }): Promise<RegisterRevocationStatusListReturn> {
+  public async registerRevocationStatusList<T extends Extensible = Extensible>(
+    options: AnonCredsRegisterRevocationStatusList<T>
+  ): Promise<RegisterRevocationStatusListReturn> {
     const { issuerId, revocationRegistryDefinitionId } = options.revocationStatusList
 
     const failedReturnBase = {
@@ -510,7 +509,7 @@ export class AnonCredsApi {
 
       const result = await registry.registerRevocationStatusList(this.agentContext, {
         revocationStatusList,
-        options: {},
+        options: options.options,
       })
 
       return result
@@ -526,23 +525,24 @@ export class AnonCredsApi {
     }
   }
 
-  public async updateRevocationStatusList(
-    options: AnonCredsUpdateRevocationStatusListOptions
+  public async updateRevocationStatusList<T extends Extensible = Extensible>(
+    options: AnonCredsUpdateRevocationStatusList<T>
   ): Promise<RegisterRevocationStatusListReturn> {
-    const { issuedCredentialIndexes, revokedCredentialIndexes, revocationRegistryDefinitionId } = options
+    const { issuedCredentialIndexes, revokedCredentialIndexes, revocationRegistryDefinitionId } =
+      options.revocationStatusList
 
     const failedReturnBase = {
       revocationStatusListState: {
         state: 'failed' as const,
-        reason: `Error updating revocation status list for revocation registry definition id ${options.revocationRegistryDefinitionId}`,
+        reason: `Error updating revocation status list for revocation registry definition id ${options.revocationStatusList.revocationRegistryDefinitionId}`,
       },
       registrationMetadata: {},
       revocationStatusListMetadata: {},
     }
 
-    const registry = this.findRegistryForIdentifier(options.revocationRegistryDefinitionId)
+    const registry = this.findRegistryForIdentifier(options.revocationStatusList.revocationRegistryDefinitionId)
     if (!registry) {
-      failedReturnBase.revocationStatusListState.reason = `Unable to update revocation status list. No registry found for id ${options.revocationRegistryDefinitionId}`
+      failedReturnBase.revocationStatusListState.reason = `Unable to update revocation status list. No registry found for id ${options.revocationStatusList.revocationRegistryDefinitionId}`
       return failedReturnBase
     }
 
@@ -562,7 +562,7 @@ export class AnonCredsApi {
     )
 
     if (!previousRevocationStatusList) {
-      failedReturnBase.revocationStatusListState.reason = `Unable to update revocation status list. No previous revocation status list found for ${options.revocationRegistryDefinitionId}`
+      failedReturnBase.revocationStatusListState.reason = `Unable to update revocation status list. No previous revocation status list found for ${options.revocationStatusList.revocationRegistryDefinitionId}`
       return failedReturnBase
     }
 
@@ -582,7 +582,7 @@ export class AnonCredsApi {
 
       const result = await registry.registerRevocationStatusList(this.agentContext, {
         revocationStatusList,
-        options: {},
+        options: options.options,
       })
 
       return result
@@ -768,6 +768,21 @@ interface AnonCredsRegisterCredentialDefinition<T extends Extensible = Extensibl
 
 interface AnonCredsRegisterSchema<T extends Extensible = Extensible> {
   schema: AnonCredsSchema
+  options: T
+}
+
+interface AnonCredsRegisterRevocationRegistryDefinition<T extends Extensible = Extensible> {
+  revocationRegistryDefinition: AnonCredsRegisterRevocationRegistryDefinitionOptions
+  options: T
+}
+
+interface AnonCredsRegisterRevocationStatusList<T extends Extensible = Extensible> {
+  revocationStatusList: AnonCredsRegisterRevocationStatusListOptions
+  options: T
+}
+
+interface AnonCredsUpdateRevocationStatusList<T extends Extensible = Extensible> {
+  revocationStatusList: AnonCredsUpdateRevocationStatusListOptions
   options: T
 }
 

@@ -3,7 +3,7 @@ import type { JwsDetachedFormat, JwsFlattenedDetachedFormat, JwsGeneralFormat } 
 import { Expose, Type } from 'class-transformer'
 import { IsDate, IsHash, IsInstance, IsInt, IsMimeType, IsOptional, IsString, ValidateNested } from 'class-validator'
 
-import { AriesFrameworkError } from '../../error'
+import { CredoError } from '../../error'
 import { JsonValue } from '../../types'
 import { JsonEncoder } from '../../utils/JsonEncoder'
 import { uuid } from '../../utils/uuid'
@@ -148,7 +148,7 @@ export class Attachment {
     } else if (this.data.json) {
       return this.data.json as T
     } else {
-      throw new AriesFrameworkError('No attachment data found in `json` or `base64` data fields.')
+      throw new CredoError('No attachment data found in `json` or `base64` data fields.')
     }
   }
 

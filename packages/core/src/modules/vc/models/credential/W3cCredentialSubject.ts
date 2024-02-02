@@ -3,7 +3,7 @@ import type { ValidationOptions } from 'class-validator'
 import { Transform, TransformationType } from 'class-transformer'
 import { IsOptional, ValidateBy, buildMessage, isInstance } from 'class-validator'
 
-import { AriesFrameworkError } from '../../../../error'
+import { CredoError } from '../../../../error'
 import { IsUri, isUri } from '../../../../utils/validators'
 
 /**
@@ -46,7 +46,7 @@ export function W3cCredentialSubjectTransformer() {
       }
 
       if (Array.isArray(value) && value.length === 0) {
-        throw new AriesFrameworkError('At least one credential subject is required')
+        throw new CredoError('At least one credential subject is required')
       }
 
       return Array.isArray(value) ? value.map(vToClass) : vToClass(value)

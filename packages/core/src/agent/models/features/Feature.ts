@@ -1,7 +1,7 @@
 import { Expose } from 'class-transformer'
 import { IsString } from 'class-validator'
 
-import { AriesFrameworkError } from '../../../error'
+import { CredoError } from '../../../error'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
 
 export interface FeatureOptions {
@@ -32,7 +32,7 @@ export class Feature {
    */
   public combine(feature: this) {
     if (feature.id !== this.id) {
-      throw new AriesFrameworkError('Can only combine with a feature with the same id')
+      throw new CredoError('Can only combine with a feature with the same id')
     }
 
     const obj1 = JsonTransformer.toJSON(this)

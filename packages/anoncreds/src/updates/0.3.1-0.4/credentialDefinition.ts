@@ -1,7 +1,7 @@
 import type { AnonCredsCredentialDefinition } from '../../models'
 import type { BaseAgent } from '@credo-ts/core'
 
-import { AriesFrameworkError } from '@credo-ts/core'
+import { CredoError } from '@credo-ts/core'
 
 import { AnonCredsCredentialDefinitionRepository } from '../../repository'
 import { AnonCredsRegistryService } from '../../services/registry/AnonCredsRegistryService'
@@ -52,7 +52,7 @@ export async function migrateAnonCredsCredentialDefinitionRecordToV0_4<Agent ext
       agent.config.logger.error(
         `Could not resolve credential definition with id ${oldCredentialDefinition.id} from ledger`
       )
-      throw new AriesFrameworkError(`Unable to resolve credential definition ${oldCredentialDefinition.id}`)
+      throw new CredoError(`Unable to resolve credential definition ${oldCredentialDefinition.id}`)
     }
 
     agent.config.logger.debug(`Resolved credential definition with id ${oldCredentialDefinition.id} from ledger`, {

@@ -10,7 +10,7 @@ import type {
 } from './types'
 
 import { AgentContext } from '../../agent'
-import { AriesFrameworkError } from '../../error'
+import { CredoError } from '../../error'
 import { injectable } from '../../plugins'
 import { WalletKeyExistsError } from '../../wallet/error'
 
@@ -119,12 +119,12 @@ export class DidsApi {
    */
   public async import({ did, didDocument, privateKeys = [], overwrite }: ImportDidOptions) {
     if (didDocument && didDocument.id !== did) {
-      throw new AriesFrameworkError(`Did document id ${didDocument.id} does not match did ${did}`)
+      throw new CredoError(`Did document id ${didDocument.id} does not match did ${did}`)
     }
 
     const existingDidRecord = await this.didRepository.findCreatedDid(this.agentContext, did)
     if (existingDidRecord && !overwrite) {
-      throw new AriesFrameworkError(
+      throw new CredoError(
         `A created did ${did} already exists. If you want to override the existing did, set the 'overwrite' option to update the did.`
       )
     }
@@ -174,5 +174,13 @@ export class DidsApi {
         alternativeDids: isValidPeerDid(didDocument.id) ? getAlternativeDidsForPeerDid(did) : undefined,
       },
     })
+  }
+
+  public get supportedResolverMethods() {
+    return this.didResolverService.supportedMethods
+  }
+
+  public get supportedRegistrarMethods() {
+    return this.didRegistrarService.supportedMethods
   }
 }
