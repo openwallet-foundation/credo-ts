@@ -1,26 +1,9 @@
 import type { RegisterCredentialDefinitionReturnStateFinished } from '@credo-ts/anoncreds'
-import type {
-  ConnectionRecord,
-  ConnectionStateChangedEvent,
-  CredentialStateChangedEvent,
-  ProofStateChangedEvent,
-} from '@credo-ts/core'
+import type { ConnectionRecord, ConnectionStateChangedEvent } from '@credo-ts/core'
 import type { IndyVdrRegisterSchemaOptions, IndyVdrRegisterCredentialDefinitionOptions } from '@credo-ts/indy-vdr'
 import type BottomBar from 'inquirer/lib/ui/bottom-bar'
 
-import {
-  CredentialState,
-  CredentialEventTypes,
-  W3cCredential,
-  W3cCredentialSubject,
-  ProofEventTypes,
-  ProofState,
-  ConnectionEventTypes,
-  KeyType,
-  TypedArrayEncoder,
-  utils,
-} from '@credo-ts/core'
-import { randomInt } from 'crypto'
+import { ConnectionEventTypes, KeyType, TypedArrayEncoder, utils } from '@credo-ts/core'
 import { ui } from 'inquirer'
 
 import { BaseAgent, indyNetworkConfig } from './BaseAgent'
@@ -34,7 +17,7 @@ export enum RegistryOptions {
 export class Faber extends BaseAgent {
   public outOfBandId?: string
   public credentialDefinition?: RegisterCredentialDefinitionReturnStateFinished
-  public anonCredsIssuerId!: string
+  public anonCredsIssuerId?: string
   public ui: BottomBar
 
   public constructor(port: number, name: string) {
@@ -43,9 +26,8 @@ export class Faber extends BaseAgent {
   }
 
   public static async build(): Promise<Faber> {
-    const faber = new Faber(9001, 'faber' + randomInt(10000))
+    const faber = new Faber(9001, 'faber')
     await faber.initializeAgent()
-
     return faber
   }
 
@@ -145,9 +127,7 @@ export class Faber extends BaseAgent {
     console.log(`\n\nThe credential definition will look like this:\n`)
     console.log(purpleText(`Name: ${Color.Reset}${name}`))
     console.log(purpleText(`Version: ${Color.Reset}${version}`))
-    console.log(
-      purpleText(`Attributes: ${Color.Reset}${attributes[0]}, ${attributes[1]}, ${attributes[2]}, ${attributes[3]}\n`)
-    )
+    console.log(purpleText(`Attributes: ${Color.Reset}${attributes[0]}, ${attributes[1]}, ${attributes[2]}\n`))
   }
 
   private async registerSchema() {
@@ -157,7 +137,7 @@ export class Faber extends BaseAgent {
     const schemaTemplate = {
       name: 'Faber College' + utils.uuid(),
       version: '1.0.0',
-      attrNames: ['id', 'name', 'height', 'age'],
+      attrNames: ['name', 'degree', 'date'],
       issuerId: this.anonCredsIssuerId,
     }
     this.printSchema(schemaTemplate.name, schemaTemplate.version, schemaTemplate.attrNames)
@@ -224,48 +204,28 @@ export class Faber extends BaseAgent {
       connectionId: connectionRecord.id,
       protocolVersion: 'v2',
       credentialFormats: {
-        dataIntegrity: {
-          bindingRequired: true,
-          anonCredsLinkSecretBindingMethodOptions: {
-            credentialDefinitionId: credentialDefinition.credentialDefinitionId,
-          },
-          credential: new W3cCredential({
-            type: ['VerifiableCredential'],
-            issuanceDate: new Date().toISOString(),
-            issuer: this.anonCredsIssuerId as string,
-            credentialSubject: new W3cCredentialSubject({
-              claims: {
-                name: 'Alice Smith',
-                age: 28,
-                height: 173,
-              },
-            }),
-          }),
+        anoncreds: {
+          attributes: [
+            {
+              name: 'name',
+              value: 'Alice Smith',
+            },
+            {
+              name: 'degree',
+              value: 'Computer Science',
+            },
+            {
+              name: 'date',
+              value: '01/01/2022',
+            },
+          ],
+          credentialDefinitionId: credentialDefinition.credentialDefinitionId,
         },
       },
     })
     this.ui.updateBottomBar(
       `\nCredential offer sent!\n\nGo to the Alice agent to accept the credential offer\n\n${Color.Reset}`
     )
-
-    this.agent.events.on<CredentialStateChangedEvent>(CredentialEventTypes.CredentialStateChanged, async (afjEvent) => {
-      const credentialRecord = afjEvent.payload.credentialRecord
-      if (afjEvent.payload.credentialRecord.state !== CredentialState.RequestReceived) return
-
-      console.log(`\nAccepting Credential Request. Sending Credential!\n\n`)
-
-      await this.agent.credentials.acceptRequest({
-        credentialRecordId: credentialRecord.id,
-        credentialFormats: {
-          dataIntegrity: {
-            credentialSubjectId: 'did:key:z6MktiQQEqm2yapXBDt1WEVB3dqgvyzi96FuFANYmrgTrKV9',
-            didCommSignedAttachmentAcceptRequestOptions: {
-              kid: 'did:key:z6MktiQQEqm2yapXBDt1WEVB3dqgvyzi96FuFANYmrgTrKV9#z6MktiQQEqm2yapXBDt1WEVB3dqgvyzi96FuFANYmrgTrKV9',
-            },
-          },
-        },
-      })
-    })
   }
 
   private async printProofFlow(print: string) {
@@ -273,81 +233,41 @@ export class Faber extends BaseAgent {
     await new Promise((f) => setTimeout(f, 2000))
   }
 
+  private async newProofAttribute() {
+    await this.printProofFlow(greenText(`Creating new proof attribute for 'name' ...\n`))
+    const proofAttribute = {
+      name: {
+        name: 'name',
+        restrictions: [
+          {
+            cred_def_id: this.credentialDefinition?.credentialDefinitionId,
+          },
+        ],
+      },
+    }
+
+    return proofAttribute
+  }
+
   public async sendProofRequest() {
     const connectionRecord = await this.getConnectionRecord()
+    const proofAttribute = await this.newProofAttribute()
     await this.printProofFlow(greenText('\nRequesting proof...\n', false))
 
     await this.agent.proofs.requestProof({
       protocolVersion: 'v2',
       connectionId: connectionRecord.id,
       proofFormats: {
-        presentationExchange: {
-          presentationDefinition: {
-            id: '1234567',
-            name: 'Age Verification',
-            purpose: 'We need to verify your age before entering a bar',
-            input_descriptors: [
-              {
-                id: 'age-verification',
-                name: 'A specific type of VC + Issuer',
-                purpose: 'We want a VC of this type generated by this issuer',
-                schema: [
-                  {
-                    uri: 'https://www.w3.org/2018/credentials/v1',
-                  },
-                ],
-                constraints: {
-                  limit_disclosure: 'required',
-                  fields: [
-                    {
-                      path: ['$.issuer'],
-                      filter: {
-                        type: 'string',
-                        const: 'did:cheqd:testnet:d37eba59-513d-42d3-8f9f-d1df0548b675',
-                      },
-                    },
-                    {
-                      path: ['$.credentialSubject.name'],
-                    },
-                    {
-                      path: ['$.credentialSubject.height'],
-                    },
-                    {
-                      path: ['$.credentialSubject.age'],
-                      predicate: 'preferred',
-                      filter: {
-                        type: 'number',
-                        minimum: 18,
-                      },
-                    },
-                  ],
-                },
-              },
-            ],
-            format: {
-              di_vc: {
-                proof_type: ['DataIntegrityProof'],
-                cryptosuite: ['anoncreds-2023', 'eddsa-rdfc-2022'],
-              },
-            },
-          },
+        anoncreds: {
+          name: 'proof-request',
+          version: '1.0',
+          requested_attributes: proofAttribute,
         },
       },
     })
     this.ui.updateBottomBar(
       `\nProof request sent!\n\nGo to the Alice agent to accept the proof request\n\n${Color.Reset}`
     )
-
-    this.agent.events.on<ProofStateChangedEvent>(ProofEventTypes.ProofStateChanged, async (afjEvent) => {
-      if (afjEvent.payload.proofRecord.state !== ProofState.PresentationReceived) return
-
-      const proofRecord = afjEvent.payload.proofRecord
-
-      console.log(`\nAccepting Presentation!\n\n${Color.Reset}`)
-      await this.agent.proofs.acceptPresentation({
-        proofRecordId: proofRecord.id,
-      })
-    })
   }
 
   public async sendMessage(message: string) {

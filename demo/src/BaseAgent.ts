@@ -1,8 +1,15 @@
 import type { InitConfig } from '@credo-ts/core'
 import type { IndyVdrPoolConfig } from '@credo-ts/indy-vdr'
 
-import { AnonCredsModule, DataIntegrityCredentialFormatService } from '@credo-ts/anoncreds'
-
+import {
+  AnonCredsCredentialFormatService,
+  AnonCredsModule,
+  AnonCredsProofFormatService,
+  LegacyIndyCredentialFormatService,
+  LegacyIndyProofFormatService,
+  V1CredentialProtocol,
+  V1ProofProtocol,
+} from '@credo-ts/anoncreds'
 import { AskarModule } from '@credo-ts/askar'
 import {
   CheqdAnonCredsRegistry,
@@ -12,22 +19,19 @@ import {
   CheqdModuleConfig,
 } from '@credo-ts/cheqd'
 import {
-  Agent,
-  AutoAcceptCredential,
-  AutoAcceptProof,
   ConnectionsModule,
-  CredentialsModule,
   DidsModule,
-  HttpOutboundTransport,
-  KeyDidRegistrar,
-  KeyDidResolver,
-  PresentationExchangeProofFormatService,
-  ProofsModule,
-  V2CredentialProtocol,
   V2ProofProtocol,
+  V2CredentialProtocol,
+  ProofsModule,
+  AutoAcceptProof,
+  AutoAcceptCredential,
+  CredentialsModule,
+  Agent,
+  HttpOutboundTransport,
 } from '@credo-ts/core'
-import { IndyVdrAnonCredsRegistry, IndyVdrIndyDidResolver, IndyVdrModule } from '@credo-ts/indy-vdr'
-import { HttpInboundTransport, agentDependencies } from '@credo-ts/node'
+import { IndyVdrIndyDidResolver, IndyVdrAnonCredsRegistry, IndyVdrModule } from '@credo-ts/indy-vdr'
+import { agentDependencies, HttpInboundTransport } from '@credo-ts/node'
 import { anoncreds } from '@hyperledger/anoncreds-nodejs'
 import { ariesAskar } from '@hyperledger/aries-askar-nodejs'
 import { indyVdr } from '@hyperledger/indy-vdr-nodejs'
@@ -86,23 +90,32 @@ export class BaseAgent {
 }
 
 function getAskarAnonCredsIndyModules() {
+  const legacyIndyCredentialFormatService = new LegacyIndyCredentialFormatService()
+  const legacyIndyProofFormatService = new LegacyIndyProofFormatService()
+
   return {
     connections: new ConnectionsModule({
       autoAcceptConnections: true,
     }),
     credentials: new CredentialsModule({
-      autoAcceptCredentials: AutoAcceptCredential.Never,
+      autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
       credentialProtocols: [
+        new V1CredentialProtocol({
+          indyCredentialFormat: legacyIndyCredentialFormatService,
+        }),
         new V2CredentialProtocol({
-          credentialFormats: [new DataIntegrityCredentialFormatService()],
+          credentialFormats: [legacyIndyCredentialFormatService, new AnonCredsCredentialFormatService()],
         }),
       ],
     }),
     proofs: new ProofsModule({
-      autoAcceptProofs: AutoAcceptProof.Never,
+      autoAcceptProofs: AutoAcceptProof.ContentApproved,
       proofProtocols: [
+        new V1ProofProtocol({
+          indyProofFormat: legacyIndyProofFormatService,
+        }),
         new V2ProofProtocol({
-          proofFormats: [new PresentationExchangeProofFormatService()],
+          proofFormats: [legacyIndyProofFormatService, new AnonCredsProofFormatService()],
         }),
       ],
     }),
@@ -126,8 +139,8 @@ function getAskarAnonCredsIndyModules() {
       })
     ),
     dids: new DidsModule({
-      resolvers: [new IndyVdrIndyDidResolver(), new CheqdDidResolver(), new KeyDidResolver()],
-      registrars: [new CheqdDidRegistrar(), new KeyDidRegistrar()],
+      resolvers: [new IndyVdrIndyDidResolver(), new CheqdDidResolver()],
+      registrars: [new CheqdDidRegistrar()],
     }),
     askar: new AskarModule({
       ariesAskar,
