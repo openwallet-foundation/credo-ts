@@ -185,8 +185,21 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
     const { credential, data_model_versions_supported, binding_method, binding_required } =
       attachment.getDataAsJson<DataIntegrityCredentialOffer>()
 
-    // TODO: validate the credential
-    JsonTransformer.fromJSON(credential, W3cCredential)
+    const context = credential['@context']
+    if (!context || !Array.isArray(context)) throw new CredoError('Invalid @context in credential offer')
+
+    const isV1Credential = context.find((c) => c === 'https://www.w3.org/2018/credentials/v1')
+    const isV2Credential = context.find((c) => c === 'https://www.w3.org/ns/credentials/v2')
+
+    if (!isV1Credential && !isV2Credential) throw new CredoError('Missing @context in credential offer')
+
+    const credentialToBeValidated = {
+      ...credential,
+      issuer: credential.issuer ?? 'https://example.com',
+      ...(isV1Credential && { validFrom: credential.issuanceDate ?? new Date().toISOString() }),
+    }
+
+    JsonTransformer.fromJSON(credentialToBeValidated, W3cCredential)
 
     const missingBindingMethod =
       binding_required && !binding_method?.anoncreds_link_secret && !binding_method?.didcomm_signed_attachment

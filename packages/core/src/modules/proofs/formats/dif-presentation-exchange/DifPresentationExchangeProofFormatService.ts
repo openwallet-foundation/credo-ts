@@ -323,7 +323,9 @@ export class PresentationExchangeProofFormatService implements ProofFormatServic
           })
         }
       } else {
-        agentContext.config.logger.error(`Received presentation in PEX proof format with unsupported format ${format}.`)
+        agentContext.config.logger.error(
+          `Received presentation in PEX proof format with unsupported format ${parsedPresentation['claimFormat']}.`
+        )
         return false
       }
 
