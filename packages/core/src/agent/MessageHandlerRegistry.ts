@@ -1,9 +1,10 @@
 import type { AgentMessage } from './AgentMessage'
 import type { MessageHandler } from './MessageHandler'
+import type { ParsedDidCommProtocolUri } from '../utils/messageType'
 
 import { injectable } from 'tsyringe'
 
-import { canHandleMessageType, parseMessageType } from '../utils/messageType'
+import { supportsIncomingDidCommProtocolUri, canHandleMessageType, parseMessageType } from '../utils/messageType'
 
 @injectable()
 export class MessageHandlerRegistry {
@@ -47,13 +48,24 @@ export class MessageHandlerRegistry {
    * Returns array of protocol IDs that dispatcher is able to handle.
    * Protocol ID format is PIURI specified at https://github.com/hyperledger/aries-rfcs/blob/main/concepts/0003-protocols/README.md#piuri.
    */
-  public get supportedProtocols() {
-    return Array.from(new Set(this.supportedMessageTypes.map((m) => m.protocolUri)))
+  public get supportedProtocolUris() {
+    const seenProtocolUris = new Set<string>()
+
+    const protocolUris: ParsedDidCommProtocolUri[] = this.supportedMessageTypes
+      .filter((m) => {
+        const has = seenProtocolUris.has(m.protocolUri)
+        seenProtocolUris.add(m.protocolUri)
+        return !has
+      })
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      .map(({ messageName, messageTypeUri, ...parsedProtocolUri }) => parsedProtocolUri)
+
+    return protocolUris
   }
 
-  public filterSupportedProtocolsByMessageFamilies(messageFamilies: string[]) {
-    return this.supportedProtocols.filter((protocolId) =>
-      messageFamilies.find((messageFamily) => protocolId.startsWith(messageFamily))
+  public filterSupportedProtocolsByProtocolUris(parsedProtocolUris: ParsedDidCommProtocolUri[]) {
+    return this.supportedProtocolUris.filter((supportedProtocol) =>
+      parsedProtocolUris.some((p) => supportsIncomingDidCommProtocolUri(supportedProtocol, p))
     )
   }
 }

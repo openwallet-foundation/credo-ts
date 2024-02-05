@@ -4,7 +4,7 @@
   "compilerOptions": {
     "baseUrl": ".",
     "paths": {
-      "@aries-framework/*": ["packages/*/src"]
+      "@credo-ts/*": ["packages/*/src"]
     }
   },
   "include": [
@@ -16,6 +16,7 @@
     "tests",
     "samples",
     "demo",
+    "demo-openid",
     "scripts"
   ],
   "exclude": ["node_modules", "build"]

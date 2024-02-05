@@ -9,7 +9,7 @@ import type {
   CredentialStateChangedEvent,
   ProofExchangeRecord,
   ProofStateChangedEvent,
-} from '@aries-framework/core'
+} from '@credo-ts/core'
 import type BottomBar from 'inquirer/lib/ui/bottom-bar'
 
 import {
@@ -19,7 +19,7 @@ import {
   CredentialState,
   ProofEventTypes,
   ProofState,
-} from '@aries-framework/core'
+} from '@credo-ts/core'
 import { ui } from 'inquirer'
 
 import { Color, purpleText } from './OutputClass'

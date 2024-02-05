@@ -2,7 +2,7 @@ import type { KeyDidMapping } from './keyDidMapping'
 
 import { Key } from '../../../../crypto/Key'
 import { KeyType } from '../../../../crypto/KeyType'
-import { AriesFrameworkError } from '../../../../error'
+import { CredoError } from '../../../../error'
 import { getBls12381G1Key2020, getBls12381G2Key2020 } from '../verificationMethod'
 
 export function getBls12381g1g2VerificationMethod(did: string, key: Key) {
@@ -31,6 +31,6 @@ export const keyDidBls12381g1g2: KeyDidMapping = {
   // For a G1G2 key, we return two verification methods
   getVerificationMethods: getBls12381g1g2VerificationMethod,
   getKeyFromVerificationMethod: () => {
-    throw new AriesFrameworkError('Not supported for bls12381g1g2 key')
+    throw new CredoError('Not supported for bls12381g1g2 key')
   },
 }

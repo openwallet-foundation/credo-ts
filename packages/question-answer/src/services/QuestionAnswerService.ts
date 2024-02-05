@@ -1,8 +1,8 @@
 import type { QuestionAnswerStateChangedEvent } from '../QuestionAnswerEvents'
 import type { ValidResponse } from '../models'
-import type { AgentContext, InboundMessageContext, Query } from '@aries-framework/core'
+import type { AgentContext, InboundMessageContext, Query } from '@credo-ts/core'
 
-import { AriesFrameworkError, EventEmitter, inject, injectable, InjectionSymbols, Logger } from '@aries-framework/core'
+import { CredoError, EventEmitter, inject, injectable, InjectionSymbols, Logger } from '@credo-ts/core'
 
 import { QuestionAnswerEventTypes } from '../QuestionAnswerEvents'
 import { QuestionAnswerRole } from '../QuestionAnswerRole'
@@ -91,7 +91,7 @@ export class QuestionAnswerService {
       questionMessage.id
     )
     if (questionRecord) {
-      throw new AriesFrameworkError(`Question answer record with thread Id ${questionMessage.id} already exists.`)
+      throw new CredoError(`Question answer record with thread Id ${questionMessage.id} already exists.`)
     }
     const questionAnswerRecord = await this.createRecord({
       questionText: questionMessage.questionText,
@@ -131,7 +131,7 @@ export class QuestionAnswerService {
     if (questionAnswerRecord.validResponses.some((e) => e.text === response)) {
       await this.updateState(agentContext, questionAnswerRecord, QuestionAnswerState.AnswerSent)
     } else {
-      throw new AriesFrameworkError(`Response does not match valid responses`)
+      throw new CredoError(`Response does not match valid responses`)
     }
     return { answerMessage, questionAnswerRecord }
   }
@@ -154,7 +154,7 @@ export class QuestionAnswerService {
       answerMessage.threadId
     )
     if (!questionAnswerRecord) {
-      throw new AriesFrameworkError(`Question Answer record with thread Id ${answerMessage.threadId} not found.`)
+      throw new CredoError(`Question Answer record with thread Id ${answerMessage.threadId} not found.`)
     }
     questionAnswerRecord.assertState(QuestionAnswerState.QuestionSent)
     questionAnswerRecord.assertRole(QuestionAnswerRole.Questioner)

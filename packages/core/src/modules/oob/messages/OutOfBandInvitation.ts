@@ -1,5 +1,4 @@
 import type { PlaintextMessage } from '../../../types'
-import type { HandshakeProtocol } from '../../connections'
 
 import { Exclude, Expose, Transform, TransformationType, Type } from 'class-transformer'
 import { ArrayNotEmpty, IsArray, IsInstance, IsOptional, IsUrl, ValidateNested } from 'class-validator'
@@ -7,7 +6,7 @@ import { parseUrl } from 'query-string'
 
 import { AgentMessage } from '../../../agent/AgentMessage'
 import { Attachment, AttachmentData } from '../../../decorators/attachment/Attachment'
-import { AriesFrameworkError } from '../../../error'
+import { CredoError } from '../../../error'
 import { JsonEncoder } from '../../../utils/JsonEncoder'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
 import { IsValidMessageType, parseMessageType, replaceLegacyDidSovPrefix } from '../../../utils/messageType'
@@ -17,11 +16,11 @@ import { OutOfBandDidCommService } from '../domain/OutOfBandDidCommService'
 
 export interface OutOfBandInvitationOptions {
   id?: string
-  label: string
+  label?: string
   goalCode?: string
   goal?: string
   accept?: string[]
-  handshakeProtocols?: HandshakeProtocol[]
+  handshakeProtocols?: string[]
   services: Array<OutOfBandDidCommService | string>
   imageUrl?: string
   appendedAttachments?: Attachment[]
@@ -83,7 +82,7 @@ export class OutOfBandInvitation extends AgentMessage {
 
       return invitation
     } else {
-      throw new AriesFrameworkError(
+      throw new CredoError(
         'InvitationUrl is invalid. It needs to contain one, and only one, of the following parameters; `oob`'
       )
     }
@@ -124,7 +123,7 @@ export class OutOfBandInvitation extends AgentMessage {
   public readonly type = OutOfBandInvitation.type.messageTypeUri
   public static readonly type = parseMessageType('https://didcomm.org/out-of-band/1.1/invitation')
 
-  public readonly label!: string
+  public readonly label?: string
 
   @Expose({ name: 'goal_code' })
   public readonly goalCode?: string
@@ -134,7 +133,7 @@ export class OutOfBandInvitation extends AgentMessage {
   public readonly accept?: string[]
   @Transform(({ value }) => value?.map(replaceLegacyDidSovPrefix), { toClassOnly: true })
   @Expose({ name: 'handshake_protocols' })
-  public handshakeProtocols?: HandshakeProtocol[]
+  public handshakeProtocols?: string[]
 
   @Expose({ name: 'requests~attach' })
   @Type(() => Attachment)

@@ -2,7 +2,7 @@ import type { KeyDidMapping } from './keyDidMapping'
 import type { VerificationMethod } from '../verificationMethod'
 
 import { KeyType } from '../../../../crypto/KeyType'
-import { AriesFrameworkError } from '../../../../error'
+import { CredoError } from '../../../../error'
 import {
   getKeyFromEd25519VerificationKey2018,
   isEd25519VerificationKey2018,
@@ -11,9 +11,12 @@ import {
   isEd25519VerificationKey2020,
   isJsonWebKey2020,
   getEd25519VerificationKey2018,
+  getKeyFromMultikey,
+  isMultikey,
   VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2018,
   VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2020,
   VERIFICATION_METHOD_TYPE_JSON_WEB_KEY_2020,
+  VERIFICATION_METHOD_TYPE_MULTIKEY,
 } from '../verificationMethod'
 
 export { convertPublicKeyToX25519 } from '@stablelib/ed25519'
@@ -23,6 +26,7 @@ export const keyDidEd25519: KeyDidMapping = {
     VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2018,
     VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2020,
     VERIFICATION_METHOD_TYPE_JSON_WEB_KEY_2020,
+    VERIFICATION_METHOD_TYPE_MULTIKEY,
   ],
   getVerificationMethods: (did, key) => [
     getEd25519VerificationKey2018({ id: `${did}#${key.fingerprint}`, key, controller: did }),
@@ -40,7 +44,11 @@ export const keyDidEd25519: KeyDidMapping = {
       return getKeyFromJsonWebKey2020(verificationMethod)
     }
 
-    throw new AriesFrameworkError(
+    if (isMultikey(verificationMethod)) {
+      return getKeyFromMultikey(verificationMethod)
+    }
+
+    throw new CredoError(
       `Verification method with type '${verificationMethod.type}' not supported for key type '${KeyType.Ed25519}'`
     )
   },

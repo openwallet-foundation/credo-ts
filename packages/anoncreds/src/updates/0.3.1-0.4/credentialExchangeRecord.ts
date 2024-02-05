@@ -1,6 +1,6 @@
-import type { BaseAgent, CredentialExchangeRecord } from '@aries-framework/core'
+import type { BaseAgent, CredentialExchangeRecord } from '@credo-ts/core'
 
-import { CredentialRepository } from '@aries-framework/core'
+import { CredentialRepository } from '@credo-ts/core'
 
 /**
  * Migrates the {@link CredentialExchangeRecord} to 0.4 compatible format. It fetches all credential exchange records from

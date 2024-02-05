@@ -1,6 +1,5 @@
 import { FeatureRegistry } from '../../../agent/FeatureRegistry'
 import { DependencyManager } from '../../../plugins/DependencyManager'
-import { OutOfBandApi } from '../OutOfBandApi'
 import { OutOfBandModule } from '../OutOfBandModule'
 import { OutOfBandService } from '../OutOfBandService'
 import { OutOfBandRepository } from '../repository/OutOfBandRepository'
@@ -17,9 +16,6 @@ const featureRegistry = new FeatureRegistryMock()
 describe('OutOfBandModule', () => {
   test('registers dependencies on the dependency manager', () => {
     new OutOfBandModule().register(dependencyManager, featureRegistry)
-
-    expect(dependencyManager.registerContextScoped).toHaveBeenCalledTimes(1)
-    expect(dependencyManager.registerContextScoped).toHaveBeenCalledWith(OutOfBandApi)
 
     expect(dependencyManager.registerSingleton).toHaveBeenCalledTimes(2)
     expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(OutOfBandService)

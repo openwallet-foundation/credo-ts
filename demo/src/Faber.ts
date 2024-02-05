@@ -1,12 +1,9 @@
-import type { RegisterCredentialDefinitionReturnStateFinished } from '@aries-framework/anoncreds'
-import type { ConnectionRecord, ConnectionStateChangedEvent } from '@aries-framework/core'
-import type {
-  IndyVdrRegisterSchemaOptions,
-  IndyVdrRegisterCredentialDefinitionOptions,
-} from '@aries-framework/indy-vdr'
+import type { RegisterCredentialDefinitionReturnStateFinished } from '@credo-ts/anoncreds'
+import type { ConnectionRecord, ConnectionStateChangedEvent } from '@credo-ts/core'
+import type { IndyVdrRegisterSchemaOptions, IndyVdrRegisterCredentialDefinitionOptions } from '@credo-ts/indy-vdr'
 import type BottomBar from 'inquirer/lib/ui/bottom-bar'
 
-import { ConnectionEventTypes, KeyType, TypedArrayEncoder, utils } from '@aries-framework/core'
+import { ConnectionEventTypes, KeyType, TypedArrayEncoder, utils } from '@credo-ts/core'
 import { ui } from 'inquirer'
 
 import { BaseAgent, indyNetworkConfig } from './BaseAgent'
@@ -24,7 +21,7 @@ export class Faber extends BaseAgent {
   public ui: BottomBar
 
   public constructor(port: number, name: string) {
-    super({ port, name, useLegacyIndySdk: true })
+    super({ port, name })
     this.ui = new ui.BottomBar()
   }
 
@@ -176,8 +173,8 @@ export class Faber extends BaseAgent {
           issuerId: this.anonCredsIssuerId,
           tag: 'latest',
         },
-        supportRevocation: false,
         options: {
+          supportRevocation: false,
           endorserMode: 'internal',
           endorserDid: this.anonCredsIssuerId,
         },

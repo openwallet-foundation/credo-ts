@@ -1,12 +1,6 @@
-import type { BaseRecordConstructor, AgentContext, BaseRecord, Query, StorageService } from '@aries-framework/core'
+import type { BaseRecordConstructor, AgentContext, BaseRecord, Query, StorageService } from '@credo-ts/core'
 
-import {
-  RecordDuplicateError,
-  WalletError,
-  RecordNotFoundError,
-  injectable,
-  JsonTransformer,
-} from '@aries-framework/core'
+import { RecordDuplicateError, WalletError, RecordNotFoundError, injectable, JsonTransformer } from '@credo-ts/core'
 import { Scan } from '@hyperledger/aries-askar-shared'
 
 import { AskarErrorCode, isAskarError } from '../utils/askarError'
@@ -116,7 +110,7 @@ export class AskarStorageService<T extends BaseRecord> implements StorageService
       return recordToInstance(record, recordClass)
     } catch (error) {
       if (error instanceof RecordNotFoundError) throw error
-      throw new WalletError(`Error getting record`, { cause: error })
+      throw new WalletError(`Error getting record ${recordClass.name}`, { cause: error })
     }
   }
 

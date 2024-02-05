@@ -1,8 +1,8 @@
 import type { AnonCredsProof, AnonCredsProofRequest, AnonCredsSelectedCredentials } from '../models'
 import type { CreateProofOptions, VerifyProofOptions } from '../services'
-import type { AgentContext } from '@aries-framework/core'
+import type { AgentContext } from '@credo-ts/core'
 
-import { AriesFrameworkError } from '@aries-framework/core'
+import { CredoError } from '@credo-ts/core'
 
 import { AnonCredsModuleConfig } from '../AnonCredsModuleConfig'
 import { AnonCredsRegistryService } from '../services'
@@ -48,7 +48,7 @@ export async function getRevocationRegistriesForRequest(
     const revocationRegistryPromises = []
     for (const { referent, selectedCredential, nonRevoked, type } of referentCredentials) {
       if (!selectedCredential.credentialInfo) {
-        throw new AriesFrameworkError(
+        throw new CredoError(
           `Credential for referent '${referent} does not have credential info for revocation state creation`
         )
       }
@@ -85,13 +85,13 @@ export async function getRevocationRegistriesForRequest(
               revocationRegistryId
             )
             if (!revocationRegistryDefinition) {
-              throw new AriesFrameworkError(
+              throw new CredoError(
                 `Could not retrieve revocation registry definition for revocation registry ${revocationRegistryId}: ${resolutionMetadata.message}`
               )
             }
 
             const tailsFileService = agentContext.dependencyManager.resolve(AnonCredsModuleConfig).tailsFileService
-            const tailsFilePath = await tailsFileService.getTailsFile(agentContext, {
+            const { tailsFilePath } = await tailsFileService.getTailsFile(agentContext, {
               revocationRegistryDefinition,
             })
 
@@ -112,7 +112,7 @@ export async function getRevocationRegistriesForRequest(
               await registry.getRevocationStatusList(agentContext, revocationRegistryId, timestampToFetch)
 
             if (!revocationStatusList) {
-              throw new AriesFrameworkError(
+              throw new CredoError(
                 `Could not retrieve revocation status list for revocation registry ${revocationRegistryId}: ${statusListResolutionMetadata.message}`
               )
             }
@@ -180,7 +180,7 @@ export async function getRevocationRegistriesForProof(agentContext: AgentContext
           revocationRegistryId
         )
         if (!revocationRegistryDefinition) {
-          throw new AriesFrameworkError(
+          throw new CredoError(
             `Could not retrieve revocation registry definition for revocation registry ${revocationRegistryId}: ${resolutionMetadata.message}`
           )
         }
@@ -197,7 +197,7 @@ export async function getRevocationRegistriesForProof(agentContext: AgentContext
           await registry.getRevocationStatusList(agentContext, revocationRegistryId, timestamp)
 
         if (!revocationStatusList) {
-          throw new AriesFrameworkError(
+          throw new CredoError(
             `Could not retrieve revocation status list for revocation registry ${revocationRegistryId}: ${statusListResolutionMetadata.message}`
           )
         }

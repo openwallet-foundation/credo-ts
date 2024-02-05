@@ -4,7 +4,7 @@ import type {
   CredentialPreviewAttribute,
   AgentConfig,
   CredentialStateChangedEvent,
-} from '@aries-framework/core'
+} from '@credo-ts/core'
 
 import {
   EventEmitter,
@@ -14,7 +14,7 @@ import {
   JsonEncoder,
   DidCommMessageRecord,
   DidCommMessageRole,
-  AriesFrameworkError,
+  CredoError,
   CredentialState,
   CredentialExchangeRecord,
   CredentialFormatSpec,
@@ -24,7 +24,7 @@ import {
   CredentialEventTypes,
   AckStatus,
   CredentialProblemReportReason,
-} from '@aries-framework/core'
+} from '@credo-ts/core'
 import { Subject } from 'rxjs'
 
 import { ConnectionService } from '../../../../../../core/src/modules/connections/services/ConnectionService'
@@ -145,7 +145,7 @@ const getAgentMessageMock = async (agentContext: AgentContext, options: { messag
     return credentialIssueMessage
   }
 
-  throw new AriesFrameworkError('Could not find message')
+  throw new CredoError('Could not find message')
 }
 
 // A record is deserialized to JSON when it's stored into the storage. We want to simulate this behaviour for `offer`

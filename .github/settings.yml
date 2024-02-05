@@ -1,0 +1,18 @@
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+
+repository:
+  name: credo-ts
+  description: Typescript framework for building decentralized identity and verifiable credential solutions
+  homepage: https://credo.js.org
+  default_branch: main
+  has_downloads: false
+  has_issues: true
+  has_projects: false
+  has_wiki: true
+  archived: false
+  private: false
+  allow_squash_merge: true
+  allow_merge_commit: false
+  allow_rebase_merge: true

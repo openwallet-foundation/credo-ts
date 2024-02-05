@@ -2,17 +2,15 @@ import { readFileSync } from 'fs'
 import path from 'path'
 
 import { InMemoryStorageService } from '../../../../../../tests/InMemoryStorageService'
-import { IndySdkWallet } from '../../../../../indy-sdk/src'
-import { IndySdkSymbol } from '../../../../../indy-sdk/src/types'
-import { Agent } from '../../../../src'
-import { indySdk } from '../../../../tests'
+import { RegisteredAskarTestWallet } from '../../../../../askar/tests/helpers'
+import { Agent, MediatorRoutingRecord } from '../../../../src'
 import { agentDependencies } from '../../../../tests/helpers'
 import { InjectionSymbols } from '../../../constants'
 import { DependencyManager } from '../../../plugins'
 import * as uuid from '../../../utils/uuid'
 import { UpdateAssistant } from '../UpdateAssistant'
 
-const backupDate = new Date('2022-01-21T22:50:20.522Z')
+const backupDate = new Date('2023-01-21T22:50:20.522Z')
 jest.useFakeTimers().setSystemTime(backupDate)
 
 const walletConfig = {
@@ -34,9 +32,8 @@ describe('UpdateAssistant | v0.2 - v0.3.1', () => {
     const dependencyManager = new DependencyManager()
     const storageService = new InMemoryStorageService()
     dependencyManager.registerInstance(InjectionSymbols.StorageService, storageService)
-    // If we register the IndySdkModule it will register the storage service, but we use in memory storage here
-    dependencyManager.registerContextScoped(InjectionSymbols.Wallet, IndySdkWallet)
-    dependencyManager.registerInstance(IndySdkSymbol, indySdk)
+    // If we register the AskarModule it will register the storage service, but we use in memory storage here
+    dependencyManager.registerContextScoped(InjectionSymbols.Wallet, RegisteredAskarTestWallet)
 
     const agent = new Agent(
       {
@@ -59,9 +56,14 @@ describe('UpdateAssistant | v0.2 - v0.3.1', () => {
 
     // Set storage after initialization. This mimics as if this wallet
     // is opened as an existing wallet instead of a new wallet
-    storageService.records = JSON.parse(aliceCredentialRecordsString)
+    storageService.contextCorrelationIdToRecords = {
+      default: {
+        records: JSON.parse(aliceCredentialRecordsString),
+        creationDate: new Date(),
+      },
+    }
 
-    expect(await updateAssistant.isUpToDate()).toBe(false)
+    expect(await updateAssistant.isUpToDate('0.3.1')).toBe(false)
     expect(await updateAssistant.getNeededUpdates('0.3.1')).toEqual([
       {
         fromVersion: '0.2',
@@ -75,14 +77,11 @@ describe('UpdateAssistant | v0.2 - v0.3.1', () => {
       },
     ])
 
-    await updateAssistant.update()
+    await updateAssistant.update('0.3.1')
 
-    expect(await updateAssistant.isUpToDate()).toBe(true)
-    expect(await updateAssistant.getNeededUpdates()).toEqual([])
-
-    // MEDIATOR_ROUTING_RECORD recipientKeys will be different every time, and is not what we're testing here
-    delete storageService.records.MEDIATOR_ROUTING_RECORD
-    expect(storageService.records).toMatchSnapshot()
+    expect(await updateAssistant.isUpToDate('0.3.1')).toBe(true)
+    expect(await updateAssistant.getNeededUpdates('0.3.1')).toEqual([])
+    expect(storageService.contextCorrelationIdToRecords[agent.context.contextCorrelationId].records).toMatchSnapshot()
 
     await agent.shutdown()
     await agent.wallet.delete()
@@ -103,9 +102,8 @@ describe('UpdateAssistant | v0.2 - v0.3.1', () => {
     const dependencyManager = new DependencyManager()
     const storageService = new InMemoryStorageService()
     dependencyManager.registerInstance(InjectionSymbols.StorageService, storageService)
-    // If we register the IndySdkModule it will register the storage service, but we use in memory storage here
-    dependencyManager.registerContextScoped(InjectionSymbols.Wallet, IndySdkWallet)
-    dependencyManager.registerInstance(IndySdkSymbol, indySdk)
+    // If we register the AskarModule it will register the storage service, but we use in memory storage here
+    dependencyManager.registerContextScoped(InjectionSymbols.Wallet, RegisteredAskarTestWallet)
 
     const agent = new Agent(
       {
@@ -127,13 +125,16 @@ describe('UpdateAssistant | v0.2 - v0.3.1', () => {
 
     // Set storage after initialization. This mimics as if this wallet
     // is opened as an existing wallet instead of a new wallet
-    storageService.records = JSON.parse(aliceCredentialRecordsString)
+    storageService.contextCorrelationIdToRecords = {
+      default: {
+        records: JSON.parse(aliceCredentialRecordsString),
+        creationDate: new Date(),
+      },
+    }
 
     await agent.initialize()
-
-    // MEDIATOR_ROUTING_RECORD recipientKeys will be different every time, and is not what we're testing here
-    delete storageService.records.MEDIATOR_ROUTING_RECORD
-    expect(storageService.records).toMatchSnapshot()
+    await storageService.deleteById(agent.context, MediatorRoutingRecord, 'MEDIATOR_ROUTING_RECORD')
+    expect(storageService.contextCorrelationIdToRecords[agent.context.contextCorrelationId].records).toMatchSnapshot()
 
     await agent.shutdown()
     await agent.wallet.delete()
@@ -150,9 +151,8 @@ describe('UpdateAssistant | v0.2 - v0.3.1', () => {
 
     const dependencyManager = new DependencyManager()
     const storageService = new InMemoryStorageService()
-    // If we register the IndySdkModule it will register the storage service, but we use in memory storage here
-    dependencyManager.registerContextScoped(InjectionSymbols.Wallet, IndySdkWallet)
-    dependencyManager.registerInstance(IndySdkSymbol, indySdk)
+    // If we register the AskarModule it will register the storage service, but we use in memory storage here
+    dependencyManager.registerContextScoped(InjectionSymbols.Wallet, RegisteredAskarTestWallet)
     dependencyManager.registerInstance(InjectionSymbols.StorageService, storageService)
 
     const agent = new Agent(
@@ -175,14 +175,17 @@ describe('UpdateAssistant | v0.2 - v0.3.1', () => {
 
     // Set storage after initialization. This mimics as if this wallet
     // is opened as an existing wallet instead of a new wallet
-    storageService.records = JSON.parse(aliceDidRecordsString)
+    storageService.contextCorrelationIdToRecords = {
+      default: {
+        records: JSON.parse(aliceDidRecordsString),
+        creationDate: new Date(),
+      },
+    }
 
     await agent.initialize()
 
-    // MEDIATOR_ROUTING_RECORD recipientKeys will be different every time, and is not what we're testing here
-    delete storageService.records.MEDIATOR_ROUTING_RECORD
-
-    expect(storageService.records).toMatchSnapshot()
+    await storageService.deleteById(agent.context, MediatorRoutingRecord, 'MEDIATOR_ROUTING_RECORD')
+    expect(storageService.contextCorrelationIdToRecords[agent.context.contextCorrelationId].records).toMatchSnapshot()
 
     await agent.shutdown()
     await agent.wallet.delete()

@@ -1,6 +1,6 @@
 import type { AnonCredsNonRevokedInterval } from '../models'
 
-import { AriesFrameworkError } from '@aries-framework/core'
+import { CredoError } from '@credo-ts/core'
 
 // This sets the `to` value to be required. We do this check in the `assertBestPracticeRevocationInterval` method,
 // and it makes it easier to work with the object in TS
@@ -14,11 +14,11 @@ export function assertBestPracticeRevocationInterval(
   revocationInterval: AnonCredsNonRevokedInterval
 ): asserts revocationInterval is BestPracticeNonRevokedInterval {
   if (!revocationInterval.to) {
-    throw new AriesFrameworkError(`Presentation requests proof of non-revocation with no 'to' value specified`)
+    throw new CredoError(`Presentation requests proof of non-revocation with no 'to' value specified`)
   }
 
   if ((revocationInterval.from || revocationInterval.from === 0) && revocationInterval.to !== revocationInterval.from) {
-    throw new AriesFrameworkError(
+    throw new CredoError(
       `Presentation requests proof of non-revocation with an interval from: '${revocationInterval.from}' that does not match the interval to: '${revocationInterval.to}', as specified in Aries RFC 0441`
     )
   }

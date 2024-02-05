@@ -1,9 +1,20 @@
-import type { DidDocument } from '../../dids'
+import type { Routing } from './ConnectionService'
+import type { AgentContext } from '../../../agent'
+import type { ResolvedDidCommService } from '../../didcomm'
+import type { DidDocument, PeerDidNumAlgo } from '../../dids'
 import type { DidDoc, PublicKey } from '../models'
 
 import { Key, KeyType } from '../../../crypto'
-import { AriesFrameworkError } from '../../../error'
-import { IndyAgentService, DidCommV1Service, DidDocumentBuilder, getEd25519VerificationKey2018 } from '../../dids'
+import { CredoError } from '../../../error'
+import {
+  IndyAgentService,
+  DidCommV1Service,
+  DidDocumentBuilder,
+  getEd25519VerificationKey2018,
+  DidRepository,
+  DidsApi,
+  createPeerDidDocumentFromServices,
+} from '../../dids'
 import { didDocumentJsonToNumAlgo1Did } from '../../dids/methods/peer/peerDidNumAlgo1'
 import { EmbeddedAuthentication } from '../models'
 
@@ -99,7 +110,7 @@ function normalizeId(fullId: string): `#${string}` {
 
 function convertPublicKeyToVerificationMethod(publicKey: PublicKey) {
   if (!publicKey.value) {
-    throw new AriesFrameworkError(`Public key ${publicKey.id} does not have value property`)
+    throw new CredoError(`Public key ${publicKey.id} does not have value property`)
   }
   const publicKeyBase58 = publicKey.value
   const ed25519Key = Key.fromPublicKeyBase58(publicKeyBase58, KeyType.Ed25519)
@@ -108,4 +119,48 @@ function convertPublicKeyToVerificationMethod(publicKey: PublicKey) {
     key: ed25519Key,
     controller: '#id',
   })
+}
+
+export function routingToServices(routing: Routing): ResolvedDidCommService[] {
+  return routing.endpoints.map((endpoint, index) => ({
+    id: `#inline-${index}`,
+    serviceEndpoint: endpoint,
+    recipientKeys: [routing.recipientKey],
+    routingKeys: routing.routingKeys,
+  }))
+}
+
+export async function getDidDocumentForCreatedDid(agentContext: AgentContext, did: string) {
+  const didRecord = await agentContext.dependencyManager.resolve(DidRepository).findCreatedDid(agentContext, did)
+
+  if (!didRecord?.didDocument) {
+    throw new CredoError(`Could not get DidDocument for created did ${did}`)
+  }
+  return didRecord.didDocument
+}
+
+export async function createPeerDidFromServices(
+  agentContext: AgentContext,
+  services: ResolvedDidCommService[],
+  numAlgo: PeerDidNumAlgo
+) {
+  const didsApi = agentContext.dependencyManager.resolve(DidsApi)
+
+  // Create did document without the id property
+  const didDocument = createPeerDidDocumentFromServices(services)
+  // Register did:peer document. This will generate the id property and save it to a did record
+
+  const result = await didsApi.create({
+    method: 'peer',
+    didDocument,
+    options: {
+      numAlgo,
+    },
+  })
+
+  if (result.didState?.state !== 'finished') {
+    throw new CredoError(`Did document creation failed: ${JSON.stringify(result.didState)}`)
+  }
+
+  return result.didState.didDocument
 }

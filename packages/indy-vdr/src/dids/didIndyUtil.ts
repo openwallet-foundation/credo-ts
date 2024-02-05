@@ -1,10 +1,10 @@
 import type { GetNymResponseData, IndyEndpointAttrib } from './didSovUtil'
 import type { IndyVdrPool } from '../pool'
-import type { AgentContext } from '@aries-framework/core'
+import type { AgentContext } from '@credo-ts/core'
 
-import { parseIndyDid } from '@aries-framework/anoncreds'
+import { parseIndyDid } from '@credo-ts/anoncreds'
 import {
-  AriesFrameworkError,
+  CredoError,
   DidDocument,
   DidDocumentBuilder,
   DidsApi,
@@ -15,7 +15,7 @@ import {
   TypedArrayEncoder,
   convertPublicKeyToX25519,
   getKeyFromVerificationMethod,
-} from '@aries-framework/core'
+} from '@credo-ts/core'
 import { GetAttribRequest, GetNymRequest } from '@hyperledger/indy-vdr-shared'
 
 import { IndyVdrError, IndyVdrNotFoundError } from '../error'
@@ -156,7 +156,7 @@ export function isSelfCertifiedIndyDid(did: string, verkey: string): boolean {
 }
 
 export function indyDidFromNamespaceAndInitialKey(namespace: string, initialKey: Key) {
-  const buffer = Hasher.hash(initialKey.publicKey, 'sha2-256')
+  const buffer = Hasher.hash(initialKey.publicKey, 'sha-256')
 
   const id = TypedArrayEncoder.toBase58(buffer.slice(0, 16))
   const verkey = initialKey.publicKeyBase58
@@ -168,7 +168,7 @@ export function indyDidFromNamespaceAndInitialKey(namespace: string, initialKey:
 /**
  * Fetches the verification key for a given did:indy did and returns the key as a {@link Key} object.
  *
- * @throws {@link AriesFrameworkError} if the did could not be resolved or the key could not be extracted
+ * @throws {@link CredoError} if the did could not be resolved or the key could not be extracted
  */
 export async function verificationKeyForIndyDid(agentContext: AgentContext, did: string) {
   // FIXME: we should store the didDocument in the DidRecord so we don't have to fetch our own did
@@ -177,7 +177,7 @@ export async function verificationKeyForIndyDid(agentContext: AgentContext, did:
   const didResult = await didsApi.resolve(did)
 
   if (!didResult.didDocument) {
-    throw new AriesFrameworkError(
+    throw new CredoError(
       `Could not resolve did ${did}. ${didResult.didResolutionMetadata.error} ${didResult.didResolutionMetadata.message}`
     )
   }

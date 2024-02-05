@@ -1,7 +1,7 @@
 import type { DummyModuleConfigOptions } from './DummyModuleConfig'
-import type { DependencyManager, FeatureRegistry, Module } from '@aries-framework/core'
+import type { DependencyManager, FeatureRegistry, Module } from '@credo-ts/core'
 
-import { Protocol } from '@aries-framework/core'
+import { Protocol } from '@credo-ts/core'
 
 import { DummyApi } from './DummyApi'
 import { DummyModuleConfig } from './DummyModuleConfig'
@@ -10,6 +10,7 @@ import { DummyService } from './services'
 
 export class DummyModule implements Module {
   public readonly config: DummyModuleConfig
+
   public readonly api = DummyApi
 
   public constructor(config?: DummyModuleConfigOptions) {
@@ -17,9 +18,6 @@ export class DummyModule implements Module {
   }
 
   public register(dependencyManager: DependencyManager, featureRegistry: FeatureRegistry) {
-    // Api
-    dependencyManager.registerContextScoped(DummyApi)
-
     // Config
     dependencyManager.registerInstance(DummyModuleConfig, this.config)
 

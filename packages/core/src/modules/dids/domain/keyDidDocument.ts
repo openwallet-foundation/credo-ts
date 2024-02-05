@@ -3,7 +3,7 @@ import type { VerificationMethod } from './verificationMethod/VerificationMethod
 
 import { Key } from '../../../crypto/Key'
 import { KeyType } from '../../../crypto/KeyType'
-import { AriesFrameworkError } from '../../../error'
+import { CredoError } from '../../../error'
 import { SECURITY_CONTEXT_BBS_URL, SECURITY_JWS_CONTEXT_URL, SECURITY_X25519_CONTEXT_URL } from '../../vc/constants'
 import { ED25519_SUITE_CONTEXT_URL_2018 } from '../../vc/data-integrity/signature-suites/ed25519/constants'
 
@@ -27,6 +27,7 @@ const didDocumentKeyTypeMapping: Record<KeyType, (did: string, key: Key) => DidD
   [KeyType.P256]: getJsonWebKey2020DidDocument,
   [KeyType.P384]: getJsonWebKey2020DidDocument,
   [KeyType.P521]: getJsonWebKey2020DidDocument,
+  [KeyType.K256]: getJsonWebKey2020DidDocument,
 }
 
 export function getDidDocumentForKey(did: string, key: Key) {
@@ -71,7 +72,7 @@ export function getJsonWebKey2020DidDocument(did: string, key: Key) {
   didDocumentBuilder.addContext(SECURITY_JWS_CONTEXT_URL).addVerificationMethod(verificationMethod)
 
   if (!key.supportsEncrypting && !key.supportsSigning) {
-    throw new AriesFrameworkError('Key must support at least signing or encrypting')
+    throw new CredoError('Key must support at least signing or encrypting')
   }
 
   if (key.supportsSigning) {

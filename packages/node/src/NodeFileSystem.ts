@@ -1,6 +1,6 @@
-import type { DownloadToFileOptions, FileSystem } from '@aries-framework/core'
+import type { DownloadToFileOptions, FileSystem } from '@credo-ts/core'
 
-import { AriesFrameworkError, TypedArrayEncoder } from '@aries-framework/core'
+import { CredoError, TypedArrayEncoder } from '@credo-ts/core'
 import { createHash } from 'crypto'
 import fs, { promises } from 'fs'
 import http from 'http'
@@ -92,7 +92,7 @@ export class NodeFileSystem implements FileSystem {
                 await fs.promises.unlink(path)
 
                 reject(
-                  new AriesFrameworkError(
+                  new CredoError(
                     `Hash of downloaded file does not match expected hash. Expected: ${
                       options.verifyHash.hash
                     }, Actual: ${TypedArrayEncoder.toUtf8String(digest)})}`

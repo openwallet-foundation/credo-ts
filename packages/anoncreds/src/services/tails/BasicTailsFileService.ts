@@ -1,8 +1,8 @@
 import type { TailsFileService } from './TailsFileService'
 import type { AnonCredsRevocationRegistryDefinition } from '../../models'
-import type { AgentContext, FileSystem } from '@aries-framework/core'
+import type { AgentContext, FileSystem } from '@credo-ts/core'
 
-import { AriesFrameworkError, InjectionSymbols, TypedArrayEncoder } from '@aries-framework/core'
+import { CredoError, InjectionSymbols, TypedArrayEncoder } from '@credo-ts/core'
 
 export class BasicTailsFileService implements TailsFileService {
   private tailsDirectoryPath?: string
@@ -27,8 +27,8 @@ export class BasicTailsFileService implements TailsFileService {
     options: {
       revocationRegistryDefinition: AnonCredsRevocationRegistryDefinition
     }
-  ): Promise<string> {
-    throw new AriesFrameworkError('BasicTailsFileService only supports tails file downloading')
+  ): Promise<{ tailsFileUrl: string }> {
+    throw new CredoError('BasicTailsFileService only supports tails file downloading')
   }
 
   public async getTailsFile(
@@ -36,7 +36,7 @@ export class BasicTailsFileService implements TailsFileService {
     options: {
       revocationRegistryDefinition: AnonCredsRevocationRegistryDefinition
     }
-  ): Promise<string> {
+  ) {
     const { revocationRegistryDefinition } = options
     const { tailsLocation, tailsHash } = revocationRegistryDefinition.value
 
@@ -67,7 +67,7 @@ export class BasicTailsFileService implements TailsFileService {
         agentContext.config.logger.debug(`Saved tails file to FileSystem at path ${tailsFilePath}`)
       }
 
-      return tailsFilePath
+      return { tailsFilePath }
     } catch (error) {
       agentContext.config.logger.error(`Error while retrieving tails file from URL ${tailsLocation}`, {
         error,

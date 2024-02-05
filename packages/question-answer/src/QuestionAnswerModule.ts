@@ -1,6 +1,6 @@
-import type { DependencyManager, FeatureRegistry, Module } from '@aries-framework/core'
+import type { DependencyManager, FeatureRegistry, Module } from '@credo-ts/core'
 
-import { Protocol } from '@aries-framework/core'
+import { Protocol } from '@credo-ts/core'
 
 import { QuestionAnswerApi } from './QuestionAnswerApi'
 import { QuestionAnswerRole } from './QuestionAnswerRole'
@@ -14,9 +14,6 @@ export class QuestionAnswerModule implements Module {
    * Registers the dependencies of the question answer module on the dependency manager.
    */
   public register(dependencyManager: DependencyManager, featureRegistry: FeatureRegistry) {
-    // Api
-    dependencyManager.registerContextScoped(QuestionAnswerApi)
-
     // Services
     dependencyManager.registerSingleton(QuestionAnswerService)
 

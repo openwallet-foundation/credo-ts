@@ -9,19 +9,26 @@ import { DidDocument } from '../../domain'
 import { DidDocumentRole } from '../../domain/DidDocumentRole'
 import { DidRepository, DidRecord } from '../../repository'
 
-import { PeerDidNumAlgo } from './didPeer'
+import { PeerDidNumAlgo, getAlternativeDidsForPeerDid } from './didPeer'
 import { keyToNumAlgo0DidDocument } from './peerDidNumAlgo0'
 import { didDocumentJsonToNumAlgo1Did } from './peerDidNumAlgo1'
 import { didDocumentToNumAlgo2Did } from './peerDidNumAlgo2'
+import { didDocumentToNumAlgo4Did } from './peerDidNumAlgo4'
 
 export class PeerDidRegistrar implements DidRegistrar {
   public readonly supportedMethods = ['peer']
 
   public async create(
     agentContext: AgentContext,
-    options: PeerDidNumAlgo0CreateOptions | PeerDidNumAlgo1CreateOptions | PeerDidNumAlgo2CreateOptions
+    options:
+      | PeerDidNumAlgo0CreateOptions
+      | PeerDidNumAlgo1CreateOptions
+      | PeerDidNumAlgo2CreateOptions
+      | PeerDidNumAlgo4CreateOptions
   ): Promise<DidCreateResult> {
     const didRepository = agentContext.dependencyManager.resolve(DidRepository)
+
+    let did: string
     let didDocument: DidDocument
 
     try {
@@ -50,16 +57,27 @@ export class PeerDidRegistrar implements DidRegistrar {
         // TODO: validate did:peer document
 
         didDocument = keyToNumAlgo0DidDocument(key)
+        did = didDocument.id
       } else if (isPeerDidNumAlgo1CreateOptions(options)) {
         const didDocumentJson = options.didDocument.toJSON()
-        const did = didDocumentJsonToNumAlgo1Did(didDocumentJson)
+        did = didDocumentJsonToNumAlgo1Did(didDocumentJson)
 
         didDocument = JsonTransformer.fromJSON({ ...didDocumentJson, id: did }, DidDocument)
       } else if (isPeerDidNumAlgo2CreateOptions(options)) {
         const didDocumentJson = options.didDocument.toJSON()
-        const did = didDocumentToNumAlgo2Did(options.didDocument)
+        did = didDocumentToNumAlgo2Did(options.didDocument)
 
         didDocument = JsonTransformer.fromJSON({ ...didDocumentJson, id: did }, DidDocument)
+      } else if (isPeerDidNumAlgo4CreateOptions(options)) {
+        const didDocumentJson = options.didDocument.toJSON()
+
+        const { longFormDid, shortFormDid } = didDocumentToNumAlgo4Did(options.didDocument)
+
+        did = longFormDid
+        didDocument = JsonTransformer.fromJSON(
+          { ...didDocumentJson, id: longFormDid, alsoKnownAs: [shortFormDid] },
+          DidDocument
+        )
       } else {
         return {
           didDocumentMetadata: {},
@@ -73,13 +91,14 @@ export class PeerDidRegistrar implements DidRegistrar {
 
       // Save the did so we know we created it and can use it for didcomm
       const didRecord = new DidRecord({
-        did: didDocument.id,
+        did,
         role: DidDocumentRole.Created,
         didDocument: isPeerDidNumAlgo1CreateOptions(options) ? didDocument : undefined,
         tags: {
           // We need to save the recipientKeys, so we can find the associated did
           // of a key when we receive a message from another connection.
           recipientKeyFingerprints: didDocument.recipientKeys.map((key) => key.fingerprint),
+          alternativeDids: getAlternativeDidsForPeerDid(did),
         },
       })
       await didRepository.save(agentContext, didRecord)
@@ -149,10 +168,15 @@ function isPeerDidNumAlgo2CreateOptions(options: PeerDidCreateOptions): options 
   return options.options.numAlgo === PeerDidNumAlgo.MultipleInceptionKeyWithoutDoc
 }
 
+function isPeerDidNumAlgo4CreateOptions(options: PeerDidCreateOptions): options is PeerDidNumAlgo4CreateOptions {
+  return options.options.numAlgo === PeerDidNumAlgo.ShortFormAndLongForm
+}
+
 export type PeerDidCreateOptions =
   | PeerDidNumAlgo0CreateOptions
   | PeerDidNumAlgo1CreateOptions
   | PeerDidNumAlgo2CreateOptions
+  | PeerDidNumAlgo4CreateOptions
 
 export interface PeerDidNumAlgo0CreateOptions extends DidCreateOptions {
   method: 'peer'
@@ -184,6 +208,16 @@ export interface PeerDidNumAlgo2CreateOptions extends DidCreateOptions {
   didDocument: DidDocument
   options: {
     numAlgo: PeerDidNumAlgo.MultipleInceptionKeyWithoutDoc
+  }
+  secret?: undefined
+}
+
+export interface PeerDidNumAlgo4CreateOptions extends DidCreateOptions {
+  method: 'peer'
+  did?: never
+  didDocument: DidDocument
+  options: {
+    numAlgo: PeerDidNumAlgo.ShortFormAndLongForm
   }
   secret?: undefined
 }

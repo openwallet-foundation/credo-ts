@@ -11,7 +11,7 @@ import type { SingleValidationResult, W3cVerifyCredentialResult, W3cVerifyPresen
 
 import { JwsService } from '../../../crypto'
 import { getJwkFromKey, getJwkClassFromJwaSignatureAlgorithm } from '../../../crypto/jose/jwk'
-import { AriesFrameworkError } from '../../../error'
+import { CredoError } from '../../../error'
 import { injectable } from '../../../plugins'
 import { asArray, isDid, MessageValidator } from '../../../utils'
 import { getKeyDidMappingByKeyType, DidResolverService, getKeyFromVerificationMethod } from '../../dids'
@@ -29,21 +29,9 @@ import { getJwtPayloadFromPresentation } from './presentationTransformer'
 @injectable()
 export class W3cJwtCredentialService {
   private jwsService: JwsService
-  private hasWarned = false
 
   public constructor(jwsService: JwsService) {
     this.jwsService = jwsService
-  }
-
-  private warnExperimentalOnce(agentContext: AgentContext) {
-    if (this.hasWarned) return
-
-    // Warn about experimental module
-    agentContext.config.logger.warn(
-      "The 'W3cJwtCredentialService' is experimental and could have unexpected breaking changes. When using this service, make sure to use strict versions for all @aries-framework packages."
-    )
-
-    this.hasWarned = true
   }
 
   /**
@@ -53,8 +41,6 @@ export class W3cJwtCredentialService {
     agentContext: AgentContext,
     options: W3cJwtSignCredentialOptions
   ): Promise<W3cJwtVerifiableCredential> {
-    this.warnExperimentalOnce(agentContext)
-
     // Validate the instance
     MessageValidator.validateSync(options.credential)
 
@@ -63,7 +49,7 @@ export class W3cJwtCredentialService {
     const jwtPayload = getJwtPayloadFromCredential(options.credential)
 
     if (!isDid(options.verificationMethod)) {
-      throw new AriesFrameworkError(`Only did identifiers are supported as verification method`)
+      throw new CredoError(`Only did identifiers are supported as verification method`)
     }
 
     const verificationMethod = await this.resolveVerificationMethod(agentContext, options.verificationMethod, [
@@ -98,8 +84,6 @@ export class W3cJwtCredentialService {
     agentContext: AgentContext,
     options: W3cJwtVerifyCredentialOptions
   ): Promise<W3cVerifyCredentialResult> {
-    this.warnExperimentalOnce(agentContext)
-
     // NOTE: this is mostly from the JSON-LD service that adds this option. Once we support
     // the same granular validation results, we can remove this and the user could just check
     // which of the validations failed. Supporting for consistency with the JSON-LD service for now.
@@ -157,7 +141,7 @@ export class W3cJwtCredentialService {
         if (!signatureResult.isValid) {
           validationResults.validations.signature = {
             isValid: false,
-            error: new AriesFrameworkError('Invalid JWS signature'),
+            error: new CredoError('Invalid JWS signature'),
           }
         } else {
           validationResults.validations.signature = {
@@ -176,7 +160,7 @@ export class W3cJwtCredentialService {
       if (credential.issuerId !== issuerVerificationMethod.controller) {
         validationResults.validations.issuerIsSigner = {
           isValid: false,
-          error: new AriesFrameworkError(
+          error: new CredoError(
             `Credential is signed using verification method ${issuerVerificationMethod.id}, while the issuer of the credential is '${credential.issuerId}'`
           ),
         }
@@ -193,7 +177,7 @@ export class W3cJwtCredentialService {
       if (!issuerIsSigner) {
         validationResults.validations.issuerIsSigner = {
           isValid: false,
-          error: new AriesFrameworkError('Credential is not signed by the issuer of the credential'),
+          error: new CredoError('Credential is not signed by the issuer of the credential'),
         }
       } else {
         validationResults.validations.issuerIsSigner = {
@@ -209,7 +193,7 @@ export class W3cJwtCredentialService {
       } else if (verifyCredentialStatus && credential.credentialStatus) {
         validationResults.validations.credentialStatus = {
           isValid: false,
-          error: new AriesFrameworkError('Verifying credential status is not supported for JWT VCs'),
+          error: new CredoError('Verifying credential status is not supported for JWT VCs'),
         }
       }
 
@@ -232,8 +216,6 @@ export class W3cJwtCredentialService {
     agentContext: AgentContext,
     options: W3cJwtSignPresentationOptions
   ): Promise<W3cJwtVerifiablePresentation> {
-    this.warnExperimentalOnce(agentContext)
-
     // Validate the instance
     MessageValidator.validateSync(options.presentation)
 
@@ -276,8 +258,6 @@ export class W3cJwtCredentialService {
     agentContext: AgentContext,
     options: W3cJwtVerifyPresentationOptions
   ): Promise<W3cVerifyPresentationResult> {
-    this.warnExperimentalOnce(agentContext)
-
     const validationResults: W3cVerifyPresentationResult = {
       isValid: false,
       validations: {},
@@ -301,12 +281,12 @@ export class W3cJwtCredentialService {
 
         // Make sure challenge matches nonce
         if (options.challenge !== presentation.jwt.payload.additionalClaims.nonce) {
-          throw new AriesFrameworkError(`JWT payload 'nonce' does not match challenge '${options.challenge}'`)
+          throw new CredoError(`JWT payload 'nonce' does not match challenge '${options.challenge}'`)
         }
 
         const audArray = asArray(presentation.jwt.payload.aud)
         if (options.domain && !audArray.includes(options.domain)) {
-          throw new AriesFrameworkError(`JWT payload 'aud' does not include domain '${options.domain}'`)
+          throw new CredoError(`JWT payload 'aud' does not include domain '${options.domain}'`)
         }
 
         validationResults.validations.dataModel = {
@@ -340,7 +320,7 @@ export class W3cJwtCredentialService {
         if (!signatureResult.isValid) {
           validationResults.validations.presentationSignature = {
             isValid: false,
-            error: new AriesFrameworkError('Invalid JWS signature on presentation'),
+            error: new CredoError('Invalid JWS signature on presentation'),
           }
         } else {
           validationResults.validations.presentationSignature = {
@@ -359,7 +339,7 @@ export class W3cJwtCredentialService {
       if (presentation.holderId && proverVerificationMethod.controller !== presentation.holderId) {
         validationResults.validations.holderIsSigner = {
           isValid: false,
-          error: new AriesFrameworkError(
+          error: new CredoError(
             `Presentation is signed using verification method ${proverVerificationMethod.id}, while the holder of the presentation is '${presentation.holderId}'`
           ),
         }
@@ -380,7 +360,7 @@ export class W3cJwtCredentialService {
           if (credential instanceof W3cJsonLdVerifiableCredential) {
             return {
               isValid: false,
-              error: new AriesFrameworkError(
+              error: new CredoError(
                 'Credential is of format ldp_vc. presentations in jwp_vp format can only contain credentials in jwt_vc format'
               ),
               validations: {},
@@ -409,7 +389,7 @@ export class W3cJwtCredentialService {
           if (credentialSubjectIds.length > 0 && !presentationAuthenticatesCredentialSubject) {
             credentialSubjectAuthentication = {
               isValid: false,
-              error: new AriesFrameworkError(
+              error: new CredoError(
                 'Credential has one or more credentialSubject ids, but presentation does not authenticate credential subject'
               ),
             }
@@ -496,7 +476,7 @@ export class W3cJwtCredentialService {
     // If the kid starts with # we assume it is a relative did url, and we resolve it based on the `iss` and the `kid`
     if (kid?.startsWith('#')) {
       if (!signerId) {
-        throw new AriesFrameworkError(`JWT 'kid' MUST be absolute when when no 'iss' is present in JWT payload`)
+        throw new CredoError(`JWT 'kid' MUST be absolute when when no 'iss' is present in JWT payload`)
       }
 
       const didDocument = await didResolver.resolveDidDocument(agentContext, signerId)
@@ -509,16 +489,16 @@ export class W3cJwtCredentialService {
       verificationMethod = didDocument.dereferenceKey(kid, purpose)
 
       if (signerId && didDocument.id !== signerId) {
-        throw new AriesFrameworkError(`kid '${kid}' does not match id of signer (holder/issuer) '${signerId}'`)
+        throw new CredoError(`kid '${kid}' does not match id of signer (holder/issuer) '${signerId}'`)
       }
     } else {
       if (!signerId) {
-        throw new AriesFrameworkError(`JWT 'iss' MUST be present in payload when no 'kid' is specified`)
+        throw new CredoError(`JWT 'iss' MUST be present in payload when no 'kid' is specified`)
       }
 
       // Find the verificationMethod in the did document based on the alg and proofPurpose
       const jwkClass = getJwkClassFromJwaSignatureAlgorithm(credential.jwt.header.alg)
-      if (!jwkClass) throw new AriesFrameworkError(`Unsupported JWT alg '${credential.jwt.header.alg}'`)
+      if (!jwkClass) throw new CredoError(`Unsupported JWT alg '${credential.jwt.header.alg}'`)
 
       const { supportedVerificationMethodTypes } = getKeyDidMappingByKeyType(jwkClass.keyType)
 
@@ -529,11 +509,11 @@ export class W3cJwtCredentialService {
           .filter((v) => supportedVerificationMethodTypes.includes(v.type)) ?? []
 
       if (verificationMethods.length === 0) {
-        throw new AriesFrameworkError(
+        throw new CredoError(
           `No verification methods found for signer '${signerId}' and key type '${jwkClass.keyType}' for alg '${credential.jwt.header.alg}'. Unable to determine which public key is associated with the credential.`
         )
       } else if (verificationMethods.length > 1) {
-        throw new AriesFrameworkError(
+        throw new CredoError(
           `Multiple verification methods found for signer '${signerId}' and key type '${jwkClass.keyType}' for alg '${credential.jwt.header.alg}'. Unable to determine which public key is associated with the credential.`
         )
       }
@@ -543,7 +523,7 @@ export class W3cJwtCredentialService {
 
     // Verify the controller of the verificationMethod matches the signer of the credential
     if (signerId && verificationMethod.controller !== signerId) {
-      throw new AriesFrameworkError(
+      throw new CredoError(
         `Verification method controller '${verificationMethod.controller}' does not match the signer '${signerId}'`
       )
     }

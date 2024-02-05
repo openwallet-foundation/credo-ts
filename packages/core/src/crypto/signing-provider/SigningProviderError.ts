@@ -1,3 +1,3 @@
-import { AriesFrameworkError } from '../../error'
+import { CredoError } from '../../error'
 
-export class SigningProviderError extends AriesFrameworkError {}
+export class SigningProviderError extends CredoError {}

@@ -4,7 +4,7 @@ import type {
 } from '../formats/AnonCredsProofFormat'
 import type { AnonCredsNonRevokedInterval, AnonCredsProofRequest } from '../models'
 
-import { utils } from '@aries-framework/core'
+import { utils } from '@credo-ts/core'
 
 export function createRequestFromPreview({
   name,

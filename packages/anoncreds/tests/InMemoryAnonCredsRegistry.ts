@@ -1,38 +1,37 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import type {
+  AnonCredsCredentialDefinition,
   AnonCredsRegistry,
-  GetSchemaReturn,
-  RegisterSchemaOptions,
-  RegisterSchemaReturn,
+  AnonCredsRevocationRegistryDefinition,
+  AnonCredsRevocationStatusList,
+  AnonCredsSchema,
   GetCredentialDefinitionReturn,
-  RegisterCredentialDefinitionOptions,
-  RegisterCredentialDefinitionReturn,
   GetRevocationRegistryDefinitionReturn,
   GetRevocationStatusListReturn,
-  AnonCredsRevocationStatusList,
-  AnonCredsRevocationRegistryDefinition,
-  AnonCredsSchema,
-  AnonCredsCredentialDefinition,
+  GetSchemaReturn,
+  RegisterCredentialDefinitionOptions,
+  RegisterCredentialDefinitionReturn,
   RegisterRevocationRegistryDefinitionOptions,
   RegisterRevocationRegistryDefinitionReturn,
-  RegisterRevocationStatusListReturn,
   RegisterRevocationStatusListOptions,
+  RegisterRevocationStatusListReturn,
+  RegisterSchemaOptions,
+  RegisterSchemaReturn,
 } from '../src'
-import type { AgentContext } from '@aries-framework/core'
+import type { AgentContext } from '@credo-ts/core'
 
-import { Hasher, TypedArrayEncoder } from '@aries-framework/core'
+import { Hasher } from '@credo-ts/core'
 import BigNumber from 'bn.js'
 
 import {
   getDidIndyCredentialDefinitionId,
-  getDidIndyRevocationRegistryId,
+  getDidIndyRevocationRegistryDefinitionId,
   getDidIndySchemaId,
-} from '../../indy-sdk/src/anoncreds/utils/identifiers'
+} from '../../indy-vdr/src/anoncreds/utils/identifiers'
 import {
-  parseIndyCredentialDefinitionId,
-  getUnqualifiedRevocationRegistryId,
+  getUnqualifiedRevocationRegistryDefinitionId,
   getUnqualifiedCredentialDefinitionId,
   getUnqualifiedSchemaId,
+  parseIndyCredentialDefinitionId,
   parseIndyDid,
   parseIndySchemaId,
 } from '../src'
@@ -44,9 +43,6 @@ import { dateToTimestamp } from '../src/utils/timestamp'
 export class InMemoryAnonCredsRegistry implements AnonCredsRegistry {
   public readonly methodName = 'inMemory'
 
-  // Roughly match that the identifier starts with an unqualified indy did. Once the
-  // anoncreds tests are not based on the indy-sdk anymore, we can use any identifier
-  // we want, but the indy-sdk is picky about the identifier format.
   public readonly supportedIdentifier = /.+/
 
   private schemas: Record<string, AnonCredsSchema>
@@ -71,7 +67,7 @@ export class InMemoryAnonCredsRegistry implements AnonCredsRegistry {
     this.revocationStatusLists = existingRevocationStatusLists
   }
 
-  public async getSchema(agentContext: AgentContext, schemaId: string): Promise<GetSchemaReturn> {
+  public async getSchema(_agentContext: AgentContext, schemaId: string): Promise<GetSchemaReturn> {
     const schema = this.schemas[schemaId]
 
     const parsed = parseIndySchemaId(schemaId)
@@ -103,7 +99,7 @@ export class InMemoryAnonCredsRegistry implements AnonCredsRegistry {
   }
 
   public async registerSchema(
-    agentContext: AgentContext,
+    _agentContext: AgentContext,
     options: RegisterSchemaOptions
   ): Promise<RegisterSchemaReturn> {
     const { namespace, namespaceIdentifier } = parseIndyDid(options.schema.issuerId)
@@ -140,7 +136,7 @@ export class InMemoryAnonCredsRegistry implements AnonCredsRegistry {
   }
 
   public async getCredentialDefinition(
-    agentContext: AgentContext,
+    _agentContext: AgentContext,
     credentialDefinitionId: string
   ): Promise<GetCredentialDefinitionReturn> {
     const credentialDefinition = this.credentialDefinitions[credentialDefinitionId]
@@ -165,7 +161,7 @@ export class InMemoryAnonCredsRegistry implements AnonCredsRegistry {
   }
 
   public async registerCredentialDefinition(
-    agentContext: AgentContext,
+    _agentContext: AgentContext,
     options: RegisterCredentialDefinitionOptions
   ): Promise<RegisterCredentialDefinitionReturn> {
     const parsedSchema = parseIndySchemaId(options.credentialDefinition.schemaId)
@@ -211,7 +207,7 @@ export class InMemoryAnonCredsRegistry implements AnonCredsRegistry {
   }
 
   public async getRevocationRegistryDefinition(
-    agentContext: AgentContext,
+    _agentContext: AgentContext,
     revocationRegistryDefinitionId: string
   ): Promise<GetRevocationRegistryDefinitionReturn> {
     const revocationRegistryDefinition = this.revocationRegistryDefinitions[revocationRegistryDefinitionId]
@@ -236,7 +232,7 @@ export class InMemoryAnonCredsRegistry implements AnonCredsRegistry {
   }
 
   public async registerRevocationRegistryDefinition(
-    agentContext: AgentContext,
+    _agentContext: AgentContext,
     options: RegisterRevocationRegistryDefinitionOptions
   ): Promise<RegisterRevocationRegistryDefinitionReturn> {
     const parsedCredentialDefinition = parseIndyCredentialDefinitionId(options.revocationRegistryDefinition.credDefId)
@@ -249,7 +245,7 @@ export class InMemoryAnonCredsRegistry implements AnonCredsRegistry {
 
     const { namespace, namespaceIdentifier } = parseIndyDid(options.revocationRegistryDefinition.issuerId)
     const legacyIssuerId = namespaceIdentifier
-    const didIndyRevocationRegistryDefinitionId = getDidIndyRevocationRegistryId(
+    const didIndyRevocationRegistryDefinitionId = getDidIndyRevocationRegistryDefinitionId(
       namespace,
       namespaceIdentifier,
       indyLedgerSeqNo,
@@ -259,7 +255,7 @@ export class InMemoryAnonCredsRegistry implements AnonCredsRegistry {
 
     this.revocationRegistryDefinitions[didIndyRevocationRegistryDefinitionId] = options.revocationRegistryDefinition
 
-    const legacyRevocationRegistryDefinitionId = getUnqualifiedRevocationRegistryId(
+    const legacyRevocationRegistryDefinitionId = getUnqualifiedRevocationRegistryDefinitionId(
       legacyIssuerId,
       indyLedgerSeqNo,
       parsedCredentialDefinition.tag,
@@ -284,7 +280,7 @@ export class InMemoryAnonCredsRegistry implements AnonCredsRegistry {
   }
 
   public async getRevocationStatusList(
-    agentContext: AgentContext,
+    _agentContext: AgentContext,
     revocationRegistryId: string,
     timestamp: number
   ): Promise<GetRevocationStatusListReturn> {
@@ -322,7 +318,7 @@ export class InMemoryAnonCredsRegistry implements AnonCredsRegistry {
   }
 
   public async registerRevocationStatusList(
-    agentContext: AgentContext,
+    _agentContext: AgentContext,
     options: RegisterRevocationStatusListOptions
   ): Promise<RegisterRevocationStatusListReturn> {
     const timestamp = (options.options.timestamp as number) ?? dateToTimestamp(new Date())
@@ -341,7 +337,6 @@ export class InMemoryAnonCredsRegistry implements AnonCredsRegistry {
       revocationStatusListState: {
         state: 'finished',
         revocationStatusList,
-        timestamp: timestamp.toString(),
       },
     }
   }
@@ -353,9 +348,7 @@ export class InMemoryAnonCredsRegistry implements AnonCredsRegistry {
  * Does this by hashing the schema id, transforming the hash to a number and taking the first 6 digits.
  */
 function getSeqNoFromSchemaId(schemaId: string) {
-  const seqNo = Number(
-    new BigNumber(Hasher.hash(TypedArrayEncoder.fromString(schemaId), 'sha2-256')).toString().slice(0, 5)
-  )
+  const seqNo = Number(new BigNumber(Hasher.hash(schemaId, 'sha-256')).toString().slice(0, 5))
 
   return seqNo
 }

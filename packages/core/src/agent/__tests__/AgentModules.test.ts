@@ -5,12 +5,14 @@ import { CacheModule } from '../../modules/cache'
 import { ConnectionsModule } from '../../modules/connections'
 import { CredentialsModule } from '../../modules/credentials'
 import { DidsModule } from '../../modules/dids'
+import { DifPresentationExchangeModule } from '../../modules/dif-presentation-exchange'
 import { DiscoverFeaturesModule } from '../../modules/discover-features'
 import { GenericRecordsModule } from '../../modules/generic-records'
-import { MessagePickupModule } from '../../modules/message-pìckup'
+import { MessagePickupModule } from '../../modules/message-pickup'
 import { OutOfBandModule } from '../../modules/oob'
 import { ProofsModule } from '../../modules/proofs'
 import { MediationRecipientModule, MediatorModule } from '../../modules/routing'
+import { SdJwtVcModule } from '../../modules/sd-jwt-vc'
 import { W3cCredentialsModule } from '../../modules/vc'
 import { DependencyManager, injectable } from '../../plugins'
 import { WalletModule } from '../../wallet'
@@ -21,8 +23,8 @@ class MyApi {}
 
 class MyModuleWithApi implements Module {
   public api = MyApi
-  public register(dependencyManager: DependencyManager) {
-    dependencyManager.registerContextScoped(MyApi)
+  public register() {
+    // nothing to register
   }
 }
 
@@ -62,12 +64,14 @@ describe('AgentModules', () => {
         mediationRecipient: expect.any(MediationRecipientModule),
         messagePickup: expect.any(MessagePickupModule),
         basicMessages: expect.any(BasicMessagesModule),
+        pex: expect.any(DifPresentationExchangeModule),
         genericRecords: expect.any(GenericRecordsModule),
         discovery: expect.any(DiscoverFeaturesModule),
         dids: expect.any(DidsModule),
         wallet: expect.any(WalletModule),
         oob: expect.any(OutOfBandModule),
         w3cCredentials: expect.any(W3cCredentialsModule),
+        sdJwtVc: expect.any(SdJwtVcModule),
         cache: expect.any(CacheModule),
       })
     })
@@ -86,6 +90,7 @@ describe('AgentModules', () => {
         mediationRecipient: expect.any(MediationRecipientModule),
         messagePickup: expect.any(MessagePickupModule),
         basicMessages: expect.any(BasicMessagesModule),
+        pex: expect.any(DifPresentationExchangeModule),
         genericRecords: expect.any(GenericRecordsModule),
         discovery: expect.any(DiscoverFeaturesModule),
         dids: expect.any(DidsModule),
@@ -93,6 +98,7 @@ describe('AgentModules', () => {
         oob: expect.any(OutOfBandModule),
         w3cCredentials: expect.any(W3cCredentialsModule),
         cache: expect.any(CacheModule),
+        sdJwtVc: expect.any(SdJwtVcModule),
         myModule,
       })
     })
@@ -113,6 +119,7 @@ describe('AgentModules', () => {
         mediationRecipient: expect.any(MediationRecipientModule),
         messagePickup: expect.any(MessagePickupModule),
         basicMessages: expect.any(BasicMessagesModule),
+        pex: expect.any(DifPresentationExchangeModule),
         genericRecords: expect.any(GenericRecordsModule),
         discovery: expect.any(DiscoverFeaturesModule),
         dids: expect.any(DidsModule),
@@ -120,6 +127,7 @@ describe('AgentModules', () => {
         oob: expect.any(OutOfBandModule),
         w3cCredentials: expect.any(W3cCredentialsModule),
         cache: expect.any(CacheModule),
+        sdJwtVc: expect.any(SdJwtVcModule),
         myModule,
       })
     })

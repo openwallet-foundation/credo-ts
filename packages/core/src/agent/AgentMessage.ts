@@ -32,6 +32,15 @@ export class AgentMessage extends Decorated {
   @Exclude()
   public readonly allowDidSovPrefix: boolean = false
 
+  /**
+   * Whether to use Queue Transport in case the recipient of this message does not have a reliable
+   * endpoint available
+   *
+   * @see https://github.com/decentralized-identity/didcomm-messaging/blob/main/extensions/return_route/main.md#queue-transport
+   */
+  @Exclude()
+  public readonly allowQueueTransport: boolean = true
+
   public toJSON({ useDidSovPrefixWhereAllowed }: { useDidSovPrefixWhereAllowed?: boolean } = {}): PlaintextMessage {
     const json = JsonTransformer.toJSON(this)
 

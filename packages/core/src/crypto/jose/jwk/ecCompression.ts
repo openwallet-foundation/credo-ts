@@ -6,14 +6,16 @@
 import bigInt from 'big-integer'
 
 import { Buffer } from '../../../utils/buffer'
+import { JwaCurve } from '../jwa'
 
 const curveToPointLength = {
-  'P-256': 64,
-  'P-384': 96,
-  'P-521': 132,
+  [JwaCurve.P256]: 64,
+  [JwaCurve.P384]: 96,
+  [JwaCurve.P521]: 132,
+  [JwaCurve.Secp256k1]: 64,
 }
 
-function getConstantsForCurve(curve: 'P-256' | 'P-384' | 'P-521') {
+function getConstantsForCurve(curve: 'P-256' | 'P-384' | 'P-521' | 'secp256k1') {
   let two, prime, b, pIdent
 
   if (curve === 'P-256') {
@@ -40,6 +42,24 @@ function getConstantsForCurve(curve: 'P-256' | 'P-384' | 'P-521') {
       '00000051953eb9618e1c9a1f929a21a0b68540eea2da725b99b315f3b8b489918ef109e156193951ec7e937b1652c0bd3bb1bf073573df883d2c34f1ef451fd46b503f00',
       16
     )
+    pIdent = prime.add(1).divide(4)
+  }
+
+  // https://en.bitcoin.it/wiki/Secp256k1
+  // p = FFFFFFFF FFFFFFFF FFFFFFFF FFFFFFFF FFFFFFFF FFFFFFFF FFFFFFFE FFFFFC2F
+  // P = 2256 - 232 - 29 - 28 - 27 - 26 - 24 - 1
+  if (curve === JwaCurve.Secp256k1) {
+    two = bigInt(2)
+    prime = two
+      .pow(256)
+      .subtract(two.pow(32))
+      .subtract(two.pow(9))
+      .subtract(two.pow(8))
+      .subtract(two.pow(7))
+      .subtract(two.pow(6))
+      .subtract(two.pow(4))
+      .subtract(1)
+    b = bigInt(7)
     pIdent = prime.add(1).divide(4)
   }
 
@@ -80,13 +100,19 @@ export function compress(publicKey: Uint8Array): Uint8Array {
   return compressECPoint(xOctet, yOctet)
 }
 
-export function expand(publicKey: Uint8Array, curve: 'P-256' | 'P-384' | 'P-521'): Uint8Array {
+export function expand(publicKey: Uint8Array, curve: 'P-256' | 'P-384' | 'P-521' | 'secp256k1'): Uint8Array {
   const publicKeyComponent = Buffer.from(publicKey).toString('hex')
   const { prime, b, pIdent } = getConstantsForCurve(curve)
   const signY = new Number(publicKeyComponent[1]).valueOf() - 2
   const x = bigInt(publicKeyComponent.substring(2), 16)
+
   // y^2 = x^3 - 3x + b
   let y = x.pow(3).subtract(x.multiply(3)).add(b).modPow(pIdent, prime)
+
+  if (curve === 'secp256k1') {
+    // y^2 = x^3 + 7
+    y = x.pow(3).add(7).modPow(pIdent, prime)
+  }
 
   // If the parity doesn't match it's the *other* root
   if (y.mod(2).toJSNumber() !== signY) {

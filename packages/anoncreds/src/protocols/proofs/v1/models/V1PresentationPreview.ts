@@ -1,4 +1,4 @@
-import { JsonTransformer, IsValidMessageType, replaceLegacyDidSovPrefix, parseMessageType } from '@aries-framework/core'
+import { JsonTransformer, IsValidMessageType, replaceLegacyDidSovPrefix, parseMessageType } from '@credo-ts/core'
 import { Expose, Transform, Type } from 'class-transformer'
 import {
   IsIn,

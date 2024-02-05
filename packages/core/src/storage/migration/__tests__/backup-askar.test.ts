@@ -4,12 +4,11 @@ import type { StorageUpdateError } from '../error/StorageUpdateError'
 import { readFileSync, unlinkSync } from 'fs'
 import path from 'path'
 
-import { AskarModule } from '../../../../../askar/src'
-import { askarModuleConfig } from '../../../../../askar/tests/helpers'
-import { getAgentOptions } from '../../../../tests/helpers'
+import { askarModule } from '../../../../../askar/tests/helpers'
+import { getAgentOptions, getAskarWalletConfig } from '../../../../tests/helpers'
 import { Agent } from '../../../agent/Agent'
 import { InjectionSymbols } from '../../../constants'
-import { AriesFrameworkError } from '../../../error'
+import { CredoError } from '../../../error'
 import { CredentialExchangeRecord, CredentialRepository } from '../../../modules/credentials'
 import { JsonTransformer } from '../../../utils'
 import { StorageUpdateService } from '../StorageUpdateService'
@@ -17,9 +16,11 @@ import { UpdateAssistant } from '../UpdateAssistant'
 
 const agentOptions = getAgentOptions(
   'UpdateAssistant | Backup | Aries Askar',
-  {},
   {
-    askar: new AskarModule(askarModuleConfig),
+    walletConfig: getAskarWalletConfig('UpdateAssistant | Backup | Aries Askar', { inMemory: false }),
+  },
+  {
+    askar: askarModule,
   }
 )
 
@@ -136,7 +137,7 @@ describe('UpdateAssistant | Backup | Aries Askar', () => {
         fromVersion: '0.1',
         toVersion: '0.2',
         doUpdate: async () => {
-          throw new AriesFrameworkError("Uh oh I'm broken")
+          throw new CredoError("Uh oh I'm broken")
         },
       },
     ])

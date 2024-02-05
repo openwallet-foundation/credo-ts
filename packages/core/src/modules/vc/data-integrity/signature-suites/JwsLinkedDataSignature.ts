@@ -4,7 +4,7 @@
 import type { DocumentLoader, Proof, VerificationMethod } from '../jsonldUtil'
 import type { LdKeyPair } from '../models/LdKeyPair'
 
-import { AriesFrameworkError } from '../../../../error'
+import { CredoError } from '../../../../error'
 import { TypedArrayEncoder, JsonEncoder } from '../../../../utils'
 import { suites } from '../libraries/jsonld-signatures'
 
@@ -183,9 +183,7 @@ export class JwsLinkedDataSignature extends LinkedDataSignature {
     }
 
     if (!options.documentLoader) {
-      throw new AriesFrameworkError(
-        'Missing custom document loader. This is required for resolving verification methods.'
-      )
+      throw new CredoError('Missing custom document loader. This is required for resolving verification methods.')
     }
 
     const { document } = await options.documentLoader(verificationMethod)
@@ -208,11 +206,6 @@ export class JwsLinkedDataSignature extends LinkedDataSignature {
    *   recommended to use one that provides static known documents, instead of
    *   fetching from the web) for returning contexts, controller documents,
    *   keys, and other relevant URLs needed for the proof.
-   * @param [options.expansionMap] - A custom expansion map that is
-   *   passed to the JSON-LD processor; by default a function that will throw
-   *   an error when unmapped properties are detected in the input, use `false`
-   *   to turn this off and allow unmapped properties to be dropped or use a
-   *   custom function.
    *
    * @returns Whether a match for the proof was found.
    */
@@ -222,14 +215,12 @@ export class JwsLinkedDataSignature extends LinkedDataSignature {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     purpose: any
     documentLoader?: DocumentLoader
-    expansionMap?: () => void
   }) {
     const proofMatches = await super.matchProof({
       proof: options.proof,
       document: options.document,
       purpose: options.purpose,
       documentLoader: options.documentLoader,
-      expansionMap: options.expansionMap,
     })
     if (!proofMatches) {
       return false

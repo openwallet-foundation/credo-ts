@@ -1,4 +1,4 @@
-import type { AgentContext } from '@aries-framework/core'
+import type { AgentContext } from '@credo-ts/core'
 
 import { AnonCredsLinkSecretRecord, AnonCredsLinkSecretRepository } from '../repository'
 

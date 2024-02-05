@@ -9,12 +9,13 @@ import { MessageHandlerRegistry } from '../../agent/MessageHandlerRegistry'
 import { MessageSender } from '../../agent/MessageSender'
 import { OutboundMessageContext } from '../../agent/models'
 import { ReturnRouteTypes } from '../../decorators/transport/TransportDecorator'
-import { AriesFrameworkError } from '../../error'
+import { CredoError } from '../../error'
 import { injectable } from '../../plugins'
 import { DidResolverService } from '../dids'
 import { DidRepository } from '../dids/repository'
 import { OutOfBandService } from '../oob/OutOfBandService'
 import { RoutingService } from '../routing/services/RoutingService'
+import { getMediationRecordForDidDocument } from '../routing/services/helpers'
 
 import { ConnectionsModuleConfig } from './ConnectionsModuleConfig'
 import { DidExchangeProtocol } from './DidExchangeProtocol'
@@ -28,8 +29,13 @@ import {
   TrustPingMessageHandler,
   TrustPingResponseMessageHandler,
   ConnectionProblemReportHandler,
+  DidRotateHandler,
+  DidRotateAckHandler,
+  DidRotateProblemReportHandler,
+  HangupHandler,
 } from './handlers'
 import { HandshakeProtocol } from './models'
+import { DidRotateService } from './services'
 import { ConnectionService } from './services/ConnectionService'
 import { TrustPingService } from './services/TrustPingService'
 
@@ -47,6 +53,7 @@ export class ConnectionsApi {
 
   private didExchangeProtocol: DidExchangeProtocol
   private connectionService: ConnectionService
+  private didRotateService: DidRotateService
   private outOfBandService: OutOfBandService
   private messageSender: MessageSender
   private trustPingService: TrustPingService
@@ -59,6 +66,7 @@ export class ConnectionsApi {
     messageHandlerRegistry: MessageHandlerRegistry,
     didExchangeProtocol: DidExchangeProtocol,
     connectionService: ConnectionService,
+    didRotateService: DidRotateService,
     outOfBandService: OutOfBandService,
     trustPingService: TrustPingService,
     routingService: RoutingService,
@@ -70,6 +78,7 @@ export class ConnectionsApi {
   ) {
     this.didExchangeProtocol = didExchangeProtocol
     this.connectionService = connectionService
+    this.didRotateService = didRotateService
     this.outOfBandService = outOfBandService
     this.trustPingService = trustPingService
     this.routingService = routingService
@@ -91,9 +100,14 @@ export class ConnectionsApi {
       imageUrl?: string
       protocol: HandshakeProtocol
       routing?: Routing
+      ourDid?: string
     }
   ) {
-    const { protocol, label, alias, imageUrl, autoAcceptConnection } = config
+    const { protocol, label, alias, imageUrl, autoAcceptConnection, ourDid } = config
+
+    if (ourDid && config.routing) {
+      throw new CredoError(`'routing' is disallowed when defining 'ourDid'`)
+    }
 
     const routing =
       config.routing ||
@@ -106,8 +120,13 @@ export class ConnectionsApi {
         alias,
         routing,
         autoAcceptConnection,
+        ourDid,
       })
     } else if (protocol === HandshakeProtocol.Connections) {
+      if (ourDid) {
+        throw new CredoError('Using an externally defined did for connections protocol is unsupported')
+      }
+
       result = await this.connectionService.createRequest(this.agentContext, outOfBandRecord, {
         label,
         alias,
@@ -116,7 +135,7 @@ export class ConnectionsApi {
         autoAcceptConnection,
       })
     } else {
-      throw new AriesFrameworkError(`Unsupported handshake protocol ${protocol}.`)
+      throw new CredoError(`Unsupported handshake protocol ${protocol}.`)
     }
 
     const { message, connectionRecord } = result
@@ -139,15 +158,15 @@ export class ConnectionsApi {
   public async acceptRequest(connectionId: string): Promise<ConnectionRecord> {
     const connectionRecord = await this.connectionService.findById(this.agentContext, connectionId)
     if (!connectionRecord) {
-      throw new AriesFrameworkError(`Connection record ${connectionId} not found.`)
+      throw new CredoError(`Connection record ${connectionId} not found.`)
     }
     if (!connectionRecord.outOfBandId) {
-      throw new AriesFrameworkError(`Connection record ${connectionId} does not have out-of-band record.`)
+      throw new CredoError(`Connection record ${connectionId} does not have out-of-band record.`)
     }
 
     const outOfBandRecord = await this.outOfBandService.findById(this.agentContext, connectionRecord.outOfBandId)
     if (!outOfBandRecord) {
-      throw new AriesFrameworkError(`Out-of-band record ${connectionRecord.outOfBandId} not found.`)
+      throw new CredoError(`Out-of-band record ${connectionRecord.outOfBandId} not found.`)
     }
 
     // If the outOfBandRecord is reusable we need to use new routing keys for the connection, otherwise
@@ -196,11 +215,11 @@ export class ConnectionsApi {
     let outboundMessageContext
     if (connectionRecord.protocol === HandshakeProtocol.DidExchange) {
       if (!connectionRecord.outOfBandId) {
-        throw new AriesFrameworkError(`Connection ${connectionRecord.id} does not have outOfBandId!`)
+        throw new CredoError(`Connection ${connectionRecord.id} does not have outOfBandId!`)
       }
       const outOfBandRecord = await this.outOfBandService.findById(this.agentContext, connectionRecord.outOfBandId)
       if (!outOfBandRecord) {
-        throw new AriesFrameworkError(
+        throw new CredoError(
           `OutOfBand record for connection ${connectionRecord.id} with outOfBandId ${connectionRecord.outOfBandId} not found!`
         )
       }
@@ -266,6 +285,74 @@ export class ConnectionsApi {
     )
 
     return message
+  }
+
+  /**
+   * Rotate the DID used for a given connection, notifying the other party immediately.
+   *
+   *  If `toDid` is not specified, a new peer did will be created. Optionally, routing
+   * configuration can be set.
+   *
+   * Note: any did created or imported in agent wallet can be used as `toDid`, as long as
+   * there are valid DIDComm services in its DID Document.
+   *
+   * @param options connectionId and optional target did and routing configuration
+   * @returns object containing the new did
+   */
+  public async rotate(options: { connectionId: string; toDid?: string; routing?: Routing }) {
+    const { connectionId, toDid } = options
+    const connection = await this.connectionService.getById(this.agentContext, connectionId)
+
+    if (toDid && options.routing) {
+      throw new CredoError(`'routing' is disallowed when defining 'toDid'`)
+    }
+
+    let routing = options.routing
+    if (!toDid && !routing) {
+      routing = await this.routingService.getRouting(this.agentContext, {})
+    }
+
+    const message = await this.didRotateService.createRotate(this.agentContext, {
+      connection,
+      toDid,
+      routing,
+    })
+
+    const outboundMessageContext = new OutboundMessageContext(message, {
+      agentContext: this.agentContext,
+      connection,
+    })
+
+    await this.messageSender.sendMessage(outboundMessageContext)
+
+    return { newDid: message.toDid }
+  }
+
+  /**
+   * Terminate a connection by sending a hang-up message to the other party. The connection record itself and any
+   * keys used for mediation will only be deleted if `deleteAfterHangup` flag is set.
+   *
+   * @param options connectionId
+   */
+  public async hangup(options: { connectionId: string; deleteAfterHangup?: boolean }) {
+    const connection = await this.connectionService.getById(this.agentContext, options.connectionId)
+
+    const connectionBeforeHangup = connection.clone()
+
+    // Create Hangup message and update did in connection record
+    const message = await this.didRotateService.createHangup(this.agentContext, { connection })
+
+    const outboundMessageContext = new OutboundMessageContext(message, {
+      agentContext: this.agentContext,
+      connection: connectionBeforeHangup,
+    })
+
+    await this.messageSender.sendMessage(outboundMessageContext)
+
+    // After hang-up message submission, delete connection if required
+    if (options.deleteAfterHangup) {
+      await this.deleteById(connection.id)
+    }
   }
 
   public async returnWhenIsConnected(connectionId: string, options?: { timeoutMs: number }): Promise<ConnectionRecord> {
@@ -384,6 +471,39 @@ export class ConnectionsApi {
     return this.connectionService.deleteById(this.agentContext, connectionId)
   }
 
+  /**
+   * Remove relationship of a connection with any previous did (either ours or theirs), preventing it from accepting
+   * messages from them. This is usually called when a DID Rotation flow has been succesful and we are sure that no
+   * more messages with older keys will arrive.
+   *
+   * It will remove routing keys from mediator if applicable.
+   *
+   * Note: this will not actually delete any DID from the wallet.
+   *
+   * @param connectionId
+   */
+  public async removePreviousDids(options: { connectionId: string }) {
+    const connection = await this.connectionService.getById(this.agentContext, options.connectionId)
+
+    for (const previousDid of connection.previousDids) {
+      const did = await this.didResolverService.resolve(this.agentContext, previousDid)
+      if (!did.didDocument) continue
+      const mediatorRecord = await getMediationRecordForDidDocument(this.agentContext, did.didDocument)
+
+      if (mediatorRecord) {
+        await this.routingService.removeRouting(this.agentContext, {
+          recipientKeys: did.didDocument.recipientKeys,
+          mediatorId: mediatorRecord.id,
+        })
+      }
+    }
+
+    connection.previousDids = []
+    connection.previousTheirDids = []
+
+    await this.connectionService.update(this.agentContext, connection)
+  }
+
   public async findAllByOutOfBandId(outOfBandId: string) {
     return this.connectionService.findAllByOutOfBandId(this.agentContext, outOfBandId)
   }
@@ -450,5 +570,13 @@ export class ConnectionsApi {
     messageHandlerRegistry.registerMessageHandler(
       new DidExchangeCompleteHandler(this.didExchangeProtocol, this.outOfBandService)
     )
+
+    messageHandlerRegistry.registerMessageHandler(new DidRotateHandler(this.didRotateService, this.connectionService))
+
+    messageHandlerRegistry.registerMessageHandler(new DidRotateAckHandler(this.didRotateService))
+
+    messageHandlerRegistry.registerMessageHandler(new HangupHandler(this.didRotateService))
+
+    messageHandlerRegistry.registerMessageHandler(new DidRotateProblemReportHandler(this.didRotateService))
   }
 }

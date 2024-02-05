@@ -3,8 +3,8 @@ import type { SignInfo } from '@cheqd/ts-proto/cheqd/did/v2'
 import type { MsgCreateResourcePayload } from '@cheqd/ts-proto/cheqd/resource/v2'
 import type { DirectSecp256k1HdWallet, DirectSecp256k1Wallet } from '@cosmjs/proto-signing'
 
-import { AriesFrameworkError, injectable } from '@aries-framework/core'
 import { createCheqdSDK, DIDModule, ResourceModule, CheqdNetwork } from '@cheqd/sdk'
+import { CredoError, injectable } from '@credo-ts/core'
 
 import { CheqdModuleConfig } from '../CheqdModuleConfig'
 import { parseCheqdDid } from '../anoncreds/utils/identifiers'
@@ -43,7 +43,7 @@ export class CheqdLedgerService {
         modules: [DIDModule as unknown as AbstractCheqdSDKModule, ResourceModule as unknown as AbstractCheqdSDKModule],
         rpcUrl: network.rpcUrl,
         wallet: await network.cosmosPayerWallet.catch((error) => {
-          throw new AriesFrameworkError(`Error initializing cosmos payer wallet: ${error.message}`, { cause: error })
+          throw new CredoError(`Error initializing cosmos payer wallet: ${error.message}`, { cause: error })
         }),
       })
     }

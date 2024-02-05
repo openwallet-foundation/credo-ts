@@ -2,7 +2,7 @@ import type { ClassConstructor } from 'class-transformer'
 
 import { Transform, TransformationType, plainToInstance, instanceToPlain } from 'class-transformer'
 
-import { AriesFrameworkError } from '../../../../../error'
+import { CredoError } from '../../../../../error'
 import { PublicKey, publicKeyTypes } from '../publicKey'
 
 import { Authentication } from './Authentication'
@@ -45,7 +45,7 @@ export function AuthenticationTransformer() {
             const publicKeyJson = obj.publicKey.find((publicKey) => publicKey.id === auth.publicKey)
 
             if (!publicKeyJson) {
-              throw new AriesFrameworkError(`Invalid public key referenced ${auth.publicKey}`)
+              throw new CredoError(`Invalid public key referenced ${auth.publicKey}`)
             }
 
             // Referenced keys use other types than embedded keys.

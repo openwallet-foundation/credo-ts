@@ -3,13 +3,13 @@ import type { DummyRecord, DummyStateChangedEvent } from './dummy'
 import {
   HttpOutboundTransport,
   Agent,
-  AriesFrameworkError,
+  CredoError,
   ConsoleLogger,
   LogLevel,
   WsOutboundTransport,
   ConnectionsModule,
-} from '@aries-framework/core'
-import { agentDependencies } from '@aries-framework/node'
+} from '@credo-ts/core'
+import { agentDependencies } from '@credo-ts/node'
 import { filter, first, firstValueFrom, map, ReplaySubject, timeout } from 'rxjs'
 
 import { DummyEventTypes, DummyState, DummyModule } from './dummy'
@@ -52,7 +52,7 @@ const run = async () => {
   const invitationUrl = await (await agentDependencies.fetch(`http://localhost:${port}/invitation`)).text()
   const { connectionRecord } = await agent.oob.receiveInvitationFromUrl(invitationUrl)
   if (!connectionRecord) {
-    throw new AriesFrameworkError('Connection record for out-of-band invitation was not created.')
+    throw new CredoError('Connection record for out-of-band invitation was not created.')
   }
   await agent.connections.returnWhenIsConnected(connectionRecord.id)
 

@@ -1,8 +1,12 @@
-import type { AskarWalletPostgresStorageConfig } from '../wallet/AskarWalletPostgresStorageConfig'
-import type { WalletConfig } from '@aries-framework/core'
+import type { WalletConfig } from '@credo-ts/core'
 
-import { KeyDerivationMethod, WalletError } from '@aries-framework/core'
+import { KeyDerivationMethod, WalletError } from '@credo-ts/core'
 import { KdfMethod, StoreKeyMethod } from '@hyperledger/aries-askar-shared'
+
+import {
+  isAskarWalletPostgresStorageConfig,
+  isAskarWalletSqliteStorageConfig,
+} from '../wallet/AskarWalletStorageConfig'
 
 export const keyDerivationMethodToStoreKeyMethod = (keyDerivationMethod: KeyDerivationMethod) => {
   const correspondenceTable = {
@@ -17,12 +21,12 @@ export const keyDerivationMethodToStoreKeyMethod = (keyDerivationMethod: KeyDeri
 /**
  * Creates a proper askar wallet URI value based on walletConfig
  * @param walletConfig WalletConfig object
- * @param afjDataPath framework data path (used in case walletConfig.storage.path is undefined)
+ * @param credoDataPath framework data path (used in case walletConfig.storage.path is undefined)
  * @returns string containing the askar wallet URI
  */
 export const uriFromWalletConfig = (
   walletConfig: WalletConfig,
-  afjDataPath: string
+  credoDataPath: string
 ): { uri: string; path?: string } => {
   let uri = ''
   let path
@@ -32,32 +36,26 @@ export const uriFromWalletConfig = (
     walletConfig.storage = { type: 'sqlite' }
   }
 
-  if (walletConfig.storage.type === 'sqlite') {
-    if (walletConfig.storage.inMemory) {
+  const urlParams = []
+
+  const storageConfig = walletConfig.storage
+  if (isAskarWalletSqliteStorageConfig(storageConfig)) {
+    if (storageConfig.config?.inMemory) {
       uri = 'sqlite://:memory:'
     } else {
-      path = (walletConfig.storage.path as string) ?? `${afjDataPath}/wallet/${walletConfig.id}/sqlite.db`
+      path = storageConfig.config?.path ?? `${credoDataPath}/wallet/${walletConfig.id}/sqlite.db`
       uri = `sqlite://${path}`
     }
-  } else if (walletConfig.storage.type === 'postgres') {
-    const storageConfig = walletConfig.storage as unknown as AskarWalletPostgresStorageConfig
-
+  } else if (isAskarWalletPostgresStorageConfig(storageConfig)) {
     if (!storageConfig.config || !storageConfig.credentials) {
       throw new WalletError('Invalid storage configuration for postgres wallet')
     }
 
-    const urlParams = []
     if (storageConfig.config.connectTimeout !== undefined) {
       urlParams.push(`connect_timeout=${encodeURIComponent(storageConfig.config.connectTimeout)}`)
     }
     if (storageConfig.config.idleTimeout !== undefined) {
       urlParams.push(`idle_timeout=${encodeURIComponent(storageConfig.config.idleTimeout)}`)
-    }
-    if (storageConfig.config.maxConnections !== undefined) {
-      urlParams.push(`max_connections=${encodeURIComponent(storageConfig.config.maxConnections)}`)
-    }
-    if (storageConfig.config.minConnections !== undefined) {
-      urlParams.push(`min_connections=${encodeURIComponent(storageConfig.config.minConnections)}`)
     }
     if (storageConfig.credentials.adminAccount !== undefined) {
       urlParams.push(`admin_account=${encodeURIComponent(storageConfig.credentials.adminAccount)}`)
@@ -69,12 +67,20 @@ export const uriFromWalletConfig = (
     uri = `postgres://${encodeURIComponent(storageConfig.credentials.account)}:${encodeURIComponent(
       storageConfig.credentials.password
     )}@${storageConfig.config.host}/${encodeURIComponent(walletConfig.id)}`
-
-    if (urlParams.length > 0) {
-      uri = `${uri}?${urlParams.join('&')}`
-    }
   } else {
-    throw new WalletError(`Storage type not supported: ${walletConfig.storage.type}`)
+    throw new WalletError(`Storage type not supported: ${storageConfig.type}`)
+  }
+
+  // Common config options
+  if (storageConfig.config?.maxConnections !== undefined) {
+    urlParams.push(`max_connections=${encodeURIComponent(storageConfig.config.maxConnections)}`)
+  }
+  if (storageConfig.config?.minConnections !== undefined) {
+    urlParams.push(`min_connections=${encodeURIComponent(storageConfig.config.minConnections)}`)
+  }
+
+  if (urlParams.length > 0) {
+    uri = `${uri}?${urlParams.join('&')}`
   }
 
   return { uri, path }

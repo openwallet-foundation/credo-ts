@@ -8,14 +8,15 @@ import type {
   RegisterCredentialDefinitionReturnStateFinished,
   RegisterSchemaReturnStateFinished,
 } from '../src'
-import type { AutoAcceptProof, ConnectionRecord } from '@aries-framework/core'
+import type { AutoAcceptProof, ConnectionRecord } from '@credo-ts/core'
 
 import {
+  AgentEventTypes,
   TypedArrayEncoder,
   CacheModule,
   InMemoryLruCache,
   Agent,
-  AriesFrameworkError,
+  CredoError,
   AutoAcceptCredential,
   CredentialEventTypes,
   CredentialsModule,
@@ -26,17 +27,13 @@ import {
   V2CredentialProtocol,
   V2ProofProtocol,
   DidsModule,
-} from '@aries-framework/core'
+} from '@credo-ts/core'
 import { randomUUID } from 'crypto'
 
-import { AnonCredsRsModule } from '../../anoncreds-rs/src'
-import { anoncreds } from '../../anoncreds-rs/tests/helpers'
-import { AskarModule } from '../../askar/src'
-import { askarModuleConfig } from '../../askar/tests/helpers'
 import { sleep } from '../../core/src/utils/sleep'
 import { setupSubjectTransports, setupEventReplaySubjects } from '../../core/tests'
 import {
-  getAgentOptions,
+  getInMemoryAgentOptions,
   importExistingIndyDidFromPrivateKey,
   makeConnection,
   publicDidSeed,
@@ -44,14 +41,6 @@ import {
   waitForProofExchangeRecordSubject,
 } from '../../core/tests/helpers'
 import testLogger from '../../core/tests/logger'
-import {
-  IndySdkAnonCredsRegistry,
-  IndySdkIndyDidRegistrar,
-  IndySdkIndyDidResolver,
-  IndySdkModule,
-  IndySdkSovDidResolver,
-} from '../../indy-sdk/src'
-import { getIndySdkModuleConfig } from '../../indy-sdk/tests/setupIndySdkModule'
 import {
   IndyVdrAnonCredsRegistry,
   IndyVdrSovDidResolver,
@@ -72,55 +61,15 @@ import {
   LegacyIndyProofFormatService,
 } from '../src'
 
+import { anoncreds } from './helpers'
+
 // Helper type to get the type of the agents (with the custom modules) for the credential tests
-export type AnonCredsTestsAgent =
-  | Agent<ReturnType<typeof getLegacyAnonCredsModules> & { mediationRecipient?: any; mediator?: any }>
-  | Agent<ReturnType<typeof getAskarAnonCredsIndyModules> & { mediationRecipient?: any; mediator?: any }>
+export type AnonCredsTestsAgent = Agent<
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  ReturnType<typeof getAnonCredsIndyModules> & { mediationRecipient?: any; mediator?: any }
+>
 
-export const getLegacyAnonCredsModules = ({
-  autoAcceptCredentials,
-  autoAcceptProofs,
-}: { autoAcceptCredentials?: AutoAcceptCredential; autoAcceptProofs?: AutoAcceptProof } = {}) => {
-  const indyCredentialFormat = new LegacyIndyCredentialFormatService()
-  const indyProofFormat = new LegacyIndyProofFormatService()
-
-  // Register the credential and proof protocols
-  const modules = {
-    credentials: new CredentialsModule({
-      autoAcceptCredentials,
-      credentialProtocols: [
-        new V1CredentialProtocol({ indyCredentialFormat }),
-        new V2CredentialProtocol({
-          credentialFormats: [indyCredentialFormat],
-        }),
-      ],
-    }),
-    proofs: new ProofsModule({
-      autoAcceptProofs,
-      proofProtocols: [
-        new V1ProofProtocol({ indyProofFormat }),
-        new V2ProofProtocol({
-          proofFormats: [indyProofFormat],
-        }),
-      ],
-    }),
-    anoncreds: new AnonCredsModule({
-      registries: [new IndySdkAnonCredsRegistry()],
-    }),
-    dids: new DidsModule({
-      resolvers: [new IndySdkSovDidResolver(), new IndySdkIndyDidResolver()],
-      registrars: [new IndySdkIndyDidRegistrar()],
-    }),
-    indySdk: new IndySdkModule(getIndySdkModuleConfig()),
-    cache: new CacheModule({
-      cache: new InMemoryLruCache({ limit: 100 }),
-    }),
-  } as const
-
-  return modules
-}
-
-export const getAskarAnonCredsIndyModules = ({
+export const getAnonCredsIndyModules = ({
   autoAcceptCredentials,
   autoAcceptProofs,
 }: { autoAcceptCredentials?: AutoAcceptCredential; autoAcceptProofs?: AutoAcceptProof } = {}) => {
@@ -152,8 +101,6 @@ export const getAskarAnonCredsIndyModules = ({
     }),
     anoncreds: new AnonCredsModule({
       registries: [new IndyVdrAnonCredsRegistry()],
-    }),
-    anoncredsRs: new AnonCredsRsModule({
       anoncreds,
     }),
     indyVdr: new IndyVdrModule(indyVdrModuleConfig),
@@ -161,7 +108,6 @@ export const getAskarAnonCredsIndyModules = ({
       resolvers: [new IndyVdrSovDidResolver(), new IndyVdrIndyDidResolver()],
       registrars: [new IndyVdrIndyDidRegistrar()],
     }),
-    askar: new AskarModule(askarModuleConfig),
     cache: new CacheModule({
       cache: new InMemoryLruCache({ limit: 100 }),
     }),
@@ -352,12 +298,12 @@ export async function setupAnonCredsTests<
   createConnections?: CreateConnections
 }): Promise<SetupAnonCredsTestsReturn<VerifierName, CreateConnections>> {
   const issuerAgent = new Agent(
-    getAgentOptions(
+    getInMemoryAgentOptions(
       issuerName,
       {
         endpoints: ['rxjs:issuer'],
       },
-      getLegacyAnonCredsModules({
+      getAnonCredsIndyModules({
         autoAcceptCredentials,
         autoAcceptProofs,
       })
@@ -365,12 +311,12 @@ export async function setupAnonCredsTests<
   )
 
   const holderAgent = new Agent(
-    getAgentOptions(
+    getInMemoryAgentOptions(
       holderName,
       {
         endpoints: ['rxjs:holder'],
       },
-      getLegacyAnonCredsModules({
+      getAnonCredsIndyModules({
         autoAcceptCredentials,
         autoAcceptProofs,
       })
@@ -379,12 +325,12 @@ export async function setupAnonCredsTests<
 
   const verifierAgent = verifierName
     ? new Agent(
-        getAgentOptions(
+        getInMemoryAgentOptions(
           verifierName,
           {
             endpoints: ['rxjs:verifier'],
           },
-          getLegacyAnonCredsModules({
+          getAnonCredsIndyModules({
             autoAcceptCredentials,
             autoAcceptProofs,
           })
@@ -395,7 +341,11 @@ export async function setupAnonCredsTests<
   setupSubjectTransports(verifierAgent ? [issuerAgent, holderAgent, verifierAgent] : [issuerAgent, holderAgent])
   const [issuerReplay, holderReplay, verifierReplay] = setupEventReplaySubjects(
     verifierAgent ? [issuerAgent, holderAgent, verifierAgent] : [issuerAgent, holderAgent],
-    [CredentialEventTypes.CredentialStateChanged, ProofEventTypes.ProofStateChanged]
+    [
+      CredentialEventTypes.CredentialStateChanged,
+      ProofEventTypes.ProofStateChanged,
+      AgentEventTypes.AgentMessageProcessed,
+    ]
   )
 
   await issuerAgent.initialize()
@@ -501,9 +451,7 @@ async function registerSchema(
   testLogger.test(`created schema with id ${schemaState.schemaId}`, schema)
 
   if (schemaState.state !== 'finished') {
-    throw new AriesFrameworkError(
-      `Schema not created: ${schemaState.state === 'failed' ? schemaState.reason : 'Not finished'}`
-    )
+    throw new CredoError(`Schema not created: ${schemaState.state === 'failed' ? schemaState.reason : 'Not finished'}`)
   }
 
   return schemaState
@@ -516,12 +464,13 @@ async function registerCredentialDefinition(
 ): Promise<RegisterCredentialDefinitionReturnStateFinished> {
   const { credentialDefinitionState } = await agent.modules.anoncreds.registerCredentialDefinition({
     credentialDefinition,
-    supportRevocation: supportRevocation ?? false,
-    options: {},
+    options: {
+      supportRevocation: supportRevocation ?? false,
+    },
   })
 
   if (credentialDefinitionState.state !== 'finished') {
-    throw new AriesFrameworkError(
+    throw new CredoError(
       `Credential definition not created: ${
         credentialDefinitionState.state === 'failed' ? credentialDefinitionState.reason : 'Not finished'
       }`

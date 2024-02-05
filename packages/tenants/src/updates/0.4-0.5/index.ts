@@ -1,4 +1,4 @@
-import type { BaseAgent } from '@aries-framework/core'
+import type { BaseAgent } from '@credo-ts/core'
 
 import { migrateTenantRecordToV0_5 } from './tenantRecord'
 

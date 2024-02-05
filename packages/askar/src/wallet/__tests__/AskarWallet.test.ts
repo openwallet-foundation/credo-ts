@@ -5,7 +5,7 @@ import type {
   KeyPair,
   SignOptions,
   VerifyOptions,
-} from '@aries-framework/core'
+} from '@credo-ts/core'
 
 import {
   WalletKeyExistsError,
@@ -19,7 +19,7 @@ import {
   TypedArrayEncoder,
   KeyDerivationMethod,
   Buffer,
-} from '@aries-framework/core'
+} from '@credo-ts/core'
 import { Store } from '@hyperledger/aries-askar-shared'
 
 import { encodeToBase58 } from '../../../../core/src/utils/base58'
@@ -59,6 +59,7 @@ describe('AskarWallet basic operations', () => {
       KeyType.Bls12381g2,
       KeyType.Bls12381g1g2,
       KeyType.P256,
+      KeyType.K256,
     ])
   })
 
@@ -146,6 +147,23 @@ describe('AskarWallet basic operations', () => {
       key: ed25519Key,
     })
     await expect(askarWallet.verify({ key: ed25519Key, data: message, signature })).resolves.toStrictEqual(true)
+  })
+
+  test('Create K-256 keypair', async () => {
+    await expect(
+      askarWallet.createKey({ seed: Buffer.concat([seed, seed]), keyType: KeyType.K256 })
+    ).resolves.toMatchObject({
+      keyType: KeyType.K256,
+    })
+  })
+
+  test('Verify a signed message with a k256 publicKey', async () => {
+    const k256Key = await askarWallet.createKey({ keyType: KeyType.K256 })
+    const signature = await askarWallet.sign({
+      data: message,
+      key: k256Key,
+    })
+    await expect(askarWallet.verify({ key: k256Key, data: message, signature })).resolves.toStrictEqual(true)
   })
 })
 

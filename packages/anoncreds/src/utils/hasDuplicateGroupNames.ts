@@ -1,6 +1,6 @@
 import type { AnonCredsProofRequest } from '../models'
 
-import { AriesFrameworkError } from '@aries-framework/core'
+import { CredoError } from '@credo-ts/core'
 
 function attributeNamesToArray(proofRequest: AnonCredsProofRequest) {
   // Attributes can contain either a `name` string value or an `names` string array. We reduce it to a single array
@@ -22,8 +22,6 @@ export function assertNoDuplicateGroupsNamesInProofRequest(proofRequest: AnonCre
 
   const duplicates = predicates.filter((item) => attributes.indexOf(item) !== -1)
   if (duplicates.length > 0) {
-    throw new AriesFrameworkError(
-      `The proof request contains duplicate predicates and attributes: ${duplicates.toString()}`
-    )
+    throw new CredoError(`The proof request contains duplicate predicates and attributes: ${duplicates.toString()}`)
   }
 }

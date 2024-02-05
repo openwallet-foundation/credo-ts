@@ -15,7 +15,7 @@ import { EventEmitter } from '../../agent/EventEmitter'
 import { MessageSender } from '../../agent/MessageSender'
 import { OutboundMessageContext } from '../../agent/models'
 import { InjectionSymbols } from '../../constants'
-import { AriesFrameworkError } from '../../error'
+import { CredoError } from '../../error'
 import { inject, injectable } from '../../plugins'
 import { ConnectionService } from '../connections/services'
 
@@ -77,7 +77,7 @@ export class DiscoverFeaturesApi<
 
   public getService<PVT extends DiscoverFeaturesService['version']>(protocolVersion: PVT): DiscoverFeaturesService {
     if (!this.serviceMap[protocolVersion]) {
-      throw new AriesFrameworkError(`No discover features service registered for protocol version ${protocolVersion}`)
+      throw new CredoError(`No discover features service registered for protocol version ${protocolVersion}`)
     }
 
     return this.serviceMap[protocolVersion] as DiscoverFeaturesService
@@ -121,7 +121,10 @@ export class DiscoverFeaturesApi<
           // Return disclosures
           map((e) => e.payload.disclosures),
           // If we don't have an answer in timeoutMs miliseconds (no response, not supported, etc...) error
-          timeout(options.awaitDisclosuresTimeoutMs ?? 7000), // TODO: Harmonize default timeouts across the framework
+          timeout({
+            first: options.awaitDisclosuresTimeoutMs ?? 7000,
+            meta: 'DiscoverFeaturesApi.queryFeatures',
+          }), // TODO: Harmonize default timeouts across the framework
           // We want to return false if an error occurred
           catchError(() => of([]))
         )

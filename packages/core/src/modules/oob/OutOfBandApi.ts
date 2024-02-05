@@ -17,11 +17,16 @@ import { OutboundMessageContext } from '../../agent/models'
 import { InjectionSymbols } from '../../constants'
 import { Key } from '../../crypto'
 import { ServiceDecorator } from '../../decorators/service/ServiceDecorator'
-import { AriesFrameworkError } from '../../error'
+import { CredoError } from '../../error'
 import { Logger } from '../../logger'
 import { inject, injectable } from '../../plugins'
 import { JsonEncoder, JsonTransformer } from '../../utils'
-import { parseMessageType, supportsIncomingMessageType } from '../../utils/messageType'
+import {
+  parseDidCommProtocolUri,
+  parseMessageType,
+  supportsIncomingDidCommProtocolUri,
+  supportsIncomingMessageType,
+} from '../../utils/messageType'
 import { parseInvitationShortUrl } from '../../utils/parseInvitation'
 import { ConnectionsApi, DidExchangeState, HandshakeProtocol } from '../connections'
 import { DidCommDocumentService } from '../didcomm'
@@ -77,6 +82,7 @@ interface BaseReceiveOutOfBandInvitationConfig {
   routing?: Routing
   acceptInvitationTimeoutMs?: number
   isImplicit?: boolean
+  ourDid?: string
 }
 
 export type ReceiveOutOfBandInvitationConfig = Omit<BaseReceiveOutOfBandInvitationConfig, 'isImplicit'>
@@ -150,31 +156,30 @@ export class OutOfBandApi {
       config.appendedAttachments && config.appendedAttachments.length > 0 ? config.appendedAttachments : undefined
 
     if (!handshake && !messages) {
-      throw new AriesFrameworkError(
-        'One or both of handshake_protocols and requests~attach MUST be included in the message.'
-      )
+      throw new CredoError('One or both of handshake_protocols and requests~attach MUST be included in the message.')
     }
 
     if (!handshake && customHandshakeProtocols) {
-      throw new AriesFrameworkError(`Attribute 'handshake' can not be 'false' when 'handshakeProtocols' is defined.`)
+      throw new CredoError(`Attribute 'handshake' can not be 'false' when 'handshakeProtocols' is defined.`)
     }
 
     // For now we disallow creating multi-use invitation with attachments. This would mean we need multi-use
     // credential and presentation exchanges.
     if (messages && multiUseInvitation) {
-      throw new AriesFrameworkError("Attribute 'multiUseInvitation' can not be 'true' when 'messages' is defined.")
+      throw new CredoError("Attribute 'multiUseInvitation' can not be 'true' when 'messages' is defined.")
     }
 
-    let handshakeProtocols
+    let handshakeProtocols: string[] | undefined
     if (handshake) {
-      // Find supported handshake protocol preserving the order of handshake protocols defined
-      // by agent
+      // Assert ALL custom handshake protocols are supported
       if (customHandshakeProtocols) {
-        this.assertHandshakeProtocols(customHandshakeProtocols)
-        handshakeProtocols = customHandshakeProtocols
-      } else {
-        handshakeProtocols = this.getSupportedHandshakeProtocols()
+        this.assertHandshakeProtocolsSupported(customHandshakeProtocols)
       }
+
+      // Find supported handshake protocol preserving the order of handshake protocols defined by agent or in config
+      handshakeProtocols = this.getSupportedHandshakeProtocols(customHandshakeProtocols).map(
+        (p) => p.parsedProtocolUri.protocolUri
+      )
     }
 
     const routing = config.routing ?? (await this.routingService.getRouting(this.agentContext, {}))
@@ -364,11 +369,15 @@ export class OutOfBandApi {
    * @returns out-of-band record and connection record if one has been created.
    */
   public async receiveImplicitInvitation(config: ReceiveOutOfBandImplicitInvitationConfig) {
+    const handshakeProtocols = this.getSupportedHandshakeProtocols(
+      config.handshakeProtocols ?? [HandshakeProtocol.DidExchange]
+    ).map((p) => p.parsedProtocolUri.protocolUri)
+
     const invitation = new OutOfBandInvitation({
       id: config.did,
       label: config.label ?? '',
       services: [config.did],
-      handshakeProtocols: config.handshakeProtocols ?? [HandshakeProtocol.DidExchange],
+      handshakeProtocols,
     })
 
     return this._receiveInvitation(invitation, { ...config, isImplicit: true })
@@ -400,9 +409,7 @@ export class OutOfBandApi {
     const isConnectionless = handshakeProtocols === undefined || handshakeProtocols.length === 0
 
     if ((!handshakeProtocols || handshakeProtocols.length === 0) && (!messages || messages?.length === 0)) {
-      throw new AriesFrameworkError(
-        'One or both of handshake_protocols and requests~attach MUST be included in the message.'
-      )
+      throw new CredoError('One or both of handshake_protocols and requests~attach MUST be included in the message.')
     }
 
     // Make sure we haven't received this invitation before
@@ -414,7 +421,7 @@ export class OutOfBandApi {
         role: OutOfBandRole.Receiver,
       })
       if (existingOobRecordsFromThisId.length > 0) {
-        throw new AriesFrameworkError(
+        throw new CredoError(
           `An out of band record with invitation ${outOfBandInvitation.id} has already been received. Invitations should have a unique id.`
         )
       }
@@ -479,6 +486,7 @@ export class OutOfBandApi {
         reuseConnection,
         routing,
         timeoutMs: config.acceptInvitationTimeoutMs,
+        ourDid: config.ourDid,
       })
     }
 
@@ -514,12 +522,13 @@ export class OutOfBandApi {
        */
       routing?: Routing
       timeoutMs?: number
+      ourDid?: string
     }
   ) {
     const outOfBandRecord = await this.outOfBandService.getById(this.agentContext, outOfBandId)
 
     const { outOfBandInvitation } = outOfBandRecord
-    const { label, alias, imageUrl, autoAcceptConnection, reuseConnection } = config
+    const { label, alias, imageUrl, autoAcceptConnection, reuseConnection, ourDid } = config
     const services = outOfBandInvitation.getServices()
     const messages = outOfBandInvitation.getRequests()
     const timeoutMs = config.timeoutMs ?? 20000
@@ -577,14 +586,15 @@ export class OutOfBandApi {
         this.logger.debug('Connection does not exist or reuse is disabled. Creating a new connection.')
         // Find first supported handshake protocol preserving the order of handshake protocols
         // defined by `handshake_protocols` attribute in the invitation message
-        const handshakeProtocol = this.getFirstSupportedProtocol(handshakeProtocols)
+        const firstSupportedProtocol = this.getFirstSupportedProtocol(handshakeProtocols)
         connectionRecord = await this.connectionsApi.acceptOutOfBandInvitation(outOfBandRecord, {
           label,
           alias,
           imageUrl,
           autoAcceptConnection,
-          protocol: handshakeProtocol,
+          protocol: firstSupportedProtocol.handshakeProtocol,
           routing,
+          ourDid,
         })
       }
 
@@ -695,47 +705,81 @@ export class OutOfBandApi {
     return this.outOfBandService.deleteById(this.agentContext, outOfBandId)
   }
 
-  private assertHandshakeProtocols(handshakeProtocols: HandshakeProtocol[]) {
+  private assertHandshakeProtocolsSupported(handshakeProtocols: HandshakeProtocol[]) {
     if (!this.areHandshakeProtocolsSupported(handshakeProtocols)) {
       const supportedProtocols = this.getSupportedHandshakeProtocols()
-      throw new AriesFrameworkError(
+      throw new CredoError(
         `Handshake protocols [${handshakeProtocols}] are not supported. Supported protocols are [${supportedProtocols}]`
       )
     }
   }
 
   private areHandshakeProtocolsSupported(handshakeProtocols: HandshakeProtocol[]) {
-    const supportedProtocols = this.getSupportedHandshakeProtocols()
-    return handshakeProtocols.every((p) => supportedProtocols.includes(p))
+    const supportedProtocols = this.getSupportedHandshakeProtocols(handshakeProtocols)
+    return supportedProtocols.length === handshakeProtocols.length
   }
 
-  private getSupportedHandshakeProtocols(): HandshakeProtocol[] {
-    // TODO: update to featureRegistry
-    const handshakeMessageFamilies = ['https://didcomm.org/didexchange', 'https://didcomm.org/connections']
-    const handshakeProtocols =
-      this.messageHandlerRegistry.filterSupportedProtocolsByMessageFamilies(handshakeMessageFamilies)
+  private getSupportedHandshakeProtocols(limitToHandshakeProtocols?: HandshakeProtocol[]) {
+    const allHandshakeProtocols = limitToHandshakeProtocols ?? Object.values(HandshakeProtocol)
 
-    if (handshakeProtocols.length === 0) {
-      throw new AriesFrameworkError('There is no handshake protocol supported. Agent can not create a connection.')
+    // Replace .x in the handshake protocol with .0 to allow it to be parsed
+    const parsedHandshakeProtocolUris = allHandshakeProtocols.map((h) => ({
+      handshakeProtocol: h,
+      parsedProtocolUri: parseDidCommProtocolUri(h.replace('.x', '.0')),
+    }))
+
+    // Now find all handshake protocols that start with the protocol uri without minor version '<base-uri>/<protocol-name>/<major-version>.'
+    const supportedHandshakeProtocols = this.messageHandlerRegistry.filterSupportedProtocolsByProtocolUris(
+      parsedHandshakeProtocolUris.map((p) => p.parsedProtocolUri)
+    )
+
+    if (supportedHandshakeProtocols.length === 0) {
+      throw new CredoError('There is no handshake protocol supported. Agent can not create a connection.')
     }
 
-    // Order protocols according to `handshakeMessageFamilies` array
-    const orderedProtocols = handshakeMessageFamilies
-      .map((messageFamily) => handshakeProtocols.find((p) => p.startsWith(messageFamily)))
-      .filter((item): item is string => !!item)
+    // Order protocols according to `parsedHandshakeProtocolUris` array (order of preference)
+    const orderedProtocols = parsedHandshakeProtocolUris
+      .map((p) => {
+        const found = supportedHandshakeProtocols.find((s) =>
+          supportsIncomingDidCommProtocolUri(s, p.parsedProtocolUri)
+        )
+        // We need to override the parsedProtocolUri with the one from the supported protocols, as we used `.0` as the minor
+        // version before. But when we return it, we want to return the correct minor version that we actually support
+        return found ? { ...p, parsedProtocolUri: found } : null
+      })
+      .filter((p): p is NonNullable<typeof p> => p !== null)
 
-    return orderedProtocols as HandshakeProtocol[]
+    return orderedProtocols
   }
 
-  private getFirstSupportedProtocol(handshakeProtocols: HandshakeProtocol[]) {
+  /**
+   * Get the first supported protocol based on the handshake protocols provided in the out of band
+   * invitation.
+   *
+   * Returns an enum value from {@link HandshakeProtocol} or throw an error if no protocol is supported.
+   * Minor versions are ignored when selecting a supported protocols, so if the `outOfBandInvitationSupportedProtocolsWithMinorVersion`
+   * value is `https://didcomm.org/didexchange/1.0` and the agent supports `https://didcomm.org/didexchange/1.1`
+   * this will be fine, and the returned value will be {@link HandshakeProtocol.DidExchange}.
+   */
+  private getFirstSupportedProtocol(protocolUris: string[]) {
     const supportedProtocols = this.getSupportedHandshakeProtocols()
-    const handshakeProtocol = handshakeProtocols.find((p) => supportedProtocols.includes(p))
-    if (!handshakeProtocol) {
-      throw new AriesFrameworkError(
-        `Handshake protocols [${handshakeProtocols}] are not supported. Supported protocols are [${supportedProtocols}]`
+    const parsedProtocolUris = protocolUris.map(parseDidCommProtocolUri)
+
+    const firstSupportedProtocol = supportedProtocols.find((supportedProtocol) =>
+      parsedProtocolUris.find((parsedProtocol) =>
+        supportsIncomingDidCommProtocolUri(supportedProtocol.parsedProtocolUri, parsedProtocol)
+      )
+    )
+
+    if (!firstSupportedProtocol) {
+      throw new CredoError(
+        `Handshake protocols [${protocolUris}] are not supported. Supported protocols are [${supportedProtocols.map(
+          (p) => p.handshakeProtocol
+        )}]`
       )
     }
-    return handshakeProtocol
+
+    return firstSupportedProtocol
   }
 
   private async findExistingConnection(outOfBandInvitation: OutOfBandInvitation) {
@@ -771,7 +815,7 @@ export class OutOfBandApi {
     })
 
     if (!plaintextMessage) {
-      throw new AriesFrameworkError('There is no message in requests~attach supported by agent.')
+      throw new CredoError('There is no message in requests~attach supported by agent.')
     }
 
     // Make sure message has correct parent thread id
@@ -795,7 +839,7 @@ export class OutOfBandApi {
     messages: PlaintextMessage[]
   ) {
     if (!services || services.length === 0) {
-      throw new AriesFrameworkError(`There are no services. We can not emit messages`)
+      throw new CredoError(`There are no services. We can not emit messages`)
     }
 
     const supportedMessageTypes = this.messageHandlerRegistry.supportedMessageTypes
@@ -805,7 +849,7 @@ export class OutOfBandApi {
     })
 
     if (!plaintextMessage) {
-      throw new AriesFrameworkError('There is no message in requests~attach supported by agent.')
+      throw new CredoError('There is no message in requests~attach supported by agent.')
     }
 
     // Make sure message has correct parent thread id
@@ -831,7 +875,7 @@ export class OutOfBandApi {
       plaintextMessage['~thread']?.pthid &&
       plaintextMessage['~thread'].pthid !== outOfBandRecord.outOfBandInvitation.id
     ) {
-      throw new AriesFrameworkError(
+      throw new CredoError(
         `Out of band invitation requests~attach message contains parent thread id ${plaintextMessage['~thread'].pthid} that does not match the invitation id ${outOfBandRecord.outOfBandInvitation.id}`
       )
     }
@@ -871,7 +915,10 @@ export class OutOfBandApi {
         ),
         // If the event is found, we return the value true
         map(() => true),
-        timeout(15000),
+        timeout({
+          first: 15000,
+          meta: 'OutOfBandApi.handleHandshakeReuse',
+        }),
         // If timeout is reached, we return false
         catchError(() => of(false))
       )

@@ -1,26 +1,27 @@
 import type { CreateTenantOptions, GetTenantAgentOptions, WithTenantAgentCallback } from './TenantsApiOptions'
-import type { DefaultAgentModules, ModulesMap } from '@aries-framework/core'
+import type { TenantRecord } from './repository'
+import type { DefaultAgentModules, ModulesMap, Query } from '@credo-ts/core'
 
-import { AgentContext, inject, InjectionSymbols, AgentContextProvider, injectable, Logger } from '@aries-framework/core'
+import { AgentContext, inject, InjectionSymbols, AgentContextProvider, injectable, Logger } from '@credo-ts/core'
 
 import { TenantAgent } from './TenantAgent'
 import { TenantRecordService } from './services'
 
 @injectable()
 export class TenantsApi<AgentModules extends ModulesMap = DefaultAgentModules> {
-  private agentContext: AgentContext
+  public readonly rootAgentContext: AgentContext
   private tenantRecordService: TenantRecordService
   private agentContextProvider: AgentContextProvider
   private logger: Logger
 
   public constructor(
     tenantRecordService: TenantRecordService,
-    agentContext: AgentContext,
+    rootAgentContext: AgentContext,
     @inject(InjectionSymbols.AgentContextProvider) agentContextProvider: AgentContextProvider,
     @inject(InjectionSymbols.Logger) logger: Logger
   ) {
     this.tenantRecordService = tenantRecordService
-    this.agentContext = agentContext
+    this.rootAgentContext = rootAgentContext
     this.agentContextProvider = agentContextProvider
     this.logger = logger
   }
@@ -58,7 +59,7 @@ export class TenantsApi<AgentModules extends ModulesMap = DefaultAgentModules> {
 
   public async createTenant(options: CreateTenantOptions) {
     this.logger.debug(`Creating tenant with label ${options.config.label}`)
-    const tenantRecord = await this.tenantRecordService.createTenant(this.agentContext, options.config)
+    const tenantRecord = await this.tenantRecordService.createTenant(this.rootAgentContext, options.config)
 
     // This initializes the tenant agent, creates the wallet etc...
     const tenantAgent = await this.getTenantAgent({ tenantId: tenantRecord.id })
@@ -71,12 +72,12 @@ export class TenantsApi<AgentModules extends ModulesMap = DefaultAgentModules> {
 
   public async getTenantById(tenantId: string) {
     this.logger.debug(`Getting tenant by id '${tenantId}'`)
-    return this.tenantRecordService.getTenantById(this.agentContext, tenantId)
+    return this.tenantRecordService.getTenantById(this.rootAgentContext, tenantId)
   }
 
   public async findTenantsByLabel(label: string) {
     this.logger.debug(`Finding tenants by label '${label}'`)
-    return this.tenantRecordService.findTenantsByLabel(this.agentContext, label)
+    return this.tenantRecordService.findTenantsByLabel(this.rootAgentContext, label)
   }
 
   public async deleteTenantById(tenantId: string) {
@@ -89,6 +90,19 @@ export class TenantsApi<AgentModules extends ModulesMap = DefaultAgentModules> {
     this.logger.trace(`Shutting down agent for tenant '${tenantId}'`)
     await tenantAgent.endSession()
 
-    return this.tenantRecordService.deleteTenantById(this.agentContext, tenantId)
+    return this.tenantRecordService.deleteTenantById(this.rootAgentContext, tenantId)
+  }
+
+  public async updateTenant(tenant: TenantRecord) {
+    await this.tenantRecordService.updateTenant(this.rootAgentContext, tenant)
+  }
+
+  public async findTenantsByQuery(query: Query<TenantRecord>) {
+    return this.tenantRecordService.findTenantsByQuery(this.rootAgentContext, query)
+  }
+
+  public async getAllTenants() {
+    this.logger.debug('Getting all tenants')
+    return this.tenantRecordService.getAllTenants(this.rootAgentContext)
   }
 }

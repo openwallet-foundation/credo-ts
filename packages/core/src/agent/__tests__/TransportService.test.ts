@@ -1,5 +1,8 @@
-import { getMockConnection } from '../../../tests/helpers'
+import { Subject } from 'rxjs'
+
+import { agentDependencies, getAgentContext, getMockConnection } from '../../../tests/helpers'
 import { DidExchangeRole } from '../../modules/connections'
+import { EventEmitter } from '../EventEmitter'
 import { TransportService } from '../TransportService'
 
 import { DummyTransportSession } from './stubs'
@@ -9,7 +12,7 @@ describe('TransportService', () => {
     let transportService: TransportService
 
     beforeEach(() => {
-      transportService = new TransportService()
+      transportService = new TransportService(getAgentContext(), new EventEmitter(agentDependencies, new Subject()))
     })
 
     test(`remove session saved for a given connection`, () => {

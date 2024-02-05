@@ -1,11 +1,10 @@
-import { Agent, KeyDerivationMethod, KeyType, TypedArrayEncoder } from '@aries-framework/core'
-import { agentDependencies } from '@aries-framework/node'
-import * as indySdk from 'indy-sdk'
+import { Agent, KeyType, TypedArrayEncoder } from '@credo-ts/core'
 
-import { IndySdkModule } from '../../indy-sdk/src/IndySdkModule'
+import { getInMemoryAgentOptions } from '../../core/tests'
 import { AnonCredsModule } from '../src'
 
 import { InMemoryAnonCredsRegistry } from './InMemoryAnonCredsRegistry'
+import { anoncreds } from './helpers'
 
 const existingSchemas = {
   '7Cd2Yj9yEZNcmNoH54tq9i:2:Test Schema:1.0.0': {
@@ -71,33 +70,26 @@ const existingRevocationStatusLists = {
   },
 }
 
-const agent = new Agent({
-  config: {
-    label: '@aries-framework/anoncreds',
-    walletConfig: {
-      id: '@aries-framework/anoncreds',
-      key: 'CwNJroKHTSSj3XvE7ZAnuKiTn2C4QkFvxEqfm5rzhNrb',
-      keyDerivationMethod: KeyDerivationMethod.Raw,
-    },
-  },
-  modules: {
-    indySdk: new IndySdkModule({
-      indySdk,
-      autoCreateLinkSecret: false,
-    }),
-    anoncreds: new AnonCredsModule({
-      registries: [
-        new InMemoryAnonCredsRegistry({
-          existingSchemas,
-          existingCredentialDefinitions,
-          existingRevocationRegistryDefinitions,
-          existingRevocationStatusLists,
-        }),
-      ],
-    }),
-  },
-  dependencies: agentDependencies,
-})
+const agent = new Agent(
+  getInMemoryAgentOptions(
+    'credo-anoncreds-package',
+    {},
+    {
+      anoncreds: new AnonCredsModule({
+        autoCreateLinkSecret: false,
+        anoncreds,
+        registries: [
+          new InMemoryAnonCredsRegistry({
+            existingSchemas,
+            existingCredentialDefinitions,
+            existingRevocationRegistryDefinitions,
+            existingRevocationStatusLists,
+          }),
+        ],
+      }),
+    }
+  )
+)
 
 describe('AnonCreds API', () => {
   beforeEach(async () => {
@@ -201,8 +193,9 @@ describe('AnonCreds API', () => {
         schemaId: '7Cd2Yj9yEZNcmNoH54tq9i:2:Test Schema:1.0.0',
         tag: 'TAG',
       },
-      supportRevocation: false,
-      options: {},
+      options: {
+        supportRevocation: false,
+      },
     })
 
     expect(credentialDefinitionResult).toEqual({

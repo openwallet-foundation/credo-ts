@@ -10,13 +10,7 @@ import { sleep } from '../packages/core/src/utils/sleep'
 import { setupEventReplaySubjects } from '../packages/core/tests'
 import { makeConnection } from '../packages/core/tests/helpers'
 
-import {
-  CredentialState,
-  MediationState,
-  ProofState,
-  CredentialEventTypes,
-  ProofEventTypes,
-} from '@aries-framework/core'
+import { CredentialState, MediationState, ProofState, CredentialEventTypes, ProofEventTypes } from '@credo-ts/core'
 
 export async function e2eTest({
   mediatorAgent,

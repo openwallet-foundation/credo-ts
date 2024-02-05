@@ -3,7 +3,7 @@ import type { GetProofsResult } from './models/GetProofsResult'
 import type { GetTypeOptions } from './models/GetTypeOptions'
 import type { JsonObject, JsonValue } from '../../../types'
 
-import { AriesFrameworkError } from '../../../error'
+import { CredoError } from '../../../error'
 import { SECURITY_CONTEXT_URL } from '../constants'
 
 import jsonld from './libraries/jsonld'
@@ -38,7 +38,7 @@ export function assertOnlyW3cJsonLdVerifiableCredentials(
   credentials: unknown[]
 ): asserts credentials is W3cJsonLdVerifiableCredential[] {
   if (credentials.some((c) => !(c instanceof W3cJsonLdVerifiableCredential))) {
-    throw new AriesFrameworkError('JSON-LD VPs can only contain JSON-LD VCs')
+    throw new CredoError('JSON-LD VPs can only contain JSON-LD VCs')
   }
 }
 
@@ -67,7 +67,7 @@ const PROOF_PROPERTY = 'proof'
  * @returns {GetProofsResult} An object containing the matched proofs and the JSON-LD document
  */
 export const getProofs = async (options: GetProofsOptions): Promise<GetProofsResult> => {
-  const { proofType, skipProofCompaction, documentLoader, expansionMap } = options
+  const { proofType, skipProofCompaction, documentLoader } = options
   let { document } = options
 
   let proofs
@@ -76,7 +76,6 @@ export const getProofs = async (options: GetProofsOptions): Promise<GetProofsRes
     // document to find the proof
     document = await jsonld.compact(document, SECURITY_CONTEXT_URL, {
       documentLoader,
-      expansionMap,
       compactToRelative: false,
     })
   }
@@ -115,7 +114,7 @@ export const getTypeInfo = async (
   document: JsonObject,
   options: GetTypeOptions
 ): Promise<{ types: string[]; alias: string }> => {
-  const { documentLoader, expansionMap } = options
+  const { documentLoader } = options
 
   // determine `@type` alias, if any
   // eslint-disable-next-line @typescript-eslint/ban-ts-comment
@@ -124,7 +123,6 @@ export const getTypeInfo = async (
 
   const compacted = await jsonld.compact({ '@type': '_:b0' }, context, {
     documentLoader,
-    expansionMap,
   })
 
   delete compacted['@context']
@@ -139,7 +137,7 @@ export const getTypeInfo = async (
   // @ts-ignore - needed because getValues is not part of the public API.
   toExpand['@type'] = jsonld.getValues(document, '@type').concat(jsonld.getValues(document, alias))
 
-  const expanded = (await jsonld.expand(toExpand, { documentLoader, expansionMap }))[0] || {}
+  const expanded = (await jsonld.expand(toExpand, { documentLoader }))[0] || {}
 
   // eslint-disable-next-line @typescript-eslint/ban-ts-comment
   // @ts-ignore - needed because getValues is not part of the public API.

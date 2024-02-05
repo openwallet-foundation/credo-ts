@@ -1,7 +1,6 @@
-import { Agent, AgentContext, InjectionSymbols } from '@aries-framework/core'
+import { Agent, AgentContext, InjectionSymbols } from '@credo-ts/core'
 
-import { indySdk, getAgentContext, getAgentOptions, mockFunction } from '../../../core/tests'
-import { IndySdkModule } from '../../../indy-sdk/src'
+import { getAgentContext, getInMemoryAgentOptions, mockFunction } from '../../../core/tests'
 import { TenantAgent } from '../TenantAgent'
 import { TenantsApi } from '../TenantsApi'
 import { TenantAgentContextProvider } from '../context/TenantAgentContextProvider'
@@ -16,7 +15,7 @@ const AgentContextProviderMock = TenantAgentContextProvider as jest.Mock<TenantA
 
 const tenantRecordService = new TenantRecordServiceMock()
 const agentContextProvider = new AgentContextProviderMock()
-const agentOptions = getAgentOptions('TenantsApi', {}, { indySdk: new IndySdkModule({ indySdk }) })
+const agentOptions = getInMemoryAgentOptions('TenantsApi')
 const rootAgent = new Agent(agentOptions)
 rootAgent.dependencyManager.registerInstance(InjectionSymbols.AgentContextProvider, agentContextProvider)
 
@@ -49,7 +48,7 @@ describe('TenantsApi', () => {
         key: 'Wallet: TenantsApi: tenant-id',
       })
 
-      expect(agentContextProvider.getAgentContextForContextCorrelationId).toBeCalledWith('tenant-id')
+      expect(agentContextProvider.getAgentContextForContextCorrelationId).toHaveBeenCalledWith('tenant-id')
       expect(tenantAgent).toBeInstanceOf(TenantAgent)
       expect(tenantAgent.context).toBe(tenantAgentContext)
 
@@ -87,7 +86,7 @@ describe('TenantsApi', () => {
           key: 'Wallet: TenantsApi: tenant-id',
         })
 
-        expect(agentContextProvider.getAgentContextForContextCorrelationId).toBeCalledWith('tenant-id')
+        expect(agentContextProvider.getAgentContextForContextCorrelationId).toHaveBeenCalledWith('tenant-id')
         expect(tenantAgent).toBeInstanceOf(TenantAgent)
         expect(tenantAgent.context).toBe(tenantAgentContext)
 
@@ -126,7 +125,7 @@ describe('TenantsApi', () => {
             key: 'Wallet: TenantsApi: tenant-id',
           })
 
-          expect(agentContextProvider.getAgentContextForContextCorrelationId).toBeCalledWith('tenant-id')
+          expect(agentContextProvider.getAgentContextForContextCorrelationId).toHaveBeenCalledWith('tenant-id')
           expect(tenantAgent).toBeInstanceOf(TenantAgent)
           expect(tenantAgent.context).toBe(tenantAgentContext)
 
@@ -207,6 +206,18 @@ describe('TenantsApi', () => {
       expect(tenantAgentMock.wallet.delete).toHaveBeenCalled()
       expect(tenantAgentMock.endSession).toHaveBeenCalled()
       expect(tenantRecordService.deleteTenantById).toHaveBeenCalledWith(rootAgent.context, 'tenant-id')
+    })
+  })
+
+  describe('getAllTenants', () => {
+    test('calls get all tenants on tenant service', async () => {
+      const tenantRecords = jest.fn() as unknown as Array<TenantRecord>
+      mockFunction(tenantRecordService.getAllTenants).mockResolvedValue(tenantRecords)
+
+      const actualTenantRecords = await tenantsApi.getAllTenants()
+
+      expect(tenantRecordService.getAllTenants).toHaveBeenCalledWith(rootAgent.context)
+      expect(actualTenantRecords).toBe(tenantRecords)
     })
   })
 })

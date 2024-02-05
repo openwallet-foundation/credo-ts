@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 
-import type { JsonObject, DocumentLoader, Proof } from '@aries-framework/core'
+import type { JsonObject, DocumentLoader, Proof } from '@credo-ts/core'
 
 /**
  * Options for creating a proof
@@ -34,11 +34,7 @@ export interface DeriveProofOptions {
    */
   // eslint-disable-next-line
   documentLoader?: DocumentLoader
-  /**
-   * Optional expansion map
-   */
-  // eslint-disable-next-line
-  expansionMap?: () => void
+
   /**
    * Nonce to include in the derived proof
    */

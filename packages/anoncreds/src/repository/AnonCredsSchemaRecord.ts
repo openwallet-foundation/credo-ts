@@ -1,8 +1,8 @@
 import type { AnonCredsSchemaRecordMetadata } from './anonCredsSchemaRecordMetadataTypes'
 import type { AnonCredsSchema } from '../models'
-import type { TagsBase } from '@aries-framework/core'
+import type { TagsBase } from '@credo-ts/core'
 
-import { BaseRecord, utils } from '@aries-framework/core'
+import { BaseRecord, utils } from '@credo-ts/core'
 
 import { getUnqualifiedSchemaId, isDidIndySchemaId, parseIndySchemaId } from '../utils/indyIdentifiers'
 

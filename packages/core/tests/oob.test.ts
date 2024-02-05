@@ -2,13 +2,13 @@
 import type { SubjectMessage } from '../../../tests/transport/SubjectInboundTransport'
 import type { V1CredentialProtocol } from '../../anoncreds/src'
 import type { CreateCredentialOfferOptions } from '../src/modules/credentials'
-import type { AgentMessage, AgentMessageReceivedEvent } from '@aries-framework/core'
+import type { AgentMessage, AgentMessageReceivedEvent } from '@credo-ts/core'
 
 import { Subject } from 'rxjs'
 
 import { SubjectInboundTransport } from '../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutboundTransport'
-import { getLegacyAnonCredsModules, prepareForAnonCredsIssuance } from '../../anoncreds/tests/legacyAnonCredsSetup'
+import { getAnonCredsIndyModules, prepareForAnonCredsIssuance } from '../../anoncreds/tests/legacyAnonCredsSetup'
 import { Agent } from '../src/agent/Agent'
 import { Key } from '../src/crypto'
 import { DidExchangeState, HandshakeProtocol } from '../src/modules/connections'
@@ -20,25 +20,26 @@ import { OutOfBandInvitation } from '../src/modules/oob/messages'
 import { JsonEncoder, JsonTransformer } from '../src/utils'
 
 import { TestMessage } from './TestMessage'
-import { getAgentOptions, waitForCredentialRecord } from './helpers'
+import { getInMemoryAgentOptions, waitForCredentialRecord } from './helpers'
 
-import { AgentEventTypes, AriesFrameworkError, AutoAcceptCredential, CredentialState } from '@aries-framework/core'
+import { AgentEventTypes, CredoError, AutoAcceptCredential, CredentialState } from '@credo-ts/core'
 
-const faberAgentOptions = getAgentOptions(
+// FIXME: oob.test doesn't need heavy AnonCreds / indy dependencies
+const faberAgentOptions = getInMemoryAgentOptions(
   'Faber Agent OOB',
   {
     endpoints: ['rxjs:faber'],
   },
-  getLegacyAnonCredsModules({
+  getAnonCredsIndyModules({
     autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
   })
 )
-const aliceAgentOptions = getAgentOptions(
+const aliceAgentOptions = getInMemoryAgentOptions(
   'Alice Agent OOB',
   {
     endpoints: ['rxjs:alice'],
   },
-  getLegacyAnonCredsModules({
+  getAnonCredsIndyModules({
     autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
   })
 )
@@ -63,8 +64,8 @@ describe('out of band', () => {
     autoAcceptConnection: false,
   }
 
-  let faberAgent: Agent<ReturnType<typeof getLegacyAnonCredsModules>>
-  let aliceAgent: Agent<ReturnType<typeof getLegacyAnonCredsModules>>
+  let faberAgent: Agent<ReturnType<typeof getAnonCredsIndyModules>>
+  let aliceAgent: Agent<ReturnType<typeof getAnonCredsIndyModules>>
   let credentialTemplate: CreateCredentialOfferOptions<[V1CredentialProtocol]>
 
   beforeAll(async () => {
@@ -145,9 +146,7 @@ describe('out of band', () => {
   describe('createInvitation', () => {
     test('throw error when there is no handshake or message', async () => {
       await expect(faberAgent.oob.createInvitation({ label: 'test-connection', handshake: false })).rejects.toEqual(
-        new AriesFrameworkError(
-          'One or both of handshake_protocols and requests~attach MUST be included in the message.'
-        )
+        new CredoError('One or both of handshake_protocols and requests~attach MUST be included in the message.')
       )
     })
 
@@ -158,9 +157,7 @@ describe('out of band', () => {
           messages: [{} as AgentMessage],
           multiUseInvitation: true,
         })
-      ).rejects.toEqual(
-        new AriesFrameworkError("Attribute 'multiUseInvitation' can not be 'true' when 'messages' is defined.")
-      )
+      ).rejects.toEqual(new CredoError("Attribute 'multiUseInvitation' can not be 'true' when 'messages' is defined."))
     })
 
     test('handles empty messages array as no messages being passed', async () => {
@@ -170,9 +167,7 @@ describe('out of band', () => {
           handshake: false,
         })
       ).rejects.toEqual(
-        new AriesFrameworkError(
-          'One or both of handshake_protocols and requests~attach MUST be included in the message.'
-        )
+        new CredoError('One or both of handshake_protocols and requests~attach MUST be included in the message.')
       )
     })
 
@@ -195,7 +190,7 @@ describe('out of band', () => {
       const { outOfBandInvitation } = await faberAgent.oob.createInvitation(makeConnectionConfig)
 
       // expect supported handshake protocols
-      expect(outOfBandInvitation.handshakeProtocols).toContain(HandshakeProtocol.DidExchange)
+      expect(outOfBandInvitation.handshakeProtocols).toContain('https://didcomm.org/didexchange/1.1')
       expect(outOfBandInvitation.getRequests()).toBeUndefined()
 
       // expect contains services
@@ -243,7 +238,7 @@ describe('out of band', () => {
       })
 
       // expect supported handshake protocols
-      expect(outOfBandInvitation.handshakeProtocols).toContain(HandshakeProtocol.Connections)
+      expect(outOfBandInvitation.handshakeProtocols).toContain('https://didcomm.org/connections/1.0')
       expect(outOfBandInvitation.getRequests()).toHaveLength(1)
 
       // expect contains services
@@ -613,7 +608,7 @@ describe('out of band', () => {
 
       // Try to receive the invitation again
       await expect(aliceAgent.oob.receiveInvitation(outOfBandInvitation)).rejects.toThrow(
-        new AriesFrameworkError(
+        new CredoError(
           `An out of band record with invitation ${outOfBandInvitation.id} has already been received. Invitations should have a unique id.`
         )
       )
@@ -691,8 +686,8 @@ describe('out of band', () => {
       outOfBandInvitation.handshakeProtocols = [unsupportedProtocol as HandshakeProtocol]
 
       await expect(aliceAgent.oob.receiveInvitation(outOfBandInvitation, receiveInvitationConfig)).rejects.toEqual(
-        new AriesFrameworkError(
-          `Handshake protocols [${unsupportedProtocol}] are not supported. Supported protocols are [https://didcomm.org/didexchange/1.0,https://didcomm.org/connections/1.0]`
+        new CredoError(
+          `Handshake protocols [${unsupportedProtocol}] are not supported. Supported protocols are [https://didcomm.org/didexchange/1.x,https://didcomm.org/connections/1.x]`
         )
       )
     })
@@ -701,9 +696,7 @@ describe('out of band', () => {
       const outOfBandInvitation = new OutOfBandInvitation({ label: 'test-connection', services: [] })
 
       await expect(aliceAgent.oob.receiveInvitation(outOfBandInvitation, receiveInvitationConfig)).rejects.toEqual(
-        new AriesFrameworkError(
-          'One or both of handshake_protocols and requests~attach MUST be included in the message.'
-        )
+        new CredoError('One or both of handshake_protocols and requests~attach MUST be included in the message.')
       )
     })
 
@@ -716,7 +709,7 @@ describe('out of band', () => {
       })
 
       await expect(aliceAgent.oob.receiveInvitation(outOfBandInvitation, receiveInvitationConfig)).rejects.toEqual(
-        new AriesFrameworkError('There is no message in requests~attach supported by agent.')
+        new CredoError('There is no message in requests~attach supported by agent.')
       )
     })
   })

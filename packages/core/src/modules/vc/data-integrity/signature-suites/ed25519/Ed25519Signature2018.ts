@@ -155,11 +155,6 @@ export class Ed25519Signature2018 extends JwsLinkedDataSignature {
    *   recommended to use one that provides static known documents, instead of
    *   fetching from the web) for returning contexts, controller documents,
    *   keys, and other relevant URLs needed for the proof.
-   * @param {Function} [options.expansionMap] - A custom expansion map that is
-   *   passed to the JSON-LD processor; by default a function that will throw
-   *   an error when unmapped properties are detected in the input, use `false`
-   *   to turn this off and allow unmapped properties to be dropped or use a
-   *   custom function.
    *
    * @returns {Promise<boolean>} Whether a match for the proof was found.
    */
@@ -169,7 +164,6 @@ export class Ed25519Signature2018 extends JwsLinkedDataSignature {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     purpose: any
     documentLoader?: DocumentLoader
-    expansionMap?: () => void
   }) {
     if (!_includesCompatibleContext({ document: options.document })) {
       return false
@@ -179,7 +173,6 @@ export class Ed25519Signature2018 extends JwsLinkedDataSignature {
       document: options.document,
       purpose: options.purpose,
       documentLoader: options.documentLoader,
-      expansionMap: options.expansionMap,
     })
   }
 }

@@ -3,7 +3,6 @@ import type { CredentialProtocol } from '../protocol/CredentialProtocol'
 import { FeatureRegistry } from '../../../agent/FeatureRegistry'
 import { Protocol } from '../../../agent/models/features/Protocol'
 import { DependencyManager } from '../../../plugins/DependencyManager'
-import { CredentialsApi } from '../CredentialsApi'
 import { CredentialsModule } from '../CredentialsModule'
 import { CredentialsModuleConfig } from '../CredentialsModuleConfig'
 import { V2CredentialProtocol } from '../protocol'
@@ -26,9 +25,6 @@ describe('CredentialsModule', () => {
       credentialProtocols: [],
     })
     credentialsModule.register(dependencyManager, featureRegistry)
-
-    expect(dependencyManager.registerContextScoped).toHaveBeenCalledTimes(1)
-    expect(dependencyManager.registerContextScoped).toHaveBeenCalledWith(CredentialsApi)
 
     expect(dependencyManager.registerInstance).toHaveBeenCalledTimes(1)
     expect(dependencyManager.registerInstance).toHaveBeenCalledWith(CredentialsModuleConfig, credentialsModule.config)

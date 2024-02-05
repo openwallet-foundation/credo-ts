@@ -1,7 +1,7 @@
-import type { AgentContextProvider, RoutingCreatedEvent, EncryptedMessage } from '@aries-framework/core'
+import type { AgentContextProvider, RoutingCreatedEvent, EncryptedMessage } from '@credo-ts/core'
 
 import {
-  AriesFrameworkError,
+  CredoError,
   injectable,
   AgentContext,
   EventEmitter,
@@ -14,7 +14,7 @@ import {
   isValidJweStructure,
   JsonEncoder,
   isJsonObject,
-} from '@aries-framework/core'
+} from '@credo-ts/core'
 
 import { TenantRecordService } from '../services'
 
@@ -93,7 +93,7 @@ export class TenantAgentContextProvider implements AgentContextProvider {
         inboundMessage,
         recipientKeys: recipientKeys.map((key) => key.fingerprint),
       })
-      throw new AriesFrameworkError("Couldn't determine tenant id for inbound message. Unable to create context")
+      throw new CredoError("Couldn't determine tenant id for inbound message. Unable to create context")
     }
 
     const agentContext = await this.getAgentContextForContextCorrelationId(tenantId)

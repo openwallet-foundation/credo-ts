@@ -11,10 +11,10 @@ import type {
   RegisterSchemaOptions,
   RegisterRevocationRegistryDefinitionReturn,
   RegisterRevocationStatusListReturn,
-} from '@aries-framework/anoncreds'
-import type { AgentContext } from '@aries-framework/core'
+} from '@credo-ts/anoncreds'
+import type { AgentContext } from '@credo-ts/core'
 
-import { AriesFrameworkError, Buffer, Hasher, JsonTransformer, TypedArrayEncoder, utils } from '@aries-framework/core'
+import { CredoError, Hasher, JsonTransformer, TypedArrayEncoder, utils } from '@credo-ts/core'
 
 import { CheqdDidResolver, CheqdDidRegistrar } from '../../dids'
 import { cheqdSdkAnonCredsRegistryIdentifierRegex, parseCheqdDid } from '../utils/identifiers'
@@ -142,7 +142,7 @@ export class CheqdAnonCredsRegistry implements AnonCredsRegistry {
       }
 
       const credDefName = `${schema.schema.name}-${credentialDefinition.tag}`
-      const credDefNameHashBuffer = Hasher.hash(Buffer.from(credDefName), 'sha2-256')
+      const credDefNameHashBuffer = Hasher.hash(credDefName, 'sha-256')
 
       const credDefResource = {
         id: utils.uuid(),
@@ -321,9 +321,7 @@ export class CheqdAnonCredsRegistry implements AnonCredsRegistry {
 
       const statusListTimestamp = response.resourceMetadata?.created?.getUTCSeconds()
       if (!statusListTimestamp) {
-        throw new AriesFrameworkError(
-          `Unable to extract revocation status list timestamp from resource ${revocationRegistryId}`
-        )
+        throw new CredoError(`Unable to extract revocation status list timestamp from resource ${revocationRegistryId}`)
       }
 
       return {

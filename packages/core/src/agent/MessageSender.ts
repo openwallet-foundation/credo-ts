@@ -5,21 +5,21 @@ import type { TransportSession } from './TransportService'
 import type { AgentContext } from './context'
 import type { ConnectionRecord } from '../modules/connections'
 import type { ResolvedDidCommService } from '../modules/didcomm'
-import type { DidDocument } from '../modules/dids'
 import type { OutOfBandRecord } from '../modules/oob/repository'
 import type { OutboundTransport } from '../transport/OutboundTransport'
-import type { OutboundPackage, EncryptedMessage } from '../types'
+import type { EncryptedMessage, OutboundPackage } from '../types'
 
 import { DID_COMM_TRANSPORT_QUEUE, InjectionSymbols } from '../constants'
 import { ReturnRouteTypes } from '../decorators/transport/TransportDecorator'
-import { AriesFrameworkError, MessageSendingError } from '../error'
+import { CredoError, MessageSendingError } from '../error'
 import { Logger } from '../logger'
 import { DidCommDocumentService } from '../modules/didcomm'
+import { DidKey, type DidDocument } from '../modules/dids'
 import { getKeyFromVerificationMethod } from '../modules/dids/domain/key-type'
-import { didKeyToInstanceOfKey } from '../modules/dids/helpers'
+import { didKeyToInstanceOfKey, verkeyToDidKey } from '../modules/dids/helpers'
 import { DidResolverService } from '../modules/dids/services/DidResolverService'
+import { MessagePickupRepository } from '../modules/message-pickup/storage'
 import { inject, injectable } from '../plugins'
-import { MessageRepository } from '../storage/MessageRepository'
 import { MessageValidator } from '../utils/MessageValidator'
 import { getProtocolScheme } from '../utils/uri'
 
@@ -38,7 +38,7 @@ export interface TransportPriorityOptions {
 export class MessageSender {
   private envelopeService: EnvelopeService
   private transportService: TransportService
-  private messageRepository: MessageRepository
+  private messagePickupRepository: MessagePickupRepository
   private logger: Logger
   private didResolverService: DidResolverService
   private didCommDocumentService: DidCommDocumentService
@@ -48,7 +48,7 @@ export class MessageSender {
   public constructor(
     envelopeService: EnvelopeService,
     transportService: TransportService,
-    @inject(InjectionSymbols.MessageRepository) messageRepository: MessageRepository,
+    @inject(InjectionSymbols.MessagePickupRepository) messagePickupRepository: MessagePickupRepository,
     @inject(InjectionSymbols.Logger) logger: Logger,
     didResolverService: DidResolverService,
     didCommDocumentService: DidCommDocumentService,
@@ -56,7 +56,7 @@ export class MessageSender {
   ) {
     this.envelopeService = envelopeService
     this.transportService = transportService
-    this.messageRepository = messageRepository
+    this.messagePickupRepository = messagePickupRepository
     this.logger = logger
     this.didResolverService = didResolverService
     this.didCommDocumentService = didCommDocumentService
@@ -101,7 +101,7 @@ export class MessageSender {
   private async sendMessageToSession(agentContext: AgentContext, session: TransportSession, message: AgentMessage) {
     this.logger.debug(`Packing message and sending it via existing session ${session.type}...`)
     if (!session.keys) {
-      throw new AriesFrameworkError(`There are no keys for the given ${session.type} transport session.`)
+      throw new CredoError(`There are no keys for the given ${session.type} transport session.`)
     }
     const encryptedMessage = await this.envelopeService.packMessage(agentContext, message, session.keys)
     this.logger.debug('Sending message')
@@ -113,9 +113,11 @@ export class MessageSender {
     {
       connection,
       encryptedMessage,
+      recipientKey,
       options,
     }: {
       connection: ConnectionRecord
+      recipientKey: string
       encryptedMessage: EncryptedMessage
       options?: { transportPriority?: TransportPriorityOptions }
     }
@@ -142,7 +144,7 @@ export class MessageSender {
     )
 
     if (this.outboundTransports.length === 0 && !queueService) {
-      throw new AriesFrameworkError('Agent has no outbound transport!')
+      throw new CredoError('Agent has no outbound transport!')
     }
 
     // Loop trough all available services and try to send the message
@@ -176,7 +178,11 @@ export class MessageSender {
     // If the other party shared a queue service endpoint in their did doc we queue the message
     if (queueService) {
       this.logger.debug(`Queue packed message for connection ${connection.id} (${connection.theirLabel})`)
-      await this.messageRepository.add(connection.id, encryptedMessage)
+      await this.messagePickupRepository.addMessage({
+        connectionId: connection.id,
+        recipientDids: [verkeyToDidKey(recipientKey)],
+        payload: encryptedMessage,
+      })
       return
     }
 
@@ -186,7 +192,7 @@ export class MessageSender {
       errors,
       connection,
     })
-    throw new AriesFrameworkError(`Message is undeliverable to connection ${connection.id} (${connection.theirLabel})`)
+    throw new CredoError(`Message is undeliverable to connection ${connection.id} (${connection.theirLabel})`)
   }
 
   public async sendMessage(
@@ -219,6 +225,7 @@ export class MessageSender {
 
     if (session) {
       this.logger.debug(`Found session with return routing for message '${message.id}' (connection '${connection.id}'`)
+
       try {
         await this.sendMessageToSession(agentContext, session, message)
         this.emitMessageSentEvent(outboundMessageContext, OutboundMessageSendStatus.SentToSession)
@@ -277,7 +284,7 @@ export class MessageSender {
     // other party can decrypt the message. https://github.com/sicpa-dlab/didcomm-rust/blob/9a24b3b60f07a11822666dda46e5616a138af056/src/message/pack_encrypted/mod.rs#L33-L44
     // This will become more relevant when we support different encrypt envelopes. One thing to take into account though is that currently we only store the recipientKeys
     // as defined in the didcomm services, while it could be for example that the first authentication key is not defined in the recipientKeys, in which case we wouldn't
-    // even be interoperable between two AFJ agents. So we should either pick the first key that is defined in the recipientKeys, or we should make sure to store all
+    // even be interoperable between two Credo agents. So we should either pick the first key that is defined in the recipientKeys, or we should make sure to store all
     // keys defined in the did document as tags so we can retrieve it, even if it's not defined in the recipientKeys. This, again, will become simpler once we use didcomm v2
     // as the `from` field in a received message will identity the did used so we don't have to store all keys in tags to be able to find the connections associated with
     // an incoming message.
@@ -317,7 +324,7 @@ export class MessageSender {
 
     // We didn't succeed to send the message over open session, or directly to serviceEndpoint
     // If the other party shared a queue service endpoint in their did doc we queue the message
-    if (queueService) {
+    if (queueService && message.allowQueueTransport) {
       this.logger.debug(`Queue message for connection ${connection.id} (${connection.theirLabel})`)
 
       const keys = {
@@ -327,7 +334,11 @@ export class MessageSender {
       }
 
       const encryptedMessage = await this.envelopeService.packMessage(agentContext, message, keys)
-      await this.messageRepository.add(connection.id, encryptedMessage)
+      await this.messagePickupRepository.addMessage({
+        connectionId: connection.id,
+        recipientDids: keys.recipientKeys.map((item) => new DidKey(item).did),
+        payload: encryptedMessage,
+      })
 
       this.emitMessageSentEvent(outboundMessageContext, OutboundMessageSendStatus.QueuedForPickup)
 
@@ -348,10 +359,7 @@ export class MessageSender {
     )
   }
 
-  /**
-   * @deprecated Use `sendMessage` directly instead. Will be made private in 0.5.0
-   */
-  public async sendMessageToService(outboundMessageContext: OutboundMessageContext) {
+  private async sendMessageToService(outboundMessageContext: OutboundMessageContext) {
     const session = this.findSessionForOutboundContext(outboundMessageContext)
 
     if (session) {
@@ -390,12 +398,12 @@ export class MessageSender {
     const { agentContext, message, serviceParams, connection } = outboundMessageContext
 
     if (!serviceParams) {
-      throw new AriesFrameworkError('No service parameters found in outbound message context')
+      throw new CredoError('No service parameters found in outbound message context')
     }
     const { service, senderKey, returnRoute } = serviceParams
 
     if (this.outboundTransports.length === 0) {
-      throw new AriesFrameworkError('Agent has no outbound transport!')
+      throw new CredoError('Agent has no outbound transport!')
     }
 
     this.logger.debug(`Sending outbound message to service:`, {

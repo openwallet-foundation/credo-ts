@@ -1,10 +1,10 @@
-import { RegisteredAskarTestWallet } from '../../../../../../askar/tests/helpers'
-import { agentDependencies, getAgentConfig, getAgentContext, testLogger } from '../../../../../tests'
+import { InMemoryWallet } from '../../../../../../../tests/InMemoryWallet'
+import { getAgentConfig, getAgentContext, testLogger } from '../../../../../tests'
 import { InjectionSymbols } from '../../../../constants'
-import { JwsService, KeyType, SigningProviderRegistry } from '../../../../crypto'
+import { JwsService, KeyType } from '../../../../crypto'
 import { JwaSignatureAlgorithm } from '../../../../crypto/jose/jwa'
 import { getJwkFromKey } from '../../../../crypto/jose/jwk'
-import { AriesFrameworkError, ClassValidationError } from '../../../../error'
+import { CredoError, ClassValidationError } from '../../../../error'
 import { JsonTransformer } from '../../../../utils'
 import { DidJwk, DidKey, DidsModuleConfig } from '../../../dids'
 import { CREDENTIALS_CONTEXT_V1_URL } from '../../constants'
@@ -13,21 +13,17 @@ import { W3cJwtCredentialService } from '../W3cJwtCredentialService'
 import { W3cJwtVerifiableCredential } from '../W3cJwtVerifiableCredential'
 
 import {
-  AfjEs256DidJwkJwtVc,
-  AfjEs256DidJwkJwtVcIssuerSeed,
-  AfjEs256DidJwkJwtVcSubjectSeed,
-  AfjEs256DidKeyJwtVp,
+  CredoEs256DidJwkJwtVc,
+  CredoEs256DidJwkJwtVcIssuerSeed,
+  CredoEs256DidJwkJwtVcSubjectSeed,
+  CredoEs256DidKeyJwtVp,
   Ed256DidJwkJwtVcUnsigned,
-} from './fixtures/afj-jwt-vc'
+} from './fixtures/credo-jwt-vc'
 import { didIonJwtVcPresentationProfileJwtVc } from './fixtures/jwt-vc-presentation-profile'
 import { didKeyTransmuteJwtVc, didKeyTransmuteJwtVp } from './fixtures/transmute-verifiable-data'
 
 const config = getAgentConfig('W3cJwtCredentialService')
-const wallet = new RegisteredAskarTestWallet(
-  config.logger,
-  new agentDependencies.FileSystem(),
-  new SigningProviderRegistry([])
-)
+const wallet = new InMemoryWallet()
 const agentContext = getAgentContext({
   wallet,
   registerInstances: [
@@ -50,13 +46,13 @@ describe('W3cJwtCredentialService', () => {
 
     const issuerKey = await agentContext.wallet.createKey({
       keyType: KeyType.P256,
-      seed: AfjEs256DidJwkJwtVcIssuerSeed,
+      seed: CredoEs256DidJwkJwtVcIssuerSeed,
     })
     issuerDidJwk = DidJwk.fromJwk(getJwkFromKey(issuerKey))
 
     const holderKey = await agentContext.wallet.createKey({
       keyType: KeyType.Ed25519,
-      seed: AfjEs256DidJwkJwtVcSubjectSeed,
+      seed: CredoEs256DidJwkJwtVcSubjectSeed,
     })
     holderDidKey = new DidKey(holderKey)
   })
@@ -72,7 +68,7 @@ describe('W3cJwtCredentialService', () => {
         credential,
       })
 
-      expect(vcJwt.serializedJwt).toEqual(AfjEs256DidJwkJwtVc)
+      expect(vcJwt.serializedJwt).toEqual(CredoEs256DidJwkJwtVc)
     })
 
     test('throws when invalid credential is passed', async () => {
@@ -138,9 +134,9 @@ describe('W3cJwtCredentialService', () => {
       })
     })
 
-    test('verifies an ES256 JWT vc signed by AFJ', async () => {
+    test('verifies an ES256 JWT vc signed by Credo', async () => {
       const result = await w3cJwtCredentialService.verifyCredential(agentContext, {
-        credential: AfjEs256DidJwkJwtVc,
+        credential: CredoEs256DidJwkJwtVc,
       })
 
       expect(result).toEqual({
@@ -197,7 +193,7 @@ describe('W3cJwtCredentialService', () => {
     })
 
     test('returns invalid result when credential is not according to data model', async () => {
-      const jwtVc = W3cJwtVerifiableCredential.fromSerializedJwt(AfjEs256DidJwkJwtVc)
+      const jwtVc = W3cJwtVerifiableCredential.fromSerializedJwt(CredoEs256DidJwkJwtVc)
 
       // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-ignore
@@ -222,7 +218,7 @@ describe('W3cJwtCredentialService', () => {
     })
 
     test('returns invalid result when credential is expired', async () => {
-      const jwtVc = W3cJwtVerifiableCredential.fromSerializedJwt(AfjEs256DidJwkJwtVc)
+      const jwtVc = W3cJwtVerifiableCredential.fromSerializedJwt(CredoEs256DidJwkJwtVc)
 
       jwtVc.jwt.payload.exp = new Date('2020-01-01').getTime() / 1000
 
@@ -236,7 +232,7 @@ describe('W3cJwtCredentialService', () => {
         validations: {
           dataModel: {
             isValid: false,
-            error: expect.any(AriesFrameworkError),
+            error: expect.any(CredoError),
           },
         },
       })
@@ -245,7 +241,7 @@ describe('W3cJwtCredentialService', () => {
     })
 
     test('returns invalid result when signature is not valid', async () => {
-      const jwtVc = W3cJwtVerifiableCredential.fromSerializedJwt(AfjEs256DidJwkJwtVc + 'a')
+      const jwtVc = W3cJwtVerifiableCredential.fromSerializedJwt(CredoEs256DidJwkJwtVc + 'a')
 
       const result = await w3cJwtCredentialService.verifyCredential(agentContext, {
         credential: jwtVc,
@@ -259,11 +255,11 @@ describe('W3cJwtCredentialService', () => {
           },
           signature: {
             isValid: false,
-            error: expect.any(AriesFrameworkError),
+            error: expect.any(CredoError),
           },
           issuerIsSigner: {
             isValid: false,
-            error: expect.any(AriesFrameworkError),
+            error: expect.any(CredoError),
           },
           credentialStatus: {
             isValid: true,
@@ -278,7 +274,7 @@ describe('W3cJwtCredentialService', () => {
   describe('signPresentation', () => {
     test('signs an ES256 JWT vp', async () => {
       // Create a new instance of the credential from the serialized JWT
-      const parsedJwtVc = W3cJwtVerifiableCredential.fromSerializedJwt(AfjEs256DidJwkJwtVc)
+      const parsedJwtVc = W3cJwtVerifiableCredential.fromSerializedJwt(CredoEs256DidJwkJwtVc)
 
       const presentation = new W3cPresentation({
         context: [CREDENTIALS_CONTEXT_V1_URL],
@@ -297,14 +293,14 @@ describe('W3cJwtCredentialService', () => {
         verificationMethod: `${holderDidKey.did}#${holderDidKey.key.fingerprint}`,
       })
 
-      expect(signedJwtVp.serializedJwt).toEqual(AfjEs256DidKeyJwtVp)
+      expect(signedJwtVp.serializedJwt).toEqual(CredoEs256DidKeyJwtVp)
     })
   })
 
   describe('verifyPresentation', () => {
-    test('verifies an ES256 JWT vp signed by AFJ', async () => {
+    test('verifies an ES256 JWT vp signed by Credo', async () => {
       const result = await w3cJwtCredentialService.verifyPresentation(agentContext, {
-        presentation: AfjEs256DidKeyJwtVp,
+        presentation: CredoEs256DidKeyJwtVp,
         challenge: 'daf942ad-816f-45ee-a9fc-facd08e5abca',
         domain: 'example.com',
       })
@@ -388,7 +384,7 @@ describe('W3cJwtCredentialService', () => {
                 },
                 credentialSubjectAuthentication: {
                   isValid: false,
-                  error: new AriesFrameworkError(
+                  error: new CredoError(
                     'Credential has one or more credentialSubject ids, but presentation does not authenticate credential subject'
                   ),
                 },

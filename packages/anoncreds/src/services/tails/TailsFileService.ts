@@ -1,5 +1,5 @@
 import type { AnonCredsRevocationRegistryDefinition } from '../../models'
-import type { AgentContext } from '@aries-framework/core'
+import type { AgentContext } from '@credo-ts/core'
 
 export interface TailsFileService {
   /**
@@ -25,7 +25,7 @@ export interface TailsFileService {
       revocationRegistryDefinition: AnonCredsRevocationRegistryDefinition
       revocationRegistryDefinitionId?: string
     }
-  ): Promise<string>
+  ): Promise<{ tailsFileUrl: string }>
 
   /**
    * Retrieve the tails file for a given revocation registry, downloading it
@@ -43,5 +43,5 @@ export interface TailsFileService {
       revocationRegistryDefinition: AnonCredsRevocationRegistryDefinition
       revocationRegistryDefinitionId?: string
     }
-  ): Promise<string>
+  ): Promise<{ tailsFilePath: string }>
 }

@@ -18,7 +18,7 @@ import { filterContextCorrelationId } from '../../../agent/Events'
 import { InjectionSymbols } from '../../../constants'
 import { Key } from '../../../crypto'
 import { signData, unpackAndVerifySignatureDecorator } from '../../../decorators/signature/SignatureDecoratorUtils'
-import { AriesFrameworkError } from '../../../error'
+import { CredoError } from '../../../error'
 import { Logger } from '../../../logger'
 import { inject, injectable } from '../../../plugins'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
@@ -226,7 +226,7 @@ export class ConnectionService {
     const connectionJson = JsonTransformer.toJSON(connection)
 
     if (!connectionRecord.threadId) {
-      throw new AriesFrameworkError(`Connection record with id ${connectionRecord.id} does not have a thread id`)
+      throw new CredoError(`Connection record with id ${connectionRecord.id} does not have a thread id`)
     }
 
     const signingKey = Key.fromFingerprint(outOfBandRecord.getTags().recipientKeyFingerprints[0]).publicKeyBase58
@@ -268,11 +268,11 @@ export class ConnectionService {
     const { connection: connectionRecord, message, recipientKey, senderKey } = messageContext
 
     if (!recipientKey || !senderKey) {
-      throw new AriesFrameworkError('Unable to process connection request without senderKey or recipientKey')
+      throw new CredoError('Unable to process connection request without senderKey or recipientKey')
     }
 
     if (!connectionRecord) {
-      throw new AriesFrameworkError('No connection record in message context.')
+      throw new CredoError('No connection record in message context.')
     }
 
     connectionRecord.assertState(DidExchangeState.RequestSent)
@@ -285,7 +285,7 @@ export class ConnectionService {
         messageContext.agentContext.wallet
       )
     } catch (error) {
-      if (error instanceof AriesFrameworkError) {
+      if (error instanceof CredoError) {
         throw new ConnectionProblemReportError(error.message, {
           problemCode: ConnectionProblemReportReason.ResponseProcessingError,
         })
@@ -309,7 +309,7 @@ export class ConnectionService {
     }
 
     if (!connection.didDoc) {
-      throw new AriesFrameworkError('DID Document is missing.')
+      throw new CredoError('DID Document is missing.')
     }
 
     const { did: peerDid } = await this.createDid(messageContext.agentContext, {
@@ -368,7 +368,7 @@ export class ConnectionService {
     const { connection, recipientKey } = messageContext
 
     if (!connection) {
-      throw new AriesFrameworkError(
+      throw new CredoError(
         `Unable to process connection ack: connection for recipient key ${recipientKey?.fingerprint} not found`
       )
     }
@@ -397,7 +397,7 @@ export class ConnectionService {
     this.logger.debug(`Processing connection problem report for verkey ${recipientKey?.fingerprint}`)
 
     if (!recipientKey) {
-      throw new AriesFrameworkError('Unable to process connection problem report without recipientKey')
+      throw new CredoError('Unable to process connection problem report without recipientKey')
     }
 
     const ourDidRecord = await this.didRepository.findCreatedDidByRecipientKey(
@@ -405,14 +405,14 @@ export class ConnectionService {
       recipientKey
     )
     if (!ourDidRecord) {
-      throw new AriesFrameworkError(
+      throw new CredoError(
         `Unable to process connection problem report: created did record for recipient key ${recipientKey.fingerprint} not found`
       )
     }
 
     const connectionRecord = await this.findByOurDid(messageContext.agentContext, ourDidRecord.did)
     if (!connectionRecord) {
-      throw new AriesFrameworkError(
+      throw new CredoError(
         `Unable to process connection problem report: connection for recipient key ${recipientKey.fingerprint} not found`
       )
     }
@@ -421,12 +421,12 @@ export class ConnectionService {
       connectionRecord.theirDid &&
       (await this.didRepository.findReceivedDid(messageContext.agentContext, connectionRecord.theirDid))
     if (!theirDidRecord) {
-      throw new AriesFrameworkError(`Received did record for did ${connectionRecord.theirDid} not found.`)
+      throw new CredoError(`Received did record for did ${connectionRecord.theirDid} not found.`)
     }
 
     if (senderKey) {
       if (!theirDidRecord?.getTags().recipientKeyFingerprints?.includes(senderKey.fingerprint)) {
-        throw new AriesFrameworkError("Sender key doesn't match key of connection record")
+        throw new CredoError("Sender key doesn't match key of connection record")
       }
     }
 
@@ -501,7 +501,7 @@ export class ConnectionService {
       // In this case there MUST be an oob record, otherwise there is no way for us to reply
       // to the message
       if (!theirService && !outOfBandRecord) {
-        throw new AriesFrameworkError(
+        throw new CredoError(
           'No service for incoming connection-less message and no associated out of band record found.'
         )
       }
@@ -509,7 +509,7 @@ export class ConnectionService {
       // ourService can be null when we receive an oob invitation or legacy connectionless message and process the message.
       // In this case lastSentMessage and lastReceivedMessage MUST be null, because there shouldn't be any previous exchange
       if (!ourService && (lastReceivedMessage || lastSentMessage)) {
-        throw new AriesFrameworkError(
+        throw new CredoError(
           'No keys on our side to use for encrypting messages, and previous messages found (in which case our keys MUST also be present).'
         )
       }
@@ -517,7 +517,7 @@ export class ConnectionService {
       // If the message is unpacked or AuthCrypt, there cannot be any previous exchange (this must be the first message).
       // All exchange after the first unpacked oob exchange MUST be encrypted.
       if ((!senderKey || !recipientKey) && (lastSentMessage || lastReceivedMessage)) {
-        throw new AriesFrameworkError(
+        throw new CredoError(
           'Incoming message must have recipientKey and senderKey (so cannot be AuthCrypt or unpacked) if there are lastSentMessage or lastReceivedMessage.'
         )
       }
@@ -526,7 +526,7 @@ export class ConnectionService {
       if (recipientKey && ourService) {
         const recipientKeyFound = ourService.recipientKeys.some((key) => key.publicKeyBase58 === recipientKey)
         if (!recipientKeyFound) {
-          throw new AriesFrameworkError(`Recipient key ${recipientKey} not found in our service`)
+          throw new CredoError(`Recipient key ${recipientKey} not found in our service`)
         }
       }
 
@@ -534,7 +534,7 @@ export class ConnectionService {
       if (senderKey && theirService) {
         const senderKeyFound = theirService.recipientKeys.some((key) => key.publicKeyBase58 === senderKey)
         if (!senderKeyFound) {
-          throw new AriesFrameworkError(`Sender key ${senderKey} not found in their service.`)
+          throw new CredoError(`Sender key ${senderKey} not found in their service.`)
         }
       }
     }
@@ -552,7 +552,7 @@ export class ConnectionService {
     { expectedConnectionId }: { expectedConnectionId?: string }
   ) {
     if (expectedConnectionId && messageContext.connection?.id === expectedConnectionId) {
-      throw new AriesFrameworkError(
+      throw new CredoError(
         `Expecting incoming message to have connection ${expectedConnectionId}, but incoming connection is ${
           messageContext.connection?.id ?? 'undefined'
         }`
@@ -571,7 +571,7 @@ export class ConnectionService {
 
     // There is no out of band record
     if (!outOfBandRecord) {
-      throw new AriesFrameworkError(
+      throw new CredoError(
         `No out of band record found for credential request message with thread ${messageContext.message.threadId}, out of band invitation id ${outOfBandInvitationId} and role ${OutOfBandRole.Sender}`
       )
     }
@@ -583,7 +583,7 @@ export class ConnectionService {
       legacyInvitationMetadata?.legacyInvitationType !== InvitationType.Connectionless &&
       outOfBandRecord.outOfBandInvitation.id !== outOfBandInvitationId
     ) {
-      throw new AriesFrameworkError(
+      throw new CredoError(
         'Response messages to out of band invitation requests MUST have a parent thread id that matches the out of band invitation id.'
       )
     }
@@ -591,19 +591,17 @@ export class ConnectionService {
     // This should not happen, as it is not allowed to create reusable out of band invitations with attached messages
     // But should that implementation change, we at least cover it here.
     if (outOfBandRecord.reusable) {
-      throw new AriesFrameworkError(
-        'Receiving messages in response to reusable out of band invitations is not supported.'
-      )
+      throw new CredoError('Receiving messages in response to reusable out of band invitations is not supported.')
     }
 
     if (outOfBandRecord.state === OutOfBandState.Done) {
       if (!messageContext.connection) {
-        throw new AriesFrameworkError(
+        throw new CredoError(
           "Can't find connection associated with incoming message, while out of band state is done. State must be await response if no connection has been created"
         )
       }
       if (messageContext.connection.outOfBandId !== outOfBandRecord.id) {
-        throw new AriesFrameworkError(
+        throw new CredoError(
           'Connection associated with incoming message is not associated with the out of band invitation containing the attached message.'
         )
       }
@@ -616,7 +614,7 @@ export class ConnectionService {
       outOfBandRecord.state = OutOfBandState.Done
       await outOfBandRepository.update(messageContext.agentContext, outOfBandRecord)
     } else {
-      throw new AriesFrameworkError(`Out of band record is in incorrect state ${outOfBandRecord.state}`)
+      throw new CredoError(`Out of band record is in incorrect state ${outOfBandRecord.state}`)
     }
   }
 
@@ -898,7 +896,10 @@ export class ConnectionService {
         filterContextCorrelationId(agentContext.contextCorrelationId),
         map((e) => e.payload.connectionRecord),
         first(isConnected), // Do not wait for longer than specified timeout
-        timeout(timeoutMs)
+        timeout({
+          first: timeoutMs,
+          meta: 'ConnectionService.returnWhenIsConnected',
+        })
       )
       .subscribe(subject)
 

@@ -8,7 +8,7 @@ import type { ConnectionRecord } from '../connections'
 import type { HandshakeProtocol } from '../connections/models'
 
 import { EventEmitter } from '../../agent/EventEmitter'
-import { AriesFrameworkError } from '../../error'
+import { CredoError } from '../../error'
 import { injectable } from '../../plugins'
 import { DidCommDocumentService } from '../didcomm/services/DidCommDocumentService'
 import { DidsApi } from '../dids'
@@ -60,14 +60,13 @@ export class OutOfBandService {
     const didsApi = agentContext.dependencyManager.resolve(DidsApi)
     const [createdDid] = await didsApi.getCreatedDids({ did: publicDid.did })
     if (!createdDid) {
-      throw new AriesFrameworkError(`Referenced public did ${did} not found.`)
+      throw new CredoError(`Referenced public did ${did} not found.`)
     }
 
     // Recreate an 'implicit invitation' matching the parameters used by the invitee when
     // initiating the flow
     const outOfBandInvitation = new OutOfBandInvitation({
       id: did,
-      label: '',
       services: [did],
       handshakeProtocols,
     })
@@ -95,12 +94,12 @@ export class OutOfBandService {
     const parentThreadId = reuseMessage.thread?.parentThreadId
 
     if (!parentThreadId) {
-      throw new AriesFrameworkError('handshake-reuse message must have a parent thread id')
+      throw new CredoError('handshake-reuse message must have a parent thread id')
     }
 
     const outOfBandRecord = await this.findByCreatedInvitationId(messageContext.agentContext, parentThreadId)
     if (!outOfBandRecord) {
-      throw new AriesFrameworkError('No out of band record found for handshake-reuse message')
+      throw new CredoError('No out of band record found for handshake-reuse message')
     }
 
     // Assert
@@ -109,7 +108,7 @@ export class OutOfBandService {
 
     const requestLength = outOfBandRecord.outOfBandInvitation.getRequests()?.length ?? 0
     if (requestLength > 0) {
-      throw new AriesFrameworkError('Handshake reuse should only be used when no requests are present')
+      throw new CredoError('Handshake reuse should only be used when no requests are present')
     }
 
     const reusedConnection = messageContext.assertReadyConnection()
@@ -140,12 +139,12 @@ export class OutOfBandService {
     const parentThreadId = reuseAcceptedMessage.thread?.parentThreadId
 
     if (!parentThreadId) {
-      throw new AriesFrameworkError('handshake-reuse-accepted message must have a parent thread id')
+      throw new CredoError('handshake-reuse-accepted message must have a parent thread id')
     }
 
     const outOfBandRecord = await this.findByReceivedInvitationId(messageContext.agentContext, parentThreadId)
     if (!outOfBandRecord) {
-      throw new AriesFrameworkError('No out of band record found for handshake-reuse-accepted message')
+      throw new CredoError('No out of band record found for handshake-reuse-accepted message')
     }
 
     // Assert
@@ -161,7 +160,7 @@ export class OutOfBandService {
     // But this is an issue in general that has also come up for ACA-Py. How do I find the connection associated with an oob record?
     // Because it doesn't work really well with connection reuse.
     if (outOfBandRecord.reuseConnectionId !== reusedConnection.id) {
-      throw new AriesFrameworkError('handshake-reuse-accepted is not in response to a handshake-reuse message.')
+      throw new CredoError('handshake-reuse-accepted is not in response to a handshake-reuse message.')
     }
 
     this.eventEmitter.emit<HandshakeReusedEvent>(messageContext.agentContext, {
@@ -279,6 +278,6 @@ export class OutOfBandService {
       }
     }
 
-    throw new AriesFrameworkError('Could not extract a service from the out of band invitation.')
+    throw new CredoError('Could not extract a service from the out of band invitation.')
   }
 }

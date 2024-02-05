@@ -14,7 +14,7 @@ import { MessageHandlerRegistry } from '../../agent/MessageHandlerRegistry'
 import { MessageSender } from '../../agent/MessageSender'
 import { OutboundMessageContext } from '../../agent/models'
 import { InjectionSymbols } from '../../constants'
-import { AriesFrameworkError } from '../../error'
+import { CredoError } from '../../error'
 import { Logger } from '../../logger'
 import { inject, injectable } from '../../plugins'
 import { TransportEventTypes } from '../../transport'
@@ -23,9 +23,9 @@ import { ConnectionService } from '../connections/services'
 import { DidsApi } from '../dids'
 import { verkeyToDidKey } from '../dids/helpers'
 import { DiscoverFeaturesApi } from '../discover-features'
-import { MessagePickupApi } from '../message-pìckup/MessagePickupApi'
-import { V1BatchPickupMessage } from '../message-pìckup/protocol/v1'
-import { V2StatusMessage } from '../message-pìckup/protocol/v2'
+import { MessagePickupApi } from '../message-pickup/MessagePickupApi'
+import { V1BatchPickupMessage } from '../message-pickup/protocol/v1'
+import { V2StatusMessage } from '../message-pickup/protocol/v2'
 
 import { MediationRecipientModuleConfig } from './MediationRecipientModuleConfig'
 import { MediatorPickupStrategy } from './MediatorPickupStrategy'
@@ -130,7 +130,7 @@ export class MediationRecipientApi {
     const hasWebSocketTransport = services && services.some((s) => websocketSchemes.includes(s.protocolScheme))
 
     if (!hasWebSocketTransport) {
-      throw new AriesFrameworkError('Cannot open websocket to connection without websocket service endpoint')
+      throw new CredoError('Cannot open websocket to connection without websocket service endpoint')
     }
 
     await this.messageSender.sendMessage(
@@ -149,7 +149,14 @@ export class MediationRecipientApi {
     )
   }
 
-  private async openWebSocketAndPickUp(mediator: MediationRecord, pickupStrategy: MediatorPickupStrategy) {
+  /**
+   * Keep track of a persistent transport session with a mediator, trying to reconnect to it as
+   * soon as it is disconnected, using a recursive back-off strategy
+   *
+   * @param mediator mediation record
+   * @param pickupStrategy chosen pick up strategy (should be Implicit or PickUp in Live Mode)
+   */
+  private async monitorMediatorWebSocketEvents(mediator: MediationRecord, pickupStrategy: MediatorPickupStrategy) {
     const { baseMediatorReconnectionIntervalMs, maximumMediatorReconnectionIntervalMs } = this.config
     let interval = baseMediatorReconnectionIntervalMs
 
@@ -197,11 +204,11 @@ export class MediationRecipientApi {
             `Websocket connection to mediator with connectionId '${mediator.connectionId}' is closed, attempting to reconnect...`
           )
           try {
-            if (pickupStrategy === MediatorPickupStrategy.PickUpV2) {
-              // Start Pickup v2 protocol to receive messages received while websocket offline
-              await this.messagePickupApi.pickupMessages({
+            if (pickupStrategy === MediatorPickupStrategy.PickUpV2LiveMode) {
+              // Start Pickup v2 protocol in live mode (retrieve any queued message before)
+              await this.messagePickupApi.setLiveDeliveryMode({
                 connectionId: mediator.connectionId,
-                batchSize: this.config.maximumMessagePickup,
+                liveDelivery: true,
                 protocolVersion: 'v2',
               })
             } else {
@@ -213,13 +220,6 @@ export class MediationRecipientApi {
         },
         complete: () => this.logger.info(`Stopping pickup of messages from mediator '${mediator.id}'`),
       })
-    try {
-      if (pickupStrategy === MediatorPickupStrategy.Implicit) {
-        await this.openMediationWebSocket(mediator)
-      }
-    } catch (error) {
-      this.logger.warn('Unable to open websocket connection to mediator', { error })
-    }
   }
 
   /**
@@ -235,25 +235,17 @@ export class MediationRecipientApi {
     const { mediatorPollingInterval } = this.config
     const mediatorRecord = mediator ?? (await this.findDefaultMediator())
     if (!mediatorRecord) {
-      throw new AriesFrameworkError('There is no mediator to pickup messages from')
+      throw new CredoError('There is no mediator to pickup messages from')
     }
 
     const mediatorPickupStrategy = pickupStrategy ?? (await this.getPickupStrategyForMediator(mediatorRecord))
     const mediatorConnection = await this.connectionService.getById(this.agentContext, mediatorRecord.connectionId)
 
     switch (mediatorPickupStrategy) {
-      case MediatorPickupStrategy.PickUpV2:
-        this.logger.info(`Starting pickup of messages from mediator '${mediatorRecord.id}'`)
-        await this.openWebSocketAndPickUp(mediatorRecord, mediatorPickupStrategy)
-        await this.messagePickupApi.pickupMessages({
-          connectionId: mediatorConnection.id,
-          batchSize: this.config.maximumMessagePickup,
-          protocolVersion: 'v2',
-        })
-        break
-      case MediatorPickupStrategy.PickUpV1: {
+      case MediatorPickupStrategy.PickUpV1:
+      case MediatorPickupStrategy.PickUpV2: {
         const stopConditions$ = merge(this.stop$, this.stopMessagePickup$).pipe()
-        // Explicit means polling every X seconds with batch message
+        // PickUpV1/PickUpV2 means polling every X seconds with batch message
         this.logger.info(`Starting explicit (batch) pickup of messages from mediator '${mediatorRecord.id}'`)
         const subscription = interval(mediatorPollingInterval)
           .pipe(takeUntil(stopConditions$))
@@ -262,18 +254,30 @@ export class MediationRecipientApi {
               await this.messagePickupApi.pickupMessages({
                 connectionId: mediatorConnection.id,
                 batchSize: this.config.maximumMessagePickup,
-                protocolVersion: 'v1',
+                protocolVersion: mediatorPickupStrategy === MediatorPickupStrategy.PickUpV2 ? 'v2' : 'v1',
               })
             },
             complete: () => this.logger.info(`Stopping pickup of messages from mediator '${mediatorRecord.id}'`),
           })
         return subscription
       }
+      case MediatorPickupStrategy.PickUpV2LiveMode:
+        // PickUp V2 in Live Mode will retrieve queued messages and then set up live delivery mode
+        this.logger.info(`Starting pickup of messages from mediator '${mediatorRecord.id}'`)
+        await this.monitorMediatorWebSocketEvents(mediatorRecord, mediatorPickupStrategy)
+        await this.messagePickupApi.setLiveDeliveryMode({
+          connectionId: mediatorConnection.id,
+          liveDelivery: true,
+          protocolVersion: 'v2',
+        })
+
+        break
       case MediatorPickupStrategy.Implicit:
         // Implicit means sending ping once and keeping connection open. This requires a long-lived transport
         // such as WebSockets to work
         this.logger.info(`Starting implicit pickup of messages from mediator '${mediatorRecord.id}'`)
-        await this.openWebSocketAndPickUp(mediatorRecord, mediatorPickupStrategy)
+        await this.monitorMediatorWebSocketEvents(mediatorRecord, mediatorPickupStrategy)
+        await this.openMediationWebSocket(mediatorRecord)
         break
       default:
         this.logger.info(`Skipping pickup of messages from mediator '${mediatorRecord.id}' due to pickup strategy none`)
@@ -327,20 +331,6 @@ export class MediationRecipientApi {
 
   public async discoverMediation() {
     return this.mediationRecipientService.discoverMediation(this.agentContext)
-  }
-
-  /**
-   * @deprecated Use `MessagePickupApi.pickupMessages` instead.
-   * */
-  public async pickupMessages(mediatorConnection: ConnectionRecord, pickupStrategy?: MediatorPickupStrategy) {
-    mediatorConnection.assertReady()
-
-    const messagePickupApi = this.agentContext.dependencyManager.resolve(MessagePickupApi)
-
-    await messagePickupApi.pickupMessages({
-      connectionId: mediatorConnection.id,
-      protocolVersion: pickupStrategy === MediatorPickupStrategy.PickUpV2 ? 'v2' : 'v1',
-    })
   }
 
   public async setDefaultMediator(mediatorRecord: MediationRecord) {
@@ -428,7 +418,10 @@ export class MediationRecipientApi {
         // Only wait for first event that matches the criteria
         first(),
         // Do not wait for longer than specified timeout
-        timeout(timeoutMs)
+        timeout({
+          first: timeoutMs,
+          meta: 'MediationRecipientApi.requestAndAwaitGrant',
+        })
       )
       .subscribe(subject)
 

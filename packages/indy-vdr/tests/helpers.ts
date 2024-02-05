@@ -1,7 +1,7 @@
 import type { IndyVdrDidCreateOptions } from '../src/dids/IndyVdrIndyDidRegistrar'
-import type { Agent } from '@aries-framework/core'
+import type { Agent } from '@credo-ts/core'
 
-import { DidCommV1Service, DidCommV2Service, DidDocumentService, KeyType } from '@aries-framework/core'
+import { DidCommV1Service, DidCommV2Service, DidDocumentService, KeyType } from '@credo-ts/core'
 import { indyVdr } from '@hyperledger/indy-vdr-nodejs'
 
 import { sleep } from '../../core/src/utils/sleep'

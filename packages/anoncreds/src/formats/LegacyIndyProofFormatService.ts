@@ -33,16 +33,9 @@ import type {
   ProofFormatAutoRespondProposalOptions,
   ProofFormatAutoRespondRequestOptions,
   ProofFormatAutoRespondPresentationOptions,
-} from '@aries-framework/core'
+} from '@credo-ts/core'
 
-import {
-  AriesFrameworkError,
-  Attachment,
-  AttachmentData,
-  JsonEncoder,
-  ProofFormatSpec,
-  JsonTransformer,
-} from '@aries-framework/core'
+import { CredoError, Attachment, AttachmentData, JsonEncoder, ProofFormatSpec, JsonTransformer } from '@credo-ts/core'
 
 import { AnonCredsProofRequest as AnonCredsProofRequestClass } from '../models/AnonCredsProofRequest'
 import { AnonCredsVerifierServiceSymbol, AnonCredsHolderServiceSymbol } from '../services'
@@ -211,7 +204,7 @@ export class LegacyIndyProofFormatService implements ProofFormatService<LegacyIn
 
     for (const [referent, attribute] of Object.entries(proofJson.requested_proof.revealed_attrs)) {
       if (!checkValidCredentialValueEncoding(attribute.raw, attribute.encoded)) {
-        throw new AriesFrameworkError(
+        throw new CredoError(
           `The encoded value for '${referent}' is invalid. ` +
             `Expected '${encodeCredentialValue(attribute.raw)}'. ` +
             `Actual '${attribute.encoded}'`
@@ -222,7 +215,7 @@ export class LegacyIndyProofFormatService implements ProofFormatService<LegacyIn
     for (const [, attributeGroup] of Object.entries(proofJson.requested_proof.revealed_attr_groups ?? {})) {
       for (const [attributeName, attribute] of Object.entries(attributeGroup.values)) {
         if (!checkValidCredentialValueEncoding(attribute.raw, attribute.encoded)) {
-          throw new AriesFrameworkError(
+          throw new CredoError(
             `The encoded value for '${attributeName}' is invalid. ` +
               `Expected '${encodeCredentialValue(attribute.raw)}'. ` +
               `Actual '${attribute.encoded}'`
@@ -421,7 +414,7 @@ export class LegacyIndyProofFormatService implements ProofFormatService<LegacyIn
       const attributeArray = credentialsForRequest.attributes[attributeName]
 
       if (attributeArray.length === 0) {
-        throw new AriesFrameworkError('Unable to automatically select requested attributes.')
+        throw new CredoError('Unable to automatically select requested attributes.')
       }
 
       selectedCredentials.attributes[attributeName] = attributeArray[0]
@@ -429,7 +422,7 @@ export class LegacyIndyProofFormatService implements ProofFormatService<LegacyIn
 
     Object.keys(credentialsForRequest.predicates).forEach((attributeName) => {
       if (credentialsForRequest.predicates[attributeName].length === 0) {
-        throw new AriesFrameworkError('Unable to automatically select requested predicates.')
+        throw new CredoError('Unable to automatically select requested predicates.')
       } else {
         selectedCredentials.predicates[attributeName] = credentialsForRequest.predicates[attributeName][0]
       }
@@ -469,14 +462,14 @@ export class LegacyIndyProofFormatService implements ProofFormatService<LegacyIn
 
     for (const schemaId of schemaIds) {
       if (!isUnqualifiedSchemaId(schemaId)) {
-        throw new AriesFrameworkError(`${schemaId} is not a valid legacy indy schema id`)
+        throw new CredoError(`${schemaId} is not a valid legacy indy schema id`)
       }
 
       const schemaRegistry = registryService.getRegistryForIdentifier(agentContext, schemaId)
       const schemaResult = await schemaRegistry.getSchema(agentContext, schemaId)
 
       if (!schemaResult.schema) {
-        throw new AriesFrameworkError(`Schema not found for id ${schemaId}: ${schemaResult.resolutionMetadata.message}`)
+        throw new CredoError(`Schema not found for id ${schemaId}: ${schemaResult.resolutionMetadata.message}`)
       }
 
       schemas[schemaId] = schemaResult.schema
@@ -501,7 +494,7 @@ export class LegacyIndyProofFormatService implements ProofFormatService<LegacyIn
 
     for (const credentialDefinitionId of credentialDefinitionIds) {
       if (!isUnqualifiedCredentialDefinitionId(credentialDefinitionId)) {
-        throw new AriesFrameworkError(`${credentialDefinitionId} is not a valid legacy indy credential definition id`)
+        throw new CredoError(`${credentialDefinitionId} is not a valid legacy indy credential definition id`)
       }
 
       const credentialDefinitionRegistry = registryService.getRegistryForIdentifier(
@@ -515,7 +508,7 @@ export class LegacyIndyProofFormatService implements ProofFormatService<LegacyIn
       )
 
       if (!credentialDefinitionResult.credentialDefinition) {
-        throw new AriesFrameworkError(
+        throw new CredoError(
           `Credential definition not found for id ${credentialDefinitionId}: ${credentialDefinitionResult.resolutionMetadata.message}`
         )
       }
@@ -559,7 +552,7 @@ export class LegacyIndyProofFormatService implements ProofFormatService<LegacyIn
     )
 
     if (!revocationStatusResult.revocationStatusList) {
-      throw new AriesFrameworkError(
+      throw new CredoError(
         `Could not retrieve revocation status list for revocation registry ${revocationRegistryId}: ${revocationStatusResult.resolutionMetadata.message}`
       )
     }

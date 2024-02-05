@@ -1,6 +1,6 @@
-import type { ParsedDid } from '@aries-framework/core'
+import type { ParsedDid } from '@credo-ts/core'
 
-import { TypedArrayEncoder, utils } from '@aries-framework/core'
+import { TypedArrayEncoder, utils } from '@credo-ts/core'
 import { isBase58 } from 'class-validator'
 
 const ID_CHAR = '([a-z,A-Z,0-9,-])'
@@ -9,18 +9,23 @@ const IDENTIFIER = `((?:${ID_CHAR}*:)*(${ID_CHAR}+))`
 const PATH = `(/[^#?]*)?`
 const QUERY = `([?][^#]*)?`
 const VERSION_ID = `(.*?)`
+const FRAGMENT = `([#].*)?`
 
 export const cheqdSdkAnonCredsRegistryIdentifierRegex = new RegExp(
-  `^did:cheqd:${NETWORK}:${IDENTIFIER}${PATH}${QUERY}$`
+  `^did:cheqd:${NETWORK}:${IDENTIFIER}${PATH}${QUERY}${FRAGMENT}$`
 )
 
-export const cheqdDidRegex = new RegExp(`^did:cheqd:${NETWORK}:${IDENTIFIER}${QUERY}$`)
-export const cheqdDidVersionRegex = new RegExp(`^did:cheqd:${NETWORK}:${IDENTIFIER}/version/${VERSION_ID}${QUERY}$`)
-export const cheqdDidVersionsRegex = new RegExp(`^did:cheqd:${NETWORK}:${IDENTIFIER}/versions${QUERY}$`)
-export const cheqdDidMetadataRegex = new RegExp(`^did:cheqd:${NETWORK}:${IDENTIFIER}/metadata${QUERY}$`)
-export const cheqdResourceRegex = new RegExp(`^did:cheqd:${NETWORK}:${IDENTIFIER}/resources/${IDENTIFIER}${QUERY}$`)
+export const cheqdDidRegex = new RegExp(`^did:cheqd:${NETWORK}:${IDENTIFIER}${QUERY}${FRAGMENT}$`)
+export const cheqdDidVersionRegex = new RegExp(
+  `^did:cheqd:${NETWORK}:${IDENTIFIER}/version/${VERSION_ID}${QUERY}${FRAGMENT}$`
+)
+export const cheqdDidVersionsRegex = new RegExp(`^did:cheqd:${NETWORK}:${IDENTIFIER}/versions${QUERY}${FRAGMENT}$`)
+export const cheqdDidMetadataRegex = new RegExp(`^did:cheqd:${NETWORK}:${IDENTIFIER}/metadata${QUERY}${FRAGMENT}$`)
+export const cheqdResourceRegex = new RegExp(
+  `^did:cheqd:${NETWORK}:${IDENTIFIER}/resources/${IDENTIFIER}${QUERY}${FRAGMENT}$`
+)
 export const cheqdResourceMetadataRegex = new RegExp(
-  `^did:cheqd:${NETWORK}:${IDENTIFIER}/resources/${IDENTIFIER}/metadata${QUERY}`
+  `^did:cheqd:${NETWORK}:${IDENTIFIER}/resources/${IDENTIFIER}/metadata${QUERY}${FRAGMENT}`
 )
 
 export type ParsedCheqdDid = ParsedDid & { network: string }

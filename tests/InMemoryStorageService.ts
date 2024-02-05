@@ -2,7 +2,9 @@ import type { AgentContext } from '../packages/core/src/agent'
 import type { BaseRecord, TagsBase } from '../packages/core/src/storage/BaseRecord'
 import type { StorageService, BaseRecordConstructor, Query } from '../packages/core/src/storage/StorageService'
 
-import { RecordNotFoundError, RecordDuplicateError, JsonTransformer, injectable } from '@aries-framework/core'
+import { InMemoryWallet } from './InMemoryWallet'
+
+import { RecordNotFoundError, RecordDuplicateError, JsonTransformer, injectable } from '@credo-ts/core'
 
 interface StorageRecord {
   value: Record<string, unknown>
@@ -15,16 +17,19 @@ interface InMemoryRecords {
   [id: string]: StorageRecord
 }
 
+interface ContextCorrelationIdToRecords {
+  [contextCorrelationId: string]: {
+    records: InMemoryRecords
+    creationDate: Date
+  }
+}
+
 @injectable()
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export class InMemoryStorageService<T extends BaseRecord<any, any, any> = BaseRecord<any, any, any>>
   implements StorageService<T>
 {
-  public records: InMemoryRecords
-
-  public constructor(records: InMemoryRecords = {}) {
-    this.records = records
-  }
+  public contextCorrelationIdToRecords: ContextCorrelationIdToRecords = {}
 
   private recordToInstance(record: StorageRecord, recordClass: BaseRecordConstructor<T>): T {
     const instance = JsonTransformer.fromJSON<T>(record.value, recordClass)
@@ -34,16 +39,43 @@ export class InMemoryStorageService<T extends BaseRecord<any, any, any> = BaseRe
     return instance
   }
 
+  private getRecordsForContext(agentContext: AgentContext): InMemoryRecords {
+    const contextCorrelationId = agentContext.contextCorrelationId
+
+    if (!this.contextCorrelationIdToRecords[contextCorrelationId]) {
+      this.contextCorrelationIdToRecords[contextCorrelationId] = {
+        records: {},
+        creationDate: new Date(),
+      }
+    } else if (agentContext.wallet instanceof InMemoryWallet && agentContext.wallet.activeWalletId) {
+      const walletCreationDate = agentContext.wallet.inMemoryWallets[agentContext.wallet.activeWalletId].creationDate
+      const storageCreationDate = this.contextCorrelationIdToRecords[contextCorrelationId].creationDate
+
+      // If the storage was created before the wallet, it means the wallet has been deleted in the meantime
+      // and thus we need to recreate the storage as we don't want to serve records from the previous wallet
+      // FIXME: this is a flaw in our wallet/storage model. I think wallet should be for keys, and storage
+      // for records and you can create them separately. But that's a bigger change.
+      if (storageCreationDate < walletCreationDate) {
+        this.contextCorrelationIdToRecords[contextCorrelationId] = {
+          records: {},
+          creationDate: new Date(),
+        }
+      }
+    }
+
+    return this.contextCorrelationIdToRecords[contextCorrelationId].records
+  }
+
   /** @inheritDoc */
   public async save(agentContext: AgentContext, record: T) {
     record.updatedAt = new Date()
     const value = JsonTransformer.toJSON(record)
 
-    if (this.records[record.id]) {
+    if (this.getRecordsForContext(agentContext)[record.id]) {
       throw new RecordDuplicateError(`Record with id ${record.id} already exists`, { recordType: record.type })
     }
 
-    this.records[record.id] = {
+    this.getRecordsForContext(agentContext)[record.id] = {
       value,
       id: record.id,
       type: record.type,
@@ -57,13 +89,13 @@ export class InMemoryStorageService<T extends BaseRecord<any, any, any> = BaseRe
     const value = JsonTransformer.toJSON(record)
     delete value._tags
 
-    if (!this.records[record.id]) {
+    if (!this.getRecordsForContext(agentContext)[record.id]) {
       throw new RecordNotFoundError(`record with id ${record.id} not found.`, {
         recordType: record.type,
       })
     }
 
-    this.records[record.id] = {
+    this.getRecordsForContext(agentContext)[record.id] = {
       value,
       id: record.id,
       type: record.type,
@@ -73,13 +105,13 @@ export class InMemoryStorageService<T extends BaseRecord<any, any, any> = BaseRe
 
   /** @inheritDoc */
   public async delete(agentContext: AgentContext, record: T) {
-    if (!this.records[record.id]) {
+    if (!this.getRecordsForContext(agentContext)[record.id]) {
       throw new RecordNotFoundError(`record with id ${record.id} not found.`, {
         recordType: record.type,
       })
     }
 
-    delete this.records[record.id]
+    delete this.getRecordsForContext(agentContext)[record.id]
   }
 
   /** @inheritDoc */
@@ -88,18 +120,18 @@ export class InMemoryStorageService<T extends BaseRecord<any, any, any> = BaseRe
     recordClass: BaseRecordConstructor<T>,
     id: string
   ): Promise<void> {
-    if (!this.records[id]) {
+    if (!this.getRecordsForContext(agentContext)[id]) {
       throw new RecordNotFoundError(`record with id ${id} not found.`, {
         recordType: recordClass.type,
       })
     }
 
-    delete this.records[id]
+    delete this.getRecordsForContext(agentContext)[id]
   }
 
   /** @inheritDoc */
   public async getById(agentContext: AgentContext, recordClass: BaseRecordConstructor<T>, id: string): Promise<T> {
-    const record = this.records[id]
+    const record = this.getRecordsForContext(agentContext)[id]
 
     if (!record) {
       throw new RecordNotFoundError(`record with id ${id} not found.`, {
@@ -112,7 +144,7 @@ export class InMemoryStorageService<T extends BaseRecord<any, any, any> = BaseRe
 
   /** @inheritDoc */
   public async getAll(agentContext: AgentContext, recordClass: BaseRecordConstructor<T>): Promise<T[]> {
-    const records = Object.values(this.records)
+    const records = Object.values(this.getRecordsForContext(agentContext))
       .filter((record) => record.type === recordClass.type)
       .map((record) => this.recordToInstance(record, recordClass))
 
@@ -125,7 +157,7 @@ export class InMemoryStorageService<T extends BaseRecord<any, any, any> = BaseRe
     recordClass: BaseRecordConstructor<T>,
     query: Query<T>
   ): Promise<T[]> {
-    const records = Object.values(this.records)
+    const records = Object.values(this.getRecordsForContext(agentContext))
       .filter((record) => record.type === recordClass.type)
       .filter((record) => filterByQuery(record, query))
       .map((record) => this.recordToInstance(record, recordClass))
@@ -165,6 +197,10 @@ function matchSimpleQuery<T extends BaseRecord<any, any, any>>(record: StorageRe
   const tags = record.tags as TagsBase
 
   for (const [key, value] of Object.entries(query)) {
+    // We don't query for value undefined, the value should be null in that case
+    if (value === undefined) continue
+
+    // TODO: support null
     if (Array.isArray(value)) {
       const tagValue = tags[key]
       if (!Array.isArray(tagValue) || !value.every((v) => tagValue.includes(v))) {

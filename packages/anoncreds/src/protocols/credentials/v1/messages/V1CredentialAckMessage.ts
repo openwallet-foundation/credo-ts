@@ -1,6 +1,6 @@
-import type { AckMessageOptions } from '@aries-framework/core'
+import type { AckMessageOptions } from '@credo-ts/core'
 
-import { AckMessage, IsValidMessageType, parseMessageType } from '@aries-framework/core'
+import { AckMessage, IsValidMessageType, parseMessageType } from '@credo-ts/core'
 
 export type V1CredentialAckMessageOptions = AckMessageOptions
 

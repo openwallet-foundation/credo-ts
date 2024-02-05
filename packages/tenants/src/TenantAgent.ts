@@ -1,6 +1,6 @@
-import type { AgentContext, DefaultAgentModules, ModulesMap } from '@aries-framework/core'
+import type { AgentContext, DefaultAgentModules, ModulesMap } from '@credo-ts/core'
 
-import { AriesFrameworkError, BaseAgent } from '@aries-framework/core'
+import { CredoError, BaseAgent } from '@credo-ts/core'
 
 export class TenantAgent<AgentModules extends ModulesMap = DefaultAgentModules> extends BaseAgent<AgentModules> {
   private sessionHasEnded = false
@@ -11,7 +11,7 @@ export class TenantAgent<AgentModules extends ModulesMap = DefaultAgentModules> 
 
   public async initialize() {
     if (this.sessionHasEnded) {
-      throw new AriesFrameworkError("Can't initialize agent after tenant sessions has been ended.")
+      throw new CredoError("Can't initialize agent after tenant sessions has been ended.")
     }
 
     await super.initialize()

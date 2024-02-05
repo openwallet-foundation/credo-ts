@@ -1,15 +1,15 @@
 <p align="center">
   <br />
   <img
-    alt="Hyperledger Aries logo"
-    src="https://raw.githubusercontent.com/hyperledger/aries-framework-javascript/aa31131825e3331dc93694bc58414d955dcb1129/images/aries-logo.png"
+    alt="Credo Logo"
+    src="https://github.com/openwallet-foundation/credo-ts/blob/c7886cb8377ceb8ee4efe8d264211e561a75072d/images/credo-logo.png"
     height="250px"
   />
 </p>
-<h1 align="center"><b>Aries Framework JavaScript - BBS Module</b></h1>
+<h1 align="center"><b>Credo BBS+ Module</b></h1>
 <p align="center">
   <a
-    href="https://raw.githubusercontent.com/hyperledger/aries-framework-javascript/main/LICENSE"
+    href="https://raw.githubusercontent.com/openwallet-foundation/credo-ts/main/LICENSE"
     ><img
       alt="License"
       src="https://img.shields.io/badge/License-Apache%202.0-blue.svg"
@@ -19,26 +19,26 @@
       alt="typescript"
       src="https://img.shields.io/badge/%3C%2F%3E-TypeScript-%230074c1.svg"
   /></a>
-    <a href="https://www.npmjs.com/package/@aries-framework/bbs-signatures"
+    <a href="https://www.npmjs.com/package/@credo-ts/bbs-signatures"
     ><img
-      alt="@aries-framework/bbs-signatures version"
-      src="https://img.shields.io/npm/v/@aries-framework/bbs-signatures"
+      alt="@credo-ts/bbs-signatures version"
+      src="https://img.shields.io/npm/v/@credo-ts/bbs-signatures"
   /></a>
 
 </p>
 <br />
 
-Aries Framework JavaScript BBS Module provides an optional addon to Aries Framework JavaScript to use BBS signatures in W3C VC exchange.
+Credo BBS Module provides an optional addon to Credo to use BBS signatures in W3C VC exchange.
 
 ## Installation
 
 ```sh
-yarn add @aries-framework/bbs-signatures
+yarn add @credo-ts/bbs-signatures
 ```
 
 ### React Native
 
-When using AFJ inside the React Native environment, temporarily, a dependency for creating keys, signing and verifying, with bbs keys must be swapped. Inside your `package.json` the following must be added. This is only needed for React Native environments
+When using Credo inside the React Native environment, temporarily, a dependency for creating keys, signing and verifying, with bbs keys must be swapped. Inside your `package.json` the following must be added. This is only needed for React Native environments
 
 #### yarn
 
@@ -72,4 +72,4 @@ The added dependency is required for autolinking and should be the same as the o
 
 ### Issue with `node-bbs-signatures`
 
-Right now some platforms will see an "error" when installing the `@aries-framework/bbs-signatures` package. This is because the BBS signatures library that we use under the hood is built for Linux x86 and MacOS x86 (and not Windows and MacOS arm). This means that it will show that it could not download the binary. This is not an error for developers, the library that fails is `node-bbs-signatures` and is an optional dependency for performance improvements. It will fallback to a (slower) wasm build.
+Right now some platforms will see an "error" when installing the `@credo-ts/bbs-signatures` package. This is because the BBS signatures library that we use under the hood is built for Linux x86 and MacOS x86 (and not Windows and MacOS arm). This means that it will show that it could not download the binary. This is not an error for developers, the library that fails is `node-bbs-signatures` and is an optional dependency for performance improvements. It will fallback to a (slower) wasm build.

@@ -1,6 +1,6 @@
-import type { ProblemReportMessageOptions } from '@aries-framework/core'
+import type { ProblemReportMessageOptions } from '@credo-ts/core'
 
-import { ProblemReportMessage, IsValidMessageType, parseMessageType } from '@aries-framework/core'
+import { ProblemReportMessage, IsValidMessageType, parseMessageType } from '@credo-ts/core'
 
 export type V1CredentialProblemReportMessageOptions = ProblemReportMessageOptions
 

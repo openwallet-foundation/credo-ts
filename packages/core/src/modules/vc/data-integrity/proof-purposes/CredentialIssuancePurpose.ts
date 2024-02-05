@@ -40,7 +40,6 @@ export class CredentialIssuancePurpose extends AssertionProofPurpose {
    * @param {string} options.verificationMethod - Key id URL to the paired
    *   public key.
    * @param {object} [options.documentLoader] - A document loader.
-   * @param {object} [options.expansionMap] - An expansion map.
    *
    * @throws {Error} If verification method not authorized by controller.
    * @throws {Error} If proof's created timestamp is out of range.
@@ -54,7 +53,6 @@ export class CredentialIssuancePurpose extends AssertionProofPurpose {
       suite: typeof LinkedDataProof
       verificationMethod: string
       documentLoader?: DocumentLoader
-      expansionMap?: () => void
     }
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   ): Promise<{ valid: boolean; error?: any }> {

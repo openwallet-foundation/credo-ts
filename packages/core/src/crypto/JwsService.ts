@@ -1,11 +1,17 @@
-import type { Jws, JwsDetachedFormat, JwsGeneralFormat, JwsProtectedHeaderOptions } from './JwsTypes'
+import type {
+  Jws,
+  JwsDetachedFormat,
+  JwsFlattenedFormat,
+  JwsGeneralFormat,
+  JwsProtectedHeaderOptions,
+} from './JwsTypes'
 import type { Key } from './Key'
 import type { Jwk } from './jose/jwk'
 import type { JwkJson } from './jose/jwk/Jwk'
 import type { AgentContext } from '../agent'
 import type { Buffer } from '../utils'
 
-import { AriesFrameworkError } from '../error'
+import { CredoError } from '../error'
 import { injectable } from '../plugins'
 import { isJsonObject, JsonEncoder, TypedArrayEncoder } from '../utils'
 import { WalletError } from '../wallet/error'
@@ -22,13 +28,13 @@ export class JwsService {
 
     // Make sure the options.key and jwk from protectedHeader are the same.
     if (jwk && (jwk.key.keyType !== options.key.keyType || !jwk.key.publicKey.equals(options.key.publicKey))) {
-      throw new AriesFrameworkError(`Protected header JWK does not match key for signing.`)
+      throw new CredoError(`Protected header JWK does not match key for signing.`)
     }
 
     // Validate the options.key used for signing against the jws options
     // We use keyJwk instead of jwk, as the user could also use kid instead of jwk
     if (keyJwk && !keyJwk.supportsSignatureAlgorithm(alg)) {
-      throw new AriesFrameworkError(
+      throw new CredoError(
         `alg '${alg}' is not a valid JWA signature algorithm for this jwk with keyType ${
           keyJwk.keyType
         }. Supported algorithms are ${keyJwk.supportedSignatureAlgorithms.join(', ')}`
@@ -96,8 +102,7 @@ export class JwsService {
     let payload: string
 
     if (typeof jws === 'string') {
-      if (!JWS_COMPACT_FORMAT_MATCHER.test(jws))
-        throw new AriesFrameworkError(`Invalid JWS compact format for value '${jws}'.`)
+      if (!JWS_COMPACT_FORMAT_MATCHER.test(jws)) throw new CredoError(`Invalid JWS compact format for value '${jws}'.`)
 
       const [protectedHeader, _payload, signature] = jws.split('.')
 
@@ -116,19 +121,24 @@ export class JwsService {
     }
 
     if (signatures.length === 0) {
-      throw new AriesFrameworkError('Unable to verify JWS, no signatures present in JWS.')
+      throw new CredoError('Unable to verify JWS, no signatures present in JWS.')
     }
+
+    const jwsFlattened = {
+      signatures,
+      payload,
+    } satisfies JwsFlattenedFormat
 
     const signerKeys: Key[] = []
     for (const jws of signatures) {
       const protectedJson = JsonEncoder.fromBase64(jws.protected)
 
       if (!isJsonObject(protectedJson)) {
-        throw new AriesFrameworkError('Unable to verify JWS, protected header is not a valid JSON object.')
+        throw new CredoError('Unable to verify JWS, protected header is not a valid JSON object.')
       }
 
       if (!protectedJson.alg || typeof protectedJson.alg !== 'string') {
-        throw new AriesFrameworkError('Unable to verify JWS, protected header alg is not provided or not a string.')
+        throw new CredoError('Unable to verify JWS, protected header alg is not provided or not a string.')
       }
 
       const jwk = await this.jwkFromJws({
@@ -141,7 +151,7 @@ export class JwsService {
         jwkResolver,
       })
       if (!jwk.supportsSignatureAlgorithm(protectedJson.alg)) {
-        throw new AriesFrameworkError(
+        throw new CredoError(
           `alg '${protectedJson.alg}' is not a valid JWA signature algorithm for this jwk with keyType ${
             jwk.keyType
           }. Supported algorithms are ${jwk.supportedSignatureAlgorithms.join(', ')}`
@@ -159,6 +169,7 @@ export class JwsService {
           return {
             isValid: false,
             signerKeys: [],
+            jws: jwsFlattened,
           }
         }
       } catch (error) {
@@ -168,6 +179,7 @@ export class JwsService {
           return {
             isValid: false,
             signerKeys: [],
+            jws: jwsFlattened,
           }
         }
 
@@ -175,15 +187,15 @@ export class JwsService {
       }
     }
 
-    return { isValid: true, signerKeys }
+    return { isValid: true, signerKeys, jws: jwsFlattened }
   }
 
   private buildProtected(options: JwsProtectedHeaderOptions) {
     if (!options.jwk && !options.kid) {
-      throw new AriesFrameworkError('Both JWK and kid are undefined. Please provide one or the other.')
+      throw new CredoError('Both JWK and kid are undefined. Please provide one or the other.')
     }
     if (options.jwk && options.kid) {
-      throw new AriesFrameworkError('Both JWK and kid are provided. Please only provide one of the two.')
+      throw new CredoError('Both JWK and kid are provided. Please only provide one of the two.')
     }
 
     return {
@@ -203,21 +215,17 @@ export class JwsService {
     const { protectedHeader, jwkResolver, jws, payload } = options
 
     if (protectedHeader.jwk && protectedHeader.kid) {
-      throw new AriesFrameworkError(
-        'Both JWK and kid are defined in the protected header. Only one of the two is allowed.'
-      )
+      throw new CredoError('Both JWK and kid are defined in the protected header. Only one of the two is allowed.')
     }
 
     // Jwk
     if (protectedHeader.jwk) {
-      if (!isJsonObject(protectedHeader.jwk)) throw new AriesFrameworkError('JWK is not a valid JSON object.')
+      if (!isJsonObject(protectedHeader.jwk)) throw new CredoError('JWK is not a valid JSON object.')
       return getJwkFromJson(protectedHeader.jwk as JwkJson)
     }
 
     if (!jwkResolver) {
-      throw new AriesFrameworkError(
-        `jwkResolver is required when the JWS protected header does not contain a 'jwk' property.`
-      )
+      throw new CredoError(`jwkResolver is required when the JWS protected header does not contain a 'jwk' property.`)
     }
 
     try {
@@ -229,7 +237,7 @@ export class JwsService {
 
       return jwk
     } catch (error) {
-      throw new AriesFrameworkError(`Error when resolving JWK for JWS in jwkResolver. ${error.message}`, {
+      throw new CredoError(`Error when resolving JWK for JWS in jwkResolver. ${error.message}`, {
         cause: error,
       })
     }
@@ -268,10 +276,12 @@ export interface VerifyJwsOptions {
 export type JwsJwkResolver = (options: {
   jws: JwsDetachedFormat
   payload: string
-  protectedHeader: { alg: string; [key: string]: unknown }
+  protectedHeader: { alg: string; jwk?: string; kid?: string; [key: string]: unknown }
 }) => Promise<Jwk> | Jwk
 
 export interface VerifyJwsResult {
   isValid: boolean
   signerKeys: Key[]
+
+  jws: JwsFlattenedFormat
 }

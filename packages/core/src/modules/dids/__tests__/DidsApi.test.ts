@@ -1,19 +1,17 @@
-import { IndySdkModule } from '../../../../../indy-sdk/src'
-import { indySdk } from '../../../../tests'
-import { getAgentOptions } from '../../../../tests/helpers'
+import { getInMemoryAgentOptions } from '../../../../tests/helpers'
 import { Agent } from '../../../agent/Agent'
+import { isLongFormDidPeer4, isShortFormDidPeer4 } from '../methods/peer/peerDidNumAlgo4'
 
-import { DidDocument, DidDocumentService, KeyType, TypedArrayEncoder } from '@aries-framework/core'
+import {
+  DidDocument,
+  DidDocumentService,
+  KeyType,
+  PeerDidNumAlgo,
+  TypedArrayEncoder,
+  createPeerDidDocumentFromServices,
+} from '@credo-ts/core'
 
-const agentOptions = getAgentOptions(
-  'DidsApi',
-  {},
-  {
-    indySdk: new IndySdkModule({
-      indySdk,
-    }),
-  }
-)
+const agentOptions = getInMemoryAgentOptions('DidsApi')
 
 const agent = new Agent(agentOptions)
 
@@ -62,6 +60,8 @@ describe('DidsApi', () => {
       method: 'key',
       methodSpecificIdentifier: 'z6MkjEayvPpjVJKFLirX8SomBTPDboHm1XSCkUev2M4siQty',
       role: 'created',
+      alternativeDids: undefined,
+      recipientKeyFingerprints: [],
     })
 
     expect(createdDids[0].toJSON()).toMatchObject({
@@ -145,6 +145,8 @@ describe('DidsApi', () => {
       method: 'peer',
       methodSpecificIdentifier: '0z6Mkhu3G8viiebsWmCiSgWiQoCZrTeuX76oLDow81YNYvJQM',
       role: 'created',
+      alternativeDids: undefined,
+      recipientKeyFingerprints: [],
     })
 
     expect(createdDids[0].toJSON()).toMatchObject({
@@ -226,5 +228,41 @@ describe('DidsApi', () => {
         },
       ],
     })
+  })
+
+  test('create and resolve did:peer:4 in short and long form', async () => {
+    const routing = await agent.mediationRecipient.getRouting({})
+    const didDocument = createPeerDidDocumentFromServices([
+      {
+        id: 'didcomm',
+        recipientKeys: [routing.recipientKey],
+        routingKeys: routing.routingKeys,
+        serviceEndpoint: routing.endpoints[0],
+      },
+    ])
+
+    const result = await agent.dids.create({
+      method: 'peer',
+      didDocument,
+      options: {
+        numAlgo: PeerDidNumAlgo.ShortFormAndLongForm,
+      },
+    })
+
+    const longFormDid = result.didState.did
+    const shortFormDid = result.didState.didDocument?.alsoKnownAs
+      ? result.didState.didDocument?.alsoKnownAs[0]
+      : undefined
+
+    if (!longFormDid) fail('Long form did not defined')
+    if (!shortFormDid) fail('Short form did not defined')
+
+    expect(isLongFormDidPeer4(longFormDid)).toBeTruthy()
+    expect(isShortFormDidPeer4(shortFormDid)).toBeTruthy()
+
+    const didDocumentFromLongFormDid = await agent.dids.resolveDidDocument(longFormDid)
+    const didDocumentFromShortFormDid = await agent.dids.resolveDidDocument(shortFormDid)
+
+    expect(didDocumentFromLongFormDid).toEqual(didDocumentFromShortFormDid)
   })
 })

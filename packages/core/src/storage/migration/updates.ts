@@ -6,6 +6,7 @@ import { updateV0_1ToV0_2 } from './updates/0.1-0.2'
 import { updateV0_2ToV0_3 } from './updates/0.2-0.3'
 import { updateV0_3ToV0_3_1 } from './updates/0.3-0.3.1'
 import { updateV0_3_1ToV0_4 } from './updates/0.3.1-0.4'
+import { updateV0_4ToV0_5 } from './updates/0.4-0.5'
 
 export const INITIAL_STORAGE_VERSION = '0.1'
 
@@ -46,15 +47,10 @@ export const supportedUpdates = [
     toVersion: '0.4',
     doUpdate: updateV0_3_1ToV0_4,
   },
-  // FIXME: this entry needs to be here to allow extension modules to add their own updates
-  // We should allow extension modules to add their own updates without having to add an entry here
-  // There will be other migrations in 0.5, so it's okay for this version upgrade
   {
     fromVersion: '0.4',
     toVersion: '0.5',
-    doUpdate: async () => {
-      // no-op
-    },
+    doUpdate: updateV0_4ToV0_5,
   },
 ] as const
 

@@ -29,18 +29,18 @@ const invalidMetadata =
 describe('HashlinkEncoder', () => {
   describe('encode()', () => {
     it('Encodes string to hashlink', () => {
-      const hashlink = HashlinkEncoder.encode(validData.data, 'sha2-256')
+      const hashlink = HashlinkEncoder.encode(validData.data, 'sha-256')
       expect(hashlink).toEqual('hl:zQmWvQxTqbG2Z9HPJgG57jjwR154cKhbtJenbyYTWkjgF3e')
     })
 
     it('Encodes string and metadata to hashlink', () => {
-      const hashlink = HashlinkEncoder.encode(validData.data, 'sha2-256', 'base58btc', validData.metadata)
+      const hashlink = HashlinkEncoder.encode(validData.data, 'sha-256', 'base58btc', validData.metadata)
       expect(hashlink).toEqual(validHashlink)
     })
 
     it('Encodes invalid metadata in hashlink', () => {
       expect(() => {
-        HashlinkEncoder.encode(validData.data, 'sha2-256', 'base58btc', invalidData.metadata)
+        HashlinkEncoder.encode(validData.data, 'sha-256', 'base58btc', invalidData.metadata)
       }).toThrow(/^Invalid metadata: /)
     })
   })

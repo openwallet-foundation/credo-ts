@@ -1,5 +1,5 @@
-import { DependencyManager, InjectionSymbols, Agent, UpdateAssistant, utils } from '@aries-framework/core'
-import { agentDependencies } from '@aries-framework/node'
+import { DependencyManager, InjectionSymbols, Agent, UpdateAssistant, utils } from '@credo-ts/core'
+import { agentDependencies } from '@credo-ts/node'
 import { readFileSync } from 'fs'
 import path from 'path'
 

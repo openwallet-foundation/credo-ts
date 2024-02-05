@@ -1,27 +1,18 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 import type { ConnectionRecord } from '../src/modules/connections'
 
-import { getIndySdkModules } from '../../indy-sdk/tests/setupIndySdkModule'
 import { Agent } from '../src/agent/Agent'
 import { HandshakeProtocol } from '../src/modules/connections'
 
-import { waitForBasicMessage, getAgentOptions } from './helpers'
+import { waitForBasicMessage, getInMemoryAgentOptions } from './helpers'
 import { setupSubjectTransports } from './transport'
 
-const aliceAgentOptions = getAgentOptions(
-  'Agents Alice',
-  {
-    endpoints: ['rxjs:alice'],
-  },
-  getIndySdkModules()
-)
-const bobAgentOptions = getAgentOptions(
-  'Agents Bob',
-  {
-    endpoints: ['rxjs:bob'],
-  },
-  getIndySdkModules()
-)
+const aliceAgentOptions = getInMemoryAgentOptions('Agents Alice', {
+  endpoints: ['rxjs:alice'],
+})
+const bobAgentOptions = getInMemoryAgentOptions('Agents Bob', {
+  endpoints: ['rxjs:bob'],
+})
 
 describe('agents', () => {
   let aliceAgent: Agent

@@ -10,11 +10,12 @@ import type {
 } from './types'
 
 import { AgentContext } from '../../agent'
-import { AriesFrameworkError } from '../../error'
+import { CredoError } from '../../error'
 import { injectable } from '../../plugins'
 import { WalletKeyExistsError } from '../../wallet/error'
 
 import { DidsModuleConfig } from './DidsModuleConfig'
+import { getAlternativeDidsForPeerDid, isValidPeerDid } from './methods'
 import { DidRepository } from './repository'
 import { DidRegistrarService, DidResolverService } from './services'
 
@@ -118,12 +119,12 @@ export class DidsApi {
    */
   public async import({ did, didDocument, privateKeys = [], overwrite }: ImportDidOptions) {
     if (didDocument && didDocument.id !== did) {
-      throw new AriesFrameworkError(`Did document id ${didDocument.id} does not match did ${did}`)
+      throw new CredoError(`Did document id ${didDocument.id} does not match did ${did}`)
     }
 
     const existingDidRecord = await this.didRepository.findCreatedDid(this.agentContext, did)
     if (existingDidRecord && !overwrite) {
-      throw new AriesFrameworkError(
+      throw new CredoError(
         `A created did ${did} already exists. If you want to override the existing did, set the 'overwrite' option to update the did.`
       )
     }
@@ -157,6 +158,7 @@ export class DidsApi {
       existingDidRecord.didDocument = didDocument
       existingDidRecord.setTags({
         recipientKeyFingerprints: didDocument.recipientKeys.map((key) => key.fingerprint),
+        alternativeDids: isValidPeerDid(didDocument.id) ? getAlternativeDidsForPeerDid(did) : undefined,
       })
 
       await this.didRepository.update(this.agentContext, existingDidRecord)
@@ -169,7 +171,16 @@ export class DidsApi {
       didDocument,
       tags: {
         recipientKeyFingerprints: didDocument.recipientKeys.map((key) => key.fingerprint),
+        alternativeDids: isValidPeerDid(didDocument.id) ? getAlternativeDidsForPeerDid(did) : undefined,
       },
     })
+  }
+
+  public get supportedResolverMethods() {
+    return this.didResolverService.supportedMethods
+  }
+
+  public get supportedRegistrarMethods() {
+    return this.didRegistrarService.supportedMethods
   }
 }

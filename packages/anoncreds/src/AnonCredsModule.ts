@@ -1,8 +1,9 @@
 import type { AnonCredsModuleConfigOptions } from './AnonCredsModuleConfig'
-import type { DependencyManager, Module, Update } from '@aries-framework/core'
+import type { DependencyManager, Module, Update } from '@credo-ts/core'
 
 import { AnonCredsApi } from './AnonCredsApi'
 import { AnonCredsModuleConfig } from './AnonCredsModuleConfig'
+import { AnonCredsRsHolderService, AnonCredsRsIssuerService, AnonCredsRsVerifierService } from './anoncreds-rs'
 import {
   AnonCredsCredentialDefinitionPrivateRepository,
   AnonCredsKeyCorrectnessProofRepository,
@@ -12,6 +13,7 @@ import {
 } from './repository'
 import { AnonCredsCredentialDefinitionRepository } from './repository/AnonCredsCredentialDefinitionRepository'
 import { AnonCredsSchemaRepository } from './repository/AnonCredsSchemaRepository'
+import { AnonCredsHolderServiceSymbol, AnonCredsIssuerServiceSymbol, AnonCredsVerifierServiceSymbol } from './services'
 import { AnonCredsRegistryService } from './services/registry/AnonCredsRegistryService'
 import { updateAnonCredsModuleV0_3_1ToV0_4 } from './updates/0.3.1-0.4'
 
@@ -40,6 +42,11 @@ export class AnonCredsModule implements Module {
     dependencyManager.registerSingleton(AnonCredsLinkSecretRepository)
     dependencyManager.registerSingleton(AnonCredsRevocationRegistryDefinitionRepository)
     dependencyManager.registerSingleton(AnonCredsRevocationRegistryDefinitionPrivateRepository)
+
+    // TODO: should we allow to override the service?
+    dependencyManager.registerSingleton(AnonCredsHolderServiceSymbol, AnonCredsRsHolderService)
+    dependencyManager.registerSingleton(AnonCredsIssuerServiceSymbol, AnonCredsRsIssuerService)
+    dependencyManager.registerSingleton(AnonCredsVerifierServiceSymbol, AnonCredsRsVerifierService)
   }
 
   public updates = [

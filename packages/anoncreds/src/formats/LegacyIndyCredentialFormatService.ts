@@ -27,19 +27,19 @@ import type {
   CredentialExchangeRecord,
   CredentialPreviewAttributeOptions,
   LinkedAttachment,
-} from '@aries-framework/core'
+} from '@credo-ts/core'
 
 import {
   ProblemReportError,
   MessageValidator,
   CredentialFormatSpec,
-  AriesFrameworkError,
+  CredoError,
   Attachment,
   JsonEncoder,
   utils,
   CredentialProblemReportReason,
   JsonTransformer,
-} from '@aries-framework/core'
+} from '@credo-ts/core'
 
 import { AnonCredsError } from '../error'
 import { AnonCredsCredentialProposal } from '../models/AnonCredsCredentialProposal'
@@ -89,7 +89,7 @@ export class LegacyIndyCredentialFormatService implements CredentialFormatServic
     const indyFormat = credentialFormats.indy
 
     if (!indyFormat) {
-      throw new AriesFrameworkError('Missing indy payload in createProposal')
+      throw new CredoError('Missing indy payload in createProposal')
     }
 
     // We want all properties except for `attributes` and `linkedAttachments` attributes.
@@ -101,7 +101,7 @@ export class LegacyIndyCredentialFormatService implements CredentialFormatServic
     try {
       MessageValidator.validateSync(proposal)
     } catch (error) {
-      throw new AriesFrameworkError(`Invalid proposal supplied: ${indyCredentialProposal} in Indy Format Service`)
+      throw new CredoError(`Invalid proposal supplied: ${indyCredentialProposal} in Indy Format Service`)
     }
 
     const attachment = this.getFormatData(JsonTransformer.toJSON(proposal), format.attachmentId)
@@ -146,17 +146,15 @@ export class LegacyIndyCredentialFormatService implements CredentialFormatServic
     const attributes = indyFormat?.attributes ?? credentialRecord.credentialAttributes
 
     if (!credentialDefinitionId) {
-      throw new AriesFrameworkError(
-        'No credential definition id in proposal or provided as input to accept proposal method.'
-      )
+      throw new CredoError('No credential definition id in proposal or provided as input to accept proposal method.')
     }
 
     if (!isUnqualifiedCredentialDefinitionId(credentialDefinitionId)) {
-      throw new AriesFrameworkError(`${credentialDefinitionId} is not a valid legacy indy credential definition id`)
+      throw new CredoError(`${credentialDefinitionId} is not a valid legacy indy credential definition id`)
     }
 
     if (!attributes) {
-      throw new AriesFrameworkError('No attributes in proposal or provided as input to accept proposal method.')
+      throw new CredoError('No attributes in proposal or provided as input to accept proposal method.')
     }
 
     const { format, attachment, previewAttributes } = await this.createIndyOffer(agentContext, {
@@ -188,7 +186,7 @@ export class LegacyIndyCredentialFormatService implements CredentialFormatServic
     const indyFormat = credentialFormats.indy
 
     if (!indyFormat) {
-      throw new AriesFrameworkError('Missing indy credentialFormat data')
+      throw new CredoError('Missing indy credentialFormat data')
     }
 
     const { format, attachment, previewAttributes } = await this.createIndyOffer(agentContext, {
@@ -232,9 +230,7 @@ export class LegacyIndyCredentialFormatService implements CredentialFormatServic
     const credentialOffer = offerAttachment.getDataAsJson<AnonCredsCredentialOffer>()
 
     if (!isUnqualifiedCredentialDefinitionId(credentialOffer.cred_def_id)) {
-      throw new AriesFrameworkError(
-        `${credentialOffer.cred_def_id} is not a valid legacy indy credential definition id`
-      )
+      throw new CredoError(`${credentialOffer.cred_def_id} is not a valid legacy indy credential definition id`)
     }
     // Get credential definition
     const registry = registryService.getRegistryForIdentifier(agentContext, credentialOffer.cred_def_id)
@@ -284,7 +280,7 @@ export class LegacyIndyCredentialFormatService implements CredentialFormatServic
    * Starting from a request is not supported for indy credentials, this method only throws an error.
    */
   public async createRequest(): Promise<CredentialFormatCreateReturn> {
-    throw new AriesFrameworkError('Starting from a request is not supported for indy credentials')
+    throw new CredoError('Starting from a request is not supported for indy credentials')
   }
 
   /**
@@ -307,7 +303,7 @@ export class LegacyIndyCredentialFormatService implements CredentialFormatServic
     // Assert credential attributes
     const credentialAttributes = credentialRecord.credentialAttributes
     if (!credentialAttributes) {
-      throw new AriesFrameworkError(
+      throw new CredoError(
         `Missing required credential attribute values on credential record with id ${credentialRecord.id}`
       )
     }
@@ -316,10 +312,10 @@ export class LegacyIndyCredentialFormatService implements CredentialFormatServic
       agentContext.dependencyManager.resolve<AnonCredsIssuerService>(AnonCredsIssuerServiceSymbol)
 
     const credentialOffer = offerAttachment?.getDataAsJson<AnonCredsCredentialOffer>()
-    if (!credentialOffer) throw new AriesFrameworkError('Missing indy credential offer in createCredential')
+    if (!credentialOffer) throw new CredoError('Missing indy credential offer in createCredential')
 
     const credentialRequest = requestAttachment.getDataAsJson<AnonCredsCredentialRequest>()
-    if (!credentialRequest) throw new AriesFrameworkError('Missing indy credential request in createCredential')
+    if (!credentialRequest) throw new CredoError('Missing indy credential request in createCredential')
 
     const { credential, credentialRevocationId } = await anonCredsIssuerService.createCredential(agentContext, {
       credentialOffer,
@@ -365,15 +361,13 @@ export class LegacyIndyCredentialFormatService implements CredentialFormatServic
       agentContext.dependencyManager.resolve<AnonCredsHolderService>(AnonCredsHolderServiceSymbol)
 
     if (!credentialRequestMetadata) {
-      throw new AriesFrameworkError(
+      throw new CredoError(
         `Missing required request metadata for credential exchange with thread id with id ${credentialRecord.id}`
       )
     }
 
     if (!credentialRecord.credentialAttributes) {
-      throw new AriesFrameworkError(
-        'Missing credential attributes on credential record. Unable to check credential attributes'
-      )
+      throw new CredoError('Missing credential attributes on credential record. Unable to check credential attributes')
     }
 
     const anonCredsCredential = attachment.getDataAsJson<AnonCredsCredential>()
@@ -382,7 +376,7 @@ export class LegacyIndyCredentialFormatService implements CredentialFormatServic
       .getRegistryForIdentifier(agentContext, anonCredsCredential.cred_def_id)
       .getCredentialDefinition(agentContext, anonCredsCredential.cred_def_id)
     if (!credentialDefinitionResult.credentialDefinition) {
-      throw new AriesFrameworkError(
+      throw new CredoError(
         `Unable to resolve credential definition ${anonCredsCredential.cred_def_id}: ${credentialDefinitionResult.resolutionMetadata.error} ${credentialDefinitionResult.resolutionMetadata.message}`
       )
     }
@@ -391,7 +385,7 @@ export class LegacyIndyCredentialFormatService implements CredentialFormatServic
       .getRegistryForIdentifier(agentContext, anonCredsCredential.cred_def_id)
       .getSchema(agentContext, anonCredsCredential.schema_id)
     if (!schemaResult.schema) {
-      throw new AriesFrameworkError(
+      throw new CredoError(
         `Unable to resolve schema ${anonCredsCredential.schema_id}: ${schemaResult.resolutionMetadata.error} ${schemaResult.resolutionMetadata.message}`
       )
     }
@@ -404,7 +398,7 @@ export class LegacyIndyCredentialFormatService implements CredentialFormatServic
         .getRevocationRegistryDefinition(agentContext, anonCredsCredential.rev_reg_id)
 
       if (!revocationRegistryResult.revocationRegistryDefinition) {
-        throw new AriesFrameworkError(
+        throw new CredoError(
           `Unable to resolve revocation registry definition ${anonCredsCredential.rev_reg_id}: ${revocationRegistryResult.resolutionMetadata.error} ${revocationRegistryResult.resolutionMetadata.message}`
         )
       }
@@ -434,8 +428,8 @@ export class LegacyIndyCredentialFormatService implements CredentialFormatServic
       const credential = await anonCredsHolderService.getCredential(agentContext, { credentialId })
 
       credentialRecord.metadata.add<AnonCredsCredentialMetadata>(AnonCredsCredentialMetadataKey, {
-        credentialRevocationId: credential.credentialRevocationId,
-        revocationRegistryId: credential.revocationRegistryId,
+        credentialRevocationId: credential.credentialRevocationId ?? undefined,
+        revocationRegistryId: credential.revocationRegistryId ?? undefined,
       })
       credentialRecord.setTags({
         anonCredsRevocationRegistryId: credential.revocationRegistryId,
@@ -562,7 +556,7 @@ export class LegacyIndyCredentialFormatService implements CredentialFormatServic
 
     const { previewAttributes } = this.getCredentialLinkedAttachments(attributes, linkedAttachments)
     if (!previewAttributes) {
-      throw new AriesFrameworkError('Missing required preview attributes for indy offer')
+      throw new CredoError('Missing required preview attributes for indy offer')
     }
 
     await this.assertPreviewAttributesMatchSchemaAttributes(agentContext, offer, previewAttributes)
@@ -588,7 +582,7 @@ export class LegacyIndyCredentialFormatService implements CredentialFormatServic
     const schemaResult = await registry.getSchema(agentContext, offer.schema_id)
 
     if (!schemaResult.schema) {
-      throw new AriesFrameworkError(
+      throw new CredoError(
         `Unable to resolve schema ${offer.schema_id} from registry: ${schemaResult.resolutionMetadata.error} ${schemaResult.resolutionMetadata.message}`
       )
     }
