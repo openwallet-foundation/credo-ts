@@ -391,6 +391,7 @@ async function anonCredsFlowTest(options: { issuerId: string; revocable: boolean
 
   // Holder processes and accepts credential
   await dataIntegrityCredentialFormatService.processCredential(agentContext, {
+    offerAttachment,
     credentialRecord: holderCredentialRecord,
     attachment: credentialAttachment,
     requestAttachment,

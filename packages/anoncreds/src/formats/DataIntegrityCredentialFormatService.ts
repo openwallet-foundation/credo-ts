@@ -66,6 +66,7 @@ import {
   SignatureSuiteRegistry,
   CredentialPreviewAttribute,
   CredoError,
+  deepEquality,
 } from '@credo-ts/core'
 import { W3cCredential as AW3cCredential } from '@hyperledger/anoncreds-shared'
 
@@ -174,6 +175,18 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
     return { format, attachment, previewAttributes }
   }
 
+  private getCredentialVersion(credentialJson: JsonObject): W3C_VC_DATA_MODEL_VERSION {
+    const context = credentialJson['@context']
+    if (!context || !Array.isArray(context)) throw new CredoError('Invalid @context in credential offer')
+
+    const isV1Credential = context.find((c) => c === 'https://www.w3.org/2018/credentials/v1')
+    const isV2Credential = context.find((c) => c === 'https://www.w3.org/ns/credentials/v2')
+
+    if (isV1Credential) return '1.1'
+    else if (isV2Credential) return '2.0'
+    else throw new CredoError('Missing @context in credential offer')
+  }
+
   public async processOffer(
     agentContext: AgentContext,
     { attachment, credentialRecord }: CredentialFormatProcessOptions
@@ -185,18 +198,12 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
     const { credential, data_model_versions_supported, binding_method, binding_required } =
       attachment.getDataAsJson<DataIntegrityCredentialOffer>()
 
-    const context = credential['@context']
-    if (!context || !Array.isArray(context)) throw new CredoError('Invalid @context in credential offer')
-
-    const isV1Credential = context.find((c) => c === 'https://www.w3.org/2018/credentials/v1')
-    const isV2Credential = context.find((c) => c === 'https://www.w3.org/ns/credentials/v2')
-
-    if (!isV1Credential && !isV2Credential) throw new CredoError('Missing @context in credential offer')
+    const credentialVersion = this.getCredentialVersion(credential)
 
     const credentialToBeValidated = {
       ...credential,
       issuer: credential.issuer ?? 'https://example.com',
-      ...(isV1Credential && { validFrom: credential.issuanceDate ?? new Date().toISOString() }),
+      ...(credentialVersion === '1.1' && { validFrom: credential.issuanceDate ?? new Date().toISOString() }),
     }
 
     JsonTransformer.fromJSON(credentialToBeValidated, W3cCredential)
@@ -684,7 +691,15 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
       if (offeredCredential.type.length !== 1 || offeredCredential.type[0] !== 'VerifiableCredential') {
         throw new CredoError('Offered Invalid credential type')
       }
-      // TODO: check if any non integrity protected fields were on the offered credential. If so throw
+
+      const integrityProtectedFields = ['@context', 'issuer', 'type', 'credentialSubject', 'validFrom', 'issuanceDate']
+      if (
+        Object.keys(credentialOffer.credential).some(
+          (key) => !integrityProtectedFields.includes(key) && key !== 'proof'
+        )
+      ) {
+        throw new CredoError('Invalid credential subject id')
+      }
     }
 
     if (credentialRequest.binding_proof?.didcomm_signed_attachment) {
@@ -792,11 +807,14 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
    */
   public async processCredential(
     agentContext: AgentContext,
-    { credentialRecord, attachment, requestAttachment }: CredentialFormatProcessCredentialOptions
+    { credentialRecord, attachment, requestAttachment, offerAttachment }: CredentialFormatProcessCredentialOptions
   ): Promise<void> {
+    const credentialOffer = offerAttachment.getDataAsJson<DataIntegrityCredentialOffer>()
+
     const credentialRequestMetadata = credentialRecord.metadata.get<DataIntegrityRequestMetadata>(
       DataIntegrityRequestMetadataKey
     )
+
     if (!credentialRequestMetadata) {
       throw new CredoError(`Missing request metadata for credential exchange with thread id ${credentialRecord.id}`)
     }
@@ -809,6 +827,44 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
     }
 
     const { credential: credentialJson } = attachment.getDataAsJson<DataIntegrityCredential>()
+
+    const offeredCredentialJson = credentialOffer.credential
+
+    if (!Array.isArray(offeredCredentialJson.credentialSubject)) {
+      const credentialSubjectMatches = Object.entries(offeredCredentialJson.credentialSubject as JsonObject).every(
+        ([key, offeredValue]) => {
+          const receivedValue = (credentialJson.credentialSubject as JsonObject)[key]
+          if (!offeredValue || !receivedValue) return false
+
+          if (typeof offeredValue === 'number' || typeof receivedValue === 'number') {
+            return offeredValue.toString() === receivedValue.toString()
+          }
+
+          return deepEquality(offeredValue, receivedValue)
+        }
+      )
+
+      if (!credentialSubjectMatches) {
+        throw new CredoError(
+          'Received invalid credential. Received credential subject does not match the offered credential subject.'
+        )
+      }
+    }
+
+    const credentialVersion = this.getCredentialVersion(credentialJson)
+    const expectedReceivedCredential = {
+      ...offeredCredentialJson,
+      issuer: offeredCredentialJson.issuer ?? credentialJson.issuer,
+      credentialSubject: credentialJson.credentialSubject,
+      ...(credentialVersion === '1.1' && { issuanceDate: credentialJson.issuanceDate }),
+      ...(credentialVersion === '2.0' && { validFrom: credentialJson.validFrom }),
+      ...(offeredCredentialJson.credentialStatus === '2.0' && { credentialStatus: credentialJson.credentialStatus }),
+      proof: credentialJson.proof,
+    }
+
+    if (!deepEquality(credentialJson, expectedReceivedCredential)) {
+      throw new CredoError('Received invalid credential. Received credential does not match the offered credential')
+    }
 
     let anonCredsCredentialRecordOptions: AnonCredsCredentialRecordOptions | undefined
     let w3cJsonLdVerifiableCredential: W3cJsonLdVerifiableCredential
@@ -833,7 +889,6 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
         true
       )
     } else {
-      // TODO: check the sturcture of the credential
       w3cJsonLdVerifiableCredential = JsonTransformer.fromJSON(credentialJson, W3cJsonLdVerifiableCredential)
     }
 

@@ -240,6 +240,7 @@ async function anonCredsFlowTest(options: {
 
   // Holder processes and accepts credential
   await dataIntegrityCredentialFormatService.processCredential(agentContext, {
+    offerAttachment,
     credentialRecord: holderCredentialRecord,
     attachment: credentialAttachment,
     requestAttachment,

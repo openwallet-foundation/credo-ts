@@ -194,7 +194,7 @@ async function anonCredsFlowTest(options: {
     type: ['VerifiableCredential'],
     issuer: issuer.did,
     issuanceDate: new Date().toISOString(),
-    credentialSubject: new W3cCredentialSubject({ claims: { name: 'John', age: '25' } }),
+    credentialSubject: new W3cCredentialSubject({ claims: { name: 'John', age: 25 } }),
   })
 
   const { attachment: offerAttachment } = await dataIntegrityCredentialFormatService.createOffer(agentContext, {
@@ -248,6 +248,7 @@ async function anonCredsFlowTest(options: {
 
   // Holder processes and accepts credential
   await dataIntegrityCredentialFormatService.processCredential(agentContext, {
+    offerAttachment,
     credentialRecord: holderCredentialRecord,
     attachment: credentialAttachment,
     requestAttachment,

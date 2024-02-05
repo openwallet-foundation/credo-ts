@@ -530,7 +530,18 @@ export class CredentialFormatCoordinator<CFs extends CredentialFormatService[]> 
   ) {
     const didCommMessageRepository = agentContext.dependencyManager.resolve(DidCommMessageRepository)
 
+    const offerMessage = await didCommMessageRepository.getAgentMessage(agentContext, {
+      associatedRecordId: credentialRecord.id,
+      messageClass: V2OfferCredentialMessage,
+    })
+
     for (const formatService of formatServices) {
+      const offerAttachment = this.getAttachmentForService(
+        formatService,
+        offerMessage.formats,
+        offerMessage.offerAttachments
+      )
+
       const attachment = this.getAttachmentForService(formatService, message.formats, message.credentialAttachments)
       const requestAttachment = this.getAttachmentForService(
         formatService,
@@ -540,6 +551,7 @@ export class CredentialFormatCoordinator<CFs extends CredentialFormatService[]> 
 
       await formatService.processCredential(agentContext, {
         attachment,
+        offerAttachment,
         requestAttachment,
         credentialRecord,
         requestAppendAttachments: requestMessage.appendedAttachments,

@@ -55,6 +55,7 @@ export interface CredentialFormatProcessOptions {
 }
 
 export interface CredentialFormatProcessCredentialOptions extends CredentialFormatProcessOptions {
+  offerAttachment: Attachment
   requestAttachment: Attachment
   requestAppendAttachments?: Attachment[]
 }
@@ -87,7 +88,6 @@ export interface CredentialFormatAcceptOfferOptions<CF extends CredentialFormat>
   credentialRecord: CredentialExchangeRecord
   credentialFormats?: CredentialFormatPayload<[CF], 'acceptOffer'>
   attachmentId?: string
-
   offerAttachment: Attachment
 }
 
