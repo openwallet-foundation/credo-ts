@@ -12,7 +12,11 @@ export interface TenantRecordProps {
   tags?: TagsBase
 }
 
-export class TenantRecord extends BaseRecord {
+export type DefaultTenantRecordTags = {
+  label: string
+}
+
+export class TenantRecord extends BaseRecord<DefaultTenantRecordTags> {
   public static readonly type = 'TenantRecord'
   public readonly type = TenantRecord.type
 
@@ -32,6 +36,7 @@ export class TenantRecord extends BaseRecord {
   public getTags() {
     return {
       ...this._tags,
+      label: this.config.label,
     }
   }
 }
