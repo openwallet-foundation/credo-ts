@@ -219,7 +219,7 @@ async function anonCredsFlowTest(options: {
       offerAttachment,
       credentialFormats: {
         dataIntegrity: {
-          didCommSignedAttachmentCredentialRequestOptions: {
+          didCommSignedAttachmentAcceptOfferOptions: {
             kid: holder.kid,
           },
         },

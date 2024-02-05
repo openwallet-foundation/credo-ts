@@ -54,11 +54,10 @@ export function W3cCredentialSubjectTransformer() {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const vToJson = (v: any) => {
         if (isInstance(v, W3cCredentialSubject)) return v.id ? { ...v.claims, id: v.id } : { ...v.claims }
-        if (v.claims) throw new Error('Credential subject claims in plain json')
         return v
       }
 
-      return Array.isArray(value) ? value.every(vToJson) : vToJson(value)
+      return Array.isArray(value) ? value.map(vToJson) : vToJson(value)
     }
     // PLAIN_TO_PLAIN
     return value

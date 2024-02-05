@@ -1,11 +1,16 @@
 import type { AnonCredsModuleConfigOptions } from './AnonCredsModuleConfig'
 
-import { anonCredsVcDataIntegrityServiceSymbol, type DependencyManager, type Module, type Update } from '@credo-ts/core'
+import {
+  anoncreds2023DataIntegrityServiceSymbol,
+  type DependencyManager,
+  type Module,
+  type Update,
+} from '@credo-ts/core'
 
 import { AnonCredsApi } from './AnonCredsApi'
 import { AnonCredsModuleConfig } from './AnonCredsModuleConfig'
 import { AnonCredsRsHolderService, AnonCredsRsIssuerService, AnonCredsRsVerifierService } from './anoncreds-rs'
-import { AnonCredsVc2023DataIntegrityService } from './anoncreds-rs/AnonCredsVcDataIntegrityService'
+import { AnonCreds2023DataIntegrityServiceImpl } from './anoncreds-rs/AnonCreds2023DataIntegrityService'
 import {
   AnonCredsCredentialDefinitionPrivateRepository,
   AnonCredsKeyCorrectnessProofRepository,
@@ -51,7 +56,7 @@ export class AnonCredsModule implements Module {
     dependencyManager.registerSingleton(AnonCredsIssuerServiceSymbol, AnonCredsRsIssuerService)
     dependencyManager.registerSingleton(AnonCredsVerifierServiceSymbol, AnonCredsRsVerifierService)
 
-    dependencyManager.registerSingleton(anonCredsVcDataIntegrityServiceSymbol, AnonCredsVc2023DataIntegrityService)
+    dependencyManager.registerSingleton(anoncreds2023DataIntegrityServiceSymbol, AnonCreds2023DataIntegrityServiceImpl)
   }
 
   public updates = [

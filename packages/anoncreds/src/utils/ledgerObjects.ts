@@ -1,4 +1,9 @@
-import type { AnonCredsCredentialDefinition, AnonCredsRevocationRegistryDefinition, AnonCredsSchema } from '../models'
+import type {
+  AnonCredsCredentialDefinition,
+  AnonCredsRevocationRegistryDefinition,
+  AnonCredsRevocationStatusList,
+  AnonCredsSchema,
+} from '../models'
 import type { AgentContext } from '@credo-ts/core'
 
 import { isDid, CredoError } from '@credo-ts/core'
@@ -89,19 +94,14 @@ export function getQualifiedId(identifier: string, namespace: string) {
   if (isUnqualifiedSchemaId(identifier)) {
     const { namespaceIdentifier, schemaName, schemaVersion } = parseIndySchemaId(identifier)
     const schemaId = `did:indy:${namespace}:${namespaceIdentifier}/anoncreds/v0/SCHEMA/${schemaName}/${schemaVersion}`
-    //if (isDidIndySchemaId(schemaId)) throw new Error(`schemaid conversion error: ${schemaId}`)
     return schemaId
   } else if (isUnqualifiedCredentialDefinitionId(identifier)) {
     const { namespaceIdentifier, schemaSeqNo, tag } = parseIndyCredentialDefinitionId(identifier)
     const credentialDefinitionId = `did:indy:${namespace}:${namespaceIdentifier}/anoncreds/v0/CLAIM_DEF/${schemaSeqNo}/${tag}`
-    //if (isDidIndyCredentialDefinitionId(credentialDefinitionId))
-    //  throw new Error(`credentialdefintiion id conversion error: ${credentialDefinitionId}`)
     return credentialDefinitionId
   } else if (isUnqualifiedRevocationRegistryId(identifier)) {
     const { namespaceIdentifier, schemaSeqNo, revocationRegistryTag } = parseIndyRevocationRegistryId(identifier)
     const revocationRegistryId = `did:indy:${namespace}:${namespaceIdentifier}/anoncreds/v0/REV_REG_DEF/${schemaSeqNo}/${revocationRegistryTag}`
-    //if (isDidIndyRevocationRegistryId(revocationRegistryId))
-    //  throw new Error(`revocationregistry id conversion error: ${revocationRegistryId}`)
     return revocationRegistryId
   }
 
@@ -109,7 +109,7 @@ export function getQualifiedId(identifier: string, namespace: string) {
 }
 
 export function getUnqualifiedSchema(schema: AnonCredsSchema): AnonCredsSchema {
-  if (!isIndyDid(schema.issuerId)) return schema
+  if (!isIndyDid(schema.issuerId)) return { ...schema }
   const issuerId = getUnQualifiedId(schema.issuerId)
 
   return { ...schema, issuerId }
@@ -120,7 +120,7 @@ export function isQualifiedSchema(schema: AnonCredsSchema) {
 }
 
 export function getQualifiedSchema(schema: AnonCredsSchema, namespace: string): AnonCredsSchema {
-  if (isQualifiedSchema(schema)) return schema
+  if (isQualifiedSchema(schema)) return { ...schema }
 
   return {
     ...schema,
@@ -165,7 +165,7 @@ export function getUnqualifiedCredentialDefinition(
   anonCredsCredentialDefinition: AnonCredsCredentialDefinition
 ): AnonCredsCredentialDefinition {
   if (!isIndyDid(anonCredsCredentialDefinition.issuerId) || !isIndyDid(anonCredsCredentialDefinition.schemaId)) {
-    return anonCredsCredentialDefinition
+    return { ...anonCredsCredentialDefinition }
   }
   const issuerId = getUnQualifiedId(anonCredsCredentialDefinition.issuerId)
   const schemaId = getUnQualifiedId(anonCredsCredentialDefinition.schemaId)
@@ -231,7 +231,7 @@ export function getUnqualifiedRevocationRegistryDefinition(
   revocationRegistryDefinition: AnonCredsRevocationRegistryDefinition
 ): AnonCredsRevocationRegistryDefinition {
   if (!isIndyDid(revocationRegistryDefinition.issuerId) || !isIndyDid(revocationRegistryDefinition.credDefId)) {
-    return revocationRegistryDefinition
+    return { ...revocationRegistryDefinition }
   }
 
   const issuerId = getUnQualifiedId(revocationRegistryDefinition.issuerId)
@@ -301,4 +301,28 @@ export async function fetchRevocationRegistryDefinition(
     qualifiedRevocationRegistryDefinition,
     unqualifiedRevocationRegistryDefinition,
   }
+}
+
+export async function fetchRevocationStatusList(
+  agentContext: AgentContext,
+  revocationRegistryId: string,
+  timestamp: number
+): Promise<{ revocationStatusList: AnonCredsRevocationStatusList }> {
+  const registry = agentContext.dependencyManager
+    .resolve(AnonCredsRegistryService)
+    .getRegistryForIdentifier(agentContext, revocationRegistryId)
+
+  const { revocationStatusList, resolutionMetadata } = await registry.getRevocationStatusList(
+    agentContext,
+    revocationRegistryId,
+    timestamp
+  )
+
+  if (!revocationStatusList) {
+    throw new CredoError(
+      `Could not retrieve revocation status list for revocation registry ${revocationRegistryId}: ${resolutionMetadata.message}`
+    )
+  }
+
+  return { revocationStatusList }
 }

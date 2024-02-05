@@ -25,9 +25,12 @@ import { AnonCredsCredentialRecord } from '../../../repository'
 import { AnonCredsRegistryService } from '../../../services'
 import * as testModule from '../anonCredsCredentialRecord'
 
+import { anoncreds } from './../../../../tests/helpers'
+
 const agentConfig = getAgentConfig('Migration AnonCreds Credential Records 0.4-0.5')
 const registry = new InMemoryAnonCredsRegistry()
 const anonCredsModuleConfig = new AnonCredsModuleConfig({
+  anoncreds,
   registries: [registry],
 })
 

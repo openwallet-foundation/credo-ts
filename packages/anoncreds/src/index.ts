@@ -35,4 +35,5 @@ export {
   isQualifiedCredentialDefinition,
   isQualifiedRevocationRegistryDefinition,
   isQualifiedSchema,
+  fetchRevocationStatusList,
 } from './utils/ledgerObjects'

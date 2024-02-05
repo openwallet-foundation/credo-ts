@@ -85,6 +85,11 @@ describe('W3cCredentialRecord', () => {
         'attr::degree::value': 'Bachelor of Science and Arts',
         revocationRegistryId: 'revocationRegistryId',
         credentialRevocationId: 'credentialRevocationId',
+        unqualifiedCredentialDefinitionId: undefined,
+        unqualifiedIssuerId: undefined,
+        unqualifiedRevocationRegistryId: undefined,
+        unqualifiedSchemaId: undefined,
+        unqualifiedSchemaIssuerId: undefined,
       }
 
       const anonCredsTags = w3cCredentialRecord.getAnonCredsTags()
@@ -100,6 +105,7 @@ describe('W3cCredentialRecord', () => {
         contexts: credential.contexts,
         proofTypes: credential.proofTypes,
         givenId: credential.id,
+        types: ['VerifiableCredential', 'UniversityDegreeCredential'],
         cryptosuites: [],
         expandedTypes: ['https://expanded.tag#1'],
         ...anoncredsCredentialTags,

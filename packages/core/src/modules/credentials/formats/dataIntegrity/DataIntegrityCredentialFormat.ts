@@ -26,8 +26,8 @@ export interface DidCommSignedAttachmentBindingMethodOptions {
  */
 export interface DataIntegrityAcceptOfferFormat {
   dataModelVersion?: W3C_VC_DATA_MODEL_VERSION
-  didCommSignedAttachmentCredentialRequestOptions?: DidCommSignedAttachmentCredentialRequestOptions
-  anonCredsLinkSecretCredentialRequestOptions?: AnonCredsLinkSecretCredentialRequestOptions
+  didCommSignedAttachmentAcceptOfferOptions?: DidCommSignedAttachmentCredentialRequestOptions
+  anonCredsLinkSecretAcceptOfferOptions?: AnonCredsLinkSecretCredentialRequestOptions
 }
 
 /**

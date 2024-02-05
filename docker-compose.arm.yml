@@ -24,3 +24,9 @@ services:
         add-did-from-seed 000000000000000000000000Trustee9 TRUSTEE &&
         /usr/bin/supervisord -n
       "
+
+  cheqd-ledger:
+    image: ghcr.io/cheqd/cheqd-testnet:latest
+    platform: linux/amd64
+    ports:
+      - '26657:26657'

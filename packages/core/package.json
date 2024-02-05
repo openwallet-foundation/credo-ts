@@ -30,7 +30,7 @@
     "@sd-jwt/core": "^0.2.0",
     "@sd-jwt/decode": "^0.2.0",
     "@sphereon/pex": "^3.0.1",
-    "@sphereon/pex-models": "^2.1.5",
+    "@sphereon/pex-models": "^2.2.0",
     "@sphereon/ssi-types": "^0.18.1",
     "@stablelib/ed25519": "^1.0.2",
     "@stablelib/sha256": "^1.0.1",

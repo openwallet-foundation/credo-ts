@@ -81,6 +81,7 @@ import {
   dateToTimestamp,
   fetchCredentialDefinition,
   fetchRevocationRegistryDefinition,
+  fetchRevocationStatusList,
   fetchSchema,
   legacyCredentialToW3cCredential,
 } from '../utils'
@@ -161,7 +162,7 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
     })
 
     const credential = dataIntegrityFormat.credential
-    if ('proof' in credential) throw new CredoError('Cannot offer a credential that already has a proof.')
+    if ('proof' in credential) throw new CredoError('The offered credential MUST NOT contain any proofs.')
 
     const { dataIntegrityCredentialOffer, previewAttributes } = await this.createDataIntegrityCredentialOffer(
       agentContext,
@@ -184,7 +185,7 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
     const { credential, data_model_versions_supported, binding_method, binding_required } =
       attachment.getDataAsJson<DataIntegrityCredentialOffer>()
 
-    // validate the credential
+    // TODO: validate the credential
     JsonTransformer.fromJSON(credential, W3cCredential)
 
     const missingBindingMethod =
@@ -322,7 +323,7 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
 
     let anonCredsLinkSecretDataIntegrityBindingProof: AnonCredsLinkSecretDataIntegrityBindingProof | undefined =
       undefined
-    if (dataIntegrityFormat.anonCredsLinkSecretCredentialRequestOptions) {
+    if (dataIntegrityFormat.anonCredsLinkSecretAcceptOfferOptions) {
       if (!credentialOffer.binding_method?.anoncreds_link_secret) {
         throw new CredoError('Cannot request credential with a binding method that was not offered.')
       }
@@ -342,7 +343,7 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
           schema_id: credentialDefinitionReturn.credentialDefinition.schemaId,
         },
         credentialDefinition: credentialDefinitionReturn.credentialDefinition,
-        linkSecretId: dataIntegrityFormat.anonCredsLinkSecretCredentialRequestOptions?.linkSecretId,
+        linkSecretId: dataIntegrityFormat.anonCredsLinkSecretAcceptOfferOptions?.linkSecretId,
       })
 
       dataIntegrityRequestMetadata.linkSecretRequestMetadata = anonCredsCredentialRequestMetadata
@@ -352,16 +353,14 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
         schemaId: credentialDefinitionReturn.credentialDefinition.schemaId,
       }
 
-      if (!anonCredsCredentialRequest.entropy) {
-        throw new CredoError('Missing entropy for anonCredsCredentialRequest')
-      }
+      if (!anonCredsCredentialRequest.entropy) throw new CredoError('Missing entropy for anonCredsCredentialRequest')
       anonCredsLinkSecretDataIntegrityBindingProof =
         anonCredsCredentialRequest as AnonCredsLinkSecretDataIntegrityBindingProof
     }
 
     let didCommSignedAttachmentBindingProof: DidCommSignedAttachmentDataIntegrityBindingProof | undefined = undefined
     let didCommSignedAttachment: Attachment | undefined = undefined
-    if (dataIntegrityFormat.didCommSignedAttachmentCredentialRequestOptions) {
+    if (dataIntegrityFormat.didCommSignedAttachmentAcceptOfferOptions) {
       if (!credentialOffer.binding_method?.didcomm_signed_attachment) {
         throw new CredoError('Cannot request credential with a binding method that was not offered.')
       }
@@ -369,7 +368,7 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
       didCommSignedAttachment = await this.createSignedAttachment(
         agentContext,
         { nonce: credentialOffer.binding_method.didcomm_signed_attachment.nonce },
-        dataIntegrityFormat.didCommSignedAttachmentCredentialRequestOptions,
+        dataIntegrityFormat.didCommSignedAttachmentAcceptOfferOptions,
         credentialOffer.binding_method.didcomm_signed_attachment.algs_supported
       )
 
@@ -384,9 +383,7 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
             didcomm_signed_attachment: didCommSignedAttachmentBindingProof,
           }
 
-    if (credentialOffer.binding_required && !bindingProof) {
-      throw new CredoError('Missing required binding proof')
-    }
+    if (credentialOffer.binding_required && !bindingProof) throw new CredoError('Missing required binding proof')
 
     const dataModelVersion = dataIntegrityFormat.dataModelVersion ?? credentialOffer.data_model_versions_supported[0]
     if (!credentialOffer.data_model_versions_supported.includes(dataModelVersion)) {
@@ -501,17 +498,11 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
         )
       }
 
-      const registryService = agentContext.dependencyManager.resolve(AnonCredsRegistryService)
-      const revocationStatusListResult = await registryService
-        .getRegistryForIdentifier(agentContext, revocationRegistryDefinitionId)
-        .getRevocationStatusList(agentContext, revocationRegistryDefinitionId, dateToTimestamp(new Date()))
-
-      if (!revocationStatusListResult.revocationStatusList) {
-        throw new CredoError(
-          `Unable to resolve revocation status list for ${revocationRegistryDefinitionId}:
-          ${revocationStatusListResult.resolutionMetadata.error} ${revocationStatusListResult.resolutionMetadata.message}`
-        )
-      }
+      const revocationStatusListResult = await fetchRevocationStatusList(
+        agentContext,
+        revocationRegistryDefinitionId,
+        dateToTimestamp(new Date())
+      )
 
       revocationStatusList = revocationStatusListResult.revocationStatusList
     }
@@ -599,21 +590,23 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
       credentialToBeSigned = _credentialToBeSigned as W3cCredential
     }
 
-    const signed = (await w3cCredentialService.signCredential(agentContext, {
+    const w3cJsonLdVerifiableCredential = (await w3cCredentialService.signCredential(agentContext, {
       format: ClaimFormat.LdpVc,
       credential: credentialToBeSigned as W3cCredential,
       proofType: signatureSuite.proofType,
       verificationMethod: verificationMethod.id,
     })) as W3cJsonLdVerifiableCredential
 
-    if (Array.isArray(signed.proof)) throw new CredoError('A newly signed credential can not have multiple proofs')
+    if (Array.isArray(w3cJsonLdVerifiableCredential.proof)) {
+      throw new CredoError('A newly signed credential can not have multiple proofs')
+    }
 
     if (credential instanceof W3cJsonLdVerifiableCredential) {
       const combinedProofs = Array.isArray(credential.proof) ? credential.proof : [credential.proof]
-      combinedProofs.push(signed.proof)
-      signed.proof = combinedProofs
+      combinedProofs.push(w3cJsonLdVerifiableCredential.proof)
+      w3cJsonLdVerifiableCredential.proof = combinedProofs
     }
-    return signed
+    return w3cJsonLdVerifiableCredential
   }
 
   public async acceptRequest(
@@ -827,6 +820,7 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
         true
       )
     } else {
+      // TODO: check the sturcture of the credential
       w3cJsonLdVerifiableCredential = JsonTransformer.fromJSON(credentialJson, W3cJsonLdVerifiableCredential)
     }
 
@@ -978,9 +972,7 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
 
       const anoncredsCredentialOffer = await agentContext.dependencyManager
         .resolve<AnonCredsIssuerService>(AnonCredsIssuerServiceSymbol)
-        .createCredentialOffer(agentContext, {
-          credentialDefinitionId,
-        })
+        .createCredentialOffer(agentContext, { credentialDefinitionId })
 
       // We check locally for credential definition info. If it supports revocation, revocationRegistryIndex
       // and revocationRegistryDefinitionId are mandatory

@@ -5,7 +5,7 @@ import type {
   AnonCredsCredentialRequest,
   AnonCredsCredentialRequestMetadata,
 } from '../models'
-import type { AnonCredsIssuerService, AnonCredsHolderService, GetRevocationRegistryDefinitionReturn } from '../services'
+import type { AnonCredsIssuerService, AnonCredsHolderService } from '../services'
 import type { AnonCredsCredentialMetadata } from '../utils/metadata'
 import type {
   CredentialFormatService,
@@ -41,10 +41,9 @@ import {
   JsonTransformer,
 } from '@credo-ts/core'
 
-import { AnonCredsError } from '../error'
 import { AnonCredsCredentialProposal } from '../models/AnonCredsCredentialProposal'
 import { AnonCredsIssuerServiceSymbol, AnonCredsHolderServiceSymbol } from '../services'
-import { AnonCredsRegistryService } from '../services/registry/AnonCredsRegistryService'
+import { fetchCredentialDefinition, fetchRevocationRegistryDefinition, fetchSchema } from '../utils'
 import {
   convertAttributesToCredentialValues,
   assertCredentialValuesMatch,
@@ -69,7 +68,7 @@ export class LegacyIndyCredentialFormatService implements CredentialFormatServic
    * credentialRecordType is the type of record that stores the credential. It is stored in the credential
    * record binding in the credential exchange record.
    */
-  public readonly credentialRecordType = 'anoncreds' as const
+  public readonly credentialRecordType = 'w3c' as const
 
   /**
    * Create a {@link AttachmentFormats} object dependent on the message type.
@@ -224,7 +223,6 @@ export class LegacyIndyCredentialFormatService implements CredentialFormatServic
       credentialFormats,
     }: CredentialFormatAcceptOfferOptions<LegacyIndyCredentialFormat>
   ): Promise<CredentialFormatCreateReturn> {
-    const registryService = agentContext.dependencyManager.resolve(AnonCredsRegistryService)
     const holderService = agentContext.dependencyManager.resolve<AnonCredsHolderService>(AnonCredsHolderServiceSymbol)
 
     const credentialOffer = offerAttachment.getDataAsJson<AnonCredsCredentialOffer>()
@@ -233,17 +231,7 @@ export class LegacyIndyCredentialFormatService implements CredentialFormatServic
       throw new CredoError(`${credentialOffer.cred_def_id} is not a valid legacy indy credential definition id`)
     }
     // Get credential definition
-    const registry = registryService.getRegistryForIdentifier(agentContext, credentialOffer.cred_def_id)
-    const { credentialDefinition, resolutionMetadata } = await registry.getCredentialDefinition(
-      agentContext,
-      credentialOffer.cred_def_id
-    )
-
-    if (!credentialDefinition) {
-      throw new AnonCredsError(
-        `Unable to retrieve credential definition with id ${credentialOffer.cred_def_id}: ${resolutionMetadata.error} ${resolutionMetadata.message}`
-      )
-    }
+    const { credentialDefinition } = await fetchCredentialDefinition(agentContext, credentialOffer.cred_def_id)
 
     const { credentialRequest, credentialRequestMetadata } = await holderService.createCredentialRequest(agentContext, {
       credentialOffer,
@@ -356,7 +344,6 @@ export class LegacyIndyCredentialFormatService implements CredentialFormatServic
       AnonCredsCredentialRequestMetadataKey
     )
 
-    const registryService = agentContext.dependencyManager.resolve(AnonCredsRegistryService)
     const anonCredsHolderService =
       agentContext.dependencyManager.resolve<AnonCredsHolderService>(AnonCredsHolderServiceSymbol)
 
@@ -372,37 +359,16 @@ export class LegacyIndyCredentialFormatService implements CredentialFormatServic
 
     const anonCredsCredential = attachment.getDataAsJson<AnonCredsCredential>()
 
-    const credentialDefinitionResult = await registryService
-      .getRegistryForIdentifier(agentContext, anonCredsCredential.cred_def_id)
-      .getCredentialDefinition(agentContext, anonCredsCredential.cred_def_id)
-    if (!credentialDefinitionResult.credentialDefinition) {
-      throw new CredoError(
-        `Unable to resolve credential definition ${anonCredsCredential.cred_def_id}: ${credentialDefinitionResult.resolutionMetadata.error} ${credentialDefinitionResult.resolutionMetadata.message}`
-      )
-    }
-
-    const schemaResult = await registryService
-      .getRegistryForIdentifier(agentContext, anonCredsCredential.cred_def_id)
-      .getSchema(agentContext, anonCredsCredential.schema_id)
-    if (!schemaResult.schema) {
-      throw new CredoError(
-        `Unable to resolve schema ${anonCredsCredential.schema_id}: ${schemaResult.resolutionMetadata.error} ${schemaResult.resolutionMetadata.message}`
-      )
-    }
+    const { credentialDefinition, id: credentialDefinitionId } = await fetchCredentialDefinition(
+      agentContext,
+      anonCredsCredential.cred_def_id
+    )
+    const { schema } = await fetchSchema(agentContext, anonCredsCredential.schema_id)
 
     // Resolve revocation registry if credential is revocable
-    let revocationRegistryResult: null | GetRevocationRegistryDefinitionReturn = null
-    if (anonCredsCredential.rev_reg_id) {
-      revocationRegistryResult = await registryService
-        .getRegistryForIdentifier(agentContext, anonCredsCredential.rev_reg_id)
-        .getRevocationRegistryDefinition(agentContext, anonCredsCredential.rev_reg_id)
-
-      if (!revocationRegistryResult.revocationRegistryDefinition) {
-        throw new CredoError(
-          `Unable to resolve revocation registry definition ${anonCredsCredential.rev_reg_id}: ${revocationRegistryResult.resolutionMetadata.error} ${revocationRegistryResult.resolutionMetadata.message}`
-        )
-      }
-    }
+    const revocationRegistryResult = anonCredsCredential.rev_reg_id
+      ? await fetchRevocationRegistryDefinition(agentContext, anonCredsCredential.rev_reg_id)
+      : undefined
 
     // assert the credential values match the offer values
     const recordCredentialValues = convertAttributesToCredentialValues(credentialRecord.credentialAttributes)
@@ -412,13 +378,13 @@ export class LegacyIndyCredentialFormatService implements CredentialFormatServic
       credentialId: utils.uuid(),
       credentialRequestMetadata,
       credential: anonCredsCredential,
-      credentialDefinitionId: credentialDefinitionResult.credentialDefinitionId,
-      credentialDefinition: credentialDefinitionResult.credentialDefinition,
-      schema: schemaResult.schema,
+      credentialDefinitionId,
+      credentialDefinition,
+      schema,
       revocationRegistry: revocationRegistryResult?.revocationRegistryDefinition
         ? {
             definition: revocationRegistryResult.revocationRegistryDefinition,
-            id: revocationRegistryResult.revocationRegistryDefinitionId,
+            id: revocationRegistryResult.id,
           }
         : undefined,
     })
@@ -576,18 +542,8 @@ export class LegacyIndyCredentialFormatService implements CredentialFormatServic
     offer: AnonCredsCredentialOffer,
     attributes: CredentialPreviewAttributeOptions[]
   ): Promise<void> {
-    const registryService = agentContext.dependencyManager.resolve(AnonCredsRegistryService)
-    const registry = registryService.getRegistryForIdentifier(agentContext, offer.schema_id)
-
-    const schemaResult = await registry.getSchema(agentContext, offer.schema_id)
-
-    if (!schemaResult.schema) {
-      throw new CredoError(
-        `Unable to resolve schema ${offer.schema_id} from registry: ${schemaResult.resolutionMetadata.error} ${schemaResult.resolutionMetadata.message}`
-      )
-    }
-
-    assertAttributesMatch(schemaResult.schema, attributes)
+    const { schema } = await fetchSchema(agentContext, offer.schema_id)
+    assertAttributesMatch(schema, attributes)
   }
 
   /**

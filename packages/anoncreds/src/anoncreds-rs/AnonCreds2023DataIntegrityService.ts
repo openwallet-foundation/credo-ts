@@ -7,8 +7,8 @@ import type {
 } from '../models'
 import type {
   AgentContext,
-  AnonCredsVcDataIntegrityService,
-  AnonCredsVcVerificationOptions,
+  Anoncreds2023DataIntegrityService,
+  Anoncreds2023VerificationOptions,
   JsonObject,
   W3cCredentialRecord,
 } from '@credo-ts/core'
@@ -44,8 +44,13 @@ import BigNumber from 'bn.js'
 
 import { AnonCredsModuleConfig } from '../AnonCredsModuleConfig'
 import { AnonCredsLinkSecretRepository } from '../repository'
-import { AnonCredsRegistryService } from '../services'
-import { assertBestPracticeRevocationInterval, fetchCredentialDefinition, fetchSchema } from '../utils'
+import {
+  assertBestPracticeRevocationInterval,
+  fetchCredentialDefinition,
+  fetchRevocationRegistryDefinition,
+  fetchRevocationStatusList,
+  fetchSchema,
+} from '../utils'
 
 export interface CredentialWithMetadata {
   credential: JsonObject
@@ -63,19 +68,20 @@ export interface RevocationRegistryFetchMetadata {
 export type PathComponent = string | number
 
 @injectable()
-export class AnonCredsVc2023DataIntegrityService implements AnonCredsVcDataIntegrityService {
-  private getDataIntegrityProof(credential: W3cJsonLdVerifiableCredential, cryptosuite: string) {
+export class AnonCreds2023DataIntegrityServiceImpl implements Anoncreds2023DataIntegrityService {
+  private getDataIntegrityProof(credential: W3cJsonLdVerifiableCredential) {
+    const cryptosuite = 'anoncreds-2023'
     if (Array.isArray(credential.proof)) {
       const proof = credential.proof.find(
         (proof) => proof.type === 'DataIntegrityProof' && proof.cryptosuite === cryptosuite
       )
-      if (!proof) throw new CredoError('Could not find anoncreds proof')
+      if (!proof) throw new CredoError('Could not find anoncreds-2023 proof')
       return proof
     }
 
     if (credential.proof.type !== 'DataIntegrityProof' || credential.proof.cryptosuite !== cryptosuite) {
       throw new CredoError(
-        `Unsupported proof type '${credential.proof.type}' or cryptosuite '${credential.proof.cryptosuite}'.`
+        `Unsupported proof type cryptosuite '${credential.proof.cryptosuite}', expected anoncreds-2023.`
       )
     }
 
@@ -92,48 +98,45 @@ export class AnonCredsVc2023DataIntegrityService implements AnonCredsVcDataInteg
     return result
   }
 
-  private getCredentialMetadata(
-    entryIndex: number,
+  private getCredentialMetadataForDescriptor(
+    descriptorMapObject: Descriptor,
     selectedCredentials: JsonObject[],
-    selectedCredentialRecords: W3cCredentialRecord[]
+    selectedCredentialRecords?: W3cCredentialRecord[]
   ) {
-    const credentialRecord = selectedCredentialRecords[entryIndex]
-    if (!deepEquality(JsonTransformer.toJSON(credentialRecord.credential), selectedCredentials[entryIndex])) {
-      throw new CredoError('selected credential does not match the selected credential record')
-    }
+    const credentialExtractionResult = this.extractPathNodes({ verifiableCredential: selectedCredentials }, [
+      descriptorMapObject.path,
+    ])
 
-    const anonCredsTags = credentialRecord.getAnonCredsTags()
-    if (!anonCredsTags) throw new CredoError('No anoncreds tags found on credential record')
-
-    return {
-      entryIndex,
-      credentialRecord,
-      anonCredsTags,
-    }
-  }
-
-  private getCredential(descriptorMapObject: Descriptor, selectedCredentials: JsonObject[]) {
-    const presentationWrapper = {
-      verifiableCredential: selectedCredentials,
-    }
-
-    const credentialExtractionResult = this.extractPathNodes(presentationWrapper, [descriptorMapObject.path])
     if (credentialExtractionResult.length === 0 || credentialExtractionResult.length > 1) {
       throw new Error('Could not extract credential from presentation submission')
     }
 
-    // only available on the holder side
-    const jsonLdVerifiableCredentialJson = credentialExtractionResult[0].value
+    const credentialJson = credentialExtractionResult[0].value as JsonObject
 
-    const entryIndex = selectedCredentials.findIndex((credential) =>
-      deepEquality(credential, jsonLdVerifiableCredentialJson)
-    )
+    // FIXME: Is this required?
+    const entryIndex = selectedCredentials.findIndex((credential) => deepEquality(credential, credentialJson))
     if (entryIndex === -1) throw new CredoError('Could not find selected credential')
+
+    const credentialRecord = selectedCredentialRecords ? selectedCredentialRecords[entryIndex] : undefined
+    if (
+      credentialRecord &&
+      !deepEquality(JsonTransformer.toJSON(credentialRecord.credential), selectedCredentials[entryIndex])
+    ) {
+      throw new CredoError('selected credential does not match the selected credential record')
+    }
+
+    const anonCredsTags = credentialRecord?.getAnonCredsTags()
+    if (credentialRecord && !anonCredsTags) throw new CredoError('No anoncreds tags found on credential record')
+
+    const { credentialDefinitionId, revocationRegistryId, schemaId } = AnonCredsW3cCredential.fromJson(credentialJson)
 
     return {
       entryIndex,
-      credential: JsonTransformer.fromJSON(jsonLdVerifiableCredentialJson, W3cJsonLdVerifiableCredential),
-      credentialJson: jsonLdVerifiableCredentialJson,
+      credentialJson,
+      anonCredsTags,
+      credentialDefinitionId,
+      revocationRegistryId,
+      schemaId,
     }
   }
 
@@ -153,40 +156,28 @@ export class AnonCredsVc2023DataIntegrityService implements AnonCredsVcDataInteg
     // Make sure the revocation interval follows best practices from Aries RFC 0441
     assertBestPracticeRevocationInterval(nonRevokedInterval)
 
-    const registry = agentContext.dependencyManager
-      .resolve(AnonCredsRegistryService)
-      .getRegistryForIdentifier(agentContext, revocationRegistryId)
-
-    const { revocationRegistryDefinition: _revocationRegistryDefinition, resolutionMetadata } =
-      await registry.getRevocationRegistryDefinition(agentContext, revocationRegistryId)
-    if (!_revocationRegistryDefinition) {
-      throw new CredoError(
-        `Could not retrieve revocation registry definition for revocation registry ${revocationRegistryId}: ${resolutionMetadata.message}`
-      )
-    }
+    const { qualifiedRevocationRegistryDefinition } = await fetchRevocationRegistryDefinition(
+      agentContext,
+      revocationRegistryId
+    )
 
     const tailsFileService = agentContext.dependencyManager.resolve(AnonCredsModuleConfig).tailsFileService
     const { tailsFilePath } = await tailsFileService.getTailsFile(agentContext, {
-      revocationRegistryDefinition: _revocationRegistryDefinition,
+      revocationRegistryDefinition: qualifiedRevocationRegistryDefinition,
     })
 
     const timestampToFetch = timestamp ?? nonRevokedInterval.to
     if (!timestampToFetch) throw new CredoError('Timestamp to fetch is required')
 
-    // Fetch revocation status list if we don't already have a revocation status list for the given timestamp
-    const { revocationStatusList: _revocationStatusList, resolutionMetadata: statusListResolutionMetadata } =
-      await registry.getRevocationStatusList(agentContext, revocationRegistryId, timestampToFetch)
-
-    if (!_revocationStatusList) {
-      throw new CredoError(
-        `Could not retrieve revocation status list for revocation registry ${revocationRegistryId}: ${statusListResolutionMetadata.message}`
-      )
-    }
-
+    const { revocationStatusList: _revocationStatusList } = await fetchRevocationStatusList(
+      agentContext,
+      revocationRegistryId,
+      timestampToFetch
+    )
     const updatedTimestamp = timestamp ?? _revocationStatusList.timestamp
 
     const revocationRegistryDefinition = RevocationRegistryDefinition.fromJson(
-      _revocationRegistryDefinition as unknown as JsonObject
+      qualifiedRevocationRegistryDefinition as unknown as JsonObject
     )
     const revocationStatusList = RevocationStatusList.fromJson(_revocationStatusList as unknown as JsonObject)
     const revocationState = revocationRegistryIndex
@@ -200,7 +191,7 @@ export class AnonCredsVc2023DataIntegrityService implements AnonCredsVcDataInteg
 
     const requestedFrom = nonRevokedInterval.from
     if (requestedFrom && requestedFrom > timestampToFetch) {
-      const { revocationStatusList: overrideRevocationStatusList } = await registry.getRevocationStatusList(
+      const { revocationStatusList: overrideRevocationStatusList } = await fetchRevocationStatusList(
         agentContext,
         revocationRegistryId,
         requestedFrom
@@ -222,58 +213,43 @@ export class AnonCredsVc2023DataIntegrityService implements AnonCredsVcDataInteg
 
     return {
       updatedTimestamp,
-      revocationRegistryDefinition: [revocationRegistryId, revocationRegistryDefinition] as [
-        string,
-        RevocationRegistryDefinition
-      ],
+      revocationRegistryId,
+      revocationRegistryDefinition,
       revocationStatusList,
       revocationState,
       nonRevokedIntervalOverride,
     }
   }
 
-  private async getCredentialDefinitionsAndSchemas(
-    agentContext: AgentContext,
-    schemaIds: Set<string> | undefined,
-    credentialDefinitionIds: Set<string>
-  ) {
-    const schemaFetchPromises = [...(schemaIds ?? [])].map((schemaId) => fetchSchema(agentContext, schemaId))
-    const credentialDefinitionFetchPromises = [...credentialDefinitionIds].map((credentialDefinitionId) =>
-      fetchCredentialDefinition(agentContext, credentialDefinitionId)
-    )
+  private async getSchemas(agentContext: AgentContext, schemaIds: Set<string>) {
+    const schemaFetchPromises = [...schemaIds].map((schemaId) => fetchSchema(agentContext, schemaId))
 
     const schemas: Record<string, AnonCredsSchema> = {}
-    const credentialDefinitions: Record<string, AnonCredsCredentialDefinition> = {}
-
-    const results = await Promise.all([
-      Promise.all(schemaFetchPromises),
-      Promise.all(credentialDefinitionFetchPromises),
-    ])
-
-    const credentialDefinitionFetchResults = results[1]
-    for (const credentialDefinitionFetchResult of credentialDefinitionFetchResults) {
-      const credentialDefinitionId = credentialDefinitionFetchResult.id
-      const credentialDefinition = credentialDefinitionFetchResult.credentialDefinition
-      credentialDefinitions[credentialDefinitionId] = credentialDefinition
-    }
-
-    const schemaFetchResults =
-      schemaFetchPromises.length > 0
-        ? results[0]
-        : await Promise.all(
-            credentialDefinitionFetchResults.map((res) => fetchSchema(agentContext, res.credentialDefinition.schemaId))
-          )
-
+    const schemaFetchResults = await Promise.all(schemaFetchPromises)
     for (const schemaFetchResult of schemaFetchResults) {
       const schemaId = schemaFetchResult.id
       const schema = schemaFetchResult.schema
       schemas[schemaId] = schema
     }
 
-    return {
-      schemas,
-      credentialDefinitions,
+    return schemas
+  }
+
+  private async getCredentialDefinitions(agentContext: AgentContext, credentialDefinitionIds: Set<string>) {
+    const credentialDefinitionFetchPromises = [...credentialDefinitionIds].map((credentialDefinitionId) =>
+      fetchCredentialDefinition(agentContext, credentialDefinitionId)
+    )
+
+    const credentialDefinitions: Record<string, AnonCredsCredentialDefinition> = {}
+
+    const credentialDefinitionFetchResults = await Promise.all(credentialDefinitionFetchPromises)
+    for (const credentialDefinitionFetchResult of credentialDefinitionFetchResults) {
+      const credentialDefinitionId = credentialDefinitionFetchResult.id
+      const credentialDefinition = credentialDefinitionFetchResult.credentialDefinition
+      credentialDefinitions[credentialDefinitionId] = credentialDefinition
     }
+
+    return credentialDefinitions
   }
 
   private getPresentationMetadata = async (
@@ -286,7 +262,7 @@ export class AnonCredsVc2023DataIntegrityService implements AnonCredsVcDataInteg
       credentialDefinitionIds: Set<string>
     }
   ) => {
-    const { linkSecretIds, schemaIds, credentialDefinitionIds, credentialsWithMetadata, credentialsProve } = input
+    const { linkSecretIds, credentialDefinitionIds, schemaIds, credentialsWithMetadata, credentialsProve } = input
     const linkSecretIdArray = [...linkSecretIds]
     if (linkSecretIdArray.length > 1) {
       throw new CredoError('Multiple linksecret cannot be used to create a single presentation')
@@ -298,17 +274,13 @@ export class AnonCredsVc2023DataIntegrityService implements AnonCredsVcDataInteg
       .resolve(AnonCredsLinkSecretRepository)
       .getByLinkSecretId(agentContext, linkSecretIdArray[0])
 
-    if (!linkSecretRecord.value) {
-      throw new CredoError('Link Secret value not stored')
-    }
+    if (!linkSecretRecord.value) throw new CredoError('Link Secret value not stored')
 
     const credentials: W3cCredentialEntry[] = await Promise.all(
       credentialsWithMetadata.map(async ({ credential, nonRevoked }) => {
         const { revocationRegistryIndex, revocationRegistryId, timestamp } = AnonCredsW3cCredential.fromJson(credential)
 
-        if (!nonRevoked) {
-          return { credential: credential as unknown as JsonObject, revocationState: undefined, timestamp: undefined }
-        }
+        if (!nonRevoked) return { credential, revocationState: undefined, timestamp: undefined }
 
         if (!revocationRegistryId || !revocationRegistryIndex) throw new CredoError('Missing revocation metadata')
 
@@ -319,15 +291,12 @@ export class AnonCredsVc2023DataIntegrityService implements AnonCredsVcDataInteg
           revocationRegistryId,
         })
 
-        return { credential: credential as unknown as JsonObject, revocationState, timestamp: updatedTimestamp }
+        return { credential, revocationState, timestamp: updatedTimestamp }
       })
     )
 
-    const { schemas, credentialDefinitions } = await this.getCredentialDefinitionsAndSchemas(
-      agentContext,
-      schemaIds,
-      credentialDefinitionIds
-    )
+    const schemas = await this.getSchemas(agentContext, schemaIds)
+    const credentialDefinitions = await this.getCredentialDefinitions(agentContext, credentialDefinitionIds)
 
     return {
       schemas,
@@ -338,9 +307,20 @@ export class AnonCredsVc2023DataIntegrityService implements AnonCredsVcDataInteg
     }
   }
 
-  private getPredicateTypeAndValues(predicateFilter?: FieldV2['filter']) {
-    if (!predicateFilter) throw new CredoError('Predicate filter is required')
+  private descriptorRequiresRevocationStatus(descriptor: InputDescriptorV1 | InputDescriptorV2) {
+    const statuses = descriptor.constraints?.statuses
+    if (!statuses) return false
+    if (
+      statuses?.active?.directive &&
+      (statuses.active.directive === 'allowed' || statuses.active.directive === 'required')
+    ) {
+      return true
+    } else {
+      throw new CredoError('Unsupported status directive')
+    }
+  }
 
+  private getPredicateTypeAndValues(predicateFilter: NonNullable<FieldV2['filter']>) {
     const predicates: {
       predicateType: AnonCredsRequestedPredicate['p_type']
       predicateValue: AnonCredsRequestedPredicate['p_value']
@@ -355,6 +335,7 @@ export class AnonCredsVc2023DataIntegrityService implements AnonCredsVcDataInteg
 
     for (const [key, value] of Object.entries(predicateFilter)) {
       if (key === 'type') continue
+
       const predicateType = supportedJsonSchemaNumericRangeProperties[key]
       if (!predicateType) throw new CredoError(`Unsupported predicate filter property '${key}'`)
       predicates.push({
@@ -364,6 +345,42 @@ export class AnonCredsVc2023DataIntegrityService implements AnonCredsVcDataInteg
     }
 
     return predicates
+  }
+
+  private getRevocationMetadataForCredentials = async (
+    agentContext: AgentContext,
+    credentialsWithMetadata: CredentialWithMetadata[]
+  ) => {
+    const revocationMetadataFetchPromises = credentialsWithMetadata
+      .filter((cwm) => cwm.nonRevoked)
+      .map(async (credentialWithMetadata) => {
+        const { revocationRegistryIndex, revocationRegistryId, timestamp } = AnonCredsW3cCredential.fromJson(
+          credentialWithMetadata.credential
+        )
+        return await this.getRevocationMetadata(agentContext, {
+          nonRevokedInterval: credentialWithMetadata.nonRevoked as AnonCredsNonRevokedInterval,
+          timestamp: timestamp,
+          revocationRegistryId,
+          revocationRegistryIndex,
+        })
+      })
+
+    return await Promise.all(revocationMetadataFetchPromises)
+  }
+
+  private getClaimNameForField(field: FieldV2) {
+    if (!field.path) throw new CredoError('Field path is required')
+    // fixme: could the path start otherwise?
+    const baseClaimPath = '$.credentialSubject.'
+    const claimPaths = field.path.filter((path) => path.startsWith(baseClaimPath))
+    if (claimPaths.length === 0) return undefined
+
+    // FIXME: we should iterate over all attributes of the schema here and check if the path is valid
+    // see https://identity.foundation/presentation-exchange/#presentation-definition
+    const claimNames = claimPaths.map((path) => path.slice(baseClaimPath.length))
+    const propertyName = claimNames[0]
+
+    return propertyName
   }
 
   public createAnonCredsProofRequestAndMetadata = async (
@@ -396,12 +413,13 @@ export class AnonCredsVc2023DataIntegrityService implements AnonCredsVcDataInteg
     const nonRevokedInterval = { from: nonRevoked, to: nonRevoked }
 
     for (const descriptorMapObject of presentationSubmission.descriptor_map) {
-      // PresentationDefinitionV2 is the common denominator
       const descriptor: InputDescriptorV1 | InputDescriptorV2 | undefined = (
         presentationDefinition.input_descriptors as InputDescriptorV2[]
       ).find((descriptor) => descriptor.id === descriptorMapObject.id)
-      if (!descriptor)
+
+      if (!descriptor) {
         throw new Error(`Descriptor with id ${descriptorMapObject.id} not found in presentation definition`)
+      }
 
       const referent = descriptorMapObject.id
       const attributeReferent = `${referent}_attribute`
@@ -411,60 +429,32 @@ export class AnonCredsVc2023DataIntegrityService implements AnonCredsVcDataInteg
       const fields = descriptor.constraints?.fields
       if (!fields) throw new CredoError('Unclear mapping of constraint with no fields.')
 
-      const { credential, entryIndex } = this.getCredential(descriptorMapObject, credentials)
-      const credentialJson = JsonTransformer.toJSON(credential)
-      const { credentialDefinitionId, revocationRegistryId, schemaId } = AnonCredsW3cCredential.fromJson(credentialJson)
+      const { entryIndex, schemaId, credentialDefinitionId, revocationRegistryId, anonCredsTags, credentialJson } =
+        this.getCredentialMetadataForDescriptor(descriptorMapObject, credentials, holderOpts?.selectedCredentialRecords)
 
       if (holderOpts) {
-        const credentialMetadata = this.getCredentialMetadata(
-          entryIndex,
-          credentials,
-          holderOpts.selectedCredentialRecords
-        )
+        if (!anonCredsTags) throw new CredoError('Anoncreds tags are required for holder')
         schemaIds.add(schemaId)
         credentialDefinitionIds.add(credentialDefinitionId)
-        linkSecretIds.add(credentialMetadata.anonCredsTags.linkSecretId)
+        linkSecretIds.add(anonCredsTags.linkSecretId)
       }
 
-      let useNonRevoked = false
-
-      const statuses = descriptor.constraints?.statuses
-      if (statuses) {
-        if (
-          statuses?.active?.directive &&
-          (statuses.active.directive === 'allowed' || statuses.active.directive === 'required')
-        ) {
-          if (!revocationRegistryId) {
-            throw new CredoError('Selected credentials must be revocable but are not')
-          }
-          useNonRevoked = true
-        } else {
-          throw new CredoError('Unsupported status directive')
-        }
+      const requiresRevocationStatus = this.descriptorRequiresRevocationStatus(descriptor)
+      if (requiresRevocationStatus && !revocationRegistryId) {
+        throw new CredoError('Selected credentials must be revocable but are not')
       }
 
       credentialsWithMetadata.push({
         credential: credentialJson,
-        nonRevoked: useNonRevoked ? nonRevokedInterval : undefined,
+        nonRevoked: requiresRevocationStatus ? nonRevokedInterval : undefined,
       })
 
       for (const field of fields) {
-        if (!field.path) throw new CredoError('Field path is required')
-        // fixme: could the path start otherwise?
-        const claimPaths = field.path?.filter((path) => path.startsWith('$.credentialSubject.'))
-        if (!claimPaths) throw new CredoError('No claim paths found')
-        if (claimPaths.length === 0) continue
-
-        const claimNames = claimPaths.map((path) => {
-          const parts = path.split('$.credentialSubject.')
-          if (parts.length !== 2) throw new CredoError('Invalid claim path')
-          if (parts[1] === '') throw new CredoError('Invalid empty claim name')
-          return parts[1]
-        })
-
-        const propertyName = claimNames[0]
+        const propertyName = this.getClaimNameForField(field)
+        if (!propertyName) continue
 
         if (field.predicate) {
+          if (!field.filter) throw new CredoError('Missing required predicate filter property.')
           const predicateTypeAndValues = this.getPredicateTypeAndValues(field.filter)
           for (const { predicateType, predicateValue } of predicateTypeAndValues) {
             const predicateReferent = `${predicateReferentBase}_${predicateReferentIndex++}`
@@ -473,7 +463,7 @@ export class AnonCredsVc2023DataIntegrityService implements AnonCredsVcDataInteg
               p_type: predicateType,
               p_value: predicateValue,
               restrictions: [{ cred_def_id: credentialDefinitionId }],
-              non_revoked: useNonRevoked ? nonRevokedInterval : undefined,
+              non_revoked: requiresRevocationStatus ? nonRevokedInterval : undefined,
             }
 
             credentialsProve.push({ entryIndex, referent: predicateReferent, isPredicate: true, reveal: true })
@@ -484,7 +474,7 @@ export class AnonCredsVc2023DataIntegrityService implements AnonCredsVcDataInteg
               name: propertyName,
               names: [propertyName],
               restrictions: [{ cred_def_id: credentialDefinitionId }],
-              non_revoked: useNonRevoked ? nonRevokedInterval : undefined,
+              non_revoked: requiresRevocationStatus ? nonRevokedInterval : undefined,
             }
           } else {
             const name = anonCredsProofRequest.requested_attributes[attributeReferent].name
@@ -501,7 +491,7 @@ export class AnonCredsVc2023DataIntegrityService implements AnonCredsVcDataInteg
 
     const presentationMetadata = holderOpts
       ? await this.getPresentationMetadata(agentContext, {
-          credentialsWithMetadata: credentialsWithMetadata,
+          credentialsWithMetadata,
           credentialsProve,
           linkSecretIds,
           schemaIds,
@@ -510,21 +500,7 @@ export class AnonCredsVc2023DataIntegrityService implements AnonCredsVcDataInteg
       : undefined
 
     const revocationMetadata = !holderOpts
-      ? await Promise.all(
-          credentialsWithMetadata
-            .filter((cwm) => cwm.nonRevoked)
-            .map(async (credentialWithMetadata) => {
-              const { revocationRegistryIndex, revocationRegistryId, timestamp } = AnonCredsW3cCredential.fromJson(
-                credentialWithMetadata.credential
-              )
-              return await this.getRevocationMetadata(agentContext, {
-                nonRevokedInterval: credentialWithMetadata.nonRevoked as AnonCredsNonRevokedInterval,
-                timestamp: timestamp,
-                revocationRegistryId,
-                revocationRegistryIndex,
-              })
-            }, true)
-        )
+      ? await this.getRevocationMetadataForCredentials(agentContext, credentialsWithMetadata)
       : undefined
 
     return { anonCredsProofRequest, presentationMetadata, revocationMetadata }
@@ -545,9 +521,7 @@ export class AnonCredsVc2023DataIntegrityService implements AnonCredsVcDataInteg
       presentationDefinition,
       presentationSubmission,
       selectedCredentials,
-      {
-        selectedCredentialRecords,
-      }
+      { selectedCredentialRecords }
     )
 
     if (!presentationMetadata) throw new CredoError('Presentation metadata not created')
@@ -570,11 +544,12 @@ export class AnonCredsVc2023DataIntegrityService implements AnonCredsVcDataInteg
     }
   }
 
-  public async verifyPresentation(agentContext: AgentContext, options: AnonCredsVcVerificationOptions) {
+  public async verifyPresentation(agentContext: AgentContext, options: Anoncreds2023VerificationOptions) {
     const { presentation, presentationDefinition, presentationSubmission } = options
 
     let anonCredsW3cPresentation: AnonCredsW3cPresentation | undefined
     let result = false
+
     const credentialDefinitionIds = new Set<string>()
     try {
       const verifiableCredentials = Array.isArray(presentation.verifiableCredential)
@@ -583,7 +558,7 @@ export class AnonCredsVc2023DataIntegrityService implements AnonCredsVcDataInteg
 
       for (const verifiableCredential of verifiableCredentials) {
         if (verifiableCredential instanceof W3cJsonLdVerifiableCredential) {
-          const proof = this.getDataIntegrityProof(verifiableCredential, 'anoncreds-2023')
+          const proof = this.getDataIntegrityProof(verifiableCredential)
           credentialDefinitionIds.add(proof.verificationMethod)
         } else {
           throw new CredoError('Unsupported credential type')
@@ -599,23 +574,22 @@ export class AnonCredsVc2023DataIntegrityService implements AnonCredsVcDataInteg
       )
       if (!revocationMetadata) throw new CredoError('Missing revocation metadata')
 
-      const { credentialDefinitions, schemas } = await this.getCredentialDefinitionsAndSchemas(
-        agentContext,
-        undefined,
-        credentialDefinitionIds
-      )
+      const credentialDefinitions = await this.getCredentialDefinitions(agentContext, credentialDefinitionIds)
+      const schemaIds = new Set(Object.values(credentialDefinitions).map((cd) => cd.schemaId))
+      const schemas = await this.getSchemas(agentContext, schemaIds)
+
       const presentationJson = JsonTransformer.toJSON(presentation)
       anonCredsW3cPresentation = AnonCredsW3cPresentation.fromJson(presentationJson)
 
       const revocationRegistryDefinitions: Record<string, RevocationRegistryDefinition> = {}
       revocationMetadata.forEach(
-        (rm) => (revocationRegistryDefinitions[rm.revocationRegistryDefinition[0]] = rm.revocationRegistryDefinition[1])
+        (rm) => (revocationRegistryDefinitions[rm.revocationRegistryId] = rm.revocationRegistryDefinition)
       )
       result = anonCredsW3cPresentation.verify({
         presentationRequest: anonCredsProofRequest as unknown as JsonObject,
         schemas: schemas as unknown as Record<string, JsonObject>,
         credentialDefinitions: credentialDefinitions as unknown as Record<string, JsonObject>,
-        revocationRegistryDefinitions: revocationRegistryDefinitions,
+        revocationRegistryDefinitions,
         revocationStatusLists: revocationMetadata.map((rm) => rm.revocationStatusList),
         nonRevokedIntervalOverrides: revocationMetadata
           .filter((rm) => rm.nonRevokedIntervalOverride)

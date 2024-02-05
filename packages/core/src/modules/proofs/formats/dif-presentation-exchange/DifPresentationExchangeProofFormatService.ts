@@ -6,7 +6,7 @@ import type {
 } from './DifPresentationExchangeProofFormat'
 import type { AgentContext } from '../../../../agent'
 import type { JsonValue } from '../../../../types'
-import type { AnonCredsVcDataIntegrityService } from '../../../credentials'
+import type { Anoncreds2023DataIntegrityService } from '../../../credentials'
 import type { DifPexInputDescriptorToCredentials } from '../../../dif-presentation-exchange'
 import type { W3cVerifiablePresentation, W3cVerifyPresentationResult } from '../../../vc'
 import type { W3cJsonPresentation } from '../../../vc/models/presentation/W3cJsonPresentation'
@@ -25,11 +25,12 @@ import type {
   ProofFormatAutoRespondRequestOptions,
   ProofFormatAutoRespondPresentationOptions,
 } from '../ProofFormatServiceOptions'
+import type { PresentationSubmission } from '@sphereon/pex-models'
 
 import { Attachment, AttachmentData } from '../../../../decorators/attachment/Attachment'
 import { CredoError } from '../../../../error'
 import { deepEquality, JsonTransformer } from '../../../../utils'
-import { anonCredsVcDataIntegrityServiceSymbol } from '../../../credentials'
+import { anoncreds2023DataIntegrityServiceSymbol } from '../../../credentials'
 import {
   DifPresentationExchangeService,
   DifPresentationExchangeSubmissionLocation,
@@ -220,6 +221,24 @@ export class PresentationExchangeProofFormatService implements ProofFormatServic
     return { attachment, format }
   }
 
+  private verifyUsingAnoncreds2023(
+    presentation: W3cVerifiablePresentation,
+    presentationSubmission: PresentationSubmission
+  ) {
+    if (presentation.claimFormat !== ClaimFormat.LdpVp) return false
+
+    const descriptorMap = presentationSubmission.descriptor_map
+
+    const verifyUsingDataIntegrity = descriptorMap.every((descriptor) => descriptor.format === ClaimFormat.DiVp)
+    if (!verifyUsingDataIntegrity) return false
+
+    if (Array.isArray(presentation.proof)) {
+      return presentation.proof.some((proof) => proof.cryptosuite?.includes('anoncreds-2023'))
+    } else {
+      return presentation.proof.cryptosuite?.includes('anoncreds-2023')
+    }
+  }
+
   public async processPresentation(
     agentContext: AgentContext,
     { requestAttachment, attachment }: ProofFormatProcessPresentationOptions
@@ -268,36 +287,20 @@ export class PresentationExchangeProofFormatService implements ProofFormatServic
 
       let verificationResult: W3cVerifyPresentationResult
 
-      const descriptorMap = jsonPresentation.presentation_submission.descriptor_map
-      const uniqueFormats = Array.from(new Set(descriptorMap.map((descriptor) => descriptor.format)))
-
-      if (uniqueFormats.length == 0) {
-        agentContext.config.logger.error('Received an invalid presentation submission with no specified format.')
-        return false
-      }
-
-      if (uniqueFormats.length > 1) {
-        agentContext.config.logger.error(
-          'Received presentation in PEX proof format with multiple formats. This is not supported.'
-        )
-        return false
-      }
-
-      const format = uniqueFormats[0]
-
-      if (format === ClaimFormat.DiVp && parsedPresentation.claimFormat === ClaimFormat.LdpVp) {
-        if (Array.isArray(parsedPresentation.proof))
-          throw new CredoError('Cannot process presentations with multiple proofs')
-        const cryptosuite = parsedPresentation.proof.cryptosuite
-        if (!cryptosuite) {
-          throw new CredoError('Cannot process data integrity presentations without cryptosuites')
-        }
-
-        if (cryptosuite === 'anoncreds-2023') {
-          const dataIntegrityService = agentContext.dependencyManager.resolve<AnonCredsVcDataIntegrityService>(
-            anonCredsVcDataIntegrityServiceSymbol
+      // FIXME: for some reason it won't accept the input if it doesn't know
+      // whether it's a JWT or JSON-LD VP even though the input is the same.
+      // Not sure how to fix
+      if (parsedPresentation.claimFormat === ClaimFormat.JwtVp) {
+        verificationResult = await w3cCredentialService.verifyPresentation(agentContext, {
+          presentation: parsedPresentation,
+          challenge: request.options.challenge,
+          domain: request.options.domain,
+        })
+      } else if (parsedPresentation.claimFormat === ClaimFormat.LdpVp) {
+        if (this.verifyUsingAnoncreds2023(parsedPresentation, jsonPresentation.presentation_submission)) {
+          const dataIntegrityService = agentContext.dependencyManager.resolve<Anoncreds2023DataIntegrityService>(
+            anoncreds2023DataIntegrityServiceSymbol
           )
-
           const proofVerificationResult = await dataIntegrityService.verifyPresentation(agentContext, {
             presentation: parsedPresentation as W3cJsonLdVerifiablePresentation,
             presentationDefinition: request.presentation_definition,
@@ -313,25 +316,12 @@ export class PresentationExchangeProofFormatService implements ProofFormatServic
             },
           }
         } else {
-          agentContext.config.logger.error(`Unsupported cryptosuite '${cryptosuite}'.`)
-          return false
+          verificationResult = await w3cCredentialService.verifyPresentation(agentContext, {
+            presentation: parsedPresentation,
+            challenge: request.options.challenge,
+            domain: request.options.domain,
+          })
         }
-      }
-      // FIXME: for some reason it won't accept the input if it doesn't know
-      // whether it's a JWT or JSON-LD VP even though the input is the same.
-      // Not sure how to fix
-      else if (parsedPresentation.claimFormat === ClaimFormat.JwtVp) {
-        verificationResult = await w3cCredentialService.verifyPresentation(agentContext, {
-          presentation: parsedPresentation,
-          challenge: request.options.challenge,
-          domain: request.options.domain,
-        })
-      } else if (parsedPresentation.claimFormat === ClaimFormat.LdpVp) {
-        verificationResult = await w3cCredentialService.verifyPresentation(agentContext, {
-          presentation: parsedPresentation,
-          challenge: request.options.challenge,
-          domain: request.options.domain,
-        })
       } else {
         agentContext.config.logger.error(`Received presentation in PEX proof format with unsupported format ${format}.`)
         return false

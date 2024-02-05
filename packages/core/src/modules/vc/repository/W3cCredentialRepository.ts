@@ -25,6 +25,7 @@ export class W3cCredentialRepository extends Repository<W3cCredentialRecord> {
     return this.findSingleByQuery(agentContext, { credentialDefinitionId })
   }
 
+  // FIXME: maybe we should rename this, as it only with anoncreds
   public async getByCredentialId(agentContext: AgentContext, credentialId: string) {
     return this.getSingleByQuery(agentContext, { credentialId })
   }

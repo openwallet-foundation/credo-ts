@@ -3,20 +3,20 @@ import type { JsonObject } from '../../../../types'
 import type { W3cCredentialRecord, W3cJsonLdVerifiablePresentation } from '../../../vc'
 import type { PresentationDefinitionV1, PresentationDefinitionV2, PresentationSubmission } from '@sphereon/pex-models'
 
-export interface AnonCredsVcSignatureOptions extends Record<string, unknown> {
+export interface Anoncreds2023SignatureOptions extends Record<string, unknown> {
   presentationDefinition: PresentationDefinitionV1 | PresentationDefinitionV2
   presentationSubmission: PresentationSubmission
   selectedCredentials: JsonObject[]
   selectedCredentialRecords: W3cCredentialRecord[]
 }
 
-export interface AnonCredsVcVerificationOptions extends Record<string, unknown> {
+export interface Anoncreds2023VerificationOptions extends Record<string, unknown> {
   presentation: W3cJsonLdVerifiablePresentation
   presentationDefinition: PresentationDefinitionV1 | PresentationDefinitionV2
   presentationSubmission: PresentationSubmission
 }
 
-export const anonCredsVcDataIntegrityServiceSymbol = Symbol('AnonCredsVcDataIntegrityService')
+export const anoncreds2023DataIntegrityServiceSymbol = Symbol('AnonCredsVcDataIntegrityService')
 
 /**
  * We keep this standalone and don't integrity it
@@ -24,8 +24,8 @@ export const anonCredsVcDataIntegrityServiceSymbol = Symbol('AnonCredsVcDataInte
  * to it's unique properties, in order to not pollute,
  * the existing api's.
  */
-export interface AnonCredsVcDataIntegrityService {
-  createPresentation(agentContext: AgentContext, options: AnonCredsVcSignatureOptions): Promise<JsonObject>
+export interface Anoncreds2023DataIntegrityService {
+  createPresentation(agentContext: AgentContext, options: Anoncreds2023SignatureOptions): Promise<JsonObject>
 
-  verifyPresentation(agentContext: AgentContext, options: AnonCredsVcVerificationOptions): Promise<boolean>
+  verifyPresentation(agentContext: AgentContext, options: Anoncreds2023VerificationOptions): Promise<boolean>
 }

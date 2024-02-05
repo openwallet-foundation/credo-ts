@@ -5,7 +5,7 @@ import type {
   AnonCredsCredentialRequest,
   AnonCredsCredentialRequestMetadata,
 } from '../models'
-import type { AnonCredsIssuerService, AnonCredsHolderService, GetRevocationRegistryDefinitionReturn } from '../services'
+import type { AnonCredsIssuerService, AnonCredsHolderService } from '../services'
 import type { AnonCredsCredentialMetadata } from '../utils/metadata'
 import type {
   CredentialFormatService,
@@ -41,7 +41,6 @@ import {
   JsonTransformer,
 } from '@credo-ts/core'
 
-import { AnonCredsError } from '../error'
 import { AnonCredsCredentialProposal } from '../models/AnonCredsCredentialProposal'
 import {
   AnonCredsCredentialDefinitionRepository,
@@ -49,8 +48,13 @@ import {
   AnonCredsRevocationRegistryState,
 } from '../repository'
 import { AnonCredsIssuerServiceSymbol, AnonCredsHolderServiceSymbol } from '../services'
-import { AnonCredsRegistryService } from '../services/registry/AnonCredsRegistryService'
-import { dateToTimestamp } from '../utils'
+import {
+  dateToTimestamp,
+  fetchCredentialDefinition,
+  fetchRevocationRegistryDefinition,
+  fetchRevocationStatusList,
+  fetchSchema,
+} from '../utils'
 import {
   convertAttributesToCredentialValues,
   assertCredentialValuesMatch,
@@ -226,23 +230,12 @@ export class AnonCredsCredentialFormatService implements CredentialFormatService
       credentialFormats,
     }: CredentialFormatAcceptOfferOptions<AnonCredsCredentialFormat>
   ): Promise<CredentialFormatCreateReturn> {
-    const registryService = agentContext.dependencyManager.resolve(AnonCredsRegistryService)
     const holderService = agentContext.dependencyManager.resolve<AnonCredsHolderService>(AnonCredsHolderServiceSymbol)
 
     const credentialOffer = offerAttachment.getDataAsJson<AnonCredsCredentialOffer>()
 
     // Get credential definition
-    const registry = registryService.getRegistryForIdentifier(agentContext, credentialOffer.cred_def_id)
-    const { credentialDefinition, resolutionMetadata } = await registry.getCredentialDefinition(
-      agentContext,
-      credentialOffer.cred_def_id
-    )
-
-    if (!credentialDefinition) {
-      throw new AnonCredsError(
-        `Unable to retrieve credential definition with id ${credentialOffer.cred_def_id}: ${resolutionMetadata.error} ${resolutionMetadata.message}`
-      )
-    }
+    const { credentialDefinition } = await fetchCredentialDefinition(agentContext, credentialOffer.cred_def_id)
 
     const { credentialRequest, credentialRequestMetadata } = await holderService.createCredentialRequest(agentContext, {
       credentialOffer,
@@ -344,18 +337,11 @@ export class AnonCredsCredentialFormatService implements CredentialFormatService
         )
       }
 
-      const registryService = agentContext.dependencyManager.resolve(AnonCredsRegistryService)
-      const revocationStatusListResult = await registryService
-        .getRegistryForIdentifier(agentContext, revocationRegistryDefinitionId)
-        .getRevocationStatusList(agentContext, revocationRegistryDefinitionId, dateToTimestamp(new Date()))
-
-      if (!revocationStatusListResult.revocationStatusList) {
-        throw new CredoError(
-          `Unable to resolve revocation status list for ${revocationRegistryDefinitionId}:
-          ${revocationStatusListResult.resolutionMetadata.error} ${revocationStatusListResult.resolutionMetadata.message}`
-        )
-      }
-
+      const revocationStatusListResult = await fetchRevocationStatusList(
+        agentContext,
+        revocationRegistryDefinitionId,
+        dateToTimestamp(new Date())
+      )
       revocationStatusList = revocationStatusListResult.revocationStatusList
     }
 
@@ -390,7 +376,6 @@ export class AnonCredsCredentialFormatService implements CredentialFormatService
       AnonCredsCredentialRequestMetadataKey
     )
 
-    const registryService = agentContext.dependencyManager.resolve(AnonCredsRegistryService)
     const anonCredsHolderService =
       agentContext.dependencyManager.resolve<AnonCredsHolderService>(AnonCredsHolderServiceSymbol)
 
@@ -406,37 +391,16 @@ export class AnonCredsCredentialFormatService implements CredentialFormatService
 
     const anonCredsCredential = attachment.getDataAsJson<AnonCredsCredential>()
 
-    const credentialDefinitionResult = await registryService
-      .getRegistryForIdentifier(agentContext, anonCredsCredential.cred_def_id)
-      .getCredentialDefinition(agentContext, anonCredsCredential.cred_def_id)
-    if (!credentialDefinitionResult.credentialDefinition) {
-      throw new CredoError(
-        `Unable to resolve credential definition ${anonCredsCredential.cred_def_id}: ${credentialDefinitionResult.resolutionMetadata.error} ${credentialDefinitionResult.resolutionMetadata.message}`
-      )
-    }
-
-    const schemaResult = await registryService
-      .getRegistryForIdentifier(agentContext, anonCredsCredential.cred_def_id)
-      .getSchema(agentContext, anonCredsCredential.schema_id)
-    if (!schemaResult.schema) {
-      throw new CredoError(
-        `Unable to resolve schema ${anonCredsCredential.schema_id}: ${schemaResult.resolutionMetadata.error} ${schemaResult.resolutionMetadata.message}`
-      )
-    }
+    const { credentialDefinition, id: credentialDefinitionId } = await fetchCredentialDefinition(
+      agentContext,
+      anonCredsCredential.cred_def_id
+    )
+    const { schema } = await fetchSchema(agentContext, anonCredsCredential.schema_id)
 
     // Resolve revocation registry if credential is revocable
-    let revocationRegistryResult: null | GetRevocationRegistryDefinitionReturn = null
-    if (anonCredsCredential.rev_reg_id) {
-      revocationRegistryResult = await registryService
-        .getRegistryForIdentifier(agentContext, anonCredsCredential.rev_reg_id)
-        .getRevocationRegistryDefinition(agentContext, anonCredsCredential.rev_reg_id)
-
-      if (!revocationRegistryResult.revocationRegistryDefinition) {
-        throw new CredoError(
-          `Unable to resolve revocation registry definition ${anonCredsCredential.rev_reg_id}: ${revocationRegistryResult.resolutionMetadata.error} ${revocationRegistryResult.resolutionMetadata.message}`
-        )
-      }
-    }
+    const revocationRegistryResult = anonCredsCredential.rev_reg_id
+      ? await fetchRevocationRegistryDefinition(agentContext, anonCredsCredential.rev_reg_id)
+      : undefined
 
     // assert the credential values match the offer values
     const recordCredentialValues = convertAttributesToCredentialValues(credentialRecord.credentialAttributes)
@@ -446,13 +410,13 @@ export class AnonCredsCredentialFormatService implements CredentialFormatService
       credentialId: utils.uuid(),
       credentialRequestMetadata,
       credential: anonCredsCredential,
-      credentialDefinitionId: credentialDefinitionResult.credentialDefinitionId,
-      credentialDefinition: credentialDefinitionResult.credentialDefinition,
-      schema: schemaResult.schema,
+      credentialDefinitionId,
+      credentialDefinition,
+      schema,
       revocationRegistry: revocationRegistryResult?.revocationRegistryDefinition
         ? {
             definition: revocationRegistryResult.revocationRegistryDefinition,
-            id: revocationRegistryResult.revocationRegistryDefinitionId,
+            id: revocationRegistryResult.id,
           }
         : undefined,
     })
@@ -644,18 +608,9 @@ export class AnonCredsCredentialFormatService implements CredentialFormatService
     offer: AnonCredsCredentialOffer,
     attributes: CredentialPreviewAttributeOptions[]
   ): Promise<void> {
-    const registryService = agentContext.dependencyManager.resolve(AnonCredsRegistryService)
-    const registry = registryService.getRegistryForIdentifier(agentContext, offer.schema_id)
+    const { schema } = await fetchSchema(agentContext, offer.schema_id)
 
-    const schemaResult = await registry.getSchema(agentContext, offer.schema_id)
-
-    if (!schemaResult.schema) {
-      throw new CredoError(
-        `Unable to resolve schema ${offer.schema_id} from registry: ${schemaResult.resolutionMetadata.error} ${schemaResult.resolutionMetadata.message}`
-      )
-    }
-
-    assertAttributesMatch(schemaResult.schema, attributes)
+    assertAttributesMatch(schema, attributes)
   }
 
   /**

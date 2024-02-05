@@ -42,12 +42,7 @@ import {
   createLinkSecret,
 } from './helpers'
 
-import {
-  AnonCredsModuleConfig,
-  AnonCredsHolderServiceSymbol,
-  AnonCredsLinkSecretRecord,
-  AnonCredsCredentialRecord,
-} from '@credo-ts/anoncreds'
+import { AnonCredsModuleConfig, AnonCredsHolderServiceSymbol, AnonCredsLinkSecretRecord } from '@credo-ts/anoncreds'
 
 const agentConfig = getAgentConfig('AnonCredsRsHolderServiceTest')
 const anonCredsHolderService = new AnonCredsRsHolderService()

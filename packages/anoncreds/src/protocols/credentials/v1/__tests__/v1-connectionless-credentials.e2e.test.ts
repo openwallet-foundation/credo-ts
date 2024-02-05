@@ -122,7 +122,7 @@ describe('V1 Connectionless Credentials', () => {
       },
       credentials: [
         {
-          credentialRecordType: 'anoncreds',
+          credentialRecordType: 'w3c',
           credentialRecordId: expect.any(String),
         },
       ],
@@ -204,7 +204,7 @@ describe('V1 Connectionless Credentials', () => {
       },
       credentials: [
         {
-          credentialRecordType: 'anoncreds',
+          credentialRecordType: 'w3c',
           credentialRecordId: expect.any(String),
         },
       ],

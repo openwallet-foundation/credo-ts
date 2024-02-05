@@ -10,6 +10,9 @@ export interface AnonCredsCredentialValue {
   encoded: string // Raw value as number in string
 }
 
+const isString = (value: unknown): value is string => typeof value === 'string'
+const isNumber = (value: unknown): value is number => typeof value === 'number'
+const isBoolean = (value: unknown): value is boolean => typeof value === 'boolean'
 const isNumeric = (value: string) => /^-?\d+$/.test(value)
 
 const isInt32 = (number: number) => {
@@ -32,22 +35,34 @@ const isInt32 = (number: number) => {
  * @see https://github.com/hyperledger/aries-rfcs/blob/be4ad0a6fb2823bb1fc109364c96f077d5d8dffa/features/0037-present-proof/README.md#verifying-claims-of-indy-based-verifiable-credentials
  * @see https://github.com/hyperledger/aries-rfcs/blob/be4ad0a6fb2823bb1fc109364c96f077d5d8dffa/features/0036-issue-credential/README.md#encoding-claims-for-indy-based-verifiable-credentials
  */
-export const encodeCredentialValue = (data: unknown): string => {
-  if (typeof data === 'boolean') return data ? '1' : '0'
+export function encodeCredentialValue(value: unknown) {
+  const isEmpty = (value: unknown) => isString(value) && value === ''
 
-  // Keep any 32-bit integer as is
-  if (typeof data === 'number' && isInt32(data)) {
-    return String(data)
+  // If bool return bool as number string
+  if (isBoolean(value)) {
+    return Number(value).toString()
   }
 
-  // Convert any string integer (e.g. "1234") to be a 32-bit integer (e.g. 1234)
-  if (typeof data === 'string' && data !== '' && !isNaN(Number(data)) && isNumeric(data) && isInt32(Number(data))) {
-    return Number(data).toString()
+  // If value is int32 return as number string
+  if (isNumber(value) && isInt32(value)) {
+    return value.toString()
   }
 
-  data = data === undefined || data === null ? 'None' : data
+  // If value is an int32 number string return as number string
+  if (isString(value) && !isEmpty(value) && !isNaN(Number(value)) && isNumeric(value) && isInt32(Number(value))) {
+    return Number(value).toString()
+  }
 
-  const buffer = TypedArrayEncoder.fromString(String(data))
+  if (isNumber(value)) {
+    value = value.toString()
+  }
+
+  // If value is null we must use the string value 'None'
+  if (value === null || value === undefined) {
+    value = 'None'
+  }
+
+  const buffer = TypedArrayEncoder.fromString(String(value))
   const hash = Hasher.hash(buffer, 'sha-256')
   const hex = Buffer.from(hash).toString('hex')
 

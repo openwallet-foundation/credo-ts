@@ -19,8 +19,7 @@ import type {
 } from '../src'
 import type { AgentContext } from '@credo-ts/core'
 
-import { isDid } from '@credo-ts/core'
-import { Hasher } from '@credo-ts/core'
+import { Hasher, isDid } from '@credo-ts/core'
 import BigNumber from 'bn.js'
 
 import {

@@ -7,7 +7,7 @@ import { Credential, W3cCredential } from '@hyperledger/anoncreds-shared'
 export async function legacyCredentialToW3cCredential(
   legacyCredential: AnonCredsCredential,
   credentialDefinition: AnonCredsCredentialDefinition,
-  process?: ProcessCredentialOptions
+  process?: Omit<ProcessCredentialOptions, 'credentialDefinition'>
 ) {
   let credential: W3cJsonLdVerifiableCredential
   let anonCredsCredential: Credential | undefined
@@ -21,11 +21,12 @@ export async function legacyCredentialToW3cCredential(
       w3cVersion: '1.1',
     })
 
-    processed = process
-      ? w3cCredentialObj.process({ ...process, credentialDefinition: credentialDefinition as unknown as JsonObject })
-      : w3cCredentialObj
+    const jsonObject = process
+      ? w3cCredentialObj
+          .process({ ...process, credentialDefinition: credentialDefinition as unknown as JsonObject })
+          .toJson()
+      : w3cCredentialObj.toJson()
 
-    const jsonObject = processed.toJson()
     credential = JsonTransformer.fromJSON(jsonObject, W3cJsonLdVerifiableCredential)
   } finally {
     anonCredsCredential?.handle?.clear()

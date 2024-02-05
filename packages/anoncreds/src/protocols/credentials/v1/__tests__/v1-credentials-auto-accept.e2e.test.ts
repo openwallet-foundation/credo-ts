@@ -137,7 +137,7 @@ describe('V1 Credentials Auto Accept', () => {
         },
         credentials: [
           {
-            credentialRecordType: 'anoncreds',
+            credentialRecordType: 'w3c',
             credentialRecordId: expect.any(String),
           },
         ],
@@ -239,7 +239,7 @@ describe('V1 Credentials Auto Accept', () => {
         },
         credentials: [
           {
-            credentialRecordType: 'anoncreds',
+            credentialRecordType: 'w3c',
             credentialRecordId: expect.any(String),
           },
         ],
@@ -327,7 +327,7 @@ describe('V1 Credentials Auto Accept', () => {
         },
         credentials: [
           {
-            credentialRecordType: 'anoncreds',
+            credentialRecordType: 'w3c',
             credentialRecordId: expect.any(String),
           },
         ],

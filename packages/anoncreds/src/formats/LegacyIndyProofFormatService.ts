@@ -47,7 +47,6 @@ import {
 
 import { AnonCredsProofRequest as AnonCredsProofRequestClass } from '../models/AnonCredsProofRequest'
 import { AnonCredsVerifierServiceSymbol, AnonCredsHolderServiceSymbol } from '../services'
-import { AnonCredsRegistryService } from '../services/registry/AnonCredsRegistryService'
 import {
   sortRequestedCredentialsMatches,
   createRequestFromPreview,
@@ -60,7 +59,7 @@ import {
   fetchSchema,
   fetchCredentialDefinition,
 } from '../utils'
-import { getUnQualifiedId } from '../utils/ledgerObjects'
+import { fetchRevocationStatusList, getUnQualifiedId } from '../utils/ledgerObjects'
 import { dateToTimestamp } from '../utils/timestamp'
 
 const V2_INDY_PRESENTATION_PROPOSAL = 'hlindy/proof-req@v2.0'
@@ -519,23 +518,14 @@ export class LegacyIndyProofFormatService implements ProofFormatService<LegacyIn
     // Make sure the revocation interval follows best practices from Aries RFC 0441
     assertBestPracticeRevocationInterval(requestNonRevoked)
 
-    const registryService = agentContext.dependencyManager.resolve(AnonCredsRegistryService)
-    const registry = registryService.getRegistryForIdentifier(agentContext, revocationRegistryId)
-
-    const revocationStatusResult = await registry.getRevocationStatusList(
+    const { revocationStatusList } = await fetchRevocationStatusList(
       agentContext,
       revocationRegistryId,
       requestNonRevoked.to ?? dateToTimestamp(new Date())
     )
 
-    if (!revocationStatusResult.revocationStatusList) {
-      throw new CredoError(
-        `Could not retrieve revocation status list for revocation registry ${revocationRegistryId}: ${revocationStatusResult.resolutionMetadata.message}`
-      )
-    }
-
     // Item is revoked when the value at the index is 1
-    const isRevoked = revocationStatusResult.revocationStatusList.revocationList[parseInt(credentialRevocationId)] === 1
+    const isRevoked = revocationStatusList.revocationList[parseInt(credentialRevocationId)] === 1
 
     agentContext.config.logger.trace(
       `Credential with credential revocation index '${credentialRevocationId}' is ${
@@ -545,7 +535,7 @@ export class LegacyIndyProofFormatService implements ProofFormatService<LegacyIn
 
     return {
       isRevoked,
-      timestamp: revocationStatusResult.revocationStatusList.timestamp,
+      timestamp: revocationStatusList.timestamp,
     }
   }
 

@@ -6,7 +6,7 @@ import type { JsonObject, NonRevokedIntervalOverride } from '@hyperledger/anoncr
 import { injectable } from '@credo-ts/core'
 import { Presentation } from '@hyperledger/anoncreds-shared'
 
-import { AnonCredsRegistryService } from '../services'
+import { fetchRevocationStatusList } from '../utils'
 
 @injectable()
 export class AnonCredsRsVerifierService implements AnonCredsVerifierService {
@@ -110,14 +110,12 @@ export class AnonCredsRsVerifierService implements AnonCredsVerifierService {
       if (requestedFrom && requestedFrom > identifier.timestamp) {
         // Check VDR if the active revocation status list at requestedFrom was the one from provided timestamp.
         // If it matches, add to the override list
-        const registry = agentContext.dependencyManager
-          .resolve(AnonCredsRegistryService)
-          .getRegistryForIdentifier(agentContext, identifier.rev_reg_id)
-        const { revocationStatusList } = await registry.getRevocationStatusList(
+        const { revocationStatusList } = await fetchRevocationStatusList(
           agentContext,
           identifier.rev_reg_id,
           requestedFrom
         )
+
         const vdrTimestamp = revocationStatusList?.timestamp
         if (vdrTimestamp && vdrTimestamp === identifier.timestamp) {
           nonRevokedIntervalOverrides.push({

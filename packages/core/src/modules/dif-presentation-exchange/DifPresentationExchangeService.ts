@@ -11,7 +11,7 @@ import type { PresentationToCreate } from './utils'
 import type { AgentContext } from '../../agent'
 import type { Query } from '../../storage/StorageService'
 import type { JsonObject } from '../../types'
-import type { AnonCredsVcDataIntegrityService } from '../credentials/formats/dataIntegrity/AnonCredsVcDataIntegrityService'
+import type { Anoncreds2023DataIntegrityService } from '../credentials/formats/dataIntegrity/AnonCredsDataIntegrityService'
 import type { VerificationMethod } from '../dids'
 import type { SdJwtVcRecord } from '../sd-jwt-vc'
 import type { W3cCredentialRecord } from '../vc'
@@ -21,7 +21,7 @@ import type {
   Validated,
   VerifiablePresentationResult,
 } from '@sphereon/pex'
-import type { InputDescriptorV2, PresentationDefinitionV1 } from '@sphereon/pex-models'
+import type { InputDescriptorV2, PresentationDefinitionV1, PresentationSubmission } from '@sphereon/pex-models'
 import type {
   W3CVerifiablePresentation as SphereonW3cVerifiablePresentation,
   W3CVerifiablePresentation,
@@ -33,7 +33,7 @@ import { injectable } from 'tsyringe'
 import { getJwkFromKey } from '../../crypto'
 import { CredoError } from '../../error'
 import { Hasher, JsonTransformer } from '../../utils'
-import { anonCredsVcDataIntegrityServiceSymbol } from '../credentials/formats/dataIntegrity/AnonCredsVcDataIntegrityService'
+import { anoncreds2023DataIntegrityServiceSymbol } from '../credentials/formats/dataIntegrity/AnonCredsDataIntegrityService'
 import { DidsApi, getKeyFromVerificationMethod } from '../dids'
 import { SdJwtVcApi } from '../sd-jwt-vc'
 import {
@@ -399,6 +399,28 @@ export class DifPresentationExchangeService {
     return supportedSignatureSuites[0].proofType
   }
 
+  private signUsingAnoncreds2023(
+    presentationToCreate: PresentationToCreate,
+    presentationSubmission: PresentationSubmission
+  ) {
+    if (presentationToCreate.claimFormat !== ClaimFormat.LdpVp) return undefined
+
+    const cryptosuites = presentationToCreate.verifiableCredentials.map((verifiableCredentials) => {
+      const inputDescriptor = presentationSubmission.descriptor_map.find(
+        (descriptor) => descriptor.id === verifiableCredentials.inputDescriptorId
+      )
+
+      return inputDescriptor?.format === 'di_vp' &&
+        verifiableCredentials.credential.credential instanceof W3cJsonLdVerifiableCredential
+        ? verifiableCredentials.credential.credential.cryptoSuites
+        : []
+    })
+
+    const commonCryptoSuites = cryptosuites.reduce((a, b) => a.filter((c) => b.includes(c)))
+    if (commonCryptoSuites.length === 0 || !commonCryptoSuites.includes('anoncreds-2023')) return undefined
+    return true
+  }
+
   private getPresentationSignCallback(agentContext: AgentContext, presentationToCreate: PresentationToCreate) {
     return async (callBackParams: PresentationSignCallBackParams) => {
       // The created partial proof and presentation, as well as original supplied options
@@ -436,38 +458,19 @@ export class DifPresentationExchangeService {
 
         return signedPresentation.encoded as W3CVerifiablePresentation
       } else if (presentationToCreate.claimFormat === ClaimFormat.LdpVp) {
-        const cryptosuites = presentationToCreate.verifiableCredentials.map((verifiableCredentials) => {
-          const format = presentationSubmission.descriptor_map.find(
-            (descriptor) => descriptor.id === verifiableCredentials.inputDescriptorId
-          )?.format
-          if (
-            format === 'di_vp' &&
-            verifiableCredentials.credential.credential instanceof W3cJsonLdVerifiableCredential
-          ) {
-            return verifiableCredentials.credential.credential.cryptoSuites
-          } else {
-            return []
-          }
-        })
-
-        const commonCryptoSuites = cryptosuites.reduce((a, b) => a.filter((c) => b.includes(c)))
-        if (commonCryptoSuites.length > 0) {
-          if (commonCryptoSuites.includes('anoncreds-2023')) {
-            const anonCredsVcDataIntegrityService =
-              agentContext.dependencyManager.resolve<AnonCredsVcDataIntegrityService>(
-                anonCredsVcDataIntegrityServiceSymbol
-              )
-            const presentation = await anonCredsVcDataIntegrityService.createPresentation(agentContext, {
-              presentationDefinition,
-              presentationSubmission,
-              selectedCredentials: selectedCredentials as JsonObject[],
-              selectedCredentialRecords: presentationToCreate.verifiableCredentials.map((vc) => vc.credential),
-            })
-            presentation.presentation_submission = presentationSubmission as unknown as JsonObject
-            return presentation as unknown as SphereonW3cVerifiablePresentation
-          } else {
-            throw new DifPresentationExchangeError(`Unsupported cryptosuites '${commonCryptoSuites.join(', ')}'`)
-          }
+        if (this.signUsingAnoncreds2023(presentationToCreate, presentationSubmission)) {
+          const anoncredsDataIntegrityService =
+            agentContext.dependencyManager.resolve<Anoncreds2023DataIntegrityService>(
+              anoncreds2023DataIntegrityServiceSymbol
+            )
+          const presentation = await anoncredsDataIntegrityService.createPresentation(agentContext, {
+            presentationDefinition,
+            presentationSubmission,
+            selectedCredentials: selectedCredentials as JsonObject[],
+            selectedCredentialRecords: presentationToCreate.verifiableCredentials.map((vc) => vc.credential),
+          })
+          presentation.presentation_submission = presentationSubmission as unknown as JsonObject
+          return presentation as unknown as SphereonW3cVerifiablePresentation
         }
 
         // Determine a suitable verification method for the presentation

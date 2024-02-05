@@ -7,11 +7,11 @@ import { IsUri } from '../../../../utils'
 
 export interface LinkedDataProofOptions {
   type: string
-  // FIXME: cryptosuite is not optional when migrating to the new data integrity specification
+  // FIXME: cryptosuite is not optional in Verifiable Credential Data Integrity 1.0
   cryptosuite?: string
   proofPurpose: string
   verificationMethod: string
-  // FIXME: created is optional when migrating to the new data integrity specification
+  // FIXME: created is optional in Verifiable Credential Data Integrity 1.0
   created: string
   domain?: string
   challenge?: string

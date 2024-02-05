@@ -363,7 +363,7 @@ async function anonCredsFlowTest(options: { issuerId: string; revocable: boolean
       credentialFormats: {
         dataIntegrity: {
           dataModelVersion: '1.1',
-          anonCredsLinkSecretCredentialRequestOptions: {
+          anonCredsLinkSecretAcceptOfferOptions: {
             linkSecretId: linkSecret.linkSecretId,
           },
         },

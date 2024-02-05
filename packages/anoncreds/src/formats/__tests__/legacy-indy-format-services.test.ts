@@ -304,7 +304,7 @@ describe('Legacy indy format services', () => {
     })
 
     expect(holderCredentialRecord.credentials).toEqual([
-      { credentialRecordType: 'anoncreds', credentialRecordId: expect.any(String) },
+      { credentialRecordType: 'w3c', credentialRecordId: expect.any(String) },
     ])
 
     const credentialId = holderCredentialRecord.credentials[0].credentialRecordId

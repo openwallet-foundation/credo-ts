@@ -196,7 +196,7 @@ async function anonCredsFlowTest(options: {
     autoAcceptCredential: AutoAcceptCredential.Never,
     credentialFormats: {
       dataIntegrity: {
-        anonCredsLinkSecretCredentialRequestOptions: {
+        anonCredsLinkSecretAcceptOfferOptions: {
           linkSecretId: 'linkSecretId',
         },
       },

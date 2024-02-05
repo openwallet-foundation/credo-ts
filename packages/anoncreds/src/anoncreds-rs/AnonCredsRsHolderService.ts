@@ -61,16 +61,13 @@ import { AnonCredsLinkSecretRepository } from '../repository'
 import { AnonCredsRegistryService } from '../services'
 import {
   fetchCredentialDefinition,
-  isQualifiedCredentialDefinition,
   legacyCredentialToW3cCredential,
   storeLinkSecret,
   unqualifiedCredentialDefinitionIdRegex,
   w3cToLegacyCredential,
   getQualifiedCredentialDefinition,
   getIndyNamespace,
-  isQualifiedRevocationRegistryDefinition,
   getQualifiedRevocationRegistryDefinition,
-  isQualifiedSchema,
   getQualifiedSchema,
   isIndyDid,
   getNonQualifiedId,
@@ -301,7 +298,6 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
     }
 
     const w3cJsonLdCredential = await legacyCredentialToW3cCredential(credential, credentialDefinition, {
-      credentialDefinition: credentialDefinition as unknown as JsonObject,
       credentialRequestMetadata: credentialRequestMetadata as unknown as JsonObject,
       linkSecret: linkSecretRecord.value,
       revocationRegistryDefinition: revocationRegistryDefinition as unknown as JsonObject,
@@ -342,7 +338,7 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
 
     const credentialId = options.credentialId ?? utils.uuid()
 
-    const indyDid = isIndyDid(credentialDefinitionId)
+    const indyDid = isIndyDid(credential.issuerId)
 
     const w3cCredentialService = agentContext.dependencyManager.resolve(W3cCredentialService)
     await w3cCredentialService.storeCredential(agentContext, {
@@ -385,26 +381,19 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
       revocationRegistry,
     } = options
 
-    let qualifiedCredentialDefinitionId: string
-    if (isDid(credentialDefinitionId)) {
-      qualifiedCredentialDefinitionId = credentialDefinitionId
-    } else {
-      const result = await fetchCredentialDefinition(agentContext, credentialDefinitionId)
-      qualifiedCredentialDefinitionId = result.qualifiedId
-    }
+    const qualifiedCredentialDefinitionId = isDid(credentialDefinitionId)
+      ? credentialDefinitionId
+      : (await fetchCredentialDefinition(agentContext, credentialDefinitionId)).qualifiedId
 
-    const qualifiedSchema = isQualifiedSchema(schema)
-      ? schema
-      : getQualifiedSchema(schema, getIndyNamespace(qualifiedCredentialDefinitionId))
+    const qualifiedSchema = getQualifiedSchema(schema, getIndyNamespace(qualifiedCredentialDefinitionId))
 
-    const qualifiedCredentialDefinition = isQualifiedCredentialDefinition(credentialDefinition)
-      ? credentialDefinition
-      : getQualifiedCredentialDefinition(credentialDefinition, getIndyNamespace(qualifiedCredentialDefinitionId))
+    const qualifiedCredentialDefinition = getQualifiedCredentialDefinition(
+      credentialDefinition,
+      getIndyNamespace(qualifiedCredentialDefinitionId)
+    )
 
     const qualifiedRevocationRegistryDefinition = !revocationRegistry?.definition
       ? undefined
-      : isQualifiedRevocationRegistryDefinition(revocationRegistry.definition)
-      ? revocationRegistry.definition
       : getQualifiedRevocationRegistryDefinition(
           revocationRegistry.definition,
           getIndyNamespace(qualifiedCredentialDefinitionId)
@@ -415,8 +404,8 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
         ? credential
         : await this.legacyToW3cCredential(agentContext, {
             credential,
-            credentialDefinition: qualifiedCredentialDefinition,
             credentialRequestMetadata,
+            credentialDefinition: qualifiedCredentialDefinition,
             revocationRegistryDefinition: qualifiedRevocationRegistryDefinition,
           })
 
@@ -442,8 +431,9 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
   }
 
   private anoncredsMetadataFromRecord(w3cCredentialRecord: W3cCredentialRecord): AnonCredsCredentialInfo {
-    if (Array.isArray(w3cCredentialRecord.credential.credentialSubject))
+    if (Array.isArray(w3cCredentialRecord.credential.credentialSubject)) {
       throw new CredoError('Credential subject must be an object, not an array.')
+    }
 
     const anonCredsTags = w3cCredentialRecord.getAnonCredsTags()
     if (!anonCredsTags) throw new CredoError('AnonCreds tags not found on credential record.')
