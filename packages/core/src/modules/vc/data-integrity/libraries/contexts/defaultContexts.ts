@@ -6,6 +6,7 @@ import { ED25519_V1 } from './ed25519_v1'
 import { ODRL } from './odrl'
 import { PURL_OB_V3P0 } from './purl_ob_v3po'
 import { SCHEMA_ORG } from './schema_org'
+import { SECP256K1_V1 } from './secp256k1_v1'
 import { SECURITY_V1 } from './security_v1'
 import { SECURITY_V2 } from './security_v2'
 import { PRESENTATION_SUBMISSION } from './submission'
@@ -18,6 +19,7 @@ export const DEFAULT_CONTEXTS = {
   'https://w3id.org/security/v2': SECURITY_V2,
   'https://w3id.org/security/suites/x25519-2019/v1': X25519_V1,
   'https://w3id.org/security/suites/ed25519-2018/v1': ED25519_V1,
+  'https://w3id.org/security/suites/secp256k1-2019/v1': SECP256K1_V1,
   'https://www.w3.org/2018/credentials/v1': CREDENTIALS_V1,
   'https://w3id.org/did/v1': DID_V1,
   'https://www.w3.org/ns/did/v1': DID_V1,
