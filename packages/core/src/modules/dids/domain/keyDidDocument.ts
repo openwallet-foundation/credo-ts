@@ -4,12 +4,7 @@ import type { VerificationMethod } from './verificationMethod/VerificationMethod
 import { Key } from '../../../crypto/Key'
 import { KeyType } from '../../../crypto/KeyType'
 import { CredoError } from '../../../error'
-import {
-  SECURITY_CONTEXT_BBS_URL,
-  SECURITY_CONTEXT_SECP256k1_URL,
-  SECURITY_JWS_CONTEXT_URL,
-  SECURITY_X25519_CONTEXT_URL,
-} from '../../vc/constants'
+import { SECURITY_CONTEXT_BBS_URL, SECURITY_JWS_CONTEXT_URL, SECURITY_X25519_CONTEXT_URL } from '../../vc/constants'
 import { ED25519_SUITE_CONTEXT_URL_2018 } from '../../vc/data-integrity/signature-suites/ed25519/constants'
 
 import { DidDocumentBuilder } from './DidDocumentBuilder'
@@ -18,7 +13,6 @@ import { convertPublicKeyToX25519 } from './key-type/ed25519'
 import {
   getBls12381G1Key2020,
   getBls12381G2Key2020,
-  getEcdsaSecp256k1VerificationKey2019,
   getEd25519VerificationKey2018,
   getJsonWebKey2020,
   getX25519KeyAgreementKey2019,
@@ -33,7 +27,7 @@ const didDocumentKeyTypeMapping: Record<KeyType, (did: string, key: Key) => DidD
   [KeyType.P256]: getJsonWebKey2020DidDocument,
   [KeyType.P384]: getJsonWebKey2020DidDocument,
   [KeyType.P521]: getJsonWebKey2020DidDocument,
-  [KeyType.K256]: getSecp256k1DidDoc,
+  [KeyType.K256]: getJsonWebKey2020DidDocument,
 }
 
 export function getDidDocumentForKey(did: string, key: Key) {
@@ -157,33 +151,4 @@ function getSignatureKeyBase({
     .addAssertionMethod(keyId)
     .addCapabilityDelegation(keyId)
     .addCapabilityInvocation(keyId)
-}
-
-function getSecp256k1DidDoc(did: string, key: Key): DidDocument {
-  const verificationMethod = getEcdsaSecp256k1VerificationKey2019({
-    id: `${did}#${key.fingerprint}`,
-    key,
-    controller: did,
-  })
-
-  const didDocumentBuilder = new DidDocumentBuilder(did)
-  didDocumentBuilder.addContext(SECURITY_CONTEXT_SECP256k1_URL).addVerificationMethod(verificationMethod)
-
-  if (!key.supportsEncrypting && !key.supportsSigning) {
-    throw new CredoError('Key must support at least signing or encrypting')
-  }
-
-  if (key.supportsSigning) {
-    didDocumentBuilder
-      .addAuthentication(verificationMethod.id)
-      .addAssertionMethod(verificationMethod.id)
-      .addCapabilityDelegation(verificationMethod.id)
-      .addCapabilityInvocation(verificationMethod.id)
-  }
-
-  if (key.supportsEncrypting) {
-    didDocumentBuilder.addKeyAgreement(verificationMethod.id)
-  }
-
-  return didDocumentBuilder.build()
 }
