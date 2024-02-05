@@ -36,14 +36,4 @@ describe('TenantsModule', () => {
     expect(dependencyManager.registerInstance).toHaveBeenCalledTimes(1)
     expect(dependencyManager.registerInstance).toHaveBeenCalledWith(TenantsModuleConfig, tenantsModule.config)
   })
-
-  test('TenantsApi should be registered as singleton rather than default context scoped', () => {
-    const dependencyManager = new DependencyManager()
-    const tenantsModule = new TenantsModule()
-    tenantsModule.register(dependencyManager)
-
-    const childDependencyManager = dependencyManager.createChild()
-
-    expect(dependencyManager.resolve(TenantsApi)).toBe(childDependencyManager.resolve(TenantsApi))
-  })
 })

@@ -106,6 +106,7 @@ export class V2ProofProtocol<PFs extends ProofFormatService[] = ProofFormatServi
       comment,
       autoAcceptProof,
       goalCode,
+      goal,
       parentThreadId,
     }: CreateProofProposalOptions<PFs>
   ): Promise<{ proofRecord: ProofExchangeRecord; message: AgentMessage }> {
@@ -131,6 +132,7 @@ export class V2ProofProtocol<PFs extends ProofFormatService[] = ProofFormatServi
       formatServices,
       comment,
       goalCode,
+      goal,
     })
 
     agentContext.config.logger.debug('Save record and emit state change event')
@@ -228,7 +230,15 @@ export class V2ProofProtocol<PFs extends ProofFormatService[] = ProofFormatServi
 
   public async acceptProposal(
     agentContext: AgentContext,
-    { proofRecord, proofFormats, autoAcceptProof, comment, goalCode, willConfirm }: AcceptProofProposalOptions<PFs>
+    {
+      proofRecord,
+      proofFormats,
+      autoAcceptProof,
+      comment,
+      goalCode,
+      goal,
+      willConfirm,
+    }: AcceptProofProposalOptions<PFs>
   ): Promise<ProofProtocolMsgReturnType<V2RequestPresentationMessage>> {
     // Assert
     proofRecord.assertProtocolVersion('v2')
@@ -262,6 +272,7 @@ export class V2ProofProtocol<PFs extends ProofFormatService[] = ProofFormatServi
       comment,
       proofFormats,
       goalCode,
+      goal,
       willConfirm,
       // Not supported at the moment
       presentMultiple: false,
@@ -283,7 +294,15 @@ export class V2ProofProtocol<PFs extends ProofFormatService[] = ProofFormatServi
    */
   public async negotiateProposal(
     agentContext: AgentContext,
-    { proofRecord, proofFormats, autoAcceptProof, comment, goalCode, willConfirm }: NegotiateProofProposalOptions<PFs>
+    {
+      proofRecord,
+      proofFormats,
+      autoAcceptProof,
+      comment,
+      goalCode,
+      goal,
+      willConfirm,
+    }: NegotiateProofProposalOptions<PFs>
   ): Promise<ProofProtocolMsgReturnType<V2RequestPresentationMessage>> {
     // Assert
     proofRecord.assertProtocolVersion('v2')
@@ -306,6 +325,7 @@ export class V2ProofProtocol<PFs extends ProofFormatService[] = ProofFormatServi
       proofRecord,
       comment,
       goalCode,
+      goal,
       willConfirm,
       // Not supported at the moment
       presentMultiple: false,
@@ -331,6 +351,7 @@ export class V2ProofProtocol<PFs extends ProofFormatService[] = ProofFormatServi
       connectionRecord,
       parentThreadId,
       goalCode,
+      goal,
       willConfirm,
     }: CreateProofRequestOptions<PFs>
   ): Promise<ProofProtocolMsgReturnType<V2RequestPresentationMessage>> {
@@ -356,6 +377,7 @@ export class V2ProofProtocol<PFs extends ProofFormatService[] = ProofFormatServi
       proofRecord,
       comment,
       goalCode,
+      goal,
       willConfirm,
     })
 
@@ -459,7 +481,7 @@ export class V2ProofProtocol<PFs extends ProofFormatService[] = ProofFormatServi
 
   public async acceptRequest(
     agentContext: AgentContext,
-    { proofRecord, autoAcceptProof, comment, proofFormats, goalCode }: AcceptProofRequestOptions<PFs>
+    { proofRecord, autoAcceptProof, comment, proofFormats, goalCode, goal }: AcceptProofRequestOptions<PFs>
   ) {
     const didCommMessageRepository = agentContext.dependencyManager.resolve(DidCommMessageRepository)
 
@@ -492,6 +514,7 @@ export class V2ProofProtocol<PFs extends ProofFormatService[] = ProofFormatServi
       comment,
       proofFormats,
       goalCode,
+      goal,
       // Sending multiple presentation messages not supported at the moment
       lastPresentation: true,
     })
@@ -512,7 +535,7 @@ export class V2ProofProtocol<PFs extends ProofFormatService[] = ProofFormatServi
    */
   public async negotiateRequest(
     agentContext: AgentContext,
-    { proofRecord, proofFormats, autoAcceptProof, comment, goalCode }: NegotiateProofRequestOptions<PFs>
+    { proofRecord, proofFormats, autoAcceptProof, comment, goalCode, goal }: NegotiateProofRequestOptions<PFs>
   ): Promise<ProofProtocolMsgReturnType<V2ProposeCredentialMessage>> {
     // Assert
     proofRecord.assertProtocolVersion('v2')
@@ -535,6 +558,7 @@ export class V2ProofProtocol<PFs extends ProofFormatService[] = ProofFormatServi
       proofRecord,
       comment,
       goalCode,
+      goal,
     })
 
     proofRecord.autoAcceptProof = autoAcceptProof ?? proofRecord.autoAcceptProof
