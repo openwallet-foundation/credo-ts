@@ -5,6 +5,7 @@ import { KeyType } from '../../../../crypto/KeyType'
 import { CredoError } from '../../../../error'
 import {
   VERIFICATION_METHOD_TYPE_ECDSA_SECP256K1_VERIFICATION_KEY_2019,
+  VERIFICATION_METHOD_TYPE_JSON_WEB_KEY_2020,
   getJsonWebKey2020,
   getKeyFromEcdsaSecp256k1VerificationKey2019,
   getKeyFromJsonWebKey2020,
