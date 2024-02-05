@@ -21,13 +21,25 @@ In order to use Credo some platform specific dependencies and setup is required.
 
 ### Run the demo
 
+#### PEX Setup
+
+This demo won't work out of the box until https://github.com/Sphereon-Opensource/PEX/pull/141
+is merged. For now you need to clone this repo https://github.com/2mau/PEX/tree/data-integrity, build it manually,
+and add PEX as dependency in `packages/core/package.json`.
+
+There will be some type errors you can ignore them for now.
+
+#### Setup Demo
+
 These are the steps for running the Credo demo:
 
 Clone the Credo git repository:
 
+
 ```sh
 git clone https://github.com/openwallet-foundation/credo-ts.git
 ```
+
 
 Open two different terminals next to each other and in both, go to the demo folder:
 
@@ -73,12 +85,6 @@ To request a proof:
 - Select 'request proof' in Faber
 - Faber will create a new proof attribute and will then send a proof request to Alice!
 - Go to Alice to accept the incoming proof request
-
-To send a basic message:
-
-- Select 'send message' in either one of the Agents
-- Type your message and press enter
-- Message sent!
 
 Exit:
 
