@@ -13,7 +13,10 @@ import {
 } from '../verificationMethod'
 
 export const keyDidSecp256k1: KeyDidMapping = {
-  supportedVerificationMethodTypes: [VERIFICATION_METHOD_TYPE_ECDSA_SECP256K1_VERIFICATION_KEY_2019],
+  supportedVerificationMethodTypes: [
+    VERIFICATION_METHOD_TYPE_ECDSA_SECP256K1_VERIFICATION_KEY_2019,
+    VERIFICATION_METHOD_TYPE_JSON_WEB_KEY_2020,
+  ],
   getVerificationMethods: (did, key) => [getJsonWebKey2020({ did, key })],
   getKeyFromVerificationMethod: (verificationMethod: VerificationMethod) => {
     if (isEcdsaSecp256k1VerificationKey2019(verificationMethod)) {
