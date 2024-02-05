@@ -9,8 +9,8 @@
   },
   "license": "Apache-2.0",
   "scripts": {
-    "alice": "ts-node src/AliceInquirer.ts",
-    "faber": "ts-node src/FaberInquirer.ts",
+    "alice": "ts-node -T src/AliceInquirer.ts",
+    "faber": "ts-node -T src/FaberInquirer.ts",
     "refresh": "rm -rf ./node_modules ./yarn.lock && yarn"
   },
   "dependencies": {

@@ -17,6 +17,7 @@ import {
   InjectionSymbols,
   KeyType,
   SignatureSuiteToken,
+  SigningProviderRegistry,
   VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2018,
   VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2020,
   W3cCredentialRecord,
@@ -32,6 +33,7 @@ import { InMemoryStorageService } from '../../../../../tests/InMemoryStorageServ
 import { AnonCredsCredentialDefinitionRepository } from '../../../../anoncreds/src/repository/AnonCredsCredentialDefinitionRepository'
 import { AnonCredsLinkSecretRepository } from '../../../../anoncreds/src/repository/AnonCredsLinkSecretRepository'
 import { InMemoryAnonCredsRegistry } from '../../../../anoncreds/tests/InMemoryAnonCredsRegistry'
+import { RegisteredAskarTestWallet } from '../../../../askar/tests/helpers'
 import { agentDependencies, getAgentConfig, getAgentContext, mockFunction } from '../../../../core/tests/helpers'
 import { AnonCredsRsHolderService } from '../AnonCredsRsHolderService'
 
@@ -62,6 +64,12 @@ const w3cCredentialRepositoryMock = new W3cCredentialRepositoryMock()
 
 const inMemoryStorageService = new InMemoryStorageService()
 const logger = new ConsoleLogger()
+
+const wallet = new RegisteredAskarTestWallet(
+  agentConfig.logger,
+  new agentDependencies.FileSystem(),
+  new SigningProviderRegistry([])
+)
 
 const agentContext = getAgentContext({
   registerInstances: [
@@ -96,6 +104,7 @@ const agentContext = getAgentContext({
     ],
   ],
   agentConfig,
+  wallet,
 })
 
 describe('AnonCredsRsHolderService', () => {

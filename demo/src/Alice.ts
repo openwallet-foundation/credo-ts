@@ -83,7 +83,7 @@ export class Alice extends BaseAgent {
       credentialRecordId: credentialRecord.id,
       credentialFormats: {
         dataIntegrity: {
-          anonCredsLinkSecretCredentialRequestOptions: {
+          anonCredsLinkSecretAcceptOfferOptions: {
             linkSecretId: 'linkSecretId',
           },
         },

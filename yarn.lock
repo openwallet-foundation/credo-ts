@@ -2618,6 +2618,26 @@
   resolved "https://registry.yarnpkg.com/@sphereon/pex-models/-/pex-models-2.1.5.tgz#ba4474a3783081392b72403c4c8ee6da3d2e5585"
   integrity sha512-7THexvdYUK/Dh8olBB46ErT9q/RnecnMdb5r2iwZ6be0Dt4vQLAUN7QU80H0HZBok4jRTb8ydt12x0raBSTHOg==
 
+"@sphereon/pex-models@^2.2.0":
+  version "2.2.0"
+  resolved "https://registry.yarnpkg.com/@sphereon/pex-models/-/pex-models-2.2.0.tgz#32013fff43d4f47df03e213792a9bcc6866a1f06"
+  integrity sha512-dGDRdoxJj+P0TRqu0R8R0/IdIzrCya1MsnxIFbcmSW3rjPsbwXbV0EojEfxXGD5LhqsUJiuAffMtyE2dtVI/XQ==
+
+"@sphereon/pex@../PEX/":
+  version "3.1.1-unstable.0"
+  dependencies:
+    "@astronautlabs/jsonpath" "^1.1.2"
+    "@sd-jwt/decode" "^0.2.0"
+    "@sd-jwt/present" "^0.2.0"
+    "@sd-jwt/utils" "^0.2.0"
+    "@sphereon/pex-models" "^2.2.0"
+    "@sphereon/ssi-types" "0.18.1"
+    ajv "^8.12.0"
+    ajv-formats "^2.1.1"
+    jwt-decode "^3.1.2"
+    nanoid "^3.3.7"
+    string.prototype.matchall "^4.0.10"
+
 "@sphereon/pex@^3.0.1":
   version "3.0.1"
   resolved "https://registry.yarnpkg.com/@sphereon/pex/-/pex-3.0.1.tgz#e7d9d36c7c921ab97190a735c67e0a2632432e3b"
@@ -3142,7 +3162,7 @@
   resolved "https://registry.yarnpkg.com/@types/uuid/-/uuid-9.0.8.tgz#7545ba4fc3c003d6c756f651f3bf163d8f0f29ba"
   integrity sha512-jg+97EGIcY9AGHJJRaaPVgetKDsrTgbRjQ5Msgjh/DQKEFl0DtyRr/VCOyD1T2R1MNeWPK/u7JoGhlDZnKBAfA==
 
-"@types/validator@^13.11.8", "@types/validator@^13.7.10":
+"@types/validator@^13.11.8":
   version "13.11.8"
   resolved "https://registry.yarnpkg.com/@types/validator/-/validator-13.11.8.tgz#bb1162ec0fe6f87c95ca812f15b996fcc5e1e2dc"
   integrity sha512-c/hzNDBh7eRF+KbCf+OoZxKbnkpaK/cKp9iLQWqB7muXtM+MtL9SUUH8vCFcLn6dH1Qm05jiexK0ofWY7TfOhQ==
@@ -4282,15 +4302,6 @@ class-transformer@0.5.1, class-transformer@^0.5.1:
   version "0.5.1"
   resolved "https://registry.yarnpkg.com/class-transformer/-/class-transformer-0.5.1.tgz#24147d5dffd2a6cea930a3250a677addf96ab336"
   integrity sha512-SQa1Ws6hUbfC98vKGxZH3KFY0Y1lm5Zm0SY8XX9zbK7FJCyVEac3ATW0RIpwzW+oOfmHE5PMPufDG9hCfoEOMw==
-
-class-validator@0.14.0:
-  version "0.14.0"
-  resolved "https://registry.yarnpkg.com/class-validator/-/class-validator-0.14.0.tgz#40ed0ecf3c83b2a8a6a320f4edb607be0f0df159"
-  integrity sha512-ct3ltplN8I9fOwUd8GrP8UQixwff129BkEtuWDKL5W45cQuLd19xqmTLu5ge78YDm/fdje6FMt0hGOhl0lii3A==
-  dependencies:
-    "@types/validator" "^13.7.10"
-    libphonenumber-js "^1.10.14"
-    validator "^13.7.0"
 
 class-validator@0.14.1:
   version "0.14.1"
@@ -7969,7 +7980,7 @@ libnpmpublish@7.1.4:
     sigstore "^1.4.0"
     ssri "^10.0.1"
 
-libphonenumber-js@^1.10.14, libphonenumber-js@^1.10.53:
+libphonenumber-js@^1.10.53:
   version "1.10.54"
   resolved "https://registry.yarnpkg.com/libphonenumber-js/-/libphonenumber-js-1.10.54.tgz#8dfba112f49d1b9c2a160e55f9697f22e50f0841"
   integrity sha512-P+38dUgJsmh0gzoRDoM4F5jLbyfztkU6PY6eSK6S5HwTi/LPvnwXqVCQZlAy1FxZ5c48q25QhxGQ0pq+WQcSlQ==
@@ -11813,7 +11824,7 @@ validate-npm-package-name@^5.0.0:
   dependencies:
     builtins "^5.0.0"
 
-validator@^13.7.0, validator@^13.9.0:
+validator@^13.9.0:
   version "13.11.0"
   resolved "https://registry.yarnpkg.com/validator/-/validator-13.11.0.tgz#23ab3fd59290c61248364eabf4067f04955fbb1b"
   integrity sha512-Ii+sehpSfZy+At5nPdnyMhx78fEoPDkR2XW/zimHEL3MyGJQOCQ7WeP20jPYRz7ZCpcKLB21NxuXHF3bxjStBQ==
