@@ -30,12 +30,14 @@ export class ProofFormatCoordinator<PFs extends ProofFormatService[]> {
       proofRecord,
       comment,
       goalCode,
+      goal,
     }: {
       formatServices: ProofFormatService[]
       proofFormats: ProofFormatPayload<ExtractProofFormats<PFs>, 'createProposal'>
       proofRecord: ProofExchangeRecord
       comment?: string
       goalCode?: string
+      goal?: string
     }
   ): Promise<V2ProposePresentationMessage> {
     const didCommMessageRepository = agentContext.dependencyManager.resolve(DidCommMessageRepository)
@@ -60,6 +62,7 @@ export class ProofFormatCoordinator<PFs extends ProofFormatService[]> {
       proposalAttachments,
       comment: comment,
       goalCode,
+      goal,
     })
 
     message.setThread({ threadId: proofRecord.threadId, parentThreadId: proofRecord.parentThreadId })
@@ -111,6 +114,7 @@ export class ProofFormatCoordinator<PFs extends ProofFormatService[]> {
       formatServices,
       comment,
       goalCode,
+      goal,
       presentMultiple,
       willConfirm,
     }: {
@@ -119,6 +123,7 @@ export class ProofFormatCoordinator<PFs extends ProofFormatService[]> {
       formatServices: ProofFormatService[]
       comment?: string
       goalCode?: string
+      goal?: string
       presentMultiple?: boolean
       willConfirm?: boolean
     }
@@ -156,6 +161,7 @@ export class ProofFormatCoordinator<PFs extends ProofFormatService[]> {
       requestAttachments,
       comment,
       goalCode,
+      goal,
       presentMultiple,
       willConfirm,
     })
@@ -186,6 +192,7 @@ export class ProofFormatCoordinator<PFs extends ProofFormatService[]> {
       proofRecord,
       comment,
       goalCode,
+      goal,
       presentMultiple,
       willConfirm,
     }: {
@@ -194,6 +201,7 @@ export class ProofFormatCoordinator<PFs extends ProofFormatService[]> {
       proofRecord: ProofExchangeRecord
       comment?: string
       goalCode?: string
+      goal?: string
       presentMultiple?: boolean
       willConfirm?: boolean
     }
@@ -219,6 +227,7 @@ export class ProofFormatCoordinator<PFs extends ProofFormatService[]> {
       comment,
       requestAttachments,
       goalCode,
+      goal,
       presentMultiple,
       willConfirm,
     })
@@ -273,6 +282,7 @@ export class ProofFormatCoordinator<PFs extends ProofFormatService[]> {
       comment,
       lastPresentation,
       goalCode,
+      goal,
     }: {
       proofRecord: ProofExchangeRecord
       proofFormats?: ProofFormatPayload<ExtractProofFormats<PFs>, 'acceptRequest'>
@@ -280,6 +290,7 @@ export class ProofFormatCoordinator<PFs extends ProofFormatService[]> {
       comment?: string
       lastPresentation?: boolean
       goalCode?: string
+      goal?: string
     }
   ) {
     const didCommMessageRepository = agentContext.dependencyManager.resolve(DidCommMessageRepository)
@@ -326,6 +337,7 @@ export class ProofFormatCoordinator<PFs extends ProofFormatService[]> {
       comment,
       lastPresentation,
       goalCode,
+      goal,
     })
 
     message.setThread({ threadId: proofRecord.threadId, parentThreadId: proofRecord.parentThreadId })
