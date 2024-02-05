@@ -121,6 +121,13 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
 
           if (!credentialRecord) {
             credentialRecord = await legacyCredentialRepository.getByCredentialId(agentContext, attribute.credentialId)
+
+            agentContext.config.logger.warn(
+              [
+                `Creating proof with legacy credential ${attribute.credentialId}.`,
+                `Please run the migration script to migrate credentials to the new w3c format.`,
+              ].join('\n')
+            )
           }
         }
 
@@ -453,8 +460,8 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
     agentContext: AgentContext,
     options: GetCredentialOptions
   ): Promise<AnonCredsCredentialInfo> {
-    const credentialRepository = agentContext.dependencyManager.resolve(W3cCredentialRepository)
     try {
+      const credentialRepository = agentContext.dependencyManager.resolve(W3cCredentialRepository)
       const credentialRecord = await credentialRepository.getByCredentialId(agentContext, options.credentialId)
       if (credentialRecord) return this.anoncredsMetadataFromRecord(credentialRecord)
     } catch {
@@ -465,6 +472,13 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
     const anonCredsCredentialRecord = await anonCredsCredentialRepository.getByCredentialId(
       agentContext,
       options.credentialId
+    )
+
+    agentContext.config.logger.warn(
+      [
+        `Querying legacy credential repository for credential with id ${options.credentialId}.`,
+        `Please run the migration script to migrate credentials to the new w3c format.`,
+      ].join('\n')
     )
 
     return this.anoncredsMetadataFromLegacyRecord(anonCredsCredentialRecord)
@@ -511,7 +525,7 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
     }
   }
 
-  public async getLegacyCredentials(
+  private async getLegacyCredentials(
     agentContext: AgentContext,
     options: GetCredentialsOptions
   ): Promise<AnonCredsCredentialInfo[]> {
@@ -561,6 +575,14 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
     const credentials = credentialRecords.map((credentialRecord) => this.anoncredsMetadataFromRecord(credentialRecord))
     const legacyCredentials = await this.getLegacyCredentials(agentContext, options)
 
+    if (legacyCredentials.length > 0) {
+      agentContext.config.logger.warn(
+        [
+          `Queried credentials include legacy credentials.`,
+          `Please run the migration script to migrate credentials to the new w3c format.`,
+        ].join('\n')
+      )
+    }
     return [...legacyCredentials, ...credentials]
   }
 
@@ -578,7 +600,7 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
     const credentialRecord = await credentialRepository.getByCredentialId(agentContext, credentialId)
     await credentialRepository.delete(agentContext, credentialRecord)
   }
-  public async getLegacyCredentialsForProofRequest(
+  private async getLegacyCredentialsForProofRequest(
     agentContext: AgentContext,
     options: GetCredentialsForProofRequestOptions
   ): Promise<GetCredentialsForProofRequestReturn> {
@@ -673,6 +695,15 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
       })
 
     const legacyCredentialWithMetadata = await this.getLegacyCredentialsForProofRequest(agentContext, options)
+
+    if (legacyCredentialWithMetadata.length > 0) {
+      agentContext.config.logger.warn(
+        [
+          `Including legacy credentials in proof request.`,
+          `Please run the migration script to migrate credentials to the new w3c format.`,
+        ].join('\n')
+      )
+    }
 
     const credentialWithMetadata = credentials.map((credentialRecord) => {
       return {
