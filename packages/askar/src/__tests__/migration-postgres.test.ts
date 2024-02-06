@@ -1,7 +1,8 @@
-import { CURRENT_FRAMEWORK_STORAGE_VERSION } from '../../../core/src/storage/migration/updates'
-import { Agent } from '../../../core/src/agent/Agent'
-import { askarPostgresStorageConfig, getAskarPostgresAgentOptions } from '../../tests/helpers'
 import { StorageUpdateService } from '@credo-ts/core'
+
+import { Agent } from '../../../core/src/agent/Agent'
+import { CURRENT_FRAMEWORK_STORAGE_VERSION } from '../../../core/src/storage/migration/updates'
+import { askarPostgresStorageConfig, getAskarPostgresAgentOptions } from '../../tests/helpers'
 
 const agentOptions = getAskarPostgresAgentOptions('Migration', askarPostgresStorageConfig, {})
 
