@@ -524,6 +524,7 @@ describe('V1CredentialProtocol', () => {
         attachment: credentialAttachment,
         credentialRecord,
         requestAttachment: expect.any(Attachment),
+        offerAttachment: expect.any(Attachment),
       })
     })
   })

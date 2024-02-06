@@ -903,7 +903,7 @@ export class V1CredentialProtocol
       throw new CredoError('Missing indy credential request attachment in processCredential')
     }
 
-    const offerAttachment = requestCredentialMessage?.getRequestAttachmentById(INDY_CREDENTIAL_OFFER_ATTACHMENT_ID)
+    const offerAttachment = offerCredentialMessage?.getOfferAttachmentById(INDY_CREDENTIAL_OFFER_ATTACHMENT_ID)
     if (!offerAttachment) {
       throw new CredoError('Missing indy credential request attachment in processCredential')
     }
