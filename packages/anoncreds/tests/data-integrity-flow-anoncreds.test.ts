@@ -374,7 +374,7 @@ async function anonCredsFlowTest(options: { issuerId: string; revocable: boolean
   expect(
     (requestAttachment.getDataAsJson() as DataIntegrityCredentialRequest).binding_proof?.anoncreds_link_secret?.entropy
   ).toBeDefined()
-  expect((requestAttachment.getDataAsJson() as any).prover_did).toBeUndefined()
+  expect((requestAttachment.getDataAsJson() as Record<string, unknown>).prover_did).toBeUndefined()
 
   // Issuer processes and accepts request
   await dataIntegrityCredentialFormatService.processRequest(agentContext, {
