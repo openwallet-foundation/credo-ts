@@ -11,7 +11,7 @@ import { WalletError } from '../../wallet/error/WalletError'
 
 import { StorageUpdateService } from './StorageUpdateService'
 import { StorageUpdateError } from './error/StorageUpdateError'
-import { CURRENT_FRAMEWORK_STORAGE_VERSION, supportedUpdates } from './updates'
+import { DEFAULT_UPDATE_CONFIG, CURRENT_FRAMEWORK_STORAGE_VERSION, supportedUpdates } from './updates'
 
 export interface UpdateAssistantUpdateOptions {
   updateToVersion?: UpdateToVersion
@@ -25,7 +25,7 @@ export class UpdateAssistant<Agent extends BaseAgent<any> = BaseAgent> {
   private updateConfig: UpdateConfig
   private fileSystem: FileSystem
 
-  public constructor(agent: Agent, updateConfig: UpdateConfig) {
+  public constructor(agent: Agent, updateConfig: UpdateConfig = DEFAULT_UPDATE_CONFIG) {
     this.agent = agent
     this.updateConfig = updateConfig
 
