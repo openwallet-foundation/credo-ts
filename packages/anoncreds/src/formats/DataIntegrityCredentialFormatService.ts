@@ -184,7 +184,7 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
 
     if (isV1Credential) return '1.1'
     else if (isV2Credential) return '2.0'
-    else throw new CredoError('Missing @context in credential offer')
+    else throw new CredoError('Cannot determine credential version from @context')
   }
 
   public async processOffer(
@@ -203,7 +203,9 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
     const credentialToBeValidated = {
       ...credential,
       issuer: credential.issuer ?? 'https://example.com',
-      ...(credentialVersion === '1.1' && { validFrom: credential.issuanceDate ?? new Date().toISOString() }),
+      ...(credentialVersion === '1.1'
+        ? { issuanceDate: new Date().toISOString() }
+        : { validFrom: new Date().toISOString() }),
     }
 
     JsonTransformer.fromJSON(credentialToBeValidated, W3cCredential)
@@ -366,16 +368,16 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
         linkSecretId: dataIntegrityFormat.anonCredsLinkSecretAcceptOfferOptions?.linkSecretId,
       })
 
+      if (!anonCredsCredentialRequest.entropy) throw new CredoError('Missing entropy for anonCredsCredentialRequest')
+      anonCredsLinkSecretDataIntegrityBindingProof =
+        anonCredsCredentialRequest as AnonCredsLinkSecretDataIntegrityBindingProof
+
       dataIntegrityRequestMetadata.linkSecretRequestMetadata = anonCredsCredentialRequestMetadata
 
       dataIntegrityMetadata.linkSecretMetadata = {
         credentialDefinitionId: credentialOffer.binding_method.anoncreds_link_secret.cred_def_id,
         schemaId: credentialDefinitionReturn.credentialDefinition.schemaId,
       }
-
-      if (!anonCredsCredentialRequest.entropy) throw new CredoError('Missing entropy for anonCredsCredentialRequest')
-      anonCredsLinkSecretDataIntegrityBindingProof =
-        anonCredsCredentialRequest as AnonCredsLinkSecretDataIntegrityBindingProof
     }
 
     let didCommSignedAttachmentBindingProof: DidCommSignedAttachmentDataIntegrityBindingProof | undefined = undefined
@@ -661,12 +663,10 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
     let signedCredential: W3cJsonLdVerifiableCredential | undefined
     if (credentialRequest.binding_proof?.anoncreds_link_secret) {
       if (!credentialOffer.binding_method?.anoncreds_link_secret) {
-        throw new CredoError('Cannot issue credential with a binding method that was not offered.')
+        throw new CredoError('Cannot issue credential with a binding method that was not offered')
       }
 
-      if (!dataIntegrityMetadata.linkSecretMetadata) {
-        throw new CredoError('Missing anoncreds link secret metadata')
-      }
+      if (!dataIntegrityMetadata.linkSecretMetadata) throw new CredoError('Missing anoncreds link secret metadata')
 
       signedCredential = await this.createCredentialWithAnonCredsDataIntegrityProof(agentContext, {
         credentialRecord,
@@ -675,36 +675,11 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
         anonCredsLinkSecretBindingProof: credentialRequest.binding_proof.anoncreds_link_secret,
         credentialSubjectId: dataIntegrityFormat.credentialSubjectId,
       })
-
-      const proofs = Array.isArray(signedCredential.proof) ? signedCredential.proof : [signedCredential.proof]
-      if (proofs.length > 1) {
-        throw new CredoError('Credential cannot have multiple proofs at this point')
-      }
-
-      if (
-        signedCredential.issuerId !== offeredCredential.issuerId ||
-        !proofs[0].verificationMethod.startsWith(signedCredential.issuerId)
-      ) {
-        throw new CredoError('Invalid issuer in credential')
-      }
-
-      if (offeredCredential.type.length !== 1 || offeredCredential.type[0] !== 'VerifiableCredential') {
-        throw new CredoError('Offered Invalid credential type')
-      }
-
-      const integrityProtectedFields = ['@context', 'issuer', 'type', 'credentialSubject', 'validFrom', 'issuanceDate']
-      if (
-        Object.keys(credentialOffer.credential).some(
-          (key) => !integrityProtectedFields.includes(key) && key !== 'proof'
-        )
-      ) {
-        throw new CredoError('Invalid credential subject id')
-      }
     }
 
     if (credentialRequest.binding_proof?.didcomm_signed_attachment) {
       if (!credentialOffer.binding_method?.didcomm_signed_attachment) {
-        throw new CredoError('Cannot issue credential with a binding method that was not offered.')
+        throw new CredoError('Cannot issue credential with a binding method that was not offered')
       }
 
       const bindingProofAttachment = requestAppendAttachments?.find(
@@ -810,11 +785,11 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
     { credentialRecord, attachment, requestAttachment, offerAttachment }: CredentialFormatProcessCredentialOptions
   ): Promise<void> {
     const credentialOffer = offerAttachment.getDataAsJson<DataIntegrityCredentialOffer>()
+    const offeredCredentialJson = credentialOffer.credential
 
     const credentialRequestMetadata = credentialRecord.metadata.get<DataIntegrityRequestMetadata>(
       DataIntegrityRequestMetadataKey
     )
-
     if (!credentialRequestMetadata) {
       throw new CredoError(`Missing request metadata for credential exchange with thread id ${credentialRecord.id}`)
     }
@@ -828,27 +803,27 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
 
     const { credential: credentialJson } = attachment.getDataAsJson<DataIntegrityCredential>()
 
-    const offeredCredentialJson = credentialOffer.credential
+    if (Array.isArray(offeredCredentialJson.credentialSubject)) {
+      throw new CredoError('Invalid credential subject. Only single credential subject object are supported')
+    }
 
-    if (!Array.isArray(offeredCredentialJson.credentialSubject)) {
-      const credentialSubjectMatches = Object.entries(offeredCredentialJson.credentialSubject as JsonObject).every(
-        ([key, offeredValue]) => {
-          const receivedValue = (credentialJson.credentialSubject as JsonObject)[key]
-          if (!offeredValue || !receivedValue) return false
+    const credentialSubjectMatches = Object.entries(offeredCredentialJson.credentialSubject as JsonObject).every(
+      ([key, offeredValue]) => {
+        const receivedValue = (credentialJson.credentialSubject as JsonObject)[key]
+        if (!offeredValue || !receivedValue) return false
 
-          if (typeof offeredValue === 'number' || typeof receivedValue === 'number') {
-            return offeredValue.toString() === receivedValue.toString()
-          }
-
-          return deepEquality(offeredValue, receivedValue)
+        if (typeof offeredValue === 'number' || typeof receivedValue === 'number') {
+          return offeredValue.toString() === receivedValue.toString()
         }
-      )
 
-      if (!credentialSubjectMatches) {
-        throw new CredoError(
-          'Received invalid credential. Received credential subject does not match the offered credential subject.'
-        )
+        return deepEquality(offeredValue, receivedValue)
       }
+    )
+
+    if (!credentialSubjectMatches) {
+      throw new CredoError(
+        'Received invalid credential. Received credential subject does not match the offered credential subject.'
+      )
     }
 
     const credentialVersion = this.getCredentialVersion(credentialJson)
@@ -858,7 +833,7 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
       credentialSubject: credentialJson.credentialSubject,
       ...(credentialVersion === '1.1' && { issuanceDate: credentialJson.issuanceDate }),
       ...(credentialVersion === '2.0' && { validFrom: credentialJson.validFrom }),
-      ...(offeredCredentialJson.credentialStatus === '2.0' && { credentialStatus: credentialJson.credentialStatus }),
+      ...(offeredCredentialJson.credentialStatus && { credentialStatus: credentialJson.credentialStatus }),
       proof: credentialJson.proof,
     }
 
@@ -888,6 +863,17 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
         anonCredsCredentialRecordOptions.schemaId,
         true
       )
+
+      const integrityProtectedFields = ['@context', 'issuer', 'type', 'credentialSubject', 'validFrom', 'issuanceDate']
+      if (
+        Object.keys(offeredCredentialJson).some((key) => !integrityProtectedFields.includes(key) && key !== 'proof')
+      ) {
+        throw new CredoError('Credential offer contains non anoncreds integrity protected fields.')
+      }
+
+      if (w3cJsonLdVerifiableCredential.type.length !== 1) {
+        throw new CredoError(`Invalid credential type. Only single credential type 'VerifiableCredential' is supported`)
+      }
     } else {
       w3cJsonLdVerifiableCredential = JsonTransformer.fromJSON(credentialJson, W3cJsonLdVerifiableCredential)
     }
