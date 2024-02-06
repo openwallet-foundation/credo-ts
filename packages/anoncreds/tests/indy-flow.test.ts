@@ -289,6 +289,7 @@ describe('Legacy indy format services using anoncreds-rs', () => {
 
     // Holder processes and accepts credential
     await legacyIndyCredentialFormatService.processCredential(agentContext, {
+      offerAttachment,
       credentialRecord: holderCredentialRecord,
       attachment: credentialAttachment,
       requestAttachment,

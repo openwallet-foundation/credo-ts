@@ -298,6 +298,7 @@ describe('Legacy indy format services', () => {
 
     // Holder processes and accepts credential
     await indyCredentialFormatService.processCredential(agentContext, {
+      offerAttachment,
       credentialRecord: holderCredentialRecord,
       attachment: credentialAttachment,
       requestAttachment,

@@ -382,6 +382,7 @@ describe('JsonLd CredentialFormatService', () => {
 
       // when
       await jsonLdFormatService.processCredential(agentContext, {
+        offerAttachment,
         attachment: credentialAttachment,
         requestAttachment: requestAttachment,
         credentialRecord,
@@ -416,6 +417,7 @@ describe('JsonLd CredentialFormatService', () => {
       // when/then
       await expect(
         jsonLdFormatService.processCredential(agentContext, {
+          offerAttachment: offerAttachment,
           attachment: credentialAttachment,
           requestAttachment: requestAttachment,
           credentialRecord,
@@ -440,6 +442,7 @@ describe('JsonLd CredentialFormatService', () => {
       // when/then
       await expect(
         jsonLdFormatService.processCredential(agentContext, {
+          offerAttachment,
           attachment: credentialAttachment,
           requestAttachment: requestAttachmentWithDomain,
           credentialRecord,
@@ -466,6 +469,7 @@ describe('JsonLd CredentialFormatService', () => {
       // when/then
       await expect(
         jsonLdFormatService.processCredential(agentContext, {
+          offerAttachment,
           attachment: credentialAttachment,
           requestAttachment: requestAttachmentWithChallenge,
           credentialRecord,
@@ -488,6 +492,7 @@ describe('JsonLd CredentialFormatService', () => {
       // when/then
       await expect(
         jsonLdFormatService.processCredential(agentContext, {
+          offerAttachment,
           attachment: credentialAttachment,
           requestAttachment: requestAttachmentWithProofType,
           credentialRecord,
@@ -510,6 +515,7 @@ describe('JsonLd CredentialFormatService', () => {
       // when/then
       await expect(
         jsonLdFormatService.processCredential(agentContext, {
+          offerAttachment,
           attachment: credentialAttachment,
           requestAttachment: requestAttachmentWithProofPurpose,
           credentialRecord,
