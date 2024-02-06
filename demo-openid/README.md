@@ -6,10 +6,12 @@ Alice, a former student of Faber College, connects with the College, is issued a
 
 ## Features
 
-- ✅ Issuing a credential
-- ✅ Offering it
-- ✅ Requesting a proof
-- ✅ Accepting the proof request
+- ✅ Issuing a credential.
+- ✅ Resolving a credential offer.
+- ✅ Accepting a credential offer.
+- ✅ Requesting a credential presentation.
+- ✅ Resolving a presentation request.
+- ✅ Accepting a resolved presentation request.
 
 ## Getting Started
 
@@ -68,7 +70,7 @@ To create a credential offer:
 - Select `UniversityDegreeCredential`.
 - Now copy the content INSIDE the quotes (without the quotes).
 
-To accept the credential:
+To resolve and accept the credential:
 
 - Go to the Holder terminal.
 - Select `Resolve a credential offer`.
@@ -76,14 +78,14 @@ To accept the credential:
 - Select `Accept the credential offer`.
 - You have now stored your credential.
 
-To request a proof:
+To create a presentation request:
 
 - Go to the Verifier terminal.
 - Select `Request the presentation of a credential`.
 - Select `UniversityDegreeCredential`.
-- Copy the presentation string content, without the quotes.
+- Copy the presentation request string content, without the quotes.
 
-To fulfil the presentation request:
+To resolve and accept the presentation request:
 
 - Go to the Holder terminal.
 - Select `Resolve a proof request`.
