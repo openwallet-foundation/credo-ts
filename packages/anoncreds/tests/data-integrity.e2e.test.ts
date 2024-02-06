@@ -1,7 +1,7 @@
 import type { AnonCredsTestsAgent } from './anoncredsSetup'
 import type { AgentContext, KeyDidCreateOptions } from '@credo-ts/core'
 import type { EventReplaySubject } from '@credo-ts/core/tests'
-import type { InputDescriptorV2, PresentationDefinitionV1 } from '@sphereon/pex-models'
+import type { InputDescriptorV2 } from '@sphereon/pex-models'
 
 import {
   AutoAcceptCredential,
@@ -269,7 +269,7 @@ async function anonCredsFlowTest(options: {
     state: ProofState.ProposalReceived,
   })
 
-  const pdCopy: PresentationDefinitionV1 = JSON.parse(JSON.stringify(presentationDefinition))
+  const pdCopy = JSON.parse(JSON.stringify(presentationDefinition))
   if (!revocationRegistryDefinitionId)
     pdCopy.input_descriptors.forEach((ide: InputDescriptorV2) => delete ide.constraints?.statuses)
 

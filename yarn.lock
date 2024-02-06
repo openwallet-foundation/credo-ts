@@ -2596,18 +2596,15 @@
     "@sphereon/ssi-types" "^0.18.1"
     uuid "^9.0.0"
 
-"@sphereon/pex-models@^2.1.5":
-  version "2.1.5"
-  resolved "https://registry.yarnpkg.com/@sphereon/pex-models/-/pex-models-2.1.5.tgz#ba4474a3783081392b72403c4c8ee6da3d2e5585"
-  integrity sha512-7THexvdYUK/Dh8olBB46ErT9q/RnecnMdb5r2iwZ6be0Dt4vQLAUN7QU80H0HZBok4jRTb8ydt12x0raBSTHOg==
-
-"@sphereon/pex-models@^2.2.0":
+"@sphereon/pex-models@^2.1.5", "@sphereon/pex-models@^2.2.0":
   version "2.2.0"
   resolved "https://registry.yarnpkg.com/@sphereon/pex-models/-/pex-models-2.2.0.tgz#32013fff43d4f47df03e213792a9bcc6866a1f06"
   integrity sha512-dGDRdoxJj+P0TRqu0R8R0/IdIzrCya1MsnxIFbcmSW3rjPsbwXbV0EojEfxXGD5LhqsUJiuAffMtyE2dtVI/XQ==
 
-"@sphereon/pex@../PEX/":
-  version "3.1.1-unstable.0"
+"@sphereon/pex@3.2.1-unstable.7":
+  version "3.2.1-unstable.7"
+  resolved "https://registry.yarnpkg.com/@sphereon/pex/-/pex-3.2.1-unstable.7.tgz#218d39c2311e5d542258607883185cacc3e6e862"
+  integrity sha512-X55PUfZL5gZ/mJinNS+eQ/iUKuFmNA6PP8NU14p4SemZbt/8kn67XYM6Nl/hYSFDysx64daPMRfPTkopKAfT+Q==
   dependencies:
     "@astronautlabs/jsonpath" "^1.1.2"
     "@sd-jwt/decode" "^0.2.0"
@@ -2622,15 +2619,15 @@
     string.prototype.matchall "^4.0.10"
 
 "@sphereon/pex@^3.0.1":
-  version "3.0.1"
-  resolved "https://registry.yarnpkg.com/@sphereon/pex/-/pex-3.0.1.tgz#e7d9d36c7c921ab97190a735c67e0a2632432e3b"
-  integrity sha512-rj+GhFfV5JLyo7dTIA3htWlrT+f6tayF9JRAGxdsIYBfYictLi9BirQ++JRBXsiq7T5zMnfermz4RGi3cvt13Q==
+  version "3.2.0"
+  resolved "https://registry.yarnpkg.com/@sphereon/pex/-/pex-3.2.0.tgz#2b8cd5e9094c88c2cbf822b1b70584ca4a08293a"
+  integrity sha512-6qk4L7PaxFsHSVjG0w5SbffwuwI0sbnwyoaNBNku17u2WOThBcnH22sgCdNRRbzacXs0e4iAw7Cb1cd730LQaQ==
   dependencies:
     "@astronautlabs/jsonpath" "^1.1.2"
     "@sd-jwt/decode" "^0.2.0"
     "@sd-jwt/present" "^0.2.0"
     "@sd-jwt/utils" "^0.2.0"
-    "@sphereon/pex-models" "^2.1.5"
+    "@sphereon/pex-models" "^2.2.0"
     "@sphereon/ssi-types" "0.18.1"
     ajv "^8.12.0"
     ajv-formats "^2.1.1"
