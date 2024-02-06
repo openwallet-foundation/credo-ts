@@ -95,7 +95,7 @@ describe('Tenants E2E', () => {
     await agent2.shutdown()
   })
 
-  test('create get and delete a tenant', async () => {
+  test('create get, find by label, and delete a tenant', async () => {
     // Create tenant
     let tenantRecord1 = await agent1.modules.tenants.createTenant({
       config: {
@@ -105,6 +105,10 @@ describe('Tenants E2E', () => {
 
     // Retrieve tenant record from storage
     tenantRecord1 = await agent1.modules.tenants.getTenantById(tenantRecord1.id)
+
+    const tenantRecordsByLabel = await agent1.modules.tenants.findTenantsByLabel('Tenant 1')
+    expect(tenantRecordsByLabel.length).toBe(1)
+    expect(tenantRecordsByLabel[0].id).toBe(tenantRecord1.id)
 
     // Get tenant agent
     const tenantAgent = await agent1.modules.tenants.getTenantAgent({

@@ -30,11 +30,15 @@ export class CredentialFormatCoordinator<CFs extends CredentialFormatService[]> 
       formatServices,
       credentialRecord,
       comment,
+      goalCode,
+      goal,
     }: {
       formatServices: CredentialFormatService[]
       credentialFormats: CredentialFormatPayload<ExtractCredentialFormats<CFs>, 'createProposal'>
       credentialRecord: CredentialExchangeRecord
       comment?: string
+      goalCode?: string
+      goal?: string
     }
   ): Promise<V2ProposeCredentialMessage> {
     const didCommMessageRepository = agentContext.dependencyManager.resolve(DidCommMessageRepository)
@@ -66,8 +70,10 @@ export class CredentialFormatCoordinator<CFs extends CredentialFormatService[]> 
       id: credentialRecord.threadId,
       formats,
       proposalAttachments,
-      comment: comment,
+      comment,
       credentialPreview,
+      goalCode,
+      goal,
     })
 
     message.setThread({ threadId: credentialRecord.threadId, parentThreadId: credentialRecord.parentThreadId })
@@ -118,11 +124,15 @@ export class CredentialFormatCoordinator<CFs extends CredentialFormatService[]> 
       credentialFormats,
       formatServices,
       comment,
+      goalCode,
+      goal,
     }: {
       credentialRecord: CredentialExchangeRecord
       credentialFormats?: CredentialFormatPayload<ExtractCredentialFormats<CFs>, 'acceptProposal'>
       formatServices: CredentialFormatService[]
       comment?: string
+      goalCode?: string
+      goal?: string
     }
   ) {
     const didCommMessageRepository = agentContext.dependencyManager.resolve(DidCommMessageRepository)
@@ -180,6 +190,8 @@ export class CredentialFormatCoordinator<CFs extends CredentialFormatService[]> 
       credentialPreview,
       offerAttachments,
       comment,
+      goalCode,
+      goal,
     })
 
     message.setThread({ threadId: credentialRecord.threadId, parentThreadId: credentialRecord.parentThreadId })
@@ -207,11 +219,15 @@ export class CredentialFormatCoordinator<CFs extends CredentialFormatService[]> 
       formatServices,
       credentialRecord,
       comment,
+      goalCode,
+      goal,
     }: {
       formatServices: CredentialFormatService[]
       credentialFormats: CredentialFormatPayload<ExtractCredentialFormats<CFs>, 'createOffer'>
       credentialRecord: CredentialExchangeRecord
       comment?: string
+      goalCode?: string
+      goal?: string
     }
   ): Promise<V2OfferCredentialMessage> {
     const didCommMessageRepository = agentContext.dependencyManager.resolve(DidCommMessageRepository)
@@ -250,6 +266,8 @@ export class CredentialFormatCoordinator<CFs extends CredentialFormatService[]> 
     const message = new V2OfferCredentialMessage({
       formats,
       comment,
+      goalCode,
+      goal,
       offerAttachments,
       credentialPreview,
     })
@@ -302,11 +320,15 @@ export class CredentialFormatCoordinator<CFs extends CredentialFormatService[]> 
       credentialFormats,
       formatServices,
       comment,
+      goalCode,
+      goal,
     }: {
       credentialRecord: CredentialExchangeRecord
       credentialFormats?: CredentialFormatPayload<ExtractCredentialFormats<CFs>, 'acceptOffer'>
       formatServices: CredentialFormatService[]
       comment?: string
+      goalCode?: string
+      goal?: string
     }
   ) {
     const didCommMessageRepository = agentContext.dependencyManager.resolve(DidCommMessageRepository)
@@ -343,9 +365,11 @@ export class CredentialFormatCoordinator<CFs extends CredentialFormatService[]> 
 
     const message = new V2RequestCredentialMessage({
       formats,
+      attachments: requestAppendAttachments,
       requestAttachments: requestAttachments,
       comment,
-      attachments: requestAppendAttachments,
+      goalCode,
+      goal,
     })
 
     message.setThread({ threadId: credentialRecord.threadId, parentThreadId: credentialRecord.parentThreadId })
@@ -373,11 +397,15 @@ export class CredentialFormatCoordinator<CFs extends CredentialFormatService[]> 
       formatServices,
       credentialRecord,
       comment,
+      goalCode,
+      goal,
     }: {
       formatServices: CredentialFormatService[]
       credentialFormats: CredentialFormatPayload<ExtractCredentialFormats<CFs>, 'createRequest'>
       credentialRecord: CredentialExchangeRecord
       comment?: string
+      goalCode?: string
+      goal?: string
     }
   ): Promise<V2RequestCredentialMessage> {
     const didCommMessageRepository = agentContext.dependencyManager.resolve(DidCommMessageRepository)
@@ -399,6 +427,8 @@ export class CredentialFormatCoordinator<CFs extends CredentialFormatService[]> 
     const message = new V2RequestCredentialMessage({
       formats,
       comment,
+      goalCode,
+      goal,
       requestAttachments: requestAttachments,
     })
 
@@ -450,11 +480,15 @@ export class CredentialFormatCoordinator<CFs extends CredentialFormatService[]> 
       credentialFormats,
       formatServices,
       comment,
+      goalCode,
+      goal,
     }: {
       credentialRecord: CredentialExchangeRecord
       credentialFormats?: CredentialFormatPayload<ExtractCredentialFormats<CFs>, 'acceptRequest'>
       formatServices: CredentialFormatService[]
       comment?: string
+      goalCode?: string
+      goal?: string
     }
   ) {
     const didCommMessageRepository = agentContext.dependencyManager.resolve(DidCommMessageRepository)
@@ -500,6 +534,8 @@ export class CredentialFormatCoordinator<CFs extends CredentialFormatService[]> 
       formats,
       credentialAttachments: credentialAttachments,
       comment,
+      goalCode,
+      goal,
     })
 
     message.setThread({ threadId: credentialRecord.threadId, parentThreadId: credentialRecord.parentThreadId })

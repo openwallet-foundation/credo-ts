@@ -114,7 +114,14 @@ export class V2CredentialProtocol<CFs extends CredentialFormatService[] = Creden
    */
   public async createProposal(
     agentContext: AgentContext,
-    { connectionRecord, credentialFormats, comment, autoAcceptCredential }: CreateCredentialProposalOptions<CFs>
+    {
+      connectionRecord,
+      credentialFormats,
+      comment,
+      goal,
+      goalCode,
+      autoAcceptCredential,
+    }: CreateCredentialProposalOptions<CFs>
   ): Promise<CredentialProtocolMsgReturnType<AgentMessage>> {
     agentContext.config.logger.debug('Get the Format Service and Create Proposal Message')
 
@@ -138,6 +145,8 @@ export class V2CredentialProtocol<CFs extends CredentialFormatService[] = Creden
       credentialRecord,
       formatServices,
       comment,
+      goal,
+      goalCode,
     })
 
     agentContext.config.logger.debug('Save record and emit state change event')
@@ -232,7 +241,14 @@ export class V2CredentialProtocol<CFs extends CredentialFormatService[] = Creden
 
   public async acceptProposal(
     agentContext: AgentContext,
-    { credentialRecord, credentialFormats, autoAcceptCredential, comment }: AcceptCredentialProposalOptions<CFs>
+    {
+      credentialRecord,
+      credentialFormats,
+      autoAcceptCredential,
+      comment,
+      goal,
+      goalCode,
+    }: AcceptCredentialProposalOptions<CFs>
   ): Promise<CredentialProtocolMsgReturnType<V2OfferCredentialMessage>> {
     // Assert
     credentialRecord.assertProtocolVersion('v2')
@@ -264,6 +280,8 @@ export class V2CredentialProtocol<CFs extends CredentialFormatService[] = Creden
       credentialRecord,
       formatServices,
       comment,
+      goal,
+      goalCode,
       credentialFormats,
     })
 
@@ -283,7 +301,14 @@ export class V2CredentialProtocol<CFs extends CredentialFormatService[] = Creden
    */
   public async negotiateProposal(
     agentContext: AgentContext,
-    { credentialRecord, credentialFormats, autoAcceptCredential, comment }: NegotiateCredentialProposalOptions<CFs>
+    {
+      credentialRecord,
+      credentialFormats,
+      autoAcceptCredential,
+      comment,
+      goal,
+      goalCode,
+    }: NegotiateCredentialProposalOptions<CFs>
   ): Promise<CredentialProtocolMsgReturnType<V2OfferCredentialMessage>> {
     // Assert
     credentialRecord.assertProtocolVersion('v2')
@@ -305,6 +330,8 @@ export class V2CredentialProtocol<CFs extends CredentialFormatService[] = Creden
       credentialFormats,
       credentialRecord,
       comment,
+      goal,
+      goalCode,
     })
 
     credentialRecord.autoAcceptCredential = autoAcceptCredential ?? credentialRecord.autoAcceptCredential
@@ -324,7 +351,14 @@ export class V2CredentialProtocol<CFs extends CredentialFormatService[] = Creden
    */
   public async createOffer(
     agentContext: AgentContext,
-    { credentialFormats, autoAcceptCredential, comment, connectionRecord }: CreateCredentialOfferOptions<CFs>
+    {
+      credentialFormats,
+      autoAcceptCredential,
+      comment,
+      goal,
+      goalCode,
+      connectionRecord,
+    }: CreateCredentialOfferOptions<CFs>
   ): Promise<CredentialProtocolMsgReturnType<V2OfferCredentialMessage>> {
     const credentialRepository = agentContext.dependencyManager.resolve(CredentialRepository)
 
@@ -346,6 +380,8 @@ export class V2CredentialProtocol<CFs extends CredentialFormatService[] = Creden
       credentialFormats,
       credentialRecord,
       comment,
+      goal,
+      goalCode,
     })
 
     agentContext.config.logger.debug(
@@ -442,7 +478,14 @@ export class V2CredentialProtocol<CFs extends CredentialFormatService[] = Creden
 
   public async acceptOffer(
     agentContext: AgentContext,
-    { credentialRecord, autoAcceptCredential, comment, credentialFormats }: AcceptCredentialOfferOptions<CFs>
+    {
+      credentialRecord,
+      autoAcceptCredential,
+      comment,
+      goal,
+      goalCode,
+      credentialFormats,
+    }: AcceptCredentialOfferOptions<CFs>
   ) {
     const didCommMessageRepository = agentContext.dependencyManager.resolve(DidCommMessageRepository)
 
@@ -474,6 +517,8 @@ export class V2CredentialProtocol<CFs extends CredentialFormatService[] = Creden
       credentialRecord,
       formatServices,
       comment,
+      goal,
+      goalCode,
       credentialFormats,
     })
 
@@ -493,7 +538,14 @@ export class V2CredentialProtocol<CFs extends CredentialFormatService[] = Creden
    */
   public async negotiateOffer(
     agentContext: AgentContext,
-    { credentialRecord, credentialFormats, autoAcceptCredential, comment }: NegotiateCredentialOfferOptions<CFs>
+    {
+      credentialRecord,
+      credentialFormats,
+      autoAcceptCredential,
+      comment,
+      goal,
+      goalCode,
+    }: NegotiateCredentialOfferOptions<CFs>
   ): Promise<CredentialProtocolMsgReturnType<V2ProposeCredentialMessage>> {
     // Assert
     credentialRecord.assertProtocolVersion('v2')
@@ -515,6 +567,8 @@ export class V2CredentialProtocol<CFs extends CredentialFormatService[] = Creden
       credentialFormats,
       credentialRecord,
       comment,
+      goal,
+      goalCode,
     })
 
     credentialRecord.autoAcceptCredential = autoAcceptCredential ?? credentialRecord.autoAcceptCredential
@@ -530,7 +584,14 @@ export class V2CredentialProtocol<CFs extends CredentialFormatService[] = Creden
    */
   public async createRequest(
     agentContext: AgentContext,
-    { credentialFormats, autoAcceptCredential, comment, connectionRecord }: CreateCredentialRequestOptions<CFs>
+    {
+      credentialFormats,
+      autoAcceptCredential,
+      comment,
+      goal,
+      goalCode,
+      connectionRecord,
+    }: CreateCredentialRequestOptions<CFs>
   ): Promise<CredentialProtocolMsgReturnType<V2RequestCredentialMessage>> {
     const credentialRepository = agentContext.dependencyManager.resolve(CredentialRepository)
 
@@ -552,6 +613,8 @@ export class V2CredentialProtocol<CFs extends CredentialFormatService[] = Creden
       credentialFormats,
       credentialRecord,
       comment,
+      goal,
+      goalCode,
     })
 
     agentContext.config.logger.debug(
@@ -659,7 +722,14 @@ export class V2CredentialProtocol<CFs extends CredentialFormatService[] = Creden
 
   public async acceptRequest(
     agentContext: AgentContext,
-    { credentialRecord, autoAcceptCredential, comment, credentialFormats }: AcceptCredentialRequestOptions<CFs>
+    {
+      credentialRecord,
+      autoAcceptCredential,
+      comment,
+      goal,
+      goalCode,
+      credentialFormats,
+    }: AcceptCredentialRequestOptions<CFs>
   ) {
     const didCommMessageRepository = agentContext.dependencyManager.resolve(DidCommMessageRepository)
 
@@ -690,6 +760,8 @@ export class V2CredentialProtocol<CFs extends CredentialFormatService[] = Creden
       credentialRecord,
       formatServices,
       comment,
+      goal,
+      goalCode,
       credentialFormats,
     })
 

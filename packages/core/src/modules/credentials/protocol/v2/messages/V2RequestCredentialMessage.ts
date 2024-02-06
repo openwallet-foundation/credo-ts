@@ -9,6 +9,8 @@ import { CredentialFormatSpec } from '../../../models'
 export interface V2RequestCredentialMessageOptions {
   id?: string
   formats: CredentialFormatSpec[]
+  goalCode?: string
+  goal?: string
   requestAttachments: Attachment[]
   comment?: string
   attachments?: Attachment[]
@@ -20,6 +22,8 @@ export class V2RequestCredentialMessage extends AgentMessage {
     if (options) {
       this.id = options.id ?? this.generateId()
       this.comment = options.comment
+      this.goalCode = options.goalCode
+      this.goal = options.goal
       this.formats = options.formats
       this.requestAttachments = options.requestAttachments
       this.appendedAttachments = options.attachments
@@ -52,6 +56,15 @@ export class V2RequestCredentialMessage extends AgentMessage {
   @IsOptional()
   @IsString()
   public comment?: string
+
+  @Expose({ name: 'goal_code' })
+  @IsString()
+  @IsOptional()
+  public goalCode?: string
+
+  @IsString()
+  @IsOptional()
+  public goal?: string
 
   public getRequestAttachmentById(id: string): Attachment | undefined {
     return this.requestAttachments.find((attachment) => attachment.id === id)

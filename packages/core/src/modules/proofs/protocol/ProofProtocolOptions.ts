@@ -73,9 +73,18 @@ export type GetProofFormatDataReturn<PFs extends ProofFormat[] = ProofFormat[]> 
 }
 
 interface BaseOptions {
-  goalCode?: string
   comment?: string
   autoAcceptProof?: AutoAcceptProof
+
+  /**
+   * Will be ignored for v1 protocol as it is not supported
+   */
+  goalCode?: string
+
+  /**
+   * Will be ignored for v1 protocol as it is not supported
+   */
+  goal?: string
 }
 
 export interface CreateProofProposalOptions<PFs extends ProofFormatService[]> extends BaseOptions {

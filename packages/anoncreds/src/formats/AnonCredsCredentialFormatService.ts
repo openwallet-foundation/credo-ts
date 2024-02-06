@@ -577,7 +577,7 @@ export class AnonCredsCredentialFormatService implements CredentialFormatService
     ).credentialDefinition.value
 
     if (credentialDefinition.revocation) {
-      if (!revocationRegistryDefinitionId || !revocationRegistryIndex) {
+      if (!revocationRegistryDefinitionId || revocationRegistryIndex === undefined) {
         throw new CredoError(
           'AnonCreds revocable credentials require revocationRegistryDefinitionId and revocationRegistryIndex'
         )

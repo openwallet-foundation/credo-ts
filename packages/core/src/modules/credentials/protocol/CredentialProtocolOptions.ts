@@ -89,18 +89,29 @@ export type GetCredentialFormatDataReturn<CFs extends CredentialFormat[] = Crede
   credential?: CredentialFormatDataMessagePayload<CFs, 'credential'>
 }
 
-export interface CreateCredentialProposalOptions<CFs extends CredentialFormatService[]> {
-  connectionRecord: ConnectionRecord
-  credentialFormats: CredentialFormatPayload<ExtractCredentialFormats<CFs>, 'createProposal'>
-  autoAcceptCredential?: AutoAcceptCredential
+interface BaseOptions {
   comment?: string
+  autoAcceptCredential?: AutoAcceptCredential
+
+  /**
+   * Will be ignored for v1 protocol as it is not supported
+   */
+  goalCode?: string
+
+  /**
+   * Will be ignored for v1 protocol as it is not supported
+   */
+  goal?: string
 }
 
-export interface AcceptCredentialProposalOptions<CFs extends CredentialFormatService[]> {
+export interface CreateCredentialProposalOptions<CFs extends CredentialFormatService[]> extends BaseOptions {
+  connectionRecord: ConnectionRecord
+  credentialFormats: CredentialFormatPayload<ExtractCredentialFormats<CFs>, 'createProposal'>
+}
+
+export interface AcceptCredentialProposalOptions<CFs extends CredentialFormatService[]> extends BaseOptions {
   credentialRecord: CredentialExchangeRecord
   credentialFormats?: CredentialFormatPayload<ExtractCredentialFormats<CFs>, 'acceptProposal'>
-  autoAcceptCredential?: AutoAcceptCredential
-  comment?: string
 }
 
 export interface NegotiateCredentialProposalOptions<CFs extends CredentialFormatService[]> {
@@ -108,42 +119,42 @@ export interface NegotiateCredentialProposalOptions<CFs extends CredentialFormat
   credentialFormats: CredentialFormatPayload<ExtractCredentialFormats<CFs>, 'createOffer'>
   autoAcceptCredential?: AutoAcceptCredential
   comment?: string
+
+  /**
+   * Will be ignored for v1 protocol as it is not supported
+   */
+  goalCode?: string
+
+  /**
+   * Will be ignored for v1 protocol as it is not supported
+   */
+  goal?: string
 }
 
-export interface CreateCredentialOfferOptions<CFs extends CredentialFormatService[]> {
+export interface CreateCredentialOfferOptions<CFs extends CredentialFormatService[]> extends BaseOptions {
   // Create offer can also be used for connection-less, so connection is optional
   connectionRecord?: ConnectionRecord
   credentialFormats: CredentialFormatPayload<ExtractCredentialFormats<CFs>, 'createOffer'>
-  autoAcceptCredential?: AutoAcceptCredential
-  comment?: string
 }
 
-export interface AcceptCredentialOfferOptions<CFs extends CredentialFormatService[]> {
+export interface AcceptCredentialOfferOptions<CFs extends CredentialFormatService[]> extends BaseOptions {
   credentialRecord: CredentialExchangeRecord
   credentialFormats?: CredentialFormatPayload<ExtractCredentialFormats<CFs>, 'acceptOffer'>
-  autoAcceptCredential?: AutoAcceptCredential
-  comment?: string
 }
 
-export interface NegotiateCredentialOfferOptions<CFs extends CredentialFormatService[]> {
+export interface NegotiateCredentialOfferOptions<CFs extends CredentialFormatService[]> extends BaseOptions {
   credentialRecord: CredentialExchangeRecord
   credentialFormats: CredentialFormatPayload<ExtractCredentialFormats<CFs>, 'createProposal'>
-  autoAcceptCredential?: AutoAcceptCredential
-  comment?: string
 }
 
-export interface CreateCredentialRequestOptions<CFs extends CredentialFormatService[]> {
+export interface CreateCredentialRequestOptions<CFs extends CredentialFormatService[]> extends BaseOptions {
   connectionRecord: ConnectionRecord
   credentialFormats: CredentialFormatPayload<ExtractCredentialFormats<CFs>, 'createRequest'>
-  autoAcceptCredential?: AutoAcceptCredential
-  comment?: string
 }
 
-export interface AcceptCredentialRequestOptions<CFs extends CredentialFormatService[]> {
+export interface AcceptCredentialRequestOptions<CFs extends CredentialFormatService[]> extends BaseOptions {
   credentialRecord: CredentialExchangeRecord
   credentialFormats?: CredentialFormatPayload<ExtractCredentialFormats<CFs>, 'acceptRequest'>
-  autoAcceptCredential?: AutoAcceptCredential
-  comment?: string
 }
 
 export interface AcceptCredentialOptions {
