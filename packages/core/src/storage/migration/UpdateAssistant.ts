@@ -107,12 +107,12 @@ export class UpdateAssistant<Agent extends BaseAgent<any> = BaseAgent> {
     return neededUpdates
   }
 
-  public async update(options?: { updateToVersion?: UpdateToVersion; backupBeforeUpdate?: boolean }) {
+  public async update(options?: { updateToVersion?: UpdateToVersion; backupBeforeStorageUpdate?: boolean }) {
     const updateIdentifier = Date.now().toString()
     const updateToVersion = options?.updateToVersion
 
     // By default do a backup first (should be explicitly disabled in case the wallet backend does not support export)
-    const doBackup = options?.backupBeforeUpdate ?? true
+    const createBackup = options?.backupBeforeStorageUpdate ?? true
 
     try {
       this.agent.config.logger.info(`Starting update of agent storage with updateIdentifier ${updateIdentifier}`)
@@ -147,7 +147,7 @@ export class UpdateAssistant<Agent extends BaseAgent<any> = BaseAgent> {
       )
 
       // Create backup in case migration goes wrong
-      if (doBackup) {
+      if (createBackup) {
         await this.createBackup(updateIdentifier)
       }
 
@@ -195,7 +195,7 @@ export class UpdateAssistant<Agent extends BaseAgent<any> = BaseAgent> {
             `Successfully updated agent storage from version ${update.fromVersion} to version ${update.toVersion}`
           )
         }
-        if (doBackup) {
+        if (createBackup) {
           // Delete backup file, as it is not needed anymore
           await this.fileSystem.delete(this.getBackupPath(updateIdentifier))
         }
@@ -204,7 +204,7 @@ export class UpdateAssistant<Agent extends BaseAgent<any> = BaseAgent> {
           error,
         })
 
-        if (doBackup) {
+        if (createBackup) {
           this.agent.config.logger.debug('Restoring backup.')
           // In the case of an error we want to restore the backup
           await this.restoreBackup(updateIdentifier)
@@ -229,7 +229,8 @@ export class UpdateAssistant<Agent extends BaseAgent<any> = BaseAgent> {
       }
       // Wallet backend does not support export
       if (error instanceof WalletExportUnsupportedError) {
-        const errorMessage = `Error updating storage with updateIdentifier ${updateIdentifier} because the wallet backend does not support exporting`
+        const errorMessage = `Error updating storage with updateIdentifier ${updateIdentifier} because the wallet backend does not support exporting.
+         Make sure to do a manual backup of your wallet and disable 'backupBeforeStorageUpdate' before proceeding.`
         this.agent.config.logger.fatal(errorMessage, {
           error,
           updateIdentifier,

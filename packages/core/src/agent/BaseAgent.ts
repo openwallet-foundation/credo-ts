@@ -163,7 +163,7 @@ export abstract class BaseAgent<AgentModules extends ModulesMap = EmptyModuleMap
       const updateAssistant = new UpdateAssistant(this, DEFAULT_UPDATE_CONFIG)
 
       await updateAssistant.initialize()
-      await updateAssistant.update({ backupBeforeUpdate: this.agentConfig.backupBeforeStorageUpdate })
+      await updateAssistant.update({ backupBeforeStorageUpdate: this.agentConfig.backupBeforeStorageUpdate })
     } else if (!isStorageUpToDate) {
       const currentVersion = await storageUpdateService.getCurrentStorageVersion(this.agentContext)
       // Close wallet to prevent un-initialized agent with initialized wallet
