@@ -98,11 +98,7 @@ export class AnonCreds2023DataIntegrityServiceImpl implements Anoncreds2023DataI
     return result
   }
 
-  private getCredentialMetadataForDescriptor(
-    descriptorMapObject: Descriptor,
-    selectedCredentials: JsonObject[],
-    selectedCredentialRecords?: W3cCredentialRecord[]
-  ) {
+  private getCredentialMetadataForDescriptor(descriptorMapObject: Descriptor, selectedCredentials: JsonObject[]) {
     const credentialExtractionResult = this.extractPathNodes({ verifiableCredential: selectedCredentials }, [
       descriptorMapObject.path,
     ])
@@ -117,23 +113,11 @@ export class AnonCreds2023DataIntegrityServiceImpl implements Anoncreds2023DataI
     const entryIndex = selectedCredentials.findIndex((credential) => deepEquality(credential, credentialJson))
     if (entryIndex === -1) throw new CredoError('Could not find selected credential')
 
-    const credentialRecord = selectedCredentialRecords ? selectedCredentialRecords[entryIndex] : undefined
-    if (
-      credentialRecord &&
-      !deepEquality(JsonTransformer.toJSON(credentialRecord.credential), selectedCredentials[entryIndex])
-    ) {
-      throw new CredoError('selected credential does not match the selected credential record')
-    }
-
-    const anonCredsTags = credentialRecord?.getAnonCredsTags()
-    if (credentialRecord && !anonCredsTags) throw new CredoError('No anoncreds tags found on credential record')
-
     const { credentialDefinitionId, revocationRegistryId, schemaId } = AnonCredsW3cCredential.fromJson(credentialJson)
 
     return {
       entryIndex,
       credentialJson,
-      anonCredsTags,
       credentialDefinitionId,
       revocationRegistryId,
       schemaId,
@@ -252,18 +236,14 @@ export class AnonCreds2023DataIntegrityServiceImpl implements Anoncreds2023DataI
     return credentialDefinitions
   }
 
-  private getPresentationMetadata = async (
-    agentContext: AgentContext,
-    input: {
-      credentialsWithMetadata: CredentialWithMetadata[]
-      credentialsProve: CredentialProve[]
-      linkSecretIds: Set<string>
-      schemaIds: Set<string>
-      credentialDefinitionIds: Set<string>
-    }
-  ) => {
-    const { linkSecretIds, credentialDefinitionIds, schemaIds, credentialsWithMetadata, credentialsProve } = input
-    const linkSecretIdArray = [...linkSecretIds]
+  private async getLinkSecret(agentContext: AgentContext, credentialRecord: W3cCredentialRecord[]) {
+    const linkSecrets = new Set(
+      credentialRecord
+        .map((record) => record.getAnonCredsTags()?.linkSecretId)
+        .filter((linkSecretId): linkSecretId is string => linkSecretId !== undefined)
+    )
+    const linkSecretIdArray = [...linkSecrets]
+
     if (linkSecretIdArray.length > 1) {
       throw new CredoError('Multiple linksecret cannot be used to create a single presentation')
     } else if (linkSecretIdArray.length === 0) {
@@ -275,6 +255,19 @@ export class AnonCreds2023DataIntegrityServiceImpl implements Anoncreds2023DataI
       .getByLinkSecretId(agentContext, linkSecretIdArray[0])
 
     if (!linkSecretRecord.value) throw new CredoError('Link Secret value not stored')
+    return linkSecretRecord.value
+  }
+
+  private getPresentationMetadata = async (
+    agentContext: AgentContext,
+    input: {
+      credentialsWithMetadata: CredentialWithMetadata[]
+      credentialsProve: CredentialProve[]
+      schemaIds: Set<string>
+      credentialDefinitionIds: Set<string>
+    }
+  ) => {
+    const { credentialDefinitionIds, schemaIds, credentialsWithMetadata, credentialsProve } = input
 
     const credentials: W3cCredentialEntry[] = await Promise.all(
       credentialsWithMetadata.map(async ({ credential, nonRevoked }) => {
@@ -301,7 +294,6 @@ export class AnonCreds2023DataIntegrityServiceImpl implements Anoncreds2023DataI
     return {
       schemas,
       credentialDefinitions,
-      linkSecret: linkSecretRecord.value,
       credentialsProve,
       credentials,
     }
@@ -387,15 +379,11 @@ export class AnonCreds2023DataIntegrityServiceImpl implements Anoncreds2023DataI
     agentContext: AgentContext,
     presentationDefinition: PresentationDefinitionV1 | PresentationDefinitionV2,
     presentationSubmission: PresentationSubmission,
-    credentials: JsonObject[],
-    holderOpts?: {
-      selectedCredentialRecords: W3cCredentialRecord[]
-    }
+    credentials: JsonObject[]
   ) => {
     const credentialsProve: CredentialProve[] = []
     const schemaIds = new Set<string>()
     const credentialDefinitionIds = new Set<string>()
-    const linkSecretIds = new Set<string>()
     const credentialsWithMetadata: CredentialWithMetadata[] = []
 
     const hash = Hasher.hash(TypedArrayEncoder.fromString(presentationDefinition.id), 'sha-256')
@@ -429,15 +417,11 @@ export class AnonCreds2023DataIntegrityServiceImpl implements Anoncreds2023DataI
       const fields = descriptor.constraints?.fields
       if (!fields) throw new CredoError('Unclear mapping of constraint with no fields.')
 
-      const { entryIndex, schemaId, credentialDefinitionId, revocationRegistryId, anonCredsTags, credentialJson } =
-        this.getCredentialMetadataForDescriptor(descriptorMapObject, credentials, holderOpts?.selectedCredentialRecords)
+      const { entryIndex, schemaId, credentialDefinitionId, revocationRegistryId, credentialJson } =
+        this.getCredentialMetadataForDescriptor(descriptorMapObject, credentials)
 
-      if (holderOpts) {
-        if (!anonCredsTags) throw new CredoError('Anoncreds tags are required for holder')
-        schemaIds.add(schemaId)
-        credentialDefinitionIds.add(credentialDefinitionId)
-        linkSecretIds.add(anonCredsTags.linkSecretId)
-      }
+      schemaIds.add(schemaId)
+      credentialDefinitionIds.add(credentialDefinitionId)
 
       const requiresRevocationStatus = this.descriptorRequiresRevocationStatus(descriptor)
       if (requiresRevocationStatus && !revocationRegistryId) {
@@ -489,21 +473,7 @@ export class AnonCreds2023DataIntegrityServiceImpl implements Anoncreds2023DataI
       }
     }
 
-    const presentationMetadata = holderOpts
-      ? await this.getPresentationMetadata(agentContext, {
-          credentialsWithMetadata,
-          credentialsProve,
-          linkSecretIds,
-          schemaIds,
-          credentialDefinitionIds,
-        })
-      : undefined
-
-    const revocationMetadata = !holderOpts
-      ? await this.getRevocationMetadataForCredentials(agentContext, credentialsWithMetadata)
-      : undefined
-
-    return { anonCredsProofRequest, presentationMetadata, revocationMetadata }
+    return { anonCredsProofRequest, credentialsWithMetadata, credentialsProve, schemaIds, credentialDefinitionIds }
   }
 
   public async createPresentation(
@@ -516,16 +486,19 @@ export class AnonCreds2023DataIntegrityServiceImpl implements Anoncreds2023DataI
     }
   ) {
     const { presentationDefinition, presentationSubmission, selectedCredentialRecords, selectedCredentials } = options
-    const { anonCredsProofRequest, presentationMetadata } = await this.createAnonCredsProofRequestAndMetadata(
+
+    const linkSecret = await this.getLinkSecret(agentContext, selectedCredentialRecords)
+
+    const { anonCredsProofRequest, ...metadata } = await this.createAnonCredsProofRequestAndMetadata(
       agentContext,
       presentationDefinition,
       presentationSubmission,
-      selectedCredentials,
-      { selectedCredentialRecords }
+      selectedCredentials
     )
 
-    if (!presentationMetadata) throw new CredoError('Presentation metadata not created')
-    const { schemas, credentialDefinitions, linkSecret, credentialsProve, credentials } = presentationMetadata
+    const presentationMetadata = await this.getPresentationMetadata(agentContext, metadata)
+
+    const { schemas, credentialDefinitions, credentialsProve, credentials } = presentationMetadata
 
     let presentation: AnonCredsW3cPresentation | undefined
     try {
@@ -566,13 +539,16 @@ export class AnonCreds2023DataIntegrityServiceImpl implements Anoncreds2023DataI
       }
 
       const verifiableCredentialsJson = verifiableCredentials.map((credential) => JsonTransformer.toJSON(credential))
-      const { anonCredsProofRequest, revocationMetadata } = await this.createAnonCredsProofRequestAndMetadata(
+      const { anonCredsProofRequest, ...metadata } = await this.createAnonCredsProofRequestAndMetadata(
         agentContext,
         presentationDefinition,
         presentationSubmission,
         verifiableCredentialsJson
       )
-      if (!revocationMetadata) throw new CredoError('Missing revocation metadata')
+      const revocationMetadata = await this.getRevocationMetadataForCredentials(
+        agentContext,
+        metadata.credentialsWithMetadata
+      )
 
       const credentialDefinitions = await this.getCredentialDefinitions(agentContext, credentialDefinitionIds)
       const schemaIds = new Set(Object.values(credentialDefinitions).map((cd) => cd.schemaId))
