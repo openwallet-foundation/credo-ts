@@ -544,7 +544,7 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
       credential.cred_def_id
     )
 
-    return await legacyCredentialToW3cCredential(credential, anoncredsCredentialDefinition)
+    return await legacyCredentialToW3cCredential(credential, anoncredsCredentialDefinition.issuerId)
   }
 
   private async getSignatureMetadata(agentContext: AgentContext, offeredCredential: W3cCredential, issuerKid?: string) {

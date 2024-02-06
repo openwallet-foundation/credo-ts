@@ -17,7 +17,7 @@ async function migrateLegacyToW3cCredential(agentContext: AgentContext, legacyRe
 
   const w3cJsonLdCredential = await legacyCredentialToW3cCredential(
     legacyCredential,
-    credentialDefinitionReturn.qualifiedCredentialDefinition
+    credentialDefinitionReturn.qualifiedCredentialDefinition.issuerId
   )
 
   const w3cCredentialService = agentContext.dependencyManager.resolve(W3cCredentialService)

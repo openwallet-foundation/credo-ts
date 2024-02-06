@@ -1,4 +1,4 @@
-import type { AnonCredsCredential, AnonCredsCredentialDefinition } from '../models'
+import type { AnonCredsCredential } from '../models'
 import type { ProcessCredentialOptions } from '@hyperledger/anoncreds-shared'
 
 import { JsonTransformer, W3cJsonLdVerifiableCredential, type JsonObject } from '@credo-ts/core'
@@ -6,8 +6,8 @@ import { Credential, W3cCredential } from '@hyperledger/anoncreds-shared'
 
 export async function legacyCredentialToW3cCredential(
   legacyCredential: AnonCredsCredential,
-  credentialDefinition: AnonCredsCredentialDefinition,
-  process?: Omit<ProcessCredentialOptions, 'credentialDefinition'>
+  qualifiedIssuerId: string,
+  process?: ProcessCredentialOptions
 ) {
   let credential: W3cJsonLdVerifiableCredential
   let anonCredsCredential: Credential | undefined
@@ -17,15 +17,11 @@ export async function legacyCredentialToW3cCredential(
   try {
     anonCredsCredential = Credential.fromJson(legacyCredential as unknown as JsonObject)
     w3cCredentialObj = anonCredsCredential.toW3c({
-      credentialDefinition: credentialDefinition as unknown as JsonObject,
+      issuerId: qualifiedIssuerId,
       w3cVersion: '1.1',
     })
 
-    const jsonObject = process
-      ? w3cCredentialObj
-          .process({ ...process, credentialDefinition: credentialDefinition as unknown as JsonObject })
-          .toJson()
-      : w3cCredentialObj.toJson()
+    const jsonObject = process ? w3cCredentialObj.process(process).toJson() : w3cCredentialObj.toJson()
 
     credential = JsonTransformer.fromJSON(jsonObject, W3cJsonLdVerifiableCredential)
   } finally {

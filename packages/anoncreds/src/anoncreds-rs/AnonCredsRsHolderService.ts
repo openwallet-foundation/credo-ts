@@ -333,10 +333,11 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
       throw new AnonCredsRsError('Link Secret value not stored')
     }
 
-    const w3cJsonLdCredential = await legacyCredentialToW3cCredential(credential, credentialDefinition, {
+    const w3cJsonLdCredential = await legacyCredentialToW3cCredential(credential, credentialDefinition.issuerId, {
       credentialRequestMetadata: credentialRequestMetadata as unknown as JsonObject,
       linkSecret: linkSecretRecord.value,
       revocationRegistryDefinition: revocationRegistryDefinition as unknown as JsonObject,
+      credentialDefinition: credentialDefinition as unknown as JsonObject,
     })
 
     return w3cJsonLdCredential
