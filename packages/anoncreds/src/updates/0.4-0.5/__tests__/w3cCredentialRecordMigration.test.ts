@@ -2,11 +2,13 @@ import type { Wallet } from '@credo-ts/core'
 
 import {
   Agent,
+  CacheModuleConfig,
   ConsoleLogger,
   DidResolverService,
   DidsModuleConfig,
   Ed25519Signature2018,
   EventEmitter,
+  InMemoryLruCache,
   InjectionSymbols,
   KeyType,
   SignatureSuiteToken,
@@ -43,6 +45,8 @@ const w3cRepo = {
   save: jest.fn(),
 }
 
+const cacheModuleConfig = new InMemoryLruCache({ limit: 500 })
+
 const inMemoryStorageService = new InMemoryStorageService()
 const logger = new ConsoleLogger()
 const agentContext = getAgentContext({
@@ -57,6 +61,7 @@ const agentContext = getAgentContext({
     [DidResolverService, new DidResolverService(logger, new DidsModuleConfig())],
     [InjectionSymbols.Logger, logger],
     [W3cCredentialsModuleConfig, new W3cCredentialsModuleConfig()],
+    [CacheModuleConfig, cacheModuleConfig],
     [AnonCredsModuleConfig, anonCredsModuleConfig],
     [
       SignatureSuiteToken,
@@ -86,6 +91,7 @@ jest.mock('../../../../../core/src/agent/Agent', () => {
       config: agentConfig,
       context: agentContext,
       dependencyManager: {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         resolve: jest.fn((repo: any) => {
           if (repo.prototype.constructor.name === 'AnonCredsCredentialRepository') {
             return anonCredsRepo

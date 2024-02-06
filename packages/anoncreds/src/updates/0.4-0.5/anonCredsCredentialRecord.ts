@@ -1,9 +1,8 @@
-import type { AnonCredsCredentialRecord } from '../../repository'
 import type { AgentContext, BaseAgent } from '@credo-ts/core'
 
-import { W3cCredentialService } from '@credo-ts/core'
+import { CacheModuleConfig, W3cCredentialService } from '@credo-ts/core'
 
-import { AnonCredsCredentialRepository } from '../../repository'
+import { AnonCredsCredentialRepository, type AnonCredsCredentialRecord } from '../../repository'
 import { legacyCredentialToW3cCredential } from '../../utils'
 import { getQualifiedId, fetchCredentialDefinition, getIndyNamespace } from '../../utils/ledgerObjects'
 
@@ -11,14 +10,45 @@ async function migrateLegacyToW3cCredential(agentContext: AgentContext, legacyRe
   const legacyCredential = legacyRecord.credential
   const legacyTags = legacyRecord.getTags()
 
-  // TODO: check if it is in cache
-  const credentialDefinitionReturn = await fetchCredentialDefinition(agentContext, legacyTags.credentialDefinitionId)
-  const namespace = getIndyNamespace(credentialDefinitionReturn.qualifiedId)
+  let qualifiedCredentialDefinitionId: string | undefined
+  let qualifiedIssuerId: string | undefined
+  let namespace: string | undefined
 
-  const w3cJsonLdCredential = await legacyCredentialToW3cCredential(
-    legacyCredential,
-    credentialDefinitionReturn.qualifiedCredentialDefinition.issuerId
-  )
+  const cacheModuleConfig = agentContext.dependencyManager.resolve(CacheModuleConfig)
+  const cache = cacheModuleConfig?.cache
+  const indyCacheKey = `IndyVdrPoolService:${legacyTags.credentialDefinitionId}`
+  const sovCacheKey = `IndySdkPoolService:${legacyTags.credentialDefinitionId}`
+
+  const cachedNymResponse: Record<string, string> | null =
+    (await cache.get(agentContext, indyCacheKey)) ?? (await cache.get(agentContext, sovCacheKey))
+
+  namespace = cachedNymResponse?.indyNamespace
+
+  if (!namespace) {
+    try {
+      const credentialDefinitionReturn = await fetchCredentialDefinition(
+        agentContext,
+        legacyTags.credentialDefinitionId
+      )
+      qualifiedCredentialDefinitionId = credentialDefinitionReturn.qualifiedId
+      qualifiedIssuerId = credentialDefinitionReturn.qualifiedCredentialDefinition.issuerId
+      namespace = getIndyNamespace(credentialDefinitionReturn.qualifiedId)
+    } catch (e) {
+      agentContext.config.logger.warn(
+        [
+          `Failed to fetch credential definition for credentialId ${legacyTags.credentialDefinitionId}.`,
+          `Not updating credential with id ${legacyRecord.credentialId} to W3C format.`,
+        ].join('\n')
+      )
+    }
+  } else {
+    qualifiedCredentialDefinitionId = getQualifiedId(legacyTags.credentialDefinitionId, namespace)
+    qualifiedIssuerId = getQualifiedId(legacyTags.issuerId, namespace)
+  }
+
+  if (!qualifiedCredentialDefinitionId || !qualifiedIssuerId || !namespace) return
+
+  const w3cJsonLdCredential = await legacyCredentialToW3cCredential(legacyCredential, qualifiedIssuerId)
 
   const w3cCredentialService = agentContext.dependencyManager.resolve(W3cCredentialService)
   await w3cCredentialService.storeCredential(agentContext, {
@@ -26,7 +56,7 @@ async function migrateLegacyToW3cCredential(agentContext: AgentContext, legacyRe
     anonCredsCredentialRecordOptions: {
       credentialId: legacyRecord.credentialId,
       linkSecretId: legacyRecord.linkSecretId,
-      credentialDefinitionId: credentialDefinitionReturn.qualifiedId,
+      credentialDefinitionId: qualifiedCredentialDefinitionId,
       schemaId: getQualifiedId(legacyTags.schemaId, namespace),
       schemaName: legacyTags.schemaName,
       schemaIssuerId: getQualifiedId(legacyTags.issuerId, namespace),
@@ -36,8 +66,6 @@ async function migrateLegacyToW3cCredential(agentContext: AgentContext, legacyRe
       credentialRevocationId: legacyTags.credentialRevocationId,
     },
   })
-
-  return w3cJsonLdCredential
 }
 
 /**
