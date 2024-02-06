@@ -6,7 +6,7 @@ import type { FileSystem } from '../FileSystem'
 import { InjectionSymbols } from '../../constants'
 import { CredoError } from '../../error'
 import { isFirstVersionEqualToSecond, isFirstVersionHigherThanSecond, parseVersionString } from '../../utils/version'
-import { WalletExportPathExistsError } from '../../wallet/error'
+import { WalletExportPathExistsError, WalletExportUnsupportedError } from '../../wallet/error'
 import { WalletError } from '../../wallet/error/WalletError'
 
 import { StorageUpdateService } from './StorageUpdateService'
@@ -107,8 +107,12 @@ export class UpdateAssistant<Agent extends BaseAgent<any> = BaseAgent> {
     return neededUpdates
   }
 
-  public async update(updateToVersion?: UpdateToVersion) {
+  public async update(options?: { updateToVersion?: UpdateToVersion; backupBeforeUpdate?: boolean }) {
     const updateIdentifier = Date.now().toString()
+    const updateToVersion = options?.updateToVersion
+
+    // By default do a backup first (should be explicitly disabled in case the wallet backend does not support export)
+    const doBackup = options?.backupBeforeUpdate ?? true
 
     try {
       this.agent.config.logger.info(`Starting update of agent storage with updateIdentifier ${updateIdentifier}`)
@@ -143,7 +147,9 @@ export class UpdateAssistant<Agent extends BaseAgent<any> = BaseAgent> {
       )
 
       // Create backup in case migration goes wrong
-      await this.createBackup(updateIdentifier)
+      if (doBackup) {
+        await this.createBackup(updateIdentifier)
+      }
 
       try {
         for (const update of neededUpdates) {
@@ -189,17 +195,23 @@ export class UpdateAssistant<Agent extends BaseAgent<any> = BaseAgent> {
             `Successfully updated agent storage from version ${update.fromVersion} to version ${update.toVersion}`
           )
         }
-        // Delete backup file, as it is not needed anymore
-        await this.fileSystem.delete(this.getBackupPath(updateIdentifier))
+        if (doBackup) {
+          // Delete backup file, as it is not needed anymore
+          await this.fileSystem.delete(this.getBackupPath(updateIdentifier))
+        }
       } catch (error) {
-        this.agent.config.logger.fatal('An error occurred while updating the wallet. Restoring backup', {
+        this.agent.config.logger.fatal('An error occurred while updating the wallet.', {
           error,
         })
-        // In the case of an error we want to restore the backup
-        await this.restoreBackup(updateIdentifier)
 
-        // Delete backup file, as wallet was already restored (backup-error file will persist though)
-        await this.fileSystem.delete(this.getBackupPath(updateIdentifier))
+        if (doBackup) {
+          this.agent.config.logger.debug('Restoring backup.')
+          // In the case of an error we want to restore the backup
+          await this.restoreBackup(updateIdentifier)
+
+          // Delete backup file, as wallet was already restored (backup-error file will persist though)
+          await this.fileSystem.delete(this.getBackupPath(updateIdentifier))
+        }
 
         throw error
       }
@@ -212,6 +224,15 @@ export class UpdateAssistant<Agent extends BaseAgent<any> = BaseAgent> {
           error,
           updateIdentifier,
           backupPath,
+        })
+        throw new StorageUpdateError(errorMessage, { cause: error })
+      }
+      // Wallet backend does not support export
+      if (error instanceof WalletExportUnsupportedError) {
+        const errorMessage = `Error updating storage with updateIdentifier ${updateIdentifier} because the wallet backend does not support exporting`
+        this.agent.config.logger.fatal(errorMessage, {
+          error,
+          updateIdentifier,
         })
         throw new StorageUpdateError(errorMessage, { cause: error })
       }
