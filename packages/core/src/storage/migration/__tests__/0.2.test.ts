@@ -77,7 +77,7 @@ describe('UpdateAssistant | v0.2 - v0.3.1', () => {
       },
     ])
 
-    await updateAssistant.update('0.3.1')
+    await updateAssistant.update({ updateToVersion: '0.3.1' })
 
     expect(await updateAssistant.isUpToDate('0.3.1')).toBe(true)
     expect(await updateAssistant.getNeededUpdates('0.3.1')).toEqual([])

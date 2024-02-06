@@ -72,7 +72,7 @@ describe('UpdateAssistant | v0.3.1 - v0.4', () => {
       },
     ])
 
-    await updateAssistant.update('0.4')
+    await updateAssistant.update({ updateToVersion: '0.4' })
 
     expect(await updateAssistant.isUpToDate('0.4')).toBe(true)
     expect(await updateAssistant.getNeededUpdates('0.4')).toEqual([])
@@ -138,7 +138,7 @@ describe('UpdateAssistant | v0.3.1 - v0.4', () => {
       },
     ])
 
-    await updateAssistant.update('0.4')
+    await updateAssistant.update({ updateToVersion: '0.4' })
 
     expect(await updateAssistant.isUpToDate('0.4')).toBe(true)
     expect(await updateAssistant.getNeededUpdates('0.4')).toEqual([])
