@@ -27,6 +27,8 @@ import {
   TypedArrayEncoder,
 } from '@credo-ts/core'
 
+const inMemoryWallets: InMemoryWallets = {}
+
 const isError = (error: unknown): error is Error => error instanceof Error
 
 interface InMemoryKey {
@@ -52,7 +54,9 @@ export class InMemoryWallet implements Wallet {
   // isInitialized to see if the wallet is actually open
   public activeWalletId?: string
 
-  public inMemoryWallets: InMemoryWallets = {}
+  public get inMemoryWallets() {
+    return inMemoryWallets
+  }
   /**
    * Abstract methods that need to be implemented by subclasses
    */

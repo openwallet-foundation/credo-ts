@@ -19,8 +19,6 @@ import {
 } from '@credo-ts/core'
 import express, { type Express } from 'express'
 
-import { AskarModule } from '../../askar/src'
-import { askarModuleConfig } from '../../askar/tests/helpers'
 import { TenantsModule } from '../../tenants/src'
 import { OpenId4VcHolderModule, OpenId4VcIssuerModule, OpenId4VcVerifierModule } from '../src'
 
@@ -95,7 +93,6 @@ describe('OpenId4Vc', () => {
             },
           },
         }),
-        askar: new AskarModule(askarModuleConfig),
         tenants: new TenantsModule(),
       },
       '96213c3d7fc8d4d6754c7a0fd969598g'
@@ -107,7 +104,6 @@ describe('OpenId4Vc', () => {
       'holder',
       {
         openId4VcHolder: new OpenId4VcHolderModule(),
-        askar: new AskarModule(askarModuleConfig),
         tenants: new TenantsModule(),
       },
       '96213c3d7fc8d4d6754c7a0fd969598e'
@@ -120,7 +116,6 @@ describe('OpenId4Vc', () => {
         openId4VcVerifier: new OpenId4VcVerifierModule({
           baseUrl: verificationBaseUrl,
         }),
-        askar: new AskarModule(askarModuleConfig),
         tenants: new TenantsModule(),
       },
       '96213c3d7fc8d4d6754c7a0fd969598f'
