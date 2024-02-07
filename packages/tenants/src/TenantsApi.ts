@@ -1,23 +1,37 @@
-import type { CreateTenantOptions, GetTenantAgentOptions, WithTenantAgentCallback } from './TenantsApiOptions'
+import type {
+  CreateTenantOptions,
+  GetTenantAgentOptions,
+  UpdateTenantStorageOptions,
+  WithTenantAgentCallback,
+} from './TenantsApiOptions'
 import type { TenantRecord } from './repository'
 import type { DefaultAgentModules, ModulesMap, Query } from '@credo-ts/core'
 
-import { AgentContext, inject, InjectionSymbols, AgentContextProvider, injectable, Logger } from '@credo-ts/core'
+import {
+  isStorageUpToDate,
+  AgentContext,
+  inject,
+  injectable,
+  InjectionSymbols,
+  Logger,
+  UpdateAssistant,
+} from '@credo-ts/core'
 
 import { TenantAgent } from './TenantAgent'
+import { TenantAgentContextProvider } from './context/TenantAgentContextProvider'
 import { TenantRecordService } from './services'
 
 @injectable()
 export class TenantsApi<AgentModules extends ModulesMap = DefaultAgentModules> {
   public readonly rootAgentContext: AgentContext
   private tenantRecordService: TenantRecordService
-  private agentContextProvider: AgentContextProvider
+  private agentContextProvider: TenantAgentContextProvider
   private logger: Logger
 
   public constructor(
     tenantRecordService: TenantRecordService,
     rootAgentContext: AgentContext,
-    @inject(InjectionSymbols.AgentContextProvider) agentContextProvider: AgentContextProvider,
+    @inject(InjectionSymbols.AgentContextProvider) agentContextProvider: TenantAgentContextProvider,
     @inject(InjectionSymbols.Logger) logger: Logger
   ) {
     this.tenantRecordService = tenantRecordService
@@ -104,5 +118,27 @@ export class TenantsApi<AgentModules extends ModulesMap = DefaultAgentModules> {
   public async getAllTenants() {
     this.logger.debug('Getting all tenants')
     return this.tenantRecordService.getAllTenants(this.rootAgentContext)
+  }
+
+  public async updateTenantStorage({ tenantId, updateOptions }: UpdateTenantStorageOptions) {
+    this.logger.debug(`Updating tenant storage for tenant '${tenantId}'`)
+    const tenantRecord = await this.tenantRecordService.getTenantById(this.rootAgentContext, tenantId)
+
+    if (isStorageUpToDate(tenantRecord.storageVersion)) {
+      this.logger.debug(`Tenant storage for tenant '${tenantId}' is already up to date. Skipping update`)
+      return
+    }
+
+    await this.agentContextProvider.updateTenantStorage(tenantRecord, updateOptions)
+  }
+
+  public async getTenantsWithOutdatedStorage() {
+    const outdatedTenants = await this.tenantRecordService.findTenantsByQuery(this.rootAgentContext, {
+      $not: {
+        storageVersion: UpdateAssistant.frameworkStorageVersion,
+      },
+    })
+
+    return outdatedTenants
   }
 }

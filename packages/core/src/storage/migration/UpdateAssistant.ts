@@ -13,6 +13,11 @@ import { StorageUpdateService } from './StorageUpdateService'
 import { StorageUpdateError } from './error/StorageUpdateError'
 import { CURRENT_FRAMEWORK_STORAGE_VERSION, supportedUpdates } from './updates'
 
+export interface UpdateAssistantUpdateOptions {
+  updateToVersion?: UpdateToVersion
+  backupBeforeStorageUpdate?: boolean
+}
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export class UpdateAssistant<Agent extends BaseAgent<any> = BaseAgent> {
   private agent: Agent
@@ -107,7 +112,7 @@ export class UpdateAssistant<Agent extends BaseAgent<any> = BaseAgent> {
     return neededUpdates
   }
 
-  public async update(options?: { updateToVersion?: UpdateToVersion; backupBeforeStorageUpdate?: boolean }) {
+  public async update(options?: UpdateAssistantUpdateOptions) {
     const updateIdentifier = Date.now().toString()
     const updateToVersion = options?.updateToVersion
 

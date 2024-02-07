@@ -5,11 +5,11 @@ import type { VersionString } from '../../utils/version'
 import { InjectionSymbols } from '../../constants'
 import { Logger } from '../../logger'
 import { injectable, inject } from '../../plugins'
-import { isFirstVersionEqualToSecond, isFirstVersionHigherThanSecond, parseVersionString } from '../../utils/version'
 
+import { isStorageUpToDate } from './isUpToDate'
 import { StorageVersionRecord } from './repository/StorageVersionRecord'
 import { StorageVersionRepository } from './repository/StorageVersionRepository'
-import { CURRENT_FRAMEWORK_STORAGE_VERSION, INITIAL_STORAGE_VERSION } from './updates'
+import { INITIAL_STORAGE_VERSION } from './updates'
 
 @injectable()
 export class StorageUpdateService {
@@ -27,15 +27,8 @@ export class StorageUpdateService {
   }
 
   public async isUpToDate(agentContext: AgentContext, updateToVersion?: UpdateToVersion) {
-    const currentStorageVersion = parseVersionString(await this.getCurrentStorageVersion(agentContext))
-
-    const compareToVersion = parseVersionString(updateToVersion ?? CURRENT_FRAMEWORK_STORAGE_VERSION)
-
-    const isUpToDate =
-      isFirstVersionEqualToSecond(currentStorageVersion, compareToVersion) ||
-      isFirstVersionHigherThanSecond(currentStorageVersion, compareToVersion)
-
-    return isUpToDate
+    const currentStorageVersion = await this.getCurrentStorageVersion(agentContext)
+    return isStorageUpToDate(currentStorageVersion, updateToVersion)
   }
 
   public async getCurrentStorageVersion(agentContext: AgentContext): Promise<VersionString> {
