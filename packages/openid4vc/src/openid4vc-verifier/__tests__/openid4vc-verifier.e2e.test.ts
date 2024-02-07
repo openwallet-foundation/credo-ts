@@ -2,6 +2,8 @@ import { Jwt } from '@credo-ts/core'
 import { SigningAlgo } from '@sphereon/did-auth-siop'
 import { cleanAll, enableNetConnect } from 'nock'
 
+import { AskarModule } from '../../../../askar/src'
+import { askarModuleConfig } from '../../../../askar/tests/helpers'
 import { createAgentFromModules, type AgentType } from '../../../tests/utils'
 import { universityDegreePresentationDefinition } from '../../../tests/utilsVp'
 import { OpenId4VcVerifierModule } from '../OpenId4VcVerifierModule'
@@ -10,6 +12,7 @@ const modules = {
   openId4VcVerifier: new OpenId4VcVerifierModule({
     baseUrl: 'http://redirect-uri',
   }),
+  askar: new AskarModule(askarModuleConfig),
 }
 
 describe('OpenId4VcVerifier', () => {

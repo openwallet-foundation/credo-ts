@@ -4,7 +4,6 @@ import type { TenantsModule } from '@credo-ts/tenants'
 
 import { LogLevel, Agent, DidKey, KeyType, TypedArrayEncoder, utils } from '@credo-ts/core'
 
-import { InMemoryWalletModule } from '../../../tests/InMemoryWalletModule'
 import { agentDependencies, TestLogger } from '../../core/tests'
 
 export async function createDidKidVerificationMethod(agent: Agent | TenantAgent, secretKey?: string) {
@@ -32,10 +31,7 @@ export async function createAgentFromModules<MM extends ModulesMap>(label: strin
   const agent = new Agent<MM>({
     config: { label, walletConfig: { id: utils.uuid(), key: utils.uuid() }, logger: new TestLogger(LogLevel.off) },
     dependencies: agentDependencies,
-    modules: {
-      ...modulesMap,
-      inMemory: new InMemoryWalletModule(),
-    },
+    modules: modulesMap,
   })
 
   await agent.initialize()

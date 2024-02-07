@@ -5,6 +5,8 @@ import type { Server } from 'http'
 
 import express from 'express'
 
+import { AskarModule } from '../../../../askar/src'
+import { askarModuleConfig } from '../../../../askar/tests/helpers'
 import { createAgentFromModules } from '../../../tests/utils'
 import { OpenId4VcVerifierModule } from '../../openid4vc-verifier'
 import { OpenId4VcHolderModule } from '../OpenId4VcHolderModule'
@@ -15,6 +17,7 @@ const verifierBaseUrl = `http://localhost:${port}`
 
 const holderModules = {
   openId4VcHolder: new OpenId4VcHolderModule(),
+  askar: new AskarModule(askarModuleConfig),
 }
 
 const verifierModules = {
@@ -26,6 +29,7 @@ const verifierModules = {
       },
     },
   }),
+  askar: new AskarModule(askarModuleConfig),
 }
 
 describe('OpenId4VcHolder | OpenID4VP', () => {

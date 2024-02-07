@@ -11,20 +11,24 @@ import {
 } from '@credo-ts/core'
 import nock, { cleanAll, enableNetConnect } from 'nock'
 
-import { getInMemoryAgentOptions } from '../../../../core/tests'
+import { AskarModule } from '../../../../askar/src'
+import { askarModuleConfig } from '../../../../askar/tests/helpers'
+import { agentDependencies } from '../../../../node/src'
 import { OpenId4VcHolderModule } from '../OpenId4VcHolderModule'
 
 import { animoOpenIdPlaygroundDraft11SdJwtVc, matrrLaunchpadDraft11JwtVcJson, waltIdDraft11JwtVcJson } from './fixtures'
 
-const holder = new Agent(
-  getInMemoryAgentOptions(
-    'OpenId4VcHolder',
-    {},
-    {
-      openId4VcHolder: new OpenId4VcHolderModule(),
-    }
-  )
-)
+const holder = new Agent({
+  config: {
+    label: 'OpenId4VcHolder Test28',
+    walletConfig: { id: 'openid4vc-holder-test27', key: 'openid4vc-holder-test27' },
+  },
+  dependencies: agentDependencies,
+  modules: {
+    openId4VcHolder: new OpenId4VcHolderModule(),
+    askar: new AskarModule(askarModuleConfig),
+  },
+})
 
 describe('OpenId4VcHolder', () => {
   let holderKey: Key

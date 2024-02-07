@@ -36,7 +36,9 @@ import {
   w3cDate,
 } from '@credo-ts/core'
 
-import { getInMemoryAgentOptions } from '../../../../core/tests'
+import { AskarModule } from '../../../../askar/src'
+import { askarModuleConfig } from '../../../../askar/tests/helpers'
+import { agentDependencies } from '../../../../node/src'
 import { OpenId4VciCredentialFormatProfile } from '../../shared'
 import { OpenId4VcIssuerModule } from '../OpenId4VcIssuerModule'
 import { OpenId4VcIssuerModuleConfig } from '../OpenId4VcIssuerModuleConfig'
@@ -65,6 +67,20 @@ const universityDegreeCredentialSdJwt = {
   format: OpenId4VciCredentialFormatProfile.SdJwtVc,
   vct: 'UniversityDegreeCredential',
 } satisfies OpenId4VciCredentialSupportedWithId
+
+const modules = {
+  openId4VcIssuer: new OpenId4VcIssuerModule({
+    baseUrl: 'https://openid4vc-issuer.com',
+    endpoints: {
+      credential: {
+        credentialRequestToCredentialMapper: () => {
+          throw new Error('Not implemented')
+        },
+      },
+    },
+  }),
+  askar: new AskarModule(askarModuleConfig),
+}
 
 const jwsService = new JwsService()
 
@@ -121,26 +137,29 @@ const createCredentialRequest = async (
   throw new Error('Unsupported format')
 }
 
-const issuer = new Agent(
-  getInMemoryAgentOptions(
-    'OpenId4VciIssuer(Holder)',
-    {},
-    {
-      openId4VcIssuer: new OpenId4VcIssuerModule({
-        baseUrl: 'https://openid4vc-issuer.com',
-        endpoints: {
-          credential: {
-            credentialRequestToCredentialMapper: () => {
-              throw new Error('Not implemented')
-            },
-          },
-        },
-      }),
-    }
-  )
-)
+const issuer = new Agent({
+  config: {
+    label: 'OpenId4VcIssuer Test323',
+    walletConfig: {
+      id: 'openid4vc-Issuer-test323',
+      key: 'openid4vc-Issuer-test323',
+    },
+  },
+  dependencies: agentDependencies,
+  modules,
+})
 
-const holder = new Agent(getInMemoryAgentOptions('OpenId4VciIssuer(Holder)'))
+const holder = new Agent({
+  config: {
+    label: 'OpenId4VciIssuer(Holder) Test323',
+    walletConfig: {
+      id: 'openid4vc-Issuer(Holder)-test323',
+      key: 'openid4vc-Issuer(Holder)-test323',
+    },
+  },
+  dependencies: agentDependencies,
+  modules,
+})
 
 describe('OpenId4VcIssuer', () => {
   let issuerVerificationMethod: VerificationMethod
