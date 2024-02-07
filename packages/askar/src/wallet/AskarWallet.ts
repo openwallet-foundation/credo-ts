@@ -13,6 +13,7 @@ import {
   WalletNotFoundError,
   KeyDerivationMethod,
   WalletImportPathExistsError,
+  WalletExportUnsupportedError,
 } from '@credo-ts/core'
 import { Store } from '@hyperledger/aries-askar-shared'
 import { inject, injectable } from 'tsyringe'
@@ -280,10 +281,10 @@ export class AskarWallet extends AskarBaseWallet {
     const { path: sourcePath } = uriFromWalletConfig(this.walletConfig, this.fileSystem.dataPath)
 
     if (isAskarWalletSqliteStorageConfig(this.walletConfig.storage) && this.walletConfig.storage?.inMemory) {
-      throw new WalletError('Export is not supported for in memory wallet')
+      throw new WalletExportUnsupportedError('Export is not supported for in memory wallet')
     }
     if (!sourcePath) {
-      throw new WalletError('Export is only supported for SQLite backend')
+      throw new WalletExportUnsupportedError('Export is only supported for SQLite backend')
     }
 
     try {
