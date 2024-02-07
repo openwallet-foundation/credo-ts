@@ -59,13 +59,15 @@ describe('AskarStorageService', () => {
         },
       })
 
-      const retrieveRecord = await ariesAskar.sessionFetch({
-        category: record.type,
-        name: record.id,
-        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        sessionHandle: wallet.session.handle!,
-        forUpdate: false,
-      })
+      const retrieveRecord = await wallet.withSession((session) =>
+        ariesAskar.sessionFetch({
+          category: record.type,
+          name: record.id,
+          // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+          sessionHandle: session.handle!,
+          forUpdate: false,
+        })
+      )
 
       expect(JSON.parse(retrieveRecord?.getTags(0) ?? '{}')).toEqual({
         someBoolean: '1',
@@ -81,31 +83,34 @@ describe('AskarStorageService', () => {
     })
 
     it('should correctly transform tag values from string after retrieving', async () => {
-      await ariesAskar.sessionUpdate({
-        category: TestRecord.type,
-        name: 'some-id',
-        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        sessionHandle: wallet.session.handle!,
-        value: TypedArrayEncoder.fromString('{}'),
-        tags: {
-          someBoolean: '1',
-          someOtherBoolean: '0',
-          someStringValue: 'string',
-          // Before 0.5.0, there was a bug where array values that contained a : would be incorrectly
-          // parsed back into a record as we would split on ':' and thus only the first part would be included
-          // in the record as the tag value. If the record was never re-saved it would work well, as well as if the
-          // record tag was generated dynamically before save (as then the incorrectly transformed back value would be
-          // overwritten again on save).
-          'anArrayValueWhereValuesContainColon:foo:bar:test': '1',
-          'anArrayValueWhereValuesContainColon:https://google.com': '1',
-          'anArrayValue:foo': '1',
-          'anArrayValue:bar': '1',
-          // booleans are stored as '1' and '0' so we store the string values '1' and '0' as 'n__1' and 'n__0'
-          someStringNumberValue: 'n__1',
-          anotherStringNumberValue: 'n__0',
-        },
-        operation: 0, // EntryOperation.Insert
-      })
+      await wallet.withSession(
+        async (session) =>
+          await ariesAskar.sessionUpdate({
+            category: TestRecord.type,
+            name: 'some-id',
+            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+            sessionHandle: session.handle!,
+            value: TypedArrayEncoder.fromString('{}'),
+            tags: {
+              someBoolean: '1',
+              someOtherBoolean: '0',
+              someStringValue: 'string',
+              // Before 0.5.0, there was a bug where array values that contained a : would be incorrectly
+              // parsed back into a record as we would split on ':' and thus only the first part would be included
+              // in the record as the tag value. If the record was never re-saved it would work well, as well as if the
+              // record tag was generated dynamically before save (as then the incorrectly transformed back value would be
+              // overwritten again on save).
+              'anArrayValueWhereValuesContainColon:foo:bar:test': '1',
+              'anArrayValueWhereValuesContainColon:https://google.com': '1',
+              'anArrayValue:foo': '1',
+              'anArrayValue:bar': '1',
+              // booleans are stored as '1' and '0' so we store the string values '1' and '0' as 'n__1' and 'n__0'
+              someStringNumberValue: 'n__1',
+              anotherStringNumberValue: 'n__0',
+            },
+            operation: 0, // EntryOperation.Insert
+          })
+      )
 
       const record = await storageService.getById(agentContext, TestRecord, 'some-id')
 

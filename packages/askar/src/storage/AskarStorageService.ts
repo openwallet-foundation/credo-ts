@@ -13,7 +13,6 @@ export class AskarStorageService<T extends BaseRecord> implements StorageService
   /** @inheritDoc */
   public async save(agentContext: AgentContext, record: T) {
     assertAskarWallet(agentContext.wallet)
-    const session = agentContext.wallet.session
 
     record.updatedAt = new Date()
 
@@ -21,7 +20,9 @@ export class AskarStorageService<T extends BaseRecord> implements StorageService
     const tags = transformFromRecordTagValues(record.getTags()) as Record<string, string>
 
     try {
-      await session.insert({ category: record.type, name: record.id, value, tags })
+      await agentContext.wallet.withSession((session) =>
+        session.insert({ category: record.type, name: record.id, value, tags })
+      )
     } catch (error) {
       if (isAskarError(error, AskarErrorCode.Duplicate)) {
         throw new RecordDuplicateError(`Record with id ${record.id} already exists`, { recordType: record.type })
@@ -34,7 +35,6 @@ export class AskarStorageService<T extends BaseRecord> implements StorageService
   /** @inheritDoc */
   public async update(agentContext: AgentContext, record: T): Promise<void> {
     assertAskarWallet(agentContext.wallet)
-    const session = agentContext.wallet.session
 
     record.updatedAt = new Date()
 
@@ -42,7 +42,9 @@ export class AskarStorageService<T extends BaseRecord> implements StorageService
     const tags = transformFromRecordTagValues(record.getTags()) as Record<string, string>
 
     try {
-      await session.replace({ category: record.type, name: record.id, value, tags })
+      await agentContext.wallet.withSession((session) =>
+        session.replace({ category: record.type, name: record.id, value, tags })
+      )
     } catch (error) {
       if (isAskarError(error, AskarErrorCode.NotFound)) {
         throw new RecordNotFoundError(`record with id ${record.id} not found.`, {
@@ -58,10 +60,9 @@ export class AskarStorageService<T extends BaseRecord> implements StorageService
   /** @inheritDoc */
   public async delete(agentContext: AgentContext, record: T) {
     assertAskarWallet(agentContext.wallet)
-    const session = agentContext.wallet.session
 
     try {
-      await session.remove({ category: record.type, name: record.id })
+      await agentContext.wallet.withSession((session) => session.remove({ category: record.type, name: record.id }))
     } catch (error) {
       if (isAskarError(error, AskarErrorCode.NotFound)) {
         throw new RecordNotFoundError(`record with id ${record.id} not found.`, {
@@ -80,10 +81,9 @@ export class AskarStorageService<T extends BaseRecord> implements StorageService
     id: string
   ): Promise<void> {
     assertAskarWallet(agentContext.wallet)
-    const session = agentContext.wallet.session
 
     try {
-      await session.remove({ category: recordClass.type, name: id })
+      await agentContext.wallet.withSession((session) => session.remove({ category: recordClass.type, name: id }))
     } catch (error) {
       if (isAskarError(error, AskarErrorCode.NotFound)) {
         throw new RecordNotFoundError(`record with id ${id} not found.`, {
@@ -98,10 +98,11 @@ export class AskarStorageService<T extends BaseRecord> implements StorageService
   /** @inheritDoc */
   public async getById(agentContext: AgentContext, recordClass: BaseRecordConstructor<T>, id: string): Promise<T> {
     assertAskarWallet(agentContext.wallet)
-    const session = agentContext.wallet.session
 
     try {
-      const record = await session.fetch({ category: recordClass.type, name: id })
+      const record = await agentContext.wallet.withSession((session) =>
+        session.fetch({ category: recordClass.type, name: id })
+      )
       if (!record) {
         throw new RecordNotFoundError(`record with id ${id} not found.`, {
           recordType: recordClass.type,
@@ -117,9 +118,8 @@ export class AskarStorageService<T extends BaseRecord> implements StorageService
   /** @inheritDoc */
   public async getAll(agentContext: AgentContext, recordClass: BaseRecordConstructor<T>): Promise<T[]> {
     assertAskarWallet(agentContext.wallet)
-    const session = agentContext.wallet.session
 
-    const records = await session.fetchAll({ category: recordClass.type })
+    const records = await agentContext.wallet.withSession((session) => session.fetchAll({ category: recordClass.type }))
 
     const instances = []
     for (const record of records) {
