@@ -42,6 +42,10 @@ export class TenantRecordService {
     return this.tenantRepository.getById(agentContext, tenantId)
   }
 
+  public async findTenantsByLabel(agentContext: AgentContext, label: string) {
+    return this.tenantRepository.findByLabel(agentContext, label)
+  }
+
   public async getAllTenants(agentContext: AgentContext) {
     return this.tenantRepository.getAll(agentContext)
   }

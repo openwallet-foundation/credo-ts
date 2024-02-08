@@ -289,7 +289,7 @@ describe('OpenId4VcHolder', () => {
       )
         // FIXME: credential returned by walt.id has nbf and issuanceDate that do not match
         // but we know that we at least received the credential if we got to this error
-        .rejects.toThrowError('JWT nbf and vc.issuanceDate do not match')
+        .rejects.toThrow('JWT nbf and vc.issuanceDate do not match')
     })
   })
 })

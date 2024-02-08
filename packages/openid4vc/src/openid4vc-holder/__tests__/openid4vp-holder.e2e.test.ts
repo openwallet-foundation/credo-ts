@@ -5,11 +5,11 @@ import type { Server } from 'http'
 
 import express from 'express'
 
-import { OpenId4VcHolderModule } from '..'
 import { AskarModule } from '../../../../askar/src'
 import { askarModuleConfig } from '../../../../askar/tests/helpers'
 import { createAgentFromModules } from '../../../tests/utils'
 import { OpenId4VcVerifierModule } from '../../openid4vc-verifier'
+import { OpenId4VcHolderModule } from '../OpenId4VcHolderModule'
 
 const port = 3121
 const verificationEndpointPath = '/proofResponse'

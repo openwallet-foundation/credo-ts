@@ -123,10 +123,36 @@ describe('transform', () => {
       expect(issued).toStrictEqual([])
     })
 
+    test('real world case', () => {
+      const revocationStatusList = [
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      ]
+
+      const delta: RevocationRegistryDelta = {
+        revoked: [],
+        issued: [
+          0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29,
+          30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56,
+          57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83,
+          84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99,
+        ],
+        accum:
+          '1 22D10308FEB1A73E5D231FBB231385A75AEFF05AFFC26C76CF6080B6831AC8F8 1 24D6BF977A437AD8BD4501070123CD096F680246D22A00B498FB1A660FAAD062 1 207D22D26EAD5941316BBDE33E19F41FE727507888ED750A2C49863AA2ACDCD1 1 243C032573EADB924D9C28BD21106AA2FB7994C85C80A2DAE89F5C011BCFA70C 2 095E45DDF417D05FB10933FFC63D474548B7FFFF7888802F07FFFFFF7D07A8A8 1 0000000000000000000000000000000000000000000000000000000000000000',
+        txnTime: 1706887938,
+      }
+
+      const { revoked, issued } = indyVdrCreateLatestRevocationDelta(accum, revocationStatusList, delta)
+
+      expect(issued).toStrictEqual([])
+      expect(revoked).toStrictEqual([10])
+    })
+
     test('no previous delta', () => {
       const revocationStatusList = [0, 0, 0, 0, 0, 1, 1, 1, 1, 1]
 
-      const { revoked, issued } = indyVdrCreateLatestRevocationDelta(accum, revocationStatusList)
+      const { revoked, issued } = indyVdrCreateLatestRevocationDelta(accum, revocationStatusList, undefined)
 
       expect(issued).toStrictEqual([0, 1, 2, 3, 4])
       expect(revoked).toStrictEqual([5, 6, 7, 8, 9])

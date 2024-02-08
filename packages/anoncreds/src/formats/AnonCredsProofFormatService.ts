@@ -519,7 +519,7 @@ export class AnonCredsProofFormatService implements ProofFormatService<AnonCreds
 
     // If revocation interval is not present or the credential is not revocable then we
     // don't need to fetch the revocation status
-    if (!requestNonRevoked || !credentialRevocationId || !revocationRegistryId) {
+    if (!requestNonRevoked || credentialRevocationId === null || !revocationRegistryId) {
       return { isRevoked: undefined, timestamp: undefined }
     }
 
