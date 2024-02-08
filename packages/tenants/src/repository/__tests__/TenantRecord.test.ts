@@ -18,6 +18,7 @@ describe('TenantRecord', () => {
           key: 'test',
         },
       },
+      storageVersion: '0.5',
     })
 
     expect(tenantRecord.type).toBe('TenantRecord')
@@ -50,6 +51,7 @@ describe('TenantRecord', () => {
           key: 'test',
         },
       },
+      storageVersion: '0.5',
     })
 
     const json = tenantRecord.toJSON()
