@@ -33,6 +33,7 @@ import { MessageReceiver } from './MessageReceiver'
 import { MessageSender } from './MessageSender'
 import { TransportService } from './TransportService'
 import { AgentContext } from './context'
+import { DRPCMessagesApi } from '../modules/drpc'
 
 export abstract class BaseAgent<AgentModules extends ModulesMap = EmptyModuleMap> {
   protected agentConfig: AgentConfig
@@ -53,6 +54,7 @@ export abstract class BaseAgent<AgentModules extends ModulesMap = EmptyModuleMap
   public readonly mediationRecipient: MediationRecipientApi
   public readonly messagePickup: CustomOrDefaultApi<AgentModules['messagePickup'], MessagePickupModule>
   public readonly basicMessages: BasicMessagesApi
+  public readonly drpcMessages: DRPCMessagesApi
   public readonly genericRecords: GenericRecordsApi
   public readonly discovery: DiscoverFeaturesApi
   public readonly dids: DidsApi
@@ -102,6 +104,7 @@ export abstract class BaseAgent<AgentModules extends ModulesMap = EmptyModuleMap
       MessagePickupModule
     >
     this.basicMessages = this.dependencyManager.resolve(BasicMessagesApi)
+    this.drpcMessages = this.dependencyManager.resolve(DRPCMessagesApi)
     this.genericRecords = this.dependencyManager.resolve(GenericRecordsApi)
     this.discovery = this.dependencyManager.resolve(DiscoverFeaturesApi)
     this.dids = this.dependencyManager.resolve(DidsApi)
@@ -118,6 +121,7 @@ export abstract class BaseAgent<AgentModules extends ModulesMap = EmptyModuleMap
       this.mediationRecipient,
       this.messagePickup,
       this.basicMessages,
+      this.drpcMessages,
       this.genericRecords,
       this.discovery,
       this.dids,

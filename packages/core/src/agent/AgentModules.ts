@@ -17,6 +17,7 @@ import { MediationRecipientModule, MediatorModule } from '../modules/routing'
 import { SdJwtVcModule } from '../modules/sd-jwt-vc'
 import { W3cCredentialsModule } from '../modules/vc'
 import { WalletModule } from '../wallet'
+import { DRPCMessagesModule } from '../modules/drpc'
 
 /**
  * Simple utility type that represent a map of modules. This is used to map from moduleKey (api key) to the api in the framework.
@@ -126,6 +127,7 @@ function getDefaultAgentModules() {
     mediationRecipient: () => new MediationRecipientModule(),
     messagePickup: () => new MessagePickupModule(),
     basicMessages: () => new BasicMessagesModule(),
+    drpcMessages: () => new DRPCMessagesModule(),
     genericRecords: () => new GenericRecordsModule(),
     discovery: () => new DiscoverFeaturesModule(),
     dids: () => new DidsModule(),

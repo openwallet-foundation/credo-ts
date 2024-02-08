@@ -43,7 +43,6 @@ export interface SendPingOptions {
   responseRequested?: boolean
   withReturnRouting?: boolean
 }
-
 @injectable()
 export class ConnectionsApi {
   /**
