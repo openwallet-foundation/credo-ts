@@ -5,30 +5,24 @@ import { Subject } from 'rxjs'
 
 import { SubjectInboundTransport } from '../../../../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from '../../../../../../tests/transport/SubjectOutboundTransport'
-import { askarModule } from '../../../../../askar/tests/helpers'
-import { getAgentOptions, waitForAgentMessageProcessedEvent, waitForBasicMessage } from '../../../../tests/helpers'
+import {
+  getInMemoryAgentOptions,
+  waitForAgentMessageProcessedEvent,
+  waitForBasicMessage,
+} from '../../../../tests/helpers'
 import { Agent } from '../../../agent/Agent'
 import { HandshakeProtocol } from '../../connections'
 import { MediatorModule } from '../../routing'
 import { MessageForwardingStrategy } from '../../routing/MessageForwardingStrategy'
 import { V2MessagesReceivedMessage, V2StatusMessage } from '../protocol'
 
-const recipientOptions = getAgentOptions(
-  'Mediation Pickup Loop Recipient',
-  {},
-  {
-    askar: askarModule,
-  },
-  // Agent is shutdown during test, so we can't use in-memory wallet
-  false
-)
-const mediatorOptions = getAgentOptions(
+const recipientOptions = getInMemoryAgentOptions('Mediation Pickup Loop Recipient')
+const mediatorOptions = getInMemoryAgentOptions(
   'Mediation Pickup Loop Mediator',
   {
     endpoints: ['wss://mediator'],
   },
   {
-    askar: askarModule,
     mediator: new MediatorModule({
       autoAcceptMediationRequests: true,
       messageForwardingStrategy: MessageForwardingStrategy.QueueAndLiveModeDelivery,
