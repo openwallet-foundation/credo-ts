@@ -48,6 +48,7 @@ export function didToNumAlgo2DidDocument(did: string) {
   const entries = identifierWithoutNumAlgo.split('.')
   const didDocument = new DidDocumentBuilder(did)
   let serviceIndex = 0
+  let keyIndex = 1
 
   for (const entry of entries) {
     // Remove the purpose identifier to get the service or key content
@@ -80,10 +81,7 @@ export function didToNumAlgo2DidDocument(did: string) {
 
       // Add all verification methods to the did document
       for (const verificationMethod of verificationMethods) {
-        // FIXME: the peer did uses key identifiers without the multi base prefix
-        // However method 0 (and thus did:key) do use the multi base prefix in the
-        // key identifier. Fixing it like this for now, before making something more complex
-        verificationMethod.id = verificationMethod.id.replace('#z', '#')
+        verificationMethod.id = `#key-${keyIndex++}`
         addVerificationMethodToDidDocument(didDocument, verificationMethod, purpose)
       }
     }
@@ -115,7 +113,7 @@ export function didDocumentToNumAlgo2Did(didDocument: DidDocument) {
       typeof entry === 'string' ? didDocument.dereferenceVerificationMethod(entry) : entry
     )
 
-    // Transform als verification methods into a fingerprint (multibase, multicodec)
+    // Transform all verification methods into a fingerprint (multibase, multicodec)
     const encoded = dereferenced.map((entry) => {
       const key = getKeyFromVerificationMethod(entry)
 
@@ -138,13 +136,10 @@ export function didDocumentToNumAlgo2Did(didDocument: DidDocument) {
       return abbreviateServiceJson(serviceJson)
     })
 
-    const encodedServices = JsonEncoder.toBase64URL(
-      // If array length is 1, encode as json object. Otherwise as array
-      // This is how it's done in the python peer did implementation.
-      abbreviatedServices.length === 1 ? abbreviatedServices[0] : abbreviatedServices
-    )
-
-    did += `.${DidPeerPurpose.Service}${encodedServices}`
+    for (const abbreviatedService of abbreviatedServices) {
+      const encodedService = JsonEncoder.toBase64URL(abbreviatedService)
+      did += `.${DidPeerPurpose.Service}${encodedService}`
+    }
   }
 
   return did
