@@ -12,7 +12,6 @@ export class DRPCMessageHandler implements MessageHandler {
   }
 
   public async handle(messageContext: MessageHandlerInboundMessage<DRPCMessageHandler>) {
-    console.log('Received DRPC message', messageContext.message)
     const connection = messageContext.assertReadyConnection()
     await this.drpcMessageService.save(messageContext, connection)
   }

@@ -21,23 +21,34 @@ export class DRPCMessageService {
     this.eventEmitter = eventEmitter
   }
 
-  public async createMessage(
+  public async createRequestMessage(
     agentContext: AgentContext,
-    message: DRPCRequestObject | DRPCResponseObject | {},
+    message: DRPCRequestObject | DRPCRequestObject[],
+    connectionRecord: ConnectionRecord,
+    messageId?: string
+  ) {
+    const drpcMessage = new DRPCRequestMessage({ request: message }, messageId)
+
+    const drpcMessageRecord = new DRPCMessageRecord({
+      content: drpcMessage,
+      connectionId: connectionRecord.id,
+      role: DRPCMessageRole.Sender,
+    })
+
+    await this.drpcMessageRepository.save(agentContext, drpcMessageRecord)
+    this.emitStateChangedEvent(agentContext, drpcMessageRecord, drpcMessage)
+
+    return { message: drpcMessage, record: drpcMessageRecord }
+  }
+
+  public async createResponseMessage(
+    agentContext: AgentContext,
+    message: {} | DRPCResponseObject | (DRPCResponseObject | {})[],
     connectionRecord: ConnectionRecord,
   ) {
-    let drpcMessage: DRPCRequestMessage | DRPCResponseMessage;
-    if ('method' in message) {
-      drpcMessage = new DRPCRequestMessage({ request: message as unknown as DRPCRequestObject })
-    } else {
-      drpcMessage = new DRPCResponseMessage({ response: message as DRPCResponseObject | {} })
-    }
 
-    // If no parentThreadid is defined, there is no need to explicitly send a thread decorator
-    // if (parentThreadId) {
-    //   basicMessage.setThread({ parentThreadId })
-    // }
-    console.log('Creating message', drpcMessage)
+    const drpcMessage = new DRPCResponseMessage({ response: message })
+
     const drpcMessageRecord = new DRPCMessageRecord({
       content: drpcMessage,
       connectionId: connectionRecord.id,
@@ -51,7 +62,7 @@ export class DRPCMessageService {
   }
 
   public createMessageListener(callback: (params: { message: DRPCRequestMessage | DRPCResponseMessage, drpcMessageRecord: DRPCMessageRecord, removeListener: () => void }) => void | Promise<void>) {
-    const listener = (event: DRPCMessageStateChangedEvent) => {
+    const listener = async (event: DRPCMessageStateChangedEvent) => {
       const { message, drpcMessageRecord } = event.payload
       callback({ message, drpcMessageRecord, removeListener: () => this.eventEmitter.off(DRPCMessageEventTypes.DRPCMessageStateChanged, listener) })
     }

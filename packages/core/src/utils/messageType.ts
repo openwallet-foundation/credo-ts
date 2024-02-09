@@ -1,7 +1,7 @@
 import type { PlaintextMessage } from '../types'
 import type { ValidationOptions, ValidationArguments } from 'class-validator'
 
-import { ValidateBy, buildMessage } from 'class-validator'
+import { ValidateBy, ValidationError, buildMessage } from 'class-validator'
 
 const PROTOCOL_URI_REGEX = /^(.+)\/([^/\\]+)\/(\d+).(\d+)$/
 const MESSAGE_TYPE_REGEX = /^(.+)\/([^/\\]+)\/(\d+).(\d+)\/([^/\\]+)$/
@@ -212,6 +212,107 @@ export function canHandleMessageType(
   messageType: ParsedMessageType
 ): boolean {
   return supportsIncomingMessageType(messageClass.type, messageType)
+}
+
+export function IsValidDRPCResponse(validationOptions?: ValidationOptions): PropertyDecorator {
+  return function (target: any, propertyKey: string | symbol) {
+    ValidateBy(
+      {
+        name: 'isValidDRPCResponse',
+        validator: {
+          validate: (value: any, args: ValidationArguments): boolean => {
+            // Check if value is a valid DRPCResponseObject, an array of DRPCResponseObject (possibly mixed with empty objects), or an empty object
+            let isValid = false
+            if (Array.isArray(value)) {
+              if (value.length > 0) {
+                isValid = value.every(isValidDRPCResponse);
+              }
+            } else {
+              isValid = isValidDRPCResponse(value);
+            }
+            if (!isValid) {
+              throw new ValidationError()
+            }
+            return isValid;
+          },
+          defaultMessage: buildMessage(
+            (eachPrefix) => eachPrefix + '$property is not a valid DRPCResponse',
+            validationOptions
+          ),
+        },
+      },
+      validationOptions
+    )(target, propertyKey);
+  };
+}
+
+function isValidDRPCResponse(value: any): boolean {
+  // Check if value is an object
+  if (typeof value !== 'object' || value === null) {
+    return false;
+  }
+
+  // Check if it's an empty object
+  if (Object.keys(value).length === 0) {
+    return true;
+  }
+
+  // Check if it's a valid DRPCResponseObject
+  if ('jsonrpc' in value && 'id' in value) {
+    // Check if 'result' and 'error' are valid
+    if ('result' in value && typeof value.result === 'undefined') {
+      return false;
+    }
+    if ('error' in value && !isValidDRPCResponseError(value.error)) {
+      return false;
+    }
+    return true;
+  }
+
+  return false;
+}
+
+function isValidDRPCResponseError(error: any): boolean {
+  return typeof error === 'object' && error !== null && 'code' in error && 'message' in error;
+}
+
+export function IsValidDRPCRequest(validationOptions?: ValidationOptions): PropertyDecorator {
+  return function (target: any, propertyKey: string | symbol) {
+    ValidateBy(
+      {
+        name: 'isValidDRPCRequest',
+        validator: {
+          validate: (value: any, args: ValidationArguments): boolean => {
+            // Check if value is a DRPCRequestObject or an array of DRPCRequestObject
+            let isValid = false
+            if (!Array.isArray(value)) {
+              isValid = isValidDRPCRequestObject(value);
+            } else {
+              isValid = value.every(isValidDRPCRequestObject);
+            }
+
+            if (!isValid) {
+              throw new ValidationError()
+            }
+
+            return isValid;
+          },
+          defaultMessage: buildMessage(
+            (eachPrefix) => eachPrefix + '$property is not a valid DRPCRequest',
+            validationOptions
+          ),
+        },
+      },
+      validationOptions
+    )(target, propertyKey);
+  };
+}
+
+export function isValidDRPCRequestObject(value: any): boolean {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) {
+    return false;
+  }
+  return 'jsonrpc' in value && 'method' in value && 'id' in value;
 }
 
 /**

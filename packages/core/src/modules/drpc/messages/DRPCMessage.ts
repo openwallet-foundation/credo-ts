@@ -1,15 +1,13 @@
-import { Expose, Transform } from 'class-transformer'
-import { IsDate, IsObject, IsString, isObject, isString } from 'class-validator'
+import { Expose } from 'class-transformer'
 
 import { AgentMessage } from '../../../agent/AgentMessage'
-import { IsValidMessageType, parseMessageType } from '../../../utils/messageType'
-import { DateParser } from '../../../utils/transformers'
+import { IsValidDRPCRequest, IsValidDRPCResponse, IsValidMessageType, parseMessageType } from '../../../utils/messageType'
 
 export interface DRPCRequestObject {
   jsonrpc: string,
   method: string,
   params?: any[] | Object,
-  id?: string | number,
+  id: string | number | null,
 }
 
 export enum DRPCErrorCode {
@@ -21,6 +19,9 @@ export enum DRPCErrorCode {
   SERVER_ERROR = -32000,
 }
 
+export type DRPCRequest = DRPCRequestObject | DRPCRequestObject[]
+export type DRPCResponse = DRPCResponseObject | (DRPCResponseObject | {})[] | {}
+
 export interface DRPCResponseError {
   code: DRPCErrorCode,
   message: string,
@@ -31,7 +32,7 @@ export interface DRPCResponseObject {
   jsonrpc: string,
   result?: any,
   error?: DRPCResponseError,
-  id?: string | number,
+  id: string | number | null,
 }
 
 export class DRPCRequestMessage extends AgentMessage {
@@ -42,11 +43,11 @@ export class DRPCRequestMessage extends AgentMessage {
    * sentTime will be assigned to new Date if not passed, id will be assigned to uuid/v4 if not passed
    * @param options
    */
-  public constructor(options: { request: DRPCRequestObject }) {
+  public constructor(options: { request: DRPCRequest }, messageId?: string) {
     super()
 
     if (options) {
-      this.id = this.generateId()
+      this.id = messageId ?? this.generateId()
       this.request = options.request
     }
   }
@@ -57,8 +58,8 @@ export class DRPCRequestMessage extends AgentMessage {
 
 
   @Expose({ name: 'request' })
-  @IsObject()
-  public request!: DRPCRequestObject
+  @IsValidDRPCRequest()
+  public request!: DRPCRequest
 }
 
 export class DRPCResponseMessage extends AgentMessage {
@@ -69,11 +70,11 @@ export class DRPCResponseMessage extends AgentMessage {
    * sentTime will be assigned to new Date if not passed, id will be assigned to uuid/v4 if not passed
    * @param options
    */
-  public constructor(options: { response: DRPCResponseObject | {} }) {
+  public constructor(options: { response: DRPCResponse }, messageId?: string) {
     super()
 
     if (options) {
-      this.id = this.generateId()
+      this.id = messageId ?? this.generateId()
       this.response = options.response
     }
   }
@@ -84,6 +85,6 @@ export class DRPCResponseMessage extends AgentMessage {
 
 
   @Expose({ name: 'response' })
-  @IsObject()
-  public response!: DRPCResponseObject | {}
+  @IsValidDRPCResponse()
+  public response!: DRPCResponse
 }
