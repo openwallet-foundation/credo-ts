@@ -9,6 +9,7 @@ import { CredentialsModule } from '../modules/credentials'
 import { DidsModule } from '../modules/dids'
 import { DifPresentationExchangeModule } from '../modules/dif-presentation-exchange'
 import { DiscoverFeaturesModule } from '../modules/discover-features'
+import { DRPCMessagesModule } from '../modules/drpc'
 import { GenericRecordsModule } from '../modules/generic-records'
 import { MessagePickupModule } from '../modules/message-pickup'
 import { OutOfBandModule } from '../modules/oob'
@@ -17,7 +18,6 @@ import { MediationRecipientModule, MediatorModule } from '../modules/routing'
 import { SdJwtVcModule } from '../modules/sd-jwt-vc'
 import { W3cCredentialsModule } from '../modules/vc'
 import { WalletModule } from '../wallet'
-import { DRPCMessagesModule } from '../modules/drpc'
 
 /**
  * Simple utility type that represent a map of modules. This is used to map from moduleKey (api key) to the api in the framework.

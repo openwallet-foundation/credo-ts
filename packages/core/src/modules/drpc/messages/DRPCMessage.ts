@@ -1,13 +1,18 @@
 import { Expose } from 'class-transformer'
 
 import { AgentMessage } from '../../../agent/AgentMessage'
-import { IsValidDRPCRequest, IsValidDRPCResponse, IsValidMessageType, parseMessageType } from '../../../utils/messageType'
+import {
+  IsValidDRPCRequest,
+  IsValidDRPCResponse,
+  IsValidMessageType,
+  parseMessageType,
+} from '../../../utils/messageType'
 
 export interface DRPCRequestObject {
-  jsonrpc: string,
-  method: string,
-  params?: any[] | Object,
-  id: string | number | null,
+  jsonrpc: string
+  method: string
+  params?: any[] | object
+  id: string | number | null
 }
 
 export enum DRPCErrorCode {
@@ -20,19 +25,19 @@ export enum DRPCErrorCode {
 }
 
 export type DRPCRequest = DRPCRequestObject | DRPCRequestObject[]
-export type DRPCResponse = DRPCResponseObject | (DRPCResponseObject | {})[] | {}
+export type DRPCResponse = DRPCResponseObject | (DRPCResponseObject | Record<string, never>)[] | Record<string, never>
 
 export interface DRPCResponseError {
-  code: DRPCErrorCode,
-  message: string,
-  data?: Object,
+  code: DRPCErrorCode
+  message: string
+  data?: any
 }
 
 export interface DRPCResponseObject {
-  jsonrpc: string,
-  result?: any,
-  error?: DRPCResponseError,
-  id: string | number | null,
+  jsonrpc: string
+  result?: any
+  error?: DRPCResponseError
+  id: string | number | null
 }
 
 export class DRPCRequestMessage extends AgentMessage {
@@ -55,7 +60,6 @@ export class DRPCRequestMessage extends AgentMessage {
   @IsValidMessageType(DRPCRequestMessage.type)
   public readonly type = DRPCRequestMessage.type.messageTypeUri
   public static readonly type = parseMessageType('https://didcomm.org/drpc/1.0/request')
-
 
   @Expose({ name: 'request' })
   @IsValidDRPCRequest()
@@ -82,7 +86,6 @@ export class DRPCResponseMessage extends AgentMessage {
   @IsValidMessageType(DRPCResponseMessage.type)
   public readonly type = DRPCResponseMessage.type.messageTypeUri
   public static readonly type = parseMessageType('https://didcomm.org/drpc/1.0/response')
-
 
   @Expose({ name: 'response' })
   @IsValidDRPCResponse()

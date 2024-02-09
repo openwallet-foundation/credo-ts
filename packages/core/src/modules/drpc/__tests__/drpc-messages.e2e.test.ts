@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 import type { SubjectMessage } from '../../../../../../tests/transport/SubjectInboundTransport'
 import type { ConnectionRecord } from '../../connections'
+import type { DRPCResponseObject } from '../messages'
 
 import { Subject } from 'rxjs'
 
@@ -9,10 +10,7 @@ import { SubjectOutboundTransport } from '../../../../../../tests/transport/Subj
 import { getInMemoryAgentOptions, makeConnection } from '../../../../tests/helpers'
 import testLogger from '../../../../tests/logger'
 import { Agent } from '../../../agent/Agent'
-import { MessageSendingError, RecordNotFoundError } from '../../../error'
-import { DRPCErrorCode, DRPCRequestMessage, DRPCResponseMessage, DRPCResponseObject } from '../messages'
-import { DRPCMessageRecord } from '../repository'
-import { assert } from 'console'
+import { DRPCErrorCode } from '../messages'
 
 const faberConfig = getInMemoryAgentOptions('Faber DRPC Messages', {
   endpoints: ['rxjs:faber'],
@@ -45,7 +43,7 @@ describe('DRPC Messages E2E', () => {
     aliceAgent.registerInboundTransport(new SubjectInboundTransport(aliceMessages))
     aliceAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     await aliceAgent.initialize()
-      ;[aliceConnection, faberConnection] = await makeConnection(aliceAgent, faberAgent)
+    ;[aliceConnection, faberConnection] = await makeConnection(aliceAgent, faberAgent)
   })
 
   afterEach(async () => {
@@ -60,7 +58,11 @@ describe('DRPC Messages E2E', () => {
     faberAgent.drpcMessages.createDRPCMethodHandler('hello', async (message) => {
       return { jsonrpc: '2.0', result: 'Hello', id: message.id }
     })
-    const helloRecord = await aliceAgent.drpcMessages.sendDRPCRequest(aliceConnection.id, { jsonrpc: '2.0', method: 'hello', id: 1 })
+    const helloRecord = await aliceAgent.drpcMessages.sendDRPCRequest(aliceConnection.id, {
+      jsonrpc: '2.0',
+      method: 'hello',
+      id: 1,
+    })
     expect((helloRecord as DRPCResponseObject).result).toBe('Hello')
 
     testLogger.test('Alice sends message with positional parameters to Faber')
@@ -70,7 +72,12 @@ describe('DRPC Messages E2E', () => {
       return { jsonrpc: '2.0', result, id: message.id }
     })
 
-    const addRecord = await aliceAgent.drpcMessages.sendDRPCRequest(aliceConnection.id, { jsonrpc: '2.0', method: 'add', params: [2, 3, 7], id: 2 })
+    const addRecord = await aliceAgent.drpcMessages.sendDRPCRequest(aliceConnection.id, {
+      jsonrpc: '2.0',
+      method: 'add',
+      params: [2, 3, 7],
+      id: 2,
+    })
     expect((addRecord as DRPCResponseObject).result).toBe(12)
 
     testLogger.test('Alice sends message with keyed parameters to Faber')
@@ -80,10 +87,19 @@ describe('DRPC Messages E2E', () => {
     })
 
     testLogger.test('Alice sends message with invalid method to Faber')
-    const parseFooRecord = await aliceAgent.drpcMessages.sendDRPCRequest(aliceConnection.id, { jsonrpc: '2.0', method: 'parseFoo', params: { foo: 'bar' }, id: 3 })
+    const parseFooRecord = await aliceAgent.drpcMessages.sendDRPCRequest(aliceConnection.id, {
+      jsonrpc: '2.0',
+      method: 'parseFoo',
+      params: { foo: 'bar' },
+      id: 3,
+    })
     expect((parseFooRecord as DRPCResponseObject).result).toBe('bar')
 
-    const errorRecord = await aliceAgent.drpcMessages.sendDRPCRequest(aliceConnection.id, { jsonrpc: '2.0', method: 'error', id: 4 })
+    const errorRecord = await aliceAgent.drpcMessages.sendDRPCRequest(aliceConnection.id, {
+      jsonrpc: '2.0',
+      method: 'error',
+      id: 4,
+    })
     expect((errorRecord as DRPCResponseObject).error).toBeDefined()
     expect((errorRecord as DRPCResponseObject).error?.code).toBe(DRPCErrorCode.METHOD_NOT_FOUND)
   })
@@ -110,11 +126,13 @@ describe('DRPC Messages E2E', () => {
       { jsonrpc: '2.0', method: 'error', id: 4 },
     ])
     expect(batchRecord as DRPCResponseObject[]).toHaveLength(4)
-    expect((batchRecord as DRPCResponseObject[]).find(item => item.id === 1)?.result).toBe('Hello')
-    expect((batchRecord as DRPCResponseObject[]).find(item => item.id === 2)?.result).toBe(12)
-    expect((batchRecord as DRPCResponseObject[]).find(item => item.id === 3)?.result).toBe('bar')
-    expect((batchRecord as DRPCResponseObject[]).find(item => item.id === 4)?.error).toBeDefined()
-    expect((batchRecord as DRPCResponseObject[]).find(item => item.id === 4)?.error?.code).toBe(DRPCErrorCode.METHOD_NOT_FOUND)
+    expect((batchRecord as DRPCResponseObject[]).find((item) => item.id === 1)?.result).toBe('Hello')
+    expect((batchRecord as DRPCResponseObject[]).find((item) => item.id === 2)?.result).toBe(12)
+    expect((batchRecord as DRPCResponseObject[]).find((item) => item.id === 3)?.result).toBe('bar')
+    expect((batchRecord as DRPCResponseObject[]).find((item) => item.id === 4)?.error).toBeDefined()
+    expect((batchRecord as DRPCResponseObject[]).find((item) => item.id === 4)?.error?.code).toBe(
+      DRPCErrorCode.METHOD_NOT_FOUND
+    )
   })
 
   test('Alice sends Faber DRPC notification', async () => {
@@ -124,7 +142,11 @@ describe('DRPC Messages E2E', () => {
       notified = true
       return {}
     })
-    const notifyRecord = await aliceAgent.drpcMessages.sendDRPCRequest(aliceConnection.id, { jsonrpc: '2.0', method: 'notify', id: null })
+    const notifyRecord = await aliceAgent.drpcMessages.sendDRPCRequest(aliceConnection.id, {
+      jsonrpc: '2.0',
+      method: 'notify',
+      id: null,
+    })
     expect(notifyRecord).toMatchObject({})
     expect(notified).toBe(true)
 
@@ -135,9 +157,20 @@ describe('DRPC Messages E2E', () => {
       return { jsonrpc: '2.0', result: 'Hello', id: message.id }
     })
 
-    const notifyBatchRecord = await aliceAgent.drpcMessages.sendDRPCRequest(aliceConnection.id, [{ jsonrpc: '2.0', method: 'hello', id: 1 }, { jsonrpc: '2.0', method: 'notify', id: null }])
-    expect((notifyBatchRecord as (DRPCResponseObject | {})[]).find(item => (item as DRPCResponseObject)?.id === 1)).toMatchObject({ jsonrpc: '2.0', result: 'Hello', id: 1 })
-    expect((notifyBatchRecord as (DRPCResponseObject | {})[]).find(item => !(item as DRPCResponseObject)?.id)).toMatchObject({})
+    const notifyBatchRecord = await aliceAgent.drpcMessages.sendDRPCRequest(aliceConnection.id, [
+      { jsonrpc: '2.0', method: 'hello', id: 1 },
+      { jsonrpc: '2.0', method: 'notify', id: null },
+    ])
+    expect(
+      (notifyBatchRecord as (DRPCResponseObject | Record<string, never>)[]).find(
+        (item) => (item as DRPCResponseObject)?.id === 1
+      )
+    ).toMatchObject({ jsonrpc: '2.0', result: 'Hello', id: 1 })
+    expect(
+      (notifyBatchRecord as (DRPCResponseObject | Record<string, never>)[]).find(
+        (item) => !(item as DRPCResponseObject)?.id
+      )
+    ).toMatchObject({})
     expect(notified).toBe(true)
   })
 
@@ -147,12 +180,20 @@ describe('DRPC Messages E2E', () => {
     })
     let error = false
     try {
-      await aliceAgent.drpcMessages.sendDRPCRequest(aliceConnection.id, "test" as any)
+      await aliceAgent.drpcMessages.sendDRPCRequest(aliceConnection.id, 'test' as any)
     } catch {
       error = true
     }
     expect(error).toBe(true)
-    const errorRecord = await aliceAgent.drpcMessages.sendDRPCRequest(aliceConnection.id, { jsonrpc: '2.0', method: 'hello', id: 1 })
-    expect((errorRecord as DRPCResponseObject)).toMatchObject({ jsonrpc: '2.0', id: null, error: { code: DRPCErrorCode.INTERNAL_ERROR, message: 'Internal error', data: "Error sending response" } })
+    const errorRecord = await aliceAgent.drpcMessages.sendDRPCRequest(aliceConnection.id, {
+      jsonrpc: '2.0',
+      method: 'hello',
+      id: 1,
+    })
+    expect(errorRecord as DRPCResponseObject).toMatchObject({
+      jsonrpc: '2.0',
+      id: null,
+      error: { code: DRPCErrorCode.INTERNAL_ERROR, message: 'Internal error', data: 'Error sending response' },
+    })
   })
 })

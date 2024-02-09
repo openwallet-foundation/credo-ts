@@ -1,8 +1,10 @@
+import type { DRPCRequestObject } from '../messages'
+
 import { getAgentContext, getMockConnection } from '../../../../tests/helpers'
 import { EventEmitter } from '../../../agent/EventEmitter'
 import { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import { DRPCMessageRole } from '../DRPCMessageRole'
-import { DRPCRequestMessage, DRPCResponseMessage, DRPCRequestObject, DRPCResponseObject } from '../messages'
+import { DRPCRequestMessage, DRPCResponseMessage, DRPCResponseObject } from '../messages'
 import { DRPCMessageRecord } from '../repository/DRPCMessageRecord'
 import { DRPCMessageRepository } from '../repository/DRPCMessageRepository'
 import { DRPCMessageService } from '../services'
@@ -35,10 +37,14 @@ describe('DRPCMessageService', () => {
         method: 'hello',
         id: 1,
       }
-      const { message } = await drpcMessageService.createMessage(agentContext, messageRequest, mockConnectionRecord)
+      const { message } = await drpcMessageService.createRequestMessage(
+        agentContext,
+        messageRequest,
+        mockConnectionRecord
+      )
 
       expect(message).toBeInstanceOf(DRPCRequestMessage)
-      expect((message as DRPCRequestMessage).request.method).toBe('hello')
+      expect((message.request as DRPCRequestObject).method).toBe('hello')
 
       expect(drpcMessageRepository.save).toHaveBeenCalledWith(agentContext, expect.any(DRPCMessageRecord))
       expect(eventEmitter.emit).toHaveBeenCalledWith(agentContext, {
@@ -46,12 +52,10 @@ describe('DRPCMessageService', () => {
         payload: {
           drpcMessageRecord: expect.objectContaining({
             connectionId: mockConnectionRecord.id,
-            id: expect.any(String),
-            sentTime: expect.any(String),
-            content: 'hello',
+            content: expect.any(DRPCRequestMessage),
             role: DRPCMessageRole.Sender,
           }),
-          message,
+          message: expect.any(DRPCRequestMessage),
         },
       })
     })
@@ -59,7 +63,7 @@ describe('DRPCMessageService', () => {
 
   describe('save', () => {
     it(`stores record and emits message and basic message record`, async () => {
-      const drpcMessage = new DRPCRequestMessage({request: {jsonrpc: '2.0', method: 'hello', id: 1}})
+      const drpcMessage = new DRPCRequestMessage({ request: { jsonrpc: '2.0', method: 'hello', id: 1 } })
 
       const messageContext = new InboundMessageContext(drpcMessage, { agentContext })
 
@@ -71,11 +75,10 @@ describe('DRPCMessageService', () => {
         payload: {
           drpcMessageRecord: expect.objectContaining({
             connectionId: mockConnectionRecord.id,
-            id: expect.any(String),
-            content: drpcMessage.request,
+            content: expect.any(DRPCRequestMessage),
             role: DRPCMessageRole.Receiver,
           }),
-          message: messageContext.message,
+          message: drpcMessage,
         },
       })
     })

@@ -13,6 +13,7 @@ import { ConnectionsApi } from '../modules/connections'
 import { CredentialsApi } from '../modules/credentials'
 import { DidsApi } from '../modules/dids'
 import { DiscoverFeaturesApi } from '../modules/discover-features'
+import { DRPCMessagesApi } from '../modules/drpc'
 import { GenericRecordsApi } from '../modules/generic-records'
 import { MessagePickupApi } from '../modules/message-pickup/MessagePickupApi'
 import { OutOfBandApi } from '../modules/oob'
@@ -33,7 +34,6 @@ import { MessageReceiver } from './MessageReceiver'
 import { MessageSender } from './MessageSender'
 import { TransportService } from './TransportService'
 import { AgentContext } from './context'
-import { DRPCMessagesApi } from '../modules/drpc'
 
 export abstract class BaseAgent<AgentModules extends ModulesMap = EmptyModuleMap> {
   protected agentConfig: AgentConfig

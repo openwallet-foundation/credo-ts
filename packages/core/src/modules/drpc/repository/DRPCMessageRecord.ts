@@ -1,9 +1,9 @@
 import type { RecordTags, TagsBase } from '../../../storage/BaseRecord'
 import type { DRPCMessageRole } from '../DRPCMessageRole'
+import type { DRPCRequestMessage, DRPCResponseMessage } from '../messages'
 
 import { BaseRecord } from '../../../storage/BaseRecord'
 import { uuid } from '../../../utils/uuid'
-import { DRPCRequestMessage, DRPCRequestObject, DRPCResponseMessage, DRPCResponseObject } from '../messages'
 
 export type CustomDRPCMessageTags = TagsBase
 export type DefaultBasicMessageTags = {

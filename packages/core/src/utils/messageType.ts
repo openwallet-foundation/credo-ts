@@ -220,20 +220,20 @@ export function IsValidDRPCResponse(validationOptions?: ValidationOptions): Prop
       {
         name: 'isValidDRPCResponse',
         validator: {
-          validate: (value: any, args: ValidationArguments): boolean => {
+          validate: (value: any, _: ValidationArguments): boolean => {
             // Check if value is a valid DRPCResponseObject, an array of DRPCResponseObject (possibly mixed with empty objects), or an empty object
             let isValid = false
             if (Array.isArray(value)) {
               if (value.length > 0) {
-                isValid = value.every(isValidDRPCResponse);
+                isValid = value.every(isValidDRPCResponse)
               }
             } else {
-              isValid = isValidDRPCResponse(value);
+              isValid = isValidDRPCResponse(value)
             }
             if (!isValid) {
               throw new ValidationError()
             }
-            return isValid;
+            return isValid
           },
           defaultMessage: buildMessage(
             (eachPrefix) => eachPrefix + '$property is not a valid DRPCResponse',
@@ -242,38 +242,38 @@ export function IsValidDRPCResponse(validationOptions?: ValidationOptions): Prop
         },
       },
       validationOptions
-    )(target, propertyKey);
-  };
+    )(target, propertyKey)
+  }
 }
 
 function isValidDRPCResponse(value: any): boolean {
   // Check if value is an object
   if (typeof value !== 'object' || value === null) {
-    return false;
+    return false
   }
 
   // Check if it's an empty object
   if (Object.keys(value).length === 0) {
-    return true;
+    return true
   }
 
   // Check if it's a valid DRPCResponseObject
   if ('jsonrpc' in value && 'id' in value) {
     // Check if 'result' and 'error' are valid
     if ('result' in value && typeof value.result === 'undefined') {
-      return false;
+      return false
     }
     if ('error' in value && !isValidDRPCResponseError(value.error)) {
-      return false;
+      return false
     }
-    return true;
+    return true
   }
 
-  return false;
+  return false
 }
 
 function isValidDRPCResponseError(error: any): boolean {
-  return typeof error === 'object' && error !== null && 'code' in error && 'message' in error;
+  return typeof error === 'object' && error !== null && 'code' in error && 'message' in error
 }
 
 export function IsValidDRPCRequest(validationOptions?: ValidationOptions): PropertyDecorator {
@@ -282,20 +282,20 @@ export function IsValidDRPCRequest(validationOptions?: ValidationOptions): Prope
       {
         name: 'isValidDRPCRequest',
         validator: {
-          validate: (value: any, args: ValidationArguments): boolean => {
+          validate: (value: any, _: ValidationArguments): boolean => {
             // Check if value is a DRPCRequestObject or an array of DRPCRequestObject
             let isValid = false
             if (!Array.isArray(value)) {
-              isValid = isValidDRPCRequestObject(value);
+              isValid = isValidDRPCRequestObject(value)
             } else {
-              isValid = value.every(isValidDRPCRequestObject);
+              isValid = value.every(isValidDRPCRequestObject)
             }
 
             if (!isValid) {
               throw new ValidationError()
             }
 
-            return isValid;
+            return isValid
           },
           defaultMessage: buildMessage(
             (eachPrefix) => eachPrefix + '$property is not a valid DRPCRequest',
@@ -304,15 +304,15 @@ export function IsValidDRPCRequest(validationOptions?: ValidationOptions): Prope
         },
       },
       validationOptions
-    )(target, propertyKey);
-  };
+    )(target, propertyKey)
+  }
 }
 
 export function isValidDRPCRequestObject(value: any): boolean {
   if (typeof value !== 'object' || value === null || Array.isArray(value)) {
-    return false;
+    return false
   }
-  return 'jsonrpc' in value && 'method' in value && 'id' in value;
+  return 'jsonrpc' in value && 'method' in value && 'id' in value
 }
 
 /**

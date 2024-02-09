@@ -3,12 +3,13 @@ import type { InboundMessageContext } from '../../../agent/models/InboundMessage
 import type { Query } from '../../../storage/StorageService'
 import type { ConnectionRecord } from '../../connections/repository/ConnectionRecord'
 import type { DRPCMessageStateChangedEvent } from '../DRPCMessageEvents'
+import type { DRPCRequest, DRPCResponse } from '../messages'
 
 import { EventEmitter } from '../../../agent/EventEmitter'
 import { injectable } from '../../../plugins'
 import { DRPCMessageEventTypes } from '../DRPCMessageEvents'
 import { DRPCMessageRole } from '../DRPCMessageRole'
-import { DRPCRequestMessage, DRPCRequestObject, DRPCResponseMessage, DRPCResponseObject } from '../messages'
+import { DRPCRequestMessage, DRPCResponseMessage } from '../messages'
 import { DRPCMessageRecord, DRPCMessageRepository } from '../repository'
 
 @injectable()
@@ -23,7 +24,7 @@ export class DRPCMessageService {
 
   public async createRequestMessage(
     agentContext: AgentContext,
-    message: DRPCRequestObject | DRPCRequestObject[],
+    message: DRPCRequest,
     connectionRecord: ConnectionRecord,
     messageId?: string
   ) {
@@ -43,10 +44,9 @@ export class DRPCMessageService {
 
   public async createResponseMessage(
     agentContext: AgentContext,
-    message: {} | DRPCResponseObject | (DRPCResponseObject | {})[],
-    connectionRecord: ConnectionRecord,
+    message: DRPCResponse,
+    connectionRecord: ConnectionRecord
   ) {
-
     const drpcMessage = new DRPCResponseMessage({ response: message })
 
     const drpcMessageRecord = new DRPCMessageRecord({
@@ -61,10 +61,20 @@ export class DRPCMessageService {
     return { message: drpcMessage, record: drpcMessageRecord }
   }
 
-  public createMessageListener(callback: (params: { message: DRPCRequestMessage | DRPCResponseMessage, drpcMessageRecord: DRPCMessageRecord, removeListener: () => void }) => void | Promise<void>) {
+  public createMessageListener(
+    callback: (params: {
+      message: DRPCRequestMessage | DRPCResponseMessage
+      drpcMessageRecord: DRPCMessageRecord
+      removeListener: () => void
+    }) => void | Promise<void>
+  ) {
     const listener = async (event: DRPCMessageStateChangedEvent) => {
       const { message, drpcMessageRecord } = event.payload
-      callback({ message, drpcMessageRecord, removeListener: () => this.eventEmitter.off(DRPCMessageEventTypes.DRPCMessageStateChanged, listener) })
+      await callback({
+        message,
+        drpcMessageRecord,
+        removeListener: () => this.eventEmitter.off(DRPCMessageEventTypes.DRPCMessageStateChanged, listener),
+      })
     }
     this.eventEmitter.on(DRPCMessageEventTypes.DRPCMessageStateChanged, listener)
   }
@@ -72,7 +82,10 @@ export class DRPCMessageService {
   /**
    * @todo use connection from message context
    */
-  public async save({ message, agentContext }: InboundMessageContext<DRPCResponseMessage | DRPCRequestMessage>, connection: ConnectionRecord) {
+  public async save(
+    { message, agentContext }: InboundMessageContext<DRPCResponseMessage | DRPCRequestMessage>,
+    connection: ConnectionRecord
+  ) {
     const drpcMessageRecord = new DRPCMessageRecord({
       content: message,
       connectionId: connection.id,
