@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 import type { SubjectMessage } from '../../../../../../tests/transport/SubjectInboundTransport'
 import type { ConnectionRecord } from '../../connections'
-import type { DRPCResponseObject } from '../messages'
+import type { DRPCRequest, DRPCResponseObject } from '../messages'
 
 import { Subject } from 'rxjs'
 
@@ -23,7 +23,6 @@ const aliceConfig = getInMemoryAgentOptions('Alice DRPC Messages', {
 describe('DRPC Messages E2E', () => {
   let faberAgent: Agent
   let aliceAgent: Agent
-  let faberConnection: ConnectionRecord
   let aliceConnection: ConnectionRecord
 
   beforeEach(async () => {
@@ -43,7 +42,7 @@ describe('DRPC Messages E2E', () => {
     aliceAgent.registerInboundTransport(new SubjectInboundTransport(aliceMessages))
     aliceAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     await aliceAgent.initialize()
-    ;[aliceConnection, faberConnection] = await makeConnection(aliceAgent, faberAgent)
+    ;[aliceConnection] = await makeConnection(aliceAgent, faberAgent)
   })
 
   afterEach(async () => {
@@ -138,7 +137,7 @@ describe('DRPC Messages E2E', () => {
   test('Alice sends Faber DRPC notification', async () => {
     testLogger.test('Alice sends notification to Faber')
     let notified = false
-    faberAgent.drpcMessages.createDRPCMethodHandler('notify', async (message) => {
+    faberAgent.drpcMessages.createDRPCMethodHandler('notify', async (_) => {
       notified = true
       return {}
     })
@@ -175,12 +174,12 @@ describe('DRPC Messages E2E', () => {
   })
 
   test('Alice sends Faber invalid DRPC message | Faber responds with invalid DRPC message', async () => {
-    faberAgent.drpcMessages.createDRPCMethodHandler('hello', async (message) => {
-      return [] as any
+    faberAgent.drpcMessages.createDRPCMethodHandler('hello', async (_) => {
+      return [] as unknown as DRPCResponseObject
     })
     let error = false
     try {
-      await aliceAgent.drpcMessages.sendDRPCRequest(aliceConnection.id, 'test' as any)
+      await aliceAgent.drpcMessages.sendDRPCRequest(aliceConnection.id, 'test' as unknown as DRPCRequest)
     } catch {
       error = true
     }
