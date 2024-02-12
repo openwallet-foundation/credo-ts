@@ -1,6 +1,7 @@
 import type { AnonCredsTestsAgent } from '../packages/anoncreds/tests/legacyAnonCredsSetup'
 
 import { getAnonCredsIndyModules } from '../packages/anoncreds/tests/legacyAnonCredsSetup'
+import { TestLogger } from '../packages/core/tests'
 import { getInMemoryAgentOptions } from '../packages/core/tests/helpers'
 
 import { e2eTest } from './e2e-test'
@@ -12,12 +13,15 @@ import {
   MediatorPickupStrategy,
   MediationRecipientModule,
   MediatorModule,
+  LogLevel,
 } from '@credo-ts/core'
 import { HttpInboundTransport } from '@credo-ts/node'
 
 const recipientAgentOptions = getInMemoryAgentOptions(
   'E2E HTTP Recipient',
-  {},
+  {
+    logger: new TestLogger(LogLevel.trace),
+  },
   {
     ...getAnonCredsIndyModules({
       autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
@@ -34,6 +38,7 @@ const mediatorAgentOptions = getInMemoryAgentOptions(
   'E2E HTTP Mediator',
   {
     endpoints: [`http://localhost:${mediatorPort}`],
+    logger: new TestLogger(LogLevel.trace),
   },
   {
     ...getAnonCredsIndyModules({
@@ -50,6 +55,7 @@ const senderAgentOptions = getInMemoryAgentOptions(
   'E2E HTTP Sender',
   {
     endpoints: [`http://localhost:${senderPort}`],
+    logger: new TestLogger(LogLevel.trace),
   },
   getAnonCredsIndyModules({
     autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
