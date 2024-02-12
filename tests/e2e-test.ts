@@ -1,4 +1,7 @@
 import type { AnonCredsTestsAgent } from '../packages/anoncreds/tests/legacyAnonCredsSetup'
+import type { AgentMessageProcessedEvent, AgentMessageSentEvent } from '@credo-ts/core'
+
+import { filter, firstValueFrom, map } from 'rxjs'
 
 import { V1CredentialPreview } from '../packages/anoncreds/src/protocols/credentials/v1'
 import {
@@ -6,11 +9,21 @@ import {
   presentLegacyAnonCredsProof,
   prepareForAnonCredsIssuance,
 } from '../packages/anoncreds/tests/legacyAnonCredsSetup'
-import { sleep } from '../packages/core/src/utils/sleep'
 import { setupEventReplaySubjects } from '../packages/core/tests'
 import { makeConnection } from '../packages/core/tests/helpers'
 
-import { CredentialState, MediationState, ProofState, CredentialEventTypes, ProofEventTypes } from '@credo-ts/core'
+import {
+  V1BatchMessage,
+  V1BatchPickupMessage,
+  V2DeliveryRequestMessage,
+  V2MessageDeliveryMessage,
+  CredentialState,
+  MediationState,
+  ProofState,
+  CredentialEventTypes,
+  ProofEventTypes,
+  AgentEventTypes,
+} from '@credo-ts/core'
 
 export async function e2eTest({
   mediatorAgent,
@@ -22,8 +35,13 @@ export async function e2eTest({
   senderAgent: AnonCredsTestsAgent
 }) {
   const [senderReplay, recipientReplay] = setupEventReplaySubjects(
-    [senderAgent, recipientAgent],
-    [CredentialEventTypes.CredentialStateChanged, ProofEventTypes.ProofStateChanged]
+    [senderAgent, recipientAgent, mediatorAgent],
+    [
+      CredentialEventTypes.CredentialStateChanged,
+      ProofEventTypes.ProofStateChanged,
+      AgentEventTypes.AgentMessageProcessed,
+      AgentEventTypes.AgentMessageSent,
+    ]
   )
 
   // Make connection between mediator and recipient
@@ -110,9 +128,32 @@ export async function e2eTest({
   // We want to stop the mediator polling before the agent is shutdown.
   await recipientAgent.mediationRecipient.stopMessagePickup()
 
+  const pickupRequestMessages = [V2DeliveryRequestMessage.type.messageTypeUri, V1BatchPickupMessage.type.messageTypeUri]
+  const deliveryMessages = [V2MessageDeliveryMessage.type.messageTypeUri, V1BatchMessage.type.messageTypeUri]
+
+  let lastSentPickupMessageThreadId: undefined | string = undefined
+  recipientReplay
+    .pipe(
+      filter((e): e is AgentMessageSentEvent => e.type === AgentEventTypes.AgentMessageSent),
+      filter((e) => pickupRequestMessages.includes(e.payload.message.message.type)),
+      map((e) => e.payload.message.message.threadId)
+    )
+    .subscribe((threadId) => (lastSentPickupMessageThreadId = threadId))
+
+  // Wait for the response to the pickup message to be processed
+  if (lastSentPickupMessageThreadId) {
+    await firstValueFrom(
+      recipientReplay.pipe(
+        filter((e): e is AgentMessageProcessedEvent => e.type === AgentEventTypes.AgentMessageProcessed),
+        filter((e) => deliveryMessages.includes(e.payload.message.type)),
+        filter((e) => e.payload.message.threadId === lastSentPickupMessageThreadId)
+      )
+    )
+  }
+
   // FIXME: we should add some fancy logic here that checks whether the last sent message has been received by the other
   // agent and possibly wait for the response. So e.g. if pickup v1 is used, we wait for the delivery message to be returned
   // as that is the final message that will be exchange after we've called stopMessagePickup. We can hook into the
   // replay subject AgentMessageProcessed and AgentMessageSent events.
-  await sleep(5000)
+  // await sleep(5000)
 }
