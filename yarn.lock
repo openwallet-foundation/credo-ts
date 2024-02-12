@@ -2429,23 +2429,23 @@
   resolved "https://registry.yarnpkg.com/@react-native/polyfills/-/polyfills-2.0.0.tgz#4c40b74655c83982c8cf47530ee7dc13d957b6aa"
   integrity sha512-K0aGNn1TjalKj+65D7ycc1//H9roAQ51GJVk5ZJQFb2teECGmzd86bYDC0aYdbRf7gtovescq4Zt6FR0tgXiHQ==
 
-"@sd-jwt/core@^0.2.1-alpha.0":
-  version "0.2.1-alpha.0"
-  resolved "https://registry.yarnpkg.com/@sd-jwt/core/-/core-0.2.1-alpha.0.tgz#1013bbc22c0622e4180459c357844aeb5ab6c7d8"
-  integrity sha512-xY3OWhaI+nt3PGM33kTMA8L7SJqTqVzXpbMJVop0wjwuIuUaF1DJJawbHqCL0SzDqjvK9+X3FxAF+YdVdU/Mfg==
+"@sd-jwt/core@^0.2.1":
+  version "0.2.1"
+  resolved "https://registry.yarnpkg.com/@sd-jwt/core/-/core-0.2.1.tgz#75b0b273758e6be050e042a75bd6a0c4a2a7258e"
+  integrity sha512-8auyt3mfzgAK+IP9mNc3kSONdo5x2Y8ypNj5gHKP7N81nVeyI+DHethoPQv84JVcqYYcNwHwyrc2Z5k7rg2lFQ==
   dependencies:
-    "@sd-jwt/decode" "0.2.1-alpha.0"
-    "@sd-jwt/present" "0.2.1-alpha.0"
-    "@sd-jwt/types" "0.2.1-alpha.0"
-    "@sd-jwt/utils" "0.2.1-alpha.0"
+    "@sd-jwt/decode" "0.2.1"
+    "@sd-jwt/present" "0.2.1"
+    "@sd-jwt/types" "0.2.1"
+    "@sd-jwt/utils" "0.2.1"
 
-"@sd-jwt/decode@0.2.1-alpha.0", "@sd-jwt/decode@^0.2.1-alpha.0":
-  version "0.2.1-alpha.0"
-  resolved "https://registry.yarnpkg.com/@sd-jwt/decode/-/decode-0.2.1-alpha.0.tgz#a5e142905cec65d1ccdbb26ab84d95d9253f1e19"
-  integrity sha512-iCM1ig9XhtBwssJaebqLHYYmll7BR9CCFZhk9vRc7wVN0MEHYH1ndorbXvVNl5a2UeeXTgOSbhxqouzdwAdW2Q==
+"@sd-jwt/decode@0.2.1", "@sd-jwt/decode@^0.2.1":
+  version "0.2.1"
+  resolved "https://registry.yarnpkg.com/@sd-jwt/decode/-/decode-0.2.1.tgz#e0fb32dd2a95440ad69237e66ea2cd4770ec7e09"
+  integrity sha512-rs55WB3llrMObxN8jeMl06km/h0WivO9jSWNubO9JUIdlfrVhssU38xoXakvQeSDjAJkUUhfZcvmC2vNo1X6Wg==
   dependencies:
-    "@sd-jwt/types" "0.2.1-alpha.0"
-    "@sd-jwt/utils" "0.2.1-alpha.0"
+    "@sd-jwt/types" "0.2.1"
+    "@sd-jwt/utils" "0.2.1"
 
 "@sd-jwt/decode@^0.2.0":
   version "0.2.0"
@@ -2455,13 +2455,13 @@
     "@sd-jwt/types" "0.2.0"
     "@sd-jwt/utils" "0.2.0"
 
-"@sd-jwt/present@0.2.1-alpha.0":
-  version "0.2.1-alpha.0"
-  resolved "https://registry.yarnpkg.com/@sd-jwt/present/-/present-0.2.1-alpha.0.tgz#174ffdbf220bb496901bbaae9226b64910d864a4"
-  integrity sha512-cn0tnPBk66tjfhnr3OdZIhD7NuYE1/0TvbjwXG2Dd/15KhKulrGFa5L7bjPDDhiB0HTQbKv8Dxs10Vp93nAMeQ==
+"@sd-jwt/present@0.2.1":
+  version "0.2.1"
+  resolved "https://registry.yarnpkg.com/@sd-jwt/present/-/present-0.2.1.tgz#ff9958626b271a60d539dd1e601763ff33c024e8"
+  integrity sha512-yWIAR2C/q1jNUwzAeUlUcf3WCTEcSSGo9pltHW5AXptELjyaWGSmC5p6o9ucDXHvBnicfPONhe5OdUCSpiCntw==
   dependencies:
-    "@sd-jwt/types" "0.2.1-alpha.0"
-    "@sd-jwt/utils" "0.2.1-alpha.0"
+    "@sd-jwt/types" "0.2.1"
+    "@sd-jwt/utils" "0.2.1"
 
 "@sd-jwt/present@^0.2.0":
   version "0.2.0"
@@ -2476,10 +2476,10 @@
   resolved "https://registry.yarnpkg.com/@sd-jwt/types/-/types-0.2.0.tgz#3cb50392e1b76ce69453f403c71c937a6e202352"
   integrity sha512-16WFRcL/maG0/JxN9UCSx07/vJ2SDbGscv9gDLmFLgJzhJcGPer41XfI6aDfVARYP430wHFixChfY/n7qC1L/Q==
 
-"@sd-jwt/types@0.2.1-alpha.0":
-  version "0.2.1-alpha.0"
-  resolved "https://registry.yarnpkg.com/@sd-jwt/types/-/types-0.2.1-alpha.0.tgz#74e6faa9d3662968e59446df390ac6a678b719a9"
-  integrity sha512-qb/8ZEu6We0ijlZ7AJAYPnyRRGsFV1NJC96jhOitCXWVV9KekLmDntUJ8rwOIQn2jJjj8Rlwu9mTO6v70woIDg==
+"@sd-jwt/types@0.2.1":
+  version "0.2.1"
+  resolved "https://registry.yarnpkg.com/@sd-jwt/types/-/types-0.2.1.tgz#e1e6b47728dffa90ed244e15e2253bd01793cb96"
+  integrity sha512-nbNik/cq6UIMsN144FcgPZQzaqIsjEEj307j3ZSFORkQBR4Tsmcj54aswTuNh0Z0z/4aSbfw14vOKBZvRWyVLQ==
 
 "@sd-jwt/utils@0.2.0", "@sd-jwt/utils@^0.2.0":
   version "0.2.0"
@@ -2489,12 +2489,12 @@
     "@sd-jwt/types" "0.2.0"
     buffer "*"
 
-"@sd-jwt/utils@0.2.1-alpha.0":
-  version "0.2.1-alpha.0"
-  resolved "https://registry.yarnpkg.com/@sd-jwt/utils/-/utils-0.2.1-alpha.0.tgz#0fa7c72f95b34ecf3e7e5408086a3ac6764b99a7"
-  integrity sha512-l4QX+idUwnzS1HrZbxMNPqish1GbW7XgaqCzfGxxagesfeUlqxY+3smrDCnleggujEqFWrnlb1daeYXZmnMjJg==
+"@sd-jwt/utils@0.2.1":
+  version "0.2.1"
+  resolved "https://registry.yarnpkg.com/@sd-jwt/utils/-/utils-0.2.1.tgz#35ad83232eab2de911e765d93222acd871982a5e"
+  integrity sha512-9eRrge44dhE3fenawR/RZGxP5iuW9DtgdOVANu/JK5PEl80r0fDsMwm/gDjuv8OgLDCmQ6uSaVte1lYaTG71bQ==
   dependencies:
-    "@sd-jwt/types" "0.2.1-alpha.0"
+    "@sd-jwt/types" "0.2.1"
     buffer "*"
 
 "@sideway/address@^4.1.5":
