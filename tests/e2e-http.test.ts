@@ -23,6 +23,7 @@ const recipientAgentOptions = getInMemoryAgentOptions(
       autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
     }),
     mediationRecipient: new MediationRecipientModule({
+      mediatorPollingInterval: 500,
       mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
     }),
   }
@@ -50,15 +51,9 @@ const senderAgentOptions = getInMemoryAgentOptions(
   {
     endpoints: [`http://localhost:${senderPort}`],
   },
-  {
-    ...getAnonCredsIndyModules({
-      autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
-    }),
-    mediationRecipient: new MediationRecipientModule({
-      mediatorPollingInterval: 1000,
-      mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
-    }),
-  }
+  getAnonCredsIndyModules({
+    autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
+  })
 )
 
 describe('E2E HTTP tests', () => {

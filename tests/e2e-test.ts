@@ -109,5 +109,10 @@ export async function e2eTest({
 
   // We want to stop the mediator polling before the agent is shutdown.
   await recipientAgent.mediationRecipient.stopMessagePickup()
-  await sleep(2000)
+
+  // FIXME: we should add some fancy logic here that checks whether the last sent message has been received by the other
+  // agent and possibly wait for the response. So e.g. if pickup v1 is used, we wait for the delivery message to be returned
+  // as that is the final message that will be exchange after we've called stopMessagePickup. We can hook into the
+  // replay subject AgentMessageProcessed and AgentMessageSent events.
+  await sleep(5000)
 }

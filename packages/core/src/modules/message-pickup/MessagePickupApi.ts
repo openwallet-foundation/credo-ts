@@ -154,7 +154,7 @@ export class MessagePickupApi<MPPs extends MessagePickupProtocol[] = [V1MessageP
    *
    */
   public async deliverMessagesFromQueue(options: DeliverMessagesFromQueueOptions) {
-    this.logger.debug('Deliverying queued messages')
+    this.logger.debug('Delivering queued messages')
 
     const { pickupSessionId, recipientDid: recipientKey, batchSize } = options
 

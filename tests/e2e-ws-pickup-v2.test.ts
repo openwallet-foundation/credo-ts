@@ -49,10 +49,6 @@ const senderOptions = getAgentOptions(
     ...getAnonCredsIndyModules({
       autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
     }),
-    mediationRecipient: new MediationRecipientModule({
-      mediatorPollingInterval: 1000,
-      mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
-    }),
     askar: askarModule,
   }
 )
@@ -68,6 +64,8 @@ describe('E2E WS Pickup V2 tests', () => {
   })
 
   afterEach(async () => {
+    // NOTE: the order is important here, as the recipient sends pickup messages to the mediator
+    // so we first want the recipient to fully be finished with the sending of messages
     await recipientAgent.shutdown()
     await recipientAgent.wallet.delete()
     await mediatorAgent.shutdown()
@@ -86,7 +84,7 @@ describe('E2E WS Pickup V2 tests', () => {
         }),
         mediationRecipient: new MediationRecipientModule({
           mediatorPickupStrategy: MediatorPickupStrategy.PickUpV2,
-          mediatorPollingInterval: 1000,
+          mediatorPollingInterval: 500,
         }),
         askar: askarModule,
       }
