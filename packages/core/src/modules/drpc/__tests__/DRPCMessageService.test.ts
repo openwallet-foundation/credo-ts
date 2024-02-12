@@ -48,14 +48,13 @@ describe('DRPCMessageService', () => {
 
       expect(drpcMessageRepository.save).toHaveBeenCalledWith(agentContext, expect.any(DRPCMessageRecord))
       expect(eventEmitter.emit).toHaveBeenCalledWith(agentContext, {
-        type: 'DRPCMessageStateChanged',
+        type: 'DRPCRequestStateChanged',
         payload: {
           drpcMessageRecord: expect.objectContaining({
             connectionId: mockConnectionRecord.id,
             content: expect.any(DRPCRequestMessage),
             role: DRPCMessageRole.Sender,
-          }),
-          message: expect.any(DRPCRequestMessage),
+          })
         },
       })
     })
@@ -71,14 +70,13 @@ describe('DRPCMessageService', () => {
 
       expect(drpcMessageRepository.save).toHaveBeenCalledWith(agentContext, expect.any(DRPCMessageRecord))
       expect(eventEmitter.emit).toHaveBeenCalledWith(agentContext, {
-        type: 'DRPCMessageStateChanged',
+        type: 'DRPCRequestStateChanged',
         payload: {
           drpcMessageRecord: expect.objectContaining({
             connectionId: mockConnectionRecord.id,
             content: expect.any(DRPCRequestMessage),
             role: DRPCMessageRole.Receiver,
           }),
-          message: drpcMessage,
         },
       })
     })

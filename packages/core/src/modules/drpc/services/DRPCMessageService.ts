@@ -2,15 +2,16 @@ import type { AgentContext } from '../../../agent'
 import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import type { Query } from '../../../storage/StorageService'
 import type { ConnectionRecord } from '../../connections/repository/ConnectionRecord'
-import type { DRPCMessageStateChangedEvent } from '../DRPCMessageEvents'
+import type { DRPCRequestStateChangedEvent } from '../DRPCRequestEvents'
 import type { DRPCRequest, DRPCResponse } from '../messages'
 
 import { EventEmitter } from '../../../agent/EventEmitter'
 import { injectable } from '../../../plugins'
-import { DRPCMessageEventTypes } from '../DRPCMessageEvents'
+import { DRPCRequestEventTypes } from '../DRPCRequestEvents'
 import { DRPCMessageRole } from '../DRPCMessageRole'
 import { DRPCRequestMessage, DRPCResponseMessage } from '../messages'
 import { DRPCMessageRecord, DRPCMessageRepository } from '../repository'
+import { DRPCResponseEventTypes, DRPCResponseStateChangedEvent } from '../DRPCResponseEvents'
 
 @injectable()
 export class DRPCMessageService {
@@ -37,7 +38,7 @@ export class DRPCMessageService {
     })
 
     await this.drpcMessageRepository.save(agentContext, drpcMessageRecord)
-    this.emitStateChangedEvent(agentContext, drpcMessageRecord, drpcMessage)
+    this.emitStateChangedEvent(agentContext, drpcMessageRecord)
 
     return { message: drpcMessage, record: drpcMessageRecord }
   }
@@ -56,32 +57,43 @@ export class DRPCMessageService {
     })
 
     await this.drpcMessageRepository.save(agentContext, drpcMessageRecord)
-    this.emitStateChangedEvent(agentContext, drpcMessageRecord, drpcMessage)
+    this.emitStateChangedEvent(agentContext, drpcMessageRecord)
 
     return { message: drpcMessage, record: drpcMessageRecord }
   }
 
-  public createMessageListener(
+  public createRequestListener(
     callback: (params: {
-      message: DRPCRequestMessage | DRPCResponseMessage
       drpcMessageRecord: DRPCMessageRecord
       removeListener: () => void
     }) => void | Promise<void>
   ) {
-    const listener = async (event: DRPCMessageStateChangedEvent) => {
-      const { message, drpcMessageRecord } = event.payload
+    const listener = async (event: DRPCRequestStateChangedEvent) => {
+      const { drpcMessageRecord } = event.payload
       await callback({
-        message,
         drpcMessageRecord,
-        removeListener: () => this.eventEmitter.off(DRPCMessageEventTypes.DRPCMessageStateChanged, listener),
+        removeListener: () => this.eventEmitter.off(DRPCRequestEventTypes.DRPCRequestStateChanged, listener),
       })
     }
-    this.eventEmitter.on(DRPCMessageEventTypes.DRPCMessageStateChanged, listener)
+    this.eventEmitter.on(DRPCRequestEventTypes.DRPCRequestStateChanged, listener)
   }
 
-  /**
-   * @todo use connection from message context
-   */
+  public createResponseListener(
+    callback: (params: {
+      drpcMessageRecord: DRPCMessageRecord
+      removeListener: () => void
+    }) => void | Promise<void>
+  ) {
+    const listener = async (event: DRPCResponseStateChangedEvent) => {
+      const { drpcMessageRecord } = event.payload
+      await callback({
+        drpcMessageRecord,
+        removeListener: () => this.eventEmitter.off(DRPCResponseEventTypes.DRPCResponseStateChanged, listener),
+      })
+    }
+    this.eventEmitter.on(DRPCResponseEventTypes.DRPCResponseStateChanged, listener)
+  }
+
   public async save(
     { message, agentContext }: InboundMessageContext<DRPCResponseMessage | DRPCRequestMessage>,
     connection: ConnectionRecord
@@ -93,18 +105,24 @@ export class DRPCMessageService {
     })
 
     await this.drpcMessageRepository.save(agentContext, drpcMessageRecord)
-    this.emitStateChangedEvent(agentContext, drpcMessageRecord, message)
+    this.emitStateChangedEvent(agentContext, drpcMessageRecord)
   }
 
   private emitStateChangedEvent(
     agentContext: AgentContext,
     drpcMessageRecord: DRPCMessageRecord,
-    drpcMessage: DRPCRequestMessage | DRPCResponseMessage
   ) {
-    this.eventEmitter.emit<DRPCMessageStateChangedEvent>(agentContext, {
-      type: DRPCMessageEventTypes.DRPCMessageStateChanged,
-      payload: { message: drpcMessage, drpcMessageRecord: drpcMessageRecord.clone() },
-    })
+    if('request' in drpcMessageRecord.content){
+      this.eventEmitter.emit<DRPCRequestStateChangedEvent>(agentContext, {
+        type: DRPCRequestEventTypes.DRPCRequestStateChanged,
+        payload: { drpcMessageRecord: drpcMessageRecord.clone() },
+      })
+    }else{
+      this.eventEmitter.emit<DRPCResponseStateChangedEvent>(agentContext, {
+        type: DRPCResponseEventTypes.DRPCResponseStateChanged,
+        payload: { drpcMessageRecord: drpcMessageRecord.clone() },
+      })
+    }
   }
 
   public async findAllByQuery(agentContext: AgentContext, query: Query<DRPCMessageRecord>) {
