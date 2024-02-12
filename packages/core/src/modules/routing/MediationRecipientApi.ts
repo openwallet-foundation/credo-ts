@@ -206,6 +206,12 @@ export class MediationRecipientApi {
           try {
             if (pickupStrategy === MediatorPickupStrategy.PickUpV2LiveMode) {
               // Start Pickup v2 protocol in live mode (retrieve any queued message before)
+              await this.messagePickupApi.pickupMessages({
+                connectionId: mediator.connectionId,
+                protocolVersion: 'v2',
+                awaitCompletion: true,
+              })
+
               await this.messagePickupApi.setLiveDeliveryMode({
                 connectionId: mediator.connectionId,
                 liveDelivery: true,
@@ -263,8 +269,15 @@ export class MediationRecipientApi {
       }
       case MediatorPickupStrategy.PickUpV2LiveMode:
         // PickUp V2 in Live Mode will retrieve queued messages and then set up live delivery mode
-        this.logger.info(`Starting pickup of messages from mediator '${mediatorRecord.id}'`)
+        this.logger.info(`Starting Live Mode pickup of messages from mediator '${mediatorRecord.id}'`)
         await this.monitorMediatorWebSocketEvents(mediatorRecord, mediatorPickupStrategy)
+
+        await this.messagePickupApi.pickupMessages({
+          connectionId: mediatorConnection.id,
+          protocolVersion: 'v2',
+          awaitCompletion: true,
+        })
+
         await this.messagePickupApi.setLiveDeliveryMode({
           connectionId: mediatorConnection.id,
           liveDelivery: true,
