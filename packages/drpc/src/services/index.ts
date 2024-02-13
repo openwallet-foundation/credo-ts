@@ -1,1 +1,1 @@
-export * from './DRPCMessageService'
+export * from './DrpcService'

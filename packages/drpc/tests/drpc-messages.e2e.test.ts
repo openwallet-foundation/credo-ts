@@ -1,19 +1,19 @@
 import type { ConnectionRecord } from '../../core/src/modules/connections'
-import type { DRPCRequest, DRPCRequestObject, DRPCResponseObject } from '../src/messages'
+import type { DrpcRequest, DrpcRequestObject, DrpcResponseObject } from '../src/messages'
 
 import { Agent } from '../../core/src/agent/Agent'
 import { setupSubjectTransports } from '../../core/tests'
 import { getInMemoryAgentOptions, makeConnection } from '../../core/tests/helpers'
 import testLogger from '../../core/tests/logger'
-import { DRPCMessagesModule } from '../src/DRPCMessagesModule'
-import { DRPCErrorCode } from '../src/messages'
+import { DrpcModule } from '../src/DrpcModule'
+import { DrpcErrorCode } from '../src/messages'
 
 const modules = {
-  drpc: new DRPCMessagesModule(),
+  drpc: new DrpcModule(),
 }
 
 const faberConfig = getInMemoryAgentOptions(
-  'Faber DRPC Messages',
+  'Faber Drpc Messages',
   {
     endpoints: ['rxjs:faber'],
   },
@@ -21,7 +21,7 @@ const faberConfig = getInMemoryAgentOptions(
 )
 
 const aliceConfig = getInMemoryAgentOptions(
-  'Alice DRPC Messages',
+  'Alice Drpc Messages',
   {
     endpoints: ['rxjs:alice'],
   },
@@ -29,8 +29,8 @@ const aliceConfig = getInMemoryAgentOptions(
 )
 
 const handleMessageOrError = async (
-  handlers: Map<string, (message: DRPCRequestObject) => Promise<DRPCResponseObject | Record<string, never>>>,
-  message: DRPCRequestObject
+  handlers: Map<string, (message: DrpcRequestObject) => Promise<DrpcResponseObject | Record<string, never>>>,
+  message: DrpcRequestObject
 ) => {
   const handler = handlers.get(message.method)
   if (handler) {
@@ -39,7 +39,7 @@ const handleMessageOrError = async (
   return {
     jsonrpc: '2.0',
     id: message.id,
-    error: { code: DRPCErrorCode.METHOD_NOT_FOUND, message: 'Method not found' },
+    error: { code: DrpcErrorCode.METHOD_NOT_FOUND, message: 'Method not found' },
   }
 }
 
@@ -47,47 +47,47 @@ const sendAndRecieve = async (
   sender: Agent,
   receiver: Agent,
   connectionRecord: ConnectionRecord,
-  message: DRPCRequestObject,
-  messageHandlers: Map<string, (message: DRPCRequestObject) => Promise<DRPCResponseObject | Record<string, never>>>
+  message: DrpcRequestObject,
+  messageHandlers: Map<string, (message: DrpcRequestObject) => Promise<DrpcResponseObject | Record<string, never>>>
 ) => {
-  const recordProm = sender.modules.drpc.sendDRPCRequest(connectionRecord.id, message)
-  const { connectionId, threadId, request } = await receiver.modules.drpc.nextDRPCRequest()
-  const result = await handleMessageOrError(messageHandlers, request as DRPCRequestObject)
-  await receiver.modules.drpc.sendDRPCResponse(connectionId, threadId, result as DRPCResponseObject)
+  const recordProm = sender.modules.drpc.sendRequest(connectionRecord.id, message)
+  const { connectionId, threadId, request } = await receiver.modules.drpc.nextRequest()
+  const result = await handleMessageOrError(messageHandlers, request as DrpcRequestObject)
+  await receiver.modules.drpc.sendResponse(connectionId, threadId, result as DrpcResponseObject)
 
   const helloRecord = await recordProm
-  return helloRecord as DRPCResponseObject
+  return helloRecord as DrpcResponseObject
 }
 
 const sendAndRecieveBatch = async (
   sender: Agent,
   receiver: Agent,
   connectionRecord: ConnectionRecord,
-  message: DRPCRequestObject[],
-  messageHandlers: Map<string, (message: DRPCRequestObject) => Promise<DRPCResponseObject | Record<string, never>>>
+  message: DrpcRequestObject[],
+  messageHandlers: Map<string, (message: DrpcRequestObject) => Promise<DrpcResponseObject | Record<string, never>>>
 ) => {
-  const batchRecordProm = sender.modules.drpc.sendDRPCRequest(connectionRecord.id, message)
+  const batchRecordProm = sender.modules.drpc.sendRequest(connectionRecord.id, message)
 
   const {
     connectionId: batchConnId,
     threadId: batchThreadId,
     request: batchRequest,
-  } = await receiver.modules.drpc.nextDRPCRequest()
-  const batchRequests = batchRequest as DRPCRequestObject[]
-  const batchResults: (DRPCResponseObject | Record<string, never>)[] = []
+  } = await receiver.modules.drpc.nextRequest()
+  const batchRequests = batchRequest as DrpcRequestObject[]
+  const batchResults: (DrpcResponseObject | Record<string, never>)[] = []
   for (const request of batchRequests) {
     batchResults.push(await handleMessageOrError(messageHandlers, request))
   }
-  await receiver.modules.drpc.sendDRPCResponse(batchConnId, batchThreadId, batchResults)
+  await receiver.modules.drpc.sendResponse(batchConnId, batchThreadId, batchResults)
   const batchRecord = await batchRecordProm
-  return batchRecord as DRPCResponseObject[]
+  return batchRecord as DrpcResponseObject[]
 }
 
-describe('DRPC Messages E2E', () => {
+describe('Drpc Messages E2E', () => {
   let faberAgent: Agent
   let aliceAgent: Agent
   let aliceConnection: ConnectionRecord
-  let messageHandlers: Map<string, (message: DRPCRequestObject) => Promise<DRPCResponseObject | Record<string, never>>>
+  let messageHandlers: Map<string, (message: DrpcRequestObject) => Promise<DrpcResponseObject | Record<string, never>>>
 
   beforeEach(async () => {
     faberAgent = new Agent(faberConfig)
@@ -100,7 +100,7 @@ describe('DRPC Messages E2E', () => {
     ;[aliceConnection] = await makeConnection(aliceAgent, faberAgent)
 
     messageHandlers = new Map()
-    messageHandlers.set('hello', async (message: DRPCRequestObject) => {
+    messageHandlers.set('hello', async (message: DrpcRequestObject) => {
       return { jsonrpc: '2.0', result: 'Hello', id: message.id }
     })
     messageHandlers.set('add', async (message) => {
@@ -134,7 +134,7 @@ describe('DRPC Messages E2E', () => {
       },
       messageHandlers
     )
-    expect((helloRecord as DRPCResponseObject).result).toBe('Hello')
+    expect((helloRecord as DrpcResponseObject).result).toBe('Hello')
 
     testLogger.test('Alice sends message with positional parameters to Faber')
 
@@ -151,7 +151,7 @@ describe('DRPC Messages E2E', () => {
       messageHandlers
     )
 
-    expect((addRecord as DRPCResponseObject).result).toBe(12)
+    expect((addRecord as DrpcResponseObject).result).toBe(12)
 
     testLogger.test('Alice sends message with keyed parameters to Faber')
 
@@ -167,7 +167,7 @@ describe('DRPC Messages E2E', () => {
       },
       messageHandlers
     )
-    expect((parseFooRecord as DRPCResponseObject).result).toBe('bar')
+    expect((parseFooRecord as DrpcResponseObject).result).toBe('bar')
 
     testLogger.test('Alice sends message with invalid method to Faber')
 
@@ -182,11 +182,11 @@ describe('DRPC Messages E2E', () => {
       },
       messageHandlers
     )
-    expect((errorRecord as DRPCResponseObject).error).toBeDefined()
-    expect((errorRecord as DRPCResponseObject).error?.code).toBe(DRPCErrorCode.METHOD_NOT_FOUND)
+    expect((errorRecord as DrpcResponseObject).error).toBeDefined()
+    expect((errorRecord as DrpcResponseObject).error?.code).toBe(DrpcErrorCode.METHOD_NOT_FOUND)
   })
 
-  test('Alice sends Faber DRPC batch message', async () => {
+  test('Alice sends Faber Drpc batch message', async () => {
     testLogger.test('Alice sends batch message to Faber')
 
     const batchRecord = await sendAndRecieveBatch(
@@ -201,17 +201,17 @@ describe('DRPC Messages E2E', () => {
       ],
       messageHandlers
     )
-    expect(batchRecord as DRPCResponseObject[]).toHaveLength(4)
-    expect((batchRecord as DRPCResponseObject[]).find((item) => item.id === 1)?.result).toBe('Hello')
-    expect((batchRecord as DRPCResponseObject[]).find((item) => item.id === 2)?.result).toBe(12)
-    expect((batchRecord as DRPCResponseObject[]).find((item) => item.id === 3)?.result).toBe('bar')
-    expect((batchRecord as DRPCResponseObject[]).find((item) => item.id === 4)?.error).toBeDefined()
-    expect((batchRecord as DRPCResponseObject[]).find((item) => item.id === 4)?.error?.code).toBe(
-      DRPCErrorCode.METHOD_NOT_FOUND
+    expect(batchRecord as DrpcResponseObject[]).toHaveLength(4)
+    expect((batchRecord as DrpcResponseObject[]).find((item) => item.id === 1)?.result).toBe('Hello')
+    expect((batchRecord as DrpcResponseObject[]).find((item) => item.id === 2)?.result).toBe(12)
+    expect((batchRecord as DrpcResponseObject[]).find((item) => item.id === 3)?.result).toBe('bar')
+    expect((batchRecord as DrpcResponseObject[]).find((item) => item.id === 4)?.error).toBeDefined()
+    expect((batchRecord as DrpcResponseObject[]).find((item) => item.id === 4)?.error?.code).toBe(
+      DrpcErrorCode.METHOD_NOT_FOUND
     )
   })
 
-  test('Alice sends Faber DRPC notification', async () => {
+  test('Alice sends Faber Drpc notification', async () => {
     testLogger.test('Alice sends notification to Faber')
     let notified = false
     messageHandlers.set('notify', async (_) => {
@@ -246,39 +246,39 @@ describe('DRPC Messages E2E', () => {
       messageHandlers
     )
     expect(
-      (notifyBatchRecord as (DRPCResponseObject | Record<string, never>)[]).find(
-        (item) => (item as DRPCResponseObject)?.id === 1
+      (notifyBatchRecord as (DrpcResponseObject | Record<string, never>)[]).find(
+        (item) => (item as DrpcResponseObject)?.id === 1
       )
     ).toMatchObject({ jsonrpc: '2.0', result: 'Hello', id: 1 })
     expect(
-      (notifyBatchRecord as (DRPCResponseObject | Record<string, never>)[]).find(
-        (item) => !(item as DRPCResponseObject)?.id
+      (notifyBatchRecord as (DrpcResponseObject | Record<string, never>)[]).find(
+        (item) => !(item as DrpcResponseObject)?.id
       )
     ).toMatchObject({})
     expect(notified).toBe(true)
   })
 
-  test('Alice sends Faber invalid DRPC message | Faber responds with invalid DRPC message', async () => {
+  test('Alice sends Faber invalid Drpc message | Faber responds with invalid Drpc message', async () => {
     messageHandlers.set('hello', async (_) => {
-      return [] as unknown as DRPCResponseObject
+      return [] as unknown as DrpcResponseObject
     })
     let error = false
     try {
-      await aliceAgent.modules.drpc.sendDRPCRequest(aliceConnection.id, 'test' as unknown as DRPCRequest)
+      await aliceAgent.modules.drpc.sendRequest(aliceConnection.id, 'test' as unknown as DrpcRequest)
     } catch {
       error = true
     }
     expect(error).toBe(true)
-    aliceAgent.modules.drpc.sendDRPCRequest(aliceConnection.id, {
+    aliceAgent.modules.drpc.sendRequest(aliceConnection.id, {
       jsonrpc: '2.0',
       method: 'hello',
       id: 1,
     })
-    const { connectionId, threadId, request } = await faberAgent.modules.drpc.nextDRPCRequest()
-    const result = await handleMessageOrError(messageHandlers, request as DRPCRequestObject)
+    const { connectionId, threadId, request } = await faberAgent.modules.drpc.nextRequest()
+    const result = await handleMessageOrError(messageHandlers, request as DrpcRequestObject)
     let responseError = false
     try {
-      await faberAgent.modules.drpc.sendDRPCResponse(connectionId, threadId, result as DRPCResponseObject)
+      await faberAgent.modules.drpc.sendResponse(connectionId, threadId, result as DrpcResponseObject)
     } catch {
       responseError = true
     }

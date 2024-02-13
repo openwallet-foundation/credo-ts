@@ -1,1 +1,2 @@
-export * from './DRPCMessage'
+export * from './DrpcResponse'
+export * from './DrpcRequest'

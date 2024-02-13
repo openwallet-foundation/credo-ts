@@ -1,5 +1,5 @@
-import type { DRPCRequest, DRPCResponse } from './messages'
-import type { DRPCMessageRecord } from './repository/DRPCMessageRecord'
+import type { DrpcRequest, DrpcResponse } from './messages'
+import type { DrpcMessageRecord } from './repository/DrpcMessageRecord'
 import type { ConnectionRecord } from '@credo-ts/core'
 
 import {
@@ -12,20 +12,20 @@ import {
   ConnectionService,
 } from '@credo-ts/core'
 
-import { DRPCMessageHandler } from './handlers'
-import { DRPCRequestMessage, DRPCResponseMessage } from './messages'
-import { DRPCMessageService } from './services'
+import { DrpcHandler } from './handlers'
+import { DrpcRequestMessage, DrpcResponseMessage } from './messages'
+import { DrpcService } from './services'
 
 @injectable()
-export class DRPCMessagesApi {
-  private drpcMessageService: DRPCMessageService
+export class DrpcApi {
+  private drpcMessageService: DrpcService
   private messageSender: MessageSender
   private connectionService: ConnectionService
   private agentContext: AgentContext
 
   public constructor(
     messageHandlerRegistry: MessageHandlerRegistry,
-    drpcMessageService: DRPCMessageService,
+    drpcMessageService: DrpcService,
     messageSender: MessageSender,
     connectionService: ConnectionService,
     agentContext: AgentContext
@@ -37,30 +37,27 @@ export class DRPCMessagesApi {
     this.registerMessageHandlers(messageHandlerRegistry)
   }
 
-  public async sendDRPCRequest(connectionId: string, request: DRPCRequest): Promise<DRPCResponse> {
+  public async sendRequest(connectionId: string, request: DrpcRequest): Promise<DrpcResponse> {
     const messageId = utils.uuid()
     const connection = await this.connectionService.getById(this.agentContext, connectionId)
-    try {
-      const { message: drpcMessage, record: drpcMessageRecord } = await this.drpcMessageService.createRequestMessage(
-        this.agentContext,
-        request,
-        connection,
-        messageId
-      )
-      await this.sendDRPCMessage(connection, drpcMessage, drpcMessageRecord)
-    } catch {
-      throw new Error('Invalid DRPC Request')
-    }
+    const { message: drpcMessage, record: drpcMessageRecord } = await this.drpcMessageService.createRequestMessage(
+      this.agentContext,
+      request,
+      connection,
+      messageId
+    )
+    await this.sendMessage(connection, drpcMessage, drpcMessageRecord)
+
     return new Promise((resolve) => {
       const listener = ({
         drpcMessageRecord,
         removeListener,
       }: {
-        drpcMessageRecord: DRPCMessageRecord
+        drpcMessageRecord: DrpcMessageRecord
         removeListener: () => void
       }) => {
         const message = drpcMessageRecord.content
-        if (message instanceof DRPCResponseMessage && message.threadId === messageId) {
+        if (message instanceof DrpcResponseMessage && message.threadId === messageId) {
           removeListener()
 
           resolve(message.response)
@@ -71,17 +68,17 @@ export class DRPCMessagesApi {
     })
   }
 
-  public async nextDRPCRequest(): Promise<{ connectionId: string; threadId: string; request: DRPCRequest }> {
+  public async nextRequest(): Promise<{ connectionId: string; threadId: string; request: DrpcRequest }> {
     return new Promise((resolve) => {
       const listener = ({
         drpcMessageRecord,
         removeListener,
       }: {
-        drpcMessageRecord: DRPCMessageRecord
+        drpcMessageRecord: DrpcMessageRecord
         removeListener: () => void
       }) => {
         const message = drpcMessageRecord.content
-        if (message instanceof DRPCRequestMessage) {
+        if (message instanceof DrpcRequestMessage) {
           removeListener()
           resolve({
             connectionId: drpcMessageRecord.connectionId,
@@ -95,7 +92,7 @@ export class DRPCMessagesApi {
     })
   }
 
-  public async sendDRPCResponse(connectionId: string, threadId: string, response: DRPCResponse): Promise<void> {
+  public async sendResponse(connectionId: string, threadId: string, response: DrpcResponse): Promise<void> {
     const connection = await this.connectionService.getById(this.agentContext, connectionId)
     const { message: drpcMessage, record: drpcMessageRecord } = await this.drpcMessageService.createResponseMessage(
       this.agentContext,
@@ -103,13 +100,13 @@ export class DRPCMessagesApi {
       connection
     )
     drpcMessage.setThread({ threadId })
-    await this.sendDRPCMessage(connection, drpcMessage, drpcMessageRecord)
+    await this.sendMessage(connection, drpcMessage, drpcMessageRecord)
   }
 
-  private async sendDRPCMessage(
+  private async sendMessage(
     connection: ConnectionRecord,
-    message: DRPCRequestMessage | DRPCResponseMessage,
-    messageRecord: DRPCMessageRecord
+    message: DrpcRequestMessage | DrpcResponseMessage,
+    messageRecord: DrpcMessageRecord
   ): Promise<void> {
     const outboundMessageContext = new OutboundMessageContext(message, {
       agentContext: this.agentContext,
@@ -120,6 +117,6 @@ export class DRPCMessagesApi {
   }
 
   private registerMessageHandlers(messageHandlerRegistry: MessageHandlerRegistry) {
-    messageHandlerRegistry.registerMessageHandler(new DRPCMessageHandler(this.drpcMessageService))
+    messageHandlerRegistry.registerMessageHandler(new DrpcHandler(this.drpcMessageService))
   }
 }

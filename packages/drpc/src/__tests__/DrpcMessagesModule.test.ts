@@ -1,8 +1,8 @@
 import { FeatureRegistry } from '../../../core/src/agent/FeatureRegistry'
 import { DependencyManager } from '../../../core/src/plugins/DependencyManager'
-import { DRPCMessagesModule } from '../DRPCMessagesModule'
-import { DRPCMessageRepository } from '../repository'
-import { DRPCMessageService } from '../services'
+import { DrpcModule } from '../DrpcModule'
+import { DrpcMessageRepository } from '../repository'
+import { DrpcService } from '../services'
 
 jest.mock('../../../core/src/plugins/DependencyManager')
 const DependencyManagerMock = DependencyManager as jest.Mock<DependencyManager>
@@ -14,12 +14,12 @@ const FeatureRegistryMock = FeatureRegistry as jest.Mock<FeatureRegistry>
 
 const featureRegistry = new FeatureRegistryMock()
 
-describe('DRPCMessagesModule', () => {
+describe('DrpcModule', () => {
   test('registers dependencies on the dependency manager', () => {
-    new DRPCMessagesModule().register(dependencyManager, featureRegistry)
+    new DrpcModule().register(dependencyManager, featureRegistry)
 
     expect(dependencyManager.registerSingleton).toHaveBeenCalledTimes(2)
-    expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(DRPCMessageService)
-    expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(DRPCMessageRepository)
+    expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(DrpcService)
+    expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(DrpcMessageRepository)
   })
 })
