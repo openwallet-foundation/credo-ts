@@ -75,6 +75,7 @@ jobs:
     name: Unit Tests
 
     strategy:
+      fail-fast: false
       matrix:
         node-version: [18.x, 20.x]
         # Each shard runs a set of the tests
@@ -96,7 +97,7 @@ jobs:
         run: yarn install --frozen-lockfile
 
       - name: Run tests
-        run: yarn test:unit --coverage --forceExit --bail --shard=${{ matrix.shard }}/2
+        run: yarn test:unit --coverage --forceExit --shard=${{ matrix.shard }}/2
 
       # Upload coverage for shard
       - run: mv coverage/coverage-final.json coverage/${{ matrix.shard }}.json
@@ -110,6 +111,7 @@ jobs:
     name: E2E Tests
 
     strategy:
+      fail-fast: false
       matrix:
         node-version: [18.x, 20.x]
 
@@ -131,7 +133,7 @@ jobs:
         run: yarn install --frozen-lockfile
 
       - name: Run tests
-        run: yarn test:e2e --coverage --forceExit --bail
+        run: yarn test:e2e --coverage --forceExit
 
       # Upload coverage for e2e
       - run: mv coverage/coverage-final.json coverage/e2e.json

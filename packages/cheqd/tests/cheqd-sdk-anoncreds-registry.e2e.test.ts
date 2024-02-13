@@ -4,13 +4,9 @@ import { Agent, JsonTransformer, TypedArrayEncoder } from '@credo-ts/core'
 
 import { getInMemoryAgentOptions } from '../../core/tests/helpers'
 import { CheqdAnonCredsRegistry } from '../src/anoncreds'
-import { DefaultRPCUrl } from '../src/ledger/CheqdLedgerService'
 
+import { resolverAgent } from './cheqd-did-resolver.e2e.test'
 import { getCheqdModules } from './setupCheqdModule'
-
-const resolverAgent = new Agent(
-  getInMemoryAgentOptions('Cheqd resolver agent', {}, getCheqdModules(undefined, DefaultRPCUrl.Testnet))
-)
 
 const agent = new Agent(
   getInMemoryAgentOptions(
@@ -196,7 +192,7 @@ describe('cheqdAnonCredsRegistry', () => {
   test('resolve query based url', async () => {
     const schemaResourceId =
       'did:cheqd:testnet:d8ac0372-0d4b-413e-8ef5-8e8f07822b2c?resourceName=test - 11&resourceType=anonCredsSchema'
-    const schemaResponse = await cheqdAnonCredsRegistry.getSchema(resolverAgent.context, `${schemaResourceId}`)
+    const schemaResponse = await cheqdAnonCredsRegistry.getSchema(resolverAgent.context, schemaResourceId)
 
     expect(schemaResponse).toMatchObject({
       schema: {
