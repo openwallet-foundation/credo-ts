@@ -80,10 +80,6 @@ export class InMemoryAnonCredsRegistry implements AnonCredsRegistry {
   public async getSchema(_agentContext: AgentContext, schemaId: string): Promise<GetSchemaReturn> {
     const schema = this.schemas[schemaId]
 
-    const parsed = parseIndySchemaId(schemaId)
-    const legacySchemaId = getUnqualifiedSchemaId(parsed.namespaceIdentifier, parsed.schemaName, parsed.schemaVersion)
-    const indyLedgerSeqNo = getSeqNoFromSchemaId(legacySchemaId)
-
     if (!schema) {
       return {
         resolutionMetadata: {
@@ -96,6 +92,8 @@ export class InMemoryAnonCredsRegistry implements AnonCredsRegistry {
     }
 
     let didIndyNamespace: string | undefined = undefined
+    let indyLedgerSeqNo: string | undefined = undefined
+
     if (isUnqualifiedSchemaId(schemaId)) {
       const qSchemaIdEnd = getQualifiedDidIndyDid(schemaId, 'mock').split('mock:')[1]
       const qSchemaId = Object.keys(this.schemas).find((schemaId) => schemaId.endsWith(qSchemaIdEnd))
@@ -103,6 +101,12 @@ export class InMemoryAnonCredsRegistry implements AnonCredsRegistry {
       else didIndyNamespace = parseIndySchemaId(qSchemaId).namespace
     } else if (isIndyDid(schemaId)) {
       didIndyNamespace = parseIndySchemaId(schemaId).namespace
+    }
+
+    if (didIndyNamespace) {
+      const parsed = parseIndySchemaId(schemaId)
+      const legacySchemaId = getUnqualifiedSchemaId(parsed.namespaceIdentifier, parsed.schemaName, parsed.schemaVersion)
+      indyLedgerSeqNo = getSeqNoFromSchemaId(legacySchemaId).toString()
     }
 
     return {

@@ -1,5 +1,5 @@
-import type { AnonCredsTestsAgent } from './anoncredsSetup'
-import type { EventReplaySubject } from '@credo-ts/core/tests'
+import type { AnonCredsTestsAgent } from './helpers/cheqdAnonCredsSetup'
+import type { EventReplaySubject } from '../../core/tests'
 import type { InputDescriptorV2 } from '@sphereon/pex-models'
 
 import {
@@ -13,21 +13,19 @@ import {
 } from '@credo-ts/core'
 
 import { InMemoryAnonCredsRegistry } from '../../anoncreds/tests/InMemoryAnonCredsRegistry'
+import { presentationDefinition } from '../../anoncreds/tests/fixtures/presentation-definition'
 import { createDidKidVerificationMethod } from '../../core/tests'
 import { waitForCredentialRecordSubject, waitForProofExchangeRecord } from '../../core/tests/helpers'
 
-import { setupAnonCredsTests } from './anoncredsSetup'
-import { presentationDefinition } from './fixtures/presentation-definition'
-
-const issuerId = 'did:indy:local:LjgpST2rjsoxYegQDRm7EL'
+import { setupAnonCredsTests } from './helpers/cheqdAnonCredsSetup'
 
 describe('anoncreds w3c data integrity e2e tests', () => {
+  let issuerId: string
   let issuerAgent: AnonCredsTestsAgent
   let holderAgent: AnonCredsTestsAgent
   let credentialDefinitionId: string
   let issuerHolderConnectionId: string
   let holderIssuerConnectionId: string
-  let revocationRegistryDefinitionId: string | null
 
   let issuerReplay: EventReplaySubject
   let holderReplay: EventReplaySubject
@@ -41,7 +39,7 @@ describe('anoncreds w3c data integrity e2e tests', () => {
     await holderAgent.wallet.delete()
   })
 
-  test('issuance and verification flow starting from offer with revocation', async () => {
+  test('cheqd issuance and verification flow starting from offer without revocation', async () => {
     ;({
       issuerAgent,
       issuerReplay,
@@ -49,53 +47,21 @@ describe('anoncreds w3c data integrity e2e tests', () => {
       holderReplay,
       credentialDefinitionId,
       issuerHolderConnectionId,
-      revocationRegistryDefinitionId,
       holderIssuerConnectionId,
+      issuerId,
     } = await setupAnonCredsTests({
-      issuerId: 'did:indy:local:LjgpST2rjsoxYegQDRm7EL',
       issuerName: 'Faber Agent Credentials v2',
       holderName: 'Alice Agent Credentials v2',
       attributeNames: ['id', 'name', 'height', 'age'],
       registries: [inMemoryRegistry],
-      supportRevocation: true,
     }))
     await anonCredsFlowTest({
-      credentialDefinitionId,
-      issuerHolderConnectionId,
-      revocationRegistryDefinitionId,
-      holderIssuerConnectionId,
-      issuerReplay: issuerReplay,
-      holderReplay: holderReplay,
-      issuer: issuerAgent,
-      holder: holderAgent,
-    })
-  })
-
-  test('issuance and verification flow starting from offer without revocation', async () => {
-    ;({
-      issuerAgent,
-      issuerReplay,
-      holderAgent,
-      holderReplay,
-      credentialDefinitionId,
-      issuerHolderConnectionId,
-      revocationRegistryDefinitionId,
-      holderIssuerConnectionId,
-    } = await setupAnonCredsTests({
-      issuerId: 'did:indy:local:LjgpST2rjsoxYegQDRm7EL',
-      issuerName: 'Faber Agent Credentials v2',
-      holderName: 'Alice Agent Credentials v2',
-      attributeNames: ['id', 'name', 'height', 'age'],
-      registries: [inMemoryRegistry],
-      supportRevocation: false,
-    }))
-    await anonCredsFlowTest({
+      issuerId,
       credentialDefinitionId,
       issuerHolderConnectionId,
       holderIssuerConnectionId,
       issuerReplay,
       holderReplay,
-      revocationRegistryDefinitionId,
       issuer: issuerAgent,
       holder: holderAgent,
     })
@@ -104,12 +70,12 @@ describe('anoncreds w3c data integrity e2e tests', () => {
 
 async function anonCredsFlowTest(options: {
   issuer: AnonCredsTestsAgent
+  issuerId: string
   holder: AnonCredsTestsAgent
   issuerHolderConnectionId: string
   holderIssuerConnectionId: string
   issuerReplay: EventReplaySubject
   holderReplay: EventReplaySubject
-  revocationRegistryDefinitionId: string | null
   credentialDefinitionId: string
 }) {
   const {
@@ -117,7 +83,7 @@ async function anonCredsFlowTest(options: {
     issuerHolderConnectionId,
     holderIssuerConnectionId,
     issuer,
-    revocationRegistryDefinitionId,
+    issuerId,
     holder,
     issuerReplay,
     holderReplay,
@@ -155,8 +121,8 @@ async function anonCredsFlowTest(options: {
         credential,
         anonCredsLinkSecretBinding: {
           credentialDefinitionId,
-          revocationRegistryDefinitionId: revocationRegistryDefinitionId ?? undefined,
-          revocationRegistryIndex: revocationRegistryDefinitionId ? 1 : undefined,
+          revocationRegistryDefinitionId: undefined,
+          revocationRegistryIndex: undefined,
         },
         didCommSignedAttachmentBinding: {},
       },
@@ -219,7 +185,7 @@ async function anonCredsFlowTest(options: {
         '_anoncreds/credentialRequest': {
           link_secret_blinding_data: {
             v_prime: expect.any(String),
-            vr_prime: revocationRegistryDefinitionId ? expect.any(String) : null,
+            vr_prime: null,
           },
           nonce: expect.any(String),
           link_secret_name: 'linkSecretId',
@@ -243,8 +209,12 @@ async function anonCredsFlowTest(options: {
   })
 
   const pdCopy = JSON.parse(JSON.stringify(presentationDefinition))
-  if (!revocationRegistryDefinitionId)
-    pdCopy.input_descriptors.forEach((ide: InputDescriptorV2) => delete ide.constraints?.statuses)
+  pdCopy.input_descriptors.forEach((ide: InputDescriptorV2) => delete ide.constraints?.statuses)
+  pdCopy.input_descriptors.forEach((ide: InputDescriptorV2) => {
+    if (ide.constraints.fields && ide.constraints.fields[0].filter?.const) {
+      ide.constraints.fields[0].filter.const = issuerId
+    }
+  })
 
   let holderProofExchangeRecord = await holder.proofs.proposeProof({
     protocolVersion: 'v2',
