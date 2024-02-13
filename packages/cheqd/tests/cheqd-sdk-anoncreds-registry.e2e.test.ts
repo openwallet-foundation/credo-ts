@@ -4,9 +4,13 @@ import { Agent, JsonTransformer, TypedArrayEncoder } from '@credo-ts/core'
 
 import { getInMemoryAgentOptions } from '../../core/tests/helpers'
 import { CheqdAnonCredsRegistry } from '../src/anoncreds'
+import { DefaultRPCUrl } from '../src/ledger/CheqdLedgerService'
 
-import { resolverAgent } from './cheqd-did-resolver.e2e.test'
 import { getCheqdModules } from './setupCheqdModule'
+
+const resolverAgent = new Agent(
+  getInMemoryAgentOptions('Cheqd resolver agent', {}, getCheqdModules(undefined, DefaultRPCUrl.Testnet))
+)
 
 const agent = new Agent(
   getInMemoryAgentOptions(
