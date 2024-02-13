@@ -1,6 +1,6 @@
-import type { AnonCredsTestsAgent } from '../packages/anoncreds/tests/legacyAnonCredsSetup'
+import type { AnonCredsTestsAgent } from '../packages/anoncreds/tests/anoncredsSetup'
 
-import { getAnonCredsIndyModules } from '../packages/anoncreds/tests/legacyAnonCredsSetup'
+import { getAnonCredsModules } from '../packages/anoncreds/tests/anoncredsSetup'
 import { askarModule } from '../packages/askar/tests/helpers'
 import { MessageForwardingStrategy } from '../packages/core/src/modules/routing/MessageForwardingStrategy'
 import { getAgentOptions } from '../packages/core/tests/helpers'
@@ -28,7 +28,7 @@ const mediatorOptions = getAgentOptions(
     endpoints: [`ws://localhost:${mediatorPort}`],
   },
   {
-    ...getAnonCredsIndyModules({
+    ...getAnonCredsModules({
       autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
     }),
     mediator: new MediatorModule({
@@ -46,7 +46,7 @@ const senderOptions = getAgentOptions(
     endpoints: [`ws://localhost:${senderPort}`],
   },
   {
-    ...getAnonCredsIndyModules({
+    ...getAnonCredsModules({
       autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
     }),
     askar: askarModule,
@@ -79,7 +79,7 @@ describe('E2E WS Pickup V2 tests', () => {
       'E2E WS Pickup V2 Recipient polling mode',
       {},
       {
-        ...getAnonCredsIndyModules({
+        ...getAnonCredsModules({
           autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
         }),
         mediationRecipient: new MediationRecipientModule({
@@ -118,7 +118,7 @@ describe('E2E WS Pickup V2 tests', () => {
       'E2E WS Pickup V2 Recipient live mode',
       {},
       {
-        ...getAnonCredsIndyModules({
+        ...getAnonCredsModules({
           autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
         }),
         mediationRecipient: new MediationRecipientModule({

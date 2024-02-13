@@ -1,9 +1,9 @@
 import type { SubjectMessage } from './transport/SubjectInboundTransport'
-import type { AnonCredsTestsAgent } from '../packages/anoncreds/tests/legacyAnonCredsSetup'
+import type { AnonCredsTestsAgent } from '../packages/anoncreds/tests/anoncredsSetup'
 
 import { Subject } from 'rxjs'
 
-import { getAnonCredsIndyModules } from '../packages/anoncreds/tests/legacyAnonCredsSetup'
+import { getAnonCredsModules } from '../packages/anoncreds/tests/anoncredsSetup'
 import { getInMemoryAgentOptions } from '../packages/core/tests/helpers'
 
 import { e2eTest } from './e2e-test'
@@ -22,7 +22,7 @@ const recipientAgentOptions = getInMemoryAgentOptions(
   'E2E Subject Recipient',
   {},
   {
-    ...getAnonCredsIndyModules({
+    ...getAnonCredsModules({
       autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
     }),
     mediationRecipient: new MediationRecipientModule({
@@ -36,7 +36,7 @@ const mediatorAgentOptions = getInMemoryAgentOptions(
     endpoints: ['rxjs:mediator'],
   },
   {
-    ...getAnonCredsIndyModules({
+    ...getAnonCredsModules({
       autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
     }),
     mediator: new MediatorModule({ autoAcceptMediationRequests: true }),
@@ -48,7 +48,7 @@ const senderAgentOptions = getInMemoryAgentOptions(
     endpoints: ['rxjs:sender'],
   },
   {
-    ...getAnonCredsIndyModules({
+    ...getAnonCredsModules({
       autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
     }),
     mediationRecipient: new MediationRecipientModule({

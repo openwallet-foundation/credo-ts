@@ -104,7 +104,6 @@ export class InMemoryAnonCredsRegistry implements AnonCredsRegistry {
     this.schemas[didIndySchemaId] = options.schema
 
     const legacySchemaId = getUnqualifiedSchemaId(legacyIssuerId, options.schema.name, options.schema.version)
-    const indyLedgerSeqNo = getSeqNoFromSchemaId(legacySchemaId)
 
     this.schemas[legacySchemaId] = {
       ...options.schema,
@@ -113,11 +112,7 @@ export class InMemoryAnonCredsRegistry implements AnonCredsRegistry {
 
     return {
       registrationMetadata: {},
-      schemaMetadata: {
-        // NOTE: the seqNo is required by the indy-sdk even though not present in AnonCreds v1.
-        // For this reason we return it in the metadata.
-        indyLedgerSeqNo,
-      },
+      schemaMetadata: {},
       schemaState: {
         state: 'finished',
         schema: options.schema,
