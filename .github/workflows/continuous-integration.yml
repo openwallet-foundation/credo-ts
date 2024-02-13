@@ -157,7 +157,7 @@ jobs:
   version-stable:
     runs-on: ubuntu-20.04
     name: Release stable
-    needs: [e2e-test2, unit-tests, validate]
+    needs: [e2e-tests, unit-tests, validate]
     if: github.ref == 'refs/heads/main' && github.event_name == 'workflow_dispatch'
     steps:
       - name: Checkout agent-framework-javascript
