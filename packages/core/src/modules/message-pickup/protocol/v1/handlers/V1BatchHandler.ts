@@ -1,28 +1,26 @@
-import type { AgentMessageReceivedEvent } from '../../../../../agent/Events'
 import type { MessageHandler, MessageHandlerInboundMessage } from '../../../../../agent/MessageHandler'
+import type { V1MessagePickupProtocol } from '../V1MessagePickupProtocol'
 
-import { EventEmitter } from '../../../../../agent/EventEmitter'
-import { AgentEventTypes } from '../../../../../agent/Events'
+import { OutboundMessageContext } from '../../../../../agent/models'
 import { V1BatchMessage } from '../messages'
 
 export class V1BatchHandler implements MessageHandler {
   public supportedMessages = [V1BatchMessage]
+  private messagePickupProtocol: V1MessagePickupProtocol
+
+  public constructor(messagePickupProtocol: V1MessagePickupProtocol) {
+    this.messagePickupProtocol = messagePickupProtocol
+  }
 
   public async handle(messageContext: MessageHandlerInboundMessage<V1BatchHandler>) {
-    const { message } = messageContext
-    const eventEmitter = messageContext.agentContext.dependencyManager.resolve(EventEmitter)
+    const connection = messageContext.assertReadyConnection()
+    const batchRequestMessage = await this.messagePickupProtocol.processBatch(messageContext)
 
-    messageContext.assertReadyConnection()
-
-    const forwardedMessages = message.messages
-    forwardedMessages.forEach((message) => {
-      eventEmitter.emit<AgentMessageReceivedEvent>(messageContext.agentContext, {
-        type: AgentEventTypes.AgentMessageReceived,
-        payload: {
-          message: message.message,
-          contextCorrelationId: messageContext.agentContext.contextCorrelationId,
-        },
+    if (batchRequestMessage) {
+      return new OutboundMessageContext(batchRequestMessage, {
+        agentContext: messageContext.agentContext,
+        connection,
       })
-    })
+    }
   }
 }
