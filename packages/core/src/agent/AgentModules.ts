@@ -9,7 +9,6 @@ import { CredentialsModule } from '../modules/credentials'
 import { DidsModule } from '../modules/dids'
 import { DifPresentationExchangeModule } from '../modules/dif-presentation-exchange'
 import { DiscoverFeaturesModule } from '../modules/discover-features'
-import { DRPCMessagesModule } from '../modules/drpc'
 import { GenericRecordsModule } from '../modules/generic-records'
 import { MessagePickupModule } from '../modules/message-pickup'
 import { OutOfBandModule } from '../modules/oob'
@@ -127,7 +126,6 @@ function getDefaultAgentModules() {
     mediationRecipient: () => new MediationRecipientModule(),
     messagePickup: () => new MessagePickupModule(),
     basicMessages: () => new BasicMessagesModule(),
-    drpcMessages: () => new DRPCMessagesModule(),
     genericRecords: () => new GenericRecordsModule(),
     discovery: () => new DiscoverFeaturesModule(),
     dids: () => new DidsModule(),

@@ -1,15 +1,15 @@
-import { FeatureRegistry } from '../../../agent/FeatureRegistry'
-import { DependencyManager } from '../../../plugins/DependencyManager'
+import { FeatureRegistry } from '../../../core/src/agent/FeatureRegistry'
+import { DependencyManager } from '../../../core/src/plugins/DependencyManager'
 import { DRPCMessagesModule } from '../DRPCMessagesModule'
 import { DRPCMessageRepository } from '../repository'
 import { DRPCMessageService } from '../services'
 
-jest.mock('../../../plugins/DependencyManager')
+jest.mock('../../../core/src/plugins/DependencyManager')
 const DependencyManagerMock = DependencyManager as jest.Mock<DependencyManager>
 
 const dependencyManager = new DependencyManagerMock()
 
-jest.mock('../../../agent/FeatureRegistry')
+jest.mock('../../../core/src/agent/FeatureRegistry')
 const FeatureRegistryMock = FeatureRegistry as jest.Mock<FeatureRegistry>
 
 const featureRegistry = new FeatureRegistryMock()

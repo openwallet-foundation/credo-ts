@@ -1,17 +1,15 @@
-import type { AgentContext } from '../../../agent'
-import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
-import type { Query } from '../../../storage/StorageService'
-import type { ConnectionRecord } from '../../connections/repository/ConnectionRecord'
 import type { DRPCRequestStateChangedEvent } from '../DRPCRequestEvents'
+import type { DRPCResponseStateChangedEvent } from '../DRPCResponseEvents'
 import type { DRPCRequest, DRPCResponse } from '../messages'
+import type { AgentContext, InboundMessageContext, Query, ConnectionRecord } from '@credo-ts/core'
 
-import { EventEmitter } from '../../../agent/EventEmitter'
-import { injectable } from '../../../plugins'
-import { DRPCRequestEventTypes } from '../DRPCRequestEvents'
+import { EventEmitter, injectable } from '@credo-ts/core'
+
 import { DRPCMessageRole } from '../DRPCMessageRole'
+import { DRPCRequestEventTypes } from '../DRPCRequestEvents'
+import { DRPCResponseEventTypes } from '../DRPCResponseEvents'
 import { DRPCRequestMessage, DRPCResponseMessage } from '../messages'
 import { DRPCMessageRecord, DRPCMessageRepository } from '../repository'
-import { DRPCResponseEventTypes, DRPCResponseStateChangedEvent } from '../DRPCResponseEvents'
 
 @injectable()
 export class DRPCMessageService {
@@ -63,10 +61,7 @@ export class DRPCMessageService {
   }
 
   public createRequestListener(
-    callback: (params: {
-      drpcMessageRecord: DRPCMessageRecord
-      removeListener: () => void
-    }) => void | Promise<void>
+    callback: (params: { drpcMessageRecord: DRPCMessageRecord; removeListener: () => void }) => void | Promise<void>
   ) {
     const listener = async (event: DRPCRequestStateChangedEvent) => {
       const { drpcMessageRecord } = event.payload
@@ -79,10 +74,7 @@ export class DRPCMessageService {
   }
 
   public createResponseListener(
-    callback: (params: {
-      drpcMessageRecord: DRPCMessageRecord
-      removeListener: () => void
-    }) => void | Promise<void>
+    callback: (params: { drpcMessageRecord: DRPCMessageRecord; removeListener: () => void }) => void | Promise<void>
   ) {
     const listener = async (event: DRPCResponseStateChangedEvent) => {
       const { drpcMessageRecord } = event.payload
@@ -108,16 +100,13 @@ export class DRPCMessageService {
     this.emitStateChangedEvent(agentContext, drpcMessageRecord)
   }
 
-  private emitStateChangedEvent(
-    agentContext: AgentContext,
-    drpcMessageRecord: DRPCMessageRecord,
-  ) {
-    if('request' in drpcMessageRecord.content){
+  private emitStateChangedEvent(agentContext: AgentContext, drpcMessageRecord: DRPCMessageRecord) {
+    if ('request' in drpcMessageRecord.content) {
       this.eventEmitter.emit<DRPCRequestStateChangedEvent>(agentContext, {
         type: DRPCRequestEventTypes.DRPCRequestStateChanged,
         payload: { drpcMessageRecord: drpcMessageRecord.clone() },
       })
-    }else{
+    } else {
       this.eventEmitter.emit<DRPCResponseStateChangedEvent>(agentContext, {
         type: DRPCResponseEventTypes.DRPCResponseStateChanged,
         payload: { drpcMessageRecord: drpcMessageRecord.clone() },

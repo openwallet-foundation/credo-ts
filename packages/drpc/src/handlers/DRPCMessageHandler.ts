@@ -1,5 +1,5 @@
-import type { MessageHandler, MessageHandlerInboundMessage } from '../../../agent/MessageHandler'
 import type { DRPCMessageService } from '../services/DRPCMessageService'
+import type { MessageHandler, MessageHandlerInboundMessage } from '@credo-ts/core'
 
 import { DRPCRequestMessage, DRPCResponseMessage } from '../messages'
 

@@ -1,7 +1,6 @@
-import type { FeatureRegistry } from '../../agent/FeatureRegistry'
-import type { DependencyManager, Module } from '../../plugins'
+import type { FeatureRegistry, DependencyManager, Module } from '@credo-ts/core'
 
-import { Protocol } from '../../agent/models'
+import { Protocol } from '@credo-ts/core'
 
 import { DRPCMessageRole } from './DRPCMessageRole'
 import { DRPCMessagesApi } from './DRPCMessagesApi'

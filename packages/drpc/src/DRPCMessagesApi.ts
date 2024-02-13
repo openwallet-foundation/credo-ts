@@ -1,19 +1,19 @@
-import type { DRPCRequest, DRPCRequestObject, DRPCResponse, DRPCResponseObject } from './messages'
+import type { DRPCRequest, DRPCResponse } from './messages'
 import type { DRPCMessageRecord } from './repository/DRPCMessageRecord'
-import type { ConnectionRecord } from '../connections'
+import type { ConnectionRecord } from '@credo-ts/core'
 
-import { AgentContext } from '../../agent'
-import { MessageHandlerRegistry } from '../../agent/MessageHandlerRegistry'
-import { MessageSender } from '../../agent/MessageSender'
-import { OutboundMessageContext } from '../../agent/models'
-import { injectable } from '../../plugins'
-import { isValidDRPCRequestObject } from '../../utils/messageType'
-import { uuid } from '../../utils/uuid'
-import { ConnectionService } from '../connections'
+import {
+  AgentContext,
+  MessageHandlerRegistry,
+  MessageSender,
+  OutboundMessageContext,
+  injectable,
+  utils,
+  ConnectionService,
+} from '@credo-ts/core'
 
-import { DRPCMessageRole } from './DRPCMessageRole'
 import { DRPCMessageHandler } from './handlers'
-import { DRPCErrorCode, DRPCRequestMessage, DRPCResponseMessage } from './messages'
+import { DRPCRequestMessage, DRPCResponseMessage } from './messages'
 import { DRPCMessageService } from './services'
 
 @injectable()
@@ -38,7 +38,7 @@ export class DRPCMessagesApi {
   }
 
   public async sendDRPCRequest(connectionId: string, request: DRPCRequest): Promise<DRPCResponse> {
-    const messageId = uuid()
+    const messageId = utils.uuid()
     const connection = await this.connectionService.getById(this.agentContext, connectionId)
     try {
       const { message: drpcMessage, record: drpcMessageRecord } = await this.drpcMessageService.createRequestMessage(
@@ -70,8 +70,8 @@ export class DRPCMessagesApi {
       this.drpcMessageService.createResponseListener(listener)
     })
   }
-  
-  public async nextDRPCRequest(): Promise<{connectionId: string, threadId:string ,request:DRPCRequest}> {
+
+  public async nextDRPCRequest(): Promise<{ connectionId: string; threadId: string; request: DRPCRequest }> {
     return new Promise((resolve) => {
       const listener = ({
         drpcMessageRecord,
@@ -83,7 +83,11 @@ export class DRPCMessagesApi {
         const message = drpcMessageRecord.content
         if (message instanceof DRPCRequestMessage) {
           removeListener()
-          resolve({connectionId: drpcMessageRecord.connectionId, threadId: message.threadId, request: message.request})
+          resolve({
+            connectionId: drpcMessageRecord.connectionId,
+            threadId: message.threadId,
+            request: message.request,
+          })
         }
       }
 

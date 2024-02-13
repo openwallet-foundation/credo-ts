@@ -1,8 +1,8 @@
 import type { DRPCRequestObject } from '../messages'
 
-import { getAgentContext, getMockConnection } from '../../../../tests/helpers'
-import { EventEmitter } from '../../../agent/EventEmitter'
-import { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
+import { EventEmitter } from '../../../core/src/agent/EventEmitter'
+import { InboundMessageContext } from '../../../core/src/agent/models/InboundMessageContext'
+import { getAgentContext, getMockConnection } from '../../../core/tests/helpers'
 import { DRPCMessageRole } from '../DRPCMessageRole'
 import { DRPCRequestMessage } from '../messages'
 import { DRPCMessageRecord } from '../repository/DRPCMessageRecord'
@@ -13,7 +13,7 @@ jest.mock('../repository/DRPCMessageRepository')
 const DRPCMessageRepositoryMock = DRPCMessageRepository as jest.Mock<DRPCMessageRepository>
 const drpcMessageRepository = new DRPCMessageRepositoryMock()
 
-jest.mock('../../../agent/EventEmitter')
+jest.mock('../../../core/src/agent/EventEmitter')
 const EventEmitterMock = EventEmitter as jest.Mock<EventEmitter>
 const eventEmitter = new EventEmitterMock()
 
@@ -54,7 +54,7 @@ describe('DRPCMessageService', () => {
             connectionId: mockConnectionRecord.id,
             content: expect.any(DRPCRequestMessage),
             role: DRPCMessageRole.Sender,
-          })
+          }),
         },
       })
     })

@@ -1,9 +1,8 @@
-import type { RecordTags, TagsBase } from '../../../storage/BaseRecord'
 import type { DRPCMessageRole } from '../DRPCMessageRole'
 import type { DRPCRequestMessage, DRPCResponseMessage } from '../messages'
+import type { RecordTags, TagsBase } from '@credo-ts/core'
 
-import { BaseRecord } from '../../../storage/BaseRecord'
-import { uuid } from '../../../utils/uuid'
+import { BaseRecord, utils } from '@credo-ts/core'
 
 export type CustomDRPCMessageTags = TagsBase
 export type DefaultBasicMessageTags = {
@@ -33,7 +32,7 @@ export class DRPCMessageRecord extends BaseRecord<DefaultBasicMessageTags, Custo
     super()
 
     if (props) {
-      this.id = props.id ?? uuid()
+      this.id = props.id ?? utils.uuid()
       this.content = props.content
       this.connectionId = props.connectionId
       this._tags = props.tags ?? {}
