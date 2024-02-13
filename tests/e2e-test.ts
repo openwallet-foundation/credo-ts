@@ -1,18 +1,18 @@
-import type { AnonCredsTestsAgent } from '../packages/anoncreds/tests/legacyAnonCredsSetup'
+import type { AnonCredsTestsAgent } from '../packages/anoncreds/tests/anoncredsSetup'
 import type { AgentMessageProcessedEvent, AgentMessageSentEvent } from '@credo-ts/core'
 
 import { filter, firstValueFrom, map } from 'rxjs'
 
-import { V1CredentialPreview } from '../packages/anoncreds/src/protocols/credentials/v1'
+import { presentAnonCredsProof, issueAnonCredsCredential } from '../packages/anoncreds/tests/anoncredsSetup'
 import {
-  issueLegacyAnonCredsCredential,
-  presentLegacyAnonCredsProof,
-  prepareForAnonCredsIssuance,
-} from '../packages/anoncreds/tests/legacyAnonCredsSetup'
+  anoncredsDefinitionFourAttributesNoRevocation,
+  usePreCreatedAnonCredsDefinition,
+} from '../packages/anoncreds/tests/preCreatedAnonCredsDefinition'
 import { setupEventReplaySubjects } from '../packages/core/tests'
 import { makeConnection } from '../packages/core/tests/helpers'
 
 import {
+  V2CredentialPreview,
   V1BatchMessage,
   V1BatchPickupMessage,
   V2DeliveryRequestMessage,
@@ -62,24 +62,26 @@ export async function e2eTest({
   const [recipientSenderConnection, senderRecipientConnection] = await makeConnection(recipientAgent, senderAgent)
   expect(recipientSenderConnection).toBeConnectedWith(senderRecipientConnection)
 
-  // Issue credential from sender to recipient
-  const { credentialDefinition } = await prepareForAnonCredsIssuance(senderAgent, {
-    attributeNames: ['name', 'age', 'dateOfBirth'],
-  })
-  const { holderCredentialExchangeRecord, issuerCredentialExchangeRecord } = await issueLegacyAnonCredsCredential({
+  const { credentialDefinitionId } = await usePreCreatedAnonCredsDefinition(
+    senderAgent,
+    anoncredsDefinitionFourAttributesNoRevocation
+  )
+
+  const { holderCredentialExchangeRecord, issuerCredentialExchangeRecord } = await issueAnonCredsCredential({
     issuerAgent: senderAgent,
     issuerReplay: senderReplay,
     holderAgent: recipientAgent,
     holderReplay: recipientReplay,
+    revocationRegistryDefinitionId: null,
 
     issuerHolderConnectionId: senderRecipientConnection.id,
     offer: {
-      credentialDefinitionId: credentialDefinition.credentialDefinitionId,
-      attributes: V1CredentialPreview.fromRecord({
+      credentialDefinitionId,
+      attributes: V2CredentialPreview.fromRecord({
         name: 'John',
         age: '25',
-        // year month day
-        dateOfBirth: '19950725',
+        'x-ray': 'not taken',
+        profile_picture: 'looking good',
       }).attributes,
     },
   })
@@ -88,7 +90,7 @@ export async function e2eTest({
   expect(issuerCredentialExchangeRecord.state).toBe(CredentialState.Done)
 
   // Present Proof from recipient to sender
-  const { holderProofExchangeRecord, verifierProofExchangeRecord } = await presentLegacyAnonCredsProof({
+  const { holderProofExchangeRecord, verifierProofExchangeRecord } = await presentAnonCredsProof({
     verifierAgent: senderAgent,
     verifierReplay: senderReplay,
 
@@ -102,7 +104,7 @@ export async function e2eTest({
           name: 'name',
           restrictions: [
             {
-              cred_def_id: credentialDefinition.credentialDefinitionId,
+              cred_def_id: credentialDefinitionId,
             },
           ],
         },
@@ -112,7 +114,7 @@ export async function e2eTest({
           name: 'age',
           restrictions: [
             {
-              cred_def_id: credentialDefinition.credentialDefinitionId,
+              cred_def_id: credentialDefinitionId,
             },
           ],
           p_type: '<=',

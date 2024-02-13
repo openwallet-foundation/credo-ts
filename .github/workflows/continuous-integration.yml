@@ -104,7 +104,7 @@ jobs:
       - uses: actions/upload-artifact@v3
         with:
           name: coverage-artifacts
-          path: coverage/
+          path: coverage/${{ matrix.shard }}.json
 
   e2e-tests:
     runs-on: ubuntu-20.04
@@ -140,7 +140,7 @@ jobs:
       - uses: actions/upload-artifact@v3
         with:
           name: coverage-artifacts
-          path: coverage/
+          path: coverage/e2e.json
 
   # Upload all the coverage reports
   report-coverage:

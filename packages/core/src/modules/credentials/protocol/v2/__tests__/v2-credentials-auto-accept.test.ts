@@ -178,7 +178,7 @@ describe('V2 Credentials Auto Accept', () => {
         issuerName: 'Faber Agent: Always V2',
         holderName: 'Alice Agent: Always V2',
         autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
-        attributeNames: ['name', 'age', 'x-ray', 'profile_picture'],
+        preCreatedDefinition: anoncredsDefinitionFourAttributesNoRevocation,
       }))
     })
 

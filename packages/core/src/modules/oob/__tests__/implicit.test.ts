@@ -1,19 +1,20 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
-import type { IndyVdrDidCreateOptions } from '@credo-ts/indy-vdr'
+import type { PeerDidCreateOptions } from '../../dids'
 
 import { getAnonCredsIndyModules } from '../../../../../anoncreds/tests/legacyAnonCredsSetup'
 import { setupSubjectTransports } from '../../../../tests'
-import {
-  getInMemoryAgentOptions,
-  importExistingIndyDidFromPrivateKey,
-  publicDidSeed,
-  waitForConnectionRecord,
-} from '../../../../tests/helpers'
+import { getInMemoryAgentOptions, waitForConnectionRecord } from '../../../../tests/helpers'
 import { Agent } from '../../../agent/Agent'
-import { TypedArrayEncoder } from '../../../utils'
-import { sleep } from '../../../utils/sleep'
+import { KeyType } from '../../../crypto'
 import { DidExchangeState, HandshakeProtocol } from '../../connections'
-import { DidCommV1Service, DidCommV2Service, DidDocumentService } from '../../dids'
+import {
+  DidCommV1Service,
+  DidCommV2Service,
+  DidDocumentService,
+  PeerDidNumAlgo,
+  DidDocumentBuilder,
+  getEd25519VerificationKey2018,
+} from '../../dids'
 
 const faberAgentOptions = getInMemoryAgentOptions(
   'Faber Agent OOB Implicit',
@@ -33,7 +34,6 @@ const aliceAgentOptions = getInMemoryAgentOptions(
 describe('out of band implicit', () => {
   let faberAgent: Agent
   let aliceAgent: Agent
-  let unqualifiedSubmitterDid: string
 
   beforeAll(async () => {
     faberAgent = new Agent(faberAgentOptions)
@@ -42,11 +42,6 @@ describe('out of band implicit', () => {
     setupSubjectTransports([faberAgent, aliceAgent])
     await faberAgent.initialize()
     await aliceAgent.initialize()
-
-    unqualifiedSubmitterDid = await importExistingIndyDidFromPrivateKey(
-      faberAgent,
-      TypedArrayEncoder.fromString(publicDidSeed)
-    )
   })
 
   afterAll(async () => {
@@ -66,11 +61,10 @@ describe('out of band implicit', () => {
   })
 
   test(`make a connection with ${HandshakeProtocol.DidExchange} based on implicit OOB invitation`, async () => {
-    const publicDid = await createPublicDid(faberAgent, unqualifiedSubmitterDid, 'rxjs:faber')
-    expect(publicDid.did).toBeDefined()
+    const peerDid = await createPeerDid(faberAgent, 'rxjs:faber')
 
     let { connectionRecord: aliceFaberConnection } = await aliceAgent.oob.receiveImplicitInvitation({
-      did: publicDid.did!,
+      did: peerDid,
       alias: 'Faber public',
       label: 'Alice',
       handshakeProtocols: [HandshakeProtocol.DidExchange],
@@ -90,19 +84,19 @@ describe('out of band implicit', () => {
     expect(faberAliceConnection).toBeConnectedWith(aliceFaberConnection)
     expect(faberAliceConnection.theirLabel).toBe('Alice')
     expect(aliceFaberConnection.alias).toBe('Faber public')
-    expect(aliceFaberConnection.invitationDid).toBe(publicDid.did!)
+    expect(aliceFaberConnection.invitationDid).toBe(peerDid)
 
     // It is possible for an agent to check if it has already a connection to a certain public entity
-    expect(await aliceAgent.connections.findByInvitationDid(publicDid.did!)).toEqual([aliceFaberConnection])
+    expect(await aliceAgent.connections.findByInvitationDid(peerDid)).toEqual([aliceFaberConnection])
   })
 
   test(`make a connection with ${HandshakeProtocol.DidExchange} based on implicit OOB invitation pointing to specific service`, async () => {
-    const publicDid = await createPublicDid(faberAgent, unqualifiedSubmitterDid, 'rxjs:faber')
-    expect(publicDid.did).toBeDefined()
+    const peerDid = await createPeerDid(faberAgent, 'rxjs:faber')
+    const peerDidDocument = await faberAgent.dids.resolveDidDocument(peerDid)
+    const serviceUrl = peerDidDocument.service![1].id
 
-    const serviceDidUrl = publicDid.didDocument?.didCommServices[0].id
     let { connectionRecord: aliceFaberConnection } = await aliceAgent.oob.receiveImplicitInvitation({
-      did: serviceDidUrl!,
+      did: serviceUrl,
       alias: 'Faber public',
       label: 'Alice',
       handshakeProtocols: [HandshakeProtocol.DidExchange],
@@ -122,18 +116,17 @@ describe('out of band implicit', () => {
     expect(faberAliceConnection).toBeConnectedWith(aliceFaberConnection)
     expect(faberAliceConnection.theirLabel).toBe('Alice')
     expect(aliceFaberConnection.alias).toBe('Faber public')
-    expect(aliceFaberConnection.invitationDid).toBe(serviceDidUrl)
+    expect(aliceFaberConnection.invitationDid).toBe(serviceUrl)
 
     // It is possible for an agent to check if it has already a connection to a certain public entity
-    expect(await aliceAgent.connections.findByInvitationDid(serviceDidUrl!)).toEqual([aliceFaberConnection])
+    expect(await aliceAgent.connections.findByInvitationDid(serviceUrl)).toEqual([aliceFaberConnection])
   })
 
   test(`make a connection with ${HandshakeProtocol.Connections} based on implicit OOB invitation`, async () => {
-    const publicDid = await createPublicDid(faberAgent, unqualifiedSubmitterDid, 'rxjs:faber')
-    expect(publicDid.did).toBeDefined()
+    const peerDid = await createPeerDid(faberAgent, 'rxjs:faber')
 
     let { connectionRecord: aliceFaberConnection } = await aliceAgent.oob.receiveImplicitInvitation({
-      did: publicDid.did!,
+      did: peerDid,
       alias: 'Faber public',
       label: 'Alice',
       handshakeProtocols: [HandshakeProtocol.Connections],
@@ -153,10 +146,10 @@ describe('out of band implicit', () => {
     expect(faberAliceConnection).toBeConnectedWith(aliceFaberConnection)
     expect(faberAliceConnection.theirLabel).toBe('Alice')
     expect(aliceFaberConnection.alias).toBe('Faber public')
-    expect(aliceFaberConnection.invitationDid).toBe(publicDid.did!)
+    expect(aliceFaberConnection.invitationDid).toBe(peerDid)
 
     // It is possible for an agent to check if it has already a connection to a certain public entity
-    expect(await aliceAgent.connections.findByInvitationDid(publicDid.did!)).toEqual([aliceFaberConnection])
+    expect(await aliceAgent.connections.findByInvitationDid(peerDid)).toEqual([aliceFaberConnection])
   })
 
   test(`receive an implicit invitation using an unresolvable did`, async () => {
@@ -167,15 +160,14 @@ describe('out of band implicit', () => {
         label: 'Alice',
         handshakeProtocols: [HandshakeProtocol.DidExchange],
       })
-    ).rejects.toThrowError(/Unable to resolve did/)
+    ).rejects.toThrow(/Unable to resolve did/)
   })
 
   test(`create two connections using the same implicit invitation`, async () => {
-    const publicDid = await createPublicDid(faberAgent, unqualifiedSubmitterDid, 'rxjs:faber')
-    expect(publicDid).toBeDefined()
+    const peerDid = await createPeerDid(faberAgent, 'rxjs:faber')
 
     let { connectionRecord: aliceFaberConnection } = await aliceAgent.oob.receiveImplicitInvitation({
-      did: publicDid.did!,
+      did: peerDid,
       alias: 'Faber public',
       label: 'Alice',
       handshakeProtocols: [HandshakeProtocol.Connections],
@@ -195,11 +187,11 @@ describe('out of band implicit', () => {
     expect(faberAliceConnection).toBeConnectedWith(aliceFaberConnection)
     expect(faberAliceConnection.theirLabel).toBe('Alice')
     expect(aliceFaberConnection.alias).toBe('Faber public')
-    expect(aliceFaberConnection.invitationDid).toBe(publicDid.did)
+    expect(aliceFaberConnection.invitationDid).toBe(peerDid)
 
     // Repeat implicit invitation procedure
     let { connectionRecord: aliceFaberNewConnection } = await aliceAgent.oob.receiveImplicitInvitation({
-      did: publicDid.did!,
+      did: peerDid,
       alias: 'Faber public New',
       label: 'Alice New',
       handshakeProtocols: [HandshakeProtocol.Connections],
@@ -219,10 +211,10 @@ describe('out of band implicit', () => {
     expect(faberAliceNewConnection).toBeConnectedWith(aliceFaberNewConnection)
     expect(faberAliceNewConnection.theirLabel).toBe('Alice New')
     expect(aliceFaberNewConnection.alias).toBe('Faber public New')
-    expect(aliceFaberNewConnection.invitationDid).toBe(publicDid.did)
+    expect(aliceFaberNewConnection.invitationDid).toBe(peerDid)
 
     // Both connections will be associated to the same invitation did
-    const connectionsFromFaberPublicDid = await aliceAgent.connections.findByInvitationDid(publicDid.did!)
+    const connectionsFromFaberPublicDid = await aliceAgent.connections.findByInvitationDid(peerDid)
     expect(connectionsFromFaberPublicDid).toHaveLength(2)
     expect(connectionsFromFaberPublicDid).toEqual(
       expect.arrayContaining([aliceFaberConnection, aliceFaberNewConnection])
@@ -230,39 +222,56 @@ describe('out of band implicit', () => {
   })
 })
 
-async function createPublicDid(agent: Agent, unqualifiedSubmitterDid: string, endpoint: string) {
-  const createResult = await agent.dids.create<IndyVdrDidCreateOptions>({
-    method: 'indy',
+async function createPeerDid(agent: Agent, endpoint: string) {
+  const builder = new DidDocumentBuilder('')
+
+  const ed25519Key = await agent.wallet.createKey({
+    keyType: KeyType.Ed25519,
+  })
+  const ed25519VerificationMethod = getEd25519VerificationKey2018({
+    key: ed25519Key,
+    id: `#${ed25519Key.fingerprint.slice(1)}`,
+    controller: '#',
+  })
+
+  builder.addService(
+    new DidDocumentService({
+      id: `#endpoint`,
+      serviceEndpoint: endpoint,
+      type: 'endpoint',
+    })
+  )
+  builder.addService(
+    new DidCommV1Service({
+      id: `#did-communication`,
+      priority: 0,
+      recipientKeys: [ed25519VerificationMethod.id],
+      routingKeys: [],
+      serviceEndpoint: endpoint,
+      accept: ['didcomm/aip2;env=rfc19'],
+    })
+  )
+
+  builder.addService(
+    new DidCommV2Service({
+      accept: ['didcomm/v2'],
+      id: `#didcomm-1`,
+      routingKeys: [],
+      serviceEndpoint: endpoint,
+    })
+  )
+
+  builder.addVerificationMethod(ed25519VerificationMethod)
+  builder.addAuthentication(ed25519VerificationMethod.id)
+  builder.addAssertionMethod(ed25519VerificationMethod.id)
+
+  const createResult = await agent.dids.create<PeerDidCreateOptions>({
+    method: 'peer',
+    didDocument: builder.build(),
     options: {
-      endorserMode: 'internal',
-      endorserDid: `did:indy:pool:localtest:${unqualifiedSubmitterDid}`,
-      useEndpointAttrib: true,
-      services: [
-        new DidDocumentService({
-          id: `#endpoint`,
-          serviceEndpoint: endpoint,
-          type: 'endpoint',
-        }),
-        new DidCommV1Service({
-          id: `#did-communication`,
-          priority: 0,
-          recipientKeys: [`#key-agreement-1`],
-          routingKeys: [],
-          serviceEndpoint: endpoint,
-          accept: ['didcomm/aip2;env=rfc19'],
-        }),
-        new DidCommV2Service({
-          accept: ['didcomm/v2'],
-          id: `#didcomm-1`,
-          routingKeys: [],
-          serviceEndpoint: endpoint,
-        }),
-      ],
-      alias: 'Alias',
+      numAlgo: PeerDidNumAlgo.MultipleInceptionKeyWithoutDoc,
     },
   })
 
-  await sleep(1000)
-
-  return createResult.didState
+  return createResult.didState.did as string
 }
