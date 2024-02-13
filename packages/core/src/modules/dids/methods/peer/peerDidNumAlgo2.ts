@@ -81,7 +81,7 @@ export function didToNumAlgo2DidDocument(did: string) {
 
       // Add all verification methods to the did document
       for (const verificationMethod of verificationMethods) {
-        verificationMethod.id = `#key-${keyIndex++}`
+        verificationMethod.id = `${did}#key-${keyIndex++}`
         addVerificationMethodToDidDocument(didDocument, verificationMethod, purpose)
       }
     }
@@ -104,6 +104,8 @@ export function didDocumentToNumAlgo2Did(didDocument: DidDocument) {
 
   let did = 'did:peer:2'
 
+  const keys: { id: string; encoded: string }[] = []
+
   for (const [purpose, entries] of Object.entries(purposeMapping)) {
     // Not all entries are required to be defined
     if (entries === undefined) continue
@@ -114,18 +116,21 @@ export function didDocumentToNumAlgo2Did(didDocument: DidDocument) {
     )
 
     // Transform all verification methods into a fingerprint (multibase, multicodec)
-    const encoded = dereferenced.map((entry) => {
+    dereferenced.forEach((entry) => {
       const key = getKeyFromVerificationMethod(entry)
 
       // Encode as '.PurposeFingerprint'
       const encoded = `.${purpose}${key.fingerprint}`
 
-      return encoded
+      keys.push({ id: entry.id, encoded })
     })
-
-    // Add all encoded keys
-    did += encoded.join('')
   }
+
+  // Add all encoded keys ordered by their id (#key-1, #key-2, etc.)
+  did += keys
+    .sort((a, b) => a.id.localeCompare(b.id))
+    .map((key) => key.encoded)
+    .join('')
 
   if (didDocument.service && didDocument.service.length > 0) {
     const abbreviatedServices = didDocument.service.map((service) => {
