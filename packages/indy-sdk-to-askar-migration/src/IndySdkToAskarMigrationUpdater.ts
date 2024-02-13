@@ -1,4 +1,5 @@
-import type { Agent, FileSystem, WalletConfig, AnonCredsCredentialValue } from '@credo-ts/core'
+import type { AnonCredsCredentialValue } from '@credo-ts/anoncreds'
+import type { Agent, FileSystem, WalletConfig } from '@credo-ts/core'
 import type { EntryObject } from '@hyperledger/aries-askar-shared'
 
 import { AnonCredsCredentialRecord, AnonCredsLinkSecretRecord } from '@credo-ts/anoncreds'

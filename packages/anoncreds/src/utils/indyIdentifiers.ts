@@ -1,3 +1,5 @@
+import type { AnonCredsCredentialDefinition, AnonCredsRevocationRegistryDefinition, AnonCredsSchema } from '../models'
+
 import { CredoError } from '@credo-ts/core'
 
 const didIndyAnonCredsBase =
@@ -48,6 +50,10 @@ export function getUnqualifiedRevocationRegistryDefinitionId(
   revocationRegistryTag: string
 ) {
   return `${unqualifiedDid}:4:${unqualifiedDid}:3:CL:${schemaSeqNo}:${credentialDefinitionTag}:CL_ACCUM:${revocationRegistryTag}`
+}
+
+export function isUnqualifiedIndyDid(did: string) {
+  return unqualifiedIndyDidRegex.test(did)
 }
 
 export function isUnqualifiedCredentialDefinitionId(credentialDefinitionId: string) {
@@ -197,4 +203,188 @@ export function parseIndyRevocationRegistryId(revocationRegistryId: string): Par
   }
 
   throw new Error(`Invalid revocation registry id: ${revocationRegistryId}`)
+}
+
+export function getIndyNamespaceFromIndyDid(identifier: string): string {
+  let namespace: string | undefined
+  if (isDidIndySchemaId(identifier)) {
+    namespace = parseIndySchemaId(identifier).namespace
+  } else if (isDidIndyCredentialDefinitionId(identifier)) {
+    namespace = parseIndyCredentialDefinitionId(identifier).namespace
+  } else if (isDidIndyRevocationRegistryId(identifier)) {
+    namespace = parseIndyRevocationRegistryId(identifier).namespace
+  } else {
+    namespace = parseIndyDid(identifier).namespace
+  }
+  if (!namespace) throw new CredoError(`Cannot get indy namespace of identifier '${identifier}'`)
+  return namespace
+}
+
+export function getUnQualifiedDidIndyDid(identifier: string): string {
+  if (isDidIndySchemaId(identifier)) {
+    const { schemaName, schemaVersion, namespaceIdentifier } = parseIndySchemaId(identifier)
+    return getUnqualifiedSchemaId(namespaceIdentifier, schemaName, schemaVersion)
+  } else if (isDidIndyCredentialDefinitionId(identifier)) {
+    const { schemaSeqNo, tag, namespaceIdentifier } = parseIndyCredentialDefinitionId(identifier)
+    return getUnqualifiedCredentialDefinitionId(namespaceIdentifier, schemaSeqNo, tag)
+  } else if (isDidIndyRevocationRegistryId(identifier)) {
+    const { namespaceIdentifier, schemaSeqNo, credentialDefinitionTag, revocationRegistryTag } =
+      parseIndyRevocationRegistryId(identifier)
+    return getUnqualifiedRevocationRegistryDefinitionId(
+      namespaceIdentifier,
+      schemaSeqNo,
+      credentialDefinitionTag,
+      revocationRegistryTag
+    )
+  }
+
+  const { namespaceIdentifier } = parseIndyDid(identifier)
+  return namespaceIdentifier
+}
+
+export function isIndyDid(identifier: string): boolean {
+  return identifier.startsWith('did:indy:')
+}
+
+export function getQualifiedDidIndyDid(identifier: string, namespace: string) {
+  if (isIndyDid(identifier)) return identifier
+
+  if (!namespace || typeof namespace !== 'string') {
+    throw new CredoError('Missing required indy namespace')
+  }
+
+  if (isUnqualifiedSchemaId(identifier)) {
+    const { namespaceIdentifier, schemaName, schemaVersion } = parseIndySchemaId(identifier)
+    const schemaId = `did:indy:${namespace}:${namespaceIdentifier}/anoncreds/v0/SCHEMA/${schemaName}/${schemaVersion}`
+    return schemaId
+  } else if (isUnqualifiedCredentialDefinitionId(identifier)) {
+    const { namespaceIdentifier, schemaSeqNo, tag } = parseIndyCredentialDefinitionId(identifier)
+    const credentialDefinitionId = `did:indy:${namespace}:${namespaceIdentifier}/anoncreds/v0/CLAIM_DEF/${schemaSeqNo}/${tag}`
+    return credentialDefinitionId
+  } else if (isUnqualifiedRevocationRegistryId(identifier)) {
+    const { namespaceIdentifier, schemaSeqNo, revocationRegistryTag } = parseIndyRevocationRegistryId(identifier)
+    const revocationRegistryId = `did:indy:${namespace}:${namespaceIdentifier}/anoncreds/v0/REV_REG_DEF/${schemaSeqNo}/${revocationRegistryTag}`
+    return revocationRegistryId
+  } else if (isUnqualifiedIndyDid(identifier)) {
+    return `did:indy:${namespace}:${identifier}`
+  } else {
+    throw new CredoError(`Cannot created qualified indy identifier for '${identifier}' with namespace '${namespace}'`)
+  }
+}
+
+// -- schema -- //
+
+export function isUnqualifiedDidIndySchema(schema: AnonCredsSchema) {
+  return isUnqualifiedIndyDid(schema.issuerId)
+}
+
+export function getUnqualifiedDidIndySchema(schema: AnonCredsSchema): AnonCredsSchema {
+  if (isUnqualifiedDidIndySchema(schema)) return { ...schema }
+  if (!isIndyDid(schema.issuerId)) {
+    throw new CredoError(`IssuerId '${schema.issuerId}' is not a valid qualified did-indy did.`)
+  }
+
+  const issuerId = getUnQualifiedDidIndyDid(schema.issuerId)
+  return { ...schema, issuerId }
+}
+
+export function isQualifiedDidIndySchema(schema: AnonCredsSchema) {
+  return !isUnqualifiedIndyDid(schema.issuerId)
+}
+
+export function getQualifiedDidIndySchema(schema: AnonCredsSchema, namespace: string): AnonCredsSchema {
+  if (isQualifiedDidIndySchema(schema)) return { ...schema }
+
+  return {
+    ...schema,
+    issuerId: getQualifiedDidIndyDid(schema.issuerId, namespace),
+  }
+}
+
+// -- credential definition -- //
+
+export function isUnqualifiedDidIndyCredentialDefinition(anonCredsCredentialDefinition: AnonCredsCredentialDefinition) {
+  return (
+    isUnqualifiedIndyDid(anonCredsCredentialDefinition.issuerId) &&
+    isUnqualifiedSchemaId(anonCredsCredentialDefinition.schemaId)
+  )
+}
+
+export function getUnqualifiedDidIndyCredentialDefinition(
+  anonCredsCredentialDefinition: AnonCredsCredentialDefinition
+): AnonCredsCredentialDefinition {
+  if (isUnqualifiedDidIndyCredentialDefinition(anonCredsCredentialDefinition)) {
+    return { ...anonCredsCredentialDefinition }
+  }
+
+  const issuerId = getUnQualifiedDidIndyDid(anonCredsCredentialDefinition.issuerId)
+  const schemaId = getUnQualifiedDidIndyDid(anonCredsCredentialDefinition.schemaId)
+
+  return { ...anonCredsCredentialDefinition, issuerId, schemaId }
+}
+
+export function isQualifiedDidIndyCredentialDefinition(anonCredsCredentialDefinition: AnonCredsCredentialDefinition) {
+  return (
+    !isUnqualifiedIndyDid(anonCredsCredentialDefinition.issuerId) &&
+    !isUnqualifiedSchemaId(anonCredsCredentialDefinition.schemaId)
+  )
+}
+
+export function getQualifiedDidIndyCredentialDefinition(
+  anonCredsCredentialDefinition: AnonCredsCredentialDefinition,
+  namespace: string
+): AnonCredsCredentialDefinition {
+  if (isQualifiedDidIndyCredentialDefinition(anonCredsCredentialDefinition)) return { ...anonCredsCredentialDefinition }
+
+  return {
+    ...anonCredsCredentialDefinition,
+    issuerId: getQualifiedDidIndyDid(anonCredsCredentialDefinition.issuerId, namespace),
+    schemaId: getQualifiedDidIndyDid(anonCredsCredentialDefinition.schemaId, namespace),
+  }
+}
+
+// -- revocation registry definition -- //
+
+export function isUnqualifiedDidIndyRevocationRegistryDefinition(
+  revocationRegistryDefinition: AnonCredsRevocationRegistryDefinition
+) {
+  return (
+    isUnqualifiedIndyDid(revocationRegistryDefinition.issuerId) &&
+    isUnqualifiedCredentialDefinitionId(revocationRegistryDefinition.credDefId)
+  )
+}
+
+export function getUnqualifiedDidIndyRevocationRegistryDefinition(
+  revocationRegistryDefinition: AnonCredsRevocationRegistryDefinition
+): AnonCredsRevocationRegistryDefinition {
+  if (isUnqualifiedDidIndyRevocationRegistryDefinition(revocationRegistryDefinition)) {
+    return { ...revocationRegistryDefinition }
+  }
+
+  const issuerId = getUnQualifiedDidIndyDid(revocationRegistryDefinition.issuerId)
+  const credDefId = getUnQualifiedDidIndyDid(revocationRegistryDefinition.credDefId)
+
+  return { ...revocationRegistryDefinition, issuerId, credDefId }
+}
+
+export function isQualifiedRevocationRegistryDefinition(
+  revocationRegistryDefinition: AnonCredsRevocationRegistryDefinition
+) {
+  return (
+    !isUnqualifiedIndyDid(revocationRegistryDefinition.issuerId) &&
+    !isUnqualifiedCredentialDefinitionId(revocationRegistryDefinition.credDefId)
+  )
+}
+
+export function getQualifiedDidIndyRevocationRegistryDefinition(
+  revocationRegistryDefinition: AnonCredsRevocationRegistryDefinition,
+  namespace: string
+): AnonCredsRevocationRegistryDefinition {
+  if (isQualifiedRevocationRegistryDefinition(revocationRegistryDefinition)) return { ...revocationRegistryDefinition }
+
+  return {
+    ...revocationRegistryDefinition,
+    issuerId: getQualifiedDidIndyDid(revocationRegistryDefinition.issuerId, namespace),
+    credDefId: getQualifiedDidIndyDid(revocationRegistryDefinition.credDefId, namespace),
+  }
 }

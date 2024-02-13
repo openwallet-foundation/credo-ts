@@ -2,17 +2,18 @@ import { IsOptional, IsString } from 'class-validator'
 
 import { IsUri } from '../../../../utils'
 
-export interface LinkedDataProofOptions {
+export interface DataIntegrityProofOptions {
   type: string
-  proofPurpose: string
+  cryptosuite: string
   verificationMethod: string
-  created: string
+  proofPurpose: string
   domain?: string
   challenge?: string
-  jws?: string
-  proofValue?: string
   nonce?: string
-  cryptosuite?: never
+  created?: string
+  expires?: string
+  proofValue?: string
+  previousProof?: string
 }
 
 /**
@@ -21,18 +22,20 @@ export interface LinkedDataProofOptions {
  *
  * @class LinkedDataProof
  */
-export class LinkedDataProof {
-  public constructor(options: LinkedDataProofOptions) {
+export class DataIntegrityProof {
+  public constructor(options: DataIntegrityProofOptions) {
     if (options) {
       this.type = options.type
-      this.proofPurpose = options.proofPurpose
+      this.cryptosuite = options.cryptosuite
       this.verificationMethod = options.verificationMethod
-      this.created = options.created
+      this.proofPurpose = options.proofPurpose
       this.domain = options.domain
       this.challenge = options.challenge
-      this.jws = options.jws
-      this.proofValue = options.proofValue
       this.nonce = options.nonce
+      this.created = options.created
+      this.expires = options.expires
+      this.proofValue = options.proofValue
+      this.previousProof = options.previousProof
     }
   }
 
@@ -40,13 +43,13 @@ export class LinkedDataProof {
   public type!: string
 
   @IsString()
+  public cryptosuite!: string
+
+  @IsString()
   public proofPurpose!: string
 
   @IsString()
   public verificationMethod!: string
-
-  @IsString()
-  public created!: string
 
   @IsUri()
   @IsOptional()
@@ -58,7 +61,15 @@ export class LinkedDataProof {
 
   @IsString()
   @IsOptional()
-  public jws?: string
+  public nonce?: string
+
+  @IsString()
+  @IsOptional()
+  public created?: string
+
+  @IsString()
+  @IsOptional()
+  public expires?: string
 
   @IsString()
   @IsOptional()
@@ -66,5 +77,5 @@ export class LinkedDataProof {
 
   @IsString()
   @IsOptional()
-  public nonce?: string
+  public previousProof?: string
 }

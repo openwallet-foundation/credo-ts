@@ -35,15 +35,7 @@ import type {
   ProofFormatAutoRespondPresentationOptions,
 } from '@credo-ts/core'
 
-import {
-  encodeCredentialValue,
-  CredoError,
-  Attachment,
-  AttachmentData,
-  JsonEncoder,
-  ProofFormatSpec,
-  JsonTransformer,
-} from '@credo-ts/core'
+import { CredoError, Attachment, AttachmentData, JsonEncoder, ProofFormatSpec, JsonTransformer } from '@credo-ts/core'
 
 import { AnonCredsProofRequest as AnonCredsProofRequestClass } from '../models/AnonCredsProofRequest'
 import { AnonCredsVerifierServiceSymbol, AnonCredsHolderServiceSymbol } from '../services'
@@ -58,8 +50,16 @@ import {
   getRevocationRegistriesForProof,
   fetchSchema,
   fetchCredentialDefinition,
+  fetchRevocationStatusList,
 } from '../utils'
-import { fetchRevocationStatusList, getUnQualifiedId } from '../utils/ledgerObjects'
+import { encodeCredentialValue } from '../utils/credential'
+import {
+  getUnQualifiedDidIndyDid,
+  isUnqualifiedCredentialDefinitionId,
+  isUnqualifiedSchemaId,
+  getUnqualifiedDidIndySchema,
+  getUnqualifiedDidIndyCredentialDefinition,
+} from '../utils/indyIdentifiers'
 import { dateToTimestamp } from '../utils/timestamp'
 
 const V2_INDY_PRESENTATION_PROPOSAL = 'hlindy/proof-req@v2.0'
@@ -468,7 +468,11 @@ export class LegacyIndyProofFormatService implements ProofFormatService<LegacyIn
 
     for (const schemaId of schemaIds) {
       const schemaResult = await fetchSchema(agentContext, schemaId)
-      schemas[getUnQualifiedId(schemaId)] = schemaResult.unqualifiedSchema
+      if (isUnqualifiedSchemaId(schemaResult.schemaId)) {
+        schemas[schemaId] = schemaResult.schema
+      } else {
+        schemas[getUnQualifiedDidIndyDid(schemaId)] = getUnqualifiedDidIndySchema(schemaResult.schema)
+      }
     }
 
     return schemas
@@ -488,8 +492,12 @@ export class LegacyIndyProofFormatService implements ProofFormatService<LegacyIn
 
     for (const credentialDefinitionId of credentialDefinitionIds) {
       const credentialDefinitionResult = await fetchCredentialDefinition(agentContext, credentialDefinitionId)
-      credentialDefinitions[getUnQualifiedId(credentialDefinitionId)] =
-        credentialDefinitionResult.unqualifiedCredentialDefinition
+      if (isUnqualifiedCredentialDefinitionId(credentialDefinitionResult.credentialDefinitionId)) {
+        credentialDefinitions[credentialDefinitionId] = credentialDefinitionResult.credentialDefinition
+      } else {
+        credentialDefinitions[getUnQualifiedDidIndyDid(credentialDefinitionId)] =
+          getUnqualifiedDidIndyCredentialDefinition(credentialDefinitionResult.credentialDefinition)
+      }
     }
 
     return credentialDefinitions

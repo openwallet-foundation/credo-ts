@@ -11,12 +11,12 @@ import {
   W3cJwtVerifiablePresentation,
   parseDid,
   CredoError,
-  DidsApi,
   injectable,
   W3cJsonLdVerifiablePresentation,
   asArray,
   DifPresentationExchangeService,
   DifPresentationExchangeSubmissionLocation,
+  DidsApi,
 } from '@credo-ts/core'
 import {
   CheckLinkedDomain,

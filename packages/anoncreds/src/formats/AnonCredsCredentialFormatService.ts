@@ -1,12 +1,7 @@
 import type { AnonCredsCredentialFormat, AnonCredsCredentialProposalFormat } from './AnonCredsCredentialFormat'
-import type {
-  AnonCredsCredential,
-  AnonCredsCredentialOffer,
-  AnonCredsCredentialRequest,
-  AnonCredsCredentialRequestMetadata,
-} from '../models'
+import type { AnonCredsCredential, AnonCredsCredentialOffer, AnonCredsCredentialRequest } from '../models'
 import type { AnonCredsIssuerService, AnonCredsHolderService } from '../services'
-import type { AnonCredsCredentialMetadata } from '../utils/metadata'
+import type { AnonCredsCredentialMetadata, AnonCredsCredentialRequestMetadata } from '../utils/metadata'
 import type {
   CredentialFormatService,
   AgentContext,
@@ -63,6 +58,7 @@ import {
   createAndLinkAttachmentsToPreview,
 } from '../utils/credential'
 import { AnonCredsCredentialMetadataKey, AnonCredsCredentialRequestMetadataKey } from '../utils/metadata'
+import { getStoreCredentialOptions } from '../utils/w3cAnonCredsUtils'
 
 const ANONCREDS_CREDENTIAL_OFFER = 'anoncreds/credential-offer@v1.0'
 const ANONCREDS_CREDENTIAL_REQUEST = 'anoncreds/credential-request@v1.0'
@@ -391,11 +387,11 @@ export class AnonCredsCredentialFormatService implements CredentialFormatService
 
     const anonCredsCredential = attachment.getDataAsJson<AnonCredsCredential>()
 
-    const { credentialDefinition, id: credentialDefinitionId } = await fetchCredentialDefinition(
+    const { credentialDefinition, credentialDefinitionId } = await fetchCredentialDefinition(
       agentContext,
       anonCredsCredential.cred_def_id
     )
-    const { schema } = await fetchSchema(agentContext, anonCredsCredential.schema_id)
+    const { schema, indyNamespace } = await fetchSchema(agentContext, anonCredsCredential.schema_id)
 
     // Resolve revocation registry if credential is revocable
     const revocationRegistryResult = anonCredsCredential.rev_reg_id
@@ -406,20 +402,25 @@ export class AnonCredsCredentialFormatService implements CredentialFormatService
     const recordCredentialValues = convertAttributesToCredentialValues(credentialRecord.credentialAttributes)
     assertCredentialValuesMatch(anonCredsCredential.values, recordCredentialValues)
 
-    const credentialId = await anonCredsHolderService.storeCredential(agentContext, {
-      credentialId: utils.uuid(),
-      credentialRequestMetadata,
-      credential: anonCredsCredential,
-      credentialDefinitionId,
-      credentialDefinition,
-      schema,
-      revocationRegistry: revocationRegistryResult?.revocationRegistryDefinition
-        ? {
-            definition: revocationRegistryResult.revocationRegistryDefinition,
-            id: revocationRegistryResult.id,
-          }
-        : undefined,
-    })
+    const storeCredentialOptions = getStoreCredentialOptions(
+      {
+        credentialId: utils.uuid(),
+        credentialRequestMetadata,
+        credential: anonCredsCredential,
+        credentialDefinitionId,
+        credentialDefinition,
+        schema,
+        revocationRegistry: revocationRegistryResult?.revocationRegistryDefinition
+          ? {
+              definition: revocationRegistryResult.revocationRegistryDefinition,
+              id: revocationRegistryResult.revocationRegistryDefinitionId,
+            }
+          : undefined,
+      },
+      indyNamespace
+    )
+
+    const credentialId = await anonCredsHolderService.storeCredential(agentContext, storeCredentialOptions)
 
     // If the credential is revocable, store the revocation identifiers in the credential record
     if (anonCredsCredential.rev_reg_id) {

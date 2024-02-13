@@ -1,11 +1,19 @@
+import type { W3cAnoncredsCredentialMetadata } from '../../utils/metadata'
 import type {
   AnonCredsCredentialDefinition,
   AnonCredsCredentialInfo,
   AnonCredsCredentialOffer,
+  AnonCredsSchema,
 } from '@credo-ts/anoncreds'
+import type { AgentContext, AnonCredsCredentialTags } from '@credo-ts/core'
 import type { JsonObject } from '@hyperledger/anoncreds-shared'
 
-import { JsonTransformer, W3cJsonLdVerifiableCredential } from '@credo-ts/core'
+import {
+  JsonTransformer,
+  W3cCredentialRepository,
+  W3cCredentialService,
+  W3cJsonLdVerifiableCredential,
+} from '@credo-ts/core'
 import {
   CredentialDefinition,
   CredentialOffer,
@@ -19,6 +27,8 @@ import {
   W3cCredential,
   anoncreds,
 } from '@hyperledger/anoncreds-shared'
+
+import { W3cAnonCredsCredentialMetadataKey } from '../../utils/metadata'
 
 /**
  * Creates a valid credential definition and returns its public and
@@ -37,7 +47,7 @@ export function createCredentialDefinition(options: { attributeNames: string[]; 
   const { credentialDefinition, credentialDefinitionPrivate, keyCorrectnessProof } = CredentialDefinition.create({
     issuerId,
     schema,
-    schemaId: 'did:indy:sovrin:F72i3Y3Q4i466efjYJYCHM/anoncreds/v0/SCHEMA/npdb/4.3.4',
+    schemaId: 'schema:uri',
     signatureType: 'CL',
     supportRevocation: true, // FIXME: Revocation should not be mandatory but current anoncreds-rs is requiring it
     tag: 'TAG',
@@ -65,7 +75,7 @@ export function createCredentialOffer(keyCorrectnessProof: Record<string, unknow
   const credentialOffer = CredentialOffer.create({
     credentialDefinitionId: 'creddef:uri',
     keyCorrectnessProof,
-    schemaId: 'did:indy:sovrin:F72i3Y3Q4i466efjYJYCHM/anoncreds/v0/SCHEMA/npdb/4.3.4',
+    schemaId: 'schema:uri',
   })
   const credentialOfferJson = credentialOffer.toJson() as unknown as AnonCredsCredentialOffer
   credentialOffer.handle.clear()
@@ -80,7 +90,8 @@ export function createLinkSecret() {
   return LinkSecret.create()
 }
 
-export function createCredentialForHolder(options: {
+export async function createCredentialForHolder(options: {
+  agentContext: AgentContext
   credentialDefinition: JsonObject
   credentialDefinitionPrivate: JsonObject
   keyCorrectnessProof: JsonObject
@@ -89,7 +100,6 @@ export function createCredentialForHolder(options: {
   attributes: Record<string, string>
   linkSecret: string
   linkSecretId: string
-  credentialId: string
   revocationRegistryDefinitionId: string
 }) {
   const {
@@ -101,7 +111,6 @@ export function createCredentialForHolder(options: {
     attributes,
     linkSecret,
     linkSecretId,
-    credentialId,
     revocationRegistryDefinitionId,
   } = options
 
@@ -156,10 +165,10 @@ export function createCredentialForHolder(options: {
 
   const w3cJsonLdCredential = JsonTransformer.fromJSON(credentialObj.toJson(), W3cJsonLdVerifiableCredential)
 
-  const credentialInfo: AnonCredsCredentialInfo = {
+  const credentialInfo: Omit<AnonCredsCredentialInfo, 'credentialId'> = {
     attributes,
     credentialDefinitionId,
-    credentialId,
+    linkSecretId,
     schemaId,
     methodName: 'inMemory',
     credentialRevocationId: null,
@@ -203,4 +212,46 @@ export function createRevocationRegistryDefinition(options: {
   })
 
   return { revocationRegistryDefinition, revocationRegistryDefinitionPrivate, tailsPath }
+}
+
+export async function storeCredential(
+  agentContext: AgentContext,
+  w3cJsonLdCredential: W3cJsonLdVerifiableCredential,
+  options: {
+    linkSecretId: string
+    credentialDefinitionId: string
+    schemaId: string
+    schema: AnonCredsSchema
+  }
+) {
+  const w3cCredentialService = agentContext.dependencyManager.resolve(W3cCredentialService)
+  const record = await w3cCredentialService.storeCredential(agentContext, {
+    credential: w3cJsonLdCredential,
+  })
+
+  const anonCredsCredentialRecordTags: AnonCredsCredentialTags = {
+    anonCredsCredentialId: record.id,
+    anonCredsLinkSecretId: options.linkSecretId,
+    anonCredsCredentialDefinitionId: options.credentialDefinitionId,
+    anonCredsSchemaId: options.schemaId,
+    anonCredsSchemaName: options.schema.name,
+    anonCredsSchemaIssuerId: options.schema.issuerId,
+    anonCredsSchemaVersion: options.schema.version,
+    anonCredsMethodName: 'method',
+  }
+
+  const anonCredsCredentialMetadata: W3cAnoncredsCredentialMetadata = {
+    credentialId: record.id,
+    credentialRevocationId: anonCredsCredentialRecordTags.anonCredsCredentialRevocationId,
+    linkSecretId: anonCredsCredentialRecordTags.anonCredsLinkSecretId,
+    methodName: anonCredsCredentialRecordTags.anonCredsMethodName,
+  }
+
+  record.setTags(anonCredsCredentialRecordTags)
+  record.metadata.set(W3cAnonCredsCredentialMetadataKey, anonCredsCredentialMetadata)
+
+  const w3cCredentialRepository = agentContext.dependencyManager.resolve(W3cCredentialRepository)
+  await w3cCredentialRepository.update(agentContext, record)
+
+  return record
 }

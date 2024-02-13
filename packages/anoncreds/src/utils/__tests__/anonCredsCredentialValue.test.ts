@@ -1,4 +1,4 @@
-import { encodeCredentialValue, mapAttributeRawValuesToAnonCredsCredentialValues } from '../anonCredsCredentialValue'
+import { encodeCredentialValue, mapAttributeRawValuesToAnonCredsCredentialValues } from '../credential'
 
 const testVectors = {
   'str 0.0': {

@@ -1,22 +1,27 @@
+import type { W3cJsonLdVerifiablePresentation } from './W3cJsonLdVerifiablePresentation'
 import type { AgentContext } from '../../../../agent'
 import type { JsonObject } from '../../../../types'
-import type { W3cCredentialRecord, W3cJsonLdVerifiablePresentation } from '../../../vc'
+import type { W3cCredentialRecord } from '../../repository'
 import type { PresentationDefinitionV1, PresentationDefinitionV2, PresentationSubmission } from '@sphereon/pex-models'
 
-export interface Anoncreds2023SignatureOptions extends Record<string, unknown> {
+export const AnoncredsDataIntegrityCryptosuite = 'anoncreds-2023' as const
+
+export interface AnoncredsDataIntegrityCreatePresentation {
   presentationDefinition: PresentationDefinitionV1 | PresentationDefinitionV2
   presentationSubmission: PresentationSubmission
   selectedCredentials: JsonObject[]
   selectedCredentialRecords: W3cCredentialRecord[]
+  challenge: string
 }
 
-export interface Anoncreds2023VerificationOptions extends Record<string, unknown> {
+export interface AnoncredsDataIntegrityVerifyPresentation {
   presentation: W3cJsonLdVerifiablePresentation
   presentationDefinition: PresentationDefinitionV1 | PresentationDefinitionV2
   presentationSubmission: PresentationSubmission
+  challenge: string
 }
 
-export const anoncreds2023DataIntegrityServiceSymbol = Symbol('AnonCredsVcDataIntegrityService')
+export const AnonCredsDataIntegrityServiceSymbol = Symbol('AnonCredsDataIntegrityService')
 
 /**
  * We keep this standalone and don't integrity it
@@ -24,8 +29,8 @@ export const anoncreds2023DataIntegrityServiceSymbol = Symbol('AnonCredsVcDataIn
  * to it's unique properties, in order to not pollute,
  * the existing api's.
  */
-export interface Anoncreds2023DataIntegrityService {
-  createPresentation(agentContext: AgentContext, options: Anoncreds2023SignatureOptions): Promise<JsonObject>
+export interface IAnoncredsDataIntegrityService {
+  createPresentation(agentContext: AgentContext, options: AnoncredsDataIntegrityCreatePresentation): Promise<JsonObject>
 
-  verifyPresentation(agentContext: AgentContext, options: Anoncreds2023VerificationOptions): Promise<boolean>
+  verifyPresentation(agentContext: AgentContext, options: AnoncredsDataIntegrityVerifyPresentation): Promise<boolean>
 }

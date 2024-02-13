@@ -6,9 +6,12 @@ import type {
 } from './DifPresentationExchangeProofFormat'
 import type { AgentContext } from '../../../../agent'
 import type { JsonValue } from '../../../../types'
-import type { Anoncreds2023DataIntegrityService } from '../../../credentials'
 import type { DifPexInputDescriptorToCredentials } from '../../../dif-presentation-exchange'
-import type { W3cVerifiablePresentation, W3cVerifyPresentationResult } from '../../../vc'
+import type {
+  IAnoncredsDataIntegrityService,
+  W3cVerifiablePresentation,
+  W3cVerifyPresentationResult,
+} from '../../../vc'
 import type { W3cJsonPresentation } from '../../../vc/models/presentation/W3cJsonPresentation'
 import type { ProofFormatService } from '../ProofFormatService'
 import type {
@@ -30,12 +33,13 @@ import type { PresentationSubmission } from '@sphereon/pex-models'
 import { Attachment, AttachmentData } from '../../../../decorators/attachment/Attachment'
 import { CredoError } from '../../../../error'
 import { deepEquality, JsonTransformer } from '../../../../utils'
-import { anoncreds2023DataIntegrityServiceSymbol } from '../../../credentials'
 import {
   DifPresentationExchangeService,
   DifPresentationExchangeSubmissionLocation,
 } from '../../../dif-presentation-exchange'
 import {
+  AnoncredsDataIntegrityCryptosuite,
+  AnonCredsDataIntegrityServiceSymbol,
   W3cCredentialService,
   ClaimFormat,
   W3cJsonLdVerifiablePresentation,
@@ -221,7 +225,7 @@ export class PresentationExchangeProofFormatService implements ProofFormatServic
     return { attachment, format }
   }
 
-  private verifyUsingAnoncreds2023(
+  private shouldVerifyUsingAnoncredsDataIntegrity(
     presentation: W3cVerifiablePresentation,
     presentationSubmission: PresentationSubmission
   ) {
@@ -232,11 +236,7 @@ export class PresentationExchangeProofFormatService implements ProofFormatServic
     const verifyUsingDataIntegrity = descriptorMap.every((descriptor) => descriptor.format === ClaimFormat.DiVp)
     if (!verifyUsingDataIntegrity) return false
 
-    if (Array.isArray(presentation.proof)) {
-      return presentation.proof.some((proof) => proof.cryptosuite?.includes('anoncreds-2023'))
-    } else {
-      return presentation.proof.cryptosuite?.includes('anoncreds-2023')
-    }
+    return presentation.dataIntegrityCryptosuites.includes(AnoncredsDataIntegrityCryptosuite)
   }
 
   public async processPresentation(
@@ -297,14 +297,17 @@ export class PresentationExchangeProofFormatService implements ProofFormatServic
           domain: request.options.domain,
         })
       } else if (parsedPresentation.claimFormat === ClaimFormat.LdpVp) {
-        if (this.verifyUsingAnoncreds2023(parsedPresentation, jsonPresentation.presentation_submission)) {
-          const dataIntegrityService = agentContext.dependencyManager.resolve<Anoncreds2023DataIntegrityService>(
-            anoncreds2023DataIntegrityServiceSymbol
+        if (
+          this.shouldVerifyUsingAnoncredsDataIntegrity(parsedPresentation, jsonPresentation.presentation_submission)
+        ) {
+          const dataIntegrityService = agentContext.dependencyManager.resolve<IAnoncredsDataIntegrityService>(
+            AnonCredsDataIntegrityServiceSymbol
           )
           const proofVerificationResult = await dataIntegrityService.verifyPresentation(agentContext, {
             presentation: parsedPresentation as W3cJsonLdVerifiablePresentation,
             presentationDefinition: request.presentation_definition,
             presentationSubmission: jsonPresentation.presentation_submission,
+            challenge: request.options.challenge,
           })
 
           verificationResult = {

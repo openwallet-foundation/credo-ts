@@ -11,10 +11,10 @@ import type { PresentationToCreate } from './utils'
 import type { AgentContext } from '../../agent'
 import type { Query } from '../../storage/StorageService'
 import type { JsonObject } from '../../types'
-import type { Anoncreds2023DataIntegrityService } from '../credentials/formats/dataIntegrity/AnonCredsDataIntegrityService'
 import type { VerificationMethod } from '../dids'
 import type { SdJwtVcRecord } from '../sd-jwt-vc'
 import type { W3cCredentialRecord } from '../vc'
+import type { IAnoncredsDataIntegrityService } from '../vc/data-integrity/models/IAnonCredsDataIntegrityService'
 import type {
   PresentationSignCallBackParams,
   SdJwtDecodedVerifiableCredentialWithKbJwtInput,
@@ -33,7 +33,6 @@ import { injectable } from 'tsyringe'
 import { getJwkFromKey } from '../../crypto'
 import { CredoError } from '../../error'
 import { Hasher, JsonTransformer } from '../../utils'
-import { anoncreds2023DataIntegrityServiceSymbol } from '../credentials/formats/dataIntegrity/AnonCredsDataIntegrityService'
 import { DidsApi, getKeyFromVerificationMethod } from '../dids'
 import { SdJwtVcApi } from '../sd-jwt-vc'
 import {
@@ -44,6 +43,10 @@ import {
   W3cCredentialService,
   W3cPresentation,
 } from '../vc'
+import {
+  AnonCredsDataIntegrityServiceSymbol,
+  AnoncredsDataIntegrityCryptosuite,
+} from '../vc/data-integrity/models/IAnonCredsDataIntegrityService'
 
 import { DifPresentationExchangeError } from './DifPresentationExchangeError'
 import { DifPresentationExchangeSubmissionLocation } from './models'
@@ -54,8 +57,6 @@ import {
   getPresentationsToCreate,
   getSphereonOriginalVerifiableCredential,
 } from './utils'
-
-// export type ProofStructure = Record<string, Record<string, Array<W3cCredentialRecord>>>
 
 /**
  * @todo create a public api for using dif presentation exchange
@@ -399,7 +400,7 @@ export class DifPresentationExchangeService {
     return supportedSignatureSuites[0].proofType
   }
 
-  private signUsingAnoncreds2023(
+  private shouldSignUsingAnoncredsDataIntegrity(
     presentationToCreate: PresentationToCreate,
     presentationSubmission: PresentationSubmission
   ) {
@@ -412,12 +413,12 @@ export class DifPresentationExchangeService {
 
       return inputDescriptor?.format === 'di_vp' &&
         verifiableCredentials.credential.credential instanceof W3cJsonLdVerifiableCredential
-        ? verifiableCredentials.credential.credential.cryptoSuites
+        ? verifiableCredentials.credential.credential.dataIntegrityCryptosuites
         : []
     })
 
-    const commonCryptoSuites = cryptosuites.reduce((a, b) => a.filter((c) => b.includes(c)))
-    if (commonCryptoSuites.length === 0 || !commonCryptoSuites.includes('anoncreds-2023')) return undefined
+    const commonCryptosuites = cryptosuites.reduce((a, b) => a.filter((c) => b.includes(c)))
+    if (commonCryptosuites.length === 0 || !commonCryptosuites.includes(AnoncredsDataIntegrityCryptosuite)) return false
     return true
   }
 
@@ -458,16 +459,16 @@ export class DifPresentationExchangeService {
 
         return signedPresentation.encoded as W3CVerifiablePresentation
       } else if (presentationToCreate.claimFormat === ClaimFormat.LdpVp) {
-        if (this.signUsingAnoncreds2023(presentationToCreate, presentationSubmission)) {
-          const anoncredsDataIntegrityService =
-            agentContext.dependencyManager.resolve<Anoncreds2023DataIntegrityService>(
-              anoncreds2023DataIntegrityServiceSymbol
-            )
+        if (this.shouldSignUsingAnoncredsDataIntegrity(presentationToCreate, presentationSubmission)) {
+          const anoncredsDataIntegrityService = agentContext.dependencyManager.resolve<IAnoncredsDataIntegrityService>(
+            AnonCredsDataIntegrityServiceSymbol
+          )
           const presentation = await anoncredsDataIntegrityService.createPresentation(agentContext, {
             presentationDefinition,
             presentationSubmission,
             selectedCredentials: selectedCredentials as JsonObject[],
             selectedCredentialRecords: presentationToCreate.verifiableCredentials.map((vc) => vc.credential),
+            challenge,
           })
           presentation.presentation_submission = presentationSubmission as unknown as JsonObject
           return presentation as unknown as SphereonW3cVerifiablePresentation

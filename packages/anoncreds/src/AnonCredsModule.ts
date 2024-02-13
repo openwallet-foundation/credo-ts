@@ -1,16 +1,12 @@
 import type { AnonCredsModuleConfigOptions } from './AnonCredsModuleConfig'
+import type { DependencyManager, Module, Update } from '@credo-ts/core'
 
-import {
-  anoncreds2023DataIntegrityServiceSymbol,
-  type DependencyManager,
-  type Module,
-  type Update,
-} from '@credo-ts/core'
+import { AnonCredsDataIntegrityServiceSymbol } from '@credo-ts/core'
 
 import { AnonCredsApi } from './AnonCredsApi'
 import { AnonCredsModuleConfig } from './AnonCredsModuleConfig'
 import { AnonCredsRsHolderService, AnonCredsRsIssuerService, AnonCredsRsVerifierService } from './anoncreds-rs'
-import { AnonCreds2023DataIntegrityServiceImpl } from './anoncreds-rs/AnonCreds2023DataIntegrityService'
+import { AnonCredsDataIntegrityService } from './anoncreds-rs/AnonCredsDataIntegrityService'
 import {
   AnonCredsCredentialDefinitionPrivateRepository,
   AnonCredsKeyCorrectnessProofRepository,
@@ -23,7 +19,7 @@ import { AnonCredsSchemaRepository } from './repository/AnonCredsSchemaRepositor
 import { AnonCredsHolderServiceSymbol, AnonCredsIssuerServiceSymbol, AnonCredsVerifierServiceSymbol } from './services'
 import { AnonCredsRegistryService } from './services/registry/AnonCredsRegistryService'
 import { updateAnonCredsModuleV0_3_1ToV0_4 } from './updates/0.3.1-0.4'
-import { updateAnonCredsModuleV0_4_1ToV0_5 } from './updates/0.4-0.5'
+import { updateAnonCredsModuleV0_4ToV0_5 } from './updates/0.4-0.5'
 
 /**
  * @public
@@ -56,7 +52,7 @@ export class AnonCredsModule implements Module {
     dependencyManager.registerSingleton(AnonCredsIssuerServiceSymbol, AnonCredsRsIssuerService)
     dependencyManager.registerSingleton(AnonCredsVerifierServiceSymbol, AnonCredsRsVerifierService)
 
-    dependencyManager.registerSingleton(anoncreds2023DataIntegrityServiceSymbol, AnonCreds2023DataIntegrityServiceImpl)
+    dependencyManager.registerSingleton(AnonCredsDataIntegrityServiceSymbol, AnonCredsDataIntegrityService)
   }
 
   public updates = [
@@ -66,9 +62,9 @@ export class AnonCredsModule implements Module {
       doUpdate: updateAnonCredsModuleV0_3_1ToV0_4,
     },
     {
-      fromVersion: '0.4.1',
+      fromVersion: '0.4',
       toVersion: '0.5',
-      doUpdate: updateAnonCredsModuleV0_4_1ToV0_5,
+      doUpdate: updateAnonCredsModuleV0_4ToV0_5,
     },
   ] satisfies Update[]
 }

@@ -1,5 +1,4 @@
 import type { AnonCredsTestsAgent } from './anoncredsSetup'
-import type { AgentContext, KeyDidCreateOptions } from '@credo-ts/core'
 import type { EventReplaySubject } from '@credo-ts/core/tests'
 import type { InputDescriptorV2 } from '@sphereon/pex-models'
 
@@ -7,42 +6,20 @@ import {
   AutoAcceptCredential,
   CredentialExchangeRecord,
   CredentialState,
-  DidKey,
-  DidsApi,
-  KeyType,
   ProofState,
-  TypedArrayEncoder,
   W3cCredential,
   W3cCredentialService,
   W3cCredentialSubject,
 } from '@credo-ts/core'
 
 import { InMemoryAnonCredsRegistry } from '../../anoncreds/tests/InMemoryAnonCredsRegistry'
+import { createDidKidVerificationMethod } from '../../core/tests'
 import { waitForCredentialRecordSubject, waitForProofExchangeRecord } from '../../core/tests/helpers'
 
 import { setupAnonCredsTests } from './anoncredsSetup'
 import { presentationDefinition } from './fixtures/presentation-definition'
 
-export async function createDidKidVerificationMethod(agentContext: AgentContext, secretKey: string) {
-  const dids = agentContext.dependencyManager.resolve(DidsApi)
-  const didCreateResult = await dids.create<KeyDidCreateOptions>({
-    method: 'key',
-    options: { keyType: KeyType.Ed25519 },
-    secret: { privateKey: TypedArrayEncoder.fromString(secretKey) },
-  })
-
-  const did = didCreateResult.didState.did as string
-  const didKey = DidKey.fromDid(did)
-  const kid = `${did}#${didKey.key.fingerprint}`
-
-  const verificationMethod = didCreateResult.didState.didDocument?.dereferenceKey(kid, ['authentication'])
-  if (!verificationMethod) throw new Error('No verification method found')
-
-  return { did, kid, verificationMethod }
-}
-
 const issuerId = 'did:indy:local:LjgpST2rjsoxYegQDRm7EL'
-export type KDV = Awaited<ReturnType<typeof createDidKidVerificationMethod>>
 
 describe('data anoncreds w3c data integrity e2e tests', () => {
   let issuerAgent: AnonCredsTestsAgent
@@ -64,7 +41,7 @@ describe('data anoncreds w3c data integrity e2e tests', () => {
     await holderAgent.wallet.delete()
   })
 
-  test('issuance and verification flow starting from proposal without negotiation and with revocation', async () => {
+  test('issuance and verification flow starting from offer with revocation', async () => {
     ;({
       issuerAgent,
       issuerReplay,
@@ -94,7 +71,7 @@ describe('data anoncreds w3c data integrity e2e tests', () => {
     })
   })
 
-  test('issuance and verification flow starting from proposal without negotiation and without revocation', async () => {
+  test('issuance and verification flow starting from offer without revocation', async () => {
     ;({
       issuerAgent,
       issuerReplay,
@@ -176,12 +153,12 @@ async function anonCredsFlowTest(options: {
       dataIntegrity: {
         bindingRequired: true,
         credential,
-        anonCredsLinkSecretBindingMethodOptions: {
+        anonCredsLinkSecretBinding: {
           credentialDefinitionId,
           revocationRegistryDefinitionId: revocationRegistryDefinitionId ?? undefined,
           revocationRegistryIndex: revocationRegistryDefinitionId ? 1 : undefined,
         },
-        didCommSignedAttachmentBindingMethodOptions: {},
+        didCommSignedAttachmentBinding: {},
       },
     },
   })
@@ -196,7 +173,7 @@ async function anonCredsFlowTest(options: {
     autoAcceptCredential: AutoAcceptCredential.Never,
     credentialFormats: {
       dataIntegrity: {
-        anonCredsLinkSecretAcceptOfferOptions: {
+        anonCredsLinkSecret: {
           linkSecretId: 'linkSecretId',
         },
       },
@@ -235,21 +212,17 @@ async function anonCredsFlowTest(options: {
     createdAt: expect.any(Date),
     metadata: {
       data: {
-        '_dataIntegrity/credential': {
-          linkSecretMetadata: {
-            credentialDefinitionId,
-            schemaId: expect.any(String),
-          },
+        '_anoncreds/credential': {
+          credentialDefinitionId,
+          schemaId: expect.any(String),
         },
-        '_dataIntegrity/credentialRequest': {
-          linkSecretRequestMetadata: {
-            link_secret_blinding_data: {
-              v_prime: expect.any(String),
-              vr_prime: revocationRegistryDefinitionId ? expect.any(String) : null,
-            },
-            nonce: expect.any(String),
-            link_secret_name: 'linkSecretId',
+        '_anoncreds/credentialRequest': {
+          link_secret_blinding_data: {
+            v_prime: expect.any(String),
+            vr_prime: revocationRegistryDefinitionId ? expect.any(String) : null,
           },
+          nonce: expect.any(String),
+          link_secret_name: 'linkSecretId',
         },
       },
     },

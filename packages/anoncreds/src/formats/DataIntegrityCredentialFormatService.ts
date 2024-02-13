@@ -1,5 +1,7 @@
 import type { AnonCredsRevocationStatusList } from '../models'
 import type { AnonCredsIssuerService, AnonCredsHolderService } from '../services'
+import type { AnonCredsClaimRecord } from '../utils/credential'
+import type { AnonCredsCredentialMetadata, AnonCredsCredentialRequestMetadata } from '../utils/metadata'
 import type {
   DataIntegrityCredentialRequest,
   DataIntegrityCredentialOffer,
@@ -12,8 +14,6 @@ import type {
   DidCommSignedAttachmentDataIntegrityBindingProof,
   DataIntegrityOfferCredentialFormat,
   DataIntegrityCredentialFormat,
-  DataIntegrityRequestMetadata,
-  DataIntegrityMetadata,
   CredentialFormatService,
   AgentContext,
   CredentialFormatCreateProposalOptions,
@@ -33,13 +33,10 @@ import type {
   CredentialExchangeRecord,
   CredentialPreviewAttributeOptions,
   JsonObject,
-  AnonCredsClaimRecord,
   JwaSignatureAlgorithm,
   JwsDetachedFormat,
-  AnonCredsCredentialRecordOptions,
-  DataIntegrityLinkSecretRequestMetadata,
-  DataIntegrityLinkSecretMetadata,
   VerificationMethod,
+  W3cCredentialRecord,
 } from '@credo-ts/core'
 
 import {
@@ -47,7 +44,6 @@ import {
   CredentialFormatSpec,
   Attachment,
   JsonEncoder,
-  utils,
   CredentialProblemReportReason,
   JsonTransformer,
   W3cCredential,
@@ -59,8 +55,6 @@ import {
   JwsService,
   getKeyFromVerificationMethod,
   getJwkFromKey,
-  DataIntegrityRequestMetadataKey,
-  DataIntegrityMetadataKey,
   ClaimFormat,
   JwtPayload,
   SignatureSuiteRegistry,
@@ -70,26 +64,26 @@ import {
 } from '@credo-ts/core'
 import { W3cCredential as AW3cCredential } from '@hyperledger/anoncreds-shared'
 
+import { AnonCredsRsHolderService } from '../anoncreds-rs'
 import {
   AnonCredsCredentialDefinitionRepository,
-  AnonCredsLinkSecretRepository,
   AnonCredsRevocationRegistryDefinitionPrivateRepository,
   AnonCredsRevocationRegistryState,
 } from '../repository'
 import { AnonCredsIssuerServiceSymbol, AnonCredsHolderServiceSymbol } from '../services'
-import { AnonCredsRegistryService } from '../services/registry/AnonCredsRegistryService'
 import {
   dateToTimestamp,
   fetchCredentialDefinition,
   fetchRevocationRegistryDefinition,
   fetchRevocationStatusList,
   fetchSchema,
-  legacyCredentialToW3cCredential,
 } from '../utils'
 import {
   convertAttributesToCredentialValues,
   assertAttributesMatch as assertAttributesMatchSchema,
 } from '../utils/credential'
+import { AnonCredsCredentialMetadataKey, AnonCredsCredentialRequestMetadataKey } from '../utils/metadata'
+import { getAnonCredsTagsFromRecord } from '../utils/w3cAnonCredsUtils'
 
 const W3C_DATA_INTEGRITY_CREDENTIAL_OFFER = 'didcomm/w3c-di-vc-offer@v0.1'
 const W3C_DATA_INTEGRITY_CREDENTIAL_REQUEST = 'didcomm/w3c-di-vc-request@v0.1'
@@ -183,7 +177,7 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
     const isV2Credential = context.find((c) => c === 'https://www.w3.org/ns/credentials/v2')
 
     if (isV1Credential) return '1.1'
-    else if (isV2Credential) return '2.0'
+    else if (isV2Credential) throw new CredoError('Received w3c credential with unsupported version 2.0.')
     else throw new CredoError('Cannot determine credential version from @context')
   }
 
@@ -282,7 +276,7 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
     })
 
     const signedAttach = new Attachment({
-      mimeType: typeof data === 'string' ? undefined : 'application/json',
+      mimeType: 'application/json',
       data: new AttachmentData({ base64: jws.payload }),
     })
 
@@ -340,12 +334,9 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
 
     const credentialOffer = offerAttachment.getDataAsJson<DataIntegrityCredentialOffer>()
 
-    const dataIntegrityMetadata: DataIntegrityMetadata = {}
-    const dataIntegrityRequestMetadata: DataIntegrityRequestMetadata = {}
-
     let anonCredsLinkSecretDataIntegrityBindingProof: AnonCredsLinkSecretDataIntegrityBindingProof | undefined =
       undefined
-    if (dataIntegrityFormat.anonCredsLinkSecretAcceptOfferOptions) {
+    if (dataIntegrityFormat.anonCredsLinkSecret) {
       if (!credentialOffer.binding_method?.anoncreds_link_secret) {
         throw new CredoError('Cannot request credential with a binding method that was not offered.')
       }
@@ -365,24 +356,26 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
           schema_id: credentialDefinitionReturn.credentialDefinition.schemaId,
         },
         credentialDefinition: credentialDefinitionReturn.credentialDefinition,
-        linkSecretId: dataIntegrityFormat.anonCredsLinkSecretAcceptOfferOptions?.linkSecretId,
+        linkSecretId: dataIntegrityFormat.anonCredsLinkSecret?.linkSecretId,
       })
 
       if (!anonCredsCredentialRequest.entropy) throw new CredoError('Missing entropy for anonCredsCredentialRequest')
       anonCredsLinkSecretDataIntegrityBindingProof =
         anonCredsCredentialRequest as AnonCredsLinkSecretDataIntegrityBindingProof
 
-      dataIntegrityRequestMetadata.linkSecretRequestMetadata = anonCredsCredentialRequestMetadata
-
-      dataIntegrityMetadata.linkSecretMetadata = {
+      credentialRecord.metadata.set<AnonCredsCredentialMetadata>(AnonCredsCredentialMetadataKey, {
         credentialDefinitionId: credentialOffer.binding_method.anoncreds_link_secret.cred_def_id,
         schemaId: credentialDefinitionReturn.credentialDefinition.schemaId,
-      }
+      })
+      credentialRecord.metadata.set<AnonCredsCredentialRequestMetadata>(
+        AnonCredsCredentialRequestMetadataKey,
+        anonCredsCredentialRequestMetadata
+      )
     }
 
     let didCommSignedAttachmentBindingProof: DidCommSignedAttachmentDataIntegrityBindingProof | undefined = undefined
     let didCommSignedAttachment: Attachment | undefined = undefined
-    if (dataIntegrityFormat.didCommSignedAttachmentAcceptOfferOptions) {
+    if (dataIntegrityFormat.didCommSignedAttachment) {
       if (!credentialOffer.binding_method?.didcomm_signed_attachment) {
         throw new CredoError('Cannot request credential with a binding method that was not offered.')
       }
@@ -390,7 +383,7 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
       didCommSignedAttachment = await this.createSignedAttachment(
         agentContext,
         { nonce: credentialOffer.binding_method.didcomm_signed_attachment.nonce },
-        dataIntegrityFormat.didCommSignedAttachmentAcceptOfferOptions,
+        dataIntegrityFormat.didCommSignedAttachment,
         credentialOffer.binding_method.didcomm_signed_attachment.algs_supported
       )
 
@@ -411,12 +404,6 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
     if (!credentialOffer.data_model_versions_supported.includes(dataModelVersion)) {
       throw new CredoError('Cannot request credential with a data model version that was not offered.')
     }
-
-    credentialRecord.metadata.set<DataIntegrityMetadata>(DataIntegrityMetadataKey, dataIntegrityMetadata)
-    credentialRecord.metadata.set<DataIntegrityRequestMetadata>(
-      DataIntegrityRequestMetadataKey,
-      dataIntegrityRequestMetadata
-    )
 
     const credentialRequest: DataIntegrityCredentialRequest = {
       data_model_version: dataModelVersion,
@@ -453,7 +440,7 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
       credentialRecord: CredentialExchangeRecord
       anonCredsLinkSecretBindingMethod: AnonCredsLinkSecretBindingMethod
       anonCredsLinkSecretBindingProof: AnonCredsLinkSecretDataIntegrityBindingProof
-      linkSecretMetadata: DataIntegrityLinkSecretMetadata
+      linkSecretMetadata: AnonCredsCredentialMetadata
       credentialSubjectId?: string
     }
   ): Promise<W3cJsonLdVerifiableCredential> {
@@ -489,7 +476,7 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
     const credentialDefinition = (
       await agentContext.dependencyManager
         .resolve(AnonCredsCredentialDefinitionRepository)
-        .getByCredentialDefinitionId(agentContext, linkSecretMetadata.credentialDefinitionId)
+        .getByCredentialDefinitionId(agentContext, linkSecretMetadata.credentialDefinitionId as string)
     ).credentialDefinition.value
 
     // We check locally for credential definition info. If it supports revocation, we need to search locally for
@@ -532,7 +519,7 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
     const { credential } = await anonCredsIssuerService.createCredential(agentContext, {
       credentialOffer: {
         ...anonCredsLinkSecretBindingMethod,
-        schema_id: linkSecretMetadata.schemaId,
+        schema_id: linkSecretMetadata.schemaId as string,
       },
       credentialRequest: anonCredsLinkSecretBindingProof,
       credentialValues: convertAttributesToCredentialValues(credentialAttributes),
@@ -546,16 +533,25 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
       credential.cred_def_id
     )
 
-    return await legacyCredentialToW3cCredential(credential, anoncredsCredentialDefinition.issuerId)
+    const anoncredsRsHolderServive = agentContext.dependencyManager.resolve(AnonCredsRsHolderService)
+    return await anoncredsRsHolderServive.legacyToW3cCredential(
+      agentContext,
+      credential,
+      anoncredsCredentialDefinition.issuerId
+    )
   }
 
-  private async getSignatureMetadata(agentContext: AgentContext, offeredCredential: W3cCredential, issuerKid?: string) {
+  private async getSignatureMetadata(
+    agentContext: AgentContext,
+    offeredCredential: W3cCredential,
+    issuerVerificationMethod?: string
+  ) {
     const didsApi = agentContext.dependencyManager.resolve(DidsApi)
     const didDocument = await didsApi.resolveDidDocument(offeredCredential.issuerId)
 
     let verificationMethod: VerificationMethod
-    if (issuerKid) {
-      verificationMethod = didDocument.dereferenceKey(issuerKid, ['authentication', 'assertionMethod'])
+    if (issuerVerificationMethod) {
+      verificationMethod = didDocument.dereferenceKey(issuerVerificationMethod, ['authentication', 'assertionMethod'])
     } else {
       const vms = didDocument.authentication ?? didDocument.assertionMethod ?? didDocument.verificationMethod
       if (!vms || vms.length === 0) {
@@ -600,9 +596,13 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
   private async signCredential(
     agentContext: AgentContext,
     credential: W3cCredential | W3cJsonLdVerifiableCredential,
-    issuerKid?: string
+    issuerVerificationMethod?: string
   ) {
-    const { signatureSuite, verificationMethod } = await this.getSignatureMetadata(agentContext, credential, issuerKid)
+    const { signatureSuite, verificationMethod } = await this.getSignatureMetadata(
+      agentContext,
+      credential,
+      issuerVerificationMethod
+    )
     const w3cCredentialService = agentContext.dependencyManager.resolve(W3cCredentialService)
 
     let credentialToBeSigned = credential
@@ -657,21 +657,20 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
     const credentialRequest = requestAttachment.getDataAsJson<DataIntegrityCredentialRequest>()
     if (!credentialRequest) throw new CredoError('Missing data integrity credential request in createCredential')
 
-    const dataIntegrityMetadata = credentialRecord.metadata.get<DataIntegrityMetadata>(DataIntegrityMetadataKey)
-    if (!dataIntegrityMetadata) throw new CredoError('Missing data integrity credential metadata in createCredential')
-
     let signedCredential: W3cJsonLdVerifiableCredential | undefined
     if (credentialRequest.binding_proof?.anoncreds_link_secret) {
       if (!credentialOffer.binding_method?.anoncreds_link_secret) {
         throw new CredoError('Cannot issue credential with a binding method that was not offered')
       }
 
-      if (!dataIntegrityMetadata.linkSecretMetadata) throw new CredoError('Missing anoncreds link secret metadata')
+      const linkSecretMetadata =
+        credentialRecord.metadata.get<AnonCredsCredentialMetadata>(AnonCredsCredentialMetadataKey)
+      if (!linkSecretMetadata) throw new CredoError('Missing anoncreds link secret metadata')
 
       signedCredential = await this.createCredentialWithAnonCredsDataIntegrityProof(agentContext, {
         credentialRecord,
         anonCredsLinkSecretBindingMethod: credentialOffer.binding_method.anoncreds_link_secret,
-        linkSecretMetadata: dataIntegrityMetadata.linkSecretMetadata,
+        linkSecretMetadata,
         anonCredsLinkSecretBindingProof: credentialRequest.binding_proof.anoncreds_link_secret,
         credentialSubjectId: dataIntegrityFormat.credentialSubjectId,
       })
@@ -692,8 +691,11 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
         throw new CredoError('Invalid nonce in signed attachment')
       }
 
-      const issuerKid = dataIntegrityFormat.didCommSignedAttachmentAcceptRequestOptions?.kid
-      signedCredential = await this.signCredential(agentContext, signedCredential ?? assertedCredential, issuerKid)
+      signedCredential = await this.signCredential(
+        agentContext,
+        signedCredential ?? assertedCredential,
+        dataIntegrityFormat.issuerVerificationMethod
+      )
     }
 
     if (
@@ -712,11 +714,11 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
     return { format, attachment }
   }
 
-  private async processLinkSecretBoundCredential(
+  private async storeAnonCredsCredential(
     agentContext: AgentContext,
     credentialJson: JsonObject,
     credentialRecord: CredentialExchangeRecord,
-    linkSecretRequestMetadata: DataIntegrityLinkSecretRequestMetadata
+    linkSecretRequestMetadata: AnonCredsCredentialRequestMetadata
   ) {
     if (!credentialRecord.credentialAttributes) {
       throw new CredoError('Missing credential attributes on credential record. Unable to check credential attributes')
@@ -731,48 +733,34 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
       ? await fetchRevocationRegistryDefinition(agentContext, revocationRegistryId)
       : undefined
 
-    const methodName = agentContext.dependencyManager
-      .resolve(AnonCredsRegistryService)
-      .getRegistryForIdentifier(agentContext, credentialDefinitionReturn.id).methodName
-
-    const linkSecretRecord = await agentContext.dependencyManager
-      .resolve(AnonCredsLinkSecretRepository)
-      .getByLinkSecretId(agentContext, linkSecretRequestMetadata.link_secret_name)
-
-    if (!linkSecretRecord.value) throw new CredoError('Link Secret value not stored')
-
-    const processed = aCredential.process({
-      credentialRequestMetadata: linkSecretRequestMetadata as unknown as JsonObject,
-      credentialDefinition: credentialDefinitionReturn.credentialDefinition as unknown as JsonObject,
-      linkSecret: linkSecretRecord.value,
-      revocationRegistryDefinition:
-        revocationRegistryDefinitionReturn?.revocationRegistryDefinition as unknown as JsonObject,
+    const anonCredsRsHolderService = agentContext.dependencyManager.resolve(AnonCredsRsHolderService)
+    const processed = await anonCredsRsHolderService.processW3cCredential(agentContext, aCredential, {
+      credentialRequestMetadata: linkSecretRequestMetadata,
+      credentialDefinition: credentialDefinitionReturn.credentialDefinition,
+      revocationRegistryDefinition: revocationRegistryDefinitionReturn?.revocationRegistryDefinition,
     })
 
-    const anonCredsCredentialRecordOptions = {
-      credentialId: utils.uuid(),
-      linkSecretId: linkSecretRecord.linkSecretId,
-      credentialDefinitionId: credentialDefinitionReturn.id,
-      schemaId: schemaReturn.id,
-      schemaName: schemaReturn.schema.name,
-      schemaIssuerId: schemaReturn.schema.issuerId,
-      schemaVersion: schemaReturn.schema.version,
-      methodName,
-      revocationRegistryId: revocationRegistryDefinitionReturn?.id,
-      credentialRevocationId: revocationRegistryIndex?.toString(),
-    }
+    const w3cCredentialRecord = await anonCredsRsHolderService.storeW3cCredential(agentContext, {
+      credential: W3cJsonLdVerifiableCredential.fromJson(processed.toJson()),
+      schema: schemaReturn.schema,
+      credentialDefinitionId,
+      credentialDefinition: credentialDefinitionReturn.credentialDefinition,
+      credentialRequestMetadata: linkSecretRequestMetadata,
+      revocationRegistryDefinition: revocationRegistryDefinitionReturn?.revocationRegistryDefinition,
+    })
 
     // If the credential is revocable, store the revocation identifiers in the credential record
     if (revocationRegistryId) {
-      const metadata = credentialRecord.metadata.get<DataIntegrityMetadata>(DataIntegrityMetadataKey)
-      if (!metadata?.linkSecretMetadata) throw new CredoError('Missing link secret metadata')
+      const linkSecretMetadata =
+        credentialRecord.metadata.get<AnonCredsCredentialMetadata>(AnonCredsCredentialMetadataKey)
+      if (!linkSecretMetadata) throw new CredoError('Missing link secret metadata')
 
-      metadata.linkSecretMetadata.revocationRegistryId = revocationRegistryDefinitionReturn?.id
-      metadata.linkSecretMetadata.credentialRevocationId = revocationRegistryIndex?.toString()
-      credentialRecord.metadata.set<DataIntegrityMetadata>(DataIntegrityMetadataKey, metadata)
+      linkSecretMetadata.revocationRegistryId = revocationRegistryDefinitionReturn?.revocationRegistryDefinitionId
+      linkSecretMetadata.credentialRevocationId = revocationRegistryIndex?.toString()
+      credentialRecord.metadata.set<AnonCredsCredentialMetadata>(AnonCredsCredentialMetadataKey, linkSecretMetadata)
     }
 
-    return { processed: processed.toJson(), anonCredsCredentialRecordOptions }
+    return w3cCredentialRecord
   }
 
   /**
@@ -786,13 +774,6 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
   ): Promise<void> {
     const credentialOffer = offerAttachment.getDataAsJson<DataIntegrityCredentialOffer>()
     const offeredCredentialJson = credentialOffer.credential
-
-    const credentialRequestMetadata = credentialRecord.metadata.get<DataIntegrityRequestMetadata>(
-      DataIntegrityRequestMetadataKey
-    )
-    if (!credentialRequestMetadata) {
-      throw new CredoError(`Missing request metadata for credential exchange with thread id ${credentialRecord.id}`)
-    }
 
     const credentialRequest = requestAttachment.getDataAsJson<DataIntegrityCredentialRequest>()
     if (!credentialRequest) throw new CredoError('Missing data integrity credential request in createCredential')
@@ -841,28 +822,14 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
       throw new CredoError('Received invalid credential. Received credential does not match the offered credential')
     }
 
-    let anonCredsCredentialRecordOptions: AnonCredsCredentialRecordOptions | undefined
-    let w3cJsonLdVerifiableCredential: W3cJsonLdVerifiableCredential
+    let w3cCredentialRecord: W3cCredentialRecord
     if (credentialRequest.binding_proof?.anoncreds_link_secret) {
-      if (!credentialRequestMetadata.linkSecretRequestMetadata) {
+      const linkSecretRequestMetadata = credentialRecord.metadata.get<AnonCredsCredentialRequestMetadata>(
+        AnonCredsCredentialRequestMetadataKey
+      )
+      if (!linkSecretRequestMetadata) {
         throw new CredoError('Missing link secret request metadata')
       }
-
-      const { anonCredsCredentialRecordOptions: options, processed } = await this.processLinkSecretBoundCredential(
-        agentContext,
-        credentialJson,
-        credentialRecord,
-        credentialRequestMetadata.linkSecretRequestMetadata
-      )
-      anonCredsCredentialRecordOptions = options
-
-      w3cJsonLdVerifiableCredential = JsonTransformer.fromJSON(processed, W3cJsonLdVerifiableCredential)
-      await this.assertCredentialAttributesMatchSchemaAttributes(
-        agentContext,
-        w3cJsonLdVerifiableCredential,
-        anonCredsCredentialRecordOptions.schemaId,
-        true
-      )
 
       const integrityProtectedFields = ['@context', 'issuer', 'type', 'credentialSubject', 'validFrom', 'issuanceDate']
       if (
@@ -871,22 +838,34 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
         throw new CredoError('Credential offer contains non anoncreds integrity protected fields.')
       }
 
-      if (w3cJsonLdVerifiableCredential.type.length !== 1) {
+      if (!Array.isArray(offeredCredentialJson.type) || offeredCredentialJson?.type.length !== 1) {
         throw new CredoError(`Invalid credential type. Only single credential type 'VerifiableCredential' is supported`)
       }
-    } else {
-      w3cJsonLdVerifiableCredential = JsonTransformer.fromJSON(credentialJson, W3cJsonLdVerifiableCredential)
-    }
 
-    const w3cCredentialService = agentContext.dependencyManager.resolve(W3cCredentialService)
-    const record = await w3cCredentialService.storeCredential(agentContext, {
-      credential: w3cJsonLdVerifiableCredential,
-      anonCredsCredentialRecordOptions,
-    })
+      w3cCredentialRecord = await this.storeAnonCredsCredential(
+        agentContext,
+        credentialJson,
+        credentialRecord,
+        linkSecretRequestMetadata
+      )
+
+      await this.assertCredentialAttributesMatchSchemaAttributes(
+        agentContext,
+        w3cCredentialRecord.credential,
+        getAnonCredsTagsFromRecord(w3cCredentialRecord)?.anonCredsSchemaId as string,
+        true
+      )
+    } else {
+      const w3cCredentialService = agentContext.dependencyManager.resolve(W3cCredentialService)
+      const w3cJsonLdVerifiableCredential = JsonTransformer.fromJSON(credentialJson, W3cJsonLdVerifiableCredential)
+      w3cCredentialRecord = await w3cCredentialService.storeCredential(agentContext, {
+        credential: w3cJsonLdVerifiableCredential,
+      })
+    }
 
     credentialRecord.credentials.push({
       credentialRecordType: this.credentialRecordType,
-      credentialRecordId: record.id,
+      credentialRecordId: w3cCredentialRecord.id,
     })
   }
 
@@ -983,7 +962,7 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
       (credentialRequest.binding_proof?.didcomm_signed_attachment &&
         credentialOffer.binding_method?.didcomm_signed_attachment)
 
-    return !!(validLinkSecretRequest && validDidCommSignedAttachmetRequest)
+    return Boolean(validLinkSecretRequest && validDidCommSignedAttachmetRequest)
   }
 
   public async shouldAutoRespondToCredential(
@@ -992,7 +971,7 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     { credentialRecord, requestAttachment, credentialAttachment }: CredentialFormatAutoRespondCredentialOptions
   ) {
-    return false
+    return true
   }
 
   private async createDataIntegrityCredentialOffer(
@@ -1006,8 +985,8 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
     const {
       bindingRequired,
       credential,
-      anonCredsLinkSecretBindingMethodOptions,
-      didCommSignedAttachmentBindingMethodOptions,
+      anonCredsLinkSecretBinding: anonCredsLinkSecretBindingMethodOptions,
+      didCommSignedAttachmentBinding: didCommSignedAttachmentBindingMethodOptions,
     } = options
 
     const dataModelVersionsSupported: W3C_VC_DATA_MODEL_VERSION[] = ['1.1']
@@ -1016,8 +995,6 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
     const credentialJson = credential instanceof W3cCredential ? JsonTransformer.toJSON(credential) : credential
     const validW3cCredential = JsonTransformer.fromJSON(credentialJson, W3cCredential)
     const previewAttributes = this.previewAttributesFromCredential(validW3cCredential)
-
-    const dataIntegrityMetadata: DataIntegrityMetadata = {}
 
     let anonCredsLinkSecretBindingMethod: AnonCredsLinkSecretBindingMethod | undefined = undefined
     if (anonCredsLinkSecretBindingMethodOptions) {
@@ -1058,19 +1035,20 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
       const { schema_id, ..._anonCredsLinkSecretBindingMethod } = anoncredsCredentialOffer
       anonCredsLinkSecretBindingMethod = _anonCredsLinkSecretBindingMethod
 
-      dataIntegrityMetadata.linkSecretMetadata = {
+      credentialRecord.metadata.set<AnonCredsCredentialMetadata>(AnonCredsCredentialMetadataKey, {
         schemaId: schema_id,
         credentialDefinitionId: credentialDefinitionId,
         credentialRevocationId: revocationRegistryIndex?.toString(),
         revocationRegistryId: revocationRegistryDefinitionId,
-      }
+      })
     }
 
     let didCommSignedAttachmentBindingMethod: DidCommSignedAttachmentBindingMethod | undefined = undefined
     if (didCommSignedAttachmentBindingMethodOptions) {
       const { didMethodsSupported, algsSupported } = didCommSignedAttachmentBindingMethodOptions
       didCommSignedAttachmentBindingMethod = {
-        did_methods_supported: didMethodsSupported ?? this.getSupportedDidMethods(agentContext),
+        did_methods_supported:
+          didMethodsSupported ?? agentContext.dependencyManager.resolve(DidsApi).supportedResolverMethods,
         algs_supported: algsSupported ?? this.getSupportedJwaSignatureAlgorithms(agentContext),
         nonce: await agentContext.wallet.generateNonce(),
       }
@@ -1097,8 +1075,6 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
       },
       credential: credentialJson,
     }
-
-    credentialRecord.metadata.set<DataIntegrityMetadata>(DataIntegrityMetadataKey, dataIntegrityMetadata)
 
     return { dataIntegrityCredentialOffer, previewAttributes }
   }
@@ -1157,17 +1133,6 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
     })
 
     return attachment
-  }
-
-  private getSupportedDidMethods(agentContext: AgentContext) {
-    const didsApi = agentContext.dependencyManager.resolve(DidsApi)
-    const supportedDidMethods: Set<string> = new Set()
-
-    for (const resolver of didsApi.config.resolvers) {
-      resolver.supportedMethods.forEach((method) => supportedDidMethods.add(method))
-    }
-
-    return Array.from(supportedDidMethods)
   }
 
   /**

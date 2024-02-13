@@ -1,10 +1,14 @@
 import type { AnonCredsProof, AnonCredsProofRequest, AnonCredsNonRevokedInterval } from '../models'
 import type { AnonCredsVerifierService, VerifyProofOptions } from '../services'
-import type { AgentContext } from '@credo-ts/core'
-import type { JsonObject, NonRevokedIntervalOverride } from '@hyperledger/anoncreds-shared'
+import type { AgentContext, W3cJsonLdVerifiablePresentation } from '@credo-ts/core'
+import type {
+  JsonObject,
+  NonRevokedIntervalOverride,
+  VerifyW3cPresentationOptions,
+} from '@hyperledger/anoncreds-shared'
 
-import { injectable } from '@credo-ts/core'
-import { Presentation } from '@hyperledger/anoncreds-shared'
+import { JsonTransformer, injectable } from '@credo-ts/core'
+import { Presentation, W3cPresentation } from '@hyperledger/anoncreds-shared'
 
 import { fetchRevocationStatusList } from '../utils'
 
@@ -136,5 +140,23 @@ export class AnonCredsRsVerifierService implements AnonCredsVerifierService {
       verified: true,
       nonRevokedIntervalOverrides: nonRevokedIntervalOverrides.length ? nonRevokedIntervalOverrides : undefined,
     }
+  }
+
+  public verifyW3cPresentation(
+    presentation: W3cJsonLdVerifiablePresentation,
+    options: VerifyW3cPresentationOptions
+  ): boolean {
+    const presentationJson = JsonTransformer.toJSON(presentation)
+    const w3cPresentation = W3cPresentation.fromJson(presentationJson)
+
+    let result = false
+
+    try {
+      result = w3cPresentation.verify(options)
+    } finally {
+      w3cPresentation?.handle.clear()
+    }
+
+    return result
   }
 }

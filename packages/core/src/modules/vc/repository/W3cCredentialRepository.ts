@@ -1,5 +1,3 @@
-import type { AgentContext } from '../../../agent'
-
 import { EventEmitter } from '../../../agent/EventEmitter'
 import { InjectionSymbols } from '../../../constants'
 import { inject, injectable } from '../../../plugins'
@@ -15,18 +13,5 @@ export class W3cCredentialRepository extends Repository<W3cCredentialRecord> {
     eventEmitter: EventEmitter
   ) {
     super(W3cCredentialRecord, storageService, eventEmitter)
-  }
-
-  public async getByCredentialDefinitionId(agentContext: AgentContext, credentialDefinitionId: string) {
-    return this.getSingleByQuery(agentContext, { credentialDefinitionId })
-  }
-
-  public async findByCredentialDefinitionId(agentContext: AgentContext, credentialDefinitionId: string) {
-    return this.findSingleByQuery(agentContext, { credentialDefinitionId })
-  }
-
-  // FIXME: maybe we should rename this, as it only with anoncreds
-  public async getByCredentialId(agentContext: AgentContext, credentialId: string) {
-    return this.getSingleByQuery(agentContext, { credentialId })
   }
 }

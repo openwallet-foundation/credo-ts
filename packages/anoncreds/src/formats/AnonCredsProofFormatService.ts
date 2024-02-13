@@ -35,15 +35,7 @@ import type {
   ProofFormatAutoRespondPresentationOptions,
 } from '@credo-ts/core'
 
-import {
-  encodeCredentialValue,
-  CredoError,
-  Attachment,
-  AttachmentData,
-  JsonEncoder,
-  ProofFormatSpec,
-  JsonTransformer,
-} from '@credo-ts/core'
+import { CredoError, Attachment, AttachmentData, JsonEncoder, ProofFormatSpec, JsonTransformer } from '@credo-ts/core'
 
 import { AnonCredsProofRequest as AnonCredsProofRequestClass } from '../models/AnonCredsProofRequest'
 import { AnonCredsVerifierServiceSymbol, AnonCredsHolderServiceSymbol } from '../services'
@@ -60,6 +52,7 @@ import {
   fetchCredentialDefinition,
   fetchRevocationStatusList,
 } from '../utils'
+import { encodeCredentialValue } from '../utils/credential'
 import { dateToTimestamp } from '../utils/timestamp'
 
 const ANONCREDS_PRESENTATION_PROPOSAL = 'anoncreds/proof-request@v1.0'

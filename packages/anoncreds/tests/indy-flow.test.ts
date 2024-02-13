@@ -14,7 +14,6 @@ import {
   VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2018,
   VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2020,
   W3cCredentialsModuleConfig,
-  ConsoleLogger,
   DidResolverService,
   DidsModuleConfig,
 } from '@credo-ts/core'
@@ -23,7 +22,7 @@ import { Subject } from 'rxjs'
 import { InMemoryStorageService } from '../../../tests/InMemoryStorageService'
 import { AnonCredsRegistryService } from '../../anoncreds/src/services/registry/AnonCredsRegistryService'
 import { InMemoryAnonCredsRegistry } from '../../anoncreds/tests/InMemoryAnonCredsRegistry'
-import { agentDependencies, getAgentConfig, getAgentContext } from '../../core/tests/helpers'
+import { agentDependencies, getAgentConfig, getAgentContext, testLogger } from '../../core/tests'
 import { AnonCredsRsVerifierService, AnonCredsRsIssuerService, AnonCredsRsHolderService } from '../src/anoncreds-rs'
 
 import { anoncreds } from './helpers'
@@ -64,7 +63,6 @@ const anonCredsIssuerService = new AnonCredsRsIssuerService()
 
 const wallet = { generateNonce: () => Promise.resolve('947121108704767252195123') } as Wallet
 
-const logger = new ConsoleLogger()
 const inMemoryStorageService = new InMemoryStorageService()
 const agentContext = getAgentContext({
   registerInstances: [
@@ -75,8 +73,8 @@ const agentContext = getAgentContext({
     [AnonCredsHolderServiceSymbol, anonCredsHolderService],
     [AnonCredsVerifierServiceSymbol, anonCredsVerifierService],
     [AnonCredsRegistryService, new AnonCredsRegistryService()],
-    [DidResolverService, new DidResolverService(logger, new DidsModuleConfig())],
-    [InjectionSymbols.Logger, logger],
+    [DidResolverService, new DidResolverService(testLogger, new DidsModuleConfig())],
+    [InjectionSymbols.Logger, testLogger],
     [W3cCredentialsModuleConfig, new W3cCredentialsModuleConfig()],
     [AnonCredsModuleConfig, anonCredsModuleConfig],
     [
@@ -315,6 +313,7 @@ describe('Legacy indy format services using anoncreds-rs', () => {
       revocationRegistryId: null,
       credentialRevocationId: null,
       methodName: 'inMemory',
+      linkSecretId: 'linkSecretId',
     })
 
     expect(holderCredentialRecord.metadata.data).toEqual({

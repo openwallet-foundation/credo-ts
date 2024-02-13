@@ -1,12 +1,7 @@
 import type { LegacyIndyCredentialFormat, LegacyIndyCredentialProposalFormat } from './LegacyIndyCredentialFormat'
-import type {
-  AnonCredsCredential,
-  AnonCredsCredentialOffer,
-  AnonCredsCredentialRequest,
-  AnonCredsCredentialRequestMetadata,
-} from '../models'
+import type { AnonCredsCredential, AnonCredsCredentialOffer, AnonCredsCredentialRequest } from '../models'
 import type { AnonCredsIssuerService, AnonCredsHolderService } from '../services'
-import type { AnonCredsCredentialMetadata } from '../utils/metadata'
+import type { AnonCredsCredentialMetadata, AnonCredsCredentialRequestMetadata } from '../utils/metadata'
 import type {
   CredentialFormatService,
   AgentContext,
@@ -36,7 +31,6 @@ import {
   CredoError,
   Attachment,
   JsonEncoder,
-  utils,
   CredentialProblemReportReason,
   JsonTransformer,
 } from '@credo-ts/core'
@@ -54,6 +48,7 @@ import {
 import { isUnqualifiedCredentialDefinitionId, isUnqualifiedSchemaId } from '../utils/indyIdentifiers'
 import { AnonCredsCredentialMetadataKey, AnonCredsCredentialRequestMetadataKey } from '../utils/metadata'
 import { generateLegacyProverDidLikeString } from '../utils/proverDid'
+import { getStoreCredentialOptions } from '../utils/w3cAnonCredsUtils'
 
 const INDY_CRED_ABSTRACT = 'hlindy/cred-abstract@v2.0'
 const INDY_CRED_REQUEST = 'hlindy/cred-req@v2.0'
@@ -359,11 +354,12 @@ export class LegacyIndyCredentialFormatService implements CredentialFormatServic
 
     const anonCredsCredential = attachment.getDataAsJson<AnonCredsCredential>()
 
-    const { credentialDefinition, id: credentialDefinitionId } = await fetchCredentialDefinition(
+    const { credentialDefinition, credentialDefinitionId } = await fetchCredentialDefinition(
       agentContext,
       anonCredsCredential.cred_def_id
     )
-    const { schema } = await fetchSchema(agentContext, anonCredsCredential.schema_id)
+
+    const { schema, indyNamespace } = await fetchSchema(agentContext, anonCredsCredential.schema_id)
 
     // Resolve revocation registry if credential is revocable
     const revocationRegistryResult = anonCredsCredential.rev_reg_id
@@ -374,20 +370,24 @@ export class LegacyIndyCredentialFormatService implements CredentialFormatServic
     const recordCredentialValues = convertAttributesToCredentialValues(credentialRecord.credentialAttributes)
     assertCredentialValuesMatch(anonCredsCredential.values, recordCredentialValues)
 
-    const credentialId = await anonCredsHolderService.storeCredential(agentContext, {
-      credentialId: utils.uuid(),
-      credentialRequestMetadata,
-      credential: anonCredsCredential,
-      credentialDefinitionId,
-      credentialDefinition,
-      schema,
-      revocationRegistry: revocationRegistryResult?.revocationRegistryDefinition
-        ? {
-            definition: revocationRegistryResult.revocationRegistryDefinition,
-            id: revocationRegistryResult.id,
-          }
-        : undefined,
-    })
+    const storeCredentialOptions = getStoreCredentialOptions(
+      {
+        credential: anonCredsCredential,
+        credentialRequestMetadata,
+        credentialDefinition,
+        schema,
+        credentialDefinitionId,
+        revocationRegistry: revocationRegistryResult?.revocationRegistryDefinition
+          ? {
+              id: revocationRegistryResult.revocationRegistryDefinitionId,
+              definition: revocationRegistryResult.revocationRegistryDefinition,
+            }
+          : undefined,
+      },
+      indyNamespace
+    )
+
+    const credentialId = await anonCredsHolderService.storeCredential(agentContext, storeCredentialOptions)
 
     // If the credential is revocable, store the revocation identifiers in the credential record
     if (anonCredsCredential.rev_reg_id) {

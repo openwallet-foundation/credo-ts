@@ -1,4 +1,4 @@
-import type { JsonObject } from '../../../..'
+import type { JsonObject } from '../../../../types'
 
 export type W3C_VC_DATA_MODEL_VERSION = '1.1' | '2.0'
 

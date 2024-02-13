@@ -11,7 +11,6 @@ import type { PresentationVerificationCallback, SigningAlgo } from '@sphereon/di
 
 import {
   CredoError,
-  DidsApi,
   inject,
   injectable,
   InjectionSymbols,
@@ -24,6 +23,7 @@ import {
   W3cCredentialService,
   W3cJsonLdVerifiablePresentation,
   Hasher,
+  DidsApi,
 } from '@credo-ts/core'
 import {
   AuthorizationResponse,

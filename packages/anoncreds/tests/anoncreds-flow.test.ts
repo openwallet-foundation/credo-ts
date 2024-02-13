@@ -5,7 +5,6 @@ import {
   InjectionSymbols,
   ProofState,
   ProofExchangeRecord,
-  ConsoleLogger,
   CredentialExchangeRecord,
   CredentialPreviewAttribute,
   CredentialState,
@@ -24,7 +23,7 @@ import { InMemoryStorageService } from '../../../tests/InMemoryStorageService'
 import { AnonCredsRegistryService } from '../../anoncreds/src/services/registry/AnonCredsRegistryService'
 import { dateToTimestamp } from '../../anoncreds/src/utils/timestamp'
 import { InMemoryAnonCredsRegistry } from '../../anoncreds/tests/InMemoryAnonCredsRegistry'
-import { agentDependencies, getAgentConfig, getAgentContext } from '../../core/tests/helpers'
+import { agentDependencies, getAgentConfig, getAgentContext, testLogger } from '../../core/tests'
 import { AnonCredsRsHolderService, AnonCredsRsIssuerService, AnonCredsRsVerifierService } from '../src/anoncreds-rs'
 
 import { InMemoryTailsFileService } from './InMemoryTailsFileService'
@@ -71,8 +70,6 @@ const wallet = { generateNonce: () => Promise.resolve('947121108704767252195123'
 
 const inMemoryStorageService = new InMemoryStorageService()
 
-const logger = new ConsoleLogger()
-
 const agentContext = getAgentContext({
   registerInstances: [
     [InjectionSymbols.Stop$, new Subject<boolean>()],
@@ -82,8 +79,8 @@ const agentContext = getAgentContext({
     [AnonCredsIssuerServiceSymbol, anonCredsIssuerService],
     [AnonCredsHolderServiceSymbol, anonCredsHolderService],
     [AnonCredsVerifierServiceSymbol, anonCredsVerifierService],
-    [InjectionSymbols.Logger, logger],
-    [DidResolverService, new DidResolverService(logger, new DidsModuleConfig())],
+    [InjectionSymbols.Logger, testLogger],
+    [DidResolverService, new DidResolverService(testLogger, new DidsModuleConfig())],
     [AnonCredsRegistryService, new AnonCredsRegistryService()],
     [AnonCredsModuleConfig, anonCredsModuleConfig],
     [W3cCredentialsModuleConfig, new W3cCredentialsModuleConfig()],
@@ -381,6 +378,7 @@ async function anonCredsFlowTest(options: { issuerId: string; revocable: boolean
       age: 25,
       name: 'John',
     },
+    linkSecretId: 'linkSecretId',
     schemaId: schemaState.schemaId,
     credentialDefinitionId: credentialDefinitionState.credentialDefinitionId,
     revocationRegistryId: revocable ? revocationRegistryDefinitionId : null,

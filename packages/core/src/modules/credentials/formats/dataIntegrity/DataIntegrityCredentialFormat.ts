@@ -1,33 +1,29 @@
 import type {
-  AnonCredsLinkSecretCredentialRequestOptions,
+  AnonCredsLinkSecretCredentialRequestOptions as AnonCredsLinkSecretAcceptOfferOptions,
   DataIntegrityCredential,
   DataIntegrityCredentialOffer,
   DataIntegrityCredentialRequest,
-  DidCommSignedAttachmentCredentialRequestOptions,
+  DidCommSignedAttachmentCredentialRequestOptions as DidCommSignedAttachmentAcceptOfferOptions,
   W3C_VC_DATA_MODEL_VERSION,
 } from './dataIntegrityExchange'
 import type { CredentialFormat, JsonObject } from '../../../..'
 import type { W3cCredential } from '../../../vc'
 
-export interface AnonCredsLinkSecretBindingMethodOptions {
+export interface AnonCredsLinkSecretCreateOfferOptions {
   credentialDefinitionId: string
   revocationRegistryDefinitionId?: string
   revocationRegistryIndex?: number
 }
 
-export interface DidCommSignedAttachmentBindingMethodOptions {
+export interface DidCommSignedAttachmentCreateOfferOptions {
   didMethodsSupported?: string[]
   algsSupported?: string[]
 }
 
-/**
- * This defines the module payload for calling CredentialsApi.acceptOffer. No options are available for this
- * method, so it's an empty object
- */
 export interface DataIntegrityAcceptOfferFormat {
   dataModelVersion?: W3C_VC_DATA_MODEL_VERSION
-  didCommSignedAttachmentAcceptOfferOptions?: DidCommSignedAttachmentCredentialRequestOptions
-  anonCredsLinkSecretAcceptOfferOptions?: AnonCredsLinkSecretCredentialRequestOptions
+  didCommSignedAttachment?: DidCommSignedAttachmentAcceptOfferOptions
+  anonCredsLinkSecret?: AnonCredsLinkSecretAcceptOfferOptions
 }
 
 /**
@@ -37,19 +33,17 @@ export interface DataIntegrityAcceptOfferFormat {
 export interface DataIntegrityOfferCredentialFormat {
   credential: W3cCredential | JsonObject
   bindingRequired: boolean
-  anonCredsLinkSecretBindingMethodOptions?: AnonCredsLinkSecretBindingMethodOptions
-  didCommSignedAttachmentBindingMethodOptions?: DidCommSignedAttachmentBindingMethodOptions
+  anonCredsLinkSecretBinding?: AnonCredsLinkSecretCreateOfferOptions
+  didCommSignedAttachmentBinding?: DidCommSignedAttachmentCreateOfferOptions
 }
 
 /**
  * This defines the module payload for calling CredentialsApi.acceptRequest. No options are available for this
  * method, so it's an empty object
  */
-export type DataIntegrityAcceptRequestFormat = {
+export interface DataIntegrityAcceptRequestFormat {
   credentialSubjectId?: string
-  didCommSignedAttachmentAcceptRequestOptions?: {
-    kid: string
-  }
+  issuerVerificationMethod?: string
 }
 
 export interface DataIntegrityCredentialFormat extends CredentialFormat {

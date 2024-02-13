@@ -1,13 +1,11 @@
-import type { KeyDidCreateOptions } from '@credo-ts/core'
+import type { CreateDidKidVerificationMethodReturn } from '../../core/tests'
 
 import {
   AgentContext,
   CredentialExchangeRecord,
   CredentialPreviewAttribute,
   CredentialState,
-  DidKey,
   DidResolverService,
-  DidsApi,
   DidsModuleConfig,
   Ed25519Signature2018,
   InjectionSymbols,
@@ -15,8 +13,6 @@ import {
   KeyDidResolver,
   KeyType,
   SignatureSuiteToken,
-  SigningProviderRegistry,
-  TypedArrayEncoder,
   VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2018,
   VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2020,
   W3cCredential,
@@ -27,11 +23,17 @@ import {
 import { Subject } from 'rxjs'
 
 import { InMemoryStorageService } from '../../../tests/InMemoryStorageService'
+import { InMemoryWallet } from '../../../tests/InMemoryWallet'
 import { DataIntegrityCredentialFormatService } from '../../anoncreds/src/formats/DataIntegrityCredentialFormatService'
 import { AnonCredsRegistryService } from '../../anoncreds/src/services/registry/AnonCredsRegistryService'
 import { InMemoryAnonCredsRegistry } from '../../anoncreds/tests/InMemoryAnonCredsRegistry'
-import { RegisteredAskarTestWallet } from '../../askar/tests/helpers'
-import { agentDependencies, getAgentConfig, getAgentContext } from '../../core/tests/helpers'
+import {
+  agentDependencies,
+  createDidKidVerificationMethod,
+  getAgentConfig,
+  getAgentContext,
+  testLogger,
+} from '../../core/tests'
 import {
   AnonCredsHolderServiceSymbol,
   AnonCredsIssuerServiceSymbol,
@@ -58,19 +60,13 @@ const anonCredsIssuerService = new AnonCredsRsIssuerService()
 
 const inMemoryStorageService = new InMemoryStorageService()
 
-const logger = agentConfig.logger
-
 const didsModuleConfig = new DidsModuleConfig({
   registrars: [new KeyDidRegistrar()],
   resolvers: [new KeyDidResolver()],
 })
 const fileSystem = new agentDependencies.FileSystem()
 
-const wallet = new RegisteredAskarTestWallet(
-  agentConfig.logger,
-  new agentDependencies.FileSystem(),
-  new SigningProviderRegistry([])
-)
+const wallet = new InMemoryWallet()
 
 const agentContext = getAgentContext({
   registerInstances: [
@@ -81,9 +77,9 @@ const agentContext = getAgentContext({
     [AnonCredsIssuerServiceSymbol, anonCredsIssuerService],
     [AnonCredsHolderServiceSymbol, anonCredsHolderService],
     [AnonCredsVerifierServiceSymbol, anonCredsVerifierService],
-    [InjectionSymbols.Logger, logger],
+    [InjectionSymbols.Logger, testLogger],
     [DidsModuleConfig, didsModuleConfig],
-    [DidResolverService, new DidResolverService(logger, didsModuleConfig)],
+    [DidResolverService, new DidResolverService(testLogger, didsModuleConfig)],
     [AnonCredsRegistryService, new AnonCredsRegistryService()],
     [AnonCredsModuleConfig, anonCredsModuleConfig],
     [W3cCredentialsModuleConfig, new W3cCredentialsModuleConfig()],
@@ -111,14 +107,14 @@ const dataIntegrityCredentialFormatService = new DataIntegrityCredentialFormatSe
 const indyDid = 'did:indy:local:LjgpST2rjsoxYegQDRm7EL'
 
 describe('data integrity format service (w3c)', () => {
-  let issuer: Awaited<ReturnType<typeof createDidKidVerificationMethod>>
-  let holder: Awaited<ReturnType<typeof createDidKidVerificationMethod>>
+  let issuerKdv: CreateDidKidVerificationMethodReturn
+  let holderKdv: CreateDidKidVerificationMethodReturn
 
   beforeAll(async () => {
     await wallet.createAndOpen(agentConfig.walletConfig)
 
-    issuer = await createDidKidVerificationMethod(agentContext, '96213c3d7fc8d4d6754c7a0fd969598g')
-    holder = await createDidKidVerificationMethod(agentContext, '96213c3d7fc8d4d6754c7a0fd969598f')
+    issuerKdv = await createDidKidVerificationMethod(agentContext, '96213c3d7fc8d4d6754c7a0fd969598g')
+    holderKdv = await createDidKidVerificationMethod(agentContext, '96213c3d7fc8d4d6754c7a0fd969598f')
   })
 
   afterEach(async () => {
@@ -126,39 +122,17 @@ describe('data integrity format service (w3c)', () => {
   })
 
   test('issuance and verification flow w3c starting from offer without negotiation and without revocation', async () => {
-    await anonCredsFlowTest({ issuerId: indyDid, revocable: false, issuer, holder })
+    await anonCredsFlowTest({ issuerId: indyDid, revocable: false, issuerKdv: issuerKdv, holderKdv: holderKdv })
   })
 })
-
-export async function createDidKidVerificationMethod(agentContext: AgentContext, secretKey: string) {
-  const dids = agentContext.dependencyManager.resolve(DidsApi)
-  const didCreateResult = await dids.create<KeyDidCreateOptions>({
-    method: 'key',
-    options: { keyType: KeyType.Ed25519 },
-    secret: { privateKey: TypedArrayEncoder.fromString(secretKey) },
-  })
-
-  const did = didCreateResult.didState.did as string
-  const didKey = DidKey.fromDid(did)
-  const kid = `${did}#${didKey.key.fingerprint}`
-
-  const verificationMethod = didCreateResult.didState.didDocument?.dereferenceKey(kid, ['authentication'])
-  if (!verificationMethod) throw new Error('No verification method found')
-
-  return {
-    did,
-    kid,
-    verificationMethod,
-  }
-}
 
 async function anonCredsFlowTest(options: {
   issuerId: string
   revocable: boolean
-  issuer: Awaited<ReturnType<typeof createDidKidVerificationMethod>>
-  holder: Awaited<ReturnType<typeof createDidKidVerificationMethod>>
+  issuerKdv: CreateDidKidVerificationMethodReturn
+  holderKdv: CreateDidKidVerificationMethodReturn
 }) {
-  const { issuer } = options
+  const { issuerKdv: issuer } = options
 
   const holderCredentialRecord = new CredentialExchangeRecord({
     protocolVersion: 'v1',
@@ -256,21 +230,13 @@ async function anonCredsFlowTest(options: {
     })
   ).rejects.toThrow()
 
-  const expectedCredentialMetadata = {}
-  expect(holderCredentialRecord.metadata.data).toEqual({
-    '_dataIntegrity/credential': expectedCredentialMetadata,
-    '_dataIntegrity/credentialRequest': {},
-  })
+  expect(holderCredentialRecord.metadata.data).toEqual({})
 
-  expect(issuerCredentialRecord.metadata.data).toEqual({
-    '_dataIntegrity/credential': expectedCredentialMetadata,
-  })
+  expect(issuerCredentialRecord.metadata.data).toEqual({})
 
   const credentialRecordId = holderCredentialRecord.credentials[0].credentialRecordId
   const w3cCredentialService = agentContext.dependencyManager.resolve(W3cCredentialService)
   const credentialRecord = await w3cCredentialService.getCredentialRecordById(agentContext, credentialRecordId)
-  const credentialId = credentialRecord.getAnonCredsTags()?.credentialId
-  expect(credentialId).toBeUndefined()
 
   expect(credentialRecord.credential).toEqual({
     ...{

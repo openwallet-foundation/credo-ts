@@ -1,7 +1,6 @@
 import type { AnonCredsProofRequest } from '@credo-ts/anoncreds'
 
 import {
-  ConsoleLogger,
   DidResolverService,
   DidsModuleConfig,
   Ed25519Signature2018,
@@ -11,7 +10,6 @@ import {
   VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2018,
   VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2020,
   W3cCredentialsModuleConfig,
-  encodeCredentialValue,
 } from '@credo-ts/core'
 import { anoncreds } from '@hyperledger/anoncreds-nodejs'
 import { Subject } from 'rxjs'
@@ -19,7 +17,9 @@ import { Subject } from 'rxjs'
 import { InMemoryStorageService } from '../../../../../tests/InMemoryStorageService'
 import { InMemoryWallet } from '../../../../../tests/InMemoryWallet'
 import { InMemoryAnonCredsRegistry } from '../../../../anoncreds/tests/InMemoryAnonCredsRegistry'
+import { testLogger } from '../../../../core/tests'
 import { agentDependencies, getAgentConfig, getAgentContext } from '../../../../core/tests/helpers'
+import { encodeCredentialValue } from '../../utils/credential'
 import { AnonCredsRsHolderService } from '../AnonCredsRsHolderService'
 import { AnonCredsRsIssuerService } from '../AnonCredsRsIssuerService'
 import { AnonCredsRsVerifierService } from '../AnonCredsRsVerifierService'
@@ -53,8 +53,6 @@ const storageService = new InMemoryStorageService()
 const wallet = new InMemoryWallet()
 const registry = new InMemoryAnonCredsRegistry()
 
-const logger = new ConsoleLogger()
-
 const agentContext = getAgentContext({
   wallet,
   registerInstances: [
@@ -72,8 +70,8 @@ const agentContext = getAgentContext({
       }),
     ],
 
-    [InjectionSymbols.Logger, logger],
-    [DidResolverService, new DidResolverService(logger, new DidsModuleConfig())],
+    [InjectionSymbols.Logger, testLogger],
+    [DidResolverService, new DidResolverService(testLogger, new DidsModuleConfig())],
     [W3cCredentialsModuleConfig, new W3cCredentialsModuleConfig()],
     [
       SignatureSuiteToken,
@@ -198,18 +196,13 @@ describe('AnonCredsRsServices', () => {
       },
     })
 
-    const credentialId = 'holderCredentialId'
-
-    const storedId = await anonCredsHolderService.storeCredential(agentContext, {
+    const credentialId = await anonCredsHolderService.storeCredential(agentContext, {
       credential,
       credentialDefinition,
       schema,
       credentialDefinitionId: credentialDefinitionState.credentialDefinitionId,
       credentialRequestMetadata: credentialRequestState.credentialRequestMetadata,
-      credentialId,
     })
-
-    expect(storedId).toEqual(credentialId)
 
     const credentialInfo = await anonCredsHolderService.getCredential(agentContext, {
       credentialId,
@@ -221,6 +214,7 @@ describe('AnonCredsRsServices', () => {
         age: 25,
         name: 'John',
       },
+      linkSecretId: 'linkSecretId',
       schemaId: schemaState.schemaId,
       credentialDefinitionId: credentialDefinitionState.credentialDefinitionId,
       revocationRegistryId: null,
@@ -406,18 +400,14 @@ describe('AnonCredsRsServices', () => {
       },
     })
 
-    const credentialId = 'holderCredentialId2'
-
-    const storedId = await anonCredsHolderService.storeCredential(agentContext, {
+    // store credential now requires qualified identifiers
+    const credentialId = await anonCredsHolderService.storeCredential(agentContext, {
       credential,
-      credentialDefinition: unqualifiedCredentialDefinition.credentialDefinition,
-      schema: unqualifiedSchema.schema,
-      credentialDefinitionId: credentialOffer.cred_def_id,
+      credentialDefinition,
+      schema,
+      credentialDefinitionId: credentialDefinitionState.credentialDefinitionId,
       credentialRequestMetadata: credentialRequestState.credentialRequestMetadata,
-      credentialId,
     })
-
-    expect(storedId).toEqual(credentialId)
 
     const credentialInfo = await anonCredsHolderService.getCredential(agentContext, {
       credentialId,
@@ -429,6 +419,7 @@ describe('AnonCredsRsServices', () => {
         age: 25,
         name: 'John',
       },
+      linkSecretId: 'someLinkSecretId',
       schemaId: schemaState.schemaId,
       credentialDefinitionId: credentialDefinitionState.credentialDefinitionId,
       revocationRegistryId: null,

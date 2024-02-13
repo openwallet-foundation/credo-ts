@@ -38,10 +38,11 @@ export class W3cCredentialSubject {
 export function W3cCredentialSubjectTransformer() {
   return Transform(({ value, type }: { value: W3cCredentialSubjectOptions; type: TransformationType }) => {
     if (type === TransformationType.PLAIN_TO_CLASS) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const vToClass = (v: any) => {
+      const vToClass = (v: unknown) => {
+        if (!v || typeof v !== 'object') throw new CredoError('Invalid credential subject')
         if (isInstance(v, W3cCredentialSubject)) return v
-        const { id, ...claims } = v
+        const { id, ...claims } = v as Record<string, unknown>
+        if (id !== undefined && typeof id !== 'string') throw new CredoError('Invalid credential subject id')
         return new W3cCredentialSubject({ id, claims })
       }
 
@@ -51,9 +52,8 @@ export function W3cCredentialSubjectTransformer() {
 
       return Array.isArray(value) ? value.map(vToClass) : vToClass(value)
     } else if (type === TransformationType.CLASS_TO_PLAIN) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const vToJson = (v: any) => {
-        if (isInstance(v, W3cCredentialSubject)) return v.id ? { ...v.claims, id: v.id } : { ...v.claims }
+      const vToJson = (v: unknown) => {
+        if (v instanceof W3cCredentialSubject) return v.id ? { ...v.claims, id: v.id } : { ...v.claims }
         return v
       }
 

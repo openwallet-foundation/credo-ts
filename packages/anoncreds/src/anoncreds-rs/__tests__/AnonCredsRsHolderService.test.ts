@@ -1,23 +1,21 @@
+import type { W3cAnoncredsCredentialMetadata } from '../../utils/metadata'
 import type {
   AnonCredsCredentialDefinition,
-  AnonCredsCredentialRequestMetadata,
   AnonCredsProofRequest,
-  AnonCredsRevocationRegistryDefinition,
   AnonCredsRevocationStatusList,
   AnonCredsSchema,
   AnonCredsSelectedCredentials,
 } from '@credo-ts/anoncreds'
+import type { AnonCredsCredentialTags } from '@credo-ts/core'
 import type { JsonObject } from '@hyperledger/anoncreds-shared'
 
 import {
-  ConsoleLogger,
   DidResolverService,
   DidsModuleConfig,
   Ed25519Signature2018,
   InjectionSymbols,
   KeyType,
   SignatureSuiteToken,
-  SigningProviderRegistry,
   VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2018,
   VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2020,
   W3cCredentialRecord,
@@ -26,25 +24,33 @@ import {
   W3cCredentialsModuleConfig,
   W3cJsonLdVerifiableCredential,
 } from '@credo-ts/core'
-import { RevocationRegistryDefinition, anoncreds } from '@hyperledger/anoncreds-nodejs'
+import { anoncreds } from '@hyperledger/anoncreds-nodejs'
 import { Subject } from 'rxjs'
 
 import { InMemoryStorageService } from '../../../../../tests/InMemoryStorageService'
 import { AnonCredsCredentialDefinitionRepository } from '../../../../anoncreds/src/repository/AnonCredsCredentialDefinitionRepository'
 import { AnonCredsLinkSecretRepository } from '../../../../anoncreds/src/repository/AnonCredsLinkSecretRepository'
 import { InMemoryAnonCredsRegistry } from '../../../../anoncreds/tests/InMemoryAnonCredsRegistry'
-import { RegisteredAskarTestWallet } from '../../../../askar/tests/helpers'
+import { testLogger } from '../../../../core/tests'
 import { agentDependencies, getAgentConfig, getAgentContext, mockFunction } from '../../../../core/tests/helpers'
+import { W3cAnonCredsCredentialMetadataKey } from '../../utils/metadata'
 import { AnonCredsRsHolderService } from '../AnonCredsRsHolderService'
 
+import { InMemoryWallet } from './../../../../../tests/InMemoryWallet'
 import {
   createCredentialDefinition,
   createCredentialForHolder,
   createCredentialOffer,
   createLinkSecret,
+  storeCredential,
 } from './helpers'
 
-import { AnonCredsModuleConfig, AnonCredsHolderServiceSymbol, AnonCredsLinkSecretRecord } from '@credo-ts/anoncreds'
+import {
+  AnonCredsCredentialRepository,
+  AnonCredsModuleConfig,
+  AnonCredsHolderServiceSymbol,
+  AnonCredsLinkSecretRecord,
+} from '@credo-ts/anoncreds'
 
 const agentConfig = getAgentConfig('AnonCredsRsHolderServiceTest')
 const anonCredsHolderService = new AnonCredsRsHolderService()
@@ -62,14 +68,13 @@ jest.mock('../../../../core/src/modules/vc/repository/W3cCredentialRepository')
 const W3cCredentialRepositoryMock = W3cCredentialRepository as jest.Mock<W3cCredentialRepository>
 const w3cCredentialRepositoryMock = new W3cCredentialRepositoryMock()
 
-const inMemoryStorageService = new InMemoryStorageService()
-const logger = new ConsoleLogger()
+jest.mock('../../../../anoncreds/src/repository/AnonCredsCredentialRepository')
+const AnonCredsCredentialRepositoryMock = AnonCredsCredentialRepository as jest.Mock<AnonCredsCredentialRepository>
+const anoncredsCredentialRepositoryMock = new AnonCredsCredentialRepositoryMock()
 
-const wallet = new RegisteredAskarTestWallet(
-  agentConfig.logger,
-  new agentDependencies.FileSystem(),
-  new SigningProviderRegistry([])
-)
+const inMemoryStorageService = new InMemoryStorageService()
+
+const wallet = new InMemoryWallet()
 
 const agentContext = getAgentContext({
   registerInstances: [
@@ -79,6 +84,7 @@ const agentContext = getAgentContext({
     [AnonCredsCredentialDefinitionRepository, credentialDefinitionRepositoryMock],
     [AnonCredsLinkSecretRepository, anoncredsLinkSecretRepositoryMock],
     [W3cCredentialRepository, w3cCredentialRepositoryMock],
+    [AnonCredsCredentialRepository, anoncredsCredentialRepositoryMock],
     [AnonCredsHolderServiceSymbol, anonCredsHolderService],
     [
       AnonCredsModuleConfig,
@@ -87,8 +93,8 @@ const agentContext = getAgentContext({
         anoncreds,
       }),
     ],
-    [InjectionSymbols.Logger, logger],
-    [DidResolverService, new DidResolverService(logger, new DidsModuleConfig())],
+    [InjectionSymbols.Logger, testLogger],
+    [DidResolverService, new DidResolverService(testLogger, new DidsModuleConfig())],
     [W3cCredentialsModuleConfig, new W3cCredentialsModuleConfig()],
     [
       SignatureSuiteToken,
@@ -108,11 +114,14 @@ const agentContext = getAgentContext({
 })
 
 describe('AnonCredsRsHolderService', () => {
-  const getByCredentialIdMock = jest.spyOn(w3cCredentialRepositoryMock, 'getByCredentialId')
+  const getByCredentialIdMock = jest.spyOn(anoncredsCredentialRepositoryMock, 'getByCredentialId')
+  const findSingleByQueryMock = jest.spyOn(w3cCredentialRepositoryMock, 'findSingleByQuery')
   const findByQueryMock = jest.spyOn(w3cCredentialRepositoryMock, 'findByQuery')
 
   beforeEach(() => {
+    findSingleByQueryMock.mockClear()
     getByCredentialIdMock.mockClear()
+    findByQueryMock.mockClear()
   })
 
   test('createCredentialRequest', async () => {
@@ -180,6 +189,7 @@ describe('AnonCredsRsHolderService', () => {
     }
 
     const {
+      schema: personSchema,
       credentialDefinition: personCredentialDefinition,
       credentialDefinitionPrivate: personCredentialDefinitionPrivate,
       keyCorrectnessProof: personKeyCorrectnessProof,
@@ -189,6 +199,7 @@ describe('AnonCredsRsHolderService', () => {
     })
 
     const {
+      schema: phoneSchema,
       credentialDefinition: phoneCredentialDefinition,
       credentialDefinitionPrivate: phoneCredentialDefinitionPrivate,
       keyCorrectnessProof: phoneKeyCorrectnessProof,
@@ -208,7 +219,8 @@ describe('AnonCredsRsHolderService', () => {
       credentialInfo: personCredentialInfo,
       revocationRegistryDefinition: personRevRegDef,
       tailsPath: personTailsPath,
-    } = createCredentialForHolder({
+    } = await createCredentialForHolder({
+      agentContext,
       attributes: {
         name: 'John',
         sex: 'M',
@@ -222,8 +234,13 @@ describe('AnonCredsRsHolderService', () => {
       keyCorrectnessProof: personKeyCorrectnessProof,
       linkSecret,
       linkSecretId: 'linkSecretId',
-      credentialId: 'personCredId',
       revocationRegistryDefinitionId: 'personrevregid:uri',
+    })
+    const personRecord = await storeCredential(agentContext, personCredential, {
+      credentialDefinitionId: 'personcreddef:uri',
+      schemaId: 'personschema:uri',
+      schema: personSchema as unknown as AnonCredsSchema,
+      linkSecretId: 'linkSecretId',
     })
 
     const {
@@ -231,7 +248,8 @@ describe('AnonCredsRsHolderService', () => {
       credentialInfo: phoneCredentialInfo,
       revocationRegistryDefinition: phoneRevRegDef,
       tailsPath: phoneTailsPath,
-    } = createCredentialForHolder({
+    } = await createCredentialForHolder({
+      agentContext,
       attributes: {
         phoneNumber: 'linkSecretId56',
       },
@@ -242,57 +260,50 @@ describe('AnonCredsRsHolderService', () => {
       keyCorrectnessProof: phoneKeyCorrectnessProof,
       linkSecret,
       linkSecretId: 'linkSecretId',
-      credentialId: 'phoneCredId',
       revocationRegistryDefinitionId: 'phonerevregid:uri',
+    })
+
+    const phoneRecord = await storeCredential(agentContext, phoneCredential, {
+      credentialDefinitionId: 'phonecreddef:uri',
+      schemaId: 'phoneschema:uri',
+      schema: phoneSchema as unknown as AnonCredsSchema,
+      linkSecretId: 'linkSecretId',
     })
 
     const selectedCredentials: AnonCredsSelectedCredentials = {
       selfAttestedAttributes: { attr5_referent: 'football' },
       attributes: {
-        attr1_referent: { credentialId: 'personCredId', credentialInfo: personCredentialInfo, revealed: true },
-        attr2_referent: { credentialId: 'phoneCredId', credentialInfo: phoneCredentialInfo, revealed: true },
-        attr3_referent: { credentialId: 'personCredId', credentialInfo: personCredentialInfo, revealed: true },
-        attr4_referent: { credentialId: 'personCredId', credentialInfo: personCredentialInfo, revealed: true },
+        attr1_referent: {
+          credentialId: personRecord.id,
+          credentialInfo: { ...personCredentialInfo, credentialId: personRecord.id },
+          revealed: true,
+        },
+        attr2_referent: {
+          credentialId: phoneRecord.id,
+          credentialInfo: { ...phoneCredentialInfo, credentialId: phoneRecord.id },
+          revealed: true,
+        },
+        attr3_referent: {
+          credentialId: personRecord.id,
+          credentialInfo: { ...personCredentialInfo, credentialId: personRecord.id },
+          revealed: true,
+        },
+        attr4_referent: {
+          credentialId: personRecord.id,
+          credentialInfo: { ...personCredentialInfo, credentialId: personRecord.id },
+          revealed: true,
+        },
       },
       predicates: {
-        predicate1_referent: { credentialId: 'personCredId', credentialInfo: personCredentialInfo },
+        predicate1_referent: {
+          credentialId: personRecord.id,
+          credentialInfo: { ...personCredentialInfo, credentialId: personRecord.id },
+        },
       },
     }
 
-    getByCredentialIdMock.mockResolvedValueOnce(
-      new W3cCredentialRecord({
-        credential: personCredential,
-        tags: {},
-        anonCredsCredentialRecordOptions: {
-          credentialId: 'personCredId',
-          linkSecretId: 'linkSecretId',
-          schemaIssuerId: 'schemaIssuerDid',
-          schemaName: 'schemaName',
-          schemaVersion: 'schemaVersion',
-          methodName: 'inMemory',
-          schemaId: personCredentialInfo.schemaId,
-          credentialDefinitionId: personCredentialInfo.credentialDefinitionId,
-          revocationRegistryId: personCredentialInfo.revocationRegistryId ?? undefined,
-        },
-      })
-    )
-    getByCredentialIdMock.mockResolvedValueOnce(
-      new W3cCredentialRecord({
-        credential: phoneCredential,
-        tags: {},
-        anonCredsCredentialRecordOptions: {
-          credentialId: 'phoneCredId',
-          linkSecretId: 'linkSecretId',
-          schemaIssuerId: 'schemaIssuerDid',
-          schemaName: 'schemaName',
-          schemaVersion: 'schemaVersion',
-          methodName: 'inMemory',
-          schemaId: phoneCredentialInfo.schemaId,
-          credentialDefinitionId: phoneCredentialInfo.credentialDefinitionId,
-          revocationRegistryId: phoneCredentialInfo.revocationRegistryId ?? undefined,
-        },
-      })
-    )
+    findSingleByQueryMock.mockResolvedValueOnce(personRecord)
+    findSingleByQueryMock.mockResolvedValueOnce(phoneRecord)
 
     const revocationRegistries = {
       'personrevregid:uri': {
@@ -326,12 +337,13 @@ describe('AnonCredsRsHolderService', () => {
       revocationRegistries,
     })
 
-    expect(getByCredentialIdMock).toHaveBeenCalledTimes(2)
+    expect(findSingleByQueryMock).toHaveBeenCalledTimes(2)
     // TODO: check proof object
   })
 
   describe('getCredentialsForProofRequest', () => {
     const findByQueryMock = jest.spyOn(w3cCredentialRepositoryMock, 'findByQuery')
+    const anonCredsFindByQueryMock = jest.spyOn(anoncredsCredentialRepositoryMock, 'findByQuery')
 
     const proofRequest: AnonCredsProofRequest = {
       nonce: anoncreds.generateNonce(),
@@ -365,10 +377,12 @@ describe('AnonCredsRsHolderService', () => {
 
     beforeEach(() => {
       findByQueryMock.mockResolvedValue([])
+      anonCredsFindByQueryMock.mockResolvedValue([])
     })
 
     afterEach(() => {
       findByQueryMock.mockClear()
+      anonCredsFindByQueryMock.mockClear()
     })
 
     test('invalid referent', async () => {
@@ -389,10 +403,10 @@ describe('AnonCredsRsHolderService', () => {
       expect(findByQueryMock).toHaveBeenCalledWith(agentContext, {
         $and: [
           {
-            'attr::name::marker': true,
+            'anonCredsAttr::name::marker': true,
           },
           {
-            unqualifiedIssuerId: 'issuer:uri',
+            anonCredsIssuerId: 'issuer:uri',
           },
         ],
       })
@@ -407,7 +421,7 @@ describe('AnonCredsRsHolderService', () => {
       expect(findByQueryMock).toHaveBeenCalledWith(agentContext, {
         $and: [
           {
-            'attr::phoneNumber::marker': true,
+            'anonCredsAttr::phoneNumber::marker': true,
           },
         ],
       })
@@ -422,10 +436,13 @@ describe('AnonCredsRsHolderService', () => {
       expect(findByQueryMock).toHaveBeenCalledWith(agentContext, {
         $and: [
           {
-            'attr::age::marker': true,
+            'anonCredsAttr::age::marker': true,
           },
           {
-            $or: [{ unqualifiedSchemaId: 'schemaid:uri', schemaName: 'schemaName' }, { schemaVersion: '1.0' }],
+            $or: [
+              { anonCredsSchemaId: 'schemaid:uri', anonCredsSchemaName: 'schemaName' },
+              { anonCredsSchemaVersion: '1.0' },
+            ],
           },
         ],
       })
@@ -440,12 +457,12 @@ describe('AnonCredsRsHolderService', () => {
       expect(findByQueryMock).toHaveBeenCalledWith(agentContext, {
         $and: [
           {
-            'attr::name::marker': true,
-            'attr::height::marker': true,
+            'anonCredsAttr::name::marker': true,
+            'anonCredsAttr::height::marker': true,
           },
           {
-            unqualifiedCredentialDefinitionId: 'crededefid:uri',
-            unqualifiedIssuerId: 'issuerid:uri',
+            anonCredsCredentialDefinitionId: 'crededefid:uri',
+            anonCredsIssuerId: 'issuerid:uri',
           },
         ],
       })
@@ -460,11 +477,11 @@ describe('AnonCredsRsHolderService', () => {
       expect(findByQueryMock).toHaveBeenCalledWith(agentContext, {
         $and: [
           {
-            'attr::name::marker': true,
+            'anonCredsAttr::name::marker': true,
           },
           {
-            'attr::name::value': 'Alice',
-            'attr::name::marker': true,
+            'anonCredsAttr::name::value': 'Alice',
+            'anonCredsAttr::name::marker': true,
           },
         ],
       })
@@ -479,7 +496,7 @@ describe('AnonCredsRsHolderService', () => {
       expect(findByQueryMock).toHaveBeenCalledWith(agentContext, {
         $and: [
           {
-            'attr::age::marker': true,
+            'anonCredsAttr::age::marker': true,
           },
         ],
       })
@@ -487,66 +504,62 @@ describe('AnonCredsRsHolderService', () => {
   })
 
   test('deleteCredential', async () => {
+    const record = new W3cCredentialRecord({
+      credential: {} as W3cJsonLdVerifiableCredential,
+      tags: {},
+    })
+    findSingleByQueryMock.mockResolvedValueOnce(null).mockResolvedValueOnce(record)
     getByCredentialIdMock.mockRejectedValueOnce(new Error())
-    getByCredentialIdMock.mockResolvedValueOnce(
-      new W3cCredentialRecord({
-        credential: {} as W3cJsonLdVerifiableCredential,
-        tags: {},
-        anonCredsCredentialRecordOptions: {
-          credentialId: 'personCredId',
-          linkSecretId: 'linkSecretId',
-          schemaIssuerId: 'schemaIssuerDid',
-          schemaName: 'schemaName',
-          schemaVersion: 'schemaVersion',
-          methodName: 'inMemory',
-          schemaId: 'schemaId',
-          credentialDefinitionId: 'credDefId',
-          revocationRegistryId: 'revRegId',
-        },
-      })
-    )
 
-    expect(anonCredsHolderService.deleteCredential(agentContext, 'credentialId')).rejects.toThrowError()
-
+    await expect(anonCredsHolderService.deleteCredential(agentContext, 'credentialId')).rejects.toThrow()
     await anonCredsHolderService.deleteCredential(agentContext, 'credentialId')
-
-    expect(getByCredentialIdMock).toHaveBeenCalledWith(agentContext, 'credentialId')
+    expect(findSingleByQueryMock).toHaveBeenCalledWith(agentContext, { anonCredsCredentialId: 'credentialId' })
   })
 
   test('get single Credential', async () => {
+    const record = new W3cCredentialRecord({
+      credential: new W3cJsonLdVerifiableCredential({
+        credentialSubject: new W3cCredentialSubject({ claims: { attr1: 'value1', attr2: 'value2' } }),
+        issuer: 'test',
+        issuanceDate: Date.now().toString(),
+        type: ['VerifiableCredential'],
+        proof: {
+          created: Date.now().toString(),
+          type: 'test',
+          proofPurpose: 'test',
+          verificationMethod: 'test',
+        },
+      }),
+      tags: {},
+    })
+
+    const tags: AnonCredsCredentialTags = {
+      anonCredsCredentialId: record.id,
+      anonCredsLinkSecretId: 'linkSecretId',
+      anonCredsCredentialDefinitionId: 'credDefId',
+      anonCredsSchemaId: 'schemaId',
+      anonCredsSchemaName: 'schemaName',
+      anonCredsSchemaIssuerId: 'schemaIssuerId',
+      anonCredsSchemaVersion: 'schemaVersion',
+      anonCredsMethodName: 'methodName',
+      anonCredsCredentialRevocationId: 'credentialRevocationId',
+      anonCredsRevocationRegistryId: 'revRegId',
+    }
+
+    const anonCredsCredentialMetadata: W3cAnoncredsCredentialMetadata = {
+      credentialId: record.id,
+      credentialRevocationId: tags.anonCredsCredentialRevocationId,
+      linkSecretId: tags.anonCredsLinkSecretId,
+      methodName: tags.anonCredsMethodName,
+    }
+
+    record.setTags(tags)
+    record.metadata.set(W3cAnonCredsCredentialMetadataKey, anonCredsCredentialMetadata)
+
+    findSingleByQueryMock.mockResolvedValueOnce(null).mockResolvedValueOnce(record)
     getByCredentialIdMock.mockRejectedValueOnce(new Error())
 
-    getByCredentialIdMock.mockResolvedValueOnce(
-      new W3cCredentialRecord({
-        credential: new W3cJsonLdVerifiableCredential({
-          credentialSubject: new W3cCredentialSubject({ claims: { attr1: 'value1', attr2: 'value2' } }),
-          issuer: 'test',
-          issuanceDate: Date.now().toString(),
-          type: ['VerifiableCredential'],
-          proof: {
-            created: Date.now().toString(),
-            type: 'test',
-            proofPurpose: 'test',
-            verificationMethod: 'test',
-          },
-        }),
-        tags: {},
-        anonCredsCredentialRecordOptions: {
-          credentialId: 'myCredentialId',
-          credentialRevocationId: 'credentialRevocationId',
-          linkSecretId: 'linkSecretId',
-          schemaIssuerId: 'schemaIssuerDid',
-          schemaName: 'schemaName',
-          schemaVersion: 'schemaVersion',
-          methodName: 'inMemory',
-          schemaId: 'schemaId',
-          credentialDefinitionId: 'credDefId',
-          revocationRegistryId: 'revRegId',
-        },
-      })
-    )
-
-    expect(
+    await expect(
       anonCredsHolderService.getCredential(agentContext, { credentialId: 'myCredentialId' })
     ).rejects.toThrowError()
 
@@ -555,7 +568,7 @@ describe('AnonCredsRsHolderService', () => {
     expect(credentialInfo).toMatchObject({
       attributes: { attr1: 'value1', attr2: 'value2' },
       credentialDefinitionId: 'credDefId',
-      credentialId: 'myCredentialId',
+      credentialId: record.id,
       revocationRegistryId: 'revRegId',
       schemaId: 'schemaId',
       credentialRevocationId: 'credentialRevocationId',
@@ -563,35 +576,47 @@ describe('AnonCredsRsHolderService', () => {
   })
 
   test('getCredentials', async () => {
-    findByQueryMock.mockResolvedValueOnce([
-      new W3cCredentialRecord({
-        credential: new W3cJsonLdVerifiableCredential({
-          credentialSubject: new W3cCredentialSubject({ claims: { attr1: 'value1', attr2: 'value2' } }),
-          issuer: 'test',
-          issuanceDate: Date.now().toString(),
-          type: ['VerifiableCredential'],
-          proof: {
-            created: Date.now().toString(),
-            type: 'test',
-            proofPurpose: 'test',
-            verificationMethod: 'test',
-          },
-        }),
-        tags: {},
-        anonCredsCredentialRecordOptions: {
-          credentialId: 'myCredentialId',
-          credentialRevocationId: 'credentialRevocationId',
-          linkSecretId: 'linkSecretId',
-          schemaIssuerId: 'schemaIssuerDid',
-          schemaName: 'schemaName',
-          schemaVersion: 'schemaVersion',
-          methodName: 'inMemory',
-          schemaId: 'schemaId',
-          credentialDefinitionId: 'credDefId',
-          revocationRegistryId: 'revRegId',
+    const record = new W3cCredentialRecord({
+      credential: new W3cJsonLdVerifiableCredential({
+        credentialSubject: new W3cCredentialSubject({ claims: { attr1: 'value1', attr2: 'value2' } }),
+        issuer: 'test',
+        issuanceDate: Date.now().toString(),
+        type: ['VerifiableCredential'],
+        proof: {
+          created: Date.now().toString(),
+          type: 'test',
+          proofPurpose: 'test',
+          verificationMethod: 'test',
         },
       }),
-    ])
+      tags: {},
+    })
+    const records = [record]
+
+    const tags: AnonCredsCredentialTags = {
+      anonCredsCredentialId: record.id,
+      anonCredsLinkSecretId: 'linkSecretId',
+      anonCredsCredentialDefinitionId: 'credDefId',
+      anonCredsSchemaId: 'schemaId',
+      anonCredsSchemaName: 'schemaName',
+      anonCredsSchemaIssuerId: 'schemaIssuerId',
+      anonCredsSchemaVersion: 'schemaVersion',
+      anonCredsMethodName: 'methodName',
+      anonCredsCredentialRevocationId: 'credentialRevocationId',
+      anonCredsRevocationRegistryId: 'revRegId',
+    }
+
+    const anonCredsCredentialMetadata: W3cAnoncredsCredentialMetadata = {
+      credentialId: record.id,
+      credentialRevocationId: tags.anonCredsCredentialRevocationId,
+      linkSecretId: tags.anonCredsLinkSecretId,
+      methodName: tags.anonCredsMethodName,
+    }
+
+    record.setTags(tags)
+    record.metadata.set(W3cAnonCredsCredentialMetadataKey, anonCredsCredentialMetadata)
+
+    findByQueryMock.mockResolvedValueOnce(records)
 
     const credentialInfo = await anonCredsHolderService.getCredentials(agentContext, {
       credentialDefinitionId: 'credDefId',
@@ -604,19 +629,19 @@ describe('AnonCredsRsHolderService', () => {
     })
 
     expect(findByQueryMock).toHaveBeenCalledWith(agentContext, {
-      unqualifiedCredentialDefinitionId: 'credDefId',
-      unqualifiedSchemaId: 'schemaId',
-      unqualifiedSchemaIssuerId: 'schemaIssuerDid',
-      unqualifiedIssuerId: 'issuerDid',
-      schemaName: 'schemaName',
-      schemaVersion: 'schemaVersion',
-      methodName: 'inMemory',
+      anonCredsCredentialDefinitionId: 'credDefId',
+      anonCredsSchemaId: 'schemaId',
+      anonCredsSchemaIssuerId: 'schemaIssuerDid',
+      anonCredsIssuerId: 'issuerDid',
+      anonCredsSchemaName: 'schemaName',
+      anonCredsSchemaVersion: 'schemaVersion',
+      anonCredsMethodName: 'inMemory',
     })
     expect(credentialInfo).toMatchObject([
       {
         attributes: { attr1: 'value1', attr2: 'value2' },
         credentialDefinitionId: 'credDefId',
-        credentialId: 'myCredentialId',
+        credentialId: record.id,
         revocationRegistryId: 'revRegId',
         schemaId: 'schemaId',
         credentialRevocationId: 'credentialRevocationId',
@@ -636,14 +661,10 @@ describe('AnonCredsRsHolderService', () => {
       new AnonCredsLinkSecretRecord({ linkSecretId: 'linkSecretId', value: linkSecret })
     )
 
-    const schema: AnonCredsSchema = {
-      attrNames: ['name', 'sex', 'height', 'age'],
-      issuerId: 'did:indy:sovrin:7Tqg6BwSSWapxgUDm9KKgg',
-      name: 'schemaName',
-      version: '1',
-    }
+    const saveCredentialMock = jest.spyOn(w3cCredentialRepositoryMock, 'save')
 
-    const { credential, revocationRegistryDefinition, credentialRequestMetadata } = createCredentialForHolder({
+    const { credential } = await createCredentialForHolder({
+      agentContext,
       attributes: {
         name: 'John',
         sex: 'M',
@@ -657,44 +678,22 @@ describe('AnonCredsRsHolderService', () => {
       keyCorrectnessProof,
       linkSecret,
       linkSecretId: 'linkSecretId',
-      credentialId: 'personCredId',
       revocationRegistryDefinitionId: 'did:indy:sovrin:test:12345/anoncreds/v0/REV_REG_DEF/420/someTag/anotherTag',
     })
 
-    const saveCredentialMock = jest.spyOn(w3cCredentialRepositoryMock, 'save')
-
-    saveCredentialMock.mockResolvedValue()
-
-    const credentialId = await anonCredsHolderService.storeCredential(agentContext, {
-      credential,
-      credentialDefinition,
-      credentialDefinitionId: 'did:indy:bcovrin:test:SDqTzbVuCowusqGBNbNDjH/anoncreds/v0/CLAIM_DEF/104/default',
-      credentialRequestMetadata: credentialRequestMetadata.toJson() as unknown as AnonCredsCredentialRequestMetadata,
-      credentialId: 'personCredId',
-      schema,
-      revocationRegistry: {
-        id: 'did:indy:sovrin:test:12345/anoncreds/v0/REV_REG_DEF/420/someTag/anotherTag',
-        definition: new RevocationRegistryDefinition(
-          revocationRegistryDefinition.handle
-        ).toJson() as unknown as AnonCredsRevocationRegistryDefinition,
+    await storeCredential(agentContext, credential, {
+      schema: {
+        name: 'schemaname',
+        attrNames: ['name', 'age', 'height', 'sex'],
+        issuerId: 'did:indy:bcovrin:test:SDqTzbVuCowusqGBNbNDjH',
+        version: '1.0',
       },
+
+      linkSecretId: 'linkSecretId',
+      schemaId: 'did:indy:bcovrin:test:SDqTzbVuCowusqGBNbNDjH/anoncreds/v0/SCHEMA/credentialDefinition-name/1.0',
+      credentialDefinitionId: 'did:indy:bcovrin:test:SDqTzbVuCowusqGBNbNDjH/anoncreds/v0/CLAIM_DEF/104/default',
     })
 
-    expect(credentialId).toBe('personCredId')
-    expect(saveCredentialMock).toHaveBeenCalledWith(
-      agentContext,
-      expect.objectContaining({
-        anonCredsCredentialMetadata: expect.objectContaining({
-          credentialId: 'personCredId',
-          linkSecretId: 'linkSecretId',
-        }),
-        // The stored credential is different from the one received originally
-        _tags: expect.objectContaining({
-          schemaName: 'schemaName',
-          schemaIssuerId: 'did:indy:sovrin:7Tqg6BwSSWapxgUDm9KKgg',
-          schemaVersion: '1',
-        }),
-      })
-    )
+    expect(saveCredentialMock).toHaveBeenCalledWith(agentContext, expect.objectContaining({ credential }))
   })
 })

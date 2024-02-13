@@ -15,7 +15,6 @@ import {
   ProofExchangeRecord,
   ProofState,
   SignatureSuiteToken,
-  SigningProviderRegistry,
   VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2018,
   VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2020,
   W3cCredential,
@@ -26,13 +25,14 @@ import {
 import { Subject } from 'rxjs'
 
 import { InMemoryStorageService } from '../../../tests/InMemoryStorageService'
+import { InMemoryWallet } from '../../../tests/InMemoryWallet'
 import { DataIntegrityCredentialFormatService } from '../../anoncreds/src/formats/DataIntegrityCredentialFormatService'
 import { AnonCredsRegistryService } from '../../anoncreds/src/services/registry/AnonCredsRegistryService'
 import { dateToTimestamp } from '../../anoncreds/src/utils/timestamp'
 import { InMemoryAnonCredsRegistry } from '../../anoncreds/tests/InMemoryAnonCredsRegistry'
-import { RegisteredAskarTestWallet } from '../../askar/tests/helpers'
-import { agentDependencies, getAgentConfig, getAgentContext } from '../../core/tests/helpers'
+import { agentDependencies, getAgentConfig, getAgentContext, testLogger } from '../../core/tests'
 import { AnonCredsRsHolderService, AnonCredsRsIssuerService, AnonCredsRsVerifierService } from '../src/anoncreds-rs'
+import { getAnonCredsTagsFromRecord } from '../src/utils/w3cAnonCredsUtils'
 
 import { InMemoryTailsFileService } from './InMemoryTailsFileService'
 import { anoncreds } from './helpers'
@@ -75,19 +75,13 @@ const anonCredsIssuerService = new AnonCredsRsIssuerService()
 
 const inMemoryStorageService = new InMemoryStorageService()
 
-const logger = agentConfig.logger
-
 const didsModuleConfig = new DidsModuleConfig({
   registrars: [new KeyDidRegistrar()],
   resolvers: [new KeyDidResolver()],
 })
 const fileSystem = new agentDependencies.FileSystem()
 
-const wallet = new RegisteredAskarTestWallet(
-  agentConfig.logger,
-  new agentDependencies.FileSystem(),
-  new SigningProviderRegistry([])
-)
+const wallet = new InMemoryWallet()
 
 const agentContext = getAgentContext({
   registerInstances: [
@@ -98,10 +92,9 @@ const agentContext = getAgentContext({
     [AnonCredsIssuerServiceSymbol, anonCredsIssuerService],
     [AnonCredsHolderServiceSymbol, anonCredsHolderService],
     [AnonCredsVerifierServiceSymbol, anonCredsVerifierService],
-    [InjectionSymbols.Logger, logger],
-    [InjectionSymbols.Logger, logger],
+    [InjectionSymbols.Logger, testLogger],
     [DidsModuleConfig, didsModuleConfig],
-    [DidResolverService, new DidResolverService(logger, didsModuleConfig)],
+    [DidResolverService, new DidResolverService(testLogger, didsModuleConfig)],
     [AnonCredsRegistryService, new AnonCredsRegistryService()],
     [AnonCredsModuleConfig, anonCredsModuleConfig],
     [W3cCredentialsModuleConfig, new W3cCredentialsModuleConfig()],
@@ -341,12 +334,12 @@ async function anonCredsFlowTest(options: { issuerId: string; revocable: boolean
       dataIntegrity: {
         bindingRequired: true,
         credential,
-        anonCredsLinkSecretBindingMethodOptions: {
+        anonCredsLinkSecretBinding: {
           credentialDefinitionId: credentialDefinitionState.credentialDefinitionId,
           revocationRegistryDefinitionId,
           revocationRegistryIndex: revocable ? 1 : undefined,
         },
-        didCommSignedAttachmentBindingMethodOptions: {},
+        didCommSignedAttachmentBinding: {},
       },
     },
   })
@@ -363,7 +356,7 @@ async function anonCredsFlowTest(options: { issuerId: string; revocable: boolean
       credentialFormats: {
         dataIntegrity: {
           dataModelVersion: '1.1',
-          anonCredsLinkSecretAcceptOfferOptions: {
+          anonCredsLinkSecret: {
             linkSecretId: linkSecret.linkSecretId,
           },
         },
@@ -404,7 +397,7 @@ async function anonCredsFlowTest(options: { issuerId: string; revocable: boolean
   const credentialRecordId = holderCredentialRecord.credentials[0].credentialRecordId
   const w3cCredentialService = agentContext.dependencyManager.resolve(W3cCredentialService)
   const credentialRecord = await w3cCredentialService.getCredentialRecordById(agentContext, credentialRecordId)
-  const credentialId = credentialRecord.getAnonCredsTags()?.credentialId
+  const credentialId = getAnonCredsTagsFromRecord(credentialRecord)?.anonCredsCredentialId
   if (!credentialId) throw new Error('Credential ID not found')
 
   const anonCredsCredential = await anonCredsHolderService.getCredential(agentContext, {
@@ -417,6 +410,7 @@ async function anonCredsFlowTest(options: { issuerId: string; revocable: boolean
       age: 25,
       name: 'John',
     },
+    linkSecretId: 'linkSecretId',
     schemaId: schemaState.schemaId,
     credentialDefinitionId: credentialDefinitionState.credentialDefinitionId,
     revocationRegistryId: revocable ? revocationRegistryDefinitionId : null,
@@ -426,32 +420,26 @@ async function anonCredsFlowTest(options: { issuerId: string; revocable: boolean
 
   const expectedCredentialMetadata = revocable
     ? {
-        linkSecretMetadata: {
-          schemaId: schemaState.schemaId,
-          credentialDefinitionId: credentialDefinitionState.credentialDefinitionId,
-          revocationRegistryId: revocationRegistryDefinitionId,
-          credentialRevocationId: '1',
-        },
+        schemaId: schemaState.schemaId,
+        credentialDefinitionId: credentialDefinitionState.credentialDefinitionId,
+        revocationRegistryId: revocationRegistryDefinitionId,
+        credentialRevocationId: '1',
       }
     : {
-        linkSecretMetadata: {
-          schemaId: schemaState.schemaId,
-          credentialDefinitionId: credentialDefinitionState.credentialDefinitionId,
-        },
+        schemaId: schemaState.schemaId,
+        credentialDefinitionId: credentialDefinitionState.credentialDefinitionId,
       }
   expect(holderCredentialRecord.metadata.data).toEqual({
-    '_dataIntegrity/credential': expectedCredentialMetadata,
-    '_dataIntegrity/credentialRequest': {
-      linkSecretRequestMetadata: {
-        link_secret_blinding_data: expect.any(Object),
-        link_secret_name: expect.any(String),
-        nonce: expect.any(String),
-      },
+    '_anoncreds/credential': expectedCredentialMetadata,
+    '_anoncreds/credentialRequest': {
+      link_secret_blinding_data: expect.any(Object),
+      link_secret_name: expect.any(String),
+      nonce: expect.any(String),
     },
   })
 
   expect(issuerCredentialRecord.metadata.data).toEqual({
-    '_dataIntegrity/credential': expectedCredentialMetadata,
+    '_anoncreds/credential': expectedCredentialMetadata,
   })
 
   const holderProofRecord = new ProofExchangeRecord({

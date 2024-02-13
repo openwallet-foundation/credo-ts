@@ -1,4 +1,4 @@
-import type { AnonCredsCredentialValue } from '@credo-ts/core'
+import type { AnonCredsCredentialValue } from '../utils/credential'
 
 export const anonCredsPredicateType = ['>=', '>', '<=', '<'] as const
 export type AnonCredsPredicateType = (typeof anonCredsPredicateType)[number]

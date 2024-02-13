@@ -14,7 +14,6 @@ import {
   VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2018,
   VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2020,
   W3cCredentialsModuleConfig,
-  ConsoleLogger,
   DidResolverService,
   DidsModuleConfig,
 } from '@credo-ts/core'
@@ -24,6 +23,7 @@ import { InMemoryStorageService } from '../../../../../tests/InMemoryStorageServ
 import { InMemoryWallet } from '../../../../../tests/InMemoryWallet'
 import { anoncreds } from '../../../../anoncreds/tests/helpers'
 import { indyDidFromPublicKeyBase58 } from '../../../../core/src/utils/did'
+import { testLogger } from '../../../../core/tests'
 import { agentDependencies, getAgentConfig, getAgentContext } from '../../../../core/tests/helpers'
 import { InMemoryAnonCredsRegistry } from '../../../tests/InMemoryAnonCredsRegistry'
 import { AnonCredsModuleConfig } from '../../AnonCredsModuleConfig'
@@ -79,7 +79,6 @@ const anonCredsCredentialDefinitionPrivateRepository = new AnonCredsCredentialDe
   eventEmitter
 )
 
-const logger = new ConsoleLogger()
 const inMemoryStorageService = new InMemoryStorageService()
 const anonCredsCredentialRepository = new AnonCredsCredentialRepository(storageService, eventEmitter)
 const anonCredsKeyCorrectnessProofRepository = new AnonCredsKeyCorrectnessProofRepository(storageService, eventEmitter)
@@ -89,11 +88,11 @@ const agentContext = getAgentContext({
     [InjectionSymbols.AgentDependencies, agentDependencies],
     [InjectionSymbols.FileSystem, new agentDependencies.FileSystem()],
     [InjectionSymbols.StorageService, inMemoryStorageService],
-    [InjectionSymbols.Logger, logger],
+    [InjectionSymbols.Logger, testLogger],
     [AnonCredsIssuerServiceSymbol, anonCredsIssuerService],
     [AnonCredsHolderServiceSymbol, anonCredsHolderService],
     [AnonCredsVerifierServiceSymbol, anonCredsVerifierService],
-    [DidResolverService, new DidResolverService(logger, new DidsModuleConfig())],
+    [DidResolverService, new DidResolverService(testLogger, new DidsModuleConfig())],
     [AnonCredsRegistryService, new AnonCredsRegistryService()],
     [AnonCredsModuleConfig, anonCredsModuleConfig],
     [AnonCredsLinkSecretRepository, anonCredsLinkSecretRepository],
@@ -320,6 +319,7 @@ describe('Legacy indy format services', () => {
         name: 'John',
       },
       schemaId: schemaState.schemaId,
+      linkSecretId: 'link-secret-id',
       credentialDefinitionId: credentialDefinitionState.credentialDefinitionId,
       revocationRegistryId: null,
       credentialRevocationId: null,
