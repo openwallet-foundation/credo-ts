@@ -70,11 +70,6 @@ export class InMemoryAnonCredsRegistry implements AnonCredsRegistry {
   public async getSchema(_agentContext: AgentContext, schemaId: string): Promise<GetSchemaReturn> {
     const schema = this.schemas[schemaId]
 
-    const parsed = parseIndySchemaId(schemaId)
-
-    const legacySchemaId = getUnqualifiedSchemaId(parsed.namespaceIdentifier, parsed.schemaName, parsed.schemaVersion)
-    const indyLedgerSeqNo = getSeqNoFromSchemaId(legacySchemaId)
-
     if (!schema) {
       return {
         resolutionMetadata: {
@@ -87,14 +82,10 @@ export class InMemoryAnonCredsRegistry implements AnonCredsRegistry {
     }
 
     return {
-      resolutionMetadata: {},
       schema,
       schemaId,
-      schemaMetadata: {
-        // NOTE: the seqNo is required by the indy-sdk even though not present in AnonCreds v1.
-        // For this reason we return it in the metadata.
-        indyLedgerSeqNo,
-      },
+      resolutionMetadata: {},
+      schemaMetadata: {},
     }
   }
 
