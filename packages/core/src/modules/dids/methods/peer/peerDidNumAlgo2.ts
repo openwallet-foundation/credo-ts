@@ -126,9 +126,21 @@ export function didDocumentToNumAlgo2Did(didDocument: DidDocument) {
     })
   }
 
+  const prefix = 'key-'
+  if (!keys.every((key) => key.id.split('#')[1]?.startsWith(prefix))) {
+    throw new CredoError('Ids for keys within DID Document for did:peer:2 creation must follow the pattern `#key-n`')
+  }
+
   // Add all encoded keys ordered by their id (#key-1, #key-2, etc.)
   did += keys
-    .sort((a, b) => a.id.localeCompare(b.id))
+    .sort((a, b) => {
+      const aFragment = a.id.split('#')[1]
+      const bFragment = b.id.split('#')[1]
+      const aIndex = Number(aFragment.replace(prefix, ''))
+      const bIndex = Number(bFragment.replace(prefix, ''))
+
+      return aIndex - bIndex
+    })
     .map((key) => key.encoded)
     .join('')
 
