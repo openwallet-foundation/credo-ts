@@ -1,6 +1,7 @@
 import type { WalletConfig } from '@credo-ts/core'
 
 import {
+  WalletExportUnsupportedError,
   WalletDuplicateError,
   WalletNotFoundError,
   InjectionSymbols,
@@ -151,7 +152,7 @@ export class AskarProfileWallet extends AskarBaseWallet {
 
   public async export() {
     // This PR should help with this: https://github.com/hyperledger/aries-askar/pull/159
-    throw new WalletError('Exporting a profile is not supported.')
+    throw new WalletExportUnsupportedError('Exporting a profile is not supported.')
   }
 
   public async import() {
