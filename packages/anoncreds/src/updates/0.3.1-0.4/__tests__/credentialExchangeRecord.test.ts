@@ -1,4 +1,4 @@
-import type { CredentialRecordBinding } from '../../../../../core/src'
+import type { CredentialRecordBinding, CredentialState } from '../../../../../core/src'
 
 import { CredentialExchangeRecord, JsonTransformer } from '../../../../../core/src'
 import { Agent } from '../../../../../core/src/agent/Agent'
@@ -144,16 +144,19 @@ function getCredentialRecord({
   id,
   metadata,
   credentials,
+  state,
 }: {
   id?: string
   metadata?: Record<string, unknown>
   credentials?: CredentialRecordBinding[]
+  state?: CredentialState
 }) {
   return JsonTransformer.fromJSON(
     {
       id: id ?? 'credential-id',
       metadata,
       credentials,
+      state,
     },
     CredentialExchangeRecord
   )

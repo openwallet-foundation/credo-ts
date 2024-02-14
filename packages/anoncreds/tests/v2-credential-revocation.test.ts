@@ -8,6 +8,7 @@ import {
   CredentialExchangeRecord,
   V2CredentialPreview,
   V2OfferCredentialMessage,
+  CredentialRole,
 } from '@credo-ts/core'
 
 import { waitForCredentialRecordSubject } from '../../core/tests'
@@ -165,6 +166,7 @@ describe('IC v2 credential revocation', () => {
     expect(aliceCredentialRecord.getTags()).toEqual({
       threadId: faberCredentialRecord.threadId,
       connectionId: aliceCredentialRecord.connectionId,
+      role: CredentialRole.Holder,
       state: aliceCredentialRecord.state,
       credentialIds: [],
     })

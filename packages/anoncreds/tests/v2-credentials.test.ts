@@ -12,6 +12,7 @@ import {
   V2OfferCredentialMessage,
   V2ProposeCredentialMessage,
   V2RequestCredentialMessage,
+  CredentialRole,
 } from '@credo-ts/core'
 
 import { waitForCredentialRecord, waitForCredentialRecordSubject } from '../../core/tests'
@@ -186,6 +187,7 @@ describe('IC V2 AnonCreds credentials', () => {
       threadId: faberCredentialRecord.threadId,
       connectionId: aliceCredentialRecord.connectionId,
       state: aliceCredentialRecord.state,
+      role: CredentialRole.Holder,
       credentialIds: [],
     })
 

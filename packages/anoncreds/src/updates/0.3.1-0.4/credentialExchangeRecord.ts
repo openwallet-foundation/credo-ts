@@ -1,6 +1,12 @@
 import type { BaseAgent, CredentialExchangeRecord } from '@credo-ts/core'
 
-import { CredentialState, CredentialRole, CredentialRepository } from '@credo-ts/core'
+import {
+  DidCommMessageRepository,
+  DidCommMessageRole,
+  CredentialState,
+  CredentialRole,
+  CredentialRepository,
+} from '@credo-ts/core'
 
 /**
  * Migrates the {@link CredentialExchangeRecord} to 0.4 compatible format. It fetches all credential exchange records from
@@ -60,8 +66,51 @@ export async function getCredentialRole(agent: BaseAgent, credentialRecord: Cred
     return CredentialRole.Holder
   }
 
-  // FIXME: we need to determine the role based on the didcomm messages
-  // If we have role Sender on e.g. offer we are the issuer
+  // Roles only the issuer can have, as sender, when issuing a credential
+  const didCommCredentialIssuerAsSenderRoles = [CredentialState.OfferSent, CredentialState.CredentialIssued]
+
+  // Roles only the holder can have, as sender, when issuing a credential
+  const didCommCredentialHolderAsSenderRoles = [CredentialState.ProposalSent, CredentialState.RequestSent]
+
+  // Roles only the issuer can have, as a recipient, when issuing a credential
+  const didCommCredentialIssuerAsReceiverRoles = [CredentialState.RequestReceived, CredentialState.ProposalReceived]
+
+  // Roles only the holder can have, as a recipient, when issuing a credential
+  const didCommCredentialHolderAsReceiverRoles = [CredentialState.OfferReceived, CredentialState.Done]
+
+  // Fetch the associated didcomm message record
+  const didCommMessageRepository = agent.dependencyManager.resolve(DidCommMessageRepository)
+  const didCommMessageRecord = await didCommMessageRepository.findSingleByQuery(agent.context, {
+    associatedRecordId: credentialRecord.id,
+  })
+
+  if (didCommMessageRecord) {
+    // Check whether the role of the didcomm message is `receiver`
+    if (didCommMessageRecord.role === DidCommMessageRole.Receiver) {
+      // Check whether the state of the credential record is included in the allowed roles for the issuer
+      if (didCommCredentialIssuerAsReceiverRoles.includes(credentialRecord.state)) {
+        return CredentialRole.Issuer
+      }
+
+      // Check whether the state of the credential record is included in the allowed roles for the holder
+      if (didCommCredentialHolderAsReceiverRoles.includes(credentialRecord.state)) {
+        return CredentialRole.Holder
+      }
+    }
+
+    // Check whether the role of the didcomm message is `sender`
+    if (didCommMessageRecord.role === DidCommMessageRole.Sender) {
+      // Check whether the state of the credential record is included in the allowed roles for the issuer
+      if (didCommCredentialIssuerAsSenderRoles.includes(credentialRecord.state)) {
+        return CredentialRole.Issuer
+      }
+
+      // Check whether the state of the credential record is included in the allowed roles for the holder
+      if (didCommCredentialHolderAsSenderRoles.includes(credentialRecord.state)) {
+        return CredentialRole.Holder
+      }
+    }
+  }
 
   // For all other states we can be certain we're the issuer
   return CredentialRole.Issuer
