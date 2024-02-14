@@ -129,6 +129,7 @@ export class V1MessagePickupProtocol extends BaseMessagePickupProtocol {
 
     const batchMessage = new V1BatchMessage({
       messages: batchMessages,
+      threadId: message.threadId,
     })
 
     return new OutboundMessageContext(batchMessage, { agentContext: messageContext.agentContext, connection })

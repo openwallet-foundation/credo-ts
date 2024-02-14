@@ -1,10 +1,11 @@
 import type { SubjectMessage } from './transport/SubjectInboundTransport'
-import type { AnonCredsTestsAgent } from '../packages/anoncreds/tests/legacyAnonCredsSetup'
+import type { AnonCredsTestsAgent } from '../packages/anoncreds/tests/anoncredsSetup'
 
 import { Subject } from 'rxjs'
 
-import { getAnonCredsIndyModules } from '../packages/anoncreds/tests/legacyAnonCredsSetup'
-import { getInMemoryAgentOptions } from '../packages/core/tests/helpers'
+import { getAnonCredsModules } from '../packages/anoncreds/tests/anoncredsSetup'
+import { askarModule } from '../packages/askar/tests/helpers'
+import { getAgentOptions } from '../packages/core/tests/helpers'
 
 import { e2eTest } from './e2e-test'
 import { SubjectInboundTransport } from './transport/SubjectInboundTransport'
@@ -18,55 +19,58 @@ import {
   MediationRecipientModule,
 } from '@credo-ts/core'
 
-const recipientAgentOptions = getInMemoryAgentOptions(
-  'E2E Subject Recipient',
+const recipientAgentOptions = getAgentOptions(
+  'E2E Askar Subject Recipient',
   {},
   {
-    ...getAnonCredsIndyModules({
+    ...getAnonCredsModules({
       autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
     }),
     mediationRecipient: new MediationRecipientModule({
       mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
     }),
+    askar: askarModule,
   }
 )
-const mediatorAgentOptions = getInMemoryAgentOptions(
-  'E2E Subject Mediator',
+const mediatorAgentOptions = getAgentOptions(
+  'E2E Askar Subject Mediator',
   {
     endpoints: ['rxjs:mediator'],
   },
   {
-    ...getAnonCredsIndyModules({
+    ...getAnonCredsModules({
       autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
     }),
     mediator: new MediatorModule({ autoAcceptMediationRequests: true }),
+    askar: askarModule,
   }
 )
-const senderAgentOptions = getInMemoryAgentOptions(
-  'E2E Subject Sender',
+const senderAgentOptions = getAgentOptions(
+  'E2E Askar Subject Sender',
   {
     endpoints: ['rxjs:sender'],
   },
   {
-    ...getAnonCredsIndyModules({
+    ...getAnonCredsModules({
       autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
     }),
     mediationRecipient: new MediationRecipientModule({
       mediatorPollingInterval: 1000,
       mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
     }),
+    askar: askarModule,
   }
 )
 
-describe('E2E Subject tests', () => {
+describe('E2E Askar-AnonCredsRS-IndyVDR Subject tests', () => {
   let recipientAgent: AnonCredsTestsAgent
   let mediatorAgent: AnonCredsTestsAgent
   let senderAgent: AnonCredsTestsAgent
 
   beforeEach(async () => {
-    recipientAgent = new Agent(recipientAgentOptions) as AnonCredsTestsAgent
-    mediatorAgent = new Agent(mediatorAgentOptions) as AnonCredsTestsAgent
-    senderAgent = new Agent(senderAgentOptions) as AnonCredsTestsAgent
+    recipientAgent = new Agent(recipientAgentOptions) as unknown as AnonCredsTestsAgent
+    mediatorAgent = new Agent(mediatorAgentOptions) as unknown as AnonCredsTestsAgent
+    senderAgent = new Agent(senderAgentOptions) as unknown as AnonCredsTestsAgent
   })
 
   afterEach(async () => {
