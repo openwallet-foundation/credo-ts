@@ -10,7 +10,7 @@ import { SubjectOutboundTransport } from '../../../../../../../../tests/transpor
 import { getAnonCredsIndyModules } from '../../../../../../../anoncreds/tests/legacyAnonCredsSetup'
 import {
   anoncredsDefinitionFourAttributesNoRevocation,
-  usePreCreatedAnonCredsDefinition,
+  storePreCreatedAnonCredsDefinition,
 } from '../../../../../../../anoncreds/tests/preCreatedAnonCredsDefinition'
 import { waitForCredentialRecordSubject, getInMemoryAgentOptions } from '../../../../../../tests/helpers'
 import testLogger from '../../../../../../tests/logger'
@@ -69,7 +69,7 @@ describe('V2 Connectionless Credentials', () => {
     await aliceAgent.initialize()
 
     // Make sure the pre-created credential definition is in the wallet
-    await usePreCreatedAnonCredsDefinition(faberAgent, anoncredsDefinitionFourAttributesNoRevocation)
+    await storePreCreatedAnonCredsDefinition(faberAgent, anoncredsDefinitionFourAttributesNoRevocation)
 
     faberReplay = new ReplaySubject<CredentialStateChangedEvent>()
     aliceReplay = new ReplaySubject<CredentialStateChangedEvent>()

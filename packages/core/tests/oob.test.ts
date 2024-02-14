@@ -11,7 +11,7 @@ import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutbou
 import { getAnonCredsIndyModules } from '../../anoncreds/tests/legacyAnonCredsSetup'
 import {
   anoncredsDefinitionFourAttributesNoRevocation,
-  usePreCreatedAnonCredsDefinition,
+  storePreCreatedAnonCredsDefinition,
 } from '../../anoncreds/tests/preCreatedAnonCredsDefinition'
 import { Agent } from '../src/agent/Agent'
 import { Key } from '../src/crypto'
@@ -92,7 +92,7 @@ describe('out of band', () => {
 
     await aliceAgent.modules.anoncreds.createLinkSecret()
 
-    const { credentialDefinitionId } = await usePreCreatedAnonCredsDefinition(
+    const { credentialDefinitionId } = await storePreCreatedAnonCredsDefinition(
       faberAgent,
       anoncredsDefinitionFourAttributesNoRevocation
     )

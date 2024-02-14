@@ -4,8 +4,7 @@ import type { Agent } from '../agent/Agent'
 import type { AgentMessageReceivedEvent } from '../agent/Events'
 import type { Logger } from '../logger'
 import type { OutboundPackage } from '../types'
-
-import WebSocket from 'ws'
+import type { WebSocket } from 'ws'
 
 import { AgentEventTypes } from '../agent/Events'
 import { CredoError } from '../error/CredoError'
@@ -41,7 +40,7 @@ export class WsOutboundTransport implements OutboundTransport {
 
     this.transportTable.forEach((socket) => {
       socket.removeEventListener('message', this.handleMessageEvent)
-      if (socket.readyState !== WebSocket.CLOSED) {
+      if (socket.readyState !== this.WebSocketClass.CLOSED) {
         stillOpenSocketClosingPromises.push(new Promise((resolve) => socket.once('close', resolve)))
         socket.close()
       }

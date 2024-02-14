@@ -68,7 +68,7 @@ import { InMemoryAnonCredsRegistry } from './InMemoryAnonCredsRegistry'
 import { anoncreds } from './helpers'
 import {
   anoncredsDefinitionFourAttributesNoRevocation,
-  usePreCreatedAnonCredsDefinition,
+  storePreCreatedAnonCredsDefinition,
 } from './preCreatedAnonCredsDefinition'
 
 // Helper type to get the type of the agents (with the custom modules) for the credential tests
@@ -386,7 +386,7 @@ export async function setupAnonCredsTests<
     schemaId = result.schema.schemaId
     credentialDefinitionId = result.credentialDefinition.credentialDefinitionId
   } else if (preCreatedDefinition) {
-    const result = await usePreCreatedAnonCredsDefinition(issuerAgent, preCreatedDefinition)
+    const result = await storePreCreatedAnonCredsDefinition(issuerAgent, preCreatedDefinition)
     schemaId = result.schemaId
     credentialDefinitionId = result.credentialDefinitionId
   } else {

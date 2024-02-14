@@ -6,7 +6,7 @@ import { filter, firstValueFrom, map } from 'rxjs'
 import { presentAnonCredsProof, issueAnonCredsCredential } from '../packages/anoncreds/tests/anoncredsSetup'
 import {
   anoncredsDefinitionFourAttributesNoRevocation,
-  usePreCreatedAnonCredsDefinition,
+  storePreCreatedAnonCredsDefinition,
 } from '../packages/anoncreds/tests/preCreatedAnonCredsDefinition'
 import { setupEventReplaySubjects } from '../packages/core/tests'
 import { makeConnection } from '../packages/core/tests/helpers'
@@ -62,7 +62,7 @@ export async function e2eTest({
   const [recipientSenderConnection, senderRecipientConnection] = await makeConnection(recipientAgent, senderAgent)
   expect(recipientSenderConnection).toBeConnectedWith(senderRecipientConnection)
 
-  const { credentialDefinitionId } = await usePreCreatedAnonCredsDefinition(
+  const { credentialDefinitionId } = await storePreCreatedAnonCredsDefinition(
     senderAgent,
     anoncredsDefinitionFourAttributesNoRevocation
   )

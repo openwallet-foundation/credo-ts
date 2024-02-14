@@ -95,7 +95,7 @@ export const anoncredsDefinitionFourAttributesNoRevocation = {
   },
 } satisfies PreCreatedAnonCredsDefinition
 
-export async function usePreCreatedAnonCredsDefinition(
+export async function storePreCreatedAnonCredsDefinition(
   agent: Agent,
   preCreatedDefinition: PreCreatedAnonCredsDefinition
 ) {
