@@ -57,6 +57,7 @@ describe('TenantAgentContextProvider', () => {
             key: 'test-wallet-key',
           },
         },
+        storageVersion: '0.5',
       })
 
       const tenantAgentContext = jest.fn() as unknown as AgentContext
@@ -67,7 +68,9 @@ describe('TenantAgentContextProvider', () => {
       const returnedAgentContext = await tenantAgentContextProvider.getAgentContextForContextCorrelationId('tenant1')
 
       expect(tenantRecordService.getTenantById).toHaveBeenCalledWith(rootAgentContext, 'tenant1')
-      expect(tenantSessionCoordinator.getContextForSession).toHaveBeenCalledWith(tenantRecord)
+      expect(tenantSessionCoordinator.getContextForSession).toHaveBeenCalledWith(tenantRecord, {
+        runInMutex: undefined,
+      })
       expect(returnedAgentContext).toBe(tenantAgentContext)
     })
   })
@@ -83,6 +86,7 @@ describe('TenantAgentContextProvider', () => {
             key: 'test-wallet-key',
           },
         },
+        storageVersion: '0.5',
       })
 
       const tenantAgentContext = jest.fn() as unknown as AgentContext
@@ -96,7 +100,9 @@ describe('TenantAgentContextProvider', () => {
       )
 
       expect(tenantRecordService.getTenantById).toHaveBeenCalledWith(rootAgentContext, 'tenant1')
-      expect(tenantSessionCoordinator.getContextForSession).toHaveBeenCalledWith(tenantRecord)
+      expect(tenantSessionCoordinator.getContextForSession).toHaveBeenCalledWith(tenantRecord, {
+        runInMutex: undefined,
+      })
       expect(returnedAgentContext).toBe(tenantAgentContext)
       expect(tenantRecordService.findTenantRoutingRecordByRecipientKey).not.toHaveBeenCalled()
     })
@@ -125,6 +131,7 @@ describe('TenantAgentContextProvider', () => {
             key: 'test-wallet-key',
           },
         },
+        storageVersion: '0.5',
       })
 
       const tenantAgentContext = jest.fn() as unknown as AgentContext
@@ -136,7 +143,9 @@ describe('TenantAgentContextProvider', () => {
       const returnedAgentContext = await tenantAgentContextProvider.getContextForInboundMessage(inboundMessage)
 
       expect(tenantRecordService.getTenantById).toHaveBeenCalledWith(rootAgentContext, 'tenant1')
-      expect(tenantSessionCoordinator.getContextForSession).toHaveBeenCalledWith(tenantRecord)
+      expect(tenantSessionCoordinator.getContextForSession).toHaveBeenCalledWith(tenantRecord, {
+        runInMutex: undefined,
+      })
       expect(returnedAgentContext).toBe(tenantAgentContext)
       expect(tenantRecordService.findTenantRoutingRecordByRecipientKey).toHaveBeenCalledWith(
         rootAgentContext,

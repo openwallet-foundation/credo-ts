@@ -9,6 +9,16 @@ import type {
 } from '../types'
 import type { Buffer } from '../utils/buffer'
 
+// Split up into WalletManager and Wallet instance
+// WalletManager is responsible for:
+//  - create, open, delete, close, export, import
+// Wallet is responsible for:
+//  - createKey, sign, verify, pack, unpack, generateNonce, generateWalletKey
+
+// - Split storage initialization from wallet initialization, as storage and wallet are not required to be the same
+//     - wallet handles key management, signing, and encryption
+//     - storage handles record storage and retrieval
+
 export interface Wallet extends Disposable {
   isInitialized: boolean
   isProvisioned: boolean

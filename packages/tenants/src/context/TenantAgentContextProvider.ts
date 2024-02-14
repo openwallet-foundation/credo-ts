@@ -1,6 +1,14 @@
-import type { AgentContextProvider, RoutingCreatedEvent, EncryptedMessage } from '@credo-ts/core'
+import type { TenantRecord } from '../repository'
+import type {
+  AgentContextProvider,
+  RoutingCreatedEvent,
+  EncryptedMessage,
+  UpdateAssistantUpdateOptions,
+} from '@credo-ts/core'
 
 import {
+  isStorageUpToDate,
+  UpdateAssistant,
   CredoError,
   injectable,
   AgentContext,
@@ -16,6 +24,7 @@ import {
   isJsonObject,
 } from '@credo-ts/core'
 
+import { TenantAgent } from '../TenantAgent'
 import { TenantRecordService } from '../services'
 
 import { TenantSessionCoordinator } from './TenantSessionCoordinator'
@@ -48,7 +57,21 @@ export class TenantAgentContextProvider implements AgentContextProvider {
   public async getAgentContextForContextCorrelationId(tenantId: string) {
     // TODO: maybe we can look at not having to retrieve the tenant record if there's already a context available.
     const tenantRecord = await this.tenantRecordService.getTenantById(this.rootAgentContext, tenantId)
-    const agentContext = this.tenantSessionCoordinator.getContextForSession(tenantRecord)
+    const shouldUpdate = !isStorageUpToDate(tenantRecord.storageVersion)
+
+    // If the tenant storage is not up to date, and autoUpdate is disabled we throw an error
+    if (shouldUpdate && !this.rootAgentContext.config.autoUpdateStorageOnStartup) {
+      throw new CredoError(
+        `Current agent storage for tenant ${tenantRecord.id} is not up to date. ` +
+          `To prevent the tenant state from getting corrupted the tenant initialization is aborted. ` +
+          `Make sure to update the tenant storage (currently at ${tenantRecord.storageVersion}) to the latest version (${UpdateAssistant.frameworkStorageVersion}). ` +
+          `You can also downgrade your version of Credo.`
+      )
+    }
+
+    const agentContext = await this.tenantSessionCoordinator.getContextForSession(tenantRecord, {
+      runInMutex: shouldUpdate ? (agentContext) => this._updateTenantStorage(tenantRecord, agentContext) : undefined,
+    })
 
     this.logger.debug(`Created tenant agent context for tenant '${tenantId}'`)
 
@@ -144,5 +167,56 @@ export class TenantAgentContextProvider implements AgentContextProvider {
       )
       await this.registerRecipientKeyForTenant(contextCorrelationId, recipientKey)
     })
+  }
+
+  /**
+   * Method to allow updating the tenant storage, this method can be called from the TenantsApi
+   * to update the storage for a tenant manually
+   */
+  public async updateTenantStorage(tenantRecord: TenantRecord, updateOptions?: UpdateAssistantUpdateOptions) {
+    await this.tenantSessionCoordinator.getContextForSession(tenantRecord, {
+      // runInMutex allows us to run the updateTenantStorage method in a mutex lock
+      // prevent other sessions from being started while the update is in progress
+      runInMutex: (agentContext) => this._updateTenantStorage(tenantRecord, agentContext, updateOptions),
+    })
+  }
+
+  /**
+   * Handle the case where the tenant storage is outdated. If auto-update is disabled we will throw an error
+   * and not update the storage. If auto-update is enabled we will update the storage.
+   *
+   * When this method is called we can be sure that we are in the mutex runExclusive lock and thus other sessions
+   * will not be able to open a session for this tenant until we're done.
+   *
+   * NOTE: We don't support multi-instance locking for now. That means you can only have a single instance open and
+   * it will prevent multiple processes from updating the tenant storage at the same time. However if multi-instances
+   * are used, we can't prevent multiple instances from updating the tenant storage at the same time.
+   * In the future we can make the tenantSessionCoordinator an interface and allowing a instance-tenant-lock as well
+   * as an tenant-lock (across all instances)
+   */
+  private async _updateTenantStorage(
+    tenantRecord: TenantRecord,
+    agentContext: AgentContext,
+    updateOptions?: UpdateAssistantUpdateOptions
+  ) {
+    try {
+      // Update the tenant storage
+      const tenantAgent = new TenantAgent(agentContext)
+      const updateAssistant = new UpdateAssistant(tenantAgent)
+      await updateAssistant.initialize()
+      await updateAssistant.update({
+        ...updateOptions,
+        backupBeforeStorageUpdate:
+          updateOptions?.backupBeforeStorageUpdate ?? agentContext.config.backupBeforeStorageUpdate,
+      })
+
+      // Update the storage version in the tenant record
+      tenantRecord.storageVersion = await updateAssistant.getCurrentAgentStorageVersion()
+      const tenantRecordService = this.rootAgentContext.dependencyManager.resolve(TenantRecordService)
+      await tenantRecordService.updateTenant(this.rootAgentContext, tenantRecord)
+    } catch (error) {
+      this.logger.error(`Error occurred while updating tenant storage for tenant ${tenantRecord.id}`, error)
+      throw error
+    }
   }
 }
