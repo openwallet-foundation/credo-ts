@@ -35,7 +35,13 @@ export class DrpcApi {
     this.registerMessageHandlers(messageHandlerRegistry)
   }
 
-  public async sendRequest(connectionId: string, request: DrpcRequest): Promise<DrpcResponse> {
+  /**
+   * sends the request object to the connection and returns a function that will resolve to the response
+   * @param connectionId the connection to send the request to
+   * @param request the request object
+   * @returns curried function that waits for the response
+   */
+  public async sendRequest(connectionId: string, request: DrpcRequest): Promise<() => Promise<DrpcResponse>> {
     const connection = await this.connectionService.getById(this.agentContext, connectionId)
     const { message: drpcMessage, record: drpcMessageRecord } = await this.drpcMessageService.createRequestMessage(
       this.agentContext,
@@ -44,6 +50,15 @@ export class DrpcApi {
     )
     const messageId = drpcMessage.id
     await this.sendMessage(connection, drpcMessage, drpcMessageRecord)
+    return this.recvResponse.bind(this, messageId)
+  }
+
+  /**
+   * Listen for a response that has a thread id matching the provided messageId
+   * @param messageId the id to match the response to
+   * @returns the response object
+   */
+  private async recvResponse(messageId: string): Promise<DrpcResponse> {
     return new Promise((resolve) => {
       const listener = ({
         drpcMessageRecord,
@@ -55,8 +70,7 @@ export class DrpcApi {
         const message = drpcMessageRecord.message
         if (drpcMessageRecord.threadId === messageId) {
           removeListener()
-
-          resolve(message)
+          resolve(message as DrpcResponse)
         }
       }
 
@@ -64,7 +78,14 @@ export class DrpcApi {
     })
   }
 
-  public async nextRequest(): Promise<{ connectionId: string; threadId: string; request: DrpcRequest }> {
+  /**
+   * Listen for a request and returns the request object and a function to send the response
+   * @returns the request object and a function to send the response
+   */
+  public async recvRequest(): Promise<{
+    request: DrpcRequest
+    sendResponse: (response: DrpcResponse) => Promise<void>
+  }> {
     return new Promise((resolve) => {
       const listener = ({
         drpcMessageRecord,
@@ -76,8 +97,9 @@ export class DrpcApi {
         const message = drpcMessageRecord.message
         removeListener()
         resolve({
-          connectionId: drpcMessageRecord.connectionId,
-          threadId: drpcMessageRecord.threadId,
+          sendResponse: async (response: DrpcResponse) => {
+            await this.sendResponse(drpcMessageRecord.connectionId, drpcMessageRecord.threadId, response)
+          },
           request: message as DrpcRequest,
         })
       }
@@ -86,7 +108,13 @@ export class DrpcApi {
     })
   }
 
-  public async sendResponse(connectionId: string, threadId: string, response: DrpcResponse): Promise<void> {
+  /**
+   * Sends a drpc response to a connection
+   * @param connectionId the connection id to use
+   * @param threadId the thread id to respond to
+   * @param response the drpc response object to send
+   */
+  private async sendResponse(connectionId: string, threadId: string, response: DrpcResponse): Promise<void> {
     const connection = await this.connectionService.getById(this.agentContext, connectionId)
     const drpcMessageRecord = await this.drpcMessageService.findByThreadAndConnectionId(
       this.agentContext,

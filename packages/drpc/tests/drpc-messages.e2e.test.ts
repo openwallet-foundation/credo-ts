@@ -50,12 +50,12 @@ const sendAndRecieve = async (
   message: DrpcRequestObject,
   messageHandlers: Map<string, (message: DrpcRequestObject) => Promise<DrpcResponseObject | Record<string, never>>>
 ) => {
-  const recordProm = sender.modules.drpc.sendRequest(connectionRecord.id, message)
-  const { connectionId, threadId, request } = await receiver.modules.drpc.nextRequest()
+  const responseListener = await sender.modules.drpc.sendRequest(connectionRecord.id, message)
+  const { request, sendResponse } = await receiver.modules.drpc.recvRequest()
   const result = await handleMessageOrError(messageHandlers, request as DrpcRequestObject)
-  await receiver.modules.drpc.sendResponse(connectionId, threadId, result as DrpcResponseObject)
+  await sendResponse(result as DrpcResponseObject)
 
-  const helloRecord = await recordProm
+  const helloRecord = await responseListener()
   return helloRecord as DrpcResponseObject
 }
 
@@ -66,20 +66,15 @@ const sendAndRecieveBatch = async (
   message: DrpcRequestObject[],
   messageHandlers: Map<string, (message: DrpcRequestObject) => Promise<DrpcResponseObject | Record<string, never>>>
 ) => {
-  const batchRecordProm = sender.modules.drpc.sendRequest(connectionRecord.id, message)
-
-  const {
-    connectionId: batchConnId,
-    threadId: batchThreadId,
-    request: batchRequest,
-  } = await receiver.modules.drpc.nextRequest()
+  const responseListener = await sender.modules.drpc.sendRequest(connectionRecord.id, message)
+  const { request: batchRequest, sendResponse: sendBatchResponse } = await receiver.modules.drpc.recvRequest()
   const batchRequests = batchRequest as DrpcRequestObject[]
   const batchResults: (DrpcResponseObject | Record<string, never>)[] = []
   for (const request of batchRequests) {
     batchResults.push(await handleMessageOrError(messageHandlers, request))
   }
-  await receiver.modules.drpc.sendResponse(batchConnId, batchThreadId, batchResults)
-  const batchRecord = await batchRecordProm
+  await sendBatchResponse(batchResults)
+  const batchRecord = await responseListener()
   return batchRecord as DrpcResponseObject[]
 }
 
@@ -269,16 +264,16 @@ describe('Drpc Messages E2E', () => {
       error = true
     }
     expect(error).toBe(true)
-    aliceAgent.modules.drpc.sendRequest(aliceConnection.id, {
+    await aliceAgent.modules.drpc.sendRequest(aliceConnection.id, {
       jsonrpc: '2.0',
       method: 'hello',
       id: 1,
     })
-    const { connectionId, threadId, request } = await faberAgent.modules.drpc.nextRequest()
+    const { request, sendResponse } = await faberAgent.modules.drpc.recvRequest()
     const result = await handleMessageOrError(messageHandlers, request as DrpcRequestObject)
     let responseError = false
     try {
-      await faberAgent.modules.drpc.sendResponse(connectionId, threadId, result as DrpcResponseObject)
+      await sendResponse(result as DrpcResponseObject)
     } catch {
       responseError = true
     }
