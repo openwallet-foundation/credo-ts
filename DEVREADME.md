@@ -18,7 +18,7 @@ GENESIS_TXN_PATH=/work/network/genesis/local-genesis.txn
 
 ## Running tests
 
-Test are executed using jest. Some test require the **indy ledger**, **cheqd ledger** or **postgres database** to be running.
+Test are executed using jest. E2E tests (ending in `.e2e.test.ts`) require the **indy ledger**, **cheqd ledger** or **postgres database** to be running.
 
 When running tests that require a connection to the indy ledger pool, you can set the `TEST_AGENT_PUBLIC_DID_SEED`, `ENDORSER_AGENT_PUBLIC_DID_SEED` and `GENESIS_TXN_PATH` environment variables.
 
@@ -38,7 +38,19 @@ docker compose -f docker-compose.arm.yml up -d
 
 ### Run all tests
 
-You can run the tests using the following command.
+You can run all unit tests (which **do not** require the docker services to be running) using the following command.
+
+```sh
+yarn test:unit
+```
+
+To run the e2e tests:
+
+```sh
+yarn test:e2e
+```
+
+You can also run **all** tests:
 
 ```sh
 yarn test

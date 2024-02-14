@@ -73,6 +73,7 @@ describe('TenantRecordService', () => {
             key: 'tenant-wallet-key',
           },
         },
+        storageVersion: '0.5',
       })
       mockFunction(tenantRepository.getById).mockResolvedValue(tenantRecord)
       mockFunction(tenantRoutingRepository.findByQuery).mockResolvedValue([])
@@ -92,6 +93,7 @@ describe('TenantRecordService', () => {
             key: 'tenant-wallet-key',
           },
         },
+        storageVersion: '0.5',
       })
       const tenantRoutingRecords = [
         new TenantRoutingRecord({

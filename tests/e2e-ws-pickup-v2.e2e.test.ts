@@ -1,6 +1,6 @@
-import type { AnonCredsTestsAgent } from '../packages/anoncreds/tests/legacyAnonCredsSetup'
+import type { AnonCredsTestsAgent } from '../packages/anoncreds/tests/anoncredsSetup'
 
-import { getAnonCredsIndyModules } from '../packages/anoncreds/tests/legacyAnonCredsSetup'
+import { getAnonCredsModules } from '../packages/anoncreds/tests/anoncredsSetup'
 import { askarModule } from '../packages/askar/tests/helpers'
 import { MessageForwardingStrategy } from '../packages/core/src/modules/routing/MessageForwardingStrategy'
 import { getAgentOptions } from '../packages/core/tests/helpers'
@@ -28,7 +28,7 @@ const mediatorOptions = getAgentOptions(
     endpoints: [`ws://localhost:${mediatorPort}`],
   },
   {
-    ...getAnonCredsIndyModules({
+    ...getAnonCredsModules({
       autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
     }),
     mediator: new MediatorModule({
@@ -46,12 +46,8 @@ const senderOptions = getAgentOptions(
     endpoints: [`ws://localhost:${senderPort}`],
   },
   {
-    ...getAnonCredsIndyModules({
+    ...getAnonCredsModules({
       autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
-    }),
-    mediationRecipient: new MediationRecipientModule({
-      mediatorPollingInterval: 1000,
-      mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
     }),
     askar: askarModule,
   }
@@ -68,6 +64,8 @@ describe('E2E WS Pickup V2 tests', () => {
   })
 
   afterEach(async () => {
+    // NOTE: the order is important here, as the recipient sends pickup messages to the mediator
+    // so we first want the recipient to fully be finished with the sending of messages
     await recipientAgent.shutdown()
     await recipientAgent.wallet.delete()
     await mediatorAgent.shutdown()
@@ -81,12 +79,12 @@ describe('E2E WS Pickup V2 tests', () => {
       'E2E WS Pickup V2 Recipient polling mode',
       {},
       {
-        ...getAnonCredsIndyModules({
+        ...getAnonCredsModules({
           autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
         }),
         mediationRecipient: new MediationRecipientModule({
           mediatorPickupStrategy: MediatorPickupStrategy.PickUpV2,
-          mediatorPollingInterval: 1000,
+          mediatorPollingInterval: 500,
         }),
         askar: askarModule,
       }
@@ -120,7 +118,7 @@ describe('E2E WS Pickup V2 tests', () => {
       'E2E WS Pickup V2 Recipient live mode',
       {},
       {
-        ...getAnonCredsIndyModules({
+        ...getAnonCredsModules({
           autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
         }),
         mediationRecipient: new MediationRecipientModule({

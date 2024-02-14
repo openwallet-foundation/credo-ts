@@ -2,6 +2,7 @@ import type { AnonCredsTestsAgent } from '../../../../../../../anoncreds/tests/l
 import type { EventReplaySubject } from '../../../../../../tests'
 
 import { setupAnonCredsTests } from '../../../../../../../anoncreds/tests/legacyAnonCredsSetup'
+import { anoncredsDefinitionFourAttributesNoRevocation } from '../../../../../../../anoncreds/tests/preCreatedAnonCredsDefinition'
 import {
   waitForCredentialRecord,
   waitForCredentialRecordSubject,
@@ -52,7 +53,7 @@ describe('V2 Credentials Auto Accept', () => {
         issuerName: 'faber agent: always v2',
         holderName: 'alice agent: always v2',
         autoAcceptCredentials: AutoAcceptCredential.Always,
-        attributeNames: ['name', 'age', 'x-ray', 'profile_picture'],
+        preCreatedDefinition: anoncredsDefinitionFourAttributesNoRevocation,
       }))
     })
 
@@ -69,7 +70,7 @@ describe('V2 Credentials Auto Accept', () => {
         connectionId: aliceConnectionId,
         protocolVersion: 'v2',
         credentialFormats: {
-          indy: {
+          anoncreds: {
             attributes: credentialPreview.attributes,
             credentialDefinitionId: credentialDefinitionId,
           },
@@ -111,7 +112,7 @@ describe('V2 Credentials Auto Accept', () => {
         comment: 'some comment about credential',
         connectionId: faberConnectionId,
         credentialFormats: {
-          indy: {
+          anoncreds: {
             attributes: credentialPreview.attributes,
             credentialDefinitionId: credentialDefinitionId,
           },
@@ -177,7 +178,7 @@ describe('V2 Credentials Auto Accept', () => {
         issuerName: 'Faber Agent: Always V2',
         holderName: 'Alice Agent: Always V2',
         autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
-        attributeNames: ['name', 'age', 'x-ray', 'profile_picture'],
+        preCreatedDefinition: anoncredsDefinitionFourAttributesNoRevocation,
       }))
     })
 
@@ -195,7 +196,7 @@ describe('V2 Credentials Auto Accept', () => {
         connectionId: aliceConnectionId,
         protocolVersion: 'v2',
         credentialFormats: {
-          indy: {
+          anoncreds: {
             attributes: credentialPreview.attributes,
             credentialDefinitionId: credentialDefinitionId,
           },
@@ -213,7 +214,7 @@ describe('V2 Credentials Auto Accept', () => {
         credentialRecordId: faberCredentialRecord.id,
         comment: 'V2 Indy Offer',
         credentialFormats: {
-          indy: {
+          anoncreds: {
             credentialDefinitionId: credentialDefinitionId,
             attributes: credentialPreview.attributes,
           },
@@ -275,7 +276,7 @@ describe('V2 Credentials Auto Accept', () => {
         comment: 'some comment about credential',
         connectionId: faberConnectionId,
         credentialFormats: {
-          indy: {
+          anoncreds: {
             attributes: credentialPreview.attributes,
             credentialDefinitionId: credentialDefinitionId,
           },
@@ -353,7 +354,7 @@ describe('V2 Credentials Auto Accept', () => {
         connectionId: aliceConnectionId,
         protocolVersion: 'v2',
         credentialFormats: {
-          indy: {
+          anoncreds: {
             attributes: credentialPreview.attributes,
             credentialDefinitionId: credentialDefinitionId,
           },
@@ -372,7 +373,7 @@ describe('V2 Credentials Auto Accept', () => {
       faberCredentialRecord = await faberAgent.credentials.negotiateProposal({
         credentialRecordId: faberCredentialRecord.id,
         credentialFormats: {
-          indy: {
+          anoncreds: {
             credentialDefinitionId: credentialDefinitionId,
             attributes: newCredentialPreview.attributes,
           },
@@ -401,7 +402,7 @@ describe('V2 Credentials Auto Accept', () => {
         comment: 'some comment about credential',
         connectionId: faberConnectionId,
         credentialFormats: {
-          indy: {
+          anoncreds: {
             attributes: credentialPreview.attributes,
             credentialDefinitionId: credentialDefinitionId,
           },
@@ -428,7 +429,7 @@ describe('V2 Credentials Auto Accept', () => {
       await aliceAgent.credentials.negotiateOffer({
         credentialRecordId: aliceCredentialRecord.id,
         credentialFormats: {
-          indy: {
+          anoncreds: {
             attributes: newCredentialPreview.attributes,
             credentialDefinitionId: credentialDefinitionId,
           },

@@ -1,7 +1,7 @@
 import type { AgentDependencies } from '@credo-ts/core'
 
 import { EventEmitter } from 'events'
-import WebSocket from 'ws'
+import { WebSocket } from 'ws'
 
 import { NodeFileSystem } from './NodeFileSystem'
 import { HttpInboundTransport } from './transport/HttpInboundTransport'

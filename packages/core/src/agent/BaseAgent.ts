@@ -22,7 +22,6 @@ import { SdJwtVcApi } from '../modules/sd-jwt-vc'
 import { W3cCredentialsApi } from '../modules/vc/W3cCredentialsApi'
 import { StorageUpdateService } from '../storage'
 import { UpdateAssistant } from '../storage/migration/UpdateAssistant'
-import { DEFAULT_UPDATE_CONFIG } from '../storage/migration/updates'
 import { WalletApi } from '../wallet'
 import { WalletError } from '../wallet/error'
 
@@ -160,7 +159,7 @@ export abstract class BaseAgent<AgentModules extends ModulesMap = EmptyModuleMap
     this.logger.info(`Agent storage is ${isStorageUpToDate ? '' : 'not '}up to date.`)
 
     if (!isStorageUpToDate && this.agentConfig.autoUpdateStorageOnStartup) {
-      const updateAssistant = new UpdateAssistant(this, DEFAULT_UPDATE_CONFIG)
+      const updateAssistant = new UpdateAssistant(this)
 
       await updateAssistant.initialize()
       await updateAssistant.update({ backupBeforeStorageUpdate: this.agentConfig.backupBeforeStorageUpdate })
