@@ -11,7 +11,7 @@ export class DrpcModule implements Module {
   public readonly api = DrpcApi
 
   /**
-   * Registers the dependencies of the basic message module on the dependency manager.
+   * Registers the dependencies of the drpc message module on the dependency manager.
    */
   public register(dependencyManager: DependencyManager, featureRegistry: FeatureRegistry) {
     // Services
@@ -24,7 +24,7 @@ export class DrpcModule implements Module {
     featureRegistry.register(
       new Protocol({
         id: 'https://didcomm.org/drpc/1.0',
-        roles: [DrpcRole.Sender, DrpcRole.Receiver],
+        roles: [DrpcRole.Client, DrpcRole.Server],
       })
     )
   }

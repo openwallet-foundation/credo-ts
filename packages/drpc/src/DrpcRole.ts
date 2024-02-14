@@ -1,4 +1,4 @@
 export enum DrpcRole {
-  Sender = 'sender',
-  Receiver = 'receiver',
+  Client = 'client',
+  Server = 'server',
 }

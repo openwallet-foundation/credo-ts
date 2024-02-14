@@ -1,7 +1,7 @@
 import type { PlaintextMessage } from '../types'
 import type { ValidationOptions, ValidationArguments } from 'class-validator'
 
-import { ValidateBy, ValidationError, buildMessage } from 'class-validator'
+import { ValidateBy, buildMessage } from 'class-validator'
 
 const PROTOCOL_URI_REGEX = /^(.+)\/([^/\\]+)\/(\d+).(\d+)$/
 const MESSAGE_TYPE_REGEX = /^(.+)\/([^/\\]+)\/(\d+).(\d+)\/([^/\\]+)$/

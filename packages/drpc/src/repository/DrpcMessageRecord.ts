@@ -1,13 +1,14 @@
 import type { DrpcRole } from '../DrpcRole'
-import type { DrpcRequestMessage, DrpcResponseMessage } from '../messages'
+import type { DrpcState } from '../DrpcState'
+import type { DrpcRequest, DrpcResponse } from '../messages'
 import type { RecordTags, TagsBase } from '@credo-ts/core'
 
-import { BaseRecord, utils } from '@credo-ts/core'
+import { BaseRecord, CredoError, utils } from '@credo-ts/core'
 
 export type CustomDrpcMessageTags = TagsBase
-export type DefaultBasicMessageTags = {
+export type DefaultDrpcMessageTags = {
   connectionId: string
-  role: DrpcRole
+  threadId: string
 }
 
 export type DrpcMessageTags = RecordTags<DrpcMessageRecord>
@@ -17,13 +18,17 @@ export interface DrpcMessageStorageProps {
   connectionId: string
   role: DrpcRole
   tags?: CustomDrpcMessageTags
-  content: DrpcRequestMessage | DrpcResponseMessage
+  message: DrpcRequest | DrpcResponse
+  state: DrpcState
+  threadId: string
 }
 
-export class DrpcMessageRecord extends BaseRecord<DefaultBasicMessageTags, CustomDrpcMessageTags> {
-  public content!: DrpcRequestMessage | DrpcResponseMessage
+export class DrpcMessageRecord extends BaseRecord<DefaultDrpcMessageTags, CustomDrpcMessageTags> {
+  public message!: DrpcRequest | DrpcResponse
   public connectionId!: string
   public role!: DrpcRole
+  public state!: DrpcState
+  public threadId!: string
 
   public static readonly type = 'DrpcMessageRecord'
   public readonly type = DrpcMessageRecord.type
@@ -33,10 +38,12 @@ export class DrpcMessageRecord extends BaseRecord<DefaultBasicMessageTags, Custo
 
     if (props) {
       this.id = props.id ?? utils.uuid()
-      this.content = props.content
+      this.message = props.message
       this.connectionId = props.connectionId
       this._tags = props.tags ?? {}
       this.role = props.role
+      this.state = props.state
+      this.threadId = props.threadId
     }
   }
 
@@ -44,7 +51,25 @@ export class DrpcMessageRecord extends BaseRecord<DefaultBasicMessageTags, Custo
     return {
       ...this._tags,
       connectionId: this.connectionId,
-      role: this.role,
+      threadId: this.threadId,
+    }
+  }
+
+  public assertRole(expectedRole: DrpcRole) {
+    if (this.role !== expectedRole) {
+      throw new CredoError(`Invalid DRPC record role ${this.role}, expected is ${expectedRole}.`)
+    }
+  }
+
+  public assertState(expectedStates: DrpcState | DrpcState[]) {
+    if (!Array.isArray(expectedStates)) {
+      expectedStates = [expectedStates]
+    }
+
+    if (!expectedStates.includes(this.state)) {
+      throw new CredoError(
+        `DRPC response record is in invalid state ${this.state}. Valid states are: ${expectedStates.join(', ')}.`
+      )
     }
   }
 }

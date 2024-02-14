@@ -14,9 +14,9 @@ export function IsValidDrpcRequest(validationOptions?: ValidationOptions): Prope
             // Check if value is a DrpcRequestObject or an array of DrpcRequestObject
             let isValid = false
             if (!Array.isArray(value)) {
-              isValid = isValidDrpcRequestObject(value)
+              isValid = isValidDrpcRequest(value)
             } else {
-              isValid = value.every(isValidDrpcRequestObject)
+              isValid = value.every(isValidDrpcRequest)
             }
 
             if (!isValid) {
@@ -36,7 +36,7 @@ export function IsValidDrpcRequest(validationOptions?: ValidationOptions): Prope
   }
 }
 
-export function isValidDrpcRequestObject(value: any): boolean {
+export function isValidDrpcRequest(value: any): boolean {
   if (typeof value !== 'object' || value === null || Array.isArray(value)) {
     return false
   }
@@ -55,11 +55,10 @@ export type DrpcRequest = DrpcRequestObject | DrpcRequestObject[]
 export class DrpcRequestMessage extends AgentMessage {
   public readonly allowDidSovPrefix = true
 
-  public constructor(options: { request: DrpcRequest }, messageId?: string) {
+  public constructor(options: { request: DrpcRequest }) {
     super()
-
     if (options) {
-      this.id = messageId ?? this.generateId()
+      this.id = this.generateId()
       this.request = options.request
     }
   }

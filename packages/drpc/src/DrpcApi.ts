@@ -1,4 +1,4 @@
-import type { DrpcRequest, DrpcResponse } from './messages'
+import type { DrpcRequest, DrpcResponse, DrpcRequestMessage, DrpcResponseMessage } from './messages'
 import type { DrpcMessageRecord } from './repository/DrpcMessageRecord'
 import type { ConnectionRecord } from '@credo-ts/core'
 
@@ -8,12 +8,10 @@ import {
   MessageSender,
   OutboundMessageContext,
   injectable,
-  utils,
   ConnectionService,
 } from '@credo-ts/core'
 
-import { DrpcHandler } from './handlers'
-import { DrpcRequestMessage, DrpcResponseMessage } from './messages'
+import { DrpcRequestHandler, DrpcResponseHandler } from './handlers'
 import { DrpcService } from './services'
 
 @injectable()
@@ -38,16 +36,14 @@ export class DrpcApi {
   }
 
   public async sendRequest(connectionId: string, request: DrpcRequest): Promise<DrpcResponse> {
-    const messageId = utils.uuid()
     const connection = await this.connectionService.getById(this.agentContext, connectionId)
     const { message: drpcMessage, record: drpcMessageRecord } = await this.drpcMessageService.createRequestMessage(
       this.agentContext,
       request,
-      connection,
-      messageId
+      connection.id
     )
+    const messageId = drpcMessage.id
     await this.sendMessage(connection, drpcMessage, drpcMessageRecord)
-
     return new Promise((resolve) => {
       const listener = ({
         drpcMessageRecord,
@@ -56,11 +52,11 @@ export class DrpcApi {
         drpcMessageRecord: DrpcMessageRecord
         removeListener: () => void
       }) => {
-        const message = drpcMessageRecord.content
-        if (message instanceof DrpcResponseMessage && message.threadId === messageId) {
+        const message = drpcMessageRecord.message
+        if (drpcMessageRecord.threadId === messageId) {
           removeListener()
 
-          resolve(message.response)
+          resolve(message)
         }
       }
 
@@ -77,15 +73,13 @@ export class DrpcApi {
         drpcMessageRecord: DrpcMessageRecord
         removeListener: () => void
       }) => {
-        const message = drpcMessageRecord.content
-        if (message instanceof DrpcRequestMessage) {
-          removeListener()
-          resolve({
-            connectionId: drpcMessageRecord.connectionId,
-            threadId: message.threadId,
-            request: message.request,
-          })
-        }
+        const message = drpcMessageRecord.message
+        removeListener()
+        resolve({
+          connectionId: drpcMessageRecord.connectionId,
+          threadId: drpcMessageRecord.threadId,
+          request: message as DrpcRequest,
+        })
       }
 
       this.drpcMessageService.createRequestListener(listener)
@@ -94,13 +88,20 @@ export class DrpcApi {
 
   public async sendResponse(connectionId: string, threadId: string, response: DrpcResponse): Promise<void> {
     const connection = await this.connectionService.getById(this.agentContext, connectionId)
-    const { message: drpcMessage, record: drpcMessageRecord } = await this.drpcMessageService.createResponseMessage(
+    const drpcMessageRecord = await this.drpcMessageService.findByThreadAndConnectionId(
+      this.agentContext,
+      connectionId,
+      threadId
+    )
+    if (!drpcMessageRecord) {
+      throw new Error(`No request found for threadId ${threadId}`)
+    }
+    const { message, record } = await this.drpcMessageService.createResponseMessage(
       this.agentContext,
       response,
-      connection
+      drpcMessageRecord
     )
-    drpcMessage.setThread({ threadId })
-    await this.sendMessage(connection, drpcMessage, drpcMessageRecord)
+    await this.sendMessage(connection, message, record)
   }
 
   private async sendMessage(
@@ -117,6 +118,7 @@ export class DrpcApi {
   }
 
   private registerMessageHandlers(messageHandlerRegistry: MessageHandlerRegistry) {
-    messageHandlerRegistry.registerMessageHandler(new DrpcHandler(this.drpcMessageService))
+    messageHandlerRegistry.registerMessageHandler(new DrpcRequestHandler(this.drpcMessageService))
+    messageHandlerRegistry.registerMessageHandler(new DrpcResponseHandler(this.drpcMessageService))
   }
 }

@@ -1,5 +1,7 @@
 import type { DrpcRequestObject } from '../messages'
 
+import { DidExchangeState } from '@credo-ts/core'
+
 import { EventEmitter } from '../../../core/src/agent/EventEmitter'
 import { InboundMessageContext } from '../../../core/src/agent/models/InboundMessageContext'
 import { getAgentContext, getMockConnection } from '../../../core/tests/helpers'
@@ -24,6 +26,7 @@ describe('DrpcService', () => {
   const mockConnectionRecord = getMockConnection({
     id: 'd3849ac3-c981-455b-a1aa-a10bea6cead8',
     did: 'did:sov:C2SsBf5QUQpqSAQfhu3sd2',
+    state: DidExchangeState.Completed,
   })
 
   beforeEach(() => {
@@ -40,7 +43,7 @@ describe('DrpcService', () => {
       const { message } = await drpcMessageService.createRequestMessage(
         agentContext,
         messageRequest,
-        mockConnectionRecord
+        mockConnectionRecord.id
       )
 
       expect(message).toBeInstanceOf(DrpcRequestMessage)
@@ -52,21 +55,25 @@ describe('DrpcService', () => {
         payload: {
           drpcMessageRecord: expect.objectContaining({
             connectionId: mockConnectionRecord.id,
-            content: expect.any(DrpcRequestMessage),
-            role: DrpcRole.Sender,
+            message: {
+              id: 1,
+              jsonrpc: '2.0',
+              method: 'hello',
+            },
+            role: DrpcRole.Client,
           }),
         },
       })
     })
   })
 
-  describe('save', () => {
+  describe('recieve request', () => {
     it(`stores record and emits message and basic message record`, async () => {
       const drpcMessage = new DrpcRequestMessage({ request: { jsonrpc: '2.0', method: 'hello', id: 1 } })
 
-      const messageContext = new InboundMessageContext(drpcMessage, { agentContext })
+      const messageContext = new InboundMessageContext(drpcMessage, { agentContext, connection: mockConnectionRecord })
 
-      await drpcMessageService.save(messageContext, mockConnectionRecord)
+      await drpcMessageService.recieveRequest(messageContext)
 
       expect(drpcMessageRepository.save).toHaveBeenCalledWith(agentContext, expect.any(DrpcMessageRecord))
       expect(eventEmitter.emit).toHaveBeenCalledWith(agentContext, {
@@ -74,8 +81,12 @@ describe('DrpcService', () => {
         payload: {
           drpcMessageRecord: expect.objectContaining({
             connectionId: mockConnectionRecord.id,
-            content: expect.any(DrpcRequestMessage),
-            role: DrpcRole.Receiver,
+            message: {
+              id: 1,
+              jsonrpc: '2.0',
+              method: 'hello',
+            },
+            role: DrpcRole.Server,
           }),
         },
       })

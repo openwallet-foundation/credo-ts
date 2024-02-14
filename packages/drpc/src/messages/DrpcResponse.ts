@@ -36,7 +36,7 @@ export function IsValidDrpcResponse(validationOptions?: ValidationOptions): Prop
   }
 }
 
-function isValidDrpcResponse(value: any): boolean {
+export function isValidDrpcResponse(value: any): boolean {
   // Check if value is an object
   if (typeof value !== 'object' || value === null) {
     return false
@@ -93,12 +93,12 @@ export interface DrpcResponseObject {
 export class DrpcResponseMessage extends AgentMessage {
   public readonly allowDidSovPrefix = true
 
-  public constructor(options: { response: DrpcResponse }, messageId?: string) {
+  public constructor(options: { response: DrpcResponse; threadId: string }) {
     super()
-
     if (options) {
-      this.id = messageId ?? this.generateId()
+      this.id = this.generateId()
       this.response = options.response
+      this.setThread({ threadId: options.threadId })
     }
   }
 
