@@ -115,37 +115,23 @@ export class SdJwtVcService {
     const sdJwtVc = _SdJwtVc.fromCompact<Header>(compactSdJwtVc).withHasher(this.hasher)
     const holder = await this.extractKeyFromHolderBinding(agentContext, this.parseHolderBindingFromCredential(sdJwtVc))
 
-    // FIXME: we create the SD-JWT in two steps as the _sd_hash is currently not included in the SD-JWT library
-    // so we add it ourselves, but for that we need the contents of the derived SD-JWT first
-    const compactDerivedSdJwtVc = await sdJwtVc.present(presentationFrame === true ? undefined : presentationFrame)
+    const compactDerivedSdJwtVc = await sdJwtVc
+      .withKeyBinding(
+        new KeyBinding({
+          header: {
+            alg: holder.alg,
+            typ: 'kb+jwt',
+          },
+          payload: {
+            iat: verifierMetadata.issuedAt,
+            nonce: verifierMetadata.nonce,
+            aud: verifierMetadata.audience,
+          },
+        }).withSigner(this.signer(agentContext, holder.key))
+      )
+      .present(presentationFrame === true ? undefined : presentationFrame)
 
-    let sdAlg: string
-    try {
-      sdAlg = sdJwtVc.getClaimInPayload<string>('_sd_alg')
-    } catch (error) {
-      sdAlg = 'sha-256'
-    }
-
-    const header = {
-      alg: holder.alg,
-      typ: 'kb+jwt',
-    } as const
-
-    const payload = {
-      iat: verifierMetadata.issuedAt,
-      nonce: verifierMetadata.nonce,
-      aud: verifierMetadata.audience,
-
-      // FIXME: _sd_hash is missing. See
-      // https://github.com/berendsliedrecht/sd-jwt-ts/issues/8
-      _sd_hash: TypedArrayEncoder.toBase64URL(Hasher.hash(compactDerivedSdJwtVc, sdAlg)),
-    }
-
-    const compactKbJwt = await new KeyBinding({ header, payload })
-      .withSigner(this.signer(agentContext, holder.key))
-      .toCompact()
-
-    return `${compactDerivedSdJwtVc}${compactKbJwt}`
+    return compactDerivedSdJwtVc
   }
 
   public async verify<Header extends SdJwtVcHeader = SdJwtVcHeader, Payload extends SdJwtVcPayload = SdJwtVcPayload>(
@@ -157,18 +143,12 @@ export class SdJwtVcService {
     const issuer = await this.extractKeyFromIssuer(agentContext, this.parseIssuerFromCredential(sdJwtVc))
     const holder = await this.extractKeyFromHolderBinding(agentContext, this.parseHolderBindingFromCredential(sdJwtVc))
 
-    // FIXME: we currently pass in the required keys in the verification method and based on the header.typ we
-    // check if we need to use the issuer or holder key. Once better support in sd-jwt lib is available we can
-    // update this.
-    // See https://github.com/berendsliedrecht/sd-jwt-ts/pull/34
-    // See https://github.com/berendsliedrecht/sd-jwt-ts/issues/15
     const verificationResult = await sdJwtVc.verify(
-      this.verifier(agentContext, {
-        issuer: issuer.key,
-        holder: holder.key,
-      }),
+      this.verifier(agentContext),
       requiredClaimKeys,
-      holder.cnf
+      holder.cnf,
+      getJwkFromKey(holder.key).toJson(),
+      getJwkFromKey(issuer.key).toJson()
     )
 
     // If keyBinding is present, verify the key binding
@@ -178,24 +158,9 @@ export class SdJwtVcService {
           throw new SdJwtVcError('Keybinding is required for verification of the sd-jwt-vc')
         }
 
-        let sdAlg: string
-        try {
-          sdAlg = sdJwtVc.getClaimInPayload<string>('_sd_alg')
-        } catch (error) {
-          sdAlg = 'sha-256'
-        }
-
-        // FIXME: Calculate _sd_hash. can be removed once below is resolved
-        // https://github.com/berendsliedrecht/sd-jwt-ts/issues/8
-        const sdJwtParts = compactSdJwtVc.split('~')
-        sdJwtParts.pop() // remove kb-jwt
-        const sdJwtWithoutKbJwt = `${sdJwtParts.join('~')}~`
-        const sdHash = TypedArrayEncoder.toBase64URL(Hasher.hash(sdJwtWithoutKbJwt, sdAlg))
-
         // Assert `aud` and `nonce` claims
         sdJwtVc.keyBinding.assertClaimInPayload('aud', keyBinding.audience)
         sdJwtVc.keyBinding.assertClaimInPayload('nonce', keyBinding.nonce)
-        sdJwtVc.keyBinding.assertClaimInPayload('_sd_hash', sdHash)
       }
     } catch (error) {
       verificationResult.isKeyBindingValid = false
@@ -269,32 +234,15 @@ export class SdJwtVcService {
   /**
    * @todo validate the JWT header (alg)
    */
-  private verifier<Header extends SdJwtVcHeader = SdJwtVcHeader>(
-    agentContext: AgentContext,
-    verificationKeys: {
-      issuer: Key
-      holder: Key
-    }
-  ): Verifier<Header> {
-    return async ({ message, signature, publicKeyJwk, header }) => {
-      const keyFromPublicKeyJwk = publicKeyJwk ? getJwkFromJson(publicKeyJwk as JwkJson).key : undefined
-
-      let key: Key
-      if (header.typ === 'kb+jwt') {
-        key = verificationKeys.holder
-      } else if (header.typ === 'vc+sd-jwt') {
-        key = verificationKeys.issuer
-      } else {
-        throw new SdJwtVcError(`Unsupported JWT type '${header.typ}'`)
-      }
-
-      if (keyFromPublicKeyJwk && key.fingerprint !== keyFromPublicKeyJwk.fingerprint) {
-        throw new SdJwtVcError('The key used to verify the signature does not match the expected key')
+  private verifier<Header extends SdJwtVcHeader = SdJwtVcHeader>(agentContext: AgentContext): Verifier<Header> {
+    return async ({ message, signature, publicKeyJwk }) => {
+      if (!publicKeyJwk) {
+        throw new SdJwtVcError('The public key used to verify the signature is missing')
       }
 
       return await agentContext.wallet.verify({
         signature: Buffer.from(signature),
-        key,
+        key: getJwkFromJson(publicKeyJwk as JwkJson).key,
         data: TypedArrayEncoder.fromString(message),
       })
     }

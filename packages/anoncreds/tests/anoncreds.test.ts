@@ -124,7 +124,7 @@ describe('AnonCreds API', () => {
 
     expect(schemaResult).toEqual({
       registrationMetadata: {},
-      schemaMetadata: { indyLedgerSeqNo: 16908 },
+      schemaMetadata: {},
       schemaState: {
         state: 'finished',
         schema: {
@@ -167,7 +167,7 @@ describe('AnonCreds API', () => {
 
     expect(schemaResult).toEqual({
       resolutionMetadata: {},
-      schemaMetadata: { indyLedgerSeqNo: 75206 },
+      schemaMetadata: {},
       schema: {
         attrNames: ['one', 'two'],
         issuerId: '7Cd2Yj9yEZNcmNoH54tq9i',

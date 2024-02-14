@@ -70,11 +70,48 @@ jobs:
       - name: Compile
         run: yarn build
 
-  integration-test:
+  unit-tests:
     runs-on: ubuntu-20.04
-    name: Integration Tests
+    name: Unit Tests
 
     strategy:
+      fail-fast: false
+      matrix:
+        node-version: [18.x, 20.x]
+        # Each shard runs a set of the tests
+        # Make sure to UPDATE THE TEST command with the total length of
+        # the shards if you change this!!
+        shard: [1, 2]
+
+    steps:
+      - name: Checkout credo
+        uses: actions/checkout@v4
+
+      - name: Setup NodeJS
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'yarn'
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Run tests
+        run: yarn test:unit --coverage --forceExit --shard=${{ matrix.shard }}/2
+
+      # Upload coverage for shard
+      - run: mv coverage/coverage-final.json coverage/${{ matrix.shard }}.json
+      - uses: actions/upload-artifact@v3
+        with:
+          name: coverage-artifacts
+          path: coverage/${{ matrix.shard }}.json
+
+  e2e-tests:
+    runs-on: ubuntu-20.04
+    name: E2E Tests
+
+    strategy:
+      fail-fast: false
       matrix:
         node-version: [18.x, 20.x]
 
@@ -96,15 +133,33 @@ jobs:
         run: yarn install --frozen-lockfile
 
       - name: Run tests
-        run: yarn test --coverage --forceExit --bail
+        run: yarn test:e2e --coverage --forceExit
+
+      # Upload coverage for e2e
+      - run: mv coverage/coverage-final.json coverage/e2e.json
+      - uses: actions/upload-artifact@v3
+        with:
+          name: coverage-artifacts
+          path: coverage/e2e.json
+
+  # Upload all the coverage reports
+  report-coverage:
+    runs-on: ubuntu-20.04
+    needs: [e2e-tests, unit-tests]
+    steps:
+      - uses: actions/download-artifact@v3
+        with:
+          name: coverage-artifacts
+          path: coverage
 
       - uses: codecov/codecov-action@v3
-        if: always()
+        with:
+          directory: coverage
 
   version-stable:
     runs-on: ubuntu-20.04
     name: Release stable
-    needs: [integration-test, validate]
+    needs: [e2e-tests, unit-tests, validate]
     if: github.ref == 'refs/heads/main' && github.event_name == 'workflow_dispatch'
     steps:
       - name: Checkout agent-framework-javascript
