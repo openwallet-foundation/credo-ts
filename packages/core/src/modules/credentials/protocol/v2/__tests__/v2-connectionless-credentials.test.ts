@@ -7,10 +7,11 @@ import { ReplaySubject, Subject } from 'rxjs'
 
 import { SubjectInboundTransport } from '../../../../../../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from '../../../../../../../../tests/transport/SubjectOutboundTransport'
+import { getAnonCredsIndyModules } from '../../../../../../../anoncreds/tests/legacyAnonCredsSetup'
 import {
-  getAnonCredsIndyModules,
-  prepareForAnonCredsIssuance,
-} from '../../../../../../../anoncreds/tests/legacyAnonCredsSetup'
+  anoncredsDefinitionFourAttributesNoRevocation,
+  storePreCreatedAnonCredsDefinition,
+} from '../../../../../../../anoncreds/tests/preCreatedAnonCredsDefinition'
 import { waitForCredentialRecordSubject, getInMemoryAgentOptions } from '../../../../../../tests/helpers'
 import testLogger from '../../../../../../tests/logger'
 import { Agent } from '../../../../../agent/Agent'
@@ -39,6 +40,8 @@ const aliceAgentOptions = getInMemoryAgentOptions(
 const credentialPreview = V2CredentialPreview.fromRecord({
   name: 'John',
   age: '99',
+  'x-ray': 'true',
+  profile_picture: 'looking_good',
 })
 
 describe('V2 Connectionless Credentials', () => {
@@ -46,7 +49,6 @@ describe('V2 Connectionless Credentials', () => {
   let aliceAgent: AnonCredsTestsAgent
   let faberReplay: ReplaySubject<CredentialStateChangedEvent>
   let aliceReplay: ReplaySubject<CredentialStateChangedEvent>
-  let credentialDefinitionId: string
 
   beforeEach(async () => {
     const faberMessages = new Subject<SubjectMessage>()
@@ -66,10 +68,8 @@ describe('V2 Connectionless Credentials', () => {
     aliceAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     await aliceAgent.initialize()
 
-    const { credentialDefinition } = await prepareForAnonCredsIssuance(faberAgent, {
-      attributeNames: ['name', 'age'],
-    })
-    credentialDefinitionId = credentialDefinition.credentialDefinitionId
+    // Make sure the pre-created credential definition is in the wallet
+    await storePreCreatedAnonCredsDefinition(faberAgent, anoncredsDefinitionFourAttributesNoRevocation)
 
     faberReplay = new ReplaySubject<CredentialStateChangedEvent>()
     aliceReplay = new ReplaySubject<CredentialStateChangedEvent>()
@@ -96,9 +96,9 @@ describe('V2 Connectionless Credentials', () => {
     let { message, credentialRecord: faberCredentialRecord } = await faberAgent.credentials.createOffer({
       comment: 'V2 Out of Band offer',
       credentialFormats: {
-        indy: {
+        anoncreds: {
           attributes: credentialPreview.attributes,
-          credentialDefinitionId,
+          credentialDefinitionId: anoncredsDefinitionFourAttributesNoRevocation.credentialDefinitionId,
         },
       },
       protocolVersion: 'v2',
@@ -160,7 +160,7 @@ describe('V2 Connectionless Credentials', () => {
       metadata: {
         data: {
           '_anoncreds/credential': {
-            credentialDefinitionId,
+            credentialDefinitionId: anoncredsDefinitionFourAttributesNoRevocation.credentialDefinitionId,
           },
         },
       },
@@ -181,7 +181,7 @@ describe('V2 Connectionless Credentials', () => {
       metadata: {
         data: {
           '_anoncreds/credential': {
-            credentialDefinitionId,
+            credentialDefinitionId: anoncredsDefinitionFourAttributesNoRevocation.credentialDefinitionId,
           },
         },
       },
@@ -195,9 +195,9 @@ describe('V2 Connectionless Credentials', () => {
     let { message, credentialRecord: faberCredentialRecord } = await faberAgent.credentials.createOffer({
       comment: 'V2 Out of Band offer',
       credentialFormats: {
-        indy: {
+        anoncreds: {
           attributes: credentialPreview.attributes,
-          credentialDefinitionId,
+          credentialDefinitionId: anoncredsDefinitionFourAttributesNoRevocation.credentialDefinitionId,
         },
       },
       protocolVersion: 'v2',
@@ -241,7 +241,7 @@ describe('V2 Connectionless Credentials', () => {
       metadata: {
         data: {
           '_anoncreds/credential': {
-            credentialDefinitionId: credentialDefinitionId,
+            credentialDefinitionId: anoncredsDefinitionFourAttributesNoRevocation.credentialDefinitionId,
           },
         },
       },

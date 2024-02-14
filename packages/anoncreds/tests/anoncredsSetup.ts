@@ -51,6 +51,7 @@ import testLogger from '../../core/tests/logger'
 import { InMemoryTailsFileService } from './InMemoryTailsFileService'
 import { LocalDidResolver } from './LocalDidResolver'
 import { anoncreds } from './helpers'
+import { anoncredsDefinitionFourAttributesNoRevocation } from './preCreatedAnonCredsDefinition'
 
 // Helper type to get the type of the agents (with the custom modules) for the credential tests
 export type AnonCredsTestsAgent = Agent<
@@ -68,6 +69,17 @@ export const getAnonCredsModules = ({
   registries?: [AnonCredsRegistry, ...AnonCredsRegistry[]]
 } = {}) => {
   const dataIntegrityCredentialFormatService = new DataIntegrityCredentialFormatService()
+  // Add support for resolving pre-created credential definitions and schemas
+  const inMemoryAnonCredsRegistry = new InMemoryAnonCredsRegistry({
+    existingCredentialDefinitions: {
+      [anoncredsDefinitionFourAttributesNoRevocation.credentialDefinitionId]:
+        anoncredsDefinitionFourAttributesNoRevocation.credentialDefinition,
+    },
+    existingSchemas: {
+      [anoncredsDefinitionFourAttributesNoRevocation.schemaId]: anoncredsDefinitionFourAttributesNoRevocation.schema,
+    },
+  })
+
   const anonCredsCredentialFormatService = new AnonCredsCredentialFormatService()
   const anonCredsProofFormatService = new AnonCredsProofFormatService()
   const presentationExchangeProofFormatService = new PresentationExchangeProofFormatService()
@@ -90,7 +102,7 @@ export const getAnonCredsModules = ({
       ],
     }),
     anoncreds: new AnonCredsModule({
-      registries: registries ?? [new InMemoryAnonCredsRegistry()],
+      registries: registries ?? [inMemoryAnonCredsRegistry],
       tailsFileService: new InMemoryTailsFileService(),
       anoncreds,
     }),

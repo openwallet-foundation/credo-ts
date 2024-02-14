@@ -1,3 +1,5 @@
+import type { DependencyManager } from '../../../../../plugins/DependencyManager'
+
 import { getAgentConfig, getAgentContext, mockFunction } from '../../../../../../tests/helpers'
 import { Agent } from '../../../../../agent/Agent'
 import { AgentConfig } from '../../../../../agent/AgentConfig'
@@ -16,7 +18,7 @@ const dependencyManager = {
 
 const agentConfig = getAgentConfig('Migration W3cCredentialRecord 0.4-0.5')
 const agentContext = getAgentContext({
-  dependencyManager: dependencyManager as any,
+  dependencyManager: dependencyManager as unknown as DependencyManager,
 })
 
 const repository = {

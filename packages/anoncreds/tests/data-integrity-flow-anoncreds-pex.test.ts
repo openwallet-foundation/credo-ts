@@ -1,5 +1,5 @@
 import type { AnonCredsTestsAgent } from './anoncredsSetup'
-import type { EventReplaySubject } from '@credo-ts/core/tests'
+import type { EventReplaySubject } from '../../core/tests'
 import type { InputDescriptorV2 } from '@sphereon/pex-models'
 
 import {
@@ -12,10 +12,13 @@ import {
   W3cCredentialSubject,
 } from '@credo-ts/core'
 
-import { InMemoryAnonCredsRegistry } from '../../anoncreds/tests/InMemoryAnonCredsRegistry'
-import { createDidKidVerificationMethod } from '../../core/tests'
-import { waitForCredentialRecordSubject, waitForProofExchangeRecord } from '../../core/tests/helpers'
+import {
+  createDidKidVerificationMethod,
+  waitForCredentialRecordSubject,
+  waitForProofExchangeRecord,
+} from '../../core/tests'
 
+import { InMemoryAnonCredsRegistry } from './InMemoryAnonCredsRegistry'
 import { setupAnonCredsTests } from './anoncredsSetup'
 import { presentationDefinition } from './fixtures/presentation-definition'
 

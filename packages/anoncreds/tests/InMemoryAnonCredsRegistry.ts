@@ -29,7 +29,6 @@ import {
 } from '../../indy-vdr/src/anoncreds/utils/identifiers'
 import {} from '../src'
 import {
-  getQualifiedDidIndyDid,
   getUnQualifiedDidIndyDid,
   getUnqualifiedRevocationRegistryDefinitionId,
   getUnqualifiedCredentialDefinitionId,
@@ -42,7 +41,6 @@ import {
   isIndyDid,
   isUnqualifiedCredentialDefinitionId,
   isUnqualifiedSchemaId,
-  isUnqualifiedRevocationRegistryId,
   isUnqualifiedIndyDid,
 } from '../src/utils/indyIdentifiers'
 import { dateToTimestamp } from '../src/utils/timestamp'
@@ -92,33 +90,20 @@ export class InMemoryAnonCredsRegistry implements AnonCredsRegistry {
     }
 
     let didIndyNamespace: string | undefined = undefined
-    let indyLedgerSeqNo: string | undefined = undefined
-
     if (isUnqualifiedSchemaId(schemaId)) {
-      const qSchemaIdEnd = getQualifiedDidIndyDid(schemaId, 'mock').split('mock:')[1]
-      const qSchemaId = Object.keys(this.schemas).find((schemaId) => schemaId.endsWith(qSchemaIdEnd))
-      if (!qSchemaId) didIndyNamespace = undefined
-      else didIndyNamespace = parseIndySchemaId(qSchemaId).namespace
+      const { namespaceIdentifier, schemaName, schemaVersion } = parseIndySchemaId(schemaId)
+      const qualifiedSchemaEnding = `${namespaceIdentifier}/anoncreds/v0/SCHEMA/${schemaName}/${schemaVersion}`
+      const qualifiedSchemaId = Object.keys(this.schemas).find((schemaId) => schemaId.endsWith(qualifiedSchemaEnding))
+      didIndyNamespace = qualifiedSchemaId ? parseIndySchemaId(qualifiedSchemaId).namespace : undefined
     } else if (isIndyDid(schemaId)) {
       didIndyNamespace = parseIndySchemaId(schemaId).namespace
-    }
-
-    if (didIndyNamespace) {
-      const parsed = parseIndySchemaId(schemaId)
-      const legacySchemaId = getUnqualifiedSchemaId(parsed.namespaceIdentifier, parsed.schemaName, parsed.schemaVersion)
-      indyLedgerSeqNo = getSeqNoFromSchemaId(legacySchemaId).toString()
     }
 
     return {
       resolutionMetadata: {},
       schema,
       schemaId,
-      schemaMetadata: {
-        // NOTE: the seqNo is required by the indy-sdk even though not present in AnonCreds v1.
-        // For this reason we return it in the metadata.
-        indyLedgerSeqNo,
-        didIndyNamespace,
-      },
+      schemaMetadata: { ...(didIndyNamespace && { didIndyNamespace }) },
     }
   }
 
@@ -129,15 +114,10 @@ export class InMemoryAnonCredsRegistry implements AnonCredsRegistry {
     const issuerId = options.schema.issuerId
 
     let schemaId: string
-    let indyLedgerSeqNo: number | undefined
     if (isIndyDid(issuerId) || isUnqualifiedIndyDid(issuerId)) {
       const { namespace, namespaceIdentifier } = parseIndyDid(issuerId)
       schemaId = getDidIndySchemaId(namespace, namespaceIdentifier, options.schema.name, options.schema.version)
-
-      const legacySchemaId = getUnQualifiedDidIndyDid(schemaId)
-      this.schemas[legacySchemaId] = getUnqualifiedDidIndySchema(options.schema)
-
-      indyLedgerSeqNo = getSeqNoFromSchemaId(legacySchemaId)
+      this.schemas[getUnQualifiedDidIndyDid(schemaId)] = getUnqualifiedDidIndySchema(options.schema)
     } else if (issuerId.startsWith('did:cheqd:')) {
       schemaId = issuerId + '/resources/' + utils.uuid()
     } else {
@@ -148,11 +128,7 @@ export class InMemoryAnonCredsRegistry implements AnonCredsRegistry {
 
     return {
       registrationMetadata: {},
-      schemaMetadata: {
-        // NOTE: the seqNo is required by the indy-sdk even though not present in AnonCreds v1.
-        // For this reason we return it in the metadata.
-        indyLedgerSeqNo,
-      },
+      schemaMetadata: {},
       schemaState: {
         state: 'finished',
         schema: options.schema,
@@ -180,12 +156,14 @@ export class InMemoryAnonCredsRegistry implements AnonCredsRegistry {
 
     let didIndyNamespace: string | undefined = undefined
     if (isUnqualifiedCredentialDefinitionId(credentialDefinitionId)) {
-      const qCredDefEnd = getQualifiedDidIndyDid(credentialDefinitionId, 'mock').split('mock:')[1]
-      const qCredDefId = Object.keys(this.credentialDefinitions).find((credentialDefinitionid) =>
-        credentialDefinitionid.endsWith(qCredDefEnd)
+      const { namespaceIdentifier, schemaSeqNo, tag } = parseIndyCredentialDefinitionId(credentialDefinitionId)
+      const qualifiedCredDefEnding = `${namespaceIdentifier}/anoncreds/v0/CLAIM_DEF/${schemaSeqNo}/${tag}`
+      const unqualifiedCredDefId = Object.keys(this.credentialDefinitions).find((credentialDefinitionId) =>
+        credentialDefinitionId.endsWith(qualifiedCredDefEnding)
       )
-      if (!qCredDefId) didIndyNamespace = undefined
-      else didIndyNamespace = parseIndyCredentialDefinitionId(qCredDefId).namespace
+      didIndyNamespace = unqualifiedCredDefId
+        ? parseIndyCredentialDefinitionId(unqualifiedCredDefId).namespace
+        : undefined
     } else if (isIndyDid(credentialDefinitionId)) {
       didIndyNamespace = parseIndyCredentialDefinitionId(credentialDefinitionId).namespace
     }
@@ -194,7 +172,7 @@ export class InMemoryAnonCredsRegistry implements AnonCredsRegistry {
       resolutionMetadata: {},
       credentialDefinition,
       credentialDefinitionId,
-      credentialDefinitionMetadata: { didIndyNamespace },
+      credentialDefinitionMetadata: { ...(didIndyNamespace && { didIndyNamespace }) },
     }
   }
 
@@ -214,22 +192,15 @@ export class InMemoryAnonCredsRegistry implements AnonCredsRegistry {
       )
       const indyLedgerSeqNo = getSeqNoFromSchemaId(legacySchemaId)
 
-      const { namespace, namespaceIdentifier } = parseIndyDid(options.credentialDefinition.issuerId)
-      const legacyIssuerId = namespaceIdentifier
+      const { namespace, namespaceIdentifier: legacyIssuerId } = parseIndyDid(options.credentialDefinition.issuerId)
       const didIndyCredentialDefinitionId = getDidIndyCredentialDefinitionId(
         namespace,
-        namespaceIdentifier,
-        indyLedgerSeqNo,
-        options.credentialDefinition.tag
-      )
-
-      const legacyCredentialDefinitionId = getUnqualifiedCredentialDefinitionId(
         legacyIssuerId,
         indyLedgerSeqNo,
         options.credentialDefinition.tag
       )
 
-      this.credentialDefinitions[legacyCredentialDefinitionId] = {
+      this.credentialDefinitions[getUnQualifiedDidIndyDid(didIndyCredentialDefinitionId)] = {
         ...options.credentialDefinition,
         issuerId: legacyIssuerId,
         schemaId: legacySchemaId,
@@ -270,14 +241,15 @@ export class InMemoryAnonCredsRegistry implements AnonCredsRegistry {
       }
     }
 
-    let didIndyNamespace: string | undefined
-    if (isUnqualifiedRevocationRegistryId(revocationRegistryDefinitionId)) {
-      const qRevRegIdEnd = getQualifiedDidIndyDid(revocationRegistryDefinitionId, 'mock').split('mock:')[1]
-      const qRevRegId = Object.keys(this.revocationRegistryDefinitions).find((revRegId) =>
-        revRegId.endsWith(qRevRegIdEnd)
+    let didIndyNamespace: string | undefined = undefined
+    if (isUnqualifiedCredentialDefinitionId(revocationRegistryDefinitionId)) {
+      const { namespaceIdentifier, schemaSeqNo, revocationRegistryTag } =
+        parseIndyRevocationRegistryId(revocationRegistryDefinitionId)
+      const qualifiedRevRegIdEnding = `:${namespaceIdentifier}/anoncreds/v0/REV_REG_DEF/${schemaSeqNo}/${revocationRegistryTag}`
+      const unqualifiedRevRegId = Object.keys(this.revocationRegistryDefinitions).find((revocationRegistryId) =>
+        revocationRegistryId.endsWith(qualifiedRevRegIdEnding)
       )
-      if (!qRevRegId) didIndyNamespace = undefined
-      else didIndyNamespace = parseIndyRevocationRegistryId(qRevRegId).namespace
+      didIndyNamespace = unqualifiedRevRegId ? parseIndySchemaId(unqualifiedRevRegId).namespace : undefined
     } else if (isIndyDid(revocationRegistryDefinitionId)) {
       didIndyNamespace = parseIndyRevocationRegistryId(revocationRegistryDefinitionId).namespace
     }
@@ -286,7 +258,7 @@ export class InMemoryAnonCredsRegistry implements AnonCredsRegistry {
       resolutionMetadata: {},
       revocationRegistryDefinition,
       revocationRegistryDefinitionId,
-      revocationRegistryDefinitionMetadata: { didIndyNamespace },
+      revocationRegistryDefinitionMetadata: { ...(didIndyNamespace && { didIndyNamespace }) },
     }
   }
 

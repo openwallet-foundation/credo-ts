@@ -71,6 +71,10 @@ export class AgentConfig {
     return this.initConfig.autoUpdateStorageOnStartup ?? false
   }
 
+  public get backupBeforeStorageUpdate() {
+    return this.initConfig.backupBeforeStorageUpdate ?? true
+  }
+
   public extend(config: Partial<InitConfig>): AgentConfig {
     return new AgentConfig(
       { ...this.initConfig, logger: this.logger, label: this.label, ...config },
