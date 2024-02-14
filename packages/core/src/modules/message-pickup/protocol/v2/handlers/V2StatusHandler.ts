@@ -7,15 +7,15 @@ import { V2StatusMessage } from '../messages'
 
 export class V2StatusHandler implements MessageHandler {
   public supportedMessages = [V2StatusMessage]
-  private messagePickupService: V2MessagePickupProtocol
+  private messagePickupProtocol: V2MessagePickupProtocol
 
-  public constructor(messagePickupService: V2MessagePickupProtocol) {
-    this.messagePickupService = messagePickupService
+  public constructor(messagePickupProtocol: V2MessagePickupProtocol) {
+    this.messagePickupProtocol = messagePickupProtocol
   }
 
   public async handle(messageContext: InboundMessageContext<V2StatusMessage>) {
     const connection = messageContext.assertReadyConnection()
-    const deliveryRequestMessage = await this.messagePickupService.processStatus(messageContext)
+    const deliveryRequestMessage = await this.messagePickupProtocol.processStatus(messageContext)
 
     if (deliveryRequestMessage) {
       return new OutboundMessageContext(deliveryRequestMessage, {

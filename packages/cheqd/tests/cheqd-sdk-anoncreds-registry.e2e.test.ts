@@ -192,7 +192,7 @@ describe('cheqdAnonCredsRegistry', () => {
   test('resolve query based url', async () => {
     const schemaResourceId =
       'did:cheqd:testnet:d8ac0372-0d4b-413e-8ef5-8e8f07822b2c?resourceName=test - 11&resourceType=anonCredsSchema'
-    const schemaResponse = await cheqdAnonCredsRegistry.getSchema(resolverAgent.context, `${schemaResourceId}`)
+    const schemaResponse = await cheqdAnonCredsRegistry.getSchema(resolverAgent.context, schemaResourceId)
 
     expect(schemaResponse).toMatchObject({
       schema: {

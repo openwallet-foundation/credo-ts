@@ -1,16 +1,29 @@
-import type { AnonCredsTestsAgent } from '../packages/anoncreds/tests/legacyAnonCredsSetup'
+import type { AnonCredsTestsAgent } from '../packages/anoncreds/tests/anoncredsSetup'
+import type { AgentMessageProcessedEvent, AgentMessageSentEvent } from '@credo-ts/core'
 
-import { V1CredentialPreview } from '../packages/anoncreds/src/protocols/credentials/v1'
+import { filter, firstValueFrom, map } from 'rxjs'
+
+import { presentAnonCredsProof, issueAnonCredsCredential } from '../packages/anoncreds/tests/anoncredsSetup'
 import {
-  issueLegacyAnonCredsCredential,
-  presentLegacyAnonCredsProof,
-  prepareForAnonCredsIssuance,
-} from '../packages/anoncreds/tests/legacyAnonCredsSetup'
-import { sleep } from '../packages/core/src/utils/sleep'
+  anoncredsDefinitionFourAttributesNoRevocation,
+  storePreCreatedAnonCredsDefinition,
+} from '../packages/anoncreds/tests/preCreatedAnonCredsDefinition'
 import { setupEventReplaySubjects } from '../packages/core/tests'
 import { makeConnection } from '../packages/core/tests/helpers'
 
-import { CredentialState, MediationState, ProofState, CredentialEventTypes, ProofEventTypes } from '@credo-ts/core'
+import {
+  V2CredentialPreview,
+  V1BatchMessage,
+  V1BatchPickupMessage,
+  V2DeliveryRequestMessage,
+  V2MessageDeliveryMessage,
+  CredentialState,
+  MediationState,
+  ProofState,
+  CredentialEventTypes,
+  ProofEventTypes,
+  AgentEventTypes,
+} from '@credo-ts/core'
 
 export async function e2eTest({
   mediatorAgent,
@@ -22,8 +35,13 @@ export async function e2eTest({
   senderAgent: AnonCredsTestsAgent
 }) {
   const [senderReplay, recipientReplay] = setupEventReplaySubjects(
-    [senderAgent, recipientAgent],
-    [CredentialEventTypes.CredentialStateChanged, ProofEventTypes.ProofStateChanged]
+    [senderAgent, recipientAgent, mediatorAgent],
+    [
+      CredentialEventTypes.CredentialStateChanged,
+      ProofEventTypes.ProofStateChanged,
+      AgentEventTypes.AgentMessageProcessed,
+      AgentEventTypes.AgentMessageSent,
+    ]
   )
 
   // Make connection between mediator and recipient
@@ -44,24 +62,26 @@ export async function e2eTest({
   const [recipientSenderConnection, senderRecipientConnection] = await makeConnection(recipientAgent, senderAgent)
   expect(recipientSenderConnection).toBeConnectedWith(senderRecipientConnection)
 
-  // Issue credential from sender to recipient
-  const { credentialDefinition } = await prepareForAnonCredsIssuance(senderAgent, {
-    attributeNames: ['name', 'age', 'dateOfBirth'],
-  })
-  const { holderCredentialExchangeRecord, issuerCredentialExchangeRecord } = await issueLegacyAnonCredsCredential({
+  const { credentialDefinitionId } = await storePreCreatedAnonCredsDefinition(
+    senderAgent,
+    anoncredsDefinitionFourAttributesNoRevocation
+  )
+
+  const { holderCredentialExchangeRecord, issuerCredentialExchangeRecord } = await issueAnonCredsCredential({
     issuerAgent: senderAgent,
     issuerReplay: senderReplay,
     holderAgent: recipientAgent,
     holderReplay: recipientReplay,
+    revocationRegistryDefinitionId: null,
 
     issuerHolderConnectionId: senderRecipientConnection.id,
     offer: {
-      credentialDefinitionId: credentialDefinition.credentialDefinitionId,
-      attributes: V1CredentialPreview.fromRecord({
+      credentialDefinitionId,
+      attributes: V2CredentialPreview.fromRecord({
         name: 'John',
         age: '25',
-        // year month day
-        dateOfBirth: '19950725',
+        'x-ray': 'not taken',
+        profile_picture: 'looking good',
       }).attributes,
     },
   })
@@ -70,7 +90,7 @@ export async function e2eTest({
   expect(issuerCredentialExchangeRecord.state).toBe(CredentialState.Done)
 
   // Present Proof from recipient to sender
-  const { holderProofExchangeRecord, verifierProofExchangeRecord } = await presentLegacyAnonCredsProof({
+  const { holderProofExchangeRecord, verifierProofExchangeRecord } = await presentAnonCredsProof({
     verifierAgent: senderAgent,
     verifierReplay: senderReplay,
 
@@ -84,7 +104,7 @@ export async function e2eTest({
           name: 'name',
           restrictions: [
             {
-              cred_def_id: credentialDefinition.credentialDefinitionId,
+              cred_def_id: credentialDefinitionId,
             },
           ],
         },
@@ -94,7 +114,7 @@ export async function e2eTest({
           name: 'age',
           restrictions: [
             {
-              cred_def_id: credentialDefinition.credentialDefinitionId,
+              cred_def_id: credentialDefinitionId,
             },
           ],
           p_type: '<=',
@@ -109,5 +129,33 @@ export async function e2eTest({
 
   // We want to stop the mediator polling before the agent is shutdown.
   await recipientAgent.mediationRecipient.stopMessagePickup()
-  await sleep(2000)
+
+  const pickupRequestMessages = [V2DeliveryRequestMessage.type.messageTypeUri, V1BatchPickupMessage.type.messageTypeUri]
+  const deliveryMessages = [V2MessageDeliveryMessage.type.messageTypeUri, V1BatchMessage.type.messageTypeUri]
+
+  let lastSentPickupMessageThreadId: undefined | string = undefined
+  recipientReplay
+    .pipe(
+      filter((e): e is AgentMessageSentEvent => e.type === AgentEventTypes.AgentMessageSent),
+      filter((e) => pickupRequestMessages.includes(e.payload.message.message.type)),
+      map((e) => e.payload.message.message.threadId)
+    )
+    .subscribe((threadId) => (lastSentPickupMessageThreadId = threadId))
+
+  // Wait for the response to the pickup message to be processed
+  if (lastSentPickupMessageThreadId) {
+    await firstValueFrom(
+      recipientReplay.pipe(
+        filter((e): e is AgentMessageProcessedEvent => e.type === AgentEventTypes.AgentMessageProcessed),
+        filter((e) => deliveryMessages.includes(e.payload.message.type)),
+        filter((e) => e.payload.message.threadId === lastSentPickupMessageThreadId)
+      )
+    )
+  }
+
+  // FIXME: we should add some fancy logic here that checks whether the last sent message has been received by the other
+  // agent and possibly wait for the response. So e.g. if pickup v1 is used, we wait for the delivery message to be returned
+  // as that is the final message that will be exchange after we've called stopMessagePickup. We can hook into the
+  // replay subject AgentMessageProcessed and AgentMessageSent events.
+  // await sleep(5000)
 }

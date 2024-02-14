@@ -1,29 +1,28 @@
-import type { SubjectMessage } from './transport/SubjectInboundTransport'
-import type { AnonCredsTestsAgent } from '../packages/anoncreds/tests/legacyAnonCredsSetup'
+import type { AnonCredsTestsAgent } from '../packages/anoncreds/tests/anoncredsSetup'
 
-import { Subject } from 'rxjs'
-
-import { getAnonCredsIndyModules } from '../packages/anoncreds/tests/legacyAnonCredsSetup'
+import { getAnonCredsModules } from '../packages/anoncreds/tests/anoncredsSetup'
 import { askarModule } from '../packages/askar/tests/helpers'
 import { getAgentOptions } from '../packages/core/tests/helpers'
 
 import { e2eTest } from './e2e-test'
-import { SubjectInboundTransport } from './transport/SubjectInboundTransport'
-import { SubjectOutboundTransport } from './transport/SubjectOutboundTransport'
 
 import {
   Agent,
+  WsOutboundTransport,
   AutoAcceptCredential,
-  MediatorModule,
   MediatorPickupStrategy,
   MediationRecipientModule,
+  MediatorModule,
 } from '@credo-ts/core'
+import { WsInboundTransport } from '@credo-ts/node'
 
+// FIXME: somehow if we use the in memory wallet and storage service in the WS test it will fail,
+// but it succeeds with Askar. We should look into this at some point
 const recipientAgentOptions = getAgentOptions(
-  'E2E Askar Subject Recipient',
+  'E2E WS Recipient ',
   {},
   {
-    ...getAnonCredsIndyModules({
+    ...getAnonCredsModules({
       autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
     }),
     mediationRecipient: new MediationRecipientModule({
@@ -32,26 +31,30 @@ const recipientAgentOptions = getAgentOptions(
     askar: askarModule,
   }
 )
+
+const mediatorPort = 4000
 const mediatorAgentOptions = getAgentOptions(
-  'E2E Askar Subject Mediator',
+  'E2E WS Mediator',
   {
-    endpoints: ['rxjs:mediator'],
+    endpoints: [`ws://localhost:${mediatorPort}`],
   },
   {
-    ...getAnonCredsIndyModules({
+    ...getAnonCredsModules({
       autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
     }),
     mediator: new MediatorModule({ autoAcceptMediationRequests: true }),
     askar: askarModule,
   }
 )
+
+const senderPort = 4001
 const senderAgentOptions = getAgentOptions(
-  'E2E Askar Subject Sender',
+  'E2E WS Sender',
   {
-    endpoints: ['rxjs:sender'],
+    endpoints: [`ws://localhost:${senderPort}`],
   },
   {
-    ...getAnonCredsIndyModules({
+    ...getAnonCredsModules({
       autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
     }),
     mediationRecipient: new MediationRecipientModule({
@@ -62,7 +65,7 @@ const senderAgentOptions = getAgentOptions(
   }
 )
 
-describe('E2E Askar-AnonCredsRS-IndyVDR Subject tests', () => {
+describe('E2E WS tests', () => {
   let recipientAgent: AnonCredsTestsAgent
   let mediatorAgent: AnonCredsTestsAgent
   let senderAgent: AnonCredsTestsAgent
@@ -82,27 +85,19 @@ describe('E2E Askar-AnonCredsRS-IndyVDR Subject tests', () => {
     await senderAgent.wallet.delete()
   })
 
-  test('Full Subject flow (connect, request mediation, issue, verify)', async () => {
-    const mediatorMessages = new Subject<SubjectMessage>()
-    const senderMessages = new Subject<SubjectMessage>()
-
-    const subjectMap = {
-      'rxjs:mediator': mediatorMessages,
-      'rxjs:sender': senderMessages,
-    }
-
+  test('Full WS flow (connect, request mediation, issue, verify)', async () => {
     // Recipient Setup
-    recipientAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
+    recipientAgent.registerOutboundTransport(new WsOutboundTransport())
     await recipientAgent.initialize()
 
     // Mediator Setup
-    mediatorAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
-    mediatorAgent.registerInboundTransport(new SubjectInboundTransport(mediatorMessages))
+    mediatorAgent.registerInboundTransport(new WsInboundTransport({ port: mediatorPort }))
+    mediatorAgent.registerOutboundTransport(new WsOutboundTransport())
     await mediatorAgent.initialize()
 
     // Sender Setup
-    senderAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
-    senderAgent.registerInboundTransport(new SubjectInboundTransport(senderMessages))
+    senderAgent.registerInboundTransport(new WsInboundTransport({ port: senderPort }))
+    senderAgent.registerOutboundTransport(new WsOutboundTransport())
     await senderAgent.initialize()
 
     await e2eTest({
