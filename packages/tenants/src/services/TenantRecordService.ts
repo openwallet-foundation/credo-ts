@@ -1,7 +1,7 @@
 import type { TenantConfig } from '../models/TenantConfig'
 import type { AgentContext, Key, Query } from '@credo-ts/core'
 
-import { injectable, utils, KeyDerivationMethod } from '@credo-ts/core'
+import { UpdateAssistant, injectable, utils, KeyDerivationMethod } from '@credo-ts/core'
 
 import { TenantRepository, TenantRecord, TenantRoutingRepository, TenantRoutingRecord } from '../repository'
 
@@ -31,6 +31,7 @@ export class TenantRecordService {
           keyDerivationMethod: KeyDerivationMethod.Raw,
         },
       },
+      storageVersion: UpdateAssistant.frameworkStorageVersion,
     })
 
     await this.tenantRepository.save(agentContext, tenantRecord)

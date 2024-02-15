@@ -31,14 +31,14 @@
     "reflect-metadata": "^0.1.13"
   },
   "devDependencies": {
-    "@hyperledger/anoncreds-nodejs": "^0.2.0-dev.9",
-    "@hyperledger/anoncreds-shared": "^0.2.0-dev.9",
+    "@hyperledger/anoncreds-nodejs": "^0.2.0",
+    "@hyperledger/anoncreds-shared": "^0.2.0",
     "@credo-ts/node": "0.4.2",
     "rimraf": "^4.4.0",
     "rxjs": "^7.8.0",
     "typescript": "~4.9.5"
   },
   "peerDependencies": {
-    "@hyperledger/anoncreds-shared": "^0.2.0-dev.9"
+    "@hyperledger/anoncreds-shared": "^0.2.0"
   }
 }

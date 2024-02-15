@@ -56,7 +56,7 @@ const record = await agent.modules.dummy.request(connection)
 
 ## Run demo
 
-This repository includes a demonstration of a requester and a responder controller using this module to exchange Dummy protocol messages. For environment set up, make sure you followed instructions for [NodeJS](https://credo.js.org/guides/getting-started/prerequisites/nodejs).
+This repository includes a demonstration of a requester and a responder controller using this module to exchange Dummy protocol messages. For environment set up, make sure you followed the [Credo Prerequisites](https://credo.js.org/guides/getting-started/prerequisites).
 
 These are the steps for running it:
 
@@ -69,7 +69,7 @@ git clone https://github.com/openwallet-foundation/credo-ts.git
 Open two different terminals and go to the extension-module directory:
 
 ```sh
-cd credo/samples/extension-module
+cd credo-ts/samples/extension-module
 ```
 
 Install the project in one of the terminals:

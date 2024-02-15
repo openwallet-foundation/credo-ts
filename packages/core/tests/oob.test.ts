@@ -1,14 +1,18 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 import type { SubjectMessage } from '../../../tests/transport/SubjectInboundTransport'
-import type { V1CredentialProtocol } from '../../anoncreds/src'
-import type { CreateCredentialOfferOptions } from '../src/modules/credentials'
+import type { AnonCredsCredentialFormatService } from '../../anoncreds/src'
+import type { CreateCredentialOfferOptions, V2CredentialProtocol } from '../src/modules/credentials'
 import type { AgentMessage, AgentMessageReceivedEvent } from '@credo-ts/core'
 
 import { Subject } from 'rxjs'
 
 import { SubjectInboundTransport } from '../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutboundTransport'
-import { getAnonCredsIndyModules, prepareForAnonCredsIssuance } from '../../anoncreds/tests/legacyAnonCredsSetup'
+import { getAnonCredsIndyModules } from '../../anoncreds/tests/legacyAnonCredsSetup'
+import {
+  anoncredsDefinitionFourAttributesNoRevocation,
+  storePreCreatedAnonCredsDefinition,
+} from '../../anoncreds/tests/preCreatedAnonCredsDefinition'
 import { Agent } from '../src/agent/Agent'
 import { Key } from '../src/crypto'
 import { DidExchangeState, HandshakeProtocol } from '../src/modules/connections'
@@ -24,7 +28,6 @@ import { getInMemoryAgentOptions, waitForCredentialRecord } from './helpers'
 
 import { AgentEventTypes, CredoError, AutoAcceptCredential, CredentialState } from '@credo-ts/core'
 
-// FIXME: oob.test doesn't need heavy AnonCreds / indy dependencies
 const faberAgentOptions = getInMemoryAgentOptions(
   'Faber Agent OOB',
   {
@@ -66,7 +69,7 @@ describe('out of band', () => {
 
   let faberAgent: Agent<ReturnType<typeof getAnonCredsIndyModules>>
   let aliceAgent: Agent<ReturnType<typeof getAnonCredsIndyModules>>
-  let credentialTemplate: CreateCredentialOfferOptions<[V1CredentialProtocol]>
+  let credentialTemplate: CreateCredentialOfferOptions<[V2CredentialProtocol<[AnonCredsCredentialFormatService]>]>
 
   beforeAll(async () => {
     const faberMessages = new Subject<SubjectMessage>()
@@ -89,14 +92,14 @@ describe('out of band', () => {
 
     await aliceAgent.modules.anoncreds.createLinkSecret()
 
-    const { credentialDefinition } = await prepareForAnonCredsIssuance(faberAgent, {
-      attributeNames: ['name', 'age', 'profile_picture', 'x-ray'],
-    })
-
+    const { credentialDefinitionId } = await storePreCreatedAnonCredsDefinition(
+      faberAgent,
+      anoncredsDefinitionFourAttributesNoRevocation
+    )
     credentialTemplate = {
-      protocolVersion: 'v1',
+      protocolVersion: 'v2',
       credentialFormats: {
-        indy: {
+        anoncreds: {
           attributes: [
             {
               name: 'name',
@@ -115,7 +118,7 @@ describe('out of band', () => {
               value: 'x-ray',
             },
           ],
-          credentialDefinitionId: credentialDefinition.credentialDefinitionId,
+          credentialDefinitionId,
         },
       },
       autoAcceptCredential: AutoAcceptCredential.Never,
@@ -1008,7 +1011,7 @@ describe('out of band', () => {
 
       expect(JsonEncoder.fromBase64(messageBase64)).toMatchObject({
         '@id': expect.any(String),
-        '@type': 'https://didcomm.org/issue-credential/1.0/offer-credential',
+        '@type': 'https://didcomm.org/issue-credential/2.0/offer-credential',
       })
     })
   })

@@ -48,6 +48,7 @@ export function didToNumAlgo2DidDocument(did: string) {
   const entries = identifierWithoutNumAlgo.split('.')
   const didDocument = new DidDocumentBuilder(did)
   let serviceIndex = 0
+  let keyIndex = 1
 
   for (const entry of entries) {
     // Remove the purpose identifier to get the service or key content
@@ -80,10 +81,7 @@ export function didToNumAlgo2DidDocument(did: string) {
 
       // Add all verification methods to the did document
       for (const verificationMethod of verificationMethods) {
-        // FIXME: the peer did uses key identifiers without the multi base prefix
-        // However method 0 (and thus did:key) do use the multi base prefix in the
-        // key identifier. Fixing it like this for now, before making something more complex
-        verificationMethod.id = verificationMethod.id.replace('#z', '#')
+        verificationMethod.id = `${did}#key-${keyIndex++}`
         addVerificationMethodToDidDocument(didDocument, verificationMethod, purpose)
       }
     }
@@ -106,6 +104,8 @@ export function didDocumentToNumAlgo2Did(didDocument: DidDocument) {
 
   let did = 'did:peer:2'
 
+  const keys: { id: string; encoded: string }[] = []
+
   for (const [purpose, entries] of Object.entries(purposeMapping)) {
     // Not all entries are required to be defined
     if (entries === undefined) continue
@@ -115,19 +115,34 @@ export function didDocumentToNumAlgo2Did(didDocument: DidDocument) {
       typeof entry === 'string' ? didDocument.dereferenceVerificationMethod(entry) : entry
     )
 
-    // Transform als verification methods into a fingerprint (multibase, multicodec)
-    const encoded = dereferenced.map((entry) => {
+    // Transform all verification methods into a fingerprint (multibase, multicodec)
+    dereferenced.forEach((entry) => {
       const key = getKeyFromVerificationMethod(entry)
 
       // Encode as '.PurposeFingerprint'
       const encoded = `.${purpose}${key.fingerprint}`
 
-      return encoded
+      keys.push({ id: entry.id, encoded })
     })
-
-    // Add all encoded keys
-    did += encoded.join('')
   }
+
+  const prefix = 'key-'
+  if (!keys.every((key) => key.id.split('#')[1]?.startsWith(prefix))) {
+    throw new CredoError('Ids for keys within DID Document for did:peer:2 creation must follow the pattern `#key-n`')
+  }
+
+  // Add all encoded keys ordered by their id (#key-1, #key-2, etc.)
+  did += keys
+    .sort((a, b) => {
+      const aFragment = a.id.split('#')[1]
+      const bFragment = b.id.split('#')[1]
+      const aIndex = Number(aFragment.replace(prefix, ''))
+      const bIndex = Number(bFragment.replace(prefix, ''))
+
+      return aIndex - bIndex
+    })
+    .map((key) => key.encoded)
+    .join('')
 
   if (didDocument.service && didDocument.service.length > 0) {
     const abbreviatedServices = didDocument.service.map((service) => {
@@ -138,13 +153,10 @@ export function didDocumentToNumAlgo2Did(didDocument: DidDocument) {
       return abbreviateServiceJson(serviceJson)
     })
 
-    const encodedServices = JsonEncoder.toBase64URL(
-      // If array length is 1, encode as json object. Otherwise as array
-      // This is how it's done in the python peer did implementation.
-      abbreviatedServices.length === 1 ? abbreviatedServices[0] : abbreviatedServices
-    )
-
-    did += `.${DidPeerPurpose.Service}${encodedServices}`
+    for (const abbreviatedService of abbreviatedServices) {
+      const encodedService = JsonEncoder.toBase64URL(abbreviatedService)
+      did += `.${DidPeerPurpose.Service}${encodedService}`
+    }
   }
 
   return did

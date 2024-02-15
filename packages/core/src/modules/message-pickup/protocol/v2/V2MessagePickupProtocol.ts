@@ -5,6 +5,7 @@ import type { FeatureRegistry } from '../../../../agent/FeatureRegistry'
 import type { InboundMessageContext } from '../../../../agent/models/InboundMessageContext'
 import type { DependencyManager } from '../../../../plugins'
 import type { EncryptedMessage } from '../../../../types'
+import type { MessagePickupCompletedEvent } from '../../MessagePickupEvents'
 import type { MessagePickupRepository } from '../../storage/MessagePickupRepository'
 import type {
   DeliverMessagesProtocolOptions,
@@ -24,6 +25,7 @@ import { injectable } from '../../../../plugins'
 import { verkeyToDidKey } from '../../../dids/helpers'
 import { ProblemReportError } from '../../../problem-reports'
 import { RoutingProblemReportReason } from '../../../routing/error'
+import { MessagePickupEventTypes } from '../../MessagePickupEvents'
 import { MessagePickupModuleConfig } from '../../MessagePickupModuleConfig'
 import { MessagePickupSessionRole } from '../../MessagePickupSession'
 import { MessagePickupSessionService } from '../../services'
@@ -242,12 +244,24 @@ export class V2MessagePickupProtocol extends BaseMessagePickupProtocol {
     const { message: statusMessage } = messageContext
     const { messageCount, recipientKey } = statusMessage
 
+    const connection = messageContext.assertReadyConnection()
+
     const messagePickupModuleConfig = messageContext.agentContext.dependencyManager.resolve(MessagePickupModuleConfig)
 
-    //No messages to be retrieved
+    const eventEmitter = messageContext.agentContext.dependencyManager.resolve(EventEmitter)
+
+    //No messages to be retrieved: message pick-up is completed
     if (messageCount === 0) {
+      eventEmitter.emit<MessagePickupCompletedEvent>(messageContext.agentContext, {
+        type: MessagePickupEventTypes.MessagePickupCompleted,
+        payload: {
+          connection,
+          threadId: statusMessage.threadId,
+        },
+      })
       return null
     }
+
     const { maximumBatchSize: maximumMessagePickup } = messagePickupModuleConfig
     const limit = messageCount < maximumMessagePickup ? messageCount : maximumMessagePickup
 

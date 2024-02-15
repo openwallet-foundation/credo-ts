@@ -71,7 +71,7 @@ export class HttpInboundTransport implements InboundTransport {
   }
 
   public async stop(): Promise<void> {
-    this._server?.close()
+    return new Promise((resolve, reject) => this._server?.close((err) => (err ? reject(err) : resolve())))
   }
 }
 

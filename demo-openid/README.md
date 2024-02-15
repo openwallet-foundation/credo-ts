@@ -6,18 +6,18 @@ Alice, a former student of Faber College, connects with the College, is issued a
 
 ## Features
 
-- ✅ Creating a connection
-- ✅ Offering a credential
-- ✅ Requesting a proof
-- ✅ Sending basic messages
+- ✅ Issuing a credential.
+- ✅ Resolving a credential offer.
+- ✅ Accepting a credential offer.
+- ✅ Requesting a credential presentation.
+- ✅ Resolving a presentation request.
+- ✅ Accepting a resolved presentation request.
 
 ## Getting Started
 
 ### Platform Specific Setup
 
-In order to use Credo some platform specific dependencies and setup is required. See our guides below to quickly set up you project with Credo for NodeJS, React Native.
-
-- [NodeJS](https://credo.js.org/guides/getting-started/installation/nodejs)
+In order to run the Credo demo, you need to make sure you have Node.JS and Yarn installed. See the [Credo Prerequisites](https://credo.js.org/guides/getting-started/prerequisites) for more information.
 
 ### Run the demo
 
@@ -29,7 +29,7 @@ Clone the Credo git repository:
 git clone https://github.com/openwallet-foundation/credo-ts.git
 ```
 
-Open two different terminals next to each other and in both, go to the demo folder:
+Open three different terminals next to each other and in both, go to the demo folder:
 
 ```sh
 cd credo-ts/demo-openid
@@ -41,49 +41,61 @@ Install the project in one of the terminals:
 yarn install
 ```
 
-In the left terminal run Alice:
+In the first terminal run the Issuer:
 
 ```sh
-yarn alice
+yarn issuer
 ```
 
-In the right terminal run Faber:
+In the second terminal run the Holder:
 
 ```sh
-yarn faber
+yarn holder
+```
+
+In the last terminal run the Verifier:
+
+```sh
+yarn verifier
 ```
 
 ### Usage
 
-To set up a connection:
+To create a credential offer:
 
-- Select 'receive connection invitation' in Alice and 'create connection invitation' in Faber
-- Faber will print a invitation link which you then copy and paste to Alice
-- You have now set up a connection!
+- Go to the Issuer terminal.
+- Select `Create a credential offer`.
+- Select `UniversityDegreeCredential`.
+- Now copy the content INSIDE the quotes (without the quotes).
 
-To offer a credential:
+To resolve and accept the credential:
 
-- Select 'offer credential' in Faber
-- Faber will start with registering a schema and the credential definition accordingly
-- You have now send a credential offer to Alice!
-- Go to Alice to accept the incoming credential offer by selecting 'yes'.
+- Go to the Holder terminal.
+- Select `Resolve a credential offer`.
+- Paste the content copied from the credential offer and hit enter.
+- Select `Accept the credential offer`.
+- You have now stored your credential.
 
-To request a proof:
+To create a presentation request:
 
-- Select 'request proof' in Faber
-- Faber will create a new proof attribute and will then send a proof request to Alice!
-- Go to Alice to accept the incoming proof request
+- Go to the Verifier terminal.
+- Select `Request the presentation of a credential`.
+- Select `UniversityDegreeCredential`.
+- Copy the presentation request string content, without the quotes.
 
-To send a basic message:
+To resolve and accept the presentation request:
 
-- Select 'send message' in either one of the Agents
-- Type your message and press enter
-- Message sent!
+- Go to the Holder terminal.
+- Select `Resolve a proof request`.
+- Paste the copied string (without the quotes).
+- Hit enter: You should see a Green message saying what will be presented.
+- Select `Accept presentation request`.
+- The presentation should be sent (WIP).
 
 Exit:
 
-- Select 'exit' to shutdown the agent.
+- Select 'exit' to shutdown the program.
 
 Restart:
 
-- Select 'restart', to shutdown the current agent and start a new one
+- Select 'restart', to shutdown the current program and start a new one
