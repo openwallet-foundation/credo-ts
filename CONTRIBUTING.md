@@ -15,7 +15,7 @@ Contributions are made pursuant to the Developer's Certificate of Origin, availa
 - It is difficult to manage a release with too many changes.
   - We should **release more often**, not months apart.
   - We should focus on feature releases (minor and patch releases) to speed iteration.
-    - See our [Credo Docs on semantic versioning](https://https://credo.js.org/guides/updating#versioning). Notably, while our versions are pre 1.0.0, minor versions are breaking change versions.
+    - See our [Credo Docs on semantic versioning](https://credo.js.org/guides/updating#versioning). Notably, while our versions are pre 1.0.0, minor versions are breaking change versions.
 - Mixing breaking changes with other PRs slows development.
   - Non-breaking change PRs are merged earlier into **main**
   - Breaking change PRs will go to a branch named **<release-version>-pre (ie. 0.3.0-pre)** and merged later in the release cycle.
