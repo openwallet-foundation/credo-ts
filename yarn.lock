@@ -2567,15 +2567,15 @@
   resolved "https://registry.yarnpkg.com/@sovpro/delimited-stream/-/delimited-stream-1.1.0.tgz#4334bba7ee241036e580fdd99c019377630d26b4"
   integrity sha512-kQpk267uxB19X3X2T1mvNMjyvIEonpNSHrMlK5ZaBU6aZxw7wPbpgKJOjHN3+/GPVpXgAV9soVT2oyHpLkLtyw==
 
-"@sphereon/did-auth-siop@0.6.0-unstable.3":
-  version "0.6.0-unstable.3"
-  resolved "https://registry.yarnpkg.com/@sphereon/did-auth-siop/-/did-auth-siop-0.6.0-unstable.3.tgz#705dfd17210846b382f3116a92d9d2e7242b93e3"
-  integrity sha512-0d2A3EPsywkHw5zfR3JWu0sjy3FACtpAlnWabol/5C8/C1Ys1hCk+X995aADqs8DRtdVFX8TFJkCMshp7pLyEg==
+"@sphereon/did-auth-siop@0.6.0-unstable.9":
+  version "0.6.0-unstable.9"
+  resolved "https://registry.yarnpkg.com/@sphereon/did-auth-siop/-/did-auth-siop-0.6.0-unstable.9.tgz#9f2ff111900f401911b692bc0b3cc74dcc313ef3"
+  integrity sha512-1i64Z+guXLrkpHKuYUhwYSTPQtQ4/JpQEAEsgv7j47mZgnlappuO18juWHlKLNwmzYyhKzTdt7zaTTeP+wjeWA==
   dependencies:
     "@astronautlabs/jsonpath" "^1.1.2"
     "@sphereon/did-uni-client" "^0.6.1"
-    "@sphereon/pex" "^3.0.1"
-    "@sphereon/pex-models" "^2.1.5"
+    "@sphereon/pex" "^3.2.0"
+    "@sphereon/pex-models" "^2.2.0"
     "@sphereon/ssi-types" "0.18.1"
     "@sphereon/wellknown-dids-client" "^0.1.3"
     cross-fetch "^4.0.0"
@@ -2583,7 +2583,7 @@
     did-resolver "^4.1.0"
     events "^3.3.0"
     language-tags "^1.0.9"
-    multiformats "^11.0.2"
+    multiformats "^12.1.3"
     qs "^6.11.2"
     sha.js "^2.4.11"
     uint8arrays "^3.1.1"
@@ -2597,49 +2597,49 @@
     cross-fetch "^4.0.0"
     did-resolver "^4.1.0"
 
-"@sphereon/oid4vci-client@0.8.2-next.46":
-  version "0.8.2-next.46"
-  resolved "https://registry.yarnpkg.com/@sphereon/oid4vci-client/-/oid4vci-client-0.8.2-next.46.tgz#0f53dc607a0ee17cf0bedb4e7ca91fe525a4c44e"
-  integrity sha512-oYY5RbFEpyYMU+EHriGOb/noFpFWhpgimr6drdAI7l5hMIQTs3iz8kUk9CSCJEOYq0n9VtWzd9jE3qDVjMgepA==
+"@sphereon/oid4vci-client@0.8.2-next.48":
+  version "0.8.2-next.48"
+  resolved "https://registry.yarnpkg.com/@sphereon/oid4vci-client/-/oid4vci-client-0.8.2-next.48.tgz#d185ed168e554fe350ff3d7982ddf8bbd0d45abf"
+  integrity sha512-YvzNsEQjUlHt9VNvsuU0haXi5EaSiQmbSxz3CWGkdTZ+0JSuCSVno+8cZovRvVFA0OV/c/DzvN1XmShv2fRJgA==
   dependencies:
-    "@sphereon/oid4vci-common" "0.8.2-next.46+e3c1601"
+    "@sphereon/oid4vci-common" "0.8.2-next.48+81adb47"
     "@sphereon/ssi-types" "^0.18.1"
     cross-fetch "^3.1.8"
     debug "^4.3.4"
 
-"@sphereon/oid4vci-common@0.8.2-next.46", "@sphereon/oid4vci-common@0.8.2-next.46+e3c1601":
-  version "0.8.2-next.46"
-  resolved "https://registry.yarnpkg.com/@sphereon/oid4vci-common/-/oid4vci-common-0.8.2-next.46.tgz#5def7c2aa68b19a7f52691668580755573db28e1"
-  integrity sha512-mt21K/bukcwdqB3kfKGFj3597rO3WnxW7Dietd0YE87C8yt7WyapXdogP7p18GJ40zu6+OealIeNnEMxCBQPXA==
+"@sphereon/oid4vci-common@0.8.2-next.48", "@sphereon/oid4vci-common@0.8.2-next.48+81adb47":
+  version "0.8.2-next.48"
+  resolved "https://registry.yarnpkg.com/@sphereon/oid4vci-common/-/oid4vci-common-0.8.2-next.48.tgz#6cf2111b3015979c4ab729bd2aec791749583bc7"
+  integrity sha512-olHR4jnGEEb0Bao8srJ8dVM3VbbVzAqQ+XDSHwu3fbTmMEGvNE1OrdMaH8vyWfFbNGpLsoBDUdKNTZE4HIpihg==
   dependencies:
     "@sphereon/ssi-types" "^0.18.1"
     cross-fetch "^3.1.8"
     jwt-decode "^3.1.2"
 
-"@sphereon/oid4vci-issuer@0.8.2-next.46":
-  version "0.8.2-next.46"
-  resolved "https://registry.yarnpkg.com/@sphereon/oid4vci-issuer/-/oid4vci-issuer-0.8.2-next.46.tgz#3886b5e1b9203de8b6d7c5b435562f888177a87b"
-  integrity sha512-9/VG9QulFEDpNvEe8X7YCcc2FwUDpR2e7geWdWY9SyOexYtjxTcoyfHb9bPgIg5TuFbA1nADTD804935suhKtw==
+"@sphereon/oid4vci-issuer@0.8.2-next.48":
+  version "0.8.2-next.48"
+  resolved "https://registry.yarnpkg.com/@sphereon/oid4vci-issuer/-/oid4vci-issuer-0.8.2-next.48.tgz#48f21d58f872dabff2dea81deab2725d8fe11e34"
+  integrity sha512-JEvZtf+T4iPluvcPSld/evgzTnPLPYrxBFbUjTpPySrpmWMfcSdymiu8Vrwj7f2SCUZokt3EyP1OqnmrE/6AAw==
   dependencies:
-    "@sphereon/oid4vci-common" "0.8.2-next.46+e3c1601"
+    "@sphereon/oid4vci-common" "0.8.2-next.48+81adb47"
     "@sphereon/ssi-types" "^0.18.1"
     uuid "^9.0.0"
 
-"@sphereon/pex-models@^2.1.5":
-  version "2.1.5"
-  resolved "https://registry.yarnpkg.com/@sphereon/pex-models/-/pex-models-2.1.5.tgz#ba4474a3783081392b72403c4c8ee6da3d2e5585"
-  integrity sha512-7THexvdYUK/Dh8olBB46ErT9q/RnecnMdb5r2iwZ6be0Dt4vQLAUN7QU80H0HZBok4jRTb8ydt12x0raBSTHOg==
+"@sphereon/pex-models@^2.2.0":
+  version "2.2.0"
+  resolved "https://registry.yarnpkg.com/@sphereon/pex-models/-/pex-models-2.2.0.tgz#32013fff43d4f47df03e213792a9bcc6866a1f06"
+  integrity sha512-dGDRdoxJj+P0TRqu0R8R0/IdIzrCya1MsnxIFbcmSW3rjPsbwXbV0EojEfxXGD5LhqsUJiuAffMtyE2dtVI/XQ==
 
-"@sphereon/pex@^3.0.1":
-  version "3.0.1"
-  resolved "https://registry.yarnpkg.com/@sphereon/pex/-/pex-3.0.1.tgz#e7d9d36c7c921ab97190a735c67e0a2632432e3b"
-  integrity sha512-rj+GhFfV5JLyo7dTIA3htWlrT+f6tayF9JRAGxdsIYBfYictLi9BirQ++JRBXsiq7T5zMnfermz4RGi3cvt13Q==
+"@sphereon/pex@^3.2.0":
+  version "3.2.0"
+  resolved "https://registry.yarnpkg.com/@sphereon/pex/-/pex-3.2.0.tgz#2b8cd5e9094c88c2cbf822b1b70584ca4a08293a"
+  integrity sha512-6qk4L7PaxFsHSVjG0w5SbffwuwI0sbnwyoaNBNku17u2WOThBcnH22sgCdNRRbzacXs0e4iAw7Cb1cd730LQaQ==
   dependencies:
     "@astronautlabs/jsonpath" "^1.1.2"
     "@sd-jwt/decode" "^0.2.0"
     "@sd-jwt/present" "^0.2.0"
     "@sd-jwt/utils" "^0.2.0"
-    "@sphereon/pex-models" "^2.1.5"
+    "@sphereon/pex-models" "^2.2.0"
     "@sphereon/ssi-types" "0.18.1"
     ajv "^8.12.0"
     ajv-formats "^2.1.1"
@@ -8834,10 +8834,10 @@ multer@^1.4.5-lts.1:
     type-is "^1.6.4"
     xtend "^4.0.0"
 
-multiformats@^11.0.2:
-  version "11.0.2"
-  resolved "https://registry.yarnpkg.com/multiformats/-/multiformats-11.0.2.tgz#b14735efc42cd8581e73895e66bebb9752151b60"
-  integrity sha512-b5mYMkOkARIuVZCpvijFj9a6m5wMVLC7cf/jIPd5D/ARDOfLC5+IFkbgDXQgcU2goIsTD/O9NY4DI/Mt4OGvlg==
+multiformats@^12.1.3:
+  version "12.1.3"
+  resolved "https://registry.yarnpkg.com/multiformats/-/multiformats-12.1.3.tgz#cbf7a9861e11e74f8228b21376088cb43ba8754e"
+  integrity sha512-eajQ/ZH7qXZQR2AgtfpmSMizQzmyYVmCql7pdhldPuYQi4atACekbJaQplk6dWyIi10jCaFnd6pqvcEFXjbaJw==
 
 multiformats@^9.4.2, multiformats@^9.6.5, multiformats@^9.9.0:
   version "9.9.0"

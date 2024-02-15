@@ -26,10 +26,10 @@
   "dependencies": {
     "@credo-ts/core": "0.4.2",
     "@sphereon/ssi-types": "^0.18.1",
-    "@sphereon/oid4vci-client": "0.8.2-next.46",
-    "@sphereon/oid4vci-common": "0.8.2-next.46",
-    "@sphereon/oid4vci-issuer": "0.8.2-next.46",
-    "@sphereon/did-auth-siop": "0.6.0-unstable.3"
+    "@sphereon/oid4vci-client": "0.8.2-next.48",
+    "@sphereon/oid4vci-common": "0.8.2-next.48",
+    "@sphereon/oid4vci-issuer": "0.8.2-next.48",
+    "@sphereon/did-auth-siop": "0.6.0-unstable.9"
   },
   "devDependencies": {
     "@credo-ts/tenants": "0.4.2",
