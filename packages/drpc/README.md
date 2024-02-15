@@ -6,7 +6,7 @@
     height="250px"
   />
 </p>
-<h1 align="center"><b>Credo Question Answer Module</b></h1>
+<h1 align="center"><b>Credo DRPC Module</b></h1>
 <p align="center">
   <a
     href="https://raw.githubusercontent.com/openwallet-foundation/credo-ts/main/LICENSE"
@@ -28,7 +28,7 @@
 </p>
 <br />
 
-Question Answer module for [Credo](https://github.com/openwallet-foundation/credo-ts.git). Implements [Aries RFC 0113](https://github.com/hyperledger/aries-rfcs/blob/1795d5c2d36f664f88f5e8045042ace8e573808c/features/0113-question-answer/README.md).
+DRPC module for [Credo](https://github.com/openwallet-foundation/credo-ts.git). Implements [Aries RFC 0804](https://github.com/hyperledger/aries-rfcs/blob/ea87d2e37640ef944568e3fa01df1f36fe7f0ff3/features/0804-didcomm-rpc/README.md).
 
 ### Quick start
 
@@ -37,7 +37,7 @@ In order for this module to work, we have to inject it into the agent to access 
 ### Example of usage
 
 ```ts
-import { QuestionAnswerModule } from '@credo-ts/question-answer'
+import { DrpcModule } from '@credo-ts/drpc'
 
 const agent = new Agent({
   config: {
@@ -45,21 +45,22 @@ const agent = new Agent({
   },
   dependencies: agentDependencies,
   modules: {
-    questionAnswer: new QuestionAnswerModule(),
+    drpc: new DrpcModule(),
     /* other custom modules */
   },
 })
 
 await agent.initialize()
 
-// To send a question to a given connection
-await agent.modules.questionAnswer.sendQuestion(connectionId, {
-  question: 'Do you want to play?',
-  validResponses: [{ text: 'Yes' }, { text: 'No' }],
-})
+// Send a request to the specified connection
+const responseListener = await senderAgent.modules.drpc.sendRequest(connectionId, {jsonrpc:'2.0', method:'hello', id:1})
 
-// Questions and Answers are received as QuestionAnswerStateChangedEvent
+// Listen for any incoming requests
+const { request, sendResponse } = await receiverAgent.modules.drpc.recvRequest()
 
-// To send an answer related to a given question answer record
-await agent.modules.questionAnswer.sendAnswer(questionAnswerRecordId, 'Yes')
+// Process the recieved request and create a response
+const result = request.method === 'hello' ? {jsonrpc:'2.0', result:'Hello world!', id:request.id} : {jsonrpc:'2.0', error:{code: DrpcErrorCode.METHOD_NOT_FOUND, message:'Method not found'}}
+
+// Send the response back
+await sendResponse(result)
 ```
