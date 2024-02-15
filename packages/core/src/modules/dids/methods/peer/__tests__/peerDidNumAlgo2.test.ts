@@ -5,13 +5,20 @@ import { didToNumAlgo2DidDocument, didDocumentToNumAlgo2Did, outOfBandServiceToN
 
 import didPeer2Ez6L from './__fixtures__/didPeer2Ez6L.json'
 import didPeer2Ez6LMoreServices from './__fixtures__/didPeer2Ez6LMoreServices.json'
+import didPeer2Ez6LMultipleServicesSingleToken from './__fixtures__/didPeer2Ez6LMultipleServicesSingleToken.json'
 
 describe('peerDidNumAlgo2', () => {
-  describe('didDocumentToNumAlgo2Did', () => {
+  describe('didToNumAlgo2DidDocument', () => {
     test('transforms method 2 peer did to a did document', async () => {
       expect(didToNumAlgo2DidDocument(didPeer2Ez6L.id).toJSON()).toMatchObject(didPeer2Ez6L)
 
+      // Here we encode each service individually, as clarified in peer did spec
       expect(didToNumAlgo2DidDocument(didPeer2Ez6LMoreServices.id).toJSON()).toMatchObject(didPeer2Ez6LMoreServices)
+
+      // In this case, service list is encoded within a single S entry (old way of doing it)
+      expect(didToNumAlgo2DidDocument(didPeer2Ez6LMultipleServicesSingleToken.id).toJSON()).toMatchObject(
+        didPeer2Ez6LMultipleServicesSingleToken
+      )
     })
   })
 
