@@ -71,6 +71,7 @@ export class Verifier extends BaseAgent<{ askar: AskarModule; openId4VcVerifier:
         askar: new AskarModule({ ariesAskar }),
         openId4VcVerifier: new OpenId4VcVerifierModule({
           baseUrl: 'http://localhost:4000/siop',
+          router: openId4VcSiopRouter,
         }),
       },
     })

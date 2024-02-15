@@ -4,7 +4,7 @@ import type { Agent } from '../agent/Agent'
 import type { AgentMessageReceivedEvent } from '../agent/Events'
 import type { Logger } from '../logger'
 import type { OutboundPackage } from '../types'
-import type WebSocket from 'ws'
+import type { WebSocket } from 'ws'
 
 import { AgentEventTypes } from '../agent/Events'
 import { CredoError } from '../error/CredoError'
@@ -19,6 +19,7 @@ export class WsOutboundTransport implements OutboundTransport {
   private logger!: Logger
   private WebSocketClass!: typeof WebSocket
   public supportedSchemes = ['ws', 'wss']
+  private isActive = false
 
   public async start(agent: Agent): Promise<void> {
     this.agent = agent
@@ -27,14 +28,26 @@ export class WsOutboundTransport implements OutboundTransport {
 
     this.logger.debug('Starting WS outbound transport')
     this.WebSocketClass = agent.config.agentDependencies.WebSocketClass
+
+    this.isActive = true
   }
 
   public async stop() {
     this.logger.debug('Stopping WS outbound transport')
+    this.isActive = false
+
+    const stillOpenSocketClosingPromises: Array<Promise<void>> = []
+
     this.transportTable.forEach((socket) => {
       socket.removeEventListener('message', this.handleMessageEvent)
-      socket.close()
+      if (socket.readyState !== this.WebSocketClass.CLOSED) {
+        stillOpenSocketClosingPromises.push(new Promise((resolve) => socket.once('close', resolve)))
+        socket.close()
+      }
     })
+
+    // Wait for all open websocket connections to have been closed
+    await Promise.all(stillOpenSocketClosingPromises)
   }
 
   public async sendMessage(outboundPackage: OutboundPackage) {
@@ -42,6 +55,10 @@ export class WsOutboundTransport implements OutboundTransport {
     this.logger.debug(`Sending outbound message to endpoint '${endpoint}' over WebSocket transport.`, {
       payload,
     })
+
+    if (!this.isActive) {
+      throw new CredoError('Outbound transport is not active. Not sending message.')
+    }
 
     if (!endpoint) {
       throw new CredoError("Missing connection or endpoint. I don't know how and where to send the message.")
@@ -51,13 +68,18 @@ export class WsOutboundTransport implements OutboundTransport {
     const isNewSocket = !this.hasOpenSocket(socketId)
     const socket = await this.resolveSocket({ socketId, endpoint, connectionId })
 
-    socket.send(Buffer.from(JSON.stringify(payload)))
+    return new Promise<void>((resolve, reject) =>
+      socket.send(Buffer.from(JSON.stringify(payload)), (err) => {
+        // If the socket was created for this message and we don't have return routing enabled
+        // We can close the socket as it shouldn't return messages anymore
+        if (isNewSocket && !outboundPackage.responseRequested) {
+          socket.close()
+        }
 
-    // If the socket was created for this message and we don't have return routing enabled
-    // We can close the socket as it shouldn't return messages anymore
-    if (isNewSocket && !outboundPackage.responseRequested) {
-      socket.close()
-    }
+        if (err) return reject(err)
+        resolve()
+      })
+    )
   }
 
   private hasOpenSocket(socketId: string) {

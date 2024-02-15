@@ -65,6 +65,7 @@ describe('TenantSessionCoordinator', () => {
             key: 'test-wallet-key',
           },
         },
+        storageVersion: '0.5',
       })
 
       const tenantAgentContext = await tenantSessionCoordinator.getContextForSession(tenantRecord)
@@ -83,6 +84,7 @@ describe('TenantSessionCoordinator', () => {
             key: 'test-wallet-key',
           },
         },
+        storageVersion: '0.5',
       })
       const createChildSpy = jest.spyOn(agentContext.dependencyManager, 'createChild')
       const extendSpy = jest.spyOn(agentContext.config, 'extend')
@@ -135,6 +137,7 @@ describe('TenantSessionCoordinator', () => {
             key: 'test-wallet-key',
           },
         },
+        storageVersion: '0.5',
       })
 
       // Throw error during wallet initialization
@@ -160,6 +163,7 @@ describe('TenantSessionCoordinator', () => {
             key: 'test-wallet-key',
           },
         },
+        storageVersion: '0.5',
       })
 
       // Add timeout to mock the initialization and we can test that the mutex is used.

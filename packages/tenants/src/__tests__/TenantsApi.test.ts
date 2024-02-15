@@ -151,6 +151,7 @@ describe('TenantsApi', () => {
             key: 'Wallet: TenantsApi: tenant-id',
           },
         },
+        storageVersion: '0.5',
       })
 
       const tenantAgentMock = {

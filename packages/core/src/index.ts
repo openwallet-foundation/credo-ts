@@ -77,6 +77,7 @@ export {
 export * from './logger'
 export * from './error'
 export * from './wallet/error'
+export { VersionString } from './utils/version'
 export { parseMessageType, IsValidMessageType, replaceLegacyDidSovPrefix } from './utils/messageType'
 export type { Constructor, Constructable } from './utils/mixins'
 export * from './agent/Events'

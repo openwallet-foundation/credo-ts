@@ -212,8 +212,6 @@ export class DifPresentationExchangeService {
     }
 
     verifiablePresentationResultsWithFormat.forEach(({ verifiablePresentationResult }, index) => {
-      // FIXME: path_nested should not be used for sd-jwt.
-      // Can be removed once https://github.com/Sphereon-Opensource/PEX/pull/140 is released
       const descriptorMap = verifiablePresentationResult.presentationSubmission.descriptor_map.map((d) => {
         const descriptor = { ...d }
 
@@ -225,10 +223,6 @@ export class DifPresentationExchangeService {
           verifiablePresentationResultsWithFormat.length > 1
         ) {
           descriptor.path = `$[${index}]`
-        }
-
-        if (descriptor.format === 'vc+sd-jwt' && descriptor.path_nested) {
-          delete descriptor.path_nested
         }
 
         return descriptor

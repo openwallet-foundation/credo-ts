@@ -1,43 +1,18 @@
 import type { Key } from '@credo-ts/core'
 
-import { AskarModule } from '../../../../../askar/src'
-import { askarModuleConfig } from '../../../../../askar/tests/helpers'
-import { agentDependencies } from '../../../../tests'
+import { getInMemoryAgentOptions } from '../../../../tests'
 
-import {
-  Agent,
-  DidKey,
-  DidsModule,
-  getJwkFromKey,
-  KeyDidRegistrar,
-  KeyDidResolver,
-  KeyType,
-  TypedArrayEncoder,
-  utils,
-} from '@credo-ts/core'
-
-const getAgent = (label: string) =>
-  new Agent({
-    config: { label, walletConfig: { id: utils.uuid(), key: utils.uuid() } },
-    modules: {
-      askar: new AskarModule(askarModuleConfig),
-      dids: new DidsModule({
-        resolvers: [new KeyDidResolver()],
-        registrars: [new KeyDidRegistrar()],
-      }),
-    },
-    dependencies: agentDependencies,
-  })
+import { Agent, DidKey, getJwkFromKey, KeyType, TypedArrayEncoder } from '@credo-ts/core'
 
 describe('sd-jwt-vc end to end test', () => {
-  const issuer = getAgent('sdjwtvcissueragent')
+  const issuer = new Agent(getInMemoryAgentOptions('sd-jwt-vc-issuer-agent'))
   let issuerKey: Key
   let issuerDidUrl: string
 
-  const holder = getAgent('sdjwtvcholderagent')
+  const holder = new Agent(getInMemoryAgentOptions('sd-jwt-vc-holder-agent'))
   let holderKey: Key
 
-  const verifier = getAgent('sdjwtvcverifieragent')
+  const verifier = new Agent(getInMemoryAgentOptions('sd-jwt-vc-verifier-agent'))
   const verifierDid = 'did:key:zUC74VEqqhEHQcgv4zagSPkqFJxuNWuoBPKjJuHETEUeHLoSqWt92viSsmaWjy82y'
 
   beforeAll(async () => {

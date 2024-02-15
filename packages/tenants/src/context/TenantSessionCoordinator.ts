@@ -46,11 +46,10 @@ export class TenantSessionCoordinator {
     this.logger = logger
     this.tenantsModuleConfig = tenantsModuleConfig
 
-    // TODO: we should make the timeout and the session limit configurable, but until we have the modularization in place with
-    // module specific config, it's not easy to do so. Keeping it hardcoded for now
     this.sessionMutex = new TenantSessionMutex(
       this.logger,
       this.tenantsModuleConfig.sessionLimit,
+      // TODO: we should probably allow a higher session acquire timeout if the storage is being updated?
       this.tenantsModuleConfig.sessionAcquireTimeout
     )
   }
@@ -59,8 +58,18 @@ export class TenantSessionCoordinator {
    * Get agent context to use for a session. If an agent context for this tenant does not exist yet
    * it will create it and store it for later use. If the agent context does already exist it will
    * be returned.
+   *
+   * @parm tenantRecord The tenant record for which to get the agent context
    */
-  public async getContextForSession(tenantRecord: TenantRecord): Promise<AgentContext> {
+  public async getContextForSession(
+    tenantRecord: TenantRecord,
+    {
+      runInMutex,
+    }: {
+      /** optional callback that will be run inside the mutex lock */
+      runInMutex?: (agentContext: AgentContext) => Promise<void>
+    } = {}
+  ): Promise<AgentContext> {
     this.logger.debug(`Getting context for session with tenant '${tenantRecord.id}'`)
 
     // Wait for a session to be available
@@ -83,6 +92,11 @@ export class TenantSessionCoordinator {
         this.logger.debug(
           `Increased agent context session count for tenant '${tenantRecord.id}' to ${tenantSessions.sessionCount}`
         )
+
+        if (runInMutex) {
+          await runInMutex(tenantSessions.agentContext)
+        }
+
         return tenantSessions.agentContext
       })
     } catch (error) {

@@ -1,3 +1,4 @@
+import type { PreCreatedAnonCredsDefinition } from './preCreatedAnonCredsDefinition'
 import type { EventReplaySubject } from '../../core/tests'
 import type {
   AnonCredsRegisterCredentialDefinitionOptions,
@@ -50,6 +51,8 @@ import {
 } from '../../indy-vdr/src'
 import { indyVdrModuleConfig } from '../../indy-vdr/tests/helpers'
 import {
+  AnonCredsCredentialFormatService,
+  AnonCredsProofFormatService,
   getUnqualifiedCredentialDefinitionId,
   getUnqualifiedSchemaId,
   parseIndyCredentialDefinitionId,
@@ -61,7 +64,12 @@ import {
   LegacyIndyProofFormatService,
 } from '../src'
 
+import { InMemoryAnonCredsRegistry } from './InMemoryAnonCredsRegistry'
 import { anoncreds } from './helpers'
+import {
+  anoncredsDefinitionFourAttributesNoRevocation,
+  storePreCreatedAnonCredsDefinition,
+} from './preCreatedAnonCredsDefinition'
 
 // Helper type to get the type of the agents (with the custom modules) for the credential tests
 export type AnonCredsTestsAgent = Agent<
@@ -72,7 +80,21 @@ export type AnonCredsTestsAgent = Agent<
 export const getAnonCredsIndyModules = ({
   autoAcceptCredentials,
   autoAcceptProofs,
-}: { autoAcceptCredentials?: AutoAcceptCredential; autoAcceptProofs?: AutoAcceptProof } = {}) => {
+}: {
+  autoAcceptCredentials?: AutoAcceptCredential
+  autoAcceptProofs?: AutoAcceptProof
+} = {}) => {
+  // Add support for resolving pre-created credential definitions and schemas
+  const inMemoryAnonCredsRegistry = new InMemoryAnonCredsRegistry({
+    existingCredentialDefinitions: {
+      [anoncredsDefinitionFourAttributesNoRevocation.credentialDefinitionId]:
+        anoncredsDefinitionFourAttributesNoRevocation.credentialDefinition,
+    },
+    existingSchemas: {
+      [anoncredsDefinitionFourAttributesNoRevocation.schemaId]: anoncredsDefinitionFourAttributesNoRevocation.schema,
+    },
+  })
+
   const legacyIndyCredentialFormatService = new LegacyIndyCredentialFormatService()
   const legacyIndyProofFormatService = new LegacyIndyProofFormatService()
 
@@ -84,7 +106,7 @@ export const getAnonCredsIndyModules = ({
           indyCredentialFormat: legacyIndyCredentialFormatService,
         }),
         new V2CredentialProtocol({
-          credentialFormats: [legacyIndyCredentialFormatService],
+          credentialFormats: [legacyIndyCredentialFormatService, new AnonCredsCredentialFormatService()],
         }),
       ],
     }),
@@ -95,12 +117,12 @@ export const getAnonCredsIndyModules = ({
           indyProofFormat: legacyIndyProofFormatService,
         }),
         new V2ProofProtocol({
-          proofFormats: [legacyIndyProofFormatService],
+          proofFormats: [legacyIndyProofFormatService, new AnonCredsProofFormatService()],
         }),
       ],
     }),
     anoncreds: new AnonCredsModule({
-      registries: [new IndyVdrAnonCredsRegistry()],
+      registries: [new IndyVdrAnonCredsRegistry(), inMemoryAnonCredsRegistry],
       anoncreds,
     }),
     indyVdr: new IndyVdrModule(indyVdrModuleConfig),
@@ -287,6 +309,7 @@ export async function setupAnonCredsTests<
   autoAcceptCredentials,
   autoAcceptProofs,
   attributeNames,
+  preCreatedDefinition,
   createConnections,
 }: {
   issuerName: string
@@ -294,7 +317,8 @@ export async function setupAnonCredsTests<
   verifierName?: VerifierName
   autoAcceptCredentials?: AutoAcceptCredential
   autoAcceptProofs?: AutoAcceptProof
-  attributeNames: string[]
+  attributeNames?: string[]
+  preCreatedDefinition?: PreCreatedAnonCredsDefinition
   createConnections?: CreateConnections
 }): Promise<SetupAnonCredsTestsReturn<VerifierName, CreateConnections>> {
   const issuerAgent = new Agent(
@@ -352,9 +376,22 @@ export async function setupAnonCredsTests<
   await holderAgent.initialize()
   if (verifierAgent) await verifierAgent.initialize()
 
-  const { credentialDefinition, schema } = await prepareForAnonCredsIssuance(issuerAgent, {
-    attributeNames,
-  })
+  let credentialDefinitionId: string
+  let schemaId: string
+
+  if (attributeNames) {
+    const result = await prepareForAnonCredsIssuance(issuerAgent, {
+      attributeNames,
+    })
+    schemaId = result.schema.schemaId
+    credentialDefinitionId = result.credentialDefinition.credentialDefinitionId
+  } else if (preCreatedDefinition) {
+    const result = await storePreCreatedAnonCredsDefinition(issuerAgent, preCreatedDefinition)
+    schemaId = result.schemaId
+    credentialDefinitionId = result.credentialDefinitionId
+  } else {
+    throw new CredoError('Either attributeNames or preCreatedDefinition must be provided')
+  }
 
   let issuerHolderConnection: ConnectionRecord | undefined
   let holderIssuerConnection: ConnectionRecord | undefined
@@ -379,8 +416,8 @@ export async function setupAnonCredsTests<
     verifierAgent: verifierName ? verifierAgent : undefined,
     verifierReplay: verifierName ? verifierReplay : undefined,
 
-    credentialDefinitionId: credentialDefinition.credentialDefinitionId,
-    schemaId: schema.schemaId,
+    credentialDefinitionId,
+    schemaId,
 
     issuerHolderConnectionId: issuerHolderConnection?.id,
     holderIssuerConnectionId: holderIssuerConnection?.id,

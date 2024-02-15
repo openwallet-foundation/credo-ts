@@ -10,12 +10,16 @@ import type {
   DeliverMessagesReturnType,
   DeliverMessagesFromQueueReturnType,
 } from './MessagePickupApiOptions'
+import type { MessagePickupCompletedEvent } from './MessagePickupEvents'
 import type { MessagePickupSession, MessagePickupSessionRole } from './MessagePickupSession'
 import type { V1MessagePickupProtocol, V2MessagePickupProtocol } from './protocol'
 import type { MessagePickupProtocol } from './protocol/MessagePickupProtocol'
 import type { MessagePickupRepository } from './storage/MessagePickupRepository'
 
+import { ReplaySubject, Subject, filter, firstValueFrom, takeUntil, timeout } from 'rxjs'
+
 import { AgentContext } from '../../agent'
+import { EventEmitter } from '../../agent/EventEmitter'
 import { MessageSender } from '../../agent/MessageSender'
 import { OutboundMessageContext } from '../../agent/models'
 import { InjectionSymbols } from '../../constants'
@@ -24,6 +28,7 @@ import { Logger } from '../../logger/Logger'
 import { inject, injectable } from '../../plugins'
 import { ConnectionService } from '../connections/services'
 
+import { MessagePickupEventTypes } from './MessagePickupEvents'
 import { MessagePickupModuleConfig } from './MessagePickupModuleConfig'
 import { MessagePickupSessionService } from './services/MessagePickupSessionService'
 
@@ -47,23 +52,29 @@ export class MessagePickupApi<MPPs extends MessagePickupProtocol[] = [V1MessageP
 
   private messageSender: MessageSender
   private agentContext: AgentContext
+  private eventEmitter: EventEmitter
   private connectionService: ConnectionService
   private messagePickupSessionService: MessagePickupSessionService
   private logger: Logger
+  private stop$: Subject<boolean>
 
   public constructor(
     messageSender: MessageSender,
     agentContext: AgentContext,
     connectionService: ConnectionService,
+    eventEmitter: EventEmitter,
     messagePickupSessionService: MessagePickupSessionService,
     config: MessagePickupModuleConfig<MPPs>,
+    @inject(InjectionSymbols.Stop$) stop$: Subject<boolean>,
     @inject(InjectionSymbols.Logger) logger: Logger
   ) {
     this.messageSender = messageSender
     this.connectionService = connectionService
     this.agentContext = agentContext
+    this.eventEmitter = eventEmitter
     this.config = config
     this.messagePickupSessionService = messagePickupSessionService
+    this.stop$ = stop$
     this.logger = logger
   }
 
@@ -123,9 +134,9 @@ export class MessagePickupApi<MPPs extends MessagePickupProtocol[] = [V1MessageP
     const session = this.messagePickupSessionService.getLiveSession(this.agentContext, pickupSessionId)
 
     if (!session) {
-      this.logger.debug(`No active live mode session found with id ${pickupSessionId}`)
-      return
+      throw new CredoError(`No active live mode session found with id ${pickupSessionId}`)
     }
+
     const connectionRecord = await this.connectionService.getById(this.agentContext, session.connectionId)
 
     const protocol = this.getProtocol(session.protocolVersion)
@@ -154,7 +165,7 @@ export class MessagePickupApi<MPPs extends MessagePickupProtocol[] = [V1MessageP
    *
    */
   public async deliverMessagesFromQueue(options: DeliverMessagesFromQueueOptions) {
-    this.logger.debug('Deliverying queued messages')
+    this.logger.debug('Delivering queued messages')
 
     const { pickupSessionId, recipientDid: recipientKey, batchSize } = options
 
@@ -187,7 +198,11 @@ export class MessagePickupApi<MPPs extends MessagePickupProtocol[] = [V1MessageP
    * Pickup queued messages from a message holder. It attempts to retrieve all current messages from the
    * queue, receiving up to `batchSize` messages per batch retrieval.
    *
-   * @param options connectionId, protocol version to use and batch size
+   * By default, this method only waits until the initial pick-up request is sent. Use `options.awaitCompletion`
+   * if you want to wait until all messages are effectively retrieved.
+   *
+   * @param options connectionId, protocol version to use and batch size, awaitCompletion,
+   * awaitCompletionTimeoutMs
    */
   public async pickupMessages(options: PickupMessagesOptions<MPPs>): Promise<PickupMessagesReturnType> {
     const connectionRecord = await this.connectionService.getById(this.agentContext, options.connectionId)
@@ -199,17 +214,41 @@ export class MessagePickupApi<MPPs extends MessagePickupProtocol[] = [V1MessageP
       recipientDid: options.recipientDid,
     })
 
-    await this.messageSender.sendMessage(
-      new OutboundMessageContext(message, {
-        agentContext: this.agentContext,
-        connection: connectionRecord,
-      })
-    )
+    const outboundMessageContext = new OutboundMessageContext(message, {
+      agentContext: this.agentContext,
+      connection: connectionRecord,
+    })
+
+    const replaySubject = new ReplaySubject(1)
+
+    if (options.awaitCompletion) {
+      // Listen for response to our feature query
+      this.eventEmitter
+        .observable<MessagePickupCompletedEvent>(MessagePickupEventTypes.MessagePickupCompleted)
+        .pipe(
+          // Stop when the agent shuts down
+          takeUntil(this.stop$),
+          // filter by connection id
+          filter((e) => e.payload.connection.id === connectionRecord.id),
+          // If we don't receive all messages within timeoutMs miliseconds (no response, not supported, etc...) error
+          timeout({
+            first: options.awaitCompletionTimeoutMs ?? 10000,
+            meta: 'MessagePickupApi.pickupMessages',
+          })
+        )
+        .subscribe(replaySubject)
+    }
+
+    await this.messageSender.sendMessage(outboundMessageContext)
+
+    if (options.awaitCompletion) {
+      await firstValueFrom(replaySubject)
+    }
   }
 
   /**
-   * Enable or disable Live Delivery mode as a recipient. If there were previous queued messages, it will pick-up them
-   * automatically.
+   * Enable or disable Live Delivery mode as a recipient. Depending on the message pickup protocol used,
+   * after receiving a response from the mediator the agent might retrieve any pending message.
    *
    * @param options connectionId, protocol version to use and boolean to enable/disable Live Mode
    */
