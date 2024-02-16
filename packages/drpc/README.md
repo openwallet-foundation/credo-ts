@@ -53,13 +53,20 @@ const agent = new Agent({
 await agent.initialize()
 
 // Send a request to the specified connection
-const responseListener = await senderAgent.modules.drpc.sendRequest(connectionId, {jsonrpc:'2.0', method:'hello', id:1})
+const responseListener = await senderAgent.modules.drpc.sendRequest(connectionId, {
+  jsonrpc: '2.0',
+  method: 'hello',
+  id: 1,
+})
 
 // Listen for any incoming requests
 const { request, sendResponse } = await receiverAgent.modules.drpc.recvRequest()
 
 // Process the recieved request and create a response
-const result = request.method === 'hello' ? {jsonrpc:'2.0', result:'Hello world!', id:request.id} : {jsonrpc:'2.0', error:{code: DrpcErrorCode.METHOD_NOT_FOUND, message:'Method not found'}}
+const result =
+  request.method === 'hello'
+    ? { jsonrpc: '2.0', result: 'Hello world!', id: request.id }
+    : { jsonrpc: '2.0', error: { code: DrpcErrorCode.METHOD_NOT_FOUND, message: 'Method not found' } }
 
 // Send the response back
 await sendResponse(result)
