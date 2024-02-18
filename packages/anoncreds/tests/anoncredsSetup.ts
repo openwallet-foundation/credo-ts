@@ -37,7 +37,7 @@ import {
 } from '@credo-ts/core'
 import { randomUUID } from 'crypto'
 
-import { CheqdDidRegistrar, CheqdDidResolver, CheqdModule } from '../../cheqd'
+import { CheqdDidRegistrar, CheqdDidResolver, CheqdModule } from '../../cheqd/src/index'
 import { getCheqdModuleConfig } from '../../cheqd/tests/setupCheqdModule'
 import { sleep } from '../../core/src/utils/sleep'
 import { setupSubjectTransports, setupEventReplaySubjects } from '../../core/tests'
