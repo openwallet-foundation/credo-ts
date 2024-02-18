@@ -13,9 +13,10 @@ import { DidKey } from '../key'
 export function createPeerDidDocumentFromServices(services: ResolvedDidCommService[]) {
   const didDocumentBuilder = new DidDocumentBuilder('')
 
-  // Keep track off all added key id based on the fingerprint so we can add them to the recipientKeys as references
+  // Keep track of all added key id based on the fingerprint so we can add them to the recipientKeys as references
   const recipientKeyIdMapping: { [fingerprint: string]: string } = {}
 
+  let keyIndex = 1
   services.forEach((service, index) => {
     // Get the local key reference for each of the recipient keys
     const recipientKeys = service.recipientKeys.map((recipientKey) => {
@@ -29,14 +30,14 @@ export function createPeerDidDocumentFromServices(services: ResolvedDidCommServi
       }
       const x25519Key = Key.fromPublicKey(convertPublicKeyToX25519(recipientKey.publicKey), KeyType.X25519)
 
-      // Remove prefix from id as it is not included in did peer identifiers
+      // key ids follow the #key-N pattern to comply with did:peer:2 spec
       const ed25519VerificationMethod = getEd25519VerificationKey2018({
-        id: `#${recipientKey.fingerprint.substring(1)}`,
+        id: `#key-${keyIndex++}`,
         key: recipientKey,
         controller: '#id',
       })
       const x25519VerificationMethod = getX25519KeyAgreementKey2019({
-        id: `#${x25519Key.fingerprint.substring(1)}`,
+        id: `#key-${keyIndex++}`,
         key: x25519Key,
         controller: '#id',
       })

@@ -28,4 +28,4 @@
 </p>
 <br />
 
-Open ID Connect For Verifiable Credentials Holder Module for [Credo](https://credo.js.org).
+Open ID For Verifiable Credentials Holder Module for [Credo](https://credo.js.org).

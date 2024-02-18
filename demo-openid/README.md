@@ -17,9 +17,7 @@ Alice, a former student of Faber College, connects with the College, is issued a
 
 ### Platform Specific Setup
 
-In order to use Credo some platform specific dependencies and setup is required. See our guides below to quickly set up you project with Credo for NodeJS, React Native.
-
-- [NodeJS](https://credo.js.org/guides/getting-started/installation/nodejs)
+In order to run the Credo demo, you need to make sure you have Node.JS and Yarn installed. See the [Credo Prerequisites](https://credo.js.org/guides/getting-started/prerequisites) for more information.
 
 ### Run the demo
 

@@ -1,6 +1,8 @@
-#################################
-# GitHub Dependabot Config info #
-#################################
+########################################################################################################################################
+# GitHub Dependabot Config info                                                                                                        #
+# For details on how this file works refer to:                                                                                         #
+#   - https://docs.github.com/en/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file #
+########################################################################################################################################
 
 version: 2
 updates:
@@ -14,10 +16,15 @@ updates:
       - dependency-type: 'production'
 
   # Maintain dependencies for GitHub Actions
+  #  - Check for updates once a month
+  #  - Group all updates into a single PR
   - package-ecosystem: 'github-actions'
     directory: '/'
     schedule:
       interval: 'monthly'
+    groups:
+      all-actions:
+        patterns: ['*']
 
   # Maintain dependencies for Docker
   - package-ecosystem: 'docker'
