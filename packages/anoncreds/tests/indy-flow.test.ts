@@ -8,11 +8,7 @@ import {
   InjectionSymbols,
   ProofState,
   ProofExchangeRecord,
-  Ed25519Signature2018,
-  KeyType,
   SignatureSuiteToken,
-  VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2018,
-  VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2020,
   W3cCredentialsModuleConfig,
   DidResolverService,
   DidsModuleConfig,
@@ -77,18 +73,7 @@ const agentContext = getAgentContext({
     [InjectionSymbols.Logger, testLogger],
     [W3cCredentialsModuleConfig, new W3cCredentialsModuleConfig()],
     [AnonCredsModuleConfig, anonCredsModuleConfig],
-    [
-      SignatureSuiteToken,
-      {
-        suiteClass: Ed25519Signature2018,
-        proofType: 'Ed25519Signature2018',
-        verificationMethodTypes: [
-          VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2018,
-          VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2020,
-        ],
-        keyTypes: [KeyType.Ed25519],
-      },
-    ],
+    [SignatureSuiteToken, 'default'],
   ],
   agentConfig,
   wallet,
@@ -299,7 +284,7 @@ describe('Legacy indy format services using anoncreds-rs', () => {
 
     const credentialId = holderCredentialRecord.credentials[0].credentialRecordId
     const anonCredsCredential = await anonCredsHolderService.getCredential(agentContext, {
-      credentialId,
+      id: credentialId,
     })
 
     expect(anonCredsCredential).toEqual({

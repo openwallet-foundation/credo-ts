@@ -1,4 +1,5 @@
 import type { W3cAnoncredsCredentialMetadata } from '../../utils/metadata'
+import type { AnonCredsCredentialTags } from '../../utils/w3cAnonCredsUtils'
 import type {
   AnonCredsCredentialDefinition,
   AnonCredsProofRequest,
@@ -6,18 +7,13 @@ import type {
   AnonCredsSchema,
   AnonCredsSelectedCredentials,
 } from '@credo-ts/anoncreds'
-import type { AnonCredsCredentialTags } from '@credo-ts/core'
 import type { JsonObject } from '@hyperledger/anoncreds-shared'
 
 import {
   DidResolverService,
   DidsModuleConfig,
-  Ed25519Signature2018,
   InjectionSymbols,
-  KeyType,
   SignatureSuiteToken,
-  VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2018,
-  VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2020,
   W3cCredentialRecord,
   W3cCredentialRepository,
   W3cCredentialSubject,
@@ -96,18 +92,7 @@ const agentContext = getAgentContext({
     [InjectionSymbols.Logger, testLogger],
     [DidResolverService, new DidResolverService(testLogger, new DidsModuleConfig())],
     [W3cCredentialsModuleConfig, new W3cCredentialsModuleConfig()],
-    [
-      SignatureSuiteToken,
-      {
-        suiteClass: Ed25519Signature2018,
-        proofType: 'Ed25519Signature2018',
-        verificationMethodTypes: [
-          VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2018,
-          VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2020,
-        ],
-        keyTypes: [KeyType.Ed25519],
-      },
-    ],
+    [SignatureSuiteToken, 'default'],
   ],
   agentConfig,
   wallet,
@@ -115,11 +100,11 @@ const agentContext = getAgentContext({
 
 describe('AnonCredsRsHolderService', () => {
   const getByCredentialIdMock = jest.spyOn(anoncredsCredentialRepositoryMock, 'getByCredentialId')
-  const findSingleByQueryMock = jest.spyOn(w3cCredentialRepositoryMock, 'findSingleByQuery')
+  const findByIdMock = jest.spyOn(w3cCredentialRepositoryMock, 'findById')
   const findByQueryMock = jest.spyOn(w3cCredentialRepositoryMock, 'findByQuery')
 
   beforeEach(() => {
-    findSingleByQueryMock.mockClear()
+    findByIdMock.mockClear()
     getByCredentialIdMock.mockClear()
     findByQueryMock.mockClear()
   })
@@ -302,8 +287,8 @@ describe('AnonCredsRsHolderService', () => {
       },
     }
 
-    findSingleByQueryMock.mockResolvedValueOnce(personRecord)
-    findSingleByQueryMock.mockResolvedValueOnce(phoneRecord)
+    findByIdMock.mockResolvedValueOnce(personRecord)
+    findByIdMock.mockResolvedValueOnce(phoneRecord)
 
     const revocationRegistries = {
       'personrevregid:uri': {
@@ -337,7 +322,7 @@ describe('AnonCredsRsHolderService', () => {
       revocationRegistries,
     })
 
-    expect(findSingleByQueryMock).toHaveBeenCalledTimes(2)
+    expect(findByIdMock).toHaveBeenCalledTimes(2)
     // TODO: check proof object
   })
 
@@ -508,12 +493,12 @@ describe('AnonCredsRsHolderService', () => {
       credential: {} as W3cJsonLdVerifiableCredential,
       tags: {},
     })
-    findSingleByQueryMock.mockResolvedValueOnce(null).mockResolvedValueOnce(record)
+    findByIdMock.mockResolvedValueOnce(null).mockResolvedValueOnce(record)
     getByCredentialIdMock.mockRejectedValueOnce(new Error())
 
     await expect(anonCredsHolderService.deleteCredential(agentContext, 'credentialId')).rejects.toThrow()
     await anonCredsHolderService.deleteCredential(agentContext, 'credentialId')
-    expect(findSingleByQueryMock).toHaveBeenCalledWith(agentContext, { anonCredsCredentialId: 'credentialId' })
+    expect(findByIdMock).toHaveBeenCalledWith(agentContext, 'credentialId')
   })
 
   test('get single Credential', async () => {
@@ -534,7 +519,6 @@ describe('AnonCredsRsHolderService', () => {
     })
 
     const tags: AnonCredsCredentialTags = {
-      anonCredsCredentialId: record.id,
       anonCredsLinkSecretId: 'linkSecretId',
       anonCredsCredentialDefinitionId: 'credDefId',
       anonCredsSchemaId: 'schemaId',
@@ -556,14 +540,12 @@ describe('AnonCredsRsHolderService', () => {
     record.setTags(tags)
     record.metadata.set(W3cAnonCredsCredentialMetadataKey, anonCredsCredentialMetadata)
 
-    findSingleByQueryMock.mockResolvedValueOnce(null).mockResolvedValueOnce(record)
+    findByIdMock.mockResolvedValueOnce(null).mockResolvedValueOnce(record)
     getByCredentialIdMock.mockRejectedValueOnce(new Error())
 
-    await expect(
-      anonCredsHolderService.getCredential(agentContext, { credentialId: 'myCredentialId' })
-    ).rejects.toThrowError()
+    await expect(anonCredsHolderService.getCredential(agentContext, { id: 'myCredentialId' })).rejects.toThrowError()
 
-    const credentialInfo = await anonCredsHolderService.getCredential(agentContext, { credentialId: 'myCredentialId' })
+    const credentialInfo = await anonCredsHolderService.getCredential(agentContext, { id: 'myCredentialId' })
 
     expect(credentialInfo).toMatchObject({
       attributes: { attr1: 'value1', attr2: 'value2' },
@@ -594,7 +576,6 @@ describe('AnonCredsRsHolderService', () => {
     const records = [record]
 
     const tags: AnonCredsCredentialTags = {
-      anonCredsCredentialId: record.id,
       anonCredsLinkSecretId: 'linkSecretId',
       anonCredsCredentialDefinitionId: 'credDefId',
       anonCredsSchemaId: 'schemaId',

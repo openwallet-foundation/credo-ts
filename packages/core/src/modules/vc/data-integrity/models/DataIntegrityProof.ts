@@ -1,4 +1,4 @@
-import { IsOptional, IsString } from 'class-validator'
+import { IsEnum, IsOptional, IsString } from 'class-validator'
 
 import { IsUri } from '../../../../utils'
 
@@ -40,6 +40,7 @@ export class DataIntegrityProof {
   }
 
   @IsString()
+  @IsEnum(['DataIntegrityProof'])
   public type!: string
 
   @IsString()

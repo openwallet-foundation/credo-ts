@@ -7,16 +7,12 @@ import {
   CredentialState,
   DidResolverService,
   DidsModuleConfig,
-  Ed25519Signature2018,
   InjectionSymbols,
   KeyDidRegistrar,
   KeyDidResolver,
-  KeyType,
   ProofExchangeRecord,
   ProofState,
   SignatureSuiteToken,
-  VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2018,
-  VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2020,
   W3cCredential,
   W3cCredentialService,
   W3cCredentialSubject,
@@ -32,7 +28,6 @@ import { dateToTimestamp } from '../../anoncreds/src/utils/timestamp'
 import { InMemoryAnonCredsRegistry } from '../../anoncreds/tests/InMemoryAnonCredsRegistry'
 import { agentDependencies, getAgentConfig, getAgentContext, testLogger } from '../../core/tests'
 import { AnonCredsRsHolderService, AnonCredsRsIssuerService, AnonCredsRsVerifierService } from '../src/anoncreds-rs'
-import { getAnonCredsTagsFromRecord } from '../src/utils/w3cAnonCredsUtils'
 
 import { InMemoryTailsFileService } from './InMemoryTailsFileService'
 import { anoncreds } from './helpers'
@@ -98,18 +93,7 @@ const agentContext = getAgentContext({
     [AnonCredsRegistryService, new AnonCredsRegistryService()],
     [AnonCredsModuleConfig, anonCredsModuleConfig],
     [W3cCredentialsModuleConfig, new W3cCredentialsModuleConfig()],
-    [
-      SignatureSuiteToken,
-      {
-        suiteClass: Ed25519Signature2018,
-        proofType: 'Ed25519Signature2018',
-        verificationMethodTypes: [
-          VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2018,
-          VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2020,
-        ],
-        keyTypes: [KeyType.Ed25519],
-      },
-    ],
+    [SignatureSuiteToken, 'default'],
   ],
   agentConfig,
   wallet,
@@ -397,11 +381,10 @@ async function anonCredsFlowTest(options: { issuerId: string; revocable: boolean
   const credentialRecordId = holderCredentialRecord.credentials[0].credentialRecordId
   const w3cCredentialService = agentContext.dependencyManager.resolve(W3cCredentialService)
   const credentialRecord = await w3cCredentialService.getCredentialRecordById(agentContext, credentialRecordId)
-  const credentialId = getAnonCredsTagsFromRecord(credentialRecord)?.anonCredsCredentialId
-  if (!credentialId) throw new Error('Credential ID not found')
+  const credentialId = credentialRecord.id
 
   const anonCredsCredential = await anonCredsHolderService.getCredential(agentContext, {
-    credentialId,
+    id: credentialId,
   })
 
   expect(anonCredsCredential).toEqual({

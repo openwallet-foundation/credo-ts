@@ -10,7 +10,6 @@ import type {
 import type { PresentationToCreate } from './utils'
 import type { AgentContext } from '../../agent'
 import type { Query } from '../../storage/StorageService'
-import type { JsonObject } from '../../types'
 import type { VerificationMethod } from '../dids'
 import type { SdJwtVcRecord } from '../sd-jwt-vc'
 import type { W3cCredentialRecord } from '../vc'
@@ -21,7 +20,7 @@ import type {
   Validated,
   VerifiablePresentationResult,
 } from '@sphereon/pex'
-import type { InputDescriptorV2, PresentationDefinitionV1, PresentationSubmission } from '@sphereon/pex-models'
+import type { InputDescriptorV2 } from '@sphereon/pex-models'
 import type {
   W3CVerifiablePresentation as SphereonW3cVerifiablePresentation,
   W3CVerifiablePresentation,
@@ -45,7 +44,7 @@ import {
 } from '../vc'
 import {
   AnonCredsDataIntegrityServiceSymbol,
-  AnoncredsDataIntegrityCryptosuite,
+  ANONCREDS_DATA_INTEGRITY_CRYPTOSUITE,
 } from '../vc/data-integrity/models/IAnonCredsDataIntegrityService'
 
 import { DifPresentationExchangeError } from './DifPresentationExchangeError'
@@ -175,7 +174,7 @@ export class DifPresentationExchangeService {
       // FIXME: cast to V1, as tsc errors for strange reasons if not
       const inputDescriptorIds = presentationToCreate.verifiableCredentials.map((c) => c.inputDescriptorId)
       const inputDescriptorsForPresentation = (
-        presentationDefinition as PresentationDefinitionV1
+        presentationDefinition as DifPresentationExchangeDefinitionV1
       ).input_descriptors.filter((inputDescriptor) => inputDescriptorIds.includes(inputDescriptor.id))
 
       // Get all the credentials for the presentation
@@ -402,7 +401,7 @@ export class DifPresentationExchangeService {
 
   private shouldSignUsingAnoncredsDataIntegrity(
     presentationToCreate: PresentationToCreate,
-    presentationSubmission: PresentationSubmission
+    presentationSubmission: DifPresentationExchangeSubmission
   ) {
     if (presentationToCreate.claimFormat !== ClaimFormat.LdpVp) return undefined
 
@@ -418,7 +417,8 @@ export class DifPresentationExchangeService {
     })
 
     const commonCryptosuites = cryptosuites.reduce((a, b) => a.filter((c) => b.includes(c)))
-    if (commonCryptosuites.length === 0 || !commonCryptosuites.includes(AnoncredsDataIntegrityCryptosuite)) return false
+    if (commonCryptosuites.length === 0 || !commonCryptosuites.includes(ANONCREDS_DATA_INTEGRITY_CRYPTOSUITE))
+      return false
     return true
   }
 
@@ -430,7 +430,6 @@ export class DifPresentationExchangeService {
         options,
         presentationDefinition,
         presentationSubmission,
-        selectedCredentials,
       } = callBackParams
       const { challenge, domain } = options.proofOptions ?? {}
 
@@ -466,12 +465,13 @@ export class DifPresentationExchangeService {
           const presentation = await anoncredsDataIntegrityService.createPresentation(agentContext, {
             presentationDefinition,
             presentationSubmission,
-            selectedCredentials: selectedCredentials as JsonObject[],
             selectedCredentialRecords: presentationToCreate.verifiableCredentials.map((vc) => vc.credential),
             challenge,
           })
-          presentation.presentation_submission = presentationSubmission as unknown as JsonObject
-          return presentation as unknown as SphereonW3cVerifiablePresentation
+          return {
+            ...presentation.toJSON(),
+            presentation_submission: presentationSubmission,
+          } as unknown as SphereonW3cVerifiablePresentation
         }
 
         // Determine a suitable verification method for the presentation
@@ -577,7 +577,7 @@ export class DifPresentationExchangeService {
     // this could help enormously in the amount of credentials we have to retrieve from storage.
     // NOTE: for now we don't support SD-JWT for v1, as I don't know what the schema.uri should be?
     if (presentationDefinitionVersion.version === PEVersion.v1) {
-      const pd = presentationDefinition as PresentationDefinitionV1
+      const pd = presentationDefinition as DifPresentationExchangeDefinitionV1
 
       // The schema.uri can contain either an expanded type, or a context uri
       for (const inputDescriptor of pd.input_descriptors) {

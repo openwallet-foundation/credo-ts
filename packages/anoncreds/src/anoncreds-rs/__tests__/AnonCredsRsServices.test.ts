@@ -3,12 +3,8 @@ import type { AnonCredsProofRequest } from '@credo-ts/anoncreds'
 import {
   DidResolverService,
   DidsModuleConfig,
-  Ed25519Signature2018,
   InjectionSymbols,
-  KeyType,
   SignatureSuiteToken,
-  VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2018,
-  VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2020,
   W3cCredentialsModuleConfig,
 } from '@credo-ts/core'
 import { anoncreds } from '@hyperledger/anoncreds-nodejs'
@@ -73,18 +69,7 @@ const agentContext = getAgentContext({
     [InjectionSymbols.Logger, testLogger],
     [DidResolverService, new DidResolverService(testLogger, new DidsModuleConfig())],
     [W3cCredentialsModuleConfig, new W3cCredentialsModuleConfig()],
-    [
-      SignatureSuiteToken,
-      {
-        suiteClass: Ed25519Signature2018,
-        proofType: 'Ed25519Signature2018',
-        verificationMethodTypes: [
-          VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2018,
-          VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2020,
-        ],
-        keyTypes: [KeyType.Ed25519],
-      },
-    ],
+    [SignatureSuiteToken, 'default'],
   ],
   agentConfig,
 })
@@ -205,7 +190,7 @@ describe('AnonCredsRsServices', () => {
     })
 
     const credentialInfo = await anonCredsHolderService.getCredential(agentContext, {
-      credentialId,
+      id: credentialId,
     })
 
     expect(credentialInfo).toEqual({
@@ -410,7 +395,7 @@ describe('AnonCredsRsServices', () => {
     })
 
     const credentialInfo = await anonCredsHolderService.getCredential(agentContext, {
-      credentialId,
+      id: credentialId,
     })
 
     expect(credentialInfo).toEqual({

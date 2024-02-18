@@ -27,7 +27,6 @@ import {
   getDidIndyRevocationRegistryDefinitionId,
   getDidIndySchemaId,
 } from '../../indy-vdr/src/anoncreds/utils/identifiers'
-import {} from '../src'
 import {
   getUnQualifiedDidIndyDid,
   getUnqualifiedRevocationRegistryDefinitionId,
@@ -114,7 +113,7 @@ export class InMemoryAnonCredsRegistry implements AnonCredsRegistry {
     const issuerId = options.schema.issuerId
 
     let schemaId: string
-    if (isIndyDid(issuerId) || isUnqualifiedIndyDid(issuerId)) {
+    if (isIndyDid(issuerId)) {
       const { namespace, namespaceIdentifier } = parseIndyDid(issuerId)
       schemaId = getDidIndySchemaId(namespace, namespaceIdentifier, options.schema.name, options.schema.version)
       this.schemas[getUnQualifiedDidIndyDid(schemaId)] = getUnqualifiedDidIndySchema(options.schema)
@@ -183,7 +182,7 @@ export class InMemoryAnonCredsRegistry implements AnonCredsRegistry {
     const schemaId = options.credentialDefinition.schemaId
 
     let credentialDefinitionId: string
-    if (isIndyDid(schemaId) || isUnqualifiedSchemaId(schemaId)) {
+    if (isIndyDid(options.credentialDefinition.issuerId)) {
       const parsedSchema = parseIndySchemaId(options.credentialDefinition.schemaId)
       const legacySchemaId = getUnqualifiedSchemaId(
         parsedSchema.namespaceIdentifier,

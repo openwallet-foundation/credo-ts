@@ -1,23 +1,25 @@
 import type { W3cJsonLdVerifiablePresentation } from './W3cJsonLdVerifiablePresentation'
 import type { AgentContext } from '../../../../agent'
-import type { JsonObject } from '../../../../types'
+import type {
+  DifPresentationExchangeDefinition,
+  DifPresentationExchangeSubmission,
+} from '../../../dif-presentation-exchange'
+import type { W3cPresentation } from '../../models'
 import type { W3cCredentialRecord } from '../../repository'
-import type { PresentationDefinitionV1, PresentationDefinitionV2, PresentationSubmission } from '@sphereon/pex-models'
 
-export const AnoncredsDataIntegrityCryptosuite = 'anoncreds-2023' as const
+export const ANONCREDS_DATA_INTEGRITY_CRYPTOSUITE = 'anoncreds-2023' as const
 
 export interface AnoncredsDataIntegrityCreatePresentation {
-  presentationDefinition: PresentationDefinitionV1 | PresentationDefinitionV2
-  presentationSubmission: PresentationSubmission
-  selectedCredentials: JsonObject[]
   selectedCredentialRecords: W3cCredentialRecord[]
+  presentationDefinition: DifPresentationExchangeDefinition
+  presentationSubmission: DifPresentationExchangeSubmission
   challenge: string
 }
 
 export interface AnoncredsDataIntegrityVerifyPresentation {
   presentation: W3cJsonLdVerifiablePresentation
-  presentationDefinition: PresentationDefinitionV1 | PresentationDefinitionV2
-  presentationSubmission: PresentationSubmission
+  presentationDefinition: DifPresentationExchangeDefinition
+  presentationSubmission: DifPresentationExchangeSubmission
   challenge: string
 }
 
@@ -30,7 +32,10 @@ export const AnonCredsDataIntegrityServiceSymbol = Symbol('AnonCredsDataIntegrit
  * the existing api's.
  */
 export interface IAnoncredsDataIntegrityService {
-  createPresentation(agentContext: AgentContext, options: AnoncredsDataIntegrityCreatePresentation): Promise<JsonObject>
+  createPresentation(
+    agentContext: AgentContext,
+    options: AnoncredsDataIntegrityCreatePresentation
+  ): Promise<W3cPresentation>
 
   verifyPresentation(agentContext: AgentContext, options: AnoncredsDataIntegrityVerifyPresentation): Promise<boolean>
 }

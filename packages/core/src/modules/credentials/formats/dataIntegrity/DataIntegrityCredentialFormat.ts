@@ -28,7 +28,6 @@ export interface DataIntegrityAcceptOfferFormat {
 
 /**
  * This defines the module payload for calling CredentialsApi.offerCredential
- * or CredentialsApi.negotiateProposal
  */
 export interface DataIntegrityOfferCredentialFormat {
   credential: W3cCredential | JsonObject
@@ -38,8 +37,7 @@ export interface DataIntegrityOfferCredentialFormat {
 }
 
 /**
- * This defines the module payload for calling CredentialsApi.acceptRequest. No options are available for this
- * method, so it's an empty object
+ * This defines the module payload for calling CredentialsApi.acceptRequest
  */
 export interface DataIntegrityAcceptRequestFormat {
   credentialSubjectId?: string

@@ -221,7 +221,7 @@ describe('data integrity format service (w3c)', () => {
 
     await expect(
       anonCredsHolderService.getCredential(agentContext, {
-        credentialId: holderCredentialRecord.id,
+        id: holderCredentialRecord.id,
       })
     ).rejects.toThrow()
 

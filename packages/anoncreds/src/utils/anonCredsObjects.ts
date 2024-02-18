@@ -1,4 +1,4 @@
-import type { AnonCredsRevocationStatusList } from '../models'
+import type { AnonCredsCredentialDefinition, AnonCredsRevocationStatusList, AnonCredsSchema } from '../models'
 import type { AgentContext } from '@credo-ts/core'
 
 import { CredoError } from '@credo-ts/core'
@@ -16,12 +16,10 @@ export async function fetchSchema(agentContext: AgentContext, schemaId: string) 
     throw new CredoError(`Schema not found for id ${schemaId}: ${result.resolutionMetadata.message}`)
   }
 
-  const indyNamespace = result.schemaMetadata.didIndyNamespace
-
   return {
     schema: result.schema,
     schemaId: result.schemaId,
-    indyNamespace: indyNamespace && typeof indyNamespace === 'string' ? indyNamespace : undefined,
+    indyNamespace: result.schemaMetadata.didIndyNamespace as string | undefined,
   }
 }
 
@@ -92,4 +90,26 @@ export async function fetchRevocationStatusList(
   }
 
   return { revocationStatusList }
+}
+
+export async function fetchSchemas(agentContext: AgentContext, schemaIds: Set<string>) {
+  const schemaFetchPromises = [...schemaIds].map(async (schemaId): Promise<[string, AnonCredsSchema]> => {
+    const { schema } = await fetchSchema(agentContext, schemaId)
+    return [schemaId, schema]
+  })
+
+  const schemas = Object.fromEntries(await Promise.all(schemaFetchPromises))
+  return schemas
+}
+
+export async function fetchCredentialDefinitions(agentContext: AgentContext, credentialDefinitionIds: Set<string>) {
+  const credentialDefinitionEntries = [...credentialDefinitionIds].map(
+    async (credentialDefinitionId): Promise<[string, AnonCredsCredentialDefinition]> => {
+      const { credentialDefinition } = await fetchCredentialDefinition(agentContext, credentialDefinitionId)
+      return [credentialDefinitionId, credentialDefinition]
+    }
+  )
+
+  const credentialDefinitions = Object.fromEntries(await Promise.all(credentialDefinitionEntries))
+  return credentialDefinitions
 }

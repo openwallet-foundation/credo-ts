@@ -6,13 +6,9 @@ import {
   CredoError,
   DidResolverService,
   DidsModuleConfig,
-  Ed25519Signature2018,
   EventEmitter,
   InjectionSymbols,
-  KeyType,
   SignatureSuiteToken,
-  VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2018,
-  VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2020,
   W3cCredentialRepository,
   W3cCredentialsModuleConfig,
 } from '@credo-ts/core'
@@ -22,8 +18,9 @@ import { InMemoryStorageService } from '../../../../../../tests/InMemoryStorageS
 import { agentDependencies, getAgentConfig, getAgentContext, mockFunction, testLogger } from '../../../../../core/tests'
 import { InMemoryAnonCredsRegistry } from '../../../../tests/InMemoryAnonCredsRegistry'
 import { AnonCredsModuleConfig } from '../../../AnonCredsModuleConfig'
+import { AnonCredsRsHolderService } from '../../../anoncreds-rs'
 import { AnonCredsCredentialRecord } from '../../../repository'
-import { AnonCredsRegistryService } from '../../../services'
+import { AnonCredsHolderServiceSymbol, AnonCredsRegistryService } from '../../../services'
 import { getUnQualifiedDidIndyDid, getQualifiedDidIndyDid, isUnqualifiedIndyDid } from '../../../utils/indyIdentifiers'
 import * as testModule from '../anonCredsCredentialRecord'
 
@@ -73,18 +70,8 @@ const agentContext = getAgentContext({
     [InjectionSymbols.Logger, testLogger],
     [W3cCredentialsModuleConfig, new W3cCredentialsModuleConfig()],
     [AnonCredsModuleConfig, anonCredsModuleConfig],
-    [
-      SignatureSuiteToken,
-      {
-        suiteClass: Ed25519Signature2018,
-        proofType: 'Ed25519Signature2018',
-        verificationMethodTypes: [
-          VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2018,
-          VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2020,
-        ],
-        keyTypes: [KeyType.Ed25519],
-      },
-    ],
+    [AnonCredsHolderServiceSymbol, new AnonCredsRsHolderService()],
+    [SignatureSuiteToken, 'default'],
   ],
   agentConfig,
   wallet,

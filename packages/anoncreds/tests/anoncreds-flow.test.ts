@@ -10,11 +10,7 @@ import {
   CredentialState,
   DidResolverService,
   DidsModuleConfig,
-  Ed25519Signature2018,
-  KeyType,
   SignatureSuiteToken,
-  VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2018,
-  VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2020,
   W3cCredentialsModuleConfig,
 } from '@credo-ts/core'
 import { Subject } from 'rxjs'
@@ -84,18 +80,7 @@ const agentContext = getAgentContext({
     [AnonCredsRegistryService, new AnonCredsRegistryService()],
     [AnonCredsModuleConfig, anonCredsModuleConfig],
     [W3cCredentialsModuleConfig, new W3cCredentialsModuleConfig()],
-    [
-      SignatureSuiteToken,
-      {
-        suiteClass: Ed25519Signature2018,
-        proofType: 'Ed25519Signature2018',
-        verificationMethodTypes: [
-          VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2018,
-          VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2020,
-        ],
-        keyTypes: [KeyType.Ed25519],
-      },
-    ],
+    [SignatureSuiteToken, 'default'],
   ],
   agentConfig,
   wallet,
@@ -369,7 +354,7 @@ async function anonCredsFlowTest(options: { issuerId: string; revocable: boolean
 
   const credentialId = holderCredentialRecord.credentials[0].credentialRecordId
   const anonCredsCredential = await anonCredsHolderService.getCredential(agentContext, {
-    credentialId,
+    id: credentialId,
   })
 
   expect(anonCredsCredential).toEqual({

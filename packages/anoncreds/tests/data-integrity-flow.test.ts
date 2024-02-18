@@ -226,7 +226,7 @@ async function anonCredsFlowTest(options: {
 
   await expect(
     anonCredsHolderService.getCredential(agentContext, {
-      credentialId: holderCredentialRecord.id,
+      id: holderCredentialRecord.id,
     })
   ).rejects.toThrow()
 

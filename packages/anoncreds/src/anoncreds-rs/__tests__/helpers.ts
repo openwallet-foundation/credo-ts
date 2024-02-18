@@ -1,11 +1,12 @@
 import type { W3cAnoncredsCredentialMetadata } from '../../utils/metadata'
+import type { AnonCredsCredentialTags } from '../../utils/w3cAnonCredsUtils'
 import type {
   AnonCredsCredentialDefinition,
   AnonCredsCredentialInfo,
   AnonCredsCredentialOffer,
   AnonCredsSchema,
 } from '@credo-ts/anoncreds'
-import type { AgentContext, AnonCredsCredentialTags } from '@credo-ts/core'
+import type { AgentContext } from '@credo-ts/core'
 import type { JsonObject } from '@hyperledger/anoncreds-shared'
 
 import {
@@ -230,7 +231,6 @@ export async function storeCredential(
   })
 
   const anonCredsCredentialRecordTags: AnonCredsCredentialTags = {
-    anonCredsCredentialId: record.id,
     anonCredsLinkSecretId: options.linkSecretId,
     anonCredsCredentialDefinitionId: options.credentialDefinitionId,
     anonCredsSchemaId: options.schemaId,

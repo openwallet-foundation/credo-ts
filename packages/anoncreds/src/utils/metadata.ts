@@ -42,4 +42,4 @@ export const AnonCredsCredentialRequestMetadataKey = '_anoncreds/credentialReque
  *
  * MUST be used with {@link W3cAnoncredsCredentialMetadata}
  */
-export const W3cAnonCredsCredentialMetadataKey = '_w3c/AnonCredsMetadata'
+export const W3cAnonCredsCredentialMetadataKey = '_w3c/anonCredsMetadata'

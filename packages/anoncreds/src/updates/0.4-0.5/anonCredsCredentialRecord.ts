@@ -1,10 +1,11 @@
+import type { AnonCredsHolderService } from '../../services'
 import type { W3cAnoncredsCredentialMetadata } from '../../utils/metadata'
 import type { AgentContext, BaseAgent } from '@credo-ts/core'
 
 import { CacheModuleConfig, CredoError, W3cCredentialRepository, W3cCredentialService } from '@credo-ts/core'
 
-import { AnonCredsRsHolderService } from '../../anoncreds-rs/AnonCredsRsHolderService'
 import { AnonCredsCredentialRepository, type AnonCredsCredentialRecord } from '../../repository'
+import { AnonCredsHolderServiceSymbol } from '../../services'
 import { fetchCredentialDefinition } from '../../utils/anonCredsObjects'
 import {
   getIndyNamespaceFromIndyDid,
@@ -31,23 +32,16 @@ async function getIndyNamespace(
     (await cache.get(agentContext, indyCacheKey)) ?? (await cache.get(agentContext, sovCacheKey))
 
   if (!cachedNymResponse?.indyNamespace || typeof cachedNymResponse?.indyNamespace !== 'string') {
-    try {
-      const credentialDefinitionReturn = await fetchCredentialDefinition(agentContext, legacyCredentialDefinitionId)
-      const namespace = credentialDefinitionReturn.indyNamespace
+    const credentialDefinitionReturn = await fetchCredentialDefinition(agentContext, legacyCredentialDefinitionId)
+    const namespace = credentialDefinitionReturn.indyNamespace
 
-      if (!namespace) {
-        throw new CredoError(
-          'Could not determine the indyNamespace required for storing anoncreds in the new w3c format.'
-        )
-      }
-
-      return namespace
-    } catch (error) {
-      agentContext.config.logger.warn(
-        `Failed to fetch credential definition for credentialId ${legacyCredentialDefinitionId}`,
-        error
+    if (!namespace) {
+      throw new CredoError(
+        'Could not determine the indyNamespace required for storing anoncreds in the new w3c format.'
       )
     }
+
+    return namespace
   } else {
     return cachedNymResponse.indyNamespace
   }
@@ -90,12 +84,12 @@ async function migrateLegacyToW3cCredential(agentContext: AgentContext, legacyRe
     qualifiedSchemaIssuerId = legacyTags.schemaIssuerId
   }
 
-  const anonCredsRsHolderService = agentContext.dependencyManager.resolve(AnonCredsRsHolderService)
-  const w3cJsonLdCredential = await anonCredsRsHolderService.legacyToW3cCredential(
-    agentContext,
-    legacyRecord.credential,
-    qualifiedIssuerId
-  )
+  const anonCredsHolderService =
+    agentContext.dependencyManager.resolve<AnonCredsHolderService>(AnonCredsHolderServiceSymbol)
+  const w3cJsonLdCredential = await anonCredsHolderService.legacyToW3cCredential(agentContext, {
+    credential: legacyRecord.credential,
+    issuerId: qualifiedIssuerId,
+  })
 
   const w3cCredentialService = agentContext.dependencyManager.resolve(W3cCredentialService)
   const w3cCredentialRecord = await w3cCredentialService.storeCredential(agentContext, {

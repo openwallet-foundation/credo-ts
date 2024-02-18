@@ -1,41 +1,140 @@
-import type { JsonObject } from '../../../../types'
+import { Expose, Type } from 'class-transformer'
+import { ArrayNotEmpty, IsBoolean, IsEnum, IsOptional, IsString, ValidateNested } from 'class-validator'
 
-export type W3C_VC_DATA_MODEL_VERSION = '1.1' | '2.0'
+import { JsonObject } from '../../../../types'
+import { JsonTransformer } from '../../../../utils/JsonTransformer'
+import { W3cCredential } from '../../../vc'
+
+const SUPPORTED_W3C_VC_DATA_MODEL_VERSIONS = ['1.1', '2.0'] as const
+export type W3C_VC_DATA_MODEL_VERSION = (typeof SUPPORTED_W3C_VC_DATA_MODEL_VERSIONS)[number]
+
+export interface AnonCredsLinkSecretBindingMethodOptions {
+  credentialDefinitionId: string
+  nonce: string
+  keyCorrectnessProof: Record<string, unknown>
+}
 
 // This binding method is intended to be used in combination with a credential containing an AnonCreds proof.
-export interface AnonCredsLinkSecretBindingMethod {
-  cred_def_id: string
+export class AnonCredsLinkSecretBindingMethod {
+  public constructor(options: AnonCredsLinkSecretBindingMethodOptions) {
+    if (options) {
+      this.credentialDefinitionId = options.credentialDefinitionId
+      this.nonce = options.nonce
+      this.keyCorrectnessProof = options.keyCorrectnessProof
+    }
+  }
+
+  @IsString()
+  @Expose({ name: 'cred_def_id' })
+  public credentialDefinitionId!: string
+
+  @IsString()
+  public nonce!: string
+
+  @Expose({ name: 'key_correctness_proof' })
+  public keyCorrectnessProof!: Record<string, unknown>
+}
+
+export interface DidCommSignedAttachmentBindingMethodOptions {
+  algSupported: string[]
+  didMethodsSupported: string[]
   nonce: string
-  key_correctness_proof: Record<string, unknown>
 }
 
-export interface DidCommSignedAttachmentBindingMethod {
-  algs_supported: string[]
-  did_methods_supported: string[]
-  nonce: string
+export class DidCommSignedAttachmentBindingMethod {
+  public constructor(options: DidCommSignedAttachmentBindingMethodOptions) {
+    if (options) {
+      this.algsSupported = options.algSupported
+      this.didMethodsSupported = options.didMethodsSupported
+      this.nonce = options.nonce
+    }
+  }
+
+  @IsString({ each: true })
+  @Expose({ name: 'algs_supported' })
+  public algsSupported!: string[]
+
+  @IsString({ each: true })
+  @Expose({ name: 'did_methods_supported' })
+  public didMethodsSupported!: string[]
+
+  @IsString()
+  public nonce!: string
 }
 
-export interface DataIntegrityBindingMethods {
-  anoncreds_link_secret?: AnonCredsLinkSecretBindingMethod
-  didcomm_signed_attachment?: DidCommSignedAttachmentBindingMethod
+export interface DataIntegrityBindingMethodsOptions {
+  anonCredsLinkSecret?: AnonCredsLinkSecretBindingMethod
+  didcommSignedAttachment?: DidCommSignedAttachmentBindingMethod
 }
 
-export interface DataIntegrityCredentialOffer {
+export class DataIntegrityBindingMethods {
+  public constructor(options: DataIntegrityBindingMethodsOptions) {
+    if (options) {
+      this.anoncredsLinkSecret = options.anonCredsLinkSecret
+      this.didcommSignedAttachment = options.didcommSignedAttachment
+    }
+  }
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => AnonCredsLinkSecretBindingMethod)
+  @Expose({ name: 'anoncreds_link_secret' })
+  public anoncredsLinkSecret?: AnonCredsLinkSecretBindingMethod
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => DidCommSignedAttachmentBindingMethod)
+  @Expose({ name: 'didcomm_signed_attachment' })
+  public didcommSignedAttachment?: DidCommSignedAttachmentBindingMethod
+}
+
+export interface DataIntegrityCredentialOfferOptions {
+  dataModelVersionsSupported: W3C_VC_DATA_MODEL_VERSION[]
+  bindingRequired?: boolean
+  bindingMethod?: DataIntegrityBindingMethods
+  credential: W3cCredential | JsonObject
+}
+
+export class DataIntegrityCredentialOffer {
+  public constructor(options: DataIntegrityCredentialOfferOptions) {
+    if (options) {
+      this.credential =
+        options.credential instanceof W3cCredential ? JsonTransformer.toJSON(options.credential) : options.credential
+      this.bindingRequired = options.bindingRequired
+      this.bindingMethod = options.bindingMethod
+      this.dataModelVersionsSupported = options.dataModelVersionsSupported
+    }
+  }
+
   // List of strings indicating the supported VC Data Model versions.
   // The list MUST contain at least one value. The values MUST be a valid data model version. Current supported values include 1.1 and 2.0.
-  data_model_versions_supported: W3C_VC_DATA_MODEL_VERSION[]
+  @ArrayNotEmpty()
+  @IsEnum(SUPPORTED_W3C_VC_DATA_MODEL_VERSIONS, { each: true })
+  @Expose({ name: 'data_model_versions_supported' })
+  public dataModelVersionsSupported!: W3C_VC_DATA_MODEL_VERSION[]
+
   // Boolean indicating whether the credential MUST be bound to the holder. If omitted, the credential is not required to be bound to the holder.
   // If set to true, the credential MUST be bound to the holder using at least one of the binding methods defined in binding_method.
-  binding_required?: boolean
+  @IsOptional()
+  @IsBoolean()
+  @Expose({ name: 'binding_required' })
+  public bindingRequired?: boolean
+
   // Required if binding_required is true.
   // Object containing key-value pairs of binding methods supported by the issuer to bind the credential to a holder.
   // If the value is omitted, this indicates the issuer does not support any binding methods for issuance of the credential.
-  binding_method?: DataIntegrityBindingMethods
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => DataIntegrityBindingMethods)
+  @Expose({ name: 'binding_method' })
+  public bindingMethod?: DataIntegrityBindingMethods
+
   // The credential should be compliant with the VC Data Model.
   // The credential MUST NOT contain any proofs.
   // Some properties MAY be omitted if they will only be available at time of issuance, such as issuanceDate, issuer, credentialSubject.id, credentialStatus, credentialStatus.id.
   // The credential MUST be conformant with one of the data model versions indicated in data_model_versions_supported.
-  credential: JsonObject
+  @Expose({ name: 'credential' })
+  public credential!: JsonObject
 }
 
 export interface AnonCredsLinkSecretDataIntegrityBindingProof {

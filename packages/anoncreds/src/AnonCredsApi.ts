@@ -601,8 +601,8 @@ export class AnonCredsApi {
     }
   }
 
-  public async getCredential(credentialId: string) {
-    return this.anonCredsHolderService.getCredential(this.agentContext, { credentialId })
+  public async getCredential(id: string) {
+    return this.anonCredsHolderService.getCredential(this.agentContext, { id })
   }
 
   public async getCredentials(options: GetCredentialsOptions) {

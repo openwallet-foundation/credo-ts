@@ -563,7 +563,7 @@ export class LegacyIndyProofFormatService implements ProofFormatService<LegacyIn
 
     const credentialObjects = await Promise.all(
       [...Object.values(selectedCredentials.attributes), ...Object.values(selectedCredentials.predicates)].map(
-        async (c) => c.credentialInfo ?? holderService.getCredential(agentContext, { credentialId: c.credentialId })
+        async (c) => c.credentialInfo ?? holderService.getCredential(agentContext, { id: c.credentialId })
       )
     )
 

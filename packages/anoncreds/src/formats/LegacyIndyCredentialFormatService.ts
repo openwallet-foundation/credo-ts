@@ -391,7 +391,7 @@ export class LegacyIndyCredentialFormatService implements CredentialFormatServic
 
     // If the credential is revocable, store the revocation identifiers in the credential record
     if (anonCredsCredential.rev_reg_id) {
-      const credential = await anonCredsHolderService.getCredential(agentContext, { credentialId })
+      const credential = await anonCredsHolderService.getCredential(agentContext, { id: credentialId })
 
       credentialRecord.metadata.add<AnonCredsCredentialMetadata>(AnonCredsCredentialMetadataKey, {
         credentialRevocationId: credential.credentialRevocationId ?? undefined,

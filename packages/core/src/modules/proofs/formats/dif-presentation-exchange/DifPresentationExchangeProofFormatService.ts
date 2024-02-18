@@ -6,7 +6,10 @@ import type {
 } from './DifPresentationExchangeProofFormat'
 import type { AgentContext } from '../../../../agent'
 import type { JsonValue } from '../../../../types'
-import type { DifPexInputDescriptorToCredentials } from '../../../dif-presentation-exchange'
+import type {
+  DifPexInputDescriptorToCredentials,
+  DifPresentationExchangeSubmission,
+} from '../../../dif-presentation-exchange'
 import type {
   IAnoncredsDataIntegrityService,
   W3cVerifiablePresentation,
@@ -28,7 +31,6 @@ import type {
   ProofFormatAutoRespondRequestOptions,
   ProofFormatAutoRespondPresentationOptions,
 } from '../ProofFormatServiceOptions'
-import type { PresentationSubmission } from '@sphereon/pex-models'
 
 import { Attachment, AttachmentData } from '../../../../decorators/attachment/Attachment'
 import { CredoError } from '../../../../error'
@@ -38,7 +40,7 @@ import {
   DifPresentationExchangeSubmissionLocation,
 } from '../../../dif-presentation-exchange'
 import {
-  AnoncredsDataIntegrityCryptosuite,
+  ANONCREDS_DATA_INTEGRITY_CRYPTOSUITE,
   AnonCredsDataIntegrityServiceSymbol,
   W3cCredentialService,
   ClaimFormat,
@@ -227,7 +229,7 @@ export class PresentationExchangeProofFormatService implements ProofFormatServic
 
   private shouldVerifyUsingAnoncredsDataIntegrity(
     presentation: W3cVerifiablePresentation,
-    presentationSubmission: PresentationSubmission
+    presentationSubmission: DifPresentationExchangeSubmission
   ) {
     if (presentation.claimFormat !== ClaimFormat.LdpVp) return false
 
@@ -236,7 +238,7 @@ export class PresentationExchangeProofFormatService implements ProofFormatServic
     const verifyUsingDataIntegrity = descriptorMap.every((descriptor) => descriptor.format === ClaimFormat.DiVp)
     if (!verifyUsingDataIntegrity) return false
 
-    return presentation.dataIntegrityCryptosuites.includes(AnoncredsDataIntegrityCryptosuite)
+    return presentation.dataIntegrityCryptosuites.includes(ANONCREDS_DATA_INTEGRITY_CRYPTOSUITE)
   }
 
   public async processPresentation(

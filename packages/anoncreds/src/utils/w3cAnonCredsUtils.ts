@@ -3,7 +3,7 @@ import type { W3cAnoncredsCredentialMetadata } from './metadata'
 import type { AnonCredsCredentialInfo, AnonCredsSchema } from '../models'
 import type { AnonCredsCredentialRecord } from '../repository'
 import type { StoreCredentialOptions } from '../services'
-import type { AnonCredsCredentialTags } from '@credo-ts/core'
+import type { DefaultW3cCredentialTags } from '@credo-ts/core'
 
 import { CredoError, W3cCredentialRecord, utils } from '@credo-ts/core'
 
@@ -22,6 +22,30 @@ import {
   getUnQualifiedDidIndyDid,
 } from './indyIdentifiers'
 import { W3cAnonCredsCredentialMetadataKey } from './metadata'
+
+export type AnonCredsCredentialTags = {
+  anonCredsLinkSecretId: string
+  anonCredsCredentialRevocationId?: string
+  anonCredsMethodName: string
+
+  // the following keys can be used for every `attribute name` in credential.
+  [key: `anonCredsAttr::${string}::marker`]: true | undefined
+  [key: `anonCredsAttr::${string}::value`]: string | undefined
+
+  anonCredsSchemaName: string
+  anonCredsSchemaVersion: string
+
+  anonCredsSchemaId: string
+  anonCredsSchemaIssuerId: string
+  anonCredsCredentialDefinitionId: string
+  anonCredsRevocationRegistryId?: string
+
+  anonCredsUnqualifiedIssuerId?: string
+  anonCredsUnqualifiedSchemaId?: string
+  anonCredsUnqualifiedSchemaIssuerId?: string
+  anonCredsUnqualifiedCredentialDefinitionId?: string
+  anonCredsUnqualifiedRevocationRegistryId?: string
+}
 
 function anoncredsCredentialInfoFromW3cRecord(w3cCredentialRecord: W3cCredentialRecord): AnonCredsCredentialInfo {
   if (Array.isArray(w3cCredentialRecord.credential.credentialSubject)) {
@@ -81,9 +105,8 @@ export function getAnonCredsTagsFromRecord(record: W3cCredentialRecord) {
   const anoncredsMetadata = record.metadata.get<W3cAnoncredsCredentialMetadata>(W3cAnonCredsCredentialMetadataKey)
   if (!anoncredsMetadata) return undefined
 
-  const tags = record.getTags()
+  const tags = record.getTags() as DefaultW3cCredentialTags & Partial<AnonCredsCredentialTags>
   if (
-    !tags.anonCredsCredentialId ||
     !tags.anonCredsLinkSecretId ||
     !tags.anonCredsMethodName ||
     !tags.anonCredsSchemaId ||
@@ -163,7 +186,6 @@ export function getW3cRecordAnonCredsTags(options: {
   const issuerId = w3cCredentialRecord.credential.issuerId
 
   const anonCredsCredentialRecordTags: AnonCredsCredentialTags = {
-    anonCredsCredentialId: w3cCredentialRecord.id,
     anonCredsLinkSecretId: linkSecretId,
     anonCredsCredentialDefinitionId: credentialDefinitionId,
     anonCredsSchemaId: schemaId,

@@ -35,35 +35,8 @@ export type DefaultW3cCredentialTags = {
   types: Array<string>
   algs?: Array<string>
 }
-export type AnonCredsCredentialTags = {
-  anonCredsCredentialId: string
-  anonCredsLinkSecretId: string
-  anonCredsCredentialRevocationId?: string
-  anonCredsMethodName: string
 
-  // the following keys can be used for every `attribute name` in credential.
-  [key: `anonCredsAttr::${string}::marker`]: true | undefined
-  [key: `anonCredsAttr::${string}::value`]: string | undefined
-
-  anonCredsSchemaName: string
-  anonCredsSchemaVersion: string
-
-  anonCredsSchemaId: string
-  anonCredsSchemaIssuerId: string
-  anonCredsCredentialDefinitionId: string
-  anonCredsRevocationRegistryId?: string
-
-  anonCredsUnqualifiedIssuerId?: string
-  anonCredsUnqualifiedSchemaId?: string
-  anonCredsUnqualifiedSchemaIssuerId?: string
-  anonCredsUnqualifiedCredentialDefinitionId?: string
-  anonCredsUnqualifiedRevocationRegistryId?: string
-}
-
-export class W3cCredentialRecord extends BaseRecord<
-  DefaultW3cCredentialTags & Partial<AnonCredsCredentialTags>,
-  CustomW3cCredentialTags
-> {
+export class W3cCredentialRecord extends BaseRecord<DefaultW3cCredentialTags, CustomW3cCredentialTags> {
   public static readonly type = 'W3cCredentialRecord'
   public readonly type = W3cCredentialRecord.type
 
@@ -80,7 +53,7 @@ export class W3cCredentialRecord extends BaseRecord<
     }
   }
 
-  public getTags(): DefaultW3cCredentialTags & Partial<AnonCredsCredentialTags> {
+  public getTags() {
     // Contexts are usually strings, but can sometimes be objects. We're unable to use objects as tags,
     // so we filter out the objects before setting the tags.
     const stringContexts = this.credential.contexts.filter((ctx): ctx is string => typeof ctx === 'string')

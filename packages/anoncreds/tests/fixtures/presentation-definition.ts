@@ -1,6 +1,6 @@
-import type { PresentationDefinitionV1 } from '@sphereon/pex-models'
+import type { DifPresentationExchangeDefinitionV1 } from '@credo-ts/core'
 
-export const presentationDefinition: PresentationDefinitionV1 = {
+export const presentationDefinition: DifPresentationExchangeDefinitionV1 = {
   id: '5591656f-5b5d-40f8-ab5c-9041c8e3a6a0',
   name: 'Age Verification',
   purpose: 'We need to verify your age before entering a bar',

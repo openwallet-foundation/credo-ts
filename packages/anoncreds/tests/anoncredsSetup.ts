@@ -1,7 +1,6 @@
+import type { EventReplaySubject } from '../../core/tests'
 import type {
   AnonCredsRegisterCredentialDefinitionOptions,
-  AnonCredsRequestedAttribute,
-  AnonCredsRequestedPredicate,
   AnonCredsOfferCredentialFormat,
   AnonCredsSchema,
   RegisterCredentialDefinitionReturnStateFinished,
@@ -11,8 +10,8 @@ import type {
   RegisterRevocationRegistryDefinitionReturnStateFinished,
   AnonCredsRegisterRevocationStatusListOptions,
   RegisterRevocationStatusListReturnStateFinished,
-} from '../../anoncreds/src'
-import type { EventReplaySubject } from '../../core/tests'
+} from '../src'
+import type { CheqdDidCreateOptions } from '@credo-ts/cheqd'
 import type { AutoAcceptProof, ConnectionRecord } from '@credo-ts/core'
 
 import {
@@ -27,26 +26,23 @@ import {
   CredentialState,
   ProofEventTypes,
   ProofsModule,
-  ProofState,
   V2CredentialProtocol,
   V2ProofProtocol,
   DidsModule,
   PresentationExchangeProofFormatService,
+  TypedArrayEncoder,
 } from '@credo-ts/core'
 import { randomUUID } from 'crypto'
 
-import { AnonCredsCredentialFormatService, AnonCredsProofFormatService, AnonCredsModule } from '../../anoncreds/src'
-import { DataIntegrityCredentialFormatService } from '../../anoncreds/src/formats/DataIntegrityCredentialFormatService'
-import { InMemoryAnonCredsRegistry } from '../../anoncreds/tests/InMemoryAnonCredsRegistry'
+import { CheqdDidRegistrar, CheqdDidResolver, CheqdModule } from '../../cheqd'
+import { getCheqdModuleConfig } from '../../cheqd/tests/setupCheqdModule'
 import { sleep } from '../../core/src/utils/sleep'
 import { setupSubjectTransports, setupEventReplaySubjects } from '../../core/tests'
-import {
-  getInMemoryAgentOptions,
-  makeConnection,
-  waitForCredentialRecordSubject,
-  waitForProofExchangeRecordSubject,
-} from '../../core/tests/helpers'
+import { getInMemoryAgentOptions, makeConnection, waitForCredentialRecordSubject } from '../../core/tests/helpers'
 import testLogger from '../../core/tests/logger'
+import { AnonCredsCredentialFormatService, AnonCredsProofFormatService, AnonCredsModule } from '../src'
+import { DataIntegrityCredentialFormatService } from '../src/formats/DataIntegrityCredentialFormatService'
+import { InMemoryAnonCredsRegistry } from '../tests/InMemoryAnonCredsRegistry'
 
 import { InMemoryTailsFileService } from './InMemoryTailsFileService'
 import { LocalDidResolver } from './LocalDidResolver'
@@ -63,10 +59,15 @@ export const getAnonCredsModules = ({
   autoAcceptCredentials,
   autoAcceptProofs,
   registries,
+  cheqd,
 }: {
   autoAcceptCredentials?: AutoAcceptCredential
   autoAcceptProofs?: AutoAcceptProof
   registries?: [AnonCredsRegistry, ...AnonCredsRegistry[]]
+  cheqd?: {
+    rpcUrl?: string
+    seed?: string
+  }
 } = {}) => {
   const dataIntegrityCredentialFormatService = new DataIntegrityCredentialFormatService()
   // Add support for resolving pre-created credential definitions and schemas
@@ -84,7 +85,9 @@ export const getAnonCredsModules = ({
   const anonCredsProofFormatService = new AnonCredsProofFormatService()
   const presentationExchangeProofFormatService = new PresentationExchangeProofFormatService()
 
+  const cheqdSdk = cheqd ? new CheqdModule(getCheqdModuleConfig(cheqd.seed, cheqd.rpcUrl)) : undefined
   const modules = {
+    ...(cheqdSdk && { cheqdSdk }),
     credentials: new CredentialsModule({
       autoAcceptCredentials,
       credentialProtocols: [
@@ -107,7 +110,8 @@ export const getAnonCredsModules = ({
       anoncreds,
     }),
     dids: new DidsModule({
-      resolvers: [new LocalDidResolver()],
+      resolvers: cheqd ? [new CheqdDidResolver()] : [new LocalDidResolver()],
+      registrars: cheqd ? [new CheqdDidRegistrar()] : undefined,
     }),
     cache: new CacheModule({
       cache: new InMemoryLruCache({ limit: 100 }),
@@ -115,83 +119,6 @@ export const getAnonCredsModules = ({
   } as const
 
   return modules
-}
-
-export async function presentAnonCredsProof({
-  verifierAgent,
-  verifierReplay,
-
-  holderAgent,
-  holderReplay,
-
-  verifierHolderConnectionId,
-
-  request: { attributes, predicates },
-}: {
-  holderAgent: AnonCredsTestsAgent
-  holderReplay: EventReplaySubject
-
-  verifierAgent: AnonCredsTestsAgent
-  verifierReplay: EventReplaySubject
-
-  verifierHolderConnectionId: string
-  request: {
-    attributes?: Record<string, AnonCredsRequestedAttribute>
-    predicates?: Record<string, AnonCredsRequestedPredicate>
-  }
-}) {
-  let holderProofExchangeRecordPromise = waitForProofExchangeRecordSubject(holderReplay, {
-    state: ProofState.RequestReceived,
-  })
-
-  let verifierProofExchangeRecord = await verifierAgent.proofs.requestProof({
-    connectionId: verifierHolderConnectionId,
-    proofFormats: {
-      anoncreds: {
-        name: 'Test Proof Request',
-        requested_attributes: attributes,
-        requested_predicates: predicates,
-        version: '1.0',
-      },
-    },
-    protocolVersion: 'v2',
-  })
-
-  let holderProofExchangeRecord = await holderProofExchangeRecordPromise
-
-  const selectedCredentials = await holderAgent.proofs.selectCredentialsForRequest({
-    proofRecordId: holderProofExchangeRecord.id,
-  })
-
-  const verifierProofExchangeRecordPromise = waitForProofExchangeRecordSubject(verifierReplay, {
-    threadId: holderProofExchangeRecord.threadId,
-    state: ProofState.PresentationReceived,
-  })
-
-  await holderAgent.proofs.acceptRequest({
-    proofRecordId: holderProofExchangeRecord.id,
-    proofFormats: { anoncreds: selectedCredentials.proofFormats.anoncreds },
-  })
-
-  verifierProofExchangeRecord = await verifierProofExchangeRecordPromise
-
-  // assert presentation is valid
-  expect(verifierProofExchangeRecord.isVerified).toBe(true)
-
-  holderProofExchangeRecordPromise = waitForProofExchangeRecordSubject(holderReplay, {
-    threadId: holderProofExchangeRecord.threadId,
-    state: ProofState.Done,
-  })
-
-  verifierProofExchangeRecord = await verifierAgent.proofs.acceptPresentation({
-    proofRecordId: verifierProofExchangeRecord.id,
-  })
-  holderProofExchangeRecord = await holderProofExchangeRecordPromise
-
-  return {
-    verifierProofExchangeRecord,
-    holderProofExchangeRecord,
-  }
 }
 
 export async function issueAnonCredsCredential({
@@ -260,6 +187,8 @@ interface SetupAnonCredsTestsReturn<VerifierName extends string | undefined, Cre
   issuerAgent: AnonCredsTestsAgent
   issuerReplay: EventReplaySubject
 
+  issuerId: string
+
   holderAgent: AnonCredsTestsAgent
   holderReplay: EventReplaySubject
 
@@ -300,8 +229,13 @@ export async function setupAnonCredsTests<
   createConnections,
   supportRevocation,
   registries,
+  cheqd,
 }: {
-  issuerId: string
+  issuerId?: string
+  cheqd?: {
+    rpcUrl?: string
+    seed?: string
+  }
   issuerName: string
   holderName: string
   verifierName?: VerifierName
@@ -322,6 +256,7 @@ export async function setupAnonCredsTests<
         autoAcceptCredentials,
         autoAcceptProofs,
         registries,
+        cheqd,
       })
     )
   )
@@ -336,6 +271,7 @@ export async function setupAnonCredsTests<
         autoAcceptCredentials,
         autoAcceptProofs,
         registries,
+        cheqd,
       })
     )
   )
@@ -351,6 +287,7 @@ export async function setupAnonCredsTests<
             autoAcceptCredentials,
             autoAcceptProofs,
             registries,
+            cheqd,
           })
         )
       )
@@ -371,6 +308,30 @@ export async function setupAnonCredsTests<
     linkSecretId: 'default',
     setAsDefault: true,
   })
+
+  if (issuerId) {
+    const didDocument = new DidDocumentBuilder(issuerId).build()
+    await issuerAgent.dids.import({ did: issuerId, didDocument })
+  } else if (cheqd) {
+    const privateKey = TypedArrayEncoder.fromString('000000000000000000000000001cheqd')
+    const did = await issuerAgent.dids.create<CheqdDidCreateOptions>({
+      method: 'cheqd',
+      secret: {
+        verificationMethod: {
+          id: 'key-10',
+          type: 'Ed25519VerificationKey2020',
+          privateKey,
+        },
+      },
+      options: {
+        network: 'testnet',
+        methodSpecificIdAlgo: 'uuid',
+      },
+    })
+    issuerId = did.didState.did as string
+  } else {
+    throw new CredoError('issuerId is required if cheqd is not used')
+  }
 
   const { credentialDefinition, revocationRegistryDefinition, revocationStatusList, schema } =
     await prepareForAnonCredsIssuance(issuerAgent, {
@@ -399,6 +360,8 @@ export async function setupAnonCredsTests<
     holderAgent,
     holderReplay,
 
+    issuerId,
+
     verifierAgent: verifierName ? verifierAgent : undefined,
     verifierReplay: verifierName ? verifierReplay : undefined,
 
@@ -422,12 +385,6 @@ export async function prepareForAnonCredsIssuance(
     issuerId,
   }: { attributeNames: string[]; supportRevocation?: boolean; issuerId: string }
 ) {
-  //const key = await agent.wallet.createKey({ keyType: KeyType.Ed25519 })
-
-  const didDocument = new DidDocumentBuilder(issuerId).build()
-
-  await agent.dids.import({ did: issuerId, didDocument })
-
   const schema = await registerSchema(agent, {
     // TODO: update attrNames to attributeNames
     attrNames: attributeNames,
