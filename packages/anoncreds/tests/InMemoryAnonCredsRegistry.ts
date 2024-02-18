@@ -40,7 +40,6 @@ import {
   isIndyDid,
   isUnqualifiedCredentialDefinitionId,
   isUnqualifiedSchemaId,
-  isUnqualifiedIndyDid,
 } from '../src/utils/indyIdentifiers'
 import { dateToTimestamp } from '../src/utils/timestamp'
 

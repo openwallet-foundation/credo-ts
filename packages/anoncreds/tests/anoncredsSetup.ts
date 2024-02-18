@@ -10,6 +10,8 @@ import type {
   RegisterRevocationRegistryDefinitionReturnStateFinished,
   AnonCredsRegisterRevocationStatusListOptions,
   RegisterRevocationStatusListReturnStateFinished,
+  AnonCredsRequestedAttribute,
+  AnonCredsRequestedPredicate,
 } from '../src'
 import type { CheqdDidCreateOptions } from '@credo-ts/cheqd'
 import type { AutoAcceptProof, ConnectionRecord } from '@credo-ts/core'
@@ -31,6 +33,7 @@ import {
   DidsModule,
   PresentationExchangeProofFormatService,
   TypedArrayEncoder,
+  ProofState,
 } from '@credo-ts/core'
 import { randomUUID } from 'crypto'
 
@@ -38,7 +41,12 @@ import { CheqdDidRegistrar, CheqdDidResolver, CheqdModule } from '../../cheqd'
 import { getCheqdModuleConfig } from '../../cheqd/tests/setupCheqdModule'
 import { sleep } from '../../core/src/utils/sleep'
 import { setupSubjectTransports, setupEventReplaySubjects } from '../../core/tests'
-import { getInMemoryAgentOptions, makeConnection, waitForCredentialRecordSubject } from '../../core/tests/helpers'
+import {
+  getInMemoryAgentOptions,
+  makeConnection,
+  waitForCredentialRecordSubject,
+  waitForProofExchangeRecordSubject,
+} from '../../core/tests/helpers'
 import testLogger from '../../core/tests/logger'
 import { AnonCredsCredentialFormatService, AnonCredsProofFormatService, AnonCredsModule } from '../src'
 import { DataIntegrityCredentialFormatService } from '../src/formats/DataIntegrityCredentialFormatService'
@@ -213,6 +221,83 @@ interface SetupAnonCredsTestsReturn<VerifierName extends string | undefined, Cre
   credentialDefinitionId: string
   revocationRegistryDefinitionId: string | null
   revocationStatusListTimestamp?: number
+}
+
+export async function presentAnonCredsProof({
+  verifierAgent,
+  verifierReplay,
+
+  holderAgent,
+  holderReplay,
+
+  verifierHolderConnectionId,
+
+  request: { attributes, predicates },
+}: {
+  holderAgent: AnonCredsTestsAgent
+  holderReplay: EventReplaySubject
+
+  verifierAgent: AnonCredsTestsAgent
+  verifierReplay: EventReplaySubject
+
+  verifierHolderConnectionId: string
+  request: {
+    attributes?: Record<string, AnonCredsRequestedAttribute>
+    predicates?: Record<string, AnonCredsRequestedPredicate>
+  }
+}) {
+  let holderProofExchangeRecordPromise = waitForProofExchangeRecordSubject(holderReplay, {
+    state: ProofState.RequestReceived,
+  })
+
+  let verifierProofExchangeRecord = await verifierAgent.proofs.requestProof({
+    connectionId: verifierHolderConnectionId,
+    proofFormats: {
+      anoncreds: {
+        name: 'Test Proof Request',
+        requested_attributes: attributes,
+        requested_predicates: predicates,
+        version: '1.0',
+      },
+    },
+    protocolVersion: 'v2',
+  })
+
+  let holderProofExchangeRecord = await holderProofExchangeRecordPromise
+
+  const selectedCredentials = await holderAgent.proofs.selectCredentialsForRequest({
+    proofRecordId: holderProofExchangeRecord.id,
+  })
+
+  const verifierProofExchangeRecordPromise = waitForProofExchangeRecordSubject(verifierReplay, {
+    threadId: holderProofExchangeRecord.threadId,
+    state: ProofState.PresentationReceived,
+  })
+
+  await holderAgent.proofs.acceptRequest({
+    proofRecordId: holderProofExchangeRecord.id,
+    proofFormats: { anoncreds: selectedCredentials.proofFormats.anoncreds },
+  })
+
+  verifierProofExchangeRecord = await verifierProofExchangeRecordPromise
+
+  // assert presentation is valid
+  expect(verifierProofExchangeRecord.isVerified).toBe(true)
+
+  holderProofExchangeRecordPromise = waitForProofExchangeRecordSubject(holderReplay, {
+    threadId: holderProofExchangeRecord.threadId,
+    state: ProofState.Done,
+  })
+
+  verifierProofExchangeRecord = await verifierAgent.proofs.acceptPresentation({
+    proofRecordId: verifierProofExchangeRecord.id,
+  })
+  holderProofExchangeRecord = await holderProofExchangeRecordPromise
+
+  return {
+    verifierProofExchangeRecord,
+    holderProofExchangeRecord,
+  }
 }
 
 export async function setupAnonCredsTests<
