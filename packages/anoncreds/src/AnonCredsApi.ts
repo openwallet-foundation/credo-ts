@@ -21,7 +21,7 @@ import type {
 import type { Extensible } from './services/registry/base'
 import type { SimpleQuery } from '@credo-ts/core'
 
-import { AgentContext, inject, injectable } from '@credo-ts/core'
+import { AgentContext, inject, injectable, isUri } from '@credo-ts/core'
 
 import { AnonCredsModuleConfig } from './AnonCredsModuleConfig'
 import { AnonCredsStoreRecordError } from './error'
@@ -398,13 +398,20 @@ export class AnonCredsApi {
           tailsDirectoryPath,
         })
 
-      // At this moment, tails file should be published and a valid public URL will be received
       const localTailsLocation = revocationRegistryDefinition.value.tailsLocation
 
-      const { tailsFileUrl } = await tailsFileService.uploadTailsFile(this.agentContext, {
-        revocationRegistryDefinition,
-      })
-      revocationRegistryDefinition.value.tailsLocation = tailsFileUrl
+      // A check is done whether the tails location is a URL.
+      // This state may occur when the `registerRevocationRegistryDefinition` is called
+      // once to create the TXN and once to actually submit it.
+      // When the TXN is created, it will be a file path and this code will be called.
+      // When the submission is done, it already has a URL as the location and does not
+      // need to be reuploaded
+      if (!isUri(localTailsLocation)) {
+        const { tailsFileUrl } = await tailsFileService.uploadTailsFile(this.agentContext, {
+          revocationRegistryDefinition,
+        })
+        revocationRegistryDefinition.value.tailsLocation = tailsFileUrl
+      }
 
       const result = await registry.registerRevocationRegistryDefinition(this.agentContext, {
         revocationRegistryDefinition,

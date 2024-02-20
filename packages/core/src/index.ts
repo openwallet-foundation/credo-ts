@@ -73,6 +73,7 @@ export {
   deepEquality,
   asArray,
   equalsIgnoreOrder,
+  isUri,
 } from './utils'
 export * from './logger'
 export * from './error'
