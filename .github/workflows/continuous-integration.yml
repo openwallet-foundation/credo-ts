@@ -142,6 +142,7 @@ jobs:
         with:
           name: coverage-artifacts
           path: coverage/e2e.json
+          overwrite: true
 
   # Upload all the coverage reports
   report-coverage:
