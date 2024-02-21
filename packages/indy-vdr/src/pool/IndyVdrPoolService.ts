@@ -160,7 +160,11 @@ export class IndyVdrPoolService {
    * Get all pool transactions
    */
   public getAllPoolTransactions() {
-    return Promise.allSettled(this.pools.map((pool) => pool.transactions))
+    return Promise.allSettled(
+      this.pools.map(async (pool) => {
+        return { config: pool.config, transactions: await pool.transactions }
+      })
+    )
   }
 
   /**
