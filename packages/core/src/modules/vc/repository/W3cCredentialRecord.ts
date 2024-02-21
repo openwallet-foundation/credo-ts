@@ -31,6 +31,7 @@ export type DefaultW3cCredentialTags = {
   claimFormat: W3cVerifiableCredential['claimFormat']
 
   proofTypes?: Array<string>
+  types: Array<string>
   algs?: Array<string>
 }
 
@@ -64,6 +65,7 @@ export class W3cCredentialRecord extends BaseRecord<DefaultW3cCredentialTags, Cu
       contexts: stringContexts,
       givenId: this.credential.id,
       claimFormat: this.credential.claimFormat,
+      types: this.credential.type,
     }
 
     // Proof types is used for ldp_vc credentials

@@ -4,7 +4,7 @@ import { AbortController } from 'abort-controller'
 import { parseUrl } from 'query-string'
 
 import { AgentMessage } from '../agent/AgentMessage'
-import { AriesFrameworkError } from '../error'
+import { CredoError } from '../error'
 import { ConnectionInvitationMessage } from '../modules/connections'
 import { OutOfBandDidCommService } from '../modules/oob/domain/OutOfBandDidCommService'
 import { convertToNewInvitation } from '../modules/oob/helpers'
@@ -28,7 +28,7 @@ const fetchShortUrl = async (invitationUrl: string, dependencies: AgentDependenc
       },
     })
   } catch (error) {
-    throw new AriesFrameworkError(`Get request failed on provided url: ${error.message}`, { cause: error })
+    throw new CredoError(`Get request failed on provided url: ${error.message}`, { cause: error })
   }
   clearTimeout(id)
   return response
@@ -44,7 +44,7 @@ export const parseInvitationJson = (invitationJson: Record<string, unknown>): Ou
   const messageType = invitationJson['@type'] as string
 
   if (!messageType) {
-    throw new AriesFrameworkError('Invitation is not a valid DIDComm message')
+    throw new CredoError('Invitation is not a valid DIDComm message')
   }
 
   const parsedMessageType = parseMessageType(messageType)
@@ -63,7 +63,7 @@ export const parseInvitationJson = (invitationJson: Record<string, unknown>): Ou
     // This is probably a legacy connectionless invitation
     return transformLegacyConnectionlessInvitationToOutOfBandInvitation(invitationJson)
   } else {
-    throw new AriesFrameworkError(`Invitation with '@type' ${parsedMessageType.messageTypeUri} not supported.`)
+    throw new CredoError(`Invitation with '@type' ${parsedMessageType.messageTypeUri} not supported.`)
   }
 }
 
@@ -83,7 +83,7 @@ export const parseInvitationUrl = (invitationUrl: string): OutOfBandInvitation =
     const invitationJson = JsonEncoder.fromBase64(encodedInvitation) as Record<string, unknown>
     return parseInvitationJson(invitationJson)
   }
-  throw new AriesFrameworkError(
+  throw new CredoError(
     'InvitationUrl is invalid. It needs to contain one, and only one, of the following parameters: `oob`, `c_i` or `d_m`.'
   )
 }
@@ -105,7 +105,7 @@ export const oobInvitationFromShortUrl = async (response: Response): Promise<Out
       return parseInvitationUrl(responseUrl)
     }
   }
-  throw new AriesFrameworkError('HTTP request time out or did not receive valid response')
+  throw new CredoError('HTTP request time out or did not receive valid response')
 }
 
 export function transformLegacyConnectionlessInvitationToOutOfBandInvitation(messageJson: Record<string, unknown>) {
@@ -113,7 +113,7 @@ export function transformLegacyConnectionlessInvitationToOutOfBandInvitation(mes
 
   // ~service is required for legacy connectionless invitations
   if (!agentMessage.service) {
-    throw new AriesFrameworkError('Invalid legacy connectionless invitation url. Missing ~service decorator.')
+    throw new CredoError('Invalid legacy connectionless invitation url. Missing ~service decorator.')
   }
 
   // This destructuring removes the ~service property from the message, and
@@ -160,7 +160,7 @@ export const parseInvitationShortUrl = async (
       outOfBandInvitation.invitationType = InvitationType.OutOfBand
       return outOfBandInvitation
     } catch (error) {
-      throw new AriesFrameworkError(
+      throw new CredoError(
         'InvitationUrl is invalid. It needs to contain one, and only one, of the following parameters: `oob`, `c_i` or `d_m`, or be valid shortened URL'
       )
     }

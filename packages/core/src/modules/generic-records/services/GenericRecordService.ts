@@ -2,7 +2,7 @@ import type { AgentContext } from '../../../agent'
 import type { Query } from '../../../storage/StorageService'
 import type { SaveGenericRecordOption } from '../repository/GenericRecord'
 
-import { AriesFrameworkError } from '../../../error'
+import { CredoError } from '../../../error'
 import { injectable } from '../../../plugins'
 import { GenericRecord } from '../repository/GenericRecord'
 import { GenericRecordsRepository } from '../repository/GenericRecordsRepository'
@@ -26,9 +26,7 @@ export class GenericRecordService {
       await this.genericRecordsRepository.save(agentContext, genericRecord)
       return genericRecord
     } catch (error) {
-      throw new AriesFrameworkError(
-        `Unable to store the genericRecord record with id ${genericRecord.id}. Message: ${error}`
-      )
+      throw new CredoError(`Unable to store the genericRecord record with id ${genericRecord.id}. Message: ${error}`)
     }
   }
 
@@ -36,7 +34,7 @@ export class GenericRecordService {
     try {
       await this.genericRecordsRepository.delete(agentContext, record)
     } catch (error) {
-      throw new AriesFrameworkError(`Unable to delete the genericRecord record with id ${record.id}. Message: ${error}`)
+      throw new CredoError(`Unable to delete the genericRecord record with id ${record.id}. Message: ${error}`)
     }
   }
 
@@ -48,7 +46,7 @@ export class GenericRecordService {
     try {
       await this.genericRecordsRepository.update(agentContext, record)
     } catch (error) {
-      throw new AriesFrameworkError(`Unable to update the genericRecord record with id ${record.id}. Message: ${error}`)
+      throw new CredoError(`Unable to update the genericRecord record with id ${record.id}. Message: ${error}`)
     }
   }
 

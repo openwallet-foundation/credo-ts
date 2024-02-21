@@ -2,7 +2,6 @@ import { FeatureRegistry } from '../../../agent/FeatureRegistry'
 import { Protocol } from '../../../agent/models'
 import { InjectionSymbols } from '../../../constants'
 import { DependencyManager } from '../../../plugins/DependencyManager'
-import { MessagePickupApi } from '../MessagePickupApi'
 import { MessagePickupModule } from '../MessagePickupModule'
 import { MessagePickupModuleConfig } from '../MessagePickupModuleConfig'
 import { MessagePickupSessionService } from '../services'
@@ -21,9 +20,6 @@ describe('MessagePickupModule', () => {
   test('registers dependencies on the dependency manager', () => {
     const module = new MessagePickupModule()
     module.register(dependencyManager, featureRegistry)
-
-    expect(dependencyManager.registerContextScoped).toHaveBeenCalledTimes(1)
-    expect(dependencyManager.registerContextScoped).toHaveBeenCalledWith(MessagePickupApi)
 
     expect(dependencyManager.registerInstance).toHaveBeenCalledTimes(1)
     expect(dependencyManager.registerInstance).toHaveBeenCalledWith(MessagePickupModuleConfig, module.config)

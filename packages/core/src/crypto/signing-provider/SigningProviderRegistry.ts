@@ -1,7 +1,7 @@
 import type { SigningProvider } from './SigningProvider'
 import type { KeyType } from '../KeyType'
 
-import { AriesFrameworkError } from '../../error'
+import { CredoError } from '../../error'
 import { injectable, injectAll } from '../../plugins'
 
 export const SigningProviderToken = Symbol('SigningProviderToken')
@@ -29,7 +29,7 @@ export class SigningProviderRegistry {
     const signingKeyProvider = this.signingKeyProviders.find((x) => x.keyType === keyType)
 
     if (!signingKeyProvider) {
-      throw new AriesFrameworkError(`No signing key provider for key type: ${keyType}`)
+      throw new CredoError(`No signing key provider for key type: ${keyType}`)
     }
 
     return signingKeyProvider

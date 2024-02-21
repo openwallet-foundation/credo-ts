@@ -27,6 +27,7 @@ describe('W3cCredentialRecord', () => {
         proofTypes: credential.proofTypes,
         givenId: credential.id,
         expandedTypes: ['https://expanded.tag#1'],
+        types: ['VerifiableCredential', 'UniversityDegreeCredential'],
       })
     })
   })

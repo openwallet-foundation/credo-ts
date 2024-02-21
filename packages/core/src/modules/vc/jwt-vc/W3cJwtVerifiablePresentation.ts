@@ -1,7 +1,7 @@
 import type { W3cPresentation } from '../models'
 
 import { Jwt } from '../../../crypto/jose/jwt/Jwt'
-import { AriesFrameworkError } from '../../../error'
+import { CredoError } from '../../../error'
 import { ClaimFormat } from '../models'
 
 import { getPresentationFromJwtPayload } from './presentationTransformer'
@@ -24,7 +24,7 @@ export class W3cJwtVerifiablePresentation {
     const jwt = Jwt.fromSerializedJwt(serializedJwt)
 
     if (!jwt.payload.additionalClaims.nonce) {
-      throw new AriesFrameworkError(`JWT payload does not contain required claim 'nonce'`)
+      throw new CredoError(`JWT payload does not contain required claim 'nonce'`)
     }
 
     return new W3cJwtVerifiablePresentation({

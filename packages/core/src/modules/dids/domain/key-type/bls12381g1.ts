@@ -2,7 +2,7 @@ import type { KeyDidMapping } from './keyDidMapping'
 import type { VerificationMethod } from '../verificationMethod'
 
 import { KeyType } from '../../../../crypto/KeyType'
-import { AriesFrameworkError } from '../../../../error'
+import { CredoError } from '../../../../error'
 import {
   getKeyFromBls12381G1Key2020,
   isBls12381G1Key2020,
@@ -21,7 +21,7 @@ export const keyDidBls12381g1: KeyDidMapping = {
       return getKeyFromBls12381G1Key2020(verificationMethod)
     }
 
-    throw new AriesFrameworkError(
+    throw new CredoError(
       `Verification method with type '${verificationMethod.type}' not supported for key type '${KeyType.Bls12381g1}'`
     )
   },

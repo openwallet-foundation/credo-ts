@@ -43,9 +43,6 @@ export class MessagePickupModule<MessagePickupProtocols extends MessagePickupPro
    * Registers the dependencies of the message pickup answer module on the dependency manager.
    */
   public register(dependencyManager: DependencyManager, featureRegistry: FeatureRegistry) {
-    // Api
-    dependencyManager.registerContextScoped(MessagePickupApi)
-
     // Config
     dependencyManager.registerInstance(MessagePickupModuleConfig, this.config)
 

@@ -29,7 +29,7 @@ import type {
   JsonObject,
 } from '@hyperledger/anoncreds-shared'
 
-import { AriesFrameworkError, JsonTransformer, TypedArrayEncoder, injectable, utils } from '@credo-ts/core'
+import { CredoError, JsonTransformer, TypedArrayEncoder, injectable, utils } from '@credo-ts/core'
 import {
   Credential,
   CredentialRequest,
@@ -110,7 +110,7 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
             // Extract revocation status list for the given timestamp
             const revocationStatusList = revocationStatusLists[timestamp]
             if (!revocationStatusList) {
-              throw new AriesFrameworkError(
+              throw new CredoError(
                 `Revocation status list for revocation registry ${revocationRegistryDefinitionId} and timestamp ${timestamp} not found in revocation status lists. All revocation status lists must be present.`
               )
             }
@@ -219,7 +219,7 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
 
       const isLegacyIdentifier = credentialOffer.cred_def_id.match(unqualifiedCredentialDefinitionIdRegex)
       if (!isLegacyIdentifier && useLegacyProverDid) {
-        throw new AriesFrameworkError('Cannot use legacy prover_did with non-legacy identifiers')
+        throw new CredoError('Cannot use legacy prover_did with non-legacy identifiers')
       }
       createReturnObj = CredentialRequest.create({
         entropy: !useLegacyProverDid || !isLegacyIdentifier ? anoncreds.generateNonce() : undefined,

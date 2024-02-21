@@ -21,9 +21,6 @@ export class DiscoverFeaturesModule implements Module {
    * Registers the dependencies of the discover features module on the dependency manager.
    */
   public register(dependencyManager: DependencyManager, featureRegistry: FeatureRegistry) {
-    // Api
-    dependencyManager.registerContextScoped(DiscoverFeaturesApi)
-
     // Config
     dependencyManager.registerInstance(DiscoverFeaturesModuleConfig, this.config)
 

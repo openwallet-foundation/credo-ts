@@ -19,7 +19,7 @@ import type {
 } from '../src'
 import type { AgentContext } from '@credo-ts/core'
 
-import { Hasher, TypedArrayEncoder } from '@credo-ts/core'
+import { Hasher } from '@credo-ts/core'
 import BigNumber from 'bn.js'
 
 import {
@@ -70,11 +70,6 @@ export class InMemoryAnonCredsRegistry implements AnonCredsRegistry {
   public async getSchema(_agentContext: AgentContext, schemaId: string): Promise<GetSchemaReturn> {
     const schema = this.schemas[schemaId]
 
-    const parsed = parseIndySchemaId(schemaId)
-
-    const legacySchemaId = getUnqualifiedSchemaId(parsed.namespaceIdentifier, parsed.schemaName, parsed.schemaVersion)
-    const indyLedgerSeqNo = getSeqNoFromSchemaId(legacySchemaId)
-
     if (!schema) {
       return {
         resolutionMetadata: {
@@ -87,14 +82,10 @@ export class InMemoryAnonCredsRegistry implements AnonCredsRegistry {
     }
 
     return {
-      resolutionMetadata: {},
       schema,
       schemaId,
-      schemaMetadata: {
-        // NOTE: the seqNo is required by the indy-sdk even though not present in AnonCreds v1.
-        // For this reason we return it in the metadata.
-        indyLedgerSeqNo,
-      },
+      resolutionMetadata: {},
+      schemaMetadata: {},
     }
   }
 
@@ -113,7 +104,6 @@ export class InMemoryAnonCredsRegistry implements AnonCredsRegistry {
     this.schemas[didIndySchemaId] = options.schema
 
     const legacySchemaId = getUnqualifiedSchemaId(legacyIssuerId, options.schema.name, options.schema.version)
-    const indyLedgerSeqNo = getSeqNoFromSchemaId(legacySchemaId)
 
     this.schemas[legacySchemaId] = {
       ...options.schema,
@@ -122,11 +112,7 @@ export class InMemoryAnonCredsRegistry implements AnonCredsRegistry {
 
     return {
       registrationMetadata: {},
-      schemaMetadata: {
-        // NOTE: the seqNo is required by the indy-sdk even though not present in AnonCreds v1.
-        // For this reason we return it in the metadata.
-        indyLedgerSeqNo,
-      },
+      schemaMetadata: {},
       schemaState: {
         state: 'finished',
         schema: options.schema,
@@ -348,9 +334,7 @@ export class InMemoryAnonCredsRegistry implements AnonCredsRegistry {
  * Does this by hashing the schema id, transforming the hash to a number and taking the first 6 digits.
  */
 function getSeqNoFromSchemaId(schemaId: string) {
-  const seqNo = Number(
-    new BigNumber(Hasher.hash(TypedArrayEncoder.fromString(schemaId), 'sha2-256')).toString().slice(0, 5)
-  )
+  const seqNo = Number(new BigNumber(Hasher.hash(schemaId, 'sha-256')).toString().slice(0, 5))
 
   return seqNo
 }

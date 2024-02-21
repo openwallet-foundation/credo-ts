@@ -29,7 +29,7 @@ export class HashlinkEncoder {
    * Encodes a buffer, with optional metadata, into a hashlink
    *
    * @param buffer the buffer to encode into a hashlink
-   * @param hashAlgorithm the name of the hashing algorithm 'sha2-256'
+   * @param hashAlgorithm the name of the hashing algorithm 'sha-256'
    * @param baseEncoding the name of the base encoding algorithm 'base58btc'
    * @param metadata the optional metadata in the hashlink
    *

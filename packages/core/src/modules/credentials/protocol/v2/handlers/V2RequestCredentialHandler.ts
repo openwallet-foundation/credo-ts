@@ -4,7 +4,7 @@ import type { CredentialExchangeRecord } from '../../../repository'
 import type { V2CredentialProtocol } from '../V2CredentialProtocol'
 
 import { getOutboundMessageContext } from '../../../../../agent/getOutboundMessageContext'
-import { AriesFrameworkError } from '../../../../../error'
+import { CredoError } from '../../../../../error'
 import { V2RequestCredentialMessage } from '../messages/V2RequestCredentialMessage'
 
 export class V2RequestCredentialHandler implements MessageHandler {
@@ -40,7 +40,7 @@ export class V2RequestCredentialHandler implements MessageHandler {
       credentialRecord.id
     )
     if (!offerMessage) {
-      throw new AriesFrameworkError(`Could not find offer message for credential record with id ${credentialRecord.id}`)
+      throw new CredoError(`Could not find offer message for credential record with id ${credentialRecord.id}`)
     }
 
     const { message } = await this.credentialProtocol.acceptRequest(messageContext.agentContext, {

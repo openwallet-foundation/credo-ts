@@ -23,9 +23,6 @@ export class ConnectionsModule implements Module {
    * Registers the dependencies of the connections module on the dependency manager.
    */
   public register(dependencyManager: DependencyManager, featureRegistry: FeatureRegistry) {
-    // Api
-    dependencyManager.registerContextScoped(ConnectionsApi)
-
     // Config
     dependencyManager.registerInstance(ConnectionsModuleConfig, this.config)
 

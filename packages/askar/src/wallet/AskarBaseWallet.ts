@@ -20,7 +20,7 @@ import {
   isValidPrivateKey,
   JsonEncoder,
   Buffer,
-  AriesFrameworkError,
+  CredoError,
   WalletError,
   Key,
   TypedArrayEncoder,
@@ -41,8 +41,6 @@ import { didcommV1Pack, didcommV1Unpack } from './didcommV1'
 const isError = (error: unknown): error is Error => error instanceof Error
 
 export abstract class AskarBaseWallet implements Wallet {
-  protected _session?: Session
-
   protected logger: Logger
   protected signingKeyProviderRegistry: SigningProviderRegistry
 
@@ -67,12 +65,54 @@ export abstract class AskarBaseWallet implements Wallet {
   public abstract dispose(): void | Promise<void>
   public abstract profile: string
 
-  public get session() {
-    if (!this._session) {
-      throw new AriesFrameworkError('No Wallet Session is opened')
-    }
+  protected abstract store: Store
 
-    return this._session
+  /**
+   * Run callback with the session provided, the session will
+   * be closed once the callback resolves or rejects if it is not closed yet.
+   *
+   * TODO: update to new `using` syntax so we don't have to use a callback
+   */
+  public async withSession<Return>(callback: (session: Session) => Return): Promise<Awaited<Return>> {
+    let session: Session | undefined = undefined
+    try {
+      session = await this.store.session(this.profile).open()
+
+      const result = await callback(session)
+
+      return result
+    } finally {
+      if (session?.handle) {
+        await session.close()
+      }
+    }
+  }
+
+  /**
+   * Run callback with a transaction. If the callback resolves the transaction
+   * will be committed if the transaction is not closed yet. If the callback rejects
+   * the transaction will be rolled back if the transaction is not closed yet.
+   *
+   * TODO: update to new `using` syntax so we don't have to use a callback
+   */
+  public async withTransaction<Return>(callback: (transaction: Session) => Return): Promise<Awaited<Return>> {
+    let session: Session | undefined = undefined
+    try {
+      session = await this.store.transaction(this.profile).open()
+
+      const result = await callback(session)
+
+      if (session.handle) {
+        await session.commit()
+      }
+      return result
+    } catch (error) {
+      if (session?.handle) {
+        await session?.rollback()
+      }
+
+      throw error
+    }
   }
 
   public get supportedKeyTypes() {
@@ -105,15 +145,23 @@ export abstract class AskarBaseWallet implements Wallet {
         // Create key
         let key: AskarKey | undefined
         try {
-          key = privateKey
+          const _key = privateKey
             ? AskarKey.fromSecretBytes({ secretKey: privateKey, algorithm })
             : seed
             ? AskarKey.fromSeed({ seed, algorithm })
             : AskarKey.generate(algorithm)
 
+          // FIXME: we need to create a separate const '_key' so TS definitely knows _key is defined in the session callback.
+          // This will be fixed once we use the new 'using' syntax
+          key = _key
+
           const keyPublicBytes = key.publicBytes
+
           // Store key
-          await this.session.insertKey({ key, name: TypedArrayEncoder.toBase58(keyPublicBytes) })
+          await this.withSession((session) =>
+            session.insertKey({ key: _key, name: TypedArrayEncoder.toBase58(keyPublicBytes) })
+          )
+
           key.handle.free()
           return Key.fromPublicKey(keyPublicBytes, keyType)
         } catch (error) {
@@ -142,7 +190,7 @@ export abstract class AskarBaseWallet implements Wallet {
       if (error instanceof WalletError) throw error
 
       if (!isError(error)) {
-        throw new AriesFrameworkError('Attempted to throw error, but it was not of type Error', { cause: error })
+        throw new CredoError('Attempted to throw error, but it was not of type Error', { cause: error })
       }
       throw new WalletError(`Error creating key with key type '${keyType}': ${error.message}`, { cause: error })
     }
@@ -162,7 +210,9 @@ export abstract class AskarBaseWallet implements Wallet {
 
     try {
       if (isKeyTypeSupportedByAskarForPurpose(key.keyType, AskarKeyTypePurpose.KeyManagement)) {
-        askarKey = (await this.session.fetchKey({ name: key.publicKeyBase58 }))?.key
+        askarKey = await this.withSession(
+          async (session) => (await session.fetchKey({ name: key.publicKeyBase58 }))?.key
+        )
       }
 
       // FIXME: remove the custom KeyPair record now that we deprecate Indy SDK.
@@ -171,19 +221,25 @@ export abstract class AskarBaseWallet implements Wallet {
       // Fallback to fetching key from the non-askar storage, this is to handle the case
       // where a key wasn't supported at first by the wallet, but now is
       if (!askarKey) {
+        // TODO: we should probably make retrieveKeyPair + insertKey + deleteKeyPair a transaction
         keyPair = await this.retrieveKeyPair(key.publicKeyBase58)
 
         // If we have the key stored in a custom record, but it is now supported by Askar,
         // we 'import' the key into askar storage and remove the custom key record
         if (keyPair && isKeyTypeSupportedByAskarForPurpose(keyPair.keyType, AskarKeyTypePurpose.KeyManagement)) {
-          askarKey = AskarKey.fromSecretBytes({
+          const _askarKey = AskarKey.fromSecretBytes({
             secretKey: TypedArrayEncoder.fromBase58(keyPair.privateKeyBase58),
             algorithm: keyAlgFromString(keyPair.keyType),
           })
-          await this.session.insertKey({
-            name: key.publicKeyBase58,
-            key: askarKey,
-          })
+          askarKey = _askarKey
+
+          await this.withSession((session) =>
+            session.insertKey({
+              name: key.publicKeyBase58,
+              key: _askarKey,
+            })
+          )
+
           // Now we can remove it from the custom record as we have imported it into Askar
           await this.deleteKeyPair(key.publicKeyBase58)
           keyPair = undefined
@@ -241,7 +297,7 @@ export abstract class AskarBaseWallet implements Wallet {
       }
     } catch (error) {
       if (!isError(error)) {
-        throw new AriesFrameworkError('Attempted to throw error, but it was not of type Error', { cause: error })
+        throw new CredoError('Attempted to throw error, but it was not of type Error', { cause: error })
       }
       throw new WalletError(`Error signing data with verkey ${key.publicKeyBase58}. ${error.message}`, { cause: error })
     } finally {
@@ -292,7 +348,7 @@ export abstract class AskarBaseWallet implements Wallet {
     } catch (error) {
       askarKey?.handle.free()
       if (!isError(error)) {
-        throw new AriesFrameworkError('Attempted to throw error, but it was not of type Error', { cause: error })
+        throw new CredoError('Attempted to throw error, but it was not of type Error', { cause: error })
       }
       throw new WalletError(`Error verifying signature of data signed with verkey ${key.publicKeyBase58}`, {
         cause: error,
@@ -313,7 +369,9 @@ export abstract class AskarBaseWallet implements Wallet {
     recipientKeys: string[],
     senderVerkey?: string // in base58
   ): Promise<EncryptedMessage> {
-    const senderKey = senderVerkey ? await this.session.fetchKey({ name: senderVerkey }) : undefined
+    const senderKey = senderVerkey
+      ? await this.withSession((session) => session.fetchKey({ name: senderVerkey }))
+      : undefined
 
     try {
       if (senderVerkey && !senderKey) {
@@ -339,18 +397,25 @@ export abstract class AskarBaseWallet implements Wallet {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const recipientKids: string[] = protectedJson.recipients.map((r: any) => r.header.kid)
 
-    for (const recipientKid of recipientKids) {
-      const recipientKeyEntry = await this.session.fetchKey({ name: recipientKid })
-      try {
-        if (recipientKeyEntry) {
-          return didcommV1Unpack(messagePackage, recipientKeyEntry.key)
+    // TODO: how long should sessions last? Just for the duration of the unpack? Or should each item in the recipientKids get a separate session?
+    const returnValue = await this.withSession(async (session) => {
+      for (const recipientKid of recipientKids) {
+        const recipientKeyEntry = await session.fetchKey({ name: recipientKid })
+        try {
+          if (recipientKeyEntry) {
+            return didcommV1Unpack(messagePackage, recipientKeyEntry.key)
+          }
+        } finally {
+          recipientKeyEntry?.key.handle.free()
         }
-      } finally {
-        recipientKeyEntry?.key.handle.free()
       }
+    })
+
+    if (!returnValue) {
+      throw new WalletError('No corresponding recipient key found')
     }
 
-    throw new WalletError('No corresponding recipient key found')
+    return returnValue
   }
 
   public async generateNonce(): Promise<string> {
@@ -360,7 +425,7 @@ export abstract class AskarBaseWallet implements Wallet {
       return new BigNumber(nonce).toString()
     } catch (error) {
       if (!isError(error)) {
-        throw new AriesFrameworkError('Attempted to throw error, but it was not of type Error', { cause: error })
+        throw new CredoError('Attempted to throw error, but it was not of type Error', { cause: error })
       }
       throw new WalletError('Error generating nonce', { cause: error })
     }
@@ -376,7 +441,9 @@ export abstract class AskarBaseWallet implements Wallet {
 
   private async retrieveKeyPair(publicKeyBase58: string): Promise<KeyPair | null> {
     try {
-      const entryObject = await this.session.fetch({ category: 'KeyPairRecord', name: `key-${publicKeyBase58}` })
+      const entryObject = await this.withSession((session) =>
+        session.fetch({ category: 'KeyPairRecord', name: `key-${publicKeyBase58}` })
+      )
 
       if (!entryObject) return null
 
@@ -388,7 +455,7 @@ export abstract class AskarBaseWallet implements Wallet {
 
   private async deleteKeyPair(publicKeyBase58: string): Promise<void> {
     try {
-      await this.session.remove({ category: 'KeyPairRecord', name: `key-${publicKeyBase58}` })
+      await this.withSession((session) => session.remove({ category: 'KeyPairRecord', name: `key-${publicKeyBase58}` }))
     } catch (error) {
       throw new WalletError('Error removing KeyPair record', { cause: error })
     }
@@ -396,14 +463,16 @@ export abstract class AskarBaseWallet implements Wallet {
 
   private async storeKeyPair(keyPair: KeyPair): Promise<void> {
     try {
-      await this.session.insert({
-        category: 'KeyPairRecord',
-        name: `key-${keyPair.publicKeyBase58}`,
-        value: JSON.stringify(keyPair),
-        tags: {
-          keyType: keyPair.keyType,
-        },
-      })
+      await this.withSession((session) =>
+        session.insert({
+          category: 'KeyPairRecord',
+          name: `key-${keyPair.publicKeyBase58}`,
+          value: JSON.stringify(keyPair),
+          tags: {
+            keyType: keyPair.keyType,
+          },
+        })
+      )
     } catch (error) {
       if (isAskarError(error, AskarErrorCode.Duplicate)) {
         throw new WalletKeyExistsError('Key already exists')

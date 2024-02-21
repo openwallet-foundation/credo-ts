@@ -73,7 +73,7 @@ describe('UpdateAssistant | AnonCreds | v0.3.1 - v0.4', () => {
       },
     }
 
-    expect(await updateAssistant.isUpToDate()).toBe(false)
+    expect(await updateAssistant.isUpToDate('0.4')).toBe(false)
     expect(await updateAssistant.getNeededUpdates('0.4')).toEqual([
       {
         fromVersion: '0.3.1',
@@ -82,10 +82,10 @@ describe('UpdateAssistant | AnonCreds | v0.3.1 - v0.4', () => {
       },
     ])
 
-    await updateAssistant.update()
+    await updateAssistant.update({ updateToVersion: '0.4' })
 
-    expect(await updateAssistant.isUpToDate()).toBe(true)
-    expect(await updateAssistant.getNeededUpdates()).toEqual([])
+    expect(await updateAssistant.isUpToDate('0.4')).toBe(true)
+    expect(await updateAssistant.getNeededUpdates('0.4')).toEqual([])
 
     expect(storageService.contextCorrelationIdToRecords[agent.context.contextCorrelationId].records).toMatchSnapshot()
 
@@ -215,8 +215,8 @@ describe('UpdateAssistant | AnonCreds | v0.3.1 - v0.4', () => {
       },
     }
 
-    expect(await updateAssistant.isUpToDate()).toBe(false)
-    expect(await updateAssistant.getNeededUpdates()).toEqual([
+    expect(await updateAssistant.isUpToDate('0.4')).toBe(false)
+    expect(await updateAssistant.getNeededUpdates('0.4')).toEqual([
       {
         fromVersion: '0.3.1',
         toVersion: '0.4',
@@ -224,10 +224,10 @@ describe('UpdateAssistant | AnonCreds | v0.3.1 - v0.4', () => {
       },
     ])
 
-    await updateAssistant.update()
+    await updateAssistant.update({ updateToVersion: '0.4' })
 
-    expect(await updateAssistant.isUpToDate()).toBe(true)
-    expect(await updateAssistant.getNeededUpdates()).toEqual([])
+    expect(await updateAssistant.isUpToDate('0.4')).toBe(true)
+    expect(await updateAssistant.getNeededUpdates('0.4')).toEqual([])
 
     expect(storageService.contextCorrelationIdToRecords[agent.context.contextCorrelationId].records).toMatchSnapshot()
 

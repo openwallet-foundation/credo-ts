@@ -9,7 +9,7 @@ import { MessageHandlerRegistry } from '../../agent/MessageHandlerRegistry'
 import { MessageSender } from '../../agent/MessageSender'
 import { OutboundMessageContext } from '../../agent/models'
 import { ReturnRouteTypes } from '../../decorators/transport/TransportDecorator'
-import { AriesFrameworkError } from '../../error'
+import { CredoError } from '../../error'
 import { injectable } from '../../plugins'
 import { DidResolverService } from '../dids'
 import { DidRepository } from '../dids/repository'
@@ -106,7 +106,7 @@ export class ConnectionsApi {
     const { protocol, label, alias, imageUrl, autoAcceptConnection, ourDid } = config
 
     if (ourDid && config.routing) {
-      throw new AriesFrameworkError(`'routing' is disallowed when defining 'ourDid'`)
+      throw new CredoError(`'routing' is disallowed when defining 'ourDid'`)
     }
 
     const routing =
@@ -124,7 +124,7 @@ export class ConnectionsApi {
       })
     } else if (protocol === HandshakeProtocol.Connections) {
       if (ourDid) {
-        throw new AriesFrameworkError('Using an externally defined did for connections protocol is unsupported')
+        throw new CredoError('Using an externally defined did for connections protocol is unsupported')
       }
 
       result = await this.connectionService.createRequest(this.agentContext, outOfBandRecord, {
@@ -135,7 +135,7 @@ export class ConnectionsApi {
         autoAcceptConnection,
       })
     } else {
-      throw new AriesFrameworkError(`Unsupported handshake protocol ${protocol}.`)
+      throw new CredoError(`Unsupported handshake protocol ${protocol}.`)
     }
 
     const { message, connectionRecord } = result
@@ -158,15 +158,15 @@ export class ConnectionsApi {
   public async acceptRequest(connectionId: string): Promise<ConnectionRecord> {
     const connectionRecord = await this.connectionService.findById(this.agentContext, connectionId)
     if (!connectionRecord) {
-      throw new AriesFrameworkError(`Connection record ${connectionId} not found.`)
+      throw new CredoError(`Connection record ${connectionId} not found.`)
     }
     if (!connectionRecord.outOfBandId) {
-      throw new AriesFrameworkError(`Connection record ${connectionId} does not have out-of-band record.`)
+      throw new CredoError(`Connection record ${connectionId} does not have out-of-band record.`)
     }
 
     const outOfBandRecord = await this.outOfBandService.findById(this.agentContext, connectionRecord.outOfBandId)
     if (!outOfBandRecord) {
-      throw new AriesFrameworkError(`Out-of-band record ${connectionRecord.outOfBandId} not found.`)
+      throw new CredoError(`Out-of-band record ${connectionRecord.outOfBandId} not found.`)
     }
 
     // If the outOfBandRecord is reusable we need to use new routing keys for the connection, otherwise
@@ -215,11 +215,11 @@ export class ConnectionsApi {
     let outboundMessageContext
     if (connectionRecord.protocol === HandshakeProtocol.DidExchange) {
       if (!connectionRecord.outOfBandId) {
-        throw new AriesFrameworkError(`Connection ${connectionRecord.id} does not have outOfBandId!`)
+        throw new CredoError(`Connection ${connectionRecord.id} does not have outOfBandId!`)
       }
       const outOfBandRecord = await this.outOfBandService.findById(this.agentContext, connectionRecord.outOfBandId)
       if (!outOfBandRecord) {
-        throw new AriesFrameworkError(
+        throw new CredoError(
           `OutOfBand record for connection ${connectionRecord.id} with outOfBandId ${connectionRecord.outOfBandId} not found!`
         )
       }
@@ -304,7 +304,7 @@ export class ConnectionsApi {
     const connection = await this.connectionService.getById(this.agentContext, connectionId)
 
     if (toDid && options.routing) {
-      throw new AriesFrameworkError(`'routing' is disallowed when defining 'toDid'`)
+      throw new CredoError(`'routing' is disallowed when defining 'toDid'`)
     }
 
     let routing = options.routing

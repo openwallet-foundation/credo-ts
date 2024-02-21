@@ -1,7 +1,7 @@
 import type { Wallet } from '../../wallet/Wallet'
 
 import { Key, KeyType } from '../../crypto'
-import { AriesFrameworkError } from '../../error'
+import { CredoError } from '../../error'
 import { JsonEncoder } from '../../utils/JsonEncoder'
 import { TypedArrayEncoder } from '../../utils/TypedArrayEncoder'
 import { Buffer } from '../../utils/buffer'
@@ -32,7 +32,7 @@ export async function unpackAndVerifySignatureDecorator(
   const isValid = await wallet.verify({ signature, data: signedData, key })
 
   if (!isValid) {
-    throw new AriesFrameworkError('Signature is not valid')
+    throw new CredoError('Signature is not valid')
   }
 
   // TODO: return Connection instance instead of raw json

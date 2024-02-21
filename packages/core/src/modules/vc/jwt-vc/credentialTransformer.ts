@@ -4,7 +4,7 @@ import type { W3cJsonCredential } from '../models/credential/W3cJsonCredential'
 import { isObject } from 'class-validator'
 
 import { JwtPayload } from '../../../crypto/jose/jwt'
-import { AriesFrameworkError } from '../../../error'
+import { CredoError } from '../../../error'
 import { JsonTransformer, isJsonObject } from '../../../utils'
 import { W3cCredential } from '../models/credential/W3cCredential'
 import { w3cDate } from '../util'
@@ -21,7 +21,7 @@ export function getJwtPayloadFromCredential(credential: W3cCredential) {
   // Extract `nbf` and remove issuance date from vc
   const issuanceDate = Date.parse(credential.issuanceDate)
   if (isNaN(issuanceDate)) {
-    throw new AriesFrameworkError('JWT VCs must have a valid issuance date')
+    throw new CredoError('JWT VCs must have a valid issuance date')
   }
   payloadOptions.nbf = Math.floor(issuanceDate / 1000)
   delete vc.issuanceDate
@@ -53,7 +53,7 @@ export function getJwtPayloadFromCredential(credential: W3cCredential) {
   }
 
   if (Array.isArray(credential.credentialSubject) && credential.credentialSubject.length !== 1) {
-    throw new AriesFrameworkError('JWT VCs must have exactly one credential subject')
+    throw new CredoError('JWT VCs must have exactly one credential subject')
   }
 
   // Extract `sub` and remove credential subject id from vc
@@ -73,34 +73,34 @@ export function getJwtPayloadFromCredential(credential: W3cCredential) {
 
 export function getCredentialFromJwtPayload(jwtPayload: JwtPayload) {
   if (!('vc' in jwtPayload.additionalClaims) || !isJsonObject(jwtPayload.additionalClaims.vc)) {
-    throw new AriesFrameworkError("JWT does not contain a valid 'vc' claim")
+    throw new CredoError("JWT does not contain a valid 'vc' claim")
   }
 
   const jwtVc = jwtPayload.additionalClaims.vc
 
   if (!jwtPayload.nbf || !jwtPayload.iss) {
-    throw new AriesFrameworkError("JWT does not contain valid 'nbf' and 'iss' claims")
+    throw new CredoError("JWT does not contain valid 'nbf' and 'iss' claims")
   }
 
   if (Array.isArray(jwtVc.credentialSubject) && jwtVc.credentialSubject.length !== 1) {
-    throw new AriesFrameworkError('JWT VCs must have exactly one credential subject')
+    throw new CredoError('JWT VCs must have exactly one credential subject')
   }
 
   if (Array.isArray(jwtVc.credentialSubject) && !isObject(jwtVc.credentialSubject[0])) {
-    throw new AriesFrameworkError('JWT VCs must have a credential subject of type object')
+    throw new CredoError('JWT VCs must have a credential subject of type object')
   }
 
   const credentialSubject = Array.isArray(jwtVc.credentialSubject)
     ? jwtVc.credentialSubject[0]
     : jwtVc.credentialSubject
   if (!isJsonObject(credentialSubject)) {
-    throw new AriesFrameworkError('JWT VC does not have a valid credential subject')
+    throw new CredoError('JWT VC does not have a valid credential subject')
   }
   const subjectWithId = jwtPayload.sub ? { ...credentialSubject, id: jwtPayload.sub } : credentialSubject
 
   // Validate vc.id and jti
   if (jwtVc.id && jwtPayload.jti !== jwtVc.id) {
-    throw new AriesFrameworkError('JWT jti and vc.id do not match')
+    throw new CredoError('JWT jti and vc.id do not match')
   }
 
   // Validate vc.issuer and iss
@@ -108,30 +108,30 @@ export function getCredentialFromJwtPayload(jwtPayload: JwtPayload) {
     (typeof jwtVc.issuer === 'string' && jwtPayload.iss !== jwtVc.issuer) ||
     (isJsonObject(jwtVc.issuer) && jwtVc.issuer.id && jwtPayload.iss !== jwtVc.issuer.id)
   ) {
-    throw new AriesFrameworkError('JWT iss and vc.issuer(.id) do not match')
+    throw new CredoError('JWT iss and vc.issuer(.id) do not match')
   }
 
   // Validate vc.issuanceDate and nbf
   if (jwtVc.issuanceDate) {
     if (typeof jwtVc.issuanceDate !== 'string') {
-      throw new AriesFrameworkError('JWT vc.issuanceDate must be a string')
+      throw new CredoError('JWT vc.issuanceDate must be a string')
     }
 
     const issuanceDate = Date.parse(jwtVc.issuanceDate) / 1000
     if (jwtPayload.nbf !== issuanceDate) {
-      throw new AriesFrameworkError('JWT nbf and vc.issuanceDate do not match')
+      throw new CredoError('JWT nbf and vc.issuanceDate do not match')
     }
   }
 
   // Validate vc.expirationDate and exp
   if (jwtVc.expirationDate) {
     if (typeof jwtVc.expirationDate !== 'string') {
-      throw new AriesFrameworkError('JWT vc.expirationDate must be a string')
+      throw new CredoError('JWT vc.expirationDate must be a string')
     }
 
     const expirationDate = Date.parse(jwtVc.expirationDate) / 1000
     if (expirationDate !== jwtPayload.exp) {
-      throw new AriesFrameworkError('JWT exp and vc.expirationDate do not match')
+      throw new CredoError('JWT exp and vc.expirationDate do not match')
     }
   }
 
@@ -145,7 +145,7 @@ export function getCredentialFromJwtPayload(jwtPayload: JwtPayload) {
       jwtVc.credentialSubject[0].id &&
       jwtPayload.sub !== jwtVc.credentialSubject[0].id)
   ) {
-    throw new AriesFrameworkError('JWT sub and vc.credentialSubject.id do not match')
+    throw new CredoError('JWT sub and vc.credentialSubject.id do not match')
   }
 
   // Create a verifiable credential structure that is compatible with the VC data model

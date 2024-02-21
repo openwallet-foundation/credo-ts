@@ -1,7 +1,7 @@
 import type { V1CredentialProtocol } from '../V1CredentialProtocol'
 import type { MessageHandler, MessageHandlerInboundMessage, CredentialExchangeRecord } from '@credo-ts/core'
 
-import { AriesFrameworkError, getOutboundMessageContext } from '@credo-ts/core'
+import { CredoError, getOutboundMessageContext } from '@credo-ts/core'
 
 import { V1IssueCredentialMessage } from '../messages'
 
@@ -41,7 +41,7 @@ export class V1IssueCredentialHandler implements MessageHandler {
       credentialRecord.id
     )
     if (!requestMessage) {
-      throw new AriesFrameworkError(`No request message found for credential record with id '${credentialRecord.id}'`)
+      throw new CredoError(`No request message found for credential record with id '${credentialRecord.id}'`)
     }
 
     return getOutboundMessageContext(messageContext.agentContext, {

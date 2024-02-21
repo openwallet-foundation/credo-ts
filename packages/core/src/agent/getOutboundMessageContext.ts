@@ -7,7 +7,7 @@ import type { BaseRecordAny } from '../storage/BaseRecord'
 
 import { Key } from '../crypto'
 import { ServiceDecorator } from '../decorators/service/ServiceDecorator'
-import { AriesFrameworkError } from '../error'
+import { CredoError } from '../error'
 import { InvitationType, OutOfBandRepository, OutOfBandRole, OutOfBandService } from '../modules/oob'
 import { OutOfBandRecordMetadataKeys } from '../modules/oob/repository/outOfBandRecordMetadataTypes'
 import { RoutingService } from '../modules/routing'
@@ -56,13 +56,13 @@ export async function getOutboundMessageContext(
   }
 
   if (!lastReceivedMessage) {
-    throw new AriesFrameworkError(
+    throw new CredoError(
       'No connection record and no lastReceivedMessage was supplied. For connection-less exchanges the lastReceivedMessage is required.'
     )
   }
 
   if (!associatedRecord) {
-    throw new AriesFrameworkError(
+    throw new CredoError(
       'No associated record was supplied. This is required for connection-less exchanges to store the associated ~service decorator on the message.'
     )
   }
@@ -111,12 +111,10 @@ export async function getConnectionlessOutboundMessageContext(
   // These errors should not happen as they will be caught by the checks above. But if there's a path missed,
   // and to make typescript happy we add these checks.
   if (!ourService) {
-    throw new AriesFrameworkError(
-      `Could not determine our service for connection-less exchange for message ${message.id}.`
-    )
+    throw new CredoError(`Could not determine our service for connection-less exchange for message ${message.id}.`)
   }
   if (!recipientService) {
-    throw new AriesFrameworkError(
+    throw new CredoError(
       `Could not determine recipient service for connection-less exchange for message ${message.id}.`
     )
   }
@@ -188,14 +186,14 @@ async function getServicesForMessage(
     }
 
     if (!recipientService) {
-      throw new AriesFrameworkError(
+      throw new CredoError(
         `Could not find a service to send the message to. Please make sure the connection has a service or provide a service to send the message to.`
       )
     }
 
     // We have created the oob record with a message, that message should be provided here as well
     if (!lastSentMessage) {
-      throw new AriesFrameworkError('Must have lastSentMessage when out of band record has role Sender')
+      throw new CredoError('Must have lastSentMessage when out of band record has role Sender')
     }
   } else if (outOfBandRecord?.role === OutOfBandRole.Receiver) {
     // Extract recipientService from the oob record if not on a previous message
@@ -207,7 +205,7 @@ async function getServicesForMessage(
     }
 
     if (lastSentMessage && !ourService) {
-      throw new AriesFrameworkError(
+      throw new CredoError(
         `Could not find a service to send the message to. Please make sure the connection has a service or provide a service to send the message to.`
       )
     }
@@ -219,7 +217,7 @@ async function getServicesForMessage(
       agentContext.config.logger.error(
         `No out of band record associated and missing our service for connection-less exchange for message ${message.id}, while previous message has already been sent.`
       )
-      throw new AriesFrameworkError(
+      throw new CredoError(
         `No out of band record associated and missing our service for connection-less exchange for message ${message.id}, while previous message has already been sent.`
       )
     }
@@ -228,7 +226,7 @@ async function getServicesForMessage(
       agentContext.config.logger.error(
         `No out of band record associated and missing recipient service for connection-less exchange for message ${message.id}.`
       )
-      throw new AriesFrameworkError(
+      throw new CredoError(
         `No out of band record associated and missing recipient service for connection-less exchange for message ${message.id}.`
       )
     }

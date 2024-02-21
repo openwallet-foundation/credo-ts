@@ -15,6 +15,8 @@ export interface V2OfferCredentialMessageOptions {
   credentialPreview: V2CredentialPreview
   replacementId?: string
   comment?: string
+  goalCode?: string
+  goal?: string
 }
 
 export class V2OfferCredentialMessage extends AgentMessage {
@@ -23,6 +25,8 @@ export class V2OfferCredentialMessage extends AgentMessage {
     if (options) {
       this.id = options.id ?? this.generateId()
       this.comment = options.comment
+      this.goalCode = options.goalCode
+      this.goal = options.goal
       this.formats = options.formats
       this.credentialPreview = options.credentialPreview
       this.offerAttachments = options.offerAttachments
@@ -42,6 +46,15 @@ export class V2OfferCredentialMessage extends AgentMessage {
   @IsString()
   @IsOptional()
   public comment?: string
+
+  @Expose({ name: 'goal_code' })
+  @IsString()
+  @IsOptional()
+  public goalCode?: string
+
+  @IsString()
+  @IsOptional()
+  public goal?: string
 
   @Expose({ name: 'credential_preview' })
   @Type(() => V2CredentialPreview)

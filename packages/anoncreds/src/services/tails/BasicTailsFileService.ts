@@ -2,7 +2,7 @@ import type { TailsFileService } from './TailsFileService'
 import type { AnonCredsRevocationRegistryDefinition } from '../../models'
 import type { AgentContext, FileSystem } from '@credo-ts/core'
 
-import { AriesFrameworkError, InjectionSymbols, TypedArrayEncoder } from '@credo-ts/core'
+import { CredoError, InjectionSymbols, TypedArrayEncoder } from '@credo-ts/core'
 
 export class BasicTailsFileService implements TailsFileService {
   private tailsDirectoryPath?: string
@@ -28,7 +28,7 @@ export class BasicTailsFileService implements TailsFileService {
       revocationRegistryDefinition: AnonCredsRevocationRegistryDefinition
     }
   ): Promise<{ tailsFileUrl: string }> {
-    throw new AriesFrameworkError('BasicTailsFileService only supports tails file downloading')
+    throw new CredoError('BasicTailsFileService only supports tails file downloading')
   }
 
   public async getTailsFile(

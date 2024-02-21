@@ -1,6 +1,6 @@
 import type { DidJwk } from './DidJwk'
 
-import { AriesFrameworkError } from '../../../../error'
+import { CredoError } from '../../../../error'
 import { JsonEncoder } from '../../../../utils'
 import { SECURITY_JWS_CONTEXT_URL } from '../../../vc/constants'
 import { getJsonWebKey2020, DidDocumentBuilder } from '../../domain'
@@ -8,7 +8,7 @@ import { parseDid } from '../../domain/parse'
 
 export function getDidJwkDocument(didJwk: DidJwk) {
   if (!didJwk.allowsEncrypting && !didJwk.allowsSigning) {
-    throw new AriesFrameworkError('At least one of allowsSigning or allowsEncrypting must be enabled')
+    throw new CredoError('At least one of allowsSigning or allowsEncrypting must be enabled')
   }
 
   const parsed = parseDid(didJwk.did)

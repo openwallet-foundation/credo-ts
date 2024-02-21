@@ -3,7 +3,7 @@ import type { DidResolver } from '../domain/DidResolver'
 import type { DidResolutionOptions, DidResolutionResult, ParsedDid } from '../types'
 
 import { InjectionSymbols } from '../../../constants'
-import { AriesFrameworkError } from '../../../error'
+import { CredoError } from '../../../error'
 import { Logger } from '../../../logger'
 import { injectable, inject } from '../../../plugins'
 import { JsonTransformer } from '../../../utils'
@@ -126,12 +126,19 @@ export class DidResolverService {
     } = await this.resolve(agentContext, did)
 
     if (!didDocument) {
-      throw new AriesFrameworkError(`Unable to resolve did document for did '${did}': ${error} ${message}`)
+      throw new CredoError(`Unable to resolve did document for did '${did}': ${error} ${message}`)
     }
     return didDocument
   }
 
   private findResolver(parsed: ParsedDid): DidResolver | null {
     return this.didsModuleConfig.resolvers.find((r) => r.supportedMethods.includes(parsed.method)) ?? null
+  }
+
+  /**
+   * Get all supported did methods for the did resolver.
+   */
+  public get supportedMethods() {
+    return Array.from(new Set(this.didsModuleConfig.resolvers.flatMap((r) => r.supportedMethods)))
   }
 }

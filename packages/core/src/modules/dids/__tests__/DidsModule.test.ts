@@ -1,5 +1,4 @@
 import { DependencyManager } from '../../../plugins/DependencyManager'
-import { DidsApi } from '../DidsApi'
 import { DidsModule } from '../DidsModule'
 import { DidsModuleConfig } from '../DidsModuleConfig'
 import { DidRepository } from '../repository'
@@ -14,9 +13,6 @@ describe('DidsModule', () => {
   test('registers dependencies on the dependency manager', () => {
     const didsModule = new DidsModule()
     didsModule.register(dependencyManager)
-
-    expect(dependencyManager.registerContextScoped).toHaveBeenCalledTimes(1)
-    expect(dependencyManager.registerContextScoped).toHaveBeenCalledWith(DidsApi)
 
     expect(dependencyManager.registerInstance).toHaveBeenCalledTimes(1)
     expect(dependencyManager.registerInstance).toHaveBeenCalledWith(DidsModuleConfig, didsModule.config)

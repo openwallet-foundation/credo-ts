@@ -99,7 +99,7 @@ module.exports = {
       },
     },
     {
-      files: ['demo/**'],
+      files: ['demo/**', 'demo-openid/**'],
       rules: {
         'no-console': 'off',
       },
@@ -112,6 +112,7 @@ module.exports = {
         'jest.*.ts',
         'samples/**',
         'demo/**',
+        'demo-openid/**',
         'scripts/**',
         '**/tests/**',
       ],

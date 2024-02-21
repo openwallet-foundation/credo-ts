@@ -1,8 +1,8 @@
 import type { OutboundMessageContext } from '../agent/models'
 
-import { AriesFrameworkError } from './AriesFrameworkError'
+import { CredoError } from './CredoError'
 
-export class MessageSendingError extends AriesFrameworkError {
+export class MessageSendingError extends CredoError {
   public outboundMessageContext: OutboundMessageContext
   public constructor(
     message: string,

@@ -4,7 +4,7 @@ import type { ClaimFormat } from '../ClaimFormat'
 import { Transform, TransformationType } from 'class-transformer'
 import { ValidationError } from 'class-validator'
 
-import { AriesFrameworkError, ClassValidationError } from '../../../../error'
+import { CredoError, ClassValidationError } from '../../../../error'
 import { JsonTransformer } from '../../../../utils'
 import { W3cJsonLdVerifiableCredential } from '../../data-integrity/models/W3cJsonLdVerifiableCredential'
 import { W3cJwtVerifiableCredential } from '../../jwt-vc/W3cJwtVerifiableCredential'
@@ -17,7 +17,7 @@ const getCredential = (v: unknown) => {
         JsonTransformer.fromJSON(v, W3cJsonLdVerifiableCredential, { validate: false })
   } catch (error) {
     if (error instanceof ValidationError || error instanceof ClassValidationError) throw error
-    throw new AriesFrameworkError(`value '${v}' is not a valid W3cJwtVerifiableCredential. ${error.message}`)
+    throw new CredoError(`value '${v}' is not a valid W3cJwtVerifiableCredential. ${error.message}`)
   }
 }
 
@@ -39,7 +39,7 @@ export function W3cVerifiableCredentialTransformer() {
 
 export type W3cVerifiableCredential<Format extends ClaimFormat.JwtVc | ClaimFormat.LdpVc | unknown = unknown> =
   Format extends ClaimFormat.JwtVc
-    ? W3cJsonLdVerifiableCredential
-    : Format extends ClaimFormat.LdpVc
     ? W3cJwtVerifiableCredential
+    : Format extends ClaimFormat.LdpVc
+    ? W3cJsonLdVerifiableCredential
     : W3cJsonLdVerifiableCredential | W3cJwtVerifiableCredential

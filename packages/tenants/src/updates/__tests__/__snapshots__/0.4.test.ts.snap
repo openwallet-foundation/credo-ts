@@ -1,0 +1,64 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`UpdateAssistant | Tenants | v0.4 - v0.5 should correctly update the tenant records 1`] = `
+{
+  "1-4e4f-41d9-94c4-f49351b811f1": {
+    "id": "1-4e4f-41d9-94c4-f49351b811f1",
+    "tags": {
+      "label": "Tenant 1",
+      "storageVersion": "0.4",
+    },
+    "type": "TenantRecord",
+    "value": {
+      "config": {
+        "label": "Tenant 1",
+        "walletConfig": {
+          "id": "tenant-1-4e4f-41d9-94c4-f49351b811f1",
+          "key": "Bs2YXMZ4mRRYSEzHPGVMuGfAD3qt9xwjgbMFNW4wuVKr",
+          "keyDerivationMethod": "RAW",
+        },
+      },
+      "createdAt": "2023-11-23T22:50:20.522Z",
+      "id": "1-4e4f-41d9-94c4-f49351b811f1",
+      "metadata": {},
+      "storageVersion": "0.4",
+      "updatedAt": "2023-11-23T22:50:20.522Z",
+    },
+  },
+  "2-4e4f-41d9-94c4-f49351b811f1": {
+    "id": "2-4e4f-41d9-94c4-f49351b811f1",
+    "tags": {
+      "label": "Tenant 2",
+      "storageVersion": "0.4",
+    },
+    "type": "TenantRecord",
+    "value": {
+      "config": {
+        "label": "Tenant 2",
+        "walletConfig": {
+          "id": "tenant-2-4e4f-41d9-94c4-f49351b811f1",
+          "key": "5eB1uJwE7c9hkyJ8cba5ziPCZ5GkXNjnhVKh95jBMfou",
+          "keyDerivationMethod": "RAW",
+        },
+      },
+      "createdAt": "2023-11-23T22:50:20.522Z",
+      "id": "2-4e4f-41d9-94c4-f49351b811f1",
+      "metadata": {},
+      "storageVersion": "0.4",
+      "updatedAt": "2023-11-23T22:50:20.522Z",
+    },
+  },
+  "STORAGE_VERSION_RECORD_ID": {
+    "id": "STORAGE_VERSION_RECORD_ID",
+    "tags": {},
+    "type": "StorageVersionRecord",
+    "value": {
+      "createdAt": "2023-11-23T22:50:20.522Z",
+      "id": "STORAGE_VERSION_RECORD_ID",
+      "metadata": {},
+      "storageVersion": "0.5",
+      "updatedAt": "2023-11-23T22:50:20.522Z",
+    },
+  },
+}
+`;

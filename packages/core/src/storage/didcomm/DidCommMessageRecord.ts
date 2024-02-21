@@ -2,7 +2,7 @@ import type { DidCommMessageRole } from './DidCommMessageRole'
 import type { ConstructableAgentMessage } from '../../agent/AgentMessage'
 import type { PlaintextMessage } from '../../types'
 
-import { AriesFrameworkError } from '../../error'
+import { CredoError } from '../../error'
 import { JsonTransformer } from '../../utils/JsonTransformer'
 import { canHandleMessageType, parseMessageType } from '../../utils/messageType'
 import { isJsonObject } from '../../utils/type'
@@ -93,7 +93,7 @@ export class DidCommMessageRecord extends BaseRecord<DefaultDidCommMessageTags> 
     const messageType = parseMessageType(this.message['@type'] as string)
 
     if (!canHandleMessageType(messageClass, messageType)) {
-      throw new AriesFrameworkError('Provided message class type does not match type of stored message')
+      throw new CredoError('Provided message class type does not match type of stored message')
     }
 
     return JsonTransformer.fromJSON(this.message, messageClass) as InstanceType<MessageClass>

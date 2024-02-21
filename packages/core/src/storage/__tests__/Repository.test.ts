@@ -8,7 +8,7 @@ import { Subject } from 'rxjs'
 import { InMemoryStorageService } from '../../../../../tests/InMemoryStorageService'
 import { getAgentConfig, getAgentContext, mockFunction } from '../../../tests/helpers'
 import { EventEmitter } from '../../agent/EventEmitter'
-import { AriesFrameworkError, RecordDuplicateError, RecordNotFoundError } from '../../error'
+import { CredoError, RecordDuplicateError, RecordNotFoundError } from '../../error'
 import { Repository } from '../Repository'
 import { RepositoryEventTypes } from '../RepositoryEvents'
 
@@ -205,9 +205,9 @@ describe('Repository', () => {
     })
 
     it('should return null if the storage service throws an error that is not RecordNotFoundError', async () => {
-      mockFunction(storageMock.getById).mockReturnValue(Promise.reject(new AriesFrameworkError('Not found')))
+      mockFunction(storageMock.getById).mockReturnValue(Promise.reject(new CredoError('Not found')))
 
-      expect(repository.findById(agentContext, 'test-id')).rejects.toThrowError(AriesFrameworkError)
+      expect(repository.findById(agentContext, 'test-id')).rejects.toThrowError(CredoError)
       expect(storageMock.getById).toBeCalledWith(agentContext, TestRecord, 'test-id')
     })
   })

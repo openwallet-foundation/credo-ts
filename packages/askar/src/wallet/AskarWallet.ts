@@ -4,7 +4,7 @@ import {
   WalletExportPathExistsError,
   WalletInvalidKeyError,
   WalletDuplicateError,
-  AriesFrameworkError,
+  CredoError,
   Logger,
   WalletError,
   InjectionSymbols,
@@ -13,16 +13,14 @@ import {
   WalletNotFoundError,
   KeyDerivationMethod,
   WalletImportPathExistsError,
+  WalletExportUnsupportedError,
 } from '@credo-ts/core'
-// eslint-disable-next-line import/order
 import { Store } from '@hyperledger/aries-askar-shared'
-
 import { inject, injectable } from 'tsyringe'
 
 import { AskarErrorCode, isAskarError, keyDerivationMethodToStoreKeyMethod, uriFromWalletConfig } from '../utils'
 
 import { AskarBaseWallet } from './AskarBaseWallet'
-import { AskarProfileWallet } from './AskarProfileWallet'
 import { isAskarWalletSqliteStorageConfig } from './AskarWalletStorageConfig'
 
 /**
@@ -54,7 +52,7 @@ export class AskarWallet extends AskarBaseWallet {
 
   public get store() {
     if (!this._store) {
-      throw new AriesFrameworkError(
+      throw new CredoError(
         'Wallet has not been initialized yet. Make sure to await agent.initialize() before using the agent.'
       )
     }
@@ -89,14 +87,6 @@ export class AskarWallet extends AskarBaseWallet {
   }
 
   /**
-   * TODO: we can add this method, and add custom logic in the tenants module
-   * or we can try to register the store on the agent context
-   */
-  public async getProfileWallet() {
-    return new AskarProfileWallet(this.store, this.logger, this.signingKeyProviderRegistry)
-  }
-
-  /**
    * @throws {WalletDuplicateError} if the wallet already exists
    * @throws {WalletError} if another error occurs
    */
@@ -125,8 +115,11 @@ export class AskarWallet extends AskarBaseWallet {
         keyMethod: askarWalletConfig.keyMethod,
         passKey: askarWalletConfig.passKey,
       })
+
+      // TODO: Should we do something to check if it exists?
+      // Like this.withSession()?
+
       this.walletConfig = walletConfig
-      this._session = await this._store.openSession()
     } catch (error) {
       // FIXME: Askar should throw a Duplicate error code, but is currently returning Encryption
       // And if we provide the very same wallet key, it will open it without any error
@@ -212,7 +205,9 @@ export class AskarWallet extends AskarBaseWallet {
           keyMethod: keyDerivationMethodToStoreKeyMethod(rekeyDerivation ?? KeyDerivationMethod.Argon2IMod),
         })
       }
-      this._session = await this._store.openSession()
+
+      // TODO: Should we do something to check if it exists?
+      // Like this.withSession()?
 
       this.walletConfig = walletConfig
     } catch (error) {
@@ -286,10 +281,10 @@ export class AskarWallet extends AskarBaseWallet {
     const { path: sourcePath } = uriFromWalletConfig(this.walletConfig, this.fileSystem.dataPath)
 
     if (isAskarWalletSqliteStorageConfig(this.walletConfig.storage) && this.walletConfig.storage?.inMemory) {
-      throw new WalletError('Export is not supported for in memory wallet')
+      throw new WalletExportUnsupportedError('Export is not supported for in memory wallet')
     }
     if (!sourcePath) {
-      throw new WalletError('Export is only supported for SQLite backend')
+      throw new WalletExportUnsupportedError('Export is only supported for SQLite backend')
     }
 
     try {
@@ -335,6 +330,7 @@ export class AskarWallet extends AskarBaseWallet {
       throw new WalletError('Import is only supported for SQLite backend')
     }
 
+    let sourceWalletStore: Store | undefined = undefined
     try {
       const importWalletConfig = await this.getAskarWalletConfig(walletConfig)
 
@@ -346,11 +342,18 @@ export class AskarWallet extends AskarBaseWallet {
       // Make sure destination path exists
       await this.fileSystem.createDirectory(destinationPath)
       // Open imported wallet and copy to destination
-      const sourceWalletStore = await Store.open({
+      sourceWalletStore = await Store.open({
         uri: `sqlite://${sourcePath}`,
         keyMethod: importWalletConfig.keyMethod,
         passKey: importKey,
       })
+
+      const defaultProfile = await sourceWalletStore.getDefaultProfile()
+      if (defaultProfile !== importWalletConfig.profile) {
+        throw new WalletError(
+          `Trying to import wallet with walletConfig.id ${importWalletConfig.profile}, however the wallet contains a default profile with id ${defaultProfile}. The walletConfig.id MUST match with the default profile. In the future this behavior may be changed. See https://github.com/hyperledger/aries-askar/issues/221 for more information.`
+        )
+      }
 
       await sourceWalletStore.copyTo({
         recreate: false,
@@ -361,6 +364,7 @@ export class AskarWallet extends AskarBaseWallet {
 
       await sourceWalletStore.close()
     } catch (error) {
+      await sourceWalletStore?.close()
       const errorMessage = `Error importing wallet '${walletConfig.id}': ${error.message}`
       this.logger.error(errorMessage, {
         error,
@@ -388,9 +392,7 @@ export class AskarWallet extends AskarBaseWallet {
     }
 
     try {
-      await this.session.close()
       await this.store.close()
-      this._session = undefined
       this._store = undefined
     } catch (error) {
       const errorMessage = `Error closing wallet': ${error.message}`

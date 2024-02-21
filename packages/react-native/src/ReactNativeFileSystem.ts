@@ -1,6 +1,6 @@
 import type { FileSystem, DownloadToFileOptions } from '@credo-ts/core'
 
-import { TypedArrayEncoder, AriesFrameworkError, getDirFromFilePath, Buffer } from '@credo-ts/core'
+import { TypedArrayEncoder, CredoError, getDirFromFilePath, Buffer } from '@credo-ts/core'
 import { Platform } from 'react-native'
 import * as RNFS from 'react-native-fs'
 
@@ -83,7 +83,7 @@ export class ReactNativeFileSystem implements FileSystem {
       // If hash doesn't match, remove file and throw error
       if (fileHashBuffer.compare(options.verifyHash.hash) !== 0) {
         await RNFS.unlink(path)
-        throw new AriesFrameworkError(
+        throw new CredoError(
           `Hash of downloaded file does not match expected hash. Expected: ${TypedArrayEncoder.toBase58(
             options.verifyHash.hash
           )}, Actual: ${TypedArrayEncoder.toBase58(fileHashBuffer)}`
