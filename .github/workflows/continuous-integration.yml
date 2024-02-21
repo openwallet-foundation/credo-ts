@@ -105,6 +105,7 @@ jobs:
         with:
           name: coverage-artifacts
           path: coverage/${{ matrix.shard }}.json
+          overwrite: true
 
   e2e-tests:
     runs-on: ubuntu-20.04
