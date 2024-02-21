@@ -2,7 +2,7 @@ import type { ActionMenuRole } from '../ActionMenuRole'
 import type { ActionMenuState } from '../ActionMenuState'
 import type { TagsBase } from '@credo-ts/core'
 
-import { AriesFrameworkError, BaseRecord, utils } from '@credo-ts/core'
+import { CredoError, BaseRecord, utils } from '@credo-ts/core'
 import { Type } from 'class-transformer'
 
 import { ActionMenuSelection, ActionMenu } from '../models'
@@ -88,7 +88,7 @@ export class ActionMenuRecord
     }
 
     if (!expectedStates.includes(this.state)) {
-      throw new AriesFrameworkError(
+      throw new CredoError(
         `Action Menu record is in invalid state ${this.state}. Valid states are: ${expectedStates.join(', ')}.`
       )
     }
@@ -96,7 +96,7 @@ export class ActionMenuRecord
 
   public assertRole(expectedRole: ActionMenuRole) {
     if (this.role !== expectedRole) {
-      throw new AriesFrameworkError(`Action Menu record has invalid role ${this.role}. Expected role ${expectedRole}.`)
+      throw new CredoError(`Action Menu record has invalid role ${this.role}. Expected role ${expectedRole}.`)
     }
   }
 }

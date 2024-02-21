@@ -1,7 +1,7 @@
 import type { VerificationMethod } from './VerificationMethod'
 
 import { Key } from '../../../../crypto/Key'
-import { AriesFrameworkError } from '../../../../error'
+import { CredoError } from '../../../../error'
 
 export const VERIFICATION_METHOD_TYPE_MULTIKEY = 'Multikey'
 
@@ -41,7 +41,7 @@ export function isMultikey(
  */
 export function getKeyFromMultikey(verificationMethod: VerificationMethod & { type: 'Multikey' }) {
   if (!verificationMethod.publicKeyMultibase) {
-    throw new AriesFrameworkError(
+    throw new CredoError(
       `Missing publicKeyMultibase on verification method with type ${VERIFICATION_METHOD_TYPE_MULTIKEY}`
     )
   }

@@ -8,7 +8,7 @@ import type { V1RevocationNotificationMessage } from '../messages/V1RevocationNo
 import { EventEmitter } from '../../../../../agent/EventEmitter'
 import { MessageHandlerRegistry } from '../../../../../agent/MessageHandlerRegistry'
 import { InjectionSymbols } from '../../../../../constants'
-import { AriesFrameworkError } from '../../../../../error/AriesFrameworkError'
+import { CredoError } from '../../../../../error/CredoError'
 import { Logger } from '../../../../../logger'
 import { inject, injectable } from '../../../../../plugins'
 import { CredentialEventTypes } from '../../../CredentialEvents'
@@ -86,7 +86,7 @@ export class RevocationNotificationService {
     try {
       const threadIdGroups = threadId.match(v1ThreadRegex)
       if (!threadIdGroups) {
-        throw new AriesFrameworkError(
+        throw new CredoError(
           `Incorrect revocation notification threadId format: \n${threadId}\ndoes not match\n"indy::<revocation_registry_id>::<credential_revocation_id>"`
         )
       }
@@ -141,7 +141,7 @@ export class RevocationNotificationService {
     const credentialId = messageContext.message.credentialId
 
     if (![v2IndyRevocationFormat, v2AnonCredsRevocationFormat].includes(messageContext.message.revocationFormat)) {
-      throw new AriesFrameworkError(
+      throw new CredoError(
         `Unknown revocation format: ${messageContext.message.revocationFormat}. Supported formats are indy-anoncreds and anoncreds`
       )
     }
@@ -150,7 +150,7 @@ export class RevocationNotificationService {
       const credentialIdGroups =
         credentialId.match(v2IndyRevocationIdentifierRegex) ?? credentialId.match(v2AnonCredsRevocationIdentifierRegex)
       if (!credentialIdGroups) {
-        throw new AriesFrameworkError(
+        throw new CredoError(
           `Incorrect revocation notification credentialId format: \n${credentialId}\ndoes not match\n"<revocation_registry_id>::<credential_revocation_id>"`
         )
       }

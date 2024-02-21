@@ -5,7 +5,7 @@ import type { ConnectionRecord } from '../repository/ConnectionRecord'
 
 import { OutboundMessageContext } from '../../../agent/models'
 import { InjectionSymbols } from '../../../constants'
-import { AriesFrameworkError } from '../../../error'
+import { CredoError } from '../../../error'
 import { Logger } from '../../../logger'
 import { inject, injectable } from '../../../plugins'
 import { AckStatus } from '../../common'
@@ -47,9 +47,7 @@ export class DidRotateService {
     const didRotateMetadata = connection.metadata.get(ConnectionMetadataKeys.DidRotate)
 
     if (didRotateMetadata) {
-      throw new AriesFrameworkError(
-        `There is already an existing opened did rotation flow for connection id ${connection.id}`
-      )
+      throw new CredoError(`There is already an existing opened did rotation flow for connection id ${connection.id}`)
     }
 
     let didDocument, mediatorId
@@ -61,7 +59,7 @@ export class DidRotateService {
       // Otherwise, create a did:peer based on the provided routing
     } else {
       if (!routing) {
-        throw new AriesFrameworkError('Routing configuration must be defined when rotating to a new peer did')
+        throw new CredoError('Routing configuration must be defined when rotating to a new peer did')
       }
 
       didDocument = await createPeerDidFromServices(
@@ -215,11 +213,11 @@ export class DidRotateService {
     const didRotateMetadata = connection.metadata.get(ConnectionMetadataKeys.DidRotate)
 
     if (!didRotateMetadata) {
-      throw new AriesFrameworkError(`No did rotation data found for connection with id '${connection.id}'`)
+      throw new CredoError(`No did rotation data found for connection with id '${connection.id}'`)
     }
 
     if (didRotateMetadata.threadId !== message.threadId) {
-      throw new AriesFrameworkError(
+      throw new CredoError(
         `Existing did rotation flow thread id '${didRotateMetadata.threadId} does not match incoming message'`
       )
     }
@@ -254,7 +252,7 @@ export class DidRotateService {
     const didRotateMetadata = connection.metadata.get(ConnectionMetadataKeys.DidRotate)
 
     if (!didRotateMetadata) {
-      throw new AriesFrameworkError(`No did rotation data found for connection with id '${connection.id}'`)
+      throw new CredoError(`No did rotation data found for connection with id '${connection.id}'`)
     }
 
     connection.metadata.delete(ConnectionMetadataKeys.DidRotate)
@@ -266,7 +264,7 @@ export class DidRotateService {
     const didRotateMetadata = connection.metadata.get(ConnectionMetadataKeys.DidRotate)
 
     if (!didRotateMetadata) {
-      throw new AriesFrameworkError(`No did rotation data found for connection with id '${connection.id}'`)
+      throw new CredoError(`No did rotation data found for connection with id '${connection.id}'`)
     }
 
     connection.metadata.delete(ConnectionMetadataKeys.DidRotate)

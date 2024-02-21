@@ -9,7 +9,7 @@ import type {
 import type { ProofFormatSpec } from '../../models/ProofFormatSpec'
 import type { ProofExchangeRecord } from '../../repository'
 
-import { AriesFrameworkError } from '../../../../error'
+import { CredoError } from '../../../../error'
 import { DidCommMessageRepository, DidCommMessageRole } from '../../../../storage'
 
 import { V2PresentationMessage, V2ProposePresentationMessage, V2RequestPresentationMessage } from './messages'
@@ -30,12 +30,14 @@ export class ProofFormatCoordinator<PFs extends ProofFormatService[]> {
       proofRecord,
       comment,
       goalCode,
+      goal,
     }: {
       formatServices: ProofFormatService[]
       proofFormats: ProofFormatPayload<ExtractProofFormats<PFs>, 'createProposal'>
       proofRecord: ProofExchangeRecord
       comment?: string
       goalCode?: string
+      goal?: string
     }
   ): Promise<V2ProposePresentationMessage> {
     const didCommMessageRepository = agentContext.dependencyManager.resolve(DidCommMessageRepository)
@@ -60,6 +62,7 @@ export class ProofFormatCoordinator<PFs extends ProofFormatService[]> {
       proposalAttachments,
       comment: comment,
       goalCode,
+      goal,
     })
 
     message.setThread({ threadId: proofRecord.threadId, parentThreadId: proofRecord.parentThreadId })
@@ -111,6 +114,7 @@ export class ProofFormatCoordinator<PFs extends ProofFormatService[]> {
       formatServices,
       comment,
       goalCode,
+      goal,
       presentMultiple,
       willConfirm,
     }: {
@@ -119,6 +123,7 @@ export class ProofFormatCoordinator<PFs extends ProofFormatService[]> {
       formatServices: ProofFormatService[]
       comment?: string
       goalCode?: string
+      goal?: string
       presentMultiple?: boolean
       willConfirm?: boolean
     }
@@ -156,6 +161,7 @@ export class ProofFormatCoordinator<PFs extends ProofFormatService[]> {
       requestAttachments,
       comment,
       goalCode,
+      goal,
       presentMultiple,
       willConfirm,
     })
@@ -186,6 +192,7 @@ export class ProofFormatCoordinator<PFs extends ProofFormatService[]> {
       proofRecord,
       comment,
       goalCode,
+      goal,
       presentMultiple,
       willConfirm,
     }: {
@@ -194,6 +201,7 @@ export class ProofFormatCoordinator<PFs extends ProofFormatService[]> {
       proofRecord: ProofExchangeRecord
       comment?: string
       goalCode?: string
+      goal?: string
       presentMultiple?: boolean
       willConfirm?: boolean
     }
@@ -219,6 +227,7 @@ export class ProofFormatCoordinator<PFs extends ProofFormatService[]> {
       comment,
       requestAttachments,
       goalCode,
+      goal,
       presentMultiple,
       willConfirm,
     })
@@ -273,6 +282,7 @@ export class ProofFormatCoordinator<PFs extends ProofFormatService[]> {
       comment,
       lastPresentation,
       goalCode,
+      goal,
     }: {
       proofRecord: ProofExchangeRecord
       proofFormats?: ProofFormatPayload<ExtractProofFormats<PFs>, 'acceptRequest'>
@@ -280,6 +290,7 @@ export class ProofFormatCoordinator<PFs extends ProofFormatService[]> {
       comment?: string
       lastPresentation?: boolean
       goalCode?: string
+      goal?: string
     }
   ) {
     const didCommMessageRepository = agentContext.dependencyManager.resolve(DidCommMessageRepository)
@@ -326,6 +337,7 @@ export class ProofFormatCoordinator<PFs extends ProofFormatService[]> {
       comment,
       lastPresentation,
       goalCode,
+      goal,
     })
 
     message.setThread({ threadId: proofRecord.threadId, parentThreadId: proofRecord.parentThreadId })
@@ -523,7 +535,7 @@ export class ProofFormatCoordinator<PFs extends ProofFormatService[]> {
     const attachment = attachments.find((attachment) => attachment.id === attachmentId)
 
     if (!attachment) {
-      throw new AriesFrameworkError(`Attachment with id ${attachmentId} not found in attachments.`)
+      throw new CredoError(`Attachment with id ${attachmentId} not found in attachments.`)
     }
 
     return attachment
@@ -532,7 +544,7 @@ export class ProofFormatCoordinator<PFs extends ProofFormatService[]> {
   private getAttachmentIdForService(credentialFormatService: ProofFormatService, formats: ProofFormatSpec[]) {
     const format = formats.find((format) => credentialFormatService.supportsFormat(format.format))
 
-    if (!format) throw new AriesFrameworkError(`No attachment found for service ${credentialFormatService.formatKey}`)
+    if (!format) throw new CredoError(`No attachment found for service ${credentialFormatService.formatKey}`)
 
     return format.attachmentId
   }

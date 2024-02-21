@@ -17,7 +17,7 @@ import {
   Protocol,
   ProofRepository,
   DidCommMessageRepository,
-  AriesFrameworkError,
+  CredoError,
   MessageValidator,
   ProofExchangeRecord,
   ProofState,
@@ -111,7 +111,7 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
     const didCommMessageRepository = agentContext.dependencyManager.resolve(DidCommMessageRepository)
 
     if (!proofFormats.indy) {
-      throw new AriesFrameworkError('Missing indy proof format in v1 create proposal call.')
+      throw new CredoError('Missing indy proof format in v1 create proposal call.')
     }
 
     const presentationProposal = new V1PresentationPreview({
@@ -357,7 +357,7 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
     const didCommMessageRepository = agentContext.dependencyManager.resolve(DidCommMessageRepository)
 
     if (!proofFormats.indy) {
-      throw new AriesFrameworkError('Missing indy proof request data for v1 create request')
+      throw new CredoError('Missing indy proof request data for v1 create request')
     }
 
     // Create record
@@ -419,9 +419,7 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
 
     const requestAttachment = proofRequestMessage.getRequestAttachmentById(INDY_PROOF_REQUEST_ATTACHMENT_ID)
     if (!requestAttachment) {
-      throw new AriesFrameworkError(
-        `Indy attachment with id ${INDY_PROOF_REQUEST_ATTACHMENT_ID} not found in request message`
-      )
+      throw new CredoError(`Indy attachment with id ${INDY_PROOF_REQUEST_ATTACHMENT_ID} not found in request message`)
     }
 
     // proof record already exists, this means we are the message is sent as reply to a proposal we sent
@@ -503,13 +501,13 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
     const didCommMessageRepository = agentContext.dependencyManager.resolve(DidCommMessageRepository)
 
     if (!proofRecord.connectionId) {
-      throw new AriesFrameworkError(
+      throw new CredoError(
         `No connectionId found for proof record '${proofRecord.id}'. Connection-less verification does not support negotiation.`
       )
     }
 
     if (!proofFormats.indy) {
-      throw new AriesFrameworkError('Missing indy proof format in v1 negotiate request call.')
+      throw new CredoError('Missing indy proof format in v1 negotiate request call.')
     }
 
     const presentationProposal = new V1PresentationPreview({
@@ -638,7 +636,7 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
     const indyProofRequest = requestMessage.indyProofRequest
 
     if (!requestAttachment || !indyProofRequest) {
-      throw new AriesFrameworkError(
+      throw new CredoError(
         `Missing indy attachment in request message for presentation with thread id ${proofRecord.threadId}`
       )
     }
@@ -698,7 +696,7 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
     const indyProofRequest = requestMessage.indyProofRequest
 
     if (!requestAttachment || !indyProofRequest) {
-      throw new AriesFrameworkError(
+      throw new CredoError(
         `Missing indy attachment in request message for presentation with thread id ${proofRecord.threadId}`
       )
     }
@@ -1153,7 +1151,7 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
     if (formatKeys.length === 0) return
 
     if (formatKeys.length !== 1 || !formatKeys.includes('indy')) {
-      throw new AriesFrameworkError('Only indy proof format is supported for present proof v1 protocol')
+      throw new CredoError('Only indy proof format is supported for present proof v1 protocol')
     }
   }
 }

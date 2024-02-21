@@ -7,7 +7,7 @@ import type { ConnectionService } from '../services/ConnectionService'
 
 import { TransportService } from '../../../agent/TransportService'
 import { OutboundMessageContext } from '../../../agent/models'
-import { AriesFrameworkError } from '../../../error/AriesFrameworkError'
+import { CredoError } from '../../../error/CredoError'
 import { tryParseDid } from '../../dids/domain/parse'
 import { ConnectionRequestMessage } from '../messages'
 import { HandshakeProtocol } from '../models'
@@ -38,7 +38,7 @@ export class ConnectionRequestHandler implements MessageHandler {
     const { agentContext, connection, recipientKey, senderKey, message, sessionId } = messageContext
 
     if (!recipientKey || !senderKey) {
-      throw new AriesFrameworkError('Unable to process connection request without senderVerkey or recipientKey')
+      throw new CredoError('Unable to process connection request without senderVerkey or recipientKey')
     }
 
     const parentThreadId = message.thread?.parentThreadId
@@ -54,18 +54,16 @@ export class ConnectionRequestHandler implements MessageHandler {
         : await this.outOfBandService.findCreatedByRecipientKey(agentContext, recipientKey)
 
     if (!outOfBandRecord) {
-      throw new AriesFrameworkError(`Out-of-band record for recipient key ${recipientKey.fingerprint} was not found.`)
+      throw new CredoError(`Out-of-band record for recipient key ${recipientKey.fingerprint} was not found.`)
     }
 
     if (connection && !outOfBandRecord.reusable) {
-      throw new AriesFrameworkError(
-        `Connection record for non-reusable out-of-band ${outOfBandRecord.id} already exists.`
-      )
+      throw new CredoError(`Connection record for non-reusable out-of-band ${outOfBandRecord.id} already exists.`)
     }
 
     const receivedDidRecord = await this.didRepository.findReceivedDidByRecipientKey(agentContext, senderKey)
     if (receivedDidRecord) {
-      throw new AriesFrameworkError(`A received did record for sender key ${senderKey.fingerprint} already exists.`)
+      throw new CredoError(`A received did record for sender key ${senderKey.fingerprint} already exists.`)
     }
 
     const connectionRecord = await this.connectionService.processRequest(messageContext, outOfBandRecord)

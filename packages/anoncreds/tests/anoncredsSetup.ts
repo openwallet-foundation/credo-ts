@@ -20,7 +20,7 @@ import {
   CacheModule,
   InMemoryLruCache,
   Agent,
-  AriesFrameworkError,
+  CredoError,
   AutoAcceptCredential,
   CredentialEventTypes,
   CredentialsModule,
@@ -49,6 +49,7 @@ import testLogger from '../../core/tests/logger'
 import { InMemoryTailsFileService } from './InMemoryTailsFileService'
 import { LocalDidResolver } from './LocalDidResolver'
 import { anoncreds } from './helpers'
+import { anoncredsDefinitionFourAttributesNoRevocation } from './preCreatedAnonCredsDefinition'
 
 // Helper type to get the type of the agents (with the custom modules) for the credential tests
 export type AnonCredsTestsAgent = Agent<
@@ -65,6 +66,17 @@ export const getAnonCredsModules = ({
   autoAcceptProofs?: AutoAcceptProof
   registries?: [AnonCredsRegistry, ...AnonCredsRegistry[]]
 } = {}) => {
+  // Add support for resolving pre-created credential definitions and schemas
+  const inMemoryAnonCredsRegistry = new InMemoryAnonCredsRegistry({
+    existingCredentialDefinitions: {
+      [anoncredsDefinitionFourAttributesNoRevocation.credentialDefinitionId]:
+        anoncredsDefinitionFourAttributesNoRevocation.credentialDefinition,
+    },
+    existingSchemas: {
+      [anoncredsDefinitionFourAttributesNoRevocation.schemaId]: anoncredsDefinitionFourAttributesNoRevocation.schema,
+    },
+  })
+
   const anonCredsCredentialFormatService = new AnonCredsCredentialFormatService()
   const anonCredsProofFormatService = new AnonCredsProofFormatService()
 
@@ -86,7 +98,7 @@ export const getAnonCredsModules = ({
       ],
     }),
     anoncreds: new AnonCredsModule({
-      registries: registries ?? [new InMemoryAnonCredsRegistry()],
+      registries: registries ?? [inMemoryAnonCredsRegistry],
       tailsFileService: new InMemoryTailsFileService(),
       anoncreds,
     }),
@@ -489,9 +501,7 @@ async function registerSchema(
   testLogger.test(`created schema with id ${schemaState.schemaId}`, schema)
 
   if (schemaState.state !== 'finished') {
-    throw new AriesFrameworkError(
-      `Schema not created: ${schemaState.state === 'failed' ? schemaState.reason : 'Not finished'}`
-    )
+    throw new CredoError(`Schema not created: ${schemaState.state === 'failed' ? schemaState.reason : 'Not finished'}`)
   }
 
   return schemaState
@@ -510,7 +520,7 @@ async function registerCredentialDefinition(
   })
 
   if (credentialDefinitionState.state !== 'finished') {
-    throw new AriesFrameworkError(
+    throw new CredoError(
       `Credential definition not created: ${
         credentialDefinitionState.state === 'failed' ? credentialDefinitionState.reason : 'Not finished'
       }`
@@ -530,7 +540,7 @@ async function registerRevocationRegistryDefinition(
   })
 
   if (revocationRegistryDefinitionState.state !== 'finished') {
-    throw new AriesFrameworkError(
+    throw new CredoError(
       `Revocation registry definition not created: ${
         revocationRegistryDefinitionState.state === 'failed' ? revocationRegistryDefinitionState.reason : 'Not finished'
       }`
@@ -550,7 +560,7 @@ async function registerRevocationStatusList(
   })
 
   if (revocationStatusListState.state !== 'finished') {
-    throw new AriesFrameworkError(
+    throw new CredoError(
       `Revocation status list not created: ${
         revocationStatusListState.state === 'failed' ? revocationStatusListState.reason : 'Not finished'
       }`

@@ -7,7 +7,7 @@ import type { MessagePickupModule } from '../modules/message-pickup'
 import type { ProofsModule } from '../modules/proofs'
 import type { DependencyManager } from '../plugins'
 
-import { AriesFrameworkError } from '../error'
+import { CredoError } from '../error'
 import { BasicMessagesApi } from '../modules/basic-messages'
 import { ConnectionsApi } from '../modules/connections'
 import { CredentialsApi } from '../modules/credentials'
@@ -18,10 +18,10 @@ import { MessagePickupApi } from '../modules/message-pickup/MessagePickupApi'
 import { OutOfBandApi } from '../modules/oob'
 import { ProofsApi } from '../modules/proofs'
 import { MediatorApi, MediationRecipientApi } from '../modules/routing'
+import { SdJwtVcApi } from '../modules/sd-jwt-vc'
 import { W3cCredentialsApi } from '../modules/vc/W3cCredentialsApi'
 import { StorageUpdateService } from '../storage'
 import { UpdateAssistant } from '../storage/migration/UpdateAssistant'
-import { DEFAULT_UPDATE_CONFIG } from '../storage/migration/updates'
 import { WalletApi } from '../wallet'
 import { WalletError } from '../wallet/error'
 
@@ -58,6 +58,7 @@ export abstract class BaseAgent<AgentModules extends ModulesMap = EmptyModuleMap
   public readonly wallet: WalletApi
   public readonly oob: OutOfBandApi
   public readonly w3cCredentials: W3cCredentialsApi
+  public readonly sdJwtVc: SdJwtVcApi
 
   public readonly modules: AgentApi<WithoutDefaultModules<AgentModules>>
 
@@ -106,6 +107,7 @@ export abstract class BaseAgent<AgentModules extends ModulesMap = EmptyModuleMap
     this.wallet = this.dependencyManager.resolve(WalletApi)
     this.oob = this.dependencyManager.resolve(OutOfBandApi)
     this.w3cCredentials = this.dependencyManager.resolve(W3cCredentialsApi)
+    this.sdJwtVc = this.dependencyManager.resolve(SdJwtVcApi)
 
     const defaultApis = [
       this.connections,
@@ -121,6 +123,7 @@ export abstract class BaseAgent<AgentModules extends ModulesMap = EmptyModuleMap
       this.wallet,
       this.oob,
       this.w3cCredentials,
+      this.sdJwtVc,
     ]
 
     // Set the api of the registered modules on the agent, excluding the default apis
@@ -135,7 +138,7 @@ export abstract class BaseAgent<AgentModules extends ModulesMap = EmptyModuleMap
     const { walletConfig } = this.agentConfig
 
     if (this._isInitialized) {
-      throw new AriesFrameworkError(
+      throw new CredoError(
         'Agent already initialized. Currently it is not supported to re-initialize an already initialized agent.'
       )
     }
@@ -156,15 +159,15 @@ export abstract class BaseAgent<AgentModules extends ModulesMap = EmptyModuleMap
     this.logger.info(`Agent storage is ${isStorageUpToDate ? '' : 'not '}up to date.`)
 
     if (!isStorageUpToDate && this.agentConfig.autoUpdateStorageOnStartup) {
-      const updateAssistant = new UpdateAssistant(this, DEFAULT_UPDATE_CONFIG)
+      const updateAssistant = new UpdateAssistant(this)
 
       await updateAssistant.initialize()
-      await updateAssistant.update()
+      await updateAssistant.update({ backupBeforeStorageUpdate: this.agentConfig.backupBeforeStorageUpdate })
     } else if (!isStorageUpToDate) {
       const currentVersion = await storageUpdateService.getCurrentStorageVersion(this.agentContext)
       // Close wallet to prevent un-initialized agent with initialized wallet
       await this.wallet.close()
-      throw new AriesFrameworkError(
+      throw new CredoError(
         // TODO: add link to where documentation on how to update can be found.
         `Current agent storage is not up to date. ` +
           `To prevent the framework state from getting corrupted the agent initialization is aborted. ` +

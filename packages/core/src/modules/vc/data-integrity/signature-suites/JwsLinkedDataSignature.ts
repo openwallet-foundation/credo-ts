@@ -4,7 +4,7 @@
 import type { DocumentLoader, Proof, VerificationMethod } from '../jsonldUtil'
 import type { LdKeyPair } from '../models/LdKeyPair'
 
-import { AriesFrameworkError } from '../../../../error'
+import { CredoError } from '../../../../error'
 import { TypedArrayEncoder, JsonEncoder } from '../../../../utils'
 import { suites } from '../libraries/jsonld-signatures'
 
@@ -183,9 +183,7 @@ export class JwsLinkedDataSignature extends LinkedDataSignature {
     }
 
     if (!options.documentLoader) {
-      throw new AriesFrameworkError(
-        'Missing custom document loader. This is required for resolving verification methods.'
-      )
+      throw new CredoError('Missing custom document loader. This is required for resolving verification methods.')
     }
 
     const { document } = await options.documentLoader(verificationMethod)

@@ -30,7 +30,7 @@ import type {
 } from '../CredentialProtocolOptions'
 
 import { Protocol } from '../../../../agent/models/features/Protocol'
-import { AriesFrameworkError } from '../../../../error'
+import { CredoError } from '../../../../error'
 import { DidCommMessageRepository } from '../../../../storage'
 import { uuid } from '../../../../utils/uuid'
 import { AckStatus } from '../../../common'
@@ -114,7 +114,14 @@ export class V2CredentialProtocol<CFs extends CredentialFormatService[] = Creden
    */
   public async createProposal(
     agentContext: AgentContext,
-    { connectionRecord, credentialFormats, comment, autoAcceptCredential }: CreateCredentialProposalOptions<CFs>
+    {
+      connectionRecord,
+      credentialFormats,
+      comment,
+      goal,
+      goalCode,
+      autoAcceptCredential,
+    }: CreateCredentialProposalOptions<CFs>
   ): Promise<CredentialProtocolMsgReturnType<AgentMessage>> {
     agentContext.config.logger.debug('Get the Format Service and Create Proposal Message')
 
@@ -122,7 +129,7 @@ export class V2CredentialProtocol<CFs extends CredentialFormatService[] = Creden
 
     const formatServices = this.getFormatServices(credentialFormats)
     if (formatServices.length === 0) {
-      throw new AriesFrameworkError(`Unable to create proposal. No supported formats`)
+      throw new CredoError(`Unable to create proposal. No supported formats`)
     }
 
     const credentialRecord = new CredentialExchangeRecord({
@@ -138,6 +145,8 @@ export class V2CredentialProtocol<CFs extends CredentialFormatService[] = Creden
       credentialRecord,
       formatServices,
       comment,
+      goal,
+      goalCode,
     })
 
     agentContext.config.logger.debug('Save record and emit state change event')
@@ -172,7 +181,7 @@ export class V2CredentialProtocol<CFs extends CredentialFormatService[] = Creden
 
     const formatServices = this.getFormatServicesFromMessage(proposalMessage.formats)
     if (formatServices.length === 0) {
-      throw new AriesFrameworkError(`Unable to process proposal. No supported formats`)
+      throw new CredoError(`Unable to process proposal. No supported formats`)
     }
 
     // credential record already exists
@@ -232,7 +241,14 @@ export class V2CredentialProtocol<CFs extends CredentialFormatService[] = Creden
 
   public async acceptProposal(
     agentContext: AgentContext,
-    { credentialRecord, credentialFormats, autoAcceptCredential, comment }: AcceptCredentialProposalOptions<CFs>
+    {
+      credentialRecord,
+      credentialFormats,
+      autoAcceptCredential,
+      comment,
+      goal,
+      goalCode,
+    }: AcceptCredentialProposalOptions<CFs>
   ): Promise<CredentialProtocolMsgReturnType<V2OfferCredentialMessage>> {
     // Assert
     credentialRecord.assertProtocolVersion('v2')
@@ -257,15 +273,15 @@ export class V2CredentialProtocol<CFs extends CredentialFormatService[] = Creden
     // If the format services list is still empty, throw an error as we don't support any
     // of the formats
     if (formatServices.length === 0) {
-      throw new AriesFrameworkError(
-        `Unable to accept proposal. No supported formats provided as input or in proposal message`
-      )
+      throw new CredoError(`Unable to accept proposal. No supported formats provided as input or in proposal message`)
     }
 
     const offerMessage = await this.credentialFormatCoordinator.acceptProposal(agentContext, {
       credentialRecord,
       formatServices,
       comment,
+      goal,
+      goalCode,
       credentialFormats,
     })
 
@@ -285,21 +301,28 @@ export class V2CredentialProtocol<CFs extends CredentialFormatService[] = Creden
    */
   public async negotiateProposal(
     agentContext: AgentContext,
-    { credentialRecord, credentialFormats, autoAcceptCredential, comment }: NegotiateCredentialProposalOptions<CFs>
+    {
+      credentialRecord,
+      credentialFormats,
+      autoAcceptCredential,
+      comment,
+      goal,
+      goalCode,
+    }: NegotiateCredentialProposalOptions<CFs>
   ): Promise<CredentialProtocolMsgReturnType<V2OfferCredentialMessage>> {
     // Assert
     credentialRecord.assertProtocolVersion('v2')
     credentialRecord.assertState(CredentialState.ProposalReceived)
 
     if (!credentialRecord.connectionId) {
-      throw new AriesFrameworkError(
+      throw new CredoError(
         `No connectionId found for credential record '${credentialRecord.id}'. Connection-less issuance does not support negotiation.`
       )
     }
 
     const formatServices = this.getFormatServices(credentialFormats)
     if (formatServices.length === 0) {
-      throw new AriesFrameworkError(`Unable to create offer. No supported formats`)
+      throw new CredoError(`Unable to create offer. No supported formats`)
     }
 
     const offerMessage = await this.credentialFormatCoordinator.createOffer(agentContext, {
@@ -307,6 +330,8 @@ export class V2CredentialProtocol<CFs extends CredentialFormatService[] = Creden
       credentialFormats,
       credentialRecord,
       comment,
+      goal,
+      goalCode,
     })
 
     credentialRecord.autoAcceptCredential = autoAcceptCredential ?? credentialRecord.autoAcceptCredential
@@ -326,13 +351,20 @@ export class V2CredentialProtocol<CFs extends CredentialFormatService[] = Creden
    */
   public async createOffer(
     agentContext: AgentContext,
-    { credentialFormats, autoAcceptCredential, comment, connectionRecord }: CreateCredentialOfferOptions<CFs>
+    {
+      credentialFormats,
+      autoAcceptCredential,
+      comment,
+      goal,
+      goalCode,
+      connectionRecord,
+    }: CreateCredentialOfferOptions<CFs>
   ): Promise<CredentialProtocolMsgReturnType<V2OfferCredentialMessage>> {
     const credentialRepository = agentContext.dependencyManager.resolve(CredentialRepository)
 
     const formatServices = this.getFormatServices(credentialFormats)
     if (formatServices.length === 0) {
-      throw new AriesFrameworkError(`Unable to create offer. No supported formats`)
+      throw new CredoError(`Unable to create offer. No supported formats`)
     }
 
     const credentialRecord = new CredentialExchangeRecord({
@@ -348,6 +380,8 @@ export class V2CredentialProtocol<CFs extends CredentialFormatService[] = Creden
       credentialFormats,
       credentialRecord,
       comment,
+      goal,
+      goalCode,
     })
 
     agentContext.config.logger.debug(
@@ -384,7 +418,7 @@ export class V2CredentialProtocol<CFs extends CredentialFormatService[] = Creden
 
     const formatServices = this.getFormatServicesFromMessage(offerMessage.formats)
     if (formatServices.length === 0) {
-      throw new AriesFrameworkError(`Unable to process offer. No supported formats`)
+      throw new CredoError(`Unable to process offer. No supported formats`)
     }
 
     // credential record already exists
@@ -444,7 +478,14 @@ export class V2CredentialProtocol<CFs extends CredentialFormatService[] = Creden
 
   public async acceptOffer(
     agentContext: AgentContext,
-    { credentialRecord, autoAcceptCredential, comment, credentialFormats }: AcceptCredentialOfferOptions<CFs>
+    {
+      credentialRecord,
+      autoAcceptCredential,
+      comment,
+      goal,
+      goalCode,
+      credentialFormats,
+    }: AcceptCredentialOfferOptions<CFs>
   ) {
     const didCommMessageRepository = agentContext.dependencyManager.resolve(DidCommMessageRepository)
 
@@ -469,15 +510,15 @@ export class V2CredentialProtocol<CFs extends CredentialFormatService[] = Creden
     // If the format services list is still empty, throw an error as we don't support any
     // of the formats
     if (formatServices.length === 0) {
-      throw new AriesFrameworkError(
-        `Unable to accept offer. No supported formats provided as input or in offer message`
-      )
+      throw new CredoError(`Unable to accept offer. No supported formats provided as input or in offer message`)
     }
 
     const message = await this.credentialFormatCoordinator.acceptOffer(agentContext, {
       credentialRecord,
       formatServices,
       comment,
+      goal,
+      goalCode,
       credentialFormats,
     })
 
@@ -497,21 +538,28 @@ export class V2CredentialProtocol<CFs extends CredentialFormatService[] = Creden
    */
   public async negotiateOffer(
     agentContext: AgentContext,
-    { credentialRecord, credentialFormats, autoAcceptCredential, comment }: NegotiateCredentialOfferOptions<CFs>
+    {
+      credentialRecord,
+      credentialFormats,
+      autoAcceptCredential,
+      comment,
+      goal,
+      goalCode,
+    }: NegotiateCredentialOfferOptions<CFs>
   ): Promise<CredentialProtocolMsgReturnType<V2ProposeCredentialMessage>> {
     // Assert
     credentialRecord.assertProtocolVersion('v2')
     credentialRecord.assertState(CredentialState.OfferReceived)
 
     if (!credentialRecord.connectionId) {
-      throw new AriesFrameworkError(
+      throw new CredoError(
         `No connectionId found for credential record '${credentialRecord.id}'. Connection-less issuance does not support negotiation.`
       )
     }
 
     const formatServices = this.getFormatServices(credentialFormats)
     if (formatServices.length === 0) {
-      throw new AriesFrameworkError(`Unable to create proposal. No supported formats`)
+      throw new CredoError(`Unable to create proposal. No supported formats`)
     }
 
     const proposalMessage = await this.credentialFormatCoordinator.createProposal(agentContext, {
@@ -519,6 +567,8 @@ export class V2CredentialProtocol<CFs extends CredentialFormatService[] = Creden
       credentialFormats,
       credentialRecord,
       comment,
+      goal,
+      goalCode,
     })
 
     credentialRecord.autoAcceptCredential = autoAcceptCredential ?? credentialRecord.autoAcceptCredential
@@ -534,13 +584,20 @@ export class V2CredentialProtocol<CFs extends CredentialFormatService[] = Creden
    */
   public async createRequest(
     agentContext: AgentContext,
-    { credentialFormats, autoAcceptCredential, comment, connectionRecord }: CreateCredentialRequestOptions<CFs>
+    {
+      credentialFormats,
+      autoAcceptCredential,
+      comment,
+      goal,
+      goalCode,
+      connectionRecord,
+    }: CreateCredentialRequestOptions<CFs>
   ): Promise<CredentialProtocolMsgReturnType<V2RequestCredentialMessage>> {
     const credentialRepository = agentContext.dependencyManager.resolve(CredentialRepository)
 
     const formatServices = this.getFormatServices(credentialFormats)
     if (formatServices.length === 0) {
-      throw new AriesFrameworkError(`Unable to create request. No supported formats`)
+      throw new CredoError(`Unable to create request. No supported formats`)
     }
 
     const credentialRecord = new CredentialExchangeRecord({
@@ -556,6 +613,8 @@ export class V2CredentialProtocol<CFs extends CredentialFormatService[] = Creden
       credentialFormats,
       credentialRecord,
       comment,
+      goal,
+      goalCode,
     })
 
     agentContext.config.logger.debug(
@@ -592,7 +651,7 @@ export class V2CredentialProtocol<CFs extends CredentialFormatService[] = Creden
 
     const formatServices = this.getFormatServicesFromMessage(requestMessage.formats)
     if (formatServices.length === 0) {
-      throw new AriesFrameworkError(`Unable to process request. No supported formats`)
+      throw new CredoError(`Unable to process request. No supported formats`)
     }
 
     // credential record already exists
@@ -663,7 +722,14 @@ export class V2CredentialProtocol<CFs extends CredentialFormatService[] = Creden
 
   public async acceptRequest(
     agentContext: AgentContext,
-    { credentialRecord, autoAcceptCredential, comment, credentialFormats }: AcceptCredentialRequestOptions<CFs>
+    {
+      credentialRecord,
+      autoAcceptCredential,
+      comment,
+      goal,
+      goalCode,
+      credentialFormats,
+    }: AcceptCredentialRequestOptions<CFs>
   ) {
     const didCommMessageRepository = agentContext.dependencyManager.resolve(DidCommMessageRepository)
 
@@ -688,14 +754,14 @@ export class V2CredentialProtocol<CFs extends CredentialFormatService[] = Creden
     // If the format services list is still empty, throw an error as we don't support any
     // of the formats
     if (formatServices.length === 0) {
-      throw new AriesFrameworkError(
-        `Unable to accept request. No supported formats provided as input or in request message`
-      )
+      throw new CredoError(`Unable to accept request. No supported formats provided as input or in request message`)
     }
     const message = await this.credentialFormatCoordinator.acceptRequest(agentContext, {
       credentialRecord,
       formatServices,
       comment,
+      goal,
+      goalCode,
       credentialFormats,
     })
 
@@ -751,7 +817,7 @@ export class V2CredentialProtocol<CFs extends CredentialFormatService[] = Creden
 
     const formatServices = this.getFormatServicesFromMessage(credentialMessage.formats)
     if (formatServices.length === 0) {
-      throw new AriesFrameworkError(`Unable to process credential. No supported formats`)
+      throw new CredoError(`Unable to process credential. No supported formats`)
     }
 
     await this.credentialFormatCoordinator.processCredential(messageContext.agentContext, {
@@ -1267,7 +1333,7 @@ export class V2CredentialProtocol<CFs extends CredentialFormatService[] = Creden
     )
 
     if (!formatService) {
-      throw new AriesFrameworkError(
+      throw new CredoError(
         `No format service found for credential record type ${credentialRecordType} in v2 credential protocol`
       )
     }

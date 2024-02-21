@@ -1,6 +1,5 @@
 import { FeatureRegistry } from '../../../agent/FeatureRegistry'
 import { DependencyManager } from '../../../plugins/DependencyManager'
-import { MediatorApi } from '../MediatorApi'
 import { MediatorModule } from '../MediatorModule'
 import { MediationRepository, MediatorRoutingRepository } from '../repository'
 import { MediatorService } from '../services'
@@ -17,9 +16,6 @@ const featureRegistry = new FeatureRegistryMock()
 describe('MediatorModule', () => {
   test('registers dependencies on the dependency manager', () => {
     new MediatorModule().register(dependencyManager, featureRegistry)
-
-    expect(dependencyManager.registerContextScoped).toHaveBeenCalledTimes(1)
-    expect(dependencyManager.registerContextScoped).toHaveBeenCalledWith(MediatorApi)
 
     expect(dependencyManager.registerSingleton).toHaveBeenCalledTimes(3)
     expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(MediatorService)

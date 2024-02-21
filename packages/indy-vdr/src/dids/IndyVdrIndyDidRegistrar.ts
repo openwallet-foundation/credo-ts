@@ -173,7 +173,7 @@ export class IndyVdrIndyDidRegistrar implements DidRegistrar {
     } else {
       // Create a new key and calculate did according to the rules for indy did method
       verificationKey = await agentContext.wallet.createKey({ privateKey, seed, keyType: KeyType.Ed25519 })
-      const buffer = Hasher.hash(verificationKey.publicKey, 'sha2-256')
+      const buffer = Hasher.hash(verificationKey.publicKey, 'sha-256')
 
       namespaceIdentifier = TypedArrayEncoder.toBase58(buffer.slice(0, 16))
       did = `did:indy:${endorserNamespace}:${namespaceIdentifier}`

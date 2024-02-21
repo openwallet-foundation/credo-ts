@@ -5,15 +5,20 @@ import type { Logger } from '../logger'
 import type { OutboundPackage } from '../types'
 
 import { AbortController } from 'abort-controller'
+import { Subject } from 'rxjs'
 
 import { AgentEventTypes } from '../agent/Events'
-import { AriesFrameworkError } from '../error/AriesFrameworkError'
+import { CredoError } from '../error/CredoError'
 import { isValidJweStructure, JsonEncoder } from '../utils'
 
 export class HttpOutboundTransport implements OutboundTransport {
   private agent!: Agent
   private logger!: Logger
   private fetch!: typeof fetch
+  private isActive = false
+
+  private outboundSessionCount = 0
+  private outboundSessionsObservable = new Subject()
 
   public supportedSchemes = ['http', 'https']
 
@@ -21,20 +26,43 @@ export class HttpOutboundTransport implements OutboundTransport {
     this.agent = agent
     this.logger = this.agent.config.logger
     this.fetch = this.agent.config.agentDependencies.fetch
+    this.isActive = true
+    this.outboundSessionCount = 0
 
     this.logger.debug('Starting HTTP outbound transport')
   }
 
   public async stop(): Promise<void> {
     this.logger.debug('Stopping HTTP outbound transport')
-    // Nothing required to stop HTTP
+    this.isActive = false
+
+    if (this.outboundSessionCount === 0) {
+      this.agent.config.logger.debug('No open outbound HTTP sessions. Immediately stopping HttpOutboundTransport')
+      return
+    }
+
+    this.agent.config.logger.debug(
+      `Still ${this.outboundSessionCount} open outbound HTTP sessions. Waiting for sessions to close before stopping HttpOutboundTransport`
+    )
+    // Track all 'closed' sessions
+    // TODO: add timeout? -> we have a timeout on the request
+    return new Promise((resolve) =>
+      this.outboundSessionsObservable.subscribe(() => {
+        this.agent.config.logger.debug(`${this.outboundSessionCount} HttpOutboundTransport sessions still active`)
+        if (this.outboundSessionCount === 0) resolve()
+      })
+    )
   }
 
   public async sendMessage(outboundPackage: OutboundPackage) {
     const { payload, endpoint } = outboundPackage
 
+    if (!this.isActive) {
+      throw new CredoError('Outbound transport is not active. Not sending message.')
+    }
+
     if (!endpoint) {
-      throw new AriesFrameworkError(`Missing endpoint. I don't know how and where to send the message.`)
+      throw new CredoError(`Missing endpoint. I don't know how and where to send the message.`)
     }
 
     this.logger.debug(`Sending outbound message to endpoint '${outboundPackage.endpoint}'`, {
@@ -44,6 +72,7 @@ export class HttpOutboundTransport implements OutboundTransport {
     try {
       const abortController = new AbortController()
       const id = setTimeout(() => abortController.abort(), 15000)
+      this.outboundSessionCount++
 
       let response
       let responseMessage
@@ -74,6 +103,11 @@ export class HttpOutboundTransport implements OutboundTransport {
       if (response && responseMessage) {
         this.logger.debug(`Response received`, { responseMessage, status: response.status })
 
+        // This should not happen
+        if (!this.isActive) {
+          this.logger.error('Received response message over HttpOutboundTransport while transport was not active.')
+        }
+
         try {
           const encryptedMessage = JsonEncoder.fromString(responseMessage)
           if (!isValidJweStructure(encryptedMessage)) {
@@ -102,7 +136,10 @@ export class HttpOutboundTransport implements OutboundTransport {
         body: payload,
         didCommMimeType: this.agent.config.didCommMimeType,
       })
-      throw new AriesFrameworkError(`Error sending message to ${endpoint}: ${error.message}`, { cause: error })
+      throw new CredoError(`Error sending message to ${endpoint}: ${error.message}`, { cause: error })
+    } finally {
+      this.outboundSessionCount--
+      this.outboundSessionsObservable.next(undefined)
     }
   }
 }

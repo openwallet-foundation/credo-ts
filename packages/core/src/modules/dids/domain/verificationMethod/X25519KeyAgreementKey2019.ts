@@ -1,6 +1,6 @@
 import { KeyType } from '../../../../crypto'
 import { Key } from '../../../../crypto/Key'
-import { AriesFrameworkError } from '../../../../error'
+import { CredoError } from '../../../../error'
 
 import { VerificationMethod } from './VerificationMethod'
 
@@ -35,7 +35,7 @@ export function isX25519KeyAgreementKey2019(
  */
 export function getKeyFromX25519KeyAgreementKey2019(verificationMethod: X25519KeyAgreementKey2019) {
   if (!verificationMethod.publicKeyBase58) {
-    throw new AriesFrameworkError('verification method is missing publicKeyBase58')
+    throw new CredoError('verification method is missing publicKeyBase58')
   }
 
   return Key.fromPublicKeyBase58(verificationMethod.publicKeyBase58, KeyType.X25519)

@@ -232,8 +232,8 @@ describe('DidRegistrar', () => {
         key,
         // controller in method 1 did should be #id
         controller: '#id',
-        // Use relative id for peer dids
-        id: '#41fb2ec7-1f8b-42bf-91a2-4ef9092ddc16',
+        // Use relative id for peer dids with pattern 'key-N'
+        id: '#key-1',
       })
 
       const didDocument = new DidDocumentBuilder('')
@@ -263,29 +263,29 @@ describe('DidRegistrar', () => {
           didRegistrationMetadata: {},
           didState: {
             state: 'finished',
-            did: 'did:peer:2.Vz6MkkjPVCX7M8D6jJSCQNzYb4T6giuSN8Fm463gWNZ65DMSc.SeyJzIjoiaHR0cHM6Ly9leGFtcGxlLmNvbSIsInQiOiJkaWQtY29tbXVuaWNhdGlvbiIsInByaW9yaXR5IjowLCJyZWNpcGllbnRLZXlzIjpbIiM0MWZiMmVjNy0xZjhiLTQyYmYtOTFhMi00ZWY5MDkyZGRjMTYiXSwiYSI6WyJkaWRjb21tL2FpcDI7ZW52PXJmYzE5Il19',
+            did: 'did:peer:2.Vz6MkkjPVCX7M8D6jJSCQNzYb4T6giuSN8Fm463gWNZ65DMSc.SeyJzIjoiaHR0cHM6Ly9leGFtcGxlLmNvbSIsInQiOiJkaWQtY29tbXVuaWNhdGlvbiIsInByaW9yaXR5IjowLCJyZWNpcGllbnRLZXlzIjpbIiNrZXktMSJdLCJhIjpbImRpZGNvbW0vYWlwMjtlbnY9cmZjMTkiXX0',
             didDocument: {
               '@context': ['https://w3id.org/did/v1'],
-              id: 'did:peer:2.Vz6MkkjPVCX7M8D6jJSCQNzYb4T6giuSN8Fm463gWNZ65DMSc.SeyJzIjoiaHR0cHM6Ly9leGFtcGxlLmNvbSIsInQiOiJkaWQtY29tbXVuaWNhdGlvbiIsInByaW9yaXR5IjowLCJyZWNpcGllbnRLZXlzIjpbIiM0MWZiMmVjNy0xZjhiLTQyYmYtOTFhMi00ZWY5MDkyZGRjMTYiXSwiYSI6WyJkaWRjb21tL2FpcDI7ZW52PXJmYzE5Il19',
+              id: 'did:peer:2.Vz6MkkjPVCX7M8D6jJSCQNzYb4T6giuSN8Fm463gWNZ65DMSc.SeyJzIjoiaHR0cHM6Ly9leGFtcGxlLmNvbSIsInQiOiJkaWQtY29tbXVuaWNhdGlvbiIsInByaW9yaXR5IjowLCJyZWNpcGllbnRLZXlzIjpbIiNrZXktMSJdLCJhIjpbImRpZGNvbW0vYWlwMjtlbnY9cmZjMTkiXX0',
               service: [
                 {
                   serviceEndpoint: 'https://example.com',
                   type: 'did-communication',
                   priority: 0,
-                  recipientKeys: ['#41fb2ec7-1f8b-42bf-91a2-4ef9092ddc16'],
+                  recipientKeys: ['#key-1'],
                   accept: ['didcomm/aip2;env=rfc19'],
                   id: '#service-0',
                 },
               ],
               verificationMethod: [
                 {
-                  id: '#41fb2ec7-1f8b-42bf-91a2-4ef9092ddc16',
+                  id: '#key-1',
                   type: 'Ed25519VerificationKey2018',
                   controller: '#id',
                   publicKeyBase58: '7H8ScGrunfcGBwMhhRakDMYguLAWiNWhQ2maYH84J8fE',
                 },
               ],
-              authentication: ['#41fb2ec7-1f8b-42bf-91a2-4ef9092ddc16'],
+              authentication: ['#key-1'],
             },
             secret: {},
           },
@@ -294,7 +294,7 @@ describe('DidRegistrar', () => {
 
       it('should store the did without the did document', async () => {
         const did =
-          'did:peer:2.Vz6MkkjPVCX7M8D6jJSCQNzYb4T6giuSN8Fm463gWNZ65DMSc.SeyJzIjoiaHR0cHM6Ly9leGFtcGxlLmNvbSIsInQiOiJkaWQtY29tbXVuaWNhdGlvbiIsInByaW9yaXR5IjowLCJyZWNpcGllbnRLZXlzIjpbIiM0MWZiMmVjNy0xZjhiLTQyYmYtOTFhMi00ZWY5MDkyZGRjMTYiXSwiYSI6WyJkaWRjb21tL2FpcDI7ZW52PXJmYzE5Il19'
+          'did:peer:2.Vz6MkkjPVCX7M8D6jJSCQNzYb4T6giuSN8Fm463gWNZ65DMSc.SeyJzIjoiaHR0cHM6Ly9leGFtcGxlLmNvbSIsInQiOiJkaWQtY29tbXVuaWNhdGlvbiIsInByaW9yaXR5IjowLCJyZWNpcGllbnRLZXlzIjpbIiNrZXktMSJdLCJhIjpbImRpZGNvbW0vYWlwMjtlbnY9cmZjMTkiXX0'
 
         await peerDidRegistrar.create(agentContext, {
           method: 'peer',

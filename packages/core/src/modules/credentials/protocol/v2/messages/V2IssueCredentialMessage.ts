@@ -9,6 +9,8 @@ import { CredentialFormatSpec } from '../../../models'
 export interface V2IssueCredentialMessageOptions {
   id?: string
   comment?: string
+  goalCode?: string
+  goal?: string
   formats: CredentialFormatSpec[]
   credentialAttachments: Attachment[]
 }
@@ -20,6 +22,8 @@ export class V2IssueCredentialMessage extends AgentMessage {
     if (options) {
       this.id = options.id ?? this.generateId()
       this.comment = options.comment
+      this.goalCode = options.goalCode
+      this.goal = options.goal
       this.formats = options.formats
       this.credentialAttachments = options.credentialAttachments
     }
@@ -46,6 +50,15 @@ export class V2IssueCredentialMessage extends AgentMessage {
   })
   @IsInstance(Attachment, { each: true })
   public credentialAttachments!: Attachment[]
+
+  @Expose({ name: 'goal_code' })
+  @IsString()
+  @IsOptional()
+  public goalCode?: string
+
+  @IsString()
+  @IsOptional()
+  public goal?: string
 
   public getCredentialAttachmentById(id: string): Attachment | undefined {
     return this.credentialAttachments.find((attachment) => attachment.id === id)

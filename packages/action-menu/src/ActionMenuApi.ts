@@ -8,7 +8,7 @@ import type {
 
 import {
   AgentContext,
-  AriesFrameworkError,
+  CredoError,
   ConnectionService,
   MessageSender,
   injectable,
@@ -118,7 +118,7 @@ export class ActionMenuApi {
       role: ActionMenuRole.Requester,
     })
     if (!actionMenuRecord) {
-      throw new AriesFrameworkError(`No active menu found for connection id ${options.connectionId}`)
+      throw new CredoError(`No active menu found for connection id ${options.connectionId}`)
     }
 
     const { message, record } = await this.actionMenuService.createPerform(this.agentContext, {

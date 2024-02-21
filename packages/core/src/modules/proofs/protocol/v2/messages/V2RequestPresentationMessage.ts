@@ -11,6 +11,7 @@ export interface V2RequestPresentationMessageOptions {
   id?: string
   comment?: string
   goalCode?: string
+  goal?: string
   presentMultiple?: boolean
   willConfirm?: boolean
   formats: ProofFormatSpec[]
@@ -26,6 +27,7 @@ export class V2RequestPresentationMessage extends AgentMessage {
       this.requestAttachments = []
       this.id = options.id ?? uuid()
       this.comment = options.comment
+      this.goal = options.goal
       this.goalCode = options.goalCode
       this.willConfirm = options.willConfirm ?? true
       this.presentMultiple = options.presentMultiple ?? false
@@ -46,6 +48,10 @@ export class V2RequestPresentationMessage extends AgentMessage {
   @IsString()
   @IsOptional()
   public goalCode?: string
+
+  @IsString()
+  @IsOptional()
+  public goal?: string
 
   @Expose({ name: 'will_confirm' })
   @IsBoolean()

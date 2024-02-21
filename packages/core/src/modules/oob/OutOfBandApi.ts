@@ -17,7 +17,7 @@ import { OutboundMessageContext } from '../../agent/models'
 import { InjectionSymbols } from '../../constants'
 import { Key } from '../../crypto'
 import { ServiceDecorator } from '../../decorators/service/ServiceDecorator'
-import { AriesFrameworkError } from '../../error'
+import { CredoError } from '../../error'
 import { Logger } from '../../logger'
 import { inject, injectable } from '../../plugins'
 import { JsonEncoder, JsonTransformer } from '../../utils'
@@ -156,19 +156,17 @@ export class OutOfBandApi {
       config.appendedAttachments && config.appendedAttachments.length > 0 ? config.appendedAttachments : undefined
 
     if (!handshake && !messages) {
-      throw new AriesFrameworkError(
-        'One or both of handshake_protocols and requests~attach MUST be included in the message.'
-      )
+      throw new CredoError('One or both of handshake_protocols and requests~attach MUST be included in the message.')
     }
 
     if (!handshake && customHandshakeProtocols) {
-      throw new AriesFrameworkError(`Attribute 'handshake' can not be 'false' when 'handshakeProtocols' is defined.`)
+      throw new CredoError(`Attribute 'handshake' can not be 'false' when 'handshakeProtocols' is defined.`)
     }
 
     // For now we disallow creating multi-use invitation with attachments. This would mean we need multi-use
     // credential and presentation exchanges.
     if (messages && multiUseInvitation) {
-      throw new AriesFrameworkError("Attribute 'multiUseInvitation' can not be 'true' when 'messages' is defined.")
+      throw new CredoError("Attribute 'multiUseInvitation' can not be 'true' when 'messages' is defined.")
     }
 
     let handshakeProtocols: string[] | undefined
@@ -411,9 +409,7 @@ export class OutOfBandApi {
     const isConnectionless = handshakeProtocols === undefined || handshakeProtocols.length === 0
 
     if ((!handshakeProtocols || handshakeProtocols.length === 0) && (!messages || messages?.length === 0)) {
-      throw new AriesFrameworkError(
-        'One or both of handshake_protocols and requests~attach MUST be included in the message.'
-      )
+      throw new CredoError('One or both of handshake_protocols and requests~attach MUST be included in the message.')
     }
 
     // Make sure we haven't received this invitation before
@@ -425,7 +421,7 @@ export class OutOfBandApi {
         role: OutOfBandRole.Receiver,
       })
       if (existingOobRecordsFromThisId.length > 0) {
-        throw new AriesFrameworkError(
+        throw new CredoError(
           `An out of band record with invitation ${outOfBandInvitation.id} has already been received. Invitations should have a unique id.`
         )
       }
@@ -711,8 +707,8 @@ export class OutOfBandApi {
 
   private assertHandshakeProtocolsSupported(handshakeProtocols: HandshakeProtocol[]) {
     if (!this.areHandshakeProtocolsSupported(handshakeProtocols)) {
-      const supportedProtocols = this.getSupportedHandshakeProtocols().map((p) => p.handshakeProtocol)
-      throw new AriesFrameworkError(
+      const supportedProtocols = this.getSupportedHandshakeProtocols()
+      throw new CredoError(
         `Handshake protocols [${handshakeProtocols}] are not supported. Supported protocols are [${supportedProtocols}]`
       )
     }
@@ -738,7 +734,7 @@ export class OutOfBandApi {
     )
 
     if (supportedHandshakeProtocols.length === 0) {
-      throw new AriesFrameworkError('There is no handshake protocol supported. Agent can not create a connection.')
+      throw new CredoError('There is no handshake protocol supported. Agent can not create a connection.')
     }
 
     // Order protocols according to `parsedHandshakeProtocolUris` array (order of preference)
@@ -776,7 +772,7 @@ export class OutOfBandApi {
     )
 
     if (!firstSupportedProtocol) {
-      throw new AriesFrameworkError(
+      throw new CredoError(
         `Handshake protocols [${protocolUris}] are not supported. Supported protocols are [${supportedProtocols.map(
           (p) => p.handshakeProtocol
         )}]`
@@ -819,7 +815,7 @@ export class OutOfBandApi {
     })
 
     if (!plaintextMessage) {
-      throw new AriesFrameworkError('There is no message in requests~attach supported by agent.')
+      throw new CredoError('There is no message in requests~attach supported by agent.')
     }
 
     // Make sure message has correct parent thread id
@@ -843,7 +839,7 @@ export class OutOfBandApi {
     messages: PlaintextMessage[]
   ) {
     if (!services || services.length === 0) {
-      throw new AriesFrameworkError(`There are no services. We can not emit messages`)
+      throw new CredoError(`There are no services. We can not emit messages`)
     }
 
     const supportedMessageTypes = this.messageHandlerRegistry.supportedMessageTypes
@@ -853,7 +849,7 @@ export class OutOfBandApi {
     })
 
     if (!plaintextMessage) {
-      throw new AriesFrameworkError('There is no message in requests~attach supported by agent.')
+      throw new CredoError('There is no message in requests~attach supported by agent.')
     }
 
     // Make sure message has correct parent thread id
@@ -879,7 +875,7 @@ export class OutOfBandApi {
       plaintextMessage['~thread']?.pthid &&
       plaintextMessage['~thread'].pthid !== outOfBandRecord.outOfBandInvitation.id
     ) {
-      throw new AriesFrameworkError(
+      throw new CredoError(
         `Out of band invitation requests~attach message contains parent thread id ${plaintextMessage['~thread'].pthid} that does not match the invitation id ${outOfBandRecord.outOfBandInvitation.id}`
       )
     }

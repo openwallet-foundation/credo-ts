@@ -1,7 +1,7 @@
 import type { TenantConfig } from '../models/TenantConfig'
-import type { AgentContext, Key } from '@credo-ts/core'
+import type { AgentContext, Key, Query } from '@credo-ts/core'
 
-import { injectable, utils, KeyDerivationMethod } from '@credo-ts/core'
+import { UpdateAssistant, injectable, utils, KeyDerivationMethod } from '@credo-ts/core'
 
 import { TenantRepository, TenantRecord, TenantRoutingRepository, TenantRoutingRecord } from '../repository'
 
@@ -31,6 +31,7 @@ export class TenantRecordService {
           keyDerivationMethod: KeyDerivationMethod.Raw,
         },
       },
+      storageVersion: UpdateAssistant.frameworkStorageVersion,
     })
 
     await this.tenantRepository.save(agentContext, tenantRecord)
@@ -40,6 +41,14 @@ export class TenantRecordService {
 
   public async getTenantById(agentContext: AgentContext, tenantId: string) {
     return this.tenantRepository.getById(agentContext, tenantId)
+  }
+
+  public async findTenantsByLabel(agentContext: AgentContext, label: string) {
+    return this.tenantRepository.findByLabel(agentContext, label)
+  }
+
+  public async getAllTenants(agentContext: AgentContext) {
+    return this.tenantRepository.getAll(agentContext)
   }
 
   public async deleteTenantById(agentContext: AgentContext, tenantId: string) {
@@ -58,6 +67,14 @@ export class TenantRecordService {
 
     // Delete tenant record
     await this.tenantRepository.delete(agentContext, tenantRecord)
+  }
+
+  public async updateTenant(agentContext: AgentContext, tenantRecord: TenantRecord) {
+    return this.tenantRepository.update(agentContext, tenantRecord)
+  }
+
+  public async findTenantsByQuery(agentContext: AgentContext, query: Query<TenantRecord>) {
+    return this.tenantRepository.findByQuery(agentContext, query)
   }
 
   public async findTenantRoutingRecordByRecipientKey(

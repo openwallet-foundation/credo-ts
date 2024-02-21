@@ -9,7 +9,7 @@ import { EventEmitter } from '../../../agent/EventEmitter'
 import { MessageSender } from '../../../agent/MessageSender'
 import { InjectionSymbols } from '../../../constants'
 import { KeyType } from '../../../crypto'
-import { AriesFrameworkError, RecordDuplicateError } from '../../../error'
+import { CredoError, RecordDuplicateError } from '../../../error'
 import { Logger } from '../../../logger'
 import { injectable, inject } from '../../../plugins'
 import { ConnectionService } from '../../connections'
@@ -68,7 +68,7 @@ export class MediatorService {
       this.logger.debug(`Returning mediator routing keys ${mediatorRoutingRecord.routingKeys}`)
       return mediatorRoutingRecord.routingKeys
     }
-    throw new AriesFrameworkError(`Mediator has not been initialized yet.`)
+    throw new CredoError(`Mediator has not been initialized yet.`)
   }
 
   public async processForwardMessage(messageContext: InboundMessageContext<ForwardMessage>): Promise<void> {
@@ -76,7 +76,7 @@ export class MediatorService {
 
     // TODO: update to class-validator validation
     if (!message.to) {
-      throw new AriesFrameworkError('Invalid Message: Missing required attribute "to"')
+      throw new CredoError('Invalid Message: Missing required attribute "to"')
     }
 
     const mediationRecord = await this.mediationRepository.getSingleByRecipientKey(agentContext, message.to)

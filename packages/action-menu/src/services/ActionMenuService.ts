@@ -9,7 +9,7 @@ import type { ActionMenuStateChangedEvent } from '../ActionMenuEvents'
 import type { ActionMenuProblemReportMessage } from '../messages'
 import type { AgentContext, InboundMessageContext, Logger, Query } from '@credo-ts/core'
 
-import { AgentConfig, EventEmitter, AriesFrameworkError, injectable } from '@credo-ts/core'
+import { AgentConfig, EventEmitter, CredoError, injectable } from '@credo-ts/core'
 
 import { ActionMenuEventTypes } from '../ActionMenuEvents'
 import { ActionMenuRole } from '../ActionMenuRole'
@@ -118,7 +118,7 @@ export class ActionMenuService {
 
     const uniqueNames = new Set(options.menu.options.map((v) => v.name))
     if (uniqueNames.size < options.menu.options.length) {
-      throw new AriesFrameworkError('Action Menu contains duplicated options')
+      throw new CredoError('Action Menu contains duplicated options')
     }
 
     // Create message
@@ -226,7 +226,7 @@ export class ActionMenuService {
 
     const validSelection = record.menu?.options.some((item) => item.name === performedSelection.name)
     if (!validSelection) {
-      throw new AriesFrameworkError('Selection does not match valid actions')
+      throw new CredoError('Selection does not match valid actions')
     }
 
     const previousState = record.state
@@ -277,7 +277,7 @@ export class ActionMenuService {
 
       const validSelection = record.menu?.options.some((item) => item.name === performMessage.name)
       if (!validSelection) {
-        throw new AriesFrameworkError('Selection does not match valid actions')
+        throw new CredoError('Selection does not match valid actions')
       }
 
       const previousState = record.state
@@ -289,7 +289,7 @@ export class ActionMenuService {
 
       this.emitStateChangedEvent(agentContext, record, previousState)
     } else {
-      throw new AriesFrameworkError(`No Action Menu found with thread id ${messageContext.message.threadId}`)
+      throw new CredoError(`No Action Menu found with thread id ${messageContext.message.threadId}`)
     }
   }
 
@@ -325,9 +325,7 @@ export class ActionMenuService {
     })
 
     if (!actionMenuRecord) {
-      throw new AriesFrameworkError(
-        `Unable to process action menu problem: record not found for connection id ${connection.id}`
-      )
+      throw new CredoError(`Unable to process action menu problem: record not found for connection id ${connection.id}`)
     }
     // Clear menu to restart flow
     return await this.clearMenu(agentContext, { actionMenuRecord })

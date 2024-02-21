@@ -2,7 +2,7 @@ import type { MessageHandler, MessageHandlerInboundMessage } from '../../../agen
 import type { OutOfBandService } from '../../oob/OutOfBandService'
 import type { DidExchangeProtocol } from '../DidExchangeProtocol'
 
-import { AriesFrameworkError } from '../../../error'
+import { CredoError } from '../../../error'
 import { tryParseDid } from '../../dids/domain/parse'
 import { OutOfBandState } from '../../oob/domain/OutOfBandState'
 import { DidExchangeCompleteMessage } from '../messages'
@@ -22,12 +22,12 @@ export class DidExchangeCompleteHandler implements MessageHandler {
     const { connection: connectionRecord } = messageContext
 
     if (!connectionRecord) {
-      throw new AriesFrameworkError(`Connection is missing in message context`)
+      throw new CredoError(`Connection is missing in message context`)
     }
 
     const { protocol } = connectionRecord
     if (protocol !== HandshakeProtocol.DidExchange) {
-      throw new AriesFrameworkError(
+      throw new CredoError(
         `Connection record protocol is ${protocol} but handler supports only ${HandshakeProtocol.DidExchange}.`
       )
     }
@@ -35,7 +35,7 @@ export class DidExchangeCompleteHandler implements MessageHandler {
     const { message } = messageContext
     const parentThreadId = message.thread?.parentThreadId
     if (!parentThreadId) {
-      throw new AriesFrameworkError(`Message does not contain pthid attribute`)
+      throw new CredoError(`Message does not contain pthid attribute`)
     }
     const outOfBandRecord = await this.outOfBandService.findByCreatedInvitationId(
       messageContext.agentContext,
@@ -44,7 +44,7 @@ export class DidExchangeCompleteHandler implements MessageHandler {
     )
 
     if (!outOfBandRecord) {
-      throw new AriesFrameworkError(`OutOfBand record for message ID ${message.thread?.parentThreadId} not found!`)
+      throw new CredoError(`OutOfBand record for message ID ${message.thread?.parentThreadId} not found!`)
     }
 
     if (!outOfBandRecord.reusable) {

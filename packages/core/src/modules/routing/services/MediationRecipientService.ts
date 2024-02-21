@@ -16,7 +16,7 @@ import { filterContextCorrelationId } from '../../../agent/Events'
 import { MessageSender } from '../../../agent/MessageSender'
 import { OutboundMessageContext } from '../../../agent/models'
 import { Key, KeyType } from '../../../crypto'
-import { AriesFrameworkError } from '../../../error'
+import { CredoError } from '../../../error'
 import { injectable } from '../../../plugins'
 import { ConnectionType } from '../../connections/models/ConnectionType'
 import { ConnectionMetadataKeys } from '../../connections/repository/ConnectionMetadataTypes'
@@ -248,7 +248,7 @@ export class MediationRecipientService {
     const mediationRecord = await this.getById(agentContext, mediatorId)
 
     if (!mediationRecord) {
-      throw new AriesFrameworkError('No mediation record to remove routing from has been found')
+      throw new CredoError('No mediation record to remove routing from has been found')
     }
 
     await this.keylistUpdateAndAwait(
@@ -349,7 +349,7 @@ export class MediationRecipientService {
     const defaultMediator = await this.findDefaultMediator(agentContext)
     if (defaultMediator) {
       if (defaultMediator.state !== MediationState.Granted) {
-        throw new AriesFrameworkError(
+        throw new CredoError(
           `Mediation State for ${defaultMediator.id} is not granted, but is set as default mediator!`
         )
       }

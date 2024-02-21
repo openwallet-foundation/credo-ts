@@ -1,7 +1,7 @@
 import type { Logger } from '@credo-ts/core'
 import type { MutexInterface } from 'async-mutex'
 
-import { AriesFrameworkError } from '@credo-ts/core'
+import { CredoError } from '@credo-ts/core'
 import { withTimeout, Mutex } from 'async-mutex'
 
 /**
@@ -23,7 +23,7 @@ export class TenantSessionMutex {
     this.sessionMutex = withTimeout(
       new Mutex(),
       sessionAcquireTimeout,
-      new AriesFrameworkError(`Failed to acquire an agent context session within ${sessionAcquireTimeout}ms`)
+      new CredoError(`Failed to acquire an agent context session within ${sessionAcquireTimeout}ms`)
     )
   }
 

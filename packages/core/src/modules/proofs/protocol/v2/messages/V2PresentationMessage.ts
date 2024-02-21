@@ -9,8 +9,9 @@ import { ProofFormatSpec } from '../../../models/ProofFormatSpec'
 
 export interface V2PresentationMessageOptions {
   id?: string
-  goalCode?: string
   comment?: string
+  goalCode?: string
+  goal?: string
   lastPresentation?: boolean
   presentationAttachments: Attachment[]
   formats: ProofFormatSpec[]
@@ -26,6 +27,7 @@ export class V2PresentationMessage extends AgentMessage {
       this.id = options.id ?? uuid()
       this.comment = options.comment
       this.goalCode = options.goalCode
+      this.goal = options.goal
       this.lastPresentation = options.lastPresentation ?? true
 
       this.formats = options.formats
@@ -45,6 +47,10 @@ export class V2PresentationMessage extends AgentMessage {
   @IsString()
   @IsOptional()
   public goalCode?: string
+
+  @IsString()
+  @IsOptional()
+  public goal?: string
 
   @Expose({ name: 'last_presentation' })
   @IsBoolean()

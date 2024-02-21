@@ -8,9 +8,24 @@ import type { W3cPresentation } from './models/presentation/W3cPresentation'
 import type { JwaSignatureAlgorithm } from '../../crypto/jose/jwa'
 import type { SingleOrArray } from '../../utils/type'
 
-export type W3cSignCredentialOptions = W3cJwtSignCredentialOptions | W3cJsonLdSignCredentialOptions
-export type W3cVerifyCredentialOptions = W3cJwtVerifyCredentialOptions | W3cJsonLdVerifyCredentialOptions
-export type W3cSignPresentationOptions = W3cJwtSignPresentationOptions | W3cJsonLdSignPresentationOptions
+export type W3cSignCredentialOptions<Format extends ClaimFormat.JwtVc | ClaimFormat.LdpVc | undefined = undefined> =
+  Format extends ClaimFormat.JwtVc
+    ? W3cJwtSignCredentialOptions
+    : Format extends ClaimFormat.LdpVc
+    ? W3cJsonLdSignCredentialOptions
+    : W3cJwtSignCredentialOptions | W3cJsonLdSignCredentialOptions
+export type W3cVerifyCredentialOptions<Format extends ClaimFormat.JwtVc | ClaimFormat.LdpVc | undefined = undefined> =
+  Format extends ClaimFormat.JwtVc
+    ? W3cJwtVerifyCredentialOptions
+    : Format extends ClaimFormat.LdpVc
+    ? W3cJsonLdVerifyCredentialOptions
+    : W3cJwtVerifyCredentialOptions | W3cJsonLdVerifyCredentialOptions
+export type W3cSignPresentationOptions<Format extends ClaimFormat.JwtVp | ClaimFormat.LdpVp | undefined = undefined> =
+  Format extends ClaimFormat.JwtVp
+    ? W3cJwtSignPresentationOptions
+    : Format extends ClaimFormat.LdpVp
+    ? W3cJsonLdSignPresentationOptions
+    : W3cJwtSignPresentationOptions | W3cJsonLdSignPresentationOptions
 export type W3cVerifyPresentationOptions = W3cJwtVerifyPresentationOptions | W3cJsonLdVerifyPresentationOptions
 
 interface W3cSignCredentialOptionsBase {

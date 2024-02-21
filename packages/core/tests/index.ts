@@ -3,6 +3,6 @@ export * from './transport'
 export * from './events'
 export * from './helpers'
 
-import testLogger from './logger'
+import testLogger, { TestLogger } from './logger'
 
-export { testLogger }
+export { testLogger, TestLogger }

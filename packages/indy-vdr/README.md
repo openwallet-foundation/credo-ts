@@ -6,7 +6,7 @@
     height="250px"
   />
 </p>
-<h1 align="center"><b>Credo - Indy Verifiable Data Registry (Indy-Vdr)</b></h1>
+<h1 align="center"><b>Credo - Indy Verifiable Data Registry (Indy VDR) Module</b></h1>
 <p align="center">
   <a
     href="https://raw.githubusercontent.com/openwallet-foundation/credo-ts/main/LICENSE"
@@ -28,8 +28,4 @@
 </p>
 <br />
 
-### Installation
-
-### Quick start
-
-### Example of usage
+Credo Indy VDR provides integration of the Hyperledger Indy blockchain into Credo. See the [Indy VDR Setup](https://credo.js.org/guides/getting-started/set-up/indy-vdr) for installation instructions.
