@@ -25,6 +25,7 @@ export class BatchMessageMessage {
 export interface BatchMessageOptions {
   id?: string
   messages: BatchMessageMessage[]
+  threadId?: string
 }
 
 /**
@@ -41,6 +42,12 @@ export class V1BatchMessage extends AgentMessage {
     if (options) {
       this.id = options.id || this.generateId()
       this.messages = options.messages
+
+      if (options.threadId) {
+        this.setThread({
+          threadId: options.threadId,
+        })
+      }
     }
   }
 

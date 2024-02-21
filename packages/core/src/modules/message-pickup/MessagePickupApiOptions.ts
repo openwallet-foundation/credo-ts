@@ -29,6 +29,8 @@ export interface PickupMessagesOptions<MPPs extends MessagePickupProtocol[] = Me
   protocolVersion: MessagePickupProtocolVersionType<MPPs>
   recipientDid?: string
   batchSize?: number
+  awaitCompletion?: boolean
+  awaitCompletionTimeoutMs?: number
 }
 
 export interface SetLiveDeliveryModeOptions<MPPs extends MessagePickupProtocol[] = MessagePickupProtocol[]> {

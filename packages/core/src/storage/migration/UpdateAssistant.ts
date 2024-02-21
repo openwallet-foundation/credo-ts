@@ -4,14 +4,19 @@ import type { Module } from '../../plugins'
 import type { FileSystem } from '../FileSystem'
 
 import { InjectionSymbols } from '../../constants'
-import { AriesFrameworkError } from '../../error'
+import { CredoError } from '../../error'
 import { isFirstVersionEqualToSecond, isFirstVersionHigherThanSecond, parseVersionString } from '../../utils/version'
-import { WalletExportPathExistsError } from '../../wallet/error'
+import { WalletExportPathExistsError, WalletExportUnsupportedError } from '../../wallet/error'
 import { WalletError } from '../../wallet/error/WalletError'
 
 import { StorageUpdateService } from './StorageUpdateService'
 import { StorageUpdateError } from './error/StorageUpdateError'
-import { CURRENT_FRAMEWORK_STORAGE_VERSION, supportedUpdates } from './updates'
+import { DEFAULT_UPDATE_CONFIG, CURRENT_FRAMEWORK_STORAGE_VERSION, supportedUpdates } from './updates'
+
+export interface UpdateAssistantUpdateOptions {
+  updateToVersion?: UpdateToVersion
+  backupBeforeStorageUpdate?: boolean
+}
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export class UpdateAssistant<Agent extends BaseAgent<any> = BaseAgent> {
@@ -20,7 +25,7 @@ export class UpdateAssistant<Agent extends BaseAgent<any> = BaseAgent> {
   private updateConfig: UpdateConfig
   private fileSystem: FileSystem
 
-  public constructor(agent: Agent, updateConfig: UpdateConfig) {
+  public constructor(agent: Agent, updateConfig: UpdateConfig = DEFAULT_UPDATE_CONFIG) {
     this.agent = agent
     this.updateConfig = updateConfig
 
@@ -30,7 +35,7 @@ export class UpdateAssistant<Agent extends BaseAgent<any> = BaseAgent> {
 
   public async initialize() {
     if (this.agent.isInitialized) {
-      throw new AriesFrameworkError("Can't initialize UpdateAssistant after agent is initialized")
+      throw new CredoError("Can't initialize UpdateAssistant after agent is initialized")
     }
 
     // Initialize the wallet if not already done
@@ -92,14 +97,14 @@ export class UpdateAssistant<Agent extends BaseAgent<any> = BaseAgent> {
       neededUpdates.length > 0 &&
       isFirstVersionHigherThanSecond(parseVersionString(neededUpdates[0].fromVersion), currentStorageVersion)
     ) {
-      throw new AriesFrameworkError(
+      throw new CredoError(
         `First fromVersion is higher than current storage version. You need to use an older version of the framework to update to at least version ${neededUpdates[0].fromVersion}`
       )
     }
 
     const lastUpdateToVersion = neededUpdates.length > 0 ? neededUpdates[neededUpdates.length - 1].toVersion : undefined
     if (toVersion && lastUpdateToVersion && lastUpdateToVersion !== toVersion) {
-      throw new AriesFrameworkError(
+      throw new CredoError(
         `No update found for toVersion ${toVersion}. Make sure the toVersion is a valid version you can update to`
       )
     }
@@ -107,8 +112,12 @@ export class UpdateAssistant<Agent extends BaseAgent<any> = BaseAgent> {
     return neededUpdates
   }
 
-  public async update(updateToVersion?: UpdateToVersion) {
+  public async update(options?: UpdateAssistantUpdateOptions) {
     const updateIdentifier = Date.now().toString()
+    const updateToVersion = options?.updateToVersion
+
+    // By default do a backup first (should be explicitly disabled in case the wallet backend does not support export)
+    const createBackup = options?.backupBeforeStorageUpdate ?? true
 
     try {
       this.agent.config.logger.info(`Starting update of agent storage with updateIdentifier ${updateIdentifier}`)
@@ -143,7 +152,9 @@ export class UpdateAssistant<Agent extends BaseAgent<any> = BaseAgent> {
       )
 
       // Create backup in case migration goes wrong
-      await this.createBackup(updateIdentifier)
+      if (createBackup) {
+        await this.createBackup(updateIdentifier)
+      }
 
       try {
         for (const update of neededUpdates) {
@@ -189,17 +200,23 @@ export class UpdateAssistant<Agent extends BaseAgent<any> = BaseAgent> {
             `Successfully updated agent storage from version ${update.fromVersion} to version ${update.toVersion}`
           )
         }
-        // Delete backup file, as it is not needed anymore
-        await this.fileSystem.delete(this.getBackupPath(updateIdentifier))
+        if (createBackup) {
+          // Delete backup file, as it is not needed anymore
+          await this.fileSystem.delete(this.getBackupPath(updateIdentifier))
+        }
       } catch (error) {
-        this.agent.config.logger.fatal('An error occurred while updating the wallet. Restoring backup', {
+        this.agent.config.logger.fatal('An error occurred while updating the wallet.', {
           error,
         })
-        // In the case of an error we want to restore the backup
-        await this.restoreBackup(updateIdentifier)
 
-        // Delete backup file, as wallet was already restored (backup-error file will persist though)
-        await this.fileSystem.delete(this.getBackupPath(updateIdentifier))
+        if (createBackup) {
+          this.agent.config.logger.debug('Restoring backup.')
+          // In the case of an error we want to restore the backup
+          await this.restoreBackup(updateIdentifier)
+
+          // Delete backup file, as wallet was already restored (backup-error file will persist though)
+          await this.fileSystem.delete(this.getBackupPath(updateIdentifier))
+        }
 
         throw error
       }
@@ -212,6 +229,16 @@ export class UpdateAssistant<Agent extends BaseAgent<any> = BaseAgent> {
           error,
           updateIdentifier,
           backupPath,
+        })
+        throw new StorageUpdateError(errorMessage, { cause: error })
+      }
+      // Wallet backend does not support export
+      if (error instanceof WalletExportUnsupportedError) {
+        const errorMessage = `Error updating storage with updateIdentifier ${updateIdentifier} because the wallet backend does not support exporting.
+         Make sure to do a manual backup of your wallet and disable 'backupBeforeStorageUpdate' before proceeding.`
+        this.agent.config.logger.fatal(errorMessage, {
+          error,
+          updateIdentifier,
         })
         throw new StorageUpdateError(errorMessage, { cause: error })
       }
@@ -237,7 +264,7 @@ export class UpdateAssistant<Agent extends BaseAgent<any> = BaseAgent> {
 
     const walletKey = this.agent.wallet.walletConfig?.key
     if (!walletKey) {
-      throw new AriesFrameworkError("Could not extract wallet key from wallet module. Can't create backup")
+      throw new CredoError("Could not extract wallet key from wallet module. Can't create backup")
     }
 
     await this.agent.wallet.export({ key: walletKey, path: backupPath })
@@ -251,7 +278,7 @@ export class UpdateAssistant<Agent extends BaseAgent<any> = BaseAgent> {
 
     const walletConfig = this.agent.wallet.walletConfig
     if (!walletConfig) {
-      throw new AriesFrameworkError('Could not extract wallet config from wallet module. Cannot restore backup')
+      throw new CredoError('Could not extract wallet config from wallet module. Cannot restore backup')
     }
 
     // Export and delete current wallet

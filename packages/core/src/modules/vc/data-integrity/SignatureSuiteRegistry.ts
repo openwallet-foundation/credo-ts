@@ -1,6 +1,6 @@
 import type { KeyType } from '../../../crypto'
 
-import { AriesFrameworkError } from '../../../error'
+import { CredoError } from '../../../error'
 import { injectable, injectAll } from '../../../plugins'
 
 import { suites } from './libraries/jsonld-signatures'
@@ -27,19 +27,22 @@ export class SignatureSuiteRegistry {
     return this.suiteMapping.map((x) => x.proofType)
   }
 
+  /**
+   * @deprecated recommended to always search by key type instead as that will have broader support
+   */
   public getByVerificationMethodType(verificationMethodType: string) {
     return this.suiteMapping.find((x) => x.verificationMethodTypes.includes(verificationMethodType))
   }
 
-  public getByKeyType(keyType: KeyType) {
-    return this.suiteMapping.find((x) => x.keyTypes.includes(keyType))
+  public getAllByKeyType(keyType: KeyType) {
+    return this.suiteMapping.filter((x) => x.keyTypes.includes(keyType))
   }
 
   public getByProofType(proofType: string) {
     const suiteInfo = this.suiteMapping.find((x) => x.proofType === proofType)
 
     if (!suiteInfo) {
-      throw new AriesFrameworkError(`No signature suite for proof type: ${proofType}`)
+      throw new CredoError(`No signature suite for proof type: ${proofType}`)
     }
 
     return suiteInfo
@@ -49,7 +52,7 @@ export class SignatureSuiteRegistry {
     const suiteInfo = this.suiteMapping.find((suiteInfo) => suiteInfo.proofType === proofType)
 
     if (!suiteInfo) {
-      throw new AriesFrameworkError(`No verification method type found for proof type: ${proofType}`)
+      throw new CredoError(`No verification method type found for proof type: ${proofType}`)
     }
 
     return suiteInfo.verificationMethodTypes

@@ -1,6 +1,6 @@
 import type { AnonCredsRevocationStatusList, AnonCredsRevocationRegistryDefinition } from '@credo-ts/anoncreds'
 
-import { AriesFrameworkError } from '@credo-ts/core'
+import { CredoError } from '@credo-ts/core'
 
 export type RevocationRegistryDelta = {
   accum: string
@@ -24,7 +24,7 @@ export function anonCredsRevocationStatusListFromIndyVdr(
   // revocation registry definition. This will likely also be checked on other levels as well
   // by the ledger or the indy-vdr library itself
   if (Math.max(...delta.issued, ...delta.revoked) >= revocationRegistryDefinition.value.maxCredNum) {
-    throw new AriesFrameworkError(
+    throw new CredoError(
       `Highest delta index '${Math.max(
         ...delta.issued,
         ...delta.revoked
@@ -81,7 +81,7 @@ export function indyVdrCreateLatestRevocationDelta(
   previousDelta?: RevocationRegistryDelta
 ) {
   if (previousDelta && Math.max(...previousDelta.issued, ...previousDelta.revoked) > revocationStatusList.length - 1) {
-    throw new AriesFrameworkError(
+    throw new CredoError(
       `Indy Vdr delta contains an index '${Math.max(
         ...previousDelta.revoked,
         ...previousDelta.issued
@@ -93,20 +93,6 @@ export function indyVdrCreateLatestRevocationDelta(
   const revoked: Array<number> = []
 
   if (previousDelta) {
-    for (const issuedIdx of previousDelta.issued) {
-      // Check whether the revocationStatusList has a different state compared to the delta
-      if (revocationStatusList[issuedIdx] !== RevocationState.Active) {
-        issued.push(issuedIdx)
-      }
-    }
-
-    for (const revokedIdx of previousDelta.revoked) {
-      // Check whether the revocationStatusList has a different state compared to the delta
-      if (revocationStatusList[revokedIdx] !== RevocationState.Revoked) {
-        revoked.push(revokedIdx)
-      }
-    }
-
     revocationStatusList.forEach((revocationStatus, idx) => {
       // Check whether the revocationStatusList entry is not included in the previous delta issued indices
       if (revocationStatus === RevocationState.Active && !previousDelta.issued.includes(idx)) {

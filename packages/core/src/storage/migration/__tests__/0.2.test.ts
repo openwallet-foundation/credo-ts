@@ -63,7 +63,7 @@ describe('UpdateAssistant | v0.2 - v0.3.1', () => {
       },
     }
 
-    expect(await updateAssistant.isUpToDate()).toBe(false)
+    expect(await updateAssistant.isUpToDate('0.3.1')).toBe(false)
     expect(await updateAssistant.getNeededUpdates('0.3.1')).toEqual([
       {
         fromVersion: '0.2',
@@ -77,10 +77,10 @@ describe('UpdateAssistant | v0.2 - v0.3.1', () => {
       },
     ])
 
-    await updateAssistant.update()
+    await updateAssistant.update({ updateToVersion: '0.3.1' })
 
-    expect(await updateAssistant.isUpToDate()).toBe(true)
-    expect(await updateAssistant.getNeededUpdates()).toEqual([])
+    expect(await updateAssistant.isUpToDate('0.3.1')).toBe(true)
+    expect(await updateAssistant.getNeededUpdates('0.3.1')).toEqual([])
     expect(storageService.contextCorrelationIdToRecords[agent.context.contextCorrelationId].records).toMatchSnapshot()
 
     await agent.shutdown()

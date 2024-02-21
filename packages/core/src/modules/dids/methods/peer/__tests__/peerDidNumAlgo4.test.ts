@@ -7,7 +7,7 @@ import didPeer4zQmUJdJ from './__fixtures__/didPeer4zQmUJdJ.json'
 import didPeer4zQmd8Cp from './__fixtures__/didPeer4zQmd8Cp.json'
 
 describe('peerDidNumAlgo4', () => {
-  describe('didDocumentToNumAlgo4Did', () => {
+  describe('didToNumAlgo4DidDocument', () => {
     test('transforms method 4 peer did to a did document', async () => {
       expect(didToNumAlgo4DidDocument(didPeer4zQmd8Cp.id).toJSON()).toMatchObject(didPeer4zQmd8Cp)
     })

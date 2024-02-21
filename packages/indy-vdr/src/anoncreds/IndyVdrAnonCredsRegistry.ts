@@ -43,7 +43,7 @@ import {
   parseIndySchemaId,
   dateToTimestamp,
 } from '@credo-ts/anoncreds'
-import { AriesFrameworkError } from '@credo-ts/core'
+import { CredoError } from '@credo-ts/core'
 import {
   RevocationRegistryEntryRequest,
   RevocationRegistryDefinitionRequest,
@@ -848,13 +848,13 @@ export class IndyVdrAnonCredsRegistry implements AnonCredsRegistry {
       )
 
       if (revocationRegistryNamespace && revocationRegistryNamespace !== namespace) {
-        throw new AriesFrameworkError(
+        throw new CredoError(
           `Issued id '${revocationStatusList.issuerId}' does not have the same namespace (${namespace}) as the revocation registry definition '${revocationRegistryNamespace}'`
         )
       }
 
       if (revocationRegistryNamespaceIdentifier !== namespaceIdentifier) {
-        throw new AriesFrameworkError(
+        throw new CredoError(
           `Cannot register revocation registry definition using a different DID. Revocation registry definition contains '${revocationRegistryNamespaceIdentifier}', but DID used was '${namespaceIdentifier}'`
         )
       }

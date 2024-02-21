@@ -1,0 +1,6 @@
+export * from './OpenId4VcHolderApi'
+export * from './OpenId4VcHolderModule'
+export * from './OpenId4VciHolderService'
+export * from './OpenId4VciHolderServiceOptions'
+export * from './OpenId4vcSiopHolderService'
+export * from './OpenId4vcSiopHolderServiceOptions'

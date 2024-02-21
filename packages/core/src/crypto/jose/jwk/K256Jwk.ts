@@ -68,7 +68,7 @@ export class K256Jwk extends Jwk {
   }
 
   public static fromJson(jwkJson: JwkJson) {
-    if (!isValidP256JwkPublicKey(jwkJson)) {
+    if (!isValidK256JwkPublicKey(jwkJson)) {
       throw new Error("Invalid 'K-256' JWK.")
     }
 
@@ -98,7 +98,7 @@ export interface K256JwkJson extends JwkJson {
   use?: 'sig' | 'enc'
 }
 
-export function isValidP256JwkPublicKey(jwk: JwkJson): jwk is K256JwkJson {
+export function isValidK256JwkPublicKey(jwk: JwkJson): jwk is K256JwkJson {
   return (
     hasKty(jwk, JwaKeyType.EC) &&
     hasCrv(jwk, JwaCurve.Secp256k1) &&

@@ -10,6 +10,7 @@ import { DummyService } from './services'
 
 export class DummyModule implements Module {
   public readonly config: DummyModuleConfig
+
   public readonly api = DummyApi
 
   public constructor(config?: DummyModuleConfigOptions) {
@@ -17,9 +18,6 @@ export class DummyModule implements Module {
   }
 
   public register(dependencyManager: DependencyManager, featureRegistry: FeatureRegistry) {
-    // Api
-    dependencyManager.registerContextScoped(DummyApi)
-
     // Config
     dependencyManager.registerInstance(DummyModuleConfig, this.config)
 

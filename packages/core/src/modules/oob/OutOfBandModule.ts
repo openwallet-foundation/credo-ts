@@ -14,9 +14,6 @@ export class OutOfBandModule implements Module {
    * Registers the dependencies of the ot of band module on the dependency manager.
    */
   public register(dependencyManager: DependencyManager, featureRegistry: FeatureRegistry) {
-    // Api
-    dependencyManager.registerContextScoped(OutOfBandApi)
-
     // Services
     dependencyManager.registerSingleton(OutOfBandService)
 

@@ -148,6 +148,23 @@ describe('AskarWallet basic operations', () => {
     })
     await expect(askarWallet.verify({ key: ed25519Key, data: message, signature })).resolves.toStrictEqual(true)
   })
+
+  test('Create K-256 keypair', async () => {
+    await expect(
+      askarWallet.createKey({ seed: Buffer.concat([seed, seed]), keyType: KeyType.K256 })
+    ).resolves.toMatchObject({
+      keyType: KeyType.K256,
+    })
+  })
+
+  test('Verify a signed message with a k256 publicKey', async () => {
+    const k256Key = await askarWallet.createKey({ keyType: KeyType.K256 })
+    const signature = await askarWallet.sign({
+      data: message,
+      key: k256Key,
+    })
+    await expect(askarWallet.verify({ key: k256Key, data: message, signature })).resolves.toStrictEqual(true)
+  })
 })
 
 describe.skip('Currently, all KeyTypes are supported by Askar natively', () => {

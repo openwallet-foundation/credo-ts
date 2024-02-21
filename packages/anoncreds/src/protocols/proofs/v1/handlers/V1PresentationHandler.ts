@@ -1,7 +1,7 @@
 import type { V1ProofProtocol } from '../V1ProofProtocol'
 import type { MessageHandler, MessageHandlerInboundMessage, ProofExchangeRecord } from '@credo-ts/core'
 
-import { AriesFrameworkError, getOutboundMessageContext } from '@credo-ts/core'
+import { CredoError, getOutboundMessageContext } from '@credo-ts/core'
 
 import { V1PresentationMessage } from '../messages'
 
@@ -34,7 +34,7 @@ export class V1PresentationHandler implements MessageHandler {
 
     const requestMessage = await this.proofProtocol.findRequestMessage(messageContext.agentContext, proofRecord.id)
     if (!requestMessage) {
-      throw new AriesFrameworkError(`No request message found for proof record with id '${proofRecord.id}'`)
+      throw new CredoError(`No request message found for proof record with id '${proofRecord.id}'`)
     }
 
     const { message } = await this.proofProtocol.acceptPresentation(messageContext.agentContext, {

@@ -15,7 +15,7 @@ import { EventEmitter } from '../../agent/EventEmitter'
 import { MessageSender } from '../../agent/MessageSender'
 import { OutboundMessageContext } from '../../agent/models'
 import { InjectionSymbols } from '../../constants'
-import { AriesFrameworkError } from '../../error'
+import { CredoError } from '../../error'
 import { inject, injectable } from '../../plugins'
 import { ConnectionService } from '../connections/services'
 
@@ -77,7 +77,7 @@ export class DiscoverFeaturesApi<
 
   public getService<PVT extends DiscoverFeaturesService['version']>(protocolVersion: PVT): DiscoverFeaturesService {
     if (!this.serviceMap[protocolVersion]) {
-      throw new AriesFrameworkError(`No discover features service registered for protocol version ${protocolVersion}`)
+      throw new CredoError(`No discover features service registered for protocol version ${protocolVersion}`)
     }
 
     return this.serviceMap[protocolVersion] as DiscoverFeaturesService

@@ -1,10 +1,11 @@
 import type { DocumentLoader } from './jsonld'
 import type { AgentContext } from '../../../../agent/context/AgentContext'
 
-import { AriesFrameworkError } from '../../../../error/AriesFrameworkError'
+import { CredoError } from '../../../../error/CredoError'
 import { isDid } from '../../../../utils'
 import { DidResolverService } from '../../../dids'
 
+import { DEFAULT_CONTEXTS } from './contexts'
 import jsonld from './jsonld'
 import { getNativeDocumentLoader } from './nativeDocumentLoader'
 
@@ -14,11 +15,29 @@ export function defaultDocumentLoader(agentContext: AgentContext): DocumentLoade
   const didResolver = agentContext.dependencyManager.resolve(DidResolverService)
 
   async function loader(url: string) {
+    // Check if in the default contexts shipped with Credo
+    if (url in DEFAULT_CONTEXTS) {
+      return {
+        contextUrl: null,
+        documentUrl: url,
+        document: DEFAULT_CONTEXTS[url as keyof typeof DEFAULT_CONTEXTS],
+      }
+    }
+
+    const withoutFragment = url.split('#')[0]
+    if (withoutFragment in DEFAULT_CONTEXTS) {
+      return {
+        contextUrl: null,
+        documentUrl: url,
+        document: DEFAULT_CONTEXTS[url as keyof typeof DEFAULT_CONTEXTS],
+      }
+    }
+
     if (isDid(url)) {
       const result = await didResolver.resolve(agentContext, url)
 
       if (result.didResolutionMetadata.error || !result.didDocument) {
-        throw new AriesFrameworkError(`Unable to resolve DID: ${url}`)
+        throw new CredoError(`Unable to resolve DID: ${url}`)
       }
 
       const framed = await jsonld.frame(

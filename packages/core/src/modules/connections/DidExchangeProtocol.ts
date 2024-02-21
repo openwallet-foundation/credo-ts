@@ -12,7 +12,7 @@ import { JwsService } from '../../crypto/JwsService'
 import { JwaSignatureAlgorithm } from '../../crypto/jose/jwa'
 import { getJwkFromKey } from '../../crypto/jose/jwk'
 import { Attachment, AttachmentData } from '../../decorators/attachment/Attachment'
-import { AriesFrameworkError } from '../../error'
+import { CredoError } from '../../error'
 import { Logger } from '../../logger'
 import { inject, injectable } from '../../plugins'
 import { TypedArrayEncoder, isDid, Buffer } from '../../utils'
@@ -101,7 +101,7 @@ export class DidExchangeProtocol {
       mediatorId = (await getMediationRecordForDidDocument(agentContext, didDocument))?.id
       // Otherwise, create a did:peer based on the provided routing
     } else {
-      if (!routing) throw new AriesFrameworkError(`'routing' must be defined if 'ourDid' is not specified`)
+      if (!routing) throw new CredoError(`'routing' must be defined if 'ourDid' is not specified`)
 
       didDocument = await createPeerDidFromServices(
         agentContext,
@@ -247,11 +247,11 @@ export class DidExchangeProtocol {
     const config = agentContext.dependencyManager.resolve(ConnectionsModuleConfig)
 
     if (!threadId) {
-      throw new AriesFrameworkError('Missing threadId on connection record.')
+      throw new CredoError('Missing threadId on connection record.')
     }
 
     if (!theirDid) {
-      throw new AriesFrameworkError('Missing theirDid on connection record.')
+      throw new CredoError('Missing theirDid on connection record.')
     }
 
     let services: ResolvedDidCommService[] = []
@@ -325,7 +325,7 @@ export class DidExchangeProtocol {
     const { connection: connectionRecord, message, agentContext } = messageContext
 
     if (!connectionRecord) {
-      throw new AriesFrameworkError('No connection record in message context.')
+      throw new CredoError('No connection record in message context.')
     }
 
     DidExchangeStateMachine.assertProcessMessageState(DidExchangeResponseMessage.type, connectionRecord)
@@ -388,13 +388,11 @@ export class DidExchangeProtocol {
     const parentThreadId = outOfBandRecord.outOfBandInvitation.id
 
     if (!threadId) {
-      throw new AriesFrameworkError(`Connection record ${connectionRecord.id} does not have 'threadId' attribute.`)
+      throw new CredoError(`Connection record ${connectionRecord.id} does not have 'threadId' attribute.`)
     }
 
     if (!parentThreadId) {
-      throw new AriesFrameworkError(
-        `Connection record ${connectionRecord.id} does not have 'parentThreadId' attribute.`
-      )
+      throw new CredoError(`Connection record ${connectionRecord.id} does not have 'parentThreadId' attribute.`)
     }
 
     const message = new DidExchangeCompleteMessage({ threadId, parentThreadId })
@@ -418,7 +416,7 @@ export class DidExchangeProtocol {
     const { connection: connectionRecord, message } = messageContext
 
     if (!connectionRecord) {
-      throw new AriesFrameworkError('No connection record in message context.')
+      throw new CredoError('No connection record in message context.')
     }
 
     DidExchangeStateMachine.assertProcessMessageState(DidExchangeCompleteMessage.type, connectionRecord)
@@ -535,7 +533,7 @@ export class DidExchangeProtocol {
       }
 
       if (!didRotateAttachment.data.base64) {
-        throw new AriesFrameworkError('DID Rotate attachment is missing base64 property for signed did.')
+        throw new CredoError('DID Rotate attachment is missing base64 property for signed did.')
       }
 
       // JWS payload must be base64url encoded
@@ -543,7 +541,7 @@ export class DidExchangeProtocol {
       const signedDid = TypedArrayEncoder.fromBase64(base64UrlPayload).toString()
 
       if (signedDid !== message.did) {
-        throw new AriesFrameworkError(
+        throw new CredoError(
           `DID Rotate attachment's did ${message.did} does not correspond to message did ${message.did}`
         )
       }
@@ -555,7 +553,7 @@ export class DidExchangeProtocol {
         },
         jwkResolver: ({ jws: { header } }) => {
           if (typeof header.kid !== 'string' || !isDid(header.kid, 'key')) {
-            throw new AriesFrameworkError('JWS header kid must be a did:key DID.')
+            throw new CredoError('JWS header kid must be a did:key DID.')
           }
 
           const didKey = DidKey.fromDid(header.kid)
@@ -621,7 +619,7 @@ export class DidExchangeProtocol {
     }
 
     if (!didDocumentAttachment.data.base64) {
-      throw new AriesFrameworkError('DID Document attachment is missing base64 property for signed did document.')
+      throw new CredoError('DID Document attachment is missing base64 property for signed did document.')
     }
 
     // JWS payload must be base64url encoded
@@ -634,7 +632,7 @@ export class DidExchangeProtocol {
       },
       jwkResolver: ({ jws: { header } }) => {
         if (typeof header.kid !== 'string' || !isDid(header.kid, 'key')) {
-          throw new AriesFrameworkError('JWS header kid must be a did:key DID.')
+          throw new CredoError('JWS header kid must be a did:key DID.')
         }
 
         const didKey = DidKey.fromDid(header.kid)

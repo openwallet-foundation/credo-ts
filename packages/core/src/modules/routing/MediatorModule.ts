@@ -22,9 +22,6 @@ export class MediatorModule implements Module {
    * Registers the dependencies of the question answer module on the dependency manager.
    */
   public register(dependencyManager: DependencyManager, featureRegistry: FeatureRegistry) {
-    // Api
-    dependencyManager.registerContextScoped(MediatorApi)
-
     // Config
     dependencyManager.registerInstance(MediatorModuleConfig, this.config)
 

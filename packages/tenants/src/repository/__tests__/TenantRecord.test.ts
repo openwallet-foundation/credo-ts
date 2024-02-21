@@ -18,20 +18,23 @@ describe('TenantRecord', () => {
           key: 'test',
         },
       },
+      storageVersion: '0.5',
     })
 
     expect(tenantRecord.type).toBe('TenantRecord')
     expect(tenantRecord.id).toBe('tenant-id')
     expect(tenantRecord.createdAt).toBe(createdAt)
-    expect(tenantRecord.config).toMatchObject({
+    expect(tenantRecord.config).toEqual({
       label: 'test',
       walletConfig: {
         id: 'test',
         key: 'test',
       },
     })
-    expect(tenantRecord.getTags()).toMatchObject({
+    expect(tenantRecord.getTags()).toEqual({
+      label: 'test',
       some: 'tag',
+      storageVersion: '0.5',
     })
   })
 
@@ -50,6 +53,7 @@ describe('TenantRecord', () => {
           key: 'test',
         },
       },
+      storageVersion: '0.5',
     })
 
     const json = tenantRecord.toJSON()
@@ -57,6 +61,7 @@ describe('TenantRecord', () => {
       id: 'tenant-id',
       createdAt: '2022-02-02T00:00:00.000Z',
       metadata: {},
+      storageVersion: '0.5',
       _tags: {
         some: 'tag',
       },
@@ -74,15 +79,17 @@ describe('TenantRecord', () => {
     expect(instance.type).toBe('TenantRecord')
     expect(instance.id).toBe('tenant-id')
     expect(instance.createdAt.getTime()).toBe(createdAt.getTime())
-    expect(instance.config).toMatchObject({
+    expect(instance.config).toEqual({
       label: 'test',
       walletConfig: {
         id: 'test',
         key: 'test',
       },
     })
-    expect(instance.getTags()).toMatchObject({
+    expect(instance.getTags()).toEqual({
+      label: 'test',
       some: 'tag',
+      storageVersion: '0.5',
     })
   })
 })

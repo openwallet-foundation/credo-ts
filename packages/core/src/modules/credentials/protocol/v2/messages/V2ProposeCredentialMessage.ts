@@ -13,6 +13,8 @@ export interface V2ProposeCredentialMessageOptions {
   formats: CredentialFormatSpec[]
   proposalAttachments: Attachment[]
   comment?: string
+  goalCode?: string
+  goal?: string
   credentialPreview?: V2CredentialPreview
   attachments?: Attachment[]
 }
@@ -23,6 +25,8 @@ export class V2ProposeCredentialMessage extends AgentMessage {
     if (options) {
       this.id = options.id ?? this.generateId()
       this.comment = options.comment
+      this.goalCode = options.goalCode
+      this.goal = options.goal
       this.credentialPreview = options.credentialPreview
       this.formats = options.formats
       this.proposalAttachments = options.proposalAttachments
@@ -63,6 +67,15 @@ export class V2ProposeCredentialMessage extends AgentMessage {
   @IsOptional()
   @IsString()
   public comment?: string
+
+  @Expose({ name: 'goal_code' })
+  @IsString()
+  @IsOptional()
+  public goalCode?: string
+
+  @IsString()
+  @IsOptional()
+  public goal?: string
 
   public getProposalAttachmentById(id: string): Attachment | undefined {
     return this.proposalAttachments.find((attachment) => attachment.id === id)

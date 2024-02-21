@@ -30,7 +30,7 @@ import { injectable } from 'tsyringe'
 import { MessageSender } from '../../agent/MessageSender'
 import { AgentContext } from '../../agent/context/AgentContext'
 import { getOutboundMessageContext } from '../../agent/getOutboundMessageContext'
-import { AriesFrameworkError } from '../../error'
+import { CredoError } from '../../error'
 import { ConnectionService } from '../connections/services/ConnectionService'
 
 import { ProofsModuleConfig } from './ProofsModuleConfig'
@@ -115,7 +115,7 @@ export class ProofsApi<PPs extends ProofProtocol[]> implements ProofsApi<PPs> {
     const proofProtocol = this.config.proofProtocols.find((protocol) => protocol.version === protocolVersion)
 
     if (!proofProtocol) {
-      throw new AriesFrameworkError(`No proof protocol registered for protocol version ${protocolVersion}`)
+      throw new CredoError(`No proof protocol registered for protocol version ${protocolVersion}`)
     }
 
     return proofProtocol
@@ -166,7 +166,7 @@ export class ProofsApi<PPs extends ProofProtocol[]> implements ProofsApi<PPs> {
     const proofRecord = await this.getById(options.proofRecordId)
 
     if (!proofRecord.connectionId) {
-      throw new AriesFrameworkError(
+      throw new CredoError(
         `No connectionId found for proof record '${proofRecord.id}'. Connection-less verification does not support presentation proposal or negotiation.`
       )
     }
@@ -210,7 +210,7 @@ export class ProofsApi<PPs extends ProofProtocol[]> implements ProofsApi<PPs> {
     const proofRecord = await this.getById(options.proofRecordId)
 
     if (!proofRecord.connectionId) {
-      throw new AriesFrameworkError(
+      throw new CredoError(
         `No connectionId found for proof record '${proofRecord.id}'. Connection-less verification does not support negotiation.`
       )
     }
@@ -289,7 +289,7 @@ export class ProofsApi<PPs extends ProofProtocol[]> implements ProofsApi<PPs> {
 
     const requestMessage = await protocol.findRequestMessage(this.agentContext, proofRecord.id)
     if (!requestMessage) {
-      throw new AriesFrameworkError(`No request message found for proof record with id '${proofRecord.id}'`)
+      throw new CredoError(`No request message found for proof record with id '${proofRecord.id}'`)
     }
 
     // Use connection if present
@@ -343,7 +343,7 @@ export class ProofsApi<PPs extends ProofProtocol[]> implements ProofsApi<PPs> {
     const proofRecord = await this.getById(options.proofRecordId)
 
     if (!proofRecord.connectionId) {
-      throw new AriesFrameworkError(
+      throw new CredoError(
         `No connectionId found for proof record '${proofRecord.id}'. Connection-less verification does not support presentation proposal or negotiation.`
       )
     }
@@ -409,12 +409,12 @@ export class ProofsApi<PPs extends ProofProtocol[]> implements ProofsApi<PPs> {
 
     const requestMessage = await protocol.findRequestMessage(this.agentContext, proofRecord.id)
     if (!requestMessage) {
-      throw new AriesFrameworkError(`No request message found for proof record with id '${proofRecord.id}'`)
+      throw new CredoError(`No request message found for proof record with id '${proofRecord.id}'`)
     }
 
     const presentationMessage = await protocol.findPresentationMessage(this.agentContext, proofRecord.id)
     if (!presentationMessage) {
-      throw new AriesFrameworkError(`No presentation message found for proof record with id '${proofRecord.id}'`)
+      throw new CredoError(`No presentation message found for proof record with id '${proofRecord.id}'`)
     }
 
     // Use connection if present
@@ -509,7 +509,7 @@ export class ProofsApi<PPs extends ProofProtocol[]> implements ProofsApi<PPs> {
       proofRecord.assertState(ProofState.RequestReceived)
 
       if (!requestMessage) {
-        throw new AriesFrameworkError(`No request message found for proof record with id '${proofRecord.id}'`)
+        throw new CredoError(`No request message found for proof record with id '${proofRecord.id}'`)
       }
     }
 

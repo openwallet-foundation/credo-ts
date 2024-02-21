@@ -5,7 +5,7 @@ import type { OutOfBandState } from '../domain/OutOfBandState'
 
 import { Type } from 'class-transformer'
 
-import { AriesFrameworkError } from '../../../error'
+import { CredoError } from '../../../error'
 import { BaseRecord } from '../../../storage/BaseRecord'
 import { getThreadIdFromPlainTextMessage } from '../../../utils/thread'
 import { uuid } from '../../../utils/uuid'
@@ -94,7 +94,7 @@ export class OutOfBandRecord extends BaseRecord<
 
   public assertRole(expectedRole: OutOfBandRole) {
     if (this.role !== expectedRole) {
-      throw new AriesFrameworkError(`Invalid out-of-band record role ${this.role}, expected is ${expectedRole}.`)
+      throw new CredoError(`Invalid out-of-band record role ${this.role}, expected is ${expectedRole}.`)
     }
   }
 
@@ -104,7 +104,7 @@ export class OutOfBandRecord extends BaseRecord<
     }
 
     if (!expectedStates.includes(this.state)) {
-      throw new AriesFrameworkError(
+      throw new CredoError(
         `Invalid out-of-band record state ${this.state}, valid states are: ${expectedStates.join(', ')}.`
       )
     }

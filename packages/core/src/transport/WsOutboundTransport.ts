@@ -4,10 +4,10 @@ import type { Agent } from '../agent/Agent'
 import type { AgentMessageReceivedEvent } from '../agent/Events'
 import type { Logger } from '../logger'
 import type { OutboundPackage } from '../types'
-import type WebSocket from 'ws'
+import type { WebSocket } from 'ws'
 
 import { AgentEventTypes } from '../agent/Events'
-import { AriesFrameworkError } from '../error/AriesFrameworkError'
+import { CredoError } from '../error/CredoError'
 import { isValidJweStructure, JsonEncoder } from '../utils'
 import { Buffer } from '../utils/buffer'
 
@@ -19,6 +19,7 @@ export class WsOutboundTransport implements OutboundTransport {
   private logger!: Logger
   private WebSocketClass!: typeof WebSocket
   public supportedSchemes = ['ws', 'wss']
+  private isActive = false
 
   public async start(agent: Agent): Promise<void> {
     this.agent = agent
@@ -27,14 +28,26 @@ export class WsOutboundTransport implements OutboundTransport {
 
     this.logger.debug('Starting WS outbound transport')
     this.WebSocketClass = agent.config.agentDependencies.WebSocketClass
+
+    this.isActive = true
   }
 
   public async stop() {
     this.logger.debug('Stopping WS outbound transport')
+    this.isActive = false
+
+    const stillOpenSocketClosingPromises: Array<Promise<void>> = []
+
     this.transportTable.forEach((socket) => {
       socket.removeEventListener('message', this.handleMessageEvent)
-      socket.close()
+      if (socket.readyState !== this.WebSocketClass.CLOSED) {
+        stillOpenSocketClosingPromises.push(new Promise((resolve) => socket.once('close', resolve)))
+        socket.close()
+      }
     })
+
+    // Wait for all open websocket connections to have been closed
+    await Promise.all(stillOpenSocketClosingPromises)
   }
 
   public async sendMessage(outboundPackage: OutboundPackage) {
@@ -43,21 +56,30 @@ export class WsOutboundTransport implements OutboundTransport {
       payload,
     })
 
+    if (!this.isActive) {
+      throw new CredoError('Outbound transport is not active. Not sending message.')
+    }
+
     if (!endpoint) {
-      throw new AriesFrameworkError("Missing connection or endpoint. I don't know how and where to send the message.")
+      throw new CredoError("Missing connection or endpoint. I don't know how and where to send the message.")
     }
 
     const socketId = `${endpoint}-${connectionId}`
     const isNewSocket = !this.hasOpenSocket(socketId)
     const socket = await this.resolveSocket({ socketId, endpoint, connectionId })
 
-    socket.send(Buffer.from(JSON.stringify(payload)))
+    return new Promise<void>((resolve, reject) =>
+      socket.send(Buffer.from(JSON.stringify(payload)), (err) => {
+        // If the socket was created for this message and we don't have return routing enabled
+        // We can close the socket as it shouldn't return messages anymore
+        if (isNewSocket && !outboundPackage.responseRequested) {
+          socket.close()
+        }
 
-    // If the socket was created for this message and we don't have return routing enabled
-    // We can close the socket as it shouldn't return messages anymore
-    if (isNewSocket && !outboundPackage.responseRequested) {
-      socket.close()
-    }
+        if (err) return reject(err)
+        resolve()
+      })
+    )
   }
 
   private hasOpenSocket(socketId: string) {
@@ -78,7 +100,7 @@ export class WsOutboundTransport implements OutboundTransport {
 
     if (!socket || socket.readyState === this.WebSocketClass.CLOSING) {
       if (!endpoint) {
-        throw new AriesFrameworkError(`Missing endpoint. I don't know how and where to send the message.`)
+        throw new CredoError(`Missing endpoint. I don't know how and where to send the message.`)
       }
       socket = await this.createSocketConnection({
         endpoint,
@@ -90,7 +112,7 @@ export class WsOutboundTransport implements OutboundTransport {
     }
 
     if (socket.readyState !== this.WebSocketClass.OPEN) {
-      throw new AriesFrameworkError('Socket is not open.')
+      throw new CredoError('Socket is not open.')
     }
 
     return socket

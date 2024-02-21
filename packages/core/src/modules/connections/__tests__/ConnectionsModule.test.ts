@@ -1,6 +1,5 @@
 import { FeatureRegistry } from '../../../agent/FeatureRegistry'
 import { DependencyManager } from '../../../plugins/DependencyManager'
-import { ConnectionsApi } from '../ConnectionsApi'
 import { ConnectionsModule } from '../ConnectionsModule'
 import { ConnectionsModuleConfig } from '../ConnectionsModuleConfig'
 import { DidExchangeProtocol } from '../DidExchangeProtocol'
@@ -22,9 +21,6 @@ describe('ConnectionsModule', () => {
   test('registers dependencies on the dependency manager', () => {
     const connectionsModule = new ConnectionsModule()
     connectionsModule.register(dependencyManager, featureRegistry)
-
-    expect(dependencyManager.registerContextScoped).toHaveBeenCalledTimes(1)
-    expect(dependencyManager.registerContextScoped).toHaveBeenCalledWith(ConnectionsApi)
 
     expect(dependencyManager.registerInstance).toHaveBeenCalledTimes(1)
     expect(dependencyManager.registerInstance).toHaveBeenCalledWith(ConnectionsModuleConfig, connectionsModule.config)

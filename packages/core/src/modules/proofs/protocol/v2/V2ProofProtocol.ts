@@ -32,7 +32,7 @@ import type {
 } from '../ProofProtocolOptions'
 
 import { Protocol } from '../../../../agent/models'
-import { AriesFrameworkError } from '../../../../error'
+import { CredoError } from '../../../../error'
 import { DidCommMessageRepository } from '../../../../storage'
 import { uuid } from '../../../../utils/uuid'
 import { AckStatus } from '../../../common'
@@ -106,6 +106,7 @@ export class V2ProofProtocol<PFs extends ProofFormatService[] = ProofFormatServi
       comment,
       autoAcceptProof,
       goalCode,
+      goal,
       parentThreadId,
     }: CreateProofProposalOptions<PFs>
   ): Promise<{ proofRecord: ProofExchangeRecord; message: AgentMessage }> {
@@ -113,7 +114,7 @@ export class V2ProofProtocol<PFs extends ProofFormatService[] = ProofFormatServi
 
     const formatServices = this.getFormatServices(proofFormats)
     if (formatServices.length === 0) {
-      throw new AriesFrameworkError(`Unable to create proposal. No supported formats`)
+      throw new CredoError(`Unable to create proposal. No supported formats`)
     }
 
     const proofRecord = new ProofExchangeRecord({
@@ -131,6 +132,7 @@ export class V2ProofProtocol<PFs extends ProofFormatService[] = ProofFormatServi
       formatServices,
       comment,
       goalCode,
+      goal,
     })
 
     agentContext.config.logger.debug('Save record and emit state change event')
@@ -168,7 +170,7 @@ export class V2ProofProtocol<PFs extends ProofFormatService[] = ProofFormatServi
 
     const formatServices = this.getFormatServicesFromMessage(proposalMessage.formats)
     if (formatServices.length === 0) {
-      throw new AriesFrameworkError(`Unable to process proposal. No supported formats`)
+      throw new CredoError(`Unable to process proposal. No supported formats`)
     }
 
     // credential record already exists
@@ -228,7 +230,15 @@ export class V2ProofProtocol<PFs extends ProofFormatService[] = ProofFormatServi
 
   public async acceptProposal(
     agentContext: AgentContext,
-    { proofRecord, proofFormats, autoAcceptProof, comment, goalCode, willConfirm }: AcceptProofProposalOptions<PFs>
+    {
+      proofRecord,
+      proofFormats,
+      autoAcceptProof,
+      comment,
+      goalCode,
+      goal,
+      willConfirm,
+    }: AcceptProofProposalOptions<PFs>
   ): Promise<ProofProtocolMsgReturnType<V2RequestPresentationMessage>> {
     // Assert
     proofRecord.assertProtocolVersion('v2')
@@ -253,9 +263,7 @@ export class V2ProofProtocol<PFs extends ProofFormatService[] = ProofFormatServi
     // If the format services list is still empty, throw an error as we don't support any
     // of the formats
     if (formatServices.length === 0) {
-      throw new AriesFrameworkError(
-        `Unable to accept proposal. No supported formats provided as input or in proposal message`
-      )
+      throw new CredoError(`Unable to accept proposal. No supported formats provided as input or in proposal message`)
     }
 
     const requestMessage = await this.proofFormatCoordinator.acceptProposal(agentContext, {
@@ -264,6 +272,7 @@ export class V2ProofProtocol<PFs extends ProofFormatService[] = ProofFormatServi
       comment,
       proofFormats,
       goalCode,
+      goal,
       willConfirm,
       // Not supported at the moment
       presentMultiple: false,
@@ -285,21 +294,29 @@ export class V2ProofProtocol<PFs extends ProofFormatService[] = ProofFormatServi
    */
   public async negotiateProposal(
     agentContext: AgentContext,
-    { proofRecord, proofFormats, autoAcceptProof, comment, goalCode, willConfirm }: NegotiateProofProposalOptions<PFs>
+    {
+      proofRecord,
+      proofFormats,
+      autoAcceptProof,
+      comment,
+      goalCode,
+      goal,
+      willConfirm,
+    }: NegotiateProofProposalOptions<PFs>
   ): Promise<ProofProtocolMsgReturnType<V2RequestPresentationMessage>> {
     // Assert
     proofRecord.assertProtocolVersion('v2')
     proofRecord.assertState(ProofState.ProposalReceived)
 
     if (!proofRecord.connectionId) {
-      throw new AriesFrameworkError(
+      throw new CredoError(
         `No connectionId found for proof record '${proofRecord.id}'. Connection-less verification does not support negotiation.`
       )
     }
 
     const formatServices = this.getFormatServices(proofFormats)
     if (formatServices.length === 0) {
-      throw new AriesFrameworkError(`Unable to create request. No supported formats`)
+      throw new CredoError(`Unable to create request. No supported formats`)
     }
 
     const requestMessage = await this.proofFormatCoordinator.createRequest(agentContext, {
@@ -308,6 +325,7 @@ export class V2ProofProtocol<PFs extends ProofFormatService[] = ProofFormatServi
       proofRecord,
       comment,
       goalCode,
+      goal,
       willConfirm,
       // Not supported at the moment
       presentMultiple: false,
@@ -333,6 +351,7 @@ export class V2ProofProtocol<PFs extends ProofFormatService[] = ProofFormatServi
       connectionRecord,
       parentThreadId,
       goalCode,
+      goal,
       willConfirm,
     }: CreateProofRequestOptions<PFs>
   ): Promise<ProofProtocolMsgReturnType<V2RequestPresentationMessage>> {
@@ -340,7 +359,7 @@ export class V2ProofProtocol<PFs extends ProofFormatService[] = ProofFormatServi
 
     const formatServices = this.getFormatServices(proofFormats)
     if (formatServices.length === 0) {
-      throw new AriesFrameworkError(`Unable to create request. No supported formats`)
+      throw new CredoError(`Unable to create request. No supported formats`)
     }
 
     const proofRecord = new ProofExchangeRecord({
@@ -358,6 +377,7 @@ export class V2ProofProtocol<PFs extends ProofFormatService[] = ProofFormatServi
       proofRecord,
       comment,
       goalCode,
+      goal,
       willConfirm,
     })
 
@@ -399,7 +419,7 @@ export class V2ProofProtocol<PFs extends ProofFormatService[] = ProofFormatServi
 
     const formatServices = this.getFormatServicesFromMessage(requestMessage.formats)
     if (formatServices.length === 0) {
-      throw new AriesFrameworkError(`Unable to process request. No supported formats`)
+      throw new CredoError(`Unable to process request. No supported formats`)
     }
 
     // proof record already exists
@@ -461,7 +481,7 @@ export class V2ProofProtocol<PFs extends ProofFormatService[] = ProofFormatServi
 
   public async acceptRequest(
     agentContext: AgentContext,
-    { proofRecord, autoAcceptProof, comment, proofFormats, goalCode }: AcceptProofRequestOptions<PFs>
+    { proofRecord, autoAcceptProof, comment, proofFormats, goalCode, goal }: AcceptProofRequestOptions<PFs>
   ) {
     const didCommMessageRepository = agentContext.dependencyManager.resolve(DidCommMessageRepository)
 
@@ -486,9 +506,7 @@ export class V2ProofProtocol<PFs extends ProofFormatService[] = ProofFormatServi
     // If the format services list is still empty, throw an error as we don't support any
     // of the formats
     if (formatServices.length === 0) {
-      throw new AriesFrameworkError(
-        `Unable to accept request. No supported formats provided as input or in request message`
-      )
+      throw new CredoError(`Unable to accept request. No supported formats provided as input or in request message`)
     }
     const message = await this.proofFormatCoordinator.acceptRequest(agentContext, {
       proofRecord,
@@ -496,6 +514,7 @@ export class V2ProofProtocol<PFs extends ProofFormatService[] = ProofFormatServi
       comment,
       proofFormats,
       goalCode,
+      goal,
       // Sending multiple presentation messages not supported at the moment
       lastPresentation: true,
     })
@@ -516,21 +535,21 @@ export class V2ProofProtocol<PFs extends ProofFormatService[] = ProofFormatServi
    */
   public async negotiateRequest(
     agentContext: AgentContext,
-    { proofRecord, proofFormats, autoAcceptProof, comment, goalCode }: NegotiateProofRequestOptions<PFs>
+    { proofRecord, proofFormats, autoAcceptProof, comment, goalCode, goal }: NegotiateProofRequestOptions<PFs>
   ): Promise<ProofProtocolMsgReturnType<V2ProposeCredentialMessage>> {
     // Assert
     proofRecord.assertProtocolVersion('v2')
     proofRecord.assertState(ProofState.RequestReceived)
 
     if (!proofRecord.connectionId) {
-      throw new AriesFrameworkError(
+      throw new CredoError(
         `No connectionId found for proof record '${proofRecord.id}'. Connection-less verification does not support negotiation.`
       )
     }
 
     const formatServices = this.getFormatServices(proofFormats)
     if (formatServices.length === 0) {
-      throw new AriesFrameworkError(`Unable to create proposal. No supported formats`)
+      throw new CredoError(`Unable to create proposal. No supported formats`)
     }
 
     const proposalMessage = await this.proofFormatCoordinator.createProposal(agentContext, {
@@ -539,6 +558,7 @@ export class V2ProofProtocol<PFs extends ProofFormatService[] = ProofFormatServi
       proofRecord,
       comment,
       goalCode,
+      goal,
     })
 
     proofRecord.autoAcceptProof = autoAcceptProof ?? proofRecord.autoAcceptProof
@@ -574,7 +594,7 @@ export class V2ProofProtocol<PFs extends ProofFormatService[] = ProofFormatServi
     // If the format services list is still empty, throw an error as we don't support any
     // of the formats
     if (formatServices.length === 0) {
-      throw new AriesFrameworkError(
+      throw new CredoError(
         `Unable to get credentials for request. No supported formats provided as input or in request message`
       )
     }
@@ -617,7 +637,7 @@ export class V2ProofProtocol<PFs extends ProofFormatService[] = ProofFormatServi
     // If the format services list is still empty, throw an error as we don't support any
     // of the formats
     if (formatServices.length === 0) {
-      throw new AriesFrameworkError(
+      throw new CredoError(
         `Unable to get credentials for request. No supported formats provided as input or in request message`
       )
     }
@@ -720,7 +740,7 @@ export class V2ProofProtocol<PFs extends ProofFormatService[] = ProofFormatServi
     })
 
     if (!presentation.lastPresentation) {
-      throw new AriesFrameworkError(
+      throw new CredoError(
         `Trying to send an ack message while presentation with id ${presentation.id} indicates this is not the last presentation (presentation.last_presentation is set to false)`
       )
     }

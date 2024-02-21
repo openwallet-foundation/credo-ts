@@ -1,6 +1,7 @@
 import type { WalletConfig } from '@credo-ts/core'
 
 import {
+  WalletExportUnsupportedError,
   WalletDuplicateError,
   WalletNotFoundError,
   InjectionSymbols,
@@ -19,6 +20,7 @@ import { AskarBaseWallet } from './AskarBaseWallet'
 export class AskarProfileWallet extends AskarBaseWallet {
   private walletConfig?: WalletConfig
   public readonly store: Store
+  public isInitialized = false
 
   public constructor(
     store: Store,
@@ -28,10 +30,6 @@ export class AskarProfileWallet extends AskarBaseWallet {
     super(logger, signingKeyProviderRegistry)
 
     this.store = store
-  }
-
-  public get isInitialized() {
-    return this._session !== undefined
   }
 
   public get isProvisioned() {
@@ -89,19 +87,15 @@ export class AskarProfileWallet extends AskarBaseWallet {
     try {
       this.walletConfig = walletConfig
 
-      this._session = await this.store.session(walletConfig.id).open()
-
-      // FIXME: opening a session for a profile that does not exist, will not throw an error until
-      // the session is actually used. We can check if the profile exists by doing something with
-      // the session, which will throw a not found error if the profile does not exists,
-      // but that is not very efficient as it needs to be done on every open.
-      // See: https://github.com/hyperledger/aries-askar/issues/163
-      await this._session.fetch({
-        category: 'fetch-to-see-if-profile-exists',
-        name: 'fetch-to-see-if-profile-exists',
-        forUpdate: false,
-        isJson: false,
+      // TODO: what is faster? listProfiles or open and close session?
+      // I think open/close is more scalable (what if profiles is 10.000.000?)
+      // We just want to check if the profile exists. Because the wallet initialization logic
+      // first tries to open, and if it doesn't exist it will create it. So we must check here
+      // if the profile exists
+      await this.withSession(() => {
+        /* no-op */
       })
+      this.isInitialized = true
     } catch (error) {
       // Profile does not exist
       if (isAskarError(error, AskarErrorCode.NotFound)) {
@@ -138,16 +132,15 @@ export class AskarProfileWallet extends AskarBaseWallet {
       )
     }
 
-    this.logger.info(`Deleting profile '${this.walletConfig.id}'`)
-
-    if (this._session) {
+    this.logger.info(`Deleting profile '${this.profile}'`)
+    if (this.isInitialized) {
       await this.close()
     }
 
     try {
-      await this.store.removeProfile(this.walletConfig.id)
+      await this.store.removeProfile(this.profile)
     } catch (error) {
-      const errorMessage = `Error deleting wallet for profile '${this.walletConfig.id}': ${error.message}`
+      const errorMessage = `Error deleting wallet for profile '${this.profile}': ${error.message}`
       this.logger.error(errorMessage, {
         error,
         errorMessage: error.message,
@@ -159,7 +152,7 @@ export class AskarProfileWallet extends AskarBaseWallet {
 
   public async export() {
     // This PR should help with this: https://github.com/hyperledger/aries-askar/pull/159
-    throw new WalletError('Exporting a profile is not supported.')
+    throw new WalletExportUnsupportedError('Exporting a profile is not supported.')
   }
 
   public async import() {
@@ -176,21 +169,10 @@ export class AskarProfileWallet extends AskarBaseWallet {
   public async close() {
     this.logger.debug(`Closing wallet for profile ${this.walletConfig?.id}`)
 
-    if (!this._session) {
-      throw new WalletError('Wallet is in invalid state, you are trying to close wallet that has no handle.')
+    if (!this.isInitialized) {
+      throw new WalletError('Wallet is in invalid state, you are trying to close wallet that is not initialized.')
     }
 
-    try {
-      await this.session.close()
-      this._session = undefined
-    } catch (error) {
-      const errorMessage = `Error closing wallet for profile ${this.walletConfig?.id}: ${error.message}`
-      this.logger.error(errorMessage, {
-        error,
-        errorMessage: error.message,
-      })
-
-      throw new WalletError(errorMessage, { cause: error })
-    }
+    this.isInitialized = false
   }
 }

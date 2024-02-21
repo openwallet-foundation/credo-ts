@@ -11,6 +11,7 @@ export interface V2ProposePresentationMessageOptions {
   id?: string
   comment?: string
   goalCode?: string
+  goal?: string
   proposalAttachments: Attachment[]
   formats: ProofFormatSpec[]
 }
@@ -25,6 +26,7 @@ export class V2ProposePresentationMessage extends AgentMessage {
       this.id = options.id ?? uuid()
       this.comment = options.comment
       this.goalCode = options.goalCode
+      this.goal = options.goal
       this.formats = options.formats
       this.proposalAttachments = options.proposalAttachments
     }
@@ -42,6 +44,10 @@ export class V2ProposePresentationMessage extends AgentMessage {
   @IsString()
   @IsOptional()
   public goalCode?: string
+
+  @IsString()
+  @IsOptional()
+  public goal?: string
 
   @Type(() => ProofFormatSpec)
   @IsArray()

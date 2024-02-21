@@ -7,7 +7,7 @@ import type { InboundTransport } from '../transport'
 import type { EncryptedMessage, PlaintextMessage } from '../types'
 
 import { InjectionSymbols } from '../constants'
-import { AriesFrameworkError } from '../error'
+import { CredoError } from '../error'
 import { Logger } from '../logger'
 import { ConnectionService } from '../modules/connections'
 import { ProblemReportError, ProblemReportMessage, ProblemReportReason } from '../modules/problem-reports'
@@ -97,7 +97,7 @@ export class MessageReceiver {
       } else if (this.isPlaintextMessage(inboundMessage)) {
         await this.receivePlaintextMessage(agentContext, inboundMessage, connection)
       } else {
-        throw new AriesFrameworkError('Unable to parse incoming message: unrecognized format')
+        throw new CredoError('Unable to parse incoming message: unrecognized format')
       }
     } finally {
       // Always end the session for the agent context after handling the message.
@@ -279,7 +279,7 @@ export class MessageReceiver {
   ) {
     const messageType = parseMessageType(plaintextMessage['@type'])
     if (canHandleMessageType(ProblemReportMessage, messageType)) {
-      throw new AriesFrameworkError(`Not sending problem report in response to problem report: ${message}`)
+      throw new CredoError(`Not sending problem report in response to problem report: ${message}`)
     }
     const problemReportMessage = new ProblemReportMessage({
       description: {

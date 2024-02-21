@@ -1,4 +1,4 @@
-import type { DependencyManager, Module } from '../../plugins'
+import type { Module } from '../../plugins'
 
 import { injectable } from 'tsyringe'
 
@@ -43,8 +43,8 @@ class MyApi {
 
 class MyModule implements Module {
   public api = MyApi
-  public register(dependencyManager: DependencyManager) {
-    dependencyManager.registerContextScoped(MyApi)
+  public register() {
+    // noop
   }
 }
 

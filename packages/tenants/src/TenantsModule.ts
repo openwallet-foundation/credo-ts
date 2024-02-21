@@ -1,5 +1,5 @@
 import type { TenantsModuleConfigOptions } from './TenantsModuleConfig'
-import type { Constructor, ModulesMap, DependencyManager, Module, EmptyModuleMap } from '@credo-ts/core'
+import type { Constructor, ModulesMap, DependencyManager, Module, EmptyModuleMap, Update } from '@credo-ts/core'
 
 import { AgentConfig, InjectionSymbols } from '@credo-ts/core'
 
@@ -9,6 +9,7 @@ import { TenantAgentContextProvider } from './context/TenantAgentContextProvider
 import { TenantSessionCoordinator } from './context/TenantSessionCoordinator'
 import { TenantRepository, TenantRoutingRepository } from './repository'
 import { TenantRecordService } from './services'
+import { updateTenantsModuleV0_4ToV0_5 } from './updates/0.4-0.5'
 
 export class TenantsModule<AgentModules extends ModulesMap = EmptyModuleMap> implements Module {
   public readonly config: TenantsModuleConfig
@@ -47,4 +48,12 @@ export class TenantsModule<AgentModules extends ModulesMap = EmptyModuleMap> imp
     dependencyManager.registerSingleton(InjectionSymbols.AgentContextProvider, TenantAgentContextProvider)
     dependencyManager.registerSingleton(TenantSessionCoordinator)
   }
+
+  public updates = [
+    {
+      fromVersion: '0.4',
+      toVersion: '0.5',
+      doUpdate: updateTenantsModuleV0_4ToV0_5,
+    },
+  ] satisfies Update[]
 }

@@ -2,7 +2,7 @@ import type { MessageHandler, MessageHandlerInboundMessage } from '../../../agen
 import type { DidRotateService } from '../services'
 import type { ConnectionService } from '../services/ConnectionService'
 
-import { AriesFrameworkError } from '../../../error'
+import { CredoError } from '../../../error'
 import { DidRotateMessage } from '../messages'
 
 export class DidRotateHandler implements MessageHandler {
@@ -18,7 +18,7 @@ export class DidRotateHandler implements MessageHandler {
   public async handle(messageContext: MessageHandlerInboundMessage<DidRotateHandler>) {
     const { connection, recipientKey } = messageContext
     if (!connection) {
-      throw new AriesFrameworkError(`Connection for verkey ${recipientKey?.fingerprint} not found!`)
+      throw new CredoError(`Connection for verkey ${recipientKey?.fingerprint} not found!`)
     }
 
     return this.didRotateService.processRotate(messageContext)

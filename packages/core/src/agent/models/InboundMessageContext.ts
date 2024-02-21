@@ -3,7 +3,7 @@ import type { ConnectionRecord } from '../../modules/connections'
 import type { AgentMessage } from '../AgentMessage'
 import type { AgentContext } from '../context'
 
-import { AriesFrameworkError } from '../../error'
+import { CredoError } from '../../error'
 
 export interface MessageContextParams {
   connection?: ConnectionRecord
@@ -33,11 +33,11 @@ export class InboundMessageContext<T extends AgentMessage = AgentMessage> {
   /**
    * Assert the inbound message has a ready connection associated with it.
    *
-   * @throws {AriesFrameworkError} if there is no connection or the connection is not ready
+   * @throws {CredoError} if there is no connection or the connection is not ready
    */
   public assertReadyConnection(): ConnectionRecord {
     if (!this.connection) {
-      throw new AriesFrameworkError(`No connection associated with incoming message ${this.message.type}`)
+      throw new CredoError(`No connection associated with incoming message ${this.message.type}`)
     }
 
     // Make sure connection is ready

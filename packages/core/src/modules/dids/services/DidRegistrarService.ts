@@ -153,4 +153,11 @@ export class DidRegistrarService {
   private findRegistrarForMethod(method: string): DidRegistrar | null {
     return this.didsModuleConfig.registrars.find((r) => r.supportedMethods.includes(method)) ?? null
   }
+
+  /**
+   * Get all supported did methods for the did registrar.
+   */
+  public get supportedMethods() {
+    return Array.from(new Set(this.didsModuleConfig.registrars.flatMap((r) => r.supportedMethods)))
+  }
 }

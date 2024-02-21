@@ -1,4 +1,4 @@
-import { AriesFrameworkError } from '@credo-ts/core'
+import { CredoError } from '@credo-ts/core'
 
 const didIndyAnonCredsBase =
   /(did:indy:((?:[a-z][_a-z0-9-]*)(?::[a-z][_a-z0-9-]*)?):([1-9A-HJ-NP-Za-km-z]{21,22}))\/anoncreds\/v0/
@@ -80,7 +80,7 @@ export function parseIndyDid(did: string) {
     const [, namespace, namespaceIdentifier] = match
     return { namespace, namespaceIdentifier }
   } else {
-    throw new AriesFrameworkError(`${did} is not a valid did:indy did`)
+    throw new CredoError(`${did} is not a valid did:indy did`)
   }
 }
 

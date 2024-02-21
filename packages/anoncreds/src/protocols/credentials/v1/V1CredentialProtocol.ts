@@ -14,7 +14,7 @@ import type {
 import {
   Protocol,
   CredentialRepository,
-  AriesFrameworkError,
+  CredoError,
   CredentialExchangeRecord,
   CredentialState,
   JsonTransformer,
@@ -124,7 +124,7 @@ export class V1CredentialProtocol
     const didCommMessageRepository = agentContext.dependencyManager.resolve(DidCommMessageRepository)
 
     if (!credentialFormats.indy) {
-      throw new AriesFrameworkError('Missing indy credential format in v1 create proposal call.')
+      throw new CredoError('Missing indy credential format in v1 create proposal call.')
     }
 
     // TODO: linked attachments are broken currently. We never include them in the messages.
@@ -315,7 +315,7 @@ export class V1CredentialProtocol
     })
 
     if (!previewAttributes) {
-      throw new AriesFrameworkError('Missing required credential preview attributes from indy format service')
+      throw new CredoError('Missing required credential preview attributes from indy format service')
     }
 
     const message = new V1OfferCredentialMessage({
@@ -373,7 +373,7 @@ export class V1CredentialProtocol
     })
 
     if (!previewAttributes) {
-      throw new AriesFrameworkError('Missing required credential preview attributes from indy format service')
+      throw new CredoError('Missing required credential preview attributes from indy format service')
     }
 
     const message = new V1OfferCredentialMessage({
@@ -423,7 +423,7 @@ export class V1CredentialProtocol
     const didCommMessageRepository = agentContext.dependencyManager.resolve(DidCommMessageRepository)
 
     if (!credentialFormats.indy) {
-      throw new AriesFrameworkError('Missing indy credential format data for v1 create offer')
+      throw new CredoError('Missing indy credential format data for v1 create offer')
     }
 
     // Create record
@@ -445,7 +445,7 @@ export class V1CredentialProtocol
     })
 
     if (!previewAttributes) {
-      throw new AriesFrameworkError('Missing required credential preview from indy format service')
+      throw new CredoError('Missing required credential preview from indy format service')
     }
 
     // Construct offer message
@@ -500,9 +500,7 @@ export class V1CredentialProtocol
 
     const offerAttachment = offerMessage.getOfferAttachmentById(INDY_CREDENTIAL_OFFER_ATTACHMENT_ID)
     if (!offerAttachment) {
-      throw new AriesFrameworkError(
-        `Indy attachment with id ${INDY_CREDENTIAL_OFFER_ATTACHMENT_ID} not found in offer message`
-      )
+      throw new CredoError(`Indy attachment with id ${INDY_CREDENTIAL_OFFER_ATTACHMENT_ID} not found in offer message`)
     }
 
     if (credentialRecord) {
@@ -596,9 +594,7 @@ export class V1CredentialProtocol
 
     const offerAttachment = offerMessage.getOfferAttachmentById(INDY_CREDENTIAL_OFFER_ATTACHMENT_ID)
     if (!offerAttachment) {
-      throw new AriesFrameworkError(
-        `Indy attachment with id ${INDY_CREDENTIAL_OFFER_ATTACHMENT_ID} not found in offer message`
-      )
+      throw new CredoError(`Indy attachment with id ${INDY_CREDENTIAL_OFFER_ATTACHMENT_ID} not found in offer message`)
     }
 
     const { attachment } = await this.indyCredentialFormat.acceptOffer(agentContext, {
@@ -658,13 +654,13 @@ export class V1CredentialProtocol
     const didCommMessageRepository = agentContext.dependencyManager.resolve(DidCommMessageRepository)
 
     if (!credentialRecord.connectionId) {
-      throw new AriesFrameworkError(
+      throw new CredoError(
         `No connectionId found for credential record '${credentialRecord.id}'. Connection-less issuance does not support negotiation.`
       )
     }
 
     if (!credentialFormats.indy) {
-      throw new AriesFrameworkError('Missing indy credential format in v1 negotiate proposal call.')
+      throw new CredoError('Missing indy credential format in v1 negotiate proposal call.')
     }
 
     const { linkedAttachments } = credentialFormats.indy
@@ -716,7 +712,7 @@ export class V1CredentialProtocol
   public async createRequest(): Promise<
     CredentialProtocolOptions.CredentialProtocolMsgReturnType<V1RequestCredentialMessage>
   > {
-    throw new AriesFrameworkError('Starting from a request is not supported for v1 issue credential protocol')
+    throw new CredoError('Starting from a request is not supported for v1 issue credential protocol')
   }
 
   public async processRequest(
@@ -764,7 +760,7 @@ export class V1CredentialProtocol
     const requestAttachment = requestMessage.getRequestAttachmentById(INDY_CREDENTIAL_REQUEST_ATTACHMENT_ID)
 
     if (!requestAttachment) {
-      throw new AriesFrameworkError(
+      throw new CredoError(
         `Indy attachment with id ${INDY_CREDENTIAL_REQUEST_ATTACHMENT_ID} not found in request message`
       )
     }
@@ -820,7 +816,7 @@ export class V1CredentialProtocol
     const requestAttachment = requestMessage.getRequestAttachmentById(INDY_CREDENTIAL_REQUEST_ATTACHMENT_ID)
 
     if (!offerAttachment || !requestAttachment) {
-      throw new AriesFrameworkError(
+      throw new CredoError(
         `Missing data payload in offer or request attachment in credential Record ${credentialRecord.id}`
       )
     }
@@ -899,12 +895,12 @@ export class V1CredentialProtocol
 
     const issueAttachment = issueMessage.getCredentialAttachmentById(INDY_CREDENTIAL_ATTACHMENT_ID)
     if (!issueAttachment) {
-      throw new AriesFrameworkError('Missing indy credential attachment in processCredential')
+      throw new CredoError('Missing indy credential attachment in processCredential')
     }
 
     const requestAttachment = requestCredentialMessage?.getRequestAttachmentById(INDY_CREDENTIAL_REQUEST_ATTACHMENT_ID)
     if (!requestAttachment) {
-      throw new AriesFrameworkError('Missing indy credential request attachment in processCredential')
+      throw new CredoError('Missing indy credential request attachment in processCredential')
     }
 
     await this.indyCredentialFormat.processCredential(messageContext.agentContext, {
@@ -1280,13 +1276,13 @@ export class V1CredentialProtocol
     if (formatKeys.length === 0) return
 
     if (formatKeys.length !== 1 || !formatKeys.includes('indy')) {
-      throw new AriesFrameworkError('Only indy credential format is supported for issue credential v1 protocol')
+      throw new CredoError('Only indy credential format is supported for issue credential v1 protocol')
     }
   }
 
   public getFormatServiceForRecordType(credentialRecordType: string) {
     if (credentialRecordType !== this.indyCredentialFormat.credentialRecordType) {
-      throw new AriesFrameworkError(
+      throw new CredoError(
         `Unsupported credential record type ${credentialRecordType} for v1 issue credential protocol (need ${this.indyCredentialFormat.credentialRecordType})`
       )
     }
