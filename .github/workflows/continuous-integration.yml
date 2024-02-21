@@ -101,10 +101,11 @@ jobs:
 
       # Upload coverage for shard
       - run: mv coverage/coverage-final.json coverage/${{ matrix.shard }}.json
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: coverage-artifacts
           path: coverage/${{ matrix.shard }}.json
+          overwrite: true
 
   e2e-tests:
     runs-on: ubuntu-20.04
@@ -137,22 +138,23 @@ jobs:
 
       # Upload coverage for e2e
       - run: mv coverage/coverage-final.json coverage/e2e.json
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: coverage-artifacts
           path: coverage/e2e.json
+          overwrite: true
 
   # Upload all the coverage reports
   report-coverage:
     runs-on: ubuntu-20.04
     needs: [e2e-tests, unit-tests]
     steps:
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
           name: coverage-artifacts
           path: coverage
 
-      - uses: codecov/codecov-action@v3
+      - uses: codecov/codecov-action@v4
         with:
           directory: coverage
 
@@ -205,7 +207,7 @@ jobs:
           echo version="${NEW_VERSION}" >> "$GITHUB_OUTPUT"
 
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v5
+        uses: peter-evans/create-pull-request@v6
         with:
           commit-message: |
             chore(release): v${{ steps.new-version.outputs.version }}
