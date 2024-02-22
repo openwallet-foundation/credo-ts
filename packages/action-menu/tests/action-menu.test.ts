@@ -6,7 +6,7 @@ import { makeConnection, testLogger, setupSubjectTransports, getInMemoryAgentOpt
 
 import { waitForActionMenuRecord } from './helpers'
 
-import { ActionMenu, ActionMenuModule, ActionMenuRecord, ActionMenuRole, ActionMenuState } from '@credo-ts/action-menu'
+import ActionMenuRecord, { ActionMenu, ActionMenuModule, ActionMenuRole, ActionMenuState } from '@credo-ts/action-menu'
 
 const modules = {
   actionMenu: new ActionMenuModule(),

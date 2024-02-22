@@ -1,52 +1,30 @@
-import type { ActionMenuFormOptions } from './ActionMenuOptionForm'
+import { z } from 'zod'
 
-import { Type } from 'class-transformer'
-import { IsBoolean, IsInstance, IsOptional, IsString } from 'class-validator'
+import { ActionMenuForm, actionMenuFormSchema, intoOptCls } from './ActionMenuOptionForm'
 
-import { ActionMenuForm } from './ActionMenuOptionForm'
+export const actionMenuOptionSchema = z.object({
+  name: z.string(),
+  title: z.string(),
+  description: z.string(),
+  disabled: z.boolean().optional(),
+  form: actionMenuFormSchema.optional().transform(intoOptCls<ActionMenuForm>(ActionMenuForm)),
+})
 
-/**
- * @public
- */
-export interface ActionMenuOptionOptions {
-  name: string
-  title: string
-  description: string
-  disabled?: boolean
-  form?: ActionMenuFormOptions
-}
+export type ActionMenuOptionOptions = z.input<typeof actionMenuOptionSchema>
 
-/**
- * @public
- */
 export class ActionMenuOption {
-  public constructor(options: ActionMenuOptionOptions) {
-    if (options) {
-      this.name = options.name
-      this.title = options.title
-      this.description = options.description
-      this.disabled = options.disabled
-      if (options.form) {
-        this.form = new ActionMenuForm(options.form)
-      }
-    }
-  }
-
-  @IsString()
-  public name!: string
-
-  @IsString()
-  public title!: string
-
-  @IsString()
-  public description!: string
-
-  @IsBoolean()
-  @IsOptional()
+  public name: string
+  public title: string
+  public description: string
   public disabled?: boolean
-
-  @IsInstance(ActionMenuForm)
-  @Type(() => ActionMenuForm)
-  @IsOptional()
   public form?: ActionMenuForm
+
+  public constructor(options: ActionMenuOptionOptions) {
+    const parsedOptions = actionMenuOptionSchema.parse(options)
+    this.name = parsedOptions.name
+    this.title = parsedOptions.title
+    this.description = parsedOptions.description
+    this.disabled = parsedOptions.disabled
+    this.form = parsedOptions.form
+  }
 }

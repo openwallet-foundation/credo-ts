@@ -1,60 +1,43 @@
-import type { ActionMenuOptionOptions } from '../models'
-
-import { AgentMessage, IsValidMessageType, parseMessageType } from '@credo-ts/core'
-import { Expose, Type } from 'class-transformer'
-import { IsInstance, IsOptional, IsString } from 'class-validator'
+import { AgentMessage, parseMessageType, utils } from '@credo-ts/core'
+import { z } from 'zod'
 
 import { ActionMenuOption } from '../models'
+import { actionMenuOptionSchema } from '../models/ActionMenuOption'
+import { arrIntoCls } from '../models/ActionMenuOptionForm'
 
-/**
- * @internal
- */
-export interface MenuMessageOptions {
-  id?: string
-  title: string
-  description: string
-  errorMessage?: string
-  options: ActionMenuOptionOptions[]
-  threadId?: string
-}
+const menuMessageSchema = z
+  .object({
+    id: z.string().default(utils.uuid()),
+    title: z.string(),
+    description: z.string(),
+    errormsg: z.string().optional(),
+    options: z.array(actionMenuOptionSchema).transform(arrIntoCls<ActionMenuOption>(ActionMenuOption)),
+    threadId: z.string().optional(),
+  })
+  .transform((o) => ({
+    ...o,
+    errorMessage: o.errormsg,
+  }))
 
-/**
- * @internal
- */
+export type MenuMessageOptions = z.input<typeof menuMessageSchema>
+
 export class MenuMessage extends AgentMessage {
-  public constructor(options: MenuMessageOptions) {
-    super()
-
-    if (options) {
-      this.id = options.id ?? this.generateId()
-      this.title = options.title
-      this.description = options.description
-      this.errorMessage = options.errorMessage
-      this.options = options.options.map((p) => new ActionMenuOption(p))
-      if (options.threadId) {
-        this.setThread({
-          threadId: options.threadId,
-        })
-      }
-    }
-  }
-
-  @IsValidMessageType(MenuMessage.type)
   public readonly type = MenuMessage.type.messageTypeUri
   public static readonly type = parseMessageType('https://didcomm.org/action-menu/1.0/menu')
 
-  @IsString()
-  public title!: string
-
-  @IsString()
-  public description!: string
-
-  @Expose({ name: 'errormsg' })
-  @IsString()
-  @IsOptional()
+  public title: string
+  public description: string
   public errorMessage?: string
+  public options: Array<ActionMenuOption>
 
-  @IsInstance(ActionMenuOption, { each: true })
-  @Type(() => ActionMenuOption)
-  public options!: ActionMenuOption[]
+  public constructor(options: MenuMessageOptions) {
+    super()
+
+    const parsedOptions = menuMessageSchema.parse(options)
+    this.id = parsedOptions.id
+    this.title = parsedOptions.title
+    this.description = parsedOptions.description
+    this.errorMessage = parsedOptions.errorMessage
+    this.options = parsedOptions.options
+  }
 }

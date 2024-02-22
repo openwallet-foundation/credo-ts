@@ -1,39 +1,39 @@
-import type { ActionMenuFormParameterOptions } from './ActionMenuOptionFormParameter'
+import { z } from 'zod'
 
-import { Expose, Type } from 'class-transformer'
-import { IsInstance, IsString } from 'class-validator'
+import { ActionMenuFormParameter, actionMenuFormParameterSchema } from './ActionMenuOptionFormParameter'
 
-import { ActionMenuFormParameter } from './ActionMenuOptionFormParameter'
+// TODO(zod): these should not have any ts-expect-error and should return the type based on `Cls` input, not the generic
+export const intoCls =
+  <T>(Cls: unknown) =>
+  (i: unknown): T =>
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    //  @ts-expect-error
+    new Cls(i)
+export const arrIntoCls =
+  <T>(Cls: unknown) =>
+  (o: Array<unknown>): Array<T> =>
+    o.map(intoCls(Cls))
+export const intoOptCls =
+  <T>(Cls: unknown) =>
+  (i?: unknown): undefined | T =>
+    i ? intoCls<T>(Cls)(i) : undefined
 
-/**
- * @public
- */
-export interface ActionMenuFormOptions {
-  description: string
-  params: ActionMenuFormParameterOptions[]
-  submitLabel: string
-}
+export const actionMenuFormSchema = z.object({
+  description: z.string(),
+  params: z
+    .array(actionMenuFormParameterSchema)
+    .transform(arrIntoCls<ActionMenuFormParameter>(ActionMenuFormParameter)),
+})
 
-/**
- * @public
- */
+export type ActionMenuFormOptions = z.input<typeof actionMenuFormSchema>
+
 export class ActionMenuForm {
+  public description: string
+  public params: Array<ActionMenuFormParameter>
+
   public constructor(options: ActionMenuFormOptions) {
-    if (options) {
-      this.description = options.description
-      this.params = options.params.map((p) => new ActionMenuFormParameter(p))
-      this.submitLabel = options.submitLabel
-    }
+    const parsedOptions = actionMenuFormSchema.parse(options)
+    this.description = parsedOptions.description
+    this.params = parsedOptions.params
   }
-
-  @IsString()
-  public description!: string
-
-  @Expose({ name: 'submit-label' })
-  @IsString()
-  public submitLabel!: string
-
-  @IsInstance(ActionMenuFormParameter, { each: true })
-  @Type(() => ActionMenuFormParameter)
-  public params!: ActionMenuFormParameter[]
 }

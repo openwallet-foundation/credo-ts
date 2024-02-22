@@ -1,28 +1,19 @@
-import { IsOptional, IsString } from 'class-validator'
+import { z } from 'zod'
 
-/**
- * @public
- */
-export interface ActionMenuSelectionOptions {
-  name: string
-  params?: Record<string, string>
-}
+export const actionMenuSelectionSchema = z.object({
+  name: z.string(),
+  params: z.record(z.string()).optional(),
+})
 
-/**
- * @public
- */
+export type ActionMenuSelectionOptions = z.input<typeof actionMenuSelectionSchema>
+
 export class ActionMenuSelection {
-  public constructor(options: ActionMenuSelectionOptions) {
-    if (options) {
-      this.name = options.name
-      this.params = options.params
-    }
-  }
-
-  @IsString()
-  public name!: string
-
-  @IsString({ each: true })
-  @IsOptional()
+  public name: string
   public params?: Record<string, string>
+
+  public constructor(options: ActionMenuSelectionOptions) {
+    const parsedOptions = actionMenuSelectionSchema.parse(options)
+    this.name = parsedOptions.name
+    this.params = parsedOptions.params
+  }
 }
