@@ -192,6 +192,8 @@ export class AnonCredsRsVerifierService implements AnonCredsVerifierService {
 
     let result = false
     const presentationJson = JsonTransformer.toJSON(options.presentation)
+    if ('presentation_submission' in presentationJson) delete presentationJson.presentation_submission
+
     let w3cPresentation: W3cPresentation | undefined
     try {
       w3cPresentation = W3cPresentation.fromJson(presentationJson)

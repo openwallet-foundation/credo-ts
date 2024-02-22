@@ -24,7 +24,7 @@ import { presentationDefinition } from './fixtures/presentation-definition'
 
 const issuerId = 'did:indy:local:LjgpST2rjsoxYegQDRm7EL'
 
-describe('anoncreds w3c data integrity e2e tests', () => {
+describe('anoncreds w3c data integrity tests', () => {
   let issuerAgent: AnonCredsTestsAgent
   let holderAgent: AnonCredsTestsAgent
   let credentialDefinitionId: string
