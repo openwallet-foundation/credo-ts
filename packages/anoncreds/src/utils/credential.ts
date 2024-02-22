@@ -4,7 +4,7 @@ import type { CredentialPreviewAttributeOptions, LinkedAttachment } from '@credo
 import { CredoError, Hasher, TypedArrayEncoder, encodeAttachment } from '@credo-ts/core'
 import bigInt from 'big-integer'
 
-export type AnonCredsClaimRecord = Record<string, string | number | boolean>
+export type AnonCredsClaimRecord = Record<string, string | number>
 
 export interface AnonCredsCredentialValue {
   raw: string
