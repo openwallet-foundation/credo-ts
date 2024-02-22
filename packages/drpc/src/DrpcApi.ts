@@ -1,5 +1,5 @@
 import type { DrpcRequest, DrpcResponse, DrpcRequestMessage, DrpcResponseMessage } from './messages'
-import type { DrpcMessageRecord } from './repository/DrpcMessageRecord'
+import type { DrpcRecord } from './repository/DrpcRecord'
 import type { ConnectionRecord } from '@credo-ts/core'
 
 import {
@@ -39,72 +39,100 @@ export class DrpcApi {
    * sends the request object to the connection and returns a function that will resolve to the response
    * @param connectionId the connection to send the request to
    * @param request the request object
-   * @returns curried function that waits for the response
+   * @returns curried function that waits for the response with an optional timeout in seconds
    */
-  public async sendRequest(connectionId: string, request: DrpcRequest): Promise<() => Promise<DrpcResponse>> {
+  public async sendRequest(
+    connectionId: string,
+    request: DrpcRequest
+  ): Promise<() => Promise<DrpcResponse | undefined>> {
     const connection = await this.connectionService.getById(this.agentContext, connectionId)
-    const { message: drpcMessage, record: drpcMessageRecord } = await this.drpcMessageService.createRequestMessage(
-      this.agentContext,
-      request,
-      connection.id
-    )
+    const { requestMessage: drpcMessage, record: drpcMessageRecord } =
+      await this.drpcMessageService.createRequestMessage(this.agentContext, request, connection.id)
     const messageId = drpcMessage.id
     await this.sendMessage(connection, drpcMessage, drpcMessageRecord)
-    return this.recvResponse.bind(this, messageId)
+    return async (timeout?: number) => {
+      return await this.recvResponse(messageId, timeout)
+    }
   }
 
   /**
    * Listen for a response that has a thread id matching the provided messageId
    * @param messageId the id to match the response to
+   * @param timeout the time in seconds to wait for a response
    * @returns the response object
    */
-  private async recvResponse(messageId: string): Promise<DrpcResponse> {
+  private async recvResponse(messageId: string, timeout?: number): Promise<DrpcResponse | undefined> {
     return new Promise((resolve) => {
       const listener = ({
         drpcMessageRecord,
         removeListener,
       }: {
-        drpcMessageRecord: DrpcMessageRecord
+        drpcMessageRecord: DrpcRecord
         removeListener: () => void
       }) => {
-        const message = drpcMessageRecord.message
+        const response = drpcMessageRecord.response
         if (drpcMessageRecord.threadId === messageId) {
           removeListener()
-          resolve(message as DrpcResponse)
+          resolve(response)
         }
       }
 
-      this.drpcMessageService.createResponseListener(listener)
+      const cancelListener = this.drpcMessageService.createResponseListener(listener)
+      if (timeout) {
+        const handle = setTimeout(() => {
+          clearTimeout(handle)
+          cancelListener()
+          resolve(undefined)
+        }, timeout * 1000)
+      }
     })
   }
 
   /**
    * Listen for a request and returns the request object and a function to send the response
+   * @param timeout the time in seconds to wait for a request
    * @returns the request object and a function to send the response
    */
-  public async recvRequest(): Promise<{
-    request: DrpcRequest
-    sendResponse: (response: DrpcResponse) => Promise<void>
-  }> {
+  public async recvRequest(timeout?: number): Promise<
+    | {
+        request: DrpcRequest
+        sendResponse: (response: DrpcResponse) => Promise<void>
+      }
+    | undefined
+  > {
     return new Promise((resolve) => {
       const listener = ({
         drpcMessageRecord,
         removeListener,
       }: {
-        drpcMessageRecord: DrpcMessageRecord
+        drpcMessageRecord: DrpcRecord
         removeListener: () => void
       }) => {
-        const message = drpcMessageRecord.message
-        removeListener()
-        resolve({
-          sendResponse: async (response: DrpcResponse) => {
-            await this.sendResponse(drpcMessageRecord.connectionId, drpcMessageRecord.threadId, response)
-          },
-          request: message as DrpcRequest,
-        })
+        const request = drpcMessageRecord.request
+        if (request) {
+          removeListener()
+          resolve({
+            sendResponse: async (response: DrpcResponse) => {
+              await this.sendResponse({
+                connectionId: drpcMessageRecord.connectionId,
+                threadId: drpcMessageRecord.threadId,
+                response,
+              })
+            },
+            request,
+          })
+        }
       }
 
-      this.drpcMessageService.createRequestListener(listener)
+      const cancelListener = this.drpcMessageService.createRequestListener(listener)
+
+      if (timeout) {
+        const handle = setTimeout(() => {
+          clearTimeout(handle)
+          cancelListener()
+          resolve(undefined)
+        }, timeout * 1000)
+      }
     })
   }
 
@@ -114,28 +142,32 @@ export class DrpcApi {
    * @param threadId the thread id to respond to
    * @param response the drpc response object to send
    */
-  private async sendResponse(connectionId: string, threadId: string, response: DrpcResponse): Promise<void> {
-    const connection = await this.connectionService.getById(this.agentContext, connectionId)
+  private async sendResponse(options: {
+    connectionId: string
+    threadId: string
+    response: DrpcResponse
+  }): Promise<void> {
+    const connection = await this.connectionService.getById(this.agentContext, options.connectionId)
     const drpcMessageRecord = await this.drpcMessageService.findByThreadAndConnectionId(
       this.agentContext,
-      connectionId,
-      threadId
+      options.connectionId,
+      options.threadId
     )
     if (!drpcMessageRecord) {
-      throw new Error(`No request found for threadId ${threadId}`)
+      throw new Error(`No request found for threadId ${options.threadId}`)
     }
-    const { message, record } = await this.drpcMessageService.createResponseMessage(
+    const { responseMessage, record } = await this.drpcMessageService.createResponseMessage(
       this.agentContext,
-      response,
+      options.response,
       drpcMessageRecord
     )
-    await this.sendMessage(connection, message, record)
+    await this.sendMessage(connection, responseMessage, record)
   }
 
   private async sendMessage(
     connection: ConnectionRecord,
     message: DrpcRequestMessage | DrpcResponseMessage,
-    messageRecord: DrpcMessageRecord
+    messageRecord: DrpcRecord
   ): Promise<void> {
     const outboundMessageContext = new OutboundMessageContext(message, {
       agentContext: this.agentContext,

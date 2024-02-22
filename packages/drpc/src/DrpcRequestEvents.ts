@@ -1,4 +1,4 @@
-import type { DrpcMessageRecord } from './repository'
+import type { DrpcRecord } from './repository'
 import type { BaseEvent } from '@credo-ts/core'
 
 export enum DrpcRequestEventTypes {
@@ -7,6 +7,6 @@ export enum DrpcRequestEventTypes {
 export interface DrpcRequestStateChangedEvent extends BaseEvent {
   type: typeof DrpcRequestEventTypes.DrpcRequestStateChanged
   payload: {
-    drpcMessageRecord: DrpcMessageRecord
+    drpcMessageRecord: DrpcRecord
   }
 }

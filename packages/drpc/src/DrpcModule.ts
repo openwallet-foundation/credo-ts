@@ -1,10 +1,10 @@
 import type { FeatureRegistry, DependencyManager, Module } from '@credo-ts/core'
 
-import { Protocol } from '@credo-ts/core'
+import { Protocol, AgentConfig } from '@credo-ts/core'
 
 import { DrpcApi } from './DrpcApi'
-import { DrpcRole } from './DrpcRole'
-import { DrpcMessageRepository } from './repository'
+import { DrpcRole } from './models/DrpcRole'
+import { DrpcRepository } from './repository'
 import { DrpcService } from './services'
 
 export class DrpcModule implements Module {
@@ -14,11 +14,18 @@ export class DrpcModule implements Module {
    * Registers the dependencies of the drpc message module on the dependency manager.
    */
   public register(dependencyManager: DependencyManager, featureRegistry: FeatureRegistry) {
+    // Warn about experimental module
+    dependencyManager
+      .resolve(AgentConfig)
+      .logger.warn(
+        "The '@credo-ts/drpc' module is experimental and could have unexpected breaking changes. When using this module, make sure to use strict versions for all @credo-ts packages."
+      )
+
     // Services
     dependencyManager.registerSingleton(DrpcService)
 
     // Repositories
-    dependencyManager.registerSingleton(DrpcMessageRepository)
+    dependencyManager.registerSingleton(DrpcRepository)
 
     // Features
     featureRegistry.register(

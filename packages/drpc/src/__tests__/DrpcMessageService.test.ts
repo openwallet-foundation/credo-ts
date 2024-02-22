@@ -5,15 +5,15 @@ import { DidExchangeState } from '@credo-ts/core'
 import { EventEmitter } from '../../../core/src/agent/EventEmitter'
 import { InboundMessageContext } from '../../../core/src/agent/models/InboundMessageContext'
 import { getAgentContext, getMockConnection } from '../../../core/tests/helpers'
-import { DrpcRole } from '../DrpcRole'
 import { DrpcRequestMessage } from '../messages'
-import { DrpcMessageRecord } from '../repository/DrpcMessageRecord'
-import { DrpcMessageRepository } from '../repository/DrpcMessageRepository'
+import { DrpcRole } from '../models/DrpcRole'
+import { DrpcRecord } from '../repository/DrpcRecord'
+import { DrpcRepository } from '../repository/DrpcRepository'
 import { DrpcService } from '../services'
 
-jest.mock('../repository/DrpcMessageRepository')
-const DrpcMessageRepositoryMock = DrpcMessageRepository as jest.Mock<DrpcMessageRepository>
-const drpcMessageRepository = new DrpcMessageRepositoryMock()
+jest.mock('../repository/DrpcRepository')
+const DrpcRepositoryMock = DrpcRepository as jest.Mock<DrpcRepository>
+const drpcMessageRepository = new DrpcRepositoryMock()
 
 jest.mock('../../../core/src/agent/EventEmitter')
 const EventEmitterMock = EventEmitter as jest.Mock<EventEmitter>
@@ -40,16 +40,16 @@ describe('DrpcService', () => {
         method: 'hello',
         id: 1,
       }
-      const { message } = await drpcMessageService.createRequestMessage(
+      const { requestMessage } = await drpcMessageService.createRequestMessage(
         agentContext,
         messageRequest,
         mockConnectionRecord.id
       )
 
-      expect(message).toBeInstanceOf(DrpcRequestMessage)
-      expect((message.request as DrpcRequestObject).method).toBe('hello')
+      expect(requestMessage).toBeInstanceOf(DrpcRequestMessage)
+      expect((requestMessage.request as DrpcRequestObject).method).toBe('hello')
 
-      expect(drpcMessageRepository.save).toHaveBeenCalledWith(agentContext, expect.any(DrpcMessageRecord))
+      expect(drpcMessageRepository.save).toHaveBeenCalledWith(agentContext, expect.any(DrpcRecord))
       expect(eventEmitter.emit).toHaveBeenCalledWith(agentContext, {
         type: 'DrpcRequestStateChanged',
         payload: {
@@ -73,9 +73,9 @@ describe('DrpcService', () => {
 
       const messageContext = new InboundMessageContext(drpcMessage, { agentContext, connection: mockConnectionRecord })
 
-      await drpcMessageService.recieveRequest(messageContext)
+      await drpcMessageService.receiveRequest(messageContext)
 
-      expect(drpcMessageRepository.save).toHaveBeenCalledWith(agentContext, expect.any(DrpcMessageRecord))
+      expect(drpcMessageRepository.save).toHaveBeenCalledWith(agentContext, expect.any(DrpcRecord))
       expect(eventEmitter.emit).toHaveBeenCalledWith(agentContext, {
         type: 'DrpcRequestStateChanged',
         payload: {

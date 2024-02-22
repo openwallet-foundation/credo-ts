@@ -6,7 +6,7 @@ import { setupSubjectTransports } from '../../core/tests'
 import { getInMemoryAgentOptions, makeConnection } from '../../core/tests/helpers'
 import testLogger from '../../core/tests/logger'
 import { DrpcModule } from '../src/DrpcModule'
-import { DrpcErrorCode } from '../src/messages'
+import { DrpcErrorCode } from '../src/models'
 
 const modules = {
   drpc: new DrpcModule(),
@@ -278,5 +278,29 @@ describe('Drpc Messages E2E', () => {
       responseError = true
     }
     expect(responseError).toBe(true)
+  })
+
+  test('Request times out', async () => {
+    // recvRequest timeout
+    setTimeout(async () => {
+      await aliceAgent.modules.drpc.sendRequest(aliceConnection.id, { jsonrpc: '2.0', method: 'hello', id: 1 })
+    }, 500)
+    const req = await faberAgent.modules.drpc.recvRequest(0.1)
+    expect(req).toBe(undefined)
+
+    // response listener timeout
+    const responseListener = await aliceAgent.modules.drpc.sendRequest(aliceConnection.id, {
+      jsonrpc: '2.0',
+      method: 'hello',
+      id: 1,
+    })
+    const { request, sendResponse } = await faberAgent.modules.drpc.recvRequest()
+    setTimeout(async () => {
+      const result = await handleMessageOrError(messageHandlers, request)
+      sendResponse(result as DrpcResponseObject)
+    }, 500)
+
+    const helloRecord = await responseListener(0.1)
+    expect(helloRecord).toBe(undefined)
   })
 })

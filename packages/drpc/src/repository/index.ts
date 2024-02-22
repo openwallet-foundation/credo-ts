@@ -1,2 +1,2 @@
-export * from './DrpcMessageRecord'
-export * from './DrpcMessageRepository'
+export * from './DrpcRecord'
+export * from './DrpcRepository'

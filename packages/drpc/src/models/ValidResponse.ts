@@ -1,7 +1,5 @@
 import type { ValidationArguments, ValidationOptions } from 'class-validator'
 
-import { IsValidMessageType, parseMessageType, AgentMessage } from '@credo-ts/core'
-import { Expose } from 'class-transformer'
 import { ValidateBy, ValidationError, buildMessage } from 'class-validator'
 
 export function IsValidDrpcResponse(validationOptions?: ValidationOptions): PropertyDecorator {
@@ -64,49 +62,4 @@ export function isValidDrpcResponse(value: any): boolean {
 
 function isValidDrpcResponseError(error: any): boolean {
   return typeof error === 'object' && error !== null && 'code' in error && 'message' in error
-}
-
-export enum DrpcErrorCode {
-  METHOD_NOT_FOUND = -32601,
-  PARSE_ERROR = -32700,
-  INVALID_REQUEST = -32600,
-  INVALID_PARAMS = -32602,
-  INTERNAL_ERROR = -32603,
-  SERVER_ERROR = -32000,
-}
-
-export type DrpcResponse = DrpcResponseObject | (DrpcResponseObject | Record<string, never>)[] | Record<string, never>
-
-export interface DrpcResponseError {
-  code: DrpcErrorCode
-  message: string
-  data?: any
-}
-
-export interface DrpcResponseObject {
-  jsonrpc: string
-  result?: any
-  error?: DrpcResponseError
-  id: string | number | null
-}
-
-export class DrpcResponseMessage extends AgentMessage {
-  public readonly allowDidSovPrefix = true
-
-  public constructor(options: { response: DrpcResponse; threadId: string }) {
-    super()
-    if (options) {
-      this.id = this.generateId()
-      this.response = options.response
-      this.setThread({ threadId: options.threadId })
-    }
-  }
-
-  @IsValidMessageType(DrpcResponseMessage.type)
-  public readonly type = DrpcResponseMessage.type.messageTypeUri
-  public static readonly type = parseMessageType('https://didcomm.org/drpc/1.0/response')
-
-  @Expose({ name: 'response' })
-  @IsValidDrpcResponse()
-  public response!: DrpcResponse
 }

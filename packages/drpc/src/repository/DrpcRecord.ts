@@ -1,6 +1,5 @@
-import type { DrpcRole } from '../DrpcRole'
-import type { DrpcState } from '../DrpcState'
 import type { DrpcRequest, DrpcResponse } from '../messages'
+import type { DrpcRole, DrpcState } from '../models'
 import type { RecordTags, TagsBase } from '@credo-ts/core'
 
 import { BaseRecord, CredoError, utils } from '@credo-ts/core'
@@ -11,34 +10,37 @@ export type DefaultDrpcMessageTags = {
   threadId: string
 }
 
-export type DrpcMessageTags = RecordTags<DrpcMessageRecord>
+export type DrpcMessageTags = RecordTags<DrpcRecord>
 
-export interface DrpcMessageStorageProps {
+export interface DrpcStorageProps {
   id?: string
   connectionId: string
   role: DrpcRole
   tags?: CustomDrpcMessageTags
-  message: DrpcRequest | DrpcResponse
+  request?: DrpcRequest
+  response?: DrpcResponse
   state: DrpcState
   threadId: string
 }
 
-export class DrpcMessageRecord extends BaseRecord<DefaultDrpcMessageTags, CustomDrpcMessageTags> {
-  public message!: DrpcRequest | DrpcResponse
+export class DrpcRecord extends BaseRecord<DefaultDrpcMessageTags, CustomDrpcMessageTags> {
+  public request?: DrpcRequest
+  public response?: DrpcResponse
   public connectionId!: string
   public role!: DrpcRole
   public state!: DrpcState
   public threadId!: string
 
-  public static readonly type = 'DrpcMessageRecord'
-  public readonly type = DrpcMessageRecord.type
+  public static readonly type = 'DrpcRecord'
+  public readonly type = DrpcRecord.type
 
-  public constructor(props: DrpcMessageStorageProps) {
+  public constructor(props: DrpcStorageProps) {
     super()
 
     if (props) {
       this.id = props.id ?? utils.uuid()
-      this.message = props.message
+      this.request = props.request
+      this.response = props.response
       this.connectionId = props.connectionId
       this._tags = props.tags ?? {}
       this.role = props.role

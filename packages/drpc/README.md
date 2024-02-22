@@ -62,7 +62,7 @@ const responseListener = await senderAgent.modules.drpc.sendRequest(connectionId
 // Listen for any incoming requests
 const { request, sendResponse } = await receiverAgent.modules.drpc.recvRequest()
 
-// Process the recieved request and create a response
+// Process the received request and create a response
 const result =
   request.method === 'hello'
     ? { jsonrpc: '2.0', result: 'Hello world!', id: request.id }

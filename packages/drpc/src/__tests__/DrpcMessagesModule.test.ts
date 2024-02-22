@@ -1,7 +1,7 @@
 import { FeatureRegistry } from '../../../core/src/agent/FeatureRegistry'
 import { DependencyManager } from '../../../core/src/plugins/DependencyManager'
 import { DrpcModule } from '../DrpcModule'
-import { DrpcMessageRepository } from '../repository'
+import { DrpcRepository } from '../repository'
 import { DrpcService } from '../services'
 
 jest.mock('../../../core/src/plugins/DependencyManager')
@@ -20,6 +20,6 @@ describe('DrpcModule', () => {
 
     expect(dependencyManager.registerSingleton).toHaveBeenCalledTimes(2)
     expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(DrpcService)
-    expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(DrpcMessageRepository)
+    expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(DrpcRepository)
   })
 })
