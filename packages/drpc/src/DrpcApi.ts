@@ -58,10 +58,10 @@ export class DrpcApi {
   /**
    * Listen for a response that has a thread id matching the provided messageId
    * @param messageId the id to match the response to
-   * @param timeout the time in seconds to wait for a response
+   * @param timeoutMs the time in milliseconds to wait for a response
    * @returns the response object
    */
-  private async recvResponse(messageId: string, timeout?: number): Promise<DrpcResponse | undefined> {
+  private async recvResponse(messageId: string, timeoutMs?: number): Promise<DrpcResponse | undefined> {
     return new Promise((resolve) => {
       const listener = ({
         drpcMessageRecord,
@@ -78,22 +78,22 @@ export class DrpcApi {
       }
 
       const cancelListener = this.drpcMessageService.createResponseListener(listener)
-      if (timeout) {
+      if (timeoutMs) {
         const handle = setTimeout(() => {
           clearTimeout(handle)
           cancelListener()
           resolve(undefined)
-        }, timeout * 1000)
+        }, timeoutMs)
       }
     })
   }
 
   /**
    * Listen for a request and returns the request object and a function to send the response
-   * @param timeout the time in seconds to wait for a request
+   * @param timeoutMs the time in seconds to wait for a request
    * @returns the request object and a function to send the response
    */
-  public async recvRequest(timeout?: number): Promise<
+  public async recvRequest(timeoutMs?: number): Promise<
     | {
         request: DrpcRequest
         sendResponse: (response: DrpcResponse) => Promise<void>
@@ -126,12 +126,12 @@ export class DrpcApi {
 
       const cancelListener = this.drpcMessageService.createRequestListener(listener)
 
-      if (timeout) {
+      if (timeoutMs) {
         const handle = setTimeout(() => {
           clearTimeout(handle)
           cancelListener()
           resolve(undefined)
-        }, timeout * 1000)
+        }, timeoutMs)
       }
     })
   }

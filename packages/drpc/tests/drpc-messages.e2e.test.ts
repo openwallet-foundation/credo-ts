@@ -285,7 +285,7 @@ describe('Drpc Messages E2E', () => {
     setTimeout(async () => {
       await aliceAgent.modules.drpc.sendRequest(aliceConnection.id, { jsonrpc: '2.0', method: 'hello', id: 1 })
     }, 500)
-    const req = await faberAgent.modules.drpc.recvRequest(0.1)
+    const req = await faberAgent.modules.drpc.recvRequest(100)
     expect(req).toBe(undefined)
 
     // response listener timeout
@@ -300,7 +300,7 @@ describe('Drpc Messages E2E', () => {
       sendResponse(result as DrpcResponseObject)
     }, 500)
 
-    const helloRecord = await responseListener(0.1)
+    const helloRecord = await responseListener(100)
     expect(helloRecord).toBe(undefined)
 
     await new Promise((r) => setTimeout(r, 1500))
