@@ -302,5 +302,7 @@ describe('Drpc Messages E2E', () => {
 
     const helloRecord = await responseListener(0.1)
     expect(helloRecord).toBe(undefined)
+
+    await new Promise((r) => setTimeout(r, 1500))
   })
 })
