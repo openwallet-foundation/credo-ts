@@ -10,6 +10,7 @@ exports[`UpdateAssistant | v0.3.1 - v0.4 should correctly update 'claimFormat' t
         "https://www.w3.org/2018/credentials/v1",
         "https://www.w3.org/2018/credentials/examples/v1",
       ],
+      "cryptosuites": [],
       "expandedTypes": [
         "https",
         "https",

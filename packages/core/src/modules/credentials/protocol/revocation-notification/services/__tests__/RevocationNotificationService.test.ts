@@ -1,10 +1,9 @@
-import type { AnonCredsCredentialMetadata } from '../../../../../../../../anoncreds/src/utils/metadata'
 import type { AgentContext } from '../../../../../../agent'
 import type { RevocationNotificationReceivedEvent } from '../../../../CredentialEvents'
+import type { AnonCredsCredentialMetadata } from '@credo-ts/anoncreds'
 
 import { Subject } from 'rxjs'
 
-import { CredentialExchangeRecord, CredentialState, InboundMessageContext } from '../../../../../..'
 import { getAgentConfig, getAgentContext, getMockConnection, mockFunction } from '../../../../../../../tests/helpers'
 import { EventEmitter } from '../../../../../../agent/EventEmitter'
 import { MessageHandlerRegistry } from '../../../../../../agent/MessageHandlerRegistry'
@@ -13,6 +12,8 @@ import { CredentialEventTypes } from '../../../../CredentialEvents'
 import { CredentialRepository } from '../../../../repository/CredentialRepository'
 import { V1RevocationNotificationMessage, V2RevocationNotificationMessage } from '../../messages'
 import { RevocationNotificationService } from '../RevocationNotificationService'
+
+import { CredentialExchangeRecord, CredentialState, InboundMessageContext } from '@credo-ts/core'
 
 jest.mock('../../../../repository/CredentialRepository')
 const CredentialRepositoryMock = CredentialRepository as jest.Mock<CredentialRepository>
@@ -187,7 +188,7 @@ describe('RevocationNotificationService', () => {
         revocationRegistryId:
           'AsB27X6KRrJFsqZ3unNAH6:4:AsB27X6KRrJFsqZ3unNAH6:3:cl:48187:default:CL_ACCUM:3b24a9b0-a979-41e0-9964-2292f2b1b7e9',
         credentialRevocationId: '1',
-      } satisfies AnonCredsCredentialMetadata
+      }
 
       mockFunction(credentialRepository.getSingleByQuery).mockResolvedValueOnce(credentialRecord)
       const revocationNotificationCredentialId = `${metadata.revocationRegistryId}::${metadata.credentialRevocationId}`

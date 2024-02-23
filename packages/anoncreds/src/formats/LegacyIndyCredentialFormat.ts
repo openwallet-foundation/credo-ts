@@ -31,8 +31,7 @@ export interface LegacyIndyCredentialRequest extends AnonCredsCredentialRequest 
 export interface LegacyIndyCredentialFormat extends CredentialFormat {
   formatKey: 'indy'
 
-  // The stored type is the same as the anoncreds credential service
-  credentialRecordType: 'anoncreds'
+  credentialRecordType: 'w3c'
 
   // credential formats are the same as the AnonCreds credential format
   credentialFormats: {

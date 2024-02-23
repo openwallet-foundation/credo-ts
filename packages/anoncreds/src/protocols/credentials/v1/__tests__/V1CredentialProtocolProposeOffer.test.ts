@@ -55,7 +55,7 @@ const agentContext = getAgentContext({
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore
-indyCredentialFormatService.credentialRecordType = 'anoncreds'
+indyCredentialFormatService.credentialRecordType = 'w3c'
 
 const connectionRecord = getMockConnection({
   id: '123',

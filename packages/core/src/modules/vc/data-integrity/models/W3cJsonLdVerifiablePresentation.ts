@@ -1,3 +1,4 @@
+import type { DataIntegrityProofOptions } from './DataIntegrityProof'
 import type { LinkedDataProofOptions } from './LinkedDataProof'
 import type { W3cPresentationOptions } from '../../models/presentation/W3cPresentation'
 
@@ -5,27 +6,37 @@ import { SingleOrArray, IsInstanceOrArrayOfInstances, JsonTransformer, asArray }
 import { ClaimFormat } from '../../models'
 import { W3cPresentation } from '../../models/presentation/W3cPresentation'
 
-import { LinkedDataProof, LinkedDataProofTransformer } from './LinkedDataProof'
+import { DataIntegrityProof } from './DataIntegrityProof'
+import { LinkedDataProof } from './LinkedDataProof'
+import { ProofTransformer } from './ProofTransformer'
 
 export interface W3cJsonLdVerifiablePresentationOptions extends W3cPresentationOptions {
-  proof: LinkedDataProofOptions
+  proof: LinkedDataProofOptions | DataIntegrityProofOptions
 }
 
 export class W3cJsonLdVerifiablePresentation extends W3cPresentation {
   public constructor(options: W3cJsonLdVerifiablePresentationOptions) {
     super(options)
     if (options) {
-      this.proof = new LinkedDataProof(options.proof)
+      if (options.proof.cryptosuite) this.proof = new DataIntegrityProof(options.proof)
+      else this.proof = new LinkedDataProof(options.proof as LinkedDataProofOptions)
     }
   }
 
-  @LinkedDataProofTransformer()
-  @IsInstanceOrArrayOfInstances({ classType: LinkedDataProof })
-  public proof!: SingleOrArray<LinkedDataProof>
+  @ProofTransformer()
+  @IsInstanceOrArrayOfInstances({ classType: [LinkedDataProof, DataIntegrityProof] })
+  public proof!: SingleOrArray<LinkedDataProof | DataIntegrityProof>
 
   public get proofTypes(): Array<string> {
     const proofArray = asArray(this.proof) ?? []
     return proofArray.map((proof) => proof.type)
+  }
+
+  public get dataIntegrityCryptosuites(): Array<string> {
+    const proofArray = asArray(this.proof) ?? []
+    return proofArray
+      .filter((proof): proof is DataIntegrityProof => proof.type === 'DataIntegrityProof' && 'cryptosuite' in proof)
+      .map((proof) => proof.cryptosuite)
   }
 
   public toJson() {

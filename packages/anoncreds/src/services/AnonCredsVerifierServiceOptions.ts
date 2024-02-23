@@ -1,20 +1,17 @@
 import type { AnonCredsProof, AnonCredsProofRequest } from '../models/exchange'
+import type { AnonCredsRevocationStatusList, AnonCredsRevocationRegistryDefinition } from '../models/registry'
 import type {
-  AnonCredsCredentialDefinition,
-  AnonCredsRevocationStatusList,
-  AnonCredsRevocationRegistryDefinition,
-  AnonCredsSchema,
-} from '../models/registry'
+  AnonCredsSchemas,
+  AnonCredsCredentialDefinitions,
+  CredentialWithRevocationMetadata,
+} from '../models/utils'
+import type { W3cJsonLdVerifiablePresentation } from '@credo-ts/core'
 
 export interface VerifyProofOptions {
   proofRequest: AnonCredsProofRequest
   proof: AnonCredsProof
-  schemas: {
-    [schemaId: string]: AnonCredsSchema
-  }
-  credentialDefinitions: {
-    [credentialDefinitionId: string]: AnonCredsCredentialDefinition
-  }
+  schemas: AnonCredsSchemas
+  credentialDefinitions: AnonCredsCredentialDefinitions
   revocationRegistries: {
     [revocationRegistryDefinitionId: string]: {
       definition: AnonCredsRevocationRegistryDefinition
@@ -28,4 +25,12 @@ export interface VerifyProofOptions {
       }
     }
   }
+}
+
+export interface VerifyW3cPresentationOptions {
+  proofRequest: AnonCredsProofRequest
+  presentation: W3cJsonLdVerifiablePresentation
+  schemas: AnonCredsSchemas
+  credentialDefinitions: AnonCredsCredentialDefinitions
+  credentialsWithRevocationMetadata: CredentialWithRevocationMetadata[]
 }

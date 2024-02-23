@@ -1,13 +1,14 @@
+import type { AnonCredsClaimRecord } from '../utils/credential'
+
 export interface AnonCredsCredentialInfo {
   credentialId: string
-  attributes: {
-    [key: string]: string
-  }
+  attributes: AnonCredsClaimRecord
   schemaId: string
   credentialDefinitionId: string
   revocationRegistryId: string | null
   credentialRevocationId: string | null
   methodName: string
+  linkSecretId: string
 }
 
 export interface AnonCredsRequestedAttributeMatch {
@@ -34,10 +35,4 @@ export interface AnonCredsSelectedCredentials {
 export interface AnonCredsLinkSecretBlindingData {
   v_prime: string
   vr_prime: string | null
-}
-
-export interface AnonCredsCredentialRequestMetadata {
-  link_secret_blinding_data: AnonCredsLinkSecretBlindingData
-  link_secret_name: string
-  nonce: string
 }

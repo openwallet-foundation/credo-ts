@@ -39,18 +39,20 @@ import { CredoError, Attachment, AttachmentData, JsonEncoder, ProofFormatSpec, J
 
 import { AnonCredsProofRequest as AnonCredsProofRequestClass } from '../models/AnonCredsProofRequest'
 import { AnonCredsVerifierServiceSymbol, AnonCredsHolderServiceSymbol } from '../services'
-import { AnonCredsRegistryService } from '../services/registry/AnonCredsRegistryService'
 import {
   sortRequestedCredentialsMatches,
   createRequestFromPreview,
   areAnonCredsProofRequestsEqual,
   assertBestPracticeRevocationInterval,
   checkValidCredentialValueEncoding,
-  encodeCredentialValue,
   assertNoDuplicateGroupsNamesInProofRequest,
   getRevocationRegistriesForRequest,
   getRevocationRegistriesForProof,
+  fetchSchema,
+  fetchCredentialDefinition,
+  fetchRevocationStatusList,
 } from '../utils'
+import { encodeCredentialValue } from '../utils/credential'
 import { dateToTimestamp } from '../utils/timestamp'
 
 const ANONCREDS_PRESENTATION_PROPOSAL = 'anoncreds/proof-request@v1.0'
@@ -232,13 +234,15 @@ export class AnonCredsProofFormatService implements ProofFormatService<AnonCreds
 
     const revocationRegistries = await getRevocationRegistriesForProof(agentContext, proofJson)
 
-    return await verifierService.verifyProof(agentContext, {
+    const verified = await verifierService.verifyProof(agentContext, {
       proofRequest: proofRequestJson,
       proof: proofJson,
       schemas,
       credentialDefinitions,
       revocationRegistries,
     })
+
+    return verified
   }
 
   public async getCredentialsForRequest(
@@ -452,19 +456,11 @@ export class AnonCredsProofFormatService implements ProofFormatService<AnonCreds
    *
    */
   private async getSchemas(agentContext: AgentContext, schemaIds: Set<string>) {
-    const registryService = agentContext.dependencyManager.resolve(AnonCredsRegistryService)
-
     const schemas: { [key: string]: AnonCredsSchema } = {}
 
     for (const schemaId of schemaIds) {
-      const schemaRegistry = registryService.getRegistryForIdentifier(agentContext, schemaId)
-      const schemaResult = await schemaRegistry.getSchema(agentContext, schemaId)
-
-      if (!schemaResult.schema) {
-        throw new CredoError(`Schema not found for id ${schemaId}: ${schemaResult.resolutionMetadata.message}`)
-      }
-
-      schemas[schemaId] = schemaResult.schema
+      const { schema } = await fetchSchema(agentContext, schemaId)
+      schemas[schemaId] = schema
     }
 
     return schemas
@@ -480,28 +476,11 @@ export class AnonCredsProofFormatService implements ProofFormatService<AnonCreds
    *
    */
   private async getCredentialDefinitions(agentContext: AgentContext, credentialDefinitionIds: Set<string>) {
-    const registryService = agentContext.dependencyManager.resolve(AnonCredsRegistryService)
-
     const credentialDefinitions: { [key: string]: AnonCredsCredentialDefinition } = {}
 
     for (const credentialDefinitionId of credentialDefinitionIds) {
-      const credentialDefinitionRegistry = registryService.getRegistryForIdentifier(
-        agentContext,
-        credentialDefinitionId
-      )
-
-      const credentialDefinitionResult = await credentialDefinitionRegistry.getCredentialDefinition(
-        agentContext,
-        credentialDefinitionId
-      )
-
-      if (!credentialDefinitionResult.credentialDefinition) {
-        throw new CredoError(
-          `Credential definition not found for id ${credentialDefinitionId}: ${credentialDefinitionResult.resolutionMetadata.message}`
-        )
-      }
-
-      credentialDefinitions[credentialDefinitionId] = credentialDefinitionResult.credentialDefinition
+      const { credentialDefinition } = await fetchCredentialDefinition(agentContext, credentialDefinitionId)
+      credentialDefinitions[credentialDefinitionId] = credentialDefinition
     }
 
     return credentialDefinitions
@@ -530,23 +509,13 @@ export class AnonCredsProofFormatService implements ProofFormatService<AnonCreds
     // Make sure the revocation interval follows best practices from Aries RFC 0441
     assertBestPracticeRevocationInterval(requestNonRevoked)
 
-    const registryService = agentContext.dependencyManager.resolve(AnonCredsRegistryService)
-    const registry = registryService.getRegistryForIdentifier(agentContext, revocationRegistryId)
-
-    const revocationStatusResult = await registry.getRevocationStatusList(
+    const { revocationStatusList } = await fetchRevocationStatusList(
       agentContext,
       revocationRegistryId,
       requestNonRevoked.to ?? dateToTimestamp(new Date())
     )
 
-    if (!revocationStatusResult.revocationStatusList) {
-      throw new CredoError(
-        `Could not retrieve revocation status list for revocation registry ${revocationRegistryId}: ${revocationStatusResult.resolutionMetadata.message}`
-      )
-    }
-
-    // Item is revoked when the value at the index is 1
-    const isRevoked = revocationStatusResult.revocationStatusList.revocationList[parseInt(credentialRevocationId)] === 1
+    const isRevoked = revocationStatusList.revocationList[parseInt(credentialRevocationId)] === 1
 
     agentContext.config.logger.trace(
       `Credential with credential revocation index '${credentialRevocationId}' is ${
@@ -556,7 +525,7 @@ export class AnonCredsProofFormatService implements ProofFormatService<AnonCreds
 
     return {
       isRevoked,
-      timestamp: revocationStatusResult.revocationStatusList.timestamp,
+      timestamp: revocationStatusList.timestamp,
     }
   }
 
@@ -576,7 +545,7 @@ export class AnonCredsProofFormatService implements ProofFormatService<AnonCreds
 
     const credentialObjects = await Promise.all(
       [...Object.values(selectedCredentials.attributes), ...Object.values(selectedCredentials.predicates)].map(
-        async (c) => c.credentialInfo ?? holderService.getCredential(agentContext, { credentialId: c.credentialId })
+        async (c) => c.credentialInfo ?? holderService.getCredential(agentContext, { id: c.credentialId })
       )
     )
 

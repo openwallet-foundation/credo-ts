@@ -312,7 +312,6 @@ export class AnonCredsRsIssuerService implements AnonCredsIssuerService {
       if (isUnqualifiedCredentialDefinitionId(options.credentialRequest.cred_def_id)) {
         const { namespaceIdentifier, schemaName, schemaVersion } = parseIndySchemaId(credentialDefinition.schemaId)
         const { namespaceIdentifier: unqualifiedDid } = parseIndyDid(credentialDefinition.issuerId)
-        parseIndyDid
         credentialDefinition = {
           ...credentialDefinition,
           schemaId: getUnqualifiedSchemaId(namespaceIdentifier, schemaName, schemaVersion),

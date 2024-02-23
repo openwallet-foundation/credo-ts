@@ -9,6 +9,10 @@ import {
   ProofState,
   EventEmitter,
   InjectionSymbols,
+  SignatureSuiteToken,
+  W3cCredentialsModuleConfig,
+  DidResolverService,
+  DidsModuleConfig,
 } from '@credo-ts/core'
 import { Subject } from 'rxjs'
 
@@ -16,6 +20,7 @@ import { InMemoryStorageService } from '../../../../../tests/InMemoryStorageServ
 import { InMemoryWallet } from '../../../../../tests/InMemoryWallet'
 import { anoncreds } from '../../../../anoncreds/tests/helpers'
 import { indyDidFromPublicKeyBase58 } from '../../../../core/src/utils/did'
+import { testLogger } from '../../../../core/tests'
 import { agentDependencies, getAgentConfig, getAgentContext } from '../../../../core/tests/helpers'
 import { InMemoryAnonCredsRegistry } from '../../../tests/InMemoryAnonCredsRegistry'
 import { AnonCredsModuleConfig } from '../../AnonCredsModuleConfig'
@@ -70,13 +75,21 @@ const anonCredsCredentialDefinitionPrivateRepository = new AnonCredsCredentialDe
   storageService,
   eventEmitter
 )
+
+const inMemoryStorageService = new InMemoryStorageService()
 const anonCredsCredentialRepository = new AnonCredsCredentialRepository(storageService, eventEmitter)
 const anonCredsKeyCorrectnessProofRepository = new AnonCredsKeyCorrectnessProofRepository(storageService, eventEmitter)
 const agentContext = getAgentContext({
   registerInstances: [
+    [InjectionSymbols.Stop$, new Subject<boolean>()],
+    [InjectionSymbols.AgentDependencies, agentDependencies],
+    [InjectionSymbols.FileSystem, new agentDependencies.FileSystem()],
+    [InjectionSymbols.StorageService, inMemoryStorageService],
+    [InjectionSymbols.Logger, testLogger],
     [AnonCredsIssuerServiceSymbol, anonCredsIssuerService],
     [AnonCredsHolderServiceSymbol, anonCredsHolderService],
     [AnonCredsVerifierServiceSymbol, anonCredsVerifierService],
+    [DidResolverService, new DidResolverService(testLogger, new DidsModuleConfig())],
     [AnonCredsRegistryService, new AnonCredsRegistryService()],
     [AnonCredsModuleConfig, anonCredsModuleConfig],
     [AnonCredsLinkSecretRepository, anonCredsLinkSecretRepository],
@@ -84,7 +97,9 @@ const agentContext = getAgentContext({
     [AnonCredsCredentialDefinitionPrivateRepository, anonCredsCredentialDefinitionPrivateRepository],
     [AnonCredsCredentialRepository, anonCredsCredentialRepository],
     [AnonCredsKeyCorrectnessProofRepository, anonCredsKeyCorrectnessProofRepository],
+    [W3cCredentialsModuleConfig, new W3cCredentialsModuleConfig()],
     [InjectionSymbols.StorageService, storageService],
+    [SignatureSuiteToken, 'default'],
   ],
   agentConfig,
   wallet,
@@ -268,28 +283,30 @@ describe('Legacy indy format services', () => {
 
     // Holder processes and accepts credential
     await indyCredentialFormatService.processCredential(agentContext, {
+      offerAttachment,
       credentialRecord: holderCredentialRecord,
       attachment: credentialAttachment,
       requestAttachment,
     })
 
     expect(holderCredentialRecord.credentials).toEqual([
-      { credentialRecordType: 'anoncreds', credentialRecordId: expect.any(String) },
+      { credentialRecordType: 'w3c', credentialRecordId: expect.any(String) },
     ])
 
     const credentialId = holderCredentialRecord.credentials[0].credentialRecordId
     const anonCredsCredential = await anonCredsHolderService.getCredential(agentContext, {
-      credentialId,
+      id: credentialId,
     })
 
     expect(anonCredsCredential).toEqual({
       credentialId,
       attributes: {
-        age: '25',
+        age: 25,
         name: 'John',
       },
-      schemaId: legacySchemaId,
-      credentialDefinitionId: legacyCredentialDefinitionId,
+      schemaId: schemaState.schemaId,
+      linkSecretId: 'link-secret-id',
+      credentialDefinitionId: credentialDefinitionState.credentialDefinitionId,
       revocationRegistryId: null,
       credentialRevocationId: null,
       methodName: 'inMemory',

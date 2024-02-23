@@ -8,13 +8,17 @@ import {
   InjectionSymbols,
   ProofState,
   ProofExchangeRecord,
+  SignatureSuiteToken,
+  W3cCredentialsModuleConfig,
+  DidResolverService,
+  DidsModuleConfig,
 } from '@credo-ts/core'
 import { Subject } from 'rxjs'
 
 import { InMemoryStorageService } from '../../../tests/InMemoryStorageService'
 import { AnonCredsRegistryService } from '../../anoncreds/src/services/registry/AnonCredsRegistryService'
 import { InMemoryAnonCredsRegistry } from '../../anoncreds/tests/InMemoryAnonCredsRegistry'
-import { agentDependencies, getAgentConfig, getAgentContext } from '../../core/tests/helpers'
+import { agentDependencies, getAgentConfig, getAgentContext, testLogger } from '../../core/tests'
 import { AnonCredsRsVerifierService, AnonCredsRsIssuerService, AnonCredsRsHolderService } from '../src/anoncreds-rs'
 
 import { anoncreds } from './helpers'
@@ -65,7 +69,11 @@ const agentContext = getAgentContext({
     [AnonCredsHolderServiceSymbol, anonCredsHolderService],
     [AnonCredsVerifierServiceSymbol, anonCredsVerifierService],
     [AnonCredsRegistryService, new AnonCredsRegistryService()],
+    [DidResolverService, new DidResolverService(testLogger, new DidsModuleConfig())],
+    [InjectionSymbols.Logger, testLogger],
+    [W3cCredentialsModuleConfig, new W3cCredentialsModuleConfig()],
     [AnonCredsModuleConfig, anonCredsModuleConfig],
+    [SignatureSuiteToken, 'default'],
   ],
   agentConfig,
   wallet,
@@ -264,31 +272,33 @@ describe('Legacy indy format services using anoncreds-rs', () => {
 
     // Holder processes and accepts credential
     await legacyIndyCredentialFormatService.processCredential(agentContext, {
+      offerAttachment,
       credentialRecord: holderCredentialRecord,
       attachment: credentialAttachment,
       requestAttachment,
     })
 
     expect(holderCredentialRecord.credentials).toEqual([
-      { credentialRecordType: 'anoncreds', credentialRecordId: expect.any(String) },
+      { credentialRecordType: 'w3c', credentialRecordId: expect.any(String) },
     ])
 
     const credentialId = holderCredentialRecord.credentials[0].credentialRecordId
     const anonCredsCredential = await anonCredsHolderService.getCredential(agentContext, {
-      credentialId,
+      id: credentialId,
     })
 
     expect(anonCredsCredential).toEqual({
       credentialId,
       attributes: {
-        age: '25',
+        age: 25,
         name: 'John',
       },
-      schemaId: unqualifiedSchemaId,
-      credentialDefinitionId: unqualifiedCredentialDefinitionId,
+      schemaId: schemaState.schemaId,
+      credentialDefinitionId: credentialDefinitionState.credentialDefinitionId,
       revocationRegistryId: null,
       credentialRevocationId: null,
       methodName: 'inMemory',
+      linkSecretId: 'linkSecretId',
     })
 
     expect(holderCredentialRecord.metadata.data).toEqual({

@@ -1,21 +1,24 @@
-import type {
-  AnonCredsCredentialInfo,
-  AnonCredsCredentialRequestMetadata,
-  AnonCredsSelectedCredentials,
-} from '../models'
+import type { AnonCredsCredentialInfo, AnonCredsSelectedCredentials } from '../models'
 import type {
   AnonCredsCredential,
   AnonCredsCredentialOffer,
   AnonCredsCredentialRequest,
-  AnonCredsProofRequest,
   AnonCredsNonRevokedInterval,
+  AnonCredsProofRequest,
 } from '../models/exchange'
 import type {
   AnonCredsCredentialDefinition,
-  AnonCredsRevocationStatusList,
   AnonCredsRevocationRegistryDefinition,
   AnonCredsSchema,
 } from '../models/registry'
+import type {
+  AnonCredsSchemas,
+  AnonCredsCredentialDefinitions,
+  AnonCredsRevocationRegistries,
+  CredentialWithRevocationMetadata,
+} from '../models/utils'
+import type { AnonCredsCredentialRequestMetadata } from '../utils/metadata'
+import type { W3cJsonLdVerifiableCredential } from '@credo-ts/core'
 
 export interface AnonCredsAttributeInfo {
   name?: string
@@ -25,27 +28,14 @@ export interface AnonCredsAttributeInfo {
 export interface CreateProofOptions {
   proofRequest: AnonCredsProofRequest
   selectedCredentials: AnonCredsSelectedCredentials
-  schemas: {
-    [schemaId: string]: AnonCredsSchema
-  }
-  credentialDefinitions: {
-    [credentialDefinitionId: string]: AnonCredsCredentialDefinition
-  }
-  revocationRegistries: {
-    [revocationRegistryDefinitionId: string]: {
-      // tails file MUST already be downloaded on a higher level and stored
-      tailsFilePath: string
-      definition: AnonCredsRevocationRegistryDefinition
-      revocationStatusLists: {
-        [timestamp: number]: AnonCredsRevocationStatusList
-      }
-    }
-  }
+  schemas: AnonCredsSchemas
+  credentialDefinitions: AnonCredsCredentialDefinitions
+  revocationRegistries: AnonCredsRevocationRegistries
 }
 
 export interface StoreCredentialOptions {
+  credential: W3cJsonLdVerifiableCredential | AnonCredsCredential
   credentialRequestMetadata: AnonCredsCredentialRequestMetadata
-  credential: AnonCredsCredential
   credentialDefinition: AnonCredsCredentialDefinition
   schema: AnonCredsSchema
   credentialDefinitionId: string
@@ -57,7 +47,7 @@ export interface StoreCredentialOptions {
 }
 
 export interface GetCredentialOptions {
-  credentialId: string
+  id: string
 }
 
 export interface GetCredentialsOptions {
@@ -108,4 +98,34 @@ export interface CreateLinkSecretOptions {
 export interface CreateLinkSecretReturn {
   linkSecretId: string
   linkSecretValue?: string
+}
+
+export interface AnonCredsCredentialProve {
+  entryIndex: number
+  referent: string
+  isPredicate: boolean
+  reveal: boolean
+}
+
+export interface CreateW3cPresentationOptions {
+  proofRequest: AnonCredsProofRequest
+  linkSecretId: string
+  schemas: AnonCredsSchemas
+  credentialDefinitions: AnonCredsCredentialDefinitions
+  credentialsProve: AnonCredsCredentialProve[]
+  credentialsWithRevocationMetadata: CredentialWithRevocationMetadata[]
+}
+
+export interface LegacyToW3cCredentialOptions {
+  credential: AnonCredsCredential
+  issuerId: string
+  processOptions?: {
+    credentialDefinition: AnonCredsCredentialDefinition
+    credentialRequestMetadata: AnonCredsCredentialRequestMetadata
+    revocationRegistryDefinition: AnonCredsRevocationRegistryDefinition | undefined
+  }
+}
+
+export interface W3cToLegacyCredentialOptions {
+  credential: W3cJsonLdVerifiableCredential
 }

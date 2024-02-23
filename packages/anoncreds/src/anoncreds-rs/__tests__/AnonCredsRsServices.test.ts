@@ -1,37 +1,44 @@
 import type { AnonCredsProofRequest } from '@credo-ts/anoncreds'
 
-import { InjectionSymbols } from '@credo-ts/core'
+import {
+  DidResolverService,
+  DidsModuleConfig,
+  InjectionSymbols,
+  SignatureSuiteToken,
+  W3cCredentialsModuleConfig,
+} from '@credo-ts/core'
 import { anoncreds } from '@hyperledger/anoncreds-nodejs'
 import { Subject } from 'rxjs'
 
 import { InMemoryStorageService } from '../../../../../tests/InMemoryStorageService'
 import { InMemoryWallet } from '../../../../../tests/InMemoryWallet'
-import { encodeCredentialValue } from '../../../../anoncreds/src/utils/credential'
 import { InMemoryAnonCredsRegistry } from '../../../../anoncreds/tests/InMemoryAnonCredsRegistry'
+import { testLogger } from '../../../../core/tests'
 import { agentDependencies, getAgentConfig, getAgentContext } from '../../../../core/tests/helpers'
+import { encodeCredentialValue } from '../../utils/credential'
 import { AnonCredsRsHolderService } from '../AnonCredsRsHolderService'
 import { AnonCredsRsIssuerService } from '../AnonCredsRsIssuerService'
 import { AnonCredsRsVerifierService } from '../AnonCredsRsVerifierService'
 
 import {
-  getUnqualifiedSchemaId,
-  parseIndySchemaId,
-  getUnqualifiedCredentialDefinitionId,
-  parseIndyCredentialDefinitionId,
-  AnonCredsModuleConfig,
-  AnonCredsHolderServiceSymbol,
-  AnonCredsIssuerServiceSymbol,
-  AnonCredsVerifierServiceSymbol,
-  AnonCredsSchemaRepository,
-  AnonCredsSchemaRecord,
-  AnonCredsCredentialDefinitionRecord,
-  AnonCredsCredentialDefinitionRepository,
   AnonCredsCredentialDefinitionPrivateRecord,
   AnonCredsCredentialDefinitionPrivateRepository,
-  AnonCredsKeyCorrectnessProofRepository,
+  AnonCredsCredentialDefinitionRecord,
+  AnonCredsCredentialDefinitionRepository,
+  AnonCredsHolderServiceSymbol,
+  AnonCredsIssuerServiceSymbol,
   AnonCredsKeyCorrectnessProofRecord,
-  AnonCredsLinkSecretRepository,
+  AnonCredsKeyCorrectnessProofRepository,
   AnonCredsLinkSecretRecord,
+  AnonCredsLinkSecretRepository,
+  AnonCredsModuleConfig,
+  AnonCredsSchemaRecord,
+  AnonCredsSchemaRepository,
+  AnonCredsVerifierServiceSymbol,
+  getUnqualifiedCredentialDefinitionId,
+  getUnqualifiedSchemaId,
+  parseIndyCredentialDefinitionId,
+  parseIndySchemaId,
 } from '@credo-ts/anoncreds'
 
 const agentConfig = getAgentConfig('AnonCredsCredentialFormatServiceTest')
@@ -58,6 +65,11 @@ const agentContext = getAgentContext({
         anoncreds,
       }),
     ],
+
+    [InjectionSymbols.Logger, testLogger],
+    [DidResolverService, new DidResolverService(testLogger, new DidsModuleConfig())],
+    [W3cCredentialsModuleConfig, new W3cCredentialsModuleConfig()],
+    [SignatureSuiteToken, 'default'],
   ],
   agentConfig,
 })
@@ -169,29 +181,25 @@ describe('AnonCredsRsServices', () => {
       },
     })
 
-    const credentialId = 'holderCredentialId'
-
-    const storedId = await anonCredsHolderService.storeCredential(agentContext, {
+    const credentialId = await anonCredsHolderService.storeCredential(agentContext, {
       credential,
       credentialDefinition,
       schema,
       credentialDefinitionId: credentialDefinitionState.credentialDefinitionId,
       credentialRequestMetadata: credentialRequestState.credentialRequestMetadata,
-      credentialId,
     })
 
-    expect(storedId).toEqual(credentialId)
-
     const credentialInfo = await anonCredsHolderService.getCredential(agentContext, {
-      credentialId,
+      id: credentialId,
     })
 
     expect(credentialInfo).toEqual({
       credentialId,
       attributes: {
-        age: '25',
+        age: 25,
         name: 'John',
       },
+      linkSecretId: 'linkSecretId',
       schemaId: schemaState.schemaId,
       credentialDefinitionId: credentialDefinitionState.credentialDefinitionId,
       revocationRegistryId: null,
@@ -377,31 +385,28 @@ describe('AnonCredsRsServices', () => {
       },
     })
 
-    const credentialId = 'holderCredentialId2'
-
-    const storedId = await anonCredsHolderService.storeCredential(agentContext, {
+    // store credential now requires qualified identifiers
+    const credentialId = await anonCredsHolderService.storeCredential(agentContext, {
       credential,
-      credentialDefinition: unqualifiedCredentialDefinition.credentialDefinition,
-      schema: unqualifiedSchema.schema,
-      credentialDefinitionId: credentialOffer.cred_def_id,
+      credentialDefinition,
+      schema,
+      credentialDefinitionId: credentialDefinitionState.credentialDefinitionId,
       credentialRequestMetadata: credentialRequestState.credentialRequestMetadata,
-      credentialId,
     })
 
-    expect(storedId).toEqual(credentialId)
-
     const credentialInfo = await anonCredsHolderService.getCredential(agentContext, {
-      credentialId,
+      id: credentialId,
     })
 
     expect(credentialInfo).toEqual({
       credentialId,
       attributes: {
-        age: '25',
+        age: 25,
         name: 'John',
       },
-      schemaId: unqualifiedSchemaId,
-      credentialDefinitionId: unqualifiedCredentialDefinitionId,
+      linkSecretId: 'someLinkSecretId',
+      schemaId: schemaState.schemaId,
+      credentialDefinitionId: credentialDefinitionState.credentialDefinitionId,
       revocationRegistryId: null,
       credentialRevocationId: null,
       methodName: 'inMemory',

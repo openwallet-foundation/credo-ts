@@ -1,12 +1,20 @@
 import type { AnonCredsProof, AnonCredsProofRequest, AnonCredsNonRevokedInterval } from '../models'
-import type { AnonCredsVerifierService, VerifyProofOptions } from '../services'
+import type { CredentialWithRevocationMetadata } from '../models/utils'
+import type { AnonCredsVerifierService, VerifyProofOptions, VerifyW3cPresentationOptions } from '../services'
 import type { AgentContext } from '@credo-ts/core'
-import type { JsonObject, NonRevokedIntervalOverride } from '@hyperledger/anoncreds-shared'
+import type {
+  JsonObject,
+  NonRevokedIntervalOverride,
+  RevocationRegistryDefinition,
+  VerifyW3cPresentationOptions as VerifyAnonCredsW3cPresentationOptions,
+} from '@hyperledger/anoncreds-shared'
 
-import { injectable } from '@credo-ts/core'
-import { Presentation } from '@hyperledger/anoncreds-shared'
+import { JsonTransformer, injectable } from '@credo-ts/core'
+import { Presentation, W3cPresentation, W3cCredential as AnonCredsW3cCredential } from '@hyperledger/anoncreds-shared'
 
-import { AnonCredsRegistryService } from '../services'
+import { fetchRevocationStatusList } from '../utils'
+
+import { getRevocationMetadata } from './utils'
 
 @injectable()
 export class AnonCredsRsVerifierService implements AnonCredsVerifierService {
@@ -110,14 +118,12 @@ export class AnonCredsRsVerifierService implements AnonCredsVerifierService {
       if (requestedFrom && requestedFrom > identifier.timestamp) {
         // Check VDR if the active revocation status list at requestedFrom was the one from provided timestamp.
         // If it matches, add to the override list
-        const registry = agentContext.dependencyManager
-          .resolve(AnonCredsRegistryService)
-          .getRegistryForIdentifier(agentContext, identifier.rev_reg_id)
-        const { revocationStatusList } = await registry.getRevocationStatusList(
+        const { revocationStatusList } = await fetchRevocationStatusList(
           agentContext,
           identifier.rev_reg_id,
           requestedFrom
         )
+
         const vdrTimestamp = revocationStatusList?.timestamp
         if (vdrTimestamp && vdrTimestamp === identifier.timestamp) {
           nonRevokedIntervalOverrides.push({
@@ -138,5 +144,63 @@ export class AnonCredsRsVerifierService implements AnonCredsVerifierService {
       verified: true,
       nonRevokedIntervalOverrides: nonRevokedIntervalOverrides.length ? nonRevokedIntervalOverrides : undefined,
     }
+  }
+
+  private getRevocationMetadataForCredentials = async (
+    agentContext: AgentContext,
+    credentialsWithMetadata: CredentialWithRevocationMetadata[]
+  ) => {
+    const revocationMetadataFetchPromises = credentialsWithMetadata
+      .filter((cwm) => cwm.nonRevoked)
+      .map(async (credentialWithMetadata) => {
+        const w3cJsonLdVerifiableCredential = JsonTransformer.toJSON(credentialWithMetadata.credential)
+        const { revocationRegistryIndex, revocationRegistryId, timestamp } =
+          AnonCredsW3cCredential.fromJson(w3cJsonLdVerifiableCredential)
+
+        return await getRevocationMetadata(agentContext, {
+          nonRevokedInterval: credentialWithMetadata.nonRevoked as AnonCredsNonRevokedInterval,
+          timestamp: timestamp,
+          revocationRegistryId,
+          revocationRegistryIndex,
+        })
+      })
+
+    return await Promise.all(revocationMetadataFetchPromises)
+  }
+
+  public async verifyW3cPresentation(agentContext: AgentContext, options: VerifyW3cPresentationOptions) {
+    const revocationMetadata = await this.getRevocationMetadataForCredentials(
+      agentContext,
+      options.credentialsWithRevocationMetadata
+    )
+
+    const revocationRegistryDefinitions: Record<string, RevocationRegistryDefinition> = {}
+    revocationMetadata.forEach(
+      (rm) => (revocationRegistryDefinitions[rm.revocationRegistryId] = rm.revocationRegistryDefinition)
+    )
+
+    const verificationOptions: VerifyAnonCredsW3cPresentationOptions = {
+      presentationRequest: options.proofRequest as unknown as JsonObject,
+      schemas: options.schemas as unknown as Record<string, JsonObject>,
+      credentialDefinitions: options.credentialDefinitions as unknown as Record<string, JsonObject>,
+      revocationRegistryDefinitions,
+      revocationStatusLists: revocationMetadata.map((rm) => rm.revocationStatusList),
+      nonRevokedIntervalOverrides: revocationMetadata
+        .filter((rm) => rm.nonRevokedIntervalOverride)
+        .map((rm) => rm.nonRevokedIntervalOverride as NonRevokedIntervalOverride),
+    }
+
+    let result = false
+    const presentationJson = JsonTransformer.toJSON(options.presentation)
+    if ('presentation_submission' in presentationJson) delete presentationJson.presentation_submission
+
+    let w3cPresentation: W3cPresentation | undefined
+    try {
+      w3cPresentation = W3cPresentation.fromJson(presentationJson)
+      result = w3cPresentation.verify(verificationOptions)
+    } finally {
+      w3cPresentation?.handle.clear()
+    }
+    return result
   }
 }

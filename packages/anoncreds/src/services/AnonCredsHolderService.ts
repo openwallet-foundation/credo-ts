@@ -9,10 +9,13 @@ import type {
   CreateLinkSecretReturn,
   CreateLinkSecretOptions,
   GetCredentialsOptions,
+  CreateW3cPresentationOptions,
+  LegacyToW3cCredentialOptions,
+  W3cToLegacyCredentialOptions,
 } from './AnonCredsHolderServiceOptions'
 import type { AnonCredsCredentialInfo } from '../models'
-import type { AnonCredsProof } from '../models/exchange'
-import type { AgentContext } from '@credo-ts/core'
+import type { AnonCredsCredential, AnonCredsProof } from '../models/exchange'
+import type { AgentContext, W3cJsonLdVerifiableCredential, W3cJsonLdVerifiablePresentation } from '@credo-ts/core'
 
 export const AnonCredsHolderServiceSymbol = Symbol('AnonCredsHolderService')
 
@@ -42,4 +45,16 @@ export interface AnonCredsHolderService {
     agentContext: AgentContext,
     options: GetCredentialsForProofRequestOptions
   ): Promise<GetCredentialsForProofRequestReturn>
+
+  createW3cPresentation(
+    agentContext: AgentContext,
+    options: CreateW3cPresentationOptions
+  ): Promise<W3cJsonLdVerifiablePresentation>
+
+  w3cToLegacyCredential(agentContext: AgentContext, options: W3cToLegacyCredentialOptions): Promise<AnonCredsCredential>
+
+  legacyToW3cCredential(
+    agentContext: AgentContext,
+    options: LegacyToW3cCredentialOptions
+  ): Promise<W3cJsonLdVerifiableCredential>
 }

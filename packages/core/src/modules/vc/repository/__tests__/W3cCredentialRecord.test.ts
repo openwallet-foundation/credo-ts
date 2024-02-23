@@ -1,3 +1,4 @@
+import { getAnonCredsTagsFromRecord } from '../../../../../../anoncreds/src/utils/w3cAnonCredsUtils'
 import { JsonTransformer } from '../../../../utils'
 import { Ed25519Signature2018Fixtures } from '../../data-integrity/__tests__/fixtures'
 import { W3cJsonLdVerifiableCredential } from '../../data-integrity/models'
@@ -5,7 +6,7 @@ import { W3cCredentialRecord } from '../W3cCredentialRecord'
 
 describe('W3cCredentialRecord', () => {
   describe('getTags', () => {
-    it('should return default tags', () => {
+    it('should return default tags (w3c credential)', () => {
       const credential = JsonTransformer.fromJSON(
         Ed25519Signature2018Fixtures.TEST_LD_DOCUMENT_SIGNED,
         W3cJsonLdVerifiableCredential
@@ -22,6 +23,7 @@ describe('W3cCredentialRecord', () => {
         claimFormat: 'ldp_vc',
         issuerId: credential.issuerId,
         subjectIds: credential.credentialSubjectIds,
+        cryptosuites: [],
         schemaIds: credential.credentialSchemaIds,
         contexts: credential.contexts,
         proofTypes: credential.proofTypes,
@@ -29,6 +31,8 @@ describe('W3cCredentialRecord', () => {
         expandedTypes: ['https://expanded.tag#1'],
         types: ['VerifiableCredential', 'UniversityDegreeCredential'],
       })
+
+      expect(getAnonCredsTagsFromRecord(w3cCredentialRecord)).toBeUndefined()
     })
   })
 })

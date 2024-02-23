@@ -39,19 +39,27 @@ import { CredoError, Attachment, AttachmentData, JsonEncoder, ProofFormatSpec, J
 
 import { AnonCredsProofRequest as AnonCredsProofRequestClass } from '../models/AnonCredsProofRequest'
 import { AnonCredsVerifierServiceSymbol, AnonCredsHolderServiceSymbol } from '../services'
-import { AnonCredsRegistryService } from '../services/registry/AnonCredsRegistryService'
 import {
   sortRequestedCredentialsMatches,
   createRequestFromPreview,
   areAnonCredsProofRequestsEqual,
   assertBestPracticeRevocationInterval,
   checkValidCredentialValueEncoding,
-  encodeCredentialValue,
   assertNoDuplicateGroupsNamesInProofRequest,
   getRevocationRegistriesForRequest,
   getRevocationRegistriesForProof,
+  fetchSchema,
+  fetchCredentialDefinition,
+  fetchRevocationStatusList,
 } from '../utils'
-import { isUnqualifiedCredentialDefinitionId, isUnqualifiedSchemaId } from '../utils/indyIdentifiers'
+import { encodeCredentialValue } from '../utils/credential'
+import {
+  getUnQualifiedDidIndyDid,
+  isUnqualifiedCredentialDefinitionId,
+  isUnqualifiedSchemaId,
+  getUnqualifiedDidIndySchema,
+  getUnqualifiedDidIndyCredentialDefinition,
+} from '../utils/indyIdentifiers'
 import { dateToTimestamp } from '../utils/timestamp'
 
 const V2_INDY_PRESENTATION_PROPOSAL = 'hlindy/proof-req@v2.0'
@@ -456,23 +464,15 @@ export class LegacyIndyProofFormatService implements ProofFormatService<LegacyIn
    *
    */
   private async getSchemas(agentContext: AgentContext, schemaIds: Set<string>) {
-    const registryService = agentContext.dependencyManager.resolve(AnonCredsRegistryService)
-
     const schemas: { [key: string]: AnonCredsSchema } = {}
 
     for (const schemaId of schemaIds) {
-      if (!isUnqualifiedSchemaId(schemaId)) {
-        throw new CredoError(`${schemaId} is not a valid legacy indy schema id`)
+      const schemaResult = await fetchSchema(agentContext, schemaId)
+      if (isUnqualifiedSchemaId(schemaResult.schemaId)) {
+        schemas[schemaId] = schemaResult.schema
+      } else {
+        schemas[getUnQualifiedDidIndyDid(schemaId)] = getUnqualifiedDidIndySchema(schemaResult.schema)
       }
-
-      const schemaRegistry = registryService.getRegistryForIdentifier(agentContext, schemaId)
-      const schemaResult = await schemaRegistry.getSchema(agentContext, schemaId)
-
-      if (!schemaResult.schema) {
-        throw new CredoError(`Schema not found for id ${schemaId}: ${schemaResult.resolutionMetadata.message}`)
-      }
-
-      schemas[schemaId] = schemaResult.schema
     }
 
     return schemas
@@ -488,32 +488,16 @@ export class LegacyIndyProofFormatService implements ProofFormatService<LegacyIn
    *
    */
   private async getCredentialDefinitions(agentContext: AgentContext, credentialDefinitionIds: Set<string>) {
-    const registryService = agentContext.dependencyManager.resolve(AnonCredsRegistryService)
-
     const credentialDefinitions: { [key: string]: AnonCredsCredentialDefinition } = {}
 
     for (const credentialDefinitionId of credentialDefinitionIds) {
-      if (!isUnqualifiedCredentialDefinitionId(credentialDefinitionId)) {
-        throw new CredoError(`${credentialDefinitionId} is not a valid legacy indy credential definition id`)
+      const credentialDefinitionResult = await fetchCredentialDefinition(agentContext, credentialDefinitionId)
+      if (isUnqualifiedCredentialDefinitionId(credentialDefinitionResult.credentialDefinitionId)) {
+        credentialDefinitions[credentialDefinitionId] = credentialDefinitionResult.credentialDefinition
+      } else {
+        credentialDefinitions[getUnQualifiedDidIndyDid(credentialDefinitionId)] =
+          getUnqualifiedDidIndyCredentialDefinition(credentialDefinitionResult.credentialDefinition)
       }
-
-      const credentialDefinitionRegistry = registryService.getRegistryForIdentifier(
-        agentContext,
-        credentialDefinitionId
-      )
-
-      const credentialDefinitionResult = await credentialDefinitionRegistry.getCredentialDefinition(
-        agentContext,
-        credentialDefinitionId
-      )
-
-      if (!credentialDefinitionResult.credentialDefinition) {
-        throw new CredoError(
-          `Credential definition not found for id ${credentialDefinitionId}: ${credentialDefinitionResult.resolutionMetadata.message}`
-        )
-      }
-
-      credentialDefinitions[credentialDefinitionId] = credentialDefinitionResult.credentialDefinition
     }
 
     return credentialDefinitions
@@ -542,23 +526,14 @@ export class LegacyIndyProofFormatService implements ProofFormatService<LegacyIn
     // Make sure the revocation interval follows best practices from Aries RFC 0441
     assertBestPracticeRevocationInterval(requestNonRevoked)
 
-    const registryService = agentContext.dependencyManager.resolve(AnonCredsRegistryService)
-    const registry = registryService.getRegistryForIdentifier(agentContext, revocationRegistryId)
-
-    const revocationStatusResult = await registry.getRevocationStatusList(
+    const { revocationStatusList } = await fetchRevocationStatusList(
       agentContext,
       revocationRegistryId,
       requestNonRevoked.to ?? dateToTimestamp(new Date())
     )
 
-    if (!revocationStatusResult.revocationStatusList) {
-      throw new CredoError(
-        `Could not retrieve revocation status list for revocation registry ${revocationRegistryId}: ${revocationStatusResult.resolutionMetadata.message}`
-      )
-    }
-
     // Item is revoked when the value at the index is 1
-    const isRevoked = revocationStatusResult.revocationStatusList.revocationList[parseInt(credentialRevocationId)] === 1
+    const isRevoked = revocationStatusList.revocationList[parseInt(credentialRevocationId)] === 1
 
     agentContext.config.logger.trace(
       `Credential with credential revocation index '${credentialRevocationId}' is ${
@@ -568,7 +543,7 @@ export class LegacyIndyProofFormatService implements ProofFormatService<LegacyIn
 
     return {
       isRevoked,
-      timestamp: revocationStatusResult.revocationStatusList.timestamp,
+      timestamp: revocationStatusList.timestamp,
     }
   }
 
@@ -588,7 +563,7 @@ export class LegacyIndyProofFormatService implements ProofFormatService<LegacyIn
 
     const credentialObjects = await Promise.all(
       [...Object.values(selectedCredentials.attributes), ...Object.values(selectedCredentials.predicates)].map(
-        async (c) => c.credentialInfo ?? holderService.getCredential(agentContext, { credentialId: c.credentialId })
+        async (c) => c.credentialInfo ?? holderService.getCredential(agentContext, { id: c.credentialId })
       )
     )
 

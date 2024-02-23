@@ -9,5 +9,8 @@ export enum ClaimFormat {
   Ldp = 'ldp',
   LdpVc = 'ldp_vc',
   LdpVp = 'ldp_vp',
+  Di = 'di',
+  DiVc = 'di_vc',
+  DiVp = 'di_vp',
   SdJwtVc = 'vc+sd-jwt',
 }

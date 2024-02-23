@@ -1,14 +1,20 @@
 import type {
+  AnonCredsCredentialDefinition,
   AnonCredsProof,
   AnonCredsRequestedAttributeMatch,
   AnonCredsRequestedPredicateMatch,
+  AnonCredsRevocationRegistryDefinition,
+  AnonCredsSchema,
   AnonCredsCredentialRequest,
-  AnonCredsCredentialRequestMetadata,
   AnonCredsCredential,
   AnonCredsCredentialInfo,
   AnonCredsProofRequestRestriction,
 } from '../models'
+import type { CredentialWithRevocationMetadata } from '../models/utils'
+import type { AnonCredsCredentialRecord } from '../repository'
 import type {
+  GetCredentialsForProofRequestOptions,
+  GetCredentialsForProofRequestReturn,
   AnonCredsHolderService,
   CreateLinkSecretOptions,
   CreateLinkSecretReturn,
@@ -18,20 +24,39 @@ import type {
   GetCredentialOptions,
   GetCredentialsOptions,
   StoreCredentialOptions,
-  GetCredentialsForProofRequestOptions,
-  GetCredentialsForProofRequestReturn,
 } from '../services'
+import type {
+  AnonCredsCredentialProve,
+  CreateW3cPresentationOptions,
+  LegacyToW3cCredentialOptions,
+  W3cToLegacyCredentialOptions,
+} from '../services/AnonCredsHolderServiceOptions'
+import type { AnonCredsCredentialRequestMetadata, W3cAnoncredsCredentialMetadata } from '../utils/metadata'
 import type { AgentContext, Query, SimpleQuery } from '@credo-ts/core'
 import type {
   CredentialEntry,
   CredentialProve,
   CredentialRequestMetadata,
   JsonObject,
+  W3cCredentialEntry,
 } from '@hyperledger/anoncreds-shared'
 
-import { CredoError, JsonTransformer, TypedArrayEncoder, injectable, utils } from '@credo-ts/core'
+import {
+  CredoError,
+  JsonTransformer,
+  W3cCredentialRecord,
+  TypedArrayEncoder,
+  W3cCredentialRepository,
+  W3cCredentialService,
+  W3cJsonLdVerifiableCredential,
+  injectable,
+  utils,
+  W3cJsonLdVerifiablePresentation,
+} from '@credo-ts/core'
 import {
   Credential,
+  W3cPresentation as W3cAnonCredsPresentation,
+  W3cCredential as W3cAnonCredsCredential,
   CredentialRequest,
   CredentialRevocationState,
   LinkSecret,
@@ -44,9 +69,19 @@ import {
 import { AnonCredsModuleConfig } from '../AnonCredsModuleConfig'
 import { AnonCredsRsError } from '../error'
 import { AnonCredsRestrictionWrapper } from '../models'
-import { AnonCredsCredentialRepository, AnonCredsCredentialRecord, AnonCredsLinkSecretRepository } from '../repository'
+import { AnonCredsCredentialRepository, AnonCredsLinkSecretRepository } from '../repository'
 import { AnonCredsRegistryService } from '../services'
 import { storeLinkSecret, unqualifiedCredentialDefinitionIdRegex } from '../utils'
+import {
+  isUnqualifiedCredentialDefinitionId,
+  isUnqualifiedIndyDid,
+  isUnqualifiedSchemaId,
+} from '../utils/indyIdentifiers'
+import { assertLinkSecretsMatch, getLinkSecret } from '../utils/linkSecret'
+import { W3cAnonCredsCredentialMetadataKey } from '../utils/metadata'
+import { getAnoncredsCredentialInfoFromRecord, getW3cRecordAnonCredsTags } from '../utils/w3cAnonCredsUtils'
+
+import { getRevocationMetadata } from './utils'
 
 @injectable()
 export class AnonCredsRsHolderService implements AnonCredsHolderService {
@@ -75,22 +110,40 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
         rsSchemas[schemaId] = schemas[schemaId] as unknown as JsonObject
       }
 
-      const credentialRepository = agentContext.dependencyManager.resolve(AnonCredsCredentialRepository)
+      const w3cCredentialRepository = agentContext.dependencyManager.resolve(W3cCredentialRepository)
+      const anoncredsCredentialRepository = agentContext.dependencyManager.resolve(AnonCredsCredentialRepository)
 
       // Cache retrieved credentials in order to minimize storage calls
-      const retrievedCredentials = new Map<string, AnonCredsCredentialRecord>()
+      const retrievedCredentials = new Map<string, W3cCredentialRecord | AnonCredsCredentialRecord>()
 
       const credentialEntryFromAttribute = async (
         attribute: AnonCredsRequestedAttributeMatch | AnonCredsRequestedPredicateMatch
       ): Promise<{ linkSecretId: string; credentialEntry: CredentialEntry }> => {
         let credentialRecord = retrievedCredentials.get(attribute.credentialId)
+
         if (!credentialRecord) {
-          credentialRecord = await credentialRepository.getByCredentialId(agentContext, attribute.credentialId)
-          retrievedCredentials.set(attribute.credentialId, credentialRecord)
+          const w3cCredentialRecord = await w3cCredentialRepository.findById(agentContext, attribute.credentialId)
+
+          if (w3cCredentialRecord) {
+            credentialRecord = w3cCredentialRecord
+            retrievedCredentials.set(attribute.credentialId, w3cCredentialRecord)
+          } else {
+            credentialRecord = await anoncredsCredentialRepository.getByCredentialId(
+              agentContext,
+              attribute.credentialId
+            )
+
+            agentContext.config.logger.warn(
+              [
+                `Creating AnonCreds proof with legacy credential ${attribute.credentialId}.`,
+                `Please run the migration script to migrate credentials to the new w3c format. See https://credo.js.org/guides/updating/versions/0.4-to-0.5 for information on how to migrate.`,
+              ].join('\n')
+            )
+          }
         }
 
-        const revocationRegistryDefinitionId = credentialRecord.credential.rev_reg_id
-        const revocationRegistryIndex = credentialRecord.credentialRevocationId
+        const { linkSecretId, revocationRegistryId, credentialRevocationId } =
+          getAnoncredsCredentialInfoFromRecord(credentialRecord)
 
         // TODO: Check if credential has a revocation registry id (check response from anoncreds-rs API, as it is
         // sending back a mandatory string in Credential.revocationRegistryId)
@@ -99,34 +152,42 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
         let revocationState: CredentialRevocationState | undefined
         let revocationRegistryDefinition: RevocationRegistryDefinition | undefined
         try {
-          if (timestamp && revocationRegistryIndex && revocationRegistryDefinitionId) {
-            if (!options.revocationRegistries[revocationRegistryDefinitionId]) {
-              throw new AnonCredsRsError(`Revocation Registry ${revocationRegistryDefinitionId} not found`)
+          if (timestamp && credentialRevocationId && revocationRegistryId) {
+            if (!options.revocationRegistries[revocationRegistryId]) {
+              throw new AnonCredsRsError(`Revocation Registry ${revocationRegistryId} not found`)
             }
 
             const { definition, revocationStatusLists, tailsFilePath } =
-              options.revocationRegistries[revocationRegistryDefinitionId]
+              options.revocationRegistries[revocationRegistryId]
 
             // Extract revocation status list for the given timestamp
             const revocationStatusList = revocationStatusLists[timestamp]
             if (!revocationStatusList) {
               throw new CredoError(
-                `Revocation status list for revocation registry ${revocationRegistryDefinitionId} and timestamp ${timestamp} not found in revocation status lists. All revocation status lists must be present.`
+                `Revocation status list for revocation registry ${revocationRegistryId} and timestamp ${timestamp} not found in revocation status lists. All revocation status lists must be present.`
               )
             }
 
             revocationRegistryDefinition = RevocationRegistryDefinition.fromJson(definition as unknown as JsonObject)
             revocationState = CredentialRevocationState.create({
-              revocationRegistryIndex: Number(revocationRegistryIndex),
+              revocationRegistryIndex: Number(credentialRevocationId),
               revocationRegistryDefinition,
               tailsPath: tailsFilePath,
               revocationStatusList: RevocationStatusList.fromJson(revocationStatusList as unknown as JsonObject),
             })
           }
+
+          const credential =
+            credentialRecord instanceof W3cCredentialRecord
+              ? await this.w3cToLegacyCredential(agentContext, {
+                  credential: credentialRecord.credential as W3cJsonLdVerifiableCredential,
+                })
+              : (credentialRecord.credential as AnonCredsCredential)
+
           return {
-            linkSecretId: credentialRecord.linkSecretId,
+            linkSecretId,
             credentialEntry: {
-              credential: credentialRecord.credential as unknown as JsonObject,
+              credential: credential as unknown as JsonObject,
               revocationState: revocationState?.toJson(),
               timestamp,
             },
@@ -155,19 +216,9 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
         entryIndex = entryIndex + 1
       }
 
-      // Get all requested credentials and take linkSecret. If it's not the same for every credential, throw error
-      const linkSecretsMatch = credentials.every((item) => item.linkSecretId === credentials[0].linkSecretId)
-      if (!linkSecretsMatch) {
-        throw new AnonCredsRsError('All credentials in a Proof should have been issued using the same Link Secret')
-      }
-
-      const linkSecretRecord = await agentContext.dependencyManager
-        .resolve(AnonCredsLinkSecretRepository)
-        .getByLinkSecretId(agentContext, credentials[0].linkSecretId)
-
-      if (!linkSecretRecord.value) {
-        throw new AnonCredsRsError('Link Secret value not stored')
-      }
+      const linkSecretIds = credentials.map((item) => item.linkSecretId)
+      const linkSecretId = assertLinkSecretsMatch(agentContext, linkSecretIds)
+      const linkSecret = await getLinkSecret(agentContext, linkSecretId)
 
       presentation = Presentation.create({
         credentialDefinitions: rsCredentialDefinitions,
@@ -176,7 +227,7 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
         credentials: credentials.map((entry) => entry.credentialEntry),
         credentialsProve,
         selfAttest: selectedCredentials.selfAttestedAttributes,
-        linkSecret: linkSecretRecord.value,
+        linkSecret,
       })
 
       return presentation.toJson() as unknown as AnonCredsProof
@@ -243,84 +294,180 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
     }
   }
 
-  public async storeCredential(agentContext: AgentContext, options: StoreCredentialOptions): Promise<string> {
-    const { credential, credentialDefinition, credentialRequestMetadata, revocationRegistry, schema } = options
+  public async w3cToLegacyCredential(agentContext: AgentContext, options: W3cToLegacyCredentialOptions) {
+    const credentialJson = JsonTransformer.toJSON(options.credential)
+    const w3cAnonCredsCredentialObj = W3cAnonCredsCredential.fromJson(credentialJson)
+    const w3cCredentialObj = w3cAnonCredsCredentialObj.toLegacy()
+    const legacyCredential = w3cCredentialObj.toJson() as unknown as AnonCredsCredential
+    return legacyCredential
+  }
 
-    const linkSecretRecord = await agentContext.dependencyManager
-      .resolve(AnonCredsLinkSecretRepository)
-      .getByLinkSecretId(agentContext, credentialRequestMetadata.link_secret_name)
+  public async processW3cCredential(
+    agentContext: AgentContext,
+    credential: W3cJsonLdVerifiableCredential,
+    processOptions: {
+      credentialDefinition: AnonCredsCredentialDefinition
+      credentialRequestMetadata: AnonCredsCredentialRequestMetadata
+      revocationRegistryDefinition: AnonCredsRevocationRegistryDefinition | undefined
+    }
+  ) {
+    const { credentialRequestMetadata, revocationRegistryDefinition, credentialDefinition } = processOptions
 
-    if (!linkSecretRecord.value) {
-      throw new AnonCredsRsError('Link Secret value not stored')
+    const processCredentialOptions = {
+      credentialRequestMetadata: credentialRequestMetadata as unknown as JsonObject,
+      linkSecret: await getLinkSecret(agentContext, credentialRequestMetadata.link_secret_name),
+      revocationRegistryDefinition: revocationRegistryDefinition as unknown as JsonObject,
+      credentialDefinition: credentialDefinition as unknown as JsonObject,
     }
 
-    const revocationRegistryDefinition = revocationRegistry?.definition as unknown as JsonObject
+    const credentialJson = JsonTransformer.toJSON(credential)
+    const w3cAnonCredsCredential = W3cAnonCredsCredential.fromJson(credentialJson)
+    const processedW3cAnonCredsCredential = w3cAnonCredsCredential.process(processCredentialOptions)
 
-    const credentialId = options.credentialId ?? utils.uuid()
+    const processedW3cJsonLdVerifiableCredential = JsonTransformer.fromJSON(
+      processedW3cAnonCredsCredential.toJson(),
+      W3cJsonLdVerifiableCredential
+    )
+    return processedW3cJsonLdVerifiableCredential
+  }
 
-    let credentialObj: Credential | undefined
-    let processedCredential: Credential | undefined
+  public async legacyToW3cCredential(agentContext: AgentContext, options: LegacyToW3cCredentialOptions) {
+    const { credential, issuerId, processOptions } = options
+    let w3cCredential: W3cJsonLdVerifiableCredential
+
+    let anonCredsCredential: Credential | undefined
+    let w3cCredentialObj: W3cAnonCredsCredential | undefined
     try {
-      credentialObj = Credential.fromJson(credential as unknown as JsonObject)
-      processedCredential = credentialObj.process({
-        credentialDefinition: credentialDefinition as unknown as JsonObject,
-        credentialRequestMetadata: credentialRequestMetadata as unknown as JsonObject,
-        linkSecret: linkSecretRecord.value,
-        revocationRegistryDefinition,
-      })
+      anonCredsCredential = Credential.fromJson(credential as unknown as JsonObject)
+      w3cCredentialObj = anonCredsCredential.toW3c({ issuerId, w3cVersion: '1.1' })
 
-      const credentialRepository = agentContext.dependencyManager.resolve(AnonCredsCredentialRepository)
-
-      const methodName = agentContext.dependencyManager
-        .resolve(AnonCredsRegistryService)
-        .getRegistryForIdentifier(agentContext, credential.cred_def_id).methodName
-
-      await credentialRepository.save(
-        agentContext,
-        new AnonCredsCredentialRecord({
-          credential: processedCredential.toJson() as unknown as AnonCredsCredential,
-          credentialId,
-          linkSecretId: linkSecretRecord.linkSecretId,
-          issuerId: options.credentialDefinition.issuerId,
-          schemaName: schema.name,
-          schemaIssuerId: schema.issuerId,
-          schemaVersion: schema.version,
-          credentialRevocationId: processedCredential.revocationRegistryIndex?.toString(),
-          methodName,
-        })
+      const w3cJsonLdVerifiableCredential = JsonTransformer.fromJSON(
+        w3cCredentialObj.toJson(),
+        W3cJsonLdVerifiableCredential
       )
 
-      return credentialId
+      w3cCredential = processOptions
+        ? await this.processW3cCredential(agentContext, w3cJsonLdVerifiableCredential, processOptions)
+        : w3cJsonLdVerifiableCredential
     } finally {
-      credentialObj?.handle.clear()
-      processedCredential?.handle.clear()
+      anonCredsCredential?.handle?.clear()
+      w3cCredentialObj?.handle?.clear()
     }
+
+    return w3cCredential
+  }
+
+  public async storeW3cCredential(
+    agentContext: AgentContext,
+    options: {
+      credential: W3cJsonLdVerifiableCredential
+      credentialDefinitionId: string
+      schema: AnonCredsSchema
+      credentialDefinition: AnonCredsCredentialDefinition
+      revocationRegistryDefinition?: AnonCredsRevocationRegistryDefinition
+      credentialRequestMetadata: AnonCredsCredentialRequestMetadata
+    }
+  ) {
+    const { credential, credentialRequestMetadata, schema, credentialDefinition, credentialDefinitionId } = options
+
+    const methodName = agentContext.dependencyManager
+      .resolve(AnonCredsRegistryService)
+      .getRegistryForIdentifier(agentContext, credential.issuerId).methodName
+
+    // this thows an error if the link secret is not found
+    await getLinkSecret(agentContext, credentialRequestMetadata.link_secret_name)
+
+    const { revocationRegistryId, revocationRegistryIndex } = W3cAnonCredsCredential.fromJson(
+      JsonTransformer.toJSON(credential)
+    )
+
+    const w3cCredentialService = agentContext.dependencyManager.resolve(W3cCredentialService)
+    const w3cCredentialRecord = await w3cCredentialService.storeCredential(agentContext, { credential })
+
+    const anonCredsTags = getW3cRecordAnonCredsTags({
+      w3cCredentialRecord,
+      schema,
+      schemaId: credentialDefinition.schemaId,
+      credentialDefinitionId,
+      revocationRegistryId,
+      credentialRevocationId: revocationRegistryIndex?.toString(),
+      linkSecretId: credentialRequestMetadata.link_secret_name,
+      methodName,
+    })
+
+    const anonCredsCredentialMetadata: W3cAnoncredsCredentialMetadata = {
+      credentialId: w3cCredentialRecord.id,
+      credentialRevocationId: anonCredsTags.anonCredsCredentialRevocationId,
+      linkSecretId: anonCredsTags.anonCredsLinkSecretId,
+      methodName: anonCredsTags.anonCredsMethodName,
+    }
+
+    w3cCredentialRecord.setTags(anonCredsTags)
+    w3cCredentialRecord.metadata.set(W3cAnonCredsCredentialMetadataKey, anonCredsCredentialMetadata)
+
+    const w3cCredentialRepository = agentContext.dependencyManager.resolve(W3cCredentialRepository)
+    await w3cCredentialRepository.update(agentContext, w3cCredentialRecord)
+
+    return w3cCredentialRecord
+  }
+
+  public async storeCredential(agentContext: AgentContext, options: StoreCredentialOptions): Promise<string> {
+    const {
+      credential,
+      credentialDefinition,
+      credentialDefinitionId,
+      credentialRequestMetadata,
+      schema,
+      revocationRegistry,
+    } = options
+
+    const w3cJsonLdCredential =
+      credential instanceof W3cJsonLdVerifiableCredential
+        ? credential
+        : await this.legacyToW3cCredential(agentContext, {
+            credential,
+            issuerId: credentialDefinition.issuerId,
+            processOptions: {
+              credentialRequestMetadata,
+              credentialDefinition,
+              revocationRegistryDefinition: revocationRegistry?.definition,
+            },
+          })
+
+    const w3cCredentialRecord = await this.storeW3cCredential(agentContext, {
+      credentialRequestMetadata,
+      credential: w3cJsonLdCredential,
+      credentialDefinitionId,
+      schema,
+      credentialDefinition,
+      revocationRegistryDefinition: revocationRegistry?.definition,
+    })
+
+    return w3cCredentialRecord.id
   }
 
   public async getCredential(
     agentContext: AgentContext,
     options: GetCredentialOptions
   ): Promise<AnonCredsCredentialInfo> {
-    const credentialRecord = await agentContext.dependencyManager
-      .resolve(AnonCredsCredentialRepository)
-      .getByCredentialId(agentContext, options.credentialId)
+    const w3cCredentialRepository = agentContext.dependencyManager.resolve(W3cCredentialRepository)
+    const w3cCredentialRecord = await w3cCredentialRepository.findById(agentContext, options.id)
+    if (w3cCredentialRecord) return getAnoncredsCredentialInfoFromRecord(w3cCredentialRecord)
 
-    const attributes: { [key: string]: string } = {}
-    for (const attribute in credentialRecord.credential.values) {
-      attributes[attribute] = credentialRecord.credential.values[attribute].raw
-    }
-    return {
-      attributes,
-      credentialDefinitionId: credentialRecord.credential.cred_def_id,
-      credentialId: credentialRecord.credentialId,
-      schemaId: credentialRecord.credential.schema_id,
-      credentialRevocationId: credentialRecord.credentialRevocationId ?? null,
-      revocationRegistryId: credentialRecord.credential.rev_reg_id ?? null,
-      methodName: credentialRecord.methodName,
-    }
+    const anonCredsCredentialRepository = agentContext.dependencyManager.resolve(AnonCredsCredentialRepository)
+    const anonCredsCredentialRecord = await anonCredsCredentialRepository.getByCredentialId(agentContext, options.id)
+
+    agentContext.config.logger.warn(
+      [
+        `Querying legacy credential repository for credential with id ${options.id}.`,
+        `Please run the migration script to migrate credentials to the new w3c format.`,
+      ].join('\n')
+    )
+
+    return getAnoncredsCredentialInfoFromRecord(anonCredsCredentialRecord)
   }
 
-  public async getCredentials(
+  private async getLegacyCredentials(
     agentContext: AgentContext,
     options: GetCredentialsOptions
   ): Promise<AnonCredsCredentialInfo[]> {
@@ -336,23 +483,115 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
         methodName: options.methodName,
       })
 
-    return credentialRecords.map((credentialRecord) => ({
-      attributes: Object.fromEntries(
-        Object.entries(credentialRecord.credential.values).map(([key, value]) => [key, value.raw])
-      ),
-      credentialDefinitionId: credentialRecord.credential.cred_def_id,
-      credentialId: credentialRecord.credentialId,
-      schemaId: credentialRecord.credential.schema_id,
-      credentialRevocationId: credentialRecord.credentialRevocationId ?? null,
-      revocationRegistryId: credentialRecord.credential.rev_reg_id ?? null,
-      methodName: credentialRecord.methodName,
-    }))
+    return credentialRecords.map((credentialRecord) => getAnoncredsCredentialInfoFromRecord(credentialRecord))
   }
 
-  public async deleteCredential(agentContext: AgentContext, credentialId: string): Promise<void> {
-    const credentialRepository = agentContext.dependencyManager.resolve(AnonCredsCredentialRepository)
-    const credentialRecord = await credentialRepository.getByCredentialId(agentContext, credentialId)
-    await credentialRepository.delete(agentContext, credentialRecord)
+  public async getCredentials(
+    agentContext: AgentContext,
+    options: GetCredentialsOptions
+  ): Promise<AnonCredsCredentialInfo[]> {
+    const credentialRecords = await agentContext.dependencyManager
+      .resolve(W3cCredentialRepository)
+      .findByQuery(agentContext, {
+        anonCredsCredentialDefinitionId:
+          !options.credentialDefinitionId || isUnqualifiedCredentialDefinitionId(options.credentialDefinitionId)
+            ? undefined
+            : options.credentialDefinitionId,
+        anonCredsSchemaId: !options.schemaId || isUnqualifiedSchemaId(options.schemaId) ? undefined : options.schemaId,
+        anonCredsIssuerId: !options.issuerId || isUnqualifiedIndyDid(options.issuerId) ? undefined : options.issuerId,
+        anonCredsSchemaName: options.schemaName,
+        anonCredsSchemaVersion: options.schemaVersion,
+        anonCredsSchemaIssuerId:
+          !options.schemaIssuerId || isUnqualifiedIndyDid(options.schemaIssuerId) ? undefined : options.schemaIssuerId,
+
+        anonCredsMethodName: options.methodName,
+        anonCredsUnqualifiedSchemaId:
+          options.schemaId && isUnqualifiedSchemaId(options.schemaId) ? options.schemaId : undefined,
+        anonCredsUnqualifiedIssuerId:
+          options.issuerId && isUnqualifiedIndyDid(options.issuerId) ? options.issuerId : undefined,
+        anonCredsUnqualifiedSchemaIssuerId:
+          options.schemaIssuerId && isUnqualifiedIndyDid(options.schemaIssuerId) ? options.schemaIssuerId : undefined,
+        anonCredsUnqualifiedCredentialDefinitionId:
+          options.credentialDefinitionId && isUnqualifiedCredentialDefinitionId(options.credentialDefinitionId)
+            ? options.credentialDefinitionId
+            : undefined,
+      })
+
+    const credentials = credentialRecords.map((credentialRecord) =>
+      getAnoncredsCredentialInfoFromRecord(credentialRecord)
+    )
+    const legacyCredentials = await this.getLegacyCredentials(agentContext, options)
+
+    if (legacyCredentials.length > 0) {
+      agentContext.config.logger.warn(
+        `Queried credentials include legacy credentials. Please run the migration script to migrate credentials to the new w3c format.`
+      )
+    }
+    return [...legacyCredentials, ...credentials]
+  }
+
+  public async deleteCredential(agentContext: AgentContext, id: string): Promise<void> {
+    const w3cCredentialRepository = agentContext.dependencyManager.resolve(W3cCredentialRepository)
+    const w3cCredentialRecord = await w3cCredentialRepository.findById(agentContext, id)
+
+    if (w3cCredentialRecord) {
+      await w3cCredentialRepository.delete(agentContext, w3cCredentialRecord)
+      return
+    }
+
+    const anoncredsCredentialRepository = agentContext.dependencyManager.resolve(AnonCredsCredentialRepository)
+    const anoncredsCredentialRecord = await anoncredsCredentialRepository.getByCredentialId(agentContext, id)
+    await anoncredsCredentialRepository.delete(agentContext, anoncredsCredentialRecord)
+  }
+  private async getLegacyCredentialsForProofRequest(
+    agentContext: AgentContext,
+    options: GetCredentialsForProofRequestOptions
+  ): Promise<GetCredentialsForProofRequestReturn> {
+    const proofRequest = options.proofRequest
+    const referent = options.attributeReferent
+
+    const requestedAttribute =
+      proofRequest.requested_attributes[referent] ?? proofRequest.requested_predicates[referent]
+
+    if (!requestedAttribute) {
+      throw new AnonCredsRsError(`Referent not found in proof request`)
+    }
+
+    const $and = []
+
+    // Make sure the attribute(s) that are requested are present using the marker tag
+    const attributes = requestedAttribute.names ?? [requestedAttribute.name]
+    const attributeQuery: SimpleQuery<AnonCredsCredentialRecord> = {}
+    for (const attribute of attributes) {
+      attributeQuery[`anonCredsAttr::${attribute}::marker`] = true
+    }
+    $and.push(attributeQuery)
+
+    // Add query for proof request restrictions
+    if (requestedAttribute.restrictions) {
+      const restrictionQuery = this.queryLegacyFromRestrictions(requestedAttribute.restrictions)
+      $and.push(restrictionQuery)
+    }
+
+    // Add extra query
+    // TODO: we're not really typing the extraQuery, and it will work differently based on the anoncreds implmentation
+    // We should make the allowed properties more strict
+    if (options.extraQuery) {
+      $and.push(options.extraQuery)
+    }
+
+    const credentials = await agentContext.dependencyManager
+      .resolve(AnonCredsCredentialRepository)
+      .findByQuery(agentContext, {
+        $and,
+      })
+
+    return credentials.map((credentialRecord) => {
+      return {
+        credentialInfo: getAnoncredsCredentialInfoFromRecord(credentialRecord),
+        interval: proofRequest.non_revoked,
+      }
+    })
   }
 
   public async getCredentialsForProofRequest(
@@ -373,9 +612,9 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
 
     // Make sure the attribute(s) that are requested are present using the marker tag
     const attributes = requestedAttribute.names ?? [requestedAttribute.name]
-    const attributeQuery: SimpleQuery<AnonCredsCredentialRecord> = {}
+    const attributeQuery: SimpleQuery<W3cCredentialRecord> = {}
     for (const attribute of attributes) {
-      attributeQuery[`attr::${attribute}::marker`] = true
+      attributeQuery[`anonCredsAttr::${attribute}::marker`] = true
     }
     $and.push(attributeQuery)
 
@@ -392,54 +631,132 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
       $and.push(options.extraQuery)
     }
 
-    const credentials = await agentContext.dependencyManager
-      .resolve(AnonCredsCredentialRepository)
-      .findByQuery(agentContext, {
-        $and,
-      })
+    const w3cCredentialRepository = agentContext.dependencyManager.resolve(W3cCredentialRepository)
+    const credentials = await w3cCredentialRepository.findByQuery(agentContext, { $and })
+    const legacyCredentialWithMetadata = await this.getLegacyCredentialsForProofRequest(agentContext, options)
 
-    return credentials.map((credentialRecord) => {
-      const attributes: { [key: string]: string } = {}
-      for (const attribute in credentialRecord.credential.values) {
-        attributes[attribute] = credentialRecord.credential.values[attribute].raw
-      }
+    if (legacyCredentialWithMetadata.length > 0) {
+      agentContext.config.logger.warn(
+        [
+          `Including legacy credentials in proof request.`,
+          `Please run the migration script to migrate credentials to the new w3c format.`,
+        ].join('\n')
+      )
+    }
+
+    const credentialWithMetadata = credentials.map((credentialRecord) => {
       return {
-        credentialInfo: {
-          attributes,
-          credentialDefinitionId: credentialRecord.credential.cred_def_id,
-          credentialId: credentialRecord.credentialId,
-          schemaId: credentialRecord.credential.schema_id,
-          credentialRevocationId: credentialRecord.credentialRevocationId ?? null,
-          revocationRegistryId: credentialRecord.credential.rev_reg_id ?? null,
-          methodName: credentialRecord.methodName,
-        },
+        credentialInfo: getAnoncredsCredentialInfoFromRecord(credentialRecord),
         interval: proofRequest.non_revoked,
       }
     })
+
+    return [...credentialWithMetadata, ...legacyCredentialWithMetadata]
   }
 
   private queryFromRestrictions(restrictions: AnonCredsProofRequestRestriction[]) {
+    const query: Query<W3cCredentialRecord>[] = []
+
+    const { restrictions: parsedRestrictions } = JsonTransformer.fromJSON({ restrictions }, AnonCredsRestrictionWrapper)
+
+    for (const restriction of parsedRestrictions) {
+      const queryElements: SimpleQuery<W3cCredentialRecord> = {}
+
+      if (restriction.credentialDefinitionId) {
+        if (isUnqualifiedCredentialDefinitionId(restriction.credentialDefinitionId)) {
+          queryElements.anonCredsUnqualifiedCredentialDefinitionId = restriction.credentialDefinitionId
+        } else {
+          queryElements.anonCredsCredentialDefinitionId = restriction.credentialDefinitionId
+        }
+      }
+
+      if (restriction.issuerId || restriction.issuerDid) {
+        const issuerId = (restriction.issuerId ?? restriction.issuerDid) as string
+        if (isUnqualifiedIndyDid(issuerId)) {
+          queryElements.anonCredsUnqualifiedIssuerId = issuerId
+        } else {
+          queryElements.anonCredsIssuerId = issuerId
+        }
+      }
+
+      if (restriction.schemaId) {
+        if (isUnqualifiedSchemaId(restriction.schemaId)) {
+          queryElements.anonCredsUnqualifiedSchemaId = restriction.schemaId
+        } else {
+          queryElements.anonCredsSchemaId = restriction.schemaId
+        }
+      }
+
+      if (restriction.schemaIssuerId || restriction.schemaIssuerDid) {
+        const schemaIssuerId = (restriction.schemaIssuerId ?? restriction.schemaIssuerDid) as string
+        if (isUnqualifiedIndyDid(schemaIssuerId)) {
+          queryElements.anonCredsUnqualifiedSchemaIssuerId = schemaIssuerId
+        } else {
+          queryElements.anonCredsSchemaIssuerId = schemaIssuerId
+        }
+      }
+
+      if (restriction.schemaName) {
+        queryElements.anonCredsSchemaName = restriction.schemaName
+      }
+
+      if (restriction.schemaVersion) {
+        queryElements.anonCredsSchemaVersion = restriction.schemaVersion
+      }
+
+      for (const [attributeName, attributeValue] of Object.entries(restriction.attributeValues)) {
+        queryElements[`anonCredsAttr::${attributeName}::value`] = attributeValue
+      }
+
+      for (const [attributeName, isAvailable] of Object.entries(restriction.attributeMarkers)) {
+        if (isAvailable) {
+          queryElements[`anonCredsAttr::${attributeName}::marker`] = isAvailable
+        }
+      }
+
+      query.push(queryElements)
+    }
+
+    return query.length === 1 ? query[0] : { $or: query }
+  }
+
+  private queryLegacyFromRestrictions(restrictions: AnonCredsProofRequestRestriction[]) {
     const query: Query<AnonCredsCredentialRecord>[] = []
 
     const { restrictions: parsedRestrictions } = JsonTransformer.fromJSON({ restrictions }, AnonCredsRestrictionWrapper)
 
     for (const restriction of parsedRestrictions) {
       const queryElements: SimpleQuery<AnonCredsCredentialRecord> = {}
+      const additionalQueryElements: SimpleQuery<AnonCredsCredentialRecord> = {}
 
       if (restriction.credentialDefinitionId) {
         queryElements.credentialDefinitionId = restriction.credentialDefinitionId
+        if (isUnqualifiedCredentialDefinitionId(restriction.credentialDefinitionId)) {
+          additionalQueryElements.credentialDefinitionId = restriction.credentialDefinitionId
+        }
       }
 
       if (restriction.issuerId || restriction.issuerDid) {
-        queryElements.issuerId = restriction.issuerId ?? restriction.issuerDid
+        const issuerId = (restriction.issuerId ?? restriction.issuerDid) as string
+        queryElements.issuerId = issuerId
+        if (isUnqualifiedIndyDid(issuerId)) {
+          additionalQueryElements.issuerId = issuerId
+        }
       }
 
       if (restriction.schemaId) {
         queryElements.schemaId = restriction.schemaId
+        if (isUnqualifiedSchemaId(restriction.schemaId)) {
+          additionalQueryElements.schemaId = restriction.schemaId
+        }
       }
 
       if (restriction.schemaIssuerId || restriction.schemaIssuerDid) {
-        queryElements.schemaIssuerId = restriction.schemaIssuerId ?? restriction.issuerDid
+        const issuerId = (restriction.schemaIssuerId ?? restriction.schemaIssuerDid) as string
+        queryElements.schemaIssuerId = issuerId
+        if (isUnqualifiedIndyDid(issuerId)) {
+          additionalQueryElements.schemaIssuerId = issuerId
+        }
       }
 
       if (restriction.schemaName) {
@@ -461,8 +778,70 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
       }
 
       query.push(queryElements)
+      if (Object.keys(additionalQueryElements).length > 0) {
+        query.push(additionalQueryElements)
+      }
     }
 
     return query.length === 1 ? query[0] : { $or: query }
+  }
+
+  private getPresentationMetadata = async (
+    agentContext: AgentContext,
+    options: {
+      credentialsWithMetadata: CredentialWithRevocationMetadata[]
+      credentialsProve: AnonCredsCredentialProve[]
+    }
+  ) => {
+    const { credentialsWithMetadata, credentialsProve } = options
+
+    const credentials: W3cCredentialEntry[] = await Promise.all(
+      credentialsWithMetadata.map(async ({ credential, nonRevoked }) => {
+        const credentialJson = JsonTransformer.toJSON(credential)
+        const { revocationRegistryIndex, revocationRegistryId, timestamp } =
+          W3cAnonCredsCredential.fromJson(credentialJson)
+
+        if (!nonRevoked) return { credential: credentialJson, revocationState: undefined, timestamp: undefined }
+
+        if (!revocationRegistryId || !revocationRegistryIndex) throw new CredoError('Missing revocation metadata')
+
+        const { revocationState, updatedTimestamp } = await getRevocationMetadata(agentContext, {
+          nonRevokedInterval: nonRevoked,
+          timestamp,
+          revocationRegistryIndex,
+          revocationRegistryId,
+        })
+
+        return { credential: credentialJson, revocationState, timestamp: updatedTimestamp }
+      })
+    )
+
+    return { credentialsProve, credentials }
+  }
+
+  public async createW3cPresentation(agentContext: AgentContext, options: CreateW3cPresentationOptions) {
+    const { credentialsProve, credentials } = await this.getPresentationMetadata(agentContext, {
+      credentialsWithMetadata: options.credentialsWithRevocationMetadata,
+      credentialsProve: options.credentialsProve,
+    })
+
+    let w3cAnonCredsPresentation: W3cAnonCredsPresentation | undefined
+    let w3cPresentation: W3cJsonLdVerifiablePresentation
+    try {
+      w3cAnonCredsPresentation = W3cAnonCredsPresentation.create({
+        credentials,
+        credentialsProve,
+        schemas: options.schemas as unknown as Record<string, JsonObject>,
+        credentialDefinitions: options.credentialDefinitions as unknown as Record<string, JsonObject>,
+        presentationRequest: options.proofRequest as unknown as JsonObject,
+        linkSecret: await getLinkSecret(agentContext, options.linkSecretId),
+      })
+      const presentationJson = w3cAnonCredsPresentation.toJson() as unknown as JsonObject
+      w3cPresentation = JsonTransformer.fromJSON(presentationJson, W3cJsonLdVerifiablePresentation)
+    } finally {
+      w3cAnonCredsPresentation?.handle.clear()
+    }
+
+    return w3cPresentation
   }
 }

@@ -17,6 +17,7 @@ import type {
   Buffer,
   AgentMessageProcessedEvent,
   RevocationNotificationReceivedEvent,
+  KeyDidCreateOptions,
 } from '../src'
 import type { AgentModulesInput, EmptyModuleMap } from '../src/agent/AgentModules'
 import type { TrustPingReceivedEvent, TrustPingResponseReceivedEvent } from '../src/modules/connections/TrustPingEvents'
@@ -49,6 +50,7 @@ import {
   InjectionSymbols,
   ProofEventTypes,
   TrustPingEventTypes,
+  DidsApi,
 } from '../src'
 import { Key, KeyType } from '../src/crypto'
 import { DidKey } from '../src/modules/dids/methods/key'
@@ -692,4 +694,23 @@ export async function retryUntilResult<T, M extends () => Promise<T | null>>(
   }
 
   throw new Error(`Unable to get result from method in ${maxAttempts} attempts`)
+}
+
+export type CreateDidKidVerificationMethodReturn = Awaited<ReturnType<typeof createDidKidVerificationMethod>>
+export async function createDidKidVerificationMethod(agentContext: AgentContext, secretKey?: string) {
+  const dids = agentContext.dependencyManager.resolve(DidsApi)
+  const didCreateResult = await dids.create<KeyDidCreateOptions>({
+    method: 'key',
+    options: { keyType: KeyType.Ed25519 },
+    secret: { privateKey: secretKey ? TypedArrayEncoder.fromString(secretKey) : undefined },
+  })
+
+  const did = didCreateResult.didState.did as string
+  const didKey = DidKey.fromDid(did)
+  const kid = `${did}#${didKey.key.fingerprint}`
+
+  const verificationMethod = didCreateResult.didState.didDocument?.dereferenceKey(kid, ['authentication'])
+  if (!verificationMethod) throw new Error('No verification method found')
+
+  return { did, kid, verificationMethod }
 }

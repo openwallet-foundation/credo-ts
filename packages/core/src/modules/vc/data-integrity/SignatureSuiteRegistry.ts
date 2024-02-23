@@ -19,8 +19,8 @@ export interface SuiteInfo {
 export class SignatureSuiteRegistry {
   private suiteMapping: SuiteInfo[]
 
-  public constructor(@injectAll(SignatureSuiteToken) suites: SuiteInfo[]) {
-    this.suiteMapping = suites
+  public constructor(@injectAll(SignatureSuiteToken) suites: Array<SuiteInfo | 'default'>) {
+    this.suiteMapping = suites.filter((suite): suite is SuiteInfo => suite !== 'default')
   }
 
   public get supportedProofTypes(): string[] {

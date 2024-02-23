@@ -4,7 +4,7 @@ import type { Constructable } from '../../../utils/mixins'
 import { BaseRecord } from '../../../storage/BaseRecord'
 import { JsonTransformer } from '../../../utils'
 import { uuid } from '../../../utils/uuid'
-import { W3cVerifiableCredential, W3cVerifiableCredentialTransformer, ClaimFormat } from '../models'
+import { ClaimFormat, W3cVerifiableCredential, W3cVerifiableCredentialTransformer } from '../models'
 
 export interface W3cCredentialRecordOptions {
   id?: string
@@ -31,6 +31,7 @@ export type DefaultW3cCredentialTags = {
   claimFormat: W3cVerifiableCredential['claimFormat']
 
   proofTypes?: Array<string>
+  cryptosuites?: Array<string>
   types: Array<string>
   algs?: Array<string>
 }
@@ -71,6 +72,7 @@ export class W3cCredentialRecord extends BaseRecord<DefaultW3cCredentialTags, Cu
     // Proof types is used for ldp_vc credentials
     if (this.credential.claimFormat === ClaimFormat.LdpVc) {
       tags.proofTypes = this.credential.proofTypes
+      tags.cryptosuites = this.credential.dataIntegrityCryptosuites
     }
 
     // Algs is used for jwt_vc credentials

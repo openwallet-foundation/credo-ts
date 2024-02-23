@@ -1,31 +1,9 @@
-import type { TenantAgent } from '../../tenants/src/TenantAgent'
-import type { KeyDidCreateOptions, ModulesMap } from '@credo-ts/core'
+import type { ModulesMap } from '@credo-ts/core'
 import type { TenantsModule } from '@credo-ts/tenants'
 
-import { LogLevel, Agent, DidKey, KeyType, TypedArrayEncoder, utils } from '@credo-ts/core'
+import { Agent, LogLevel, utils } from '@credo-ts/core'
 
-import { agentDependencies, TestLogger } from '../../core/tests'
-
-export async function createDidKidVerificationMethod(agent: Agent | TenantAgent, secretKey?: string) {
-  const didCreateResult = await agent.dids.create<KeyDidCreateOptions>({
-    method: 'key',
-    options: { keyType: KeyType.Ed25519 },
-    secret: { privateKey: secretKey ? TypedArrayEncoder.fromString(secretKey) : undefined },
-  })
-
-  const did = didCreateResult.didState.did as string
-  const didKey = DidKey.fromDid(did)
-  const kid = `${did}#${didKey.key.fingerprint}`
-
-  const verificationMethod = didCreateResult.didState.didDocument?.dereferenceKey(kid, ['authentication'])
-  if (!verificationMethod) throw new Error('No verification method found')
-
-  return {
-    did,
-    kid,
-    verificationMethod,
-  }
-}
+import { TestLogger, agentDependencies, createDidKidVerificationMethod } from '../../core/tests'
 
 export async function createAgentFromModules<MM extends ModulesMap>(label: string, modulesMap: MM, secretKey: string) {
   const agent = new Agent<MM>({
@@ -35,7 +13,7 @@ export async function createAgentFromModules<MM extends ModulesMap>(label: strin
   })
 
   await agent.initialize()
-  const data = await createDidKidVerificationMethod(agent, secretKey)
+  const data = await createDidKidVerificationMethod(agent.context, secretKey)
 
   return {
     ...data,

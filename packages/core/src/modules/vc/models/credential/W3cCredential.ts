@@ -4,7 +4,7 @@ import type { JsonObject } from '../../../../types'
 import type { ValidationOptions } from 'class-validator'
 
 import { Expose, Type } from 'class-transformer'
-import { IsInstance, buildMessage, IsOptional, IsRFC3339, ValidateBy, ValidateNested } from 'class-validator'
+import { buildMessage, IsInstance, IsOptional, IsRFC3339, ValidateBy, ValidateNested } from 'class-validator'
 
 import { asArray, JsonTransformer, mapSingleOrArray } from '../../../../utils'
 import { SingleOrArray } from '../../../../utils/type'
@@ -14,8 +14,8 @@ import { IsCredentialJsonLdContext } from '../../validators'
 
 import { W3cCredentialSchema } from './W3cCredentialSchema'
 import { W3cCredentialStatus } from './W3cCredentialStatus'
-import { W3cCredentialSubject } from './W3cCredentialSubject'
-import { W3cIssuer, IsW3cIssuer, W3cIssuerTransformer } from './W3cIssuer'
+import { IsW3cCredentialSubject, W3cCredentialSubject, W3cCredentialSubjectTransformer } from './W3cCredentialSubject'
+import { IsW3cIssuer, W3cIssuer, W3cIssuerTransformer } from './W3cIssuer'
 
 export interface W3cCredentialOptions {
   context?: Array<string | JsonObject>
@@ -75,9 +75,8 @@ export class W3cCredential {
   @IsOptional()
   public expirationDate?: string
 
-  @Type(() => W3cCredentialSubject)
-  @ValidateNested({ each: true })
-  @IsInstanceOrArrayOfInstances({ classType: W3cCredentialSubject })
+  @IsW3cCredentialSubject({ each: true })
+  @W3cCredentialSubjectTransformer()
   public credentialSubject!: SingleOrArray<W3cCredentialSubject>
 
   @IsOptional()

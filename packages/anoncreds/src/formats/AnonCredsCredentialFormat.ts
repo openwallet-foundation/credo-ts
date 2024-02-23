@@ -76,7 +76,7 @@ export type AnonCredsAcceptRequestFormat = Record<string, never>
 
 export interface AnonCredsCredentialFormat extends CredentialFormat {
   formatKey: 'anoncreds'
-  credentialRecordType: 'anoncreds'
+  credentialRecordType: 'w3c'
   credentialFormats: {
     createProposal: AnonCredsProposeCredentialFormat
     acceptProposal: AnonCredsAcceptProposalFormat

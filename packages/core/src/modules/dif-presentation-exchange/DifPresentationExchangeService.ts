@@ -1,10 +1,10 @@
 import type {
-  DifPexInputDescriptorToCredentials,
   DifPexCredentialsForRequest,
+  DifPexInputDescriptorToCredentials,
   DifPresentationExchangeDefinition,
   DifPresentationExchangeDefinitionV1,
-  DifPresentationExchangeSubmission,
   DifPresentationExchangeDefinitionV2,
+  DifPresentationExchangeSubmission,
   VerifiablePresentation,
 } from './models'
 import type { PresentationToCreate } from './utils'
@@ -13,16 +13,20 @@ import type { Query } from '../../storage/StorageService'
 import type { VerificationMethod } from '../dids'
 import type { SdJwtVcRecord } from '../sd-jwt-vc'
 import type { W3cCredentialRecord } from '../vc'
+import type { IAnoncredsDataIntegrityService } from '../vc/data-integrity/models/IAnonCredsDataIntegrityService'
 import type {
   PresentationSignCallBackParams,
   SdJwtDecodedVerifiableCredentialWithKbJwtInput,
   Validated,
   VerifiablePresentationResult,
 } from '@sphereon/pex'
-import type { InputDescriptorV2, PresentationDefinitionV1 } from '@sphereon/pex-models'
-import type { W3CVerifiablePresentation } from '@sphereon/ssi-types'
+import type { InputDescriptorV2 } from '@sphereon/pex-models'
+import type {
+  W3CVerifiablePresentation as SphereonW3cVerifiablePresentation,
+  W3CVerifiablePresentation,
+} from '@sphereon/ssi-types'
 
-import { Status, PEVersion, PEX } from '@sphereon/pex'
+import { PEVersion, PEX, Status } from '@sphereon/pex'
 import { injectable } from 'tsyringe'
 
 import { getJwkFromKey } from '../../crypto'
@@ -31,12 +35,17 @@ import { Hasher, JsonTransformer } from '../../utils'
 import { DidsApi, getKeyFromVerificationMethod } from '../dids'
 import { SdJwtVcApi } from '../sd-jwt-vc'
 import {
+  W3cJsonLdVerifiableCredential,
   ClaimFormat,
   SignatureSuiteRegistry,
   W3cCredentialRepository,
   W3cCredentialService,
   W3cPresentation,
 } from '../vc'
+import {
+  AnonCredsDataIntegrityServiceSymbol,
+  ANONCREDS_DATA_INTEGRITY_CRYPTOSUITE,
+} from '../vc/data-integrity/models/IAnonCredsDataIntegrityService'
 
 import { DifPresentationExchangeError } from './DifPresentationExchangeError'
 import { DifPresentationExchangeSubmissionLocation } from './models'
@@ -114,7 +123,10 @@ export class DifPresentationExchangeService {
   ) {
     const { errors } = this.pex.evaluatePresentation(
       presentationDefinition,
-      getSphereonOriginalVerifiablePresentation(presentation)
+      getSphereonOriginalVerifiablePresentation(presentation),
+      {
+        limitDisclosureSignatureSuites: ['BbsBlsSignatureProof2020', 'DataIntegrityProof.anoncreds-2023'],
+      }
     )
 
     if (errors) {
@@ -162,7 +174,7 @@ export class DifPresentationExchangeService {
       // FIXME: cast to V1, as tsc errors for strange reasons if not
       const inputDescriptorIds = presentationToCreate.verifiableCredentials.map((c) => c.inputDescriptorId)
       const inputDescriptorsForPresentation = (
-        presentationDefinition as PresentationDefinitionV1
+        presentationDefinition as DifPresentationExchangeDefinitionV1
       ).input_descriptors.filter((inputDescriptor) => inputDescriptorIds.includes(inputDescriptor.id))
 
       // Get all the credentials for the presentation
@@ -183,7 +195,10 @@ export class DifPresentationExchangeService {
         credentialsForPresentation,
         this.getPresentationSignCallback(agentContext, presentationToCreate),
         {
-          proofOptions: { domain, challenge },
+          proofOptions: {
+            challenge,
+            domain,
+          },
           signatureOptions: {},
           presentationSubmissionLocation:
             presentationSubmissionLocation ?? DifPresentationExchangeSubmissionLocation.PRESENTATION,
@@ -378,10 +393,38 @@ export class DifPresentationExchangeService {
     return supportedSignatureSuites[0].proofType
   }
 
+  private shouldSignUsingAnoncredsDataIntegrity(
+    presentationToCreate: PresentationToCreate,
+    presentationSubmission: DifPresentationExchangeSubmission
+  ) {
+    if (presentationToCreate.claimFormat !== ClaimFormat.LdpVp) return undefined
+
+    const cryptosuites = presentationToCreate.verifiableCredentials.map((verifiableCredentials) => {
+      const inputDescriptor = presentationSubmission.descriptor_map.find(
+        (descriptor) => descriptor.id === verifiableCredentials.inputDescriptorId
+      )
+
+      return inputDescriptor?.format === 'di_vp' &&
+        verifiableCredentials.credential.credential instanceof W3cJsonLdVerifiableCredential
+        ? verifiableCredentials.credential.credential.dataIntegrityCryptosuites
+        : []
+    })
+
+    const commonCryptosuites = cryptosuites.reduce((a, b) => a.filter((c) => b.includes(c)))
+    if (commonCryptosuites.length === 0 || !commonCryptosuites.includes(ANONCREDS_DATA_INTEGRITY_CRYPTOSUITE))
+      return false
+    return true
+  }
+
   private getPresentationSignCallback(agentContext: AgentContext, presentationToCreate: PresentationToCreate) {
     return async (callBackParams: PresentationSignCallBackParams) => {
       // The created partial proof and presentation, as well as original supplied options
-      const { presentation: presentationInput, options, presentationDefinition } = callBackParams
+      const {
+        presentation: presentationInput,
+        options,
+        presentationDefinition,
+        presentationSubmission,
+      } = callBackParams
       const { challenge, domain } = options.proofOptions ?? {}
 
       if (!challenge) {
@@ -409,6 +452,22 @@ export class DifPresentationExchangeService {
 
         return signedPresentation.encoded as W3CVerifiablePresentation
       } else if (presentationToCreate.claimFormat === ClaimFormat.LdpVp) {
+        if (this.shouldSignUsingAnoncredsDataIntegrity(presentationToCreate, presentationSubmission)) {
+          const anoncredsDataIntegrityService = agentContext.dependencyManager.resolve<IAnoncredsDataIntegrityService>(
+            AnonCredsDataIntegrityServiceSymbol
+          )
+          const presentation = await anoncredsDataIntegrityService.createPresentation(agentContext, {
+            presentationDefinition,
+            presentationSubmission,
+            selectedCredentialRecords: presentationToCreate.verifiableCredentials.map((vc) => vc.credential),
+            challenge,
+          })
+          return {
+            ...presentation.toJSON(),
+            presentation_submission: presentationSubmission,
+          } as unknown as SphereonW3cVerifiablePresentation
+        }
+
         // Determine a suitable verification method for the presentation
         const verificationMethod = await this.getVerificationMethodForSubjectId(
           agentContext,
@@ -512,7 +571,7 @@ export class DifPresentationExchangeService {
     // this could help enormously in the amount of credentials we have to retrieve from storage.
     // NOTE: for now we don't support SD-JWT for v1, as I don't know what the schema.uri should be?
     if (presentationDefinitionVersion.version === PEVersion.v1) {
-      const pd = presentationDefinition as PresentationDefinitionV1
+      const pd = presentationDefinition as DifPresentationExchangeDefinitionV1
 
       // The schema.uri can contain either an expanded type, or a context uri
       for (const inputDescriptor of pd.input_descriptors) {

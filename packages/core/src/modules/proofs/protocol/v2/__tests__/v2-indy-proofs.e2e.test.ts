@@ -602,7 +602,7 @@ describe('Present Proof', () => {
                     image_0: 'hl:zQmfDXo7T3J43j3CTkEZaz7qdHuABhWktksZ7JEBueZ5zUS',
                     image_1: 'hl:zQmRHBT9rDs5QhsnYuPY3mNpXxgLcnNXkhjWJvTSAPMmcVd',
                     name: 'John',
-                    age: '99',
+                    age: 99,
                   },
                   schemaId: expect.any(String),
                   credentialDefinitionId: expect.any(String),
@@ -618,7 +618,7 @@ describe('Present Proof', () => {
                 credentialInfo: {
                   credentialId: expect.any(String),
                   attributes: {
-                    age: '99',
+                    age: 99,
                     image_0: 'hl:zQmfDXo7T3J43j3CTkEZaz7qdHuABhWktksZ7JEBueZ5zUS',
                     image_1: 'hl:zQmRHBT9rDs5QhsnYuPY3mNpXxgLcnNXkhjWJvTSAPMmcVd',
                     name: 'John',
@@ -641,7 +641,7 @@ describe('Present Proof', () => {
                     image_1: 'hl:zQmRHBT9rDs5QhsnYuPY3mNpXxgLcnNXkhjWJvTSAPMmcVd',
                     image_0: 'hl:zQmfDXo7T3J43j3CTkEZaz7qdHuABhWktksZ7JEBueZ5zUS',
                     name: 'John',
-                    age: '99',
+                    age: 99,
                   },
                   schemaId: expect.any(String),
                   credentialDefinitionId: expect.any(String),

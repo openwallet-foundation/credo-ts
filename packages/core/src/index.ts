@@ -71,6 +71,7 @@ export {
   TypedArrayEncoder,
   Buffer,
   deepEquality,
+  isDid,
   asArray,
   equalsIgnoreOrder,
 } from './utils'

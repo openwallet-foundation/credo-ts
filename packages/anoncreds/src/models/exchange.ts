@@ -1,3 +1,5 @@
+import type { AnonCredsCredentialValue } from '../utils/credential'
+
 export const anonCredsPredicateType = ['>=', '>', '<=', '<'] as const
 export type AnonCredsPredicateType = (typeof anonCredsPredicateType)[number]
 
@@ -42,10 +44,6 @@ export interface AnonCredsCredentialRequest {
 }
 
 export type AnonCredsCredentialValues = Record<string, AnonCredsCredentialValue>
-export interface AnonCredsCredentialValue {
-  raw: string
-  encoded: string // Raw value as number in string
-}
 
 export interface AnonCredsCredential {
   schema_id: string

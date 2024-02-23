@@ -15,4 +15,11 @@ export { generateLegacyProverDidLikeString } from './utils/proverDid'
 export * from './utils/indyIdentifiers'
 export { assertBestPracticeRevocationInterval } from './utils/revocationInterval'
 export { storeLinkSecret } from './utils/linkSecret'
-export { dateToTimestamp } from './utils'
+
+export { dateToTimestamp, AnonCredsCredentialValue, AnonCredsCredentialMetadata } from './utils'
+export {
+  fetchCredentialDefinition,
+  fetchRevocationRegistryDefinition,
+  fetchSchema,
+  fetchRevocationStatusList,
+} from './utils/anonCredsObjects'

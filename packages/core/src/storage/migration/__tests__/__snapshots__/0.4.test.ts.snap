@@ -10,6 +10,7 @@ exports[`UpdateAssistant | v0.4 - v0.5 should correctly add 'type' tag to w3c re
         "https://www.w3.org/2018/credentials/v1",
         "https://www.w3.org/2018/credentials/examples/v1",
       ],
+      "cryptosuites": [],
       "expandedTypes": [
         "https://www.w3.org/2018/credentials#VerifiableCredential",
         "https://example.org/examples#UniversityDegreeCredential",

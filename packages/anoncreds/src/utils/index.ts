@@ -4,7 +4,8 @@ export { assertNoDuplicateGroupsNamesInProofRequest } from './hasDuplicateGroupN
 export { areAnonCredsProofRequestsEqual } from './areRequestsEqual'
 export { assertBestPracticeRevocationInterval } from './revocationInterval'
 export { getRevocationRegistriesForRequest, getRevocationRegistriesForProof } from './getRevocationRegistries'
-export { encodeCredentialValue, checkValidCredentialValueEncoding } from './credential'
+export { checkValidCredentialValueEncoding, AnonCredsCredentialValue } from './credential'
+export { AnonCredsCredentialMetadata } from './metadata'
 export { IsMap } from './isMap'
 export { composeCredentialAutoAccept, composeProofAutoAccept } from './composeAutoAccept'
 export { areCredentialPreviewAttributesEqual } from './credentialPreviewAttributes'
@@ -16,3 +17,10 @@ export {
   unqualifiedSchemaIdRegex,
   unqualifiedSchemaVersionRegex,
 } from './indyIdentifiers'
+
+export {
+  fetchCredentialDefinition,
+  fetchRevocationRegistryDefinition,
+  fetchSchema,
+  fetchRevocationStatusList,
+} from './anonCredsObjects'

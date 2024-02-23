@@ -67,7 +67,7 @@ const connectionService = new ConnectionServiceMock()
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore
-legacyIndyCredentialFormatService.credentialRecordType = 'anoncreds'
+legacyIndyCredentialFormatService.credentialRecordType = 'w3c'
 
 const connection = getMockConnection({
   id: '123',
@@ -174,7 +174,7 @@ const mockCredentialRecord = ({
     connectionId: connectionId ?? '123',
     credentials: [
       {
-        credentialRecordType: 'anoncreds',
+        credentialRecordType: 'w3c',
         credentialRecordId: '123456',
       },
     ],
@@ -524,6 +524,7 @@ describe('V1CredentialProtocol', () => {
         attachment: credentialAttachment,
         credentialRecord,
         requestAttachment: expect.any(Attachment),
+        offerAttachment: expect.any(Attachment),
       })
     })
   })

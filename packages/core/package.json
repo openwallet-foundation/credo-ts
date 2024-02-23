@@ -29,7 +29,7 @@
     "@multiformats/base-x": "^4.0.1",
     "@sd-jwt/core": "^0.2.1",
     "@sd-jwt/decode": "^0.2.1",
-    "@sphereon/pex": "^3.2.0",
+    "@sphereon/pex": "3.2.1-unstable.7",
     "@sphereon/pex-models": "^2.2.0",
     "@sphereon/ssi-types": "^0.18.1",
     "@stablelib/ed25519": "^1.0.2",

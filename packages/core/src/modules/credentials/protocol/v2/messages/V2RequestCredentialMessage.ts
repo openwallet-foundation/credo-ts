@@ -13,6 +13,7 @@ export interface V2RequestCredentialMessageOptions {
   goal?: string
   requestAttachments: Attachment[]
   comment?: string
+  attachments?: Attachment[]
 }
 
 export class V2RequestCredentialMessage extends AgentMessage {
@@ -25,6 +26,7 @@ export class V2RequestCredentialMessage extends AgentMessage {
       this.goal = options.goal
       this.formats = options.formats
       this.requestAttachments = options.requestAttachments
+      this.appendedAttachments = options.attachments
     }
   }
 

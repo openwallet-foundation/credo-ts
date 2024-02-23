@@ -6,8 +6,15 @@ import type {
 } from './DifPresentationExchangeProofFormat'
 import type { AgentContext } from '../../../../agent'
 import type { JsonValue } from '../../../../types'
-import type { DifPexInputDescriptorToCredentials } from '../../../dif-presentation-exchange'
-import type { W3cVerifiablePresentation, W3cVerifyPresentationResult } from '../../../vc'
+import type {
+  DifPexInputDescriptorToCredentials,
+  DifPresentationExchangeSubmission,
+} from '../../../dif-presentation-exchange'
+import type {
+  IAnoncredsDataIntegrityService,
+  W3cVerifiablePresentation,
+  W3cVerifyPresentationResult,
+} from '../../../vc'
 import type { W3cJsonPresentation } from '../../../vc/models/presentation/W3cJsonPresentation'
 import type { ProofFormatService } from '../ProofFormatService'
 import type {
@@ -33,6 +40,8 @@ import {
   DifPresentationExchangeSubmissionLocation,
 } from '../../../dif-presentation-exchange'
 import {
+  ANONCREDS_DATA_INTEGRITY_CRYPTOSUITE,
+  AnonCredsDataIntegrityServiceSymbol,
   W3cCredentialService,
   ClaimFormat,
   W3cJsonLdVerifiablePresentation,
@@ -218,6 +227,20 @@ export class PresentationExchangeProofFormatService implements ProofFormatServic
     return { attachment, format }
   }
 
+  private shouldVerifyUsingAnoncredsDataIntegrity(
+    presentation: W3cVerifiablePresentation,
+    presentationSubmission: DifPresentationExchangeSubmission
+  ) {
+    if (presentation.claimFormat !== ClaimFormat.LdpVp) return false
+
+    const descriptorMap = presentationSubmission.descriptor_map
+
+    const verifyUsingDataIntegrity = descriptorMap.every((descriptor) => descriptor.format === ClaimFormat.DiVp)
+    if (!verifyUsingDataIntegrity) return false
+
+    return presentation.dataIntegrityCryptosuites.includes(ANONCREDS_DATA_INTEGRITY_CRYPTOSUITE)
+  }
+
   public async processPresentation(
     agentContext: AgentContext,
     { requestAttachment, attachment }: ProofFormatProcessPresentationOptions
@@ -275,12 +298,40 @@ export class PresentationExchangeProofFormatService implements ProofFormatServic
           challenge: request.options.challenge,
           domain: request.options.domain,
         })
+      } else if (parsedPresentation.claimFormat === ClaimFormat.LdpVp) {
+        if (
+          this.shouldVerifyUsingAnoncredsDataIntegrity(parsedPresentation, jsonPresentation.presentation_submission)
+        ) {
+          const dataIntegrityService = agentContext.dependencyManager.resolve<IAnoncredsDataIntegrityService>(
+            AnonCredsDataIntegrityServiceSymbol
+          )
+          const proofVerificationResult = await dataIntegrityService.verifyPresentation(agentContext, {
+            presentation: parsedPresentation as W3cJsonLdVerifiablePresentation,
+            presentationDefinition: request.presentation_definition,
+            presentationSubmission: jsonPresentation.presentation_submission,
+            challenge: request.options.challenge,
+          })
+
+          verificationResult = {
+            isValid: proofVerificationResult,
+            validations: {},
+            error: {
+              name: 'DataIntegrityError',
+              message: 'Verifying the Data Integrity Proof failed. An unknown error occurred.',
+            },
+          }
+        } else {
+          verificationResult = await w3cCredentialService.verifyPresentation(agentContext, {
+            presentation: parsedPresentation,
+            challenge: request.options.challenge,
+            domain: request.options.domain,
+          })
+        }
       } else {
-        verificationResult = await w3cCredentialService.verifyPresentation(agentContext, {
-          presentation: parsedPresentation,
-          challenge: request.options.challenge,
-          domain: request.options.domain,
-        })
+        agentContext.config.logger.error(
+          `Received presentation in PEX proof format with unsupported format ${parsedPresentation['claimFormat']}.`
+        )
+        return false
       }
 
       if (!verificationResult.isValid) {

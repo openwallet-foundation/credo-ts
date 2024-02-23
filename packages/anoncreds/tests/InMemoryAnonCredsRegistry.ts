@@ -19,7 +19,7 @@ import type {
 } from '../src'
 import type { AgentContext } from '@credo-ts/core'
 
-import { Hasher } from '@credo-ts/core'
+import { Hasher, utils } from '@credo-ts/core'
 import BigNumber from 'bn.js'
 
 import {
@@ -28,13 +28,19 @@ import {
   getDidIndySchemaId,
 } from '../../indy-vdr/src/anoncreds/utils/identifiers'
 import {
+  getUnQualifiedDidIndyDid,
   getUnqualifiedRevocationRegistryDefinitionId,
   getUnqualifiedCredentialDefinitionId,
   getUnqualifiedSchemaId,
-  parseIndyCredentialDefinitionId,
   parseIndyDid,
+  getUnqualifiedDidIndySchema,
+  parseIndyCredentialDefinitionId,
+  parseIndyRevocationRegistryId,
   parseIndySchemaId,
-} from '../src'
+  isIndyDid,
+  isUnqualifiedCredentialDefinitionId,
+  isUnqualifiedSchemaId,
+} from '../src/utils/indyIdentifiers'
 import { dateToTimestamp } from '../src/utils/timestamp'
 
 /**
@@ -81,11 +87,21 @@ export class InMemoryAnonCredsRegistry implements AnonCredsRegistry {
       }
     }
 
+    let didIndyNamespace: string | undefined = undefined
+    if (isUnqualifiedSchemaId(schemaId)) {
+      const { namespaceIdentifier, schemaName, schemaVersion } = parseIndySchemaId(schemaId)
+      const qualifiedSchemaEnding = `${namespaceIdentifier}/anoncreds/v0/SCHEMA/${schemaName}/${schemaVersion}`
+      const qualifiedSchemaId = Object.keys(this.schemas).find((schemaId) => schemaId.endsWith(qualifiedSchemaEnding))
+      didIndyNamespace = qualifiedSchemaId ? parseIndySchemaId(qualifiedSchemaId).namespace : undefined
+    } else if (isIndyDid(schemaId)) {
+      didIndyNamespace = parseIndySchemaId(schemaId).namespace
+    }
+
     return {
+      resolutionMetadata: {},
       schema,
       schemaId,
-      resolutionMetadata: {},
-      schemaMetadata: {},
+      schemaMetadata: { ...(didIndyNamespace && { didIndyNamespace }) },
     }
   }
 
@@ -93,22 +109,20 @@ export class InMemoryAnonCredsRegistry implements AnonCredsRegistry {
     _agentContext: AgentContext,
     options: RegisterSchemaOptions
   ): Promise<RegisterSchemaReturn> {
-    const { namespace, namespaceIdentifier } = parseIndyDid(options.schema.issuerId)
-    const legacyIssuerId = namespaceIdentifier
-    const didIndySchemaId = getDidIndySchemaId(
-      namespace,
-      namespaceIdentifier,
-      options.schema.name,
-      options.schema.version
-    )
-    this.schemas[didIndySchemaId] = options.schema
+    const issuerId = options.schema.issuerId
 
-    const legacySchemaId = getUnqualifiedSchemaId(legacyIssuerId, options.schema.name, options.schema.version)
-
-    this.schemas[legacySchemaId] = {
-      ...options.schema,
-      issuerId: legacyIssuerId,
+    let schemaId: string
+    if (isIndyDid(issuerId)) {
+      const { namespace, namespaceIdentifier } = parseIndyDid(issuerId)
+      schemaId = getDidIndySchemaId(namespace, namespaceIdentifier, options.schema.name, options.schema.version)
+      this.schemas[getUnQualifiedDidIndyDid(schemaId)] = getUnqualifiedDidIndySchema(options.schema)
+    } else if (issuerId.startsWith('did:cheqd:')) {
+      schemaId = issuerId + '/resources/' + utils.uuid()
+    } else {
+      throw new Error(`Cannot register Schema. Unsupported issuerId '${issuerId}'`)
     }
+
+    this.schemas[schemaId] = options.schema
 
     return {
       registrationMetadata: {},
@@ -116,7 +130,7 @@ export class InMemoryAnonCredsRegistry implements AnonCredsRegistry {
       schemaState: {
         state: 'finished',
         schema: options.schema,
-        schemaId: didIndySchemaId,
+        schemaId: schemaId,
       },
     }
   }
@@ -138,11 +152,25 @@ export class InMemoryAnonCredsRegistry implements AnonCredsRegistry {
       }
     }
 
+    let didIndyNamespace: string | undefined = undefined
+    if (isUnqualifiedCredentialDefinitionId(credentialDefinitionId)) {
+      const { namespaceIdentifier, schemaSeqNo, tag } = parseIndyCredentialDefinitionId(credentialDefinitionId)
+      const qualifiedCredDefEnding = `${namespaceIdentifier}/anoncreds/v0/CLAIM_DEF/${schemaSeqNo}/${tag}`
+      const unqualifiedCredDefId = Object.keys(this.credentialDefinitions).find((credentialDefinitionId) =>
+        credentialDefinitionId.endsWith(qualifiedCredDefEnding)
+      )
+      didIndyNamespace = unqualifiedCredDefId
+        ? parseIndyCredentialDefinitionId(unqualifiedCredDefId).namespace
+        : undefined
+    } else if (isIndyDid(credentialDefinitionId)) {
+      didIndyNamespace = parseIndyCredentialDefinitionId(credentialDefinitionId).namespace
+    }
+
     return {
       resolutionMetadata: {},
       credentialDefinition,
       credentialDefinitionId,
-      credentialDefinitionMetadata: {},
+      credentialDefinitionMetadata: { ...(didIndyNamespace && { didIndyNamespace }) },
     }
   }
 
@@ -150,44 +178,46 @@ export class InMemoryAnonCredsRegistry implements AnonCredsRegistry {
     _agentContext: AgentContext,
     options: RegisterCredentialDefinitionOptions
   ): Promise<RegisterCredentialDefinitionReturn> {
-    const parsedSchema = parseIndySchemaId(options.credentialDefinition.schemaId)
-    const legacySchemaId = getUnqualifiedSchemaId(
-      parsedSchema.namespaceIdentifier,
-      parsedSchema.schemaName,
-      parsedSchema.schemaVersion
-    )
-    const indyLedgerSeqNo = getSeqNoFromSchemaId(legacySchemaId)
+    const schemaId = options.credentialDefinition.schemaId
 
-    const { namespace, namespaceIdentifier } = parseIndyDid(options.credentialDefinition.issuerId)
-    const legacyIssuerId = namespaceIdentifier
-    const didIndyCredentialDefinitionId = getDidIndyCredentialDefinitionId(
-      namespace,
-      namespaceIdentifier,
-      indyLedgerSeqNo,
-      options.credentialDefinition.tag
-    )
+    let credentialDefinitionId: string
+    if (isIndyDid(options.credentialDefinition.issuerId)) {
+      const parsedSchema = parseIndySchemaId(options.credentialDefinition.schemaId)
+      const legacySchemaId = getUnqualifiedSchemaId(
+        parsedSchema.namespaceIdentifier,
+        parsedSchema.schemaName,
+        parsedSchema.schemaVersion
+      )
+      const indyLedgerSeqNo = getSeqNoFromSchemaId(legacySchemaId)
 
-    this.credentialDefinitions[didIndyCredentialDefinitionId] = options.credentialDefinition
+      const { namespace, namespaceIdentifier: legacyIssuerId } = parseIndyDid(options.credentialDefinition.issuerId)
+      const didIndyCredentialDefinitionId = getDidIndyCredentialDefinitionId(
+        namespace,
+        legacyIssuerId,
+        indyLedgerSeqNo,
+        options.credentialDefinition.tag
+      )
 
-    const legacyCredentialDefinitionId = getUnqualifiedCredentialDefinitionId(
-      legacyIssuerId,
-      indyLedgerSeqNo,
-      options.credentialDefinition.tag
-    )
-
-    this.credentialDefinitions[legacyCredentialDefinitionId] = {
-      ...options.credentialDefinition,
-      issuerId: legacyIssuerId,
-      schemaId: legacySchemaId,
+      this.credentialDefinitions[getUnQualifiedDidIndyDid(didIndyCredentialDefinitionId)] = {
+        ...options.credentialDefinition,
+        issuerId: legacyIssuerId,
+        schemaId: legacySchemaId,
+      }
+      credentialDefinitionId = didIndyCredentialDefinitionId
+    } else if (schemaId.startsWith('did:cheqd:')) {
+      credentialDefinitionId = options.credentialDefinition.issuerId + '/resources/' + utils.uuid()
+    } else {
+      throw new Error(`Cannot register Credential Definition. Unsupported schemaId '${schemaId}'`)
     }
 
+    this.credentialDefinitions[credentialDefinitionId] = options.credentialDefinition
     return {
       registrationMetadata: {},
       credentialDefinitionMetadata: {},
       credentialDefinitionState: {
         state: 'finished',
         credentialDefinition: options.credentialDefinition,
-        credentialDefinitionId: didIndyCredentialDefinitionId,
+        credentialDefinitionId,
       },
     }
   }
@@ -209,11 +239,24 @@ export class InMemoryAnonCredsRegistry implements AnonCredsRegistry {
       }
     }
 
+    let didIndyNamespace: string | undefined = undefined
+    if (isUnqualifiedCredentialDefinitionId(revocationRegistryDefinitionId)) {
+      const { namespaceIdentifier, schemaSeqNo, revocationRegistryTag } =
+        parseIndyRevocationRegistryId(revocationRegistryDefinitionId)
+      const qualifiedRevRegIdEnding = `:${namespaceIdentifier}/anoncreds/v0/REV_REG_DEF/${schemaSeqNo}/${revocationRegistryTag}`
+      const unqualifiedRevRegId = Object.keys(this.revocationRegistryDefinitions).find((revocationRegistryId) =>
+        revocationRegistryId.endsWith(qualifiedRevRegIdEnding)
+      )
+      didIndyNamespace = unqualifiedRevRegId ? parseIndySchemaId(unqualifiedRevRegId).namespace : undefined
+    } else if (isIndyDid(revocationRegistryDefinitionId)) {
+      didIndyNamespace = parseIndyRevocationRegistryId(revocationRegistryDefinitionId).namespace
+    }
+
     return {
       resolutionMetadata: {},
       revocationRegistryDefinition,
       revocationRegistryDefinitionId,
-      revocationRegistryDefinitionMetadata: {},
+      revocationRegistryDefinitionMetadata: { ...(didIndyNamespace && { didIndyNamespace }) },
     }
   }
 

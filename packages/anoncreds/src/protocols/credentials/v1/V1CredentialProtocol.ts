@@ -903,7 +903,13 @@ export class V1CredentialProtocol
       throw new CredoError('Missing indy credential request attachment in processCredential')
     }
 
+    const offerAttachment = offerCredentialMessage?.getOfferAttachmentById(INDY_CREDENTIAL_OFFER_ATTACHMENT_ID)
+    if (!offerAttachment) {
+      throw new CredoError('Missing indy credential request attachment in processCredential')
+    }
+
     await this.indyCredentialFormat.processCredential(messageContext.agentContext, {
+      offerAttachment,
       attachment: issueAttachment,
       credentialRecord,
       requestAttachment,
