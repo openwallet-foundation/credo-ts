@@ -55,7 +55,7 @@ describe('DrpcService', () => {
         payload: {
           drpcMessageRecord: expect.objectContaining({
             connectionId: mockConnectionRecord.id,
-            message: {
+            request: {
               id: 1,
               jsonrpc: '2.0',
               method: 'hello',
@@ -81,7 +81,7 @@ describe('DrpcService', () => {
         payload: {
           drpcMessageRecord: expect.objectContaining({
             connectionId: mockConnectionRecord.id,
-            message: {
+            request: {
               id: 1,
               jsonrpc: '2.0',
               method: 'hello',

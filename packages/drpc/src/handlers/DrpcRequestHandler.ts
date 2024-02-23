@@ -12,6 +12,6 @@ export class DrpcRequestHandler implements MessageHandler {
   }
 
   public async handle(messageContext: MessageHandlerInboundMessage<DrpcRequestHandler>) {
-    await this.drpcMessageService.recieveRequest(messageContext)
+    await this.drpcMessageService.receiveRequest(messageContext)
   }
 }

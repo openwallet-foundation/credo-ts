@@ -1,18 +1,22 @@
+import type { DependencyManager } from '../../../core/src/plugins/DependencyManager'
+
 import { FeatureRegistry } from '../../../core/src/agent/FeatureRegistry'
-import { DependencyManager } from '../../../core/src/plugins/DependencyManager'
 import { DrpcModule } from '../DrpcModule'
 import { DrpcRepository } from '../repository'
 import { DrpcService } from '../services'
 
 jest.mock('../../../core/src/plugins/DependencyManager')
-const DependencyManagerMock = DependencyManager as jest.Mock<DependencyManager>
-
-const dependencyManager = new DependencyManagerMock()
 
 jest.mock('../../../core/src/agent/FeatureRegistry')
 const FeatureRegistryMock = FeatureRegistry as jest.Mock<FeatureRegistry>
 
 const featureRegistry = new FeatureRegistryMock()
+
+const dependencyManager = {
+  registerInstance: jest.fn(),
+  registerSingleton: jest.fn(),
+  resolve: jest.fn().mockReturnValue({ logger: { warn: jest.fn() } }),
+} as unknown as DependencyManager
 
 describe('DrpcModule', () => {
   test('registers dependencies on the dependency manager', () => {
