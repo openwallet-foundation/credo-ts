@@ -127,7 +127,7 @@ describe('SdJwtVcService', () => {
     test('Create sd-jwt-vc from a basic payload with a disclosure', async () => {
       const { compact, header, prettyClaims, payload } = await sdJwtVcService.sign(agent.context, {
         payload: { claim: 'some-claim', vct: 'IdentityCredential' },
-        disclosureFrame: { claim: true },
+        disclosureFrame: { _sd: ['claim'] },
         holder: {
           method: 'jwk',
           jwk: jwkJsonWithoutUse(getJwkFromKey(holderKey)),
@@ -171,13 +171,10 @@ describe('SdJwtVcService', () => {
     test('Create sd-jwt-vc from a basic payload with multiple (nested) disclosure', async () => {
       const { compact, header, payload, prettyClaims } = await sdJwtVcService.sign(agent.context, {
         disclosureFrame: {
-          is_over_65: true,
-          is_over_21: true,
-          is_over_18: true,
-          birthdate: true,
-          email: true,
-          address: { region: true, country: true },
-          given_name: true,
+          _sd: ['is_over_65', 'is_over_21', 'is_over_18', 'birthdate', 'email', 'address', 'given_name'],
+          address: {
+            _sd: ['region', 'country'],
+          },
         },
         payload: {
           vct: 'IdentityCredential',
@@ -390,7 +387,7 @@ describe('SdJwtVcService', () => {
     test('Present sd-jwt-vc from a basic payload without disclosures', async () => {
       const presentation = await sdJwtVcService.present(agent.context, {
         compactSdJwtVc: simpleJwtVc,
-        presentationFrame: {},
+        presentationFrame: [],
         verifierMetadata: {
           issuedAt: new Date().getTime() / 1000,
           audience: verifierDid,
@@ -404,9 +401,7 @@ describe('SdJwtVcService', () => {
     test('Present sd-jwt-vc from a basic payload with a disclosure', async () => {
       const presentation = await sdJwtVcService.present(agent.context, {
         compactSdJwtVc: sdJwtVcWithSingleDisclosure,
-        presentationFrame: {
-          claim: true,
-        },
+        presentationFrame: ['claim'],
         verifierMetadata: {
           issuedAt: new Date().getTime() / 1000,
           audience: verifierDid,
@@ -418,31 +413,14 @@ describe('SdJwtVcService', () => {
     })
 
     test('Present sd-jwt-vc from a basic payload with multiple (nested) disclosure', async () => {
-      const presentation = await sdJwtVcService.present<
-        Record<string, unknown>,
-        {
-          // FIXME: when not passing a payload, adding nested presentationFrame is broken
-          // Needs to be fixed in sd-jwt library
-          address: {
-            country: string
-          }
-        }
-      >(agent.context, {
+      const presentation = await sdJwtVcService.present(agent.context, {
         compactSdJwtVc: complexSdJwtVc,
         verifierMetadata: {
           issuedAt: new Date().getTime() / 1000,
           audience: verifierDid,
           nonce: await agent.context.wallet.generateNonce(),
         },
-        presentationFrame: {
-          is_over_65: true,
-          is_over_21: true,
-          email: true,
-          address: {
-            country: true,
-          },
-          given_name: true,
-        },
+        presentationFrame: ['is_over_65', 'is_over_21', 'email', 'address.country', 'given_name'],
       })
 
       expect(presentation).toStrictEqual(complexSdJwtVcPresentation)
@@ -455,7 +433,7 @@ describe('SdJwtVcService', () => {
       const presentation = await sdJwtVcService.present(agent.context, {
         compactSdJwtVc: simpleJwtVc,
         // no disclosures
-        presentationFrame: {},
+        presentationFrame: [],
         verifierMetadata: {
           issuedAt: new Date().getTime() / 1000,
           audience: verifierDid,
@@ -489,9 +467,7 @@ describe('SdJwtVcService', () => {
           audience: verifierDid,
           nonce,
         },
-        presentationFrame: {
-          claim: true,
-        },
+        presentationFrame: ['claim'],
       })
 
       const { verification } = await sdJwtVcService.verify(agent.context, {
@@ -513,26 +489,15 @@ describe('SdJwtVcService', () => {
     test('Verify sd-jwt-vc with multiple (nested) disclosure', async () => {
       const nonce = await agent.context.wallet.generateNonce()
 
-      const presentation = await sdJwtVcService.present<SdJwtVcHeader, { address: { country: string } }>(
-        agent.context,
-        {
-          compactSdJwtVc: complexSdJwtVc,
-          verifierMetadata: {
-            issuedAt: new Date().getTime() / 1000,
-            audience: verifierDid,
-            nonce,
-          },
-          presentationFrame: {
-            is_over_65: true,
-            is_over_21: true,
-            email: true,
-            address: {
-              country: true,
-            },
-            given_name: true,
-          },
-        }
-      )
+      const presentation = await sdJwtVcService.present(agent.context, {
+        compactSdJwtVc: complexSdJwtVc,
+        verifierMetadata: {
+          issuedAt: new Date().getTime() / 1000,
+          audience: verifierDid,
+          nonce,
+        },
+        presentationFrame: ['is_over_65', 'is_over_21', 'email', 'address.country', 'given_name'],
+      })
 
       const { verification } = await sdJwtVcService.verify(agent.context, {
         compactSdJwtVc: presentation,
