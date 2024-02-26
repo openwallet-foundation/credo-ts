@@ -516,11 +516,13 @@ describe('SdJwtVcService', () => {
           'is_over_21',
           'email',
           'given_name',
-          'street_address',
-          'locality',
-          'country',
+          'address.street_address',
+          'address.locality',
+          'address.country',
         ],
       })
+
+      console.log(verification)
 
       expect(verification).toEqual({
         isSignatureValid: true,
