@@ -522,8 +522,6 @@ describe('SdJwtVcService', () => {
         ],
       })
 
-      console.log(verification)
-
       expect(verification).toEqual({
         isSignatureValid: true,
         areRequiredClaimsIncluded: true,
