@@ -5,6 +5,7 @@ exports[`UpdateAssistant | Backup should create a backup 1`] = `
   {
     "_tags": {
       "connectionId": "0b6de73d-b376-430f-b2b4-f6e51407bb66",
+      "role": "issuer",
       "state": "done",
       "threadId": "578e73da-c3be-43d4-949b-7aadfd5a6eae",
     },
@@ -37,6 +38,7 @@ exports[`UpdateAssistant | Backup should create a backup 1`] = `
       },
     },
     "protocolVersion": "v1",
+    "role": "issuer",
     "state": "done",
     "threadId": "578e73da-c3be-43d4-949b-7aadfd5a6eae",
     "updatedAt": "2022-03-21T22:50:20.522Z",
@@ -48,6 +50,7 @@ exports[`UpdateAssistant | Backup should create a backup 1`] = `
       "credentialIds": [
         "a77114e1-c812-4bff-a53c-3d5003fcc278",
       ],
+      "role": "holder",
       "state": "done",
       "threadId": "578e73da-c3be-43d4-949b-7aadfd5a6eae",
     },
@@ -93,6 +96,7 @@ exports[`UpdateAssistant | Backup should create a backup 1`] = `
       },
     },
     "protocolVersion": "v1",
+    "role": "holder",
     "state": "done",
     "threadId": "578e73da-c3be-43d4-949b-7aadfd5a6eae",
     "updatedAt": "2022-03-21T22:50:20.522Z",
@@ -100,6 +104,7 @@ exports[`UpdateAssistant | Backup should create a backup 1`] = `
   {
     "_tags": {
       "connectionId": "cd66cbf1-5721-449e-8724-f4d8dcef1bc4",
+      "role": "issuer",
       "state": "done",
       "threadId": "e2c2194c-6ac6-4b27-9030-18887c79b5eb",
     },
@@ -132,6 +137,7 @@ exports[`UpdateAssistant | Backup should create a backup 1`] = `
       },
     },
     "protocolVersion": "v1",
+    "role": "issuer",
     "state": "done",
     "threadId": "e2c2194c-6ac6-4b27-9030-18887c79b5eb",
     "updatedAt": "2022-03-21T22:50:20.522Z",
@@ -143,6 +149,7 @@ exports[`UpdateAssistant | Backup should create a backup 1`] = `
       "credentialIds": [
         "19c1f29f-d2df-486c-b8c6-950c403fa7d9",
       ],
+      "role": "holder",
       "state": "done",
       "threadId": "e2c2194c-6ac6-4b27-9030-18887c79b5eb",
     },
@@ -188,6 +195,7 @@ exports[`UpdateAssistant | Backup should create a backup 1`] = `
       },
     },
     "protocolVersion": "v1",
+    "role": "holder",
     "state": "done",
     "threadId": "e2c2194c-6ac6-4b27-9030-18887c79b5eb",
     "updatedAt": "2022-03-21T22:50:20.522Z",

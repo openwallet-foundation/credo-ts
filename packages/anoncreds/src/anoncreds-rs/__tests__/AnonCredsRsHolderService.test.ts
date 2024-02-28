@@ -1,4 +1,4 @@
-import type { W3cAnoncredsCredentialMetadata } from '../../utils/metadata'
+import type { W3cAnonCredsCredentialMetadata } from '../../utils/metadata'
 import type { AnonCredsCredentialTags } from '../../utils/w3cAnonCredsUtils'
 import type {
   AnonCredsCredentialDefinition,
@@ -530,8 +530,7 @@ describe('AnonCredsRsHolderService', () => {
       anonCredsRevocationRegistryId: 'revRegId',
     }
 
-    const anonCredsCredentialMetadata: W3cAnoncredsCredentialMetadata = {
-      credentialId: record.id,
+    const anonCredsCredentialMetadata: W3cAnonCredsCredentialMetadata = {
       credentialRevocationId: tags.anonCredsCredentialRevocationId,
       linkSecretId: tags.anonCredsLinkSecretId,
       methodName: tags.anonCredsMethodName,
@@ -587,8 +586,7 @@ describe('AnonCredsRsHolderService', () => {
       anonCredsRevocationRegistryId: 'revRegId',
     }
 
-    const anonCredsCredentialMetadata: W3cAnoncredsCredentialMetadata = {
-      credentialId: record.id,
+    const anonCredsCredentialMetadata: W3cAnonCredsCredentialMetadata = {
       credentialRevocationId: tags.anonCredsCredentialRevocationId,
       linkSecretId: tags.anonCredsLinkSecretId,
       methodName: tags.anonCredsMethodName,

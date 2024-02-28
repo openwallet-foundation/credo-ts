@@ -1,6 +1,8 @@
 import type { DataIntegrityCredentialRequest } from '@credo-ts/core'
 
 import {
+  ProofRole,
+  CredentialRole,
   AgentContext,
   CredentialExchangeRecord,
   CredentialPreviewAttribute,
@@ -279,12 +281,14 @@ async function anonCredsFlowTest(options: { issuerId: string; revocable: boolean
     protocolVersion: 'v1',
     state: CredentialState.ProposalSent,
     threadId: 'f365c1a5-2baf-4873-9432-fa87c888a0aa',
+    role: CredentialRole.Holder,
   })
 
   const issuerCredentialRecord = new CredentialExchangeRecord({
     protocolVersion: 'v1',
     state: CredentialState.ProposalReceived,
     threadId: 'f365c1a5-2baf-4873-9432-fa87c888a0aa',
+    role: CredentialRole.Issuer,
   })
 
   const credentialAttributes = [
@@ -428,10 +432,12 @@ async function anonCredsFlowTest(options: { issuerId: string; revocable: boolean
   const holderProofRecord = new ProofExchangeRecord({
     protocolVersion: 'v1',
     state: ProofState.ProposalSent,
+    role: ProofRole.Prover,
     threadId: '4f5659a4-1aea-4f42-8c22-9a9985b35e38',
   })
   const verifierProofRecord = new ProofExchangeRecord({
     protocolVersion: 'v1',
+    role: ProofRole.Verifier,
     state: ProofState.ProposalReceived,
     threadId: '4f5659a4-1aea-4f42-8c22-9a9985b35e38',
   })

@@ -1,5 +1,5 @@
 import type { AnonCredsHolderService } from '../../services'
-import type { W3cAnoncredsCredentialMetadata } from '../../utils/metadata'
+import type { W3cAnonCredsCredentialMetadata } from '../../utils/metadata'
 import type { AgentContext, BaseAgent } from '@credo-ts/core'
 
 import { CacheModuleConfig, CredoError, W3cCredentialRepository, W3cCredentialService } from '@credo-ts/core'
@@ -111,8 +111,7 @@ async function migrateLegacyToW3cCredential(agentContext: AgentContext, legacyRe
     methodName: legacyTags.methodName,
   })
 
-  const anonCredsCredentialMetadata: W3cAnoncredsCredentialMetadata = {
-    credentialId: w3cCredentialRecord.id,
+  const anonCredsCredentialMetadata: W3cAnonCredsCredentialMetadata = {
     credentialRevocationId: anonCredsTags.anonCredsCredentialRevocationId,
     linkSecretId: anonCredsTags.anonCredsLinkSecretId,
     methodName: anonCredsTags.anonCredsMethodName,
