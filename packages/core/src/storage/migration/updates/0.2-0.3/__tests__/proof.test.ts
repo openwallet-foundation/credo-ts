@@ -226,7 +226,7 @@ describe('0.2-0.3 | Proof', () => {
             isVerified: true,
           })
         )
-      ).toBe(testModule.ProofRole.Verifier)
+      ).toBe(testModule.V02_03MigrationProofRole.Verifier)
 
       expect(
         testModule.getProofRole(
@@ -234,7 +234,7 @@ describe('0.2-0.3 | Proof', () => {
             isVerified: false,
           })
         )
-      ).toBe(testModule.ProofRole.Verifier)
+      ).toBe(testModule.V02_03MigrationProofRole.Verifier)
     })
 
     it('should return ProofRole.Prover if state is Done and isVerified is not set', () => {
@@ -242,7 +242,7 @@ describe('0.2-0.3 | Proof', () => {
         state: ProofState.Done,
       })
 
-      expect(testModule.getProofRole(proofRecord)).toBe(testModule.ProofRole.Prover)
+      expect(testModule.getProofRole(proofRecord)).toBe(testModule.V02_03MigrationProofRole.Prover)
     })
 
     it('should return ProofRole.Prover if the value is a prover state', () => {
@@ -260,7 +260,7 @@ describe('0.2-0.3 | Proof', () => {
               state: holderState,
             })
           )
-        ).toBe(testModule.ProofRole.Prover)
+        ).toBe(testModule.V02_03MigrationProofRole.Prover)
       }
     })
 
@@ -271,7 +271,7 @@ describe('0.2-0.3 | Proof', () => {
             state: ProofState.PresentationReceived,
           })
         )
-      ).toBe(testModule.ProofRole.Verifier)
+      ).toBe(testModule.V02_03MigrationProofRole.Verifier)
     })
   })
 })

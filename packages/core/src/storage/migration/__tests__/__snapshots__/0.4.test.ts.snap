@@ -103,3 +103,796 @@ exports[`UpdateAssistant | v0.4 - v0.5 should correctly add 'type' tag to w3c re
   },
 }
 `;
+
+exports[`UpdateAssistant | v0.4 - v0.5 should correctly add role to credential exchange records 1`] = `
+{
+  "6bab4ff7-45a1-4d66-98a4-ae81efd7f460": {
+    "id": "6bab4ff7-45a1-4d66-98a4-ae81efd7f460",
+    "tags": {
+      "associatedRecordId": "8df00782-5090-434e-8f34-96d5e484658a",
+      "messageId": "6a49a044-b5cb-4d91-9a6f-18d808656cc8",
+      "messageName": "ack",
+      "messageType": "https://didcomm.org/issue-credential/2.0/ack",
+      "protocolMajorVersion": "2",
+      "protocolMinorVersion": "0",
+      "protocolName": "issue-credential",
+      "role": "sender",
+      "threadId": "ba17e7c5-74e0-46e5-8862-7f433e201286",
+    },
+    "type": "DidCommMessageRecord",
+    "value": {
+      "associatedRecordId": "8df00782-5090-434e-8f34-96d5e484658a",
+      "createdAt": "2024-02-28T09:36:46.755Z",
+      "id": "6bab4ff7-45a1-4d66-98a4-ae81efd7f460",
+      "message": {
+        "@id": "6a49a044-b5cb-4d91-9a6f-18d808656cc8",
+        "@type": "https://didcomm.org/issue-credential/2.0/ack",
+        "status": "OK",
+        "~service": {
+          "recipientKeys": [
+            "Ab2MHChPWKG1f7xSMp8tKJFZj8qdTAnsQvN4nJ5vuZdA",
+          ],
+          "routingKeys": [],
+          "serviceEndpoint": "http://localhost:3001",
+        },
+        "~thread": {
+          "pthid": "9cf43eb2-2690-4bbc-8e29-7ece0acf9349",
+          "thid": "ba17e7c5-74e0-46e5-8862-7f433e201286",
+        },
+      },
+      "metadata": {},
+      "role": "sender",
+      "updatedAt": "2024-02-28T09:36:46.755Z",
+    },
+  },
+  "8df00782-5090-434e-8f34-96d5e484658a": {
+    "id": "8df00782-5090-434e-8f34-96d5e484658a",
+    "tags": {
+      "connectionId": undefined,
+      "credentialIds": [
+        "c5775c27-93d1-46e0-bb00-65e408a58d97",
+      ],
+      "parentThreadId": "9cf43eb2-2690-4bbc-8e29-7ece0acf9349",
+      "role": "holder",
+      "state": "done",
+      "threadId": "ba17e7c5-74e0-46e5-8862-7f433e201286",
+    },
+    "type": "CredentialRecord",
+    "value": {
+      "createdAt": "2024-02-28T09:36:11.555Z",
+      "credentialAttributes": [
+        {
+          "mime-type": "text/plain",
+          "name": "test",
+          "value": "test",
+        },
+      ],
+      "credentials": [
+        {
+          "credentialRecordId": "c5775c27-93d1-46e0-bb00-65e408a58d97",
+          "credentialRecordType": "anoncreds",
+        },
+      ],
+      "id": "8df00782-5090-434e-8f34-96d5e484658a",
+      "metadata": {
+        "_anoncreds/credential": {
+          "credentialDefinitionId": "did:indy:bcovrin:test:6LHqdUeWDWsL94zRc1ULEx/anoncreds/v0/CLAIM_DEF/400832/test",
+          "schemaId": "did:indy:bcovrin:test:6LHqdUeWDWsL94zRc1ULEx/anoncreds/v0/SCHEMA/test0.1599221872308001/1.0",
+        },
+        "_anoncreds/credentialRequest": {
+          "link_secret_blinding_data": {
+            "v_prime": "13120265176299908185898873509373450263031037373213459182327318255420442817142729461299281465699119807362298565594454759288247538050340146656288128953997075333312454192263427271050503267075194365317557114968037548461894334655900837672256313231303463277753218922239512751838553222838565650935887880786124571846070357367162926133614147020173182949018785393466888036067039449038012778965503244623829426114742052867541393595950207886123033595140571273680755807414104278569809550597205459544801806826874048588059800699107031186607221972879349194293825608495858147307683980675532601970303518939133216185993672407675581367508904617978807526724974743",
+            "vr_prime": null,
+          },
+          "link_secret_name": "ae343b1d-e2af-4706-9aae-2010a7f2c882",
+          "nonce": "533240365625577424098040",
+        },
+      },
+      "parentThreadId": "9cf43eb2-2690-4bbc-8e29-7ece0acf9349",
+      "protocolVersion": "v2",
+      "role": "holder",
+      "state": "done",
+      "threadId": "ba17e7c5-74e0-46e5-8862-7f433e201286",
+      "updatedAt": "2024-02-05T22:50:20.522Z",
+    },
+  },
+  "90d4edf7-c408-48a0-a711-2502f3c649ac": {
+    "id": "90d4edf7-c408-48a0-a711-2502f3c649ac",
+    "tags": {
+      "associatedRecordId": "e04ca938-64e1-441e-b5d9-4525befe4686",
+      "messageId": "0f3c0bb1-737e-4e9c-9f6a-85337222941e",
+      "messageName": "request-credential",
+      "messageType": "https://didcomm.org/issue-credential/2.0/request-credential",
+      "protocolMajorVersion": "2",
+      "protocolMinorVersion": "0",
+      "protocolName": "issue-credential",
+      "role": "receiver",
+      "threadId": "ba17e7c5-74e0-46e5-8862-7f433e201286",
+    },
+    "type": "DidCommMessageRecord",
+    "value": {
+      "associatedRecordId": "e04ca938-64e1-441e-b5d9-4525befe4686",
+      "createdAt": "2024-02-28T09:36:26.745Z",
+      "id": "90d4edf7-c408-48a0-a711-2502f3c649ac",
+      "message": {
+        "@id": "0f3c0bb1-737e-4e9c-9f6a-85337222941e",
+        "@type": "https://didcomm.org/issue-credential/2.0/request-credential",
+        "formats": [
+          {
+            "attach_id": "a81bbf5e-e766-44b8-8ba4-4a92819473b9",
+            "format": "anoncreds/credential-request@v1.0",
+          },
+        ],
+        "requests~attach": [
+          {
+            "@id": "a81bbf5e-e766-44b8-8ba4-4a92819473b9",
+            "data": {
+              "base64": "eyJlbnRyb3B5IjoiNDYwNDIxODQ1MzE0ODU4NDI3ODE2OTAxIiwiY3JlZF9kZWZfaWQiOiJkaWQ6aW5keTpiY292cmluOnRlc3Q6NkxIcWRVZVdEV3NMOTR6UmMxVUxFeC9hbm9uY3JlZHMvdjAvQ0xBSU1fREVGLzQwMDgzMi90ZXN0IiwiYmxpbmRlZF9tcyI6eyJ1IjoiODYwNjAyODA1NjM1NTgzNTUwNTc0MTAyOTkxNTExOTA3NTMxNjQ1NTE5MTEwMTI0MTUyMzA0MjMzNTMzMTA4NDcxMDc2NDc5MzA3NzMwMTI3NzQ1NDE1NTE1ODUwOTA1ODAxNjg1ODc0NDM2MDE5NjU2NTg0NjU0ODc0NTEyNjMwMzEwMjc2MzIzNzY2MzE2ODk2NTM3MDk4MzAxNTg1NzE5NTU1MjQ2NDc4NjY5OTI2NDcwMzc1MTgzMzUwOTMwNjU2ODgwMTY1MjcyMjU4NDY2MzcyOTAxMjA5MjkwMTMyNTEwNTgzNTA3NjAyNTc5MTg5NDc4OTU1OTMzNzA0OTc2NzA3OTI3NTg2MjU5NjQ4MjQ2NDQxMTEyOTYyOTczMDA3NDkyNzUzMTY1Nzc3MzQwNzQ0MTA2MzcxOTAyMzc0OTc4NzQ4MDI0NTgxODc2MjEwNTU0NDI5NDcyMTc0NzgzNTI5NTY2MjcxMTEyOTgyNjkxNTgwMTgxMDI4ODc5NjgxNjQxMDg4MDQwODY3OTAxODcxNTY4NjY3NzEzNzE1Njc2MzM4NTcwNDE1NTUwNTIyMzAzMjAyNDYxMTg4NDIwMjUyNDA2ODUyODUzOTczODUyOTY1ODI3NjUyMjEzMTA1NzM4OTE1NzIyNzQ4MTg4NTc0MDIxMzE3OTEwMDY5NDQyMDM3MDQyMzI5NzczNTQ4MzEzNTQyNDAxMzcyMzMzMTMyODQ1NzkzMzUwMDQ2MDk3Nzg4NjA4MTA2NTA5OTUxNDE1NDkzNjkxNjAxNjExMTIwNzE1MzM0NjExMTM3MjY0NDM0NjUiLCJ1ciI6bnVsbCwiaGlkZGVuX2F0dHJpYnV0ZXMiOlsibWFzdGVyX3NlY3JldCJdLCJjb21taXR0ZWRfYXR0cmlidXRlcyI6e319LCJibGluZGVkX21zX2NvcnJlY3RuZXNzX3Byb29mIjp7ImMiOiI4MzE2NjQxOTY2MDcyMzc1MzAxNzYxOTMxMzY2OTMxMjEyNjA3NzUyMTk5MDI1Nzc5MDYyMDUwMjA5NDI4OTkzMzg2NTQ0Mzc3NjY5MCIsInZfZGFzaF9jYXAiOiIxMDkxMTY1NDc5NzEyMTM3ODgxNzIxMjQ3NjYzNjE2ODU5MDE5Njg1MTg2MDY5OTI4NjIyNjE1NDg2MzM0MTQzNzYzMzU0ODMxNTc2NDMyNDQxMjEyODQ4MTYyNjI5Mzg4ODc0NTQyMTYyNTMwNTU5MjMxNTU0NzIwNTMyNTc3ODY0MDQ1NjMwNzA4MjkyOTkzODQzMzU0ODE3NjEyMzQ3OTQ1MzU3NzM0NjMyNTc0NTA3ODM2MjAwODAxMjY2NDc3Mzc5MDUwMTMzNjQ1MzE3MTM2Nzg1MzM4OTU5NDg0MjUzNTEyNTEzOTcyNDM3MDM2MjcyNDU3Mzk4ODE4NjExODYyMjE1OTA3NDQzOTAwNDE2ODMyMDI3Nzk3NDE5MTQxNTk5MTY0MTY1MTA2NzA0MjgyMjg1NjcyOTEwMTMwMzc4NDA5NjExNzI3NjA3MjIxODA3ODg0MjI3OTgyNjM1MjY2NjI2NTEzOTg1OTIxNTgyMjM4NzU4NTM0MjkxMTU5MDgxMTk0NjUwNjg5Mjk0NzM5MTA1MTQwNTQzNjQ0NDUzMzg1NzU4ODY2NDg2MzgyNDY1MjA0MjQ0NTYyNTkxNzI5ODQzNDI1Mjc4MDAzMTk1MTk1MzU4MzgxODAxNzA5NTI5MzEwOTU4NDk5OTg1MDcwNjk0NzA2MjcwNjUyOTQ2MzU0MDg1MjYyOTMxNzI0NzI5MTk2MjY3MDczMDAyODk4NzQxMzc3ODEzMjgzNzAzNjU4MDkwNDE3ODcxMjE5NzQ1NzIwNTc1OTE4MTU5MzMzMDczMTA4OTE3Mjk5MzA2MzE0NTk4ODc5NDQ4NjQ1NjA4NDM2NTYzOTU5OTA2ODY2NzcwMjQ3MzIwMTkwMDQ0MTQxNjc2MDAyNTI5Njg2MTA1Nzc1NjI0MTU1NTkwMjMxMjMyNjQyNTY0MDE4NTM1ODQxNzU4MDYxMzk2IiwibV9jYXBzIjp7Im1hc3Rlcl9zZWNyZXQiOiIxODk2Nzk5NDIxNjYxODE0MjQxMTcxMDU0NTcxOTYwMDc5MzM1MDUyOTU1NTM4MDM2OTExNzk1NjUxMzgyOTc5NTkxMTA0MTM3MDU3NTA1NTI1ODYyNjY5MTc1NjAxNDE3MDM3NzAyMTYyNzY4ODQ4MTc5MzA5MTU3MDAzMTI3NzI0NDc5NjQwNDQzNjcyOTQzNTg1MjkwMTk3Mjg3MTM3NjA3MDEzOTY1MzUzNjI0MzU4NSJ9LCJyX2NhcHMiOnt9fSwibm9uY2UiOiI1MzMyNDAzNjU2MjU1Nzc0MjQwOTgwNDAifQ==",
+            },
+            "mime-type": "application/json",
+          },
+        ],
+        "~service": {
+          "recipientKeys": [
+            "Ab2MHChPWKG1f7xSMp8tKJFZj8qdTAnsQvN4nJ5vuZdA",
+          ],
+          "routingKeys": [],
+          "serviceEndpoint": "http://localhost:3001",
+        },
+        "~thread": {
+          "pthid": "9cf43eb2-2690-4bbc-8e29-7ece0acf9349",
+          "thid": "ba17e7c5-74e0-46e5-8862-7f433e201286",
+        },
+        "~transport": {
+          "return_route": "all",
+        },
+      },
+      "metadata": {},
+      "role": "receiver",
+      "updatedAt": "2024-02-28T09:36:26.745Z",
+    },
+  },
+  "9a9b7488-2205-4e98-9aae-2b5e2b56a988": {
+    "id": "9a9b7488-2205-4e98-9aae-2b5e2b56a988",
+    "tags": {
+      "associatedRecordId": "8df00782-5090-434e-8f34-96d5e484658a",
+      "messageId": "0f3c0bb1-737e-4e9c-9f6a-85337222941e",
+      "messageName": "request-credential",
+      "messageType": "https://didcomm.org/issue-credential/2.0/request-credential",
+      "protocolMajorVersion": "2",
+      "protocolMinorVersion": "0",
+      "protocolName": "issue-credential",
+      "role": "sender",
+      "threadId": "ba17e7c5-74e0-46e5-8862-7f433e201286",
+    },
+    "type": "DidCommMessageRecord",
+    "value": {
+      "associatedRecordId": "8df00782-5090-434e-8f34-96d5e484658a",
+      "createdAt": "2024-02-28T09:36:19.670Z",
+      "id": "9a9b7488-2205-4e98-9aae-2b5e2b56a988",
+      "message": {
+        "@id": "0f3c0bb1-737e-4e9c-9f6a-85337222941e",
+        "@type": "https://didcomm.org/issue-credential/2.0/request-credential",
+        "formats": [
+          {
+            "attach_id": "a81bbf5e-e766-44b8-8ba4-4a92819473b9",
+            "format": "anoncreds/credential-request@v1.0",
+          },
+        ],
+        "requests~attach": [
+          {
+            "@id": "a81bbf5e-e766-44b8-8ba4-4a92819473b9",
+            "data": {
+              "base64": "eyJlbnRyb3B5IjoiNDYwNDIxODQ1MzE0ODU4NDI3ODE2OTAxIiwiY3JlZF9kZWZfaWQiOiJkaWQ6aW5keTpiY292cmluOnRlc3Q6NkxIcWRVZVdEV3NMOTR6UmMxVUxFeC9hbm9uY3JlZHMvdjAvQ0xBSU1fREVGLzQwMDgzMi90ZXN0IiwiYmxpbmRlZF9tcyI6eyJ1IjoiODYwNjAyODA1NjM1NTgzNTUwNTc0MTAyOTkxNTExOTA3NTMxNjQ1NTE5MTEwMTI0MTUyMzA0MjMzNTMzMTA4NDcxMDc2NDc5MzA3NzMwMTI3NzQ1NDE1NTE1ODUwOTA1ODAxNjg1ODc0NDM2MDE5NjU2NTg0NjU0ODc0NTEyNjMwMzEwMjc2MzIzNzY2MzE2ODk2NTM3MDk4MzAxNTg1NzE5NTU1MjQ2NDc4NjY5OTI2NDcwMzc1MTgzMzUwOTMwNjU2ODgwMTY1MjcyMjU4NDY2MzcyOTAxMjA5MjkwMTMyNTEwNTgzNTA3NjAyNTc5MTg5NDc4OTU1OTMzNzA0OTc2NzA3OTI3NTg2MjU5NjQ4MjQ2NDQxMTEyOTYyOTczMDA3NDkyNzUzMTY1Nzc3MzQwNzQ0MTA2MzcxOTAyMzc0OTc4NzQ4MDI0NTgxODc2MjEwNTU0NDI5NDcyMTc0NzgzNTI5NTY2MjcxMTEyOTgyNjkxNTgwMTgxMDI4ODc5NjgxNjQxMDg4MDQwODY3OTAxODcxNTY4NjY3NzEzNzE1Njc2MzM4NTcwNDE1NTUwNTIyMzAzMjAyNDYxMTg4NDIwMjUyNDA2ODUyODUzOTczODUyOTY1ODI3NjUyMjEzMTA1NzM4OTE1NzIyNzQ4MTg4NTc0MDIxMzE3OTEwMDY5NDQyMDM3MDQyMzI5NzczNTQ4MzEzNTQyNDAxMzcyMzMzMTMyODQ1NzkzMzUwMDQ2MDk3Nzg4NjA4MTA2NTA5OTUxNDE1NDkzNjkxNjAxNjExMTIwNzE1MzM0NjExMTM3MjY0NDM0NjUiLCJ1ciI6bnVsbCwiaGlkZGVuX2F0dHJpYnV0ZXMiOlsibWFzdGVyX3NlY3JldCJdLCJjb21taXR0ZWRfYXR0cmlidXRlcyI6e319LCJibGluZGVkX21zX2NvcnJlY3RuZXNzX3Byb29mIjp7ImMiOiI4MzE2NjQxOTY2MDcyMzc1MzAxNzYxOTMxMzY2OTMxMjEyNjA3NzUyMTk5MDI1Nzc5MDYyMDUwMjA5NDI4OTkzMzg2NTQ0Mzc3NjY5MCIsInZfZGFzaF9jYXAiOiIxMDkxMTY1NDc5NzEyMTM3ODgxNzIxMjQ3NjYzNjE2ODU5MDE5Njg1MTg2MDY5OTI4NjIyNjE1NDg2MzM0MTQzNzYzMzU0ODMxNTc2NDMyNDQxMjEyODQ4MTYyNjI5Mzg4ODc0NTQyMTYyNTMwNTU5MjMxNTU0NzIwNTMyNTc3ODY0MDQ1NjMwNzA4MjkyOTkzODQzMzU0ODE3NjEyMzQ3OTQ1MzU3NzM0NjMyNTc0NTA3ODM2MjAwODAxMjY2NDc3Mzc5MDUwMTMzNjQ1MzE3MTM2Nzg1MzM4OTU5NDg0MjUzNTEyNTEzOTcyNDM3MDM2MjcyNDU3Mzk4ODE4NjExODYyMjE1OTA3NDQzOTAwNDE2ODMyMDI3Nzk3NDE5MTQxNTk5MTY0MTY1MTA2NzA0MjgyMjg1NjcyOTEwMTMwMzc4NDA5NjExNzI3NjA3MjIxODA3ODg0MjI3OTgyNjM1MjY2NjI2NTEzOTg1OTIxNTgyMjM4NzU4NTM0MjkxMTU5MDgxMTk0NjUwNjg5Mjk0NzM5MTA1MTQwNTQzNjQ0NDUzMzg1NzU4ODY2NDg2MzgyNDY1MjA0MjQ0NTYyNTkxNzI5ODQzNDI1Mjc4MDAzMTk1MTk1MzU4MzgxODAxNzA5NTI5MzEwOTU4NDk5OTg1MDcwNjk0NzA2MjcwNjUyOTQ2MzU0MDg1MjYyOTMxNzI0NzI5MTk2MjY3MDczMDAyODk4NzQxMzc3ODEzMjgzNzAzNjU4MDkwNDE3ODcxMjE5NzQ1NzIwNTc1OTE4MTU5MzMzMDczMTA4OTE3Mjk5MzA2MzE0NTk4ODc5NDQ4NjQ1NjA4NDM2NTYzOTU5OTA2ODY2NzcwMjQ3MzIwMTkwMDQ0MTQxNjc2MDAyNTI5Njg2MTA1Nzc1NjI0MTU1NTkwMjMxMjMyNjQyNTY0MDE4NTM1ODQxNzU4MDYxMzk2IiwibV9jYXBzIjp7Im1hc3Rlcl9zZWNyZXQiOiIxODk2Nzk5NDIxNjYxODE0MjQxMTcxMDU0NTcxOTYwMDc5MzM1MDUyOTU1NTM4MDM2OTExNzk1NjUxMzgyOTc5NTkxMTA0MTM3MDU3NTA1NTI1ODYyNjY5MTc1NjAxNDE3MDM3NzAyMTYyNzY4ODQ4MTc5MzA5MTU3MDAzMTI3NzI0NDc5NjQwNDQzNjcyOTQzNTg1MjkwMTk3Mjg3MTM3NjA3MDEzOTY1MzUzNjI0MzU4NSJ9LCJyX2NhcHMiOnt9fSwibm9uY2UiOiI1MzMyNDAzNjU2MjU1Nzc0MjQwOTgwNDAifQ==",
+            },
+            "mime-type": "application/json",
+          },
+        ],
+        "~service": {
+          "recipientKeys": [
+            "Ab2MHChPWKG1f7xSMp8tKJFZj8qdTAnsQvN4nJ5vuZdA",
+          ],
+          "routingKeys": [],
+          "serviceEndpoint": "http://localhost:3001",
+        },
+        "~thread": {
+          "pthid": "9cf43eb2-2690-4bbc-8e29-7ece0acf9349",
+          "thid": "ba17e7c5-74e0-46e5-8862-7f433e201286",
+        },
+      },
+      "metadata": {},
+      "role": "sender",
+      "updatedAt": "2024-02-28T09:36:21.638Z",
+    },
+  },
+  "STORAGE_VERSION_RECORD_ID": {
+    "id": "STORAGE_VERSION_RECORD_ID",
+    "tags": {},
+    "type": "StorageVersionRecord",
+    "value": {
+      "createdAt": "2023-03-18T18:35:02.888Z",
+      "id": "STORAGE_VERSION_RECORD_ID",
+      "metadata": {},
+      "storageVersion": "0.5",
+      "updatedAt": "2024-02-05T22:50:20.522Z",
+    },
+  },
+  "b576366d-7fa2-4ede-b83c-3d29e6e31a78": {
+    "id": "b576366d-7fa2-4ede-b83c-3d29e6e31a78",
+    "tags": {
+      "associatedRecordId": "8df00782-5090-434e-8f34-96d5e484658a",
+      "messageId": "44bead94-eb8a-46c8-abb7-f55e99fb8e28",
+      "messageName": "issue-credential",
+      "messageType": "https://didcomm.org/issue-credential/2.0/issue-credential",
+      "protocolMajorVersion": "2",
+      "protocolMinorVersion": "0",
+      "protocolName": "issue-credential",
+      "role": "receiver",
+      "threadId": "ba17e7c5-74e0-46e5-8862-7f433e201286",
+    },
+    "type": "DidCommMessageRecord",
+    "value": {
+      "associatedRecordId": "8df00782-5090-434e-8f34-96d5e484658a",
+      "createdAt": "2024-02-28T09:36:43.506Z",
+      "id": "b576366d-7fa2-4ede-b83c-3d29e6e31a78",
+      "message": {
+        "@id": "44bead94-eb8a-46c8-abb7-f55e99fb8e28",
+        "@type": "https://didcomm.org/issue-credential/2.0/issue-credential",
+        "credentials~attach": [
+          {
+            "@id": "e5c0d797-67f3-4d1d-a3e1-336786820213",
+            "data": {
+              "base64": "eyJzY2hlbWFfaWQiOiJkaWQ6aW5keTpiY292cmluOnRlc3Q6NkxIcWRVZVdEV3NMOTR6UmMxVUxFeC9hbm9uY3JlZHMvdjAvU0NIRU1BL3Rlc3QwLjE1OTkyMjE4NzIzMDgwMDEvMS4wIiwiY3JlZF9kZWZfaWQiOiJkaWQ6aW5keTpiY292cmluOnRlc3Q6NkxIcWRVZVdEV3NMOTR6UmMxVUxFeC9hbm9uY3JlZHMvdjAvQ0xBSU1fREVGLzQwMDgzMi90ZXN0IiwicmV2X3JlZ19pZCI6bnVsbCwidmFsdWVzIjp7InRlc3QiOnsicmF3IjoidGVzdCIsImVuY29kZWQiOiI3MjE1NTkzOTQ4Njg0Njg0OTUwOTc1OTM2OTczMzI2NjQ4Njk4MjgyMTc5NTgxMDQ0ODI0NTQyMzE2ODk1NzM5MDYwNzY0NDM2MzI3MiJ9fSwic2lnbmF0dXJlIjp7InBfY3JlZGVudGlhbCI6eyJtXzIiOiI4NTY3NjYyMzQ4NDI3NzYyNDY4MjQ0NDgyMDQ0NDcwMjQ2NzQ5OTM1NzkxMDI3NDE2NTAxMzQxODM3OTEyNTEzNDA3NTMyNTU0MzcyOSIsImEiOiIyOTA3ODU4MzAyMzY0NDcyMzQxNzI1Njk2Mzk1MTgzNDc2OTQyOTU0NDg5MzU2MTMxMjYwODA0MTk5OTAzOTcyNTc3OTA0NTQ3ODk1NzY2NTYxMDUzOTM0NTY2OTI0OTAzMzY0Mzg0NTg3MTMxMDYzODIwNTM1OTgyNzkxMzM0NTUzOTg5MzYwNDc4NDE3MjIyMTE3Nzg3NDE1MTg2NzMyMzc4OTc4MzM1MjA2OTg1ODExNDY3NzA2MjM4MjMyOTIwMTk0MTMzNjExNDY0MDA5NDQ0ODk4MjQ5MjU0ODYyMTc0NTQxODE0MDI4NzUyMzM1ODQ1NTc5Njk4NTQ1MjI5MjYwMzgxNDA1MDYxMzAyMjQ5OTIwNjM1MDQ4MTk2NjQ1MDk0OTE0Nzc5ODYwNzI0ODM2NzM5MzAyMjQwMDg3MTM4OTQ0MTk4NTQ4MzI1MTk5NTY2NjExMDA2ODQzMTM1NjEwMjQyMDA2OTQ1MDIzMjcxMjM3MDQxMDA3MTAzODUyOTIzNzMzODU5MDAyMjI1NTY3NTQ1MTE0ODM2MjYwMDcyNzU4NDk5NDY2NTE3NzI4NTg1MzA4MTc5OTY4MzYyMzY3NDI5MTYwMzY0MDMxNDczMzY2NjQ2ODkxODY2NjE3NTEwMzYyMjgzMTYwNDQwMjIxNTMyMjI4OTUwOTU5NDE1Nzg3NTIxMjQwNjU4NDU1ODk3MzY4MjMyNzEyNzUzMjgwMzM3MzQyNDU3NTIzMDk0NjcyMTUyMTk2ODY4MDA3NTYwODE3ODU4NjE2NTU2NTE2MjkzMjY0MzM3ODIzNjQyODQwMzMzMSIsImUiOiIyNTkzNDQ3MjMwNTUwNjIwNTk5MDcwMjU0OTE0ODA2OTc1NzE5MzgyNzc4ODk1MTUxNTIzMDYyNDk3Mjg1ODMxMDU2NjU4MDA3MTMzMDY3NTkxNDk5ODE2OTA1NTkxOTM5ODcxNDMwMTIzNjc5MTMyMDYyOTkzMjM4OTk2OTY5NDIyMTMyMzU5NTY3NDI5MzAxMDM5MjcwODI5MzQzMDYyMDQxODk0NTM5MTQ4NTQ1Njg2MzMiLCJ2IjoiMTAxMTMyNDY1OTQ5MTk5Njg2OTQyNDM3NDkxNTA1MzM0MjEyNTE5MDMyMTI1MTYxNzYyODA0NTA5NDQzNDM1NjQ0MzExMDk1MDU5Mzg4NDE4OTE2MjUyNDc2NjczNjQzNzk0MTIxMjk0MDU0MDUzNDg0NzcwOTU2MTAwMDI0MzM1NjgzNDc4NTY1MDkxNTk2MTEzMzU3NTg4MTg3NTY5MjY4MjUwNjM1NjA3NzAzMTQ4NzMxNTE5MDg5NjQwMDAwNDQzNjA1MzM5OTQ4MzM1MTc4Nzg5ODcxNDEwMTYyOTA1NTA2OTM0MDc0OTQxMjE4NjY4NjA1ODgwMTc3MjEyOTQ4NjYxNzc5MTI0MzI4NDA1MjgzMzIwNjU2NDQzMDg2ODk1MDY0NDQ3NTMwMjI4NTgzODE1OTg3ODk0NzYxMzcwMjg0ODExMjIwNTY2NTgxNzM2NzQwNzY1NzUyNzIyMTE3MDEwODEzODkyMTE5MDE1NzAyNDI1Njk3OTg4NzQwNjIzMDA4NDQzOTY4MTQ5NDAwNjk3ODI2NzMzNjg5NzU0ODYwNjk4NzIwMjkzMjI3ODU3NjU3NzM0MTc5ODEyOTQ2MDkwNTU0ODE3MDcyNjQ4NDgwOTA4MTg4NTI4NDY4MjAzMzM2MDEyMzY2OTUyNjUyODgwNDY5NjUwMTEzODU1NjQ4OTc0Mzk0NzU4NjM5NjUwMjM0NzY0Mzk5OTQ5NjMyNzk3NTYwMzc4NDU2NDIzNjc4NDM1NDIzMDUwMzg4MDU0NDEwMzg3NjIyMDEzMTYxMDc2OTEwOTQ3MjI3Mzk3NDQxMTgzMDA0NDM3MTI0NDU1Nzc0NTI1NzIwMDcxMjg4MjA5NDY2OTcwNDQwNDk3MTY1MTE1MTQ1OTc3NDM5MjkxNDI3MjgyNzI2MTAxMzAwNTg0NTU3MjYzNzMzNDY0NzA3NzA0NTk0NTQxODgzNjE0MTA3MzIwNDIxNDM3MjMxNzY5MzM2NDcxNTE3NjgyNzg1NDk3OTA1MzAzODM4ODk0ODM2NjE3NjU0MTc3Mzk3MDEwOTQ1NDI5ODU0NjM1NzAyODgwNDA3NjkyOTAxNjQzNTEifSwicl9jcmVkZW50aWFsIjpudWxsfSwic2lnbmF0dXJlX2NvcnJlY3RuZXNzX3Byb29mIjp7InNlIjoiMjE0NzgwNDA1MTAyNzUxNzA2MTIzMzc5MTYwODIxMTUzMjkwMDU5MjQ3MjkxNjAxMzg3Mjg1MDA3MzE5NjY2ODk3Njg4NjQ4NzYzNTAzMTQxMjc1ODIwNjUyMjIwNzAzNTg0NTMwOTEzMjY1NTc0NzYxMzI2NDA1MTI5MTUxNjQzOTM0NjkxNjI0MDAyNDE1NTU0ODY0NjUwMzEzNTIxMjczMDk2MTc4NjMwOTY2NDI2ODU0NzE1Nzk3MzYyNzk3NTM0ODM3OTE4NDUzOTQxMjAwNTIwNTI4NTA1Nzk3NjEwOTcwNTk3Njc2Mzc2NDE2MjA2MzcyNDYyNzU5NjcyNTE2NTYyNDE5Mzk0NDk5OTk3Mjg5MzQzOTg0MDE3MjM5OTg1MjA3OTg4OTYxNzc5NDU2NTAzODg3Njk2MzA3MjE3NzczNDI2MjMxMDU0MTc1NzYzNzgzMDA4MDIxMzgyMDU5MDY1OTU3MjI2NDg3OTkzOTk3MjI5OTg3NTgzNDU1ODE5NTI4MTA4Nzk2MTIxNzA2MjY0MTc4ODI1MDM5NTA2MzkzODk3MTc5NDk5Mjc5OTUzODYwODY1OTUzNzA3NjQyNTkxMDY0ODIyMjg4ODg1NDE5MjMyMTc1NTYwMzIwMDczNDgzNTg0Mzc3NDUxMDMxNTA2NDQ0NTcwNzQ1MTEyNTYxNjIxNzMzNjY1NjE2MzU0NjUxMzE0MjI3OTgzNjEyODM2NjkwMzgwNDg4MDY4NDk2MTkzMzc4OTUxMjY2NDI0Nzg2MzIxODY1NjYyOTMyNTM1OTc4MjY4NDgxMzQ0MzQ4NDQ5NzkiLCJjIjoiNzE1NzQ0NjIzMTA1OTU5NjM4NDg4ODk3ODU3NTYwNzIzOTYxMDE5NjE5MjIwNTc2NTkyMTgyMjc4NDk3Mjk4NjE4MzQzNTU4MDAyMDEifSwicmV2X3JlZyI6bnVsbCwid2l0bmVzcyI6bnVsbH0=",
+            },
+            "mime-type": "application/json",
+          },
+        ],
+        "formats": [
+          {
+            "attach_id": "e5c0d797-67f3-4d1d-a3e1-336786820213",
+            "format": "anoncreds/credential@v1.0",
+          },
+        ],
+        "~please_ack": {
+          "on": [
+            "RECEIPT",
+          ],
+        },
+        "~service": {
+          "recipientKeys": [
+            "xaRkB1mi5rQxihB5T2pAyx3m54fuT65nq9C1mjVNdZy",
+          ],
+          "routingKeys": [],
+          "serviceEndpoint": "http://localhost:2001",
+        },
+        "~thread": {
+          "pthid": "9cf43eb2-2690-4bbc-8e29-7ece0acf9349",
+          "thid": "ba17e7c5-74e0-46e5-8862-7f433e201286",
+        },
+      },
+      "metadata": {},
+      "role": "receiver",
+      "updatedAt": "2024-02-28T09:36:43.506Z",
+    },
+  },
+  "c30fcbff-c5c5-4676-89ee-9c68e2c39d1c": {
+    "id": "c30fcbff-c5c5-4676-89ee-9c68e2c39d1c",
+    "tags": {
+      "associatedRecordId": "e04ca938-64e1-441e-b5d9-4525befe4686",
+      "messageId": "a1ec787c-8df6-4efe-9280-6b4407db026e",
+      "messageName": "offer-credential",
+      "messageType": "https://didcomm.org/issue-credential/2.0/offer-credential",
+      "protocolMajorVersion": "2",
+      "protocolMinorVersion": "0",
+      "protocolName": "issue-credential",
+      "role": "sender",
+      "threadId": "ba17e7c5-74e0-46e5-8862-7f433e201286",
+    },
+    "type": "DidCommMessageRecord",
+    "value": {
+      "associatedRecordId": "e04ca938-64e1-441e-b5d9-4525befe4686",
+      "createdAt": "2024-02-28T09:36:08.529Z",
+      "id": "c30fcbff-c5c5-4676-89ee-9c68e2c39d1c",
+      "message": {
+        "@id": "a1ec787c-8df6-4efe-9280-6b4407db026e",
+        "@type": "https://didcomm.org/issue-credential/2.0/offer-credential",
+        "credential_preview": {
+          "@type": "https://didcomm.org/issue-credential/2.0/credential-preview",
+          "attributes": [
+            {
+              "name": "test",
+              "value": "test",
+            },
+          ],
+        },
+        "formats": [
+          {
+            "attach_id": "d6883b94-7a6b-4fe7-9ddc-98b23c46c478",
+            "format": "anoncreds/credential@v1.0",
+          },
+        ],
+        "offers~attach": [
+          {
+            "@id": "d6883b94-7a6b-4fe7-9ddc-98b23c46c478",
+            "data": {
+              "base64": "eyJzY2hlbWFfaWQiOiJkaWQ6aW5keTpiY292cmluOnRlc3Q6NkxIcWRVZVdEV3NMOTR6UmMxVUxFeC9hbm9uY3JlZHMvdjAvU0NIRU1BL3Rlc3QwLjE1OTkyMjE4NzIzMDgwMDEvMS4wIiwiY3JlZF9kZWZfaWQiOiJkaWQ6aW5keTpiY292cmluOnRlc3Q6NkxIcWRVZVdEV3NMOTR6UmMxVUxFeC9hbm9uY3JlZHMvdjAvQ0xBSU1fREVGLzQwMDgzMi90ZXN0Iiwia2V5X2NvcnJlY3RuZXNzX3Byb29mIjp7ImMiOiIxMDk0MzkxMjM2ODU1Nzg0MTgzNDIyMDY2NjI2MzE2OTQ4ODQ1ODMwNzA0MjY0MjUzNDUyMTkwNTAxMTM2ODIyNTcwNTY0MTIzMzY4NDAiLCJ4el9jYXAiOiIyMTk4OTc3Nzk0MzA1NjU5NzMwNDk2MDU0MjM4NDE4OTYxODUzMDEyMTgzODgxODQxNjk4NDUwMTY2ODU5MTA1MDg1MDY0MzIzNzcyMjE3MDUxMDQwODYwNDcwODY0NTM1MDI5Mzk2NTY4Njc0ODkyNzg4Nzg5MTIzNTU3MzE2MTkwNjAyNjczMTczODM0NDUwNjcxMjA2ODA2MjYxOTg2Mzc3NjE1NTc3MzU4MjI0MTM4NDc1OTExNjgyOTQ2MTAzOTkzODg5MTIxODMyNjExNTg4NDc0NzUwMjIxNTQ3MjcwNDAyMjUwMTIyMjc5ODcwNDQ4MDA3OTgwMjQ0NDA5OTc5NDgyNDg1MjU2MDk3OTY4ODQyNDg3ODM2MzMyNTA4MjA0OTIwNjM3ODE0NDMyNDczMjg0NDc0MzQzNzQ3Njg0MjI2MTMxMjAwNjQyMDI3NjQ2NjMwMzkzMDE4MTk1NTAzOTQ3MjkxNjA0Nzg5MjM5MTY3ODUwNjA5Mzc3MTE4NjA3NjUwMzE0NTYyOTk3MDc2NjQ3MDUzNzcxNzgxMjAwMTAxNjExOTc2MTI4ODY5OTE0NTM0NzQ5MDc0MDc3NzcyOTUzMjkzNjMwMzMyMDc5MTk4MzAxNjMwNTY3MjQ3Mjc0OTY5MTM5ODI2Nzc2NTM2NzEwMTgxMjQ3MDY2NDE4OTY1NTQyNDY5MjMyMDkxMDYwNjI4Njc0MTM4OTgwMDcwODE0Njg1OTMyMjg0MzIyMjMzMDQ3NjQ2NTkxODc3NjkyODgyMTM5ODQ4MzgxNjQxMTg1ODE1ODAxMDg0OTM5NTk2NzMwMTYxMjA1MDg2MzMzNzgwNjI5OTEyMTc1NDA0ODQ2MDk5MTI5MjY0NjM3ODA2MjQ3MzE2NzU2NTg3NDI5MjEwNjkzNDM5NTQyMjEzNzI2IiwieHJfY2FwIjpbWyJtYXN0ZXJfc2VjcmV0IiwiMTA4NjM5NjM3NDg4MzU1Nzc0MDI5ODE3OTk0NDkxOTE1MjIyMzc2ODk2NzQwMjM0MDk3MzI0NjcwNzU3NDQ1NjQ0OTAxNTk2NjUwMjk1MDc3NjM0Nzk0Mzc5MzMwODUyNzUxNjQwODk5NjYwMDUwOTY5MDUzNDYyMjcyMzQ5MTEzNjYxOTg3NzMxNDQ3NDMzNTIzNTc0OTc5NjYyMzE0MTAxMTI3Njc5MTAwNzcwMjY0NDMxMTIxNjYzMzMyMTQ2MTU4NzM3MzU0NTk0MDM1NTM1MjI5Mzc4MjU3NzUyOTAwMzA3Mjg3NjQ4NzcwOTU4NTg5ODg1NzA3NDEyOTgzNzYwNTE2ODk0NzkzMTE3NTQ5Nzc3Njg1NTg0MjQ3MzQ1ODMxNzk2MjUzMzQ1MDk1NzIyODU4NjM4MjAxMjgxMjIzNDYyOTg2NjE2MjYzNzIyMDk1MjMxMjg0MTgzMzM3ODYwODQ2Njc5Njg5ODM2MTM4NzAxNjE4MzI1MDAyNTM5NjczNzM4NjUwMTMxNzMzODIzNDk0Mjk5MzQzNDQxNjc5MzM1MTQ5NTIwODQ4Mzg4Njk5MTk5ODA1NTk4MTAzNTk0NTk4OTE0OTkyOTI2MDMzNTA0MzAxNTY5MjMwODYyMzc3NTg5ODg2OTYyMDIxOTIxODM3ODI3MDYyNTI0MzIzMTg3OTcwNjg0MzIxNzY0MzcwMzc4NDc0Mjc4MzA4NzMzOTY4ODgzNTMyNzM2MTE1NTQ3MzA0MzU4ODgyMzc1Njc0MTQwMjEzNzc1OTE1OTU3NzU5MTM3NjUwMjY0Njg3OTUzMTk4NTE5OTY0MDcyMzEwNDY3OTA2Njk0OTQxMzM4NDAzNDg4NTYyMjgxMDE5MTQzMDk5MTE0NjM3MTY1OTI2MzQxOTY4NTk3MjE4MjU3OTU5OCJdLFsidGVzdCIsIjcwMDE5MTUyMzc5MTExNTQzNzgwOTgxNTYyMDU5OTYzMDYzMzg4ODg5NDg1NjkxOTM5MzM3NzgxNjkwNTU3NjA5MDA4MTA2NjY5NzAwNjA3MzI1OTAyNjQyMzA4NTIzMDc5MjA3NjEwNTU1MjQ0NTY0MjkwNzc5ODA5Mzg5ODEzNTI0OTc5MzE5MTg4NDI0NzIwNzUxMjQwMzQ3NTY0NTQ3MDY2NDE1NTE3MzU5NjUxODU1NzU3MzY4NDcxOTM5OTk3NjY1MTk5NTE4OTQ2ODMzMDY1MTMyNjYxMDI4Nzc5ODg1NDQ5ODMwMzg1MTA3MzUxOTgxMDM1NTAzMzM1MDg0NjgxMDQ4MzE0NjQzMDQ4NzIwMzQxMzk0MjI5NTEyNDcyNDY0NjUwNDI3NDA4NTI5ODkwMzg1ODc1MzkzMjA0ODExMTUwODgxNDA4NzY3NTMzNjI1MjU4MDUwNDc2NzU2NDIyMzk5NjMxNjA5NTU2MjI0NjQ1Mjg5NDM0Mjk3NDkwMzg0MzYwNDM0Mzg4MDU1NDAxODgyNDIxNDU1OTI0NjQxMTUwNjQ1NTkzNzUwMjQ2MTI4NTYzNzMzMzgzMzQ2MTYyNjYzNjE5MTYyMzIxMDM3MDgzNTcxNzc0MzQ5MzYwMTcxNzkwNzUzNzYyMDI3NTczMDc0MDI1NTgyOTQyODk4MzMwMTY3NDY0MTExNjA1MTMxMjk5MDE2MjQ5MzU2MDY5MjM3OTAzNjAyNjgwMjMwNzgzMjg0MDIwOTMxMjY3MDkzNTE1MzU3MjQ1MDEwOTI0MTI2MTIyNjUwNTM1MDI5MjIxMzY2NzA5NTI2NjY1Mjc5NzIyMDg0NjI0MzQwOTkyODQ4NDU0OTgxNTExOTIwNDE4NzM2NTE1NjIxMTgxNjkxMzcyNDE5ODU2OTg1NDkzMSJdXX0sIm5vbmNlIjoiOTczNDk4MTg3NTMwNzE2MjQ3MDE5NzU0In0=",
+            },
+            "mime-type": "application/json",
+          },
+        ],
+        "~thread": {
+          "thid": "ba17e7c5-74e0-46e5-8862-7f433e201286",
+        },
+      },
+      "metadata": {},
+      "role": "sender",
+      "updatedAt": "2024-02-28T09:36:08.529Z",
+    },
+  },
+  "de893e30-a2f3-458e-b8ec-aaca324c0806": {
+    "id": "de893e30-a2f3-458e-b8ec-aaca324c0806",
+    "tags": {
+      "associatedRecordId": "e04ca938-64e1-441e-b5d9-4525befe4686",
+      "messageId": "44bead94-eb8a-46c8-abb7-f55e99fb8e28",
+      "messageName": "issue-credential",
+      "messageType": "https://didcomm.org/issue-credential/2.0/issue-credential",
+      "protocolMajorVersion": "2",
+      "protocolMinorVersion": "0",
+      "protocolName": "issue-credential",
+      "role": "sender",
+      "threadId": "ba17e7c5-74e0-46e5-8862-7f433e201286",
+    },
+    "type": "DidCommMessageRecord",
+    "value": {
+      "associatedRecordId": "e04ca938-64e1-441e-b5d9-4525befe4686",
+      "createdAt": "2024-02-28T09:36:31.458Z",
+      "id": "de893e30-a2f3-458e-b8ec-aaca324c0806",
+      "message": {
+        "@id": "44bead94-eb8a-46c8-abb7-f55e99fb8e28",
+        "@type": "https://didcomm.org/issue-credential/2.0/issue-credential",
+        "credentials~attach": [
+          {
+            "@id": "e5c0d797-67f3-4d1d-a3e1-336786820213",
+            "data": {
+              "base64": "eyJzY2hlbWFfaWQiOiJkaWQ6aW5keTpiY292cmluOnRlc3Q6NkxIcWRVZVdEV3NMOTR6UmMxVUxFeC9hbm9uY3JlZHMvdjAvU0NIRU1BL3Rlc3QwLjE1OTkyMjE4NzIzMDgwMDEvMS4wIiwiY3JlZF9kZWZfaWQiOiJkaWQ6aW5keTpiY292cmluOnRlc3Q6NkxIcWRVZVdEV3NMOTR6UmMxVUxFeC9hbm9uY3JlZHMvdjAvQ0xBSU1fREVGLzQwMDgzMi90ZXN0IiwicmV2X3JlZ19pZCI6bnVsbCwidmFsdWVzIjp7InRlc3QiOnsicmF3IjoidGVzdCIsImVuY29kZWQiOiI3MjE1NTkzOTQ4Njg0Njg0OTUwOTc1OTM2OTczMzI2NjQ4Njk4MjgyMTc5NTgxMDQ0ODI0NTQyMzE2ODk1NzM5MDYwNzY0NDM2MzI3MiJ9fSwic2lnbmF0dXJlIjp7InBfY3JlZGVudGlhbCI6eyJtXzIiOiI4NTY3NjYyMzQ4NDI3NzYyNDY4MjQ0NDgyMDQ0NDcwMjQ2NzQ5OTM1NzkxMDI3NDE2NTAxMzQxODM3OTEyNTEzNDA3NTMyNTU0MzcyOSIsImEiOiIyOTA3ODU4MzAyMzY0NDcyMzQxNzI1Njk2Mzk1MTgzNDc2OTQyOTU0NDg5MzU2MTMxMjYwODA0MTk5OTAzOTcyNTc3OTA0NTQ3ODk1NzY2NTYxMDUzOTM0NTY2OTI0OTAzMzY0Mzg0NTg3MTMxMDYzODIwNTM1OTgyNzkxMzM0NTUzOTg5MzYwNDc4NDE3MjIyMTE3Nzg3NDE1MTg2NzMyMzc4OTc4MzM1MjA2OTg1ODExNDY3NzA2MjM4MjMyOTIwMTk0MTMzNjExNDY0MDA5NDQ0ODk4MjQ5MjU0ODYyMTc0NTQxODE0MDI4NzUyMzM1ODQ1NTc5Njk4NTQ1MjI5MjYwMzgxNDA1MDYxMzAyMjQ5OTIwNjM1MDQ4MTk2NjQ1MDk0OTE0Nzc5ODYwNzI0ODM2NzM5MzAyMjQwMDg3MTM4OTQ0MTk4NTQ4MzI1MTk5NTY2NjExMDA2ODQzMTM1NjEwMjQyMDA2OTQ1MDIzMjcxMjM3MDQxMDA3MTAzODUyOTIzNzMzODU5MDAyMjI1NTY3NTQ1MTE0ODM2MjYwMDcyNzU4NDk5NDY2NTE3NzI4NTg1MzA4MTc5OTY4MzYyMzY3NDI5MTYwMzY0MDMxNDczMzY2NjQ2ODkxODY2NjE3NTEwMzYyMjgzMTYwNDQwMjIxNTMyMjI4OTUwOTU5NDE1Nzg3NTIxMjQwNjU4NDU1ODk3MzY4MjMyNzEyNzUzMjgwMzM3MzQyNDU3NTIzMDk0NjcyMTUyMTk2ODY4MDA3NTYwODE3ODU4NjE2NTU2NTE2MjkzMjY0MzM3ODIzNjQyODQwMzMzMSIsImUiOiIyNTkzNDQ3MjMwNTUwNjIwNTk5MDcwMjU0OTE0ODA2OTc1NzE5MzgyNzc4ODk1MTUxNTIzMDYyNDk3Mjg1ODMxMDU2NjU4MDA3MTMzMDY3NTkxNDk5ODE2OTA1NTkxOTM5ODcxNDMwMTIzNjc5MTMyMDYyOTkzMjM4OTk2OTY5NDIyMTMyMzU5NTY3NDI5MzAxMDM5MjcwODI5MzQzMDYyMDQxODk0NTM5MTQ4NTQ1Njg2MzMiLCJ2IjoiMTAxMTMyNDY1OTQ5MTk5Njg2OTQyNDM3NDkxNTA1MzM0MjEyNTE5MDMyMTI1MTYxNzYyODA0NTA5NDQzNDM1NjQ0MzExMDk1MDU5Mzg4NDE4OTE2MjUyNDc2NjczNjQzNzk0MTIxMjk0MDU0MDUzNDg0NzcwOTU2MTAwMDI0MzM1NjgzNDc4NTY1MDkxNTk2MTEzMzU3NTg4MTg3NTY5MjY4MjUwNjM1NjA3NzAzMTQ4NzMxNTE5MDg5NjQwMDAwNDQzNjA1MzM5OTQ4MzM1MTc4Nzg5ODcxNDEwMTYyOTA1NTA2OTM0MDc0OTQxMjE4NjY4NjA1ODgwMTc3MjEyOTQ4NjYxNzc5MTI0MzI4NDA1MjgzMzIwNjU2NDQzMDg2ODk1MDY0NDQ3NTMwMjI4NTgzODE1OTg3ODk0NzYxMzcwMjg0ODExMjIwNTY2NTgxNzM2NzQwNzY1NzUyNzIyMTE3MDEwODEzODkyMTE5MDE1NzAyNDI1Njk3OTg4NzQwNjIzMDA4NDQzOTY4MTQ5NDAwNjk3ODI2NzMzNjg5NzU0ODYwNjk4NzIwMjkzMjI3ODU3NjU3NzM0MTc5ODEyOTQ2MDkwNTU0ODE3MDcyNjQ4NDgwOTA4MTg4NTI4NDY4MjAzMzM2MDEyMzY2OTUyNjUyODgwNDY5NjUwMTEzODU1NjQ4OTc0Mzk0NzU4NjM5NjUwMjM0NzY0Mzk5OTQ5NjMyNzk3NTYwMzc4NDU2NDIzNjc4NDM1NDIzMDUwMzg4MDU0NDEwMzg3NjIyMDEzMTYxMDc2OTEwOTQ3MjI3Mzk3NDQxMTgzMDA0NDM3MTI0NDU1Nzc0NTI1NzIwMDcxMjg4MjA5NDY2OTcwNDQwNDk3MTY1MTE1MTQ1OTc3NDM5MjkxNDI3MjgyNzI2MTAxMzAwNTg0NTU3MjYzNzMzNDY0NzA3NzA0NTk0NTQxODgzNjE0MTA3MzIwNDIxNDM3MjMxNzY5MzM2NDcxNTE3NjgyNzg1NDk3OTA1MzAzODM4ODk0ODM2NjE3NjU0MTc3Mzk3MDEwOTQ1NDI5ODU0NjM1NzAyODgwNDA3NjkyOTAxNjQzNTEifSwicl9jcmVkZW50aWFsIjpudWxsfSwic2lnbmF0dXJlX2NvcnJlY3RuZXNzX3Byb29mIjp7InNlIjoiMjE0NzgwNDA1MTAyNzUxNzA2MTIzMzc5MTYwODIxMTUzMjkwMDU5MjQ3MjkxNjAxMzg3Mjg1MDA3MzE5NjY2ODk3Njg4NjQ4NzYzNTAzMTQxMjc1ODIwNjUyMjIwNzAzNTg0NTMwOTEzMjY1NTc0NzYxMzI2NDA1MTI5MTUxNjQzOTM0NjkxNjI0MDAyNDE1NTU0ODY0NjUwMzEzNTIxMjczMDk2MTc4NjMwOTY2NDI2ODU0NzE1Nzk3MzYyNzk3NTM0ODM3OTE4NDUzOTQxMjAwNTIwNTI4NTA1Nzk3NjEwOTcwNTk3Njc2Mzc2NDE2MjA2MzcyNDYyNzU5NjcyNTE2NTYyNDE5Mzk0NDk5OTk3Mjg5MzQzOTg0MDE3MjM5OTg1MjA3OTg4OTYxNzc5NDU2NTAzODg3Njk2MzA3MjE3NzczNDI2MjMxMDU0MTc1NzYzNzgzMDA4MDIxMzgyMDU5MDY1OTU3MjI2NDg3OTkzOTk3MjI5OTg3NTgzNDU1ODE5NTI4MTA4Nzk2MTIxNzA2MjY0MTc4ODI1MDM5NTA2MzkzODk3MTc5NDk5Mjc5OTUzODYwODY1OTUzNzA3NjQyNTkxMDY0ODIyMjg4ODg1NDE5MjMyMTc1NTYwMzIwMDczNDgzNTg0Mzc3NDUxMDMxNTA2NDQ0NTcwNzQ1MTEyNTYxNjIxNzMzNjY1NjE2MzU0NjUxMzE0MjI3OTgzNjEyODM2NjkwMzgwNDg4MDY4NDk2MTkzMzc4OTUxMjY2NDI0Nzg2MzIxODY1NjYyOTMyNTM1OTc4MjY4NDgxMzQ0MzQ4NDQ5NzkiLCJjIjoiNzE1NzQ0NjIzMTA1OTU5NjM4NDg4ODk3ODU3NTYwNzIzOTYxMDE5NjE5MjIwNTc2NTkyMTgyMjc4NDk3Mjk4NjE4MzQzNTU4MDAyMDEifSwicmV2X3JlZyI6bnVsbCwid2l0bmVzcyI6bnVsbH0=",
+            },
+            "mime-type": "application/json",
+          },
+        ],
+        "formats": [
+          {
+            "attach_id": "e5c0d797-67f3-4d1d-a3e1-336786820213",
+            "format": "anoncreds/credential@v1.0",
+          },
+        ],
+        "~please_ack": {
+          "on": [
+            "RECEIPT",
+          ],
+        },
+        "~service": {
+          "recipientKeys": [
+            "xaRkB1mi5rQxihB5T2pAyx3m54fuT65nq9C1mjVNdZy",
+          ],
+          "routingKeys": [],
+          "serviceEndpoint": "http://localhost:2001",
+        },
+        "~thread": {
+          "pthid": "9cf43eb2-2690-4bbc-8e29-7ece0acf9349",
+          "thid": "ba17e7c5-74e0-46e5-8862-7f433e201286",
+        },
+      },
+      "metadata": {},
+      "role": "sender",
+      "updatedAt": "2024-02-28T09:36:32.927Z",
+    },
+  },
+  "e04ca938-64e1-441e-b5d9-4525befe4686": {
+    "id": "e04ca938-64e1-441e-b5d9-4525befe4686",
+    "tags": {
+      "connectionId": undefined,
+      "credentialIds": [],
+      "parentThreadId": undefined,
+      "role": "issuer",
+      "state": "done",
+      "threadId": "ba17e7c5-74e0-46e5-8862-7f433e201286",
+    },
+    "type": "CredentialRecord",
+    "value": {
+      "createdAt": "2024-02-28T09:36:04.294Z",
+      "credentialAttributes": [
+        {
+          "mime-type": "text/plain",
+          "name": "test",
+          "value": "test",
+        },
+      ],
+      "credentials": [],
+      "id": "e04ca938-64e1-441e-b5d9-4525befe4686",
+      "metadata": {
+        "_anoncreds/credential": {
+          "credentialDefinitionId": "did:indy:bcovrin:test:6LHqdUeWDWsL94zRc1ULEx/anoncreds/v0/CLAIM_DEF/400832/test",
+          "schemaId": "did:indy:bcovrin:test:6LHqdUeWDWsL94zRc1ULEx/anoncreds/v0/SCHEMA/test0.1599221872308001/1.0",
+        },
+      },
+      "protocolVersion": "v2",
+      "role": "issuer",
+      "state": "done",
+      "threadId": "ba17e7c5-74e0-46e5-8862-7f433e201286",
+      "updatedAt": "2024-02-05T22:50:20.522Z",
+    },
+  },
+  "f189e88c-4743-460a-bccc-443f2a692b98": {
+    "id": "f189e88c-4743-460a-bccc-443f2a692b98",
+    "tags": {
+      "associatedRecordId": "8df00782-5090-434e-8f34-96d5e484658a",
+      "messageId": "a1ec787c-8df6-4efe-9280-6b4407db026e",
+      "messageName": "offer-credential",
+      "messageType": "https://didcomm.org/issue-credential/2.0/offer-credential",
+      "protocolMajorVersion": "2",
+      "protocolMinorVersion": "0",
+      "protocolName": "issue-credential",
+      "role": "receiver",
+      "threadId": "ba17e7c5-74e0-46e5-8862-7f433e201286",
+    },
+    "type": "DidCommMessageRecord",
+    "value": {
+      "associatedRecordId": "8df00782-5090-434e-8f34-96d5e484658a",
+      "createdAt": "2024-02-28T09:36:11.829Z",
+      "id": "f189e88c-4743-460a-bccc-443f2a692b98",
+      "message": {
+        "@id": "a1ec787c-8df6-4efe-9280-6b4407db026e",
+        "@type": "https://didcomm.org/issue-credential/2.0/offer-credential",
+        "credential_preview": {
+          "@type": "https://didcomm.org/issue-credential/2.0/credential-preview",
+          "attributes": [
+            {
+              "mime-type": "text/plain",
+              "name": "test",
+              "value": "test",
+            },
+          ],
+        },
+        "formats": [
+          {
+            "attach_id": "d6883b94-7a6b-4fe7-9ddc-98b23c46c478",
+            "format": "anoncreds/credential@v1.0",
+          },
+        ],
+        "offers~attach": [
+          {
+            "@id": "d6883b94-7a6b-4fe7-9ddc-98b23c46c478",
+            "data": {
+              "base64": "eyJzY2hlbWFfaWQiOiJkaWQ6aW5keTpiY292cmluOnRlc3Q6NkxIcWRVZVdEV3NMOTR6UmMxVUxFeC9hbm9uY3JlZHMvdjAvU0NIRU1BL3Rlc3QwLjE1OTkyMjE4NzIzMDgwMDEvMS4wIiwiY3JlZF9kZWZfaWQiOiJkaWQ6aW5keTpiY292cmluOnRlc3Q6NkxIcWRVZVdEV3NMOTR6UmMxVUxFeC9hbm9uY3JlZHMvdjAvQ0xBSU1fREVGLzQwMDgzMi90ZXN0Iiwia2V5X2NvcnJlY3RuZXNzX3Byb29mIjp7ImMiOiIxMDk0MzkxMjM2ODU1Nzg0MTgzNDIyMDY2NjI2MzE2OTQ4ODQ1ODMwNzA0MjY0MjUzNDUyMTkwNTAxMTM2ODIyNTcwNTY0MTIzMzY4NDAiLCJ4el9jYXAiOiIyMTk4OTc3Nzk0MzA1NjU5NzMwNDk2MDU0MjM4NDE4OTYxODUzMDEyMTgzODgxODQxNjk4NDUwMTY2ODU5MTA1MDg1MDY0MzIzNzcyMjE3MDUxMDQwODYwNDcwODY0NTM1MDI5Mzk2NTY4Njc0ODkyNzg4Nzg5MTIzNTU3MzE2MTkwNjAyNjczMTczODM0NDUwNjcxMjA2ODA2MjYxOTg2Mzc3NjE1NTc3MzU4MjI0MTM4NDc1OTExNjgyOTQ2MTAzOTkzODg5MTIxODMyNjExNTg4NDc0NzUwMjIxNTQ3MjcwNDAyMjUwMTIyMjc5ODcwNDQ4MDA3OTgwMjQ0NDA5OTc5NDgyNDg1MjU2MDk3OTY4ODQyNDg3ODM2MzMyNTA4MjA0OTIwNjM3ODE0NDMyNDczMjg0NDc0MzQzNzQ3Njg0MjI2MTMxMjAwNjQyMDI3NjQ2NjMwMzkzMDE4MTk1NTAzOTQ3MjkxNjA0Nzg5MjM5MTY3ODUwNjA5Mzc3MTE4NjA3NjUwMzE0NTYyOTk3MDc2NjQ3MDUzNzcxNzgxMjAwMTAxNjExOTc2MTI4ODY5OTE0NTM0NzQ5MDc0MDc3NzcyOTUzMjkzNjMwMzMyMDc5MTk4MzAxNjMwNTY3MjQ3Mjc0OTY5MTM5ODI2Nzc2NTM2NzEwMTgxMjQ3MDY2NDE4OTY1NTQyNDY5MjMyMDkxMDYwNjI4Njc0MTM4OTgwMDcwODE0Njg1OTMyMjg0MzIyMjMzMDQ3NjQ2NTkxODc3NjkyODgyMTM5ODQ4MzgxNjQxMTg1ODE1ODAxMDg0OTM5NTk2NzMwMTYxMjA1MDg2MzMzNzgwNjI5OTEyMTc1NDA0ODQ2MDk5MTI5MjY0NjM3ODA2MjQ3MzE2NzU2NTg3NDI5MjEwNjkzNDM5NTQyMjEzNzI2IiwieHJfY2FwIjpbWyJtYXN0ZXJfc2VjcmV0IiwiMTA4NjM5NjM3NDg4MzU1Nzc0MDI5ODE3OTk0NDkxOTE1MjIyMzc2ODk2NzQwMjM0MDk3MzI0NjcwNzU3NDQ1NjQ0OTAxNTk2NjUwMjk1MDc3NjM0Nzk0Mzc5MzMwODUyNzUxNjQwODk5NjYwMDUwOTY5MDUzNDYyMjcyMzQ5MTEzNjYxOTg3NzMxNDQ3NDMzNTIzNTc0OTc5NjYyMzE0MTAxMTI3Njc5MTAwNzcwMjY0NDMxMTIxNjYzMzMyMTQ2MTU4NzM3MzU0NTk0MDM1NTM1MjI5Mzc4MjU3NzUyOTAwMzA3Mjg3NjQ4NzcwOTU4NTg5ODg1NzA3NDEyOTgzNzYwNTE2ODk0NzkzMTE3NTQ5Nzc3Njg1NTg0MjQ3MzQ1ODMxNzk2MjUzMzQ1MDk1NzIyODU4NjM4MjAxMjgxMjIzNDYyOTg2NjE2MjYzNzIyMDk1MjMxMjg0MTgzMzM3ODYwODQ2Njc5Njg5ODM2MTM4NzAxNjE4MzI1MDAyNTM5NjczNzM4NjUwMTMxNzMzODIzNDk0Mjk5MzQzNDQxNjc5MzM1MTQ5NTIwODQ4Mzg4Njk5MTk5ODA1NTk4MTAzNTk0NTk4OTE0OTkyOTI2MDMzNTA0MzAxNTY5MjMwODYyMzc3NTg5ODg2OTYyMDIxOTIxODM3ODI3MDYyNTI0MzIzMTg3OTcwNjg0MzIxNzY0MzcwMzc4NDc0Mjc4MzA4NzMzOTY4ODgzNTMyNzM2MTE1NTQ3MzA0MzU4ODgyMzc1Njc0MTQwMjEzNzc1OTE1OTU3NzU5MTM3NjUwMjY0Njg3OTUzMTk4NTE5OTY0MDcyMzEwNDY3OTA2Njk0OTQxMzM4NDAzNDg4NTYyMjgxMDE5MTQzMDk5MTE0NjM3MTY1OTI2MzQxOTY4NTk3MjE4MjU3OTU5OCJdLFsidGVzdCIsIjcwMDE5MTUyMzc5MTExNTQzNzgwOTgxNTYyMDU5OTYzMDYzMzg4ODg5NDg1NjkxOTM5MzM3NzgxNjkwNTU3NjA5MDA4MTA2NjY5NzAwNjA3MzI1OTAyNjQyMzA4NTIzMDc5MjA3NjEwNTU1MjQ0NTY0MjkwNzc5ODA5Mzg5ODEzNTI0OTc5MzE5MTg4NDI0NzIwNzUxMjQwMzQ3NTY0NTQ3MDY2NDE1NTE3MzU5NjUxODU1NzU3MzY4NDcxOTM5OTk3NjY1MTk5NTE4OTQ2ODMzMDY1MTMyNjYxMDI4Nzc5ODg1NDQ5ODMwMzg1MTA3MzUxOTgxMDM1NTAzMzM1MDg0NjgxMDQ4MzE0NjQzMDQ4NzIwMzQxMzk0MjI5NTEyNDcyNDY0NjUwNDI3NDA4NTI5ODkwMzg1ODc1MzkzMjA0ODExMTUwODgxNDA4NzY3NTMzNjI1MjU4MDUwNDc2NzU2NDIyMzk5NjMxNjA5NTU2MjI0NjQ1Mjg5NDM0Mjk3NDkwMzg0MzYwNDM0Mzg4MDU1NDAxODgyNDIxNDU1OTI0NjQxMTUwNjQ1NTkzNzUwMjQ2MTI4NTYzNzMzMzgzMzQ2MTYyNjYzNjE5MTYyMzIxMDM3MDgzNTcxNzc0MzQ5MzYwMTcxNzkwNzUzNzYyMDI3NTczMDc0MDI1NTgyOTQyODk4MzMwMTY3NDY0MTExNjA1MTMxMjk5MDE2MjQ5MzU2MDY5MjM3OTAzNjAyNjgwMjMwNzgzMjg0MDIwOTMxMjY3MDkzNTE1MzU3MjQ1MDEwOTI0MTI2MTIyNjUwNTM1MDI5MjIxMzY2NzA5NTI2NjY1Mjc5NzIyMDg0NjI0MzQwOTkyODQ4NDU0OTgxNTExOTIwNDE4NzM2NTE1NjIxMTgxNjkxMzcyNDE5ODU2OTg1NDkzMSJdXX0sIm5vbmNlIjoiOTczNDk4MTg3NTMwNzE2MjQ3MDE5NzU0In0=",
+            },
+            "mime-type": "application/json",
+          },
+        ],
+        "~thread": {
+          "pthid": "9cf43eb2-2690-4bbc-8e29-7ece0acf9349",
+          "thid": "ba17e7c5-74e0-46e5-8862-7f433e201286",
+        },
+      },
+      "metadata": {},
+      "role": "receiver",
+      "updatedAt": "2024-02-28T09:36:11.829Z",
+    },
+  },
+}
+`;
+
+exports[`UpdateAssistant | v0.4 - v0.5 should correctly add role to proof exchange records 1`] = `
+{
+  "3f3351dd-7b56-4288-8ed7-b9c46f33718e": {
+    "id": "3f3351dd-7b56-4288-8ed7-b9c46f33718e",
+    "tags": {
+      "associatedRecordId": "a190fdb4-161d-41ea-bfe6-219c5cf63b59",
+      "messageId": "9e1568e0-7c3e-4112-b76e-869ea9d12f06",
+      "messageName": "request-presentation",
+      "messageType": "https://didcomm.org/present-proof/2.0/request-presentation",
+      "protocolMajorVersion": "2",
+      "protocolMinorVersion": "0",
+      "protocolName": "present-proof",
+      "role": "sender",
+      "threadId": "a2f120ce-ff0f-498a-a092-97225e5d5f68",
+    },
+    "type": "DidCommMessageRecord",
+    "value": {
+      "associatedRecordId": "a190fdb4-161d-41ea-bfe6-219c5cf63b59",
+      "createdAt": "2024-02-28T09:36:44.806Z",
+      "id": "3f3351dd-7b56-4288-8ed7-b9c46f33718e",
+      "message": {
+        "@id": "9e1568e0-7c3e-4112-b76e-869ea9d12f06",
+        "@type": "https://didcomm.org/present-proof/2.0/request-presentation",
+        "formats": [
+          {
+            "attach_id": "f8e75054-35ab-4f7a-83f8-0f6638a865b0",
+            "format": "anoncreds/proof-request@v1.0",
+          },
+        ],
+        "present_multiple": false,
+        "request_presentations~attach": [
+          {
+            "@id": "f8e75054-35ab-4f7a-83f8-0f6638a865b0",
+            "data": {
+              "base64": "eyJuYW1lIjoidGVzdCIsInZlcnNpb24iOiIxLjAiLCJub25jZSI6IjExMTUyNTQ2NTQwNjU3ODkyNDY4OTA3MDUiLCJyZXF1ZXN0ZWRfYXR0cmlidXRlcyI6eyJ0ZXN0Ijp7Im5hbWUiOiJ0ZXN0IiwicmVzdHJpY3Rpb25zIjpbeyJjcmVkX2RlZl9pZCI6ImRpZDppbmR5OmJjb3ZyaW46dGVzdDo2TEhxZFVlV0RXc0w5NHpSYzFVTEV4L2Fub25jcmVkcy92MC9DTEFJTV9ERUYvNDAwODMyL3Rlc3QifV19fSwicmVxdWVzdGVkX3ByZWRpY2F0ZXMiOnt9fQ==",
+            },
+            "mime-type": "application/json",
+          },
+        ],
+        "will_confirm": true,
+        "~thread": {
+          "thid": "a2f120ce-ff0f-498a-a092-97225e5d5f68",
+        },
+      },
+      "metadata": {},
+      "role": "sender",
+      "updatedAt": "2024-02-28T09:36:44.806Z",
+    },
+  },
+  "423586ec-1f01-458c-bc83-7080c7c90173": {
+    "id": "423586ec-1f01-458c-bc83-7080c7c90173",
+    "tags": {
+      "associatedRecordId": "6cea02c6-8a02-480d-be63-598e4dd7287a",
+      "messageId": "b62d95a7-076c-4e38-ba1f-9d0d8d51677d",
+      "messageName": "presentation",
+      "messageType": "https://didcomm.org/present-proof/2.0/presentation",
+      "protocolMajorVersion": "2",
+      "protocolMinorVersion": "0",
+      "protocolName": "present-proof",
+      "role": "sender",
+      "threadId": "a2f120ce-ff0f-498a-a092-97225e5d5f68",
+    },
+    "type": "DidCommMessageRecord",
+    "value": {
+      "associatedRecordId": "6cea02c6-8a02-480d-be63-598e4dd7287a",
+      "createdAt": "2024-02-28T09:37:01.712Z",
+      "id": "423586ec-1f01-458c-bc83-7080c7c90173",
+      "message": {
+        "@id": "b62d95a7-076c-4e38-ba1f-9d0d8d51677d",
+        "@type": "https://didcomm.org/present-proof/2.0/presentation",
+        "formats": [
+          {
+            "attach_id": "21f8cb0f-084c-4741-8815-026914a92ce1",
+            "format": "anoncreds/proof@v1.0",
+          },
+        ],
+        "last_presentation": true,
+        "presentations~attach": [
+          {
+            "@id": "21f8cb0f-084c-4741-8815-026914a92ce1",
+            "data": {
+              "base64": "eyJwcm9vZiI6eyJwcm9vZnMiOlt7InByaW1hcnlfcHJvb2YiOnsiZXFfcHJvb2YiOnsicmV2ZWFsZWRfYXR0cnMiOnsidGVzdCI6IjcyMTU1OTM5NDg2ODQ2ODQ5NTA5NzU5MzY5NzMzMjY2NDg2OTgyODIxNzk1ODEwNDQ4MjQ1NDIzMTY4OTU3MzkwNjA3NjQ0MzYzMjcyIn0sImFfcHJpbWUiOiIyNDc2MzE0OTMxMzE1OTU5ODY1MzU1MjgzMjM1MjkxMDc4MDM0NjAzMjcxMjQzMTEwOTQ3OTM0NDU3MzAyMTUwMjY5NDIzODkyMDYzODk2OTkzNzgxMDQwMDQ2NzI1MzIyNjE5Nzg1MzU2MTgxMjU0NDAxOTIzMzk4NjYyNzMyNjI3MjU3MzA5MDgxMjA3NjY2ODI5NDc0MDY5MDA2NjY5NDk3MTI4NzI1ODA4NjExOTAwMzQ0MTIxOTUwODc0NjYzMTEwNjE0NTc2ODc2NjQ2NTM2NTcxOTkwMjM5MDg4NTIwNjAyODY1NzM5MDM5MTAxMjI3NDY3Mzk5NzE3ODc3MDc4ODA0NzM5NDYyOTkzMjg5OTc4NjM2NDQxNzg2MTE2OTM4MzkzMzIzMTMwNDQwNDgzNDI5NjY1ODczNTE2NTA4ODA2MzA5MTMzODMxMjkxMzM5NDg1NDIyMzg1MDE1MzY3Nzc1NDc3ODkwNjQzMzg0MTYyODk5MDA1NzA0MjMxNzM1MTg2ODE5OTEwNTc2MDU0NjIzODkzOTk0MDkyNTA4MjU4ODgzODQ0MjkzMTkxNzY2ODQyNzg1ODA4NzY3MDQ1NDE3MTQ3NDc3NDQwNTk4MTk2NjM5OTA0NTQxNjE2MDY2MTYyMjYxNzE5MTUyMTYzNDk5ODEzNDc3NjM2MzE2NDgwNzQxMzI3OTg3OTk2NTk5MTc2OTc1MzQzNzUzOTgyOTMyMzA2NTA4MzQ3ODMxMjM2NjA1ODc2NTkwMDI3NDI5MDY0ODg0NzU5NTc4OTY2MjY5NzcxODQxNDUzMTI1NjYzMjgxOCIsImUiOiIxMzI4MDA2MjE3OTg5NjIzMjUyNTQ2MzQwNDE2MTAxMTcwODY0NTM4NDQwNzEzNzczNDE4NjA5ODU2NDE3MjI2MTg1NTQxMzE3NTk4MTQ0NzQ2Nzg1MDQ2NDcxMjA2MTUzNzY2NjU3NjQwNzEyNDc1ODY3NjMwOTE4NTIwMzY4MTE1MDQ3NTEzNDQiLCJ2IjoiNTgyMDc2NDI4NzI3NjQwNjY3ODA5ODkxNTI4MDIyMzQ0NjYwMDU4Njg1MTkxOTUwODIyMTExMzgwMjU1MDcxMTAwNzE3NzM5MzE0MTQxMzkxMTYxOTU5NTg2NDk0ODE2Njg5OTg2NTc0NDk1NzExOTI4OTEzODcwNjEwMDE1NjE3NTYxOTI5NjQzMjY5NjM2ODEzNTk4NjgwMTAyMDQ4NDYzNjk1NjgxMDIzNDI5MTM2NDI2NDgwNDEzNzI2MzEyNzMxMTczODE2NjI3MjExNzEyMTQzNTg4OTgyMDM5NTk5Mjg0NTgzNDI1MjE3MjI1OTg0NjcxNjYxODcwNzY4NzMxNjYyODE2MjMzOTUzMDg2MzYyMDA5NDA0OTQ3NTQxOTY5OTAwNzcxODA1NzI0NTUwNTQ1MTczOTg5MDI2NjAwNzk3ODkwMzc1MDE5OTQ4MjM3OTA2NjY1MTA5MTY0NDIxNDQ1MTEwMTQ0ODYyNzEzNjY1NjA0MTkwMzY1NTQzNjM3ODY4NTc1MjI1OTA2MTMyNjk5MTc0NzcxMjMzNDkzOTUzODc5MTQwMjQwNDIxMzY5NTA3MDU3MTgwMjA5NTM1NzEyODI1NzI2NDkwODkxMDE2OTUyMDkzMzc5MTMyMjI3MzMzNjg2OTEyMDE3MTEwMDM5ODcwNTc3MTMwNTA4ODQ2MDM2Mzc0MzYxMzE1MTQ3ODgwODA4NzkyNjQ0MzU2Mjg4NzgwNjQ4OTUyNDQxNzkyMDU0NDY4ODU2NjY1ODg0MTg1MzYyNDM4Mjk1NTcxNjAyMjk5MTA5MjA4ODg5NTU2NzE3ODc5NzI4NDUzMjk5NDI0MTQwMzc1NTU1OTQwNjUzOTAxOTIzMDE5NjQyNjU4MzI0NDU0MzU0MDk5MjU4ODczODY2NjY2MDg2MTYwODA5NTExNDYwOTQzMTAzNzEwMDk5MTU3MzExMDM3OTAwODIwOTI1ODYwNTYyMzE4NDc0MDc3NTQ3NTg2MTUxODg0NzEwOTU2Mzc0MzUxNDI1MTQzMjA2MjI3ODk0MzE5NjM2MDc4MDQyODU5NTMyOTU3MTk0MzYwNDYzNTIyODg5MDM1NjUyODAyNjk5MjUyNDkzMDcwNjA0ODgwMjY0NzA4MDg1MDAwNzczODUzOTQyMzg0ODQ2MDY5NTYwMTYzMjE0MzUwODM0MTcwODU4OTU3OTUzOTc5NDg3MTk3NDY0NjY0MDU1IiwibSI6eyJtYXN0ZXJfc2VjcmV0IjoiMzg0ODM0OTE0MjE1Mjg5MjAyNTM1MTM4ODg1MzgzNjAwNzAyNjMyNDQzODE4NjkzMzA2OTYzMjM4ODMwMDE1ODgwMzU2MDQ2NjMwMjMwNTc3MDU3NTQ2MjY0MzkwNzk2NjQxODg5NjMzMTkwMzUzMTcxOTUzNjAwMDAxOTM2NDE1NzM5NDcxODExNjQyMDQ2Mzk0MjEyODk3OTE3Nzg4NDQ4MzMxNTU0NjA5MTA1ODU3NSJ9LCJtMiI6Ijc3OTk1NzIwMTQ1NDU5ODMxODM2MjI3NTA2NTM4NDQxNjUxMDI3NDA0NDM5MTcyMDQwMDc5ODc3NDUyMDI2NDI5NTgxNjMyNDYxNjg5NzIzMzkwMjU4NDc5NDY5MTg4Mjk4NzgwMTgyMDkzNTMxMDc3NzkzNjEzODUwMjAwNzc1NjIzMDcxMjk4NTI5ODExOTk3OTkyMTEzODUxODM5MjcyMjExMTQ5NDEzNTY3OTEyMzIifSwiZ2VfcHJvb2ZzIjpbXX0sIm5vbl9yZXZvY19wcm9vZiI6bnVsbH1dLCJhZ2dyZWdhdGVkX3Byb29mIjp7ImNfaGFzaCI6IjQ1NTgyNDIzNzE0NzIyNTkwODQ4NDgxOTM4NTYxNDU3MTcwNjI4NzAzODk4OTI1NTU2OTE0Mjc3NDU5MTU4OTM3Nzc0NDA3NDgxNzIyIiwiY19saXN0IjpbWzE5Niw0MSwxMTYsMzIsNDIsMTgsMjUsMTA3LDE1MCwyMzcsMTMsNjksMTIyLDEyOCwyMDcsNDYsMjQsMjE2LDYxLDg4LDE1OSwyMjMsMTQyLDE2MiwxMDksMTMwLDIyOSwyNDQsNjIsMTEzLDUsMTIxLDU5LDE1NiwyMTEsMTUwLDEsOTMsNTUsMTI4LDI0MywyMzgsODAsMTgxLDEyMSwyMjcsNzgsNzQsMzAsODIsMTQ0LDIwNSwxNzIsODEsMjQxLDE3NSwxNCwxNjIsNzMsMTk0LDY0LDE3NSwyMzEsMTM3LDI0OSwyMzcsMjMyLDE1MiwxOTMsMTAzLDEyNiwyNTMsMTI1LDE4MSwyMzUsMjMzLDEwOSwxNzQsMTcwLDE2OSw0MiwyMzEsMTYsMjI0LDIwNiwxNywxMzMsODEsNDYsMzUsNzAsMjE1LDM3LDI0MCwxNTUsMTQzLDE2MCw2OCwxOTksNzgsODgsMTksMTE0LDEwNywxMDYsMTUzLDE0MywxNjcsNDUsMTE2LDE2Myw1Myw2MSwxMTAsMTg5LDIzMCwxNTUsMjM1LDIzMywxNSwyNDEsNzUsMTM4LDEwNyw3MCwyLDk1LDE4NSwxMzEsMTI5LDEwMSwyMzksMTk1LDY3LDE4NCwzOSwxMDMsNDcsMTYwLDEzMSwyMTUsMjQ3LDIwNywyMywxMDYsMTkwLDE0NCwwLDEwLDM3LDEyNSw5MSwxMTQsMTI0LDEyNSwxNDgsMTU0LDE1NSwxNzUsMjI1LDI1MywxMzgsMjA5LDE2OCw3NywxOTYsNDIsMTgwLDEzMywxMTEsMzgsMTUzLDQzLDE1OSwxOTUsOTMsODAsNDMsMTMzLDg3LDE5NCwyNDcsMzgsNDAsMjE1LDE3OSwxOSwyMSwxMTcsNywxNDAsMjE3LDQwLDM5LDY2LDE3LDkzLDM3LDE1Miw5MCwyNDQsMzcsMTQ4LDk3LDE3NCw1OCw2NCwxNjYsNzAsOTAsMzYsNTUsMTEzLDIxMCwxODQsMjE0LDk0LDQ1LDEyNCwyNDEsMjM5LDE0OSwzOSwzMyw4OCwxNSwxNSwyNDksNTcsMjQ0LDUyLDIzMSwxOTUsNzUsNjUsNjUsMjUyLDEyMiwzMywyNTUsMjQ0LDE4MiwyLDExOSwyMjAsNDIsNzIsNzQsMTU3LDE1OCwyMTMsMTEyLDg3LDExLDE5NywyNDJdXX19LCJyZXF1ZXN0ZWRfcHJvb2YiOnsicmV2ZWFsZWRfYXR0cnMiOnsidGVzdCI6eyJzdWJfcHJvb2ZfaW5kZXgiOjAsInJhdyI6InRlc3QiLCJlbmNvZGVkIjoiNzIxNTU5Mzk0ODY4NDY4NDk1MDk3NTkzNjk3MzMyNjY0ODY5ODI4MjE3OTU4MTA0NDgyNDU0MjMxNjg5NTczOTA2MDc2NDQzNjMyNzIifX0sInNlbGZfYXR0ZXN0ZWRfYXR0cnMiOnt9LCJ1bnJldmVhbGVkX2F0dHJzIjp7fSwicHJlZGljYXRlcyI6e319LCJpZGVudGlmaWVycyI6W3sic2NoZW1hX2lkIjoiZGlkOmluZHk6YmNvdnJpbjp0ZXN0OjZMSHFkVWVXRFdzTDk0elJjMVVMRXgvYW5vbmNyZWRzL3YwL1NDSEVNQS90ZXN0MC4xNTk5MjIxODcyMzA4MDAxLzEuMCIsImNyZWRfZGVmX2lkIjoiZGlkOmluZHk6YmNvdnJpbjp0ZXN0OjZMSHFkVWVXRFdzTDk0elJjMVVMRXgvYW5vbmNyZWRzL3YwL0NMQUlNX0RFRi80MDA4MzIvdGVzdCIsInJldl9yZWdfaWQiOm51bGwsInRpbWVzdGFtcCI6bnVsbH1dfQ==",
+            },
+            "mime-type": "application/json",
+          },
+        ],
+        "~please_ack": {
+          "on": [
+            "RECEIPT",
+          ],
+        },
+        "~service": {
+          "recipientKeys": [
+            "4jXwJs8iWhNoQWoNhugUuFAKHo6Lodr983s6gHDtHNSX",
+          ],
+          "routingKeys": [],
+          "serviceEndpoint": "http://localhost:3001",
+        },
+        "~thread": {
+          "pthid": "2b2e1468-d90f-43d8-a30c-6a494b9f4420",
+          "thid": "a2f120ce-ff0f-498a-a092-97225e5d5f68",
+        },
+      },
+      "metadata": {},
+      "role": "sender",
+      "updatedAt": "2024-02-28T09:37:03.716Z",
+    },
+  },
+  "6cea02c6-8a02-480d-be63-598e4dd7287a": {
+    "id": "6cea02c6-8a02-480d-be63-598e4dd7287a",
+    "tags": {
+      "connectionId": undefined,
+      "parentThreadId": "2b2e1468-d90f-43d8-a30c-6a494b9f4420",
+      "role": "prover",
+      "state": "done",
+      "threadId": "a2f120ce-ff0f-498a-a092-97225e5d5f68",
+    },
+    "type": "ProofRecord",
+    "value": {
+      "createdAt": "2024-02-28T09:36:53.850Z",
+      "id": "6cea02c6-8a02-480d-be63-598e4dd7287a",
+      "metadata": {},
+      "parentThreadId": "2b2e1468-d90f-43d8-a30c-6a494b9f4420",
+      "protocolVersion": "v2",
+      "role": "prover",
+      "state": "done",
+      "threadId": "a2f120ce-ff0f-498a-a092-97225e5d5f68",
+      "updatedAt": "2024-02-05T22:50:20.522Z",
+    },
+  },
+  "76ad893a-f582-4bd6-be47-27e88a7ebc53": {
+    "id": "76ad893a-f582-4bd6-be47-27e88a7ebc53",
+    "tags": {
+      "associatedRecordId": "a190fdb4-161d-41ea-bfe6-219c5cf63b59",
+      "messageId": "b62d95a7-076c-4e38-ba1f-9d0d8d51677d",
+      "messageName": "presentation",
+      "messageType": "https://didcomm.org/present-proof/2.0/presentation",
+      "protocolMajorVersion": "2",
+      "protocolMinorVersion": "0",
+      "protocolName": "present-proof",
+      "role": "receiver",
+      "threadId": "a2f120ce-ff0f-498a-a092-97225e5d5f68",
+    },
+    "type": "DidCommMessageRecord",
+    "value": {
+      "associatedRecordId": "a190fdb4-161d-41ea-bfe6-219c5cf63b59",
+      "createdAt": "2024-02-28T09:37:13.397Z",
+      "id": "76ad893a-f582-4bd6-be47-27e88a7ebc53",
+      "message": {
+        "@id": "b62d95a7-076c-4e38-ba1f-9d0d8d51677d",
+        "@type": "https://didcomm.org/present-proof/2.0/presentation",
+        "formats": [
+          {
+            "attach_id": "21f8cb0f-084c-4741-8815-026914a92ce1",
+            "format": "anoncreds/proof@v1.0",
+          },
+        ],
+        "last_presentation": true,
+        "presentations~attach": [
+          {
+            "@id": "21f8cb0f-084c-4741-8815-026914a92ce1",
+            "data": {
+              "base64": "eyJwcm9vZiI6eyJwcm9vZnMiOlt7InByaW1hcnlfcHJvb2YiOnsiZXFfcHJvb2YiOnsicmV2ZWFsZWRfYXR0cnMiOnsidGVzdCI6IjcyMTU1OTM5NDg2ODQ2ODQ5NTA5NzU5MzY5NzMzMjY2NDg2OTgyODIxNzk1ODEwNDQ4MjQ1NDIzMTY4OTU3MzkwNjA3NjQ0MzYzMjcyIn0sImFfcHJpbWUiOiIyNDc2MzE0OTMxMzE1OTU5ODY1MzU1MjgzMjM1MjkxMDc4MDM0NjAzMjcxMjQzMTEwOTQ3OTM0NDU3MzAyMTUwMjY5NDIzODkyMDYzODk2OTkzNzgxMDQwMDQ2NzI1MzIyNjE5Nzg1MzU2MTgxMjU0NDAxOTIzMzk4NjYyNzMyNjI3MjU3MzA5MDgxMjA3NjY2ODI5NDc0MDY5MDA2NjY5NDk3MTI4NzI1ODA4NjExOTAwMzQ0MTIxOTUwODc0NjYzMTEwNjE0NTc2ODc2NjQ2NTM2NTcxOTkwMjM5MDg4NTIwNjAyODY1NzM5MDM5MTAxMjI3NDY3Mzk5NzE3ODc3MDc4ODA0NzM5NDYyOTkzMjg5OTc4NjM2NDQxNzg2MTE2OTM4MzkzMzIzMTMwNDQwNDgzNDI5NjY1ODczNTE2NTA4ODA2MzA5MTMzODMxMjkxMzM5NDg1NDIyMzg1MDE1MzY3Nzc1NDc3ODkwNjQzMzg0MTYyODk5MDA1NzA0MjMxNzM1MTg2ODE5OTEwNTc2MDU0NjIzODkzOTk0MDkyNTA4MjU4ODgzODQ0MjkzMTkxNzY2ODQyNzg1ODA4NzY3MDQ1NDE3MTQ3NDc3NDQwNTk4MTk2NjM5OTA0NTQxNjE2MDY2MTYyMjYxNzE5MTUyMTYzNDk5ODEzNDc3NjM2MzE2NDgwNzQxMzI3OTg3OTk2NTk5MTc2OTc1MzQzNzUzOTgyOTMyMzA2NTA4MzQ3ODMxMjM2NjA1ODc2NTkwMDI3NDI5MDY0ODg0NzU5NTc4OTY2MjY5NzcxODQxNDUzMTI1NjYzMjgxOCIsImUiOiIxMzI4MDA2MjE3OTg5NjIzMjUyNTQ2MzQwNDE2MTAxMTcwODY0NTM4NDQwNzEzNzczNDE4NjA5ODU2NDE3MjI2MTg1NTQxMzE3NTk4MTQ0NzQ2Nzg1MDQ2NDcxMjA2MTUzNzY2NjU3NjQwNzEyNDc1ODY3NjMwOTE4NTIwMzY4MTE1MDQ3NTEzNDQiLCJ2IjoiNTgyMDc2NDI4NzI3NjQwNjY3ODA5ODkxNTI4MDIyMzQ0NjYwMDU4Njg1MTkxOTUwODIyMTExMzgwMjU1MDcxMTAwNzE3NzM5MzE0MTQxMzkxMTYxOTU5NTg2NDk0ODE2Njg5OTg2NTc0NDk1NzExOTI4OTEzODcwNjEwMDE1NjE3NTYxOTI5NjQzMjY5NjM2ODEzNTk4NjgwMTAyMDQ4NDYzNjk1NjgxMDIzNDI5MTM2NDI2NDgwNDEzNzI2MzEyNzMxMTczODE2NjI3MjExNzEyMTQzNTg4OTgyMDM5NTk5Mjg0NTgzNDI1MjE3MjI1OTg0NjcxNjYxODcwNzY4NzMxNjYyODE2MjMzOTUzMDg2MzYyMDA5NDA0OTQ3NTQxOTY5OTAwNzcxODA1NzI0NTUwNTQ1MTczOTg5MDI2NjAwNzk3ODkwMzc1MDE5OTQ4MjM3OTA2NjY1MTA5MTY0NDIxNDQ1MTEwMTQ0ODYyNzEzNjY1NjA0MTkwMzY1NTQzNjM3ODY4NTc1MjI1OTA2MTMyNjk5MTc0NzcxMjMzNDkzOTUzODc5MTQwMjQwNDIxMzY5NTA3MDU3MTgwMjA5NTM1NzEyODI1NzI2NDkwODkxMDE2OTUyMDkzMzc5MTMyMjI3MzMzNjg2OTEyMDE3MTEwMDM5ODcwNTc3MTMwNTA4ODQ2MDM2Mzc0MzYxMzE1MTQ3ODgwODA4NzkyNjQ0MzU2Mjg4NzgwNjQ4OTUyNDQxNzkyMDU0NDY4ODU2NjY1ODg0MTg1MzYyNDM4Mjk1NTcxNjAyMjk5MTA5MjA4ODg5NTU2NzE3ODc5NzI4NDUzMjk5NDI0MTQwMzc1NTU1OTQwNjUzOTAxOTIzMDE5NjQyNjU4MzI0NDU0MzU0MDk5MjU4ODczODY2NjY2MDg2MTYwODA5NTExNDYwOTQzMTAzNzEwMDk5MTU3MzExMDM3OTAwODIwOTI1ODYwNTYyMzE4NDc0MDc3NTQ3NTg2MTUxODg0NzEwOTU2Mzc0MzUxNDI1MTQzMjA2MjI3ODk0MzE5NjM2MDc4MDQyODU5NTMyOTU3MTk0MzYwNDYzNTIyODg5MDM1NjUyODAyNjk5MjUyNDkzMDcwNjA0ODgwMjY0NzA4MDg1MDAwNzczODUzOTQyMzg0ODQ2MDY5NTYwMTYzMjE0MzUwODM0MTcwODU4OTU3OTUzOTc5NDg3MTk3NDY0NjY0MDU1IiwibSI6eyJtYXN0ZXJfc2VjcmV0IjoiMzg0ODM0OTE0MjE1Mjg5MjAyNTM1MTM4ODg1MzgzNjAwNzAyNjMyNDQzODE4NjkzMzA2OTYzMjM4ODMwMDE1ODgwMzU2MDQ2NjMwMjMwNTc3MDU3NTQ2MjY0MzkwNzk2NjQxODg5NjMzMTkwMzUzMTcxOTUzNjAwMDAxOTM2NDE1NzM5NDcxODExNjQyMDQ2Mzk0MjEyODk3OTE3Nzg4NDQ4MzMxNTU0NjA5MTA1ODU3NSJ9LCJtMiI6Ijc3OTk1NzIwMTQ1NDU5ODMxODM2MjI3NTA2NTM4NDQxNjUxMDI3NDA0NDM5MTcyMDQwMDc5ODc3NDUyMDI2NDI5NTgxNjMyNDYxNjg5NzIzMzkwMjU4NDc5NDY5MTg4Mjk4NzgwMTgyMDkzNTMxMDc3NzkzNjEzODUwMjAwNzc1NjIzMDcxMjk4NTI5ODExOTk3OTkyMTEzODUxODM5MjcyMjExMTQ5NDEzNTY3OTEyMzIifSwiZ2VfcHJvb2ZzIjpbXX0sIm5vbl9yZXZvY19wcm9vZiI6bnVsbH1dLCJhZ2dyZWdhdGVkX3Byb29mIjp7ImNfaGFzaCI6IjQ1NTgyNDIzNzE0NzIyNTkwODQ4NDgxOTM4NTYxNDU3MTcwNjI4NzAzODk4OTI1NTU2OTE0Mjc3NDU5MTU4OTM3Nzc0NDA3NDgxNzIyIiwiY19saXN0IjpbWzE5Niw0MSwxMTYsMzIsNDIsMTgsMjUsMTA3LDE1MCwyMzcsMTMsNjksMTIyLDEyOCwyMDcsNDYsMjQsMjE2LDYxLDg4LDE1OSwyMjMsMTQyLDE2MiwxMDksMTMwLDIyOSwyNDQsNjIsMTEzLDUsMTIxLDU5LDE1NiwyMTEsMTUwLDEsOTMsNTUsMTI4LDI0MywyMzgsODAsMTgxLDEyMSwyMjcsNzgsNzQsMzAsODIsMTQ0LDIwNSwxNzIsODEsMjQxLDE3NSwxNCwxNjIsNzMsMTk0LDY0LDE3NSwyMzEsMTM3LDI0OSwyMzcsMjMyLDE1MiwxOTMsMTAzLDEyNiwyNTMsMTI1LDE4MSwyMzUsMjMzLDEwOSwxNzQsMTcwLDE2OSw0MiwyMzEsMTYsMjI0LDIwNiwxNywxMzMsODEsNDYsMzUsNzAsMjE1LDM3LDI0MCwxNTUsMTQzLDE2MCw2OCwxOTksNzgsODgsMTksMTE0LDEwNywxMDYsMTUzLDE0MywxNjcsNDUsMTE2LDE2Myw1Myw2MSwxMTAsMTg5LDIzMCwxNTUsMjM1LDIzMywxNSwyNDEsNzUsMTM4LDEwNyw3MCwyLDk1LDE4NSwxMzEsMTI5LDEwMSwyMzksMTk1LDY3LDE4NCwzOSwxMDMsNDcsMTYwLDEzMSwyMTUsMjQ3LDIwNywyMywxMDYsMTkwLDE0NCwwLDEwLDM3LDEyNSw5MSwxMTQsMTI0LDEyNSwxNDgsMTU0LDE1NSwxNzUsMjI1LDI1MywxMzgsMjA5LDE2OCw3NywxOTYsNDIsMTgwLDEzMywxMTEsMzgsMTUzLDQzLDE1OSwxOTUsOTMsODAsNDMsMTMzLDg3LDE5NCwyNDcsMzgsNDAsMjE1LDE3OSwxOSwyMSwxMTcsNywxNDAsMjE3LDQwLDM5LDY2LDE3LDkzLDM3LDE1Miw5MCwyNDQsMzcsMTQ4LDk3LDE3NCw1OCw2NCwxNjYsNzAsOTAsMzYsNTUsMTEzLDIxMCwxODQsMjE0LDk0LDQ1LDEyNCwyNDEsMjM5LDE0OSwzOSwzMyw4OCwxNSwxNSwyNDksNTcsMjQ0LDUyLDIzMSwxOTUsNzUsNjUsNjUsMjUyLDEyMiwzMywyNTUsMjQ0LDE4MiwyLDExOSwyMjAsNDIsNzIsNzQsMTU3LDE1OCwyMTMsMTEyLDg3LDExLDE5NywyNDJdXX19LCJyZXF1ZXN0ZWRfcHJvb2YiOnsicmV2ZWFsZWRfYXR0cnMiOnsidGVzdCI6eyJzdWJfcHJvb2ZfaW5kZXgiOjAsInJhdyI6InRlc3QiLCJlbmNvZGVkIjoiNzIxNTU5Mzk0ODY4NDY4NDk1MDk3NTkzNjk3MzMyNjY0ODY5ODI4MjE3OTU4MTA0NDgyNDU0MjMxNjg5NTczOTA2MDc2NDQzNjMyNzIifX0sInNlbGZfYXR0ZXN0ZWRfYXR0cnMiOnt9LCJ1bnJldmVhbGVkX2F0dHJzIjp7fSwicHJlZGljYXRlcyI6e319LCJpZGVudGlmaWVycyI6W3sic2NoZW1hX2lkIjoiZGlkOmluZHk6YmNvdnJpbjp0ZXN0OjZMSHFkVWVXRFdzTDk0elJjMVVMRXgvYW5vbmNyZWRzL3YwL1NDSEVNQS90ZXN0MC4xNTk5MjIxODcyMzA4MDAxLzEuMCIsImNyZWRfZGVmX2lkIjoiZGlkOmluZHk6YmNvdnJpbjp0ZXN0OjZMSHFkVWVXRFdzTDk0elJjMVVMRXgvYW5vbmNyZWRzL3YwL0NMQUlNX0RFRi80MDA4MzIvdGVzdCIsInJldl9yZWdfaWQiOm51bGwsInRpbWVzdGFtcCI6bnVsbH1dfQ==",
+            },
+            "mime-type": "application/json",
+          },
+        ],
+        "~please_ack": {
+          "on": [
+            "RECEIPT",
+          ],
+        },
+        "~service": {
+          "recipientKeys": [
+            "4jXwJs8iWhNoQWoNhugUuFAKHo6Lodr983s6gHDtHNSX",
+          ],
+          "routingKeys": [],
+          "serviceEndpoint": "http://localhost:3001",
+        },
+        "~thread": {
+          "pthid": "2b2e1468-d90f-43d8-a30c-6a494b9f4420",
+          "thid": "a2f120ce-ff0f-498a-a092-97225e5d5f68",
+        },
+        "~transport": {
+          "return_route": "all",
+        },
+      },
+      "metadata": {},
+      "role": "receiver",
+      "updatedAt": "2024-02-28T09:37:13.397Z",
+    },
+  },
+  "9bf15c4a-8876-4878-85f6-a33eca8e8842": {
+    "id": "9bf15c4a-8876-4878-85f6-a33eca8e8842",
+    "tags": {
+      "associatedRecordId": "6cea02c6-8a02-480d-be63-598e4dd7287a",
+      "messageId": "9e1568e0-7c3e-4112-b76e-869ea9d12f06",
+      "messageName": "request-presentation",
+      "messageType": "https://didcomm.org/present-proof/2.0/request-presentation",
+      "protocolMajorVersion": "2",
+      "protocolMinorVersion": "0",
+      "protocolName": "present-proof",
+      "role": "receiver",
+      "threadId": "a2f120ce-ff0f-498a-a092-97225e5d5f68",
+    },
+    "type": "DidCommMessageRecord",
+    "value": {
+      "associatedRecordId": "6cea02c6-8a02-480d-be63-598e4dd7287a",
+      "createdAt": "2024-02-28T09:36:54.124Z",
+      "id": "9bf15c4a-8876-4878-85f6-a33eca8e8842",
+      "message": {
+        "@id": "9e1568e0-7c3e-4112-b76e-869ea9d12f06",
+        "@type": "https://didcomm.org/present-proof/2.0/request-presentation",
+        "formats": [
+          {
+            "attach_id": "f8e75054-35ab-4f7a-83f8-0f6638a865b0",
+            "format": "anoncreds/proof-request@v1.0",
+          },
+        ],
+        "present_multiple": false,
+        "request_presentations~attach": [
+          {
+            "@id": "f8e75054-35ab-4f7a-83f8-0f6638a865b0",
+            "data": {
+              "base64": "eyJuYW1lIjoidGVzdCIsInZlcnNpb24iOiIxLjAiLCJub25jZSI6IjExMTUyNTQ2NTQwNjU3ODkyNDY4OTA3MDUiLCJyZXF1ZXN0ZWRfYXR0cmlidXRlcyI6eyJ0ZXN0Ijp7Im5hbWUiOiJ0ZXN0IiwicmVzdHJpY3Rpb25zIjpbeyJjcmVkX2RlZl9pZCI6ImRpZDppbmR5OmJjb3ZyaW46dGVzdDo2TEhxZFVlV0RXc0w5NHpSYzFVTEV4L2Fub25jcmVkcy92MC9DTEFJTV9ERUYvNDAwODMyL3Rlc3QifV19fSwicmVxdWVzdGVkX3ByZWRpY2F0ZXMiOnt9fQ==",
+            },
+            "mime-type": "application/json",
+          },
+        ],
+        "will_confirm": true,
+        "~thread": {
+          "pthid": "2b2e1468-d90f-43d8-a30c-6a494b9f4420",
+          "thid": "a2f120ce-ff0f-498a-a092-97225e5d5f68",
+        },
+      },
+      "metadata": {},
+      "role": "receiver",
+      "updatedAt": "2024-02-28T09:36:54.124Z",
+    },
+  },
+  "STORAGE_VERSION_RECORD_ID": {
+    "id": "STORAGE_VERSION_RECORD_ID",
+    "tags": {},
+    "type": "StorageVersionRecord",
+    "value": {
+      "createdAt": "2023-03-18T18:35:02.888Z",
+      "id": "STORAGE_VERSION_RECORD_ID",
+      "metadata": {},
+      "storageVersion": "0.5",
+      "updatedAt": "2024-02-05T22:50:20.522Z",
+    },
+  },
+  "a190fdb4-161d-41ea-bfe6-219c5cf63b59": {
+    "id": "a190fdb4-161d-41ea-bfe6-219c5cf63b59",
+    "tags": {
+      "connectionId": undefined,
+      "parentThreadId": undefined,
+      "role": "verifier",
+      "state": "done",
+      "threadId": "a2f120ce-ff0f-498a-a092-97225e5d5f68",
+    },
+    "type": "ProofRecord",
+    "value": {
+      "createdAt": "2024-02-28T09:36:43.889Z",
+      "id": "a190fdb4-161d-41ea-bfe6-219c5cf63b59",
+      "isVerified": true,
+      "metadata": {},
+      "protocolVersion": "v2",
+      "role": "verifier",
+      "state": "done",
+      "threadId": "a2f120ce-ff0f-498a-a092-97225e5d5f68",
+      "updatedAt": "2024-02-05T22:50:20.522Z",
+    },
+  },
+  "cee2243c-d02d-4e1a-b97c-6befcb768ced": {
+    "id": "cee2243c-d02d-4e1a-b97c-6befcb768ced",
+    "tags": {
+      "associatedRecordId": "a190fdb4-161d-41ea-bfe6-219c5cf63b59",
+      "messageId": "ae6f67d0-21b6-4b12-b039-7b9dbd530d30",
+      "messageName": "ack",
+      "messageType": "https://didcomm.org/present-proof/2.0/ack",
+      "protocolMajorVersion": "2",
+      "protocolMinorVersion": "0",
+      "protocolName": "present-proof",
+      "role": "sender",
+      "threadId": "a2f120ce-ff0f-498a-a092-97225e5d5f68",
+    },
+    "type": "DidCommMessageRecord",
+    "value": {
+      "associatedRecordId": "a190fdb4-161d-41ea-bfe6-219c5cf63b59",
+      "createdAt": "2024-02-28T09:37:15.884Z",
+      "id": "cee2243c-d02d-4e1a-b97c-6befcb768ced",
+      "message": {
+        "@id": "ae6f67d0-21b6-4b12-b039-7b9dbd530d30",
+        "@type": "https://didcomm.org/present-proof/2.0/ack",
+        "status": "OK",
+        "~service": {
+          "recipientKeys": [
+            "GTzoFyznwPBdprbgXcZ7LJyzMia921w8v1ykcCvud5hX",
+          ],
+          "routingKeys": [],
+          "serviceEndpoint": "http://localhost:2001",
+        },
+        "~thread": {
+          "pthid": "2b2e1468-d90f-43d8-a30c-6a494b9f4420",
+          "thid": "a2f120ce-ff0f-498a-a092-97225e5d5f68",
+        },
+      },
+      "metadata": {},
+      "role": "sender",
+      "updatedAt": "2024-02-28T09:37:15.884Z",
+    },
+  },
+}
+`;

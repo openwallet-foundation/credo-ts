@@ -31,7 +31,7 @@ import type {
 
 import { Protocol } from '../../../../agent/models/features/Protocol'
 import { CredoError } from '../../../../error'
-import { DidCommMessageRepository } from '../../../../storage'
+import { DidCommMessageRepository } from '../../../../storage/didcomm'
 import { uuid } from '../../../../utils/uuid'
 import { AckStatus } from '../../../common'
 import { ConnectionService } from '../../../connections'

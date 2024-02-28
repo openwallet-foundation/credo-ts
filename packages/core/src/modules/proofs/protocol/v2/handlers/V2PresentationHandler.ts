@@ -3,7 +3,7 @@ import type { ProofExchangeRecord } from '../../../repository'
 import type { V2ProofProtocol } from '../V2ProofProtocol'
 
 import { getOutboundMessageContext } from '../../../../../agent/getOutboundMessageContext'
-import { DidCommMessageRepository } from '../../../../../storage'
+import { DidCommMessageRepository } from '../../../../../storage/didcomm'
 import { V2PresentationMessage, V2RequestPresentationMessage } from '../messages'
 
 export class V2PresentationHandler implements MessageHandler {

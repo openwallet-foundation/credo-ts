@@ -33,11 +33,10 @@ import type {
 
 import { Protocol } from '../../../../agent/models'
 import { CredoError } from '../../../../error'
-import { DidCommMessageRepository } from '../../../../storage'
+import { DidCommMessageRepository } from '../../../../storage/didcomm'
 import { uuid } from '../../../../utils/uuid'
 import { AckStatus } from '../../../common'
 import { ConnectionService } from '../../../connections'
-import { V2ProposeCredentialMessage } from '../../../credentials'
 import { ProofsModuleConfig } from '../../ProofsModuleConfig'
 import { PresentationProblemReportReason } from '../../errors/PresentationProblemReportReason'
 import { AutoAcceptProof, ProofRole, ProofState } from '../../models'
@@ -429,7 +428,7 @@ export class V2ProofProtocol<PFs extends ProofFormatService[] = ProofFormatServi
     if (proofRecord) {
       const lastSentMessage = await didCommMessageRepository.findAgentMessage(messageContext.agentContext, {
         associatedRecordId: proofRecord.id,
-        messageClass: V2ProposeCredentialMessage,
+        messageClass: V2ProposePresentationMessage,
       })
 
       const lastReceivedMessage = await didCommMessageRepository.findAgentMessage(messageContext.agentContext, {
@@ -540,7 +539,7 @@ export class V2ProofProtocol<PFs extends ProofFormatService[] = ProofFormatServi
   public async negotiateRequest(
     agentContext: AgentContext,
     { proofRecord, proofFormats, autoAcceptProof, comment, goalCode, goal }: NegotiateProofRequestOptions<PFs>
-  ): Promise<ProofProtocolMsgReturnType<V2ProposeCredentialMessage>> {
+  ): Promise<ProofProtocolMsgReturnType<V2ProposePresentationMessage>> {
     // Assert
     proofRecord.assertProtocolVersion('v2')
     proofRecord.assertState(ProofState.RequestReceived)

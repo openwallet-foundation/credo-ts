@@ -5,7 +5,7 @@ import type { CredentialFormatSpec } from '../../models'
 import type { CredentialExchangeRecord } from '../../repository/CredentialExchangeRecord'
 
 import { CredoError } from '../../../../error/CredoError'
-import { DidCommMessageRepository, DidCommMessageRole } from '../../../../storage'
+import { DidCommMessageRepository, DidCommMessageRole } from '../../../../storage/didcomm'
 
 import {
   V2IssueCredentialMessage,

@@ -440,7 +440,7 @@ describe('0.1-0.2 | Credential', () => {
         ],
       })
 
-      expect(testModule.getCredentialRole(credentialRecord)).toBe(testModule.CredentialRole.Holder)
+      expect(testModule.getCredentialRole(credentialRecord)).toBe(testModule.V01_02MigrationCredentialRole.Holder)
     })
 
     it('should return CredentialRole.Issuer if state is Done and credentials array is empty', () => {
@@ -449,7 +449,7 @@ describe('0.1-0.2 | Credential', () => {
         credentials: [],
       })
 
-      expect(testModule.getCredentialRole(credentialRecord)).toBe(testModule.CredentialRole.Issuer)
+      expect(testModule.getCredentialRole(credentialRecord)).toBe(testModule.V01_02MigrationCredentialRole.Issuer)
     })
 
     it('should return CredentialRole.Holder if the value is a holder state', () => {
@@ -468,7 +468,7 @@ describe('0.1-0.2 | Credential', () => {
               state: holderState,
             })
           )
-        ).toBe(testModule.CredentialRole.Holder)
+        ).toBe(testModule.V01_02MigrationCredentialRole.Holder)
       }
     })
 
@@ -479,7 +479,7 @@ describe('0.1-0.2 | Credential', () => {
             state: CredentialState.CredentialIssued,
           })
         )
-      ).toBe(testModule.CredentialRole.Issuer)
+      ).toBe(testModule.V01_02MigrationCredentialRole.Issuer)
     })
   })
 })
