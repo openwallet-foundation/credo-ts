@@ -12,6 +12,7 @@ import { waitForCredentialRecord, waitForCredentialRecordSubject } from '../../.
 import testLogger from '../../../../../../tests/logger'
 import { DidCommMessageRepository } from '../../../../../storage'
 import { JsonTransformer } from '../../../../../utils'
+import { CredentialRole } from '../../../models'
 import { CredentialState } from '../../../models/CredentialState'
 import { CredentialExchangeRecord } from '../../../repository/CredentialExchangeRecord'
 import {
@@ -177,6 +178,8 @@ describe('v2 credentials', () => {
 
     // below values are not in json object
     expect(aliceCredentialRecord.getTags()).toEqual({
+      role: CredentialRole.Holder,
+      parentThreadId: undefined,
       threadId: faberCredentialRecord.threadId,
       connectionId: aliceCredentialRecord.connectionId,
       state: aliceCredentialRecord.state,
