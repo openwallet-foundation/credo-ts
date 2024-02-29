@@ -28,7 +28,7 @@ import type { ExtractProofFormats, ProofFormatService } from '../formats'
 import type { ProofExchangeRecord } from '../repository'
 
 import { EventEmitter } from '../../../agent/EventEmitter'
-import { DidCommMessageRepository } from '../../../storage'
+import { DidCommMessageRepository } from '../../../storage/didcomm'
 import { ProofEventTypes } from '../ProofEvents'
 import { ProofState } from '../models/ProofState'
 import { ProofRepository } from '../repository'

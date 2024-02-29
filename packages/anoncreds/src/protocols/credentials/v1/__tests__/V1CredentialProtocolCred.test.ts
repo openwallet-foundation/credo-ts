@@ -24,6 +24,7 @@ import {
   CredentialEventTypes,
   AckStatus,
   CredentialProblemReportReason,
+  CredentialRole,
 } from '@credo-ts/core'
 import { Subject } from 'rxjs'
 
@@ -152,6 +153,7 @@ const getAgentMessageMock = async (agentContext: AgentContext, options: { messag
 // object to test our service would behave correctly. We use type assertion for `offer` attribute to `any`.
 const mockCredentialRecord = ({
   state,
+  role,
   threadId,
   connectionId,
   tags,
@@ -159,6 +161,7 @@ const mockCredentialRecord = ({
   credentialAttributes,
 }: {
   state?: CredentialState
+  role?: CredentialRole
   tags?: CustomCredentialTags
   threadId?: string
   connectionId?: string
@@ -170,6 +173,7 @@ const mockCredentialRecord = ({
     id,
     credentialAttributes: credentialAttributes || credentialPreview.attributes,
     state: state || CredentialState.OfferSent,
+    role: role || CredentialRole.Issuer,
     threadId: threadId ?? '809dd7ec-f0e7-4b97-9231-7a3615af6139',
     connectionId: connectionId ?? '123',
     credentials: [

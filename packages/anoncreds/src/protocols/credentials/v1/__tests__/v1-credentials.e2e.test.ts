@@ -1,6 +1,12 @@
 import type { AnonCredsTestsAgent } from '../../../../../tests/legacyAnonCredsSetup'
 
-import { CredentialExchangeRecord, CredentialState, DidCommMessageRepository, JsonTransformer } from '@credo-ts/core'
+import {
+  CredentialExchangeRecord,
+  CredentialRole,
+  CredentialState,
+  DidCommMessageRepository,
+  JsonTransformer,
+} from '@credo-ts/core'
 
 import { waitForCredentialRecord } from '../../../../../../core/tests/helpers'
 import testLogger from '../../../../../../core/tests/logger'
@@ -143,6 +149,8 @@ describe('V1 Credentials', () => {
 
     // below values are not in json object
     expect(aliceCredentialRecord.getTags()).toEqual({
+      role: CredentialRole.Holder,
+      parentThreadId: undefined,
       threadId: faberCredentialRecord.threadId,
       connectionId: aliceCredentialRecord.connectionId,
       state: aliceCredentialRecord.state,

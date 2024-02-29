@@ -1,4 +1,4 @@
-import type { W3cAnoncredsCredentialMetadata } from '../../utils/metadata'
+import type { W3cAnonCredsCredentialMetadata } from '../../utils/metadata'
 import type { AnonCredsCredentialTags } from '../../utils/w3cAnonCredsUtils'
 import type {
   AnonCredsCredentialDefinition,
@@ -240,8 +240,7 @@ export async function storeCredential(
     anonCredsMethodName: 'method',
   }
 
-  const anonCredsCredentialMetadata: W3cAnoncredsCredentialMetadata = {
-    credentialId: record.id,
+  const anonCredsCredentialMetadata: W3cAnonCredsCredentialMetadata = {
     credentialRevocationId: anonCredsCredentialRecordTags.anonCredsCredentialRevocationId,
     linkSecretId: anonCredsCredentialRecordTags.anonCredsLinkSecretId,
     methodName: anonCredsCredentialRecordTags.anonCredsMethodName,

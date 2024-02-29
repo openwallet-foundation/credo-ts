@@ -2,6 +2,8 @@ import type { AnonCredsCredentialRequest } from '@credo-ts/anoncreds'
 import type { Wallet } from '@credo-ts/core'
 
 import {
+  CredentialRole,
+  ProofRole,
   InjectionSymbols,
   ProofState,
   ProofExchangeRecord,
@@ -260,12 +262,14 @@ async function anonCredsFlowTest(options: { issuerId: string; revocable: boolean
     protocolVersion: 'v1',
     state: CredentialState.ProposalSent,
     threadId: 'f365c1a5-2baf-4873-9432-fa87c888a0aa',
+    role: CredentialRole.Holder,
   })
 
   const issuerCredentialRecord = new CredentialExchangeRecord({
     protocolVersion: 'v1',
     state: CredentialState.ProposalReceived,
     threadId: 'f365c1a5-2baf-4873-9432-fa87c888a0aa',
+    role: CredentialRole.Issuer,
   })
 
   const credentialAttributes = [
@@ -399,11 +403,13 @@ async function anonCredsFlowTest(options: { issuerId: string; revocable: boolean
     protocolVersion: 'v1',
     state: ProofState.ProposalSent,
     threadId: '4f5659a4-1aea-4f42-8c22-9a9985b35e38',
+    role: ProofRole.Prover,
   })
   const verifierProofRecord = new ProofExchangeRecord({
     protocolVersion: 'v1',
     state: ProofState.ProposalReceived,
     threadId: '4f5659a4-1aea-4f42-8c22-9a9985b35e38',
+    role: ProofRole.Verifier,
   })
 
   const nrpRequestedTime = dateToTimestamp(new Date())

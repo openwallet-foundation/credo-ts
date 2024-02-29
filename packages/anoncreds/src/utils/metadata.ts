@@ -13,8 +13,7 @@ export interface AnonCredsCredentialRequestMetadata {
   nonce: string
 }
 
-export interface W3cAnoncredsCredentialMetadata {
-  credentialId: string
+export interface W3cAnonCredsCredentialMetadata {
   methodName: string
   credentialRevocationId?: string
   linkSecretId: string
@@ -40,6 +39,6 @@ export const AnonCredsCredentialRequestMetadataKey = '_anoncreds/credentialReque
 /**
  * Metadata key for storing the W3C AnonCreds credential metadata.
  *
- * MUST be used with {@link W3cAnoncredsCredentialMetadata}
+ * MUST be used with {@link W3cAnonCredsCredentialMetadata}
  */
 export const W3cAnonCredsCredentialMetadataKey = '_w3c/anonCredsMetadata'

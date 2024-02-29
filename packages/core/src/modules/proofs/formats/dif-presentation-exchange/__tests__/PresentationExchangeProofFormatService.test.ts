@@ -15,7 +15,7 @@ import {
   W3cJsonLdVerifiablePresentation,
 } from '../../../../vc'
 import { ProofsModule } from '../../../ProofsModule'
-import { ProofState } from '../../../models'
+import { ProofRole, ProofState } from '../../../models'
 import { V2ProofProtocol } from '../../../protocol'
 import { ProofExchangeRecord } from '../../../repository'
 import { PresentationExchangeProofFormatService } from '../DifPresentationExchangeProofFormatService'
@@ -25,6 +25,7 @@ const mockProofRecord = () =>
     state: ProofState.ProposalSent,
     threadId: 'add7e1a0-109e-4f37-9caa-cfd0fcdfe540',
     protocolVersion: 'v2',
+    role: ProofRole.Prover,
   })
 
 const mockPresentationDefinition = (): DifPresentationExchangeDefinitionV1 => ({

@@ -26,7 +26,7 @@ import type { CredentialFormatService, ExtractCredentialFormats } from '../forma
 import type { CredentialExchangeRecord } from '../repository'
 
 import { EventEmitter } from '../../../agent/EventEmitter'
-import { DidCommMessageRepository } from '../../../storage'
+import { DidCommMessageRepository } from '../../../storage/didcomm'
 import { CredentialEventTypes } from '../CredentialEvents'
 import { CredentialState } from '../models/CredentialState'
 import { CredentialRepository } from '../repository'

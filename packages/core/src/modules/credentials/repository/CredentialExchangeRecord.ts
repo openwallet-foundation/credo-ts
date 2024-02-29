@@ -1,4 +1,5 @@
 import type { TagsBase } from '../../../storage/BaseRecord'
+import type { CredentialRole } from '../models'
 import type { AutoAcceptCredential } from '../models/CredentialAutoAcceptType'
 import type { CredentialState } from '../models/CredentialState'
 import type { RevocationNotification } from '../models/RevocationNotification'
@@ -15,6 +16,7 @@ export interface CredentialExchangeRecordProps {
   id?: string
   createdAt?: Date
   state: CredentialState
+  role: CredentialRole
   connectionId?: string
   threadId: string
   parentThreadId?: string
@@ -35,6 +37,7 @@ export type DefaultCredentialTags = {
   parentThreadId?: string
   connectionId?: string
   state: CredentialState
+  role: CredentialRole
   credentialIds: string[]
 }
 
@@ -48,6 +51,7 @@ export class CredentialExchangeRecord extends BaseRecord<DefaultCredentialTags, 
   public threadId!: string
   public parentThreadId?: string
   public state!: CredentialState
+  public role!: CredentialRole
   public autoAcceptCredential?: AutoAcceptCredential
   public revocationNotification?: RevocationNotification
   public errorMessage?: string
@@ -70,6 +74,7 @@ export class CredentialExchangeRecord extends BaseRecord<DefaultCredentialTags, 
       this.id = props.id ?? uuid()
       this.createdAt = props.createdAt ?? new Date()
       this.state = props.state
+      this.role = props.role
       this.connectionId = props.connectionId
       this.threadId = props.threadId
       this.parentThreadId = props.parentThreadId
@@ -94,6 +99,7 @@ export class CredentialExchangeRecord extends BaseRecord<DefaultCredentialTags, 
       parentThreadId: this.parentThreadId,
       connectionId: this.connectionId,
       state: this.state,
+      role: this.role,
       credentialIds: ids,
     }
   }

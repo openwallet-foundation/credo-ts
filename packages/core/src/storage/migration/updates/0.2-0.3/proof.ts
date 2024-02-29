@@ -35,7 +35,7 @@ export async function migrateProofExchangeRecordToV0_3<Agent extends BaseAgent>(
   }
 }
 
-export enum ProofRole {
+export enum V02_03MigrationProofRole {
   Verifier,
   Prover,
 }
@@ -49,12 +49,12 @@ const proverProofStates = [
 ]
 
 const didCommMessageRoleMapping = {
-  [ProofRole.Verifier]: {
+  [V02_03MigrationProofRole.Verifier]: {
     proposalMessage: DidCommMessageRole.Receiver,
     requestMessage: DidCommMessageRole.Sender,
     presentationMessage: DidCommMessageRole.Receiver,
   },
-  [ProofRole.Prover]: {
+  [V02_03MigrationProofRole.Prover]: {
     proposalMessage: DidCommMessageRole.Sender,
     requestMessage: DidCommMessageRole.Receiver,
     presentationMessage: DidCommMessageRole.Sender,
@@ -66,19 +66,19 @@ const proofRecordMessageKeys = ['proposalMessage', 'requestMessage', 'presentati
 export function getProofRole(proofRecord: ProofExchangeRecord) {
   // Proofs will only have an isVerified value when a presentation is verified, meaning we're the verifier
   if (proofRecord.isVerified !== undefined) {
-    return ProofRole.Verifier
+    return V02_03MigrationProofRole.Verifier
   }
   // If proofRecord.isVerified doesn't have any value, and we're also not in state done it means we're the prover.
   else if (proofRecord.state === ProofState.Done) {
-    return ProofRole.Prover
+    return V02_03MigrationProofRole.Prover
   }
   // For these states we know for certain that we're the prover
   else if (proverProofStates.includes(proofRecord.state)) {
-    return ProofRole.Prover
+    return V02_03MigrationProofRole.Prover
   }
 
   // For all other states we can be certain we're the verifier
-  return ProofRole.Verifier
+  return V02_03MigrationProofRole.Verifier
 }
 
 /**

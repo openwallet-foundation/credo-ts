@@ -45,6 +45,10 @@ export class HttpInboundTransport implements InboundTransport {
       }
 
       const session = new HttpTransportSession(utils.uuid(), req, res)
+      // We want to make sure the session is removed if the connection is closed, as it
+      // can't be used anymore then. This could happen if the client abruptly closes the connection.
+      req.once('close', () => transportService.removeSession(session))
+
       try {
         const message = req.body
         const encryptedMessage = JSON.parse(message)

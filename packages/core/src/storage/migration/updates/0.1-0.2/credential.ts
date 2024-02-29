@@ -38,7 +38,7 @@ export async function migrateCredentialRecordToV0_2<Agent extends BaseAgent>(age
   }
 }
 
-export enum CredentialRole {
+export enum V01_02MigrationCredentialRole {
   Issuer,
   Holder,
 }
@@ -52,13 +52,13 @@ const holderCredentialStates = [
 ]
 
 const didCommMessageRoleMapping = {
-  [CredentialRole.Issuer]: {
+  [V01_02MigrationCredentialRole.Issuer]: {
     proposalMessage: DidCommMessageRole.Receiver,
     offerMessage: DidCommMessageRole.Sender,
     requestMessage: DidCommMessageRole.Receiver,
     credentialMessage: DidCommMessageRole.Sender,
   },
-  [CredentialRole.Holder]: {
+  [V01_02MigrationCredentialRole.Holder]: {
     proposalMessage: DidCommMessageRole.Sender,
     offerMessage: DidCommMessageRole.Receiver,
     requestMessage: DidCommMessageRole.Sender,
@@ -71,19 +71,19 @@ const credentialRecordMessageKeys = ['proposalMessage', 'offerMessage', 'request
 export function getCredentialRole(credentialRecord: CredentialExchangeRecord) {
   // Credentials will only have a value when a credential is received, meaning we're the holder
   if (credentialRecord.credentials.length > 0) {
-    return CredentialRole.Holder
+    return V01_02MigrationCredentialRole.Holder
   }
   // If credentialRecord.credentials doesn't have any values, and we're also not in state done it means we're the issuer.
   else if (credentialRecord.state === CredentialState.Done) {
-    return CredentialRole.Issuer
+    return V01_02MigrationCredentialRole.Issuer
   }
   // For these states we know for certain that we're the holder
   else if (holderCredentialStates.includes(credentialRecord.state)) {
-    return CredentialRole.Holder
+    return V01_02MigrationCredentialRole.Holder
   }
 
   // For all other states we can be certain we're the issuer
-  return CredentialRole.Issuer
+  return V01_02MigrationCredentialRole.Issuer
 }
 
 /**

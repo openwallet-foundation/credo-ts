@@ -12,6 +12,7 @@ import type {
 } from '@credo-ts/core'
 
 import {
+  CredentialRole,
   Protocol,
   CredentialRepository,
   CredoError,
@@ -136,6 +137,7 @@ export class V1CredentialProtocol
       connectionId: connectionRecord.id,
       threadId: utils.uuid(),
       state: CredentialState.ProposalSent,
+      role: CredentialRole.Holder,
       linkedAttachments: linkedAttachments?.map((linkedAttachment) => linkedAttachment.attachment),
       autoAcceptCredential,
       protocolVersion: 'v1',
@@ -253,6 +255,7 @@ export class V1CredentialProtocol
         connectionId: connection?.id,
         threadId: proposalMessage.threadId,
         state: CredentialState.ProposalReceived,
+        role: CredentialRole.Issuer,
         protocolVersion: 'v1',
       })
 
@@ -434,6 +437,7 @@ export class V1CredentialProtocol
         (linkedAttachments) => linkedAttachments.attachment
       ),
       state: CredentialState.OfferSent,
+      role: CredentialRole.Issuer,
       autoAcceptCredential,
       protocolVersion: 'v1',
     })
@@ -541,6 +545,7 @@ export class V1CredentialProtocol
         threadId: offerMessage.threadId,
         parentThreadId: offerMessage.thread?.parentThreadId,
         state: CredentialState.OfferReceived,
+        role: CredentialRole.Holder,
         protocolVersion: 'v1',
       })
 

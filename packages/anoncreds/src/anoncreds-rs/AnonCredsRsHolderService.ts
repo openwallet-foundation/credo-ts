@@ -31,7 +31,7 @@ import type {
   LegacyToW3cCredentialOptions,
   W3cToLegacyCredentialOptions,
 } from '../services/AnonCredsHolderServiceOptions'
-import type { AnonCredsCredentialRequestMetadata, W3cAnoncredsCredentialMetadata } from '../utils/metadata'
+import type { AnonCredsCredentialRequestMetadata, W3cAnonCredsCredentialMetadata } from '../utils/metadata'
 import type { AgentContext, Query, SimpleQuery } from '@credo-ts/core'
 import type {
   CredentialEntry,
@@ -395,8 +395,7 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
       methodName,
     })
 
-    const anonCredsCredentialMetadata: W3cAnoncredsCredentialMetadata = {
-      credentialId: w3cCredentialRecord.id,
+    const anonCredsCredentialMetadata: W3cAnonCredsCredentialMetadata = {
       credentialRevocationId: anonCredsTags.anonCredsCredentialRevocationId,
       linkSecretId: anonCredsTags.anonCredsLinkSecretId,
       methodName: anonCredsTags.anonCredsMethodName,

@@ -19,6 +19,7 @@ import {
   W3cCredentialService,
   W3cCredentialSubject,
   W3cCredentialsModuleConfig,
+  CredentialRole,
 } from '@credo-ts/core'
 import { Subject } from 'rxjs'
 
@@ -138,12 +139,14 @@ async function anonCredsFlowTest(options: {
     protocolVersion: 'v1',
     state: CredentialState.ProposalSent,
     threadId: 'f365c1a5-2baf-4873-9432-fa87c888a0aa',
+    role: CredentialRole.Holder,
   })
 
   const issuerCredentialRecord = new CredentialExchangeRecord({
     protocolVersion: 'v1',
     state: CredentialState.ProposalReceived,
     threadId: 'f365c1a5-2baf-4873-9432-fa87c888a0aa',
+    role: CredentialRole.Issuer,
   })
 
   const credentialAttributes = [

@@ -10,7 +10,7 @@ import type { ProofFormatSpec } from '../../models/ProofFormatSpec'
 import type { ProofExchangeRecord } from '../../repository'
 
 import { CredoError } from '../../../../error'
-import { DidCommMessageRepository, DidCommMessageRole } from '../../../../storage'
+import { DidCommMessageRepository, DidCommMessageRole } from '../../../../storage/didcomm'
 
 import { V2PresentationMessage, V2ProposePresentationMessage, V2RequestPresentationMessage } from './messages'
 

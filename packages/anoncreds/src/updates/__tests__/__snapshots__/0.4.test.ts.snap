@@ -1,0 +1,154 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`UpdateAssistant | AnonCreds | v0.4 - v0.5 should correctly update the credential exchange records for holders 1`] = `
+{
+  "1-4e4f-41d9-94c4-f49351b811f1": {
+    "id": "1-4e4f-41d9-94c4-f49351b811f1",
+    "tags": {
+      "anonCredsAttr::test::marker": true,
+      "anonCredsAttr::test::value": "test",
+      "anonCredsCredentialDefinitionId": "did:indy:bcovrin:test:6LHqdUeWDWsL94zRc1ULEx/anoncreds/v0/CLAIM_DEF/400832/test",
+      "anonCredsCredentialRevocationId": undefined,
+      "anonCredsLinkSecretId": "ae343b1d-e2af-4706-9aae-2010a7f2c882",
+      "anonCredsMethodName": "indy",
+      "anonCredsRevocationRegistryId": undefined,
+      "anonCredsSchemaId": "did:indy:bcovrin:test:6LHqdUeWDWsL94zRc1ULEx/anoncreds/v0/SCHEMA/test0.1599221872308001/1.0",
+      "anonCredsSchemaIssuerId": "did:indy:bcovrin:test:6LHqdUeWDWsL94zRc1ULEx",
+      "anonCredsSchemaName": "test0.1599221872308001",
+      "anonCredsSchemaVersion": "1.0",
+      "anonCredsUnqualifiedCredentialDefinitionId": "6LHqdUeWDWsL94zRc1ULEx:3:CL:400832:test",
+      "anonCredsUnqualifiedIssuerId": "6LHqdUeWDWsL94zRc1ULEx",
+      "anonCredsUnqualifiedRevocationRegistryId": undefined,
+      "anonCredsUnqualifiedSchemaId": "6LHqdUeWDWsL94zRc1ULEx:2:test0.1599221872308001:1.0",
+      "anonCredsUnqualifiedSchemaIssuerId": "6LHqdUeWDWsL94zRc1ULEx",
+      "claimFormat": "ldp_vc",
+      "contexts": [
+        "https://www.w3.org/2018/credentials/v1",
+        "https://w3id.org/security/data-integrity/v2",
+      ],
+      "cryptosuites": [
+        "anoncreds-2023",
+      ],
+      "expandedTypes": [
+        "https://www.w3.org/2018/credentials#VerifiableCredential",
+      ],
+      "givenId": undefined,
+      "issuerId": "did:indy:bcovrin:test:6LHqdUeWDWsL94zRc1ULEx",
+      "proofTypes": [
+        "DataIntegrityProof",
+      ],
+      "schemaIds": [],
+      "subjectIds": [],
+      "types": [
+        "VerifiableCredential",
+      ],
+    },
+    "type": "W3cCredentialRecord",
+    "value": {
+      "createdAt": "2024-02-28T22:50:20.522Z",
+      "credential": {
+        "@context": [
+          "https://www.w3.org/2018/credentials/v1",
+          "https://w3id.org/security/data-integrity/v2",
+          {
+            "@vocab": "https://www.w3.org/ns/credentials/issuer-dependent#",
+          },
+        ],
+        "credentialSubject": {
+          "test": "test",
+        },
+        "issuanceDate": 2024-02-28T22:50:20.522Z,
+        "issuer": "did:indy:bcovrin:test:6LHqdUeWDWsL94zRc1ULEx",
+        "proof": [
+          {
+            "cryptosuite": "anoncreds-2023",
+            "proofPurpose": "assertionMethod",
+            "proofValue": "ukgGEqXNjaGVtYV9pZNlbZGlkOmluZHk6YmNvdnJpbjp0ZXN0OjZMSHFkVWVXRFdzTDk0elJjMVVMRXgvYW5vbmNyZWRzL3YwL1NDSEVNQS90ZXN0MC4xNTk5MjIxODcyMzA4MDAxLzEuMKtjcmVkX2RlZl9pZNlPZGlkOmluZHk6YmNvdnJpbjp0ZXN0OjZMSHFkVWVXRFdzTDk0elJjMVVMRXgvYW5vbmNyZWRzL3YwL0NMQUlNX0RFRi80MDA4MzIvdGVzdKlzaWduYXR1cmWCrHBfY3JlZGVudGlhbISjbV8y3AAgzL1rQBvM-szpzMImzNrMgcylCi7M8syxzKEQzLBBzKNTzOTM48zbzIlaNDzM1F91MaFh3AEAzOZYzMR6USQgEHTMoRbMrsydzKtnXBAGzITM7C4kPczaWG_Mh2nM0czezItlzLcnPMzVzIJSan06zMDMolbM48z3e8ynzOnMm8y6zOLMqMyizM3M-MyvzNnMrB3MtsyUc0ciO8yYK8ztzIHM4lg1PMyezJ7M0MyYecyrEsz4zOXMvldEF8yZIszbzNPMlT4xzIhfzMYCGA7M9cy3SczmzM3Mql0eScyJZ2UKKHRKGcy6zN8ozLvMvlLM_sy3WTjM_gfMrMzQMszKzKTMxDY2F8zmTWTM3EHMlwB4zLYAEsyeZcyIZBTMtlrMpczfSVdMzN1_zPQMzJ0QEAfM9MzIzIrMwsyeZ8zDH8zPzIRjUi42zJfM5wITADQlzMLM5grM8wrM-MzbC8zUB8ypzOPMj8yscMz7zMNbHAxCLQkpMER2zO7Ml3nMoB4yzI1GzJ7MkG3M61XM21jMhszZzLAvzJBgzK_M1MzlzMnM8gTMs8yCXQNdzLtuzL3MjMzYQsyDoWXcAEsQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABSMsydzL0HzPpfzJTM8CLM4czlJsyyzLmhdtwBVQ_M-EvM1cyczK3MqcyccwMqzIvM6kzM6UdwOcyDzPM1zN_Mnzt1zLvM2MyrIHzMoszPzOXMpMzhzJsBMMz5aszuzMbM38yrzNV3WMyFSczMzINpMMyOAszZOszaSMy1zIYBzKvMxHNuzKHM58zuzIvMvcyvzPkfFMyqzN_Mi1nMxADM1szOODERcsz3zJvMtcyCL0dUzJjMzMzwIsy8zJPMxMz_zMbMzcyWGyDM-S5FzOLM5szzYszbTczyLA8bMgAmRczCGHXMmwFhGQfMilMjHVBWcFXM28yWzOjMsMyJzKETHQsezOfMhcybesz7zKXM6wxwbsz8RszHMGBFzObM_mfMq8zWbMzpzKdDzOEwdizM0czeNwRWCR0DzM41bMzNzJczzOczzP7MgUErzK9cAhkDcg1GzLl7IszBPUBua1vMyCfMtszUzIvM6QcDVlzM_szUGczAzObMvszrzLHMl8yWeC0-KlDM7cy4VUPMsD_MmzjM-cz_zPnM0sz3zJPMvmRGzKnMqSdDzJnMpcybf3VnzL_MkMzazK4qI8ySzOjMnszHzMhTFWRozIbM7G1sMD3MjQrMucz4zPDMnMzNIMyPzKIfzJR_TcyMzNjMrVrMycyaKsy6zLjMlSEtKsy4zNfMsMyrY8y0zN5bVFXMgMzAzIzM4hrM2ylyzPJvD8yWVsyRFqxyX2NyZWRlbnRpYWzAu3NpZ25hdHVyZV9jb3JyZWN0bmVzc19wcm9vZoKic2XcAQDMqiPMi8zrzOPMgcy3zOo9GMz4zOlEKUjM3My2zNgAR8yZzJnM4D5fzOLM5szeEGnMscy6zN8mDszrzL3MrszfTHrM7MzBdMyvMcyizIXM3UE4asyXRSJnzK3MygZuXncNzLPMgWZIXQQPHMy3JcyCYF_MhDNnYCsMLl8LzLfM98yhGnZfzPfMrsygzKEAzI_M50nM28yxzLnMpFJ_ScyjEWfMiio2zIfMxszLzLBrIEFJD8zbzMEDPjDMiszIzKcTbCpXT3hzLiIld8zDzLbMyMyqHV3MzHnMwszzdCQEMlpGzOMRzJwCE8zizNXM4HnM8kYSzLcyzNNYzNrM7GbM1xTMwszkzKt5zNjM92QgzOZuCMzlzKQIRhZszP_MpMzbzLXM1sy0NyIHIszyzJBlzMLMjBrM4RI2Q8z2MMyRLRfM7iNkIMzEzORbzPkEesy5zJnMoMy5zMt7zMxYzLjM7zzMoC7Mt8y7OSNtHx84zI_M5m3MgszxM6Fj3AAgzJ49zLXMxljMmGvMqsy1BD3MpszXzMfM7MztzIwBQMyAdMzJCVXM38y0Y8ybzMhoeMyJ",
+            "type": "DataIntegrityProof",
+            "verificationMethod": "did:indy:bcovrin:test:6LHqdUeWDWsL94zRc1ULEx/anoncreds/v0/CLAIM_DEF/400832/test",
+          },
+        ],
+        "type": [
+          "VerifiableCredential",
+        ],
+      },
+      "id": "1-4e4f-41d9-94c4-f49351b811f1",
+      "metadata": {
+        "_w3c/anonCredsMetadata": {
+          "credentialRevocationId": undefined,
+          "linkSecretId": "ae343b1d-e2af-4706-9aae-2010a7f2c882",
+          "methodName": "indy",
+        },
+      },
+      "updatedAt": "2024-02-28T22:50:20.522Z",
+    },
+  },
+  "14720230-54b4-4735-8072-0e1902982429": {
+    "id": "bb30d3ee-651a-4ffc-b1d9-30e4df23a045",
+    "tags": {
+      "attr": [
+        "",
+      ],
+      "attr::test::marker": true,
+      "attr::test::value": "test",
+      "credentialDefinitionId": "6LHqdUeWDWsL94zRc1ULEx:3:CL:400832:test",
+      "credentialId": "e1548638-fbe6-4e26-96fc-d536d453b380",
+      "issuerId": "6LHqdUeWDWsL94zRc1ULEx",
+      "linkSecretId": "ae343b1d-e2af-4706-9aae-2010a7f2c882",
+      "methodName": "indy",
+      "revocationRegistryId": null,
+      "schemaId": "6LHqdUeWDWsL94zRc1ULEx:2:test0.1599221872308001:1.0",
+      "schemaIssuerId": "6LHqdUeWDWsL94zRc1ULEx",
+      "schemaName": "test0.1599221872308001",
+      "schemaVersion": "1.0",
+    },
+    "type": "AnonCredsCredentialRecord",
+    "value": {
+      "credential": {
+        "cred_def_id": "6LHqdUeWDWsL94zRc1ULEx:3:CL:400832:test",
+        "rev_reg": null,
+        "rev_reg_id": null,
+        "schema_id": "6LHqdUeWDWsL94zRc1ULEx:2:test0.1599221872308001:1.0",
+        "signature": {
+          "p_credential": {
+            "a": "29078583023644723417256963951834769429544893561312608041999039725779045478957665610539345669249033643845871310638205359827913345539893604784172221177874151867323789783352069858114677062382329201941336114640094448982492548621745418140287523358455796985452292603814050613022499206350481966450949147798607248367393022400871389441985483251995666110068431356102420069450232712370410071038529237338590022255675451148362600727584994665177285853081799683623674291603640314733666468918666175103622831604402215322289509594157875212406584558973682327127532803373424575230946721521968680075608178586165565162932643378236428403331",
+            "e": "259344723055062059907025491480697571938277889515152306249728583105665800713306759149981690559193987143012367913206299323899696942213235956742930103927082934306204189453914854568633",
+            "m_2": "85676623484277624682444820444702467499357910274165013418379125134075325543729",
+            "v": "10113246594919968694243749150533421251903212516176280450944343564431109505938841891625247667364379412129405405348477095610002433568347856509159611335758818756926825063560770314873165029229176344268719893707027252437404047327923906866676449185116008460538437595639211714306227451873006607255100899512311105919649129622793316610076053733506986530767535638972131892478976764607887355989030338392858709274725683511041231799301175492600538984695657494046447608704545830499026706733632944905447307052632450973098625532585070622424882750416943328031030319205075858421333346786928868231555780815068857501287044930625867151895584283719258208379421233099516506594646921971059399550756016776860669930757562757559953692743338803382655236340538001870484617627827300880520094049323022699847759090147376675910494368188266848296015139094",
+          },
+          "r_credential": null,
+        },
+        "signature_correctness_proof": {
+          "c": "71574462310595963848889785756072396101961922057659218227849729861834355800201",
+          "se": "21478040510275170612337916082115329005924729160138728500731966689768864876350314127582065222070358453091326557476132640512915164393469162400241555486465031352127309617863096642685471579736279753483791845394120052052850579761097059767637641620637246275967251656241939449999728934398401723998520798896177945650388769630721777342623105417576378300802138205906595722648799399722998758345581952810879612170626417882503950639389717949927995386086595370764259106482228888541923217556032007348358437745103150644457074511256162173366561635465131422798361283669038048806849619337895126642478632186566293253597826848134434844979",
+        },
+        "values": {
+          "test": {
+            "encoded": "72155939486846849509759369733266486982821795810448245423168957390607644363272",
+            "raw": "test",
+          },
+        },
+        "witness": null,
+      },
+      "credentialId": "e1548638-fbe6-4e26-96fc-d536d453b380",
+      "id": "9ec1f4c6-6b58-4c54-84d0-2fa74f83f70f",
+      "linkSecretId": "ae343b1d-e2af-4706-9aae-2010a7f2c882",
+      "metadata": {},
+      "methodName": "indy",
+      "updatedAt": "2024-02-28T09:36:42.994Z",
+    },
+  },
+  "STORAGE_VERSION_RECORD_ID": {
+    "id": "STORAGE_VERSION_RECORD_ID",
+    "tags": {},
+    "type": "StorageVersionRecord",
+    "value": {
+      "createdAt": "2023-03-18T18:53:44.041Z",
+      "id": "STORAGE_VERSION_RECORD_ID",
+      "metadata": {},
+      "storageVersion": "0.5",
+      "updatedAt": "2024-02-28T22:50:20.522Z",
+    },
+  },
+}
+`;

@@ -9,6 +9,7 @@ import {
   waitForAgentMessageProcessedEventSubject,
 } from '../../../../../../tests/helpers'
 import testLogger from '../../../../../../tests/logger'
+import { CredentialRole } from '../../../models'
 import { AutoAcceptCredential } from '../../../models/CredentialAutoAcceptType'
 import { CredentialState } from '../../../models/CredentialState'
 import { CredentialExchangeRecord } from '../../../repository/CredentialExchangeRecord'
@@ -296,6 +297,7 @@ describe('V2 Credentials Auto Accept', () => {
         threadId: aliceCredentialRecord.threadId,
         state: aliceCredentialRecord.state,
         connectionId: aliceConnectionId,
+        role: CredentialRole.Holder,
         credentialIds: [],
       })
       testLogger.test('Alice received credential offer from Faber')
@@ -392,6 +394,7 @@ describe('V2 Credentials Auto Accept', () => {
         threadId: aliceCredentialRecord.threadId,
         state: aliceCredentialRecord.state,
         connectionId: aliceConnectionId,
+        role: CredentialRole.Holder,
         credentialIds: [],
       })
     })
@@ -422,6 +425,7 @@ describe('V2 Credentials Auto Accept', () => {
         threadId: aliceCredentialRecord.threadId,
         state: aliceCredentialRecord.state,
         connectionId: aliceConnectionId,
+        role: CredentialRole.Holder,
         credentialIds: [],
       })
 

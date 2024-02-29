@@ -11,7 +11,7 @@ import { CredoError } from '../error'
 import { InvitationType, OutOfBandRepository, OutOfBandRole, OutOfBandService } from '../modules/oob'
 import { OutOfBandRecordMetadataKeys } from '../modules/oob/repository/outOfBandRecordMetadataTypes'
 import { RoutingService } from '../modules/routing'
-import { DidCommMessageRepository, DidCommMessageRole } from '../storage'
+import { DidCommMessageRepository, DidCommMessageRole } from '../storage/didcomm'
 import { uuid } from '../utils/uuid'
 
 import { OutboundMessageContext } from './models'

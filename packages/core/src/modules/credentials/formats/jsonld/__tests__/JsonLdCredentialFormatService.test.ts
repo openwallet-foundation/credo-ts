@@ -10,11 +10,15 @@ import { JsonTransformer } from '../../../../../utils'
 import { JsonEncoder } from '../../../../../utils/JsonEncoder'
 import { DidDocument } from '../../../../dids'
 import { DidResolverService } from '../../../../dids/services/DidResolverService'
-import { CREDENTIALS_CONTEXT_V1_URL, W3cCredentialRecord, W3cJsonLdVerifiableCredential } from '../../../../vc'
-import { W3cCredentialService } from '../../../../vc/W3cCredentialService'
+import {
+  CREDENTIALS_CONTEXT_V1_URL,
+  W3cCredentialRecord,
+  W3cJsonLdVerifiableCredential,
+  W3cCredentialService,
+} from '../../../../vc'
 import { W3cJsonLdCredentialService } from '../../../../vc/data-integrity/W3cJsonLdCredentialService'
 import { Ed25519Signature2018Fixtures } from '../../../../vc/data-integrity/__tests__/fixtures'
-import { CredentialState } from '../../../models'
+import { CredentialState, CredentialRole } from '../../../models'
 import { V2CredentialPreview } from '../../../protocol/v2/messages'
 import { CredentialExchangeRecord } from '../../../repository/CredentialExchangeRecord'
 import { JsonLdCredentialFormatService } from '../JsonLdCredentialFormatService'
@@ -95,6 +99,7 @@ const credentialAttachment = new Attachment({
 // object to test our service would behave correctly. We use type assertion for `offer` attribute to `any`.
 const mockCredentialRecord = ({
   state,
+  role,
   threadId,
   connectionId,
   tags,
@@ -102,6 +107,7 @@ const mockCredentialRecord = ({
   credentialAttributes,
 }: {
   state?: CredentialState
+  role?: CredentialRole
   tags?: CustomCredentialTags
   threadId?: string
   connectionId?: string
@@ -112,6 +118,7 @@ const mockCredentialRecord = ({
     id,
     credentialAttributes: credentialAttributes || credentialPreview.attributes,
     state: state || CredentialState.OfferSent,
+    role: role || CredentialRole.Issuer,
     threadId: threadId ?? 'add7e1a0-109e-4f37-9caa-cfd0fcdfe540',
     connectionId: connectionId ?? '123',
     tags,

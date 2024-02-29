@@ -1,7 +1,13 @@
 import type { EventReplaySubject } from '../../../../../../core/tests'
 import type { AnonCredsTestsAgent } from '../../../../../tests/legacyAnonCredsSetup'
 
-import { AutoAcceptCredential, CredentialState, CredentialExchangeRecord, JsonTransformer } from '@credo-ts/core'
+import {
+  AutoAcceptCredential,
+  CredentialState,
+  CredentialExchangeRecord,
+  JsonTransformer,
+  CredentialRole,
+} from '@credo-ts/core'
 
 import { waitForCredentialRecord, waitForCredentialRecordSubject, testLogger } from '../../../../../../core/tests'
 import { setupAnonCredsTests } from '../../../../../tests/legacyAnonCredsSetup'
@@ -289,6 +295,8 @@ describe('V1 Credentials Auto Accept', () => {
       // below values are not in json object
       expect(aliceCredentialExchangeRecord.id).not.toBeNull()
       expect(aliceCredentialExchangeRecord.getTags()).toEqual({
+        role: CredentialRole.Holder,
+        parentThreadId: undefined,
         threadId: aliceCredentialExchangeRecord.threadId,
         state: aliceCredentialExchangeRecord.state,
         connectionId: aliceConnectionId,
@@ -365,6 +373,8 @@ describe('V1 Credentials Auto Accept', () => {
       // below values are not in json object
       expect(aliceCredentialExchangeRecord.id).not.toBeNull()
       expect(aliceCredentialExchangeRecord.getTags()).toEqual({
+        role: CredentialRole.Holder,
+        parentThreadId: undefined,
         threadId: aliceCredentialExchangeRecord.threadId,
         state: aliceCredentialExchangeRecord.state,
         connectionId: aliceConnectionId,
@@ -437,6 +447,8 @@ describe('V1 Credentials Auto Accept', () => {
       // below values are not in json object
       expect(record.id).not.toBeNull()
       expect(record.getTags()).toEqual({
+        role: CredentialRole.Holder,
+        parentThreadId: undefined,
         threadId: record.threadId,
         state: record.state,
         connectionId: aliceConnectionId,

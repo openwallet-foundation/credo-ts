@@ -3,6 +3,7 @@ import type { CustomProofTags, AgentConfig, AgentContext, ProofStateChangedEvent
 import { Subject } from 'rxjs'
 
 import {
+  ProofRole,
   DidExchangeState,
   Attachment,
   AttachmentData,
@@ -57,12 +58,14 @@ const requestAttachment = new Attachment({
 // object to test our service would behave correctly. We use type assertion for `offer` attribute to `any`.
 const mockProofExchangeRecord = ({
   state,
+  role,
   threadId,
   connectionId,
   tags,
   id,
 }: {
   state?: ProofState
+  role?: ProofRole
   requestMessage?: V1RequestPresentationMessage
   tags?: CustomProofTags
   threadId?: string
@@ -78,6 +81,7 @@ const mockProofExchangeRecord = ({
     protocolVersion: 'v1',
     id,
     state: state || ProofState.RequestSent,
+    role: role || ProofRole.Verifier,
     threadId: threadId ?? requestPresentationMessage.id,
     connectionId: connectionId ?? '123',
     tags,

@@ -7,7 +7,7 @@ import { KeyType } from '../../../../../crypto'
 import { CredoError } from '../../../../../error/CredoError'
 import { TypedArrayEncoder } from '../../../../../utils'
 import { CREDENTIALS_CONTEXT_V1_URL } from '../../../../vc/constants'
-import { AutoAcceptCredential, CredentialState } from '../../../models'
+import { AutoAcceptCredential, CredentialRole, CredentialState } from '../../../models'
 import { CredentialExchangeRecord } from '../../../repository/CredentialExchangeRecord'
 
 const signCredentialOptions = {
@@ -238,6 +238,7 @@ describe('V2 Credentials - JSON-LD - Auto Accept Always', () => {
         threadId: aliceCredentialRecord.threadId,
         state: aliceCredentialRecord.state,
         connectionId: aliceConnectionId,
+        role: CredentialRole.Holder,
         credentialIds: [],
       })
       expect(aliceCredentialRecord.type).toBe(CredentialExchangeRecord.type)
@@ -303,6 +304,7 @@ describe('V2 Credentials - JSON-LD - Auto Accept Always', () => {
         threadId: aliceCredentialRecord.threadId,
         state: aliceCredentialRecord.state,
         connectionId: aliceConnectionId,
+        role: CredentialRole.Holder,
         credentialIds: [],
       })
       expect(aliceCredentialRecord.type).toBe(CredentialExchangeRecord.type)
@@ -388,6 +390,7 @@ describe('V2 Credentials - JSON-LD - Auto Accept Always', () => {
         threadId: record.threadId,
         state: record.state,
         connectionId: aliceConnectionId,
+        role: CredentialRole.Holder,
         credentialIds: [],
       })
       expect(record.type).toBe(CredentialExchangeRecord.type)
