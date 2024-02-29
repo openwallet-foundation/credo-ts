@@ -220,10 +220,12 @@ export class V1CredentialProtocol
       const lastReceivedMessage = await didCommMessageRepository.findAgentMessage(messageContext.agentContext, {
         associatedRecordId: credentialRecord.id,
         messageClass: V1ProposeCredentialMessage,
+        role: DidCommMessageRole.Receiver,
       })
       const lastSentMessage = await didCommMessageRepository.getAgentMessage(messageContext.agentContext, {
         associatedRecordId: credentialRecord.id,
         messageClass: V1OfferCredentialMessage,
+        role: DidCommMessageRole.Sender,
       })
 
       await connectionService.assertConnectionOrOutOfBandExchange(messageContext, {
@@ -299,6 +301,7 @@ export class V1CredentialProtocol
     const proposalMessage = await didCommMessageRepository.getAgentMessage(agentContext, {
       associatedRecordId: credentialRecord.id,
       messageClass: V1ProposeCredentialMessage,
+      role: DidCommMessageRole.Receiver,
     })
 
     // NOTE: We set the credential attributes from the proposal on the record as we've 'accepted' them
@@ -511,10 +514,12 @@ export class V1CredentialProtocol
       const lastSentMessage = await didCommMessageRepository.getAgentMessage(messageContext.agentContext, {
         associatedRecordId: credentialRecord.id,
         messageClass: V1ProposeCredentialMessage,
+        role: DidCommMessageRole.Sender,
       })
       const lastReceivedMessage = await didCommMessageRepository.findAgentMessage(messageContext.agentContext, {
         associatedRecordId: credentialRecord.id,
         messageClass: V1OfferCredentialMessage,
+        role: DidCommMessageRole.Receiver,
       })
 
       // Assert
@@ -595,6 +600,7 @@ export class V1CredentialProtocol
     const offerMessage = await didCommMessageRepository.getAgentMessage(agentContext, {
       associatedRecordId: credentialRecord.id,
       messageClass: V1OfferCredentialMessage,
+      role: DidCommMessageRole.Receiver,
     })
 
     const offerAttachment = offerMessage.getOfferAttachmentById(INDY_CREDENTIAL_OFFER_ATTACHMENT_ID)
@@ -739,10 +745,12 @@ export class V1CredentialProtocol
     const proposalMessage = await didCommMessageRepository.findAgentMessage(messageContext.agentContext, {
       associatedRecordId: credentialRecord.id,
       messageClass: V1ProposeCredentialMessage,
+      role: DidCommMessageRole.Receiver,
     })
     const offerMessage = await didCommMessageRepository.findAgentMessage(messageContext.agentContext, {
       associatedRecordId: credentialRecord.id,
       messageClass: V1OfferCredentialMessage,
+      role: DidCommMessageRole.Sender,
     })
 
     // Assert
@@ -811,10 +819,12 @@ export class V1CredentialProtocol
     const offerMessage = await didCommMessageRepository.getAgentMessage(agentContext, {
       associatedRecordId: credentialRecord.id,
       messageClass: V1OfferCredentialMessage,
+      role: DidCommMessageRole.Sender,
     })
     const requestMessage = await didCommMessageRepository.getAgentMessage(agentContext, {
       associatedRecordId: credentialRecord.id,
       messageClass: V1RequestCredentialMessage,
+      role: DidCommMessageRole.Receiver,
     })
 
     const offerAttachment = offerMessage.getOfferAttachmentById(INDY_CREDENTIAL_OFFER_ATTACHMENT_ID)
@@ -884,10 +894,12 @@ export class V1CredentialProtocol
     const requestCredentialMessage = await didCommMessageRepository.findAgentMessage(messageContext.agentContext, {
       associatedRecordId: credentialRecord.id,
       messageClass: V1RequestCredentialMessage,
+      role: DidCommMessageRole.Sender,
     })
     const offerCredentialMessage = await didCommMessageRepository.findAgentMessage(messageContext.agentContext, {
       associatedRecordId: credentialRecord.id,
       messageClass: V1OfferCredentialMessage,
+      role: DidCommMessageRole.Receiver,
     })
 
     // Assert
@@ -987,10 +999,12 @@ export class V1CredentialProtocol
     const requestCredentialMessage = await didCommMessageRepository.getAgentMessage(messageContext.agentContext, {
       associatedRecordId: credentialRecord.id,
       messageClass: V1RequestCredentialMessage,
+      role: DidCommMessageRole.Receiver,
     })
     const issueCredentialMessage = await didCommMessageRepository.getAgentMessage(messageContext.agentContext, {
       associatedRecordId: credentialRecord.id,
       messageClass: V1IssueCredentialMessage,
+      role: DidCommMessageRole.Sender,
     })
 
     // Assert
