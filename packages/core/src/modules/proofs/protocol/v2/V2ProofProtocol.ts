@@ -162,9 +162,10 @@ export class V2ProofProtocol<PFs extends ProofFormatService[] = ProofFormatServi
     const didCommMessageRepository = agentContext.dependencyManager.resolve(DidCommMessageRepository)
     const connectionService = agentContext.dependencyManager.resolve(ConnectionService)
 
-    let proofRecord = await this.findByThreadAndConnectionId(
+    let proofRecord = await this.findByThreadIdConnectionIdAndRole(
       messageContext.agentContext,
       proposalMessage.threadId,
+      ProofRole.Verifier,
       connection?.id
     )
 
@@ -416,9 +417,10 @@ export class V2ProofProtocol<PFs extends ProofFormatService[] = ProofFormatServi
 
     agentContext.config.logger.debug(`Processing proof request with id ${requestMessage.id}`)
 
-    let proofRecord = await this.findByThreadAndConnectionId(
+    let proofRecord = await this.findByThreadIdConnectionIdAndRole(
       messageContext.agentContext,
       requestMessage.threadId,
+      ProofRole.Prover,
       connection?.id
     )
 
@@ -674,7 +676,11 @@ export class V2ProofProtocol<PFs extends ProofFormatService[] = ProofFormatServi
 
     agentContext.config.logger.debug(`Processing presentation with id ${presentationMessage.id}`)
 
-    const proofRecord = await this.getByThreadAndConnectionId(messageContext.agentContext, presentationMessage.threadId)
+    const proofRecord = await this.getByThreadIdConnectionIdAndRole(
+      messageContext.agentContext,
+      presentationMessage.threadId,
+      ProofRole.Verifier
+    )
 
     const lastSentMessage = await didCommMessageRepository.getAgentMessage(messageContext.agentContext, {
       associatedRecordId: proofRecord.id,
@@ -787,9 +793,10 @@ export class V2ProofProtocol<PFs extends ProofFormatService[] = ProofFormatServi
     const didCommMessageRepository = agentContext.dependencyManager.resolve(DidCommMessageRepository)
     const connectionService = agentContext.dependencyManager.resolve(ConnectionService)
 
-    const proofRecord = await this.getByThreadAndConnectionId(
+    const proofRecord = await this.getByThreadIdConnectionIdAndRole(
       messageContext.agentContext,
       ackMessage.threadId,
+      ProofRole.Prover,
       connection?.id
     )
     proofRecord.connectionId = connection?.id

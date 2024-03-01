@@ -23,6 +23,7 @@ import type { Query } from '../../../storage/StorageService'
 import type { ProblemReportMessage } from '../../problem-reports'
 import type { CredentialStateChangedEvent } from '../CredentialEvents'
 import type { CredentialFormatService, ExtractCredentialFormats } from '../formats'
+import type { CredentialRole } from '../models'
 import type { CredentialExchangeRecord } from '../repository'
 
 import { EventEmitter } from '../../../agent/EventEmitter'
@@ -141,9 +142,10 @@ export abstract class BaseCredentialProtocol<CFs extends CredentialFormatService
 
     agentContext.config.logger.debug(`Processing problem report with message id ${credentialProblemReportMessage.id}`)
 
-    const credentialRecord = await this.getByThreadAndConnectionId(
+    const credentialRecord = await this.getByThreadIdConnectionIdAndRole(
       agentContext,
       credentialProblemReportMessage.threadId,
+      undefined,
       connection.id
     )
 
@@ -275,14 +277,17 @@ export abstract class BaseCredentialProtocol<CFs extends CredentialFormatService
    * Retrieve a credential record by connection id and thread id
    *
    * @param connectionId The connection id
+   * @param role The role of the record, i.e. holder or issuer
    * @param threadId The thread id
+   *
    * @throws {RecordNotFoundError} If no record is found
    * @throws {RecordDuplicateError} If multiple records are found
    * @returns The credential record
    */
-  public getByThreadAndConnectionId(
+  public getByThreadIdConnectionIdAndRole(
     agentContext: AgentContext,
     threadId: string,
+    role?: CredentialRole,
     connectionId?: string
   ): Promise<CredentialExchangeRecord> {
     const credentialRepository = agentContext.dependencyManager.resolve(CredentialRepository)
@@ -290,19 +295,23 @@ export abstract class BaseCredentialProtocol<CFs extends CredentialFormatService
     return credentialRepository.getSingleByQuery(agentContext, {
       connectionId,
       threadId,
+      role,
     })
   }
 
   /**
    * Find a credential record by connection id and thread id, returns null if not found
    *
-   * @param connectionId The connection id
    * @param threadId The thread id
+   * @param role The role of the record, i.e. holder or issuer
+   * @param connectionId The connection id
+   *
    * @returns The credential record
    */
-  public findByThreadAndConnectionId(
+  public findByThreadIdConnectionIdAndRole(
     agentContext: AgentContext,
     threadId: string,
+    role?: CredentialRole,
     connectionId?: string
   ): Promise<CredentialExchangeRecord | null> {
     const credentialRepository = agentContext.dependencyManager.resolve(CredentialRepository)
@@ -310,6 +319,7 @@ export abstract class BaseCredentialProtocol<CFs extends CredentialFormatService
     return credentialRepository.findSingleByQuery(agentContext, {
       connectionId,
       threadId,
+      role,
     })
   }
 

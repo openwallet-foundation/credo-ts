@@ -101,12 +101,12 @@ export interface ProofProtocol<PFs extends ProofFormatService[] = ProofFormatSer
   findAllByQuery(agentContext: AgentContext, query: Query<ProofExchangeRecord>): Promise<ProofExchangeRecord[]>
   findById(agentContext: AgentContext, proofExchangeId: string): Promise<ProofExchangeRecord | null>
   delete(agentContext: AgentContext, proofRecord: ProofExchangeRecord, options?: DeleteProofOptions): Promise<void>
-  getByThreadAndConnectionId(
+  getByThreadIdConnectionIdAndRole(
     agentContext: AgentContext,
     threadId: string,
     connectionId?: string
   ): Promise<ProofExchangeRecord>
-  findByThreadAndConnectionId(
+  findByThreadIdConnectionIdAndRole(
     agentContext: AgentContext,
     threadId: string,
     connectionId?: string

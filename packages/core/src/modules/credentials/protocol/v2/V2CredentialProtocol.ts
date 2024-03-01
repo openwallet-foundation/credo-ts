@@ -174,9 +174,10 @@ export class V2CredentialProtocol<CFs extends CredentialFormatService[] = Creden
     const didCommMessageRepository = agentContext.dependencyManager.resolve(DidCommMessageRepository)
     const connectionService = agentContext.dependencyManager.resolve(ConnectionService)
 
-    let credentialRecord = await this.findByThreadAndConnectionId(
+    let credentialRecord = await this.findByThreadIdConnectionIdAndRole(
       messageContext.agentContext,
       proposalMessage.threadId,
+      CredentialRole.Issuer,
       connection?.id
     )
 
@@ -416,9 +417,10 @@ export class V2CredentialProtocol<CFs extends CredentialFormatService[] = Creden
     const didCommMessageRepository = agentContext.dependencyManager.resolve(DidCommMessageRepository)
     const connectionService = agentContext.dependencyManager.resolve(ConnectionService)
 
-    let credentialRecord = await this.findByThreadAndConnectionId(
+    let credentialRecord = await this.findByThreadIdConnectionIdAndRole(
       messageContext.agentContext,
       offerMessage.threadId,
+      CredentialRole.Holder,
       connection?.id
     )
 
@@ -658,7 +660,11 @@ export class V2CredentialProtocol<CFs extends CredentialFormatService[] = Creden
 
     agentContext.config.logger.debug(`Processing credential request with id ${requestMessage.id}`)
 
-    let credentialRecord = await this.findByThreadAndConnectionId(messageContext.agentContext, requestMessage.threadId)
+    let credentialRecord = await this.findByThreadIdConnectionIdAndRole(
+      messageContext.agentContext,
+      requestMessage.threadId,
+      CredentialRole.Issuer
+    )
 
     const formatServices = this.getFormatServicesFromMessage(requestMessage.formats)
     if (formatServices.length === 0) {
@@ -807,9 +813,10 @@ export class V2CredentialProtocol<CFs extends CredentialFormatService[] = Creden
 
     agentContext.config.logger.debug(`Processing credential with id ${credentialMessage.id}`)
 
-    const credentialRecord = await this.getByThreadAndConnectionId(
+    const credentialRecord = await this.getByThreadIdConnectionIdAndRole(
       messageContext.agentContext,
       credentialMessage.threadId,
+      CredentialRole.Holder,
       connection?.id
     )
 
@@ -893,9 +900,10 @@ export class V2CredentialProtocol<CFs extends CredentialFormatService[] = Creden
     const didCommMessageRepository = agentContext.dependencyManager.resolve(DidCommMessageRepository)
     const connectionService = agentContext.dependencyManager.resolve(ConnectionService)
 
-    const credentialRecord = await this.getByThreadAndConnectionId(
+    const credentialRecord = await this.getByThreadIdConnectionIdAndRole(
       messageContext.agentContext,
       ackMessage.threadId,
+      CredentialRole.Issuer,
       connection?.id
     )
     credentialRecord.connectionId = connection?.id
@@ -934,7 +942,7 @@ export class V2CredentialProtocol<CFs extends CredentialFormatService[] = Creden
    *
    */
   public async createProblemReport(
-    agentContext: AgentContext,
+    _agentContext: AgentContext,
     { credentialRecord, description }: CreateCredentialProblemReportOptions
   ): Promise<CredentialProtocolMsgReturnType<ProblemReportMessage>> {
     const message = new V2CredentialProblemReportMessage({

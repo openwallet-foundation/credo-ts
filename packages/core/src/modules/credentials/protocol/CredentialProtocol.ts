@@ -112,12 +112,12 @@ export interface CredentialProtocol<CFs extends CredentialFormatService[] = Cred
     credentialRecord: CredentialExchangeRecord,
     options?: DeleteCredentialOptions
   ): Promise<void>
-  getByThreadAndConnectionId(
+  getByThreadIdConnectionIdAndRole(
     agentContext: AgentContext,
     threadId: string,
     connectionId?: string
   ): Promise<CredentialExchangeRecord>
-  findByThreadAndConnectionId(
+  findByThreadIdConnectionIdAndRole(
     agentContext: AgentContext,
     threadId: string,
     connectionId?: string
