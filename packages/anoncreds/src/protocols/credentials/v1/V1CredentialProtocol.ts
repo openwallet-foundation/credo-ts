@@ -203,10 +203,11 @@ export class V1CredentialProtocol
 
     agentContext.config.logger.debug(`Processing credential proposal with message id ${proposalMessage.id}`)
 
-    let credentialRecord = await this.findByThreadAndConnectionId(
+    let credentialRecord = await this.findByThreadIdConnectionIdAndRole(
       messageContext.agentContext,
       proposalMessage.threadId,
-      connection?.id
+      connection?.id,
+      CredentialRole.Issuer
     )
 
     // Credential record already exists, this is a response to an earlier message sent by us
@@ -503,7 +504,12 @@ export class V1CredentialProtocol
 
     agentContext.config.logger.debug(`Processing credential offer with id ${offerMessage.id}`)
 
-    let credentialRecord = await this.findByThreadAndConnectionId(agentContext, offerMessage.threadId, connection?.id)
+    let credentialRecord = await this.findByThreadIdConnectionIdAndRole(
+      agentContext,
+      offerMessage.threadId,
+      connection?.id,
+      CredentialRole.Holder
+    )
 
     const offerAttachment = offerMessage.getOfferAttachmentById(INDY_CREDENTIAL_OFFER_ATTACHMENT_ID)
     if (!offerAttachment) {

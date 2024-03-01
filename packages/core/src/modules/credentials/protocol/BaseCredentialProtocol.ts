@@ -23,6 +23,7 @@ import type { Query } from '../../../storage/StorageService'
 import type { ProblemReportMessage } from '../../problem-reports'
 import type { CredentialStateChangedEvent } from '../CredentialEvents'
 import type { CredentialFormatService, ExtractCredentialFormats } from '../formats'
+import type { CredentialRole } from '../models'
 import type { CredentialExchangeRecord } from '../repository'
 
 import { EventEmitter } from '../../../agent/EventEmitter'
@@ -296,20 +297,23 @@ export abstract class BaseCredentialProtocol<CFs extends CredentialFormatService
   /**
    * Find a credential record by connection id and thread id, returns null if not found
    *
-   * @param connectionId The connection id
    * @param threadId The thread id
+   * @param connectionId The connection id
+   * @param role The role required, i.e. issuer of holder
    * @returns The credential record
    */
-  public findByThreadAndConnectionId(
+  public findByThreadIdConnectionIdAndRole(
     agentContext: AgentContext,
     threadId: string,
-    connectionId?: string
+    connectionId?: string,
+    role?: CredentialRole
   ): Promise<CredentialExchangeRecord | null> {
     const credentialRepository = agentContext.dependencyManager.resolve(CredentialRepository)
 
     return credentialRepository.findSingleByQuery(agentContext, {
       connectionId,
       threadId,
+      role,
     })
   }
 

@@ -25,6 +25,7 @@ import type { Query } from '../../../storage/StorageService'
 import type { ProblemReportMessage } from '../../problem-reports'
 import type { ProofStateChangedEvent } from '../ProofEvents'
 import type { ExtractProofFormats, ProofFormatService } from '../formats'
+import type { ProofRole } from '../models'
 import type { ProofExchangeRecord } from '../repository'
 
 import { EventEmitter } from '../../../agent/EventEmitter'
@@ -256,20 +257,23 @@ export abstract class BaseProofProtocol<PFs extends ProofFormatService[] = Proof
   /**
    * Find a proof record by connection id and thread id, returns null if not found
    *
-   * @param connectionId The connection id
    * @param threadId The thread id
+   * @param connectionId The connection id
+   * @param role The role of the proof record, i.e. verifier or prover
    * @returns The proof record
    */
-  public findByThreadAndConnectionId(
+  public findByThreadIdConnectionIdAndRole(
     agentContext: AgentContext,
     threadId: string,
-    connectionId?: string
+    connectionId?: string,
+    role?: ProofRole
   ): Promise<ProofExchangeRecord | null> {
     const proofRepository = agentContext.dependencyManager.resolve(ProofRepository)
 
     return proofRepository.findSingleByQuery(agentContext, {
       connectionId,
       threadId,
+      role,
     })
   }
 

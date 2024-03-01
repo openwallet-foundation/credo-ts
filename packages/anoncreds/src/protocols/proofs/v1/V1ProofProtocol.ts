@@ -171,7 +171,12 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
 
     agentContext.config.logger.debug(`Processing presentation proposal with message id ${proposalMessage.id}`)
 
-    let proofRecord = await this.findByThreadAndConnectionId(agentContext, proposalMessage.threadId, connection?.id)
+    let proofRecord = await this.findByThreadIdConnectionIdAndRole(
+      agentContext,
+      proposalMessage.threadId,
+      connection?.id,
+      ProofRole.Verifier
+    )
 
     // Proof record already exists, this is a response to an earlier message sent by us
     if (proofRecord) {
@@ -422,7 +427,12 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
 
     agentContext.config.logger.debug(`Processing presentation request with id ${proofRequestMessage.id}`)
 
-    let proofRecord = await this.findByThreadAndConnectionId(agentContext, proofRequestMessage.threadId, connection?.id)
+    let proofRecord = await this.findByThreadIdConnectionIdAndRole(
+      agentContext,
+      proofRequestMessage.threadId,
+      connection?.id,
+      ProofRole.Prover
+    )
 
     const requestAttachment = proofRequestMessage.getRequestAttachmentById(INDY_PROOF_REQUEST_ATTACHMENT_ID)
     if (!requestAttachment) {

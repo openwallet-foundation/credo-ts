@@ -327,7 +327,7 @@ describe('credentialProtocol', () => {
         invalidCredentialStates.map(async (state) => {
           await expect(
             credentialProtocol.acceptOffer(agentContext, { credentialRecord: mockCredentialRecord({ state }) })
-          ).rejects.toThrowError(`Credential record is in invalid state ${state}. Valid states are: ${validState}.`)
+          ).rejects.toThrow(`Credential record is in invalid state ${state}. Valid states are: ${validState}.`)
         })
       )
     })
@@ -350,6 +350,8 @@ describe('credentialProtocol', () => {
       // then
       expect(credentialRepository.findSingleByQuery).toHaveBeenNthCalledWith(1, agentContext, {
         threadId: 'somethreadid',
+        connectionId: 'issuer',
+        role: undefined,
       })
       expect(credentialRepository.update).toHaveBeenCalledTimes(1)
       expect(returnedCredentialRecord.state).toEqual(CredentialState.RequestReceived)
@@ -372,6 +374,8 @@ describe('credentialProtocol', () => {
       // then
       expect(credentialRepository.findSingleByQuery).toHaveBeenNthCalledWith(1, agentContext, {
         threadId: 'somethreadid',
+        connectionId: 'issuer',
+        role: undefined,
       })
       expect(eventListenerMock).toHaveBeenCalled()
       expect(returnedCredentialRecord.state).toEqual(CredentialState.RequestReceived)

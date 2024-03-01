@@ -106,7 +106,7 @@ export interface ProofProtocol<PFs extends ProofFormatService[] = ProofFormatSer
     threadId: string,
     connectionId?: string
   ): Promise<ProofExchangeRecord>
-  findByThreadAndConnectionId(
+  findByThreadIdConnectionIdAndRole(
     agentContext: AgentContext,
     threadId: string,
     connectionId?: string
