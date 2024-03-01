@@ -145,6 +145,7 @@ export class CredentialFormatCoordinator<CFs extends CredentialFormatService[]> 
     const proposalMessage = await didCommMessageRepository.getAgentMessage(agentContext, {
       associatedRecordId: credentialRecord.id,
       messageClass: V2ProposeCredentialMessage,
+      role: DidCommMessageRole.Receiver,
     })
 
     // NOTE: We set the credential attributes from the proposal on the record as we've 'accepted' them
@@ -336,6 +337,7 @@ export class CredentialFormatCoordinator<CFs extends CredentialFormatService[]> 
     const offerMessage = await didCommMessageRepository.getAgentMessage(agentContext, {
       associatedRecordId: credentialRecord.id,
       messageClass: V2OfferCredentialMessage,
+      role: DidCommMessageRole.Receiver,
     })
 
     // create message. there are two arrays in each message, one for formats the other for attachments
@@ -496,11 +498,13 @@ export class CredentialFormatCoordinator<CFs extends CredentialFormatService[]> 
     const requestMessage = await didCommMessageRepository.getAgentMessage(agentContext, {
       associatedRecordId: credentialRecord.id,
       messageClass: V2RequestCredentialMessage,
+      role: DidCommMessageRole.Receiver,
     })
 
     const offerMessage = await didCommMessageRepository.findAgentMessage(agentContext, {
       associatedRecordId: credentialRecord.id,
       messageClass: V2OfferCredentialMessage,
+      role: DidCommMessageRole.Sender,
     })
 
     // create message. there are two arrays in each message, one for formats the other for attachments
@@ -569,6 +573,7 @@ export class CredentialFormatCoordinator<CFs extends CredentialFormatService[]> 
     const offerMessage = await didCommMessageRepository.getAgentMessage(agentContext, {
       associatedRecordId: credentialRecord.id,
       messageClass: V2OfferCredentialMessage,
+      role: DidCommMessageRole.Receiver,
     })
 
     for (const formatService of formatServices) {

@@ -137,6 +137,7 @@ export class ProofFormatCoordinator<PFs extends ProofFormatService[]> {
     const proposalMessage = await didCommMessageRepository.getAgentMessage(agentContext, {
       associatedRecordId: proofRecord.id,
       messageClass: V2ProposePresentationMessage,
+      role: DidCommMessageRole.Receiver,
     })
 
     for (const formatService of formatServices) {
@@ -298,11 +299,13 @@ export class ProofFormatCoordinator<PFs extends ProofFormatService[]> {
     const requestMessage = await didCommMessageRepository.getAgentMessage(agentContext, {
       associatedRecordId: proofRecord.id,
       messageClass: V2RequestPresentationMessage,
+      role: DidCommMessageRole.Receiver,
     })
 
     const proposalMessage = await didCommMessageRepository.findAgentMessage(agentContext, {
       associatedRecordId: proofRecord.id,
       messageClass: V2ProposePresentationMessage,
+      role: DidCommMessageRole.Receiver,
     })
 
     // create message. there are two arrays in each message, one for formats the other for attachments
@@ -373,11 +376,13 @@ export class ProofFormatCoordinator<PFs extends ProofFormatService[]> {
     const requestMessage = await didCommMessageRepository.getAgentMessage(agentContext, {
       associatedRecordId: proofRecord.id,
       messageClass: V2RequestPresentationMessage,
+      role: DidCommMessageRole.Receiver,
     })
 
     const proposalMessage = await didCommMessageRepository.findAgentMessage(agentContext, {
       associatedRecordId: proofRecord.id,
       messageClass: V2ProposePresentationMessage,
+      role: DidCommMessageRole.Receiver,
     })
 
     const credentialsForRequest: Record<string, unknown> = {}
@@ -429,11 +434,13 @@ export class ProofFormatCoordinator<PFs extends ProofFormatService[]> {
     const requestMessage = await didCommMessageRepository.getAgentMessage(agentContext, {
       associatedRecordId: proofRecord.id,
       messageClass: V2RequestPresentationMessage,
+      role: DidCommMessageRole.Receiver,
     })
 
     const proposalMessage = await didCommMessageRepository.findAgentMessage(agentContext, {
       associatedRecordId: proofRecord.id,
       messageClass: V2ProposePresentationMessage,
+      role: DidCommMessageRole.Receiver,
     })
 
     const credentialsForRequest: Record<string, unknown> = {}

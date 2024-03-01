@@ -3,7 +3,7 @@ import type { ProofExchangeRecord } from '../../../repository'
 import type { V2ProofProtocol } from '../V2ProofProtocol'
 
 import { getOutboundMessageContext } from '../../../../../agent/getOutboundMessageContext'
-import { DidCommMessageRepository } from '../../../../../storage/didcomm'
+import { DidCommMessageRepository, DidCommMessageRole } from '../../../../../storage/didcomm'
 import { V2PresentationMessage, V2RequestPresentationMessage } from '../messages'
 
 export class V2PresentationHandler implements MessageHandler {
@@ -41,6 +41,7 @@ export class V2PresentationHandler implements MessageHandler {
     const requestMessage = await didCommMessageRepository.getAgentMessage(messageContext.agentContext, {
       associatedRecordId: proofRecord.id,
       messageClass: V2RequestPresentationMessage,
+      role: DidCommMessageRole.Sender,
     })
 
     return getOutboundMessageContext(messageContext.agentContext, {

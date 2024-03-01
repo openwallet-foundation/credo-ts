@@ -55,26 +55,28 @@ export class DidCommMessageRepository extends Repository<DidCommMessageRecord> {
 
   public async getAgentMessage<MessageClass extends ConstructableAgentMessage = ConstructableAgentMessage>(
     agentContext: AgentContext,
-    { associatedRecordId, messageClass }: GetAgentMessageOptions<MessageClass>
+    { associatedRecordId, messageClass, role }: GetAgentMessageOptions<MessageClass>
   ): Promise<InstanceType<MessageClass>> {
     const record = await this.getSingleByQuery(agentContext, {
       associatedRecordId,
       messageName: messageClass.type.messageName,
       protocolName: messageClass.type.protocolName,
       protocolMajorVersion: String(messageClass.type.protocolMajorVersion),
+      role,
     })
 
     return record.getMessageInstance(messageClass)
   }
   public async findAgentMessage<MessageClass extends ConstructableAgentMessage = ConstructableAgentMessage>(
     agentContext: AgentContext,
-    { associatedRecordId, messageClass }: GetAgentMessageOptions<MessageClass>
+    { associatedRecordId, messageClass, role }: GetAgentMessageOptions<MessageClass>
   ): Promise<InstanceType<MessageClass> | null> {
     const record = await this.findSingleByQuery(agentContext, {
       associatedRecordId,
       messageName: messageClass.type.messageName,
       protocolName: messageClass.type.protocolName,
       protocolMajorVersion: String(messageClass.type.protocolMajorVersion),
+      role,
     })
 
     return record?.getMessageInstance(messageClass) ?? null
@@ -90,4 +92,5 @@ export interface SaveAgentMessageOptions {
 export interface GetAgentMessageOptions<MessageClass extends typeof AgentMessage> {
   associatedRecordId: string
   messageClass: MessageClass
+  role?: DidCommMessageRole
 }
