@@ -171,12 +171,11 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
 
     agentContext.config.logger.debug(`Processing presentation proposal with message id ${proposalMessage.id}`)
 
-    let proofRecord = await this.findByThreadIdConnectionIdAndRole(
-      agentContext,
-      proposalMessage.threadId,
-      ProofRole.Verifier,
-      connection?.id
-    )
+    let proofRecord = await this.findByProperties(agentContext, {
+      threadId: proposalMessage.threadId,
+      role: ProofRole.Verifier,
+      connectionId: connection?.id,
+    })
 
     // Proof record already exists, this is a response to an earlier message sent by us
     if (proofRecord) {
@@ -427,12 +426,11 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
 
     agentContext.config.logger.debug(`Processing presentation request with id ${proofRequestMessage.id}`)
 
-    let proofRecord = await this.findByThreadIdConnectionIdAndRole(
-      agentContext,
-      proofRequestMessage.threadId,
-      ProofRole.Prover,
-      connection?.id
-    )
+    let proofRecord = await this.findByProperties(agentContext, {
+      threadId: proofRequestMessage.threadId,
+      role: ProofRole.Prover,
+      connectionId: connection?.id,
+    })
 
     const requestAttachment = proofRequestMessage.getRequestAttachmentById(INDY_PROOF_REQUEST_ATTACHMENT_ID)
     if (!requestAttachment) {
@@ -770,7 +768,10 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
     // only depends on the public api, rather than the internal API (this helps with breaking changes)
     const connectionService = agentContext.dependencyManager.resolve(ConnectionService)
 
-    const proofRecord = await this.getByThreadIdConnectionIdAndRole(agentContext, presentationMessage.threadId)
+    const proofRecord = await this.getByProperties(agentContext, {
+      threadId: presentationMessage.threadId,
+      role: ProofRole.Verifier,
+    })
 
     const proposalMessage = await didCommMessageRepository.findAgentMessage(agentContext, {
       associatedRecordId: proofRecord.id,
@@ -897,12 +898,11 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
     // only depends on the public api, rather than the internal API (this helps with breaking changes)
     const connectionService = agentContext.dependencyManager.resolve(ConnectionService)
 
-    const proofRecord = await this.getByThreadIdConnectionIdAndRole(
-      agentContext,
-      presentationAckMessage.threadId,
-      ProofRole.Prover,
-      connection?.id
-    )
+    const proofRecord = await this.getByProperties(agentContext, {
+      threadId: presentationAckMessage.threadId,
+      role: ProofRole.Prover,
+      connectionId: connection?.id,
+    })
 
     const lastReceivedMessage = await didCommMessageRepository.getAgentMessage(agentContext, {
       associatedRecordId: proofRecord.id,

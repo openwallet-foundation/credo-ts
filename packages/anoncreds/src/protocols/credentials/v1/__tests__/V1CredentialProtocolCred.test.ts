@@ -758,12 +758,13 @@ describe('V1CredentialProtocol', () => {
     it('getById should return value from credentialRepository.getSingleByQuery', async () => {
       const expected = mockCredentialRecord()
       mockFunction(credentialRepository.getSingleByQuery).mockReturnValue(Promise.resolve(expected))
-      const result = await credentialProtocol.getByThreadIdConnectionIdAndRole(
-        agentContext,
-        'threadId',
-        CredentialRole.Issuer,
-        'connectionId'
-      )
+
+      const result = await credentialProtocol.getByProperties(agentContext, {
+        threadId: 'threadId',
+        role: CredentialRole.Issuer,
+        connectionId: 'connectionId',
+      })
+
       expect(credentialRepository.getSingleByQuery).toHaveBeenCalledWith(agentContext, {
         threadId: 'threadId',
         connectionId: 'connectionId',

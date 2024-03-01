@@ -142,12 +142,10 @@ export abstract class BaseCredentialProtocol<CFs extends CredentialFormatService
 
     agentContext.config.logger.debug(`Processing problem report with message id ${credentialProblemReportMessage.id}`)
 
-    const credentialRecord = await this.getByThreadIdConnectionIdAndRole(
-      agentContext,
-      credentialProblemReportMessage.threadId,
-      undefined,
-      connection.id
-    )
+    const credentialRecord = await this.getByProperties(agentContext, {
+      threadId: credentialProblemReportMessage.threadId,
+      connectionId: connection.id,
+    })
 
     // Update record
     credentialRecord.errorMessage = `${credentialProblemReportMessage.description.code}: ${credentialProblemReportMessage.description.en}`
@@ -276,20 +274,21 @@ export abstract class BaseCredentialProtocol<CFs extends CredentialFormatService
   /**
    * Retrieve a credential record by connection id and thread id
    *
-   * @param connectionId The connection id
-   * @param role The role of the record, i.e. holder or issuer
-   * @param threadId The thread id
+   * @param properties Properties to query by
    *
    * @throws {RecordNotFoundError} If no record is found
    * @throws {RecordDuplicateError} If multiple records are found
    * @returns The credential record
    */
-  public getByThreadIdConnectionIdAndRole(
+  public getByProperties(
     agentContext: AgentContext,
-    threadId: string,
-    role?: CredentialRole,
-    connectionId?: string
+    properties: {
+      threadId: string
+      role?: CredentialRole
+      connectionId?: string
+    }
   ): Promise<CredentialExchangeRecord> {
+    const { role, connectionId, threadId } = properties
     const credentialRepository = agentContext.dependencyManager.resolve(CredentialRepository)
 
     return credentialRepository.getSingleByQuery(agentContext, {
@@ -308,12 +307,15 @@ export abstract class BaseCredentialProtocol<CFs extends CredentialFormatService
    *
    * @returns The credential record
    */
-  public findByThreadIdConnectionIdAndRole(
+  public findByProperties(
     agentContext: AgentContext,
-    threadId: string,
-    role?: CredentialRole,
-    connectionId?: string
+    properties: {
+      threadId: string
+      role?: CredentialRole
+      connectionId?: string
+    }
   ): Promise<CredentialExchangeRecord | null> {
+    const { role, connectionId, threadId } = properties
     const credentialRepository = agentContext.dependencyManager.resolve(CredentialRepository)
 
     return credentialRepository.findSingleByQuery(agentContext, {
