@@ -4,6 +4,7 @@ import type {
   SdJwtVcPayload,
   SdJwtVcPresentOptions,
   SdJwtVcVerifyOptions,
+  SdJwtVcGetPresentationKeysOptions,
 } from './SdJwtVcOptions'
 import type { SdJwtVcRecord } from './repository'
 import type { Query } from '../../storage/StorageService'
@@ -37,10 +38,12 @@ export class SdJwtVcApi {
    *
    * Also, whether to include the holder key binding.
    */
-  public async present<Header extends SdJwtVcHeader, Payload extends SdJwtVcPayload>(
-    options: SdJwtVcPresentOptions<Payload>
-  ): Promise<string> {
-    return await this.sdJwtVcService.present<Header, Payload>(this.agentContext, options)
+  public async present(options: SdJwtVcPresentOptions): Promise<string> {
+    return await this.sdJwtVcService.present(this.agentContext, options)
+  }
+
+  public async getPresentableKeys(options: SdJwtVcGetPresentationKeysOptions): Promise<string[]> {
+    return await this.sdJwtVcService.getPresentableKeys(options)
   }
 
   /**

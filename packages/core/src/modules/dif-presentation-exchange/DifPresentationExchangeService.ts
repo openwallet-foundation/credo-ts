@@ -501,8 +501,8 @@ export class DifPresentationExchangeService {
         const sdJwtVcApi = this.getSdJwtVcApi(agentContext)
         const sdJwtVc = await sdJwtVcApi.present({
           compactSdJwtVc: sdJwtInput.compactSdJwtVc,
-          // SD is already handled by PEX
-          presentationFrame: true,
+          // SD is already handled by PEX, so we presents all keys
+          presentationFrame: await sdJwtVcApi.getPresentableKeys({ compactSdJwtVc: sdJwtInput.compactSdJwtVc }),
           verifierMetadata: {
             audience: domain,
             nonce: challenge,

@@ -47,7 +47,7 @@ export type SdJwtVcPresentOptions = {
   /**
    * Use true to disclose everything
    */
-  presentationFrame: string[]
+  presentationFrame: string[] | undefined
 
   /**
    * This information is received out-of-band from the verifier.
@@ -58,6 +58,10 @@ export type SdJwtVcPresentOptions = {
     nonce: string
     issuedAt: number
   }
+}
+
+export type SdJwtVcGetPresentationKeysOptions = {
+  compactSdJwtVc: string
 }
 
 export type SdJwtVcVerifyOptions = {

@@ -6,6 +6,7 @@ import type {
   SdJwtVcHeader,
   SdJwtVcHolderBinding,
   SdJwtVcIssuer,
+  SdJwtVcGetPresentationKeysOptions,
 } from './SdJwtVcOptions'
 import type { AgentContext } from '../../agent'
 import type { JwkJson, Key } from '../../crypto'
@@ -142,8 +143,6 @@ export class SdJwtVcService {
     const compactDerivedSdJwtVc = await sdjwt.present(compactSdJwtVc, presentationFrame, {
       kb: {
         payload: {
-          // TODO: This will be supported automatically in sd-jwt package later
-          sd_hash: Uint8ArrayToBase64Url(this.hasher(compactSdJwtVc, 'sha-256')),
           iat: verifierMetadata.issuedAt,
           nonce: verifierMetadata.nonce,
           aud: verifierMetadata.audience,
@@ -152,6 +151,14 @@ export class SdJwtVcService {
     })
 
     return compactDerivedSdJwtVc
+  }
+
+  public async getPresentableKeys({ compactSdJwtVc }: SdJwtVcGetPresentationKeysOptions) {
+    const sdjwt = new SDJwtInstance({
+      hasher: this.hasher,
+    })
+    const keys = await sdjwt.presentableKeys(compactSdJwtVc)
+    return keys
   }
 
   public async verify<Header extends SdJwtVcHeader = SdJwtVcHeader, Payload extends SdJwtVcPayload = SdJwtVcPayload>(
