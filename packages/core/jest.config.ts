@@ -10,7 +10,6 @@ const config: Config.InitialOptions = {
   ...base,
   displayName: packageJson.name,
   setupFilesAfterEnv: ['./tests/setup.ts'],
-  testMatch: ['**/*/sdJwtVc.test.ts', '**/*/SdJwtVcService.test.ts', '**/*/SdJwtVcModule.test.ts'],
 }
 
 export default config

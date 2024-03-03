@@ -7,7 +7,11 @@ const config: Config.InitialOptions = {
   roots: ['<rootDir>'],
   coveragePathIgnorePatterns: ['/build/', '/node_modules/', '/__tests__/', 'tests'],
   coverageDirectory: '<rootDir>/coverage/',
-  projects: ['<rootDir>/packages/core/jest.config.ts'],
+  projects: [
+    '<rootDir>/packages/*/jest.config.ts',
+    '<rootDir>/tests/jest.config.ts',
+    '<rootDir>/samples/extension-module/jest.config.ts',
+  ],
 }
 
 export default config
