@@ -49,7 +49,7 @@ export interface VerificationResult {
   areRequiredClaimsIncluded?: boolean
   isKeyBindingValid?: boolean
   containsExpectedKeyBinding?: boolean
-  containsRequiredVcProperties: boolean
+  containsRequiredVcProperties?: boolean
 }
 
 /**
@@ -177,11 +177,6 @@ export class SdJwtVcService {
     const verificationResult: VerificationResult = {
       isValid: false,
       isSignatureValid: false,
-      isNotBeforeValid: false,
-      isExpiryTimeValid: false,
-      areRequiredClaimsIncluded: false,
-      containsExpectedKeyBinding: false,
-      containsRequiredVcProperties: false,
     }
 
     await sdjwt.verify(compactSdJwtVc, requiredClaimKeys, !!keyBinding)
@@ -207,6 +202,8 @@ export class SdJwtVcService {
         }
 
         verificationResult.isKeyBindingValid = true
+        verificationResult.containsExpectedKeyBinding = true
+        verificationResult.containsRequiredVcProperties = true
       }
     } catch (error) {
       verificationResult.isKeyBindingValid = false
