@@ -12,6 +12,7 @@ import {
 } from '@credo-ts/core'
 
 import { DrpcRequestHandler, DrpcResponseHandler } from './handlers'
+import { DrpcRole } from './models'
 import { DrpcService } from './services'
 
 @injectable()
@@ -109,7 +110,7 @@ export class DrpcApi {
         removeListener: () => void
       }) => {
         const request = drpcMessageRecord.request
-        if (request) {
+        if (request && drpcMessageRecord.role === DrpcRole.Server) {
           removeListener()
           resolve({
             sendResponse: async (response: DrpcResponse) => {
