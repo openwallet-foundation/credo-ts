@@ -162,11 +162,11 @@ export class V2ProofProtocol<PFs extends ProofFormatService[] = ProofFormatServi
     const didCommMessageRepository = agentContext.dependencyManager.resolve(DidCommMessageRepository)
     const connectionService = agentContext.dependencyManager.resolve(ConnectionService)
 
-    let proofRecord = await this.findByThreadAndConnectionId(
-      messageContext.agentContext,
-      proposalMessage.threadId,
-      connection?.id
-    )
+    let proofRecord = await this.findByProperties(messageContext.agentContext, {
+      threadId: proposalMessage.threadId,
+      role: ProofRole.Verifier,
+      connectionId: connection?.id,
+    })
 
     const formatServices = this.getFormatServicesFromMessage(proposalMessage.formats)
     if (formatServices.length === 0) {
@@ -416,11 +416,11 @@ export class V2ProofProtocol<PFs extends ProofFormatService[] = ProofFormatServi
 
     agentContext.config.logger.debug(`Processing proof request with id ${requestMessage.id}`)
 
-    let proofRecord = await this.findByThreadAndConnectionId(
-      messageContext.agentContext,
-      requestMessage.threadId,
-      connection?.id
-    )
+    let proofRecord = await this.findByProperties(messageContext.agentContext, {
+      threadId: requestMessage.threadId,
+      role: ProofRole.Prover,
+      connectionId: connection?.id,
+    })
 
     const formatServices = this.getFormatServicesFromMessage(requestMessage.formats)
     if (formatServices.length === 0) {
@@ -674,7 +674,10 @@ export class V2ProofProtocol<PFs extends ProofFormatService[] = ProofFormatServi
 
     agentContext.config.logger.debug(`Processing presentation with id ${presentationMessage.id}`)
 
-    const proofRecord = await this.getByThreadAndConnectionId(messageContext.agentContext, presentationMessage.threadId)
+    const proofRecord = await this.getByProperties(messageContext.agentContext, {
+      threadId: presentationMessage.threadId,
+      role: ProofRole.Verifier,
+    })
 
     const lastSentMessage = await didCommMessageRepository.getAgentMessage(messageContext.agentContext, {
       associatedRecordId: proofRecord.id,
@@ -787,11 +790,11 @@ export class V2ProofProtocol<PFs extends ProofFormatService[] = ProofFormatServi
     const didCommMessageRepository = agentContext.dependencyManager.resolve(DidCommMessageRepository)
     const connectionService = agentContext.dependencyManager.resolve(ConnectionService)
 
-    const proofRecord = await this.getByThreadAndConnectionId(
-      messageContext.agentContext,
-      ackMessage.threadId,
-      connection?.id
-    )
+    const proofRecord = await this.getByProperties(messageContext.agentContext, {
+      threadId: ackMessage.threadId,
+      role: ProofRole.Prover,
+      connectionId: connection?.id,
+    })
     proofRecord.connectionId = connection?.id
 
     const lastReceivedMessage = await didCommMessageRepository.getAgentMessage(messageContext.agentContext, {
@@ -821,7 +824,7 @@ export class V2ProofProtocol<PFs extends ProofFormatService[] = ProofFormatServi
   }
 
   public async createProblemReport(
-    agentContext: AgentContext,
+    _agentContext: AgentContext,
     { description, proofRecord }: CreateProofProblemReportOptions
   ): Promise<ProofProtocolMsgReturnType<ProblemReportMessage>> {
     const message = new V2PresentationProblemReportMessage({

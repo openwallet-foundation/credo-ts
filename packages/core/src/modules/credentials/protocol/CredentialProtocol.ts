@@ -21,6 +21,7 @@ import type { DependencyManager } from '../../../plugins'
 import type { Query } from '../../../storage/StorageService'
 import type { ProblemReportMessage } from '../../problem-reports'
 import type { CredentialFormatService, ExtractCredentialFormats } from '../formats'
+import type { CredentialRole } from '../models'
 import type { CredentialState } from '../models/CredentialState'
 import type { CredentialExchangeRecord } from '../repository'
 
@@ -112,15 +113,21 @@ export interface CredentialProtocol<CFs extends CredentialFormatService[] = Cred
     credentialRecord: CredentialExchangeRecord,
     options?: DeleteCredentialOptions
   ): Promise<void>
-  getByThreadAndConnectionId(
+  getByProperties(
     agentContext: AgentContext,
-    threadId: string,
-    connectionId?: string
+    properties: {
+      threadId: string
+      connectionId?: string
+      role?: CredentialRole
+    }
   ): Promise<CredentialExchangeRecord>
-  findByThreadAndConnectionId(
+  findByProperties(
     agentContext: AgentContext,
-    threadId: string,
-    connectionId?: string
+    properties: {
+      threadId: string
+      connectionId?: string
+      role?: CredentialRole
+    }
   ): Promise<CredentialExchangeRecord | null>
   update(agentContext: AgentContext, credentialRecord: CredentialExchangeRecord): Promise<void>
 

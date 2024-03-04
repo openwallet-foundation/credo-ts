@@ -23,6 +23,7 @@ import type { DependencyManager } from '../../../plugins'
 import type { Query } from '../../../storage/StorageService'
 import type { ProblemReportMessage } from '../../problem-reports'
 import type { ExtractProofFormats, ProofFormatService } from '../formats'
+import type { ProofRole } from '../models'
 import type { ProofState } from '../models/ProofState'
 import type { ProofExchangeRecord } from '../repository'
 
@@ -101,15 +102,21 @@ export interface ProofProtocol<PFs extends ProofFormatService[] = ProofFormatSer
   findAllByQuery(agentContext: AgentContext, query: Query<ProofExchangeRecord>): Promise<ProofExchangeRecord[]>
   findById(agentContext: AgentContext, proofExchangeId: string): Promise<ProofExchangeRecord | null>
   delete(agentContext: AgentContext, proofRecord: ProofExchangeRecord, options?: DeleteProofOptions): Promise<void>
-  getByThreadAndConnectionId(
+  getByProperties(
     agentContext: AgentContext,
-    threadId: string,
-    connectionId?: string
+    properties: {
+      threadId: string
+      connectionId?: string
+      role?: ProofRole
+    }
   ): Promise<ProofExchangeRecord>
-  findByThreadAndConnectionId(
+  findByProperties(
     agentContext: AgentContext,
-    threadId: string,
-    connectionId?: string
+    properties: {
+      threadId: string
+      connectionId?: string
+      role?: ProofRole
+    }
   ): Promise<ProofExchangeRecord | null>
   update(agentContext: AgentContext, proofRecord: ProofExchangeRecord): Promise<void>
 

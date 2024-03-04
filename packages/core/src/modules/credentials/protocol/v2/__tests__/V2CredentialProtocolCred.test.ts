@@ -160,7 +160,7 @@ const didCommMessageRecord = new DidCommMessageRecord({
 })
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-const getAgentMessageMock = async (agentContext: AgentContext, options: GetAgentMessageOptions<any>) => {
+const getAgentMessageMock = async (_agentContext: AgentContext, options: GetAgentMessageOptions<any>) => {
   if (options.messageClass === V2ProposeCredentialMessage) {
     return credentialProposalMessage
   }
@@ -327,7 +327,7 @@ describe('credentialProtocol', () => {
         invalidCredentialStates.map(async (state) => {
           await expect(
             credentialProtocol.acceptOffer(agentContext, { credentialRecord: mockCredentialRecord({ state }) })
-          ).rejects.toThrowError(`Credential record is in invalid state ${state}. Valid states are: ${validState}.`)
+          ).rejects.toThrow(`Credential record is in invalid state ${state}. Valid states are: ${validState}.`)
         })
       )
     })
@@ -350,6 +350,7 @@ describe('credentialProtocol', () => {
       // then
       expect(credentialRepository.findSingleByQuery).toHaveBeenNthCalledWith(1, agentContext, {
         threadId: 'somethreadid',
+        role: CredentialRole.Issuer,
       })
       expect(credentialRepository.update).toHaveBeenCalledTimes(1)
       expect(returnedCredentialRecord.state).toEqual(CredentialState.RequestReceived)
@@ -372,6 +373,7 @@ describe('credentialProtocol', () => {
       // then
       expect(credentialRepository.findSingleByQuery).toHaveBeenNthCalledWith(1, agentContext, {
         threadId: 'somethreadid',
+        role: CredentialRole.Issuer,
       })
       expect(eventListenerMock).toHaveBeenCalled()
       expect(returnedCredentialRecord.state).toEqual(CredentialState.RequestReceived)
@@ -390,7 +392,7 @@ describe('credentialProtocol', () => {
           mockFunction(credentialRepository.findSingleByQuery).mockReturnValue(
             Promise.resolve(mockCredentialRecord({ state }))
           )
-          await expect(credentialProtocol.processRequest(messageContext)).rejects.toThrowError(
+          await expect(credentialProtocol.processRequest(messageContext)).rejects.toThrow(
             `Credential record is in invalid state ${state}. Valid states are: ${validState}.`
           )
         })
@@ -587,7 +589,7 @@ describe('credentialProtocol', () => {
                 connectionId: 'b1e2f039-aa39-40be-8643-6ce2797b5190',
               }),
             })
-          ).rejects.toThrowError(`Credential record is in invalid state ${state}. Valid states are: ${validState}.`)
+          ).rejects.toThrow(`Credential record is in invalid state ${state}. Valid states are: ${validState}.`)
         })
       )
     })
@@ -614,6 +616,7 @@ describe('credentialProtocol', () => {
       expect(credentialRepository.getSingleByQuery).toHaveBeenNthCalledWith(1, agentContext, {
         threadId: 'somethreadid',
         connectionId: '123',
+        role: CredentialRole.Issuer,
       })
 
       expect(returnedCredentialRecord.state).toBe(CredentialState.Done)
@@ -693,7 +696,7 @@ describe('credentialProtocol', () => {
       const expected = mockCredentialRecord()
       mockFunction(credentialRepository.getById).mockReturnValue(Promise.resolve(expected))
       const result = await credentialProtocol.getById(agentContext, expected.id)
-      expect(credentialRepository.getById).toBeCalledWith(agentContext, expected.id)
+      expect(credentialRepository.getById).toHaveBeenCalledWith(agentContext, expected.id)
 
       expect(result).toBe(expected)
     })
@@ -701,9 +704,16 @@ describe('credentialProtocol', () => {
     it('getById should return value from credentialRepository.getSingleByQuery', async () => {
       const expected = mockCredentialRecord()
       mockFunction(credentialRepository.getSingleByQuery).mockReturnValue(Promise.resolve(expected))
-      const result = await credentialProtocol.getByThreadAndConnectionId(agentContext, 'threadId', 'connectionId')
-      expect(credentialRepository.getSingleByQuery).toBeCalledWith(agentContext, {
+
+      const result = await credentialProtocol.getByProperties(agentContext, {
         threadId: 'threadId',
+        role: CredentialRole.Issuer,
+        connectionId: 'connectionId',
+      })
+
+      expect(credentialRepository.getSingleByQuery).toHaveBeenCalledWith(agentContext, {
+        threadId: 'threadId',
+        role: CredentialRole.Issuer,
         connectionId: 'connectionId',
       })
 
@@ -714,7 +724,7 @@ describe('credentialProtocol', () => {
       const expected = mockCredentialRecord()
       mockFunction(credentialRepository.findById).mockReturnValue(Promise.resolve(expected))
       const result = await credentialProtocol.findById(agentContext, expected.id)
-      expect(credentialRepository.findById).toBeCalledWith(agentContext, expected.id)
+      expect(credentialRepository.findById).toHaveBeenCalledWith(agentContext, expected.id)
 
       expect(result).toBe(expected)
     })
@@ -724,7 +734,7 @@ describe('credentialProtocol', () => {
 
       mockFunction(credentialRepository.getAll).mockReturnValue(Promise.resolve(expected))
       const result = await credentialProtocol.getAll(agentContext)
-      expect(credentialRepository.getAll).toBeCalledWith(agentContext)
+      expect(credentialRepository.getAll).toHaveBeenCalledWith(agentContext)
 
       expect(result).toEqual(expect.arrayContaining(expected))
     })
@@ -734,7 +744,7 @@ describe('credentialProtocol', () => {
 
       mockFunction(credentialRepository.findByQuery).mockReturnValue(Promise.resolve(expected))
       const result = await credentialProtocol.findAllByQuery(agentContext, { state: CredentialState.OfferSent })
-      expect(credentialRepository.findByQuery).toBeCalledWith(agentContext, { state: CredentialState.OfferSent })
+      expect(credentialRepository.findByQuery).toHaveBeenCalledWith(agentContext, { state: CredentialState.OfferSent })
 
       expect(result).toEqual(expect.arrayContaining(expected))
     })
