@@ -2429,22 +2429,22 @@
   resolved "https://registry.yarnpkg.com/@react-native/polyfills/-/polyfills-2.0.0.tgz#4c40b74655c83982c8cf47530ee7dc13d957b6aa"
   integrity sha512-K0aGNn1TjalKj+65D7ycc1//H9roAQ51GJVk5ZJQFb2teECGmzd86bYDC0aYdbRf7gtovescq4Zt6FR0tgXiHQ==
 
-"@sd-jwt/core@0.3.2-next.103":
-  version "0.3.2-next.103"
-  resolved "https://registry.yarnpkg.com/@sd-jwt/core/-/core-0.3.2-next.103.tgz#d325bc347ba07f70edf179dc319c55a94fa4a516"
-  integrity sha512-fcCuHI3DSRZDLse/Rc5UgvBJBDdZrRp8as6OfGuHow3xlPa6vsUxC0J3ZzZgWsiHMROLCyPM9j+Pp4l9HfN1QA==
+"@sd-jwt/core@0.3.2-next.107":
+  version "0.3.2-next.107"
+  resolved "https://registry.yarnpkg.com/@sd-jwt/core/-/core-0.3.2-next.107.tgz#e3382b6bdf77413e706912bcbea6df7d83080f9e"
+  integrity sha512-B77/4i/01R8lnXSfPDITZdN+1MOcviSsgsqlxICOQjSL8eWoKjtMwQvI+e3zHLqVgw2O0p7zbNBDhymqxFR3IA==
   dependencies:
-    "@sd-jwt/decode" "0.3.2-next.103+a28ae21"
-    "@sd-jwt/types" "0.3.2-next.103+a28ae21"
-    "@sd-jwt/utils" "0.3.2-next.103+a28ae21"
+    "@sd-jwt/decode" "0.3.2-next.107+7b8a217"
+    "@sd-jwt/types" "0.3.2-next.107+7b8a217"
+    "@sd-jwt/utils" "0.3.2-next.107+7b8a217"
 
-"@sd-jwt/decode@0.3.2-next.103", "@sd-jwt/decode@0.3.2-next.103+a28ae21":
-  version "0.3.2-next.103"
-  resolved "https://registry.yarnpkg.com/@sd-jwt/decode/-/decode-0.3.2-next.103.tgz#3cc04b24f33c7c2f4e025e9f3dc423eeb90df914"
-  integrity sha512-msiWP6EpX6LA58auqFq+TwLrW3kKrdorNiZgsMJSoQm5E/ptz0F7VsbCxNRa/ez4TNCV+mfA2V/eF417wRHBdg==
+"@sd-jwt/decode@0.3.2-next.107", "@sd-jwt/decode@0.3.2-next.107+7b8a217":
+  version "0.3.2-next.107"
+  resolved "https://registry.yarnpkg.com/@sd-jwt/decode/-/decode-0.3.2-next.107.tgz#981d2abe28f61ff10e3550d540e7657bd7fa9c8c"
+  integrity sha512-GZBzslcyAYgMzs63BnkOY2+AJVmg2Vh5aAAR1y8TlHzaAe1UxNIiCwLOcJpQt+nkCmBDxO4P9rOLMMBHQ5WFEQ==
   dependencies:
-    "@sd-jwt/types" "0.3.2-next.103+a28ae21"
-    "@sd-jwt/utils" "0.3.2-next.103+a28ae21"
+    "@sd-jwt/types" "0.3.2-next.107+7b8a217"
+    "@sd-jwt/utils" "0.3.2-next.107+7b8a217"
 
 "@sd-jwt/decode@^0.2.0":
   version "0.2.0"
@@ -2467,10 +2467,10 @@
   resolved "https://registry.yarnpkg.com/@sd-jwt/types/-/types-0.2.0.tgz#3cb50392e1b76ce69453f403c71c937a6e202352"
   integrity sha512-16WFRcL/maG0/JxN9UCSx07/vJ2SDbGscv9gDLmFLgJzhJcGPer41XfI6aDfVARYP430wHFixChfY/n7qC1L/Q==
 
-"@sd-jwt/types@0.3.2-next.103", "@sd-jwt/types@0.3.2-next.103+a28ae21":
-  version "0.3.2-next.103"
-  resolved "https://registry.yarnpkg.com/@sd-jwt/types/-/types-0.3.2-next.103.tgz#249f06f522292e9dc5345e194adf782714161bcc"
-  integrity sha512-vvQVAXBVnQvE4vF3PZ3agbVvpt5lMmxwb4e54B6hS8wnh/CSpQxrBVBAjr++moLaNIbgPNedicTTXT0mX+6Dsg==
+"@sd-jwt/types@0.3.2-next.107", "@sd-jwt/types@0.3.2-next.107+7b8a217":
+  version "0.3.2-next.107"
+  resolved "https://registry.yarnpkg.com/@sd-jwt/types/-/types-0.3.2-next.107.tgz#68420ee9464dcdf060f0e26fe230ee99aa0778bc"
+  integrity sha512-mft02chJEYvucDhD0FM/czILG5SA8DHYHuhl3yWZZx+KUTmtSe3IVfJ4BzZIWPtyr2B2FhEjX9Cz4XjxzDQZ3Q==
 
 "@sd-jwt/utils@0.2.0", "@sd-jwt/utils@^0.2.0":
   version "0.2.0"
@@ -2480,12 +2480,12 @@
     "@sd-jwt/types" "0.2.0"
     buffer "*"
 
-"@sd-jwt/utils@0.3.2-next.103", "@sd-jwt/utils@0.3.2-next.103+a28ae21":
-  version "0.3.2-next.103"
-  resolved "https://registry.yarnpkg.com/@sd-jwt/utils/-/utils-0.3.2-next.103.tgz#cf7a0ca634ae2db05b20a1a6652c827f1c1179d5"
-  integrity sha512-eBIFKXgu6jpylivcs7g5M2av5uXBmtRSKwWYV5kv9gWXWlUkyDaas7AJ8ssbBr+ho2/hpa1ro9UFMDmzeXbHsw==
+"@sd-jwt/utils@0.3.2-next.107", "@sd-jwt/utils@0.3.2-next.107+7b8a217":
+  version "0.3.2-next.107"
+  resolved "https://registry.yarnpkg.com/@sd-jwt/utils/-/utils-0.3.2-next.107.tgz#bda4068343e9ffdbd42eea52f0e055d93973fb72"
+  integrity sha512-VdeZLUu2Lj3ZWCqyyETOBM6X1JJufpBzOUJnJK/u0oBuY88DO5u4Ha76u43R+UNgMYgoUad/W5rQl87Bt7w7Ng==
   dependencies:
-    "@sd-jwt/types" "0.3.2-next.103+a28ae21"
+    "@sd-jwt/types" "0.3.2-next.107+7b8a217"
     js-base64 "^3.7.6"
 
 "@sideway/address@^4.1.5":
