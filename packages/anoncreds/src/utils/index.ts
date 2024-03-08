@@ -5,7 +5,6 @@ export { areAnonCredsProofRequestsEqual } from './areRequestsEqual'
 export { assertBestPracticeRevocationInterval } from './revocationInterval'
 export { getRevocationRegistriesForRequest, getRevocationRegistriesForProof } from './getRevocationRegistries'
 export { checkValidCredentialValueEncoding, AnonCredsCredentialValue } from './credential'
-export { AnonCredsCredentialMetadata } from './metadata'
 export { IsMap } from './isMap'
 export { composeCredentialAutoAccept, composeProofAutoAccept } from './composeAutoAccept'
 export { areCredentialPreviewAttributesEqual } from './credentialPreviewAttributes'
@@ -24,3 +23,11 @@ export {
   fetchSchema,
   fetchRevocationStatusList,
 } from './anonCredsObjects'
+export {
+  AnonCredsCredentialMetadataKey,
+  AnonCredsCredentialRequestMetadataKey,
+  W3cAnonCredsCredentialMetadataKey,
+  AnonCredsCredentialMetadata,
+  AnonCredsCredentialRequestMetadata,
+  W3cAnonCredsCredentialMetadata,
+} from './metadata'

@@ -53,13 +53,15 @@ export function getPresentationsToCreate(credentialsForInputDescriptor: DifPexIn
       if (credential instanceof W3cCredentialRecord) {
         const subjectId = credential.credential.credentialSubjectIds[0]
         if (!subjectId) {
-          throw new DifPresentationExchangeError('Missing required credential subject for creating the presentation.')
+          // FIXME: AnonCreds Presentations must not have a credential subject id
+          //throw new DifPresentationExchangeError('Missing required credential subject for creating the presentation.')
         }
 
         // NOTE: we only support one subjectId per VP -- once we have proper support
         // for multiple proofs on an LDP-VP we can add multiple subjectIds to a single VP for LDP-vp only
         const expectedClaimFormat =
           credential.credential.claimFormat === ClaimFormat.LdpVc ? ClaimFormat.LdpVp : ClaimFormat.JwtVp
+
         const matchingClaimFormatAndSubject = presentationsToCreate.find(
           (p): p is JwtVpPresentationToCreate =>
             p.claimFormat === expectedClaimFormat && p.subjectIds.includes(subjectId)
