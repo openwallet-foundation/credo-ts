@@ -68,18 +68,14 @@ export class WsOutboundTransport implements OutboundTransport {
     const isNewSocket = !this.hasOpenSocket(socketId)
     const socket = await this.resolveSocket({ socketId, endpoint, connectionId })
 
-    return new Promise<void>((resolve, reject) =>
-      socket.send(Buffer.from(JSON.stringify(payload)), (err) => {
-        // If the socket was created for this message and we don't have return routing enabled
-        // We can close the socket as it shouldn't return messages anymore
-        if (isNewSocket && !outboundPackage.responseRequested) {
-          socket.close()
-        }
-
-        if (err) return reject(err)
-        resolve()
-      })
-    )
+    // If the socket was created for this message and we don't have return routing enabled
+    // We can close the socket as it shouldn't return messages anymore
+    // make sure to use the socket in a manner that is compliant with the https://developer.mozilla.org/en-US/docs/Web/API/WebSocket
+    // (React Native) and https://github.com/websockets/ws (NodeJs)
+    socket.send(Buffer.from(JSON.stringify(payload)))
+    if (isNewSocket && !outboundPackage.responseRequested) {
+      socket.close()
+    }
   }
 
   private hasOpenSocket(socketId: string) {
