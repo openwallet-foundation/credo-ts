@@ -387,7 +387,7 @@ describe('SdJwtVcService', () => {
     test('Present sd-jwt-vc from a basic payload without disclosures', async () => {
       const presentation = await sdJwtVcService.present(agent.context, {
         compactSdJwtVc: simpleJwtVc,
-        presentationFrame: [],
+        presentationFrame: {},
         verifierMetadata: {
           issuedAt: new Date().getTime() / 1000,
           audience: verifierDid,
@@ -401,7 +401,7 @@ describe('SdJwtVcService', () => {
     test('Present sd-jwt-vc from a basic payload with a disclosure', async () => {
       const presentation = await sdJwtVcService.present(agent.context, {
         compactSdJwtVc: sdJwtVcWithSingleDisclosure,
-        presentationFrame: ['claim'],
+        presentationFrame: { claim: true },
         verifierMetadata: {
           issuedAt: new Date().getTime() / 1000,
           audience: verifierDid,
@@ -420,7 +420,15 @@ describe('SdJwtVcService', () => {
           audience: verifierDid,
           nonce: await agent.context.wallet.generateNonce(),
         },
-        presentationFrame: ['is_over_65', 'is_over_21', 'email', 'address.country', 'given_name'],
+        presentationFrame: {
+          is_over_65: true,
+          is_over_21: true,
+          email: true,
+          address: {
+            country: true,
+          },
+          given_name: true,
+        },
       })
 
       expect(presentation).toStrictEqual(complexSdJwtVcPresentation)
@@ -433,7 +441,7 @@ describe('SdJwtVcService', () => {
       const presentation = await sdJwtVcService.present(agent.context, {
         compactSdJwtVc: simpleJwtVc,
         // no disclosures
-        presentationFrame: [],
+        presentationFrame: {},
         verifierMetadata: {
           issuedAt: new Date().getTime() / 1000,
           audience: verifierDid,
@@ -467,7 +475,7 @@ describe('SdJwtVcService', () => {
           audience: verifierDid,
           nonce,
         },
-        presentationFrame: ['claim'],
+        presentationFrame: { claim: true },
       })
 
       const { verification } = await sdJwtVcService.verify(agent.context, {
@@ -496,7 +504,15 @@ describe('SdJwtVcService', () => {
           audience: verifierDid,
           nonce,
         },
-        presentationFrame: ['is_over_65', 'is_over_21', 'email', 'address.country', 'given_name'],
+        presentationFrame: {
+          is_over_65: true,
+          is_over_21: true,
+          email: true,
+          address: {
+            country: true,
+          },
+          given_name: true,
+        },
       })
 
       const { verification } = await sdJwtVcService.verify(agent.context, {

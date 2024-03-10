@@ -175,23 +175,25 @@ describe('sd-jwt-vc end to end test', () => {
       nonce: await verifier.wallet.generateNonce(),
     }
 
-    const presentation = await holder.sdJwtVc.present<Header, Payload>({
+    const presentation = await holder.sdJwtVc.present<Payload>({
       compactSdJwtVc: compact,
       verifierMetadata,
-      presentationFrame: [
-        'given_name',
-        'family_name',
-        'email',
-        'phone_number',
-        'address.street_address',
-        'address.locality',
-        'address.region',
-        'address.country',
-        'birthdate',
-        'is_over_18',
-        'is_over_21',
-        'is_over_65',
-      ],
+      presentationFrame: {
+        given_name: true,
+        family_name: true,
+        email: true,
+        phone_number: true,
+        address: {
+          street_address: true,
+          locality: true,
+          region: true,
+          country: true,
+        },
+        birthdate: true,
+        is_over_18: true,
+        is_over_21: true,
+        is_over_65: true,
+      },
     })
 
     const { verification: presentationVerification } = await verifier.sdJwtVc.verify({
