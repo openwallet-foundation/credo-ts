@@ -1,38 +1,25 @@
-import type { ActionMenuOptionOptions } from './ActionMenuOption'
+import { z } from 'zod'
 
-import { Type } from 'class-transformer'
-import { IsInstance, IsString } from 'class-validator'
+import { ActionMenuOption, actionMenuOptionSchema } from './ActionMenuOption'
+import { arrIntoCls } from './ActionMenuOptionForm'
 
-import { ActionMenuOption } from './ActionMenuOption'
+export const actionMenuSchema = z.object({
+  title: z.string(),
+  description: z.string(),
+  options: z.array(actionMenuOptionSchema).transform(arrIntoCls<ActionMenuOption>(ActionMenuOption)),
+})
 
-/**
- * @public
- */
-export interface ActionMenuOptions {
-  title: string
-  description: string
-  options: ActionMenuOptionOptions[]
-}
+export type ActionMenuOptions = z.input<typeof actionMenuSchema>
 
-/**
- * @public
- */
 export class ActionMenu {
+  public title: string
+  public description: string
+  public options: Array<ActionMenuOption>
+
   public constructor(options: ActionMenuOptions) {
-    if (options) {
-      this.title = options.title
-      this.description = options.description
-      this.options = options.options.map((p) => new ActionMenuOption(p))
-    }
+    const parsedOptions = actionMenuSchema.parse(options)
+    this.title = parsedOptions.title
+    this.description = parsedOptions.description
+    this.options = parsedOptions.options
   }
-
-  @IsString()
-  public title!: string
-
-  @IsString()
-  public description!: string
-
-  @IsInstance(ActionMenuOption, { each: true })
-  @Type(() => ActionMenuOption)
-  public options!: ActionMenuOption[]
 }

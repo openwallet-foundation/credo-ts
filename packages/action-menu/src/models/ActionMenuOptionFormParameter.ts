@@ -1,57 +1,35 @@
-import { IsBoolean, IsEnum, IsOptional, IsString } from 'class-validator'
+import { z } from 'zod'
 
-/**
- * @public
- */
 export enum ActionMenuFormInputType {
   Text = 'text',
 }
 
-/**
- * @public
- */
-export interface ActionMenuFormParameterOptions {
-  name: string
-  title: string
-  default?: string
-  description: string
-  required?: boolean
-  type?: ActionMenuFormInputType
-}
+export const actionMenuFormParameterSchema = z.object({
+  name: z.string(),
+  title: z.string(),
+  description: z.string(),
+  default: z.string().optional(),
+  required: z.boolean().optional(),
+  type: z.nativeEnum(ActionMenuFormInputType),
+})
 
-/**
- * @public
- */
+export type ActionMenuFormParameterOptions = z.input<typeof actionMenuFormParameterSchema>
+
 export class ActionMenuFormParameter {
-  public constructor(options: ActionMenuFormParameterOptions) {
-    if (options) {
-      this.name = options.name
-      this.title = options.title
-      this.default = options.default
-      this.description = options.description
-      this.required = options.required
-      this.type = options.type
-    }
-  }
-
-  @IsString()
-  public name!: string
-
-  @IsString()
-  public title!: string
-
-  @IsString()
-  @IsOptional()
+  public name: string
+  public title: string
+  public description: string
   public default?: string
-
-  @IsString()
-  public description!: string
-
-  @IsBoolean()
-  @IsOptional()
   public required?: boolean
+  public type: ActionMenuFormInputType
 
-  @IsEnum(ActionMenuFormInputType)
-  @IsOptional()
-  public type?: ActionMenuFormInputType
+  public constructor(options: ActionMenuFormParameterOptions) {
+    const parsedOptions = actionMenuFormParameterSchema.parse(options)
+    this.name = parsedOptions.name
+    this.title = parsedOptions.title
+    this.description = parsedOptions.description
+    this.default = parsedOptions.default
+    this.required = parsedOptions.required
+    this.type = parsedOptions.type
+  }
 }

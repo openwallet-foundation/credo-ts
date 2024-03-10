@@ -32,6 +32,10 @@ export class InMemoryStorageService<T extends BaseRecord<any, any, any> = BaseRe
   public contextCorrelationIdToRecords: ContextCorrelationIdToRecords = {}
 
   private recordToInstance(record: StorageRecord, recordClass: BaseRecordConstructor<T>): T {
+    // TODO(zod): temporary transformation as the rest still uses class-transformer
+    if (recordClass.name === 'ActionMenuRecord') {
+      return new recordClass(record.value)
+    }
     const instance = JsonTransformer.fromJSON<T>(record.value, recordClass)
     instance.id = record.id
     instance.replaceTags(record.tags as TagsBase)

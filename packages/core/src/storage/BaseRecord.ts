@@ -28,7 +28,7 @@ export abstract class BaseRecord<
   // We want an empty object, as Record<string, unknown> will make typescript
   // not infer the types correctly
   // eslint-disable-next-line @typescript-eslint/ban-types
-  MetadataValues = {}
+  MetadataValues = {},
 > {
   protected _tags: CustomTags = {} as CustomTags
 
@@ -95,13 +95,15 @@ export abstract class BaseRecord<
   }
 
   public toJSON(): Record<string, unknown> {
-    return JsonTransformer.toJSON(this)
+    // TODO: convert to JSON with zod, should be quite easy
+    return { ...this } as Record<string, unknown>
   }
 
   /**
    * Clones the record.
    */
   public clone() {
-    return JsonTransformer.clone(this)
+    // TODO: clone with zod, should be quite easy
+    return { ...this }
   }
 }

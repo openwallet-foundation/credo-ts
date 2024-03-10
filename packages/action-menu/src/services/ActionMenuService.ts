@@ -18,7 +18,7 @@ import { ActionMenuProblemReportError } from '../errors/ActionMenuProblemReportE
 import { ActionMenuProblemReportReason } from '../errors/ActionMenuProblemReportReason'
 import { PerformMessage, MenuMessage, MenuRequestMessage } from '../messages'
 import { ActionMenuSelection, ActionMenu } from '../models'
-import { ActionMenuRepository, ActionMenuRecord } from '../repository'
+import { ActionMenuRecord, ActionMenuRepository } from '../repository'
 
 /**
  * @internal

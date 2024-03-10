@@ -1,41 +1,33 @@
-import { AgentMessage, IsValidMessageType, parseMessageType } from '@credo-ts/core'
-import { IsOptional, IsString } from 'class-validator'
+import { AgentMessage, parseMessageType, utils } from '@credo-ts/core'
+import { z } from 'zod'
 
-/**
- * @internal
- */
-export interface PerformMessageOptions {
-  id?: string
-  name: string
-  params?: Record<string, string>
-  threadId: string
-}
+const performMessageSchema = z.object({
+  id: z.string().default(utils.uuid()),
 
-/**
- * @internal
- */
+  // TODO(zod): validate the name like is done in `@IsValidMessageType(PerformMessage.type)`
+  name: z.string(),
+  params: z.record(z.string()).optional(),
+  threadId: z.string(),
+})
+
+export type PerformMessageOptions = z.input<typeof performMessageSchema>
+
 export class PerformMessage extends AgentMessage {
-  public constructor(options: PerformMessageOptions) {
-    super()
-
-    if (options) {
-      this.id = options.id ?? this.generateId()
-      this.name = options.name
-      this.params = options.params
-      this.setThread({
-        threadId: options.threadId,
-      })
-    }
-  }
-
-  @IsValidMessageType(PerformMessage.type)
   public readonly type = PerformMessage.type.messageTypeUri
   public static readonly type = parseMessageType('https://didcomm.org/action-menu/1.0/perform')
 
-  @IsString()
-  public name!: string
-
-  @IsString({ each: true })
-  @IsOptional()
+  public name: string
   public params?: Record<string, string>
+
+  public constructor(options: PerformMessageOptions) {
+    super()
+
+    const parsedOptions = performMessageSchema.parse(options)
+    this.id = parsedOptions.id
+    this.name = parsedOptions.name
+    this.params = parsedOptions.params
+    this.setThread({
+      threadId: parsedOptions.threadId,
+    })
+  }
 }
