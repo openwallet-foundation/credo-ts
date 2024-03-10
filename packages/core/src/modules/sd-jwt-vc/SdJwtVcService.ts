@@ -125,9 +125,9 @@ export class SdJwtVcService {
     }
   }
 
-  public async present(
+  public async present<Payload extends SdJwtVcPayload = SdJwtVcPayload>(
     agentContext: AgentContext,
-    { compactSdJwtVc, presentationFrame, verifierMetadata }: SdJwtVcPresentOptions
+    { compactSdJwtVc, presentationFrame, verifierMetadata }: SdJwtVcPresentOptions<Payload>
   ): Promise<string> {
     const sdjwt = new SDJwtInstance({
       hasher: this.hasher,
