@@ -502,7 +502,7 @@ export class DifPresentationExchangeService {
         const sdJwtVc = await sdJwtVcApi.present({
           compactSdJwtVc: sdJwtInput.compactSdJwtVc,
           // SD is already handled by PEX, so we presents all keys
-          presentationFrame: await sdJwtVcApi.getPresentableKeys({ compactSdJwtVc: sdJwtInput.compactSdJwtVc }),
+          presentationFrame: undefined,
           verifierMetadata: {
             audience: domain,
             nonce: challenge,
