@@ -432,6 +432,10 @@ export class DifPresentationExchangeService {
       }
 
       if (presentationToCreate.claimFormat === ClaimFormat.JwtVp) {
+        if (!presentationToCreate.subjectIds) {
+          throw new DifPresentationExchangeError(`Cannot create presentation for credentials without subject id`)
+        }
+
         // Determine a suitable verification method for the presentation
         const verificationMethod = await this.getVerificationMethodForSubjectId(
           agentContext,
@@ -468,6 +472,9 @@ export class DifPresentationExchangeService {
           } as unknown as SphereonW3cVerifiablePresentation
         }
 
+        if (!presentationToCreate.subjectIds) {
+          throw new DifPresentationExchangeError(`Cannot create presentation for credentials without subject id`)
+        }
         // Determine a suitable verification method for the presentation
         const verificationMethod = await this.getVerificationMethodForSubjectId(
           agentContext,

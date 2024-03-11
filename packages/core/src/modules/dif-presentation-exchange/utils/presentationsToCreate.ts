@@ -29,7 +29,7 @@ export interface LdpVpPresentationToCreate {
   claimFormat: ClaimFormat.LdpVp
   // NOTE: we only support one subject id at the moment as we don't have proper
   // support yet for adding multiple proofs to an LDP-VP
-  subjectIds: [string]
+  subjectIds: undefined | [string]
   verifiableCredentials: Array<{
     credential: W3cCredentialRecord
     inputDescriptorId: string
@@ -52,10 +52,6 @@ export function getPresentationsToCreate(credentialsForInputDescriptor: DifPexIn
     for (const credential of credentials) {
       if (credential instanceof W3cCredentialRecord) {
         const subjectId = credential.credential.credentialSubjectIds[0]
-        if (!subjectId) {
-          // FIXME: AnonCreds Presentations must not have a credential subject id
-          //throw new DifPresentationExchangeError('Missing required credential subject for creating the presentation.')
-        }
 
         // NOTE: we only support one subjectId per VP -- once we have proper support
         // for multiple proofs on an LDP-VP we can add multiple subjectIds to a single VP for LDP-vp only
@@ -64,7 +60,7 @@ export function getPresentationsToCreate(credentialsForInputDescriptor: DifPexIn
 
         const matchingClaimFormatAndSubject = presentationsToCreate.find(
           (p): p is JwtVpPresentationToCreate =>
-            p.claimFormat === expectedClaimFormat && p.subjectIds.includes(subjectId)
+            p.claimFormat === expectedClaimFormat && Boolean(p.subjectIds?.includes(subjectId))
         )
 
         if (matchingClaimFormatAndSubject) {
