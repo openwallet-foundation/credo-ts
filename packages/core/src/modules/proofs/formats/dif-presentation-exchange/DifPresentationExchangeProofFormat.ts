@@ -8,6 +8,9 @@ import type { ProofFormat } from '../ProofFormat'
 
 export type DifPresentationExchangeProposal = DifPresentationExchangeDefinitionV1
 
+// eslint-disable-next-line @typescript-eslint/no-empty-interface
+export interface DifPexGetCredentialsForProofRequestOptions {}
+
 export type DifPresentationExchangeRequest = {
   options?: {
     challenge?: string
@@ -50,13 +53,13 @@ export interface DifPresentationExchangeProofFormat extends ProofFormat {
     }
 
     getCredentialsForRequest: {
-      input: never
+      input: DifPexGetCredentialsForProofRequestOptions
       // Presentation submission details which the options that are available
       output: DifPexCredentialsForRequest
     }
 
     selectCredentialsForRequest: {
-      input: never
+      input: DifPexGetCredentialsForProofRequestOptions
       // Input descriptor to credentials specifically details which credentials
       // should be used for which input descriptor
       output: {
