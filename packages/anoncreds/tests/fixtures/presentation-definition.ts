@@ -47,10 +47,4 @@ export const presentationDefinition: DifPresentationExchangeDefinitionV1 = {
       },
     },
   ],
-  format: {
-    di_vc: {
-      proof_type: ['DataIntegrityProof'],
-      cryptosuite: ['anoncreds-2023', 'eddsa-rdfc-2022'],
-    },
-  },
 }

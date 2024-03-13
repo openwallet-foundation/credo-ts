@@ -2,7 +2,6 @@ import type { SdJwtVcRecord } from '../../sd-jwt-vc'
 import type { DifPexInputDescriptorToCredentials } from '../models'
 
 import { W3cCredentialRecord, ClaimFormat } from '../../vc'
-import { DifPresentationExchangeError } from '../DifPresentationExchangeError'
 
 //  - the credentials included in the presentation
 export interface SdJwtVcPresentationToCreate {
