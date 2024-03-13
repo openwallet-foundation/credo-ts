@@ -8,9 +8,9 @@ import type { Router } from 'express'
 
 import { importExpress } from '../shared/router'
 
-const DEFAULT_C_NONCE_EXPIRES_IN = 5 * 60 * 1000 // 5 minutes
-const DEFAULT_TOKEN_EXPIRES_IN = 3 * 60 * 1000 // 3 minutes
-const DEFAULT_PRE_AUTH_CODE_EXPIRES_IN = 3 * 60 * 1000 // 3 minutes
+const DEFAULT_C_NONCE_EXPIRES_IN = 5 * 60 // 5 minutes
+const DEFAULT_TOKEN_EXPIRES_IN = 3 * 60 // 3 minutes
+const DEFAULT_PRE_AUTH_CODE_EXPIRES_IN = 3 * 60 // 3 minutes
 
 export interface OpenId4VcIssuerModuleConfigOptions {
   /**

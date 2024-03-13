@@ -47,7 +47,6 @@ export function configureAuthorizationEndpoint(router: Router, config: OpenId4Vc
       })
       response.status(200).send()
     } catch (error) {
-      console.log('oh neeee', error)
       sendErrorResponse(response, agentContext.config.logger, 500, 'invalid_request', error)
     }
 

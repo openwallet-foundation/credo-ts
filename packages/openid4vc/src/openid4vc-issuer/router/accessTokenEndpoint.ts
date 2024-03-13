@@ -56,7 +56,11 @@ export function configureAccessTokenEndpoint(router: Router, config: OpenId4VciA
   )
 }
 
-function getJwtSignerCallback(agentContext: AgentContext, signerPublicKey: Key): JWTSignerCallback {
+function getJwtSignerCallback(
+  agentContext: AgentContext,
+  signerPublicKey: Key,
+  config: OpenId4VciAccessTokenEndpointConfig
+): JWTSignerCallback {
   return async (jwt, _kid) => {
     if (_kid) {
       throw new CredoError('Kid should not be supplied externally.')
@@ -71,6 +75,13 @@ function getJwtSignerCallback(agentContext: AgentContext, signerPublicKey: Key):
     if (!alg) {
       throw new CredoError(`No supported signature algorithms for key type: ${signerPublicKey.keyType}`)
     }
+
+    // FIXME: the iat and exp implementation in OID4VCI is incorrect so we override the values here
+    // https://github.com/Sphereon-Opensource/OID4VCI/pull/99
+    // https://github.com/Sphereon-Opensource/OID4VCI/pull/101
+    const iat = Math.floor(new Date().getTime() / 1000)
+    jwt.payload.iat = iat
+    jwt.payload.exp = iat + config.tokenExpiresInSeconds
 
     const jwk = getJwkFromKey(signerPublicKey)
     const signedJwt = await jwsService.createJwsCompact(agentContext, {
@@ -106,12 +117,12 @@ export function handleTokenRequest(config: OpenId4VciAccessTokenEndpointConfig) 
     try {
       const accessTokenResponse = await createAccessTokenResponse(request.body, {
         credentialOfferSessions: new SphereonOpenId4VcCredentialOfferSessionStateManager(agentContext, issuer.issuerId),
-        tokenExpiresIn: tokenExpiresInSeconds,
+        tokenExpiresIn: tokenExpiresInSeconds * 1000,
         accessTokenIssuer: issuerMetadata.issuerUrl,
         cNonce: await agentContext.wallet.generateNonce(),
         cNonceExpiresIn: cNonceExpiresInSeconds,
         cNonces: new SphereonOpenId4VcCNonceStateManager(agentContext, issuer.issuerId),
-        accessTokenSignerCallback: getJwtSignerCallback(agentContext, accessTokenSigningKey),
+        accessTokenSignerCallback: getJwtSignerCallback(agentContext, accessTokenSigningKey, config),
       })
       response.status(200).json(accessTokenResponse)
     } catch (error) {
