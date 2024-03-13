@@ -6,6 +6,7 @@ import { getAgentContext } from '../../../../core/tests'
 import { OpenId4VcIssuerModule } from '../OpenId4VcIssuerModule'
 import { OpenId4VcIssuerModuleConfig } from '../OpenId4VcIssuerModuleConfig'
 import { OpenId4VcIssuerService } from '../OpenId4VcIssuerService'
+import { OpenId4VcIssuanceSessionRepository } from '../repository'
 import { OpenId4VcIssuerRepository } from '../repository/OpenId4VcIssuerRepository'
 
 const dependencyManager = {
@@ -39,8 +40,9 @@ describe('OpenId4VcIssuerModule', () => {
       new OpenId4VcIssuerModuleConfig(options)
     )
 
-    expect(dependencyManager.registerSingleton).toHaveBeenCalledTimes(2)
+    expect(dependencyManager.registerSingleton).toHaveBeenCalledTimes(3)
     expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(OpenId4VcIssuerService)
+    expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(OpenId4VcIssuanceSessionRepository)
     expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(OpenId4VcIssuerRepository)
 
     await openId4VcClientModule.initialize(agentContext)

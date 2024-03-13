@@ -20,7 +20,9 @@ export type OpenId4VciCredentialSupportedWithId = CredentialSupported & { id: st
 export type OpenId4VciCredentialSupported = CredentialSupported
 export type OpenId4VciIssuerMetadata = CredentialIssuerMetadata
 export type OpenId4VciIssuerMetadataDisplay = MetadataDisplay
+
 export type OpenId4VciCredentialRequest = UniformCredentialRequest
+
 export type OpenId4VciCredentialRequestJwtVcJson = CredentialRequestJwtVcJson
 export type OpenId4VciCredentialRequestJwtVcJsonLdAndLdpVc = CredentialRequestJwtVcJsonLdAndLdpVc
 export type OpenId4VciCredentialRequestSdJwtVc = CredentialRequestSdJwtVc

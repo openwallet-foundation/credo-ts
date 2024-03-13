@@ -13,8 +13,9 @@ import {
 import { assertValidAccessTokenRequest, createAccessTokenResponse } from '@sphereon/oid4vci-issuer'
 
 import { getRequestContext, sendErrorResponse } from '../../shared/router'
-import { OpenId4VcIssuerModuleConfig } from '../OpenId4VcIssuerModuleConfig'
 import { OpenId4VcIssuerService } from '../OpenId4VcIssuerService'
+import { SphereonOpenId4VcCNonceStateManager } from '../repository/SphereonOpenId4VcCNonceStateManager'
+import { SphereonOpenId4VcCredentialOfferSessionStateManager } from '../repository/SphereonOpenId4VcCredentialOfferSessionStateManager'
 
 export interface OpenId4VciAccessTokenEndpointConfig {
   /**
@@ -98,19 +99,18 @@ export function handleTokenRequest(config: OpenId4VciAccessTokenEndpointConfig) 
       })
     }
 
-    const openId4VcIssuerConfig = agentContext.dependencyManager.resolve(OpenId4VcIssuerModuleConfig)
     const openId4VcIssuerService = agentContext.dependencyManager.resolve(OpenId4VcIssuerService)
     const issuerMetadata = openId4VcIssuerService.getIssuerMetadata(agentContext, issuer)
     const accessTokenSigningKey = Key.fromFingerprint(issuer.accessTokenPublicKeyFingerprint)
 
     try {
       const accessTokenResponse = await createAccessTokenResponse(request.body, {
-        credentialOfferSessions: openId4VcIssuerConfig.getCredentialOfferSessionStateManager(agentContext),
+        credentialOfferSessions: new SphereonOpenId4VcCredentialOfferSessionStateManager(agentContext, issuer.issuerId),
         tokenExpiresIn: tokenExpiresInSeconds,
         accessTokenIssuer: issuerMetadata.issuerUrl,
         cNonce: await agentContext.wallet.generateNonce(),
         cNonceExpiresIn: cNonceExpiresInSeconds,
-        cNonces: openId4VcIssuerConfig.getCNonceStateManager(agentContext),
+        cNonces: new SphereonOpenId4VcCNonceStateManager(agentContext, issuer.issuerId),
         accessTokenSignerCallback: getJwtSignerCallback(agentContext, accessTokenSigningKey),
       })
       response.status(200).json(accessTokenResponse)
@@ -125,14 +125,13 @@ export function handleTokenRequest(config: OpenId4VciAccessTokenEndpointConfig) 
 
 export function verifyTokenRequest(options: { preAuthorizedCodeExpirationInSeconds: number }) {
   return async (request: OpenId4VcIssuanceRequest, response: Response, next: NextFunction) => {
-    const { agentContext } = getRequestContext(request)
+    const { agentContext, issuer } = getRequestContext(request)
 
     try {
-      const openId4VcIssuerConfig = agentContext.dependencyManager.resolve(OpenId4VcIssuerModuleConfig)
       await assertValidAccessTokenRequest(request.body, {
         // we use seconds instead of milliseconds for consistency
         expirationDuration: options.preAuthorizedCodeExpirationInSeconds * 1000,
-        credentialOfferSessions: openId4VcIssuerConfig.getCredentialOfferSessionStateManager(agentContext),
+        credentialOfferSessions: new SphereonOpenId4VcCredentialOfferSessionStateManager(agentContext, issuer.issuerId),
       })
     } catch (error) {
       if (error instanceof TokenError) {

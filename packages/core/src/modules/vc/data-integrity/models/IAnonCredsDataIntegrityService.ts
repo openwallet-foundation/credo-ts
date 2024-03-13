@@ -31,7 +31,7 @@ export const AnonCredsDataIntegrityServiceSymbol = Symbol('AnonCredsDataIntegrit
  * to it's unique properties, in order to not pollute,
  * the existing api's.
  */
-export interface IAnoncredsDataIntegrityService {
+export interface IAnonCredsDataIntegrityService {
   createPresentation(
     agentContext: AgentContext,
     options: AnoncredsDataIntegrityCreatePresentation

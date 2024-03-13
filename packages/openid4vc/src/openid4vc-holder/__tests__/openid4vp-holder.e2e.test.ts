@@ -60,16 +60,17 @@ describe('OpenId4VcHolder | OpenID4VP', () => {
   })
 
   it('siop authorization request without presentation exchange', async () => {
-    const { authorizationRequestUri } = await verifier.agent.modules.openId4VcVerifier.createAuthorizationRequest({
-      requestSigner: {
-        method: 'did',
-        didUrl: verifier.kid,
-      },
-      verifierId: openIdVerifier.verifierId,
-    })
+    const { authorizationRequest, verificationSession } =
+      await verifier.agent.modules.openId4VcVerifier.createAuthorizationRequest({
+        requestSigner: {
+          method: 'did',
+          didUrl: verifier.kid,
+        },
+        verifierId: openIdVerifier.verifierId,
+      })
 
     const resolvedAuthorizationRequest = await holder.agent.modules.openId4VcHolder.resolveSiopAuthorizationRequest(
-      authorizationRequestUri
+      authorizationRequest
     )
 
     const { submittedResponse, serverResponse } =
@@ -96,7 +97,7 @@ describe('OpenId4VcHolder | OpenID4VP', () => {
     const { idToken, presentationExchange } =
       await verifier.agent.modules.openId4VcVerifier.verifyAuthorizationResponse({
         authorizationResponse: submittedResponse,
-        verifierId: openIdVerifier.verifierId,
+        verificationSessionId: verificationSession.id,
       })
 
     expect(presentationExchange).toBeUndefined()

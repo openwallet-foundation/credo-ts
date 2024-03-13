@@ -23,7 +23,7 @@
     "@credo-ts/node": "*",
     "@credo-ts/askar": "*",
     "class-validator": "0.14.1",
-    "rxjs": "^7.2.0",
+    "rxjs": "^7.8.0",
     "@hyperledger/aries-askar-nodejs": "^0.2.0"
   }
 }

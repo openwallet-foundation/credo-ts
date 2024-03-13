@@ -13,7 +13,7 @@ import type { Query } from '../../storage/StorageService'
 import type { VerificationMethod } from '../dids'
 import type { SdJwtVcRecord } from '../sd-jwt-vc'
 import type { W3cCredentialRecord } from '../vc'
-import type { IAnoncredsDataIntegrityService } from '../vc/data-integrity/models/IAnonCredsDataIntegrityService'
+import type { IAnonCredsDataIntegrityService } from '../vc/data-integrity/models/IAnonCredsDataIntegrityService'
 import type {
   PresentationSignCallBackParams,
   SdJwtDecodedVerifiableCredentialWithKbJwtInput,
@@ -393,7 +393,7 @@ export class DifPresentationExchangeService {
     return supportedSignatureSuites[0].proofType
   }
 
-  private shouldSignUsingAnoncredsDataIntegrity(
+  private shouldSignUsingAnonCredsDataIntegrity(
     presentationToCreate: PresentationToCreate,
     presentationSubmission: DifPresentationExchangeSubmission
   ) {
@@ -404,7 +404,7 @@ export class DifPresentationExchangeService {
         (descriptor) => descriptor.id === verifiableCredentials.inputDescriptorId
       )
 
-      return inputDescriptor?.format === 'di_vp' &&
+      return inputDescriptor?.format === ClaimFormat.DiVc &&
         verifiableCredentials.credential.credential instanceof W3cJsonLdVerifiableCredential
         ? verifiableCredentials.credential.credential.dataIntegrityCryptosuites
         : []
@@ -456,8 +456,8 @@ export class DifPresentationExchangeService {
 
         return signedPresentation.encoded as W3CVerifiablePresentation
       } else if (presentationToCreate.claimFormat === ClaimFormat.LdpVp) {
-        if (this.shouldSignUsingAnoncredsDataIntegrity(presentationToCreate, presentationSubmission)) {
-          const anoncredsDataIntegrityService = agentContext.dependencyManager.resolve<IAnoncredsDataIntegrityService>(
+        if (this.shouldSignUsingAnonCredsDataIntegrity(presentationToCreate, presentationSubmission)) {
+          const anoncredsDataIntegrityService = agentContext.dependencyManager.resolve<IAnonCredsDataIntegrityService>(
             AnonCredsDataIntegrityServiceSymbol
           )
           const presentation = await anoncredsDataIntegrityService.createPresentation(agentContext, {

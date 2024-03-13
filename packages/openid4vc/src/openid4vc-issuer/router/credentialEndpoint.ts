@@ -5,6 +5,7 @@ import type { Router, Response } from 'express'
 
 import { getRequestContext, sendErrorResponse } from '../../shared/router'
 import { OpenId4VcIssuerService } from '../OpenId4VcIssuerService'
+import { getCNonceFromCredentialRequest } from '../util/credentialRequest'
 
 export interface OpenId4VciCredentialEndpointConfig {
   /**
@@ -28,12 +29,26 @@ export function configureCredentialEndpoint(router: Router, config: OpenId4VciCr
     try {
       const openId4VcIssuerService = agentContext.dependencyManager.resolve(OpenId4VcIssuerService)
       const credentialRequest = request.body as OpenId4VciCredentialRequest
-      const issueCredentialResponse = await openId4VcIssuerService.createCredentialResponse(agentContext, {
-        issuer,
+
+      const issuanceSession = await openId4VcIssuerService.findIssuanceSessionForCredentialRequest(agentContext, {
+        issuerId: issuer.issuerId,
         credentialRequest,
       })
 
-      response.json(issueCredentialResponse)
+      if (!issuanceSession) {
+        const cNonce = getCNonceFromCredentialRequest(credentialRequest)
+        agentContext.config.logger.warn(
+          `No issuance session found for incoming credential request with cNonce ${cNonce} and issuer ${issuer.issuerId}`
+        )
+        return sendErrorResponse(response, agentContext.config.logger, 404, 'invalid_request', null)
+      }
+
+      const { credentialResponse } = await openId4VcIssuerService.createCredentialResponse(agentContext, {
+        issuanceSession,
+        credentialRequest,
+      })
+
+      response.json(credentialResponse)
     } catch (error) {
       sendErrorResponse(response, agentContext.config.logger, 500, 'invalid_request', error)
     }
