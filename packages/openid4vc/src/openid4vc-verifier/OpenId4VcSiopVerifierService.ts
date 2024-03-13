@@ -66,8 +66,8 @@ import {
   OpenId4VcVerifierRecord,
   OpenId4VcVerifierRepository,
 } from './repository'
-import { SphereonOpenId4VcRelyingPartyEventHandler } from './repository/SphereonOpenId4VcRelyingPartyEventEmitter'
-import { SphereonOpenId4VcRelyingPartySessionManager } from './repository/SphereonOpenId4VcRelyingPartySessionManager'
+import { OpenId4VcRelyingPartyEventHandler } from './repository/OpenId4VcRelyingPartyEventEmitter'
+import { OpenId4VcRelyingPartySessionManager } from './repository/OpenId4VcRelyingPartySessionManager'
 
 /**
  * @internal
@@ -392,10 +392,10 @@ export class OpenId4VcSiopVerifierService {
       .resolve(DidsApi)
       .supportedResolverMethods.filter((m) => m !== 'peer')
 
-    // The SphereonOpenId4VcRelyingPartyEventHandler is a global event handler that makes sure that
+    // The OpenId4VcRelyingPartyEventHandler is a global event handler that makes sure that
     // all the events are handled, and that the correct context is used for the events.
     const sphereonEventEmitter = agentContext.dependencyManager
-      .resolve(SphereonOpenId4VcRelyingPartyEventHandler)
+      .resolve(OpenId4VcRelyingPartyEventHandler)
       .getEventEmitterForVerifier(agentContext.contextCorrelationId, verifierId)
 
     builder
@@ -440,7 +440,7 @@ export class OpenId4VcSiopVerifierService {
       // FIXME: should allow verification of revocation
       // .withRevocationVerificationCallback()
       .withRevocationVerification(RevocationVerification.NEVER)
-      .withSessionManager(new SphereonOpenId4VcRelyingPartySessionManager(agentContext, verifierId))
+      .withSessionManager(new OpenId4VcRelyingPartySessionManager(agentContext, verifierId))
       .withEventEmitter(sphereonEventEmitter)
 
     if (presentationDefinition) {

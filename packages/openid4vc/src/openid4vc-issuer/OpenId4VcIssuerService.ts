@@ -53,9 +53,9 @@ import { getProofTypeFromKey } from '../shared/utils'
 import { OpenId4VcIssuanceSessionState } from './OpenId4VcIssuanceSessionState'
 import { OpenId4VcIssuerModuleConfig } from './OpenId4VcIssuerModuleConfig'
 import { OpenId4VcIssuerRepository, OpenId4VcIssuerRecord, OpenId4VcIssuanceSessionRepository } from './repository'
-import { SphereonOpenId4VcCNonceStateManager } from './repository/SphereonOpenId4VcCNonceStateManager'
-import { SphereonOpenId4VcCredentialOfferSessionStateManager } from './repository/SphereonOpenId4VcCredentialOfferSessionStateManager'
-import { SphereonOpenId4VcCredentialOfferUriStateManager } from './repository/SphereonOpenId4VcCredentialOfferUriStateManager'
+import { OpenId4VcCNonceStateManager } from './repository/OpenId4VcCNonceStateManager'
+import { OpenId4VcCredentialOfferSessionStateManager } from './repository/OpenId4VcCredentialOfferSessionStateManager'
+import { OpenId4VcCredentialOfferUriStateManager } from './repository/OpenId4VcCredentialOfferUriStateManager'
 import { getCNonceFromCredentialRequest } from './util/credentialRequest'
 
 const w3cOpenId4VcFormats = [
@@ -291,13 +291,9 @@ export class OpenId4VcIssuerService {
       .withCredentialEndpoint(issuerMetadata.credentialEndpoint)
       .withTokenEndpoint(issuerMetadata.tokenEndpoint)
       .withCredentialsSupported(issuerMetadata.credentialsSupported)
-      .withCNonceStateManager(new SphereonOpenId4VcCNonceStateManager(agentContext, issuer.issuerId))
-      .withCredentialOfferStateManager(
-        new SphereonOpenId4VcCredentialOfferSessionStateManager(agentContext, issuer.issuerId)
-      )
-      .withCredentialOfferURIStateManager(
-        new SphereonOpenId4VcCredentialOfferUriStateManager(agentContext, issuer.issuerId)
-      )
+      .withCNonceStateManager(new OpenId4VcCNonceStateManager(agentContext, issuer.issuerId))
+      .withCredentialOfferStateManager(new OpenId4VcCredentialOfferSessionStateManager(agentContext, issuer.issuerId))
+      .withCredentialOfferURIStateManager(new OpenId4VcCredentialOfferUriStateManager(agentContext, issuer.issuerId))
       .withJWTVerifyCallback(this.getJwtVerifyCallback(agentContext))
       .withCredentialSignerCallback(() => {
         throw new CredoError('Credential signer callback should be overwritten. This is a no-op')

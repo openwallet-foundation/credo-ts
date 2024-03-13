@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import type { OpenId4VcVerificationSessionStateChangedEvent } from '../OpenId4VcVerifierEvents'
 import type { AgentContext } from '@credo-ts/core'
 import type { AuthorizationEvent, AuthorizationRequest, AuthorizationResponse } from '@sphereon/did-auth-siop'
@@ -27,7 +26,7 @@ interface RelyingPartyEventEmitterContext {
 }
 
 @injectable()
-export class SphereonOpenId4VcRelyingPartyEventHandler {
+export class OpenId4VcRelyingPartyEventHandler {
   public readonly nativeEventEmitter: NativeEventEmitter
 
   public constructor(
@@ -72,7 +71,7 @@ export class SphereonOpenId4VcRelyingPartyEventHandler {
   }
 
   public getEventEmitterForVerifier(contextCorrelationId: string, verifierId: string) {
-    return new SphereonOpenId4VcRelyingPartyEventEmitter(this.nativeEventEmitter, contextCorrelationId, verifierId)
+    return new OpenId4VcRelyingPartyEventEmitter(this.nativeEventEmitter, contextCorrelationId, verifierId)
   }
 
   private onAuthorizationRequestCreatedSuccess = async (
@@ -119,29 +118,6 @@ export class SphereonOpenId4VcRelyingPartyEventHandler {
       }
     })
   }
-
-  // private onAuthorizationResponseReceivedSuccess = async (
-  //   event: AuthorizationEvent<AuthorizationResponse>,
-  //   context: RelyingPartyEventEmitterContext
-  // ): Promise<void> => {
-  //   await this.withSession(context.contextCorrelationId, async (agentContext, verificationSessionRepository) => {
-  //     const verificationSession = await verificationSessionRepository.getById(agentContext, event.correlationId)
-
-  //     // In all other cases it doesn't make sense to update the state, as the state is already advanced beyond
-  //     // this state.
-  //     if (
-  //       verificationSession.state === OpenId4VcVerificationSessionState.RequestCreated ||
-  //       verificationSession.state === OpenId4VcVerificationSessionState.RequestUriRetrieved
-  //     ) {
-  //       const previousState = verificationSession.state
-
-  //       verificationSession.state = OpenId4VcVerificationSessionState.ResponseReceived
-  //       verificationSession.authorizationResponsePayload = event.subject.payload
-  //       await verificationSessionRepository.update(agentContext, verificationSession)
-  //       this.emitStateChangedEvent(agentContext, verificationSession, previousState)
-  //     }
-  //   })
-  // }
 
   private onAuthorizationResponseReceivedFailed = async (
     event: AuthorizationEvent<AuthorizationResponse>,
@@ -231,15 +207,16 @@ export class SphereonOpenId4VcRelyingPartyEventHandler {
  * event emitter and thus not have endless event emitters and listeners for each active RP.
  *
  * We only modify the emit method, and add the verifierId and contextCorrelationId to the event
- * this allows the listener to know which tenant and which verified the event is associated with.
+ * this allows the listener to know which tenant and which verifier the event is associated with.
  */
-class SphereonOpenId4VcRelyingPartyEventEmitter implements NativeEventEmitter {
+class OpenId4VcRelyingPartyEventEmitter implements NativeEventEmitter {
   public constructor(
     private nativeEventEmitter: NativeEventEmitter,
     private contextCorrelationId: string,
     private verifierId: string
   ) {}
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   public emit(eventName: string | symbol, ...args: any[]): boolean {
     return this.nativeEventEmitter.emit(eventName, ...args, {
       contextCorrelationId: this.contextCorrelationId,
@@ -247,30 +224,36 @@ class SphereonOpenId4VcRelyingPartyEventEmitter implements NativeEventEmitter {
     } satisfies RelyingPartyEventEmitterContext)
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   public [NativeEventEmitter.captureRejectionSymbol]?(error: Error, event: string, ...args: any[]): void {
     return this.nativeEventEmitter[NativeEventEmitter.captureRejectionSymbol]?.(error, event, ...args)
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   public addListener(eventName: string | symbol, listener: (...args: any[]) => void): this {
     this.nativeEventEmitter.addListener(eventName, listener)
     return this
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   public on(eventName: string | symbol, listener: (...args: any[]) => void): this {
     this.nativeEventEmitter.on(eventName, listener)
     return this
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   public once(eventName: string | symbol, listener: (...args: any[]) => void): this {
     this.nativeEventEmitter.once(eventName, listener)
     return this
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   public removeListener(eventName: string | symbol, listener: (...args: any[]) => void): this {
     this.nativeEventEmitter.removeListener(eventName, listener)
     return this
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   public off(eventName: string | symbol, listener: (...args: any[]) => void): this {
     this.nativeEventEmitter.off(eventName, listener)
     return this

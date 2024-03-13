@@ -11,7 +11,7 @@ import { OpenId4VcSiopVerifierService } from './OpenId4VcSiopVerifierService'
 import { OpenId4VcVerifierApi } from './OpenId4VcVerifierApi'
 import { OpenId4VcVerifierModuleConfig } from './OpenId4VcVerifierModuleConfig'
 import { OpenId4VcVerifierRepository } from './repository'
-import { SphereonOpenId4VcRelyingPartyEventHandler } from './repository/SphereonOpenId4VcRelyingPartyEventEmitter'
+import { OpenId4VcRelyingPartyEventHandler } from './repository/OpenId4VcRelyingPartyEventEmitter'
 import { configureAuthorizationEndpoint } from './router'
 import { configureAuthorizationRequestEndpoint } from './router/authorizationRequestEndpoint'
 
@@ -46,7 +46,7 @@ export class OpenId4VcVerifierModule implements Module {
     dependencyManager.registerSingleton(OpenId4VcVerifierRepository)
 
     // Global event emitter
-    dependencyManager.registerSingleton(SphereonOpenId4VcRelyingPartyEventHandler)
+    dependencyManager.registerSingleton(OpenId4VcRelyingPartyEventHandler)
   }
 
   public async initialize(rootAgentContext: AgentContext): Promise<void> {

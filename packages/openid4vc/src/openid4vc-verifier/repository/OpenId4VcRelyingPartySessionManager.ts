@@ -14,7 +14,7 @@ import { OpenId4VcVerificationSessionState } from '../OpenId4VcVerificationSessi
 
 import { OpenId4VcVerificationSessionRepository } from './OpenId4VcVerificationSessionRepository'
 
-export class SphereonOpenId4VcRelyingPartySessionManager implements IRPSessionManager {
+export class OpenId4VcRelyingPartySessionManager implements IRPSessionManager {
   private openId4VcVerificationSessionRepository: OpenId4VcVerificationSessionRepository
 
   public constructor(private agentContext: AgentContext, private verifierId: string) {
@@ -25,7 +25,7 @@ export class SphereonOpenId4VcRelyingPartySessionManager implements IRPSessionMa
 
   public async getRequestStateByCorrelationId(
     correlationId: string,
-    errorOnNotFound?: boolean | undefined
+    errorOnNotFound?: boolean
   ): Promise<AuthorizationRequestState | undefined> {
     const verificationSession = await this.openId4VcVerificationSessionRepository.findById(
       this.agentContext,
@@ -43,7 +43,7 @@ export class SphereonOpenId4VcRelyingPartySessionManager implements IRPSessionMa
 
   public async getRequestStateByNonce(
     nonce: string,
-    errorOnNotFound?: boolean | undefined
+    errorOnNotFound?: boolean
   ): Promise<AuthorizationRequestState | undefined> {
     const verificationSession = await this.openId4VcVerificationSessionRepository.findSingleByQuery(this.agentContext, {
       verifierId: this.verifierId,
@@ -60,7 +60,7 @@ export class SphereonOpenId4VcRelyingPartySessionManager implements IRPSessionMa
 
   public async getRequestStateByState(
     state: string,
-    errorOnNotFound?: boolean | undefined
+    errorOnNotFound?: boolean
   ): Promise<AuthorizationRequestState | undefined> {
     const verificationSession = await this.openId4VcVerificationSessionRepository.findSingleByQuery(this.agentContext, {
       verifierId: this.verifierId,
@@ -77,7 +77,7 @@ export class SphereonOpenId4VcRelyingPartySessionManager implements IRPSessionMa
 
   public async getResponseStateByCorrelationId(
     correlationId: string,
-    errorOnNotFound?: boolean | undefined
+    errorOnNotFound?: boolean
   ): Promise<AuthorizationResponseState | undefined> {
     const verificationSession = await this.openId4VcVerificationSessionRepository.findById(
       this.agentContext,
@@ -96,7 +96,7 @@ export class SphereonOpenId4VcRelyingPartySessionManager implements IRPSessionMa
 
   public async getResponseStateByNonce(
     nonce: string,
-    errorOnNotFound?: boolean | undefined
+    errorOnNotFound?: boolean
   ): Promise<AuthorizationResponseState | undefined> {
     const verificationSession = await this.openId4VcVerificationSessionRepository.findSingleByQuery(this.agentContext, {
       verifierId: this.verifierId,
@@ -114,7 +114,7 @@ export class SphereonOpenId4VcRelyingPartySessionManager implements IRPSessionMa
 
   public async getResponseStateByState(
     state: string,
-    errorOnNotFound?: boolean | undefined
+    errorOnNotFound?: boolean
   ): Promise<AuthorizationResponseState | undefined> {
     const verificationSession = await this.openId4VcVerificationSessionRepository.findSingleByQuery(this.agentContext, {
       verifierId: this.verifierId,
@@ -130,18 +130,12 @@ export class SphereonOpenId4VcRelyingPartySessionManager implements IRPSessionMa
     return responseState
   }
 
-  public async getCorrelationIdByNonce(
-    nonce: string,
-    errorOnNotFound?: boolean | undefined
-  ): Promise<string | undefined> {
+  public async getCorrelationIdByNonce(nonce: string, errorOnNotFound?: boolean): Promise<string | undefined> {
     const requestState = await this.getRequestStateByNonce(nonce, errorOnNotFound)
     return requestState?.correlationId
   }
 
-  public async getCorrelationIdByState(
-    state: string,
-    errorOnNotFound?: boolean | undefined
-  ): Promise<string | undefined> {
+  public async getCorrelationIdByState(state: string, errorOnNotFound?: boolean): Promise<string | undefined> {
     const requestState = await this.getRequestStateByState(state, errorOnNotFound)
     return requestState?.correlationId
   }

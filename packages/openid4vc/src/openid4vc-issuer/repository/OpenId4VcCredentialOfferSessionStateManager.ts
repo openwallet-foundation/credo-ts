@@ -11,7 +11,7 @@ import { OpenId4VcIssuerEvents } from '../OpenId4VcIssuerEvents'
 import { OpenId4VcIssuanceSessionRecord } from './OpenId4VcIssuanceSessionRecord'
 import { OpenId4VcIssuanceSessionRepository } from './OpenId4VcIssuanceSessionRepository'
 
-export class SphereonOpenId4VcCredentialOfferSessionStateManager implements IStateManager<CredentialOfferSession> {
+export class OpenId4VcCredentialOfferSessionStateManager implements IStateManager<CredentialOfferSession> {
   private openId4VcIssuanceSessionRepository: OpenId4VcIssuanceSessionRepository
   private eventEmitter: EventEmitter
 

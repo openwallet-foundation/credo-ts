@@ -5,7 +5,7 @@ import { CredoError } from '@credo-ts/core'
 
 import { OpenId4VcIssuanceSessionRepository } from './OpenId4VcIssuanceSessionRepository'
 
-export class SphereonOpenId4VcCredentialOfferUriStateManager implements IStateManager<URIState> {
+export class OpenId4VcCredentialOfferUriStateManager implements IStateManager<URIState> {
   private openId4VcIssuanceSessionRepository: OpenId4VcIssuanceSessionRepository
 
   public constructor(private agentContext: AgentContext, private issuerId: string) {

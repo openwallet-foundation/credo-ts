@@ -14,8 +14,8 @@ import { assertValidAccessTokenRequest, createAccessTokenResponse } from '@spher
 
 import { getRequestContext, sendErrorResponse } from '../../shared/router'
 import { OpenId4VcIssuerService } from '../OpenId4VcIssuerService'
-import { SphereonOpenId4VcCNonceStateManager } from '../repository/SphereonOpenId4VcCNonceStateManager'
-import { SphereonOpenId4VcCredentialOfferSessionStateManager } from '../repository/SphereonOpenId4VcCredentialOfferSessionStateManager'
+import { OpenId4VcCNonceStateManager } from '../repository/OpenId4VcCNonceStateManager'
+import { OpenId4VcCredentialOfferSessionStateManager } from '../repository/OpenId4VcCredentialOfferSessionStateManager'
 
 export interface OpenId4VciAccessTokenEndpointConfig {
   /**
@@ -116,12 +116,12 @@ export function handleTokenRequest(config: OpenId4VciAccessTokenEndpointConfig) 
 
     try {
       const accessTokenResponse = await createAccessTokenResponse(request.body, {
-        credentialOfferSessions: new SphereonOpenId4VcCredentialOfferSessionStateManager(agentContext, issuer.issuerId),
+        credentialOfferSessions: new OpenId4VcCredentialOfferSessionStateManager(agentContext, issuer.issuerId),
         tokenExpiresIn: tokenExpiresInSeconds * 1000,
         accessTokenIssuer: issuerMetadata.issuerUrl,
         cNonce: await agentContext.wallet.generateNonce(),
         cNonceExpiresIn: cNonceExpiresInSeconds,
-        cNonces: new SphereonOpenId4VcCNonceStateManager(agentContext, issuer.issuerId),
+        cNonces: new OpenId4VcCNonceStateManager(agentContext, issuer.issuerId),
         accessTokenSignerCallback: getJwtSignerCallback(agentContext, accessTokenSigningKey, config),
       })
       response.status(200).json(accessTokenResponse)
@@ -142,7 +142,7 @@ export function verifyTokenRequest(options: { preAuthorizedCodeExpirationInSecon
       await assertValidAccessTokenRequest(request.body, {
         // we use seconds instead of milliseconds for consistency
         expirationDuration: options.preAuthorizedCodeExpirationInSeconds * 1000,
-        credentialOfferSessions: new SphereonOpenId4VcCredentialOfferSessionStateManager(agentContext, issuer.issuerId),
+        credentialOfferSessions: new OpenId4VcCredentialOfferSessionStateManager(agentContext, issuer.issuerId),
       })
     } catch (error) {
       if (error instanceof TokenError) {

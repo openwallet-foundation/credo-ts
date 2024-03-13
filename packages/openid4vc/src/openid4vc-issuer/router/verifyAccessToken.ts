@@ -8,7 +8,7 @@ import { OpenId4VcIssuerService } from '../OpenId4VcIssuerService'
 export async function verifyAccessToken(
   agentContext: AgentContext,
   issuer: OpenId4VcIssuerRecord,
-  authorizationHeader: string | undefined
+  authorizationHeader?: string
 ) {
   const openId4VcIssuerService = agentContext.dependencyManager.resolve(OpenId4VcIssuerService)
 
