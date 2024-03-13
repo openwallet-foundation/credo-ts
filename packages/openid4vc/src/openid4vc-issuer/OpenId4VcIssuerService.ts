@@ -150,6 +150,8 @@ export class OpenId4VcIssuerService {
     options.issuanceSession.assertState([
       OpenId4VcIssuanceSessionState.AccessTokenCreated,
       OpenId4VcIssuanceSessionState.CredentialRequestReceived,
+      // It is possible to issue multiple credentials in one session
+      OpenId4VcIssuanceSessionState.CredentialIssued,
     ])
     const { credentialRequest, issuanceSession } = options
     if (!credentialRequest.proof) throw new CredoError('No proof defined in the credentialRequest.')

@@ -40,7 +40,9 @@ import { AskarModule } from '../../../../askar/src'
 import { askarModuleConfig } from '../../../../askar/tests/helpers'
 import { agentDependencies } from '../../../../node/src'
 import { OpenId4VciCredentialFormatProfile } from '../../shared'
+import { OpenId4VcIssuanceSessionState } from '../OpenId4VcIssuanceSessionState'
 import { OpenId4VcIssuerModule } from '../OpenId4VcIssuerModule'
+import { OpenId4VcIssuerService } from '../OpenId4VcIssuerService'
 import { OpenId4VcIssuanceSessionRepository } from '../repository'
 
 const openBadgeCredential = {
@@ -325,6 +327,10 @@ describe('OpenId4VcIssuer', () => {
       throw new Error('No issuance session found')
     }
 
+    // We need to update the state, as it is checked and we're skipping the access token step
+    result.issuanceSession.state = OpenId4VcIssuanceSessionState.AccessTokenCreated
+    await issuanceSessionRepository.update(issuer.context, result.issuanceSession)
+
     const { credentialResponse } = await issuer.modules.openId4VcIssuer.createCredentialResponse({
       issuanceSessionId: issuanceSession.id,
       credentialRequest,
@@ -365,7 +371,9 @@ describe('OpenId4VcIssuer', () => {
     })
 
     const issuanceSessionRepository = issuer.context.dependencyManager.resolve(OpenId4VcIssuanceSessionRepository)
+    // We need to update the state, as it is checked and we're skipping the access token step
     result.issuanceSession.cNonce = '1234'
+    result.issuanceSession.state = OpenId4VcIssuanceSessionState.AccessTokenCreated
     await issuanceSessionRepository.update(issuer.context, result.issuanceSession)
 
     expect(result.credentialOffer).toBeDefined()
@@ -433,6 +441,8 @@ describe('OpenId4VcIssuer', () => {
     })
 
     const issuanceSessionRepository = issuer.context.dependencyManager.resolve(OpenId4VcIssuanceSessionRepository)
+    // We need to update the state, as it is checked and we're skipping the access token step
+    result.issuanceSession.state = OpenId4VcIssuanceSessionState.AccessTokenCreated
     result.issuanceSession.cNonce = '1234'
     await issuanceSessionRepository.update(issuer.context, result.issuanceSession)
 
@@ -466,7 +476,9 @@ describe('OpenId4VcIssuer', () => {
     })
 
     const issuanceSessionRepository = issuer.context.dependencyManager.resolve(OpenId4VcIssuanceSessionRepository)
+    // We need to update the state, as it is checked and we're skipping the access token step
     result.issuanceSession.cNonce = '1234'
+    result.issuanceSession.state = OpenId4VcIssuanceSessionState.AccessTokenCreated
     await issuanceSessionRepository.update(issuer.context, result.issuanceSession)
 
     const issuerMetadata = await issuer.modules.openId4VcIssuer.getIssuerMetadata(openId4VcIssuer.issuerId)
@@ -517,6 +529,8 @@ describe('OpenId4VcIssuer', () => {
     })
 
     const issuanceSessionRepository = issuer.context.dependencyManager.resolve(OpenId4VcIssuanceSessionRepository)
+    // We need to update the state, as it is checked and we're skipping the access token step
+    result.issuanceSession.state = OpenId4VcIssuanceSessionState.AccessTokenCreated
     result.issuanceSession.cNonce = '1234'
     await issuanceSessionRepository.update(issuer.context, result.issuanceSession)
 
@@ -596,6 +610,10 @@ describe('OpenId4VcIssuer', () => {
       }),
       verificationMethod: issuerVerificationMethod.id,
     })
+
+    // We need to update the state, as it is checked and we're skipping the access token step
+    result.issuanceSession.state = OpenId4VcIssuanceSessionState.AccessTokenCreated
+    await issuanceSessionRepository.update(issuer.context, result.issuanceSession)
 
     const issuerMetadata = await issuer.modules.openId4VcIssuer.getIssuerMetadata(openId4VcIssuer.issuerId)
     const { credentialResponse } = await issuer.modules.openId4VcIssuer.createCredentialResponse({

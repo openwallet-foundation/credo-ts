@@ -7,8 +7,8 @@ import express from 'express'
 
 import { AskarModule } from '../../../../askar/src'
 import { askarModuleConfig } from '../../../../askar/tests/helpers'
-import { createAgentFromModules } from '../../../tests/utils'
-import { OpenId4VcVerifierModule } from '../../openid4vc-verifier'
+import { waitForVerificationSessionRecordSubject, createAgentFromModules } from '../../../tests/utils'
+import { OpenId4VcVerificationSessionState, OpenId4VcVerifierModule } from '../../openid4vc-verifier'
 import { OpenId4VcHolderModule } from '../OpenId4VcHolderModule'
 
 const port = 3121
@@ -94,11 +94,14 @@ describe('OpenId4VcHolder | OpenID4VP', () => {
       state: expect.any(String),
     })
 
+    await waitForVerificationSessionRecordSubject(verifier.replaySubject, {
+      state: OpenId4VcVerificationSessionState.ResponseVerified,
+      contextCorrelationId: verifier.agent.context.contextCorrelationId,
+      verificationSessionId: verificationSession.id,
+    })
+
     const { idToken, presentationExchange } =
-      await verifier.agent.modules.openId4VcVerifier.verifyAuthorizationResponse({
-        authorizationResponse: submittedResponse,
-        verificationSessionId: verificationSession.id,
-      })
+      await verifier.agent.modules.openId4VcVerifier.getVerifiedAuthorizationResponse(verificationSession.id)
 
     expect(presentationExchange).toBeUndefined()
     expect(idToken).toMatchObject({
