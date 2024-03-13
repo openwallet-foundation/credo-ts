@@ -13,8 +13,9 @@ import {
 import { assertValidAccessTokenRequest, createAccessTokenResponse } from '@sphereon/oid4vci-issuer'
 
 import { getRequestContext, sendErrorResponse } from '../../shared/router'
-import { OpenId4VcIssuerModuleConfig } from '../OpenId4VcIssuerModuleConfig'
 import { OpenId4VcIssuerService } from '../OpenId4VcIssuerService'
+import { OpenId4VcCNonceStateManager } from '../repository/OpenId4VcCNonceStateManager'
+import { OpenId4VcCredentialOfferSessionStateManager } from '../repository/OpenId4VcCredentialOfferSessionStateManager'
 
 export interface OpenId4VciAccessTokenEndpointConfig {
   /**
@@ -55,7 +56,11 @@ export function configureAccessTokenEndpoint(router: Router, config: OpenId4VciA
   )
 }
 
-function getJwtSignerCallback(agentContext: AgentContext, signerPublicKey: Key): JWTSignerCallback {
+function getJwtSignerCallback(
+  agentContext: AgentContext,
+  signerPublicKey: Key,
+  config: OpenId4VciAccessTokenEndpointConfig
+): JWTSignerCallback {
   return async (jwt, _kid) => {
     if (_kid) {
       throw new CredoError('Kid should not be supplied externally.')
@@ -70,6 +75,13 @@ function getJwtSignerCallback(agentContext: AgentContext, signerPublicKey: Key):
     if (!alg) {
       throw new CredoError(`No supported signature algorithms for key type: ${signerPublicKey.keyType}`)
     }
+
+    // FIXME: the iat and exp implementation in OID4VCI is incorrect so we override the values here
+    // https://github.com/Sphereon-Opensource/OID4VCI/pull/99
+    // https://github.com/Sphereon-Opensource/OID4VCI/pull/101
+    const iat = Math.floor(new Date().getTime() / 1000)
+    jwt.payload.iat = iat
+    jwt.payload.exp = iat + config.tokenExpiresInSeconds
 
     const jwk = getJwkFromKey(signerPublicKey)
     const signedJwt = await jwsService.createJwsCompact(agentContext, {
@@ -98,20 +110,19 @@ export function handleTokenRequest(config: OpenId4VciAccessTokenEndpointConfig) 
       })
     }
 
-    const openId4VcIssuerConfig = agentContext.dependencyManager.resolve(OpenId4VcIssuerModuleConfig)
     const openId4VcIssuerService = agentContext.dependencyManager.resolve(OpenId4VcIssuerService)
     const issuerMetadata = openId4VcIssuerService.getIssuerMetadata(agentContext, issuer)
     const accessTokenSigningKey = Key.fromFingerprint(issuer.accessTokenPublicKeyFingerprint)
 
     try {
       const accessTokenResponse = await createAccessTokenResponse(request.body, {
-        credentialOfferSessions: openId4VcIssuerConfig.getCredentialOfferSessionStateManager(agentContext),
-        tokenExpiresIn: tokenExpiresInSeconds,
+        credentialOfferSessions: new OpenId4VcCredentialOfferSessionStateManager(agentContext, issuer.issuerId),
+        tokenExpiresIn: tokenExpiresInSeconds * 1000,
         accessTokenIssuer: issuerMetadata.issuerUrl,
         cNonce: await agentContext.wallet.generateNonce(),
         cNonceExpiresIn: cNonceExpiresInSeconds,
-        cNonces: openId4VcIssuerConfig.getCNonceStateManager(agentContext),
-        accessTokenSignerCallback: getJwtSignerCallback(agentContext, accessTokenSigningKey),
+        cNonces: new OpenId4VcCNonceStateManager(agentContext, issuer.issuerId),
+        accessTokenSignerCallback: getJwtSignerCallback(agentContext, accessTokenSigningKey, config),
       })
       response.status(200).json(accessTokenResponse)
     } catch (error) {
@@ -125,14 +136,13 @@ export function handleTokenRequest(config: OpenId4VciAccessTokenEndpointConfig) 
 
 export function verifyTokenRequest(options: { preAuthorizedCodeExpirationInSeconds: number }) {
   return async (request: OpenId4VcIssuanceRequest, response: Response, next: NextFunction) => {
-    const { agentContext } = getRequestContext(request)
+    const { agentContext, issuer } = getRequestContext(request)
 
     try {
-      const openId4VcIssuerConfig = agentContext.dependencyManager.resolve(OpenId4VcIssuerModuleConfig)
       await assertValidAccessTokenRequest(request.body, {
         // we use seconds instead of milliseconds for consistency
         expirationDuration: options.preAuthorizedCodeExpirationInSeconds * 1000,
-        credentialOfferSessions: openId4VcIssuerConfig.getCredentialOfferSessionStateManager(agentContext),
+        credentialOfferSessions: new OpenId4VcCredentialOfferSessionStateManager(agentContext, issuer.issuerId),
       })
     } catch (error) {
       if (error instanceof TokenError) {

@@ -13,7 +13,7 @@ import type { Query } from '../../storage/StorageService'
 import type { VerificationMethod } from '../dids'
 import type { SdJwtVcRecord } from '../sd-jwt-vc'
 import type { W3cCredentialRecord } from '../vc'
-import type { IAnoncredsDataIntegrityService } from '../vc/data-integrity/models/IAnonCredsDataIntegrityService'
+import type { IAnonCredsDataIntegrityService } from '../vc/data-integrity/models/IAnonCredsDataIntegrityService'
 import type {
   PresentationSignCallBackParams,
   SdJwtDecodedVerifiableCredentialWithKbJwtInput,
@@ -35,7 +35,6 @@ import { Hasher, JsonTransformer } from '../../utils'
 import { DidsApi, getKeyFromVerificationMethod } from '../dids'
 import { SdJwtVcApi } from '../sd-jwt-vc'
 import {
-  W3cJsonLdVerifiableCredential,
   ClaimFormat,
   SignatureSuiteRegistry,
   W3cCredentialRepository,
@@ -398,7 +397,7 @@ export class DifPresentationExchangeService {
    * and all credentials have an ANONCREDS_DATA_INTEGRITY proof we default to
    * signing the presentation using the ANONCREDS_DATA_INTEGRITY_CRYPTOSUITE
    */
-  private shouldSignUsingAnoncredsDataIntegrity(
+  private shouldSignUsingAnonCredsDataIntegrity(
     presentationToCreate: PresentationToCreate,
     presentationSubmission: DifPresentationExchangeSubmission
   ) {
@@ -460,13 +459,13 @@ export class DifPresentationExchangeService {
 
         return signedPresentation.encoded as W3CVerifiablePresentation
       } else if (presentationToCreate.claimFormat === ClaimFormat.LdpVp) {
-        if (this.shouldSignUsingAnoncredsDataIntegrity(presentationToCreate, presentationSubmission)) {
+        if (this.shouldSignUsingAnonCredsDataIntegrity(presentationToCreate, presentationSubmission)) {
           // make sure the descriptors format properties are set correctly
           presentationSubmission.descriptor_map = presentationSubmission.descriptor_map.map((descriptor) => ({
             ...descriptor,
             format: 'di_vp',
           }))
-          const anoncredsDataIntegrityService = agentContext.dependencyManager.resolve<IAnoncredsDataIntegrityService>(
+          const anoncredsDataIntegrityService = agentContext.dependencyManager.resolve<IAnonCredsDataIntegrityService>(
             AnonCredsDataIntegrityServiceSymbol
           )
           const presentation = await anoncredsDataIntegrityService.createPresentation(agentContext, {

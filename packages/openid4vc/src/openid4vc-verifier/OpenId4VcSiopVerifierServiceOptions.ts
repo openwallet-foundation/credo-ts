@@ -1,6 +1,6 @@
+import type { OpenId4VcVerificationSessionRecord } from './repository'
 import type {
   OpenId4VcJwtIssuer,
-  OpenId4VcSiopAuthorizationRequestPayload,
   OpenId4VcSiopAuthorizationResponsePayload,
   OpenId4VcSiopIdTokenPayload,
 } from '../shared'
@@ -34,8 +34,8 @@ export interface OpenId4VcSiopVerifyAuthorizationResponseOptions {
 }
 
 export interface OpenId4VcSiopCreateAuthorizationRequestReturn {
-  authorizationRequestUri: string
-  authorizationRequestPayload: OpenId4VcSiopAuthorizationRequestPayload
+  authorizationRequest: string
+  verificationSession: OpenId4VcVerificationSessionRecord
 }
 
 /**
@@ -55,7 +55,7 @@ export interface OpenId4VcSiopVerifiedAuthorizationResponse {
 
 export interface OpenId4VcSiopCreateVerifierOptions {
   /**
-   * Id of the verifier, not the id of the verified record. Will be exposed publicly
+   * Id of the verifier, not the id of the verifier record. Will be exposed publicly
    */
   verifierId?: string
 }

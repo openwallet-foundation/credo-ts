@@ -18,7 +18,7 @@ import { ProofsModule } from '../../../ProofsModule'
 import { ProofRole, ProofState } from '../../../models'
 import { V2ProofProtocol } from '../../../protocol'
 import { ProofExchangeRecord } from '../../../repository'
-import { PresentationExchangeProofFormatService } from '../DifPresentationExchangeProofFormatService'
+import { DifPresentationExchangeProofFormatService } from '../DifPresentationExchangeProofFormatService'
 
 const mockProofRecord = () =>
   new ProofExchangeRecord({
@@ -99,7 +99,7 @@ describe('Presentation Exchange ProofFormatService', () => {
         {
           pex: new DifPresentationExchangeModule(),
           proofs: new ProofsModule({
-            proofProtocols: [new V2ProofProtocol({ proofFormats: [new PresentationExchangeProofFormatService()] })],
+            proofProtocols: [new V2ProofProtocol({ proofFormats: [new DifPresentationExchangeProofFormatService()] })],
           }),
         }
       )
@@ -107,7 +107,7 @@ describe('Presentation Exchange ProofFormatService', () => {
 
     await agent.initialize()
 
-    pexFormatService = agent.dependencyManager.resolve(PresentationExchangeProofFormatService)
+    pexFormatService = agent.dependencyManager.resolve(DifPresentationExchangeProofFormatService)
   })
 
   describe('Create Presentation Exchange Proof Proposal / Request', () => {

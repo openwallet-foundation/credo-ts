@@ -2455,6 +2455,14 @@
     "@sd-jwt/types" "0.2.0"
     "@sd-jwt/utils" "0.2.0"
 
+"@sd-jwt/decode@^0.3.0":
+  version "0.3.0"
+  resolved "https://registry.yarnpkg.com/@sd-jwt/decode/-/decode-0.3.0.tgz#23627ce1b7c678a6ac685d7241e7f64e18bd9a8c"
+  integrity sha512-jCN1g3VzopiUxUtBZWq0Ojfzbg+wYkE1/gV86Xq7/gV8aNacCJo7Su5a3pYtoYg/rnH7ou1kwpD6vteQFkvXMQ==
+  dependencies:
+    "@sd-jwt/types" "0.3.0"
+    "@sd-jwt/utils" "0.3.0"
+
 "@sd-jwt/present@0.2.1":
   version "0.2.1"
   resolved "https://registry.yarnpkg.com/@sd-jwt/present/-/present-0.2.1.tgz#ff9958626b271a60d539dd1e601763ff33c024e8"
@@ -2463,13 +2471,13 @@
     "@sd-jwt/types" "0.2.1"
     "@sd-jwt/utils" "0.2.1"
 
-"@sd-jwt/present@^0.2.0":
-  version "0.2.0"
-  resolved "https://registry.yarnpkg.com/@sd-jwt/present/-/present-0.2.0.tgz#01ecbd09dd21287be892b36d754a79c8629387f2"
-  integrity sha512-6xDBiB+UqCwW8k7O7OUJ7BgC/8zcO+AD5ZX1k4I6yjDM9vscgPulSVxT/yUH+Aov3cZ/BKvfKC0qDEZkHmP/kg==
+"@sd-jwt/present@^0.3.0":
+  version "0.3.0"
+  resolved "https://registry.yarnpkg.com/@sd-jwt/present/-/present-0.3.0.tgz#e054f66c0ec9c339570ec028e0f2291d75c279e3"
+  integrity sha512-dICPhH5hqOLXmuJMdTaA47ZMpCDkTzbWUQXsIgw0vma7Aj9Bc6ySNevPwlsUx4K8XBjPgYWwBM9tKdrs3tsCvQ==
   dependencies:
-    "@sd-jwt/types" "0.2.0"
-    "@sd-jwt/utils" "0.2.0"
+    "@sd-jwt/types" "0.3.0"
+    "@sd-jwt/utils" "0.3.0"
 
 "@sd-jwt/types@0.2.0":
   version "0.2.0"
@@ -2481,7 +2489,12 @@
   resolved "https://registry.yarnpkg.com/@sd-jwt/types/-/types-0.2.1.tgz#e1e6b47728dffa90ed244e15e2253bd01793cb96"
   integrity sha512-nbNik/cq6UIMsN144FcgPZQzaqIsjEEj307j3ZSFORkQBR4Tsmcj54aswTuNh0Z0z/4aSbfw14vOKBZvRWyVLQ==
 
-"@sd-jwt/utils@0.2.0", "@sd-jwt/utils@^0.2.0":
+"@sd-jwt/types@0.3.0":
+  version "0.3.0"
+  resolved "https://registry.yarnpkg.com/@sd-jwt/types/-/types-0.3.0.tgz#12f2fa7b448f1f5e368ddfac8db2143ed58c38f7"
+  integrity sha512-JbpZICZ+nWPiKPKw+Veg5tf0Oftit4EzxhLJyvcd0u4R6IulNZvi6LCoUL7b2IT1H86eYPd/qB1KvSh43ByZOA==
+
+"@sd-jwt/utils@0.2.0":
   version "0.2.0"
   resolved "https://registry.yarnpkg.com/@sd-jwt/utils/-/utils-0.2.0.tgz#ef52b744116e874f72ec01978f0631ad5a131eb7"
   integrity sha512-oHCfRYVHCb5RNwdq3eHAt7P9d7TsEaSM1TTux+xl1I9PeQGLtZETnto9Gchtzn8FlTrMdVsLlcuAcK6Viwj1Qw==
@@ -2495,6 +2508,14 @@
   integrity sha512-9eRrge44dhE3fenawR/RZGxP5iuW9DtgdOVANu/JK5PEl80r0fDsMwm/gDjuv8OgLDCmQ6uSaVte1lYaTG71bQ==
   dependencies:
     "@sd-jwt/types" "0.2.1"
+    buffer "*"
+
+"@sd-jwt/utils@0.3.0", "@sd-jwt/utils@^0.3.0":
+  version "0.3.0"
+  resolved "https://registry.yarnpkg.com/@sd-jwt/utils/-/utils-0.3.0.tgz#73ce9809ccc98b35d5a6d1bf1ed34758bcdfb39d"
+  integrity sha512-jQNYxvyfLda9StVLeUqUZtv5csI6IuzcD6b55/wsC9xJgTuntZqf8vyJvuu4MwEJUFwm9PdGkCJXyl/nbpmNLw==
+  dependencies:
+    "@sd-jwt/types" "0.3.0"
     buffer "*"
 
 "@sideway/address@^4.1.5":
@@ -2567,15 +2588,15 @@
   resolved "https://registry.yarnpkg.com/@sovpro/delimited-stream/-/delimited-stream-1.1.0.tgz#4334bba7ee241036e580fdd99c019377630d26b4"
   integrity sha512-kQpk267uxB19X3X2T1mvNMjyvIEonpNSHrMlK5ZaBU6aZxw7wPbpgKJOjHN3+/GPVpXgAV9soVT2oyHpLkLtyw==
 
-"@sphereon/did-auth-siop@0.6.0-unstable.9":
-  version "0.6.0-unstable.9"
-  resolved "https://registry.yarnpkg.com/@sphereon/did-auth-siop/-/did-auth-siop-0.6.0-unstable.9.tgz#9f2ff111900f401911b692bc0b3cc74dcc313ef3"
-  integrity sha512-1i64Z+guXLrkpHKuYUhwYSTPQtQ4/JpQEAEsgv7j47mZgnlappuO18juWHlKLNwmzYyhKzTdt7zaTTeP+wjeWA==
+"@sphereon/did-auth-siop@0.6.2":
+  version "0.6.2"
+  resolved "https://registry.yarnpkg.com/@sphereon/did-auth-siop/-/did-auth-siop-0.6.2.tgz#3af0820c2771e80f8ed70abfe64fb7cd388459aa"
+  integrity sha512-fLoWk54I3EaLdTxqQLnhFMBLdsTdB7g1D/zcDndQWmp/p5Z9pwFf77FSIiIPOb409b4fqXnOMEVoVIlBlhqTbQ==
   dependencies:
     "@astronautlabs/jsonpath" "^1.1.2"
     "@sphereon/did-uni-client" "^0.6.1"
-    "@sphereon/pex" "^3.2.0"
-    "@sphereon/pex-models" "^2.2.0"
+    "@sphereon/pex" "^3.3.0"
+    "@sphereon/pex-models" "^2.2.2"
     "@sphereon/ssi-types" "0.18.1"
     "@sphereon/wellknown-dids-client" "^0.1.3"
     cross-fetch "^4.0.0"
@@ -2597,66 +2618,51 @@
     cross-fetch "^4.0.0"
     did-resolver "^4.1.0"
 
-"@sphereon/oid4vci-client@0.8.2-next.48":
-  version "0.8.2-next.48"
-  resolved "https://registry.yarnpkg.com/@sphereon/oid4vci-client/-/oid4vci-client-0.8.2-next.48.tgz#d185ed168e554fe350ff3d7982ddf8bbd0d45abf"
-  integrity sha512-YvzNsEQjUlHt9VNvsuU0haXi5EaSiQmbSxz3CWGkdTZ+0JSuCSVno+8cZovRvVFA0OV/c/DzvN1XmShv2fRJgA==
+"@sphereon/oid4vci-client@^0.10.1":
+  version "0.10.1"
+  resolved "https://registry.yarnpkg.com/@sphereon/oid4vci-client/-/oid4vci-client-0.10.1.tgz#c78e92a81b6033f785858104e8e89adb7af076e4"
+  integrity sha512-v3Vk+FepN6xt0CjCMVHMO65RVu4e/ireqq0Ed3J5falXbdVR7xCdFBLa8Lj+bSF1sn0f3WvpmTM1E9e+QnYErg==
   dependencies:
-    "@sphereon/oid4vci-common" "0.8.2-next.48+81adb47"
+    "@sphereon/oid4vci-common" "0.10.1"
     "@sphereon/ssi-types" "^0.18.1"
     cross-fetch "^3.1.8"
     debug "^4.3.4"
 
-"@sphereon/oid4vci-common@0.8.2-next.48", "@sphereon/oid4vci-common@0.8.2-next.48+81adb47":
-  version "0.8.2-next.48"
-  resolved "https://registry.yarnpkg.com/@sphereon/oid4vci-common/-/oid4vci-common-0.8.2-next.48.tgz#6cf2111b3015979c4ab729bd2aec791749583bc7"
-  integrity sha512-olHR4jnGEEb0Bao8srJ8dVM3VbbVzAqQ+XDSHwu3fbTmMEGvNE1OrdMaH8vyWfFbNGpLsoBDUdKNTZE4HIpihg==
+"@sphereon/oid4vci-common@0.10.1", "@sphereon/oid4vci-common@^0.10.1":
+  version "0.10.1"
+  resolved "https://registry.yarnpkg.com/@sphereon/oid4vci-common/-/oid4vci-common-0.10.1.tgz#49bc77bcdef0e9696526e9517a3caed3fc134804"
+  integrity sha512-J5MdekO5/EgA7UCpMFdPgAnift1vzvauH5ll19iYZoxKlTL1DZ1yiablo47l3aaral7DASM99HJyHfL7ceGcvg==
   dependencies:
     "@sphereon/ssi-types" "^0.18.1"
     cross-fetch "^3.1.8"
     jwt-decode "^3.1.2"
+    sha.js "^2.4.11"
+    uint8arrays "3.1.1"
 
-"@sphereon/oid4vci-issuer@0.8.2-next.48":
-  version "0.8.2-next.48"
-  resolved "https://registry.yarnpkg.com/@sphereon/oid4vci-issuer/-/oid4vci-issuer-0.8.2-next.48.tgz#48f21d58f872dabff2dea81deab2725d8fe11e34"
-  integrity sha512-JEvZtf+T4iPluvcPSld/evgzTnPLPYrxBFbUjTpPySrpmWMfcSdymiu8Vrwj7f2SCUZokt3EyP1OqnmrE/6AAw==
+"@sphereon/oid4vci-issuer@^0.10.1":
+  version "0.10.1"
+  resolved "https://registry.yarnpkg.com/@sphereon/oid4vci-issuer/-/oid4vci-issuer-0.10.1.tgz#7e88b7b0eb1a878d097ae54e605372a925eb4a0b"
+  integrity sha512-bczrK1gTX6gRSHSu1H+zGL4sUyMNIzAjtNNIBmtFPdQWSoSGVrBDfvf/36/3ag8jr8DtCJ808UTYwYQIWLgJcA==
   dependencies:
-    "@sphereon/oid4vci-common" "0.8.2-next.48+81adb47"
+    "@sphereon/oid4vci-common" "0.10.1"
     "@sphereon/ssi-types" "^0.18.1"
     uuid "^9.0.0"
 
-"@sphereon/pex-models@^2.2.0":
-  version "2.2.0"
-  resolved "https://registry.yarnpkg.com/@sphereon/pex-models/-/pex-models-2.2.0.tgz#32013fff43d4f47df03e213792a9bcc6866a1f06"
-  integrity sha512-dGDRdoxJj+P0TRqu0R8R0/IdIzrCya1MsnxIFbcmSW3rjPsbwXbV0EojEfxXGD5LhqsUJiuAffMtyE2dtVI/XQ==
+"@sphereon/pex-models@^2.2.2":
+  version "2.2.2"
+  resolved "https://registry.yarnpkg.com/@sphereon/pex-models/-/pex-models-2.2.2.tgz#3f8b12c49d8fab7372b4b47eae5bcbf8729cccba"
+  integrity sha512-CZIsBoaV5rMZEWYBsmH+RxsdoxpXf5FSDwDz0GB0qOf5WFk1BGUnzpZzi5yJ+2L151mhPk97dlRc9Wb01Awr4Q==
 
-"@sphereon/pex@3.2.1-unstable.7":
-  version "3.2.1-unstable.7"
-  resolved "https://registry.yarnpkg.com/@sphereon/pex/-/pex-3.2.1-unstable.7.tgz#218d39c2311e5d542258607883185cacc3e6e862"
-  integrity sha512-X55PUfZL5gZ/mJinNS+eQ/iUKuFmNA6PP8NU14p4SemZbt/8kn67XYM6Nl/hYSFDysx64daPMRfPTkopKAfT+Q==
+"@sphereon/pex@3.3.0", "@sphereon/pex@^3.3.0":
+  version "3.3.0"
+  resolved "https://registry.yarnpkg.com/@sphereon/pex/-/pex-3.3.0.tgz#86384f7ee6e5a966b98d3e8010a27e93eb144317"
+  integrity sha512-CNthF/6dlIECqTqdOWGD5HOT72OWjzKTFVuFGmSbgOqsEtEtGU0e0g0gYbvXWNm0hYKsyFgS5XIZ1Uj3NR5UMg==
   dependencies:
     "@astronautlabs/jsonpath" "^1.1.2"
-    "@sd-jwt/decode" "^0.2.0"
-    "@sd-jwt/present" "^0.2.0"
-    "@sd-jwt/utils" "^0.2.0"
-    "@sphereon/pex-models" "^2.2.0"
-    "@sphereon/ssi-types" "0.18.1"
-    ajv "^8.12.0"
-    ajv-formats "^2.1.1"
-    jwt-decode "^3.1.2"
-    nanoid "^3.3.7"
-    string.prototype.matchall "^4.0.10"
-
-"@sphereon/pex@^3.2.0":
-  version "3.2.0"
-  resolved "https://registry.yarnpkg.com/@sphereon/pex/-/pex-3.2.0.tgz#2b8cd5e9094c88c2cbf822b1b70584ca4a08293a"
-  integrity sha512-6qk4L7PaxFsHSVjG0w5SbffwuwI0sbnwyoaNBNku17u2WOThBcnH22sgCdNRRbzacXs0e4iAw7Cb1cd730LQaQ==
-  dependencies:
-    "@astronautlabs/jsonpath" "^1.1.2"
-    "@sd-jwt/decode" "^0.2.0"
-    "@sd-jwt/present" "^0.2.0"
-    "@sd-jwt/utils" "^0.2.0"
-    "@sphereon/pex-models" "^2.2.0"
+    "@sd-jwt/decode" "^0.3.0"
+    "@sd-jwt/present" "^0.3.0"
+    "@sd-jwt/utils" "^0.3.0"
+    "@sphereon/pex-models" "^2.2.2"
     "@sphereon/ssi-types" "0.18.1"
     ajv "^8.12.0"
     ajv-formats "^2.1.1"
@@ -11642,7 +11648,7 @@ uglify-js@^3.1.4:
   resolved "https://registry.yarnpkg.com/uglify-js/-/uglify-js-3.17.4.tgz#61678cf5fa3f5b7eb789bb345df29afb8257c22c"
   integrity sha512-T9q82TJI9e/C1TAxYvfb16xO120tMVFZrGA3f9/P4424DNu6ypK103y0GPFVa17yotwSyZW5iYXgjYHkGrJW/g==
 
-uint8arrays@^3.0.0, uint8arrays@^3.1.1:
+uint8arrays@3.1.1, uint8arrays@^3.0.0, uint8arrays@^3.1.1:
   version "3.1.1"
   resolved "https://registry.yarnpkg.com/uint8arrays/-/uint8arrays-3.1.1.tgz#2d8762acce159ccd9936057572dade9459f65ae0"
   integrity sha512-+QJa8QRnbdXVpHYjLoTpJIdCTiw9Ir62nocClWuXIq2JIh4Uta0cQsTSpFL678p2CN8B+XSApwcU+pQEqVpKWg==

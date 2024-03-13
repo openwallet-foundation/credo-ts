@@ -54,9 +54,14 @@ export class TenantAgentContextProvider implements AgentContextProvider {
     this.listenForRoutingKeyCreatedEvents()
   }
 
-  public async getAgentContextForContextCorrelationId(tenantId: string) {
+  public async getAgentContextForContextCorrelationId(contextCorrelationId: string) {
+    // It could be that the root agent context is requested, in that case we return the root agent context
+    if (contextCorrelationId === this.rootAgentContext.contextCorrelationId) {
+      return this.rootAgentContext
+    }
+
     // TODO: maybe we can look at not having to retrieve the tenant record if there's already a context available.
-    const tenantRecord = await this.tenantRecordService.getTenantById(this.rootAgentContext, tenantId)
+    const tenantRecord = await this.tenantRecordService.getTenantById(this.rootAgentContext, contextCorrelationId)
     const shouldUpdate = !isStorageUpToDate(tenantRecord.storageVersion)
 
     // If the tenant storage is not up to date, and autoUpdate is disabled we throw an error
@@ -73,7 +78,7 @@ export class TenantAgentContextProvider implements AgentContextProvider {
       runInMutex: shouldUpdate ? (agentContext) => this._updateTenantStorage(tenantRecord, agentContext) : undefined,
     })
 
-    this.logger.debug(`Created tenant agent context for tenant '${tenantId}'`)
+    this.logger.debug(`Created tenant agent context for tenant '${contextCorrelationId}'`)
 
     return agentContext
   }

@@ -89,7 +89,7 @@ export class Verifier extends BaseAgent<{ askar: AskarModule; openId4VcVerifier:
 
   // TODO: add method to show the received presentation submission
   public async createProofRequest(presentationDefinition: DifPresentationExchangeDefinitionV2) {
-    const { authorizationRequestUri } = await this.agent.modules.openId4VcVerifier.createAuthorizationRequest({
+    const { authorizationRequest } = await this.agent.modules.openId4VcVerifier.createAuthorizationRequest({
       requestSigner: {
         method: 'did',
         didUrl: this.verificationMethod.id,
@@ -100,7 +100,7 @@ export class Verifier extends BaseAgent<{ askar: AskarModule; openId4VcVerifier:
       },
     })
 
-    return authorizationRequestUri
+    return authorizationRequest
   }
 
   public async exit() {

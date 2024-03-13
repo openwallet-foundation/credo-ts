@@ -31,7 +31,7 @@ import {
   V2CredentialProtocol,
   V2ProofProtocol,
   DidsModule,
-  PresentationExchangeProofFormatService,
+  DifPresentationExchangeProofFormatService,
   TypedArrayEncoder,
   ProofState,
 } from '@credo-ts/core'
@@ -91,7 +91,7 @@ export const getAnonCredsModules = ({
 
   const anonCredsCredentialFormatService = new AnonCredsCredentialFormatService()
   const anonCredsProofFormatService = new AnonCredsProofFormatService()
-  const presentationExchangeProofFormatService = new PresentationExchangeProofFormatService()
+  const presentationExchangeProofFormatService = new DifPresentationExchangeProofFormatService()
 
   const cheqdSdk = cheqd ? new CheqdModule(getCheqdModuleConfig(cheqd.seed, cheqd.rpcUrl)) : undefined
   const modules = {

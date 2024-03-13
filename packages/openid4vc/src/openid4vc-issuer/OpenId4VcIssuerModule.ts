@@ -9,8 +9,14 @@ import { getAgentContextForActorId, getRequestContext, importExpress } from '../
 import { OpenId4VcIssuerApi } from './OpenId4VcIssuerApi'
 import { OpenId4VcIssuerModuleConfig } from './OpenId4VcIssuerModuleConfig'
 import { OpenId4VcIssuerService } from './OpenId4VcIssuerService'
+import { OpenId4VcIssuanceSessionRepository } from './repository'
 import { OpenId4VcIssuerRepository } from './repository/OpenId4VcIssuerRepository'
-import { configureAccessTokenEndpoint, configureCredentialEndpoint, configureIssuerMetadataEndpoint } from './router'
+import {
+  configureCredentialOfferEndpoint,
+  configureAccessTokenEndpoint,
+  configureCredentialEndpoint,
+  configureIssuerMetadataEndpoint,
+} from './router'
 
 /**
  * @public
@@ -42,6 +48,7 @@ export class OpenId4VcIssuerModule implements Module {
 
     // Repository
     dependencyManager.registerSingleton(OpenId4VcIssuerRepository)
+    dependencyManager.registerSingleton(OpenId4VcIssuanceSessionRepository)
   }
 
   public async initialize(rootAgentContext: AgentContext): Promise<void> {
@@ -109,6 +116,7 @@ export class OpenId4VcIssuerModule implements Module {
 
     // Configure endpoints
     configureIssuerMetadataEndpoint(endpointRouter)
+    configureCredentialOfferEndpoint(endpointRouter, this.config.credentialOfferEndpoint)
     configureAccessTokenEndpoint(endpointRouter, this.config.accessTokenEndpoint)
     configureCredentialEndpoint(endpointRouter, this.config.credentialEndpoint)
 
