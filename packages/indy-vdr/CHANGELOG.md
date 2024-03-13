@@ -3,6 +3,33 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.5.0](https://github.com/openwallet-foundation/credo-ts/compare/v0.4.2...v0.5.0) (2024-03-13)
+
+### Bug Fixes
+
+- **indy-vdr:** for creating latest delta ([#1737](https://github.com/openwallet-foundation/credo-ts/issues/1737)) ([68f0d70](https://github.com/openwallet-foundation/credo-ts/commit/68f0d70b9fd2b7acc8b6120b23b65144c93af391))
+
+- feat(indy-vdr)!: include config in getAllPoolTransactions (#1770) ([29c589d](https://github.com/openwallet-foundation/credo-ts/commit/29c589dd2f5b6da0a6bed129b5f733851785ccba)), closes [#1770](https://github.com/openwallet-foundation/credo-ts/issues/1770)
+
+### Features
+
+- **anoncreds:** issue revocable credentials ([#1427](https://github.com/openwallet-foundation/credo-ts/issues/1427)) ([c59ad59](https://github.com/openwallet-foundation/credo-ts/commit/c59ad59fbe63b6d3760d19030e0f95fb2ea8488a))
+- bump indy-vdr version ([#1637](https://github.com/openwallet-foundation/credo-ts/issues/1637)) ([a641a96](https://github.com/openwallet-foundation/credo-ts/commit/a641a9699b7816825a88f2c883c9e65aaa4c0f87))
+- **indy-vdr:** ability to refresh the pool manually ([#1623](https://github.com/openwallet-foundation/credo-ts/issues/1623)) ([0865ea5](https://github.com/openwallet-foundation/credo-ts/commit/0865ea52fb99103fba0cc71cb118f0eb3fb909e4))
+- **indy-vdr:** register revocation registry definitions and status list ([#1693](https://github.com/openwallet-foundation/credo-ts/issues/1693)) ([ee34fe7](https://github.com/openwallet-foundation/credo-ts/commit/ee34fe71780a0787db96e28575eeedce3b4704bd))
+- **openid4vc:** persistance and events ([#1793](https://github.com/openwallet-foundation/credo-ts/issues/1793)) ([f4c386a](https://github.com/openwallet-foundation/credo-ts/commit/f4c386a6ccf8adb829cad30b81d524e6ffddb029))
+
+### BREAKING CHANGES
+
+- `IndyVdrApi.getAllPoolTransactions()` now returns an array of objects containing transactions and config of each pool
+
+```
+{
+    config: IndyVdrPoolConfig;
+    transactions: Transactions;
+}
+```
+
 ## [0.4.2](https://github.com/hyperledger/aries-framework-javascript/compare/v0.4.1...v0.4.2) (2023-10-05)
 
 **Note:** Version bump only for package @credo-ts/indy-vdr
