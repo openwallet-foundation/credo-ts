@@ -3,6 +3,13 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.5.0](https://github.com/openwallet-foundation/credo-ts/compare/v0.4.2...v0.5.0) (2024-03-13)
+
+### Bug Fixes
+
+- jsonld document loader node 18 ([#1454](https://github.com/openwallet-foundation/credo-ts/issues/1454)) ([3656d49](https://github.com/openwallet-foundation/credo-ts/commit/3656d4902fb832e5e75142b1846074d4f39c11a2))
+- unused imports ([#1733](https://github.com/openwallet-foundation/credo-ts/issues/1733)) ([e0b971e](https://github.com/openwallet-foundation/credo-ts/commit/e0b971e86b506bb78dafa21f76ae3b193abe9a9d))
+
 ## [0.4.2](https://github.com/hyperledger/aries-framework-javascript/compare/v0.4.1...v0.4.2) (2023-10-05)
 
 **Note:** Version bump only for package @credo-ts/bbs-signatures

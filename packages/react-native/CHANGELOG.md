@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.5.0](https://github.com/openwallet-foundation/credo-ts/compare/v0.4.2...v0.5.0) (2024-03-13)
+
+### Bug Fixes
+
+- **rn:** more flexible react native version ([#1760](https://github.com/openwallet-foundation/credo-ts/issues/1760)) ([af82918](https://github.com/openwallet-foundation/credo-ts/commit/af82918f5401bad113dfc32fc903d981e4389c4e))
+
 ## [0.4.2](https://github.com/hyperledger/aries-framework-javascript/compare/v0.4.1...v0.4.2) (2023-10-05)
 
 **Note:** Version bump only for package @credo-ts/react-native

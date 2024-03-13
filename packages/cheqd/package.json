@@ -2,7 +2,7 @@
   "name": "@credo-ts/cheqd",
   "main": "build/index",
   "types": "build/index",
-  "version": "0.4.2",
+  "version": "0.5.0",
   "files": [
     "build"
   ],
@@ -24,12 +24,12 @@
     "test": "jest"
   },
   "dependencies": {
-    "@credo-ts/anoncreds": "0.4.2",
-    "@credo-ts/core": "0.4.2",
     "@cheqd/sdk": "cjs",
     "@cheqd/ts-proto": "cjs",
     "@cosmjs/crypto": "^0.29.5",
     "@cosmjs/proto-signing": "^0.31.0",
+    "@credo-ts/anoncreds": "0.5.0",
+    "@credo-ts/core": "0.5.0",
     "@stablelib/ed25519": "^1.0.3",
     "class-transformer": "^0.5.1",
     "class-validator": "0.14.1",

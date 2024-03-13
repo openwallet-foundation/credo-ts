@@ -3,6 +3,29 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.5.0](https://github.com/openwallet-foundation/credo-ts/compare/v0.4.2...v0.5.0) (2024-03-13)
+
+### Bug Fixes
+
+- abandon proof protocol if presentation fails ([#1610](https://github.com/openwallet-foundation/credo-ts/issues/1610)) ([b2ba7c7](https://github.com/openwallet-foundation/credo-ts/commit/b2ba7c7197139e780cbb95eed77dc0a2ad3b3210))
+- **anoncreds:** allow for zero idx to be used for revocation ([#1742](https://github.com/openwallet-foundation/credo-ts/issues/1742)) ([a1b9901](https://github.com/openwallet-foundation/credo-ts/commit/a1b9901b8bb232560118c902d86464e28d8a73fa))
+- **anoncreds:** only store the revocation registry definition when the state is finished ([#1735](https://github.com/openwallet-foundation/credo-ts/issues/1735)) ([f7785c5](https://github.com/openwallet-foundation/credo-ts/commit/f7785c52b814dfa01c6d16dbecfcc937d533b710))
+- **anoncreds:** pass along options for registry and status list ([#1734](https://github.com/openwallet-foundation/credo-ts/issues/1734)) ([e4b99a8](https://github.com/openwallet-foundation/credo-ts/commit/e4b99a86c76a1a4a41aebb94da0b57f774dd6aaf))
+- **core:** query credential and proof records by correct DIDComm role ([#1780](https://github.com/openwallet-foundation/credo-ts/issues/1780)) ([add7e09](https://github.com/openwallet-foundation/credo-ts/commit/add7e091e845fdaddaf604335f19557f47a31079))
+- presentation submission format ([#1792](https://github.com/openwallet-foundation/credo-ts/issues/1792)) ([1a46e9f](https://github.com/openwallet-foundation/credo-ts/commit/1a46e9f02599ed8b2bf36f5b9d3951d143852f03))
+- query the record by credential and proof role ([#1784](https://github.com/openwallet-foundation/credo-ts/issues/1784)) ([d2b5cd9](https://github.com/openwallet-foundation/credo-ts/commit/d2b5cd9cbbfa95cbdcde9a4fed3305bab6161faf))
+- save AnonCredsCredentialRecord createdAt ([#1603](https://github.com/openwallet-foundation/credo-ts/issues/1603)) ([a1942f8](https://github.com/openwallet-foundation/credo-ts/commit/a1942f8a8dffb11558dcbb900cbeb052e7d0227e))
+- w3c anoncreds ([#1791](https://github.com/openwallet-foundation/credo-ts/issues/1791)) ([913596c](https://github.com/openwallet-foundation/credo-ts/commit/913596c4e843855f77a490428c55daac220bc8c6))
+
+### Features
+
+- anoncreds w3c migration ([#1744](https://github.com/openwallet-foundation/credo-ts/issues/1744)) ([d7c2bbb](https://github.com/openwallet-foundation/credo-ts/commit/d7c2bbb4fde57cdacbbf1ed40c6bd1423f7ab015))
+- **anoncreds:** issue revocable credentials ([#1427](https://github.com/openwallet-foundation/credo-ts/issues/1427)) ([c59ad59](https://github.com/openwallet-foundation/credo-ts/commit/c59ad59fbe63b6d3760d19030e0f95fb2ea8488a))
+- **indy-vdr:** register revocation registry definitions and status list ([#1693](https://github.com/openwallet-foundation/credo-ts/issues/1693)) ([ee34fe7](https://github.com/openwallet-foundation/credo-ts/commit/ee34fe71780a0787db96e28575eeedce3b4704bd))
+- **openid4vc:** persistance and events ([#1793](https://github.com/openwallet-foundation/credo-ts/issues/1793)) ([f4c386a](https://github.com/openwallet-foundation/credo-ts/commit/f4c386a6ccf8adb829cad30b81d524e6ffddb029))
+- optional backup on storage migration ([#1745](https://github.com/openwallet-foundation/credo-ts/issues/1745)) ([81ff63c](https://github.com/openwallet-foundation/credo-ts/commit/81ff63ccf7c71eccf342899d298a780d66045534))
+- sped up lookup for revocation registries ([#1605](https://github.com/openwallet-foundation/credo-ts/issues/1605)) ([32ef8c5](https://github.com/openwallet-foundation/credo-ts/commit/32ef8c5a002c2cfe209c72e01f95b43337922fc6))
+
 ## [0.4.2](https://github.com/hyperledger/aries-framework-javascript/compare/v0.4.1...v0.4.2) (2023-10-05)
 
 ### Bug Fixes
