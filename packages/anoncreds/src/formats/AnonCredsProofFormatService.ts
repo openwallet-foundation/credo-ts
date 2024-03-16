@@ -319,7 +319,7 @@ export class AnonCredsProofFormatService implements ProofFormatService<AnonCreds
     return supportedFormats.includes(formatIdentifier)
   }
 
-  private async _getCredentialsForRequest(
+  public async _getCredentialsForRequest(
     agentContext: AgentContext,
     proofRequest: AnonCredsProofRequest,
     options: AnonCredsGetCredentialsForProofRequestOptions
