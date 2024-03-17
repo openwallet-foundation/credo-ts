@@ -30,6 +30,7 @@ export function MetadataTransformer() {
  */
 export function DateTransformer() {
   return Transform(({ value, type }) => {
+    if (value === undefined) return undefined
     if (type === TransformationType.CLASS_TO_PLAIN) {
       return value.toISOString()
     }

@@ -117,7 +117,7 @@ export function handleTokenRequest(config: OpenId4VciAccessTokenEndpointConfig) 
     try {
       const accessTokenResponse = await createAccessTokenResponse(request.body, {
         credentialOfferSessions: new OpenId4VcCredentialOfferSessionStateManager(agentContext, issuer.issuerId),
-        tokenExpiresIn: tokenExpiresInSeconds * 1000,
+        tokenExpiresIn: tokenExpiresInSeconds,
         accessTokenIssuer: issuerMetadata.issuerUrl,
         cNonce: await agentContext.wallet.generateNonce(),
         cNonceExpiresIn: cNonceExpiresInSeconds,
@@ -140,8 +140,7 @@ export function verifyTokenRequest(options: { preAuthorizedCodeExpirationInSecon
 
     try {
       await assertValidAccessTokenRequest(request.body, {
-        // we use seconds instead of milliseconds for consistency
-        expirationDuration: options.preAuthorizedCodeExpirationInSeconds * 1000,
+        expirationDuration: options.preAuthorizedCodeExpirationInSeconds,
         credentialOfferSessions: new OpenId4VcCredentialOfferSessionStateManager(agentContext, issuer.issuerId),
       })
     } catch (error) {

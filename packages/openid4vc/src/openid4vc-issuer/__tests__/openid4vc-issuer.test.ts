@@ -287,6 +287,7 @@ describe('OpenId4VcIssuer', () => {
 
     const issuanceSessionRepository = issuer.context.dependencyManager.resolve(OpenId4VcIssuanceSessionRepository)
     result.issuanceSession.cNonce = '1234'
+    result.issuanceSession.cNonceExpiresAt = new Date(Date.now() + 30000) // 30 seconds
     await issuanceSessionRepository.update(issuer.context, result.issuanceSession)
 
     expect(result).toMatchObject({
@@ -345,7 +346,7 @@ describe('OpenId4VcIssuer', () => {
 
     expect(credentialResponse).toEqual({
       c_nonce: expect.any(String),
-      c_nonce_expires_in: 300000,
+      c_nonce_expires_in: 300,
       credential: expect.any(String),
       format: 'vc+sd-jwt',
     })
@@ -375,6 +376,7 @@ describe('OpenId4VcIssuer', () => {
     const issuanceSessionRepository = issuer.context.dependencyManager.resolve(OpenId4VcIssuanceSessionRepository)
     // We need to update the state, as it is checked and we're skipping the access token step
     result.issuanceSession.cNonce = '1234'
+    result.issuanceSession.cNonceExpiresAt = new Date(Date.now() + 30000) // 30 seconds
     result.issuanceSession.state = OpenId4VcIssuanceSessionState.AccessTokenCreated
     await issuanceSessionRepository.update(issuer.context, result.issuanceSession)
 
@@ -410,7 +412,7 @@ describe('OpenId4VcIssuer', () => {
 
     expect(credentialResponse).toEqual({
       c_nonce: expect.any(String),
-      c_nonce_expires_in: 300000,
+      c_nonce_expires_in: 300,
       credential: expect.any(String),
       format: 'jwt_vc_json',
     })
@@ -453,6 +455,7 @@ describe('OpenId4VcIssuer', () => {
     // We need to update the state, as it is checked and we're skipping the access token step
     result.issuanceSession.state = OpenId4VcIssuanceSessionState.AccessTokenCreated
     result.issuanceSession.cNonce = '1234'
+    result.issuanceSession.cNonceExpiresAt = new Date(Date.now() + 30000) // 30 seconds
     await issuanceSessionRepository.update(issuer.context, result.issuanceSession)
 
     const issuerMetadata = await issuer.modules.openId4VcIssuer.getIssuerMetadata(openId4VcIssuer.issuerId)
@@ -487,6 +490,7 @@ describe('OpenId4VcIssuer', () => {
     const issuanceSessionRepository = issuer.context.dependencyManager.resolve(OpenId4VcIssuanceSessionRepository)
     // We need to update the state, as it is checked and we're skipping the access token step
     result.issuanceSession.cNonce = '1234'
+    result.issuanceSession.cNonceExpiresAt = new Date(Date.now() + 30000) // 30 seconds
     result.issuanceSession.state = OpenId4VcIssuanceSessionState.AccessTokenCreated
     await issuanceSessionRepository.update(issuer.context, result.issuanceSession)
 
@@ -513,7 +517,7 @@ describe('OpenId4VcIssuer', () => {
 
     expect(credentialResponse).toEqual({
       c_nonce: expect.any(String),
-      c_nonce_expires_in: 300000,
+      c_nonce_expires_in: 300,
       credential: expect.any(String),
       format: 'jwt_vc_json-ld',
     })
@@ -541,6 +545,7 @@ describe('OpenId4VcIssuer', () => {
     // We need to update the state, as it is checked and we're skipping the access token step
     result.issuanceSession.state = OpenId4VcIssuanceSessionState.AccessTokenCreated
     result.issuanceSession.cNonce = '1234'
+    result.issuanceSession.cNonceExpiresAt = new Date(Date.now() + 30000) // 30 seconds
     await issuanceSessionRepository.update(issuer.context, result.issuanceSession)
 
     const issuerMetadata = await issuer.modules.openId4VcIssuer.getIssuerMetadata(openId4VcIssuer.issuerId)
@@ -597,6 +602,7 @@ describe('OpenId4VcIssuer', () => {
 
     const issuanceSessionRepository = issuer.context.dependencyManager.resolve(OpenId4VcIssuanceSessionRepository)
     result.issuanceSession.cNonce = '1234'
+    result.issuanceSession.cNonceExpiresAt = new Date(Date.now() + 30000) // 30 seconds
     await issuanceSessionRepository.update(issuer.context, result.issuanceSession)
 
     expect(result.issuanceSession.credentialOfferPayload?.credentials).toEqual([
@@ -638,7 +644,7 @@ describe('OpenId4VcIssuer', () => {
 
     expect(credentialResponse).toEqual({
       c_nonce: expect.any(String),
-      c_nonce_expires_in: 300000,
+      c_nonce_expires_in: 300,
       credential: expect.any(String),
       format: 'jwt_vc_json',
     })
@@ -662,7 +668,7 @@ describe('OpenId4VcIssuer', () => {
 
     expect(credentialResponse2).toEqual({
       c_nonce: expect.any(String),
-      c_nonce_expires_in: 300000,
+      c_nonce_expires_in: 300,
       credential: expect.any(String),
       format: 'jwt_vc_json',
     })
