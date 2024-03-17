@@ -292,7 +292,7 @@ describe('OpenId4VcIssuer', () => {
     expect(result).toMatchObject({
       credentialOffer: expect.stringMatching(
         new RegExp(
-          `^openid-credential-offer://\\?credential_offer_uri=https://openid4vc-issuer.com/${openId4VcIssuer.issuerId}/offers/.*$`
+          `^openid-credential-offer://\\?credential_offer_uri=https%3A%2F%2Fopenid4vc-issuer.com%2F${openId4VcIssuer.issuerId}%2Foffers%2F.*$`
         )
       ),
       issuanceSession: {
@@ -578,7 +578,7 @@ describe('OpenId4VcIssuer', () => {
 
     expect(credentialOffer).toMatch(
       new RegExp(
-        `^openid-credential-offer://\\?credential_offer_uri=https://openid4vc-issuer.com/${openId4VcIssuer.issuerId}/offers/.*$`
+        `^openid-credential-offer://\\?credential_offer_uri=https%3A%2F%2Fopenid4vc-issuer.com%2F${openId4VcIssuer.issuerId}%2Foffers%2F.*$`
       )
     )
   })
