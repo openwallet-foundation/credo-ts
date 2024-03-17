@@ -108,13 +108,18 @@ export class OpenId4VcIssuerService {
       utils.uuid(),
     ])
 
-    const { uri } = await vcIssuer.createCredentialOfferURI({
+    let { uri } = await vcIssuer.createCredentialOfferURI({
       grants: await this.getGrantsFromConfig(agentContext, preAuthorizedCodeFlowConfig),
       credentials: offeredCredentials,
       credentialOfferUri: hostedCredentialOfferUri,
       baseUri: options.baseUri,
       credentialDataSupplierInput: options.issuanceMetadata,
     })
+
+    // FIXME: https://github.com/Sphereon-Opensource/OID4VCI/issues/102
+    if (uri.includes(hostedCredentialOfferUri)) {
+      uri = uri.replace(hostedCredentialOfferUri, encodeURIComponent(hostedCredentialOfferUri))
+    }
 
     const issuanceSession = await this.openId4VcIssuanceSessionRepository.getSingleByQuery(agentContext, {
       credentialOfferUri: hostedCredentialOfferUri,
