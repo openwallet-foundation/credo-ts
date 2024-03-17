@@ -113,6 +113,7 @@ export class OpenId4VcIssuerService {
       credentials: offeredCredentials,
       credentialOfferUri: hostedCredentialOfferUri,
       baseUri: options.baseUri,
+      credentialDataSupplierInput: options.issuanceMetadata,
     })
 
     const issuanceSession = await this.openId4VcIssuanceSessionRepository.getSingleByQuery(agentContext, {
@@ -469,6 +470,7 @@ export class OpenId4VcIssuerService {
     agentContext: AgentContext,
     options: OpenId4VciCreateCredentialResponseOptions & {
       issuer: OpenId4VcIssuerRecord
+      issuanceSession: OpenId4VcIssuanceSessionRecord
     }
   ): CredentialDataSupplier => {
     return async (args: CredentialDataSupplierArgs) => {
@@ -497,6 +499,7 @@ export class OpenId4VcIssuerService {
         this.openId4VcIssuerConfig.credentialEndpoint.credentialRequestToCredentialMapper
       const signOptions = await mapper({
         agentContext,
+        issuanceSession: options.issuanceSession,
         holderBinding,
 
         credentialOffer,

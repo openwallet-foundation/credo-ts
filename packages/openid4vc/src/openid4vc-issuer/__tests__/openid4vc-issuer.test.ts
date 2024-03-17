@@ -42,7 +42,6 @@ import { agentDependencies } from '../../../../node/src'
 import { OpenId4VciCredentialFormatProfile } from '../../shared'
 import { OpenId4VcIssuanceSessionState } from '../OpenId4VcIssuanceSessionState'
 import { OpenId4VcIssuerModule } from '../OpenId4VcIssuerModule'
-import { OpenId4VcIssuerService } from '../OpenId4VcIssuerService'
 import { OpenId4VcIssuanceSessionRepository } from '../repository'
 
 const openBadgeCredential = {
@@ -368,6 +367,9 @@ describe('OpenId4VcIssuer', () => {
         preAuthorizedCode,
         userPinRequired: false,
       },
+      issuanceMetadata: {
+        myIssuance: 'metadata',
+      },
     })
 
     const issuanceSessionRepository = issuer.context.dependencyManager.resolve(OpenId4VcIssuanceSessionRepository)
@@ -381,16 +383,23 @@ describe('OpenId4VcIssuer', () => {
     const issuerMetadata = await issuer.modules.openId4VcIssuer.getIssuerMetadata(openId4VcIssuer.issuerId)
     const { credentialResponse } = await issuer.modules.openId4VcIssuer.createCredentialResponse({
       issuanceSessionId: result.issuanceSession.id,
-      credentialRequestToCredentialMapper: () => ({
-        format: 'jwt_vc',
-        credential: new W3cCredential({
-          type: openBadgeCredential.types,
-          issuer: new W3cIssuer({ id: issuerDid }),
-          credentialSubject: new W3cCredentialSubject({ id: holderDid }),
-          issuanceDate: w3cDate(Date.now()),
-        }),
-        verificationMethod: issuerVerificationMethod.id,
-      }),
+      credentialRequestToCredentialMapper: ({ issuanceSession }) => {
+        expect(issuanceSession.id).toEqual(result.issuanceSession.id)
+        expect(issuanceSession.issuanceMetadata).toEqual({
+          myIssuance: 'metadata',
+        })
+
+        return {
+          format: 'jwt_vc',
+          credential: new W3cCredential({
+            type: openBadgeCredential.types,
+            issuer: new W3cIssuer({ id: issuerDid }),
+            credentialSubject: new W3cCredentialSubject({ id: holderDid }),
+            issuanceDate: w3cDate(Date.now()),
+          }),
+          verificationMethod: issuerVerificationMethod.id,
+        }
+      },
       credentialRequest: await createCredentialRequest(holder.context, {
         credentialSupported: openBadgeCredential,
         issuerMetadata,
