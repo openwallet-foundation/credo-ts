@@ -117,7 +117,7 @@ export function handleTokenRequest(config: OpenId4VciAccessTokenEndpointConfig) 
     try {
       const accessTokenResponse = await createAccessTokenResponse(request.body, {
         credentialOfferSessions: new OpenId4VcCredentialOfferSessionStateManager(agentContext, issuer.issuerId),
-        tokenExpiresIn: tokenExpiresInSeconds * 1000,
+        tokenExpiresIn: tokenExpiresInSeconds,
         accessTokenIssuer: issuerMetadata.issuerUrl,
         cNonce: await agentContext.wallet.generateNonce(),
         cNonceExpiresIn: cNonceExpiresInSeconds,
@@ -139,19 +139,29 @@ export function verifyTokenRequest(options: { preAuthorizedCodeExpirationInSecon
     const { agentContext, issuer } = getRequestContext(request)
 
     try {
-      await assertValidAccessTokenRequest(request.body, {
-        // we use seconds instead of milliseconds for consistency
+      const { preAuthSession } = await assertValidAccessTokenRequest(request.body, {
+        // It should actually be in seconds. but the oid4vci library has some bugs related
+        // to seconds vs milliseconds. We pass it as ms for now, but once the fix is released
+        // we should pass it as seconds. We have an extra check below, so that we won't have
+        // an security issue once the fix is released.
+        // FIXME: https://github.com/Sphereon-Opensource/OID4VCI/pull/104
         expirationDuration: options.preAuthorizedCodeExpirationInSeconds * 1000,
         credentialOfferSessions: new OpenId4VcCredentialOfferSessionStateManager(agentContext, issuer.issuerId),
       })
+
+      // TODO: remove once above PR is merged and released
+      const expiresAt = preAuthSession.createdAt + options.preAuthorizedCodeExpirationInSeconds * 1000
+      if (Date.now() > expiresAt) {
+        throw new TokenError(400, TokenErrorResponse.invalid_grant, 'Pre-authorized code has expired')
+      }
     } catch (error) {
       if (error instanceof TokenError) {
         sendErrorResponse(
           response,
           agentContext.config.logger,
           error.statusCode,
-          error.responseError + error.getDescription(),
-          error
+          error.responseError,
+          error.getDescription()
         )
       } else {
         sendErrorResponse(response, agentContext.config.logger, 400, TokenErrorResponse.invalid_request, error)

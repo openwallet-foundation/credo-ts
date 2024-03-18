@@ -1,3 +1,4 @@
+import type { OpenId4VcIssuanceSessionRecord } from './repository'
 import type {
   OpenId4VcCredentialHolderBinding,
   OpenId4VciCredentialOffer,
@@ -37,6 +38,14 @@ export interface OpenId4VciCreateCredentialOfferOptions {
   baseUri?: string
 
   preAuthorizedCodeFlowConfig: OpenId4VciPreAuthorizedCodeFlowConfig
+
+  /**
+   * Metadata about the issuance, that will be stored in the issuance session record and
+   * passed to the credential request to credential mapper. This can be used to e.g. store an
+   * user identifier so user data can be fetched in the credential mapper, or the actual credential
+   * data.
+   */
+  issuanceMetadata?: Record<string, unknown>
 }
 
 export interface OpenId4VciCreateCredentialResponseOptions {
@@ -59,6 +68,12 @@ export interface OpenId4VciCreateCredentialResponseOptions {
 // mapper should get input data passed (which is supplied to offer or create response) like credentialDataSupplierInput in sphereon lib
 export type OpenId4VciCredentialRequestToCredentialMapper = (options: {
   agentContext: AgentContext
+
+  /**
+   * The issuance session associated with the credential request. You can extract the
+   * issuance metadata from this record if passed in the offer creation method.
+   */
+  issuanceSession: OpenId4VcIssuanceSessionRecord
 
   /**
    * The credential request received from the wallet

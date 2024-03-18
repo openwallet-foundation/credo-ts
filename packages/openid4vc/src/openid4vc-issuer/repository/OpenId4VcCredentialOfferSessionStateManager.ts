@@ -147,7 +147,7 @@ export class OpenId4VcCredentialOfferSessionStateManager implements IStateManage
     const state = await this.get(preAuthorizedCode)
 
     if (!state) {
-      throw new CredoError(`No cNonce state found for id ${preAuthorizedCode}`)
+      throw new CredoError(`No credential offer state found for id ${preAuthorizedCode}`)
     }
 
     return state

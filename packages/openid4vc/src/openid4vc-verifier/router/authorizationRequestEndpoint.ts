@@ -30,6 +30,16 @@ export function configureAuthorizationRequestEndpoint(
     async (request: OpenId4VcVerificationRequest, response: Response, next) => {
       const { agentContext, verifier } = getRequestContext(request)
 
+      if (!request.params.authorizationRequestId || typeof request.params.authorizationRequestId !== 'string') {
+        return sendErrorResponse(
+          response,
+          agentContext.config.logger,
+          400,
+          'invalid_request',
+          'Invalid authorization request url'
+        )
+      }
+
       try {
         const verifierService = agentContext.dependencyManager.resolve(OpenId4VcSiopVerifierService)
         const verificationSessionRepository = agentContext.dependencyManager.resolve(
@@ -37,13 +47,16 @@ export function configureAuthorizationRequestEndpoint(
         )
         const verifierConfig = agentContext.dependencyManager.resolve(OpenId4VcVerifierModuleConfig)
 
-        // TODO: is there a cleaner way to get the host (including port)?
-        const [, , host] = verifierConfig.baseUrl.split('/')
+        // We always use shortened URIs currently
+        const fullAuthorizationRequestUri = joinUriParts(verifierConfig.baseUrl, [
+          verifier.verifierId,
+          verifierConfig.authorizationRequestEndpoint.endpointPath,
+          request.params.authorizationRequestId,
+        ])
 
-        const authorizationRequestUri = `${request.protocol}://${host}${request.originalUrl}`
         const [verificationSession] = await verifierService.findVerificationSessionsByQuery(agentContext, {
           verifierId: verifier.verifierId,
-          authorizationRequestUri,
+          authorizationRequestUri: fullAuthorizationRequestUri,
         })
 
         if (!verificationSession) {
