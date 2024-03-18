@@ -277,13 +277,13 @@ export class SdJwtVcService {
    * @todo validate the JWT header (alg)
    */
   private verifier(agentContext: AgentContext, key: Key): Verifier {
-    return async (message: string, signature: string) => {
+    return async (message: string, signatureBase64Url: string) => {
       if (!key) {
         throw new SdJwtVcError('The public key used to verify the signature is missing')
       }
 
       return await agentContext.wallet.verify({
-        signature: Buffer.from(signature),
+        signature: TypedArrayEncoder.fromBase64(signatureBase64Url),
         key,
         data: TypedArrayEncoder.fromString(message),
       })
