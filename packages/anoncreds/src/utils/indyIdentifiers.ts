@@ -246,7 +246,7 @@ export function isIndyDid(identifier: string): boolean {
   return identifier.startsWith('did:indy:')
 }
 
-export function getQualifiedDidIndyDid(identifier: string, namespace: string) {
+export function getQualifiedDidIndyDid(identifier: string, namespace: string): string {
   if (isIndyDid(identifier)) return identifier
 
   if (!namespace || typeof namespace !== 'string') {

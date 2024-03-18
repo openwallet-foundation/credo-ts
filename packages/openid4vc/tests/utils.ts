@@ -1,9 +1,24 @@
-import type { ModulesMap } from '@credo-ts/core'
+import type {
+  OpenId4VcIssuanceSessionState,
+  OpenId4VcIssuanceSessionStateChangedEvent,
+  OpenId4VcVerificationSessionState,
+  OpenId4VcVerificationSessionStateChangedEvent,
+} from '../src'
+import type { BaseEvent, ModulesMap } from '@credo-ts/core'
 import type { TenantsModule } from '@credo-ts/tenants'
+import type { Observable } from 'rxjs'
 
 import { Agent, LogLevel, utils } from '@credo-ts/core'
+import { tap, ReplaySubject, lastValueFrom, filter, timeout, catchError, take, map } from 'rxjs'
+import { threadId } from 'worker_threads'
 
-import { TestLogger, agentDependencies, createDidKidVerificationMethod } from '../../core/tests'
+import {
+  TestLogger,
+  agentDependencies,
+  createDidKidVerificationMethod,
+  setupEventReplaySubjects,
+} from '../../core/tests'
+import { OpenId4VcVerifierEvents, OpenId4VcIssuerEvents } from '../src'
 
 export async function createAgentFromModules<MM extends ModulesMap>(label: string, modulesMap: MM, secretKey: string) {
   const agent = new Agent<MM>({
@@ -15,9 +30,15 @@ export async function createAgentFromModules<MM extends ModulesMap>(label: strin
   await agent.initialize()
   const data = await createDidKidVerificationMethod(agent.context, secretKey)
 
+  const [replaySubject] = setupEventReplaySubjects(
+    [agent],
+    [OpenId4VcIssuerEvents.IssuanceSessionStateChanged, OpenId4VcVerifierEvents.VerificationSessionStateChanged]
+  )
+
   return {
     ...data,
     agent,
+    replaySubject,
   }
 }
 
@@ -50,3 +71,95 @@ export async function createTenantForAgent(
 }
 
 export type TenantType = Awaited<ReturnType<typeof createTenantForAgent>>
+
+export function waitForCredentialIssuanceSessionRecordSubject(
+  subject: ReplaySubject<BaseEvent> | Observable<BaseEvent>,
+  {
+    state,
+    previousState,
+    timeoutMs = 10000,
+    count = 1,
+    contextCorrelationId,
+    issuanceSessionId,
+  }: {
+    state?: OpenId4VcIssuanceSessionState
+    previousState?: OpenId4VcIssuanceSessionState | null
+    timeoutMs?: number
+    count?: number
+    contextCorrelationId?: string
+    issuanceSessionId?: string
+  }
+) {
+  const observable: Observable<BaseEvent> = subject instanceof ReplaySubject ? subject.asObservable() : subject
+  return lastValueFrom(
+    observable.pipe(
+      filter((e) => contextCorrelationId === undefined || e.metadata.contextCorrelationId === contextCorrelationId),
+      filter(
+        (event): event is OpenId4VcIssuanceSessionStateChangedEvent =>
+          event.type === OpenId4VcIssuerEvents.IssuanceSessionStateChanged
+      ),
+      filter((e) => previousState === undefined || e.payload.previousState === previousState),
+      filter((e) => state === undefined || e.payload.issuanceSession.state === state),
+      filter((e) => issuanceSessionId === undefined || e.payload.issuanceSession.id === issuanceSessionId),
+      timeout(timeoutMs),
+      catchError(() => {
+        throw new Error(
+          `OpenId4VcIssuanceSessionStateChangedEvent event not emitted within specified timeout: ${timeoutMs}
+          contextCorrelationId: ${contextCorrelationId},
+          issuanceSessionId: ${issuanceSessionId}
+          previousState: ${previousState},
+          state: ${state}
+        }`
+        )
+      }),
+      take(count),
+      map((e) => e.payload.issuanceSession)
+    )
+  )
+}
+
+export function waitForVerificationSessionRecordSubject(
+  subject: ReplaySubject<BaseEvent> | Observable<BaseEvent>,
+  {
+    state,
+    previousState,
+    timeoutMs = 10000,
+    count = 1,
+    contextCorrelationId,
+    verificationSessionId,
+  }: {
+    state?: OpenId4VcVerificationSessionState
+    previousState?: OpenId4VcVerificationSessionState | null
+    timeoutMs?: number
+    count?: number
+    contextCorrelationId?: string
+    verificationSessionId?: string
+  }
+) {
+  const observable: Observable<BaseEvent> = subject instanceof ReplaySubject ? subject.asObservable() : subject
+  return lastValueFrom(
+    observable.pipe(
+      filter((e) => contextCorrelationId === undefined || e.metadata.contextCorrelationId === contextCorrelationId),
+      filter(
+        (event): event is OpenId4VcVerificationSessionStateChangedEvent =>
+          event.type === OpenId4VcVerifierEvents.VerificationSessionStateChanged
+      ),
+      filter((e) => previousState === undefined || e.payload.previousState === previousState),
+      filter((e) => state === undefined || e.payload.verificationSession.state === state),
+      filter((e) => verificationSessionId === undefined || e.payload.verificationSession.id === verificationSessionId),
+      timeout(timeoutMs),
+      catchError(() => {
+        throw new Error(
+          `OpenId4VcVerificationSessionStateChangedEvent event not emitted within specified timeout: ${timeoutMs}
+          contextCorrelationId: ${contextCorrelationId},
+          verificationSessionId: ${verificationSessionId}
+          previousState: ${previousState},
+          state: ${state}
+        }`
+        )
+      }),
+      take(count),
+      map((e) => e.payload.verificationSession)
+    )
+  )
+}

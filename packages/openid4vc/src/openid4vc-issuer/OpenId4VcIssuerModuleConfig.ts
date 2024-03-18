@@ -1,15 +1,16 @@
-import type { OpenId4VciAccessTokenEndpointConfig, OpenId4VciCredentialEndpointConfig } from './router'
-import type { AgentContext, Optional } from '@credo-ts/core'
-import type { CNonceState, CredentialOfferSession, IStateManager, URIState } from '@sphereon/oid4vci-common'
+import type {
+  OpenId4VciAccessTokenEndpointConfig,
+  OpenId4VciCredentialEndpointConfig,
+  OpenId4VciCredentialOfferEndpointConfig,
+} from './router'
+import type { Optional } from '@credo-ts/core'
 import type { Router } from 'express'
-
-import { MemoryStates } from '@sphereon/oid4vci-issuer'
 
 import { importExpress } from '../shared/router'
 
-const DEFAULT_C_NONCE_EXPIRES_IN = 5 * 60 * 1000 // 5 minutes
-const DEFAULT_TOKEN_EXPIRES_IN = 3 * 60 * 1000 // 3 minutes
-const DEFAULT_PRE_AUTH_CODE_EXPIRES_IN = 3 * 60 * 1000 // 3 minutes
+const DEFAULT_C_NONCE_EXPIRES_IN = 5 * 60 // 5 minutes
+const DEFAULT_TOKEN_EXPIRES_IN = 3 * 60 // 3 minutes
+const DEFAULT_PRE_AUTH_CODE_EXPIRES_IN = 3 * 60 // 3 minutes
 
 export interface OpenId4VcIssuerModuleConfigOptions {
   /**
@@ -28,6 +29,7 @@ export interface OpenId4VcIssuerModuleConfigOptions {
   router?: Router
 
   endpoints: {
+    credentialOffer?: Optional<OpenId4VciCredentialOfferEndpointConfig, 'endpointPath'>
     credential: Optional<OpenId4VciCredentialEndpointConfig, 'endpointPath'>
     accessToken?: Optional<
       OpenId4VciAccessTokenEndpointConfig,
@@ -40,14 +42,7 @@ export class OpenId4VcIssuerModuleConfig {
   private options: OpenId4VcIssuerModuleConfigOptions
   public readonly router: Router
 
-  private credentialOfferSessionManagerMap: Map<string, IStateManager<CredentialOfferSession>>
-  private uriStateManagerMap: Map<string, IStateManager<URIState>>
-  private cNonceStateManagerMap: Map<string, IStateManager<CNonceState>>
-
   public constructor(options: OpenId4VcIssuerModuleConfigOptions) {
-    this.uriStateManagerMap = new Map()
-    this.credentialOfferSessionManagerMap = new Map()
-    this.cNonceStateManagerMap = new Map()
     this.options = options
 
     this.router = options.router ?? importExpress().Router()
@@ -87,33 +82,16 @@ export class OpenId4VcIssuerModuleConfig {
     }
   }
 
-  // FIXME: rework (no in-memory)
-  public getUriStateManager(agentContext: AgentContext) {
-    const value = this.uriStateManagerMap.get(agentContext.contextCorrelationId)
-    if (value) return value
+  /**
+   * Get the hosted credential offer endpoint config, with default values set
+   */
+  public get credentialOfferEndpoint(): OpenId4VciCredentialOfferEndpointConfig {
+    // Use user supplied options, or return defaults.
+    const userOptions = this.options.endpoints.credentialOffer ?? {}
 
-    const newValue = new MemoryStates<URIState>()
-    this.uriStateManagerMap.set(agentContext.contextCorrelationId, newValue)
-    return newValue
-  }
-
-  // FIXME: rework (no in-memory)
-  public getCredentialOfferSessionStateManager(agentContext: AgentContext) {
-    const value = this.credentialOfferSessionManagerMap.get(agentContext.contextCorrelationId)
-    if (value) return value
-
-    const newValue = new MemoryStates<CredentialOfferSession>()
-    this.credentialOfferSessionManagerMap.set(agentContext.contextCorrelationId, newValue)
-    return newValue
-  }
-
-  // FIXME: rework (no in-memory)
-  public getCNonceStateManager(agentContext: AgentContext) {
-    const value = this.cNonceStateManagerMap.get(agentContext.contextCorrelationId)
-    if (value) return value
-
-    const newValue = new MemoryStates<CNonceState>()
-    this.cNonceStateManagerMap.set(agentContext.contextCorrelationId, newValue)
-    return newValue
+    return {
+      ...userOptions,
+      endpointPath: userOptions.endpointPath ?? '/offers',
+    }
   }
 }

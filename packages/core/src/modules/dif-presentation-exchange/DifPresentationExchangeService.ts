@@ -13,7 +13,7 @@ import type { Query } from '../../storage/StorageService'
 import type { VerificationMethod } from '../dids'
 import type { SdJwtVcRecord } from '../sd-jwt-vc'
 import type { W3cCredentialRecord } from '../vc'
-import type { IAnoncredsDataIntegrityService } from '../vc/data-integrity/models/IAnonCredsDataIntegrityService'
+import type { IAnonCredsDataIntegrityService } from '../vc/data-integrity/models/IAnonCredsDataIntegrityService'
 import type {
   PresentationSignCallBackParams,
   SdJwtDecodedVerifiableCredentialWithKbJwtInput,
@@ -35,7 +35,6 @@ import { Hasher, JsonTransformer } from '../../utils'
 import { DidsApi, getKeyFromVerificationMethod } from '../dids'
 import { SdJwtVcApi } from '../sd-jwt-vc'
 import {
-  W3cJsonLdVerifiableCredential,
   ClaimFormat,
   SignatureSuiteRegistry,
   W3cCredentialRepository,
@@ -393,27 +392,31 @@ export class DifPresentationExchangeService {
     return supportedSignatureSuites[0].proofType
   }
 
-  private shouldSignUsingAnoncredsDataIntegrity(
+  /**
+   * if all submission descriptors have a format of di | ldp,
+   * and all credentials have an ANONCREDS_DATA_INTEGRITY proof we default to
+   * signing the presentation using the ANONCREDS_DATA_INTEGRITY_CRYPTOSUITE
+   */
+  private shouldSignUsingAnonCredsDataIntegrity(
     presentationToCreate: PresentationToCreate,
     presentationSubmission: DifPresentationExchangeSubmission
   ) {
     if (presentationToCreate.claimFormat !== ClaimFormat.LdpVp) return undefined
 
-    const cryptosuites = presentationToCreate.verifiableCredentials.map((verifiableCredentials) => {
-      const inputDescriptor = presentationSubmission.descriptor_map.find(
-        (descriptor) => descriptor.id === verifiableCredentials.inputDescriptorId
+    const validDescriptorFormat = presentationSubmission.descriptor_map.every((descriptor) =>
+      [ClaimFormat.DiVc, ClaimFormat.DiVp, ClaimFormat.LdpVc, ClaimFormat.LdpVp].includes(
+        descriptor.format as ClaimFormat
       )
+    )
 
-      return inputDescriptor?.format === 'di_vp' &&
-        verifiableCredentials.credential.credential instanceof W3cJsonLdVerifiableCredential
-        ? verifiableCredentials.credential.credential.dataIntegrityCryptosuites
-        : []
-    })
+    const credentialAreSignedUsingAnonCredsDataIntegrity = presentationToCreate.verifiableCredentials.every(
+      ({ credential }) => {
+        if (credential.credential.claimFormat !== ClaimFormat.LdpVc) return false
+        return credential.credential.dataIntegrityCryptosuites.includes(ANONCREDS_DATA_INTEGRITY_CRYPTOSUITE)
+      }
+    )
 
-    const commonCryptosuites = cryptosuites.reduce((a, b) => a.filter((c) => b.includes(c)))
-    if (commonCryptosuites.length === 0 || !commonCryptosuites.includes(ANONCREDS_DATA_INTEGRITY_CRYPTOSUITE))
-      return false
-    return true
+    return validDescriptorFormat && credentialAreSignedUsingAnonCredsDataIntegrity
   }
 
   private getPresentationSignCallback(agentContext: AgentContext, presentationToCreate: PresentationToCreate) {
@@ -432,6 +435,10 @@ export class DifPresentationExchangeService {
       }
 
       if (presentationToCreate.claimFormat === ClaimFormat.JwtVp) {
+        if (!presentationToCreate.subjectIds) {
+          throw new DifPresentationExchangeError(`Cannot create presentation for credentials without subject id`)
+        }
+
         // Determine a suitable verification method for the presentation
         const verificationMethod = await this.getVerificationMethodForSubjectId(
           agentContext,
@@ -452,8 +459,13 @@ export class DifPresentationExchangeService {
 
         return signedPresentation.encoded as W3CVerifiablePresentation
       } else if (presentationToCreate.claimFormat === ClaimFormat.LdpVp) {
-        if (this.shouldSignUsingAnoncredsDataIntegrity(presentationToCreate, presentationSubmission)) {
-          const anoncredsDataIntegrityService = agentContext.dependencyManager.resolve<IAnoncredsDataIntegrityService>(
+        if (this.shouldSignUsingAnonCredsDataIntegrity(presentationToCreate, presentationSubmission)) {
+          // make sure the descriptors format properties are set correctly
+          presentationSubmission.descriptor_map = presentationSubmission.descriptor_map.map((descriptor) => ({
+            ...descriptor,
+            format: 'di_vp',
+          }))
+          const anoncredsDataIntegrityService = agentContext.dependencyManager.resolve<IAnonCredsDataIntegrityService>(
             AnonCredsDataIntegrityServiceSymbol
           )
           const presentation = await anoncredsDataIntegrityService.createPresentation(agentContext, {
@@ -468,6 +480,9 @@ export class DifPresentationExchangeService {
           } as unknown as SphereonW3cVerifiablePresentation
         }
 
+        if (!presentationToCreate.subjectIds) {
+          throw new DifPresentationExchangeError(`Cannot create presentation for credentials without subject id`)
+        }
         // Determine a suitable verification method for the presentation
         const verificationMethod = await this.getVerificationMethodForSubjectId(
           agentContext,

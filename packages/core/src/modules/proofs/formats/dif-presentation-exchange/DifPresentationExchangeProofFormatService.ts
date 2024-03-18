@@ -11,7 +11,7 @@ import type {
   DifPresentationExchangeSubmission,
 } from '../../../dif-presentation-exchange'
 import type {
-  IAnoncredsDataIntegrityService,
+  IAnonCredsDataIntegrityService,
   W3cVerifiablePresentation,
   W3cVerifyPresentationResult,
 } from '../../../vc'
@@ -53,7 +53,9 @@ const PRESENTATION_EXCHANGE_PRESENTATION_PROPOSAL = 'dif/presentation-exchange/d
 const PRESENTATION_EXCHANGE_PRESENTATION_REQUEST = 'dif/presentation-exchange/definitions@v1.0'
 const PRESENTATION_EXCHANGE_PRESENTATION = 'dif/presentation-exchange/submission@v1.0'
 
-export class PresentationExchangeProofFormatService implements ProofFormatService<DifPresentationExchangeProofFormat> {
+export class DifPresentationExchangeProofFormatService
+  implements ProofFormatService<DifPresentationExchangeProofFormat>
+{
   public readonly formatKey = 'presentationExchange' as const
 
   private presentationExchangeService(agentContext: AgentContext) {
@@ -227,12 +229,11 @@ export class PresentationExchangeProofFormatService implements ProofFormatServic
     return { attachment, format }
   }
 
-  private shouldVerifyUsingAnoncredsDataIntegrity(
+  private shouldVerifyUsingAnonCredsDataIntegrity(
     presentation: W3cVerifiablePresentation,
     presentationSubmission: DifPresentationExchangeSubmission
   ) {
     if (presentation.claimFormat !== ClaimFormat.LdpVp) return false
-
     const descriptorMap = presentationSubmission.descriptor_map
 
     const verifyUsingDataIntegrity = descriptorMap.every((descriptor) => descriptor.format === ClaimFormat.DiVp)
@@ -300,9 +301,9 @@ export class PresentationExchangeProofFormatService implements ProofFormatServic
         })
       } else if (parsedPresentation.claimFormat === ClaimFormat.LdpVp) {
         if (
-          this.shouldVerifyUsingAnoncredsDataIntegrity(parsedPresentation, jsonPresentation.presentation_submission)
+          this.shouldVerifyUsingAnonCredsDataIntegrity(parsedPresentation, jsonPresentation.presentation_submission)
         ) {
-          const dataIntegrityService = agentContext.dependencyManager.resolve<IAnoncredsDataIntegrityService>(
+          const dataIntegrityService = agentContext.dependencyManager.resolve<IAnonCredsDataIntegrityService>(
             AnonCredsDataIntegrityServiceSymbol
           )
           const proofVerificationResult = await dataIntegrityService.verifyPresentation(agentContext, {

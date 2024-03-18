@@ -7,8 +7,8 @@ import express from 'express'
 
 import { AskarModule } from '../../../../askar/src'
 import { askarModuleConfig } from '../../../../askar/tests/helpers'
-import { createAgentFromModules } from '../../../tests/utils'
-import { OpenId4VcVerifierModule } from '../../openid4vc-verifier'
+import { waitForVerificationSessionRecordSubject, createAgentFromModules } from '../../../tests/utils'
+import { OpenId4VcVerificationSessionState, OpenId4VcVerifierModule } from '../../openid4vc-verifier'
 import { OpenId4VcHolderModule } from '../OpenId4VcHolderModule'
 
 const port = 3121
@@ -60,16 +60,17 @@ describe('OpenId4VcHolder | OpenID4VP', () => {
   })
 
   it('siop authorization request without presentation exchange', async () => {
-    const { authorizationRequestUri } = await verifier.agent.modules.openId4VcVerifier.createAuthorizationRequest({
-      requestSigner: {
-        method: 'did',
-        didUrl: verifier.kid,
-      },
-      verifierId: openIdVerifier.verifierId,
-    })
+    const { authorizationRequest, verificationSession } =
+      await verifier.agent.modules.openId4VcVerifier.createAuthorizationRequest({
+        requestSigner: {
+          method: 'did',
+          didUrl: verifier.kid,
+        },
+        verifierId: openIdVerifier.verifierId,
+      })
 
     const resolvedAuthorizationRequest = await holder.agent.modules.openId4VcHolder.resolveSiopAuthorizationRequest(
-      authorizationRequestUri
+      authorizationRequest
     )
 
     const { submittedResponse, serverResponse } =
@@ -93,11 +94,14 @@ describe('OpenId4VcHolder | OpenID4VP', () => {
       state: expect.any(String),
     })
 
+    await waitForVerificationSessionRecordSubject(verifier.replaySubject, {
+      state: OpenId4VcVerificationSessionState.ResponseVerified,
+      contextCorrelationId: verifier.agent.context.contextCorrelationId,
+      verificationSessionId: verificationSession.id,
+    })
+
     const { idToken, presentationExchange } =
-      await verifier.agent.modules.openId4VcVerifier.verifyAuthorizationResponse({
-        authorizationResponse: submittedResponse,
-        verifierId: openIdVerifier.verifierId,
-      })
+      await verifier.agent.modules.openId4VcVerifier.getVerifiedAuthorizationResponse(verificationSession.id)
 
     expect(presentationExchange).toBeUndefined()
     expect(idToken).toMatchObject({

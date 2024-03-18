@@ -40,8 +40,9 @@ import { AskarModule } from '../../../../askar/src'
 import { askarModuleConfig } from '../../../../askar/tests/helpers'
 import { agentDependencies } from '../../../../node/src'
 import { OpenId4VciCredentialFormatProfile } from '../../shared'
+import { OpenId4VcIssuanceSessionState } from '../OpenId4VcIssuanceSessionState'
 import { OpenId4VcIssuerModule } from '../OpenId4VcIssuerModule'
-import { OpenId4VcIssuerModuleConfig } from '../OpenId4VcIssuerModuleConfig'
+import { OpenId4VcIssuanceSessionRepository } from '../repository'
 
 const openBadgeCredential = {
   id: 'https://openid4vc-issuer.com/credentials/OpenBadgeCredential',
@@ -127,7 +128,11 @@ const createCredentialRequest = async (
   ) {
     return {
       format: credentialSupported.format,
-      credential_definition: { '@context': credentialSupported['@context'], types: credentialSupported.types },
+      credential_definition: {
+        '@context': credentialSupported['@context'],
+        types: credentialSupported.types,
+      },
+
       proof: { jwt: jws, proof_type: 'jwt' },
     }
   } else if (credentialSupported.format === OpenId4VciCredentialFormatProfile.SdJwtVc) {
@@ -269,12 +274,7 @@ describe('OpenId4VcIssuer', () => {
   }
 
   it('pre authorized code flow (sd-jwt-vc)', async () => {
-    const cNonce = '1234'
     const preAuthorizedCode = '1234567890'
-
-    await issuer.modules.openId4VcIssuer.config
-      .getCNonceStateManager(issuer.context)
-      .set(cNonce, { cNonce: cNonce, createdAt: Date.now(), preAuthorizedCode })
 
     const result = await issuer.modules.openId4VcIssuer.createCredentialOffer({
       issuerId: openId4VcIssuer.issuerId,
@@ -285,32 +285,53 @@ describe('OpenId4VcIssuer', () => {
       },
     })
 
-    expect(result.credentialOfferPayload).toEqual({
-      credential_issuer: `https://openid4vc-issuer.com/${openId4VcIssuer.issuerId}`,
-      credentials: ['https://openid4vc-issuer.com/credentials/UniversityDegreeCredentialSdJwt'],
-      grants: {
-        authorization_code: undefined,
-        'urn:ietf:params:oauth:grant-type:pre-authorized_code': {
-          'pre-authorized_code': '1234567890',
-          user_pin_required: false,
+    const issuanceSessionRepository = issuer.context.dependencyManager.resolve(OpenId4VcIssuanceSessionRepository)
+    result.issuanceSession.cNonce = '1234'
+    await issuanceSessionRepository.update(issuer.context, result.issuanceSession)
+
+    expect(result).toMatchObject({
+      credentialOffer: expect.stringMatching(
+        new RegExp(
+          `^openid-credential-offer://\\?credential_offer_uri=https://openid4vc-issuer.com/${openId4VcIssuer.issuerId}/offers/.*$`
+        )
+      ),
+      issuanceSession: {
+        credentialOfferPayload: {
+          credential_issuer: `https://openid4vc-issuer.com/${openId4VcIssuer.issuerId}`,
+          credentials: ['https://openid4vc-issuer.com/credentials/UniversityDegreeCredentialSdJwt'],
+          grants: {
+            'urn:ietf:params:oauth:grant-type:pre-authorized_code': {
+              'pre-authorized_code': '1234567890',
+              user_pin_required: false,
+            },
+          },
         },
       },
     })
-
-    expect(result.credentialOffer).toEqual(
-      `openid-credential-offer://?credential_offer=%7B%22grants%22%3A%7B%22urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Apre-authorized_code%22%3A%7B%22pre-authorized_code%22%3A%221234567890%22%2C%22user_pin_required%22%3Afalse%7D%7D%2C%22credentials%22%3A%5B%22https%3A%2F%2Fopenid4vc-issuer.com%2Fcredentials%2FUniversityDegreeCredentialSdJwt%22%5D%2C%22credential_issuer%22%3A%22https%3A%2F%2Fopenid4vc-issuer.com%2F${openId4VcIssuer.issuerId}%22%7D`
-    )
 
     const issuerMetadata = await issuer.modules.openId4VcIssuer.getIssuerMetadata(openId4VcIssuer.issuerId)
     const credentialRequest = await createCredentialRequest(holder.context, {
       credentialSupported: universityDegreeCredentialSdJwt,
       issuerMetadata,
       kid: holderKid,
-      nonce: cNonce,
+      nonce: result.issuanceSession.cNonce as string,
     })
 
-    const issueCredentialResponse = await issuer.modules.openId4VcIssuer.createCredentialResponse({
+    const issuanceSession = await issuer.modules.openId4VcIssuer.findIssuanceSessionForCredentialRequest({
+      credentialRequest,
       issuerId: openId4VcIssuer.issuerId,
+    })
+
+    if (!issuanceSession) {
+      throw new Error('No issuance session found')
+    }
+
+    // We need to update the state, as it is checked and we're skipping the access token step
+    result.issuanceSession.state = OpenId4VcIssuanceSessionState.AccessTokenCreated
+    await issuanceSessionRepository.update(issuer.context, result.issuanceSession)
+
+    const { credentialResponse } = await issuer.modules.openId4VcIssuer.createCredentialResponse({
+      issuanceSessionId: issuanceSession.id,
       credentialRequest,
 
       credentialRequestToCredentialMapper: () => ({
@@ -318,31 +339,26 @@ describe('OpenId4VcIssuer', () => {
         payload: { vct: 'UniversityDegreeCredential', university: 'innsbruck', degree: 'bachelor' },
         issuer: { method: 'did', didUrl: issuerVerificationMethod.id },
         holder: { method: 'did', didUrl: holderVerificationMethod.id },
-        disclosureFrame: { university: true, degree: true },
+        disclosureFrame: { _sd: ['university', 'degree'] },
       }),
     })
 
-    const sphereonW3cCredential = issueCredentialResponse.credential
-    if (!sphereonW3cCredential) throw new Error('No credential found')
-
-    expect(issueCredentialResponse).toEqual({
+    expect(credentialResponse).toEqual({
       c_nonce: expect.any(String),
       c_nonce_expires_in: 300000,
       credential: expect.any(String),
       format: 'vc+sd-jwt',
     })
 
-    await handleCredentialResponse(holder.context, sphereonW3cCredential, universityDegreeCredentialSdJwt)
+    await handleCredentialResponse(
+      holder.context,
+      credentialResponse.credential as SphereonW3cVerifiableCredential,
+      universityDegreeCredentialSdJwt
+    )
   })
 
   it('pre authorized code flow (jwt-vc-json)', async () => {
-    const cNonce = '1234'
     const preAuthorizedCode = '1234567890'
-
-    await issuer.context.dependencyManager
-      .resolve(OpenId4VcIssuerModuleConfig)
-      .getCNonceStateManager(issuer.context)
-      .set(cNonce, { cNonce: cNonce, createdAt: Date.now(), preAuthorizedCode })
 
     const result = await issuer.modules.openId4VcIssuer.createCredentialOffer({
       issuerId: openId4VcIssuer.issuerId,
@@ -353,13 +369,17 @@ describe('OpenId4VcIssuer', () => {
       },
     })
 
-    expect(result.credentialOffer).toEqual(
-      `openid-credential-offer://?credential_offer=%7B%22grants%22%3A%7B%22urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Apre-authorized_code%22%3A%7B%22pre-authorized_code%22%3A%221234567890%22%2C%22user_pin_required%22%3Afalse%7D%7D%2C%22credentials%22%3A%5B%22https%3A%2F%2Fopenid4vc-issuer.com%2Fcredentials%2FOpenBadgeCredential%22%5D%2C%22credential_issuer%22%3A%22https%3A%2F%2Fopenid4vc-issuer.com%2F${openId4VcIssuer.issuerId}%22%7D`
-    )
+    const issuanceSessionRepository = issuer.context.dependencyManager.resolve(OpenId4VcIssuanceSessionRepository)
+    // We need to update the state, as it is checked and we're skipping the access token step
+    result.issuanceSession.cNonce = '1234'
+    result.issuanceSession.state = OpenId4VcIssuanceSessionState.AccessTokenCreated
+    await issuanceSessionRepository.update(issuer.context, result.issuanceSession)
+
+    expect(result.credentialOffer).toBeDefined()
 
     const issuerMetadata = await issuer.modules.openId4VcIssuer.getIssuerMetadata(openId4VcIssuer.issuerId)
-    const issueCredentialResponse = await issuer.modules.openId4VcIssuer.createCredentialResponse({
-      issuerId: openId4VcIssuer.issuerId,
+    const { credentialResponse } = await issuer.modules.openId4VcIssuer.createCredentialResponse({
+      issuanceSessionId: result.issuanceSession.id,
       credentialRequestToCredentialMapper: () => ({
         format: 'jwt_vc',
         credential: new W3cCredential({
@@ -374,31 +394,26 @@ describe('OpenId4VcIssuer', () => {
         credentialSupported: openBadgeCredential,
         issuerMetadata,
         kid: holderKid,
-        nonce: cNonce,
+        nonce: result.issuanceSession.cNonce as string,
       }),
     })
 
-    const sphereonW3cCredential = issueCredentialResponse.credential
-    if (!sphereonW3cCredential) throw new Error('No credential found')
-
-    expect(issueCredentialResponse).toEqual({
+    expect(credentialResponse).toEqual({
       c_nonce: expect.any(String),
       c_nonce_expires_in: 300000,
       credential: expect.any(String),
       format: 'jwt_vc_json',
     })
 
-    await handleCredentialResponse(holder.context, sphereonW3cCredential, openBadgeCredential)
+    await handleCredentialResponse(
+      holder.context,
+      credentialResponse.credential as SphereonW3cVerifiableCredential,
+      openBadgeCredential
+    )
   })
 
   it('credential id not in credential supported errors', async () => {
-    const cNonce = '1234'
     const preAuthorizedCode = '1234567890'
-
-    await issuer.context.dependencyManager
-      .resolve(OpenId4VcIssuerModuleConfig)
-      .getCNonceStateManager(issuer.context)
-      .set(cNonce, { cNonce: cNonce, createdAt: Date.now(), preAuthorizedCode })
 
     await expect(
       issuer.modules.openId4VcIssuer.createCredentialOffer({
@@ -409,19 +424,11 @@ describe('OpenId4VcIssuer', () => {
           userPinRequired: false,
         },
       })
-    ).rejects.toThrowError(
-      "Offered credential 'invalid id' is not part of credentials_supported of the issuer metadata."
-    )
+    ).rejects.toThrow("Offered credential 'invalid id' is not part of credentials_supported of the issuer metadata.")
   })
 
   it('issuing non offered credential errors', async () => {
-    const cNonce = '1234'
     const preAuthorizedCode = '1234567890'
-
-    await issuer.context.dependencyManager
-      .resolve(OpenId4VcIssuerModuleConfig)
-      .getCNonceStateManager(issuer.context)
-      .set(cNonce, { cNonce: cNonce, createdAt: Date.now(), preAuthorizedCode })
 
     const result = await issuer.modules.openId4VcIssuer.createCredentialOffer({
       issuerId: openId4VcIssuer.issuerId,
@@ -432,36 +439,31 @@ describe('OpenId4VcIssuer', () => {
       },
     })
 
-    expect(result.credentialOffer).toEqual(
-      `openid-credential-offer://?credential_offer=%7B%22grants%22%3A%7B%22urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Apre-authorized_code%22%3A%7B%22pre-authorized_code%22%3A%221234567890%22%2C%22user_pin_required%22%3Afalse%7D%7D%2C%22credentials%22%3A%5B%22https%3A%2F%2Fopenid4vc-issuer.com%2Fcredentials%2FOpenBadgeCredential%22%5D%2C%22credential_issuer%22%3A%22https%3A%2F%2Fopenid4vc-issuer.com%2F${openId4VcIssuer.issuerId}%22%7D`
-    )
+    const issuanceSessionRepository = issuer.context.dependencyManager.resolve(OpenId4VcIssuanceSessionRepository)
+    // We need to update the state, as it is checked and we're skipping the access token step
+    result.issuanceSession.state = OpenId4VcIssuanceSessionState.AccessTokenCreated
+    result.issuanceSession.cNonce = '1234'
+    await issuanceSessionRepository.update(issuer.context, result.issuanceSession)
 
     const issuerMetadata = await issuer.modules.openId4VcIssuer.getIssuerMetadata(openId4VcIssuer.issuerId)
     await expect(
       issuer.modules.openId4VcIssuer.createCredentialResponse({
-        issuerId: openId4VcIssuer.issuerId,
-
+        issuanceSessionId: result.issuanceSession.id,
         credentialRequest: await createCredentialRequest(holder.context, {
           credentialSupported: universityDegreeCredential,
           issuerMetadata,
           kid: holderKid,
-          nonce: cNonce,
+          nonce: result.issuanceSession.cNonce as string,
         }),
         credentialRequestToCredentialMapper: () => {
           throw new Error('Not implemented')
         },
       })
-    ).rejects.toThrowError('No offered credentials match the credential request.')
+    ).rejects.toThrow('No offered credentials match the credential request.')
   })
 
   it('pre authorized code flow using multiple credentials_supported', async () => {
-    const cNonce = '1234'
     const preAuthorizedCode = '1234567890'
-
-    await issuer.context.dependencyManager
-      .resolve(OpenId4VcIssuerModuleConfig)
-      .getCNonceStateManager(issuer.context)
-      .set(cNonce, { cNonce: cNonce, createdAt: Date.now(), preAuthorizedCode })
 
     const result = await issuer.modules.openId4VcIssuer.createCredentialOffer({
       offeredCredentials: [openBadgeCredential.id, universityDegreeCredentialLd.id],
@@ -472,18 +474,20 @@ describe('OpenId4VcIssuer', () => {
       },
     })
 
-    expect(result.credentialOffer).toEqual(
-      `openid-credential-offer://?credential_offer=%7B%22grants%22%3A%7B%22urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Apre-authorized_code%22%3A%7B%22pre-authorized_code%22%3A%221234567890%22%2C%22user_pin_required%22%3Afalse%7D%7D%2C%22credentials%22%3A%5B%22https%3A%2F%2Fopenid4vc-issuer.com%2Fcredentials%2FOpenBadgeCredential%22%2C%22https%3A%2F%2Fopenid4vc-issuer.com%2Fcredentials%2FUniversityDegreeCredentialLd%22%5D%2C%22credential_issuer%22%3A%22https%3A%2F%2Fopenid4vc-issuer.com%2F${openId4VcIssuer.issuerId}%22%7D`
-    )
+    const issuanceSessionRepository = issuer.context.dependencyManager.resolve(OpenId4VcIssuanceSessionRepository)
+    // We need to update the state, as it is checked and we're skipping the access token step
+    result.issuanceSession.cNonce = '1234'
+    result.issuanceSession.state = OpenId4VcIssuanceSessionState.AccessTokenCreated
+    await issuanceSessionRepository.update(issuer.context, result.issuanceSession)
 
     const issuerMetadata = await issuer.modules.openId4VcIssuer.getIssuerMetadata(openId4VcIssuer.issuerId)
-    const issueCredentialResponse = await issuer.modules.openId4VcIssuer.createCredentialResponse({
-      issuerId: openId4VcIssuer.issuerId,
+    const { credentialResponse } = await issuer.modules.openId4VcIssuer.createCredentialResponse({
+      issuanceSessionId: result.issuanceSession.id,
       credentialRequest: await createCredentialRequest(holder.context, {
         credentialSupported: universityDegreeCredentialLd,
         issuerMetadata,
         kid: holderKid,
-        nonce: cNonce,
+        nonce: result.issuanceSession.cNonce as string,
       }),
       credentialRequestToCredentialMapper: () => ({
         format: 'jwt_vc',
@@ -497,27 +501,22 @@ describe('OpenId4VcIssuer', () => {
       }),
     })
 
-    const sphereonW3cCredential = issueCredentialResponse.credential
-    if (!sphereonW3cCredential) throw new Error('No credential found')
-
-    expect(issueCredentialResponse).toEqual({
+    expect(credentialResponse).toEqual({
       c_nonce: expect.any(String),
       c_nonce_expires_in: 300000,
       credential: expect.any(String),
       format: 'jwt_vc_json-ld',
     })
 
-    await handleCredentialResponse(holder.context, sphereonW3cCredential, universityDegreeCredentialLd)
+    await handleCredentialResponse(
+      holder.context,
+      credentialResponse.credential as SphereonW3cVerifiableCredential,
+      universityDegreeCredentialLd
+    )
   })
 
   it('requesting non offered credential errors', async () => {
-    const cNonce = '1234'
     const preAuthorizedCode = '1234567890'
-
-    await issuer.context.dependencyManager
-      .resolve(OpenId4VcIssuerModuleConfig)
-      .getCNonceStateManager(issuer.context)
-      .set(cNonce, { cNonce: cNonce, createdAt: Date.now(), preAuthorizedCode })
 
     const result = await issuer.modules.openId4VcIssuer.createCredentialOffer({
       offeredCredentials: [openBadgeCredential.id],
@@ -528,14 +527,16 @@ describe('OpenId4VcIssuer', () => {
       },
     })
 
-    expect(result.credentialOffer).toEqual(
-      `openid-credential-offer://?credential_offer=%7B%22grants%22%3A%7B%22urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Apre-authorized_code%22%3A%7B%22pre-authorized_code%22%3A%221234567890%22%2C%22user_pin_required%22%3Afalse%7D%7D%2C%22credentials%22%3A%5B%22https%3A%2F%2Fopenid4vc-issuer.com%2Fcredentials%2FOpenBadgeCredential%22%5D%2C%22credential_issuer%22%3A%22https%3A%2F%2Fopenid4vc-issuer.com%2F${openId4VcIssuer.issuerId}%22%7D`
-    )
+    const issuanceSessionRepository = issuer.context.dependencyManager.resolve(OpenId4VcIssuanceSessionRepository)
+    // We need to update the state, as it is checked and we're skipping the access token step
+    result.issuanceSession.state = OpenId4VcIssuanceSessionState.AccessTokenCreated
+    result.issuanceSession.cNonce = '1234'
+    await issuanceSessionRepository.update(issuer.context, result.issuanceSession)
 
     const issuerMetadata = await issuer.modules.openId4VcIssuer.getIssuerMetadata(openId4VcIssuer.issuerId)
     await expect(
       issuer.modules.openId4VcIssuer.createCredentialResponse({
-        issuerId: openId4VcIssuer.issuerId,
+        issuanceSessionId: result.issuanceSession.id,
         credentialRequest: await createCredentialRequest(holder.context, {
           credentialSupported: {
             id: 'someid',
@@ -544,122 +545,36 @@ describe('OpenId4VcIssuer', () => {
           },
           issuerMetadata,
           kid: holderKid,
-          nonce: cNonce,
+          nonce: result.issuanceSession.cNonce as string,
         }),
         credentialRequestToCredentialMapper: () => {
           throw new Error('Not implemented')
         },
       })
-    ).rejects.toThrowError('No offered credentials match the credential request.')
-  })
-
-  it('authorization code flow', async () => {
-    const cNonce = '1234'
-    const issuerState = '1234567890'
-
-    await issuer.context.dependencyManager
-      .resolve(OpenId4VcIssuerModuleConfig)
-      .getCNonceStateManager(issuer.context)
-      .set(cNonce, { cNonce: cNonce, createdAt: Date.now(), issuerState })
-
-    const result = await issuer.modules.openId4VcIssuer.createCredentialOffer({
-      offeredCredentials: [openBadgeCredential.id],
-      issuerId: openId4VcIssuer.issuerId,
-      authorizationCodeFlowConfig: {
-        issuerState,
-      },
-    })
-
-    expect(result.credentialOffer).toEqual(
-      `openid-credential-offer://?credential_offer=%7B%22grants%22%3A%7B%22authorization_code%22%3A%7B%22issuer_state%22%3A%221234567890%22%7D%7D%2C%22credentials%22%3A%5B%22https%3A%2F%2Fopenid4vc-issuer.com%2Fcredentials%2FOpenBadgeCredential%22%5D%2C%22credential_issuer%22%3A%22https%3A%2F%2Fopenid4vc-issuer.com%2F${openId4VcIssuer.issuerId}%22%7D`
-    )
-
-    const issuerMetadata = await issuer.modules.openId4VcIssuer.getIssuerMetadata(openId4VcIssuer.issuerId)
-    const issueCredentialResponse = await issuer.modules.openId4VcIssuer.createCredentialResponse({
-      issuerId: openId4VcIssuer.issuerId,
-      credentialRequest: await createCredentialRequest(holder.context, {
-        credentialSupported: openBadgeCredential,
-        issuerMetadata,
-        kid: holderKid,
-        nonce: cNonce,
-        clientId: 'required',
-      }),
-      credentialRequestToCredentialMapper: () => ({
-        format: 'jwt_vc',
-        credential: new W3cCredential({
-          type: ['VerifiableCredential', 'OpenBadgeCredential'],
-          issuer: new W3cIssuer({ id: issuerDid }),
-          credentialSubject: new W3cCredentialSubject({ id: holderDid }),
-          issuanceDate: w3cDate(Date.now()),
-        }),
-        verificationMethod: issuerVerificationMethod.id,
-      }),
-    })
-
-    const sphereonW3cCredential = issueCredentialResponse.credential
-    if (!sphereonW3cCredential) throw new Error('No credential found')
-
-    expect(issueCredentialResponse).toEqual({
-      c_nonce: expect.any(String),
-      c_nonce_expires_in: 300000,
-      credential: expect.any(String),
-      format: 'jwt_vc_json',
-    })
-
-    await handleCredentialResponse(holder.context, sphereonW3cCredential, openBadgeCredential)
+    ).rejects.toThrow('No offered credentials match the credential request.')
   })
 
   it('create credential offer and retrieve it from the uri (pre authorized flow)', async () => {
     const preAuthorizedCode = '1234567890'
 
-    const hostedCredentialOfferUrl = 'https://openid4vc-issuer.com/credential-offer-uri'
-
-    const { credentialOffer, credentialOfferPayload } = await issuer.modules.openId4VcIssuer.createCredentialOffer({
+    const { credentialOffer } = await issuer.modules.openId4VcIssuer.createCredentialOffer({
       issuerId: openId4VcIssuer.issuerId,
       offeredCredentials: [openBadgeCredential.id],
-      hostedCredentialOfferUrl,
       preAuthorizedCodeFlowConfig: {
         preAuthorizedCode,
         userPinRequired: false,
       },
     })
 
-    expect(credentialOffer).toEqual(`openid-credential-offer://?credential_offer_uri=${hostedCredentialOfferUrl}`)
-
-    const credentialOfferReceivedByUri = await issuer.modules.openId4VcIssuer.getCredentialOfferFromUri(
-      hostedCredentialOfferUrl
+    expect(credentialOffer).toMatch(
+      new RegExp(
+        `^openid-credential-offer://\\?credential_offer_uri=https://openid4vc-issuer.com/${openId4VcIssuer.issuerId}/offers/.*$`
+      )
     )
-
-    expect(credentialOfferPayload).toEqual(credentialOfferReceivedByUri)
-  })
-
-  it('create credential offer and retrieve it from the uri (authorizationCodeFlow)', async () => {
-    const hostedCredentialOfferUrl = 'https://openid4vc-issuer.com/credential-offer-uri'
-
-    const { credentialOffer, credentialOfferPayload } = await issuer.modules.openId4VcIssuer.createCredentialOffer({
-      offeredCredentials: [openBadgeCredential.id],
-      issuerId: openId4VcIssuer.issuerId,
-      hostedCredentialOfferUrl,
-      authorizationCodeFlowConfig: { issuerState: '1234567890' },
-    })
-
-    expect(credentialOffer).toEqual(`openid-credential-offer://?credential_offer_uri=${hostedCredentialOfferUrl}`)
-
-    const credentialOfferReceivedByUri = await issuer.modules.openId4VcIssuer.getCredentialOfferFromUri(
-      hostedCredentialOfferUrl
-    )
-
-    expect(credentialOfferPayload).toEqual(credentialOfferReceivedByUri)
   })
 
   it('offer and request multiple credentials', async () => {
-    const cNonce = '1234'
     const preAuthorizedCode = '1234567890'
-
-    await issuer.context.dependencyManager
-      .resolve(OpenId4VcIssuerModuleConfig)
-      .getCNonceStateManager(issuer.context)
-      .set(cNonce, { cNonce: cNonce, createdAt: Date.now(), preAuthorizedCode })
 
     const result = await issuer.modules.openId4VcIssuer.createCredentialOffer({
       offeredCredentials: [openBadgeCredential.id, universityDegreeCredential.id],
@@ -670,9 +585,14 @@ describe('OpenId4VcIssuer', () => {
       },
     })
 
-    expect(result.credentialOffer).toEqual(
-      `openid-credential-offer://?credential_offer=%7B%22grants%22%3A%7B%22urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Apre-authorized_code%22%3A%7B%22pre-authorized_code%22%3A%221234567890%22%2C%22user_pin_required%22%3Afalse%7D%7D%2C%22credentials%22%3A%5B%22https%3A%2F%2Fopenid4vc-issuer.com%2Fcredentials%2FOpenBadgeCredential%22%2C%22https%3A%2F%2Fopenid4vc-issuer.com%2Fcredentials%2FUniversityDegreeCredential%22%5D%2C%22credential_issuer%22%3A%22https%3A%2F%2Fopenid4vc-issuer.com%2F${openId4VcIssuer.issuerId}%22%7D`
-    )
+    const issuanceSessionRepository = issuer.context.dependencyManager.resolve(OpenId4VcIssuanceSessionRepository)
+    result.issuanceSession.cNonce = '1234'
+    await issuanceSessionRepository.update(issuer.context, result.issuanceSession)
+
+    expect(result.issuanceSession.credentialOfferPayload?.credentials).toEqual([
+      openBadgeCredential.id,
+      universityDegreeCredential.id,
+    ])
 
     const credentialRequestToCredentialMapper: OpenId4VciCredentialRequestToCredentialMapper = ({
       credentialsSupported,
@@ -690,51 +610,57 @@ describe('OpenId4VcIssuer', () => {
       verificationMethod: issuerVerificationMethod.id,
     })
 
+    // We need to update the state, as it is checked and we're skipping the access token step
+    result.issuanceSession.state = OpenId4VcIssuanceSessionState.AccessTokenCreated
+    await issuanceSessionRepository.update(issuer.context, result.issuanceSession)
+
     const issuerMetadata = await issuer.modules.openId4VcIssuer.getIssuerMetadata(openId4VcIssuer.issuerId)
-    const issueCredentialResponse = await issuer.modules.openId4VcIssuer.createCredentialResponse({
-      issuerId: openId4VcIssuer.issuerId,
+    const { credentialResponse } = await issuer.modules.openId4VcIssuer.createCredentialResponse({
+      issuanceSessionId: result.issuanceSession.id,
       credentialRequest: await createCredentialRequest(holder.context, {
         credentialSupported: openBadgeCredential,
         issuerMetadata,
         kid: holderKid,
-        nonce: cNonce,
+        nonce: result.issuanceSession.cNonce as string,
       }),
       credentialRequestToCredentialMapper,
     })
 
-    const sphereonW3cCredential = issueCredentialResponse.credential
-    if (!sphereonW3cCredential) throw new Error('No credential found')
-
-    expect(issueCredentialResponse).toEqual({
+    expect(credentialResponse).toEqual({
       c_nonce: expect.any(String),
       c_nonce_expires_in: 300000,
       credential: expect.any(String),
       format: 'jwt_vc_json',
     })
 
-    await handleCredentialResponse(holder.context, sphereonW3cCredential, openBadgeCredential)
+    await handleCredentialResponse(
+      holder.context,
+      credentialResponse.credential as SphereonW3cVerifiableCredential,
+      openBadgeCredential
+    )
 
-    const issueCredentialResponse2 = await issuer.modules.openId4VcIssuer.createCredentialResponse({
-      issuerId: openId4VcIssuer.issuerId,
+    const { credentialResponse: credentialResponse2 } = await issuer.modules.openId4VcIssuer.createCredentialResponse({
+      issuanceSessionId: result.issuanceSession.id,
       credentialRequest: await createCredentialRequest(holder.context, {
         credentialSupported: universityDegreeCredential,
         issuerMetadata,
         kid: holderKid,
-        nonce: issueCredentialResponse.c_nonce ?? cNonce,
+        nonce: credentialResponse.c_nonce ?? (result.issuanceSession.cNonce as string),
       }),
       credentialRequestToCredentialMapper,
     })
 
-    const sphereonW3cCredential2 = issueCredentialResponse2.credential
-    if (!sphereonW3cCredential2) throw new Error('No credential found')
-
-    expect(issueCredentialResponse2).toEqual({
+    expect(credentialResponse2).toEqual({
       c_nonce: expect.any(String),
       c_nonce_expires_in: 300000,
       credential: expect.any(String),
       format: 'jwt_vc_json',
     })
 
-    await handleCredentialResponse(holder.context, sphereonW3cCredential2, universityDegreeCredential)
+    await handleCredentialResponse(
+      holder.context,
+      credentialResponse2.credential as SphereonW3cVerifiableCredential,
+      universityDegreeCredential
+    )
   })
 })

@@ -7,6 +7,7 @@ import { OpenId4VcSiopVerifierService } from '../OpenId4VcSiopVerifierService'
 import { OpenId4VcVerifierModule } from '../OpenId4VcVerifierModule'
 import { OpenId4VcVerifierModuleConfig } from '../OpenId4VcVerifierModuleConfig'
 import { OpenId4VcVerifierRepository } from '../repository'
+import { OpenId4VcRelyingPartyEventHandler } from '../repository/OpenId4VcRelyingPartyEventEmitter'
 
 const dependencyManager = {
   registerInstance: jest.fn(),
@@ -35,8 +36,9 @@ describe('OpenId4VcVerifierModule', () => {
       new OpenId4VcVerifierModuleConfig(options)
     )
 
-    expect(dependencyManager.registerSingleton).toHaveBeenCalledTimes(2)
+    expect(dependencyManager.registerSingleton).toHaveBeenCalledTimes(3)
     expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(OpenId4VcSiopVerifierService)
     expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(OpenId4VcVerifierRepository)
+    expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(OpenId4VcRelyingPartyEventHandler)
   })
 })

@@ -25,6 +25,7 @@ import type { Query } from '../../../storage/StorageService'
 import type { ProblemReportMessage } from '../../problem-reports'
 import type { ProofStateChangedEvent } from '../ProofEvents'
 import type { ExtractProofFormats, ProofFormatService } from '../formats'
+import type { ProofRole } from '../models'
 import type { ProofExchangeRecord } from '../repository'
 
 import { EventEmitter } from '../../../agent/EventEmitter'
@@ -113,11 +114,10 @@ export abstract class BaseProofProtocol<PFs extends ProofFormatService[] = Proof
 
     agentContext.config.logger.debug(`Processing problem report with message id ${proofProblemReportMessage.id}`)
 
-    const proofRecord = await this.getByThreadAndConnectionId(
-      agentContext,
-      proofProblemReportMessage.threadId,
-      connection?.id
-    )
+    const proofRecord = await this.getByProperties(agentContext, {
+      threadId: proofProblemReportMessage.threadId,
+      connectionId: connection?.id,
+    })
 
     // Update record
     proofRecord.errorMessage = `${proofProblemReportMessage.description.code}: ${proofProblemReportMessage.description.en}`
@@ -234,42 +234,53 @@ export abstract class BaseProofProtocol<PFs extends ProofFormatService[] = Proof
   /**
    * Retrieve a proof record by connection id and thread id
    *
-   * @param connectionId The connection id
-   * @param threadId The thread id
+   * @param properties Properties to query by
+   *
    * @throws {RecordNotFoundError} If no record is found
    * @throws {RecordDuplicateError} If multiple records are found
+   *
    * @returns The proof record
    */
-  public getByThreadAndConnectionId(
+  public getByProperties(
     agentContext: AgentContext,
-    threadId: string,
-    connectionId?: string
+    properties: {
+      threadId: string
+      role?: ProofRole
+      connectionId?: string
+    }
   ): Promise<ProofExchangeRecord> {
+    const { threadId, connectionId, role } = properties
     const proofRepository = agentContext.dependencyManager.resolve(ProofRepository)
 
     return proofRepository.getSingleByQuery(agentContext, {
       connectionId,
       threadId,
+      role,
     })
   }
 
   /**
    * Find a proof record by connection id and thread id, returns null if not found
    *
-   * @param connectionId The connection id
-   * @param threadId The thread id
+   * @param properties Properties to query by
+   *
    * @returns The proof record
    */
-  public findByThreadAndConnectionId(
+  public findByProperties(
     agentContext: AgentContext,
-    threadId: string,
-    connectionId?: string
+    properties: {
+      threadId: string
+      role?: ProofRole
+      connectionId?: string
+    }
   ): Promise<ProofExchangeRecord | null> {
+    const { role, connectionId, threadId } = properties
     const proofRepository = agentContext.dependencyManager.resolve(ProofRepository)
 
     return proofRepository.findSingleByQuery(agentContext, {
       connectionId,
       threadId,
+      role,
     })
   }
 

@@ -4,7 +4,7 @@ import type { CredentialWithRevocationMetadata } from '../models/utils'
 import type { AnonCredsCredentialProve, CreateW3cPresentationOptions, AnonCredsHolderService } from '../services'
 import type {
   AgentContext,
-  IAnoncredsDataIntegrityService,
+  IAnonCredsDataIntegrityService,
   AnoncredsDataIntegrityVerifyPresentation,
   DifPresentationExchangeDefinition,
   DifPresentationExchangeSubmission,
@@ -36,7 +36,7 @@ import { getW3cAnonCredsCredentialMetadata } from './utils'
 export type PathComponent = string | number
 
 @injectable()
-export class AnonCredsDataIntegrityService implements IAnoncredsDataIntegrityService {
+export class AnonCredsDataIntegrityService implements IAnonCredsDataIntegrityService {
   private getDataIntegrityProof(credential: W3cJsonLdVerifiableCredential) {
     const cryptosuite = ANONCREDS_DATA_INTEGRITY_CRYPTOSUITE
     if (Array.isArray(credential.proof)) {

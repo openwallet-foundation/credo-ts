@@ -6,14 +6,14 @@ import type {
   SdJwtVcHeader,
   SdJwtVcHolderBinding,
   SdJwtVcIssuer,
-  SdJwtVcGetPresentationKeysOptions,
 } from './SdJwtVcOptions'
 import type { AgentContext } from '../../agent'
 import type { JwkJson, Key } from '../../crypto'
 import type { Query } from '../../storage/StorageService'
+import type { SDJwt } from '@sd-jwt/core'
 import type { Signer, Verifier, HasherSync } from '@sd-jwt/types'
 
-import { SDJwt, SDJwtInstance } from '@sd-jwt/core'
+import { SDJwtInstance } from '@sd-jwt/core'
 import { decodeSdJwtSync, getClaimsSync } from '@sd-jwt/decode'
 import { Uint8ArrayToBase64Url } from '@sd-jwt/utils'
 import { injectable } from 'tsyringe'
@@ -151,14 +151,6 @@ export class SdJwtVcService {
     })
 
     return compactDerivedSdJwtVc
-  }
-
-  public async getPresentableKeys({ compactSdJwtVc }: SdJwtVcGetPresentationKeysOptions) {
-    const sdjwt = new SDJwtInstance({
-      hasher: this.hasher,
-    })
-    const keys = await sdjwt.presentableKeys(compactSdJwtVc)
-    return keys
   }
 
   public async verify<Header extends SdJwtVcHeader = SdJwtVcHeader, Payload extends SdJwtVcPayload = SdJwtVcPayload>(

@@ -11,7 +11,9 @@ import { OpenId4VcSiopVerifierService } from './OpenId4VcSiopVerifierService'
 import { OpenId4VcVerifierApi } from './OpenId4VcVerifierApi'
 import { OpenId4VcVerifierModuleConfig } from './OpenId4VcVerifierModuleConfig'
 import { OpenId4VcVerifierRepository } from './repository'
+import { OpenId4VcRelyingPartyEventHandler } from './repository/OpenId4VcRelyingPartyEventEmitter'
 import { configureAuthorizationEndpoint } from './router'
+import { configureAuthorizationRequestEndpoint } from './router/authorizationRequestEndpoint'
 
 /**
  * @public
@@ -42,6 +44,9 @@ export class OpenId4VcVerifierModule implements Module {
 
     // Repository
     dependencyManager.registerSingleton(OpenId4VcVerifierRepository)
+
+    // Global event emitter
+    dependencyManager.registerSingleton(OpenId4VcRelyingPartyEventHandler)
   }
 
   public async initialize(rootAgentContext: AgentContext): Promise<void> {
@@ -84,7 +89,7 @@ export class OpenId4VcVerifierModule implements Module {
       try {
         agentContext = await getAgentContextForActorId(rootAgentContext, verifierId)
         const verifierApi = agentContext.dependencyManager.resolve(OpenId4VcVerifierApi)
-        const verifier = await verifierApi.getByVerifierId(verifierId)
+        const verifier = await verifierApi.getVerifierByVerifierId(verifierId)
 
         req.requestContext = {
           agentContext,
@@ -109,6 +114,7 @@ export class OpenId4VcVerifierModule implements Module {
 
     // Configure endpoints
     configureAuthorizationEndpoint(endpointRouter, this.config.authorizationEndpoint)
+    configureAuthorizationRequestEndpoint(endpointRouter, this.config.authorizationRequestEndpoint)
 
     // First one will be called for all requests (when next is called)
     contextRouter.use(async (req: OpenId4VcVerificationRequest, _res: unknown, next) => {

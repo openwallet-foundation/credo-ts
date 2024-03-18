@@ -44,10 +44,6 @@ export class SdJwtVcApi {
     return await this.sdJwtVcService.present(this.agentContext, options)
   }
 
-  public async getPresentableKeys(options: SdJwtVcGetPresentationKeysOptions): Promise<string[]> {
-    return await this.sdJwtVcService.getPresentableKeys(options)
-  }
-
   /**
    *
    * Verify an incoming sd-jwt. It will check whether everything is valid, but also returns parts of the validation.

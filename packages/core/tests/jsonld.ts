@@ -5,7 +5,7 @@ import { InMemoryWalletModule } from '../../../tests/InMemoryWalletModule'
 import { askarModule } from '../../askar/tests/helpers'
 import { BbsModule } from '../../bbs-signatures/src/BbsModule'
 import {
-  PresentationExchangeProofFormatService,
+  DifPresentationExchangeProofFormatService,
   V2ProofProtocol,
   CacheModule,
   CredentialEventTypes,
@@ -41,7 +41,7 @@ export const getJsonLdModules = ({
     }),
     proofs: new ProofsModule({
       autoAcceptProofs,
-      proofProtocols: [new V2ProofProtocol({ proofFormats: [new PresentationExchangeProofFormatService()] })],
+      proofProtocols: [new V2ProofProtocol({ proofFormats: [new DifPresentationExchangeProofFormatService()] })],
     }),
     cache: new CacheModule({
       cache: new InMemoryLruCache({ limit: 100 }),

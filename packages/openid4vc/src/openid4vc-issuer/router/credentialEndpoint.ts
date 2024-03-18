@@ -3,8 +3,13 @@ import type { OpenId4VciCredentialRequest } from '../../shared'
 import type { OpenId4VciCredentialRequestToCredentialMapper } from '../OpenId4VcIssuerServiceOptions'
 import type { Router, Response } from 'express'
 
+import { CredoError, JwsService, Jwt } from '@credo-ts/core'
+
 import { getRequestContext, sendErrorResponse } from '../../shared/router'
 import { OpenId4VcIssuerService } from '../OpenId4VcIssuerService'
+import { getCNonceFromCredentialRequest } from '../util/credentialRequest'
+
+import { verifyAccessToken } from './verifyAccessToken'
 
 export interface OpenId4VciCredentialEndpointConfig {
   /**
@@ -24,16 +29,37 @@ export interface OpenId4VciCredentialEndpointConfig {
 export function configureCredentialEndpoint(router: Router, config: OpenId4VciCredentialEndpointConfig) {
   router.post(config.endpointPath, async (request: OpenId4VcIssuanceRequest, response: Response, next) => {
     const { agentContext, issuer } = getRequestContext(request)
+    const openId4VcIssuerService = agentContext.dependencyManager.resolve(OpenId4VcIssuerService)
+
+    // Verify the access token (should at some point be moved to a middleware function or something)
+    try {
+      await verifyAccessToken(agentContext, issuer, request.headers.authorization)
+    } catch (error) {
+      return sendErrorResponse(response, agentContext.config.logger, 401, 'unauthorized', error)
+    }
 
     try {
-      const openId4VcIssuerService = agentContext.dependencyManager.resolve(OpenId4VcIssuerService)
       const credentialRequest = request.body as OpenId4VciCredentialRequest
-      const issueCredentialResponse = await openId4VcIssuerService.createCredentialResponse(agentContext, {
-        issuer,
+
+      const issuanceSession = await openId4VcIssuerService.findIssuanceSessionForCredentialRequest(agentContext, {
+        issuerId: issuer.issuerId,
         credentialRequest,
       })
 
-      response.json(issueCredentialResponse)
+      if (!issuanceSession) {
+        const cNonce = getCNonceFromCredentialRequest(credentialRequest)
+        agentContext.config.logger.warn(
+          `No issuance session found for incoming credential request with cNonce ${cNonce} and issuer ${issuer.issuerId}`
+        )
+        return sendErrorResponse(response, agentContext.config.logger, 404, 'invalid_request', null)
+      }
+
+      const { credentialResponse } = await openId4VcIssuerService.createCredentialResponse(agentContext, {
+        issuanceSession,
+        credentialRequest,
+      })
+
+      response.json(credentialResponse)
     } catch (error) {
       sendErrorResponse(response, agentContext.config.logger, 500, 'invalid_request', error)
     }

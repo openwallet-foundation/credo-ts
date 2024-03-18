@@ -26,10 +26,24 @@ export function configureAuthorizationEndpoint(router: Router, config: OpenId4Vc
       const authorizationResponse: AuthorizationResponsePayload = request.body
       if (isVpRequest) authorizationResponse.presentation_submission = JSON.parse(request.body.presentation_submission)
 
-      // FIXME: we should emit an event here and in other places
+      const verificationSession = await openId4VcVerifierService.findVerificationSessionForAuthorizationResponse(
+        agentContext,
+        {
+          authorizationResponse,
+          verifierId: verifier.verifierId,
+        }
+      )
+
+      if (!verificationSession) {
+        agentContext.config.logger.warn(
+          `No verification session found for incoming authorization response for verifier ${verifier.verifierId}`
+        )
+        return sendErrorResponse(response, agentContext.config.logger, 404, 'invalid_request', null)
+      }
+
       await openId4VcVerifierService.verifyAuthorizationResponse(agentContext, {
         authorizationResponse: request.body,
-        verifier,
+        verificationSession,
       })
       response.status(200).send()
     } catch (error) {

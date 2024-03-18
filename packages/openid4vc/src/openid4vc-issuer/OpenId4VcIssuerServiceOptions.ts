@@ -13,10 +13,6 @@ export interface OpenId4VciPreAuthorizedCodeFlowConfig {
   userPinRequired?: boolean
 }
 
-export type OpenId4VciAuthorizationCodeFlowConfig = {
-  issuerState?: string
-}
-
 export type OpenId4VcIssuerMetadata = {
   // The Credential Issuer's identifier. (URL using the https scheme)
   issuerUrl: string
@@ -40,15 +36,7 @@ export interface OpenId4VciCreateCredentialOfferOptions {
    */
   baseUri?: string
 
-  preAuthorizedCodeFlowConfig?: OpenId4VciPreAuthorizedCodeFlowConfig
-  authorizationCodeFlowConfig?: OpenId4VciAuthorizationCodeFlowConfig
-
-  /**
-   * You can provide a `hostedCredentialOfferUrl` if the created credential offer
-   * should points to a hosted credential offer in the `credential_offer_uri` field
-   * of the credential offer.
-   */
-  hostedCredentialOfferUrl?: string
+  preAuthorizedCodeFlowConfig: OpenId4VciPreAuthorizedCodeFlowConfig
 }
 
 export interface OpenId4VciCreateCredentialResponseOptions {

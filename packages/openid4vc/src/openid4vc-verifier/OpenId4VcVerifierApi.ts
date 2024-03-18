@@ -2,9 +2,11 @@ import type {
   OpenId4VcSiopCreateAuthorizationRequestOptions,
   OpenId4VcSiopVerifyAuthorizationResponseOptions,
   OpenId4VcSiopCreateAuthorizationRequestReturn,
-  OpenId4VcSiopVerifiedAuthorizationResponse,
   OpenId4VcSiopCreateVerifierOptions,
 } from './OpenId4VcSiopVerifierServiceOptions'
+import type { OpenId4VcVerificationSessionRecord } from './repository'
+import type { OpenId4VcSiopAuthorizationResponsePayload } from '../shared'
+import type { Query } from '@credo-ts/core'
 
 import { injectable, AgentContext } from '@credo-ts/core'
 
@@ -32,8 +34,8 @@ export class OpenId4VcVerifierApi {
   /**
    * Retrieve a verifier record from storage by its verified id
    */
-  public async getByVerifierId(verifierId: string) {
-    return this.openId4VcSiopVerifierService.getByVerifierId(this.agentContext, verifierId)
+  public async getVerifierByVerifierId(verifierId: string) {
+    return this.openId4VcSiopVerifierService.getVerifierByVerifierId(this.agentContext, verifierId)
   }
 
   /**
@@ -41,6 +43,14 @@ export class OpenId4VcVerifierApi {
    */
   public async createVerifier(options?: OpenId4VcSiopCreateVerifierOptions) {
     return this.openId4VcSiopVerifierService.createVerifier(this.agentContext, options)
+  }
+
+  public async findVerificationSessionsByQuery(query: Query<OpenId4VcVerificationSessionRecord>) {
+    return this.openId4VcSiopVerifierService.findVerificationSessionsByQuery(this.agentContext, query)
+  }
+
+  public async getVerificationSessionById(verificationSessionId: string) {
+    return this.openId4VcSiopVerifierService.getVerificationSessionById(this.agentContext, verificationSessionId)
   }
 
   /**
@@ -60,7 +70,7 @@ export class OpenId4VcVerifierApi {
   }: OpenId4VcSiopCreateAuthorizationRequestOptions & {
     verifierId: string
   }): Promise<OpenId4VcSiopCreateAuthorizationRequestReturn> {
-    const verifier = await this.getByVerifierId(verifierId)
+    const verifier = await this.getVerifierByVerifierId(verifierId)
     return await this.openId4VcSiopVerifierService.createAuthorizationRequest(this.agentContext, {
       ...otherOptions,
       verifier,
@@ -74,15 +84,27 @@ export class OpenId4VcVerifierApi {
    * as well as that the structure of the Verifiable Presentation matches the provided presentation definition.
    */
   public async verifyAuthorizationResponse({
-    verifierId,
+    verificationSessionId,
     ...otherOptions
   }: OpenId4VcSiopVerifyAuthorizationResponseOptions & {
-    verifierId: string
-  }): Promise<OpenId4VcSiopVerifiedAuthorizationResponse> {
-    const verifier = await this.getByVerifierId(verifierId)
+    verificationSessionId: string
+  }) {
+    const verificationSession = await this.getVerificationSessionById(verificationSessionId)
     return await this.openId4VcSiopVerifierService.verifyAuthorizationResponse(this.agentContext, {
       ...otherOptions,
-      verifier,
+      verificationSession,
     })
+  }
+
+  public async getVerifiedAuthorizationResponse(verificationSessionId: string) {
+    const verificationSession = await this.getVerificationSessionById(verificationSessionId)
+    return this.openId4VcSiopVerifierService.getVerifiedAuthorizationResponse(verificationSession)
+  }
+
+  public async findVerificationSessionForAuthorizationResponse(options: {
+    authorizationResponse: OpenId4VcSiopAuthorizationResponsePayload
+    verifierId?: string
+  }) {
+    return this.openId4VcSiopVerifierService.findVerificationSessionForAuthorizationResponse(this.agentContext, options)
   }
 }

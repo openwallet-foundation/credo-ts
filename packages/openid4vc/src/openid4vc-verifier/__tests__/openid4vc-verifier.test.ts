@@ -35,22 +35,27 @@ describe('OpenId4VcVerifier', () => {
 
     it('check openid proof request format', async () => {
       const openIdVerifier = await verifier.agent.modules.openId4VcVerifier.createVerifier()
-      const { authorizationRequestUri } = await verifier.agent.modules.openId4VcVerifier.createAuthorizationRequest({
-        requestSigner: {
-          method: 'did',
-          didUrl: verifier.kid,
-        },
-        verifierId: openIdVerifier.verifierId,
-        presentationExchange: {
-          definition: universityDegreePresentationDefinition,
-        },
-      })
+      const { authorizationRequest, verificationSession } =
+        await verifier.agent.modules.openId4VcVerifier.createAuthorizationRequest({
+          requestSigner: {
+            method: 'did',
+            didUrl: verifier.kid,
+          },
+          verifierId: openIdVerifier.verifierId,
+          presentationExchange: {
+            definition: universityDegreePresentationDefinition,
+          },
+        })
 
-      const base = `openid://?redirect_uri=http%3A%2F%2Fredirect-uri%2F${openIdVerifier.verifierId}%2Fauthorize&request=`
-      expect(authorizationRequestUri.startsWith(base)).toBe(true)
+      expect(
+        authorizationRequest.startsWith(
+          `openid://?request_uri=http%3A%2F%2Fredirect-uri%2F${openIdVerifier.verifierId}%2Fauthorization-requests%2F`
+        )
+      ).toBe(true)
 
-      const _jwt = authorizationRequestUri.substring(base.length)
-      const jwt = Jwt.fromSerializedJwt(_jwt)
+      const jwt = Jwt.fromSerializedJwt(verificationSession.authorizationRequestJwt)
+
+      expect(jwt.header.kid)
 
       expect(jwt.header.kid).toEqual(verifier.kid)
       expect(jwt.header.alg).toEqual(SigningAlgo.EDDSA)

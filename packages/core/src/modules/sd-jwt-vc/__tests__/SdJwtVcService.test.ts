@@ -413,7 +413,13 @@ describe('SdJwtVcService', () => {
     })
 
     test('Present sd-jwt-vc from a basic payload with multiple (nested) disclosure', async () => {
-      const presentation = await sdJwtVcService.present(agent.context, {
+      const presentation = await sdJwtVcService.present<{
+        is_over_65: boolean
+        is_over_21: boolean
+        email: boolean
+        address: { country: string }
+        given_name: boolean
+      }>(agent.context, {
         compactSdJwtVc: complexSdJwtVc,
         verifierMetadata: {
           issuedAt: new Date().getTime() / 1000,
@@ -497,7 +503,13 @@ describe('SdJwtVcService', () => {
     test('Verify sd-jwt-vc with multiple (nested) disclosure', async () => {
       const nonce = await agent.context.wallet.generateNonce()
 
-      const presentation = await sdJwtVcService.present(agent.context, {
+      const presentation = await sdJwtVcService.present<{
+        is_over_65: boolean
+        is_over_21: boolean
+        email: boolean
+        address: { country: string }
+        given_name: boolean
+      }>(agent.context, {
         compactSdJwtVc: complexSdJwtVc,
         verifierMetadata: {
           issuedAt: new Date().getTime() / 1000,
