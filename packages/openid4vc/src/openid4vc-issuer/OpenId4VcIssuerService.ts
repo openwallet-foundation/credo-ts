@@ -169,7 +169,10 @@ export class OpenId4VcIssuerService {
       throw new CredoError('The cNonce in the credential request does not match the cNonce in the issuance session.')
     }
 
-    if (!issuanceSession.cNonceExpiresAt || Date.now() > issuanceSession.cNonceExpiresAt.getTime()) {
+    if (!issuanceSession.cNonceExpiresAt) {
+      throw new CredoError('Missing required cNonceExpiresAt in the issuance session. Assuming cNonce is not valid')
+    }
+    if (Date.now() > issuanceSession.cNonceExpiresAt.getTime()) {
       throw new CredoError('The cNonce has expired.')
     }
 
