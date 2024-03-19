@@ -30,7 +30,7 @@ export interface W3cAnonCredsCredentialMetadata {
 export const AnonCredsCredentialMetadataKey = '_anoncreds/credential'
 
 /**
- * Metadata key for strong metadata on an AnonCreds credential request.
+ * Metadata key for storing metadata on an AnonCreds credential request.
  *
  * MUST be used with {@link AnonCredsCredentialRequestMetadata}
  */
