@@ -67,10 +67,27 @@ export class DifPresentationExchangeService {
 
   public async getCredentialsForRequest(
     agentContext: AgentContext,
-    presentationDefinition: DifPresentationExchangeDefinition
+    presentationDefinition: DifPresentationExchangeDefinition,
+    options?: {
+      filterByNonRevocationRequirements: boolean
+    }
   ): Promise<DifPexCredentialsForRequest> {
-    const credentialRecords = await this.queryCredentialForPresentationDefinition(agentContext, presentationDefinition)
-    return getCredentialsForRequest(this.pex, presentationDefinition, credentialRecords)
+    let pd = presentationDefinition
+
+    if (options?.filterByNonRevocationRequirements === false) {
+      pd = {
+        ...pd,
+        input_descriptors: (pd.input_descriptors = pd.input_descriptors.map((inputDescriptor) => {
+          return {
+            ...inputDescriptor,
+            constraints: { ...inputDescriptor.constraints, statuses: undefined },
+          }
+        })),
+      }
+    }
+
+    const credentialRecords = await this.queryCredentialForPresentationDefinition(agentContext, pd)
+    return getCredentialsForRequest(this.pex, pd, credentialRecords)
   }
 
   /**

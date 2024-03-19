@@ -8,8 +8,9 @@ import type { ProofFormat } from '../ProofFormat'
 
 export type DifPresentationExchangeProposal = DifPresentationExchangeDefinitionV1
 
-// eslint-disable-next-line @typescript-eslint/no-empty-interface
-export interface DifPexGetCredentialsForProofRequestOptions {}
+export interface DifPexGetCredentialsForProofRequestOptions {
+  filterByNonRevocationRequirements?: boolean
+}
 
 export type DifPresentationExchangeRequest = {
   options?: {

@@ -3,8 +3,6 @@ import type { OpenId4VciCredentialRequest } from '../../shared'
 import type { OpenId4VciCredentialRequestToCredentialMapper } from '../OpenId4VcIssuerServiceOptions'
 import type { Router, Response } from 'express'
 
-import { CredoError, JwsService, Jwt } from '@credo-ts/core'
-
 import { getRequestContext, sendErrorResponse } from '../../shared/router'
 import { OpenId4VcIssuerService } from '../OpenId4VcIssuerService'
 import { getCNonceFromCredentialRequest } from '../util/credentialRequest'

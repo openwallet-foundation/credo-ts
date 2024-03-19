@@ -197,7 +197,9 @@ export class DifPresentationExchangeProofFormatService
     if (proofFormats?.presentationExchange?.credentials) {
       credentials = proofFormats.presentationExchange.credentials
     } else {
-      const credentialsForRequest = await ps.getCredentialsForRequest(agentContext, presentationDefinition)
+      const credentialsForRequest = await ps.getCredentialsForRequest(agentContext, presentationDefinition, {
+        filterByNonRevocationRequirements: true,
+      })
       credentials = ps.selectCredentialsForRequest(credentialsForRequest)
     }
 
@@ -354,7 +356,7 @@ export class DifPresentationExchangeProofFormatService
 
   public async getCredentialsForRequest(
     agentContext: AgentContext,
-    { requestAttachment }: ProofFormatGetCredentialsForRequestOptions<DifPresentationExchangeProofFormat>
+    { requestAttachment, proofFormats }: ProofFormatGetCredentialsForRequestOptions<DifPresentationExchangeProofFormat>
   ) {
     const ps = this.presentationExchangeService(agentContext)
     const { presentation_definition: presentationDefinition } =
@@ -362,19 +364,30 @@ export class DifPresentationExchangeProofFormatService
 
     ps.validatePresentationDefinition(presentationDefinition)
 
-    const presentationSubmission = await ps.getCredentialsForRequest(agentContext, presentationDefinition)
+    // Set default values
+    const { filterByNonRevocationRequirements = true } = proofFormats?.presentationExchange ?? {}
+    const presentationSubmission = await ps.getCredentialsForRequest(agentContext, presentationDefinition, {
+      filterByNonRevocationRequirements,
+    })
     return presentationSubmission
   }
 
   public async selectCredentialsForRequest(
     agentContext: AgentContext,
-    { requestAttachment }: ProofFormatSelectCredentialsForRequestOptions<DifPresentationExchangeProofFormat>
+    {
+      requestAttachment,
+      proofFormats,
+    }: ProofFormatSelectCredentialsForRequestOptions<DifPresentationExchangeProofFormat>
   ) {
     const ps = this.presentationExchangeService(agentContext)
     const { presentation_definition: presentationDefinition } =
       requestAttachment.getDataAsJson<DifPresentationExchangeRequest>()
 
-    const credentialsForRequest = await ps.getCredentialsForRequest(agentContext, presentationDefinition)
+    // Set default values
+    const { filterByNonRevocationRequirements = true } = proofFormats?.presentationExchange ?? {}
+    const credentialsForRequest = await ps.getCredentialsForRequest(agentContext, presentationDefinition, {
+      filterByNonRevocationRequirements,
+    })
     return { credentials: ps.selectCredentialsForRequest(credentialsForRequest) }
   }
 

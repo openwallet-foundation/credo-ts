@@ -9,8 +9,6 @@ import type { TenantsModule } from '@credo-ts/tenants'
 import type { Observable } from 'rxjs'
 
 import { Agent, LogLevel, utils } from '@credo-ts/core'
-import { tap, ReplaySubject, lastValueFrom, filter, timeout, catchError, take, map } from 'rxjs'
-import { threadId } from 'worker_threads'
 
 import {
   TestLogger,
