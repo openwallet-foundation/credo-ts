@@ -108,12 +108,18 @@ export class OpenId4VcIssuerService {
       utils.uuid(),
     ])
 
-    const { uri } = await vcIssuer.createCredentialOfferURI({
+    let { uri } = await vcIssuer.createCredentialOfferURI({
       grants: await this.getGrantsFromConfig(agentContext, preAuthorizedCodeFlowConfig),
       credentials: offeredCredentials,
       credentialOfferUri: hostedCredentialOfferUri,
       baseUri: options.baseUri,
+      credentialDataSupplierInput: options.issuanceMetadata,
     })
+
+    // FIXME: https://github.com/Sphereon-Opensource/OID4VCI/issues/102
+    if (uri.includes(hostedCredentialOfferUri)) {
+      uri = uri.replace(hostedCredentialOfferUri, encodeURIComponent(hostedCredentialOfferUri))
+    }
 
     const issuanceSession = await this.openId4VcIssuanceSessionRepository.getSingleByQuery(agentContext, {
       credentialOfferUri: hostedCredentialOfferUri,
@@ -158,6 +164,18 @@ export class OpenId4VcIssuerService {
 
     const issuer = await this.getIssuerByIssuerId(agentContext, options.issuanceSession.issuerId)
 
+    const cNonce = getCNonceFromCredentialRequest(credentialRequest)
+    if (issuanceSession.cNonce !== cNonce) {
+      throw new CredoError('The cNonce in the credential request does not match the cNonce in the issuance session.')
+    }
+
+    if (!issuanceSession.cNonceExpiresAt) {
+      throw new CredoError('Missing required cNonceExpiresAt in the issuance session. Assuming cNonce is not valid')
+    }
+    if (Date.now() > issuanceSession.cNonceExpiresAt.getTime()) {
+      throw new CredoError('The cNonce has expired.')
+    }
+
     const vcIssuer = this.getVcIssuer(agentContext, issuer)
     const credentialResponse = await vcIssuer.issueCredential({
       credentialRequest,
@@ -166,21 +184,31 @@ export class OpenId4VcIssuerService {
       // This can just be combined with signing callback right?
       credentialDataSupplier: this.getCredentialDataSupplier(agentContext, { ...options, issuer }),
       credentialDataSupplierInput: issuanceSession.issuanceMetadata,
-      newCNonce: undefined,
       responseCNonce: undefined,
     })
 
+    const updatedIssuanceSession = await this.openId4VcIssuanceSessionRepository.getById(
+      agentContext,
+      issuanceSession.id
+    )
+
     if (!credentialResponse.credential) {
-      throw new CredoError('No credential found in the issueCredentialResponse.')
+      updatedIssuanceSession.state = OpenId4VcIssuanceSessionState.Error
+      updatedIssuanceSession.errorMessage = 'No credential found in the issueCredentialResponse.'
+      await this.openId4VcIssuanceSessionRepository.update(agentContext, updatedIssuanceSession)
+      throw new CredoError(updatedIssuanceSession.errorMessage)
     }
 
     if (credentialResponse.acceptance_token) {
-      throw new CredoError('Acceptance token not yet supported.')
+      updatedIssuanceSession.state = OpenId4VcIssuanceSessionState.Error
+      updatedIssuanceSession.errorMessage = 'Acceptance token not yet supported.'
+      await this.openId4VcIssuanceSessionRepository.update(agentContext, updatedIssuanceSession)
+      throw new CredoError(updatedIssuanceSession.errorMessage)
     }
 
     return {
       credentialResponse,
-      issuanceSession: await this.openId4VcIssuanceSessionRepository.getById(agentContext, issuanceSession.id),
+      issuanceSession: updatedIssuanceSession,
     }
   }
 
@@ -469,6 +497,7 @@ export class OpenId4VcIssuerService {
     agentContext: AgentContext,
     options: OpenId4VciCreateCredentialResponseOptions & {
       issuer: OpenId4VcIssuerRecord
+      issuanceSession: OpenId4VcIssuanceSessionRecord
     }
   ): CredentialDataSupplier => {
     return async (args: CredentialDataSupplierArgs) => {
@@ -497,6 +526,7 @@ export class OpenId4VcIssuerService {
         this.openId4VcIssuerConfig.credentialEndpoint.credentialRequestToCredentialMapper
       const signOptions = await mapper({
         agentContext,
+        issuanceSession: options.issuanceSession,
         holderBinding,
 
         credentialOffer,
