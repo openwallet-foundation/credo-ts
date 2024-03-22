@@ -118,6 +118,7 @@ export class V2MessagePickupProtocol extends BaseMessagePickupProtocol {
       (msg) =>
         new Attachment({
           id: msg.id,
+          lastmodTime: msg.receivedAt,
           data: {
             json: msg.encryptedMessage,
           },
