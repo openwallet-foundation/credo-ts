@@ -139,3 +139,13 @@ export interface SendCredentialProblemReportOptions {
   credentialRecordId: string
   description: string
 }
+
+/**
+ * Interface for CredentialsApi.declineOffer. Decline a received credential offer and optionally send a problem-report message to Issuer.
+ */
+export interface DeclineCredentialOfferOptions {
+  // TODO: in next major release, move the id to this object as well
+  // for consistency with the proofs api
+  // credentialRecordId: string
+  sendProblemReport?: boolean
+}
