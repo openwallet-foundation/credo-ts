@@ -335,7 +335,10 @@ export class CredentialsApi<CPs extends CredentialProtocol[]> implements Credent
     // with version we can get the Service
     const protocol = this.getProtocol(credentialRecord.protocolVersion)
     if (options?.sendProblemReport) {
-      await this.sendProblemReport({ credentialRecordId, description: 'Offer declined' })
+      await this.sendProblemReport({
+        credentialRecordId,
+        description: options.problemReportDescription ?? 'Offer declined',
+      })
     }
 
     await protocol.updateState(this.agentContext, credentialRecord, CredentialState.Declined)
