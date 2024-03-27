@@ -179,5 +179,17 @@ export interface SendProofProblemReportOptions {
  */
 export interface DeclineProofRequestOptions {
   proofRecordId: string
+
+  /**
+   * Whether to send a problem-report message to the verifier as part
+   * of declining the proof request
+   */
   sendProblemReport?: boolean
+
+  /**
+   * Description to include in the problem-report message
+   * Only used if `sendProblemReport` is set to `true`.
+   * @default "Request declined"
+   */
+  problemReportDescription?: string
 }
