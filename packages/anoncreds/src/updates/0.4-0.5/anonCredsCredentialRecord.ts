@@ -96,6 +96,10 @@ async function migrateLegacyToW3cCredential(agentContext: AgentContext, legacyRe
     credential: w3cJsonLdCredential,
   })
 
+  for (const [key, meta] of Object.entries(legacyRecord.metadata.data)) {
+    w3cCredentialRecord.metadata.set(key, meta)
+  }
+
   const anonCredsTags = getW3cRecordAnonCredsTags({
     w3cCredentialRecord,
     schemaId: qualifiedSchemaId,
