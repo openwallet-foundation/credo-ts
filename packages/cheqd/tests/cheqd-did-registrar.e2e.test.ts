@@ -7,9 +7,9 @@ import { generateKeyPairFromSeed } from '@stablelib/ed25519'
 import { getInMemoryAgentOptions } from '../../core/tests/helpers'
 
 import { validService } from './setup'
-import { getCheqdModules } from './setupCheqdModule'
+import { cheqdPayerSeeds, getCheqdModules } from './setupCheqdModule'
 
-const agentOptions = getInMemoryAgentOptions('Faber Dids Registrar', {}, getCheqdModules())
+const agentOptions = getInMemoryAgentOptions('Faber Dids Registrar', {}, getCheqdModules(cheqdPayerSeeds[0]))
 
 describe('Cheqd DID registrar', () => {
   let agent: Agent<ReturnType<typeof getCheqdModules>>
