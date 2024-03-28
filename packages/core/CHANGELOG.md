@@ -3,6 +3,18 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.5.1](https://github.com/openwallet-foundation/credo-ts/compare/v0.5.0...v0.5.1) (2024-03-28)
+
+### Bug Fixes
+
+- **openid4vc:** several fixes and improvements ([#1795](https://github.com/openwallet-foundation/credo-ts/issues/1795)) ([b83c517](https://github.com/openwallet-foundation/credo-ts/commit/b83c5173070594448d92f801331b3a31c7ac8049))
+- remove strict w3c subjectId uri validation ([#1805](https://github.com/openwallet-foundation/credo-ts/issues/1805)) ([65f7611](https://github.com/openwallet-foundation/credo-ts/commit/65f7611b7668d3242b4526831f442c68d6cfbea8))
+- unsubscribe from emitter after pickup completion ([#1806](https://github.com/openwallet-foundation/credo-ts/issues/1806)) ([9fb6ae0](https://github.com/openwallet-foundation/credo-ts/commit/9fb6ae0005f11197eefdb864aa8a7cf3b79357f0))
+
+### Features
+
+- credentials api decline offer report ([#1800](https://github.com/openwallet-foundation/credo-ts/issues/1800)) ([15c62a8](https://github.com/openwallet-foundation/credo-ts/commit/15c62a8e20df7189ae8068e3ff42bf7e20a38ad5))
+
 # [0.5.0](https://github.com/openwallet-foundation/credo-ts/compare/v0.4.2...v0.5.0) (2024-03-13)
 
 ### Bug Fixes
