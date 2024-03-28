@@ -1,7 +1,8 @@
 import type { Agent, InboundTransport, Logger, TransportSession, EncryptedMessage, AgentContext } from '@credo-ts/core'
 
 import { CredoError, TransportService, utils, MessageReceiver } from '@credo-ts/core'
-import { WebSocket, Server } from 'ws'
+// eslint-disable-next-line import/no-named-as-default
+import WebSocket, { Server } from 'ws'
 
 export class WsInboundTransport implements InboundTransport {
   private socketServer: Server
