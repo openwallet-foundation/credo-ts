@@ -5,18 +5,9 @@ import { Agent, JsonTransformer, TypedArrayEncoder } from '@credo-ts/core'
 import { getInMemoryAgentOptions } from '../../core/tests/helpers'
 import { CheqdAnonCredsRegistry } from '../src/anoncreds'
 
-import { resolverAgent } from './cheqd-did-resolver.e2e.test'
-import { getCheqdModules } from './setupCheqdModule'
+import { cheqdPayerSeeds, getCheqdModules } from './setupCheqdModule'
 
-const agent = new Agent(
-  getInMemoryAgentOptions(
-    'cheqdAnonCredsRegistry',
-    {},
-    getCheqdModules(
-      'ugly dirt sorry girl prepare argue door man that manual glow scout bomb pigeon matter library transfer flower clown cat miss pluck drama dizzy'
-    )
-  )
-)
+const agent = new Agent(getInMemoryAgentOptions('cheqdAnonCredsRegistry', {}, getCheqdModules(cheqdPayerSeeds[2])))
 
 const cheqdAnonCredsRegistry = new CheqdAnonCredsRegistry()
 
@@ -190,23 +181,23 @@ describe('cheqdAnonCredsRegistry', () => {
 
   // Should resolve query based url
   test('resolve query based url', async () => {
-    const schemaResourceId =
-      'did:cheqd:testnet:d8ac0372-0d4b-413e-8ef5-8e8f07822b2c?resourceName=test - 11&resourceType=anonCredsSchema'
-    const schemaResponse = await cheqdAnonCredsRegistry.getSchema(resolverAgent.context, schemaResourceId)
+    const schemaResourceId = `${issuerId}?resourceName=test11-Schema&resourceType=anonCredsSchema`
 
+    const schemaResponse = await cheqdAnonCredsRegistry.getSchema(agent.context, schemaResourceId)
     expect(schemaResponse).toMatchObject({
       schema: {
         attrNames: ['name'],
-        name: 'test - 11',
+        name: 'test11',
       },
     })
   })
 
+  // TODO: re-add once we support registering revocation registries and revocation status lists
   // Should resolve revocationRegistryDefinition and statusList
-  test('resolve revocation registry definition and statusList', async () => {
+  xtest('resolve revocation registry definition and statusList', async () => {
     const revocationRegistryId = 'did:cheqd:testnet:e42ccb8b-78e8-4e54-9d11-f375153d63f8?resourceName=universityDegree'
     const revocationDefinitionResponse = await cheqdAnonCredsRegistry.getRevocationRegistryDefinition(
-      resolverAgent.context,
+      agent.context,
       revocationRegistryId
     )
 
@@ -227,7 +218,7 @@ describe('cheqdAnonCredsRegistry', () => {
     })
 
     const revocationStatusListResponse = await cheqdAnonCredsRegistry.getRevocationStatusList(
-      resolverAgent.context,
+      agent.context,
       revocationRegistryId,
       1680789403
     )
