@@ -27,7 +27,6 @@ export class W3cCredentialSubject {
     }
   }
 
-  @IsUri()
   @IsOptional()
   public id?: string
 
@@ -70,12 +69,11 @@ export function IsW3cCredentialSubject(validationOptions?: ValidationOptions): P
       name: 'IsW3cCredentialSubject',
       validator: {
         validate: (value): boolean => {
-          return isInstance(value, W3cCredentialSubject) && (!value.id || isUri(value.id))
+          return isInstance(value, W3cCredentialSubject)
         },
         defaultMessage: buildMessage(
           (eachPrefix) =>
-            eachPrefix +
-            '$property must be an object or an array of objects with an optional id property which is an URI',
+            eachPrefix + '$property must be an object or an array of objects with an optional id property',
           validationOptions
         ),
       },
