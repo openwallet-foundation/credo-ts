@@ -41,7 +41,11 @@ export class CheqdLedgerService {
 
   public async connect() {
     for (const network of this.networks) {
-      await this.initializeSdkForNetwork(network)
+      if (!network.sdk) {
+        await this.initializeSdkForNetwork(network)
+      } else {
+        this.logger.debug(`Not connecting to network ${network} as SDK already initialized`)
+      }
     }
   }
 

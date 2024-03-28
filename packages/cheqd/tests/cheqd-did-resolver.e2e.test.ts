@@ -6,9 +6,11 @@ import { getInMemoryAgentOptions } from '../../core/tests/helpers'
 import { CheqdDidRegistrar } from '../src'
 import { getClosestResourceVersion } from '../src/dids/didCheqdUtil'
 
-import { getCheqdModules } from './setupCheqdModule'
+import { cheqdPayerSeeds, getCheqdModules } from './setupCheqdModule'
 
-export const resolverAgent = new Agent(getInMemoryAgentOptions('Cheqd resolver', {}, getCheqdModules(undefined)))
+export const resolverAgent = new Agent(
+  getInMemoryAgentOptions('Cheqd resolver', {}, getCheqdModules(cheqdPayerSeeds[1]))
+)
 
 describe('Cheqd DID resolver', () => {
   let did: string

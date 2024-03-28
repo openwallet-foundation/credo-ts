@@ -5,18 +5,9 @@ import { Agent, JsonTransformer, TypedArrayEncoder } from '@credo-ts/core'
 import { getInMemoryAgentOptions } from '../../core/tests/helpers'
 import { CheqdAnonCredsRegistry } from '../src/anoncreds'
 
-import { resolverAgent } from './cheqd-did-resolver.e2e.test'
-import { getCheqdModules } from './setupCheqdModule'
+import { cheqdPayerSeeds, getCheqdModules } from './setupCheqdModule'
 
-const agent = new Agent(
-  getInMemoryAgentOptions(
-    'cheqdAnonCredsRegistry',
-    {},
-    getCheqdModules(
-      'ugly dirt sorry girl prepare argue door man that manual glow scout bomb pigeon matter library transfer flower clown cat miss pluck drama dizzy'
-    )
-  )
-)
+const agent = new Agent(getInMemoryAgentOptions('cheqdAnonCredsRegistry', {}, getCheqdModules(cheqdPayerSeeds[2])))
 
 const cheqdAnonCredsRegistry = new CheqdAnonCredsRegistry()
 
@@ -192,7 +183,7 @@ describe('cheqdAnonCredsRegistry', () => {
   test('resolve query based url', async () => {
     const schemaResourceId = `${issuerId}?resourceName=test11-Schema&resourceType=anonCredsSchema`
 
-    const schemaResponse = await cheqdAnonCredsRegistry.getSchema(resolverAgent.context, schemaResourceId)
+    const schemaResponse = await cheqdAnonCredsRegistry.getSchema(agent.context, schemaResourceId)
     expect(schemaResponse).toMatchObject({
       schema: {
         attrNames: ['name'],
@@ -206,7 +197,7 @@ describe('cheqdAnonCredsRegistry', () => {
   xtest('resolve revocation registry definition and statusList', async () => {
     const revocationRegistryId = 'did:cheqd:testnet:e42ccb8b-78e8-4e54-9d11-f375153d63f8?resourceName=universityDegree'
     const revocationDefinitionResponse = await cheqdAnonCredsRegistry.getRevocationRegistryDefinition(
-      resolverAgent.context,
+      agent.context,
       revocationRegistryId
     )
 
@@ -227,7 +218,7 @@ describe('cheqdAnonCredsRegistry', () => {
     })
 
     const revocationStatusListResponse = await cheqdAnonCredsRegistry.getRevocationStatusList(
-      resolverAgent.context,
+      agent.context,
       revocationRegistryId,
       1680789403
     )
