@@ -190,20 +190,20 @@ describe('cheqdAnonCredsRegistry', () => {
 
   // Should resolve query based url
   test('resolve query based url', async () => {
-    const schemaResourceId =
-      'did:cheqd:testnet:d8ac0372-0d4b-413e-8ef5-8e8f07822b2c?resourceName=test - 11&resourceType=anonCredsSchema'
-    const schemaResponse = await cheqdAnonCredsRegistry.getSchema(resolverAgent.context, schemaResourceId)
+    const schemaResourceId = `${issuerId}?resourceName=test11-Schema&resourceType=anonCredsSchema`
 
+    const schemaResponse = await cheqdAnonCredsRegistry.getSchema(resolverAgent.context, schemaResourceId)
     expect(schemaResponse).toMatchObject({
       schema: {
         attrNames: ['name'],
-        name: 'test - 11',
+        name: 'test11',
       },
     })
   })
 
+  // TODO: re-add once we support registering revocation registries and revocation status lists
   // Should resolve revocationRegistryDefinition and statusList
-  test('resolve revocation registry definition and statusList', async () => {
+  xtest('resolve revocation registry definition and statusList', async () => {
     const revocationRegistryId = 'did:cheqd:testnet:e42ccb8b-78e8-4e54-9d11-f375153d63f8?resourceName=universityDegree'
     const revocationDefinitionResponse = await cheqdAnonCredsRegistry.getRevocationRegistryDefinition(
       resolverAgent.context,
