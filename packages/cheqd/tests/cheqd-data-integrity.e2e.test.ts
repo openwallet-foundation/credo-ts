@@ -18,6 +18,8 @@ import { presentationDefinition } from '../../anoncreds/tests/fixtures/presentat
 import { createDidKidVerificationMethod } from '../../core/tests'
 import { waitForCredentialRecordSubject, waitForProofExchangeRecord } from '../../core/tests/helpers'
 
+import { cheqdPayerSeeds } from './setupCheqdModule'
+
 describe('anoncreds w3c data integrity e2e tests', () => {
   let issuerId: string
   let issuerAgent: AnonCredsTestsAgent
@@ -51,7 +53,9 @@ describe('anoncreds w3c data integrity e2e tests', () => {
       holderName: 'Holder Agent Credentials v2',
       attributeNames: ['id', 'name', 'height', 'age'],
       registries: [new InMemoryAnonCredsRegistry()],
-      cheqd: {},
+      cheqd: {
+        seed: cheqdPayerSeeds[3],
+      },
     }))
 
     const holderKdv = await createDidKidVerificationMethod(holderAgent.context, '96213c3d7fc8d4d6754c7a0fd969598f')

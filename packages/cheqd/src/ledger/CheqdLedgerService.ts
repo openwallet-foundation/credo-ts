@@ -4,7 +4,7 @@ import type { MsgCreateResourcePayload } from '@cheqd/ts-proto/cheqd/resource/v2
 import type { DirectSecp256k1HdWallet, DirectSecp256k1Wallet } from '@cosmjs/proto-signing'
 
 import { createCheqdSDK, DIDModule, ResourceModule, CheqdNetwork } from '@cheqd/sdk'
-import { CredoError, injectable } from '@credo-ts/core'
+import { CredoError, inject, injectable, InjectionSymbols, Logger } from '@credo-ts/core'
 
 import { CheqdModuleConfig } from '../CheqdModuleConfig'
 import { parseCheqdDid } from '../anoncreds/utils/identifiers'
@@ -14,7 +14,7 @@ export interface ICheqdLedgerConfig {
   network: string
   rpcUrl: string
   readonly cosmosPayerWallet: Promise<DirectSecp256k1HdWallet | DirectSecp256k1Wallet>
-  sdk?: CheqdSDK
+  sdk?: Promise<CheqdSDK>
 }
 
 export enum DefaultRPCUrl {
@@ -25,8 +25,10 @@ export enum DefaultRPCUrl {
 @injectable()
 export class CheqdLedgerService {
   private networks: ICheqdLedgerConfig[]
+  private logger: Logger
 
-  public constructor(cheqdSdkModuleConfig: CheqdModuleConfig) {
+  public constructor(cheqdSdkModuleConfig: CheqdModuleConfig, @inject(InjectionSymbols.Logger) logger: Logger) {
+    this.logger = logger
     this.networks = cheqdSdkModuleConfig.networks.map((config) => {
       const { network, rpcUrl, cosmosPayerSeed } = config
       return {
@@ -39,17 +41,15 @@ export class CheqdLedgerService {
 
   public async connect() {
     for (const network of this.networks) {
-      network.sdk = await createCheqdSDK({
-        modules: [DIDModule as unknown as AbstractCheqdSDKModule, ResourceModule as unknown as AbstractCheqdSDKModule],
-        rpcUrl: network.rpcUrl,
-        wallet: await network.cosmosPayerWallet.catch((error) => {
-          throw new CredoError(`Error initializing cosmos payer wallet: ${error.message}`, { cause: error })
-        }),
-      })
+      if (!network.sdk) {
+        await this.initializeSdkForNetwork(network)
+      } else {
+        this.logger.debug(`Not connecting to network ${network} as SDK already initialized`)
+      }
     }
   }
 
-  private getSdk(did: string) {
+  private async getSdk(did: string) {
     const parsedDid = parseCheqdDid(did)
     if (!parsedDid) {
       throw new Error('Invalid DID')
@@ -59,10 +59,43 @@ export class CheqdLedgerService {
     }
 
     const network = this.networks.find((network) => network.network === parsedDid.network)
-    if (!network || !network.sdk) {
-      throw new Error('Network not configured')
+    if (!network) {
+      throw new Error(`Network ${network} not found in cheqd networks configuration`)
     }
-    return network.sdk
+
+    if (!network.sdk) {
+      const sdk = await this.initializeSdkForNetwork(network)
+      if (!sdk) throw new Error(`Cheqd SDK not initialized for network ${parsedDid.network}`)
+      return sdk
+    }
+
+    try {
+      const sdk = await network.sdk
+      return sdk
+    } catch (error) {
+      throw new Error(`Error initializing cheqd sdk for network ${parsedDid.network}: ${error.message}`)
+    }
+  }
+
+  private async initializeSdkForNetwork(network: ICheqdLedgerConfig) {
+    try {
+      // Initialize cheqd sdk with promise
+      network.sdk = createCheqdSDK({
+        modules: [DIDModule as unknown as AbstractCheqdSDKModule, ResourceModule as unknown as AbstractCheqdSDKModule],
+        rpcUrl: network.rpcUrl,
+        wallet: await network.cosmosPayerWallet.catch((error) => {
+          throw new CredoError(`Error initializing cosmos payer wallet: ${error.message}`, { cause: error })
+        }),
+      })
+
+      return await network.sdk
+    } catch (error) {
+      this.logger.error(
+        `Skipping connection for network ${network.network} in cheqd sdk due to error in initialization: ${error.message}`
+      )
+      network.sdk = undefined
+      return undefined
+    }
   }
 
   public async create(
@@ -71,7 +104,8 @@ export class CheqdLedgerService {
     versionId?: string | undefined,
     fee?: DidStdFee
   ) {
-    return await this.getSdk(didPayload.id).createDidDocTx(signInputs, didPayload, '', fee, undefined, versionId)
+    const sdk = await this.getSdk(didPayload.id)
+    return sdk.createDidDocTx(signInputs, didPayload, '', fee, undefined, versionId)
   }
 
   public async update(
@@ -80,7 +114,8 @@ export class CheqdLedgerService {
     versionId?: string | undefined,
     fee?: DidStdFee
   ) {
-    return await this.getSdk(didPayload.id).updateDidDocTx(signInputs, didPayload, '', fee, undefined, versionId)
+    const sdk = await this.getSdk(didPayload.id)
+    return sdk.updateDidDocTx(signInputs, didPayload, '', fee, undefined, versionId)
   }
 
   public async deactivate(
@@ -89,15 +124,18 @@ export class CheqdLedgerService {
     versionId?: string | undefined,
     fee?: DidStdFee
   ) {
-    return await this.getSdk(didPayload.id).deactivateDidDocTx(signInputs, didPayload, '', fee, undefined, versionId)
+    const sdk = await this.getSdk(didPayload.id)
+    return sdk.deactivateDidDocTx(signInputs, didPayload, '', fee, undefined, versionId)
   }
 
   public async resolve(did: string, version?: string) {
-    return version ? await this.getSdk(did).queryDidDocVersion(did, version) : await this.getSdk(did).queryDidDoc(did)
+    const sdk = await this.getSdk(did)
+    return version ? sdk.queryDidDocVersion(did, version) : sdk.queryDidDoc(did)
   }
 
   public async resolveMetadata(did: string) {
-    return await this.getSdk(did).queryAllDidDocVersionsMetadata(did)
+    const sdk = await this.getSdk(did)
+    return sdk.queryAllDidDocVersionsMetadata(did)
   }
 
   public async createResource(
@@ -106,18 +144,22 @@ export class CheqdLedgerService {
     signInputs: SignInfo[],
     fee?: DidStdFee
   ) {
-    return await this.getSdk(did).createLinkedResourceTx(signInputs, resourcePayload, '', fee, undefined)
+    const sdk = await this.getSdk(did)
+    return sdk.createLinkedResourceTx(signInputs, resourcePayload, '', fee, undefined)
   }
 
   public async resolveResource(did: string, collectionId: string, resourceId: string) {
-    return await this.getSdk(did).queryLinkedResource(collectionId, resourceId)
+    const sdk = await this.getSdk(did)
+    return sdk.queryLinkedResource(collectionId, resourceId)
   }
 
   public async resolveCollectionResources(did: string, collectionId: string) {
-    return await this.getSdk(did).queryLinkedResources(collectionId)
+    const sdk = await this.getSdk(did)
+    return sdk.queryLinkedResources(collectionId)
   }
 
   public async resolveResourceMetadata(did: string, collectionId: string, resourceId: string) {
-    return await this.getSdk(did).queryLinkedResourceMetadata(collectionId, resourceId)
+    const sdk = await this.getSdk(did)
+    return sdk.queryLinkedResourceMetadata(collectionId, resourceId)
   }
 }
