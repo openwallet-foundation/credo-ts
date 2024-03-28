@@ -1,6 +1,6 @@
 import type { JwkJson, Jwk } from '../../crypto'
 import type { HashName } from '../../utils'
-import type { DisclosureFrame, PresentationFrame } from '@sd-jwt/core'
+import type { DisclosureFrame, PresentationFrame } from '@sd-jwt/types'
 
 // TODO: extend with required claim names for input (e.g. vct)
 export type SdJwtVcPayload = Record<string, unknown>
@@ -47,7 +47,7 @@ export type SdJwtVcPresentOptions<Payload extends SdJwtVcPayload = SdJwtVcPayloa
   /**
    * Use true to disclose everything
    */
-  presentationFrame: PresentationFrame<Payload> | true
+  presentationFrame?: PresentationFrame<Payload>
 
   /**
    * This information is received out-of-band from the verifier.
@@ -58,6 +58,10 @@ export type SdJwtVcPresentOptions<Payload extends SdJwtVcPayload = SdJwtVcPayloa
     nonce: string
     issuedAt: number
   }
+}
+
+export type SdJwtVcGetPresentationKeysOptions = {
+  compactSdJwtVc: string
 }
 
 export type SdJwtVcVerifyOptions = {
