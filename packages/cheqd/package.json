@@ -26,7 +26,7 @@
   "dependencies": {
     "@cheqd/sdk": "cjs",
     "@cheqd/ts-proto": "cjs",
-    "@cosmjs/crypto": "^0.29.5",
+    "@cosmjs/crypto": "^0.32.3",
     "@cosmjs/proto-signing": "^0.31.0",
     "@credo-ts/anoncreds": "0.5.1",
     "@credo-ts/core": "0.5.1",
