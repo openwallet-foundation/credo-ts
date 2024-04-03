@@ -24,10 +24,10 @@
     "test": "jest"
   },
   "dependencies": {
-    "@cheqd/sdk": "cjs",
-    "@cheqd/ts-proto": "cjs",
-    "@cosmjs/crypto": "^0.29.5",
-    "@cosmjs/proto-signing": "^0.31.0",
+    "@cheqd/sdk": "^2.4.0",
+    "@cheqd/ts-proto": "^2.3.0",
+    "@cosmjs/crypto": "^0.32.3",
+    "@cosmjs/proto-signing": "^0.32.3",
     "@credo-ts/anoncreds": "0.5.1",
     "@credo-ts/core": "0.5.1",
     "@stablelib/ed25519": "^1.0.3",
