@@ -795,12 +795,12 @@
   resolved "https://registry.yarnpkg.com/@bcoe/v8-coverage/-/v8-coverage-0.2.3.tgz#75a2e8b51cb758a7553d6804a5932d7aace75c39"
   integrity sha512-0hYQ8SB4Db5zvZB4axdMHGwEaQjkZzFjQiN9LVYvIFB2nSUHW9tYpxWriPrWDASIxiaXax83REcLxuSdnGPZtw==
 
-"@cheqd/sdk@^2.4.0":
-  version "2.4.0"
-  resolved "https://registry.yarnpkg.com/@cheqd/sdk/-/sdk-2.4.0.tgz#96aea145194404a4df3a0a61731e71e0dfdd49f7"
-  integrity sha512-36R+gxi+cnWF9KVPssuMsseGVr+RwckJpFK1HgCSAJD5WbVY+S9CubsS8SLClrYt1FTWBK124ssgjV/fsMlMxQ==
+"@cheqd/sdk@^2.4.2":
+  version "2.4.2"
+  resolved "https://registry.yarnpkg.com/@cheqd/sdk/-/sdk-2.4.2.tgz#31ea02fe19f18b5d0f753be05f72a532a227a67e"
+  integrity sha512-0w6fOUvKxO2Z2shDd+jB54Egg2VYoq/4Ck6J/UX87PajO26cghUb5n0AXDZZAVg/RCUoc0/1MDpEW6YBvsxHpw==
   dependencies:
-    "@cheqd/ts-proto" "~2.3.0"
+    "@cheqd/ts-proto" "~2.3.1"
     "@cosmjs/amino" "^0.32.3"
     "@cosmjs/crypto" "^0.32.3"
     "@cosmjs/encoding" "^0.32.3"
@@ -817,10 +817,10 @@
     multiformats "~9.9.0"
     uuid "^9.0.1"
 
-"@cheqd/ts-proto@^2.3.0", "@cheqd/ts-proto@~2.3.0":
-  version "2.3.0"
-  resolved "https://registry.yarnpkg.com/@cheqd/ts-proto/-/ts-proto-2.3.0.tgz#791e5321ce3d07fab320a00e7a5481b643a26a3c"
-  integrity sha512-yWQKQQzxPfuX2hxNhUWMArBaeHKuaNL/dcot0uDJtvWCjRDVcyOHIjV5A3wzLig4j7uD+ocuhEMCgBEz9iQixA==
+"@cheqd/ts-proto@^2.3.1", "@cheqd/ts-proto@~2.3.1":
+  version "2.3.1"
+  resolved "https://registry.yarnpkg.com/@cheqd/ts-proto/-/ts-proto-2.3.1.tgz#c3bdff115c51ce1de5fd64981f2b60e2c1692e68"
+  integrity sha512-GD8jFsGCm/sOfyCWUPA9mPTMiyIh4rcTE4UYGOB9sXTN1MUrPVfptqZWdZCMGBG37lR6nfqZ4r6hy/uZOYJDNg==
   dependencies:
     long "^5.2.3"
     protobufjs "^7.2.6"

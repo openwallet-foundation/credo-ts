@@ -24,8 +24,8 @@
     "test": "jest"
   },
   "dependencies": {
-    "@cheqd/sdk": "^2.4.0",
-    "@cheqd/ts-proto": "^2.3.0",
+    "@cheqd/sdk": "^2.4.2",
+    "@cheqd/ts-proto": "^2.3.1",
     "@cosmjs/crypto": "^0.32.3",
     "@cosmjs/proto-signing": "^0.32.3",
     "@credo-ts/anoncreds": "0.5.1",
