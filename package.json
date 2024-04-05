@@ -65,7 +65,8 @@
     "ws": "^8.13.0"
   },
   "resolutions": {
-    "@types/node": "18.18.8"
+    "@types/node": "18.18.8",
+    "@2060.io/ffi-napi": "4.0.9"
   },
   "engines": {
     "node": ">=18"
