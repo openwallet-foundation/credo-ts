@@ -1,6 +1,6 @@
 import type { OpenId4VcIssuanceRequest } from './requestContext'
 import type { AgentContext } from '@credo-ts/core'
-import type { JWTSignerCallback } from '@sphereon/oid4vci-common'
+import type { AccessTokenRequest, JWTSignerCallback } from '@sphereon/oid4vci-common'
 import type { NextFunction, Response, Router } from 'express'
 
 import { getJwkFromKey, CredoError, JwsService, JwtPayload, getJwkClassFromKeyType, Key } from '@credo-ts/core'
@@ -86,7 +86,7 @@ function getJwtSignerCallback(
     const jwk = getJwkFromKey(signerPublicKey)
     const signedJwt = await jwsService.createJwsCompact(agentContext, {
       protectedHeaderOptions: { ...jwt.header, jwk, alg },
-      payload: new JwtPayload(jwt.payload),
+      payload: JwtPayload.fromJson(jwt.payload),
       key: signerPublicKey,
     })
 
@@ -103,11 +103,15 @@ export function handleTokenRequest(config: OpenId4VciAccessTokenEndpointConfig) 
     const requestContext = getRequestContext(request)
     const { agentContext, issuer } = requestContext
 
-    if (request.body.grant_type !== GrantTypes.PRE_AUTHORIZED_CODE) {
-      return response.status(400).json({
-        error: TokenErrorResponse.invalid_request,
-        error_description: PRE_AUTHORIZED_CODE_REQUIRED_ERROR,
-      })
+    const body = request.body as AccessTokenRequest
+    if (body.grant_type !== GrantTypes.PRE_AUTHORIZED_CODE) {
+      return sendErrorResponse(
+        response,
+        agentContext.config.logger,
+        400,
+        TokenErrorResponse.invalid_request,
+        PRE_AUTHORIZED_CODE_REQUIRED_ERROR
+      )
     }
 
     const openId4VcIssuerService = agentContext.dependencyManager.resolve(OpenId4VcIssuerService)
