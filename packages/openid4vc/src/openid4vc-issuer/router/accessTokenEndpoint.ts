@@ -1,5 +1,4 @@
 import type { OpenId4VcIssuanceRequest } from './requestContext'
-import type { OpenId4VcIssuanceSessionRecord } from '../repository'
 import type { AgentContext } from '@credo-ts/core'
 import type { AccessTokenRequest, JWTSignerCallback } from '@sphereon/oid4vci-common'
 import type { NextFunction, Response, Router } from 'express'
@@ -60,7 +59,6 @@ export function configureAccessTokenEndpoint(router: Router, config: OpenId4VciA
 
 function getJwtSignerCallback(
   agentContext: AgentContext,
-  issuanceSession: OpenId4VcIssuanceSessionRecord,
   signerPublicKey: Key,
   config: OpenId4VciAccessTokenEndpointConfig
 ): JWTSignerCallback {
@@ -86,14 +84,10 @@ function getJwtSignerCallback(
     jwt.payload.iat = iat
     jwt.payload.exp = iat + config.tokenExpiresInSeconds
 
-    // We add the pre-auth code so we can make sure the access token can only be used with
-    // the issuance session it was created for.
-    jwt.payload[PRE_AUTH_CODE_LITERAL] = issuanceSession.preAuthorizedCode
-
     const jwk = getJwkFromKey(signerPublicKey)
     const signedJwt = await jwsService.createJwsCompact(agentContext, {
       protectedHeaderOptions: { ...jwt.header, jwk, alg },
-      payload: new JwtPayload(jwt.payload),
+      payload: JwtPayload.fromJson(jwt.payload),
       key: signerPublicKey,
     })
 
@@ -137,21 +131,6 @@ export function handleTokenRequest(config: OpenId4VciAccessTokenEndpointConfig) 
     }
 
     try {
-      const [issuanceSession] = await openId4VcIssuerService.findIssuanceSessionsByQuery(agentContext, {
-        issuerId: issuer.issuerId,
-        preAuthorizedCode,
-      })
-
-      if (!issuanceSession) {
-        return sendErrorResponse(
-          response,
-          agentContext.config.logger,
-          400,
-          TokenErrorResponse.invalid_request,
-          'Invalid pre-authorized code'
-        )
-      }
-
       const accessTokenResponse = await createAccessTokenResponse(request.body, {
         credentialOfferSessions: new OpenId4VcCredentialOfferSessionStateManager(agentContext, issuer.issuerId),
         tokenExpiresIn: tokenExpiresInSeconds,
@@ -159,7 +138,7 @@ export function handleTokenRequest(config: OpenId4VciAccessTokenEndpointConfig) 
         cNonce: await agentContext.wallet.generateNonce(),
         cNonceExpiresIn: cNonceExpiresInSeconds,
         cNonces: new OpenId4VcCNonceStateManager(agentContext, issuer.issuerId),
-        accessTokenSignerCallback: getJwtSignerCallback(agentContext, issuanceSession, accessTokenSigningKey, config),
+        accessTokenSignerCallback: getJwtSignerCallback(agentContext, accessTokenSigningKey, config),
       })
       response.status(200).json(accessTokenResponse)
     } catch (error) {

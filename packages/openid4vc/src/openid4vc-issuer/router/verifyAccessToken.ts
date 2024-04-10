@@ -2,7 +2,6 @@ import type { OpenId4VcIssuerRecord } from '../repository'
 import type { AgentContext } from '@credo-ts/core'
 
 import { CredoError, JwsService, Jwt } from '@credo-ts/core'
-import { PRE_AUTH_CODE_LITERAL } from '@sphereon/oid4vci-common'
 
 import { OpenId4VcIssuerService } from '../OpenId4VcIssuerService'
 
@@ -43,11 +42,11 @@ export async function verifyAccessToken(
     throw new CredoError('Access token was not issued by the expected issuer')
   }
 
-  if (typeof accessToken.payload.additionalClaims[PRE_AUTH_CODE_LITERAL] !== 'string') {
-    throw new CredoError('No pre-authorized code present in access token')
+  if (typeof accessToken.payload.additionalClaims.preAuthorizedCode !== 'string') {
+    throw new CredoError('No preAuthorizedCode present in access token')
   }
 
   return {
-    preAuthorizedCode: accessToken.payload.additionalClaims[PRE_AUTH_CODE_LITERAL],
+    preAuthorizedCode: accessToken.payload.additionalClaims.preAuthorizedCode,
   }
 }
