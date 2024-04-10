@@ -21,7 +21,7 @@ import { OpenId4VcVerifierEvents, OpenId4VcIssuerEvents } from '../src'
 
 export async function createAgentFromModules<MM extends ModulesMap>(label: string, modulesMap: MM, secretKey: string) {
   const agent = new Agent<MM>({
-    config: { label, walletConfig: { id: utils.uuid(), key: utils.uuid() }, logger: new TestLogger(LogLevel.off) },
+    config: { label, walletConfig: { id: utils.uuid(), key: utils.uuid() }, logger: new TestLogger(LogLevel.debug) },
     dependencies: agentDependencies,
     modules: modulesMap,
   })

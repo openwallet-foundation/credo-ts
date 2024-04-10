@@ -136,11 +136,17 @@ export class OpenId4VcSiopVerifierService {
       requestByReferenceURI: hostedAuthorizationRequestUri,
     })
 
-    const authorizationRequestUri = await authorizationRequest.uri()
+    // NOTE: it's not possible to set the uri scheme when using the RP to create an auth request, only lower level
+    // functions allow this. So we need to replace the uri scheme manually.
+    const authorizationRequestUri = (await authorizationRequest.uri()).encodedUri
+    if (options.presentationExchange) {
+      authorizationRequestUri.replace('openid://', 'openid4vp://')
+    }
+
     const verificationSession = await verificationSessionCreatedPromise
 
     return {
-      authorizationRequest: authorizationRequestUri.encodedUri,
+      authorizationRequest: authorizationRequestUri,
       verificationSession,
     }
   }
@@ -402,39 +408,8 @@ export class OpenId4VcSiopVerifierService {
       .withRedirectUri(authorizationResponseUrl)
       .withIssuer(ResponseIss.SELF_ISSUED_V2)
       .withSupportedVersions([SupportedVersion.SIOPv2_D11, SupportedVersion.SIOPv2_D12_OID4VP_D18])
-      // TODO: we should probably allow some dynamic values here
-      .withClientMetadata({
-        client_id: _clientId,
-        passBy: PassBy.VALUE,
-        idTokenSigningAlgValuesSupported: supportedAlgs as SigningAlgo[],
-        responseTypesSupported: [ResponseType.VP_TOKEN, ResponseType.ID_TOKEN],
-        subject_syntax_types_supported: supportedDidMethods.map((m) => `did:${m}`),
-        vpFormatsSupported: {
-          jwt_vc: {
-            alg: supportedAlgs,
-          },
-          jwt_vc_json: {
-            alg: supportedAlgs,
-          },
-          jwt_vp: {
-            alg: supportedAlgs,
-          },
-          ldp_vc: {
-            proof_type: supportedProofTypes,
-          },
-          ldp_vp: {
-            proof_type: supportedProofTypes,
-          },
-          'vc+sd-jwt': {
-            kb_jwt_alg_values: supportedAlgs,
-            sd_jwt_alg_values: supportedAlgs,
-          },
-        },
-      })
       .withCustomResolver(getSphereonDidResolver(agentContext))
       .withResponseMode(ResponseMode.POST)
-      .withResponseType(presentationDefinition ? [ResponseType.ID_TOKEN, ResponseType.VP_TOKEN] : ResponseType.ID_TOKEN)
-      .withScope('openid')
       .withHasher(Hasher.hash)
       .withCheckLinkedDomain(CheckLinkedDomain.NEVER)
       // FIXME: should allow verification of revocation
@@ -444,7 +419,49 @@ export class OpenId4VcSiopVerifierService {
       .withEventEmitter(sphereonEventEmitter)
 
     if (presentationDefinition) {
-      builder.withPresentationDefinition({ definition: presentationDefinition }, [PropertyTarget.REQUEST_OBJECT])
+      builder
+        .withPresentationDefinition({ definition: presentationDefinition }, [PropertyTarget.REQUEST_OBJECT])
+        .withResponseType([ResponseType.VP_TOKEN])
+        // TODO: we should probably allow some dynamic values here
+        .withClientMetadata({
+          client_id: _clientId,
+          passBy: PassBy.VALUE,
+          responseTypesSupported: [ResponseType.VP_TOKEN],
+          subject_syntax_types_supported: supportedDidMethods.map((m) => `did:${m}`),
+          vpFormatsSupported: {
+            jwt_vc: {
+              alg: supportedAlgs,
+            },
+            jwt_vc_json: {
+              alg: supportedAlgs,
+            },
+            jwt_vp: {
+              alg: supportedAlgs,
+            },
+            ldp_vc: {
+              proof_type: supportedProofTypes,
+            },
+            ldp_vp: {
+              proof_type: supportedProofTypes,
+            },
+            'vc+sd-jwt': {
+              kb_jwt_alg_values: supportedAlgs,
+              sd_jwt_alg_values: supportedAlgs,
+            },
+          },
+        })
+    } else {
+      builder
+        .withScope('openid')
+        .withResponseType([ResponseType.ID_TOKEN])
+        // TODO: we should probably allow some dynamic values here
+        .withClientMetadata({
+          client_id: _clientId,
+          passBy: PassBy.VALUE,
+          idTokenSigningAlgValuesSupported: supportedAlgs as SigningAlgo[],
+          responseTypesSupported: [ResponseType.ID_TOKEN],
+          subject_syntax_types_supported: supportedDidMethods.map((m) => `did:${m}`),
+        })
     }
 
     for (const supportedDidMethod of supportedDidMethods) {

@@ -39,7 +39,7 @@ export interface OpenId4VcSiopCreateAuthorizationRequestReturn {
 }
 
 /**
- * Either `idToken` and/or `presentationExchange` will be present, but not none.
+ * Either `idToken` or `presentationExchange` will be present.
  */
 export interface OpenId4VcSiopVerifiedAuthorizationResponse {
   idToken?: {

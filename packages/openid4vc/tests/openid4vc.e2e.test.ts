@@ -336,6 +336,75 @@ describe('OpenId4Vc', () => {
     await holderTenant1.endSession()
   })
 
+  it('e2e flow with tenants only requesting an id-token', async () => {
+    const holderTenant = await holder.agent.modules.tenants.getTenantAgent({ tenantId: holder1.tenantId })
+    const verifierTenant1 = await verifier.agent.modules.tenants.getTenantAgent({ tenantId: verifier1.tenantId })
+
+    const openIdVerifierTenant1 = await verifierTenant1.modules.openId4VcVerifier.createVerifier()
+
+    const { authorizationRequest: authorizationRequestUri1, verificationSession: verificationSession } =
+      await verifierTenant1.modules.openId4VcVerifier.createAuthorizationRequest({
+        verifierId: openIdVerifierTenant1.verifierId,
+        requestSigner: {
+          method: 'did',
+          didUrl: verifier1.verificationMethod.id,
+        },
+      })
+
+    expect(authorizationRequestUri1).toEqual(
+      `openid://?request_uri=${encodeURIComponent(verificationSession.authorizationRequestUri)}`
+    )
+
+    await verifierTenant1.endSession()
+
+    const resolvedAuthorizationRequest = await holderTenant.modules.openId4VcHolder.resolveSiopAuthorizationRequest(
+      authorizationRequestUri1
+    )
+
+    expect(resolvedAuthorizationRequest.presentationExchange).toBeUndefined()
+
+    const { submittedResponse: submittedResponse1, serverResponse: serverResponse1 } =
+      await holderTenant.modules.openId4VcHolder.acceptSiopAuthorizationRequest({
+        authorizationRequest: resolvedAuthorizationRequest.authorizationRequest,
+        openIdTokenIssuer: {
+          method: 'did',
+          didUrl: holder1.verificationMethod.id,
+        },
+      })
+
+    expect(submittedResponse1).toEqual({
+      expires_in: 6000,
+      id_token: expect.any(String),
+      state: expect.any(String),
+    })
+    expect(serverResponse1).toMatchObject({
+      status: 200,
+    })
+
+    // The RP MUST validate that the aud (audience) Claim contains the value of the client_id
+    // that the RP sent in the Authorization Request as an audience.
+    // When the request has been signed, the value might be an HTTPS URL, or a Decentralized Identifier.
+    const verifierTenant1_2 = await verifier.agent.modules.tenants.getTenantAgent({ tenantId: verifier1.tenantId })
+    await waitForVerificationSessionRecordSubject(verifier.replaySubject, {
+      contextCorrelationId: verifierTenant1_2.context.contextCorrelationId,
+      state: OpenId4VcVerificationSessionState.ResponseVerified,
+      verificationSessionId: verificationSession.id,
+    })
+
+    const { idToken, presentationExchange } =
+      await verifierTenant1_2.modules.openId4VcVerifier.getVerifiedAuthorizationResponse(verificationSession.id)
+
+    const requestObjectPayload = JsonEncoder.fromBase64(
+      verificationSession.authorizationRequestJwt?.split('.')[1] as string
+    )
+    expect(idToken?.payload).toMatchObject({
+      state: requestObjectPayload.state,
+      nonce: requestObjectPayload.nonce,
+    })
+
+    expect(presentationExchange).toBeUndefined()
+  })
+
   it('e2e flow with tenants, verifier endpoints verifying a jwt-vc', async () => {
     const holderTenant = await holder.agent.modules.tenants.getTenantAgent({ tenantId: holder1.tenantId })
     const verifierTenant1 = await verifier.agent.modules.tenants.getTenantAgent({ tenantId: verifier1.tenantId })
@@ -471,7 +540,6 @@ describe('OpenId4Vc', () => {
 
     expect(submittedResponse1).toEqual({
       expires_in: 6000,
-      id_token: expect.any(String),
       presentation_submission: {
         definition_id: 'OpenBadgeCredential',
         descriptor_map: [
@@ -508,14 +576,7 @@ describe('OpenId4Vc', () => {
     const { idToken: idToken1, presentationExchange: presentationExchange1 } =
       await verifierTenant1_2.modules.openId4VcVerifier.getVerifiedAuthorizationResponse(verificationSession1.id)
 
-    const requestObjectPayload1 = JsonEncoder.fromBase64(
-      verificationSession1.authorizationRequestJwt?.split('.')[1] as string
-    )
-    expect(idToken1?.payload).toMatchObject({
-      state: requestObjectPayload1.state,
-      nonce: requestObjectPayload1.nonce,
-    })
-
+    expect(idToken1).toBeUndefined()
     expect(presentationExchange1).toMatchObject({
       definition: openBadgePresentationDefinition,
       submission: {
@@ -558,14 +619,7 @@ describe('OpenId4Vc', () => {
     })
     const { idToken: idToken2, presentationExchange: presentationExchange2 } =
       await verifierTenant2_2.modules.openId4VcVerifier.getVerifiedAuthorizationResponse(verificationSession2.id)
-
-    const requestObjectPayload2 = JsonEncoder.fromBase64(
-      verificationSession2.authorizationRequestJwt?.split('.')[1] as string
-    )
-    expect(idToken2?.payload).toMatchObject({
-      state: requestObjectPayload2.state,
-      nonce: requestObjectPayload2.nonce,
-    })
+    expect(idToken2).toBeUndefined()
 
     expect(presentationExchange2).toMatchObject({
       definition: universityDegreePresentationDefinition,
@@ -700,7 +754,6 @@ describe('OpenId4Vc', () => {
     expect(submittedResponse.presentation_submission?.descriptor_map[0].path_nested).toBeUndefined()
     expect(submittedResponse).toEqual({
       expires_in: 6000,
-      id_token: expect.any(String),
       presentation_submission: {
         definition_id: 'OpenBadgeCredential',
         descriptor_map: [
@@ -730,13 +783,7 @@ describe('OpenId4Vc', () => {
     const { idToken, presentationExchange } =
       await verifier.agent.modules.openId4VcVerifier.getVerifiedAuthorizationResponse(verificationSession.id)
 
-    const requestObjectPayload = JsonEncoder.fromBase64(
-      verificationSession.authorizationRequestJwt?.split('.')[1] as string
-    )
-    expect(idToken?.payload).toMatchObject({
-      state: requestObjectPayload.state,
-      nonce: requestObjectPayload.nonce,
-    })
+    expect(idToken).toBeUndefined()
 
     const presentation = presentationExchange?.presentations[0] as SdJwtVc
 
