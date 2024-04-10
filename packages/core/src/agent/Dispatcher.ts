@@ -97,6 +97,7 @@ class Dispatcher {
       payload: {
         message,
         connection,
+        receivedAt: messageContext.receivedAt,
       },
     })
   }

@@ -82,7 +82,13 @@ export class MessageReceiver {
       session,
       connection,
       contextCorrelationId,
-    }: { session?: TransportSession; connection?: ConnectionRecord; contextCorrelationId?: string } = {}
+      receivedAt,
+    }: {
+      session?: TransportSession
+      connection?: ConnectionRecord
+      contextCorrelationId?: string
+      receivedAt?: Date
+    } = {}
   ) {
     this.logger.debug(`Agent received message`)
 
@@ -93,9 +99,9 @@ export class MessageReceiver {
 
     try {
       if (this.isEncryptedMessage(inboundMessage)) {
-        await this.receiveEncryptedMessage(agentContext, inboundMessage as EncryptedMessage, session)
+        await this.receiveEncryptedMessage(agentContext, inboundMessage as EncryptedMessage, session, receivedAt)
       } else if (this.isPlaintextMessage(inboundMessage)) {
-        await this.receivePlaintextMessage(agentContext, inboundMessage, connection)
+        await this.receivePlaintextMessage(agentContext, inboundMessage, connection, receivedAt)
       } else {
         throw new CredoError('Unable to parse incoming message: unrecognized format')
       }
@@ -108,17 +114,19 @@ export class MessageReceiver {
   private async receivePlaintextMessage(
     agentContext: AgentContext,
     plaintextMessage: PlaintextMessage,
-    connection?: ConnectionRecord
+    connection?: ConnectionRecord,
+    receivedAt?: Date
   ) {
     const message = await this.transformAndValidate(agentContext, plaintextMessage)
-    const messageContext = new InboundMessageContext(message, { connection, agentContext })
+    const messageContext = new InboundMessageContext(message, { connection, agentContext, receivedAt })
     await this.dispatcher.dispatch(messageContext)
   }
 
   private async receiveEncryptedMessage(
     agentContext: AgentContext,
     encryptedMessage: EncryptedMessage,
-    session?: TransportSession
+    session?: TransportSession,
+    receivedAt?: Date
   ) {
     const decryptedMessage = await this.decryptMessage(agentContext, encryptedMessage)
     const { plaintextMessage, senderKey, recipientKey } = decryptedMessage
@@ -140,6 +148,7 @@ export class MessageReceiver {
       senderKey,
       recipientKey,
       agentContext,
+      receivedAt,
     })
 
     // We want to save a session if there is a chance of returning outbound message via inbound transport.

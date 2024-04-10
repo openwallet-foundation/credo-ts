@@ -11,6 +11,7 @@ export interface MessageContextParams {
   senderKey?: Key
   recipientKey?: Key
   agentContext: AgentContext
+  receivedAt?: Date
 }
 
 export class InboundMessageContext<T extends AgentMessage = AgentMessage> {
@@ -19,6 +20,7 @@ export class InboundMessageContext<T extends AgentMessage = AgentMessage> {
   public sessionId?: string
   public senderKey?: Key
   public recipientKey?: Key
+  public receivedAt: Date
   public readonly agentContext: AgentContext
 
   public constructor(message: T, context: MessageContextParams) {
@@ -28,6 +30,7 @@ export class InboundMessageContext<T extends AgentMessage = AgentMessage> {
     this.connection = context.connection
     this.sessionId = context.sessionId
     this.agentContext = context.agentContext
+    this.receivedAt = context.receivedAt ?? new Date()
   }
 
   /**
