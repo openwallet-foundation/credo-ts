@@ -5,7 +5,6 @@ import type { NextFunction, Response, Router } from 'express'
 
 import { getJwkFromKey, CredoError, JwsService, JwtPayload, getJwkClassFromKeyType, Key } from '@credo-ts/core'
 import {
-  PRE_AUTH_CODE_LITERAL,
   GrantTypes,
   PRE_AUTHORIZED_CODE_REQUIRED_ERROR,
   TokenError,
@@ -118,17 +117,6 @@ export function handleTokenRequest(config: OpenId4VciAccessTokenEndpointConfig) 
     const openId4VcIssuerService = agentContext.dependencyManager.resolve(OpenId4VcIssuerService)
     const issuerMetadata = openId4VcIssuerService.getIssuerMetadata(agentContext, issuer)
     const accessTokenSigningKey = Key.fromFingerprint(issuer.accessTokenPublicKeyFingerprint)
-
-    const preAuthorizedCode = body[PRE_AUTH_CODE_LITERAL] as string | undefined
-    if (!preAuthorizedCode) {
-      return sendErrorResponse(
-        response,
-        agentContext.config.logger,
-        400,
-        TokenErrorResponse.invalid_request,
-        'Pre-authorized code is required'
-      )
-    }
 
     try {
       const accessTokenResponse = await createAccessTokenResponse(request.body, {
