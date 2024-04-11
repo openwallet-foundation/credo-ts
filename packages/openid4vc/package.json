@@ -30,6 +30,7 @@
     "@sphereon/oid4vci-common": "^0.10.1",
     "@sphereon/oid4vci-issuer": "^0.10.2",
     "@sphereon/ssi-types": "^0.18.1",
+    "class-transformer": "^0.5.1",
     "rxjs": "^7.8.0"
   },
   "devDependencies": {

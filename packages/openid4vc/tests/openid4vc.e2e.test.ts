@@ -90,6 +90,10 @@ describe('OpenId4Vc', () => {
 
                 if (credentialRequest.format === 'vc+sd-jwt') {
                   return {
+                    credentialSupportedId:
+                      credentialRequest.vct === 'UniversityDegreeCredential'
+                        ? universityDegreeCredentialSdJwt.id
+                        : universityDegreeCredentialSdJwt2.id,
                     format: credentialRequest.format,
                     payload: { vct: credentialRequest.vct, university: 'innsbruck', degree: 'bachelor' },
                     holder: holderBinding,
@@ -264,7 +268,7 @@ describe('OpenId4Vc', () => {
       contextCorrelationId: issuer1.tenantId,
     })
     await waitForCredentialIssuanceSessionRecordSubject(issuer.replaySubject, {
-      state: OpenId4VcIssuanceSessionState.CredentialIssued,
+      state: OpenId4VcIssuanceSessionState.Completed,
       issuanceSessionId: issuanceSession1.id,
       contextCorrelationId: issuer1.tenantId,
     })
@@ -319,7 +323,7 @@ describe('OpenId4Vc', () => {
       contextCorrelationId: issuer2.tenantId,
     })
     await waitForCredentialIssuanceSessionRecordSubject(issuer.replaySubject, {
-      state: OpenId4VcIssuanceSessionState.CredentialIssued,
+      state: OpenId4VcIssuanceSessionState.Completed,
       issuanceSessionId: issuanceSession2.id,
       contextCorrelationId: issuer2.tenantId,
     })
