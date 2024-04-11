@@ -5,8 +5,11 @@ import type { NextFunction, Response, Router } from 'express'
 
 import { getJwkFromKey, CredoError, JwsService, JwtPayload, getJwkClassFromKeyType, Key } from '@credo-ts/core'
 import {
+  BAD_PARAMS,
   GrantTypes,
+  IssueStatus,
   PRE_AUTHORIZED_CODE_REQUIRED_ERROR,
+  PRE_AUTH_CODE_LITERAL,
   TokenError,
   TokenErrorResponse,
 } from '@sphereon/oid4vci-common'
@@ -139,6 +142,11 @@ export function verifyTokenRequest(options: { preAuthorizedCodeExpirationInSecon
     const { agentContext, issuer } = getRequestContext(request)
 
     try {
+      const credentialOfferSessions = new OpenId4VcCredentialOfferSessionStateManager(agentContext, issuer.issuerId)
+      const credentialOfferSession = await credentialOfferSessions.getAsserted(request.body[PRE_AUTH_CODE_LITERAL])
+      if (![IssueStatus.OFFER_CREATED, IssueStatus.OFFER_URI_RETRIEVED].includes(credentialOfferSession.status)) {
+        throw new TokenError(400, TokenErrorResponse.invalid_request, 'Access token has already been retrieved')
+      }
       const { preAuthSession } = await assertValidAccessTokenRequest(request.body, {
         // It should actually be in seconds. but the oid4vci library has some bugs related
         // to seconds vs milliseconds. We pass it as ms for now, but once the fix is released
@@ -146,7 +154,7 @@ export function verifyTokenRequest(options: { preAuthorizedCodeExpirationInSecon
         // an security issue once the fix is released.
         // FIXME: https://github.com/Sphereon-Opensource/OID4VCI/pull/104
         expirationDuration: options.preAuthorizedCodeExpirationInSeconds * 1000,
-        credentialOfferSessions: new OpenId4VcCredentialOfferSessionStateManager(agentContext, issuer.issuerId),
+        credentialOfferSessions,
       })
 
       // TODO: remove once above PR is merged and released

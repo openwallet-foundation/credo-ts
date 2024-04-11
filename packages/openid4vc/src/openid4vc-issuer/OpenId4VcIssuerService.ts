@@ -13,6 +13,7 @@ import type {
   OpenId4VciCredentialOfferPayload,
   OpenId4VciCredentialRequest,
   OpenId4VciCredentialSupported,
+  OpenId4VciCredentialSupportedWithId,
 } from '../shared'
 import type { AgentContext, DidDocument, Query } from '@credo-ts/core'
 import type { Grant, JWTVerifyCallback } from '@sphereon/oid4vci-common'
@@ -157,7 +158,7 @@ export class OpenId4VcIssuerService {
       OpenId4VcIssuanceSessionState.AccessTokenCreated,
       OpenId4VcIssuanceSessionState.CredentialRequestReceived,
       // It is possible to issue multiple credentials in one session
-      OpenId4VcIssuanceSessionState.CredentialIssued,
+      OpenId4VcIssuanceSessionState.CredentialsPartiallyIssued,
     ])
     const { credentialRequest, issuanceSession } = options
     if (!credentialRequest.proof) throw new CredoError('No proof defined in the credentialRequest.')
@@ -191,7 +192,6 @@ export class OpenId4VcIssuerService {
       agentContext,
       issuanceSession.id
     )
-
     if (!credentialResponse.credential) {
       updatedIssuanceSession.state = OpenId4VcIssuanceSessionState.Error
       updatedIssuanceSession.errorMessage = 'No credential found in the issueCredentialResponse.'
@@ -357,7 +357,7 @@ export class OpenId4VcIssuerService {
     credentialOffer: OpenId4VciCredentialOfferPayload,
     credentialRequest: OpenId4VciCredentialRequest,
     credentialsSupported: OpenId4VciCredentialSupported[]
-  ): OpenId4VciCredentialSupported[] {
+  ): OpenId4VciCredentialSupportedWithId[] {
     const offeredCredentials = getOfferedCredentials(credentialOffer.credentials, credentialsSupported)
 
     return offeredCredentials.filter((offeredCredential) => {
@@ -501,6 +501,7 @@ export class OpenId4VcIssuerService {
     }
   ): CredentialDataSupplier => {
     return async (args: CredentialDataSupplierArgs) => {
+      const { issuanceSession } = options
       const { credentialRequest, credentialOffer } = args
       const issuerMetadata = this.getIssuerMetadata(agentContext, options.issuer)
 
@@ -519,6 +520,19 @@ export class OpenId4VcIssuerService {
           'Multiple credentials from credentials supported matching request, picking first one.'
         )
       }
+
+      const requestedCredentialId = offeredCredentialsMatchingRequest[0].id
+      const credentialHasAlreadyBeenIssued = issuanceSession.issuedCredentials.includes(requestedCredentialId)
+      if (credentialHasAlreadyBeenIssued) {
+        throw new CredoError(`The requested credential with id '${requestedCredentialId}' has already been issued.`)
+      }
+
+      const updatedIssuanceSession = await this.openId4VcIssuanceSessionRepository.getById(
+        agentContext,
+        issuanceSession.id
+      )
+      updatedIssuanceSession.issuedCredentials.push(requestedCredentialId)
+      await this.openId4VcIssuanceSessionRepository.update(agentContext, updatedIssuanceSession)
 
       const holderBinding = await this.getHolderBindingFromRequest(credentialRequest as OpenId4VciCredentialRequest)
       const mapper =

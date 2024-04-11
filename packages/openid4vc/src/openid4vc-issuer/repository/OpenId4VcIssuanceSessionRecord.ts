@@ -50,6 +50,11 @@ export class OpenId4VcIssuanceSessionRecord extends BaseRecord<DefaultOpenId4VcI
   public state!: OpenId4VcIssuanceSessionState
 
   /**
+   * The credentials that were issued during this session.
+   */
+  public issuedCredentials: string[] = []
+
+  /**
    * cNonce that should be used in the credential request by the holder.
    */
   public cNonce?: string
