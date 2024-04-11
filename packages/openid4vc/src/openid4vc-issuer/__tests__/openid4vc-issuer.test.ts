@@ -474,7 +474,7 @@ describe('OpenId4VcIssuer', () => {
           throw new Error('Not implemented')
         },
       })
-    ).rejects.toThrow('Not implemented')
+    ).rejects.toThrow('No offered credentials match the credential request.')
   })
 
   it('pre authorized code flow using multiple credentials_supported', async () => {
@@ -569,7 +569,7 @@ describe('OpenId4VcIssuer', () => {
           throw new Error('Not implemented')
         },
       })
-    ).rejects.toThrow('Not implemented')
+    ).rejects.toThrow('No offered credentials match the credential request.')
   })
 
   it('create credential offer and retrieve it from the uri (pre authorized flow)', async () => {

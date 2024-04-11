@@ -56,7 +56,7 @@ export class OpenId4VcCredentialOfferSessionStateManager implements IStateManage
     // we set the completed state manually when all credentials have been issued
     if (
       state === OpenId4VcIssuanceSessionState.CredentialsPartiallyIssued &&
-      (record?.issuedCredentials?.length ?? 0) + 1 >= stateValue.credentialOffer.credential_offer.credentials.length
+      (record?.issuedCredentials?.length ?? 0) >= stateValue.credentialOffer.credential_offer.credentials.length
     ) {
       state = OpenId4VcIssuanceSessionState.Completed
     }

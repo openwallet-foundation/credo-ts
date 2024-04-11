@@ -6,7 +6,6 @@ import type {
   OpenId4VcIssuerMetadata,
   OpenId4VciSignSdJwtCredential,
   OpenId4VciSignW3cCredential,
-  OpenId4VciSignCredential,
 } from './OpenId4VcIssuerServiceOptions'
 import type { OpenId4VcIssuanceSessionRecord } from './repository'
 import type {
@@ -184,42 +183,13 @@ export class OpenId4VcIssuerService {
     }
 
     const vcIssuer = this.getVcIssuer(agentContext, issuer)
-    const issuerMetadata = this.getIssuerMetadata(agentContext, issuer)
-    const holderBinding = await this.getHolderBindingFromRequest(credentialRequest as OpenId4VciCredentialRequest)
-
-    const mapper =
-      options.credentialRequestToCredentialMapper ??
-      this.openId4VcIssuerConfig.credentialEndpoint.credentialRequestToCredentialMapper
-
-    const offeredCredentialsMatchingRequest = this.findOfferedCredentialsMatchingRequest(
-      issuanceSession.credentialOfferPayload,
-      credentialRequest as OpenId4VciCredentialRequest,
-      issuerMetadata.credentialsSupported,
-      issuanceSession
-    )
-
-    const signOptions = await mapper({
-      agentContext,
-      issuanceSession,
-      holderBinding,
-      credentialOffer: { credential_offer: issuanceSession.credentialOfferPayload },
-      credentialRequest: credentialRequest as OpenId4VciCredentialRequest,
-      credentialsSupported: offeredCredentialsMatchingRequest,
-    })
-
-    const credentialHasAlreadyBeenIssued = issuanceSession.issuedCredentials.includes(signOptions.credentialSupportedId)
-    if (credentialHasAlreadyBeenIssued) {
-      throw new CredoError(
-        `The requested credential with id '${signOptions.credentialSupportedId}' has already been issued.`
-      )
-    }
 
     const credentialResponse = await vcIssuer.issueCredential({
       credentialRequest,
       tokenExpiresIn: this.openId4VcIssuerConfig.accessTokenEndpoint.tokenExpiresInSeconds,
 
       // This can just be combined with signing callback right?
-      credentialDataSupplier: this.getCredentialDataSupplier(agentContext, { ...options, issuer, signOptions }),
+      credentialDataSupplier: this.getCredentialDataSupplier(agentContext, { ...options, issuer }),
       credentialDataSupplierInput: issuanceSession.issuanceMetadata,
       responseCNonce: undefined,
     })
@@ -535,12 +505,61 @@ export class OpenId4VcIssuerService {
     agentContext: AgentContext,
     options: OpenId4VciCreateCredentialResponseOptions & {
       issuer: OpenId4VcIssuerRecord
-      signOptions: OpenId4VciSignCredential
+      issuanceSession: OpenId4VcIssuanceSessionRecord
     }
   ): CredentialDataSupplier => {
     return async (args: CredentialDataSupplierArgs) => {
-      const { signOptions } = options
+      const { issuanceSession, issuer } = options
       const { credentialRequest } = args
+
+      const issuerMetadata = this.getIssuerMetadata(agentContext, issuer)
+
+      const offeredCredentialsMatchingRequest = this.findOfferedCredentialsMatchingRequest(
+        options.issuanceSession.credentialOfferPayload,
+        credentialRequest as OpenId4VciCredentialRequest,
+        issuerMetadata.credentialsSupported,
+        issuanceSession
+      )
+
+      if (offeredCredentialsMatchingRequest.length === 0) {
+        throw new CredoError('No offered credentials match the credential request.')
+      }
+
+      if (offeredCredentialsMatchingRequest.length > 1) {
+        agentContext.config.logger.debug(
+          'Multiple credentials from credentials supported matching request, picking first one.'
+        )
+      }
+
+      const mapper =
+        options.credentialRequestToCredentialMapper ??
+        this.openId4VcIssuerConfig.credentialEndpoint.credentialRequestToCredentialMapper
+
+      const holderBinding = await this.getHolderBindingFromRequest(credentialRequest as OpenId4VciCredentialRequest)
+      const signOptions = await mapper({
+        agentContext,
+        issuanceSession,
+        holderBinding,
+        credentialOffer: { credential_offer: issuanceSession.credentialOfferPayload },
+        credentialRequest: credentialRequest as OpenId4VciCredentialRequest,
+        credentialsSupported: offeredCredentialsMatchingRequest,
+      })
+
+      const credentialHasAlreadyBeenIssued = issuanceSession.issuedCredentials.includes(
+        signOptions.credentialSupportedId
+      )
+      if (credentialHasAlreadyBeenIssued) {
+        throw new CredoError(
+          `The requested credential with id '${signOptions.credentialSupportedId}' has already been issued.`
+        )
+      }
+
+      const updatedIssuanceSession = await this.openId4VcIssuanceSessionRepository.getById(
+        agentContext,
+        issuanceSession.id
+      )
+      updatedIssuanceSession.issuedCredentials.push(signOptions.credentialSupportedId)
+      await this.openId4VcIssuanceSessionRepository.update(agentContext, updatedIssuanceSession)
 
       if (signOptions.format === ClaimFormat.JwtVc || signOptions.format === ClaimFormat.LdpVc) {
         if (!w3cOpenId4VcFormats.includes(credentialRequest.format as OpenId4VciCredentialFormatProfile)) {
