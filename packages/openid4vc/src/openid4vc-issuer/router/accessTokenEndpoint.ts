@@ -5,7 +5,6 @@ import type { NextFunction, Response, Router } from 'express'
 
 import { getJwkFromKey, CredoError, JwsService, JwtPayload, getJwkClassFromKeyType, Key } from '@credo-ts/core'
 import {
-  BAD_PARAMS,
   GrantTypes,
   IssueStatus,
   PRE_AUTHORIZED_CODE_REQUIRED_ERROR,

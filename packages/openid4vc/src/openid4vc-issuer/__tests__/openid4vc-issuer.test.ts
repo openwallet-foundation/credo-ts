@@ -341,6 +341,7 @@ describe('OpenId4VcIssuer', () => {
         issuer: { method: 'did', didUrl: issuerVerificationMethod.id },
         holder: { method: 'did', didUrl: holderVerificationMethod.id },
         disclosureFrame: { university: true, degree: true },
+        credentialSupportedId: universityDegreeCredentialSdJwt.id,
       }),
     })
 
@@ -393,6 +394,7 @@ describe('OpenId4VcIssuer', () => {
 
         return {
           format: 'jwt_vc',
+          credentialSupportedId: openBadgeCredential.id,
           credential: new W3cCredential({
             type: openBadgeCredential.types,
             issuer: new W3cIssuer({ id: issuerDid }),
@@ -472,7 +474,7 @@ describe('OpenId4VcIssuer', () => {
           throw new Error('Not implemented')
         },
       })
-    ).rejects.toThrow('No offered credentials match the credential request.')
+    ).rejects.toThrow('Not implemented')
   })
 
   it('pre authorized code flow using multiple credentials_supported', async () => {
@@ -511,6 +513,7 @@ describe('OpenId4VcIssuer', () => {
           credentialSubject: new W3cCredentialSubject({ id: holderDid }),
           issuanceDate: w3cDate(Date.now()),
         }),
+        credentialSupportedId: universityDegreeCredentialLd.id,
         verificationMethod: issuerVerificationMethod.id,
       }),
     })
@@ -566,7 +569,7 @@ describe('OpenId4VcIssuer', () => {
           throw new Error('Not implemented')
         },
       })
-    ).rejects.toThrow('No offered credentials match the credential request.')
+    ).rejects.toThrow('Not implemented')
   })
 
   it('create credential offer and retrieve it from the uri (pre authorized flow)', async () => {
@@ -612,19 +615,22 @@ describe('OpenId4VcIssuer', () => {
 
     const credentialRequestToCredentialMapper: OpenId4VciCredentialRequestToCredentialMapper = ({
       credentialsSupported,
-    }) => ({
-      format: 'jwt_vc',
-      credential: new W3cCredential({
-        type:
-          credentialsSupported[0].id === openBadgeCredential.id
-            ? openBadgeCredential.types
-            : universityDegreeCredential.types,
-        issuer: new W3cIssuer({ id: issuerDid }),
-        credentialSubject: new W3cCredentialSubject({ id: holderDid }),
-        issuanceDate: w3cDate(Date.now()),
-      }),
-      verificationMethod: issuerVerificationMethod.id,
-    })
+    }) => {
+      const credential =
+        credentialsSupported[0].id === openBadgeCredential.id ? openBadgeCredential : universityDegreeCredential
+      return {
+        format: 'jwt_vc',
+        credential: new W3cCredential({
+          type: credential.types,
+          issuer: new W3cIssuer({ id: issuerDid }),
+          credentialSubject: new W3cCredentialSubject({ id: holderDid }),
+          issuanceDate: w3cDate(Date.now()),
+        }),
+        credentialSupportedId: credential.id,
+
+        verificationMethod: issuerVerificationMethod.id,
+      }
+    }
 
     // We need to update the state, as it is checked and we're skipping the access token step
     result.issuanceSession.state = OpenId4VcIssuanceSessionState.AccessTokenCreated

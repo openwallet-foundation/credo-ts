@@ -101,7 +101,10 @@ export type OpenId4VciCredentialRequestToCredentialMapper = (options: {
   credentialsSupported: OpenId4VciCredentialSupported[]
 }) => Promise<OpenId4VciSignCredential> | OpenId4VciSignCredential
 
-export type OpenId4VciSignCredential = OpenId4VciSignSdJwtCredential | OpenId4VciSignW3cCredential
+export type OpenId4VciSignCredential = { credentialSupportedId: string } & (
+  | OpenId4VciSignSdJwtCredential
+  | OpenId4VciSignW3cCredential
+)
 export interface OpenId4VciSignSdJwtCredential extends SdJwtVcSignOptions {
   format: ClaimFormat.SdJwtVc | `${ClaimFormat.SdJwtVc}`
 }

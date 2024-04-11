@@ -90,6 +90,10 @@ describe('OpenId4Vc', () => {
 
                 if (credentialRequest.format === 'vc+sd-jwt') {
                   return {
+                    credentialSupportedId:
+                      credentialRequest.vct === 'UniversityDegreeCredential'
+                        ? universityDegreeCredentialSdJwt.id
+                        : universityDegreeCredentialSdJwt2.id,
                     format: credentialRequest.format,
                     payload: { vct: credentialRequest.vct, university: 'innsbruck', degree: 'bachelor' },
                     holder: holderBinding,
