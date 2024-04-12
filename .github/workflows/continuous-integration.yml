@@ -52,9 +52,7 @@ jobs:
       - name: Setup NodeJS
         uses: actions/setup-node@v4
         with:
-          # Node 18.20 and 20.13 broke ffi-napi
-          # https://github.com/nodejs/node/issues/52240
-          node-version: 18.19
+          node-version: 18
           cache: 'yarn'
 
       - name: Install dependencies
@@ -79,9 +77,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # Node 18.20 and 20.12 broke ffi-napi
-        # https://github.com/nodejs/node/issues/52240
-        node-version: [18.19, 20.11]
+        node-version: [18, 20]
         # Each shard runs a set of the tests
         # Make sure to UPDATE THE TEST command with the total length of
         # the shards if you change this!!
@@ -118,9 +114,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # Node 18.20 and 20.12 broke ffi-napi
-        # https://github.com/nodejs/node/issues/52240
-        node-version: [18.19, 20.11]
+        node-version: [18, 20]
 
     steps:
       - name: Checkout credo
@@ -180,9 +174,7 @@ jobs:
       - name: Setup NodeJS
         uses: actions/setup-node@v4
         with:
-          # Node 18.20 and 20.13 broke ffi-napi
-          # https://github.com/nodejs/node/issues/52240
-          node-version: 18.19
+          node-version: 18
           cache: 'yarn'
 
       - name: Install dependencies
