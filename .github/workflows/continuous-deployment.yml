@@ -23,9 +23,7 @@ jobs:
       - name: Setup NodeJS
         uses: actions/setup-node@v4
         with:
-          # Node 18.20 and 20.13 broke ffi-napi
-          # https://github.com/nodejs/node/issues/52240
-          node-version: 18.19
+          node-version: 18
           cache: 'yarn'
           registry-url: 'https://registry.npmjs.org/'
 
@@ -70,9 +68,7 @@ jobs:
       - name: Setup NodeJS
         uses: actions/setup-node@v4
         with:
-          # Node 18.20 and 20.13 broke ffi-napi
-          # https://github.com/nodejs/node/issues/52240
-          node-version: 18.19
+          node-version: 18
           cache: 'yarn'
           registry-url: 'https://registry.npmjs.org/'
 

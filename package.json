@@ -30,7 +30,7 @@
     "next-version-bump": "ts-node ./scripts/get-next-bump.ts"
   },
   "devDependencies": {
-    "@hyperledger/aries-askar-nodejs": "^0.2.0",
+    "@hyperledger/aries-askar-nodejs": "^0.2.1",
     "@types/bn.js": "^5.1.5",
     "@types/cors": "^2.8.10",
     "@types/eslint": "^8.21.2",

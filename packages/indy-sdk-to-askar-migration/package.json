@@ -30,12 +30,12 @@
     "@credo-ts/node": "0.5.1"
   },
   "devDependencies": {
-    "@hyperledger/aries-askar-nodejs": "^0.2.0",
-    "@hyperledger/aries-askar-shared": "^0.2.0",
+    "@hyperledger/aries-askar-nodejs": "^0.2.1",
+    "@hyperledger/aries-askar-shared": "^0.2.1",
     "rimraf": "^4.4.0",
     "typescript": "~4.9.5"
   },
   "peerDependencies": {
-    "@hyperledger/aries-askar-shared": "^0.2.0"
+    "@hyperledger/aries-askar-shared": "^0.2.1"
   }
 }
