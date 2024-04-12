@@ -125,6 +125,22 @@ describe('Tenants E2E', () => {
     )
   })
 
+  test('withTenantAgent returns value from callback', async () => {
+    const tenantRecord = await agent1.modules.tenants.createTenant({
+      config: {
+        label: 'Tenant 2',
+      },
+    })
+
+    const result = await agent1.modules.tenants.withTenantAgent({ tenantId: tenantRecord.id }, async () => {
+      return {
+        hello: 'world',
+      }
+    })
+
+    expect(result).toEqual({ hello: 'world' })
+  })
+
   test('create a connection between two tenants within the same agent', async () => {
     // Create tenants
     const tenantRecord1 = await agent1.modules.tenants.createTenant({
