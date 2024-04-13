@@ -199,7 +199,8 @@ export class OpenId4VcSiopVerifierService {
             (e) =>
               e.payload.record.id === options.verificationSession.id &&
               e.payload.record.verifierId === options.verificationSession.verifierId &&
-              e.payload.record.state === OpenId4VcVerificationSessionState.ResponseVerified
+              (e.payload.record.state === OpenId4VcVerificationSessionState.ResponseVerified ||
+                e.payload.record.state === OpenId4VcVerificationSessionState.Error)
           ),
           first(),
           timeout({
