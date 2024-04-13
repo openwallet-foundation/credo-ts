@@ -138,9 +138,9 @@ export class OpenId4VcSiopVerifierService {
 
     // NOTE: it's not possible to set the uri scheme when using the RP to create an auth request, only lower level
     // functions allow this. So we need to replace the uri scheme manually.
-    const authorizationRequestUri = (await authorizationRequest.uri()).encodedUri
+    let authorizationRequestUri = (await authorizationRequest.uri()).encodedUri
     if (options.presentationExchange) {
-      authorizationRequestUri.replace('openid://', 'openid4vp://')
+      authorizationRequestUri = authorizationRequestUri.replace('openid://', 'openid4vp://')
     }
 
     const verificationSession = await verificationSessionCreatedPromise

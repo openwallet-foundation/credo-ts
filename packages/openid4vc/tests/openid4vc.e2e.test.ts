@@ -453,7 +453,7 @@ describe('OpenId4Vc', () => {
       })
 
     expect(authorizationRequestUri1).toEqual(
-      `openid://?request_uri=${encodeURIComponent(verificationSession1.authorizationRequestUri)}`
+      `openid4vp://?request_uri=${encodeURIComponent(verificationSession1.authorizationRequestUri)}`
     )
 
     const { authorizationRequest: authorizationRequestUri2, verificationSession: verificationSession2 } =
@@ -469,7 +469,7 @@ describe('OpenId4Vc', () => {
       })
 
     expect(authorizationRequestUri2).toEqual(
-      `openid://?request_uri=${encodeURIComponent(verificationSession2.authorizationRequestUri)}`
+      `openid4vp://?request_uri=${encodeURIComponent(verificationSession2.authorizationRequestUri)}`
     )
 
     await verifierTenant1.endSession()
@@ -706,7 +706,7 @@ describe('OpenId4Vc', () => {
       })
 
     expect(authorizationRequest).toEqual(
-      `openid://?request_uri=${encodeURIComponent(verificationSession.authorizationRequestUri)}`
+      `openid4vp://?request_uri=${encodeURIComponent(verificationSession.authorizationRequestUri)}`
     )
 
     const resolvedAuthorizationRequest = await holder.agent.modules.openId4VcHolder.resolveSiopAuthorizationRequest(
