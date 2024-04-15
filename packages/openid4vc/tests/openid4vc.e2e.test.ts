@@ -418,8 +418,11 @@ describe('OpenId4Vc', () => {
             {
               verifiableCredentials: [
                 {
-                  credential: {
-                    type: ['VerifiableCredential', 'OpenBadgeCredential'],
+                  type: ClaimFormat.JwtVc,
+                  credentialRecord: {
+                    credential: {
+                      type: ['VerifiableCredential', 'OpenBadgeCredential'],
+                    },
                   },
                 },
               ],
@@ -441,8 +444,11 @@ describe('OpenId4Vc', () => {
             {
               verifiableCredentials: [
                 {
-                  credential: {
-                    type: ['VerifiableCredential', 'UniversityDegreeCredential'],
+                  type: ClaimFormat.JwtVc,
+                  credentialRecord: {
+                    credential: {
+                      type: ['VerifiableCredential', 'UniversityDegreeCredential'],
+                    },
                   },
                 },
               ],
@@ -659,17 +665,37 @@ describe('OpenId4Vc', () => {
       authorizationRequest
     )
 
-    expect(resolvedAuthorizationRequest.presentationExchange?.credentialsForRequest).toMatchObject({
+    expect(resolvedAuthorizationRequest.presentationExchange?.credentialsForRequest).toEqual({
       areRequirementsSatisfied: true,
+      name: undefined,
+      purpose: undefined,
       requirements: [
         {
+          isRequirementSatisfied: true,
+          needsCount: 1,
+          rule: 'pick',
           submissionEntry: [
             {
+              name: undefined,
+              purpose: undefined,
+              inputDescriptorId: 'OpenBadgeCredentialDescriptor',
               verifiableCredentials: [
                 {
-                  // FIXME: because we have the record, we don't know which fields will be disclosed
-                  // Can we temp-assign these to the record?
-                  compactSdJwtVc: signedSdJwtVc.compact,
+                  type: ClaimFormat.SdJwtVc,
+                  credentialRecord: expect.objectContaining({
+                    compactSdJwtVc: signedSdJwtVc.compact,
+                  }),
+                  // Name is NOT in here
+                  disclosedPayload: {
+                    cnf: {
+                      kid: 'did:key:z6MkpGR4gs4Rc3Zph4vj8wRnjnAxgAPSxcR8MAVKutWspQzc#z6MkpGR4gs4Rc3Zph4vj8wRnjnAxgAPSxcR8MAVKutWspQzc',
+                    },
+                    degree: 'bachelor',
+                    iat: expect.any(Number),
+                    iss: 'did:key:z6MkrzQPBr4pyqC776KKtrz13SchM5ePPbssuPuQZb5t4uKQ',
+                    university: 'innsbruck',
+                    vct: 'OpenBadgeCredential',
+                  },
                 },
               ],
             },
@@ -747,19 +773,46 @@ describe('OpenId4Vc', () => {
     expect(presentation.payload).not.toHaveProperty('university')
     expect(presentation.payload).not.toHaveProperty('name')
 
-    expect(presentationExchange).toMatchObject({
+    expect(presentationExchange).toEqual({
       definition: presentationDefinition,
       submission: {
         definition_id: 'OpenBadgeCredential',
+        descriptor_map: [
+          {
+            format: 'vc+sd-jwt',
+            id: 'OpenBadgeCredentialDescriptor',
+            path: '$',
+          },
+        ],
+        id: expect.any(String),
       },
       presentations: [
         {
+          compact: expect.any(String),
+          header: {
+            alg: 'EdDSA',
+            kid: '#z6MkrzQPBr4pyqC776KKtrz13SchM5ePPbssuPuQZb5t4uKQ',
+            typ: 'vc+sd-jwt',
+          },
           payload: {
+            _sd: [expect.any(String), expect.any(String)],
+            _sd_alg: 'sha-256',
+            cnf: {
+              kid: 'did:key:z6MkpGR4gs4Rc3Zph4vj8wRnjnAxgAPSxcR8MAVKutWspQzc#z6MkpGR4gs4Rc3Zph4vj8wRnjnAxgAPSxcR8MAVKutWspQzc',
+            },
+            iat: expect.any(Number),
+            iss: 'did:key:z6MkrzQPBr4pyqC776KKtrz13SchM5ePPbssuPuQZb5t4uKQ',
             vct: 'OpenBadgeCredential',
             degree: 'bachelor',
           },
           // university SHOULD be disclosed
           prettyClaims: {
+            cnf: {
+              kid: 'did:key:z6MkpGR4gs4Rc3Zph4vj8wRnjnAxgAPSxcR8MAVKutWspQzc#z6MkpGR4gs4Rc3Zph4vj8wRnjnAxgAPSxcR8MAVKutWspQzc',
+            },
+            iat: expect.any(Number),
+            iss: 'did:key:z6MkrzQPBr4pyqC776KKtrz13SchM5ePPbssuPuQZb5t4uKQ',
+            vct: 'OpenBadgeCredential',
             degree: 'bachelor',
             university: 'innsbruck',
           },
