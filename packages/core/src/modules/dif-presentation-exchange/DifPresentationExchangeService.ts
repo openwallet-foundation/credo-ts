@@ -93,7 +93,7 @@ export class DifPresentationExchangeService {
         }
 
         // We pick the first matching VC if we are auto-selecting
-        credentials[submission.inputDescriptorId].push(submission.verifiableCredentials[0])
+        credentials[submission.inputDescriptorId].push(submission.verifiableCredentials[0].credentialRecord)
       }
     }
 
