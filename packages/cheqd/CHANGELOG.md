@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.5.1](https://github.com/openwallet-foundation/credo-ts/compare/v0.5.0...v0.5.1) (2024-03-28)
+
+### Bug Fixes
+
+- **cheqd:** do not crash agent if cheqd down ([#1808](https://github.com/openwallet-foundation/credo-ts/issues/1808)) ([842efd4](https://github.com/openwallet-foundation/credo-ts/commit/842efd4512748a0787ce331add394426b3b07943))
+
 # [0.5.0](https://github.com/openwallet-foundation/credo-ts/compare/v0.4.2...v0.5.0) (2024-03-13)
 
 ### Features

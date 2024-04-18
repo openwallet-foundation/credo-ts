@@ -365,10 +365,18 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
       schema: AnonCredsSchema
       credentialDefinition: AnonCredsCredentialDefinition
       revocationRegistryDefinition?: AnonCredsRevocationRegistryDefinition
+      revocationRegistryId?: string
       credentialRequestMetadata: AnonCredsCredentialRequestMetadata
     }
   ) {
-    const { credential, credentialRequestMetadata, schema, credentialDefinition, credentialDefinitionId } = options
+    const {
+      credential,
+      credentialRequestMetadata,
+      schema,
+      credentialDefinition,
+      credentialDefinitionId,
+      revocationRegistryId,
+    } = options
 
     const methodName = agentContext.dependencyManager
       .resolve(AnonCredsRegistryService)
@@ -377,15 +385,15 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
     // this thows an error if the link secret is not found
     await getLinkSecret(agentContext, credentialRequestMetadata.link_secret_name)
 
-    const { revocationRegistryId, revocationRegistryIndex } = W3cAnonCredsCredential.fromJson(
-      JsonTransformer.toJSON(credential)
-    )
+    const { revocationRegistryIndex } = W3cAnonCredsCredential.fromJson(JsonTransformer.toJSON(credential))
 
-    const w3cCredentialService = agentContext.dependencyManager.resolve(W3cCredentialService)
-    const w3cCredentialRecord = await w3cCredentialService.storeCredential(agentContext, { credential })
+    if (Array.isArray(credential.credentialSubject)) {
+      throw new CredoError('Credential subject must be an object, not an array.')
+    }
 
     const anonCredsTags = getW3cRecordAnonCredsTags({
-      w3cCredentialRecord,
+      credentialSubject: credential.credentialSubject,
+      issuerId: credential.issuerId,
       schema,
       schemaId: credentialDefinition.schemaId,
       credentialDefinitionId,
@@ -394,6 +402,9 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
       linkSecretId: credentialRequestMetadata.link_secret_name,
       methodName,
     })
+
+    const w3cCredentialService = agentContext.dependencyManager.resolve(W3cCredentialService)
+    const w3cCredentialRecord = await w3cCredentialService.storeCredential(agentContext, { credential })
 
     const anonCredsCredentialMetadata: W3cAnonCredsCredentialMetadata = {
       credentialRevocationId: anonCredsTags.anonCredsCredentialRevocationId,
@@ -440,6 +451,7 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
       schema,
       credentialDefinition,
       revocationRegistryDefinition: revocationRegistry?.definition,
+      revocationRegistryId: revocationRegistry?.id,
     })
 
     return w3cCredentialRecord.id

@@ -52,16 +52,17 @@ export class TenantsApi<AgentModules extends ModulesMap = DefaultAgentModules> {
     return tenantAgent
   }
 
-  public async withTenantAgent(
+  public async withTenantAgent<ReturnValue>(
     options: GetTenantAgentOptions,
-    withTenantAgentCallback: WithTenantAgentCallback<AgentModules>
-  ): Promise<void> {
+    withTenantAgentCallback: WithTenantAgentCallback<AgentModules, ReturnValue>
+  ): Promise<ReturnValue> {
     this.logger.debug(`Getting tenant agent for tenant '${options.tenantId}' in with tenant agent callback`)
     const tenantAgent = await this.getTenantAgent(options)
 
     try {
       this.logger.debug(`Calling tenant agent callback for tenant '${options.tenantId}'`)
-      await withTenantAgentCallback(tenantAgent)
+      const result = await withTenantAgentCallback(tenantAgent)
+      return result
     } catch (error) {
       this.logger.error(`Error in tenant agent callback for tenant '${options.tenantId}'`, { error })
       throw error
