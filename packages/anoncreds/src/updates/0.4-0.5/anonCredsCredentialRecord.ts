@@ -91,17 +91,13 @@ async function migrateLegacyToW3cCredential(agentContext: AgentContext, legacyRe
     issuerId: qualifiedIssuerId,
   })
 
-  const w3cCredentialService = agentContext.dependencyManager.resolve(W3cCredentialService)
-  const w3cCredentialRecord = await w3cCredentialService.storeCredential(agentContext, {
-    credential: w3cJsonLdCredential,
-  })
-
-  for (const [key, meta] of Object.entries(legacyRecord.metadata.data)) {
-    w3cCredentialRecord.metadata.set(key, meta)
+  if (Array.isArray(w3cJsonLdCredential.credentialSubject)) {
+    throw new CredoError('Credential subject must be an object, not an array.')
   }
 
   const anonCredsTags = getW3cRecordAnonCredsTags({
-    w3cCredentialRecord,
+    credentialSubject: w3cJsonLdCredential.credentialSubject,
+    issuerId: w3cJsonLdCredential.issuerId,
     schemaId: qualifiedSchemaId,
     schema: {
       issuerId: qualifiedSchemaIssuerId,
@@ -114,6 +110,15 @@ async function migrateLegacyToW3cCredential(agentContext: AgentContext, legacyRe
     linkSecretId: legacyTags.linkSecretId,
     methodName: legacyTags.methodName,
   })
+
+  const w3cCredentialService = agentContext.dependencyManager.resolve(W3cCredentialService)
+  const w3cCredentialRecord = await w3cCredentialService.storeCredential(agentContext, {
+    credential: w3cJsonLdCredential,
+  })
+
+  for (const [key, meta] of Object.entries(legacyRecord.metadata.data)) {
+    w3cCredentialRecord.metadata.set(key, meta)
+  }
 
   const anonCredsCredentialMetadata: W3cAnonCredsCredentialMetadata = {
     credentialRevocationId: anonCredsTags.anonCredsCredentialRevocationId,
