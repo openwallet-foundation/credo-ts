@@ -89,7 +89,7 @@ const testEncodings: { [key: string]: { raw: string | number | boolean | null; e
   },
   'leading zero number string': {
     raw: '012345',
-    encoded: '12345',
+    encoded: '012345',
   },
   'chr 0': {
     raw: String.fromCharCode(0),
@@ -119,6 +119,11 @@ describe('Utils | Credentials', () => {
           mimeType: 'text/plain',
           value: '1234',
         }),
+        new CredentialPreviewAttribute({
+          name: 'id',
+          mimeType: 'text/plain',
+          value: '0678',
+        }),
       ]
 
       expect(convertAttributesToCredentialValues(attributes)).toEqual({
@@ -127,6 +132,7 @@ describe('Utils | Credentials', () => {
           encoded: '68086943237164982734333428280784300550565381723532936263016368251445461241953',
         },
         age: { raw: '1234', encoded: '1234' },
+        id: { raw: '0678', encoded: '0678' },
       })
     })
   })

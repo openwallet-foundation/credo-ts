@@ -15,6 +15,8 @@ const isString = (value: unknown): value is string => typeof value === 'string'
 const isNumber = (value: unknown): value is number => typeof value === 'number'
 const isBoolean = (value: unknown): value is boolean => typeof value === 'boolean'
 const isNumeric = (value: string) => /^-?\d+$/.test(value)
+const isDecimal = (number: number) => !Number.isInteger(number)
+const hasLeadingZero = (value: string) => value.length > 1 && value.startsWith('0')
 
 const isInt32 = (number: number) => {
   const minI32 = -2147483648
@@ -46,6 +48,11 @@ export function encodeCredentialValue(value: unknown) {
 
   // If value is int32 return as number string
   if (isNumber(value) && isInt32(value)) {
+    return value.toString()
+  }
+
+  // If value is a number string with leading zero and not a decimal return as number string
+  if (isString(value) && !isNaN(Number(value)) && !isDecimal(Number(value)) && hasLeadingZero(value)) {
     return value.toString()
   }
 
