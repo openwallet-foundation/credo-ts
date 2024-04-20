@@ -57,7 +57,14 @@ export function encodeCredentialValue(value: unknown) {
   }
 
   // If value is an int32 number string return as number string
-  if (isString(value) && !isEmpty(value) && !isNaN(Number(value)) && isNumeric(value) && isInt32(Number(value))) {
+  if (
+    isString(value) &&
+    !isEmpty(value) &&
+    !isNaN(Number(value)) &&
+    isNumeric(value) &&
+    isInt32(Number(value)) &&
+    !hasLeadingZero(value)
+  ) {
     return Number(value).toString()
   }
 
