@@ -89,7 +89,7 @@ const testEncodings: { [key: string]: { raw: string | number | boolean | null; e
   },
   'leading zero number string': {
     raw: '012345',
-    encoded: '012345',
+    encoded: '15442803653501515687133735982599955909858317553820932727345025407787217899333',
   },
   'chr 0': {
     raw: String.fromCharCode(0),
@@ -132,7 +132,7 @@ describe('Utils | Credentials', () => {
           encoded: '68086943237164982734333428280784300550565381723532936263016368251445461241953',
         },
         age: { raw: '1234', encoded: '1234' },
-        id: { raw: '0678', encoded: '0678' },
+        id: { raw: '0678', encoded: '77028439388269848458807170800403172154093562860161099407497319717275846030012' },
       })
     })
   })
