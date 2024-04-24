@@ -17,7 +17,8 @@ export function sortRequestedCredentialsMatches<
 
   return credentialsClone.sort((credential, compareTo) => {
     // Nothing needs to happen if values are the same
-    if (credential.revoked === compareTo.revoked) return compareTo.credentialInfo.updatedAt.getTime() - credential.credentialInfo.updatedAt.getTime()
+    if (credential.revoked === compareTo.revoked)
+      return compareTo.credentialInfo.updatedAt.getTime() - credential.credentialInfo.updatedAt.getTime()
 
     // Undefined always is at the top
     if (credential.revoked === undefined) return credentialGoUp
