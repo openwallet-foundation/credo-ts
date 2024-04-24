@@ -26,7 +26,7 @@ import { JsonEncoder, JsonTransformer } from '../src/utils'
 import { TestMessage } from './TestMessage'
 import { getInMemoryAgentOptions, waitForCredentialRecord } from './helpers'
 
-import { AgentEventTypes, CredoError, AutoAcceptCredential, CredentialState } from '@credo-ts/core'
+import { AgentEventTypes, CredoError, AutoAcceptCredential, CredentialState, PeerDidNumAlgo } from '@credo-ts/core'
 
 const faberAgentOptions = getInMemoryAgentOptions(
   'Faber Agent OOB',
@@ -716,7 +716,7 @@ describe('out of band', () => {
       )
     })
 
-    test.only(`make two connections with ${HandshakeProtocol.DidExchange} by reusing the did from the first connection as the 'invitationDid' in oob invitation for the second connection`, async () => {
+    test(`make two connections with ${HandshakeProtocol.DidExchange} by reusing the did from the first connection as the 'invitationDid' in oob invitation for the second connection`, async () => {
       const outOfBandRecord1 = await faberAgent.oob.createInvitation({})
 
       let { connectionRecord: aliceFaberConnection } = await aliceAgent.oob.receiveInvitation(

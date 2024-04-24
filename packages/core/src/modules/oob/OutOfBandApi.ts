@@ -31,6 +31,7 @@ import { parseInvitationShortUrl } from '../../utils/parseInvitation'
 import { ConnectionsApi, DidExchangeState, HandshakeProtocol } from '../connections'
 import { DidCommDocumentService } from '../didcomm'
 import { DidKey } from '../dids'
+import { outOfBandServiceToInlineKeysNumAlgo2Did } from '../dids/methods/peer/peerDidNumAlgo2'
 import { RoutingService } from '../routing/services/RoutingService'
 
 import { OutOfBandService } from './OutOfBandService'
@@ -787,6 +788,13 @@ export class OutOfBandApi {
 
     for (const invitationDid of outOfBandInvitation.invitationDids) {
       const connections = await this.connectionsApi.findByInvitationDid(invitationDid)
+
+      // Also search for legacy invitationDids based on inline services (TODO: remove in 0.6.0)
+      for (const service of outOfBandInvitation.getInlineServices()) {
+        const records = await this.connectionsApi.findByInvitationDid(outOfBandServiceToInlineKeysNumAlgo2Did(service))
+        connections.push(...records)
+      }
+
       this.logger.debug(`Retrieved ${connections.length} connections for invitation did ${invitationDid}`)
 
       if (connections.length === 1) {
