@@ -23,3 +23,8 @@ export {
   fetchSchema,
   fetchRevocationStatusList,
 } from './utils/anonCredsObjects'
+
+export { AnonCredsCredentialMetadataKey } from './utils/metadata'
+export { getAnonCredsTagsFromRecord, AnonCredsCredentialTags } from './utils/w3cAnonCredsUtils'
+export { W3cAnonCredsCredentialMetadataKey } from './utils/metadata'
+export { getCredentialsForAnonCredsProofRequest } from './utils/getCredentialsForAnonCredsRequest'

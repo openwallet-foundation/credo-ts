@@ -152,7 +152,7 @@ describe('W3cCredential', () => {
         },
         W3cCredential
       )
-    ).toThrow()
+    ).not.toThrow()
 
     expect(() =>
       JsonTransformer.fromJSON(

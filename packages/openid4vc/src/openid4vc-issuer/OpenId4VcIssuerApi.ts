@@ -29,7 +29,15 @@ export class OpenId4VcIssuerApi {
     return this.openId4VcIssuerService.getAllIssuers(this.agentContext)
   }
 
+  /**
+   * @deprecated use {@link getIssuerByIssuerId} instead.
+   * @todo remove in 0.6
+   */
   public async getByIssuerId(issuerId: string) {
+    return this.getIssuerByIssuerId(issuerId)
+  }
+
+  public async getIssuerByIssuerId(issuerId: string) {
     return this.openId4VcIssuerService.getIssuerByIssuerId(this.agentContext, issuerId)
   }
 

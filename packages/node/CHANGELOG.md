@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.5.1](https://github.com/openwallet-foundation/credo-ts/compare/v0.5.0...v0.5.1) (2024-03-28)
+
+### Bug Fixes
+
+- import of websocket ([#1804](https://github.com/openwallet-foundation/credo-ts/issues/1804)) ([48b31ae](https://github.com/openwallet-foundation/credo-ts/commit/48b31ae9229cd188defb0ed3b4e64b0346013f3d))
+
 # [0.5.0](https://github.com/openwallet-foundation/credo-ts/compare/v0.4.2...v0.5.0) (2024-03-13)
 
 **Note:** Version bump only for package @credo-ts/node

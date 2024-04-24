@@ -3,6 +3,16 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.5.1](https://github.com/openwallet-foundation/credo-ts/compare/v0.5.0...v0.5.1) (2024-03-28)
+
+### Bug Fixes
+
+- anoncreds w3c migration metadata ([#1803](https://github.com/openwallet-foundation/credo-ts/issues/1803)) ([069c9c4](https://github.com/openwallet-foundation/credo-ts/commit/069c9c4fe362ee6c8af233df154d2d9b2c0f2d44))
+
+### Features
+
+- **anoncreds:** expose methods and metadata ([#1797](https://github.com/openwallet-foundation/credo-ts/issues/1797)) ([5992c57](https://github.com/openwallet-foundation/credo-ts/commit/5992c57a34d3b48dfa86cb659c77af498b6e8708))
+
 # [0.5.0](https://github.com/openwallet-foundation/credo-ts/compare/v0.4.2...v0.5.0) (2024-03-13)
 
 ### Bug Fixes

@@ -1,8 +1,10 @@
 import type { OpenId4VciCredentialOfferPayload } from '../../shared'
-import type { OpenId4VcIssuanceSessionState } from '../OpenId4VcIssuanceSessionState'
 import type { RecordTags, TagsBase } from '@credo-ts/core'
 
-import { CredoError, BaseRecord, utils } from '@credo-ts/core'
+import { CredoError, BaseRecord, utils, DateTransformer } from '@credo-ts/core'
+import { Transform } from 'class-transformer'
+
+import { OpenId4VcIssuanceSessionState } from '../OpenId4VcIssuanceSessionState'
 
 export type OpenId4VcIssuanceSessionRecordTags = RecordTags<OpenId4VcIssuanceSessionRecord>
 
@@ -20,7 +22,9 @@ export interface OpenId4VcIssuanceSessionRecordProps {
   tags?: TagsBase
 
   issuerId: string
+
   cNonce?: string
+  cNonceExpiresAt?: Date
 
   preAuthorizedCode?: string
   userPin?: string
@@ -45,12 +49,31 @@ export class OpenId4VcIssuanceSessionRecord extends BaseRecord<DefaultOpenId4VcI
   /**
    * The state of the issuance session.
    */
+  @Transform(({ value }) => {
+    // CredentialIssued is an old state that is no longer used. It should be mapped to Error.
+    if (value === 'CredentialIssued') {
+      return OpenId4VcIssuanceSessionState.Error
+    }
+
+    return value
+  })
   public state!: OpenId4VcIssuanceSessionState
+
+  /**
+   * The credentials that were issued during this session.
+   */
+  public issuedCredentials: string[] = []
 
   /**
    * cNonce that should be used in the credential request by the holder.
    */
   public cNonce?: string
+
+  /**
+   * The time at which the cNonce expires.
+   */
+  @DateTransformer()
+  public cNonceExpiresAt?: Date
 
   /**
    * Pre authorized code used for the issuance session. Only used when a pre-authorized credential
@@ -96,6 +119,7 @@ export class OpenId4VcIssuanceSessionRecord extends BaseRecord<DefaultOpenId4VcI
 
       this.issuerId = props.issuerId
       this.cNonce = props.cNonce
+      this.cNonceExpiresAt = props.cNonceExpiresAt
       this.userPin = props.userPin
       this.preAuthorizedCode = props.preAuthorizedCode
       this.credentialOfferUri = props.credentialOfferUri

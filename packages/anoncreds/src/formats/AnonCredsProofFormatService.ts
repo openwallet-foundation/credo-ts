@@ -1,21 +1,12 @@
-import type {
-  AnonCredsProofFormat,
-  AnonCredsCredentialsForProofRequest,
-  AnonCredsGetCredentialsForProofRequestOptions,
-} from './AnonCredsProofFormat'
+import type { AnonCredsProofFormat, AnonCredsGetCredentialsForProofRequestOptions } from './AnonCredsProofFormat'
 import type {
   AnonCredsCredentialDefinition,
-  AnonCredsCredentialInfo,
   AnonCredsProof,
-  AnonCredsRequestedAttribute,
-  AnonCredsRequestedAttributeMatch,
-  AnonCredsRequestedPredicate,
-  AnonCredsRequestedPredicateMatch,
   AnonCredsSchema,
   AnonCredsSelectedCredentials,
   AnonCredsProofRequest,
 } from '../models'
-import type { AnonCredsHolderService, AnonCredsVerifierService, GetCredentialsForProofRequestReturn } from '../services'
+import type { AnonCredsHolderService, AnonCredsVerifierService } from '../services'
 import type {
   ProofFormatService,
   AgentContext,
@@ -40,20 +31,17 @@ import { CredoError, Attachment, AttachmentData, JsonEncoder, ProofFormatSpec, J
 import { AnonCredsProofRequest as AnonCredsProofRequestClass } from '../models/AnonCredsProofRequest'
 import { AnonCredsVerifierServiceSymbol, AnonCredsHolderServiceSymbol } from '../services'
 import {
-  sortRequestedCredentialsMatches,
   createRequestFromPreview,
   areAnonCredsProofRequestsEqual,
-  assertBestPracticeRevocationInterval,
   checkValidCredentialValueEncoding,
   assertNoDuplicateGroupsNamesInProofRequest,
   getRevocationRegistriesForRequest,
   getRevocationRegistriesForProof,
   fetchSchema,
   fetchCredentialDefinition,
-  fetchRevocationStatusList,
 } from '../utils'
 import { encodeCredentialValue } from '../utils/credential'
-import { dateToTimestamp } from '../utils/timestamp'
+import { getCredentialsForAnonCredsProofRequest } from '../utils/getCredentialsForAnonCredsRequest'
 
 const ANONCREDS_PRESENTATION_PROPOSAL = 'anoncreds/proof-request@v1.0'
 const ANONCREDS_PRESENTATION_REQUEST = 'anoncreds/proof-request@v1.0'
@@ -254,7 +242,7 @@ export class AnonCredsProofFormatService implements ProofFormatService<AnonCreds
     // Set default values
     const { filterByNonRevocationRequirements = true } = proofFormats?.anoncreds ?? {}
 
-    const credentialsForRequest = await this._getCredentialsForRequest(agentContext, proofRequestJson, {
+    const credentialsForRequest = await getCredentialsForAnonCredsProofRequest(agentContext, proofRequestJson, {
       filterByNonRevocationRequirements,
     })
 
@@ -319,90 +307,12 @@ export class AnonCredsProofFormatService implements ProofFormatService<AnonCreds
     return supportedFormats.includes(formatIdentifier)
   }
 
-  private async _getCredentialsForRequest(
-    agentContext: AgentContext,
-    proofRequest: AnonCredsProofRequest,
-    options: AnonCredsGetCredentialsForProofRequestOptions
-  ): Promise<AnonCredsCredentialsForProofRequest> {
-    const credentialsForProofRequest: AnonCredsCredentialsForProofRequest = {
-      attributes: {},
-      predicates: {},
-    }
-
-    for (const [referent, requestedAttribute] of Object.entries(proofRequest.requested_attributes)) {
-      const credentials = await this.getCredentialsForProofRequestReferent(agentContext, proofRequest, referent)
-
-      credentialsForProofRequest.attributes[referent] = sortRequestedCredentialsMatches(
-        await Promise.all(
-          credentials.map(async (credential) => {
-            const { isRevoked, timestamp } = await this.getRevocationStatus(
-              agentContext,
-              proofRequest,
-              requestedAttribute,
-              credential.credentialInfo
-            )
-
-            return {
-              credentialId: credential.credentialInfo.credentialId,
-              revealed: true,
-              credentialInfo: credential.credentialInfo,
-              timestamp,
-              revoked: isRevoked,
-            } satisfies AnonCredsRequestedAttributeMatch
-          })
-        )
-      )
-
-      // We only attach revoked state if non-revocation is requested. So if revoked is true it means
-      // the credential is not applicable to the proof request
-      if (options.filterByNonRevocationRequirements) {
-        credentialsForProofRequest.attributes[referent] = credentialsForProofRequest.attributes[referent].filter(
-          (r) => !r.revoked
-        )
-      }
-    }
-
-    for (const [referent, requestedPredicate] of Object.entries(proofRequest.requested_predicates)) {
-      const credentials = await this.getCredentialsForProofRequestReferent(agentContext, proofRequest, referent)
-
-      credentialsForProofRequest.predicates[referent] = sortRequestedCredentialsMatches(
-        await Promise.all(
-          credentials.map(async (credential) => {
-            const { isRevoked, timestamp } = await this.getRevocationStatus(
-              agentContext,
-              proofRequest,
-              requestedPredicate,
-              credential.credentialInfo
-            )
-
-            return {
-              credentialId: credential.credentialInfo.credentialId,
-              credentialInfo: credential.credentialInfo,
-              timestamp,
-              revoked: isRevoked,
-            } satisfies AnonCredsRequestedPredicateMatch
-          })
-        )
-      )
-
-      // We only attach revoked state if non-revocation is requested. So if revoked is true it means
-      // the credential is not applicable to the proof request
-      if (options.filterByNonRevocationRequirements) {
-        credentialsForProofRequest.predicates[referent] = credentialsForProofRequest.predicates[referent].filter(
-          (r) => !r.revoked
-        )
-      }
-    }
-
-    return credentialsForProofRequest
-  }
-
   private async _selectCredentialsForRequest(
     agentContext: AgentContext,
     proofRequest: AnonCredsProofRequest,
     options: AnonCredsGetCredentialsForProofRequestOptions
   ): Promise<AnonCredsSelectedCredentials> {
-    const credentialsForRequest = await this._getCredentialsForRequest(agentContext, proofRequest, options)
+    const credentialsForRequest = await getCredentialsForAnonCredsProofRequest(agentContext, proofRequest, options)
 
     const selectedCredentials: AnonCredsSelectedCredentials = {
       attributes: {},
@@ -429,21 +339,6 @@ export class AnonCredsProofFormatService implements ProofFormatService<AnonCreds
     })
 
     return selectedCredentials
-  }
-
-  private async getCredentialsForProofRequestReferent(
-    agentContext: AgentContext,
-    proofRequest: AnonCredsProofRequest,
-    attributeReferent: string
-  ): Promise<GetCredentialsForProofRequestReturn> {
-    const holderService = agentContext.dependencyManager.resolve<AnonCredsHolderService>(AnonCredsHolderServiceSymbol)
-
-    const credentials = await holderService.getCredentialsForProofRequest(agentContext, {
-      proofRequest,
-      attributeReferent,
-    })
-
-    return credentials
   }
 
   /**
@@ -484,49 +379,6 @@ export class AnonCredsProofFormatService implements ProofFormatService<AnonCreds
     }
 
     return credentialDefinitions
-  }
-
-  private async getRevocationStatus(
-    agentContext: AgentContext,
-    proofRequest: AnonCredsProofRequest,
-    requestedItem: AnonCredsRequestedAttribute | AnonCredsRequestedPredicate,
-    credentialInfo: AnonCredsCredentialInfo
-  ) {
-    const requestNonRevoked = requestedItem.non_revoked ?? proofRequest.non_revoked
-    const credentialRevocationId = credentialInfo.credentialRevocationId
-    const revocationRegistryId = credentialInfo.revocationRegistryId
-
-    // If revocation interval is not present or the credential is not revocable then we
-    // don't need to fetch the revocation status
-    if (!requestNonRevoked || credentialRevocationId === null || !revocationRegistryId) {
-      return { isRevoked: undefined, timestamp: undefined }
-    }
-
-    agentContext.config.logger.trace(
-      `Fetching credential revocation status for credential revocation id '${credentialRevocationId}' with revocation interval with from '${requestNonRevoked.from}' and to '${requestNonRevoked.to}'`
-    )
-
-    // Make sure the revocation interval follows best practices from Aries RFC 0441
-    assertBestPracticeRevocationInterval(requestNonRevoked)
-
-    const { revocationStatusList } = await fetchRevocationStatusList(
-      agentContext,
-      revocationRegistryId,
-      requestNonRevoked.to ?? dateToTimestamp(new Date())
-    )
-
-    const isRevoked = revocationStatusList.revocationList[parseInt(credentialRevocationId)] === 1
-
-    agentContext.config.logger.trace(
-      `Credential with credential revocation index '${credentialRevocationId}' is ${
-        isRevoked ? '' : 'not '
-      }revoked with revocation interval with to '${requestNonRevoked.to}' & from '${requestNonRevoked.from}'`
-    )
-
-    return {
-      isRevoked,
-      timestamp: revocationStatusList.timestamp,
-    }
   }
 
   /**

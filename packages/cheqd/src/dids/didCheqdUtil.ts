@@ -114,12 +114,13 @@ export interface IDidDocOptions {
 }
 
 export function getClosestResourceVersion(resources: Metadata[], date: Date) {
-  const result = resources.sort(function (a, b) {
+  const result = [...resources].sort(function (a, b) {
     if (!a.created || !b.created) throw new CredoError("Missing required property 'created' on resource")
     const distancea = Math.abs(date.getTime() - a.created.getTime())
     const distanceb = Math.abs(date.getTime() - b.created.getTime())
     return distancea - distanceb
   })
+
   return result[0]
 }
 

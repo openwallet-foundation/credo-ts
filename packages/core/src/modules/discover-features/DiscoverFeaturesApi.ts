@@ -8,7 +8,7 @@ import type { DiscoverFeaturesService } from './services'
 import type { Feature } from '../../agent/models'
 
 import { firstValueFrom, of, ReplaySubject, Subject } from 'rxjs'
-import { catchError, filter, map, takeUntil, timeout } from 'rxjs/operators'
+import { catchError, filter, first, map, takeUntil, timeout } from 'rxjs/operators'
 
 import { AgentContext } from '../../agent'
 import { EventEmitter } from '../../agent/EventEmitter'
@@ -120,6 +120,8 @@ export class DiscoverFeaturesApi<
           filter((e) => e.payload.connection?.id === connection.id),
           // Return disclosures
           map((e) => e.payload.disclosures),
+          // Only wait for first event that matches the criteria
+          first(),
           // If we don't have an answer in timeoutMs miliseconds (no response, not supported, etc...) error
           timeout({
             first: options.awaitDisclosuresTimeoutMs ?? 7000,
