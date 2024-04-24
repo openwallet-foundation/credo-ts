@@ -15,11 +15,11 @@ import type { Signer, Verifier, HasherSync } from '@sd-jwt/types'
 
 import { SDJwtInstance } from '@sd-jwt/core'
 import { decodeSdJwtSync, getClaimsSync } from '@sd-jwt/decode'
-import { Uint8ArrayToBase64Url } from '@sd-jwt/utils'
+import { uint8ArrayToBase64Url } from '@sd-jwt/utils'
 import { injectable } from 'tsyringe'
 
 import { Jwk, getJwkFromJson, getJwkFromKey } from '../../crypto'
-import { TypedArrayEncoder, Hasher, Buffer } from '../../utils'
+import { TypedArrayEncoder, Hasher } from '../../utils'
 import { DidResolverService, parseDid, getKeyFromVerificationMethod } from '../dids'
 
 import { SdJwtVcError } from './SdJwtVcError'
@@ -269,7 +269,7 @@ export class SdJwtVcService {
   private signer(agentContext: AgentContext, key: Key): Signer {
     return async (input: string) => {
       const signedBuffer = await agentContext.wallet.sign({ key, data: TypedArrayEncoder.fromString(input) })
-      return Uint8ArrayToBase64Url(signedBuffer)
+      return uint8ArrayToBase64Url(signedBuffer)
     }
   }
 

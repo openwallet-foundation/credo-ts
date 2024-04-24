@@ -60,10 +60,6 @@ export type SdJwtVcPresentOptions<Payload extends SdJwtVcPayload = SdJwtVcPayloa
   }
 }
 
-export type SdJwtVcGetPresentationKeysOptions = {
-  compactSdJwtVc: string
-}
-
 export type SdJwtVcVerifyOptions = {
   compactSdJwtVc: string
 

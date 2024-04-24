@@ -124,6 +124,47 @@ describe('SdJwtVcService', () => {
       })
     })
 
+    test('Sign sd-jwt-vc from a basic payload including false boolean values', async () => {
+      const { compact } = await sdJwtVcService.sign(agent.context, {
+        payload: {
+          claim: 'some-claim',
+          vct: 'IdentityCredential',
+          value: false,
+          discloseableValue: false,
+        },
+        holder: {
+          // FIXME: is it nicer API to just pass either didUrl or JWK?
+          // Or none if you don't want to bind it?
+          method: 'jwk',
+          jwk: jwkJsonWithoutUse(getJwkFromKey(holderKey)),
+        },
+        issuer: {
+          method: 'did',
+          didUrl: issuerDidUrl,
+        },
+      })
+
+      const sdJwtVc = await sdJwtVcService.fromCompact(compact)
+
+      expect(sdJwtVc.header).toEqual({
+        alg: 'EdDSA',
+        typ: 'vc+sd-jwt',
+        kid: '#z6MktqtXNG8CDUY9PrrtoStFzeCnhpMmgxYL1gikcW3BzvNW',
+      })
+
+      expect(sdJwtVc.prettyClaims).toEqual({
+        claim: 'some-claim',
+        vct: 'IdentityCredential',
+        iat: Math.floor(new Date().getTime() / 1000),
+        iss: parseDid(issuerDidUrl).did,
+        value: false,
+        discloseableValue: false,
+        cnf: {
+          jwk: jwkJsonWithoutUse(getJwkFromKey(holderKey)),
+        },
+      })
+    })
+
     test('Create sd-jwt-vc from a basic payload with a disclosure', async () => {
       const { compact, header, prettyClaims, payload } = await sdJwtVcService.sign(agent.context, {
         payload: { claim: 'some-claim', vct: 'IdentityCredential' },
@@ -229,6 +270,92 @@ describe('SdJwtVcService', () => {
           'pdDk2_XAKHo7gOAfwF1b7OdCUVTit2kJHaxSECQ9xfc',
           'psauKUNWEi09nu3Cl89xKXgmpWENZl5uy1N1nyn_jMk',
           'sN_ge0pHXF6qmsYnX1A9SdwJ8ch8aENkxbODsT74YwI',
+        ],
+        _sd_alg: 'sha-256',
+        cnf: {
+          jwk: jwkJsonWithoutUse(getJwkFromKey(holderKey)),
+        },
+      })
+
+      expect(prettyClaims).toEqual({
+        vct: 'IdentityCredential',
+        iat: Math.floor(new Date().getTime() / 1000),
+        address: {
+          region: 'Anystate',
+          country: 'US',
+          locality: 'Anytown',
+          street_address: '123 Main St',
+        },
+        email: 'johndoe@example.com',
+        given_name: 'John',
+        phone_number: '+1-202-555-0101',
+        family_name: 'Doe',
+        iss: issuerDidUrl.split('#')[0],
+        birthdate: '1940-01-01',
+        is_over_18: true,
+        is_over_21: true,
+        is_over_65: true,
+        cnf: {
+          jwk: jwkJsonWithoutUse(getJwkFromKey(holderKey)),
+        },
+      })
+    })
+
+    test('Create sd-jwt-vc from a basic payload with multiple (nested) disclosure where a disclosure contains other disclosures', async () => {
+      const { header, payload, prettyClaims } = await sdJwtVcService.sign(agent.context, {
+        disclosureFrame: {
+          _sd: ['is_over_65', 'is_over_21', 'is_over_18', 'birthdate', 'email', 'given_name', 'address'],
+          address: {
+            _sd: ['region', 'country'],
+          },
+        },
+        payload: {
+          vct: 'IdentityCredential',
+          given_name: 'John',
+          family_name: 'Doe',
+          email: 'johndoe@example.com',
+          phone_number: '+1-202-555-0101',
+          address: {
+            street_address: '123 Main St',
+            locality: 'Anytown',
+            region: 'Anystate',
+            country: 'US',
+          },
+          birthdate: '1940-01-01',
+          is_over_18: true,
+          is_over_21: true,
+          is_over_65: true,
+        },
+        holder: {
+          method: 'jwk',
+          jwk: jwkJsonWithoutUse(getJwkFromKey(holderKey)),
+        },
+        issuer: {
+          method: 'did',
+          didUrl: issuerDidUrl,
+        },
+      })
+
+      expect(header).toEqual({
+        alg: 'EdDSA',
+        typ: 'vc+sd-jwt',
+        kid: '#z6MktqtXNG8CDUY9PrrtoStFzeCnhpMmgxYL1gikcW3BzvNW',
+      })
+
+      expect(payload).toEqual({
+        vct: 'IdentityCredential',
+        iat: Math.floor(new Date().getTime() / 1000),
+        phone_number: '+1-202-555-0101',
+        family_name: 'Doe',
+        iss: issuerDidUrl.split('#')[0],
+        _sd: [
+          '1Cur2k2A2oIB5CshSIf_A_Kg-l26u_qKuWQ79P0Vdas',
+          'R1zTUvOYHgcepj0jHypGHz9EHttVKft0yswbc9ETPbU',
+          'eDqQpdTXJXbWhf-EsI7zw5X6OvYmFN-UZQQMesXwKPw',
+          'pdDk2_XAKHo7gOAfwF1b7OdCUVTit2kJHaxSECQ9xfc',
+          'psauKUNWEi09nu3Cl89xKXgmpWENZl5uy1N1nyn_jMk',
+          'sN_ge0pHXF6qmsYnX1A9SdwJ8ch8aENkxbODsT74YwI',
+          'yPhxDEM7k7p7eQ9eHHC-Ca6VEA8bzebZpYu7vYmwG6c',
         ],
         _sd_alg: 'sha-256',
         cnf: {

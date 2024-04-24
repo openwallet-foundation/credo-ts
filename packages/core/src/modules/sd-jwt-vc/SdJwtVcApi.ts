@@ -4,7 +4,6 @@ import type {
   SdJwtVcPayload,
   SdJwtVcPresentOptions,
   SdJwtVcVerifyOptions,
-  SdJwtVcGetPresentationKeysOptions,
 } from './SdJwtVcOptions'
 import type { SdJwtVcRecord } from './repository'
 import type { Query } from '../../storage/StorageService'
