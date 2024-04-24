@@ -787,7 +787,9 @@ export class ConnectionService {
     const didDocument = convertToNewDidDocument(didDoc)
 
     // Assert that the keys we are going to use for creating a did document haven't already been used in another did document
-    await assertNoCreatedDidExistsForKeys(agentContext, didDocument.recipientKeys)
+    if (role === DidDocumentRole.Created) {
+      await assertNoCreatedDidExistsForKeys(agentContext, didDocument.recipientKeys)
+    }
 
     const peerDid = didDocumentJsonToNumAlgo1Did(didDocument.toJSON())
     didDocument.id = peerDid
