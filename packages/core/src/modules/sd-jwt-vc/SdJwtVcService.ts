@@ -11,7 +11,7 @@ import type { AgentContext } from '../../agent'
 import type { JwkJson, Key } from '../../crypto'
 import type { Query } from '../../storage/StorageService'
 import type { SDJwt } from '@sd-jwt/core'
-import type { Signer, Verifier, HasherSync } from '@sd-jwt/types'
+import type { Signer, Verifier, HasherSync, PresentationFrame, DisclosureFrame } from '@sd-jwt/types'
 
 import { SDJwtInstance } from '@sd-jwt/core'
 import { decodeSdJwtSync, getClaimsSync } from '@sd-jwt/decode'
@@ -91,7 +91,7 @@ export class SdJwtVcService {
 
     const compact = await sdjwt.issue(
       { ...payload, cnf: holderBinding.cnf, iss: issuer.iss, iat: Math.floor(new Date().getTime() / 1000) },
-      disclosureFrame,
+      disclosureFrame as DisclosureFrame<Payload>,
       { header }
     )
 
@@ -140,7 +140,7 @@ export class SdJwtVcService {
       kbSignAlg: holder.alg,
     })
 
-    const compactDerivedSdJwtVc = await sdjwt.present(compactSdJwtVc, presentationFrame, {
+    const compactDerivedSdJwtVc = await sdjwt.present(compactSdJwtVc, presentationFrame as PresentationFrame<Payload>, {
       kb: {
         payload: {
           iat: verifierMetadata.issuedAt,

@@ -1,10 +1,19 @@
 import type { JwkJson, Jwk } from '../../crypto'
 import type { HashName } from '../../utils'
-import type { DisclosureFrame, PresentationFrame } from '@sd-jwt/types'
 
 // TODO: extend with required claim names for input (e.g. vct)
 export type SdJwtVcPayload = Record<string, unknown>
 export type SdJwtVcHeader = Record<string, unknown>
+
+export interface IDisclosureFrame {
+  _sd?: string[]
+  _sd_decoy?: number
+  [x: string]: string[] | number | IDisclosureFrame | undefined
+}
+
+export interface IPresentationFrame {
+  [x: string]: boolean | IPresentationFrame
+}
 
 export interface SdJwtVcHolderDidBinding {
   method: 'did'
@@ -33,7 +42,7 @@ export interface SdJwtVcSignOptions<Payload extends SdJwtVcPayload = SdJwtVcPayl
   payload: Payload
   holder: SdJwtVcHolderBinding
   issuer: SdJwtVcIssuer
-  disclosureFrame?: DisclosureFrame<Payload>
+  disclosureFrame?: IDisclosureFrame
 
   /**
    * Default of sha-256 will be used if not provided
@@ -47,7 +56,7 @@ export type SdJwtVcPresentOptions<Payload extends SdJwtVcPayload = SdJwtVcPayloa
   /**
    * Use true to disclose everything
    */
-  presentationFrame?: PresentationFrame<Payload>
+  presentationFrame?: IPresentationFrame
 
   /**
    * This information is received out-of-band from the verifier.
