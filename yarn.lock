@@ -795,10 +795,10 @@
   resolved "https://registry.yarnpkg.com/@bcoe/v8-coverage/-/v8-coverage-0.2.3.tgz#75a2e8b51cb758a7553d6804a5932d7aace75c39"
   integrity sha512-0hYQ8SB4Db5zvZB4axdMHGwEaQjkZzFjQiN9LVYvIFB2nSUHW9tYpxWriPrWDASIxiaXax83REcLxuSdnGPZtw==
 
-"@cheqd/sdk@^2.4.3":
-  version "2.4.3"
-  resolved "https://registry.yarnpkg.com/@cheqd/sdk/-/sdk-2.4.3.tgz#da5a12e19a0c926774fe73aa6e33ffcda9918668"
-  integrity sha512-JD+7zcEZ281sIJ2EnCKDtWoNYBDT4AIItwf+8uME8fUZU6D6382WkZNqXjlWmJbNNt3IiEkrBpO1AMxT0/bE/g==
+"@cheqd/sdk@^2.4.4":
+  version "2.4.4"
+  resolved "https://registry.yarnpkg.com/@cheqd/sdk/-/sdk-2.4.4.tgz#80daf50e1ac83da0ec4e471def042c47496015c9"
+  integrity sha512-ratcHNuKUZH6pmRvyLeiEFODhrlawfiDssaSzANscOTjeDMJzHK0YvEiSXswZAHcsB/DWbGlR+9gKhbLyD5G7w==
   dependencies:
     "@cheqd/ts-proto" "~2.2.0"
     "@cosmjs/amino" "~0.30.0"
