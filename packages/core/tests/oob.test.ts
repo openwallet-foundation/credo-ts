@@ -26,7 +26,7 @@ import { JsonEncoder, JsonTransformer } from '../src/utils'
 import { TestMessage } from './TestMessage'
 import { getInMemoryAgentOptions, waitForCredentialRecord } from './helpers'
 
-import { AgentEventTypes, CredoError, AutoAcceptCredential, CredentialState } from '@credo-ts/core'
+import { AgentEventTypes, CredoError, AutoAcceptCredential, CredentialState, PeerDidNumAlgo } from '@credo-ts/core'
 
 const faberAgentOptions = getInMemoryAgentOptions(
   'Faber Agent OOB',
@@ -714,6 +714,36 @@ describe('out of band', () => {
       await expect(aliceAgent.oob.receiveInvitation(outOfBandInvitation, receiveInvitationConfig)).rejects.toEqual(
         new CredoError('There is no message in requests~attach supported by agent.')
       )
+    })
+
+    test(`make two connections with ${HandshakeProtocol.DidExchange} by reusing the did from the first connection as the 'invitationDid' in oob invitation for the second connection`, async () => {
+      const outOfBandRecord1 = await faberAgent.oob.createInvitation({})
+
+      let { connectionRecord: aliceFaberConnection } = await aliceAgent.oob.receiveInvitation(
+        outOfBandRecord1.outOfBandInvitation
+      )
+
+      aliceFaberConnection = await aliceAgent.connections.returnWhenIsConnected(aliceFaberConnection!.id)
+      expect(aliceFaberConnection.state).toBe(DidExchangeState.Completed)
+
+      let [faberAliceConnection] = await faberAgent.connections.findAllByOutOfBandId(outOfBandRecord1!.id)
+      faberAliceConnection = await faberAgent.connections.returnWhenIsConnected(faberAliceConnection!.id)
+      expect(faberAliceConnection?.state).toBe(DidExchangeState.Completed)
+
+      // Use the invitation did from the first connection to create the second connection
+      const outOfBandRecord2 = await faberAgent.oob.createInvitation({
+        invitationDid: outOfBandRecord1.outOfBandInvitation.invitationDids[0],
+      })
+
+      let { connectionRecord: aliceFaberConnection2 } = await aliceAgent.oob.receiveInvitation(
+        outOfBandRecord2.outOfBandInvitation
+      )
+      aliceFaberConnection2 = await aliceAgent.connections.returnWhenIsConnected(aliceFaberConnection2!.id)
+      expect(aliceFaberConnection2.state).toBe(DidExchangeState.Completed)
+
+      let [faberAliceConnection2] = await faberAgent.connections.findAllByOutOfBandId(outOfBandRecord2!.id)
+      faberAliceConnection2 = await faberAgent.connections.returnWhenIsConnected(faberAliceConnection2!.id)
+      expect(faberAliceConnection2?.state).toBe(DidExchangeState.Completed)
     })
   })
 

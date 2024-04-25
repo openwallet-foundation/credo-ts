@@ -109,9 +109,11 @@ export class ConnectionsApi {
       throw new CredoError(`'routing' is disallowed when defining 'ourDid'`)
     }
 
-    const routing =
-      config.routing ||
-      (await this.routingService.getRouting(this.agentContext, { mediatorId: outOfBandRecord.mediatorId }))
+    // Only generate routing if ourDid hasn't been provided
+    let routing = config.routing
+    if (!routing && !ourDid) {
+      routing = await this.routingService.getRouting(this.agentContext, { mediatorId: outOfBandRecord.mediatorId })
+    }
 
     let result
     if (protocol === HandshakeProtocol.DidExchange) {
@@ -125,6 +127,11 @@ export class ConnectionsApi {
     } else if (protocol === HandshakeProtocol.Connections) {
       if (ourDid) {
         throw new CredoError('Using an externally defined did for connections protocol is unsupported')
+      }
+      // This is just to make TS happy, as we always generate routing if ourDid is not provided
+      // and ourDid is not supported for connection (see check above)
+      if (!routing) {
+        throw new CredoError('Routing is required for connections protocol')
       }
 
       result = await this.connectionService.createRequest(this.agentContext, outOfBandRecord, {
@@ -169,9 +176,13 @@ export class ConnectionsApi {
       throw new CredoError(`Out-of-band record ${connectionRecord.outOfBandId} not found.`)
     }
 
-    // If the outOfBandRecord is reusable we need to use new routing keys for the connection, otherwise
-    // all connections will use the same routing keys
-    const routing = outOfBandRecord.reusable ? await this.routingService.getRouting(this.agentContext) : undefined
+    // We generate routing in two scenarios:
+    // 1. When the out-of-band invitation is reusable, as otherwise all connections use the same keys
+    // 2. When the out-of-band invitation has no inline services, as we don't want to generate a legacy did doc from a service did
+    const routing =
+      outOfBandRecord.reusable || outOfBandRecord.outOfBandInvitation.getInlineServices().length === 0
+        ? await this.routingService.getRouting(this.agentContext)
+        : undefined
 
     let outboundMessageContext
     if (connectionRecord.protocol === HandshakeProtocol.DidExchange) {
@@ -186,6 +197,14 @@ export class ConnectionsApi {
         connection: connectionRecord,
       })
     } else {
+      // We generate routing in two scenarios:
+      // 1. When the out-of-band invitation is reusable, as otherwise all connections use the same keys
+      // 2. When the out-of-band invitation has no inline services, as we don't want to generate a legacy did doc from a service did
+      const routing =
+        outOfBandRecord.reusable || outOfBandRecord.outOfBandInvitation.getInlineServices().length === 0
+          ? await this.routingService.getRouting(this.agentContext)
+          : undefined
+
       const { message } = await this.connectionService.createResponse(
         this.agentContext,
         connectionRecord,
