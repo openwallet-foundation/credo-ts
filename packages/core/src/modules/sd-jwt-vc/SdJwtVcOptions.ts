@@ -50,6 +50,8 @@ export interface SdJwtVcSignOptions<Payload extends SdJwtVcPayload = SdJwtVcPayl
   hashingAlgorithm?: HashName
 }
 
+// TODO: use the payload type once types are fixed
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export type SdJwtVcPresentOptions<Payload extends SdJwtVcPayload = SdJwtVcPayload> = {
   compactSdJwtVc: string
 
