@@ -4,7 +4,7 @@ import type { AutoAcceptCredential } from '../models/CredentialAutoAcceptType'
 import type { CredentialState } from '../models/CredentialState'
 import type { RevocationNotification } from '../models/RevocationNotification'
 
-import { Type } from 'class-transformer'
+import { Transform, TransformationType, Type } from 'class-transformer'
 
 import { Attachment } from '../../../decorators/attachment/Attachment'
 import { CredoError } from '../../../error'
@@ -56,6 +56,16 @@ export class CredentialExchangeRecord extends BaseRecord<DefaultCredentialTags, 
   public revocationNotification?: RevocationNotification
   public errorMessage?: string
   public protocolVersion!: string
+
+  // TODO; remove in 0.6 if migration has been applied
+  @Transform(({ value, type }) => {
+    if (type === TransformationType.PLAIN_TO_CLASS && Array.isArray(value)) {
+      return value.map((v: CredentialRecordBinding) =>
+        v.credentialRecordType === 'anoncreds' ? { ...v, credentialRecordType: 'w3c' } : v
+      )
+    }
+    return value
+  })
   public credentials: CredentialRecordBinding[] = []
 
   @Type(() => CredentialPreviewAttribute)
