@@ -29,7 +29,7 @@ import type { Observable } from 'rxjs'
 import { readFileSync } from 'fs'
 import path from 'path'
 import { lastValueFrom, firstValueFrom, ReplaySubject } from 'rxjs'
-import { catchError, filter, map, take, timeout } from 'rxjs/operators'
+import { catchError, filter, map, take, tap, timeout } from 'rxjs/operators'
 
 import { InMemoryWalletModule } from '../../../tests/InMemoryWalletModule'
 import { agentDependencies } from '../../node/src'
@@ -515,10 +515,10 @@ export function waitForConnectionRecordSubject(
       timeout(timeoutMs),
       catchError(() => {
         throw new Error(`ConnectionStateChanged event not emitted within specified timeout: {
-  previousState: ${previousState},
-  threadId: ${threadId},
-  state: ${state}
-}`)
+          previousState: ${previousState},
+          threadId: ${threadId},
+          state: ${state}
+        }`)
       }),
       map((e) => e.payload.connectionRecord)
     )

@@ -9,6 +9,7 @@ import {
   makeConnection,
   waitForAgentMessageProcessedEvent,
   waitForBasicMessage,
+  waitForConnectionRecord,
   waitForDidRotate,
 } from '../../../../tests/helpers'
 import { Agent } from '../../../agent/Agent'
@@ -19,6 +20,7 @@ import { BasicMessage } from '../../basic-messages'
 import { createPeerDidDocumentFromServices } from '../../dids'
 import { ConnectionsModule } from '../ConnectionsModule'
 import { DidRotateProblemReportMessage, HangupMessage, DidRotateAckMessage } from '../messages'
+import { DidExchangeState } from '../models'
 import { ConnectionRecord } from '../repository'
 
 import { InMemoryDidRegistry } from './InMemoryDidRegistry'
@@ -345,11 +347,31 @@ describe('Rotation E2E tests', () => {
         connectionRecord: bobAliceConnection!.clone(),
       })
 
+      const connectionsAbandoned = Promise.all([
+        waitForConnectionRecord(aliceAgent, {
+          state: DidExchangeState.Abandoned,
+          threadId: aliceBobConnection?.threadId,
+        }),
+        waitForConnectionRecord(bobAgent, {
+          state: DidExchangeState.Abandoned,
+          threadId: aliceBobConnection?.threadId,
+        }),
+      ])
       await aliceAgent.connections.hangup({ connectionId: aliceBobConnection!.id })
 
       // Wait for hangup
       await waitForAgentMessageProcessedEvent(bobAgent, {
         messageType: HangupMessage.type.messageTypeUri,
+      })
+
+      const [aliceAbandoned, bobAbandoned] = await connectionsAbandoned
+      expect(aliceAbandoned).toMatchObject({
+        state: DidExchangeState.Abandoned,
+        errorMessage: 'Connection hangup by us',
+      })
+      expect(bobAbandoned).toMatchObject({
+        state: DidExchangeState.Abandoned,
+        errorMessage: 'Connection hangup by other party',
       })
 
       // If Bob attempts to send a message to Alice after they received the hangup, framework should reject it
