@@ -1,7 +1,5 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 
-import type { ConnectionRecord } from '../repository'
-
 import { ReplaySubject, first, firstValueFrom, timeout } from 'rxjs'
 
 import { MessageSender } from '../../..//agent/MessageSender'
@@ -11,6 +9,8 @@ import {
   makeConnection,
   waitForAgentMessageProcessedEvent,
   waitForBasicMessage,
+  waitForConnectionRecord,
+  waitForDidRotate,
 } from '../../../../tests/helpers'
 import { Agent } from '../../../agent/Agent'
 import { getOutboundMessageContext } from '../../../agent/getOutboundMessageContext'
@@ -20,6 +20,8 @@ import { BasicMessage } from '../../basic-messages'
 import { createPeerDidDocumentFromServices } from '../../dids'
 import { ConnectionsModule } from '../ConnectionsModule'
 import { DidRotateProblemReportMessage, HangupMessage, DidRotateAckMessage } from '../messages'
+import { DidExchangeState } from '../models'
+import { ConnectionRecord } from '../repository'
 
 import { InMemoryDidRegistry } from './InMemoryDidRegistry'
 
@@ -233,11 +235,33 @@ describe('Rotation E2E tests', () => {
         didDocument,
       })
 
+      const waitForAllDidRotate = Promise.all([waitForDidRotate(aliceAgent, {}), waitForDidRotate(bobAgent, {})])
+
       // Do did rotate
       await aliceAgent.connections.rotate({ connectionId: aliceBobConnection!.id, toDid: did })
 
       // Wait for acknowledge
       await waitForAgentMessageProcessedEvent(aliceAgent, { messageType: DidRotateAckMessage.type.messageTypeUri })
+      const [firstRotate, secondRotate] = await waitForAllDidRotate
+
+      const preRotateDid = aliceBobConnection!.did
+      expect(firstRotate).toEqual({
+        connectionRecord: expect.any(ConnectionRecord),
+        ourDid: {
+          from: preRotateDid,
+          to: did,
+        },
+        theirDid: undefined,
+      })
+
+      expect(secondRotate).toEqual({
+        connectionRecord: expect.any(ConnectionRecord),
+        ourDid: undefined,
+        theirDid: {
+          from: preRotateDid,
+          to: did,
+        },
+      })
 
       // Send message to previous did
       await bobAgent.dependencyManager.resolve(MessageSender).sendMessage(messageToPreviousDid)
@@ -323,11 +347,31 @@ describe('Rotation E2E tests', () => {
         connectionRecord: bobAliceConnection!.clone(),
       })
 
+      const connectionsAbandoned = Promise.all([
+        waitForConnectionRecord(aliceAgent, {
+          state: DidExchangeState.Abandoned,
+          threadId: aliceBobConnection?.threadId,
+        }),
+        waitForConnectionRecord(bobAgent, {
+          state: DidExchangeState.Abandoned,
+          threadId: aliceBobConnection?.threadId,
+        }),
+      ])
       await aliceAgent.connections.hangup({ connectionId: aliceBobConnection!.id })
 
       // Wait for hangup
       await waitForAgentMessageProcessedEvent(bobAgent, {
         messageType: HangupMessage.type.messageTypeUri,
+      })
+
+      const [aliceAbandoned, bobAbandoned] = await connectionsAbandoned
+      expect(aliceAbandoned).toMatchObject({
+        state: DidExchangeState.Abandoned,
+        errorMessage: 'Connection hangup by us',
+      })
+      expect(bobAbandoned).toMatchObject({
+        state: DidExchangeState.Abandoned,
+        errorMessage: 'Connection hangup by other party',
       })
 
       // If Bob attempts to send a message to Alice after they received the hangup, framework should reject it
@@ -358,7 +402,7 @@ describe('Rotation E2E tests', () => {
       await aliceAgent.connections.hangup({ connectionId: aliceBobConnection!.id, deleteAfterHangup: true })
 
       // Verify that alice connection has been effectively deleted
-      expect(aliceAgent.connections.getById(aliceBobConnection!.id)).rejects.toThrowError(RecordNotFoundError)
+      expect(aliceAgent.connections.getById(aliceBobConnection!.id)).rejects.toThrow(RecordNotFoundError)
 
       // Wait for hangup
       await waitForAgentMessageProcessedEvent(bobAgent, {

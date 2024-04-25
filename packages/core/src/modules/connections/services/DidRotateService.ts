@@ -1,8 +1,10 @@
 import type { Routing } from './ConnectionService'
 import type { AgentContext } from '../../../agent'
 import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
+import type { ConnectionDidRotatedEvent, ConnectionStateChangedEvent } from '../ConnectionEvents'
 import type { ConnectionRecord } from '../repository/ConnectionRecord'
 
+import { EventEmitter } from '../../../agent/EventEmitter'
 import { OutboundMessageContext } from '../../../agent/models'
 import { InjectionSymbols } from '../../../constants'
 import { CredoError } from '../../../error'
@@ -18,8 +20,10 @@ import {
   isValidPeerDid,
 } from '../../dids'
 import { getMediationRecordForDidDocument } from '../../routing/services/helpers'
+import { ConnectionEventTypes } from '../ConnectionEvents'
 import { ConnectionsModuleConfig } from '../ConnectionsModuleConfig'
 import { DidRotateMessage, DidRotateAckMessage, DidRotateProblemReportMessage, HangupMessage } from '../messages'
+import { DidExchangeState } from '../models'
 import { ConnectionMetadataKeys } from '../repository/ConnectionMetadataTypes'
 
 import { ConnectionService } from './ConnectionService'
@@ -29,10 +33,16 @@ import { createPeerDidFromServices, getDidDocumentForCreatedDid, routingToServic
 export class DidRotateService {
   private didResolverService: DidResolverService
   private logger: Logger
+  private eventEmitter: EventEmitter
 
-  public constructor(didResolverService: DidResolverService, @inject(InjectionSymbols.Logger) logger: Logger) {
+  public constructor(
+    didResolverService: DidResolverService,
+    @inject(InjectionSymbols.Logger) logger: Logger,
+    eventEmitter: EventEmitter
+  ) {
     this.didResolverService = didResolverService
     this.logger = logger
+    this.eventEmitter = eventEmitter
   }
 
   public async createRotate(
@@ -95,9 +105,13 @@ export class DidRotateService {
       connection.previousDids = [...connection.previousDids, connection.did]
     }
 
+    const previousState = connection.state
     connection.did = undefined
+    connection.state = DidExchangeState.Abandoned
+    connection.errorMessage = 'Connection hangup by us'
 
     await agentContext.dependencyManager.resolve(ConnectionService).update(agentContext, connection)
+    this.emitStateChangedEvent(agentContext, connection, previousState)
 
     return message
   }
@@ -119,9 +133,13 @@ export class DidRotateService {
       connection.previousTheirDids = [...connection.previousTheirDids, connection.theirDid]
     }
 
+    const previousState = connection.state
     connection.theirDid = undefined
+    connection.state = DidExchangeState.Abandoned
+    connection.errorMessage = 'Connection hangup by other party'
 
     await agentContext.dependencyManager.resolve(ConnectionService).update(agentContext, connection)
+    this.emitStateChangedEvent(agentContext, connection, previousState)
   }
 
   /**
@@ -197,9 +215,13 @@ export class DidRotateService {
       connection.previousTheirDids = [...connection.previousTheirDids, connection.theirDid]
     }
 
+    const previousTheirDid = connection.theirDid
     connection.theirDid = newDid
 
     await agentContext.dependencyManager.resolve(ConnectionService).update(agentContext, connection)
+    this.emitDidRotatedEvent(agentContext, connection, {
+      previousTheirDid,
+    })
 
     return outboundMessageContext
   }
@@ -225,11 +247,15 @@ export class DidRotateService {
     // Store previous did in order to still accept out-of-order messages that arrived later using it
     if (connection.did) connection.previousDids = [...connection.previousDids, connection.did]
 
+    const previousOurDid = connection.did
     connection.did = didRotateMetadata.did
     connection.mediatorId = didRotateMetadata.mediatorId
     connection.metadata.delete(ConnectionMetadataKeys.DidRotate)
 
     await agentContext.dependencyManager.resolve(ConnectionService).update(agentContext, connection)
+    this.emitDidRotatedEvent(agentContext, connection, {
+      previousOurDid,
+    })
   }
 
   /**
@@ -270,5 +296,50 @@ export class DidRotateService {
     connection.metadata.delete(ConnectionMetadataKeys.DidRotate)
 
     await agentContext.dependencyManager.resolve(ConnectionService).update(agentContext, connection)
+  }
+
+  private emitDidRotatedEvent(
+    agentContext: AgentContext,
+    connectionRecord: ConnectionRecord,
+    { previousOurDid, previousTheirDid }: { previousOurDid?: string; previousTheirDid?: string }
+  ) {
+    this.eventEmitter.emit<ConnectionDidRotatedEvent>(agentContext, {
+      type: ConnectionEventTypes.ConnectionDidRotated,
+      payload: {
+        // Connection record in event should be static
+        connectionRecord: connectionRecord.clone(),
+
+        ourDid:
+          previousOurDid && connectionRecord.did
+            ? {
+                from: previousOurDid,
+                to: connectionRecord.did,
+              }
+            : undefined,
+
+        theirDid:
+          previousTheirDid && connectionRecord.theirDid
+            ? {
+                from: previousTheirDid,
+                to: connectionRecord.theirDid,
+              }
+            : undefined,
+      },
+    })
+  }
+
+  private emitStateChangedEvent(
+    agentContext: AgentContext,
+    connectionRecord: ConnectionRecord,
+    previousState: DidExchangeState | null
+  ) {
+    this.eventEmitter.emit<ConnectionStateChangedEvent>(agentContext, {
+      type: ConnectionEventTypes.ConnectionStateChanged,
+      payload: {
+        // Connection record in event should be static
+        connectionRecord: connectionRecord.clone(),
+        previousState,
+      },
+    })
   }
 }
