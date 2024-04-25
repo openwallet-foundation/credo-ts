@@ -136,11 +136,17 @@ export class OpenId4VcSiopVerifierService {
       requestByReferenceURI: hostedAuthorizationRequestUri,
     })
 
-    const authorizationRequestUri = await authorizationRequest.uri()
+    // NOTE: it's not possible to set the uri scheme when using the RP to create an auth request, only lower level
+    // functions allow this. So we need to replace the uri scheme manually.
+    let authorizationRequestUri = (await authorizationRequest.uri()).encodedUri
+    if (options.presentationExchange && !options.idToken) {
+      authorizationRequestUri = authorizationRequestUri.replace('openid://', 'openid4vp://')
+    }
+
     const verificationSession = await verificationSessionCreatedPromise
 
     return {
-      authorizationRequest: authorizationRequestUri.encodedUri,
+      authorizationRequest: authorizationRequestUri,
       verificationSession,
     }
   }
@@ -193,7 +199,8 @@ export class OpenId4VcSiopVerifierService {
             (e) =>
               e.payload.record.id === options.verificationSession.id &&
               e.payload.record.verifierId === options.verificationSession.verifierId &&
-              e.payload.record.state === OpenId4VcVerificationSessionState.ResponseVerified
+              (e.payload.record.state === OpenId4VcVerificationSessionState.ResponseVerified ||
+                e.payload.record.state === OpenId4VcVerificationSessionState.Error)
           ),
           first(),
           timeout({
@@ -353,10 +360,12 @@ export class OpenId4VcSiopVerifierService {
     agentContext: AgentContext,
     verifierId: string,
     {
+      idToken,
       presentationDefinition,
       requestSigner,
       clientId,
     }: {
+      idToken?: boolean
       presentationDefinition?: DifPresentationExchangeDefinition
       requestSigner?: OpenId4VcJwtIssuer
       clientId?: string
@@ -387,6 +396,17 @@ export class OpenId4VcSiopVerifierService {
       throw new CredoError("Either 'requestSigner' or 'clientId' must be provided.")
     }
 
+    const responseTypes: ResponseType[] = []
+    if (!presentationDefinition && idToken === false) {
+      throw new CredoError('Either `presentationExchange` or `idToken` must be enabled')
+    }
+    if (presentationDefinition) {
+      responseTypes.push(ResponseType.VP_TOKEN)
+    }
+    if (idToken === true || !presentationDefinition) {
+      responseTypes.push(ResponseType.ID_TOKEN)
+    }
+
     // FIXME: we now manually remove did:peer, we should probably allow the user to configure this
     const supportedDidMethods = agentContext.dependencyManager
       .resolve(DidsApi)
@@ -402,12 +422,22 @@ export class OpenId4VcSiopVerifierService {
       .withRedirectUri(authorizationResponseUrl)
       .withIssuer(ResponseIss.SELF_ISSUED_V2)
       .withSupportedVersions([SupportedVersion.SIOPv2_D11, SupportedVersion.SIOPv2_D12_OID4VP_D18])
+      .withCustomResolver(getSphereonDidResolver(agentContext))
+      .withResponseMode(ResponseMode.POST)
+      .withHasher(Hasher.hash)
+      .withCheckLinkedDomain(CheckLinkedDomain.NEVER)
+      // FIXME: should allow verification of revocation
+      // .withRevocationVerificationCallback()
+      .withRevocationVerification(RevocationVerification.NEVER)
+      .withSessionManager(new OpenId4VcRelyingPartySessionManager(agentContext, verifierId))
+      .withEventEmitter(sphereonEventEmitter)
+      .withResponseType(responseTypes)
+
       // TODO: we should probably allow some dynamic values here
       .withClientMetadata({
         client_id: _clientId,
         passBy: PassBy.VALUE,
-        idTokenSigningAlgValuesSupported: supportedAlgs as SigningAlgo[],
-        responseTypesSupported: [ResponseType.VP_TOKEN, ResponseType.ID_TOKEN],
+        responseTypesSupported: [ResponseType.VP_TOKEN],
         subject_syntax_types_supported: supportedDidMethods.map((m) => `did:${m}`),
         vpFormatsSupported: {
           jwt_vc: {
@@ -431,20 +461,12 @@ export class OpenId4VcSiopVerifierService {
           },
         },
       })
-      .withCustomResolver(getSphereonDidResolver(agentContext))
-      .withResponseMode(ResponseMode.POST)
-      .withResponseType(presentationDefinition ? [ResponseType.ID_TOKEN, ResponseType.VP_TOKEN] : ResponseType.ID_TOKEN)
-      .withScope('openid')
-      .withHasher(Hasher.hash)
-      .withCheckLinkedDomain(CheckLinkedDomain.NEVER)
-      // FIXME: should allow verification of revocation
-      // .withRevocationVerificationCallback()
-      .withRevocationVerification(RevocationVerification.NEVER)
-      .withSessionManager(new OpenId4VcRelyingPartySessionManager(agentContext, verifierId))
-      .withEventEmitter(sphereonEventEmitter)
 
     if (presentationDefinition) {
       builder.withPresentationDefinition({ definition: presentationDefinition }, [PropertyTarget.REQUEST_OBJECT])
+    }
+    if (responseTypes.includes(ResponseType.ID_TOKEN)) {
+      builder.withScope('openid')
     }
 
     for (const supportedDidMethod of supportedDidMethods) {
