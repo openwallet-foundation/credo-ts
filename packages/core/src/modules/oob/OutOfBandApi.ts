@@ -786,14 +786,14 @@ export class OutOfBandApi {
   private async findExistingConnection(outOfBandInvitation: OutOfBandInvitation) {
     this.logger.debug('Searching for an existing connection for out-of-band invitation.', { outOfBandInvitation })
 
-    for (const invitationDid of outOfBandInvitation.invitationDids) {
-      const connections = await this.connectionsApi.findByInvitationDid(invitationDid)
-
+    const invitationDids = [
+      ...outOfBandInvitation.invitationDids,
       // Also search for legacy invitationDids based on inline services (TODO: remove in 0.6.0)
-      for (const service of outOfBandInvitation.getInlineServices()) {
-        const records = await this.connectionsApi.findByInvitationDid(outOfBandServiceToInlineKeysNumAlgo2Did(service))
-        connections.push(...records)
-      }
+      ...outOfBandInvitation.getInlineServices().map(outOfBandServiceToInlineKeysNumAlgo2Did),
+    ]
+
+    for (const invitationDid of invitationDids) {
+      const connections = await this.connectionsApi.findByInvitationDid(invitationDid)
 
       this.logger.debug(`Retrieved ${connections.length} connections for invitation did ${invitationDid}`)
 

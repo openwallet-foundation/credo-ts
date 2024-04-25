@@ -110,10 +110,10 @@ export class ConnectionsApi {
     }
 
     // Only generate routing if ourDid hasn't been provided
-    const routing =
-      config.routing || !ourDid
-        ? await this.routingService.getRouting(this.agentContext, { mediatorId: outOfBandRecord.mediatorId })
-        : undefined
+    let routing = config.routing
+    if (!routing && !ourDid) {
+      routing = await this.routingService.getRouting(this.agentContext, { mediatorId: outOfBandRecord.mediatorId })
+    }
 
     let result
     if (protocol === HandshakeProtocol.DidExchange) {
