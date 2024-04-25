@@ -147,7 +147,7 @@ async function migrateLegacyToW3cCredential(agentContext: AgentContext, legacyRe
   if (relatedCredentialExchangeRecord) {
     // Replace the related binding by the new one
     const credentialBindingIndex = relatedCredentialExchangeRecord.credentials.findIndex(
-      (binding) => binding.credentialRecordId !== legacyRecord.id
+      (binding) => binding.credentialRecordId === legacyRecord.id
     )
     if (credentialBindingIndex !== -1) {
       relatedCredentialExchangeRecord.credentials[credentialBindingIndex] = {
