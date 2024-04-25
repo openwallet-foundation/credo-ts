@@ -124,10 +124,51 @@ describe('SdJwtVcService', () => {
       })
     })
 
+    test('Sign sd-jwt-vc from a basic payload including false boolean values', async () => {
+      const { compact } = await sdJwtVcService.sign(agent.context, {
+        payload: {
+          claim: 'some-claim',
+          vct: 'IdentityCredential',
+          value: false,
+          discloseableValue: false,
+        },
+        holder: {
+          // FIXME: is it nicer API to just pass either didUrl or JWK?
+          // Or none if you don't want to bind it?
+          method: 'jwk',
+          jwk: jwkJsonWithoutUse(getJwkFromKey(holderKey)),
+        },
+        issuer: {
+          method: 'did',
+          didUrl: issuerDidUrl,
+        },
+      })
+
+      const sdJwtVc = await sdJwtVcService.fromCompact(compact)
+
+      expect(sdJwtVc.header).toEqual({
+        alg: 'EdDSA',
+        typ: 'vc+sd-jwt',
+        kid: '#z6MktqtXNG8CDUY9PrrtoStFzeCnhpMmgxYL1gikcW3BzvNW',
+      })
+
+      expect(sdJwtVc.prettyClaims).toEqual({
+        claim: 'some-claim',
+        vct: 'IdentityCredential',
+        iat: Math.floor(new Date().getTime() / 1000),
+        iss: parseDid(issuerDidUrl).did,
+        value: false,
+        discloseableValue: false,
+        cnf: {
+          jwk: jwkJsonWithoutUse(getJwkFromKey(holderKey)),
+        },
+      })
+    })
+
     test('Create sd-jwt-vc from a basic payload with a disclosure', async () => {
       const { compact, header, prettyClaims, payload } = await sdJwtVcService.sign(agent.context, {
         payload: { claim: 'some-claim', vct: 'IdentityCredential' },
-        disclosureFrame: { claim: true },
+        disclosureFrame: { _sd: ['claim'] },
         holder: {
           method: 'jwk',
           jwk: jwkJsonWithoutUse(getJwkFromKey(holderKey)),
@@ -171,13 +212,10 @@ describe('SdJwtVcService', () => {
     test('Create sd-jwt-vc from a basic payload with multiple (nested) disclosure', async () => {
       const { compact, header, payload, prettyClaims } = await sdJwtVcService.sign(agent.context, {
         disclosureFrame: {
-          is_over_65: true,
-          is_over_21: true,
-          is_over_18: true,
-          birthdate: true,
-          email: true,
-          address: { region: true, country: true },
-          given_name: true,
+          _sd: ['is_over_65', 'is_over_21', 'is_over_18', 'birthdate', 'email', 'given_name'],
+          address: {
+            _sd: ['region', 'country'],
+          },
         },
         payload: {
           vct: 'IdentityCredential',
@@ -232,6 +270,92 @@ describe('SdJwtVcService', () => {
           'pdDk2_XAKHo7gOAfwF1b7OdCUVTit2kJHaxSECQ9xfc',
           'psauKUNWEi09nu3Cl89xKXgmpWENZl5uy1N1nyn_jMk',
           'sN_ge0pHXF6qmsYnX1A9SdwJ8ch8aENkxbODsT74YwI',
+        ],
+        _sd_alg: 'sha-256',
+        cnf: {
+          jwk: jwkJsonWithoutUse(getJwkFromKey(holderKey)),
+        },
+      })
+
+      expect(prettyClaims).toEqual({
+        vct: 'IdentityCredential',
+        iat: Math.floor(new Date().getTime() / 1000),
+        address: {
+          region: 'Anystate',
+          country: 'US',
+          locality: 'Anytown',
+          street_address: '123 Main St',
+        },
+        email: 'johndoe@example.com',
+        given_name: 'John',
+        phone_number: '+1-202-555-0101',
+        family_name: 'Doe',
+        iss: issuerDidUrl.split('#')[0],
+        birthdate: '1940-01-01',
+        is_over_18: true,
+        is_over_21: true,
+        is_over_65: true,
+        cnf: {
+          jwk: jwkJsonWithoutUse(getJwkFromKey(holderKey)),
+        },
+      })
+    })
+
+    test('Create sd-jwt-vc from a basic payload with multiple (nested) disclosure where a disclosure contains other disclosures', async () => {
+      const { header, payload, prettyClaims } = await sdJwtVcService.sign(agent.context, {
+        disclosureFrame: {
+          _sd: ['is_over_65', 'is_over_21', 'is_over_18', 'birthdate', 'email', 'given_name', 'address'],
+          address: {
+            _sd: ['region', 'country'],
+          },
+        },
+        payload: {
+          vct: 'IdentityCredential',
+          given_name: 'John',
+          family_name: 'Doe',
+          email: 'johndoe@example.com',
+          phone_number: '+1-202-555-0101',
+          address: {
+            street_address: '123 Main St',
+            locality: 'Anytown',
+            region: 'Anystate',
+            country: 'US',
+          },
+          birthdate: '1940-01-01',
+          is_over_18: true,
+          is_over_21: true,
+          is_over_65: true,
+        },
+        holder: {
+          method: 'jwk',
+          jwk: jwkJsonWithoutUse(getJwkFromKey(holderKey)),
+        },
+        issuer: {
+          method: 'did',
+          didUrl: issuerDidUrl,
+        },
+      })
+
+      expect(header).toEqual({
+        alg: 'EdDSA',
+        typ: 'vc+sd-jwt',
+        kid: '#z6MktqtXNG8CDUY9PrrtoStFzeCnhpMmgxYL1gikcW3BzvNW',
+      })
+
+      expect(payload).toEqual({
+        vct: 'IdentityCredential',
+        iat: Math.floor(new Date().getTime() / 1000),
+        phone_number: '+1-202-555-0101',
+        family_name: 'Doe',
+        iss: issuerDidUrl.split('#')[0],
+        _sd: [
+          '1Cur2k2A2oIB5CshSIf_A_Kg-l26u_qKuWQ79P0Vdas',
+          'R1zTUvOYHgcepj0jHypGHz9EHttVKft0yswbc9ETPbU',
+          'eDqQpdTXJXbWhf-EsI7zw5X6OvYmFN-UZQQMesXwKPw',
+          'pdDk2_XAKHo7gOAfwF1b7OdCUVTit2kJHaxSECQ9xfc',
+          'psauKUNWEi09nu3Cl89xKXgmpWENZl5uy1N1nyn_jMk',
+          'sN_ge0pHXF6qmsYnX1A9SdwJ8ch8aENkxbODsT74YwI',
+          'yPhxDEM7k7p7eQ9eHHC-Ca6VEA8bzebZpYu7vYmwG6c',
         ],
         _sd_alg: 'sha-256',
         cnf: {
@@ -404,9 +528,7 @@ describe('SdJwtVcService', () => {
     test('Present sd-jwt-vc from a basic payload with a disclosure', async () => {
       const presentation = await sdJwtVcService.present(agent.context, {
         compactSdJwtVc: sdJwtVcWithSingleDisclosure,
-        presentationFrame: {
-          claim: true,
-        },
+        presentationFrame: { claim: true },
         verifierMetadata: {
           issuedAt: new Date().getTime() / 1000,
           audience: verifierDid,
@@ -418,16 +540,13 @@ describe('SdJwtVcService', () => {
     })
 
     test('Present sd-jwt-vc from a basic payload with multiple (nested) disclosure', async () => {
-      const presentation = await sdJwtVcService.present<
-        Record<string, unknown>,
-        {
-          // FIXME: when not passing a payload, adding nested presentationFrame is broken
-          // Needs to be fixed in sd-jwt library
-          address: {
-            country: string
-          }
-        }
-      >(agent.context, {
+      const presentation = await sdJwtVcService.present<{
+        is_over_65: boolean
+        is_over_21: boolean
+        email: boolean
+        address: { country: string }
+        given_name: boolean
+      }>(agent.context, {
         compactSdJwtVc: complexSdJwtVc,
         verifierMetadata: {
           issuedAt: new Date().getTime() / 1000,
@@ -489,9 +608,7 @@ describe('SdJwtVcService', () => {
           audience: verifierDid,
           nonce,
         },
-        presentationFrame: {
-          claim: true,
-        },
+        presentationFrame: { claim: true },
       })
 
       const { verification } = await sdJwtVcService.verify(agent.context, {
@@ -513,26 +630,29 @@ describe('SdJwtVcService', () => {
     test('Verify sd-jwt-vc with multiple (nested) disclosure', async () => {
       const nonce = await agent.context.wallet.generateNonce()
 
-      const presentation = await sdJwtVcService.present<SdJwtVcHeader, { address: { country: string } }>(
-        agent.context,
-        {
-          compactSdJwtVc: complexSdJwtVc,
-          verifierMetadata: {
-            issuedAt: new Date().getTime() / 1000,
-            audience: verifierDid,
-            nonce,
+      const presentation = await sdJwtVcService.present<{
+        is_over_65: boolean
+        is_over_21: boolean
+        email: boolean
+        address: { country: string }
+        given_name: boolean
+      }>(agent.context, {
+        compactSdJwtVc: complexSdJwtVc,
+        verifierMetadata: {
+          issuedAt: new Date().getTime() / 1000,
+          audience: verifierDid,
+          nonce,
+        },
+        presentationFrame: {
+          is_over_65: true,
+          is_over_21: true,
+          email: true,
+          address: {
+            country: true,
           },
-          presentationFrame: {
-            is_over_65: true,
-            is_over_21: true,
-            email: true,
-            address: {
-              country: true,
-            },
-            given_name: true,
-          },
-        }
-      )
+          given_name: true,
+        },
+      })
 
       const { verification } = await sdJwtVcService.verify(agent.context, {
         compactSdJwtVc: presentation,
@@ -551,9 +671,9 @@ describe('SdJwtVcService', () => {
           'is_over_21',
           'email',
           'given_name',
-          'street_address',
-          'locality',
-          'country',
+          'address.street_address',
+          'address.locality',
+          'address.country',
         ],
       })
 
@@ -572,10 +692,10 @@ describe('SdJwtVcService', () => {
         agent.context,
         {
           compactSdJwtVc:
-            'eyJhbGciOiJFZERTQSIsInR5cCI6InZjK3NkLWp3dCIsImtpZCI6IiN6Nk1rcnpRUEJyNHB5cUM3NzZLS3RyejEzU2NoTTVlUFBic3N1UHVRWmI1dDR1S1EifQ.eyJ2Y3QiOiJPcGVuQmFkZ2VDcmVkZW50aWFsIiwiZGVncmVlIjoiYmFjaGVsb3IiLCJjbmYiOnsia2lkIjoiZGlkOmtleTp6Nk1rcEdSNGdzNFJjM1pwaDR2ajh3Um5qbkF4Z0FQU3hjUjhNQVZLdXRXc3BRemMjejZNa3BHUjRnczRSYzNacGg0dmo4d1Juam5BeGdBUFN4Y1I4TUFWS3V0V3NwUXpjIn0sImlzcyI6ImRpZDprZXk6ejZNa3J6UVBCcjRweXFDNzc2S0t0cnoxM1NjaE01ZVBQYnNzdVB1UVpiNXQ0dUtRIiwiaWF0IjoxNzA2MjY0ODQwLCJfc2RfYWxnIjoic2hhLTI1NiIsIl9zZCI6WyJTSm81ME0xX3NUQWRPSjFObF82ekJzZWg3Ynd4czhhbDhleVotQl9nTXZFIiwiYTJjT2xWOXY4TUlWNTRvMVFrODdBMDRNZ0c3Q0hiaFZUN1lkb00zUnM4RSJdfQ.PrZtmLFPr8tBY0FKsv2yHJeqzds8m0Rlrof-Z36o7ksNvON3ZSrKHOD8fFDJaQ8oFJcZAnjpUS6pY9kwAgU1Ag~WyI5Mjg3NDM3NDQyMTg0ODk1NTU3OTA1NTkiLCJ1bml2ZXJzaXR5IiwiaW5uc2JydWNrIl0~eyJhbGciOiJFZERTQSIsInR5cCI6ImtiK2p3dCJ9.eyJpYXQiOjE3MDYyNjQ4NDAsIm5vbmNlIjoiODExNzMxNDIwNTMxODQ3NzAwNjM2ODUiLCJhdWQiOiJkaWQ6a2V5Ono2TWt0aVFRRXFtMnlhcFhCRHQxV0VWQjNkcWd2eXppOTZGdUZBTlltcmdUcktWOSIsIl9zZF9oYXNoIjoiSVd0cTEtOGUtLU9wWWpXa3Z1RTZrRjlaa2h5aDVfV3lOYXItaWtVT0FscyJ9.cJNnYH16lHn0PsF9tOQPofpONGoY19bQB5k6Ezux9TvQWS_Opnd-3m_fO9yKu8S0pmjyG2mu3Uzn1pUNqhL9AQ',
+            'eyJ0eXAiOiJ2YytzZC1qd3QiLCJhbGciOiJFZERTQSIsImtpZCI6IiN6Nk1rdHF0WE5HOENEVVk5UHJydG9TdEZ6ZUNuaHBNbWd4WUwxZ2lrY1czQnp2TlcifQ.eyJ2Y3QiOiJPcGVuQmFkZ2VDcmVkZW50aWFsIiwiZGVncmVlIjoiYmFjaGVsb3IiLCJjbmYiOnsiandrIjp7Imt0eSI6Ik9LUCIsImNydiI6IkVkMjU1MTkiLCJ4Ijoib0VOVnN4T1VpSDU0WDh3SkxhVmtpY0NSazAwd0JJUTRzUmdiazU0TjhNbyJ9fSwiaXNzIjoiZGlkOmtleTp6Nk1rdHF0WE5HOENEVVk5UHJydG9TdEZ6ZUNuaHBNbWd4WUwxZ2lrY1czQnp2TlciLCJpYXQiOjE2OTgxNTE1MzIsIl9zZCI6WyJLbE5PM0VfYjRmdUwyOUd2QXdwTGczTGZHZTlxdDdhakUxMzlfU1pIbWk4Il0sIl9zZF9hbGciOiJzaGEtMjU2In0.TBWIECIMmNKNqVtjwHARSnR0Ii9Fefy871sXEK-zfThbTBALdvXBTBQ6iKvvI-CxsniSH1hJMEJTu1vK7esTDg~WyJzYWx0IiwidW5pdmVyc2l0eSIsImlubnNicnVjayJd~eyJ0eXAiOiJrYitqd3QiLCJhbGciOiJFZERTQSJ9.eyJpYXQiOjE2OTgxNTE1MzIsIm5vbmNlIjoic2FsdCIsImF1ZCI6ImRpZDprZXk6elVDNzRWRXFxaEVIUWNndjR6YWdTUGtxRkp4dU5XdW9CUEtqSnVIRVRFVWVITG9TcVd0OTJ2aVNzbWFXank4MnkiLCJzZF9oYXNoIjoiODlyX3JrSjdvb3RuSGJ3TXdjMW9sNzZncU03WU1zNVUzVnpkMHN6N3VkbyJ9.VkrxL06aP8t-G_lVtlAZNgJC2gouqR__rXDgJQPParq5OGxna3ZoQQbjv7e3I2TUaVaMV6xUpJY1KufZlPDwAg',
           keyBinding: {
-            audience: 'did:key:z6MktiQQEqm2yapXBDt1WEVB3dqgvyzi96FuFANYmrgTrKV9',
-            nonce: '81173142053184770063685',
+            audience: 'did:key:zUC74VEqqhEHQcgv4zagSPkqFJxuNWuoBPKjJuHETEUeHLoSqWt92viSsmaWjy82y',
+            nonce: 'salt',
           },
         }
       )

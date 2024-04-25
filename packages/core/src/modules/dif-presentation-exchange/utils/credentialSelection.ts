@@ -7,7 +7,7 @@ import type {
 import type { IPresentationDefinition, SelectResults, SubmissionRequirementMatch, PEX } from '@sphereon/pex'
 import type { InputDescriptorV1, InputDescriptorV2, SubmissionRequirement } from '@sphereon/pex-models'
 
-import { decodeSdJwtVc } from '@sd-jwt/decode'
+import { decodeSdJwt, decodeSdJwtSync, getClaimsSync } from '@sd-jwt/decode'
 import { Rules } from '@sphereon/pex-models'
 import { default as jp } from 'jsonpath'
 
@@ -59,12 +59,13 @@ export async function getCredentialsForRequest(
       if (credentialRecord instanceof SdJwtVcRecord) {
         // selectedEncoded always string when SdJwtVcRecord
         // Get the decoded payload from the the selected credential, this already has SD applied
-        const { decodedPayload } = decodeSdJwtVc(selectedEncoded as string, Hasher.hash)
+        const { jwt, disclosures } = decodeSdJwtSync(selectedEncoded as string, Hasher.hash)
+        const prettyClaims = getClaimsSync(jwt.payload, disclosures, Hasher.hash)
 
         return {
           type: ClaimFormat.SdJwtVc,
           credentialRecord,
-          disclosedPayload: decodedPayload,
+          disclosedPayload: prettyClaims as Record<string, unknown>,
         }
       } else if (credentialRecord instanceof W3cCredentialRecord) {
         return {

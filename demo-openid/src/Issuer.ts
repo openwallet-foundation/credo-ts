@@ -106,7 +106,7 @@ function getCredentialRequestToCredentialMapper({
           method: 'did',
           didUrl: `${issuerDidKey.did}#${issuerDidKey.key.fingerprint}`,
         },
-        disclosureFrame: { university: true, degree: true },
+        disclosureFrame: { _sd: ['university', 'degree'] },
       }
     }
 
