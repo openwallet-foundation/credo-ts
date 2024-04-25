@@ -1,6 +1,7 @@
 import type { AgentType, TenantType } from './utils'
 import type { OpenId4VciCredentialBindingResolver } from '../src/openid4vc-holder'
-import type { DifPresentationExchangeDefinitionV2, SdJwtVc } from '@credo-ts/core'
+import type { DifPresentationExchangeDefinitionV2, SdJwtVc, SdJwtVcPayload } from '@credo-ts/core'
+import type { DisclosureFrame } from '@sd-jwt/types'
 import type { Server } from 'http'
 
 import {
@@ -101,7 +102,7 @@ describe('OpenId4Vc', () => {
                       method: 'did',
                       didUrl: verificationMethod.id,
                     },
-                    disclosureFrame: { university: true, degree: true },
+                    disclosureFrame: { _sd: ['university', 'degree'] } as DisclosureFrame<SdJwtVcPayload>,
                   }
                 }
 
@@ -663,8 +664,7 @@ describe('OpenId4Vc', () => {
         name: 'John Doe',
       },
       disclosureFrame: {
-        university: true,
-        name: true,
+        _sd: ['university', 'name'],
       },
     })
 

@@ -14,7 +14,7 @@ import type {
   RecordSavedEvent,
   RecordUpdatedEvent,
 } from '@credo-ts/core'
-import type { PresentationVerificationCallback, SigningAlgo } from '@sphereon/did-auth-siop'
+import type { PresentationVerificationCallback } from '@sphereon/did-auth-siop'
 
 import {
   EventEmitter,
