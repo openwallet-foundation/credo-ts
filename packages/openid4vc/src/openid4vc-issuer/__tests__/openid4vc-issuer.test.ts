@@ -340,7 +340,7 @@ describe('OpenId4VcIssuer', () => {
         payload: { vct: 'UniversityDegreeCredential', university: 'innsbruck', degree: 'bachelor' },
         issuer: { method: 'did', didUrl: issuerVerificationMethod.id },
         holder: { method: 'did', didUrl: holderVerificationMethod.id },
-        disclosureFrame: { university: true, degree: true },
+        disclosureFrame: { _sd: ['university', 'degree'] },
         credentialSupportedId: universityDegreeCredentialSdJwt.id,
       }),
     })

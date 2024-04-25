@@ -51,7 +51,7 @@ import {
 import { ConnectionRecord } from '../repository/ConnectionRecord'
 import { ConnectionRepository } from '../repository/ConnectionRepository'
 
-import { convertToNewDidDocument } from './helpers'
+import { assertNoCreatedDidExistsForKeys, convertToNewDidDocument } from './helpers'
 
 export interface ConnectionRequestParams {
   label?: string
@@ -209,9 +209,17 @@ export class ConnectionService {
     connectionRecord.assertState(DidExchangeState.RequestReceived)
     connectionRecord.assertRole(DidExchangeRole.Responder)
 
-    const didDoc = routing
-      ? this.createDidDoc(routing)
-      : this.createDidDocFromOutOfBandDidCommServices(outOfBandRecord.outOfBandInvitation.getInlineServices())
+    let didDoc: DidDoc
+    if (routing) {
+      didDoc = this.createDidDoc(routing)
+    } else if (outOfBandRecord.outOfBandInvitation.getInlineServices().length > 0) {
+      didDoc = this.createDidDocFromOutOfBandDidCommServices(outOfBandRecord.outOfBandInvitation.getInlineServices())
+    } else {
+      // We don't support using a did from the OOB invitation services currently, in this case we always pass routing to this method
+      throw new CredoError(
+        'No routing provided, and no inline services found in out of band invitation. When using did services in out of band invitation, make sure to provide routing information for rotation.'
+      )
+    }
 
     const { did: peerDid } = await this.createDid(agentContext, {
       role: DidDocumentRole.Created,
@@ -777,6 +785,11 @@ export class ConnectionService {
   private async createDid(agentContext: AgentContext, { role, didDoc }: { role: DidDocumentRole; didDoc: DidDoc }) {
     // Convert the legacy did doc to a new did document
     const didDocument = convertToNewDidDocument(didDoc)
+
+    // Assert that the keys we are going to use for creating a did document haven't already been used in another did document
+    if (role === DidDocumentRole.Created) {
+      await assertNoCreatedDidExistsForKeys(agentContext, didDocument.recipientKeys)
+    }
 
     const peerDid = didDocumentJsonToNumAlgo1Did(didDocument.toJSON())
     didDocument.id = peerDid

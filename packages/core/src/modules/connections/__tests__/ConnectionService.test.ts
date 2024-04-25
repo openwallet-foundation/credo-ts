@@ -1,6 +1,5 @@
 import type { AgentContext } from '../../../agent'
 import type { Wallet } from '../../../wallet/Wallet'
-import type { DidDocument } from '../../dids'
 import type { Routing } from '../services/ConnectionService'
 
 import { Subject } from 'rxjs'
@@ -27,7 +26,6 @@ import { DidDocumentRole } from '../../dids/domain/DidDocumentRole'
 import { DidCommV1Service } from '../../dids/domain/service/DidCommV1Service'
 import { didDocumentJsonToNumAlgo1Did } from '../../dids/methods/peer/peerDidNumAlgo1'
 import { DidRecord, DidRepository } from '../../dids/repository'
-import { DidRegistrarService } from '../../dids/services/DidRegistrarService'
 import { OutOfBandService } from '../../oob/OutOfBandService'
 import { OutOfBandRole } from '../../oob/domain/OutOfBandRole'
 import { OutOfBandState } from '../../oob/domain/OutOfBandState'
@@ -50,24 +48,11 @@ import { convertToNewDidDocument } from '../services/helpers'
 jest.mock('../repository/ConnectionRepository')
 jest.mock('../../oob/repository/OutOfBandRepository')
 jest.mock('../../oob/OutOfBandService')
-jest.mock('../../dids/services/DidRegistrarService')
 jest.mock('../../dids/repository/DidRepository')
 const ConnectionRepositoryMock = ConnectionRepository as jest.Mock<ConnectionRepository>
 const OutOfBandRepositoryMock = OutOfBandRepository as jest.Mock<OutOfBandRepository>
 const OutOfBandServiceMock = OutOfBandService as jest.Mock<OutOfBandService>
 const DidRepositoryMock = DidRepository as jest.Mock<DidRepository>
-const DidRegistrarServiceMock = DidRegistrarService as jest.Mock<DidRegistrarService>
-
-const didRegistrarService = new DidRegistrarServiceMock()
-mockFunction(didRegistrarService.create).mockResolvedValue({
-  didDocumentMetadata: {},
-  didRegistrationMetadata: {},
-  didState: {
-    state: 'finished',
-    did: 'did:peer:123',
-    didDocument: {} as DidDocument,
-  },
-})
 
 const connectionImageUrl = 'https://example.com/image.png'
 
@@ -78,12 +63,12 @@ const agentConfig = getAgentConfig('ConnectionServiceTest', {
 
 const outOfBandRepository = new OutOfBandRepositoryMock()
 const outOfBandService = new OutOfBandServiceMock()
+const didRepository = new DidRepositoryMock()
 
 describe('ConnectionService', () => {
   let wallet: Wallet
   let connectionRepository: ConnectionRepository
 
-  let didRepository: DidRepository
   let connectionService: ConnectionService
   let eventEmitter: EventEmitter
   let myRouting: Routing
@@ -97,6 +82,7 @@ describe('ConnectionService', () => {
       registerInstances: [
         [OutOfBandRepository, outOfBandRepository],
         [OutOfBandService, outOfBandService],
+        [DidRepository, didRepository],
       ],
     })
     await wallet.createAndOpen(agentConfig.walletConfig)
@@ -109,7 +95,6 @@ describe('ConnectionService', () => {
   beforeEach(async () => {
     eventEmitter = new EventEmitter(agentConfig.agentDependencies, new Subject())
     connectionRepository = new ConnectionRepositoryMock()
-    didRepository = new DidRepositoryMock()
     connectionService = new ConnectionService(agentConfig.logger, connectionRepository, didRepository, eventEmitter)
     myRouting = {
       recipientKey: Key.fromFingerprint('z6MkwFkSP4uv5PhhKJCGehtjuZedkotC7VF64xtMsxuM8R3W'),
@@ -119,11 +104,14 @@ describe('ConnectionService', () => {
     }
 
     mockFunction(didRepository.getById).mockResolvedValue(
-      new DidRecord({
-        did: 'did:peer:123',
-        role: DidDocumentRole.Created,
-      })
+      Promise.resolve(
+        new DidRecord({
+          did: 'did:peer:123',
+          role: DidDocumentRole.Created,
+        })
+      )
     )
+    mockFunction(didRepository.findByQuery).mockResolvedValue(Promise.resolve([]))
   })
 
   describe('createRequest', () => {
