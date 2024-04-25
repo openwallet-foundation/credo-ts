@@ -370,6 +370,9 @@ export class ConnectionsApi {
 
     // After hang-up message submission, delete connection if required
     if (options.deleteAfterHangup) {
+      // First remove any recipient keys related to it
+      await this.removeRouting(connectionBeforeHangup)
+
       await this.deleteById(connection.id)
     }
   }
@@ -476,18 +479,22 @@ export class ConnectionsApi {
   public async deleteById(connectionId: string) {
     const connection = await this.connectionService.getById(this.agentContext, connectionId)
 
-    if (connection.mediatorId && connection.did) {
-      const did = await this.didResolverService.resolve(this.agentContext, connection.did)
+    await this.removeRouting(connection)
 
-      if (did.didDocument) {
+    return this.connectionService.deleteById(this.agentContext, connectionId)
+  }
+
+  private async removeRouting(connection: ConnectionRecord) {
+    if (connection.mediatorId && connection.did) {
+      const { didDocument } = await this.didResolverService.resolve(this.agentContext, connection.did)
+
+      if (didDocument) {
         await this.routingService.removeRouting(this.agentContext, {
-          recipientKeys: did.didDocument.recipientKeys,
+          recipientKeys: didDocument.recipientKeys,
           mediatorId: connection.mediatorId,
         })
       }
     }
-
-    return this.connectionService.deleteById(this.agentContext, connectionId)
   }
 
   /**
