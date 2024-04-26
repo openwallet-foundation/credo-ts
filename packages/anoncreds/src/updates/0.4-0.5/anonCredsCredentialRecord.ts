@@ -2,7 +2,13 @@ import type { AnonCredsHolderService } from '../../services'
 import type { W3cAnonCredsCredentialMetadata } from '../../utils/metadata'
 import type { AgentContext, BaseAgent } from '@credo-ts/core'
 
-import { CacheModuleConfig, CredoError, W3cCredentialRepository, W3cCredentialService } from '@credo-ts/core'
+import {
+  CacheModuleConfig,
+  CredentialRepository,
+  CredoError,
+  W3cCredentialRepository,
+  W3cCredentialService,
+} from '@credo-ts/core'
 
 import { AnonCredsCredentialRepository, type AnonCredsCredentialRecord } from '../../repository'
 import { AnonCredsHolderServiceSymbol } from '../../services'
@@ -131,6 +137,26 @@ async function migrateLegacyToW3cCredential(agentContext: AgentContext, legacyRe
 
   const w3cCredentialRepository = agentContext.dependencyManager.resolve(W3cCredentialRepository)
   await w3cCredentialRepository.update(agentContext, w3cCredentialRecord)
+
+  // Find the credential exchange record bound to this anoncreds credential and update it to point to the newly created w3c record
+  const credentialExchangeRepository = agentContext.dependencyManager.resolve(CredentialRepository)
+  const [relatedCredentialExchangeRecord] = await credentialExchangeRepository.findByQuery(agentContext, {
+    credentialIds: [legacyRecord.id],
+  })
+
+  if (relatedCredentialExchangeRecord) {
+    // Replace the related binding by the new one
+    const credentialBindingIndex = relatedCredentialExchangeRecord.credentials.findIndex(
+      (binding) => binding.credentialRecordId === legacyRecord.id
+    )
+    if (credentialBindingIndex !== -1) {
+      relatedCredentialExchangeRecord.credentials[credentialBindingIndex] = {
+        credentialRecordType: 'w3c',
+        credentialRecordId: w3cCredentialRecord.id,
+      }
+      await credentialExchangeRepository.update(agentContext, relatedCredentialExchangeRecord)
+    }
+  }
 }
 
 /**
