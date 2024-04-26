@@ -1,8 +1,11 @@
 import type { Wallet } from '@credo-ts/core'
 
 import {
+  CredentialState,
   Agent,
   CacheModuleConfig,
+  CredentialExchangeRecord,
+  CredentialRole,
   CredoError,
   DidResolverService,
   DidsModuleConfig,
@@ -11,6 +14,7 @@ import {
   SignatureSuiteToken,
   W3cCredentialRepository,
   W3cCredentialsModuleConfig,
+  CredentialRepository,
 } from '@credo-ts/core'
 import { Subject } from 'rxjs'
 
@@ -43,6 +47,11 @@ const w3cRepo = {
   update: jest.fn(),
 }
 
+const credentialExchangeRepo = {
+  findByQuery: jest.fn(),
+  update: jest.fn(),
+}
+
 const inMemoryLruCache = {
   get: jest.fn(),
   set: jest.fn(),
@@ -61,6 +70,7 @@ const agentContext = getAgentContext({
     [CacheModuleConfig, cacheModuleConfig],
     [EventEmitter, eventEmitter],
     [W3cCredentialRepository, w3cRepo],
+    [CredentialRepository, credentialExchangeRepo],
     [InjectionSymbols.Stop$, new Subject<boolean>()],
     [InjectionSymbols.AgentDependencies, agentDependencies],
     [InjectionSymbols.FileSystem, new agentDependencies.FileSystem()],
@@ -110,6 +120,8 @@ describe('0.4-0.5 | AnonCredsRecord', () => {
     beforeEach(() => {
       anonCredsRepo.delete.mockClear()
       anonCredsRepo.getAll.mockClear()
+      credentialExchangeRepo.findByQuery.mockClear()
+      credentialExchangeRepo.update.mockClear()
       w3cRepo.save.mockClear()
       w3cRepo.update.mockClear()
       inMemoryLruCache.clear.mockClear()
@@ -263,6 +275,21 @@ async function testMigration(
 
   mockFunction(anonCredsRepo.getAll).mockResolvedValue(records)
 
+  const initialCredentialExchangeRecord = new CredentialExchangeRecord({
+    protocolVersion: 'v2',
+    role: CredentialRole.Holder,
+    state: CredentialState.Done,
+    threadId: 'threadId',
+    credentials: [
+      {
+        credentialRecordId: anonCredsRecord.id,
+        credentialRecordType: 'anoncreds',
+      },
+    ],
+  })
+
+  mockFunction(credentialExchangeRepo.findByQuery).mockResolvedValue([initialCredentialExchangeRecord])
+
   await testModule.storeAnonCredsInW3cFormatV0_5(agent)
 
   const unqualifiedDidIndyDid = isUnqualifiedIndyDid(issuerId)
@@ -283,18 +310,29 @@ async function testMigration(
   expect(anonCredsRepo.getAll).toHaveBeenCalledTimes(1)
   expect(anonCredsRepo.getAll).toHaveBeenCalledWith(agent.context)
   expect(w3cRepo.save).toHaveBeenCalledTimes(1)
-  expect(w3cRepo.save).toHaveBeenCalledWith(
-    agent.context,
-    expect.objectContaining({
-      metadata: expect.objectContaining({
-        data: expect.objectContaining({
-          custom: { key: 'value' },
-        }),
+  const [context, w3cCredentialRecord] = mockFunction(w3cRepo.save).mock.calls[0]
+  expect(context).toMatchObject(agent.context)
+  expect(w3cCredentialRecord).toMatchObject({
+    metadata: expect.objectContaining({
+      data: expect.objectContaining({
+        custom: { key: 'value' },
       }),
-    })
-  )
+    }),
+  })
+
   expect(w3cRepo.update).toHaveBeenCalledTimes(1)
   expect(anonCredsRepo.delete).toHaveBeenCalledTimes(1)
+  expect(credentialExchangeRepo.findByQuery).toHaveBeenCalledTimes(1)
+  expect(credentialExchangeRepo.findByQuery).toHaveBeenCalledWith(agent.context, {
+    credentialIds: [anonCredsRecord.id],
+  })
+  expect(credentialExchangeRepo.update).toHaveBeenCalledTimes(1)
+  expect(credentialExchangeRepo.update).toHaveBeenCalledWith(
+    agent.context,
+    expect.objectContaining({
+      credentials: [{ credentialRecordType: 'w3c', credentialRecordId: w3cCredentialRecord.id }],
+    })
+  )
 
   if (unqualifiedDidIndyDid && options.shouldBeInCache) {
     expect(inMemoryLruCache.get).toHaveReturnedWith({ indyNamespace })
