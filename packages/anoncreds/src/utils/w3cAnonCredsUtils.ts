@@ -69,6 +69,8 @@ function anonCredsCredentialInfoFromW3cRecord(w3cCredentialRecord: W3cCredential
     revocationRegistryId: anonCredsTags.anonCredsRevocationRegistryId ?? null,
     methodName: anonCredsCredentialMetadata.methodName,
     linkSecretId: anonCredsCredentialMetadata.linkSecretId,
+    createdAt: w3cCredentialRecord.createdAt,
+    updatedAt: w3cCredentialRecord.updatedAt ?? w3cCredentialRecord.createdAt,
   }
 }
 
@@ -89,6 +91,8 @@ function anonCredsCredentialInfoFromAnonCredsRecord(
     revocationRegistryId: anonCredsCredentialRecord.credential.rev_reg_id ?? null,
     methodName: anonCredsCredentialRecord.methodName,
     linkSecretId: anonCredsCredentialRecord.linkSecretId,
+    createdAt: anonCredsCredentialRecord.createdAt,
+    updatedAt: anonCredsCredentialRecord.updatedAt ?? anonCredsCredentialRecord.createdAt,
   }
 }
 

@@ -205,6 +205,8 @@ describe('AnonCredsRsServices', () => {
       revocationRegistryId: null,
       credentialRevocationId: null,
       methodName: 'inMemory',
+      createdAt: expect.any(Date),
+      updatedAt: expect.any(Date),
     })
 
     const proofRequest: AnonCredsProofRequest = {
@@ -410,6 +412,8 @@ describe('AnonCredsRsServices', () => {
       revocationRegistryId: null,
       credentialRevocationId: null,
       methodName: 'inMemory',
+      createdAt: expect.any(Date),
+      updatedAt: expect.any(Date),
     })
 
     const proofRequest: AnonCredsProofRequest = {

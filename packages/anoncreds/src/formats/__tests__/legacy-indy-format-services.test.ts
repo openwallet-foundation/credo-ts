@@ -314,6 +314,8 @@ describe('Legacy indy format services', () => {
       revocationRegistryId: null,
       credentialRevocationId: null,
       methodName: 'inMemory',
+      createdAt: expect.any(Date),
+      updatedAt: expect.any(Date),
     })
 
     expect(holderCredentialRecord.metadata.data).toEqual({

@@ -303,6 +303,8 @@ describe('Legacy indy format services using anoncreds-rs', () => {
       credentialRevocationId: null,
       methodName: 'inMemory',
       linkSecretId: 'linkSecretId',
+      createdAt: expect.any(Date),
+      updatedAt: expect.any(Date),
     })
 
     expect(holderCredentialRecord.metadata.data).toEqual({

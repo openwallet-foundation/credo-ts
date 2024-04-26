@@ -373,6 +373,8 @@ async function anonCredsFlowTest(options: { issuerId: string; revocable: boolean
     revocationRegistryId: revocable ? revocationRegistryDefinitionId : null,
     credentialRevocationId: revocable ? '1' : null,
     methodName: 'inMemory',
+    createdAt: expect.any(Date),
+    updatedAt: expect.any(Date),
   })
 
   const expectedCredentialMetadata = revocable
