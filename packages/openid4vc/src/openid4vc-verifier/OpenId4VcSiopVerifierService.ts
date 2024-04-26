@@ -481,55 +481,62 @@ export class OpenId4VcSiopVerifierService {
     options: { nonce: string; audience: string }
   ): PresentationVerificationCallback {
     return async (encodedPresentation, presentationSubmission) => {
-      this.logger.debug(`Presentation response`, JsonTransformer.toJSON(encodedPresentation))
-      this.logger.debug(`Presentation submission`, presentationSubmission)
+      try {
+        this.logger.debug(`Presentation response`, JsonTransformer.toJSON(encodedPresentation))
+        this.logger.debug(`Presentation submission`, presentationSubmission)
 
-      if (!encodedPresentation) throw new CredoError('Did not receive a presentation for verification.')
+        if (!encodedPresentation) throw new CredoError('Did not receive a presentation for verification.')
 
-      let isValid: boolean
+        let isValid: boolean
 
-      // TODO: it might be better here to look at the presentation submission to know
-      // If presentation includes a ~, we assume it's an SD-JWT-VC
-      if (typeof encodedPresentation === 'string' && encodedPresentation.includes('~')) {
-        const sdJwtVcApi = agentContext.dependencyManager.resolve(SdJwtVcApi)
+        // TODO: it might be better here to look at the presentation submission to know
+        // If presentation includes a ~, we assume it's an SD-JWT-VC
+        if (typeof encodedPresentation === 'string' && encodedPresentation.includes('~')) {
+          const sdJwtVcApi = agentContext.dependencyManager.resolve(SdJwtVcApi)
 
-        const verificationResult = await sdJwtVcApi.verify({
-          compactSdJwtVc: encodedPresentation,
-          keyBinding: {
-            audience: options.audience,
-            nonce: options.nonce,
-          },
+          const verificationResult = await sdJwtVcApi.verify({
+            compactSdJwtVc: encodedPresentation,
+            keyBinding: {
+              audience: options.audience,
+              nonce: options.nonce,
+            },
+          })
+
+          isValid = verificationResult.verification.isValid
+        } else if (typeof encodedPresentation === 'string') {
+          const verificationResult = await this.w3cCredentialService.verifyPresentation(agentContext, {
+            presentation: encodedPresentation,
+            challenge: options.nonce,
+            domain: options.audience,
+          })
+
+          isValid = verificationResult.isValid
+        } else {
+          const verificationResult = await this.w3cCredentialService.verifyPresentation(agentContext, {
+            presentation: JsonTransformer.fromJSON(encodedPresentation, W3cJsonLdVerifiablePresentation),
+            challenge: options.nonce,
+            domain: options.audience,
+          })
+
+          isValid = verificationResult.isValid
+        }
+
+        // FIXME: we throw an error here as there's a bug in sphereon library where they
+        // don't check the returned 'verified' property and only catch errors thrown.
+        // Once https://github.com/Sphereon-Opensource/SIOP-OID4VP/pull/70 is merged we
+        // can remove this.
+        if (!isValid) {
+          throw new CredoError('Presentation verification failed.')
+        }
+
+        return {
+          verified: isValid,
+        }
+      } catch (error) {
+        agentContext.config.logger.warn('Error occurred during verification of presentation', {
+          error,
         })
-
-        isValid = verificationResult.verification.isValid
-      } else if (typeof encodedPresentation === 'string') {
-        const verificationResult = await this.w3cCredentialService.verifyPresentation(agentContext, {
-          presentation: encodedPresentation,
-          challenge: options.nonce,
-          domain: options.audience,
-        })
-
-        isValid = verificationResult.isValid
-      } else {
-        const verificationResult = await this.w3cCredentialService.verifyPresentation(agentContext, {
-          presentation: JsonTransformer.fromJSON(encodedPresentation, W3cJsonLdVerifiablePresentation),
-          challenge: options.nonce,
-          domain: options.audience,
-        })
-
-        isValid = verificationResult.isValid
-      }
-
-      // FIXME: we throw an error here as there's a bug in sphereon library where they
-      // don't check the returned 'verified' property and only catch errors thrown.
-      // Once https://github.com/Sphereon-Opensource/SIOP-OID4VP/pull/70 is merged we
-      // can remove this.
-      if (!isValid) {
-        throw new CredoError('Presentation verification failed.')
-      }
-
-      return {
-        verified: isValid,
+        throw error
       }
     }
   }
