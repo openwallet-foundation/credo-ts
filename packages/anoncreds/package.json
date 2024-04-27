@@ -30,7 +30,7 @@
     "bn.js": "^5.2.1",
     "class-transformer": "0.5.1",
     "class-validator": "0.14.1",
-    "reflect-metadata": "^0.1.13"
+    "reflect-metadata": "^0.2.2"
   },
   "devDependencies": {
     "@credo-ts/node": "0.5.2",
