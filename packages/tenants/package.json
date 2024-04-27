@@ -2,7 +2,7 @@
   "name": "@credo-ts/tenants",
   "main": "build/index",
   "types": "build/index",
-  "version": "0.5.1",
+  "version": "0.5.2",
   "files": [
     "build"
   ],
@@ -24,11 +24,11 @@
     "test": "jest"
   },
   "dependencies": {
-    "@credo-ts/core": "0.5.1",
+    "@credo-ts/core": "0.5.2",
     "async-mutex": "^0.4.0"
   },
   "devDependencies": {
-    "@credo-ts/node": "0.5.1",
+    "@credo-ts/node": "0.5.2",
     "reflect-metadata": "^0.1.13",
     "rimraf": "^4.4.0",
     "typescript": "~4.9.5"

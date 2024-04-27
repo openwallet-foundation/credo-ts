@@ -3,6 +3,13 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.5.2](https://github.com/openwallet-foundation/credo-ts/compare/v0.5.1...v0.5.2) (2024-04-26)
+
+### Bug Fixes
+
+- udpate cheqd deps ([#1830](https://github.com/openwallet-foundation/credo-ts/issues/1830)) ([6b4b71b](https://github.com/openwallet-foundation/credo-ts/commit/6b4b71bf365262e8c2c9718547b60c44f2afc920))
+- update cheqd to 2.4.2 ([#1817](https://github.com/openwallet-foundation/credo-ts/issues/1817)) ([8154df4](https://github.com/openwallet-foundation/credo-ts/commit/8154df45f45bd9da0c60abe3792ff0f081e81818))
+
 ## [0.5.1](https://github.com/openwallet-foundation/credo-ts/compare/v0.5.0...v0.5.1) (2024-03-28)
 
 ### Bug Fixes

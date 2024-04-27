@@ -2,7 +2,7 @@
   "name": "@credo-ts/askar",
   "main": "build/index",
   "types": "build/index",
-  "version": "0.5.1",
+  "version": "0.5.2",
   "files": [
     "build"
   ],
@@ -24,7 +24,7 @@
     "test": "jest"
   },
   "dependencies": {
-    "@credo-ts/core": "0.5.1",
+    "@credo-ts/core": "0.5.2",
     "bn.js": "^5.2.1",
     "class-transformer": "0.5.1",
     "class-validator": "0.14.1",
