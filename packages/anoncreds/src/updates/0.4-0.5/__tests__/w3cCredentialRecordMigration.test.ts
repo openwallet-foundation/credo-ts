@@ -324,7 +324,7 @@ async function testMigration(
   expect(anonCredsRepo.delete).toHaveBeenCalledTimes(1)
   expect(credentialExchangeRepo.findByQuery).toHaveBeenCalledTimes(1)
   expect(credentialExchangeRepo.findByQuery).toHaveBeenCalledWith(agent.context, {
-    credentialIds: [anonCredsRecord.id],
+    credentialIds: [anonCredsRecord.credentialId],
   })
   expect(credentialExchangeRepo.update).toHaveBeenCalledTimes(1)
   expect(credentialExchangeRepo.update).toHaveBeenCalledWith(
