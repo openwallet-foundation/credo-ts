@@ -282,7 +282,7 @@ async function testMigration(
     threadId: 'threadId',
     credentials: [
       {
-        credentialRecordId: anonCredsRecord.id,
+        credentialRecordId: anonCredsRecord.credentialId,
         credentialRecordType: 'anoncreds',
       },
     ],
