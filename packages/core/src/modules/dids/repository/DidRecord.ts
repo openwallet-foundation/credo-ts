@@ -81,7 +81,7 @@ export class DidRecord extends BaseRecord<DefaultDidTags, CustomDidTags, DidReco
       did: this.did,
       methodSpecificIdentifier: did.id,
 
-      // Calucate if we have a did document, otherwise use the already present recipient keys
+      // Calculate if we have a did document, otherwise use the already present recipient keys
       recipientKeyFingerprints: this.didDocument
         ? this.didDocument.recipientKeys.map((recipientKey) => recipientKey.fingerprint)
         : this._tags.recipientKeyFingerprints,
