@@ -179,9 +179,6 @@ export async function extractDidDocument<Agent extends BaseAgent>(agent: Agent, 
         role: DidDocumentRole.Created,
         didDocument: newOurDidDocument,
         createdAt: connectionRecord.createdAt,
-        tags: {
-          recipientKeyFingerprints: newOurDidDocument.recipientKeys.map((key) => key.fingerprint),
-        },
       })
 
       ourDidRecord.metadata.set(DidRecordMetadataKeys.LegacyDid, {
@@ -231,9 +228,6 @@ export async function extractDidDocument<Agent extends BaseAgent>(agent: Agent, 
         role: DidDocumentRole.Received,
         didDocument: newTheirDidDocument,
         createdAt: connectionRecord.createdAt,
-        tags: {
-          recipientKeyFingerprints: newTheirDidDocument.recipientKeys.map((key) => key.fingerprint),
-        },
       })
 
       theirDidRecord.metadata.set(DidRecordMetadataKeys.LegacyDid, {

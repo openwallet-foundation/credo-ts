@@ -141,11 +141,6 @@ describe('peer dids', () => {
       // It is important to take the did document from the PeerDid class
       // as it will have the id property
       didDocument: didDocument,
-      tags: {
-        // We need to save the recipientKeys, so we can find the associated did
-        // of a key when we receive a message from another connection.
-        recipientKeyFingerprints: didDocument.recipientKeys.map((key) => key.fingerprint),
-      },
     })
 
     await didRepository.save(agentContext, didDocumentRecord)
