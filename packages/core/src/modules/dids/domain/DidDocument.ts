@@ -196,7 +196,7 @@ export class DidDocument {
         recipientKeys = [
           ...recipientKeys,
           ...service.recipientKeys.map((recipientKey) =>
-            getKeyFromVerificationMethod(this.dereferenceKey(recipientKey, ['authentication', 'assertionMethod']))
+            getKeyFromVerificationMethod(this.dereferenceKey(recipientKey, ['authentication', 'keyAgreement']))
           ),
         ]
       }

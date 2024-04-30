@@ -607,6 +607,7 @@ describe('IndyVdrIndyDidRegistrar', () => {
       },
     })
     expect(setEndpointsForDidSpy).not.toHaveBeenCalled()
+    console.log(result)
     expect(JsonTransformer.toJSON(result)).toMatchObject({
       didDocumentMetadata: {},
       didRegistrationMetadata: {},
