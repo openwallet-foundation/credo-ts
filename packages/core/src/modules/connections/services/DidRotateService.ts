@@ -194,8 +194,6 @@ export class DidRotateService {
       did: didDocument.id,
       didDocument,
       tags: {
-        recipientKeyFingerprints: didDocument.recipientKeys.map((key) => key.fingerprint),
-
         // For did:peer, store any alternative dids (like short form did:peer:4),
         // it may have in order to relate any message referencing it
         alternativeDids: isValidPeerDid(didDocument.id) ? getAlternativeDidsForPeerDid(didDocument.id) : undefined,
