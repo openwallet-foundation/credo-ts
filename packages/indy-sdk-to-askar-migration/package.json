@@ -2,7 +2,7 @@
   "name": "@credo-ts/indy-sdk-to-askar-migration",
   "main": "build/index",
   "types": "build/index",
-  "version": "0.5.2",
+  "version": "0.5.3",
   "files": [
     "build"
   ],
@@ -24,10 +24,10 @@
     "test": "jest"
   },
   "dependencies": {
-    "@credo-ts/anoncreds": "0.5.2",
-    "@credo-ts/askar": "0.5.2",
-    "@credo-ts/core": "0.5.2",
-    "@credo-ts/node": "0.5.2"
+    "@credo-ts/anoncreds": "0.5.3",
+    "@credo-ts/askar": "0.5.3",
+    "@credo-ts/core": "0.5.3",
+    "@credo-ts/node": "0.5.3"
   },
   "devDependencies": {
     "@hyperledger/aries-askar-nodejs": "^0.2.1",

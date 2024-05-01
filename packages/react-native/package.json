@@ -2,7 +2,7 @@
   "name": "@credo-ts/react-native",
   "main": "build/index",
   "types": "build/index",
-  "version": "0.5.2",
+  "version": "0.5.3",
   "files": [
     "build"
   ],
@@ -25,7 +25,7 @@
   },
   "dependencies": {
     "@azure/core-asynciterator-polyfill": "^1.0.2",
-    "@credo-ts/core": "0.5.2",
+    "@credo-ts/core": "0.5.3",
     "events": "^3.3.0"
   },
   "devDependencies": {

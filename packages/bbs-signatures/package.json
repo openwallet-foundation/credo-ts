@@ -2,7 +2,7 @@
   "name": "@credo-ts/bbs-signatures",
   "main": "build/index",
   "types": "build/index",
-  "version": "0.5.2",
+  "version": "0.5.3",
   "files": [
     "build"
   ],
@@ -24,7 +24,7 @@
     "test": "jest"
   },
   "dependencies": {
-    "@credo-ts/core": "0.5.2",
+    "@credo-ts/core": "0.5.3",
     "@mattrglobal/bbs-signatures": "^1.0.0",
     "@mattrglobal/bls12381-key-pair": "^1.0.0",
     "@stablelib/random": "^1.0.2"
@@ -33,7 +33,7 @@
     "@animo-id/react-native-bbs-signatures": "^0.1.0"
   },
   "devDependencies": {
-    "@credo-ts/node": "0.5.2",
+    "@credo-ts/node": "0.5.3",
     "reflect-metadata": "^0.1.13",
     "rimraf": "^4.4.0",
     "typescript": "~4.9.5"

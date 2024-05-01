@@ -2,7 +2,7 @@
   "name": "@credo-ts/indy-vdr",
   "main": "build/index",
   "types": "build/index",
-  "version": "0.5.2",
+  "version": "0.5.3",
   "files": [
     "build"
   ],
@@ -24,8 +24,8 @@
     "test": "jest"
   },
   "dependencies": {
-    "@credo-ts/anoncreds": "0.5.2",
-    "@credo-ts/core": "0.5.2"
+    "@credo-ts/anoncreds": "0.5.3",
+    "@credo-ts/core": "0.5.3"
   },
   "devDependencies": {
     "@hyperledger/indy-vdr-nodejs": "^0.2.2",

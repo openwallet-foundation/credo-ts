@@ -2,7 +2,7 @@
   "name": "@credo-ts/core",
   "main": "build/index",
   "types": "build/index",
-  "version": "0.5.2",
+  "version": "0.5.3",
   "files": [
     "build"
   ],
