@@ -2,7 +2,7 @@
   "name": "@credo-ts/anoncreds",
   "main": "build/index",
   "types": "build/index",
-  "version": "0.5.2",
+  "version": "0.5.3",
   "files": [
     "build"
   ],
@@ -25,7 +25,7 @@
   },
   "dependencies": {
     "@astronautlabs/jsonpath": "^1.1.2",
-    "@credo-ts/core": "0.5.2",
+    "@credo-ts/core": "0.5.3",
     "big-integer": "^1.6.51",
     "bn.js": "^5.2.1",
     "class-transformer": "0.5.1",
@@ -33,7 +33,7 @@
     "reflect-metadata": "^0.1.13"
   },
   "devDependencies": {
-    "@credo-ts/node": "0.5.2",
+    "@credo-ts/node": "0.5.3",
     "@hyperledger/anoncreds-nodejs": "^0.2.2",
     "@hyperledger/anoncreds-shared": "^0.2.2",
     "rimraf": "^4.4.0",

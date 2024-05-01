@@ -2,7 +2,7 @@
   "name": "@credo-ts/openid4vc",
   "main": "build/index",
   "types": "build/index",
-  "version": "0.5.2",
+  "version": "0.5.3",
   "files": [
     "build"
   ],
@@ -24,7 +24,7 @@
     "test": "jest"
   },
   "dependencies": {
-    "@credo-ts/core": "0.5.2",
+    "@credo-ts/core": "0.5.3",
     "@sphereon/did-auth-siop": "^0.6.4",
     "@sphereon/oid4vci-client": "^0.10.2",
     "@sphereon/oid4vci-common": "^0.10.1",
@@ -34,7 +34,7 @@
     "rxjs": "^7.8.0"
   },
   "devDependencies": {
-    "@credo-ts/tenants": "0.5.2",
+    "@credo-ts/tenants": "0.5.3",
     "@types/express": "^4.17.21",
     "express": "^4.18.2",
     "nock": "^13.3.0",

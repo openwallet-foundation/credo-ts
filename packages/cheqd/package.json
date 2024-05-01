@@ -2,7 +2,7 @@
   "name": "@credo-ts/cheqd",
   "main": "build/index",
   "types": "build/index",
-  "version": "0.5.2",
+  "version": "0.5.3",
   "files": [
     "build"
   ],
@@ -28,8 +28,8 @@
     "@cheqd/ts-proto": "~2.2.0",
     "@cosmjs/crypto": "~0.30.0",
     "@cosmjs/proto-signing": "~0.30.0",
-    "@credo-ts/anoncreds": "0.5.2",
-    "@credo-ts/core": "0.5.2",
+    "@credo-ts/anoncreds": "0.5.3",
+    "@credo-ts/core": "0.5.3",
     "@stablelib/ed25519": "^1.0.3",
     "class-transformer": "^0.5.1",
     "class-validator": "0.14.1",
