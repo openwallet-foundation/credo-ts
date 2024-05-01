@@ -3,6 +3,13 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.5.3](https://github.com/openwallet-foundation/credo-ts/compare/v0.5.2...v0.5.3) (2024-05-01)
+
+### Bug Fixes
+
+- allow did document for didcomm without authentication or keyAgreement ([#1848](https://github.com/openwallet-foundation/credo-ts/issues/1848)) ([5d986f0](https://github.com/openwallet-foundation/credo-ts/commit/5d986f0da67de78b4df2ad7ab92eeb2bdf9f2c83))
+- store recipient keys by default ([#1847](https://github.com/openwallet-foundation/credo-ts/issues/1847)) ([e9238cf](https://github.com/openwallet-foundation/credo-ts/commit/e9238cfde4d76c5b927f6f76b3529d4c80808a3a))
+
 ## [0.5.2](https://github.com/openwallet-foundation/credo-ts/compare/v0.5.1...v0.5.2) (2024-04-26)
 
 ### Bug Fixes
