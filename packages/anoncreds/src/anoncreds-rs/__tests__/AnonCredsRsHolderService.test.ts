@@ -19,6 +19,7 @@ import {
   W3cCredentialSubject,
   W3cCredentialsModuleConfig,
   W3cJsonLdVerifiableCredential,
+  DidRepository,
 } from '@credo-ts/core'
 import { anoncreds } from '@hyperledger/anoncreds-nodejs'
 import { Subject } from 'rxjs'
@@ -90,7 +91,7 @@ const agentContext = getAgentContext({
       }),
     ],
     [InjectionSymbols.Logger, testLogger],
-    [DidResolverService, new DidResolverService(testLogger, new DidsModuleConfig())],
+    [DidResolverService, new DidResolverService(testLogger, new DidsModuleConfig(), {} as unknown as DidRepository)],
     [W3cCredentialsModuleConfig, new W3cCredentialsModuleConfig()],
     [SignatureSuiteToken, 'default'],
   ],

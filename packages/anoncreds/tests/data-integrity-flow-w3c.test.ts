@@ -20,6 +20,7 @@ import {
   W3cCredentialSubject,
   W3cCredentialsModuleConfig,
   CredentialRole,
+  DidRepository,
 } from '@credo-ts/core'
 import { Subject } from 'rxjs'
 
@@ -80,7 +81,7 @@ const agentContext = getAgentContext({
     [AnonCredsVerifierServiceSymbol, anonCredsVerifierService],
     [InjectionSymbols.Logger, testLogger],
     [DidsModuleConfig, didsModuleConfig],
-    [DidResolverService, new DidResolverService(testLogger, didsModuleConfig)],
+    [DidResolverService, new DidResolverService(testLogger, didsModuleConfig, {} as unknown as DidRepository)],
     [AnonCredsRegistryService, new AnonCredsRegistryService()],
     [AnonCredsModuleConfig, anonCredsModuleConfig],
     [W3cCredentialsModuleConfig, new W3cCredentialsModuleConfig()],

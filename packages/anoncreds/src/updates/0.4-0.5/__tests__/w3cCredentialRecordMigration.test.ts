@@ -1,4 +1,4 @@
-import type { Wallet } from '@credo-ts/core'
+import type { DidRepository, Wallet } from '@credo-ts/core'
 
 import {
   CredentialState,
@@ -76,7 +76,7 @@ const agentContext = getAgentContext({
     [InjectionSymbols.FileSystem, new agentDependencies.FileSystem()],
     [InjectionSymbols.StorageService, inMemoryStorageService],
     [AnonCredsRegistryService, new AnonCredsRegistryService()],
-    [DidResolverService, new DidResolverService(testLogger, new DidsModuleConfig())],
+    [DidResolverService, new DidResolverService(testLogger, new DidsModuleConfig(), {} as unknown as DidRepository)],
     [InjectionSymbols.Logger, testLogger],
     [W3cCredentialsModuleConfig, new W3cCredentialsModuleConfig()],
     [AnonCredsModuleConfig, anonCredsModuleConfig],

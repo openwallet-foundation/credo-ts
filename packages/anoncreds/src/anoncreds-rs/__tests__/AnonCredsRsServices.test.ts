@@ -1,6 +1,7 @@
 import type { AnonCredsProofRequest } from '@credo-ts/anoncreds'
 
 import {
+  DidRepository,
   DidResolverService,
   DidsModuleConfig,
   InjectionSymbols,
@@ -67,7 +68,7 @@ const agentContext = getAgentContext({
     ],
 
     [InjectionSymbols.Logger, testLogger],
-    [DidResolverService, new DidResolverService(testLogger, new DidsModuleConfig())],
+    [DidResolverService, new DidResolverService(testLogger, new DidsModuleConfig(), {} as unknown as DidRepository)],
     [W3cCredentialsModuleConfig, new W3cCredentialsModuleConfig()],
     [SignatureSuiteToken, 'default'],
   ],
