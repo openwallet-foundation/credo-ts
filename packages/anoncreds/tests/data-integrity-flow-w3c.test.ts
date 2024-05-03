@@ -1,4 +1,5 @@
 import type { CreateDidKidVerificationMethodReturn } from '../../core/tests'
+import type { DidRepository } from '@credo-ts/core'
 
 import {
   AgentContext,
@@ -20,7 +21,6 @@ import {
   W3cCredentialSubject,
   W3cCredentialsModuleConfig,
   CredentialRole,
-  DidRepository,
 } from '@credo-ts/core'
 import { Subject } from 'rxjs'
 

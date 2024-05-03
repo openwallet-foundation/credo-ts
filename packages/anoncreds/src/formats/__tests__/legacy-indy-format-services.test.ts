@@ -1,4 +1,5 @@
 import type { AnonCredsCredentialRequest } from '../../models'
+import type { DidRepository } from '@credo-ts/core'
 
 import {
   CredentialState,
@@ -15,7 +16,6 @@ import {
   DidsModuleConfig,
   ProofRole,
   CredentialRole,
-  DidRepository,
 } from '@credo-ts/core'
 import { Subject } from 'rxjs'
 

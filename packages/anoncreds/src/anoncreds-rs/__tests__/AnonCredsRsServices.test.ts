@@ -1,7 +1,7 @@
 import type { AnonCredsProofRequest } from '@credo-ts/anoncreds'
+import type { DidRepository } from '@credo-ts/core'
 
 import {
-  DidRepository,
   DidResolverService,
   DidsModuleConfig,
   InjectionSymbols,

@@ -7,6 +7,7 @@ import type {
   AnonCredsSchema,
   AnonCredsSelectedCredentials,
 } from '@credo-ts/anoncreds'
+import type { DidRepository } from '@credo-ts/core'
 import type { JsonObject } from '@hyperledger/anoncreds-shared'
 
 import {
@@ -19,7 +20,6 @@ import {
   W3cCredentialSubject,
   W3cCredentialsModuleConfig,
   W3cJsonLdVerifiableCredential,
-  DidRepository,
 } from '@credo-ts/core'
 import { anoncreds } from '@hyperledger/anoncreds-nodejs'
 import { Subject } from 'rxjs'
