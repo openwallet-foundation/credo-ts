@@ -10,7 +10,7 @@ export interface DidResolver {
    * a did record to resolve the did document.
    *
    * @default false
-   * @todo make required in 0.5.0
+   * @todo make required in 0.6.0
    */
   readonly allowsLocalDidRecord?: boolean
 
