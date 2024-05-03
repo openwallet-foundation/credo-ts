@@ -132,7 +132,9 @@ describe('Cheqd DID registrar', () => {
     expect(deactivateResult.didState.didDocument?.toJSON()).toMatchObject(didDocument.toJSON())
     expect(deactivateResult.didState.state).toEqual('finished')
 
-    const resolvedDocument = await agent.dids.resolve(did)
+    const resolvedDocument = await agent.dids.resolve(did, {
+      useLocalCreatedDidRecord: false,
+    })
     expect(resolvedDocument.didDocumentMetadata.deactivated).toBe(true)
   })
 
