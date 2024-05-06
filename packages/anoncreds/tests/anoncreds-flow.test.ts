@@ -1,5 +1,5 @@
 import type { AnonCredsCredentialRequest } from '@credo-ts/anoncreds'
-import type { Wallet } from '@credo-ts/core'
+import type { DidRepository, Wallet } from '@credo-ts/core'
 
 import {
   CredentialRole,
@@ -78,7 +78,7 @@ const agentContext = getAgentContext({
     [AnonCredsHolderServiceSymbol, anonCredsHolderService],
     [AnonCredsVerifierServiceSymbol, anonCredsVerifierService],
     [InjectionSymbols.Logger, testLogger],
-    [DidResolverService, new DidResolverService(testLogger, new DidsModuleConfig())],
+    [DidResolverService, new DidResolverService(testLogger, new DidsModuleConfig(), {} as unknown as DidRepository)],
     [AnonCredsRegistryService, new AnonCredsRegistryService()],
     [AnonCredsModuleConfig, anonCredsModuleConfig],
     [W3cCredentialsModuleConfig, new W3cCredentialsModuleConfig()],

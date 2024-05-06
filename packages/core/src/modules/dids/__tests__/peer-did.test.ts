@@ -55,7 +55,8 @@ describe('peer dids', () => {
 
     didResolverService = new DidResolverService(
       config.logger,
-      new DidsModuleConfig({ resolvers: [new PeerDidResolver()] })
+      new DidsModuleConfig({ resolvers: [new PeerDidResolver()] }),
+      {} as unknown as DidRepository
     )
   })
 

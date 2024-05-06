@@ -7,7 +7,7 @@ import type {
 import type { IPresentationDefinition, SelectResults, SubmissionRequirementMatch, PEX } from '@sphereon/pex'
 import type { InputDescriptorV1, InputDescriptorV2, SubmissionRequirement } from '@sphereon/pex-models'
 
-import { decodeSdJwt, decodeSdJwtSync, getClaimsSync } from '@sd-jwt/decode'
+import { decodeSdJwtSync, getClaimsSync } from '@sd-jwt/decode'
 import { Rules } from '@sphereon/pex-models'
 import { default as jp } from 'jsonpath'
 

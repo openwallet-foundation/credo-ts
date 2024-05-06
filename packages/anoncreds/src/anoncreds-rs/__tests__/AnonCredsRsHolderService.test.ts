@@ -7,6 +7,7 @@ import type {
   AnonCredsSchema,
   AnonCredsSelectedCredentials,
 } from '@credo-ts/anoncreds'
+import type { DidRepository } from '@credo-ts/core'
 import type { JsonObject } from '@hyperledger/anoncreds-shared'
 
 import {
@@ -90,7 +91,7 @@ const agentContext = getAgentContext({
       }),
     ],
     [InjectionSymbols.Logger, testLogger],
-    [DidResolverService, new DidResolverService(testLogger, new DidsModuleConfig())],
+    [DidResolverService, new DidResolverService(testLogger, new DidsModuleConfig(), {} as unknown as DidRepository)],
     [W3cCredentialsModuleConfig, new W3cCredentialsModuleConfig()],
     [SignatureSuiteToken, 'default'],
   ],

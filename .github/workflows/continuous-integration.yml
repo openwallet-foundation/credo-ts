@@ -140,7 +140,7 @@ jobs:
       - run: mv coverage/coverage-final.json coverage/e2e.json
       - uses: actions/upload-artifact@v4
         with:
-          name: coverage-artifacts
+          name: coverage-artifcats
           path: coverage/e2e.json
           overwrite: true
 

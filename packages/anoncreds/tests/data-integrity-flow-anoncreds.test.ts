@@ -1,4 +1,4 @@
-import type { DataIntegrityCredentialRequest } from '@credo-ts/core'
+import type { DataIntegrityCredentialRequest, DidRepository } from '@credo-ts/core'
 
 import {
   ProofRole,
@@ -91,7 +91,7 @@ const agentContext = getAgentContext({
     [AnonCredsVerifierServiceSymbol, anonCredsVerifierService],
     [InjectionSymbols.Logger, testLogger],
     [DidsModuleConfig, didsModuleConfig],
-    [DidResolverService, new DidResolverService(testLogger, didsModuleConfig)],
+    [DidResolverService, new DidResolverService(testLogger, didsModuleConfig, {} as unknown as DidRepository)],
     [AnonCredsRegistryService, new AnonCredsRegistryService()],
     [AnonCredsModuleConfig, anonCredsModuleConfig],
     [W3cCredentialsModuleConfig, new W3cCredentialsModuleConfig()],
