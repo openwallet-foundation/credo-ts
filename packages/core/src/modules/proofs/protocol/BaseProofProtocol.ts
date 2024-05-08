@@ -116,7 +116,6 @@ export abstract class BaseProofProtocol<PFs extends ProofFormatService[] = Proof
 
     const proofRecord = await this.getByProperties(agentContext, {
       threadId: proofProblemReportMessage.threadId,
-      connectionId: connection?.id,
     })
 
     // Update record
