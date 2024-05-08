@@ -28,6 +28,7 @@ import type { CredentialExchangeRecord } from '../repository'
 
 import { EventEmitter } from '../../../agent/EventEmitter'
 import { DidCommMessageRepository } from '../../../storage/didcomm'
+import { ConnectionService } from '../../connections'
 import { CredentialEventTypes } from '../CredentialEvents'
 import { CredentialState } from '../models/CredentialState'
 import { CredentialRepository } from '../repository'
@@ -138,11 +139,27 @@ export abstract class BaseCredentialProtocol<CFs extends CredentialFormatService
   ): Promise<CredentialExchangeRecord> {
     const { message: credentialProblemReportMessage, agentContext } = messageContext
 
+    const connectionService = agentContext.dependencyManager.resolve(ConnectionService)
+
+    const connection = messageContext.assertReadyConnection()
+
     agentContext.config.logger.debug(`Processing problem report with message id ${credentialProblemReportMessage.id}`)
 
     const credentialRecord = await this.getByProperties(agentContext, {
       threadId: credentialProblemReportMessage.threadId,
     })
+
+    // Assert
+    await connectionService.assertConnectionOrOutOfBandExchange(messageContext)
+
+    //  This makes sure that the sender of the incoming message is authorized to do so.
+    if (!credentialRecord?.connectionId) {
+      await connectionService.matchIncomingMessageToRequestMessageInOutOfBandExchange(messageContext, {
+        expectedConnectionId: credentialRecord?.connectionId,
+      })
+
+      credentialRecord.connectionId = connection?.id
+    }
 
     // Update record
     credentialRecord.errorMessage = `${credentialProblemReportMessage.description.code}: ${credentialProblemReportMessage.description.en}`
