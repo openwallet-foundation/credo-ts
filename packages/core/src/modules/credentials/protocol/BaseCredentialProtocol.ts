@@ -150,7 +150,9 @@ export abstract class BaseCredentialProtocol<CFs extends CredentialFormatService
     })
 
     // Assert
-    await connectionService.assertConnectionOrOutOfBandExchange(messageContext)
+    await connectionService.assertConnectionOrOutOfBandExchange(messageContext, {
+      expectedConnectionId: credentialRecord.connectionId,
+    })
 
     //  This makes sure that the sender of the incoming message is authorized to do so.
     if (!credentialRecord?.connectionId) {

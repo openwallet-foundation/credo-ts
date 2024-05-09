@@ -124,7 +124,9 @@ export abstract class BaseProofProtocol<PFs extends ProofFormatService[] = Proof
     })
 
     // Assert
-    await connectionService.assertConnectionOrOutOfBandExchange(messageContext)
+    await connectionService.assertConnectionOrOutOfBandExchange(messageContext, {
+      expectedConnectionId: proofRecord.connectionId,
+    })
 
     //  This makes sure that the sender of the incoming message is authorized to do so.
     if (!proofRecord?.connectionId) {
