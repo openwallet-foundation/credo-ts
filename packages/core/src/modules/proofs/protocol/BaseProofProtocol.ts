@@ -111,13 +111,11 @@ export abstract class BaseProofProtocol<PFs extends ProofFormatService[] = Proof
   public async processProblemReport(
     messageContext: InboundMessageContext<ProblemReportMessage>
   ): Promise<ProofExchangeRecord> {
-    const { message: proofProblemReportMessage, agentContext } = messageContext
+    const { message: proofProblemReportMessage, agentContext, connection } = messageContext
 
     const connectionService = agentContext.dependencyManager.resolve(ConnectionService)
 
     agentContext.config.logger.debug(`Processing problem report with message id ${proofProblemReportMessage.id}`)
-
-    const connection = messageContext.assertReadyConnection()
 
     const proofRecord = await this.getByProperties(agentContext, {
       threadId: proofProblemReportMessage.threadId,

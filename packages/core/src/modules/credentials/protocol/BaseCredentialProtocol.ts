@@ -137,11 +137,9 @@ export abstract class BaseCredentialProtocol<CFs extends CredentialFormatService
   public async processProblemReport(
     messageContext: InboundMessageContext<ProblemReportMessage>
   ): Promise<CredentialExchangeRecord> {
-    const { message: credentialProblemReportMessage, agentContext } = messageContext
+    const { message: credentialProblemReportMessage, agentContext, connection } = messageContext
 
     const connectionService = agentContext.dependencyManager.resolve(ConnectionService)
-
-    const connection = messageContext.assertReadyConnection()
 
     agentContext.config.logger.debug(`Processing problem report with message id ${credentialProblemReportMessage.id}`)
 
