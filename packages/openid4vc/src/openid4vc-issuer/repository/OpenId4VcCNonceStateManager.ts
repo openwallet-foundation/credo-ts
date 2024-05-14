@@ -3,13 +3,17 @@ import type { CNonceState, IStateManager } from '@sphereon/oid4vci-common'
 
 import { CredoError } from '@credo-ts/core'
 
+import { OpenId4VcIssuerModuleConfig } from '../OpenId4VcIssuerModuleConfig'
+
 import { OpenId4VcIssuanceSessionRepository } from './OpenId4VcIssuanceSessionRepository'
 
 export class OpenId4VcCNonceStateManager implements IStateManager<CNonceState> {
   private openId4VcIssuanceSessionRepository: OpenId4VcIssuanceSessionRepository
+  private openId4VcIssuerModuleConfig: OpenId4VcIssuerModuleConfig
 
   public constructor(private agentContext: AgentContext, private issuerId: string) {
     this.openId4VcIssuanceSessionRepository = agentContext.dependencyManager.resolve(OpenId4VcIssuanceSessionRepository)
+    this.openId4VcIssuerModuleConfig = agentContext.dependencyManager.resolve(OpenId4VcIssuerModuleConfig)
   }
 
   public async set(cNonce: string, stateValue: CNonceState): Promise<void> {
@@ -29,7 +33,17 @@ export class OpenId4VcCNonceStateManager implements IStateManager<CNonceState> {
       preAuthorizedCode: stateValue.preAuthorizedCode,
     })
 
+    // cNonce already matches, no need to update
+    if (record.cNonce === stateValue.cNonce) {
+      return
+    }
+
+    const expiresAtDate = new Date(
+      Date.now() + this.openId4VcIssuerModuleConfig.accessTokenEndpoint.cNonceExpiresInSeconds * 1000
+    )
+
     record.cNonce = stateValue.cNonce
+    record.cNonceExpiresAt = expiresAtDate
     await this.openId4VcIssuanceSessionRepository.update(this.agentContext, record)
   }
 
@@ -74,6 +88,7 @@ export class OpenId4VcCNonceStateManager implements IStateManager<CNonceState> {
     // We only remove the cNonce from the record, we don't want to remove
     // the whole issuance session.
     record.cNonce = undefined
+    record.cNonceExpiresAt = undefined
     await this.openId4VcIssuanceSessionRepository.update(this.agentContext, record)
     return true
   }

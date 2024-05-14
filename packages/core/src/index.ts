@@ -74,6 +74,7 @@ export {
   isDid,
   asArray,
   equalsIgnoreOrder,
+  DateTransformer,
 } from './utils'
 export * from './logger'
 export * from './error'

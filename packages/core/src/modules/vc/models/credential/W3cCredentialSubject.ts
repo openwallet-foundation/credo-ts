@@ -4,7 +4,6 @@ import { Transform, TransformationType } from 'class-transformer'
 import { IsOptional, ValidateBy, buildMessage, isInstance } from 'class-validator'
 
 import { CredoError } from '../../../../error'
-import { IsUri, isUri } from '../../../../utils/validators'
 
 /**
  * @see https://www.w3.org/TR/vc-data-model/#credential-subject
@@ -27,7 +26,6 @@ export class W3cCredentialSubject {
     }
   }
 
-  @IsUri()
   @IsOptional()
   public id?: string
 
@@ -70,12 +68,11 @@ export function IsW3cCredentialSubject(validationOptions?: ValidationOptions): P
       name: 'IsW3cCredentialSubject',
       validator: {
         validate: (value): boolean => {
-          return isInstance(value, W3cCredentialSubject) && (!value.id || isUri(value.id))
+          return isInstance(value, W3cCredentialSubject)
         },
         defaultMessage: buildMessage(
           (eachPrefix) =>
-            eachPrefix +
-            '$property must be an object or an array of objects with an optional id property which is an URI',
+            eachPrefix + '$property must be an object or an array of objects with an optional id property',
           validationOptions
         ),
       },

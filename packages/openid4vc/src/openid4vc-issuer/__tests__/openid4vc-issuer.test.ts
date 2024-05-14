@@ -42,7 +42,6 @@ import { agentDependencies } from '../../../../node/src'
 import { OpenId4VciCredentialFormatProfile } from '../../shared'
 import { OpenId4VcIssuanceSessionState } from '../OpenId4VcIssuanceSessionState'
 import { OpenId4VcIssuerModule } from '../OpenId4VcIssuerModule'
-import { OpenId4VcIssuerService } from '../OpenId4VcIssuerService'
 import { OpenId4VcIssuanceSessionRepository } from '../repository'
 
 const openBadgeCredential = {
@@ -288,12 +287,13 @@ describe('OpenId4VcIssuer', () => {
 
     const issuanceSessionRepository = issuer.context.dependencyManager.resolve(OpenId4VcIssuanceSessionRepository)
     result.issuanceSession.cNonce = '1234'
+    result.issuanceSession.cNonceExpiresAt = new Date(Date.now() + 30000) // 30 seconds
     await issuanceSessionRepository.update(issuer.context, result.issuanceSession)
 
     expect(result).toMatchObject({
       credentialOffer: expect.stringMatching(
         new RegExp(
-          `^openid-credential-offer://\\?credential_offer_uri=https://openid4vc-issuer.com/${openId4VcIssuer.issuerId}/offers/.*$`
+          `^openid-credential-offer://\\?credential_offer_uri=https%3A%2F%2Fopenid4vc-issuer.com%2F${openId4VcIssuer.issuerId}%2Foffers%2F.*$`
         )
       ),
       issuanceSession: {
@@ -340,13 +340,14 @@ describe('OpenId4VcIssuer', () => {
         payload: { vct: 'UniversityDegreeCredential', university: 'innsbruck', degree: 'bachelor' },
         issuer: { method: 'did', didUrl: issuerVerificationMethod.id },
         holder: { method: 'did', didUrl: holderVerificationMethod.id },
-        disclosureFrame: { university: true, degree: true },
+        disclosureFrame: { _sd: ['university', 'degree'] },
+        credentialSupportedId: universityDegreeCredentialSdJwt.id,
       }),
     })
 
     expect(credentialResponse).toEqual({
       c_nonce: expect.any(String),
-      c_nonce_expires_in: 300000,
+      c_nonce_expires_in: 300,
       credential: expect.any(String),
       format: 'vc+sd-jwt',
     })
@@ -368,11 +369,15 @@ describe('OpenId4VcIssuer', () => {
         preAuthorizedCode,
         userPinRequired: false,
       },
+      issuanceMetadata: {
+        myIssuance: 'metadata',
+      },
     })
 
     const issuanceSessionRepository = issuer.context.dependencyManager.resolve(OpenId4VcIssuanceSessionRepository)
     // We need to update the state, as it is checked and we're skipping the access token step
     result.issuanceSession.cNonce = '1234'
+    result.issuanceSession.cNonceExpiresAt = new Date(Date.now() + 30000) // 30 seconds
     result.issuanceSession.state = OpenId4VcIssuanceSessionState.AccessTokenCreated
     await issuanceSessionRepository.update(issuer.context, result.issuanceSession)
 
@@ -381,16 +386,24 @@ describe('OpenId4VcIssuer', () => {
     const issuerMetadata = await issuer.modules.openId4VcIssuer.getIssuerMetadata(openId4VcIssuer.issuerId)
     const { credentialResponse } = await issuer.modules.openId4VcIssuer.createCredentialResponse({
       issuanceSessionId: result.issuanceSession.id,
-      credentialRequestToCredentialMapper: () => ({
-        format: 'jwt_vc',
-        credential: new W3cCredential({
-          type: openBadgeCredential.types,
-          issuer: new W3cIssuer({ id: issuerDid }),
-          credentialSubject: new W3cCredentialSubject({ id: holderDid }),
-          issuanceDate: w3cDate(Date.now()),
-        }),
-        verificationMethod: issuerVerificationMethod.id,
-      }),
+      credentialRequestToCredentialMapper: ({ issuanceSession }) => {
+        expect(issuanceSession.id).toEqual(result.issuanceSession.id)
+        expect(issuanceSession.issuanceMetadata).toEqual({
+          myIssuance: 'metadata',
+        })
+
+        return {
+          format: 'jwt_vc',
+          credentialSupportedId: openBadgeCredential.id,
+          credential: new W3cCredential({
+            type: openBadgeCredential.types,
+            issuer: new W3cIssuer({ id: issuerDid }),
+            credentialSubject: new W3cCredentialSubject({ id: holderDid }),
+            issuanceDate: w3cDate(Date.now()),
+          }),
+          verificationMethod: issuerVerificationMethod.id,
+        }
+      },
       credentialRequest: await createCredentialRequest(holder.context, {
         credentialSupported: openBadgeCredential,
         issuerMetadata,
@@ -401,7 +414,7 @@ describe('OpenId4VcIssuer', () => {
 
     expect(credentialResponse).toEqual({
       c_nonce: expect.any(String),
-      c_nonce_expires_in: 300000,
+      c_nonce_expires_in: 300,
       credential: expect.any(String),
       format: 'jwt_vc_json',
     })
@@ -444,6 +457,7 @@ describe('OpenId4VcIssuer', () => {
     // We need to update the state, as it is checked and we're skipping the access token step
     result.issuanceSession.state = OpenId4VcIssuanceSessionState.AccessTokenCreated
     result.issuanceSession.cNonce = '1234'
+    result.issuanceSession.cNonceExpiresAt = new Date(Date.now() + 30000) // 30 seconds
     await issuanceSessionRepository.update(issuer.context, result.issuanceSession)
 
     const issuerMetadata = await issuer.modules.openId4VcIssuer.getIssuerMetadata(openId4VcIssuer.issuerId)
@@ -478,6 +492,7 @@ describe('OpenId4VcIssuer', () => {
     const issuanceSessionRepository = issuer.context.dependencyManager.resolve(OpenId4VcIssuanceSessionRepository)
     // We need to update the state, as it is checked and we're skipping the access token step
     result.issuanceSession.cNonce = '1234'
+    result.issuanceSession.cNonceExpiresAt = new Date(Date.now() + 30000) // 30 seconds
     result.issuanceSession.state = OpenId4VcIssuanceSessionState.AccessTokenCreated
     await issuanceSessionRepository.update(issuer.context, result.issuanceSession)
 
@@ -498,13 +513,14 @@ describe('OpenId4VcIssuer', () => {
           credentialSubject: new W3cCredentialSubject({ id: holderDid }),
           issuanceDate: w3cDate(Date.now()),
         }),
+        credentialSupportedId: universityDegreeCredentialLd.id,
         verificationMethod: issuerVerificationMethod.id,
       }),
     })
 
     expect(credentialResponse).toEqual({
       c_nonce: expect.any(String),
-      c_nonce_expires_in: 300000,
+      c_nonce_expires_in: 300,
       credential: expect.any(String),
       format: 'jwt_vc_json-ld',
     })
@@ -532,6 +548,7 @@ describe('OpenId4VcIssuer', () => {
     // We need to update the state, as it is checked and we're skipping the access token step
     result.issuanceSession.state = OpenId4VcIssuanceSessionState.AccessTokenCreated
     result.issuanceSession.cNonce = '1234'
+    result.issuanceSession.cNonceExpiresAt = new Date(Date.now() + 30000) // 30 seconds
     await issuanceSessionRepository.update(issuer.context, result.issuanceSession)
 
     const issuerMetadata = await issuer.modules.openId4VcIssuer.getIssuerMetadata(openId4VcIssuer.issuerId)
@@ -569,7 +586,7 @@ describe('OpenId4VcIssuer', () => {
 
     expect(credentialOffer).toMatch(
       new RegExp(
-        `^openid-credential-offer://\\?credential_offer_uri=https://openid4vc-issuer.com/${openId4VcIssuer.issuerId}/offers/.*$`
+        `^openid-credential-offer://\\?credential_offer_uri=https%3A%2F%2Fopenid4vc-issuer.com%2F${openId4VcIssuer.issuerId}%2Foffers%2F.*$`
       )
     )
   })
@@ -588,6 +605,7 @@ describe('OpenId4VcIssuer', () => {
 
     const issuanceSessionRepository = issuer.context.dependencyManager.resolve(OpenId4VcIssuanceSessionRepository)
     result.issuanceSession.cNonce = '1234'
+    result.issuanceSession.cNonceExpiresAt = new Date(Date.now() + 30000) // 30 seconds
     await issuanceSessionRepository.update(issuer.context, result.issuanceSession)
 
     expect(result.issuanceSession.credentialOfferPayload?.credentials).toEqual([
@@ -597,19 +615,22 @@ describe('OpenId4VcIssuer', () => {
 
     const credentialRequestToCredentialMapper: OpenId4VciCredentialRequestToCredentialMapper = ({
       credentialsSupported,
-    }) => ({
-      format: 'jwt_vc',
-      credential: new W3cCredential({
-        type:
-          credentialsSupported[0].id === openBadgeCredential.id
-            ? openBadgeCredential.types
-            : universityDegreeCredential.types,
-        issuer: new W3cIssuer({ id: issuerDid }),
-        credentialSubject: new W3cCredentialSubject({ id: holderDid }),
-        issuanceDate: w3cDate(Date.now()),
-      }),
-      verificationMethod: issuerVerificationMethod.id,
-    })
+    }) => {
+      const credential =
+        credentialsSupported[0].id === openBadgeCredential.id ? openBadgeCredential : universityDegreeCredential
+      return {
+        format: 'jwt_vc',
+        credential: new W3cCredential({
+          type: credential.types,
+          issuer: new W3cIssuer({ id: issuerDid }),
+          credentialSubject: new W3cCredentialSubject({ id: holderDid }),
+          issuanceDate: w3cDate(Date.now()),
+        }),
+        credentialSupportedId: credential.id,
+
+        verificationMethod: issuerVerificationMethod.id,
+      }
+    }
 
     // We need to update the state, as it is checked and we're skipping the access token step
     result.issuanceSession.state = OpenId4VcIssuanceSessionState.AccessTokenCreated
@@ -629,7 +650,7 @@ describe('OpenId4VcIssuer', () => {
 
     expect(credentialResponse).toEqual({
       c_nonce: expect.any(String),
-      c_nonce_expires_in: 300000,
+      c_nonce_expires_in: 300,
       credential: expect.any(String),
       format: 'jwt_vc_json',
     })
@@ -653,7 +674,7 @@ describe('OpenId4VcIssuer', () => {
 
     expect(credentialResponse2).toEqual({
       c_nonce: expect.any(String),
-      c_nonce_expires_in: 300000,
+      c_nonce_expires_in: 300,
       credential: expect.any(String),
       format: 'jwt_vc_json',
     })

@@ -37,10 +37,10 @@ export class SdJwtVcApi {
    *
    * Also, whether to include the holder key binding.
    */
-  public async present<Header extends SdJwtVcHeader, Payload extends SdJwtVcPayload>(
+  public async present<Payload extends SdJwtVcPayload = SdJwtVcPayload>(
     options: SdJwtVcPresentOptions<Payload>
   ): Promise<string> {
-    return await this.sdJwtVcService.present<Header, Payload>(this.agentContext, options)
+    return await this.sdJwtVcService.present(this.agentContext, options)
   }
 
   /**

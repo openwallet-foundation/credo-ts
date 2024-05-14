@@ -93,7 +93,7 @@ export class DifPresentationExchangeService {
         }
 
         // We pick the first matching VC if we are auto-selecting
-        credentials[submission.inputDescriptorId].push(submission.verifiableCredentials[0])
+        credentials[submission.inputDescriptorId].push(submission.verifiableCredentials[0].credentialRecord)
       }
     }
 
@@ -516,8 +516,8 @@ export class DifPresentationExchangeService {
         const sdJwtVcApi = this.getSdJwtVcApi(agentContext)
         const sdJwtVc = await sdJwtVcApi.present({
           compactSdJwtVc: sdJwtInput.compactSdJwtVc,
-          // SD is already handled by PEX
-          presentationFrame: true,
+          // SD is already handled by PEX, so we presents all keys
+          presentationFrame: undefined,
           verifierMetadata: {
             audience: domain,
             nonce: challenge,
@@ -592,7 +592,7 @@ export class DifPresentationExchangeService {
       for (const inputDescriptor of pd.input_descriptors) {
         for (const schema of inputDescriptor.schema) {
           w3cQuery.push({
-            $or: [{ expandedType: [schema.uri] }, { contexts: [schema.uri] }, { type: [schema.uri] }],
+            $or: [{ expandedTypes: [schema.uri] }, { contexts: [schema.uri] }, { types: [schema.uri] }],
           })
         }
       }

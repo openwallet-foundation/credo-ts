@@ -8,6 +8,7 @@ import { getRequestContext, sendErrorResponse } from '../../shared/router'
 import { OpenId4VcIssuanceSessionState } from '../OpenId4VcIssuanceSessionState'
 import { OpenId4VcIssuerEvents } from '../OpenId4VcIssuerEvents'
 import { OpenId4VcIssuerModuleConfig } from '../OpenId4VcIssuerModuleConfig'
+import { OpenId4VcIssuerService } from '../OpenId4VcIssuerService'
 import { OpenId4VcIssuanceSessionRepository } from '../repository'
 
 export interface OpenId4VciCredentialOfferEndpointConfig {
@@ -26,19 +27,32 @@ export function configureCredentialOfferEndpoint(router: Router, config: OpenId4
     async (request: OpenId4VcIssuanceRequest, response: Response, next) => {
       const { agentContext, issuer } = getRequestContext(request)
 
+      if (!request.params.credentialOfferId || typeof request.params.credentialOfferId !== 'string') {
+        return sendErrorResponse(
+          response,
+          agentContext.config.logger,
+          400,
+          'invalid_request',
+          'Invalid credential offer url'
+        )
+      }
+
       try {
+        const issuerService = agentContext.dependencyManager.resolve(OpenId4VcIssuerService)
+        const issuerMetadata = issuerService.getIssuerMetadata(agentContext, issuer)
         const openId4VcIssuanceSessionRepository = agentContext.dependencyManager.resolve(
           OpenId4VcIssuanceSessionRepository
         )
         const issuerConfig = agentContext.dependencyManager.resolve(OpenId4VcIssuerModuleConfig)
 
-        // TODO: is there a cleaner way to get the host (including port)?
-        const [, , host] = issuerConfig.baseUrl.split('/')
+        const fullCredentialOfferUri = joinUriParts(issuerMetadata.issuerUrl, [
+          issuerConfig.credentialOfferEndpoint.endpointPath,
+          request.params.credentialOfferId,
+        ])
 
-        const credentialOfferUri = `${request.protocol}://${host}${request.originalUrl}`
         const openId4VcIssuanceSession = await openId4VcIssuanceSessionRepository.findSingleByQuery(agentContext, {
           issuerId: issuer.issuerId,
-          credentialOfferUri,
+          credentialOfferUri: fullCredentialOfferUri,
         })
 
         if (!openId4VcIssuanceSession || !openId4VcIssuanceSession.credentialOfferPayload) {

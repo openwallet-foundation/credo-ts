@@ -34,9 +34,17 @@ export function isX25519KeyAgreementKey2019(
  * Get a key from a X25519KeyAgreementKey2019 verification method.
  */
 export function getKeyFromX25519KeyAgreementKey2019(verificationMethod: X25519KeyAgreementKey2019) {
-  if (!verificationMethod.publicKeyBase58) {
-    throw new CredoError('verification method is missing publicKeyBase58')
+  if (verificationMethod.publicKeyBase58) {
+    return Key.fromPublicKeyBase58(verificationMethod.publicKeyBase58, KeyType.X25519)
+  }
+  if (verificationMethod.publicKeyMultibase) {
+    const key = Key.fromFingerprint(verificationMethod.publicKeyMultibase)
+    if (key.keyType === KeyType.X25519) return key
+    else
+      throw new CredoError(
+        `Unexpected key type from resolving multibase encoding, key type was ${key.keyType} but expected ${KeyType.X25519}`
+      )
   }
 
-  return Key.fromPublicKeyBase58(verificationMethod.publicKeyBase58, KeyType.X25519)
+  throw new CredoError('verification method is missing publicKeyBase58')
 }

@@ -34,9 +34,17 @@ export function isEd25519VerificationKey2018(
  * Get a key from a Ed25519VerificationKey2018 verification method.
  */
 export function getKeyFromEd25519VerificationKey2018(verificationMethod: Ed25519VerificationKey2018) {
-  if (!verificationMethod.publicKeyBase58) {
-    throw new CredoError('verification method is missing publicKeyBase58')
+  if (verificationMethod.publicKeyBase58) {
+    return Key.fromPublicKeyBase58(verificationMethod.publicKeyBase58, KeyType.Ed25519)
+  }
+  if (verificationMethod.publicKeyMultibase) {
+    const key = Key.fromFingerprint(verificationMethod.publicKeyMultibase)
+    if (key.keyType === KeyType.Ed25519) return key
+    else
+      throw new CredoError(
+        `Unexpected key type from resolving multibase encoding, key type was ${key.keyType} but expected ${KeyType.Ed25519}`
+      )
   }
 
-  return Key.fromPublicKeyBase58(verificationMethod.publicKeyBase58, KeyType.Ed25519)
+  throw new CredoError('verification method is missing publicKeyBase58')
 }

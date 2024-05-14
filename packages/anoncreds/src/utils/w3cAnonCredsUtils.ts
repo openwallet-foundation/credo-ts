@@ -3,7 +3,7 @@ import type { W3cAnonCredsCredentialMetadata } from './metadata'
 import type { AnonCredsCredentialInfo, AnonCredsSchema } from '../models'
 import type { AnonCredsCredentialRecord } from '../repository'
 import type { StoreCredentialOptions } from '../services'
-import type { DefaultW3cCredentialTags } from '@credo-ts/core'
+import type { DefaultW3cCredentialTags, W3cCredentialSubject } from '@credo-ts/core'
 
 import { CredoError, W3cCredentialRecord, utils } from '@credo-ts/core'
 
@@ -69,6 +69,8 @@ function anonCredsCredentialInfoFromW3cRecord(w3cCredentialRecord: W3cCredential
     revocationRegistryId: anonCredsTags.anonCredsRevocationRegistryId ?? null,
     methodName: anonCredsCredentialMetadata.methodName,
     linkSecretId: anonCredsCredentialMetadata.linkSecretId,
+    createdAt: w3cCredentialRecord.createdAt,
+    updatedAt: w3cCredentialRecord.updatedAt ?? w3cCredentialRecord.createdAt,
   }
 }
 
@@ -89,6 +91,8 @@ function anonCredsCredentialInfoFromAnonCredsRecord(
     revocationRegistryId: anonCredsCredentialRecord.credential.rev_reg_id ?? null,
     methodName: anonCredsCredentialRecord.methodName,
     linkSecretId: anonCredsCredentialRecord.linkSecretId,
+    createdAt: anonCredsCredentialRecord.createdAt,
+    updatedAt: anonCredsCredentialRecord.updatedAt ?? anonCredsCredentialRecord.createdAt,
   }
 }
 
@@ -163,7 +167,8 @@ export function getStoreCredentialOptions(
 }
 
 export function getW3cRecordAnonCredsTags(options: {
-  w3cCredentialRecord: W3cCredentialRecord
+  credentialSubject: W3cCredentialSubject
+  issuerId: string
   schemaId: string
   schema: Omit<AnonCredsSchema, 'attrNames'>
   credentialDefinitionId: string
@@ -173,7 +178,8 @@ export function getW3cRecordAnonCredsTags(options: {
   methodName: string
 }) {
   const {
-    w3cCredentialRecord,
+    credentialSubject,
+    issuerId,
     schema,
     schemaId,
     credentialDefinitionId,
@@ -182,8 +188,6 @@ export function getW3cRecordAnonCredsTags(options: {
     linkSecretId,
     methodName,
   } = options
-
-  const issuerId = w3cCredentialRecord.credential.issuerId
 
   const anonCredsCredentialRecordTags: AnonCredsCredentialTags = {
     anonCredsLinkSecretId: linkSecretId,
@@ -206,12 +210,8 @@ export function getW3cRecordAnonCredsTags(options: {
     }),
   }
 
-  if (Array.isArray(w3cCredentialRecord.credential.credentialSubject)) {
-    throw new CredoError('Credential subject must be an object, not an array.')
-  }
-
   const values = mapAttributeRawValuesToAnonCredsCredentialValues(
-    (w3cCredentialRecord.credential.credentialSubject.claims as AnonCredsClaimRecord) ?? {}
+    (credentialSubject.claims as AnonCredsClaimRecord) ?? {}
   )
 
   for (const [key, value] of Object.entries(values)) {
