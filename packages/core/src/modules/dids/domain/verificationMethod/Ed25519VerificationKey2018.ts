@@ -46,5 +46,5 @@ export function getKeyFromEd25519VerificationKey2018(verificationMethod: Ed25519
       )
   }
 
-  throw new CredoError('verification method is missing publicKeyBase58')
+  throw new CredoError('verification method is missing publicKeyBase58 or publicKeyMultibase')
 }

@@ -339,7 +339,7 @@ export class W3cJsonLdCredentialService {
     agentContext: AgentContext,
     verificationMethod: string
   ): Promise<Key> {
-    if (!verificationMethod.startsWith('did:peer')) {
+    if (!verificationMethod.startsWith('did:')) {
       const documentLoader = this.w3cCredentialsModuleConfig.documentLoader(agentContext)
       const verificationMethodObject = await documentLoader(verificationMethod)
       const verificationMethodClass = JsonTransformer.fromJSON(verificationMethodObject.document, VerificationMethod)

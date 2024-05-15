@@ -46,5 +46,5 @@ export function getKeyFromX25519KeyAgreementKey2019(verificationMethod: X25519Ke
       )
   }
 
-  throw new CredoError('verification method is missing publicKeyBase58')
+  throw new CredoError('verification method is missing publicKeyBase58 or publicKeyMultibase')
 }
