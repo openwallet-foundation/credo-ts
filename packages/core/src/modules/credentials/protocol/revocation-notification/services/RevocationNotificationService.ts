@@ -60,8 +60,8 @@ export class RevocationNotificationService {
           connectionId: connection.id,
         },
         {
-          anonCredsRevocationRegistryId,
-          anonCredsUnqualifiedRevocationRegistryId: anonCredsCredentialRevocationId,
+          anonCredsUnqualifiedRevocationRegistryId: anonCredsRevocationRegistryId,
+          anonCredsCredentialRevocationId,
           connectionId: connection.id,
         },
       ],
