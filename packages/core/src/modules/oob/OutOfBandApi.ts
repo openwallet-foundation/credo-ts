@@ -618,7 +618,7 @@ export class OutOfBandApi {
       return { outOfBandRecord, connectionRecord }
     } else if (messages) {
       this.logger.debug('Out of band message contains only request messages.')
-      if (existingConnection) {
+      if (existingConnection && reuseConnection) {
         this.logger.debug('Connection already exists.', { connectionId: existingConnection.id })
         await this.emitWithConnection(outOfBandRecord, existingConnection, messages)
       } else {
