@@ -141,6 +141,7 @@ export class ProofsApi<PPs extends ProofProtocol[]> implements ProofsApi<PPs> {
       proofFormats: options.proofFormats,
       autoAcceptProof: options.autoAcceptProof,
       goalCode: options.goalCode,
+      goal: options.goal,
       comment: options.comment,
       parentThreadId: options.parentThreadId,
     })
@@ -182,6 +183,7 @@ export class ProofsApi<PPs extends ProofProtocol[]> implements ProofsApi<PPs> {
       proofRecord,
       proofFormats: options.proofFormats,
       goalCode: options.goalCode,
+      goal: options.goal,
       willConfirm: options.willConfirm,
       comment: options.comment,
       autoAcceptProof: options.autoAcceptProof,
@@ -227,6 +229,7 @@ export class ProofsApi<PPs extends ProofProtocol[]> implements ProofsApi<PPs> {
       autoAcceptProof: options.autoAcceptProof,
       comment: options.comment,
       goalCode: options.goalCode,
+      goal: options.goal,
       willConfirm: options.willConfirm,
     })
 
@@ -261,6 +264,7 @@ export class ProofsApi<PPs extends ProofProtocol[]> implements ProofsApi<PPs> {
       parentThreadId: options.parentThreadId,
       comment: options.comment,
       goalCode: options.goalCode,
+      goal: options.goal,
       willConfirm: options.willConfirm,
     })
 
@@ -304,6 +308,7 @@ export class ProofsApi<PPs extends ProofProtocol[]> implements ProofsApi<PPs> {
       comment: options.comment,
       autoAcceptProof: options.autoAcceptProof,
       goalCode: options.goalCode,
+      goal: options.goal,
     })
 
     const outboundMessageContext = await getOutboundMessageContext(this.agentContext, {
@@ -362,6 +367,7 @@ export class ProofsApi<PPs extends ProofProtocol[]> implements ProofsApi<PPs> {
       proofFormats: options.proofFormats,
       autoAcceptProof: options.autoAcceptProof,
       goalCode: options.goalCode,
+      goal: options.goal,
       comment: options.comment,
     })
 
@@ -394,6 +400,7 @@ export class ProofsApi<PPs extends ProofProtocol[]> implements ProofsApi<PPs> {
       comment: options.comment,
       parentThreadId: options.parentThreadId,
       goalCode: options.goalCode,
+      goal: options.goal,
       willConfirm: options.willConfirm,
     })
   }
