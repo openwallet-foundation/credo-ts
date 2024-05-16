@@ -312,7 +312,8 @@ export class LegacyIndyCredentialFormatService implements CredentialFormatServic
         revocationRegistryId: credential.rev_reg_id,
       })
       credentialRecord.setTags({
-        anonCredsRevocationRegistryId: credential.rev_reg_id,
+        anonCredsRevocationRegistryId: credentialRevocationId,
+        anonCredsUnqualifiedRevocationRegistryId: credential.rev_reg_id,
         anonCredsCredentialRevocationId: credentialRevocationId,
       })
     }
