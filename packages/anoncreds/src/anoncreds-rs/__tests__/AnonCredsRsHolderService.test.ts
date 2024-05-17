@@ -392,7 +392,7 @@ describe('AnonCredsRsHolderService', () => {
             'anonCredsAttr::name::marker': true,
           },
           {
-            anonCredsIssuerId: 'issuer:uri',
+            issuerId: 'issuer:uri',
           },
         ],
       })
@@ -448,7 +448,7 @@ describe('AnonCredsRsHolderService', () => {
           },
           {
             anonCredsCredentialDefinitionId: 'crededefid:uri',
-            anonCredsIssuerId: 'issuerid:uri',
+            issuerId: 'issuerid:uri',
           },
         ],
       })
@@ -612,7 +612,7 @@ describe('AnonCredsRsHolderService', () => {
       anonCredsCredentialDefinitionId: 'credDefId',
       anonCredsSchemaId: 'schemaId',
       anonCredsSchemaIssuerId: 'schemaIssuerDid',
-      anonCredsIssuerId: 'issuerDid',
+      issuerId: 'issuerDid',
       anonCredsSchemaName: 'schemaName',
       anonCredsSchemaVersion: 'schemaVersion',
       anonCredsMethodName: 'inMemory',

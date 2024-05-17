@@ -504,12 +504,12 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
     const credentialRecords = await agentContext.dependencyManager
       .resolve(W3cCredentialRepository)
       .findByQuery(agentContext, {
+        issuerId: !options.issuerId || isUnqualifiedIndyDid(options.issuerId) ? undefined : options.issuerId,
         anonCredsCredentialDefinitionId:
           !options.credentialDefinitionId || isUnqualifiedCredentialDefinitionId(options.credentialDefinitionId)
             ? undefined
             : options.credentialDefinitionId,
         anonCredsSchemaId: !options.schemaId || isUnqualifiedSchemaId(options.schemaId) ? undefined : options.schemaId,
-        anonCredsIssuerId: !options.issuerId || isUnqualifiedIndyDid(options.issuerId) ? undefined : options.issuerId,
         anonCredsSchemaName: options.schemaName,
         anonCredsSchemaVersion: options.schemaVersion,
         anonCredsSchemaIssuerId:
@@ -686,7 +686,7 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
         if (isUnqualifiedIndyDid(issuerId)) {
           queryElements.anonCredsUnqualifiedIssuerId = issuerId
         } else {
-          queryElements.anonCredsIssuerId = issuerId
+          queryElements.issuerId = issuerId
         }
       }
 
