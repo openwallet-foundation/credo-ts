@@ -158,10 +158,10 @@ async function migrateLegacyToW3cCredential(agentContext: AgentContext, legacyRe
 
       // If using unqualified dids, store both qualified/unqualified revRegId forms
       // to allow retrieving it from revocation notification service
-      if (qualifiedRevocationRegistryId && indyNamespace) {
+      if (legacyTags.revocationRegistryId && indyNamespace) {
         relatedCredentialExchangeRecord.setTags({
-          anonCredsRevocationRegistryId: qualifiedRevocationRegistryId,
-          anonCredsUnqualifiedRevocationRegistryId: getUnQualifiedDidIndyDid(qualifiedRevocationRegistryId),
+          anonCredsRevocationRegistryId: getQualifiedDidIndyDid(legacyTags.revocationRegistryId, indyNamespace),
+          anonCredsUnqualifiedRevocationRegistryId: getUnQualifiedDidIndyDid(legacyTags.revocationRegistryId),
         })
       }
 
