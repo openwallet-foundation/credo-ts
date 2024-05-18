@@ -1,6 +1,8 @@
 import type { SdJwtVcHeader } from '../SdJwtVcOptions'
 import type { Jwk, Key } from '@credo-ts/core'
 
+import { randomUUID } from 'crypto'
+
 import { getInMemoryAgentOptions } from '../../../../tests'
 import { SdJwtVcService } from '../SdJwtVcService'
 import { SdJwtVcRepository } from '../repository'
@@ -12,6 +14,7 @@ import {
   sdJwtVcWithSingleDisclosurePresentation,
   simpleJwtVc,
   simpleJwtVcPresentation,
+  simpleJwtVcWithoutHolderBinding,
 } from './sdjwtvc.fixtures'
 
 import {
@@ -105,7 +108,7 @@ describe('SdJwtVcService', () => {
 
       expect(compact).toStrictEqual(simpleJwtVc)
 
-      const sdJwtVc = await sdJwtVcService.fromCompact(compact)
+      const sdJwtVc = sdJwtVcService.fromCompact(compact)
 
       expect(sdJwtVc.header).toEqual({
         alg: 'EdDSA',
@@ -121,6 +124,36 @@ describe('SdJwtVcService', () => {
         cnf: {
           jwk: jwkJsonWithoutUse(getJwkFromKey(holderKey)),
         },
+      })
+    })
+
+    test('Sign sd-jwt-vc from a basic payload without holder binding', async () => {
+      const { compact } = await sdJwtVcService.sign(agent.context, {
+        payload: {
+          claim: 'some-claim',
+          vct: 'IdentityCredential',
+        },
+        issuer: {
+          method: 'did',
+          didUrl: issuerDidUrl,
+        },
+      })
+
+      expect(compact).toStrictEqual(simpleJwtVcWithoutHolderBinding)
+
+      const sdJwtVc = sdJwtVcService.fromCompact(compact)
+
+      expect(sdJwtVc.header).toEqual({
+        alg: 'EdDSA',
+        typ: 'vc+sd-jwt',
+        kid: '#z6MktqtXNG8CDUY9PrrtoStFzeCnhpMmgxYL1gikcW3BzvNW',
+      })
+
+      expect(sdJwtVc.prettyClaims).toEqual({
+        claim: 'some-claim',
+        vct: 'IdentityCredential',
+        iat: Math.floor(new Date().getTime() / 1000),
+        iss: parseDid(issuerDidUrl).did,
       })
     })
 
@@ -144,7 +177,7 @@ describe('SdJwtVcService', () => {
         },
       })
 
-      const sdJwtVc = await sdJwtVcService.fromCompact(compact)
+      const sdJwtVc = sdJwtVcService.fromCompact(compact)
 
       expect(sdJwtVc.header).toEqual({
         alg: 'EdDSA',
@@ -390,7 +423,7 @@ describe('SdJwtVcService', () => {
 
   describe('SdJwtVcService.receive', () => {
     test('Receive sd-jwt-vc from a basic payload without disclosures', async () => {
-      const sdJwtVc = await sdJwtVcService.fromCompact(simpleJwtVc)
+      const sdJwtVc = sdJwtVcService.fromCompact(simpleJwtVc)
       const sdJwtVcRecord = await sdJwtVcService.store(agent.context, sdJwtVc.compact)
       expect(sdJwtVcRecord.compactSdJwtVc).toEqual(simpleJwtVc)
 
@@ -411,8 +444,27 @@ describe('SdJwtVcService', () => {
       })
     })
 
+    test('Receive sd-jwt-vc without holder binding', async () => {
+      const sdJwtVc = sdJwtVcService.fromCompact(simpleJwtVcWithoutHolderBinding)
+      const sdJwtVcRecord = await sdJwtVcService.store(agent.context, simpleJwtVcWithoutHolderBinding)
+      expect(sdJwtVcRecord.compactSdJwtVc).toEqual(simpleJwtVcWithoutHolderBinding)
+
+      expect(sdJwtVc.header).toEqual({
+        alg: 'EdDSA',
+        typ: 'vc+sd-jwt',
+        kid: '#z6MktqtXNG8CDUY9PrrtoStFzeCnhpMmgxYL1gikcW3BzvNW',
+      })
+
+      expect(sdJwtVc.payload).toEqual({
+        claim: 'some-claim',
+        vct: 'IdentityCredential',
+        iat: Math.floor(new Date().getTime() / 1000),
+        iss: issuerDidUrl.split('#')[0],
+      })
+    })
+
     test('Receive sd-jwt-vc from a basic payload with a disclosure', async () => {
-      const sdJwtVc = await sdJwtVcService.fromCompact(sdJwtVcWithSingleDisclosure)
+      const sdJwtVc = sdJwtVcService.fromCompact(sdJwtVcWithSingleDisclosure)
 
       expect(sdJwtVc.header).toEqual({
         alg: 'EdDSA',
@@ -437,7 +489,7 @@ describe('SdJwtVcService', () => {
     })
 
     test('Receive sd-jwt-vc from a basic payload with multiple (nested) disclosure', async () => {
-      const sdJwtVc = await sdJwtVcService.fromCompact(complexSdJwtVc)
+      const sdJwtVc = sdJwtVcService.fromCompact(complexSdJwtVc)
 
       expect(sdJwtVc.header).toEqual({
         alg: 'EdDSA',
@@ -525,6 +577,30 @@ describe('SdJwtVcService', () => {
       expect(presentation).toStrictEqual(simpleJwtVcPresentation)
     })
 
+    test('Present sd-jwt-vc without holder binding', async () => {
+      const presentation = await sdJwtVcService.present(agent.context, {
+        compactSdJwtVc: simpleJwtVcWithoutHolderBinding,
+        presentationFrame: {},
+      })
+
+      // Input should be the same as output
+      expect(presentation).toStrictEqual(simpleJwtVcWithoutHolderBinding)
+    })
+
+    test('Errors when providing verifier metadata but SD-JWT VC has no cnf claim', async () => {
+      await expect(
+        sdJwtVcService.present(agent.context, {
+          compactSdJwtVc: simpleJwtVcWithoutHolderBinding,
+          presentationFrame: {},
+          verifierMetadata: {
+            audience: 'verifier',
+            issuedAt: Date.now() / 1000,
+            nonce: randomUUID(),
+          },
+        })
+      ).rejects.toThrow("Verifier metadata provided, but credential has no 'cnf' claim to create a KB-JWT from")
+    })
+
     test('Present sd-jwt-vc from a basic payload with a disclosure', async () => {
       const presentation = await sdJwtVcService.present(agent.context, {
         compactSdJwtVc: sdJwtVcWithSingleDisclosure,
@@ -595,6 +671,25 @@ describe('SdJwtVcService', () => {
         areRequiredClaimsIncluded: true,
         isValid: true,
         isKeyBindingValid: true,
+      })
+    })
+
+    test('Verify sd-jwt-vc without holder binding', async () => {
+      const presentation = await sdJwtVcService.present(agent.context, {
+        compactSdJwtVc: simpleJwtVcWithoutHolderBinding,
+        // no disclosures
+        presentationFrame: {},
+      })
+
+      const { verification } = await sdJwtVcService.verify(agent.context, {
+        compactSdJwtVc: presentation,
+        requiredClaimKeys: ['claim'],
+      })
+
+      expect(verification).toEqual({
+        isSignatureValid: true,
+        areRequiredClaimsIncluded: true,
+        isValid: true,
       })
     })
 

@@ -73,7 +73,11 @@ export class SdJwtVcService {
     }
 
     const issuer = await this.extractKeyFromIssuer(agentContext, options.issuer)
-    const holderBinding = await this.extractKeyFromHolderBinding(agentContext, options.holder)
+
+    // holer binding is optional
+    const holderBinding = options.holder
+      ? await this.extractKeyFromHolderBinding(agentContext, options.holder)
+      : undefined
 
     const header = {
       alg: issuer.alg,
@@ -90,7 +94,7 @@ export class SdJwtVcService {
     })
 
     const compact = await sdjwt.issue(
-      { ...payload, cnf: holderBinding.cnf, iss: issuer.iss, iat: Math.floor(new Date().getTime() / 1000) },
+      { ...payload, cnf: holderBinding?.cnf, iss: issuer.iss, iat: Math.floor(new Date().getTime() / 1000) },
       disclosureFrame as DisclosureFrame<Payload>,
       { header }
     )
@@ -134,20 +138,27 @@ export class SdJwtVcService {
     })
     const sdJwtVc = await sdjwt.decode(compactSdJwtVc)
 
-    const holder = await this.extractKeyFromHolderBinding(agentContext, this.parseHolderBindingFromCredential(sdJwtVc))
+    const holderBinding = this.parseHolderBindingFromCredential(sdJwtVc)
+    if (!holderBinding && verifierMetadata) {
+      throw new SdJwtVcError("Verifier metadata provided, but credential has no 'cnf' claim to create a KB-JWT from")
+    }
+
+    const holder = holderBinding ? await this.extractKeyFromHolderBinding(agentContext, holderBinding) : undefined
     sdjwt.config({
-      kbSigner: this.signer(agentContext, holder.key),
-      kbSignAlg: holder.alg,
+      kbSigner: holder ? this.signer(agentContext, holder.key) : undefined,
+      kbSignAlg: holder?.alg,
     })
 
     const compactDerivedSdJwtVc = await sdjwt.present(compactSdJwtVc, presentationFrame as PresentationFrame<Payload>, {
-      kb: {
-        payload: {
-          iat: verifierMetadata.issuedAt,
-          nonce: verifierMetadata.nonce,
-          aud: verifierMetadata.audience,
-        },
-      },
+      kb: verifierMetadata
+        ? {
+            payload: {
+              iat: verifierMetadata.issuedAt,
+              nonce: verifierMetadata.nonce,
+              aud: verifierMetadata.audience,
+            },
+          }
+        : undefined,
     })
 
     return compactDerivedSdJwtVc
@@ -166,11 +177,12 @@ export class SdJwtVcService {
     }
 
     const issuer = await this.extractKeyFromIssuer(agentContext, this.parseIssuerFromCredential(sdJwtVc))
-    const holder = await this.extractKeyFromHolderBinding(agentContext, this.parseHolderBindingFromCredential(sdJwtVc))
+    const holderBinding = this.parseHolderBindingFromCredential(sdJwtVc)
+    const holder = holderBinding ? await this.extractKeyFromHolderBinding(agentContext, holderBinding) : undefined
 
     sdjwt.config({
       verifier: this.verifier(agentContext, issuer.key),
-      kbVerifier: this.verifier(agentContext, holder.key),
+      kbVerifier: holder ? this.verifier(agentContext, holder.key) : undefined,
     })
 
     const verificationResult: VerificationResult = {
@@ -178,7 +190,7 @@ export class SdJwtVcService {
       isSignatureValid: false,
     }
 
-    await sdjwt.verify(compactSdJwtVc, requiredClaimKeys, !!keyBinding)
+    await sdjwt.verify(compactSdJwtVc, requiredClaimKeys, keyBinding !== undefined)
 
     verificationResult.isValid = true
     verificationResult.isSignatureValid = true
@@ -206,6 +218,7 @@ export class SdJwtVcService {
       }
     } catch (error) {
       verificationResult.isKeyBindingValid = false
+      verificationResult.containsExpectedKeyBinding = false
       verificationResult.isValid = false
     }
 
@@ -369,13 +382,13 @@ export class SdJwtVcService {
 
   private parseHolderBindingFromCredential<Header extends SdJwtVcHeader, Payload extends SdJwtVcPayload>(
     sdJwtVc: SDJwt<Header, Payload>
-  ): SdJwtVcHolderBinding {
+  ): SdJwtVcHolderBinding | null {
     if (!sdJwtVc.jwt?.payload) {
       throw new SdJwtVcError('Credential not exist')
     }
 
     if (!sdJwtVc.jwt?.payload['cnf']) {
-      throw new SdJwtVcError('Credential does not contain a holder binding')
+      return null
     }
     const cnf: CnfPayload = sdJwtVc.jwt.payload['cnf']
 
