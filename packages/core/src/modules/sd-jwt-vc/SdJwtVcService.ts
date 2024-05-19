@@ -99,7 +99,6 @@ export class SdJwtVcService {
     if (!payload.vct || typeof payload.vct !== 'string') {
       throw new SdJwtVcError("Missing required parameter 'vct'")
     }
-    console.log(payload)
 
     const compact = await sdjwt.issue(
       {
