@@ -40,7 +40,11 @@ export type SdJwtVcIssuer = SdJwtVcIssuerDid
 
 export interface SdJwtVcSignOptions<Payload extends SdJwtVcPayload = SdJwtVcPayload> {
   payload: Payload
-  holder: SdJwtVcHolderBinding
+
+  /**
+   * If holder is not provided, we don't bind the SD-JWT VC to a key (so bearer VC)
+   */
+  holder?: SdJwtVcHolderBinding
   issuer: SdJwtVcIssuer
   disclosureFrame?: IDisclosureFrame
 
@@ -63,8 +67,10 @@ export type SdJwtVcPresentOptions<Payload extends SdJwtVcPayload = SdJwtVcPayloa
   /**
    * This information is received out-of-band from the verifier.
    * The claims will be used to create a normal JWT, used for key binding.
+   *
+   * If not defined, a KB-JWT will not be created
    */
-  verifierMetadata: {
+  verifierMetadata?: {
     audience: string
     nonce: string
     issuedAt: number
