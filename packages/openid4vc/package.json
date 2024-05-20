@@ -26,9 +26,9 @@
   "dependencies": {
     "@credo-ts/core": "0.5.3",
     "@sphereon/did-auth-siop": "^0.6.4",
-    "@sphereon/oid4vci-client": "^0.10.2",
-    "@sphereon/oid4vci-common": "^0.10.1",
-    "@sphereon/oid4vci-issuer": "^0.10.2",
+    "@sphereon/oid4vci-client": "^0.10.3",
+    "@sphereon/oid4vci-common": "^0.10.3",
+    "@sphereon/oid4vci-issuer": "^0.10.3",
     "@sphereon/ssi-types": "^0.23.0",
     "class-transformer": "^0.5.1",
     "rxjs": "^7.8.0"
