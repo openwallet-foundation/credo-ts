@@ -55,5 +55,5 @@ export function getKeyFromEcdsaSecp256k1VerificationKey2019(verificationMethod: 
       )
   }
 
-  throw new CredoError('verification method is missing publicKeyBase58')
+  throw new CredoError('verification method is missing publicKeyBase58 or publicKeyMultibase')
 }

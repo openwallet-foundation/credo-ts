@@ -44,5 +44,5 @@ export function getKeyFromBls12381G2Key2020(verificationMethod: Bls12381G2Key202
       )
   }
 
-  throw new CredoError('verification method is missing publicKeyBase58')
+  throw new CredoError('verification method is missing publicKeyBase58 or publicKeyMultibase')
 }
