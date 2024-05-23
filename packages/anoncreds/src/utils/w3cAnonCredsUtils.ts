@@ -20,6 +20,7 @@ import {
   isUnqualifiedRevocationRegistryId,
   isIndyDid,
   getUnQualifiedDidIndyDid,
+  isUnqualifiedIndyDid,
 } from './indyIdentifiers'
 import { W3cAnonCredsCredentialMetadataKey } from './metadata'
 
@@ -199,7 +200,7 @@ export function getW3cRecordAnonCredsTags(options: {
     anonCredsMethodName: methodName,
     anonCredsRevocationRegistryId: revocationRegistryId,
     anonCredsCredentialRevocationId: credentialRevocationId,
-    ...(isIndyDid(issuerId) && {
+    ...((isIndyDid(issuerId) || isUnqualifiedIndyDid(issuerId)) && {
       anonCredsUnqualifiedIssuerId: getUnQualifiedDidIndyDid(issuerId),
       anonCredsUnqualifiedCredentialDefinitionId: getUnQualifiedDidIndyDid(credentialDefinitionId),
       anonCredsUnqualifiedSchemaId: getUnQualifiedDidIndyDid(schemaId),

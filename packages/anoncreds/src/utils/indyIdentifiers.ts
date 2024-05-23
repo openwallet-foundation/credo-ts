@@ -221,6 +221,8 @@ export function getIndyNamespaceFromIndyDid(identifier: string): string {
 }
 
 export function getUnQualifiedDidIndyDid(identifier: string): string {
+  if (isUnqualifiedIndyDid(identifier)) return identifier
+
   if (isDidIndySchemaId(identifier)) {
     const { schemaName, schemaVersion, namespaceIdentifier } = parseIndySchemaId(identifier)
     return getUnqualifiedSchemaId(namespaceIdentifier, schemaName, schemaVersion)

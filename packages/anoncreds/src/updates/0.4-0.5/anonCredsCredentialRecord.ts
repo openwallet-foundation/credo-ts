@@ -16,6 +16,7 @@ import { fetchCredentialDefinition } from '../../utils/anonCredsObjects'
 import {
   getIndyNamespaceFromIndyDid,
   getQualifiedDidIndyDid,
+  getUnQualifiedDidIndyDid,
   isIndyDid,
   isUnqualifiedCredentialDefinitionId,
   isUnqualifiedIndyDid,
@@ -154,6 +155,16 @@ async function migrateLegacyToW3cCredential(agentContext: AgentContext, legacyRe
         credentialRecordType: 'w3c',
         credentialRecordId: w3cCredentialRecord.id,
       }
+
+      // If using unqualified dids, store both qualified/unqualified revRegId forms
+      // to allow retrieving it from revocation notification service
+      if (legacyTags.revocationRegistryId && indyNamespace) {
+        relatedCredentialExchangeRecord.setTags({
+          anonCredsRevocationRegistryId: getQualifiedDidIndyDid(legacyTags.revocationRegistryId, indyNamespace),
+          anonCredsUnqualifiedRevocationRegistryId: getUnQualifiedDidIndyDid(legacyTags.revocationRegistryId),
+        })
+      }
+
       await credentialExchangeRepository.update(agentContext, relatedCredentialExchangeRecord)
     }
   }
