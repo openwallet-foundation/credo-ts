@@ -20,6 +20,7 @@ import {
   isUnqualifiedRevocationRegistryId,
   isIndyDid,
   getUnQualifiedDidIndyDid,
+  isUnqualifiedIndyDid,
 } from './indyIdentifiers'
 import { W3cAnonCredsCredentialMetadataKey } from './metadata'
 
@@ -166,6 +167,14 @@ export function getStoreCredentialOptions(
   return storeCredentialOptions
 }
 
+// The issuer of the schema does not always match the issuer of the credential definition thus the unqualified schema id needs to be derived from both values
+function getUnqualifiedSchemaId(schemaIssuerId: string, schemaId: string) {
+  const schemaDid = schemaIssuerId.split(':')[3]
+  const split = getUnQualifiedDidIndyDid(schemaId).split(':')
+  split[0] = schemaDid
+  return split.join(':')
+}
+
 export function getW3cRecordAnonCredsTags(options: {
   credentialSubject: W3cCredentialSubject
   issuerId: string
@@ -199,10 +208,10 @@ export function getW3cRecordAnonCredsTags(options: {
     anonCredsMethodName: methodName,
     anonCredsRevocationRegistryId: revocationRegistryId,
     anonCredsCredentialRevocationId: credentialRevocationId,
-    ...(isIndyDid(issuerId) && {
+    ...((isIndyDid(issuerId) || isUnqualifiedIndyDid(issuerId)) && {
       anonCredsUnqualifiedIssuerId: getUnQualifiedDidIndyDid(issuerId),
       anonCredsUnqualifiedCredentialDefinitionId: getUnQualifiedDidIndyDid(credentialDefinitionId),
-      anonCredsUnqualifiedSchemaId: getUnQualifiedDidIndyDid(schemaId),
+      anonCredsUnqualifiedSchemaId: getUnqualifiedSchemaId(schema.issuerId, schemaId),
       anonCredsUnqualifiedSchemaIssuerId: getUnQualifiedDidIndyDid(schema.issuerId),
       anonCredsUnqualifiedRevocationRegistryId: revocationRegistryId
         ? getUnQualifiedDidIndyDid(revocationRegistryId)
