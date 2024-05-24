@@ -979,8 +979,8 @@ export class IndyVdrAnonCredsRegistry implements AnonCredsRegistry {
     }
 
     const schema = response.result.data?.txn.data as SchemaType
-
-    const schemaId = getUnqualifiedSchemaId(did, schema.data.name, schema.data.version)
+    const schemaDid = response.result.data?.txn.metadata.from as string
+    const schemaId = getUnqualifiedSchemaId(schemaDid, schema.data.name, schema.data.version)
 
     return {
       schema: {
