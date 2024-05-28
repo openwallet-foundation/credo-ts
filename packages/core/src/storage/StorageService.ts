@@ -12,7 +12,13 @@ interface AdvancedQuery<T extends BaseRecord> {
   $not?: Query<T>
 }
 
-export type Query<T extends BaseRecord<any, any, any>> = AdvancedQuery<T> | SimpleQuery<T>
+interface PaginationQuery {
+  $offset?: number;
+  $limit?: number;
+}
+
+
+export type Query<T extends BaseRecord<any, any, any>> = AdvancedQuery<T> | SimpleQuery<T> | PaginationQuery
 
 export interface BaseRecordConstructor<T> extends Constructor<T> {
   type: string

@@ -157,12 +157,17 @@ export class InMemoryStorageService<T extends BaseRecord<any, any, any> = BaseRe
     recordClass: BaseRecordConstructor<T>,
     query: Query<T>
   ): Promise<T[]> {
-    const records = Object.values(this.getRecordsForContext(agentContext))
+    const { $offset = 0, $limit } = query;
+
+    const allRecords = Object.values(this.getRecordsForContext(agentContext))
       .filter((record) => record.type === recordClass.type)
       .filter((record) => filterByQuery(record, query))
-      .map((record) => this.recordToInstance(record, recordClass))
 
-    return records
+    const slicedRecords = $limit !== undefined
+      ? allRecords.slice($offset, $offset + $limit)
+      : allRecords.slice($offset);
+
+    return slicedRecords.map((record) => this.recordToInstance(record, recordClass));
   }
 }
 

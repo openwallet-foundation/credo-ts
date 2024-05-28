@@ -137,13 +137,16 @@ export class AskarStorageService<T extends BaseRecord> implements StorageService
     const wallet = agentContext.wallet
     assertAskarWallet(wallet)
 
-    const askarQuery = askarQueryFromSearchQuery(query)
+    const { $offset, $limit, ...searchQuery } = query;
+    const askarQuery = askarQueryFromSearchQuery(searchQuery)
 
     const scan = new Scan({
       category: recordClass.type,
       store: wallet.store,
       tagFilter: askarQuery,
       profile: wallet.profile,
+      offset: $offset,
+      limit: $limit,
     })
 
     const instances = []
