@@ -167,14 +167,6 @@ export function getStoreCredentialOptions(
   return storeCredentialOptions
 }
 
-// The issuer of the schema does not always match the issuer of the credential definition thus the unqualified schema id needs to be derived from both values
-function getUnqualifiedSchemaId(schemaIssuerId: string, schemaId: string) {
-  const schemaDid = schemaIssuerId.split(':')[3]
-  const split = getUnQualifiedDidIndyDid(schemaId).split(':')
-  split[0] = schemaDid
-  return split.join(':')
-}
-
 export function getW3cRecordAnonCredsTags(options: {
   credentialSubject: W3cCredentialSubject
   issuerId: string
@@ -211,7 +203,7 @@ export function getW3cRecordAnonCredsTags(options: {
     ...((isIndyDid(issuerId) || isUnqualifiedIndyDid(issuerId)) && {
       anonCredsUnqualifiedIssuerId: getUnQualifiedDidIndyDid(issuerId),
       anonCredsUnqualifiedCredentialDefinitionId: getUnQualifiedDidIndyDid(credentialDefinitionId),
-      anonCredsUnqualifiedSchemaId: getUnqualifiedSchemaId(schema.issuerId, schemaId),
+      anonCredsUnqualifiedSchemaId: getUnQualifiedDidIndyDid(schema.issuerId),
       anonCredsUnqualifiedSchemaIssuerId: getUnQualifiedDidIndyDid(schema.issuerId),
       anonCredsUnqualifiedRevocationRegistryId: revocationRegistryId
         ? getUnQualifiedDidIndyDid(revocationRegistryId)
