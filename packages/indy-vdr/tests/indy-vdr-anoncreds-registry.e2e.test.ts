@@ -61,6 +61,7 @@ describe('IndyVdrAnonCredsRegistry', () => {
   let agentDid: string
   beforeAll(async () => {
     await endorser.initialize()
+    await agent.initialize()
     const unqualifiedSubmitterDid = await importExistingIndyDidFromPrivateKey(
       endorser,
       TypedArrayEncoder.fromString('00000000000000000000000Endorser9')
@@ -71,8 +72,6 @@ describe('IndyVdrAnonCredsRegistry', () => {
       TypedArrayEncoder.fromString('00000000000000000000000Endorser9')
     )
     agentDid = `did:indy:pool:localtest:${agentUnqualifiedSubmitterDid}`
-
-    await agent.initialize()
   })
 
   afterAll(async () => {
