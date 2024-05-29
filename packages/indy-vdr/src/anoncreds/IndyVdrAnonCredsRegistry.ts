@@ -287,8 +287,9 @@ export class IndyVdrAnonCredsRegistry implements AnonCredsRegistry {
       }
 
       // Format the schema id based on the type of the credential definition id
+      const unqualifiedDid = schema.schema.schemaId.split(':')[0]
       const schemaId = credentialDefinitionId.startsWith('did:indy')
-        ? getDidIndySchemaId(pool.indyNamespace, namespaceIdentifier, schema.schema.name, schema.schema.version)
+        ? getDidIndySchemaId(pool.indyNamespace, unqualifiedDid, schema.schema.name, schema.schema.version)
         : schema.schema.schemaId
 
       return {
