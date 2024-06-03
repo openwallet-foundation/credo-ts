@@ -84,13 +84,13 @@ jobs:
           echo version="${NEW_VERSION}" >> "$GITHUB_OUTPUT"
 
       - name: Create Tag
-        uses: mathieudutour/github-tag-action@v6.1
+        uses: mathieudutour/github-tag-action@v6.2
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           custom_tag: ${{ steps.new-version.outputs.version }}
 
       - name: Create Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ steps.new-version.outputs.version }}
           body: |
