@@ -684,7 +684,6 @@ describe('credentialProtocol', () => {
 
       expect(credentialRepository.getSingleByQuery).toHaveBeenNthCalledWith(1, agentContext, {
         threadId: 'somethreadid',
-        connectionId: '123',
       })
       expect(credentialRepository.update).toHaveBeenCalled()
       expect(returnedCredentialRecord.errorMessage).toBe('issuance-abandoned: Indy error')
