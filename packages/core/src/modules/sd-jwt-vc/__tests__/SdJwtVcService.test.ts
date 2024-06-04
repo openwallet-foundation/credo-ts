@@ -753,22 +753,6 @@ describe('SdJwtVcService', () => {
 
     test('Verify sd-jwt-vc with status where credential is not revoked', async () => {
       const sdJwtVcService = agent.dependencyManager.resolve(SdJwtVcService)
-      // const { compact } = await sdJwtVcService.sign(agent.context, {
-      //   payload: {
-      //     claim: 'some-claim',
-      //     vct: 'IdentityCredential',
-      //     status: {
-      //       status_list: {
-      //         idx: 12,
-      //         uri: 'https://example.com/status-list',
-      //       },
-      //     },
-      //   },
-      //   issuer: {
-      //     method: 'did',
-      //     didUrl: issuerDidUrl,
-      //   },
-      // })
 
       // Mock call to status list
       const fetchSpy = jest.spyOn(fetchUtils, 'fetchWithTimeout')

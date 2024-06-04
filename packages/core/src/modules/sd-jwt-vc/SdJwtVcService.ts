@@ -19,12 +19,15 @@ import { uint8ArrayToBase64Url } from '@sd-jwt/utils'
 import { injectable } from 'tsyringe'
 
 import { JwtPayload, Jwk, getJwkFromJson, getJwkFromKey } from '../../crypto'
-import { TypedArrayEncoder, Hasher } from '../../utils'
+import { CredoError } from '../../error'
+import { TypedArrayEncoder, Hasher, nowInSeconds } from '../../utils'
 import { fetchWithTimeout } from '../../utils/fetch'
 import { DidResolverService, parseDid, getKeyFromVerificationMethod } from '../dids'
 
 import { SdJwtVcError } from './SdJwtVcError'
 import { SdJwtVcRecord, SdJwtVcRepository } from './repository'
+
+type SdJwtVcConfig = SDJwtVcInstance['userConfig']
 
 export interface SdJwtVc<
   Header extends SdJwtVcHeader = SdJwtVcHeader,
@@ -93,7 +96,6 @@ export class SdJwtVcService {
       signer: this.signer(agentContext, issuer.key),
       hashAlg: 'sha-256',
       signAlg: issuer.alg,
-      saltGenerator: agentContext.wallet.generateNonce,
     })
 
     if (!payload.vct || typeof payload.vct !== 'string') {
@@ -105,7 +107,7 @@ export class SdJwtVcService {
         ...payload,
         cnf: holderBinding?.cnf,
         iss: issuer.iss,
-        iat: Math.floor(new Date().getTime() / 1000),
+        iat: nowInSeconds(),
         vct: payload.vct,
       },
       disclosureFrame as DisclosureFrame<Payload>,
@@ -193,7 +195,7 @@ export class SdJwtVcService {
 
     try {
       sdJwtVc = await sdjwt.decode(compactSdJwtVc)
-      if (!sdJwtVc.jwt) throw new Error('Invalid sd-jwt-vc')
+      if (!sdJwtVc.jwt) throw new CredoError('Invalid sd-jwt-vc')
     } catch (error) {
       return {
         isValid: false,
@@ -512,10 +514,11 @@ export class SdJwtVcService {
     throw new SdJwtVcError("Unsupported credential holder binding. Only 'did' and 'jwk' are supported at the moment.")
   }
 
-  private getBaseSdJwtConfig(agentContext: AgentContext) {
+  private getBaseSdJwtConfig(agentContext: AgentContext): SdJwtVcConfig {
     return {
       hasher: this.hasher,
       statusListFetcher: this.getStatusListFetcher(agentContext),
+      saltGenerator: agentContext.wallet.generateNonce,
     }
   }
 
@@ -527,7 +530,7 @@ export class SdJwtVcService {
     return async (uri: string) => {
       const response = await fetchWithTimeout(agentContext.config.agentDependencies.fetch, uri)
       if (!response.ok) {
-        throw new Error(
+        throw new CredoError(
           `Received invalid response with status ${
             response.status
           } when fetching status list from ${uri}. ${await response.text()}`
