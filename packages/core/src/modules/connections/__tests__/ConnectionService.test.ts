@@ -753,6 +753,35 @@ describe('ConnectionService', () => {
   })
 
   describe('assertConnectionOrOutOfBandExchange', () => {
+    it('should throw an error when a expectedConnectionId is present, but no connection is present in the messageContext', async () => {
+      expect.assertions(1)
+
+      const messageContext = new InboundMessageContext(new AgentMessage(), {
+        agentContext,
+      })
+
+      await expect(
+        connectionService.assertConnectionOrOutOfBandExchange(messageContext, {
+          expectedConnectionId: '123',
+        })
+      ).rejects.toThrow('Expected incoming message to be from connection 123 but no connection found.')
+    })
+
+    it('should throw an error when a expectedConnectionId is present, but does not match with connection id present in the messageContext', async () => {
+      expect.assertions(1)
+
+      const messageContext = new InboundMessageContext(new AgentMessage(), {
+        agentContext,
+        connection: getMockConnection({ state: DidExchangeState.InvitationReceived, id: 'something' }),
+      })
+
+      await expect(
+        connectionService.assertConnectionOrOutOfBandExchange(messageContext, {
+          expectedConnectionId: 'something-else',
+        })
+      ).rejects.toThrow('Expected incoming message to be from connection something-else but connection is something.')
+    })
+
     it('should not throw an error when a connection record with state complete is present in the messageContext', async () => {
       expect.assertions(1)
 
