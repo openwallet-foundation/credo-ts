@@ -16,10 +16,11 @@ import { fetchCredentialDefinition } from '../../utils/anonCredsObjects'
 import {
   getIndyNamespaceFromIndyDid,
   getQualifiedDidIndyDid,
-  getUnQualifiedDidIndyDid,
+  getUnqualifiedRevocationRegistryDefinitionId,
   isIndyDid,
   isUnqualifiedCredentialDefinitionId,
   isUnqualifiedIndyDid,
+  parseIndyRevocationRegistryId,
 } from '../../utils/indyIdentifiers'
 import { W3cAnonCredsCredentialMetadataKey } from '../../utils/metadata'
 import { getW3cRecordAnonCredsTags } from '../../utils/w3cAnonCredsUtils'
@@ -156,12 +157,20 @@ async function migrateLegacyToW3cCredential(agentContext: AgentContext, legacyRe
         credentialRecordId: w3cCredentialRecord.id,
       }
 
-      // If using unqualified dids, store both qualified/unqualified revRegId forms
+      // If using Indy dids, store both qualified/unqualified revRegId forms
       // to allow retrieving it from revocation notification service
       if (legacyTags.revocationRegistryId && indyNamespace) {
+        const { credentialDefinitionTag, namespaceIdentifier, revocationRegistryTag, schemaSeqNo } =
+          parseIndyRevocationRegistryId(legacyTags.revocationRegistryId)
+
         relatedCredentialExchangeRecord.setTags({
           anonCredsRevocationRegistryId: getQualifiedDidIndyDid(legacyTags.revocationRegistryId, indyNamespace),
-          anonCredsUnqualifiedRevocationRegistryId: getUnQualifiedDidIndyDid(legacyTags.revocationRegistryId),
+          anonCredsUnqualifiedRevocationRegistryId: getUnqualifiedRevocationRegistryDefinitionId(
+            namespaceIdentifier,
+            schemaSeqNo,
+            credentialDefinitionTag,
+            revocationRegistryTag
+          ),
         })
       }
 
@@ -190,13 +199,14 @@ export async function storeAnonCredsInW3cFormatV0_5<Agent extends BaseAgent>(age
     try {
       await migrateLegacyToW3cCredential(agent.context, record)
       await anoncredsRepository.delete(agent.context, record)
+      agent.config.logger.debug(
+        `Successfully migrated w3c credential record with id ${record.id} to storage version 0.5`
+      )
     } catch (error) {
       agent.config.logger.error(
         `Failed to migrate w3c credential record with id ${record.id} to storage version 0.5`,
         error
       )
     }
-
-    agent.config.logger.debug(`Successfully migrated w3c credential record with id ${record.id} to storage version 0.5`)
   }
 }
