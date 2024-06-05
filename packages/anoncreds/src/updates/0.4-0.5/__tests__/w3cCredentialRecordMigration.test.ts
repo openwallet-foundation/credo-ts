@@ -294,7 +294,7 @@ async function testMigration(
   const anonCredsRecord = new AnonCredsCredentialRecord({
     credential: {
       schema_id: schemaId,
-      cred_def_id: credentialDefinitionState.credentialDefinitionId,
+      cred_def_id: credentialDefinitionId,
       values: {
         name: {
           raw: 'John',
