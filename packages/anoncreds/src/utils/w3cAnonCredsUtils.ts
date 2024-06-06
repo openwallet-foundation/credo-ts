@@ -48,7 +48,10 @@ export type AnonCredsCredentialTags = {
   anonCredsUnqualifiedRevocationRegistryId?: string
 }
 
-function anonCredsCredentialInfoFromW3cRecord(w3cCredentialRecord: W3cCredentialRecord): AnonCredsCredentialInfo {
+function anonCredsCredentialInfoFromW3cRecord(
+  w3cCredentialRecord: W3cCredentialRecord,
+  useUnqualifiedIdentifiers?: boolean
+): AnonCredsCredentialInfo {
   if (Array.isArray(w3cCredentialRecord.credential.credentialSubject)) {
     throw new CredoError('Credential subject must be an object, not an array.')
   }
@@ -61,13 +64,28 @@ function anonCredsCredentialInfoFromW3cRecord(w3cCredentialRecord: W3cCredential
   )
   if (!anonCredsCredentialMetadata) throw new CredoError('AnonCreds metadata not found on credential record.')
 
+  const credentialDefinitionId =
+    useUnqualifiedIdentifiers && anonCredsTags.anonCredsUnqualifiedCredentialDefinitionId
+      ? anonCredsTags.anonCredsUnqualifiedCredentialDefinitionId
+      : anonCredsTags.anonCredsCredentialDefinitionId
+
+  const schemaId =
+    useUnqualifiedIdentifiers && anonCredsTags.anonCredsUnqualifiedSchemaId
+      ? anonCredsTags.anonCredsUnqualifiedSchemaId
+      : anonCredsTags.anonCredsSchemaId
+
+  const revocationRegistryId =
+    useUnqualifiedIdentifiers && anonCredsTags.anonCredsUnqualifiedRevocationRegistryId
+      ? anonCredsTags.anonCredsUnqualifiedRevocationRegistryId
+      : anonCredsTags.anonCredsRevocationRegistryId ?? null
+
   return {
     attributes: (w3cCredentialRecord.credential.credentialSubject.claims as AnonCredsClaimRecord) ?? {},
     credentialId: w3cCredentialRecord.id,
-    credentialDefinitionId: anonCredsTags.anonCredsCredentialDefinitionId,
-    schemaId: anonCredsTags.anonCredsSchemaId,
+    credentialDefinitionId,
+    schemaId,
+    revocationRegistryId,
     credentialRevocationId: anonCredsCredentialMetadata.credentialRevocationId ?? null,
-    revocationRegistryId: anonCredsTags.anonCredsRevocationRegistryId ?? null,
     methodName: anonCredsCredentialMetadata.methodName,
     linkSecretId: anonCredsCredentialMetadata.linkSecretId,
     createdAt: w3cCredentialRecord.createdAt,
@@ -98,10 +116,11 @@ function anonCredsCredentialInfoFromAnonCredsRecord(
 }
 
 export function getAnoncredsCredentialInfoFromRecord(
-  credentialRecord: W3cCredentialRecord | AnonCredsCredentialRecord
+  credentialRecord: W3cCredentialRecord | AnonCredsCredentialRecord,
+  useUnqualifiedIdentifiersIfPresent?: boolean
 ): AnonCredsCredentialInfo {
   if (credentialRecord instanceof W3cCredentialRecord) {
-    return anonCredsCredentialInfoFromW3cRecord(credentialRecord)
+    return anonCredsCredentialInfoFromW3cRecord(credentialRecord, useUnqualifiedIdentifiersIfPresent)
   } else {
     return anonCredsCredentialInfoFromAnonCredsRecord(credentialRecord)
   }
