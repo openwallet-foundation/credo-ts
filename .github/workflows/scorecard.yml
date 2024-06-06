@@ -1,7 +1,7 @@
 name: OpenSSF Scorecard supply-chain security
 on:
   schedule:
-    - cron: '00 08 * * 5'
+    - cron: "00 08 * * 5"
 
 # Declare default permissions as read only.
 permissions: read-all
@@ -49,3 +49,4 @@ jobs:
         uses: github/codeql-action/upload-sarif@1b1aada464948af03b950897e5eb522f92603cc2 # v3.24.9
         with:
           sarif_file: results.sarif
+
