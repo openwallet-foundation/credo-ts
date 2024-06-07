@@ -365,11 +365,9 @@ describe('PP V2 AnonCreds Proofs', () => {
       presentation: {
         anoncreds: {
           proof: {
+            // Only one proof means the predicate and attribute was combined into one proof (and thus we can
+            // know that it was the same cred)
             proofs: [
-              {
-                primary_proof: expect.any(Object),
-                non_revoc_proof: null,
-              },
               {
                 primary_proof: expect.any(Object),
                 non_revoc_proof: null,
