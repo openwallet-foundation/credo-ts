@@ -1,31 +1,42 @@
 import type { SdJwtVcHeader } from '../SdJwtVcOptions'
-import type { Jwk, Key } from '@credo-ts/core'
+import type { AgentContext, Jwk, Key } from '@credo-ts/core'
 
+import { createHeaderAndPayload, StatusList } from '@sd-jwt/jwt-status-list'
+import { SDJWTException } from '@sd-jwt/utils'
 import { randomUUID } from 'crypto'
 
-import { getInMemoryAgentOptions } from '../../../../tests'
+import { agentDependencies, getInMemoryAgentOptions } from '../../../../tests'
+import * as fetchUtils from '../../../utils/fetch'
 import { SdJwtVcService } from '../SdJwtVcService'
 import { SdJwtVcRepository } from '../repository'
 
 import {
   complexSdJwtVc,
   complexSdJwtVcPresentation,
+  contentChangedSdJwtVc,
+  expiredSdJwtVc,
+  notBeforeInFutureSdJwtVc,
   sdJwtVcWithSingleDisclosure,
   sdJwtVcWithSingleDisclosurePresentation,
+  signatureInvalidSdJwtVc,
   simpleJwtVc,
   simpleJwtVcPresentation,
   simpleJwtVcWithoutHolderBinding,
+  simpleSdJwtVcWithStatus,
 } from './sdjwtvc.fixtures'
 
 import {
-  parseDid,
-  getJwkFromKey,
+  CredoError,
+  Agent,
   DidKey,
   DidsModule,
+  getJwkFromKey,
+  JwsService,
+  JwtPayload,
   KeyDidRegistrar,
   KeyDidResolver,
   KeyType,
-  Agent,
+  parseDid,
   TypedArrayEncoder,
 } from '@credo-ts/core'
 
@@ -53,6 +64,41 @@ Date.prototype.getTime = jest.fn(() => 1698151532000)
 
 jest.mock('../repository/SdJwtVcRepository')
 const SdJwtVcRepositoryMock = SdJwtVcRepository as jest.Mock<SdJwtVcRepository>
+
+const generateStatusList = async (
+  agentContext: AgentContext,
+  key: Key,
+  issuerDidUrl: string,
+  length: number,
+  revokedIndexes: number[]
+): Promise<string> => {
+  const statusList = new StatusList(
+    Array.from({ length }, (_, i) => (revokedIndexes.includes(i) ? 1 : 0)),
+    1
+  )
+
+  const [did, keyId] = issuerDidUrl.split('#')
+  const { header, payload } = createHeaderAndPayload(
+    statusList,
+    {
+      iss: did,
+      sub: 'https://example.com/status/1',
+      iat: new Date().getTime() / 1000,
+    },
+    {
+      alg: 'EdDSA',
+      typ: 'statuslist+jwt',
+      kid: `#${keyId}`,
+    }
+  )
+
+  const jwsService = agentContext.dependencyManager.resolve(JwsService)
+  return jwsService.createJwsCompact(agentContext, {
+    key,
+    payload: JwtPayload.fromJson(payload),
+    protectedHeaderOptions: header,
+  })
+}
 
 describe('SdJwtVcService', () => {
   const verifierDid = 'did:key:zUC74VEqqhEHQcgv4zagSPkqFJxuNWuoBPKjJuHETEUeHLoSqWt92viSsmaWjy82y'
@@ -658,19 +704,25 @@ describe('SdJwtVcService', () => {
         },
       })
 
-      const { verification } = await sdJwtVcService.verify(agent.context, {
+      const verificationResult = await sdJwtVcService.verify(agent.context, {
         compactSdJwtVc: presentation,
         keyBinding: { audience: verifierDid, nonce },
         requiredClaimKeys: ['claim'],
       })
 
-      expect(verification).toEqual({
-        isSignatureValid: true,
-        containsRequiredVcProperties: true,
-        containsExpectedKeyBinding: true,
-        areRequiredClaimsIncluded: true,
+      expect(verificationResult).toEqual({
         isValid: true,
-        isKeyBindingValid: true,
+        sdJwtVc: expect.any(Object),
+        verification: {
+          isSignatureValid: true,
+          containsRequiredVcProperties: true,
+          containsExpectedKeyBinding: true,
+          areRequiredClaimsIncluded: true,
+          isValid: true,
+          isValidJwtPayload: true,
+          isStatusValid: true,
+          isKeyBindingValid: true,
+        },
       })
     })
 
@@ -681,15 +733,132 @@ describe('SdJwtVcService', () => {
         presentationFrame: {},
       })
 
-      const { verification } = await sdJwtVcService.verify(agent.context, {
+      const verificationResult = await sdJwtVcService.verify(agent.context, {
         compactSdJwtVc: presentation,
         requiredClaimKeys: ['claim'],
       })
 
-      expect(verification).toEqual({
-        isSignatureValid: true,
-        areRequiredClaimsIncluded: true,
+      expect(verificationResult).toEqual({
         isValid: true,
+        sdJwtVc: expect.any(Object),
+        verification: {
+          isSignatureValid: true,
+          areRequiredClaimsIncluded: true,
+          isValid: true,
+          isValidJwtPayload: true,
+          isStatusValid: true,
+        },
+      })
+    })
+
+    test('Verify sd-jwt-vc with status where credential is not revoked', async () => {
+      const sdJwtVcService = agent.dependencyManager.resolve(SdJwtVcService)
+
+      // Mock call to status list
+      const fetchSpy = jest.spyOn(fetchUtils, 'fetchWithTimeout')
+
+      // First time not revoked
+      fetchSpy.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        text: () => generateStatusList(agent.context, issuerKey, issuerDidUrl, 24, []),
+      } satisfies Partial<Response> as Response)
+
+      const presentation = await sdJwtVcService.present(agent.context, {
+        compactSdJwtVc: simpleSdJwtVcWithStatus,
+        presentationFrame: {},
+      })
+
+      const verificationResult = await sdJwtVcService.verify(agent.context, {
+        compactSdJwtVc: presentation,
+      })
+      expect(fetchUtils.fetchWithTimeout).toHaveBeenCalledWith(
+        agentDependencies.fetch,
+        'https://example.com/status-list'
+      )
+
+      expect(verificationResult).toEqual({
+        isValid: true,
+        sdJwtVc: expect.any(Object),
+        verification: {
+          isSignatureValid: true,
+          isValid: true,
+          isValidJwtPayload: true,
+          isStatusValid: true,
+          areRequiredClaimsIncluded: true,
+        },
+      })
+    })
+
+    test('Verify sd-jwt-vc with status where credential is revoked and fails', async () => {
+      const sdJwtVcService = agent.dependencyManager.resolve(SdJwtVcService)
+
+      // Mock call to status list
+      const fetchSpy = jest.spyOn(fetchUtils, 'fetchWithTimeout')
+
+      // First time not revoked
+      fetchSpy.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        text: () => generateStatusList(agent.context, issuerKey, issuerDidUrl, 24, [12]),
+      } satisfies Partial<Response> as Response)
+
+      const presentation = await sdJwtVcService.present(agent.context, {
+        compactSdJwtVc: simpleSdJwtVcWithStatus,
+        presentationFrame: {},
+      })
+
+      const verificationResult = await sdJwtVcService.verify(agent.context, {
+        compactSdJwtVc: presentation,
+      })
+      expect(fetchUtils.fetchWithTimeout).toHaveBeenCalledWith(
+        agentDependencies.fetch,
+        'https://example.com/status-list'
+      )
+
+      expect(verificationResult).toEqual({
+        isValid: false,
+        sdJwtVc: expect.any(Object),
+        verification: {
+          isValid: false,
+        },
+        error: new SDJWTException('Status is not valid'),
+      })
+    })
+
+    test('Verify sd-jwt-vc with status where status list is not valid and fails', async () => {
+      const sdJwtVcService = agent.dependencyManager.resolve(SdJwtVcService)
+
+      // Mock call to status list
+      const fetchSpy = jest.spyOn(fetchUtils, 'fetchWithTimeout')
+
+      // First time not revoked
+      fetchSpy.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        text: () => generateStatusList(agent.context, issuerKey, issuerDidUrl, 8, []),
+      } satisfies Partial<Response> as Response)
+
+      const presentation = await sdJwtVcService.present(agent.context, {
+        compactSdJwtVc: simpleSdJwtVcWithStatus,
+        presentationFrame: {},
+      })
+
+      const verificationResult = await sdJwtVcService.verify(agent.context, {
+        compactSdJwtVc: presentation,
+      })
+      expect(fetchUtils.fetchWithTimeout).toHaveBeenCalledWith(
+        agentDependencies.fetch,
+        'https://example.com/status-list'
+      )
+
+      expect(verificationResult).toEqual({
+        isValid: false,
+        sdJwtVc: expect.any(Object),
+        verification: {
+          isValid: false,
+        },
+        error: new Error('Index out of bounds'),
       })
     })
 
@@ -706,19 +875,25 @@ describe('SdJwtVcService', () => {
         presentationFrame: { claim: true },
       })
 
-      const { verification } = await sdJwtVcService.verify(agent.context, {
+      const verificationResult = await sdJwtVcService.verify(agent.context, {
         compactSdJwtVc: presentation,
         keyBinding: { audience: verifierDid, nonce },
         requiredClaimKeys: ['vct', 'cnf', 'claim', 'iat'],
       })
 
-      expect(verification).toEqual({
-        isSignatureValid: true,
-        containsRequiredVcProperties: true,
-        areRequiredClaimsIncluded: true,
+      expect(verificationResult).toEqual({
         isValid: true,
-        isKeyBindingValid: true,
-        containsExpectedKeyBinding: true,
+        sdJwtVc: expect.any(Object),
+        verification: {
+          isSignatureValid: true,
+          containsRequiredVcProperties: true,
+          areRequiredClaimsIncluded: true,
+          isValid: true,
+          isValidJwtPayload: true,
+          isStatusValid: true,
+          isKeyBindingValid: true,
+          containsExpectedKeyBinding: true,
+        },
       })
     })
 
@@ -749,7 +924,7 @@ describe('SdJwtVcService', () => {
         },
       })
 
-      const { verification } = await sdJwtVcService.verify(agent.context, {
+      const verificationResult = await sdJwtVcService.verify(agent.context, {
         compactSdJwtVc: presentation,
         keyBinding: { audience: verifierDid, nonce },
         // FIXME: this should be a requiredFrame to be consistent with the other methods
@@ -772,13 +947,19 @@ describe('SdJwtVcService', () => {
         ],
       })
 
-      expect(verification).toEqual({
-        isSignatureValid: true,
-        areRequiredClaimsIncluded: true,
-        containsExpectedKeyBinding: true,
-        containsRequiredVcProperties: true,
+      expect(verificationResult).toEqual({
         isValid: true,
-        isKeyBindingValid: true,
+        sdJwtVc: expect.any(Object),
+        verification: {
+          isSignatureValid: true,
+          areRequiredClaimsIncluded: true,
+          containsExpectedKeyBinding: true,
+          containsRequiredVcProperties: true,
+          isValid: true,
+          isValidJwtPayload: true,
+          isStatusValid: true,
+          isKeyBindingValid: true,
+        },
       })
     })
 
@@ -796,6 +977,74 @@ describe('SdJwtVcService', () => {
       )
 
       expect(verificationResult.verification.isValid).toBe(true)
+    })
+
+    test('verify expired sd-jwt-vc and fails', async () => {
+      const verificationResult = await sdJwtVcService.verify(agent.context, {
+        compactSdJwtVc: expiredSdJwtVc,
+      })
+
+      expect(verificationResult).toEqual({
+        isValid: false,
+        verification: {
+          areRequiredClaimsIncluded: true,
+          isSignatureValid: true,
+          isStatusValid: true,
+          isValid: false,
+          isValidJwtPayload: false,
+        },
+        error: new CredoError('JWT expired at 1716111919'),
+        sdJwtVc: expect.any(Object),
+      })
+    })
+
+    test('verify sd-jwt-vc with nbf in future and fails', async () => {
+      const verificationResult = await sdJwtVcService.verify(agent.context, {
+        compactSdJwtVc: notBeforeInFutureSdJwtVc,
+      })
+
+      expect(verificationResult).toEqual({
+        isValid: false,
+        verification: {
+          areRequiredClaimsIncluded: true,
+          isSignatureValid: true,
+          isStatusValid: true,
+          isValid: false,
+          isValidJwtPayload: false,
+        },
+        error: new CredoError('JWT not valid before 4078944000'),
+        sdJwtVc: expect.any(Object),
+      })
+    })
+
+    test('verify sd-jwt-vc with content changed and fails', async () => {
+      const verificationResult = await sdJwtVcService.verify(agent.context, {
+        compactSdJwtVc: contentChangedSdJwtVc,
+      })
+
+      expect(verificationResult).toEqual({
+        isValid: false,
+        verification: {
+          isValid: false,
+        },
+        error: new SDJWTException('Verify Error: Invalid JWT Signature'),
+        sdJwtVc: expect.any(Object),
+      })
+    })
+
+    test('verify sd-jwt-vc with invalid signature and fails', async () => {
+      const verificationResult = await sdJwtVcService.verify(agent.context, {
+        compactSdJwtVc: signatureInvalidSdJwtVc,
+      })
+
+      expect(verificationResult).toEqual({
+        isValid: false,
+        verification: {
+          isValid: false,
+        },
+        error: new SDJWTException('Verify Error: Invalid JWT Signature'),
+        sdJwtVc: expect.any(Object),
+      })
     })
   })
 })
