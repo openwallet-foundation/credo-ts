@@ -2373,15 +2373,15 @@
   resolved "https://registry.yarnpkg.com/@react-native/polyfills/-/polyfills-2.0.0.tgz#4c40b74655c83982c8cf47530ee7dc13d957b6aa"
   integrity sha512-K0aGNn1TjalKj+65D7ycc1//H9roAQ51GJVk5ZJQFb2teECGmzd86bYDC0aYdbRf7gtovescq4Zt6FR0tgXiHQ==
 
-"@sd-jwt/core@^0.6.1":
-  version "0.6.1"
-  resolved "https://registry.yarnpkg.com/@sd-jwt/core/-/core-0.6.1.tgz#d28be10d0f4b672636fcf7ad71737cb08e5dae96"
-  integrity sha512-egFTb23o6BGWF93vnjopN02rSiC1HOOnkk9BI8Kao3jz9ipZAHdO6wF7gwfZm5Nlol/Kd1/KSLhbOUPYt++FjA==
+"@sd-jwt/core@0.7.0", "@sd-jwt/core@^0.7.0":
+  version "0.7.0"
+  resolved "https://registry.yarnpkg.com/@sd-jwt/core/-/core-0.7.0.tgz#ebacddd4015db24c8901a06bb3b771eddea28d1d"
+  integrity sha512-S6syiR6KUfQMWB1YlBudB9iNIji0p+Ip2XSPdqBkSCBJq7o5RBGhoZppHjuOFe+5KImQYv1ltEyJtNZqiRU/rQ==
   dependencies:
-    "@sd-jwt/decode" "0.6.1"
-    "@sd-jwt/present" "0.6.1"
-    "@sd-jwt/types" "0.6.1"
-    "@sd-jwt/utils" "0.6.1"
+    "@sd-jwt/decode" "0.7.0"
+    "@sd-jwt/present" "0.7.0"
+    "@sd-jwt/types" "0.7.0"
+    "@sd-jwt/utils" "0.7.0"
 
 "@sd-jwt/decode@0.6.1", "@sd-jwt/decode@^0.6.1":
   version "0.6.1"
@@ -2391,7 +2391,33 @@
     "@sd-jwt/types" "0.6.1"
     "@sd-jwt/utils" "0.6.1"
 
-"@sd-jwt/present@0.6.1", "@sd-jwt/present@^0.6.1":
+"@sd-jwt/decode@0.7.0", "@sd-jwt/decode@^0.7.0":
+  version "0.7.0"
+  resolved "https://registry.yarnpkg.com/@sd-jwt/decode/-/decode-0.7.0.tgz#b899edba3582b4b6db2e90cf010c6aebad9a360c"
+  integrity sha512-XPLwelf8pOVWsJ9D+Y0BW6nvKN7Q/+cTcSRBlFcGYh/vJ4MGpT4Q1c4V6RrawpI9UUE485OqG/xhftCJ+x6P2Q==
+  dependencies:
+    "@sd-jwt/types" "0.7.0"
+    "@sd-jwt/utils" "0.7.0"
+
+"@sd-jwt/jwt-status-list@0.7.0", "@sd-jwt/jwt-status-list@^0.7.0":
+  version "0.7.0"
+  resolved "https://registry.yarnpkg.com/@sd-jwt/jwt-status-list/-/jwt-status-list-0.7.0.tgz#80d8ebb924c7e628927eaebd8f6ccaf61f80b27a"
+  integrity sha512-2cRiay88u+yLqO17oaoRlVR7amYo2RFWKYpvThsbCH5K9HrVBOZXBzJYZs771gXqeezcFNlFy9xbsqKJ9NqrUw==
+  dependencies:
+    "@sd-jwt/types" "0.7.0"
+    base64url "^3.0.1"
+    pako "^2.1.0"
+
+"@sd-jwt/present@0.7.0":
+  version "0.7.0"
+  resolved "https://registry.yarnpkg.com/@sd-jwt/present/-/present-0.7.0.tgz#a9c7494a1962a48e94953e78bd1cd28d1f7ef351"
+  integrity sha512-ozWRrobhmfSmAC2v0D6oS+abPPcmAjxGPZsaJL/064n1CN9rkbsRmyZvZ8U7rADJYF6INqE295Zpz1p6MaYK+w==
+  dependencies:
+    "@sd-jwt/decode" "0.7.0"
+    "@sd-jwt/types" "0.7.0"
+    "@sd-jwt/utils" "0.7.0"
+
+"@sd-jwt/present@^0.6.1":
   version "0.6.1"
   resolved "https://registry.yarnpkg.com/@sd-jwt/present/-/present-0.6.1.tgz#82b9188becb0fa240897c397d84a54d55c7d169e"
   integrity sha512-QRD3TUDLj4PqQNZ70bBxh8FLLrOE9mY8V9qiZrJSsaDOLFs2p1CtZG+v9ig62fxFYJZMf4bWKwYjz+qqGAtxCg==
@@ -2400,17 +2426,38 @@
     "@sd-jwt/types" "0.6.1"
     "@sd-jwt/utils" "0.6.1"
 
+"@sd-jwt/sd-jwt-vc@^0.7.0":
+  version "0.7.0"
+  resolved "https://registry.yarnpkg.com/@sd-jwt/sd-jwt-vc/-/sd-jwt-vc-0.7.0.tgz#48c572881f5908f45b80e235bb970a6b4aa2f5eb"
+  integrity sha512-7MkCKY8Ittqvd7HJT+Ebge2d1tS7Y7xd+jmZFJJ5h6tzXlIPz08X1UzxR6f8h97euqCCDDCLJWfG34HKHE4lYw==
+  dependencies:
+    "@sd-jwt/core" "0.7.0"
+    "@sd-jwt/jwt-status-list" "0.7.0"
+
 "@sd-jwt/types@0.6.1", "@sd-jwt/types@^0.6.1":
   version "0.6.1"
   resolved "https://registry.yarnpkg.com/@sd-jwt/types/-/types-0.6.1.tgz#fc4235e00cf40d35a21d6bc02e44e12d7162aa9b"
   integrity sha512-LKpABZJGT77jNhOLvAHIkNNmGqXzyfwBT+6r+DN9zNzMx1CzuNR0qXk1GMUbast9iCfPkGbnEpUv/jHTBvlIvg==
 
-"@sd-jwt/utils@0.6.1", "@sd-jwt/utils@^0.6.1":
+"@sd-jwt/types@0.7.0", "@sd-jwt/types@^0.7.0":
+  version "0.7.0"
+  resolved "https://registry.yarnpkg.com/@sd-jwt/types/-/types-0.7.0.tgz#28fb3a9772467e771dc214112ef66362162c4528"
+  integrity sha512-jSHokgiv2rR/6bORK1Ym7WZb4k9mImVneE/Lt0rqKTA7xSX5IwIOCpjEAG7dIRWUqIdC1pFPRI/XkGri2BUiPQ==
+
+"@sd-jwt/utils@0.6.1":
   version "0.6.1"
   resolved "https://registry.yarnpkg.com/@sd-jwt/utils/-/utils-0.6.1.tgz#33273b20c9eb1954e4eab34118158b646b574ff9"
   integrity sha512-1NHZ//+GecGQJb+gSdDicnrHG0DvACUk9jTnXA5yLZhlRjgkjyfJLNsCZesYeCyVp/SiyvIC9B+JwoY4kI0TwQ==
   dependencies:
     "@sd-jwt/types" "0.6.1"
+    js-base64 "^3.7.6"
+
+"@sd-jwt/utils@0.7.0", "@sd-jwt/utils@^0.7.0":
+  version "0.7.0"
+  resolved "https://registry.yarnpkg.com/@sd-jwt/utils/-/utils-0.7.0.tgz#382abc116b70c5ab83726de5871eda304499621f"
+  integrity sha512-/paioVASVMuNA2YOf/Bn9eGCot5QXBsMSYJNf7kcC+9UHsTgI2emVP2oYlBQRJHVduohy0BuaqpsOHDpZwoE0A==
+  dependencies:
+    "@sd-jwt/types" "0.7.0"
     js-base64 "^3.7.6"
 
 "@sideway/address@^4.1.5":
@@ -9561,7 +9608,7 @@ pacote@^15.0.0, pacote@^15.0.8:
     ssri "^10.0.0"
     tar "^6.1.11"
 
-pako@^2.0.4:
+pako@^2.0.4, pako@^2.1.0:
   version "2.1.0"
   resolved "https://registry.yarnpkg.com/pako/-/pako-2.1.0.tgz#266cc37f98c7d883545d11335c00fbd4062c9a86"
   integrity sha512-w+eufiZ1WuJYgPXbV/PO3NCMEc3xqylkKHzp8bxp1uW4qaSNQUkwmLLEc3kKsfz8lpV1F8Ht3U1Cm+9Srog2ug==

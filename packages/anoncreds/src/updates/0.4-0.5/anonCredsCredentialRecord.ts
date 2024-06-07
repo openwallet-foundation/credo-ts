@@ -16,6 +16,7 @@ import { fetchCredentialDefinition } from '../../utils/anonCredsObjects'
 import {
   getIndyNamespaceFromIndyDid,
   getQualifiedDidIndyDid,
+  getUnQualifiedDidIndyDid,
   getUnqualifiedRevocationRegistryDefinitionId,
   isIndyDid,
   isUnqualifiedCredentialDefinitionId,
