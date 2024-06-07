@@ -350,10 +350,6 @@ describe('Present Proof', () => {
                 primary_proof: expect.any(Object),
                 non_revoc_proof: null,
               },
-              {
-                primary_proof: expect.any(Object),
-                non_revoc_proof: null,
-              },
             ],
             aggregated_proof: {
               c_hash: expect.any(String),
