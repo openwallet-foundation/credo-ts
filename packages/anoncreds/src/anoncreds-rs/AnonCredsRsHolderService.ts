@@ -79,6 +79,7 @@ import {
 } from '../utils/indyIdentifiers'
 import { assertLinkSecretsMatch, getLinkSecret } from '../utils/linkSecret'
 import { W3cAnonCredsCredentialMetadataKey } from '../utils/metadata'
+import { proofRequestUsesUnqualifiedIdentifiers } from '../utils/proofRequest'
 import { getAnoncredsCredentialInfoFromRecord, getW3cRecordAnonCredsTags } from '../utils/w3cAnonCredsUtils'
 
 import { getRevocationMetadata } from './utils'
@@ -142,8 +143,10 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
           }
         }
 
-        const { linkSecretId, revocationRegistryId, credentialRevocationId } =
-          getAnoncredsCredentialInfoFromRecord(credentialRecord)
+        const { linkSecretId, revocationRegistryId, credentialRevocationId } = getAnoncredsCredentialInfoFromRecord(
+          credentialRecord,
+          proofRequestUsesUnqualifiedIdentifiers(proofRequest)
+        )
 
         // TODO: Check if credential has a revocation registry id (check response from anoncreds-rs API, as it is
         // sending back a mandatory string in Credential.revocationRegistryId)
@@ -495,7 +498,9 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
   ): Promise<AnonCredsCredentialInfo> {
     const w3cCredentialRepository = agentContext.dependencyManager.resolve(W3cCredentialRepository)
     const w3cCredentialRecord = await w3cCredentialRepository.findById(agentContext, options.id)
-    if (w3cCredentialRecord) return getAnoncredsCredentialInfoFromRecord(w3cCredentialRecord)
+    if (w3cCredentialRecord) {
+      return getAnoncredsCredentialInfoFromRecord(w3cCredentialRecord, options.useUnqualifiedIdentifiersIfPresent)
+    }
 
     const anonCredsCredentialRepository = agentContext.dependencyManager.resolve(AnonCredsCredentialRepository)
     const anonCredsCredentialRecord = await anonCredsCredentialRepository.getByCredentialId(agentContext, options.id)
@@ -653,6 +658,8 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
 
     const $and = []
 
+    const useUnqualifiedIdentifiers = proofRequestUsesUnqualifiedIdentifiers(proofRequest)
+
     // Make sure the attribute(s) that are requested are present using the marker tag
     const attributes = requestedAttribute.names ?? [requestedAttribute.name]
     const attributeQuery: SimpleQuery<W3cCredentialRecord> = {}
@@ -689,7 +696,7 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
 
     const credentialWithMetadata = credentials.map((credentialRecord) => {
       return {
-        credentialInfo: getAnoncredsCredentialInfoFromRecord(credentialRecord),
+        credentialInfo: getAnoncredsCredentialInfoFromRecord(credentialRecord, useUnqualifiedIdentifiers),
         interval: proofRequest.non_revoked,
       }
     })
