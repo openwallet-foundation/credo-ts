@@ -158,9 +158,6 @@ describe('AnonCredsRsHolderService', () => {
         attr2_referent: {
           name: 'phoneNumber',
         },
-        attr3_referent: {
-          name: 'age',
-        },
         attr4_referent: {
           names: ['name', 'height'],
         },
@@ -269,11 +266,6 @@ describe('AnonCredsRsHolderService', () => {
           credentialInfo: { ...phoneCredentialInfo, credentialId: phoneRecord.id },
           revealed: true,
         },
-        attr3_referent: {
-          credentialId: personRecord.id,
-          credentialInfo: { ...personCredentialInfo, credentialId: personRecord.id },
-          revealed: true,
-        },
         attr4_referent: {
           credentialId: personRecord.id,
           credentialInfo: { ...personCredentialInfo, credentialId: personRecord.id },
@@ -343,13 +335,9 @@ describe('AnonCredsRsHolderService', () => {
         attr2_referent: {
           name: 'phoneNumber',
         },
-        attr3_referent: {
-          name: 'age',
-          restrictions: [{ schema_id: 'schemaid:uri', schema_name: 'schemaName' }, { schema_version: '1.0' }],
-        },
         attr4_referent: {
           names: ['name', 'height'],
-          restrictions: [{ cred_def_id: 'crededefid:uri', issuer_id: 'issuerid:uri' }],
+          restrictions: [{ cred_def_id: 'crededefid:uri', issuer_id: 'issuerid:uri' }, { schema_version: '1.0' }],
         },
         attr5_referent: {
           name: 'name',
@@ -413,27 +401,6 @@ describe('AnonCredsRsHolderService', () => {
       })
     })
 
-    test('referent with multiple, complex restrictions', async () => {
-      await anonCredsHolderService.getCredentialsForProofRequest(agentContext, {
-        proofRequest,
-        attributeReferent: 'attr3_referent',
-      })
-
-      expect(findByQueryMock).toHaveBeenCalledWith(agentContext, {
-        $and: [
-          {
-            'anonCredsAttr::age::marker': true,
-          },
-          {
-            $or: [
-              { anonCredsSchemaId: 'schemaid:uri', anonCredsSchemaName: 'schemaName' },
-              { anonCredsSchemaVersion: '1.0' },
-            ],
-          },
-        ],
-      })
-    })
-
     test('referent with multiple names and restrictions', async () => {
       await anonCredsHolderService.getCredentialsForProofRequest(agentContext, {
         proofRequest,
@@ -447,8 +414,15 @@ describe('AnonCredsRsHolderService', () => {
             'anonCredsAttr::height::marker': true,
           },
           {
-            anonCredsCredentialDefinitionId: 'crededefid:uri',
-            issuerId: 'issuerid:uri',
+            $or: [
+              {
+                anonCredsCredentialDefinitionId: 'crededefid:uri',
+                issuerId: 'issuerid:uri',
+              },
+              {
+                anonCredsSchemaVersion: '1.0',
+              },
+            ],
           },
         ],
       })

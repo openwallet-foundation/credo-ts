@@ -118,7 +118,7 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
 
       const credentialEntryFromAttribute = async (
         attribute: AnonCredsRequestedAttributeMatch | AnonCredsRequestedPredicateMatch
-      ): Promise<{ linkSecretId: string; credentialEntry: CredentialEntry }> => {
+      ): Promise<{ linkSecretId: string; credentialEntry: CredentialEntry; credentialId: string }> => {
         let credentialRecord = retrievedCredentials.get(attribute.credentialId)
 
         if (!credentialRecord) {
@@ -186,6 +186,7 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
 
           return {
             linkSecretId,
+            credentialId: attribute.credentialId,
             credentialEntry: {
               credential: credential as unknown as JsonObject,
               revocationState: revocationState?.toJson(),
@@ -199,21 +200,52 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
       }
 
       const credentialsProve: CredentialProve[] = []
-      const credentials: { linkSecretId: string; credentialEntry: CredentialEntry }[] = []
+      const credentials: { linkSecretId: string; credentialEntry: CredentialEntry; credentialId: string }[] = []
 
       let entryIndex = 0
       for (const referent in selectedCredentials.attributes) {
         const attribute = selectedCredentials.attributes[referent]
-        credentials.push(await credentialEntryFromAttribute(attribute))
-        credentialsProve.push({ entryIndex, isPredicate: false, referent, reveal: attribute.revealed })
-        entryIndex = entryIndex + 1
+
+        // If the credentialId with the same timestamp is already present, we will use the existing entry, so that the proof is created
+        // showing the attributes come from the same cred, rather than different ones.
+        const existingCredentialIndex = credentials.findIndex(
+          (credential) =>
+            credential.credentialId === attribute.credentialId &&
+            attribute.timestamp === credential.credentialEntry.timestamp
+        )
+
+        if (existingCredentialIndex !== -1) {
+          credentialsProve.push({
+            entryIndex: existingCredentialIndex,
+            isPredicate: false,
+            referent,
+            reveal: attribute.revealed,
+          })
+        } else {
+          credentials.push(await credentialEntryFromAttribute(attribute))
+          credentialsProve.push({ entryIndex, isPredicate: false, referent, reveal: attribute.revealed })
+          entryIndex = entryIndex + 1
+        }
       }
 
       for (const referent in selectedCredentials.predicates) {
         const predicate = selectedCredentials.predicates[referent]
-        credentials.push(await credentialEntryFromAttribute(predicate))
-        credentialsProve.push({ entryIndex, isPredicate: true, referent, reveal: true })
-        entryIndex = entryIndex + 1
+
+        // If the credentialId with the same timestamp is already present, we will use the existing entry, so that the proof is created
+        // showing the attributes come from the same cred, rather than different ones.
+        const existingCredentialIndex = credentials.findIndex(
+          (credential) =>
+            credential.credentialId === predicate.credentialId &&
+            predicate.timestamp === credential.credentialEntry.timestamp
+        )
+
+        if (existingCredentialIndex !== -1) {
+          credentialsProve.push({ entryIndex: existingCredentialIndex, isPredicate: true, referent, reveal: true })
+        } else {
+          credentials.push(await credentialEntryFromAttribute(predicate))
+          credentialsProve.push({ entryIndex, isPredicate: true, referent, reveal: true })
+          entryIndex = entryIndex + 1
+        }
       }
 
       const linkSecretIds = credentials.map((item) => item.linkSecretId)
