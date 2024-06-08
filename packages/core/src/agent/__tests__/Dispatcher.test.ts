@@ -152,10 +152,7 @@ describe('Dispatcher', () => {
       const inboundMessageContext = new InboundMessageContext(customProtocolMessage, { agentContext })
 
       const fallbackMessageHandler = jest.fn()
-      agentContext.dependencyManager.setFallbackMessageHandler({
-        supportedMessages: [],
-        handle: fallbackMessageHandler,
-      })
+      agentContext.dependencyManager.setFallbackMessageHandler(fallbackMessageHandler)
 
       await dispatcher.dispatch(inboundMessageContext)
 

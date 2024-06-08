@@ -38,9 +38,14 @@ class Dispatcher {
   }
 
   private defaultHandlerMiddleware: MessageHandlerMiddleware = async (inboundMessageContext, next) => {
-    const messageHandler =
-      inboundMessageContext.messageHandler ??
-      inboundMessageContext.agentContext.dependencyManager.fallbackMessageHandler
+    let messageHandler = inboundMessageContext.messageHandler
+
+    if (!messageHandler && inboundMessageContext.agentContext.dependencyManager.fallbackMessageHandler) {
+      messageHandler = {
+        supportedMessages: [],
+        handle: inboundMessageContext.agentContext.dependencyManager.fallbackMessageHandler,
+      }
+    }
 
     if (!messageHandler) {
       throw new ProblemReportError(

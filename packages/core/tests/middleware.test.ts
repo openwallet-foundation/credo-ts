@@ -1,5 +1,5 @@
 import type { SubjectMessage } from '../../../tests/transport/SubjectInboundTransport'
-import type { ConnectionRecord, InboundMessageContext, MessageHandler } from '../src'
+import type { ConnectionRecord, InboundMessageContext } from '../src'
 
 import { Subject } from 'rxjs'
 
@@ -29,19 +29,6 @@ const faberConfig = getInMemoryAgentOptions('Faber Message Handler Middleware', 
 const aliceConfig = getInMemoryAgentOptions('Alice Message Handler Middleware', {
   endpoints: ['rxjs:alice'],
 })
-
-class FallbackMessageHandler implements MessageHandler {
-  public supportedMessages = []
-
-  public async handle(messageContext: InboundMessageContext<AgentMessage>) {
-    return getOutboundMessageContext(messageContext.agentContext, {
-      connectionRecord: messageContext.connection,
-      message: new BasicMessage({
-        content: "Hey there, I'm not sure I understand the message you sent to me",
-      }),
-    })
-  }
-}
 
 describe('Message Handler Middleware E2E', () => {
   let faberAgent: Agent
@@ -79,7 +66,14 @@ describe('Message Handler Middleware E2E', () => {
 
   test('Correctly calls the fallback message handler if no message handler is defined', async () => {
     // Fallback message handler
-    aliceAgent.dependencyManager.setFallbackMessageHandler(new FallbackMessageHandler())
+    aliceAgent.dependencyManager.setFallbackMessageHandler((messageContext) => {
+      return getOutboundMessageContext(messageContext.agentContext, {
+        connectionRecord: messageContext.connection,
+        message: new BasicMessage({
+          content: "Hey there, I'm not sure I understand the message you sent to me",
+        }),
+      })
+    })
 
     const message = JsonTransformer.fromJSON(
       {

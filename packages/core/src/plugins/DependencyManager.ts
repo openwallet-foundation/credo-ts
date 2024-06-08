@@ -17,7 +17,7 @@ export class DependencyManager {
   public readonly registeredModules: ModulesMap
 
   public readonly messageHandlerMiddlewares: MessageHandlerMiddleware[] = []
-  private _fallbackMessageHandler?: MessageHandler
+  private _fallbackMessageHandler?: MessageHandler['handle']
 
   public constructor(
     container: DependencyContainer = rootContainer.createChildContainer(),
@@ -65,7 +65,7 @@ export class DependencyManager {
    * Sets the fallback message handler, the message handler that will be called if no handler
    * is registered for an incoming message type.
    */
-  public setFallbackMessageHandler(fallbackMessageHandler: MessageHandler) {
+  public setFallbackMessageHandler(fallbackMessageHandler: MessageHandler['handle']) {
     this._fallbackMessageHandler = fallbackMessageHandler
   }
 
