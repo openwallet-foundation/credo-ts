@@ -7,13 +7,12 @@ export interface MessageHandlerMiddleware {
 export class MessageHandlerMiddlewareRunner {
   public static async run(middlewares: MessageHandlerMiddleware[], inboundMessageContext: InboundMessageContext) {
     const compose = (middlewares: MessageHandlerMiddleware[]) => {
-      return async function (inboundMessageContext: InboundMessageContext, next?: () => Promise<void>) {
+      return async function (inboundMessageContext: InboundMessageContext) {
         let index = -1
         async function dispatch(i: number): Promise<void> {
           if (i <= index) throw new Error('next() called multiple times')
           index = i
-          let fn: MessageHandlerMiddleware | undefined = middlewares[i]
-          if (i === middlewares.length) fn = next
+          const fn = middlewares[i]
           if (!fn) return
           await fn(inboundMessageContext, () => dispatch(i + 1))
         }
