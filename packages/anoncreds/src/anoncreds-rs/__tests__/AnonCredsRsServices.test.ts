@@ -218,9 +218,6 @@ describe('AnonCredsRsServices', () => {
         attr1_referent: {
           name: 'name',
         },
-        attr2_referent: {
-          name: 'age',
-        },
       },
       requested_predicates: {
         predicate1_referent: { name: 'age', p_type: '>=' as const, p_value: 18 },
@@ -233,7 +230,6 @@ describe('AnonCredsRsServices', () => {
       selectedCredentials: {
         attributes: {
           attr1_referent: { credentialId, credentialInfo, revealed: true },
-          attr2_referent: { credentialId, credentialInfo, revealed: true },
         },
         predicates: {
           predicate1_referent: { credentialId, credentialInfo },
@@ -425,9 +421,6 @@ describe('AnonCredsRsServices', () => {
         attr1_referent: {
           name: 'name',
         },
-        attr2_referent: {
-          name: 'age',
-        },
       },
       requested_predicates: {
         predicate1_referent: { name: 'age', p_type: '>=' as const, p_value: 18 },
@@ -440,7 +433,6 @@ describe('AnonCredsRsServices', () => {
       selectedCredentials: {
         attributes: {
           attr1_referent: { credentialId, credentialInfo, revealed: true },
-          attr2_referent: { credentialId, credentialInfo, revealed: true },
         },
         predicates: {
           predicate1_referent: { credentialId, credentialInfo },

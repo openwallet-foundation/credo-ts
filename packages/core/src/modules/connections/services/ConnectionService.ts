@@ -459,12 +459,25 @@ export class ConnectionService {
     {
       lastSentMessage,
       lastReceivedMessage,
+      expectedConnectionId,
     }: {
       lastSentMessage?: AgentMessage | null
       lastReceivedMessage?: AgentMessage | null
+      expectedConnectionId?: string
     } = {}
   ) {
     const { connection, message } = messageContext
+
+    if (expectedConnectionId && !connection) {
+      throw new CredoError(
+        `Expected incoming message to be from connection ${expectedConnectionId} but no connection found.`
+      )
+    }
+    if (expectedConnectionId && connection?.id !== expectedConnectionId) {
+      throw new CredoError(
+        `Expected incoming message to be from connection ${expectedConnectionId} but connection is ${connection?.id}.`
+      )
+    }
 
     // Check if we have a ready connection. Verification is already done somewhere else. Return
     if (connection) {
@@ -559,7 +572,7 @@ export class ConnectionService {
     messageContext: InboundMessageContext,
     { expectedConnectionId }: { expectedConnectionId?: string }
   ) {
-    if (expectedConnectionId && messageContext.connection?.id === expectedConnectionId) {
+    if (expectedConnectionId && messageContext.connection?.id !== expectedConnectionId) {
       throw new CredoError(
         `Expecting incoming message to have connection ${expectedConnectionId}, but incoming connection is ${
           messageContext.connection?.id ?? 'undefined'
