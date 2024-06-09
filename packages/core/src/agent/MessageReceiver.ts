@@ -1,4 +1,3 @@
-import type { AgentMessage } from './AgentMessage'
 import type { DecryptedMessageContext } from './EnvelopeService'
 import type { TransportSession } from './TransportService'
 import type { AgentContext } from './context'
@@ -16,6 +15,7 @@ import { isValidJweStructure } from '../utils/JWE'
 import { JsonTransformer } from '../utils/JsonTransformer'
 import { canHandleMessageType, parseMessageType, replaceLegacyDidSovPrefixOnMessage } from '../utils/messageType'
 
+import { AgentMessage } from './AgentMessage'
 import { Dispatcher } from './Dispatcher'
 import { EnvelopeService } from './EnvelopeService'
 import { MessageHandlerRegistry } from './MessageHandlerRegistry'
@@ -250,13 +250,7 @@ export class MessageReceiver {
     replaceLegacyDidSovPrefixOnMessage(message)
 
     const messageType = message['@type']
-    const MessageClass = this.messageHandlerRegistry.getMessageClassForMessageType(messageType)
-
-    if (!MessageClass) {
-      throw new ProblemReportError(`No message class found for message type "${messageType}"`, {
-        problemCode: ProblemReportReason.MessageParseFailure,
-      })
-    }
+    const MessageClass = this.messageHandlerRegistry.getMessageClassForMessageType(messageType) ?? AgentMessage
 
     // Cast the plain JSON object to specific instance of Message extended from AgentMessage
     let messageTransformed: AgentMessage

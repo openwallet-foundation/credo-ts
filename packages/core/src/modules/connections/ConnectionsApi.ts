@@ -277,11 +277,11 @@ export class ConnectionsApi {
    * @param connectionId the id of the connection for which to accept the response
    * @param responseRequested do we want a response to our ping
    * @param withReturnRouting do we want a response at the time of posting
-   * @returns TurstPingMessage
+   * @returns TrustPingMessage
    */
   public async sendPing(
     connectionId: string,
-    { responseRequested = true, withReturnRouting = undefined }: SendPingOptions
+    { responseRequested = true, withReturnRouting = undefined }: SendPingOptions = {}
   ) {
     const connection = await this.getById(connectionId)
 

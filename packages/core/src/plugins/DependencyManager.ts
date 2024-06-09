@@ -1,5 +1,6 @@
 import type { ModulesMap } from '../agent/AgentModules'
 import type { MessageHandler } from '../agent/MessageHandler'
+import type { MessageHandlerMiddleware } from '../agent/MessageHandlerMiddleware'
 import type { Constructor } from '../utils/mixins'
 import type { DependencyContainer } from 'tsyringe'
 
@@ -14,6 +15,9 @@ export { InjectionToken }
 export class DependencyManager {
   public readonly container: DependencyContainer
   public readonly registeredModules: ModulesMap
+
+  public readonly messageHandlerMiddlewares: MessageHandlerMiddleware[] = []
+  private _fallbackMessageHandler?: MessageHandler['handle']
 
   public constructor(
     container: DependencyContainer = rootContainer.createChildContainer(),
@@ -47,6 +51,22 @@ export class DependencyManager {
     for (const messageHandler of messageHandlers) {
       messageHandlerRegistry.registerMessageHandler(messageHandler)
     }
+  }
+
+  public registerMessageHandlerMiddleware(messageHandlerMiddleware: MessageHandlerMiddleware) {
+    this.messageHandlerMiddlewares.push(messageHandlerMiddleware)
+  }
+
+  public get fallbackMessageHandler() {
+    return this._fallbackMessageHandler
+  }
+
+  /**
+   * Sets the fallback message handler, the message handler that will be called if no handler
+   * is registered for an incoming message type.
+   */
+  public setFallbackMessageHandler(fallbackMessageHandler: MessageHandler['handle']) {
+    this._fallbackMessageHandler = fallbackMessageHandler
   }
 
   public registerSingleton<T>(from: InjectionToken<T>, to: InjectionToken<T>): void
