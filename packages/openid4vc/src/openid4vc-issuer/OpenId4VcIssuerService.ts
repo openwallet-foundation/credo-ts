@@ -15,7 +15,7 @@ import type {
   OpenId4VciCredentialSupported,
   OpenId4VciCredentialSupportedWithId,
 } from '../shared'
-import type { AgentContext, DidDocument, Query } from '@credo-ts/core'
+import type { AgentContext, DidDocument, Query, QueryOptions } from '@credo-ts/core'
 import type { Grant, JWTVerifyCallback } from '@sphereon/oid4vci-common'
 import type {
   CredentialDataSupplier,
@@ -218,8 +218,12 @@ export class OpenId4VcIssuerService {
     }
   }
 
-  public async findIssuanceSessionsByQuery(agentContext: AgentContext, query: Query<OpenId4VcIssuanceSessionRecord>) {
-    return this.openId4VcIssuanceSessionRepository.findByQuery(agentContext, query)
+  public async findIssuanceSessionsByQuery(
+    agentContext: AgentContext,
+    query: Query<OpenId4VcIssuanceSessionRecord>,
+    queryOptions?: QueryOptions
+  ) {
+    return this.openId4VcIssuanceSessionRepository.findByQuery(agentContext, query, queryOptions)
   }
 
   public async getIssuanceSessionById(agentContext: AgentContext, issuanceSessionId: string) {

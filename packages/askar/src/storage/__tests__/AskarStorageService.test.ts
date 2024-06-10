@@ -332,7 +332,7 @@ describe('AskarStorageService', () => {
       await insertRecord({ tags: { myTag: 'foobar' } })
       await insertRecord({ tags: { myTag: 'notfoobar' } })
 
-      const records = await storageService.findByQuery(agentContext, TestRecord, { $offset: 3, $limit: 2 })
+      const records = await storageService.findByQuery(agentContext, TestRecord, {}, { offset: 3, limit: 2 })
 
       expect(records.length).toBe(1)
     })
@@ -343,11 +343,14 @@ describe('AskarStorageService', () => {
       const expectedRecord2 = await insertRecord({ tags: { myTag: 'foobar' } })
       await insertRecord({ tags: { myTag: 'notfoobar' } })
 
-      const records = await storageService.findByQuery(agentContext, TestRecord, {
-        $offset: 0,
-        $limit: 2,
-        myTag: 'foobar',
-      })
+      const records = await storageService.findByQuery(
+        agentContext,
+        TestRecord,
+        {
+          myTag: 'foobar',
+        },
+        { offset: 0, limit: 2 }
+      )
 
       expect(records.length).toBe(2)
       expect(records).toEqual(expect.arrayContaining([expectedRecord1, expectedRecord2]))

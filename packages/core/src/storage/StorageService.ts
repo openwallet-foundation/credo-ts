@@ -12,13 +12,12 @@ interface AdvancedQuery<T extends BaseRecord> {
   $not?: Query<T>
 }
 
-interface PaginationQuery {
-  $offset?: number;
-  $limit?: number;
+export type QueryOptions = {
+  limit?: number
+  offset?: number
 }
 
-
-export type Query<T extends BaseRecord<any, any, any>> = AdvancedQuery<T> | SimpleQuery<T> | PaginationQuery
+export type Query<T extends BaseRecord<any, any, any>> = AdvancedQuery<T> | SimpleQuery<T>
 
 export interface BaseRecordConstructor<T> extends Constructor<T> {
   type: string
@@ -79,6 +78,13 @@ export interface StorageService<T extends BaseRecord<any, any, any>> {
    *
    * @param recordClass the record class to find records for
    * @param query the query to use for finding records
+   * @param queryOptions optional parameters to customize the query execution (e.g., limit, offset)
+   *
    */
-  findByQuery(agentContext: AgentContext, recordClass: BaseRecordConstructor<T>, query: Query<T>): Promise<T[]>
+  findByQuery(
+    agentContext: AgentContext,
+    recordClass: BaseRecordConstructor<T>,
+    query: Query<T>,
+    queryOptions?: QueryOptions
+  ): Promise<T[]>
 }

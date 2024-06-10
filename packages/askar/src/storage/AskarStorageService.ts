@@ -1,4 +1,11 @@
-import type { BaseRecordConstructor, AgentContext, BaseRecord, Query, StorageService } from '@credo-ts/core'
+import type {
+  BaseRecordConstructor,
+  AgentContext,
+  BaseRecord,
+  Query,
+  QueryOptions,
+  StorageService,
+} from '@credo-ts/core'
 
 import { RecordDuplicateError, WalletError, RecordNotFoundError, injectable, JsonTransformer } from '@credo-ts/core'
 import { Scan } from '@hyperledger/aries-askar-shared'
@@ -132,21 +139,21 @@ export class AskarStorageService<T extends BaseRecord> implements StorageService
   public async findByQuery(
     agentContext: AgentContext,
     recordClass: BaseRecordConstructor<T>,
-    query: Query<T>
+    query: Query<T>,
+    queryOptions?: QueryOptions
   ): Promise<T[]> {
     const wallet = agentContext.wallet
     assertAskarWallet(wallet)
 
-    const { $offset, $limit, ...searchQuery } = query;
-    const askarQuery = askarQueryFromSearchQuery(searchQuery)
+    const askarQuery = askarQueryFromSearchQuery(query)
 
     const scan = new Scan({
       category: recordClass.type,
       store: wallet.store,
       tagFilter: askarQuery,
       profile: wallet.profile,
-      offset: $offset,
-      limit: $limit,
+      offset: queryOptions?.offset,
+      limit: queryOptions?.limit,
     })
 
     const instances = []
