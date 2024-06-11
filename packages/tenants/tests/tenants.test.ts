@@ -8,8 +8,7 @@ import { SubjectInboundTransport } from '../../../tests/transport/SubjectInbound
 import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutboundTransport'
 import { uuid } from '../../core/src/utils/uuid'
 import { testLogger } from '../../core/tests'
-
-import { TenantsModule } from '@credo-ts/tenants'
+import { TenantsModule } from '../src/TenantsModule'
 
 const agent1Config: InitConfig = {
   label: 'Tenant Agent 1',
@@ -250,5 +249,31 @@ describe('Tenants E2E', () => {
     })
 
     await agent1.modules.tenants.deleteTenantById(tenantRecord.id)
+  })
+
+  test('fallback middleware for the tenant manager propagated to the tenant', async () => {
+    expect(agent1.dependencyManager.fallbackMessageHandler).toBeUndefined()
+
+    const fallbackFunction = async () => {
+      // empty
+    }
+
+    agent1.dependencyManager.setFallbackMessageHandler(fallbackFunction)
+
+    expect(agent1.dependencyManager.fallbackMessageHandler).toBe(fallbackFunction)
+
+    const tenantRecord = await agent1.modules.tenants.createTenant({
+      config: {
+        label: 'Agent 1 Tenant 1',
+      },
+    })
+
+    const tenantAgent = await agent1.modules.tenants.getTenantAgent({
+      tenantId: tenantRecord.id,
+    })
+
+    expect(tenantAgent.dependencyManager.fallbackMessageHandler).toBe(fallbackFunction)
+
+    await tenantAgent.endSession()
   })
 })
