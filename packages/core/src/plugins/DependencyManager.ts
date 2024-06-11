@@ -16,9 +16,6 @@ export class DependencyManager {
   public readonly container: DependencyContainer
   public readonly registeredModules: ModulesMap
 
-  public readonly messageHandlerMiddlewares: MessageHandlerMiddleware[] = []
-  private _fallbackMessageHandler?: MessageHandler['handle']
-
   public constructor(
     container: DependencyContainer = rootContainer.createChildContainer(),
     registeredModules: ModulesMap = {}
@@ -54,11 +51,21 @@ export class DependencyManager {
   }
 
   public registerMessageHandlerMiddleware(messageHandlerMiddleware: MessageHandlerMiddleware) {
-    this.messageHandlerMiddlewares.push(messageHandlerMiddleware)
+    const messageHandlerRegistry = this.resolve(MessageHandlerRegistry)
+
+    messageHandlerRegistry.registerMessageHandlerMiddleware(messageHandlerMiddleware)
   }
 
   public get fallbackMessageHandler() {
-    return this._fallbackMessageHandler
+    const messageHandlerRegistry = this.resolve(MessageHandlerRegistry)
+
+    return messageHandlerRegistry.fallbackMessageHandler
+  }
+
+  public get messageHandlerMiddlewares() {
+    const messageHandlerRegistry = this.resolve(MessageHandlerRegistry)
+
+    return messageHandlerRegistry.messageHandlerMiddlewares
   }
 
   /**
@@ -66,7 +73,9 @@ export class DependencyManager {
    * is registered for an incoming message type.
    */
   public setFallbackMessageHandler(fallbackMessageHandler: MessageHandler['handle']) {
-    this._fallbackMessageHandler = fallbackMessageHandler
+    const messageHandlerRegistry = this.resolve(MessageHandlerRegistry)
+
+    messageHandlerRegistry.setFallbackMessageHandler(fallbackMessageHandler)
   }
 
   public registerSingleton<T>(from: InjectionToken<T>, to: InjectionToken<T>): void

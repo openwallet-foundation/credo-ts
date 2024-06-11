@@ -77,10 +77,13 @@ describe('Dispatcher', () => {
     it('calls the middleware in the order they are registered', async () => {
       const agentContext = getAgentContext()
 
+      // Replace the MessageHandlerRegistry instance with a empty one
+      agentContext.dependencyManager.registerInstance(MessageHandlerRegistry, new MessageHandlerRegistry())
+
       const dispatcher = new Dispatcher(
         new MessageSenderMock(),
         eventEmitter,
-        new MessageHandlerRegistry(),
+        agentContext.dependencyManager.resolve(MessageHandlerRegistry),
         agentConfig.logger
       )
 
@@ -108,10 +111,13 @@ describe('Dispatcher', () => {
     it('calls the middleware in the order they are registered', async () => {
       const agentContext = getAgentContext()
 
+      // Replace the MessageHandlerRegistry instance with a empty one
+      agentContext.dependencyManager.registerInstance(MessageHandlerRegistry, new MessageHandlerRegistry())
+
       const dispatcher = new Dispatcher(
         new MessageSenderMock(),
         eventEmitter,
-        new MessageHandlerRegistry(),
+        agentContext.dependencyManager.resolve(MessageHandlerRegistry),
         agentConfig.logger
       )
 
@@ -139,10 +145,13 @@ describe('Dispatcher', () => {
     it('correctly calls the fallback message handler if no message handler is registered for the message type', async () => {
       const agentContext = getAgentContext()
 
+      // Replace the MessageHandlerRegistry instance with a empty one
+      agentContext.dependencyManager.registerInstance(MessageHandlerRegistry, new MessageHandlerRegistry())
+
       const dispatcher = new Dispatcher(
         new MessageSenderMock(),
         eventEmitter,
-        new MessageHandlerRegistry(),
+        agentContext.dependencyManager.resolve(MessageHandlerRegistry),
         agentConfig.logger
       )
 
@@ -160,13 +169,15 @@ describe('Dispatcher', () => {
     })
 
     it('will not call the message handler if the middleware does not call next (intercept incoming message handling)', async () => {
-      const messageHandlerRegistry = new MessageHandlerRegistry()
       const agentContext = getAgentContext()
+
+      // Replace the MessageHandlerRegistry instance with a empty one
+      agentContext.dependencyManager.registerInstance(MessageHandlerRegistry, new MessageHandlerRegistry())
 
       const dispatcher = new Dispatcher(
         new MessageSenderMock(),
         eventEmitter,
-        messageHandlerRegistry,
+        agentContext.dependencyManager.resolve(MessageHandlerRegistry),
         agentConfig.logger
       )
 
@@ -176,7 +187,12 @@ describe('Dispatcher', () => {
       const inboundMessageContext = new InboundMessageContext(customProtocolMessage, { agentContext })
 
       const mockHandle = jest.fn()
-      messageHandlerRegistry.registerMessageHandler({ supportedMessages: [CustomProtocolMessage], handle: mockHandle })
+      agentContext.dependencyManager.registerMessageHandlers([
+        {
+          supportedMessages: [CustomProtocolMessage],
+          handle: mockHandle,
+        },
+      ])
 
       const middleware = jest.fn()
       agentContext.dependencyManager.registerMessageHandlerMiddleware(middleware)
@@ -192,10 +208,13 @@ describe('Dispatcher', () => {
     it('calls the message handler set by the middleware', async () => {
       const agentContext = getAgentContext()
 
+      // Replace the MessageHandlerRegistry instance with a empty one
+      agentContext.dependencyManager.registerInstance(MessageHandlerRegistry, new MessageHandlerRegistry())
+
       const dispatcher = new Dispatcher(
         new MessageSenderMock(),
         eventEmitter,
-        new MessageHandlerRegistry(),
+        agentContext.dependencyManager.resolve(MessageHandlerRegistry),
         agentConfig.logger
       )
 
@@ -228,10 +247,13 @@ describe('Dispatcher', () => {
       })
       const messageSenderMock = new MessageSenderMock()
 
+      // Replace the MessageHandlerRegistry instance with a empty one
+      agentContext.dependencyManager.registerInstance(MessageHandlerRegistry, new MessageHandlerRegistry())
+
       const dispatcher = new Dispatcher(
         messageSenderMock,
         eventEmitter,
-        new MessageHandlerRegistry(),
+        agentContext.dependencyManager.resolve(MessageHandlerRegistry),
         agentConfig.logger
       )
 
