@@ -23,7 +23,7 @@ import type { ProofProtocol } from './protocol/ProofProtocol'
 import type { ProofFormatsFromProtocols } from './protocol/ProofProtocolOptions'
 import type { ProofExchangeRecord } from './repository/ProofExchangeRecord'
 import type { AgentMessage } from '../../agent/AgentMessage'
-import type { Query } from '../../storage/StorageService'
+import type { Query, QueryOptions } from '../../storage/StorageService'
 
 import { injectable } from 'tsyringe'
 
@@ -72,7 +72,7 @@ export interface ProofsApi<PPs extends ProofProtocol[]> {
 
   // Record Methods
   getAll(): Promise<ProofExchangeRecord[]>
-  findAllByQuery(query: Query<ProofExchangeRecord>): Promise<ProofExchangeRecord[]>
+  findAllByQuery(query: Query<ProofExchangeRecord>, queryOptions?: QueryOptions): Promise<ProofExchangeRecord[]>
   getById(proofRecordId: string): Promise<ProofExchangeRecord>
   findById(proofRecordId: string): Promise<ProofExchangeRecord | null>
   deleteById(proofId: string, options?: DeleteProofOptions): Promise<void>
@@ -555,8 +555,11 @@ export class ProofsApi<PPs extends ProofProtocol[]> implements ProofsApi<PPs> {
    *
    * @returns List containing all proof records matching specified params
    */
-  public findAllByQuery(query: Query<ProofExchangeRecord>): Promise<ProofExchangeRecord[]> {
-    return this.proofRepository.findByQuery(this.agentContext, query)
+  public findAllByQuery(
+    query: Query<ProofExchangeRecord>,
+    queryOptions?: QueryOptions
+  ): Promise<ProofExchangeRecord[]> {
+    return this.proofRepository.findByQuery(this.agentContext, query, queryOptions)
   }
 
   /**

@@ -742,8 +742,12 @@ describe('credentialProtocol', () => {
       const expected = [mockCredentialRecord(), mockCredentialRecord()]
 
       mockFunction(credentialRepository.findByQuery).mockReturnValue(Promise.resolve(expected))
-      const result = await credentialProtocol.findAllByQuery(agentContext, { state: CredentialState.OfferSent })
-      expect(credentialRepository.findByQuery).toHaveBeenCalledWith(agentContext, { state: CredentialState.OfferSent })
+      const result = await credentialProtocol.findAllByQuery(agentContext, { state: CredentialState.OfferSent }, {})
+      expect(credentialRepository.findByQuery).toHaveBeenCalledWith(
+        agentContext,
+        { state: CredentialState.OfferSent },
+        {}
+      )
 
       expect(result).toEqual(expect.arrayContaining(expected))
     })
