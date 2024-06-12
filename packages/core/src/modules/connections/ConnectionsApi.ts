@@ -1,7 +1,7 @@
 import type { ConnectionType } from './models'
 import type { ConnectionRecord } from './repository/ConnectionRecord'
 import type { Routing } from './services'
-import type { Query } from '../../storage/StorageService'
+import type { Query, QueryOptions } from '../../storage/StorageService'
 import type { OutOfBandRecord } from '../oob/repository'
 
 import { AgentContext } from '../../agent'
@@ -395,8 +395,8 @@ export class ConnectionsApi {
    *
    * @returns List containing all connection records matching specified query paramaters
    */
-  public findAllByQuery(query: Query<ConnectionRecord>) {
-    return this.connectionService.findAllByQuery(this.agentContext, query)
+  public findAllByQuery(query: Query<ConnectionRecord>, queryOptions?: QueryOptions) {
+    return this.connectionService.findAllByQuery(this.agentContext, query, queryOptions)
   }
 
   /**

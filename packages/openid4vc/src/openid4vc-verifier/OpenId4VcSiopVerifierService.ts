@@ -11,6 +11,7 @@ import type {
   AgentContext,
   DifPresentationExchangeDefinition,
   Query,
+  QueryOptions,
   RecordSavedEvent,
   RecordUpdatedEvent,
 } from '@credo-ts/core'
@@ -347,9 +348,10 @@ export class OpenId4VcSiopVerifierService {
 
   public async findVerificationSessionsByQuery(
     agentContext: AgentContext,
-    query: Query<OpenId4VcVerificationSessionRecord>
+    query: Query<OpenId4VcVerificationSessionRecord>,
+    queryOptions?: QueryOptions
   ) {
-    return this.openId4VcVerificationSessionRepository.findByQuery(agentContext, query)
+    return this.openId4VcVerificationSessionRepository.findByQuery(agentContext, query, queryOptions)
   }
 
   public async getVerificationSessionById(agentContext: AgentContext, verificationSessionId: string) {

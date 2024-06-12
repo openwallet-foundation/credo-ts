@@ -1012,12 +1012,20 @@ describe('ConnectionService', () => {
       const expected = [getMockConnection(), getMockConnection()]
 
       mockFunction(connectionRepository.findByQuery).mockReturnValue(Promise.resolve(expected))
-      const result = await connectionService.findAllByQuery(agentContext, {
-        state: DidExchangeState.InvitationReceived,
-      })
-      expect(connectionRepository.findByQuery).toBeCalledWith(agentContext, {
-        state: DidExchangeState.InvitationReceived,
-      })
+      const result = await connectionService.findAllByQuery(
+        agentContext,
+        {
+          state: DidExchangeState.InvitationReceived,
+        },
+        undefined
+      )
+      expect(connectionRepository.findByQuery).toBeCalledWith(
+        agentContext,
+        {
+          state: DidExchangeState.InvitationReceived,
+        },
+        undefined
+      )
 
       expect(result).toEqual(expect.arrayContaining(expected))
     })

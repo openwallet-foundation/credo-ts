@@ -9,7 +9,7 @@ import type {
 } from './SdJwtVcOptions'
 import type { AgentContext } from '../../agent'
 import type { JwkJson, Key } from '../../crypto'
-import type { Query } from '../../storage/StorageService'
+import type { Query, QueryOptions } from '../../storage/StorageService'
 import type { SDJwt } from '@sd-jwt/core'
 import type { Signer, Verifier, HasherSync, PresentationFrame, DisclosureFrame } from '@sd-jwt/types'
 
@@ -319,8 +319,12 @@ export class SdJwtVcService {
     return await this.sdJwtVcRepository.getAll(agentContext)
   }
 
-  public async findByQuery(agentContext: AgentContext, query: Query<SdJwtVcRecord>): Promise<Array<SdJwtVcRecord>> {
-    return await this.sdJwtVcRepository.findByQuery(agentContext, query)
+  public async findByQuery(
+    agentContext: AgentContext,
+    query: Query<SdJwtVcRecord>,
+    queryOptions?: QueryOptions
+  ): Promise<Array<SdJwtVcRecord>> {
+    return await this.sdJwtVcRepository.findByQuery(agentContext, query, queryOptions)
   }
 
   public async deleteById(agentContext: AgentContext, id: string) {

@@ -21,7 +21,7 @@ import type { FeatureRegistry } from '../../../agent/FeatureRegistry'
 import type { AgentContext } from '../../../agent/context/AgentContext'
 import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import type { DependencyManager } from '../../../plugins'
-import type { Query } from '../../../storage/StorageService'
+import type { Query, QueryOptions } from '../../../storage/StorageService'
 import type { ProblemReportMessage } from '../../problem-reports'
 import type { ProofStateChangedEvent } from '../ProofEvents'
 import type { ExtractProofFormats, ProofFormatService } from '../formats'
@@ -206,11 +206,12 @@ export abstract class BaseProofProtocol<PFs extends ProofFormatService[] = Proof
 
   public async findAllByQuery(
     agentContext: AgentContext,
-    query: Query<ProofExchangeRecord>
+    query: Query<ProofExchangeRecord>,
+    queryOptions?: QueryOptions
   ): Promise<ProofExchangeRecord[]> {
     const proofRepository = agentContext.dependencyManager.resolve(ProofRepository)
 
-    return proofRepository.findByQuery(agentContext, query)
+    return proofRepository.findByQuery(agentContext, query, queryOptions)
   }
 
   /**
