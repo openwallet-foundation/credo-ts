@@ -268,7 +268,7 @@ export class IndyVdrAnonCredsRegistry implements AnonCredsRegistry {
       agentContext.config.logger.trace(
         `Submitting get credential definition request for credential definition '${credentialDefinitionId}' to ledger '${pool.indyNamespace}'`
       )
-      const response: GetCredentialDefinitionResponse = await pool.submitRequest(request)
+      const response = await pool.submitRequest(request)
 
       // We need to fetch the schema to determine the schemaId (we only have the seqNo)
       const schema = await this.fetchIndySchemaWithSeqNo(agentContext, response.result.ref, namespaceIdentifier)
