@@ -6,6 +6,7 @@ import {
   DidCommV2Service,
   convertPublicKeyToX25519,
   CredoError,
+  Buffer,
 } from '@credo-ts/core'
 
 export type CommEndpointType = 'endpoint' | 'did-communication' | 'DIDComm'
