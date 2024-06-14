@@ -1,43 +1,28 @@
-import type { AnonCredsTestsAgent } from './anoncredsSetup'
-import type { EventReplaySubject } from '../../core/tests'
-import type { AnonCredsRequestProofFormat } from '@credo-ts/anoncreds'
-import type { CredentialExchangeRecord } from '@credo-ts/core'
+import type { AnonCredsTestsAgent } from '../../../../../../../anoncreds/tests/legacyAnonCredsSetup'
+import type { EventReplaySubject } from '../../../../../../tests'
 
 import {
-  Attachment,
-  AttachmentData,
-  LinkedAttachment,
-  ProofState,
-  ProofExchangeRecord,
-  V2ProposePresentationMessage,
-  V2RequestPresentationMessage,
-  V2PresentationMessage,
-} from '@credo-ts/core'
+  issueLegacyAnonCredsCredential,
+  setupAnonCredsTests,
+} from '../../../../../../../anoncreds/tests/legacyAnonCredsSetup'
+import { waitForProofExchangeRecord } from '../../../../../../tests'
+import testLogger from '../../../../../../tests/logger'
+import { Attachment, AttachmentData } from '../../../../../decorators/attachment/Attachment'
+import { LinkedAttachment } from '../../../../../utils/LinkedAttachment'
+import { ProofState } from '../../../models'
+import { ProofExchangeRecord } from '../../../repository'
+import { V2ProposePresentationMessage, V2RequestPresentationMessage, V2PresentationMessage } from '../messages'
 
-import { sleep } from '../../core/src/utils/sleep'
-import { waitForProofExchangeRecord } from '../../core/tests'
-import testLogger from '../../core/tests/logger'
-import { dateToTimestamp } from '../src/utils/timestamp'
-
-import { InMemoryAnonCredsRegistry } from './InMemoryAnonCredsRegistry'
-import { issueAnonCredsCredential, setupAnonCredsTests } from './anoncredsSetup'
-
-describe('PP V2 AnonCreds Proofs', () => {
+describe('Present Proof', () => {
   let faberAgent: AnonCredsTestsAgent
   let faberReplay: EventReplaySubject
   let aliceAgent: AnonCredsTestsAgent
   let aliceReplay: EventReplaySubject
   let credentialDefinitionId: string
-  let revocationRegistryDefinitionId: string | null
   let aliceConnectionId: string
   let faberConnectionId: string
   let faberProofExchangeRecord: ProofExchangeRecord
   let aliceProofExchangeRecord: ProofExchangeRecord
-  let faberCredentialExchangeRecord: CredentialExchangeRecord
-
-  const inMemoryRegistry = new InMemoryAnonCredsRegistry()
-
-  const issuerId = 'did:indy:local:LjgpST2rjsoxYegQDRm7EL'
 
   beforeAll(async () => {
     testLogger.test('Initializing the agents')
@@ -48,25 +33,20 @@ describe('PP V2 AnonCreds Proofs', () => {
       holderAgent: aliceAgent,
       holderReplay: aliceReplay,
       credentialDefinitionId,
-      revocationRegistryDefinitionId,
-      //revocationStatusListTimestamp,
       issuerHolderConnectionId: faberConnectionId,
       holderIssuerConnectionId: aliceConnectionId,
     } = await setupAnonCredsTests({
-      issuerId,
-      issuerName: 'Faber agent AnonCreds proofs',
-      holderName: 'Alice agent AnonCreds proofs',
+      issuerName: 'Faber agent anoncreds unqualified indy proofs',
+      holderName: 'Alice agent anoncreds unqualified indy proofs',
       attributeNames: ['name', 'age', 'image_0', 'image_1'],
-      registries: [inMemoryRegistry],
-      supportRevocation: true,
     }))
-    ;({ issuerCredentialExchangeRecord: faberCredentialExchangeRecord } = await issueAnonCredsCredential({
+
+    await issueLegacyAnonCredsCredential({
       issuerAgent: faberAgent,
       holderAgent: aliceAgent,
       holderReplay: aliceReplay,
       issuerReplay: faberReplay,
       issuerHolderConnectionId: faberConnectionId,
-      revocationRegistryDefinitionId,
       offer: {
         credentialDefinitionId,
         attributes: [
@@ -96,7 +76,7 @@ describe('PP V2 AnonCreds Proofs', () => {
           }),
         ],
       },
-    }))
+    })
   })
 
   afterAll(async () => {
@@ -365,8 +345,6 @@ describe('PP V2 AnonCreds Proofs', () => {
       presentation: {
         anoncreds: {
           proof: {
-            // Only one proof means the predicate and attribute was combined into one proof (and thus we can
-            // know that it was the same cred)
             proofs: [
               {
                 primary_proof: expect.any(Object),
@@ -623,8 +601,8 @@ describe('PP V2 AnonCreds Proofs', () => {
                   },
                   schemaId: expect.any(String),
                   credentialDefinitionId: expect.any(String),
-                  credentialRevocationId: '1',
-                  revocationRegistryId: revocationRegistryDefinitionId,
+                  revocationRegistryId: null,
+                  credentialRevocationId: null,
                 },
               },
             ],
@@ -642,8 +620,8 @@ describe('PP V2 AnonCreds Proofs', () => {
                   },
                   schemaId: expect.any(String),
                   credentialDefinitionId: expect.any(String),
-                  credentialRevocationId: '1',
-                  revocationRegistryId: revocationRegistryDefinitionId,
+                  revocationRegistryId: null,
+                  credentialRevocationId: null,
                 },
               },
             ],
@@ -662,8 +640,8 @@ describe('PP V2 AnonCreds Proofs', () => {
                   },
                   schemaId: expect.any(String),
                   credentialDefinitionId: expect.any(String),
-                  credentialRevocationId: '1',
-                  revocationRegistryId: revocationRegistryDefinitionId,
+                  revocationRegistryId: null,
+                  credentialRevocationId: null,
                 },
               },
             ],
@@ -770,242 +748,6 @@ describe('PP V2 AnonCreds Proofs', () => {
       threadId: aliceProofExchangeRecord.threadId,
       state: ProofState.Abandoned,
       protocolVersion: 'v2',
-    })
-  })
-
-  test('Credential is revoked after proof request and before presentation', async () => {
-    let aliceProofExchangeRecordPromise = waitForProofExchangeRecord(aliceAgent, {
-      state: ProofState.RequestReceived,
-    })
-
-    const nrpRequestedTime = dateToTimestamp(new Date()) + 1
-
-    const requestProofFormat: AnonCredsRequestProofFormat = {
-      non_revoked: { from: nrpRequestedTime, to: nrpRequestedTime },
-      name: 'Proof Request',
-      version: '1.0.0',
-      requested_attributes: {
-        name: {
-          name: 'name',
-          restrictions: [
-            {
-              cred_def_id: credentialDefinitionId,
-            },
-          ],
-        },
-        image_0: {
-          name: 'image_0',
-          restrictions: [
-            {
-              cred_def_id: credentialDefinitionId,
-            },
-          ],
-        },
-      },
-      requested_predicates: {
-        age: {
-          name: 'age',
-          p_type: '>=',
-          p_value: 50,
-          restrictions: [
-            {
-              cred_def_id: credentialDefinitionId,
-            },
-          ],
-        },
-      },
-    }
-
-    // Faber sends a presentation request to Alice
-    testLogger.test('Faber sends a presentation request to Alice')
-    faberProofExchangeRecord = await faberAgent.proofs.requestProof({
-      protocolVersion: 'v2',
-      connectionId: faberConnectionId,
-      proofFormats: {
-        anoncreds: requestProofFormat,
-      },
-    })
-
-    // Alice waits for presentation request from Faber
-    testLogger.test('Alice waits for presentation request from Faber')
-    aliceProofExchangeRecord = await aliceProofExchangeRecordPromise
-
-    // Alice retrieves the requested credentials and accepts the presentation request
-    testLogger.test('Alice accepts presentation request from Faber')
-
-    const requestedCredentials = await aliceAgent.proofs.selectCredentialsForRequest({
-      proofRecordId: aliceProofExchangeRecord.id,
-    })
-
-    const faberProofExchangeRecordPromise = waitForProofExchangeRecord(faberAgent, {
-      threadId: aliceProofExchangeRecord.threadId,
-      state: ProofState.PresentationReceived,
-    })
-
-    // Revoke the credential
-    const credentialRevocationRegistryDefinitionId = faberCredentialExchangeRecord.getTag(
-      'anonCredsRevocationRegistryId'
-    ) as string
-    const credentialRevocationIndex = faberCredentialExchangeRecord.getTag('anonCredsCredentialRevocationId') as string
-
-    expect(credentialRevocationRegistryDefinitionId).toBeDefined()
-    expect(credentialRevocationIndex).toBeDefined()
-
-    // FIXME: do not use delays. Maybe we can add the timestamp to parameters?
-    // InMemoryAnonCredsRegistry would respect what we ask while actual VDRs will use their own
-    await sleep(2000)
-    await faberAgent.modules.anoncreds.updateRevocationStatusList({
-      revocationStatusList: {
-        revocationRegistryDefinitionId: credentialRevocationRegistryDefinitionId,
-        revokedCredentialIndexes: [Number(credentialRevocationIndex)],
-      },
-      options: {},
-    })
-
-    await aliceAgent.proofs.acceptRequest({
-      proofRecordId: aliceProofExchangeRecord.id,
-      proofFormats: { anoncreds: requestedCredentials.proofFormats.anoncreds },
-    })
-
-    // Faber waits until it receives a presentation from Alice
-    testLogger.test('Faber waits for presentation from Alice')
-    faberProofExchangeRecord = await faberProofExchangeRecordPromise
-
-    aliceProofExchangeRecordPromise = waitForProofExchangeRecord(aliceAgent, {
-      threadId: aliceProofExchangeRecord.threadId,
-      state: ProofState.Done,
-    })
-
-    // Faber accepts the presentation
-    testLogger.test('Faber accept the presentation from Alice')
-    await faberAgent.proofs.acceptPresentation({ proofRecordId: faberProofExchangeRecord.id })
-
-    // Alice waits until she receives a presentation acknowledgement
-    testLogger.test('Alice waits for acceptance by Faber')
-    aliceProofExchangeRecord = await aliceProofExchangeRecordPromise
-
-    expect(faberProofExchangeRecord).toMatchObject({
-      threadId: aliceProofExchangeRecord.threadId,
-      isVerified: true,
-      state: ProofState.PresentationReceived,
-    })
-
-    expect(aliceProofExchangeRecord).toMatchObject({
-      threadId: faberProofExchangeRecord.threadId,
-      state: ProofState.Done,
-    })
-  })
-
-  test('Credential is revoked before proof request', async () => {
-    // Revoke the credential
-    const credentialRevocationRegistryDefinitionId = faberCredentialExchangeRecord.getTag(
-      'anonCredsRevocationRegistryId'
-    ) as string
-    const credentialRevocationIndex = faberCredentialExchangeRecord.getTag('anonCredsCredentialRevocationId') as string
-
-    expect(credentialRevocationRegistryDefinitionId).toBeDefined()
-    expect(credentialRevocationIndex).toBeDefined()
-
-    const { revocationStatusListState } = await faberAgent.modules.anoncreds.updateRevocationStatusList({
-      revocationStatusList: {
-        revocationRegistryDefinitionId: credentialRevocationRegistryDefinitionId,
-        revokedCredentialIndexes: [Number(credentialRevocationIndex)],
-      },
-      options: {},
-    })
-
-    expect(revocationStatusListState.revocationStatusList).toBeDefined()
-    const revokedTimestamp = revocationStatusListState.revocationStatusList?.timestamp
-
-    const aliceProofExchangeRecordPromise = waitForProofExchangeRecord(aliceAgent, {
-      state: ProofState.RequestReceived,
-    })
-
-    const nrpRequestedTime = (revokedTimestamp ?? dateToTimestamp(new Date())) + 1
-
-    const requestProofFormat: AnonCredsRequestProofFormat = {
-      non_revoked: { from: nrpRequestedTime, to: nrpRequestedTime },
-      name: 'Proof Request',
-      version: '1.0.0',
-      requested_attributes: {
-        name: {
-          name: 'name',
-          restrictions: [
-            {
-              cred_def_id: credentialDefinitionId,
-            },
-          ],
-        },
-        image_0: {
-          name: 'image_0',
-          restrictions: [
-            {
-              cred_def_id: credentialDefinitionId,
-            },
-          ],
-        },
-      },
-      requested_predicates: {
-        age: {
-          name: 'age',
-          p_type: '>=',
-          p_value: 50,
-          restrictions: [
-            {
-              cred_def_id: credentialDefinitionId,
-            },
-          ],
-        },
-      },
-    }
-
-    // Faber sends a presentation request to Alice
-    testLogger.test('Faber sends a presentation request to Alice')
-    faberProofExchangeRecord = await faberAgent.proofs.requestProof({
-      protocolVersion: 'v2',
-      connectionId: faberConnectionId,
-      proofFormats: {
-        anoncreds: requestProofFormat,
-      },
-    })
-
-    // Alice waits for presentation request from Faber
-    testLogger.test('Alice waits for presentation request from Faber')
-    aliceProofExchangeRecord = await aliceProofExchangeRecordPromise
-
-    // Alice retrieves the requested credentials and accepts the presentation request
-    testLogger.test('Alice accepts presentation request from Faber')
-
-    const requestedCredentials = await aliceAgent.proofs.selectCredentialsForRequest({
-      proofRecordId: aliceProofExchangeRecord.id,
-      proofFormats: { anoncreds: { filterByNonRevocationRequirements: false } },
-    })
-
-    const faberProofExchangeRecordPromise = waitForProofExchangeRecord(faberAgent, {
-      threadId: aliceProofExchangeRecord.threadId,
-    })
-
-    await aliceAgent.proofs.acceptRequest({
-      proofRecordId: aliceProofExchangeRecord.id,
-      proofFormats: { anoncreds: requestedCredentials.proofFormats.anoncreds },
-    })
-
-    // Faber waits until it receives a presentation from Alice
-    testLogger.test('Faber waits for presentation from Alice')
-    faberProofExchangeRecord = await faberProofExchangeRecordPromise
-
-    // Faber receives presentation and checks that it is not valid
-    expect(faberProofExchangeRecord).toMatchObject({
-      threadId: aliceProofExchangeRecord.threadId,
-      isVerified: false,
-      state: ProofState.Abandoned,
-    })
-
-    // Faber will send a problem report, meaning for Alice that the proof state is abandoned
-    // as well
-    await waitForProofExchangeRecord(aliceAgent, {
-      threadId: aliceProofExchangeRecord.threadId,
-      state: ProofState.Abandoned,
     })
   })
 })

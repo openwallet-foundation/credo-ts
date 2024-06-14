@@ -79,6 +79,7 @@ import {
 } from '../utils/indyIdentifiers'
 import { assertLinkSecretsMatch, getLinkSecret } from '../utils/linkSecret'
 import { W3cAnonCredsCredentialMetadataKey } from '../utils/metadata'
+import { proofRequestUsesUnqualifiedIdentifiers } from '../utils/proofRequest'
 import { getAnoncredsCredentialInfoFromRecord, getW3cRecordAnonCredsTags } from '../utils/w3cAnonCredsUtils'
 
 import { getRevocationMetadata } from './utils'
@@ -118,7 +119,7 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
 
       const credentialEntryFromAttribute = async (
         attribute: AnonCredsRequestedAttributeMatch | AnonCredsRequestedPredicateMatch
-      ): Promise<{ linkSecretId: string; credentialEntry: CredentialEntry }> => {
+      ): Promise<{ linkSecretId: string; credentialEntry: CredentialEntry; credentialId: string }> => {
         let credentialRecord = retrievedCredentials.get(attribute.credentialId)
 
         if (!credentialRecord) {
@@ -142,8 +143,10 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
           }
         }
 
-        const { linkSecretId, revocationRegistryId, credentialRevocationId } =
-          getAnoncredsCredentialInfoFromRecord(credentialRecord)
+        const { linkSecretId, revocationRegistryId, credentialRevocationId } = getAnoncredsCredentialInfoFromRecord(
+          credentialRecord,
+          proofRequestUsesUnqualifiedIdentifiers(proofRequest)
+        )
 
         // TODO: Check if credential has a revocation registry id (check response from anoncreds-rs API, as it is
         // sending back a mandatory string in Credential.revocationRegistryId)
@@ -186,6 +189,7 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
 
           return {
             linkSecretId,
+            credentialId: attribute.credentialId,
             credentialEntry: {
               credential: credential as unknown as JsonObject,
               revocationState: revocationState?.toJson(),
@@ -199,21 +203,52 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
       }
 
       const credentialsProve: CredentialProve[] = []
-      const credentials: { linkSecretId: string; credentialEntry: CredentialEntry }[] = []
+      const credentials: { linkSecretId: string; credentialEntry: CredentialEntry; credentialId: string }[] = []
 
       let entryIndex = 0
       for (const referent in selectedCredentials.attributes) {
         const attribute = selectedCredentials.attributes[referent]
-        credentials.push(await credentialEntryFromAttribute(attribute))
-        credentialsProve.push({ entryIndex, isPredicate: false, referent, reveal: attribute.revealed })
-        entryIndex = entryIndex + 1
+
+        // If the credentialId with the same timestamp is already present, we will use the existing entry, so that the proof is created
+        // showing the attributes come from the same cred, rather than different ones.
+        const existingCredentialIndex = credentials.findIndex(
+          (credential) =>
+            credential.credentialId === attribute.credentialId &&
+            attribute.timestamp === credential.credentialEntry.timestamp
+        )
+
+        if (existingCredentialIndex !== -1) {
+          credentialsProve.push({
+            entryIndex: existingCredentialIndex,
+            isPredicate: false,
+            referent,
+            reveal: attribute.revealed,
+          })
+        } else {
+          credentials.push(await credentialEntryFromAttribute(attribute))
+          credentialsProve.push({ entryIndex, isPredicate: false, referent, reveal: attribute.revealed })
+          entryIndex = entryIndex + 1
+        }
       }
 
       for (const referent in selectedCredentials.predicates) {
         const predicate = selectedCredentials.predicates[referent]
-        credentials.push(await credentialEntryFromAttribute(predicate))
-        credentialsProve.push({ entryIndex, isPredicate: true, referent, reveal: true })
-        entryIndex = entryIndex + 1
+
+        // If the credentialId with the same timestamp is already present, we will use the existing entry, so that the proof is created
+        // showing the attributes come from the same cred, rather than different ones.
+        const existingCredentialIndex = credentials.findIndex(
+          (credential) =>
+            credential.credentialId === predicate.credentialId &&
+            predicate.timestamp === credential.credentialEntry.timestamp
+        )
+
+        if (existingCredentialIndex !== -1) {
+          credentialsProve.push({ entryIndex: existingCredentialIndex, isPredicate: true, referent, reveal: true })
+        } else {
+          credentials.push(await credentialEntryFromAttribute(predicate))
+          credentialsProve.push({ entryIndex, isPredicate: true, referent, reveal: true })
+          entryIndex = entryIndex + 1
+        }
       }
 
       const linkSecretIds = credentials.map((item) => item.linkSecretId)
@@ -463,7 +498,9 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
   ): Promise<AnonCredsCredentialInfo> {
     const w3cCredentialRepository = agentContext.dependencyManager.resolve(W3cCredentialRepository)
     const w3cCredentialRecord = await w3cCredentialRepository.findById(agentContext, options.id)
-    if (w3cCredentialRecord) return getAnoncredsCredentialInfoFromRecord(w3cCredentialRecord)
+    if (w3cCredentialRecord) {
+      return getAnoncredsCredentialInfoFromRecord(w3cCredentialRecord, options.useUnqualifiedIdentifiersIfPresent)
+    }
 
     const anonCredsCredentialRepository = agentContext.dependencyManager.resolve(AnonCredsCredentialRepository)
     const anonCredsCredentialRecord = await anonCredsCredentialRepository.getByCredentialId(agentContext, options.id)
@@ -504,12 +541,12 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
     const credentialRecords = await agentContext.dependencyManager
       .resolve(W3cCredentialRepository)
       .findByQuery(agentContext, {
+        issuerId: !options.issuerId || isUnqualifiedIndyDid(options.issuerId) ? undefined : options.issuerId,
         anonCredsCredentialDefinitionId:
           !options.credentialDefinitionId || isUnqualifiedCredentialDefinitionId(options.credentialDefinitionId)
             ? undefined
             : options.credentialDefinitionId,
         anonCredsSchemaId: !options.schemaId || isUnqualifiedSchemaId(options.schemaId) ? undefined : options.schemaId,
-        anonCredsIssuerId: !options.issuerId || isUnqualifiedIndyDid(options.issuerId) ? undefined : options.issuerId,
         anonCredsSchemaName: options.schemaName,
         anonCredsSchemaVersion: options.schemaVersion,
         anonCredsSchemaIssuerId:
@@ -621,6 +658,8 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
 
     const $and = []
 
+    const useUnqualifiedIdentifiers = proofRequestUsesUnqualifiedIdentifiers(proofRequest)
+
     // Make sure the attribute(s) that are requested are present using the marker tag
     const attributes = requestedAttribute.names ?? [requestedAttribute.name]
     const attributeQuery: SimpleQuery<W3cCredentialRecord> = {}
@@ -657,7 +696,7 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
 
     const credentialWithMetadata = credentials.map((credentialRecord) => {
       return {
-        credentialInfo: getAnoncredsCredentialInfoFromRecord(credentialRecord),
+        credentialInfo: getAnoncredsCredentialInfoFromRecord(credentialRecord, useUnqualifiedIdentifiers),
         interval: proofRequest.non_revoked,
       }
     })
@@ -686,7 +725,7 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
         if (isUnqualifiedIndyDid(issuerId)) {
           queryElements.anonCredsUnqualifiedIssuerId = issuerId
         } else {
-          queryElements.anonCredsIssuerId = issuerId
+          queryElements.issuerId = issuerId
         }
       }
 
