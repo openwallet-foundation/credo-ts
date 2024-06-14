@@ -35,14 +35,6 @@ export function getKeyFromBls12381G1Key2020(verificationMethod: Bls12381G1Key202
   if (verificationMethod.publicKeyBase58) {
     return Key.fromPublicKeyBase58(verificationMethod.publicKeyBase58, KeyType.Bls12381g1)
   }
-  if (verificationMethod.publicKeyMultibase) {
-    const key = Key.fromFingerprint(verificationMethod.publicKeyMultibase)
-    if (key.keyType === KeyType.Bls12381g1) return key
-    else
-      throw new CredoError(
-        `Unexpected key type from resolving multibase encoding, key type was ${key.keyType} but expected ${KeyType.Bls12381g1}}`
-      )
-  }
 
-  throw new CredoError('verification method is missing publicKeyBase58 or publicKeyMultibase')
+  throw new CredoError('verification method is missing publicKeyBase58')
 }
