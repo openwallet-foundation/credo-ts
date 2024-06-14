@@ -31,7 +31,7 @@ import type {
   RegisterRevocationStatusListOptions,
 } from '@credo-ts/anoncreds'
 import type { AgentContext } from '@credo-ts/core'
-import type { GetCredentialDefinitionResponse, SchemaResponse } from '@hyperledger/indy-vdr-shared'
+import type { SchemaResponse } from '@hyperledger/indy-vdr-shared'
 
 import {
   getUnqualifiedCredentialDefinitionId,

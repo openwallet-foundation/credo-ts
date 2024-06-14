@@ -1,5 +1,5 @@
 import type { Key } from '../../../../crypto/Key'
-import { VerificationMethod } from '../verificationMethod'
+import type { VerificationMethod } from '../verificationMethod'
 
 import { KeyType } from '../../../../crypto/KeyType'
 import { getJwkFromJson } from '../../../../crypto/jose/jwk'
