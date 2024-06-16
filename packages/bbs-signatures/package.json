@@ -17,10 +17,10 @@
     "directory": "packages/bbs-signatures"
   },
   "scripts": {
-    "build": "yarn run clean && yarn run compile",
+    "build": "pnpm run clean && pnpm run compile",
     "clean": "rimraf ./build",
     "compile": "tsc -p tsconfig.build.json",
-    "prepublishOnly": "yarn run build",
+    "prepublishOnly": "pnpm run build",
     "test": "jest"
   },
   "dependencies": {
@@ -36,7 +36,7 @@
     "@credo-ts/node": "0.5.3",
     "reflect-metadata": "^0.1.13",
     "rimraf": "^4.4.0",
-    "typescript": "~4.9.5"
+    "typescript": "~5.5.0-beta"
   },
   "peerDependenciesMeta": {
     "@animo-id/react-native-bbs-signatures": {

@@ -10,8 +10,7 @@
   "license": "Apache-2.0",
   "scripts": {
     "alice": "ts-node src/AliceInquirer.ts",
-    "faber": "ts-node src/FaberInquirer.ts",
-    "refresh": "rm -rf ./node_modules ./yarn.lock && yarn"
+    "faber": "ts-node src/FaberInquirer.ts"
   },
   "dependencies": {
     "@hyperledger/indy-vdr-nodejs": "^0.2.2",

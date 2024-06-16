@@ -33,7 +33,8 @@ Credo BBS Module provides an optional addon to Credo to use BBS signatures in W3
 ## Installation
 
 ```sh
-yarn add @credo-ts/bbs-signatures
+# or npm/yarn
+pnpm add @credo-ts/bbs-signatures
 ```
 
 ### React Native
@@ -52,7 +53,7 @@ When using Credo inside the React Native environment, temporarily, a dependency 
     }
 ```
 
-#### npm
+#### npm / pnpm
 
 ```diff
 +   "overrides": {
