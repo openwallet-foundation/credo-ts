@@ -24,8 +24,8 @@
     "test": "jest"
   },
   "dependencies": {
-    "@credo-ts/anoncreds": "0.5.3",
-    "@credo-ts/core": "0.5.3"
+    "@credo-ts/anoncreds": "workspace:*",
+    "@credo-ts/core": "workspace:*"
   },
   "devDependencies": {
     "@hyperledger/indy-vdr-nodejs": "^0.2.2",

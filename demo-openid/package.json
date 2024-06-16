@@ -21,10 +21,10 @@
     "inquirer": "^8.2.5"
   },
   "devDependencies": {
-    "@credo-ts/openid4vc": "*",
-    "@credo-ts/askar": "*",
-    "@credo-ts/core": "*",
-    "@credo-ts/node": "*",
+    "@credo-ts/openid4vc": "workspace:*",
+    "@credo-ts/askar": "workspace:*",
+    "@credo-ts/core": "workspace:*",
+    "@credo-ts/node": "workspace:*",
     "@types/express": "^4.17.13",
     "@types/figlet": "^1.5.4",
     "@types/inquirer": "^8.2.6",

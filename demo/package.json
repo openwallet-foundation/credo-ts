@@ -19,12 +19,12 @@
     "inquirer": "^8.2.5"
   },
   "devDependencies": {
-    "@credo-ts/anoncreds": "*",
-    "@credo-ts/askar": "*",
-    "@credo-ts/core": "*",
-    "@credo-ts/indy-vdr": "*",
-    "@credo-ts/cheqd": "*",
-    "@credo-ts/node": "*",
+    "@credo-ts/anoncreds": "workspace:*",
+    "@credo-ts/askar": "workspace:*",
+    "@credo-ts/core": "workspace:*",
+    "@credo-ts/indy-vdr": "workspace:*",
+    "@credo-ts/cheqd": "workspace:*",
+    "@credo-ts/node": "workspace:*",
     "@types/figlet": "^1.5.4",
     "@types/inquirer": "^8.2.6",
     "clear": "^0.1.0",

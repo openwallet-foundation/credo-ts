@@ -25,7 +25,7 @@
   },
   "dependencies": {
     "@azure/core-asynciterator-polyfill": "^1.0.2",
-    "@credo-ts/core": "0.5.3",
+    "@credo-ts/core": "workspace:*",
     "events": "^3.3.0"
   },
   "devDependencies": {
