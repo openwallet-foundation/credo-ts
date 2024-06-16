@@ -114,8 +114,23 @@ export function endpointsAttribFromServices(services: DidDocumentService[]): Ind
   const commTypes: CommEndpointType[] = ['endpoint', 'did-communication', 'DIDComm', 'DIDCommMessaging']
   const commServices = services.filter((item) => commTypes.includes(item.type as CommEndpointType))
 
+  const endpoint =
+    commServices[0] instanceof NewDidCommV2Service
+      ? commServices[0].firstServiceEndpointUri
+      : commServices[0].serviceEndpoint
+
+  if (typeof endpoint !== 'string') {
+    throw new CredoError(
+      `For unknown service endpoint types (${commServices[0].type}) the 'serviceEndpoint' needs to be of type 'string'`
+    )
+  }
+
   // Check that all services use the same endpoint, as only one is accepted
-  if (!commServices.every((item) => item.serviceEndpoint === services[0].serviceEndpoint)) {
+  if (
+    !commServices.every(
+      (item) => (item instanceof NewDidCommV2Service ? item.firstServiceEndpointUri : item.serviceEndpoint) === endpoint
+    )
+  ) {
     throw new CredoError('serviceEndpoint for all services must match')
   }
 
@@ -142,17 +157,6 @@ export function endpointsAttribFromServices(services: DidDocumentService[]): Ind
 
       firstServiceEndpoint.routingKeys?.forEach((item) => routingKeys.add(item))
     }
-  }
-
-  const endpoint =
-    commServices[0] instanceof NewDidCommV2Service
-      ? commServices[0].firstServiceEndpointUri
-      : commServices[0].serviceEndpoint
-
-  if (typeof endpoint !== 'string') {
-    throw new CredoError(
-      `For unknown service endpoint types (${commServices[0].type}) the 'serviceEndpoint' needs to be of type 'string'`
-    )
   }
 
   return { endpoint, types, routingKeys: Array.from(routingKeys) }

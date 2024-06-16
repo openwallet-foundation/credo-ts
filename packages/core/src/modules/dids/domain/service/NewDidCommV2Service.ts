@@ -1,3 +1,4 @@
+import { Type } from 'class-transformer'
 import { IsOptional, IsString, ValidateNested } from 'class-validator'
 
 import { CredoError } from '../../../../error'
@@ -56,6 +57,7 @@ export class NewDidCommV2Service extends DidDocumentService {
 
   @IsInstanceOrArrayOfInstances({ classType: [NewDidCommV2ServiceEndpoint] })
   @ValidateNested()
+  @Type(() => NewDidCommV2ServiceEndpoint)
   public serviceEndpoint!: SingleOrArray<NewDidCommV2ServiceEndpoint>
 
   public get firstServiceEndpointUri(): string {

@@ -427,11 +427,13 @@ describe('IndyVdrIndyDidRegistrar', () => {
             type: 'did-communication',
           },
           {
-            accept: ['didcomm/v2'],
             id: 'did:indy:pool1:B6xaJg1c2xU3D9ppCtt1CZ#didcomm-1',
-            routingKeys: ['key-1'],
-            serviceEndpoint: 'https://example.com/endpoint',
-            type: 'DIDComm',
+            serviceEndpoint: {
+              uri: 'https://example.com/endpoint',
+              accept: ['didcomm/v2'],
+              routingKeys: ['key-1'],
+            },
+            type: 'DIDCommMessaging',
           },
         ],
         verificationMethod: [
@@ -497,10 +499,12 @@ describe('IndyVdrIndyDidRegistrar', () => {
             },
             {
               id: 'did:indy:pool1:B6xaJg1c2xU3D9ppCtt1CZ#didcomm-1',
-              serviceEndpoint: 'https://example.com/endpoint',
-              type: 'DIDComm',
-              routingKeys: ['key-1'],
-              accept: ['didcomm/v2'],
+              type: 'DIDCommMessaging',
+              serviceEndpoint: {
+                uri: 'https://example.com/endpoint',
+                routingKeys: ['key-1'],
+                accept: ['didcomm/v2'],
+              },
             },
           ],
           authentication: ['did:indy:pool1:B6xaJg1c2xU3D9ppCtt1CZ#verkey'],
@@ -579,6 +583,7 @@ describe('IndyVdrIndyDidRegistrar', () => {
         privateKey,
       },
     })
+    expect(result.didState.state).toEqual('finished')
 
     expect(createRegisterDidWriteRequestSpy).toHaveBeenCalledWith({
       agentContext,
@@ -608,7 +613,7 @@ describe('IndyVdrIndyDidRegistrar', () => {
       endpoints: {
         endpoint: 'https://example.com/endpoint',
         routingKeys: ['key-1'],
-        types: ['endpoint', 'did-communication', 'DIDComm'],
+        types: ['endpoint', 'did-communication', 'DIDCommMessaging'],
       },
     })
     expect(setEndpointsForDidSpy).not.toHaveBeenCalled()
@@ -657,10 +662,8 @@ describe('IndyVdrIndyDidRegistrar', () => {
             },
             {
               id: 'did:indy:pool1:B6xaJg1c2xU3D9ppCtt1CZ#didcomm-1',
-              serviceEndpoint: 'https://example.com/endpoint',
-              type: 'DIDComm',
-              routingKeys: ['key-1'],
-              accept: ['didcomm/v2'],
+              type: 'DIDCommMessaging',
+              serviceEndpoint: { uri: 'https://example.com/endpoint', routingKeys: ['key-1'], accept: ['didcomm/v2'] },
             },
           ],
           authentication: ['did:indy:pool1:B6xaJg1c2xU3D9ppCtt1CZ#verkey'],
