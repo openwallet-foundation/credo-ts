@@ -3,7 +3,7 @@ import type { DidRecord, RecordSavedEvent } from '@credo-ts/core'
 
 import {
   DidCommV1Service,
-  DidCommV2Service,
+  NewDidCommV2Service,
   DidDocumentService,
   DidDocument,
   DidDocumentRole,
@@ -16,6 +16,7 @@ import {
   RepositoryEventTypes,
   TypedArrayEncoder,
   VerificationMethod,
+  NewDidcommV2ServiceEndpoint,
 } from '@credo-ts/core'
 import { Subject } from 'rxjs'
 
@@ -381,11 +382,13 @@ describe('IndyVdrIndyDidRegistrar', () => {
             serviceEndpoint: 'https://example.com/endpoint',
             accept: ['didcomm/aip2;env=rfc19'],
           }),
-          new DidCommV2Service({
-            accept: ['didcomm/v2'],
+          new NewDidCommV2Service({
             id: `#didcomm-1`,
-            routingKeys: ['key-1'],
-            serviceEndpoint: 'https://example.com/endpoint',
+            serviceEndpoint: new NewDidcommV2ServiceEndpoint({
+              accept: ['didcomm/v2'],
+              routingKeys: ['key-1'],
+              uri: 'https://example.com/endpoint',
+            }),
           }),
         ],
       },
@@ -562,11 +565,13 @@ describe('IndyVdrIndyDidRegistrar', () => {
             serviceEndpoint: 'https://example.com/endpoint',
             accept: ['didcomm/aip2;env=rfc19'],
           }),
-          new DidCommV2Service({
-            accept: ['didcomm/v2'],
+          new NewDidCommV2Service({
             id: `#didcomm-1`,
-            routingKeys: ['key-1'],
-            serviceEndpoint: 'https://example.com/endpoint',
+            serviceEndpoint: new NewDidcommV2ServiceEndpoint({
+              accept: ['didcomm/v2'],
+              routingKeys: ['key-1'],
+              uri: 'https://example.com/endpoint',
+            }),
           }),
         ],
       },
@@ -714,11 +719,13 @@ describe('IndyVdrIndyDidRegistrar', () => {
             serviceEndpoint: 'https://example.com/endpoint',
             accept: ['didcomm/aip2;env=rfc19'],
           }),
-          new DidCommV2Service({
-            accept: ['didcomm/v2'],
+          new NewDidCommV2Service({
             id: `#didcomm-1`,
-            routingKeys: ['key-1'],
-            serviceEndpoint: 'https://example.com/endpoint',
+            serviceEndpoint: new NewDidcommV2ServiceEndpoint({
+              accept: ['didcomm/v2'],
+              routingKeys: ['key-1'],
+              uri: 'https://example.com/endpoint',
+            }),
           }),
         ],
       },

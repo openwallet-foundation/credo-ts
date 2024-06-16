@@ -7,10 +7,11 @@ import {
   KeyType,
   TypedArrayEncoder,
   DidCommV1Service,
-  DidCommV2Service,
+  NewDidCommV2Service,
   DidDocumentService,
   Agent,
   DidsModule,
+  NewDidcommV2ServiceEndpoint,
 } from '@credo-ts/core'
 import { indyVdr } from '@hyperledger/indy-vdr-nodejs'
 import { convertPublicKeyToX25519, generateKeyPairFromSeed } from '@stablelib/ed25519'
@@ -378,11 +379,13 @@ describe('Indy VDR Indy Did Registrar', () => {
             serviceEndpoint: 'https://example.com/endpoint',
             accept: ['didcomm/aip2;env=rfc19'],
           }),
-          new DidCommV2Service({
-            accept: ['didcomm/v2'],
+          new NewDidCommV2Service({
             id: `${did}#didcomm-1`,
-            routingKeys: ['a-routing-key'],
-            serviceEndpoint: 'https://example.com/endpoint',
+            serviceEndpoint: new NewDidcommV2ServiceEndpoint({
+              accept: ['didcomm/v2'],
+              routingKeys: ['a-routing-key'],
+              uri: 'https://example.com/endpoint',
+            }),
           }),
         ],
       },
@@ -500,11 +503,13 @@ describe('Indy VDR Indy Did Registrar', () => {
             serviceEndpoint: 'https://example.com/endpoint',
             accept: ['didcomm/aip2;env=rfc19'],
           }),
-          new DidCommV2Service({
-            accept: ['didcomm/v2'],
+          new NewDidCommV2Service({
             id: `${did}#didcomm-1`,
-            routingKeys: ['a-routing-key'],
-            serviceEndpoint: 'https://example.com/endpoint',
+            serviceEndpoint: new NewDidcommV2ServiceEndpoint({
+              accept: ['didcomm/v2'],
+              routingKeys: ['a-routing-key'],
+              uri: 'https://example.com/endpoint',
+            }),
           }),
         ],
       },

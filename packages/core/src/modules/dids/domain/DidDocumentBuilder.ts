@@ -16,6 +16,9 @@ export class DidDocumentBuilder {
     if (typeof this.didDocument.context === 'string') {
       this.didDocument.context = [this.didDocument.context, context]
     } else {
+      // If already included, no need to add again
+      if (this.didDocument.context.includes(context)) return this
+
       this.didDocument.context.push(context)
     }
 

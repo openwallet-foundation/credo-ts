@@ -1,5 +1,8 @@
 import { ArrayNotEmpty, IsOptional, IsString } from 'class-validator'
 
+import { IsUri } from '../../../../utils'
+import { getProtocolScheme } from '../../../../utils/uri'
+
 import { DidDocumentService } from './DidDocumentService'
 
 export class DidCommV1Service extends DidDocumentService {
@@ -22,6 +25,14 @@ export class DidCommV1Service extends DidDocumentService {
   }
 
   public static type = 'did-communication'
+
+  public get protocolScheme(): string {
+    return getProtocolScheme(this.serviceEndpoint)
+  }
+
+  @IsString()
+  @IsUri()
+  public serviceEndpoint!: string
 
   @ArrayNotEmpty()
   @IsString({ each: true })

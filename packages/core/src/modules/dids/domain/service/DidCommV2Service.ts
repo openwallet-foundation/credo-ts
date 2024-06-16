@@ -1,14 +1,28 @@
 import { IsOptional, IsString } from 'class-validator'
 
-import { DidDocumentService } from './DidDocumentService'
+import { IsUri } from '../../../../utils'
 
+import { DidDocumentService } from './DidDocumentService'
+import { NewDidCommV2Service, NewDidcommV2ServiceEndpoint } from './NewDidCommV2Service'
+
+export interface DidcommV2ServiceOptions {
+  id: string
+  serviceEndpoint: string
+  routingKeys?: string[]
+  accept?: string[]
+}
+
+/**
+ * @deprecated use `NewDidcommV2Service` instead. Will be renamed to `LegacyDidcommV2Service` in 0.6
+ */
 export class DidCommV2Service extends DidDocumentService {
-  public constructor(options: { id: string; serviceEndpoint: string; routingKeys?: string[]; accept?: string[] }) {
+  public constructor(options: DidcommV2ServiceOptions) {
     super({ ...options, type: DidCommV2Service.type })
 
     if (options) {
-      this.routingKeys = options.routingKeys
+      this.serviceEndpoint = options.serviceEndpoint
       this.accept = options.accept
+      this.routingKeys = options.routingKeys
     }
   }
 
@@ -21,4 +35,19 @@ export class DidCommV2Service extends DidDocumentService {
   @IsString({ each: true })
   @IsOptional()
   public accept?: string[]
+
+  @IsUri()
+  @IsString()
+  public serviceEndpoint!: string
+
+  public toNewDidCommV2(): NewDidCommV2Service {
+    return new NewDidCommV2Service({
+      id: this.id,
+      serviceEndpoint: new NewDidcommV2ServiceEndpoint({
+        uri: this.serviceEndpoint,
+        accept: this.accept,
+        routingKeys: this.routingKeys,
+      }),
+    })
+  }
 }
