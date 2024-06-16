@@ -7,7 +7,7 @@ import {
   convertPublicKeyToX25519,
   CredoError,
   Buffer,
-  NewDidcommV2ServiceEndpoint,
+  NewDidCommV2ServiceEndpoint,
   DidCommV2Service,
 } from '@credo-ts/core'
 
@@ -200,7 +200,7 @@ export function addServicesFromEndpointsAttrib(
         .addService(
           new NewDidCommV2Service({
             id: `${did}#didcomm-messaging-1`,
-            serviceEndpoint: new NewDidcommV2ServiceEndpoint({
+            serviceEndpoint: new NewDidCommV2ServiceEndpoint({
               uri: endpoint,
               routingKeys: routingKeys,
               accept: ['didcomm/v2'],

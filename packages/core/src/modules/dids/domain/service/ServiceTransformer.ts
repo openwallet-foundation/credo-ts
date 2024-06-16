@@ -3,8 +3,8 @@ import type { ClassConstructor } from 'class-transformer'
 import { Transform, plainToInstance } from 'class-transformer'
 
 import { DidCommV1Service } from './DidCommV1Service'
+import { DidCommV2Service } from './DidCommV2Service'
 import { DidDocumentService } from './DidDocumentService'
-import { DidCommV2Service } from './DidcommV2Service'
 import { IndyAgentService } from './IndyAgentService'
 import { NewDidCommV2Service } from './NewDidCommV2Service'
 

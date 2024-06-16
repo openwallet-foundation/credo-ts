@@ -6,7 +6,7 @@ import {
   NewDidCommV2Service,
   DidDocumentService,
   KeyType,
-  NewDidcommV2ServiceEndpoint,
+  NewDidCommV2ServiceEndpoint,
 } from '@credo-ts/core'
 import { indyVdr } from '@hyperledger/indy-vdr-nodejs'
 
@@ -54,7 +54,7 @@ export async function createDidOnLedger(agent: Agent, endorserDid: string) {
         }),
         new NewDidCommV2Service({
           id: `#didcomm-1`,
-          serviceEndpoint: new NewDidcommV2ServiceEndpoint({
+          serviceEndpoint: new NewDidCommV2ServiceEndpoint({
             accept: ['didcomm/v2'],
             routingKeys: ['a-routing-key'],
             uri: 'http://localhost:3000',

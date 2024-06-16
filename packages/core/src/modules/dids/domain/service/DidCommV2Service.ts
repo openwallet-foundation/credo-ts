@@ -3,9 +3,9 @@ import { IsOptional, IsString } from 'class-validator'
 import { IsUri } from '../../../../utils'
 
 import { DidDocumentService } from './DidDocumentService'
-import { NewDidCommV2Service, NewDidcommV2ServiceEndpoint } from './NewDidCommV2Service'
+import { NewDidCommV2Service, NewDidCommV2ServiceEndpoint } from './NewDidCommV2Service'
 
-export interface DidcommV2ServiceOptions {
+export interface DidCommV2ServiceOptions {
   id: string
   serviceEndpoint: string
   routingKeys?: string[]
@@ -13,10 +13,10 @@ export interface DidcommV2ServiceOptions {
 }
 
 /**
- * @deprecated use `NewDidcommV2Service` instead. Will be renamed to `LegacyDidcommV2Service` in 0.6
+ * @deprecated use `NewDidCommV2Service` instead. Will be renamed to `LegacyDidCommV2Service` in 0.6
  */
 export class DidCommV2Service extends DidDocumentService {
-  public constructor(options: DidcommV2ServiceOptions) {
+  public constructor(options: DidCommV2ServiceOptions) {
     super({ ...options, type: DidCommV2Service.type })
 
     if (options) {
@@ -43,7 +43,7 @@ export class DidCommV2Service extends DidDocumentService {
   public toNewDidCommV2(): NewDidCommV2Service {
     return new NewDidCommV2Service({
       id: this.id,
-      serviceEndpoint: new NewDidcommV2ServiceEndpoint({
+      serviceEndpoint: new NewDidCommV2ServiceEndpoint({
         uri: this.serviceEndpoint,
         accept: this.accept,
         routingKeys: this.routingKeys,

@@ -16,7 +16,7 @@ import {
   RepositoryEventTypes,
   TypedArrayEncoder,
   VerificationMethod,
-  NewDidcommV2ServiceEndpoint,
+  NewDidCommV2ServiceEndpoint,
 } from '@credo-ts/core'
 import { Subject } from 'rxjs'
 
@@ -384,7 +384,7 @@ describe('IndyVdrIndyDidRegistrar', () => {
           }),
           new NewDidCommV2Service({
             id: `#didcomm-1`,
-            serviceEndpoint: new NewDidcommV2ServiceEndpoint({
+            serviceEndpoint: new NewDidCommV2ServiceEndpoint({
               accept: ['didcomm/v2'],
               routingKeys: ['key-1'],
               uri: 'https://example.com/endpoint',
@@ -567,7 +567,7 @@ describe('IndyVdrIndyDidRegistrar', () => {
           }),
           new NewDidCommV2Service({
             id: `#didcomm-1`,
-            serviceEndpoint: new NewDidcommV2ServiceEndpoint({
+            serviceEndpoint: new NewDidCommV2ServiceEndpoint({
               accept: ['didcomm/v2'],
               routingKeys: ['key-1'],
               uri: 'https://example.com/endpoint',
@@ -721,7 +721,7 @@ describe('IndyVdrIndyDidRegistrar', () => {
           }),
           new NewDidCommV2Service({
             id: `#didcomm-1`,
-            serviceEndpoint: new NewDidcommV2ServiceEndpoint({
+            serviceEndpoint: new NewDidCommV2ServiceEndpoint({
               accept: ['didcomm/v2'],
               routingKeys: ['key-1'],
               uri: 'https://example.com/endpoint',

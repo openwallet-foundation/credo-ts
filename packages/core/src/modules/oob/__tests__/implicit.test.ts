@@ -13,7 +13,7 @@ import {
   DidDocumentBuilder,
   getEd25519VerificationKey2018,
   DidsModule,
-  NewDidcommV2ServiceEndpoint,
+  NewDidCommV2ServiceEndpoint,
 } from '../../dids'
 
 const inMemoryDidsRegistry = new InMemoryDidRegistry()
@@ -268,7 +268,7 @@ async function createInMemoryDid(agent: Agent, endpoint: string) {
   builder.addService(
     new NewDidCommV2Service({
       id: `${did}#didcomm-1`,
-      serviceEndpoint: new NewDidcommV2ServiceEndpoint({
+      serviceEndpoint: new NewDidCommV2ServiceEndpoint({
         accept: ['didcomm/v2'],
         routingKeys: [],
         uri: endpoint,

@@ -11,7 +11,7 @@ import {
   DidDocumentService,
   Agent,
   DidsModule,
-  NewDidcommV2ServiceEndpoint,
+  NewDidCommV2ServiceEndpoint,
 } from '@credo-ts/core'
 import { indyVdr } from '@hyperledger/indy-vdr-nodejs'
 import { convertPublicKeyToX25519, generateKeyPairFromSeed } from '@stablelib/ed25519'
@@ -381,7 +381,7 @@ describe('Indy VDR Indy Did Registrar', () => {
           }),
           new NewDidCommV2Service({
             id: `${did}#didcomm-1`,
-            serviceEndpoint: new NewDidcommV2ServiceEndpoint({
+            serviceEndpoint: new NewDidCommV2ServiceEndpoint({
               accept: ['didcomm/v2'],
               routingKeys: ['a-routing-key'],
               uri: 'https://example.com/endpoint',
@@ -505,7 +505,7 @@ describe('Indy VDR Indy Did Registrar', () => {
           }),
           new NewDidCommV2Service({
             id: `${did}#didcomm-1`,
-            serviceEndpoint: new NewDidcommV2ServiceEndpoint({
+            serviceEndpoint: new NewDidCommV2ServiceEndpoint({
               accept: ['didcomm/v2'],
               routingKeys: ['a-routing-key'],
               uri: 'https://example.com/endpoint',
