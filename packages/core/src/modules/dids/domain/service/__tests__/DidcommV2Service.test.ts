@@ -1,7 +1,7 @@
 import { JsonTransformer } from '../../../../../utils'
 import didExample123DidcommV2 from '../../../__tests__/__fixtures__/didExample123DidcommV2Service.json'
 import { DidDocument } from '../../DidDocument'
-import { DidCommV2Service } from '../DidcommV2Service'
+import { DidCommV2Service } from '../DidCommV2Service'
 import { NewDidCommV2Service } from '../NewDidCommV2Service'
 
 describe('Did | DidDocument | DidCommV2Service', () => {
