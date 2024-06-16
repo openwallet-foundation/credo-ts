@@ -19,7 +19,7 @@ import type { AgentMessage } from '../../../agent/AgentMessage'
 import type { FeatureRegistry } from '../../../agent/FeatureRegistry'
 import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import type { DependencyManager } from '../../../plugins'
-import type { Query } from '../../../storage/StorageService'
+import type { Query, QueryOptions } from '../../../storage/StorageService'
 import type { ProblemReportMessage } from '../../problem-reports'
 import type { CredentialStateChangedEvent } from '../CredentialEvents'
 import type { CredentialFormatService, ExtractCredentialFormats } from '../formats'
@@ -236,11 +236,12 @@ export abstract class BaseCredentialProtocol<CFs extends CredentialFormatService
 
   public async findAllByQuery(
     agentContext: AgentContext,
-    query: Query<CredentialExchangeRecord>
+    query: Query<CredentialExchangeRecord>,
+    queryOptions?: QueryOptions
   ): Promise<CredentialExchangeRecord[]> {
     const credentialRepository = agentContext.dependencyManager.resolve(CredentialRepository)
 
-    return credentialRepository.findByQuery(agentContext, query)
+    return credentialRepository.findByQuery(agentContext, query, queryOptions)
   }
 
   /**

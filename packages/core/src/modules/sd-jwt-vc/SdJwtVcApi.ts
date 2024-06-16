@@ -6,7 +6,7 @@ import type {
   SdJwtVcVerifyOptions,
 } from './SdJwtVcOptions'
 import type { SdJwtVcRecord } from './repository'
-import type { Query } from '../../storage/StorageService'
+import type { Query, QueryOptions } from '../../storage/StorageService'
 
 import { AgentContext } from '../../agent'
 import { injectable } from '../../plugins'
@@ -73,8 +73,8 @@ export class SdJwtVcApi {
     return await this.sdJwtVcService.getAll(this.agentContext)
   }
 
-  public async findAllByQuery(query: Query<SdJwtVcRecord>): Promise<Array<SdJwtVcRecord>> {
-    return await this.sdJwtVcService.findByQuery(this.agentContext, query)
+  public async findAllByQuery(query: Query<SdJwtVcRecord>, queryOptions?: QueryOptions): Promise<Array<SdJwtVcRecord>> {
+    return await this.sdJwtVcService.findByQuery(this.agentContext, query, queryOptions)
   }
 
   public async deleteById(id: string) {
