@@ -69,13 +69,10 @@ export function didToNumAlgo2DidDocument(did: string) {
       for (let service of services) {
         // Expand abbreviations used for service key/values
         service = expandServiceAbbreviations(service)
+
         service.id = `${did}#${service.type.toLowerCase()}-${serviceIndex++}`
-        try {
-          didDocument.addService(JsonTransformer.fromJSON(service, DidDocumentService))
-        } catch (e) {
-          //If it is didCommv2 the json transform will throw
-          serviceIndex--
-        }
+
+        didDocument.addService(JsonTransformer.fromJSON(service, DidDocumentService))
       }
     }
     // Otherwise we can be sure it is a key
