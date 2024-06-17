@@ -222,7 +222,7 @@ export function getW3cRecordAnonCredsTags(options: {
     ...((isIndyDid(issuerId) || isUnqualifiedIndyDid(issuerId)) && {
       anonCredsUnqualifiedIssuerId: getUnQualifiedDidIndyDid(issuerId),
       anonCredsUnqualifiedCredentialDefinitionId: getUnQualifiedDidIndyDid(credentialDefinitionId),
-      anonCredsUnqualifiedSchemaId: getUnQualifiedDidIndyDid(schema.issuerId),
+      anonCredsUnqualifiedSchemaId: getUnQualifiedDidIndyDid(issuerId),
       anonCredsUnqualifiedSchemaIssuerId: getUnQualifiedDidIndyDid(schema.issuerId),
       anonCredsUnqualifiedRevocationRegistryId: revocationRegistryId
         ? getUnQualifiedDidIndyDid(revocationRegistryId)

@@ -592,7 +592,7 @@ export class DifPresentationExchangeService {
       for (const inputDescriptor of pd.input_descriptors) {
         for (const schema of inputDescriptor.schema) {
           w3cQuery.push({
-            $or: [{ expandedTypes: [schema.uri] }, { contexts: [schema.uri] }, { types: [schema.uri] }],
+            $or: [{ expandedType: [schema.uri] }, { contexts: [schema.uri] }, { type: [schema.uri] }],
           })
         }
       }
