@@ -504,10 +504,13 @@ export class DidExchangeProtocol {
     message: DidExchangeRequestMessage | DidExchangeResponseMessage,
     invitationKeysBase58: string[] = []
   ) {
-    // The only supported case where we expect to receive a did-document attachment is did:peer algo 1
-    return isDid(message.did, 'peer') && getNumAlgoFromPeerDid(message.did) === PeerDidNumAlgo.GenesisDoc
-      ? this.extractAttachedDidDocument(agentContext, message, invitationKeysBase58)
-      : this.extractResolvableDidDocument(agentContext, message, invitationKeysBase58)
+    // Not all agents use didRotate yet, some may still send a didDoc attach with various did types
+    // we should check if the didDoc attach is there and if not require that the didRotate be present
+    if (message.didDoc) {
+      return this.extractAttachedDidDocument(agentContext, message, invitationKeysBase58)
+    } else {
+      return this.extractResolvableDidDocument(agentContext, message, invitationKeysBase58)
+    }
   }
 
   /**
@@ -522,57 +525,59 @@ export class DidExchangeProtocol {
     // Validate did-rotate attachment in case of DID Exchange response
     if (message instanceof DidExchangeResponseMessage) {
       const didRotateAttachment = message.didRotate
+      if (!didRotateAttachment) {
+        throw new DidExchangeProblemReportError(
+          'Either a DID Rotate attachment or a didDoc attachment must be provided to make a secure connection',
+          { problemCode: DidExchangeProblemReportReason.ResponseNotAccepted }
+        )
+      }
 
-      if (didRotateAttachment) {
-        const jws = didRotateAttachment.data.jws
+      const jws = didRotateAttachment.data.jws
 
-        if (!jws) {
-          throw new DidExchangeProblemReportError('DID Rotate signature is missing.', {
-            problemCode: DidExchangeProblemReportReason.ResponseNotAccepted,
-          })
-        }
-
-        if (!didRotateAttachment.data.base64) {
-          throw new CredoError('DID Rotate attachment is missing base64 property for signed did.')
-        }
-
-        // JWS payload must be base64url encoded
-        const base64UrlPayload = base64ToBase64URL(didRotateAttachment.data.base64)
-        const signedDid = TypedArrayEncoder.fromBase64(base64UrlPayload).toString()
-
-        if (signedDid !== message.did) {
-          throw new CredoError(
-            `DID Rotate attachment's did ${message.did} does not correspond to message did ${message.did}`
-          )
-        }
-
-        const { isValid, signerKeys } = await this.jwsService.verifyJws(agentContext, {
-          jws: {
-            ...jws,
-            payload: base64UrlPayload,
-          },
-          jwkResolver: ({ jws: { header } }) => {
-            if (typeof header.kid !== 'string' || !isDid(header.kid, 'key')) {
-              throw new CredoError('JWS header kid must be a did:key DID.')
-            }
-
-            const didKey = DidKey.fromDid(header.kid)
-            return getJwkFromKey(didKey.key)
-          },
+      if (!jws) {
+        throw new DidExchangeProblemReportError('DID Rotate signature is missing.', {
+          problemCode: DidExchangeProblemReportReason.ResponseNotAccepted,
         })
+      }
 
-        if (!isValid || !signerKeys.every((key) => invitationKeysBase58?.includes(key.publicKeyBase58))) {
-          throw new DidExchangeProblemReportError(
-            `DID Rotate signature is invalid. isValid: ${isValid} signerKeys: ${JSON.stringify(
-              signerKeys
-            )} invitationKeys:${JSON.stringify(invitationKeysBase58)}`,
-            {
-              problemCode: DidExchangeProblemReportReason.ResponseNotAccepted,
-            }
-          )
-        }
-      } else {
-        this.logger.warn(`Document does not contain didRotate`)
+      if (!didRotateAttachment.data.base64) {
+        throw new CredoError('DID Rotate attachment is missing base64 property for signed did.')
+      }
+
+      // JWS payload must be base64url encoded
+      const base64UrlPayload = base64ToBase64URL(didRotateAttachment.data.base64)
+      const signedDid = TypedArrayEncoder.fromBase64(base64UrlPayload).toString()
+
+      if (signedDid !== message.did) {
+        throw new CredoError(
+          `DID Rotate attachment's did ${message.did} does not correspond to message did ${message.did}`
+        )
+      }
+
+      const { isValid, signerKeys } = await this.jwsService.verifyJws(agentContext, {
+        jws: {
+          ...jws,
+          payload: base64UrlPayload,
+        },
+        jwkResolver: ({ jws: { header } }) => {
+          if (typeof header.kid !== 'string' || !isDid(header.kid, 'key')) {
+            throw new CredoError('JWS header kid must be a did:key DID.')
+          }
+
+          const didKey = DidKey.fromDid(header.kid)
+          return getJwkFromKey(didKey.key)
+        },
+      })
+
+      if (!isValid || !signerKeys.every((key) => invitationKeysBase58?.includes(key.publicKeyBase58))) {
+        throw new DidExchangeProblemReportError(
+          `DID Rotate signature is invalid. isValid: ${isValid} signerKeys: ${JSON.stringify(
+            signerKeys
+          )} invitationKeys:${JSON.stringify(invitationKeysBase58)}`,
+          {
+            problemCode: DidExchangeProblemReportReason.ResponseNotAccepted,
+          }
+        )
       }
     }
 
