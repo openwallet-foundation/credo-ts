@@ -53,11 +53,25 @@ When using Credo inside the React Native environment, temporarily, a dependency 
     }
 ```
 
-#### npm / pnpm
+#### npm
 
 ```diff
 +   "overrides": {
 +     "@mattrglobal/bbs-signatures": "@animo-id/react-native-bbs-signatures@^0.1.0",
++   },
+    "dependencies": {
+      ...
++     "@animo-id/react-native-bbs-signatures": "^0.1.0",
+    }
+```
+
+#### pnpm
+
+```diff
++   "pnpm": {
++       overrides": {
++          "@mattrglobal/bbs-signatures": "npm:@animo-id/react-native-bbs-signatures@^0.1.0",
++       }
 +   },
     "dependencies": {
       ...
