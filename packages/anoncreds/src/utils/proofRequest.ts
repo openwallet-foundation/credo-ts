@@ -20,5 +20,16 @@ export function proofRequestUsesUnqualifiedIdentifiers(proofRequest: AnonCredsPr
         (restriction.schema_issuer_id && isUnqualifiedIndyDid(restriction.schema_issuer_id)) ||
         (restriction.rev_reg_id && isUnqualifiedRevocationRegistryId(restriction.rev_reg_id))
     )
+  ) || Object.values(proofRequest.requested_predicates).some((predicate) =>
+    predicate.restrictions?.some(
+      (restriction) =>
+        (restriction.cred_def_id && isUnqualifiedCredentialDefinitionId(restriction.cred_def_id)) ||
+        (restriction.schema_id && isUnqualifiedSchemaId(restriction.schema_id)) ||
+        (restriction.issuer_did && isUnqualifiedIndyDid(restriction.issuer_did)) ||
+        (restriction.issuer_id && isUnqualifiedIndyDid(restriction.issuer_id)) ||
+        (restriction.schema_issuer_did && isUnqualifiedIndyDid(restriction.schema_issuer_did)) ||
+        (restriction.schema_issuer_id && isUnqualifiedIndyDid(restriction.schema_issuer_id)) ||
+        (restriction.rev_reg_id && isUnqualifiedRevocationRegistryId(restriction.rev_reg_id))
+    )
   )
 }
