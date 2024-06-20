@@ -26,7 +26,8 @@
     "test": "jest",
     "lint": "eslint --ignore-path .gitignore .",
     "validate": "pnpm lint && pnpm check-types && pnpm check-format",
-    "run-mediator": "ts-node ./samples/mediator.ts"
+    "run-mediator": "ts-node ./samples/mediator.ts",
+    "release": "pnpm build && pnpm changeset publish"
   },
   "devDependencies": {
     "@changesets/cli": "^2.27.5",
