@@ -23,7 +23,7 @@ export class DidDocumentService {
    */
   public get protocolScheme(): string {
     if (typeof this.serviceEndpoint !== 'string') {
-      throw new CredoError('Unable to extract protocol scheme from serviceEndpoint as it is not a string. In ')
+      throw new CredoError('Unable to extract protocol scheme from serviceEndpoint as it is not a string.')
     }
 
     return getProtocolScheme(this.serviceEndpoint)
@@ -53,7 +53,7 @@ function IsStringOrJsonObjectSingleOrArray(validationOptions?: Omit<ValidationOp
           (Array.isArray(value) && value.every((v) => isString(v) || isJsonObject(v))),
         defaultMessage: buildMessage(
           (eachPrefix) =>
-            eachPrefix + '$property must be a string, json object, or an array consisting of strings and JSON objects',
+            eachPrefix + '$property must be a string, JSON object, or an array consisting of strings and JSON objects',
           validationOptions
         ),
       },
