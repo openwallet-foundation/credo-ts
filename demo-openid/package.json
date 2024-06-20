@@ -11,8 +11,7 @@
   "scripts": {
     "issuer": "ts-node src/IssuerInquirer.ts",
     "holder": "ts-node src/HolderInquirer.ts",
-    "verifier": "ts-node src/VerifierInquirer.ts",
-    "refresh": "rm -rf ./node_modules ./yarn.lock && yarn"
+    "verifier": "ts-node src/VerifierInquirer.ts"
   },
   "dependencies": {
     "@hyperledger/anoncreds-nodejs": "^0.2.2",
@@ -22,10 +21,10 @@
     "inquirer": "^8.2.5"
   },
   "devDependencies": {
-    "@credo-ts/openid4vc": "*",
-    "@credo-ts/askar": "*",
-    "@credo-ts/core": "*",
-    "@credo-ts/node": "*",
+    "@credo-ts/openid4vc": "workspace:*",
+    "@credo-ts/askar": "workspace:*",
+    "@credo-ts/core": "workspace:*",
+    "@credo-ts/node": "workspace:*",
     "@types/express": "^4.17.13",
     "@types/figlet": "^1.5.4",
     "@types/inquirer": "^8.2.6",
