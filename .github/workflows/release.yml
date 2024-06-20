@@ -40,10 +40,18 @@ jobs:
         with:
           # This expects you to have a script called release which does a build for your packages and calls changeset publish
           publish: pnpm release
-          commit: 'chore(release): '
-          title: 'chore(release): '
+          commit: 'chore(release): new version'
+          title: 'chore(release): new version'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_PUBLISH }}
+
+      - name: Creating .npmrc
+        run: |
+          cat << EOF > ".npmrc"
+            //registry.npmjs.org/:_authToken=$NPM_TOKEN
+          EOF
+        env:
           NPM_TOKEN: ${{ secrets.NPM_PUBLISH }}
 
       - name: Create unstable release
