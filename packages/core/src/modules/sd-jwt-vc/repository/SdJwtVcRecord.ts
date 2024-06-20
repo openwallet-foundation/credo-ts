@@ -5,7 +5,6 @@ import type { Constructable } from '../../../utils/mixins'
 import { decodeSdJwtSync } from '@sd-jwt/decode'
 
 import { BaseRecord } from '../../../storage/BaseRecord'
-import { Query, SimpleQuery } from '../../../storage/StorageService'
 import { Hasher, JsonTransformer } from '../../../utils'
 import { uuid } from '../../../utils/uuid'
 
