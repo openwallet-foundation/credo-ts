@@ -16,7 +16,7 @@
     "check-types": "pnpm check-types:build && pnpm check-types:tests",
     "check-types:tests": "tsc -p tsconfig.test.json --noEmit",
     "check-types:build": "pnpm -r --parallel exec tsc --noEmit",
-    "prettier": "prettier --ignore-path .gitignore '**/*.+(js|json|ts|md|yml|yaml)'",
+    "prettier": "prettier --ignore-path .prettierignore '**/*.+(js|json|ts|md|yml|yaml)'",
     "format": "pnpm prettier --write",
     "check-format": "pnpm prettier --list-different",
     "clean": "pnpm -r --parallel run clean",
