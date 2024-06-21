@@ -9,7 +9,10 @@ import {
 
 export function proofRequestUsesUnqualifiedIdentifiers(proofRequest: AnonCredsProofRequest) {
   // We assume that if any identifier is unqualified, all of them are unqualified as well
-  return Object.values(proofRequest.requested_attributes).some((attribute) =>
+  return [
+    ...Object.values(proofRequest.requested_attributes),
+    ...Object.values(proofRequest.requested_predicates),
+  ].some((attribute) =>
     attribute.restrictions?.some(
       (restriction) =>
         (restriction.cred_def_id && isUnqualifiedCredentialDefinitionId(restriction.cred_def_id)) ||

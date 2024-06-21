@@ -1,6 +1,7 @@
 import type { AnonCredsTestsAgent } from '../../../../../../../anoncreds/tests/legacyAnonCredsSetup'
 import type { EventReplaySubject } from '../../../../../../tests'
 
+import { isUnqualifiedCredentialDefinitionId } from '../../../../../../../anoncreds/src/utils/indyIdentifiers'
 import {
   issueLegacyAnonCredsCredential,
   setupAnonCredsTests,
@@ -527,7 +528,174 @@ describe('Present Proof', () => {
     })
   })
 
-  test('Alice provides credentials via call to getRequestedCredentials', async () => {
+  test('Alice provides only attributes from credentials via call to getRequestedCredentials', async () => {
+    const aliceProofExchangeRecordPromise = waitForProofExchangeRecord(aliceAgent, {
+      state: ProofState.RequestReceived,
+    })
+
+    // Faber sends a presentation request to Alice
+    testLogger.test('Faber sends a presentation request to Alice')
+    faberProofExchangeRecord = await faberAgent.proofs.requestProof({
+      protocolVersion: 'v2',
+      connectionId: faberConnectionId,
+      proofFormats: {
+        anoncreds: {
+          name: 'Proof Request',
+          version: '1.0.0',
+          requested_attributes: {
+            name: {
+              name: 'name',
+              restrictions: [
+                {
+                  cred_def_id: credentialDefinitionId,
+                },
+              ],
+            },
+            image_0: {
+              name: 'image_0',
+              restrictions: [
+                {
+                  cred_def_id: credentialDefinitionId,
+                },
+              ],
+            },
+          },
+        },
+      },
+    })
+
+    // Alice waits for presentation request from Faber
+    testLogger.test('Alice waits for presentation request from Faber')
+    aliceProofExchangeRecord = await aliceProofExchangeRecordPromise
+
+    const retrievedCredentials = await aliceAgent.proofs.getCredentialsForRequest({
+      proofRecordId: aliceProofExchangeRecord.id,
+    })
+
+    expect(retrievedCredentials).toMatchObject({
+      proofFormats: {
+        anoncreds: {
+          attributes: {
+            name: [
+              {
+                credentialId: expect.any(String),
+                revealed: true,
+                credentialInfo: {
+                  credentialId: expect.any(String),
+                  attributes: {
+                    image_0: 'hl:zQmfDXo7T3J43j3CTkEZaz7qdHuABhWktksZ7JEBueZ5zUS',
+                    image_1: 'hl:zQmRHBT9rDs5QhsnYuPY3mNpXxgLcnNXkhjWJvTSAPMmcVd',
+                    name: 'John',
+                    age: 99,
+                  },
+                  schemaId: expect.any(String),
+                  credentialDefinitionId: expect.any(String),
+                  revocationRegistryId: null,
+                  credentialRevocationId: null,
+                },
+              },
+            ],
+            image_0: [
+              {
+                credentialId: expect.any(String),
+                revealed: true,
+                credentialInfo: {
+                  credentialId: expect.any(String),
+                  attributes: {
+                    age: 99,
+                    image_0: 'hl:zQmfDXo7T3J43j3CTkEZaz7qdHuABhWktksZ7JEBueZ5zUS',
+                    image_1: 'hl:zQmRHBT9rDs5QhsnYuPY3mNpXxgLcnNXkhjWJvTSAPMmcVd',
+                    name: 'John',
+                  },
+                  schemaId: expect.any(String),
+                  credentialDefinitionId: expect.any(String),
+                  revocationRegistryId: null,
+                  credentialRevocationId: null,
+                },
+              },
+            ],
+          },
+        },
+      },
+    })
+    // response should be in unqualified format
+    const credDefId =
+      retrievedCredentials.proofFormats.anoncreds?.attributes?.name?.[0]?.credentialInfo?.credentialDefinitionId ?? ''
+    expect(isUnqualifiedCredentialDefinitionId(credDefId)).toBe(true)
+  })
+
+  test('Alice provides only predicates from credentials via call to getRequestedCredentials', async () => {
+    const aliceProofExchangeRecordPromise = waitForProofExchangeRecord(aliceAgent, {
+      state: ProofState.RequestReceived,
+    })
+
+    // Faber sends a presentation request to Alice
+    testLogger.test('Faber sends a presentation request to Alice')
+    faberProofExchangeRecord = await faberAgent.proofs.requestProof({
+      protocolVersion: 'v2',
+      connectionId: faberConnectionId,
+      proofFormats: {
+        anoncreds: {
+          name: 'Proof Request',
+          version: '1.0.0',
+          requested_predicates: {
+            age: {
+              name: 'age',
+              p_type: '>=',
+              p_value: 50,
+              restrictions: [
+                {
+                  cred_def_id: credentialDefinitionId,
+                },
+              ],
+            },
+          },
+        },
+      },
+    })
+
+    // Alice waits for presentation request from Faber
+    testLogger.test('Alice waits for presentation request from Faber')
+    aliceProofExchangeRecord = await aliceProofExchangeRecordPromise
+
+    const retrievedCredentials = await aliceAgent.proofs.getCredentialsForRequest({
+      proofRecordId: aliceProofExchangeRecord.id,
+    })
+
+    expect(retrievedCredentials).toMatchObject({
+      proofFormats: {
+        anoncreds: {
+          predicates: {
+            age: [
+              {
+                credentialId: expect.any(String),
+                credentialInfo: {
+                  credentialId: expect.any(String),
+                  attributes: {
+                    image_1: 'hl:zQmRHBT9rDs5QhsnYuPY3mNpXxgLcnNXkhjWJvTSAPMmcVd',
+                    image_0: 'hl:zQmfDXo7T3J43j3CTkEZaz7qdHuABhWktksZ7JEBueZ5zUS',
+                    name: 'John',
+                    age: 99,
+                  },
+                  schemaId: expect.any(String),
+                  credentialDefinitionId: expect.any(String),
+                  revocationRegistryId: null,
+                  credentialRevocationId: null,
+                },
+              },
+            ],
+          },
+        },
+      },
+    })
+
+    // response should be in unqualified format
+    const credDefId =
+      retrievedCredentials.proofFormats.anoncreds?.predicates?.age?.[0]?.credentialInfo?.credentialDefinitionId ?? ''
+    expect(isUnqualifiedCredentialDefinitionId(credDefId)).toBe(true)
+  })
+
+  test('Alice provides both attributes and predicates from credentials via call to getRequestedCredentials', async () => {
     const aliceProofExchangeRecordPromise = waitForProofExchangeRecord(aliceAgent, {
       state: ProofState.RequestReceived,
     })
@@ -649,6 +817,13 @@ describe('Present Proof', () => {
         },
       },
     })
+    // response should be in unqualified format
+    const attrCredDefId =
+      retrievedCredentials.proofFormats.anoncreds?.attributes?.name?.[0]?.credentialInfo?.credentialDefinitionId ?? ''
+    expect(isUnqualifiedCredentialDefinitionId(attrCredDefId)).toBe(true)
+    const predCredDefId =
+      retrievedCredentials.proofFormats.anoncreds?.predicates?.age?.[0]?.credentialInfo?.credentialDefinitionId ?? ''
+    expect(isUnqualifiedCredentialDefinitionId(predCredDefId)).toBe(true)
   })
 
   test('Faber starts with proof request to Alice but gets Problem Reported', async () => {
