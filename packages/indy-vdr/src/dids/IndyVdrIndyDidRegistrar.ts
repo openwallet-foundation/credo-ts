@@ -232,7 +232,7 @@ export class IndyVdrIndyDidRegistrar implements DidRegistrar {
         didDocumentBuilder.addService(item)
       })
 
-      const commTypes = [IndyAgentService.type, DidCommV1Service.type, NewDidCommV2Service.type]
+      const commTypes = [IndyAgentService.type, DidCommV1Service.type, NewDidCommV2Service.type, DidCommV2Service.type]
       const serviceTypes = new Set(services.map((item) => item.type))
 
       const keyAgreementId = `${did}#key-agreement-1`

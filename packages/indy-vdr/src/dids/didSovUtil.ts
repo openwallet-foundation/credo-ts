@@ -91,7 +91,7 @@ export function sovDidDocumentFromDid(fullDid: string, verkey: string) {
 
 // Process Indy Attrib Endpoint Types according to: https://sovrin-foundation.github.io/sovrin/spec/did-method-spec-template.html > Read (Resolve) > DID Service Endpoint
 function processEndpointTypes(types?: string[]) {
-  const expectedTypes = ['endpoint', 'did-communication', 'DIDComm']
+  const expectedTypes = ['endpoint', 'did-communication', 'DIDComm', 'DIDCommMessaging']
   const defaultTypes = ['endpoint', 'did-communication']
 
   // Return default types if types "is NOT present [or] empty"

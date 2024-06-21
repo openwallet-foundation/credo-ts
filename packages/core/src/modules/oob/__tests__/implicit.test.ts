@@ -267,7 +267,7 @@ async function createInMemoryDid(agent: Agent, endpoint: string) {
 
   builder.addService(
     new NewDidCommV2Service({
-      id: `${did}#didcomm-1`,
+      id: `${did}#didcomm-messaging-1`,
       serviceEndpoint: new NewDidCommV2ServiceEndpoint({
         accept: ['didcomm/v2'],
         routingKeys: [],

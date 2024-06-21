@@ -91,6 +91,7 @@ describe('Indy VDR Sov DID Resolver', () => {
     // DID created. Now resolve it
     const didResult = await agent.dids.resolve(sovDid)
 
+    console.log(JSON.stringify(didResult, null, 2))
     expect(JsonTransformer.toJSON(didResult)).toMatchObject({
       didDocument: {
         '@context': [
@@ -137,11 +138,9 @@ describe('Indy VDR Sov DID Resolver', () => {
             type: 'did-communication',
           },
           {
-            id: `${sovDid}#didcomm-1`,
-            accept: ['didcomm/v2'],
-            routingKeys: ['a-routing-key'],
-            serviceEndpoint: 'http://localhost:3000',
-            type: 'DIDComm',
+            id: `${sovDid}#didcomm-messaging-1`,
+            serviceEndpoint: { uri: 'http://localhost:3000', routingKeys: ['a-routing-key'], accept: ['didcomm/v2'] },
+            type: 'DIDCommMessaging',
           },
         ],
       },

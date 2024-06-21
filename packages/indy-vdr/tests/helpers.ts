@@ -53,7 +53,7 @@ export async function createDidOnLedger(agent: Agent, endorserDid: string) {
           accept: ['didcomm/aip2;env=rfc19'],
         }),
         new NewDidCommV2Service({
-          id: `#didcomm-1`,
+          id: `#didcomm--messaging-1`,
           serviceEndpoint: new NewDidCommV2ServiceEndpoint({
             accept: ['didcomm/v2'],
             routingKeys: ['a-routing-key'],

@@ -383,7 +383,7 @@ describe('IndyVdrIndyDidRegistrar', () => {
             accept: ['didcomm/aip2;env=rfc19'],
           }),
           new NewDidCommV2Service({
-            id: `#didcomm-1`,
+            id: `#didcomm-messaging-1`,
             serviceEndpoint: new NewDidCommV2ServiceEndpoint({
               accept: ['didcomm/v2'],
               routingKeys: ['key-1'],
@@ -427,7 +427,7 @@ describe('IndyVdrIndyDidRegistrar', () => {
             type: 'did-communication',
           },
           {
-            id: 'did:indy:pool1:B6xaJg1c2xU3D9ppCtt1CZ#didcomm-1',
+            id: 'did:indy:pool1:B6xaJg1c2xU3D9ppCtt1CZ#didcomm-messaging-1',
             serviceEndpoint: {
               uri: 'https://example.com/endpoint',
               accept: ['didcomm/v2'],
@@ -498,7 +498,7 @@ describe('IndyVdrIndyDidRegistrar', () => {
               accept: ['didcomm/aip2;env=rfc19'],
             },
             {
-              id: 'did:indy:pool1:B6xaJg1c2xU3D9ppCtt1CZ#didcomm-1',
+              id: 'did:indy:pool1:B6xaJg1c2xU3D9ppCtt1CZ#didcomm-messaging-1',
               type: 'DIDCommMessaging',
               serviceEndpoint: {
                 uri: 'https://example.com/endpoint',
@@ -570,7 +570,7 @@ describe('IndyVdrIndyDidRegistrar', () => {
             accept: ['didcomm/aip2;env=rfc19'],
           }),
           new NewDidCommV2Service({
-            id: `#didcomm-1`,
+            id: `#didcomm-messaging-1`,
             serviceEndpoint: new NewDidCommV2ServiceEndpoint({
               accept: ['didcomm/v2'],
               routingKeys: ['key-1'],
@@ -661,7 +661,7 @@ describe('IndyVdrIndyDidRegistrar', () => {
               accept: ['didcomm/aip2;env=rfc19'],
             },
             {
-              id: 'did:indy:pool1:B6xaJg1c2xU3D9ppCtt1CZ#didcomm-1',
+              id: 'did:indy:pool1:B6xaJg1c2xU3D9ppCtt1CZ#didcomm-messaging-1',
               type: 'DIDCommMessaging',
               serviceEndpoint: { uri: 'https://example.com/endpoint', routingKeys: ['key-1'], accept: ['didcomm/v2'] },
             },
@@ -723,7 +723,7 @@ describe('IndyVdrIndyDidRegistrar', () => {
             accept: ['didcomm/aip2;env=rfc19'],
           }),
           new NewDidCommV2Service({
-            id: `#didcomm-1`,
+            id: `#didcomm-messaging-1`,
             serviceEndpoint: new NewDidCommV2ServiceEndpoint({
               accept: ['didcomm/v2'],
               routingKeys: ['key-1'],

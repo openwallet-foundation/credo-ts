@@ -1,5 +1,7 @@
 import type { DidDocumentService } from './service'
 
+import { asArray } from '../../../utils'
+
 import { DidDocument } from './DidDocument'
 import { VerificationMethod } from './verificationMethod'
 
@@ -13,15 +15,10 @@ export class DidDocumentBuilder {
   }
 
   public addContext(context: string) {
-    if (typeof this.didDocument.context === 'string') {
-      this.didDocument.context = [this.didDocument.context, context]
-    } else {
-      // If already included, no need to add again
-      if (this.didDocument.context.includes(context)) return this
+    const currentContexts = asArray(this.didDocument.context)
+    if (currentContexts.includes(context)) return this
 
-      this.didDocument.context.push(context)
-    }
-
+    this.didDocument.context = [...currentContexts, context]
     return this
   }
 
