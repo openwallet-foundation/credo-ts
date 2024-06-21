@@ -35,7 +35,6 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Create Release Pull Request or Publish to npm
-        if: github.ref == 'refs/heads/main'
         id: changesets
         uses: changesets/action@v1
         with:
@@ -80,6 +79,13 @@ jobs:
           pnpm changeset version --snapshot alpha
           pnpm build
           pnpm changeset publish --tag alpha
+
+          CURRENT_PACKAGE_VERSION=$(node -p "require('./packages/core/package.json').version")
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag v$CURRENT_PACKAGE_VERSION
+          git push origin v$CURRENT_PACKAGE_VERSION --no-verify
+
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_PUBLISH }}
