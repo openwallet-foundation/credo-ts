@@ -504,10 +504,13 @@ export class DidExchangeProtocol {
     message: DidExchangeRequestMessage | DidExchangeResponseMessage,
     invitationKeysBase58: string[] = []
   ) {
-    // The only supported case where we expect to receive a did-document attachment is did:peer algo 1
-    return isDid(message.did, 'peer') && getNumAlgoFromPeerDid(message.did) === PeerDidNumAlgo.GenesisDoc
-      ? this.extractAttachedDidDocument(agentContext, message, invitationKeysBase58)
-      : this.extractResolvableDidDocument(agentContext, message, invitationKeysBase58)
+    // Not all agents use didRotate yet, some may still send a didDoc attach with various did types
+    // we should check if the didDoc attach is there and if not require that the didRotate be present
+    if (message.didDoc) {
+      return this.extractAttachedDidDocument(agentContext, message, invitationKeysBase58)
+    } else {
+      return this.extractResolvableDidDocument(agentContext, message, invitationKeysBase58)
+    }
   }
 
   /**
@@ -522,11 +525,11 @@ export class DidExchangeProtocol {
     // Validate did-rotate attachment in case of DID Exchange response
     if (message instanceof DidExchangeResponseMessage) {
       const didRotateAttachment = message.didRotate
-
       if (!didRotateAttachment) {
-        throw new DidExchangeProblemReportError('DID Rotate attachment is missing.', {
-          problemCode: DidExchangeProblemReportReason.ResponseNotAccepted,
-        })
+        throw new DidExchangeProblemReportError(
+          'Either a DID Rotate attachment or a didDoc attachment must be provided to make a secure connection',
+          { problemCode: DidExchangeProblemReportReason.ResponseNotAccepted }
+        )
       }
 
       const jws = didRotateAttachment.data.jws

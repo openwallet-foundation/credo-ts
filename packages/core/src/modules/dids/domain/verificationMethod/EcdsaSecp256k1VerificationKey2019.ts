@@ -43,9 +43,9 @@ export function isEcdsaSecp256k1VerificationKey2019(
  * Get a key from a EcdsaSecp256k1VerificationKey2019 verification method.
  */
 export function getKeyFromEcdsaSecp256k1VerificationKey2019(verificationMethod: EcdsaSecp256k1VerificationKey2019) {
-  if (!verificationMethod.publicKeyBase58) {
-    throw new CredoError('verification method is missing publicKeyBase58')
+  if (verificationMethod.publicKeyBase58) {
+    return Key.fromPublicKeyBase58(verificationMethod.publicKeyBase58, KeyType.K256)
   }
 
-  return Key.fromPublicKeyBase58(verificationMethod.publicKeyBase58, KeyType.K256)
+  throw new CredoError('verification method is missing publicKeyBase58')
 }

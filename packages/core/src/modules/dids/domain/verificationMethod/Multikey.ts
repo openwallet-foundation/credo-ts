@@ -32,14 +32,20 @@ export function getMultikey({ did, key, verificationMethodId }: GetMultikeyOptio
  */
 export function isMultikey(
   verificationMethod: VerificationMethod
-): verificationMethod is VerificationMethod & { type: 'Multikey' } {
+): verificationMethod is
+  | (VerificationMethod & { type: 'Multikey' })
+  | (VerificationMethod & { publicKeyMultibase: string }) {
   return verificationMethod.type === VERIFICATION_METHOD_TYPE_MULTIKEY
 }
 
 /**
  * Get a key from a Multikey verification method.
  */
-export function getKeyFromMultikey(verificationMethod: VerificationMethod & { type: 'Multikey' }) {
+export function getKeyFromMultikey(
+  verificationMethod:
+    | (VerificationMethod & { type: 'Multikey' })
+    | (VerificationMethod & { publicKeyMultibase: string })
+) {
   if (!verificationMethod.publicKeyMultibase) {
     throw new CredoError(
       `Missing publicKeyMultibase on verification method with type ${VERIFICATION_METHOD_TYPE_MULTIKEY}`
