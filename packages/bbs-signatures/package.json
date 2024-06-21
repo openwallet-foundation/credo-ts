@@ -2,7 +2,7 @@
   "name": "@credo-ts/bbs-signatures",
   "main": "build/index",
   "types": "build/index",
-  "version": "0.5.3",
+  "version": "0.5.4",
   "files": [
     "build"
   ],

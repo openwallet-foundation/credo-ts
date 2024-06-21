@@ -16,6 +16,7 @@ jobs:
   release:
     name: Release
     runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v4
@@ -46,6 +47,26 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_PUBLISH }}
 
+  release-unstable:
+    name: Release Unstable
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v2
+        with:
+          version: 9.1.0
+
+      - name: Setup Node.js 20.x
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.x
+          cache: 'pnpm'
+
+      - name: Install Dependencies
+        run: pnpm install --frozen-lockfile
+
       - name: Creating .npmrc
         run: |
           cat << EOF > ".npmrc"
@@ -55,7 +76,6 @@ jobs:
           NPM_TOKEN: ${{ secrets.NPM_PUBLISH }}
 
       - name: Create unstable release
-        if: github.ref != 'refs/heads/main' || steps.changesets.outputs.published == 'false'
         run: |
           pnpm changeset version --snapshot alpha
           pnpm build
