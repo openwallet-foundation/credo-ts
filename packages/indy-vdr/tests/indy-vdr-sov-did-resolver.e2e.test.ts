@@ -91,7 +91,6 @@ describe('Indy VDR Sov DID Resolver', () => {
     // DID created. Now resolve it
     const didResult = await agent.dids.resolve(sovDid)
 
-    console.log(JSON.stringify(didResult, null, 2))
     expect(JsonTransformer.toJSON(didResult)).toMatchObject({
       didDocument: {
         '@context': [
