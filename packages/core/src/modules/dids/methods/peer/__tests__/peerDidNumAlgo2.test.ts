@@ -1,6 +1,7 @@
 import { JsonTransformer } from '../../../../../utils'
 import { OutOfBandDidCommService } from '../../../../oob/domain/OutOfBandDidCommService'
 import { DidDocument } from '../../../domain'
+import { isValidPeerDid } from '../didPeer'
 import {
   didToNumAlgo2DidDocument,
   didDocumentToNumAlgo2Did,
@@ -11,6 +12,7 @@ import {
 import didPeer2Ez6L from './__fixtures__/didPeer2Ez6L.json'
 import didPeer2Ez6LMoreServices from './__fixtures__/didPeer2Ez6LMoreServices.json'
 import didPeer2Ez6LMultipleServicesSingleToken from './__fixtures__/didPeer2Ez6LMultipleServicesSingleToken.json'
+import didPeer2Ez6LSe3YyteKQAcaPy from './__fixtures__/didPeer2Ez6LSe3YyteKQAcaPy.json'
 
 describe('peerDidNumAlgo2', () => {
   describe('didToNumAlgo2DidDocument', () => {
@@ -24,6 +26,11 @@ describe('peerDidNumAlgo2', () => {
       expect(didToNumAlgo2DidDocument(didPeer2Ez6LMultipleServicesSingleToken.id).toJSON()).toMatchObject(
         didPeer2Ez6LMultipleServicesSingleToken
       )
+    })
+
+    test('transforms method 2 peer did created by aca-py to a did document', async () => {
+      expect(isValidPeerDid(didPeer2Ez6LSe3YyteKQAcaPy.id)).toEqual(true)
+      expect(didToNumAlgo2DidDocument(didPeer2Ez6LSe3YyteKQAcaPy.id).toJSON()).toEqual(didPeer2Ez6LSe3YyteKQAcaPy)
     })
   })
 

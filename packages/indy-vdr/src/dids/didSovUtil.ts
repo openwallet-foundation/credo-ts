@@ -3,12 +3,15 @@ import {
   DidDocumentService,
   DidDocumentBuilder,
   DidCommV1Service,
-  DidCommV2Service,
+  NewDidCommV2Service,
   convertPublicKeyToX25519,
   CredoError,
+  Buffer,
+  NewDidCommV2ServiceEndpoint,
+  DidCommV2Service,
 } from '@credo-ts/core'
 
-export type CommEndpointType = 'endpoint' | 'did-communication' | 'DIDComm'
+export type CommEndpointType = 'endpoint' | 'did-communication' | 'DIDComm' | 'DIDCommMessaging'
 
 export interface IndyEndpointAttrib {
   endpoint?: string
@@ -88,7 +91,7 @@ export function sovDidDocumentFromDid(fullDid: string, verkey: string) {
 
 // Process Indy Attrib Endpoint Types according to: https://sovrin-foundation.github.io/sovrin/spec/did-method-spec-template.html > Read (Resolve) > DID Service Endpoint
 function processEndpointTypes(types?: string[]) {
-  const expectedTypes = ['endpoint', 'did-communication', 'DIDComm']
+  const expectedTypes = ['endpoint', 'did-communication', 'DIDComm', 'DIDCommMessaging']
   const defaultTypes = ['endpoint', 'did-communication']
 
   // Return default types if types "is NOT present [or] empty"
@@ -108,11 +111,26 @@ function processEndpointTypes(types?: string[]) {
 }
 
 export function endpointsAttribFromServices(services: DidDocumentService[]): IndyEndpointAttrib {
-  const commTypes: CommEndpointType[] = ['endpoint', 'did-communication', 'DIDComm']
+  const commTypes: CommEndpointType[] = ['endpoint', 'did-communication', 'DIDComm', 'DIDCommMessaging']
   const commServices = services.filter((item) => commTypes.includes(item.type as CommEndpointType))
 
+  const endpoint =
+    commServices[0] instanceof NewDidCommV2Service
+      ? commServices[0].firstServiceEndpointUri
+      : commServices[0].serviceEndpoint
+
+  if (typeof endpoint !== 'string') {
+    throw new CredoError(
+      `For unknown service endpoint types (${commServices[0].type}) the 'serviceEndpoint' needs to be of type 'string'`
+    )
+  }
+
   // Check that all services use the same endpoint, as only one is accepted
-  if (!commServices.every((item) => item.serviceEndpoint === services[0].serviceEndpoint)) {
+  if (
+    !commServices.every(
+      (item) => (item instanceof NewDidCommV2Service ? item.firstServiceEndpointUri : item.serviceEndpoint) === endpoint
+    )
+  ) {
     throw new CredoError('serviceEndpoint for all services must match')
   }
 
@@ -132,10 +150,16 @@ export function endpointsAttribFromServices(services: DidDocumentService[]): Ind
       commService.routingKeys
     ) {
       commService.routingKeys.forEach((item) => routingKeys.add(item))
+    } else if (commService instanceof NewDidCommV2Service) {
+      const firstServiceEndpoint = Array.isArray(commService.serviceEndpoint)
+        ? commService.serviceEndpoint[0]
+        : commService.serviceEndpoint
+
+      firstServiceEndpoint.routingKeys?.forEach((item) => routingKeys.add(item))
     }
   }
 
-  return { endpoint: services[0].serviceEndpoint, types, routingKeys: Array.from(routingKeys) }
+  return { endpoint, types, routingKeys: Array.from(routingKeys) }
 }
 
 export function addServicesFromEndpointsAttrib(
@@ -172,21 +196,36 @@ export function addServicesFromEndpointsAttrib(
           accept: ['didcomm/aip2;env=rfc19'],
         })
       )
+    }
 
-      // If 'DIDComm' included in types, add DIDComm v2 entry
-      // TODO: should it be DIDComm or DIDCommMessaging? (see https://github.com/sovrin-foundation/sovrin/issues/343)
-      if (processedTypes.includes('DIDComm')) {
-        builder
-          .addService(
-            new DidCommV2Service({
-              id: `${did}#didcomm-1`,
-              serviceEndpoint: endpoint,
-              routingKeys: routingKeys ?? [],
+    // If 'DIDCommMessaging' included in types, add DIDComm v2 entry
+    if (processedTypes.includes('DIDCommMessaging')) {
+      builder
+        .addService(
+          new NewDidCommV2Service({
+            id: `${did}#didcomm-messaging-1`,
+            serviceEndpoint: new NewDidCommV2ServiceEndpoint({
+              uri: endpoint,
+              routingKeys: routingKeys,
               accept: ['didcomm/v2'],
-            })
-          )
-          .addContext('https://didcomm.org/messaging/contexts/v2')
-      }
+            }),
+          })
+        )
+        .addContext('https://didcomm.org/messaging/contexts/v2')
+    }
+
+    // If 'DIDComm' included in types, add legacy DIDComm v2 entry
+    if (processedTypes.includes('DIDComm')) {
+      builder
+        .addService(
+          new DidCommV2Service({
+            id: `${did}#didcomm-1`,
+            routingKeys: routingKeys,
+            accept: ['didcomm/v2'],
+            serviceEndpoint: endpoint,
+          })
+        )
+        .addContext('https://didcomm.org/messaging/contexts/v2')
     }
   }
 

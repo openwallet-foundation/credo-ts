@@ -8,11 +8,12 @@ import { DidExchangeState, HandshakeProtocol } from '../../connections'
 import { InMemoryDidRegistry } from '../../connections/__tests__/InMemoryDidRegistry'
 import {
   DidCommV1Service,
-  DidCommV2Service,
+  NewDidCommV2Service,
   DidDocumentService,
   DidDocumentBuilder,
   getEd25519VerificationKey2018,
   DidsModule,
+  NewDidCommV2ServiceEndpoint,
 } from '../../dids'
 
 const inMemoryDidsRegistry = new InMemoryDidRegistry()
@@ -265,11 +266,13 @@ async function createInMemoryDid(agent: Agent, endpoint: string) {
   )
 
   builder.addService(
-    new DidCommV2Service({
-      accept: ['didcomm/v2'],
-      id: `${did}#didcomm-1`,
-      routingKeys: [],
-      serviceEndpoint: endpoint,
+    new NewDidCommV2Service({
+      id: `${did}#didcomm-messaging-1`,
+      serviceEndpoint: new NewDidCommV2ServiceEndpoint({
+        accept: ['didcomm/v2'],
+        routingKeys: [],
+        uri: endpoint,
+      }),
     })
   )
 

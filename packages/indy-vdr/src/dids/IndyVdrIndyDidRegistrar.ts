@@ -17,7 +17,7 @@ import type { IndyVdrRequest } from '@hyperledger/indy-vdr-shared'
 import { parseIndyDid } from '@credo-ts/anoncreds'
 import {
   DidCommV1Service,
-  DidCommV2Service,
+  NewDidCommV2Service,
   DidDocumentRole,
   DidRecord,
   DidRepository,
@@ -25,6 +25,7 @@ import {
   IndyAgentService,
   Key,
   KeyType,
+  DidCommV2Service,
   TypedArrayEncoder,
 } from '@credo-ts/core'
 import { AttribRequest, CustomRequest, NymRequest } from '@hyperledger/indy-vdr-shared'
@@ -231,7 +232,7 @@ export class IndyVdrIndyDidRegistrar implements DidRegistrar {
         didDocumentBuilder.addService(item)
       })
 
-      const commTypes = [IndyAgentService.type, DidCommV1Service.type, DidCommV2Service.type]
+      const commTypes = [IndyAgentService.type, DidCommV1Service.type, NewDidCommV2Service.type, DidCommV2Service.type]
       const serviceTypes = new Set(services.map((item) => item.type))
 
       const keyAgreementId = `${did}#key-agreement-1`
@@ -249,8 +250,9 @@ export class IndyVdrIndyDidRegistrar implements DidRegistrar {
           .addKeyAgreement(keyAgreementId)
       }
 
+      // FIXME: it doesn't seem this context exists?
       // If there is a DIDComm V2 service, add context
-      if (serviceTypes.has(DidCommV2Service.type)) {
+      if (serviceTypes.has(NewDidCommV2Service.type) || serviceTypes.has(DidCommV2Service.type)) {
         didDocumentBuilder.addContext('https://didcomm.org/messaging/contexts/v2')
       }
 

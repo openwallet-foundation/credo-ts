@@ -3,7 +3,7 @@ import type { DidRecord, RecordSavedEvent } from '@credo-ts/core'
 
 import {
   DidCommV1Service,
-  DidCommV2Service,
+  NewDidCommV2Service,
   DidDocumentService,
   DidDocument,
   DidDocumentRole,
@@ -16,6 +16,7 @@ import {
   RepositoryEventTypes,
   TypedArrayEncoder,
   VerificationMethod,
+  NewDidCommV2ServiceEndpoint,
 } from '@credo-ts/core'
 import { Subject } from 'rxjs'
 
@@ -381,11 +382,13 @@ describe('IndyVdrIndyDidRegistrar', () => {
             serviceEndpoint: 'https://example.com/endpoint',
             accept: ['didcomm/aip2;env=rfc19'],
           }),
-          new DidCommV2Service({
-            accept: ['didcomm/v2'],
-            id: `#didcomm-1`,
-            routingKeys: ['key-1'],
-            serviceEndpoint: 'https://example.com/endpoint',
+          new NewDidCommV2Service({
+            id: `#didcomm-messaging-1`,
+            serviceEndpoint: new NewDidCommV2ServiceEndpoint({
+              accept: ['didcomm/v2'],
+              routingKeys: ['key-1'],
+              uri: 'https://example.com/endpoint',
+            }),
           }),
         ],
       },
@@ -424,11 +427,13 @@ describe('IndyVdrIndyDidRegistrar', () => {
             type: 'did-communication',
           },
           {
-            accept: ['didcomm/v2'],
-            id: 'did:indy:pool1:B6xaJg1c2xU3D9ppCtt1CZ#didcomm-1',
-            routingKeys: ['key-1'],
-            serviceEndpoint: 'https://example.com/endpoint',
-            type: 'DIDComm',
+            id: 'did:indy:pool1:B6xaJg1c2xU3D9ppCtt1CZ#didcomm-messaging-1',
+            serviceEndpoint: {
+              uri: 'https://example.com/endpoint',
+              accept: ['didcomm/v2'],
+              routingKeys: ['key-1'],
+            },
+            type: 'DIDCommMessaging',
           },
         ],
         verificationMethod: [
@@ -493,11 +498,13 @@ describe('IndyVdrIndyDidRegistrar', () => {
               accept: ['didcomm/aip2;env=rfc19'],
             },
             {
-              id: 'did:indy:pool1:B6xaJg1c2xU3D9ppCtt1CZ#didcomm-1',
-              serviceEndpoint: 'https://example.com/endpoint',
-              type: 'DIDComm',
-              routingKeys: ['key-1'],
-              accept: ['didcomm/v2'],
+              id: 'did:indy:pool1:B6xaJg1c2xU3D9ppCtt1CZ#didcomm-messaging-1',
+              type: 'DIDCommMessaging',
+              serviceEndpoint: {
+                uri: 'https://example.com/endpoint',
+                routingKeys: ['key-1'],
+                accept: ['didcomm/v2'],
+              },
             },
           ],
           authentication: ['did:indy:pool1:B6xaJg1c2xU3D9ppCtt1CZ#verkey'],
@@ -562,11 +569,13 @@ describe('IndyVdrIndyDidRegistrar', () => {
             serviceEndpoint: 'https://example.com/endpoint',
             accept: ['didcomm/aip2;env=rfc19'],
           }),
-          new DidCommV2Service({
-            accept: ['didcomm/v2'],
-            id: `#didcomm-1`,
-            routingKeys: ['key-1'],
-            serviceEndpoint: 'https://example.com/endpoint',
+          new NewDidCommV2Service({
+            id: `#didcomm-messaging-1`,
+            serviceEndpoint: new NewDidCommV2ServiceEndpoint({
+              accept: ['didcomm/v2'],
+              routingKeys: ['key-1'],
+              uri: 'https://example.com/endpoint',
+            }),
           }),
         ],
       },
@@ -574,6 +583,7 @@ describe('IndyVdrIndyDidRegistrar', () => {
         privateKey,
       },
     })
+    expect(result.didState.state).toEqual('finished')
 
     expect(createRegisterDidWriteRequestSpy).toHaveBeenCalledWith({
       agentContext,
@@ -603,7 +613,7 @@ describe('IndyVdrIndyDidRegistrar', () => {
       endpoints: {
         endpoint: 'https://example.com/endpoint',
         routingKeys: ['key-1'],
-        types: ['endpoint', 'did-communication', 'DIDComm'],
+        types: ['endpoint', 'did-communication', 'DIDCommMessaging'],
       },
     })
     expect(setEndpointsForDidSpy).not.toHaveBeenCalled()
@@ -651,11 +661,9 @@ describe('IndyVdrIndyDidRegistrar', () => {
               accept: ['didcomm/aip2;env=rfc19'],
             },
             {
-              id: 'did:indy:pool1:B6xaJg1c2xU3D9ppCtt1CZ#didcomm-1',
-              serviceEndpoint: 'https://example.com/endpoint',
-              type: 'DIDComm',
-              routingKeys: ['key-1'],
-              accept: ['didcomm/v2'],
+              id: 'did:indy:pool1:B6xaJg1c2xU3D9ppCtt1CZ#didcomm-messaging-1',
+              type: 'DIDCommMessaging',
+              serviceEndpoint: { uri: 'https://example.com/endpoint', routingKeys: ['key-1'], accept: ['didcomm/v2'] },
             },
           ],
           authentication: ['did:indy:pool1:B6xaJg1c2xU3D9ppCtt1CZ#verkey'],
@@ -714,11 +722,13 @@ describe('IndyVdrIndyDidRegistrar', () => {
             serviceEndpoint: 'https://example.com/endpoint',
             accept: ['didcomm/aip2;env=rfc19'],
           }),
-          new DidCommV2Service({
-            accept: ['didcomm/v2'],
-            id: `#didcomm-1`,
-            routingKeys: ['key-1'],
-            serviceEndpoint: 'https://example.com/endpoint',
+          new NewDidCommV2Service({
+            id: `#didcomm-messaging-1`,
+            serviceEndpoint: new NewDidCommV2ServiceEndpoint({
+              accept: ['didcomm/v2'],
+              routingKeys: ['key-1'],
+              uri: 'https://example.com/endpoint',
+            }),
           }),
         ],
       },

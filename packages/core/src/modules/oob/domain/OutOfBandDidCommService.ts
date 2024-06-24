@@ -3,7 +3,7 @@ import type { ValidationOptions } from 'class-validator'
 
 import { ArrayNotEmpty, buildMessage, IsOptional, isString, IsString, ValidateBy } from 'class-validator'
 
-import { isDid } from '../../../utils'
+import { isDid, IsUri } from '../../../utils'
 import { DidDocumentService, DidKey } from '../../dids'
 
 export class OutOfBandDidCommService extends DidDocumentService {
@@ -24,6 +24,10 @@ export class OutOfBandDidCommService extends DidDocumentService {
   }
 
   public static type = 'did-communication'
+
+  @IsString()
+  @IsUri()
+  public serviceEndpoint!: string
 
   @ArrayNotEmpty()
   @IsDidKeyString({ each: true })
