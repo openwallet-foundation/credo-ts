@@ -16,7 +16,7 @@ export function validVerificationMethod(did: string) {
 export function validService(did: string) {
   return new DidDocumentService({
     id: did + '#service-1',
-    type: 'DIDCommMessaging',
+    type: 'CustomType',
     serviceEndpoint: 'https://rand.io',
   })
 }

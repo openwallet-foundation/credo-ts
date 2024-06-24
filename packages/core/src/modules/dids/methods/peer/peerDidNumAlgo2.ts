@@ -210,14 +210,31 @@ export function outOfBandServiceToInlineKeysNumAlgo2Did(service: OutOfBandDidCom
 
 function expandServiceAbbreviations(service: JsonObject) {
   const expand = (abbreviated: string) => didPeerExpansions[abbreviated] ?? abbreviated
+  const expandJson = (json: unknown): unknown => {
+    if (!json) return json
+    if (typeof json === 'number') return json
+    if (typeof json === 'string') return expand(json)
+    if (Array.isArray(json)) return json.map(expandJson)
+    if (typeof json === 'object')
+      return Object.entries(json as Record<string, unknown>).reduce(
+        (jsonBody, [key, value]) => ({
+          ...jsonBody,
+          [expand(key)]: expandJson(value),
+        }),
+        {}
+      )
+  }
 
-  const fullService = Object.entries(service).reduce(
-    (serviceBody, [key, value]) => ({
-      ...serviceBody,
-      [expand(key)]: expand(value as string),
-    }),
-    {}
-  )
+  const fullService = expandJson(service) as Record<string, unknown>
+
+  // Handle the case where a legacy DIDComm v2 service has been encoded in the did:peer:2.
+  // We use the legacy `DIDComm` type (over `DIDCommMessaging`)
+  if ('t' in service && service.t === 'dm' && typeof service.serviceEndpoint === 'string') {
+    return {
+      ...fullService,
+      type: 'DIDComm',
+    }
+  }
 
   return fullService
 }
