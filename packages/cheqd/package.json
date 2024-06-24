@@ -2,7 +2,7 @@
   "name": "@credo-ts/cheqd",
   "main": "build/index",
   "types": "build/index",
-  "version": "0.5.4",
+  "version": "0.5.5",
   "files": [
     "build"
   ],
