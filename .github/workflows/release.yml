@@ -49,6 +49,7 @@ jobs:
   release-unstable:
     name: Release Unstable
     runs-on: ubuntu-latest
+    if: "!startsWith(github.event.head_commit.message, 'chore(release): new version')"
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v4
@@ -76,6 +77,15 @@ jobs:
 
       - name: Create unstable release
         run: |
+          # this ensures there's always a patch release created
+          cat << 'EOF' > .changeset/snapshot-template-changeset.md
+          ---
+          '@credo-ts/core': patch
+          ---
+
+          snapshot release
+          EOF
+
           pnpm changeset version --snapshot alpha
           pnpm build
           pnpm changeset publish --tag alpha
