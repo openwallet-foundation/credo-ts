@@ -105,6 +105,11 @@ jobs:
           node-version: ${{ matrix.node-version }}
           cache: 'pnpm'
 
+      - name: Install glibc
+        run: |
+          sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test
+          sudo apt install -y g++-11
+
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
@@ -148,6 +153,11 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+
+      - name: Install glibc
+        run: |
+          sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test
+          sudo apt install -y g++-11
 
       - name: Run tests
         run: pnpm test:e2e --coverage --forceExit
