@@ -1,9 +1,11 @@
 {
   "name": "@credo-ts/anoncreds",
   "main": "build/index",
-  "types": "build/index",
+  "types": "src/index",
   "version": "0.5.5",
   "files": [
+    "!src/**/__tests__",
+    "src",
     "build"
   ],
   "license": "Apache-2.0",
@@ -39,7 +41,7 @@
     "@hyperledger/anoncreds-shared": "^0.2.2",
     "rimraf": "^4.4.0",
     "rxjs": "^7.8.0",
-    "typescript": "~5.5.0-beta"
+    "typescript": "~5.5.2"
   },
   "peerDependencies": {
     "@hyperledger/anoncreds-shared": "^0.2.2"
