@@ -38,7 +38,6 @@ jobs:
         with:
           # This expects you to have a script called release which does a build for your packages and calls changeset publish
           publish: pnpm release
-          commit: 'chore(release): new version'
           title: 'chore(release): new version'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -47,7 +46,7 @@ jobs:
   release-unstable:
     name: Release Unstable
     runs-on: ubuntu-latest
-    if: "!startsWith(github.event.head_commit.message, 'chore(release): new version')"
+    if: "!startsWith(github.event.head_commit.message, 'chore(release): version')"
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v4
