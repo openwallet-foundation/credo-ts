@@ -32,34 +32,28 @@
 <br />
 
 <p align="center">
+  <a href="#quickstart">Quickstart</a> &nbsp;|&nbsp;
   <a href="#features">Features</a> &nbsp;|&nbsp;
-  <a href="#getting-started">Getting started</a> &nbsp;|&nbsp;
   <a href="#contributing">Contributing</a> &nbsp;|&nbsp;
   <a href="#license">License</a> 
 </p>
 
-Credo is a framework written in TypeScript for building **SSI Agents and DIDComm services** that aims to be **compliant and interoperable** with the standards defined in the [Aries RFCs](https://github.com/hyperledger/aries-rfcs).
+Credo is a framework written in TypeScript for building **decentralized identity solutions** that aims to be compliant and **interoperable with identity standards across the world**. Credo is agnostic to any specific exchange protocol, credential format, signature suite or did method, but currently mainly focuses on alignment with [OpenID4VC](https://openid.net/sg/openid4vc/), [DIDComm](https://identity.foundation/didcomm-messaging/spec/) and [Hyperledger Aries](https://hyperledger.github.io/aries-rfcs/latest/).
 
-> **Note**
-> The Aries Framework JavaScript project has recently been rebranded to "Credo" and was moved from the Hyperledger Foundation to the Open Wallet Foundation.
-> We are currently in the process of changing the name of the project to Credo, and updating all the documentation and links to reflect this change.
-> You may encounter some broken links, or references to the old name, but we are working hard to fix this. Once the new name has been decided
-> we will update this README and all the documentation to reflect this change.
-> You can follow this discussion for updates about the name: https://github.com/openwallet-foundation/agent-framework-javascript/discussions/1668
+## Quickstart
+
+Documentation on how to get started with Credo can be found at https://credo.js.org/
 
 ## Features
 
 See [Supported Features](https://credo.js.org/guides/features) on the Credo website for a full list of supported features.
 
-- 🏃 Runs in React Native & Node.JS
-- 🔒 DIDComm v1 support
-- 🌎 [Aries Interop Profile](https://github.com/hyperledger/aries-rfcs/blob/main/concepts/0302-aries-interop-profile/README.md) v1 & v2 support
-  - With support for Chat, Mediator Coordination, Indy Credentials & and JSON-LD Credentials sub-targets
-- `did:web`, `did:key`, `did:jwk`, `did:peer`, `did:sov`, `did:indy` and `did:cheqd`, with pluggable interface for registering custom did methods.
-- OpenID for Verifiable Credentials
-- W3C Verifiable Credentials, SD-JWT VCs and AnonCreds
-- 💡 Smart Auto Acceptance of Connections, Credentials and Proofs
-- 🏢 Multi tenant module for managing multiple tenants under a single agent.
+- 🏃 **Platform agnostic** - out of the box support for Node.JS and React Native
+- 🔒 **DIDComm and AIP** - Support for [DIDComm v1](https://hyperledger.github.io/aries-rfcs/latest/concepts/0005-didcomm/), and both v1 and v2 of the [Aries Interop Profile](https://github.com/hyperledger/aries-rfcs/blob/main/concepts/0302-aries-interop-profile/README.md).
+- 🛂 **Extendable [DID](https://www.w3.org/TR/did-core/) resolver and registrar** - out of the box support for `did:web`, `did:key`, `did:jwk`, `did:peer`, `did:sov`, `did:indy` and `did:cheqd`.
+- 🔑 **[OpenID4VC](https://openid.net/sg/openid4vc/)** - support for [OpenID for Verifiable Credential Issuance](https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0.html), [OpenID for Verifiable Presentations](https://openid.net/specs/openid-4-verifiable-presentations-1_0.html) and [Self-Issued OpenID Provider v2](https://openid.net/specs/openid-connect-self-issued-v2-1_0.html).
+- 🪪 **Multiple credential formats** - [W3C Verifiable Credential Data Model v1.1](https://www.w3.org/TR/vc-data-model/), [SD-JWT VCs](https://www.ietf.org/archive/id/draft-ietf-oauth-sd-jwt-vc-03.html), and [AnonCreds](https://hyperledger.github.io/anoncreds-spec/).
+- 🏢 **Multi-tenant** - Optional multi-tenant module for managing multiple tenants under a single agent.
 
 ### Packages
 
@@ -156,6 +150,14 @@ See [Supported Features](https://credo.js.org/guides/features) on the Credo webs
     </td>
   </tr>
   <tr>
+    <td>@credo-ts/drpc</td>
+    <td>
+      <a href="https://npmjs.com/package/@credo-ts/drpc">
+        <img alt="@credo-ts/drpc version" src="https://img.shields.io/npm/v/@credo-ts/drpc"/>
+      </a>
+    </td>
+  </tr>
+  <tr>
     <td><s>@aries-framework/indy-sdk</s> (deprecated, unmaintained after 0.4.x)</td>
     <td>
       <a href="https://npmjs.com/package/@aries-framework/indy-sdk">
@@ -181,15 +183,12 @@ See [Supported Features](https://credo.js.org/guides/features) on the Credo webs
   </tr>
 </table>
 
-## Getting Started
+## Demo
 
-Documentation on how to get started with Credo can be found at https://credo.js.org/
+To get to know the Credo issuance and verification flow, we built a demo to walk through it yourself together with agents Alice and Faber.
 
-### Demo
-
-To get to know the Credo flow, we built a demo to walk through it yourself together with agents Alice and Faber.
-
-You can run the demo in the [`/demo`](/demo) directory of this repository.
+- OpenID4VC and SD-JWT VC demo in the [`/demo-openid`](/demo-openid) directory.
+- DIDComm and AnonCreds demo in the [`/demo`](/demo) directory.
 
 ## Contributing
 
