@@ -1,9 +1,11 @@
 {
   "name": "@credo-ts/bbs-signatures",
   "main": "build/index",
-  "types": "build/index",
+  "types": "src/index",
   "version": "0.5.5",
   "files": [
+    "!src/**/__tests__",
+    "src",
     "build"
   ],
   "license": "Apache-2.0",
@@ -36,7 +38,7 @@
     "@credo-ts/node": "workspace:*",
     "reflect-metadata": "^0.1.13",
     "rimraf": "^4.4.0",
-    "typescript": "~5.5.0-beta"
+    "typescript": "~5.5.2"
   },
   "peerDependenciesMeta": {
     "@animo-id/react-native-bbs-signatures": {

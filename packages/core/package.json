@@ -1,9 +1,11 @@
 {
   "name": "@credo-ts/core",
   "main": "build/index",
-  "types": "build/index",
+  "types": "src/index",
   "version": "0.5.5",
   "files": [
+    "!src/**/__tests__",
+    "src",
     "build"
   ],
   "license": "Apache-2.0",
@@ -69,6 +71,6 @@
     "nock": "^13.3.0",
     "rimraf": "^4.4.0",
     "tslog": "^4.8.2",
-    "typescript": "~5.5.0-beta"
+    "typescript": "~5.5.2"
   }
 }
