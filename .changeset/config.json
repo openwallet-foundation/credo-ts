@@ -1,7 +1,7 @@
 {
   "$schema": "https://unpkg.com/@changesets/config@3.0.1/schema.json",
   "changelog": "@changesets/cli/changelog",
-  "commit": true,
+  "commit": "./commit",
   "privatePackages": false,
   "fixed": [["@credo-ts/*"]],
   "access": "public",
