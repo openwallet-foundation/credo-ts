@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.5.6
+
+### Patch Changes
+
+- 66e696d: Fix build issue causing error with importing packages in 0.5.5 release
+- Updated dependencies [66e696d]
+  - @credo-ts/anoncreds@0.5.6
+  - @credo-ts/askar@0.5.6
+  - @credo-ts/core@0.5.6
+  - @credo-ts/node@0.5.6
+
 ## 0.5.5
 
 ### Patch Changes

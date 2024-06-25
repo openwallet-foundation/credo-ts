@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.5.6
+
+### Patch Changes
+
+- 66e696d: Fix build issue causing error with importing packages in 0.5.5 release
+
 ## 0.5.5
 
 ### Patch Changes
