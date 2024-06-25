@@ -6,8 +6,6 @@ on:
       - main
       - '**-pre'
 
-concurrency: ${{ github.workflow }}-${{ github.ref }}
-
 permissions:
   pull-requests: write
   contents: write
@@ -40,16 +38,26 @@ jobs:
         with:
           # This expects you to have a script called release which does a build for your packages and calls changeset publish
           publish: pnpm release
-          commit: 'chore(release): new version'
           title: 'chore(release): new version'
+          createGithubReleases: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_PUBLISH }}
 
+      - name: Get current package version
+        id: get_version
+        run: echo "CURRENT_PACKAGE_VERSION=$(node -p "require('./packages/core/package.json').version")" >> $GITHUB_ENV
+
+      - name: Create Github Release
+        if: steps.changesets.outputs.published == 'true'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ env.CURRENT_PACKAGE_VERSION }}
+
   release-unstable:
     name: Release Unstable
     runs-on: ubuntu-latest
-    if: "!startsWith(github.event.head_commit.message, 'chore(release): new version')"
+    if: "!startsWith(github.event.head_commit.message, 'chore(release): version')"
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v4
