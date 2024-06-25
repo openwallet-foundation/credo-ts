@@ -26,6 +26,7 @@ module.exports = {
     },
   },
   rules: {
+    '@typescript-eslint/no-unsafe-declaration-merging': 'off',
     '@typescript-eslint/explicit-function-return-type': 'off',
     '@typescript-eslint/explicit-module-boundary-types': 'off',
     '@typescript-eslint/no-use-before-define': ['error', { functions: false, classes: false, variables: true }],

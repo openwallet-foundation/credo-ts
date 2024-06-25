@@ -1,8 +1,5 @@
 {
   "extends": "./tsconfig.build.json",
-  "ts-node": {
-    "require": ["tsconfig-paths/register"]
-  },
   "compilerOptions": {
     "baseUrl": ".",
     "paths": {

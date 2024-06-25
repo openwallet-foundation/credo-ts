@@ -4,7 +4,7 @@ import { ValidateBy, ValidationError, buildMessage } from 'class-validator'
 
 export function IsValidDrpcResponse(validationOptions?: ValidationOptions): PropertyDecorator {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return function (target: any, propertyKey: string | symbol) {
+  return (target: any, propertyKey: string | symbol) => {
     ValidateBy(
       {
         name: 'isValidDrpcResponse',
@@ -36,6 +36,7 @@ export function IsValidDrpcResponse(validationOptions?: ValidationOptions): Prop
   }
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function isValidDrpcResponse(value: any): boolean {
   // Check if value is an object
   if (typeof value !== 'object' || value === null) {
@@ -62,6 +63,7 @@ export function isValidDrpcResponse(value: any): boolean {
   return false
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function isValidDrpcResponseError(error: any): boolean {
   return typeof error === 'object' && error !== null && 'code' in error && 'message' in error
 }
