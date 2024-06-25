@@ -1,16 +1,8 @@
 {
   "extends": "../../tsconfig.build.json",
-
   "compilerOptions": {
     "outDir": "./build",
-    "baseUrl": ".",
-    "paths": {
-      "@credo-ts/*": ["../*/src"]
-    },
-    // FIXME https://github.com/openwallet-foundation/credo-ts/pull/327
-    "skipLibCheck": true,
     "types": ["react-native"]
   },
-
   "include": ["src/**/*"]
 }
