@@ -2,6 +2,9 @@
   "extends": "./tsconfig.build.json",
   "compilerOptions": {
     "baseUrl": ".",
+    "paths": {
+      "@credo-ts/*": ["packages/*/src"]
+    },
     "types": ["jest", "node"]
   },
   "include": ["tests", "samples", "demo", "demo-openid", "packages/core/types/jest.d.ts"],
