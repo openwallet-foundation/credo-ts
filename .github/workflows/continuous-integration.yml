@@ -95,15 +95,29 @@ jobs:
       - name: Checkout credo
         uses: actions/checkout@v4
 
+      - name: Setup NodeJS
+        id: setup-node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+
       - uses: pnpm/action-setup@v2
         with:
           version: 9.1.0
 
-      - name: Setup NodeJS
-        uses: actions/setup-node@v4
+      # See https://github.com/actions/setup-node/issues/641#issuecomment-1358859686
+      - name: pnpm cache path
+        id: pnpm-cache-path
+        run: |
+          echo "STORE_PATH=$(pnpm store path)" >> $GITHUB_OUTPUT
+
+      - name: pnpm cache
+        uses: actions/cache@v3
         with:
-          node-version: ${{ matrix.node-version }}
-          cache: 'pnpm'
+          path: ${{ steps.pnpm-cache-path.outputs.STORE_PATH }}
+          key: ${{ runner.os }}-${{ steps.setup-node.outputs.node-version }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ steps.setup-node.outputs.node-version }}-pnpm-store-
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -136,15 +150,29 @@ jobs:
       - name: Setup services
         run: docker compose up -d
 
+      - name: Setup NodeJS
+        id: setup-node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+
       - uses: pnpm/action-setup@v2
         with:
           version: 9.1.0
 
-      - name: Setup NodeJS
-        uses: actions/setup-node@v4
+      # See https://github.com/actions/setup-node/issues/641#issuecomment-1358859686
+      - name: pnpm cache path
+        id: pnpm-cache-path
+        run: |
+          echo "STORE_PATH=$(pnpm store path)" >> $GITHUB_OUTPUT
+
+      - name: pnpm cache
+        uses: actions/cache@v3
         with:
-          node-version: ${{ matrix.node-version }}
-          cache: 'pnpm'
+          path: ${{ steps.pnpm-cache-path.outputs.STORE_PATH }}
+          key: ${{ runner.os }}-${{ steps.setup-node.outputs.node-version }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ steps.setup-node.outputs.node-version }}-pnpm-store-
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
