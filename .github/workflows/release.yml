@@ -52,7 +52,7 @@ jobs:
         if: steps.changesets.outputs.published == 'true'
         uses: softprops/action-gh-release@v2
         with:
-          tag: v${{ env.CURRENT_PACKAGE_VERSION }}
+          tag_name: v${{ env.CURRENT_PACKAGE_VERSION }}
 
   release-unstable:
     name: Release Unstable
