@@ -1,14 +1,10 @@
 {
   "extends": "./tsconfig.build.json",
   "ts-node": {
-    "require": ["tsconfig-paths/register"],
     "files": true
   },
   "compilerOptions": {
     "baseUrl": ".",
-    "paths": {
-      "@credo-ts/*": ["packages/*/src"]
-    },
     "types": ["jest", "node"]
   },
   "exclude": ["node_modules", "**/build/**"]
