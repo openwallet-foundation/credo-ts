@@ -27,7 +27,7 @@
     "lint": "eslint --ignore-path .gitignore .",
     "validate": "pnpm lint && pnpm check-types && pnpm check-format",
     "run-mediator": "ts-node ./samples/mediator.ts",
-    "release": "pnpm build && pnpm changeset publish"
+    "release": "pnpm build && pnpm changeset publish --no-git-tag"
   },
   "devDependencies": {
     "@changesets/cli": "^2.27.5",
