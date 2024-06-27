@@ -11,7 +11,7 @@ import { Subject } from 'rxjs'
 import { concatMap, takeUntil } from 'rxjs/operators'
 
 import { InjectionSymbols } from '../constants'
-import { SigningProviderToken } from '../crypto'
+import { SigningProviderToken, X509Service } from '../crypto'
 import { JwsService } from '../crypto/JwsService'
 import { CredoError } from '../error'
 import { DependencyManager } from '../plugins'
@@ -59,6 +59,7 @@ export class Agent<AgentModules extends AgentModulesInput = any> extends BaseAge
     dependencyManager.registerSingleton(DidCommMessageRepository)
     dependencyManager.registerSingleton(StorageVersionRepository)
     dependencyManager.registerSingleton(StorageUpdateService)
+    dependencyManager.registerSingleton(X509Service)
 
     // This is a really ugly hack to make tsyringe work without any SigningProviders registered
     // It is currently impossible to use @injectAll if there are no instances registered for the

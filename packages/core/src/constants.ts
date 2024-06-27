@@ -7,6 +7,7 @@ export const InjectionSymbols = {
   Stop$: Symbol('Stop$'),
   FileSystem: Symbol('FileSystem'),
   Wallet: Symbol('Wallet'),
+  WebCrypto: Symbol('WebCrypto'),
 }
 
 export const DID_COMM_TRANSPORT_QUEUE = 'didcomm:transport/queue'
