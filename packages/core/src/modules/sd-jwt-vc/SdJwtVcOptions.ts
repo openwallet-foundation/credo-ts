@@ -1,5 +1,4 @@
-import type { JwkJson, Jwk } from '../../crypto'
-import type { HashName } from '../../utils'
+import type { JwkJson, Jwk, HashName } from '../../crypto'
 
 // TODO: extend with required claim names for input (e.g. vct)
 export type SdJwtVcPayload = Record<string, unknown>

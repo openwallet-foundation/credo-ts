@@ -29,9 +29,9 @@ import type {
 import { PEVersion, PEX, Status } from '@sphereon/pex'
 import { injectable } from 'tsyringe'
 
-import { getJwkFromKey } from '../../crypto'
+import { Hasher, getJwkFromKey } from '../../crypto'
 import { CredoError } from '../../error'
-import { Hasher, JsonTransformer } from '../../utils'
+import { JsonTransformer } from '../../utils'
 import { DidsApi, getKeyFromVerificationMethod } from '../dids'
 import { SdJwtVcApi } from '../sd-jwt-vc'
 import {

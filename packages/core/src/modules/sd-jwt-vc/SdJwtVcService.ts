@@ -18,9 +18,9 @@ import { SDJwtVcInstance } from '@sd-jwt/sd-jwt-vc'
 import { uint8ArrayToBase64Url } from '@sd-jwt/utils'
 import { injectable } from 'tsyringe'
 
-import { JwtPayload, Jwk, getJwkFromJson, getJwkFromKey } from '../../crypto'
+import { JwtPayload, Jwk, getJwkFromJson, getJwkFromKey, Hasher } from '../../crypto'
 import { CredoError } from '../../error'
-import { TypedArrayEncoder, Hasher, nowInSeconds } from '../../utils'
+import { TypedArrayEncoder, nowInSeconds } from '../../utils'
 import { fetchWithTimeout } from '../../utils/fetch'
 import { DidResolverService, parseDid, getKeyFromVerificationMethod } from '../dids'
 
