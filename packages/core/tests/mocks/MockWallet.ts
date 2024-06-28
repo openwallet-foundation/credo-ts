@@ -16,16 +16,16 @@ export class MockWallet implements Wallet {
 
   public supportedKeyTypes = []
 
-  public create(walletConfig: WalletConfig): Promise<void> {
+  public create(_walletConfig: WalletConfig): Promise<void> {
     throw new Error('Method not implemented.')
   }
-  public createAndOpen(walletConfig: WalletConfig): Promise<void> {
+  public createAndOpen(_walletConfig: WalletConfig): Promise<void> {
     throw new Error('Method not implemented.')
   }
-  public open(walletConfig: WalletConfig): Promise<void> {
+  public open(_walletConfig: WalletConfig): Promise<void> {
     throw new Error('Method not implemented.')
   }
-  public rotateKey(walletConfig: WalletConfigRekey): Promise<void> {
+  public rotateKey(_walletConfig: WalletConfigRekey): Promise<void> {
     throw new Error('Method not implemented.')
   }
   public close(): Promise<void> {
@@ -34,34 +34,38 @@ export class MockWallet implements Wallet {
   public delete(): Promise<void> {
     throw new Error('Method not implemented.')
   }
-  public export(exportConfig: WalletExportImportConfig): Promise<void> {
+  public export(_exportConfig: WalletExportImportConfig): Promise<void> {
     throw new Error('Method not implemented.')
   }
-  public import(walletConfig: WalletConfig, importConfig: WalletExportImportConfig): Promise<void> {
+  public import(_walletConfig: WalletConfig, _importConfig: WalletExportImportConfig): Promise<void> {
     throw new Error('Method not implemented.')
   }
   public pack(
-    payload: Record<string, unknown>,
-    recipientKeys: string[],
-    senderVerkey?: string
+    _payload: Record<string, unknown>,
+    _recipientKeys: string[],
+    _senderVerkey?: string
   ): Promise<EncryptedMessage> {
     throw new Error('Method not implemented.')
   }
-  public unpack(encryptedMessage: EncryptedMessage): Promise<UnpackedMessageContext> {
+  public unpack(_encryptedMessage: EncryptedMessage): Promise<UnpackedMessageContext> {
     throw new Error('Method not implemented.')
   }
-  public sign(options: WalletSignOptions): Promise<Buffer> {
+  public sign(_options: WalletSignOptions): Promise<Buffer> {
     throw new Error('Method not implemented.')
   }
-  public verify(options: WalletVerifyOptions): Promise<boolean> {
+  public verify(_options: WalletVerifyOptions): Promise<boolean> {
     throw new Error('Method not implemented.')
   }
 
-  public createKey(options: WalletCreateKeyOptions): Promise<Key> {
+  public createKey(_options: WalletCreateKeyOptions): Promise<Key> {
     throw new Error('Method not implemented.')
   }
 
   public generateNonce(): Promise<string> {
+    throw new Error('Method not implemented.')
+  }
+
+  public getRandomValues(_length: number): Uint8Array {
     throw new Error('Method not implemented.')
   }
 

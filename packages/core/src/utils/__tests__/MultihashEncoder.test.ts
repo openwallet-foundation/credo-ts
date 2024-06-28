@@ -1,4 +1,4 @@
-import { Hasher } from '../Hasher'
+import { Hasher } from '../../crypto'
 import { MultiHashEncoder } from '../MultiHashEncoder'
 import { Buffer } from '../buffer'
 

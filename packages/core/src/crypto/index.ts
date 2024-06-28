@@ -9,3 +9,7 @@ export { Key } from './Key'
 export * from './jose'
 
 export * from './signing-provider'
+
+export * from './webcrypto'
+export * from './hashes'
+export * from './x509'

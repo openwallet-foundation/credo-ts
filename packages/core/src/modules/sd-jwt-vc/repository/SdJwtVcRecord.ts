@@ -1,11 +1,11 @@
-import type { JwaSignatureAlgorithm } from '../../../crypto'
 import type { TagsBase } from '../../../storage/BaseRecord'
 import type { Constructable } from '../../../utils/mixins'
 
 import { decodeSdJwtSync } from '@sd-jwt/decode'
 
+import { Hasher, type JwaSignatureAlgorithm } from '../../../crypto'
 import { BaseRecord } from '../../../storage/BaseRecord'
-import { Hasher, JsonTransformer } from '../../../utils'
+import { JsonTransformer } from '../../../utils'
 import { uuid } from '../../../utils/uuid'
 
 export type DefaultSdJwtVcRecordTags = {

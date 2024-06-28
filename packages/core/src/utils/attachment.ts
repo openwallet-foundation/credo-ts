@@ -1,5 +1,5 @@
-import type { HashName } from './Hasher'
 import type { BaseName } from './MultiBaseEncoder'
+import type { HashName } from '../crypto'
 import type { Attachment } from '../decorators/attachment/Attachment'
 
 import { CredoError } from '../error/CredoError'

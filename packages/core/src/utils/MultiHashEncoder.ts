@@ -1,6 +1,7 @@
-import type { HashName } from './Hasher'
+import type { HashName } from '../crypto/hashes'
 
-import { Hasher } from './Hasher'
+import { Hasher } from '../crypto/hashes'
+
 import { VarintEncoder } from './VarintEncoder'
 import { Buffer } from './buffer'
 
@@ -13,6 +14,7 @@ type MultiHashCodeMap = {
 }
 
 const multiHashNameMap: MultiHashNameMap = {
+  'sha-1': 0x11,
   'sha-256': 0x12,
 }
 

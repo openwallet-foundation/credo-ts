@@ -1,6 +1,6 @@
-import type { HashName } from './Hasher'
 import type { BaseName } from './MultiBaseEncoder'
 import type { Buffer } from './buffer'
+import type { HashName } from '../crypto'
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore ts is giving me headaches because this package has no types
