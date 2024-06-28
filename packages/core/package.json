@@ -29,6 +29,11 @@
     "@digitalcredentials/jsonld-signatures": "^9.4.0",
     "@digitalcredentials/vc": "^6.0.1",
     "@multiformats/base-x": "^4.0.1",
+    "@noble/hashes": "^1.4.0",
+    "@peculiar/asn1-ecc": "^2.3.8",
+    "@peculiar/asn1-schema": "^2.3.8",
+    "@peculiar/asn1-x509": "^2.3.8",
+    "@peculiar/x509": "^1.11.0",
     "@sd-jwt/core": "^0.7.0",
     "@sd-jwt/decode": "^0.7.0",
     "@sd-jwt/jwt-status-list": "^0.7.0",
@@ -39,7 +44,6 @@
     "@sphereon/pex-models": "^2.2.4",
     "@sphereon/ssi-types": "^0.23.0",
     "@stablelib/ed25519": "^1.0.2",
-    "@stablelib/sha256": "^1.0.1",
     "@types/ws": "^8.5.4",
     "abort-controller": "^3.0.0",
     "big-integer": "^1.6.51",
@@ -59,7 +63,8 @@
     "tsyringe": "^4.8.0",
     "uuid": "^9.0.0",
     "varint": "^6.0.0",
-    "web-did-resolver": "^2.0.21"
+    "web-did-resolver": "^2.0.21",
+    "webcrypto-core": "^1.8.0"
   },
   "devDependencies": {
     "@types/events": "^3.0.0",

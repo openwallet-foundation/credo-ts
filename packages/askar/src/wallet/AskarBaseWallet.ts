@@ -431,6 +431,28 @@ export abstract class AskarBaseWallet implements Wallet {
     }
   }
 
+  public getRandomValues(length: number): Uint8Array {
+    try {
+      const buffer = new Uint8Array(length)
+      const CBOX_NONCE_LENGTH = 24
+
+      const genCount = Math.ceil(length / CBOX_NONCE_LENGTH)
+      const buf = new Uint8Array(genCount * CBOX_NONCE_LENGTH)
+      for (let i = 0; i < genCount; i++) {
+        const randomBytes = CryptoBox.randomNonce()
+        buf.set(randomBytes, CBOX_NONCE_LENGTH * i)
+      }
+      buffer.set(buf.subarray(0, length))
+
+      return buffer
+    } catch (error) {
+      if (!isError(error)) {
+        throw new CredoError('Attempted to throw error, but it was not of type Error', { cause: error })
+      }
+      throw new WalletError('Error generating nonce', { cause: error })
+    }
+  }
+
   public async generateWalletKey() {
     try {
       return Store.generateRawKey()
