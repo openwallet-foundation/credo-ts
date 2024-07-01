@@ -7,6 +7,7 @@ export interface JwsProtectedHeaderOptions {
   alg: JwaSignatureAlgorithm | string
   kid?: Kid
   jwk?: Jwk
+  x5c?: string[]
   [key: string]: unknown
 }
 

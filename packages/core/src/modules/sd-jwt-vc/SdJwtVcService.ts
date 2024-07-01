@@ -7,7 +7,6 @@ import type {
   SdJwtVcHolderBinding,
   SdJwtVcIssuer,
 } from './SdJwtVcOptions'
-import type { AgentContext } from '../../agent'
 import type { JwkJson, Key } from '../../crypto'
 import type { Query, QueryOptions } from '../../storage/StorageService'
 import type { SDJwt } from '@sd-jwt/core'
@@ -18,7 +17,9 @@ import { SDJwtVcInstance } from '@sd-jwt/sd-jwt-vc'
 import { uint8ArrayToBase64Url } from '@sd-jwt/utils'
 import { injectable } from 'tsyringe'
 
-import { JwtPayload, Jwk, getJwkFromJson, getJwkFromKey, Hasher } from '../../crypto'
+import { AgentContext } from '../../agent'
+import { X509Certificate, JwtPayload, Jwk, getJwkFromJson, getJwkFromKey, Hasher } from '../../crypto'
+import { X509Service } from '../../crypto/x509/X509Service'
 import { CredoError } from '../../error'
 import { TypedArrayEncoder, nowInSeconds } from '../../utils'
 import { fetchWithTimeout } from '../../utils/fetch'
@@ -89,6 +90,7 @@ export class SdJwtVcService {
       alg: issuer.alg,
       typ: 'vc+sd-jwt',
       kid: issuer.kid,
+      x5c: issuer.x5c,
     } as const
 
     const sdjwt = new SDJwtVcInstance({
@@ -178,6 +180,33 @@ export class SdJwtVcService {
     return compactDerivedSdJwtVc
   }
 
+  private assertValidX5cJwtIssuer(iss: string, leafCertificate: X509Certificate) {
+    if (iss.startsWith('dns:')) {
+      // If the iss value contains a DNS name encoded as a URI using the DNS URI scheme [RFC4501],
+      // the DNS name MUST match a dNSName Subject Alternative Name (SAN) [RFC5280] entry of the leaf certificate.
+      const extractDnsNameFromDnsUriScheme = (iss: string): string => {
+        const afterDns = iss.substring('dns:'.length)
+        const withoutQuery = afterDns.split('?')[0]
+        return withoutQuery.split('/').pop() || ''
+      }
+
+      const dnsName = extractDnsNameFromDnsUriScheme(iss)
+
+      // TODO: HAIP: x.509 certificates: the SD-JWT VC contains the issuer's certificate along with a trust chain in the x5c JOSE header.
+      // In this case, the iss value MUST be an URL with a FQDN matching a dNSName Subject Alternative Name (SAN) [RFC5280] entry in the leaf certificate.
+
+      if (!leafCertificate.sanDnsNames?.includes(dnsName)) {
+        throw new SdJwtVcError(`The 'iss' claim in the payload does not match a 'SAN-DNS' name in the x5c certificate.`)
+      }
+    } else {
+      if (!leafCertificate.sanUriNames?.includes(iss)) {
+        throw new SdJwtVcError(
+          `The 'iss' claim in the payload does not match a 'SAN-URI' or 'SAN-DNS' name in the x5c certificate.`
+        )
+      }
+    }
+  }
+
   public async verify<Header extends SdJwtVcHeader = SdJwtVcHeader, Payload extends SdJwtVcPayload = SdJwtVcPayload>(
     agentContext: AgentContext,
     { compactSdJwtVc, keyBinding, requiredClaimKeys }: SdJwtVcVerifyOptions
@@ -212,7 +241,8 @@ export class SdJwtVcService {
     } satisfies SdJwtVc<Header, Payload>
 
     try {
-      const issuer = await this.extractKeyFromIssuer(agentContext, this.parseIssuerFromCredential(sdJwtVc))
+      const credentialIssuer = await this.parseIssuerFromCredential(agentContext, sdJwtVc)
+      const issuer = await this.extractKeyFromIssuer(agentContext, credentialIssuer)
       const holderBinding = this.parseHolderBindingFromCredential(sdJwtVc)
       const holder = holderBinding ? await this.extractKeyFromHolderBinding(agentContext, holderBinding) : undefined
 
@@ -393,12 +423,28 @@ export class SdJwtVcService {
       }
     }
 
-    throw new SdJwtVcError("Unsupported credential issuer. Only 'did' is supported at the moment.")
+    if (issuer.method === 'x5c') {
+      const leafCertificate = X509Service.getLeafCertificate(agentContext, { certificateChain: issuer.chain })
+      const key = leafCertificate.publicKey
+      const alg = getJwkFromKey(key).supportedSignatureAlgorithms[0]
+
+      this.assertValidX5cJwtIssuer(issuer.issuer, leafCertificate)
+
+      return {
+        key,
+        iss: issuer.issuer,
+        x5c: issuer.chain,
+        alg,
+      }
+    }
+
+    throw new SdJwtVcError("Unsupported credential issuer. Only 'did' and 'x5c' is supported at the moment.")
   }
 
-  private parseIssuerFromCredential<Header extends SdJwtVcHeader, Payload extends SdJwtVcPayload>(
+  private async parseIssuerFromCredential<Header extends SdJwtVcHeader, Payload extends SdJwtVcPayload>(
+    agentContext: AgentContext,
     sdJwtVc: SDJwt<Header, Payload>
-  ): SdJwtVcIssuer {
+  ): Promise<SdJwtVcIssuer> {
     if (!sdJwtVc.jwt?.payload) {
       throw new SdJwtVcError('Credential not exist')
     }
@@ -408,6 +454,26 @@ export class SdJwtVcService {
     }
 
     const iss = sdJwtVc.jwt.payload['iss'] as string
+
+    if (sdJwtVc.jwt.header?.x5c) {
+      if (!Array.isArray(sdJwtVc.jwt.header.x5c)) {
+        throw new SdJwtVcError('Invalid x5c header in credential. Not an array.')
+      }
+      if (sdJwtVc.jwt.header.x5c.length === 0) {
+        throw new SdJwtVcError('Invalid x5c header in credential. Empty array.')
+      }
+      if (sdJwtVc.jwt.header.x5c.some((x5c) => typeof x5c !== 'string')) {
+        throw new SdJwtVcError('Invalid x5c header in credential. Not an array of strings.')
+      }
+
+      await X509Service.validateCertificateChain(agentContext, { certificateChain: sdJwtVc.jwt.header.x5c })
+      // TODO: check for trusted trust anchor
+      return {
+        method: 'x5c',
+        chain: sdJwtVc.jwt.header.x5c,
+        issuer: iss,
+      }
+    }
 
     if (iss.startsWith('did:')) {
       // If `did` is used, we require a relative KID to be present to identify
