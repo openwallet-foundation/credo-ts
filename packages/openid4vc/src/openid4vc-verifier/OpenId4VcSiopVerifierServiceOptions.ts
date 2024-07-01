@@ -14,7 +14,7 @@ import type {
 export interface OpenId4VcSiopCreateAuthorizationRequestOptions {
   /**
    * Signing information for the request JWT. This will be used to sign the request JWT
-   * and to set the client_id for registration of client_metadata.
+   * and to set the client_id and client_id_scheme for registration of client_metadata.
    */
   requestSigner: OpenId4VcJwtIssuer
 
