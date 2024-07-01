@@ -690,8 +690,8 @@ importers:
         specifier: ^0.10.3
         version: 0.10.3(encoding@0.1.13)(msrcrypto@1.5.8)
       '@sphereon/oid4vci-issuer':
-        specifier: ^0.10.3
-        version: 0.10.3(encoding@0.1.13)(msrcrypto@1.5.8)
+        specifier: ^0.12.0
+        version: 0.12.0(encoding@0.1.13)
       '@sphereon/ssi-types':
         specifier: ^0.23.0
         version: 0.23.4
@@ -2379,8 +2379,12 @@ packages:
       msrcrypto:
         optional: true
 
-  '@sphereon/oid4vci-issuer@0.10.3':
-    resolution: {integrity: sha512-qhm8ypkXuYsaG5XmXIFwL9DUJQ0TJScNjvg5w7beAm+zjz0sOkwIjXdS7S+29LfWj0BkYiRZp1d3mj8H/rmdUw==}
+  '@sphereon/oid4vci-common@0.12.0':
+    resolution: {integrity: sha512-eGhDu1R9XHmGy//3BLa0LltnscpAkK7xKJzx+g8kUvH+B3Gcz5Mk6haH3GEa54ZEskuSSjOnm5yqQwZPBk3AhA==}
+    engines: {node: '>=18'}
+
+  '@sphereon/oid4vci-issuer@0.12.0':
+    resolution: {integrity: sha512-aZxj9hlJ3aIoGLE0JmVqF5IJMJ50BpEACnyqtGQZK9sEGyOFotPD/xaDaJOR9C1Kw2Tj/VMmO6fONa7M+PlPwQ==}
     engines: {node: '>=18'}
     peerDependencies:
       awesome-qr: ^2.1.5-rc.0
@@ -2400,6 +2404,9 @@ packages:
 
   '@sphereon/ssi-types@0.23.4':
     resolution: {integrity: sha512-1lM2yfOEhpcYYBxm/12KYY4n3ZSahVf5rFqGdterQkMJMthwr20HqTjw3+VK5p7IVf+86DyBoZJyS4V9tSsoCA==}
+
+  '@sphereon/ssi-types@0.25.1-unstable.87':
+    resolution: {integrity: sha512-CaZO9Da/WcHylnZOT6i/o6P8eB9EVhywJpAKZYpSZVnZiUkpSD9ciTI5F1GK8snMDjlTFci5RJruEMpiFSgnuQ==}
 
   '@sphereon/ssi-types@0.9.0':
     resolution: {integrity: sha512-umCr/syNcmvMMbQ+i/r/mwjI1Qw2aFPp9AwBTvTo1ailAVaaJjJGPkkVz1K9/2NZATNdDiQ3A8yGzdVJoKh9pA==}
@@ -9891,14 +9898,25 @@ snapshots:
     transitivePeerDependencies:
       - encoding
 
-  '@sphereon/oid4vci-issuer@0.10.3(encoding@0.1.13)(msrcrypto@1.5.8)':
+  '@sphereon/oid4vci-common@0.12.0(encoding@0.1.13)':
     dependencies:
-      '@sphereon/oid4vci-common': 0.10.3(encoding@0.1.13)(msrcrypto@1.5.8)
-      '@sphereon/ssi-types': 0.23.4
+      '@sphereon/ssi-types': 0.25.1-unstable.87
+      cross-fetch: 3.1.8(encoding@0.1.13)
+      jwt-decode: 3.1.2
+      sha.js: 2.4.11
+      uint8arrays: 3.1.1
+    transitivePeerDependencies:
+      - encoding
+      - supports-color
+
+  '@sphereon/oid4vci-issuer@0.12.0(encoding@0.1.13)':
+    dependencies:
+      '@sphereon/oid4vci-common': 0.12.0(encoding@0.1.13)
+      '@sphereon/ssi-types': 0.25.1-unstable.87
       uuid: 9.0.1
     transitivePeerDependencies:
       - encoding
-      - msrcrypto
+      - supports-color
 
   '@sphereon/pex-models@2.2.4': {}
 
@@ -9926,6 +9944,15 @@ snapshots:
     dependencies:
       '@sd-jwt/decode': 0.6.1
       jwt-decode: 3.1.2
+
+  '@sphereon/ssi-types@0.25.1-unstable.87':
+    dependencies:
+      '@sd-jwt/decode': 0.6.1
+      debug: 4.3.5
+      events: 3.3.0
+      jwt-decode: 3.1.2
+    transitivePeerDependencies:
+      - supports-color
 
   '@sphereon/ssi-types@0.9.0':
     dependencies:
