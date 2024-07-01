@@ -133,8 +133,8 @@ export class X509Certificate {
     const isSignatureValid = await certificate.verify({ signatureOnly: true, publicKey: publicCryptoKey }, webCrypto)
     const time = date.getTime()
 
-    const isNotBeforeValid = certificate.notBefore.getTime() < time
-    const isNotAfterValid = time < certificate.notAfter.getTime()
+    const isNotBeforeValid = certificate.notBefore.getTime() <= time
+    const isNotAfterValid = time <= certificate.notAfter.getTime()
 
     if (!isSignatureValid) {
       throw new X509Error(`Certificate: '${certificate.subject}' has an invalid signature`)

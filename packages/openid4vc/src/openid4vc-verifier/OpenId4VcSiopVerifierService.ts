@@ -6,7 +6,7 @@ import type {
   OpenId4VcSiopVerifyAuthorizationResponseOptions,
 } from './OpenId4VcSiopVerifierServiceOptions'
 import type { OpenId4VcVerificationSessionRecord } from './repository'
-import type { OpenId4VcJwtIssuer, OpenId4VcSiopAuthorizationResponsePayload } from '../shared'
+import type { OpenId4VcSiopAuthorizationResponsePayload } from '../shared'
 import type {
   AgentContext,
   DifPresentationExchangeDefinition,
@@ -15,7 +15,7 @@ import type {
   RecordSavedEvent,
   RecordUpdatedEvent,
 } from '@credo-ts/core'
-import type { PresentationVerificationCallback } from '@sphereon/did-auth-siop'
+import type { ClientIdScheme, PresentationVerificationCallback } from '@sphereon/did-auth-siop'
 
 import {
   EventEmitter,
@@ -34,11 +34,11 @@ import {
   W3cJsonLdVerifiablePresentation,
   Hasher,
   DidsApi,
+  X509Service,
 } from '@credo-ts/core'
 import {
   AuthorizationRequest,
   AuthorizationResponse,
-  CheckLinkedDomain,
   PassBy,
   PropertyTarget,
   ResponseIss,
@@ -47,7 +47,6 @@ import {
   RevocationVerification,
   RP,
   SupportedVersion,
-  VerificationMode,
 } from '@sphereon/did-auth-siop'
 import { extractPresentationsFromAuthorizationResponse } from '@sphereon/did-auth-siop/dist/authorization-response/OpenID4VP'
 import { filter, first, firstValueFrom, map, timeout } from 'rxjs'
@@ -55,9 +54,10 @@ import { filter, first, firstValueFrom, map, timeout } from 'rxjs'
 import { storeActorIdForContextCorrelationId } from '../shared/router'
 import { getVerifiablePresentationFromSphereonWrapped } from '../shared/transform'
 import {
-  getSphereonDidResolver,
-  getSphereonSuppliedSignatureFromJwtIssuer,
+  getCreateJwtCallback,
   getSupportedJwaSignatureAlgorithms,
+  getVerifyJwtCallback,
+  openIdTokenIssuerToJwtIssuer,
 } from '../shared/utils'
 
 import { OpenId4VcVerificationSessionState } from './OpenId4VcVerificationSessionState'
@@ -93,9 +93,60 @@ export class OpenId4VcSiopVerifierService {
     // Correlation id will be the id of the verification session record
     const correlationId = utils.uuid()
 
+    const requestSigner = options.requestSigner
+
+    let clientId: string
+    let clientIdScheme: ClientIdScheme
+
+    if (requestSigner.method === 'x5c') {
+      const issuer = requestSigner.issuer
+      const leafCertificate = X509Service.getLeafCertificate(agentContext, {
+        certificateChain: requestSigner.chain,
+      })
+
+      if (issuer.startsWith('dns:')) {
+        // If the iss value contains a DNS name encoded as a URI using the DNS URI scheme [RFC4501],
+        // the DNS name MUST match a dNSName Subject Alternative Name (SAN) [RFC5280] entry of the leaf certificate.
+        const extractDnsNameFromDnsUriScheme = (iss: string): string => {
+          const afterDns = iss.substring('dns:'.length)
+          const withoutQuery = afterDns.split('?')[0]
+          return withoutQuery.split('/').pop() || ''
+        }
+
+        const dnsName = extractDnsNameFromDnsUriScheme(issuer)
+
+        // TODO: HAIP: x.509 certificates: the SD-JWT VC contains the issuer's certificate along with a trust chain in the x5c JOSE header.
+        // In this case, the iss value MUST be an URL with a FQDN matching a dNSName Subject Alternative Name (SAN) [RFC5280] entry in the leaf certificate.
+
+        if (!leafCertificate.sanDnsNames?.includes(dnsName)) {
+          throw new CredoError(`The 'iss' claim in the payload does not match a 'SAN-DNS' name in the x5c certificate.`)
+        }
+
+        clientIdScheme = 'x509_san_dns'
+        clientId = dnsName
+      } else {
+        if (!leafCertificate.sanUriNames?.includes(issuer)) {
+          throw new Error(
+            `The 'iss' claim in the payload does not match a 'SAN-URI' or 'SAN-DNS' name in the x5c certificate.`
+          )
+        }
+
+        clientIdScheme = 'x509_san_uri'
+        clientId = issuer
+      }
+    } else if (requestSigner.method === 'did') {
+      clientId = requestSigner.didUrl.split('#')[0]
+      clientIdScheme = 'did'
+    } else {
+      throw new CredoError(
+        `Unsupported jwt issuer method '${options.requestSigner.method}'. Only 'did' and 'x5c' are supported.`
+      )
+    }
+
     const relyingParty = await this.getRelyingParty(agentContext, options.verifier.verifierId, {
       presentationDefinition: options.presentationExchange?.definition,
-      requestSigner: options.requestSigner,
+      clientId,
+      clientIdScheme,
     })
 
     // We always use shortened URIs currently
@@ -130,11 +181,14 @@ export class OpenId4VcSiopVerifierService {
         )
     )
 
+    const jwtIssuer = await openIdTokenIssuerToJwtIssuer(agentContext, options.requestSigner)
+
     const authorizationRequest = await relyingParty.createAuthorizationRequest({
       correlationId,
       nonce,
       state,
       requestByReferenceURI: hostedAuthorizationRequestUri,
+      jwtIssuer,
     })
 
     // NOTE: it's not possible to set the uri scheme when using the RP to create an auth request, only lower level
@@ -222,10 +276,6 @@ export class OpenId4VcSiopVerifierService {
           nonce: requestNonce,
           audience: requestClientId,
         }),
-        // FIXME: Supplied mode is not implemented.
-        // See https://github.com/Sphereon-Opensource/SIOP-OID4VP/issues/55
-        mode: VerificationMode.INTERNAL,
-        resolveOpts: { noUniversalResolverFallback: true, resolver: getSphereonDidResolver(agentContext) },
       },
     })
 
@@ -364,13 +414,13 @@ export class OpenId4VcSiopVerifierService {
     {
       idToken,
       presentationDefinition,
-      requestSigner,
       clientId,
+      clientIdScheme,
     }: {
       idToken?: boolean
       presentationDefinition?: DifPresentationExchangeDefinition
-      requestSigner?: OpenId4VcJwtIssuer
-      clientId?: string
+      clientId: string
+      clientIdScheme?: ClientIdScheme
     }
   ) {
     const authorizationResponseUrl = joinUriParts(this.config.baseUrl, [
@@ -385,18 +435,6 @@ export class OpenId4VcSiopVerifierService {
 
     // Check: audience must be set to the issuer with dynamic disc otherwise self-issued.me/v2.
     const builder = RP.builder()
-
-    let _clientId = clientId
-    if (requestSigner) {
-      const suppliedSignature = await getSphereonSuppliedSignatureFromJwtIssuer(agentContext, requestSigner)
-      builder.withSignature(suppliedSignature)
-
-      _clientId = suppliedSignature.did
-    }
-
-    if (!_clientId) {
-      throw new CredoError("Either 'requestSigner' or 'clientId' must be provided.")
-    }
 
     const responseTypes: ResponseType[] = []
     if (!presentationDefinition && idToken === false) {
@@ -424,20 +462,21 @@ export class OpenId4VcSiopVerifierService {
       .withRedirectUri(authorizationResponseUrl)
       .withIssuer(ResponseIss.SELF_ISSUED_V2)
       .withSupportedVersions([SupportedVersion.SIOPv2_D11, SupportedVersion.SIOPv2_D12_OID4VP_D18])
-      .withCustomResolver(getSphereonDidResolver(agentContext))
-      .withResponseMode(ResponseMode.POST)
+      .withResponseMode(ResponseMode.DIRECT_POST)
       .withHasher(Hasher.hash)
-      .withCheckLinkedDomain(CheckLinkedDomain.NEVER)
       // FIXME: should allow verification of revocation
       // .withRevocationVerificationCallback()
       .withRevocationVerification(RevocationVerification.NEVER)
       .withSessionManager(new OpenId4VcRelyingPartySessionManager(agentContext, verifierId))
       .withEventEmitter(sphereonEventEmitter)
       .withResponseType(responseTypes)
+      .withCreateJwtCallback(getCreateJwtCallback(agentContext))
+      .withVerifyJwtCallback(getVerifyJwtCallback(agentContext))
 
       // TODO: we should probably allow some dynamic values here
       .withClientMetadata({
-        client_id: _clientId,
+        client_id: clientId,
+        client_id_scheme: clientIdScheme,
         passBy: PassBy.VALUE,
         responseTypesSupported: [ResponseType.VP_TOKEN],
         subject_syntax_types_supported: supportedDidMethods.map((m) => `did:${m}`),
@@ -469,10 +508,6 @@ export class OpenId4VcSiopVerifierService {
     }
     if (responseTypes.includes(ResponseType.ID_TOKEN)) {
       builder.withScope('openid')
-    }
-
-    for (const supportedDidMethod of supportedDidMethods) {
-      builder.addDidMethod(supportedDidMethod)
     }
 
     return builder.build()
