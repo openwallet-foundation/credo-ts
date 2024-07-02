@@ -3,6 +3,7 @@ export { JwsService } from './JwsService'
 export { JwsDetachedFormat } from './JwsTypes'
 export * from './keyUtils'
 
+export { KeyBackend } from './KeyBackend'
 export { KeyType } from './KeyType'
 export { Key } from './Key'
 

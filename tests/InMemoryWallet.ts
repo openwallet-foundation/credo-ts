@@ -25,6 +25,7 @@ import {
   WalletError,
   Key,
   TypedArrayEncoder,
+  KeyBackend,
 } from '@credo-ts/core'
 
 const inMemoryWallets: InMemoryWallets = {}
@@ -143,8 +144,11 @@ export class InMemoryWallet implements Wallet {
    * Create a key with an optional seed and keyType.
    * The keypair is also automatically stored in the wallet afterwards
    */
-  public async createKey({ seed, privateKey, keyType }: WalletCreateKeyOptions): Promise<Key> {
+  public async createKey({ seed, privateKey, keyType, keyBackend }: WalletCreateKeyOptions): Promise<Key> {
     try {
+      if (keyBackend !== KeyBackend.Software) {
+        throw new WalletError('Only Software backend is allowed for the in-memory wallet')
+      }
       if (seed && privateKey) {
         throw new WalletError('Only one of seed and privateKey can be set')
       }
