@@ -1,4 +1,5 @@
 import type { Key, KeyType } from '../crypto'
+import type { KeyBackend } from '../crypto/KeyBackend'
 import type { Disposable } from '../plugins'
 import type {
   EncryptedMessage,
@@ -70,6 +71,7 @@ export interface WalletCreateKeyOptions {
   keyType: KeyType
   seed?: Buffer
   privateKey?: Buffer
+  keyBackend?: KeyBackend
 }
 
 export interface WalletSignOptions {
