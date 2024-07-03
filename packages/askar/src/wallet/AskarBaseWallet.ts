@@ -24,6 +24,7 @@ import {
   WalletError,
   Key,
   TypedArrayEncoder,
+  KeyBackend,
 } from '@credo-ts/core'
 import { CryptoBox, Store, Key as AskarKey, keyAlgFromString } from '@hyperledger/aries-askar-shared'
 import BigNumber from 'bn.js'
@@ -35,6 +36,7 @@ import {
   isKeyTypeSupportedByAskarForPurpose,
   keyTypesSupportedByAskar,
 } from '../utils'
+import { convertToAskarKeyBackend } from '../utils/askarKeyBackend'
 
 import { didcommV1Pack, didcommV1Unpack } from './didcommV1'
 
@@ -125,7 +127,12 @@ export abstract class AskarBaseWallet implements Wallet {
    * Create a key with an optional seed and keyType.
    * The keypair is also automatically stored in the wallet afterwards
    */
-  public async createKey({ seed, privateKey, keyType }: WalletCreateKeyOptions): Promise<Key> {
+  public async createKey({
+    seed,
+    privateKey,
+    keyType,
+    keyBackend = KeyBackend.Software,
+  }: WalletCreateKeyOptions): Promise<Key> {
     try {
       if (seed && privateKey) {
         throw new WalletError('Only one of seed and privateKey can be set')
@@ -149,7 +156,7 @@ export abstract class AskarBaseWallet implements Wallet {
             ? AskarKey.fromSecretBytes({ secretKey: privateKey, algorithm })
             : seed
             ? AskarKey.fromSeed({ seed, algorithm })
-            : AskarKey.generate(algorithm)
+            : AskarKey.generate(algorithm, convertToAskarKeyBackend(keyBackend))
 
           // FIXME: we need to create a separate const '_key' so TS definitely knows _key is defined in the session callback.
           // This will be fixed once we use the new 'using' syntax
