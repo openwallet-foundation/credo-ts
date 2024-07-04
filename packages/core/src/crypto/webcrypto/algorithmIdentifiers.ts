@@ -1,51 +1,31 @@
-import { ecdsaWithSHA256 } from '@peculiar/asn1-ecc'
-import { AsnProp, AsnPropTypes, AsnSerializer } from '@peculiar/asn1-schema'
+import { id_ecPublicKey, id_secp256r1, id_secp384r1 } from '@peculiar/asn1-ecc'
+import { AsnObjectIdentifierConverter } from '@peculiar/asn1-schema'
 import { AlgorithmIdentifier } from '@peculiar/asn1-x509'
+
+const ecPublicKeyAlgorithmIdentifier = (objectId: string) =>
+  new AlgorithmIdentifier({
+    algorithm: id_ecPublicKey,
+    parameters: AsnObjectIdentifierConverter.toASN(objectId).toBER(),
+  })
 
 /**
  *
  * https://oid-rep.orange-labs.fr/get/1.2.840.10045.3.1.7
  *
  */
-class P256AlgorithmIdentifierParameters {
-  @AsnProp({ type: AsnPropTypes.ObjectIdentifier })
-  public parameters: string = '1.2.840.10045.3.1.7'
-}
-
+export const ecPublicKeyWithP256AlgorithmIdentifier = ecPublicKeyAlgorithmIdentifier(id_secp256r1)
 /**
  *
  * https://oid-rep.orange-labs.fr/get/1.3.132.0.34
  *
  */
-class P384AlgorithmIdentifierParameters {
-  @AsnProp({ type: AsnPropTypes.ObjectIdentifier })
-  public parameters: string = '1.3.132.0.34'
-}
-
+export const ecPublicKeyWithP384AlgorithmIdentifier = ecPublicKeyAlgorithmIdentifier(id_secp384r1)
 /**
  *
  * https://oid-rep.orange-labs.fr/get/1.3.132.0.10
  *
  */
-class K256AlgorithmIdentifierParameters {
-  @AsnProp({ type: AsnPropTypes.ObjectIdentifier })
-  public parameters: string = '1.3.132.0.10'
-}
-
-export const ecdsaWithSha256AndP256AlgorithmIdentifier = new AlgorithmIdentifier({
-  algorithm: ecdsaWithSHA256.algorithm,
-  parameters: AsnSerializer.serialize(new P256AlgorithmIdentifierParameters()),
-})
-
-export const ecdsaWithSha256AndK256AlgorithmIdentifier = new AlgorithmIdentifier({
-  algorithm: ecdsaWithSHA256.algorithm,
-  parameters: AsnSerializer.serialize(new K256AlgorithmIdentifierParameters()),
-})
-
-export const ecdsaWithSha256AndP384AlgorithmIdentifier = new AlgorithmIdentifier({
-  algorithm: ecdsaWithSHA256.algorithm,
-  parameters: AsnSerializer.serialize(new P384AlgorithmIdentifierParameters()),
-})
+export const ecPublicKeyWithK256AlgorithmIdentifier = ecPublicKeyAlgorithmIdentifier('1.3.132.0.10')
 
 /**
  *
