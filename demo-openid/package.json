@@ -18,7 +18,7 @@
     "@hyperledger/aries-askar-nodejs": "^0.2.3",
     "@hyperledger/indy-vdr-nodejs": "^0.2.2",
     "express": "^4.18.1",
-    "inquirer": "^8.2.5"
+    "inquirer": "^9.3.3"
   },
   "devDependencies": {
     "@credo-ts/openid4vc": "workspace:*",
@@ -27,7 +27,7 @@
     "@credo-ts/node": "workspace:*",
     "@types/express": "^4.17.13",
     "@types/figlet": "^1.5.4",
-    "@types/inquirer": "^8.2.6",
+    "@types/inquirer": "^9.0.7",
     "clear": "^0.1.0",
     "figlet": "^1.5.2",
     "ts-node": "^10.4.0"
