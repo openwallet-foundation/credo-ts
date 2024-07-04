@@ -15,8 +15,8 @@ importers:
         specifier: ^2.27.5
         version: 2.27.5
       '@hyperledger/aries-askar-nodejs':
-        specifier: ^0.2.1
-        version: 0.2.1(encoding@0.1.13)
+        specifier: ^0.2.3
+        version: 0.2.3(encoding@0.1.13)
       '@jest/types':
         specifier: ^29.6.3
         version: 29.6.3
@@ -111,8 +111,8 @@ importers:
         specifier: ^0.2.2
         version: 0.2.2(encoding@0.1.13)
       '@hyperledger/aries-askar-nodejs':
-        specifier: ^0.2.1
-        version: 0.2.1(encoding@0.1.13)
+        specifier: ^0.2.3
+        version: 0.2.3(encoding@0.1.13)
       '@hyperledger/indy-vdr-nodejs':
         specifier: ^0.2.2
         version: 0.2.2(encoding@0.1.13)
@@ -160,8 +160,8 @@ importers:
         specifier: ^0.2.2
         version: 0.2.2(encoding@0.1.13)
       '@hyperledger/aries-askar-nodejs':
-        specifier: ^0.2.1
-        version: 0.2.1(encoding@0.1.13)
+        specifier: ^0.2.3
+        version: 0.2.3(encoding@0.1.13)
       '@hyperledger/indy-vdr-nodejs':
         specifier: ^0.2.2
         version: 0.2.2(encoding@0.1.13)
@@ -296,11 +296,11 @@ importers:
         version: 4.8.0
     devDependencies:
       '@hyperledger/aries-askar-nodejs':
-        specifier: ^0.2.1
-        version: 0.2.1(encoding@0.1.13)
+        specifier: ^0.2.3
+        version: 0.2.3(encoding@0.1.13)
       '@hyperledger/aries-askar-shared':
-        specifier: ^0.2.1
-        version: 0.2.1
+        specifier: ^0.2.3
+        version: 0.2.3
       '@types/bn.js':
         specifier: ^5.1.0
         version: 5.1.5
@@ -592,11 +592,11 @@ importers:
         version: link:../node
     devDependencies:
       '@hyperledger/aries-askar-nodejs':
-        specifier: ^0.2.1
-        version: 0.2.1(encoding@0.1.13)
+        specifier: ^0.2.3
+        version: 0.2.3(encoding@0.1.13)
       '@hyperledger/aries-askar-shared':
-        specifier: ^0.2.1
-        version: 0.2.1
+        specifier: ^0.2.3
+        version: 0.2.3
       rimraf:
         specifier: ^4.4.0
         version: 4.4.1
@@ -811,8 +811,8 @@ importers:
         specifier: workspace:*
         version: link:../../packages/node
       '@hyperledger/aries-askar-nodejs':
-        specifier: ^0.2.1
-        version: 0.2.1(encoding@0.1.13)
+        specifier: ^0.2.3
+        version: 0.2.3(encoding@0.1.13)
       class-validator:
         specifier: 0.14.1
         version: 0.14.1
@@ -1960,12 +1960,12 @@ packages:
   '@hyperledger/anoncreds-shared@0.2.2':
     resolution: {integrity: sha512-dfYpqbAkqtHJkRkuGmWdJruHfLegLUIbu/dSAWnz5dMRKd8ad8rEnQkwRnockQZ/pc7QDr8kxfG6bT2YDGZeMw==}
 
-  '@hyperledger/aries-askar-nodejs@0.2.1':
-    resolution: {integrity: sha512-RSBa+onshUSIJlVyGBzndZtcw2KPb8mgnYIio9z0RquKgGitufc0ymNiL2kLKWNjk2gET20jAUHijhlE4ssk5A==}
+  '@hyperledger/aries-askar-nodejs@0.2.3':
+    resolution: {integrity: sha512-2BnGqK08Y96DEB8tDuXy2x+soetChyMGB0+L1yqdHx1Xv5FvRerYrTXdTjJXTW6ANb48k2Np8WlJ4YNePSo6ww==}
     engines: {node: '>= 18'}
 
-  '@hyperledger/aries-askar-shared@0.2.1':
-    resolution: {integrity: sha512-7d8tiqq27dxFl7+0Cf2I40IzzDoRU9aEolyPyvfdLGbco6NAtWB4CV8AzgY11EZ7/ou4RirJxfP9hBjgYBo1Ag==}
+  '@hyperledger/aries-askar-shared@0.2.3':
+    resolution: {integrity: sha512-g9lao8qa80kPCLqqp02ovNqEfQIrm6cAf4xZVzD5P224VmOhf4zM6AKplQTvQx7USNKoXroe93JrOOSVxPeqrA==}
 
   '@hyperledger/indy-vdr-nodejs@0.2.2':
     resolution: {integrity: sha512-mc0iKuHCtKuOV0sMnGOTVWnQrpfBMS+1tIRyob+CvGCvwC2llGo3Hu5AvgPcR9nqCo/wJ0LoKBo66dYYb0uZbw==}
@@ -5494,10 +5494,6 @@ packages:
   node-addon-api@3.2.1:
     resolution: {integrity: sha512-mmcei9JghVNDYydghQmeDX8KoAm0FAiYyIcUt/N4nhyAipB17pllZQDOJD2fotxABnt4Mdz+dKTO7eftLg4d0A==}
 
-  node-cache@5.1.2:
-    resolution: {integrity: sha512-t1QzWwnk4sjLWaQAS8CHgOJ+RAfmHpxFWmc36IWTiWHQfs0w5JDMBS1b1ZxQteo0vVVuWJvIUKHDkkeK7vIGCg==}
-    engines: {node: '>= 8.0.0'}
-
   node-dir@0.1.17:
     resolution: {integrity: sha512-tmPX422rYgofd4epzrNoOXiE8XFZYOcCq1vD7MAXCDO+O+zndlA2ztdKKMa+EeuBG5tHETpr4ml4RGgpqDCCAg==}
     engines: {node: '>= 0.10.5'}
@@ -9013,20 +9009,19 @@ snapshots:
 
   '@hyperledger/anoncreds-shared@0.2.2': {}
 
-  '@hyperledger/aries-askar-nodejs@0.2.1(encoding@0.1.13)':
+  '@hyperledger/aries-askar-nodejs@0.2.3(encoding@0.1.13)':
     dependencies:
       '@2060.io/ffi-napi': 4.0.9
       '@2060.io/ref-napi': 3.0.6
-      '@hyperledger/aries-askar-shared': 0.2.1
+      '@hyperledger/aries-askar-shared': 0.2.3
       '@mapbox/node-pre-gyp': 1.0.11(encoding@0.1.13)
-      node-cache: 5.1.2
       ref-array-di: 1.2.2
       ref-struct-di: 1.1.1
     transitivePeerDependencies:
       - encoding
       - supports-color
 
-  '@hyperledger/aries-askar-shared@0.2.1':
+  '@hyperledger/aries-askar-shared@0.2.3':
     dependencies:
       buffer: 6.0.3
 
@@ -11013,7 +11008,8 @@ snapshots:
 
   clone@1.0.4: {}
 
-  clone@2.1.2: {}
+  clone@2.1.2:
+    optional: true
 
   co@4.6.0: {}
 
@@ -13907,10 +13903,6 @@ snapshots:
       - supports-color
 
   node-addon-api@3.2.1: {}
-
-  node-cache@5.1.2:
-    dependencies:
-      clone: 2.1.2
 
   node-dir@0.1.17:
     dependencies:
