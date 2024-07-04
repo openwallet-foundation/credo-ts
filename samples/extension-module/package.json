@@ -24,6 +24,6 @@
     "@credo-ts/askar": "workspace:*",
     "class-validator": "0.14.1",
     "rxjs": "^7.8.0",
-    "@hyperledger/aries-askar-nodejs": "^0.2.1"
+    "@hyperledger/aries-askar-nodejs": "^0.2.3"
   }
 }

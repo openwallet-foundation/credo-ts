@@ -22,6 +22,7 @@ import {
 } from '@credo-ts/core'
 import { Store } from '@hyperledger/aries-askar-shared'
 
+import { KeyBackend } from '../../../../core/src/crypto/KeyBackend'
 import { encodeToBase58 } from '../../../../core/src/utils/base58'
 import { agentDependencies } from '../../../../core/tests/helpers'
 import testLogger from '../../../../core/tests/logger'
@@ -102,7 +103,7 @@ describe('AskarWallet basic operations', () => {
         seed,
         keyType: KeyType.Ed25519,
       })
-    ).rejects.toThrowError()
+    ).rejects.toThrow()
   })
 
   test('Create x25519 keypair', async () => {
@@ -122,13 +123,17 @@ describe('AskarWallet basic operations', () => {
   test('throws WalletKeyExistsError when a key already exists', async () => {
     const privateKey = TypedArrayEncoder.fromString('2103de41b4ae37e8e28586d84a342b68')
     await expect(askarWallet.createKey({ privateKey, keyType: KeyType.Ed25519 })).resolves.toEqual(expect.any(Key))
-    await expect(askarWallet.createKey({ privateKey, keyType: KeyType.Ed25519 })).rejects.toThrowError(
-      WalletKeyExistsError
-    )
+    await expect(askarWallet.createKey({ privateKey, keyType: KeyType.Ed25519 })).rejects.toThrow(WalletKeyExistsError)
   })
 
   test('Fail to create a P384 keypair', async () => {
-    await expect(askarWallet.createKey({ seed, keyType: KeyType.P384 })).rejects.toThrowError(WalletError)
+    await expect(askarWallet.createKey({ seed, keyType: KeyType.P384 })).rejects.toThrow(WalletError)
+  })
+
+  test('Fail to create a P256 keypair in hardware', async () => {
+    await expect(
+      askarWallet.createKey({ keyType: KeyType.P256, keyBackend: KeyBackend.SecureElement })
+    ).rejects.toThrow(WalletError)
   })
 
   test('Create a signature with a ed25519 keypair', async () => {
@@ -186,12 +191,12 @@ describe.skip('Currently, all KeyTypes are supported by Askar natively', () => {
       }
 
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      public async sign(options: SignOptions): Promise<Buffer> {
+      public async sign(_options: SignOptions): Promise<Buffer> {
         return new Buffer('signed')
       }
 
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      public async verify(options: VerifyOptions): Promise<boolean> {
+      public async verify(_options: VerifyOptions): Promise<boolean> {
         return true
       }
     }
@@ -268,7 +273,7 @@ describe('AskarWallet management', () => {
     await askarWallet.close()
     await expect(
       askarWallet.createAndOpen({ ...walletConfig, id: 'AskarWallet Create', key: anotherKey })
-    ).rejects.toThrowError(WalletDuplicateError)
+    ).rejects.toThrow(WalletDuplicateError)
   })
 
   test('Open', async () => {
@@ -282,14 +287,14 @@ describe('AskarWallet management', () => {
 
     // Close and try to re-opening it with a wrong key
     await askarWallet.close()
-    await expect(askarWallet.open({ ...walletConfig, id: 'AskarWallet Open', key: wrongKey })).rejects.toThrowError(
+    await expect(askarWallet.open({ ...walletConfig, id: 'AskarWallet Open', key: wrongKey })).rejects.toThrow(
       WalletInvalidKeyError
     )
 
     // Try to open a non existent wallet
     await expect(
       askarWallet.open({ ...walletConfig, id: 'AskarWallet Open - Non existent', key: initialKey })
-    ).rejects.toThrowError(WalletNotFoundError)
+    ).rejects.toThrow(WalletNotFoundError)
   })
 
   test('Rotate key', async () => {
@@ -313,7 +318,7 @@ describe('AskarWallet management', () => {
 
     await expect(
       askarWallet.open({ ...walletConfig, id: 'AskarWallet Key Rotation', key: initialKey })
-    ).rejects.toThrowError(WalletInvalidKeyError)
+    ).rejects.toThrow(WalletInvalidKeyError)
 
     await askarWallet.open({ ...walletConfig, id: 'AskarWallet Key Rotation', key: newKey })
 

@@ -31,7 +31,7 @@
   },
   "devDependencies": {
     "@changesets/cli": "^2.27.5",
-    "@hyperledger/aries-askar-nodejs": "^0.2.1",
+    "@hyperledger/aries-askar-nodejs": "^0.2.3",
     "@jest/types": "^29.6.3",
     "@types/bn.js": "^5.1.5",
     "@types/cors": "^2.8.10",
