@@ -5,7 +5,14 @@ import type {
   OpenId4VciIssuerMetadata,
 } from '../shared'
 import type { JwaSignatureAlgorithm, KeyType } from '@credo-ts/core'
-import type { AuthorizationServerMetadata, EndpointMetadataResult, OpenId4VCIVersion } from '@sphereon/oid4vci-common'
+import type { VerifiableCredential } from '@credo-ts/core/src/modules/dif-presentation-exchange/models/index'
+import type {
+  AccessTokenResponse,
+  AuthorizationServerMetadata,
+  CredentialOfferRequestWithBaseUrl,
+  EndpointMetadataResult,
+  OpenId4VCIVersion,
+} from '@sphereon/oid4vci-common'
 
 import { OpenId4VciCredentialFormatProfile } from '../shared/models/OpenId4VciCredentialFormatProfile'
 
@@ -22,11 +29,31 @@ export const openId4VciSupportedCredentialFormats: OpenId4VciSupportedCredential
   OpenId4VciCredentialFormatProfile.LdpVc,
 ]
 
+export interface OpenId4VciNotificationMetadata {
+  notificationId: string
+  notificationEndpoint: string
+}
+
+/**
+ * credential_accepted is to be used when the Credential was successfully stored in the Wallet, with or without user action.
+ * credential_deleted is to be used when the unsuccessful Credential issuance was caused by a user action.
+ * In all other unsuccessful cases, credential_failure is to be used.
+ */
+export type OpenId4VcNotificationEvent = 'credential_accepted' | 'credential_failure' | 'credential_deleted'
+
+export type OpenId4VciTokenResponse = AccessTokenResponse
+
+export interface OpenId4VciCredentialResponse {
+  credential: VerifiableCredential
+  notificationMetadata?: OpenId4VciNotificationMetadata
+}
+
 export interface OpenId4VciResolvedCredentialOffer {
   metadata: EndpointMetadataResult & {
     credentialIssuerMetadata: Partial<AuthorizationServerMetadata> & OpenId4VciIssuerMetadata
   }
   credentialOfferPayload: OpenId4VciCredentialOfferPayload
+  credentialOfferRequestWithBaseUrl: CredentialOfferRequestWithBaseUrl
   offeredCredentials: OpenId4VciCredentialSupportedWithId[]
   version: OpenId4VCIVersion
 }
@@ -40,11 +67,41 @@ export interface OpenId4VciResolvedAuthorizationRequestWithCode extends OpenId4V
   code: string
 }
 
+export interface OpenId4VciSendNotificationOptions {
+  notificationMetadata: OpenId4VciNotificationMetadata
+  accessToken: string
+  notificationEvent: OpenId4VcNotificationEvent
+}
+
+interface OpenId4VcTokenRequestBaseOptions {
+  resolvedCredentialOffer: OpenId4VciResolvedCredentialOffer
+  userPin?: string
+}
+
+export interface OpenId4VcAuthorizationCodeTokenRequestOptions extends OpenId4VcTokenRequestBaseOptions {
+  resolvedAuthorizationRequest: OpenId4VciResolvedAuthorizationRequest
+  code: string
+}
+
+export interface OpenId4VciPreAuthorizedTokenRequestOptions extends OpenId4VcTokenRequestBaseOptions {
+  resolvedAuthorizationRequest?: never
+  code?: never
+}
+
+export type OpenId4VciTokenRequestOptions =
+  | OpenId4VciPreAuthorizedTokenRequestOptions
+  | OpenId4VcAuthorizationCodeTokenRequestOptions
+
+export interface OpenId4VciCredentialRequestOptions extends OpenId4VciAcceptCredentialOfferOptions {
+  resolvedCredentialOffer: OpenId4VciResolvedCredentialOffer
+  tokenResponse: OpenId4VciTokenResponse
+}
 /**
  * Options that are used to accept a credential offer for both the pre-authorized code flow and authorization code flow.
  */
 export interface OpenId4VciAcceptCredentialOfferOptions {
   /**
+   * FIXME: remove this with 0.6
    * String value containing a user PIN. This value MUST be present if user_pin_required was set to true in the Credential Offer.
    * This parameter MUST only be used, if the grant_type is urn:ietf:params:oauth:grant-type:pre-authorized_code.
    */

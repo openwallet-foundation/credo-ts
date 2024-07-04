@@ -16,7 +16,7 @@ import type {
   OpenId4VciCredentialSupportedWithId,
 } from '../shared'
 import type { AgentContext, DidDocument, Query, QueryOptions } from '@credo-ts/core'
-import type { Grant, JWTVerifyCallback } from '@sphereon/oid4vci-common'
+import type { CredentialOfferPayloadV1_0_13, Grant, JWTVerifyCallback } from '@sphereon/oid4vci-common'
 import type {
   CredentialDataSupplier,
   CredentialDataSupplierArgs,
@@ -46,7 +46,12 @@ import {
 } from '@credo-ts/core'
 import { VcIssuerBuilder } from '@sphereon/oid4vci-issuer'
 
-import { getOfferedCredentials, OpenId4VciCredentialFormatProfile } from '../shared'
+import {
+  credentialsSupportedV13ToV11,
+  credentialsSupportedV11ToV13,
+  getOfferedCredentials,
+  OpenId4VciCredentialFormatProfile,
+} from '../shared'
 import { storeActorIdForContextCorrelationId } from '../shared/router'
 import { getSphereonVerifiableCredential } from '../shared/transform'
 import { getProofTypeFromKey } from '../shared/utils'
@@ -98,9 +103,20 @@ export class OpenId4VcIssuerService {
 
     const vcIssuer = this.getVcIssuer(agentContext, issuer)
 
+    const version = options.version ?? 'v11'
+    if (version === 'v13' && options.preAuthorizedCodeFlowConfig.userPinRequired !== undefined) {
+      throw new CredoError('User pin is not supported in OpenId4Vc version v13.')
+    }
+    if (version === 'v11' && options.preAuthorizedCodeFlowConfig.txCode !== undefined) {
+      throw new CredoError('Tx code is not supported OpenId4Vc version v11.')
+    }
+
     // this checks if the structure of the credentials is correct
     // it throws an error if a offered credential cannot be found in the credentialsSupported
-    getOfferedCredentials(options.offeredCredentials, vcIssuer.issuerMetadata.credentials_supported)
+    getOfferedCredentials(
+      options.offeredCredentials,
+      credentialsSupportedV13ToV11(vcIssuer.issuerMetadata.credential_configurations_supported)
+    )
 
     const uniqueOfferedCredentials = Array.from(new Set(options.offeredCredentials))
     if (uniqueOfferedCredentials.length !== offeredCredentials.length) {
@@ -114,12 +130,16 @@ export class OpenId4VcIssuerService {
       utils.uuid(),
     ])
 
+    const grants = await this.getGrantsFromConfig(agentContext, preAuthorizedCodeFlowConfig)
+
     let { uri } = await vcIssuer.createCredentialOfferURI({
-      grants: await this.getGrantsFromConfig(agentContext, preAuthorizedCodeFlowConfig),
-      credentials: offeredCredentials,
+      scheme: 'openid-credential-offer',
+      grants,
+      credential_configuration_ids: offeredCredentials,
       credentialOfferUri: hostedCredentialOfferUri,
       baseUri: options.baseUri,
       credentialDataSupplierInput: options.issuanceMetadata,
+      pinLength: grants['urn:ietf:params:oauth:grant-type:pre-authorized_code']?.tx_code?.length,
     })
 
     // FIXME: https://github.com/Sphereon-Opensource/OID4VCI/issues/102
@@ -127,9 +147,23 @@ export class OpenId4VcIssuerService {
       uri = uri.replace(hostedCredentialOfferUri, encodeURIComponent(hostedCredentialOfferUri))
     }
 
-    const issuanceSession = await this.openId4VcIssuanceSessionRepository.getSingleByQuery(agentContext, {
+    const issuanceSessionRepository = this.openId4VcIssuanceSessionRepository
+    const issuanceSession = await issuanceSessionRepository.getSingleByQuery(agentContext, {
       credentialOfferUri: hostedCredentialOfferUri,
     })
+
+    if (version === 'v11') {
+      const payload = issuanceSession.credentialOfferPayload as CredentialOfferPayloadV1_0_13
+      // @ts-expect-error was was removed in v13
+      issuanceSession.credentialOfferPayload.credentials = payload.credential_configuration_ids
+      const preAuthorizedCodeFlowGrant =
+        issuanceSession.credentialOfferPayload.grants?.['urn:ietf:params:oauth:grant-type:pre-authorized_code']
+      if (preAuthorizedCodeFlowGrant) {
+        // property was always defined in v11
+        preAuthorizedCodeFlowGrant.user_pin_required = preAuthorizedCodeFlowConfig.userPinRequired ?? false
+      }
+      await issuanceSessionRepository.update(agentContext, issuanceSession)
+    }
 
     return {
       issuanceSession,
@@ -193,6 +227,9 @@ export class OpenId4VcIssuerService {
       credentialDataSupplierInput: issuanceSession.issuanceMetadata,
       responseCNonce: undefined,
     })
+
+    // FIXME: ONLY REQUIRED FOR V11 COMPAT
+    credentialResponse.format = credentialRequest.format
 
     const updatedIssuanceSession = await this.openId4VcIssuanceSessionRepository.getById(
       agentContext,
@@ -328,7 +365,7 @@ export class OpenId4VcIssuerService {
       .withCredentialIssuer(issuerMetadata.issuerUrl)
       .withCredentialEndpoint(issuerMetadata.credentialEndpoint)
       .withTokenEndpoint(issuerMetadata.tokenEndpoint)
-      .withCredentialsSupported(issuerMetadata.credentialsSupported)
+      .withCredentialConfigurationsSupported(credentialsSupportedV11ToV13(issuer.credentialsSupported))
       .withCNonceStateManager(new OpenId4VcCNonceStateManager(agentContext, issuer.issuerId))
       .withCredentialOfferStateManager(new OpenId4VcCredentialOfferSessionStateManager(agentContext, issuer.issuerId))
       .withCredentialOfferURIStateManager(new OpenId4VcCredentialOfferUriStateManager(agentContext, issuer.issuerId))
@@ -338,7 +375,7 @@ export class OpenId4VcIssuerService {
       })
 
     if (issuerMetadata.authorizationServer) {
-      builder.withAuthorizationServer(issuerMetadata.authorizationServer)
+      builder.withAuthorizationServers(issuerMetadata.authorizationServer)
     }
 
     if (issuerMetadata.issuerDisplay) {
@@ -356,7 +393,9 @@ export class OpenId4VcIssuerService {
       'urn:ietf:params:oauth:grant-type:pre-authorized_code': {
         'pre-authorized_code':
           preAuthorizedCodeFlowConfig.preAuthorizedCode ?? (await agentContext.wallet.generateNonce()),
+        // v11 only
         user_pin_required: preAuthorizedCodeFlowConfig.userPinRequired ?? false,
+        tx_code: preAuthorizedCodeFlowConfig.txCode,
       },
     }
 
@@ -369,7 +408,10 @@ export class OpenId4VcIssuerService {
     credentialsSupported: OpenId4VciCredentialSupported[],
     issuanceSession: OpenId4VcIssuanceSessionRecord
   ): OpenId4VciCredentialSupportedWithId[] {
-    const offeredCredentials = getOfferedCredentials(credentialOffer.credentials, credentialsSupported)
+    const offeredCredentialsData =
+      'credentials' in credentialOffer ? credentialOffer.credentials : credentialOffer.credential_configuration_ids
+
+    const offeredCredentials = getOfferedCredentials(offeredCredentialsData, credentialsSupported)
 
     return offeredCredentials.filter((offeredCredential) => {
       if (offeredCredential.format !== credentialRequest.format) return false
@@ -514,13 +556,14 @@ export class OpenId4VcIssuerService {
   ): CredentialDataSupplier => {
     return async (args: CredentialDataSupplierArgs) => {
       const { issuanceSession, issuer } = options
-      const { credentialRequest } = args
+
+      const credentialRequest = args.credentialRequest as OpenId4VciCredentialRequest
 
       const issuerMetadata = this.getIssuerMetadata(agentContext, issuer)
 
       const offeredCredentialsMatchingRequest = this.findOfferedCredentialsMatchingRequest(
         options.issuanceSession.credentialOfferPayload,
-        credentialRequest as OpenId4VciCredentialRequest,
+        credentialRequest,
         issuerMetadata.credentialsSupported,
         issuanceSession
       )

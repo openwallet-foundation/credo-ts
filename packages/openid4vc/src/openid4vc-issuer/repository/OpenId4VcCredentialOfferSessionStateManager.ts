@@ -53,12 +53,19 @@ export class OpenId4VcCredentialOfferSessionStateManager implements IStateManage
 
     let state = openId4VcIssuanceStateFromSphereon(stateValue.status)
 
-    // we set the completed state manually when all credentials have been issued
-    if (
-      state === OpenId4VcIssuanceSessionState.CredentialsPartiallyIssued &&
-      (record?.issuedCredentials?.length ?? 0) >= stateValue.credentialOffer.credential_offer.credentials.length
-    ) {
-      state = OpenId4VcIssuanceSessionState.Completed
+    if (state === OpenId4VcIssuanceSessionState.CredentialsPartiallyIssued) {
+      // we set the completed state manually when all credentials have been issued
+      const issuedCredentials = record?.issuedCredentials?.length ?? 0
+      const credentialOffer = stateValue.credentialOffer.credential_offer
+
+      const offeredCredentials =
+        'credential_configuration_ids' in credentialOffer
+          ? credentialOffer.credential_configuration_ids // v13
+          : credentialOffer.credentials // v11
+
+      if (issuedCredentials >= offeredCredentials.length) {
+        state = OpenId4VcIssuanceSessionState.Completed
+      }
     }
 
     // NOTE: we don't use clientId at the moment, will become relevant when doing the authorized flow
@@ -112,6 +119,7 @@ export class OpenId4VcCredentialOfferSessionStateManager implements IStateManage
         credential_offer: record.credentialOfferPayload,
         credential_offer_uri: record.credentialOfferUri,
       },
+      notification_id: '', // TODO! This probably needs to have a different structure allowing to receive notifications on a per credential request basis
       status: sphereonIssueStatusFromOpenId4VcIssuanceState(record.state),
       preAuthorizedCode: record.preAuthorizedCode,
       credentialDataSupplierInput: record.issuanceMetadata,

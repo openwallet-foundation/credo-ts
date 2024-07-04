@@ -197,14 +197,16 @@ describe('OpenId4Vc', () => {
       await issuerTenant1.modules.openId4VcIssuer.createCredentialOffer({
         issuerId: openIdIssuerTenant1.issuerId,
         offeredCredentials: [universityDegreeCredentialSdJwt.id],
-        preAuthorizedCodeFlowConfig: { userPinRequired: false },
+        preAuthorizedCodeFlowConfig: { txCode: { input_mode: 'numeric', length: 4 } },
+        version: 'v13',
       })
 
     const { issuanceSession: issuanceSession2, credentialOffer: credentialOffer2 } =
       await issuerTenant2.modules.openId4VcIssuer.createCredentialOffer({
         issuerId: openIdIssuerTenant2.issuerId,
         offeredCredentials: [universityDegreeCredentialSdJwt2.id],
-        preAuthorizedCodeFlowConfig: { userPinRequired: false },
+        preAuthorizedCodeFlowConfig: { txCode: { input_mode: 'numeric', length: 4 } },
+        version: 'v13',
       })
 
     await issuerTenant1.endSession()
@@ -227,7 +229,7 @@ describe('OpenId4Vc', () => {
       credentialOffer1
     )
 
-    await waitForCredentialIssuanceSessionRecordSubject(issuer.replaySubject, {
+    const issuerSession1 = await waitForCredentialIssuanceSessionRecordSubject(issuer.replaySubject, {
       state: OpenId4VcIssuanceSessionState.OfferUriRetrieved,
       issuanceSessionId: issuanceSession1.id,
       contextCorrelationId: issuer1.tenantId,
@@ -248,6 +250,7 @@ describe('OpenId4Vc', () => {
       resolvedCredentialOffer1,
       {
         credentialBindingResolver,
+        userPin: issuerSession1.userPin,
       }
     )
 
@@ -299,12 +302,15 @@ describe('OpenId4Vc', () => {
     )
 
     // Bind to did
-    const credentialsTenant2 = await holderTenant1.modules.openId4VcHolder.acceptCredentialOfferUsingPreAuthorizedCode(
-      resolvedCredentialOffer2,
-      {
-        credentialBindingResolver,
-      }
-    )
+    const tokenResponseTenant2 = await holderTenant1.modules.openId4VcHolder.requestToken({
+      resolvedCredentialOffer: resolvedCredentialOffer2,
+    })
+
+    const credentialsTenant2 = await holderTenant1.modules.openId4VcHolder.requestCredential({
+      resolvedCredentialOffer: resolvedCredentialOffer2,
+      tokenResponse: tokenResponseTenant2,
+      credentialBindingResolver,
+    })
 
     // Wait for all events
     await waitForCredentialIssuanceSessionRecordSubject(issuer.replaySubject, {
@@ -329,7 +335,7 @@ describe('OpenId4Vc', () => {
     })
 
     expect(credentialsTenant2).toHaveLength(1)
-    const compactSdJwtVcTenant2 = (credentialsTenant2[0] as SdJwtVc).compact
+    const compactSdJwtVcTenant2 = (credentialsTenant2[0].credential as SdJwtVc).compact
     const sdJwtVcTenant2 = holderTenant1.sdJwtVc.fromCompact(compactSdJwtVcTenant2)
     expect(sdJwtVcTenant2.payload.vct).toEqual('UniversityDegreeCredential2')
 
