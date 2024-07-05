@@ -41,7 +41,10 @@ export interface SdJwtVcIssuerX5c {
   chain: string[]
 
   /**
-   * The issuer of the Jwt
+   * The issuer of the JWT. Should be a HTTPS URI.
+   *
+   * The issuer value must either match a `uniformResourceIdentifier` SAN entry of the leaf entity certificate
+   * or match the domain name in the `iss` value matches the `dNSName` SAN entry of the end-entity certificate.
    */
   issuer: string
 }

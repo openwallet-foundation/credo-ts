@@ -17,12 +17,10 @@ interface OpenId4VcIssuerX5c {
   chain: string[]
 
   /**
-   * The issuer of the JWT.
+   * The issuer of the JWT. Should be a HTTPS URI.
    *
-   * If the issuer is a DNS name the x509_san_dns client_id_scheme is used
-   * Otherwise the x509_san_uri client_id_scheme is used.
-   *
-   * Must be provided when creating x509 certificate protected authorization requests.
+   * The issuer value must either match a `uniformResourceIdentifier` SAN entry of the leaf entity certificate
+   * or match the domain name in the `iss` value matches the `dNSName` SAN entry of the end-entity certificate.
    */
   issuer: string
 }

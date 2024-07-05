@@ -27,6 +27,7 @@ import { DidResolverService, parseDid, getKeyFromVerificationMethod } from '../d
 
 import { SdJwtVcError } from './SdJwtVcError'
 import { SdJwtVcRecord, SdJwtVcRepository } from './repository'
+import { getDomainFromUrl } from '../../utils/domain'
 
 type SdJwtVcConfig = SDJwtVcInstance['userConfig']
 
@@ -181,29 +182,13 @@ export class SdJwtVcService {
   }
 
   private assertValidX5cJwtIssuer(iss: string, leafCertificate: X509Certificate) {
-    if (iss.startsWith('dns:')) {
-      // If the iss value contains a DNS name encoded as a URI using the DNS URI scheme [RFC4501],
-      // the DNS name MUST match a dNSName Subject Alternative Name (SAN) [RFC5280] entry of the leaf certificate.
-      const extractDnsNameFromDnsUriScheme = (iss: string): string => {
-        const afterDns = iss.substring('dns:'.length)
-        const withoutQuery = afterDns.split('?')[0]
-        return withoutQuery.split('/').pop() || ''
-      }
+    // TODO: should we throw here?
+    if (!iss.startsWith('https://')) throw new SdJwtVcError('The X509 certificate issuer must be a HTTPS URI.')
 
-      const dnsName = extractDnsNameFromDnsUriScheme(iss)
-
-      // TODO: HAIP: x.509 certificates: the SD-JWT VC contains the issuer's certificate along with a trust chain in the x5c JOSE header.
-      // In this case, the iss value MUST be an URL with a FQDN matching a dNSName Subject Alternative Name (SAN) [RFC5280] entry in the leaf certificate.
-
-      if (!leafCertificate.sanDnsNames?.includes(dnsName)) {
-        throw new SdJwtVcError(`The 'iss' claim in the payload does not match a 'SAN-DNS' name in the x5c certificate.`)
-      }
-    } else {
-      if (!leafCertificate.sanUriNames?.includes(iss)) {
-        throw new SdJwtVcError(
-          `The 'iss' claim in the payload does not match a 'SAN-URI' or 'SAN-DNS' name in the x5c certificate.`
-        )
-      }
+    if (!leafCertificate.sanUriNames?.includes(iss) && !leafCertificate.sanDnsNames?.includes(getDomainFromUrl(iss))) {
+      throw new SdJwtVcError(
+        `The 'iss' claim in the payload does not match a 'SAN-URI' name and the domain extracted from the HTTPS URI does not match a 'SAN-DNS' name in the x5c certificate.`
+      )
     }
   }
 
@@ -413,7 +398,11 @@ export class SdJwtVcService {
 
       const { verificationMethod } = await this.resolveDidUrl(agentContext, issuer.didUrl)
       const key = getKeyFromVerificationMethod(verificationMethod)
-      const alg = getJwkFromKey(key).supportedSignatureAlgorithms[0]
+      const supportedSignatureAlgorithms = getJwkFromKey(key).supportedSignatureAlgorithms
+      if (supportedSignatureAlgorithms.length === 0) {
+        throw new SdJwtVcError('No supported signature algorithms found for key.')
+      }
+      const alg = supportedSignatureAlgorithms[0]
 
       return {
         alg,
@@ -426,7 +415,11 @@ export class SdJwtVcService {
     if (issuer.method === 'x5c') {
       const leafCertificate = X509Service.getLeafCertificate(agentContext, { certificateChain: issuer.chain })
       const key = leafCertificate.publicKey
-      const alg = getJwkFromKey(key).supportedSignatureAlgorithms[0]
+      const supportedSignatureAlgorithms = getJwkFromKey(key).supportedSignatureAlgorithms
+      if (supportedSignatureAlgorithms.length === 0) {
+        throw new SdJwtVcError('No supported signature algorithms found for key.')
+      }
+      const alg = supportedSignatureAlgorithms[0]
 
       this.assertValidX5cJwtIssuer(issuer.issuer, leafCertificate)
 
@@ -556,7 +549,11 @@ export class SdJwtVcService {
 
       const { verificationMethod } = await this.resolveDidUrl(agentContext, holder.didUrl)
       const key = getKeyFromVerificationMethod(verificationMethod)
-      const alg = getJwkFromKey(key).supportedSignatureAlgorithms[0]
+      const supportedSignatureAlgorithms = getJwkFromKey(key).supportedSignatureAlgorithms
+      if (supportedSignatureAlgorithms.length === 0) {
+        throw new SdJwtVcError('No supported signature algorithms found for key.')
+      }
+      const alg = supportedSignatureAlgorithms[0]
 
       return {
         alg,
