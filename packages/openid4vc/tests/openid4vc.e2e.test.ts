@@ -197,7 +197,7 @@ describe('OpenId4Vc', () => {
       await issuerTenant1.modules.openId4VcIssuer.createCredentialOffer({
         issuerId: openIdIssuerTenant1.issuerId,
         offeredCredentials: [universityDegreeCredentialSdJwt.id],
-        preAuthorizedCodeFlowConfig: { txCode: { input_mode: 'numeric', length: 4 } },
+        preAuthorizedCodeFlowConfig: {}, // { txCode: { input_mode: 'numeric', length: 4 } }, // TODO: disable due to sphereon limitations
         version: 'v13',
       })
 
@@ -205,7 +205,7 @@ describe('OpenId4Vc', () => {
       await issuerTenant2.modules.openId4VcIssuer.createCredentialOffer({
         issuerId: openIdIssuerTenant2.issuerId,
         offeredCredentials: [universityDegreeCredentialSdJwt2.id],
-        preAuthorizedCodeFlowConfig: { txCode: { input_mode: 'numeric', length: 4 } },
+        preAuthorizedCodeFlowConfig: {}, // { txCode: { input_mode: 'numeric', length: 4 } }, // TODO: disable due to sphereon limitations
         version: 'v13',
       })
 
