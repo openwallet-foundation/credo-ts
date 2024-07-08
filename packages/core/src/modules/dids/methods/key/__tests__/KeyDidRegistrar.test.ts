@@ -80,7 +80,7 @@ describe('DidRegistrar', () => {
         didRegistrationMetadata: {},
         didState: {
           state: 'failed',
-          reason: 'Key instance cannot be combined with key type, seed and or private key',
+          reason: 'Key instance cannot be combined with key type, seed or private key',
         },
       })
     })

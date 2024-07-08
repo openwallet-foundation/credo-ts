@@ -28,12 +28,12 @@ export class KeyDidRegistrar implements DidRegistrar {
           didRegistrationMetadata: {},
           didState: {
             state: 'failed',
-            reason: 'Key instance cannot be combined with key type, seed and or private key',
+            reason: 'Key instance cannot be combined with key type, seed or private key',
           },
         }
       }
 
-      if (!key && keyType) {
+      if (keyType) {
         key = await agentContext.wallet.createKey({
           keyType,
           seed,
