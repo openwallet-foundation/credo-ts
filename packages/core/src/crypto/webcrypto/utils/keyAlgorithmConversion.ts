@@ -11,6 +11,21 @@ import {
   x25519AlgorithmIdentifier,
 } from '../algorithmIdentifiers'
 
+export const credoKeyTypeIntoCryptoKeyAlgorithm = (keyType: KeyType): KeyGenAlgorithm => {
+  switch (keyType) {
+    case KeyType.Ed25519:
+      return 'Ed25119'
+    case KeyType.P256:
+      return { name: 'ECDSA', namedCurve: 'P-256' }
+    case KeyType.P384:
+      return { name: 'ECDSA', namedCurve: 'P-384' }
+    case KeyType.K256:
+      return { name: 'ECDSA', namedCurve: 'K-256' }
+    default:
+      throw new CredoWebCryptoError(`Unsupported key type: ${keyType}`)
+  }
+}
+
 export const cryptoKeyAlgorithmToCredoKeyType = (algorithm: KeyGenAlgorithm): KeyType => {
   const algorithmName = typeof algorithm === 'string' ? algorithm.toUpperCase() : algorithm.name.toUpperCase()
   switch (algorithmName) {
@@ -29,9 +44,8 @@ export const cryptoKeyAlgorithmToCredoKeyType = (algorithm: KeyGenAlgorithm): Ke
         default:
           throw new CredoWebCryptoError(`Unsupported curve for ECDSA: ${(algorithm as EcKeyGenParams).namedCurve}`)
       }
-    default:
-      throw new CredoWebCryptoError(`Unsupported algorithm: ${algorithmName}`)
   }
+  throw new CredoWebCryptoError(`Unsupported algorithm: ${algorithmName}`)
 }
 
 export const spkiAlgorithmIntoCredoKeyType = (algorithm: AlgorithmIdentifier): KeyType => {
@@ -64,7 +78,7 @@ export const credoKeyTypeIntoSpkiAlgorithm = (keyType: KeyType): AlgorithmIdenti
       return ecPublicKeyWithP384AlgorithmIdentifier
     case KeyType.K256:
       return ecPublicKeyWithK256AlgorithmIdentifier
-    default:
-      throw new CredoWebCryptoError(`Unsupported key type: ${keyType}`)
   }
+
+  throw new CredoWebCryptoError(`Unsupported key type: ${keyType}`)
 }

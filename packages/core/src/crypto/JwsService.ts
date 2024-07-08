@@ -16,10 +16,10 @@ import { injectable } from '../plugins'
 import { isJsonObject, JsonEncoder, TypedArrayEncoder } from '../utils'
 import { WalletError } from '../wallet/error'
 
+import { X509Service } from './../modules/x509/X509Service'
 import { JWS_COMPACT_FORMAT_MATCHER } from './JwsTypes'
 import { getJwkFromJson, getJwkFromKey } from './jose/jwk'
 import { JwtPayload } from './jose/jwt'
-import { X509Service } from './x509'
 
 @injectable()
 export class JwsService {

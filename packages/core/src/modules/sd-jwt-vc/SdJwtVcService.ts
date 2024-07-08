@@ -18,16 +18,17 @@ import { uint8ArrayToBase64Url } from '@sd-jwt/utils'
 import { injectable } from 'tsyringe'
 
 import { AgentContext } from '../../agent'
-import { X509Certificate, JwtPayload, Jwk, getJwkFromJson, getJwkFromKey, Hasher } from '../../crypto'
-import { X509Service } from '../../crypto/x509/X509Service'
+import { JwtPayload, Jwk, getJwkFromJson, getJwkFromKey, Hasher } from '../../crypto'
 import { CredoError } from '../../error'
+import { X509Service } from '../../modules/x509/X509Service'
 import { TypedArrayEncoder, nowInSeconds } from '../../utils'
+import { getDomainFromUrl } from '../../utils/domain'
 import { fetchWithTimeout } from '../../utils/fetch'
 import { DidResolverService, parseDid, getKeyFromVerificationMethod } from '../dids'
+import { X509Certificate, X509ModuleConfig } from '../x509'
 
 import { SdJwtVcError } from './SdJwtVcError'
 import { SdJwtVcRecord, SdJwtVcRepository } from './repository'
-import { getDomainFromUrl } from '../../utils/domain'
 
 type SdJwtVcConfig = SDJwtVcInstance['userConfig']
 
@@ -183,7 +184,9 @@ export class SdJwtVcService {
 
   private assertValidX5cJwtIssuer(iss: string, leafCertificate: X509Certificate) {
     // TODO: should we throw here?
-    if (!iss.startsWith('https://')) throw new SdJwtVcError('The X509 certificate issuer must be a HTTPS URI.')
+    if (!iss.startsWith('http://') && !iss.startsWith('https://')) {
+      throw new SdJwtVcError('The X509 certificate issuer must be a HTTPS URI.')
+    }
 
     if (!leafCertificate.sanUriNames?.includes(iss) && !leafCertificate.sanDnsNames?.includes(getDomainFromUrl(iss))) {
       throw new SdJwtVcError(
@@ -459,8 +462,12 @@ export class SdJwtVcService {
         throw new SdJwtVcError('Invalid x5c header in credential. Not an array of strings.')
       }
 
-      await X509Service.validateCertificateChain(agentContext, { certificateChain: sdJwtVc.jwt.header.x5c })
-      // TODO: check for trusted trust anchor
+      const trustedCertificates = agentContext.dependencyManager.resolve(X509ModuleConfig).trustedCertificates
+      await X509Service.validateCertificateChain(agentContext, {
+        certificateChain: sdJwtVc.jwt.header.x5c,
+        trustedCertificates,
+      })
+
       return {
         method: 'x5c',
         chain: sdJwtVc.jwt.header.x5c,
