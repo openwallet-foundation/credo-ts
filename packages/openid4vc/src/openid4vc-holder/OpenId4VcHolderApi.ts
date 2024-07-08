@@ -137,7 +137,7 @@ export class OpenId4VcHolderApi {
   }
 
   /**
-   * Make a token request to fetch the information required to request credentials.
+   * Requests the token to be used for credential requests.
    *
    * @param options.resolvedCredentialOffer Obtained through @see resolveCredentialOffer
    * @param options.userPin The user's PIN
@@ -149,7 +149,7 @@ export class OpenId4VcHolderApi {
   }
 
   /**
-   * Request a credential
+   * Request a credential. Can be used with both the pre-authorized code flow and the authorization code flow.
    *
    * @param options.resolvedCredentialOffer Obtained through @see resolveCredentialOffer
    * @param options.tokenResponse Obtained through @see requestAccessToken
@@ -167,9 +167,9 @@ export class OpenId4VcHolderApi {
   /**
    * Send a notification event to the credential issuer
    *
-   * @param options.event credential_accepted The Credential was successfully stored in the Wallet.
-   * credential_deleted when the unsuccessful Credential issuance was caused by a user action.
-   * else credential_failure
+   * @param options.event 'credential_accepted' The Credential was successfully stored in the Wallet.
+   *                      'credential_deleted' when the unsuccessful Credential issuance was caused by a user action.
+   *                      'credential_failure' otherwise.
    * @param options.notificationMetadata The notification metadata received from @see acceptCredentialOfferUsingPreAuthorizedCode2 or @see requestCredential
    * @param options.tokenResponse The token response obtained through @see acceptCredentialOfferUsingPreAuthorizedCode2 or @see requestCredential
    */

@@ -12,7 +12,7 @@ import type {
   OpenId4VciAcceptCredentialOfferOptions,
   OpenId4VciTokenRequestOptions,
 } from './OpenId4VciHolderServiceOptions'
-import type { OpenId4VciCredentialSupported } from '../shared'
+import type { OpenId4VciCredentialSupported, OpenId4VciIssuerMetadata } from '../shared'
 import type { AgentContext, JwaSignatureAlgorithm, Key, JwkJson } from '@credo-ts/core'
 import type {
   AccessTokenResponse,
@@ -21,10 +21,8 @@ import type {
   OpenIDResponse,
   AuthorizationDetails,
   AuthorizationDetailsJwtVcJson,
-  IssuerMetadataV1_0_13,
   CredentialOfferPayloadV1_0_11,
-  CredentialIssuerMetadataV1_0_11,
-  CredentialIssuerMetadataV1_0_13,
+  IssuerMetadataV1_0_13,
 } from '@sphereon/oid4vci-common'
 
 import {
@@ -253,7 +251,7 @@ export class OpenId4VciHolderService {
     )
 
     if (!response.successBody) {
-      throw new CredoError(`Failed to send notification '${notificationId}' event to '${notificationEndpoint}'`)
+      throw new CredoError(`Failed to send notification event '${notificationId}' to '${notificationEndpoint}'`)
     }
   }
 
@@ -578,7 +576,7 @@ export class OpenId4VciHolderService {
     credentialResponse: OpenIDResponse<CredentialResponse>,
     options: {
       verifyCredentialStatus: boolean
-      credentialIssuerMetadata: CredentialIssuerMetadataV1_0_11 | CredentialIssuerMetadataV1_0_13
+      credentialIssuerMetadata: OpenId4VciIssuerMetadata
     }
   ): Promise<OpenId4VciCredentialResponse> {
     const { verifyCredentialStatus, credentialIssuerMetadata } = options

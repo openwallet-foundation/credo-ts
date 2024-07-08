@@ -17,13 +17,14 @@ import type {
   CredentialRequestSdJwtVc,
   CredentialsSupportedLegacy,
   MetadataDisplay,
+  TxCode,
 } from '@sphereon/oid4vci-common'
 
 export type OpenId4VciCredentialSupportedWithId = CredentialsSupportedLegacy & { id: string }
 export type OpenId4VciCredentialSupported = CredentialsSupportedLegacy
 export type OpenId4VciCredentialConfigurationsSupported = Record<string, CredentialConfigurationSupportedV1_0_13>
-
-export type OpenId4VciIssuerMetadata = CredentialIssuerMetadataV1_0_11 & CredentialIssuerMetadataV1_0_13
+export type OpenId4VciTxCode = TxCode
+export type OpenId4VciIssuerMetadata = CredentialIssuerMetadataV1_0_11 | CredentialIssuerMetadataV1_0_13
 export type OpenId4VciIssuerMetadataDisplay = MetadataDisplay
 
 export type OpenId4VciCredentialRequest = CommonCredentialRequest &

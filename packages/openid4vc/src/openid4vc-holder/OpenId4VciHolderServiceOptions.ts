@@ -8,7 +8,6 @@ import type { JwaSignatureAlgorithm, KeyType } from '@credo-ts/core'
 import type { VerifiableCredential } from '@credo-ts/core/src/modules/dif-presentation-exchange/models/index'
 import type {
   AccessTokenResponse,
-  AuthorizationServerMetadata,
   CredentialOfferRequestWithBaseUrl,
   EndpointMetadataResult,
   OpenId4VCIVersion,
@@ -35,9 +34,9 @@ export interface OpenId4VciNotificationMetadata {
 }
 
 /**
- * credential_accepted is to be used when the Credential was successfully stored in the Wallet, with or without user action.
- * credential_deleted is to be used when the unsuccessful Credential issuance was caused by a user action.
- * In all other unsuccessful cases, credential_failure is to be used.
+ * 'credential_accepted' The Credential was successfully stored in the Wallet.
+ * 'credential_deleted' when the unsuccessful Credential issuance was caused by a user action.
+ * 'credential_failure' otherwise.
  */
 export type OpenId4VcNotificationEvent = 'credential_accepted' | 'credential_failure' | 'credential_deleted'
 
@@ -50,7 +49,7 @@ export interface OpenId4VciCredentialResponse {
 
 export interface OpenId4VciResolvedCredentialOffer {
   metadata: EndpointMetadataResult & {
-    credentialIssuerMetadata: Partial<AuthorizationServerMetadata> & OpenId4VciIssuerMetadata
+    credentialIssuerMetadata: OpenId4VciIssuerMetadata
   }
   credentialOfferPayload: OpenId4VciCredentialOfferPayload
   credentialOfferRequestWithBaseUrl: CredentialOfferRequestWithBaseUrl

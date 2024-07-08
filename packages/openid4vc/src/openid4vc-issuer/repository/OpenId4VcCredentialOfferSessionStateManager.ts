@@ -72,7 +72,7 @@ export class OpenId4VcCredentialOfferSessionStateManager implements IStateManage
     if (record) {
       record.issuanceMetadata = stateValue.credentialDataSupplierInput
       record.credentialOfferPayload = stateValue.credentialOffer.credential_offer
-      record.userPin = stateValue.userPin
+      record.userPin = stateValue.txCode
       record.preAuthorizedCode = stateValue.preAuthorizedCode
       record.errorMessage = stateValue.error
       record.credentialOfferUri = credentialOfferUri
@@ -85,7 +85,7 @@ export class OpenId4VcCredentialOfferSessionStateManager implements IStateManage
         issuanceMetadata: stateValue.credentialDataSupplierInput,
         credentialOfferPayload: stateValue.credentialOffer.credential_offer,
         credentialOfferUri,
-        userPin: stateValue.userPin,
+        userPin: stateValue.txCode,
         errorMessage: stateValue.error,
         state: state,
       })
@@ -124,7 +124,7 @@ export class OpenId4VcCredentialOfferSessionStateManager implements IStateManage
       preAuthorizedCode: record.preAuthorizedCode,
       credentialDataSupplierInput: record.issuanceMetadata,
       error: record.errorMessage,
-      userPin: record.userPin,
+      txCode: record.userPin,
       createdAt: record.createdAt.getTime(),
       lastUpdatedAt: record.updatedAt?.getTime() ?? record.createdAt.getTime(),
     }

@@ -6,27 +6,9 @@ import type {
   OpenId4VciCredentialSupported,
   OpenId4VciCredentialSupportedWithId,
   OpenId4VciIssuerMetadataDisplay,
+  OpenId4VciTxCode,
 } from '../shared'
 import type { AgentContext, ClaimFormat, W3cCredential, SdJwtVcSignOptions } from '@credo-ts/core'
-
-export interface OpenId4VciTxCode {
-  /**
-   * OPTIONAL. The input character set. Possible values are numeric (only digits) and text (any characters). The default is numeric.
-   */
-  input_mode?: 'numeric' | 'text'
-
-  /**
-   * OPTIONAL. Integer specifying the length of the Transaction Code.
-   */
-  length?: number
-
-  /**
-   * OPTIONAL. String containing guidance for the Holder of the Wallet on how to obtain the Transaction Code.
-   * The Wallet is RECOMMENDED to display this description next to the Transaction Code input screen to improve the user experience.
-   * The length of the string MUST NOT exceed * 300 characters.
-   */
-  description?: string
-}
 
 export interface OpenId4VciPreAuthorizedCodeFlowConfig {
   preAuthorizedCode?: string
