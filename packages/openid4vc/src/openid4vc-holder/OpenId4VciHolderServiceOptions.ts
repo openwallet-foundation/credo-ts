@@ -39,7 +39,7 @@ export interface OpenId4VciNotificationMetadata {
  */
 export type OpenId4VciNotificationEvent = 'credential_accepted' | 'credential_failure' | 'credential_deleted'
 
-export type OpenId4VciTokenResponse = AccessTokenResponse
+export type OpenId4VciTokenResponse = Pick<AccessTokenResponse, 'access_token' | 'c_nonce'>
 
 export interface OpenId4VciCredentialResponse {
   credential: VerifiableCredential

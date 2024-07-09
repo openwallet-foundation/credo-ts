@@ -109,13 +109,13 @@ export class OpenId4VcIssuerService {
       throw new CredoError('User pin is not supported in OpenId4Vc version v13.')
     }
     if (version === 'v11' && options.preAuthorizedCodeFlowConfig.txCode !== undefined) {
-      throw new CredoError('Tx code is not supported OpenId4Vc version v11.')
+      options.preAuthorizedCodeFlowConfig.txCode = undefined
+      options.preAuthorizedCodeFlowConfig.userPinRequired = true
     }
 
     // this checks if the structure of the credentials is correct
     // it throws an error if a offered credential cannot be found in the credentialsSupported
     getOfferedCredentials(options.offeredCredentials, vcIssuer.issuerMetadata.credential_configurations_supported)
-
     const uniqueOfferedCredentials = Array.from(new Set(options.offeredCredentials))
     if (uniqueOfferedCredentials.length !== offeredCredentials.length) {
       throw new CredoError('All offered credentials must have unique ids.')
