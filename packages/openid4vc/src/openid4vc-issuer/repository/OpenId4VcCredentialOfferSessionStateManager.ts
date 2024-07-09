@@ -5,6 +5,7 @@ import type { CredentialOfferSession, IStateManager } from '@sphereon/oid4vci-co
 import { CredoError, EventEmitter } from '@credo-ts/core'
 import { IssueStatus } from '@sphereon/oid4vci-common'
 
+import { isCredentialOfferV1Draft13 } from '../../shared/utils'
 import { OpenId4VcIssuanceSessionState } from '../OpenId4VcIssuanceSessionState'
 import { OpenId4VcIssuerEvents } from '../OpenId4VcIssuerEvents'
 
@@ -58,21 +59,25 @@ export class OpenId4VcCredentialOfferSessionStateManager implements IStateManage
       const issuedCredentials = record?.issuedCredentials?.length ?? 0
       const credentialOffer = stateValue.credentialOffer.credential_offer
 
-      const offeredCredentials =
-        'credential_configuration_ids' in credentialOffer
-          ? credentialOffer.credential_configuration_ids // v13
-          : credentialOffer.credentials // v11
+      const offeredCredentials = isCredentialOfferV1Draft13(credentialOffer)
+        ? credentialOffer.credential_configuration_ids // v13
+        : credentialOffer.credentials // v11
 
       if (issuedCredentials >= offeredCredentials.length) {
         state = OpenId4VcIssuanceSessionState.Completed
       }
     }
 
+    // TODO: sphereon currently sets the wrong prop
+    const userPin =
+      stateValue.txCode ??
+      ('userPin' in stateValue && typeof stateValue.userPin === 'string' ? stateValue.userPin : undefined)
+
     // NOTE: we don't use clientId at the moment, will become relevant when doing the authorized flow
     if (record) {
       record.issuanceMetadata = stateValue.credentialDataSupplierInput
       record.credentialOfferPayload = stateValue.credentialOffer.credential_offer
-      record.userPin = stateValue.txCode
+      record.userPin = userPin
       record.preAuthorizedCode = stateValue.preAuthorizedCode
       record.errorMessage = stateValue.error
       record.credentialOfferUri = credentialOfferUri
@@ -85,7 +90,7 @@ export class OpenId4VcCredentialOfferSessionStateManager implements IStateManage
         issuanceMetadata: stateValue.credentialDataSupplierInput,
         credentialOfferPayload: stateValue.credentialOffer.credential_offer,
         credentialOfferUri,
-        userPin: stateValue.txCode,
+        userPin: userPin,
         errorMessage: stateValue.error,
         state: state,
       })

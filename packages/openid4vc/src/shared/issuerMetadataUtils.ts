@@ -1,8 +1,4 @@
-import type {
-  OpenId4VciCredentialConfigurationsSupported,
-  OpenId4VciCredentialSupported,
-  OpenId4VciCredentialSupportedWithId,
-} from './models'
+import type { OpenId4VciCredentialConfigurationsSupported, OpenId4VciCredentialSupportedWithId } from './models'
 import type { CredentialConfigurationSupportedV1_0_13, CredentialOfferFormat } from '@sphereon/oid4vci-common'
 
 import { CredoError } from '@credo-ts/core'
@@ -12,59 +8,114 @@ import { CredoError } from '@credo-ts/core'
  *
  * Depending on the format, the types may be nested, or have different a different name/type
  */
-export function getTypesFromCredentialSupported(credentialSupported: OpenId4VciCredentialSupported) {
+export function getTypesFromCredentialSupported(credentialSupported: CredentialConfigurationSupportedV1_0_13) {
   if (
     credentialSupported.format === 'jwt_vc_json-ld' ||
     credentialSupported.format === 'ldp_vc' ||
     credentialSupported.format === 'jwt_vc_json' ||
     credentialSupported.format === 'jwt_vc'
   ) {
-    return credentialSupported.types
+    return credentialSupported.credential_definition.type
   } else if (credentialSupported.format === 'vc+sd-jwt') {
-    return [credentialSupported.vct]
+    return credentialSupported.vct
   }
 
   throw Error(`Unable to extract types from credentials supported. Unknown format ${credentialSupported.format}`)
 }
 
 export function credentialConfigurationSupportedToCredentialSupported(
+  id: string,
   config: CredentialConfigurationSupportedV1_0_13
 ): OpenId4VciCredentialSupportedWithId {
-  return {
-    id: config.id as string,
-    format: config.format,
+  const baseConfig = {
+    id,
     scope: config.scope,
     cryptographic_binding_methods_supported: config.cryptographic_binding_methods_supported,
-    // @ts-expect-error this property was removed for some reason
     cryptographic_suites_supported: config.credential_signing_alg_values_supported,
+    // In theory credentials_supported should not have any proof_types we do this to allow back and forth conversion
     proof_types_supported: config.proof_types_supported,
     display: config.display,
-    ...(config.vct && { vct: config.vct }),
-    claims: config.format === 'vc+sd-jwt' ? config.claims : undefined,
-    credentialSubject: config.format !== 'vc+sd-jwt' ? config.credential_definition.credentialSubject : undefined,
-    types: config.format !== 'vc+sd-jwt' ? config.credential_definition.type : undefined,
+    order: config.order as string[] | undefined,
   }
+
+  if (config.format === 'jwt_vc_json' || config.format === 'jwt_vc') {
+    return {
+      ...baseConfig,
+      format: config.format,
+      credentialSubject: config.credential_definition.credentialSubject,
+      types: config.credential_definition.type ?? [],
+    }
+  } else if (config.format === 'ldp_vc' || config.format === 'jwt_vc_json-ld') {
+    return {
+      ...baseConfig,
+      format: config.format,
+      // @ts-expect-error this should exist
+      '@context': config.credential_definition['@context'],
+      credentialSubject: config.credential_definition.credentialSubject,
+      types: config.credential_definition.type ?? [],
+    }
+  } else if (config.format === 'vc+sd-jwt') {
+    return {
+      ...baseConfig,
+      format: config.format,
+      // @ts-expect-error keep this for now to allow back and forth conversion
+      vct: config.vct,
+      claims: config.claims,
+    }
+  }
+
+  throw new CredoError(`Unsupported credential format ${config.format}`)
 }
 
 export function credentialSupportedToCredentialConfigurationSupported(
   credentialSupported: OpenId4VciCredentialSupportedWithId
 ): CredentialConfigurationSupportedV1_0_13 {
-  return {
-    vct: credentialSupported.format === 'vc+sd-jwt' ? credentialSupported.vct : undefined,
+  const baseCredentialConfigurationSupported = {
     id: credentialSupported.id,
-    claims: credentialSupported.format === 'vc+sd-jwt' ? credentialSupported.claims : undefined,
-    format: credentialSupported.format,
     scope: credentialSupported.scope,
     cryptographic_binding_methods_supported: credentialSupported.cryptographic_binding_methods_supported,
-    // @ts-expect-error this property was removed for some reason
-    credential_signing_alg_values_supported: credentialSupported.cryptographic_suites_supported,
+    credential_signing_alg_values_supported:
+      'cryptographic_suites_supported' in credentialSupported
+        ? (credentialSupported.cryptographic_suites_supported as string[] | undefined)
+        : undefined,
+    // In theory credentials_supported should not have any proof_types we do this to allow back and forth conversion
     proof_types_supported: credentialSupported.proof_types_supported,
     display: credentialSupported.display,
-    credential_definition: {
-      credentialSubject: credentialSupported.format !== 'vc+sd-jwt' ? credentialSupported.credentialSubject : undefined,
-      type: credentialSupported.format !== 'vc+sd-jwt' ? credentialSupported.types : undefined,
-    },
+    order: credentialSupported.order,
   }
+
+  if (credentialSupported.format === 'jwt_vc_json' || credentialSupported.format === 'jwt_vc') {
+    return {
+      ...baseCredentialConfigurationSupported,
+      format: credentialSupported.format,
+      credential_definition: {
+        credentialSubject: credentialSupported.credentialSubject,
+        type: credentialSupported.types,
+      },
+    }
+  } else if (credentialSupported.format === 'ldp_vc' || credentialSupported.format === 'jwt_vc_json-ld') {
+    return {
+      ...baseCredentialConfigurationSupported,
+      format: credentialSupported.format,
+      credential_definition: {
+        // @ts-expect-error this should exist
+        '@context': credentialSupported['@context'],
+        credentialSubject: credentialSupported.credentialSubject,
+        type: credentialSupported.types,
+      },
+    }
+  } else if (credentialSupported.format === 'vc+sd-jwt') {
+    return {
+      ...baseCredentialConfigurationSupported,
+      format: credentialSupported.format,
+      vct: credentialSupported.vct,
+      id: credentialSupported.id,
+      claims: credentialSupported.format === 'vc+sd-jwt' ? credentialSupported.claims : undefined,
+      credential_definition: {},
+    }
+  }
+
+  throw new CredoError(`Unsupported credential format ${credentialSupported.format}`)
 }
 
 export function credentialsSupportedV13ToV11(
@@ -73,10 +124,7 @@ export function credentialsSupportedV13ToV11(
   const credentialsSupportedWithId: OpenId4VciCredentialSupportedWithId[] = []
 
   for (const [id, credentialConfiguration] of Object.entries(credentialConfigurationSupported)) {
-    credentialsSupportedWithId.push({
-      ...credentialConfigurationSupportedToCredentialSupported(credentialConfiguration),
-      id,
-    })
+    credentialsSupportedWithId.push(credentialConfigurationSupportedToCredentialSupported(id, credentialConfiguration))
   }
 
   return credentialsSupportedWithId
@@ -101,13 +149,13 @@ export function credentialsSupportedV11ToV13(
  */
 export function getOfferedCredentials(
   offeredCredentials: Array<string | CredentialOfferFormat>,
-  allCredentialsSupported: OpenId4VciCredentialSupported[] | OpenId4VciCredentialConfigurationsSupported
-): OpenId4VciCredentialSupportedWithId[] {
-  const credentialsSupported: OpenId4VciCredentialSupportedWithId[] = []
+  allCredentialsSupported: OpenId4VciCredentialSupportedWithId[] | OpenId4VciCredentialConfigurationsSupported
+) {
+  const credentialConfigurationsOffered: OpenId4VciCredentialConfigurationsSupported = {}
 
   const uniformCredentialsSupported = Array.isArray(allCredentialsSupported)
-    ? allCredentialsSupported
-    : credentialsSupportedV13ToV11(allCredentialsSupported)
+    ? credentialsSupportedV11ToV13(allCredentialsSupported)
+    : allCredentialsSupported
 
   for (const offeredCredential of offeredCredentials) {
     // In draft 12 inline credential offers are removed. It's easier to already remove support now.
@@ -117,20 +165,15 @@ export function getOfferedCredentials(
       )
     }
 
-    const foundSupportedCredential = uniformCredentialsSupported.find(
-      (supportedCredential): supportedCredential is OpenId4VciCredentialSupportedWithId =>
-        supportedCredential.id !== undefined && supportedCredential.id === offeredCredential
-    )
-
     // Make sure the issuer metadata includes the offered credential.
-    if (!foundSupportedCredential) {
+    const credentialConfigurationSupported = uniformCredentialsSupported[offeredCredential]
+    if (!credentialConfigurationSupported) {
       throw new Error(
         `Offered credential '${offeredCredential}' is not part of credentials_supported of the issuer metadata.`
       )
     }
-
-    credentialsSupported.push(foundSupportedCredential)
+    credentialConfigurationsOffered[offeredCredential] = credentialConfigurationSupported
   }
 
-  return credentialsSupported
+  return credentialConfigurationsOffered
 }

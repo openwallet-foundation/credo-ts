@@ -6,7 +6,6 @@ import type {
 } from '@sphereon/did-auth-siop'
 import type {
   AssertedUniformCredentialOffer,
-  CommonCredentialRequest,
   CredentialConfigurationSupportedV1_0_13,
   CredentialIssuerMetadataV1_0_11,
   CredentialIssuerMetadataV1_0_13,
@@ -27,8 +26,10 @@ export type OpenId4VciTxCode = TxCode
 export type OpenId4VciIssuerMetadata = CredentialIssuerMetadataV1_0_11 | CredentialIssuerMetadataV1_0_13
 export type OpenId4VciIssuerMetadataDisplay = MetadataDisplay
 
-export type OpenId4VciCredentialRequest = CommonCredentialRequest &
-  (CredentialRequestJwtVcJson | CredentialRequestJwtVcJsonLdAndLdpVc | CredentialRequestSdJwtVc)
+export type OpenId4VciCredentialRequest =
+  | CredentialRequestJwtVcJson
+  | CredentialRequestJwtVcJsonLdAndLdpVc
+  | CredentialRequestSdJwtVc
 
 export type OpenId4VciCredentialRequestJwtVcJson = CredentialRequestJwtVcJson
 export type OpenId4VciCredentialRequestJwtVcJsonLdAndLdpVc = CredentialRequestJwtVcJsonLdAndLdpVc

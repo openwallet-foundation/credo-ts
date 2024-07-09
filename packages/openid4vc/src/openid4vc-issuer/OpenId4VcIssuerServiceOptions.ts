@@ -12,7 +12,15 @@ import type { AgentContext, ClaimFormat, W3cCredential, SdJwtVcSignOptions } fro
 
 export interface OpenId4VciPreAuthorizedCodeFlowConfig {
   preAuthorizedCode?: string
+  /**
+   * The user pin required flag indicates whether the user needs to enter a pin to authorize the transaction.
+   * Only compatible with v11
+   */
   userPinRequired?: boolean
+  /**
+   * The user pin required flag indicates whether the user needs to enter a pin to authorize the transaction.
+   * Only compatible with v13
+   */
   txCode?: OpenId4VciTxCode
 }
 
@@ -49,7 +57,10 @@ export interface OpenId4VciCreateCredentialOfferOptions {
    */
   issuanceMetadata?: Record<string, unknown>
 
-  version?: 'v11' | 'v13'
+  /**
+   * @default v11
+   */
+  version?: 'v11' | 'v1.draft13'
 }
 
 export interface OpenId4VciCreateCredentialResponseOptions {
@@ -97,12 +108,21 @@ export type OpenId4VciCredentialRequestToCredentialMapper = (options: {
   holderBinding: OpenId4VcCredentialHolderBinding
 
   /**
+   * @deprecated use credentialConfigurations instead
+   *
    * The credentials supported entries from the issuer metadata that were offered
    * and match the incoming request
    *
    * NOTE: in v12 this will probably become a single entry, as it will be matched on id
    */
   credentialsSupported: OpenId4VciCredentialSupported[]
+
+  /**
+   * v13: The ids of the credential configurations that were offered and match the request
+   *
+   * NOTE: This will probably become a single entry, as it will be matched on id
+   */
+  credentialConfigurationIds: [string, ...string[]]
 }) => Promise<OpenId4VciSignCredential> | OpenId4VciSignCredential
 
 export type OpenId4VciSignCredential = OpenId4VciSignSdJwtCredential | OpenId4VciSignW3cCredential

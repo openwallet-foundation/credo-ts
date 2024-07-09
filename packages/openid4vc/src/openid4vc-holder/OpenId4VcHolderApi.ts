@@ -167,11 +167,7 @@ export class OpenId4VcHolderApi {
   /**
    * Send a notification event to the credential issuer
    *
-   * @param options.event 'credential_accepted' The Credential was successfully stored in the Wallet.
-   *                      'credential_deleted' when the unsuccessful Credential issuance was caused by a user action.
-   *                      'credential_failure' otherwise.
-   * @param options.notificationMetadata The notification metadata received from @see acceptCredentialOfferUsingPreAuthorizedCode2 or @see requestCredential
-   * @param options.tokenResponse The token response obtained through @see acceptCredentialOfferUsingPreAuthorizedCode2 or @see requestCredential
+   * @param options OpenId4VciSendNotificationOptions
    */
   public async sendNotification(options: OpenId4VciSendNotificationOptions) {
     return this.openId4VciHolderService.sendNotification(options)

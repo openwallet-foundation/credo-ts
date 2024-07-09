@@ -1,6 +1,5 @@
 import type {
   OpenId4VcCredentialHolderBinding,
-  OpenId4VciCredentialOfferPayload,
   OpenId4VciCredentialSupportedWithId,
   OpenId4VciIssuerMetadata,
 } from '../shared'
@@ -38,7 +37,7 @@ export interface OpenId4VciNotificationMetadata {
  * 'credential_deleted' when the unsuccessful Credential issuance was caused by a user action.
  * 'credential_failure' otherwise.
  */
-export type OpenId4VcNotificationEvent = 'credential_accepted' | 'credential_failure' | 'credential_deleted'
+export type OpenId4VciNotificationEvent = 'credential_accepted' | 'credential_failure' | 'credential_deleted'
 
 export type OpenId4VciTokenResponse = AccessTokenResponse
 
@@ -48,10 +47,9 @@ export interface OpenId4VciCredentialResponse {
 }
 
 export interface OpenId4VciResolvedCredentialOffer {
-  metadata: EndpointMetadataResult & {
+  metadata: Omit<EndpointMetadataResult, 'credentialIssuerMetadata'> & {
     credentialIssuerMetadata: OpenId4VciIssuerMetadata
   }
-  credentialOfferPayload: OpenId4VciCredentialOfferPayload
   credentialOfferRequestWithBaseUrl: CredentialOfferRequestWithBaseUrl
   offeredCredentials: OpenId4VciCredentialSupportedWithId[]
   version: OpenId4VCIVersion
@@ -67,14 +65,29 @@ export interface OpenId4VciResolvedAuthorizationRequestWithCode extends OpenId4V
 }
 
 export interface OpenId4VciSendNotificationOptions {
+  /**
+   * The notification metadata received from @see requestCredential
+   */
   notificationMetadata: OpenId4VciNotificationMetadata
+
+  /**
+   * The access token obtained through @see requestToken
+   */
   accessToken: string
-  notificationEvent: OpenId4VcNotificationEvent
+
+  /**
+   * The notification event
+   *
+   * 'credential_accepted' The Credential was successfully stored in the Wallet.
+   * 'credential_deleted' when the unsuccessful Credential issuance was caused by a user action.
+   * 'credential_failure' otherwise.
+   */
+  notificationEvent: OpenId4VciNotificationEvent
 }
 
 interface OpenId4VcTokenRequestBaseOptions {
   resolvedCredentialOffer: OpenId4VciResolvedCredentialOffer
-  userPin?: string
+  txCode?: string
 }
 
 export interface OpenId4VcAuthorizationCodeTokenRequestOptions extends OpenId4VcTokenRequestBaseOptions {
@@ -91,16 +104,16 @@ export type OpenId4VciTokenRequestOptions =
   | OpenId4VciPreAuthorizedTokenRequestOptions
   | OpenId4VcAuthorizationCodeTokenRequestOptions
 
-export interface OpenId4VciCredentialRequestOptions extends OpenId4VciAcceptCredentialOfferOptions {
+export interface OpenId4VciCredentialRequestOptions extends Omit<OpenId4VciAcceptCredentialOfferOptions, 'userPin'> {
   resolvedCredentialOffer: OpenId4VciResolvedCredentialOffer
   tokenResponse: OpenId4VciTokenResponse
 }
 /**
  * Options that are used to accept a credential offer for both the pre-authorized code flow and authorization code flow.
+ * NOTE: Merge with @see OpenId4VciCredentialRequestOptions for 0.6
  */
 export interface OpenId4VciAcceptCredentialOfferOptions {
   /**
-   * FIXME: remove this with 0.6
    * String value containing a user PIN. This value MUST be present if user_pin_required was set to true in the Credential Offer.
    * This parameter MUST only be used, if the grant_type is urn:ietf:params:oauth:grant-type:pre-authorized_code.
    */

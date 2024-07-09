@@ -198,15 +198,15 @@ describe('OpenId4Vc', () => {
         issuerId: openIdIssuerTenant1.issuerId,
         offeredCredentials: [universityDegreeCredentialSdJwt.id],
         preAuthorizedCodeFlowConfig: {}, // { txCode: { input_mode: 'numeric', length: 4 } }, // TODO: disable due to sphereon limitations
-        version: 'v13',
+        version: 'v1.draft13',
       })
 
     const { issuanceSession: issuanceSession2, credentialOffer: credentialOffer2 } =
       await issuerTenant2.modules.openId4VcIssuer.createCredentialOffer({
         issuerId: openIdIssuerTenant2.issuerId,
         offeredCredentials: [universityDegreeCredentialSdJwt2.id],
-        preAuthorizedCodeFlowConfig: {}, // { txCode: { input_mode: 'numeric', length: 4 } }, // TODO: disable due to sphereon limitations
-        version: 'v13',
+        preAuthorizedCodeFlowConfig: {}, // { userPinRequired: true },
+        version: 'v11',
       })
 
     await issuerTenant1.endSession()
@@ -229,13 +229,7 @@ describe('OpenId4Vc', () => {
       credentialOffer1
     )
 
-    const issuerSession1 = await waitForCredentialIssuanceSessionRecordSubject(issuer.replaySubject, {
-      state: OpenId4VcIssuanceSessionState.OfferUriRetrieved,
-      issuanceSessionId: issuanceSession1.id,
-      contextCorrelationId: issuer1.tenantId,
-    })
-
-    expect(resolvedCredentialOffer1.credentialOfferPayload.credential_issuer).toEqual(
+    expect(resolvedCredentialOffer1.credentialOfferRequestWithBaseUrl.credential_offer.credential_issuer).toEqual(
       `${issuanceBaseUrl}/${openIdIssuerTenant1.issuerId}`
     )
     expect(resolvedCredentialOffer1.metadata.credentialIssuerMetadata?.token_endpoint).toEqual(
@@ -248,10 +242,7 @@ describe('OpenId4Vc', () => {
     // Bind to JWK
     const credentialsTenant1 = await holderTenant1.modules.openId4VcHolder.acceptCredentialOfferUsingPreAuthorizedCode(
       resolvedCredentialOffer1,
-      {
-        credentialBindingResolver,
-        userPin: issuerSession1.userPin,
-      }
+      { credentialBindingResolver, userPin: issuanceSession1.userPin }
     )
 
     // Wait for all events
@@ -291,7 +282,7 @@ describe('OpenId4Vc', () => {
       contextCorrelationId: issuer2.tenantId,
     })
 
-    expect(resolvedCredentialOffer2.credentialOfferPayload.credential_issuer).toEqual(
+    expect(resolvedCredentialOffer2.credentialOfferRequestWithBaseUrl.credential_offer.credential_issuer).toEqual(
       `${issuanceBaseUrl}/${openIdIssuerTenant2.issuerId}`
     )
     expect(resolvedCredentialOffer2.metadata.credentialIssuerMetadata?.token_endpoint).toEqual(
@@ -304,6 +295,7 @@ describe('OpenId4Vc', () => {
     // Bind to did
     const tokenResponseTenant2 = await holderTenant1.modules.openId4VcHolder.requestToken({
       resolvedCredentialOffer: resolvedCredentialOffer2,
+      txCode: issuanceSession2.userPin,
     })
 
     const credentialsTenant2 = await holderTenant1.modules.openId4VcHolder.requestCredential({
