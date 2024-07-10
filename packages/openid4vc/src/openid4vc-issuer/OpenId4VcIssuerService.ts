@@ -52,7 +52,7 @@ import {
 import { VcIssuerBuilder } from '@sphereon/oid4vci-issuer'
 
 import { credentialsSupportedV11ToV13, getOfferedCredentials, OpenId4VciCredentialFormatProfile } from '../shared'
-import { credentialsSupportedV13ToV11 } from '../shared/issuerMetadataUtils'
+import { credentialsSupportedV13ToV11, getProofTypesSupported } from '../shared/issuerMetadataUtils'
 import { storeActorIdForContextCorrelationId } from '../shared/router'
 import { getSphereonVerifiableCredential } from '../shared/transform'
 import { getProofTypeFromKey, isCredentialOfferV1Draft13 } from '../shared/utils'
@@ -289,11 +289,15 @@ export class OpenId4VcIssuerService {
     const accessTokenSignerKey = await agentContext.wallet.createKey({
       keyType: KeyType.Ed25519,
     })
+
+    const credentialsSupported = Array.isArray(options.credentialsSupported)
+      ? options.credentialsSupported
+      : credentialsSupportedV13ToV11(options.credentialsSupported)
     const openId4VcIssuer = new OpenId4VcIssuerRecord({
       issuerId: options.issuerId ?? utils.uuid(),
       display: options.display,
       accessTokenPublicKeyFingerprint: accessTokenSignerKey.fingerprint,
-      credentialsSupported: options.credentialsSupported,
+      credentialsSupported,
     })
 
     await this.openId4VcIssuerRepository.save(agentContext, openId4VcIssuer)
@@ -364,11 +368,14 @@ export class OpenId4VcIssuerService {
   private getVcIssuer(agentContext: AgentContext, issuer: OpenId4VcIssuerRecord) {
     const issuerMetadata = this.getIssuerMetadata(agentContext, issuer)
 
+    const proofTypesSupported = getProofTypesSupported(agentContext)
     const builder = new VcIssuerBuilder()
       .withCredentialIssuer(issuerMetadata.issuerUrl)
       .withCredentialEndpoint(issuerMetadata.credentialEndpoint)
       .withTokenEndpoint(issuerMetadata.tokenEndpoint)
-      .withCredentialConfigurationsSupported(credentialsSupportedV11ToV13(issuer.credentialsSupported))
+      .withCredentialConfigurationsSupported(
+        credentialsSupportedV11ToV13(issuer.credentialsSupported, { proofTypesSupported })
+      )
       .withCNonceStateManager(new OpenId4VcCNonceStateManager(agentContext, issuer.issuerId))
       .withCredentialOfferStateManager(new OpenId4VcCredentialOfferSessionStateManager(agentContext, issuer.issuerId))
       .withCredentialOfferURIStateManager(new OpenId4VcCredentialOfferUriStateManager(agentContext, issuer.issuerId))
@@ -406,6 +413,7 @@ export class OpenId4VcIssuerService {
   }
 
   private findOfferedCredentialsMatchingRequest(
+    agentContext: AgentContext,
     credentialOffer: OpenId4VciCredentialOfferPayload,
     credentialRequest: OpenId4VciCredentialRequest,
     credentialsSupported: OpenId4VciCredentialSupportedWithId[],
@@ -415,7 +423,10 @@ export class OpenId4VcIssuerService {
       ? credentialOffer.credential_configuration_ids
       : credentialOffer.credentials
 
-    const offeredCredentials = getOfferedCredentials(offeredCredentialsData, credentialsSupported)
+    const proofTypesSupported = getProofTypesSupported(agentContext)
+    const offeredCredentials = getOfferedCredentials(offeredCredentialsData, credentialsSupported, {
+      proofTypesSupported,
+    })
 
     if ('credential_identifier' in credentialRequest && typeof credentialRequest.credential_identifier === 'string') {
       const offeredCredential = offeredCredentials[credentialRequest.credential_identifier]
@@ -587,6 +598,7 @@ export class OpenId4VcIssuerService {
       const issuerMetadata = this.getIssuerMetadata(agentContext, issuer)
 
       const offeredCredentialsMatchingRequest = this.findOfferedCredentialsMatchingRequest(
+        agentContext,
         options.issuanceSession.credentialOfferPayload,
         credentialRequest,
         issuerMetadata.credentialsSupported,

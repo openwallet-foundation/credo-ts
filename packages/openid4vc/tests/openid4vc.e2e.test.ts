@@ -36,7 +36,11 @@ import {
   createAgentFromModules,
   createTenantForAgent,
 } from './utils'
-import { universityDegreeCredentialSdJwt, universityDegreeCredentialSdJwt2 } from './utilsVci'
+import {
+  universityDegreeCredentialConfigurationSupported,
+  universityDegreeCredentialSdJwt,
+  universityDegreeCredentialSdJwt2,
+} from './utilsVci'
 import { openBadgePresentationDefinition, universityDegreePresentationDefinition } from './utilsVp'
 
 const serverPort = 1234
@@ -186,8 +190,21 @@ describe('OpenId4Vc', () => {
     const issuerTenant2 = await issuer.agent.modules.tenants.getTenantAgent({ tenantId: issuer2.tenantId })
 
     const openIdIssuerTenant1 = await issuerTenant1.modules.openId4VcIssuer.createIssuer({
-      credentialsSupported: [universityDegreeCredentialSdJwt],
+      credentialsSupported: {
+        universityDegree: universityDegreeCredentialConfigurationSupported,
+      },
     })
+    const issuer1Record = await issuerTenant1.modules.openId4VcIssuer.getIssuerByIssuerId(openIdIssuerTenant1.issuerId)
+    expect(issuer1Record.credentialsSupported).toEqual([
+      {
+        id: 'universityDegree',
+        format: 'vc+sd-jwt',
+        cryptographic_binding_methods_supported: ['did:key'],
+        vct: universityDegreeCredentialConfigurationSupported.vct,
+        scope: universityDegreeCredentialConfigurationSupported.scope,
+        proof_types_supported: universityDegreeCredentialConfigurationSupported.proof_types_supported,
+      },
+    ])
 
     const openIdIssuerTenant2 = await issuerTenant2.modules.openId4VcIssuer.createIssuer({
       credentialsSupported: [universityDegreeCredentialSdJwt2],
@@ -196,7 +213,7 @@ describe('OpenId4Vc', () => {
     const { issuanceSession: issuanceSession1, credentialOffer: credentialOffer1 } =
       await issuerTenant1.modules.openId4VcIssuer.createCredentialOffer({
         issuerId: openIdIssuerTenant1.issuerId,
-        offeredCredentials: [universityDegreeCredentialSdJwt.id],
+        offeredCredentials: ['universityDegree'],
         preAuthorizedCodeFlowConfig: {}, // { txCode: { input_mode: 'numeric', length: 4 } }, // TODO: disable due to sphereon limitations
         version: 'v1.draft13',
       })
@@ -228,6 +245,17 @@ describe('OpenId4Vc', () => {
     const resolvedCredentialOffer1 = await holderTenant1.modules.openId4VcHolder.resolveCredentialOffer(
       credentialOffer1
     )
+
+    expect(resolvedCredentialOffer1.offeredCredentials).toEqual([
+      {
+        id: 'universityDegree',
+        format: 'vc+sd-jwt',
+        cryptographic_binding_methods_supported: ['did:key'],
+        vct: universityDegreeCredentialConfigurationSupported.vct,
+        scope: universityDegreeCredentialConfigurationSupported.scope,
+        proof_types_supported: universityDegreeCredentialConfigurationSupported.proof_types_supported,
+      },
+    ])
 
     expect(resolvedCredentialOffer1.credentialOfferRequestWithBaseUrl.credential_offer.credential_issuer).toEqual(
       `${issuanceBaseUrl}/${openIdIssuerTenant1.issuerId}`

@@ -12,7 +12,11 @@ import type {
   OpenId4VciAcceptCredentialOfferOptions,
   OpenId4VciTokenRequestOptions,
 } from './OpenId4VciHolderServiceOptions'
-import type { OpenId4VciCredentialSupported, OpenId4VciIssuerMetadata } from '../shared'
+import type {
+  OpenId4VciCredentialConfigurationSupported,
+  OpenId4VciCredentialSupported,
+  OpenId4VciIssuerMetadata,
+} from '../shared'
 import type { AgentContext, JwaSignatureAlgorithm, Key, JwkJson } from '@credo-ts/core'
 import type {
   AccessTokenResponse,
@@ -23,7 +27,6 @@ import type {
   AuthorizationDetailsJwtVcJson,
   CredentialIssuerMetadataV1_0_11,
   CredentialIssuerMetadataV1_0_13,
-  CredentialConfigurationSupportedV1_0_13,
 } from '@sphereon/oid4vci-common'
 
 import {
@@ -436,7 +439,7 @@ export class OpenId4VciHolderService {
     options: {
       credentialBindingResolver: OpenId4VciCredentialBindingResolver
       possibleProofOfPossessionSignatureAlgorithms: JwaSignatureAlgorithm[]
-      offeredCredential: CredentialConfigurationSupportedV1_0_13
+      offeredCredential: OpenId4VciCredentialConfigurationSupported
     }
   ) {
     const { signatureAlgorithm, supportedDidMethods, supportsAllDidMethods, supportsJwk } =
@@ -507,7 +510,7 @@ export class OpenId4VciHolderService {
   private getProofOfPossessionRequirements(
     agentContext: AgentContext,
     options: {
-      credentialToRequest: CredentialConfigurationSupportedV1_0_13
+      credentialToRequest: OpenId4VciCredentialConfigurationSupported
       possibleProofOfPossessionSignatureAlgorithms: JwaSignatureAlgorithm[]
     }
   ): OpenId4VciProofOfPossessionRequirements {

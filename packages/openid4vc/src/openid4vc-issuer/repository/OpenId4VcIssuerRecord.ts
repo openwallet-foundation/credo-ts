@@ -1,7 +1,8 @@
-import type { OpenId4VciCredentialSupportedWithId, OpenId4VciIssuerMetadataDisplay } from '../../shared'
 import type { RecordTags, TagsBase } from '@credo-ts/core'
 
 import { BaseRecord, utils } from '@credo-ts/core'
+
+import { type OpenId4VciCredentialSupportedWithId, type OpenId4VciIssuerMetadataDisplay } from '../../shared'
 
 export type OpenId4VcIssuerRecordTags = RecordTags<OpenId4VcIssuerRecord>
 
@@ -52,6 +53,7 @@ export class OpenId4VcIssuerRecord extends BaseRecord<DefaultOpenId4VcIssuerReco
       this.issuerId = props.issuerId
       this.accessTokenPublicKeyFingerprint = props.accessTokenPublicKeyFingerprint
       this.credentialsSupported = props.credentialsSupported
+
       this.display = props.display
     }
   }

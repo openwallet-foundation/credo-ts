@@ -1,14 +1,21 @@
-import type { OpenId4VciCredentialConfigurationsSupported, OpenId4VciCredentialSupportedWithId } from './models'
-import type { CredentialConfigurationSupportedV1_0_13, CredentialOfferFormat } from '@sphereon/oid4vci-common'
+import type {
+  OpenId4VciCredentialConfigurationsSupported,
+  OpenId4VciCredentialConfigurationSupported,
+  OpenId4VciCredentialSupportedWithId,
+} from './models'
+import type { AgentContext } from '@credo-ts/core'
+import type { CredentialOfferFormat, KeyProofType, ProofType } from '@sphereon/oid4vci-common'
 
 import { CredoError } from '@credo-ts/core'
+
+import { getSupportedJwaSignatureAlgorithms } from './utils'
 
 /**
  * Get all `types` from a `CredentialSupported` object.
  *
  * Depending on the format, the types may be nested, or have different a different name/type
  */
-export function getTypesFromCredentialSupported(credentialSupported: CredentialConfigurationSupportedV1_0_13) {
+export function getTypesFromCredentialSupported(credentialSupported: OpenId4VciCredentialConfigurationSupported) {
   if (
     credentialSupported.format === 'jwt_vc_json-ld' ||
     credentialSupported.format === 'ldp_vc' ||
@@ -25,7 +32,7 @@ export function getTypesFromCredentialSupported(credentialSupported: CredentialC
 
 export function credentialConfigurationSupportedToCredentialSupported(
   id: string,
-  config: CredentialConfigurationSupportedV1_0_13
+  config: OpenId4VciCredentialConfigurationSupported
 ): OpenId4VciCredentialSupportedWithId {
   const baseConfig = {
     id,
@@ -68,8 +75,11 @@ export function credentialConfigurationSupportedToCredentialSupported(
 }
 
 export function credentialSupportedToCredentialConfigurationSupported(
-  credentialSupported: OpenId4VciCredentialSupportedWithId
-): CredentialConfigurationSupportedV1_0_13 {
+  credentialSupported: OpenId4VciCredentialSupportedWithId,
+  options?: {
+    proofTypesSupported?: Record<KeyProofType, ProofType>
+  }
+): OpenId4VciCredentialConfigurationSupported {
   const baseCredentialConfigurationSupported = {
     id: credentialSupported.id,
     scope: credentialSupported.scope,
@@ -79,7 +89,7 @@ export function credentialSupportedToCredentialConfigurationSupported(
         ? (credentialSupported.cryptographic_suites_supported as string[] | undefined)
         : undefined,
     // In theory credentials_supported should not have any proof_types we do this to allow back and forth conversion
-    proof_types_supported: credentialSupported.proof_types_supported,
+    proof_types_supported: credentialSupported.proof_types_supported ?? options?.proofTypesSupported,
     display: credentialSupported.display,
     order: credentialSupported.order,
   }
@@ -131,13 +141,18 @@ export function credentialsSupportedV13ToV11(
 }
 
 export function credentialsSupportedV11ToV13(
-  credentialsSupported: OpenId4VciCredentialSupportedWithId[]
+  credentialsSupported: OpenId4VciCredentialSupportedWithId[],
+  options?: {
+    proofTypesSupported?: Record<KeyProofType, ProofType>
+  }
 ): OpenId4VciCredentialConfigurationsSupported {
   const credentialConfigurationsSupported: OpenId4VciCredentialConfigurationsSupported = {}
 
   for (const credentialSupported of credentialsSupported) {
-    credentialConfigurationsSupported[credentialSupported.id] =
-      credentialSupportedToCredentialConfigurationSupported(credentialSupported)
+    credentialConfigurationsSupported[credentialSupported.id] = credentialSupportedToCredentialConfigurationSupported(
+      credentialSupported,
+      options
+    )
   }
 
   return credentialConfigurationsSupported
@@ -149,12 +164,15 @@ export function credentialsSupportedV11ToV13(
  */
 export function getOfferedCredentials(
   offeredCredentials: Array<string | CredentialOfferFormat>,
-  allCredentialsSupported: OpenId4VciCredentialSupportedWithId[] | OpenId4VciCredentialConfigurationsSupported
+  allCredentialsSupported: OpenId4VciCredentialSupportedWithId[] | OpenId4VciCredentialConfigurationsSupported,
+  options?: {
+    proofTypesSupported?: Record<KeyProofType, ProofType>
+  }
 ) {
   const credentialConfigurationsOffered: OpenId4VciCredentialConfigurationsSupported = {}
 
   const uniformCredentialsSupported = Array.isArray(allCredentialsSupported)
-    ? credentialsSupportedV11ToV13(allCredentialsSupported)
+    ? credentialsSupportedV11ToV13(allCredentialsSupported, options)
     : allCredentialsSupported
 
   for (const offeredCredential of offeredCredentials) {
@@ -176,4 +194,18 @@ export function getOfferedCredentials(
   }
 
   return credentialConfigurationsOffered
+}
+
+export const getProofTypesSupported = (agentContext: AgentContext) => {
+  return {
+    jwt: {
+      proof_signing_alg_values_supported: getSupportedJwaSignatureAlgorithms(agentContext) as string[],
+    },
+    cwt: {
+      proof_signing_alg_values_supported: [],
+    },
+    ldp_vp: {
+      proof_signing_alg_values_supported: [],
+    },
+  }
 }

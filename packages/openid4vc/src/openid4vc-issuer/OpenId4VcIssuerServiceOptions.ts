@@ -1,6 +1,7 @@
 import type { OpenId4VcIssuanceSessionRecord } from './repository'
 import type {
   OpenId4VcCredentialHolderBinding,
+  OpenId4VciCredentialConfigurationsSupported,
   OpenId4VciCredentialOffer,
   OpenId4VciCredentialRequest,
   OpenId4VciCredentialSupported,
@@ -145,6 +146,6 @@ export interface OpenId4VciCreateIssuerOptions {
    */
   issuerId?: string
 
-  credentialsSupported: OpenId4VciCredentialSupportedWithId[]
+  credentialsSupported: OpenId4VciCredentialSupportedWithId[] | OpenId4VciCredentialConfigurationsSupported
   display?: OpenId4VciIssuerMetadataDisplay[]
 }

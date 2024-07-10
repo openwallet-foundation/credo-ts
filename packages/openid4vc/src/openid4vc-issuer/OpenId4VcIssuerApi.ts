@@ -4,9 +4,10 @@ import type {
   OpenId4VciCreateIssuerOptions,
 } from './OpenId4VcIssuerServiceOptions'
 import type { OpenId4VcIssuerRecordProps } from './repository'
-import type { OpenId4VciCredentialRequest } from '../shared'
 
 import { injectable, AgentContext } from '@credo-ts/core'
+
+import { credentialsSupportedV13ToV11, type OpenId4VciCredentialRequest } from '../shared'
 
 import { OpenId4VcIssuerModuleConfig } from './OpenId4VcIssuerModuleConfig'
 import { OpenId4VcIssuerService } from './OpenId4VcIssuerService'
@@ -62,7 +63,9 @@ export class OpenId4VcIssuerApi {
   ) {
     const issuer = await this.openId4VcIssuerService.getIssuerByIssuerId(this.agentContext, options.issuerId)
 
-    issuer.credentialsSupported = options.credentialsSupported
+    issuer.credentialsSupported = Array.isArray(options.credentialsSupported)
+      ? options.credentialsSupported
+      : credentialsSupportedV13ToV11(options.credentialsSupported)
     issuer.display = options.display
 
     return this.openId4VcIssuerService.updateIssuer(this.agentContext, issuer)
