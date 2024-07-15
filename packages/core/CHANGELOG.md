@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.5.7
+
+### Patch Changes
+
+- 352383f: Fix a build issue where the types would reference source code not available in the published NPM package
+- 1044c9d: make credential_preview optional on V2CredentialOfferMessage
+
 ## 0.5.6
 
 ### Patch Changes

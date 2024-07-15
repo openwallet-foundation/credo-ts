@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.5.7
+
+### Patch Changes
+
+- 8474776: Fix a build issue where importing cheqd pacakge would not work and give type errors
+- Updated dependencies [352383f]
+- Updated dependencies [1044c9d]
+  - @credo-ts/core@0.5.7
+  - @credo-ts/anoncreds@0.5.7
+
 ## 0.5.6
 
 ### Patch Changes
