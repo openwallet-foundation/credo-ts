@@ -13,6 +13,7 @@ import {
   getJwkFromKey,
   getJwkFromJson,
   X509Service,
+  getDomainFromUrl,
 } from '@credo-ts/core'
 
 /**
@@ -66,16 +67,13 @@ export function getVerifyJwtCallback(agentContext: AgentContext): VerifyJwtCallb
 
 export function getCreateJwtCallback(agentContext: AgentContext): CreateJwtCallback {
   return async (jwtIssuer, jwt) => {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { iss, sub, aud, exp, nbf, iat, jti, ...additionalClaims } = jwt.payload
-
     const jwsService = agentContext.dependencyManager.resolve(JwsService)
 
     if (jwtIssuer.method === 'did') {
       const key = await getKeyFromDid(agentContext, jwtIssuer.didUrl)
       const jws = await jwsService.createJwsCompact(agentContext, {
         protectedHeaderOptions: { alg: jwtIssuer.alg, ...jwt.header },
-        payload: new JwtPayload({ ...jwt.payload, additionalClaims }),
+        payload: JwtPayload.fromJson(jwt.payload),
         key,
       })
 
@@ -84,7 +82,7 @@ export function getCreateJwtCallback(agentContext: AgentContext): CreateJwtCallb
       const key = getJwkFromJson(jwtIssuer.jwk).key
       const jws = await jwsService.createJwsCompact(agentContext, {
         protectedHeaderOptions: jwt.header as JwsProtectedHeaderOptions,
-        payload: new JwtPayload({ ...jwt.payload, additionalClaims }),
+        payload: JwtPayload.fromJson(jwt.payload),
         key,
       })
 
@@ -94,7 +92,7 @@ export function getCreateJwtCallback(agentContext: AgentContext): CreateJwtCallb
 
       const jws = await jwsService.createJwsCompact(agentContext, {
         protectedHeaderOptions: jwt.header as JwsProtectedHeaderOptions,
-        payload: new JwtPayload({ ...jwt.payload, additionalClaims }),
+        payload: JwtPayload.fromJson(jwt.payload),
         key,
       })
 
@@ -120,9 +118,31 @@ export async function openIdTokenIssuerToJwtIssuer(
       alg: _alg as unknown as SigningAlgo,
     }
   } else if (openId4VcTokenIssuer.method === 'x5c') {
-    return {
-      ...openId4VcTokenIssuer,
-      clientIdScheme: 'x509_san_dns',
+    const issuer = openId4VcTokenIssuer.issuer
+    const leafCertificate = X509Service.getLeafCertificate(agentContext, {
+      certificateChain: openId4VcTokenIssuer.x5c,
+    })
+
+    if (!issuer.startsWith('https://')) {
+      throw new CredoError('The X509 certificate issuer must be a HTTPS URI.')
+    }
+
+    if (leafCertificate.sanUriNames?.includes(issuer)) {
+      return {
+        ...openId4VcTokenIssuer,
+        clientIdScheme: 'x509_san_uri',
+      }
+    } else {
+      if (!leafCertificate.sanDnsNames?.includes(getDomainFromUrl(issuer))) {
+        throw new Error(
+          `The 'iss' claim in the payload does not match a 'SAN-URI' or 'SAN-DNS' name in the x5c certificate.`
+        )
+      }
+
+      return {
+        ...openId4VcTokenIssuer,
+        clientIdScheme: 'x509_san_dns',
+      }
     }
   }
 

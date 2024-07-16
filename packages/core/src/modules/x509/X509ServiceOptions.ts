@@ -4,7 +4,15 @@ import type { Key } from '../../crypto/Key'
 export interface X509ValidateCertificateChainOptions {
   certificateChain: Array<string>
   certificate?: string
-  date?: Date
+  /**
+   * The date for which the certificate chain should be valid
+   * @default new Date()
+   *
+   * The certificates must be valid on this date
+   * according to the certificates certificate.notBefore and certificate.notAfter
+   * otherwise, the validation will fail
+   */
+  verificationDate?: Date
   trustedCertificates?: [string, ...string[]]
 }
 

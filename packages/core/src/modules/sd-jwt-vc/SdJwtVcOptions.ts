@@ -38,13 +38,13 @@ export interface SdJwtVcIssuerX5c {
    *
    * The certificate containing the public key corresponding to the key used to digitally sign the JWS MUST be the first certificate.
    */
-  chain: string[]
+  x5c: string[]
 
   /**
    * The issuer of the JWT. Should be a HTTPS URI.
    *
    * The issuer value must either match a `uniformResourceIdentifier` SAN entry of the leaf entity certificate
-   * or match the domain name in the `iss` value matches the `dNSName` SAN entry of the end-entity certificate.
+   * or the domain name in the `iss` value matches a `dNSName` SAN entry of the leaf-entity certificate.
    */
   issuer: string
 }

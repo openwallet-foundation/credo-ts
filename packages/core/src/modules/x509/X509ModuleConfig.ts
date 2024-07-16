@@ -5,8 +5,8 @@ export interface X509ModuleConfigOptions {
 export class X509ModuleConfig {
   private options: X509ModuleConfigOptions
 
-  public constructor(options: X509ModuleConfigOptions) {
-    this.options = options
+  public constructor(options?: X509ModuleConfigOptions) {
+    this.options = options ?? {}
   }
 
   public get trustedCertificates() {
@@ -14,14 +14,14 @@ export class X509ModuleConfig {
   }
 
   public setTrustedCertificates(trustedCertificates?: [string, ...string[]]) {
-    this.options.trustedCertificates = trustedCertificates
+    this.options.trustedCertificates = trustedCertificates ? [...trustedCertificates] : undefined
   }
 
   public addTrustedCertificate(trustedCertificate: string) {
     if (!this.options.trustedCertificates) {
       this.options.trustedCertificates = [trustedCertificate]
+      return
     }
-
     this.options.trustedCertificates.push(trustedCertificate)
   }
 }

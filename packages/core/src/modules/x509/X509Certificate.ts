@@ -25,7 +25,7 @@ export class X509Certificate {
   public privateKey?: Uint8Array
   public extensions?: Array<Extension>
 
-  public rawCertificate: Uint8Array
+  public readonly rawCertificate: Uint8Array
 
   public constructor(options: X509CertificateOptions) {
     this.extensions = options.extensions
@@ -123,7 +123,10 @@ export class X509Certificate {
     return certificate.subject
   }
 
-  public async verify({ date = new Date(), publicKey }: { date: Date; publicKey?: Key }, webCrypto: CredoWebCrypto) {
+  public async verify(
+    { verificationDate = new Date(), publicKey }: { verificationDate: Date; publicKey?: Key },
+    webCrypto: CredoWebCrypto
+  ) {
     const certificate = new x509.X509Certificate(this.rawCertificate)
 
     let publicCryptoKey: CredoWebCryptoKey | undefined
@@ -134,7 +137,7 @@ export class X509Certificate {
 
     // We use the library to validate the signature, but the date is manually verified
     const isSignatureValid = await certificate.verify({ signatureOnly: true, publicKey: publicCryptoKey }, webCrypto)
-    const time = date.getTime()
+    const time = verificationDate.getTime()
 
     const isNotBeforeValid = certificate.notBefore.getTime() <= time
     const isNotAfterValid = time <= certificate.notAfter.getTime()

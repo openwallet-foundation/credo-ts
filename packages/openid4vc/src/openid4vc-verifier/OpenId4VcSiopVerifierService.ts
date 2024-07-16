@@ -34,7 +34,6 @@ import {
   W3cJsonLdVerifiablePresentation,
   Hasher,
   DidsApi,
-  X509Service,
 } from '@credo-ts/core'
 import {
   AuthorizationRequest,
@@ -93,49 +92,16 @@ export class OpenId4VcSiopVerifierService {
     // Correlation id will be the id of the verification session record
     const correlationId = utils.uuid()
 
-    const requestSigner = options.requestSigner
+    const jwtIssuer = await openIdTokenIssuerToJwtIssuer(agentContext, options.requestSigner)
 
-    let clientId: string
     let clientIdScheme: ClientIdScheme
+    let clientId: string
 
-    if (requestSigner.method === 'x5c') {
-      const issuer = requestSigner.issuer
-      const leafCertificate = X509Service.getLeafCertificate(agentContext, {
-        certificateChain: requestSigner.x5c,
-      })
-
-      if (issuer.startsWith('dns:')) {
-        // If the iss value contains a DNS name encoded as a URI using the DNS URI scheme [RFC4501],
-        // the DNS name MUST match a dNSName Subject Alternative Name (SAN) [RFC5280] entry of the leaf certificate.
-        const extractDnsNameFromDnsUriScheme = (iss: string): string => {
-          const afterDns = iss.substring('dns:'.length)
-          const withoutQuery = afterDns.split('?')[0]
-          return withoutQuery.split('/').pop() || ''
-        }
-
-        const dnsName = extractDnsNameFromDnsUriScheme(issuer)
-
-        // TODO: HAIP: x.509 certificates: the SD-JWT VC contains the issuer's certificate along with a trust chain in the x5c JOSE header.
-        // In this case, the iss value MUST be an URL with a FQDN matching a dNSName Subject Alternative Name (SAN) [RFC5280] entry in the leaf certificate.
-
-        if (!leafCertificate.sanDnsNames?.includes(dnsName)) {
-          throw new CredoError(`The 'iss' claim in the payload does not match a 'SAN-DNS' name in the x5c certificate.`)
-        }
-
-        clientIdScheme = 'x509_san_dns'
-        clientId = dnsName
-      } else {
-        if (!leafCertificate.sanUriNames?.includes(issuer)) {
-          throw new Error(
-            `The 'iss' claim in the payload does not match a 'SAN-URI' or 'SAN-DNS' name in the x5c certificate.`
-          )
-        }
-
-        clientIdScheme = 'x509_san_uri'
-        clientId = issuer
-      }
-    } else if (requestSigner.method === 'did') {
-      clientId = requestSigner.didUrl.split('#')[0]
+    if (jwtIssuer.method === 'x5c') {
+      clientId = jwtIssuer.issuer
+      clientIdScheme = jwtIssuer.clientIdScheme
+    } else if (jwtIssuer.method === 'did') {
+      clientId = jwtIssuer.didUrl.split('#')[0]
       clientIdScheme = 'did'
     } else {
       throw new CredoError(
@@ -180,8 +146,6 @@ export class OpenId4VcSiopVerifierService {
           map((e) => e.payload.record)
         )
     )
-
-    const jwtIssuer = await openIdTokenIssuerToJwtIssuer(agentContext, options.requestSigner)
 
     const authorizationRequest = await relyingParty.createAuthorizationRequest({
       correlationId,
@@ -461,7 +425,11 @@ export class OpenId4VcSiopVerifierService {
     builder
       .withRedirectUri(authorizationResponseUrl)
       .withIssuer(ResponseIss.SELF_ISSUED_V2)
-      .withSupportedVersions([SupportedVersion.SIOPv2_D11, SupportedVersion.SIOPv2_D12_OID4VP_D18])
+      .withSupportedVersions([
+        SupportedVersion.SIOPv2_D11,
+        SupportedVersion.SIOPv2_D12_OID4VP_D18,
+        SupportedVersion.SIOPv2_D12_OID4VP_D20,
+      ])
       .withResponseMode(ResponseMode.DIRECT_POST)
       .withHasher(Hasher.hash)
       // FIXME: should allow verification of revocation

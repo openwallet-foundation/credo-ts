@@ -14,7 +14,7 @@ import {
 export const credoKeyTypeIntoCryptoKeyAlgorithm = (keyType: KeyType): KeyGenAlgorithm => {
   switch (keyType) {
     case KeyType.Ed25519:
-      return 'Ed25119'
+      return { name: 'Ed25519' }
     case KeyType.P256:
       return { name: 'ECDSA', namedCurve: 'P-256' }
     case KeyType.P384:
@@ -27,7 +27,7 @@ export const credoKeyTypeIntoCryptoKeyAlgorithm = (keyType: KeyType): KeyGenAlgo
 }
 
 export const cryptoKeyAlgorithmToCredoKeyType = (algorithm: KeyGenAlgorithm): KeyType => {
-  const algorithmName = typeof algorithm === 'string' ? algorithm.toUpperCase() : algorithm.name.toUpperCase()
+  const algorithmName = algorithm.name.toUpperCase()
   switch (algorithmName) {
     case 'ED25519':
       return KeyType.Ed25519

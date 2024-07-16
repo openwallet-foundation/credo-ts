@@ -96,6 +96,7 @@ export { encodeAttachment, isLinkedAttachment } from './utils/attachment'
 export type { Optional } from './utils'
 export { MessageValidator } from './utils/MessageValidator'
 export { LinkedAttachment, LinkedAttachmentOptions } from './utils/LinkedAttachment'
+export { getDomainFromUrl } from './utils/domain'
 import { parseInvitationUrl } from './utils/parseInvitation'
 import { uuid, isValidUuid } from './utils/uuid'
 

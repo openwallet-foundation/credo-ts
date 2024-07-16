@@ -449,7 +449,7 @@ export class OpenId4VcIssuerService {
         const key = getKeyFromVerificationMethod(verificationMethod)
         const supportedSignatureAlgorithms = getJwkFromKey(key).supportedSignatureAlgorithms
         if (supportedSignatureAlgorithms.length === 0) {
-          throw new CredoError('No supported signature algorithms found for key.')
+          throw new CredoError(`No supported JWA signature algorithms found for key with keyType ${key.keyType}`)
         }
         const alg = supportedSignatureAlgorithms[0]
 

@@ -159,7 +159,11 @@ export class OpenId4VcSiopHolderService {
       .withExpiresIn(6000)
       .withIssuer(ResponseIss.SELF_ISSUED_V2)
       .withResponseMode(ResponseMode.POST)
-      .withSupportedVersions([SupportedVersion.SIOPv2_D11, SupportedVersion.SIOPv2_D12_OID4VP_D18])
+      .withSupportedVersions([
+        SupportedVersion.SIOPv2_D11,
+        SupportedVersion.SIOPv2_D12_OID4VP_D18,
+        SupportedVersion.SIOPv2_D12_OID4VP_D20,
+      ])
       .withCreateJwtCallback(getCreateJwtCallback(agentContext))
       .withVerifyJwtCallback(getVerifyJwtCallback(agentContext))
       .withHasher(Hasher.hash)

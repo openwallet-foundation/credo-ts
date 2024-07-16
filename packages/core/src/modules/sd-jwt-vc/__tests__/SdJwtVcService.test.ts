@@ -39,6 +39,7 @@ import {
   KeyType,
   parseDid,
   TypedArrayEncoder,
+  X509ModuleConfig,
 } from '@credo-ts/core'
 
 const jwkJsonWithoutUse = (jwk: Jwk) => {
@@ -148,7 +149,7 @@ describe('SdJwtVcService', () => {
           },
           issuer: {
             method: 'x5c',
-            chain: [simpleX509.certificate],
+            x5c: [simpleX509.certificate],
             issuer: 'some-issuer',
           },
         })
@@ -167,7 +168,7 @@ describe('SdJwtVcService', () => {
         },
         issuer: {
           method: 'x5c',
-          chain: [simpleX509.certificate],
+          x5c: [simpleX509.certificate],
           issuer: simpleX509.certificateIssuer,
         },
       })
@@ -794,6 +795,9 @@ describe('SdJwtVcService', () => {
           nonce,
         },
       })
+
+      const x509ModuleConfig = agent.context.dependencyManager.resolve(X509ModuleConfig)
+      await x509ModuleConfig.addTrustedCertificate(simpleX509.certificate)
 
       const verificationResult = await sdJwtVcService.verify(agent.context, {
         compactSdJwtVc: presentation,

@@ -15,7 +15,7 @@ export class X509Module implements Module {
 
   public readonly config: X509ModuleConfig
 
-  public constructor(options: X509ModuleConfigOptions) {
+  public constructor(options?: X509ModuleConfigOptions) {
     this.config = new X509ModuleConfig(options)
   }
 

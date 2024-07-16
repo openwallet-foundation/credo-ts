@@ -34,7 +34,7 @@ export class X509Service {
     {
       certificateChain,
       certificate = certificateChain[0],
-      date = new Date(),
+      verificationDate = new Date(),
       trustedCertificates,
     }: X509ValidateCertificateChainOptions
   ) {
@@ -79,7 +79,7 @@ export class X509Service {
       const cert = parsedChain[i]
       const previousCertificate = parsedChain[i - 1]
       const publicKey = previousCertificate ? previousCertificate.publicKey : undefined
-      await cert.verify({ publicKey, date }, webCrypto)
+      await cert.verify({ publicKey, verificationDate }, webCrypto)
     }
 
     return parsedChain

@@ -183,8 +183,7 @@ export class SdJwtVcService {
   }
 
   private assertValidX5cJwtIssuer(iss: string, leafCertificate: X509Certificate) {
-    // TODO: should we throw here?
-    if (!iss.startsWith('http://') && !iss.startsWith('https://')) {
+    if (!iss.startsWith('https://')) {
       throw new SdJwtVcError('The X509 certificate issuer must be a HTTPS URI.')
     }
 
@@ -403,7 +402,7 @@ export class SdJwtVcService {
       const key = getKeyFromVerificationMethod(verificationMethod)
       const supportedSignatureAlgorithms = getJwkFromKey(key).supportedSignatureAlgorithms
       if (supportedSignatureAlgorithms.length === 0) {
-        throw new SdJwtVcError('No supported signature algorithms found for key.')
+        throw new SdJwtVcError(`No supported JWA signature algorithms found for key with keyType ${key.keyType}`)
       }
       const alg = supportedSignatureAlgorithms[0]
 
@@ -416,11 +415,11 @@ export class SdJwtVcService {
     }
 
     if (issuer.method === 'x5c') {
-      const leafCertificate = X509Service.getLeafCertificate(agentContext, { certificateChain: issuer.chain })
+      const leafCertificate = X509Service.getLeafCertificate(agentContext, { certificateChain: issuer.x5c })
       const key = leafCertificate.publicKey
       const supportedSignatureAlgorithms = getJwkFromKey(key).supportedSignatureAlgorithms
       if (supportedSignatureAlgorithms.length === 0) {
-        throw new SdJwtVcError('No supported signature algorithms found for key.')
+        throw new SdJwtVcError(`No supported JWA signature algorithms found for key with keyType ${key.keyType}`)
       }
       const alg = supportedSignatureAlgorithms[0]
 
@@ -429,7 +428,7 @@ export class SdJwtVcService {
       return {
         key,
         iss: issuer.issuer,
-        x5c: issuer.chain,
+        x5c: issuer.x5c,
         alg,
       }
     }
@@ -463,6 +462,12 @@ export class SdJwtVcService {
       }
 
       const trustedCertificates = agentContext.dependencyManager.resolve(X509ModuleConfig).trustedCertificates
+      if (!trustedCertificates) {
+        throw new SdJwtVcError(
+          'No trusted certificates configured for X509 certificate chain validation. Issuer cannot be verified.'
+        )
+      }
+
       await X509Service.validateCertificateChain(agentContext, {
         certificateChain: sdJwtVc.jwt.header.x5c,
         trustedCertificates,
@@ -470,7 +475,7 @@ export class SdJwtVcService {
 
       return {
         method: 'x5c',
-        chain: sdJwtVc.jwt.header.x5c,
+        x5c: sdJwtVc.jwt.header.x5c,
         issuer: iss,
       }
     }
@@ -558,7 +563,7 @@ export class SdJwtVcService {
       const key = getKeyFromVerificationMethod(verificationMethod)
       const supportedSignatureAlgorithms = getJwkFromKey(key).supportedSignatureAlgorithms
       if (supportedSignatureAlgorithms.length === 0) {
-        throw new SdJwtVcError('No supported signature algorithms found for key.')
+        throw new SdJwtVcError(`No supported JWA signature algorithms found for key with keyType ${key.keyType}`)
       }
       const alg = supportedSignatureAlgorithms[0]
 
