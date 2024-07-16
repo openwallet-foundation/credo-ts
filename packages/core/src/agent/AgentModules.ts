@@ -136,7 +136,7 @@ function getDefaultAgentModules() {
     cache: () => new CacheModule(),
     pex: () => new DifPresentationExchangeModule(),
     sdJwtVc: () => new SdJwtVcModule(),
-    x509Module: () => new X509Module(),
+    x509: () => new X509Module(),
   } as const
 }
 
