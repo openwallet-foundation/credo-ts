@@ -14,7 +14,7 @@ interface OpenId4VcIssuerX5c {
    *
    * The certificate containing the public key corresponding to the key used to digitally sign the JWS MUST be the first certificate.
    */
-  chain: string[]
+  x5c: string[]
 
   /**
    * The issuer of the JWT. Should be a HTTPS URI.

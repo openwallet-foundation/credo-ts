@@ -101,7 +101,7 @@ export class OpenId4VcSiopVerifierService {
     if (requestSigner.method === 'x5c') {
       const issuer = requestSigner.issuer
       const leafCertificate = X509Service.getLeafCertificate(agentContext, {
-        certificateChain: requestSigner.chain,
+        certificateChain: requestSigner.x5c,
       })
 
       if (issuer.startsWith('dns:')) {

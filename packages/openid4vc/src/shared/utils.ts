@@ -1,8 +1,7 @@
 import type { OpenId4VcJwtIssuer } from './models'
 import type { AgentContext, JwaSignatureAlgorithm, JwsProtectedHeaderOptions, Key } from '@credo-ts/core'
 import type { CreateJwtCallback, JwtIssuer, SigningAlgo, VerifyJwtCallback } from '@sphereon/did-auth-siop'
-import { X509Certificate } from '../../../core/src/crypto/x509/X509Certificate'
-import { X509Service } from '../../../core/src/crypto/x509/X509Service'
+
 import {
   CredoError,
   DidsApi,
@@ -13,6 +12,7 @@ import {
   JwtPayload,
   getJwkFromKey,
   getJwkFromJson,
+  X509Service,
 } from '@credo-ts/core'
 
 /**
@@ -90,7 +90,7 @@ export function getCreateJwtCallback(agentContext: AgentContext): CreateJwtCallb
 
       return jws
     } else if (jwtIssuer.method === 'x5c') {
-      const key = X509Service.getLeafCertificate(agentContext, { certificateChain: jwtIssuer.chain }).publicKey
+      const key = X509Service.getLeafCertificate(agentContext, { certificateChain: jwtIssuer.x5c }).publicKey
 
       const jws = await jwsService.createJwsCompact(agentContext, {
         protectedHeaderOptions: jwt.header as JwsProtectedHeaderOptions,
@@ -118,6 +118,11 @@ export async function openIdTokenIssuerToJwtIssuer(
       method: openId4VcTokenIssuer.method,
       didUrl: openId4VcTokenIssuer.didUrl,
       alg: _alg as unknown as SigningAlgo,
+    }
+  } else if (openId4VcTokenIssuer.method === 'x5c') {
+    return {
+      ...openId4VcTokenIssuer,
+      clientIdScheme: 'x509_san_dns',
     }
   }
 
