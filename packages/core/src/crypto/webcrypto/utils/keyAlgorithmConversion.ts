@@ -78,7 +78,7 @@ export const credoKeyTypeIntoSpkiAlgorithm = (keyType: KeyType): AlgorithmIdenti
       return ecPublicKeyWithP384AlgorithmIdentifier
     case KeyType.K256:
       return ecPublicKeyWithK256AlgorithmIdentifier
+    default:
+      throw new CredoWebCryptoError(`Unsupported key type: ${keyType}`)
   }
-
-  throw new CredoWebCryptoError(`Unsupported key type: ${keyType}`)
 }

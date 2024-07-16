@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.5.7
+
+### Patch Changes
+
+- 2173952: Fix an issue where `express` was being bundled in React Native applications even though the `OpenId4VcIssuerModule` and `OpenId4VcVerifierModule` were not used, causing runtime errors.
+- Updated dependencies [352383f]
+- Updated dependencies [1044c9d]
+  - @credo-ts/core@0.5.7
+
 ## 0.5.6
 
 ### Patch Changes
