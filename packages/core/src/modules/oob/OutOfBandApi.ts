@@ -548,7 +548,7 @@ export class OutOfBandApi {
 
     await this.outOfBandService.updateState(this.agentContext, outOfBandRecord, OutOfBandState.PrepareResponse)
 
-    if (handshakeProtocols) {
+    if (handshakeProtocols && handshakeProtocols.length > 0) {
       this.logger.debug('Out of band message contains handshake protocols.')
 
       let connectionRecord
