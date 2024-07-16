@@ -15,7 +15,7 @@ import { createWalletKeyPairClass } from '../../../crypto/WalletKeyPair'
 import { CredoError } from '../../../error'
 import { injectable } from '../../../plugins'
 import { asArray, JsonTransformer } from '../../../utils'
-import { VerificationMethod } from '../../dids'
+import { DidsApi, VerificationMethod } from '../../dids'
 import { getKeyFromVerificationMethod } from '../../dids/domain/key-type'
 import { W3cCredentialsModuleConfig } from '../W3cCredentialsModuleConfig'
 import { w3cDate } from '../util'
@@ -339,12 +339,23 @@ export class W3cJsonLdCredentialService {
     agentContext: AgentContext,
     verificationMethod: string
   ): Promise<Key> {
-    const documentLoader = this.w3cCredentialsModuleConfig.documentLoader(agentContext)
-    const verificationMethodObject = await documentLoader(verificationMethod)
-    const verificationMethodClass = JsonTransformer.fromJSON(verificationMethodObject.document, VerificationMethod)
+    if (!verificationMethod.startsWith('did:')) {
+      const documentLoader = this.w3cCredentialsModuleConfig.documentLoader(agentContext)
+      const verificationMethodObject = await documentLoader(verificationMethod)
+      const verificationMethodClass = JsonTransformer.fromJSON(verificationMethodObject.document, VerificationMethod)
 
-    const key = getKeyFromVerificationMethod(verificationMethodClass)
-    return key
+      const key = getKeyFromVerificationMethod(verificationMethodClass)
+      return key
+    } else {
+      const [did, keyid] = verificationMethod.split('#')
+      const didsApi = agentContext.dependencyManager.resolve(DidsApi)
+      const doc = await didsApi.resolve(did)
+      if (doc.didDocument) {
+        const verificationMethodClass = doc.didDocument.dereferenceKey(keyid)
+        return getKeyFromVerificationMethod(verificationMethodClass)
+      }
+      throw new CredoError(`Could not resolve verification method with id ${verificationMethod}`)
+    }
   }
 
   private getSignatureSuitesForCredential(agentContext: AgentContext, credential: W3cJsonLdVerifiableCredential) {

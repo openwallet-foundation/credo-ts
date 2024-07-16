@@ -32,9 +32,9 @@ export function isBls12381G1Key2020(verificationMethod: VerificationMethod): ver
  * Get a key from a Bls12381G1Key2020 verification method.
  */
 export function getKeyFromBls12381G1Key2020(verificationMethod: Bls12381G1Key2020) {
-  if (!verificationMethod.publicKeyBase58) {
-    throw new CredoError('verification method is missing publicKeyBase58')
+  if (verificationMethod.publicKeyBase58) {
+    return Key.fromPublicKeyBase58(verificationMethod.publicKeyBase58, KeyType.Bls12381g1)
   }
 
-  return Key.fromPublicKeyBase58(verificationMethod.publicKeyBase58, KeyType.Bls12381g1)
+  throw new CredoError('verification method is missing publicKeyBase58')
 }

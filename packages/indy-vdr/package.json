@@ -26,12 +26,12 @@
     "test": "jest"
   },
   "dependencies": {
-    "@credo-ts/anoncreds": "workspace:*",
-    "@credo-ts/core": "workspace:*"
+    "@credo-ts/anoncreds": "file:./../anoncreds",
+    "@credo-ts/core": "file:./../core"
   },
   "devDependencies": {
     "@hyperledger/indy-vdr-nodejs": "^0.2.2",
-    "@hyperledger/indy-vdr-shared": "^0.2.2",
+    "@hyperledger/indy-vdr-shared": "^0.2.2", 
     "@stablelib/ed25519": "^1.0.2",
     "@types/ref-array-di": "^1.2.6",
     "@types/ref-struct-di": "^1.1.10",
