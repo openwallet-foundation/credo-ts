@@ -65,8 +65,8 @@ export function credentialConfigurationSupportedToCredentialSupported(
     return {
       ...baseConfig,
       format: config.format,
-      // @ts-expect-error keep this for now to allow back and forth conversion
-      vct: config.vct,
+      // vct must be defined when format is vc+sd-jwt
+      vct: config.vct as string,
       claims: config.claims,
     }
   }
