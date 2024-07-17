@@ -6,7 +6,7 @@ export class X509ModuleConfig {
   private options: X509ModuleConfigOptions
 
   public constructor(options?: X509ModuleConfigOptions) {
-    this.options = options ?? {}
+    this.options = options?.trustedCertificates ? { trustedCertificates: [...options.trustedCertificates] } : {}
   }
 
   public get trustedCertificates() {
