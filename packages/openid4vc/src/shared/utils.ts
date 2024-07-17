@@ -1,19 +1,20 @@
 import type { OpenId4VcJwtIssuer } from './models'
 import type { AgentContext, JwaSignatureAlgorithm, JwsProtectedHeaderOptions, Key } from '@credo-ts/core'
 import type { CreateJwtCallback, JwtIssuer, SigningAlgo, VerifyJwtCallback } from '@sphereon/did-auth-siop'
+import type { CredentialOfferPayloadV1_0_11, CredentialOfferPayloadV1_0_13 } from '@sphereon/oid4vci-common'
 
 import {
   CredoError,
   DidsApi,
-  getKeyFromVerificationMethod,
+  getDomainFromUrl,
   getJwkClassFromKeyType,
-  SignatureSuiteRegistry,
+  getJwkFromJson,
+  getJwkFromKey,
+  getKeyFromVerificationMethod,
   JwsService,
   JwtPayload,
-  getJwkFromKey,
-  getJwkFromJson,
+  SignatureSuiteRegistry,
   X509Service,
-  getDomainFromUrl,
 } from '@credo-ts/core'
 
 /**
@@ -158,4 +159,10 @@ export function getProofTypeFromKey(agentContext: AgentContext, key: Key) {
   }
 
   return supportedSignatureSuites[0].proofType
+}
+
+export const isCredentialOfferV1Draft13 = (
+  credentialOffer: CredentialOfferPayloadV1_0_11 | CredentialOfferPayloadV1_0_13
+): credentialOffer is CredentialOfferPayloadV1_0_13 => {
+  return 'credential_configuration_ids' in credentialOffer
 }

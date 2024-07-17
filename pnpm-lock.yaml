@@ -684,17 +684,17 @@ importers:
         specifier: ^0.15.0
         version: 0.15.0
       '@sphereon/oid4vci-client':
-        specifier: ^0.10.3
-        version: 0.10.3(msrcrypto@1.5.8)
+        specifier: ^0.15.0
+        version: 0.15.0
       '@sphereon/oid4vci-common':
-        specifier: ^0.10.3
-        version: 0.10.3(msrcrypto@1.5.8)
+        specifier: ^0.15.0
+        version: 0.15.0
       '@sphereon/oid4vci-issuer':
-        specifier: ^0.10.3
-        version: 0.10.3(msrcrypto@1.5.8)
+        specifier: ^0.15.0
+        version: 0.15.0
       '@sphereon/ssi-types':
-        specifier: ^0.23.0
-        version: 0.23.4
+        specifier: 0.26.1-next.132
+        version: 0.26.1-next.132
       class-transformer:
         specifier: ^0.5.1
         version: 0.5.1
@@ -2377,21 +2377,16 @@ packages:
   '@sphereon/did-uni-client@0.6.3':
     resolution: {integrity: sha512-g7LD7ofbE36slHN7Bhr5dwUrj6t0BuZeXBYJMaVY/pOeL1vJxW1cZHbZqu0NSfOmzyBg4nsYVlgTjyi/Aua2ew==}
 
-  '@sphereon/oid4vci-client@0.10.3':
-    resolution: {integrity: sha512-PkIZrwTMrHlgwcDNimWDQaAgi+9ptkV79g/sQJJAe4g8NCt3WyXtsV9l88CdzxDGVGDtzsnYqPXkimxP4eSScw==}
+  '@sphereon/oid4vci-client@0.15.0':
+    resolution: {integrity: sha512-fPMFvgxaRxeejrkrHm1cuX2B3vv661QOrcNDQfCoGD5jhvv6G1iXnVNIAfow89nb8seBJoUJ91I4fkypQBAYIQ==}
     engines: {node: '>=18'}
 
-  '@sphereon/oid4vci-common@0.10.3':
-    resolution: {integrity: sha512-VsUnDKkKm2yQ3lzAt2CY6vL06mZDK9dhwFT6T92aq03ncbUcS6gelwccdsXEMEfi5r4baFemiFM1O5v+mPjuEA==}
+  '@sphereon/oid4vci-common@0.15.0':
+    resolution: {integrity: sha512-dwEuukE3Z512X3CAKoGZQ2E2duxukqIrELwsvdVGBLBxfNppRTI2H51ZYirbKYiYbbcV6uvqhKqWZ5Ela6LkKw==}
     engines: {node: '>=18'}
-    peerDependencies:
-      msrcrypto: ^1.5.8
-    peerDependenciesMeta:
-      msrcrypto:
-        optional: true
 
-  '@sphereon/oid4vci-issuer@0.10.3':
-    resolution: {integrity: sha512-qhm8ypkXuYsaG5XmXIFwL9DUJQ0TJScNjvg5w7beAm+zjz0sOkwIjXdS7S+29LfWj0BkYiRZp1d3mj8H/rmdUw==}
+  '@sphereon/oid4vci-issuer@0.15.0':
+    resolution: {integrity: sha512-sc+GbJNFgT8PWSNMIyNxHnMJNyFJygMcOAHjhYTAaRSsYhA8ym17cGRe4r/Fnic/jq1nRsi3Woq2ruZea2CVuQ==}
     engines: {node: '>=18'}
     peerDependencies:
       awesome-qr: ^2.1.5-rc.0
@@ -2411,6 +2406,9 @@ packages:
 
   '@sphereon/ssi-types@0.23.4':
     resolution: {integrity: sha512-1lM2yfOEhpcYYBxm/12KYY4n3ZSahVf5rFqGdterQkMJMthwr20HqTjw3+VK5p7IVf+86DyBoZJyS4V9tSsoCA==}
+
+  '@sphereon/ssi-types@0.26.1-next.132':
+    resolution: {integrity: sha512-coqhozmVf2phy40l1htj/zbLJLJhyD69ZukBVR4gKn35t8q2B2EZhJbCIPWKk2HWT6+gV+JUBQ9n4v3cSHNCJg==}
 
   '@sphereon/ssi-types@0.9.0':
     resolution: {integrity: sha512-umCr/syNcmvMMbQ+i/r/mwjI1Qw2aFPp9AwBTvTo1ailAVaaJjJGPkkVz1K9/2NZATNdDiQ3A8yGzdVJoKh9pA==}
@@ -9818,37 +9816,35 @@ snapshots:
     transitivePeerDependencies:
       - encoding
 
-  '@sphereon/oid4vci-client@0.10.3(msrcrypto@1.5.8)':
+  '@sphereon/oid4vci-client@0.15.0':
     dependencies:
-      '@sphereon/oid4vci-common': 0.10.3(msrcrypto@1.5.8)
-      '@sphereon/ssi-types': 0.23.4
+      '@sphereon/oid4vci-common': 0.15.0
+      '@sphereon/ssi-types': 0.26.1-next.132
       cross-fetch: 3.1.8
       debug: 4.3.5
     transitivePeerDependencies:
       - encoding
-      - msrcrypto
       - supports-color
 
-  '@sphereon/oid4vci-common@0.10.3(msrcrypto@1.5.8)':
+  '@sphereon/oid4vci-common@0.15.0':
     dependencies:
-      '@sphereon/ssi-types': 0.23.4
+      '@sphereon/ssi-types': 0.26.1-next.132
       cross-fetch: 3.1.8
-      jwt-decode: 3.1.2
+      jwt-decode: 4.0.0
       sha.js: 2.4.11
       uint8arrays: 3.1.1
-    optionalDependencies:
-      msrcrypto: 1.5.8
     transitivePeerDependencies:
       - encoding
+      - supports-color
 
-  '@sphereon/oid4vci-issuer@0.10.3(msrcrypto@1.5.8)':
+  '@sphereon/oid4vci-issuer@0.15.0':
     dependencies:
-      '@sphereon/oid4vci-common': 0.10.3(msrcrypto@1.5.8)
-      '@sphereon/ssi-types': 0.23.4
+      '@sphereon/oid4vci-common': 0.15.0
+      '@sphereon/ssi-types': 0.26.1-next.132
       uuid: 9.0.1
     transitivePeerDependencies:
       - encoding
-      - msrcrypto
+      - supports-color
 
   '@sphereon/pex-models@2.2.4': {}
 
@@ -9876,6 +9872,15 @@ snapshots:
     dependencies:
       '@sd-jwt/decode': 0.6.1
       jwt-decode: 3.1.2
+
+  '@sphereon/ssi-types@0.26.1-next.132':
+    dependencies:
+      '@sd-jwt/decode': 0.6.1
+      debug: 4.3.5
+      events: 3.3.0
+      jwt-decode: 3.1.2
+    transitivePeerDependencies:
+      - supports-color
 
   '@sphereon/ssi-types@0.9.0':
     dependencies:
