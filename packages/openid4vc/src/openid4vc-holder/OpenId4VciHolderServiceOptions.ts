@@ -2,6 +2,7 @@ import type {
   OpenId4VcCredentialHolderBinding,
   OpenId4VciCredentialSupportedWithId,
   OpenId4VciIssuerMetadata,
+  OpenId4VciCredentialOfferPayload,
 } from '../shared'
 import type { JwaSignatureAlgorithm, KeyType } from '@credo-ts/core'
 import type { VerifiableCredential } from '@credo-ts/core/src/modules/dif-presentation-exchange/models/index'
@@ -53,6 +54,7 @@ export interface OpenId4VciResolvedCredentialOffer {
     credentialIssuerMetadata: OpenId4VciIssuerMetadata
   }
   credentialOfferRequestWithBaseUrl: CredentialOfferRequestWithBaseUrl
+  credentialOfferPayload: OpenId4VciCredentialOfferPayload
   offeredCredentials: OpenId4VciCredentialSupportedWithId[]
   version: OpenId4VCIVersion
 }

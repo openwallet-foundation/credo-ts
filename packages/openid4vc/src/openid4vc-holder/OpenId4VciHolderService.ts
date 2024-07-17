@@ -8,7 +8,6 @@ import type {
   OpenId4VciSupportedCredentialFormats,
   OpenId4VciCredentialResponse,
   OpenId4VciNotificationEvent,
-  OpenId4VciTokenResponse,
   OpenId4VciAcceptCredentialOfferOptions,
   OpenId4VciTokenRequestOptions,
 } from './OpenId4VciHolderServiceOptions'
@@ -138,6 +137,7 @@ export class OpenId4VciHolderService {
         credentialIssuerMetadata: credentialIssuerMetadata,
       },
       offeredCredentials: credentialsSupportedV13ToV11(offeredCredentialConfigurations),
+      credentialOfferPayload,
       credentialOfferRequestWithBaseUrl: client.credentialOffer,
       version: client.version(),
     }
@@ -306,7 +306,8 @@ export class OpenId4VciHolderService {
       resolvedCredentialOffer: OpenId4VciResolvedCredentialOffer
       acceptCredentialOfferOptions: OpenId4VciAcceptCredentialOfferOptions
       resolvedAuthorizationRequestWithCode?: OpenId4VciResolvedAuthorizationRequestWithCode
-      tokenResponse?: OpenId4VciTokenResponse
+      accessToken?: string
+      cNonce?: string
     }
   ) {
     const { resolvedCredentialOffer, acceptCredentialOfferOptions } = options
@@ -345,7 +346,9 @@ export class OpenId4VciHolderService {
       txCode: acceptCredentialOfferOptions.userPin,
     } as OpenId4VciTokenRequestOptions
 
-    const tokenResponse = options.tokenResponse ?? (await this.requestAccessToken(agentContext, tokenRequestOptions))
+    const tokenResponse = options.accessToken
+      ? { access_token: options.accessToken, c_nonce: options.cNonce }
+      : await this.requestAccessToken(agentContext, tokenRequestOptions)
 
     const receivedCredentials: Array<OpenId4VciCredentialResponse> = []
     let newCNonce: string | undefined

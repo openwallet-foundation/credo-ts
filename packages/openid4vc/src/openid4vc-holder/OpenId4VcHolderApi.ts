@@ -164,8 +164,9 @@ export class OpenId4VcHolderApi {
 
     return this.openId4VciHolderService.acceptCredentialOffer(this.agentContext, {
       resolvedCredentialOffer,
-      tokenResponse: { c_nonce: cNonce, access_token: accessToken },
       acceptCredentialOfferOptions: credentialRequestOptions,
+      accessToken,
+      cNonce,
     })
   }
 

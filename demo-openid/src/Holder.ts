@@ -40,9 +40,9 @@ export class Holder extends BaseAgent<ReturnType<typeof getOpenIdHolderModules>>
     credentialsToRequest: string[]
   ) {
     const tokenResponse = await this.agent.modules.openId4VcHolder.requestToken({ resolvedCredentialOffer })
-    const credentialResponse = await this.agent.modules.openId4VcHolder.requestCredential({
+    const credentialResponse = await this.agent.modules.openId4VcHolder.requestCredentials({
       resolvedCredentialOffer,
-      tokenResponse,
+      ...tokenResponse,
       // TODO: add jwk support for holder binding
       credentialsToRequest,
       credentialBindingResolver: async () => ({
