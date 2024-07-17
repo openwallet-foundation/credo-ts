@@ -404,7 +404,6 @@ export class OpenId4VciHolderService {
         .withVersion(version)
         .withCredentialEndpoint(metadata.credential_endpoint)
         .withToken(tokenResponse.access_token)
-        .withTokenFromResponse(tokenResponse)
 
       const credentialRequestClient = credentialRequestBuilder.build()
       const credentialResponse = await credentialRequestClient.acquireCredentialsUsingProof({
@@ -535,18 +534,22 @@ export class OpenId4VciHolderService {
 
     if (credentialToRequest.proof_types_supported) {
       if (!credentialToRequest.proof_types_supported.jwt) {
-        throw new CredoError(`Unsupported proof type '${credentialToRequest.proof_types_supported}'`)
+        throw new CredoError(
+          `Unsupported proof type(s) ${Object.keys(credentialToRequest.proof_types_supported).join(
+            ', '
+          )}. Supported proof type(s) are: jwt`
+        )
       }
     }
 
     // FIXME credentialToRequest.credential_signing_alg_values_supported is only required for v11 compat
-    const credentialSigningAlgsSupported =
+    const proofSigningAlgsSupported =
       credentialToRequest.proof_types_supported?.jwt.proof_signing_alg_values_supported ??
       credentialToRequest.credential_signing_alg_values_supported
 
     // If undefined, it means the issuer didn't include the cryptographic suites in the metadata
     // We just guess that the first one is supported
-    if (credentialSigningAlgsSupported === undefined) {
+    if (proofSigningAlgsSupported === undefined) {
       signatureAlgorithm = options.possibleProofOfPossessionSignatureAlgorithms[0]
     } else {
       switch (credentialToRequest.format) {
@@ -554,7 +557,7 @@ export class OpenId4VciHolderService {
         case OpenId4VciCredentialFormatProfile.JwtVcJsonLd:
         case OpenId4VciCredentialFormatProfile.SdJwtVc:
           signatureAlgorithm = options.possibleProofOfPossessionSignatureAlgorithms.find((signatureAlgorithm) =>
-            credentialSigningAlgsSupported.includes(signatureAlgorithm)
+            proofSigningAlgsSupported.includes(signatureAlgorithm)
           )
           break
         case OpenId4VciCredentialFormatProfile.LdpVc:
@@ -565,7 +568,7 @@ export class OpenId4VciHolderService {
             const matchingSuite = signatureSuiteRegistry.getAllByKeyType(JwkClass.keyType)
             if (matchingSuite.length === 0) return false
 
-            return credentialSigningAlgsSupported.includes(matchingSuite[0].proofType)
+            return proofSigningAlgsSupported.includes(matchingSuite[0].proofType)
           })
           break
         default:

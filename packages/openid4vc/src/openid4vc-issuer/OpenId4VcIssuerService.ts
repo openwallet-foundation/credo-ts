@@ -104,12 +104,15 @@ export class OpenId4VcIssuerService {
 
     const vcIssuer = this.getVcIssuer(agentContext, issuer)
 
-    const version = options.version ?? 'v11'
-    if (version === 'v1.draft13' && options.preAuthorizedCodeFlowConfig.userPinRequired !== undefined) {
-      throw new CredoError('User pin is not supported in OpenId4Vc version v13.')
+    if (options.preAuthorizedCodeFlowConfig.userPinRequired === false && options.preAuthorizedCodeFlowConfig.txCode) {
+      throw new CredoError('The userPinRequired option must be set to true when using txCode.')
     }
-    if (version === 'v11' && options.preAuthorizedCodeFlowConfig.txCode !== undefined) {
-      options.preAuthorizedCodeFlowConfig.txCode = undefined
+
+    if (options.preAuthorizedCodeFlowConfig.userPinRequired && !options.preAuthorizedCodeFlowConfig.txCode) {
+      options.preAuthorizedCodeFlowConfig.txCode = {}
+    }
+
+    if (options.preAuthorizedCodeFlowConfig.txCode && !options.preAuthorizedCodeFlowConfig.userPinRequired) {
       options.preAuthorizedCodeFlowConfig.userPinRequired = true
     }
 
@@ -150,7 +153,7 @@ export class OpenId4VcIssuerService {
       credentialOfferUri: hostedCredentialOfferUri,
     })
 
-    if (version === 'v11') {
+    if (options.version !== 'v1.draft13') {
       const v13CredentialOfferPayload = issuanceSession.credentialOfferPayload as CredentialOfferPayloadV1_0_13
       const v11CredentialOfferPayload: CredentialOfferPayloadV1_0_11 = {
         ...v13CredentialOfferPayload,
@@ -247,7 +250,7 @@ export class OpenId4VcIssuerService {
 
     if (credentialResponse.acceptance_token || credentialResponse.transaction_id) {
       updatedIssuanceSession.state = OpenId4VcIssuanceSessionState.Error
-      updatedIssuanceSession.errorMessage = 'Acceptance token not yet supported.'
+      updatedIssuanceSession.errorMessage = 'Acceptance token and transaction id are not yet supported.'
       await this.openId4VcIssuanceSessionRepository.update(agentContext, updatedIssuanceSession)
       throw new CredoError(updatedIssuanceSession.errorMessage)
     }
@@ -620,10 +623,9 @@ export class OpenId4VcIssuerService {
         options.credentialRequestToCredentialMapper ??
         this.openId4VcIssuerConfig.credentialEndpoint.credentialRequestToCredentialMapper
 
-      const credentialConfigurationIds = Object.entries(offeredCredentialsMatchingRequest).map((match) => match[0]) as [
-        string,
-        ...string[]
-      ]
+      const credentialConfigurationIds = Object.entries(offeredCredentialsMatchingRequest).map(
+        ([credentialConfigurationId]) => credentialConfigurationId
+      ) as [string, ...string[]]
 
       const holderBinding = await this.getHolderBindingFromRequest(credentialRequest)
       const signOptions = await mapper({

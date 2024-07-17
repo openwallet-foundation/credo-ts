@@ -15,7 +15,9 @@ import { getSupportedJwaSignatureAlgorithms } from './utils'
  *
  * Depending on the format, the types may be nested, or have different a different name/type
  */
-export function getTypesFromCredentialSupported(credentialSupported: OpenId4VciCredentialConfigurationSupported) {
+export function getTypesFromCredentialSupported(
+  credentialSupported: OpenId4VciCredentialConfigurationSupported
+): string[] | undefined {
   if (
     credentialSupported.format === 'jwt_vc_json-ld' ||
     credentialSupported.format === 'ldp_vc' ||
@@ -24,7 +26,7 @@ export function getTypesFromCredentialSupported(credentialSupported: OpenId4VciC
   ) {
     return credentialSupported.credential_definition.type
   } else if (credentialSupported.format === 'vc+sd-jwt') {
-    return credentialSupported.vct
+    return credentialSupported.vct ? [credentialSupported.vct] : undefined
   }
 
   throw Error(`Unable to extract types from credentials supported. Unknown format ${credentialSupported.format}`)
@@ -120,7 +122,7 @@ export function credentialSupportedToCredentialConfigurationSupported(
       format: credentialSupported.format,
       vct: credentialSupported.vct,
       id: credentialSupported.id,
-      claims: credentialSupported.format === 'vc+sd-jwt' ? credentialSupported.claims : undefined,
+      claims: credentialSupported.claims,
       credential_definition: {},
     }
   }
@@ -196,7 +198,7 @@ export function getOfferedCredentials(
   return credentialConfigurationsOffered
 }
 
-export const getProofTypesSupported = (agentContext: AgentContext) => {
+export const getProofTypesSupported = (agentContext: AgentContext): Record<KeyProofType, ProofType> => {
   return {
     jwt: {
       proof_signing_alg_values_supported: getSupportedJwaSignatureAlgorithms(agentContext) as string[],

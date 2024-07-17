@@ -223,7 +223,7 @@ describe('OpenId4Vc', () => {
         issuerId: openIdIssuerTenant2.issuerId,
         offeredCredentials: [universityDegreeCredentialSdJwt2.id],
         preAuthorizedCodeFlowConfig: {}, // { userPinRequired: true },
-        version: 'v11',
+        version: 'v1.draft11',
       })
 
     await issuerTenant1.endSession()
@@ -326,9 +326,9 @@ describe('OpenId4Vc', () => {
       txCode: issuanceSession2.userPin,
     })
 
-    const credentialsTenant2 = await holderTenant1.modules.openId4VcHolder.requestCredential({
+    const credentialsTenant2 = await holderTenant1.modules.openId4VcHolder.requestCredentials({
       resolvedCredentialOffer: resolvedCredentialOffer2,
-      tokenResponse: tokenResponseTenant2,
+      ...tokenResponseTenant2,
       credentialBindingResolver,
     })
 

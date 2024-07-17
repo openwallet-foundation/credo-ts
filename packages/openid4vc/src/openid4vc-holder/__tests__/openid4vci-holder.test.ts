@@ -185,9 +185,9 @@ describe('OpenId4VcHolder', () => {
         resolvedCredentialOffer,
       })
 
-      const credentialResponse = await holder.modules.openId4VcHolder.requestCredential({
+      const credentialResponse = await holder.modules.openId4VcHolder.requestCredentials({
         resolvedCredentialOffer,
-        tokenResponse,
+        ...tokenResponse,
         verifyCredentialStatus: false,
         // We only allow EdDSa, as we've created a did with keyType ed25519. If we create
         // or determine the did dynamically we could use any signature algorithm
@@ -201,7 +201,7 @@ describe('OpenId4VcHolder', () => {
       if (!credentialResponse[0]?.notificationMetadata) throw new Error("Notification metadata wasn't returned")
 
       await holder.modules.openId4VcHolder.sendNotification({
-        accessToken: tokenResponse.access_token,
+        accessToken: tokenResponse.accessToken,
         notificationEvent: 'credential_accepted',
         notificationMetadata: credentialResponse[0].notificationMetadata,
       })
@@ -305,9 +305,9 @@ describe('OpenId4VcHolder', () => {
       })
 
       await expect(
-        holder.modules.openId4VcHolder.requestCredential({
+        holder.modules.openId4VcHolder.requestCredentials({
           resolvedCredentialOffer,
-          tokenResponse,
+          ...tokenResponse,
           allowedProofOfPossessionSignatureAlgorithms: [JwaSignatureAlgorithm.EdDSA],
           credentialBindingResolver: () => ({ method: 'did', didUrl: holderVerificationMethod }),
           verifyCredentialStatus: false,

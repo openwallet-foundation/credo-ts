@@ -41,6 +41,8 @@ export type OpenId4VciNotificationEvent = 'credential_accepted' | 'credential_fa
 
 export type OpenId4VciTokenResponse = Pick<AccessTokenResponse, 'access_token' | 'c_nonce'>
 
+export type OpenId4VciRequestTokenResponse = { accessToken: string; cNonce?: string }
+
 export interface OpenId4VciCredentialResponse {
   credential: VerifiableCredential
   notificationMetadata?: OpenId4VciNotificationMetadata
@@ -106,7 +108,8 @@ export type OpenId4VciTokenRequestOptions =
 
 export interface OpenId4VciCredentialRequestOptions extends Omit<OpenId4VciAcceptCredentialOfferOptions, 'userPin'> {
   resolvedCredentialOffer: OpenId4VciResolvedCredentialOffer
-  tokenResponse: OpenId4VciTokenResponse
+  accessToken: string
+  cNonce?: string
 }
 /**
  * Options that are used to accept a credential offer for both the pre-authorized code flow and authorization code flow.

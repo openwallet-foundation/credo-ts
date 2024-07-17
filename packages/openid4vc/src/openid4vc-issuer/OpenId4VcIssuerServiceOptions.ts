@@ -61,7 +61,7 @@ export interface OpenId4VciCreateCredentialOfferOptions {
   /**
    * @default v11
    */
-  version?: 'v11' | 'v1.draft13'
+  version?: 'v1.draft11' | 'v1.draft13'
 }
 
 export interface OpenId4VciCreateCredentialResponseOptions {
