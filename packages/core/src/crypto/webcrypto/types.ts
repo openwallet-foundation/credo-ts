@@ -24,7 +24,7 @@ export type EcdsaParams = {
   hash: { name: HashAlgorithmIdentifier } | HashAlgorithmIdentifier
 }
 
-export type Ed25519Params = 'Ed25519'
+export type Ed25519Params = { name: 'Ed25519' }
 
 /*
  *
@@ -32,7 +32,7 @@ export type Ed25519Params = 'Ed25519'
  *
  */
 
-export type Ed25519KeyGenParams = 'Ed25119'
+export type Ed25519KeyGenParams = { name: 'Ed25519' }
 
 export type EcKeyGenParams = {
   name: 'ECDSA'
@@ -45,7 +45,7 @@ export type EcKeyGenParams = {
  *
  */
 
-export type Ed25519KeyImportParams = 'Ed25519'
+export type Ed25519KeyImportParams = { name: 'Ed25519' }
 
 export type EcKeyImportParams = {
   name: 'ECDSA'
