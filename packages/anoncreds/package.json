@@ -1,8 +1,8 @@
 {
   "name": "@credo-ts/anoncreds",
-  "main": "src/index",
-  "types": "src/index",
-  "version": "0.5.6",
+  "main": "build/index",
+  "types": "build/index",
+  "version": "0.5.6-revocation",
   "files": [
     "build"
   ],
@@ -27,7 +27,7 @@
   },
   "dependencies": {
     "@astronautlabs/jsonpath": "^1.1.2",
-    "@credo-ts/core": "file:./../core",
+    "@credo-ts/core": "0.5.6-revocation",
     "@sphereon/pex-models": "^2.2.4",
     "big-integer": "^1.6.51",
     "bn.js": "^5.2.1",

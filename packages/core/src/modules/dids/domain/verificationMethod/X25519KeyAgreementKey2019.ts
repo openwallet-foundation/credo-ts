@@ -44,7 +44,6 @@ export function getKeyFromX25519KeyAgreementKey2019(verificationMethod: X25519Ke
       throw new CredoError(
         `Unexpected key type from resolving multibase encoding, key type was ${key.keyType} but expected ${KeyType.X25519}`
       )
-  }
-
-  throw new CredoError('verification method is missing publicKeyBase58 or publicKeyMultibase')
+    }
+    throw new CredoError('verification method is missing publicKeyBase58 or publicKeyMultibase')
 }

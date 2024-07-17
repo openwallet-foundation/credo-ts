@@ -31,7 +31,7 @@ import type {
   RegisterRevocationStatusListOptions,
 } from '@credo-ts/anoncreds'
 import type { AgentContext } from '@credo-ts/core'
-import type { SchemaResponse } from '@hyperledger/indy-vdr-shared'
+import type { GetCredentialDefinitionResponse, SchemaResponse } from '@hyperledger/indy-vdr-shared'
 
 import {
   getUnqualifiedCredentialDefinitionId,
@@ -268,7 +268,7 @@ export class IndyVdrAnonCredsRegistry implements AnonCredsRegistry {
       agentContext.config.logger.trace(
         `Submitting get credential definition request for credential definition '${credentialDefinitionId}' to ledger '${pool.indyNamespace}'`
       )
-      const response = await pool.submitRequest(request)
+      const response: GetCredentialDefinitionResponse = await pool.submitRequest(request)
 
       // We need to fetch the schema to determine the schemaId (we only have the seqNo)
       const schema = await this.fetchIndySchemaWithSeqNo(agentContext, response.result.ref, namespaceIdentifier)
@@ -979,7 +979,7 @@ export class IndyVdrAnonCredsRegistry implements AnonCredsRegistry {
     }
 
     const schema = response.result.data?.txn.data as SchemaType
-    const schemaDid = response.result.data?.txn.metadata.from as string
+    const schemaDid = response.result.data?.txn.metadata['from'] as string
     const schemaId = getUnqualifiedSchemaId(schemaDid, schema.data.name, schema.data.version)
 
     return {

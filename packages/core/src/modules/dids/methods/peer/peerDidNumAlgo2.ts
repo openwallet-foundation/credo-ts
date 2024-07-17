@@ -72,7 +72,12 @@ export function didToNumAlgo2DidDocument(did: string) {
 
         service.id = `${did}#${service.type.toLowerCase()}-${serviceIndex++}`
 
-        didDocument.addService(JsonTransformer.fromJSON(service, DidDocumentService))
+        try {
+          didDocument.addService(JsonTransformer.fromJSON(service, DidDocumentService))
+        } catch (e) {
+          //If it is didCommv2 the json transform will throw
+          serviceIndex--
+        }
       }
     }
     // Otherwise we can be sure it is a key

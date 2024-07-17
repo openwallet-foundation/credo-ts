@@ -46,6 +46,13 @@ export function getKeyFromEcdsaSecp256k1VerificationKey2019(verificationMethod: 
   if (verificationMethod.publicKeyBase58) {
     return Key.fromPublicKeyBase58(verificationMethod.publicKeyBase58, KeyType.K256)
   }
-
-  throw new CredoError('verification method is missing publicKeyBase58')
+  if (verificationMethod.publicKeyMultibase) {
+    const key = Key.fromFingerprint(verificationMethod.publicKeyMultibase)
+    if (key.keyType === KeyType.K256) return key
+    else
+      throw new CredoError(
+        `Unexpected key type from resolving multibase encoding, key type was ${key.keyType} but expected ${KeyType.K256}}`
+      )
+  }
+  throw new CredoError('verification method is missing publicKeyBase58 or publicKeyMultibase')
 }

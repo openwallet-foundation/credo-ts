@@ -114,7 +114,7 @@ export class DidDocument {
     // TODO: once we use JSON-LD we should use that to resolve references in did documents.
     // for now we check whether the key id ends with the keyId.
     // so if looking for #123 and key.id is did:key:123#123, it is valid. But #123 as key.id is also valid
-    const verificationMethod = this.verificationMethod?.find((key) => key.id.endsWith(keyId))
+    const verificationMethod = this.verificationMethod?.find((key) => key.id.endsWith(keyId) || key.controller === keyId)
 
     if (!verificationMethod) {
       throw new CredoError(`Unable to locate verification method with id '${keyId}'`)

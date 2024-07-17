@@ -1,8 +1,8 @@
 {
   "name": "@credo-ts/indy-vdr",
-  "main": "src/index",
-  "types": "src/index",
-  "version": "0.5.6",
+  "main": "build/index",
+  "types": "build/index",
+  "version": "0.5.6-revocation",
   "files": [
     "build"
   ],
@@ -26,8 +26,8 @@
     "test": "jest"
   },
   "dependencies": {
-    "@credo-ts/anoncreds": "file:./../anoncreds",
-    "@credo-ts/core": "file:./../core"
+    "@credo-ts/anoncreds": "0.5.6-revocation",
+    "@credo-ts/core": "0.5.6-revocation"
   },
   "devDependencies": {
     "@hyperledger/indy-vdr-nodejs": "^0.2.2",
