@@ -98,10 +98,32 @@ describe('DidRegistrar', () => {
       expect(walletMock.createKey).toHaveBeenCalledWith({ keyType: KeyType.P256, privateKey })
     })
 
-    it('should return an error state if no key type is provided', async () => {
+    it('should return an error state if a key instance and key type are both provided', async () => {
+      const key = await agentContext.wallet.createKey({
+        keyType: KeyType.P256,
+      })
+
       const result = await jwkDidRegistrar.create(agentContext, {
         method: 'jwk',
-        // @ts-expect-error - key type is required in interface
+        options: {
+          key,
+          keyType: KeyType.P256,
+        },
+      })
+
+      expect(JsonTransformer.toJSON(result)).toMatchObject({
+        didDocumentMetadata: {},
+        didRegistrationMetadata: {},
+        didState: {
+          state: 'failed',
+          reason: 'Key instance cannot be combined with key type, seed or private key',
+        },
+      })
+    })
+
+    it('should return an error state if no key or key type is provided', async () => {
+      const result = await jwkDidRegistrar.create(agentContext, {
+        method: 'jwk',
         options: {},
       })
 
@@ -110,7 +132,7 @@ describe('DidRegistrar', () => {
         didRegistrationMetadata: {},
         didState: {
           state: 'failed',
-          reason: 'Missing key type',
+          reason: 'Missing key type or key instance',
         },
       })
     })

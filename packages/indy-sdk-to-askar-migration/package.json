@@ -2,7 +2,7 @@
   "name": "@credo-ts/indy-sdk-to-askar-migration",
   "main": "src/index",
   "types": "src/index",
-  "version": "0.5.6",
+  "version": "0.5.7",
   "files": [
     "build"
   ],
@@ -32,12 +32,12 @@
     "@credo-ts/node": "workspace:*"
   },
   "devDependencies": {
-    "@hyperledger/aries-askar-nodejs": "^0.2.1",
-    "@hyperledger/aries-askar-shared": "^0.2.1",
+    "@hyperledger/aries-askar-nodejs": "^0.2.3",
+    "@hyperledger/aries-askar-shared": "^0.2.3",
     "rimraf": "^4.4.0",
     "typescript": "~5.5.2"
   },
   "peerDependencies": {
-    "@hyperledger/aries-askar-shared": "^0.2.1"
+    "@hyperledger/aries-askar-shared": "^0.2.3"
   }
 }

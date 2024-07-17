@@ -1,12 +1,12 @@
-import type { CredoWebCrypto } from '../webcrypto'
+import type { CredoWebCrypto } from '../../crypto/webcrypto'
 
 import { AsnParser } from '@peculiar/asn1-schema'
 import { id_ce_subjectAltName, SubjectPublicKeyInfo } from '@peculiar/asn1-x509'
 import * as x509 from '@peculiar/x509'
 
-import { Key } from '../Key'
-import { CredoWebCryptoKey } from '../webcrypto'
-import { spkiAlgorithmIntoCredoKeyType } from '../webcrypto/utils'
+import { Key } from '../../crypto/Key'
+import { CredoWebCryptoKey } from '../../crypto/webcrypto'
+import { credoKeyTypeIntoCryptoKeyAlgorithm, spkiAlgorithmIntoCredoKeyType } from '../../crypto/webcrypto/utils'
 
 import { X509Error } from './X509Error'
 
@@ -25,7 +25,7 @@ export class X509Certificate {
   public privateKey?: Uint8Array
   public extensions?: Array<Extension>
 
-  private rawCertificate: Uint8Array
+  public readonly rawCertificate: Uint8Array
 
   public constructor(options: X509CertificateOptions) {
     this.extensions = options.extensions
@@ -99,9 +99,10 @@ export class X509Certificate {
     },
     webCrypto: CredoWebCrypto
   ) {
-    const publicKey = new CredoWebCryptoKey(key, { name: 'ECDSA', namedCurve: 'P-256' }, true, 'public', ['verify'])
+    const cryptoKeyAlgorithm = credoKeyTypeIntoCryptoKeyAlgorithm(key.keyType)
 
-    const privateKey = new CredoWebCryptoKey(key, { name: 'ECDSA', namedCurve: 'P-256' }, false, 'private', ['sign'])
+    const publicKey = new CredoWebCryptoKey(key, cryptoKeyAlgorithm, true, 'public', ['verify'])
+    const privateKey = new CredoWebCryptoKey(key, cryptoKeyAlgorithm, false, 'private', ['sign'])
 
     const certificate = await x509.X509CertificateGenerator.createSelfSigned(
       {
@@ -122,19 +123,24 @@ export class X509Certificate {
     return certificate.subject
   }
 
-  public async verify({ date = new Date(), publicKey }: { date: Date; publicKey?: Key }, webCrypto: CredoWebCrypto) {
+  public async verify(
+    { verificationDate = new Date(), publicKey }: { verificationDate: Date; publicKey?: Key },
+    webCrypto: CredoWebCrypto
+  ) {
     const certificate = new x509.X509Certificate(this.rawCertificate)
 
-    const publicCryptoKey = publicKey
-      ? new CredoWebCryptoKey(publicKey, { name: 'ECDSA', namedCurve: 'P-256' }, true, 'public', ['verify'])
-      : undefined
+    let publicCryptoKey: CredoWebCryptoKey | undefined
+    if (publicKey) {
+      const cryptoKeyAlgorithm = credoKeyTypeIntoCryptoKeyAlgorithm(publicKey.keyType)
+      publicCryptoKey = new CredoWebCryptoKey(publicKey, cryptoKeyAlgorithm, true, 'public', ['verify'])
+    }
 
     // We use the library to validate the signature, but the date is manually verified
     const isSignatureValid = await certificate.verify({ signatureOnly: true, publicKey: publicCryptoKey }, webCrypto)
-    const time = date.getTime()
+    const time = verificationDate.getTime()
 
-    const isNotBeforeValid = certificate.notBefore.getTime() < time
-    const isNotAfterValid = time < certificate.notAfter.getTime()
+    const isNotBeforeValid = certificate.notBefore.getTime() <= time
+    const isNotAfterValid = time <= certificate.notAfter.getTime()
 
     if (!isSignatureValid) {
       throw new X509Error(`Certificate: '${certificate.subject}' has an invalid signature`)
@@ -151,5 +157,12 @@ export class X509Certificate {
   public toString(format: 'asn' | 'pem' | 'hex' | 'base64' | 'text' | 'base64url') {
     const certificate = new x509.X509Certificate(this.rawCertificate)
     return certificate.toString(format)
+  }
+
+  public equal(certificate: X509Certificate) {
+    const parsedThis = new x509.X509Certificate(this.rawCertificate)
+    const parsedOther = new x509.X509Certificate(certificate.rawCertificate)
+
+    return parsedThis.equal(parsedOther)
   }
 }

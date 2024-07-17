@@ -2,7 +2,7 @@
   "name": "@credo-ts/openid4vc",
   "main": "src/index",
   "types": "src/index",
-  "version": "0.5.6",
+  "version": "0.5.7",
   "files": [
     "build"
   ],
@@ -27,7 +27,7 @@
   },
   "dependencies": {
     "@credo-ts/core": "workspace:*",
-    "@sphereon/did-auth-siop": "^0.6.4",
+    "@sphereon/did-auth-siop": "^0.15.0",
     "@sphereon/oid4vci-client": "^0.14.0",
     "@sphereon/oid4vci-common": "^0.14.0",
     "@sphereon/oid4vci-issuer": "^0.14.0",
