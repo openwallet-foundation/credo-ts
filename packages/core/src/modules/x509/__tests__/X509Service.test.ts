@@ -1,12 +1,12 @@
 import type { AgentContext } from '../../../agent'
-import type { KeyGenAlgorithm, KeySignParams } from '../../webcrypto/types'
+import type { KeyGenAlgorithm, KeySignParams } from '../../../crypto/webcrypto/types'
 
 import * as x509 from '@peculiar/x509'
 
 import { InMemoryWallet } from '../../../../../../tests/InMemoryWallet'
 import { getAgentConfig, getAgentContext } from '../../../../tests'
-import { KeyType } from '../../KeyType'
-import { CredoWebCrypto, CredoWebCryptoKey } from '../../webcrypto'
+import { KeyType } from '../../../crypto/KeyType'
+import { CredoWebCrypto, CredoWebCryptoKey } from '../../../crypto/webcrypto'
 import { X509Error } from '../X509Error'
 import { X509Service } from '../X509Service'
 

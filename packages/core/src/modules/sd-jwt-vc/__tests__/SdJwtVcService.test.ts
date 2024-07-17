@@ -23,6 +23,7 @@ import {
   simpleJwtVcPresentation,
   simpleJwtVcWithoutHolderBinding,
   simpleSdJwtVcWithStatus,
+  simpleX509,
 } from './sdjwtvc.fixtures'
 
 import {
@@ -38,6 +39,7 @@ import {
   KeyType,
   parseDid,
   TypedArrayEncoder,
+  X509ModuleConfig,
 } from '@credo-ts/core'
 
 const jwkJsonWithoutUse = (jwk: Jwk) => {
@@ -134,6 +136,61 @@ describe('SdJwtVcService', () => {
   })
 
   describe('SdJwtVcService.sign', () => {
+    test('Sign (x509) sd-jwt-vc with an invalid certificate issuer should fail', async () => {
+      await expect(
+        sdJwtVcService.sign(agent.context, {
+          payload: {
+            claim: 'some-claim',
+            vct: 'IdentityCredential',
+          },
+          holder: {
+            method: 'jwk',
+            jwk: jwkJsonWithoutUse(getJwkFromKey(holderKey)),
+          },
+          issuer: {
+            method: 'x5c',
+            x5c: [simpleX509.certificate],
+            issuer: 'some-issuer',
+          },
+        })
+      ).rejects.toThrow()
+    })
+
+    test('Sign (x509) sd-jwt-vc from a basic payload without disclosures', async () => {
+      const { compact } = await sdJwtVcService.sign(agent.context, {
+        payload: {
+          claim: 'some-claim',
+          vct: 'IdentityCredential',
+        },
+        holder: {
+          method: 'jwk',
+          jwk: jwkJsonWithoutUse(getJwkFromKey(holderKey)),
+        },
+        issuer: {
+          method: 'x5c',
+          x5c: [simpleX509.certificate],
+          issuer: simpleX509.certificateIssuer,
+        },
+      })
+
+      expect(compact).toStrictEqual(simpleX509.sdJwtVc)
+
+      const sdJwtVc = sdJwtVcService.fromCompact(compact)
+      expect(sdJwtVc.header).toEqual({
+        typ: 'vc+sd-jwt',
+        alg: 'EdDSA',
+        x5c: [simpleX509.certificate],
+      })
+
+      expect(sdJwtVc.prettyClaims).toEqual({
+        claim: 'some-claim',
+        vct: 'IdentityCredential',
+        iat: Math.floor(new Date().getTime() / 1000),
+        iss: simpleX509.certificateIssuer,
+        cnf: { jwk: jwkJsonWithoutUse(getJwkFromKey(holderKey)) },
+      })
+    })
+
     test('Sign sd-jwt-vc from a basic payload without disclosures', async () => {
       const { compact } = await sdJwtVcService.sign(agent.context, {
         payload: {
@@ -703,6 +760,44 @@ describe('SdJwtVcService', () => {
           nonce,
         },
       })
+
+      const verificationResult = await sdJwtVcService.verify(agent.context, {
+        compactSdJwtVc: presentation,
+        keyBinding: { audience: verifierDid, nonce },
+        requiredClaimKeys: ['claim'],
+      })
+
+      expect(verificationResult).toEqual({
+        isValid: true,
+        sdJwtVc: expect.any(Object),
+        verification: {
+          isSignatureValid: true,
+          containsRequiredVcProperties: true,
+          containsExpectedKeyBinding: true,
+          areRequiredClaimsIncluded: true,
+          isValid: true,
+          isValidJwtPayload: true,
+          isStatusValid: true,
+          isKeyBindingValid: true,
+        },
+      })
+    })
+
+    test('Verify x509 protected sd-jwt-vc without disclosures', async () => {
+      const nonce = await agent.context.wallet.generateNonce()
+      const presentation = await sdJwtVcService.present(agent.context, {
+        compactSdJwtVc: simpleX509.sdJwtVc,
+        // no disclosures
+        presentationFrame: {},
+        verifierMetadata: {
+          issuedAt: new Date().getTime() / 1000,
+          audience: verifierDid,
+          nonce,
+        },
+      })
+
+      const x509ModuleConfig = agent.context.dependencyManager.resolve(X509ModuleConfig)
+      await x509ModuleConfig.addTrustedCertificate(simpleX509.certificate)
 
       const verificationResult = await sdJwtVcService.verify(agent.context, {
         compactSdJwtVc: presentation,
