@@ -99,7 +99,7 @@ jobs:
 
       - name: Create unstable release
         env:
-          TAG: ${{ github.event_name == 'push' && 'alpha' || github.ref_name }}
+          TAG: ${{ github.event_name == 'push' && 'alpha' || github.head_ref }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_PUBLISH }}
         run: |
