@@ -16,20 +16,11 @@ import {
   asArray,
   DifPresentationExchangeService,
   DifPresentationExchangeSubmissionLocation,
-  DidsApi,
 } from '@credo-ts/core'
-import {
-  CheckLinkedDomain,
-  OP,
-  ResponseIss,
-  ResponseMode,
-  SupportedVersion,
-  VPTokenLocation,
-  VerificationMode,
-} from '@sphereon/did-auth-siop'
+import { OP, ResponseIss, ResponseMode, SupportedVersion, VPTokenLocation } from '@sphereon/did-auth-siop'
 
 import { getSphereonVerifiablePresentation } from '../shared/transform'
-import { getSphereonDidResolver, getSphereonSuppliedSignatureFromJwtIssuer } from '../shared/utils'
+import { getCreateJwtCallback, getVerifyJwtCallback, openIdTokenIssuerToJwtIssuer } from '../shared/utils'
 
 @injectable()
 export class OpenId4VcSiopHolderService {
@@ -39,17 +30,10 @@ export class OpenId4VcSiopHolderService {
     agentContext: AgentContext,
     requestJwtOrUri: string
   ): Promise<OpenId4VcSiopResolvedAuthorizationRequest> {
-    const openidProvider = await this.getOpenIdProvider(agentContext, {})
+    const openidProvider = await this.getOpenIdProvider(agentContext)
 
     // parsing happens automatically in verifyAuthorizationRequest
-    const verifiedAuthorizationRequest = await openidProvider.verifyAuthorizationRequest(requestJwtOrUri, {
-      verification: {
-        // FIXME: we want custom verification, but not supported currently
-        // https://github.com/Sphereon-Opensource/SIOP-OID4VP/issues/55
-        mode: VerificationMode.INTERNAL,
-        resolveOpts: { resolver: getSphereonDidResolver(agentContext), noUniversalResolverFallback: true },
-      },
-    })
+    const verifiedAuthorizationRequest = await openidProvider.verifyAuthorizationRequest(requestJwtOrUri)
 
     agentContext.config.logger.debug(
       `verified SIOP Authorization Request for issuer '${verifiedAuthorizationRequest.issuer}'`
@@ -138,20 +122,12 @@ export class OpenId4VcSiopHolderService {
     }
 
     this.assertValidTokenIssuer(authorizationRequest, openIdTokenIssuer)
-    const openidProvider = await this.getOpenIdProvider(agentContext, {
-      openIdTokenIssuer,
-    })
+    const openidProvider = await this.getOpenIdProvider(agentContext)
 
-    const suppliedSignature = await getSphereonSuppliedSignatureFromJwtIssuer(agentContext, openIdTokenIssuer)
     const authorizationResponseWithCorrelationId = await openidProvider.createAuthorizationResponse(
       authorizationRequest,
       {
-        signature: suppliedSignature,
-        issuer: suppliedSignature.did,
-        verification: {
-          resolveOpts: { resolver: getSphereonDidResolver(agentContext), noUniversalResolverFallback: true },
-          mode: VerificationMode.INTERNAL,
-        },
+        jwtIssuer: await openIdTokenIssuerToJwtIssuer(agentContext, openIdTokenIssuer),
         presentationExchange: presentationExchangeOptions,
         // https://openid.net/specs/openid-connect-self-issued-v2-1_0.html#name-aud-of-a-request-object
         audience: authorizationRequest.authorizationRequestPayload.client_id,
@@ -178,33 +154,19 @@ export class OpenId4VcSiopHolderService {
     }
   }
 
-  private async getOpenIdProvider(
-    agentContext: AgentContext,
-    options: {
-      openIdTokenIssuer?: OpenId4VcJwtIssuer
-    } = {}
-  ) {
-    const { openIdTokenIssuer } = options
-
+  private async getOpenIdProvider(agentContext: AgentContext) {
     const builder = OP.builder()
       .withExpiresIn(6000)
       .withIssuer(ResponseIss.SELF_ISSUED_V2)
       .withResponseMode(ResponseMode.POST)
-      .withSupportedVersions([SupportedVersion.SIOPv2_D11, SupportedVersion.SIOPv2_D12_OID4VP_D18])
-      .withCustomResolver(getSphereonDidResolver(agentContext))
-      .withCheckLinkedDomain(CheckLinkedDomain.NEVER)
+      .withSupportedVersions([
+        SupportedVersion.SIOPv2_D11,
+        SupportedVersion.SIOPv2_D12_OID4VP_D18,
+        SupportedVersion.SIOPv2_D12_OID4VP_D20,
+      ])
+      .withCreateJwtCallback(getCreateJwtCallback(agentContext))
+      .withVerifyJwtCallback(getVerifyJwtCallback(agentContext))
       .withHasher(Hasher.hash)
-
-    if (openIdTokenIssuer) {
-      const suppliedSignature = await getSphereonSuppliedSignatureFromJwtIssuer(agentContext, openIdTokenIssuer)
-      builder.withSignature(suppliedSignature)
-    }
-
-    // Add did methods
-    const supportedDidMethods = agentContext.dependencyManager.resolve(DidsApi).supportedResolverMethods
-    for (const supportedDidMethod of supportedDidMethods) {
-      builder.addDidMethod(supportedDidMethod)
-    }
 
     const openidProvider = builder.build()
 

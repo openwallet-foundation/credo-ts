@@ -8,6 +8,7 @@
     "demo-openid",
     "samples/*"
   ],
+  "packageManager": "pnpm@9.1.0",
   "repository": {
     "url": "https://github.com/openwallet-foundation/credo-ts",
     "type": "git"
