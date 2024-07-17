@@ -4,7 +4,14 @@ on:
   push:
     branches:
       - main
-      - '**-pre'
+  pull_request:
+    branches:
+      - main
+    types:
+      - opened
+      - synchronize
+      - reopened
+      - labeled
 
 permissions:
   pull-requests: write
@@ -14,7 +21,7 @@ jobs:
   release:
     name: Release
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v4
@@ -57,8 +64,15 @@ jobs:
   release-unstable:
     name: Release Unstable
     runs-on: ubuntu-latest
-    if: "!startsWith(github.event.head_commit.message, 'chore(release): version')"
+    if: "(github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == 'openwallet-foundation/credo-ts') || (github.event_name == 'push' && !startsWith(github.event.head_commit.message, 'chore(release): version'))"
     steps:
+      - uses: snnaplab/get-labels-action@v1
+        if: github.event_name == 'pull_request'
+
+      # exit if pull request and no alpha-release tag
+      - if: github.event_name == 'pull_request' && !contains(fromJSON(env.LABELS), 'alpha-release')
+        run: exit 0
+
       - name: Checkout Repo
         uses: actions/checkout@v4
 
@@ -84,6 +98,10 @@ jobs:
           NPM_TOKEN: ${{ secrets.NPM_PUBLISH }}
 
       - name: Create unstable release
+        env:
+          TAG: ${{ github.event_name == 'push' && 'alpha' || format('pr-{0}', github.event.number) }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_PUBLISH }}
         run: |
           # this ensures there's always a patch release created
           cat << 'EOF' > .changeset/snapshot-template-changeset.md
@@ -94,16 +112,12 @@ jobs:
           snapshot release
           EOF
 
-          pnpm changeset version --snapshot alpha
+          pnpm changeset version --snapshot ${{ env.TAG }}
           pnpm build
-          pnpm changeset publish --tag alpha
+          pnpm changeset publish --tag ${{ env.TAG }}
 
           CURRENT_PACKAGE_VERSION=$(node -p "require('./packages/core/package.json').version")
           git config --global user.name "github-actions[bot]"
           git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git tag v$CURRENT_PACKAGE_VERSION
           git push origin v$CURRENT_PACKAGE_VERSION --no-verify
-
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NPM_TOKEN: ${{ secrets.NPM_PUBLISH }}
