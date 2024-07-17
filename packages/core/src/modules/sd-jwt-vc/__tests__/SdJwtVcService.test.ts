@@ -15,6 +15,7 @@ import {
   complexSdJwtVcPresentation,
   contentChangedSdJwtVc,
   expiredSdJwtVc,
+  funkeX509,
   notBeforeInFutureSdJwtVc,
   sdJwtVcWithSingleDisclosure,
   sdJwtVcWithSingleDisclosurePresentation,
@@ -27,10 +28,11 @@ import {
 } from './sdjwtvc.fixtures'
 
 import {
-  CredoError,
   Agent,
+  CredoError,
   DidKey,
   DidsModule,
+  getDomainFromUrl,
   getJwkFromKey,
   JwsService,
   JwtPayload,
@@ -149,7 +151,7 @@ describe('SdJwtVcService', () => {
           },
           issuer: {
             method: 'x5c',
-            x5c: [simpleX509.certificate],
+            x5c: [simpleX509.trustedCertficate],
             issuer: 'some-issuer',
           },
         })
@@ -168,7 +170,7 @@ describe('SdJwtVcService', () => {
         },
         issuer: {
           method: 'x5c',
-          x5c: [simpleX509.certificate],
+          x5c: [simpleX509.trustedCertficate],
           issuer: simpleX509.certificateIssuer,
         },
       })
@@ -179,7 +181,7 @@ describe('SdJwtVcService', () => {
       expect(sdJwtVc.header).toEqual({
         typ: 'vc+sd-jwt',
         alg: 'EdDSA',
-        x5c: [simpleX509.certificate],
+        x5c: [simpleX509.trustedCertficate],
       })
 
       expect(sdJwtVc.prettyClaims).toEqual({
@@ -797,7 +799,7 @@ describe('SdJwtVcService', () => {
       })
 
       const x509ModuleConfig = agent.context.dependencyManager.resolve(X509ModuleConfig)
-      await x509ModuleConfig.addTrustedCertificate(simpleX509.certificate)
+      await x509ModuleConfig.addTrustedCertificate(simpleX509.trustedCertficate)
 
       const verificationResult = await sdJwtVcService.verify(agent.context, {
         compactSdJwtVc: presentation,
@@ -841,6 +843,33 @@ describe('SdJwtVcService', () => {
           areRequiredClaimsIncluded: true,
           isValid: true,
           isValidJwtPayload: true,
+          isStatusValid: true,
+        },
+      })
+    })
+
+    test('Verify x509 chain protected sd-jwt-vc', async () => {
+      const x509ModuleConfig = agent.context.dependencyManager.resolve(X509ModuleConfig)
+      await x509ModuleConfig.addTrustedCertificate(funkeX509.trustedCertificate)
+
+      const verificationResult = await sdJwtVcService.verify(agent.context, {
+        compactSdJwtVc: funkeX509.sdJwtVc,
+        requiredClaimKeys: ['issuing_country'],
+      })
+
+      const sdJwtIss = verificationResult.sdJwtVc?.payload.iss
+      expect(sdJwtIss).toEqual('https://demo.pid-issuer.bundesdruckerei.de/c')
+      expect(getDomainFromUrl(sdJwtIss as string)).toEqual('demo.pid-issuer.bundesdruckerei.de')
+
+      expect(verificationResult).toEqual({
+        isValid: false,
+        error: new CredoError('JWT expired at 1718707804'),
+        sdJwtVc: expect.any(Object),
+        verification: {
+          isSignatureValid: true,
+          areRequiredClaimsIncluded: true,
+          isValid: false,
+          isValidJwtPayload: false,
           isStatusValid: true,
         },
       })
