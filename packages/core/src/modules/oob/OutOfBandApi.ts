@@ -548,7 +548,7 @@ export class OutOfBandApi {
 
     await this.outOfBandService.updateState(this.agentContext, outOfBandRecord, OutOfBandState.PrepareResponse)
 
-    if (handshakeProtocols) {
+    if (handshakeProtocols && handshakeProtocols.length > 0) {
       this.logger.debug('Out of band message contains handshake protocols.')
 
       let connectionRecord
@@ -557,7 +557,7 @@ export class OutOfBandApi {
           `Connection already exists and reuse is enabled. Reusing an existing connection with ID ${existingConnection.id}.`
         )
 
-        if (!messages) {
+        if (!messages || messages?.length === 0) {
           this.logger.debug('Out of band message does not contain any request messages.')
           const isHandshakeReuseSuccessful = await this.handleHandshakeReuse(outOfBandRecord, existingConnection)
 
@@ -594,7 +594,7 @@ export class OutOfBandApi {
         })
       }
 
-      if (messages) {
+      if (messages && messages.length > 0) {
         this.logger.debug('Out of band message contains request messages.')
         if (connectionRecord.isReady) {
           await this.emitWithConnection(outOfBandRecord, connectionRecord, messages)
