@@ -11,6 +11,8 @@ import type {
   RegisterSchemaOptions,
   RegisterRevocationRegistryDefinitionReturn,
   RegisterRevocationStatusListReturn,
+  RegisterRevocationRegistryDefinitionOptions,
+  RegisterRevocationStatusListOptions,
 } from '@credo-ts/anoncreds'
 import type { AgentContext } from '@credo-ts/core'
 
@@ -39,9 +41,7 @@ export class CheqdAnonCredsRegistry implements AnonCredsRegistry {
     try {
       const cheqdDidResolver = agentContext.dependencyManager.resolve(CheqdDidResolver)
       const parsedDid = parseCheqdDid(schemaId)
-      if (!parsedDid) {
-        throw new Error(`Invalid schemaId: ${schemaId}`)
-      }
+      if (!parsedDid) throw new CredoError(`Invalid schemaId: ${schemaId}`)
 
       agentContext.config.logger.trace(`Submitting get schema request for schema '${schemaId}' to ledger`)
 
@@ -98,7 +98,7 @@ export class CheqdAnonCredsRegistry implements AnonCredsRegistry {
 
       const response = await cheqdDidRegistrar.createResource(agentContext, schema.issuerId, schemaResource)
       if (response.resourceState.state !== 'finished') {
-        throw new Error(response.resourceState.reason)
+        throw new CredoError(response.resourceState.reason ?? 'Unknown error')
       }
 
       return {
@@ -137,9 +137,7 @@ export class CheqdAnonCredsRegistry implements AnonCredsRegistry {
       const cheqdDidRegistrar = agentContext.dependencyManager.resolve(CheqdDidRegistrar)
       const { credentialDefinition } = options
       const schema = await this.getSchema(agentContext, credentialDefinition.schemaId)
-      if (!schema.schema) {
-        throw new Error(`Schema not found for schemaId: ${credentialDefinition.schemaId}`)
-      }
+      if (!schema.schema) throw new CredoError(`Schema not found for schemaId: ${credentialDefinition.schemaId}`)
 
       const credDefName = `${schema.schema.name}-${credentialDefinition.tag}`
       const credDefNameHashBuffer = Hasher.hash(credDefName, 'sha-256')
@@ -162,9 +160,8 @@ export class CheqdAnonCredsRegistry implements AnonCredsRegistry {
         credentialDefinition.issuerId,
         credDefResource
       )
-      if (response.resourceState.state !== 'finished') {
-        throw new Error(response.resourceState.reason)
-      }
+      if (response.resourceState.state !== 'finished')
+        throw new CredoError(response.resourceState.reason ?? 'Unknown error')
 
       return {
         credentialDefinitionState: {
@@ -204,9 +201,7 @@ export class CheqdAnonCredsRegistry implements AnonCredsRegistry {
     try {
       const cheqdDidResolver = agentContext.dependencyManager.resolve(CheqdDidResolver)
       const parsedDid = parseCheqdDid(credentialDefinitionId)
-      if (!parsedDid) {
-        throw new Error(`Invalid credentialDefinitionId: ${credentialDefinitionId}`)
-      }
+      if (!parsedDid) throw new CredoError(`Invalid credentialDefinitionId: ${credentialDefinitionId}`)
 
       agentContext.config.logger.trace(
         `Submitting get credential definition request for '${credentialDefinitionId}' to ledger`
@@ -247,18 +242,19 @@ export class CheqdAnonCredsRegistry implements AnonCredsRegistry {
     try {
       const cheqdDidResolver = agentContext.dependencyManager.resolve(CheqdDidResolver)
       const parsedDid = parseCheqdDid(revocationRegistryDefinitionId)
-      if (!parsedDid) {
-        throw new Error(`Invalid revocationRegistryDefinitionId: ${revocationRegistryDefinitionId}`)
-      }
+      if (!parsedDid) throw new CredoError(`Invalid revocationRegistryDefinitionId: ${revocationRegistryDefinitionId}`)
 
       agentContext.config.logger.trace(
         `Submitting get revocation registry definition request for '${revocationRegistryDefinitionId}' to ledger`
       )
 
-      const response = await cheqdDidResolver.resolveResource(
-        agentContext,
-        `${revocationRegistryDefinitionId}&resourceType=anonCredsRevocRegDef`
-      )
+      const searchDid = parsedDid.path
+        ? revocationRegistryDefinitionId
+        : `${revocationRegistryDefinitionId}${
+            revocationRegistryDefinitionId.includes('?') ? '&' : '?'
+          }resourceType=anonCredsRevocRegDef`
+
+      const response = await cheqdDidResolver.resolveResource(agentContext, searchDid)
       const revocationRegistryDefinition = JsonTransformer.fromJSON(
         response.resource,
         CheqdRevocationRegistryDefinition
@@ -292,11 +288,76 @@ export class CheqdAnonCredsRegistry implements AnonCredsRegistry {
     }
   }
 
-  public async registerRevocationRegistryDefinition(): Promise<RegisterRevocationRegistryDefinitionReturn> {
-    throw new Error('Not implemented!')
+  public async registerRevocationRegistryDefinition(
+    agentContext: AgentContext,
+    { revocationRegistryDefinition, options }: RegisterRevocationRegistryDefinitionOptions
+  ): Promise<RegisterRevocationRegistryDefinitionReturn> {
+    try {
+      const credentialDefinition = await this.getCredentialDefinition(
+        agentContext,
+        revocationRegistryDefinition.credDefId
+      )
+      if (!credentialDefinition.credentialDefinition)
+        throw new CredoError(`Credential definition not found for id: ${revocationRegistryDefinition.credDefId}`)
+
+      const credentialDefinitionName = credentialDefinition.credentialDefinitionMetadata.name
+      if (!credentialDefinitionName)
+        throw new CredoError(`Credential definition name not found for id: ${revocationRegistryDefinition.credDefId}`)
+
+      const cheqdDidRegistrar = agentContext.dependencyManager.resolve(CheqdDidRegistrar)
+
+      const revocationRegistryDefinitionResource = {
+        id: utils.uuid(),
+        name: credentialDefinitionName as string,
+        resourceType: 'anonCredsRevocRegDef',
+        data: {
+          credDefId: revocationRegistryDefinition.credDefId,
+          revocDefType: revocationRegistryDefinition.revocDefType,
+          tag: revocationRegistryDefinition.tag,
+          value: revocationRegistryDefinition.value,
+        },
+        version: utils.uuid(),
+      } satisfies CheqdCreateResourceOptions
+
+      const response = await cheqdDidRegistrar.createResource(
+        agentContext,
+        revocationRegistryDefinition.issuerId,
+        revocationRegistryDefinitionResource
+      )
+      if (response.resourceState.state !== 'finished')
+        throw new CredoError(response.resourceState.reason ?? 'Unknown error')
+
+      return {
+        revocationRegistryDefinitionState: {
+          state: 'finished',
+          revocationRegistryDefinition,
+          revocationRegistryDefinitionId: `${revocationRegistryDefinition.issuerId}/resources/${revocationRegistryDefinitionResource.id}`,
+        },
+        registrationMetadata: {},
+        revocationRegistryDefinitionMetadata: (response.resourceMetadata ?? {}) as Record<string, unknown>,
+      }
+    } catch (error) {
+      agentContext.config.logger.error(
+        `Error registering revocation registry definition for did '${revocationRegistryDefinition.issuerId}'`,
+        {
+          error,
+          did: revocationRegistryDefinition.issuerId,
+          options,
+        }
+      )
+
+      return {
+        revocationRegistryDefinitionMetadata: {},
+        registrationMetadata: {},
+        revocationRegistryDefinitionState: {
+          state: 'failed',
+          revocationRegistryDefinition,
+          reason: `unknownError: ${error.message}`,
+        },
+      }
+    }
   }
 
-  // FIXME: this method doesn't retrieve the revocation status list at a specified time, it just resolves the revocation registry definition
   public async getRevocationStatusList(
     agentContext: AgentContext,
     revocationRegistryId: string,
@@ -305,24 +366,35 @@ export class CheqdAnonCredsRegistry implements AnonCredsRegistry {
     try {
       const cheqdDidResolver = agentContext.dependencyManager.resolve(CheqdDidResolver)
       const parsedDid = parseCheqdDid(revocationRegistryId)
-      if (!parsedDid) {
-        throw new Error(`Invalid revocationRegistryId: ${revocationRegistryId}`)
-      }
+      if (!parsedDid) throw new CredoError(`Invalid revocationRegistryId: ${revocationRegistryId}`)
 
       agentContext.config.logger.trace(
         `Submitting get revocation status request for '${revocationRegistryId}' to ledger`
       )
 
+      const revocationRegistryDefinition = await this.getRevocationRegistryDefinition(
+        agentContext,
+        revocationRegistryId
+      )
+      if (!revocationRegistryDefinition.revocationRegistryDefinition)
+        throw new CredoError(`Revocation registry definition not found for id: ${revocationRegistryId}`)
+
+      const revocationRegistryDefinitionName = revocationRegistryDefinition.revocationRegistryDefinitionMetadata.name
+      if (!revocationRegistryDefinitionName)
+        throw new CredoError(`Revocation registry definition name not found for id: ${revocationRegistryId}`)
+
       const response = await cheqdDidResolver.resolveResource(
         agentContext,
-        `${revocationRegistryId}&resourceType=anonCredsStatusList&resourceVersionTime=${timestamp}`
+        `${parsedDid.did}?resourceType=anonCredsStatusList&resourceVersionTime=${timestamp}&resourceName=${revocationRegistryDefinitionName}`
       )
+
       const revocationStatusList = JsonTransformer.fromJSON(response.resource, CheqdRevocationStatusList)
 
-      const statusListTimestamp = response.resourceMetadata?.created?.getUTCSeconds()
-      if (!statusListTimestamp) {
+      const statusListTimestamp = response.resourceMetadata?.created
+        ? Math.floor(response.resourceMetadata.created.getTime() / 1000)
+        : undefined
+      if (statusListTimestamp === undefined)
         throw new CredoError(`Unable to extract revocation status list timestamp from resource ${revocationRegistryId}`)
-      }
 
       return {
         revocationStatusList: {
@@ -349,7 +421,79 @@ export class CheqdAnonCredsRegistry implements AnonCredsRegistry {
     }
   }
 
-  public async registerRevocationStatusList(): Promise<RegisterRevocationStatusListReturn> {
-    throw new Error('Not implemented!')
+  public async registerRevocationStatusList(
+    agentContext: AgentContext,
+    { revocationStatusList, options }: RegisterRevocationStatusListOptions
+  ): Promise<RegisterRevocationStatusListReturn> {
+    try {
+      const revocationRegistryDefinition = await this.getRevocationRegistryDefinition(
+        agentContext,
+        revocationStatusList.revRegDefId
+      )
+      if (!revocationRegistryDefinition.revocationRegistryDefinition) {
+        throw new CredoError(`Revocation registry definition not found for id: ${revocationStatusList.revRegDefId}`)
+      }
+
+      const revocationRegistryDefinitionName = revocationRegistryDefinition.revocationRegistryDefinitionMetadata.name
+      if (!revocationRegistryDefinitionName)
+        throw new CredoError(
+          `Revocation registry definition name not found for id: ${revocationStatusList.revRegDefId}`
+        )
+
+      const cheqdDidRegistrar = agentContext.dependencyManager.resolve(CheqdDidRegistrar)
+      const revocationStatusListResource = {
+        id: utils.uuid(),
+        name: revocationRegistryDefinitionName as string,
+        resourceType: 'anonCredsStatusList',
+        data: {
+          currentAccumulator: revocationStatusList.currentAccumulator,
+          revRegDefId: revocationStatusList.revRegDefId,
+          revocationList: revocationStatusList.revocationList,
+        },
+        version: utils.uuid(),
+      } satisfies CheqdCreateResourceOptions
+
+      const response = await cheqdDidRegistrar.createResource(
+        agentContext,
+        revocationStatusList.issuerId,
+        revocationStatusListResource
+      )
+      if (response.resourceState.state !== 'finished')
+        throw new CredoError(response.resourceState.reason ?? 'Unknown error')
+
+      // It's not possible to get the timestamp from the response, so we set it to the current time
+      const nowTimestamp = Math.floor(Date.now() / 1000)
+
+      return {
+        revocationStatusListState: {
+          state: 'finished',
+          revocationStatusList: {
+            ...revocationStatusList,
+            timestamp: nowTimestamp,
+          },
+        },
+        registrationMetadata: {},
+        revocationStatusListMetadata: (response.resourceMetadata ?? {}) as Record<string, unknown>,
+      }
+    } catch (error) {
+      agentContext.config.logger.error(
+        `Error registering revocation status list for did '${revocationStatusList.issuerId}'`,
+        {
+          error,
+          did: revocationStatusList.issuerId,
+          options,
+        }
+      )
+
+      return {
+        revocationStatusListMetadata: {},
+        registrationMetadata: {},
+        revocationStatusListState: {
+          state: 'failed',
+          revocationStatusList,
+          reason: `unknownError: ${error.message}`,
+        },
+      }
+    }
   }
 }

@@ -23,6 +23,8 @@ describe('cheqdAnonCredsRegistry', () => {
     await agent.wallet.delete()
   })
 
+  let credentialDefinitionId: string
+
   // One test as the credential definition depends on the schema
   test('register and resolve a schema and credential definition', async () => {
     const privateKey = TypedArrayEncoder.fromString('000000000000000000000000000cheqd')
@@ -135,6 +137,8 @@ describe('cheqdAnonCredsRegistry', () => {
       },
     })
 
+    credentialDefinitionId = credentialDefinitionResult.credentialDefinitionState.credentialDefinitionId as string
+
     const credentialDefinitionResponse = await cheqdAnonCredsRegistry.getCredentialDefinition(
       agent.context,
       credentialDefinitionResult.credentialDefinitionState.credentialDefinitionId as string
@@ -192,19 +196,45 @@ describe('cheqdAnonCredsRegistry', () => {
     })
   })
 
-  // TODO: re-add once we support registering revocation registries and revocation status lists
-  // Should resolve revocationRegistryDefinition and statusList
-  xtest('resolve revocation registry definition and statusList', async () => {
-    const revocationRegistryId = 'did:cheqd:testnet:e42ccb8b-78e8-4e54-9d11-f375153d63f8?resourceName=universityDegree'
-    const revocationDefinitionResponse = await cheqdAnonCredsRegistry.getRevocationRegistryDefinition(
+  test('register and resolve revocation registry definition and statusList', async () => {
+    const registerRevocationDefinitionResponse = await cheqdAnonCredsRegistry.registerRevocationRegistryDefinition(
       agent.context,
-      revocationRegistryId
+      {
+        options: {},
+        revocationRegistryDefinition: {
+          issuerId,
+          credDefId: credentialDefinitionId,
+          tag: 'TAG',
+          value: {
+            publicKeys: {
+              accumKey: {
+                z: '1 08C6E71D1CE1D1690AED25BC769646538BEC69600829CE1FB7AA788479E0B878 1 026909513F9901655B3F9153071DB43A846418F00F305BA25FE851730ED41102 1 10E9D5438AE95AE2BED78A33716BFF923A0F4CA980A9A599C25A24A2295658DA 1 0A04C318A0DFD29ABB1F1D8DD697999F9B89D6682272C591B586D53F8A9D3DC4 1 0501E5FFCE863E08D209C2FA7B390A5AA91F462BB71957CF8DB41EACDC9EB222 1 14BED208817ACB398D8476212C987E7FF77265A72F145EF2853DDB631758AED4 1 180774B2F67179FB62BD452A15F6C034599DA7BF45CC15AA2138212B53A0C110 1 00A0B87DDFFC047BE07235DD11D31226A9F5FA1E03D49C03843AA36A8AF68194 1 10218703955E0B53DB93A8D2D593EB8120A9C9739F127325CB0865ECA4B2B42F 1 08685A263CD0A045FD845AAC6DAA0FDDAAD0EC222C1A0286799B69F37CD75919 1 1FA3D27E70C185C1A16D9A83D3EE7D8CACE727A99C882EE649F87BD52E9EEE47 1 054704706B95A154F5AFC3FBB536D38DC9DCB9702EA0BFDCCB2E36A3AA23F3EC',
+              },
+            },
+            maxCredNum: 666,
+            tailsLocation: 'https://my.revocations.tails/tailsfile.txt',
+            tailsHash: '91zvq2cFmBZmHCcLqFyzv7bfehHH5rMhdAG5wTjqy2PE',
+          },
+          revocDefType: 'CL_ACCUM',
+        },
+      }
     )
 
-    expect(revocationDefinitionResponse.revocationRegistryDefinition).toMatchObject({
+    if (!registerRevocationDefinitionResponse.revocationRegistryDefinitionState.revocationRegistryDefinitionId)
+      throw new Error('Revocation registry definition ID not found')
+
+    const revocationRegistryDefinitionId =
+      registerRevocationDefinitionResponse.revocationRegistryDefinitionState.revocationRegistryDefinitionId
+
+    const revocationRegistryDefinitionResponse = await cheqdAnonCredsRegistry.getRevocationRegistryDefinition(
+      agent.context,
+      revocationRegistryDefinitionId
+    )
+
+    expect(revocationRegistryDefinitionResponse.revocationRegistryDefinition).toMatchObject({
       revocDefType: 'CL_ACCUM',
-      credDefId: 'did:cheqd:mainnet:zF7rhDBfUt9d1gJPjx7s1J/resources/77465164-5646-42d9-9a0a-f7b2dcb855c0',
-      tag: '2.0',
+      credDefId: credentialDefinitionId,
+      tag: 'TAG',
       value: {
         publicKeys: {
           accumKey: {
@@ -217,14 +247,38 @@ describe('cheqdAnonCredsRegistry', () => {
       },
     })
 
+    const registerRevocationStatusListResponse = await cheqdAnonCredsRegistry.registerRevocationStatusList(
+      agent.context,
+      {
+        options: {},
+        revocationStatusList: {
+          issuerId,
+          revRegDefId: revocationRegistryDefinitionId,
+          revocationList: [
+            0, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+          ],
+          currentAccumulator:
+            '21 124C594B6B20E41B681E92B2C43FD165EA9E68BC3C9D63A82C8893124983CAE94 21 124C5341937827427B0A3A32113BD5E64FB7AB39BD3E5ABDD7970874501CA4897 6 5438CB6F442E2F807812FD9DC0C39AFF4A86B1E6766DBB5359E86A4D70401B0F 4 39D1CA5C4716FFC4FE0853C4FF7F081DFD8DF8D2C2CA79705211680AC77BF3A1 6 70504A5493F89C97C225B68310811A41AD9CD889301F238E93C95AD085E84191 4 39582252194D756D5D86D0EED02BF1B95CE12AED2FA5CD3C53260747D891993C',
+        },
+      }
+    )
+
+    if (!registerRevocationStatusListResponse.revocationStatusListState.revocationStatusList?.timestamp)
+      throw new Error('Revocation status list timestamp not found')
+
+    const statusListTimestamp =
+      registerRevocationStatusListResponse.revocationStatusListState.revocationStatusList.timestamp
+
     const revocationStatusListResponse = await cheqdAnonCredsRegistry.getRevocationStatusList(
       agent.context,
-      revocationRegistryId,
-      1680789403
+      revocationRegistryDefinitionId,
+      statusListTimestamp
     )
 
     expect(revocationStatusListResponse.revocationStatusList).toMatchObject({
-      revRegDefId: `${revocationRegistryId}&resourceType=anonCredsRevocRegDef`,
+      revRegDefId: `${revocationRegistryDefinitionId}`,
       revocationList: [
         0, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
