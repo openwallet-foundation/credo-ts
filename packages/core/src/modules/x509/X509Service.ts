@@ -105,7 +105,7 @@ export class X509Service {
   ): X509Certificate {
     if (certificateChain.length === 0) throw new X509Error('Certificate chain is empty')
 
-    const certificate = X509Certificate.fromEncodedCertificate(certificateChain[certificateChain.length - 1])
+    const certificate = X509Certificate.fromEncodedCertificate(certificateChain[0])
 
     return certificate
   }
