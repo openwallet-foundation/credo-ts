@@ -1,5 +1,5 @@
-import type { AgentContext, Jwk, Key } from '@credo-ts/core'
 import type { SdJwtVcHeader } from '../SdJwtVcOptions'
+import type { AgentContext, Jwk, Key } from '@credo-ts/core'
 
 import { createHeaderAndPayload, StatusList } from '@sd-jwt/jwt-status-list'
 import { SDJWTException } from '@sd-jwt/utils'
@@ -7,8 +7,8 @@ import { randomUUID } from 'crypto'
 
 import { agentDependencies, getInMemoryAgentOptions } from '../../../../tests'
 import * as fetchUtils from '../../../utils/fetch'
-import { SdJwtVcRepository } from '../repository'
 import { SdJwtVcService } from '../SdJwtVcService'
+import { SdJwtVcRepository } from '../repository'
 
 import {
   complexSdJwtVc,
