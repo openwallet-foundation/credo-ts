@@ -16,6 +16,7 @@ import { ProofsModule } from '../modules/proofs'
 import { MediationRecipientModule, MediatorModule } from '../modules/routing'
 import { SdJwtVcModule } from '../modules/sd-jwt-vc'
 import { W3cCredentialsModule } from '../modules/vc'
+import { X509Module } from '../modules/x509'
 import { WalletModule } from '../wallet'
 
 /**
@@ -135,6 +136,7 @@ function getDefaultAgentModules() {
     cache: () => new CacheModule(),
     pex: () => new DifPresentationExchangeModule(),
     sdJwtVc: () => new SdJwtVcModule(),
+    x509: () => new X509Module(),
   } as const
 }
 

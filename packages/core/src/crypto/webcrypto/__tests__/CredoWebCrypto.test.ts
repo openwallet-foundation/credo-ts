@@ -14,7 +14,7 @@ describe('CredoWebCrypto', () => {
     { hash: 'SHA-256', name: 'ECDSA', namedCurve: 'P-256' },
     { hash: 'SHA-256', name: 'ECDSA', namedCurve: 'P-384' },
     { hash: 'SHA-256', name: 'ECDSA', namedCurve: 'K-256' },
-    'Ed25519',
+    { name: 'Ed25519' },
   ]
 
   beforeAll(async () => {

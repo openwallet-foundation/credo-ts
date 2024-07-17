@@ -1,11 +1,17 @@
+import type {
+  X509ValidateCertificateChainOptions,
+  X509CreateSelfSignedCertificateOptions,
+  X509GetLefCertificateOptions,
+  X509ParseCertificateOptions,
+} from './X509ServiceOptions'
+
 import * as x509 from '@peculiar/x509'
 import { injectable } from 'tsyringe'
 
 import { AgentContext } from '../../agent'
-import { Key } from '../Key'
-import { CredoWebCrypto } from '../webcrypto'
+import { CredoWebCrypto } from '../../crypto/webcrypto'
 
-import { ExtensionInput, X509Certificate } from './X509Certificate'
+import { X509Certificate } from './X509Certificate'
 import { X509Error } from './X509Error'
 
 @injectable()
@@ -19,23 +25,18 @@ export class X509Service {
    *
    * The leaf certificate should be the 0th index and the root the last
    *
-   * Note:
-   *   - Does not check whether a root or intermediate certificate is trusted
-   *
    * Additional validation:
    *   - Make sure atleast a single certificate is in the chain
+   *   - Check whether a certificate in the chain matches with a trusted certificate
    */
   public static async validateCertificateChain(
     agentContext: AgentContext,
     {
       certificateChain,
       certificate = certificateChain[0],
-      date = new Date(),
-    }: {
-      certificateChain: Array<string>
-      certificate?: string
-      date?: Date
-    }
+      verificationDate = new Date(),
+      trustedCertificates,
+    }: X509ValidateCertificateChainOptions
   ) {
     const webCrypto = new CredoWebCrypto(agentContext)
     if (certificateChain.length === 0) throw new X509Error('Certificate chain is empty')
@@ -50,10 +51,27 @@ export class X509Service {
 
     // The chain is reversed here as the `x5c` header (the expected input),
     // has the leaf certificate as the first entry, while the `x509` library expects this as the last
-    const parsedChain = chain.map((c) => X509Certificate.fromRawCertificate(new Uint8Array(c.rawData))).reverse()
+    let parsedChain = chain.map((c) => X509Certificate.fromRawCertificate(new Uint8Array(c.rawData))).reverse()
 
     if (parsedChain.length !== certificateChain.length) {
       throw new X509Error('Could not parse the full chain. Likely due to incorrect ordering')
+    }
+
+    if (trustedCertificates) {
+      const parsedTrustedCertificates = trustedCertificates.map((trustedCertificate) =>
+        X509Certificate.fromEncodedCertificate(trustedCertificate)
+      )
+
+      const trustedCertificateIndex = parsedChain.findIndex((cert) =>
+        parsedTrustedCertificates.some((tCert) => cert.equal(tCert))
+      )
+
+      if (trustedCertificateIndex === -1) {
+        throw new X509Error('No trusted certificate was found while validating the X.509 chain')
+      }
+
+      // Pop everything off above the index of the trusted as it is not relevant for validation
+      parsedChain = parsedChain.slice(0, trustedCertificateIndex)
     }
 
     // Verify the certificate with the publicKey of the certificate above
@@ -61,7 +79,7 @@ export class X509Service {
       const cert = parsedChain[i]
       const previousCertificate = parsedChain[i - 1]
       const publicKey = previousCertificate ? previousCertificate.publicKey : undefined
-      await cert.verify({ publicKey, date }, webCrypto)
+      await cert.verify({ publicKey, verificationDate }, webCrypto)
     }
 
     return parsedChain
@@ -74,7 +92,7 @@ export class X509Service {
    */
   public static parseCertificate(
     _agentContext: AgentContext,
-    { encodedCertificate }: { encodedCertificate: string }
+    { encodedCertificate }: X509ParseCertificateOptions
   ): X509Certificate {
     const certificate = X509Certificate.fromEncodedCertificate(encodedCertificate)
 
@@ -83,7 +101,7 @@ export class X509Service {
 
   public static getLeafCertificate(
     _agentContext: AgentContext,
-    { certificateChain }: { certificateChain: Array<string> }
+    { certificateChain }: X509GetLefCertificateOptions
   ): X509Certificate {
     if (certificateChain.length === 0) throw new X509Error('Certificate chain is empty')
 
@@ -94,7 +112,7 @@ export class X509Service {
 
   public static async createSelfSignedCertificate(
     agentContext: AgentContext,
-    options: { key: Key; extensions?: ExtensionInput; notBefore?: Date; notAfter?: Date; name?: string }
+    options: X509CreateSelfSignedCertificateOptions
   ) {
     const webCrypto = new CredoWebCrypto(agentContext)
 
