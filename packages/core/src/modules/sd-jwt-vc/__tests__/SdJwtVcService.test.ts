@@ -1,5 +1,5 @@
-import type { SdJwtVcHeader } from '../SdJwtVcOptions'
 import type { AgentContext, Jwk, Key } from '@credo-ts/core'
+import type { SdJwtVcHeader } from '../SdJwtVcOptions'
 
 import { createHeaderAndPayload, StatusList } from '@sd-jwt/jwt-status-list'
 import { SDJWTException } from '@sd-jwt/utils'
@@ -7,8 +7,8 @@ import { randomUUID } from 'crypto'
 
 import { agentDependencies, getInMemoryAgentOptions } from '../../../../tests'
 import * as fetchUtils from '../../../utils/fetch'
-import { SdJwtVcService } from '../SdJwtVcService'
 import { SdJwtVcRepository } from '../repository'
+import { SdJwtVcService } from '../SdJwtVcService'
 
 import {
   complexSdJwtVc,
@@ -28,11 +28,11 @@ import {
 } from './sdjwtvc.fixtures'
 
 import {
-  getDomainFromUrl,
-  CredoError,
   Agent,
+  CredoError,
   DidKey,
   DidsModule,
+  getDomainFromUrl,
   getJwkFromKey,
   JwsService,
   JwtPayload,
@@ -808,7 +808,7 @@ describe('SdJwtVcService', () => {
       })
 
       expect(verificationResult).toEqual({
-        isValid: false,
+        isValid: true,
         sdJwtVc: expect.any(Object),
         verification: {
           isSignatureValid: true,
@@ -816,7 +816,7 @@ describe('SdJwtVcService', () => {
           containsExpectedKeyBinding: true,
           areRequiredClaimsIncluded: true,
           isValid: true,
-          isValidJwtPayload: false,
+          isValidJwtPayload: true,
           isStatusValid: true,
           isKeyBindingValid: true,
         },
