@@ -202,7 +202,6 @@ describe('OpenId4Vc', () => {
         cryptographic_binding_methods_supported: ['did:key'],
         vct: universityDegreeCredentialConfigurationSupported.vct,
         scope: universityDegreeCredentialConfigurationSupported.scope,
-        proof_types_supported: universityDegreeCredentialConfigurationSupported.proof_types_supported,
       },
     ])
 
@@ -223,7 +222,7 @@ describe('OpenId4Vc', () => {
         issuerId: openIdIssuerTenant2.issuerId,
         offeredCredentials: [universityDegreeCredentialSdJwt2.id],
         preAuthorizedCodeFlowConfig: {}, // { userPinRequired: true },
-        version: 'v1.draft11',
+        version: 'v1.draft11-13',
       })
 
     await issuerTenant1.endSession()
@@ -253,7 +252,6 @@ describe('OpenId4Vc', () => {
         cryptographic_binding_methods_supported: ['did:key'],
         vct: universityDegreeCredentialConfigurationSupported.vct,
         scope: universityDegreeCredentialConfigurationSupported.scope,
-        proof_types_supported: universityDegreeCredentialConfigurationSupported.proof_types_supported,
       },
     ])
 

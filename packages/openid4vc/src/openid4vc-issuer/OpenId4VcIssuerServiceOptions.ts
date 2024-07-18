@@ -59,9 +59,9 @@ export interface OpenId4VciCreateCredentialOfferOptions {
   issuanceMetadata?: Record<string, unknown>
 
   /**
-   * @default v11
+   * @default v1.draft11-13
    */
-  version?: 'v1.draft11' | 'v1.draft13'
+  version?: 'v1.draft11-13' | 'v1.draft13'
 }
 
 export interface OpenId4VciCreateCredentialResponseOptions {

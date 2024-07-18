@@ -11,6 +11,10 @@ import { credentialsSupportedV13ToV11, type OpenId4VciCredentialRequest } from '
 
 import { OpenId4VcIssuerModuleConfig } from './OpenId4VcIssuerModuleConfig'
 import { OpenId4VcIssuerService } from './OpenId4VcIssuerService'
+import {
+  OpenId4VcIssuerRecordCredentialSupportedProps,
+  OpenId4VcIssuerRecordCredentialConfigurationsSupportedProps,
+} from './repository'
 
 /**
  * @public
@@ -59,13 +63,18 @@ export class OpenId4VcIssuerApi {
   }
 
   public async updateIssuerMetadata(
-    options: Pick<OpenId4VcIssuerRecordProps, 'issuerId' | 'credentialsSupported' | 'display'>
+    options: Pick<OpenId4VcIssuerRecordProps, 'issuerId' | 'display'> &
+      (OpenId4VcIssuerRecordCredentialSupportedProps | OpenId4VcIssuerRecordCredentialConfigurationsSupportedProps)
   ) {
     const issuer = await this.openId4VcIssuerService.getIssuerByIssuerId(this.agentContext, options.issuerId)
 
-    issuer.credentialsSupported = Array.isArray(options.credentialsSupported)
-      ? options.credentialsSupported
-      : credentialsSupportedV13ToV11(options.credentialsSupported)
+    if (options.credentialConfigurationsSupported) {
+      issuer.credentialConfigurationsSupported = options.credentialConfigurationsSupported
+      issuer.credentialsSupported = credentialsSupportedV13ToV11(options.credentialConfigurationsSupported)
+    } else {
+      issuer.credentialsSupported = options.credentialsSupported
+      issuer.credentialConfigurationsSupported = undefined
+    }
     issuer.display = options.display
 
     return this.openId4VcIssuerService.updateIssuer(this.agentContext, issuer)

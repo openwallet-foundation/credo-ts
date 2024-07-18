@@ -12,6 +12,7 @@ import type {
   OpenId4VciTokenRequestOptions,
 } from './OpenId4VciHolderServiceOptions'
 import type {
+  OpenId4VciCredentialConfigurationsSupported,
   OpenId4VciCredentialConfigurationSupported,
   OpenId4VciCredentialSupported,
   OpenId4VciIssuerMetadata,
@@ -65,7 +66,6 @@ import { OpenId4VciCredentialFormatProfile } from '../shared'
 import {
   getTypesFromCredentialSupported,
   getOfferedCredentials,
-  credentialsSupportedV13ToV11,
   credentialsSupportedV11ToV13,
 } from '../shared/issuerMetadataUtils'
 import { OpenId4VciCredentialSupportedWithId } from '../shared/models/index'
@@ -125,10 +125,10 @@ export class OpenId4VciHolderService {
       ? credentialOfferPayload.credential_configuration_ids
       : credentialOfferPayload.credentials
 
-    const offeredCredentialConfigurations = getOfferedCredentials(
+    const offeredCredentials = getOfferedCredentials(
       offeredCredentialsData,
       (credentialIssuerMetadata.credentials_supported as OpenId4VciCredentialSupportedWithId[] | undefined) ??
-        credentialIssuerMetadata.credential_configurations_supported
+        (credentialIssuerMetadata.credential_configurations_supported as OpenId4VciCredentialConfigurationsSupported)
     )
 
     return {
@@ -136,7 +136,7 @@ export class OpenId4VciHolderService {
         ...metadata,
         credentialIssuerMetadata: credentialIssuerMetadata,
       },
-      offeredCredentials: credentialsSupportedV13ToV11(offeredCredentialConfigurations),
+      offeredCredentials,
       credentialOfferPayload,
       credentialOfferRequestWithBaseUrl: client.credentialOffer,
       version: client.version(),
@@ -367,7 +367,7 @@ export class OpenId4VciHolderService {
           return true
         }) ?? offeredCredentials
 
-    const offeredCredentialConfigurations = credentialsSupportedV11ToV13(credentialsSupportedToRequest)
+    const offeredCredentialConfigurations = credentialsSupportedV11ToV13(agentContext, credentialsSupportedToRequest)
     for (const offeredCredentialConfiguration of Object.entries(offeredCredentialConfigurations)) {
       const offeredCredential = offeredCredentialConfiguration[1]
 

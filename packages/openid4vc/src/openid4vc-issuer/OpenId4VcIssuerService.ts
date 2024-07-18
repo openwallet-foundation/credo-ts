@@ -51,8 +51,11 @@ import {
 } from '@credo-ts/core'
 import { VcIssuerBuilder } from '@sphereon/oid4vci-issuer'
 
-import { credentialsSupportedV11ToV13, getOfferedCredentials, OpenId4VciCredentialFormatProfile } from '../shared'
-import { credentialsSupportedV13ToV11, getProofTypesSupported } from '../shared/issuerMetadataUtils'
+import { credentialsSupportedV11ToV13, OpenId4VciCredentialFormatProfile } from '../shared'
+import {
+  credentialsSupportedV13ToV11,
+  getOfferedCredentialConfigurationsSupported,
+} from '../shared/issuerMetadataUtils'
 import { storeActorIdForContextCorrelationId } from '../shared/router'
 import { getSphereonVerifiableCredential } from '../shared/transform'
 import { getProofTypeFromKey, isCredentialOfferV1Draft13 } from '../shared/utils'
@@ -118,7 +121,11 @@ export class OpenId4VcIssuerService {
 
     // this checks if the structure of the credentials is correct
     // it throws an error if a offered credential cannot be found in the credentialsSupported
-    getOfferedCredentials(options.offeredCredentials, vcIssuer.issuerMetadata.credential_configurations_supported)
+    getOfferedCredentialConfigurationsSupported(
+      agentContext,
+      options.offeredCredentials,
+      vcIssuer.issuerMetadata.credential_configurations_supported
+    )
     const uniqueOfferedCredentials = Array.from(new Set(options.offeredCredentials))
     if (uniqueOfferedCredentials.length !== offeredCredentials.length) {
       throw new CredoError('All offered credentials must have unique ids.')
@@ -371,13 +378,13 @@ export class OpenId4VcIssuerService {
   private getVcIssuer(agentContext: AgentContext, issuer: OpenId4VcIssuerRecord) {
     const issuerMetadata = this.getIssuerMetadata(agentContext, issuer)
 
-    const proofTypesSupported = getProofTypesSupported(agentContext)
     const builder = new VcIssuerBuilder()
       .withCredentialIssuer(issuerMetadata.issuerUrl)
       .withCredentialEndpoint(issuerMetadata.credentialEndpoint)
       .withTokenEndpoint(issuerMetadata.tokenEndpoint)
       .withCredentialConfigurationsSupported(
-        credentialsSupportedV11ToV13(issuer.credentialsSupported, { proofTypesSupported })
+        issuer.credentialConfigurationsSupported ??
+          credentialsSupportedV11ToV13(agentContext, issuer.credentialsSupported)
       )
       .withCNonceStateManager(new OpenId4VcCNonceStateManager(agentContext, issuer.issuerId))
       .withCredentialOfferStateManager(new OpenId4VcCredentialOfferSessionStateManager(agentContext, issuer.issuerId))
@@ -426,10 +433,11 @@ export class OpenId4VcIssuerService {
       ? credentialOffer.credential_configuration_ids
       : credentialOffer.credentials
 
-    const proofTypesSupported = getProofTypesSupported(agentContext)
-    const offeredCredentials = getOfferedCredentials(offeredCredentialsData, credentialsSupported, {
-      proofTypesSupported,
-    })
+    const offeredCredentials = getOfferedCredentialConfigurationsSupported(
+      agentContext,
+      offeredCredentialsData,
+      credentialsSupported
+    )
 
     if ('credential_identifier' in credentialRequest && typeof credentialRequest.credential_identifier === 'string') {
       const offeredCredential = offeredCredentials[credentialRequest.credential_identifier]
