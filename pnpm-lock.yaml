@@ -117,8 +117,8 @@ importers:
         specifier: ^0.2.2
         version: 0.2.2
       inquirer:
-        specifier: ^8.2.5
-        version: 8.2.6
+        specifier: ^10.0.3
+        version: 10.0.3
     devDependencies:
       '@credo-ts/anoncreds':
         specifier: workspace:*
@@ -169,8 +169,8 @@ importers:
         specifier: ^4.18.1
         version: 4.19.2
       inquirer:
-        specifier: ^8.2.5
-        version: 8.2.6
+        specifier: ^10.0.3
+        version: 10.0.3
     devDependencies:
       '@credo-ts/askar':
         specifier: workspace:*
@@ -763,13 +763,13 @@ importers:
     devDependencies:
       react-native:
         specifier: ^0.71.4
-        version: 0.71.19(@babel/core@7.24.9)(@babel/preset-env@7.24.8(@babel/core@7.24.9))(react@18.2.0)
+        version: 0.71.19(@babel/core@7.24.9)(@babel/preset-env@7.24.8(@babel/core@7.24.9))(react@18.3.1)
       react-native-fs:
         specifier: ^2.20.0
-        version: 2.20.0(react-native@0.71.19(@babel/core@7.24.9)(@babel/preset-env@7.24.8(@babel/core@7.24.9))(react@18.2.0))
+        version: 2.20.0(react-native@0.71.19(@babel/core@7.24.9)(@babel/preset-env@7.24.8(@babel/core@7.24.9))(react@18.3.1))
       react-native-get-random-values:
         specifier: ^1.8.0
-        version: 1.11.0(react-native@0.71.19(@babel/core@7.24.9)(@babel/preset-env@7.24.8(@babel/core@7.24.9))(react@18.2.0))
+        version: 1.11.0(react-native@0.71.19(@babel/core@7.24.9)(@babel/preset-env@7.24.8(@babel/core@7.24.9))(react@18.3.1))
       rimraf:
         specifier: ^4.4.0
         version: 4.4.1
@@ -1977,6 +1977,58 @@ packages:
   '@hyperledger/indy-vdr-shared@0.2.2':
     resolution: {integrity: sha512-9425MHU3K+/ahccCRjOIX3Z/51gqxvp3Nmyujyqlx9cd7PWG2Rianx7iNWecFBkdAEqS0DfHsb6YqqH39YZp/A==}
 
+  '@inquirer/checkbox@2.4.0':
+    resolution: {integrity: sha512-XHOCmntitRBD8SJcrv+6X9YakxO1wfsvezOnU5MBIXeTlSBRCVk9DOIrx6Cgi9BS3qkcy7oQb+fUGEKrP6xecQ==}
+    engines: {node: '>=18'}
+
+  '@inquirer/confirm@3.1.15':
+    resolution: {integrity: sha512-CiLGi3JmKGEsia5kYJN62yG/njHydbYIkzSBril7tCaKbsnIqxa2h/QiON9NjfwiKck/2siosz4h7lVhLFocMQ==}
+    engines: {node: '>=18'}
+
+  '@inquirer/core@9.0.3':
+    resolution: {integrity: sha512-p2BRZv/vMmpwlU4ZR966vKQzGVCi4VhLjVofwnFLziTQia541T7i1Ar8/LPh+LzjkXzocme+g5Io6MRtzlCcNA==}
+    engines: {node: '>=18'}
+
+  '@inquirer/editor@2.1.15':
+    resolution: {integrity: sha512-UmtZnY36rGLS/4cCzvdRmk0xxsGgH2AsF0v1SSlBZ3C5JK/Bxm2gNW8fmUVzQ5vm8kpdWASXPapbUx4iV49ScA==}
+    engines: {node: '>=18'}
+
+  '@inquirer/expand@2.1.15':
+    resolution: {integrity: sha512-aBnnrBw9vbFJROUlDCsbq8H/plX6JHfPwLmSphxaVqOR+b1hgLdw+oRhZkpcJhG2AZOlc8IKzGdZhji93gQg4w==}
+    engines: {node: '>=18'}
+
+  '@inquirer/figures@1.0.4':
+    resolution: {integrity: sha512-R7Gsg6elpuqdn55fBH2y9oYzrU/yKrSmIsDX4ROT51vohrECFzTf2zw9BfUbOW8xjfmM2QbVoVYdTwhrtEKWSQ==}
+    engines: {node: '>=18'}
+
+  '@inquirer/input@2.2.2':
+    resolution: {integrity: sha512-VjkzYSVH0606nLi9HHiSb4QYs2idwRgneiMoFoTAIwQ1Qwx6OIDugOYLtLta3gP8AWZx7qUvgDtj+/SJuiiKuQ==}
+    engines: {node: '>=18'}
+
+  '@inquirer/number@1.0.3':
+    resolution: {integrity: sha512-GLTuhuhzK/QtB7BhM2pLJGKsv366kv237iNF8hTEOx+EGmXsPNGTydAgZmcuVizEmgC9VSVh1S0memXnIUTYzQ==}
+    engines: {node: '>=18'}
+
+  '@inquirer/password@2.1.15':
+    resolution: {integrity: sha512-/JmiTtIcSYbZdPucEW5q2rhC71vGKPivm3LFqNDQEI6lJyffq7hlfKKFC+R1Qp19dMqkaG+O5L1XmcHpmlAUUQ==}
+    engines: {node: '>=18'}
+
+  '@inquirer/prompts@5.2.0':
+    resolution: {integrity: sha512-7jBWrlkvprEHEFw29zG/piw/M76c5/zYQWfi8ybHeyzcTuXkh1NjDQxLg2PiruvsIt36z1zvKM5yn7vbF0Yr/A==}
+    engines: {node: '>=18'}
+
+  '@inquirer/rawlist@2.1.15':
+    resolution: {integrity: sha512-zwU6aWDMyuQNiY5Z0iYXkxi7pliRFXqUmiS7vG6lAGxqcbOSptYgIxGJnd3AU4Y91N0Tbt57+koJL0S2p6vSkA==}
+    engines: {node: '>=18'}
+
+  '@inquirer/select@2.4.0':
+    resolution: {integrity: sha512-iU1eRkHirVNs43zWk6anMIMKc7tCXlJ+I5DcpIV7JzMe+45TuPPOGGCgeGIkZ4xYJ3cXdFoh7GJpm84PNC8veg==}
+    engines: {node: '>=18'}
+
+  '@inquirer/type@1.5.0':
+    resolution: {integrity: sha512-L/UdayX9Z1lLN+itoTKqJ/X4DX5DaWu2Sruwt4XgZzMNv32x4qllbzMX4MbJlz0yxAQtU19UvABGOjmdq1u3qA==}
+    engines: {node: '>=18'}
+
   '@isaacs/cliui@8.0.2':
     resolution: {integrity: sha512-O8jcjabXaleOG9DQ0+ARXWZBTfnP4WNAqzuiJK7ll44AmxGKv/J2M4TPjxjY3znBCfvBXFzucm1twdyFybFqEA==}
     engines: {node: '>=12'}
@@ -2575,6 +2627,9 @@ packages:
   '@types/multer@1.4.11':
     resolution: {integrity: sha512-svK240gr6LVWvv3YGyhLlA+6LRRWA4mnGIU7RcNmgjBYFl6665wcXrRfxGp5tEPVHUNm5FMcmq7too9bxCwX/w==}
 
+  '@types/mute-stream@0.0.4':
+    resolution: {integrity: sha512-CPM9nzrCPPJHQNA9keH9CVkVI+WR5kMa+7XEs5jcGQ0VoAGnLv242w8lIVgwAEfmE4oufJRaTc9PNLQl0ioAow==}
+
   '@types/node-forge@1.3.11':
     resolution: {integrity: sha512-FQx220y22OKNTqaByeBGqHWYz4cl94tpcxeFdvBo3wjG6XPBuZ0BNgNZRV5J5TFmmcsJ4IzsLkmGRiQbnYsBEQ==}
 
@@ -2622,6 +2677,9 @@ packages:
 
   '@types/varint@6.0.3':
     resolution: {integrity: sha512-DHukoGWdJ2aYkveZJTB2rN2lp6m7APzVsoJQ7j/qy1fQxyamJTPD5xQzCMoJ2Qtgn0mE3wWeNOpbTyBFvF+dyA==}
+
+  '@types/wrap-ansi@3.0.0':
+    resolution: {integrity: sha512-ltIpx+kM7g/MLRZfkbL7EsCEjfzCcScLpkg37eXEtx5kmrAKBkTJwd1GIAjDSL8wTpM6Hzn5YO4pSb91BEwu1g==}
 
   '@types/ws@8.5.11':
     resolution: {integrity: sha512-4+q7P5h3SpJxaBft0Dzpbr6lmMaqh0Jr2tbhJZ/luAwvD7ohSCniYkwz/pLxuT2h0EOa6QADgJj1Ko+TzRfZ+w==}
@@ -3254,6 +3312,10 @@ packages:
   cli-width@3.0.0:
     resolution: {integrity: sha512-FxqpkPPwu1HjuN93Omfm4h8uIanXofW0RxVEW3k5RKx+mJJYSthzNhp32Kzxxy3YAEZ/Dc/EWN1vZRY0+kOhbw==}
     engines: {node: '>= 10'}
+
+  cli-width@4.1.0:
+    resolution: {integrity: sha512-ouuZd4/dm2Sw5Gmqy6bGyNNNe1qt9RpmxveLSO7KcgsTnU7RXfsw+/bukWGo1abgBiMAic068rclZsO4IWmmxQ==}
+    engines: {node: '>= 12'}
 
   cliui@6.0.0:
     resolution: {integrity: sha512-t6wbgtoCXvAzst7QgXxJYqPt0usEfbgQdftEPbLL/cvv6HPE5VgvqCuAIDR0NgU52ds6rFwqrgakNLrHEjCbrQ==}
@@ -4437,13 +4499,13 @@ packages:
   iniparser@1.0.5:
     resolution: {integrity: sha512-i40MWqgTU6h/70NtMsDVVDLjDYWwcIR1yIEVDPfxZIJno9z9L4s83p/V7vAu2i48Vj0gpByrkGFub7ko9XvPrw==}
 
+  inquirer@10.0.3:
+    resolution: {integrity: sha512-/PxdZLy7YgrD5GFIBqUDy08jt73YVRzXrRJqv0Kfe4jJ2tPBhbr16r7OKkHEJ/Bd/0GgOLYSeqtQS/01YS5Pow==}
+    engines: {node: '>=18'}
+
   inquirer@7.3.3:
     resolution: {integrity: sha512-JG3eIAj5V9CwcGvuOmoo6LB9kbAYT8HXffUl6memuszlwDC/qvFAJw49XJ5NROSFNPxp3iQg1GqkFhaY/CR0IA==}
     engines: {node: '>=8.0.0'}
-
-  inquirer@8.2.6:
-    resolution: {integrity: sha512-M1WuAmb7pn9zdFRtQYk26ZBoY043Sse0wVDdk4Bppr+JOXyQYybdtvK+l9wUibhtjdjvtoiNy8tk+EgsYIUqKg==}
-    engines: {node: '>=12.0.0'}
 
   internal-ip@4.3.0:
     resolution: {integrity: sha512-S1zBo1D6zcsyuC6PMmY5+55YMILQ9av8lotMx447Bq6SAgo/sDK6y6uUKmuYhW7eacnIhFfsPmCNYdDzsnnDCg==}
@@ -5404,6 +5466,10 @@ packages:
   mute-stream@0.0.8:
     resolution: {integrity: sha512-nnbWWOkoWyUsTjKrhgD0dcz22mdkSnpYqbEjIm2nhwhuxlSkpywJmBo8h0ZqJdkp73mb90SssHkN4rsRaBAfAA==}
 
+  mute-stream@1.0.0:
+    resolution: {integrity: sha512-avsJQhyd+680gKXyG/sQc0nXaC6rBkPOfyHYcFb9+hdkqQkR9bdnkJ0AMZhke0oesPqIO+mFFJ+IdBc7mst4IA==}
+    engines: {node: ^14.17.0 || ^16.13.0 || >=18.0.0}
+
   mv@2.1.1:
     resolution: {integrity: sha512-at/ZndSy3xEGJ8i0ygALh8ru9qy7gWW1cmkaqBN29JmMlIvM//MEO9y1sk/avxuwnPcfhkejkLsuPxH81BrkSg==}
     engines: {node: '>=0.8.0'}
@@ -5957,10 +6023,6 @@ packages:
     peerDependencies:
       react: ^16.0.0 || ^17.0.0 || ^18.0.0
 
-  react@18.2.0:
-    resolution: {integrity: sha512-/3IjMdb2L9QbBdWiW5e3P2/npwMBaU9mHCSCUzNln0ZCYbcfTsGbTJrU/kGemdH2IWmB2ioZ+zkxtmq6g09fGQ==}
-    engines: {node: '>=0.10.0'}
-
   react@18.3.1:
     resolution: {integrity: sha512-wS+hAgJShR0KhEvPJArfuPVN1+Hz1t0Y6n5jLrGQbkb4urgPE/0Rve+1kMB1v/oWgHgm4WIcV+i7F2pTVj+2iQ==}
     engines: {node: '>=0.10.0'}
@@ -6129,6 +6191,10 @@ packages:
 
   run-async@2.4.1:
     resolution: {integrity: sha512-tvVnVv01b8c1RrA6Ep7JkStj85Guv/YrMcwqYQnwjsAS2cTmmPGBBjAjpCW7RrSodNSoE2/qg9O4bceNvUuDgQ==}
+    engines: {node: '>=0.12.0'}
+
+  run-async@3.0.0:
+    resolution: {integrity: sha512-540WwVDOMxA6dN6We19EcT9sc3hkXPw5mzRNGM3FkdN/vtE9NFvj5lFAPNwUDmJjXidm3v7TC1cTE7t17Ulm1Q==}
     engines: {node: '>=0.12.0'}
 
   run-parallel@1.2.0:
@@ -7084,6 +7150,10 @@ packages:
   yocto-queue@0.1.0:
     resolution: {integrity: sha512-rVksvsnNCdJ/ohGc6xgPwyN8eheCxsiLM8mxuE/t/mOVqJewPuO1miLpTHQiRgTKCLexL4MeAFVagts7HmNZ2Q==}
     engines: {node: '>=10'}
+
+  yoctocolors-cjs@2.1.2:
+    resolution: {integrity: sha512-cYVsTjKl8b+FrnidjibDWskAv7UKOfcwaVZdp/it9n1s9fU3IkgDbhdIRKCW4JDsAlECJY0ytoVPT3sK6kideA==}
+    engines: {node: '>=18'}
 
   zod-validation-error@2.1.0:
     resolution: {integrity: sha512-VJh93e2wb4c3tWtGgTa0OF/dTt/zoPCPzXq4V11ZjxmEAFaPi/Zss1xIZdEB5RD8GD00U0/iVXgqkF77RV7pdQ==}
@@ -8981,6 +9051,95 @@ snapshots:
 
   '@hyperledger/indy-vdr-shared@0.2.2': {}
 
+  '@inquirer/checkbox@2.4.0':
+    dependencies:
+      '@inquirer/core': 9.0.3
+      '@inquirer/figures': 1.0.4
+      '@inquirer/type': 1.5.0
+      ansi-escapes: 4.3.2
+      yoctocolors-cjs: 2.1.2
+
+  '@inquirer/confirm@3.1.15':
+    dependencies:
+      '@inquirer/core': 9.0.3
+      '@inquirer/type': 1.5.0
+
+  '@inquirer/core@9.0.3':
+    dependencies:
+      '@inquirer/figures': 1.0.4
+      '@inquirer/type': 1.5.0
+      '@types/mute-stream': 0.0.4
+      '@types/node': 18.18.8
+      '@types/wrap-ansi': 3.0.0
+      ansi-escapes: 4.3.2
+      cli-spinners: 2.9.2
+      cli-width: 4.1.0
+      mute-stream: 1.0.0
+      signal-exit: 4.1.0
+      strip-ansi: 6.0.1
+      wrap-ansi: 6.2.0
+      yoctocolors-cjs: 2.1.2
+
+  '@inquirer/editor@2.1.15':
+    dependencies:
+      '@inquirer/core': 9.0.3
+      '@inquirer/type': 1.5.0
+      external-editor: 3.1.0
+
+  '@inquirer/expand@2.1.15':
+    dependencies:
+      '@inquirer/core': 9.0.3
+      '@inquirer/type': 1.5.0
+      yoctocolors-cjs: 2.1.2
+
+  '@inquirer/figures@1.0.4': {}
+
+  '@inquirer/input@2.2.2':
+    dependencies:
+      '@inquirer/core': 9.0.3
+      '@inquirer/type': 1.5.0
+
+  '@inquirer/number@1.0.3':
+    dependencies:
+      '@inquirer/core': 9.0.3
+      '@inquirer/type': 1.5.0
+
+  '@inquirer/password@2.1.15':
+    dependencies:
+      '@inquirer/core': 9.0.3
+      '@inquirer/type': 1.5.0
+      ansi-escapes: 4.3.2
+
+  '@inquirer/prompts@5.2.0':
+    dependencies:
+      '@inquirer/checkbox': 2.4.0
+      '@inquirer/confirm': 3.1.15
+      '@inquirer/editor': 2.1.15
+      '@inquirer/expand': 2.1.15
+      '@inquirer/input': 2.2.2
+      '@inquirer/number': 1.0.3
+      '@inquirer/password': 2.1.15
+      '@inquirer/rawlist': 2.1.15
+      '@inquirer/select': 2.4.0
+
+  '@inquirer/rawlist@2.1.15':
+    dependencies:
+      '@inquirer/core': 9.0.3
+      '@inquirer/type': 1.5.0
+      yoctocolors-cjs: 2.1.2
+
+  '@inquirer/select@2.4.0':
+    dependencies:
+      '@inquirer/core': 9.0.3
+      '@inquirer/figures': 1.0.4
+      '@inquirer/type': 1.5.0
+      ansi-escapes: 4.3.2
+      yoctocolors-cjs: 2.1.2
+
+  '@inquirer/type@1.5.0':
+    dependencies:
+      mute-stream: 1.0.0
+
   '@isaacs/cliui@8.0.2':
     dependencies:
       string-width: 5.1.2
@@ -10106,6 +10265,10 @@ snapshots:
     dependencies:
       '@types/express': 4.17.21
 
+  '@types/mute-stream@0.0.4':
+    dependencies:
+      '@types/node': 18.18.8
+
   '@types/node-forge@1.3.11':
     dependencies:
       '@types/node': 18.18.8
@@ -10159,6 +10322,8 @@ snapshots:
   '@types/varint@6.0.3':
     dependencies:
       '@types/node': 18.18.8
+
+  '@types/wrap-ansi@3.0.0': {}
 
   '@types/ws@8.5.11':
     dependencies:
@@ -10952,7 +11117,10 @@ snapshots:
 
   cli-spinners@2.9.2: {}
 
-  cli-width@3.0.0: {}
+  cli-width@3.0.0:
+    optional: true
+
+  cli-width@4.1.0: {}
 
   cliui@6.0.0:
     dependencies:
@@ -11936,6 +12104,7 @@ snapshots:
   figures@3.2.0:
     dependencies:
       escape-string-regexp: 1.0.5
+    optional: true
 
   file-entry-cache@6.0.1:
     dependencies:
@@ -12413,6 +12582,16 @@ snapshots:
   iniparser@1.0.5:
     optional: true
 
+  inquirer@10.0.3:
+    dependencies:
+      '@inquirer/prompts': 5.2.0
+      '@inquirer/type': 1.5.0
+      '@types/mute-stream': 0.0.4
+      ansi-escapes: 4.3.2
+      mute-stream: 1.0.0
+      run-async: 3.0.0
+      rxjs: 7.8.1
+
   inquirer@7.3.3:
     dependencies:
       ansi-escapes: 4.3.2
@@ -12429,24 +12608,6 @@ snapshots:
       strip-ansi: 6.0.1
       through: 2.3.8
     optional: true
-
-  inquirer@8.2.6:
-    dependencies:
-      ansi-escapes: 4.3.2
-      chalk: 4.1.2
-      cli-cursor: 3.1.0
-      cli-width: 3.0.0
-      external-editor: 3.1.0
-      figures: 3.2.0
-      lodash: 4.17.21
-      mute-stream: 0.0.8
-      ora: 5.4.1
-      run-async: 2.4.1
-      rxjs: 7.8.1
-      string-width: 4.2.3
-      strip-ansi: 6.0.1
-      through: 2.3.8
-      wrap-ansi: 6.2.0
 
   internal-ip@4.3.0:
     dependencies:
@@ -13304,7 +13465,8 @@ snapshots:
 
   lodash.throttle@4.1.1: {}
 
-  lodash@4.17.21: {}
+  lodash@4.17.21:
+    optional: true
 
   log-symbols@2.2.0:
     dependencies:
@@ -13769,7 +13931,10 @@ snapshots:
 
   multiformats@9.9.0: {}
 
-  mute-stream@0.0.8: {}
+  mute-stream@0.0.8:
+    optional: true
+
+  mute-stream@1.0.0: {}
 
   mv@2.1.1:
     dependencies:
@@ -14341,16 +14506,16 @@ snapshots:
       - '@babel/preset-env'
       - supports-color
 
-  react-native-fs@2.20.0(react-native@0.71.19(@babel/core@7.24.9)(@babel/preset-env@7.24.8(@babel/core@7.24.9))(react@18.2.0)):
+  react-native-fs@2.20.0(react-native@0.71.19(@babel/core@7.24.9)(@babel/preset-env@7.24.8(@babel/core@7.24.9))(react@18.3.1)):
     dependencies:
       base-64: 0.1.0
-      react-native: 0.71.19(@babel/core@7.24.9)(@babel/preset-env@7.24.8(@babel/core@7.24.9))(react@18.2.0)
+      react-native: 0.71.19(@babel/core@7.24.9)(@babel/preset-env@7.24.8(@babel/core@7.24.9))(react@18.3.1)
       utf8: 3.0.0
 
-  react-native-get-random-values@1.11.0(react-native@0.71.19(@babel/core@7.24.9)(@babel/preset-env@7.24.8(@babel/core@7.24.9))(react@18.2.0)):
+  react-native-get-random-values@1.11.0(react-native@0.71.19(@babel/core@7.24.9)(@babel/preset-env@7.24.8(@babel/core@7.24.9))(react@18.3.1)):
     dependencies:
       fast-base64-decode: 1.0.0
-      react-native: 0.71.19(@babel/core@7.24.9)(@babel/preset-env@7.24.8(@babel/core@7.24.9))(react@18.2.0)
+      react-native: 0.71.19(@babel/core@7.24.9)(@babel/preset-env@7.24.8(@babel/core@7.24.9))(react@18.3.1)
 
   react-native-gradle-plugin@0.71.19: {}
 
@@ -14359,52 +14524,6 @@ snapshots:
       base64-js: 1.5.1
       react-native: 0.71.19(@babel/core@7.24.9)(@babel/preset-env@7.24.8(@babel/core@7.24.9))(react@18.3.1)
     optional: true
-
-  react-native@0.71.19(@babel/core@7.24.9)(@babel/preset-env@7.24.8(@babel/core@7.24.9))(react@18.2.0):
-    dependencies:
-      '@jest/create-cache-key-function': 29.7.0
-      '@react-native-community/cli': 10.2.7(@babel/core@7.24.9)
-      '@react-native-community/cli-platform-android': 10.2.0
-      '@react-native-community/cli-platform-ios': 10.2.5
-      '@react-native/assets': 1.0.0
-      '@react-native/normalize-color': 2.1.0
-      '@react-native/polyfills': 2.0.0
-      abort-controller: 3.0.0
-      anser: 1.4.10
-      ansi-regex: 5.0.1
-      base64-js: 1.5.1
-      deprecated-react-native-prop-types: 3.0.2
-      event-target-shim: 5.0.1
-      invariant: 2.2.4
-      jest-environment-node: 29.7.0
-      jsc-android: 250231.0.0
-      memoize-one: 5.2.1
-      metro-react-native-babel-transformer: 0.73.10(@babel/core@7.24.9)
-      metro-runtime: 0.73.10
-      metro-source-map: 0.73.10
-      mkdirp: 0.5.6
-      nullthrows: 1.1.1
-      pretty-format: 26.6.2
-      promise: 8.3.0
-      react: 18.2.0
-      react-devtools-core: 4.28.5
-      react-native-codegen: 0.71.6(@babel/preset-env@7.24.8(@babel/core@7.24.9))
-      react-native-gradle-plugin: 0.71.19
-      react-refresh: 0.4.3
-      react-shallow-renderer: 16.15.0(react@18.2.0)
-      regenerator-runtime: 0.13.11
-      scheduler: 0.23.2
-      stacktrace-parser: 0.1.10
-      use-sync-external-store: 1.2.2(react@18.2.0)
-      whatwg-fetch: 3.6.20
-      ws: 6.2.3
-    transitivePeerDependencies:
-      - '@babel/core'
-      - '@babel/preset-env'
-      - bufferutil
-      - encoding
-      - supports-color
-      - utf-8-validate
 
   react-native@0.71.19(@babel/core@7.24.9)(@babel/preset-env@7.24.8(@babel/core@7.24.9))(react@18.3.1):
     dependencies:
@@ -14457,21 +14576,11 @@ snapshots:
 
   react-refresh@0.4.3: {}
 
-  react-shallow-renderer@16.15.0(react@18.2.0):
-    dependencies:
-      object-assign: 4.1.1
-      react: 18.2.0
-      react-is: 18.3.1
-
   react-shallow-renderer@16.15.0(react@18.3.1):
     dependencies:
       object-assign: 4.1.1
       react: 18.3.1
       react-is: 18.3.1
-
-  react@18.2.0:
-    dependencies:
-      loose-envify: 1.4.0
 
   react@18.3.1:
     dependencies:
@@ -14649,7 +14758,10 @@ snapshots:
     dependencies:
       glob: 9.3.5
 
-  run-async@2.4.1: {}
+  run-async@2.4.1:
+    optional: true
+
+  run-async@3.0.0: {}
 
   run-parallel@1.2.0:
     dependencies:
@@ -14792,8 +14904,7 @@ snapshots:
 
   signal-exit@3.0.7: {}
 
-  signal-exit@4.1.0:
-    optional: true
+  signal-exit@4.1.0: {}
 
   simple-plist@1.3.1:
     dependencies:
@@ -15125,7 +15236,8 @@ snapshots:
       readable-stream: 2.3.8
       xtend: 4.0.2
 
-  through@2.3.8: {}
+  through@2.3.8:
+    optional: true
 
   tmp@0.0.33:
     dependencies:
@@ -15392,10 +15504,6 @@ snapshots:
   url-join@4.0.0:
     optional: true
 
-  use-sync-external-store@1.2.2(react@18.2.0):
-    dependencies:
-      react: 18.2.0
-
   use-sync-external-store@1.2.2(react@18.3.1):
     dependencies:
       react: 18.3.1
@@ -15653,6 +15761,8 @@ snapshots:
   yn@3.1.1: {}
 
   yocto-queue@0.1.0: {}
+
+  yoctocolors-cjs@2.1.2: {}
 
   zod-validation-error@2.1.0(zod@3.23.8):
     dependencies:
