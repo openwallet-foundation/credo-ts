@@ -1,17 +1,28 @@
 import type { OpenId4VcIssuanceSessionRecord } from './repository'
 import type {
   OpenId4VcCredentialHolderBinding,
+  OpenId4VciCredentialConfigurationsSupported,
   OpenId4VciCredentialOffer,
   OpenId4VciCredentialRequest,
   OpenId4VciCredentialSupported,
   OpenId4VciCredentialSupportedWithId,
   OpenId4VciIssuerMetadataDisplay,
+  OpenId4VciTxCode,
 } from '../shared'
 import type { AgentContext, ClaimFormat, W3cCredential, SdJwtVcSignOptions } from '@credo-ts/core'
 
 export interface OpenId4VciPreAuthorizedCodeFlowConfig {
   preAuthorizedCode?: string
+  /**
+   * The user pin required flag indicates whether the user needs to enter a pin to authorize the transaction.
+   * Only compatible with v11
+   */
   userPinRequired?: boolean
+  /**
+   * The user pin required flag indicates whether the user needs to enter a pin to authorize the transaction.
+   * Only compatible with v13
+   */
+  txCode?: OpenId4VciTxCode
 }
 
 export type OpenId4VcIssuerMetadata = {
@@ -22,7 +33,7 @@ export type OpenId4VcIssuerMetadata = {
   authorizationServer?: string
 
   issuerDisplay?: OpenId4VciIssuerMetadataDisplay[]
-  credentialsSupported: OpenId4VciCredentialSupported[]
+  credentialsSupported: OpenId4VciCredentialSupportedWithId[]
 }
 
 export interface OpenId4VciCreateCredentialOfferOptions {
@@ -46,6 +57,11 @@ export interface OpenId4VciCreateCredentialOfferOptions {
    * data.
    */
   issuanceMetadata?: Record<string, unknown>
+
+  /**
+   * @default v1.draft11-13
+   */
+  version?: 'v1.draft11-13' | 'v1.draft13'
 }
 
 export interface OpenId4VciCreateCredentialResponseOptions {
@@ -93,12 +109,21 @@ export type OpenId4VciCredentialRequestToCredentialMapper = (options: {
   holderBinding: OpenId4VcCredentialHolderBinding
 
   /**
+   * @deprecated use credentialConfigurations instead
+   *
    * The credentials supported entries from the issuer metadata that were offered
    * and match the incoming request
    *
    * NOTE: in v12 this will probably become a single entry, as it will be matched on id
    */
   credentialsSupported: OpenId4VciCredentialSupported[]
+
+  /**
+   * v13: The ids of the credential configurations that were offered and match the request
+   *
+   * NOTE: This will probably become a single entry, as it will be matched on id
+   */
+  credentialConfigurationIds: [string, ...string[]]
 }) => Promise<OpenId4VciSignCredential> | OpenId4VciSignCredential
 
 export type OpenId4VciSignCredential = OpenId4VciSignSdJwtCredential | OpenId4VciSignW3cCredential
@@ -121,6 +146,6 @@ export interface OpenId4VciCreateIssuerOptions {
    */
   issuerId?: string
 
-  credentialsSupported: OpenId4VciCredentialSupportedWithId[]
+  credentialsSupported: OpenId4VciCredentialSupportedWithId[] | OpenId4VciCredentialConfigurationsSupported
   display?: OpenId4VciIssuerMetadataDisplay[]
 }

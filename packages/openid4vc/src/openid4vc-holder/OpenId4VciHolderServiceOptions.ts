@@ -1,11 +1,17 @@
 import type {
   OpenId4VcCredentialHolderBinding,
-  OpenId4VciCredentialOfferPayload,
   OpenId4VciCredentialSupportedWithId,
   OpenId4VciIssuerMetadata,
+  OpenId4VciCredentialOfferPayload,
 } from '../shared'
 import type { JwaSignatureAlgorithm, KeyType } from '@credo-ts/core'
-import type { AuthorizationServerMetadata, EndpointMetadataResult, OpenId4VCIVersion } from '@sphereon/oid4vci-common'
+import type { VerifiableCredential } from '@credo-ts/core/src/modules/dif-presentation-exchange/models/index'
+import type {
+  AccessTokenResponse,
+  CredentialOfferRequestWithBaseUrl,
+  EndpointMetadataResult,
+  OpenId4VCIVersion,
+} from '@sphereon/oid4vci-common'
 
 import { OpenId4VciCredentialFormatProfile } from '../shared/models/OpenId4VciCredentialFormatProfile'
 
@@ -22,10 +28,32 @@ export const openId4VciSupportedCredentialFormats: OpenId4VciSupportedCredential
   OpenId4VciCredentialFormatProfile.LdpVc,
 ]
 
+export interface OpenId4VciNotificationMetadata {
+  notificationId: string
+  notificationEndpoint: string
+}
+
+/**
+ * 'credential_accepted' The Credential was successfully stored in the Wallet.
+ * 'credential_deleted' when the unsuccessful Credential issuance was caused by a user action.
+ * 'credential_failure' otherwise.
+ */
+export type OpenId4VciNotificationEvent = 'credential_accepted' | 'credential_failure' | 'credential_deleted'
+
+export type OpenId4VciTokenResponse = Pick<AccessTokenResponse, 'access_token' | 'c_nonce'>
+
+export type OpenId4VciRequestTokenResponse = { accessToken: string; cNonce?: string }
+
+export interface OpenId4VciCredentialResponse {
+  credential: VerifiableCredential
+  notificationMetadata?: OpenId4VciNotificationMetadata
+}
+
 export interface OpenId4VciResolvedCredentialOffer {
-  metadata: EndpointMetadataResult & {
-    credentialIssuerMetadata: Partial<AuthorizationServerMetadata> & OpenId4VciIssuerMetadata
+  metadata: Omit<EndpointMetadataResult, 'credentialIssuerMetadata'> & {
+    credentialIssuerMetadata: OpenId4VciIssuerMetadata
   }
+  credentialOfferRequestWithBaseUrl: CredentialOfferRequestWithBaseUrl
   credentialOfferPayload: OpenId4VciCredentialOfferPayload
   offeredCredentials: OpenId4VciCredentialSupportedWithId[]
   version: OpenId4VCIVersion
@@ -40,8 +68,54 @@ export interface OpenId4VciResolvedAuthorizationRequestWithCode extends OpenId4V
   code: string
 }
 
+export interface OpenId4VciSendNotificationOptions {
+  /**
+   * The notification metadata received from @see requestCredential
+   */
+  notificationMetadata: OpenId4VciNotificationMetadata
+
+  /**
+   * The access token obtained through @see requestToken
+   */
+  accessToken: string
+
+  /**
+   * The notification event
+   *
+   * 'credential_accepted' The Credential was successfully stored in the Wallet.
+   * 'credential_deleted' when the unsuccessful Credential issuance was caused by a user action.
+   * 'credential_failure' otherwise.
+   */
+  notificationEvent: OpenId4VciNotificationEvent
+}
+
+interface OpenId4VcTokenRequestBaseOptions {
+  resolvedCredentialOffer: OpenId4VciResolvedCredentialOffer
+  txCode?: string
+}
+
+export interface OpenId4VcAuthorizationCodeTokenRequestOptions extends OpenId4VcTokenRequestBaseOptions {
+  resolvedAuthorizationRequest: OpenId4VciResolvedAuthorizationRequest
+  code: string
+}
+
+export interface OpenId4VciPreAuthorizedTokenRequestOptions extends OpenId4VcTokenRequestBaseOptions {
+  resolvedAuthorizationRequest?: never
+  code?: never
+}
+
+export type OpenId4VciTokenRequestOptions =
+  | OpenId4VciPreAuthorizedTokenRequestOptions
+  | OpenId4VcAuthorizationCodeTokenRequestOptions
+
+export interface OpenId4VciCredentialRequestOptions extends Omit<OpenId4VciAcceptCredentialOfferOptions, 'userPin'> {
+  resolvedCredentialOffer: OpenId4VciResolvedCredentialOffer
+  accessToken: string
+  cNonce?: string
+}
 /**
  * Options that are used to accept a credential offer for both the pre-authorized code flow and authorization code flow.
+ * NOTE: Merge with @see OpenId4VciCredentialRequestOptions for 0.6
  */
 export interface OpenId4VciAcceptCredentialOfferOptions {
   /**

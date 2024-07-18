@@ -53,10 +53,10 @@ function getCredentialRequestToCredentialMapper({
 }: {
   issuerDidKey: DidKey
 }): OpenId4VciCredentialRequestToCredentialMapper {
-  return async ({ holderBinding, credentialsSupported }) => {
-    const credentialSupported = credentialsSupported[0]
+  return async ({ holderBinding, credentialConfigurationIds }) => {
+    const credentialConfigurationId = credentialConfigurationIds[0]
 
-    if (credentialSupported.id === universityDegreeCredential.id) {
+    if (credentialConfigurationId === universityDegreeCredential.id) {
       assertDidBasedHolderBinding(holderBinding)
 
       return {
@@ -76,7 +76,7 @@ function getCredentialRequestToCredentialMapper({
       }
     }
 
-    if (credentialSupported.id === openBadgeCredential.id) {
+    if (credentialConfigurationId === openBadgeCredential.id) {
       assertDidBasedHolderBinding(holderBinding)
 
       return {
@@ -96,7 +96,7 @@ function getCredentialRequestToCredentialMapper({
       }
     }
 
-    if (credentialSupported.id === universityDegreeCredentialSdJwt.id) {
+    if (credentialConfigurationId === universityDegreeCredentialSdJwt.id) {
       return {
         credentialSupportedId: universityDegreeCredentialSdJwt.id,
         format: ClaimFormat.SdJwtVc,

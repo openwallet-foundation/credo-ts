@@ -1,4 +1,4 @@
-import type { OpenId4VciCredentialSupportedWithId } from '../src'
+import type { OpenId4VciCredentialConfigurationSupported, OpenId4VciCredentialSupportedWithId } from '../src'
 
 import { OpenId4VciCredentialFormatProfile } from '../src'
 
@@ -27,6 +27,19 @@ export const universityDegreeCredentialSdJwt = {
   vct: 'UniversityDegreeCredential',
   cryptographic_binding_methods_supported: ['did:key'],
 } satisfies OpenId4VciCredentialSupportedWithId
+
+export const universityDegreeCredentialConfigurationSupported = {
+  credential_definition: {},
+  format: OpenId4VciCredentialFormatProfile.SdJwtVc,
+  scope: 'UniversityDegreeCredential',
+  vct: 'UniversityDegreeCredential',
+  proof_types_supported: {
+    jwt: { proof_signing_alg_values_supported: ['EdDSA'] },
+    cwt: { proof_signing_alg_values_supported: [] },
+    ldp_vp: { proof_signing_alg_values_supported: [] },
+  },
+  cryptographic_binding_methods_supported: ['did:key'],
+} satisfies OpenId4VciCredentialConfigurationSupported
 
 export const universityDegreeCredentialSdJwt2 = {
   id: 'https://openid4vc-issuer.com/credentials/UniversityDegreeCredentialSdJwt2',

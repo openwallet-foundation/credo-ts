@@ -5,6 +5,7 @@ import type { CredentialOfferSession, IStateManager } from '@sphereon/oid4vci-co
 import { CredoError, EventEmitter } from '@credo-ts/core'
 import { IssueStatus } from '@sphereon/oid4vci-common'
 
+import { isCredentialOfferV1Draft13 } from '../../shared/utils'
 import { OpenId4VcIssuanceSessionState } from '../OpenId4VcIssuanceSessionState'
 import { OpenId4VcIssuerEvents } from '../OpenId4VcIssuerEvents'
 
@@ -53,19 +54,30 @@ export class OpenId4VcCredentialOfferSessionStateManager implements IStateManage
 
     let state = openId4VcIssuanceStateFromSphereon(stateValue.status)
 
-    // we set the completed state manually when all credentials have been issued
-    if (
-      state === OpenId4VcIssuanceSessionState.CredentialsPartiallyIssued &&
-      (record?.issuedCredentials?.length ?? 0) >= stateValue.credentialOffer.credential_offer.credentials.length
-    ) {
-      state = OpenId4VcIssuanceSessionState.Completed
+    if (state === OpenId4VcIssuanceSessionState.CredentialsPartiallyIssued) {
+      // we set the completed state manually when all credentials have been issued
+      const issuedCredentials = record?.issuedCredentials?.length ?? 0
+      const credentialOffer = stateValue.credentialOffer.credential_offer
+
+      const offeredCredentials = isCredentialOfferV1Draft13(credentialOffer)
+        ? credentialOffer.credential_configuration_ids // v13
+        : credentialOffer.credentials // v11
+
+      if (issuedCredentials >= offeredCredentials.length) {
+        state = OpenId4VcIssuanceSessionState.Completed
+      }
     }
+
+    // TODO: sphereon currently sets the wrong prop
+    const userPin =
+      stateValue.txCode ??
+      ('userPin' in stateValue && typeof stateValue.userPin === 'string' ? stateValue.userPin : undefined)
 
     // NOTE: we don't use clientId at the moment, will become relevant when doing the authorized flow
     if (record) {
       record.issuanceMetadata = stateValue.credentialDataSupplierInput
       record.credentialOfferPayload = stateValue.credentialOffer.credential_offer
-      record.userPin = stateValue.userPin
+      record.userPin = userPin
       record.preAuthorizedCode = stateValue.preAuthorizedCode
       record.errorMessage = stateValue.error
       record.credentialOfferUri = credentialOfferUri
@@ -78,7 +90,7 @@ export class OpenId4VcCredentialOfferSessionStateManager implements IStateManage
         issuanceMetadata: stateValue.credentialDataSupplierInput,
         credentialOfferPayload: stateValue.credentialOffer.credential_offer,
         credentialOfferUri,
-        userPin: stateValue.userPin,
+        userPin: userPin,
         errorMessage: stateValue.error,
         state: state,
       })
@@ -112,11 +124,12 @@ export class OpenId4VcCredentialOfferSessionStateManager implements IStateManage
         credential_offer: record.credentialOfferPayload,
         credential_offer_uri: record.credentialOfferUri,
       },
+      notification_id: '', // TODO! This probably needs to have a different structure allowing to receive notifications on a per credential request basis
       status: sphereonIssueStatusFromOpenId4VcIssuanceState(record.state),
       preAuthorizedCode: record.preAuthorizedCode,
       credentialDataSupplierInput: record.issuanceMetadata,
       error: record.errorMessage,
-      userPin: record.userPin,
+      txCode: record.userPin,
       createdAt: record.createdAt.getTime(),
       lastUpdatedAt: record.updatedAt?.getTime() ?? record.createdAt.getTime(),
     }

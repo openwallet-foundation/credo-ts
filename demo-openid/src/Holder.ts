@@ -39,20 +39,21 @@ export class Holder extends BaseAgent<ReturnType<typeof getOpenIdHolderModules>>
     resolvedCredentialOffer: OpenId4VciResolvedCredentialOffer,
     credentialsToRequest: string[]
   ) {
-    const credentials = await this.agent.modules.openId4VcHolder.acceptCredentialOfferUsingPreAuthorizedCode(
+    const tokenResponse = await this.agent.modules.openId4VcHolder.requestToken({ resolvedCredentialOffer })
+    const credentialResponse = await this.agent.modules.openId4VcHolder.requestCredentials({
       resolvedCredentialOffer,
-      {
-        credentialsToRequest,
-        // TODO: add jwk support for holder binding
-        credentialBindingResolver: async () => ({
-          method: 'did',
-          didUrl: this.verificationMethod.id,
-        }),
-      }
-    )
+      ...tokenResponse,
+      // TODO: add jwk support for holder binding
+      credentialsToRequest,
+      credentialBindingResolver: async () => ({
+        method: 'did',
+        didUrl: this.verificationMethod.id,
+      }),
+    })
 
     const storedCredentials = await Promise.all(
-      credentials.map((credential) => {
+      credentialResponse.map((response) => {
+        const credential = response.credential
         if (credential instanceof W3cJwtVerifiableCredential || credential instanceof W3cJsonLdVerifiableCredential) {
           return this.agent.w3cCredentials.storeCredential({ credential })
         } else {
