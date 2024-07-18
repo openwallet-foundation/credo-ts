@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.5.8
+
+### Patch Changes
+
+- 3819eb2: Adds support for issuance and verification of SD-JWT VCs using x509 certificates over OpenID4VC, as well as adds support for the `x509_san_uri` and `x509_san_dns` values for `client_id_scheme`. It also adds support for OpenID4VP Draft 20
+- 15d0a54: Treat an empty received handshake_protocols array as undefined
+- a5235e7: Allow to pass in a key instance when registering a DID jwk, key or peer with num algo 0
+
 ## 0.5.7
 
 ### Patch Changes
