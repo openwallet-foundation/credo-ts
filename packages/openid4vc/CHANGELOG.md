@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.5.8
+
+### Patch Changes
+
+- 3819eb2: Adds support for issuance and verification of SD-JWT VCs using x509 certificates over OpenID4VC, as well as adds support for the `x509_san_uri` and `x509_san_dns` values for `client_id_scheme`. It also adds support for OpenID4VP Draft 20
+- Updated dependencies [3819eb2]
+- Updated dependencies [15d0a54]
+- Updated dependencies [a5235e7]
+  - @credo-ts/core@0.5.8
+
 ## 0.5.7
 
 ### Patch Changes
