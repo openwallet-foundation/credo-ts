@@ -28,10 +28,10 @@
   "dependencies": {
     "@credo-ts/core": "workspace:*",
     "@sphereon/did-auth-siop": "^0.15.0",
-    "@sphereon/oid4vci-client": "^0.10.3",
-    "@sphereon/oid4vci-common": "^0.10.3",
-    "@sphereon/oid4vci-issuer": "^0.10.3",
-    "@sphereon/ssi-types": "^0.23.0",
+    "@sphereon/oid4vci-client": "^0.14.0",
+    "@sphereon/oid4vci-common": "^0.14.0",
+    "@sphereon/oid4vci-issuer": "^0.14.0",
+    "@sphereon/ssi-types": "0.26.1-next.132",
     "class-transformer": "^0.5.1",
     "rxjs": "^7.8.0"
   },
