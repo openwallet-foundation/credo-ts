@@ -25,7 +25,7 @@ export function getTypesFromCredentialSupported(
     credentialSupported.format === 'jwt_vc_json' ||
     credentialSupported.format === 'jwt_vc'
   ) {
-    if (!credentialSupported.credential_definition || !Array.isArray(credentialSupported.type)) {
+    if (!credentialSupported.credential_definition || !Array.isArray(credentialSupported.credential_definition.type)) {
       throw Error(
         `Unable to extract types from credentials supported for format ${credentialSupported.format}. credential_definition.type is not defined`
       )
