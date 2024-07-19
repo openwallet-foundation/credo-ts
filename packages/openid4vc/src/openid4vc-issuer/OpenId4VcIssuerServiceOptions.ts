@@ -1,4 +1,8 @@
-import type { OpenId4VcIssuanceSessionRecord } from './repository'
+import type {
+  OpenId4VcIssuanceSessionRecord,
+  OpenId4VcIssuerRecordCredentialConfigurationsSupportedProps,
+  OpenId4VcIssuerRecordCredentialSupportedProps,
+} from './repository'
 import type {
   OpenId4VcCredentialHolderBinding,
   OpenId4VciCredentialConfigurationsSupported,
@@ -34,6 +38,7 @@ export type OpenId4VcIssuerMetadata = {
 
   issuerDisplay?: OpenId4VciIssuerMetadataDisplay[]
   credentialsSupported: OpenId4VciCredentialSupportedWithId[]
+  credentialConfigurationsSupported: OpenId4VciCredentialConfigurationsSupported
 }
 
 export interface OpenId4VciCreateCredentialOfferOptions {
@@ -140,12 +145,11 @@ export interface OpenId4VciSignW3cCredential {
   credential: W3cCredential
 }
 
-export interface OpenId4VciCreateIssuerOptions {
+export type OpenId4VciCreateIssuerOptions = {
   /**
    * Id of the issuer, not the id of the issuer record. Will be exposed publicly
    */
   issuerId?: string
 
-  credentialsSupported: OpenId4VciCredentialSupportedWithId[] | OpenId4VciCredentialConfigurationsSupported
   display?: OpenId4VciIssuerMetadataDisplay[]
-}
+} & (OpenId4VcIssuerRecordCredentialSupportedProps | OpenId4VcIssuerRecordCredentialConfigurationsSupportedProps)
