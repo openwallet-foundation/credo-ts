@@ -12,6 +12,7 @@ import type { AgentContext } from '../agent'
 import type { Buffer } from '../utils'
 
 import { CredoError } from '../error'
+import { X509ModuleConfig } from '../modules/x509'
 import { injectable } from '../plugins'
 import { isJsonObject, JsonEncoder, TypedArrayEncoder } from '../utils'
 import { WalletError } from '../wallet/error'
@@ -231,9 +232,24 @@ export class JwsService {
     }
 
     if (protectedHeader.x5c) {
-      if (!Array.isArray(protectedHeader.x5c) || typeof protectedHeader.x5c[0] !== 'string') {
+      if (
+        !Array.isArray(protectedHeader.x5c) ||
+        protectedHeader.x5c.some((certificate) => typeof certificate !== 'string')
+      ) {
         throw new CredoError('x5c header is not a valid JSON array of string.')
       }
+
+      const trustedCertificates = agentContext.dependencyManager.resolve(X509ModuleConfig).trustedCertificates
+      if (!trustedCertificates) {
+        throw new CredoError(
+          'No trusted certificates configured for X509 certificate chain validation. Issuer cannot be verified.'
+        )
+      }
+
+      await X509Service.validateCertificateChain(agentContext, {
+        certificateChain: protectedHeader.x5c,
+        trustedCertificates,
+      })
 
       const certificate = X509Service.getLeafCertificate(agentContext, { certificateChain: protectedHeader.x5c })
       return getJwkFromKey(certificate.publicKey)
