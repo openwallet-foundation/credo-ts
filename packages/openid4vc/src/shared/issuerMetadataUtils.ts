@@ -5,7 +5,7 @@ import type {
   OpenId4VciCredentialSupported,
 } from './models'
 import type { AgentContext, JwaSignatureAlgorithm } from '@credo-ts/core'
-import type { CredentialOfferFormat, KeyProofType, ProofType } from '@sphereon/oid4vci-common'
+import type { CredentialOfferFormat } from '@sphereon/oid4vci-common'
 
 import { CredoError } from '@credo-ts/core'
 
@@ -25,8 +25,19 @@ export function getTypesFromCredentialSupported(
     credentialSupported.format === 'jwt_vc_json' ||
     credentialSupported.format === 'jwt_vc'
   ) {
+    if (!credentialSupported.credential_definition || !Array.isArray(credentialSupported.credential_definition.type)) {
+      throw Error(
+        `Unable to extract types from credentials supported for format ${credentialSupported.format}. credential_definition.type is not defined`
+      )
+    }
+
     return credentialSupported.credential_definition.type
   } else if (credentialSupported.format === 'vc+sd-jwt') {
+    if (!credentialSupported.vct) {
+      throw Error(
+        `Unable to extract types from credentials supported for format ${credentialSupported.format}. vct is not defined`
+      )
+    }
     return credentialSupported.vct ? [credentialSupported.vct] : undefined
   }
 
@@ -50,23 +61,33 @@ export function credentialConfigurationSupportedToCredentialSupported(
     return {
       ...baseConfig,
       format: config.format,
-      credentialSubject: config.credential_definition.credentialSubject,
-      types: config.credential_definition.type ?? [],
+      credentialSubject: config.credential_definition?.credentialSubject,
+      types: config.credential_definition?.type ?? [],
     }
   } else if (config.format === 'ldp_vc' || config.format === 'jwt_vc_json-ld') {
+    if (!config.credential_definition?.['@context']) {
+      throw new Error(
+        `Unable to transform from draft 13 credential configuration to draft 11 credential supported for format ${config.format}. credential_definition.@context is not defined`
+      )
+    }
+
     return {
       ...baseConfig,
       format: config.format,
-      // @ts-expect-error this should exist
       '@context': config.credential_definition['@context'],
       credentialSubject: config.credential_definition.credentialSubject,
-      types: config.credential_definition.type ?? [],
+      types: config.credential_definition.type,
     }
   } else if (config.format === 'vc+sd-jwt') {
+    if (!config.vct) {
+      throw new Error(
+        `Unable to transform from draft 13 credential configuration to draft 11 credential supported for format ${config.format}. vct is not defined`
+      )
+    }
+
     return {
       ...baseConfig,
       format: config.format,
-      // @ts-expect-error keep this for now to allow back and forth conversion
       vct: config.vct,
       claims: config.claims,
     }
@@ -89,14 +110,7 @@ export function credentialSupportedToCredentialConfigurationSupported(
     jwt: {
       proof_signing_alg_values_supported: proofSigningAlgValuesSupported,
     },
-    // These should not be required
-    //cwt: {
-    //proof_signing_alg_values_supported: [],
-    //},
-    //ldp_vp: {
-    //proof_signing_alg_values_supported: [],
-    //},
-  } as Record<KeyProofType, ProofType>
+  } as const
 
   const baseCredentialConfigurationSupported = {
     id: credentialSupported.id,
@@ -126,8 +140,7 @@ export function credentialSupportedToCredentialConfigurationSupported(
       ...baseCredentialConfigurationSupported,
       format: credentialSupported.format,
       credential_definition: {
-        // @ts-expect-error this should exist
-        '@context': credentialSupported['@context'],
+        '@context': credentialSupported['@context'] as string[],
         credentialSubject: credentialSupported.credentialSubject,
         type: credentialSupported.types,
       },
@@ -139,7 +152,6 @@ export function credentialSupportedToCredentialConfigurationSupported(
       vct: credentialSupported.vct,
       id: credentialSupported.id,
       claims: credentialSupported.claims,
-      credential_definition: {},
     }
   }
 
@@ -247,19 +259,4 @@ export function getOfferedCredentialConfigurationsSupported(
   }
 
   return credentialConfigurationsOffered
-}
-
-export const getProofTypesSupported = (agentContext: AgentContext): Record<KeyProofType, ProofType> => {
-  return {
-    jwt: {
-      proof_signing_alg_values_supported: getSupportedJwaSignatureAlgorithms(agentContext) as string[],
-    },
-    // These properties should not be required
-    //cwt: {
-    //  proof_signing_alg_values_supported: [],
-    //},
-    //ldp_vp: {
-    //  proof_signing_alg_values_supported: [],
-    //},
-  } as Record<KeyProofType, ProofType>
 }

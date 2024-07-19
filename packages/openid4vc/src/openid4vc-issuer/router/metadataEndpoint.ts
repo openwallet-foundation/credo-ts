@@ -2,7 +2,6 @@ import type { OpenId4VcIssuanceRequest } from './requestContext'
 import type { CredentialIssuerMetadata } from '@sphereon/oid4vci-common'
 import type { Router, Response } from 'express'
 
-import { credentialsSupportedV11ToV13 } from '../../shared/issuerMetadataUtils'
 import { getRequestContext, sendErrorResponse } from '../../shared/router'
 import { OpenId4VcIssuerService } from '../OpenId4VcIssuerService'
 
@@ -21,9 +20,7 @@ export function configureIssuerMetadataEndpoint(router: Router) {
           authorization_server: issuerMetadata.authorizationServer,
           authorization_servers: issuerMetadata.authorizationServer ? [issuerMetadata.authorizationServer] : undefined,
           credentials_supported: issuerMetadata.credentialsSupported,
-          credential_configurations_supported:
-            issuer.credentialConfigurationsSupported ??
-            credentialsSupportedV11ToV13(agentContext, issuerMetadata.credentialsSupported),
+          credential_configurations_supported: issuerMetadata.credentialConfigurationsSupported,
           display: issuerMetadata.issuerDisplay,
         } satisfies CredentialIssuerMetadata
 

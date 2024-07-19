@@ -300,15 +300,21 @@ export class OpenId4VcIssuerService {
       keyType: KeyType.Ed25519,
     })
 
-    const credentialsSupported = Array.isArray(options.credentialsSupported)
-      ? options.credentialsSupported
-      : credentialsSupportedV13ToV11(options.credentialsSupported)
-    const openId4VcIssuer = new OpenId4VcIssuerRecord({
+    const openId4VcIssuerBase = {
       issuerId: options.issuerId ?? utils.uuid(),
       display: options.display,
       accessTokenPublicKeyFingerprint: accessTokenSignerKey.fingerprint,
-      credentialsSupported,
-    })
+    } as const
+
+    const openId4VcIssuer = options.credentialsSupported
+      ? new OpenId4VcIssuerRecord({
+          ...openId4VcIssuerBase,
+          credentialsSupported: options.credentialsSupported,
+        })
+      : new OpenId4VcIssuerRecord({
+          ...openId4VcIssuerBase,
+          credentialConfigurationsSupported: options.credentialConfigurationsSupported,
+        })
 
     await this.openId4VcIssuerRepository.save(agentContext, openId4VcIssuer)
     await storeActorIdForContextCorrelationId(agentContext, openId4VcIssuer.issuerId)
@@ -334,6 +340,9 @@ export class OpenId4VcIssuerService {
       tokenEndpoint: joinUriParts(issuerUrl, [config.accessTokenEndpoint.endpointPath]),
       credentialEndpoint: joinUriParts(issuerUrl, [config.credentialEndpoint.endpointPath]),
       credentialsSupported: issuerRecord.credentialsSupported,
+      credentialConfigurationsSupported:
+        issuerRecord.credentialConfigurationsSupported ??
+        credentialsSupportedV11ToV13(agentContext, issuerRecord.credentialsSupported),
       issuerDisplay: issuerRecord.display,
     } satisfies OpenId4VcIssuerMetadata
 
@@ -426,7 +435,7 @@ export class OpenId4VcIssuerService {
     agentContext: AgentContext,
     credentialOffer: OpenId4VciCredentialOfferPayload,
     credentialRequest: OpenId4VciCredentialRequest,
-    credentialsSupported: OpenId4VciCredentialSupportedWithId[],
+    credentialsSupported: OpenId4VciCredentialSupportedWithId[] | OpenId4VciCredentialConfigurationsSupported,
     issuanceSession: OpenId4VcIssuanceSessionRecord
   ): OpenId4VciCredentialConfigurationsSupported {
     const offeredCredentialsData = isCredentialOfferV1Draft13(credentialOffer)
@@ -616,7 +625,7 @@ export class OpenId4VcIssuerService {
         agentContext,
         options.issuanceSession.credentialOfferPayload,
         credentialRequest,
-        issuerMetadata.credentialsSupported,
+        issuerMetadata.credentialConfigurationsSupported,
         issuanceSession
       )
 

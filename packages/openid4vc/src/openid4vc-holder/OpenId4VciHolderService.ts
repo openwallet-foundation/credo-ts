@@ -368,13 +368,16 @@ export class OpenId4VciHolderService {
         }) ?? offeredCredentials
 
     const offeredCredentialConfigurations = credentialsSupportedV11ToV13(agentContext, credentialsSupportedToRequest)
-    for (const offeredCredentialConfiguration of Object.entries(offeredCredentialConfigurations)) {
-      const offeredCredential = offeredCredentialConfiguration[1]
-
+    for (const [offeredCredentialId, offeredCredentialConfiguration] of Object.entries(
+      offeredCredentialConfigurations
+    )) {
       // Get all options for the credential request (such as which kid to use, the signature algorithm, etc)
       const { credentialBinding, signatureAlgorithm } = await this.getCredentialRequestOptions(agentContext, {
         possibleProofOfPossessionSignatureAlgorithms: possibleProofOfPossessionSigAlgs,
-        offeredCredential,
+        offeredCredential: {
+          id: offeredCredentialId,
+          configuration: offeredCredentialConfiguration,
+        },
         credentialBindingResolver,
       })
 
@@ -411,8 +414,8 @@ export class OpenId4VciHolderService {
       const credentialRequestClient = credentialRequestBuilder.build()
       const credentialResponse = await credentialRequestClient.acquireCredentialsUsingProof({
         proofInput: proofOfPossession,
-        credentialTypes: getTypesFromCredentialSupported(offeredCredential),
-        format: offeredCredential.format,
+        credentialTypes: getTypesFromCredentialSupported(offeredCredentialConfiguration),
+        format: offeredCredentialConfiguration.format,
       })
 
       newCNonce = credentialResponse.successBody?.c_nonce
@@ -441,7 +444,10 @@ export class OpenId4VciHolderService {
     options: {
       credentialBindingResolver: OpenId4VciCredentialBindingResolver
       possibleProofOfPossessionSignatureAlgorithms: JwaSignatureAlgorithm[]
-      offeredCredential: OpenId4VciCredentialConfigurationSupported
+      offeredCredential: {
+        id: string
+        configuration: OpenId4VciCredentialConfigurationSupported
+      }
     }
   ) {
     const { signatureAlgorithm, supportedDidMethods, supportsAllDidMethods, supportsJwk } =
@@ -457,7 +463,7 @@ export class OpenId4VciHolderService {
 
     const supportedVerificationMethods = getSupportedVerificationMethodTypesFromKeyType(JwkClass.keyType)
 
-    const format = options.offeredCredential.format as OpenId4VciSupportedCredentialFormats
+    const format = options.offeredCredential.configuration.format as OpenId4VciSupportedCredentialFormats
 
     // Now we need to determine how the credential will be bound to us
     const credentialBinding = await options.credentialBindingResolver({
@@ -512,18 +518,23 @@ export class OpenId4VciHolderService {
   private getProofOfPossessionRequirements(
     agentContext: AgentContext,
     options: {
-      credentialToRequest: OpenId4VciCredentialConfigurationSupported
+      credentialToRequest: {
+        id: string
+        configuration: OpenId4VciCredentialConfigurationSupported
+      }
       possibleProofOfPossessionSignatureAlgorithms: JwaSignatureAlgorithm[]
     }
   ): OpenId4VciProofOfPossessionRequirements {
     const { credentialToRequest } = options
 
     if (
-      !openId4VciSupportedCredentialFormats.includes(credentialToRequest.format as OpenId4VciSupportedCredentialFormats)
+      !openId4VciSupportedCredentialFormats.includes(
+        credentialToRequest.configuration.format as OpenId4VciSupportedCredentialFormats
+      )
     ) {
       throw new CredoError(
         [
-          `Requested credential with format '${credentialToRequest.format}',`,
+          `Requested credential with format '${credentialToRequest.configuration.format}',`,
           `for the credential with id '${credentialToRequest.id},`,
           `but the wallet only supports the following formats '${openId4VciSupportedCredentialFormats.join(', ')}'`,
         ].join('\n')
@@ -535,10 +546,10 @@ export class OpenId4VciHolderService {
 
     let signatureAlgorithm: JwaSignatureAlgorithm | undefined
 
-    if (credentialToRequest.proof_types_supported) {
-      if (!credentialToRequest.proof_types_supported.jwt) {
+    if (credentialToRequest.configuration.proof_types_supported) {
+      if (!credentialToRequest.configuration.proof_types_supported.jwt) {
         throw new CredoError(
-          `Unsupported proof type(s) ${Object.keys(credentialToRequest.proof_types_supported).join(
+          `Unsupported proof type(s) ${Object.keys(credentialToRequest.configuration.proof_types_supported).join(
             ', '
           )}. Supported proof type(s) are: jwt`
         )
@@ -547,15 +558,15 @@ export class OpenId4VciHolderService {
 
     // FIXME credentialToRequest.credential_signing_alg_values_supported is only required for v11 compat
     const proofSigningAlgsSupported =
-      credentialToRequest.proof_types_supported?.jwt.proof_signing_alg_values_supported ??
-      credentialToRequest.credential_signing_alg_values_supported
+      credentialToRequest.configuration.proof_types_supported?.jwt?.proof_signing_alg_values_supported ??
+      credentialToRequest.configuration.credential_signing_alg_values_supported
 
     // If undefined, it means the issuer didn't include the cryptographic suites in the metadata
     // We just guess that the first one is supported
     if (proofSigningAlgsSupported === undefined) {
       signatureAlgorithm = options.possibleProofOfPossessionSignatureAlgorithms[0]
     } else {
-      switch (credentialToRequest.format) {
+      switch (credentialToRequest.configuration.format) {
         case OpenId4VciCredentialFormatProfile.JwtVcJson:
         case OpenId4VciCredentialFormatProfile.JwtVcJsonLd:
         case OpenId4VciCredentialFormatProfile.SdJwtVc:
@@ -581,11 +592,11 @@ export class OpenId4VciHolderService {
 
     if (!signatureAlgorithm) {
       throw new CredoError(
-        `Could not establish signature algorithm for format ${credentialToRequest.format} and id ${credentialToRequest.id}`
+        `Could not establish signature algorithm for format ${credentialToRequest.configuration.format} and id ${credentialToRequest.id}`
       )
     }
 
-    const issuerSupportedBindingMethods = credentialToRequest.cryptographic_binding_methods_supported
+    const issuerSupportedBindingMethods = credentialToRequest.configuration.cryptographic_binding_methods_supported
     const supportsAllDidMethods = issuerSupportedBindingMethods?.includes('did') ?? false
     const supportedDidMethods = issuerSupportedBindingMethods?.filter((method) => method.startsWith('did:'))
     const supportsJwk = issuerSupportedBindingMethods?.includes('jwk') ?? false
