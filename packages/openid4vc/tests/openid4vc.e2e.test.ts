@@ -190,7 +190,7 @@ describe('OpenId4Vc', () => {
     const issuerTenant2 = await issuer.agent.modules.tenants.getTenantAgent({ tenantId: issuer2.tenantId })
 
     const openIdIssuerTenant1 = await issuerTenant1.modules.openId4VcIssuer.createIssuer({
-      credentialsSupported: {
+      credentialConfigurationsSupported: {
         universityDegree: universityDegreeCredentialConfigurationSupported,
       },
     })
@@ -204,7 +204,19 @@ describe('OpenId4Vc', () => {
         scope: universityDegreeCredentialConfigurationSupported.scope,
       },
     ])
-
+    expect(issuer1Record.credentialConfigurationsSupported).toEqual({
+      universityDegree: {
+        format: 'vc+sd-jwt',
+        cryptographic_binding_methods_supported: ['did:key'],
+        proof_types_supported: {
+          jwt: {
+            proof_signing_alg_values_supported: ['EdDSA'],
+          },
+        },
+        vct: universityDegreeCredentialConfigurationSupported.vct,
+        scope: universityDegreeCredentialConfigurationSupported.scope,
+      },
+    })
     const openIdIssuerTenant2 = await issuerTenant2.modules.openId4VcIssuer.createIssuer({
       credentialsSupported: [universityDegreeCredentialSdJwt2],
     })
