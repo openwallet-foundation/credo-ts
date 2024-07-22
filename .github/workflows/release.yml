@@ -64,7 +64,10 @@ jobs:
   release-unstable:
     name: Release Unstable
     runs-on: ubuntu-latest
-    if: "(github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == 'openwallet-foundation/credo-ts') || (github.event_name == 'push' && !startsWith(github.event.head_commit.message, 'chore(release): version'))"
+    # We don't want to run release and release-unstable concurrently as NPM doesn't allow publishing packages while another version of the same package is
+    # still processing. So we wait for release to finish, and the always() ensure that it will run no matter the result of release.
+    needs: [release]
+    if: "always() && (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == 'openwallet-foundation/credo-ts') || (github.event_name == 'push' && !startsWith(github.event.head_commit.message, 'chore(release): new version'))"
     steps:
       - uses: snnaplab/get-labels-action@v1
         if: github.event_name == 'pull_request'
