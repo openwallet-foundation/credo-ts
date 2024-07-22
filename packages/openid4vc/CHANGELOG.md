@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.5.9
+
+### Patch Changes
+
+- a12d80c: feat: update to openid4vc v1 draft 13, with v11 compatibility
+  - @credo-ts/core@0.5.9
+
 ## 0.5.8
 
 ### Patch Changes

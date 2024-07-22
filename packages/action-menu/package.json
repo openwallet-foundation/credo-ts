@@ -2,7 +2,7 @@
   "name": "@credo-ts/action-menu",
   "main": "src/index",
   "types": "src/index",
-  "version": "0.5.8",
+  "version": "0.5.9",
   "files": [
     "build"
   ],

@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.5.9
+
+### Patch Changes
+
+- @credo-ts/anoncreds@0.5.9
+- @credo-ts/core@0.5.9
+
 ## 0.5.8
 
 ### Patch Changes
