@@ -424,6 +424,7 @@ export class OpenId4VciHolderService {
       const credential = await this.handleCredentialResponse(agentContext, credentialResponse, {
         verifyCredentialStatus: verifyCredentialStatus ?? false,
         credentialIssuerMetadata: metadata.credentialIssuerMetadata,
+        format: offeredCredentialConfiguration.format as OpenId4VciCredentialFormatProfile,
       })
 
       this.logger.debug('Full credential', credential)
@@ -615,6 +616,7 @@ export class OpenId4VciHolderService {
     options: {
       verifyCredentialStatus: boolean
       credentialIssuerMetadata: OpenId4VciIssuerMetadata
+      format: OpenId4VciCredentialFormatProfile
     }
   ): Promise<OpenId4VciCredentialResponse> {
     const { verifyCredentialStatus, credentialIssuerMetadata } = options
@@ -635,7 +637,7 @@ export class OpenId4VciHolderService {
           }
         : undefined
 
-    const format = credentialResponse.successBody.format
+    const format = options.format
     if (format === OpenId4VciCredentialFormatProfile.SdJwtVc) {
       if (typeof credentialResponse.successBody.credential !== 'string')
         throw new CredoError(
