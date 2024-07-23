@@ -661,6 +661,12 @@ export class CredentialsApi<CPs extends CredentialProtocol[]> implements Credent
     return protocol.delete(this.agentContext, credentialRecord, options)
   }
 
+  async deleteByIdLd(credentialId: string, options?: DeleteCredentialOptions) {
+    const credentialRecord = await this.getById(credentialId)
+    const protocol = await this.getServiceForCredentialExchangeId(credentialId)
+    return protocol.delete(this.agentContext, credentialRecord, options)
+}
+
   /**
    * Update a credential exchange record
    *
