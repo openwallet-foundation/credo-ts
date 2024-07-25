@@ -1,7 +1,14 @@
 import type { OpenId4VcJwtIssuer } from './models'
-import type { AgentContext, JwaSignatureAlgorithm, JwsProtectedHeaderOptions, Key } from '@credo-ts/core'
-import type { CreateJwtCallback, JwtIssuer, SigningAlgo, VerifyJwtCallback } from '@sphereon/did-auth-siop'
-import type { CredentialOfferPayloadV1_0_11, CredentialOfferPayloadV1_0_13 } from '@sphereon/oid4vci-common'
+import type { AgentContext, JwaSignatureAlgorithm, Key } from '@credo-ts/core'
+import type { JwtIssuerWithContext as VpJwtIssuerWithContext, VerifyJwtCallback } from '@sphereon/did-auth-siop'
+import type {
+  CreateJwtCallback,
+  CredentialOfferPayloadV1_0_11,
+  CredentialOfferPayloadV1_0_13,
+  JwtIssuer,
+  DPoPJwtIssuerWithContext,
+  SigningAlgo,
+} from '@sphereon/oid4vci-common'
 
 import {
   CredoError,
@@ -66,7 +73,9 @@ export function getVerifyJwtCallback(agentContext: AgentContext): VerifyJwtCallb
   }
 }
 
-export function getCreateJwtCallback(agentContext: AgentContext): CreateJwtCallback {
+export function getCreateJwtCallback(
+  agentContext: AgentContext
+): CreateJwtCallback<DPoPJwtIssuerWithContext | VpJwtIssuerWithContext> {
   return async (jwtIssuer, jwt) => {
     const jwsService = agentContext.dependencyManager.resolve(JwsService)
 
@@ -80,9 +89,10 @@ export function getCreateJwtCallback(agentContext: AgentContext): CreateJwtCallb
 
       return jws
     } else if (jwtIssuer.method === 'jwk') {
-      const key = getJwkFromJson(jwtIssuer.jwk).key
+      const jwk = getJwkFromJson(jwtIssuer.jwk)
+      const key = jwk.key
       const jws = await jwsService.createJwsCompact(agentContext, {
-        protectedHeaderOptions: jwt.header as JwsProtectedHeaderOptions,
+        protectedHeaderOptions: { ...jwt.header, jwk, alg: jwtIssuer.alg },
         payload: JwtPayload.fromJson(jwt.payload),
         key,
       })
@@ -92,7 +102,7 @@ export function getCreateJwtCallback(agentContext: AgentContext): CreateJwtCallb
       const key = X509Service.getLeafCertificate(agentContext, { certificateChain: jwtIssuer.x5c }).publicKey
 
       const jws = await jwsService.createJwsCompact(agentContext, {
-        protectedHeaderOptions: jwt.header as JwsProtectedHeaderOptions,
+        protectedHeaderOptions: { ...jwt.header, alg: jwtIssuer.alg },
         payload: JwtPayload.fromJson(jwt.payload),
         key,
       })
@@ -124,6 +134,12 @@ export async function openIdTokenIssuerToJwtIssuer(
       certificateChain: openId4VcTokenIssuer.x5c,
     })
 
+    const jwk = getJwkFromKey(leafCertificate.publicKey)
+    const alg = jwk.supportedSignatureAlgorithms[0]
+    if (!alg) {
+      throw new CredoError(`No supported signature algorithms found key type: '${jwk.keyType}'`)
+    }
+
     if (!issuer.startsWith('https://')) {
       throw new CredoError('The X509 certificate issuer must be a HTTPS URI.')
     }
@@ -131,6 +147,7 @@ export async function openIdTokenIssuerToJwtIssuer(
     if (leafCertificate.sanUriNames?.includes(issuer)) {
       return {
         ...openId4VcTokenIssuer,
+        alg: alg as unknown as SigningAlgo,
         clientIdScheme: 'x509_san_uri',
       }
     } else {
@@ -142,12 +159,23 @@ export async function openIdTokenIssuerToJwtIssuer(
 
       return {
         ...openId4VcTokenIssuer,
+        alg: alg as unknown as SigningAlgo,
         clientIdScheme: 'x509_san_dns',
       }
     }
+  } else if (openId4VcTokenIssuer.method === 'jwk') {
+    const alg = openId4VcTokenIssuer.jwk.supportedSignatureAlgorithms[0]
+    if (!alg) {
+      throw new CredoError(`No supported signature algorithms for key type: '${openId4VcTokenIssuer.jwk.keyType}'`)
+    }
+    return {
+      ...openId4VcTokenIssuer,
+      jwk: openId4VcTokenIssuer.jwk.toJson(),
+      alg: alg as unknown as SigningAlgo,
+    }
   }
 
-  return openId4VcTokenIssuer
+  throw new CredoError(`Unsupported jwt issuer method '${(openId4VcTokenIssuer as OpenId4VcJwtIssuer).method}'`)
 }
 
 export function getProofTypeFromKey(agentContext: AgentContext, key: Key) {

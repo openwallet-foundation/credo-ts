@@ -4,7 +4,7 @@ import type {
   OpenId4VciIssuerMetadata,
   OpenId4VciCredentialOfferPayload,
 } from '../shared'
-import type { JwaSignatureAlgorithm, KeyType } from '@credo-ts/core'
+import type { JwaSignatureAlgorithm, Jwk, KeyType } from '@credo-ts/core'
 import type { VerifiableCredential } from '@credo-ts/core/src/modules/dif-presentation-exchange/models/index'
 import type {
   AccessTokenResponse,
@@ -42,7 +42,7 @@ export type OpenId4VciNotificationEvent = 'credential_accepted' | 'credential_fa
 
 export type OpenId4VciTokenResponse = Pick<AccessTokenResponse, 'access_token' | 'c_nonce'>
 
-export type OpenId4VciRequestTokenResponse = { accessToken: string; cNonce?: string }
+export type OpenId4VciRequestTokenResponse = { accessToken: string; cNonce?: string; dPoPJwk?: Jwk }
 
 export interface OpenId4VciCredentialResponse {
   credential: VerifiableCredential
@@ -112,6 +112,7 @@ export interface OpenId4VciCredentialRequestOptions extends Omit<OpenId4VciAccep
   resolvedCredentialOffer: OpenId4VciResolvedCredentialOffer
   accessToken: string
   cNonce?: string
+  dPoPJwk?: Jwk
 }
 /**
  * Options that are used to accept a credential offer for both the pre-authorized code flow and authorization code flow.

@@ -303,6 +303,7 @@ export class OpenId4VcIssuerService {
     const openId4VcIssuerBase = {
       issuerId: options.issuerId ?? utils.uuid(),
       display: options.display,
+      dPoPSigningAlgValuesSupported: options.dPoPSigningAlgValuesSupported,
       accessTokenPublicKeyFingerprint: accessTokenSignerKey.fingerprint,
     } as const
 
@@ -344,6 +345,7 @@ export class OpenId4VcIssuerService {
         issuerRecord.credentialConfigurationsSupported ??
         credentialsSupportedV11ToV13(agentContext, issuerRecord.credentialsSupported),
       issuerDisplay: issuerRecord.display,
+      dPoPSigningAlgValuesSupported: issuerRecord.dPoPSigningAlgValuesSupported,
     } satisfies OpenId4VcIssuerMetadata
 
     return issuerMetadata

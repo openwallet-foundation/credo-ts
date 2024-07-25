@@ -63,7 +63,7 @@ export class OpenId4VcIssuerApi {
   }
 
   public async updateIssuerMetadata(
-    options: Pick<OpenId4VcIssuerRecordProps, 'issuerId' | 'display'> &
+    options: Pick<OpenId4VcIssuerRecordProps, 'issuerId' | 'display' | 'dPoPSigningAlgValuesSupported'> &
       (OpenId4VcIssuerRecordCredentialSupportedProps | OpenId4VcIssuerRecordCredentialConfigurationsSupportedProps)
   ) {
     const issuer = await this.openId4VcIssuerService.getIssuerByIssuerId(this.agentContext, options.issuerId)
@@ -76,6 +76,7 @@ export class OpenId4VcIssuerApi {
       issuer.credentialConfigurationsSupported = undefined
     }
     issuer.display = options.display
+    issuer.dPoPSigningAlgValuesSupported = options.dPoPSigningAlgValuesSupported
 
     return this.openId4VcIssuerService.updateIssuer(this.agentContext, issuer)
   }
