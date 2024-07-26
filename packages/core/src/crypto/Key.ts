@@ -8,10 +8,12 @@ import { getKeyTypeByMultiCodecPrefix, getMultiCodecPrefixByKeyType } from './mu
 export class Key {
   public readonly publicKey: Buffer
   public readonly keyType: KeyType
+  public keyId: string
 
-  public constructor(publicKey: Uint8Array, keyType: KeyType) {
+  public constructor(publicKey: Uint8Array, keyType: KeyType, keyId?: string) {
     this.publicKey = Buffer.from(publicKey)
     this.keyType = keyType
+    this.keyId = keyId ?? TypedArrayEncoder.toBase58(this.publicKey)
   }
 
   public static fromPublicKey(publicKey: Uint8Array, keyType: KeyType) {
