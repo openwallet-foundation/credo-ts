@@ -3,10 +3,11 @@ import type { OpenId4VcIssuerRecord } from '../repository'
 import type { AgentContext } from '@credo-ts/core'
 import type { SigningAlgo } from '@sphereon/oid4vci-common'
 
-import { CredoError, JwsService, Jwt } from '@credo-ts/core'
+import { CredoError, joinUriParts, JwsService, Jwt } from '@credo-ts/core'
 import { verifyResourceDPoP } from '@sphereon/oid4vci-common'
 
 import { getVerifyJwtCallback } from '../../shared/utils'
+import { OpenId4VcIssuerModuleConfig } from '../OpenId4VcIssuerModuleConfig'
 import { OpenId4VcIssuerService } from '../OpenId4VcIssuerService'
 
 export async function verifyResourceRequest(
@@ -36,7 +37,8 @@ export async function verifyResourceRequest(
     },
   })
 
-  const fullUrl = request.protocol + '://' + request.get('host') + request.originalUrl
+  const issuerConfig = agentContext.dependencyManager.resolve(OpenId4VcIssuerModuleConfig)
+  const fullUrl = joinUriParts(issuerConfig.baseUrl, [issuer.issuerId, request.url])
   await verifyResourceDPoP(
     { method: request.method, headers: request.headers, fullUrl },
     {

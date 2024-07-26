@@ -192,7 +192,7 @@ describe('OpenId4Vc', () => {
     const issuerTenant2 = await issuer.agent.modules.tenants.getTenantAgent({ tenantId: issuer2.tenantId })
 
     const openIdIssuerTenant1 = await issuerTenant1.modules.openId4VcIssuer.createIssuer({
-      dPoPSigningAlgValuesSupported: ['EdDSA'],
+      dPoPSigningAlgValuesSupported: [JwaSignatureAlgorithm.EdDSA],
       credentialConfigurationsSupported: {
         universityDegree: universityDegreeCredentialConfigurationSupported,
       },
@@ -223,7 +223,7 @@ describe('OpenId4Vc', () => {
       },
     })
     const openIdIssuerTenant2 = await issuerTenant2.modules.openId4VcIssuer.createIssuer({
-      dPoPSigningAlgValuesSupported: ['EdDSA'],
+      dPoPSigningAlgValuesSupported: [JwaSignatureAlgorithm.EdDSA],
       credentialsSupported: [universityDegreeCredentialSdJwt2],
     })
 

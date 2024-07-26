@@ -285,9 +285,7 @@ export class OpenId4VciHolderService {
 
     if (!dPoPSigningAlgValuesSupported) return undefined
 
-    const alg = dPoPSigningAlgValuesSupported
-      .flatMap((alg) => alg)
-      .find((alg) => getJwkClassFromJwaSignatureAlgorithm(alg))
+    const alg = dPoPSigningAlgValuesSupported.find((alg) => getJwkClassFromJwaSignatureAlgorithm(alg))
 
     const JwkClass = alg ? getJwkClassFromJwaSignatureAlgorithm(alg) : undefined
 
@@ -323,7 +321,6 @@ export class OpenId4VciHolderService {
     const createDPoPOptions = await this.getCreateDPoPOptions(agentContext, metadata)
     const dPoPJwk = createDPoPOptions ? getJwkFromJson(createDPoPOptions.jwtIssuer.jwk) : undefined
 
-    resolvedCredentialOffer.metadata.credentialIssuerMetadata
     if (resolvedAuthorizationRequest) {
       const { codeVerifier, redirectUri } = resolvedAuthorizationRequest
       accessTokenResponse = await accessTokenClient.acquireAccessToken({

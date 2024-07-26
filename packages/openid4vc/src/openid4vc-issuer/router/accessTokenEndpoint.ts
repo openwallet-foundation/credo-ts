@@ -3,7 +3,16 @@ import type { AgentContext } from '@credo-ts/core'
 import type { AccessTokenRequest, JWK, JWTSignerCallback, SigningAlgo } from '@sphereon/oid4vci-common'
 import type { NextFunction, Response, Router } from 'express'
 
-import { getJwkFromKey, CredoError, JwsService, JwtPayload, getJwkClassFromKeyType, Key } from '@credo-ts/core'
+import {
+  getJwkFromKey,
+  CredoError,
+  JwsService,
+  JwtPayload,
+  getJwkClassFromKeyType,
+  Key,
+  joinUriParts,
+  Jwt,
+} from '@credo-ts/core'
 import {
   GrantTypes,
   IssueStatus,
@@ -17,6 +26,7 @@ import { assertValidAccessTokenRequest, createAccessTokenResponse } from '@spher
 
 import { getRequestContext, sendErrorResponse } from '../../shared/router'
 import { getVerifyJwtCallback } from '../../shared/utils'
+import { OpenId4VcIssuerModuleConfig } from '../OpenId4VcIssuerModuleConfig'
 import { OpenId4VcIssuerService } from '../OpenId4VcIssuerService'
 import { OpenId4VcCNonceStateManager } from '../repository/OpenId4VcCNonceStateManager'
 import { OpenId4VcCredentialOfferSessionStateManager } from '../repository/OpenId4VcCredentialOfferSessionStateManager'
@@ -125,7 +135,9 @@ export function handleTokenRequest(config: OpenId4VciAccessTokenEndpointConfig) 
     let dPoPJwk: JWK | undefined
     if (request.headers.dpop) {
       try {
-        const fullUrl = request.protocol + '://' + request.get('host') + request.originalUrl
+        const issuerConfig = agentContext.dependencyManager.resolve(OpenId4VcIssuerModuleConfig)
+        const fullUrl = joinUriParts(issuerConfig.baseUrl, [requestContext.issuer.issuerId, request.url])
+
         dPoPJwk = await verifyDPoP(
           { method: request.method, headers: request.headers, fullUrl },
           {
