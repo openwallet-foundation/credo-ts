@@ -42,7 +42,7 @@ export type OpenId4VciNotificationEvent = 'credential_accepted' | 'credential_fa
 
 export type OpenId4VciTokenResponse = Pick<AccessTokenResponse, 'access_token' | 'c_nonce'>
 
-export type OpenId4VciRequestTokenResponse = { accessToken: string; cNonce?: string; dpop: { dpopJwk?: Jwk } }
+export type OpenId4VciRequestTokenResponse = { accessToken: string; cNonce?: string; dpop?: { dpopJwk: Jwk } }
 
 export interface OpenId4VciCredentialResponse {
   credential: VerifiableCredential

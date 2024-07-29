@@ -301,7 +301,7 @@ export class OpenId4VciHolderService {
 
     const createDPoPOpts: CreateDPoPClientOpts = {
       jwtIssuer: { alg: alg as unknown as SigningAlgo, jwk: jwk.toJson() },
-      dpopSigningAlgValuesSupported,
+      dPoPSigningAlgValuesSupported: dpopSigningAlgValuesSupported,
       jwtPayloadProps: {},
       createJwtCallback: getCreateJwtCallback(agentContext),
     }
@@ -348,7 +348,7 @@ export class OpenId4VciHolderService {
 
     this.logger.debug('Requested OpenId4VCI Access Token.')
 
-    return { ...accessTokenResponse.successBody, dpop: { dpopJwk: dpopJwk } }
+    return { ...accessTokenResponse.successBody, ...(dpopJwk && { dpop: { dpopJwk: dpopJwk } }) }
   }
 
   public async acceptCredentialOffer(
@@ -359,9 +359,7 @@ export class OpenId4VciHolderService {
       resolvedAuthorizationRequestWithCode?: OpenId4VciResolvedAuthorizationRequestWithCode
       accessToken?: string
       cNonce?: string
-      dpop?: {
-        dpopJwk: Jwk
-      }
+      dpop?: { dpopJwk: Jwk }
     }
   ) {
     const { resolvedCredentialOffer, acceptCredentialOfferOptions } = options
