@@ -72,6 +72,7 @@ export interface WalletCreateKeyOptions {
   seed?: Buffer
   privateKey?: Buffer
   keyBackend?: KeyBackend
+  keyId?: string
 }
 
 export interface WalletSignOptions {
