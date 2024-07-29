@@ -47,5 +47,10 @@
   "peerDependencies": {
     "@hyperledger/aries-askar-shared": "^0.2.3",
     "@animo-id/expo-secure-environment": "^0.0.1-alpha.0"
+  },
+  "peerDependenciesMeta": {
+    "@animo-id/expo-secure-environment": {
+      "optional": true
+    }
   }
 }

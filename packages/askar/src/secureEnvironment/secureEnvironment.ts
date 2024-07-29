@@ -4,6 +4,6 @@ export function importSecureEnvironment(): {
   generateKeypair: (id: string) => void
 } {
   throw new Error(
-    'expo-secure-environment cannot be imported in Node.js. Currently, there is no hardware key support for node.js'
+    '@animo-id/expo-secure-environment cannot be imported in Node.js. Currently, there is no hardware key support for node.js'
   )
 }

@@ -31,6 +31,7 @@ import {
 import { CryptoBox, Store, Key as AskarKey, keyAlgFromString } from '@hyperledger/aries-askar-shared'
 import BigNumber from 'bn.js'
 
+import { importSecureEnvironment } from '../secureEnvironment'
 import {
   AskarErrorCode,
   AskarKeyTypePurpose,
@@ -40,7 +41,6 @@ import {
 } from '../utils'
 
 import { didcommV1Pack, didcommV1Unpack } from './didcommV1'
-import { importSecureEnvironment } from '../secureEnvironment'
 
 const isError = (error: unknown): error is Error => error instanceof Error
 
@@ -200,13 +200,13 @@ export abstract class AskarBaseWallet implements Wallet {
         const publicKeyBytes = secureEnvironment.getPublicBytesForKeyId(kid)
         const publicKeyBase58 = TypedArrayEncoder.toBase58(publicKeyBytes)
 
-        await this.storeHardwareKeyById({
+        await this.storeSecureEnvironmentKeyById({
           keyType,
           publicKeyBase58,
           keyId: kid,
         })
 
-        return new Key(publicKeyBytes, keyType, keyId)
+        return new Key(publicKeyBytes, keyType, kid)
       } else {
         // Check if there is a signing key provider for the specified key type.
         if (this.signingKeyProviderRegistry.hasProviderForKeyType(keyType)) {
@@ -521,7 +521,7 @@ export abstract class AskarBaseWallet implements Wallet {
   private async doesSecureEnvironmentKeyExist(keyId: string): Promise<boolean> {
     try {
       const entryObject = await this.withSession((session) =>
-        session.fetch({ category: 'SecureEnvironmentRecord', name: keyId })
+        session.fetch({ category: 'SecureEnvironmentKeyRecord', name: keyId })
       )
 
       return !!entryObject
@@ -558,7 +558,7 @@ export abstract class AskarBaseWallet implements Wallet {
     }
   }
 
-  private async storeHardwareKeyById(options: {
+  private async storeSecureEnvironmentKeyById(options: {
     keyId: string
     publicKeyBase58: string
     keyType: KeyType
@@ -566,7 +566,7 @@ export abstract class AskarBaseWallet implements Wallet {
     try {
       await this.withSession((session) =>
         session.insert({
-          category: 'SecureEnvironmentRecord',
+          category: 'SecureEnvironmentKeyRecord',
           name: options.keyId,
           value: JSON.stringify(options),
           tags: {
