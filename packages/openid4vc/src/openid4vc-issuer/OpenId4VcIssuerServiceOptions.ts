@@ -45,7 +45,7 @@ export type OpenId4VcIssuerMetadata = {
   issuerDisplay?: OpenId4VciIssuerMetadataDisplay[]
   credentialsSupported: OpenId4VciCredentialSupportedWithId[]
   credentialConfigurationsSupported: OpenId4VciCredentialConfigurationsSupported
-  dPoPSigningAlgValuesSupported?: [JwaSignatureAlgorithm, ...JwaSignatureAlgorithm[]]
+  dpopSigningAlgValuesSupported?: [JwaSignatureAlgorithm, ...JwaSignatureAlgorithm[]]
 }
 
 export interface OpenId4VciCreateCredentialOfferOptions {
@@ -159,5 +159,5 @@ export type OpenId4VciCreateIssuerOptions = {
   issuerId?: string
 
   display?: OpenId4VciIssuerMetadataDisplay[]
-  dPoPSigningAlgValuesSupported?: [JwaSignatureAlgorithm, ...JwaSignatureAlgorithm[]]
+  dpopSigningAlgValuesSupported?: [JwaSignatureAlgorithm, ...JwaSignatureAlgorithm[]]
 } & (OpenId4VcIssuerRecordCredentialSupportedProps | OpenId4VcIssuerRecordCredentialConfigurationsSupportedProps)

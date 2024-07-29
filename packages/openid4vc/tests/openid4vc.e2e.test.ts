@@ -192,13 +192,13 @@ describe('OpenId4Vc', () => {
     const issuerTenant2 = await issuer.agent.modules.tenants.getTenantAgent({ tenantId: issuer2.tenantId })
 
     const openIdIssuerTenant1 = await issuerTenant1.modules.openId4VcIssuer.createIssuer({
-      dPoPSigningAlgValuesSupported: [JwaSignatureAlgorithm.EdDSA],
+      dpopSigningAlgValuesSupported: [JwaSignatureAlgorithm.EdDSA],
       credentialConfigurationsSupported: {
         universityDegree: universityDegreeCredentialConfigurationSupported,
       },
     })
     const issuer1Record = await issuerTenant1.modules.openId4VcIssuer.getIssuerByIssuerId(openIdIssuerTenant1.issuerId)
-    expect(issuer1Record.dPoPSigningAlgValuesSupported).toEqual(['EdDSA'])
+    expect(issuer1Record.dpopSigningAlgValuesSupported).toEqual(['EdDSA'])
 
     expect(issuer1Record.credentialsSupported).toEqual([
       {
@@ -223,7 +223,7 @@ describe('OpenId4Vc', () => {
       },
     })
     const openIdIssuerTenant2 = await issuerTenant2.modules.openId4VcIssuer.createIssuer({
-      dPoPSigningAlgValuesSupported: [JwaSignatureAlgorithm.EdDSA],
+      dpopSigningAlgValuesSupported: [JwaSignatureAlgorithm.EdDSA],
       credentialsSupported: [universityDegreeCredentialSdJwt2],
     })
 
@@ -292,7 +292,7 @@ describe('OpenId4Vc', () => {
     })
 
     expect(tokenResponseTenant1.accessToken).toBeDefined()
-    expect(tokenResponseTenant1.dPoPJwk).toBeInstanceOf(Jwk)
+    expect(tokenResponseTenant1.dpop.dpopJwk).toBeInstanceOf(Jwk)
     const { payload } = Jwt.fromSerializedJwt(tokenResponseTenant1.accessToken)
     expect(payload.additionalClaims.token_type).toEqual('DPoP')
 

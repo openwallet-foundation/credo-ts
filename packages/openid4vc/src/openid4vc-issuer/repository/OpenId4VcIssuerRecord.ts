@@ -42,7 +42,7 @@ export type OpenId4VcIssuerRecordProps = {
    * The DPoP signing algorithms supported by this issuer.
    * If not provided, dPoP is considered unsupported.
    */
-  dPoPSigningAlgValuesSupported?: [JwaSignatureAlgorithm, ...JwaSignatureAlgorithm[]]
+  dpopSigningAlgValuesSupported?: [JwaSignatureAlgorithm, ...JwaSignatureAlgorithm[]]
 
   display?: OpenId4VciIssuerMetadataDisplay[]
 } & (OpenId4VcIssuerRecordCredentialSupportedProps | OpenId4VcIssuerRecordCredentialConfigurationsSupportedProps)
@@ -62,7 +62,7 @@ export class OpenId4VcIssuerRecord extends BaseRecord<DefaultOpenId4VcIssuerReco
   public credentialsSupported!: OpenId4VciCredentialSupportedWithId[]
   public credentialConfigurationsSupported?: OpenId4VciCredentialConfigurationsSupported
   public display?: OpenId4VciIssuerMetadataDisplay[]
-  public dPoPSigningAlgValuesSupported?: [JwaSignatureAlgorithm, ...JwaSignatureAlgorithm[]]
+  public dpopSigningAlgValuesSupported?: [JwaSignatureAlgorithm, ...JwaSignatureAlgorithm[]]
 
   public constructor(props: OpenId4VcIssuerRecordProps) {
     super()
@@ -77,7 +77,7 @@ export class OpenId4VcIssuerRecord extends BaseRecord<DefaultOpenId4VcIssuerReco
       this.credentialsSupported =
         props.credentialsSupported ?? credentialsSupportedV13ToV11(props.credentialConfigurationsSupported)
       this.credentialConfigurationsSupported = props.credentialConfigurationsSupported
-      this.dPoPSigningAlgValuesSupported = props.dPoPSigningAlgValuesSupported
+      this.dpopSigningAlgValuesSupported = props.dpopSigningAlgValuesSupported
       this.display = props.display
     }
   }

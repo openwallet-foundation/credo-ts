@@ -63,22 +63,22 @@ export class OpenId4VcIssuerApi {
   }
 
   public async updateIssuerMetadata(
-    options: Pick<OpenId4VcIssuerRecordProps, 'issuerId' | 'display' | 'dPoPSigningAlgValuesSupported'> &
+    options: Pick<OpenId4VcIssuerRecordProps, 'issuerId' | 'display' | 'dpopSigningAlgValuesSupported'> &
       (OpenId4VcIssuerRecordCredentialSupportedProps | OpenId4VcIssuerRecordCredentialConfigurationsSupportedProps)
   ) {
-    const issuer = await this.openId4VcIssuerService.getIssuerByIssuerId(this.agentContext, options.issuerId)
+    const { issuerId, credentialConfigurationsSupported, credentialsSupported, ...issuerOptions } = options
 
-    if (options.credentialConfigurationsSupported) {
-      issuer.credentialConfigurationsSupported = options.credentialConfigurationsSupported
-      issuer.credentialsSupported = credentialsSupportedV13ToV11(options.credentialConfigurationsSupported)
+    const issuer = await this.openId4VcIssuerService.getIssuerByIssuerId(this.agentContext, issuerId)
+
+    if (credentialConfigurationsSupported) {
+      issuer.credentialConfigurationsSupported = credentialConfigurationsSupported
+      issuer.credentialsSupported = credentialsSupportedV13ToV11(credentialConfigurationsSupported)
     } else {
-      issuer.credentialsSupported = options.credentialsSupported
+      issuer.credentialsSupported = credentialsSupported
       issuer.credentialConfigurationsSupported = undefined
     }
-    issuer.display = options.display
-    issuer.dPoPSigningAlgValuesSupported = options.dPoPSigningAlgValuesSupported
 
-    return this.openId4VcIssuerService.updateIssuer(this.agentContext, issuer)
+    return this.openId4VcIssuerService.updateIssuer(this.agentContext, Object.assign(issuer, issuerOptions))
   }
 
   /**

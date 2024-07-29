@@ -1,5 +1,5 @@
 import { Jwt } from '@credo-ts/core'
-import { SigningAlgo } from '@sphereon/oid4vci-common'
+import { SigningAlgo } from '@sphereon/common'
 import { cleanAll, enableNetConnect } from 'nock'
 
 import { AskarModule } from '../../../../askar/src'

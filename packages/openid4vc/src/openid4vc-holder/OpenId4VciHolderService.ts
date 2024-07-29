@@ -46,6 +46,7 @@ import {
   injectable,
   parseDid,
 } from '@credo-ts/core'
+import { SigningAlgo, CreateDPoPClientOpts } from '@sphereon/common'
 import {
   AccessTokenClient,
   CredentialRequestClientBuilder,
@@ -67,9 +68,7 @@ import {
   OpenId4VCIVersion,
   PARMode,
   post,
-  SigningAlgo,
   EndpointMetadataResult,
-  CreateDPoPClientOptions,
 } from '@sphereon/oid4vci-common'
 
 import { OpenId4VciCredentialFormatProfile } from '../shared'
@@ -279,19 +278,19 @@ export class OpenId4VciHolderService {
       credentialIssuerMetadata: OpenId4VciIssuerMetadata
     }
   ) {
-    const dPoPSigningAlgValuesSupported =
+    const dpopSigningAlgValuesSupported =
       metadata.authorizationServerMetadata?.dpop_signing_alg_values_supported ??
       metadata.credentialIssuerMetadata.dpop_signing_alg_values_supported
 
-    if (!dPoPSigningAlgValuesSupported) return undefined
+    if (!dpopSigningAlgValuesSupported) return undefined
 
-    const alg = dPoPSigningAlgValuesSupported.find((alg) => getJwkClassFromJwaSignatureAlgorithm(alg))
+    const alg = dpopSigningAlgValuesSupported.find((alg) => getJwkClassFromJwaSignatureAlgorithm(alg))
 
     const JwkClass = alg ? getJwkClassFromJwaSignatureAlgorithm(alg) : undefined
 
     if (!JwkClass) {
       throw new CredoError(
-        `No supported dpop signature algorithms found in dpop_signing_alg_values_supported '${dPoPSigningAlgValuesSupported.join(
+        `No supported dpop signature algorithms found in dpop_signing_alg_values_supported '${dpopSigningAlgValuesSupported.join(
           ', '
         )}'`
       )
@@ -300,13 +299,13 @@ export class OpenId4VciHolderService {
     const key = await agentContext.wallet.createKey({ keyType: JwkClass.keyType })
     const jwk = getJwkFromKey(key)
 
-    const createDPoPOptions: CreateDPoPClientOptions = {
+    const createDPoPOpts: CreateDPoPClientOpts = {
       jwtIssuer: { alg: alg as unknown as SigningAlgo, jwk: jwk.toJson() },
-      dPoPSigningAlgValuesSupported,
+      dpopSigningAlgValuesSupported,
       jwtPayloadProps: {},
       createJwtCallback: getCreateJwtCallback(agentContext),
     }
-    return createDPoPOptions
+    return createDPoPOpts
   }
 
   public async requestAccessToken(agentContext: AgentContext, options: OpenId4VciTokenRequestOptions) {
@@ -318,8 +317,8 @@ export class OpenId4VciHolderService {
 
     const accessTokenClient = new AccessTokenClient()
 
-    const createDPoPOptions = await this.getCreateDPoPOptions(agentContext, metadata)
-    const dPoPJwk = createDPoPOptions ? getJwkFromJson(createDPoPOptions.jwtIssuer.jwk) : undefined
+    const createDPoPOpts = await this.getCreateDPoPOptions(agentContext, metadata)
+    const dpopJwk = createDPoPOpts ? getJwkFromJson(createDPoPOpts.jwtIssuer.jwk) : undefined
 
     if (resolvedAuthorizationRequest) {
       const { codeVerifier, redirectUri } = resolvedAuthorizationRequest
@@ -330,14 +329,14 @@ export class OpenId4VciHolderService {
         code,
         codeVerifier,
         redirectUri,
-        createDPoPOptions,
+        createDPoPOpts,
       })
     } else {
       accessTokenResponse = await accessTokenClient.acquireAccessToken({
         metadata: metadata,
         credentialOffer: { credential_offer: credentialOfferRequestWithBaseUrl.credential_offer },
         pin: txCode,
-        createDPoPOptions,
+        createDPoPOpts,
       })
     }
 
@@ -349,7 +348,7 @@ export class OpenId4VciHolderService {
 
     this.logger.debug('Requested OpenId4VCI Access Token.')
 
-    return { ...accessTokenResponse.successBody, dPoPJwk }
+    return { ...accessTokenResponse.successBody, dpop: { dpopJwk: dpopJwk } }
   }
 
   public async acceptCredentialOffer(
@@ -360,7 +359,9 @@ export class OpenId4VciHolderService {
       resolvedAuthorizationRequestWithCode?: OpenId4VciResolvedAuthorizationRequestWithCode
       accessToken?: string
       cNonce?: string
-      dPoPJwk?: Jwk
+      dpop?: {
+        dpopJwk: Jwk
+      }
     }
   ) {
     const { resolvedCredentialOffer, acceptCredentialOfferOptions } = options
@@ -402,7 +403,11 @@ export class OpenId4VciHolderService {
     } as OpenId4VciTokenRequestOptions
 
     const tokenResponse = options.accessToken
-      ? { access_token: options.accessToken, c_nonce: options.cNonce, dPoPJwk: options.dPoPJwk }
+      ? {
+          access_token: options.accessToken,
+          c_nonce: options.cNonce,
+          ...(options.dpop && { dpop: { dpopJwk: options.dpop.dpopJwk } }),
+        }
       : await this.requestAccessToken(agentContext, tokenRequestOptions)
 
     const receivedCredentials: Array<OpenId4VciCredentialResponse> = []
@@ -468,12 +473,12 @@ export class OpenId4VciHolderService {
 
       const credentialRequestClient = credentialRequestBuilder.build()
 
-      let createDPoPOptions: CreateDPoPClientOptions | undefined
-      if (options.dPoPJwk) {
-        const jwk = options.dPoPJwk
+      let createDPoPOpts: CreateDPoPClientOpts | undefined
+      if (options.dpop) {
+        const jwk = options.dpop.dpopJwk
         const alg = jwk.supportedSignatureAlgorithms[0]
 
-        createDPoPOptions = {
+        createDPoPOpts = {
           jwtIssuer: { alg: alg as unknown as SigningAlgo, jwk: jwk.toJson() },
           jwtPayloadProps: { accessToken: options.accessToken },
           createJwtCallback: getCreateJwtCallback(agentContext),
@@ -484,7 +489,7 @@ export class OpenId4VciHolderService {
         proofInput: proofOfPossession,
         credentialTypes: getTypesFromCredentialSupported(offeredCredentialConfiguration),
         format: offeredCredentialConfiguration.format,
-        createDPoPOptions,
+        createDPoPOpts,
       })
 
       newCNonce = credentialResponse.successBody?.c_nonce

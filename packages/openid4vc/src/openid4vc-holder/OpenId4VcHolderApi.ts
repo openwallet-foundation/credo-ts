@@ -149,9 +149,9 @@ export class OpenId4VcHolderApi {
     const {
       access_token: accessToken,
       c_nonce: cNonce,
-      dPoPJwk,
+      dpop,
     } = await this.openId4VciHolderService.requestAccessToken(this.agentContext, options)
-    return { accessToken, cNonce, dPoPJwk }
+    return { accessToken, cNonce, dpop }
   }
 
   /**
@@ -161,14 +161,14 @@ export class OpenId4VcHolderApi {
    * @param options.tokenResponse Obtained through @see requestAccessToken
    */
   public async requestCredentials(options: OpenId4VciRequestCredentialOptions) {
-    const { resolvedCredentialOffer, cNonce, accessToken, dPoPJwk, ...credentialRequestOptions } = options
+    const { resolvedCredentialOffer, cNonce, accessToken, dpop, ...credentialRequestOptions } = options
 
     return this.openId4VciHolderService.acceptCredentialOffer(this.agentContext, {
       resolvedCredentialOffer,
       acceptCredentialOfferOptions: credentialRequestOptions,
       accessToken,
       cNonce,
-      dPoPJwk,
+      dpop,
     })
   }
 

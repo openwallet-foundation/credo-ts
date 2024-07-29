@@ -1,6 +1,7 @@
 import type { OpenId4VcIssuanceRequest } from './requestContext'
 import type { AgentContext } from '@credo-ts/core'
-import type { AccessTokenRequest, JWK, JWTSignerCallback, SigningAlgo } from '@sphereon/oid4vci-common'
+import type { JWK, SigningAlgo } from '@sphereon/common'
+import type { AccessTokenRequest, JWTSignerCallback } from '@sphereon/oid4vci-common'
 import type { NextFunction, Response, Router } from 'express'
 
 import {
@@ -11,8 +12,8 @@ import {
   getJwkClassFromKeyType,
   Key,
   joinUriParts,
-  Jwt,
 } from '@credo-ts/core'
+import { verifyDPoP } from '@sphereon/common'
 import {
   GrantTypes,
   IssueStatus,
@@ -20,7 +21,6 @@ import {
   PRE_AUTH_CODE_LITERAL,
   TokenError,
   TokenErrorResponse,
-  verifyDPoP,
 } from '@sphereon/oid4vci-common'
 import { assertValidAccessTokenRequest, createAccessTokenResponse } from '@sphereon/oid4vci-issuer'
 
@@ -132,19 +132,19 @@ export function handleTokenRequest(config: OpenId4VciAccessTokenEndpointConfig) 
     const issuerMetadata = openId4VcIssuerService.getIssuerMetadata(agentContext, issuer)
     const accessTokenSigningKey = Key.fromFingerprint(issuer.accessTokenPublicKeyFingerprint)
 
-    let dPoPJwk: JWK | undefined
+    let dpopJwk: JWK | undefined
     if (request.headers.dpop) {
       try {
         const issuerConfig = agentContext.dependencyManager.resolve(OpenId4VcIssuerModuleConfig)
-        const fullUrl = joinUriParts(issuerConfig.baseUrl, [requestContext.issuer.issuerId, request.url])
 
-        dPoPJwk = await verifyDPoP(
+        const fullUrl = joinUriParts(issuerConfig.baseUrl, [requestContext.issuer.issuerId, request.url])
+        dpopJwk = await verifyDPoP(
           { method: request.method, headers: request.headers, fullUrl },
           {
             jwtVerifyCallback: getVerifyJwtCallback(agentContext),
             expectAccessToken: false,
             maxIatAgeInSeconds: undefined,
-            acceptedAlgorithms: issuerMetadata.dPoPSigningAlgValuesSupported as SigningAlgo[] | undefined,
+            acceptedAlgorithms: issuerMetadata.dpopSigningAlgValuesSupported as SigningAlgo[] | undefined,
           }
         )
       } catch (error) {
@@ -167,7 +167,7 @@ export function handleTokenRequest(config: OpenId4VciAccessTokenEndpointConfig) 
         cNonceExpiresIn: cNonceExpiresInSeconds,
         cNonces: new OpenId4VcCNonceStateManager(agentContext, issuer.issuerId),
         accessTokenSignerCallback: getJwtSignerCallback(agentContext, accessTokenSigningKey, config),
-        dPoPJwk,
+        dPoPJwk: dpopJwk,
       })
       response.status(200).json(accessTokenResponse)
     } catch (error) {

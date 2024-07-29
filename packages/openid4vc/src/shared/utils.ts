@@ -1,14 +1,8 @@
 import type { OpenId4VcJwtIssuer } from './models'
 import type { AgentContext, JwaSignatureAlgorithm, Key } from '@credo-ts/core'
+import type { DPoPJwtIssuerWithContext, SigningAlgo, CreateJwtCallback, JwtIssuer } from '@sphereon/common'
 import type { JwtIssuerWithContext as VpJwtIssuerWithContext, VerifyJwtCallback } from '@sphereon/did-auth-siop'
-import type {
-  CreateJwtCallback,
-  CredentialOfferPayloadV1_0_11,
-  CredentialOfferPayloadV1_0_13,
-  JwtIssuer,
-  DPoPJwtIssuerWithContext,
-  SigningAlgo,
-} from '@sphereon/oid4vci-common'
+import type { CredentialOfferPayloadV1_0_11, CredentialOfferPayloadV1_0_13 } from '@sphereon/oid4vci-common'
 
 import {
   CredoError,
@@ -82,7 +76,7 @@ export function getCreateJwtCallback(
     if (jwtIssuer.method === 'did') {
       const key = await getKeyFromDid(agentContext, jwtIssuer.didUrl)
       const jws = await jwsService.createJwsCompact(agentContext, {
-        protectedHeaderOptions: { alg: jwtIssuer.alg, ...jwt.header },
+        protectedHeaderOptions: { ...jwt.header, alg: jwtIssuer.alg, jwk: undefined },
         payload: JwtPayload.fromJson(jwt.payload),
         key,
       })
@@ -102,7 +96,7 @@ export function getCreateJwtCallback(
       const key = X509Service.getLeafCertificate(agentContext, { certificateChain: jwtIssuer.x5c }).publicKey
 
       const jws = await jwsService.createJwsCompact(agentContext, {
-        protectedHeaderOptions: { ...jwt.header, alg: jwtIssuer.alg },
+        protectedHeaderOptions: { ...jwt.header, alg: jwtIssuer.alg, jwk: undefined },
         payload: JwtPayload.fromJson(jwt.payload),
         key,
       })

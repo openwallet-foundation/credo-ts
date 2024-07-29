@@ -1,10 +1,10 @@
 import type { OpenId4VcIssuanceRequest } from './requestContext'
 import type { OpenId4VcIssuerRecord } from '../repository'
 import type { AgentContext } from '@credo-ts/core'
-import type { SigningAlgo } from '@sphereon/oid4vci-common'
+import type { SigningAlgo } from '@sphereon/common'
 
 import { CredoError, joinUriParts, JwsService, Jwt } from '@credo-ts/core'
-import { verifyResourceDPoP } from '@sphereon/oid4vci-common'
+import { verifyResourceDPoP } from '@sphereon/common'
 
 import { getVerifyJwtCallback } from '../../shared/utils'
 import { OpenId4VcIssuerModuleConfig } from '../OpenId4VcIssuerModuleConfig'
@@ -43,7 +43,7 @@ export async function verifyResourceRequest(
     { method: request.method, headers: request.headers, fullUrl },
     {
       jwtVerifyCallback: getVerifyJwtCallback(agentContext),
-      acceptedAlgorithms: issuerMetadata.dPoPSigningAlgValuesSupported as SigningAlgo[] | undefined,
+      acceptedAlgorithms: issuerMetadata.dpopSigningAlgValuesSupported as SigningAlgo[] | undefined,
     }
   )
 
