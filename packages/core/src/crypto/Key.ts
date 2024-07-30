@@ -9,17 +9,9 @@ export class Key {
   public readonly publicKey: Buffer
   public readonly keyType: KeyType
 
-  /**
-   *
-   * the identifier of the key. If not provided in the constructor the base58 encoded public key will be used as the key identifier by default
-   *
-   */
-  public keyId: string
-
-  public constructor(publicKey: Uint8Array, keyType: KeyType, keyId?: string) {
+  public constructor(publicKey: Uint8Array, keyType: KeyType) {
     this.publicKey = Buffer.from(publicKey)
     this.keyType = keyType
-    this.keyId = keyId ?? TypedArrayEncoder.toBase58(this.publicKey)
   }
 
   public static fromPublicKey(publicKey: Uint8Array, keyType: KeyType) {

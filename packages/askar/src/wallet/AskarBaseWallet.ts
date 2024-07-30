@@ -193,7 +193,7 @@ export abstract class AskarBaseWallet implements Wallet {
         }
       } else if (keyBackend === KeyBackend.SecureElement && keyType === KeyType.P256) {
         const secureEnvironment = importSecureEnvironment()
-        const kid = keyId ?? utils.uuid()
+        const kid = utils.uuid()
 
         // Generate a hardware-backed P-256 keypair
         secureEnvironment.generateKeypair(kid)
@@ -206,7 +206,7 @@ export abstract class AskarBaseWallet implements Wallet {
           keyId: kid,
         })
 
-        return new Key(publicKeyBytes, keyType, kid)
+        return new Key(publicKeyBytes, keyType)
       } else {
         // Check if there is a signing key provider for the specified key type.
         if (this.signingKeyProviderRegistry.hasProviderForKeyType(keyType)) {
@@ -277,15 +277,13 @@ export abstract class AskarBaseWallet implements Wallet {
           await this.deleteKeyPair(key.publicKeyBase58)
           keyPair = undefined
         } else {
-          if (!(await this.doesSecureEnvironmentKeyExist(key.keyId))) {
-            throw new WalletError(`Secure Environment key with id '${key.keyId}' not found`)
-          }
+          const { keyId } = await this.getSecureEnvironmentKey(key.publicKeyBase58)
 
           if (Array.isArray(data[0])) {
             throw new WalletError('Multi signature is not supported for the Secure Environment')
           }
 
-          return Buffer.from(await importSecureEnvironment().sign(key.keyId, new Uint8Array(data as Buffer)))
+          return Buffer.from(await importSecureEnvironment().sign(keyId, new Uint8Array(data as Buffer)))
         }
       }
 
@@ -518,13 +516,13 @@ export abstract class AskarBaseWallet implements Wallet {
     }
   }
 
-  private async doesSecureEnvironmentKeyExist(keyId: string): Promise<boolean> {
+  private async getSecureEnvironmentKey(keyId: string): Promise<{ keyId: string }> {
     try {
       const entryObject = await this.withSession((session) =>
         session.fetch({ category: 'SecureEnvironmentKeyRecord', name: keyId })
       )
 
-      return !!entryObject
+      return JsonEncoder.fromString(entryObject?.value as string) as { keyId: string }
     } catch (error) {
       throw new WalletError('Error retrieving Secure Environment record', { cause: error })
     }
@@ -567,7 +565,7 @@ export abstract class AskarBaseWallet implements Wallet {
       await this.withSession((session) =>
         session.insert({
           category: 'SecureEnvironmentKeyRecord',
-          name: options.keyId,
+          name: options.publicKeyBase58,
           value: JSON.stringify(options),
           tags: {
             keyType: options.keyType,
