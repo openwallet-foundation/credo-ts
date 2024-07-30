@@ -1,7 +1,7 @@
 import type { OpenId4VcJwtIssuer } from './models'
-import type { AgentContext, JwaSignatureAlgorithm, Key } from '@credo-ts/core'
-import type { DPoPJwtIssuerWithContext, SigningAlgo, CreateJwtCallback, JwtIssuer } from '@sphereon/common'
+import type { AgentContext, JwaSignatureAlgorithm, JwkJson, Key } from '@credo-ts/core'
 import type { JwtIssuerWithContext as VpJwtIssuerWithContext, VerifyJwtCallback } from '@sphereon/did-auth-siop'
+import type { DPoPJwtIssuerWithContext, SigningAlgo, CreateJwtCallback, JwtIssuer } from '@sphereon/oid4vc-common'
 import type { CredentialOfferPayloadV1_0_11, CredentialOfferPayloadV1_0_13 } from '@sphereon/oid4vci-common'
 
 import {
@@ -83,7 +83,10 @@ export function getCreateJwtCallback(
 
       return jws
     } else if (jwtIssuer.method === 'jwk') {
-      const jwk = getJwkFromJson(jwtIssuer.jwk)
+      if (!jwtIssuer.jwk.kty) {
+        throw new CredoError('Missing required key type (kty) in the jwk.')
+      }
+      const jwk = getJwkFromJson(jwtIssuer.jwk as JwkJson)
       const key = jwk.key
       const jws = await jwsService.createJwsCompact(agentContext, {
         protectedHeaderOptions: { ...jwt.header, jwk, alg: jwtIssuer.alg },

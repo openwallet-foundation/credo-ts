@@ -292,7 +292,7 @@ describe('OpenId4Vc', () => {
     })
 
     expect(tokenResponseTenant1.accessToken).toBeDefined()
-    expect(tokenResponseTenant1.dpop.dpopJwk).toBeInstanceOf(Jwk)
+    expect(tokenResponseTenant1.dpop?.dpopJwk).toBeInstanceOf(Jwk)
     const { payload } = Jwt.fromSerializedJwt(tokenResponseTenant1.accessToken)
     expect(payload.additionalClaims.token_type).toEqual('DPoP')
 

@@ -46,7 +46,7 @@ import {
   injectable,
   parseDid,
 } from '@credo-ts/core'
-import { SigningAlgo, CreateDPoPClientOpts } from '@sphereon/common'
+import { SigningAlgo, CreateDPoPClientOpts } from '@sphereon/oid4vc-common'
 import {
   AccessTokenClient,
   CredentialRequestClientBuilder,
@@ -318,8 +318,14 @@ export class OpenId4VciHolderService {
     const accessTokenClient = new AccessTokenClient()
 
     const createDPoPOpts = await this.getCreateDPoPOptions(agentContext, metadata)
-    const dpopJwk = createDPoPOpts ? getJwkFromJson(createDPoPOpts.jwtIssuer.jwk) : undefined
 
+    let dpopJwk: Jwk | undefined
+    if (createDPoPOpts) {
+      if (!createDPoPOpts.jwtIssuer.jwk.kty) {
+        throw new CredoError('Missing required key type (kty) in the jwk.')
+      }
+      dpopJwk = getJwkFromJson(createDPoPOpts.jwtIssuer.jwk as JwkJson)
+    }
     if (resolvedAuthorizationRequest) {
       const { codeVerifier, redirectUri } = resolvedAuthorizationRequest
       accessTokenResponse = await accessTokenClient.acquireAccessToken({
@@ -471,12 +477,12 @@ export class OpenId4VciHolderService {
 
       const credentialRequestClient = credentialRequestBuilder.build()
 
-      let createDPoPOpts: CreateDPoPClientOpts | undefined
-      if (options.dpop) {
-        const jwk = options.dpop.dpopJwk
+      let createDpopOpts: CreateDPoPClientOpts | undefined
+      if (tokenResponse.dpop) {
+        const jwk = tokenResponse.dpop.dpopJwk
         const alg = jwk.supportedSignatureAlgorithms[0]
 
-        createDPoPOpts = {
+        createDpopOpts = {
           jwtIssuer: { alg: alg as unknown as SigningAlgo, jwk: jwk.toJson() },
           jwtPayloadProps: { accessToken: options.accessToken },
           createJwtCallback: getCreateJwtCallback(agentContext),
@@ -487,7 +493,7 @@ export class OpenId4VciHolderService {
         proofInput: proofOfPossession,
         credentialTypes: getTypesFromCredentialSupported(offeredCredentialConfiguration),
         format: offeredCredentialConfiguration.format,
-        createDPoPOpts,
+        createDPoPOpts: createDpopOpts,
       })
 
       newCNonce = credentialResponse.successBody?.c_nonce

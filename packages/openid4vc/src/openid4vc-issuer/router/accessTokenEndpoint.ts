@@ -1,6 +1,6 @@
 import type { OpenId4VcIssuanceRequest } from './requestContext'
 import type { AgentContext } from '@credo-ts/core'
-import type { JWK, SigningAlgo } from '@sphereon/common'
+import type { JWK, SigningAlgo } from '@sphereon/oid4vc-common'
 import type { AccessTokenRequest, JWTSignerCallback } from '@sphereon/oid4vci-common'
 import type { NextFunction, Response, Router } from 'express'
 
@@ -13,7 +13,7 @@ import {
   Key,
   joinUriParts,
 } from '@credo-ts/core'
-import { verifyDPoP } from '@sphereon/common'
+import { verifyDPoP } from '@sphereon/oid4vc-common'
 import {
   GrantTypes,
   IssueStatus,

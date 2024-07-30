@@ -680,12 +680,12 @@ importers:
       '@credo-ts/core':
         specifier: workspace:*
         version: link:../core
-      '@sphereon/common':
-        specifier: link:../../../../Documents/OID4VCI/packages/common
-        version: link:../../../OID4VCI/packages/common
       '@sphereon/did-auth-siop':
         specifier: link:../../../../Documents/OID4VCI/packages/siop-oid4vp
         version: link:../../../OID4VCI/packages/siop-oid4vp
+      '@sphereon/oid4vc-common':
+        specifier: link:../../../../Documents/OID4VCI/packages/common
+        version: link:../../../OID4VCI/packages/common
       '@sphereon/oid4vci-client':
         specifier: link:../../../../Documents/OID4VCI/packages/client
         version: link:../../../OID4VCI/packages/client
