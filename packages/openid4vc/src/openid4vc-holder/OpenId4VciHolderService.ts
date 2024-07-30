@@ -27,6 +27,8 @@ import type {
   AuthorizationDetailsJwtVcJson,
   CredentialIssuerMetadataV1_0_11,
   CredentialIssuerMetadataV1_0_13,
+  AuthorizationDetailsJwtVcJsonLdAndLdpVc,
+  AuthorizationDetailsSdJwtVc,
 } from '@sphereon/oid4vci-common'
 
 import {
@@ -59,6 +61,7 @@ import {
   OpenID4VCIClient,
   OpenID4VCIClientV1_0_11,
   OpenID4VCIClientV1_0_13,
+  OpenID4VCIClientStateV1_0_13,
 } from '@sphereon/oid4vci-client'
 import { CodeChallengeMethod, OpenId4VCIVersion, PARMode, post } from '@sphereon/oid4vci-common'
 
@@ -163,7 +166,7 @@ export class OpenId4VciHolderService {
         types: offeredCredential.types,
       }
 
-      return { type, format, locations, credential_definition }
+      return { type, format, locations, credential_definition } satisfies AuthorizationDetailsJwtVcJsonLdAndLdpVc
     } else if (format === OpenId4VciCredentialFormatProfile.SdJwtVc) {
       return {
         type,
@@ -171,7 +174,7 @@ export class OpenId4VciHolderService {
         locations,
         vct: offeredCredential.vct,
         claims: offeredCredential.claims,
-      }
+      } satisfies AuthorizationDetailsSdJwtVc
     } else {
       throw new CredoError(`Cannot create authorization_details. Unsupported credential format '${format}'.`)
     }
@@ -185,7 +188,7 @@ export class OpenId4VciHolderService {
     const { metadata, offeredCredentials } = resolvedCredentialOffer
     const codeVerifier = (
       await Promise.all([agentContext.wallet.generateNonce(), agentContext.wallet.generateNonce()])
-    ).join()
+    ).join('')
     const codeVerifierSha256 = Hasher.hash(codeVerifier, 'sha-256')
     const codeChallenge = TypedArrayEncoder.toBase64URL(codeVerifierSha256)
 
@@ -217,7 +220,7 @@ export class OpenId4VciHolderService {
           codeChallengeMethod: CodeChallengeMethod.S256,
           codeVerifier,
         },
-      },
+      } satisfies OpenID4VCIClientStateV1_0_13,
     }
 
     const client =
@@ -228,7 +231,7 @@ export class OpenId4VciHolderService {
     const authorizationRequestUri = await client.createAuthorizationRequestUrl({
       authorizationRequest: {
         redirectUri,
-        scope: scope ? scope[0] : 'openid',
+        scope: scope ? scope.join(' ') : undefined,
         authorizationDetails: authDetails,
         parMode: PARMode.AUTO,
       },
@@ -308,6 +311,7 @@ export class OpenId4VciHolderService {
       resolvedAuthorizationRequestWithCode?: OpenId4VciResolvedAuthorizationRequestWithCode
       accessToken?: string
       cNonce?: string
+      clientId?: string
     }
   ) {
     const { resolvedCredentialOffer, acceptCredentialOfferOptions } = options
@@ -390,10 +394,19 @@ export class OpenId4VciHolderService {
         .withEndpointMetadata(metadata)
         .withAlg(signatureAlgorithm)
 
+      // TODO: what if auth flow using did, and the did is different from client id. We now use the client_id
       if (credentialBinding.method === 'did') {
         proofOfPossessionBuilder.withClientId(parseDid(credentialBinding.didUrl).did).withKid(credentialBinding.didUrl)
       } else if (credentialBinding.method === 'jwk') {
         proofOfPossessionBuilder.withJWK(credentialBinding.jwk.toJson())
+      }
+
+      // Add client id if in auth flow. This may override the clientId from the did binding method. But according to spec,
+      // the "value of this claim MUST be the client_id of the Client making the Credential request."
+      if (options.clientId || options.resolvedAuthorizationRequestWithCode?.clientId) {
+        proofOfPossessionBuilder.withClientId(
+          (options.clientId || options.resolvedAuthorizationRequestWithCode?.clientId) as string
+        )
       }
 
       if (newCNonce) proofOfPossessionBuilder.withAccessTokenNonce(newCNonce)
