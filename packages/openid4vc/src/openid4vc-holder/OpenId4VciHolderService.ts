@@ -69,6 +69,7 @@ import {
   PARMode,
   post,
   EndpointMetadataResult,
+  DPoPResponseParams,
 } from '@sphereon/oid4vci-common'
 
 import { OpenId4VciCredentialFormatProfile } from '../shared'
@@ -313,7 +314,7 @@ export class OpenId4VciHolderService {
     const { metadata, credentialOfferRequestWithBaseUrl } = resolvedCredentialOffer
 
     // acquire the access token
-    let accessTokenResponse: OpenIDResponse<AccessTokenResponse>
+    let accessTokenResponse: OpenIDResponse<AccessTokenResponse, DPoPResponseParams>
 
     const accessTokenClient = new AccessTokenClient()
 
@@ -354,7 +355,10 @@ export class OpenId4VciHolderService {
 
     this.logger.debug('Requested OpenId4VCI Access Token.')
 
-    return { ...accessTokenResponse.successBody, ...(dpopJwk && { dpop: { dpopJwk: dpopJwk } }) }
+    return {
+      ...accessTokenResponse.successBody,
+      ...(dpopJwk && { dpop: { dpopJwk: dpopJwk, dpopNonce: accessTokenResponse.params?.dpop?.dpopNonce } }),
+    }
   }
 
   public async acceptCredentialOffer(
@@ -365,7 +369,7 @@ export class OpenId4VciHolderService {
       resolvedAuthorizationRequestWithCode?: OpenId4VciResolvedAuthorizationRequestWithCode
       accessToken?: string
       cNonce?: string
-      dpop?: { dpopJwk: Jwk }
+      dpop?: { dpopJwk: Jwk; dpopNonce?: string }
     }
   ) {
     const { resolvedCredentialOffer, acceptCredentialOfferOptions } = options
@@ -410,7 +414,7 @@ export class OpenId4VciHolderService {
       ? {
           access_token: options.accessToken,
           c_nonce: options.cNonce,
-          ...(options.dpop && { dpop: { dpopJwk: options.dpop.dpopJwk } }),
+          ...(options.dpop && { dpop: { dpopJwk: options.dpop.dpopJwk, dpopNonce: options.dpop?.dpopNonce } }),
         }
       : await this.requestAccessToken(agentContext, tokenRequestOptions)
 
@@ -484,7 +488,7 @@ export class OpenId4VciHolderService {
 
         createDpopOpts = {
           jwtIssuer: { alg: alg as unknown as SigningAlgo, jwk: jwk.toJson() },
-          jwtPayloadProps: { accessToken: options.accessToken },
+          jwtPayloadProps: { accessToken: tokenResponse.access_token, nonce: tokenResponse.dpop?.dpopNonce },
           createJwtCallback: getCreateJwtCallback(agentContext),
         }
       }
@@ -690,7 +694,7 @@ export class OpenId4VciHolderService {
 
   private async handleCredentialResponse(
     agentContext: AgentContext,
-    credentialResponse: OpenIDResponse<CredentialResponse>,
+    credentialResponse: OpenIDResponse<CredentialResponse, DPoPResponseParams>,
     options: {
       verifyCredentialStatus: boolean
       credentialIssuerMetadata: OpenId4VciIssuerMetadata
