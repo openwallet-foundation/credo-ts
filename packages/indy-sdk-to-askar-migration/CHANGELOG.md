@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.5.10
+
+### Patch Changes
+
+- @credo-ts/anoncreds@0.5.10
+- @credo-ts/askar@0.5.10
+- @credo-ts/core@0.5.10
+- @credo-ts/node@0.5.10
+
 ## 0.5.9
 
 ### Patch Changes

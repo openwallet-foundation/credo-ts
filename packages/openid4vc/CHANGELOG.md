@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.5.10
+
+### Patch Changes
+
+- 2110e4a: fix: incorrect generation of code verifier for pkce
+- 2110e4a: fix: include client_id when requesting credential using authorization_code flow
+  - @credo-ts/core@0.5.10
+
 ## 0.5.9
 
 ### Patch Changes
