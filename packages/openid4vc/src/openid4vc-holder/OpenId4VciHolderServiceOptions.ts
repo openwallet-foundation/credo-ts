@@ -112,7 +112,13 @@ export interface OpenId4VciCredentialRequestOptions extends Omit<OpenId4VciAccep
   resolvedCredentialOffer: OpenId4VciResolvedCredentialOffer
   accessToken: string
   cNonce?: string
+
+  /**
+   * The client id used for authorization. Only required if authorization_code flow was used.
+   */
+  clientId?: string
 }
+
 /**
  * Options that are used to accept a credential offer for both the pre-authorized code flow and authorization code flow.
  * NOTE: Merge with @see OpenId4VciCredentialRequestOptions for 0.6
