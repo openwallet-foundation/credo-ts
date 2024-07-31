@@ -130,7 +130,7 @@ describe('AskarWallet basic operations', () => {
     await expect(askarWallet.createKey({ seed, keyType: KeyType.P384 })).rejects.toThrow(WalletError)
   })
 
-  test('Fail to create a P256 keypair in hardware', async () => {
+  test('Fail to create a P256 keypair in the secure environment', async () => {
     await expect(
       askarWallet.createKey({ keyType: KeyType.P256, keyBackend: KeyBackend.SecureElement })
     ).rejects.toThrow(WalletError)

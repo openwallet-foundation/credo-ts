@@ -1,44 +1,53 @@
 import type {
+  OpenId4VciAcceptCredentialOfferOptions,
   OpenId4VciAuthCodeFlowOptions,
-  OpenId4VciProofOfPossessionRequirements,
   OpenId4VciCredentialBindingResolver,
-  OpenId4VciResolvedCredentialOffer,
-  OpenId4VciResolvedAuthorizationRequest,
-  OpenId4VciResolvedAuthorizationRequestWithCode,
-  OpenId4VciSupportedCredentialFormats,
   OpenId4VciCredentialResponse,
   OpenId4VciNotificationEvent,
-  OpenId4VciAcceptCredentialOfferOptions,
+  OpenId4VciProofOfPossessionRequirements,
+  OpenId4VciResolvedAuthorizationRequest,
+  OpenId4VciResolvedAuthorizationRequestWithCode,
+  OpenId4VciResolvedCredentialOffer,
+  OpenId4VciSupportedCredentialFormats,
   OpenId4VciTokenRequestOptions,
 } from './OpenId4VciHolderServiceOptions'
 import type {
-  OpenId4VciCredentialConfigurationsSupported,
   OpenId4VciCredentialConfigurationSupported,
+  OpenId4VciCredentialConfigurationsSupported,
   OpenId4VciCredentialSupported,
   OpenId4VciIssuerMetadata,
 } from '../shared'
+import type { AgentContext, JwaSignatureAlgorithm, JwkJson, Key } from '@credo-ts/core'
+import type {
+  AccessTokenResponse,
+  AuthorizationDetails,
+  AuthorizationDetailsJwtVcJson,
+  AuthorizationDetailsJwtVcJsonLdAndLdpVc,
+  AuthorizationDetailsSdJwtVc,
+  CredentialIssuerMetadataV1_0_11,
+  CredentialIssuerMetadataV1_0_13,
+  CredentialResponse,
+  Jwt,
+  OpenIDResponse,
+} from '@sphereon/oid4vci-common'
 
 import {
-  AgentContext,
-  JwaSignatureAlgorithm,
-  Key,
-  JwkJson,
-  Jwk,
-  SdJwtVcApi,
-  getJwkFromJson,
-  DidsApi,
   CredoError,
+  DidsApi,
   Hasher,
   InjectionSymbols,
   JsonEncoder,
+  Jwk,
   JwsService,
   Logger,
+  SdJwtVcApi,
   SignatureSuiteRegistry,
   TypedArrayEncoder,
   W3cCredentialService,
   W3cJsonLdVerifiableCredential,
   W3cJwtVerifiableCredential,
   getJwkClassFromJwaSignatureAlgorithm,
+  getJwkFromJson,
   getJwkFromKey,
   getKeyFromVerificationMethod,
   getSupportedVerificationMethodTypesFromKeyType,
@@ -46,42 +55,35 @@ import {
   injectable,
   parseDid,
 } from '@credo-ts/core'
-import { SigningAlgo, CreateDPoPClientOpts } from '@sphereon/oid4vc-common'
+import { CreateDPoPClientOpts, SigningAlgo } from '@sphereon/oid4vc-common'
 import {
   AccessTokenClient,
   CredentialRequestClientBuilder,
-  ProofOfPossessionBuilder,
   OpenID4VCIClient,
+  OpenID4VCIClientStateV1_0_13,
   OpenID4VCIClientV1_0_11,
   OpenID4VCIClientV1_0_13,
+  ProofOfPossessionBuilder,
 } from '@sphereon/oid4vci-client'
 import {
-  AccessTokenResponse,
-  CredentialResponse,
-  Jwt,
-  OpenIDResponse,
-  AuthorizationDetails,
-  AuthorizationDetailsJwtVcJson,
-  CredentialIssuerMetadataV1_0_11,
-  CredentialIssuerMetadataV1_0_13,
   CodeChallengeMethod,
+  DPoPResponseParams,
+  EndpointMetadataResult,
   OpenId4VCIVersion,
   PARMode,
   post,
-  EndpointMetadataResult,
-  DPoPResponseParams,
 } from '@sphereon/oid4vci-common'
 
 import { OpenId4VciCredentialFormatProfile } from '../shared'
 import {
-  getTypesFromCredentialSupported,
-  getOfferedCredentials,
   credentialsSupportedV11ToV13,
+  getOfferedCredentials,
+  getTypesFromCredentialSupported,
 } from '../shared/issuerMetadataUtils'
 import { OpenId4VciCredentialSupportedWithId } from '../shared/models/index'
 import { getCreateJwtCallback, getSupportedJwaSignatureAlgorithms, isCredentialOfferV1Draft13 } from '../shared/utils'
 
-import { openId4VciSupportedCredentialFormats, OpenId4VciNotificationMetadata } from './OpenId4VciHolderServiceOptions'
+import { OpenId4VciNotificationMetadata, openId4VciSupportedCredentialFormats } from './OpenId4VciHolderServiceOptions'
 
 @injectable()
 export class OpenId4VciHolderService {
@@ -173,7 +175,7 @@ export class OpenId4VciHolderService {
         types: offeredCredential.types,
       }
 
-      return { type, format, locations, credential_definition }
+      return { type, format, locations, credential_definition } satisfies AuthorizationDetailsJwtVcJsonLdAndLdpVc
     } else if (format === OpenId4VciCredentialFormatProfile.SdJwtVc) {
       return {
         type,
@@ -181,7 +183,7 @@ export class OpenId4VciHolderService {
         locations,
         vct: offeredCredential.vct,
         claims: offeredCredential.claims,
-      }
+      } satisfies AuthorizationDetailsSdJwtVc
     } else {
       throw new CredoError(`Cannot create authorization_details. Unsupported credential format '${format}'.`)
     }
@@ -195,7 +197,7 @@ export class OpenId4VciHolderService {
     const { metadata, offeredCredentials } = resolvedCredentialOffer
     const codeVerifier = (
       await Promise.all([agentContext.wallet.generateNonce(), agentContext.wallet.generateNonce()])
-    ).join()
+    ).join('')
     const codeVerifierSha256 = Hasher.hash(codeVerifier, 'sha-256')
     const codeChallenge = TypedArrayEncoder.toBase64URL(codeVerifierSha256)
 
@@ -227,7 +229,7 @@ export class OpenId4VciHolderService {
           codeChallengeMethod: CodeChallengeMethod.S256,
           codeVerifier,
         },
-      },
+      } satisfies OpenID4VCIClientStateV1_0_13,
     }
 
     const client =
@@ -238,7 +240,7 @@ export class OpenId4VciHolderService {
     const authorizationRequestUri = await client.createAuthorizationRequestUrl({
       authorizationRequest: {
         redirectUri,
-        scope: scope ? scope[0] : 'openid',
+        scope: scope ? scope.join(' ') : undefined,
         authorizationDetails: authDetails,
         parMode: PARMode.AUTO,
       },
@@ -370,6 +372,7 @@ export class OpenId4VciHolderService {
       accessToken?: string
       cNonce?: string
       dpop?: { dpopJwk: Jwk; dpopNonce?: string }
+      clientId?: string
     }
   ) {
     const { resolvedCredentialOffer, acceptCredentialOfferOptions } = options
@@ -458,10 +461,19 @@ export class OpenId4VciHolderService {
         .withEndpointMetadata(metadata)
         .withAlg(signatureAlgorithm)
 
+      // TODO: what if auth flow using did, and the did is different from client id. We now use the client_id
       if (credentialBinding.method === 'did') {
         proofOfPossessionBuilder.withClientId(parseDid(credentialBinding.didUrl).did).withKid(credentialBinding.didUrl)
       } else if (credentialBinding.method === 'jwk') {
         proofOfPossessionBuilder.withJWK(credentialBinding.jwk.toJson())
+      }
+
+      // Add client id if in auth flow. This may override the clientId from the did binding method. But according to spec,
+      // the "value of this claim MUST be the client_id of the Client making the Credential request."
+      if (options.clientId || options.resolvedAuthorizationRequestWithCode?.clientId) {
+        proofOfPossessionBuilder.withClientId(
+          (options.clientId || options.resolvedAuthorizationRequestWithCode?.clientId) as string
+        )
       }
 
       if (newCNonce) proofOfPossessionBuilder.withAccessTokenNonce(newCNonce)

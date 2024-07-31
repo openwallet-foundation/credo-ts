@@ -34,6 +34,7 @@
     "tsyringe": "^4.8.0"
   },
   "devDependencies": {
+    "@animo-id/expo-secure-environment": "^0.0.1-alpha.0",
     "@hyperledger/aries-askar-nodejs": "^0.2.3",
     "@hyperledger/aries-askar-shared": "^0.2.3",
     "@types/bn.js": "^5.1.0",
@@ -44,6 +45,12 @@
     "typescript": "~5.5.2"
   },
   "peerDependencies": {
-    "@hyperledger/aries-askar-shared": "^0.2.3"
+    "@hyperledger/aries-askar-shared": "^0.2.3",
+    "@animo-id/expo-secure-environment": "^0.0.1-alpha.0"
+  },
+  "peerDependenciesMeta": {
+    "@animo-id/expo-secure-environment": {
+      "optional": true
+    }
   }
 }
