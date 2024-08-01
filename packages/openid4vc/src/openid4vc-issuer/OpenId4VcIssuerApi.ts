@@ -1,20 +1,16 @@
 import type {
-  OpenId4VciCreateCredentialResponseOptions,
+  OpenId4VcUpdateIssuerRecordOptions,
   OpenId4VciCreateCredentialOfferOptions,
+  OpenId4VciCreateCredentialResponseOptions,
   OpenId4VciCreateIssuerOptions,
 } from './OpenId4VcIssuerServiceOptions'
-import type { OpenId4VcIssuerRecordProps } from './repository'
 
-import { injectable, AgentContext } from '@credo-ts/core'
+import { AgentContext, injectable } from '@credo-ts/core'
 
 import { credentialsSupportedV13ToV11, type OpenId4VciCredentialRequest } from '../shared'
 
 import { OpenId4VcIssuerModuleConfig } from './OpenId4VcIssuerModuleConfig'
 import { OpenId4VcIssuerService } from './OpenId4VcIssuerService'
-import {
-  OpenId4VcIssuerRecordCredentialSupportedProps,
-  OpenId4VcIssuerRecordCredentialConfigurationsSupportedProps,
-} from './repository'
 
 /**
  * @public
@@ -62,10 +58,7 @@ export class OpenId4VcIssuerApi {
     return this.openId4VcIssuerService.rotateAccessTokenSigningKey(this.agentContext, issuer)
   }
 
-  public async updateIssuerMetadata(
-    options: Pick<OpenId4VcIssuerRecordProps, 'issuerId' | 'display' | 'dpopSigningAlgValuesSupported'> &
-      (OpenId4VcIssuerRecordCredentialSupportedProps | OpenId4VcIssuerRecordCredentialConfigurationsSupportedProps)
-  ) {
+  public async updateIssuerMetadata(options: OpenId4VcUpdateIssuerRecordOptions) {
     const { issuerId, credentialConfigurationsSupported, credentialsSupported, ...issuerOptions } = options
 
     const issuer = await this.openId4VcIssuerService.getIssuerByIssuerId(this.agentContext, issuerId)
@@ -77,8 +70,10 @@ export class OpenId4VcIssuerApi {
       issuer.credentialsSupported = credentialsSupported
       issuer.credentialConfigurationsSupported = undefined
     }
+    issuer.display = issuerOptions.display
+    issuer.dpopSigningAlgValuesSupported = issuerOptions.dpopSigningAlgValuesSupported
 
-    return this.openId4VcIssuerService.updateIssuer(this.agentContext, Object.assign(issuer, issuerOptions))
+    return this.openId4VcIssuerService.updateIssuer(this.agentContext, issuer)
   }
 
   /**

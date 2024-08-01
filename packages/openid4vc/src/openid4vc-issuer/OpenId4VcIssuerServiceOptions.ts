@@ -2,6 +2,7 @@ import type {
   OpenId4VcIssuanceSessionRecord,
   OpenId4VcIssuerRecordCredentialConfigurationsSupportedProps,
   OpenId4VcIssuerRecordCredentialSupportedProps,
+  OpenId4VcIssuerRecordProps,
 } from './repository'
 import type {
   OpenId4VcCredentialHolderBinding,
@@ -161,3 +162,9 @@ export type OpenId4VciCreateIssuerOptions = {
   display?: OpenId4VciIssuerMetadataDisplay[]
   dpopSigningAlgValuesSupported?: [JwaSignatureAlgorithm, ...JwaSignatureAlgorithm[]]
 } & (OpenId4VcIssuerRecordCredentialSupportedProps | OpenId4VcIssuerRecordCredentialConfigurationsSupportedProps)
+
+export type OpenId4VcUpdateIssuerRecordOptions = Pick<
+  OpenId4VcIssuerRecordProps,
+  'issuerId' | 'display' | 'dpopSigningAlgValuesSupported'
+> &
+  (OpenId4VcIssuerRecordCredentialSupportedProps | OpenId4VcIssuerRecordCredentialConfigurationsSupportedProps)

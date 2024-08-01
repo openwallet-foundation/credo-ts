@@ -45,7 +45,7 @@ export type OpenId4VciTokenResponse = Pick<AccessTokenResponse, 'access_token' |
 export type OpenId4VciRequestTokenResponse = {
   accessToken: string
   cNonce?: string
-  dpop?: { dpopJwk: Jwk; dpopNonce?: string }
+  dpop?: { jwk: Jwk; nonce?: string }
 }
 
 export interface OpenId4VciCredentialResponse {
@@ -116,7 +116,7 @@ export interface OpenId4VciCredentialRequestOptions extends Omit<OpenId4VciAccep
   resolvedCredentialOffer: OpenId4VciResolvedCredentialOffer
   accessToken: string
   cNonce?: string
-  dpop?: { dpopJwk: Jwk; dpopNonce?: string }
+  dpop?: { jwk: Jwk; nonce?: string }
 
   /**
    * The client id used for authorization. Only required if authorization_code flow was used.
