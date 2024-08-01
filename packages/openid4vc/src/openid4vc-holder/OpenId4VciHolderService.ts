@@ -356,7 +356,7 @@ export class OpenId4VciHolderService {
         if (!offeredCredentialConfigurations[id]) {
           const offeredCredentialIds = Object.keys(offeredCredentialConfigurations).join(', ')
           throw new CredoError(
-            `Credential to request '${credentialsToRequest[i]}' is not present in offered credentials. Offered credentials are ${offeredCredentialIds}`
+            `Credential to request '${id}' is not present in offered credentials. Offered credentials are ${offeredCredentialIds}`
           )
         }
         return [id, offeredCredentialConfigurations[id]] as const
