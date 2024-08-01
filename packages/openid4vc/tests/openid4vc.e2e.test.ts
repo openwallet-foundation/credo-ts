@@ -16,6 +16,8 @@ import {
   W3cCredentialSubject,
   w3cDate,
   W3cIssuer,
+  X509Module,
+  KeyType,
 } from '@credo-ts/core'
 import express, { type Express } from 'express'
 
@@ -55,6 +57,7 @@ describe('OpenId4Vc', () => {
   let issuer: AgentType<{
     openId4VcIssuer: OpenId4VcIssuerModule
     tenants: TenantsModule<{ openId4VcIssuer: OpenId4VcIssuerModule }>
+    x509: X509Module
   }>
   let issuer1: TenantType
   let issuer2: TenantType
@@ -78,6 +81,7 @@ describe('OpenId4Vc', () => {
     issuer = (await createAgentFromModules(
       'issuer',
       {
+        x509: new X509Module(),
         openId4VcIssuer: new OpenId4VcIssuerModule({
           baseUrl: issuanceBaseUrl,
           endpoints: {
@@ -128,6 +132,7 @@ describe('OpenId4Vc', () => {
         openId4VcHolder: new OpenId4VcHolderModule(),
         askar: new AskarModule(askarModuleConfig),
         tenants: new TenantsModule(),
+        x509: new X509Module(),
       },
       '96213c3d7fc8d4d6754c7a0fd969598e'
     )) as unknown as typeof holder
@@ -684,10 +689,7 @@ describe('OpenId4Vc', () => {
     const openIdVerifier = await verifier.agent.modules.openId4VcVerifier.createVerifier()
 
     const signedSdJwtVc = await issuer.agent.sdJwtVc.sign({
-      holder: {
-        method: 'did',
-        didUrl: holder.kid,
-      },
+      holder: { method: 'did', didUrl: holder.kid },
       issuer: {
         method: 'did',
         didUrl: issuer.kid,
@@ -703,7 +705,16 @@ describe('OpenId4Vc', () => {
       },
     })
 
+    const certificate = await verifier.agent.x509.createSelfSignedCertificate({
+      key: await verifier.agent.wallet.createKey({ keyType: KeyType.Ed25519 }),
+      extensions: [[{ type: 'dns', value: 'example.com' }]],
+    })
+
+    const rawCertificate = certificate.toString('base64')
     await holder.agent.sdJwtVc.store(signedSdJwtVc.compact)
+
+    await holder.agent.x509.addTrustedCertificate(rawCertificate)
+    await verifier.agent.x509.addTrustedCertificate(rawCertificate)
 
     const presentationDefinition = {
       id: 'OpenBadgeCredential',
@@ -737,9 +748,11 @@ describe('OpenId4Vc', () => {
     const { authorizationRequest, verificationSession } =
       await verifier.agent.modules.openId4VcVerifier.createAuthorizationRequest({
         verifierId: openIdVerifier.verifierId,
+
         requestSigner: {
-          method: 'did',
-          didUrl: verifier.kid,
+          method: 'x5c',
+          x5c: [rawCertificate],
+          issuer: 'https://example.com/hakuna/matadata',
         },
         presentationExchange: {
           definition: presentationDefinition,
