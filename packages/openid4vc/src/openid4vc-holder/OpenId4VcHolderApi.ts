@@ -160,13 +160,14 @@ export class OpenId4VcHolderApi {
    * @param options.tokenResponse Obtained through @see requestAccessToken
    */
   public async requestCredentials(options: OpenId4VciRequestCredentialOptions) {
-    const { resolvedCredentialOffer, cNonce, accessToken, ...credentialRequestOptions } = options
+    const { resolvedCredentialOffer, cNonce, accessToken, clientId, ...credentialRequestOptions } = options
 
     return this.openId4VciHolderService.acceptCredentialOffer(this.agentContext, {
       resolvedCredentialOffer,
       acceptCredentialOfferOptions: credentialRequestOptions,
       accessToken,
       cNonce,
+      clientId,
     })
   }
 
