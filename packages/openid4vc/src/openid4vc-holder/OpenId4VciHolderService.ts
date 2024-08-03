@@ -352,7 +352,7 @@ export class OpenId4VciHolderService {
     let newCNonce: string | undefined
 
     const credentialConfigurationToRequest =
-      credentialsToRequest?.map((id, i) => {
+      credentialsToRequest?.map((id) => {
         if (!offeredCredentialConfigurations[id]) {
           const offeredCredentialIds = Object.keys(offeredCredentialConfigurations).join(', ')
           throw new CredoError(
