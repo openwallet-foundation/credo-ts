@@ -64,7 +64,7 @@ export class OpenId4VcHolderApi {
    * @returns The uniform credential offer payload, the issuer metadata, protocol version, and the offered credentials with metadata.
    */
   public async resolveCredentialOffer(credentialOffer: string) {
-    return await this.openId4VciHolderService.resolveCredentialOffer(credentialOffer)
+    return await this.openId4VciHolderService.resolveCredentialOffer(this.agentContext, credentialOffer)
   }
 
   /**
@@ -161,7 +161,7 @@ export class OpenId4VcHolderApi {
    * @param options.tokenResponse Obtained through @see requestAccessToken
    */
   public async requestCredentials(options: OpenId4VciRequestCredentialOptions) {
-    const { resolvedCredentialOffer, cNonce, accessToken, dpop, ...credentialRequestOptions } = options
+    const { resolvedCredentialOffer, cNonce, accessToken, dpop, clientId, ...credentialRequestOptions } = options
 
     return this.openId4VciHolderService.acceptCredentialOffer(this.agentContext, {
       resolvedCredentialOffer,
@@ -169,6 +169,7 @@ export class OpenId4VcHolderApi {
       accessToken,
       cNonce,
       dpop,
+      clientId,
     })
   }
 
