@@ -534,7 +534,9 @@ describe('OpenId4VcIssuer', () => {
           userPinRequired: false,
         },
       })
-    ).rejects.toThrow("Offered credential 'invalid id' is not part of credentials_supported of the issuer metadata.")
+    ).rejects.toThrow(
+      "Offered credential 'invalid id' is not part of credentials_supported/credential_configurations_supported of the issuer metadata."
+    )
   })
 
   it('issuing non offered credential errors', async () => {
