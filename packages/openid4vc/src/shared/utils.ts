@@ -1,7 +1,7 @@
 import type { OpenId4VcJwtIssuer } from './models'
 import type { AgentContext, JwaSignatureAlgorithm, JwkJson, Key } from '@credo-ts/core'
 import type { JwtIssuerWithContext as VpJwtIssuerWithContext, VerifyJwtCallback } from '@sphereon/did-auth-siop'
-import type { DPoPJwtIssuerWithContext, SigningAlgo, CreateJwtCallback, JwtIssuer } from '@sphereon/oid4vc-common'
+import type { DPoPJwtIssuerWithContext, CreateJwtCallback, JwtIssuer } from '@sphereon/oid4vc-common'
 import type { CredentialOfferPayloadV1_0_11, CredentialOfferPayloadV1_0_13 } from '@sphereon/oid4vci-common'
 
 import {
@@ -117,13 +117,13 @@ export async function openIdTokenIssuerToJwtIssuer(
 ): Promise<JwtIssuer> {
   if (openId4VcTokenIssuer.method === 'did') {
     const key = await getKeyFromDid(agentContext, openId4VcTokenIssuer.didUrl)
-    const _alg = getJwkClassFromKeyType(key.keyType)?.supportedSignatureAlgorithms[0]
-    if (!_alg) throw new CredoError(`No supported signature algorithms for key type: ${key.keyType}`)
+    const alg = getJwkClassFromKeyType(key.keyType)?.supportedSignatureAlgorithms[0]
+    if (!alg) throw new CredoError(`No supported signature algorithms for key type: ${key.keyType}`)
 
     return {
       method: openId4VcTokenIssuer.method,
       didUrl: openId4VcTokenIssuer.didUrl,
-      alg: _alg as unknown as SigningAlgo,
+      alg,
     }
   } else if (openId4VcTokenIssuer.method === 'x5c') {
     const issuer = openId4VcTokenIssuer.issuer
@@ -144,7 +144,7 @@ export async function openIdTokenIssuerToJwtIssuer(
     if (leafCertificate.sanUriNames?.includes(issuer)) {
       return {
         ...openId4VcTokenIssuer,
-        alg: alg as unknown as SigningAlgo,
+        alg,
         clientIdScheme: 'x509_san_uri',
       }
     } else {
@@ -156,7 +156,7 @@ export async function openIdTokenIssuerToJwtIssuer(
 
       return {
         ...openId4VcTokenIssuer,
-        alg: alg as unknown as SigningAlgo,
+        alg,
         clientIdScheme: 'x509_san_dns',
       }
     }
@@ -168,7 +168,7 @@ export async function openIdTokenIssuerToJwtIssuer(
     return {
       ...openId4VcTokenIssuer,
       jwk: openId4VcTokenIssuer.jwk.toJson(),
-      alg: alg as unknown as SigningAlgo,
+      alg,
     }
   }
 
