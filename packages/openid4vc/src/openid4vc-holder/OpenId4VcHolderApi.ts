@@ -64,7 +64,7 @@ export class OpenId4VcHolderApi {
    * @returns The uniform credential offer payload, the issuer metadata, protocol version, and the offered credentials with metadata.
    */
   public async resolveCredentialOffer(credentialOffer: string) {
-    return await this.openId4VciHolderService.resolveCredentialOffer(credentialOffer)
+    return await this.openId4VciHolderService.resolveCredentialOffer(this.agentContext, credentialOffer)
   }
 
   /**

@@ -12,7 +12,6 @@ import type {
   OpenId4VciTokenRequestOptions,
 } from './OpenId4VciHolderServiceOptions'
 import type {
-  OpenId4VciCredentialConfigurationsSupported,
   OpenId4VciCredentialConfigurationSupported,
   OpenId4VciCredentialSupported,
   OpenId4VciIssuerMetadata,
@@ -25,8 +24,6 @@ import type {
   OpenIDResponse,
   AuthorizationDetails,
   AuthorizationDetailsJwtVcJson,
-  CredentialIssuerMetadataV1_0_11,
-  CredentialIssuerMetadataV1_0_13,
   AuthorizationDetailsJwtVcJsonLdAndLdpVc,
   AuthorizationDetailsSdJwtVc,
 } from '@sphereon/oid4vci-common'
@@ -66,12 +63,7 @@ import {
 import { CodeChallengeMethod, OpenId4VCIVersion, PARMode, post } from '@sphereon/oid4vci-common'
 
 import { OpenId4VciCredentialFormatProfile } from '../shared'
-import {
-  getTypesFromCredentialSupported,
-  getOfferedCredentials,
-  credentialsSupportedV11ToV13,
-} from '../shared/issuerMetadataUtils'
-import { OpenId4VciCredentialSupportedWithId } from '../shared/models/index'
+import { getTypesFromCredentialSupported, getOfferedCredentials } from '../shared/issuerMetadataUtils'
 import { getSupportedJwaSignatureAlgorithms, isCredentialOfferV1Draft13 } from '../shared/utils'
 
 import { openId4VciSupportedCredentialFormats, OpenId4VciNotificationMetadata } from './OpenId4VciHolderServiceOptions'
@@ -92,7 +84,10 @@ export class OpenId4VciHolderService {
     this.logger = logger
   }
 
-  public async resolveCredentialOffer(credentialOffer: string): Promise<OpenId4VciResolvedCredentialOffer> {
+  public async resolveCredentialOffer(
+    agentContext: AgentContext,
+    credentialOffer: string
+  ): Promise<OpenId4VciResolvedCredentialOffer> {
     const client = await OpenID4VCIClient.fromURI({
       uri: credentialOffer,
       resolveOfferUri: true,
@@ -106,9 +101,7 @@ export class OpenId4VciHolderService {
     }
 
     const metadata = client.endpointMetadata
-    const credentialIssuerMetadata = metadata.credentialIssuerMetadata as
-      | CredentialIssuerMetadataV1_0_11
-      | CredentialIssuerMetadataV1_0_13
+    const credentialIssuerMetadata = metadata.credentialIssuerMetadata as OpenId4VciIssuerMetadata
 
     if (!credentialIssuerMetadata) {
       throw new CredoError(`Could not retrieve issuer metadata from '${metadata.issuer}'`)
@@ -128,10 +121,10 @@ export class OpenId4VciHolderService {
       ? credentialOfferPayload.credential_configuration_ids
       : credentialOfferPayload.credentials
 
-    const offeredCredentials = getOfferedCredentials(
+    const { credentialConfigurationsSupported, credentialsSupported } = getOfferedCredentials(
+      agentContext,
       offeredCredentialsData,
-      (credentialIssuerMetadata.credentials_supported as OpenId4VciCredentialSupportedWithId[] | undefined) ??
-        (credentialIssuerMetadata.credential_configurations_supported as OpenId4VciCredentialConfigurationsSupported)
+      credentialIssuerMetadata.credentials_supported ?? credentialIssuerMetadata.credential_configurations_supported
     )
 
     return {
@@ -139,7 +132,8 @@ export class OpenId4VciHolderService {
         ...metadata,
         credentialIssuerMetadata: credentialIssuerMetadata,
       },
-      offeredCredentials,
+      offeredCredentials: credentialsSupported,
+      offeredCredentialConfigurations: credentialConfigurationsSupported,
       credentialOfferPayload,
       credentialOfferRequestWithBaseUrl: client.credentialOffer,
       version: client.version(),
@@ -315,7 +309,7 @@ export class OpenId4VciHolderService {
     }
   ) {
     const { resolvedCredentialOffer, acceptCredentialOfferOptions } = options
-    const { metadata, version, offeredCredentials } = resolvedCredentialOffer
+    const { metadata, version, offeredCredentialConfigurations } = resolvedCredentialOffer
 
     const { credentialsToRequest, credentialBindingResolver, verifyCredentialStatus } = acceptCredentialOfferOptions
 
@@ -357,24 +351,18 @@ export class OpenId4VciHolderService {
     const receivedCredentials: Array<OpenId4VciCredentialResponse> = []
     let newCNonce: string | undefined
 
-    const credentialsSupportedToRequest =
-      credentialsToRequest
-        ?.map((id) => offeredCredentials.find((credential) => credential.id === id))
-        .filter((c, i): c is OpenId4VciCredentialSupportedWithId => {
-          if (!c) {
-            const offeredCredentialIds = offeredCredentials.map((c) => c.id).join(', ')
-            throw new CredoError(
-              `Credential to request '${credentialsToRequest[i]}' is not present in offered credentials. Offered credentials are ${offeredCredentialIds}`
-            )
-          }
+    const credentialConfigurationToRequest =
+      credentialsToRequest?.map((id) => {
+        if (!offeredCredentialConfigurations[id]) {
+          const offeredCredentialIds = Object.keys(offeredCredentialConfigurations).join(', ')
+          throw new CredoError(
+            `Credential to request '${id}' is not present in offered credentials. Offered credentials are ${offeredCredentialIds}`
+          )
+        }
+        return [id, offeredCredentialConfigurations[id]] as const
+      }) ?? Object.entries(offeredCredentialConfigurations)
 
-          return true
-        }) ?? offeredCredentials
-
-    const offeredCredentialConfigurations = credentialsSupportedV11ToV13(agentContext, credentialsSupportedToRequest)
-    for (const [offeredCredentialId, offeredCredentialConfiguration] of Object.entries(
-      offeredCredentialConfigurations
-    )) {
+    for (const [offeredCredentialId, offeredCredentialConfiguration] of credentialConfigurationToRequest) {
       // Get all options for the credential request (such as which kid to use, the signature algorithm, etc)
       const { credentialBinding, signatureAlgorithm } = await this.getCredentialRequestOptions(agentContext, {
         possibleProofOfPossessionSignatureAlgorithms: possibleProofOfPossessionSigAlgs,
@@ -570,10 +558,8 @@ export class OpenId4VciHolderService {
       }
     }
 
-    // FIXME credentialToRequest.credential_signing_alg_values_supported is only required for v11 compat
     const proofSigningAlgsSupported =
-      credentialToRequest.configuration.proof_types_supported?.jwt?.proof_signing_alg_values_supported ??
-      credentialToRequest.configuration.credential_signing_alg_values_supported
+      credentialToRequest.configuration.proof_types_supported?.jwt?.proof_signing_alg_values_supported
 
     // If undefined, it means the issuer didn't include the cryptographic suites in the metadata
     // We just guess that the first one is supported
