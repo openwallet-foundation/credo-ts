@@ -20,21 +20,15 @@ import type {
 } from '@sphereon/oid4vci-common'
 
 export type OpenId4VciCredentialSupportedWithId = OpenId4VciCredentialSupported & { id: string }
-
-// FIXME: https://github.com/Sphereon-Opensource/OID4VC/pull/136
-export type OpenId4VciCredentialSupported = CredentialsSupportedLegacy & { cryptographic_suites_supported?: string[] }
-
+export type OpenId4VciCredentialSupported = CredentialsSupportedLegacy
 export type OpenId4VciCredentialConfigurationSupported = CredentialConfigurationSupportedV1_0_13
 export type OpenId4VciCredentialConfigurationsSupported = Record<string, OpenId4VciCredentialConfigurationSupported>
 export type OpenId4VciTxCode = TxCode
 
-// FIXME: https://github.com/Sphereon-Opensource/OID4VC/pull/136
-export type OpenId4VciIssuerMetadataV1Draft11 = Omit<CredentialIssuerMetadataV1_0_11, 'credentials_supported'> & {
-  credentials_supported: OpenId4VciCredentialSupported[]
-}
+export type OpenId4VciIssuerMetadataV1Draft11 = CredentialIssuerMetadataV1_0_11
 export type OpenId4VciIssuerMetadataV1Draft13 = CredentialIssuerMetadataV1_0_13
-
 export type OpenId4VciIssuerMetadata = OpenId4VciIssuerMetadataV1Draft11 | OpenId4VciIssuerMetadataV1Draft13
+
 export type OpenId4VciIssuerMetadataDisplay = MetadataDisplay
 
 export type OpenId4VciCredentialRequest =
