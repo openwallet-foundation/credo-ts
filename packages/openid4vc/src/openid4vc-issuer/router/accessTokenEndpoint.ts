@@ -1,9 +1,19 @@
 import type { OpenId4VcIssuanceRequest } from './requestContext'
 import type { AgentContext } from '@credo-ts/core'
+import type { JWK, SigningAlgo } from '@sphereon/oid4vc-common'
 import type { AccessTokenRequest, JWTSignerCallback } from '@sphereon/oid4vci-common'
 import type { NextFunction, Response, Router } from 'express'
 
-import { getJwkFromKey, CredoError, JwsService, JwtPayload, getJwkClassFromKeyType, Key } from '@credo-ts/core'
+import {
+  getJwkFromKey,
+  CredoError,
+  JwsService,
+  JwtPayload,
+  getJwkClassFromKeyType,
+  Key,
+  joinUriParts,
+} from '@credo-ts/core'
+import { verifyDPoP } from '@sphereon/oid4vc-common'
 import {
   GrantTypes,
   IssueStatus,
@@ -15,6 +25,8 @@ import {
 import { assertValidAccessTokenRequest, createAccessTokenResponse } from '@sphereon/oid4vci-issuer'
 
 import { getRequestContext, sendErrorResponse } from '../../shared/router'
+import { getVerifyJwtCallback } from '../../shared/utils'
+import { OpenId4VcIssuerModuleConfig } from '../OpenId4VcIssuerModuleConfig'
 import { OpenId4VcIssuerService } from '../OpenId4VcIssuerService'
 import { OpenId4VcCNonceStateManager } from '../repository/OpenId4VcCNonceStateManager'
 import { OpenId4VcCredentialOfferSessionStateManager } from '../repository/OpenId4VcCredentialOfferSessionStateManager'
@@ -120,6 +132,32 @@ export function handleTokenRequest(config: OpenId4VciAccessTokenEndpointConfig) 
     const issuerMetadata = openId4VcIssuerService.getIssuerMetadata(agentContext, issuer)
     const accessTokenSigningKey = Key.fromFingerprint(issuer.accessTokenPublicKeyFingerprint)
 
+    let dpopJwk: JWK | undefined
+    if (request.headers.dpop) {
+      try {
+        const issuerConfig = agentContext.dependencyManager.resolve(OpenId4VcIssuerModuleConfig)
+
+        const fullUrl = joinUriParts(issuerConfig.baseUrl, [requestContext.issuer.issuerId, request.url])
+        dpopJwk = await verifyDPoP(
+          { method: request.method, headers: request.headers, fullUrl },
+          {
+            jwtVerifyCallback: getVerifyJwtCallback(agentContext),
+            expectAccessToken: false,
+            maxIatAgeInSeconds: undefined,
+            acceptedAlgorithms: issuerMetadata.dpopSigningAlgValuesSupported as SigningAlgo[] | undefined,
+          }
+        )
+      } catch (error) {
+        return sendErrorResponse(
+          response,
+          agentContext.config.logger,
+          400,
+          TokenErrorResponse.invalid_dpop_proof,
+          error instanceof Error ? error.message : 'Unknown error'
+        )
+      }
+    }
+
     try {
       const accessTokenResponse = await createAccessTokenResponse(request.body, {
         credentialOfferSessions: new OpenId4VcCredentialOfferSessionStateManager(agentContext, issuer.issuerId),
@@ -129,6 +167,7 @@ export function handleTokenRequest(config: OpenId4VciAccessTokenEndpointConfig) 
         cNonceExpiresIn: cNonceExpiresInSeconds,
         cNonces: new OpenId4VcCNonceStateManager(agentContext, issuer.issuerId),
         accessTokenSignerCallback: getJwtSignerCallback(agentContext, accessTokenSigningKey, config),
+        dPoPJwk: dpopJwk,
       })
       response.status(200).json(accessTokenResponse)
     } catch (error) {

@@ -16,6 +16,8 @@ import {
   W3cCredentialSubject,
   w3cDate,
   W3cIssuer,
+  Jwt,
+  Jwk,
 } from '@credo-ts/core'
 import express, { type Express } from 'express'
 
@@ -190,11 +192,14 @@ describe('OpenId4Vc', () => {
     const issuerTenant2 = await issuer.agent.modules.tenants.getTenantAgent({ tenantId: issuer2.tenantId })
 
     const openIdIssuerTenant1 = await issuerTenant1.modules.openId4VcIssuer.createIssuer({
+      dpopSigningAlgValuesSupported: [JwaSignatureAlgorithm.EdDSA],
       credentialConfigurationsSupported: {
         universityDegree: universityDegreeCredentialConfigurationSupported,
       },
     })
     const issuer1Record = await issuerTenant1.modules.openId4VcIssuer.getIssuerByIssuerId(openIdIssuerTenant1.issuerId)
+    expect(issuer1Record.dpopSigningAlgValuesSupported).toEqual(['EdDSA'])
+
     expect(issuer1Record.credentialsSupported).toEqual([
       {
         id: 'universityDegree',
@@ -218,6 +223,7 @@ describe('OpenId4Vc', () => {
       },
     })
     const openIdIssuerTenant2 = await issuerTenant2.modules.openId4VcIssuer.createIssuer({
+      dpopSigningAlgValuesSupported: [JwaSignatureAlgorithm.EdDSA],
       credentialsSupported: [universityDegreeCredentialSdJwt2],
     })
 
@@ -257,6 +263,9 @@ describe('OpenId4Vc', () => {
       credentialOffer1
     )
 
+    expect(resolvedCredentialOffer1.metadata.credentialIssuerMetadata?.dpop_signing_alg_values_supported).toEqual([
+      'EdDSA',
+    ])
     expect(resolvedCredentialOffer1.offeredCredentials).toEqual([
       {
         id: 'universityDegree',
@@ -278,10 +287,20 @@ describe('OpenId4Vc', () => {
     )
 
     // Bind to JWK
-    const credentialsTenant1 = await holderTenant1.modules.openId4VcHolder.acceptCredentialOfferUsingPreAuthorizedCode(
-      resolvedCredentialOffer1,
-      { credentialBindingResolver, userPin: issuanceSession1.userPin }
-    )
+    const tokenResponseTenant1 = await holderTenant1.modules.openId4VcHolder.requestToken({
+      resolvedCredentialOffer: resolvedCredentialOffer1,
+    })
+
+    expect(tokenResponseTenant1.accessToken).toBeDefined()
+    expect(tokenResponseTenant1.dpop?.jwk).toBeInstanceOf(Jwk)
+    const { payload } = Jwt.fromSerializedJwt(tokenResponseTenant1.accessToken)
+    expect(payload.additionalClaims.token_type).toEqual('DPoP')
+
+    const credentialsTenant1 = await holderTenant1.modules.openId4VcHolder.requestCredentials({
+      resolvedCredentialOffer: resolvedCredentialOffer1,
+      ...tokenResponseTenant1,
+      credentialBindingResolver,
+    })
 
     // Wait for all events
     await waitForCredentialIssuanceSessionRecordSubject(issuer.replaySubject, {
@@ -306,7 +325,7 @@ describe('OpenId4Vc', () => {
     })
 
     expect(credentialsTenant1).toHaveLength(1)
-    const compactSdJwtVcTenant1 = (credentialsTenant1[0] as SdJwtVc).compact
+    const compactSdJwtVcTenant1 = (credentialsTenant1[0].credential as SdJwtVc).compact
     const sdJwtVcTenant1 = holderTenant1.sdJwtVc.fromCompact(compactSdJwtVcTenant1)
     expect(sdJwtVcTenant1.payload.vct).toEqual('UniversityDegreeCredential')
 

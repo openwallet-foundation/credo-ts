@@ -22,6 +22,7 @@ export function configureIssuerMetadataEndpoint(router: Router) {
           credentials_supported: issuerMetadata.credentialsSupported,
           credential_configurations_supported: issuerMetadata.credentialConfigurationsSupported,
           display: issuerMetadata.issuerDisplay,
+          dpop_signing_alg_values_supported: issuerMetadata.dpopSigningAlgValuesSupported,
         } satisfies CredentialIssuerMetadata
 
         response.status(200).json(transformedMetadata)

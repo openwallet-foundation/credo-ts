@@ -2,6 +2,7 @@ import type {
   OpenId4VcIssuanceSessionRecord,
   OpenId4VcIssuerRecordCredentialConfigurationsSupportedProps,
   OpenId4VcIssuerRecordCredentialSupportedProps,
+  OpenId4VcIssuerRecordProps,
 } from './repository'
 import type {
   OpenId4VcCredentialHolderBinding,
@@ -13,7 +14,13 @@ import type {
   OpenId4VciIssuerMetadataDisplay,
   OpenId4VciTxCode,
 } from '../shared'
-import type { AgentContext, ClaimFormat, W3cCredential, SdJwtVcSignOptions } from '@credo-ts/core'
+import type {
+  AgentContext,
+  ClaimFormat,
+  W3cCredential,
+  SdJwtVcSignOptions,
+  JwaSignatureAlgorithm,
+} from '@credo-ts/core'
 
 export interface OpenId4VciPreAuthorizedCodeFlowConfig {
   preAuthorizedCode?: string
@@ -39,6 +46,7 @@ export type OpenId4VcIssuerMetadata = {
   issuerDisplay?: OpenId4VciIssuerMetadataDisplay[]
   credentialsSupported: OpenId4VciCredentialSupportedWithId[]
   credentialConfigurationsSupported: OpenId4VciCredentialConfigurationsSupported
+  dpopSigningAlgValuesSupported?: [JwaSignatureAlgorithm, ...JwaSignatureAlgorithm[]]
 }
 
 export interface OpenId4VciCreateCredentialOfferOptions {
@@ -152,4 +160,11 @@ export type OpenId4VciCreateIssuerOptions = {
   issuerId?: string
 
   display?: OpenId4VciIssuerMetadataDisplay[]
+  dpopSigningAlgValuesSupported?: [JwaSignatureAlgorithm, ...JwaSignatureAlgorithm[]]
 } & (OpenId4VcIssuerRecordCredentialSupportedProps | OpenId4VcIssuerRecordCredentialConfigurationsSupportedProps)
+
+export type OpenId4VcUpdateIssuerRecordOptions = Pick<
+  OpenId4VcIssuerRecordProps,
+  'issuerId' | 'display' | 'dpopSigningAlgValuesSupported'
+> &
+  (OpenId4VcIssuerRecordCredentialSupportedProps | OpenId4VcIssuerRecordCredentialConfigurationsSupportedProps)

@@ -42,7 +42,7 @@
     "@sd-jwt/utils": "^0.7.0",
     "@sphereon/pex": "^3.3.2",
     "@sphereon/pex-models": "^2.2.4",
-    "@sphereon/ssi-types": "^0.23.0",
+    "@sphereon/ssi-types": "^0.28.0",
     "@stablelib/ed25519": "^1.0.2",
     "@types/ws": "^8.5.4",
     "abort-controller": "^3.0.0",

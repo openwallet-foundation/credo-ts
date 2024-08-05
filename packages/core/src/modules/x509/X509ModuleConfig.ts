@@ -1,4 +1,8 @@
 export interface X509ModuleConfigOptions {
+  /**
+   *
+   * Array of trusted base64-encoded certificate strings in the DER-format.
+   */
   trustedCertificates?: [string, ...string[]]
 }
 
