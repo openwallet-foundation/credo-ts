@@ -378,8 +378,8 @@ importers:
         specifier: workspace:*
         version: link:../core
       '@stablelib/ed25519':
-        specifier: ^1.0.3
-        version: 1.0.3
+        specifier: ^2.0.0
+        version: 2.0.0
       class-transformer:
         specifier: ^0.5.1
         version: 0.5.1
@@ -457,8 +457,8 @@ importers:
         specifier: ^0.28.0
         version: 0.28.0
       '@stablelib/ed25519':
-        specifier: ^1.0.2
-        version: 1.0.3
+        specifier: ^2.0.0
+        version: 2.0.0
       '@types/ws':
         specifier: ^8.5.4
         version: 8.5.11
@@ -623,8 +623,8 @@ importers:
         specifier: ^0.2.2
         version: 0.2.2
       '@stablelib/ed25519':
-        specifier: ^1.0.2
-        version: 1.0.3
+        specifier: ^2.0.0
+        version: 2.0.0
       '@types/ref-array-di':
         specifier: ^1.2.6
         version: 1.2.8
@@ -2436,6 +2436,9 @@ packages:
   '@stablelib/binary@1.0.1':
     resolution: {integrity: sha512-ClJWvmL6UBM/wjkvv/7m5VP3GMr9t0osr4yVgLZsLCOz4hGN9gIAFEqnJ0TsSMAN+n840nf2cHZnA5/KFqHC7Q==}
 
+  '@stablelib/binary@2.0.0':
+    resolution: {integrity: sha512-dHejKHMtq5OtNwDSMcFx+djhixVAnZ76Rqga3WOOKe6KV3NlnE7JBXlmdLIn04G4FxqhRSEx+zkoO4Izdw10ZA==}
+
   '@stablelib/bytes@1.0.1':
     resolution: {integrity: sha512-Kre4Y4kdwuqL8BR2E9hV/R5sOrUj6NanZaZis0V6lX5yzqC3hBuVSDXUIBqQv/sCpmuWRiHLwqiT1pqqjuBXoQ==}
 
@@ -2451,11 +2454,20 @@ packages:
   '@stablelib/ed25519@1.0.3':
     resolution: {integrity: sha512-puIMWaX9QlRsbhxfDc5i+mNPMY+0TmQEskunY1rZEBPi1acBCVQAhnsk/1Hk50DGPtVsZtAWQg4NHGlVaO9Hqg==}
 
+  '@stablelib/ed25519@2.0.0':
+    resolution: {integrity: sha512-4q/Kv7/yl0VcL1ZCbX63BG7wkDhiJR6QBPYV10WO37jjWhQhdUCcnSsKYwZ4t9fQngrULo5thnCc8jZqqufM4g==}
+
   '@stablelib/hash@1.0.1':
     resolution: {integrity: sha512-eTPJc/stDkdtOcrNMZ6mcMK1e6yBbqRBaNW55XA1jU8w/7QdnCF0CmMmOD1m7VSkBR44PWrMHU2l6r8YEQHMgg==}
 
+  '@stablelib/hash@2.0.0':
+    resolution: {integrity: sha512-u3WPSqGido8lwJuMcrBgM5K54LrPGhkWAdtsyccf7dGsLixAZUds77zOAbu7bvKPwQlmoByH0txBi5rTmEKuHg==}
+
   '@stablelib/int@1.0.1':
     resolution: {integrity: sha512-byr69X/sDtDiIjIV6m4roLVWnNNlRGzsvxw+agj8CIEazqWGOQp2dTYgQhtyVXV9wpO6WyXRQUzLV/JRNumT2w==}
+
+  '@stablelib/int@2.0.0':
+    resolution: {integrity: sha512-EiSYDisTYKk1wuCqoh7wuBySmE0A1isq7TQbsijQ6XFi6nIAozchgAT7Zv2PCl2iY8BTe0URScC4PdYHOe3Yow==}
 
   '@stablelib/keyagreement@1.0.1':
     resolution: {integrity: sha512-VKL6xBwgJnI6l1jKrBAfn265cspaWBPAPEc62VBQrWHLqVgNRE09gQ/AnOEyKUWrrqfD+xSQ3u42gJjLDdMDQg==}
@@ -2469,14 +2481,23 @@ packages:
   '@stablelib/random@1.0.2':
     resolution: {integrity: sha512-rIsE83Xpb7clHPVRlBj8qNe5L8ISQOzjghYQm/dZ7VaM2KHYwMW5adjQjrzTZCchFnNCNhkwtnOBa9HTMJCI8w==}
 
+  '@stablelib/random@2.0.0':
+    resolution: {integrity: sha512-qvOSbiPq2B3ajvn/IDftC1mzL/W89OGv59gdJ7klMjm327Yk/54NyGl4Jtrwcz35GjCPy/ScVnQXC8YQk8uAUQ==}
+
   '@stablelib/sha256@1.0.1':
     resolution: {integrity: sha512-GIIH3e6KH+91FqGV42Kcj71Uefd/QEe7Dy42sBTeqppXV95ggCcxLTk39bEr+lZfJmp+ghsR07J++ORkRELsBQ==}
 
   '@stablelib/sha512@1.0.1':
     resolution: {integrity: sha512-13gl/iawHV9zvDKciLo1fQ8Bgn2Pvf7OV6amaRVKiq3pjQ3UmEpXxWiAfV8tYjUpeZroBxtyrwtdooQT/i3hzw==}
 
+  '@stablelib/sha512@2.0.0':
+    resolution: {integrity: sha512-JiIub0BfK+dDsymA8b4mUdT9hnFMPfbXqEp/NXR3MUsunf1WMyUQPQr/dhCVL8tt63oYLV9ItUFDP7B2wyIRwA==}
+
   '@stablelib/wipe@1.0.1':
     resolution: {integrity: sha512-WfqfX/eXGiAd3RJe4VU2snh/ZPwtSjLG4ynQ/vYzvghTh7dHFcI1wl+nrkWG6lGhukOxOsUHfv8dUXr58D0ayg==}
+
+  '@stablelib/wipe@2.0.0':
+    resolution: {integrity: sha512-VBMpCJx8py9j9F5DxV5dGmSSO+vkYDnXHXG4alkfpaD08UTfNTqsQoRlUh5obeqBNHiO+3Iv40GxKpM0gfd5xA==}
 
   '@stablelib/x25519@1.0.3':
     resolution: {integrity: sha512-KnTbKmUhPhHavzobclVJQG5kuivH+qDLpe84iRqX3CLrKp881cF160JvXJ+hjn1aMyCwYOKeIZefIH/P5cJoRw==}
@@ -9889,6 +9910,10 @@ snapshots:
     dependencies:
       '@stablelib/int': 1.0.1
 
+  '@stablelib/binary@2.0.0':
+    dependencies:
+      '@stablelib/int': 2.0.0
+
   '@stablelib/bytes@1.0.1': {}
 
   '@stablelib/chacha20poly1305@1.0.1':
@@ -9913,9 +9938,19 @@ snapshots:
       '@stablelib/sha512': 1.0.1
       '@stablelib/wipe': 1.0.1
 
+  '@stablelib/ed25519@2.0.0':
+    dependencies:
+      '@stablelib/random': 2.0.0
+      '@stablelib/sha512': 2.0.0
+      '@stablelib/wipe': 2.0.0
+
   '@stablelib/hash@1.0.1': {}
 
+  '@stablelib/hash@2.0.0': {}
+
   '@stablelib/int@1.0.1': {}
+
+  '@stablelib/int@2.0.0': {}
 
   '@stablelib/keyagreement@1.0.1':
     dependencies:
@@ -9936,6 +9971,11 @@ snapshots:
       '@stablelib/binary': 1.0.1
       '@stablelib/wipe': 1.0.1
 
+  '@stablelib/random@2.0.0':
+    dependencies:
+      '@stablelib/binary': 2.0.0
+      '@stablelib/wipe': 2.0.0
+
   '@stablelib/sha256@1.0.1':
     dependencies:
       '@stablelib/binary': 1.0.1
@@ -9948,7 +9988,15 @@ snapshots:
       '@stablelib/hash': 1.0.1
       '@stablelib/wipe': 1.0.1
 
+  '@stablelib/sha512@2.0.0':
+    dependencies:
+      '@stablelib/binary': 2.0.0
+      '@stablelib/hash': 2.0.0
+      '@stablelib/wipe': 2.0.0
+
   '@stablelib/wipe@1.0.1': {}
+
+  '@stablelib/wipe@2.0.0': {}
 
   '@stablelib/x25519@1.0.3':
     dependencies:
