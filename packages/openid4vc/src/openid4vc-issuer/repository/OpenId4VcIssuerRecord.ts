@@ -3,7 +3,7 @@ import type {
   OpenId4VciCredentialConfigurationsSupported,
   OpenId4VciIssuerMetadataDisplay,
 } from '../../shared'
-import type { RecordTags, TagsBase } from '@credo-ts/core'
+import type { JwaSignatureAlgorithm, RecordTags, TagsBase } from '@credo-ts/core'
 
 import { BaseRecord, utils } from '@credo-ts/core'
 
@@ -38,6 +38,12 @@ export type OpenId4VcIssuerRecordProps = {
    */
   accessTokenPublicKeyFingerprint: string
 
+  /**
+   * The DPoP signing algorithms supported by this issuer.
+   * If not provided, dPoP is considered unsupported.
+   */
+  dpopSigningAlgValuesSupported?: [JwaSignatureAlgorithm, ...JwaSignatureAlgorithm[]]
+
   display?: OpenId4VciIssuerMetadataDisplay[]
 } & (OpenId4VcIssuerRecordCredentialSupportedProps | OpenId4VcIssuerRecordCredentialConfigurationsSupportedProps)
 
@@ -56,6 +62,7 @@ export class OpenId4VcIssuerRecord extends BaseRecord<DefaultOpenId4VcIssuerReco
   public credentialsSupported!: OpenId4VciCredentialSupportedWithId[]
   public credentialConfigurationsSupported?: OpenId4VciCredentialConfigurationsSupported
   public display?: OpenId4VciIssuerMetadataDisplay[]
+  public dpopSigningAlgValuesSupported?: [JwaSignatureAlgorithm, ...JwaSignatureAlgorithm[]]
 
   public constructor(props: OpenId4VcIssuerRecordProps) {
     super()
@@ -70,6 +77,7 @@ export class OpenId4VcIssuerRecord extends BaseRecord<DefaultOpenId4VcIssuerReco
       this.credentialsSupported =
         props.credentialsSupported ?? credentialsSupportedV13ToV11(props.credentialConfigurationsSupported)
       this.credentialConfigurationsSupported = props.credentialConfigurationsSupported
+      this.dpopSigningAlgValuesSupported = props.dpopSigningAlgValuesSupported
       this.display = props.display
     }
   }
