@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.5.10
+
+### Patch Changes
+
+- 2110e4a: fix: incorrect generation of code verifier for pkce
+- 2110e4a: fix: include client_id when requesting credential using authorization_code flow
+- 35a04e3: fix v11 metadata typing and update v11<->v13 tranformation logic accordingly
+- fa62b74: Add support for Demonstrating Proof of Possesion (DPoP) when receiving credentials using OpenID4VCI
+- a093150: fix: pass the `clientId` in the `requestCredentials` method from the API down to the service
+- Updated dependencies [fa62b74]
+  - @credo-ts/core@0.5.10
+
 ## 0.5.9
 
 ### Patch Changes
