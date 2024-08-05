@@ -448,8 +448,8 @@ importers:
         specifier: ^0.7.0
         version: 0.7.1
       '@sphereon/pex':
-        specifier: ^3.3.2
-        version: 3.3.3
+        specifier: ^4.0.1
+        version: 4.0.1
       '@sphereon/pex-models':
         specifier: ^2.2.4
         version: 2.2.4
@@ -2416,6 +2416,10 @@ packages:
 
   '@sphereon/pex@3.3.3':
     resolution: {integrity: sha512-CXwdEcMTUh2z/5AriBn3OuShEG06l2tgiIr7qDJthnkez8DQ3sZo2vr4NEQWKKAL+DeAWAI4FryQGO4KuK7yfg==}
+    engines: {node: '>=18'}
+
+  '@sphereon/pex@4.0.1':
+    resolution: {integrity: sha512-3XnX/YJpxR8ueMO+qZLcn14dYFE4OHqi3i1qMLwPo/7jFFLrTb70uDG1++D+MqS7YTwYQbMtJA9KzzWcKTEg4w==}
     engines: {node: '>=18'}
 
   '@sphereon/ssi-types@0.22.0':
@@ -9843,6 +9847,21 @@ snapshots:
   '@sphereon/pex-models@2.2.4': {}
 
   '@sphereon/pex@3.3.3':
+    dependencies:
+      '@astronautlabs/jsonpath': 1.1.2
+      '@sd-jwt/decode': 0.6.1
+      '@sd-jwt/present': 0.6.1
+      '@sd-jwt/types': 0.6.1
+      '@sphereon/pex-models': 2.2.4
+      '@sphereon/ssi-types': 0.22.0
+      ajv: 8.17.1
+      ajv-formats: 2.1.1(ajv@8.17.1)
+      jwt-decode: 3.1.2
+      nanoid: 3.3.7
+      string.prototype.matchall: 4.0.11
+      uint8arrays: 3.1.1
+
+  '@sphereon/pex@4.0.1':
     dependencies:
       '@astronautlabs/jsonpath': 1.1.2
       '@sd-jwt/decode': 0.6.1
