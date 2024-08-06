@@ -32,7 +32,7 @@ export type OpenId4VciIssuerMetadata = OpenId4VciIssuerMetadataV1Draft11 | OpenI
 export type OpenId4VciIssuerMetadataDisplay = MetadataDisplay
 
 export type OpenId4VciCredentialRequest =
-  | CredentialRequestJwtVcJson
+  | (CredentialRequestJwtVcJson & { credential_definition: { type: string[] } })
   | CredentialRequestJwtVcJsonLdAndLdpVc
   | CredentialRequestSdJwtVc
 
