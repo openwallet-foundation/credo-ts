@@ -3,4 +3,5 @@ export enum OpenId4VciCredentialFormatProfile {
   JwtVcJsonLd = 'jwt_vc_json-ld',
   LdpVc = 'ldp_vc',
   SdJwtVc = 'vc+sd-jwt',
+  MsoMdoc = 'mso_mdoc',
 }
