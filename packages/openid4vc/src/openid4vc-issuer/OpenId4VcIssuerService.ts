@@ -468,34 +468,32 @@ export class OpenId4VcIssuerService {
           credentialRequest.format === OpenId4VciCredentialFormatProfile.JwtVcJson &&
           offeredCredential.format === credentialRequest.format
         ) {
-          /*
-            Issue: https://github.com/openwallet-foundation/credo-ts/issues/1963
-            Handling `credentialRequest.types` by checking if `credentialRequest.credential_definition` is not `undefined`.
-            `credentialRequest.credential_definition` requires a `type` attribute which does not currently exist.
-            Therefore, adding the `type` attribute at line 41 in `packages/openid4vc/src/shared/models/index.ts`.
-           */
+          const types =
+            'credential_definition' in credentialRequest
+              ? credentialRequest.credential_definition.type
+              : credentialRequest.types
 
-          credentialRequest.types = credentialRequest.credential_definition
-            ? credentialRequest.credential_definition.type
-            : credentialRequest.types
-
-          return equalsIgnoreOrder(offeredCredential.credential_definition.type ?? [], credentialRequest.types)
+          return equalsIgnoreOrder(offeredCredential.credential_definition.type ?? [], types)
         } else if (
           credentialRequest.format === OpenId4VciCredentialFormatProfile.JwtVcJsonLd &&
           offeredCredential.format === credentialRequest.format
         ) {
-          return equalsIgnoreOrder(
-            offeredCredential.credential_definition.type ?? [],
-            credentialRequest.credential_definition.types
-          )
+          const types =
+            'type' in credentialRequest.credential_definition
+              ? credentialRequest.credential_definition.type
+              : credentialRequest.credential_definition.types
+
+          return equalsIgnoreOrder(offeredCredential.credential_definition.type ?? [], types)
         } else if (
           credentialRequest.format === OpenId4VciCredentialFormatProfile.LdpVc &&
           offeredCredential.format === credentialRequest.format
         ) {
-          return equalsIgnoreOrder(
-            offeredCredential.credential_definition.type ?? [],
-            credentialRequest.credential_definition.types
-          )
+          const types =
+            'type' in credentialRequest.credential_definition
+              ? credentialRequest.credential_definition.type
+              : credentialRequest.credential_definition.types
+
+          return equalsIgnoreOrder(offeredCredential.credential_definition.type ?? [], types)
         } else if (
           credentialRequest.format === OpenId4VciCredentialFormatProfile.SdJwtVc &&
           offeredCredential.format === credentialRequest.format
