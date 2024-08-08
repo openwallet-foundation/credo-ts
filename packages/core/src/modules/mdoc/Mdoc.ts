@@ -1,39 +1,40 @@
 import type { AgentContext } from '../../agent'
 
-import * as kmpCrypto from '@sphereon/kmp-crypto'
-import * as kmpMdlMdoc from '@sphereon/kmp-mdl-mdoc'
+import { com } from '@sphereon/kmp-mdl-mdoc'
 
 import { JwaSignatureAlgorithm } from '../../crypto'
-import { getJwkFromJson } from '../../crypto/jose/jwk/transform'
 import { TypedArrayEncoder } from '../../utils'
-import { X509Service, X509Certificate } from '../x509'
 
+import { MdocCoseCallbackService } from './MdocCoseCallbackService'
 import { MdocError } from './MdocError'
+import { MdocX509CallbackService } from './MdocX509CallbackService'
 
-type IssuerSignedJson = kmpMdlMdoc.com.sphereon.mdoc.data.device.IssuerSignedJson
-type IssuerSignedCbor = kmpMdlMdoc.com.sphereon.mdoc.data.device.IssuerSignedCbor
+type IssuerSignedJson = com.sphereon.mdoc.data.device.IssuerSignedJson
+type IssuerSignedCbor = com.sphereon.mdoc.data.device.IssuerSignedCbor
 
-export type MdocIssuerSignedItem<T = unknown> = kmpMdlMdoc.com.sphereon.mdoc.data.device.IssuerSignedItemJson<T>
+export type MdocIssuerSignedItem<T = unknown> = com.sphereon.mdoc.data.device.IssuerSignedItemJson<T>
 export type MdocNamespaceData = Record<string, MdocIssuerSignedItem>
 export type MdocNamespace = Record<string, MdocNamespaceData>
 
 export class Mdoc {
+  private _docType: string
   private issuerSignedJson: IssuerSignedJson
   private issuerSignedCbor: IssuerSignedCbor
   private _hexEncodedMdoc: string
 
   private constructor(hexEncodedMdoc: string) {
+    this._docType = 'org.iso.18013.5.1.mDL' // TODO: This will be a part of the { ... issuerSigned } structure
     this._hexEncodedMdoc = hexEncodedMdoc
 
-    this.issuerSignedCbor = kmpMdlMdoc.com.sphereon.mdoc.data.device.IssuerSignedCbor.Companion.cborDecode(
+    // TODO: THIS IS WRONG! it should not only be the issuersigned part!
+    this.issuerSignedCbor = com.sphereon.mdoc.data.device.IssuerSignedCbor.Companion.cborDecode(
       Int8Array.from(TypedArrayEncoder.fromHex(hexEncodedMdoc))
     )
     this.issuerSignedJson = this.issuerSignedCbor.toJson()
   }
 
   public get docType() {
-    // TODO: IMPLEMENT
-    return ''
+    return this._docType
   }
 
   public get namespaces() {
@@ -87,110 +88,29 @@ export class Mdoc {
   public async verify(agentContext: AgentContext, options: { trustedCertificates: [string, ...string[]] }) {
     const { trustedCertificates } = options
 
-    const x509ServiceObjectJS = kmpCrypto.com.sphereon.crypto.X509ServiceObjectJS
-    const coseServiceObjectJS = kmpCrypto.com.sphereon.crypto.CoseCryptoServiceJS
+    const cryptoServiceJS = com.sphereon.crypto.CryptoServiceJS
 
-    coseServiceObjectJS.register({
-      __doNotUseOrImplementIt: {} as any,
-      async sign1(coseCborInput, keyInfo) {
-        if (!keyInfo?.key) {
-          throw new MdocError('Missing key in mdoc cose sign callback')
-        }
-        const jwk = getJwkFromJson(keyInfo.key.toJson())
-        const key = jwk.key
+    // TODO: This way of of registering and working with the x509/cose services is subject to race-conditions
+    // TODO: This is a known issue and beeing worked on by sphereon
+    // We register this service with the mDL/mdoc library
+    cryptoServiceJS.X509.register(new MdocX509CallbackService(agentContext, trustedCertificates))
+    cryptoServiceJS.COSE.register(new MdocCoseCallbackService())
 
-        if (!coseCborInput.payload) {
-          throw new MdocError('Missing payload in mdoc cose sign callback.')
-        }
-
-        const data = TypedArrayEncoder.fromHex(coseCborInput.payload.toHexString())
-        const signedPayload = await agentContext.wallet.sign({ data, key })
-
-        // TODO: I CANNOT IMAGE THIS IS TRUE
-        return new kmpCrypto.com.sphereon.cbor.cose.CoseSign1Cbor(
-          coseCborInput.protectedHeader,
-          coseCborInput.unprotectedHeader,
-          coseCborInput.payload,
-          new kmpCrypto.com.sphereon.cbor.CborByteString(new Int8Array(signedPayload))
-        )
-      },
-
-      async verify1(input, keyInfo) {
-        const success = await agentContext.wallet.verify({
-          data: {} as any,
-          key: {} as any,
-          signature: {} as any,
-        })
-
-        return new kmpCrypto.com.sphereon.crypto.VerifySignatureResult(
-          !success,
-          'Signature Verification',
-          !success,
-          !success ? 'Invalid mdoc signature' : 'Signature correct',
-          undefined
-        )
-      },
-    })
-
-    x509ServiceObjectJS.register({
-      __doNotUseOrImplementIt: {} as any,
-      getTrustedCerts() {
-        return trustedCertificates
-      },
-      async verifyCertificateChainJS(chainDER) {
-        if (!chainDER) {
-          return new kmpCrypto.com.sphereon.crypto.X509VerificationResult(
-            '',
-            undefined,
-            undefined,
-            'name',
-            false,
-            'Missing ChainDER parameter when verifying the Certificate chain.',
-            false
-          )
-        }
-
-        try {
-          await X509Service.validateCertificateChain(agentContext, {
-            certificateChain: chainDER.map((value) =>
-              X509Certificate.fromRawCertificate(new Uint8Array(value)).toString('base64url')
-            ),
-            trustedCertificates: trustedCertificates,
-          })
-
-          return new kmpCrypto.com.sphereon.crypto.X509VerificationResult(
-            undefined,
-            undefined,
-            undefined,
-            'success',
-            false,
-            'message',
-            false
-          )
-        } catch (error) {
-          return new kmpCrypto.com.sphereon.crypto.X509VerificationResult(
-            '',
-            undefined,
-            undefined,
-            'verification error',
-            false,
-            error instanceof Error
-              ? error.message
-              : 'An unknown error occurred during x509 certificate chain validation.',
-            false
-          ) as any
-        }
-      },
-    })
-
-    const res = await kmpCrypto.com.sphereon.crypto.CryptoServiceJS.X509.verifyCertificateChainJS(null, ['', ''], [''])
-
-    const verificationResult = await kmpMdlMdoc.com.sphereon.mdoc.ValidationsJS.fromIssuerAuthAsync(
+    const verificationResult = await com.sphereon.mdoc.ValidationsJS.fromIssuerAuthAsync(
       this.issuerSignedCbor.issuerAuth,
       null,
       trustedCertificates
     )
 
-    return
+    if (verificationResult.error) {
+      return {
+        isValid: false,
+        error: verificationResult.verifications,
+      }
+    }
+
+    return {
+      isValid: true,
+    } as const
   }
 }
