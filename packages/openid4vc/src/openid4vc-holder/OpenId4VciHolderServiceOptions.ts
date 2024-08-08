@@ -21,12 +21,14 @@ export type OpenId4VciSupportedCredentialFormats =
   | OpenId4VciCredentialFormatProfile.JwtVcJsonLd
   | OpenId4VciCredentialFormatProfile.SdJwtVc
   | OpenId4VciCredentialFormatProfile.LdpVc
+  | OpenId4VciCredentialFormatProfile.MsoMdoc
 
 export const openId4VciSupportedCredentialFormats: OpenId4VciSupportedCredentialFormats[] = [
   OpenId4VciCredentialFormatProfile.JwtVcJson,
   OpenId4VciCredentialFormatProfile.JwtVcJsonLd,
   OpenId4VciCredentialFormatProfile.SdJwtVc,
   OpenId4VciCredentialFormatProfile.LdpVc,
+  OpenId4VciCredentialFormatProfile.MsoMdoc,
 ]
 
 export interface OpenId4VciNotificationMetadata {

@@ -51,6 +51,8 @@ import {
   inject,
   injectable,
   parseDid,
+  MdocService,
+  Mdoc,
 } from '@credo-ts/core'
 import { CreateDPoPClientOpts, CreateDPoPJwtPayloadProps, SigningAlgo } from '@sphereon/oid4vc-common'
 import {
@@ -81,14 +83,17 @@ import { OpenId4VciNotificationMetadata, openId4VciSupportedCredentialFormats } 
 export class OpenId4VciHolderService {
   private logger: Logger
   private w3cCredentialService: W3cCredentialService
+  private mdocService: MdocService
   private jwsService: JwsService
 
   public constructor(
     @inject(InjectionSymbols.Logger) logger: Logger,
     w3cCredentialService: W3cCredentialService,
+    mdocService: MdocService,
     jwsService: JwsService
   ) {
     this.w3cCredentialService = w3cCredentialService
+    this.mdocService = mdocService
     this.jwsService = jwsService
     this.logger = logger
   }
@@ -178,9 +183,14 @@ export class OpenId4VciHolderService {
         vct: offeredCredential.vct,
         claims: offeredCredential.claims,
       } satisfies AuthorizationDetailsSdJwtVc
-    } else {
-      throw new CredoError(`Cannot create authorization_details. Unsupported credential format '${format}'.`)
-    }
+    } else if (format === OpenId4VciCredentialFormatProfile.MsoMdoc) {
+      return {
+        type,
+        format,
+        locations,
+        claims: offeredCredential.claims,
+        doctype: offeredCredential.doctype,
+      } satisfies AuthorizationDetailsMsoMdoc
   }
 
   public async resolveAuthorizationRequest(
@@ -654,6 +664,7 @@ export class OpenId4VciHolderService {
       switch (credentialToRequest.configuration.format) {
         case OpenId4VciCredentialFormatProfile.JwtVcJson:
         case OpenId4VciCredentialFormatProfile.JwtVcJsonLd:
+        case OpenId4VciCredentialFormatProfile.MsoMdoc:
         case OpenId4VciCredentialFormatProfile.SdJwtVc:
           signatureAlgorithm = options.possibleProofOfPossessionSignatureAlgorithms.find((signatureAlgorithm) =>
             proofSigningAlgsSupported.includes(signatureAlgorithm)
@@ -772,6 +783,17 @@ export class OpenId4VciHolderService {
       }
 
       return { credential, notificationMetadata }
+    } else if (format === OpenId4VciCredentialFormatProfile.MsoMdoc) {
+      // todo: !!!
+      const mdoc = Mdoc.fromBase64UrlEncodedMdoc(credentialResponse.successBody.credential as string)
+      const result = await this.mdocService.verify(agentContext, {
+        mdoc,
+        expectedDocumentType: 'org.iso.18013.5.1.mDL',
+      })
+      if (!result.isValid) {
+        agentContext.config.logger.error('Failed to validate credential', { result })
+        throw new CredoError(`Failed to validate credential, error = ${result.error?.message ?? 'Unknown'}`)
+      }
     }
 
     throw new CredoError(`Unsupported credential format ${credentialResponse.successBody.format}`)
