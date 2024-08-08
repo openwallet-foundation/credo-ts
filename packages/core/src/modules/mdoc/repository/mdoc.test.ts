@@ -49,7 +49,6 @@ describe('mdoc test', () => {
     const verify = await mdoc.verify(agent.context, {
       trustedCertificates: [funkeX509TrustedCertificate],
     })
-    expect(verify).toBeDefined()
-    expect(true).toBeFalsy()
+    expect(verify.isValid).toBeTruthy()
   })
 })
