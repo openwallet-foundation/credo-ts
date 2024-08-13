@@ -14,11 +14,11 @@ import { MdocService } from './MdocService'
 @injectable()
 export class MdocApi {
   private agentContext: AgentContext
-  private MdocService: MdocService
+  private mdocService: MdocService
 
   public constructor(agentContext: AgentContext, mdocService: MdocService) {
     this.agentContext = agentContext
-    this.MdocService = mdocService
+    this.mdocService = mdocService
   }
 
   /**
@@ -29,44 +29,44 @@ export class MdocApi {
    *
    */
   public async verify(options: MdocVerifyOptions) {
-    return await this.MdocService.verify(this.agentContext, options)
+    return await this.mdocService.verify(this.agentContext, options)
   }
 
   /**
-   * Create an Mdoc class from a hex encoded Mdoc
+   * Create an Mdoc class from a hex encoded Mdoc Issuer-Signed structure
    */
-  public fromHexEncodedMdoc(hexEncodedMdoc: string) {
-    return Mdoc.fromHexEncodedMdoc(hexEncodedMdoc)
+  public fromIssuerSignedHex(hexEncodedMdoc: string) {
+    return Mdoc.fromIssuerSignedHex(hexEncodedMdoc)
   }
 
   /**
-   * Create an Mdoc class from a hex encoded Mdoc
+   * Create an Mdoc class from a hex encoded Mdoc Issuer-Signed structure
    */
-  public fromBase64UrlEncoded(base64UrlEncodedMdoc: string) {
-    return Mdoc.fromBase64UrlEncodedMdoc(base64UrlEncodedMdoc)
+  public fromIssuerSignedBase64Url(base64UrlEncodedMdoc: string) {
+    return Mdoc.fromIssuerSignedBase64Url(base64UrlEncodedMdoc)
   }
 
   public async store(mdoc: Mdoc) {
-    return await this.MdocService.store(this.agentContext, mdoc)
+    return await this.mdocService.store(this.agentContext, mdoc)
   }
 
   public async getById(id: string): Promise<MdocRecord> {
-    return await this.MdocService.getById(this.agentContext, id)
+    return await this.mdocService.getById(this.agentContext, id)
   }
 
   public async getAll(): Promise<Array<MdocRecord>> {
-    return await this.MdocService.getAll(this.agentContext)
+    return await this.mdocService.getAll(this.agentContext)
   }
 
   public async findAllByQuery(query: Query<MdocRecord>, queryOptions?: QueryOptions): Promise<Array<MdocRecord>> {
-    return await this.MdocService.findByQuery(this.agentContext, query, queryOptions)
+    return await this.mdocService.findByQuery(this.agentContext, query, queryOptions)
   }
 
   public async deleteById(id: string) {
-    return await this.MdocService.deleteById(this.agentContext, id)
+    return await this.mdocService.deleteById(this.agentContext, id)
   }
 
   public async update(mdocRecord: MdocRecord) {
-    return await this.MdocService.update(this.agentContext, mdocRecord)
+    return await this.mdocService.update(this.agentContext, mdocRecord)
   }
 }

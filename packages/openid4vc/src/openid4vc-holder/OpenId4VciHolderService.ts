@@ -22,6 +22,7 @@ import type {
   AuthorizationDetails,
   AuthorizationDetailsJwtVcJson,
   AuthorizationDetailsJwtVcJsonLdAndLdpVc,
+  AuthorizationDetailsMsoMdoc,
   AuthorizationDetailsSdJwtVc,
   CredentialResponse,
   Jwt,
@@ -191,6 +192,7 @@ export class OpenId4VciHolderService {
         claims: offeredCredential.claims,
         doctype: offeredCredential.doctype,
       } satisfies AuthorizationDetailsMsoMdoc
+    }
   }
 
   public async resolveAuthorizationRequest(
@@ -784,15 +786,12 @@ export class OpenId4VciHolderService {
 
       return { credential, notificationMetadata }
     } else if (format === OpenId4VciCredentialFormatProfile.MsoMdoc) {
-      // todo: !!!
       const mdoc = Mdoc.fromBase64UrlEncodedMdoc(credentialResponse.successBody.credential as string)
-      const result = await this.mdocService.verify(agentContext, {
-        mdoc,
-        expectedDocumentType: 'org.iso.18013.5.1.mDL',
-      })
+      const result = await this.mdocService.verify(agentContext, { mdoc })
       if (!result.isValid) {
         agentContext.config.logger.error('Failed to validate credential', { result })
-        throw new CredoError(`Failed to validate credential, error = ${result.error?.message ?? 'Unknown'}`)
+        const errorMessage = typeof result.error ?? 'Unknown'
+        throw new CredoError(`Failed to validate credential, error = ${errorMessage}`)
       }
     }
 

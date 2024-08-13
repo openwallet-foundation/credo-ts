@@ -28,8 +28,8 @@ export class MdocRecord extends BaseRecord<DefaultMdocRecordTags> {
   public static readonly type = 'MdocRecord'
   public readonly type = MdocRecord.type
 
-  // We store the mdoc in it's original received form
-  public hexEncodedMdoc!: string
+  // We store the mdoc in it's original format
+  public issuerSignedHex!: string
   public docType!: string
 
   public constructor(props: MdocRecordStorageProps) {
@@ -38,13 +38,13 @@ export class MdocRecord extends BaseRecord<DefaultMdocRecordTags> {
     if (props) {
       this.id = props.id ?? uuid()
       this.createdAt = props.createdAt ?? new Date()
-      this.hexEncodedMdoc = props.mdoc.hexEncodedMdoc
+      this.issuerSignedHex = props.mdoc.issuerSignedHex
       this._tags = props.tags ?? {}
     }
   }
 
   public getTags() {
-    const mdoc = Mdoc.fromHexEncodedMdoc(this.hexEncodedMdoc)
+    const mdoc = Mdoc.fromIssuerSignedHex(this.issuerSignedHex)
     const alg = mdoc.jwaSignatureAlgorithm
     const docType = mdoc.docType
 

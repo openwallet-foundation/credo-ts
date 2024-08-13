@@ -4,6 +4,7 @@ import type { Query, QueryOptions } from '../../storage/StorageService'
 import { injectable } from 'tsyringe'
 
 import { AgentContext } from '../../agent'
+import { TypedArrayEncoder } from '../../utils'
 import { X509ModuleConfig } from '../x509'
 
 import { Mdoc } from './Mdoc'
@@ -19,6 +20,16 @@ export class MdocService {
 
   public constructor(mdocRepository: MdocRepository) {
     this.MdocRepository = mdocRepository
+  }
+
+  public fromHexEncodedMdoc(hexEncodedMdoc: string) {
+    return Mdoc.fromIssuerSignedHex(hexEncodedMdoc)
+  }
+
+  public fromBase64UrlEncodedMdoc(base64UrlEncodedMdoc: string) {
+    const hexEncodedMdoc = TypedArrayEncoder.fromBase64(base64UrlEncodedMdoc).toString('hex')
+
+    return Mdoc.fromIssuerSignedHex(hexEncodedMdoc)
   }
 
   public async verify(agentContext: AgentContext, { mdoc }: MdocVerifyOptions) {

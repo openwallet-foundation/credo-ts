@@ -1,12 +1,16 @@
-import type { AgentContext } from '../..'
 import type { com, Nullable } from '@sphereon/kmp-mdl-mdoc'
 
+import { type AgentContext } from '../../agent'
+import { X509ModuleConfig } from '../x509'
 import { X509Certificate } from '../x509/X509Certificate'
 import { X509Service } from '../x509/X509Service'
+
+import { MdocError } from './MdocError'
 
 type IX509CallbackServiceJS = com.sphereon.crypto.IX509ServiceJS
 
 type IKey = com.sphereon.cbor.cose.IKey
+
 type IX509VerificationResult<KeyType extends IKey> = com.sphereon.crypto.IX509VerificationResult<KeyType>
 
 /**
@@ -17,7 +21,16 @@ type IX509VerificationResult<KeyType extends IKey> = com.sphereon.crypto.IX509Ve
  * Next to the specific function for the library it exports a more powerful version of the same verification method as well
  */
 export class MdocX509CallbackService implements IX509CallbackServiceJS {
-  public constructor(private agentContext: AgentContext, private trustedCertificates: [string, ...string[]]) {}
+  private trustedCertificates: [string, ...string[]]
+  public constructor(private agentContext: AgentContext, trustedCertificates?: [string, ...string[]]) {
+    const _trustedCertificates =
+      trustedCertificates ?? agentContext.dependencyManager.resolve(X509ModuleConfig).trustedCertificates
+
+    if (!_trustedCertificates) {
+      throw new MdocError('Missing trusted certificates for Mdoc validation.')
+    }
+    this.trustedCertificates = _trustedCertificates
+  }
 
   /**
    * This method is the implementation used within the mDL/Mdoc library
@@ -40,23 +53,19 @@ export class MdocX509CallbackService implements IX509CallbackServiceJS {
       )
 
       await X509Service.validateCertificateChain(this.agentContext, { certificateChain })
-      const leafCertificate = X509Service.getLeafCertificate(this.agentContext, { certificateChain })
 
       return {
-        publicKey: leafCertificate.publicKey as unknown as undefined, // TODO:
-        publicKeyAlgorithm: undefined,
-        publicKeyParams: undefined,
-        name: 'x509-verification success',
+        name: 'x509-verification',
         message: 'x509-chain successfully validated',
         critical: false,
         error: false,
       } satisfies IX509VerificationResult<IKey>
     } catch (error) {
       return {
-        name: 'x509-verification failed',
+        name: 'x509-verification',
         message:
           error instanceof Error
-            ? error.message
+            ? `Modoc x509 certificate chain validation failed. ${error.message}`
             : 'An unknown error occurred during x509 certificate chain validation.',
         critical: true,
         error: true,
