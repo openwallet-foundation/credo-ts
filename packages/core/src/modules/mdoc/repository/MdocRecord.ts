@@ -28,7 +28,6 @@ export class MdocRecord extends BaseRecord<DefaultMdocRecordTags> {
   public static readonly type = 'MdocRecord'
   public readonly type = MdocRecord.type
 
-  // We store the mdoc in it's original format
   public issuerSignedHex!: string
   public docType!: string
 

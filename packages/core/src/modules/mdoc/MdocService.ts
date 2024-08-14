@@ -22,12 +22,12 @@ export class MdocService {
     this.MdocRepository = mdocRepository
   }
 
-  public fromHexEncodedMdoc(hexEncodedMdoc: string) {
+  public fromIssuerSignedHex(hexEncodedMdoc: string) {
     return Mdoc.fromIssuerSignedHex(hexEncodedMdoc)
   }
 
-  public fromBase64UrlEncodedMdoc(base64UrlEncodedMdoc: string) {
-    const hexEncodedMdoc = TypedArrayEncoder.fromBase64(base64UrlEncodedMdoc).toString('hex')
+  public fromIssuerSignedBase64(issuerSignedBase64: string) {
+    const hexEncodedMdoc = TypedArrayEncoder.fromBase64(issuerSignedBase64).toString('hex')
 
     return Mdoc.fromIssuerSignedHex(hexEncodedMdoc)
   }
