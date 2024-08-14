@@ -81,8 +81,8 @@ export class Mdoc {
     return new Mdoc(TypedArrayEncoder.fromHex(hexEncodedMdoc))
   }
 
-  public static fromIssuerSignedBase64Url(base64UrlEncodedMdoc: string) {
-    const hexEncodedMdoc = TypedArrayEncoder.fromBase64(base64UrlEncodedMdoc).toString('hex')
+  public static fromIssuerSignedBase64(issuerSignedBase64: string) {
+    const hexEncodedMdoc = TypedArrayEncoder.fromBase64(issuerSignedBase64).toString('hex')
 
     return this.fromIssuerSignedHex(hexEncodedMdoc)
   }

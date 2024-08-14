@@ -24,7 +24,7 @@
     "build": "pnpm -r --parallel run build",
     "test:unit": "jest --testPathIgnorePatterns 'e2e.test.ts$'",
     "test:e2e": "jest --testMatch '**/?(*.)e2e.test.ts'",
-    "test": "jest **/mdoc.test.ts",
+    "test": "jest",
     "lint": "eslint --ignore-path .gitignore .",
     "validate": "pnpm lint && pnpm check-types && pnpm check-format",
     "run-mediator": "ts-node ./samples/mediator.ts",

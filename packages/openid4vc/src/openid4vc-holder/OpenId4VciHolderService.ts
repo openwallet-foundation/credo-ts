@@ -786,7 +786,10 @@ export class OpenId4VciHolderService {
 
       return { credential, notificationMetadata }
     } else if (format === OpenId4VciCredentialFormatProfile.MsoMdoc) {
-      const mdoc = Mdoc.fromIssuerSignedBase64Url(credentialResponse.successBody.credential as string)
+      if (typeof credentialResponse.successBody.credential !== 'string') {
+        throw new CredoError('Received Mdoc credential in an unsupported format.')
+      }
+      const mdoc = Mdoc.fromIssuerSignedBase64(credentialResponse.successBody.credential)
       const result = await this.mdocService.verify(agentContext, { mdoc })
       if (!result.isValid) {
         agentContext.config.logger.error('Failed to validate credential', { result })

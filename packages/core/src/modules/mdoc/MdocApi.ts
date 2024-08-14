@@ -40,10 +40,10 @@ export class MdocApi {
   }
 
   /**
-   * Create an Mdoc class from a hex encoded Mdoc Issuer-Signed structure
+   * Create an Mdoc class from a base64/base64url encoded Mdoc Issuer-Signed structure
    */
-  public fromIssuerSignedBase64Url(base64UrlEncodedMdoc: string) {
-    return Mdoc.fromIssuerSignedBase64Url(base64UrlEncodedMdoc)
+  public fromIssuerSignedBase64(issuerSignedBase64: string) {
+    return Mdoc.fromIssuerSignedBase64(issuerSignedBase64)
   }
 
   public async store(mdoc: Mdoc) {
