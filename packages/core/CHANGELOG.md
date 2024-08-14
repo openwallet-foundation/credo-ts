@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.5.10
+
+### Patch Changes
+
+- fa62b74: Add support for Demonstrating Proof of Possesion (DPoP) when receiving credentials using OpenID4VCI
+
 ## 0.5.9
 
 ## 0.5.8
