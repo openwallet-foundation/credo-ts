@@ -5,7 +5,7 @@ import type {
   OpenId4VciCredentialSupportedWithId,
 } from './models'
 import type { AgentContext, JwaSignatureAlgorithm } from '@credo-ts/core'
-import type { CredentialOfferFormat } from '@sphereon/oid4vci-common'
+import type { CredentialOfferFormatV1_0_11 } from '@sphereon/oid4vci-common'
 
 import { CredoError } from '@credo-ts/core'
 
@@ -39,6 +39,8 @@ export function getTypesFromCredentialSupported(
       )
     }
     return credentialSupported.vct ? [credentialSupported.vct] : undefined
+  } else if (credentialSupported.format === 'mso_mdoc') {
+    return [credentialSupported.doctype]
   }
 
   throw Error(`Unable to extract types from credentials supported. Unknown format ${credentialSupported.format}`)
@@ -55,6 +57,10 @@ export function credentialConfigurationSupportedToCredentialSupported(
     cryptographic_suites_supported: config.credential_signing_alg_values_supported,
     display: config.display,
     order: config.order,
+  }
+
+  if (config.format === 'mso_mdoc') {
+    return { id, ...config }
   }
 
   if (config.format === 'jwt_vc_json' || config.format === 'jwt_vc') {
@@ -100,6 +106,10 @@ export function credentialSupportedToCredentialConfigurationSupported(
   agentContext: AgentContext,
   credentialSupported: OpenId4VciCredentialSupportedWithId
 ): OpenId4VciCredentialConfigurationSupported {
+  if (credentialSupported.format === 'mso_mdoc') {
+    return { ...credentialSupported }
+  }
+
   const supportedJwaSignatureAlgorithms = getSupportedJwaSignatureAlgorithms(agentContext)
 
   // We assume the jwt proof_types_supported is the same as the cryptographic_suites_supported when converting from v11 to v13
@@ -190,7 +200,7 @@ export function credentialsSupportedV11ToV13(
  */
 export function getOfferedCredentials(
   agentContext: AgentContext,
-  offeredCredentials: Array<string | CredentialOfferFormat>,
+  offeredCredentials: Array<string | CredentialOfferFormatV1_0_11>,
   credentialsSupportedOrConfigurations: OpenId4VciCredentialConfigurationsSupported | OpenId4VciCredentialSupported[]
 ): {
   credentialsSupported: OpenId4VciCredentialSupportedWithId[]
