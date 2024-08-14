@@ -32,8 +32,11 @@ export class MdocService {
     return Mdoc.fromIssuerSignedHex(hexEncodedMdoc)
   }
 
-  public async verify(agentContext: AgentContext, { mdoc }: MdocVerifyOptions) {
-    const { trustedCertificates } = agentContext.dependencyManager.resolve(X509ModuleConfig)
+  public async verify(agentContext: AgentContext, options: MdocVerifyOptions) {
+    const { mdoc } = options
+    const trustedCertificates =
+      options.trustedCertificates ?? agentContext.dependencyManager.resolve(X509ModuleConfig).trustedCertificates
+
     if (!trustedCertificates) {
       throw new MdocError('Mdoc Verification failed. Missing trusted certificates.')
     }

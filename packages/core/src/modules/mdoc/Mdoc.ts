@@ -82,9 +82,7 @@ export class Mdoc {
   }
 
   public static fromIssuerSignedBase64(issuerSignedBase64: string) {
-    const hexEncodedMdoc = TypedArrayEncoder.fromBase64(issuerSignedBase64).toString('hex')
-
-    return this.fromIssuerSignedHex(hexEncodedMdoc)
+    return new Mdoc(TypedArrayEncoder.fromBase64(issuerSignedBase64))
   }
 
   public get issuerSignedHex() {
@@ -100,8 +98,12 @@ export class Mdoc {
 
     const cryptoServiceJS = com.sphereon.crypto.CryptoServiceJS
 
-    // TODO: This way of of registering and working with the x509/cose services is subject to race-conditions
-    // TODO: This is a known issue and beeing worked on by sphereon
+    if (agentContext.contextCorrelationId !== 'default') {
+      // TODO: This way of of registering and working with the x509/cose services is subject to race-conditions
+      // TODO: This is a known issue and beeing worked on by sphereon
+      throw new MdocError('Multitenancy is currently not supported for Mdoc.')
+    }
+
     cryptoServiceJS.X509.register(new MdocX509CallbackService(agentContext, trustedCertificates))
     cryptoServiceJS.COSE.register(new MdocCoseCallbackService(agentContext))
 

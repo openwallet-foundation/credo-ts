@@ -158,7 +158,7 @@ export class OpenId4VciHolderService {
   private getAuthDetailsFromOfferedCredential(
     offeredCredential: OpenId4VciCredentialSupported,
     authDetailsLocation: string | undefined
-  ): AuthorizationDetails | undefined {
+  ): AuthorizationDetails {
     const { format } = offeredCredential
     const type = 'openid_credential'
 
@@ -192,6 +192,8 @@ export class OpenId4VciHolderService {
         claims: offeredCredential.claims,
         doctype: offeredCredential.doctype,
       } satisfies AuthorizationDetailsMsoMdoc
+    } else {
+      throw new CredoError(`Cannot create authorization_details. Unsupported credential format '${format}'.`)
     }
   }
 
