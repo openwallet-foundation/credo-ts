@@ -13,7 +13,7 @@ export class MdocModule implements Module {
   public readonly api = MdocApi
 
   /**
-   * Registers the dependencies of the sd-jwt-vc module on the dependency manager.
+   * Registers the dependencies of the mdoc module on the dependency manager.
    */
   public register(dependencyManager: DependencyManager) {
     // Warn about experimental module

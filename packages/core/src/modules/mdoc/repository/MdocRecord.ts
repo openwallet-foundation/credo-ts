@@ -27,9 +27,7 @@ export type MdocRecordStorageProps = {
 export class MdocRecord extends BaseRecord<DefaultMdocRecordTags> {
   public static readonly type = 'MdocRecord'
   public readonly type = MdocRecord.type
-
   public issuerSignedHex!: string
-  public docType!: string
 
   public constructor(props: MdocRecordStorageProps) {
     super()

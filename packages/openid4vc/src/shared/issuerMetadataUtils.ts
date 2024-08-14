@@ -60,10 +60,8 @@ export function credentialConfigurationSupportedToCredentialSupported(
   }
 
   if (config.format === 'mso_mdoc') {
-    return { id, ...config }
-  }
-
-  if (config.format === 'jwt_vc_json' || config.format === 'jwt_vc') {
+    return { ...baseConfig, format: 'mso_mdoc', doctype: config.doctype, claims: config.claims }
+  } else if (config.format === 'jwt_vc_json' || config.format === 'jwt_vc') {
     return {
       ...baseConfig,
       format: config.format,
@@ -106,10 +104,6 @@ export function credentialSupportedToCredentialConfigurationSupported(
   agentContext: AgentContext,
   credentialSupported: OpenId4VciCredentialSupportedWithId
 ): OpenId4VciCredentialConfigurationSupported {
-  if (credentialSupported.format === 'mso_mdoc') {
-    return { ...credentialSupported }
-  }
-
   const supportedJwaSignatureAlgorithms = getSupportedJwaSignatureAlgorithms(agentContext)
 
   // We assume the jwt proof_types_supported is the same as the cryptographic_suites_supported when converting from v11 to v13
@@ -135,7 +129,14 @@ export function credentialSupportedToCredentialConfigurationSupported(
     order: credentialSupported.order,
   }
 
-  if (credentialSupported.format === 'jwt_vc_json' || credentialSupported.format === 'jwt_vc') {
+  if (credentialSupported.format === 'mso_mdoc') {
+    return {
+      ...baseCredentialConfigurationSupported,
+      doctype: credentialSupported.doctype,
+      format: credentialSupported.format,
+      claims: credentialSupported.claims,
+    }
+  } else if (credentialSupported.format === 'jwt_vc_json' || credentialSupported.format === 'jwt_vc') {
     return {
       ...baseCredentialConfigurationSupported,
       format: credentialSupported.format,
