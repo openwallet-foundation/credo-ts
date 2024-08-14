@@ -793,6 +793,8 @@ export class OpenId4VciHolderService {
         const errorMessage = typeof result.error ?? 'Unknown'
         throw new CredoError(`Failed to validate credential, error = ${errorMessage}`)
       }
+
+      return { credential: mdoc, notificationMetadata }
     }
 
     throw new CredoError(`Unsupported credential format ${credentialResponse.successBody.format}`)

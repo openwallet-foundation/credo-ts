@@ -39,6 +39,8 @@ export function getTypesFromCredentialSupported(
       )
     }
     return credentialSupported.vct ? [credentialSupported.vct] : undefined
+  } else if (credentialSupported.format === 'mso_mdoc') {
+    return [credentialSupported.doctype]
   }
 
   throw Error(`Unable to extract types from credentials supported. Unknown format ${credentialSupported.format}`)
@@ -55,6 +57,10 @@ export function credentialConfigurationSupportedToCredentialSupported(
     cryptographic_suites_supported: config.credential_signing_alg_values_supported,
     display: config.display,
     order: config.order,
+  }
+
+  if (config.format === 'mso_mdoc') {
+    return { id, ...config }
   }
 
   if (config.format === 'jwt_vc_json' || config.format === 'jwt_vc') {
@@ -100,6 +106,10 @@ export function credentialSupportedToCredentialConfigurationSupported(
   agentContext: AgentContext,
   credentialSupported: OpenId4VciCredentialSupportedWithId
 ): OpenId4VciCredentialConfigurationSupported {
+  if (credentialSupported.format === 'mso_mdoc') {
+    return { ...credentialSupported }
+  }
+
   const supportedJwaSignatureAlgorithms = getSupportedJwaSignatureAlgorithms(agentContext)
 
   // We assume the jwt proof_types_supported is the same as the cryptographic_suites_supported when converting from v11 to v13
