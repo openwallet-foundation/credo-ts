@@ -713,7 +713,7 @@ export class OpenId4VcIssuerService {
           signCallback: this.getSdJwtVcCredentialSigningCallback(agentContext, signOptions),
         }
       } else {
-        throw new CredoError(`Unsupported credential format`)
+        throw new CredoError(`Unsupported credential format ${signOptions.format}`)
       }
     }
   }
