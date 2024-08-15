@@ -468,23 +468,32 @@ export class OpenId4VcIssuerService {
           credentialRequest.format === OpenId4VciCredentialFormatProfile.JwtVcJson &&
           offeredCredential.format === credentialRequest.format
         ) {
-          return equalsIgnoreOrder(offeredCredential.credential_definition.type ?? [], credentialRequest.types)
+          const types =
+            'credential_definition' in credentialRequest
+              ? credentialRequest.credential_definition.type
+              : credentialRequest.types
+
+          return equalsIgnoreOrder(offeredCredential.credential_definition.type ?? [], types)
         } else if (
           credentialRequest.format === OpenId4VciCredentialFormatProfile.JwtVcJsonLd &&
           offeredCredential.format === credentialRequest.format
         ) {
-          return equalsIgnoreOrder(
-            offeredCredential.credential_definition.type ?? [],
-            credentialRequest.credential_definition.types
-          )
+          const types =
+            'type' in credentialRequest.credential_definition
+              ? credentialRequest.credential_definition.type
+              : credentialRequest.credential_definition.types
+
+          return equalsIgnoreOrder(offeredCredential.credential_definition.type ?? [], types)
         } else if (
           credentialRequest.format === OpenId4VciCredentialFormatProfile.LdpVc &&
           offeredCredential.format === credentialRequest.format
         ) {
-          return equalsIgnoreOrder(
-            offeredCredential.credential_definition.type ?? [],
-            credentialRequest.credential_definition.types
-          )
+          const types =
+            'type' in credentialRequest.credential_definition
+              ? credentialRequest.credential_definition.type
+              : credentialRequest.credential_definition.types
+
+          return equalsIgnoreOrder(offeredCredential.credential_definition.type ?? [], types)
         } else if (
           credentialRequest.format === OpenId4VciCredentialFormatProfile.SdJwtVc &&
           offeredCredential.format === credentialRequest.format
