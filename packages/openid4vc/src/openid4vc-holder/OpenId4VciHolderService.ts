@@ -580,7 +580,7 @@ export class OpenId4VciHolderService {
       )
     } else if (credentialBinding.method === 'jwk' && !supportsJwk) {
       throw new CredoError(
-        `Resolved credential binding for proof of possession uses jwk, but openid issuer does not support 'jwk' cryptographic binding method`
+        `Resolved credential binding for proof of possession uses jwk, but openid issuer does not support 'jwk' or 'cose_key' cryptographic binding method`
       )
     }
 
@@ -684,7 +684,10 @@ export class OpenId4VciHolderService {
     const issuerSupportedBindingMethods = credentialToRequest.configuration.cryptographic_binding_methods_supported
     const supportsAllDidMethods = issuerSupportedBindingMethods?.includes('did') ?? false
     const supportedDidMethods = issuerSupportedBindingMethods?.filter((method) => method.startsWith('did:'))
-    const supportsJwk = issuerSupportedBindingMethods?.includes('jwk') ?? false
+
+    // The cryptographic_binding_methods_supported describe the cryptographic key material that the issued Credential is bound to.
+    const supportsCoseKey = issuerSupportedBindingMethods?.includes('cose_key') ?? false
+    const supportsJwk = issuerSupportedBindingMethods?.includes('jwk') ?? supportsCoseKey ?? false
 
     return {
       signatureAlgorithm,
