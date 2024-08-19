@@ -31,7 +31,9 @@ export async function fetchCredentialDefinition(agentContext: AgentContext, cred
     .getCredentialDefinition(agentContext, credentialDefinitionId)
 
   if (!result || !result.credentialDefinition) {
-    throw new CredoError(`Schema not found for id ${credentialDefinitionId}: ${result.resolutionMetadata.message}`)
+    throw new CredoError(
+      `Credential definition not found for id ${credentialDefinitionId}: ${result.resolutionMetadata.message}`
+    )
   }
 
   const indyNamespace = result.credentialDefinitionMetadata.didIndyNamespace
