@@ -27,8 +27,8 @@
   },
   "dependencies": {
     "@credo-ts/core": "workspace:*",
-    "@sphereon/did-auth-siop": "0.16.1-next.8",
-    "@sphereon/oid4vc-common": "0.16.1-next.8",
+    "@sphereon/did-auth-siop": "0.16.1-next.13",
+    "@sphereon/oid4vc-common": "0.16.1-next.13",
     "@sphereon/oid4vci-client": "0.16.1-next.8",
     "@sphereon/oid4vci-common": "0.16.1-next.8",
     "@sphereon/oid4vci-issuer": "0.16.1-next.8",

@@ -34,12 +34,15 @@ import {
   W3cJsonLdVerifiablePresentation,
   Hasher,
   DidsApi,
+  X509Service,
+  getDomainFromUrl,
 } from '@credo-ts/core'
 import {
   AuthorizationRequest,
   AuthorizationResponse,
   PassBy,
   PropertyTarget,
+  RequestAud,
   ResponseIss,
   ResponseMode,
   ResponseType,
@@ -97,9 +100,31 @@ export class OpenId4VcSiopVerifierService {
     let clientIdScheme: ClientIdScheme
     let clientId: string
 
+    let authorizationResponseUrl = joinUriParts(this.config.baseUrl, [
+      options.verifier.verifierId,
+      this.config.authorizationEndpoint.endpointPath,
+    ])
+
     if (jwtIssuer.method === 'x5c') {
-      clientId = jwtIssuer.issuer
-      clientIdScheme = jwtIssuer.clientIdScheme
+      const leafCertificate = X509Service.getLeafCertificate(agentContext, { certificateChain: jwtIssuer.x5c })
+
+      if (leafCertificate.sanDnsNames.includes(getDomainFromUrl(jwtIssuer.issuer))) {
+        clientIdScheme = 'x509_san_dns'
+      } else if (leafCertificate.sanUriNames.includes(jwtIssuer.issuer)) {
+        clientIdScheme = 'x509_san_uri'
+      } else {
+        throw new CredoError(
+          `With jwtIssuer 'method' 'x5c' the jwtIssuer's 'issuer' field must either match the match a sanDnsName (FQDN) or sanUriName in the leaf x509 chain's leaf certificate.`
+        )
+      }
+
+      if (clientIdScheme === 'x509_san_dns') {
+        clientId = getDomainFromUrl(jwtIssuer.issuer)
+        authorizationResponseUrl = jwtIssuer.issuer
+      } else {
+        clientId = jwtIssuer.issuer
+        authorizationResponseUrl = clientId
+      }
     } else if (jwtIssuer.method === 'did') {
       clientId = jwtIssuer.didUrl.split('#')[0]
       clientIdScheme = 'did'
@@ -113,6 +138,7 @@ export class OpenId4VcSiopVerifierService {
       presentationDefinition: options.presentationExchange?.definition,
       clientId,
       clientIdScheme,
+      authorizationResponseUrl,
     })
 
     // We always use shortened URIs currently
@@ -155,12 +181,22 @@ export class OpenId4VcSiopVerifierService {
       jwtIssuer,
     })
 
+    // TODO:
+    // const isMdlRequest = false
+    //  options.presentationExchange?.definition.format === 'mso_mdoc' ||
+    // options.presentationExchange?.definition.input_descriptors((descriptor) => descriptor.format === 'mso_mdoc')
+
     // NOTE: it's not possible to set the uri scheme when using the RP to create an auth request, only lower level
     // functions allow this. So we need to replace the uri scheme manually.
     let authorizationRequestUri = (await authorizationRequest.uri()).encodedUri
     if (options.presentationExchange && !options.idToken) {
+      // TODO: && !isMdlRequest) {
       authorizationRequestUri = authorizationRequestUri.replace('openid://', 'openid4vp://')
     }
+    // TODO:
+    //if (isMdlRequest) {
+    //authorizationRequestUri = authorizationRequestUri.replace('openid://', 'mdoc-openid4vp')
+    //}
 
     const verificationSession = await verificationSessionCreatedPromise
 
@@ -197,9 +233,15 @@ export class OpenId4VcSiopVerifierService {
       )
     }
 
+    const authorizationResponseUrl = joinUriParts(this.config.baseUrl, [
+      options.verificationSession.verifierId,
+      this.config.authorizationEndpoint.endpointPath,
+    ])
+
     const relyingParty = await this.getRelyingParty(agentContext, options.verificationSession.verifierId, {
       presentationDefinition: presentationDefinitionsWithLocation?.[0]?.definition,
       clientId: requestClientId,
+      authorizationResponseUrl,
     })
 
     // This is very unfortunate, but storing state in sphereon's SiOP-OID4VP library
@@ -380,18 +422,15 @@ export class OpenId4VcSiopVerifierService {
       presentationDefinition,
       clientId,
       clientIdScheme,
+      authorizationResponseUrl,
     }: {
+      authorizationResponseUrl: string
       idToken?: boolean
       presentationDefinition?: DifPresentationExchangeDefinition
       clientId: string
       clientIdScheme?: ClientIdScheme
     }
   ) {
-    const authorizationResponseUrl = joinUriParts(this.config.baseUrl, [
-      verifierId,
-      this.config.authorizationEndpoint.endpointPath,
-    ])
-
     const signatureSuiteRegistry = agentContext.dependencyManager.resolve(SignatureSuiteRegistry)
 
     const supportedAlgs = getSupportedJwaSignatureAlgorithms(agentContext) as string[]
@@ -423,8 +462,9 @@ export class OpenId4VcSiopVerifierService {
       .getEventEmitterForVerifier(agentContext.contextCorrelationId, verifierId)
 
     builder
-      .withRedirectUri(authorizationResponseUrl)
+      .withResponsetUri(authorizationResponseUrl)
       .withIssuer(ResponseIss.SELF_ISSUED_V2)
+      .withAudience(RequestAud.SELF_ISSUED_V2)
       .withSupportedVersions([
         SupportedVersion.SIOPv2_D11,
         SupportedVersion.SIOPv2_D12_OID4VP_D18,
@@ -444,7 +484,6 @@ export class OpenId4VcSiopVerifierService {
       // TODO: we should probably allow some dynamic values here
       .withClientMetadata({
         client_id: clientId,
-        client_id_scheme: clientIdScheme,
         passBy: PassBy.VALUE,
         responseTypesSupported: [ResponseType.VP_TOKEN],
         subject_syntax_types_supported: supportedDidMethods.map((m) => `did:${m}`),
@@ -473,6 +512,10 @@ export class OpenId4VcSiopVerifierService {
           },
         },
       })
+
+    if (clientIdScheme) {
+      builder.withClientIdScheme(clientIdScheme)
+    }
 
     if (presentationDefinition) {
       builder.withPresentationDefinition({ definition: presentationDefinition }, [PropertyTarget.REQUEST_OBJECT])
