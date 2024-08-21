@@ -106,9 +106,9 @@ export class OpenId4VcSiopVerifierService {
     ])
 
     if (jwtIssuer.method === 'x5c') {
-      if (!jwtIssuer.issuer.startsWith(authorizationResponseUrl)) {
+      if (jwtIssuer.issuer !== authorizationResponseUrl) {
         throw new CredoError(
-          `The jwtIssuer's issuer field must start with the verifier's authorizationResponseUrl '${authorizationResponseUrl}'.`
+          `The jwtIssuer's issuer field must start match the verifier's authorizationResponseUrl '${authorizationResponseUrl}'.`
         )
       }
       const leafCertificate = X509Service.getLeafCertificate(agentContext, { certificateChain: jwtIssuer.x5c })
