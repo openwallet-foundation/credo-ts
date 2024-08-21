@@ -106,24 +106,25 @@ export class OpenId4VcSiopVerifierService {
     ])
 
     if (jwtIssuer.method === 'x5c') {
+      if (!jwtIssuer.issuer.startsWith(authorizationResponseUrl)) {
+        throw new CredoError(
+          `The jwtIssuer's issuer field must start with the verifier's authorizationResponseUrl '${authorizationResponseUrl}'.`
+        )
+      }
       const leafCertificate = X509Service.getLeafCertificate(agentContext, { certificateChain: jwtIssuer.x5c })
 
       if (leafCertificate.sanDnsNames.includes(getDomainFromUrl(jwtIssuer.issuer))) {
         clientIdScheme = 'x509_san_dns'
+        clientId = getDomainFromUrl(jwtIssuer.issuer)
+        authorizationResponseUrl = jwtIssuer.issuer
       } else if (leafCertificate.sanUriNames.includes(jwtIssuer.issuer)) {
         clientIdScheme = 'x509_san_uri'
+        clientId = jwtIssuer.issuer
+        authorizationResponseUrl = clientId
       } else {
         throw new CredoError(
           `With jwtIssuer 'method' 'x5c' the jwtIssuer's 'issuer' field must either match the match a sanDnsName (FQDN) or sanUriName in the leaf x509 chain's leaf certificate.`
         )
-      }
-
-      if (clientIdScheme === 'x509_san_dns') {
-        clientId = getDomainFromUrl(jwtIssuer.issuer)
-        authorizationResponseUrl = jwtIssuer.issuer
-      } else {
-        clientId = jwtIssuer.issuer
-        authorizationResponseUrl = clientId
       }
     } else if (jwtIssuer.method === 'did') {
       clientId = jwtIssuer.didUrl.split('#')[0]
