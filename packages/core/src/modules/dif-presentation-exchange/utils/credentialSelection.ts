@@ -273,7 +273,7 @@ function getSubmissionRequirementRulePick(
     // if the requirement is satisfied, we only need to return the satisfied submissions
     // however if the requirement is not satisfied, we include all entries so the wallet could
     // render which credentials are missing.
-    submission:
+    submissionEntry:
       satisfiedSubmissions.length >= selectedSubmission.needsCount
         ? satisfiedSubmissions
         : [...satisfiedSubmissions, ...unsatisfiedSubmissions],
