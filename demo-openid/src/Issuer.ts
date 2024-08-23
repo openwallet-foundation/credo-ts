@@ -48,12 +48,47 @@ export const credentialsSupported = [
   universityDegreeCredentialSdJwt,
 ] satisfies OpenId4VciCredentialSupportedWithId[]
 
+// string: string dictionary
+const issuanceToUserId = {} as Record<string, string>
+
+function getStringAfterLastSlash(credentialOfferUriEncoded: string): string {
+  // Decode the URL-encoded credential_offer_uri
+  const credentialOfferUri = decodeURIComponent(credentialOfferUriEncoded)
+
+  // Extract the part after the last '/' in the decoded credential_offer_uri
+  const parts = credentialOfferUri.split('/')
+  return parts[parts.length - 1]
+}
+
+function getNameSurname(userId: string) {
+  return {
+    name: `Alice${userId}`,
+    surname: `Doe${userId}`,
+  }
+}
+
+function credentialOfferOfferUri(credentialOffer: string) {
+  const url = new URL(credentialOffer)
+  const credentialOfferUri = url.searchParams.get('credential_offer_uri')
+  if (!credentialOfferUri) {
+    throw new Error('credential_offer_uri parameter not found in the input string.')
+  }
+  return credentialOfferUri
+}
+
 function getCredentialRequestToCredentialMapper({
   issuerDidKey,
 }: {
   issuerDidKey: DidKey
 }): OpenId4VciCredentialRequestToCredentialMapper {
-  return async ({ holderBinding, credentialConfigurationIds }) => {
+  return async ({ issuanceSession, holderBinding, credentialConfigurationIds }) => {
+    const issuanceId = getStringAfterLastSlash(issuanceSession.credentialOfferUri)
+    const userId = issuanceToUserId[issuanceId]
+    const userData = getNameSurname(userId)
+    console.log(
+      `[issuance ${issuanceId}] We will issue credential with values ${JSON.stringify(userData)} for user ${userId}`
+    )
+
     const credentialConfigurationId = credentialConfigurationIds[0]
 
     if (credentialConfigurationId === universityDegreeCredential.id) {
@@ -155,12 +190,17 @@ export class Issuer extends BaseAgent<{
   }
 
   public async createCredentialOffer(offeredCredentials: string[]) {
+    const userId = Math.random().toString()
     const { credentialOffer } = await this.agent.modules.openId4VcIssuer.createCredentialOffer({
       issuerId: this.issuerRecord.issuerId,
       offeredCredentials,
       preAuthorizedCodeFlowConfig: { userPinRequired: false },
     })
 
+    const credentialOfferUri = credentialOfferOfferUri(credentialOffer)
+    const issuanceId = getStringAfterLastSlash(credentialOfferUri)
+    issuanceToUserId[issuanceId] = userId
+    console.log(`Started issuance ${issuanceId} for user ${userId}`)
     return credentialOffer
   }
 
