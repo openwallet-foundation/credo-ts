@@ -3,6 +3,7 @@ import type { AgentContext } from '../../agent'
 import { com, kotlin } from '@sphereon/kmp-mdl-mdoc'
 
 import { JwaSignatureAlgorithm } from '../../crypto'
+import { CredoError } from '../../error'
 import { X509Service } from '../../modules/x509'
 import { Buffer, TypedArrayEncoder } from '../../utils'
 
@@ -11,11 +12,11 @@ import { MdocError } from './MdocError'
 import { MdocX509CallbackService } from './MdocX509CallbackService'
 
 type IssuerSignedJson = com.sphereon.mdoc.data.device.IssuerSignedJson
+type IssuerSignedItemJson = com.sphereon.mdoc.data.device.IssuerSignedItemJson
 type IssuerSignedCbor = com.sphereon.mdoc.data.device.IssuerSignedCbor
 
-type MdocIssuerSignedItem<T = unknown> = com.sphereon.mdoc.data.device.IssuerSignedItemJson<T>
-type MdocNamespaceData = Record<string, MdocIssuerSignedItem>
-type MdocNamespace = Record<string, MdocNamespaceData>
+type MdocNamespaceData = Record<string, unknown>
+export type MdocNamespaces = Record<string, MdocNamespaceData>
 
 export class Mdoc {
   private issuerSignedCbor: IssuerSignedCbor
@@ -23,41 +24,31 @@ export class Mdoc {
 
   private constructor(buffer: Buffer) {
     // TODO: CONVERSION FROM CBOR TO JSON AND BACK CURRENTLY NOT COMPLETELY WORKING THEREFORE WE STORE BOTH FOR NOW
-    this.issuerSignedCbor = com.sphereon.mdoc.data.device.IssuerSignedCbor.Companion.cborDecode(Int8Array.from(buffer))
+    this.issuerSignedCbor = com.sphereon.mdoc.data.device.IssuerSignedCbor.Static.cborDecode(Int8Array.from(buffer))
     this.issuerSignedJson = this.issuerSignedCbor.toJson()
   }
 
   public get docType() {
-    // TODO: This will be a part of the { ... issuerSigned } structure
-    return 'org.iso.18013.5.1.mDL'
+    const type = this.issuerSignedJson.MSO?.docType
+    if (!type) {
+      throw new CredoError('Missing required doctype in MDOC.')
+    }
+    return type
   }
 
-  // TODO: Use a different return type. Wait for sphereon
-  public get namespaces(): Record<string, unknown> {
-    const namespaces: MdocNamespace = {}
-    const entries = this.issuerSignedJson.nameSpaces?.asJsMapView().entries()
+  public get namespaces(): MdocNamespaces {
+    const mdocNamespaces = this.issuerSignedCbor.toJsonDTO().nameSpaces
+    if (!mdocNamespaces) throw new MdocError(`Failed to retrieve namespaces from the mdoc 'IssuerSigned' structure.`)
 
-    // eslint-disable-next-line no-constant-condition
-    while (true) {
-      const next = entries?.next()
-      if (next?.done) break
-      if (!next?.value) {
-        throw new MdocError('Missing value in Mdoc')
-      }
+    const namespaces: MdocNamespaces = {}
+    const namespaceEntries: [string, Record<string, IssuerSignedItemJson>][] = Object.entries(mdocNamespaces)
 
-      // TODO: This is not completely working yet. The values are still not json if nested.
-      // TODO: wait for sphereon to complete
-      // Waiting for fix from sphereon
-      const mdocDataItem = next.value[1]
-      const mdocDataItemRecord: Record<
-        string,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        com.sphereon.mdoc.data.device.IssuerSignedItemJson<any>['elementValue']
-      > = Object.fromEntries(mdocDataItem.map((dataItem) => [dataItem.elementIdentifier, dataItem.elementValue]))
-
-      namespaces[next.value[0]] = mdocDataItemRecord
+    for (const [namespace, claims] of namespaceEntries) {
+      const claimEntries = Object.entries(claims)
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const claimRecord = Object.fromEntries(claimEntries.map(([_, val]) => [val.key, val.value.value as unknown]))
+      namespaces[namespace] = claimRecord
     }
-
     return namespaces
   }
 
@@ -67,8 +58,7 @@ export class Mdoc {
       throw new MdocError(`Missing Signature Algorithm in Mdoc.`)
     }
 
-    const jwaAlgorithm = com.sphereon.crypto.SignatureAlgorithmMapping.Companion.toJose(alg)
-      .value as JwaSignatureAlgorithm
+    const jwaAlgorithm = com.sphereon.crypto.SignatureAlgorithmMapping.Static.toJose(alg).value as JwaSignatureAlgorithm
 
     if (!Object.values(JwaSignatureAlgorithm).includes(jwaAlgorithm)) {
       throw new MdocError(`Invalid Signature Algorithm on MDoc Document. Alg '${alg}'`)
@@ -93,7 +83,7 @@ export class Mdoc {
     return TypedArrayEncoder.toBase64URL(Buffer.from(this.issuerSignedCbor.toCbor().cborEncode()))
   }
 
-  public async verify(agentContext: AgentContext, options?: { trustedCertificates?: [string, ...string[]] }) {
+  public async verifyCredential(agentContext: AgentContext, options?: { trustedCertificates?: [string, ...string[]] }) {
     const { trustedCertificates } = options ?? {}
 
     const cryptoServiceJS = com.sphereon.crypto.CryptoServiceJS

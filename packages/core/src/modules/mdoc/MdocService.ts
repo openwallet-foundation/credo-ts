@@ -41,7 +41,7 @@ export class MdocService {
       throw new MdocError('Mdoc Verification failed. Missing trusted certificates.')
     }
 
-    return await mdoc.verify(agentContext, { trustedCertificates })
+    return await mdoc.verifyCredential(agentContext, { trustedCertificates })
   }
 
   public async store(agentContext: AgentContext, mdoc: Mdoc) {

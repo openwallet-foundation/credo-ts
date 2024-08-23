@@ -7,14 +7,14 @@ import { TypedArrayEncoder } from '../../utils/TypedArrayEncoder'
 
 import { MdocError } from './MdocError'
 
-type ICoseKeyCbor = com.sphereon.cbor.cose.ICoseKeyCbor
+type ICoseKeyCbor = com.sphereon.crypto.cose.ICoseKeyCbor
+type IKeyInfo = com.sphereon.crypto.IKeyInfo<ICoseKeyCbor>
+type IKey = com.sphereon.crypto.IKey
 type ICoseCallbackServiceJS = com.sphereon.crypto.ICoseCryptoCallbackJS
-type KeyInfo = com.sphereon.crypto.IKeyInfo<com.sphereon.cbor.cose.ICoseKeyCbor>
-type CoseSign1Cbor<CborType, JsonType> = com.sphereon.cbor.cose.CoseSign1Cbor<CborType, JsonType>
-type IKey = com.sphereon.cbor.cose.IKey
+type CoseSign1Cbor<T> = com.sphereon.crypto.cose.CoseSign1Cbor<T>
 type IVerifySignatureResult<KeyType extends IKey> = com.sphereon.crypto.IVerifySignatureResult<KeyType>
 
-const mdlJwk = com.sphereon.jose.jwk.Jwk
+const mdlJwk = com.sphereon.crypto.jose.Jwk
 
 /**
  * This class can be used for Cose signing and sigature verification.
@@ -25,21 +25,22 @@ const mdlJwk = com.sphereon.jose.jwk.Jwk
  */
 export class MdocCoseCallbackService implements ICoseCallbackServiceJS {
   public constructor(private agentContext: AgentContext) {}
-  public async sign1<CborType, JsonType>(
+
+  public sign1<CborType>(
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    coseCborInput: CoseSign1Cbor<CborType, JsonType>,
+    input: CoseSign1Cbor<CborType>,
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    keyInfo: Nullable<KeyInfo>
-  ): Promise<com.sphereon.cbor.cose.CoseSign1Cbor<CborType, JsonType>> {
-    throw new MdocError('Method not yet implemented')
+    keyInfo: Nullable<IKeyInfo>
+  ): Promise<CoseSign1Cbor<CborType>> {
+    throw new Error('Mdoc cose sign1 method not yet implemented.')
   }
 
   /**
    * This method is the implementation used within the mDL/Mdoc library
    */
-  public async verify1<CborType, JsonType>(
-    input: CoseSign1Cbor<CborType, JsonType>,
-    keyInfo?: KeyInfo
+  public async verify1<CborType>(
+    input: com.sphereon.crypto.cose.CoseSign1Cbor<CborType>,
+    keyInfo: Nullable<IKeyInfo>
   ): Promise<IVerifySignatureResult<ICoseKeyCbor>> {
     const sign1Json = input.toJson() // Let's make it a bit easier on ourselves, instead of working with CBOR
     const coseAlg = sign1Json.protectedHeader.alg
@@ -54,7 +55,7 @@ export class MdocCoseCallbackService implements ICoseCallbackServiceJS {
     if (!publicKey) new MdocError('Mdoc Verification Callback missing publicKey Jwk.')
 
     const publicKeyJwk = getJwkFromKey(publicKey).toJson()
-    const coseKey = mdlJwk.Companion.fromJsonObject(publicKeyJwk).jwkToCoseKeyJson()
+    const coseKey = mdlJwk.Static.fromJson(publicKeyJwk).jwkToCoseKeyJson()
     const recalculatedToBeSigned = input.toBeSignedJson(coseKey, coseAlg)
 
     const valid = await this.agentContext.wallet.verify({
@@ -66,7 +67,7 @@ export class MdocCoseCallbackService implements ICoseCallbackServiceJS {
     return {
       name: 'cose-verification',
       message: valid ? 'cose-signature successfully validated' : 'cose-signature could not be validated',
-      keyInfo: keyInfo ?? ({ kid, key: coseKey.toCbor() } satisfies KeyInfo),
+      keyInfo: keyInfo ?? { kid, key: coseKey.toCbor() },
       critical: !valid,
       error: !valid,
     } satisfies IVerifySignatureResult<ICoseKeyCbor>

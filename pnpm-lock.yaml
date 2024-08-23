@@ -448,8 +448,8 @@ importers:
         specifier: ^0.7.0
         version: 0.7.1
       '@sphereon/kmp-mdl-mdoc':
-        specifier: 0.1.0-SNAPSHOT.21
-        version: 0.1.0-SNAPSHOT.21
+        specifier: 0.2.0-SNAPSHOT.3
+        version: 0.2.0-SNAPSHOT.3
       '@sphereon/pex':
         specifier: ^3.3.2
         version: 3.3.3
@@ -2401,8 +2401,8 @@ packages:
   '@sphereon/did-uni-client@0.6.3':
     resolution: {integrity: sha512-g7LD7ofbE36slHN7Bhr5dwUrj6t0BuZeXBYJMaVY/pOeL1vJxW1cZHbZqu0NSfOmzyBg4nsYVlgTjyi/Aua2ew==}
 
-  '@sphereon/kmp-mdl-mdoc@0.1.0-SNAPSHOT.21':
-    resolution: {integrity: sha512-UcgIZfnU10UNSaETrM+u6C9NHfWZyUba+mD+pDDdq2kbTD0LkYmjUBkcwABexMC6L/4avW/2spYss4OkmRbinA==}
+  '@sphereon/kmp-mdl-mdoc@0.2.0-SNAPSHOT.3':
+    resolution: {integrity: sha512-V39LCNZEov9xfix42THzz0hFUVMnehoq2yRb8GdEAuPHrQtTh2v9g66f0EX9eKOyZ2q7W/QXhM+jGNaoGVIzgg==}
 
   '@sphereon/oid4vc-common@0.16.1-next.13':
     resolution: {integrity: sha512-Ozm1tdWvHu9AaCg4MG87/YG7nUHsif6IdzOAyRfA4KsHCetq7t94jkV23l6KwwRydkt6UD6hu1SOc8UJFm2SaQ==}
@@ -9828,7 +9828,7 @@ snapshots:
     transitivePeerDependencies:
       - encoding
 
-  '@sphereon/kmp-mdl-mdoc@0.1.0-SNAPSHOT.21':
+  '@sphereon/kmp-mdl-mdoc@0.2.0-SNAPSHOT.3':
     dependencies:
       '@js-joda/core': 5.6.3
       '@js-joda/timezone': 2.3.0(@js-joda/core@5.6.3)

@@ -9,7 +9,7 @@ import { MdocError } from './MdocError'
 
 type IX509CallbackServiceJS = com.sphereon.crypto.IX509ServiceJS
 
-type IKey = com.sphereon.cbor.cose.IKey
+type IKey = com.sphereon.crypto.IKey
 
 type IX509VerificationResult<KeyType extends IKey> = com.sphereon.crypto.IX509VerificationResult<KeyType>
 
