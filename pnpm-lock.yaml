@@ -447,6 +447,9 @@ importers:
       '@sd-jwt/utils':
         specifier: ^0.7.0
         version: 0.7.1
+      '@sphereon/kmp-mdl-mdoc':
+        specifier: 0.1.0-SNAPSHOT.21
+        version: 0.1.0-SNAPSHOT.21
       '@sphereon/pex':
         specifier: ^3.3.2
         version: 3.3.3
@@ -490,8 +493,8 @@ importers:
         specifier: ^0.4.1
         version: 0.4.1
       luxon:
-        specifier: ^3.3.0
-        version: 3.4.4
+        specifier: ^3.5.0
+        version: 3.5.0
       make-error:
         specifier: ^1.3.6
         version: 1.3.6
@@ -684,20 +687,20 @@ importers:
         specifier: workspace:*
         version: link:../core
       '@sphereon/did-auth-siop':
-        specifier: 0.16.1-next.3
-        version: 0.16.1-next.3
+        specifier: 0.16.1-next.13
+        version: 0.16.1-next.13
       '@sphereon/oid4vc-common':
-        specifier: 0.16.1-next.3
-        version: 0.16.1-next.3
+        specifier: 0.16.1-next.13
+        version: 0.16.1-next.13
       '@sphereon/oid4vci-client':
-        specifier: 0.16.1-next.3
-        version: 0.16.1-next.3
+        specifier: 0.16.1-next.8
+        version: 0.16.1-next.8
       '@sphereon/oid4vci-common':
-        specifier: 0.16.1-next.3
-        version: 0.16.1-next.3
+        specifier: 0.16.1-next.8
+        version: 0.16.1-next.8
       '@sphereon/oid4vci-issuer':
-        specifier: 0.16.1-next.3
-        version: 0.16.1-next.3
+        specifier: 0.16.1-next.8
+        version: 0.16.1-next.8
       '@sphereon/ssi-types':
         specifier: 0.28.0
         version: 0.28.0
@@ -2112,6 +2115,14 @@ packages:
   '@jridgewell/trace-mapping@0.3.9':
     resolution: {integrity: sha512-3Belt6tdc8bPgAtbcmdtNJlirVoTmEb5e2gC94PnkwEW9jI6CAHUeoG85tjWP5WquqfavoMtMwiG4P926ZKKuQ==}
 
+  '@js-joda/core@5.6.3':
+    resolution: {integrity: sha512-T1rRxzdqkEXcou0ZprN1q9yDRlvzCPLqmlNt5IIsGBzoEVgLCCYrKEwc84+TvsXuAc95VAZwtWD2zVsKPY4bcA==}
+
+  '@js-joda/timezone@2.3.0':
+    resolution: {integrity: sha512-DHXdNs0SydSqC5f0oRJPpTcNfnpRojgBqMCFupQFv6WgeZAjU3DBx+A7JtaGPP3dHrP2Odi2N8Vf+uAm/8ynCQ==}
+    peerDependencies:
+      '@js-joda/core': '>=1.11.0'
+
   '@manypkg/find-root@1.1.0':
     resolution: {integrity: sha512-mki5uBvhHzO8kYYix/WRy2WX8S3B5wdVSc9D6KcU5lQNglP2yt58/VfLuAK49glRXChosY8ap2oJ1qgma3GUVA==}
 
@@ -2383,27 +2394,34 @@ packages:
     resolution: {integrity: sha512-kQpk267uxB19X3X2T1mvNMjyvIEonpNSHrMlK5ZaBU6aZxw7wPbpgKJOjHN3+/GPVpXgAV9soVT2oyHpLkLtyw==}
     engines: {node: '>= 8'}
 
-  '@sphereon/did-auth-siop@0.16.1-next.3':
-    resolution: {integrity: sha512-PjE1n5oUPpLU7KCZ3pK1OOo+/DL+ASsJew5I2awt0HT7+mOEbXPhIWmnKjIcqPnXrw8O59m8uYi5MUrtASrIpg==}
+  '@sphereon/did-auth-siop@0.16.1-next.13':
+    resolution: {integrity: sha512-WiptXftpPQDSWjS3Dh9hdWRKZW7bAIDmFdbFf4hUFXWK9REd4BSZiWjybkKcT7iX/gIPmVklhFicUqBHaw3b1Q==}
     engines: {node: '>=18'}
 
   '@sphereon/did-uni-client@0.6.3':
     resolution: {integrity: sha512-g7LD7ofbE36slHN7Bhr5dwUrj6t0BuZeXBYJMaVY/pOeL1vJxW1cZHbZqu0NSfOmzyBg4nsYVlgTjyi/Aua2ew==}
 
-  '@sphereon/oid4vc-common@0.16.1-next.3':
-    resolution: {integrity: sha512-0bdCLsUtqzmn/Zks0RZNuO8H3s5Zc71x/o1WDXE4263REvO8zuzI4N6viNQZdM8vUxR99GnADQCxWCY2ZoVO8g==}
+  '@sphereon/kmp-mdl-mdoc@0.1.0-SNAPSHOT.21':
+    resolution: {integrity: sha512-UcgIZfnU10UNSaETrM+u6C9NHfWZyUba+mD+pDDdq2kbTD0LkYmjUBkcwABexMC6L/4avW/2spYss4OkmRbinA==}
+
+  '@sphereon/oid4vc-common@0.16.1-next.13':
+    resolution: {integrity: sha512-Ozm1tdWvHu9AaCg4MG87/YG7nUHsif6IdzOAyRfA4KsHCetq7t94jkV23l6KwwRydkt6UD6hu1SOc8UJFm2SaQ==}
     engines: {node: '>=18'}
 
-  '@sphereon/oid4vci-client@0.16.1-next.3':
-    resolution: {integrity: sha512-b5xtDlQcEsg0W0In1lywUcvf3jJy/NhfvknbtYjRVtObhA2K/pRsb1yS+p54Vfc02enA+A/a2lVb6zI2peyF3w==}
+  '@sphereon/oid4vc-common@0.16.1-next.8':
+    resolution: {integrity: sha512-e/DPY0zbVrCSDN6sPQApkNHncgMn2hJBbiSnkFgkJFXvBpob3RgnUn/CebO/VzClGT6ua0EOkSs4jMe6MhRimw==}
     engines: {node: '>=18'}
 
-  '@sphereon/oid4vci-common@0.16.1-next.3':
-    resolution: {integrity: sha512-+0Cm/qWgQ2efs+vSFwf37Zji1k+oSs3pI7yuN0dGQF7iYG3whq+iNRfIKR5M9rYg8H4bITg0PSTrcFXz7VuWww==}
+  '@sphereon/oid4vci-client@0.16.1-next.8':
+    resolution: {integrity: sha512-9cqlA3mLwhjS1ucTPEyXi/NmVcJk90z3Ock21gwQeSdGMzqAD2U6nUz6dbzOyaMyrLtQLtiQalYXY8BeTq16ug==}
     engines: {node: '>=18'}
 
-  '@sphereon/oid4vci-issuer@0.16.1-next.3':
-    resolution: {integrity: sha512-92D+dEqvEkyI6XKkjbZXSmZlqLNdl3vAd8BNDWM1+E2X337lFnT9cE0pF432YdOzvS/ZwdlmftGjq2ehi1nOgg==}
+  '@sphereon/oid4vci-common@0.16.1-next.8':
+    resolution: {integrity: sha512-yQF22jfFHxHqGBYg+vngeaXWSj8wuky9OK/T/obwQDUUS8pRav+RNRsB0ydX0ZtNskReORWk4A/QpVv3RBkgqQ==}
+    engines: {node: '>=18'}
+
+  '@sphereon/oid4vci-issuer@0.16.1-next.8':
+    resolution: {integrity: sha512-cFHK62lLqx3ozJn0MfFy7jeU9ICCQb/pJBUEDcmYcdpDJ7LKHL9ism0ib3ytVlmc656oXwoXk109DaqOi199/A==}
     engines: {node: '>=18'}
     peerDependencies:
       awesome-qr: ^2.1.5-rc.0
@@ -2423,6 +2441,9 @@ packages:
 
   '@sphereon/ssi-types@0.28.0':
     resolution: {integrity: sha512-NkTkrsBoQUZzJutlk5XD3snBxL9kfsxKdQvBbGUEaUDOiW8siTNUoJuQFeA+bI0eJY99up95bmMKdJeDc1VDfg==}
+
+  '@sphereon/ssi-types@0.29.0':
+    resolution: {integrity: sha512-fq4rx5UBRlfCRTqY0jKu4Fr5PKwWi20/FDVeceQrnk9QMnAnDPh4XhasVx5A1RYgCWrxdcgQiVsykUH7Uy2gVA==}
 
   '@sphereon/ssi-types@0.9.0':
     resolution: {integrity: sha512-umCr/syNcmvMMbQ+i/r/mwjI1Qw2aFPp9AwBTvTo1ailAVaaJjJGPkkVz1K9/2NZATNdDiQ3A8yGzdVJoKh9pA==}
@@ -3507,8 +3528,8 @@ packages:
       supports-color:
         optional: true
 
-  debug@4.3.5:
-    resolution: {integrity: sha512-pt0bNEmneDIvdL1Xsd9oDQ/wrQRkXDT4AUWlNZNPKvW5x/jyO9VFXkJUP07vQ2upmw5PlaITaPKc31jK13V+jg==}
+  debug@4.3.6:
+    resolution: {integrity: sha512-O/09Bd4Z1fBrU4VzkhFqVgpPzaGbw6Sm9FEkBT1A/YBXQFGuuSxa1dN2nxgxS34JmKXqYx8CZAwEVoJFImUXIg==}
     engines: {node: '>=6.0'}
     peerDependencies:
       supports-color: '*'
@@ -4144,6 +4165,9 @@ packages:
   form-data@4.0.0:
     resolution: {integrity: sha512-ETEklSGi5t0QMZuiXoA/Q6vcnxcLQP5vdugSpuAyi6SVGi2clPPp+xgEhuMaHC+zGgn31Kd235W35f7Hykkaww==}
     engines: {node: '>= 6'}
+
+  format-util@1.0.5:
+    resolution: {integrity: sha512-varLbTj0e0yVyRpqQhuWV+8hlePAgaoFRhNFj50BNjEIrw1/DphHSObtqwskVCPWNgzwPoQrZAbfa/SBiicNeg==}
 
   formdata-polyfill@4.0.10:
     resolution: {integrity: sha512-buewHzMvYL29jdeQTVILecSaZKnt/RJWjoZCF5OW60Z67/GmSLBkOFM7qh1PI3zFNtJbaZL5eQu1vLfazOwj4g==}
@@ -5158,8 +5182,8 @@ packages:
   lru_map@0.4.1:
     resolution: {integrity: sha512-I+lBvqMMFfqaV8CJCISjI3wbjmwVu/VyOoU7+qtu9d7ioW5klMgsTTiUOUp+DJvfTTzKXoPbyC6YfgkNcyPSOg==}
 
-  luxon@3.4.4:
-    resolution: {integrity: sha512-zobTr7akeGHnv7eBOXcRgMeCP6+uyYsczwmeRCauvpvaAltgNyTbLH/+VaEAPUeWBT+1GuNmz4wC/6jtQzbbVA==}
+  luxon@3.5.0:
+    resolution: {integrity: sha512-rh+Zjr6DNfUYR3bPwJEnuwDdqMbxZW7LOQfUN4B54+Cl+0o5zaU9RJ6bcidfDtC1cWCZXQ+nvX8bf6bAji37QQ==}
     engines: {node: '>=12'}
 
   make-dir@2.1.0:
@@ -7109,7 +7133,7 @@ snapshots:
   '@2060.io/ffi-napi@4.0.9':
     dependencies:
       '@2060.io/ref-napi': 3.0.6
-      debug: 4.3.5
+      debug: 4.3.6
       get-uv-event-loop-napi-h: 1.0.6
       node-addon-api: 3.2.1
       node-gyp-build: 4.8.1
@@ -7119,7 +7143,7 @@ snapshots:
 
   '@2060.io/ref-napi@3.0.6':
     dependencies:
-      debug: 4.3.5
+      debug: 4.3.6
       get-symbol-from-current-process-h: 1.0.2
       node-addon-api: 3.2.1
       node-gyp-build: 4.8.1
@@ -7175,7 +7199,7 @@ snapshots:
       '@babel/traverse': 7.24.8
       '@babel/types': 7.24.9
       convert-source-map: 2.0.0
-      debug: 4.3.5
+      debug: 4.3.6
       gensync: 1.0.0-beta.2
       json5: 2.2.3
       semver: 6.3.1
@@ -7243,7 +7267,7 @@ snapshots:
       '@babel/core': 7.24.9
       '@babel/helper-compilation-targets': 7.24.8
       '@babel/helper-plugin-utils': 7.24.8
-      debug: 4.3.5
+      debug: 4.3.6
       lodash.debounce: 4.0.8
       resolve: 1.22.8
     transitivePeerDependencies:
@@ -8137,7 +8161,7 @@ snapshots:
       '@babel/helper-split-export-declaration': 7.24.7
       '@babel/parser': 7.24.8
       '@babel/types': 7.24.9
-      debug: 4.3.5
+      debug: 4.3.6
       globals: 11.12.0
     transitivePeerDependencies:
       - supports-color
@@ -8608,7 +8632,7 @@ snapshots:
   '@eslint/eslintrc@2.1.4':
     dependencies:
       ajv: 6.12.6
-      debug: 4.3.5
+      debug: 4.3.6
       espree: 9.6.1
       globals: 13.24.0
       ignore: 5.3.1
@@ -8658,7 +8682,7 @@ snapshots:
       chalk: 4.1.2
       ci-info: 3.9.0
       connect: 3.7.0
-      debug: 4.3.5
+      debug: 4.3.6
       env-editor: 0.4.2
       fast-glob: 3.3.2
       find-yarn-workspace-root: 2.0.0
@@ -8726,7 +8750,7 @@ snapshots:
       '@expo/plist': 0.1.3
       '@expo/sdk-runtime-versions': 1.0.0
       chalk: 4.1.2
-      debug: 4.3.5
+      debug: 4.3.6
       find-up: 5.0.0
       getenv: 1.0.0
       glob: 7.1.6
@@ -8778,7 +8802,7 @@ snapshots:
   '@expo/env@0.3.0':
     dependencies:
       chalk: 4.1.2
-      debug: 4.3.5
+      debug: 4.3.6
       dotenv: 16.4.5
       dotenv-expand: 11.0.6
       getenv: 1.0.0
@@ -8817,7 +8841,7 @@ snapshots:
       '@expo/json-file': 8.3.3
       '@expo/spawn-async': 1.7.2
       chalk: 4.1.2
-      debug: 4.3.5
+      debug: 4.3.6
       find-yarn-workspace-root: 2.0.0
       fs-extra: 9.1.0
       getenv: 1.0.0
@@ -8863,7 +8887,7 @@ snapshots:
       '@expo/image-utils': 0.5.1
       '@expo/json-file': 8.3.3
       '@react-native/normalize-colors': 0.74.85
-      debug: 4.3.5
+      debug: 4.3.6
       expo-modules-autolinking: 1.11.1
       fs-extra: 9.1.0
       resolve-from: 5.0.0
@@ -8917,7 +8941,7 @@ snapshots:
   '@humanwhocodes/config-array@0.11.14':
     dependencies:
       '@humanwhocodes/object-schema': 2.0.3
-      debug: 4.3.5
+      debug: 4.3.6
       minimatch: 3.1.2
     transitivePeerDependencies:
       - supports-color
@@ -9205,6 +9229,12 @@ snapshots:
     dependencies:
       '@jridgewell/resolve-uri': 3.1.2
       '@jridgewell/sourcemap-codec': 1.5.0
+
+  '@js-joda/core@5.6.3': {}
+
+  '@js-joda/timezone@2.3.0(@js-joda/core@5.6.3)':
+    dependencies:
+      '@js-joda/core': 5.6.3
 
   '@manypkg/find-root@1.1.0':
     dependencies:
@@ -9770,16 +9800,17 @@ snapshots:
 
   '@sovpro/delimited-stream@1.1.0': {}
 
-  '@sphereon/did-auth-siop@0.16.1-next.3':
+  '@sphereon/did-auth-siop@0.16.1-next.13':
     dependencies:
       '@astronautlabs/jsonpath': 1.1.2
       '@sphereon/did-uni-client': 0.6.3
-      '@sphereon/oid4vc-common': 0.16.1-next.3
+      '@sphereon/oid4vc-common': 0.16.1-next.13
       '@sphereon/pex': 3.3.3
       '@sphereon/pex-models': 2.2.4
       '@sphereon/ssi-types': 0.22.0
       '@sphereon/wellknown-dids-client': 0.1.3
       cross-fetch: 4.0.0
+      debug: 4.3.6
       events: 3.3.0
       jwt-decode: 4.0.0
       language-tags: 1.0.9
@@ -9797,9 +9828,15 @@ snapshots:
     transitivePeerDependencies:
       - encoding
 
-  '@sphereon/oid4vc-common@0.16.1-next.3':
+  '@sphereon/kmp-mdl-mdoc@0.1.0-SNAPSHOT.21':
     dependencies:
-      '@sphereon/ssi-types': 0.28.0
+      '@js-joda/core': 5.6.3
+      '@js-joda/timezone': 2.3.0(@js-joda/core@5.6.3)
+      format-util: 1.0.5
+
+  '@sphereon/oid4vc-common@0.16.1-next.13':
+    dependencies:
+      '@sphereon/ssi-types': 0.29.0
       jwt-decode: 4.0.0
       sha.js: 2.4.11
       uint8arrays: 3.1.1
@@ -9807,21 +9844,31 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@sphereon/oid4vci-client@0.16.1-next.3':
+  '@sphereon/oid4vc-common@0.16.1-next.8':
     dependencies:
-      '@sphereon/oid4vc-common': 0.16.1-next.3
-      '@sphereon/oid4vci-common': 0.16.1-next.3
-      '@sphereon/ssi-types': 0.28.0
+      '@sphereon/ssi-types': 0.29.0
+      jwt-decode: 4.0.0
+      sha.js: 2.4.11
+      uint8arrays: 3.1.1
+      uuid: 9.0.1
+    transitivePeerDependencies:
+      - supports-color
+
+  '@sphereon/oid4vci-client@0.16.1-next.8':
+    dependencies:
+      '@sphereon/oid4vc-common': 0.16.1-next.8
+      '@sphereon/oid4vci-common': 0.16.1-next.8
+      '@sphereon/ssi-types': 0.29.0
       cross-fetch: 3.1.8
-      debug: 4.3.5
+      debug: 4.3.6
     transitivePeerDependencies:
       - encoding
       - supports-color
 
-  '@sphereon/oid4vci-common@0.16.1-next.3':
+  '@sphereon/oid4vci-common@0.16.1-next.8':
     dependencies:
-      '@sphereon/oid4vc-common': 0.16.1-next.3
-      '@sphereon/ssi-types': 0.28.0
+      '@sphereon/oid4vc-common': 0.16.1-next.8
+      '@sphereon/ssi-types': 0.29.0
       cross-fetch: 3.1.8
       jwt-decode: 4.0.0
       uint8arrays: 3.1.1
@@ -9830,11 +9877,11 @@ snapshots:
       - encoding
       - supports-color
 
-  '@sphereon/oid4vci-issuer@0.16.1-next.3':
+  '@sphereon/oid4vci-issuer@0.16.1-next.8':
     dependencies:
-      '@sphereon/oid4vc-common': 0.16.1-next.3
-      '@sphereon/oid4vci-common': 0.16.1-next.3
-      '@sphereon/ssi-types': 0.28.0
+      '@sphereon/oid4vc-common': 0.16.1-next.8
+      '@sphereon/oid4vci-common': 0.16.1-next.8
+      '@sphereon/ssi-types': 0.29.0
       uuid: 9.0.1
     transitivePeerDependencies:
       - encoding
@@ -9865,7 +9912,16 @@ snapshots:
   '@sphereon/ssi-types@0.28.0':
     dependencies:
       '@sd-jwt/decode': 0.6.1
-      debug: 4.3.5
+      debug: 4.3.6
+      events: 3.3.0
+      jwt-decode: 3.1.2
+    transitivePeerDependencies:
+      - supports-color
+
+  '@sphereon/ssi-types@0.29.0':
+    dependencies:
+      '@sd-jwt/decode': 0.6.1
+      debug: 4.3.6
       events: 3.3.0
       jwt-decode: 3.1.2
     transitivePeerDependencies:
@@ -10189,7 +10245,7 @@ snapshots:
       '@typescript-eslint/types': 7.16.1
       '@typescript-eslint/typescript-estree': 7.16.1(typescript@5.5.3)
       '@typescript-eslint/visitor-keys': 7.16.1
-      debug: 4.3.5
+      debug: 4.3.6
       eslint: 8.57.0
     optionalDependencies:
       typescript: 5.5.3
@@ -10205,7 +10261,7 @@ snapshots:
     dependencies:
       '@typescript-eslint/typescript-estree': 7.16.1(typescript@5.5.3)
       '@typescript-eslint/utils': 7.16.1(eslint@8.57.0)(typescript@5.5.3)
-      debug: 4.3.5
+      debug: 4.3.6
       eslint: 8.57.0
       ts-api-utils: 1.3.0(typescript@5.5.3)
     optionalDependencies:
@@ -10219,7 +10275,7 @@ snapshots:
     dependencies:
       '@typescript-eslint/types': 7.16.1
       '@typescript-eslint/visitor-keys': 7.16.1
-      debug: 4.3.5
+      debug: 4.3.6
       globby: 11.1.0
       is-glob: 4.0.3
       minimatch: 9.0.5
@@ -10300,7 +10356,7 @@ snapshots:
 
   agent-base@6.0.2:
     dependencies:
-      debug: 4.3.5
+      debug: 4.3.6
     transitivePeerDependencies:
       - supports-color
 
@@ -11162,7 +11218,7 @@ snapshots:
     dependencies:
       ms: 2.1.3
 
-  debug@4.3.5:
+  debug@4.3.6:
     dependencies:
       ms: 2.1.2
 
@@ -11468,7 +11524,7 @@ snapshots:
 
   eslint-import-resolver-typescript@3.6.1(@typescript-eslint/parser@7.16.1(eslint@8.57.0)(typescript@5.5.3))(eslint-plugin-import@2.29.1)(eslint@8.57.0):
     dependencies:
-      debug: 4.3.5
+      debug: 4.3.6
       enhanced-resolve: 5.17.0
       eslint: 8.57.0
       eslint-module-utils: 2.8.1(@typescript-eslint/parser@7.16.1(eslint@8.57.0)(typescript@5.5.3))(eslint-import-resolver-node@0.3.9)(eslint-import-resolver-typescript@3.6.1(@typescript-eslint/parser@7.16.1(eslint@8.57.0)(typescript@5.5.3))(eslint-plugin-import@2.29.1)(eslint@8.57.0))(eslint@8.57.0)
@@ -11553,7 +11609,7 @@ snapshots:
       ajv: 6.12.6
       chalk: 4.1.2
       cross-spawn: 7.0.3
-      debug: 4.3.5
+      debug: 4.3.6
       doctrine: 3.0.0
       escape-string-regexp: 4.0.0
       eslint-scope: 7.2.2
@@ -11985,6 +12041,8 @@ snapshots:
       combined-stream: 1.0.8
       mime-types: 2.1.35
 
+  format-util@1.0.5: {}
+
   formdata-polyfill@4.0.10:
     dependencies:
       fetch-blob: 3.2.0
@@ -12266,7 +12324,7 @@ snapshots:
   https-proxy-agent@5.0.1:
     dependencies:
       agent-base: 6.0.2
-      debug: 4.3.5
+      debug: 4.3.6
     transitivePeerDependencies:
       - supports-color
 
@@ -12556,7 +12614,7 @@ snapshots:
 
   istanbul-lib-source-maps@4.0.1:
     dependencies:
-      debug: 4.3.5
+      debug: 4.3.6
       istanbul-lib-coverage: 3.2.2
       source-map: 0.6.1
     transitivePeerDependencies:
@@ -13231,7 +13289,7 @@ snapshots:
 
   lru_map@0.4.1: {}
 
-  luxon@3.4.4: {}
+  luxon@3.5.0: {}
 
   make-dir@2.1.0:
     dependencies:
@@ -13697,7 +13755,7 @@ snapshots:
 
   nock@13.5.4:
     dependencies:
-      debug: 4.3.5
+      debug: 4.3.6
       json-stringify-safe: 5.0.1
       propagate: 2.0.1
     transitivePeerDependencies:

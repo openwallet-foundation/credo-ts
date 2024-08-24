@@ -10,6 +10,7 @@ import { DidsModule } from '../modules/dids'
 import { DifPresentationExchangeModule } from '../modules/dif-presentation-exchange'
 import { DiscoverFeaturesModule } from '../modules/discover-features'
 import { GenericRecordsModule } from '../modules/generic-records'
+import { MdocModule } from '../modules/mdoc'
 import { MessagePickupModule } from '../modules/message-pickup'
 import { OutOfBandModule } from '../modules/oob'
 import { ProofsModule } from '../modules/proofs'
@@ -136,6 +137,7 @@ function getDefaultAgentModules() {
     cache: () => new CacheModule(),
     pex: () => new DifPresentationExchangeModule(),
     sdJwtVc: () => new SdJwtVcModule(),
+    mdoc: () => new MdocModule(),
     x509: () => new X509Module(),
   } as const
 }
