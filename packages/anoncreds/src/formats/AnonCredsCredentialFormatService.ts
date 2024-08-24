@@ -318,7 +318,7 @@ export class AnonCredsCredentialFormatService implements CredentialFormatService
         revocationRegistryIndex = Number(credentialMetadata.credentialRevocationId)
       }
 
-      if (!revocationRegistryDefinitionId || !revocationRegistryIndex) {
+      if (!revocationRegistryDefinitionId || revocationRegistryIndex === undefined) {
         throw new CredoError(
           'Revocation registry definition id and revocation index are mandatory to issue AnonCreds revocable credentials'
         )
