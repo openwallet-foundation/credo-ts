@@ -11,7 +11,6 @@ import {
   JwtPayload,
   SignatureSuiteRegistry,
   X509Service,
-  getDomainFromUrl,
   getJwkClassFromKeyType,
   getJwkFromJson,
   getJwkFromKey,
@@ -96,12 +95,12 @@ export function getCreateJwtCallback(
 
       return jws
     } else if (jwtIssuer.method === 'x5c') {
-      const key = X509Service.getLeafCertificate(agentContext, { certificateChain: jwtIssuer.x5c }).publicKey
+      const leafCertificate = X509Service.getLeafCertificate(agentContext, { certificateChain: jwtIssuer.x5c })
 
       const jws = await jwsService.createJwsCompact(agentContext, {
         protectedHeaderOptions: { ...jwt.header, alg: jwtIssuer.alg, jwk: undefined },
         payload: JwtPayload.fromJson(jwt.payload),
-        key,
+        key: leafCertificate.publicKey,
       })
 
       return jws
@@ -126,7 +125,6 @@ export async function openIdTokenIssuerToJwtIssuer(
       alg,
     }
   } else if (openId4VcTokenIssuer.method === 'x5c') {
-    const issuer = openId4VcTokenIssuer.issuer
     const leafCertificate = X509Service.getLeafCertificate(agentContext, {
       certificateChain: openId4VcTokenIssuer.x5c,
     })
@@ -137,28 +135,9 @@ export async function openIdTokenIssuerToJwtIssuer(
       throw new CredoError(`No supported signature algorithms found key type: '${jwk.keyType}'`)
     }
 
-    if (!issuer.startsWith('https://')) {
-      throw new CredoError('The X509 certificate issuer must be a HTTPS URI.')
-    }
-
-    if (leafCertificate.sanUriNames?.includes(issuer)) {
-      return {
-        ...openId4VcTokenIssuer,
-        alg,
-        clientIdScheme: 'x509_san_uri',
-      }
-    } else {
-      if (!leafCertificate.sanDnsNames?.includes(getDomainFromUrl(issuer))) {
-        throw new Error(
-          `The 'iss' claim in the payload does not match a 'SAN-URI' or 'SAN-DNS' name in the x5c certificate.`
-        )
-      }
-
-      return {
-        ...openId4VcTokenIssuer,
-        alg,
-        clientIdScheme: 'x509_san_dns',
-      }
+    return {
+      ...openId4VcTokenIssuer,
+      alg,
     }
   } else if (openId4VcTokenIssuer.method === 'jwk') {
     const alg = openId4VcTokenIssuer.jwk.supportedSignatureAlgorithms[0]
