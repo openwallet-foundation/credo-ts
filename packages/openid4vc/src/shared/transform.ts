@@ -14,6 +14,7 @@ import {
   W3cJwtVerifiableCredential,
   W3cJsonLdVerifiableCredential,
   JsonEncoder,
+  Mdoc,
 } from '@credo-ts/core'
 
 export function getSphereonVerifiableCredential(
@@ -26,6 +27,8 @@ export function getSphereonVerifiableCredential(
     return JsonTransformer.toJSON(verifiableCredential) as SphereonW3cVerifiableCredential
   } else if (verifiableCredential instanceof W3cJwtVerifiableCredential) {
     return verifiableCredential.serializedJwt
+  } else if (verifiableCredential instanceof Mdoc) {
+    throw new CredoError('Issuance side for Mdoc not yet implemented.')
   } else {
     return verifiableCredential.compact
   }

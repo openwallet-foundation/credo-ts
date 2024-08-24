@@ -14,6 +14,7 @@ import { CredentialsApi } from '../modules/credentials'
 import { DidsApi } from '../modules/dids'
 import { DiscoverFeaturesApi } from '../modules/discover-features'
 import { GenericRecordsApi } from '../modules/generic-records'
+import { MdocApi } from '../modules/mdoc'
 import { MessagePickupApi } from '../modules/message-pickup/MessagePickupApi'
 import { OutOfBandApi } from '../modules/oob'
 import { ProofsApi } from '../modules/proofs'
@@ -60,6 +61,7 @@ export abstract class BaseAgent<AgentModules extends ModulesMap = EmptyModuleMap
   public readonly oob: OutOfBandApi
   public readonly w3cCredentials: W3cCredentialsApi
   public readonly sdJwtVc: SdJwtVcApi
+  public readonly mdoc: MdocApi
   public readonly x509: X509Api
 
   public readonly modules: AgentApi<WithoutDefaultModules<AgentModules>>
@@ -110,6 +112,7 @@ export abstract class BaseAgent<AgentModules extends ModulesMap = EmptyModuleMap
     this.oob = this.dependencyManager.resolve(OutOfBandApi)
     this.w3cCredentials = this.dependencyManager.resolve(W3cCredentialsApi)
     this.sdJwtVc = this.dependencyManager.resolve(SdJwtVcApi)
+    this.mdoc = this.dependencyManager.resolve(MdocApi)
     this.x509 = this.dependencyManager.resolve(X509Api)
 
     const defaultApis = [

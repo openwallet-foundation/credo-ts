@@ -5,7 +5,7 @@ import type {
   OpenId4VciCredentialSupportedWithId,
 } from './models'
 import type { AgentContext, JwaSignatureAlgorithm } from '@credo-ts/core'
-import type { CredentialOfferFormat } from '@sphereon/oid4vci-common'
+import type { CredentialOfferFormatV1_0_11 } from '@sphereon/oid4vci-common'
 
 import { CredoError } from '@credo-ts/core'
 
@@ -39,6 +39,8 @@ export function getTypesFromCredentialSupported(
       )
     }
     return credentialSupported.vct ? [credentialSupported.vct] : undefined
+  } else if (credentialSupported.format === 'mso_mdoc') {
+    return [credentialSupported.doctype]
   }
 
   throw Error(`Unable to extract types from credentials supported. Unknown format ${credentialSupported.format}`)
@@ -57,7 +59,9 @@ export function credentialConfigurationSupportedToCredentialSupported(
     order: config.order,
   }
 
-  if (config.format === 'jwt_vc_json' || config.format === 'jwt_vc') {
+  if (config.format === 'mso_mdoc') {
+    return { ...baseConfig, format: 'mso_mdoc', doctype: config.doctype, claims: config.claims }
+  } else if (config.format === 'jwt_vc_json' || config.format === 'jwt_vc') {
     return {
       ...baseConfig,
       format: config.format,
@@ -125,7 +129,14 @@ export function credentialSupportedToCredentialConfigurationSupported(
     order: credentialSupported.order,
   }
 
-  if (credentialSupported.format === 'jwt_vc_json' || credentialSupported.format === 'jwt_vc') {
+  if (credentialSupported.format === 'mso_mdoc') {
+    return {
+      ...baseCredentialConfigurationSupported,
+      doctype: credentialSupported.doctype,
+      format: credentialSupported.format,
+      claims: credentialSupported.claims,
+    }
+  } else if (credentialSupported.format === 'jwt_vc_json' || credentialSupported.format === 'jwt_vc') {
     return {
       ...baseCredentialConfigurationSupported,
       format: credentialSupported.format,
@@ -190,7 +201,7 @@ export function credentialsSupportedV11ToV13(
  */
 export function getOfferedCredentials(
   agentContext: AgentContext,
-  offeredCredentials: Array<string | CredentialOfferFormat>,
+  offeredCredentials: Array<string | CredentialOfferFormatV1_0_11>,
   credentialsSupportedOrConfigurations: OpenId4VciCredentialConfigurationsSupported | OpenId4VciCredentialSupported[]
 ): {
   credentialsSupported: OpenId4VciCredentialSupportedWithId[]
