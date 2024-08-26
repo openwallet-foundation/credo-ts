@@ -36,6 +36,7 @@ import {
   DidsApi,
   X509Service,
   getDomainFromUrl,
+  Mdoc,
 } from '@credo-ts/core'
 import {
   AuthorizationRequest,
@@ -50,7 +51,10 @@ import {
   RP,
   SupportedVersion,
 } from '@sphereon/did-auth-siop'
-import { extractPresentationsFromAuthorizationResponse } from '@sphereon/did-auth-siop/dist/authorization-response/OpenID4VP'
+import {
+  extractPresentationsFromAuthorizationResponse,
+  MdocVerifiablePresentation,
+} from '@sphereon/did-auth-siop/dist/authorization-response/OpenID4VP'
 import { filter, first, firstValueFrom, map, timeout } from 'rxjs'
 
 import { storeActorIdForContextCorrelationId } from '../shared/router'
@@ -108,7 +112,7 @@ export class OpenId4VcSiopVerifierService {
     if (jwtIssuer.method === 'x5c') {
       if (jwtIssuer.issuer !== authorizationResponseUrl) {
         throw new CredoError(
-          `The jwtIssuer's issuer field must start match the verifier's authorizationResponseUrl '${authorizationResponseUrl}'.`
+          `The jwtIssuer's issuer field must match the verifier's authorizationResponseUrl '${authorizationResponseUrl}'.`
         )
       }
       const leafCertificate = X509Service.getLeafCertificate(agentContext, { certificateChain: jwtIssuer.x5c })
@@ -463,7 +467,7 @@ export class OpenId4VcSiopVerifierService {
       .getEventEmitterForVerifier(agentContext.contextCorrelationId, verifierId)
 
     builder
-      .withResponsetUri(authorizationResponseUrl)
+      .withResponseUri(authorizationResponseUrl)
       .withIssuer(ResponseIss.SELF_ISSUED_V2)
       .withAudience(RequestAud.SELF_ISSUED_V2)
       .withSupportedVersions([
@@ -555,6 +559,11 @@ export class OpenId4VcSiopVerifierService {
           })
 
           isValid = verificationResult.verification.isValid
+        } else if (encodedPresentation instanceof MdocVerifiablePresentation) {
+          // TODO: REMOVE THIS
+          const deviceSigned = JSON.parse(encodedPresentation.deviceSignedBase64Url).deviceSigned
+          const result = await Mdoc.verifyDeviceSigned(deviceSigned)
+          isValid = result
         } else if (typeof encodedPresentation === 'string') {
           const verificationResult = await this.w3cCredentialService.verifyPresentation(agentContext, {
             presentation: encodedPresentation,

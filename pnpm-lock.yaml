@@ -447,9 +447,12 @@ importers:
       '@sd-jwt/utils':
         specifier: ^0.7.0
         version: 0.7.1
+      '@sphereon/did-auth-siop':
+        specifier: file:../../sphereon-did-auth-siop-0.16.0.tgz
+        version: file:sphereon-did-auth-siop-0.16.0.tgz
       '@sphereon/kmp-mdl-mdoc':
-        specifier: 0.2.0-SNAPSHOT.3
-        version: 0.2.0-SNAPSHOT.3
+        specifier: 0.2.0-SNAPSHOT.6
+        version: 0.2.0-SNAPSHOT.6
       '@sphereon/pex':
         specifier: ^3.3.2
         version: 3.3.3
@@ -687,20 +690,20 @@ importers:
         specifier: workspace:*
         version: link:../core
       '@sphereon/did-auth-siop':
-        specifier: 0.16.1-next.13
-        version: 0.16.1-next.13
+        specifier: file:../../sphereon-did-auth-siop-0.16.0.tgz
+        version: file:sphereon-did-auth-siop-0.16.0.tgz
       '@sphereon/oid4vc-common':
         specifier: 0.16.1-next.13
         version: 0.16.1-next.13
       '@sphereon/oid4vci-client':
-        specifier: 0.16.1-next.8
-        version: 0.16.1-next.8
+        specifier: 0.16.1-next.13
+        version: 0.16.1-next.13
       '@sphereon/oid4vci-common':
-        specifier: 0.16.1-next.8
-        version: 0.16.1-next.8
+        specifier: 0.16.1-next.13
+        version: 0.16.1-next.13
       '@sphereon/oid4vci-issuer':
-        specifier: 0.16.1-next.8
-        version: 0.16.1-next.8
+        specifier: 0.16.1-next.13
+        version: 0.16.1-next.13
       '@sphereon/ssi-types':
         specifier: 0.28.0
         version: 0.28.0
@@ -2394,34 +2397,35 @@ packages:
     resolution: {integrity: sha512-kQpk267uxB19X3X2T1mvNMjyvIEonpNSHrMlK5ZaBU6aZxw7wPbpgKJOjHN3+/GPVpXgAV9soVT2oyHpLkLtyw==}
     engines: {node: '>= 8'}
 
-  '@sphereon/did-auth-siop@0.16.1-next.13':
-    resolution: {integrity: sha512-WiptXftpPQDSWjS3Dh9hdWRKZW7bAIDmFdbFf4hUFXWK9REd4BSZiWjybkKcT7iX/gIPmVklhFicUqBHaw3b1Q==}
+  '@sphereon/did-auth-siop@file:sphereon-did-auth-siop-0.16.0.tgz':
+    resolution: {integrity: sha512-MSQHbLASX3rOPSiYRplNNmyONYepmr8DplAgyNctj3I4B9mQk8UanIxKj2Y+L1DJqFS5OIfe+6mu66plbh4syQ==, tarball: file:sphereon-did-auth-siop-0.16.0.tgz}
+    version: 0.16.0
     engines: {node: '>=18'}
 
   '@sphereon/did-uni-client@0.6.3':
     resolution: {integrity: sha512-g7LD7ofbE36slHN7Bhr5dwUrj6t0BuZeXBYJMaVY/pOeL1vJxW1cZHbZqu0NSfOmzyBg4nsYVlgTjyi/Aua2ew==}
 
-  '@sphereon/kmp-mdl-mdoc@0.2.0-SNAPSHOT.3':
-    resolution: {integrity: sha512-V39LCNZEov9xfix42THzz0hFUVMnehoq2yRb8GdEAuPHrQtTh2v9g66f0EX9eKOyZ2q7W/QXhM+jGNaoGVIzgg==}
+  '@sphereon/kmp-mdl-mdoc@0.2.0-SNAPSHOT.6':
+    resolution: {integrity: sha512-lZ3lWoG0dBND7I5/gXxv9z+6o86oKm/SiRnnlISFTaS7j+K1g36KBZk2vLlWw8kEppG4eiXoCLgYO/FUZC3m9w==}
+
+  '@sphereon/oid4vc-common@0.16.0':
+    resolution: {integrity: sha512-EgT0gwMX5/MhTDAOEWqbx2c9azBSQAThL8EDu7wufGQxRFNAc3Ya8NXoCMIOfqIqbSLhmyCB0ANcdoHeJq2VdA==}
+    engines: {node: '>=18'}
 
   '@sphereon/oid4vc-common@0.16.1-next.13':
     resolution: {integrity: sha512-Ozm1tdWvHu9AaCg4MG87/YG7nUHsif6IdzOAyRfA4KsHCetq7t94jkV23l6KwwRydkt6UD6hu1SOc8UJFm2SaQ==}
     engines: {node: '>=18'}
 
-  '@sphereon/oid4vc-common@0.16.1-next.8':
-    resolution: {integrity: sha512-e/DPY0zbVrCSDN6sPQApkNHncgMn2hJBbiSnkFgkJFXvBpob3RgnUn/CebO/VzClGT6ua0EOkSs4jMe6MhRimw==}
+  '@sphereon/oid4vci-client@0.16.1-next.13':
+    resolution: {integrity: sha512-hMrdnrosJrvndIQIwRfbAtopCEjaw3J0nC8nAqkXPWY3Il/6qlW8v/6Uh41TvbWUReRyAI2qGWVYT5WPPiTekA==}
     engines: {node: '>=18'}
 
-  '@sphereon/oid4vci-client@0.16.1-next.8':
-    resolution: {integrity: sha512-9cqlA3mLwhjS1ucTPEyXi/NmVcJk90z3Ock21gwQeSdGMzqAD2U6nUz6dbzOyaMyrLtQLtiQalYXY8BeTq16ug==}
+  '@sphereon/oid4vci-common@0.16.1-next.13':
+    resolution: {integrity: sha512-6RPKk9zSOknhPHwI67Zzyq7Abqzztd0HSEuLssC13EA+oNdrb4fqfoXjyLw81kl+b+OwZGXKSGPexq/9S/JxxA==}
     engines: {node: '>=18'}
 
-  '@sphereon/oid4vci-common@0.16.1-next.8':
-    resolution: {integrity: sha512-yQF22jfFHxHqGBYg+vngeaXWSj8wuky9OK/T/obwQDUUS8pRav+RNRsB0ydX0ZtNskReORWk4A/QpVv3RBkgqQ==}
-    engines: {node: '>=18'}
-
-  '@sphereon/oid4vci-issuer@0.16.1-next.8':
-    resolution: {integrity: sha512-cFHK62lLqx3ozJn0MfFy7jeU9ICCQb/pJBUEDcmYcdpDJ7LKHL9ism0ib3ytVlmc656oXwoXk109DaqOi199/A==}
+  '@sphereon/oid4vci-issuer@0.16.1-next.13':
+    resolution: {integrity: sha512-YKkvpyE7pdHoJMf2Dp1aYWTNNhNA49DqOnQMww4oXaUA7WHiMmGwkTFOg4T6LzxvGuMnw5IpA95XDIFM31FRpQ==}
     engines: {node: '>=18'}
     peerDependencies:
       awesome-qr: ^2.1.5-rc.0
@@ -9800,11 +9804,11 @@ snapshots:
 
   '@sovpro/delimited-stream@1.1.0': {}
 
-  '@sphereon/did-auth-siop@0.16.1-next.13':
+  '@sphereon/did-auth-siop@file:sphereon-did-auth-siop-0.16.0.tgz':
     dependencies:
       '@astronautlabs/jsonpath': 1.1.2
       '@sphereon/did-uni-client': 0.6.3
-      '@sphereon/oid4vc-common': 0.16.1-next.13
+      '@sphereon/oid4vc-common': 0.16.0
       '@sphereon/pex': 3.3.3
       '@sphereon/pex-models': 2.2.4
       '@sphereon/ssi-types': 0.22.0
@@ -9828,11 +9832,21 @@ snapshots:
     transitivePeerDependencies:
       - encoding
 
-  '@sphereon/kmp-mdl-mdoc@0.2.0-SNAPSHOT.3':
+  '@sphereon/kmp-mdl-mdoc@0.2.0-SNAPSHOT.6':
     dependencies:
       '@js-joda/core': 5.6.3
       '@js-joda/timezone': 2.3.0(@js-joda/core@5.6.3)
       format-util: 1.0.5
+
+  '@sphereon/oid4vc-common@0.16.0':
+    dependencies:
+      '@sphereon/ssi-types': 0.28.0
+      jwt-decode: 4.0.0
+      sha.js: 2.4.11
+      uint8arrays: 3.1.1
+      uuid: 9.0.1
+    transitivePeerDependencies:
+      - supports-color
 
   '@sphereon/oid4vc-common@0.16.1-next.13':
     dependencies:
@@ -9844,20 +9858,10 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@sphereon/oid4vc-common@0.16.1-next.8':
+  '@sphereon/oid4vci-client@0.16.1-next.13':
     dependencies:
-      '@sphereon/ssi-types': 0.29.0
-      jwt-decode: 4.0.0
-      sha.js: 2.4.11
-      uint8arrays: 3.1.1
-      uuid: 9.0.1
-    transitivePeerDependencies:
-      - supports-color
-
-  '@sphereon/oid4vci-client@0.16.1-next.8':
-    dependencies:
-      '@sphereon/oid4vc-common': 0.16.1-next.8
-      '@sphereon/oid4vci-common': 0.16.1-next.8
+      '@sphereon/oid4vc-common': 0.16.1-next.13
+      '@sphereon/oid4vci-common': 0.16.1-next.13
       '@sphereon/ssi-types': 0.29.0
       cross-fetch: 3.1.8
       debug: 4.3.6
@@ -9865,11 +9869,12 @@ snapshots:
       - encoding
       - supports-color
 
-  '@sphereon/oid4vci-common@0.16.1-next.8':
+  '@sphereon/oid4vci-common@0.16.1-next.13':
     dependencies:
-      '@sphereon/oid4vc-common': 0.16.1-next.8
+      '@sphereon/oid4vc-common': 0.16.1-next.13
       '@sphereon/ssi-types': 0.29.0
       cross-fetch: 3.1.8
+      debug: 4.3.6
       jwt-decode: 4.0.0
       uint8arrays: 3.1.1
       uuid: 9.0.1
@@ -9877,10 +9882,10 @@ snapshots:
       - encoding
       - supports-color
 
-  '@sphereon/oid4vci-issuer@0.16.1-next.8':
+  '@sphereon/oid4vci-issuer@0.16.1-next.13':
     dependencies:
-      '@sphereon/oid4vc-common': 0.16.1-next.8
-      '@sphereon/oid4vci-common': 0.16.1-next.8
+      '@sphereon/oid4vc-common': 0.16.1-next.13
+      '@sphereon/oid4vci-common': 0.16.1-next.13
       '@sphereon/ssi-types': 0.29.0
       uuid: 9.0.1
     transitivePeerDependencies:
