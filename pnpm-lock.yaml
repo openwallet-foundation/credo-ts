@@ -452,8 +452,8 @@ importers:
         specifier: ^0.7.0
         version: 0.7.1
       '@sphereon/did-auth-siop':
-        specifier: file:../../sphereon-did-auth-siop-0.16.0.tgz
-        version: file:sphereon-did-auth-siop-0.16.0.tgz
+        specifier: file:./sphereon-did-auth-siop-0.16.0.tgz
+        version: file:packages/core/sphereon-did-auth-siop-0.16.0.tgz
       '@sphereon/kmp-mdl-mdoc':
         specifier: 0.2.0-SNAPSHOT.6
         version: 0.2.0-SNAPSHOT.6
@@ -694,8 +694,8 @@ importers:
         specifier: workspace:*
         version: link:../core
       '@sphereon/did-auth-siop':
-        specifier: file:../../sphereon-did-auth-siop-0.16.0.tgz
-        version: file:sphereon-did-auth-siop-0.16.0.tgz
+        specifier: file:./sphereon-did-auth-siop-0.16.0.tgz
+        version: file:packages/openid4vc/sphereon-did-auth-siop-0.16.0.tgz
       '@sphereon/oid4vc-common':
         specifier: 0.16.1-next.14
         version: 0.16.1-next.14
@@ -2401,8 +2401,13 @@ packages:
     resolution: {integrity: sha512-kQpk267uxB19X3X2T1mvNMjyvIEonpNSHrMlK5ZaBU6aZxw7wPbpgKJOjHN3+/GPVpXgAV9soVT2oyHpLkLtyw==}
     engines: {node: '>= 8'}
 
-  '@sphereon/did-auth-siop@file:sphereon-did-auth-siop-0.16.0.tgz':
-    resolution: {integrity: sha512-ClSggF0NJ5zFOr6pLhi6cJs08QPqJFUb3+p+Cn0K+68HcMfUWt0/d6fKAOokV2GK6lF9QWHjIAzSbagKgqFDNw==, tarball: file:sphereon-did-auth-siop-0.16.0.tgz}
+  '@sphereon/did-auth-siop@file:packages/core/sphereon-did-auth-siop-0.16.0.tgz':
+    resolution: {integrity: sha512-ClSggF0NJ5zFOr6pLhi6cJs08QPqJFUb3+p+Cn0K+68HcMfUWt0/d6fKAOokV2GK6lF9QWHjIAzSbagKgqFDNw==, tarball: file:packages/core/sphereon-did-auth-siop-0.16.0.tgz}
+    version: 0.16.0
+    engines: {node: '>=18'}
+
+  '@sphereon/did-auth-siop@file:packages/openid4vc/sphereon-did-auth-siop-0.16.0.tgz':
+    resolution: {integrity: sha512-ClSggF0NJ5zFOr6pLhi6cJs08QPqJFUb3+p+Cn0K+68HcMfUWt0/d6fKAOokV2GK6lF9QWHjIAzSbagKgqFDNw==, tarball: file:packages/openid4vc/sphereon-did-auth-siop-0.16.0.tgz}
     version: 0.16.0
     engines: {node: '>=18'}
 
@@ -9805,7 +9810,28 @@ snapshots:
 
   '@sovpro/delimited-stream@1.1.0': {}
 
-  '@sphereon/did-auth-siop@file:sphereon-did-auth-siop-0.16.0.tgz':
+  '@sphereon/did-auth-siop@file:packages/core/sphereon-did-auth-siop-0.16.0.tgz':
+    dependencies:
+      '@astronautlabs/jsonpath': 1.1.2
+      '@sphereon/did-uni-client': 0.6.3
+      '@sphereon/oid4vc-common': 0.16.1-next.14
+      '@sphereon/pex': 3.3.3
+      '@sphereon/pex-models': 2.2.4
+      '@sphereon/ssi-types': 0.22.0
+      '@sphereon/wellknown-dids-client': 0.1.3
+      cross-fetch: 4.0.0
+      debug: 4.3.6
+      events: 3.3.0
+      jwt-decode: 4.0.0
+      language-tags: 1.0.9
+      multiformats: 12.1.3
+      qs: 6.13.0
+      uint8arrays: 3.1.1
+    transitivePeerDependencies:
+      - encoding
+      - supports-color
+
+  '@sphereon/did-auth-siop@file:packages/openid4vc/sphereon-did-auth-siop-0.16.0.tgz':
     dependencies:
       '@astronautlabs/jsonpath': 1.1.2
       '@sphereon/did-uni-client': 0.6.3
