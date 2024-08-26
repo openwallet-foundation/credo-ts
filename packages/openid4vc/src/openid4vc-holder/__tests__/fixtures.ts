@@ -342,3 +342,39 @@ export const animoOpenIdPlaygroundDraft11SdJwtVc = {
     notification_id: '1234',
   },
 }
+
+export const funke_sprind_mdoc_presentation_definition = {
+  id: 'mDL-sample-req',
+  input_descriptors: [
+    {
+      id: 'eu.europa.ec.eudi.pid.1',
+      group: ['A'],
+      format: {
+        mso_mdoc: {
+          alg: ['ES256', 'ES384', 'ES512', 'EdDSA'], // alg: ['ES256', 'ES384', 'ES512', 'EdDSA', 'ESB256', 'ESB320', 'ESB384', 'ESB512'],
+        },
+      },
+      constraints: {
+        fields: [
+          {
+            path: ["$['eu.europa.ec.eudi.pid.1']['given_name']"],
+            intent_to_retain: false,
+          },
+          {
+            path: ["$['eu.europa.ec.eudi.pid.1']['family_name']"],
+            intent_to_retain: false,
+          },
+          {
+            path: ["$['eu.europa.ec.eudi.pid.1']['age_over_21']"],
+            intent_to_retain: false,
+          },
+          {
+            path: ["$['eu.europa.ec.eudi.pid.1']['nationality']"],
+            intent_to_retain: false,
+          },
+        ],
+        limit_disclosure: 'required',
+      },
+    },
+  ],
+}
