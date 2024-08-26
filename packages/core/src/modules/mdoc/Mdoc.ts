@@ -16,6 +16,8 @@ import { MdocCoseCallbackService } from './MdocCoseCallbackService'
 import { MdocError } from './MdocError'
 import { MdocX509CallbackService } from './MdocX509CallbackService'
 
+export { MdocVerifiablePresentation } from '@sphereon/did-auth-siop'
+
 type IssuerSignedJson = com.sphereon.mdoc.data.device.IssuerSignedJson
 type IssuerSignedItemJson = com.sphereon.mdoc.data.device.IssuerSignedItemJson
 type IssuerSignedCbor = com.sphereon.mdoc.data.device.IssuerSignedCbor
