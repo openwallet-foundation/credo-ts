@@ -19,7 +19,7 @@ import { MdocX509CallbackService } from './MdocX509CallbackService'
 type IssuerSignedJson = com.sphereon.mdoc.data.device.IssuerSignedJson
 type IssuerSignedItemJson = com.sphereon.mdoc.data.device.IssuerSignedItemJson
 type IssuerSignedCbor = com.sphereon.mdoc.data.device.IssuerSignedCbor
-
+type Oid4vpSubmissionDescriptor = com.sphereon.mdoc.oid4vp.Oid4vpSubmissionDescriptor
 export type MdocNamespaceData = Record<string, unknown>
 export type MdocNamespaces = Record<string, MdocNamespaceData>
 
@@ -130,6 +130,8 @@ export class Mdoc {
 
     return { isValid: true }
   }
+
+  // TODO: REPLACE THIS WITH SERIALIZER
   private getMdocPresentationDefinition = (presentationDefinition: DifPresentationExchangeDefinitionV2) => {
     const oid4vp = com.sphereon.mdoc.oid4vp
     const mdocInputDescriptors: com.sphereon.mdoc.oid4vp.IOid4VPInputDescriptor[] = []
@@ -140,14 +142,13 @@ export class Mdoc {
       const fields = inputDescriptor.constraints.fields?.map((field) => {
         return oid4vp.Oid4VPConstraintField.Static.fromDTO({
           path: field.path,
-          // @ts-expect-error type not correct
+          // @ts-expect-error needs fix from sphereon
           intent_to_retain: field.intent_to_retain,
         })
       })
 
       const constraints = oid4vp.Oid4VPConstraints.Static.fromDTO({
         fields,
-        // @ts-expect-error type not correct
         limit_disclosure: oid4vp.Oid4VPLimitDisclosure.REQUIRED,
       })
 
@@ -166,14 +167,11 @@ export class Mdoc {
 
     return oid4vp.Oid4VPPresentationDefinition.Static.fromDTO({
       id: presentationDefinition.id,
-      // @ts-expect-error type not correct
       input_descriptors: mdocInputDescriptors,
     })
   }
 
-  private mdocSubmissionToSubmission = (
-    descriptorMapEntry: com.sphereon.mdoc.oid4vp.Oid4VPPresentationSubmission['descriptorMap'][number]
-  ): Descriptor => {
+  private mdocSubmissionToSubmission = (descriptorMapEntry: Oid4vpSubmissionDescriptor): Descriptor => {
     return {
       id: descriptorMapEntry.id,
       format: descriptorMapEntry.format.value,
@@ -202,8 +200,7 @@ export class Mdoc {
 
     const submission: DifPresentationExchangeSubmission = {
       id: mdocSubmission.id,
-      definition_id: mdocSubmission.definitionId,
-      // @ts-expect-error type not correct
+      definition_id: mdocSubmission.definition_id,
       descriptor_map: mdocSubmission.descriptor_map.map(this.mdocSubmissionToSubmission),
     }
 
@@ -223,7 +220,7 @@ export class Mdoc {
     return { submission, deviceSignedBase64Url }
   }
 
-  // TODO:
+  // TODO: MOVE TO MDOC DEVICE SIGNED CLASS
   public static async verifyDeviceSigned(deviceSigned: string) {
     // Just check if the device response can be parsed for now
     com.sphereon.mdoc.data.device.DeviceResponseCbor.Static.cborDecode(
@@ -233,6 +230,7 @@ export class Mdoc {
     return true
   }
 
+  // TODO: MOVE TO MDOC DEVICE SIGNED CLASS
   public static async getDisclosedClaims(deviceSigned: string) {
     // Just check if the device response can be parsed for now
     const deviceResponseCbor = com.sphereon.mdoc.data.device.DeviceResponseCbor.Static.cborDecode(

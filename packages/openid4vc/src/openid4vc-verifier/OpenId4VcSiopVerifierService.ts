@@ -34,9 +34,9 @@ import {
   W3cJsonLdVerifiablePresentation,
   Hasher,
   DidsApi,
+  Mdoc,
   X509Service,
   getDomainFromUrl,
-  Mdoc,
 } from '@credo-ts/core'
 import {
   AuthorizationRequest,
@@ -186,22 +186,12 @@ export class OpenId4VcSiopVerifierService {
       jwtIssuer,
     })
 
-    // TODO:
-    // const isMdlRequest = false
-    //  options.presentationExchange?.definition.format === 'mso_mdoc' ||
-    // options.presentationExchange?.definition.input_descriptors((descriptor) => descriptor.format === 'mso_mdoc')
-
     // NOTE: it's not possible to set the uri scheme when using the RP to create an auth request, only lower level
     // functions allow this. So we need to replace the uri scheme manually.
     let authorizationRequestUri = (await authorizationRequest.uri()).encodedUri
     if (options.presentationExchange && !options.idToken) {
-      // TODO: && !isMdlRequest) {
       authorizationRequestUri = authorizationRequestUri.replace('openid://', 'openid4vp://')
     }
-    // TODO:
-    //if (isMdlRequest) {
-    //authorizationRequestUri = authorizationRequestUri.replace('openid://', 'mdoc-openid4vp')
-    //}
 
     const verificationSession = await verificationSessionCreatedPromise
 
