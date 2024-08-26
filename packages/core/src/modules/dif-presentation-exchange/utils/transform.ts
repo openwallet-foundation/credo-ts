@@ -8,6 +8,9 @@ import type {
   W3CVerifiablePresentation as SphereonW3CVerifiablePresentation,
 } from '@sphereon/ssi-types'
 
+import { MdocVerifiablePresentation } from '@sphereon/did-auth-siop'
+
+import { Jwt } from '../../../crypto'
 import { CredoError } from '../../../error'
 import { JsonTransformer } from '../../../utils'
 import { SdJwtVcApi } from '../../sd-jwt-vc'
@@ -31,6 +34,8 @@ export function getSphereonOriginalVerifiablePresentation(
     verifiablePresentation instanceof W3cJsonLdVerifiablePresentation
   ) {
     return verifiablePresentation.encoded as SphereonOriginalVerifiablePresentation
+  } else if (verifiablePresentation instanceof MdocVerifiablePresentation) {
+    return verifiablePresentation.deviceSignedBase64Url
   } else {
     return verifiablePresentation.compact
   }
@@ -39,13 +44,19 @@ export function getSphereonOriginalVerifiablePresentation(
 // TODO: we might want to move this to some generic vc transformation util
 export function getVerifiablePresentationFromEncoded(
   agentContext: AgentContext,
-  encodedVerifiablePresentation: string | W3cJsonPresentation | SphereonW3CVerifiablePresentation
+  encodedVerifiablePresentation:
+    | string
+    | W3cJsonPresentation
+    | SphereonW3CVerifiablePresentation
+    | MdocVerifiablePresentation
 ) {
   if (typeof encodedVerifiablePresentation === 'string' && encodedVerifiablePresentation.includes('~')) {
     const sdJwtVcApi = agentContext.dependencyManager.resolve(SdJwtVcApi)
     return sdJwtVcApi.fromCompact(encodedVerifiablePresentation)
-  } else if (typeof encodedVerifiablePresentation === 'string') {
+  } else if (typeof encodedVerifiablePresentation === 'string' && Jwt.format.test(encodedVerifiablePresentation)) {
     return W3cJwtVerifiablePresentation.fromSerializedJwt(encodedVerifiablePresentation)
+  } else if (typeof encodedVerifiablePresentation === 'string') {
+    return new MdocVerifiablePresentation(encodedVerifiablePresentation)
   } else if (typeof encodedVerifiablePresentation === 'object' && '@context' in encodedVerifiablePresentation) {
     return JsonTransformer.fromJSON(encodedVerifiablePresentation, W3cJsonLdVerifiablePresentation)
   } else {

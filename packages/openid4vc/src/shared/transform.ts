@@ -14,7 +14,9 @@ import {
   W3cJwtVerifiableCredential,
   W3cJsonLdVerifiableCredential,
   JsonEncoder,
+  Mdoc,
 } from '@credo-ts/core'
+import { MdocVerifiablePresentation } from '@sphereon/did-auth-siop'
 
 export function getSphereonVerifiableCredential(
   verifiableCredential: VerifiableCredential
@@ -26,17 +28,21 @@ export function getSphereonVerifiableCredential(
     return JsonTransformer.toJSON(verifiableCredential) as SphereonW3cVerifiableCredential
   } else if (verifiableCredential instanceof W3cJwtVerifiableCredential) {
     return verifiableCredential.serializedJwt
+  } else if (verifiableCredential instanceof Mdoc) {
+    throw new CredoError('Issuance side for Mdoc not yet implemented.')
   } else {
     return verifiableCredential.compact
   }
 }
 
 export function getSphereonVerifiablePresentation(
-  verifiablePresentation: VerifiablePresentation
+  verifiablePresentation: VerifiablePresentation | MdocVerifiablePresentation
 ): SphereonW3cVerifiablePresentation | SphereonCompactSdJwtVc {
   // encoded sd-jwt or jwt
   if (typeof verifiablePresentation === 'string') {
     return verifiablePresentation
+  } else if (verifiablePresentation instanceof MdocVerifiablePresentation) {
+    return verifiablePresentation.deviceSignedBase64Url
   } else if (verifiablePresentation instanceof W3cJsonLdVerifiablePresentation) {
     return JsonTransformer.toJSON(verifiablePresentation) as SphereonW3cVerifiablePresentation
   } else if (verifiablePresentation instanceof W3cJwtVerifiablePresentation) {
@@ -47,9 +53,11 @@ export function getSphereonVerifiablePresentation(
 }
 
 export function getVerifiablePresentationFromSphereonWrapped(
-  wrappedVerifiablePresentation: WrappedVerifiablePresentation
-): VerifiablePresentation {
-  if (wrappedVerifiablePresentation.format === 'jwt_vp') {
+  wrappedVerifiablePresentation: WrappedVerifiablePresentation | MdocVerifiablePresentation
+): VerifiablePresentation | MdocVerifiablePresentation {
+  if (wrappedVerifiablePresentation instanceof MdocVerifiablePresentation) {
+    return wrappedVerifiablePresentation
+  } else if (wrappedVerifiablePresentation.format === 'jwt_vp') {
     if (typeof wrappedVerifiablePresentation.original !== 'string') {
       throw new CredoError('Unable to transform JWT VP to W3C VP')
     }

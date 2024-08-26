@@ -412,7 +412,9 @@ describe('OpenId4Vc', () => {
       })
 
     expect(authorizationRequestUri1).toEqual(
-      `openid://?request_uri=${encodeURIComponent(verificationSession.authorizationRequestUri)}`
+      `openid://?client_id=${encodeURIComponent(verifier1.did)}&request_uri=${encodeURIComponent(
+        verificationSession.authorizationRequestUri
+      )}`
     )
 
     await verifierTenant1.endSession()
@@ -513,7 +515,9 @@ describe('OpenId4Vc', () => {
       })
 
     expect(authorizationRequestUri1).toEqual(
-      `openid4vp://?request_uri=${encodeURIComponent(verificationSession1.authorizationRequestUri)}`
+      `openid4vp://?client_id=${encodeURIComponent(verifier1.did)}&request_uri=${encodeURIComponent(
+        verificationSession1.authorizationRequestUri
+      )}`
     )
 
     const { authorizationRequest: authorizationRequestUri2, verificationSession: verificationSession2 } =
@@ -529,7 +533,9 @@ describe('OpenId4Vc', () => {
       })
 
     expect(authorizationRequestUri2).toEqual(
-      `openid4vp://?request_uri=${encodeURIComponent(verificationSession2.authorizationRequestUri)}`
+      `openid4vp://?client_id=${encodeURIComponent(verifier2.did)}&request_uri=${encodeURIComponent(
+        verificationSession2.authorizationRequestUri
+      )}`
     )
 
     await verifierTenant1.endSession()
@@ -726,7 +732,7 @@ describe('OpenId4Vc', () => {
 
     const certificate = await verifier.agent.x509.createSelfSignedCertificate({
       key: await verifier.agent.wallet.createKey({ keyType: KeyType.Ed25519 }),
-      extensions: [[{ type: 'dns', value: 'example.com' }]],
+      extensions: [[{ type: 'dns', value: 'localhost:1234' }]],
     })
 
     const rawCertificate = certificate.toString('base64')
@@ -771,7 +777,7 @@ describe('OpenId4Vc', () => {
         requestSigner: {
           method: 'x5c',
           x5c: [rawCertificate],
-          issuer: 'https://example.com/hakuna/matadata',
+          issuer: `${verificationBaseUrl}/${openIdVerifier.verifierId}/authorize`,
         },
         presentationExchange: {
           definition: presentationDefinition,
@@ -779,7 +785,9 @@ describe('OpenId4Vc', () => {
       })
 
     expect(authorizationRequest).toEqual(
-      `openid4vp://?request_uri=${encodeURIComponent(verificationSession.authorizationRequestUri)}`
+      `openid4vp://?client_id=localhost%3A1234&request_uri=${encodeURIComponent(
+        verificationSession.authorizationRequestUri
+      )}`
     )
 
     const resolvedAuthorizationRequest = await holder.agent.modules.openId4VcHolder.resolveSiopAuthorizationRequest(

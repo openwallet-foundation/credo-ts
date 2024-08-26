@@ -5,8 +5,7 @@ import type {
   OpenId4VciCredentialOfferPayload,
   OpenId4VciCredentialConfigurationsSupported,
 } from '../shared'
-import type { JwaSignatureAlgorithm, Jwk, KeyType } from '@credo-ts/core'
-import type { VerifiableCredential } from '@credo-ts/core/src/modules/dif-presentation-exchange/models/index'
+import type { JwaSignatureAlgorithm, Jwk, KeyType, VerifiableCredential } from '@credo-ts/core'
 import type {
   AccessTokenResponse,
   CredentialOfferRequestWithBaseUrl,
@@ -21,12 +20,14 @@ export type OpenId4VciSupportedCredentialFormats =
   | OpenId4VciCredentialFormatProfile.JwtVcJsonLd
   | OpenId4VciCredentialFormatProfile.SdJwtVc
   | OpenId4VciCredentialFormatProfile.LdpVc
+  | OpenId4VciCredentialFormatProfile.MsoMdoc
 
 export const openId4VciSupportedCredentialFormats: OpenId4VciSupportedCredentialFormats[] = [
   OpenId4VciCredentialFormatProfile.JwtVcJson,
   OpenId4VciCredentialFormatProfile.JwtVcJsonLd,
   OpenId4VciCredentialFormatProfile.SdJwtVc,
   OpenId4VciCredentialFormatProfile.LdpVc,
+  OpenId4VciCredentialFormatProfile.MsoMdoc,
 ]
 
 export interface OpenId4VciNotificationMetadata {
