@@ -447,8 +447,11 @@ export interface CheqdDidDeactivateOptions extends DidCreateOptions {
   }
 }
 
-export interface CheqdCreateResourceOptions extends Omit<Partial<MsgCreateResourcePayload>, 'data'> {
+export interface CheqdCreateResourceOptions extends Pick<MsgCreateResourcePayload, 'id' | 'name' | 'resourceType'> {
   data: string | Uint8Array | object
+  collectionId?: MsgCreateResourcePayload['collectionId']
+  version?: MsgCreateResourcePayload['version']
+  alsoKnownAs?: MsgCreateResourcePayload['alsoKnownAs']
 }
 
 interface IVerificationMethod {
