@@ -41,7 +41,7 @@
     "@sd-jwt/types": "^0.7.0",
     "@sd-jwt/utils": "^0.7.0",
     "@sphereon/did-auth-siop": "file:./sphereon-did-auth-siop-0.16.0.tgz",
-    "@sphereon/kmp-mdl-mdoc": "0.2.0-SNAPSHOT.6",
+    "@sphereon/kmp-mdl-mdoc": "0.2.0-SNAPSHOT.22",
     "@sphereon/pex": "^3.3.2",
     "@sphereon/pex-models": "^2.2.4",
     "@sphereon/ssi-types": "^0.28.0",

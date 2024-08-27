@@ -141,8 +141,6 @@ describe('OpenId4VcHolder | OpenID4VP', () => {
       resolvedAuthorizationRequest.presentationExchange.credentialsForRequest
     )
 
-    // create the response our
-
     const { submittedResponse, serverResponse } =
       await holder.agent.modules.openId4VcHolder.acceptSiopAuthorizationRequest({
         authorizationRequest: resolvedAuthorizationRequest.authorizationRequest,
