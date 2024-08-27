@@ -4,7 +4,6 @@ import type {
 } from './OpenId4vcSiopHolderServiceOptions'
 import type { OpenId4VcJwtIssuer } from '../shared'
 import type { AgentContext, VerifiablePresentation } from '@credo-ts/core'
-import type { VerifiedAuthorizationRequest, PresentationExchangeResponseOpts } from '@sphereon/did-auth-siop'
 
 import {
   Hasher,
@@ -17,7 +16,17 @@ import {
   DifPresentationExchangeService,
   DifPresentationExchangeSubmissionLocation,
 } from '@credo-ts/core'
-import { OP, ResponseIss, ResponseMode, ResponseType, SupportedVersion, VPTokenLocation } from '@sphereon/did-auth-siop'
+import {
+  VerifiedAuthorizationRequest,
+  PresentationExchangeResponseOpts,
+  MdocVerifiablePresentation,
+  OP,
+  ResponseIss,
+  ResponseMode,
+  ResponseType,
+  SupportedVersion,
+  VPTokenLocation,
+} from '@sphereon/did-auth-siop'
 
 import { getSphereonVerifiablePresentation } from '../shared/transform'
 import { getCreateJwtCallback, getVerifyJwtCallback, openIdTokenIssuerToJwtIssuer } from '../shared/utils'
@@ -102,6 +111,13 @@ export class OpenId4VcSiopHolderService {
           presentationSubmissionLocation: DifPresentationExchangeSubmissionLocation.EXTERNAL,
         })
 
+      for (const verifiablePresentation of verifiablePresentations) {
+        // not sure why instanceof is not working here
+        if ('format' in verifiablePresentation && verifiablePresentation.format === 'mso_mdoc') {
+          verifiablePresentation.nonce = nonce
+        }
+      }
+
       presentationExchangeOptions = {
         verifiablePresentations: verifiablePresentations.map((vp) => getSphereonVerifiablePresentation(vp)),
         presentationSubmission,
@@ -183,9 +199,13 @@ export class OpenId4VcSiopHolderService {
   }
 
   private getOpenIdTokenIssuerFromVerifiablePresentation(
-    verifiablePresentation: VerifiablePresentation
+    verifiablePresentation: VerifiablePresentation | MdocVerifiablePresentation
   ): OpenId4VcJwtIssuer {
     let openIdTokenIssuer: OpenId4VcJwtIssuer
+
+    if (verifiablePresentation instanceof MdocVerifiablePresentation) {
+      throw new CredoError('OpenId token issuer extraction is not yet supported for MdocPresentations')
+    }
 
     if (verifiablePresentation instanceof W3cJsonLdVerifiablePresentation) {
       const [firstProof] = asArray(verifiablePresentation.proof)
