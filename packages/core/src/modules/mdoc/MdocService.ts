@@ -5,10 +5,8 @@ import { injectable } from 'tsyringe'
 
 import { AgentContext } from '../../agent'
 import { TypedArrayEncoder } from '../../utils'
-import { X509ModuleConfig } from '../x509'
 
 import { Mdoc } from './Mdoc'
-import { MdocError } from './MdocError'
 import { MdocRecord, MdocRepository } from './repository'
 
 /**
@@ -34,14 +32,8 @@ export class MdocService {
 
   public async verify(agentContext: AgentContext, options: MdocVerifyOptions) {
     const { mdoc } = options
-    const trustedCertificates =
-      options.trustedCertificates ?? agentContext.dependencyManager.resolve(X509ModuleConfig).trustedCertificates
 
-    if (!trustedCertificates) {
-      throw new MdocError('Mdoc Verification failed. Missing trusted certificates.')
-    }
-
-    return await mdoc.verifyCredential(agentContext, { trustedCertificates })
+    return await mdoc.verifyIssuerSigned(agentContext, { trustedCertificates: options.trustedCertificates })
   }
 
   public async store(agentContext: AgentContext, mdoc: Mdoc) {

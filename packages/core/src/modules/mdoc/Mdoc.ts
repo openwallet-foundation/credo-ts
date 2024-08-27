@@ -8,8 +8,7 @@ import type { Descriptor } from '@sphereon/pex-models'
 import { com, kotlin } from '@sphereon/kmp-mdl-mdoc'
 
 import { JwaSignatureAlgorithm } from '../../crypto'
-import { CredoError } from '../../error'
-import { X509Service } from '../../modules/x509'
+import { X509ModuleConfig, X509Service } from '../../modules/x509'
 import { Buffer, TypedArrayEncoder } from '../../utils'
 
 import { MdocCoseCallbackService } from './MdocCoseCallbackService'
@@ -38,7 +37,7 @@ export class Mdoc {
   public get docType() {
     const type = this.issuerSignedJson.MSO?.docType
     if (!type) {
-      throw new CredoError('Missing required doctype in MDOC.')
+      throw new MdocError('Missing required doctype in MDOC.')
     }
     return type
   }
@@ -90,8 +89,16 @@ export class Mdoc {
     return TypedArrayEncoder.toBase64URL(Buffer.from(this.issuerSignedCbor.toCbor().cborEncode()))
   }
 
-  public async verifyCredential(agentContext: AgentContext, options?: { trustedCertificates?: [string, ...string[]] }) {
-    const { trustedCertificates } = options ?? {}
+  public async verifyIssuerSigned(
+    agentContext: AgentContext,
+    options?: { trustedCertificates?: [string, ...string[]] }
+  ) {
+    const trustedCertificates =
+      options?.trustedCertificates ?? agentContext.dependencyManager.resolve(X509ModuleConfig).trustedCertificates
+
+    if (!trustedCertificates) {
+      throw new MdocError('Mdoc Verification failed. Missing trusted certificates.')
+    }
 
     const cryptoServiceJS = com.sphereon.crypto.CryptoServiceJS
 
@@ -184,11 +191,24 @@ export class Mdoc {
   }
 
   // TODO: MOVE TO MDOC DEVICE SIGNED CLASS
-  public static async verifyDeviceSigned(deviceSigned: string) {
+  public static async verifyDeviceSigned(agentContext: AgentContext, deviceSigned: string) {
     // Just check if the device response can be parsed for now
-    com.sphereon.mdoc.data.device.DeviceResponseCbor.Static.cborDecode(
+    const deviceResponse = com.sphereon.mdoc.data.device.DeviceResponseCbor.Static.cborDecode(
       Int8Array.from(TypedArrayEncoder.fromBase64(deviceSigned))
     )
+
+    if (!deviceResponse.documents || deviceResponse.documents.length === 0) {
+      throw new MdocError('Device response does not contain any documents.')
+    }
+
+    for (const document of deviceResponse.documents) {
+      const mdoc = new Mdoc(Buffer.from(document.issuerSigned.cborEncode()))
+      const result = await mdoc.verifyIssuerSigned(agentContext)
+
+      if (!result.isValid) {
+        throw new MdocError(`Mdoc verification failed. ${result.error}`)
+      }
+    }
 
     return true
   }
@@ -201,7 +221,7 @@ export class Mdoc {
     )
 
     if (!deviceResponseCbor.documents || deviceResponseCbor.documents.length === 0) {
-      throw new CredoError('Device response does not contain any documents.')
+      throw new MdocError('Device response does not contain any documents.')
     }
 
     const mdoc = Mdoc.fromIssuerSignedBase64(
