@@ -552,7 +552,7 @@ export class OpenId4VcSiopVerifierService {
         } else if (encodedPresentation instanceof MdocVerifiablePresentation) {
           // TODO: REMOVE THIS
           const deviceSigned = JSON.parse(encodedPresentation.deviceSignedBase64Url).deviceSigned
-          const result = await Mdoc.verifyDeviceSigned(deviceSigned)
+          const result = await Mdoc.verifyDeviceSigned(agentContext, deviceSigned)
           isValid = result
         } else if (typeof encodedPresentation === 'string') {
           const verificationResult = await this.w3cCredentialService.verifyPresentation(agentContext, {
