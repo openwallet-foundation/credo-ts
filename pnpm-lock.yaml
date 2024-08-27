@@ -2416,7 +2416,6 @@ packages:
 
   '@sphereon/kmp-mdl-mdoc@0.2.0-SNAPSHOT.6':
     resolution: {integrity: sha512-lZ3lWoG0dBND7I5/gXxv9z+6o86oKm/SiRnnlISFTaS7j+K1g36KBZk2vLlWw8kEppG4eiXoCLgYO/FUZC3m9w==}
-    bundledDependencies: []
 
   '@sphereon/oid4vc-common@0.16.1-next.14':
     resolution: {integrity: sha512-0Db4mYGUQ/D7EEYEWoyQYTIoixKxBhftatPeR886ivVl9uFATknZuoTgwn5uPMZf3GyIHW7Tc7ZbDt4LdavwJA==}
