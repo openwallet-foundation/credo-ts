@@ -8,8 +8,7 @@ import type { Descriptor } from '@sphereon/pex-models'
 import { com, kotlin } from '@sphereon/kmp-mdl-mdoc'
 
 import { JwaSignatureAlgorithm } from '../../crypto'
-import { CredoError } from '../../error'
-import { X509Service } from '../../modules/x509'
+import { X509ModuleConfig, X509Service } from '../../modules/x509'
 import { Buffer, TypedArrayEncoder } from '../../utils'
 
 import { MdocCoseCallbackService } from './MdocCoseCallbackService'
@@ -38,7 +37,7 @@ export class Mdoc {
   public get docType() {
     const type = this.issuerSignedJson.MSO?.docType
     if (!type) {
-      throw new CredoError('Missing required doctype in MDOC.')
+      throw new MdocError('Missing required doctype in MDOC.')
     }
     return type
   }
@@ -90,8 +89,16 @@ export class Mdoc {
     return TypedArrayEncoder.toBase64URL(Buffer.from(this.issuerSignedCbor.toCbor().cborEncode()))
   }
 
-  public async verifyCredential(agentContext: AgentContext, options?: { trustedCertificates?: [string, ...string[]] }) {
-    const { trustedCertificates } = options ?? {}
+  public async verifyIssuerSigned(
+    agentContext: AgentContext,
+    options?: { trustedCertificates?: [string, ...string[]] }
+  ) {
+    const trustedCertificates =
+      options?.trustedCertificates ?? agentContext.dependencyManager.resolve(X509ModuleConfig).trustedCertificates
+
+    if (!trustedCertificates) {
+      throw new MdocError('Mdoc Verification failed. Missing trusted certificates.')
+    }
 
     const cryptoServiceJS = com.sphereon.crypto.CryptoServiceJS
 
@@ -134,72 +141,38 @@ export class Mdoc {
   }
 
   // TODO: REPLACE THIS WITH SERIALIZER
-  private getMdocPresentationDefinition = (presentationDefinition: DifPresentationExchangeDefinitionV2) => {
-    const oid4vp = com.sphereon.mdoc.oid4vp
-    const mdocInputDescriptors: com.sphereon.mdoc.oid4vp.IOid4VPInputDescriptor[] = []
-
-    for (const inputDescriptor of presentationDefinition.input_descriptors) {
-      if (!inputDescriptor.constraints.fields) continue
-
-      const fields = inputDescriptor.constraints.fields?.map((field) => {
-        return oid4vp.Oid4VPConstraintField.Static.fromDTO({
-          path: field.path,
-          // @ts-expect-error needs fix from sphereon
-          intent_to_retain: field.intent_to_retain,
-        })
-      })
-
-      const constraints = oid4vp.Oid4VPConstraints.Static.fromDTO({
-        fields,
-        limit_disclosure: oid4vp.Oid4VPLimitDisclosure.REQUIRED,
-      })
-
-      const mdocInputDescriptor = oid4vp.Oid4VPInputDescriptor.Static.fromDTO({
-        id: inputDescriptor.id,
-        constraints,
-        format: {
-          msoMdoc: {
-            alg: [], // TODO
-          },
-        },
-      })
-
-      mdocInputDescriptors.push(mdocInputDescriptor)
-    }
-
-    return oid4vp.Oid4VPPresentationDefinition.Static.fromDTO({
-      id: presentationDefinition.id,
-      input_descriptors: mdocInputDescriptors,
-    })
-  }
 
   private mdocSubmissionToSubmission = (descriptorMapEntry: Oid4vpSubmissionDescriptor): Descriptor => {
     return {
       id: descriptorMapEntry.id,
-      format: descriptorMapEntry.format.value,
+      format: 'mso_mdoc',
       path: descriptorMapEntry.path,
     }
   }
 
   public async limitDisclosure(presentationDefinition: DifPresentationExchangeDefinitionV2) {
-    const mdocPresentationDefinition = this.getMdocPresentationDefinition(presentationDefinition)
-
     const mdoc = this.issuerSignedCbor.toDocument()
-    const limited = mdoc.limitDisclosures(mdocPresentationDefinition.toDocRequest())
+    const limited = mdoc.toSingleDocDeviceResponse(
+      // @ts-expect-error bad type expects class
+      presentationDefinition
+    )
 
-    return Mdoc.fromIssuerSignedBase64(TypedArrayEncoder.toBase64(Buffer.from(limited.cborEncode())))
+    if (!limited.documents || limited.documents.length === 0) {
+      throw new Error('No document present in mdoc limited disclosure.')
+    }
+
+    return Mdoc.fromIssuerSignedBase64(
+      TypedArrayEncoder.toBase64(Buffer.from(limited.documents[0].issuerSigned.cborEncode()))
+    )
   }
 
   // todo:
   public async createPresentation(presentationDefinition: DifPresentationExchangeDefinitionV2) {
-    const mdocPresentationDefinition = this.getMdocPresentationDefinition(presentationDefinition)
-
     const Oid4VPPresentationSubmission = com.sphereon.mdoc.oid4vp.Oid4VPPresentationSubmission
     const mdocSubmission = Oid4VPPresentationSubmission.Static.fromPresentationDefinition(
-      mdocPresentationDefinition,
+      presentationDefinition as unknown as com.sphereon.mdoc.oid4vp.IOid4VPPresentationDefinition,
       'mdoc-presentation-submission'
     )
-
     const submission: DifPresentationExchangeSubmission = {
       id: mdocSubmission.id,
       definition_id: mdocSubmission.definition_id,
@@ -207,15 +180,10 @@ export class Mdoc {
     }
 
     const limitedDisclosedMdoc = await this.limitDisclosure(presentationDefinition)
-    const limitedDocumentCbor = limitedDisclosedMdoc.issuerSignedCbor.toDocument()
-
-    const deviceResponse = new com.sphereon.mdoc.data.device.DeviceResponseCbor(
-      new com.sphereon.cbor.CborString(limitedDisclosedMdoc.docType),
-      [limitedDocumentCbor],
-      null,
-      undefined
-    )
-
+    const deviceResponse = limitedDisclosedMdoc.issuerSignedCbor
+      .toDocument()
+      // @ts-expect-error bad type expects class
+      .toSingleDocDeviceResponse(presentationDefinition)
     const deviceSigned = TypedArrayEncoder.toBase64(Uint8Array.from(deviceResponse.cborEncode()))
     const deviceSignedBase64Url = JSON.stringify({ nonce: 'nonce', deviceSigned })
 
@@ -223,11 +191,24 @@ export class Mdoc {
   }
 
   // TODO: MOVE TO MDOC DEVICE SIGNED CLASS
-  public static async verifyDeviceSigned(deviceSigned: string) {
+  public static async verifyDeviceSigned(agentContext: AgentContext, deviceSigned: string) {
     // Just check if the device response can be parsed for now
-    com.sphereon.mdoc.data.device.DeviceResponseCbor.Static.cborDecode(
+    const deviceResponse = com.sphereon.mdoc.data.device.DeviceResponseCbor.Static.cborDecode(
       Int8Array.from(TypedArrayEncoder.fromBase64(deviceSigned))
     )
+
+    if (!deviceResponse.documents || deviceResponse.documents.length === 0) {
+      throw new MdocError('Device response does not contain any documents.')
+    }
+
+    for (const document of deviceResponse.documents) {
+      const mdoc = new Mdoc(Buffer.from(document.issuerSigned.cborEncode()))
+      const result = await mdoc.verifyIssuerSigned(agentContext)
+
+      if (!result.isValid) {
+        throw new MdocError(`Mdoc verification failed. ${result.error}`)
+      }
+    }
 
     return true
   }
@@ -240,11 +221,13 @@ export class Mdoc {
     )
 
     if (!deviceResponseCbor.documents || deviceResponseCbor.documents.length === 0) {
-      throw new CredoError('Device response does not contain any documents.')
+      throw new MdocError('Device response does not contain any documents.')
     }
 
-    return Mdoc.fromIssuerSignedBase64(
+    const mdoc = Mdoc.fromIssuerSignedBase64(
       TypedArrayEncoder.toBase64(Uint8Array.from(deviceResponseCbor.documents[0].issuerSigned.cborEncode()))
-    ).namespaces
+    )
+
+    return mdoc.namespaces
   }
 }

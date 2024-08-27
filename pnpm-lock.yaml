@@ -455,8 +455,8 @@ importers:
         specifier: file:./sphereon-did-auth-siop-0.16.0.tgz
         version: file:packages/core/sphereon-did-auth-siop-0.16.0.tgz
       '@sphereon/kmp-mdl-mdoc':
-        specifier: 0.2.0-SNAPSHOT.6
-        version: 0.2.0-SNAPSHOT.6
+        specifier: 0.2.0-SNAPSHOT.22
+        version: 0.2.0-SNAPSHOT.22
       '@sphereon/pex':
         specifier: ^3.3.2
         version: 3.3.3
@@ -2414,8 +2414,8 @@ packages:
   '@sphereon/did-uni-client@0.6.3':
     resolution: {integrity: sha512-g7LD7ofbE36slHN7Bhr5dwUrj6t0BuZeXBYJMaVY/pOeL1vJxW1cZHbZqu0NSfOmzyBg4nsYVlgTjyi/Aua2ew==}
 
-  '@sphereon/kmp-mdl-mdoc@0.2.0-SNAPSHOT.6':
-    resolution: {integrity: sha512-lZ3lWoG0dBND7I5/gXxv9z+6o86oKm/SiRnnlISFTaS7j+K1g36KBZk2vLlWw8kEppG4eiXoCLgYO/FUZC3m9w==}
+  '@sphereon/kmp-mdl-mdoc@0.2.0-SNAPSHOT.22':
+    resolution: {integrity: sha512-uAZZExVy+ug9JLircejWa5eLtAZ7bnBP6xb7DO2+86LRsHNLh2k2jMWJYxp+iWtGHTsh6RYsZl14ScQLvjiQ/A==}
 
   '@sphereon/oid4vc-common@0.16.1-next.14':
     resolution: {integrity: sha512-0Db4mYGUQ/D7EEYEWoyQYTIoixKxBhftatPeR886ivVl9uFATknZuoTgwn5uPMZf3GyIHW7Tc7ZbDt4LdavwJA==}
@@ -9858,7 +9858,7 @@ snapshots:
     transitivePeerDependencies:
       - encoding
 
-  '@sphereon/kmp-mdl-mdoc@0.2.0-SNAPSHOT.6':
+  '@sphereon/kmp-mdl-mdoc@0.2.0-SNAPSHOT.22':
     dependencies:
       '@js-joda/core': 5.6.3
       '@js-joda/timezone': 2.3.0(@js-joda/core@5.6.3)

@@ -111,11 +111,12 @@ export class OpenId4VcSiopHolderService {
           presentationSubmissionLocation: DifPresentationExchangeSubmissionLocation.EXTERNAL,
         })
 
-      verifiablePresentations.map((vp) => {
-        if (vp instanceof MdocVerifiablePresentation) {
-          vp.nonce = nonce
+      for (const verifiablePresentation of verifiablePresentations) {
+        // not sure why instanceof is not working here
+        if ('format' in verifiablePresentation && verifiablePresentation.format === 'mso_mdoc') {
+          verifiablePresentation.nonce = nonce
         }
-      })
+      }
 
       presentationExchangeOptions = {
         verifiablePresentations: verifiablePresentations.map((vp) => getSphereonVerifiablePresentation(vp)),

@@ -41,8 +41,12 @@ export function getSphereonVerifiablePresentation(
   // encoded sd-jwt or jwt
   if (typeof verifiablePresentation === 'string') {
     return verifiablePresentation
-  } else if (verifiablePresentation instanceof MdocVerifiablePresentation) {
-    return verifiablePresentation.deviceSignedBase64Url
+    // todo: check why instanceof MdocVerifiablePresentation is not working
+  } else if (
+    verifiablePresentation instanceof MdocVerifiablePresentation ||
+    ('format' in verifiablePresentation && verifiablePresentation.format === 'mso_mdoc')
+  ) {
+    return (verifiablePresentation as MdocVerifiablePresentation).deviceSignedBase64Url
   } else if (verifiablePresentation instanceof W3cJsonLdVerifiablePresentation) {
     return JsonTransformer.toJSON(verifiablePresentation) as SphereonW3cVerifiablePresentation
   } else if (verifiablePresentation instanceof W3cJwtVerifiablePresentation) {
