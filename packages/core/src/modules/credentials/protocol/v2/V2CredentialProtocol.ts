@@ -177,7 +177,6 @@ export class V2CredentialProtocol<CFs extends CredentialFormatService[] = Creden
     let credentialRecord = await this.findByProperties(messageContext.agentContext, {
       threadId: proposalMessage.threadId,
       role: CredentialRole.Issuer,
-      connectionId: connection?.id,
     })
 
     const formatServices = this.getFormatServicesFromMessage(proposalMessage.formats)
