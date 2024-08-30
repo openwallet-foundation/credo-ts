@@ -1,4 +1,6 @@
-import type { AgentContext } from '@credo-ts/core'
+import type { OpenId4VcIssuanceCodeType } from './OpenId4VcCredentialOfferSessionStateManager'
+import type { OpenId4VcIssuanceSessionRecord } from './OpenId4VcIssuanceSessionRecord'
+import type { AgentContext, Query } from '@credo-ts/core'
 import type { CNonceState, IStateManager } from '@sphereon/oid4vci-common'
 
 import { CredoError } from '@credo-ts/core'
@@ -16,21 +18,26 @@ export class OpenId4VcCNonceStateManager implements IStateManager<CNonceState> {
     this.openId4VcIssuerModuleConfig = agentContext.dependencyManager.resolve(OpenId4VcIssuerModuleConfig)
   }
 
-  public async set(cNonce: string, stateValue: CNonceState): Promise<void> {
+  public async set(cNonce: string, stateValue: CNonceState, type?: OpenId4VcIssuanceCodeType): Promise<void> {
     // Just to make sure that the cNonce is the same as the id as that's what we use to query
     if (cNonce !== stateValue.cNonce) {
       throw new CredoError('Expected the id of the cNonce state to be equal to the cNonce')
     }
 
-    if (!stateValue.preAuthorizedCode) {
-      throw new CredoError("Expected the stateValue to have a 'preAuthorizedCode' property")
+    if (!stateValue.preAuthorizedCode && !stateValue.issuerState) {
+      throw new CredoError("Expected the stateValue to have a 'preAuthorizedCode' or 'issuerState' property")
     }
 
     // Record MUST exist (otherwise there's no issuance session active yet)
+
+    const $or: Query<OpenId4VcIssuanceSessionRecord>[] = []
+
+    if (!type || type === 'preAuthorized') $or.push({ preAuthorizedCode: stateValue.preAuthorizedCode })
+    if (!type || type === 'issuerState') $or.push({ issuerState: stateValue.issuerState })
+
     const record = await this.openId4VcIssuanceSessionRepository.getSingleByQuery(this.agentContext, {
-      // NOTE: once we support authorized flow, we need to add an $or for the issuer state as well
       issuerId: this.issuerId,
-      preAuthorizedCode: stateValue.preAuthorizedCode,
+      $or,
     })
 
     // cNonce already matches, no need to update

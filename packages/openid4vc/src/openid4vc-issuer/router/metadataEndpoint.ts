@@ -18,7 +18,9 @@ export function configureIssuerMetadataEndpoint(router: Router) {
           credential_issuer: issuerMetadata.issuerUrl,
           token_endpoint: issuerMetadata.tokenEndpoint,
           credential_endpoint: issuerMetadata.credentialEndpoint,
-          authorization_server: issuerMetadata.authorizationServer,
+          // TODO: this is a temporary solution to support the first authorization server
+          // TODO: CHANGE THIS TO SUPPORT MULTIPLE AUTHORIZATION SERVERS
+          authorization_server: issuerMetadata.authorizationServers?.[0],
           credentials_supported: issuerMetadata.credentialsSupported,
           display: issuerMetadata.issuerDisplay,
         } satisfies CredentialIssuerMetadata

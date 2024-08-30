@@ -16,8 +16,9 @@ import type {
   UniformCredentialRequest,
 } from '@sphereon/oid4vci-common'
 
-export type OpenId4VciCredentialSupportedWithId = CredentialSupported & { id: string }
-export type OpenId4VciCredentialSupported = CredentialSupported
+export type OpenId4VciCredentialSupported = CredentialSupported & { id?: string; scope?: string }
+export type OpenId4VciCredentialSupportedWithId = OpenId4VciCredentialSupported & { id: string; scope?: string }
+export type OpenId4VciCredentialSupportedWithIdAndScope = OpenId4VciCredentialSupportedWithId & { scope: string }
 export type OpenId4VciIssuerMetadata = CredentialIssuerMetadata
 export type OpenId4VciIssuerMetadataDisplay = MetadataDisplay
 
@@ -37,3 +38,4 @@ export type OpenId4VcSiopIdTokenPayload = IDTokenPayload
 export * from './OpenId4VcJwtIssuer'
 export * from './CredentialHolderBinding'
 export * from './OpenId4VciCredentialFormatProfile'
+export * from './AuthorizationServer'

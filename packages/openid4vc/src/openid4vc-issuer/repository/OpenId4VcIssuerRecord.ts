@@ -1,4 +1,8 @@
-import type { OpenId4VciCredentialSupportedWithId, OpenId4VciIssuerMetadataDisplay } from '../../shared'
+import type {
+  OpenId4VciCredentialSupportedWithId,
+  OpenId4VciIssuerMetadataDisplay,
+  OpenId4VciAuthorizationServerConfig,
+} from '../../shared'
 import type { RecordTags, TagsBase } from '@credo-ts/core'
 
 import { BaseRecord, utils } from '@credo-ts/core'
@@ -24,6 +28,7 @@ export interface OpenId4VcIssuerRecordProps {
 
   credentialsSupported: OpenId4VciCredentialSupportedWithId[]
   display?: OpenId4VciIssuerMetadataDisplay[]
+  authorizationServerConfigs?: OpenId4VciAuthorizationServerConfig[]
 }
 
 /**
@@ -40,6 +45,7 @@ export class OpenId4VcIssuerRecord extends BaseRecord<DefaultOpenId4VcIssuerReco
 
   public credentialsSupported!: OpenId4VciCredentialSupportedWithId[]
   public display?: OpenId4VciIssuerMetadataDisplay[]
+  public authorizationServerConfigs?: OpenId4VciAuthorizationServerConfig[]
 
   public constructor(props: OpenId4VcIssuerRecordProps) {
     super()
@@ -53,6 +59,7 @@ export class OpenId4VcIssuerRecord extends BaseRecord<DefaultOpenId4VcIssuerReco
       this.accessTokenPublicKeyFingerprint = props.accessTokenPublicKeyFingerprint
       this.credentialsSupported = props.credentialsSupported
       this.display = props.display
+      this.authorizationServerConfigs = props.authorizationServerConfigs
     }
   }
 

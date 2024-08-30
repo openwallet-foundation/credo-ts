@@ -1,23 +1,208 @@
 import type { OpenId4VcIssuanceRequest } from './requestContext'
 import type { AgentContext } from '@credo-ts/core'
-import type { AccessTokenRequest, JWTSignerCallback } from '@sphereon/oid4vci-common'
+import type {
+  AccessTokenResponse,
+  CredentialOfferSession,
+  IStateManager,
+  JWTSignerCallback,
+  Jwt,
+} from '@sphereon/oid4vci-common'
+import type { ITokenEndpointOpts } from '@sphereon/oid4vci-issuer'
 import type { NextFunction, Response, Router } from 'express'
 
-import { getJwkFromKey, CredoError, JwsService, JwtPayload, getJwkClassFromKeyType, Key } from '@credo-ts/core'
+import { getJwkFromKey, CredoError, JwsService, JwtPayload, getJwkClassFromKeyType, Key, Jwk } from '@credo-ts/core'
 import {
+  Alg,
+  EXPIRED_PRE_AUTHORIZED_CODE,
   GrantTypes,
+  INVALID_PRE_AUTHORIZED_CODE,
   IssueStatus,
-  PRE_AUTHORIZED_CODE_REQUIRED_ERROR,
+  PIN_NOT_MATCH_ERROR,
+  PIN_VALIDATION_ERROR,
   PRE_AUTH_CODE_LITERAL,
   TokenError,
   TokenErrorResponse,
+  UNSUPPORTED_GRANT_TYPE_ERROR,
+  USER_PIN_NOT_REQUIRED_ERROR,
+  USER_PIN_REQUIRED_ERROR,
 } from '@sphereon/oid4vci-common'
-import { assertValidAccessTokenRequest, createAccessTokenResponse } from '@sphereon/oid4vci-issuer'
+import { isPreAuthorizedCodeExpired } from '@sphereon/oid4vci-issuer'
 
 import { getRequestContext, sendErrorResponse } from '../../shared/router'
 import { OpenId4VcIssuerService } from '../OpenId4VcIssuerService'
 import { OpenId4VcCNonceStateManager } from '../repository/OpenId4VcCNonceStateManager'
 import { OpenId4VcCredentialOfferSessionStateManager } from '../repository/OpenId4VcCredentialOfferSessionStateManager'
+
+// TODO
+export const isValidGrant = (assertedState: CredentialOfferSession, grantType: string): boolean => {
+  if (assertedState.credentialOffer?.credential_offer?.grants) {
+    const validPreAuthorizedGrant =
+      Object.keys(assertedState.credentialOffer.credential_offer.grants).includes(GrantTypes.PRE_AUTHORIZED_CODE) &&
+      grantType === GrantTypes.PRE_AUTHORIZED_CODE
+
+    const validAuthorizationCodeGrant =
+      Object.keys(assertedState.credentialOffer.credential_offer.grants).includes(GrantTypes.AUTHORIZATION_CODE) &&
+      grantType === GrantTypes.AUTHORIZATION_CODE
+    return validAuthorizationCodeGrant || validPreAuthorizedGrant
+  }
+  return false
+}
+
+// TODO: Update in Sphereon OID4VCI
+export const assertValidAccessTokenRequest = async (
+  request: AccessTokenRequest,
+  opts: {
+    credentialOfferSessions: IStateManager<CredentialOfferSession>
+    expirationDuration: number
+  }
+) => {
+  const { credentialOfferSessions, expirationDuration } = opts
+  // Only pre-auth supported for now
+  if (request.grant_type !== GrantTypes.PRE_AUTHORIZED_CODE && request.grant_type !== GrantTypes.AUTHORIZATION_CODE) {
+    throw new TokenError(400, TokenErrorResponse.invalid_grant, UNSUPPORTED_GRANT_TYPE_ERROR)
+  }
+
+  // Pre-auth flow
+  const preAuthorizedCode =
+    request.grant_type === GrantTypes.PRE_AUTHORIZED_CODE ? request[PRE_AUTH_CODE_LITERAL] : undefined
+  const issuerStatus = request.grant_type === GrantTypes.AUTHORIZATION_CODE ? request.issuer_state : undefined
+
+  if (!preAuthorizedCode && !issuerStatus) {
+    throw new TokenError(
+      400,
+      TokenErrorResponse.invalid_request,
+      "Either 'pre-authorized_code' or 'authorization_code' is required"
+    )
+  }
+
+  const code = (preAuthorizedCode ?? issuerStatus) as string
+
+  const credentialOfferSession = await credentialOfferSessions.getAsserted(code)
+
+  if (![IssueStatus.OFFER_CREATED, IssueStatus.OFFER_URI_RETRIEVED].includes(credentialOfferSession.status)) {
+    throw new TokenError(400, TokenErrorResponse.invalid_request, 'Access token has already been retrieved')
+  }
+
+  credentialOfferSession.status = IssueStatus.ACCESS_TOKEN_REQUESTED
+  credentialOfferSession.lastUpdatedAt = +new Date()
+  await credentialOfferSessions.set(code, credentialOfferSession)
+
+  if (!isValidGrant(credentialOfferSession, request.grant_type)) {
+    throw new TokenError(400, TokenErrorResponse.invalid_grant, UNSUPPORTED_GRANT_TYPE_ERROR)
+  }
+
+  if (preAuthorizedCode) {
+    /*
+  invalid_request:
+  the Authorization Server expects a PIN in the pre-authorized flow but the client does not provide a PIN
+   */
+    if (
+      credentialOfferSession.credentialOffer.credential_offer.grants?.[GrantTypes.PRE_AUTHORIZED_CODE]
+        ?.user_pin_required &&
+      !request.user_pin
+    ) {
+      throw new TokenError(400, TokenErrorResponse.invalid_request, USER_PIN_REQUIRED_ERROR)
+    }
+
+    /*
+  invalid_request:
+  the Authorization Server does not expect a PIN in the pre-authorized flow but the client provides a PIN
+   */
+    if (
+      !credentialOfferSession.credentialOffer.credential_offer.grants?.[GrantTypes.PRE_AUTHORIZED_CODE]
+        ?.user_pin_required &&
+      request.user_pin
+    ) {
+      throw new TokenError(400, TokenErrorResponse.invalid_request, USER_PIN_NOT_REQUIRED_ERROR)
+    }
+
+    /*
+  invalid_grant:
+  the Authorization Server expects a PIN in the pre-authorized flow but the client provides the wrong PIN
+  the End-User provides the wrong Pre-Authorized Code or the Pre-Authorized Code has expired
+   */
+    if (request.user_pin && !/[0-9{,8}]/.test(request.user_pin)) {
+      throw new TokenError(400, TokenErrorResponse.invalid_grant, PIN_VALIDATION_ERROR)
+    } else if (request.user_pin !== credentialOfferSession.userPin) {
+      throw new TokenError(400, TokenErrorResponse.invalid_grant, PIN_NOT_MATCH_ERROR)
+    } else if (isPreAuthorizedCodeExpired(credentialOfferSession, expirationDuration)) {
+      throw new TokenError(400, TokenErrorResponse.invalid_grant, EXPIRED_PRE_AUTHORIZED_CODE)
+    } else if (
+      request[PRE_AUTH_CODE_LITERAL] !==
+      credentialOfferSession.credentialOffer.credential_offer.grants?.[GrantTypes.PRE_AUTHORIZED_CODE]?.[
+        PRE_AUTH_CODE_LITERAL
+      ]
+    ) {
+      throw new TokenError(400, TokenErrorResponse.invalid_grant, INVALID_PRE_AUTHORIZED_CODE)
+    }
+    return { preAuthSession: credentialOfferSession }
+  }
+
+  // Authorization code flow
+
+  const authorizationCodeGrant = credentialOfferSession.credentialOffer.credential_offer.grants?.authorization_code
+
+  if (authorizationCodeGrant?.issuer_state !== credentialOfferSession.issuerState) {
+    throw new TokenError(
+      400,
+      TokenErrorResponse.invalid_request,
+      'Issuer state does not match credential offer issuance state'
+    )
+  }
+
+  // TODO: rename to isCodeExpired
+  if (isPreAuthorizedCodeExpired(credentialOfferSession, expirationDuration)) {
+    throw new TokenError(400, TokenErrorResponse.invalid_grant, 'Issuer state is expired')
+  }
+
+  if (!authorizationCodeGrant?.issuer_state || request.issuer_state !== authorizationCodeGrant.issuer_state) {
+    throw new TokenError(400, TokenErrorResponse.invalid_grant, 'Issuer state is invalid')
+  }
+  return { preAuthSession: credentialOfferSession }
+}
+
+// TODO: Update in Sphereon OID4VCI
+export interface AccessTokenRequest {
+  client_id?: string
+  code?: string
+  code_verifier?: string
+  grant_type: GrantTypes
+  'pre-authorized_code'?: string
+  issuer_state?: string
+  redirect_uri?: string
+  scope?: string
+  user_pin?: string
+}
+
+/**
+ * TODO: create pr to support issuerState in `createAccessTokenResponse`
+ * Copy from '@sphereon/oid4vci-issuer'
+ * @param opts
+ * @returns
+ */
+export const generateAccessToken = async (
+  opts: Required<Pick<ITokenEndpointOpts, 'accessTokenSignerCallback' | 'tokenExpiresIn' | 'accessTokenIssuer'>> & {
+    preAuthorizedCode?: string
+    issuerState?: string
+    alg?: Alg
+  }
+): Promise<string> => {
+  const { accessTokenIssuer, alg, accessTokenSignerCallback, tokenExpiresIn, preAuthorizedCode, issuerState } = opts
+  // JWT uses seconds for iat and exp
+  const iat = new Date().getTime() / 1000
+  const exp = iat + tokenExpiresIn
+  const jwt: Jwt = {
+    header: { typ: 'JWT', alg: alg ?? Alg.ES256K },
+    payload: {
+      iat,
+      exp,
+      iss: accessTokenIssuer,
+      ...(preAuthorizedCode && { preAuthorizedCode }),
+      ...(issuerState && { issuerState }),
+    },
+  }
+  return await accessTokenSignerCallback(jwt)
+}
 
 export interface OpenId4VciAccessTokenEndpointConfig {
   /**
@@ -53,7 +238,7 @@ export interface OpenId4VciAccessTokenEndpointConfig {
 export function configureAccessTokenEndpoint(router: Router, config: OpenId4VciAccessTokenEndpointConfig) {
   router.post(
     config.endpointPath,
-    verifyTokenRequest({ preAuthorizedCodeExpirationInSeconds: config.preAuthorizedCodeExpirationInSeconds }),
+    verifyTokenRequest({ codeExpirationInSeconds: config.preAuthorizedCodeExpirationInSeconds }),
     handleTokenRequest(config)
   )
 }
@@ -106,30 +291,52 @@ export function handleTokenRequest(config: OpenId4VciAccessTokenEndpointConfig) 
     const { agentContext, issuer } = requestContext
 
     const body = request.body as AccessTokenRequest
-    if (body.grant_type !== GrantTypes.PRE_AUTHORIZED_CODE) {
-      return sendErrorResponse(
-        response,
-        agentContext.config.logger,
-        400,
-        TokenErrorResponse.invalid_request,
-        PRE_AUTHORIZED_CODE_REQUIRED_ERROR
-      )
-    }
 
     const openId4VcIssuerService = agentContext.dependencyManager.resolve(OpenId4VcIssuerService)
     const issuerMetadata = openId4VcIssuerService.getIssuerMetadata(agentContext, issuer)
     const accessTokenSigningKey = Key.fromFingerprint(issuer.accessTokenPublicKeyFingerprint)
 
     try {
-      const accessTokenResponse = await createAccessTokenResponse(request.body, {
-        credentialOfferSessions: new OpenId4VcCredentialOfferSessionStateManager(agentContext, issuer.issuerId),
-        tokenExpiresIn: tokenExpiresInSeconds,
+      const code = body.issuer_state
+        ? { type: 'issuerState' as const, value: body.issuer_state }
+        : { type: 'preAuthorized' as const, value: body[PRE_AUTH_CODE_LITERAL] as string }
+
+      const cNonceStateManager = new OpenId4VcCNonceStateManager(agentContext, issuer.issuerId)
+      const cNonce = await agentContext.wallet.generateNonce()
+      await cNonceStateManager.set(
+        cNonce,
+        {
+          cNonce,
+          createdAt: +new Date(),
+          ...(code.type === 'issuerState' && { issuerState: code.value }),
+          ...(code.type === 'preAuthorized' && { preAuthorizedCode: code.value }),
+        },
+        code.type
+      )
+
+      const access_token = await generateAccessToken({
+        tokenExpiresIn: 3600,
         accessTokenIssuer: issuerMetadata.issuerUrl,
-        cNonce: await agentContext.wallet.generateNonce(),
-        cNonceExpiresIn: cNonceExpiresInSeconds,
-        cNonces: new OpenId4VcCNonceStateManager(agentContext, issuer.issuerId),
         accessTokenSignerCallback: getJwtSignerCallback(agentContext, accessTokenSigningKey, config),
+        ...(code.type === 'issuerState' && { issuerState: code.value }),
+        ...(code.type === 'preAuthorized' && { preAuthorizedCode: code.value }),
       })
+
+      const accessTokenResponse: AccessTokenResponse = {
+        access_token,
+        expires_in: tokenExpiresInSeconds,
+        c_nonce: cNonce,
+        c_nonce_expires_in: cNonceExpiresInSeconds,
+        authorization_pending: false,
+        interval: undefined,
+      }
+
+      const credentialOfferStateManager = new OpenId4VcCredentialOfferSessionStateManager(agentContext, issuer.issuerId)
+      const credentialOfferSession = await credentialOfferStateManager.getAsserted(code.value, code.type)
+      credentialOfferSession.status = IssueStatus.ACCESS_TOKEN_CREATED
+      credentialOfferSession.lastUpdatedAt = +new Date()
+      await credentialOfferStateManager.set(code.value, credentialOfferSession, code.type)
+
       response.status(200).json(accessTokenResponse)
     } catch (error) {
       sendErrorResponse(response, agentContext.config.logger, 400, TokenErrorResponse.invalid_request, error)
@@ -140,31 +347,15 @@ export function handleTokenRequest(config: OpenId4VciAccessTokenEndpointConfig) 
   }
 }
 
-export function verifyTokenRequest(options: { preAuthorizedCodeExpirationInSeconds: number }) {
+export function verifyTokenRequest(options: { codeExpirationInSeconds: number }) {
   return async (request: OpenId4VcIssuanceRequest, response: Response, next: NextFunction) => {
     const { agentContext, issuer } = getRequestContext(request)
 
     try {
-      const credentialOfferSessions = new OpenId4VcCredentialOfferSessionStateManager(agentContext, issuer.issuerId)
-      const credentialOfferSession = await credentialOfferSessions.getAsserted(request.body[PRE_AUTH_CODE_LITERAL])
-      if (![IssueStatus.OFFER_CREATED, IssueStatus.OFFER_URI_RETRIEVED].includes(credentialOfferSession.status)) {
-        throw new TokenError(400, TokenErrorResponse.invalid_request, 'Access token has already been retrieved')
-      }
-      const { preAuthSession } = await assertValidAccessTokenRequest(request.body, {
-        // It should actually be in seconds. but the oid4vci library has some bugs related
-        // to seconds vs milliseconds. We pass it as ms for now, but once the fix is released
-        // we should pass it as seconds. We have an extra check below, so that we won't have
-        // an security issue once the fix is released.
-        // FIXME: https://github.com/Sphereon-Opensource/OID4VCI/pull/104
-        expirationDuration: options.preAuthorizedCodeExpirationInSeconds * 1000,
-        credentialOfferSessions,
+      await assertValidAccessTokenRequest(request.body, {
+        expirationDuration: options.codeExpirationInSeconds,
+        credentialOfferSessions: new OpenId4VcCredentialOfferSessionStateManager(agentContext, issuer.issuerId),
       })
-
-      // TODO: remove once above PR is merged and released
-      const expiresAt = preAuthSession.createdAt + options.preAuthorizedCodeExpirationInSeconds * 1000
-      if (Date.now() > expiresAt) {
-        throw new TokenError(400, TokenErrorResponse.invalid_grant, 'Pre-authorized code has expired')
-      }
     } catch (error) {
       if (error instanceof TokenError) {
         sendErrorResponse(

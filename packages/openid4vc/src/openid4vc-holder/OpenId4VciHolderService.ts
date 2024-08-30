@@ -165,9 +165,11 @@ export class OpenId4VciHolderService {
     authCodeFlowOptions: OpenId4VciAuthCodeFlowOptions
   ): Promise<OpenId4VciResolvedAuthorizationRequest> {
     const { credentialOfferPayload, metadata, offeredCredentials } = resolvedCredentialOffer
+
     const codeVerifier = (
-      await Promise.allSettled([agentContext.wallet.generateNonce(), agentContext.wallet.generateNonce()])
-    ).join()
+      await Promise.all([agentContext.wallet.generateNonce(), agentContext.wallet.generateNonce()])
+    ).join('')
+
     const codeVerifierSha256 = Hasher.hash(codeVerifier, 'sha-256')
     const codeChallenge = TypedArrayEncoder.toBase64URL(codeVerifierSha256)
 
@@ -178,13 +180,13 @@ export class OpenId4VciHolderService {
     })
 
     const authDetailsLocation = metadata.credentialIssuerMetadata.authorization_server
-      ? metadata.credentialIssuerMetadata.authorization_server
-      : undefined
+
     const authDetails = offeredCredentials
       .map((credential) => this.getAuthDetailsFromOfferedCredential(credential, authDetailsLocation))
       .filter((authDetail): authDetail is AuthorizationDetails => authDetail !== undefined)
 
     const { clientId, redirectUri, scope } = authCodeFlowOptions
+
     const authorizationRequestUri = await createAuthorizationRequestUri({
       clientId,
       codeChallenge,
@@ -256,6 +258,7 @@ export class OpenId4VciHolderService {
         code,
         codeVerifier,
         redirectUri,
+        asOpts: { clientId: resolvedAuthorizationRequestWithCode.clientId },
       })
     } else {
       accessTokenResponse = await accessTokenClient.acquireAccessToken({
@@ -642,8 +645,21 @@ async function createAuthorizationRequestUri(options: {
   authDetails?: AuthorizationDetails | AuthorizationDetails[]
   redirectUri: string
   scope?: string[]
+  userHint?: string
+  walletIssuer?: string
 }) {
-  const { scope, authDetails, metadata, clientId, codeChallenge, codeChallengeMethod, redirectUri } = options
+  const {
+    scope,
+    authDetails,
+    metadata,
+    clientId,
+    codeChallenge,
+    codeChallengeMethod,
+    redirectUri,
+    userHint,
+    walletIssuer,
+  } = options
+
   let nonEmptyScope = !scope || scope.length === 0 ? undefined : scope
   const nonEmptyAuthDetails = !authDetails || authDetails.length === 0 ? undefined : authDetails
 
@@ -655,9 +671,13 @@ async function createAuthorizationRequestUri(options: {
 
   // Authorization servers supporting PAR SHOULD include the URL of their pushed authorization request endpoint in their authorization server metadata document
   // Note that the presence of pushed_authorization_request_endpoint is sufficient for a client to determine that it may use the PAR flow.
-  const parEndpoint = metadata.credentialIssuerMetadata.pushed_authorization_request_endpoint
+  const parEndpoint =
+    metadata.credentialIssuerMetadata.pushed_authorization_request_endpoint ??
+    metadata.authorizationServerMetadata?.pushed_authorization_request_endpoint
 
-  const authorizationEndpoint = metadata.credentialIssuerMetadata?.authorization_endpoint
+  const authorizationEndpoint =
+    metadata.credentialIssuerMetadata?.authorization_endpoint ??
+    metadata.authorizationServerMetadata?.authorization_endpoint
 
   if (!authorizationEndpoint && !parEndpoint) {
     throw new CredoError(
@@ -680,8 +700,12 @@ async function createAuthorizationRequestUri(options: {
 
   if (nonEmptyScope) queryObj['scope'] = nonEmptyScope.join(' ')
 
-  if (nonEmptyAuthDetails)
+  if (nonEmptyAuthDetails) {
     queryObj['authorization_details'] = JSON.stringify(handleAuthorizationDetails(nonEmptyAuthDetails, metadata))
+  }
+
+  if (userHint) queryObj['user_hint'] = userHint
+  if (walletIssuer) queryObj['wallet_issuer'] = walletIssuer
 
   const issuerState = options.credentialOffer.grants?.authorization_code?.issuer_state
   if (issuerState) queryObj['issuer_state'] = issuerState

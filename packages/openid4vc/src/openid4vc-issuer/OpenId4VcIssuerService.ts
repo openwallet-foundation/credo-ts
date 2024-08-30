@@ -6,6 +6,7 @@ import type {
   OpenId4VcIssuerMetadata,
   OpenId4VciSignSdJwtCredential,
   OpenId4VciSignW3cCredential,
+  OpenId4VciAuthorizationCodeFlowConfig,
 } from './OpenId4VcIssuerServiceOptions'
 import type { OpenId4VcIssuanceSessionRecord } from './repository'
 import type {
@@ -94,7 +95,11 @@ export class OpenId4VcIssuerService {
     agentContext: AgentContext,
     options: OpenId4VciCreateCredentialOfferOptions & { issuer: OpenId4VcIssuerRecord }
   ) {
-    const { preAuthorizedCodeFlowConfig, issuer, offeredCredentials } = options
+    const { preAuthorizedCodeFlowConfig, authorizationCodeFlowConfig, issuer, offeredCredentials } = options
+
+    if (!preAuthorizedCodeFlowConfig && !authorizationCodeFlowConfig) {
+      throw new CredoError('Authorization Config or Pre-Authorized Config must be provided.')
+    }
 
     const vcIssuer = this.getVcIssuer(agentContext, issuer)
 
@@ -114,8 +119,37 @@ export class OpenId4VcIssuerService {
       utils.uuid(),
     ])
 
+    // TODO: HAIP
+    // TODO: for grant type authorization_code, the issuer must include a scope value in order to allow the wallet to identify the desired credential type.
+    // TODO: The wallet MUST use that value in the scope Authorization parameter.
+    // TODO: add support for scope in the credential offer in sphereon-oid4vci
+    const issuerMetadata = this.getIssuerMetadata(agentContext, issuer)
+
+    if (
+      authorizationCodeFlowConfig &&
+      (issuerMetadata.authorizationServers?.length ?? 0 > 1) &&
+      authorizationCodeFlowConfig?.authorizationServerUrl
+    ) {
+      throw new CredoError(
+        'The authorization code flow requires an explicit authorization server url, if multiple authorization servers are present.'
+      )
+    }
+
     let { uri } = await vcIssuer.createCredentialOfferURI({
-      grants: await this.getGrantsFromConfig(agentContext, preAuthorizedCodeFlowConfig),
+      grants: await this.getGrantsFromConfig(agentContext, {
+        preAuthorizedCodeFlowConfig,
+        authorizationCodeFlowConfig: authorizationCodeFlowConfig
+          ? {
+              ...authorizationCodeFlowConfig,
+
+              // Must only be used if multiple authorization servers are present
+              authorizationServerUrl:
+                issuerMetadata.authorizationServers?.length ?? 0 > 1
+                  ? authorizationCodeFlowConfig?.authorizationServerUrl
+                  : undefined,
+            }
+          : undefined,
+      }),
       credentials: offeredCredentials,
       credentialOfferUri: hostedCredentialOfferUri,
       baseUri: options.baseUri,
@@ -239,17 +273,35 @@ export class OpenId4VcIssuerService {
   }
 
   public async createIssuer(agentContext: AgentContext, options: OpenId4VciCreateIssuerOptions) {
+    const { authorizationServerConfigs: authorizationServers, issuerId, display } = options
     // TODO: ideally we can store additional data with a key, such as:
     // - createdAt
     // - purpose
     const accessTokenSignerKey = await agentContext.wallet.createKey({
       keyType: KeyType.Ed25519,
     })
+
+    // If we have an authorization server, we also want to publish a scope to request each credential
+    // this is required for HAIP
+    const credentialsSupported = options.credentialsSupported.map((credentialSupported) => {
+      return {
+        ...credentialSupported,
+        // TODO: do we also need to provide some way to let the wallet know which authorization server
+        // TODO: can issue which credentials?
+        scope: credentialSupported.scope
+          ? credentialSupported.scope
+          : authorizationServers?.length ?? 0 > 0
+          ? credentialSupported.id
+          : undefined,
+      }
+    })
+
     const openId4VcIssuer = new OpenId4VcIssuerRecord({
-      issuerId: options.issuerId ?? utils.uuid(),
-      display: options.display,
+      issuerId: issuerId ?? utils.uuid(),
+      display: display,
       accessTokenPublicKeyFingerprint: accessTokenSignerKey.fingerprint,
-      credentialsSupported: options.credentialsSupported,
+      credentialsSupported,
+      authorizationServerConfigs: authorizationServers,
     })
 
     await this.openId4VcIssuerRepository.save(agentContext, openId4VcIssuer)
@@ -271,12 +323,22 @@ export class OpenId4VcIssuerService {
     const config = agentContext.dependencyManager.resolve(OpenId4VcIssuerModuleConfig)
     const issuerUrl = joinUriParts(config.baseUrl, [issuerRecord.issuerId])
 
+    const authorizationServers =
+      issuerRecord.authorizationServerConfigs && issuerRecord.authorizationServerConfigs.length > 0
+        ? issuerRecord.authorizationServerConfigs.map((authorizationServer) => authorizationServer.baseUrl)
+        : undefined
+
+    const tokenEndpoint = authorizationServers
+      ? undefined
+      : joinUriParts(issuerUrl, [config.accessTokenEndpoint.endpointPath])
+
     const issuerMetadata = {
       issuerUrl,
-      tokenEndpoint: joinUriParts(issuerUrl, [config.accessTokenEndpoint.endpointPath]),
+      tokenEndpoint,
       credentialEndpoint: joinUriParts(issuerUrl, [config.credentialEndpoint.endpointPath]),
       credentialsSupported: issuerRecord.credentialsSupported,
       issuerDisplay: issuerRecord.display,
+      authorizationServers,
     } satisfies OpenId4VcIssuerMetadata
 
     return issuerMetadata
@@ -323,7 +385,6 @@ export class OpenId4VcIssuerService {
     const builder = new VcIssuerBuilder()
       .withCredentialIssuer(issuerMetadata.issuerUrl)
       .withCredentialEndpoint(issuerMetadata.credentialEndpoint)
-      .withTokenEndpoint(issuerMetadata.tokenEndpoint)
       .withCredentialsSupported(issuerMetadata.credentialsSupported)
       .withCNonceStateManager(new OpenId4VcCNonceStateManager(agentContext, issuer.issuerId))
       .withCredentialOfferStateManager(new OpenId4VcCredentialOfferSessionStateManager(agentContext, issuer.issuerId))
@@ -333,8 +394,14 @@ export class OpenId4VcIssuerService {
         throw new CredoError('Credential signer callback should be overwritten. This is a no-op')
       })
 
-    if (issuerMetadata.authorizationServer) {
-      builder.withAuthorizationServer(issuerMetadata.authorizationServer)
+    if (issuerMetadata.authorizationServers) {
+      // TODO: add support for multiple authorization servers
+      builder.withAuthorizationServer(issuerMetadata.authorizationServers[0])
+    } else {
+      if (!issuerMetadata.tokenEndpoint) {
+        throw new CredoError('Missing required token endpoint. No authorization server is set.')
+      }
+      builder.withTokenEndpoint(issuerMetadata.tokenEndpoint)
     }
 
     if (issuerMetadata.issuerDisplay) {
@@ -346,14 +413,28 @@ export class OpenId4VcIssuerService {
 
   private async getGrantsFromConfig(
     agentContext: AgentContext,
-    preAuthorizedCodeFlowConfig: OpenId4VciPreAuthorizedCodeFlowConfig
+    config: {
+      preAuthorizedCodeFlowConfig?: OpenId4VciPreAuthorizedCodeFlowConfig
+      authorizationCodeFlowConfig?: OpenId4VciAuthorizationCodeFlowConfig
+    }
   ) {
+    const { preAuthorizedCodeFlowConfig, authorizationCodeFlowConfig } = config
+
     const grants: Grant = {
-      'urn:ietf:params:oauth:grant-type:pre-authorized_code': {
-        'pre-authorized_code':
-          preAuthorizedCodeFlowConfig.preAuthorizedCode ?? (await agentContext.wallet.generateNonce()),
-        user_pin_required: preAuthorizedCodeFlowConfig.userPinRequired ?? false,
-      },
+      ...(preAuthorizedCodeFlowConfig && {
+        'urn:ietf:params:oauth:grant-type:pre-authorized_code': {
+          'pre-authorized_code':
+            preAuthorizedCodeFlowConfig.preAuthorizedCode ?? (await agentContext.wallet.generateNonce()),
+          user_pin_required: preAuthorizedCodeFlowConfig.userPinRequired ?? false,
+        },
+      }),
+
+      ...(authorizationCodeFlowConfig && {
+        authorization_code: {
+          issuer_state: authorizationCodeFlowConfig.issuerState,
+          authorization_server: authorizationCodeFlowConfig.authorizationServerUrl,
+        },
+      }),
     }
 
     return grants

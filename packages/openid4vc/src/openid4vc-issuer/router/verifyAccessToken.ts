@@ -5,11 +5,15 @@ import { CredoError, JwsService, Jwt } from '@credo-ts/core'
 
 import { OpenId4VcIssuerService } from '../OpenId4VcIssuerService'
 
+export type VerifyAccessTokenResult =
+  | { preAuthorizedCode: string; issuerState: undefined }
+  | { preAuthorizedCode: undefined; issuerState: string }
+
 export async function verifyAccessToken(
   agentContext: AgentContext,
   issuer: OpenId4VcIssuerRecord,
   authorizationHeader?: string
-) {
+): Promise<VerifyAccessTokenResult> {
   const openId4VcIssuerService = agentContext.dependencyManager.resolve(OpenId4VcIssuerService)
 
   if (!authorizationHeader || !authorizationHeader.startsWith('Bearer ')) {
@@ -42,11 +46,22 @@ export async function verifyAccessToken(
     throw new CredoError('Access token was not issued by the expected issuer')
   }
 
-  if (typeof accessToken.payload.additionalClaims.preAuthorizedCode !== 'string') {
-    throw new CredoError('No preAuthorizedCode present in access token')
+  const { preAuthorizedCode, issuerState } = accessToken.payload.additionalClaims
+
+  if (!preAuthorizedCode && !issuerState) {
+    throw new CredoError('No preAuthorizedCode or issuerState present in access token')
+  }
+
+  if (preAuthorizedCode && typeof preAuthorizedCode !== 'string') {
+    throw new CredoError('Invalid preAuthorizedCode present in access token')
+  }
+
+  if (issuerState && typeof issuerState !== 'string') {
+    throw new CredoError('Invalid issuerState present in access token')
   }
 
   return {
-    preAuthorizedCode: accessToken.payload.additionalClaims.preAuthorizedCode,
-  }
+    preAuthorizedCode: preAuthorizedCode || undefined,
+    issuerState: issuerState || undefined,
+  } as VerifyAccessTokenResult
 }

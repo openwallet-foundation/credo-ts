@@ -1,5 +1,5 @@
 import type { OpenId4VcIssuanceSessionStateChangedEvent } from '../OpenId4VcIssuerEvents'
-import type { AgentContext } from '@credo-ts/core'
+import type { AgentContext, Query } from '@credo-ts/core'
 import type { CredentialOfferSession, IStateManager } from '@sphereon/oid4vci-common'
 
 import { CredoError, EventEmitter } from '@credo-ts/core'
@@ -11,6 +11,21 @@ import { OpenId4VcIssuerEvents } from '../OpenId4VcIssuerEvents'
 import { OpenId4VcIssuanceSessionRecord } from './OpenId4VcIssuanceSessionRecord'
 import { OpenId4VcIssuanceSessionRepository } from './OpenId4VcIssuanceSessionRepository'
 
+export type OpenId4VcIssuanceCodeType = 'preAuthorized' | 'issuerState'
+
+const createCodeQuery = (
+  issuerId: string,
+  code: string,
+  type?: OpenId4VcIssuanceCodeType
+): Query<OpenId4VcIssuanceSessionRecord> => {
+  const $or: Query<OpenId4VcIssuanceSessionRecord>[] = []
+
+  if (!type || type === 'preAuthorized') $or.push({ preAuthorizedCode: code })
+  if (!type || type === 'issuerState') $or.push({ issuerState: code })
+
+  return { issuerId, $or }
+}
+
 export class OpenId4VcCredentialOfferSessionStateManager implements IStateManager<CredentialOfferSession> {
   private openId4VcIssuanceSessionRepository: OpenId4VcIssuanceSessionRepository
   private eventEmitter: EventEmitter
@@ -20,22 +35,31 @@ export class OpenId4VcCredentialOfferSessionStateManager implements IStateManage
     this.eventEmitter = agentContext.dependencyManager.resolve(EventEmitter)
   }
 
-  public async set(preAuthorizedCode: string, stateValue: CredentialOfferSession): Promise<void> {
+  public async set(code: string, stateValue: CredentialOfferSession, type?: OpenId4VcIssuanceCodeType): Promise<void> {
     // Just to make sure that the preAuthorizedCode is the same as the id as that's what we use to query
     // NOTE: once we support authorized flow, we need to also allow the id to be equal to issuer state
-    if (preAuthorizedCode !== stateValue.preAuthorizedCode) {
-      throw new CredoError('Expected the id of the credential offer state to be equal to the preAuthorizedCode')
+    if (
+      (type === 'preAuthorized' && code !== stateValue.preAuthorizedCode) ||
+      (type === 'issuerState' && code !== stateValue.issuerState)
+    ) {
+      throw new CredoError(`Expected the id of the credential offer state to be equal to the '${type}'`)
     }
 
-    if (!stateValue.preAuthorizedCode) {
-      throw new CredoError("Expected the stateValue to have a 'preAuthorizedCode' property")
+    if (code !== stateValue.issuerState && code !== stateValue.preAuthorizedCode) {
+      throw new CredoError(
+        `Expected the id of the credential offer state to be equal to the 'preAuthorizedCode' or 'issuerState'`
+      )
+    }
+
+    if (!stateValue.issuerState && !stateValue.preAuthorizedCode) {
+      throw new CredoError("Expected the stateValue to have a 'preAuthorizedCode' or 'issuerState' property")
     }
 
     // Record may already exist
-    let record = await this.openId4VcIssuanceSessionRepository.findSingleByQuery(this.agentContext, {
-      issuerId: this.issuerId,
-      preAuthorizedCode: stateValue.preAuthorizedCode,
-    })
+    let record = await this.openId4VcIssuanceSessionRepository.findSingleByQuery(
+      this.agentContext,
+      createCodeQuery(this.issuerId, code, type)
+    )
 
     const previousState = record?.state ?? null
 
@@ -67,6 +91,7 @@ export class OpenId4VcCredentialOfferSessionStateManager implements IStateManage
       record.credentialOfferPayload = stateValue.credentialOffer.credential_offer
       record.userPin = stateValue.userPin
       record.preAuthorizedCode = stateValue.preAuthorizedCode
+      record.issuerState = stateValue.issuerState
       record.errorMessage = stateValue.error
       record.credentialOfferUri = credentialOfferUri
       record.state = state
@@ -75,6 +100,7 @@ export class OpenId4VcCredentialOfferSessionStateManager implements IStateManage
       record = new OpenId4VcIssuanceSessionRecord({
         issuerId: this.issuerId,
         preAuthorizedCode: stateValue.preAuthorizedCode,
+        issuerState: stateValue.issuerState,
         issuanceMetadata: stateValue.credentialDataSupplierInput,
         credentialOfferPayload: stateValue.credentialOffer.credential_offer,
         credentialOfferUri,
@@ -89,18 +115,16 @@ export class OpenId4VcCredentialOfferSessionStateManager implements IStateManage
     this.emitStateChangedEvent(this.agentContext, record, previousState)
   }
 
-  public async get(preAuthorizedCode: string): Promise<CredentialOfferSession | undefined> {
-    const record = await this.openId4VcIssuanceSessionRepository.findSingleByQuery(this.agentContext, {
-      issuerId: this.issuerId,
-      preAuthorizedCode,
-    })
+  public async get(code: string, type?: OpenId4VcIssuanceCodeType): Promise<CredentialOfferSession | undefined> {
+    const record = await this.openId4VcIssuanceSessionRepository.findSingleByQuery(
+      this.agentContext,
+      createCodeQuery(this.issuerId, code, type)
+    )
 
     if (!record) return undefined
 
-    // NOTE: This should not happen as we query by the preAuthorizedCode
-    // so it's mostly to make TS happy
-    if (!record.preAuthorizedCode) {
-      throw new CredoError("No 'preAuthorizedCode' found on record.")
+    if (!record.preAuthorizedCode && !record.issuerState) {
+      throw new CredoError("No 'preAuthorizedCode' and 'issuerState' found on record.")
     }
 
     if (!record.credentialOfferPayload) {
@@ -114,6 +138,7 @@ export class OpenId4VcCredentialOfferSessionStateManager implements IStateManage
       },
       status: sphereonIssueStatusFromOpenId4VcIssuanceState(record.state),
       preAuthorizedCode: record.preAuthorizedCode,
+      issuerState: record.issuerState,
       credentialDataSupplierInput: record.issuanceMetadata,
       error: record.errorMessage,
       userPin: record.userPin,
@@ -122,20 +147,20 @@ export class OpenId4VcCredentialOfferSessionStateManager implements IStateManage
     }
   }
 
-  public async has(preAuthorizedCode: string): Promise<boolean> {
-    const record = await this.openId4VcIssuanceSessionRepository.findSingleByQuery(this.agentContext, {
-      issuerId: this.issuerId,
-      preAuthorizedCode,
-    })
+  public async has(code: string, type?: OpenId4VcIssuanceCodeType): Promise<boolean> {
+    const record = await this.openId4VcIssuanceSessionRepository.findSingleByQuery(
+      this.agentContext,
+      createCodeQuery(this.issuerId, code, type)
+    )
 
     return record !== undefined
   }
 
-  public async delete(preAuthorizedCode: string): Promise<boolean> {
-    const record = await this.openId4VcIssuanceSessionRepository.findSingleByQuery(this.agentContext, {
-      issuerId: this.issuerId,
-      preAuthorizedCode,
-    })
+  public async delete(code: string, type?: OpenId4VcIssuanceCodeType): Promise<boolean> {
+    const record = await this.openId4VcIssuanceSessionRepository.findSingleByQuery(
+      this.agentContext,
+      createCodeQuery(this.issuerId, code, type)
+    )
 
     if (!record) return false
 
@@ -153,11 +178,11 @@ export class OpenId4VcCredentialOfferSessionStateManager implements IStateManage
     throw new Error('Method not implemented.')
   }
 
-  public async getAsserted(preAuthorizedCode: string): Promise<CredentialOfferSession> {
-    const state = await this.get(preAuthorizedCode)
+  public async getAsserted(code: string, type?: OpenId4VcIssuanceCodeType): Promise<CredentialOfferSession> {
+    const state = await this.get(code, type)
 
     if (!state) {
-      throw new CredoError(`No credential offer state found for id ${preAuthorizedCode}`)
+      throw new CredoError(`No credential offer state found for id '${code}'`)
     }
 
     return state

@@ -7,6 +7,7 @@ import type {
   OpenId4VciCredentialSupportedWithId,
   OpenId4VciIssuerMetadataDisplay,
 } from '../shared'
+import type { OpenId4VciAuthorizationServerConfig } from '../shared/models/AuthorizationServer'
 import type { AgentContext, ClaimFormat, W3cCredential, SdJwtVcSignOptions } from '@credo-ts/core'
 
 export interface OpenId4VciPreAuthorizedCodeFlowConfig {
@@ -14,15 +15,26 @@ export interface OpenId4VciPreAuthorizedCodeFlowConfig {
   userPinRequired?: boolean
 }
 
+export interface OpenId4VciAuthorizationCodeFlowConfig {
+  // OPTIONAL. String value created by the Credential Issuer and opaque to the Wallet
+  // that is used to bind the subsequent Authorization Request with the Credential Issuer
+  // to a context set up during previous steps.
+  issuerState?: string
+
+  // OPTIONAL string that the Wallet can use to identify the Authorization Server to use with this grant
+  // type when authorization_servers parameter in the Credential Issuer metadata has multiple entries.
+  authorizationServerUrl?: string
+}
+
 export type OpenId4VcIssuerMetadata = {
   // The Credential Issuer's identifier. (URL using the https scheme)
   issuerUrl: string
   credentialEndpoint: string
-  tokenEndpoint: string
-  authorizationServer?: string
+  tokenEndpoint?: string
+  authorizationServers?: string[]
 
   issuerDisplay?: OpenId4VciIssuerMetadataDisplay[]
-  credentialsSupported: OpenId4VciCredentialSupported[]
+  credentialsSupported: OpenId4VciCredentialSupportedWithId[]
 }
 
 export interface OpenId4VciCreateCredentialOfferOptions {
@@ -37,7 +49,9 @@ export interface OpenId4VciCreateCredentialOfferOptions {
    */
   baseUri?: string
 
-  preAuthorizedCodeFlowConfig: OpenId4VciPreAuthorizedCodeFlowConfig
+  preAuthorizedCodeFlowConfig?: OpenId4VciPreAuthorizedCodeFlowConfig
+
+  authorizationCodeFlowConfig?: OpenId4VciAuthorizationCodeFlowConfig
 
   /**
    * Metadata about the issuance, that will be stored in the issuance session record and
@@ -123,4 +137,5 @@ export interface OpenId4VciCreateIssuerOptions {
 
   credentialsSupported: OpenId4VciCredentialSupportedWithId[]
   display?: OpenId4VciIssuerMetadataDisplay[]
+  authorizationServerConfigs?: OpenId4VciAuthorizationServerConfig[]
 }
