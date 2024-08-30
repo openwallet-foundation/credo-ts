@@ -20,7 +20,8 @@
   "service": [
     {
       "id": "did:example:123#service-1",
-      "type": "Mediator"
+      "type": "Mediator",
+      "serviceEndpoint": "uri:uri"
     },
     {
       "id": "did:example:123#service-2",

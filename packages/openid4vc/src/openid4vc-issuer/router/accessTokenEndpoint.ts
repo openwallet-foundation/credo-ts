@@ -1,5 +1,6 @@
 import type { OpenId4VcIssuanceRequest } from './requestContext'
 import type { AgentContext } from '@credo-ts/core'
+import type { JWK, SigningAlgo } from '@sphereon/oid4vc-common'
 import type {
   AccessTokenResponse,
   CredentialOfferSession,
@@ -10,7 +11,16 @@ import type {
 import type { ITokenEndpointOpts } from '@sphereon/oid4vci-issuer'
 import type { NextFunction, Response, Router } from 'express'
 
-import { getJwkFromKey, CredoError, JwsService, JwtPayload, getJwkClassFromKeyType, Key, Jwk } from '@credo-ts/core'
+import {
+  getJwkFromKey,
+  CredoError,
+  JwsService,
+  JwtPayload,
+  getJwkClassFromKeyType,
+  Key,
+  joinUriParts,
+} from '@credo-ts/core'
+import { calculateJwkThumbprint, verifyDPoP } from '@sphereon/oid4vc-common'
 import {
   Alg,
   EXPIRED_PRE_AUTHORIZED_CODE,
@@ -29,6 +39,8 @@ import {
 import { isPreAuthorizedCodeExpired } from '@sphereon/oid4vci-issuer'
 
 import { getRequestContext, sendErrorResponse } from '../../shared/router'
+import { getVerifyJwtCallback } from '../../shared/utils'
+import { OpenId4VcIssuerModuleConfig } from '../OpenId4VcIssuerModuleConfig'
 import { OpenId4VcIssuerService } from '../OpenId4VcIssuerService'
 import { OpenId4VcCNonceStateManager } from '../repository/OpenId4VcCNonceStateManager'
 import { OpenId4VcCredentialOfferSessionStateManager } from '../repository/OpenId4VcCredentialOfferSessionStateManager'
@@ -123,7 +135,7 @@ export const assertValidAccessTokenRequest = async (
    */
     if (request.user_pin && !/[0-9{,8}]/.test(request.user_pin)) {
       throw new TokenError(400, TokenErrorResponse.invalid_grant, PIN_VALIDATION_ERROR)
-    } else if (request.user_pin !== credentialOfferSession.userPin) {
+    } else if (request.user_pin !== credentialOfferSession.txCode) {
       throw new TokenError(400, TokenErrorResponse.invalid_grant, PIN_NOT_MATCH_ERROR)
     } else if (isPreAuthorizedCodeExpired(credentialOfferSession, expirationDuration)) {
       throw new TokenError(400, TokenErrorResponse.invalid_grant, EXPIRED_PRE_AUTHORIZED_CODE)
@@ -162,6 +174,7 @@ export const assertValidAccessTokenRequest = async (
 }
 
 // TODO: Update in Sphereon OID4VCI
+
 export interface AccessTokenRequest {
   client_id?: string
   code?: string
@@ -185,20 +198,28 @@ export const generateAccessToken = async (
     preAuthorizedCode?: string
     issuerState?: string
     alg?: Alg
+    dPoPJwk?: JWK
   }
 ): Promise<string> => {
-  const { accessTokenIssuer, alg, accessTokenSignerCallback, tokenExpiresIn, preAuthorizedCode, issuerState } = opts
+  const { dPoPJwk, accessTokenIssuer, alg, accessTokenSignerCallback, tokenExpiresIn, preAuthorizedCode, issuerState } =
+    opts
   // JWT uses seconds for iat and exp
   const iat = new Date().getTime() / 1000
   const exp = iat + tokenExpiresIn
+  const cnf = dPoPJwk ? { cnf: { jkt: await calculateJwkThumbprint(dPoPJwk, 'sha256') } } : undefined
   const jwt: Jwt = {
-    header: { typ: 'JWT', alg: alg ?? Alg.ES256K },
+    header: { typ: 'JWT', alg: alg ?? Alg.ES256 },
     payload: {
       iat,
       exp,
       iss: accessTokenIssuer,
+      ...cnf,
       ...(preAuthorizedCode && { preAuthorizedCode }),
       ...(issuerState && { issuerState }),
+      // Protected resources simultaneously supporting both the DPoP and Bearer schemes need to update how the
+      // evaluation process is performed for bearer tokens to prevent downgraded usage of a DPoP-bound access token.
+      // Specifically, such a protected resource MUST reject a DPoP-bound access token received as a bearer token per [RFC6750].
+      token_type: dPoPJwk ? 'DPoP' : 'Bearer',
     },
   }
   return await accessTokenSignerCallback(jwt)
@@ -296,6 +317,32 @@ export function handleTokenRequest(config: OpenId4VciAccessTokenEndpointConfig) 
     const issuerMetadata = openId4VcIssuerService.getIssuerMetadata(agentContext, issuer)
     const accessTokenSigningKey = Key.fromFingerprint(issuer.accessTokenPublicKeyFingerprint)
 
+    let dpopJwk: JWK | undefined
+    if (request.headers.dpop) {
+      try {
+        const issuerConfig = agentContext.dependencyManager.resolve(OpenId4VcIssuerModuleConfig)
+
+        const fullUrl = joinUriParts(issuerConfig.baseUrl, [requestContext.issuer.issuerId, request.url])
+        dpopJwk = await verifyDPoP(
+          { method: request.method, headers: request.headers, fullUrl },
+          {
+            jwtVerifyCallback: getVerifyJwtCallback(agentContext),
+            expectAccessToken: false,
+            maxIatAgeInSeconds: undefined,
+            acceptedAlgorithms: issuerMetadata.dpopSigningAlgValuesSupported as SigningAlgo[] | undefined,
+          }
+        )
+      } catch (error) {
+        return sendErrorResponse(
+          response,
+          agentContext.config.logger,
+          400,
+          TokenErrorResponse.invalid_dpop_proof,
+          error instanceof Error ? error.message : 'Unknown error'
+        )
+      }
+    }
+
     try {
       const code = body.issuer_state
         ? { type: 'issuerState' as const, value: body.issuer_state }
@@ -320,6 +367,7 @@ export function handleTokenRequest(config: OpenId4VciAccessTokenEndpointConfig) 
         accessTokenSignerCallback: getJwtSignerCallback(agentContext, accessTokenSigningKey, config),
         ...(code.type === 'issuerState' && { issuerState: code.value }),
         ...(code.type === 'preAuthorized' && { preAuthorizedCode: code.value }),
+        dPoPJwk: dpopJwk,
       })
 
       const accessTokenResponse: AccessTokenResponse = {
@@ -329,6 +377,7 @@ export function handleTokenRequest(config: OpenId4VciAccessTokenEndpointConfig) 
         c_nonce_expires_in: cNonceExpiresInSeconds,
         authorization_pending: false,
         interval: undefined,
+        token_type: dpopJwk ? 'DPoP' : 'Bearer',
       }
 
       const credentialOfferStateManager = new OpenId4VcCredentialOfferSessionStateManager(agentContext, issuer.issuerId)

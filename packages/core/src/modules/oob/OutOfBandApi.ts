@@ -2,7 +2,7 @@ import type { HandshakeReusedEvent } from './domain/OutOfBandEvents'
 import type { AgentMessage } from '../../agent/AgentMessage'
 import type { AgentMessageReceivedEvent } from '../../agent/Events'
 import type { Attachment } from '../../decorators/attachment/Attachment'
-import type { Query } from '../../storage/StorageService'
+import type { Query, QueryOptions } from '../../storage/StorageService'
 import type { PlaintextMessage } from '../../types'
 import type { ConnectionInvitationMessage, ConnectionRecord, Routing } from '../connections'
 
@@ -548,7 +548,7 @@ export class OutOfBandApi {
 
     await this.outOfBandService.updateState(this.agentContext, outOfBandRecord, OutOfBandState.PrepareResponse)
 
-    if (handshakeProtocols) {
+    if (handshakeProtocols && handshakeProtocols.length > 0) {
       this.logger.debug('Out of band message contains handshake protocols.')
 
       let connectionRecord
@@ -557,7 +557,7 @@ export class OutOfBandApi {
           `Connection already exists and reuse is enabled. Reusing an existing connection with ID ${existingConnection.id}.`
         )
 
-        if (!messages) {
+        if (!messages || messages?.length === 0) {
           this.logger.debug('Out of band message does not contain any request messages.')
           const isHandshakeReuseSuccessful = await this.handleHandshakeReuse(outOfBandRecord, existingConnection)
 
@@ -594,7 +594,7 @@ export class OutOfBandApi {
         })
       }
 
-      if (messages) {
+      if (messages && messages.length > 0) {
         this.logger.debug('Out of band message contains request messages.')
         if (connectionRecord.isReady) {
           await this.emitWithConnection(outOfBandRecord, connectionRecord, messages)
@@ -650,8 +650,8 @@ export class OutOfBandApi {
    *
    * @returns List containing all out of band records matching specified query params
    */
-  public findAllByQuery(query: Query<OutOfBandRecord>) {
-    return this.outOfBandService.findAllByQuery(this.agentContext, query)
+  public findAllByQuery(query: Query<OutOfBandRecord>, queryOptions?: QueryOptions) {
+    return this.outOfBandService.findAllByQuery(this.agentContext, query, queryOptions)
   }
 
   /**

@@ -1,5 +1,8 @@
 import { ArrayNotEmpty, IsOptional, IsString } from 'class-validator'
 
+import { IsUri } from '../../../../utils'
+import { getProtocolScheme } from '../../../../utils/uri'
+
 import { DidDocumentService } from './DidDocumentService'
 
 export class IndyAgentService extends DidDocumentService {
@@ -20,6 +23,14 @@ export class IndyAgentService extends DidDocumentService {
   }
 
   public static type = 'IndyAgent'
+
+  public get protocolScheme(): string {
+    return getProtocolScheme(this.serviceEndpoint)
+  }
+
+  @IsString()
+  @IsUri()
+  public serviceEndpoint!: string
 
   @ArrayNotEmpty()
   @IsString({ each: true })

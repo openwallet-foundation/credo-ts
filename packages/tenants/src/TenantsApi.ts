@@ -5,7 +5,7 @@ import type {
   WithTenantAgentCallback,
 } from './TenantsApiOptions'
 import type { TenantRecord } from './repository'
-import type { DefaultAgentModules, ModulesMap, Query } from '@credo-ts/core'
+import type { DefaultAgentModules, ModulesMap, Query, QueryOptions } from '@credo-ts/core'
 
 import {
   isStorageUpToDate,
@@ -112,8 +112,8 @@ export class TenantsApi<AgentModules extends ModulesMap = DefaultAgentModules> {
     await this.tenantRecordService.updateTenant(this.rootAgentContext, tenant)
   }
 
-  public async findTenantsByQuery(query: Query<TenantRecord>) {
-    return this.tenantRecordService.findTenantsByQuery(this.rootAgentContext, query)
+  public async findTenantsByQuery(query: Query<TenantRecord>, queryOptions?: QueryOptions) {
+    return this.tenantRecordService.findTenantsByQuery(this.rootAgentContext, query, queryOptions)
   }
 
   public async getAllTenants() {

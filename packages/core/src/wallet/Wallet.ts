@@ -1,4 +1,5 @@
 import type { Key, KeyType } from '../crypto'
+import type { KeyBackend } from '../crypto/KeyBackend'
 import type { Disposable } from '../plugins'
 import type {
   EncryptedMessage,
@@ -57,6 +58,7 @@ export interface Wallet extends Disposable {
   pack(payload: Record<string, unknown>, recipientKeys: string[], senderVerkey?: string): Promise<EncryptedMessage>
   unpack(encryptedMessage: EncryptedMessage): Promise<UnpackedMessageContext>
   generateNonce(): Promise<string>
+  getRandomValues(length: number): Uint8Array
   generateWalletKey(): Promise<string>
 
   /**
@@ -69,6 +71,8 @@ export interface WalletCreateKeyOptions {
   keyType: KeyType
   seed?: Buffer
   privateKey?: Buffer
+  keyBackend?: KeyBackend
+  keyId?: string
 }
 
 export interface WalletSignOptions {

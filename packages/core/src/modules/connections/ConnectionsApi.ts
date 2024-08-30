@@ -1,7 +1,7 @@
 import type { ConnectionType } from './models'
 import type { ConnectionRecord } from './repository/ConnectionRecord'
 import type { Routing } from './services'
-import type { Query } from '../../storage/StorageService'
+import type { Query, QueryOptions } from '../../storage/StorageService'
 import type { OutOfBandRecord } from '../oob/repository'
 
 import { AgentContext } from '../../agent'
@@ -277,11 +277,11 @@ export class ConnectionsApi {
    * @param connectionId the id of the connection for which to accept the response
    * @param responseRequested do we want a response to our ping
    * @param withReturnRouting do we want a response at the time of posting
-   * @returns TurstPingMessage
+   * @returns TrustPingMessage
    */
   public async sendPing(
     connectionId: string,
-    { responseRequested = true, withReturnRouting = undefined }: SendPingOptions
+    { responseRequested = true, withReturnRouting = undefined }: SendPingOptions = {}
   ) {
     const connection = await this.getById(connectionId)
 
@@ -395,8 +395,8 @@ export class ConnectionsApi {
    *
    * @returns List containing all connection records matching specified query paramaters
    */
-  public findAllByQuery(query: Query<ConnectionRecord>) {
-    return this.connectionService.findAllByQuery(this.agentContext, query)
+  public findAllByQuery(query: Query<ConnectionRecord>, queryOptions?: QueryOptions) {
+    return this.connectionService.findAllByQuery(this.agentContext, query, queryOptions)
   }
 
   /**

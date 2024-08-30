@@ -11,8 +11,9 @@ import { decodeSdJwtSync, getClaimsSync } from '@sd-jwt/decode'
 import { Rules } from '@sphereon/pex-models'
 import { default as jp } from 'jsonpath'
 
+import { Hasher } from '../../../crypto'
 import { CredoError } from '../../../error'
-import { deepEquality, Hasher } from '../../../utils'
+import { deepEquality } from '../../../utils'
 import { SdJwtVcRecord } from '../../sd-jwt-vc'
 import { ClaimFormat, W3cCredentialRecord } from '../../vc'
 import { DifPresentationExchangeError } from '../DifPresentationExchangeError'
@@ -272,7 +273,7 @@ function getSubmissionRequirementRulePick(
     // if the requirement is satisfied, we only need to return the satisfied submissions
     // however if the requirement is not satisfied, we include all entries so the wallet could
     // render which credentials are missing.
-    submission:
+    submissionEntry:
       satisfiedSubmissions.length >= selectedSubmission.needsCount
         ? satisfiedSubmissions
         : [...satisfiedSubmissions, ...unsatisfiedSubmissions],

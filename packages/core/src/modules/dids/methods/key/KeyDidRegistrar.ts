@@ -1,5 +1,5 @@
 import type { AgentContext } from '../../../../agent'
-import type { KeyType } from '../../../../crypto'
+import type { Key, KeyType } from '../../../../crypto'
 import type { Buffer } from '../../../../utils'
 import type { DidRegistrar } from '../../domain/DidRegistrar'
 import type { DidCreateOptions, DidCreateResult, DidDeactivateResult, DidUpdateResult } from '../../types'
@@ -19,23 +19,38 @@ export class KeyDidRegistrar implements DidRegistrar {
     const seed = options.secret?.seed
     const privateKey = options.secret?.privateKey
 
-    if (!keyType) {
-      return {
-        didDocumentMetadata: {},
-        didRegistrationMetadata: {},
-        didState: {
-          state: 'failed',
-          reason: 'Missing key type',
-        },
-      }
-    }
-
     try {
-      const key = await agentContext.wallet.createKey({
-        keyType,
-        seed,
-        privateKey,
-      })
+      let key = options.options.key
+
+      if (key && (keyType || seed || privateKey)) {
+        return {
+          didDocumentMetadata: {},
+          didRegistrationMetadata: {},
+          didState: {
+            state: 'failed',
+            reason: 'Key instance cannot be combined with key type, seed or private key',
+          },
+        }
+      }
+
+      if (keyType) {
+        key = await agentContext.wallet.createKey({
+          keyType,
+          seed,
+          privateKey,
+        })
+      }
+
+      if (!key) {
+        return {
+          didDocumentMetadata: {},
+          didRegistrationMetadata: {},
+          didState: {
+            state: 'failed',
+            reason: 'Missing key type or key instance',
+          },
+        }
+      }
 
       const didKey = new DidKey(key)
 
@@ -105,7 +120,8 @@ export interface KeyDidCreateOptions extends DidCreateOptions {
   did?: never
   didDocument?: never
   options: {
-    keyType: KeyType
+    keyType?: KeyType
+    key?: Key
   }
   secret?: {
     seed?: Buffer

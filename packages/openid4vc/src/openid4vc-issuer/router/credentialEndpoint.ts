@@ -1,5 +1,5 @@
 import type { OpenId4VcIssuanceRequest } from './requestContext'
-import type { VerifyAccessTokenResult } from './verifyAccessToken'
+import type { VerifyAccessTokenResult } from './verifyResourceRequest'
 import type { OpenId4VciCredentialRequest } from '../../shared'
 import type { OpenId4VciCredentialRequestToCredentialMapper } from '../OpenId4VcIssuerServiceOptions'
 import type { Router, Response } from 'express'
@@ -8,7 +8,7 @@ import { getRequestContext, sendErrorResponse } from '../../shared/router'
 import { OpenId4VcIssuerService } from '../OpenId4VcIssuerService'
 import { getCNonceFromCredentialRequest } from '../util/credentialRequest'
 
-import { verifyAccessToken } from './verifyAccessToken'
+import { verifyResourceRequest } from './verifyResourceRequest'
 
 export interface OpenId4VciCredentialEndpointConfig {
   /**
@@ -34,7 +34,7 @@ export function configureCredentialEndpoint(router: Router, config: OpenId4VciCr
 
     // Verify the access token (should at some point be moved to a middleware function or something)
     try {
-      verifyAccessTokenResult = await verifyAccessToken(agentContext, issuer, request.headers.authorization)
+      verifyAccessTokenResult = await verifyResourceRequest(agentContext, issuer, request)
     } catch (error) {
       return sendErrorResponse(response, agentContext.config.logger, 401, 'unauthorized', error)
     }

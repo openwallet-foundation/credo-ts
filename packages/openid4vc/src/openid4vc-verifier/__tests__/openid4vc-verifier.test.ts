@@ -1,5 +1,5 @@
 import { Jwt } from '@credo-ts/core'
-import { SigningAlgo } from '@sphereon/did-auth-siop'
+import { SigningAlgo } from '@sphereon/oid4vc-common'
 import { cleanAll, enableNetConnect } from 'nock'
 
 import { AskarModule } from '../../../../askar/src'
@@ -65,7 +65,7 @@ describe('OpenId4VcVerifier', () => {
       expect(jwt.payload.additionalClaims.redirect_uri).toEqual(
         `http://redirect-uri/${openIdVerifier.verifierId}/authorize`
       )
-      expect(jwt.payload.additionalClaims.response_mode).toEqual('post')
+      expect(jwt.payload.additionalClaims.response_mode).toEqual('direct_post')
       expect(jwt.payload.additionalClaims.nonce).toBeDefined()
       expect(jwt.payload.additionalClaims.state).toBeDefined()
       expect(jwt.payload.additionalClaims.response_type).toEqual('vp_token')
@@ -102,7 +102,7 @@ describe('OpenId4VcVerifier', () => {
       expect(jwt.payload.additionalClaims.redirect_uri).toEqual(
         `http://redirect-uri/${openIdVerifier.verifierId}/authorize`
       )
-      expect(jwt.payload.additionalClaims.response_mode).toEqual('post')
+      expect(jwt.payload.additionalClaims.response_mode).toEqual('direct_post')
       expect(jwt.payload.additionalClaims.nonce).toBeDefined()
       expect(jwt.payload.additionalClaims.state).toBeDefined()
       expect(jwt.payload.additionalClaims.response_type).toEqual('id_token')

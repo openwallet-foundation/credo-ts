@@ -1,14 +1,21 @@
 import type { OpenId4VcJwtIssuer } from './models'
-import type { AgentContext, JwaSignatureAlgorithm, Key } from '@credo-ts/core'
-import type { DIDDocument, SigningAlgo, SuppliedSignature } from '@sphereon/did-auth-siop'
+import type { AgentContext, JwaSignatureAlgorithm, JwkJson, Key } from '@credo-ts/core'
+import type { JwtIssuerWithContext as VpJwtIssuerWithContext, VerifyJwtCallback } from '@sphereon/did-auth-siop'
+import type { DPoPJwtIssuerWithContext, CreateJwtCallback, JwtIssuer } from '@sphereon/oid4vc-common'
+import type { CredentialOfferPayloadV1_0_11, CredentialOfferPayloadV1_0_13 } from '@sphereon/oid4vci-common'
 
 import {
   CredoError,
   DidsApi,
-  TypedArrayEncoder,
-  getKeyFromVerificationMethod,
-  getJwkClassFromKeyType,
+  JwsService,
+  JwtPayload,
   SignatureSuiteRegistry,
+  X509Service,
+  getDomainFromUrl,
+  getJwkClassFromKeyType,
+  getJwkFromJson,
+  getJwkFromKey,
+  getKeyFromVerificationMethod,
 } from '@credo-ts/core'
 
 /**
@@ -34,61 +41,138 @@ export function getSupportedJwaSignatureAlgorithms(agentContext: AgentContext): 
   return supportedJwaSignatureAlgorithms
 }
 
-export async function getSphereonSuppliedSignatureFromJwtIssuer(
-  agentContext: AgentContext,
-  jwtIssuer: OpenId4VcJwtIssuer
-): Promise<SuppliedSignature> {
-  let key: Key
-  let alg: string
-  let kid: string | undefined
-  let did: string | undefined
+async function getKeyFromDid(agentContext: AgentContext, didUrl: string) {
+  const didsApi = agentContext.dependencyManager.resolve(DidsApi)
+  const didDocument = await didsApi.resolveDidDocument(didUrl)
+  const verificationMethod = didDocument.dereferenceKey(didUrl, ['authentication'])
 
-  if (jwtIssuer.method === 'did') {
-    const didsApi = agentContext.dependencyManager.resolve(DidsApi)
-    const didDocument = await didsApi.resolveDidDocument(jwtIssuer.didUrl)
-    const verificationMethod = didDocument.dereferenceKey(jwtIssuer.didUrl, ['authentication'])
+  return getKeyFromVerificationMethod(verificationMethod)
+}
 
-    // get the key from the verification method and use the first supported signature algorithm
-    key = getKeyFromVerificationMethod(verificationMethod)
-    const _alg = getJwkClassFromKeyType(key.keyType)?.supportedSignatureAlgorithms[0]
-    if (!_alg) throw new CredoError(`No supported signature algorithms for key type: ${key.keyType}`)
+export function getVerifyJwtCallback(agentContext: AgentContext): VerifyJwtCallback {
+  return async (jwtVerifier, jwt) => {
+    const jwsService = agentContext.dependencyManager.resolve(JwsService)
+    if (jwtVerifier.method === 'did') {
+      const key = await getKeyFromDid(agentContext, jwtVerifier.didUrl)
+      const jwk = getJwkFromKey(key)
 
-    alg = _alg
-    kid = verificationMethod.id
-    did = verificationMethod.controller
-  } else {
-    throw new CredoError(`Unsupported jwt issuer method '${jwtIssuer.method as string}'. Only 'did' is supported.`)
-  }
-
-  return {
-    signature: async (data: string | Uint8Array) => {
-      if (typeof data !== 'string') throw new CredoError("Expected string but received 'Uint8Array'")
-      const signedData = await agentContext.wallet.sign({
-        data: TypedArrayEncoder.fromString(data),
-        key,
-      })
-
-      const signature = TypedArrayEncoder.toBase64URL(signedData)
-      return signature
-    },
-    alg: alg as unknown as SigningAlgo,
-    did,
-    kid,
+      const res = await jwsService.verifyJws(agentContext, { jws: jwt.raw, jwkResolver: () => jwk })
+      return res.isValid
+    } else if (jwtVerifier.method === 'x5c' || jwtVerifier.method === 'jwk') {
+      const res = await jwsService.verifyJws(agentContext, { jws: jwt.raw })
+      return res.isValid
+    } else {
+      throw new Error(`Unsupported jwt verifier method: '${jwtVerifier.method}'`)
+    }
   }
 }
 
-export function getSphereonDidResolver(agentContext: AgentContext) {
-  return {
-    resolve: async (didUrl: string) => {
-      const didsApi = agentContext.dependencyManager.resolve(DidsApi)
-      const result = await didsApi.resolve(didUrl)
+export function getCreateJwtCallback(
+  agentContext: AgentContext
+): CreateJwtCallback<DPoPJwtIssuerWithContext | VpJwtIssuerWithContext> {
+  return async (jwtIssuer, jwt) => {
+    const jwsService = agentContext.dependencyManager.resolve(JwsService)
+
+    if (jwtIssuer.method === 'did') {
+      const key = await getKeyFromDid(agentContext, jwtIssuer.didUrl)
+      const jws = await jwsService.createJwsCompact(agentContext, {
+        protectedHeaderOptions: { ...jwt.header, alg: jwtIssuer.alg, jwk: undefined },
+        payload: JwtPayload.fromJson(jwt.payload),
+        key,
+      })
+
+      return jws
+    } else if (jwtIssuer.method === 'jwk') {
+      if (!jwtIssuer.jwk.kty) {
+        throw new CredoError('Missing required key type (kty) in the jwk.')
+      }
+      const jwk = getJwkFromJson(jwtIssuer.jwk as JwkJson)
+      const key = jwk.key
+      const jws = await jwsService.createJwsCompact(agentContext, {
+        protectedHeaderOptions: { ...jwt.header, jwk, alg: jwtIssuer.alg },
+        payload: JwtPayload.fromJson(jwt.payload),
+        key,
+      })
+
+      return jws
+    } else if (jwtIssuer.method === 'x5c') {
+      const key = X509Service.getLeafCertificate(agentContext, { certificateChain: jwtIssuer.x5c }).publicKey
+
+      const jws = await jwsService.createJwsCompact(agentContext, {
+        protectedHeaderOptions: { ...jwt.header, alg: jwtIssuer.alg, jwk: undefined },
+        payload: JwtPayload.fromJson(jwt.payload),
+        key,
+      })
+
+      return jws
+    }
+
+    throw new Error(`Unsupported jwt issuer method '${jwtIssuer.method}'`)
+  }
+}
+
+export async function openIdTokenIssuerToJwtIssuer(
+  agentContext: AgentContext,
+  openId4VcTokenIssuer: OpenId4VcJwtIssuer
+): Promise<JwtIssuer> {
+  if (openId4VcTokenIssuer.method === 'did') {
+    const key = await getKeyFromDid(agentContext, openId4VcTokenIssuer.didUrl)
+    const alg = getJwkClassFromKeyType(key.keyType)?.supportedSignatureAlgorithms[0]
+    if (!alg) throw new CredoError(`No supported signature algorithms for key type: ${key.keyType}`)
+
+    return {
+      method: openId4VcTokenIssuer.method,
+      didUrl: openId4VcTokenIssuer.didUrl,
+      alg,
+    }
+  } else if (openId4VcTokenIssuer.method === 'x5c') {
+    const issuer = openId4VcTokenIssuer.issuer
+    const leafCertificate = X509Service.getLeafCertificate(agentContext, {
+      certificateChain: openId4VcTokenIssuer.x5c,
+    })
+
+    const jwk = getJwkFromKey(leafCertificate.publicKey)
+    const alg = jwk.supportedSignatureAlgorithms[0]
+    if (!alg) {
+      throw new CredoError(`No supported signature algorithms found key type: '${jwk.keyType}'`)
+    }
+
+    if (!issuer.startsWith('https://')) {
+      throw new CredoError('The X509 certificate issuer must be a HTTPS URI.')
+    }
+
+    if (leafCertificate.sanUriNames?.includes(issuer)) {
+      return {
+        ...openId4VcTokenIssuer,
+        alg,
+        clientIdScheme: 'x509_san_uri',
+      }
+    } else {
+      if (!leafCertificate.sanDnsNames?.includes(getDomainFromUrl(issuer))) {
+        throw new Error(
+          `The 'iss' claim in the payload does not match a 'SAN-URI' or 'SAN-DNS' name in the x5c certificate.`
+        )
+      }
 
       return {
-        ...result,
-        didDocument: result.didDocument?.toJSON() as DIDDocument,
+        ...openId4VcTokenIssuer,
+        alg,
+        clientIdScheme: 'x509_san_dns',
       }
-    },
+    }
+  } else if (openId4VcTokenIssuer.method === 'jwk') {
+    const alg = openId4VcTokenIssuer.jwk.supportedSignatureAlgorithms[0]
+    if (!alg) {
+      throw new CredoError(`No supported signature algorithms for key type: '${openId4VcTokenIssuer.jwk.keyType}'`)
+    }
+    return {
+      ...openId4VcTokenIssuer,
+      jwk: openId4VcTokenIssuer.jwk.toJson(),
+      alg,
+    }
   }
+
+  throw new CredoError(`Unsupported jwt issuer method '${(openId4VcTokenIssuer as OpenId4VcJwtIssuer).method}'`)
 }
 
 export function getProofTypeFromKey(agentContext: AgentContext, key: Key) {
@@ -100,4 +184,10 @@ export function getProofTypeFromKey(agentContext: AgentContext, key: Key) {
   }
 
   return supportedSignatureSuites[0].proofType
+}
+
+export const isCredentialOfferV1Draft13 = (
+  credentialOffer: CredentialOfferPayloadV1_0_11 | CredentialOfferPayloadV1_0_13
+): credentialOffer is CredentialOfferPayloadV1_0_13 => {
+  return 'credential_configuration_ids' in credentialOffer
 }

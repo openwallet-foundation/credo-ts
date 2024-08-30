@@ -1,12 +1,13 @@
 import type {
-  OpenId4VciCreateCredentialResponseOptions,
+  OpenId4VcUpdateIssuerRecordOptions,
   OpenId4VciCreateCredentialOfferOptions,
+  OpenId4VciCreateCredentialResponseOptions,
   OpenId4VciCreateIssuerOptions,
 } from './OpenId4VcIssuerServiceOptions'
-import type { OpenId4VcIssuerRecordProps } from './repository'
-import type { OpenId4VciCredentialRequest } from '../shared'
 
-import { injectable, AgentContext } from '@credo-ts/core'
+import { AgentContext, injectable } from '@credo-ts/core'
+
+import { credentialsSupportedV13ToV11, type OpenId4VciCredentialRequest } from '../shared'
 
 import { OpenId4VcIssuerModuleConfig } from './OpenId4VcIssuerModuleConfig'
 import { OpenId4VcIssuerService } from './OpenId4VcIssuerService'
@@ -57,13 +58,20 @@ export class OpenId4VcIssuerApi {
     return this.openId4VcIssuerService.rotateAccessTokenSigningKey(this.agentContext, issuer)
   }
 
-  public async updateIssuerMetadata(
-    options: Pick<OpenId4VcIssuerRecordProps, 'issuerId' | 'credentialsSupported' | 'display'>
-  ) {
-    const issuer = await this.openId4VcIssuerService.getIssuerByIssuerId(this.agentContext, options.issuerId)
+  public async updateIssuerMetadata(options: OpenId4VcUpdateIssuerRecordOptions) {
+    const { issuerId, credentialConfigurationsSupported, credentialsSupported, ...issuerOptions } = options
 
-    issuer.credentialsSupported = options.credentialsSupported
-    issuer.display = options.display
+    const issuer = await this.openId4VcIssuerService.getIssuerByIssuerId(this.agentContext, issuerId)
+
+    if (credentialConfigurationsSupported) {
+      issuer.credentialConfigurationsSupported = credentialConfigurationsSupported
+      issuer.credentialsSupported = credentialsSupportedV13ToV11(credentialConfigurationsSupported)
+    } else {
+      issuer.credentialsSupported = credentialsSupported
+      issuer.credentialConfigurationsSupported = undefined
+    }
+    issuer.display = issuerOptions.display
+    issuer.dpopSigningAlgValuesSupported = issuerOptions.dpopSigningAlgValuesSupported
 
     return this.openId4VcIssuerService.updateIssuer(this.agentContext, issuer)
   }

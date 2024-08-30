@@ -260,6 +260,7 @@ export const animoOpenIdPlaygroundDraft11SdJwtVc = {
     credential_issuer: 'https://openid4vc.animo.id/oid4vci/0bbfb1c0-9f45-478c-a139-08f6ed610a37',
     token_endpoint: 'https://openid4vc.animo.id/oid4vci/0bbfb1c0-9f45-478c-a139-08f6ed610a37/token',
     credential_endpoint: 'https://openid4vc.animo.id/oid4vci/0bbfb1c0-9f45-478c-a139-08f6ed610a37/credential',
+    notification_endpoint: 'https://openid4vc.animo.id/oid4vci/0bbfb1c0-9f45-478c-a139-08f6ed610a37/notification',
     credentials_supported: [
       {
         id: 'AnimoOpenId4VcPlaygroundSdJwtVcDid',
@@ -338,5 +339,6 @@ export const animoOpenIdPlaygroundDraft11SdJwtVc = {
     format: 'vc+sd-jwt',
     c_nonce: '98b487cb-f6e5-4f9b-b963-ad69b8fe5e29',
     c_nonce_expires_in: 300000,
+    notification_id: '1234',
   },
 }

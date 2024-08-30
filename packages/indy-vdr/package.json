@@ -1,13 +1,15 @@
 {
   "name": "@credo-ts/indy-vdr",
-  "main": "build/index",
-  "types": "build/index",
-  "version": "0.5.3",
+  "main": "src/index",
+  "types": "src/index",
+  "version": "0.5.10",
   "files": [
     "build"
   ],
   "license": "Apache-2.0",
   "publishConfig": {
+    "main": "build/index",
+    "types": "build/index",
     "access": "public"
   },
   "homepage": "https://github.com/openwallet-foundation/credo-ts/tree/main/packages/indy-vdr",
@@ -17,15 +19,15 @@
     "directory": "packages/indy-vdr"
   },
   "scripts": {
-    "build": "yarn run clean && yarn run compile",
+    "build": "pnpm run clean && pnpm run compile",
     "clean": "rimraf ./build",
     "compile": "tsc -p tsconfig.build.json",
-    "prepublishOnly": "yarn run build",
+    "prepublishOnly": "pnpm run build",
     "test": "jest"
   },
   "dependencies": {
-    "@credo-ts/anoncreds": "0.5.3",
-    "@credo-ts/core": "0.5.3"
+    "@credo-ts/anoncreds": "workspace:*",
+    "@credo-ts/core": "workspace:*"
   },
   "devDependencies": {
     "@hyperledger/indy-vdr-nodejs": "^0.2.2",
@@ -35,7 +37,7 @@
     "@types/ref-struct-di": "^1.1.10",
     "rimraf": "^4.4.0",
     "rxjs": "^7.8.0",
-    "typescript": "~4.9.5"
+    "typescript": "~5.5.2"
   },
   "peerDependencies": {
     "@hyperledger/indy-vdr-shared": "^0.2.2"

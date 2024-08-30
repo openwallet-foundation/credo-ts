@@ -1,7 +1,13 @@
 import type { IndyVdrDidCreateOptions } from '../src/dids/IndyVdrIndyDidRegistrar'
 import type { Agent } from '@credo-ts/core'
 
-import { DidCommV1Service, DidCommV2Service, DidDocumentService, KeyType } from '@credo-ts/core'
+import {
+  DidCommV1Service,
+  NewDidCommV2Service,
+  DidDocumentService,
+  KeyType,
+  NewDidCommV2ServiceEndpoint,
+} from '@credo-ts/core'
 import { indyVdr } from '@hyperledger/indy-vdr-nodejs'
 
 import { sleep } from '../../core/src/utils/sleep'
@@ -46,11 +52,13 @@ export async function createDidOnLedger(agent: Agent, endorserDid: string) {
           serviceEndpoint: 'http://localhost:3000',
           accept: ['didcomm/aip2;env=rfc19'],
         }),
-        new DidCommV2Service({
-          accept: ['didcomm/v2'],
-          id: `#didcomm-1`,
-          routingKeys: ['a-routing-key'],
-          serviceEndpoint: 'http://localhost:3000',
+        new NewDidCommV2Service({
+          id: `#didcomm--messaging-1`,
+          serviceEndpoint: new NewDidCommV2ServiceEndpoint({
+            accept: ['didcomm/v2'],
+            routingKeys: ['a-routing-key'],
+            uri: 'http://localhost:3000',
+          }),
         }),
       ],
     },

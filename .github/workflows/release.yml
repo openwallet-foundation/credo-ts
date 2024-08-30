@@ -1,0 +1,126 @@
+name: Release
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+    types:
+      - opened
+      - synchronize
+      - reopened
+      - labeled
+
+permissions:
+  pull-requests: write
+  contents: write
+
+jobs:
+  release:
+    name: Release
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v2
+        with:
+          version: 9.1.0
+
+      - name: Setup Node.js 20.x
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.x
+          cache: 'pnpm'
+
+      - name: Install Dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Create Release Pull Request or Publish to npm
+        id: changesets
+        uses: changesets/action@v1
+        with:
+          # This expects you to have a script called release which does a build for your packages and calls changeset publish
+          publish: pnpm release
+          title: 'chore(release): new version'
+          createGithubReleases: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_PUBLISH }}
+
+      - name: Get current package version
+        id: get_version
+        run: echo "CURRENT_PACKAGE_VERSION=$(node -p "require('./packages/core/package.json').version")" >> $GITHUB_ENV
+
+      - name: Create Github Release
+        if: steps.changesets.outputs.published == 'true'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ env.CURRENT_PACKAGE_VERSION }}
+
+  release-unstable:
+    name: Release Unstable
+    runs-on: ubuntu-latest
+    # We don't want to run release and release-unstable concurrently as NPM doesn't allow publishing packages while another version of the same package is
+    # still processing. So we wait for release to finish, and the always() ensure that it will run no matter the result of release.
+    needs: [release]
+    if: "always() && (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == 'openwallet-foundation/credo-ts') || (github.event_name == 'push' && !startsWith(github.event.head_commit.message, 'chore(release): new version'))"
+    steps:
+      - uses: snnaplab/get-labels-action@v1
+        if: github.event_name == 'pull_request'
+
+      # exit if pull request and no alpha-release tag
+      - if: github.event_name == 'pull_request' && !contains(fromJSON(env.LABELS), 'alpha-release')
+        run: exit 0
+
+      - name: Checkout Repo
+        uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v2
+        with:
+          version: 9.1.0
+
+      - name: Setup Node.js 20.x
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.x
+          cache: 'pnpm'
+
+      - name: Install Dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Creating .npmrc
+        run: |
+          cat << EOF > ".npmrc"
+            //registry.npmjs.org/:_authToken=$NPM_TOKEN
+          EOF
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_PUBLISH }}
+
+      - name: Create unstable release
+        env:
+          TAG: ${{ github.event_name == 'push' && 'alpha' || format('pr-{0}', github.event.number) }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_PUBLISH }}
+        run: |
+          # this ensures there's always a patch release created
+          cat << 'EOF' > .changeset/snapshot-template-changeset.md
+          ---
+          '@credo-ts/core': patch
+          ---
+
+          snapshot release
+          EOF
+
+          pnpm changeset version --snapshot ${{ env.TAG }}
+          pnpm build
+          pnpm changeset publish --tag ${{ env.TAG }}
+
+          CURRENT_PACKAGE_VERSION=$(node -p "require('./packages/core/package.json').version")
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag v$CURRENT_PACKAGE_VERSION
+          git push origin v$CURRENT_PACKAGE_VERSION --no-verify

@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
 import type { ConnectionRecord } from '../../modules/connections'
 import type { ResolvedDidCommService } from '../../modules/didcomm'
-import type { DidDocumentService } from '../../modules/dids'
+import type { DidDocumentService, IndyAgentService } from '../../modules/dids'
 import type { MessagePickupRepository } from '../../modules/message-pickup/storage'
 import type { OutboundTransport } from '../../transport'
 import type { EncryptedMessage } from '../../types'
@@ -693,7 +693,7 @@ function getMockDidDocument({ service }: { service: DidDocumentService[] }) {
   })
 }
 
-function getMockResolvedDidService(service: DidDocumentService): ResolvedDidCommService {
+function getMockResolvedDidService(service: DidCommV1Service | IndyAgentService): ResolvedDidCommService {
   return {
     id: service.id,
     serviceEndpoint: service.serviceEndpoint,

@@ -1,7 +1,58 @@
-# Change Log
+# Changelog
 
-All notable changes to this project will be documented in this file.
-See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
+## 0.5.10
+
+### Patch Changes
+
+- fa62b74: Add support for Demonstrating Proof of Possesion (DPoP) when receiving credentials using OpenID4VCI
+
+## 0.5.9
+
+## 0.5.8
+
+### Patch Changes
+
+- 3819eb2: Adds support for issuance and verification of SD-JWT VCs using x509 certificates over OpenID4VC, as well as adds support for the `x509_san_uri` and `x509_san_dns` values for `client_id_scheme`. It also adds support for OpenID4VP Draft 20
+- 15d0a54: Treat an empty received handshake_protocols array as undefined
+- a5235e7: Allow to pass in a key instance when registering a DID jwk, key or peer with num algo 0
+
+## 0.5.7
+
+### Patch Changes
+
+- 352383f: Fix a build issue where the types would reference source code not available in the published NPM package
+- 1044c9d: make credential_preview optional on V2CredentialOfferMessage
+
+## 0.5.6
+
+### Patch Changes
+
+- 66e696d: Fix build issue causing error with importing packages in 0.5.5 release
+
+## 0.5.5
+
+### Patch Changes
+
+- 3239ef3: pex query fix
+- d548fa4: feat: support new 'DIDCommMessaging' didcomm v2 service type (in addition to older 'DIDComm' service type)
+- 482a630: - feat: allow serving dids from did record (#1856)
+  - fix: set created at for anoncreds records (#1862)
+  - feat: add goal to public api for credential and proof (#1867)
+  - fix(oob): only reuse connection if enabled (#1868)
+  - fix: issuer id query anoncreds w3c (#1870)
+  - feat: sd-jwt issuance without holder binding (#1871)
+  - chore: update oid4vci deps (#1873)
+  - fix: query for qualified/unqualified forms in revocation notification (#1866)
+  - fix: wrong schema id is stored for credentials (#1884)
+  - fix: process credential or proof problem report message related to connectionless or out of band exchange (#1859)
+  - fix: unqualified indy revRegDefId in migration (#1887)
+  - feat: verify SD-JWT Token status list and SD-JWT VC fixes (#1872)
+  - fix(anoncreds): combine creds into one proof (#1893)
+  - fix: AnonCreds proof requests with unqualified dids (#1891)
+  - fix: WebSocket priority in Message Pick Up V2 (#1888)
+  - fix: anoncreds predicate only proof with unqualified dids (#1907)
+  - feat: add pagination params to storage service (#1883)
+  - feat: add message handler middleware and fallback (#1894)
 
 ## [0.5.3](https://github.com/openwallet-foundation/credo-ts/compare/v0.5.2...v0.5.3) (2024-05-01)
 

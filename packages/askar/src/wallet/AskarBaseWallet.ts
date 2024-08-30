@@ -24,10 +24,14 @@ import {
   WalletError,
   Key,
   TypedArrayEncoder,
+  KeyBackend,
+  KeyType,
+  utils,
 } from '@credo-ts/core'
 import { CryptoBox, Store, Key as AskarKey, keyAlgFromString } from '@hyperledger/aries-askar-shared'
 import BigNumber from 'bn.js'
 
+import { importSecureEnvironment } from '../secureEnvironment'
 import {
   AskarErrorCode,
   AskarKeyTypePurpose,
@@ -125,7 +129,13 @@ export abstract class AskarBaseWallet implements Wallet {
    * Create a key with an optional seed and keyType.
    * The keypair is also automatically stored in the wallet afterwards
    */
-  public async createKey({ seed, privateKey, keyType }: WalletCreateKeyOptions): Promise<Key> {
+  public async createKey({
+    seed,
+    privateKey,
+    keyType,
+    keyId,
+    keyBackend = KeyBackend.Software,
+  }: WalletCreateKeyOptions): Promise<Key> {
     try {
       if (seed && privateKey) {
         throw new WalletError('Only one of seed and privateKey can be set')
@@ -139,7 +149,14 @@ export abstract class AskarBaseWallet implements Wallet {
         throw new WalletError('Invalid private key provided')
       }
 
-      if (isKeyTypeSupportedByAskarForPurpose(keyType, AskarKeyTypePurpose.KeyManagement)) {
+      if (keyBackend === KeyBackend.SecureElement && keyType !== KeyType.P256) {
+        throw new WalletError(`Keytype '${keyType}' is not supported for the secure element`)
+      }
+
+      if (
+        isKeyTypeSupportedByAskarForPurpose(keyType, AskarKeyTypePurpose.KeyManagement) &&
+        keyBackend === KeyBackend.Software
+      ) {
         const algorithm = keyAlgFromString(keyType)
 
         // Create key
@@ -159,7 +176,7 @@ export abstract class AskarBaseWallet implements Wallet {
 
           // Store key
           await this.withSession((session) =>
-            session.insertKey({ key: _key, name: TypedArrayEncoder.toBase58(keyPublicBytes) })
+            session.insertKey({ key: _key, name: keyId ?? TypedArrayEncoder.toBase58(keyPublicBytes) })
           )
 
           key.handle.free()
@@ -174,6 +191,22 @@ export abstract class AskarBaseWallet implements Wallet {
           // Otherwise re-throw error
           throw error
         }
+      } else if (keyBackend === KeyBackend.SecureElement && keyType === KeyType.P256) {
+        const secureEnvironment = importSecureEnvironment()
+        const kid = utils.uuid()
+
+        // Generate a hardware-backed P-256 keypair
+        secureEnvironment.generateKeypair(kid)
+        const publicKeyBytes = secureEnvironment.getPublicBytesForKeyId(kid)
+        const publicKeyBase58 = TypedArrayEncoder.toBase58(publicKeyBytes)
+
+        await this.storeSecureEnvironmentKeyById({
+          keyType,
+          publicKeyBase58,
+          keyId: kid,
+        })
+
+        return new Key(publicKeyBytes, keyType)
       } else {
         // Check if there is a signing key provider for the specified key type.
         if (this.signingKeyProviderRegistry.hasProviderForKeyType(keyType)) {
@@ -243,6 +276,14 @@ export abstract class AskarBaseWallet implements Wallet {
           // Now we can remove it from the custom record as we have imported it into Askar
           await this.deleteKeyPair(key.publicKeyBase58)
           keyPair = undefined
+        } else {
+          const { keyId } = await this.getSecureEnvironmentKey(key.publicKeyBase58)
+
+          if (Array.isArray(data[0])) {
+            throw new WalletError('Multi signature is not supported for the Secure Environment')
+          }
+
+          return Buffer.from(await importSecureEnvironment().sign(keyId, new Uint8Array(data as Buffer)))
         }
       }
 
@@ -431,6 +472,28 @@ export abstract class AskarBaseWallet implements Wallet {
     }
   }
 
+  public getRandomValues(length: number): Uint8Array {
+    try {
+      const buffer = new Uint8Array(length)
+      const CBOX_NONCE_LENGTH = 24
+
+      const genCount = Math.ceil(length / CBOX_NONCE_LENGTH)
+      const buf = new Uint8Array(genCount * CBOX_NONCE_LENGTH)
+      for (let i = 0; i < genCount; i++) {
+        const randomBytes = CryptoBox.randomNonce()
+        buf.set(randomBytes, CBOX_NONCE_LENGTH * i)
+      }
+      buffer.set(buf.subarray(0, length))
+
+      return buffer
+    } catch (error) {
+      if (!isError(error)) {
+        throw new CredoError('Attempted to throw error, but it was not of type Error', { cause: error })
+      }
+      throw new WalletError('Error generating nonce', { cause: error })
+    }
+  }
+
   public async generateWalletKey() {
     try {
       return Store.generateRawKey()
@@ -450,6 +513,18 @@ export abstract class AskarBaseWallet implements Wallet {
       return JsonEncoder.fromString(entryObject?.value as string) as KeyPair
     } catch (error) {
       throw new WalletError('Error retrieving KeyPair record', { cause: error })
+    }
+  }
+
+  private async getSecureEnvironmentKey(keyId: string): Promise<{ keyId: string }> {
+    try {
+      const entryObject = await this.withSession((session) =>
+        session.fetch({ category: 'SecureEnvironmentKeyRecord', name: keyId })
+      )
+
+      return JsonEncoder.fromString(entryObject?.value as string) as { keyId: string }
+    } catch (error) {
+      throw new WalletError('Error retrieving Secure Environment record', { cause: error })
     }
   }
 
@@ -478,6 +553,30 @@ export abstract class AskarBaseWallet implements Wallet {
         throw new WalletKeyExistsError('Key already exists')
       }
       throw new WalletError('Error saving KeyPair record', { cause: error })
+    }
+  }
+
+  private async storeSecureEnvironmentKeyById(options: {
+    keyId: string
+    publicKeyBase58: string
+    keyType: KeyType
+  }): Promise<void> {
+    try {
+      await this.withSession((session) =>
+        session.insert({
+          category: 'SecureEnvironmentKeyRecord',
+          name: options.publicKeyBase58,
+          value: JSON.stringify(options),
+          tags: {
+            keyType: options.keyType,
+          },
+        })
+      )
+    } catch (error) {
+      if (isAskarError(error, AskarErrorCode.Duplicate)) {
+        throw new WalletKeyExistsError('Key already exists')
+      }
+      throw new WalletError('Error saving SecureEnvironment record', { cause: error })
     }
   }
 }

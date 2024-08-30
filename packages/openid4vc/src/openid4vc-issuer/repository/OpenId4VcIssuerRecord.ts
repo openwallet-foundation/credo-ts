@@ -1,11 +1,14 @@
 import type {
-  OpenId4VciCredentialSupportedWithId,
-  OpenId4VciIssuerMetadataDisplay,
   OpenId4VciAuthorizationServerConfig,
+  OpenId4VciCredentialSupportedWithId,
+  OpenId4VciCredentialConfigurationsSupported,
+  OpenId4VciIssuerMetadataDisplay,
 } from '../../shared'
-import type { RecordTags, TagsBase } from '@credo-ts/core'
+import type { JwaSignatureAlgorithm, RecordTags, TagsBase } from '@credo-ts/core'
 
 import { BaseRecord, utils } from '@credo-ts/core'
+
+import { credentialsSupportedV13ToV11 } from '../../shared/issuerMetadataUtils'
 
 export type OpenId4VcIssuerRecordTags = RecordTags<OpenId4VcIssuerRecord>
 
@@ -13,7 +16,17 @@ export type DefaultOpenId4VcIssuerRecordTags = {
   issuerId: string
 }
 
-export interface OpenId4VcIssuerRecordProps {
+export interface OpenId4VcIssuerRecordCredentialSupportedProps {
+  credentialsSupported: OpenId4VciCredentialSupportedWithId[]
+  credentialConfigurationsSupported?: never
+}
+
+export interface OpenId4VcIssuerRecordCredentialConfigurationsSupportedProps {
+  credentialsSupported?: never
+  credentialConfigurationsSupported: OpenId4VciCredentialConfigurationsSupported
+}
+
+export type OpenId4VcIssuerRecordProps = {
   id?: string
   createdAt?: Date
   tags?: TagsBase
@@ -26,10 +39,15 @@ export interface OpenId4VcIssuerRecordProps {
    */
   accessTokenPublicKeyFingerprint: string
 
-  credentialsSupported: OpenId4VciCredentialSupportedWithId[]
+  /**
+   * The DPoP signing algorithms supported by this issuer.
+   * If not provided, dPoP is considered unsupported.
+   */
+  dpopSigningAlgValuesSupported?: [JwaSignatureAlgorithm, ...JwaSignatureAlgorithm[]]
+
   display?: OpenId4VciIssuerMetadataDisplay[]
   authorizationServerConfigs?: OpenId4VciAuthorizationServerConfig[]
-}
+} & (OpenId4VcIssuerRecordCredentialSupportedProps | OpenId4VcIssuerRecordCredentialConfigurationsSupportedProps)
 
 /**
  * For OID4VC you need to expos metadata files. Each issuer needs to host this metadata. This is not the case for DIDComm where we can just have one /didcomm endpoint.
@@ -44,8 +62,10 @@ export class OpenId4VcIssuerRecord extends BaseRecord<DefaultOpenId4VcIssuerReco
   public accessTokenPublicKeyFingerprint!: string
 
   public credentialsSupported!: OpenId4VciCredentialSupportedWithId[]
+  public credentialConfigurationsSupported?: OpenId4VciCredentialConfigurationsSupported
   public display?: OpenId4VciIssuerMetadataDisplay[]
   public authorizationServerConfigs?: OpenId4VciAuthorizationServerConfig[]
+  public dpopSigningAlgValuesSupported?: [JwaSignatureAlgorithm, ...JwaSignatureAlgorithm[]]
 
   public constructor(props: OpenId4VcIssuerRecordProps) {
     super()
@@ -57,7 +77,10 @@ export class OpenId4VcIssuerRecord extends BaseRecord<DefaultOpenId4VcIssuerReco
 
       this.issuerId = props.issuerId
       this.accessTokenPublicKeyFingerprint = props.accessTokenPublicKeyFingerprint
-      this.credentialsSupported = props.credentialsSupported
+      this.credentialsSupported =
+        props.credentialsSupported ?? credentialsSupportedV13ToV11(props.credentialConfigurationsSupported)
+      this.credentialConfigurationsSupported = props.credentialConfigurationsSupported
+      this.dpopSigningAlgValuesSupported = props.dpopSigningAlgValuesSupported
       this.display = props.display
       this.authorizationServerConfigs = props.authorizationServerConfigs
     }

@@ -174,19 +174,40 @@ describe('OpenId4VcHolder', () => {
         .post('/credential')
         .reply(200, fixture.credentialResponse)
 
-      const resolved = await holder.modules.openId4VcHolder.resolveCredentialOffer(fixture.credentialOffer)
+        .post('/notification')
+        .reply(204, 'No Content')
 
-      const credentials = await holder.modules.openId4VcHolder.acceptCredentialOfferUsingPreAuthorizedCode(resolved, {
+      const resolvedCredentialOffer = await holder.modules.openId4VcHolder.resolveCredentialOffer(
+        fixture.credentialOffer
+      )
+
+      const tokenResponse = await holder.modules.openId4VcHolder.requestToken({
+        resolvedCredentialOffer,
+      })
+
+      const credentialResponse = await holder.modules.openId4VcHolder.requestCredentials({
+        resolvedCredentialOffer,
+        ...tokenResponse,
         verifyCredentialStatus: false,
         // We only allow EdDSa, as we've created a did with keyType ed25519. If we create
         // or determine the did dynamically we could use any signature algorithm
         allowedProofOfPossessionSignatureAlgorithms: [JwaSignatureAlgorithm.EdDSA],
-        credentialsToRequest: resolved.offeredCredentials.filter((c) => c.format === 'vc+sd-jwt').map((m) => m.id),
+        credentialsToRequest: resolvedCredentialOffer.offeredCredentials
+          .filter((c) => c.format === 'vc+sd-jwt')
+          .map((m) => m.id),
         credentialBindingResolver: () => ({ method: 'jwk', jwk: getJwkFromKey(holderKey) }),
       })
 
-      expect(credentials).toHaveLength(1)
-      const credential = credentials[0] as SdJwtVc
+      if (!credentialResponse[0]?.notificationMetadata) throw new Error("Notification metadata wasn't returned")
+
+      await holder.modules.openId4VcHolder.sendNotification({
+        accessToken: tokenResponse.accessToken,
+        notificationEvent: 'credential_accepted',
+        notificationMetadata: credentialResponse[0].notificationMetadata,
+      })
+
+      expect(credentialResponse).toHaveLength(1)
+      const credential = credentialResponse[0].credential as SdJwtVc
       expect(credential).toEqual({
         compact:
           'eyJhbGciOiJFZERTQSIsInR5cCI6InZjK3NkLWp3dCIsImtpZCI6IiN6Nk1raDVITlBDQ0pXWm42V1JMalJQdHR5dllaQnNrWlVkU0pmVGlad2NVU2llcXgifQ.eyJ2Y3QiOiJBbmltb09wZW5JZDRWY1BsYXlncm91bmQiLCJwbGF5Z3JvdW5kIjp7ImZyYW1ld29yayI6IkFyaWVzIEZyYW1ld29yayBKYXZhU2NyaXB0IiwiY3JlYXRlZEJ5IjoiQW5pbW8gU29sdXRpb25zIiwiX3NkIjpbImZZM0ZqUHpZSEZOcHlZZnRnVl9kX25DMlRHSVh4UnZocE00VHdrMk1yMDQiLCJwTnNqdmZJeVBZOEQwTks1c1l0alR2Nkc2R0FNVDNLTjdaZDNVNDAwZ1pZIl19LCJjbmYiOnsiandrIjp7Imt0eSI6Ik9LUCIsImNydiI6IkVkMjU1MTkiLCJ4Ijoia2MydGxwaGNadzFBSUt5a3pNNnBjY2k2UXNLQW9jWXpGTC01RmUzNmg2RSJ9fSwiaXNzIjoiZGlkOmtleTp6Nk1raDVITlBDQ0pXWm42V1JMalJQdHR5dllaQnNrWlVkU0pmVGlad2NVU2llcXgiLCJpYXQiOjE3MDU4NDM1NzQsIl9zZF9hbGciOiJzaGEtMjU2In0.2iAjaCFcuiHXTfQsrxXo6BghtwzqTrfDmhmarAAJAhY8r9yKXY3d10JY1dry2KnaEYWpq2R786thjdA5BXlPAQ~WyI5MzM3MTM0NzU4NDM3MjYyODY3NTE4NzkiLCJsYW5ndWFnZSIsIlR5cGVTY3JpcHQiXQ~WyIxMTQ3MDA5ODk2Nzc2MDYzOTc1MDUwOTMxIiwidmVyc2lvbiIsIjEuMCJd~',
@@ -264,10 +285,12 @@ describe('OpenId4VcHolder', () => {
         .get('/.well-known/oauth-authorization-server')
         .reply(404)
 
-      const resolved = await holder.modules.openId4VcHolder.resolveCredentialOffer(fixture.credentialOffer)
+      const resolvedCredentialOffer = await holder.modules.openId4VcHolder.resolveCredentialOffer(
+        fixture.credentialOffer
+      )
 
       const resolvedAuthorizationRequest = await holder.modules.openId4VcHolder.resolveIssuanceAuthorizationRequest(
-        resolved,
+        resolvedCredentialOffer,
         {
           clientId: 'test-client',
           redirectUri: 'http://example.com',
@@ -275,17 +298,20 @@ describe('OpenId4VcHolder', () => {
         }
       )
 
+      const tokenResponse = await holder.modules.openId4VcHolder.requestToken({
+        resolvedCredentialOffer,
+        resolvedAuthorizationRequest,
+        code: fixture.authorizationCode,
+      })
+
       await expect(
-        holder.modules.openId4VcHolder.acceptCredentialOfferUsingAuthorizationCode(
-          resolved,
-          resolvedAuthorizationRequest,
-          fixture.authorizationCode,
-          {
-            allowedProofOfPossessionSignatureAlgorithms: [JwaSignatureAlgorithm.EdDSA],
-            credentialBindingResolver: () => ({ method: 'did', didUrl: holderVerificationMethod }),
-            verifyCredentialStatus: false,
-          }
-        )
+        holder.modules.openId4VcHolder.requestCredentials({
+          resolvedCredentialOffer,
+          ...tokenResponse,
+          allowedProofOfPossessionSignatureAlgorithms: [JwaSignatureAlgorithm.EdDSA],
+          credentialBindingResolver: () => ({ method: 'did', didUrl: holderVerificationMethod }),
+          verifyCredentialStatus: false,
+        })
       )
         // FIXME: credential returned by walt.id has nbf and issuanceDate that do not match
         // but we know that we at least received the credential if we got to this error
