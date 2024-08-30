@@ -99,15 +99,21 @@ export class OpenId4VcSiopVerifierService {
     // Correlation id will be the id of the verification session record
     const correlationId = utils.uuid()
 
-    const jwtIssuer = await openIdTokenIssuerToJwtIssuer(agentContext, options.requestSigner)
-
-    let clientIdScheme: ClientIdScheme
-    let clientId: string
-
     let authorizationResponseUrl = joinUriParts(this.config.baseUrl, [
       options.verifier.verifierId,
       this.config.authorizationEndpoint.endpointPath,
     ])
+
+    const jwtIssuer =
+      options.requestSigner.method === 'x5c'
+        ? await openIdTokenIssuerToJwtIssuer(agentContext, {
+            ...options.requestSigner,
+            issuer: authorizationResponseUrl,
+          })
+        : await openIdTokenIssuerToJwtIssuer(agentContext, options.requestSigner)
+
+    let clientIdScheme: ClientIdScheme
+    let clientId: string
 
     if (jwtIssuer.method === 'x5c') {
       if (jwtIssuer.issuer !== authorizationResponseUrl) {

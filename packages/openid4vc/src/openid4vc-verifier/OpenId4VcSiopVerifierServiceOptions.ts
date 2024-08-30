@@ -1,5 +1,6 @@
 import type { OpenId4VcVerificationSessionRecord } from './repository'
 import type {
+  OpenId4VcIssuerX5c,
   OpenId4VcJwtIssuer,
   OpenId4VcSiopAuthorizationResponsePayload,
   OpenId4VcSiopIdTokenPayload,
@@ -15,8 +16,12 @@ export interface OpenId4VcSiopCreateAuthorizationRequestOptions {
   /**
    * Signing information for the request JWT. This will be used to sign the request JWT
    * and to set the client_id and client_id_scheme for registration of client_metadata.
+   *
+   * For x5c signer's the issuer value can be omitted as it can be derived from the authorization response endpoint.
    */
-  requestSigner: OpenId4VcJwtIssuer
+  requestSigner:
+    | Exclude<OpenId4VcJwtIssuer, OpenId4VcIssuerX5c>
+    | (Omit<OpenId4VcIssuerX5c, 'issuer'> & { issuer?: string })
 
   /**
    * Whether to reuqest an ID Token. Enabled by defualt when `presentationExchange` is not provided,

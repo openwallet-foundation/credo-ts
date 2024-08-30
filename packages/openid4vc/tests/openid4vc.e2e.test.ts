@@ -777,7 +777,6 @@ describe('OpenId4Vc', () => {
         requestSigner: {
           method: 'x5c',
           x5c: [rawCertificate],
-          issuer: `${verificationBaseUrl}/${openIdVerifier.verifierId}/authorize`,
         },
         presentationExchange: {
           definition: presentationDefinition,
