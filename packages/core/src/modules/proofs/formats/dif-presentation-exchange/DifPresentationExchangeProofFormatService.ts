@@ -10,6 +10,7 @@ import type {
   DifPexInputDescriptorToCredentials,
   DifPresentationExchangeSubmission,
 } from '../../../dif-presentation-exchange'
+import type { SdJwtVc } from '../../../sd-jwt-vc'
 import type {
   IAnonCredsDataIntegrityService,
   W3cVerifiablePresentation,
@@ -31,6 +32,8 @@ import type {
   ProofFormatAutoRespondRequestOptions,
   ProofFormatAutoRespondPresentationOptions,
 } from '../ProofFormatServiceOptions'
+
+import { MdocVerifiablePresentation } from '@sphereon/did-auth-siop'
 
 import { Attachment, AttachmentData } from '../../../../decorators/attachment/Attachment'
 import { CredoError } from '../../../../error'
@@ -223,6 +226,8 @@ export class DifPresentationExchangeProofFormatService
       firstPresentation instanceof W3cJwtVerifiablePresentation ||
       firstPresentation instanceof W3cJsonLdVerifiablePresentation
         ? firstPresentation.encoded
+        : firstPresentation instanceof MdocVerifiablePresentation
+        ? firstPresentation.deviceSignedBase64Url
         : firstPresentation?.compact
     const attachment = this.getFormatData(encodedFirstPresentation, format.attachmentId)
 
