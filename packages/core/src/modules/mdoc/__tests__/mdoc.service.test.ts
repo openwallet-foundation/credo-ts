@@ -53,7 +53,7 @@ describe('mdoc service test', () => {
 
   test('can verify sprindFunkeTestVector Issuer Signed structure', async () => {
     const mdoc = Mdoc.fromIssuerSignedBase64(sprindFunkeTestVectorBase64Url)
-    const verify = await mdoc.verifyCredential(agent.context, {
+    const verify = await mdoc.verifyIssuerSigned(agent.context, {
       trustedCertificates: [sprindFunkeX509TrustedCertificate],
     })
     expect(verify.isValid).toBeTruthy()
