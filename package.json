@@ -64,7 +64,11 @@
     "ws": "^8.13.0"
   },
   "resolutions": {
-    "@types/node": "18.18.8"
+    "@types/node": "18.18.8",
+    "@sphereon/oid4vc-common": "0.16.1-next.14",
+    "@sphereon/oid4vci-client": "0.16.1-next.14",
+    "@sphereon/oid4vci-common": "0.16.1-next.14",
+    "@sphereon/oid4vci-issuer": "0.16.1-next.14"
   },
   "engines": {
     "node": ">=18"

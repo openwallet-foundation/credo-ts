@@ -2,6 +2,8 @@ import type {
   DifPexCredentialsForRequest,
   DifPexCredentialsForRequestRequirement,
   DifPexCredentialsForRequestSubmissionEntry,
+  DifPresentationExchangeDefinition,
+  DifPresentationExchangeDefinitionV2,
   SubmissionEntryCredential,
 } from '../models'
 import type { IPresentationDefinition, SelectResults, SubmissionRequirementMatch, PEX } from '@sphereon/pex'
@@ -14,23 +16,62 @@ import { default as jp } from 'jsonpath'
 import { Hasher } from '../../../crypto'
 import { CredoError } from '../../../error'
 import { deepEquality } from '../../../utils'
+import { Mdoc, MdocRecord } from '../../mdoc'
 import { SdJwtVcRecord } from '../../sd-jwt-vc'
 import { ClaimFormat, W3cCredentialRecord } from '../../vc'
 import { DifPresentationExchangeError } from '../DifPresentationExchangeError'
 
 import { getSphereonOriginalVerifiableCredential } from './transform'
 
+const partitionPresentationDefinition = (pd: DifPresentationExchangeDefinition) => {
+  const mdocPresentationDefinition: DifPresentationExchangeDefinition = {
+    ...pd,
+    // @ts-expect-error mdoc not yet supported by pex
+    format: 'mso_mdoc',
+    input_descriptors: pd.input_descriptors
+      .map((id) => {
+        const idFilteredFormat = Object.fromEntries(
+          Object.entries((id as InputDescriptorV2).format ?? {}).filter(([key]) => key === 'mso_mdoc')
+        )
+        return { ...id, format: idFilteredFormat }
+      })
+      .filter((id) => id.format.mso_mdoc) as InputDescriptorV1[] | InputDescriptorV2[],
+  }
+
+  const nonMdocPresentationDefinition: DifPresentationExchangeDefinition = {
+    ...pd,
+    input_descriptors: pd.input_descriptors.filter(
+      (id) => !Object.keys((id as InputDescriptorV2).format ?? {}).includes('mso_mdoc')
+    ),
+  } as DifPresentationExchangeDefinition
+
+  return { mdocPresentationDefinition, nonMdocPresentationDefinition }
+}
+
 export async function getCredentialsForRequest(
   // PEX instance with hasher defined
   pex: PEX,
   presentationDefinition: IPresentationDefinition,
-  credentialRecords: Array<W3cCredentialRecord | SdJwtVcRecord>
+  credentialRecords: Array<W3cCredentialRecord | SdJwtVcRecord | MdocRecord>
 ): Promise<DifPexCredentialsForRequest> {
-  const encodedCredentials = credentialRecords.map((c) => getSphereonOriginalVerifiableCredential(c))
-  const selectResultsRaw = pex.selectFrom(presentationDefinition, encodedCredentials)
+  const encodedCredentials = credentialRecords
+    .filter((c) => c instanceof MdocRecord === false)
+    .map((c) => getSphereonOriginalVerifiableCredential(c as SdJwtVcRecord | W3cCredentialRecord))
 
-  const selectResults = {
+  const { mdocPresentationDefinition, nonMdocPresentationDefinition } =
+    partitionPresentationDefinition(presentationDefinition)
+
+  const selectResultsRaw = pex.selectFrom(nonMdocPresentationDefinition, encodedCredentials)
+
+  const selectResults: CredentialRecordSelectResults = {
     ...selectResultsRaw,
+    areRequiredCredentialsPresent:
+      mdocPresentationDefinition.input_descriptors.length >= 1
+        ? 'warn' // we don't know yet wheater the required credentials are present
+        : nonMdocPresentationDefinition.input_descriptors.length >= 1
+        ? selectResultsRaw.areRequiredCredentialsPresent
+        : 'error',
+
     // Map the encoded credential to their respective w3c credential record
     verifiableCredential: selectResultsRaw.verifiableCredential?.map((selectedEncoded): SubmissionEntryCredential => {
       const credentialRecordIndex = encodedCredentials.findIndex((encoded) => {
@@ -79,6 +120,44 @@ export async function getCredentialsForRequest(
     }),
   }
 
+  const mdocRecords = credentialRecords.filter((c) => c instanceof MdocRecord)
+
+  for (const mdocInputDescriptor of mdocPresentationDefinition.input_descriptors) {
+    if (!selectResults.verifiableCredential) selectResults.verifiableCredential = []
+    if (!selectResults.matches) selectResults.matches = []
+
+    const mdocRecordsMatchingId = mdocRecords.filter((mdoc) => mdoc.getTags().docType === mdocInputDescriptor.id)
+
+    const submissionRequirementMatch: SubmissionRequirementMatch = {
+      name: mdocInputDescriptor.id,
+      rule: Rules.Pick,
+      vc_path: [],
+    }
+
+    // Limit this to a single input descriptor for now to get a predictable result
+    const limitDisclosurePresentationDefinition: DifPresentationExchangeDefinitionV2 = {
+      ...mdocPresentationDefinition,
+      input_descriptors: [mdocInputDescriptor as InputDescriptorV2],
+    }
+
+    for (const mdocRecordMatchingId of mdocRecordsMatchingId) {
+      selectResults.verifiableCredential.push({
+        type: ClaimFormat.MsoMdoc,
+        credentialRecord: mdocRecordMatchingId,
+        // TODO: THIS IS HACKY
+        disclosedPayload: await Mdoc.fromIssuerSignedHex(mdocRecordMatchingId.issuerSignedHex)
+          .limitDisclosure(limitDisclosurePresentationDefinition)
+          .then((mdoc) => mdoc.namespaces),
+      })
+
+      submissionRequirementMatch.vc_path.push(
+        `$.verifiableCredential[${selectResults.verifiableCredential.length - 1}]`
+      )
+    }
+
+    if (submissionRequirementMatch.vc_path.length >= 1) selectResults.matches.push(submissionRequirementMatch)
+  }
+
   const presentationSubmission: DifPexCredentialsForRequest = {
     requirements: [],
     areRequirementsSatisfied: false,
@@ -104,7 +183,7 @@ export async function getCredentialsForRequest(
       'Presentation Definition does not require any credentials. Optional credentials are not included in the presentation submission.'
     )
   }
-  if (selectResultsRaw.areRequiredCredentialsPresent === 'error') {
+  if (selectResults.areRequiredCredentialsPresent === 'error') {
     return presentationSubmission
   }
 
