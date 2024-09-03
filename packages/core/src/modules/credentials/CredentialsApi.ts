@@ -69,8 +69,11 @@ export interface CredentialsApi<CPs extends CredentialProtocol[]> {
   // Issue Credential Methods
   acceptCredential(options: AcceptCredentialOptions): Promise<CredentialExchangeRecord>
 
-  // Revoke Credential Methods
+  // Revoke JSON-LD credential Methods
   sendRevocationNotification(options: SendRevocationNotificationOptions): Promise<void>
+
+  // Revoke Credential Methods
+  revokeJsonLdCredential(options: RevokeCredentialOption): Promise<{ message: string }>
 
   // out of band
   createOffer(options: CreateCredentialOfferOptions<CPs>): Promise<{
@@ -530,7 +533,7 @@ export class CredentialsApi<CPs extends CredentialProtocol[]> implements Credent
    * @returns Revoke credential notification message
    *
    */
-  public async revokeJsonLdCredential(options: RevokeCredentialOption): Promise<void> {
+  public async revokeJsonLdCredential(options: RevokeCredentialOption): Promise<{ message: string }> {
     // Default to '1' (revoked)
     const revocationStatus = '1' as JsonLdRevocationStatus
 
@@ -558,6 +561,8 @@ export class CredentialsApi<CPs extends CredentialProtocol[]> implements Credent
       revocationId: statusListCredentialURL,
       revocationFormat,
     })
+
+    return { message: 'The JSON-LD credential has been successfully revoked.' }
   }
 
   private async getCredentialRecord(
