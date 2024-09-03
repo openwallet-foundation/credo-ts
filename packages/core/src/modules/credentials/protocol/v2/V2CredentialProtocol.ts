@@ -186,11 +186,6 @@ export class V2CredentialProtocol<CFs extends CredentialFormatService[] = Creden
 
     // credential record already exists
     if (credentialRecord) {
-      // Assert
-      await connectionService.assertConnectionOrOutOfBandExchange(messageContext, {
-        expectedConnectionId: credentialRecord.connectionId,
-      })
-
       //  This makes sure to associate the connectionId
       if (!credentialRecord?.connectionId) {
         await connectionService.matchIncomingMessageToRequestMessageInOutOfBandExchange(messageContext, {
