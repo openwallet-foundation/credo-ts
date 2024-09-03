@@ -555,11 +555,11 @@ export class CredentialsApi<CPs extends CredentialProtocol[]> implements Credent
     await this.postUpdatedBitString(statusListCredentialURL, bitStringCredential)
 
     // Send the revocation notification
-    const revocationFormat = `${statusListCredentialURL}::${credentialIndex}`
+    const revocationId = `${statusListCredentialURL}::${credentialIndex}`
     await this.sendRevocationNotification({
       credentialRecordId: options.credentialRecordId,
-      revocationId: statusListCredentialURL,
-      revocationFormat,
+      revocationId,
+      revocationFormat: 'jsonld',
     })
 
     return { message: 'The JSON-LD credential has been successfully revoked.' }
