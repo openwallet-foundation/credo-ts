@@ -1,6 +1,7 @@
 import type { AgentContext } from '@credo-ts/core'
 
-import { Key } from '@credo-ts/core'
+import { CacheModule, CacheModuleConfig, InMemoryLruCache, Key } from '@credo-ts/core'
+import { container } from 'tsyringe'
 
 import { EventEmitter } from '../../../../core/src/agent/EventEmitter'
 import { getAgentConfig, getAgentContext, mockFunction } from '../../../../core/tests/helpers'
@@ -62,6 +63,11 @@ describe('TenantAgentContextProvider', () => {
 
       const tenantAgentContext = jest.fn() as unknown as AgentContext
 
+      container.registerInstance(CacheModuleConfig, {
+        cache: new CacheModule({
+          cache: new InMemoryLruCache({ limit: 100 }),
+        }).config.cache as unknown as CacheModule,
+      })
       mockFunction(tenantRecordService.getTenantById).mockResolvedValue(tenantRecord)
       mockFunction(tenantSessionCoordinator.getContextForSession).mockResolvedValue(tenantAgentContext)
 
