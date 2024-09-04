@@ -22,6 +22,7 @@ import {
   isValidJweStructure,
   JsonEncoder,
   isJsonObject,
+  CacheModuleConfig,
 } from '@credo-ts/core'
 
 import { TenantAgent } from '../TenantAgent'
@@ -55,13 +56,26 @@ export class TenantAgentContextProvider implements AgentContextProvider {
   }
 
   public async getAgentContextForContextCorrelationId(contextCorrelationId: string) {
+    this.logger.debug('Inside getAgentContextForContextCorrelationId')
     // It could be that the root agent context is requested, in that case we return the root agent context
     if (contextCorrelationId === this.rootAgentContext.contextCorrelationId) {
       return this.rootAgentContext
     }
 
-    // TODO: maybe we can look at not having to retrieve the tenant record if there's already a context available.
-    const tenantRecord = await this.tenantRecordService.getTenantById(this.rootAgentContext, contextCorrelationId)
+    const cache = this.rootAgentContext.dependencyManager.resolve(CacheModuleConfig).cache
+
+    this.logger.debug('Getting tenantRecord from cache')
+    let tenantRecord: TenantRecord | null = await cache.get(
+      this.rootAgentContext,
+      `contextCorrelationId-${contextCorrelationId}`
+    )
+    if (!tenantRecord) {
+      // TODO: maybe we can look at not having to retrieve the tenant record if there's already a context available.
+      this.logger.debug('TenantRecord not found in cache')
+      tenantRecord = await this.tenantRecordService.getTenantById(this.rootAgentContext, contextCorrelationId)
+      await cache.set(this.rootAgentContext, `contextCorrelationId-${contextCorrelationId}`, tenantRecord)
+      this.logger.debug(`Cached tenantRecord '${contextCorrelationId}'`)
+    }
     const shouldUpdate = !isStorageUpToDate(tenantRecord.storageVersion)
 
     // If the tenant storage is not up to date, and autoUpdate is disabled we throw an error
