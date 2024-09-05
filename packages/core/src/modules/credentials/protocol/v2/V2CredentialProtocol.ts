@@ -186,15 +186,6 @@ export class V2CredentialProtocol<CFs extends CredentialFormatService[] = Creden
 
     // credential record already exists
     if (credentialRecord) {
-      //  This makes sure to associate the connectionId
-      if (!credentialRecord?.connectionId) {
-        await connectionService.matchIncomingMessageToRequestMessageInOutOfBandExchange(messageContext, {
-          expectedConnectionId: credentialRecord?.connectionId,
-        })
-
-        credentialRecord.connectionId = connection?.id
-      }
-
       const proposalCredentialMessage = await didCommMessageRepository.findAgentMessage(messageContext.agentContext, {
         associatedRecordId: credentialRecord.id,
         messageClass: V2ProposeCredentialMessage,
@@ -214,6 +205,15 @@ export class V2CredentialProtocol<CFs extends CredentialFormatService[] = Creden
         lastSentMessage: offerCredentialMessage ?? undefined,
         expectedConnectionId: credentialRecord.connectionId,
       })
+
+      // This makes sure that the sender of the incoming message is authorized to do so.
+      if (!credentialRecord?.connectionId) {
+        await connectionService.matchIncomingMessageToRequestMessageInOutOfBandExchange(messageContext, {
+          expectedConnectionId: credentialRecord?.connectionId,
+        })
+
+        credentialRecord.connectionId = connection?.id
+      }
 
       await this.credentialFormatCoordinator.processProposal(messageContext.agentContext, {
         credentialRecord,
