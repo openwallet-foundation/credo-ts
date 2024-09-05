@@ -63,11 +63,13 @@ describe('TenantAgentContextProvider', () => {
 
       const tenantAgentContext = jest.fn() as unknown as AgentContext
 
-      container.registerInstance(CacheModuleConfig, {
-        cache: new CacheModule({
+      container.registerInstance(
+        CacheModuleConfig,
+        new CacheModuleConfig({
           cache: new InMemoryLruCache({ limit: 100 }),
-        }).config.cache as unknown as CacheModule,
-      })
+        })
+      )
+
       mockFunction(tenantRecordService.getTenantById).mockResolvedValue(tenantRecord)
       mockFunction(tenantSessionCoordinator.getContextForSession).mockResolvedValue(tenantAgentContext)
 

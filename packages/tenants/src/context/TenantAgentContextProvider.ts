@@ -63,18 +63,17 @@ export class TenantAgentContextProvider implements AgentContextProvider {
     }
 
     const cache = this.rootAgentContext.dependencyManager.resolve(CacheModuleConfig).cache
+    let isTenantRecordCached = true
 
-    this.logger.debug('Getting tenantRecord from cache')
+    this.logger.debug(`Getting tenantRecord with id ${contextCorrelationId} from cache`)
     let tenantRecord: TenantRecord | null = await cache.get(
       this.rootAgentContext,
       `contextCorrelationId-${contextCorrelationId}`
     )
     if (!tenantRecord) {
-      // TODO: maybe we can look at not having to retrieve the tenant record if there's already a context available.
-      this.logger.debug('TenantRecord not found in cache')
+      isTenantRecordCached = false
+      this.logger.debug(`TenantRecord with id ${contextCorrelationId} not found in cache`)
       tenantRecord = await this.tenantRecordService.getTenantById(this.rootAgentContext, contextCorrelationId)
-      await cache.set(this.rootAgentContext, `contextCorrelationId-${contextCorrelationId}`, tenantRecord)
-      this.logger.debug(`Cached tenantRecord '${contextCorrelationId}'`)
     }
     const shouldUpdate = !isStorageUpToDate(tenantRecord.storageVersion)
 
@@ -91,8 +90,12 @@ export class TenantAgentContextProvider implements AgentContextProvider {
     const agentContext = await this.tenantSessionCoordinator.getContextForSession(tenantRecord, {
       runInMutex: shouldUpdate ? (agentContext) => this._updateTenantStorage(tenantRecord, agentContext) : undefined,
     })
-
     this.logger.debug(`Created tenant agent context for tenant '${contextCorrelationId}'`)
+
+    if (!isTenantRecordCached) {
+      await cache.set(this.rootAgentContext, `contextCorrelationId-${contextCorrelationId}`, tenantRecord)
+      this.logger.debug(`Cached tenantRecord with id'${contextCorrelationId}'`)
+    }
 
     return agentContext
   }
