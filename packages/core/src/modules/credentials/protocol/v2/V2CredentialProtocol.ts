@@ -177,7 +177,6 @@ export class V2CredentialProtocol<CFs extends CredentialFormatService[] = Creden
     let credentialRecord = await this.findByProperties(messageContext.agentContext, {
       threadId: proposalMessage.threadId,
       role: CredentialRole.Issuer,
-      connectionId: connection?.id,
     })
 
     const formatServices = this.getFormatServicesFromMessage(proposalMessage.formats)
@@ -206,6 +205,15 @@ export class V2CredentialProtocol<CFs extends CredentialFormatService[] = Creden
         lastSentMessage: offerCredentialMessage ?? undefined,
         expectedConnectionId: credentialRecord.connectionId,
       })
+
+      // This makes sure that the sender of the incoming message is authorized to do so.
+      if (!credentialRecord?.connectionId) {
+        await connectionService.matchIncomingMessageToRequestMessageInOutOfBandExchange(messageContext, {
+          expectedConnectionId: credentialRecord?.connectionId,
+        })
+
+        credentialRecord.connectionId = connection?.id
+      }
 
       await this.credentialFormatCoordinator.processProposal(messageContext.agentContext, {
         credentialRecord,
