@@ -1,6 +1,6 @@
 import type { AgentContext } from '@credo-ts/core'
 
-import { CacheModule, CacheModuleConfig, InMemoryLruCache, Key } from '@credo-ts/core'
+import { CacheModuleConfig, InMemoryLruCache, Key } from '@credo-ts/core'
 import { container } from 'tsyringe'
 
 import { EventEmitter } from '../../../../core/src/agent/EventEmitter'
