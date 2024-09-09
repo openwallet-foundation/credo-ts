@@ -47,6 +47,16 @@ describe('TenantAgentContextProvider', () => {
     jest.clearAllMocks()
   })
 
+  beforeEach(() => {
+    // Re-register the instance of CacheModuleConfig with a fresh cache before each test
+    container.registerInstance(
+      CacheModuleConfig,
+      new CacheModuleConfig({
+        cache: new InMemoryLruCache({ limit: 100 }), // Fresh cache for each test
+      })
+    )
+  })
+
   describe('getAgentContextForContextCorrelationId', () => {
     test('retrieves the tenant and calls tenant session coordinator', async () => {
       const tenantRecord = new TenantRecord({
@@ -62,13 +72,6 @@ describe('TenantAgentContextProvider', () => {
       })
 
       const tenantAgentContext = jest.fn() as unknown as AgentContext
-
-      container.registerInstance(
-        CacheModuleConfig,
-        new CacheModuleConfig({
-          cache: new InMemoryLruCache({ limit: 100 }),
-        })
-      )
 
       mockFunction(tenantRecordService.getTenantById).mockResolvedValue(tenantRecord)
       mockFunction(tenantSessionCoordinator.getContextForSession).mockResolvedValue(tenantAgentContext)
