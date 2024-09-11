@@ -48,7 +48,7 @@ export class Ed25519Signature2020 extends JwsLinkedDataSignature {
    */
   public constructor(options: Ed25519Signature2020Options) {
     super({
-      type: 'Ed25519Signature2018',
+      type: 'Ed25519Signature2020',
       algorithm: 'EdDSA',
       LDKeyClass: options.LDKeyClass,
       contextUrl: ED25519_SUITE_CONTEXT_URL_2020,
@@ -57,7 +57,7 @@ export class Ed25519Signature2020 extends JwsLinkedDataSignature {
       date: options.date,
       useNativeCanonize: options.useNativeCanonize,
     })
-    this.requiredKeyType = 'Ed25519VerificationKey2018'
+    this.requiredKeyType = 'Ed25519VerificationKey2020'
   }
 
   public async assertVerificationMethod(document: JsonLdDoc) {
@@ -95,7 +95,10 @@ export class Ed25519Signature2020 extends JwsLinkedDataSignature {
     // convert Ed25519VerificationKey2020 to Ed25519VerificationKey2018
     if (_isEd2020Key(verificationMethod) && _includesEd2020Context(verificationMethod)) {
       // -- convert multibase to base58 --
-      const publicKeyBuffer = MultiBaseEncoder.decode(verificationMethod.publicKeyMultibase)
+      let publicKeyBuffer = MultiBaseEncoder.decode(verificationMethod.publicKeyMultibase).data
+      if ((verificationMethod.publicKeyMultibase as string).startsWith("z6Mk")) {
+         publicKeyBuffer = publicKeyBuffer.slice(2)
+      }
 
       // -- update type
       verificationMethod.type = 'Ed25519VerificationKey2018'
@@ -103,7 +106,7 @@ export class Ed25519Signature2020 extends JwsLinkedDataSignature {
       verificationMethod = {
         ...verificationMethod,
         publicKeyMultibase: undefined,
-        publicKeyBase58: TypedArrayEncoder.toBase58(publicKeyBuffer.data),
+        publicKeyBase58: TypedArrayEncoder.toBase58(publicKeyBuffer),
       }
     }
 
@@ -201,7 +204,7 @@ export class Ed25519Signature2020 extends JwsLinkedDataSignature {
     if (!(options.proof.proofValue && typeof options.proof.proofValue === 'string')) {
       throw new TypeError('The proof does not include a valid "proofValue" property.')
     }
-    const signature = MultiBaseEncoder.decode(options.proof.proofValue)
+    const signature = MultiBaseEncoder.decode(options.proof.proofValue).data
 
     let { verifier } = this
     if (!verifier) {
