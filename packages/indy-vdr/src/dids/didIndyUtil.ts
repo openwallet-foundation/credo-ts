@@ -276,9 +276,7 @@ export async function buildDidDocument(agentContext: AgentContext, pool: IndyVdr
     try {
       diddocContent = JSON.parse(nym.diddocContent) as Record<string, unknown>
     } catch (error) {
-      agentContext.config.logger.error(
-        `Nym diddocContent is not a valid json string: ${diddocContent}`
-      )
+      agentContext.config.logger.error(`Nym diddocContent is not a valid json string: ${diddocContent}`)
       throw new IndyVdrError(`Nym diddocContent failed to parse as JSON: ${error}`)
     }
     return combineDidDocumentWithJson(builder.build(), diddocContent)
