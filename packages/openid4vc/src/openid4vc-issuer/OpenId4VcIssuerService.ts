@@ -17,7 +17,6 @@ import type {
 } from '../shared'
 import type { AgentContext, DidDocument, Query, QueryOptions } from '@credo-ts/core'
 import type {
-  CredentialConfigurationSupported,
   CredentialOfferPayloadV1_0_11,
   CredentialOfferPayloadV1_0_13,
   Grant,

@@ -10,7 +10,6 @@ import type {
   DifPexInputDescriptorToCredentials,
   DifPresentationExchangeSubmission,
 } from '../../../dif-presentation-exchange'
-import type { SdJwtVc } from '../../../sd-jwt-vc'
 import type {
   IAnonCredsDataIntegrityService,
   W3cVerifiablePresentation,
