@@ -51,9 +51,7 @@ export class W3cCredentialsModule implements Module {
     dependencyManager.registerInstance(SignatureSuiteToken, {
       suiteClass: Ed25519Signature2020,
       proofType: 'Ed25519Signature2020',
-      verificationMethodTypes: [
-        VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2020,
-      ],
+      verificationMethodTypes: [VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2020],
       keyTypes: [KeyType.Ed25519],
     })
   }

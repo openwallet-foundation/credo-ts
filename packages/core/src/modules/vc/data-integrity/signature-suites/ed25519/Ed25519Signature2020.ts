@@ -96,8 +96,8 @@ export class Ed25519Signature2020 extends JwsLinkedDataSignature {
     if (_isEd2020Key(verificationMethod) && _includesEd2020Context(verificationMethod)) {
       // -- convert multibase to base58 --
       let publicKeyBuffer = MultiBaseEncoder.decode(verificationMethod.publicKeyMultibase).data
-      if ((verificationMethod.publicKeyMultibase as string).startsWith("z6Mk")) {
-         publicKeyBuffer = publicKeyBuffer.slice(2)
+      if ((verificationMethod.publicKeyMultibase as string).startsWith('z6Mk')) {
+        publicKeyBuffer = publicKeyBuffer.slice(2)
       }
 
       // -- update type
@@ -181,7 +181,7 @@ export class Ed25519Signature2020 extends JwsLinkedDataSignature {
       throw new Error('A signer API has not been specified.')
     }
     const signature = await this.signer.sign({ data: options.verifyData })
-    const encodedSignature = MultiBaseEncoder.encode(signature, "base58btc")
+    const encodedSignature = MultiBaseEncoder.encode(signature, 'base58btc')
 
     // create detached content signature
     options.proof.proofValue = encodedSignature
