@@ -1,7 +1,8 @@
 import type { DocumentLoader, JsonLdDoc, Proof, VerificationMethod } from '../../jsonldUtil'
 import type { JwsLinkedDataSignatureOptions } from '../JwsLinkedDataSignature'
 
-import { MultiBaseEncoder, TypedArrayEncoder } from '../../../../../utils'
+import { Key } from '../../../../../crypto'
+import { MultiBaseEncoder } from '../../../../../utils'
 import { CREDENTIALS_CONTEXT_V1_URL, SECURITY_CONTEXT_URL } from '../../../constants'
 import { _includesContext } from '../../jsonldUtil'
 import jsonld from '../../libraries/jsonld'
@@ -95,10 +96,7 @@ export class Ed25519Signature2020 extends JwsLinkedDataSignature {
     // convert Ed25519VerificationKey2020 to Ed25519VerificationKey2018
     if (_isEd2020Key(verificationMethod) && _includesEd2020Context(verificationMethod)) {
       // -- convert multibase to base58 --
-      let publicKeyBuffer = MultiBaseEncoder.decode(verificationMethod.publicKeyMultibase).data
-      if ((verificationMethod.publicKeyMultibase as string).startsWith('z6Mk')) {
-        publicKeyBuffer = publicKeyBuffer.slice(2)
-      }
+      const publicKeyBase58 = Key.fromFingerprint(verificationMethod.publicKeyMultibase).publicKeyBase58
 
       // -- update type
       verificationMethod.type = 'Ed25519VerificationKey2018'
@@ -106,7 +104,7 @@ export class Ed25519Signature2020 extends JwsLinkedDataSignature {
       verificationMethod = {
         ...verificationMethod,
         publicKeyMultibase: undefined,
-        publicKeyBase58: TypedArrayEncoder.toBase58(publicKeyBuffer),
+        publicKeyBase58,
       }
     }
 
