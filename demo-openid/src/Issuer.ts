@@ -4,6 +4,7 @@ import type {
   OpenId4VcCredentialHolderDidBinding,
   OpenId4VciCredentialRequestToCredentialMapper,
   OpenId4VciCredentialSupportedWithId,
+  OpenId4VciCredentialSupportedWithIdAndScope,
   OpenId4VcIssuerRecord,
 } from '@credo-ts/openid4vc'
 
@@ -28,13 +29,15 @@ export const universityDegreeCredential = {
   id: 'UniversityDegreeCredential',
   format: OpenId4VciCredentialFormatProfile.JwtVcJson,
   types: ['VerifiableCredential', 'UniversityDegreeCredential'],
-} satisfies OpenId4VciCredentialSupportedWithId
+  scope: 'openid4vc:credential:UniversityDegreeCredential',
+} satisfies OpenId4VciCredentialSupportedWithIdAndScope
 
 export const openBadgeCredential = {
   id: 'OpenBadgeCredential',
   format: OpenId4VciCredentialFormatProfile.JwtVcJson,
   types: ['VerifiableCredential', 'OpenBadgeCredential'],
-} satisfies OpenId4VciCredentialSupportedWithId
+  scope: 'openid4vc:credential:OpenBadgeCredential',
+} satisfies OpenId4VciCredentialSupportedWithIdAndScope
 
 export const universityDegreeCredentialSdJwt = {
   id: 'UniversityDegreeCredential-sdjwt',
@@ -148,7 +151,9 @@ export class Issuer extends BaseAgent<{
     const issuer = new Issuer(2000, 'OpenId4VcIssuer ' + Math.random().toString())
     await issuer.initializeAgent('96213c3d7fc8d4d6754c7a0fd969598f')
     issuer.issuerRecord = await issuer.agent.modules.openId4VcIssuer.createIssuer({
+      issuerId: '726222ad-7624-4f12-b15b-e08aa7042ffa',
       credentialsSupported,
+      authorizationServerConfigs: [{ baseUrl: 'http://localhost:3042' }],
     })
 
     return issuer
@@ -158,7 +163,7 @@ export class Issuer extends BaseAgent<{
     const { credentialOffer } = await this.agent.modules.openId4VcIssuer.createCredentialOffer({
       issuerId: this.issuerRecord.issuerId,
       offeredCredentials,
-      preAuthorizedCodeFlowConfig: { userPinRequired: false },
+      authorizationCodeFlowConfig: { issuerState: 'f498b73c-144f-4eea-bd6b-7be89b35936e' },
     })
 
     return credentialOffer
