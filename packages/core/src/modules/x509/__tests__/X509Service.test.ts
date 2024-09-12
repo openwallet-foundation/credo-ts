@@ -173,7 +173,24 @@ describe('X509Service', () => {
     })
   })
 
-  it('should generate a self-signed X509 Certificate', async () => {
+  it('should generate a self-signed X509 Certificate with Ed25519', async () => {
+    const key = await agentContext.wallet.createKey({ keyType: KeyType.Ed25519 })
+
+    const selfSignedCertificate = await X509Service.createSelfSignedCertificate(agentContext, {
+      key,
+    })
+
+    expect(selfSignedCertificate.publicKey.publicKeyBase58).toStrictEqual(key.publicKeyBase58)
+    expect(selfSignedCertificate.sanDnsNames).toStrictEqual([])
+    expect(selfSignedCertificate.sanUriNames).toStrictEqual([])
+
+    const pemCertificate = selfSignedCertificate.toString('pem')
+
+    expect(pemCertificate.startsWith('-----BEGIN CERTIFICATE-----\n')).toBeTruthy()
+    expect(pemCertificate.endsWith('\n-----END CERTIFICATE-----')).toBeTruthy()
+  })
+
+  it('should generate a self-signed X509 Certificate with P256', async () => {
     const key = await agentContext.wallet.createKey({ keyType: KeyType.P256 })
 
     const selfSignedCertificate = await X509Service.createSelfSignedCertificate(agentContext, {
