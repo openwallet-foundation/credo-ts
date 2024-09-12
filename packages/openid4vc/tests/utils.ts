@@ -4,7 +4,7 @@ import type {
   OpenId4VcVerificationSessionState,
   OpenId4VcVerificationSessionStateChangedEvent,
 } from '../src'
-import type { BaseEvent, ModulesMap } from '@credo-ts/core'
+import type { BaseEvent, ModulesMap, X509Module } from '@credo-ts/core'
 import type { TenantsModule } from '@credo-ts/tenants'
 import type { Observable } from 'rxjs'
 
@@ -44,7 +44,7 @@ export async function createAgentFromModules<MM extends ModulesMap>(label: strin
 export type AgentType<MM extends ModulesMap> = Awaited<ReturnType<typeof createAgentFromModules<MM>>>
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-type AgentWithTenantsModule = Agent<{ tenants: TenantsModule<any> }>
+type AgentWithTenantsModule = Agent<{ tenants: TenantsModule<any>; x509: X509Module }>
 
 export async function createTenantForAgent(
   // FIXME: we need to make some improvements on the agent typing. It'a quite hard

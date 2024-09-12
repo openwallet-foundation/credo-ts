@@ -3,11 +3,13 @@ import type { AgentContext, DependencyManager, Module } from '@credo-ts/core'
 
 import { AgentConfig, Buffer } from '@credo-ts/core'
 
+import { CheqdApi } from './CheqdApi'
 import { CheqdModuleConfig } from './CheqdModuleConfig'
 import { CheqdLedgerService } from './ledger'
 
 export class CheqdModule implements Module {
   public readonly config: CheqdModuleConfig
+  public readonly api = CheqdApi
 
   public constructor(config: CheqdModuleConfigOptions) {
     this.config = new CheqdModuleConfig(config)

@@ -13,7 +13,6 @@ import type {
   OpenId4VciCredentialConfigurationsSupported,
   OpenId4VciCredentialOfferPayload,
   OpenId4VciCredentialRequest,
-  OpenId4VciCredentialSupportedWithId,
 } from '../shared'
 import type { AgentContext, DidDocument, Query, QueryOptions } from '@credo-ts/core'
 import type {
@@ -52,10 +51,7 @@ import {
 import { VcIssuerBuilder } from '@sphereon/oid4vci-issuer'
 
 import { credentialsSupportedV11ToV13, OpenId4VciCredentialFormatProfile } from '../shared'
-import {
-  credentialsSupportedV13ToV11,
-  getOfferedCredentialConfigurationsSupported,
-} from '../shared/issuerMetadataUtils'
+import { credentialsSupportedV13ToV11, getOfferedCredentials } from '../shared/issuerMetadataUtils'
 import { storeActorIdForContextCorrelationId } from '../shared/router'
 import { getSphereonVerifiableCredential } from '../shared/transform'
 import { getProofTypeFromKey, isCredentialOfferV1Draft13 } from '../shared/utils'
@@ -121,7 +117,7 @@ export class OpenId4VcIssuerService {
 
     // this checks if the structure of the credentials is correct
     // it throws an error if a offered credential cannot be found in the credentialsSupported
-    getOfferedCredentialConfigurationsSupported(
+    getOfferedCredentials(
       agentContext,
       options.offeredCredentials,
       vcIssuer.issuerMetadata.credential_configurations_supported
@@ -303,6 +299,7 @@ export class OpenId4VcIssuerService {
     const openId4VcIssuerBase = {
       issuerId: options.issuerId ?? utils.uuid(),
       display: options.display,
+      dpopSigningAlgValuesSupported: options.dpopSigningAlgValuesSupported,
       accessTokenPublicKeyFingerprint: accessTokenSignerKey.fingerprint,
     } as const
 
@@ -344,6 +341,7 @@ export class OpenId4VcIssuerService {
         issuerRecord.credentialConfigurationsSupported ??
         credentialsSupportedV11ToV13(agentContext, issuerRecord.credentialsSupported),
       issuerDisplay: issuerRecord.display,
+      dpopSigningAlgValuesSupported: issuerRecord.dpopSigningAlgValuesSupported,
     } satisfies OpenId4VcIssuerMetadata
 
     return issuerMetadata
@@ -435,21 +433,21 @@ export class OpenId4VcIssuerService {
     agentContext: AgentContext,
     credentialOffer: OpenId4VciCredentialOfferPayload,
     credentialRequest: OpenId4VciCredentialRequest,
-    credentialsSupported: OpenId4VciCredentialSupportedWithId[] | OpenId4VciCredentialConfigurationsSupported,
+    allCredentialConfigurationsSupported: OpenId4VciCredentialConfigurationsSupported,
     issuanceSession: OpenId4VcIssuanceSessionRecord
   ): OpenId4VciCredentialConfigurationsSupported {
     const offeredCredentialsData = isCredentialOfferV1Draft13(credentialOffer)
       ? credentialOffer.credential_configuration_ids
       : credentialOffer.credentials
 
-    const offeredCredentials = getOfferedCredentialConfigurationsSupported(
+    const { credentialConfigurationsSupported: offeredCredentialConfigurations } = getOfferedCredentials(
       agentContext,
       offeredCredentialsData,
-      credentialsSupported
+      allCredentialConfigurationsSupported
     )
 
     if ('credential_identifier' in credentialRequest && typeof credentialRequest.credential_identifier === 'string') {
-      const offeredCredential = offeredCredentials[credentialRequest.credential_identifier]
+      const offeredCredential = offeredCredentialConfigurations[credentialRequest.credential_identifier]
       if (!offeredCredential) {
         throw new CredoError(
           `Requested credential with id '${credentialRequest.credential_identifier}' was not offered.`
@@ -462,7 +460,7 @@ export class OpenId4VcIssuerService {
     }
 
     return Object.fromEntries(
-      Object.entries(offeredCredentials).filter(([id, offeredCredential]) => {
+      Object.entries(offeredCredentialConfigurations).filter(([id, offeredCredential]) => {
         if (offeredCredential.format !== credentialRequest.format) return false
         if (issuanceSession.issuedCredentials.includes(id)) return false
 
@@ -470,23 +468,32 @@ export class OpenId4VcIssuerService {
           credentialRequest.format === OpenId4VciCredentialFormatProfile.JwtVcJson &&
           offeredCredential.format === credentialRequest.format
         ) {
-          return equalsIgnoreOrder(offeredCredential.credential_definition.type ?? [], credentialRequest.types)
+          const types =
+            'credential_definition' in credentialRequest
+              ? credentialRequest.credential_definition.type
+              : credentialRequest.types
+
+          return equalsIgnoreOrder(offeredCredential.credential_definition.type ?? [], types)
         } else if (
           credentialRequest.format === OpenId4VciCredentialFormatProfile.JwtVcJsonLd &&
           offeredCredential.format === credentialRequest.format
         ) {
-          return equalsIgnoreOrder(
-            offeredCredential.credential_definition.type ?? [],
-            credentialRequest.credential_definition.types
-          )
+          const types =
+            'type' in credentialRequest.credential_definition
+              ? credentialRequest.credential_definition.type
+              : credentialRequest.credential_definition.types
+
+          return equalsIgnoreOrder(offeredCredential.credential_definition.type ?? [], types)
         } else if (
           credentialRequest.format === OpenId4VciCredentialFormatProfile.LdpVc &&
           offeredCredential.format === credentialRequest.format
         ) {
-          return equalsIgnoreOrder(
-            offeredCredential.credential_definition.type ?? [],
-            credentialRequest.credential_definition.types
-          )
+          const types =
+            'type' in credentialRequest.credential_definition
+              ? credentialRequest.credential_definition.type
+              : credentialRequest.credential_definition.types
+
+          return equalsIgnoreOrder(offeredCredential.credential_definition.type ?? [], types)
         } else if (
           credentialRequest.format === OpenId4VciCredentialFormatProfile.SdJwtVc &&
           offeredCredential.format === credentialRequest.format

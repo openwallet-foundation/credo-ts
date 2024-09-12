@@ -17,7 +17,7 @@ import {
   DifPresentationExchangeService,
   DifPresentationExchangeSubmissionLocation,
 } from '@credo-ts/core'
-import { OP, ResponseIss, ResponseMode, SupportedVersion, VPTokenLocation } from '@sphereon/did-auth-siop'
+import { OP, ResponseIss, ResponseMode, ResponseType, SupportedVersion, VPTokenLocation } from '@sphereon/did-auth-siop'
 
 import { getSphereonVerifiablePresentation } from '../shared/transform'
 import { getCreateJwtCallback, getVerifyJwtCallback, openIdTokenIssuerToJwtIssuer } from '../shared/utils'
@@ -73,6 +73,8 @@ export class OpenId4VcSiopHolderService {
     let openIdTokenIssuer = options.openIdTokenIssuer
     let presentationExchangeOptions: PresentationExchangeResponseOpts | undefined = undefined
 
+    const wantsIdToken = await authorizationRequest.authorizationRequest.containsResponseType(ResponseType.ID_TOKEN)
+
     // Handle presentation exchange part
     if (authorizationRequest.presentationDefinitions && authorizationRequest.presentationDefinitions.length > 0) {
       if (!presentationExchange) {
@@ -106,7 +108,7 @@ export class OpenId4VcSiopHolderService {
         vpTokenLocation: VPTokenLocation.AUTHORIZATION_RESPONSE,
       }
 
-      if (!openIdTokenIssuer) {
+      if (wantsIdToken && !openIdTokenIssuer) {
         openIdTokenIssuer = this.getOpenIdTokenIssuerFromVerifiablePresentation(verifiablePresentations[0])
       }
     } else if (options.presentationExchange) {
@@ -115,19 +117,26 @@ export class OpenId4VcSiopHolderService {
       )
     }
 
-    if (!openIdTokenIssuer) {
-      throw new CredoError(
-        'Unable to create authorization response. openIdTokenIssuer MUST be supplied when no presentation is active.'
-      )
+    if (wantsIdToken) {
+      if (!openIdTokenIssuer) {
+        throw new CredoError(
+          'Unable to create authorization response. openIdTokenIssuer MUST be supplied when no presentation is active and the ResponseType includes id_token.'
+        )
+      }
+
+      this.assertValidTokenIssuer(authorizationRequest, openIdTokenIssuer)
     }
 
-    this.assertValidTokenIssuer(authorizationRequest, openIdTokenIssuer)
-    const openidProvider = await this.getOpenIdProvider(agentContext)
+    const jwtIssuer =
+      wantsIdToken && openIdTokenIssuer
+        ? await openIdTokenIssuerToJwtIssuer(agentContext, openIdTokenIssuer)
+        : undefined
 
+    const openidProvider = await this.getOpenIdProvider(agentContext)
     const authorizationResponseWithCorrelationId = await openidProvider.createAuthorizationResponse(
       authorizationRequest,
       {
-        jwtIssuer: await openIdTokenIssuerToJwtIssuer(agentContext, openIdTokenIssuer),
+        jwtIssuer,
         presentationExchange: presentationExchangeOptions,
         // https://openid.net/specs/openid-connect-self-issued-v2-1_0.html#name-aud-of-a-request-object
         audience: authorizationRequest.authorizationRequestPayload.client_id,

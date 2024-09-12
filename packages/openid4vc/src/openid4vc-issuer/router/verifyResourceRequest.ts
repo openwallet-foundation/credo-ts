@@ -1,23 +1,33 @@
+import type { OpenId4VcIssuanceRequest } from './requestContext'
 import type { OpenId4VcIssuerRecord } from '../repository'
 import type { AgentContext } from '@credo-ts/core'
+import type { SigningAlgo } from '@sphereon/oid4vc-common'
 
-import { CredoError, JwsService, Jwt } from '@credo-ts/core'
+import { CredoError, joinUriParts, JwsService, Jwt } from '@credo-ts/core'
+import { verifyResourceDPoP } from '@sphereon/oid4vc-common'
 
+import { getVerifyJwtCallback } from '../../shared/utils'
+import { OpenId4VcIssuerModuleConfig } from '../OpenId4VcIssuerModuleConfig'
 import { OpenId4VcIssuerService } from '../OpenId4VcIssuerService'
 
-export async function verifyAccessToken(
+export async function verifyResourceRequest(
   agentContext: AgentContext,
   issuer: OpenId4VcIssuerRecord,
-  authorizationHeader?: string
+  request: OpenId4VcIssuanceRequest
 ) {
   const openId4VcIssuerService = agentContext.dependencyManager.resolve(OpenId4VcIssuerService)
+  const authorizationHeader = request.headers.authorization
 
-  if (!authorizationHeader || !authorizationHeader.startsWith('Bearer ')) {
+  if (!authorizationHeader) {
     throw new CredoError('No access token provided in the authorization header')
   }
 
+  if (!authorizationHeader.startsWith('Bearer ') && !authorizationHeader.startsWith('DPoP ')) {
+    throw new CredoError(`Invalid access token scheme. Expected Bearer or DPoP.`)
+  }
+
   const issuerMetadata = openId4VcIssuerService.getIssuerMetadata(agentContext, issuer)
-  const accessToken = Jwt.fromSerializedJwt(authorizationHeader.replace('Bearer ', ''))
+  const accessToken = Jwt.fromSerializedJwt(authorizationHeader.replace('Bearer ', '').replace('DPoP ', ''))
   const jwsService = agentContext.dependencyManager.resolve(JwsService)
 
   const { isValid, signerKeys } = await jwsService.verifyJws(agentContext, {
@@ -26,6 +36,16 @@ export async function verifyAccessToken(
       throw new Error('No JWK resolver available for access token verification')
     },
   })
+
+  const issuerConfig = agentContext.dependencyManager.resolve(OpenId4VcIssuerModuleConfig)
+  const fullUrl = joinUriParts(issuerConfig.baseUrl, [issuer.issuerId, request.url])
+  await verifyResourceDPoP(
+    { method: request.method, headers: request.headers, fullUrl },
+    {
+      jwtVerifyCallback: getVerifyJwtCallback(agentContext),
+      acceptedAlgorithms: issuerMetadata.dpopSigningAlgValuesSupported as SigningAlgo[] | undefined,
+    }
+  )
 
   if (!isValid) {
     throw new CredoError('Signature on access token is invalid')
