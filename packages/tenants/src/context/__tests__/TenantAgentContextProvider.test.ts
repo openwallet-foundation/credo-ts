@@ -1,6 +1,7 @@
 import type { AgentContext } from '@credo-ts/core'
 
-import { Key } from '@credo-ts/core'
+import { CacheModuleConfig, InMemoryLruCache, Key } from '@credo-ts/core'
+import { container } from 'tsyringe'
 
 import { EventEmitter } from '../../../../core/src/agent/EventEmitter'
 import { getAgentConfig, getAgentContext, mockFunction } from '../../../../core/tests/helpers'
@@ -44,6 +45,16 @@ const inboundMessage = {
 describe('TenantAgentContextProvider', () => {
   afterEach(() => {
     jest.clearAllMocks()
+  })
+
+  beforeEach(() => {
+    // Re-register the instance of CacheModuleConfig with a fresh cache before each test
+    container.registerInstance(
+      CacheModuleConfig,
+      new CacheModuleConfig({
+        cache: new InMemoryLruCache({ limit: 100 }), // Fresh cache for each test
+      })
+    )
   })
 
   describe('getAgentContextForContextCorrelationId', () => {

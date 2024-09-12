@@ -22,6 +22,7 @@ import {
   isValidJweStructure,
   JsonEncoder,
   isJsonObject,
+  CacheModuleConfig,
 } from '@credo-ts/core'
 
 import { TenantAgent } from '../TenantAgent'
@@ -55,13 +56,25 @@ export class TenantAgentContextProvider implements AgentContextProvider {
   }
 
   public async getAgentContextForContextCorrelationId(contextCorrelationId: string) {
+    this.logger.debug('Inside getAgentContextForContextCorrelationId')
     // It could be that the root agent context is requested, in that case we return the root agent context
     if (contextCorrelationId === this.rootAgentContext.contextCorrelationId) {
       return this.rootAgentContext
     }
 
-    // TODO: maybe we can look at not having to retrieve the tenant record if there's already a context available.
-    const tenantRecord = await this.tenantRecordService.getTenantById(this.rootAgentContext, contextCorrelationId)
+    const cache = this.rootAgentContext.dependencyManager.resolve(CacheModuleConfig).cache
+    let isTenantRecordCached = true
+
+    this.logger.debug(`Getting tenantRecord with id ${contextCorrelationId} from cache`)
+    let tenantRecord: TenantRecord | null = await cache.get(
+      this.rootAgentContext,
+      `contextCorrelationId-${contextCorrelationId}`
+    )
+    if (!tenantRecord) {
+      isTenantRecordCached = false
+      this.logger.debug(`TenantRecord with id ${contextCorrelationId} not found in cache`)
+      tenantRecord = await this.tenantRecordService.getTenantById(this.rootAgentContext, contextCorrelationId)
+    }
     const shouldUpdate = !isStorageUpToDate(tenantRecord.storageVersion)
 
     // If the tenant storage is not up to date, and autoUpdate is disabled we throw an error
@@ -77,8 +90,12 @@ export class TenantAgentContextProvider implements AgentContextProvider {
     const agentContext = await this.tenantSessionCoordinator.getContextForSession(tenantRecord, {
       runInMutex: shouldUpdate ? (agentContext) => this._updateTenantStorage(tenantRecord, agentContext) : undefined,
     })
-
     this.logger.debug(`Created tenant agent context for tenant '${contextCorrelationId}'`)
+
+    if (!isTenantRecordCached) {
+      await cache.set(this.rootAgentContext, `contextCorrelationId-${contextCorrelationId}`, tenantRecord)
+      this.logger.debug(`Cached tenantRecord with id'${contextCorrelationId}'`)
+    }
 
     return agentContext
   }
