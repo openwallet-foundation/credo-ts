@@ -25,7 +25,7 @@ export interface GetNymResponseData {
   verkey: string
   role: string
   alias?: string
-  diddocContent?: Record<string, unknown>
+  diddocContent?: string
 }
 
 export const FULL_VERKEY_REGEX = /^[1-9A-HJ-NP-Za-km-z]{43,44}$/
