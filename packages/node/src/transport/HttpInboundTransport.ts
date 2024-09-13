@@ -12,7 +12,7 @@ import type { Server } from 'http'
 
 import { DidCommMimeType, CredoError, TransportService, utils, AgentEventTypes } from '@credo-ts/core'
 import express, { text } from 'express'
-import { filter, first, firstValueFrom } from 'rxjs'
+import { first, firstValueFrom, ReplaySubject, timeout } from 'rxjs'
 
 const supportedContentTypes: string[] = [DidCommMimeType.V0, DidCommMimeType.V1]
 
@@ -59,7 +59,21 @@ export class HttpInboundTransport implements InboundTransport {
 
       try {
         const message = req.body
-        const encryptedMessage = JSON.parse(message)
+        const encryptedMessage = JSON.parse(message) as EncryptedMessage
+
+        const observable = agent.events.observable<AgentMessageProcessedEvent>(AgentEventTypes.AgentMessageProcessed)
+        const subject = new ReplaySubject(1)
+
+        observable
+          .pipe(
+            first((e) => e.type === AgentEventTypes.AgentMessageProcessed),
+            timeout({
+              first: 10000, // timeout after 10 seconds
+              meta: 'HttpInboundTransport.start',
+            })
+          )
+          .subscribe(subject)
+
         agent.events.emit<AgentMessageReceivedEvent>(agent.context, {
           type: AgentEventTypes.AgentMessageReceived,
           payload: {
@@ -69,14 +83,7 @@ export class HttpInboundTransport implements InboundTransport {
         })
 
         // Wait for message to be processed
-        await firstValueFrom(
-          agent.events.observable<AgentMessageProcessedEvent>(AgentEventTypes.AgentMessageProcessed).pipe(
-            filter((e) => e.type === AgentEventTypes.AgentMessageProcessed),
-            filter((e) => e.payload.message.id === encryptedMessage.id),
-            filter((e) => e.payload.message.type === encryptedMessage.type),
-            first()
-          )
-        )
+        await firstValueFrom(subject)
 
         // If agent did not use session when processing message we need to send response here.
         if (!res.headersSent) {

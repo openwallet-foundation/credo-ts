@@ -10,7 +10,7 @@ import type {
 } from '@credo-ts/core'
 
 import { CredoError, TransportService, utils, AgentEventTypes } from '@credo-ts/core'
-import { filter, first, firstValueFrom } from 'rxjs'
+import { first, firstValueFrom, ReplaySubject, timeout } from 'rxjs'
 // eslint-disable-next-line import/no-named-as-default
 import WebSocket, { Server } from 'ws'
 
@@ -72,7 +72,21 @@ export class WsInboundTransport implements InboundTransport {
     socket.addEventListener('message', async (event: any) => {
       this.logger.debug('WebSocket message event received.', { url: event.target.url })
       try {
-        const encryptedMessage = JSON.parse(event.data)
+        const encryptedMessage = JSON.parse(event.data) as EncryptedMessage
+
+        const observable = agent.events.observable<AgentMessageProcessedEvent>(AgentEventTypes.AgentMessageProcessed)
+        const subject = new ReplaySubject(1)
+
+        observable
+          .pipe(
+            first((e) => e.type === AgentEventTypes.AgentMessageProcessed),
+            timeout({
+              first: 10000, // timeout after 10 seconds
+              meta: 'WsInboundTransport.listenOnWebSocketMessages',
+            })
+          )
+          .subscribe(subject)
+
         agent.events.emit<AgentMessageReceivedEvent>(agent.context, {
           type: AgentEventTypes.AgentMessageReceived,
           payload: {
@@ -82,14 +96,7 @@ export class WsInboundTransport implements InboundTransport {
         })
 
         // Wait for message to be processed
-        await firstValueFrom(
-          agent.events.observable<AgentMessageProcessedEvent>(AgentEventTypes.AgentMessageProcessed).pipe(
-            filter((e) => e.type === AgentEventTypes.AgentMessageProcessed),
-            filter((e) => e.payload.message.id === encryptedMessage.id),
-            filter((e) => e.payload.message.type === encryptedMessage.type),
-            first()
-          )
-        )
+        await firstValueFrom(subject)
       } catch (error) {
         this.logger.error(`Error processing message: ${error}`)
       }
