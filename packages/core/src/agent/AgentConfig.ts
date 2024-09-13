@@ -75,8 +75,8 @@ export class AgentConfig {
     return this.initConfig.backupBeforeStorageUpdate ?? true
   }
 
-  public get processMessagesConcurrently() {
-    return this.initConfig.processMessagesConcurrently ?? false
+  public get processDidCommMessagesConcurrently() {
+    return this.initConfig.processDidCommMessagesConcurrently ?? false
   }
 
   public extend(config: Partial<InitConfig>): AgentConfig {

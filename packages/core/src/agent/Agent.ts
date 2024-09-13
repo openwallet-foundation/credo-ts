@@ -163,7 +163,7 @@ export class Agent<AgentModules extends AgentModulesInput = any> extends BaseAge
               .catch((error) => {
                 this.logger.error('Failed to process message', { error })
               }),
-          this.agentConfig.processMessagesConcurrently ? undefined : 1
+          this.agentConfig.processDidCommMessagesConcurrently ? undefined : 1
         )
       )
       .subscribe()
