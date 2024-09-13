@@ -26,8 +26,8 @@
     "test": "jest"
   },
   "dependencies": {
-    "@cheqd/sdk": "^2.4.4",
-    "@cheqd/ts-proto": "~2.2.0",
+    "@cheqd/sdk": "^2.5.1",
+    "@cheqd/ts-proto": "~2.3.2",
     "@cosmjs/crypto": "~0.30.0",
     "@cosmjs/proto-signing": "~0.30.0",
     "@cosmjs/stargate": "~0.30.0",
