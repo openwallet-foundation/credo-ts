@@ -271,7 +271,14 @@ export async function buildDidDocument(agentContext: AgentContext, pool: IndyVdr
     }
     return builder.build()
   } else {
-    // Combine it with didDoc (TODO: Check if diddocContent is returned as a JSON object or a string)
-    return combineDidDocumentWithJson(builder.build(), nym.diddocContent)
+    // Combine it with didDoc
+    let diddocContent
+    try {
+      diddocContent = JSON.parse(nym.diddocContent) as Record<string, unknown>
+    } catch (error) {
+      agentContext.config.logger.error(`Nym diddocContent is not a valid json string: ${diddocContent}`)
+      throw new IndyVdrError(`Nym diddocContent failed to parse as JSON: ${error}`)
+    }
+    return combineDidDocumentWithJson(builder.build(), diddocContent)
   }
 }
