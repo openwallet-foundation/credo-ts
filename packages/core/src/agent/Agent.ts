@@ -158,6 +158,7 @@ export class Agent<AgentModules extends AgentModulesInput = any> extends BaseAge
               .receiveMessage(e.payload.message, {
                 connection: e.payload.connection,
                 contextCorrelationId: e.payload.contextCorrelationId,
+                session: e.payload.session,
               })
               .catch((error) => {
                 this.logger.error('Failed to process message', { error })

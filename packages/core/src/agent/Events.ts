@@ -1,4 +1,5 @@
 import type { AgentMessage } from './AgentMessage'
+import type { TransportSession } from './TransportService'
 import type { OutboundMessageContext, OutboundMessageSendStatus } from './models'
 import type { ConnectionRecord } from '../modules/connections'
 import type { Observable } from 'rxjs'
@@ -34,6 +35,7 @@ export interface AgentMessageReceivedEvent extends BaseEvent {
     connection?: ConnectionRecord
     contextCorrelationId?: string
     receivedAt?: Date
+    session?: TransportSession
   }
 }
 

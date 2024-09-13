@@ -1,8 +1,15 @@
-import type { InboundTransport, Agent, TransportSession, EncryptedMessage, AgentContext } from '@credo-ts/core'
+import type {
+  InboundTransport,
+  Agent,
+  TransportSession,
+  EncryptedMessage,
+  AgentContext,
+  AgentMessageReceivedEvent,
+} from '@credo-ts/core'
 import type { Express, Request, Response } from 'express'
 import type { Server } from 'http'
 
-import { DidCommMimeType, CredoError, TransportService, utils, MessageReceiver } from '@credo-ts/core'
+import { DidCommMimeType, CredoError, TransportService, utils, AgentEventTypes } from '@credo-ts/core'
 import express, { text } from 'express'
 
 const supportedContentTypes: string[] = [DidCommMimeType.V0, DidCommMimeType.V1]
@@ -29,7 +36,6 @@ export class HttpInboundTransport implements InboundTransport {
 
   public async start(agent: Agent) {
     const transportService = agent.dependencyManager.resolve(TransportService)
-    const messageReceiver = agent.dependencyManager.resolve(MessageReceiver)
 
     agent.config.logger.debug(`Starting HTTP inbound transport`, {
       port: this.port,
@@ -52,8 +58,12 @@ export class HttpInboundTransport implements InboundTransport {
       try {
         const message = req.body
         const encryptedMessage = JSON.parse(message)
-        await messageReceiver.receiveMessage(encryptedMessage, {
-          session,
+        agent.events.emit<AgentMessageReceivedEvent>(agent.context, {
+          type: AgentEventTypes.AgentMessageReceived,
+          payload: {
+            message: encryptedMessage,
+            session: session,
+          },
         })
 
         // If agent did not use session when processing message we need to send response here.
