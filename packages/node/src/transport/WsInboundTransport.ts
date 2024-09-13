@@ -6,9 +6,11 @@ import type {
   EncryptedMessage,
   AgentContext,
   AgentMessageReceivedEvent,
+  AgentMessageProcessedEvent,
 } from '@credo-ts/core'
 
 import { CredoError, TransportService, utils, AgentEventTypes } from '@credo-ts/core'
+import { filter, first, firstValueFrom } from 'rxjs'
 // eslint-disable-next-line import/no-named-as-default
 import WebSocket, { Server } from 'ws'
 
@@ -70,13 +72,24 @@ export class WsInboundTransport implements InboundTransport {
     socket.addEventListener('message', async (event: any) => {
       this.logger.debug('WebSocket message event received.', { url: event.target.url })
       try {
+        const encryptedMessage = JSON.parse(event.data)
         agent.events.emit<AgentMessageReceivedEvent>(agent.context, {
           type: AgentEventTypes.AgentMessageReceived,
           payload: {
-            message: JSON.parse(event.data),
+            message: encryptedMessage,
             session: session,
           },
         })
+
+        // Wait for message to be processed
+        await firstValueFrom(
+          agent.events.observable<AgentMessageProcessedEvent>(AgentEventTypes.AgentMessageProcessed).pipe(
+            filter((e) => e.type === AgentEventTypes.AgentMessageProcessed),
+            filter((e) => e.payload.message.id === encryptedMessage.id),
+            filter((e) => e.payload.message.type === encryptedMessage.type),
+            first()
+          )
+        )
       } catch (error) {
         this.logger.error(`Error processing message: ${error}`)
       }

@@ -5,12 +5,14 @@ import type {
   EncryptedMessage,
   AgentContext,
   AgentMessageReceivedEvent,
+  AgentMessageProcessedEvent,
 } from '@credo-ts/core'
 import type { Express, Request, Response } from 'express'
 import type { Server } from 'http'
 
 import { DidCommMimeType, CredoError, TransportService, utils, AgentEventTypes } from '@credo-ts/core'
 import express, { text } from 'express'
+import { filter, first, firstValueFrom } from 'rxjs'
 
 const supportedContentTypes: string[] = [DidCommMimeType.V0, DidCommMimeType.V1]
 
@@ -65,6 +67,16 @@ export class HttpInboundTransport implements InboundTransport {
             session: session,
           },
         })
+
+        // Wait for message to be processed
+        await firstValueFrom(
+          agent.events.observable<AgentMessageProcessedEvent>(AgentEventTypes.AgentMessageProcessed).pipe(
+            filter((e) => e.type === AgentEventTypes.AgentMessageProcessed),
+            filter((e) => e.payload.message.id === encryptedMessage.id),
+            filter((e) => e.payload.message.type === encryptedMessage.type),
+            first()
+          )
+        )
 
         // If agent did not use session when processing message we need to send response here.
         if (!res.headersSent) {
