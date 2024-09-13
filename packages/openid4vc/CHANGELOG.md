@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.5.11
+
+### Patch Changes
+
+- 6c2dd88: add support for cose_key as cryptographic_binding_methods_supported value
+  - @credo-ts/core@0.5.11
+
 ## 0.5.10
 
 ### Patch Changes
