@@ -10,9 +10,9 @@ import type {
 import type { Express, Request, Response } from 'express'
 import type { Server } from 'http'
 
-import { DidCommMimeType, CredoError, TransportService, utils, AgentEventTypes } from '@credo-ts/core'
+import { DidCommMimeType, CredoError, TransportService, utils, AgentEventTypes, deepEquality } from '@credo-ts/core'
 import express, { text } from 'express'
-import { first, firstValueFrom, ReplaySubject, timeout } from 'rxjs'
+import { filter, firstValueFrom, ReplaySubject, timeout } from 'rxjs'
 
 const supportedContentTypes: string[] = [DidCommMimeType.V0, DidCommMimeType.V1]
 
@@ -66,7 +66,8 @@ export class HttpInboundTransport implements InboundTransport {
 
         observable
           .pipe(
-            first((e) => e.type === AgentEventTypes.AgentMessageProcessed),
+            filter((e) => e.type === AgentEventTypes.AgentMessageProcessed),
+            filter((e) => deepEquality(e.payload.encryptedMessage, encryptedMessage)),
             timeout({
               first: 10000, // timeout after 10 seconds
               meta: 'HttpInboundTransport.start',

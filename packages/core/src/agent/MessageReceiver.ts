@@ -174,7 +174,7 @@ export class MessageReceiver {
       await session.close()
     }
 
-    await this.dispatcher.dispatch(messageContext)
+    await this.dispatcher.dispatch(messageContext, encryptedMessage)
   }
 
   /**

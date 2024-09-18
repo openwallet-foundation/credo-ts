@@ -8,6 +8,7 @@ import { CredoError } from '../error'
 import { Logger } from '../logger'
 import { ProblemReportError, ProblemReportReason } from '../modules/problem-reports'
 import { injectable, inject } from '../plugins'
+import { EncryptedMessage } from '../types'
 import { canHandleMessageType, parseMessageType } from '../utils/messageType'
 
 import { ProblemReportMessage } from './../modules/problem-reports/messages/ProblemReportMessage'
@@ -64,7 +65,7 @@ class Dispatcher {
     await next()
   }
 
-  public async dispatch(messageContext: InboundMessageContext): Promise<void> {
+  public async dispatch(messageContext: InboundMessageContext, encryptedMessage?: EncryptedMessage): Promise<void> {
     const { agentContext, connection, senderKey, recipientKey, message } = messageContext
 
     // Set default handler if available, middleware can still override the message handler
@@ -138,6 +139,7 @@ class Dispatcher {
         message,
         connection,
         receivedAt: messageContext.receivedAt,
+        encryptedMessage,
       },
     })
   }

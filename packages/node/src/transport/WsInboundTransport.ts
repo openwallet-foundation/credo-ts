@@ -9,8 +9,8 @@ import type {
   AgentMessageProcessedEvent,
 } from '@credo-ts/core'
 
-import { CredoError, TransportService, utils, AgentEventTypes } from '@credo-ts/core'
-import { first, firstValueFrom, ReplaySubject, timeout } from 'rxjs'
+import { CredoError, TransportService, utils, AgentEventTypes, deepEquality } from '@credo-ts/core'
+import { filter, firstValueFrom, ReplaySubject, timeout } from 'rxjs'
 // eslint-disable-next-line import/no-named-as-default
 import WebSocket, { Server } from 'ws'
 
@@ -79,7 +79,8 @@ export class WsInboundTransport implements InboundTransport {
 
         observable
           .pipe(
-            first((e) => e.type === AgentEventTypes.AgentMessageProcessed),
+            filter((e) => e.type === AgentEventTypes.AgentMessageProcessed),
+            filter((e) => deepEquality(e.payload.encryptedMessage, encryptedMessage)),
             timeout({
               first: 10000, // timeout after 10 seconds
               meta: 'WsInboundTransport.listenOnWebSocketMessages',

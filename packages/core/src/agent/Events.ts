@@ -2,6 +2,7 @@ import type { AgentMessage } from './AgentMessage'
 import type { TransportSession } from './TransportService'
 import type { OutboundMessageContext, OutboundMessageSendStatus } from './models'
 import type { ConnectionRecord } from '../modules/connections'
+import type { EncryptedMessage } from '../types'
 import type { Observable } from 'rxjs'
 
 import { filter } from 'rxjs'
@@ -45,6 +46,7 @@ export interface AgentMessageProcessedEvent extends BaseEvent {
     message: AgentMessage
     connection?: ConnectionRecord
     receivedAt?: Date
+    encryptedMessage?: EncryptedMessage
   }
 }
 
