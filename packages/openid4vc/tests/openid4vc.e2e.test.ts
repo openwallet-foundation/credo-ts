@@ -30,6 +30,7 @@ import {
   OpenId4VcHolderModule,
   OpenId4VcIssuanceSessionState,
   OpenId4VcIssuerModule,
+  OpenId4VcVerificationSessionRepository,
   OpenId4VcVerificationSessionState,
   OpenId4VcVerifierModule,
 } from '../src'
@@ -726,7 +727,7 @@ describe('OpenId4Vc', () => {
 
     const certificate = await verifier.agent.x509.createSelfSignedCertificate({
       key: await verifier.agent.wallet.createKey({ keyType: KeyType.Ed25519 }),
-      extensions: [[{ type: 'dns', value: 'example.com' }]],
+      extensions: [[{ type: 'dns', value: 'localhost:1234' }]],
     })
 
     const rawCertificate = certificate.toString('base64')
@@ -764,6 +765,9 @@ describe('OpenId4Vc', () => {
       ],
     } satisfies DifPresentationExchangeDefinitionV2
 
+    // Hack to make it work with x5c check
+    // @ts-ignore
+    verifier.agent.modules.openId4VcVerifier.config.options.baseUrl = verifier.agent.modules.openId4VcVerifier.config.options.baseUrl.replace('http://', 'https://')
     const { authorizationRequest, verificationSession } =
       await verifier.agent.modules.openId4VcVerifier.createAuthorizationRequest({
         verifierId: openIdVerifier.verifierId,
@@ -771,19 +775,28 @@ describe('OpenId4Vc', () => {
         requestSigner: {
           method: 'x5c',
           x5c: [rawCertificate],
-          issuer: 'https://example.com/hakuna/matadata',
         },
         presentationExchange: {
           definition: presentationDefinition,
         },
       })
 
-    expect(authorizationRequest).toEqual(
+    // Hack to make it work with x5c checks
+    verificationSession.authorizationRequestUri = verificationSession.authorizationRequestUri.replace('https', 'http')
+    const verificationSessionRepoitory = verifier.agent.dependencyManager.resolve(OpenId4VcVerificationSessionRepository)
+    await verificationSessionRepoitory.update(verifier.agent.context, verificationSession)
+
+    // Hack to make it work with x5c check
+    // @ts-ignore
+    verifier.agent.modules.openId4VcVerifier.config.options.baseUrl = verifier.agent.modules.openId4VcVerifier.config.options.baseUrl.replace('https://', 'http://')
+
+    expect(authorizationRequest.replace('https', 'http')).toEqual(
       `openid4vp://?request_uri=${encodeURIComponent(verificationSession.authorizationRequestUri)}`
     )
 
     const resolvedAuthorizationRequest = await holder.agent.modules.openId4VcHolder.resolveSiopAuthorizationRequest(
-      authorizationRequest
+      // hack to make it work on localhost
+      authorizationRequest.replace('https', 'http')
     )
 
     expect(resolvedAuthorizationRequest.presentationExchange?.credentialsForRequest).toEqual({
@@ -834,6 +847,9 @@ describe('OpenId4Vc', () => {
     const selectedCredentials = presentationExchangeService.selectCredentialsForRequest(
       resolvedAuthorizationRequest.presentationExchange.credentialsForRequest
     )
+
+    // Hack to make it work with x5c
+    resolvedAuthorizationRequest.authorizationRequest.responseURI = resolvedAuthorizationRequest.authorizationRequest.responseURI?.replace('https', 'http')
 
     const { serverResponse, submittedResponse } =
       await holder.agent.modules.openId4VcHolder.acceptSiopAuthorizationRequest({

@@ -64,7 +64,13 @@
     "ws": "^8.13.0"
   },
   "resolutions": {
-    "@types/node": "18.18.8"
+    "@types/node": "18.18.8",
+    "@sphereon/pex": "file:../../sphereon-pex-5.0.0-unstable.0-paradym-multi-vp.tgz",
+    "@sphereon/did-auth-siop": "file:../../sphereon-did-auth-siop-0.16.0-paradym-multi-vp.tgz",
+    "@sphereon/oid4vc-common": "0.16.1-next.29",
+    "@sphereon/oid4vci-client": "0.16.1-next.29",
+    "@sphereon/oid4vci-common": "0.16.1-next.29",
+    "@sphereon/oid4vci-issuer": "0.16.1-next.29"
   },
   "engines": {
     "node": ">=18"
