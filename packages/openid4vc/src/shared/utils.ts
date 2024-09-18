@@ -145,7 +145,6 @@ export async function openIdTokenIssuerToJwtIssuer(
       return {
         ...openId4VcTokenIssuer,
         alg,
-        clientIdScheme: 'x509_san_uri',
       }
     } else {
       if (!leafCertificate.sanDnsNames?.includes(getDomainFromUrl(issuer))) {
@@ -157,7 +156,6 @@ export async function openIdTokenIssuerToJwtIssuer(
       return {
         ...openId4VcTokenIssuer,
         alg,
-        clientIdScheme: 'x509_san_dns',
       }
     }
   } else if (openId4VcTokenIssuer.method === 'jwk') {
