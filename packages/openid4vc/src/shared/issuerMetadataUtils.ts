@@ -5,7 +5,7 @@ import type {
   OpenId4VciCredentialSupportedWithId,
 } from './models'
 import type { AgentContext, JwaSignatureAlgorithm } from '@credo-ts/core'
-import type { CredentialOfferFormat } from '@sphereon/oid4vci-common'
+import type { CredentialOfferFormatV1_0_11 } from '@sphereon/oid4vci-common'
 
 import { CredoError } from '@credo-ts/core'
 
@@ -190,7 +190,7 @@ export function credentialsSupportedV11ToV13(
  */
 export function getOfferedCredentials(
   agentContext: AgentContext,
-  offeredCredentials: Array<string | CredentialOfferFormat>,
+  offeredCredentials: Array<string | CredentialOfferFormatV1_0_11>,
   credentialsSupportedOrConfigurations: OpenId4VciCredentialConfigurationsSupported | OpenId4VciCredentialSupported[]
 ): {
   credentialsSupported: OpenId4VciCredentialSupportedWithId[]
@@ -205,9 +205,9 @@ export function getOfferedCredentials(
 
   const credentialConfigurationsSupported = Array.isArray(credentialsSupportedOrConfigurations)
     ? credentialsSupportedV11ToV13(
-        agentContext,
-        credentialsSupportedOrConfigurations.filter((s): s is OpenId4VciCredentialSupportedWithId => s.id !== undefined)
-      )
+      agentContext,
+      credentialsSupportedOrConfigurations.filter((s): s is OpenId4VciCredentialSupportedWithId => s.id !== undefined)
+    )
     : credentialsSupportedOrConfigurations
 
   for (const offeredCredential of offeredCredentials) {
