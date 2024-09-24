@@ -6,12 +6,6 @@ settings:
 
 overrides:
   '@types/node': 18.18.8
-  '@sphereon/pex': file:../../sphereon-pex-5.0.0-unstable.0-paradym-multi-vp.tgz
-  '@sphereon/did-auth-siop': file:../../sphereon-did-auth-siop-0.16.0-paradym-multi-vp.tgz
-  '@sphereon/oid4vc-common': 0.16.1-next.29
-  '@sphereon/oid4vci-client': 0.16.1-next.29
-  '@sphereon/oid4vci-common': 0.16.1-next.29
-  '@sphereon/oid4vci-issuer': 0.16.1-next.29
 
 importers:
 
@@ -454,14 +448,14 @@ importers:
         specifier: ^0.7.0
         version: 0.7.2
       '@sphereon/pex':
-        specifier: file:../../sphereon-pex-5.0.0-unstable.0-paradym-multi-vp.tgz
-        version: file:sphereon-pex-5.0.0-unstable.0-paradym-multi-vp.tgz(ts-node@10.9.2(@types/node@18.18.8)(typescript@5.5.4))
+        specifier: ^5.0.0-unstable.7
+        version: 5.0.0-unstable.7(ts-node@10.9.2(@types/node@18.18.8)(typescript@5.5.4))
       '@sphereon/pex-models':
         specifier: ^2.3.1
         version: 2.3.1
       '@sphereon/ssi-types':
-        specifier: 0.29.1-next.122
-        version: 0.29.1-next.122(ts-node@10.9.2(@types/node@18.18.8)(typescript@5.5.4))
+        specifier: 0.29.1-unstable.121
+        version: 0.29.1-unstable.121(ts-node@10.9.2(@types/node@18.18.8)(typescript@5.5.4))
       '@stablelib/ed25519':
         specifier: ^1.0.2
         version: 1.0.3
@@ -690,23 +684,23 @@ importers:
         specifier: workspace:*
         version: link:../core
       '@sphereon/did-auth-siop':
-        specifier: file:../../sphereon-did-auth-siop-0.16.0-paradym-multi-vp.tgz
-        version: file:sphereon-did-auth-siop-0.16.0-paradym-multi-vp.tgz(ts-node@10.9.2(@types/node@18.18.8)(typescript@5.5.4))
+        specifier: 0.16.1-next.50
+        version: 0.16.1-next.50(ts-node@10.9.2(@types/node@18.18.8)(typescript@5.5.4))
       '@sphereon/oid4vc-common':
-        specifier: 0.16.1-next.29
-        version: 0.16.1-next.29
+        specifier: 0.16.1-next.50
+        version: 0.16.1-next.50
       '@sphereon/oid4vci-client':
-        specifier: 0.16.1-next.29
-        version: 0.16.1-next.29
+        specifier: 0.16.1-next.50
+        version: 0.16.1-next.50
       '@sphereon/oid4vci-common':
-        specifier: 0.16.1-next.29
-        version: 0.16.1-next.29
+        specifier: 0.16.1-next.50
+        version: 0.16.1-next.50
       '@sphereon/oid4vci-issuer':
-        specifier: 0.16.1-next.29
-        version: 0.16.1-next.29
+        specifier: 0.16.1-next.50
+        version: 0.16.1-next.50
       '@sphereon/ssi-types':
-        specifier: 0.29.1-next.122
-        version: 0.29.1-next.122(ts-node@10.9.2(@types/node@18.18.8)(typescript@5.5.4))
+        specifier: 0.29.1-unstable.121
+        version: 0.29.1-unstable.121(ts-node@10.9.2(@types/node@18.18.8)(typescript@5.5.4))
       class-transformer:
         specifier: ^0.5.1
         version: 0.5.1
@@ -2450,9 +2444,8 @@ packages:
     resolution: {integrity: sha512-kQpk267uxB19X3X2T1mvNMjyvIEonpNSHrMlK5ZaBU6aZxw7wPbpgKJOjHN3+/GPVpXgAV9soVT2oyHpLkLtyw==}
     engines: {node: '>= 8'}
 
-  '@sphereon/did-auth-siop@file:sphereon-did-auth-siop-0.16.0-paradym-multi-vp.tgz':
-    resolution: {integrity: sha512-IfLY51iKvsp7b7CH+g4XvkWE6A1S0x+Mnt14+ZacEdyUgz41LK4ysfNxup5wVlK2DNAiEYBcUXEkmnSdo9kIMg==, tarball: file:sphereon-did-auth-siop-0.16.0-paradym-multi-vp.tgz}
-    version: 0.16.0-paradym-multi-vp
+  '@sphereon/did-auth-siop@0.16.1-next.50':
+    resolution: {integrity: sha512-JrQg6LNyV7jeqmqcAB6d/tFOufF+CrvFH5WZWHX/wA7zBNKN9M6vLDeMcfhnpbUC58b9XUUlT3XWUXXNrT6ZCA==}
     engines: {node: '>=18'}
 
   '@sphereon/did-uni-client@0.6.3':
@@ -2460,22 +2453,21 @@ packages:
 
   '@sphereon/kmp-mdl-mdoc@0.2.0-SNAPSHOT.22':
     resolution: {integrity: sha512-uAZZExVy+ug9JLircejWa5eLtAZ7bnBP6xb7DO2+86LRsHNLh2k2jMWJYxp+iWtGHTsh6RYsZl14ScQLvjiQ/A==}
-    bundledDependencies: []
 
-  '@sphereon/oid4vc-common@0.16.1-next.29':
-    resolution: {integrity: sha512-Y5PALbBdHrMLS0iyPXgIuQY+GWzjBk23NlRTcL0rLSJj8Fngxj1SSAfKWt4XBKOd0ns8y8obQhzls8tR0F7b9w==}
+  '@sphereon/oid4vc-common@0.16.1-next.50':
+    resolution: {integrity: sha512-ZekAd2mmuNGUq8KzXK3VjJesAaqzUI7Jr4yfRrQo3HSs89ZGkiTRz+W8c8+jG5bD366Zm2lr38Ln5/suQ+JYbQ==}
     engines: {node: '>=18'}
 
-  '@sphereon/oid4vci-client@0.16.1-next.29':
-    resolution: {integrity: sha512-iwvGmgpGpC0r0DuLumhSHGM8Hj09Uajgv6YH0ZJ4N+qCmnxl7CAA1sGmZLsgKU23hKi3+JknLAONNK4UKE3KIw==}
+  '@sphereon/oid4vci-client@0.16.1-next.50':
+    resolution: {integrity: sha512-uy163VC5uuGgdlmQqMnfoy7W4QO8sUvQZcmWAOBPC+A7dxTlxH7Q8GsMqujYLJ/ZQ8YbRqPxudP92l2CF+nIlg==}
     engines: {node: '>=18'}
 
-  '@sphereon/oid4vci-common@0.16.1-next.29':
-    resolution: {integrity: sha512-7UAtbW0ss8xiRTaAsLpzCideX2yGxXg+eljZwbqIJHzTVXYe0uELaXzgAg7ErvMYVIoUy0F42QRKVcJL/K/diw==}
+  '@sphereon/oid4vci-common@0.16.1-next.50':
+    resolution: {integrity: sha512-WvB06M1YMsLH0/IFMX11IOMZholTfUZ3lEQPacd2Xj09e93+8aegEjTu3o3sdOcj5hxDP8mQiv3wYNw43aQcew==}
     engines: {node: '>=18'}
 
-  '@sphereon/oid4vci-issuer@0.16.1-next.29':
-    resolution: {integrity: sha512-7WxeTMifDKUFFD1MSIt/js2CiNXPhITuQbsqGcoTqb0v0Ghr/IhH3e1ksayZvgLoavEFy44VdJxZaH5jlZZN9Q==}
+  '@sphereon/oid4vci-issuer@0.16.1-next.50':
+    resolution: {integrity: sha512-8nnb5drVyCnCWXuTTX6AtwFGjYC2FYLA/4Do10jbZxDJxaJFk3eUSAKkBEBZrwen9BUyqFcRcLpELnZ3uD563Q==}
     engines: {node: '>=18'}
     peerDependencies:
       awesome-qr: ^2.1.5-rc.0
@@ -2486,9 +2478,12 @@ packages:
   '@sphereon/pex-models@2.3.1':
     resolution: {integrity: sha512-SByU4cJ0XYA6VZQ/L6lsSiRcFtBPHbFioCeQ4GP7/W/jQ+PSBD7uK2oTnKQ9/0iEiMK/6JYqhKgLs4a9UX3UTQ==}
 
-  '@sphereon/pex@file:sphereon-pex-5.0.0-unstable.0-paradym-multi-vp.tgz':
-    resolution: {integrity: sha512-T/fjF6+c6YIT+eLlb0zDlay1FsfE/DMSqgzWF7F07N1Qag96Ugps7vUbvU8nJ+yCnfHWtKQz2du0vNdIjhy0ug==, tarball: file:sphereon-pex-5.0.0-unstable.0-paradym-multi-vp.tgz}
-    version: 5.0.0-unstable.0-paradym-multi-vp
+  '@sphereon/pex@5.0.0-unstable.2':
+    resolution: {integrity: sha512-mA6lY/OBKKzsh4Jf4btm9Tj4ymVsX6xuVATn85LurD4bt3fhZwNJMkxhFy4tT/QyAtp05E4aaEq0wTVvOjVa7w==}
+    engines: {node: '>=18'}
+
+  '@sphereon/pex@5.0.0-unstable.7':
+    resolution: {integrity: sha512-E+pehf6E6JN/vSELZbnIvnNQqXEKjbijCCzov2mXqFWb3WyBn7B5RY7I3v9cCFnN+8r3W3E/Hb9jAJej1DIRCg==}
     engines: {node: '>=18'}
 
   '@sphereon/ssi-sdk-ext.did-utils@0.24.1-unstable.112':
@@ -2514,9 +2509,6 @@ packages:
 
   '@sphereon/ssi-sdk.core@0.29.1-unstable.161':
     resolution: {integrity: sha512-3E/KsjTywT9BzP5bMi41JVTu9nTiu2ekwNSPobF9tAJnHJv+LkjCJ59xA8jtbq/Xe4iq3xRMU17yBvpZXN2W4A==}
-
-  '@sphereon/ssi-types@0.29.1-next.122':
-    resolution: {integrity: sha512-/6wV0JU5lJgevtMeMoy9bFsyQVszQT7BP3VVpbfHLjZV/v4Mwc00j2CGN2piGGyI2oK0hOtdO3pok3UKZ7m8oA==}
 
   '@sphereon/ssi-types@0.29.1-unstable.121':
     resolution: {integrity: sha512-g5qt2cRa/9t3WrBWMneGOrwjyU2Mqdh4LlKeO6japli5bgl5D6lim91F++m1iIIhOYP4dqPpk5PLjy9XQlLyEw==}
@@ -10190,13 +10182,13 @@ snapshots:
 
   '@sovpro/delimited-stream@1.1.0': {}
 
-  '@sphereon/did-auth-siop@file:sphereon-did-auth-siop-0.16.0-paradym-multi-vp.tgz(ts-node@10.9.2(@types/node@18.18.8)(typescript@5.5.4))':
+  '@sphereon/did-auth-siop@0.16.1-next.50(ts-node@10.9.2(@types/node@18.18.8)(typescript@5.5.4))':
     dependencies:
       '@astronautlabs/jsonpath': 1.1.2
       '@sphereon/did-uni-client': 0.6.3
       '@sphereon/kmp-mdl-mdoc': 0.2.0-SNAPSHOT.22
-      '@sphereon/oid4vc-common': 0.16.1-next.29
-      '@sphereon/pex': file:sphereon-pex-5.0.0-unstable.0-paradym-multi-vp.tgz(ts-node@10.9.2(@types/node@18.18.8)(typescript@5.5.4))
+      '@sphereon/oid4vc-common': 0.16.1-next.50
+      '@sphereon/pex': 5.0.0-unstable.2(ts-node@10.9.2(@types/node@18.18.8)(typescript@5.5.4))
       '@sphereon/pex-models': 2.3.1
       '@sphereon/ssi-types': 0.29.1-unstable.121(ts-node@10.9.2(@types/node@18.18.8)(typescript@5.5.4))
       '@sphereon/wellknown-dids-client': 0.1.3
@@ -10242,7 +10234,7 @@ snapshots:
       '@js-joda/timezone': 2.3.0(@js-joda/core@5.6.3)
       format-util: 1.0.5
 
-  '@sphereon/oid4vc-common@0.16.1-next.29':
+  '@sphereon/oid4vc-common@0.16.1-next.50':
     dependencies:
       '@sphereon/ssi-types': 0.29.1-unstable.208
       jwt-decode: 4.0.0
@@ -10252,10 +10244,10 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@sphereon/oid4vci-client@0.16.1-next.29':
+  '@sphereon/oid4vci-client@0.16.1-next.50':
     dependencies:
-      '@sphereon/oid4vc-common': 0.16.1-next.29
-      '@sphereon/oid4vci-common': 0.16.1-next.29
+      '@sphereon/oid4vc-common': 0.16.1-next.50
+      '@sphereon/oid4vci-common': 0.16.1-next.50
       '@sphereon/ssi-types': 0.29.1-unstable.208
       cross-fetch: 3.1.8
       debug: 4.3.6
@@ -10263,9 +10255,9 @@ snapshots:
       - encoding
       - supports-color
 
-  '@sphereon/oid4vci-common@0.16.1-next.29':
+  '@sphereon/oid4vci-common@0.16.1-next.50':
     dependencies:
-      '@sphereon/oid4vc-common': 0.16.1-next.29
+      '@sphereon/oid4vc-common': 0.16.1-next.50
       '@sphereon/ssi-types': 0.29.1-unstable.208
       cross-fetch: 3.1.8
       debug: 4.3.6
@@ -10276,10 +10268,10 @@ snapshots:
       - encoding
       - supports-color
 
-  '@sphereon/oid4vci-issuer@0.16.1-next.29':
+  '@sphereon/oid4vci-issuer@0.16.1-next.50':
     dependencies:
-      '@sphereon/oid4vc-common': 0.16.1-next.29
-      '@sphereon/oid4vci-common': 0.16.1-next.29
+      '@sphereon/oid4vc-common': 0.16.1-next.50
+      '@sphereon/oid4vci-common': 0.16.1-next.50
       '@sphereon/ssi-types': 0.29.1-unstable.208
       uuid: 9.0.1
     transitivePeerDependencies:
@@ -10288,7 +10280,42 @@ snapshots:
 
   '@sphereon/pex-models@2.3.1': {}
 
-  '@sphereon/pex@file:sphereon-pex-5.0.0-unstable.0-paradym-multi-vp.tgz(ts-node@10.9.2(@types/node@18.18.8)(typescript@5.5.4))':
+  '@sphereon/pex@5.0.0-unstable.2(ts-node@10.9.2(@types/node@18.18.8)(typescript@5.5.4))':
+    dependencies:
+      '@astronautlabs/jsonpath': 1.1.2
+      '@sd-jwt/decode': 0.6.1
+      '@sd-jwt/present': 0.6.1
+      '@sd-jwt/types': 0.6.1
+      '@sphereon/pex-models': 2.3.1
+      '@sphereon/ssi-types': 0.29.1-unstable.121(ts-node@10.9.2(@types/node@18.18.8)(typescript@5.5.4))
+      ajv: 8.17.1
+      ajv-formats: 2.1.1(ajv@8.17.1)
+      jwt-decode: 3.1.2
+      nanoid: 3.3.7
+      string.prototype.matchall: 4.0.11
+      uint8arrays: 3.1.1
+    transitivePeerDependencies:
+      - '@google-cloud/spanner'
+      - '@sap/hana-client'
+      - better-sqlite3
+      - encoding
+      - hdb-pool
+      - ioredis
+      - mongodb
+      - mssql
+      - mysql2
+      - oracledb
+      - pg
+      - pg-native
+      - pg-query-stream
+      - redis
+      - sql.js
+      - sqlite3
+      - supports-color
+      - ts-node
+      - typeorm-aurora-data-api-driver
+
+  '@sphereon/pex@5.0.0-unstable.7(ts-node@10.9.2(@types/node@18.18.8)(typescript@5.5.4))':
     dependencies:
       '@astronautlabs/jsonpath': 1.1.2
       '@sd-jwt/decode': 0.6.1
@@ -10508,35 +10535,6 @@ snapshots:
     transitivePeerDependencies:
       - encoding
       - supports-color
-
-  '@sphereon/ssi-types@0.29.1-next.122(ts-node@10.9.2(@types/node@18.18.8)(typescript@5.5.4))':
-    dependencies:
-      '@sd-jwt/decode': 0.6.1
-      '@sphereon/kmp-mdl-mdoc': 0.2.0-SNAPSHOT.22
-      '@sphereon/ssi-sdk-ext.jwt-service': 0.24.1-unstable.112(ts-node@10.9.2(@types/node@18.18.8)(typescript@5.5.4))
-      debug: 4.3.6
-      events: 3.3.0
-      jwt-decode: 3.1.2
-    transitivePeerDependencies:
-      - '@google-cloud/spanner'
-      - '@sap/hana-client'
-      - better-sqlite3
-      - encoding
-      - hdb-pool
-      - ioredis
-      - mongodb
-      - mssql
-      - mysql2
-      - oracledb
-      - pg
-      - pg-native
-      - pg-query-stream
-      - redis
-      - sql.js
-      - sqlite3
-      - supports-color
-      - ts-node
-      - typeorm-aurora-data-api-driver
 
   '@sphereon/ssi-types@0.29.1-unstable.121(ts-node@10.9.2(@types/node@18.18.8)(typescript@5.5.4))':
     dependencies:

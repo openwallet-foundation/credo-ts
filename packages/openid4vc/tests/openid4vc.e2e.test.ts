@@ -434,7 +434,6 @@ describe('OpenId4Vc', () => {
       })
 
     expect(submittedResponse1).toEqual({
-      expires_in: 6000,
       id_token: expect.any(String),
       state: expect.any(String),
     })
@@ -606,7 +605,6 @@ describe('OpenId4Vc', () => {
       })
 
     expect(submittedResponse1).toEqual({
-      expires_in: 6000,
       presentation_submission: {
         definition_id: 'OpenBadgeCredential',
         descriptor_map: [
@@ -767,7 +765,9 @@ describe('OpenId4Vc', () => {
 
     // Hack to make it work with x5c check
     // @ts-ignore
-    verifier.agent.modules.openId4VcVerifier.config.options.baseUrl = verifier.agent.modules.openId4VcVerifier.config.options.baseUrl.replace('http://', 'https://')
+    verifier.agent.modules.openId4VcVerifier.config.options.baseUrl =
+      // @ts-ignore
+      verifier.agent.modules.openId4VcVerifier.config.options.baseUrl.replace('http://', 'https://')
     const { authorizationRequest, verificationSession } =
       await verifier.agent.modules.openId4VcVerifier.createAuthorizationRequest({
         verifierId: openIdVerifier.verifierId,
@@ -783,12 +783,16 @@ describe('OpenId4Vc', () => {
 
     // Hack to make it work with x5c checks
     verificationSession.authorizationRequestUri = verificationSession.authorizationRequestUri.replace('https', 'http')
-    const verificationSessionRepoitory = verifier.agent.dependencyManager.resolve(OpenId4VcVerificationSessionRepository)
+    const verificationSessionRepoitory = verifier.agent.dependencyManager.resolve(
+      OpenId4VcVerificationSessionRepository
+    )
     await verificationSessionRepoitory.update(verifier.agent.context, verificationSession)
 
     // Hack to make it work with x5c check
     // @ts-ignore
-    verifier.agent.modules.openId4VcVerifier.config.options.baseUrl = verifier.agent.modules.openId4VcVerifier.config.options.baseUrl.replace('https://', 'http://')
+    verifier.agent.modules.openId4VcVerifier.config.options.baseUrl =
+      // @ts-ignore
+      verifier.agent.modules.openId4VcVerifier.config.options.baseUrl.replace('https://', 'http://')
 
     expect(authorizationRequest.replace('https', 'http')).toEqual(
       `openid4vp://?request_uri=${encodeURIComponent(verificationSession.authorizationRequestUri)}`
@@ -849,7 +853,8 @@ describe('OpenId4Vc', () => {
     )
 
     // Hack to make it work with x5c
-    resolvedAuthorizationRequest.authorizationRequest.responseURI = resolvedAuthorizationRequest.authorizationRequest.responseURI?.replace('https', 'http')
+    resolvedAuthorizationRequest.authorizationRequest.responseURI =
+      resolvedAuthorizationRequest.authorizationRequest.responseURI?.replace('https', 'http')
 
     const { serverResponse, submittedResponse } =
       await holder.agent.modules.openId4VcHolder.acceptSiopAuthorizationRequest({
@@ -862,7 +867,6 @@ describe('OpenId4Vc', () => {
     // path_nested should not be used for sd-jwt
     expect(submittedResponse.presentation_submission?.descriptor_map[0].path_nested).toBeUndefined()
     expect(submittedResponse).toEqual({
-      expires_in: 6000,
       presentation_submission: {
         definition_id: 'OpenBadgeCredential',
         descriptor_map: [

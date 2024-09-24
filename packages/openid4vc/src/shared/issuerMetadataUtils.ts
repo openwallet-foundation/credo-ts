@@ -205,9 +205,9 @@ export function getOfferedCredentials(
 
   const credentialConfigurationsSupported = Array.isArray(credentialsSupportedOrConfigurations)
     ? credentialsSupportedV11ToV13(
-      agentContext,
-      credentialsSupportedOrConfigurations.filter((s): s is OpenId4VciCredentialSupportedWithId => s.id !== undefined)
-    )
+        agentContext,
+        credentialsSupportedOrConfigurations.filter((s): s is OpenId4VciCredentialSupportedWithId => s.id !== undefined)
+      )
     : credentialsSupportedOrConfigurations
 
   for (const offeredCredential of offeredCredentials) {

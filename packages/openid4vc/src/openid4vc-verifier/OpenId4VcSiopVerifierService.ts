@@ -83,7 +83,7 @@ export class OpenId4VcSiopVerifierService {
     private openId4VcVerifierRepository: OpenId4VcVerifierRepository,
     private config: OpenId4VcVerifierModuleConfig,
     private openId4VcVerificationSessionRepository: OpenId4VcVerificationSessionRepository
-  ) { }
+  ) {}
 
   public async createAuthorizationRequest(
     agentContext: AgentContext,
@@ -103,9 +103,9 @@ export class OpenId4VcSiopVerifierService {
     const jwtIssuer =
       options.requestSigner.method === 'x5c'
         ? await openIdTokenIssuerToJwtIssuer(agentContext, {
-          ...options.requestSigner,
-          issuer: authorizationResponseUrl,
-        })
+            ...options.requestSigner,
+            issuer: authorizationResponseUrl,
+          })
         : await openIdTokenIssuerToJwtIssuer(agentContext, options.requestSigner)
 
     let clientIdScheme: ClientIdScheme

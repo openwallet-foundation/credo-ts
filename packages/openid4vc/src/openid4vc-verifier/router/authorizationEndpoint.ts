@@ -23,10 +23,15 @@ export function configureAuthorizationEndpoint(router: Router, config: OpenId4Vc
       const openId4VcVerifierService = agentContext.dependencyManager.resolve(OpenId4VcSiopVerifierService)
 
       const authorizationResponse: AuthorizationResponsePayload = request.body
-      if (authorizationResponse.presentation_submission) authorizationResponse.presentation_submission = JSON.parse(request.body.presentation_submission)
+      if (authorizationResponse.presentation_submission)
+        authorizationResponse.presentation_submission = JSON.parse(request.body.presentation_submission)
 
       // This feels hacky, and should probably be moved to OID4VP lib. However the OID4VP spec allows either object, string, or array...
-      if (authorizationResponse.vp_token && typeof authorizationResponse.vp_token === 'string' && (authorizationResponse.vp_token.startsWith('{') || authorizationResponse.vp_token.startsWith('['))) {
+      if (
+        authorizationResponse.vp_token &&
+        typeof authorizationResponse.vp_token === 'string' &&
+        (authorizationResponse.vp_token.startsWith('{') || authorizationResponse.vp_token.startsWith('['))
+      ) {
         authorizationResponse.vp_token = JSON.parse(authorizationResponse.vp_token)
       }
 
