@@ -5,7 +5,7 @@ import { W3cCredentialsModule } from '../W3cCredentialsModule'
 import { W3cCredentialsModuleConfig } from '../W3cCredentialsModuleConfig'
 import { SignatureSuiteRegistry, SignatureSuiteToken } from '../data-integrity/SignatureSuiteRegistry'
 import { W3cJsonLdCredentialService } from '../data-integrity/W3cJsonLdCredentialService'
-import { Ed25519Signature2018 } from '../data-integrity/signature-suites'
+import { Ed25519Signature2018, Ed25519Signature2020 } from '../data-integrity/signature-suites'
 import { W3cJwtCredentialService } from '../jwt-vc'
 import { W3cCredentialRepository } from '../repository'
 
@@ -27,13 +27,19 @@ describe('W3cCredentialsModule', () => {
     expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(W3cCredentialRepository)
     expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(SignatureSuiteRegistry)
 
-    expect(dependencyManager.registerInstance).toHaveBeenCalledTimes(2)
+    expect(dependencyManager.registerInstance).toHaveBeenCalledTimes(3)
     expect(dependencyManager.registerInstance).toHaveBeenCalledWith(W3cCredentialsModuleConfig, module.config)
 
     expect(dependencyManager.registerInstance).toHaveBeenCalledWith(SignatureSuiteToken, {
       suiteClass: Ed25519Signature2018,
       verificationMethodTypes: ['Ed25519VerificationKey2018', 'Ed25519VerificationKey2020'],
       proofType: 'Ed25519Signature2018',
+      keyTypes: [KeyType.Ed25519],
+    })
+    expect(dependencyManager.registerInstance).toHaveBeenCalledWith(SignatureSuiteToken, {
+      suiteClass: Ed25519Signature2020,
+      verificationMethodTypes: ['Ed25519VerificationKey2020'],
+      proofType: 'Ed25519Signature2020',
       keyTypes: [KeyType.Ed25519],
     })
   })
