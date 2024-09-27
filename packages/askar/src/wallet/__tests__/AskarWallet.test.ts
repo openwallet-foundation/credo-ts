@@ -19,6 +19,7 @@ import {
   TypedArrayEncoder,
   KeyDerivationMethod,
   Buffer,
+  JsonEncoder,
 } from '@credo-ts/core'
 import { Store } from '@hyperledger/aries-askar-shared'
 
@@ -169,6 +170,46 @@ describe('AskarWallet basic operations', () => {
       key: k256Key,
     })
     await expect(askarWallet.verify({ key: k256Key, data: message, signature })).resolves.toStrictEqual(true)
+  })
+
+  test('Encrypt and decrypt using JWE ECDH-ES', async () => {
+    const recipientKey = await askarWallet.createKey({
+      keyType: KeyType.P256,
+    })
+
+    const apv = TypedArrayEncoder.toBase64URL(TypedArrayEncoder.fromString('nonce-from-auth-request'))
+    const apu = TypedArrayEncoder.toBase64URL(TypedArrayEncoder.fromString(await askarWallet.generateNonce()))
+
+    const compactJwe = await askarWallet.directEncryptCompactJweEcdhEs({
+      data: JsonEncoder.toBuffer({ vp_token: ['something'] }),
+      apu,
+      apv,
+      encryptionAlgorithm: 'A256GCM',
+      header: {
+        kid: 'some-kid',
+      },
+      recipientKey,
+    })
+
+    const { data, header } = await askarWallet.directDecryptCompactJweEcdhEs({
+      compactJwe,
+      recipientKey,
+    })
+
+    expect(header).toEqual({
+      kid: 'some-kid',
+      apv,
+      apu,
+      enc: 'A256GCM',
+      alg: 'ECDH-ES',
+      epk: {
+        kty: 'EC',
+        crv: 'P-256',
+        x: expect.any(String),
+        y: expect.any(String),
+      },
+    })
+    expect(JsonEncoder.fromBuffer(data)).toEqual({ vp_token: ['something'] })
   })
 })
 
