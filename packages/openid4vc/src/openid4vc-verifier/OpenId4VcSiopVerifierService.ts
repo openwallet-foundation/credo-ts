@@ -11,6 +11,7 @@ import type { OpenId4VcSiopAuthorizationResponsePayload } from '../shared'
 import type {
   AgentContext,
   DifPresentationExchangeDefinition,
+  JwkJson,
   Query,
   QueryOptions,
   RecordSavedEvent,
@@ -38,6 +39,7 @@ import {
   X509Service,
   getDomainFromUrl,
   KeyType,
+  getJwkFromKey,
 } from '@credo-ts/core'
 import {
   AuthorizationRequest,
@@ -73,16 +75,6 @@ import {
 } from './repository'
 import { OpenId4VcRelyingPartyEventHandler } from './repository/OpenId4VcRelyingPartyEventEmitter'
 import { OpenId4VcRelyingPartySessionManager } from './repository/OpenId4VcRelyingPartySessionManager'
-
-export const ISO_MDL_7_EPHEMERAL_READER_PUBLIC_KEY_JWK = {
-  kty: 'EC',
-  use: 'enc',
-  crv: 'P-256',
-  x: 'xVLtZaPPK-xvruh1fEClNVTR6RCZBsQai2-DrnyKkxg',
-  y: '-5-QtFqJqGwOjEL3Ut89nrE0MeaUp5RozksKHpBiyw0',
-  alg: 'ECDH-ES',
-  kid: 'P8p0virRlh6fAkh5-YSeHt4EIv-hFGneYk14d8DF51w',
-}
 
 /**
  * @internal
@@ -498,10 +490,12 @@ export class OpenId4VcSiopVerifierService {
         ? SphereonResponseMode.DIRECT_POST
         : SphereonResponseMode.DIRECT_POST_JWT
 
-    const jarmKey =
-      mode === SphereonResponseMode.DIRECT_POST_JWT
-        ? await agentContext.wallet.createKey({ keyType: KeyType.P256 })
-        : undefined
+    let jarmEncryptionJwk: (JwkJson & { kid: string; use: 'enc' }) | undefined
+
+    if (mode === SphereonResponseMode.DIRECT_POST_JWT) {
+      const key = await agentContext.wallet.createKey({ keyType: KeyType.P256 })
+      jarmEncryptionJwk = { ...getJwkFromKey(key).toJson(), kid: key.fingerprint, use: 'enc' }
+    }
 
     builder
       .withResponseUri(authorizationResponseUrl)
@@ -526,7 +520,7 @@ export class OpenId4VcSiopVerifierService {
 
       // TODO: we should probably allow some dynamic values here
       .withClientMetadata({
-        jwks: jarmKey ? { keys: [ISO_MDL_7_EPHEMERAL_READER_PUBLIC_KEY_JWK] } : undefined,
+        jwks: jarmEncryptionJwk ? { keys: [jarmEncryptionJwk] } : undefined,
         client_id: clientId,
         client_id_scheme: clientIdScheme,
         passBy: PassBy.VALUE,

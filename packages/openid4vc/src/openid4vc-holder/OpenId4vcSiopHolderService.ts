@@ -3,8 +3,7 @@ import type {
   OpenId4VcSiopResolvedAuthorizationRequest,
 } from './OpenId4vcSiopHolderServiceOptions'
 import type { OpenId4VcJwtIssuer } from '../shared'
-import type { AgentContext, VerifiablePresentation } from '@credo-ts/core'
-import type { JoseJweEncryptJwt } from '@protokoll/jose'
+import type { AgentContext, JwkJson, VerifiablePresentation } from '@credo-ts/core'
 import type {
   AuthorizationResponsePayload,
   PresentationExchangeResponseOpts,
@@ -13,6 +12,7 @@ import type {
 } from '@sphereon/did-auth-siop'
 
 import {
+  Buffer,
   CredoError,
   DifPresentationExchangeService,
   DifPresentationExchangeSubmissionLocation,
@@ -20,32 +20,14 @@ import {
   W3cJsonLdVerifiablePresentation,
   W3cJwtVerifiablePresentation,
   asArray,
+  getJwkFromJson,
   injectable,
   parseDid,
 } from '@credo-ts/core'
 import { OP, ResponseIss, ResponseMode, ResponseType, SupportedVersion, VPTokenLocation } from '@sphereon/did-auth-siop'
-import * as jose from 'jose'
 
 import { getSphereonVerifiablePresentation } from '../shared/transform'
 import { getCreateJwtCallback, getVerifyJwtCallback, openIdTokenIssuerToJwtIssuer } from '../shared/utils'
-
-const encryptJwt: JoseJweEncryptJwt = async (input) => {
-  const { payload, protectedHeader, jwk, alg, keyManagementParameters } = input
-  const encode = TextEncoder.prototype.encode.bind(new TextEncoder())
-  const recipientPublicKey = await jose.importJWK(jwk, alg)
-
-  const joseEncryptJwt = new jose.EncryptJWT(payload).setProtectedHeader(protectedHeader)
-
-  if (keyManagementParameters) {
-    joseEncryptJwt.setKeyManagementParameters({
-      apu: encode(keyManagementParameters.apu),
-      apv: encode(keyManagementParameters.apv),
-    })
-  }
-
-  const jwe = await joseEncryptJwt.encrypt(recipientPublicKey)
-  return { jwe }
-}
 
 @injectable()
 export class OpenId4VcSiopHolderService {
@@ -175,19 +157,12 @@ export class OpenId4VcSiopHolderService {
       const { authorizationResponsePayload, requestObjectPayload } = opts
 
       const jwk = await OP.extractEncJwksFromClientMetadata(requestObjectPayload.client_metadata)
-      if (!jwk.alg) {
-        throw new CredoError(
-          'Missing alg in jwk. Cannot determine encryption algorithm, for creating the JARM response.'
-        )
+      if (!jwk.kty) {
+        throw new CredoError('Missing kty in jwk.')
       }
-      const { jwe } = await encryptJwt({
-        jwk,
+      const jwe = await this.encryptJarmResponse(agentContext, {
+        jwkJson: { ...jwk, kty: jwk.kty },
         payload: authorizationResponsePayload,
-        protectedHeader: {
-          alg: jwk.alg,
-          enc: 'A256GCM', // TODO:
-          kid: jwk.kid,
-        },
       })
 
       return { response: jwe }
@@ -329,5 +304,34 @@ export class OpenId4VcSiopHolderService {
         ].join('\n')
       )
     }
+  }
+
+  private async encryptJarmResponse(
+    agentContext: AgentContext,
+    options: { jwkJson: JwkJson; payload: Record<string, unknown> }
+  ) {
+    const { payload, jwkJson } = options
+    const jwk = getJwkFromJson(jwkJson)
+    const key = jwk.key
+
+    if (!agentContext.wallet.directEncryptCompactJweEcdhEs) {
+      throw new CredoError(
+        'Cannot decrypt Jarm Response, wallet does not support directEncryptCompactJweEcdhEs. You need to upgrade your wallet implementation.'
+      )
+    }
+
+    const data = Buffer.from(JSON.stringify(payload))
+    const jwe = await agentContext.wallet.directEncryptCompactJweEcdhEs({
+      data,
+      recipientKey: key,
+      header: {
+        alg: jwkJson.alg,
+        kid: jwkJson.kid,
+        enc: 'A256GCM',
+      },
+      encryptionAlgorithm: 'A256GCM',
+    })
+
+    return jwe
   }
 }

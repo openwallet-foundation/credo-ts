@@ -238,7 +238,7 @@ importers:
         version: link:../core
       '@sphereon/pex-models':
         specifier: ^2.2.4
-        version: 2.2.4
+        version: 2.3.1
       big-integer:
         specifier: ^1.6.51
         version: 1.6.52
@@ -416,7 +416,7 @@ importers:
         version: 4.0.1
       '@noble/hashes':
         specifier: ^1.4.0
-        version: 1.4.0
+        version: 1.5.0
       '@peculiar/asn1-ecc':
         specifier: ^2.3.8
         version: 2.3.13
@@ -452,7 +452,7 @@ importers:
         version: 5.0.0-unstable.8(ts-node@10.9.2(@types/node@18.18.8)(typescript@5.5.4))
       '@sphereon/pex-models':
         specifier: ^2.2.4
-        version: 2.2.4
+        version: 2.3.1
       '@sphereon/ssi-types':
         specifier: 0.29.1-unstable.121
         version: 0.29.1-unstable.121(ts-node@10.9.2(@types/node@18.18.8)(typescript@5.5.4))
@@ -684,8 +684,8 @@ importers:
         specifier: workspace:*
         version: link:../core
       '@sphereon/did-auth-siop':
-        specifier: 0.16.1-unstable.68
-        version: 0.16.1-unstable.68(ts-node@10.9.2(@types/node@18.18.8)(typescript@5.5.4))
+        specifier: link:../../../Code/OID4VC/packages/siop-oid4vp
+        version: link:../../../Code/OID4VC/packages/siop-oid4vp
       '@sphereon/oid4vc-common':
         specifier: 0.16.1-unstable.68
         version: 0.16.1-unstable.68(ts-node@10.9.2(@types/node@18.18.8)(typescript@5.5.4))
@@ -2195,10 +2195,6 @@ packages:
     resolution: {integrity: sha512-TlaHRXDehJuRNR9TfZDNQ45mMEd5dwUwmicsafcIX4SsNiqnCHKjE/1alYPd/lDRVhxdhUAlv8uEhMCI5zjIJQ==}
     engines: {node: ^14.21.3 || >=16}
 
-  '@noble/hashes@1.4.0':
-    resolution: {integrity: sha512-V1JJ1WTRUqHHrOSh597hURcMqVKVGL/ea3kv0gSnEdsEZ0/+VyPghM1lMNGc00z7CIQorSvbKpuJkxvuHbvdbg==}
-    engines: {node: '>= 16'}
-
   '@noble/hashes@1.5.0':
     resolution: {integrity: sha512-1j6kQFb7QRru7eKN3ZDvRcP13rugwdxZqCjbiAVZfIJwgj2A65UmT4TgARXGlXgnRkORLTDTrO19ZErt7+QXgA==}
     engines: {node: ^14.21.3 || >=16}
@@ -2444,10 +2440,6 @@ packages:
     resolution: {integrity: sha512-kQpk267uxB19X3X2T1mvNMjyvIEonpNSHrMlK5ZaBU6aZxw7wPbpgKJOjHN3+/GPVpXgAV9soVT2oyHpLkLtyw==}
     engines: {node: '>= 8'}
 
-  '@sphereon/did-auth-siop@0.16.1-unstable.68':
-    resolution: {integrity: sha512-u+wPut7LZ51/4PLlQarspsacSqt09NmaLSU5YnRgRbw5LXbno7SjZYmKvkgHpOz+xv5NGXCWlzAQPaZY1/4Oyg==}
-    engines: {node: '>=18'}
-
   '@sphereon/did-uni-client@0.6.3':
     resolution: {integrity: sha512-g7LD7ofbE36slHN7Bhr5dwUrj6t0BuZeXBYJMaVY/pOeL1vJxW1cZHbZqu0NSfOmzyBg4nsYVlgTjyi/Aua2ew==}
 
@@ -2475,15 +2467,8 @@ packages:
       awesome-qr:
         optional: true
 
-  '@sphereon/pex-models@2.2.4':
-    resolution: {integrity: sha512-pGlp+wplneE1+Lk3U48/2htYKTbONMeG5/x7vhO6AnPUOsnOXeJdftPrBYWVSzz/JH5GJptAc6+pAyYE1zMu4Q==}
-
   '@sphereon/pex-models@2.3.1':
     resolution: {integrity: sha512-SByU4cJ0XYA6VZQ/L6lsSiRcFtBPHbFioCeQ4GP7/W/jQ+PSBD7uK2oTnKQ9/0iEiMK/6JYqhKgLs4a9UX3UTQ==}
-
-  '@sphereon/pex@5.0.0-unstable.7':
-    resolution: {integrity: sha512-E+pehf6E6JN/vSELZbnIvnNQqXEKjbijCCzov2mXqFWb3WyBn7B5RY7I3v9cCFnN+8r3W3E/Hb9jAJej1DIRCg==}
-    engines: {node: '>=18'}
 
   '@sphereon/pex@5.0.0-unstable.8':
     resolution: {integrity: sha512-DD85XvyK2F+7VH4lRmfalqSiET8SJysY3ryIPuTVfYrZ3KssYCFfxTcip0+mgjAgbTUldjZYIXuhJO42TDjA/A==}
@@ -2518,12 +2503,6 @@ packages:
 
   '@sphereon/ssi-types@0.29.1-unstable.161':
     resolution: {integrity: sha512-ifMADjk6k0f97/isK/4Qw/PX6n4k+qS5k6mmmH47MTD3KMDddVghoXycsvNw7wObJdLUalHBX630ghr+u21oMg==}
-
-  '@sphereon/ssi-types@0.9.0':
-    resolution: {integrity: sha512-umCr/syNcmvMMbQ+i/r/mwjI1Qw2aFPp9AwBTvTo1ailAVaaJjJGPkkVz1K9/2NZATNdDiQ3A8yGzdVJoKh9pA==}
-
-  '@sphereon/wellknown-dids-client@0.1.3':
-    resolution: {integrity: sha512-TAT24L3RoXD8ocrkTcsz7HuJmgjNjdoV6IXP1p3DdaI/GqkynytXE3J1+F7vUFMRYwY5nW2RaXSgDQhrFJemaA==}
 
   '@sqltools/formatter@1.2.5':
     resolution: {integrity: sha512-Uy0+khmZqUrUGm5dmMqVlnvufZRSK0FbYzVgp0UMstm+F5+W2/jnEEQyc9vo1ZR/E5ZI/B1WjjoTqBqwJL6Krw==}
@@ -5209,13 +5188,6 @@ packages:
     resolution: {integrity: sha512-CasD9OCEQSFIam2U8efFK81Yeg8vNMTBUqtMOHlrcWQHqUX3HeCl9Dr31u4toV7emlH8Mymk5+9p0lL6mKb/Xw==}
     engines: {node: '>=14.16'}
 
-  language-subtag-registry@0.3.23:
-    resolution: {integrity: sha512-0K65Lea881pHotoGEa5gDlMxt3pctLi2RplBb7Ezh4rRdLEOtgi7n4EwK9lamnUCkKBqaeKRVebTq6BAxSkpXQ==}
-
-  language-tags@1.0.9:
-    resolution: {integrity: sha512-MbjN408fEndfiQXbFQ1vnd+1NoLDsnQW41410oQBXiyXDMYH5z505juWa4KUE1LqxRC7DgOgZDbKLxHIwm27hA==}
-    engines: {node: '>=0.10'}
-
   leven@3.1.0:
     resolution: {integrity: sha512-qsda+H8jTaUaN/x5vzW2rzc+8Rw4TAQ/4KjB46IwK5VH+IlVeeeje/EoZRpiXvIqjFgK84QffqPztGI3VBLG1A==}
     engines: {node: '>=6'}
@@ -5641,10 +5613,6 @@ packages:
     resolution: {integrity: sha512-x23pDe5+svdLz/k5JPGCVdfn7Q5mZVMBETiC+ORfO+sor9Sgs0smJzAjfTbM5tckeCqnaUuMYoz+k3RXMmJClQ==}
     engines: {node: '>=12.0.0', npm: '>=6.0.0'}
     deprecated: This module has been superseded by the multiformats module
-
-  multiformats@12.1.3:
-    resolution: {integrity: sha512-eajQ/ZH7qXZQR2AgtfpmSMizQzmyYVmCql7pdhldPuYQi4atACekbJaQplk6dWyIi10jCaFnd6pqvcEFXjbaJw==}
-    engines: {node: '>=16.0.0', npm: '>=7.0.0'}
 
   multiformats@9.7.1:
     resolution: {integrity: sha512-TaVmGEBt0fhxiNJMGphBfB+oGvUxFs8KgGvgl8d3C+GWtrFcvXdJ2196eg+dYhmSFClmgFfSfJEklo+SZzdNuw==}
@@ -6130,10 +6098,6 @@ packages:
 
   qs@6.11.0:
     resolution: {integrity: sha512-MvjoMCJwEarSbUYk5O+nmoSzSutSsTwF85zcHPQ9OrlFoZOYIjaqBAJIqIXjptyD5vThxGq52Xu/MaJzRkIk4Q==}
-    engines: {node: '>=0.6'}
-
-  qs@6.13.0:
-    resolution: {integrity: sha512-+38qI9SOr8tfZ4QmJNplMUxqjbe7LKvvZgWdExBOmd+egZTtjLB67Gu0HRX3u/XOq7UU2Nx6nsjvS16Z9uwfpg==}
     engines: {node: '>=0.6'}
 
   query-string@7.1.3:
@@ -8670,7 +8634,7 @@ snapshots:
 
   '@confio/ics23@0.6.8':
     dependencies:
-      '@noble/hashes': 1.4.0
+      '@noble/hashes': 1.5.0
       protobufjs: 6.11.4
 
   '@cosmjs/amino@0.30.1':
@@ -8685,7 +8649,7 @@ snapshots:
       '@cosmjs/encoding': 0.30.1
       '@cosmjs/math': 0.30.1
       '@cosmjs/utils': 0.30.1
-      '@noble/hashes': 1.4.0
+      '@noble/hashes': 1.5.0
       bn.js: 5.2.1
       elliptic: 6.5.7
       libsodium-wrappers: 0.7.15
@@ -9683,8 +9647,6 @@ snapshots:
     dependencies:
       '@noble/hashes': 1.5.0
 
-  '@noble/hashes@1.4.0': {}
-
   '@noble/hashes@1.5.0': {}
 
   '@nodelib/fs.scandir@2.1.5':
@@ -10182,45 +10144,6 @@ snapshots:
 
   '@sovpro/delimited-stream@1.1.0': {}
 
-  '@sphereon/did-auth-siop@0.16.1-unstable.68(ts-node@10.9.2(@types/node@18.18.8)(typescript@5.5.4))':
-    dependencies:
-      '@astronautlabs/jsonpath': 1.1.2
-      '@sphereon/did-uni-client': 0.6.3
-      '@sphereon/kmp-mdl-mdoc': 0.2.0-SNAPSHOT.22
-      '@sphereon/oid4vc-common': 0.16.1-unstable.68(ts-node@10.9.2(@types/node@18.18.8)(typescript@5.5.4))
-      '@sphereon/pex': 5.0.0-unstable.7(ts-node@10.9.2(@types/node@18.18.8)(typescript@5.5.4))
-      '@sphereon/pex-models': 2.3.1
-      '@sphereon/ssi-types': 0.29.1-unstable.121(ts-node@10.9.2(@types/node@18.18.8)(typescript@5.5.4))
-      '@sphereon/wellknown-dids-client': 0.1.3
-      cross-fetch: 4.0.0
-      debug: 4.3.6
-      events: 3.3.0
-      jwt-decode: 4.0.0
-      language-tags: 1.0.9
-      multiformats: 12.1.3
-      qs: 6.13.0
-      uint8arrays: 3.1.1
-    transitivePeerDependencies:
-      - '@google-cloud/spanner'
-      - '@sap/hana-client'
-      - better-sqlite3
-      - encoding
-      - hdb-pool
-      - ioredis
-      - mongodb
-      - mssql
-      - mysql2
-      - oracledb
-      - pg
-      - pg-native
-      - pg-query-stream
-      - redis
-      - sql.js
-      - sqlite3
-      - supports-color
-      - ts-node
-      - typeorm-aurora-data-api-driver
-
   '@sphereon/did-uni-client@0.6.3':
     dependencies:
       cross-fetch: 3.1.8
@@ -10347,44 +10270,7 @@ snapshots:
       - ts-node
       - typeorm-aurora-data-api-driver
 
-  '@sphereon/pex-models@2.2.4': {}
-
   '@sphereon/pex-models@2.3.1': {}
-
-  '@sphereon/pex@5.0.0-unstable.7(ts-node@10.9.2(@types/node@18.18.8)(typescript@5.5.4))':
-    dependencies:
-      '@astronautlabs/jsonpath': 1.1.2
-      '@sd-jwt/decode': 0.6.1
-      '@sd-jwt/present': 0.6.1
-      '@sd-jwt/types': 0.6.1
-      '@sphereon/pex-models': 2.3.1
-      '@sphereon/ssi-types': 0.29.1-unstable.121(ts-node@10.9.2(@types/node@18.18.8)(typescript@5.5.4))
-      ajv: 8.17.1
-      ajv-formats: 2.1.1(ajv@8.17.1)
-      jwt-decode: 3.1.2
-      nanoid: 3.3.7
-      string.prototype.matchall: 4.0.11
-      uint8arrays: 3.1.1
-    transitivePeerDependencies:
-      - '@google-cloud/spanner'
-      - '@sap/hana-client'
-      - better-sqlite3
-      - encoding
-      - hdb-pool
-      - ioredis
-      - mongodb
-      - mssql
-      - mysql2
-      - oracledb
-      - pg
-      - pg-native
-      - pg-query-stream
-      - redis
-      - sql.js
-      - sqlite3
-      - supports-color
-      - ts-node
-      - typeorm-aurora-data-api-driver
 
   '@sphereon/pex@5.0.0-unstable.8(ts-node@10.9.2(@types/node@18.18.8)(typescript@5.5.4))':
     dependencies:
@@ -10644,18 +10530,6 @@ snapshots:
       jwt-decode: 3.1.2
     transitivePeerDependencies:
       - supports-color
-
-  '@sphereon/ssi-types@0.9.0':
-    dependencies:
-      jwt-decode: 3.1.2
-
-  '@sphereon/wellknown-dids-client@0.1.3':
-    dependencies:
-      '@sphereon/ssi-types': 0.9.0
-      cross-fetch: 3.1.8
-      jwt-decode: 3.1.2
-    transitivePeerDependencies:
-      - encoding
 
   '@sqltools/formatter@1.2.5': {}
 
@@ -12150,7 +12024,7 @@ snapshots:
     dependencies:
       '@noble/ciphers': 0.5.3
       '@noble/curves': 1.6.0
-      '@noble/hashes': 1.4.0
+      '@noble/hashes': 1.5.0
       '@scure/base': 1.1.8
       canonicalize: 2.0.0
       did-resolver: 4.1.0
@@ -14087,12 +13961,6 @@ snapshots:
 
   ky@0.33.3: {}
 
-  language-subtag-registry@0.3.23: {}
-
-  language-tags@1.0.9:
-    dependencies:
-      language-subtag-registry: 0.3.23
-
   leven@3.1.0: {}
 
   levn@0.3.0:
@@ -14656,8 +14524,6 @@ snapshots:
     dependencies:
       '@multiformats/base-x': 4.0.1
 
-  multiformats@12.1.3: {}
-
   multiformats@9.7.1: {}
 
   multiformats@9.9.0: {}
@@ -15159,10 +15025,6 @@ snapshots:
   qrcode-terminal@0.11.0: {}
 
   qs@6.11.0:
-    dependencies:
-      side-channel: 1.0.6
-
-  qs@6.13.0:
     dependencies:
       side-channel: 1.0.6
 

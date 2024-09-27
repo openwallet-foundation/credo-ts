@@ -1,49 +1,14 @@
 import type { OpenId4VcVerificationRequest } from './requestContext'
 import type { OpenId4VcVerificationSessionRecord } from '../repository'
-import type { JwkJson } from '@credo-ts/core'
 import type { AgentContext } from '@credo-ts/core/src/agent/context/AgentContext'
-import type { AuthorizationResponsePayload } from '@sphereon/did-auth-siop'
+import type { AuthorizationResponsePayload, DecryptCompact } from '@sphereon/did-auth-siop'
 import type { Response, Router } from 'express'
 
-import { CredoError } from '@credo-ts/core'
+import { CredoError, Key, TypedArrayEncoder } from '@credo-ts/core'
 import { AuthorizationRequest, RP } from '@sphereon/did-auth-siop'
-import * as jose from 'jose'
 
 import { getRequestContext, sendErrorResponse } from '../../shared/router'
 import { OpenId4VcSiopVerifierService } from '../OpenId4VcSiopVerifierService'
-
-export const ISO_MDL_7_EPHEMERAL_READER_PRIVATE_KEY_JWK = {
-  kty: 'EC',
-  d: '_Hc7lRd1Zt8sDAb1-pCgI9qS3oobKNa-mjRDhaKjH90',
-  use: 'enc',
-  crv: 'P-256',
-  x: 'xVLtZaPPK-xvruh1fEClNVTR6RCZBsQai2-DrnyKkxg',
-  y: '-5-QtFqJqGwOjEL3Ut89nrE0MeaUp5RozksKHpBiyw0',
-  alg: 'ECDH-ES',
-  kid: 'P8p0virRlh6fAkh5-YSeHt4EIv-hFGneYk14d8DF51w',
-}
-
-const decryptCompact = async (input: { jwk: { kid: string }; jwe: string }) => {
-  const { jwe, jwk } = input
-
-  let jwkToUse: JwkJson
-  if (jwk.kid === ISO_MDL_7_EPHEMERAL_READER_PRIVATE_KEY_JWK.kid) {
-    jwkToUse = ISO_MDL_7_EPHEMERAL_READER_PRIVATE_KEY_JWK
-  } else {
-    throw new CredoError('Invalid JWK provided for decryption')
-  }
-
-  const privateKey = await jose.importJWK(jwkToUse)
-  const decode = TextDecoder.prototype.decode.bind(new TextDecoder())
-
-  const { plaintext, protectedHeader } = await jose.compactDecrypt(jwe, privateKey)
-
-  return {
-    plaintext: decode(plaintext),
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    protectedHeader: protectedHeader as any,
-  }
-}
 
 export interface OpenId4VcSiopAuthorizationEndpointConfig {
   /**
@@ -81,6 +46,24 @@ async function getVerificationSession(
   return session
 }
 
+const decryptJarmResponse = (agentContext: AgentContext): DecryptCompact => {
+  return async (input) => {
+    const { jwe: compactJwe, jwk: jwkJson } = input
+    const key = Key.fromFingerprint(jwkJson.kid)
+    if (!agentContext.wallet.directDecryptCompactJweEcdhEs) {
+      throw new CredoError('Cannot decrypt Jarm Response, wallet does not support directDecryptCompactJweEcdhEs')
+    }
+
+    const { data, header } = await agentContext.wallet.directDecryptCompactJweEcdhEs({ compactJwe, recipientKey: key })
+    const decryptedPayload = TypedArrayEncoder.toUtf8String(data)
+
+    return {
+      plaintext: decryptedPayload,
+      protectedHeader: header as Record<string, unknown> & { alg: string; enc: string },
+    }
+  }
+}
+
 export function configureAuthorizationEndpoint(router: Router, config: OpenId4VcSiopAuthorizationEndpointConfig) {
   router.post(config.endpointPath, async (request: OpenId4VcVerificationRequest, response: Response, next) => {
     const { agentContext, verifier } = getRequestContext(request)
@@ -107,7 +90,7 @@ export function configureAuthorizationEndpoint(router: Router, config: OpenId4Vc
             }
             return { authRequestParams: requestObjectPayload }
           },
-          decryptCompact,
+          decryptCompact: decryptJarmResponse(agentContext),
         })
 
         authorizationResponsePayload = res.authResponseParams as AuthorizationResponsePayload
