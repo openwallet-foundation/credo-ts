@@ -4,7 +4,7 @@ import { KeyAlgs } from '@hyperledger/aries-askar-shared'
 export enum AskarKeyTypePurpose {
   KeyManagement = 'KeyManagement',
   Signing = 'Signing',
-  Encryption = 'Encryption'
+  Encryption = 'Encryption',
 }
 
 const keyTypeToAskarAlg = {

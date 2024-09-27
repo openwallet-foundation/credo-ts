@@ -174,7 +174,7 @@ describe('AskarWallet basic operations', () => {
 
   test('Encrypt and decrypt using JWE ECDH-ES', async () => {
     const recipientKey = await askarWallet.createKey({
-      keyType: KeyType.P256
+      keyType: KeyType.P256,
     })
 
     const apv = TypedArrayEncoder.toBase64URL(TypedArrayEncoder.fromString('nonce-from-auth-request'))
@@ -186,14 +186,14 @@ describe('AskarWallet basic operations', () => {
       apv,
       encryptionAlgorithm: 'A256GCM',
       header: {
-        kid: 'some-kid'
+        kid: 'some-kid',
       },
-      recipientKey
+      recipientKey,
     })
 
     const { data, header } = await askarWallet.directDecryptCompactJweEcdhEs({
       compactJwe,
-      recipientKey
+      recipientKey,
     })
 
     expect(header).toEqual({
@@ -206,8 +206,8 @@ describe('AskarWallet basic operations', () => {
         kty: 'EC',
         crv: 'P-256',
         x: expect.any(String),
-        y: expect.any(String)
-      }
+        y: expect.any(String),
+      },
     })
     expect(JsonEncoder.fromBuffer(data)).toEqual({ vp_token: ['something'] })
   })
