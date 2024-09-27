@@ -11,6 +11,7 @@ import type {
   WalletExportImportConfig,
   Logger,
   SigningProviderRegistry,
+  WalletDirectEncryptCompactJwtEcdhEsOptions,
 } from '@credo-ts/core'
 import type { Session } from '@hyperledger/aries-askar-shared'
 
@@ -28,7 +29,15 @@ import {
   KeyType,
   utils,
 } from '@credo-ts/core'
-import { CryptoBox, Store, Key as AskarKey, keyAlgFromString } from '@hyperledger/aries-askar-shared'
+import {
+  CryptoBox,
+  Store,
+  Key as AskarKey,
+  keyAlgFromString,
+  EcdhEs,
+  KeyAlgs,
+  Jwk,
+} from '@hyperledger/aries-askar-shared'
 import BigNumber from 'bn.js'
 
 import { importSecureEnvironment } from '../secureEnvironment'
@@ -457,6 +466,125 @@ export abstract class AskarBaseWallet implements Wallet {
     }
 
     return returnValue
+  }
+
+  /**
+   * Method that enables JWE encryption using ECDH-ES and AesA256Gcm and returns it as a compact JWE.
+   * This method is specifically added to support OpenID4VP response encryption using JARM and should later be
+   * refactored into a more generic method that supports encryption/decryption.
+   *
+   * @returns compact JWE
+   */
+  public async directEncryptCompactJweEcdhEs({
+    recipientKey,
+    encryptionAlgorithm,
+    apu,
+    apv,
+    data,
+    header,
+  }: WalletDirectEncryptCompactJwtEcdhEsOptions) {
+    if (encryptionAlgorithm !== 'A256GCM') {
+      throw new WalletError(`Encryption algorithm ${encryptionAlgorithm} is not supported. Only A256GCM is supported`)
+    }
+
+    // Only one supported for now
+    const encAlg = KeyAlgs.AesA256Gcm
+
+    // Create ephemeral key
+    const ephemeralKey = AskarKey.generate(keyAlgFromString(recipientKey.keyType))
+
+    const _header = {
+      ...header,
+      apv,
+      apu,
+      enc: 'A256GCM',
+      alg: 'ECDH-ES',
+      epk: ephemeralKey.jwkPublic,
+    }
+
+    const encodedHeader = JsonEncoder.toBuffer(_header)
+
+    const ecdh = new EcdhEs({
+      algId: Uint8Array.from(Buffer.from(encAlg)),
+      apu: apu ? Uint8Array.from(TypedArrayEncoder.fromBase64(apu)) : Uint8Array.from([]),
+      apv: apv ? Uint8Array.from(TypedArrayEncoder.fromBase64(apv)) : Uint8Array.from([]),
+    })
+
+    const { ciphertext, tag, nonce } = ecdh.encryptDirect({
+      encAlg,
+      ephemeralKey,
+      message: Uint8Array.from(data),
+      recipientKey: AskarKey.fromPublicBytes({
+        algorithm: keyAlgFromString(recipientKey.keyType),
+        publicKey: recipientKey.publicKey,
+      }),
+      aad: Uint8Array.from(encodedHeader),
+    })
+
+    const compactJwe = `${TypedArrayEncoder.toBase64URL(encodedHeader)}..${TypedArrayEncoder.toBase64URL(
+      nonce
+    )}.${TypedArrayEncoder.toBase64URL(ciphertext)}.${TypedArrayEncoder.toBase64URL(tag)}`
+    return compactJwe
+  }
+
+  /**
+   * Method that enables JWE decryption using ECDH-ES and AesA256Gcm and returns it as plaintext buffer with the header.
+   * The apv and apu values are extracted from the heaader, and thus on a higher level it should be checked that these
+   * values are correct.
+   */
+  public async directDecryptCompactJweEcdhEs({
+    compactJwe,
+    recipientKey,
+  }: {
+    compactJwe: string
+    recipientKey: Key
+  }): Promise<{ data: Buffer; header: Record<string, unknown> }> {
+    // encryption key is not used (we don't use key wrapping)
+    const [encodedHeader /* encryptionKey */, , encodedIv, encodedCiphertext, encodedTag] = compactJwe.split('.')
+
+    const header = JsonEncoder.fromBase64(encodedHeader)
+
+    if (header.alg !== 'ECDH-ES') {
+      throw new WalletError('Only ECDH-ES alg value is supported')
+    }
+    if (header.enc !== 'A256GCM') {
+      throw new WalletError('Only A256GCM enc value is supported')
+    }
+    if (!header.epk || typeof header.epk !== 'object') {
+      throw new WalletError('header epk value must contain a JWK')
+    }
+
+    // NOTE: we don't support custom key storage record at the moment.
+    let askarKey: AskarKey | null | undefined
+    if (isKeyTypeSupportedByAskarForPurpose(recipientKey.keyType, AskarKeyTypePurpose.KeyManagement)) {
+      askarKey = await this.withSession(
+        async (session) => (await session.fetchKey({ name: recipientKey.publicKeyBase58 }))?.key
+      )
+    }
+    if (!askarKey) {
+      throw new WalletError('Key entry not found')
+    }
+
+    // Only one supported for now
+    const encAlg = KeyAlgs.AesA256Gcm
+
+    const ecdh = new EcdhEs({
+      algId: Uint8Array.from(Buffer.from(encAlg)),
+      apu: header.apu ? Uint8Array.from(TypedArrayEncoder.fromBase64(header.apu)) : Uint8Array.from([]),
+      apv: header.apv ? Uint8Array.from(TypedArrayEncoder.fromBase64(header.apv)) : Uint8Array.from([]),
+    })
+
+    const plaintext = ecdh.decryptDirect({
+      nonce: TypedArrayEncoder.fromBase64(encodedIv),
+      ciphertext: TypedArrayEncoder.fromBase64(encodedCiphertext),
+      encAlg,
+      ephemeralKey: Jwk.fromJson(header.epk),
+      recipientKey: askarKey,
+      tag: TypedArrayEncoder.fromBase64(encodedTag),
+      aad: TypedArrayEncoder.fromBase64(encodedHeader),
+    })
+
+    return { data: Buffer.from(plaintext), header }
   }
 
   public async generateNonce(): Promise<string> {
