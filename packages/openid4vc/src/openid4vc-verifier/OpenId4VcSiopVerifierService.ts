@@ -4,6 +4,7 @@ import type {
   OpenId4VcSiopCreateVerifierOptions,
   OpenId4VcSiopVerifiedAuthorizationResponse,
   OpenId4VcSiopVerifyAuthorizationResponseOptions,
+  ResponseMode,
 } from './OpenId4VcSiopVerifierServiceOptions'
 import type { OpenId4VcVerificationSessionRecord } from './repository'
 import type { OpenId4VcSiopAuthorizationResponsePayload } from '../shared'
@@ -36,6 +37,7 @@ import {
   DidsApi,
   X509Service,
   getDomainFromUrl,
+  KeyType,
 } from '@credo-ts/core'
 import {
   AuthorizationRequest,
@@ -44,7 +46,7 @@ import {
   PropertyTarget,
   RequestAud,
   ResponseIss,
-  ResponseMode,
+  ResponseMode as SphereonResponseMode,
   ResponseType,
   RevocationVerification,
   RP,
@@ -71,6 +73,16 @@ import {
 } from './repository'
 import { OpenId4VcRelyingPartyEventHandler } from './repository/OpenId4VcRelyingPartyEventEmitter'
 import { OpenId4VcRelyingPartySessionManager } from './repository/OpenId4VcRelyingPartySessionManager'
+
+export const ISO_MDL_7_EPHEMERAL_READER_PUBLIC_KEY_JWK = {
+  kty: 'EC',
+  use: 'enc',
+  crv: 'P-256',
+  x: 'xVLtZaPPK-xvruh1fEClNVTR6RCZBsQai2-DrnyKkxg',
+  y: '-5-QtFqJqGwOjEL3Ut89nrE0MeaUp5RozksKHpBiyw0',
+  alg: 'ECDH-ES',
+  kid: 'P8p0virRlh6fAkh5-YSeHt4EIv-hFGneYk14d8DF51w',
+}
 
 /**
  * @internal
@@ -146,6 +158,7 @@ export class OpenId4VcSiopVerifierService {
       authorizationResponseUrl,
       clientId,
       clientIdScheme,
+      responseMode: options.responseMode,
     })
 
     // We always use shortened URIs currently
@@ -352,26 +365,45 @@ export class OpenId4VcSiopVerifierService {
     agentContext: AgentContext,
     {
       authorizationResponse,
+      authorizationResponseParams,
       verifierId,
-    }: {
-      authorizationResponse: OpenId4VcSiopAuthorizationResponsePayload
-      verifierId?: string
-    }
+    }:
+      | {
+          authorizationResponse?: never
+          authorizationResponseParams: {
+            state?: string
+            nonce?: string
+          }
+          verifierId?: string
+        }
+      | {
+          authorizationResponse: OpenId4VcSiopAuthorizationResponsePayload
+          authorizationResponseParams?: never
+          verifierId?: string
+        }
   ) {
-    const authorizationResponseInstance = await AuthorizationResponse.fromPayload(authorizationResponse).catch(() => {
-      throw new CredoError(`Unable to parse authorization response payload. ${JSON.stringify(authorizationResponse)}`)
-    })
+    let nonce: string | undefined
+    let state: string | undefined
 
-    const responseNonce = await authorizationResponseInstance.getMergedProperty<string>('nonce', {
-      hasher: Hasher.hash,
-    })
-    const responseState = await authorizationResponseInstance.getMergedProperty<string>('state', {
-      hasher: Hasher.hash,
-    })
+    if (authorizationResponse) {
+      const authorizationResponseInstance = await AuthorizationResponse.fromPayload(authorizationResponse).catch(() => {
+        throw new CredoError(`Unable to parse authorization response payload. ${JSON.stringify(authorizationResponse)}`)
+      })
+
+      nonce = await authorizationResponseInstance.getMergedProperty<string>('nonce', {
+        hasher: Hasher.hash,
+      })
+      state = await authorizationResponseInstance.getMergedProperty<string>('state', {
+        hasher: Hasher.hash,
+      })
+    } else {
+      nonce = authorizationResponseParams.nonce
+      state = authorizationResponse
+    }
 
     const verificationSession = await this.openId4VcVerificationSessionRepository.findSingleByQuery(agentContext, {
-      nonce: responseNonce,
-      payloadState: responseState,
+      nonce,
+      payloadState: state,
       verifierId,
     })
 
@@ -421,7 +453,9 @@ export class OpenId4VcSiopVerifierService {
       clientId,
       clientIdScheme,
       authorizationResponseUrl,
+      responseMode,
     }: {
+      responseMode?: ResponseMode
       authorizationResponseUrl: string
       idToken?: boolean
       presentationDefinition?: DifPresentationExchangeDefinition
@@ -459,6 +493,16 @@ export class OpenId4VcSiopVerifierService {
       .resolve(OpenId4VcRelyingPartyEventHandler)
       .getEventEmitterForVerifier(agentContext.contextCorrelationId, verifierId)
 
+    const mode =
+      !responseMode || responseMode === 'direct_post'
+        ? SphereonResponseMode.DIRECT_POST
+        : SphereonResponseMode.DIRECT_POST_JWT
+
+    const jarmKey =
+      mode === SphereonResponseMode.DIRECT_POST_JWT
+        ? await agentContext.wallet.createKey({ keyType: KeyType.P256 })
+        : undefined
+
     builder
       .withResponseUri(authorizationResponseUrl)
       .withIssuer(ResponseIss.SELF_ISSUED_V2)
@@ -469,7 +513,7 @@ export class OpenId4VcSiopVerifierService {
         SupportedVersion.SIOPv2_D12_OID4VP_D18,
         SupportedVersion.SIOPv2_D12_OID4VP_D20,
       ])
-      .withResponseMode(ResponseMode.DIRECT_POST)
+      .withResponseMode(mode)
       .withHasher(Hasher.hash)
       // FIXME: should allow verification of revocation
       // .withRevocationVerificationCallback()
@@ -482,6 +526,7 @@ export class OpenId4VcSiopVerifierService {
 
       // TODO: we should probably allow some dynamic values here
       .withClientMetadata({
+        jwks: jarmKey ? { keys: [ISO_MDL_7_EPHEMERAL_READER_PUBLIC_KEY_JWK] } : undefined,
         client_id: clientId,
         client_id_scheme: clientIdScheme,
         passBy: PassBy.VALUE,

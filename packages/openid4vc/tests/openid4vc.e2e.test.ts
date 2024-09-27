@@ -708,7 +708,7 @@ describe('OpenId4Vc', () => {
     })
   })
 
-  it('e2e flow with verifier endpoints verifying a sd-jwt-vc with selective disclosure', async () => {
+  it('e2e flow (jarm) with verifier endpoints verifying a sd-jwt-vc with selective disclosure', async () => {
     const openIdVerifier = await verifier.agent.modules.openId4VcVerifier.createVerifier()
 
     const signedSdJwtVc = await issuer.agent.sdJwtVc.sign({
@@ -771,7 +771,7 @@ describe('OpenId4Vc', () => {
     const { authorizationRequest, verificationSession } =
       await verifier.agent.modules.openId4VcVerifier.createAuthorizationRequest({
         verifierId: openIdVerifier.verifierId,
-
+        responseMode: 'direct_post.jwt',
         requestSigner: {
           method: 'x5c',
           x5c: [rawCertificate],
@@ -791,6 +791,7 @@ describe('OpenId4Vc', () => {
     const resolvedAuthorizationRequest = await holder.agent.modules.openId4VcHolder.resolveSiopAuthorizationRequest(
       authorizationRequest
     )
+    expect(resolvedAuthorizationRequest.authorizationRequest.payload?.response_mode).toEqual('direct_post.jwt')
 
     expect(resolvedAuthorizationRequest.presentationExchange?.credentialsForRequest).toEqual({
       areRequirementsSatisfied: true,
