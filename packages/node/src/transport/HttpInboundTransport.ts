@@ -10,7 +10,7 @@ import type {
 import type { Express, Request, Response } from 'express'
 import type { Server } from 'http'
 
-import { DidCommMimeType, CredoError, TransportService, utils, AgentEventTypes, deepEquality } from '@credo-ts/core'
+import { DidCommMimeType, CredoError, TransportService, utils, AgentEventTypes } from '@credo-ts/core'
 import express, { text } from 'express'
 import { filter, firstValueFrom, ReplaySubject, timeout } from 'rxjs'
 
@@ -21,13 +21,25 @@ export class HttpInboundTransport implements InboundTransport {
   private port: number
   private path: string
   private _server?: Server
+  private processedMessageListenerTimeoutMs: number
 
   public get server() {
     return this._server
   }
 
-  public constructor({ app, path, port }: { app?: Express; path?: string; port: number }) {
+  public constructor({
+    app,
+    path,
+    port,
+    processedMessageListenerTimeoutMs,
+  }: {
+    app?: Express
+    path?: string
+    port: number
+    processedMessageListenerTimeoutMs?: number
+  }) {
     this.port = port
+    this.processedMessageListenerTimeoutMs = processedMessageListenerTimeoutMs ?? 10000 // timeout after 10 seconds
 
     // Create Express App
     this.app = app ?? express()
@@ -67,9 +79,9 @@ export class HttpInboundTransport implements InboundTransport {
         observable
           .pipe(
             filter((e) => e.type === AgentEventTypes.AgentMessageProcessed),
-            filter((e) => deepEquality(e.payload.encryptedMessage, encryptedMessage)),
+            filter((e) => e.payload.encryptedMessage === encryptedMessage),
             timeout({
-              first: 10000, // timeout after 10 seconds
+              first: this.processedMessageListenerTimeoutMs,
               meta: 'HttpInboundTransport.start',
             })
           )

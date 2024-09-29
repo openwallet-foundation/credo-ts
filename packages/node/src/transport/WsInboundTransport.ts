@@ -6,11 +6,9 @@ import type {
   EncryptedMessage,
   AgentContext,
   AgentMessageReceivedEvent,
-  AgentMessageProcessedEvent,
 } from '@credo-ts/core'
 
-import { CredoError, TransportService, utils, AgentEventTypes, deepEquality } from '@credo-ts/core'
-import { filter, firstValueFrom, ReplaySubject, timeout } from 'rxjs'
+import { CredoError, TransportService, utils, AgentEventTypes } from '@credo-ts/core'
 // eslint-disable-next-line import/no-named-as-default
 import WebSocket, { Server } from 'ws'
 
@@ -74,20 +72,6 @@ export class WsInboundTransport implements InboundTransport {
       try {
         const encryptedMessage = JSON.parse(event.data) as EncryptedMessage
 
-        const observable = agent.events.observable<AgentMessageProcessedEvent>(AgentEventTypes.AgentMessageProcessed)
-        const subject = new ReplaySubject(1)
-
-        observable
-          .pipe(
-            filter((e) => e.type === AgentEventTypes.AgentMessageProcessed),
-            filter((e) => deepEquality(e.payload.encryptedMessage, encryptedMessage)),
-            timeout({
-              first: 10000, // timeout after 10 seconds
-              meta: 'WsInboundTransport.listenOnWebSocketMessages',
-            })
-          )
-          .subscribe(subject)
-
         agent.events.emit<AgentMessageReceivedEvent>(agent.context, {
           type: AgentEventTypes.AgentMessageReceived,
           payload: {
@@ -95,9 +79,6 @@ export class WsInboundTransport implements InboundTransport {
             session: session,
           },
         })
-
-        // Wait for message to be processed
-        await firstValueFrom(subject)
       } catch (error) {
         this.logger.error(`Error processing message: ${error}`)
       }
