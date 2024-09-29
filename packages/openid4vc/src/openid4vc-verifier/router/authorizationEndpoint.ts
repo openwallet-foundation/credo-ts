@@ -71,7 +71,7 @@ export function configureAuthorizationEndpoint(router: Router, config: OpenId4Vc
     try {
       const openId4VcVerifierService = agentContext.dependencyManager.resolve(OpenId4VcSiopVerifierService)
 
-      let verificationSession: OpenId4VcVerificationSessionRecord
+      let verificationSession: OpenId4VcVerificationSessionRecord | undefined
       let authorizationResponsePayload: AuthorizationResponsePayload
 
       if (request.body.response) {
@@ -83,8 +83,8 @@ export function configureAuthorizationEndpoint(router: Router, config: OpenId4Vc
               nonce: input.nonce,
             })
 
-            const res = await AuthorizationRequest.fromUriOrJwt(verificationSession.authorizationRequestJwt)
-            const requestObjectPayload = await res.requestObject?.getPayload()
+            const req = await AuthorizationRequest.fromUriOrJwt(verificationSession.authorizationRequestJwt)
+            const requestObjectPayload = await req.requestObject?.getPayload()
             if (!requestObjectPayload) {
               throw new CredoError('No request object payload found.')
             }
@@ -96,13 +96,12 @@ export function configureAuthorizationEndpoint(router: Router, config: OpenId4Vc
         authorizationResponsePayload = res.authResponseParams as AuthorizationResponsePayload
       } else {
         authorizationResponsePayload = request.body
+        verificationSession = await getVerificationSession(agentContext, {
+          verifierId: verifier.verifierId,
+          state: authorizationResponsePayload.state,
+          nonce: authorizationResponsePayload.nonce,
+        })
       }
-
-      verificationSession = await getVerificationSession(agentContext, {
-        verifierId: verifier.verifierId,
-        state: authorizationResponsePayload.state,
-        nonce: authorizationResponsePayload.nonce,
-      })
 
       if (typeof authorizationResponsePayload.presentation_submission === 'string') {
         authorizationResponsePayload.presentation_submission = JSON.parse(
@@ -110,6 +109,9 @@ export function configureAuthorizationEndpoint(router: Router, config: OpenId4Vc
         )
       }
 
+      if (!verificationSession) {
+        throw new CredoError('Missing verification session, cannot verify authorization response.')
+      }
       await openId4VcVerifierService.verifyAuthorizationResponse(agentContext, {
         authorizationResponse: authorizationResponsePayload,
         verificationSession,

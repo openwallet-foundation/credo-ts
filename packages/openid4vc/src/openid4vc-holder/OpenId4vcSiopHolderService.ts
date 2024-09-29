@@ -160,9 +160,24 @@ export class OpenId4VcSiopHolderService {
       if (!jwk.kty) {
         throw new CredoError('Missing kty in jwk.')
       }
+
+      const validatedMetadata = OP.validateJarmMetadata({
+        client_metadata: requestObjectPayload.client_metadata,
+        server_metadata: {
+          authorization_encryption_alg_values_supported: ['ECDH-ES'],
+          authorization_encryption_enc_values_supported: ['A256GCM'],
+        },
+      })
+
+      if (validatedMetadata.type !== 'encrypted') {
+        throw new CredoError('Only encrypted JARM responses are supported.')
+      }
+
       const jwe = await this.encryptJarmResponse(agentContext, {
         jwkJson: { ...jwk, kty: jwk.kty },
         payload: authorizationResponsePayload,
+        encryptionAlgorithm: validatedMetadata.client_metadata.authorization_encrypted_response_alg,
+        enc: validatedMetadata.client_metadata.authorization_encrypted_response_enc,
       })
 
       return { response: jwe }
@@ -308,7 +323,7 @@ export class OpenId4VcSiopHolderService {
 
   private async encryptJarmResponse(
     agentContext: AgentContext,
-    options: { jwkJson: JwkJson; payload: Record<string, unknown> }
+    options: { jwkJson: JwkJson; payload: Record<string, unknown>; encryptionAlgorithm: string; enc: string }
   ) {
     const { payload, jwkJson } = options
     const jwk = getJwkFromJson(jwkJson)

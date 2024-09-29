@@ -17,7 +17,7 @@ import type {
   RecordSavedEvent,
   RecordUpdatedEvent,
 } from '@credo-ts/core'
-import type { ClientIdScheme, PresentationVerificationCallback } from '@sphereon/did-auth-siop'
+import type { ClientIdScheme, JarmClientMetadata, PresentationVerificationCallback } from '@sphereon/did-auth-siop'
 
 import {
   EventEmitter,
@@ -490,12 +490,22 @@ export class OpenId4VcSiopVerifierService {
         ? SphereonResponseMode.DIRECT_POST
         : SphereonResponseMode.DIRECT_POST_JWT
 
-    let jarmEncryptionJwk: (JwkJson & { kid: string; use: 'enc' }) | undefined
+    type JarmEncryptionJwk = JwkJson & { kid: string; use: 'enc' }
+    let jarmEncryptionJwk: JarmEncryptionJwk | undefined
 
     if (mode === SphereonResponseMode.DIRECT_POST_JWT) {
       const key = await agentContext.wallet.createKey({ keyType: KeyType.P256 })
       jarmEncryptionJwk = { ...getJwkFromKey(key).toJson(), kid: key.fingerprint, use: 'enc' }
     }
+
+    const jarmClientMetadata: (JarmClientMetadata & { jwks: { keys: JarmEncryptionJwk[] } }) | undefined =
+      jarmEncryptionJwk
+        ? {
+            jwks: { keys: [jarmEncryptionJwk] },
+            authorization_encrypted_response_alg: 'ECDH-ES',
+            authorization_encrypted_response_enc: 'A256GCM',
+          }
+        : undefined
 
     builder
       .withResponseUri(authorizationResponseUrl)
@@ -520,8 +530,8 @@ export class OpenId4VcSiopVerifierService {
 
       // TODO: we should probably allow some dynamic values here
       .withClientMetadata({
-        jwks: jarmEncryptionJwk ? { keys: [jarmEncryptionJwk] } : undefined,
         client_id: clientId,
+        ...jarmClientMetadata,
         client_id_scheme: clientIdScheme,
         passBy: PassBy.VALUE,
         responseTypesSupported: [ResponseType.VP_TOKEN],

@@ -127,7 +127,7 @@ export const matrrLaunchpadDraft11JwtVcJson = {
 
 export const waltIdDraft11JwtVcJson = {
   credentialOffer:
-    'openid-credential-offer://?credential_offer=%7B%22credential_issuer%22%3A%22https%3A%2F%2Fissuer.portal.walt.id%22%2C%22credentials%22%3A%5B%22UniversityDegree%22%5D%2C%22grants%22%3A%7B%22authorization_code%22%3A%7B%22issuer_state%22%3A%22efc2f5dd-0f44-4f38-a902-3204e732c391%22%7D%2C%22urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Apre-authorized_code%22%3A%7B%22pre-authorized_code%22%3A%22eyJhbGciOiJFZERTQSJ9.eyJzdWIiOiJlZmMyZjVkZC0wZjQ0LTRmMzgtYTkwMi0zMjA0ZTczMmMzOTEiLCJpc3MiOiJodHRwczovL2lzc3Vlci5wb3J0YWwud2FsdC5pZCIsImF1ZCI6IlRPS0VOIn0.OHzYTP_u6I95hHBmjF3RchydGidq3nsT0QHdgJ1AXyR5AFkrTfJwsW4FQIdOdda93uS7FOh_vSVGY0Qngzm7Ag%22%2C%22user_pin_required%22%3Afalse%7D%7D%7D',
+    'openid-credential-offer://?credential_offer=%7B%22credential_issuer%22%3A%22https%3A%2F%2Fissuer.portal.walt.id%22%2C%22credentials%22%3A%5B%22UniversityDegree%22%5D%2C%22grants%22%3A%7B%22urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Apre-authorized_code%22%3A%7B%22pre-authorized_code%22%3A%22eyJhbGciOiJFZERTQSJ9.eyJzdWIiOiJlZmMyZjVkZC0wZjQ0LTRmMzgtYTkwMi0zMjA0ZTczMmMzOTEiLCJpc3MiOiJodHRwczovL2lzc3Vlci5wb3J0YWwud2FsdC5pZCIsImF1ZCI6IlRPS0VOIn0.OHzYTP_u6I95hHBmjF3RchydGidq3nsT0QHdgJ1AXyR5AFkrTfJwsW4FQIdOdda93uS7FOh_vSVGY0Qngzm7Ag%22%2C%22user_pin_required%22%3Afalse%7D%7D%7D',
   getMetadataResponse: {
     issuer: 'https://issuer.portal.walt.id',
     authorization_endpoint: 'https://issuer.portal.walt.id/authorize',
@@ -235,7 +235,9 @@ export const waltIdDraft11JwtVcJson = {
       'eyJhbGciOiJFZERTQSJ9.eyJzdWIiOiJjMDQyMmUxMy1kNTU0LTQwMmUtOTQ0OS0yZjA0ZjAyNjMzNTMiLCJpc3MiOiJodHRwczovL2lzc3Vlci5wb3J0YWwud2FsdC5pZCIsImF1ZCI6IkFDQ0VTUyJ9.pkNF05uUy72QAoZwdf1Uz1XRc4aGs1hhnim-x1qIeMe17TMUYV2D6BOATQtDItxnnhQz2MBfqUSQKYi7CFirDA',
     token_type: 'bearer',
     c_nonce: 'd4364dac-f026-4380-a4c3-2bfe2d2df52a',
-    c_nonce_expires_in: 27,
+    c_nonce_expires_in: 300000,
+    expires_in: 180000,
+    authorization_pending: false,
   },
 
   authorizationCode:
