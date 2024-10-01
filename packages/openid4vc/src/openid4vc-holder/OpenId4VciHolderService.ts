@@ -23,6 +23,7 @@ import type {
   AuthorizationDetailsJwtVcJson,
   AuthorizationDetailsJwtVcJsonLdAndLdpVc,
   AuthorizationDetailsSdJwtVc,
+  CredentialDefinitionJwtVcJsonLdAndLdpVcV1_0_13,
   CredentialResponse,
   Jwt,
   OpenIDResponse,
@@ -489,6 +490,8 @@ export class OpenId4VciHolderService {
         .withToken(tokenResponse.access_token)
 
       const credentialRequestClient = credentialRequestBuilder.build()
+      // retrive the context from the credential configuration
+      const context = offeredCredentialConfiguration.format === OpenId4VciCredentialFormatProfile.JwtVcJsonLd || offeredCredentialConfiguration.format === OpenId4VciCredentialFormatProfile.LdpVc ? (offeredCredentialConfiguration.credential_definition as CredentialDefinitionJwtVcJsonLdAndLdpVcV1_0_13)['@context']  : undefined
 
       const createDpopOpts = tokenResponse.dpop
         ? await this.getCreateDpopOptions(agentContext, metadata, {
@@ -502,6 +505,7 @@ export class OpenId4VciHolderService {
         credentialTypes: getTypesFromCredentialSupported(offeredCredentialConfiguration),
         format: offeredCredentialConfiguration.format,
         createDPoPOpts: createDpopOpts,
+        context: context,
       })
 
       newCNonce = credentialResponse.successBody?.c_nonce
