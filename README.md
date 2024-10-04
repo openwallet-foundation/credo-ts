@@ -2,8 +2,7 @@
   <br />
   <img
     alt="Credo Logo"
-    src="
-https://raw.githubusercontent.com/openwallet-foundation/credo-ts/c7886cb8377ceb8ee4efe8d264211e561a75072d/images/credo-logo.png"
+    src="https://raw.githubusercontent.com/openwallet-foundation/credo-ts/c7886cb8377ceb8ee4efe8d264211e561a75072d/images/credo-logo.png"
     height="250px"
   />
 </p>
