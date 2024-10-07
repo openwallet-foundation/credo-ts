@@ -1,7 +1,8 @@
 import type { AgentContext } from '../../agent'
 
 type GetTrustedCertificatesForProofOptions = {
-  proofRecordId: string
+  proofRecordId?: string
+  correlationId?: string
 }
 
 export interface X509ModuleConfigOptions {

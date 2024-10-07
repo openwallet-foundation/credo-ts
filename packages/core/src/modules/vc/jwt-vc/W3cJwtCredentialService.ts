@@ -322,6 +322,7 @@ export class W3cJwtCredentialService {
           jwkResolver: () => proverPublicJwk,
           trustedCertificates: await getTrustedCertificatesForProof?.(agentContext, {
             proofRecordId: options.proofRecordId,
+            correlationId: options.correlationId,
           }),
         })
 
