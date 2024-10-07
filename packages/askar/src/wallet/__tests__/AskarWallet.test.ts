@@ -6,7 +6,8 @@ import type {
   SignOptions,
   VerifyOptions,
 } from '@credo-ts/core'
-import { Key as AskarKey } from '@hyperledger/aries-askar-nodejs'
+import type { JwkProps } from '@hyperledger/aries-askar-shared'
+
 import {
   WalletKeyExistsError,
   Key,
@@ -21,15 +22,16 @@ import {
   Buffer,
   JsonEncoder,
 } from '@credo-ts/core'
-import { Jwk, JwkProps, Store } from '@hyperledger/aries-askar-shared'
+import { Key as AskarKey } from '@hyperledger/aries-askar-nodejs'
+import { Jwk, Store } from '@hyperledger/aries-askar-shared'
+import { readFileSync } from 'fs'
+import path from 'path'
 
 import { KeyBackend } from '../../../../core/src/crypto/KeyBackend'
 import { encodeToBase58 } from '../../../../core/src/utils/base58'
 import { agentDependencies } from '../../../../core/tests/helpers'
 import testLogger from '../../../../core/tests/logger'
 import { AskarWallet } from '../AskarWallet'
-import { readFileSync, writeFileSync } from 'fs'
-import path from 'path'
 
 // use raw key derivation method to speed up wallet creating / opening / closing between tests
 const walletConfig: WalletConfig = {
