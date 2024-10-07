@@ -244,7 +244,7 @@ export class DifPresentationExchangeProofFormatService
 
   public async processPresentation(
     agentContext: AgentContext,
-    { requestAttachment, attachment }: ProofFormatProcessPresentationOptions
+    { requestAttachment, attachment, proofRecord }: ProofFormatProcessPresentationOptions
   ): Promise<boolean> {
     const ps = this.presentationExchangeService(agentContext)
     const w3cCredentialService = agentContext.dependencyManager.resolve(W3cCredentialService)
@@ -295,6 +295,7 @@ export class DifPresentationExchangeProofFormatService
       // Not sure how to fix
       if (parsedPresentation.claimFormat === ClaimFormat.JwtVp) {
         verificationResult = await w3cCredentialService.verifyPresentation(agentContext, {
+          proofRecordId: proofRecord.id,
           presentation: parsedPresentation,
           challenge: request.options.challenge,
           domain: request.options.domain,

@@ -181,6 +181,7 @@ interface W3cVerifyPresentationOptionsBase {
 
 export interface W3cJwtVerifyPresentationOptions extends W3cVerifyPresentationOptionsBase {
   presentation: W3cJwtVerifiablePresentation | string // string must be encoded VP JWT
+  proofRecordId: string
 }
 
 export interface W3cJsonLdVerifyPresentationOptions extends W3cVerifyPresentationOptionsBase {

@@ -7,6 +7,7 @@ import { getJwkFromKey } from '../../../../crypto/jose/jwk'
 import { CredoError, ClassValidationError } from '../../../../error'
 import { JsonTransformer } from '../../../../utils'
 import { DidJwk, DidKey, DidRepository, DidsModuleConfig } from '../../../dids'
+import { X509ModuleConfig } from '../../../x509'
 import { CREDENTIALS_CONTEXT_V1_URL } from '../../constants'
 import { ClaimFormat, W3cCredential, W3cPresentation } from '../../models'
 import { W3cJwtCredentialService } from '../W3cJwtCredentialService'
@@ -30,6 +31,7 @@ const agentContext = getAgentContext({
     [InjectionSymbols.Logger, testLogger],
     [DidsModuleConfig, new DidsModuleConfig()],
     [DidRepository, {} as unknown as DidRepository],
+    [X509ModuleConfig, new X509ModuleConfig()],
   ],
   agentConfig: config,
 })
@@ -301,6 +303,7 @@ describe('W3cJwtCredentialService', () => {
   describe('verifyPresentation', () => {
     test('verifies an ES256 JWT vp signed by Credo', async () => {
       const result = await w3cJwtCredentialService.verifyPresentation(agentContext, {
+        proofRecordId: '123',
         presentation: CredoEs256DidKeyJwtVp,
         challenge: 'daf942ad-816f-45ee-a9fc-facd08e5abca',
         domain: 'example.com',
@@ -350,6 +353,7 @@ describe('W3cJwtCredentialService', () => {
     // the credential has a credential subject id (so it's not a bearer credential)
     test('verifies an EdDSA JWT vp from the transmute vc.js library', async () => {
       const result = await w3cJwtCredentialService.verifyPresentation(agentContext, {
+        proofRecordId: '123',
         presentation: didKeyTransmuteJwtVp,
         challenge: '123',
         domain: 'example.com',
