@@ -215,7 +215,14 @@ describe('AskarWallet basic operations', () => {
   })
 
   test('decrypt using JWE ECDH-ES based on test vector from OpenID Conformance test', async () => {
-    const { compactJwe, decodedPayload, privateKeyJwk, header: expectedHeader } = JSON.parse(readFileSync(path.join(__dirname, '__fixtures__/jarm-jwe-encrypted-response.json')).toString('utf-8')) as {
+    const {
+      compactJwe,
+      decodedPayload,
+      privateKeyJwk,
+      header: expectedHeader,
+    } = JSON.parse(
+      readFileSync(path.join(__dirname, '__fixtures__/jarm-jwe-encrypted-response.json')).toString('utf-8')
+    ) as {
       compactJwe: string
       decodedPayload: Record<string, unknown>
       privateKeyJwk: JwkProps

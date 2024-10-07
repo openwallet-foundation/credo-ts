@@ -175,8 +175,8 @@ export abstract class AskarBaseWallet implements Wallet {
           const _key = privateKey
             ? AskarKey.fromSecretBytes({ secretKey: privateKey, algorithm })
             : seed
-              ? AskarKey.fromSeed({ seed, algorithm })
-              : AskarKey.generate(algorithm)
+            ? AskarKey.fromSeed({ seed, algorithm })
+            : AskarKey.generate(algorithm)
 
           // FIXME: we need to create a separate const '_key' so TS definitely knows _key is defined in the session callback.
           // This will be fixed once we use the new 'using' syntax
@@ -311,9 +311,9 @@ export abstract class AskarBaseWallet implements Wallet {
           askarKey ??
           (keyPair
             ? AskarKey.fromSecretBytes({
-              secretKey: TypedArrayEncoder.fromBase58(keyPair.privateKeyBase58),
-              algorithm: keyAlgFromString(keyPair.keyType),
-            })
+                secretKey: TypedArrayEncoder.fromBase58(keyPair.privateKeyBase58),
+                algorithm: keyAlgFromString(keyPair.keyType),
+              })
             : undefined)
 
         if (!askarKey) {
@@ -523,9 +523,9 @@ export abstract class AskarBaseWallet implements Wallet {
       aad: Uint8Array.from(Buffer.from(encodedHeader)),
     })
 
-    const compactJwe = `${encodedHeader}..${TypedArrayEncoder.toBase64URL(
-      nonce
-    )}.${TypedArrayEncoder.toBase64URL(ciphertext)}.${TypedArrayEncoder.toBase64URL(tag)}`
+    const compactJwe = `${encodedHeader}..${TypedArrayEncoder.toBase64URL(nonce)}.${TypedArrayEncoder.toBase64URL(
+      ciphertext
+    )}.${TypedArrayEncoder.toBase64URL(tag)}`
     return compactJwe
   }
 
@@ -584,7 +584,7 @@ export abstract class AskarBaseWallet implements Wallet {
       recipientKey: askarKey,
       tag: TypedArrayEncoder.fromBase64(encodedTag),
       // NOTE: aad is bytes of base64url encoded string. It SHOULD NOT be decoded as base64
-      aad: TypedArrayEncoder.fromString(encodedHeader)
+      aad: TypedArrayEncoder.fromString(encodedHeader),
     })
 
     return { data: Buffer.from(plaintext), header }
