@@ -503,10 +503,10 @@ export abstract class AskarBaseWallet implements Wallet {
       epk: ephemeralKey.jwkPublic,
     }
 
-    const encodedHeader = JsonEncoder.toBuffer(_header)
+    const encodedHeader = JsonEncoder.toBase64URL(_header)
 
     const ecdh = new EcdhEs({
-      algId: Uint8Array.from(Buffer.from(encAlg)),
+      algId: Uint8Array.from(Buffer.from(encryptionAlgorithm)),
       apu: apu ? Uint8Array.from(TypedArrayEncoder.fromBase64(apu)) : Uint8Array.from([]),
       apv: apv ? Uint8Array.from(TypedArrayEncoder.fromBase64(apv)) : Uint8Array.from([]),
     })
@@ -519,10 +519,11 @@ export abstract class AskarBaseWallet implements Wallet {
         algorithm: keyAlgFromString(recipientKey.keyType),
         publicKey: recipientKey.publicKey,
       }),
-      aad: Uint8Array.from(encodedHeader),
+      // NOTE: aad is bytes of base64url encoded string. It SHOULD NOT be decoded as base64
+      aad: Uint8Array.from(Buffer.from(encodedHeader)),
     })
 
-    const compactJwe = `${TypedArrayEncoder.toBase64URL(encodedHeader)}..${TypedArrayEncoder.toBase64URL(
+    const compactJwe = `${encodedHeader}..${TypedArrayEncoder.toBase64URL(
       nonce
     )}.${TypedArrayEncoder.toBase64URL(ciphertext)}.${TypedArrayEncoder.toBase64URL(tag)}`
     return compactJwe
@@ -570,23 +571,10 @@ export abstract class AskarBaseWallet implements Wallet {
     const encAlg = KeyAlgs.AesA256Gcm
 
     const ecdh = new EcdhEs({
-      algId: Uint8Array.from(Buffer.from(encAlg)),
+      algId: Uint8Array.from(Buffer.from(header.enc)),
       apu: header.apu ? Uint8Array.from(TypedArrayEncoder.fromBase64(header.apu)) : Uint8Array.from([]),
       apv: header.apv ? Uint8Array.from(TypedArrayEncoder.fromBase64(header.apv)) : Uint8Array.from([]),
     })
-
-    console.log('secret p256', TypedArrayEncoder.toHex(askarKey.secretBytes))
-    const derived = new AskarKey(ariesAskarNodeJS.keyDeriveEcdhEs({
-      algId: Uint8Array.from(Buffer.from(encAlg)),
-      algorithm: encAlg,
-      apu: header.apu ? Uint8Array.from(TypedArrayEncoder.fromBase64(header.apu)) : Uint8Array.from([]),
-      apv: header.apv ? Uint8Array.from(TypedArrayEncoder.fromBase64(header.apv)) : Uint8Array.from([]),
-      ephemeralKey: AskarKey.fromJwk({ jwk: Jwk.fromJson(header.epk) }),
-      receive: true,
-      recipientKey: askarKey,
-    }))
-
-    console.log(TypedArrayEncoder.toHex(derived.secretBytes))
 
     const plaintext = ecdh.decryptDirect({
       nonce: TypedArrayEncoder.fromBase64(encodedIv),
@@ -595,7 +583,8 @@ export abstract class AskarBaseWallet implements Wallet {
       ephemeralKey: Jwk.fromJson(header.epk),
       recipientKey: askarKey,
       tag: TypedArrayEncoder.fromBase64(encodedTag),
-      aad: TypedArrayEncoder.fromBase64(encodedHeader),
+      // NOTE: aad is bytes of base64url encoded string. It SHOULD NOT be decoded as base64
+      aad: TypedArrayEncoder.fromString(encodedHeader)
     })
 
     return { data: Buffer.from(plaintext), header }
