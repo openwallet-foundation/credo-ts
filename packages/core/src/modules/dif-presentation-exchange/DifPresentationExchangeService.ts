@@ -242,10 +242,9 @@ export class DifPresentationExchangeService {
     })
 
     return {
-      verifiablePresentations: verifiablePresentationResultsWithFormat.map((resultWithFormat) =>
-        getVerifiablePresentationFromEncoded(
-          agentContext,
-          resultWithFormat.verifiablePresentationResult.verifiablePresentation
+      verifiablePresentations: verifiablePresentationResultsWithFormat.flatMap((resultWithFormat) =>
+        resultWithFormat.verifiablePresentationResult.verifiablePresentations.map((encoded) =>
+          getVerifiablePresentationFromEncoded(agentContext, encoded)
         )
       ),
       presentationSubmission,
