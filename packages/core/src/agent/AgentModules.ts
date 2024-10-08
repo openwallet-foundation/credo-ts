@@ -138,7 +138,7 @@ function getDefaultAgentModules() {
     pex: () => new DifPresentationExchangeModule(),
     sdJwtVc: () => new SdJwtVcModule(),
     x509: () => new X509Module(),
-    mod: () => new MdocModule(),
+    mdoc: () => new MdocModule(),
   } as const
 }
 
