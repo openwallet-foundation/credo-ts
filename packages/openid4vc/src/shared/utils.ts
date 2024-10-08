@@ -140,7 +140,10 @@ export async function openIdTokenIssuerToJwtIssuer(
       throw new CredoError('The X509 certificate issuer must be a HTTPS URI.')
     }
 
-    if (!leafCertificate.sanUriNames?.includes(openId4VcTokenIssuer.issuer) && !leafCertificate.sanDnsNames?.includes(getDomainFromUrl(openId4VcTokenIssuer.issuer))) {
+    if (
+      !leafCertificate.sanUriNames?.includes(openId4VcTokenIssuer.issuer) &&
+      !leafCertificate.sanDnsNames?.includes(getDomainFromUrl(openId4VcTokenIssuer.issuer))
+    ) {
       throw new Error(
         `The 'iss' claim in the payload does not match a 'SAN-URI' or 'SAN-DNS' name in the x5c certificate.`
       )

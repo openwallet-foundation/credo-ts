@@ -217,7 +217,7 @@ class OpenId4VcRelyingPartyEventEmitter implements NativeEventEmitter {
     private nativeEventEmitter: NativeEventEmitter,
     private contextCorrelationId: string,
     private verifierId: string
-  ) { }
+  ) {}
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   public emit(eventName: string | symbol, ...args: any[]): boolean {

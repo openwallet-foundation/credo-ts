@@ -71,8 +71,6 @@ export function configureAuthorizationEndpoint(router: Router, config: OpenId4Vc
     try {
       const openId4VcVerifierService = agentContext.dependencyManager.resolve(OpenId4VcSiopVerifierService)
 
-
-
       let verificationSession: OpenId4VcVerificationSessionRecord | undefined
       let authorizationResponsePayload: AuthorizationResponsePayload
 

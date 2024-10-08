@@ -1354,7 +1354,9 @@ describe('OpenId4Vc', () => {
       verifier.agent.modules.openId4VcVerifier.config.options.baseUrl.replace('https://', 'http://')
 
     expect(authorizationRequest.replace('https', 'http')).toEqual(
-      `openid4vp://?client_id=localhost%3A1234&request_uri=${encodeURIComponent(verificationSession.authorizationRequestUri)}`
+      `openid4vp://?client_id=localhost%3A1234&request_uri=${encodeURIComponent(
+        verificationSession.authorizationRequestUri
+      )}`
     )
 
     const resolvedAuthorizationRequest = await holder.agent.modules.openId4VcHolder.resolveSiopAuthorizationRequest(
@@ -1421,7 +1423,7 @@ describe('OpenId4Vc', () => {
                     iss: 'did:key:z6MkrzQPBr4pyqC776KKtrz13SchM5ePPbssuPuQZb5t4uKQ',
                     vct: 'OpenBadgeCredential2',
                     degree: 'bachelor2',
-                    name: 'John Doe2'
+                    name: 'John Doe2',
                   },
                 },
               ],
@@ -1566,7 +1568,7 @@ describe('OpenId4Vc', () => {
             iat: expect.any(Number),
             iss: 'did:key:z6MkrzQPBr4pyqC776KKtrz13SchM5ePPbssuPuQZb5t4uKQ',
             vct: 'OpenBadgeCredential2',
-            degree: 'bachelor2'
+            degree: 'bachelor2',
           },
           prettyClaims: {
             cnf: {
@@ -1576,7 +1578,7 @@ describe('OpenId4Vc', () => {
             iss: 'did:key:z6MkrzQPBr4pyqC776KKtrz13SchM5ePPbssuPuQZb5t4uKQ',
             vct: 'OpenBadgeCredential2',
             name: 'John Doe2',
-            degree: 'bachelor2'
+            degree: 'bachelor2',
           },
         },
       ],

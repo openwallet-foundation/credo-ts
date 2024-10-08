@@ -49,7 +49,8 @@ describe('OpenId4VcVerifier', () => {
 
       expect(
         authorizationRequest.startsWith(
-          `openid4vp://?client_id=${encodeURIComponent(verifier.did)}&request_uri=http%3A%2F%2Fredirect-uri%2F${openIdVerifier.verifierId
+          `openid4vp://?client_id=${encodeURIComponent(verifier.did)}&request_uri=http%3A%2F%2Fredirect-uri%2F${
+            openIdVerifier.verifierId
           }%2Fauthorization-requests%2F`
         )
       ).toBe(true)
@@ -87,7 +88,8 @@ describe('OpenId4VcVerifier', () => {
 
       expect(
         authorizationRequest.startsWith(
-          `openid://?client_id=${encodeURIComponent(verifier.did)}&request_uri=http%3A%2F%2Fredirect-uri%2F${openIdVerifier.verifierId
+          `openid://?client_id=${encodeURIComponent(verifier.did)}&request_uri=http%3A%2F%2Fredirect-uri%2F${
+            openIdVerifier.verifierId
           }%2Fauthorization-requests%2F`
         )
       ).toBe(true)

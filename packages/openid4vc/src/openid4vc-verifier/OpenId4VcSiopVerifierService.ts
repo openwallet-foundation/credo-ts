@@ -87,7 +87,7 @@ export class OpenId4VcSiopVerifierService {
     private openId4VcVerifierRepository: OpenId4VcVerifierRepository,
     private config: OpenId4VcVerifierModuleConfig,
     private openId4VcVerificationSessionRepository: OpenId4VcVerificationSessionRepository
-  ) { }
+  ) {}
 
   public async createAuthorizationRequest(
     agentContext: AgentContext,
@@ -107,9 +107,9 @@ export class OpenId4VcSiopVerifierService {
     const jwtIssuer =
       options.requestSigner.method === 'x5c'
         ? await openIdTokenIssuerToJwtIssuer(agentContext, {
-          ...options.requestSigner,
-          issuer: authorizationResponseUrl,
-        })
+            ...options.requestSigner,
+            issuer: authorizationResponseUrl,
+          })
         : await openIdTokenIssuerToJwtIssuer(agentContext, options.requestSigner)
 
     let clientIdScheme: ClientIdScheme
@@ -363,18 +363,18 @@ export class OpenId4VcSiopVerifierService {
       verifierId,
     }:
       | {
-        authorizationResponse?: never
-        authorizationResponseParams: {
-          state?: string
-          nonce?: string
+          authorizationResponse?: never
+          authorizationResponseParams: {
+            state?: string
+            nonce?: string
+          }
+          verifierId?: string
         }
-        verifierId?: string
-      }
       | {
-        authorizationResponse: OpenId4VcSiopAuthorizationResponsePayload
-        authorizationResponseParams?: never
-        verifierId?: string
-      }
+          authorizationResponse: OpenId4VcSiopAuthorizationResponsePayload
+          authorizationResponseParams?: never
+          verifierId?: string
+        }
   ) {
     let nonce: string | undefined
     let state: string | undefined
@@ -514,10 +514,10 @@ export class OpenId4VcSiopVerifierService {
     const jarmClientMetadata: (JarmClientMetadata & { jwks: { keys: JarmEncryptionJwk[] } }) | undefined =
       jarmEncryptionJwk
         ? {
-          jwks: { keys: [jarmEncryptionJwk] },
-          authorization_encrypted_response_alg: 'ECDH-ES',
-          authorization_encrypted_response_enc: 'A256GCM',
-        }
+            jwks: { keys: [jarmEncryptionJwk] },
+            authorization_encrypted_response_alg: 'ECDH-ES',
+            authorization_encrypted_response_enc: 'A256GCM',
+          }
         : undefined
 
     builder
