@@ -388,9 +388,20 @@ export class OpenId4VcSiopVerifierService {
       state = await authorizationResponseInstance.getMergedProperty<string>('state', {
         hasher: Hasher.hash,
       })
+
+      if (!nonce && !state) {
+        throw new CredoError(
+          'Could not extract nonce or state from authorization response. Unable to find OpenId4VcVerificationSession.'
+        )
+      }
     } else {
-      nonce = authorizationResponseParams.nonce
-      state = authorizationResponse
+      if (authorizationResponseParams?.nonce && !authorizationResponseParams?.state) {
+        throw new CredoError(
+          'Either nonce or state must be provided if no authorization response is provided. Unable to find OpenId4VcVerificationSession.'
+        )
+      }
+      nonce = authorizationResponseParams?.nonce
+      state = authorizationResponseParams?.state
     }
 
     const verificationSession = await this.openId4VcVerificationSessionRepository.findSingleByQuery(agentContext, {

@@ -6,6 +6,7 @@ import type {
   SignOptions,
   VerifyOptions,
 } from '@credo-ts/core'
+import type { JwkProps } from '@hyperledger/aries-askar-shared'
 
 import {
   WalletKeyExistsError,
@@ -21,7 +22,10 @@ import {
   Buffer,
   JsonEncoder,
 } from '@credo-ts/core'
-import { Store } from '@hyperledger/aries-askar-shared'
+import { Key as AskarKey } from '@hyperledger/aries-askar-nodejs'
+import { Jwk, Store } from '@hyperledger/aries-askar-shared'
+import { readFileSync } from 'fs'
+import path from 'path'
 
 import { KeyBackend } from '../../../../core/src/crypto/KeyBackend'
 import { encodeToBase58 } from '../../../../core/src/utils/base58'
@@ -210,6 +214,36 @@ describe('AskarWallet basic operations', () => {
       },
     })
     expect(JsonEncoder.fromBuffer(data)).toEqual({ vp_token: ['something'] })
+  })
+
+  test('decrypt using JWE ECDH-ES based on test vector from OpenID Conformance test', async () => {
+    const {
+      compactJwe,
+      decodedPayload,
+      privateKeyJwk,
+      header: expectedHeader,
+    } = JSON.parse(
+      readFileSync(path.join(__dirname, '__fixtures__/jarm-jwe-encrypted-response.json')).toString('utf-8')
+    ) as {
+      compactJwe: string
+      decodedPayload: Record<string, unknown>
+      privateKeyJwk: JwkProps
+      header: string
+    }
+
+    const key = AskarKey.fromJwk({ jwk: Jwk.fromJson(privateKeyJwk) })
+    const recipientKey = await askarWallet.createKey({
+      keyType: KeyType.P256,
+      privateKey: Buffer.from(key.secretBytes),
+    })
+
+    const { data, header } = await askarWallet.directDecryptCompactJweEcdhEs({
+      compactJwe,
+      recipientKey,
+    })
+
+    expect(header).toEqual(expectedHeader)
+    expect(JsonEncoder.fromBuffer(data)).toEqual(decodedPayload)
   })
 })
 

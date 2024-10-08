@@ -25,14 +25,14 @@ async function getVerificationSession(
   options: {
     verifierId: string
     state?: string
-    nonce?: unknown
+    nonce?: string
   }
 ): Promise<OpenId4VcVerificationSessionRecord> {
   const { verifierId, state, nonce } = options
 
   const openId4VcVerifierService = agentContext.dependencyManager.resolve(OpenId4VcSiopVerifierService)
   const session = await openId4VcVerifierService.findVerificationSessionForAuthorizationResponse(agentContext, {
-    authorizationResponseParams: { state, nonce: nonce as string },
+    authorizationResponseParams: { state, nonce },
     verifierId,
   })
 
@@ -80,7 +80,7 @@ export function configureAuthorizationEndpoint(router: Router, config: OpenId4Vc
             verificationSession = await getVerificationSession(agentContext, {
               verifierId: verifier.verifierId,
               state: input.state,
-              nonce: input.nonce,
+              nonce: input.nonce as string,
             })
 
             const req = await AuthorizationRequest.fromUriOrJwt(verificationSession.authorizationRequestJwt)
@@ -93,6 +93,7 @@ export function configureAuthorizationEndpoint(router: Router, config: OpenId4Vc
           decryptCompact: decryptJarmResponse(agentContext),
         })
 
+        // FIXME: verify the apv matches the nonce of the authorization reuqest
         authorizationResponsePayload = res.authResponseParams as AuthorizationResponsePayload
       } else {
         authorizationResponsePayload = request.body

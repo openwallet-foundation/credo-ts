@@ -17,6 +17,8 @@ import {
   DifPresentationExchangeService,
   DifPresentationExchangeSubmissionLocation,
   Hasher,
+  KeyType,
+  TypedArrayEncoder,
   W3cJsonLdVerifiablePresentation,
   W3cJwtVerifiablePresentation,
   asArray,
@@ -173,10 +175,17 @@ export class OpenId4VcSiopHolderService {
         throw new CredoError('Only encrypted JARM responses are supported.')
       }
 
+      // Extract nonce from the request, we use this as the `apv`
+      const nonce = authorizationRequest.payload?.nonce
+      if (!nonce || typeof nonce !== 'string') {
+        throw new CredoError('Missing nonce in authorization request payload')
+      }
+
       const jwe = await this.encryptJarmResponse(agentContext, {
-        jwkJson: { ...jwk, kty: jwk.kty },
+        jwkJson: jwk as JwkJson,
         payload: authorizationResponsePayload,
-        encryptionAlgorithm: validatedMetadata.client_metadata.authorization_encrypted_response_alg,
+        authorizationRequestNonce: nonce,
+        alg: validatedMetadata.client_metadata.authorization_encrypted_response_alg,
         enc: validatedMetadata.client_metadata.authorization_encrypted_response_enc,
       })
 
@@ -323,7 +332,13 @@ export class OpenId4VcSiopHolderService {
 
   private async encryptJarmResponse(
     agentContext: AgentContext,
-    options: { jwkJson: JwkJson; payload: Record<string, unknown>; encryptionAlgorithm: string; enc: string }
+    options: {
+      jwkJson: JwkJson
+      payload: Record<string, unknown>
+      alg: string
+      enc: string
+      authorizationRequestNonce: string
+    }
   ) {
     const { payload, jwkJson } = options
     const jwk = getJwkFromJson(jwkJson)
@@ -335,16 +350,28 @@ export class OpenId4VcSiopHolderService {
       )
     }
 
+    if (options.alg !== 'ECDH-ES') {
+      throw new CredoError("Only 'ECDH-ES' is supported as 'alg' value for JARM response encryption")
+    }
+
+    if (options.enc !== 'A256GCM') {
+      throw new CredoError("Only 'A256GCM' is supported as 'enc' value for JARM response encryption")
+    }
+
+    if (key.keyType !== KeyType.P256) {
+      throw new CredoError(`Only '${KeyType.P256}' key type is supported for JARM response encryption`)
+    }
+
     const data = Buffer.from(JSON.stringify(payload))
     const jwe = await agentContext.wallet.directEncryptCompactJweEcdhEs({
       data,
       recipientKey: key,
       header: {
-        alg: jwkJson.alg,
         kid: jwkJson.kid,
-        enc: 'A256GCM',
       },
-      encryptionAlgorithm: 'A256GCM',
+      encryptionAlgorithm: options.enc,
+      apu: TypedArrayEncoder.toBase64URL(TypedArrayEncoder.fromString(await agentContext.wallet.generateNonce())),
+      apv: TypedArrayEncoder.toBase64URL(TypedArrayEncoder.fromString(options.authorizationRequestNonce)),
     })
 
     return jwe
