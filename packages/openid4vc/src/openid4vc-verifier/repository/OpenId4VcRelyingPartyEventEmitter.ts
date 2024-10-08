@@ -78,12 +78,12 @@ export class OpenId4VcRelyingPartyEventHandler {
     event: AuthorizationEvent<AuthorizationRequest>,
     context: RelyingPartyEventEmitterContext
   ): Promise<void> => {
-    const authorizationRequestJwt = await event.subject.requestObjectJwt()
+    const authorizationRequestJwt = await event.subject?.requestObjectJwt()
     if (!authorizationRequestJwt) {
       throw new CredoError('Authorization request object JWT is missing')
     }
 
-    const authorizationRequestUri = event.subject.payload.request_uri
+    const authorizationRequestUri = event.subject?.payload.request_uri
     if (!authorizationRequestUri) {
       throw new CredoError('Authorization request URI is missing')
     }
@@ -128,8 +128,8 @@ export class OpenId4VcRelyingPartyEventHandler {
 
       const previousState = verificationSession.state
       verificationSession.state = OpenId4VcVerificationSessionState.Error
-      verificationSession.authorizationResponsePayload = event.subject.payload
-      verificationSession.errorMessage = event.error.message
+      verificationSession.authorizationResponsePayload = event.subject?.payload
+      verificationSession.errorMessage = event.error?.message
       await verificationSessionRepository.update(agentContext, verificationSession)
       this.emitStateChangedEvent(agentContext, verificationSession, previousState)
     })
@@ -147,7 +147,7 @@ export class OpenId4VcRelyingPartyEventHandler {
         verificationSession.state !== OpenId4VcVerificationSessionState.ResponseVerified
       ) {
         const previousState = verificationSession.state
-        verificationSession.authorizationResponsePayload = event.subject.payload
+        verificationSession.authorizationResponsePayload = event.subject?.payload
         verificationSession.state = OpenId4VcVerificationSessionState.ResponseVerified
         await verificationSessionRepository.update(agentContext, verificationSession)
         this.emitStateChangedEvent(agentContext, verificationSession, previousState)
@@ -164,7 +164,7 @@ export class OpenId4VcRelyingPartyEventHandler {
 
       const previousState = verificationSession.state
       verificationSession.state = OpenId4VcVerificationSessionState.Error
-      verificationSession.errorMessage = event.error.message
+      verificationSession.errorMessage = event.error?.message
       await verificationSessionRepository.update(agentContext, verificationSession)
       this.emitStateChangedEvent(agentContext, verificationSession, previousState)
     })

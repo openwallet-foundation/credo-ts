@@ -49,7 +49,9 @@ describe('OpenId4VcVerifier', () => {
 
       expect(
         authorizationRequest.startsWith(
-          `openid4vp://?request_uri=http%3A%2F%2Fredirect-uri%2F${openIdVerifier.verifierId}%2Fauthorization-requests%2F`
+          `openid4vp://?client_id=${encodeURIComponent(verifier.did)}&request_uri=http%3A%2F%2Fredirect-uri%2F${
+            openIdVerifier.verifierId
+          }%2Fauthorization-requests%2F`
         )
       ).toBe(true)
 
@@ -60,9 +62,8 @@ describe('OpenId4VcVerifier', () => {
       expect(jwt.header.kid).toEqual(verifier.kid)
       expect(jwt.header.alg).toEqual(SigningAlgo.EDDSA)
       expect(jwt.header.typ).toEqual('JWT')
-      expect(jwt.payload.additionalClaims.scope).toEqual('openid')
       expect(jwt.payload.additionalClaims.client_id).toEqual(verifier.did)
-      expect(jwt.payload.additionalClaims.redirect_uri).toEqual(
+      expect(jwt.payload.additionalClaims.response_uri).toEqual(
         `http://redirect-uri/${openIdVerifier.verifierId}/authorize`
       )
       expect(jwt.payload.additionalClaims.response_mode).toEqual('direct_post')
@@ -86,7 +87,9 @@ describe('OpenId4VcVerifier', () => {
 
       expect(
         authorizationRequest.startsWith(
-          `openid://?request_uri=http%3A%2F%2Fredirect-uri%2F${openIdVerifier.verifierId}%2Fauthorization-requests%2F`
+          `openid://?client_id=${encodeURIComponent(verifier.did)}&request_uri=http%3A%2F%2Fredirect-uri%2F${
+            openIdVerifier.verifierId
+          }%2Fauthorization-requests%2F`
         )
       ).toBe(true)
 
@@ -99,7 +102,7 @@ describe('OpenId4VcVerifier', () => {
       expect(jwt.header.typ).toEqual('JWT')
       expect(jwt.payload.additionalClaims.scope).toEqual('openid')
       expect(jwt.payload.additionalClaims.client_id).toEqual(verifier.did)
-      expect(jwt.payload.additionalClaims.redirect_uri).toEqual(
+      expect(jwt.payload.additionalClaims.response_uri).toEqual(
         `http://redirect-uri/${openIdVerifier.verifierId}/authorize`
       )
       expect(jwt.payload.additionalClaims.response_mode).toEqual('direct_post')
