@@ -142,7 +142,7 @@ describe('mdoc device-response openid4vp test', () => {
 
     // this is the ISSUER side
     {
-      mdoc = await Mdoc.create(agent.context, {
+      mdoc = await Mdoc.sign(agent.context, {
         docType: 'org.iso.18013.5.1.mDL',
         validityInfo: {
           signed: new Date('2023-10-24'),

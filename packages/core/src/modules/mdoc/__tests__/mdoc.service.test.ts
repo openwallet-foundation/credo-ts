@@ -53,7 +53,7 @@ describe('mdoc service test', () => {
 
     const issuerCertificate = selfSignedCertificate.toString('pem')
 
-    const mdoc = await Mdoc.create(agentContext, {
+    const mdoc = await Mdoc.sign(agentContext, {
       docType: 'org.iso.18013.5.1.mDL',
       holderPublicKey: holderKey,
       namespaces: {
@@ -77,10 +77,10 @@ describe('mdoc service test', () => {
 
     expect(() => mdoc.deviceSignedNamespaces).toThrow()
 
-    const res = await mdoc.verify(agentContext, {
+    const { isValid } = await mdoc.verify(agentContext, {
       trustedCertificates: [selfSignedCertificate.toString('base64')],
     })
-    expect(res).toBeTruthy()
+    expect(isValid).toBeTruthy()
   })
 
   test('can decode claims from namespaces', async () => {
@@ -123,7 +123,7 @@ describe('mdoc service test', () => {
   test('can verify sprindFunkeTestVector Issuer Signed', async () => {
     const mdoc = Mdoc.fromBase64Url(sprindFunkeTestVectorBase64Url)
     const now = new Date('2024-08-12T14:50:42.124Z')
-    const isValid = await mdoc.verify(agentContext, {
+    const { isValid } = await mdoc.verify(agentContext, {
       trustedCertificates: [sprindFunkeX509TrustedCertificate],
       now,
     })

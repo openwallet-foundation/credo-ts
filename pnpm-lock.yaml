@@ -433,14 +433,14 @@ importers:
         specifier: ^1.11.0
         version: 1.12.1
       '@protokoll/core':
-        specifier: 0.2.26
-        version: 0.2.26(typescript@5.5.4)
+        specifier: 0.2.27
+        version: 0.2.27(typescript@5.5.4)
       '@protokoll/crypto':
-        specifier: 0.2.26
-        version: 0.2.26(typescript@5.5.4)
+        specifier: 0.2.27
+        version: 0.2.27(typescript@5.5.4)
       '@protokoll/mdoc-client':
-        specifier: 0.2.26
-        version: 0.2.26(typescript@5.5.4)
+        specifier: 0.2.27
+        version: 0.2.27(typescript@5.5.4)
       '@sd-jwt/core':
         specifier: ^0.7.0
         version: 0.7.2
@@ -2335,14 +2335,14 @@ packages:
   '@protobufjs/utf8@1.1.0':
     resolution: {integrity: sha512-Vvn3zZrhQZkkBE8LSuW3em98c0FwgO4nxzv6OdSxPKJIEKY2bGbHn+mhGIPerzI4twdxaP8/0+06HBpwf345Lw==}
 
-  '@protokoll/core@0.2.26':
-    resolution: {integrity: sha512-mZeFrBKBvjS++c/ooi0sI0yN/RlgrJKWIfSz4QJMmUKBlRpGvGVF6UPxlDWKBZwkxZAAWLoW/GzMg20gPKqW5g==}
+  '@protokoll/core@0.2.27':
+    resolution: {integrity: sha512-9+SOTmrehKxfb3UJBleplC8tZ99TBZDCqgB54L9JAsApqJqSRVhU/kTm4XWknn7pG5Sq4oUtQifo4Eo2nrmOhw==}
 
-  '@protokoll/crypto@0.2.26':
-    resolution: {integrity: sha512-CpJm0n7QvwITwOUa+E0jiiv2KayAAOOrW6bufZ1XIdxED7v2+0zQh/Li5hJip1N13T3YZpyYDX8qonE6e1ZXVA==}
+  '@protokoll/crypto@0.2.27':
+    resolution: {integrity: sha512-dIp5t7T5muW+G0leFNC80ra8VCXOnQNebQ9bIGuwskrzdEdY4KS2ZrljaQIu61fKx/YBFLhHkM3TO0hgrATlSg==}
 
-  '@protokoll/mdoc-client@0.2.26':
-    resolution: {integrity: sha512-LN7Rk5UWtD6VHl7jLh/Qlsa3XPssfypJ8tzIEjOnRtDxLO5I1RrFWdcZgT4IMcJRswTx0MheIQ1+jSayjGo/7w==}
+  '@protokoll/mdoc-client@0.2.27':
+    resolution: {integrity: sha512-1z7ZLVgsInGsFW8b+VhhLGZR0rS8emZxXfRTkcZTyePSSpQilT4IoINBTfUeNMj47ANqkMBsgHmZs9UEKNSYSQ==}
 
   '@react-native-community/cli-clean@10.1.1':
     resolution: {integrity: sha512-iNsrjzjIRv9yb5y309SWJ8NDHdwYtnCpmxZouQDyOljUdC9MwdZ4ChbtA4rwQyAwgOVfS9F/j56ML3Cslmvrxg==}
@@ -9931,7 +9931,7 @@ snapshots:
 
   '@protobufjs/utf8@1.1.0': {}
 
-  '@protokoll/core@0.2.26(typescript@5.5.4)':
+  '@protokoll/core@0.2.27(typescript@5.5.4)':
     dependencies:
       '@credo-ts/core': link:packages/core
       jwt-decode: 4.0.0
@@ -9939,17 +9939,17 @@ snapshots:
     transitivePeerDependencies:
       - typescript
 
-  '@protokoll/crypto@0.2.26(typescript@5.5.4)':
+  '@protokoll/crypto@0.2.27(typescript@5.5.4)':
     dependencies:
-      '@protokoll/core': 0.2.26(typescript@5.5.4)
+      '@protokoll/core': 0.2.27(typescript@5.5.4)
       valibot: 0.37.0(typescript@5.5.4)
     transitivePeerDependencies:
       - typescript
 
-  '@protokoll/mdoc-client@0.2.26(typescript@5.5.4)':
+  '@protokoll/mdoc-client@0.2.27(typescript@5.5.4)':
     dependencies:
       '@jfromaniello/typedmap': 1.4.0
-      '@protokoll/core': 0.2.26(typescript@5.5.4)
+      '@protokoll/core': 0.2.27(typescript@5.5.4)
       cbor-x: 1.6.0
       compare-versions: 6.1.1
     transitivePeerDependencies:

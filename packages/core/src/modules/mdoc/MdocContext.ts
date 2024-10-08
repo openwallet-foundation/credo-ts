@@ -6,7 +6,7 @@ import { p256 } from '@noble/curves/p256'
 import { hkdf } from '@noble/hashes/hkdf'
 import { sha256 } from '@noble/hashes/sha2'
 import * as x509 from '@peculiar/x509'
-import { exportJwk, importX509, verifyWithJwk } from '@protokoll/crypto'
+import { exportJwk, importX509 } from '@protokoll/crypto'
 
 import { CredoWebCrypto, getJwkFromJson, Hasher } from '../../crypto'
 import { Buffer, TypedArrayEncoder } from '../../utils'
@@ -54,8 +54,13 @@ export const getMdocContext = (agentContext: AgentContext): MdocContext => {
         },
         verify: async (input) => {
           const { mac0, jwk, options } = input
-          const { data, signature, alg } = mac0.getRawVerificationData(options)
-          return await verifyWithJwk({ jwk, signature, data, alg })
+          const { data, signature } = mac0.getRawVerificationData(options)
+
+          return await agentContext.wallet.verify({
+            key: getJwkFromJson(jwk as JwkJson).key,
+            data: Buffer.from(data),
+            signature: new Buffer(signature),
+          })
         },
       },
       sign1: {
@@ -69,8 +74,12 @@ export const getMdocContext = (agentContext: AgentContext): MdocContext => {
         },
         verify: async (input) => {
           const { sign1, jwk, options } = input
-          const { data, signature, alg } = sign1.getRawVerificationData(options)
-          return await verifyWithJwk({ jwk, signature, data, alg, crypto })
+          const { data, signature } = sign1.getRawVerificationData(options)
+          return await agentContext.wallet.verify({
+            key: getJwkFromJson(jwk as JwkJson).key,
+            data: Buffer.from(data),
+            signature: new Buffer(signature),
+          })
         },
       },
     },
@@ -82,6 +91,11 @@ export const getMdocContext = (agentContext: AgentContext): MdocContext => {
         return x509Certificate.getIssuerNameField(field)
       },
       getPublicKey: async (input) => {
+        //const comp = X509Certificate.fromRawCertificate(input.certificate)
+        //const x = getJwkFromKey(comp.publicKey).toJson()
+        //////// eslint-disable-next-line @typescript-eslint/no-unused-vars
+        //return x
+
         const certificate = new x509.X509Certificate(input.certificate)
         const key = await importX509({
           x509: certificate.toString(),

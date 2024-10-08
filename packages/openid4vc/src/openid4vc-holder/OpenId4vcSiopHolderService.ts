@@ -116,7 +116,7 @@ export class OpenId4VcSiopHolderService {
             mdocGeneratedNonce: await agentContext.wallet.generateNonce(),
             responseUri:
               authorizationRequest.authorizationRequestPayload.response_uri ??
-              authorizationRequest.authorizationRequestPayload.response_uri,
+              authorizationRequest.authorizationRequestPayload.request_uri,
           },
         })
 

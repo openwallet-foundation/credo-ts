@@ -1,5 +1,5 @@
 import type {
-  MdocCreateOptions,
+  MdocSignOptions,
   MdocDeviceResponseOpenId4VpOptions,
   MdocDeviceResponseVerifyOptions,
   MdocVerifyOptions,
@@ -29,8 +29,8 @@ export class MdocService {
     return Mdoc.fromBase64Url(hexEncodedMdoc)
   }
 
-  public createMdoc(agentContext: AgentContext, options: MdocCreateOptions) {
-    return Mdoc.create(agentContext, options)
+  public createMdoc(agentContext: AgentContext, options: MdocSignOptions) {
+    return Mdoc.sign(agentContext, options)
   }
 
   public async verifyMdoc(agentContext: AgentContext, mdoc: Mdoc, options: MdocVerifyOptions) {

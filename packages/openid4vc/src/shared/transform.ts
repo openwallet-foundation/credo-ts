@@ -46,7 +46,7 @@ export function getSphereonVerifiablePresentation(
   } else if (verifiablePresentation instanceof W3cJwtVerifiablePresentation) {
     return verifiablePresentation.serializedJwt
   } else if (verifiablePresentation instanceof MdocVerifiablePresentation) {
-    throw new CredoError('Mdoc verifiable credential is not yet supported.')
+    throw new CredoError('Mdoc verifiable presentation is not yet supported.')
   } else {
     return verifiablePresentation.compact
   }

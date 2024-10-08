@@ -209,6 +209,10 @@ export class DifPresentationExchangeProofFormatService
       domain: options?.domain,
     })
 
+    if (!presentation) {
+      throw new CredoError('Failed to create presentation for request.')
+    }
+
     if (presentation.verifiablePresentations.length > 1) {
       throw new CredoError('Invalid amount of verifiable presentations. Only one is allowed.')
     }

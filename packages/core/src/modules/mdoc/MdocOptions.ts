@@ -1,6 +1,6 @@
 import type { Mdoc } from './Mdoc'
 import type { Key } from '../../crypto/Key'
-import type { DifPresentationExchangeDefinitionV2 } from '../dif-presentation-exchange'
+import type { DifPresentationExchangeDefinition } from '../dif-presentation-exchange'
 import type { ValidityInfo, MdocNameSpaces } from '@protokoll/mdoc-client'
 
 export type { MdocNameSpaces } from '@protokoll/mdoc-client'
@@ -19,7 +19,7 @@ export type MdocOpenId4VpSessionTranscriptOptions = {
 
 export type MdocDeviceResponseOpenId4VpOptions = {
   mdocs: [Mdoc, ...Mdoc[]]
-  presentationDefinition: DifPresentationExchangeDefinitionV2
+  presentationDefinition: DifPresentationExchangeDefinition
   deviceNameSpaces?: MdocNameSpaces
   sessionTranscriptOptions: MdocOpenId4VpSessionTranscriptOptions
 }
@@ -40,7 +40,7 @@ export type MdocDeviceResponseVerifyOptions = {
   now?: Date
 }
 
-export type MdocCreateOptions = {
+export type MdocSignOptions = {
   // eslint-disable-next-line @typescript-eslint/ban-types
   docType: 'org.iso.18013.5.1.mDL' | (string & {})
   validityInfo?: Partial<ValidityInfo>

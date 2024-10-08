@@ -33,7 +33,7 @@ describe('mdoc device-response test', () => {
 
     const issuerCertificate = selfSignedCertificate.toString('pem')
 
-    const mdoc = await Mdoc.create(agent.context, {
+    const mdoc = await Mdoc.sign(agent.context, {
       docType: 'org.iso.18013.5.1.mDL',
       holderPublicKey: holderKey,
       namespaces: {

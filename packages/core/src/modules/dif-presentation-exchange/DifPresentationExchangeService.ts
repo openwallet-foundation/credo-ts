@@ -22,7 +22,7 @@ import type {
   W3CVerifiablePresentation,
 } from '@sphereon/ssi-types'
 
-import { PEVersion, PEX, Status } from '@sphereon/pex'
+import { PEVersion, PEX, PresentationSubmissionLocation, Status } from '@sphereon/pex'
 import { PartialSdJwtDecodedVerifiableCredential } from '@sphereon/pex/dist/main/lib'
 import { injectable } from 'tsyringe'
 
@@ -197,7 +197,7 @@ export class DifPresentationExchangeService {
 
         const { deviceResponseBase64Url, presentationSubmission } = await MdocDeviceResponse.openId4Vp(agentContext, {
           mdocs: [Mdoc.fromBase64Url(mdocRecord.base64Url)],
-          presentationDefinition: presentationDefinition as DifPresentationExchangeDefinitionV2,
+          presentationDefinition: presentationDefinition,
           sessionTranscriptOptions: {
             ...openid4vp,
           },
@@ -211,81 +211,79 @@ export class DifPresentationExchangeService {
           },
           claimFormat: presentationToCreate.claimFormat,
         })
+      } else {
+        // Get all the credentials for the presentation
+        const credentialsForPresentation = presentationToCreate.verifiableCredentials.map((c) =>
+          getSphereonOriginalVerifiableCredential(c.credential)
+        )
 
-        continue
+        const verifiablePresentationResult = await this.pex.verifiablePresentationFrom(
+          presentationDefinitionForSubject,
+          credentialsForPresentation,
+          this.getPresentationSignCallback(agentContext, presentationToCreate),
+          {
+            proofOptions: {
+              challenge,
+              domain,
+            },
+            signatureOptions: {},
+            presentationSubmissionLocation:
+              presentationSubmissionLocation ?? DifPresentationExchangeSubmissionLocation.PRESENTATION,
+          }
+        )
+
+        verifiablePresentationResultsWithFormat.push({
+          verifiablePresentationResult,
+          claimFormat: presentationToCreate.claimFormat,
+        })
       }
 
-      // Get all the credentials for the presentation
-      const credentialsForPresentation = presentationToCreate.verifiableCredentials.map((c) =>
-        getSphereonOriginalVerifiableCredential(c.credential)
-      )
+      if (verifiablePresentationResultsWithFormat.length === 0) {
+        throw new DifPresentationExchangeError('No verifiable presentations created')
+      }
 
-      const verifiablePresentationResult = await this.pex.verifiablePresentationFrom(
-        presentationDefinitionForSubject,
-        credentialsForPresentation,
-        this.getPresentationSignCallback(agentContext, presentationToCreate),
-        {
-          proofOptions: {
-            challenge,
-            domain,
-          },
-          signatureOptions: {},
-          presentationSubmissionLocation:
-            presentationSubmissionLocation ?? DifPresentationExchangeSubmissionLocation.PRESENTATION,
-        }
-      )
+      if (presentationsToCreate.length !== verifiablePresentationResultsWithFormat.length) {
+        throw new DifPresentationExchangeError('Invalid amount of verifiable presentations created')
+      }
 
-      verifiablePresentationResultsWithFormat.push({
-        verifiablePresentationResult,
-        claimFormat: presentationToCreate.claimFormat,
-      })
-    }
+      const presentationSubmission: DifPresentationExchangeSubmission = {
+        id: verifiablePresentationResultsWithFormat[0].verifiablePresentationResult.presentationSubmission.id,
+        definition_id:
+          verifiablePresentationResultsWithFormat[0].verifiablePresentationResult.presentationSubmission.definition_id,
+        descriptor_map: [],
+      }
 
-    if (verifiablePresentationResultsWithFormat.length === 0) {
-      throw new DifPresentationExchangeError('No verifiable presentations created')
-    }
+      verifiablePresentationResultsWithFormat.forEach(({ verifiablePresentationResult }, index) => {
+        const descriptorMap = verifiablePresentationResult.presentationSubmission.descriptor_map.map((d) => {
+          const descriptor = { ...d }
 
-    if (presentationsToCreate.length !== verifiablePresentationResultsWithFormat.length) {
-      throw new DifPresentationExchangeError('Invalid amount of verifiable presentations created')
-    }
+          // when multiple presentations are submitted, path should be $[0], $[1]
+          // FIXME: this should be addressed in the PEX/OID4VP lib.
+          // See https://github.com/Sphereon-Opensource/SIOP-OID4VP/issues/62
+          if (
+            presentationSubmissionLocation === DifPresentationExchangeSubmissionLocation.EXTERNAL &&
+            verifiablePresentationResultsWithFormat.length > 1
+          ) {
+            descriptor.path = `$[${index}]`
+          }
 
-    const presentationSubmission: DifPresentationExchangeSubmission = {
-      id: verifiablePresentationResultsWithFormat[0].verifiablePresentationResult.presentationSubmission.id,
-      definition_id:
-        verifiablePresentationResultsWithFormat[0].verifiablePresentationResult.presentationSubmission.definition_id,
-      descriptor_map: [],
-    }
+          return descriptor
+        })
 
-    verifiablePresentationResultsWithFormat.forEach(({ verifiablePresentationResult }, index) => {
-      const descriptorMap = verifiablePresentationResult.presentationSubmission.descriptor_map.map((d) => {
-        const descriptor = { ...d }
-
-        // when multiple presentations are submitted, path should be $[0], $[1]
-        // FIXME: this should be addressed in the PEX/OID4VP lib.
-        // See https://github.com/Sphereon-Opensource/SIOP-OID4VP/issues/62
-        if (
-          presentationSubmissionLocation === DifPresentationExchangeSubmissionLocation.EXTERNAL &&
-          verifiablePresentationResultsWithFormat.length > 1
-        ) {
-          descriptor.path = `$[${index}]`
-        }
-
-        return descriptor
+        presentationSubmission.descriptor_map.push(...descriptorMap)
       })
 
-      presentationSubmission.descriptor_map.push(...descriptorMap)
-    })
-
-    return {
-      verifiablePresentations: verifiablePresentationResultsWithFormat.map((resultWithFormat) =>
-        getVerifiablePresentationFromEncoded(
-          agentContext,
-          resultWithFormat.verifiablePresentationResult.verifiablePresentation
-        )
-      ),
-      presentationSubmission,
-      presentationSubmissionLocation:
-        verifiablePresentationResultsWithFormat[0].verifiablePresentationResult.presentationSubmissionLocation,
+      return {
+        verifiablePresentations: verifiablePresentationResultsWithFormat.map((resultWithFormat) =>
+          getVerifiablePresentationFromEncoded(
+            agentContext,
+            resultWithFormat.verifiablePresentationResult.verifiablePresentation
+          )
+        ),
+        presentationSubmission,
+        presentationSubmissionLocation:
+          verifiablePresentationResultsWithFormat[0].verifiablePresentationResult.presentationSubmissionLocation,
+      }
     }
   }
 

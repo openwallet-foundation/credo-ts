@@ -31,8 +31,8 @@ export async function getCredentialsForRequest(
   credentialRecords: Array<W3cCredentialRecord | SdJwtVcRecord | MdocRecord>
 ): Promise<DifPexCredentialsForRequest> {
   const encodedCredentials = credentialRecords
-    .filter((c) => c instanceof MdocRecord === false)
-    .map((c) => getSphereonOriginalVerifiableCredential(c as SdJwtVcRecord | W3cCredentialRecord))
+    .filter((c): c is Exclude<typeof c, MdocRecord> => c instanceof MdocRecord === false)
+    .map((c) => getSphereonOriginalVerifiableCredential(c))
 
   const { mdocPresentationDefinition, nonMdocPresentationDefinition } =
     MdocDeviceResponse.partitionPresentationDefinition(presentationDefinition)
@@ -41,12 +41,6 @@ export async function getCredentialsForRequest(
 
   const selectResults: CredentialRecordSelectResults = {
     ...selectResultsRaw,
-    areRequiredCredentialsPresent:
-      mdocPresentationDefinition.input_descriptors.length >= 1
-        ? 'warn' // we don't know yet wheater the required credentials are present
-        : nonMdocPresentationDefinition.input_descriptors.length >= 1
-        ? selectResultsRaw.areRequiredCredentialsPresent
-        : 'error',
     // Map the encoded credential to their respective w3c credential record
     verifiableCredential: selectResultsRaw.verifiableCredential?.map((selectedEncoded): SubmissionEntryCredential => {
       const credentialRecordIndex = encodedCredentials.findIndex((encoded) => {
@@ -126,7 +120,11 @@ export async function getCredentialsForRequest(
       )
     }
 
-    if (submissionRequirementMatch.vc_path.length >= 1) selectResults.matches.push(submissionRequirementMatch)
+    if (submissionRequirementMatch.vc_path.length >= 1) {
+      selectResults.matches.push(submissionRequirementMatch)
+    } else {
+      selectResultsRaw.areRequiredCredentialsPresent = 'error'
+    }
   }
 
   const presentationSubmission: DifPexCredentialsForRequest = {

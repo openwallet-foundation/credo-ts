@@ -1,4 +1,4 @@
-import type { MdocCreateOptions, MdocNameSpaces, MdocVerifyOptions } from './MdocOptions'
+import type { MdocSignOptions, MdocNameSpaces, MdocVerifyOptions } from './MdocOptions'
 import type { AgentContext } from '../../agent'
 import type { IssuerSignedDocument } from '@protokoll/mdoc-client'
 
@@ -62,7 +62,7 @@ export class Mdoc {
     return this.issuerSignedDocument.allIssuerSignedNamespaces
   }
 
-  public static async create(agentContext: AgentContext, options: MdocCreateOptions) {
+  public static async sign(agentContext: AgentContext, options: MdocSignOptions) {
     const { docType, validityInfo, namespaces, holderPublicKey, issuerCertificate } = options
     const mdocContext = getMdocContext(agentContext)
 
@@ -77,11 +77,30 @@ export class Mdoc {
     }
 
     const cert = X509Certificate.fromEncodedCertificate(issuerCertificate)
-    const issuerPrivateJwk = await getJwkFromKey(options.issuerKey ?? cert.publicKey)
+    const issuerKey = await getJwkFromKey(options.issuerKey ?? cert.publicKey)
+
+    const alg = issuerKey.supportedSignatureAlgorithms.find(
+      (alg): alg is JwaSignatureAlgorithm.ES256 | JwaSignatureAlgorithm.ES384 | JwaSignatureAlgorithm.ES512 => {
+        return (
+          alg === JwaSignatureAlgorithm.ES256 ||
+          alg === JwaSignatureAlgorithm.ES384 ||
+          alg === JwaSignatureAlgorithm.ES512
+        )
+      }
+    )
+
+    if (!alg) {
+      throw new MdocError(
+        `Cannot find a suitable JwaSignatureAlgorithm for signing the mdoc. Supported algorithms are 'ES256', 'ES384', 'ES512'. The issuer key supports: ${issuerKey.supportedSignatureAlgorithms.join(
+          ', '
+        )}`
+      )
+    }
+
     const issuerSignedDocument = await document.sign(
       {
-        issuerPrivateKey: issuerPrivateJwk.toJson(),
-        alg: issuerPrivateJwk.supportedSignatureAlgorithms[0] as 'ES256' | 'ES384' | 'ES512' | 'EdDSA',
+        issuerPrivateKey: issuerKey.toJson(),
+        alg,
         issuerCertificate,
         kid: cert.publicKey.fingerprint,
       },
@@ -91,7 +110,10 @@ export class Mdoc {
     return new Mdoc(issuerSignedDocument)
   }
 
-  public async verify(agentContext: AgentContext, options?: MdocVerifyOptions): Promise<boolean> {
+  public async verify(
+    agentContext: AgentContext,
+    options?: MdocVerifyOptions
+  ): Promise<{ isValid: true } | { isValid: false; error: string }> {
     const trustedCerts =
       options?.trustedCertificates ?? agentContext.dependencyManager.resolve(X509ModuleConfig).trustedCertificates
 
@@ -113,9 +135,9 @@ export class Mdoc {
       )
 
       await verifier.verifyData({ mdoc: this.issuerSignedDocument }, mdocContext)
-      return true
+      return { isValid: true }
     } catch (error) {
-      return false
+      return { isValid: false, error: error.message }
     }
   }
 }

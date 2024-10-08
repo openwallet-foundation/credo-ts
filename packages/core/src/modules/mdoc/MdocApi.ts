@@ -1,4 +1,4 @@
-import type { MdocCreateOptions, MdocVerifyOptions } from './MdocOptions'
+import type { MdocSignOptions, MdocVerifyOptions } from './MdocOptions'
 import type { MdocRecord } from './repository'
 import type { Query, QueryOptions } from '../../storage/StorageService'
 
@@ -24,10 +24,10 @@ export class MdocApi {
   /**
    * Create a new Mdoc, with a spcific doctype, namespace, and validity info.
    *
-   * @param options {MdocCreateOptions}
+   * @param options {MdocSignOptions}
    * @returns {Promise<Mdoc>}
    */
-  public async create(options: MdocCreateOptions) {
+  public async create(options: MdocSignOptions) {
     return await this.mdocService.createMdoc(this.agentContext, options)
   }
 

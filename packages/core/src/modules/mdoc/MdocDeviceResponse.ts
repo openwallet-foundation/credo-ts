@@ -16,6 +16,7 @@ import {
 
 import { getJwkFromKey } from '../../crypto/jose/jwk/transform'
 import { CredoError } from '../../error'
+import { uuid } from '../../utils/uuid'
 import { X509Certificate } from '../x509/X509Certificate'
 import { X509ModuleConfig } from '../x509/X509ModuleConfig'
 
@@ -136,7 +137,6 @@ export class MdocDeviceResponse {
 
     const publicDeviceJwk = COSEKey.import(deviceKeyInfo.deviceKey).toJWK()
 
-    deviceKeyInfo.deviceKey
     const deviceResponseBuilder = await DeviceResponse.from(mdoc)
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       .usingPresentationDefinition(presentationDefinition as any)
@@ -152,7 +152,7 @@ export class MdocDeviceResponse {
     return {
       deviceResponseBase64Url: TypedArrayEncoder.toBase64URL(deviceResponseMdoc.encode()),
       presentationSubmission: MdocDeviceResponse.createPresentationSubmission({
-        id: 'MdocPresentationSubmission ' + agentContext.wallet.generateNonce(),
+        id: 'MdocPresentationSubmission ' + uuid(),
         presentationDefinition,
       }),
     }
