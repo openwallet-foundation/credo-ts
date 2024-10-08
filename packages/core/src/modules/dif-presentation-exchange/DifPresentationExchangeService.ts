@@ -23,6 +23,7 @@ import type {
 } from '@sphereon/ssi-types'
 
 import { PEVersion, PEX, Status } from '@sphereon/pex'
+import { PartialSdJwtDecodedVerifiableCredential } from '@sphereon/pex/dist/main/lib'
 import { injectable } from 'tsyringe'
 
 import { Hasher, getJwkFromKey } from '../../crypto'
@@ -51,7 +52,6 @@ import {
   getPresentationsToCreate,
   getSphereonOriginalVerifiableCredential,
 } from './utils'
-import { PartialSdJwtDecodedVerifiableCredential } from '@sphereon/pex/dist/main/lib'
 
 /**
  * @todo create a public api for using dif presentation exchange

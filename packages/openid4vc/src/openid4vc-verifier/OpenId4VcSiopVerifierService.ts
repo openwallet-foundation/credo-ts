@@ -545,6 +545,9 @@ export class OpenId4VcSiopVerifierService {
       // TODO: we should probably allow some dynamic values here
       .withClientMetadata({
         ...jarmClientMetadata,
+        // FIXME: not passing client_id here means it will not be added
+        // to the authorization request url (not the signed payload). Need
+        // to fix that in Sphereon lib
         client_id: clientId,
         passBy: PassBy.VALUE,
         responseTypesSupported: [ResponseType.VP_TOKEN],
