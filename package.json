@@ -64,14 +64,7 @@
     "ws": "^8.13.0"
   },
   "resolutions": {
-    "@types/node": "18.18.8",
-    "@sphereon/did-auth-siop": "https://gitpkg.vercel.app/animo/OID4VC/packages/siop-oid4vp?funke",
-    "@sphereon/oid4vc-common": "https://gitpkg.vercel.app/animo/OID4VC/packages/common?funke",
-    "@sphereon/oid4vci-common": "https://gitpkg.vercel.app/animo/OID4VC/packages/oid4vci-common?funke",
-    "@sphereon/oid4vci-issuer": "https://gitpkg.vercel.app/animo/OID4VC/packages/issuer?funke",
-    "@sphereon/oid4vci-client": "https://gitpkg.vercel.app/animo/OID4VC/packages/client?funke",
-    "@sphereon/jarm": "https://gitpkg.vercel.app/animo/OID4VC/packages/jarm?funke",
-    "@sphereon/ssi-types": "0.29.1-unstable.121"
+    "@types/node": "18.18.8"
   },
   "engines": {
     "node": ">=18"

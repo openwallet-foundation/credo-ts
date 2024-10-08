@@ -6,13 +6,6 @@ settings:
 
 overrides:
   '@types/node': 18.18.8
-  '@sphereon/did-auth-siop': https://gitpkg.vercel.app/animo/OID4VC/packages/siop-oid4vp?funke
-  '@sphereon/oid4vc-common': https://gitpkg.vercel.app/animo/OID4VC/packages/common?funke
-  '@sphereon/oid4vci-common': https://gitpkg.vercel.app/animo/OID4VC/packages/oid4vci-common?funke
-  '@sphereon/oid4vci-issuer': https://gitpkg.vercel.app/animo/OID4VC/packages/issuer?funke
-  '@sphereon/oid4vci-client': https://gitpkg.vercel.app/animo/OID4VC/packages/client?funke
-  '@sphereon/jarm': https://gitpkg.vercel.app/animo/OID4VC/packages/jarm?funke
-  '@sphereon/ssi-types': 0.29.1-unstable.121
 
 importers:
 
@@ -691,20 +684,20 @@ importers:
         specifier: workspace:*
         version: link:../core
       '@sphereon/did-auth-siop':
-        specifier: https://gitpkg.vercel.app/animo/OID4VC/packages/siop-oid4vp?funke
-        version: https://gitpkg.vercel.app/animo/OID4VC/packages/siop-oid4vp?funke(ts-node@10.9.2(@types/node@18.18.8)(typescript@5.5.4))(typescript@5.5.4)
+        specifier: 0.16.1-unstable.68
+        version: 0.16.1-unstable.68(ts-node@10.9.2(@types/node@18.18.8)(typescript@5.5.4))
       '@sphereon/oid4vc-common':
-        specifier: https://gitpkg.vercel.app/animo/OID4VC/packages/common?funke
-        version: https://gitpkg.vercel.app/animo/OID4VC/packages/common?funke(ts-node@10.9.2(@types/node@18.18.8)(typescript@5.5.4))
+        specifier: 0.16.1-unstable.68
+        version: 0.16.1-unstable.68(ts-node@10.9.2(@types/node@18.18.8)(typescript@5.5.4))
       '@sphereon/oid4vci-client':
-        specifier: https://gitpkg.vercel.app/animo/OID4VC/packages/client?funke
-        version: https://gitpkg.vercel.app/animo/OID4VC/packages/client?funke(ts-node@10.9.2(@types/node@18.18.8)(typescript@5.5.4))
+        specifier: 0.16.1-unstable.68
+        version: 0.16.1-unstable.68(ts-node@10.9.2(@types/node@18.18.8)(typescript@5.5.4))
       '@sphereon/oid4vci-common':
-        specifier: https://gitpkg.vercel.app/animo/OID4VC/packages/oid4vci-common?funke
-        version: https://gitpkg.vercel.app/animo/OID4VC/packages/oid4vci-common?funke(ts-node@10.9.2(@types/node@18.18.8)(typescript@5.5.4))
+        specifier: 0.16.1-unstable.68
+        version: 0.16.1-unstable.68(ts-node@10.9.2(@types/node@18.18.8)(typescript@5.5.4))
       '@sphereon/oid4vci-issuer':
-        specifier: https://gitpkg.vercel.app/animo/OID4VC/packages/issuer?funke
-        version: https://gitpkg.vercel.app/animo/OID4VC/packages/issuer?funke(ts-node@10.9.2(@types/node@18.18.8)(typescript@5.5.4))
+        specifier: 0.16.1-unstable.68
+        version: 0.16.1-unstable.68(ts-node@10.9.2(@types/node@18.18.8)(typescript@5.5.4))
       '@sphereon/ssi-types':
         specifier: 0.29.1-unstable.121
         version: 0.29.1-unstable.121(ts-node@10.9.2(@types/node@18.18.8)(typescript@5.5.4))
@@ -2451,40 +2444,30 @@ packages:
     resolution: {integrity: sha512-kQpk267uxB19X3X2T1mvNMjyvIEonpNSHrMlK5ZaBU6aZxw7wPbpgKJOjHN3+/GPVpXgAV9soVT2oyHpLkLtyw==}
     engines: {node: '>= 8'}
 
-  '@sphereon/did-auth-siop@https://gitpkg.vercel.app/animo/OID4VC/packages/siop-oid4vp?funke':
-    resolution: {tarball: https://gitpkg.vercel.app/animo/OID4VC/packages/siop-oid4vp?funke}
-    version: 0.16.0
+  '@sphereon/did-auth-siop@0.16.1-unstable.68':
+    resolution: {integrity: sha512-u+wPut7LZ51/4PLlQarspsacSqt09NmaLSU5YnRgRbw5LXbno7SjZYmKvkgHpOz+xv5NGXCWlzAQPaZY1/4Oyg==}
     engines: {node: '>=18'}
 
   '@sphereon/did-uni-client@0.6.3':
     resolution: {integrity: sha512-g7LD7ofbE36slHN7Bhr5dwUrj6t0BuZeXBYJMaVY/pOeL1vJxW1cZHbZqu0NSfOmzyBg4nsYVlgTjyi/Aua2ew==}
 
-  '@sphereon/jarm@https://gitpkg.vercel.app/animo/OID4VC/packages/jarm?funke':
-    resolution: {tarball: https://gitpkg.vercel.app/animo/OID4VC/packages/jarm?funke}
-    version: 0.16.0
-    engines: {node: '>=18'}
-
   '@sphereon/kmp-mdl-mdoc@0.2.0-SNAPSHOT.22':
     resolution: {integrity: sha512-uAZZExVy+ug9JLircejWa5eLtAZ7bnBP6xb7DO2+86LRsHNLh2k2jMWJYxp+iWtGHTsh6RYsZl14ScQLvjiQ/A==}
 
-  '@sphereon/oid4vc-common@https://gitpkg.vercel.app/animo/OID4VC/packages/common?funke':
-    resolution: {tarball: https://gitpkg.vercel.app/animo/OID4VC/packages/common?funke}
-    version: 0.16.0
+  '@sphereon/oid4vc-common@0.16.1-unstable.68':
+    resolution: {integrity: sha512-njQWU12rMoJLpqC249QrhkZDykGA4KdLBvYvIRcfQaEWnIRsOzQFu9knOJ7ETlzE56V5K8JSw0+jSM9hE1A4wg==}
     engines: {node: '>=18'}
 
-  '@sphereon/oid4vci-client@https://gitpkg.vercel.app/animo/OID4VC/packages/client?funke':
-    resolution: {tarball: https://gitpkg.vercel.app/animo/OID4VC/packages/client?funke}
-    version: 0.16.0
+  '@sphereon/oid4vci-client@0.16.1-unstable.68':
+    resolution: {integrity: sha512-2WW460D0sajI3l5OCN8XhD3xuiHIn9MujLZ1vMZI7hlHKSS7vu/FFEzlGVPjjL63Jbvfdcq+vHRRnI79xRuhuQ==}
     engines: {node: '>=18'}
 
-  '@sphereon/oid4vci-common@https://gitpkg.vercel.app/animo/OID4VC/packages/oid4vci-common?funke':
-    resolution: {tarball: https://gitpkg.vercel.app/animo/OID4VC/packages/oid4vci-common?funke}
-    version: 0.16.0
+  '@sphereon/oid4vci-common@0.16.1-unstable.68':
+    resolution: {integrity: sha512-TGzp7KxEnVh29u9S0MTQT+z/rOwL6R62wwTB4bywkVFj5AcbF08ois4FaUa7k6uistdeEbOJzS6Lni99rz6i8w==}
     engines: {node: '>=18'}
 
-  '@sphereon/oid4vci-issuer@https://gitpkg.vercel.app/animo/OID4VC/packages/issuer?funke':
-    resolution: {tarball: https://gitpkg.vercel.app/animo/OID4VC/packages/issuer?funke}
-    version: 0.16.0
+  '@sphereon/oid4vci-issuer@0.16.1-unstable.68':
+    resolution: {integrity: sha512-atv0LccJxm64p7Y5AE13gVVoHcszJNpXU3X67u4o4g9iJnk3MfYwnPRfYusy1eJ4hbtirfzOBNCVQfuyAp6cCQ==}
     engines: {node: '>=18'}
     peerDependencies:
       awesome-qr: ^2.1.5-rc.0
@@ -2502,27 +2485,45 @@ packages:
     resolution: {integrity: sha512-wriK0JGw/ONrISvYFbE//+ITVLZnvcPjPesFrMpZcDhxlOLf+TMOqVtUjjg2DHWy7HINM8WQ2eUKz1d96vyarw==}
     engines: {node: '>=18'}
 
-  '@sphereon/pex@5.0.0-unstable.2':
-    resolution: {integrity: sha512-mA6lY/OBKKzsh4Jf4btm9Tj4ymVsX6xuVATn85LurD4bt3fhZwNJMkxhFy4tT/QyAtp05E4aaEq0wTVvOjVa7w==}
+  '@sphereon/pex@5.0.0-unstable.7':
+    resolution: {integrity: sha512-E+pehf6E6JN/vSELZbnIvnNQqXEKjbijCCzov2mXqFWb3WyBn7B5RY7I3v9cCFnN+8r3W3E/Hb9jAJej1DIRCg==}
     engines: {node: '>=18'}
 
   '@sphereon/ssi-sdk-ext.did-utils@0.24.1-unstable.112':
     resolution: {integrity: sha512-nc0jFPOWg0H20S8m83aQUpNym0Wx0rJCGkgpH6GdK8gBtgza8Y9DvAap1AYZug18WbqPcF6rBjvtIJqAKsSvlQ==}
 
+  '@sphereon/ssi-sdk-ext.did-utils@0.24.1-unstable.130':
+    resolution: {integrity: sha512-I+0VjitRjisABWm8RtTPQG57tFwfUS13Wud30OvBoADRxnaA0guUrkS82AYtV6YD0TBHdrd0D6a0RCJwK9SvDg==}
+
   '@sphereon/ssi-sdk-ext.identifier-resolution@0.24.1-unstable.112':
     resolution: {integrity: sha512-VBkJjHokFNsQ0wsHUbyCysMuShTOEuK6yrvyW64uOFcB2hzq1J/wi9CewI+YRHv7mnejBlu46uYNycvOKKRcsQ==}
+
+  '@sphereon/ssi-sdk-ext.identifier-resolution@0.24.1-unstable.130':
+    resolution: {integrity: sha512-9mY+qgXmbZCC8aic99R7B3vKBHBakDiC6Sktgd7Q9AknR8cCmvdrmTgnOETrLng9L43uNOJnNTMG/4T6LqmtsA==}
 
   '@sphereon/ssi-sdk-ext.jwt-service@0.24.1-unstable.112':
     resolution: {integrity: sha512-OrBaSg5wLSehkJ4MyuyDWKD4CRIBERnJqRT0o/y5DbaCF3k02+/lN/rWP+4qwk2w192fIEAExG4L2GwZM/5PLQ==}
 
+  '@sphereon/ssi-sdk-ext.jwt-service@0.24.1-unstable.130':
+    resolution: {integrity: sha512-MHLGRmJODEYJyFoXKwlKMYzf48vS5JcUkGk0W4sqmrY1wwcw+ro3l8adIprG37mNuknXBs9Mv0x/tvibE9wwCQ==}
+
   '@sphereon/ssi-sdk-ext.key-manager@0.24.1-unstable.112':
     resolution: {integrity: sha512-XdXV4qj+BYTZWyGHduWQxl0mxCYt5CF0Q93p4Thbm2/hjfaAC6aJi2WAXFGTIri95QVbKW1Uscob0CjNCVkWdg==}
+
+  '@sphereon/ssi-sdk-ext.key-manager@0.24.1-unstable.130':
+    resolution: {integrity: sha512-O/6NlKmlYRnEyP/mAI2Diu0qptMSqZfVwqog8KAOG/G8JUmktfSQmclBW8RoJ6AD9uY65BGzNk1oAVuuMv4Dog==}
 
   '@sphereon/ssi-sdk-ext.key-utils@0.24.1-unstable.112':
     resolution: {integrity: sha512-er6TwGUWxlao2lSP97r1DTFlUXcPSMsIToULOWQJp6wKbvCuvV6pN5luS0qKB/W0/TOUE5kXzFwNx086BPnPRA==}
 
+  '@sphereon/ssi-sdk-ext.key-utils@0.24.1-unstable.130':
+    resolution: {integrity: sha512-DCyXW18g1OAuZ+aFHzQGrbZSx793DX94LSFnrWlOTMnYeILmrizuFksUlWSb3lTqQGAqWBC48NoR3I1H6lSMEQ==}
+
   '@sphereon/ssi-sdk-ext.x509-utils@0.24.1-unstable.112':
     resolution: {integrity: sha512-bbx2jFoqWhW/xYABVwg3HiUo15yztPt3s+9bJtdB8n4PCjin4Nq3+vFvaHsmu70yAGkbWfsBcBVW6Y3oFtvpAA==}
+
+  '@sphereon/ssi-sdk-ext.x509-utils@0.24.1-unstable.130':
+    resolution: {integrity: sha512-JDX8i0WrwONaOivZXB+OxJQGkln7vuSLS61tOYl7M1RyPGixdBYuEuACsdvWf6egYOpaWmhmXZzaAOj18eDddw==}
 
   '@sphereon/ssi-sdk.agent-config@0.29.1-unstable.161':
     resolution: {integrity: sha512-ZP/TjapF/Gv/AwnNr9e1U3rjyRwdLtAj4un9j1csnKcgYe9ff2fhYbe06y9mU4tfQilH69mAW4Tz1t6N5U7XbA==}
@@ -2532,6 +2533,15 @@ packages:
 
   '@sphereon/ssi-types@0.29.1-unstable.121':
     resolution: {integrity: sha512-g5qt2cRa/9t3WrBWMneGOrwjyU2Mqdh4LlKeO6japli5bgl5D6lim91F++m1iIIhOYP4dqPpk5PLjy9XQlLyEw==}
+
+  '@sphereon/ssi-types@0.29.1-unstable.161':
+    resolution: {integrity: sha512-ifMADjk6k0f97/isK/4Qw/PX6n4k+qS5k6mmmH47MTD3KMDddVghoXycsvNw7wObJdLUalHBX630ghr+u21oMg==}
+
+  '@sphereon/ssi-types@0.30.1':
+    resolution: {integrity: sha512-vbYaxQXb71sOPwDj7TRDlUGfIHKVVs8PiHfImPBgSBshrD7VpEHOrB+EwwavMm5MAQvWK/yblGmzk7FHds7SHA==}
+
+  '@sphereon/ssi-types@0.9.0':
+    resolution: {integrity: sha512-umCr/syNcmvMMbQ+i/r/mwjI1Qw2aFPp9AwBTvTo1ailAVaaJjJGPkkVz1K9/2NZATNdDiQ3A8yGzdVJoKh9pA==}
 
   '@sphereon/wellknown-dids-client@0.1.3':
     resolution: {integrity: sha512-TAT24L3RoXD8ocrkTcsz7HuJmgjNjdoV6IXP1p3DdaI/GqkynytXE3J1+F7vUFMRYwY5nW2RaXSgDQhrFJemaA==}
@@ -7195,14 +7205,6 @@ packages:
     resolution: {integrity: sha512-kiGUalWN+rgBJ/1OHZsBtU4rXZOfj/7rKQxULKlIzwzQSvMJUUNgPwJEEh7gU6xEVxC0ahoOBvN2YI8GH6FNgA==}
     engines: {node: '>=10.12.0'}
 
-  valibot@0.42.1:
-    resolution: {integrity: sha512-3keXV29Ar5b//Hqi4MbSdV7lfVp6zuYLZuA9V1PvQUsXqogr+u5lvLPLk3A4f74VUXDnf/JfWMN6sB+koJ/FFw==}
-    peerDependencies:
-      typescript: '>=5'
-    peerDependenciesMeta:
-      typescript:
-        optional: true
-
   valid-url@1.0.9:
     resolution: {integrity: sha512-QQDsV8OnSf5Uc30CKSwG9lnhMPe6exHtTXLRYX8uMwKENy640pU+2BgBL0LRbDh/eYRahNCS7aewCx0wf3NYVA==}
 
@@ -10201,14 +10203,13 @@ snapshots:
 
   '@sovpro/delimited-stream@1.1.0': {}
 
-  '@sphereon/did-auth-siop@https://gitpkg.vercel.app/animo/OID4VC/packages/siop-oid4vp?funke(ts-node@10.9.2(@types/node@18.18.8)(typescript@5.5.4))(typescript@5.5.4)':
+  '@sphereon/did-auth-siop@0.16.1-unstable.68(ts-node@10.9.2(@types/node@18.18.8)(typescript@5.5.4))':
     dependencies:
       '@astronautlabs/jsonpath': 1.1.2
       '@sphereon/did-uni-client': 0.6.3
-      '@sphereon/jarm': https://gitpkg.vercel.app/animo/OID4VC/packages/jarm?funke(ts-node@10.9.2(@types/node@18.18.8)(typescript@5.5.4))(typescript@5.5.4)
       '@sphereon/kmp-mdl-mdoc': 0.2.0-SNAPSHOT.22
-      '@sphereon/oid4vc-common': https://gitpkg.vercel.app/animo/OID4VC/packages/common?funke(ts-node@10.9.2(@types/node@18.18.8)(typescript@5.5.4))
-      '@sphereon/pex': 5.0.0-unstable.2
+      '@sphereon/oid4vc-common': 0.16.1-unstable.68(ts-node@10.9.2(@types/node@18.18.8)(typescript@5.5.4))
+      '@sphereon/pex': 5.0.0-unstable.7(ts-node@10.9.2(@types/node@18.18.8)(typescript@5.5.4))
       '@sphereon/pex-models': 2.3.1
       '@sphereon/ssi-types': 0.29.1-unstable.121(ts-node@10.9.2(@types/node@18.18.8)(typescript@5.5.4))
       '@sphereon/wellknown-dids-client': 0.1.3
@@ -10240,7 +10241,6 @@ snapshots:
       - supports-color
       - ts-node
       - typeorm-aurora-data-api-driver
-      - typescript
 
   '@sphereon/did-uni-client@0.6.3':
     dependencies:
@@ -10249,39 +10249,13 @@ snapshots:
     transitivePeerDependencies:
       - encoding
 
-  '@sphereon/jarm@https://gitpkg.vercel.app/animo/OID4VC/packages/jarm?funke(ts-node@10.9.2(@types/node@18.18.8)(typescript@5.5.4))(typescript@5.5.4)':
-    dependencies:
-      '@sphereon/oid4vc-common': https://gitpkg.vercel.app/animo/OID4VC/packages/common?funke(ts-node@10.9.2(@types/node@18.18.8)(typescript@5.5.4))
-      valibot: 0.42.1(typescript@5.5.4)
-    transitivePeerDependencies:
-      - '@google-cloud/spanner'
-      - '@sap/hana-client'
-      - better-sqlite3
-      - encoding
-      - hdb-pool
-      - ioredis
-      - mongodb
-      - mssql
-      - mysql2
-      - oracledb
-      - pg
-      - pg-native
-      - pg-query-stream
-      - redis
-      - sql.js
-      - sqlite3
-      - supports-color
-      - ts-node
-      - typeorm-aurora-data-api-driver
-      - typescript
-
   '@sphereon/kmp-mdl-mdoc@0.2.0-SNAPSHOT.22':
     dependencies:
       '@js-joda/core': 5.6.3
       '@js-joda/timezone': 2.3.0(@js-joda/core@5.6.3)
       format-util: 1.0.5
 
-  '@sphereon/oid4vc-common@https://gitpkg.vercel.app/animo/OID4VC/packages/common?funke(ts-node@10.9.2(@types/node@18.18.8)(typescript@5.5.4))':
+  '@sphereon/oid4vc-common@0.16.1-unstable.68(ts-node@10.9.2(@types/node@18.18.8)(typescript@5.5.4))':
     dependencies:
       '@sphereon/ssi-types': 0.29.1-unstable.121(ts-node@10.9.2(@types/node@18.18.8)(typescript@5.5.4))
       jwt-decode: 4.0.0
@@ -10309,10 +10283,10 @@ snapshots:
       - ts-node
       - typeorm-aurora-data-api-driver
 
-  '@sphereon/oid4vci-client@https://gitpkg.vercel.app/animo/OID4VC/packages/client?funke(ts-node@10.9.2(@types/node@18.18.8)(typescript@5.5.4))':
+  '@sphereon/oid4vci-client@0.16.1-unstable.68(ts-node@10.9.2(@types/node@18.18.8)(typescript@5.5.4))':
     dependencies:
-      '@sphereon/oid4vc-common': https://gitpkg.vercel.app/animo/OID4VC/packages/common?funke(ts-node@10.9.2(@types/node@18.18.8)(typescript@5.5.4))
-      '@sphereon/oid4vci-common': https://gitpkg.vercel.app/animo/OID4VC/packages/oid4vci-common?funke(ts-node@10.9.2(@types/node@18.18.8)(typescript@5.5.4))
+      '@sphereon/oid4vc-common': 0.16.1-unstable.68(ts-node@10.9.2(@types/node@18.18.8)(typescript@5.5.4))
+      '@sphereon/oid4vci-common': 0.16.1-unstable.68(ts-node@10.9.2(@types/node@18.18.8)(typescript@5.5.4))
       '@sphereon/ssi-types': 0.29.1-unstable.121(ts-node@10.9.2(@types/node@18.18.8)(typescript@5.5.4))
       cross-fetch: 3.1.8
       debug: 4.3.6
@@ -10337,9 +10311,9 @@ snapshots:
       - ts-node
       - typeorm-aurora-data-api-driver
 
-  '@sphereon/oid4vci-common@https://gitpkg.vercel.app/animo/OID4VC/packages/oid4vci-common?funke(ts-node@10.9.2(@types/node@18.18.8)(typescript@5.5.4))':
+  '@sphereon/oid4vci-common@0.16.1-unstable.68(ts-node@10.9.2(@types/node@18.18.8)(typescript@5.5.4))':
     dependencies:
-      '@sphereon/oid4vc-common': https://gitpkg.vercel.app/animo/OID4VC/packages/common?funke(ts-node@10.9.2(@types/node@18.18.8)(typescript@5.5.4))
+      '@sphereon/oid4vc-common': 0.16.1-unstable.68(ts-node@10.9.2(@types/node@18.18.8)(typescript@5.5.4))
       '@sphereon/ssi-types': 0.29.1-unstable.121(ts-node@10.9.2(@types/node@18.18.8)(typescript@5.5.4))
       cross-fetch: 3.1.8
       debug: 4.3.6
@@ -10367,10 +10341,10 @@ snapshots:
       - ts-node
       - typeorm-aurora-data-api-driver
 
-  '@sphereon/oid4vci-issuer@https://gitpkg.vercel.app/animo/OID4VC/packages/issuer?funke(ts-node@10.9.2(@types/node@18.18.8)(typescript@5.5.4))':
+  '@sphereon/oid4vci-issuer@0.16.1-unstable.68(ts-node@10.9.2(@types/node@18.18.8)(typescript@5.5.4))':
     dependencies:
-      '@sphereon/oid4vc-common': https://gitpkg.vercel.app/animo/OID4VC/packages/common?funke(ts-node@10.9.2(@types/node@18.18.8)(typescript@5.5.4))
-      '@sphereon/oid4vci-common': https://gitpkg.vercel.app/animo/OID4VC/packages/oid4vci-common?funke(ts-node@10.9.2(@types/node@18.18.8)(typescript@5.5.4))
+      '@sphereon/oid4vc-common': 0.16.1-unstable.68(ts-node@10.9.2(@types/node@18.18.8)(typescript@5.5.4))
+      '@sphereon/oid4vci-common': 0.16.1-unstable.68(ts-node@10.9.2(@types/node@18.18.8)(typescript@5.5.4))
       '@sphereon/ssi-types': 0.29.1-unstable.121(ts-node@10.9.2(@types/node@18.18.8)(typescript@5.5.4))
       uuid: 9.0.1
     transitivePeerDependencies:
@@ -10405,7 +10379,7 @@ snapshots:
       '@sd-jwt/present': 0.7.2
       '@sd-jwt/types': 0.7.2
       '@sphereon/pex-models': 2.3.1
-      '@sphereon/ssi-types': 0.29.1-unstable.121(ts-node@10.9.2(@types/node@18.18.8)(typescript@5.5.4))
+      '@sphereon/ssi-types': 0.30.1(ts-node@10.9.2(@types/node@18.18.8)(typescript@5.5.4))
       ajv: 8.17.1
       ajv-formats: 2.1.1(ajv@8.17.1)
       jwt-decode: 3.1.2
@@ -10432,7 +10406,7 @@ snapshots:
       - ts-node
       - typeorm-aurora-data-api-driver
 
-  '@sphereon/pex@5.0.0-unstable.2':
+  '@sphereon/pex@5.0.0-unstable.7(ts-node@10.9.2(@types/node@18.18.8)(typescript@5.5.4))':
     dependencies:
       '@astronautlabs/jsonpath': 1.1.2
       '@sd-jwt/decode': 0.6.1
@@ -10447,7 +10421,25 @@ snapshots:
       string.prototype.matchall: 4.0.11
       uint8arrays: 3.1.1
     transitivePeerDependencies:
+      - '@google-cloud/spanner'
+      - '@sap/hana-client'
+      - better-sqlite3
+      - encoding
+      - hdb-pool
+      - ioredis
+      - mongodb
+      - mssql
+      - mysql2
+      - oracledb
+      - pg
+      - pg-native
+      - pg-query-stream
+      - redis
+      - sql.js
+      - sqlite3
       - supports-color
+      - ts-node
+      - typeorm-aurora-data-api-driver
 
   '@sphereon/ssi-sdk-ext.did-utils@0.24.1-unstable.112(ts-node@10.9.2(@types/node@18.18.8)(typescript@5.5.4))':
     dependencies:
@@ -10458,7 +10450,45 @@ snapshots:
       '@sphereon/ssi-sdk-ext.x509-utils': 0.24.1-unstable.112
       '@sphereon/ssi-sdk.agent-config': 0.29.1-unstable.161(ts-node@10.9.2(@types/node@18.18.8)(typescript@5.5.4))
       '@sphereon/ssi-sdk.core': 0.29.1-unstable.161
-      '@sphereon/ssi-types': 0.29.1-unstable.121(ts-node@10.9.2(@types/node@18.18.8)(typescript@5.5.4))
+      '@sphereon/ssi-types': 0.29.1-unstable.161
+      '@stablelib/ed25519': 1.0.3
+      '@veramo/core': 4.2.0
+      '@veramo/utils': 4.2.0
+      did-jwt: 6.11.6
+      did-resolver: 4.1.0
+      elliptic: 6.5.7
+      uint8arrays: 3.1.1
+    transitivePeerDependencies:
+      - '@google-cloud/spanner'
+      - '@sap/hana-client'
+      - better-sqlite3
+      - encoding
+      - hdb-pool
+      - ioredis
+      - mongodb
+      - mssql
+      - mysql2
+      - oracledb
+      - pg
+      - pg-native
+      - pg-query-stream
+      - redis
+      - sql.js
+      - sqlite3
+      - supports-color
+      - ts-node
+      - typeorm-aurora-data-api-driver
+
+  '@sphereon/ssi-sdk-ext.did-utils@0.24.1-unstable.130(ts-node@10.9.2(@types/node@18.18.8)(typescript@5.5.4))':
+    dependencies:
+      '@ethersproject/networks': 5.7.1
+      '@ethersproject/transactions': 5.7.0
+      '@sphereon/did-uni-client': 0.6.3
+      '@sphereon/ssi-sdk-ext.key-utils': 0.24.1-unstable.130
+      '@sphereon/ssi-sdk-ext.x509-utils': 0.24.1-unstable.130
+      '@sphereon/ssi-sdk.agent-config': 0.29.1-unstable.161(ts-node@10.9.2(@types/node@18.18.8)(typescript@5.5.4))
+      '@sphereon/ssi-sdk.core': 0.29.1-unstable.161
+      '@sphereon/ssi-types': 0.29.1-unstable.161
       '@stablelib/ed25519': 1.0.3
       '@veramo/core': 4.2.0
       '@veramo/utils': 4.2.0
@@ -10493,7 +10523,40 @@ snapshots:
       '@sphereon/ssi-sdk-ext.key-utils': 0.24.1-unstable.112
       '@sphereon/ssi-sdk-ext.x509-utils': 0.24.1-unstable.112
       '@sphereon/ssi-sdk.agent-config': 0.29.1-unstable.161(ts-node@10.9.2(@types/node@18.18.8)(typescript@5.5.4))
-      '@sphereon/ssi-types': 0.29.1-unstable.121(ts-node@10.9.2(@types/node@18.18.8)(typescript@5.5.4))
+      '@sphereon/ssi-types': 0.29.1-unstable.161
+      '@veramo/core': 4.2.0
+      '@veramo/utils': 4.2.0
+      debug: 4.3.6
+      pkijs: 3.2.4
+      uint8arrays: 3.1.1
+    transitivePeerDependencies:
+      - '@google-cloud/spanner'
+      - '@sap/hana-client'
+      - better-sqlite3
+      - encoding
+      - hdb-pool
+      - ioredis
+      - mongodb
+      - mssql
+      - mysql2
+      - oracledb
+      - pg
+      - pg-native
+      - pg-query-stream
+      - redis
+      - sql.js
+      - sqlite3
+      - supports-color
+      - ts-node
+      - typeorm-aurora-data-api-driver
+
+  '@sphereon/ssi-sdk-ext.identifier-resolution@0.24.1-unstable.130(ts-node@10.9.2(@types/node@18.18.8)(typescript@5.5.4))':
+    dependencies:
+      '@sphereon/ssi-sdk-ext.did-utils': 0.24.1-unstable.130(ts-node@10.9.2(@types/node@18.18.8)(typescript@5.5.4))
+      '@sphereon/ssi-sdk-ext.key-utils': 0.24.1-unstable.130
+      '@sphereon/ssi-sdk-ext.x509-utils': 0.24.1-unstable.130
+      '@sphereon/ssi-sdk.agent-config': 0.29.1-unstable.161(ts-node@10.9.2(@types/node@18.18.8)(typescript@5.5.4))
+      '@sphereon/ssi-types': 0.29.1-unstable.161
       '@veramo/core': 4.2.0
       '@veramo/utils': 4.2.0
       debug: 4.3.6
@@ -10528,7 +10591,42 @@ snapshots:
       '@sphereon/ssi-sdk-ext.key-utils': 0.24.1-unstable.112
       '@sphereon/ssi-sdk-ext.x509-utils': 0.24.1-unstable.112
       '@sphereon/ssi-sdk.agent-config': 0.29.1-unstable.161(ts-node@10.9.2(@types/node@18.18.8)(typescript@5.5.4))
-      '@sphereon/ssi-types': 0.29.1-unstable.121(ts-node@10.9.2(@types/node@18.18.8)(typescript@5.5.4))
+      '@sphereon/ssi-types': 0.29.1-unstable.161
+      '@veramo/core': 4.2.0
+      '@veramo/utils': 4.2.0
+      debug: 4.3.6
+      jwt-decode: 4.0.0
+      uint8arrays: 3.1.1
+    transitivePeerDependencies:
+      - '@google-cloud/spanner'
+      - '@sap/hana-client'
+      - better-sqlite3
+      - encoding
+      - hdb-pool
+      - ioredis
+      - mongodb
+      - mssql
+      - mysql2
+      - oracledb
+      - pg
+      - pg-native
+      - pg-query-stream
+      - redis
+      - sql.js
+      - sqlite3
+      - supports-color
+      - ts-node
+      - typeorm-aurora-data-api-driver
+
+  '@sphereon/ssi-sdk-ext.jwt-service@0.24.1-unstable.130(ts-node@10.9.2(@types/node@18.18.8)(typescript@5.5.4))':
+    dependencies:
+      '@sphereon/ssi-sdk-ext.did-utils': 0.24.1-unstable.130(ts-node@10.9.2(@types/node@18.18.8)(typescript@5.5.4))
+      '@sphereon/ssi-sdk-ext.identifier-resolution': 0.24.1-unstable.130(ts-node@10.9.2(@types/node@18.18.8)(typescript@5.5.4))
+      '@sphereon/ssi-sdk-ext.key-manager': 0.24.1-unstable.130
+      '@sphereon/ssi-sdk-ext.key-utils': 0.24.1-unstable.130
+      '@sphereon/ssi-sdk-ext.x509-utils': 0.24.1-unstable.130
+      '@sphereon/ssi-sdk.agent-config': 0.29.1-unstable.161(ts-node@10.9.2(@types/node@18.18.8)(typescript@5.5.4))
+      '@sphereon/ssi-types': 0.29.1-unstable.161
       '@veramo/core': 4.2.0
       '@veramo/utils': 4.2.0
       debug: 4.3.6
@@ -10563,11 +10661,41 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
+  '@sphereon/ssi-sdk-ext.key-manager@0.24.1-unstable.130':
+    dependencies:
+      '@veramo/core': 4.2.0
+      '@veramo/key-manager': 4.2.0
+      uint8arrays: 3.1.1
+    transitivePeerDependencies:
+      - supports-color
+
   '@sphereon/ssi-sdk-ext.key-utils@0.24.1-unstable.112':
     dependencies:
       '@ethersproject/random': 5.7.0
       '@sphereon/ssi-sdk-ext.x509-utils': 0.24.1-unstable.112
-      '@sphereon/ssi-types': 0.29.1-unstable.121(ts-node@10.9.2(@types/node@18.18.8)(typescript@5.5.4))
+      '@sphereon/ssi-types': 0.29.1-unstable.161
+      '@stablelib/ed25519': 1.0.3
+      '@stablelib/sha256': 1.0.1
+      '@stablelib/sha512': 1.0.1
+      '@trust/keyto': 1.0.1
+      '@veramo/core': 4.2.0
+      base64url: 3.0.1
+      debug: 4.3.6
+      did-resolver: 4.1.0
+      elliptic: 6.5.7
+      lodash.isplainobject: 4.0.6
+      multiformats: 9.9.0
+      uint8arrays: 3.1.1
+      varint: 6.0.0
+      web-encoding: 1.1.5
+    transitivePeerDependencies:
+      - supports-color
+
+  '@sphereon/ssi-sdk-ext.key-utils@0.24.1-unstable.130':
+    dependencies:
+      '@ethersproject/random': 5.7.0
+      '@sphereon/ssi-sdk-ext.x509-utils': 0.24.1-unstable.130
+      '@sphereon/ssi-types': 0.29.1-unstable.161
       '@stablelib/ed25519': 1.0.3
       '@stablelib/sha256': 1.0.1
       '@stablelib/sha512': 1.0.1
@@ -10586,6 +10714,16 @@ snapshots:
       - supports-color
 
   '@sphereon/ssi-sdk-ext.x509-utils@0.24.1-unstable.112':
+    dependencies:
+      '@trust/keyto': 1.0.1
+      debug: 4.3.6
+      js-x509-utils: 1.0.7
+      pkijs: 3.2.4
+      uint8arrays: 3.1.1
+    transitivePeerDependencies:
+      - supports-color
+
+  '@sphereon/ssi-sdk-ext.x509-utils@0.24.1-unstable.130':
     dependencies:
       '@trust/keyto': 1.0.1
       debug: 4.3.6
@@ -10625,7 +10763,7 @@ snapshots:
 
   '@sphereon/ssi-sdk.core@0.29.1-unstable.161':
     dependencies:
-      '@sphereon/ssi-types': 0.29.1-unstable.121(ts-node@10.9.2(@types/node@18.18.8)(typescript@5.5.4))
+      '@sphereon/ssi-types': 0.29.1-unstable.161
       '@veramo/core': 4.2.0
       cross-fetch: 3.1.8
       debug: 4.3.6
@@ -10664,14 +10802,55 @@ snapshots:
       - ts-node
       - typeorm-aurora-data-api-driver
 
+  '@sphereon/ssi-types@0.29.1-unstable.161':
+    dependencies:
+      '@sd-jwt/decode': 0.6.1
+      debug: 4.3.6
+      events: 3.3.0
+      jwt-decode: 3.1.2
+    transitivePeerDependencies:
+      - supports-color
+
+  '@sphereon/ssi-types@0.30.1(ts-node@10.9.2(@types/node@18.18.8)(typescript@5.5.4))':
+    dependencies:
+      '@sd-jwt/decode': 0.7.2
+      '@sphereon/kmp-mdl-mdoc': 0.2.0-SNAPSHOT.22
+      '@sphereon/ssi-sdk-ext.jwt-service': 0.24.1-unstable.130(ts-node@10.9.2(@types/node@18.18.8)(typescript@5.5.4))
+      debug: 4.3.6
+      events: 3.3.0
+      jwt-decode: 3.1.2
+    transitivePeerDependencies:
+      - '@google-cloud/spanner'
+      - '@sap/hana-client'
+      - better-sqlite3
+      - encoding
+      - hdb-pool
+      - ioredis
+      - mongodb
+      - mssql
+      - mysql2
+      - oracledb
+      - pg
+      - pg-native
+      - pg-query-stream
+      - redis
+      - sql.js
+      - sqlite3
+      - supports-color
+      - ts-node
+      - typeorm-aurora-data-api-driver
+
+  '@sphereon/ssi-types@0.9.0':
+    dependencies:
+      jwt-decode: 3.1.2
+
   '@sphereon/wellknown-dids-client@0.1.3':
     dependencies:
-      '@sphereon/ssi-types': 0.29.1-unstable.121(ts-node@10.9.2(@types/node@18.18.8)(typescript@5.5.4))
+      '@sphereon/ssi-types': 0.9.0
       cross-fetch: 3.1.8
       jwt-decode: 3.1.2
     transitivePeerDependencies:
       - encoding
-      - supports-color
 
   '@sqltools/formatter@1.2.5': {}
 
@@ -16252,10 +16431,6 @@ snapshots:
       '@jridgewell/trace-mapping': 0.3.25
       '@types/istanbul-lib-coverage': 2.0.6
       convert-source-map: 2.0.0
-
-  valibot@0.42.1(typescript@5.5.4):
-    optionalDependencies:
-      typescript: 5.5.4
 
   valid-url@1.0.9: {}
 
