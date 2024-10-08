@@ -7,6 +7,7 @@ import { getJwkFromKey } from '../../../../crypto/jose/jwk'
 import { CredoError, ClassValidationError } from '../../../../error'
 import { JsonTransformer } from '../../../../utils'
 import { DidJwk, DidKey, DidRepository, DidsModuleConfig } from '../../../dids'
+import { X509ModuleConfig } from '../../../x509'
 import { CREDENTIALS_CONTEXT_V1_URL } from '../../constants'
 import { ClaimFormat, W3cCredential, W3cPresentation } from '../../models'
 import { W3cJwtCredentialService } from '../W3cJwtCredentialService'
@@ -30,6 +31,7 @@ const agentContext = getAgentContext({
     [InjectionSymbols.Logger, testLogger],
     [DidsModuleConfig, new DidsModuleConfig()],
     [DidRepository, {} as unknown as DidRepository],
+    [X509ModuleConfig, new X509ModuleConfig()],
   ],
   agentConfig: config,
 })

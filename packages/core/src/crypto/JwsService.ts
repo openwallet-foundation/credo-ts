@@ -110,7 +110,10 @@ export class JwsService {
   /**
    * Verify a JWS
    */
-  public async verifyJws(agentContext: AgentContext, { jws, jwkResolver }: VerifyJwsOptions): Promise<VerifyJwsResult> {
+  public async verifyJws(
+    agentContext: AgentContext,
+    { jws, jwkResolver, trustedCertificates }: VerifyJwsOptions
+  ): Promise<VerifyJwsResult> {
     let signatures: JwsDetachedFormat[] = []
     let payload: string
 
@@ -162,6 +165,7 @@ export class JwsService {
           alg: protectedJson.alg,
         },
         jwkResolver,
+        trustedCertificates,
       })
       if (!jwk.supportsSignatureAlgorithm(protectedJson.alg)) {
         throw new CredoError(
@@ -223,9 +227,10 @@ export class JwsService {
       protectedHeader: { alg: string; [key: string]: unknown }
       payload: string
       jwkResolver?: JwsJwkResolver
+      trustedCertificates?: [string, ...string[]]
     }
   ): Promise<Jwk> {
-    const { protectedHeader, jwkResolver, jws, payload } = options
+    const { protectedHeader, jwkResolver, jws, payload, trustedCertificates: trustedCertificatesFromOptions } = options
 
     if ([protectedHeader.jwk, protectedHeader.kid, protectedHeader.x5c].filter(Boolean).length > 1) {
       throw new CredoError('Only one of jwk, kid and x5c headers can and must be provided.')
@@ -239,16 +244,17 @@ export class JwsService {
         throw new CredoError('x5c header is not a valid JSON array of string.')
       }
 
-      const trustedCertificates = agentContext.dependencyManager.resolve(X509ModuleConfig).trustedCertificates
-      if (!trustedCertificates) {
+      const trustedCertificatesFromConfig = agentContext.dependencyManager.resolve(X509ModuleConfig).trustedCertificates
+      const trustedCertificates = [...(trustedCertificatesFromConfig ?? []), ...(trustedCertificatesFromOptions ?? [])]
+      if (trustedCertificates.length === 0) {
         throw new CredoError(
-          'No trusted certificates configured for X509 certificate chain validation. Issuer cannot be verified.'
+          `trustedCertificates is required when the JWS protected header contains an 'x5c' property.`
         )
       }
 
       await X509Service.validateCertificateChain(agentContext, {
         certificateChain: protectedHeader.x5c,
-        trustedCertificates,
+        trustedCertificates: trustedCertificates as [string, ...string[]], // Already validated that it has at least one certificate
       })
 
       const certificate = X509Service.getLeafCertificate(agentContext, { certificateChain: protectedHeader.x5c })
@@ -308,6 +314,8 @@ export interface VerifyJwsOptions {
    * base on the `iss` property in the JWT payload.
    */
   jwkResolver?: JwsJwkResolver
+
+  trustedCertificates?: [string, ...string[]]
 }
 
 export type JwsJwkResolver = (options: {

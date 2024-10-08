@@ -179,8 +179,22 @@ interface W3cVerifyPresentationOptionsBase {
   verifyCredentialStatus?: boolean
 }
 
+export interface VerificationContext {
+  /**
+   * The `id` of the `ProofRecord` that this verification is bound to.
+   */
+  didcommProofRecordId?: string
+
+  /**
+   * The `id` of the `OpenId4VcVerificationSessionRecord` that this verification is bound to.
+   */
+  openId4VcVerificationSessionId?: string
+}
+
 export interface W3cJwtVerifyPresentationOptions extends W3cVerifyPresentationOptionsBase {
   presentation: W3cJwtVerifiablePresentation | string // string must be encoded VP JWT
+  trustedCertificates?: [string, ...string[]]
+  verificationContext?: VerificationContext
 }
 
 export interface W3cJsonLdVerifyPresentationOptions extends W3cVerifyPresentationOptionsBase {
