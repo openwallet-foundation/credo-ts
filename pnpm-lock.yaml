@@ -448,8 +448,8 @@ importers:
         specifier: ^0.7.0
         version: 0.7.2
       '@sphereon/pex':
-        specifier: ^5.0.0-unstable.7
-        version: 5.0.0-unstable.7(ts-node@10.9.2(@types/node@18.18.8)(typescript@5.5.4))
+        specifier: 5.0.0-unstable.2
+        version: 5.0.0-unstable.2(ts-node@10.9.2(@types/node@18.18.8)(typescript@5.5.4))
       '@sphereon/pex-models':
         specifier: ^2.3.1
         version: 2.3.1
@@ -2453,6 +2453,7 @@ packages:
 
   '@sphereon/kmp-mdl-mdoc@0.2.0-SNAPSHOT.22':
     resolution: {integrity: sha512-uAZZExVy+ug9JLircejWa5eLtAZ7bnBP6xb7DO2+86LRsHNLh2k2jMWJYxp+iWtGHTsh6RYsZl14ScQLvjiQ/A==}
+    bundledDependencies: []
 
   '@sphereon/oid4vc-common@0.16.1-next.50':
     resolution: {integrity: sha512-ZekAd2mmuNGUq8KzXK3VjJesAaqzUI7Jr4yfRrQo3HSs89ZGkiTRz+W8c8+jG5bD366Zm2lr38Ln5/suQ+JYbQ==}
@@ -2480,10 +2481,6 @@ packages:
 
   '@sphereon/pex@5.0.0-unstable.2':
     resolution: {integrity: sha512-mA6lY/OBKKzsh4Jf4btm9Tj4ymVsX6xuVATn85LurD4bt3fhZwNJMkxhFy4tT/QyAtp05E4aaEq0wTVvOjVa7w==}
-    engines: {node: '>=18'}
-
-  '@sphereon/pex@5.0.0-unstable.7':
-    resolution: {integrity: sha512-E+pehf6E6JN/vSELZbnIvnNQqXEKjbijCCzov2mXqFWb3WyBn7B5RY7I3v9cCFnN+8r3W3E/Hb9jAJej1DIRCg==}
     engines: {node: '>=18'}
 
   '@sphereon/ssi-sdk-ext.did-utils@0.24.1-unstable.112':
@@ -10281,41 +10278,6 @@ snapshots:
   '@sphereon/pex-models@2.3.1': {}
 
   '@sphereon/pex@5.0.0-unstable.2(ts-node@10.9.2(@types/node@18.18.8)(typescript@5.5.4))':
-    dependencies:
-      '@astronautlabs/jsonpath': 1.1.2
-      '@sd-jwt/decode': 0.6.1
-      '@sd-jwt/present': 0.6.1
-      '@sd-jwt/types': 0.6.1
-      '@sphereon/pex-models': 2.3.1
-      '@sphereon/ssi-types': 0.29.1-unstable.121(ts-node@10.9.2(@types/node@18.18.8)(typescript@5.5.4))
-      ajv: 8.17.1
-      ajv-formats: 2.1.1(ajv@8.17.1)
-      jwt-decode: 3.1.2
-      nanoid: 3.3.7
-      string.prototype.matchall: 4.0.11
-      uint8arrays: 3.1.1
-    transitivePeerDependencies:
-      - '@google-cloud/spanner'
-      - '@sap/hana-client'
-      - better-sqlite3
-      - encoding
-      - hdb-pool
-      - ioredis
-      - mongodb
-      - mssql
-      - mysql2
-      - oracledb
-      - pg
-      - pg-native
-      - pg-query-stream
-      - redis
-      - sql.js
-      - sqlite3
-      - supports-color
-      - ts-node
-      - typeorm-aurora-data-api-driver
-
-  '@sphereon/pex@5.0.0-unstable.7(ts-node@10.9.2(@types/node@18.18.8)(typescript@5.5.4))':
     dependencies:
       '@astronautlabs/jsonpath': 1.1.2
       '@sd-jwt/decode': 0.6.1

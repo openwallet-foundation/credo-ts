@@ -703,7 +703,7 @@ describe('OpenId4Vc', () => {
     })
   })
 
-  it('e2e flow with verifier endpoints verifying a sd-jwt-vc with selective disclosure', async () => {
+  it('e2e flow with verifier endpoints verifying two sd-jwt-vcs with selective disclosure', async () => {
     const openIdVerifier = await verifier.agent.modules.openId4VcVerifier.createVerifier()
 
     const signedSdJwtVc = await issuer.agent.sdJwtVc.sign({
@@ -723,6 +723,23 @@ describe('OpenId4Vc', () => {
       },
     })
 
+    const signedSdJwtVc2 = await issuer.agent.sdJwtVc.sign({
+      holder: { method: 'did', didUrl: holder.kid },
+      issuer: {
+        method: 'did',
+        didUrl: issuer.kid,
+      },
+      payload: {
+        vct: 'OpenBadgeCredential2',
+        university: 'innsbruck2',
+        degree: 'bachelor2',
+        name: 'John Doe2',
+      },
+      disclosureFrame: {
+        _sd: ['university', 'name'],
+      },
+    })
+
     const certificate = await verifier.agent.x509.createSelfSignedCertificate({
       key: await verifier.agent.wallet.createKey({ keyType: KeyType.Ed25519 }),
       extensions: [[{ type: 'dns', value: 'localhost:1234' }]],
@@ -730,12 +747,13 @@ describe('OpenId4Vc', () => {
 
     const rawCertificate = certificate.toString('base64')
     await holder.agent.sdJwtVc.store(signedSdJwtVc.compact)
+    await holder.agent.sdJwtVc.store(signedSdJwtVc2.compact)
 
     await holder.agent.x509.addTrustedCertificate(rawCertificate)
     await verifier.agent.x509.addTrustedCertificate(rawCertificate)
 
     const presentationDefinition = {
-      id: 'OpenBadgeCredential',
+      id: 'OpenBadgeCredentials',
       input_descriptors: [
         {
           id: 'OpenBadgeCredentialDescriptor',
@@ -760,13 +778,36 @@ describe('OpenId4Vc', () => {
             ],
           },
         },
+        {
+          id: 'OpenBadgeCredentialDescriptor2',
+          format: {
+            'vc+sd-jwt': {
+              'sd-jwt_alg_values': ['EdDSA'],
+            },
+          },
+          constraints: {
+            limit_disclosure: 'required',
+            fields: [
+              {
+                path: ['$.vct'],
+                filter: {
+                  type: 'string',
+                  const: 'OpenBadgeCredential2',
+                },
+              },
+              {
+                path: ['$.name'],
+              },
+            ],
+          },
+        },
       ],
     } satisfies DifPresentationExchangeDefinitionV2
 
     // Hack to make it work with x5c check
-    // @ts-ignore
+    // @ts-expect-error
     verifier.agent.modules.openId4VcVerifier.config.options.baseUrl =
-      // @ts-ignore
+      // @ts-expect-error
       verifier.agent.modules.openId4VcVerifier.config.options.baseUrl.replace('http://', 'https://')
     const { authorizationRequest, verificationSession } =
       await verifier.agent.modules.openId4VcVerifier.createAuthorizationRequest({
@@ -789,9 +830,9 @@ describe('OpenId4Vc', () => {
     await verificationSessionRepoitory.update(verifier.agent.context, verificationSession)
 
     // Hack to make it work with x5c check
-    // @ts-ignore
+    // @ts-expect-error
     verifier.agent.modules.openId4VcVerifier.config.options.baseUrl =
-      // @ts-ignore
+      // @ts-expect-error
       verifier.agent.modules.openId4VcVerifier.config.options.baseUrl.replace('https://', 'http://')
 
     expect(authorizationRequest.replace('https', 'http')).toEqual(
@@ -807,7 +848,7 @@ describe('OpenId4Vc', () => {
       areRequirementsSatisfied: true,
       name: undefined,
       purpose: undefined,
-      requirements: [
+      requirements: expect.arrayContaining([
         {
           isRequirementSatisfied: true,
           needsCount: 1,
@@ -839,7 +880,37 @@ describe('OpenId4Vc', () => {
             },
           ],
         },
-      ],
+        {
+          isRequirementSatisfied: true,
+          needsCount: 1,
+          rule: 'pick',
+          submissionEntry: [
+            {
+              name: undefined,
+              purpose: undefined,
+              inputDescriptorId: 'OpenBadgeCredentialDescriptor2',
+              verifiableCredentials: [
+                {
+                  type: ClaimFormat.SdJwtVc,
+                  credentialRecord: expect.objectContaining({
+                    compactSdJwtVc: signedSdJwtVc2.compact,
+                  }),
+                  disclosedPayload: {
+                    cnf: {
+                      kid: 'did:key:z6MkpGR4gs4Rc3Zph4vj8wRnjnAxgAPSxcR8MAVKutWspQzc#z6MkpGR4gs4Rc3Zph4vj8wRnjnAxgAPSxcR8MAVKutWspQzc',
+                    },
+                    iat: expect.any(Number),
+                    iss: 'did:key:z6MkrzQPBr4pyqC776KKtrz13SchM5ePPbssuPuQZb5t4uKQ',
+                    vct: 'OpenBadgeCredential2',
+                    degree: 'bachelor2',
+                    name: 'John Doe2'
+                  },
+                },
+              ],
+            },
+          ],
+        },
+      ]),
     })
 
     if (!resolvedAuthorizationRequest.presentationExchange) {
@@ -868,18 +939,23 @@ describe('OpenId4Vc', () => {
     expect(submittedResponse.presentation_submission?.descriptor_map[0].path_nested).toBeUndefined()
     expect(submittedResponse).toEqual({
       presentation_submission: {
-        definition_id: 'OpenBadgeCredential',
+        definition_id: 'OpenBadgeCredentials',
         descriptor_map: [
           {
             format: 'vc+sd-jwt',
             id: 'OpenBadgeCredentialDescriptor',
-            path: '$',
+            path: '$[0]',
+          },
+          {
+            format: 'vc+sd-jwt',
+            id: 'OpenBadgeCredentialDescriptor2',
+            path: '$[1]',
           },
         ],
         id: expect.any(String),
       },
       state: expect.any(String),
-      vp_token: expect.any(String),
+      vp_token: [expect.any(String), expect.any(String)],
     })
     expect(serverResponse).toMatchObject({
       status: 200,
@@ -910,12 +986,17 @@ describe('OpenId4Vc', () => {
     expect(presentationExchange).toEqual({
       definition: presentationDefinition,
       submission: {
-        definition_id: 'OpenBadgeCredential',
+        definition_id: 'OpenBadgeCredentials',
         descriptor_map: [
           {
             format: 'vc+sd-jwt',
             id: 'OpenBadgeCredentialDescriptor',
-            path: '$',
+            path: '$[0]',
+          },
+          {
+            format: 'vc+sd-jwt',
+            id: 'OpenBadgeCredentialDescriptor2',
+            path: '$[1]',
           },
         ],
         id: expect.any(String),
@@ -949,6 +1030,35 @@ describe('OpenId4Vc', () => {
             vct: 'OpenBadgeCredential',
             degree: 'bachelor',
             university: 'innsbruck',
+          },
+        },
+        {
+          compact: expect.any(String),
+          header: {
+            alg: 'EdDSA',
+            kid: '#z6MkrzQPBr4pyqC776KKtrz13SchM5ePPbssuPuQZb5t4uKQ',
+            typ: 'vc+sd-jwt',
+          },
+          payload: {
+            _sd: [expect.any(String), expect.any(String)],
+            _sd_alg: 'sha-256',
+            cnf: {
+              kid: 'did:key:z6MkpGR4gs4Rc3Zph4vj8wRnjnAxgAPSxcR8MAVKutWspQzc#z6MkpGR4gs4Rc3Zph4vj8wRnjnAxgAPSxcR8MAVKutWspQzc',
+            },
+            iat: expect.any(Number),
+            iss: 'did:key:z6MkrzQPBr4pyqC776KKtrz13SchM5ePPbssuPuQZb5t4uKQ',
+            vct: 'OpenBadgeCredential2',
+            degree: 'bachelor2'
+          },
+          prettyClaims: {
+            cnf: {
+              kid: 'did:key:z6MkpGR4gs4Rc3Zph4vj8wRnjnAxgAPSxcR8MAVKutWspQzc#z6MkpGR4gs4Rc3Zph4vj8wRnjnAxgAPSxcR8MAVKutWspQzc',
+            },
+            iat: expect.any(Number),
+            iss: 'did:key:z6MkrzQPBr4pyqC776KKtrz13SchM5ePPbssuPuQZb5t4uKQ',
+            vct: 'OpenBadgeCredential2',
+            name: 'John Doe2',
+            degree: 'bachelor2'
           },
         },
       ],
