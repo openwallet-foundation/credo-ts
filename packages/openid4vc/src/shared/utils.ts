@@ -11,6 +11,7 @@ import {
   JwtPayload,
   SignatureSuiteRegistry,
   X509Service,
+  getDomainFromUrl,
   getJwkClassFromKeyType,
   getJwkFromJson,
   getJwkFromKey,
@@ -133,6 +134,19 @@ export async function openIdTokenIssuerToJwtIssuer(
     const alg = jwk.supportedSignatureAlgorithms[0]
     if (!alg) {
       throw new CredoError(`No supported signature algorithms found key type: '${jwk.keyType}'`)
+    }
+
+    if (!openId4VcTokenIssuer.issuer.startsWith('https://')) {
+      throw new CredoError('The X509 certificate issuer must be a HTTPS URI.')
+    }
+
+    if (
+      !leafCertificate.sanUriNames?.includes(openId4VcTokenIssuer.issuer) &&
+      !leafCertificate.sanDnsNames?.includes(getDomainFromUrl(openId4VcTokenIssuer.issuer))
+    ) {
+      throw new Error(
+        `The 'iss' claim in the payload does not match a 'SAN-URI' or 'SAN-DNS' name in the x5c certificate.`
+      )
     }
 
     return {
