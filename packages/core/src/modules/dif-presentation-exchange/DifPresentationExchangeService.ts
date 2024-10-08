@@ -51,6 +51,7 @@ import {
   getPresentationsToCreate,
   getSphereonOriginalVerifiableCredential,
 } from './utils'
+import { PartialSdJwtDecodedVerifiableCredential } from '@sphereon/pex/dist/main/lib'
 
 /**
  * @todo create a public api for using dif presentation exchange
@@ -242,9 +243,10 @@ export class DifPresentationExchangeService {
     })
 
     return {
-      verifiablePresentations: verifiablePresentationResultsWithFormat.flatMap((resultWithFormat) =>
-        resultWithFormat.verifiablePresentationResult.verifiablePresentations.map((encoded) =>
-          getVerifiablePresentationFromEncoded(agentContext, encoded)
+      verifiablePresentations: verifiablePresentationResultsWithFormat.map((resultWithFormat) =>
+        getVerifiablePresentationFromEncoded(
+          agentContext,
+          resultWithFormat.verifiablePresentationResult.verifiablePresentation
         )
       ),
       presentationSubmission,
@@ -502,7 +504,9 @@ export class DifPresentationExchangeService {
 
         return signedPresentation.encoded as W3CVerifiablePresentation
       } else if (presentationToCreate.claimFormat === ClaimFormat.SdJwtVc) {
-        const sdJwtInput = presentationInput as SdJwtDecodedVerifiableCredential
+        const sdJwtInput = presentationInput as
+          | SdJwtDecodedVerifiableCredential
+          | PartialSdJwtDecodedVerifiableCredential
 
         if (!domain) {
           throw new CredoError("Missing 'domain' property, unable to set required 'aud' property in SD-JWT KB-JWT")
