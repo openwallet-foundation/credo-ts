@@ -174,8 +174,8 @@ export abstract class AskarBaseWallet implements Wallet {
           const _key = privateKey
             ? AskarKey.fromSecretBytes({ secretKey: privateKey, algorithm })
             : seed
-              ? AskarKey.fromSeed({ seed, algorithm })
-              : AskarKey.generate(algorithm)
+            ? AskarKey.fromSeed({ seed, algorithm })
+            : AskarKey.generate(algorithm)
 
           // FIXME: we need to create a separate const '_key' so TS definitely knows _key is defined in the session callback.
           // This will be fixed once we use the new 'using' syntax
@@ -310,9 +310,9 @@ export abstract class AskarBaseWallet implements Wallet {
           askarKey ??
           (keyPair
             ? AskarKey.fromSecretBytes({
-              secretKey: TypedArrayEncoder.fromBase58(keyPair.privateKeyBase58),
-              algorithm: keyAlgFromString(keyPair.keyType),
-            })
+                secretKey: TypedArrayEncoder.fromBase58(keyPair.privateKeyBase58),
+                algorithm: keyAlgFromString(keyPair.keyType),
+              })
             : undefined)
 
         if (!askarKey) {
