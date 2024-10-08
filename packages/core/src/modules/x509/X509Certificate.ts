@@ -1,3 +1,4 @@
+import type { X509CreateSelfSignedCertificateOptions } from './X509ServiceOptions'
 import type { CredoWebCrypto } from '../../crypto/webcrypto'
 
 import { AsnParser } from '@peculiar/asn1-schema'
@@ -7,6 +8,7 @@ import * as x509 from '@peculiar/x509'
 import { Key } from '../../crypto/Key'
 import { CredoWebCryptoKey } from '../../crypto/webcrypto'
 import { credoKeyTypeIntoCryptoKeyAlgorithm, spkiAlgorithmIntoCredoKeyType } from '../../crypto/webcrypto/utils'
+import { TypedArrayEncoder } from '../../utils'
 
 import { X509Error } from './X509Error'
 
@@ -83,20 +85,7 @@ export class X509Certificate {
   }
 
   public static async createSelfSigned(
-    {
-      key,
-      extensions,
-      notAfter,
-      notBefore,
-      name,
-    }: {
-      key: Key
-      // For now we only support the SubjectAlternativeName as `dns` or `uri`
-      extensions?: ExtensionInput
-      notBefore?: Date
-      notAfter?: Date
-      name?: string
-    },
+    { key, extensions, notAfter, notBefore, name, countryName }: X509CreateSelfSignedCertificateOptions,
     webCrypto: CredoWebCrypto
   ) {
     const cryptoKeyAlgorithm = credoKeyTypeIntoCryptoKeyAlgorithm(key.keyType)
@@ -104,10 +93,20 @@ export class X509Certificate {
     const publicKey = new CredoWebCryptoKey(key, cryptoKeyAlgorithm, true, 'public', ['verify'])
     const privateKey = new CredoWebCryptoKey(key, cryptoKeyAlgorithm, false, 'private', ['sign'])
 
+    const issuerName =
+      name || countryName
+        ? [
+            {
+              ...(name && { CN: [name] }),
+              ...(countryName && { C: [countryName] }),
+            },
+          ]
+        : undefined
+
     const certificate = await x509.X509CertificateGenerator.createSelfSigned(
       {
         keys: { publicKey, privateKey },
-        name,
+        name: issuerName,
         extensions: extensions?.map((extension) => new x509.SubjectAlternativeNameExtension(extension)),
         notAfter,
         notBefore,
@@ -152,6 +151,27 @@ export class X509Certificate {
     if (!isNotAfterValid) {
       throw new X509Error(`Certificate: '${certificate.subject}' used after it is allowed`)
     }
+  }
+
+  public async getData(crypto?: CredoWebCrypto) {
+    const certificate = new x509.X509Certificate(this.rawCertificate)
+
+    const thumbprint = await certificate.getThumbprint(crypto)
+    const thumbprintHex = TypedArrayEncoder.toHex(new Uint8Array(thumbprint))
+    return {
+      issuerName: certificate.issuerName.toString(),
+      subjectName: certificate.subjectName.toString(),
+      serialNumber: certificate.serialNumber,
+      thumbprint: thumbprintHex,
+      pem: certificate.toString(),
+      notBefore: certificate.notBefore,
+      notAfter: certificate.notAfter,
+    }
+  }
+
+  public getIssuerNameField(field: string) {
+    const certificate = new x509.X509Certificate(this.rawCertificate)
+    return certificate.issuerName.getField(field)
   }
 
   public toString(format: 'asn' | 'pem' | 'hex' | 'base64' | 'text' | 'base64url') {

@@ -25,6 +25,7 @@ import {
   getJwkFromJson,
   injectable,
   parseDid,
+  MdocVerifiablePresentation,
 } from '@credo-ts/core'
 import { OP, ResponseIss, ResponseMode, ResponseType, SupportedVersion, VPTokenLocation } from '@sphereon/did-auth-siop'
 
@@ -109,6 +110,14 @@ export class OpenId4VcSiopHolderService {
           challenge: nonce,
           domain: clientId,
           presentationSubmissionLocation: DifPresentationExchangeSubmissionLocation.EXTERNAL,
+          openid4vp: {
+            clientId,
+            verifierGeneratedNonce: nonce,
+            mdocGeneratedNonce: await agentContext.wallet.generateNonce(),
+            responseUri:
+              authorizationRequest.authorizationRequestPayload.response_uri ??
+              authorizationRequest.authorizationRequestPayload.response_uri,
+          },
         })
 
       presentationExchangeOptions = {
@@ -272,6 +281,8 @@ export class OpenId4VcSiopHolderService {
           "JWT W3C Verifiable presentation does not include did in JWT header 'kid'. Unable to extract openIdTokenIssuer from verifiable presentation"
         )
       }
+    } else if (verifiablePresentation instanceof MdocVerifiablePresentation) {
+      throw new CredoError('Mdoc Verifiable Presentations are not yet supported')
     } else {
       const cnf = verifiablePresentation.payload.cnf
       // FIXME: SD-JWT VC should have better payload typing, so this doesn't become so ugly

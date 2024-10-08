@@ -39,6 +39,7 @@ import {
   DifPresentationExchangeService,
   DifPresentationExchangeSubmissionLocation,
 } from '../../../dif-presentation-exchange'
+import { MdocVerifiablePresentation } from '../../../mdoc'
 import {
   ANONCREDS_DATA_INTEGRITY_CRYPTOSUITE,
   AnonCredsDataIntegrityServiceSymbol,
@@ -223,6 +224,8 @@ export class DifPresentationExchangeProofFormatService
       firstPresentation instanceof W3cJwtVerifiablePresentation ||
       firstPresentation instanceof W3cJsonLdVerifiablePresentation
         ? firstPresentation.encoded
+        : firstPresentation instanceof MdocVerifiablePresentation
+        ? firstPresentation.deviceSignedBase64Url
         : firstPresentation?.compact
     const attachment = this.getFormatData(encodedFirstPresentation, format.attachmentId)
 
