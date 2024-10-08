@@ -309,8 +309,8 @@ export class W3cJwtCredentialService {
       const proverPublicKey = getKeyFromVerificationMethod(proverVerificationMethod)
       const proverPublicJwk = getJwkFromKey(proverPublicKey)
 
-      const getTrustedCertificatesForProof = agentContext.dependencyManager.isRegistered(X509ModuleConfig)
-        ? agentContext.dependencyManager.resolve(X509ModuleConfig).getTrustedCertificatesForProof
+      const getTrustedCertificatesForVerification = agentContext.dependencyManager.isRegistered(X509ModuleConfig)
+        ? agentContext.dependencyManager.resolve(X509ModuleConfig).getTrustedCertificatesForVerification
         : undefined
 
       let signatureResult: VerifyJwsResult | undefined = undefined
@@ -322,7 +322,7 @@ export class W3cJwtCredentialService {
           jwkResolver: () => proverPublicJwk,
           trustedCertificates:
             options.trustedCertificates ??
-            (await getTrustedCertificatesForProof?.(agentContext, options.verificationContext)),
+            (await getTrustedCertificatesForVerification?.(agentContext, options.verificationContext)),
         })
 
         if (!signatureResult.isValid) {

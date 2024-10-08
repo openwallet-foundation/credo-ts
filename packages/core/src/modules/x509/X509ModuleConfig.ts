@@ -16,7 +16,7 @@ export interface X509ModuleConfigOptions {
    *
    * @returns An array of base64-encoded certificate strings or PEM certificate strings.
    */
-  getTrustedCertificatesForProof?(
+  getTrustedCertificatesForVerification?(
     agentContext: AgentContext,
     verificationContext?: VerificationContext
   ): Promise<[string, ...string[]] | undefined>
@@ -27,19 +27,19 @@ export class X509ModuleConfig {
 
   public constructor(options?: X509ModuleConfigOptions) {
     this.options = options?.trustedCertificates ? { trustedCertificates: [...options.trustedCertificates] } : {}
-    this.options.getTrustedCertificatesForProof = options?.getTrustedCertificatesForProof
+    this.options.getTrustedCertificatesForVerification = options?.getTrustedCertificatesForVerification
   }
 
   public get trustedCertificates() {
     return this.options.trustedCertificates
   }
 
-  public get getTrustedCertificatesForProof() {
-    return this.options.getTrustedCertificatesForProof
+  public get getTrustedCertificatesForVerification() {
+    return this.options.getTrustedCertificatesForVerification
   }
 
-  public setTrustedCertificatesForProof(fn: X509ModuleConfigOptions['getTrustedCertificatesForProof']) {
-    this.options.getTrustedCertificatesForProof = fn
+  public setTrustedCertificatesForVerification(fn: X509ModuleConfigOptions['getTrustedCertificatesForVerification']) {
+    this.options.getTrustedCertificatesForVerification = fn
   }
 
   public setTrustedCertificates(trustedCertificates?: [string, ...string[]]) {
