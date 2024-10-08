@@ -4,18 +4,20 @@ import type {
   OpenId4VcSiopCreateVerifierOptions,
   OpenId4VcSiopVerifiedAuthorizationResponse,
   OpenId4VcSiopVerifyAuthorizationResponseOptions,
+  ResponseMode,
 } from './OpenId4VcSiopVerifierServiceOptions'
 import type { OpenId4VcVerificationSessionRecord } from './repository'
 import type { OpenId4VcSiopAuthorizationResponsePayload } from '../shared'
 import type {
   AgentContext,
   DifPresentationExchangeDefinition,
+  JwkJson,
   Query,
   QueryOptions,
   RecordSavedEvent,
   RecordUpdatedEvent,
 } from '@credo-ts/core'
-import type { ClientIdScheme, PresentationVerificationCallback } from '@sphereon/did-auth-siop'
+import type { ClientIdScheme, JarmClientMetadata, PresentationVerificationCallback } from '@sphereon/did-auth-siop'
 
 import {
   EventEmitter,
@@ -36,6 +38,8 @@ import {
   DidsApi,
   X509Service,
   getDomainFromUrl,
+  KeyType,
+  getJwkFromKey,
 } from '@credo-ts/core'
 import {
   AuthorizationRequest,
@@ -44,7 +48,7 @@ import {
   PropertyTarget,
   RequestAud,
   ResponseIss,
-  ResponseMode,
+  ResponseMode as SphereonResponseMode,
   ResponseType,
   RevocationVerification,
   RP,
@@ -83,7 +87,7 @@ export class OpenId4VcSiopVerifierService {
     private openId4VcVerifierRepository: OpenId4VcVerifierRepository,
     private config: OpenId4VcVerifierModuleConfig,
     private openId4VcVerificationSessionRepository: OpenId4VcVerificationSessionRepository
-  ) {}
+  ) { }
 
   public async createAuthorizationRequest(
     agentContext: AgentContext,
@@ -103,9 +107,9 @@ export class OpenId4VcSiopVerifierService {
     const jwtIssuer =
       options.requestSigner.method === 'x5c'
         ? await openIdTokenIssuerToJwtIssuer(agentContext, {
-            ...options.requestSigner,
-            issuer: authorizationResponseUrl,
-          })
+          ...options.requestSigner,
+          issuer: authorizationResponseUrl,
+        })
         : await openIdTokenIssuerToJwtIssuer(agentContext, options.requestSigner)
 
     let clientIdScheme: ClientIdScheme
@@ -146,6 +150,7 @@ export class OpenId4VcSiopVerifierService {
       authorizationResponseUrl,
       clientId,
       clientIdScheme,
+      responseMode: options.responseMode,
     })
 
     // We always use shortened URIs currently
@@ -354,26 +359,56 @@ export class OpenId4VcSiopVerifierService {
     agentContext: AgentContext,
     {
       authorizationResponse,
+      authorizationResponseParams,
       verifierId,
-    }: {
-      authorizationResponse: OpenId4VcSiopAuthorizationResponsePayload
-      verifierId?: string
-    }
+    }:
+      | {
+        authorizationResponse?: never
+        authorizationResponseParams: {
+          state?: string
+          nonce?: string
+        }
+        verifierId?: string
+      }
+      | {
+        authorizationResponse: OpenId4VcSiopAuthorizationResponsePayload
+        authorizationResponseParams?: never
+        verifierId?: string
+      }
   ) {
-    const authorizationResponseInstance = await AuthorizationResponse.fromPayload(authorizationResponse).catch(() => {
-      throw new CredoError(`Unable to parse authorization response payload. ${JSON.stringify(authorizationResponse)}`)
-    })
+    let nonce: string | undefined
+    let state: string | undefined
 
-    const responseNonce = await authorizationResponseInstance.getMergedProperty<string>('nonce', {
-      hasher: Hasher.hash,
-    })
-    const responseState = await authorizationResponseInstance.getMergedProperty<string>('state', {
-      hasher: Hasher.hash,
-    })
+    if (authorizationResponse) {
+      const authorizationResponseInstance = await AuthorizationResponse.fromPayload(authorizationResponse).catch(() => {
+        throw new CredoError(`Unable to parse authorization response payload. ${JSON.stringify(authorizationResponse)}`)
+      })
+
+      nonce = await authorizationResponseInstance.getMergedProperty<string>('nonce', {
+        hasher: Hasher.hash,
+      })
+      state = await authorizationResponseInstance.getMergedProperty<string>('state', {
+        hasher: Hasher.hash,
+      })
+
+      if (!nonce && !state) {
+        throw new CredoError(
+          'Could not extract nonce or state from authorization response. Unable to find OpenId4VcVerificationSession.'
+        )
+      }
+    } else {
+      if (authorizationResponseParams?.nonce && !authorizationResponseParams?.state) {
+        throw new CredoError(
+          'Either nonce or state must be provided if no authorization response is provided. Unable to find OpenId4VcVerificationSession.'
+        )
+      }
+      nonce = authorizationResponseParams?.nonce
+      state = authorizationResponseParams?.state
+    }
 
     const verificationSession = await this.openId4VcVerificationSessionRepository.findSingleByQuery(agentContext, {
-      nonce: responseNonce,
-      payloadState: responseState,
+      nonce,
+      payloadState: state,
       verifierId,
     })
 
@@ -423,7 +458,9 @@ export class OpenId4VcSiopVerifierService {
       clientId,
       clientIdScheme,
       authorizationResponseUrl,
+      responseMode,
     }: {
+      responseMode?: ResponseMode
       idToken?: boolean
       presentationDefinition?: DifPresentationExchangeDefinition
       clientId: string
@@ -461,10 +498,32 @@ export class OpenId4VcSiopVerifierService {
       .resolve(OpenId4VcRelyingPartyEventHandler)
       .getEventEmitterForVerifier(agentContext.contextCorrelationId, verifierId)
 
+    const mode =
+      !responseMode || responseMode === 'direct_post'
+        ? SphereonResponseMode.DIRECT_POST
+        : SphereonResponseMode.DIRECT_POST_JWT
+
+    type JarmEncryptionJwk = JwkJson & { kid: string; use: 'enc' }
+    let jarmEncryptionJwk: JarmEncryptionJwk | undefined
+
+    if (mode === SphereonResponseMode.DIRECT_POST_JWT) {
+      const key = await agentContext.wallet.createKey({ keyType: KeyType.P256 })
+      jarmEncryptionJwk = { ...getJwkFromKey(key).toJson(), kid: key.fingerprint, use: 'enc' }
+    }
+
+    const jarmClientMetadata: (JarmClientMetadata & { jwks: { keys: JarmEncryptionJwk[] } }) | undefined =
+      jarmEncryptionJwk
+        ? {
+          jwks: { keys: [jarmEncryptionJwk] },
+          authorization_encrypted_response_alg: 'ECDH-ES',
+          authorization_encrypted_response_enc: 'A256GCM',
+        }
+        : undefined
+
     builder
-      // FIXME: reponset (T!!!)
-      .withResponsetUri(authorizationResponseUrl)
       .withClientId(clientId)
+      .withResponseUri(authorizationResponseUrl)
+      .withIssuer(ResponseIss.SELF_ISSUED_V2)
       .withAudience(RequestAud.SELF_ISSUED_V2)
       .withIssuer(ResponseIss.SELF_ISSUED_V2)
       .withSupportedVersions([
@@ -472,7 +531,7 @@ export class OpenId4VcSiopVerifierService {
         SupportedVersion.SIOPv2_D12_OID4VP_D18,
         SupportedVersion.SIOPv2_D12_OID4VP_D20,
       ])
-      .withResponseMode(ResponseMode.DIRECT_POST)
+      .withResponseMode(mode)
       .withHasher(Hasher.hash)
       // FIXME: should allow verification of revocation
       // .withRevocationVerificationCallback()
@@ -485,6 +544,8 @@ export class OpenId4VcSiopVerifierService {
 
       // TODO: we should probably allow some dynamic values here
       .withClientMetadata({
+        ...jarmClientMetadata,
+        client_id: clientId,
         passBy: PassBy.VALUE,
         responseTypesSupported: [ResponseType.VP_TOKEN],
         subject_syntax_types_supported: supportedDidMethods.map((m) => `did:${m}`),

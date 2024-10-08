@@ -6,6 +6,7 @@ import type {
   SignOptions,
   VerifyOptions,
 } from '@credo-ts/core'
+import type { JwkProps } from '@hyperledger/aries-askar-shared'
 
 import {
   WalletKeyExistsError,
@@ -19,8 +20,12 @@ import {
   TypedArrayEncoder,
   KeyDerivationMethod,
   Buffer,
+  JsonEncoder,
 } from '@credo-ts/core'
-import { Store } from '@hyperledger/aries-askar-shared'
+import { Key as AskarKey } from '@hyperledger/aries-askar-nodejs'
+import { Jwk, Store } from '@hyperledger/aries-askar-shared'
+import { readFileSync } from 'fs'
+import path from 'path'
 
 import { KeyBackend } from '../../../../core/src/crypto/KeyBackend'
 import { encodeToBase58 } from '../../../../core/src/utils/base58'
@@ -169,6 +174,76 @@ describe('AskarWallet basic operations', () => {
       key: k256Key,
     })
     await expect(askarWallet.verify({ key: k256Key, data: message, signature })).resolves.toStrictEqual(true)
+  })
+
+  test('Encrypt and decrypt using JWE ECDH-ES', async () => {
+    const recipientKey = await askarWallet.createKey({
+      keyType: KeyType.P256,
+    })
+
+    const apv = TypedArrayEncoder.toBase64URL(TypedArrayEncoder.fromString('nonce-from-auth-request'))
+    const apu = TypedArrayEncoder.toBase64URL(TypedArrayEncoder.fromString(await askarWallet.generateNonce()))
+
+    const compactJwe = await askarWallet.directEncryptCompactJweEcdhEs({
+      data: JsonEncoder.toBuffer({ vp_token: ['something'] }),
+      apu,
+      apv,
+      encryptionAlgorithm: 'A256GCM',
+      header: {
+        kid: 'some-kid',
+      },
+      recipientKey,
+    })
+
+    const { data, header } = await askarWallet.directDecryptCompactJweEcdhEs({
+      compactJwe,
+      recipientKey,
+    })
+
+    expect(header).toEqual({
+      kid: 'some-kid',
+      apv,
+      apu,
+      enc: 'A256GCM',
+      alg: 'ECDH-ES',
+      epk: {
+        kty: 'EC',
+        crv: 'P-256',
+        x: expect.any(String),
+        y: expect.any(String),
+      },
+    })
+    expect(JsonEncoder.fromBuffer(data)).toEqual({ vp_token: ['something'] })
+  })
+
+  test('decrypt using JWE ECDH-ES based on test vector from OpenID Conformance test', async () => {
+    const {
+      compactJwe,
+      decodedPayload,
+      privateKeyJwk,
+      header: expectedHeader,
+    } = JSON.parse(
+      readFileSync(path.join(__dirname, '__fixtures__/jarm-jwe-encrypted-response.json')).toString('utf-8')
+    ) as {
+      compactJwe: string
+      decodedPayload: Record<string, unknown>
+      privateKeyJwk: JwkProps
+      header: string
+    }
+
+    const key = AskarKey.fromJwk({ jwk: Jwk.fromJson(privateKeyJwk) })
+    const recipientKey = await askarWallet.createKey({
+      keyType: KeyType.P256,
+      privateKey: Buffer.from(key.secretBytes),
+    })
+
+    const { data, header } = await askarWallet.directDecryptCompactJweEcdhEs({
+      compactJwe,
+      recipientKey,
+    })
+
+    expect(header).toEqual(expectedHeader)
+    expect(JsonEncoder.fromBuffer(data)).toEqual(decodedPayload)
   })
 })
 

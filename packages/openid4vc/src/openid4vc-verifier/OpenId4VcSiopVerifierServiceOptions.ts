@@ -12,6 +12,8 @@ import type {
   VerifiablePresentation,
 } from '@credo-ts/core'
 
+export type ResponseMode = 'direct_post' | 'direct_post.jwt'
+
 export interface OpenId4VcSiopCreateAuthorizationRequestOptions {
   /**
    * Signing information for the request JWT. This will be used to sign the request JWT
@@ -35,6 +37,15 @@ export interface OpenId4VcSiopCreateAuthorizationRequestOptions {
   presentationExchange?: {
     definition: DifPresentationExchangeDefinitionV2
   }
+
+  /**
+   * The response mode to use for the authorization request.
+   * @default to `direct_post`.
+   *
+   * With response_mode `direct_post` the response will be posted directly to the `response_uri` provided in the request.
+   * With response_mode `direct_post.jwt` the response will be `signed` `encrypted` or `signed and encrypted` and then posted to the `response_uri` provided in the request.
+   */
+  responseMode?: ResponseMode
 }
 
 export interface OpenId4VcSiopVerifyAuthorizationResponseOptions {

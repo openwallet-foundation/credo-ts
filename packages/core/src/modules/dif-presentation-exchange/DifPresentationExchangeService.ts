@@ -60,7 +60,7 @@ import { PartialSdJwtDecodedVerifiableCredential } from '@sphereon/pex/dist/main
 export class DifPresentationExchangeService {
   private pex = new PEX({ hasher: Hasher.hash })
 
-  public constructor(private w3cCredentialService: W3cCredentialService) {}
+  public constructor(private w3cCredentialService: W3cCredentialService) { }
 
   public async getCredentialsForRequest(
     agentContext: AgentContext,
@@ -244,10 +244,7 @@ export class DifPresentationExchangeService {
 
     return {
       verifiablePresentations: verifiablePresentationResultsWithFormat.map((resultWithFormat) =>
-        getVerifiablePresentationFromEncoded(
-          agentContext,
-          resultWithFormat.verifiablePresentationResult.verifiablePresentation
-        )
+        getVerifiablePresentationFromEncoded(agentContext, resultWithFormat.verifiablePresentationResult.verifiablePresentation)
       ),
       presentationSubmission,
       presentationSubmissionLocation:
@@ -614,8 +611,8 @@ export class DifPresentationExchangeService {
     const w3cCredentialRecords =
       w3cQuery.length > 0
         ? await w3cCredentialRepository.findByQuery(agentContext, {
-            $or: w3cQuery,
-          })
+          $or: w3cQuery,
+        })
         : await w3cCredentialRepository.getAll(agentContext)
 
     allRecords.push(...w3cCredentialRecords)
@@ -624,8 +621,8 @@ export class DifPresentationExchangeService {
     const sdJwtVcRecords =
       sdJwtVcQuery.length > 0
         ? await sdJwtVcApi.findAllByQuery({
-            $or: sdJwtVcQuery,
-          })
+          $or: sdJwtVcQuery,
+        })
         : await sdJwtVcApi.getAll()
 
     allRecords.push(...sdJwtVcRecords)

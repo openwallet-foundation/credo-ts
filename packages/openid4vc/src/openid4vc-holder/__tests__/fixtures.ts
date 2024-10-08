@@ -237,7 +237,9 @@ export const waltIdDraft11JwtVcJson = {
       'eyJhbGciOiJFZERTQSJ9.eyJzdWIiOiJjMDQyMmUxMy1kNTU0LTQwMmUtOTQ0OS0yZjA0ZjAyNjMzNTMiLCJpc3MiOiJodHRwczovL2lzc3Vlci5wb3J0YWwud2FsdC5pZCIsImF1ZCI6IkFDQ0VTUyJ9.pkNF05uUy72QAoZwdf1Uz1XRc4aGs1hhnim-x1qIeMe17TMUYV2D6BOATQtDItxnnhQz2MBfqUSQKYi7CFirDA',
     token_type: 'bearer',
     c_nonce: 'd4364dac-f026-4380-a4c3-2bfe2d2df52a',
-    c_nonce_expires_in: 27,
+    c_nonce_expires_in: 300000,
+    expires_in: 180000,
+    authorization_pending: false,
   },
 
   authorizationCode:

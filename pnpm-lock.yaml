@@ -684,20 +684,20 @@ importers:
         specifier: workspace:*
         version: link:../core
       '@sphereon/did-auth-siop':
-        specifier: 0.16.1-next.50
-        version: 0.16.1-next.50(ts-node@10.9.2(@types/node@18.18.8)(typescript@5.5.4))
+        specifier: 0.16.1-next.66
+        version: 0.16.1-next.66(ts-node@10.9.2(@types/node@18.18.8)(typescript@5.5.4))(typescript@5.5.4)
       '@sphereon/oid4vc-common':
-        specifier: 0.16.1-next.50
-        version: 0.16.1-next.50
+        specifier: 0.16.1-next.66
+        version: 0.16.1-next.66
       '@sphereon/oid4vci-client':
-        specifier: 0.16.1-next.50
-        version: 0.16.1-next.50
+        specifier: 0.16.1-next.66
+        version: 0.16.1-next.66
       '@sphereon/oid4vci-common':
-        specifier: 0.16.1-next.50
-        version: 0.16.1-next.50
+        specifier: 0.16.1-next.66
+        version: 0.16.1-next.66
       '@sphereon/oid4vci-issuer':
-        specifier: 0.16.1-next.50
-        version: 0.16.1-next.50
+        specifier: 0.16.1-next.66
+        version: 0.16.1-next.66
       '@sphereon/ssi-types':
         specifier: 0.29.1-unstable.121
         version: 0.29.1-unstable.121(ts-node@10.9.2(@types/node@18.18.8)(typescript@5.5.4))
@@ -2444,31 +2444,34 @@ packages:
     resolution: {integrity: sha512-kQpk267uxB19X3X2T1mvNMjyvIEonpNSHrMlK5ZaBU6aZxw7wPbpgKJOjHN3+/GPVpXgAV9soVT2oyHpLkLtyw==}
     engines: {node: '>= 8'}
 
-  '@sphereon/did-auth-siop@0.16.1-next.50':
-    resolution: {integrity: sha512-JrQg6LNyV7jeqmqcAB6d/tFOufF+CrvFH5WZWHX/wA7zBNKN9M6vLDeMcfhnpbUC58b9XUUlT3XWUXXNrT6ZCA==}
+  '@sphereon/did-auth-siop@0.16.1-next.66':
+    resolution: {integrity: sha512-B6YVuMnGppkCRJdTVJYW8tn7o6ptinGZeR5ktd4fS8+F6i2GcCE0KEnaxnSBa5+AP9e4JYXNRdiUBlwMEymbZQ==}
     engines: {node: '>=18'}
 
   '@sphereon/did-uni-client@0.6.3':
     resolution: {integrity: sha512-g7LD7ofbE36slHN7Bhr5dwUrj6t0BuZeXBYJMaVY/pOeL1vJxW1cZHbZqu0NSfOmzyBg4nsYVlgTjyi/Aua2ew==}
 
+  '@sphereon/jarm@0.16.1-next.66':
+    resolution: {integrity: sha512-TxFwaJ1AKp6gGQpidOMNujYUe1qvOUStwKPwzl2WGDZ00CctDYfTaeD8ySVxqvIk1V9UY33Bztdr8jdD+A/uKg==}
+    engines: {node: '>=18'}
+
   '@sphereon/kmp-mdl-mdoc@0.2.0-SNAPSHOT.22':
     resolution: {integrity: sha512-uAZZExVy+ug9JLircejWa5eLtAZ7bnBP6xb7DO2+86LRsHNLh2k2jMWJYxp+iWtGHTsh6RYsZl14ScQLvjiQ/A==}
-    bundledDependencies: []
 
-  '@sphereon/oid4vc-common@0.16.1-next.50':
-    resolution: {integrity: sha512-ZekAd2mmuNGUq8KzXK3VjJesAaqzUI7Jr4yfRrQo3HSs89ZGkiTRz+W8c8+jG5bD366Zm2lr38Ln5/suQ+JYbQ==}
+  '@sphereon/oid4vc-common@0.16.1-next.66':
+    resolution: {integrity: sha512-PqMFDMfWHn9jiUxa5k018huQTYxHfYJJstQNyRrle/pV37gv6Lh+yjwML6LE8eUQksw05tfXeq1hk8M2Gl1HWA==}
     engines: {node: '>=18'}
 
-  '@sphereon/oid4vci-client@0.16.1-next.50':
-    resolution: {integrity: sha512-uy163VC5uuGgdlmQqMnfoy7W4QO8sUvQZcmWAOBPC+A7dxTlxH7Q8GsMqujYLJ/ZQ8YbRqPxudP92l2CF+nIlg==}
+  '@sphereon/oid4vci-client@0.16.1-next.66':
+    resolution: {integrity: sha512-h5GhZOdYWmWCwqESKCp9qHHuI9ZrdaciKhKTY9LYv98tpFyBjiSYftNIIv1kax4kQFiQHLkrtQlZvfARZ3/QOg==}
     engines: {node: '>=18'}
 
-  '@sphereon/oid4vci-common@0.16.1-next.50':
-    resolution: {integrity: sha512-WvB06M1YMsLH0/IFMX11IOMZholTfUZ3lEQPacd2Xj09e93+8aegEjTu3o3sdOcj5hxDP8mQiv3wYNw43aQcew==}
+  '@sphereon/oid4vci-common@0.16.1-next.66':
+    resolution: {integrity: sha512-Y2PXGEq3jdl/84GXFZZfPCjcxk5k7hx7gAaWQeNue6JTuRQOkiyqD4xPAj+bTOnRo22BuJmU2VAhonFDqlN0Tg==}
     engines: {node: '>=18'}
 
-  '@sphereon/oid4vci-issuer@0.16.1-next.50':
-    resolution: {integrity: sha512-8nnb5drVyCnCWXuTTX6AtwFGjYC2FYLA/4Do10jbZxDJxaJFk3eUSAKkBEBZrwen9BUyqFcRcLpELnZ3uD563Q==}
+  '@sphereon/oid4vci-issuer@0.16.1-next.66':
+    resolution: {integrity: sha512-qu8IF6fMZbZHMYmekj+755xwgT5NUe6DUFNqHYugRKWaiGiz+e0YzJa18EAUIxNib00U3rWEr9i3SJdectRJQg==}
     engines: {node: '>=18'}
     peerDependencies:
       awesome-qr: ^2.1.5-rc.0
@@ -7181,6 +7184,14 @@ packages:
     resolution: {integrity: sha512-kiGUalWN+rgBJ/1OHZsBtU4rXZOfj/7rKQxULKlIzwzQSvMJUUNgPwJEEh7gU6xEVxC0ahoOBvN2YI8GH6FNgA==}
     engines: {node: '>=10.12.0'}
 
+  valibot@0.42.1:
+    resolution: {integrity: sha512-3keXV29Ar5b//Hqi4MbSdV7lfVp6zuYLZuA9V1PvQUsXqogr+u5lvLPLk3A4f74VUXDnf/JfWMN6sB+koJ/FFw==}
+    peerDependencies:
+      typescript: '>=5'
+    peerDependenciesMeta:
+      typescript:
+        optional: true
+
   valid-url@1.0.9:
     resolution: {integrity: sha512-QQDsV8OnSf5Uc30CKSwG9lnhMPe6exHtTXLRYX8uMwKENy640pU+2BgBL0LRbDh/eYRahNCS7aewCx0wf3NYVA==}
 
@@ -10179,12 +10190,13 @@ snapshots:
 
   '@sovpro/delimited-stream@1.1.0': {}
 
-  '@sphereon/did-auth-siop@0.16.1-next.50(ts-node@10.9.2(@types/node@18.18.8)(typescript@5.5.4))':
+  '@sphereon/did-auth-siop@0.16.1-next.66(ts-node@10.9.2(@types/node@18.18.8)(typescript@5.5.4))(typescript@5.5.4)':
     dependencies:
       '@astronautlabs/jsonpath': 1.1.2
       '@sphereon/did-uni-client': 0.6.3
+      '@sphereon/jarm': 0.16.1-next.66(typescript@5.5.4)
       '@sphereon/kmp-mdl-mdoc': 0.2.0-SNAPSHOT.22
-      '@sphereon/oid4vc-common': 0.16.1-next.50
+      '@sphereon/oid4vc-common': 0.16.1-next.66
       '@sphereon/pex': 5.0.0-unstable.2(ts-node@10.9.2(@types/node@18.18.8)(typescript@5.5.4))
       '@sphereon/pex-models': 2.3.1
       '@sphereon/ssi-types': 0.29.1-unstable.121(ts-node@10.9.2(@types/node@18.18.8)(typescript@5.5.4))
@@ -10217,6 +10229,7 @@ snapshots:
       - supports-color
       - ts-node
       - typeorm-aurora-data-api-driver
+      - typescript
 
   '@sphereon/did-uni-client@0.6.3':
     dependencies:
@@ -10225,13 +10238,21 @@ snapshots:
     transitivePeerDependencies:
       - encoding
 
+  '@sphereon/jarm@0.16.1-next.66(typescript@5.5.4)':
+    dependencies:
+      '@sphereon/oid4vc-common': 0.16.1-next.66
+      valibot: 0.42.1(typescript@5.5.4)
+    transitivePeerDependencies:
+      - supports-color
+      - typescript
+
   '@sphereon/kmp-mdl-mdoc@0.2.0-SNAPSHOT.22':
     dependencies:
       '@js-joda/core': 5.6.3
       '@js-joda/timezone': 2.3.0(@js-joda/core@5.6.3)
       format-util: 1.0.5
 
-  '@sphereon/oid4vc-common@0.16.1-next.50':
+  '@sphereon/oid4vc-common@0.16.1-next.66':
     dependencies:
       '@sphereon/ssi-types': 0.29.1-unstable.208
       jwt-decode: 4.0.0
@@ -10241,10 +10262,10 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@sphereon/oid4vci-client@0.16.1-next.50':
+  '@sphereon/oid4vci-client@0.16.1-next.66':
     dependencies:
-      '@sphereon/oid4vc-common': 0.16.1-next.50
-      '@sphereon/oid4vci-common': 0.16.1-next.50
+      '@sphereon/oid4vc-common': 0.16.1-next.66
+      '@sphereon/oid4vci-common': 0.16.1-next.66
       '@sphereon/ssi-types': 0.29.1-unstable.208
       cross-fetch: 3.1.8
       debug: 4.3.6
@@ -10252,9 +10273,9 @@ snapshots:
       - encoding
       - supports-color
 
-  '@sphereon/oid4vci-common@0.16.1-next.50':
+  '@sphereon/oid4vci-common@0.16.1-next.66':
     dependencies:
-      '@sphereon/oid4vc-common': 0.16.1-next.50
+      '@sphereon/oid4vc-common': 0.16.1-next.66
       '@sphereon/ssi-types': 0.29.1-unstable.208
       cross-fetch: 3.1.8
       debug: 4.3.6
@@ -10265,10 +10286,10 @@ snapshots:
       - encoding
       - supports-color
 
-  '@sphereon/oid4vci-issuer@0.16.1-next.50':
+  '@sphereon/oid4vci-issuer@0.16.1-next.66':
     dependencies:
-      '@sphereon/oid4vc-common': 0.16.1-next.50
-      '@sphereon/oid4vci-common': 0.16.1-next.50
+      '@sphereon/oid4vc-common': 0.16.1-next.66
+      '@sphereon/oid4vci-common': 0.16.1-next.66
       '@sphereon/ssi-types': 0.29.1-unstable.208
       uuid: 9.0.1
     transitivePeerDependencies:
@@ -16137,6 +16158,10 @@ snapshots:
       '@jridgewell/trace-mapping': 0.3.25
       '@types/istanbul-lib-coverage': 2.0.6
       convert-source-map: 2.0.0
+
+  valibot@0.42.1(typescript@5.5.4):
+    optionalDependencies:
+      typescript: 5.5.4
 
   valid-url@1.0.9: {}
 
