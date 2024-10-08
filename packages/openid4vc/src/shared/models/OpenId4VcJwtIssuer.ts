@@ -5,7 +5,7 @@ interface OpenId4VcJwtIssuerDid {
   didUrl: string
 }
 
-interface OpenId4VcIssuerX5c {
+export interface OpenId4VcIssuerX5c {
   method: 'x5c'
 
   /**

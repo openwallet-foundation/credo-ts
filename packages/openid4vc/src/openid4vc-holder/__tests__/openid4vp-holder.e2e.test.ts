@@ -89,7 +89,6 @@ describe('OpenId4VcHolder | OpenID4VP', () => {
     })
 
     expect(submittedResponse).toMatchObject({
-      expires_in: 6000,
       id_token: expect.any(String),
       state: expect.any(String),
     })

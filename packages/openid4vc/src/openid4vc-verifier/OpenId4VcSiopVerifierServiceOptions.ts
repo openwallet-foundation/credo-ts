@@ -1,5 +1,6 @@
 import type { OpenId4VcVerificationSessionRecord } from './repository'
 import type {
+  OpenId4VcIssuerX5c,
   OpenId4VcJwtIssuer,
   OpenId4VcSiopAuthorizationResponsePayload,
   OpenId4VcSiopIdTokenPayload,
@@ -11,12 +12,18 @@ import type {
   VerifiablePresentation,
 } from '@credo-ts/core'
 
+export type ResponseMode = 'direct_post' | 'direct_post.jwt'
+
 export interface OpenId4VcSiopCreateAuthorizationRequestOptions {
   /**
    * Signing information for the request JWT. This will be used to sign the request JWT
    * and to set the client_id and client_id_scheme for registration of client_metadata.
+   *
+   * For x5c signer's the issuer value can be omitted as it can be derived from the authorization response endpoint.
    */
-  requestSigner: OpenId4VcJwtIssuer
+  requestSigner:
+    | Exclude<OpenId4VcJwtIssuer, OpenId4VcIssuerX5c>
+    | (Omit<OpenId4VcIssuerX5c, 'issuer'> & { issuer?: string })
 
   /**
    * Whether to reuqest an ID Token. Enabled by defualt when `presentationExchange` is not provided,
@@ -30,6 +37,15 @@ export interface OpenId4VcSiopCreateAuthorizationRequestOptions {
   presentationExchange?: {
     definition: DifPresentationExchangeDefinitionV2
   }
+
+  /**
+   * The response mode to use for the authorization request.
+   * @default to `direct_post`.
+   *
+   * With response_mode `direct_post` the response will be posted directly to the `response_uri` provided in the request.
+   * With response_mode `direct_post.jwt` the response will be `signed` `encrypted` or `signed and encrypted` and then posted to the `response_uri` provided in the request.
+   */
+  responseMode?: ResponseMode
 }
 
 export interface OpenId4VcSiopVerifyAuthorizationResponseOptions {

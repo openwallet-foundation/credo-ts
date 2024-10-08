@@ -14,14 +14,10 @@ import type { VerificationMethod } from '../dids'
 import type { SdJwtVcRecord } from '../sd-jwt-vc'
 import type { W3cCredentialRecord } from '../vc'
 import type { IAnonCredsDataIntegrityService } from '../vc/data-integrity/models/IAnonCredsDataIntegrityService'
-import type {
-  PresentationSignCallBackParams,
-  SdJwtDecodedVerifiableCredentialWithKbJwtInput,
-  Validated,
-  VerifiablePresentationResult,
-} from '@sphereon/pex'
+import type { PresentationSignCallBackParams, Validated, VerifiablePresentationResult } from '@sphereon/pex'
 import type { InputDescriptorV2 } from '@sphereon/pex-models'
 import type {
+  SdJwtDecodedVerifiableCredential,
   W3CVerifiablePresentation as SphereonW3cVerifiablePresentation,
   W3CVerifiablePresentation,
 } from '@sphereon/ssi-types'
@@ -246,10 +242,9 @@ export class DifPresentationExchangeService {
     })
 
     return {
-      verifiablePresentations: verifiablePresentationResultsWithFormat.map((resultWithFormat) =>
-        getVerifiablePresentationFromEncoded(
-          agentContext,
-          resultWithFormat.verifiablePresentationResult.verifiablePresentation
+      verifiablePresentations: verifiablePresentationResultsWithFormat.flatMap((resultWithFormat) =>
+        resultWithFormat.verifiablePresentationResult.verifiablePresentations.map((encoded) =>
+          getVerifiablePresentationFromEncoded(agentContext, encoded)
         )
       ),
       presentationSubmission,
@@ -507,7 +502,7 @@ export class DifPresentationExchangeService {
 
         return signedPresentation.encoded as W3CVerifiablePresentation
       } else if (presentationToCreate.claimFormat === ClaimFormat.SdJwtVc) {
-        const sdJwtInput = presentationInput as SdJwtDecodedVerifiableCredentialWithKbJwtInput
+        const sdJwtInput = presentationInput as SdJwtDecodedVerifiableCredential
 
         if (!domain) {
           throw new CredoError("Missing 'domain' property, unable to set required 'aud' property in SD-JWT KB-JWT")

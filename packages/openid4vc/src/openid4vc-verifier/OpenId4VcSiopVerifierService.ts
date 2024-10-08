@@ -4,18 +4,20 @@ import type {
   OpenId4VcSiopCreateVerifierOptions,
   OpenId4VcSiopVerifiedAuthorizationResponse,
   OpenId4VcSiopVerifyAuthorizationResponseOptions,
+  ResponseMode,
 } from './OpenId4VcSiopVerifierServiceOptions'
 import type { OpenId4VcVerificationSessionRecord } from './repository'
 import type { OpenId4VcSiopAuthorizationResponsePayload } from '../shared'
 import type {
   AgentContext,
   DifPresentationExchangeDefinition,
+  JwkJson,
   Query,
   QueryOptions,
   RecordSavedEvent,
   RecordUpdatedEvent,
 } from '@credo-ts/core'
-import type { ClientIdScheme, PresentationVerificationCallback } from '@sphereon/did-auth-siop'
+import type { ClientIdScheme, JarmClientMetadata, PresentationVerificationCallback } from '@sphereon/did-auth-siop'
 
 import {
   EventEmitter,
@@ -34,14 +36,19 @@ import {
   W3cJsonLdVerifiablePresentation,
   Hasher,
   DidsApi,
+  X509Service,
+  getDomainFromUrl,
+  KeyType,
+  getJwkFromKey,
 } from '@credo-ts/core'
 import {
   AuthorizationRequest,
   AuthorizationResponse,
   PassBy,
   PropertyTarget,
+  RequestAud,
   ResponseIss,
-  ResponseMode,
+  ResponseMode as SphereonResponseMode,
   ResponseType,
   RevocationVerification,
   RP,
@@ -92,14 +99,43 @@ export class OpenId4VcSiopVerifierService {
     // Correlation id will be the id of the verification session record
     const correlationId = utils.uuid()
 
-    const jwtIssuer = await openIdTokenIssuerToJwtIssuer(agentContext, options.requestSigner)
+    let authorizationResponseUrl = joinUriParts(this.config.baseUrl, [
+      options.verifier.verifierId,
+      this.config.authorizationEndpoint.endpointPath,
+    ])
+
+    const jwtIssuer =
+      options.requestSigner.method === 'x5c'
+        ? await openIdTokenIssuerToJwtIssuer(agentContext, {
+            ...options.requestSigner,
+            issuer: authorizationResponseUrl,
+          })
+        : await openIdTokenIssuerToJwtIssuer(agentContext, options.requestSigner)
 
     let clientIdScheme: ClientIdScheme
     let clientId: string
 
     if (jwtIssuer.method === 'x5c') {
-      clientId = jwtIssuer.issuer
-      clientIdScheme = jwtIssuer.clientIdScheme
+      if (jwtIssuer.issuer !== authorizationResponseUrl) {
+        throw new CredoError(
+          `The jwtIssuer's issuer field must match the verifier's authorizationResponseUrl '${authorizationResponseUrl}'.`
+        )
+      }
+      const leafCertificate = X509Service.getLeafCertificate(agentContext, { certificateChain: jwtIssuer.x5c })
+
+      if (leafCertificate.sanDnsNames.includes(getDomainFromUrl(jwtIssuer.issuer))) {
+        clientIdScheme = 'x509_san_dns'
+        clientId = getDomainFromUrl(jwtIssuer.issuer)
+        authorizationResponseUrl = jwtIssuer.issuer
+      } else if (leafCertificate.sanUriNames.includes(jwtIssuer.issuer)) {
+        clientIdScheme = 'x509_san_uri'
+        clientId = jwtIssuer.issuer
+        authorizationResponseUrl = clientId
+      } else {
+        throw new CredoError(
+          `With jwtIssuer 'method' 'x5c' the jwtIssuer's 'issuer' field must either match the match a sanDnsName (FQDN) or sanUriName in the leaf x509 chain's leaf certificate.`
+        )
+      }
     } else if (jwtIssuer.method === 'did') {
       clientId = jwtIssuer.didUrl.split('#')[0]
       clientIdScheme = 'did'
@@ -111,8 +147,10 @@ export class OpenId4VcSiopVerifierService {
 
     const relyingParty = await this.getRelyingParty(agentContext, options.verifier.verifierId, {
       presentationDefinition: options.presentationExchange?.definition,
+      authorizationResponseUrl,
       clientId,
       clientIdScheme,
+      responseMode: options.responseMode,
     })
 
     // We always use shortened URIs currently
@@ -197,9 +235,15 @@ export class OpenId4VcSiopVerifierService {
       )
     }
 
+    const authorizationResponseUrl = joinUriParts(this.config.baseUrl, [
+      options.verificationSession.verifierId,
+      this.config.authorizationEndpoint.endpointPath,
+    ])
+
     const relyingParty = await this.getRelyingParty(agentContext, options.verificationSession.verifierId, {
       presentationDefinition: presentationDefinitionsWithLocation?.[0]?.definition,
       clientId: requestClientId,
+      authorizationResponseUrl,
     })
 
     // This is very unfortunate, but storing state in sphereon's SiOP-OID4VP library
@@ -287,9 +331,10 @@ export class OpenId4VcSiopVerifierService {
         throw new CredoError('Unable to extract submission from the response.')
       }
 
+      const vps = Array.isArray(presentations) ? presentations : [presentations]
       presentationExchange = {
         definition: presentationDefinitions[0].definition,
-        presentations: presentations.map(getVerifiablePresentationFromSphereonWrapped),
+        presentations: vps.map(getVerifiablePresentationFromSphereonWrapped),
         submission,
       }
     }
@@ -312,26 +357,56 @@ export class OpenId4VcSiopVerifierService {
     agentContext: AgentContext,
     {
       authorizationResponse,
+      authorizationResponseParams,
       verifierId,
-    }: {
-      authorizationResponse: OpenId4VcSiopAuthorizationResponsePayload
-      verifierId?: string
-    }
+    }:
+      | {
+          authorizationResponse?: never
+          authorizationResponseParams: {
+            state?: string
+            nonce?: string
+          }
+          verifierId?: string
+        }
+      | {
+          authorizationResponse: OpenId4VcSiopAuthorizationResponsePayload
+          authorizationResponseParams?: never
+          verifierId?: string
+        }
   ) {
-    const authorizationResponseInstance = await AuthorizationResponse.fromPayload(authorizationResponse).catch(() => {
-      throw new CredoError(`Unable to parse authorization response payload. ${JSON.stringify(authorizationResponse)}`)
-    })
+    let nonce: string | undefined
+    let state: string | undefined
 
-    const responseNonce = await authorizationResponseInstance.getMergedProperty<string>('nonce', {
-      hasher: Hasher.hash,
-    })
-    const responseState = await authorizationResponseInstance.getMergedProperty<string>('state', {
-      hasher: Hasher.hash,
-    })
+    if (authorizationResponse) {
+      const authorizationResponseInstance = await AuthorizationResponse.fromPayload(authorizationResponse).catch(() => {
+        throw new CredoError(`Unable to parse authorization response payload. ${JSON.stringify(authorizationResponse)}`)
+      })
+
+      nonce = await authorizationResponseInstance.getMergedProperty<string>('nonce', {
+        hasher: Hasher.hash,
+      })
+      state = await authorizationResponseInstance.getMergedProperty<string>('state', {
+        hasher: Hasher.hash,
+      })
+
+      if (!nonce && !state) {
+        throw new CredoError(
+          'Could not extract nonce or state from authorization response. Unable to find OpenId4VcVerificationSession.'
+        )
+      }
+    } else {
+      if (authorizationResponseParams?.nonce && !authorizationResponseParams?.state) {
+        throw new CredoError(
+          'Either nonce or state must be provided if no authorization response is provided. Unable to find OpenId4VcVerificationSession.'
+        )
+      }
+      nonce = authorizationResponseParams?.nonce
+      state = authorizationResponseParams?.state
+    }
 
     const verificationSession = await this.openId4VcVerificationSessionRepository.findSingleByQuery(agentContext, {
-      nonce: responseNonce,
-      payloadState: responseState,
+      nonce,
+      payloadState: state,
       verifierId,
     })
 
@@ -380,18 +455,17 @@ export class OpenId4VcSiopVerifierService {
       presentationDefinition,
       clientId,
       clientIdScheme,
+      authorizationResponseUrl,
+      responseMode,
     }: {
+      responseMode?: ResponseMode
+      authorizationResponseUrl: string
       idToken?: boolean
       presentationDefinition?: DifPresentationExchangeDefinition
       clientId: string
       clientIdScheme?: ClientIdScheme
     }
   ) {
-    const authorizationResponseUrl = joinUriParts(this.config.baseUrl, [
-      verifierId,
-      this.config.authorizationEndpoint.endpointPath,
-    ])
-
     const signatureSuiteRegistry = agentContext.dependencyManager.resolve(SignatureSuiteRegistry)
 
     const supportedAlgs = getSupportedJwaSignatureAlgorithms(agentContext) as string[]
@@ -422,15 +496,39 @@ export class OpenId4VcSiopVerifierService {
       .resolve(OpenId4VcRelyingPartyEventHandler)
       .getEventEmitterForVerifier(agentContext.contextCorrelationId, verifierId)
 
+    const mode =
+      !responseMode || responseMode === 'direct_post'
+        ? SphereonResponseMode.DIRECT_POST
+        : SphereonResponseMode.DIRECT_POST_JWT
+
+    type JarmEncryptionJwk = JwkJson & { kid: string; use: 'enc' }
+    let jarmEncryptionJwk: JarmEncryptionJwk | undefined
+
+    if (mode === SphereonResponseMode.DIRECT_POST_JWT) {
+      const key = await agentContext.wallet.createKey({ keyType: KeyType.P256 })
+      jarmEncryptionJwk = { ...getJwkFromKey(key).toJson(), kid: key.fingerprint, use: 'enc' }
+    }
+
+    const jarmClientMetadata: (JarmClientMetadata & { jwks: { keys: JarmEncryptionJwk[] } }) | undefined =
+      jarmEncryptionJwk
+        ? {
+            jwks: { keys: [jarmEncryptionJwk] },
+            authorization_encrypted_response_alg: 'ECDH-ES',
+            authorization_encrypted_response_enc: 'A256GCM',
+          }
+        : undefined
+
     builder
-      .withRedirectUri(authorizationResponseUrl)
+      .withResponseUri(authorizationResponseUrl)
+      .withIssuer(ResponseIss.SELF_ISSUED_V2)
+      .withAudience(RequestAud.SELF_ISSUED_V2)
       .withIssuer(ResponseIss.SELF_ISSUED_V2)
       .withSupportedVersions([
         SupportedVersion.SIOPv2_D11,
         SupportedVersion.SIOPv2_D12_OID4VP_D18,
         SupportedVersion.SIOPv2_D12_OID4VP_D20,
       ])
-      .withResponseMode(ResponseMode.DIRECT_POST)
+      .withResponseMode(mode)
       .withHasher(Hasher.hash)
       // FIXME: should allow verification of revocation
       // .withRevocationVerificationCallback()
@@ -444,6 +542,7 @@ export class OpenId4VcSiopVerifierService {
       // TODO: we should probably allow some dynamic values here
       .withClientMetadata({
         client_id: clientId,
+        ...jarmClientMetadata,
         client_id_scheme: clientIdScheme,
         passBy: PassBy.VALUE,
         responseTypesSupported: [ResponseType.VP_TOKEN],
@@ -470,6 +569,10 @@ export class OpenId4VcSiopVerifierService {
           },
         },
       })
+
+    if (clientIdScheme) {
+      builder.withClientIdScheme(clientIdScheme)
+    }
 
     if (presentationDefinition) {
       builder.withPresentationDefinition({ definition: presentationDefinition }, [PropertyTarget.REQUEST_OBJECT])
