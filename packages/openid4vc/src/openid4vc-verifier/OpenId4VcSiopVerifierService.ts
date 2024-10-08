@@ -281,6 +281,7 @@ export class OpenId4VcSiopVerifierService {
       presentationDefinitions: presentationDefinitionsWithLocation,
       verification: {
         presentationVerificationCallback: this.getPresentationVerificationCallback(agentContext, {
+          correlationId: options.verificationSession.id,
           nonce: requestNonce,
           audience: requestClientId,
         }),
@@ -591,7 +592,7 @@ export class OpenId4VcSiopVerifierService {
 
   private getPresentationVerificationCallback(
     agentContext: AgentContext,
-    options: { nonce: string; audience: string }
+    options: { nonce: string; audience: string; correlationId: string }
   ): PresentationVerificationCallback {
     return async (encodedPresentation, presentationSubmission) => {
       try {
@@ -621,6 +622,9 @@ export class OpenId4VcSiopVerifierService {
             presentation: encodedPresentation,
             challenge: options.nonce,
             domain: options.audience,
+            verificationContext: {
+              openId4VcVerificationSessionId: options.correlationId,
+            },
           })
 
           isValid = verificationResult.isValid
