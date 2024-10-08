@@ -237,7 +237,7 @@ importers:
         specifier: workspace:*
         version: link:../core
       '@sphereon/pex-models':
-        specifier: ^2.2.4
+        specifier: ^2.3.1
         version: 2.3.1
       big-integer:
         specifier: ^1.6.51
@@ -460,10 +460,10 @@ importers:
         specifier: ^0.7.0
         version: 0.7.2
       '@sphereon/pex':
-        specifier: ^5.0.0-unstable.8
-        version: 5.0.0-unstable.8(ts-node@10.9.2(@types/node@18.18.8)(typescript@5.5.4))
+        specifier: 5.0.0-unstable.2
+        version: 5.0.0-unstable.2(ts-node@10.9.2(@types/node@18.18.8)(typescript@5.5.4))
       '@sphereon/pex-models':
-        specifier: ^2.2.4
+        specifier: ^2.3.1
         version: 2.3.1
       '@sphereon/ssi-types':
         specifier: 0.29.1-unstable.121
@@ -2534,10 +2534,6 @@ packages:
 
   '@sphereon/pex@5.0.0-unstable.2':
     resolution: {integrity: sha512-mA6lY/OBKKzsh4Jf4btm9Tj4ymVsX6xuVATn85LurD4bt3fhZwNJMkxhFy4tT/QyAtp05E4aaEq0wTVvOjVa7w==}
-    engines: {node: '>=18'}
-
-  '@sphereon/pex@5.0.0-unstable.8':
-    resolution: {integrity: sha512-DD85XvyK2F+7VH4lRmfalqSiET8SJysY3ryIPuTVfYrZ3KssYCFfxTcip0+mgjAgbTUldjZYIXuhJO42TDjA/A==}
     engines: {node: '>=18'}
 
   '@sphereon/ssi-sdk-ext.did-utils@0.24.1-unstable.112':
@@ -10418,41 +10414,6 @@ snapshots:
   '@sphereon/pex-models@2.3.1': {}
 
   '@sphereon/pex@5.0.0-unstable.2(ts-node@10.9.2(@types/node@18.18.8)(typescript@5.5.4))':
-    dependencies:
-      '@astronautlabs/jsonpath': 1.1.2
-      '@sd-jwt/decode': 0.6.1
-      '@sd-jwt/present': 0.6.1
-      '@sd-jwt/types': 0.6.1
-      '@sphereon/pex-models': 2.3.1
-      '@sphereon/ssi-types': 0.29.1-unstable.121(ts-node@10.9.2(@types/node@18.18.8)(typescript@5.5.4))
-      ajv: 8.17.1
-      ajv-formats: 2.1.1(ajv@8.17.1)
-      jwt-decode: 3.1.2
-      nanoid: 3.3.7
-      string.prototype.matchall: 4.0.11
-      uint8arrays: 3.1.1
-    transitivePeerDependencies:
-      - '@google-cloud/spanner'
-      - '@sap/hana-client'
-      - better-sqlite3
-      - encoding
-      - hdb-pool
-      - ioredis
-      - mongodb
-      - mssql
-      - mysql2
-      - oracledb
-      - pg
-      - pg-native
-      - pg-query-stream
-      - redis
-      - sql.js
-      - sqlite3
-      - supports-color
-      - ts-node
-      - typeorm-aurora-data-api-driver
-
-  '@sphereon/pex@5.0.0-unstable.8(ts-node@10.9.2(@types/node@18.18.8)(typescript@5.5.4))':
     dependencies:
       '@astronautlabs/jsonpath': 1.1.2
       '@sd-jwt/decode': 0.6.1

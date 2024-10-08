@@ -30,6 +30,7 @@ import {
   OpenId4VcHolderModule,
   OpenId4VcIssuanceSessionState,
   OpenId4VcIssuerModule,
+  OpenId4VcVerificationSessionRepository,
   OpenId4VcVerificationSessionState,
   OpenId4VcVerifierModule,
 } from '../src'
@@ -768,6 +769,12 @@ describe('OpenId4Vc', () => {
       ],
     } satisfies DifPresentationExchangeDefinitionV2
 
+    // Hack to make it work with x5c check
+    // @ts-expect-error
+    verifier.agent.modules.openId4VcVerifier.config.options.baseUrl =
+      // @ts-expect-error
+      verifier.agent.modules.openId4VcVerifier.config.options.baseUrl.replace('http://', 'https://')
+
     const { authorizationRequest, verificationSession } =
       await verifier.agent.modules.openId4VcVerifier.createAuthorizationRequest({
         verifierId: openIdVerifier.verifierId,
@@ -782,14 +789,28 @@ describe('OpenId4Vc', () => {
         },
       })
 
-    expect(authorizationRequest).toEqual(
+    // Hack to make it work with x5c checks
+    verificationSession.authorizationRequestUri = verificationSession.authorizationRequestUri.replace('https', 'http')
+    const verificationSessionRepoitory = verifier.agent.dependencyManager.resolve(
+      OpenId4VcVerificationSessionRepository
+    )
+    await verificationSessionRepoitory.update(verifier.agent.context, verificationSession)
+
+    // Hack to make it work with x5c check
+    // @ts-expect-error
+    verifier.agent.modules.openId4VcVerifier.config.options.baseUrl =
+      // @ts-expect-error
+      verifier.agent.modules.openId4VcVerifier.config.options.baseUrl.replace('https://', 'http://')
+
+    expect(authorizationRequest.replace('https', 'http')).toEqual(
       `openid4vp://?client_id=localhost%3A1234&request_uri=${encodeURIComponent(
         verificationSession.authorizationRequestUri
       )}`
     )
 
     const resolvedAuthorizationRequest = await holder.agent.modules.openId4VcHolder.resolveSiopAuthorizationRequest(
-      authorizationRequest
+      // hack to make it work on localhost
+      authorizationRequest.replace('https', 'http')
     )
     expect(resolvedAuthorizationRequest.authorizationRequest.payload?.response_mode).toEqual('direct_post.jwt')
 
@@ -841,6 +862,10 @@ describe('OpenId4Vc', () => {
     const selectedCredentials = presentationExchangeService.selectCredentialsForRequest(
       resolvedAuthorizationRequest.presentationExchange.credentialsForRequest
     )
+
+    // Hack to make it work with x5c
+    resolvedAuthorizationRequest.authorizationRequest.responseURI =
+      resolvedAuthorizationRequest.authorizationRequest.responseURI?.replace('https', 'http')
 
     const { serverResponse, submittedResponse } =
       await holder.agent.modules.openId4VcHolder.acceptSiopAuthorizationRequest({
@@ -1001,6 +1026,12 @@ describe('OpenId4Vc', () => {
       ],
     } satisfies DifPresentationExchangeDefinitionV2
 
+    // Hack to make it work with x5c check
+    // @ts-expect-error
+    verifier.agent.modules.openId4VcVerifier.config.options.baseUrl =
+      // @ts-expect-error
+      verifier.agent.modules.openId4VcVerifier.config.options.baseUrl.replace('http://', 'https://')
+
     const { authorizationRequest, verificationSession } =
       await verifier.agent.modules.openId4VcVerifier.createAuthorizationRequest({
         verifierId: openIdVerifier.verifierId,
@@ -1014,14 +1045,28 @@ describe('OpenId4Vc', () => {
         },
       })
 
-    expect(authorizationRequest).toEqual(
+    // Hack to make it work with x5c checks
+    verificationSession.authorizationRequestUri = verificationSession.authorizationRequestUri.replace('https', 'http')
+    const verificationSessionRepoitory = verifier.agent.dependencyManager.resolve(
+      OpenId4VcVerificationSessionRepository
+    )
+    await verificationSessionRepoitory.update(verifier.agent.context, verificationSession)
+
+    // Hack to make it work with x5c check
+    // @ts-expect-error
+    verifier.agent.modules.openId4VcVerifier.config.options.baseUrl =
+      // @ts-expect-error
+      verifier.agent.modules.openId4VcVerifier.config.options.baseUrl.replace('https://', 'http://')
+
+    expect(authorizationRequest.replace('https', 'http')).toEqual(
       `openid4vp://?client_id=localhost%3A1234&request_uri=${encodeURIComponent(
         verificationSession.authorizationRequestUri
       )}`
     )
 
     const resolvedAuthorizationRequest = await holder.agent.modules.openId4VcHolder.resolveSiopAuthorizationRequest(
-      authorizationRequest
+      // hack to make it work on localhost
+      authorizationRequest.replace('https', 'http')
     )
 
     expect(resolvedAuthorizationRequest.presentationExchange?.credentialsForRequest).toEqual({
@@ -1072,6 +1117,10 @@ describe('OpenId4Vc', () => {
     const selectedCredentials = presentationExchangeService.selectCredentialsForRequest(
       resolvedAuthorizationRequest.presentationExchange.credentialsForRequest
     )
+
+    // Hack to make it work with x5c
+    resolvedAuthorizationRequest.authorizationRequest.responseURI =
+      resolvedAuthorizationRequest.authorizationRequest.responseURI?.replace('https', 'http')
 
     const { serverResponse, submittedResponse } =
       await holder.agent.modules.openId4VcHolder.acceptSiopAuthorizationRequest({
@@ -1166,6 +1215,370 @@ describe('OpenId4Vc', () => {
             vct: 'OpenBadgeCredential',
             degree: 'bachelor',
             university: 'innsbruck',
+          },
+        },
+      ],
+    })
+  })
+
+  it('e2e flow with verifier endpoints verifying two sd-jwt-vcs with selective disclosure', async () => {
+    const openIdVerifier = await verifier.agent.modules.openId4VcVerifier.createVerifier()
+
+    const signedSdJwtVc = await issuer.agent.sdJwtVc.sign({
+      holder: { method: 'did', didUrl: holder.kid },
+      issuer: {
+        method: 'did',
+        didUrl: issuer.kid,
+      },
+      payload: {
+        vct: 'OpenBadgeCredential',
+        university: 'innsbruck',
+        degree: 'bachelor',
+        name: 'John Doe',
+      },
+      disclosureFrame: {
+        _sd: ['university', 'name'],
+      },
+    })
+
+    const signedSdJwtVc2 = await issuer.agent.sdJwtVc.sign({
+      holder: { method: 'did', didUrl: holder.kid },
+      issuer: {
+        method: 'did',
+        didUrl: issuer.kid,
+      },
+      payload: {
+        vct: 'OpenBadgeCredential2',
+        university: 'innsbruck2',
+        degree: 'bachelor2',
+        name: 'John Doe2',
+      },
+      disclosureFrame: {
+        _sd: ['university', 'name'],
+      },
+    })
+
+    const certificate = await verifier.agent.x509.createSelfSignedCertificate({
+      key: await verifier.agent.wallet.createKey({ keyType: KeyType.Ed25519 }),
+      extensions: [[{ type: 'dns', value: 'localhost:1234' }]],
+    })
+
+    const rawCertificate = certificate.toString('base64')
+    await holder.agent.sdJwtVc.store(signedSdJwtVc.compact)
+    await holder.agent.sdJwtVc.store(signedSdJwtVc2.compact)
+
+    await holder.agent.x509.addTrustedCertificate(rawCertificate)
+    await verifier.agent.x509.addTrustedCertificate(rawCertificate)
+
+    const presentationDefinition = {
+      id: 'OpenBadgeCredentials',
+      input_descriptors: [
+        {
+          id: 'OpenBadgeCredentialDescriptor',
+          format: {
+            'vc+sd-jwt': {
+              'sd-jwt_alg_values': ['EdDSA'],
+            },
+          },
+          constraints: {
+            limit_disclosure: 'required',
+            fields: [
+              {
+                path: ['$.vct'],
+                filter: {
+                  type: 'string',
+                  const: 'OpenBadgeCredential',
+                },
+              },
+              {
+                path: ['$.university'],
+              },
+            ],
+          },
+        },
+        {
+          id: 'OpenBadgeCredentialDescriptor2',
+          format: {
+            'vc+sd-jwt': {
+              'sd-jwt_alg_values': ['EdDSA'],
+            },
+          },
+          constraints: {
+            limit_disclosure: 'required',
+            fields: [
+              {
+                path: ['$.vct'],
+                filter: {
+                  type: 'string',
+                  const: 'OpenBadgeCredential2',
+                },
+              },
+              {
+                path: ['$.name'],
+              },
+            ],
+          },
+        },
+      ],
+    } satisfies DifPresentationExchangeDefinitionV2
+
+    // Hack to make it work with x5c check
+    // @ts-expect-error
+    verifier.agent.modules.openId4VcVerifier.config.options.baseUrl =
+      // @ts-expect-error
+      verifier.agent.modules.openId4VcVerifier.config.options.baseUrl.replace('http://', 'https://')
+    const { authorizationRequest, verificationSession } =
+      await verifier.agent.modules.openId4VcVerifier.createAuthorizationRequest({
+        verifierId: openIdVerifier.verifierId,
+
+        requestSigner: {
+          method: 'x5c',
+          x5c: [rawCertificate],
+        },
+        presentationExchange: {
+          definition: presentationDefinition,
+        },
+      })
+
+    // Hack to make it work with x5c checks
+    verificationSession.authorizationRequestUri = verificationSession.authorizationRequestUri.replace('https', 'http')
+    const verificationSessionRepoitory = verifier.agent.dependencyManager.resolve(
+      OpenId4VcVerificationSessionRepository
+    )
+    await verificationSessionRepoitory.update(verifier.agent.context, verificationSession)
+
+    // Hack to make it work with x5c check
+    // @ts-expect-error
+    verifier.agent.modules.openId4VcVerifier.config.options.baseUrl =
+      // @ts-expect-error
+      verifier.agent.modules.openId4VcVerifier.config.options.baseUrl.replace('https://', 'http://')
+
+    expect(authorizationRequest.replace('https', 'http')).toEqual(
+      `openid4vp://?client_id=localhost%3A1234&request_uri=${encodeURIComponent(
+        verificationSession.authorizationRequestUri
+      )}`
+    )
+
+    const resolvedAuthorizationRequest = await holder.agent.modules.openId4VcHolder.resolveSiopAuthorizationRequest(
+      // hack to make it work on localhost
+      authorizationRequest.replace('https', 'http')
+    )
+
+    expect(resolvedAuthorizationRequest.presentationExchange?.credentialsForRequest).toEqual({
+      areRequirementsSatisfied: true,
+      name: undefined,
+      purpose: undefined,
+      requirements: expect.arrayContaining([
+        {
+          isRequirementSatisfied: true,
+          needsCount: 1,
+          rule: 'pick',
+          submissionEntry: [
+            {
+              name: undefined,
+              purpose: undefined,
+              inputDescriptorId: 'OpenBadgeCredentialDescriptor',
+              verifiableCredentials: [
+                {
+                  type: ClaimFormat.SdJwtVc,
+                  credentialRecord: expect.objectContaining({
+                    compactSdJwtVc: signedSdJwtVc.compact,
+                  }),
+                  // Name is NOT in here
+                  disclosedPayload: {
+                    cnf: {
+                      kid: 'did:key:z6MkpGR4gs4Rc3Zph4vj8wRnjnAxgAPSxcR8MAVKutWspQzc#z6MkpGR4gs4Rc3Zph4vj8wRnjnAxgAPSxcR8MAVKutWspQzc',
+                    },
+                    degree: 'bachelor',
+                    iat: expect.any(Number),
+                    iss: 'did:key:z6MkrzQPBr4pyqC776KKtrz13SchM5ePPbssuPuQZb5t4uKQ',
+                    university: 'innsbruck',
+                    vct: 'OpenBadgeCredential',
+                  },
+                },
+              ],
+            },
+          ],
+        },
+        {
+          isRequirementSatisfied: true,
+          needsCount: 1,
+          rule: 'pick',
+          submissionEntry: [
+            {
+              name: undefined,
+              purpose: undefined,
+              inputDescriptorId: 'OpenBadgeCredentialDescriptor2',
+              verifiableCredentials: [
+                {
+                  type: ClaimFormat.SdJwtVc,
+                  credentialRecord: expect.objectContaining({
+                    compactSdJwtVc: signedSdJwtVc2.compact,
+                  }),
+                  disclosedPayload: {
+                    cnf: {
+                      kid: 'did:key:z6MkpGR4gs4Rc3Zph4vj8wRnjnAxgAPSxcR8MAVKutWspQzc#z6MkpGR4gs4Rc3Zph4vj8wRnjnAxgAPSxcR8MAVKutWspQzc',
+                    },
+                    iat: expect.any(Number),
+                    iss: 'did:key:z6MkrzQPBr4pyqC776KKtrz13SchM5ePPbssuPuQZb5t4uKQ',
+                    vct: 'OpenBadgeCredential2',
+                    degree: 'bachelor2',
+                    name: 'John Doe2',
+                  },
+                },
+              ],
+            },
+          ],
+        },
+      ]),
+    })
+
+    if (!resolvedAuthorizationRequest.presentationExchange) {
+      throw new Error('Presentation exchange not defined')
+    }
+
+    // TODO: better way to auto-select
+    const presentationExchangeService = holder.agent.dependencyManager.resolve(DifPresentationExchangeService)
+    const selectedCredentials = presentationExchangeService.selectCredentialsForRequest(
+      resolvedAuthorizationRequest.presentationExchange.credentialsForRequest
+    )
+
+    // Hack to make it work with x5c
+    resolvedAuthorizationRequest.authorizationRequest.responseURI =
+      resolvedAuthorizationRequest.authorizationRequest.responseURI?.replace('https', 'http')
+
+    const { serverResponse, submittedResponse } =
+      await holder.agent.modules.openId4VcHolder.acceptSiopAuthorizationRequest({
+        authorizationRequest: resolvedAuthorizationRequest.authorizationRequest,
+        presentationExchange: {
+          credentials: selectedCredentials,
+        },
+      })
+
+    // path_nested should not be used for sd-jwt
+    expect(submittedResponse.presentation_submission?.descriptor_map[0].path_nested).toBeUndefined()
+    expect(submittedResponse).toEqual({
+      presentation_submission: {
+        definition_id: 'OpenBadgeCredentials',
+        descriptor_map: [
+          {
+            format: 'vc+sd-jwt',
+            id: 'OpenBadgeCredentialDescriptor',
+            path: '$[0]',
+          },
+          {
+            format: 'vc+sd-jwt',
+            id: 'OpenBadgeCredentialDescriptor2',
+            path: '$[1]',
+          },
+        ],
+        id: expect.any(String),
+      },
+      state: expect.any(String),
+      vp_token: [expect.any(String), expect.any(String)],
+    })
+    expect(serverResponse).toMatchObject({
+      status: 200,
+    })
+
+    // The RP MUST validate that the aud (audience) Claim contains the value of the client_id
+    // that the RP sent in the Authorization Request as an audience.
+    // When the request has been signed, the value might be an HTTPS URL, or a Decentralized Identifier.
+    await waitForVerificationSessionRecordSubject(verifier.replaySubject, {
+      contextCorrelationId: verifier.agent.context.contextCorrelationId,
+      state: OpenId4VcVerificationSessionState.ResponseVerified,
+      verificationSessionId: verificationSession.id,
+    })
+    const { idToken, presentationExchange } =
+      await verifier.agent.modules.openId4VcVerifier.getVerifiedAuthorizationResponse(verificationSession.id)
+
+    expect(idToken).toBeUndefined()
+
+    const presentation = presentationExchange?.presentations[0] as SdJwtVc
+
+    // name SHOULD NOT be disclosed
+    expect(presentation.prettyClaims).not.toHaveProperty('name')
+
+    // university and name SHOULD NOT be in the signed payload
+    expect(presentation.payload).not.toHaveProperty('university')
+    expect(presentation.payload).not.toHaveProperty('name')
+
+    expect(presentationExchange).toEqual({
+      definition: presentationDefinition,
+      submission: {
+        definition_id: 'OpenBadgeCredentials',
+        descriptor_map: [
+          {
+            format: 'vc+sd-jwt',
+            id: 'OpenBadgeCredentialDescriptor',
+            path: '$[0]',
+          },
+          {
+            format: 'vc+sd-jwt',
+            id: 'OpenBadgeCredentialDescriptor2',
+            path: '$[1]',
+          },
+        ],
+        id: expect.any(String),
+      },
+      presentations: [
+        {
+          compact: expect.any(String),
+          header: {
+            alg: 'EdDSA',
+            kid: '#z6MkrzQPBr4pyqC776KKtrz13SchM5ePPbssuPuQZb5t4uKQ',
+            typ: 'vc+sd-jwt',
+          },
+          payload: {
+            _sd: [expect.any(String), expect.any(String)],
+            _sd_alg: 'sha-256',
+            cnf: {
+              kid: 'did:key:z6MkpGR4gs4Rc3Zph4vj8wRnjnAxgAPSxcR8MAVKutWspQzc#z6MkpGR4gs4Rc3Zph4vj8wRnjnAxgAPSxcR8MAVKutWspQzc',
+            },
+            iat: expect.any(Number),
+            iss: 'did:key:z6MkrzQPBr4pyqC776KKtrz13SchM5ePPbssuPuQZb5t4uKQ',
+            vct: 'OpenBadgeCredential',
+            degree: 'bachelor',
+          },
+          // university SHOULD be disclosed
+          prettyClaims: {
+            cnf: {
+              kid: 'did:key:z6MkpGR4gs4Rc3Zph4vj8wRnjnAxgAPSxcR8MAVKutWspQzc#z6MkpGR4gs4Rc3Zph4vj8wRnjnAxgAPSxcR8MAVKutWspQzc',
+            },
+            iat: expect.any(Number),
+            iss: 'did:key:z6MkrzQPBr4pyqC776KKtrz13SchM5ePPbssuPuQZb5t4uKQ',
+            vct: 'OpenBadgeCredential',
+            degree: 'bachelor',
+            university: 'innsbruck',
+          },
+        },
+        {
+          compact: expect.any(String),
+          header: {
+            alg: 'EdDSA',
+            kid: '#z6MkrzQPBr4pyqC776KKtrz13SchM5ePPbssuPuQZb5t4uKQ',
+            typ: 'vc+sd-jwt',
+          },
+          payload: {
+            _sd: [expect.any(String), expect.any(String)],
+            _sd_alg: 'sha-256',
+            cnf: {
+              kid: 'did:key:z6MkpGR4gs4Rc3Zph4vj8wRnjnAxgAPSxcR8MAVKutWspQzc#z6MkpGR4gs4Rc3Zph4vj8wRnjnAxgAPSxcR8MAVKutWspQzc',
+            },
+            iat: expect.any(Number),
+            iss: 'did:key:z6MkrzQPBr4pyqC776KKtrz13SchM5ePPbssuPuQZb5t4uKQ',
+            vct: 'OpenBadgeCredential2',
+            degree: 'bachelor2',
+          },
+          prettyClaims: {
+            cnf: {
+              kid: 'did:key:z6MkpGR4gs4Rc3Zph4vj8wRnjnAxgAPSxcR8MAVKutWspQzc#z6MkpGR4gs4Rc3Zph4vj8wRnjnAxgAPSxcR8MAVKutWspQzc',
+            },
+            iat: expect.any(Number),
+            iss: 'did:key:z6MkrzQPBr4pyqC776KKtrz13SchM5ePPbssuPuQZb5t4uKQ',
+            vct: 'OpenBadgeCredential2',
+            name: 'John Doe2',
+            degree: 'bachelor2',
           },
         },
       ],

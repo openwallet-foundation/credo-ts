@@ -22,7 +22,8 @@ import type {
   W3CVerifiablePresentation,
 } from '@sphereon/ssi-types'
 
-import { PEVersion, PEX, PresentationSubmissionLocation, Status } from '@sphereon/pex'
+import { PEVersion, PEX, Status } from '@sphereon/pex'
+import { PartialSdJwtDecodedVerifiableCredential } from '@sphereon/pex/dist/main/lib'
 import { injectable } from 'tsyringe'
 
 import { Hasher, getJwkFromKey } from '../../crypto'
@@ -276,9 +277,10 @@ export class DifPresentationExchangeService {
     })
 
     return {
-      verifiablePresentations: verifiablePresentationResultsWithFormat.flatMap((resultWithFormat) =>
-        resultWithFormat.verifiablePresentationResult.verifiablePresentations.map((encoded) =>
-          getVerifiablePresentationFromEncoded(agentContext, encoded)
+      verifiablePresentations: verifiablePresentationResultsWithFormat.map((resultWithFormat) =>
+        getVerifiablePresentationFromEncoded(
+          agentContext,
+          resultWithFormat.verifiablePresentationResult.verifiablePresentation
         )
       ),
       presentationSubmission,
@@ -536,7 +538,9 @@ export class DifPresentationExchangeService {
 
         return signedPresentation.encoded as W3CVerifiablePresentation
       } else if (presentationToCreate.claimFormat === ClaimFormat.SdJwtVc) {
-        const sdJwtInput = presentationInput as SdJwtDecodedVerifiableCredential
+        const sdJwtInput = presentationInput as
+          | SdJwtDecodedVerifiableCredential
+          | PartialSdJwtDecodedVerifiableCredential
 
         if (!domain) {
           throw new CredoError("Missing 'domain' property, unable to set required 'aud' property in SD-JWT KB-JWT")

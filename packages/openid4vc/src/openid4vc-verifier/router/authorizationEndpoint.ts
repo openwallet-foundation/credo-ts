@@ -103,16 +103,22 @@ export function configureAuthorizationEndpoint(router: Router, config: OpenId4Vc
           nonce: authorizationResponsePayload.nonce,
         })
       }
-
       if (typeof authorizationResponsePayload.presentation_submission === 'string') {
-        authorizationResponsePayload.presentation_submission = JSON.parse(
-          authorizationResponsePayload.presentation_submission
-        )
+        authorizationResponsePayload.presentation_submission = JSON.parse(request.body.presentation_submission)
+      }
+
+      // This feels hacky, and should probably be moved to OID4VP lib. However the OID4VP spec allows either object, string, or array...
+      if (
+        typeof authorizationResponsePayload.vp_token === 'string' &&
+        (authorizationResponsePayload.vp_token.startsWith('{') || authorizationResponsePayload.vp_token.startsWith('['))
+      ) {
+        authorizationResponsePayload.vp_token = JSON.parse(authorizationResponsePayload.vp_token)
       }
 
       if (!verificationSession) {
         throw new CredoError('Missing verification session, cannot verify authorization response.')
       }
+
       await openId4VcVerifierService.verifyAuthorizationResponse(agentContext, {
         authorizationResponse: authorizationResponsePayload,
         verificationSession,
