@@ -295,10 +295,12 @@ export class DifPresentationExchangeProofFormatService
       // Not sure how to fix
       if (parsedPresentation.claimFormat === ClaimFormat.JwtVp) {
         verificationResult = await w3cCredentialService.verifyPresentation(agentContext, {
-          proofRecordId: proofRecord.id,
           presentation: parsedPresentation,
           challenge: request.options.challenge,
           domain: request.options.domain,
+          verificationContext: {
+            didcommProofRecordId: proofRecord.id,
+          },
         })
       } else if (parsedPresentation.claimFormat === ClaimFormat.LdpVp) {
         if (

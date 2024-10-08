@@ -303,7 +303,6 @@ describe('W3cJwtCredentialService', () => {
   describe('verifyPresentation', () => {
     test('verifies an ES256 JWT vp signed by Credo', async () => {
       const result = await w3cJwtCredentialService.verifyPresentation(agentContext, {
-        proofRecordId: '123',
         presentation: CredoEs256DidKeyJwtVp,
         challenge: 'daf942ad-816f-45ee-a9fc-facd08e5abca',
         domain: 'example.com',
@@ -353,7 +352,6 @@ describe('W3cJwtCredentialService', () => {
     // the credential has a credential subject id (so it's not a bearer credential)
     test('verifies an EdDSA JWT vp from the transmute vc.js library', async () => {
       const result = await w3cJwtCredentialService.verifyPresentation(agentContext, {
-        proofRecordId: '123',
         presentation: didKeyTransmuteJwtVp,
         challenge: '123',
         domain: 'example.com',

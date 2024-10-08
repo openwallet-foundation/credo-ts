@@ -1,9 +1,5 @@
 import type { AgentContext } from '../../agent'
-
-type GetTrustedCertificatesForProofOptions = {
-  proofRecordId?: string
-  correlationId?: string
-}
+import type { VerificationContext } from '../vc'
 
 export interface X509ModuleConfigOptions {
   /**
@@ -12,9 +8,17 @@ export interface X509ModuleConfigOptions {
    */
   trustedCertificates?: [string, ...string[]]
 
+  /**
+   * Optional callback method that will be called to dynamically get trusted certificates for a verification.
+   * It will always provide the `agentContext` allowing to dynamically set the trusted certificates for a tenant.
+   * If available the associated record id is also provided allowing to filter down trusted certificates to a single
+   * exchange.
+   *
+   * @returns An array of base64-encoded certificate strings or PEM certificate strings.
+   */
   getTrustedCertificatesForProof?(
     agentContext: AgentContext,
-    options: GetTrustedCertificatesForProofOptions
+    verificationContext?: VerificationContext
   ): Promise<[string, ...string[]] | undefined>
 }
 

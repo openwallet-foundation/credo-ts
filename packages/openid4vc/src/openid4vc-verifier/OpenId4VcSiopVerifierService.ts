@@ -511,10 +511,12 @@ export class OpenId4VcSiopVerifierService {
           isValid = verificationResult.verification.isValid
         } else if (typeof encodedPresentation === 'string') {
           const verificationResult = await this.w3cCredentialService.verifyPresentation(agentContext, {
-            correlationId: options.correlationId,
             presentation: encodedPresentation,
             challenge: options.nonce,
             domain: options.audience,
+            verificationContext: {
+              openId4VcVerificationSessionId: options.correlationId,
+            },
           })
 
           isValid = verificationResult.isValid

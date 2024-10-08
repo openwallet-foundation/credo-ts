@@ -320,10 +320,9 @@ export class W3cJwtCredentialService {
           jws: presentation.jwt.serializedJwt,
           // We have pre-fetched the key based on the singer/holder of the presentation
           jwkResolver: () => proverPublicJwk,
-          trustedCertificates: await getTrustedCertificatesForProof?.(agentContext, {
-            proofRecordId: options.proofRecordId,
-            correlationId: options.correlationId,
-          }),
+          trustedCertificates:
+            options.trustedCertificates ??
+            (await getTrustedCertificatesForProof?.(agentContext, options.verificationContext)),
         })
 
         if (!signatureResult.isValid) {
