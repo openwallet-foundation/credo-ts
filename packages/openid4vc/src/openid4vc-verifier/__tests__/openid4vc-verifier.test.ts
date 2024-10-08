@@ -62,6 +62,7 @@ describe('OpenId4VcVerifier', () => {
       expect(jwt.header.kid).toEqual(verifier.kid)
       expect(jwt.header.alg).toEqual(SigningAlgo.EDDSA)
       expect(jwt.header.typ).toEqual('JWT')
+      expect(jwt.payload.additionalClaims.scope).toEqual(undefined)
       expect(jwt.payload.additionalClaims.client_id).toEqual(verifier.did)
       expect(jwt.payload.additionalClaims.response_uri).toEqual(
         `http://redirect-uri/${openIdVerifier.verifierId}/authorize`

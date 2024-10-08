@@ -242,8 +242,8 @@ export class OpenId4VcSiopVerifierService {
 
     const relyingParty = await this.getRelyingParty(agentContext, options.verificationSession.verifierId, {
       presentationDefinition: presentationDefinitionsWithLocation?.[0]?.definition,
-      clientId: requestClientId,
       authorizationResponseUrl,
+      clientId: requestClientId,
     })
 
     // This is very unfortunate, but storing state in sphereon's SiOP-OID4VP library
@@ -331,10 +331,12 @@ export class OpenId4VcSiopVerifierService {
         throw new CredoError('Unable to extract submission from the response.')
       }
 
-      const vps = Array.isArray(presentations) ? presentations : [presentations]
+      // FIXME: should return type be an array? As now it doesn't always match the submission
+      const presentationsArray = Array.isArray(presentations) ? presentations : [presentations]
+
       presentationExchange = {
         definition: presentationDefinitions[0].definition,
-        presentations: vps.map(getVerifiablePresentationFromSphereonWrapped),
+        presentations: presentationsArray.map(getVerifiablePresentationFromSphereonWrapped),
         submission,
       }
     }
@@ -459,10 +461,10 @@ export class OpenId4VcSiopVerifierService {
       responseMode,
     }: {
       responseMode?: ResponseMode
-      authorizationResponseUrl: string
       idToken?: boolean
       presentationDefinition?: DifPresentationExchangeDefinition
       clientId: string
+      authorizationResponseUrl: string
       clientIdScheme?: ClientIdScheme
     }
   ) {
@@ -519,6 +521,7 @@ export class OpenId4VcSiopVerifierService {
         : undefined
 
     builder
+      .withClientId(clientId)
       .withResponseUri(authorizationResponseUrl)
       .withIssuer(ResponseIss.SELF_ISSUED_V2)
       .withAudience(RequestAud.SELF_ISSUED_V2)
@@ -541,9 +544,11 @@ export class OpenId4VcSiopVerifierService {
 
       // TODO: we should probably allow some dynamic values here
       .withClientMetadata({
-        client_id: clientId,
         ...jarmClientMetadata,
-        client_id_scheme: clientIdScheme,
+        // FIXME: not passing client_id here means it will not be added
+        // to the authorization request url (not the signed payload). Need
+        // to fix that in Sphereon lib
+        client_id: clientId,
         passBy: PassBy.VALUE,
         responseTypesSupported: [ResponseType.VP_TOKEN],
         subject_syntax_types_supported: supportedDidMethods.map((m) => `did:${m}`),

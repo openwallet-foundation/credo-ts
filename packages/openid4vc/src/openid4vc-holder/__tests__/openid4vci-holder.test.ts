@@ -136,7 +136,7 @@ describe('OpenId4VcHolder', () => {
         .post('/credential')
         .reply(200, fixture.credentialResponse)
 
-      const resolved = await holder.modules.openId4VcHolder.resolveCredentialOffer(fixture.credentialOffer)
+      const resolved = await holder.modules.openId4VcHolder.resolveCredentialOffer(fixture.credentialOfferPreAuth)
 
       await expect(() =>
         holder.modules.openId4VcHolder.acceptCredentialOfferUsingPreAuthorizedCode(resolved, {
@@ -286,7 +286,7 @@ describe('OpenId4VcHolder', () => {
         .reply(404)
 
       const resolvedCredentialOffer = await holder.modules.openId4VcHolder.resolveCredentialOffer(
-        fixture.credentialOffer
+        fixture.credentialOfferAuth
       )
 
       const resolvedAuthorizationRequest = await holder.modules.openId4VcHolder.resolveIssuanceAuthorizationRequest(
