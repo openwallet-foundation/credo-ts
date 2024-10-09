@@ -489,8 +489,8 @@ export class OpenId4VciHolderService {
         .withToken(tokenResponse.access_token)
 
       const credentialRequestClient = credentialRequestBuilder.build()
-      // retrive the context from the credential configuration
-      const context = offeredCredentialConfiguration.format === OpenId4VciCredentialFormatProfile.JwtVcJsonLd || offeredCredentialConfiguration.format === OpenId4VciCredentialFormatProfile.LdpVc ? (offeredCredentialConfiguration.credential_definition as CredentialDefinitionJwtVcJsonLdAndLdpVcV1_0_13)['@context']  : undefined
+      // retrieve the @context from the credential configuration
+      const context = offeredCredentialConfiguration.format === OpenId4VciCredentialFormatProfile.JwtVcJsonLd || offeredCredentialConfiguration.format === OpenId4VciCredentialFormatProfile.LdpVc ? offeredCredentialConfiguration.credential_definition['@context'] : undefined
 
       const createDpopOpts = tokenResponse.dpop
         ? await this.getCreateDpopOptions(agentContext, metadata, {
