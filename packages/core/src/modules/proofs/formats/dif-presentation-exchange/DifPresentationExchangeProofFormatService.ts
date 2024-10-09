@@ -244,7 +244,7 @@ export class DifPresentationExchangeProofFormatService
 
   public async processPresentation(
     agentContext: AgentContext,
-    { requestAttachment, attachment }: ProofFormatProcessPresentationOptions
+    { requestAttachment, attachment, proofRecord }: ProofFormatProcessPresentationOptions
   ): Promise<boolean> {
     const ps = this.presentationExchangeService(agentContext)
     const w3cCredentialService = agentContext.dependencyManager.resolve(W3cCredentialService)
@@ -298,6 +298,9 @@ export class DifPresentationExchangeProofFormatService
           presentation: parsedPresentation,
           challenge: request.options.challenge,
           domain: request.options.domain,
+          verificationContext: {
+            didcommProofRecordId: proofRecord.id,
+          },
         })
       } else if (parsedPresentation.claimFormat === ClaimFormat.LdpVp) {
         if (

@@ -34,7 +34,7 @@ describe('IndyVdrIndyDidResolver', () => {
             did: 'LjgpST2rjsoxYegQDRm7EL',
             verkey: 'E6D1m3eERqCueX4ZgMCY14B4NceAr6XP2HyVqt55gDhu',
             role: 'ENDORSER',
-            diddocContent: didIndyLjgpST2rjsoxYegQDRm7ELdiddocContent,
+            diddocContent: JSON.stringify(didIndyLjgpST2rjsoxYegQDRm7ELdiddocContent),
           }),
         },
       }

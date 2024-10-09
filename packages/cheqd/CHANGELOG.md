@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.5.11
+
+### Patch Changes
+
+- 4485dc9: add cheqd api to allow creation of DID-Linked resources
+  - @credo-ts/anoncreds@0.5.11
+  - @credo-ts/core@0.5.11
+
 ## 0.5.10
 
 ### Patch Changes

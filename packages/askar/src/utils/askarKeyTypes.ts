@@ -4,6 +4,7 @@ import { KeyAlgs } from '@hyperledger/aries-askar-shared'
 export enum AskarKeyTypePurpose {
   KeyManagement = 'KeyManagement',
   Signing = 'Signing',
+  Encryption = 'Encryption',
 }
 
 const keyTypeToAskarAlg = {
@@ -29,7 +30,7 @@ const keyTypeToAskarAlg = {
   },
   [KeyType.P256]: {
     keyAlg: KeyAlgs.EcSecp256r1,
-    purposes: [AskarKeyTypePurpose.KeyManagement, AskarKeyTypePurpose.Signing],
+    purposes: [AskarKeyTypePurpose.KeyManagement, AskarKeyTypePurpose.Signing, AskarKeyTypePurpose.Encryption],
   },
   [KeyType.K256]: {
     keyAlg: KeyAlgs.EcSecp256k1,
