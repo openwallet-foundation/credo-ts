@@ -5,6 +5,7 @@ import {
   W3cJwtVerifiableCredential,
   W3cJsonLdVerifiableCredential,
   DifPresentationExchangeService,
+  Mdoc,
 } from '@credo-ts/core'
 import { OpenId4VcHolderModule } from '@credo-ts/openid4vc'
 import { ariesAskar } from '@hyperledger/aries-askar-nodejs'
@@ -56,6 +57,8 @@ export class Holder extends BaseAgent<ReturnType<typeof getOpenIdHolderModules>>
         const credential = response.credential
         if (credential instanceof W3cJwtVerifiableCredential || credential instanceof W3cJsonLdVerifiableCredential) {
           return this.agent.w3cCredentials.storeCredential({ credential })
+        } else if (credential instanceof Mdoc) {
+          return this.agent.mdoc.store(credential)
         } else {
           return this.agent.sdJwtVc.store(credential.compact)
         }

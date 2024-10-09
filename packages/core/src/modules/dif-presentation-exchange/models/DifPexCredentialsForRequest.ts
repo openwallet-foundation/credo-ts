@@ -1,5 +1,7 @@
+import type { MdocRecord } from '../../mdoc'
 import type { SdJwtVcRecord } from '../../sd-jwt-vc'
 import type { ClaimFormat, W3cCredentialRecord } from '../../vc'
+import type { IssuerSignedItem } from '@protokoll/mdoc-client'
 
 export interface DifPexCredentialsForRequest {
   /**
@@ -129,8 +131,13 @@ export type SubmissionEntryCredential =
       type: ClaimFormat.JwtVc | ClaimFormat.LdpVc
       credentialRecord: W3cCredentialRecord
     }
+  | {
+      type: ClaimFormat.MsoMdoc
+      credentialRecord: MdocRecord
+      disclosedPayload: Record<string, IssuerSignedItem[]>
+    }
 
 /**
  * Mapping of selected credentials for an input descriptor
  */
-export type DifPexInputDescriptorToCredentials = Record<string, Array<W3cCredentialRecord | SdJwtVcRecord>>
+export type DifPexInputDescriptorToCredentials = Record<string, Array<W3cCredentialRecord | SdJwtVcRecord | MdocRecord>>
