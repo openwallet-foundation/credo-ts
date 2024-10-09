@@ -13,17 +13,23 @@ export function configureIssuerMetadataEndpoint(router: Router) {
       try {
         const openId4VcIssuerService = agentContext.dependencyManager.resolve(OpenId4VcIssuerService)
         const issuerMetadata = openId4VcIssuerService.getIssuerMetadata(agentContext, issuer)
+
         const transformedMetadata = {
           credential_issuer: issuerMetadata.issuerUrl,
-          token_endpoint: issuerMetadata.tokenEndpoint,
           credential_endpoint: issuerMetadata.credentialEndpoint,
-          // TODO: this is a temporary solution to support the first authorization server
-          // TODO: CHANGE THIS TO SUPPORT MULTIPLE AUTHORIZATION SERVERS
-          authorization_server: issuerMetadata.authorizationServers?.[0],
-          authorization_servers: issuerMetadata.authorizationServers,
-          credentials_supported: issuerMetadata.credentialsSupported,
-          credential_configurations_supported: issuerMetadata.credentialConfigurationsSupported,
           display: issuerMetadata.issuerDisplay,
+
+          // OID4VCI draft 11 (only one auth server is supported)
+          authorization_server: issuerMetadata.authorizationServers?.[0],
+          credentials_supported: issuerMetadata.credentialsSupported,
+
+          // OID4VCI draft 13
+          authorization_servers: issuerMetadata.authorizationServers,
+          credential_configurations_supported: issuerMetadata.credentialConfigurationsSupported,
+
+          // TOOD: these values should be removed, as they need to be hosted in the oauth-authorization-server
+          // metadata. For backwards compatiblity we will keep them in now.
+          token_endpoint: issuerMetadata.tokenEndpoint,
           dpop_signing_alg_values_supported: issuerMetadata.dpopSigningAlgValuesSupported,
         } satisfies CredentialIssuerMetadata
 

@@ -16,6 +16,7 @@ import {
   configureAccessTokenEndpoint,
   configureCredentialEndpoint,
   configureIssuerMetadataEndpoint,
+  configureOAuthAuthorizationServerMetadataEndpoint,
 } from './router'
 
 /**
@@ -116,6 +117,7 @@ export class OpenId4VcIssuerModule implements Module {
 
     // Configure endpoints
     configureIssuerMetadataEndpoint(endpointRouter)
+    configureOAuthAuthorizationServerMetadataEndpoint(endpointRouter)
     configureCredentialOfferEndpoint(endpointRouter, this.config.credentialOfferEndpoint)
     configureAccessTokenEndpoint(endpointRouter, this.config.accessTokenEndpoint)
     configureCredentialEndpoint(endpointRouter, this.config.credentialEndpoint)
