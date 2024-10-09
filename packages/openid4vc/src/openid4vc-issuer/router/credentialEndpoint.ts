@@ -1,4 +1,5 @@
 import type { OpenId4VcIssuanceRequest } from './requestContext'
+import type { VerifyAccessTokenResult } from './verifyResourceRequest'
 import type { OpenId4VciCredentialRequest } from '../../shared'
 import type { OpenId4VciCredentialRequestToCredentialMapper } from '../OpenId4VcIssuerServiceOptions'
 import type { Router, Response } from 'express'
@@ -29,11 +30,11 @@ export function configureCredentialEndpoint(router: Router, config: OpenId4VciCr
     const { agentContext, issuer } = getRequestContext(request)
     const openId4VcIssuerService = agentContext.dependencyManager.resolve(OpenId4VcIssuerService)
 
-    let preAuthorizedCode: string
+    let verifyAccessTokenResult: VerifyAccessTokenResult
 
     // Verify the access token (should at some point be moved to a middleware function or something)
     try {
-      preAuthorizedCode = (await verifyResourceRequest(agentContext, issuer, request)).preAuthorizedCode
+      verifyAccessTokenResult = await verifyResourceRequest(agentContext, issuer, request)
     } catch (error) {
       return sendErrorResponse(response, agentContext.config.logger, 401, 'unauthorized', error)
     }
@@ -46,9 +47,21 @@ export function configureCredentialEndpoint(router: Router, config: OpenId4VciCr
         credentialRequest,
       })
 
-      if (issuanceSession?.preAuthorizedCode !== preAuthorizedCode) {
+      if (!issuanceSession) {
+        const cNonce = getCNonceFromCredentialRequest(credentialRequest)
         agentContext.config.logger.warn(
-          `Credential request used access token with for credential offer with different pre-authorized code than was used for the issuance session ${issuanceSession?.id}`
+          `No issuance session found for incoming credential request with cNonce ${cNonce} and issuer ${issuer.issuerId}`
+        )
+        return sendErrorResponse(response, agentContext.config.logger, 404, 'invalid_request', null)
+      }
+
+      if (
+        (verifyAccessTokenResult.preAuthorizedCode &&
+          issuanceSession.preAuthorizedCode !== verifyAccessTokenResult.preAuthorizedCode) ||
+        (verifyAccessTokenResult.issuerState && issuanceSession.issuerState !== verifyAccessTokenResult.issuerState)
+      ) {
+        agentContext.config.logger.warn(
+          `Credential request used access token with different a pre-authorized code or issuerState code than was used for the issuance session ${issuanceSession?.id}`
         )
         return sendErrorResponse(
           response,
@@ -57,14 +70,6 @@ export function configureCredentialEndpoint(router: Router, config: OpenId4VciCr
           'unauthorized',
           'Access token is not valid for this credential request'
         )
-      }
-
-      if (!issuanceSession) {
-        const cNonce = getCNonceFromCredentialRequest(credentialRequest)
-        agentContext.config.logger.warn(
-          `No issuance session found for incoming credential request with cNonce ${cNonce} and issuer ${issuer.issuerId}`
-        )
-        return sendErrorResponse(response, agentContext.config.logger, 404, 'invalid_request', null)
       }
 
       const { credentialResponse } = await openId4VcIssuerService.createCredentialResponse(agentContext, {

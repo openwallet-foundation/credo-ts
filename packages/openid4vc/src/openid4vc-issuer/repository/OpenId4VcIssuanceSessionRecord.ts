@@ -27,6 +27,7 @@ export interface OpenId4VcIssuanceSessionRecordProps {
   cNonceExpiresAt?: Date
 
   preAuthorizedCode?: string
+  issuerState?: string
   userPin?: string
 
   credentialOfferUri: string
@@ -82,6 +83,12 @@ export class OpenId4VcIssuanceSessionRecord extends BaseRecord<DefaultOpenId4VcI
   public preAuthorizedCode?: string
 
   /**
+   * String value created by the Credential Issuer and opaque to the Wallet that
+   * is used to bind the subsequent Authorization Request with the Credential Issuer to a context set up during previous steps.
+   */
+  public issuerState?: string
+
+  /**
    * Optional user pin that needs to be provided by the user in the access token request.
    */
   public userPin?: string
@@ -122,6 +129,7 @@ export class OpenId4VcIssuanceSessionRecord extends BaseRecord<DefaultOpenId4VcI
       this.cNonceExpiresAt = props.cNonceExpiresAt
       this.userPin = props.userPin
       this.preAuthorizedCode = props.preAuthorizedCode
+      this.issuerState = props.issuerState
       this.credentialOfferUri = props.credentialOfferUri
       this.credentialOfferPayload = props.credentialOfferPayload
       this.issuanceMetadata = props.issuanceMetadata
@@ -151,6 +159,7 @@ export class OpenId4VcIssuanceSessionRecord extends BaseRecord<DefaultOpenId4VcI
       cNonce: this.cNonce,
       credentialOfferUri: this.credentialOfferUri,
       preAuthorizedCode: this.preAuthorizedCode,
+      issuerState: this.issuerState,
       state: this.state,
     }
   }

@@ -1,4 +1,5 @@
 import type {
+  OpenId4VciAuthorizationServerConfig,
   OpenId4VciCredentialSupportedWithId,
   OpenId4VciCredentialConfigurationsSupported,
   OpenId4VciIssuerMetadataDisplay,
@@ -45,6 +46,7 @@ export type OpenId4VcIssuerRecordProps = {
   dpopSigningAlgValuesSupported?: [JwaSignatureAlgorithm, ...JwaSignatureAlgorithm[]]
 
   display?: OpenId4VciIssuerMetadataDisplay[]
+  authorizationServerConfigs?: OpenId4VciAuthorizationServerConfig[]
 } & (OpenId4VcIssuerRecordCredentialSupportedProps | OpenId4VcIssuerRecordCredentialConfigurationsSupportedProps)
 
 /**
@@ -62,6 +64,7 @@ export class OpenId4VcIssuerRecord extends BaseRecord<DefaultOpenId4VcIssuerReco
   public credentialsSupported!: OpenId4VciCredentialSupportedWithId[]
   public credentialConfigurationsSupported?: OpenId4VciCredentialConfigurationsSupported
   public display?: OpenId4VciIssuerMetadataDisplay[]
+  public authorizationServerConfigs?: OpenId4VciAuthorizationServerConfig[]
   public dpopSigningAlgValuesSupported?: [JwaSignatureAlgorithm, ...JwaSignatureAlgorithm[]]
 
   public constructor(props: OpenId4VcIssuerRecordProps) {
@@ -79,6 +82,7 @@ export class OpenId4VcIssuerRecord extends BaseRecord<DefaultOpenId4VcIssuerReco
       this.credentialConfigurationsSupported = props.credentialConfigurationsSupported
       this.dpopSigningAlgValuesSupported = props.dpopSigningAlgValuesSupported
       this.display = props.display
+      this.authorizationServerConfigs = props.authorizationServerConfigs
     }
   }
 

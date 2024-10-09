@@ -39,16 +39,34 @@ export class Holder extends BaseAgent<ReturnType<typeof getOpenIdHolderModules>>
     resolvedCredentialOffer: OpenId4VciResolvedCredentialOffer,
     credentialsToRequest: string[]
   ) {
-    const tokenResponse = await this.agent.modules.openId4VcHolder.requestToken({ resolvedCredentialOffer })
+    const resolvedAuthorizationRequest = await this.agent.modules.openId4VcHolder.resolveIssuanceAuthorizationRequest(
+      resolvedCredentialOffer,
+      {
+        clientId: 'foo',
+        redirectUri: 'http://example.com',
+        scope: ['openid', 'UniversityDegree'],
+      }
+    )
+
+    console.log(resolvedAuthorizationRequest.authorizationRequestUri)
+
+    let code = 'not a valid code!'
+    code = 'MU_MtTZjjhjmzuzGZdsLSam2GcC-7c4g_k5ukV2XO3i'
+
+    const tokenResponse = await this.agent.modules.openId4VcHolder.requestToken({
+      resolvedAuthorizationRequest,
+      code,
+      resolvedCredentialOffer,
+    })
+
     const credentialResponse = await this.agent.modules.openId4VcHolder.requestCredentials({
       resolvedCredentialOffer,
-      ...tokenResponse,
-      // TODO: add jwk support for holder binding
       credentialsToRequest,
       credentialBindingResolver: async () => ({
         method: 'did',
         didUrl: this.verificationMethod.id,
       }),
+      ...tokenResponse,
     })
 
     const storedCredentials = await Promise.all(
