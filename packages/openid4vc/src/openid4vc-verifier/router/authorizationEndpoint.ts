@@ -1,6 +1,6 @@
 import type { OpenId4VcVerificationRequest } from './requestContext'
 import type { OpenId4VcVerificationSessionRecord } from '../repository'
-import type { AgentContext } from '@credo-ts/core/src/agent/context/AgentContext'
+import type { AgentContext } from '@credo-ts/core'
 import type { AuthorizationResponsePayload, DecryptCompact } from '@sphereon/did-auth-siop'
 import type { Response, Router } from 'express'
 
