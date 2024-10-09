@@ -23,7 +23,6 @@ import type {
   AuthorizationDetailsJwtVcJson,
   AuthorizationDetailsJwtVcJsonLdAndLdpVc,
   AuthorizationDetailsSdJwtVc,
-  CredentialDefinitionJwtVcJsonLdAndLdpVcV1_0_13,
   CredentialResponse,
   Jwt,
   OpenIDResponse,
