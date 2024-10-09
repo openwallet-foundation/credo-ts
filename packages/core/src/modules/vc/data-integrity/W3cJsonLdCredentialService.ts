@@ -21,6 +21,7 @@ import { W3cCredentialsModuleConfig } from '../W3cCredentialsModuleConfig'
 import { w3cDate } from '../util'
 
 import { SignatureSuiteRegistry } from './SignatureSuiteRegistry'
+import { verifyBitStringCredentialStatus } from './VerifyBitStringCredentialStatus'
 import { deriveProof } from './deriveProof'
 import { assertOnlyW3cJsonLdVerifiableCredentials } from './jsonldUtil'
 import jsonld from './libraries/jsonld'
@@ -109,10 +110,9 @@ export class W3cJsonLdCredentialService {
         credential: JsonTransformer.toJSON(options.credential),
         suite: suites,
         documentLoader: this.w3cCredentialsModuleConfig.documentLoader(agentContext),
-        checkStatus: ({ credential }: { credential: W3cJsonCredential }) => {
-          // Only throw error if credentialStatus is present
+        checkStatus: async ({ credential }: { credential: W3cJsonCredential }) => {
           if (verifyCredentialStatus && 'credentialStatus' in credential) {
-            throw new CredoError('Verifying credential status for JSON-LD credentials is currently not supported')
+            await verifyBitStringCredentialStatus(credential, agentContext)
           }
           return {
             verified: true,
@@ -265,6 +265,14 @@ export class W3cJsonLdCredentialService {
         challenge: options.challenge,
         domain: options.domain,
         documentLoader: this.w3cCredentialsModuleConfig.documentLoader(agentContext),
+        checkStatus: async ({ credential }: { credential: W3cJsonCredential }) => {
+          if ('credentialStatus' in credential) {
+            await verifyBitStringCredentialStatus(credential, agentContext)
+          }
+          return {
+            verified: true,
+          }
+        },
       }
 
       // this is a hack because vcjs throws if purpose is passed as undefined or null
