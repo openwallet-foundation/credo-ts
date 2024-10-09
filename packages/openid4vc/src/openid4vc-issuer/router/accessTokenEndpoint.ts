@@ -206,7 +206,7 @@ export function verifyTokenRequest(options: { preAuthorizedCodeExpirationInSecon
       }
     } catch (error) {
       if (error instanceof TokenError) {
-        sendErrorResponse(
+        return sendErrorResponse(
           response,
           agentContext.config.logger,
           error.statusCode,
@@ -214,7 +214,7 @@ export function verifyTokenRequest(options: { preAuthorizedCodeExpirationInSecon
           error.getDescription()
         )
       } else {
-        sendErrorResponse(response, agentContext.config.logger, 400, TokenErrorResponse.invalid_request, error)
+        return sendErrorResponse(response, agentContext.config.logger, 400, TokenErrorResponse.invalid_request, error)
       }
     }
 
