@@ -1,9 +1,18 @@
-import type { InboundTransport, Agent, TransportSession, EncryptedMessage, AgentContext } from '@credo-ts/core'
+import type {
+  InboundTransport,
+  Agent,
+  TransportSession,
+  EncryptedMessage,
+  AgentContext,
+  AgentMessageReceivedEvent,
+  AgentMessageProcessedEvent,
+} from '@credo-ts/core'
 import type { Express, Request, Response } from 'express'
 import type { Server } from 'http'
 
-import { DidCommMimeType, CredoError, TransportService, utils, MessageReceiver } from '@credo-ts/core'
+import { DidCommMimeType, CredoError, TransportService, utils, AgentEventTypes } from '@credo-ts/core'
 import express, { text } from 'express'
+import { filter, firstValueFrom, ReplaySubject, timeout } from 'rxjs'
 
 const supportedContentTypes: string[] = [DidCommMimeType.V0, DidCommMimeType.V1]
 
@@ -12,13 +21,25 @@ export class HttpInboundTransport implements InboundTransport {
   private port: number
   private path: string
   private _server?: Server
+  private processedMessageListenerTimeoutMs: number
 
   public get server() {
     return this._server
   }
 
-  public constructor({ app, path, port }: { app?: Express; path?: string; port: number }) {
+  public constructor({
+    app,
+    path,
+    port,
+    processedMessageListenerTimeoutMs,
+  }: {
+    app?: Express
+    path?: string
+    port: number
+    processedMessageListenerTimeoutMs?: number
+  }) {
     this.port = port
+    this.processedMessageListenerTimeoutMs = processedMessageListenerTimeoutMs ?? 10000 // timeout after 10 seconds
 
     // Create Express App
     this.app = app ?? express()
@@ -29,7 +50,6 @@ export class HttpInboundTransport implements InboundTransport {
 
   public async start(agent: Agent) {
     const transportService = agent.dependencyManager.resolve(TransportService)
-    const messageReceiver = agent.dependencyManager.resolve(MessageReceiver)
 
     agent.config.logger.debug(`Starting HTTP inbound transport`, {
       port: this.port,
@@ -51,10 +71,32 @@ export class HttpInboundTransport implements InboundTransport {
 
       try {
         const message = req.body
-        const encryptedMessage = JSON.parse(message)
-        await messageReceiver.receiveMessage(encryptedMessage, {
-          session,
+        const encryptedMessage = JSON.parse(message) as EncryptedMessage
+
+        const observable = agent.events.observable<AgentMessageProcessedEvent>(AgentEventTypes.AgentMessageProcessed)
+        const subject = new ReplaySubject(1)
+
+        observable
+          .pipe(
+            filter((e) => e.type === AgentEventTypes.AgentMessageProcessed),
+            filter((e) => e.payload.encryptedMessage === encryptedMessage),
+            timeout({
+              first: this.processedMessageListenerTimeoutMs,
+              meta: 'HttpInboundTransport.start',
+            })
+          )
+          .subscribe(subject)
+
+        agent.events.emit<AgentMessageReceivedEvent>(agent.context, {
+          type: AgentEventTypes.AgentMessageReceived,
+          payload: {
+            message: encryptedMessage,
+            session: session,
+          },
         })
+
+        // Wait for message to be processed
+        await firstValueFrom(subject)
 
         // If agent did not use session when processing message we need to send response here.
         if (!res.headersSent) {
