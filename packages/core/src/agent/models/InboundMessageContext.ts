@@ -1,6 +1,7 @@
 import type { OutboundMessageContext } from './OutboundMessageContext'
 import type { Key } from '../../crypto'
 import type { ConnectionRecord } from '../../modules/connections'
+import type { EncryptedMessage } from '../../types'
 import type { AgentMessage } from '../AgentMessage'
 import type { MessageHandler } from '../MessageHandler'
 import type { AgentContext } from '../context'
@@ -14,6 +15,7 @@ export interface MessageContextParams {
   recipientKey?: Key
   agentContext: AgentContext
   receivedAt?: Date
+  encryptedMessage?: EncryptedMessage
 }
 
 export class InboundMessageContext<T extends AgentMessage = AgentMessage> {
@@ -28,6 +30,7 @@ export class InboundMessageContext<T extends AgentMessage = AgentMessage> {
   public message: T
   public messageHandler?: MessageHandler
   public responseMessage?: OutboundMessageContext
+  public encryptedMessage?: EncryptedMessage
 
   public constructor(message: T, context: MessageContextParams) {
     this.message = message
@@ -37,6 +40,7 @@ export class InboundMessageContext<T extends AgentMessage = AgentMessage> {
     this.sessionId = context.sessionId
     this.agentContext = context.agentContext
     this.receivedAt = context.receivedAt ?? new Date()
+    this.encryptedMessage = context.encryptedMessage
   }
 
   public setMessageHandler(messageHandler: MessageHandler) {
