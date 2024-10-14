@@ -127,14 +127,14 @@ describe('X509Service', () => {
     const x509Certificate = X509Service.parseCertificate(agentContext, { encodedCertificate })
 
     expect(x509Certificate.publicKey.publicKey.length).toStrictEqual(33)
-    expect(x509Certificate.publicKey.publicKeyBase58).toStrictEqual('tzf7ci2SqwnesE1Ppb8NPhWfMJpuWpRETfLegmsaooBY')
+    expect(x509Certificate.publicKey.publicKeyBase58).toStrictEqual('23vfBuUJkWXTC3zZWMh1TR57CTubFjFfhm4CGfgszRMHU')
 
     const jwk = getJwkFromKey(x509Certificate.publicKey)
 
     expect(jwk).toBeInstanceOf(P256Jwk)
     expect(jwk).toMatchObject({
-      x: 'BIk8LYNHkG3GzWm39javS_1TP5YYTwqtrNEIMNpEcds',
-      y: '2UODj-scC_6OYXAeLtWqbo6SP4tU1coNPU0qLjxCBCE',
+      x: 'iTwtg0eQbcbNabf2Nq9L_VM_lhhPCq2s0Qgw2kRx29s',
+      y: 'YKwXDRz8U0-uLZ3NSI93R_35eNkl6jHp6Qg8OCup7VM',
     })
   })
 

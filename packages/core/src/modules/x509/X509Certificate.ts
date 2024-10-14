@@ -61,7 +61,8 @@ export class X509Certificate {
       if (keyBytes[0] !== 0x04) {
         throw new X509Error('Received P256 key with 65 bytes, but key did not start with 0x04. Invalid key')
       }
-      keyBytes = compress(keyBytes)
+      // TODO(crypto): the compress method is bugged because it does not expect the required `0x04` prefix. Here we strip that and receive the expected result
+      keyBytes = compress(keyBytes.slice(1))
     }
 
     const key = new Key(keyBytes, keyType)
