@@ -12,6 +12,7 @@ import {
   parseIssuerSigned,
   Verifier,
   MDocStatus,
+  cborEncode,
 } from '@protokoll/mdoc-client'
 
 import { getJwkFromKey } from '../../crypto/jose/jwk/transform'
@@ -191,6 +192,17 @@ export class MdocDeviceResponse {
       throw new MdocError('Device response verification failed. An unknown error occurred.')
     }
 
-    return result.documents.map((doc) => Mdoc._internalFromIssuerSignedDocument(doc))
+    return result.documents.map((doc) => {
+      const prepared = doc.prepare()
+      const docType = prepared.get('docType') as string
+      const issuerSigned = cborEncode(prepared.get('issuerSigned'))
+      const deviceSigned = cborEncode(prepared.get('deviceSigned'))
+
+      return Mdoc.fromIssuerSignedDocument(
+        TypedArrayEncoder.toBase64URL(issuerSigned),
+        TypedArrayEncoder.toBase64URL(deviceSigned),
+        docType
+      )
+    })
   }
 }

@@ -51,5 +51,4 @@ export type MdocSignOptions = {
    */
   issuerCertificate: string
   holderKey: Key
-  issuerKey?: Key
 }

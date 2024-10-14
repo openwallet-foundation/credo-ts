@@ -22,7 +22,6 @@ export interface X509CreateSelfSignedCertificateOptions {
   notBefore?: Date
   notAfter?: Date
   name?: string
-  countryName?: string
 }
 
 export interface X509GetLefCertificateOptions {

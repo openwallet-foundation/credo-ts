@@ -1,6 +1,6 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { Key as AskarKey, Jwk } from '@hyperledger/aries-askar-nodejs'
-import { parseDeviceResponse } from '@protokoll/mdoc-client'
+import { cborEncode, parseDeviceResponse } from '@protokoll/mdoc-client'
 
 import { Agent, KeyType } from '../../..'
 import { getInMemoryAgentOptions } from '../../../../tests'
@@ -135,7 +135,7 @@ describe('mdoc device-response openid4vp test', () => {
     })
 
     const issuerPrivateAskar = AskarKey.fromJwk({ jwk: Jwk.fromJson(ISSUER_PRIVATE_KEY_JWK) })
-    const issuerPrivateKey = await agent.context.wallet.createKey({
+    await agent.context.wallet.createKey({
       keyType: KeyType.P256,
       privateKey: Buffer.from(issuerPrivateAskar.secretBytes),
     })
@@ -150,7 +150,6 @@ describe('mdoc device-response openid4vp test', () => {
         },
         holderKey: getJwkFromJson(DEVICE_JWK_PUBLIC).key,
         issuerCertificate: ISSUER_CERTIFICATE,
-        issuerKey: issuerPrivateKey,
         namespaces: {
           'org.iso.18013.5.1': {
             family_name: 'Jones',
@@ -207,7 +206,16 @@ describe('mdoc device-response openid4vp test', () => {
 
       const parsed = parseDeviceResponse(TypedArrayEncoder.fromBase64(deviceResponse))
       expect(parsed.documents).toHaveLength(1)
-      parsedDocument = Mdoc._internalFromIssuerSignedDocument(parsed.documents[0])
+
+      const prepared = parsed.documents[0].prepare()
+      const docType = prepared.get('docType') as string
+      const issuerSigned = cborEncode(prepared.get('issuerSigned'))
+      const deviceSigned = cborEncode(prepared.get('deviceSigned'))
+      parsedDocument = Mdoc.fromIssuerSignedDocument(
+        TypedArrayEncoder.toBase64URL(issuerSigned),
+        TypedArrayEncoder.toBase64URL(deviceSigned),
+        docType
+      )
     }
   })
 

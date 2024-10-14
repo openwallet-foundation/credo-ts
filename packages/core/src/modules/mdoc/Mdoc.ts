@@ -2,7 +2,14 @@ import type { MdocSignOptions, MdocNameSpaces, MdocVerifyOptions } from './MdocO
 import type { AgentContext } from '../../agent'
 import type { IssuerSignedDocument } from '@protokoll/mdoc-client'
 
-import { DeviceSignedDocument, Document, Verifier, cborEncode, parseIssuerSigned } from '@protokoll/mdoc-client'
+import {
+  DeviceSignedDocument,
+  Document,
+  Verifier,
+  cborEncode,
+  parseDeviceSigned,
+  parseIssuerSigned,
+} from '@protokoll/mdoc-client'
 
 import { getJwkFromKey, JwaSignatureAlgorithm } from '../../crypto'
 import { X509Certificate, X509ModuleConfig } from '../x509'
@@ -22,13 +29,29 @@ export class Mdoc {
     this.base64Url = TypedArrayEncoder.toBase64URL(cborEncode(issuerSigned))
   }
 
-  public static _internalFromIssuerSignedDocument(issuerSignedDocument: IssuerSignedDocument) {
-    return new Mdoc(issuerSignedDocument)
-  }
-
   public static fromBase64Url(mdocBase64Url: string, expectedDocType?: string): Mdoc {
     const issuerSignedDocument = parseIssuerSigned(TypedArrayEncoder.fromBase64(mdocBase64Url), expectedDocType)
     return new Mdoc(issuerSignedDocument)
+  }
+
+  public static fromIssuerSignedDocument(
+    issuerSignedBase64Url: string,
+    deviceSignedBase64Url?: string,
+    expectedDocType?: string
+  ): Mdoc {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
+    if (deviceSignedBase64Url) {
+      return new Mdoc(
+        parseDeviceSigned(
+          TypedArrayEncoder.fromBase64(deviceSignedBase64Url),
+          TypedArrayEncoder.fromBase64(issuerSignedBase64Url),
+          expectedDocType
+        )
+      )
+    } else {
+      return new Mdoc(parseIssuerSigned(TypedArrayEncoder.fromBase64(issuerSignedBase64Url), expectedDocType))
+    }
   }
 
   public get docType(): string {
@@ -77,7 +100,7 @@ export class Mdoc {
     }
 
     const cert = X509Certificate.fromEncodedCertificate(issuerCertificate)
-    const issuerKey = await getJwkFromKey(options.issuerKey ?? cert.publicKey)
+    const issuerKey = await getJwkFromKey(cert.publicKey)
 
     const alg = issuerKey.supportedSignatureAlgorithms.find(
       (alg): alg is JwaSignatureAlgorithm.ES256 | JwaSignatureAlgorithm.ES384 | JwaSignatureAlgorithm.ES512 => {

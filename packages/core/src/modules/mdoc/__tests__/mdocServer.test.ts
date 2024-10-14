@@ -48,6 +48,7 @@ describe('mdoc service test', () => {
       notBefore: currentDate,
       notAfter: nextDay,
       extensions: [],
+      name: 'C=DE',
     })
 
     const issuerCertificate = selfSignedCertificate.toString('pem')
@@ -62,7 +63,6 @@ describe('mdoc service test', () => {
         },
       },
       issuerCertificate,
-      issuerKey,
     })
 
     expect(mdoc.alg).toBe('ES256')

@@ -98,7 +98,7 @@ export class X509Certificate {
   }
 
   public static async createSelfSigned(
-    { key, extensions, notAfter, notBefore, name, countryName }: X509CreateSelfSignedCertificateOptions,
+    { key, extensions, notAfter, notBefore, name }: X509CreateSelfSignedCertificateOptions,
     webCrypto: CredoWebCrypto
   ) {
     const cryptoKeyAlgorithm = credoKeyTypeIntoCryptoKeyAlgorithm(key.keyType)
@@ -106,15 +106,19 @@ export class X509Certificate {
     const publicKey = new CredoWebCryptoKey(key, cryptoKeyAlgorithm, true, 'public', ['verify'])
     const privateKey = new CredoWebCryptoKey(key, cryptoKeyAlgorithm, false, 'private', ['sign'])
 
-    const issuerName =
-      name || countryName
-        ? [
-            {
-              ...(name && { CN: [name] }),
-              ...(countryName && { C: [countryName] }),
-            },
-          ]
-        : undefined
+    const issuerName = name?.includes(',')
+      ? [
+          Object.fromEntries(
+            name.split(', ').map((s) => {
+              const keyValPairs = s.trim().split('=')
+              if (keyValPairs.some((pair) => pair.length !== 2)) {
+                throw new X509Error(`Cannot create self-signed certificate. Name parsing failed. '${name}'`)
+              }
+              return keyValPairs.map(([key, val]) => [key, [val]] as [string, string[]])
+            })
+          ),
+        ]
+      : name
 
     const certificate = await x509.X509CertificateGenerator.createSelfSigned(
       {
