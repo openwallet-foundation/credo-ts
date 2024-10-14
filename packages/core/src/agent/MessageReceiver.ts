@@ -149,6 +149,7 @@ export class MessageReceiver {
       recipientKey,
       agentContext,
       receivedAt,
+      encryptedMessage,
     })
 
     // We want to save a session if there is a chance of returning outbound message via inbound transport.
