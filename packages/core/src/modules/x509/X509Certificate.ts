@@ -6,6 +6,8 @@ import { id_ce_subjectAltName, SubjectPublicKeyInfo } from '@peculiar/asn1-x509'
 import * as x509 from '@peculiar/x509'
 
 import { Key } from '../../crypto/Key'
+import { KeyType } from '../../crypto/KeyType'
+import { compress } from '../../crypto/jose/jwk/ecCompression'
 import { CredoWebCryptoKey } from '../../crypto/webcrypto'
 import { credoKeyTypeIntoCryptoKeyAlgorithm, spkiAlgorithmIntoCredoKeyType } from '../../crypto/webcrypto/utils'
 import { TypedArrayEncoder } from '../../utils'
@@ -52,7 +54,17 @@ export class X509Certificate {
 
     const keyType = spkiAlgorithmIntoCredoKeyType(publicKey.algorithm)
 
-    const key = new Key(new Uint8Array(publicKey.subjectPublicKey), keyType)
+    // TODO(crypto): Currently this only does point-compression for P256.
+    //               We should either store all keys as uncompressed, or we should compress all supported keys here correctly
+    let keyBytes = new Uint8Array(publicKey.subjectPublicKey)
+    if (publicKey.subjectPublicKey.byteLength === 65 && keyType === KeyType.P256) {
+      if (keyBytes[0] !== 0x04) {
+        throw new X509Error('Received P256 key with 65 bytes, but key did not start with 0x04. Invalid key')
+      }
+      keyBytes = compress(keyBytes)
+    }
+
+    const key = new Key(keyBytes, keyType)
 
     return new X509Certificate({
       publicKey: key,
