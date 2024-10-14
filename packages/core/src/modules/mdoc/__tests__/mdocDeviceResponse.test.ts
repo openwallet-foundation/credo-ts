@@ -35,7 +35,7 @@ describe('mdoc device-response test', () => {
 
     const mdoc = await Mdoc.sign(agent.context, {
       docType: 'org.iso.18013.5.1.mDL',
-      holderPublicKey: holderKey,
+      holderKey: holderKey,
       namespaces: {
         hello: {
           world: 'from-mdoc',

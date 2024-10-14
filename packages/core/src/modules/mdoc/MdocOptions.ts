@@ -25,7 +25,6 @@ export type MdocDeviceResponseOpenId4VpOptions = {
 }
 
 export type MdocDeviceResponseVerifyOptions = {
-  mdoc: Mdoc
   trustedCertificates?: [string, ...string[]]
   sessionTranscriptOptions: MdocOpenId4VpSessionTranscriptOptions
   /**
@@ -34,7 +33,7 @@ export type MdocDeviceResponseVerifyOptions = {
   deviceResponse: string
 
   /**
-   * The private part of the ephemeral key used in the session where the DeviceResponse was obtained. This is only required if the DeviceResponse is using the MAC method for device authentication.
+   * The public ephemeral key used in the session where the DeviceResponse was obtained. This is only required if the DeviceResponse is using the MAC method for device authentication.
    */
   verifierKey?: Key
   now?: Date
@@ -51,6 +50,6 @@ export type MdocSignOptions = {
    * The trusted base64-encoded issuer certificate string in the DER-format.
    */
   issuerCertificate: string
-  holderPublicKey: Key
+  holderKey: Key
   issuerKey?: Key
 }

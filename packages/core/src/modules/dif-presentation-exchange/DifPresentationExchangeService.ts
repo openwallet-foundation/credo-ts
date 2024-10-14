@@ -154,7 +154,7 @@ export class DifPresentationExchangeService {
       presentationSubmissionLocation?: DifPresentationExchangeSubmissionLocation
       challenge: string
       domain?: string
-      openid4vp?: MdocOpenId4VpSessionTranscriptOptions
+      openid4vp?: Omit<MdocOpenId4VpSessionTranscriptOptions, 'verifierGeneratedNonce' | 'clientId'>
     }
   ) {
     const { presentationDefinition, domain, challenge, openid4vp } = options
@@ -195,13 +195,20 @@ export class DifPresentationExchangeService {
           throw new DifPresentationExchangeError('Missing openid4vp options for creating MDOC presentation.')
         }
 
-        const { deviceResponseBase64Url, presentationSubmission } = await MdocDeviceResponse.openId4Vp(agentContext, {
-          mdocs: [Mdoc.fromBase64Url(mdocRecord.base64Url)],
-          presentationDefinition: presentationDefinition,
-          sessionTranscriptOptions: {
-            ...openid4vp,
-          },
-        })
+        if (!domain) {
+          throw new DifPresentationExchangeError('Missing domain property for creating MDOC presentation.')
+        }
+
+        const { deviceResponseBase64Url, presentationSubmission } =
+          await MdocDeviceResponse.createOpenId4VpDeviceResponse(agentContext, {
+            mdocs: [Mdoc.fromBase64Url(mdocRecord.base64Url)],
+            presentationDefinition: presentationDefinition,
+            sessionTranscriptOptions: {
+              ...openid4vp,
+              clientId: domain,
+              verifierGeneratedNonce: challenge,
+            },
+          })
 
         verifiablePresentationResultsWithFormat.push({
           verifiablePresentationResult: {
@@ -237,53 +244,53 @@ export class DifPresentationExchangeService {
           claimFormat: presentationToCreate.claimFormat,
         })
       }
+    }
 
-      if (verifiablePresentationResultsWithFormat.length === 0) {
-        throw new DifPresentationExchangeError('No verifiable presentations created')
-      }
+    if (verifiablePresentationResultsWithFormat.length === 0) {
+      throw new DifPresentationExchangeError('No verifiable presentations created')
+    }
 
-      if (presentationsToCreate.length !== verifiablePresentationResultsWithFormat.length) {
-        throw new DifPresentationExchangeError('Invalid amount of verifiable presentations created')
-      }
+    if (presentationsToCreate.length !== verifiablePresentationResultsWithFormat.length) {
+      throw new DifPresentationExchangeError('Invalid amount of verifiable presentations created')
+    }
 
-      const presentationSubmission: DifPresentationExchangeSubmission = {
-        id: verifiablePresentationResultsWithFormat[0].verifiablePresentationResult.presentationSubmission.id,
-        definition_id:
-          verifiablePresentationResultsWithFormat[0].verifiablePresentationResult.presentationSubmission.definition_id,
-        descriptor_map: [],
-      }
+    const presentationSubmission: DifPresentationExchangeSubmission = {
+      id: verifiablePresentationResultsWithFormat[0].verifiablePresentationResult.presentationSubmission.id,
+      definition_id:
+        verifiablePresentationResultsWithFormat[0].verifiablePresentationResult.presentationSubmission.definition_id,
+      descriptor_map: [],
+    }
 
-      verifiablePresentationResultsWithFormat.forEach(({ verifiablePresentationResult }, index) => {
-        const descriptorMap = verifiablePresentationResult.presentationSubmission.descriptor_map.map((d) => {
-          const descriptor = { ...d }
+    verifiablePresentationResultsWithFormat.forEach(({ verifiablePresentationResult }, index) => {
+      const descriptorMap = verifiablePresentationResult.presentationSubmission.descriptor_map.map((d) => {
+        const descriptor = { ...d }
 
-          // when multiple presentations are submitted, path should be $[0], $[1]
-          // FIXME: this should be addressed in the PEX/OID4VP lib.
-          // See https://github.com/Sphereon-Opensource/SIOP-OID4VP/issues/62
-          if (
-            presentationSubmissionLocation === DifPresentationExchangeSubmissionLocation.EXTERNAL &&
-            verifiablePresentationResultsWithFormat.length > 1
-          ) {
-            descriptor.path = `$[${index}]`
-          }
+        // when multiple presentations are submitted, path should be $[0], $[1]
+        // FIXME: this should be addressed in the PEX/OID4VP lib.
+        // See https://github.com/Sphereon-Opensource/SIOP-OID4VP/issues/62
+        if (
+          presentationSubmissionLocation === DifPresentationExchangeSubmissionLocation.EXTERNAL &&
+          verifiablePresentationResultsWithFormat.length > 1
+        ) {
+          descriptor.path = `$[${index}]`
+        }
 
-          return descriptor
-        })
-
-        presentationSubmission.descriptor_map.push(...descriptorMap)
+        return descriptor
       })
 
-      return {
-        verifiablePresentations: verifiablePresentationResultsWithFormat.map((resultWithFormat) =>
-          getVerifiablePresentationFromEncoded(
-            agentContext,
-            resultWithFormat.verifiablePresentationResult.verifiablePresentation
-          )
-        ),
-        presentationSubmission,
-        presentationSubmissionLocation:
-          verifiablePresentationResultsWithFormat[0].verifiablePresentationResult.presentationSubmissionLocation,
-      }
+      presentationSubmission.descriptor_map.push(...descriptorMap)
+    })
+
+    return {
+      verifiablePresentations: verifiablePresentationResultsWithFormat.map((resultWithFormat) =>
+        getVerifiablePresentationFromEncoded(
+          agentContext,
+          resultWithFormat.verifiablePresentationResult.verifiablePresentation
+        )
+      ),
+      presentationSubmission,
+      presentationSubmissionLocation:
+        verifiablePresentationResultsWithFormat[0].verifiablePresentationResult.presentationSubmissionLocation,
     }
   }
 

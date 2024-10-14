@@ -22,7 +22,7 @@ export class Mdoc {
     this.base64Url = TypedArrayEncoder.toBase64URL(cborEncode(issuerSigned))
   }
 
-  public static _interalFromIssuerSignedDocument(issuerSignedDocument: IssuerSignedDocument) {
+  public static _internalFromIssuerSignedDocument(issuerSignedDocument: IssuerSignedDocument) {
     return new Mdoc(issuerSignedDocument)
   }
 
@@ -63,10 +63,10 @@ export class Mdoc {
   }
 
   public static async sign(agentContext: AgentContext, options: MdocSignOptions) {
-    const { docType, validityInfo, namespaces, holderPublicKey, issuerCertificate } = options
+    const { docType, validityInfo, namespaces, holderKey, issuerCertificate } = options
     const mdocContext = getMdocContext(agentContext)
 
-    const holderPublicJwk = await getJwkFromKey(holderPublicKey)
+    const holderPublicJwk = await getJwkFromKey(holderKey)
     const document = new Document(docType, mdocContext)
       .useDigestAlgorithm('SHA-256')
       .addValidityInfo(validityInfo)

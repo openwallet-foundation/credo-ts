@@ -27,8 +27,8 @@ export class MdocApi {
    * @param options {MdocSignOptions}
    * @returns {Promise<Mdoc>}
    */
-  public async create(options: MdocSignOptions) {
-    return await this.mdocService.createMdoc(this.agentContext, options)
+  public async sign(options: MdocSignOptions) {
+    return await this.mdocService.signMdoc(this.agentContext, options)
   }
 
   /**

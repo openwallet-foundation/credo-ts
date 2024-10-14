@@ -116,7 +116,10 @@ export class MdocDeviceResponse {
     return mdocLimitDisclosureToId({ mdoc: _mdoc, inputDescriptor })
   }
 
-  public static async openId4Vp(agentContext: AgentContext, options: MdocDeviceResponseOpenId4VpOptions) {
+  public static async createOpenId4VpDeviceResponse(
+    agentContext: AgentContext,
+    options: MdocDeviceResponseOpenId4VpOptions
+  ) {
     const { sessionTranscriptOptions } = options
     const presentationDefinition = this.partitionPresentationDefinition(
       options.presentationDefinition
@@ -188,6 +191,6 @@ export class MdocDeviceResponse {
       throw new MdocError('Device response verification failed. An unknown error occurred.')
     }
 
-    return result.documents.map((doc) => Mdoc._interalFromIssuerSignedDocument(doc))
+    return result.documents.map((doc) => Mdoc._internalFromIssuerSignedDocument(doc))
   }
 }

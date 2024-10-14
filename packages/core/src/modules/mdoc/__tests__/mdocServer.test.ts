@@ -48,14 +48,13 @@ describe('mdoc service test', () => {
       notBefore: currentDate,
       notAfter: nextDay,
       extensions: [],
-      countryName: 'DE',
     })
 
     const issuerCertificate = selfSignedCertificate.toString('pem')
 
     const mdoc = await Mdoc.sign(agentContext, {
       docType: 'org.iso.18013.5.1.mDL',
-      holderPublicKey: holderKey,
+      holderKey: holderKey,
       namespaces: {
         hello: {
           world: 'world',

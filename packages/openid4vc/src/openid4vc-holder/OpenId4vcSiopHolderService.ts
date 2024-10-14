@@ -111,8 +111,6 @@ export class OpenId4VcSiopHolderService {
           domain: clientId,
           presentationSubmissionLocation: DifPresentationExchangeSubmissionLocation.EXTERNAL,
           openid4vp: {
-            clientId,
-            verifierGeneratedNonce: nonce,
             mdocGeneratedNonce: await agentContext.wallet.generateNonce(),
             responseUri:
               authorizationRequest.authorizationRequestPayload.response_uri ??

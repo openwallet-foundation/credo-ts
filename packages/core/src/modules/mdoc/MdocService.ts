@@ -29,7 +29,7 @@ export class MdocService {
     return Mdoc.fromBase64Url(hexEncodedMdoc)
   }
 
-  public createMdoc(agentContext: AgentContext, options: MdocSignOptions) {
+  public signMdoc(agentContext: AgentContext, options: MdocSignOptions) {
     return Mdoc.sign(agentContext, options)
   }
 
@@ -37,8 +37,8 @@ export class MdocService {
     return await mdoc.verify(agentContext, options)
   }
 
-  public async createDeviceResponse(agentContext: AgentContext, options: MdocDeviceResponseOpenId4VpOptions) {
-    return MdocDeviceResponse.openId4Vp(agentContext, options)
+  public async createOpenId4VpDeviceResponse(agentContext: AgentContext, options: MdocDeviceResponseOpenId4VpOptions) {
+    return MdocDeviceResponse.createOpenId4VpDeviceResponse(agentContext, options)
   }
 
   public async verifyDeviceResponse(agentContext: AgentContext, options: MdocDeviceResponseVerifyOptions) {

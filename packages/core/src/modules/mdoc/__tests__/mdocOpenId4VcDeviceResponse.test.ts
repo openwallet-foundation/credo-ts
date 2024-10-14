@@ -148,7 +148,7 @@ describe('mdoc device-response openid4vp test', () => {
           signed: new Date('2023-10-24'),
           validUntil: new Date('2050-10-24'),
         },
-        holderPublicKey: getJwkFromJson(DEVICE_JWK_PUBLIC).key,
+        holderKey: getJwkFromJson(DEVICE_JWK_PUBLIC).key,
         issuerCertificate: ISSUER_CERTIFICATE,
         issuerKey: issuerPrivateKey,
         namespaces: {
@@ -189,7 +189,7 @@ describe('mdoc device-response openid4vp test', () => {
 
     //  This is the Device side
     {
-      const result = await MdocDeviceResponse.openId4Vp(agent.context, {
+      const result = await MdocDeviceResponse.createOpenId4VpDeviceResponse(agent.context, {
         mdocs: [mdoc],
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         presentationDefinition: PRESENTATION_DEFINITION_1 as any,
@@ -207,7 +207,7 @@ describe('mdoc device-response openid4vp test', () => {
 
       const parsed = parseDeviceResponse(TypedArrayEncoder.fromBase64(deviceResponse))
       expect(parsed.documents).toHaveLength(1)
-      parsedDocument = Mdoc._interalFromIssuerSignedDocument(parsed.documents[0])
+      parsedDocument = Mdoc._internalFromIssuerSignedDocument(parsed.documents[0])
     }
   })
 
@@ -215,7 +215,6 @@ describe('mdoc device-response openid4vp test', () => {
     const res = await MdocDeviceResponse.verify(agent.context, {
       deviceResponse,
       trustedCertificates: [ISSUER_CERTIFICATE],
-      mdoc,
       sessionTranscriptOptions: {
         clientId,
         responseUri,
@@ -227,48 +226,19 @@ describe('mdoc device-response openid4vp test', () => {
   })
 
   describe('should not be verifiable', () => {
-    ;[
-      [
-        'clientId',
-        {
-          clientId: 'wrong',
-          responseUri,
-          verifierGeneratedNonce,
-          mdocGeneratedNonce,
-        },
-      ] as const,
-      [
-        'responseUri',
-        {
-          clientId,
-          responseUri: 'wrong',
-          verifierGeneratedNonce,
-          mdocGeneratedNonce,
-        },
-      ] as const,
-      [
-        'verifierGeneratedNonce',
-        {
-          clientId,
-          responseUri,
-          verifierGeneratedNonce: 'wrong',
-          mdocGeneratedNonce,
-        },
-      ] as const,
-      [
-        'mdocGeneratedNonce',
-        {
-          clientId,
-          responseUri,
-          verifierGeneratedNonce,
-          mdocGeneratedNonce: 'wrong',
-        },
-      ] as const,
-    ].forEach(([name, values]) => {
+    const testCases = ['clientId', 'responseUri', 'verifierGeneratedNonce', 'mdocGeneratedNonce']
+
+    testCases.forEach((name) => {
+      const values = {
+        clientId,
+        responseUri,
+        verifierGeneratedNonce,
+        mdocGeneratedNonce,
+        [name]: 'wrong',
+      }
       it(`with a different ${name}`, async () => {
         try {
           await MdocDeviceResponse.verify(agent.context, {
-            mdoc,
             trustedCertificates: [ISSUER_CERTIFICATE],
             deviceResponse,
             sessionTranscriptOptions: {
