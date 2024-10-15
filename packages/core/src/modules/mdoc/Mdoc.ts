@@ -137,8 +137,18 @@ export class Mdoc {
     agentContext: AgentContext,
     options?: MdocVerifyOptions
   ): Promise<{ isValid: true } | { isValid: false; error: string }> {
-    const trustedCerts =
-      options?.trustedCertificates ?? agentContext.dependencyManager.resolve(X509ModuleConfig).trustedCertificates
+    let trustedCerts: [string, ...string[]] | undefined
+
+    if (options?.trustedCertificates) {
+      trustedCerts = options.trustedCertificates
+    } else if (options?.verificationContext) {
+      agentContext.dependencyManager.resolve(X509ModuleConfig).getTrustedCertificatesForVerification
+      trustedCerts = await agentContext.dependencyManager
+        .resolve(X509ModuleConfig)
+        .getTrustedCertificatesForVerification?.(agentContext, options.verificationContext)
+    } else {
+      trustedCerts = agentContext.dependencyManager.resolve(X509ModuleConfig).trustedCertificates
+    }
 
     if (!trustedCerts) {
       throw new MdocError('No trusted certificates found. Cannot verify mdoc.')

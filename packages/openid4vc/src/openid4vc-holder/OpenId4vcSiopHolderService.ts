@@ -84,6 +84,7 @@ export class OpenId4VcSiopHolderService {
     let presentationExchangeOptions: PresentationExchangeResponseOpts | undefined = undefined
 
     const wantsIdToken = await authorizationRequest.authorizationRequest.containsResponseType(ResponseType.ID_TOKEN)
+    const authorizationResponseNonce = await agentContext.wallet.generateNonce()
 
     // Handle presentation exchange part
     if (authorizationRequest.presentationDefinitions && authorizationRequest.presentationDefinitions.length > 0) {
@@ -111,7 +112,7 @@ export class OpenId4VcSiopHolderService {
           domain: clientId,
           presentationSubmissionLocation: DifPresentationExchangeSubmissionLocation.EXTERNAL,
           openid4vp: {
-            mdocGeneratedNonce: await agentContext.wallet.generateNonce(),
+            mdocGeneratedNonce: authorizationResponseNonce,
             responseUri:
               authorizationRequest.authorizationRequestPayload.response_uri ??
               authorizationRequest.authorizationRequestPayload.request_uri,
@@ -159,49 +160,52 @@ export class OpenId4VcSiopHolderService {
       }
     )
 
-    const createJarmResponse = async (opts: {
-      authorizationResponsePayload: AuthorizationResponsePayload
-      requestObjectPayload: RequestObjectPayload
-    }) => {
-      const { authorizationResponsePayload, requestObjectPayload } = opts
+    const getCreateJarmResponseCallback = (authorizationResponseNonce: string) => {
+      return async (opts: {
+        authorizationResponsePayload: AuthorizationResponsePayload
+        requestObjectPayload: RequestObjectPayload
+      }) => {
+        const { authorizationResponsePayload, requestObjectPayload } = opts
 
-      const jwk = await OP.extractEncJwksFromClientMetadata(requestObjectPayload.client_metadata)
-      if (!jwk.kty) {
-        throw new CredoError('Missing kty in jwk.')
+        const jwk = await OP.extractEncJwksFromClientMetadata(requestObjectPayload.client_metadata)
+        if (!jwk.kty) {
+          throw new CredoError('Missing kty in jwk.')
+        }
+
+        const validatedMetadata = OP.validateJarmMetadata({
+          client_metadata: requestObjectPayload.client_metadata,
+          server_metadata: {
+            authorization_encryption_alg_values_supported: ['ECDH-ES'],
+            authorization_encryption_enc_values_supported: ['A256GCM'],
+          },
+        })
+
+        if (validatedMetadata.type !== 'encrypted') {
+          throw new CredoError('Only encrypted JARM responses are supported.')
+        }
+
+        // Extract nonce from the request, we use this as the `apv`
+        const nonce = authorizationRequest.payload?.nonce
+        if (!nonce || typeof nonce !== 'string') {
+          throw new CredoError('Missing nonce in authorization request payload')
+        }
+
+        const jwe = await this.encryptJarmResponse(agentContext, {
+          jwkJson: jwk as JwkJson,
+          payload: authorizationResponsePayload,
+          authorizationRequestNonce: nonce,
+          alg: validatedMetadata.client_metadata.authorization_encrypted_response_alg,
+          enc: validatedMetadata.client_metadata.authorization_encrypted_response_enc,
+          authorizationResponseNonce,
+        })
+
+        return { response: jwe }
       }
-
-      const validatedMetadata = OP.validateJarmMetadata({
-        client_metadata: requestObjectPayload.client_metadata,
-        server_metadata: {
-          authorization_encryption_alg_values_supported: ['ECDH-ES'],
-          authorization_encryption_enc_values_supported: ['A256GCM'],
-        },
-      })
-
-      if (validatedMetadata.type !== 'encrypted') {
-        throw new CredoError('Only encrypted JARM responses are supported.')
-      }
-
-      // Extract nonce from the request, we use this as the `apv`
-      const nonce = authorizationRequest.payload?.nonce
-      if (!nonce || typeof nonce !== 'string') {
-        throw new CredoError('Missing nonce in authorization request payload')
-      }
-
-      const jwe = await this.encryptJarmResponse(agentContext, {
-        jwkJson: jwk as JwkJson,
-        payload: authorizationResponsePayload,
-        authorizationRequestNonce: nonce,
-        alg: validatedMetadata.client_metadata.authorization_encrypted_response_alg,
-        enc: validatedMetadata.client_metadata.authorization_encrypted_response_enc,
-      })
-
-      return { response: jwe }
     }
 
     const response = await openidProvider.submitAuthorizationResponse(
       authorizationResponseWithCorrelationId,
-      createJarmResponse
+      getCreateJarmResponseCallback(authorizationResponseNonce)
     )
     let responseDetails: string | Record<string, unknown> | undefined = undefined
     try {
@@ -347,6 +351,7 @@ export class OpenId4VcSiopHolderService {
       alg: string
       enc: string
       authorizationRequestNonce: string
+      authorizationResponseNonce: string
     }
   ) {
     const { payload, jwkJson } = options

@@ -5,9 +5,17 @@ import type { ValidityInfo, MdocNameSpaces } from '@protokoll/mdoc-client'
 
 export type { MdocNameSpaces } from '@protokoll/mdoc-client'
 
+export interface MdocVerificationContext {
+  /**
+   * The `id` of the `OpenId4VcVerificationSessionRecord` that this verification is bound to.
+   */
+  openId4VcVerificationSessionId?: string
+}
+
 export type MdocVerifyOptions = {
   trustedCertificates?: [string, ...string[]]
   now?: Date
+  verificationContext?: MdocVerificationContext
 }
 
 export type MdocOpenId4VpSessionTranscriptOptions = {
@@ -31,12 +39,8 @@ export type MdocDeviceResponseVerifyOptions = {
    * The base64Url-encoded device response string.
    */
   deviceResponse: string
-
-  /**
-   * The public ephemeral key used in the session where the DeviceResponse was obtained. This is only required if the DeviceResponse is using the MAC method for device authentication.
-   */
-  verifierKey?: Key
   now?: Date
+  verificationContext?: MdocVerificationContext
 }
 
 export type MdocSignOptions = {

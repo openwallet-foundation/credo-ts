@@ -142,8 +142,7 @@ export class MdocDeviceResponse {
     const publicDeviceJwk = COSEKey.import(deviceKeyInfo.deviceKey).toJWK()
 
     const deviceResponseBuilder = await DeviceResponse.from(mdoc)
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      .usingPresentationDefinition(presentationDefinition as any)
+      .usingPresentationDefinition(presentationDefinition)
       .usingSessionTranscriptForOID4VP(sessionTranscriptOptions)
       .authenticateWithSignature(publicDeviceJwk, 'ES256')
 
@@ -166,8 +165,17 @@ export class MdocDeviceResponse {
     const verifier = new Verifier()
     const mdocContext = getMdocContext(agentContext)
 
-    const trustedCerts =
-      options?.trustedCertificates ?? agentContext.dependencyManager.resolve(X509ModuleConfig).trustedCertificates
+    let trustedCerts: [string, ...string[]] | undefined
+    if (options?.trustedCertificates) {
+      trustedCerts = options.trustedCertificates
+    } else if (options?.verificationContext) {
+      agentContext.dependencyManager.resolve(X509ModuleConfig).getTrustedCertificatesForVerification
+      trustedCerts = await agentContext.dependencyManager
+        .resolve(X509ModuleConfig)
+        .getTrustedCertificatesForVerification?.(agentContext, options.verificationContext)
+    } else {
+      trustedCerts = agentContext.dependencyManager.resolve(X509ModuleConfig).trustedCertificates
+    }
 
     if (!trustedCerts) {
       throw new MdocError('No trusted certificates found. Cannot verify mdoc.')
@@ -176,7 +184,7 @@ export class MdocDeviceResponse {
     const result = await verifier.verifyDeviceResponse(
       {
         encodedDeviceResponse: TypedArrayEncoder.fromBase64(options.deviceResponse),
-        ephemeralReaderKey: options.verifierKey ? getJwkFromKey(options.verifierKey).toJson() : undefined,
+        //ephemeralReaderKey: options.verifierKey ? getJwkFromKey(options.verifierKey).toJson() : undefined,
         encodedSessionTranscript: DeviceResponse.calculateSessionTranscriptForOID4VP(options.sessionTranscriptOptions),
         trustedCertificates: trustedCerts.map((cert) => X509Certificate.fromEncodedCertificate(cert).rawCertificate),
         now: options.now,
