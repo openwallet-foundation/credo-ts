@@ -15,7 +15,6 @@ import {
   cborEncode,
 } from '@protokoll/mdoc-client'
 
-import { getJwkFromKey } from '../../crypto/jose/jwk/transform'
 import { CredoError } from '../../error'
 import { uuid } from '../../utils/uuid'
 import { X509Certificate } from '../x509/X509Certificate'
