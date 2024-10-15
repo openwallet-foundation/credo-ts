@@ -432,12 +432,6 @@ importers:
       '@peculiar/x509':
         specifier: ^1.11.0
         version: 1.12.1
-      '@protokoll/core':
-        specifier: 0.2.27
-        version: 0.2.27(typescript@5.5.4)
-      '@protokoll/crypto':
-        specifier: 0.2.27
-        version: 0.2.27(typescript@5.5.4)
       '@protokoll/mdoc-client':
         specifier: 0.2.27
         version: 0.2.27(typescript@5.5.4)
@@ -2340,9 +2334,6 @@ packages:
 
   '@protokoll/core@0.2.27':
     resolution: {integrity: sha512-9+SOTmrehKxfb3UJBleplC8tZ99TBZDCqgB54L9JAsApqJqSRVhU/kTm4XWknn7pG5Sq4oUtQifo4Eo2nrmOhw==}
-
-  '@protokoll/crypto@0.2.27':
-    resolution: {integrity: sha512-dIp5t7T5muW+G0leFNC80ra8VCXOnQNebQ9bIGuwskrzdEdY4KS2ZrljaQIu61fKx/YBFLhHkM3TO0hgrATlSg==}
 
   '@protokoll/mdoc-client@0.2.27':
     resolution: {integrity: sha512-1z7ZLVgsInGsFW8b+VhhLGZR0rS8emZxXfRTkcZTyePSSpQilT4IoINBTfUeNMj47ANqkMBsgHmZs9UEKNSYSQ==}
@@ -9939,13 +9930,6 @@ snapshots:
     dependencies:
       '@credo-ts/core': link:packages/core
       jwt-decode: 4.0.0
-      valibot: 0.37.0(typescript@5.5.4)
-    transitivePeerDependencies:
-      - typescript
-
-  '@protokoll/crypto@0.2.27(typescript@5.5.4)':
-    dependencies:
-      '@protokoll/core': 0.2.27(typescript@5.5.4)
       valibot: 0.37.0(typescript@5.5.4)
     transitivePeerDependencies:
       - typescript
