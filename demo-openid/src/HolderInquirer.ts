@@ -188,7 +188,7 @@ export class HolderInquirer extends BaseInquirer {
       console.log('')
     } else if (credential.type === 'MdocRecord') {
       console.log(greenText(`MdocRecord`, true))
-      const namespaces = Mdoc.fromBase64Url(credential.base64Url).namespaces
+      const namespaces = Mdoc.fromBase64Url(credential.base64Url).issuerSignedNamespaces
       console.log(JSON.stringify(namespaces, null, 2))
       console.log('')
     } else {
