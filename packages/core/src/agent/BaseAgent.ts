@@ -131,6 +131,7 @@ export abstract class BaseAgent<AgentModules extends ModulesMap = EmptyModuleMap
       this.w3cCredentials,
       this.sdJwtVc,
       this.x509,
+      this.mdoc,
     ]
 
     // Set the api of the registered modules on the agent, excluding the default apis
