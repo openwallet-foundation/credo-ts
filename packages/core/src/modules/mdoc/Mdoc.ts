@@ -142,7 +142,6 @@ export class Mdoc {
     if (options?.trustedCertificates) {
       trustedCerts = options.trustedCertificates
     } else if (options?.verificationContext) {
-      agentContext.dependencyManager.resolve(X509ModuleConfig).getTrustedCertificatesForVerification
       trustedCerts = await agentContext.dependencyManager
         .resolve(X509ModuleConfig)
         .getTrustedCertificatesForVerification?.(agentContext, options.verificationContext)
@@ -164,7 +163,7 @@ export class Mdoc {
           disableCertificateChainValidation: false,
           now: options?.now,
         },
-        getMdocContext(agentContext)
+        mdocContext
       )
 
       await verifier.verifyData({ mdoc: this.issuerSignedDocument }, mdocContext)
