@@ -14,6 +14,8 @@ import {
   W3cJwtVerifiableCredential,
   W3cJsonLdVerifiableCredential,
   JsonEncoder,
+  Mdoc,
+  MdocVerifiablePresentation,
 } from '@credo-ts/core'
 
 export function getSphereonVerifiableCredential(
@@ -26,6 +28,8 @@ export function getSphereonVerifiableCredential(
     return JsonTransformer.toJSON(verifiableCredential) as SphereonW3cVerifiableCredential
   } else if (verifiableCredential instanceof W3cJwtVerifiableCredential) {
     return verifiableCredential.serializedJwt
+  } else if (verifiableCredential instanceof Mdoc) {
+    throw new CredoError('Mdoc verifiable credential is not yet supported.')
   } else {
     return verifiableCredential.compact
   }
@@ -41,6 +45,8 @@ export function getSphereonVerifiablePresentation(
     return JsonTransformer.toJSON(verifiablePresentation) as SphereonW3cVerifiablePresentation
   } else if (verifiablePresentation instanceof W3cJwtVerifiablePresentation) {
     return verifiablePresentation.serializedJwt
+  } else if (verifiablePresentation instanceof MdocVerifiablePresentation) {
+    throw new CredoError('Mdoc verifiable presentation is not yet supported.')
   } else {
     return verifiablePresentation.compact
   }

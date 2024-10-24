@@ -10,6 +10,7 @@ import type {
 
 import { CredoError } from '../../../error'
 import { JsonTransformer } from '../../../utils'
+import { MdocVerifiablePresentation } from '../../mdoc/MdocVerifiablePresentation'
 import { SdJwtVcApi } from '../../sd-jwt-vc'
 import { W3cCredentialRecord, W3cJsonLdVerifiablePresentation, W3cJwtVerifiablePresentation } from '../../vc'
 
@@ -31,6 +32,8 @@ export function getSphereonOriginalVerifiablePresentation(
     verifiablePresentation instanceof W3cJsonLdVerifiablePresentation
   ) {
     return verifiablePresentation.encoded as SphereonOriginalVerifiablePresentation
+  } else if (verifiablePresentation instanceof MdocVerifiablePresentation) {
+    throw new CredoError('Mdoc verifiable presentation is not yet supported by Sphereon.')
   } else {
     return verifiablePresentation.compact
   }
@@ -49,6 +52,7 @@ export function getVerifiablePresentationFromEncoded(
   } else if (typeof encodedVerifiablePresentation === 'object' && '@context' in encodedVerifiablePresentation) {
     return JsonTransformer.fromJSON(encodedVerifiablePresentation, W3cJsonLdVerifiablePresentation)
   } else {
+    // TODO: WE NEED TO ADD SUPPORT FOR MDOC VERIFIABLE PRESENTATION
     throw new CredoError('Unsupported verifiable presentation format')
   }
 }

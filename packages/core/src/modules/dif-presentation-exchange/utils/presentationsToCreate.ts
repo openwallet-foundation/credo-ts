@@ -1,6 +1,7 @@
 import type { SdJwtVcRecord } from '../../sd-jwt-vc'
 import type { DifPexInputDescriptorToCredentials } from '../models'
 
+import { MdocRecord } from '../../mdoc'
 import { W3cCredentialRecord, ClaimFormat } from '../../vc'
 
 //  - the credentials included in the presentation
@@ -35,7 +36,22 @@ export interface LdpVpPresentationToCreate {
   }> // multiple credentials supported for LDP VP
 }
 
-export type PresentationToCreate = SdJwtVcPresentationToCreate | JwtVpPresentationToCreate | LdpVpPresentationToCreate
+export interface MdocPresentationToCreate {
+  claimFormat: ClaimFormat.MsoMdoc
+  subjectIds: []
+  verifiableCredentials: [
+    {
+      credential: MdocRecord
+      inputDescriptorId: string
+    }
+  ] // only one credential supported for MDOC
+}
+
+export type PresentationToCreate =
+  | SdJwtVcPresentationToCreate
+  | JwtVpPresentationToCreate
+  | LdpVpPresentationToCreate
+  | MdocPresentationToCreate
 
 // FIXME: we should extract supported format form top-level presentation definition, and input_descriptor as well
 // to make sure the presentation we are going to create is a presentation format supported by the verifier.
@@ -71,6 +87,12 @@ export function getPresentationsToCreate(credentialsForInputDescriptor: DifPexIn
             verifiableCredentials: [{ credential, inputDescriptorId }],
           })
         }
+      } else if (credential instanceof MdocRecord) {
+        presentationsToCreate.push({
+          claimFormat: ClaimFormat.MsoMdoc,
+          verifiableCredentials: [{ inputDescriptorId, credential }],
+          subjectIds: [],
+        })
       } else {
         // SD-JWT-VC always needs it's own presentation
         presentationsToCreate.push({

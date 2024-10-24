@@ -22,7 +22,7 @@ import type {
   W3CVerifiablePresentation,
 } from '@sphereon/ssi-types'
 
-import { PEVersion, PEX, Status } from '@sphereon/pex'
+import { PEVersion, PEX, PresentationSubmissionLocation, Status } from '@sphereon/pex'
 import { PartialSdJwtDecodedVerifiableCredential } from '@sphereon/pex/dist/main/lib'
 import { injectable } from 'tsyringe'
 
@@ -30,6 +30,8 @@ import { Hasher, getJwkFromKey } from '../../crypto'
 import { CredoError } from '../../error'
 import { JsonTransformer } from '../../utils'
 import { DidsApi, getKeyFromVerificationMethod } from '../dids'
+import { Mdoc, MdocApi, MdocOpenId4VpSessionTranscriptOptions, MdocRecord } from '../mdoc'
+import { MdocDeviceResponse } from '../mdoc/MdocDeviceResponse'
 import { SdJwtVcApi } from '../sd-jwt-vc'
 import {
   ClaimFormat,
@@ -152,9 +154,10 @@ export class DifPresentationExchangeService {
       presentationSubmissionLocation?: DifPresentationExchangeSubmissionLocation
       challenge: string
       domain?: string
+      openid4vp?: Omit<MdocOpenId4VpSessionTranscriptOptions, 'verifierGeneratedNonce' | 'clientId'>
     }
   ) {
-    const { presentationDefinition, domain, challenge } = options
+    const { presentationDefinition, domain, challenge, openid4vp } = options
     const presentationSubmissionLocation =
       options.presentationSubmissionLocation ?? DifPresentationExchangeSubmissionLocation.PRESENTATION
 
@@ -173,11 +176,6 @@ export class DifPresentationExchangeService {
         presentationDefinition as DifPresentationExchangeDefinitionV1
       ).input_descriptors.filter((inputDescriptor) => inputDescriptorIds.includes(inputDescriptor.id))
 
-      // Get all the credentials for the presentation
-      const credentialsForPresentation = presentationToCreate.verifiableCredentials.map((c) =>
-        getSphereonOriginalVerifiableCredential(c.credential)
-      )
-
       const presentationDefinitionForSubject: DifPresentationExchangeDefinition = {
         ...presentationDefinition,
         input_descriptors: inputDescriptorsForPresentation,
@@ -186,25 +184,66 @@ export class DifPresentationExchangeService {
         submission_requirements: undefined,
       }
 
-      const verifiablePresentationResult = await this.pex.verifiablePresentationFrom(
-        presentationDefinitionForSubject,
-        credentialsForPresentation,
-        this.getPresentationSignCallback(agentContext, presentationToCreate),
-        {
-          proofOptions: {
-            challenge,
-            domain,
-          },
-          signatureOptions: {},
-          presentationSubmissionLocation:
-            presentationSubmissionLocation ?? DifPresentationExchangeSubmissionLocation.PRESENTATION,
+      if (presentationToCreate.claimFormat === ClaimFormat.MsoMdoc) {
+        if (presentationToCreate.verifiableCredentials.length !== 1) {
+          throw new DifPresentationExchangeError(
+            'Currently a Mdoc presentation can only be created from a single credential'
+          )
         }
-      )
+        const mdocRecord = presentationToCreate.verifiableCredentials[0].credential
+        if (!openid4vp) {
+          throw new DifPresentationExchangeError('Missing openid4vp options for creating MDOC presentation.')
+        }
 
-      verifiablePresentationResultsWithFormat.push({
-        verifiablePresentationResult,
-        claimFormat: presentationToCreate.claimFormat,
-      })
+        if (!domain) {
+          throw new DifPresentationExchangeError('Missing domain property for creating MDOC presentation.')
+        }
+
+        const { deviceResponseBase64Url, presentationSubmission } =
+          await MdocDeviceResponse.createOpenId4VpDeviceResponse(agentContext, {
+            mdocs: [Mdoc.fromBase64Url(mdocRecord.base64Url)],
+            presentationDefinition: presentationDefinition,
+            sessionTranscriptOptions: {
+              ...openid4vp,
+              clientId: domain,
+              verifierGeneratedNonce: challenge,
+            },
+          })
+
+        verifiablePresentationResultsWithFormat.push({
+          verifiablePresentationResult: {
+            presentationSubmission: presentationSubmission,
+            verifiablePresentation: deviceResponseBase64Url,
+            presentationSubmissionLocation: PresentationSubmissionLocation.EXTERNAL,
+          },
+          claimFormat: presentationToCreate.claimFormat,
+        })
+      } else {
+        // Get all the credentials for the presentation
+        const credentialsForPresentation = presentationToCreate.verifiableCredentials.map((c) =>
+          getSphereonOriginalVerifiableCredential(c.credential)
+        )
+
+        const verifiablePresentationResult = await this.pex.verifiablePresentationFrom(
+          presentationDefinitionForSubject,
+          credentialsForPresentation,
+          this.getPresentationSignCallback(agentContext, presentationToCreate),
+          {
+            proofOptions: {
+              challenge,
+              domain,
+            },
+            signatureOptions: {},
+            presentationSubmissionLocation:
+              presentationSubmissionLocation ?? DifPresentationExchangeSubmissionLocation.PRESENTATION,
+          }
+        )
+
+        verifiablePresentationResultsWithFormat.push({
+          verifiablePresentationResult,
+          claimFormat: presentationToCreate.claimFormat,
+        })
+      }
     }
 
     if (verifiablePresentationResultsWithFormat.length === 0) {
@@ -568,10 +607,12 @@ export class DifPresentationExchangeService {
   private async queryCredentialForPresentationDefinition(
     agentContext: AgentContext,
     presentationDefinition: DifPresentationExchangeDefinition
-  ): Promise<Array<SdJwtVcRecord | W3cCredentialRecord>> {
+  ): Promise<Array<SdJwtVcRecord | W3cCredentialRecord | MdocRecord>> {
     const w3cCredentialRepository = agentContext.dependencyManager.resolve(W3cCredentialRepository)
     const w3cQuery: Array<Query<W3cCredentialRecord>> = []
     const sdJwtVcQuery: Array<Query<SdJwtVcRecord>> = []
+    const mdocQuery: Array<Query<MdocRecord>> = []
+
     const presentationDefinitionVersion = PEX.definitionVersionDiscovery(presentationDefinition)
 
     if (!presentationDefinitionVersion.version) {
@@ -595,6 +636,9 @@ export class DifPresentationExchangeService {
           w3cQuery.push({
             $or: [{ expandedTypes: [schema.uri] }, { contexts: [schema.uri] }, { types: [schema.uri] }],
           })
+          mdocQuery.push({
+            docType: inputDescriptor.id,
+          })
         }
       }
     } else if (presentationDefinitionVersion.version === PEVersion.v2) {
@@ -607,33 +651,33 @@ export class DifPresentationExchangeService {
       )
     }
 
-    const allRecords: Array<SdJwtVcRecord | W3cCredentialRecord> = []
+    const allRecords: Array<SdJwtVcRecord | W3cCredentialRecord | MdocRecord> = []
 
     // query the wallet ourselves first to avoid the need to query the pex library for all
     // credentials for every proof request
     const w3cCredentialRecords =
       w3cQuery.length > 0
-        ? await w3cCredentialRepository.findByQuery(agentContext, {
-            $or: w3cQuery,
-          })
+        ? await w3cCredentialRepository.findByQuery(agentContext, { $or: w3cQuery })
         : await w3cCredentialRepository.getAll(agentContext)
-
     allRecords.push(...w3cCredentialRecords)
 
     const sdJwtVcApi = this.getSdJwtVcApi(agentContext)
     const sdJwtVcRecords =
-      sdJwtVcQuery.length > 0
-        ? await sdJwtVcApi.findAllByQuery({
-            $or: sdJwtVcQuery,
-          })
-        : await sdJwtVcApi.getAll()
-
+      sdJwtVcQuery.length > 0 ? await sdJwtVcApi.findAllByQuery({ $or: sdJwtVcQuery }) : await sdJwtVcApi.getAll()
     allRecords.push(...sdJwtVcRecords)
+
+    const mdocApi = this.getMdocApi(agentContext)
+    const mdocRecords = mdocQuery.length > 0 ? await mdocApi.findAllByQuery({ $or: mdocQuery }) : await mdocApi.getAll()
+    allRecords.push(...mdocRecords)
 
     return allRecords
   }
 
   private getSdJwtVcApi(agentContext: AgentContext) {
     return agentContext.dependencyManager.resolve(SdJwtVcApi)
+  }
+
+  private getMdocApi(agentContext: AgentContext) {
+    return agentContext.dependencyManager.resolve(MdocApi)
   }
 }
