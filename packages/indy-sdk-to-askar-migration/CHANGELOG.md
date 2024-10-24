@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.5.12
+
+### Patch Changes
+
+- Updated dependencies [3c85565]
+- Updated dependencies [3c85565]
+- Updated dependencies [7d51fcb]
+- Updated dependencies [9756a4a]
+  - @credo-ts/core@0.5.12
+  - @credo-ts/askar@0.5.12
+  - @credo-ts/anoncreds@0.5.12
+  - @credo-ts/node@0.5.12
+
 ## 0.5.11
 
 ### Patch Changes
