@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.5.12
+
+### Patch Changes
+
+- 7d51fcb: feat: mdoc-support
+- 9756a4a: feat: add direct ecdh-es jwe encryption/decryption
+
 ## 0.5.11
 
 ## 0.5.10
