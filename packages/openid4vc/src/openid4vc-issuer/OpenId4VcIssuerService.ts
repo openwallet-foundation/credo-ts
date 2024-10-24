@@ -6,6 +6,7 @@ import type {
   OpenId4VcIssuerMetadata,
   OpenId4VciSignSdJwtCredential,
   OpenId4VciSignW3cCredential,
+  OpenId4VciAuthorizationCodeFlowConfig,
 } from './OpenId4VcIssuerServiceOptions'
 import type { OpenId4VcIssuanceSessionRecord } from './repository'
 import type {
@@ -99,20 +100,36 @@ export class OpenId4VcIssuerService {
     agentContext: AgentContext,
     options: OpenId4VciCreateCredentialOfferOptions & { issuer: OpenId4VcIssuerRecord }
   ) {
-    const { preAuthorizedCodeFlowConfig, issuer, offeredCredentials } = options
+    const { preAuthorizedCodeFlowConfig, authorizationCodeFlowConfig, issuer, offeredCredentials } = options
+
+    if (!preAuthorizedCodeFlowConfig && !authorizationCodeFlowConfig) {
+      throw new CredoError('Authorization Config or Pre-Authorized Config must be provided.')
+    }
 
     const vcIssuer = this.getVcIssuer(agentContext, issuer)
 
-    if (options.preAuthorizedCodeFlowConfig.userPinRequired === false && options.preAuthorizedCodeFlowConfig.txCode) {
+    if (
+      preAuthorizedCodeFlowConfig &&
+      preAuthorizedCodeFlowConfig.userPinRequired === false &&
+      preAuthorizedCodeFlowConfig.txCode
+    ) {
       throw new CredoError('The userPinRequired option must be set to true when using txCode.')
     }
 
-    if (options.preAuthorizedCodeFlowConfig.userPinRequired && !options.preAuthorizedCodeFlowConfig.txCode) {
-      options.preAuthorizedCodeFlowConfig.txCode = {}
+    if (
+      preAuthorizedCodeFlowConfig &&
+      preAuthorizedCodeFlowConfig.userPinRequired &&
+      !preAuthorizedCodeFlowConfig.txCode
+    ) {
+      preAuthorizedCodeFlowConfig.txCode = {}
     }
 
-    if (options.preAuthorizedCodeFlowConfig.txCode && !options.preAuthorizedCodeFlowConfig.userPinRequired) {
-      options.preAuthorizedCodeFlowConfig.userPinRequired = true
+    if (
+      preAuthorizedCodeFlowConfig &&
+      preAuthorizedCodeFlowConfig.txCode &&
+      !preAuthorizedCodeFlowConfig.userPinRequired
+    ) {
+      preAuthorizedCodeFlowConfig.userPinRequired = true
     }
 
     // this checks if the structure of the credentials is correct
@@ -134,7 +151,36 @@ export class OpenId4VcIssuerService {
       utils.uuid(),
     ])
 
-    const grants = await this.getGrantsFromConfig(agentContext, preAuthorizedCodeFlowConfig)
+    // TODO: HAIP
+    // TODO: for grant type authorization_code, the issuer must include a scope value in order to allow the wallet to identify the desired credential type.
+    // TODO: The wallet MUST use that value in the scope Authorization parameter.
+    // TODO: add support for scope in the credential offer in sphereon-oid4vci
+    const issuerMetadata = this.getIssuerMetadata(agentContext, issuer)
+
+    if (
+      authorizationCodeFlowConfig &&
+      (issuerMetadata.authorizationServers?.length ?? 0 > 1) &&
+      authorizationCodeFlowConfig?.authorizationServerUrl
+    ) {
+      throw new CredoError(
+        'The authorization code flow requires an explicit authorization server url, if multiple authorization servers are present.'
+      )
+    }
+
+    const grants = await this.getGrantsFromConfig(agentContext, {
+      preAuthorizedCodeFlowConfig,
+      authorizationCodeFlowConfig: authorizationCodeFlowConfig
+        ? {
+            ...authorizationCodeFlowConfig,
+
+            // Must only be used if multiple authorization servers are present
+            authorizationServerUrl:
+              issuerMetadata.authorizationServers?.length ?? 0 > 1
+                ? authorizationCodeFlowConfig?.authorizationServerUrl
+                : undefined,
+          }
+        : undefined,
+    })
 
     let { uri } = await vcIssuer.createCredentialOfferURI({
       scheme: 'openid-credential-offer',
@@ -165,7 +211,7 @@ export class OpenId4VcIssuerService {
       if (v11CredentialOfferPayload.grants?.['urn:ietf:params:oauth:grant-type:pre-authorized_code']) {
         // property was always defined in v11
         v11CredentialOfferPayload.grants['urn:ietf:params:oauth:grant-type:pre-authorized_code'].user_pin_required =
-          preAuthorizedCodeFlowConfig.userPinRequired ?? false
+          preAuthorizedCodeFlowConfig?.userPinRequired ?? false
       }
 
       issuanceSession.credentialOfferPayload = v11CredentialOfferPayload
@@ -301,16 +347,48 @@ export class OpenId4VcIssuerService {
       display: options.display,
       dpopSigningAlgValuesSupported: options.dpopSigningAlgValuesSupported,
       accessTokenPublicKeyFingerprint: accessTokenSignerKey.fingerprint,
+      authorizationServerConfigs: options.authorizationServerConfigs,
     } as const
 
+    const credentialsSupported =
+      options.credentialsSupported?.map((credentialSupported) => {
+        return {
+          ...credentialSupported,
+          scope:
+            credentialSupported.scope ?? options.authorizationServerConfigs?.length ?? 0 > 0
+              ? credentialSupported.id
+              : undefined,
+        }
+      }) ?? []
+
+    const credentialConfigurationsSupported =
+      options.credentialConfigurationsSupported &&
+      Object.fromEntries(
+        Object.entries(options.credentialConfigurationsSupported).map(([id, credentialConfiguration]) => {
+          return [
+            id,
+            {
+              ...credentialConfiguration,
+              scope:
+                credentialConfiguration.scope ?? (options.authorizationServerConfigs?.length ?? 0 > 0 ? id : undefined),
+            },
+          ]
+        })
+      )
+
+    // If we have an authorization server, we also want to publish a scope to request each credential
+    // this is required for HAIP
+    // TODO: do we also need to provide some way to let the wallet know which authorization server
+    // TODO: can issue which credentials?
     const openId4VcIssuer = options.credentialsSupported
       ? new OpenId4VcIssuerRecord({
           ...openId4VcIssuerBase,
-          credentialsSupported: options.credentialsSupported,
+          credentialsSupported: credentialsSupported,
         })
       : new OpenId4VcIssuerRecord({
           ...openId4VcIssuerBase,
-          credentialConfigurationsSupported: options.credentialConfigurationsSupported,
+          credentialConfigurationsSupported:
+            credentialConfigurationsSupported as OpenId4VciCredentialConfigurationsSupported,
         })
 
     await this.openId4VcIssuerRepository.save(agentContext, openId4VcIssuer)
@@ -332,15 +410,25 @@ export class OpenId4VcIssuerService {
     const config = agentContext.dependencyManager.resolve(OpenId4VcIssuerModuleConfig)
     const issuerUrl = joinUriParts(config.baseUrl, [issuerRecord.issuerId])
 
+    const authorizationServers =
+      issuerRecord.authorizationServerConfigs && issuerRecord.authorizationServerConfigs.length > 0
+        ? issuerRecord.authorizationServerConfigs.map((authorizationServer) => authorizationServer.baseUrl)
+        : undefined
+
+    const tokenEndpoint = authorizationServers
+      ? undefined
+      : joinUriParts(issuerUrl, [config.accessTokenEndpoint.endpointPath])
+
     const issuerMetadata = {
       issuerUrl,
-      tokenEndpoint: joinUriParts(issuerUrl, [config.accessTokenEndpoint.endpointPath]),
+      tokenEndpoint,
       credentialEndpoint: joinUriParts(issuerUrl, [config.credentialEndpoint.endpointPath]),
       credentialsSupported: issuerRecord.credentialsSupported,
       credentialConfigurationsSupported:
         issuerRecord.credentialConfigurationsSupported ??
         credentialsSupportedV11ToV13(agentContext, issuerRecord.credentialsSupported),
       issuerDisplay: issuerRecord.display,
+      authorizationServers,
       dpopSigningAlgValuesSupported: issuerRecord.dpopSigningAlgValuesSupported,
     } satisfies OpenId4VcIssuerMetadata
 
@@ -388,7 +476,6 @@ export class OpenId4VcIssuerService {
     const builder = new VcIssuerBuilder()
       .withCredentialIssuer(issuerMetadata.issuerUrl)
       .withCredentialEndpoint(issuerMetadata.credentialEndpoint)
-      .withTokenEndpoint(issuerMetadata.tokenEndpoint)
       .withCredentialConfigurationsSupported(
         issuer.credentialConfigurationsSupported ??
           credentialsSupportedV11ToV13(agentContext, issuer.credentialsSupported)
@@ -401,8 +488,13 @@ export class OpenId4VcIssuerService {
         throw new CredoError('Credential signer callback should be overwritten. This is a no-op')
       })
 
-    if (issuerMetadata.authorizationServer) {
-      builder.withAuthorizationServers(issuerMetadata.authorizationServer)
+    if (issuerMetadata.authorizationServers) {
+      builder.withAuthorizationServers(issuerMetadata.authorizationServers)
+    } else {
+      if (!issuerMetadata.tokenEndpoint) {
+        throw new CredoError('Missing required token endpoint. No authorization server is set.')
+      }
+      builder.withTokenEndpoint(issuerMetadata.tokenEndpoint)
     }
 
     if (issuerMetadata.issuerDisplay) {
@@ -414,16 +506,30 @@ export class OpenId4VcIssuerService {
 
   private async getGrantsFromConfig(
     agentContext: AgentContext,
-    preAuthorizedCodeFlowConfig: OpenId4VciPreAuthorizedCodeFlowConfig
+    config: {
+      preAuthorizedCodeFlowConfig?: OpenId4VciPreAuthorizedCodeFlowConfig
+      authorizationCodeFlowConfig?: OpenId4VciAuthorizationCodeFlowConfig
+    }
   ) {
+    const { preAuthorizedCodeFlowConfig, authorizationCodeFlowConfig } = config
+
     const grants: Grant = {
-      'urn:ietf:params:oauth:grant-type:pre-authorized_code': {
-        'pre-authorized_code':
-          preAuthorizedCodeFlowConfig.preAuthorizedCode ?? (await agentContext.wallet.generateNonce()),
-        // v11 only
-        user_pin_required: preAuthorizedCodeFlowConfig.userPinRequired ?? false,
-        tx_code: preAuthorizedCodeFlowConfig.txCode,
-      },
+      ...(preAuthorizedCodeFlowConfig && {
+        'urn:ietf:params:oauth:grant-type:pre-authorized_code': {
+          'pre-authorized_code':
+            preAuthorizedCodeFlowConfig.preAuthorizedCode ?? (await agentContext.wallet.generateNonce()),
+          // v11 only
+          user_pin_required: preAuthorizedCodeFlowConfig.userPinRequired ?? false,
+          tx_code: preAuthorizedCodeFlowConfig.txCode,
+        },
+      }),
+
+      ...(authorizationCodeFlowConfig && {
+        authorization_code: {
+          issuer_state: authorizationCodeFlowConfig.issuerState,
+          authorization_server: authorizationCodeFlowConfig.authorizationServerUrl,
+        },
+      }),
     }
 
     return grants

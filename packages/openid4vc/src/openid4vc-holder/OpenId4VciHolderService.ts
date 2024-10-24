@@ -192,6 +192,7 @@ export class OpenId4VciHolderService {
     const codeVerifier = (
       await Promise.all([agentContext.wallet.generateNonce(), agentContext.wallet.generateNonce()])
     ).join('')
+
     const codeVerifierSha256 = Hasher.hash(codeVerifier, 'sha-256')
     const codeChallenge = TypedArrayEncoder.toBase64URL(codeVerifierSha256)
 
@@ -202,9 +203,6 @@ export class OpenId4VciHolderService {
     })
 
     const authDetailsLocation = metadata.credentialIssuerMetadata.authorization_server
-      ? metadata.credentialIssuerMetadata.authorization_server
-      : undefined
-
     const authDetails = offeredCredentials
       .map((credential) => this.getAuthDetailsFromOfferedCredential(credential, authDetailsLocation))
       .filter((authDetail): authDetail is AuthorizationDetails => authDetail !== undefined)
@@ -237,6 +235,7 @@ export class OpenId4VciHolderService {
         scope: scope ? scope.join(' ') : undefined,
         authorizationDetails: authDetails,
         parMode: PARMode.AUTO,
+        clientId,
       },
     })
 
@@ -342,6 +341,9 @@ export class OpenId4VciHolderService {
         codeVerifier,
         redirectUri,
         createDPoPOpts,
+        additionalParams: {
+          client_id: resolvedAuthorizationRequest.clientId,
+        },
       })
     } else {
       accessTokenResponse = await accessTokenClient.acquireAccessToken({
