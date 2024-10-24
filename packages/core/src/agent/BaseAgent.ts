@@ -14,6 +14,7 @@ import { CredentialsApi } from '../modules/credentials'
 import { DidsApi } from '../modules/dids'
 import { DiscoverFeaturesApi } from '../modules/discover-features'
 import { GenericRecordsApi } from '../modules/generic-records'
+import { MdocApi } from '../modules/mdoc'
 import { MessagePickupApi } from '../modules/message-pickup/MessagePickupApi'
 import { OutOfBandApi } from '../modules/oob'
 import { ProofsApi } from '../modules/proofs'
@@ -53,6 +54,7 @@ export abstract class BaseAgent<AgentModules extends ModulesMap = EmptyModuleMap
   public readonly mediationRecipient: MediationRecipientApi
   public readonly messagePickup: CustomOrDefaultApi<AgentModules['messagePickup'], MessagePickupModule>
   public readonly basicMessages: BasicMessagesApi
+  public readonly mdoc: MdocApi
   public readonly genericRecords: GenericRecordsApi
   public readonly discovery: DiscoverFeaturesApi
   public readonly dids: DidsApi
@@ -111,6 +113,7 @@ export abstract class BaseAgent<AgentModules extends ModulesMap = EmptyModuleMap
     this.w3cCredentials = this.dependencyManager.resolve(W3cCredentialsApi)
     this.sdJwtVc = this.dependencyManager.resolve(SdJwtVcApi)
     this.x509 = this.dependencyManager.resolve(X509Api)
+    this.mdoc = this.dependencyManager.resolve(MdocApi)
 
     const defaultApis = [
       this.connections,
@@ -128,6 +131,7 @@ export abstract class BaseAgent<AgentModules extends ModulesMap = EmptyModuleMap
       this.w3cCredentials,
       this.sdJwtVc,
       this.x509,
+      this.mdoc,
     ]
 
     // Set the api of the registered modules on the agent, excluding the default apis

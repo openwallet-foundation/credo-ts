@@ -6,6 +6,7 @@ import * as x509 from '@peculiar/x509'
 import { InMemoryWallet } from '../../../../../../tests/InMemoryWallet'
 import { getAgentConfig, getAgentContext } from '../../../../tests'
 import { KeyType } from '../../../crypto/KeyType'
+import { getJwkFromKey, P256Jwk } from '../../../crypto/jose/jwk'
 import { CredoWebCrypto, CredoWebCryptoKey } from '../../../crypto/webcrypto'
 import { X509Error } from '../X509Error'
 import { X509Service } from '../X509Service'
@@ -117,6 +118,51 @@ describe('X509Service', () => {
 
   afterAll(async () => {
     await wallet.close()
+  })
+
+  it('should correctly parse an X.509 certificate with an uncompressed key to a JWK', async () => {
+    const encodedCertificate =
+      'MIICKjCCAdCgAwIBAgIUV8bM0wi95D7KN0TyqHE42ru4hOgwCgYIKoZIzj0EAwIwUzELMAkGA1UEBhMCVVMxETAPBgNVBAgMCE5ldyBZb3JrMQ8wDQYDVQQHDAZBbGJhbnkxDzANBgNVBAoMBk5ZIERNVjEPMA0GA1UECwwGTlkgRE1WMB4XDTIzMDkxNDE0NTUxOFoXDTMzMDkxMTE0NTUxOFowUzELMAkGA1UEBhMCVVMxETAPBgNVBAgMCE5ldyBZb3JrMQ8wDQYDVQQHDAZBbGJhbnkxDzANBgNVBAoMBk5ZIERNVjEPMA0GA1UECwwGTlkgRE1WMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEiTwtg0eQbcbNabf2Nq9L/VM/lhhPCq2s0Qgw2kRx29tgrBcNHPxTT64tnc1Ij3dH/fl42SXqMenpCDw4K6ntU6OBgTB/MB0GA1UdDgQWBBSrbS4DuR1JIkAzj7zK3v2TM+r2xzAfBgNVHSMEGDAWgBSrbS4DuR1JIkAzj7zK3v2TM+r2xzAPBgNVHRMBAf8EBTADAQH/MCwGCWCGSAGG+EIBDQQfFh1PcGVuU1NMIEdlbmVyYXRlZCBDZXJ0aWZpY2F0ZTAKBggqhkjOPQQDAgNIADBFAiAJ/Qyrl7A+ePZOdNfc7ohmjEdqCvxaos6//gfTvncuqQIhANo4q8mKCA9J8k/+zh//yKbN1bLAtdqPx7dnrDqV3Lg+'
+
+    const x509Certificate = X509Service.parseCertificate(agentContext, { encodedCertificate })
+
+    expect(x509Certificate.publicKey.publicKey.length).toStrictEqual(33)
+    expect(x509Certificate.publicKey.publicKeyBase58).toStrictEqual('23vfBuUJkWXTC3zZWMh1TR57CTubFjFfhm4CGfgszRMHU')
+
+    const jwk = getJwkFromKey(x509Certificate.publicKey)
+
+    expect(jwk).toBeInstanceOf(P256Jwk)
+    expect(jwk).toMatchObject({
+      x: 'iTwtg0eQbcbNabf2Nq9L_VM_lhhPCq2s0Qgw2kRx29s',
+      y: 'YKwXDRz8U0-uLZ3NSI93R_35eNkl6jHp6Qg8OCup7VM',
+    })
+  })
+
+  it('should parse a valid X.509 certificate', async () => {
+    const key = await agentContext.wallet.createKey({ keyType: KeyType.P256 })
+    const certificate = await X509Service.createSelfSignedCertificate(agentContext, {
+      key,
+      extensions: [
+        [
+          { type: 'url', value: 'animo.id' },
+          { type: 'dns', value: 'paradym.id' },
+        ],
+        [
+          { type: 'dns', value: 'wallet.paradym.id' },
+          { type: 'dns', value: 'animo.id' },
+        ],
+      ],
+    })
+    const encodedCertificate = certificate.toString('base64')
+
+    const x509Certificate = X509Service.parseCertificate(agentContext, { encodedCertificate })
+
+    expect(x509Certificate).toMatchObject({
+      sanDnsNames: expect.arrayContaining(['paradym.id', 'wallet.paradym.id', 'animo.id']),
+      sanUriNames: expect.arrayContaining(['animo.id']),
+    })
+
+    expect(x509Certificate.publicKey.publicKey.length).toStrictEqual(33)
   })
 
   it('should correctly parse x5c chain provided as a test-vector', async () => {

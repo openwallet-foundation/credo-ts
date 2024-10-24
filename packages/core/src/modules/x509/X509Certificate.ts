@@ -1,3 +1,4 @@
+import type { X509CreateSelfSignedCertificateOptions } from './X509ServiceOptions'
 import type { CredoWebCrypto } from '../../crypto/webcrypto'
 
 import { AsnParser } from '@peculiar/asn1-schema'
@@ -5,8 +6,11 @@ import { id_ce_subjectAltName, SubjectPublicKeyInfo } from '@peculiar/asn1-x509'
 import * as x509 from '@peculiar/x509'
 
 import { Key } from '../../crypto/Key'
+import { KeyType } from '../../crypto/KeyType'
+import { compress } from '../../crypto/jose/jwk/ecCompression'
 import { CredoWebCryptoKey } from '../../crypto/webcrypto'
 import { credoKeyTypeIntoCryptoKeyAlgorithm, spkiAlgorithmIntoCredoKeyType } from '../../crypto/webcrypto/utils'
+import { TypedArrayEncoder } from '../../utils'
 
 import { X509Error } from './X509Error'
 
@@ -50,7 +54,18 @@ export class X509Certificate {
 
     const keyType = spkiAlgorithmIntoCredoKeyType(publicKey.algorithm)
 
-    const key = new Key(new Uint8Array(publicKey.subjectPublicKey), keyType)
+    // TODO(crypto): Currently this only does point-compression for P256.
+    //               We should either store all keys as uncompressed, or we should compress all supported keys here correctly
+    let keyBytes = new Uint8Array(publicKey.subjectPublicKey)
+    if (publicKey.subjectPublicKey.byteLength === 65 && keyType === KeyType.P256) {
+      if (keyBytes[0] !== 0x04) {
+        throw new X509Error('Received P256 key with 65 bytes, but key did not start with 0x04. Invalid key')
+      }
+      // TODO(crypto): the compress method is bugged because it does not expect the required `0x04` prefix. Here we strip that and receive the expected result
+      keyBytes = compress(keyBytes.slice(1))
+    }
+
+    const key = new Key(keyBytes, keyType)
 
     return new X509Certificate({
       publicKey: key,
@@ -83,20 +98,7 @@ export class X509Certificate {
   }
 
   public static async createSelfSigned(
-    {
-      key,
-      extensions,
-      notAfter,
-      notBefore,
-      name,
-    }: {
-      key: Key
-      // For now we only support the SubjectAlternativeName as `dns` or `uri`
-      extensions?: ExtensionInput
-      notBefore?: Date
-      notAfter?: Date
-      name?: string
-    },
+    { key, extensions, notAfter, notBefore, name }: X509CreateSelfSignedCertificateOptions,
     webCrypto: CredoWebCrypto
   ) {
     const cryptoKeyAlgorithm = credoKeyTypeIntoCryptoKeyAlgorithm(key.keyType)
@@ -104,10 +106,24 @@ export class X509Certificate {
     const publicKey = new CredoWebCryptoKey(key, cryptoKeyAlgorithm, true, 'public', ['verify'])
     const privateKey = new CredoWebCryptoKey(key, cryptoKeyAlgorithm, false, 'private', ['sign'])
 
+    const issuerName = name?.includes(',')
+      ? [
+          Object.fromEntries(
+            name.split(', ').map((s) => {
+              const keyValPairs = s.trim().split('=')
+              if (keyValPairs.some((pair) => pair.length !== 2)) {
+                throw new X509Error(`Cannot create self-signed certificate. Name parsing failed. '${name}'`)
+              }
+              return keyValPairs.map(([key, val]) => [key, [val]] as [string, string[]])
+            })
+          ),
+        ]
+      : name
+
     const certificate = await x509.X509CertificateGenerator.createSelfSigned(
       {
         keys: { publicKey, privateKey },
-        name,
+        name: issuerName,
         extensions: extensions?.map((extension) => new x509.SubjectAlternativeNameExtension(extension)),
         notAfter,
         notBefore,
@@ -152,6 +168,27 @@ export class X509Certificate {
     if (!isNotAfterValid) {
       throw new X509Error(`Certificate: '${certificate.subject}' used after it is allowed`)
     }
+  }
+
+  public async getData(crypto?: CredoWebCrypto) {
+    const certificate = new x509.X509Certificate(this.rawCertificate)
+
+    const thumbprint = await certificate.getThumbprint(crypto)
+    const thumbprintHex = TypedArrayEncoder.toHex(new Uint8Array(thumbprint))
+    return {
+      issuerName: certificate.issuerName.toString(),
+      subjectName: certificate.subjectName.toString(),
+      serialNumber: certificate.serialNumber,
+      thumbprint: thumbprintHex,
+      pem: certificate.toString(),
+      notBefore: certificate.notBefore,
+      notAfter: certificate.notAfter,
+    }
+  }
+
+  public getIssuerNameField(field: string) {
+    const certificate = new x509.X509Certificate(this.rawCertificate)
+    return certificate.issuerName.getField(field)
   }
 
   public toString(format: 'asn' | 'pem' | 'hex' | 'base64' | 'text' | 'base64url') {

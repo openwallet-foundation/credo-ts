@@ -8,12 +8,16 @@ import type { IPresentationDefinition, SelectResults, SubmissionRequirementMatch
 import type { InputDescriptorV1, InputDescriptorV2, SubmissionRequirement } from '@sphereon/pex-models'
 
 import { decodeSdJwtSync, getClaimsSync } from '@sd-jwt/decode'
+import { SubmissionRequirementMatchType } from '@sphereon/pex/dist/main/lib/evaluation/core'
 import { Rules } from '@sphereon/pex-models'
 import { default as jp } from 'jsonpath'
 
 import { Hasher } from '../../../crypto'
 import { CredoError } from '../../../error'
 import { deepEquality } from '../../../utils'
+import { MdocRecord } from '../../mdoc'
+import { Mdoc } from '../../mdoc/Mdoc'
+import { MdocDeviceResponse } from '../../mdoc/MdocDeviceResponse'
 import { SdJwtVcRecord } from '../../sd-jwt-vc'
 import { ClaimFormat, W3cCredentialRecord } from '../../vc'
 import { DifPresentationExchangeError } from '../DifPresentationExchangeError'
@@ -24,12 +28,18 @@ export async function getCredentialsForRequest(
   // PEX instance with hasher defined
   pex: PEX,
   presentationDefinition: IPresentationDefinition,
-  credentialRecords: Array<W3cCredentialRecord | SdJwtVcRecord>
+  credentialRecords: Array<W3cCredentialRecord | SdJwtVcRecord | MdocRecord>
 ): Promise<DifPexCredentialsForRequest> {
-  const encodedCredentials = credentialRecords.map((c) => getSphereonOriginalVerifiableCredential(c))
-  const selectResultsRaw = pex.selectFrom(presentationDefinition, encodedCredentials)
+  const encodedCredentials = credentialRecords
+    .filter((c): c is Exclude<typeof c, MdocRecord> => c instanceof MdocRecord === false)
+    .map((c) => getSphereonOriginalVerifiableCredential(c))
 
-  const selectResults = {
+  const { mdocPresentationDefinition, nonMdocPresentationDefinition } =
+    MdocDeviceResponse.partitionPresentationDefinition(presentationDefinition)
+
+  const selectResultsRaw = pex.selectFrom(nonMdocPresentationDefinition, encodedCredentials)
+
+  const selectResults: CredentialRecordSelectResults = {
     ...selectResultsRaw,
     // Map the encoded credential to their respective w3c credential record
     verifiableCredential: selectResultsRaw.verifiableCredential?.map((selectedEncoded): SubmissionEntryCredential => {
@@ -79,6 +89,44 @@ export async function getCredentialsForRequest(
     }),
   }
 
+  const mdocRecords = credentialRecords.filter((c) => c instanceof MdocRecord)
+  for (const mdocInputDescriptor of mdocPresentationDefinition.input_descriptors) {
+    if (!selectResults.verifiableCredential) selectResults.verifiableCredential = []
+    if (!selectResults.matches) selectResults.matches = []
+
+    const mdocRecordsMatchingId = mdocRecords.filter(
+      (mdocRecord) => mdocRecord.getTags().docType === mdocInputDescriptor.id
+    )
+    const submissionRequirementMatch: SubmissionRequirementMatch = {
+      id: mdocInputDescriptor.id,
+      type: SubmissionRequirementMatchType.InputDescriptor,
+      name: mdocInputDescriptor.id,
+      rule: Rules.Pick,
+      vc_path: [],
+    }
+
+    for (const mdocRecordMatchingId of mdocRecordsMatchingId) {
+      selectResults.verifiableCredential.push({
+        type: ClaimFormat.MsoMdoc,
+        credentialRecord: mdocRecordMatchingId,
+        disclosedPayload: MdocDeviceResponse.limitDisclosureToInputDescriptor({
+          mdoc: Mdoc.fromBase64Url(mdocRecordMatchingId.base64Url),
+          inputDescriptor: mdocInputDescriptor as InputDescriptorV2,
+        }),
+      })
+
+      submissionRequirementMatch.vc_path.push(
+        `$.verifiableCredential[${selectResults.verifiableCredential.length - 1}]`
+      )
+    }
+
+    if (submissionRequirementMatch.vc_path.length >= 1) {
+      selectResults.matches.push(submissionRequirementMatch)
+    } else {
+      selectResultsRaw.areRequiredCredentialsPresent = 'error'
+    }
+  }
+
   const presentationSubmission: DifPexCredentialsForRequest = {
     requirements: [],
     areRequirementsSatisfied: false,
@@ -104,7 +152,7 @@ export async function getCredentialsForRequest(
       'Presentation Definition does not require any credentials. Optional credentials are not included in the presentation submission.'
     )
   }
-  if (selectResultsRaw.areRequiredCredentialsPresent === 'error') {
+  if (selectResults.areRequiredCredentialsPresent === 'error') {
     return presentationSubmission
   }
 
