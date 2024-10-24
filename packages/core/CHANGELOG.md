@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.5.12
+
+### Patch Changes
+
+- 3c85565: feat: add config to process didcomm messages concurrently
+- 3c85565: feat: add support for Ed25519Signature2020
+- 7d51fcb: feat: mdoc-support
+- 9756a4a: feat: add direct ecdh-es jwe encryption/decryption
+
 ## 0.5.11
 
 ## 0.5.10
