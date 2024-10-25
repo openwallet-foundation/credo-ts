@@ -1,4 +1,5 @@
 import type { Mdoc } from './Mdoc'
+import type { Jwk } from '../../crypto'
 import type { Key } from '../../crypto/Key'
 import type { DifPresentationExchangeDefinition } from '../dif-presentation-exchange'
 import type { ValidityInfo, MdocNameSpaces } from '@protokoll/mdoc-client'
@@ -56,3 +57,15 @@ export type MdocSignOptions = {
   issuerCertificate: string
   holderKey: Key
 }
+
+export type MdocCredentialHolderDidBinding = {
+  method: 'did'
+  didUrl: string
+}
+
+export type MdocCredentialHolderJwkBinding = {
+  method: 'jwk'
+  jwk: Jwk
+}
+
+export type MdocCredentialHolderBinding = MdocCredentialHolderDidBinding | MdocCredentialHolderJwkBinding

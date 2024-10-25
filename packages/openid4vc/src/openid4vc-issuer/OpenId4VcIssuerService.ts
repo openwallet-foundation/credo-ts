@@ -6,6 +6,7 @@ import type {
   OpenId4VcIssuerMetadata,
   OpenId4VciSignSdJwtCredential,
   OpenId4VciSignW3cCredential,
+  OpenId4VciSignMdocCredential,
 } from './OpenId4VcIssuerServiceOptions'
 import type { OpenId4VcIssuanceSessionRecord } from './repository'
 import type {
@@ -47,6 +48,7 @@ import {
   KeyType,
   utils,
   W3cCredentialService,
+  MdocApi,
 } from '@credo-ts/core'
 import { VcIssuerBuilder } from '@sphereon/oid4vci-issuer'
 
@@ -499,6 +501,11 @@ export class OpenId4VcIssuerService {
           offeredCredential.format === credentialRequest.format
         ) {
           return offeredCredential.vct === credentialRequest.vct
+        } else if (
+          credentialRequest.format === OpenId4VciCredentialFormatProfile.MsoMdoc &&
+          offeredCredential.format === credentialRequest.format
+        ) {
+          return offeredCredential.doctype === credentialRequest.doctype
         }
 
         return false
@@ -515,6 +522,18 @@ export class OpenId4VcIssuerService {
 
       const sdJwtVc = await sdJwtVcApi.sign(options)
       return getSphereonVerifiableCredential(sdJwtVc)
+    }
+  }
+
+  private getMsoMdocCredentialSigningCallback = (
+    agentContext: AgentContext,
+    options: OpenId4VciSignMdocCredential
+  ): CredentialSignerCallback<DidDocument> => {
+    return async () => {
+      const mdocApi = agentContext.dependencyManager.resolve(MdocApi)
+
+      const mdoc = await mdocApi.sign(options)
+      return getSphereonVerifiableCredential(mdoc)
     }
   }
 
@@ -711,6 +730,25 @@ export class OpenId4VcIssuerService {
           // NOTE: we don't use the credential value here as we pass the credential directly to the singer
           credential: { ...signOptions.payload } as unknown as CredentialIssuanceInput,
           signCallback: this.getSdJwtVcCredentialSigningCallback(agentContext, signOptions),
+        }
+      } else if (signOptions.format === ClaimFormat.MsoMdoc) {
+        if (credentialRequest.format !== OpenId4VciCredentialFormatProfile.MsoMdoc) {
+          throw new CredoError(
+            `Invalid credential format. Expected '${OpenId4VciCredentialFormatProfile.MsoMdoc}', received '${credentialRequest.format}'.`
+          )
+        }
+
+        if (credentialRequest.doctype !== signOptions.docType) {
+          throw new CredoError(
+            `The types of the offered credentials do not match the types of the requested credential. Offered '${signOptions.docType}' Requested '${credentialRequest.doctype}'.`
+          )
+        }
+
+        return {
+          format: credentialRequest.format,
+          // NOTE: we don't use the credential value here as we pass the credential directly to the singer
+          credential: { ...signOptions.namespaces, docType: signOptions.docType } as unknown as CredentialIssuanceInput,
+          signCallback: this.getMsoMdocCredentialSigningCallback(agentContext, signOptions),
         }
       } else {
         throw new CredoError(`Unsupported credential format ${signOptions.format}`)

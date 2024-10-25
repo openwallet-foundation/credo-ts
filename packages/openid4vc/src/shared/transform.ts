@@ -20,7 +20,7 @@ import {
 
 export function getSphereonVerifiableCredential(
   verifiableCredential: VerifiableCredential
-): SphereonW3cVerifiableCredential | SphereonCompactSdJwtVc {
+): SphereonW3cVerifiableCredential | SphereonCompactSdJwtVc | string {
   // encoded sd-jwt or jwt
   if (typeof verifiableCredential === 'string') {
     return verifiableCredential
@@ -29,7 +29,7 @@ export function getSphereonVerifiableCredential(
   } else if (verifiableCredential instanceof W3cJwtVerifiableCredential) {
     return verifiableCredential.serializedJwt
   } else if (verifiableCredential instanceof Mdoc) {
-    throw new CredoError('Mdoc verifiable credential is not yet supported.')
+    return verifiableCredential.base64Url
   } else {
     return verifiableCredential.compact
   }
@@ -47,6 +47,9 @@ export function getSphereonVerifiablePresentation(
     return verifiablePresentation.serializedJwt
   } else if (verifiablePresentation instanceof MdocVerifiablePresentation) {
     throw new CredoError('Mdoc verifiable presentation is not yet supported.')
+
+    // TODO: CHECK IF THIS IS WHAT IS EXPECTED
+    // return verifiablePresentation.deviceSignedBase64Url
   } else {
     return verifiablePresentation.compact
   }
@@ -73,6 +76,11 @@ export function getVerifiablePresentationFromSphereonWrapped(
       payload: wrappedVerifiablePresentation.presentation.signedPayload,
       prettyClaims: wrappedVerifiablePresentation.presentation.decodedPayload,
     } satisfies SdJwtVc
+  } else if (wrappedVerifiablePresentation.format === 'mso_mdoc') {
+    if (typeof wrappedVerifiablePresentation.original !== 'string') {
+      throw new CredoError('Invalid format of original verifiable presentation. DeviceResponseCbor is not supported')
+    }
+    return new MdocVerifiablePresentation(wrappedVerifiablePresentation.original)
   }
 
   throw new CredoError(`Unsupported presentation format: ${wrappedVerifiablePresentation.format}`)

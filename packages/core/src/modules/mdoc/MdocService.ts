@@ -3,12 +3,15 @@ import type {
   MdocDeviceResponseOpenId4VpOptions,
   MdocDeviceResponseVerifyOptions,
   MdocVerifyOptions,
+  MdocCredentialHolderBinding,
 } from './MdocOptions'
 import type { Query, QueryOptions } from '../../storage/StorageService'
 
 import { injectable } from 'tsyringe'
 
 import { AgentContext } from '../../agent'
+import { Key } from '../../crypto'
+import { DidResolverService, getKeyFromVerificationMethod, parseDid } from '../dids'
 
 import { Mdoc } from './Mdoc'
 import { MdocDeviceResponse } from './MdocDeviceResponse'
@@ -35,6 +38,29 @@ export class MdocService {
 
   public async verifyMdoc(agentContext: AgentContext, mdoc: Mdoc, options: MdocVerifyOptions) {
     return await mdoc.verify(agentContext, options)
+  }
+
+  public async getKeyFromMdocCredentialHolderBinding(
+    agentContext: AgentContext,
+    holderBinding: MdocCredentialHolderBinding
+  ) {
+    let holderKey: Key
+    if (holderBinding.method !== 'jwk') {
+      const parsedDid = parseDid(holderBinding.didUrl)
+      if (!parsedDid.fragment) {
+        throw new Error(
+          `didUrl '${holderBinding.didUrl}' does not contain a '#'. Unable to derive key from did document`
+        )
+      }
+
+      const didResolver = agentContext.dependencyManager.resolve(DidResolverService)
+      const didDocument = await didResolver.resolveDidDocument(agentContext, holderBinding.didUrl)
+      holderKey = getKeyFromVerificationMethod(didDocument.dereferenceKey(holderBinding.didUrl, ['assertionMethod']))
+    } else {
+      holderKey = holderBinding.jwk.key
+    }
+
+    return holderKey
   }
 
   public async createOpenId4VpDeviceResponse(agentContext: AgentContext, options: MdocDeviceResponseOpenId4VpOptions) {

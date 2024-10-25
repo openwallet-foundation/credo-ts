@@ -554,6 +554,9 @@ export class OpenId4VcSiopVerifierService {
         responseTypesSupported: [ResponseType.VP_TOKEN],
         subject_syntax_types_supported: supportedDidMethods.map((m) => `did:${m}`),
         vpFormatsSupported: {
+          mso_mdoc: {
+            alg: supportedAlgs,
+          },
           jwt_vc: {
             alg: supportedAlgs,
           },
