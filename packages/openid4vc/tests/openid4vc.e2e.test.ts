@@ -22,7 +22,6 @@ import {
   Jwt,
   Jwk,
   X509ModuleConfig,
-  MdocService,
 } from '@credo-ts/core'
 import express, { type Express } from 'express'
 
@@ -124,14 +123,12 @@ describe('OpenId4Vc', () => {
                     disclosureFrame: { _sd: ['university', 'degree'] },
                   }
                 } else if (credentialRequest.format === 'mso_mdoc') {
-                  const mdocService = agentContext.dependencyManager.resolve(MdocService)
-                  const holderKey = await mdocService.getKeyFromMdocCredentialHolderBinding(agentContext, holderBinding)
                   return {
                     credentialSupportedId: '',
                     format: ClaimFormat.MsoMdoc,
                     docType: universityDegreeCredentialConfigurationSupportedMdoc.doctype,
                     issuerCertificate: trustedCertificates[0],
-                    holderKey,
+                    holderKey: holderBinding.key,
                     namespaces: {
                       'Leopold-Franzens-University': {
                         degree: 'bachelor',
