@@ -22,6 +22,7 @@ import type {
   AuthorizationDetails,
   AuthorizationDetailsJwtVcJson,
   AuthorizationDetailsJwtVcJsonLdAndLdpVc,
+  AuthorizationDetailsMsoMdoc,
   AuthorizationDetailsSdJwtVc,
   CredentialResponse,
   Jwt,
@@ -37,6 +38,8 @@ import {
   Jwk,
   JwsService,
   Logger,
+  Mdoc,
+  MdocApi,
   SdJwtVcApi,
   SignatureSuiteRegistry,
   TypedArrayEncoder,
@@ -178,6 +181,14 @@ export class OpenId4VciHolderService {
         vct: offeredCredential.vct,
         claims: offeredCredential.claims,
       } satisfies AuthorizationDetailsSdJwtVc
+    } else if (format === OpenId4VciCredentialFormatProfile.MsoMdoc) {
+      return {
+        type,
+        format,
+        locations,
+        claims: offeredCredential.claims,
+        doctype: offeredCredential.doctype,
+      } satisfies AuthorizationDetailsMsoMdoc
     } else {
       throw new CredoError(`Cannot create authorization_details. Unsupported credential format '${format}'.`)
     }
@@ -662,6 +673,7 @@ export class OpenId4VciHolderService {
         case OpenId4VciCredentialFormatProfile.JwtVcJson:
         case OpenId4VciCredentialFormatProfile.JwtVcJsonLd:
         case OpenId4VciCredentialFormatProfile.SdJwtVc:
+        case OpenId4VciCredentialFormatProfile.MsoMdoc:
           signatureAlgorithm = options.possibleProofOfPossessionSignatureAlgorithms.find((signatureAlgorithm) =>
             proofSigningAlgsSupported.includes(signatureAlgorithm)
           )
@@ -782,6 +794,24 @@ export class OpenId4VciHolderService {
       }
 
       return { credential, notificationMetadata }
+    } else if (format === OpenId4VciCredentialFormatProfile.MsoMdoc) {
+      if (typeof credentialResponse.successBody.credential !== 'string')
+        throw new CredoError(
+          `Received a credential of format ${
+            OpenId4VciCredentialFormatProfile.MsoMdoc
+          }, but the credential is not a string. ${JSON.stringify(credentialResponse.successBody.credential)}`
+        )
+
+      const mdocApi = agentContext.dependencyManager.resolve(MdocApi)
+      const mdoc = Mdoc.fromBase64Url(credentialResponse.successBody.credential)
+      const verificationResult = await mdocApi.verify(mdoc, {})
+
+      if (!verificationResult.isValid) {
+        agentContext.config.logger.error('Failed to validate credential', { verificationResult })
+        throw new CredoError(`Failed to validate mdoc credential. Results = ${verificationResult.error}`)
+      }
+
+      return { credential: mdoc, notificationMetadata }
     }
 
     throw new CredoError(`Unsupported credential format ${credentialResponse.successBody.format}`)

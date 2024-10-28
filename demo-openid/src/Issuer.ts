@@ -4,6 +4,7 @@ import type {
   OpenId4VcCredentialHolderDidBinding,
   OpenId4VciCredentialRequestToCredentialMapper,
   OpenId4VciCredentialSupportedWithId,
+  OpenId4VciSignMdocCredential,
   OpenId4VcIssuerRecord,
 } from '@credo-ts/openid4vc'
 
@@ -16,6 +17,9 @@ import {
   W3cCredentialSubject,
   W3cIssuer,
   w3cDate,
+  X509Service,
+  KeyType,
+  X509ModuleConfig,
 } from '@credo-ts/core'
 import { OpenId4VcIssuerModule, OpenId4VciCredentialFormatProfile } from '@credo-ts/openid4vc'
 import { ariesAskar } from '@hyperledger/aries-askar-nodejs'
@@ -42,10 +46,17 @@ export const universityDegreeCredentialSdJwt = {
   vct: 'UniversityDegreeCredential',
 } satisfies OpenId4VciCredentialSupportedWithId
 
+export const universityDegreeCredentialMdoc = {
+  id: 'UniversityDegreeCredential-mdoc',
+  format: OpenId4VciCredentialFormatProfile.MsoMdoc,
+  doctype: 'UniversityDegreeCredential',
+} satisfies OpenId4VciCredentialSupportedWithId
+
 export const credentialsSupported = [
   universityDegreeCredential,
   openBadgeCredential,
   universityDegreeCredentialSdJwt,
+  universityDegreeCredentialMdoc,
 ] satisfies OpenId4VciCredentialSupportedWithId[]
 
 function getCredentialRequestToCredentialMapper({
@@ -53,7 +64,11 @@ function getCredentialRequestToCredentialMapper({
 }: {
   issuerDidKey: DidKey
 }): OpenId4VciCredentialRequestToCredentialMapper {
-  return async ({ holderBinding, credentialConfigurationIds }) => {
+  return async ({ holderBinding, credentialConfigurationIds, agentContext }) => {
+    const trustedCertificates = agentContext.dependencyManager.resolve(X509ModuleConfig).trustedCertificates
+    if (trustedCertificates?.length !== 1) {
+      throw new Error(`Expected exactly one trusted certificate. Received ${trustedCertificates?.length}.`)
+    }
     const credentialConfigurationId = credentialConfigurationIds[0]
 
     if (credentialConfigurationId === universityDegreeCredential.id) {
@@ -110,6 +125,21 @@ function getCredentialRequestToCredentialMapper({
       }
     }
 
+    if (credentialConfigurationId === universityDegreeCredentialMdoc.id) {
+      return {
+        credentialSupportedId: universityDegreeCredentialMdoc.id,
+        format: ClaimFormat.MsoMdoc,
+        docType: universityDegreeCredentialMdoc.doctype,
+        issuerCertificate: trustedCertificates[0],
+        holderKey: holderBinding.key,
+        namespaces: {
+          'Leopold-Franzens-University': {
+            degree: 'bachelor',
+          },
+        },
+      } satisfies OpenId4VciSignMdocCredential
+    }
+
     throw new Error('Invalid request')
   }
 }
@@ -147,6 +177,25 @@ export class Issuer extends BaseAgent<{
   public static async build(): Promise<Issuer> {
     const issuer = new Issuer(2000, 'OpenId4VcIssuer ' + Math.random().toString())
     await issuer.initializeAgent('96213c3d7fc8d4d6754c7a0fd969598f')
+
+    const currentDate = new Date()
+    currentDate.setDate(currentDate.getDate() - 1)
+    const nextDay = new Date(currentDate)
+    nextDay.setDate(currentDate.getDate() + 2)
+
+    const selfSignedCertificate = await X509Service.createSelfSignedCertificate(issuer.agent.context, {
+      key: await issuer.agent.context.wallet.createKey({ keyType: KeyType.P256 }),
+      notBefore: currentDate,
+      notAfter: nextDay,
+      extensions: [],
+      name: 'C=DE',
+    })
+
+    const issuerCertficicate = selfSignedCertificate.toString('pem')
+    await issuer.agent.x509.setTrustedCertificates([issuerCertficicate])
+    console.log('Set the following certficate for the holder to verify mdoc credentials.')
+    console.log(issuerCertficicate)
+
     issuer.issuerRecord = await issuer.agent.modules.openId4VcIssuer.createIssuer({
       credentialsSupported,
     })

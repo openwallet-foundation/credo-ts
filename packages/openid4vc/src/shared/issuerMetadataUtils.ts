@@ -39,6 +39,13 @@ export function getTypesFromCredentialSupported(
       )
     }
     return credentialSupported.vct ? [credentialSupported.vct] : undefined
+  } else if (credentialSupported.format === 'mso_mdoc') {
+    if (!credentialSupported.doctype) {
+      throw Error(
+        `Unable to extract types from credentials supported for format ${credentialSupported.format}. Doctype is not defined`
+      )
+    }
+    return [credentialSupported.doctype]
   }
 
   throw Error(`Unable to extract types from credentials supported. Unknown format ${credentialSupported.format}`)
@@ -57,7 +64,14 @@ export function credentialConfigurationSupportedToCredentialSupported(
     order: config.order,
   }
 
-  if (config.format === 'jwt_vc_json' || config.format === 'jwt_vc') {
+  if (config.format === 'mso_mdoc') {
+    return {
+      ...baseConfig,
+      doctype: config.doctype,
+      format: config.format,
+      claims: config.claims,
+    }
+  } else if (config.format === 'jwt_vc_json' || config.format === 'jwt_vc') {
     return {
       ...baseConfig,
       format: config.format,
@@ -149,6 +163,13 @@ export function credentialSupportedToCredentialConfigurationSupported(
       ...baseCredentialConfigurationSupported,
       format: credentialSupported.format,
       vct: credentialSupported.vct,
+      claims: credentialSupported.claims,
+    }
+  } else if (credentialSupported.format === 'mso_mdoc') {
+    return {
+      ...baseCredentialConfigurationSupported,
+      format: credentialSupported.format,
+      doctype: credentialSupported.doctype,
       claims: credentialSupported.claims,
     }
   }

@@ -20,6 +20,8 @@ import type {
   W3cCredential,
   SdJwtVcSignOptions,
   JwaSignatureAlgorithm,
+  MdocSignOptions,
+  Key,
 } from '@credo-ts/core'
 
 export interface OpenId4VciPreAuthorizedCodeFlowConfig {
@@ -119,7 +121,7 @@ export type OpenId4VciCredentialRequestToCredentialMapper = (options: {
    *
    * Can either be bound to did or a JWK (in case of for ex. SD-JWT)
    */
-  holderBinding: OpenId4VcCredentialHolderBinding
+  holderBinding: OpenId4VcCredentialHolderBinding & { key: Key }
 
   /**
    * @deprecated use credentialConfigurations instead
@@ -139,11 +141,19 @@ export type OpenId4VciCredentialRequestToCredentialMapper = (options: {
   credentialConfigurationIds: [string, ...string[]]
 }) => Promise<OpenId4VciSignCredential> | OpenId4VciSignCredential
 
-export type OpenId4VciSignCredential = OpenId4VciSignSdJwtCredential | OpenId4VciSignW3cCredential
+export type OpenId4VciSignCredential =
+  | OpenId4VciSignSdJwtCredential
+  | OpenId4VciSignW3cCredential
+  | OpenId4VciSignMdocCredential
 
 export interface OpenId4VciSignSdJwtCredential extends SdJwtVcSignOptions {
   credentialSupportedId: string
   format: ClaimFormat.SdJwtVc | `${ClaimFormat.SdJwtVc}`
+}
+
+export interface OpenId4VciSignMdocCredential extends MdocSignOptions {
+  credentialSupportedId: string
+  format: ClaimFormat.MsoMdoc | `${ClaimFormat.MsoMdoc}`
 }
 
 export interface OpenId4VciSignW3cCredential {
