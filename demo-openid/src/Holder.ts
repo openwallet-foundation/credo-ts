@@ -29,6 +29,12 @@ export class Holder extends BaseAgent<ReturnType<typeof getOpenIdHolderModules>>
     const holder = new Holder(3000, 'OpenId4VcHolder ' + Math.random().toString())
     await holder.initializeAgent('96213c3d7fc8d4d6754c7a0fd969598e')
 
+    // Set trusted issuer certificates. Required fro verifying mdoc credentials
+    const trustedCertificates: string[] = []
+    await holder.agent.x509.setTrustedCertificates(
+      trustedCertificates.length === 0 ? undefined : (trustedCertificates as [string, ...string[]])
+    )
+
     return holder
   }
 

@@ -198,6 +198,8 @@ export class OpenId4VcSiopVerifierService {
     let authorizationRequestUri = (await authorizationRequest.uri()).encodedUri
     if (options.presentationExchange && !options.idToken) {
       authorizationRequestUri = authorizationRequestUri.replace('openid://', 'openid4vp://')
+    } else {
+      authorizationRequestUri = authorizationRequestUri.replace('openid4vp://', 'openid://')
     }
 
     const verificationSession = await verificationSessionCreatedPromise
@@ -554,6 +556,9 @@ export class OpenId4VcSiopVerifierService {
         responseTypesSupported: [ResponseType.VP_TOKEN],
         subject_syntax_types_supported: supportedDidMethods.map((m) => `did:${m}`),
         vpFormatsSupported: {
+          mso_mdoc: {
+            alg: supportedAlgs,
+          },
           jwt_vc: {
             alg: supportedAlgs,
           },

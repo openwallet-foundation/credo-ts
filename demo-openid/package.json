@@ -21,15 +21,15 @@
     "inquirer": "^8.2.5"
   },
   "devDependencies": {
-    "@credo-ts/openid4vc": "workspace:*",
     "@credo-ts/askar": "workspace:*",
     "@credo-ts/core": "workspace:*",
     "@credo-ts/node": "workspace:*",
+    "@credo-ts/openid4vc": "workspace:*",
     "@types/express": "^4.17.13",
     "@types/figlet": "^1.5.4",
     "@types/inquirer": "^8.2.6",
     "clear": "^0.1.0",
     "figlet": "^1.5.2",
-    "ts-node": "^10.4.0"
+    "ts-node": "^10.9.2"
   }
 }

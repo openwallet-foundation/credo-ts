@@ -38,6 +38,16 @@ export const universityDegreeCredentialConfigurationSupported = {
   cryptographic_binding_methods_supported: ['did:key'],
 } satisfies OpenId4VciCredentialConfigurationSupported
 
+export const universityDegreeCredentialConfigurationSupportedMdoc = {
+  format: OpenId4VciCredentialFormatProfile.MsoMdoc,
+  scope: 'UniversityDegreeCredential',
+  doctype: 'UniversityDegreeCredential',
+  proof_types_supported: {
+    jwt: { proof_signing_alg_values_supported: ['ES256'] },
+  },
+  cryptographic_binding_methods_supported: ['did:key'],
+} satisfies OpenId4VciCredentialConfigurationSupported
+
 export const universityDegreeCredentialSdJwt2 = {
   id: 'https://openid4vc-issuer.com/credentials/UniversityDegreeCredentialSdJwt2',
   format: OpenId4VciCredentialFormatProfile.SdJwtVc,

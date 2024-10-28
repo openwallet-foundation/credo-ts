@@ -1,6 +1,7 @@
 import type { AgentType, TenantType } from './utils'
+import type { OpenId4VciSignMdocCredential } from '../src'
 import type { OpenId4VciCredentialBindingResolver } from '../src/openid4vc-holder'
-import type { DifPresentationExchangeDefinitionV2, SdJwtVc } from '@credo-ts/core'
+import type { DifPresentationExchangeDefinitionV2, Mdoc, SdJwtVc } from '@credo-ts/core'
 import type { Server } from 'http'
 
 import {
@@ -20,6 +21,7 @@ import {
   KeyType,
   Jwt,
   Jwk,
+  X509ModuleConfig,
 } from '@credo-ts/core'
 import express, { type Express } from 'express'
 
@@ -43,6 +45,7 @@ import {
 } from './utils'
 import {
   universityDegreeCredentialConfigurationSupported,
+  universityDegreeCredentialConfigurationSupportedMdoc,
   universityDegreeCredentialSdJwt,
   universityDegreeCredentialSdJwt2,
 } from './utilsVci'
@@ -114,9 +117,28 @@ describe('OpenId4Vc', () => {
                     },
                     disclosureFrame: { _sd: ['university', 'degree'] },
                   }
-                }
+                } else if (credentialRequest.format === 'mso_mdoc') {
+                  const trustedCertificates =
+                    agentContext.dependencyManager.resolve(X509ModuleConfig).trustedCertificates
+                  if (trustedCertificates?.length !== 1) {
+                    throw new Error('Expected exactly one trusted certificate. Received 0.')
+                  }
 
-                throw new Error('Invalid request')
+                  return {
+                    credentialSupportedId: '',
+                    format: ClaimFormat.MsoMdoc,
+                    docType: universityDegreeCredentialConfigurationSupportedMdoc.doctype,
+                    issuerCertificate: trustedCertificates[0],
+                    holderKey: holderBinding.key,
+                    namespaces: {
+                      'Leopold-Franzens-University': {
+                        degree: 'bachelor',
+                      },
+                    },
+                  } satisfies OpenId4VciSignMdocCredential
+                } else {
+                  throw new Error('Invalid request')
+                }
               },
             },
           },
@@ -1583,5 +1605,147 @@ describe('OpenId4Vc', () => {
         },
       ],
     })
+  })
+
+  it('e2e flow with tenants, issuer endpoints requesting a mdoc', async () => {
+    const issuerTenant1 = await issuer.agent.modules.tenants.getTenantAgent({ tenantId: issuer1.tenantId })
+
+    const currentDate = new Date()
+    currentDate.setDate(currentDate.getDate() - 1)
+    const nextDay = new Date(currentDate)
+    nextDay.setDate(currentDate.getDate() + 2)
+
+    const selfSignedIssuerCertificate = await issuerTenant1.x509.createSelfSignedCertificate({
+      key: await issuerTenant1.wallet.createKey({ keyType: KeyType.P256 }),
+      notBefore: currentDate,
+      notAfter: nextDay,
+      extensions: [],
+      name: 'C=DE',
+    })
+    const selfSignedIssuerCertPem = selfSignedIssuerCertificate.toString('pem')
+    await issuerTenant1.x509.setTrustedCertificates([selfSignedIssuerCertPem])
+
+    const openIdIssuerTenant1 = await issuerTenant1.modules.openId4VcIssuer.createIssuer({
+      dpopSigningAlgValuesSupported: [JwaSignatureAlgorithm.ES256],
+      credentialConfigurationsSupported: {
+        universityDegree: universityDegreeCredentialConfigurationSupportedMdoc,
+      },
+    })
+    const issuer1Record = await issuerTenant1.modules.openId4VcIssuer.getIssuerByIssuerId(openIdIssuerTenant1.issuerId)
+    expect(issuer1Record.dpopSigningAlgValuesSupported).toEqual(['ES256'])
+
+    expect(issuer1Record.credentialsSupported).toEqual([
+      {
+        id: 'universityDegree',
+        format: 'mso_mdoc',
+        cryptographic_binding_methods_supported: ['did:key'],
+        doctype: universityDegreeCredentialConfigurationSupportedMdoc.doctype,
+        scope: 'UniversityDegreeCredential',
+      },
+    ])
+    expect(issuer1Record.credentialConfigurationsSupported).toEqual({
+      universityDegree: {
+        format: 'mso_mdoc',
+        cryptographic_binding_methods_supported: ['did:key'],
+        proof_types_supported: {
+          jwt: {
+            proof_signing_alg_values_supported: ['ES256'],
+          },
+        },
+        doctype: universityDegreeCredentialConfigurationSupportedMdoc.doctype,
+        scope: universityDegreeCredentialConfigurationSupportedMdoc.scope,
+      },
+    })
+
+    const { issuanceSession: issuanceSession1, credentialOffer: credentialOffer1 } =
+      await issuerTenant1.modules.openId4VcIssuer.createCredentialOffer({
+        issuerId: openIdIssuerTenant1.issuerId,
+        offeredCredentials: ['universityDegree'],
+        preAuthorizedCodeFlowConfig: {}, // { txCode: { input_mode: 'numeric', length: 4 } }, // TODO: disable due to sphereon limitations
+        version: 'v1.draft13',
+      })
+
+    await issuerTenant1.endSession()
+
+    await waitForCredentialIssuanceSessionRecordSubject(issuer.replaySubject, {
+      state: OpenId4VcIssuanceSessionState.OfferCreated,
+      issuanceSessionId: issuanceSession1.id,
+      contextCorrelationId: issuer1.tenantId,
+    })
+
+    const holderTenant1 = await holder.agent.modules.tenants.getTenantAgent({ tenantId: holder1.tenantId })
+    await holderTenant1.x509.setTrustedCertificates([selfSignedIssuerCertPem])
+
+    const resolvedCredentialOffer1 = await holderTenant1.modules.openId4VcHolder.resolveCredentialOffer(
+      credentialOffer1
+    )
+
+    expect(resolvedCredentialOffer1.metadata.credentialIssuerMetadata?.dpop_signing_alg_values_supported).toEqual([
+      'ES256',
+    ])
+    expect(resolvedCredentialOffer1.offeredCredentials).toEqual([
+      {
+        id: 'universityDegree',
+        doctype: 'UniversityDegreeCredential',
+        cryptographic_binding_methods_supported: ['did:key'],
+        format: 'mso_mdoc',
+        scope: universityDegreeCredentialConfigurationSupportedMdoc.scope,
+      },
+    ])
+
+    expect(resolvedCredentialOffer1.credentialOfferRequestWithBaseUrl.credential_offer.credential_issuer).toEqual(
+      `${issuanceBaseUrl}/${openIdIssuerTenant1.issuerId}`
+    )
+    expect(resolvedCredentialOffer1.metadata.credentialIssuerMetadata?.token_endpoint).toEqual(
+      `${issuanceBaseUrl}/${openIdIssuerTenant1.issuerId}/token`
+    )
+    expect(resolvedCredentialOffer1.metadata.credentialIssuerMetadata?.credential_endpoint).toEqual(
+      `${issuanceBaseUrl}/${openIdIssuerTenant1.issuerId}/credential`
+    )
+
+    // Bind to JWK
+    const tokenResponseTenant1 = await holderTenant1.modules.openId4VcHolder.requestToken({
+      resolvedCredentialOffer: resolvedCredentialOffer1,
+    })
+
+    expect(tokenResponseTenant1.accessToken).toBeDefined()
+    expect(tokenResponseTenant1.dpop?.jwk).toBeInstanceOf(Jwk)
+    const { payload } = Jwt.fromSerializedJwt(tokenResponseTenant1.accessToken)
+    expect(payload.additionalClaims.token_type).toEqual('DPoP')
+
+    const credentialsTenant1 = await holderTenant1.modules.openId4VcHolder.requestCredentials({
+      resolvedCredentialOffer: resolvedCredentialOffer1,
+      ...tokenResponseTenant1,
+      credentialBindingResolver,
+    })
+
+    // Wait for all events
+    await waitForCredentialIssuanceSessionRecordSubject(issuer.replaySubject, {
+      state: OpenId4VcIssuanceSessionState.AccessTokenRequested,
+      issuanceSessionId: issuanceSession1.id,
+      contextCorrelationId: issuer1.tenantId,
+    })
+    await waitForCredentialIssuanceSessionRecordSubject(issuer.replaySubject, {
+      state: OpenId4VcIssuanceSessionState.AccessTokenCreated,
+      issuanceSessionId: issuanceSession1.id,
+      contextCorrelationId: issuer1.tenantId,
+    })
+    await waitForCredentialIssuanceSessionRecordSubject(issuer.replaySubject, {
+      state: OpenId4VcIssuanceSessionState.CredentialRequestReceived,
+      issuanceSessionId: issuanceSession1.id,
+      contextCorrelationId: issuer1.tenantId,
+    })
+    await waitForCredentialIssuanceSessionRecordSubject(issuer.replaySubject, {
+      state: OpenId4VcIssuanceSessionState.Completed,
+      issuanceSessionId: issuanceSession1.id,
+      contextCorrelationId: issuer1.tenantId,
+    })
+
+    expect(credentialsTenant1).toHaveLength(1)
+    const mdocBase64Url = (credentialsTenant1[0].credential as Mdoc).base64Url
+    const mdoc = holderTenant1.mdoc.fromBase64Url(mdocBase64Url)
+    expect(mdoc.docType).toEqual('UniversityDegreeCredential')
+
+    await holderTenant1.endSession()
   })
 })
