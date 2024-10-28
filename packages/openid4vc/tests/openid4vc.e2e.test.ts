@@ -102,11 +102,6 @@ describe('OpenId4Vc', () => {
                   throw new Error('No verification method found')
                 }
 
-                const trustedCertificates = agentContext.dependencyManager.resolve(X509ModuleConfig).trustedCertificates
-                if (trustedCertificates?.length !== 1) {
-                  throw new Error('Expected exactly one trusted certificate. Received 0.')
-                }
-
                 if (credentialRequest.format === 'vc+sd-jwt') {
                   return {
                     credentialSupportedId:
@@ -123,6 +118,12 @@ describe('OpenId4Vc', () => {
                     disclosureFrame: { _sd: ['university', 'degree'] },
                   }
                 } else if (credentialRequest.format === 'mso_mdoc') {
+                  const trustedCertificates =
+                    agentContext.dependencyManager.resolve(X509ModuleConfig).trustedCertificates
+                  if (trustedCertificates?.length !== 1) {
+                    throw new Error('Expected exactly one trusted certificate. Received 0.')
+                  }
+
                   return {
                     credentialSupportedId: '',
                     format: ClaimFormat.MsoMdoc,
