@@ -15,7 +15,7 @@ import type {
   OpenId4VciCredentialOfferPayload,
   OpenId4VciCredentialRequest,
 } from '../shared'
-import type { AgentContext, DidDocument, Query, QueryOptions } from '@credo-ts/core'
+import type { AgentContext, DidDocument, Key, Query, QueryOptions } from '@credo-ts/core'
 import type {
   CredentialOfferPayloadV1_0_11,
   CredentialOfferPayloadV1_0_13,
@@ -49,6 +49,8 @@ import {
   utils,
   W3cCredentialService,
   MdocApi,
+  parseDid,
+  DidResolverService,
 } from '@credo-ts/core'
 import { VcIssuerBuilder } from '@sphereon/oid4vci-issuer'
 
@@ -605,7 +607,10 @@ export class OpenId4VcIssuerService {
     }
   }
 
-  private async getHolderBindingFromRequest(credentialRequest: OpenId4VciCredentialRequest) {
+  private async getHolderBindingFromRequest(
+    agentContext: AgentContext,
+    credentialRequest: OpenId4VciCredentialRequest
+  ) {
     if (!credentialRequest.proof?.jwt) throw new CredoError('Received a credential request without a proof')
 
     const jwt = Jwt.fromSerializedJwt(credentialRequest.proof.jwt)
@@ -619,15 +624,27 @@ export class OpenId4VcIssuerService {
         )
       }
 
+      const parsedDid = parseDid(jwt.header.kid)
+      if (!parsedDid.fragment) {
+        throw new Error(`didUrl '${parsedDid.didUrl}' does not contain a '#'. Unable to derive key from did document.`)
+      }
+
+      const didResolver = agentContext.dependencyManager.resolve(DidResolverService)
+      const didDocument = await didResolver.resolveDidDocument(agentContext, parsedDid.didUrl)
+      const key = getKeyFromVerificationMethod(didDocument.dereferenceKey(parsedDid.didUrl, ['assertionMethod']))
+
       return {
         method: 'did',
         didUrl: jwt.header.kid,
-      } satisfies OpenId4VcCredentialHolderBinding
+        key,
+      } satisfies OpenId4VcCredentialHolderBinding & { key: Key }
     } else if (jwt.header.jwk) {
+      const jwk = getJwkFromJson(jwt.header.jwk)
       return {
         method: 'jwk',
-        jwk: getJwkFromJson(jwt.header.jwk),
-      } satisfies OpenId4VcCredentialHolderBinding
+        jwk: jwk,
+        key: jwk.key,
+      } satisfies OpenId4VcCredentialHolderBinding & { key: Key }
     } else {
       throw new CredoError('Either kid or jwk must be present in credential request proof header')
     }
@@ -674,7 +691,7 @@ export class OpenId4VcIssuerService {
         ([credentialConfigurationId]) => credentialConfigurationId
       ) as [string, ...string[]]
 
-      const holderBinding = await this.getHolderBindingFromRequest(credentialRequest)
+      const holderBinding = await this.getHolderBindingFromRequest(agentContext, credentialRequest)
       const signOptions = await mapper({
         agentContext,
         issuanceSession,

@@ -21,6 +21,7 @@ import type {
   SdJwtVcSignOptions,
   JwaSignatureAlgorithm,
   MdocSignOptions,
+  Key,
 } from '@credo-ts/core'
 
 export interface OpenId4VciPreAuthorizedCodeFlowConfig {
@@ -120,7 +121,7 @@ export type OpenId4VciCredentialRequestToCredentialMapper = (options: {
    *
    * Can either be bound to did or a JWK (in case of for ex. SD-JWT)
    */
-  holderBinding: OpenId4VcCredentialHolderBinding
+  holderBinding: OpenId4VcCredentialHolderBinding & { key: Key }
 
   /**
    * @deprecated use credentialConfigurations instead

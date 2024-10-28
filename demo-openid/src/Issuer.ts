@@ -20,7 +20,6 @@ import {
   X509Service,
   KeyType,
   X509ModuleConfig,
-  MdocService,
 } from '@credo-ts/core'
 import { OpenId4VcIssuerModule, OpenId4VciCredentialFormatProfile } from '@credo-ts/openid4vc'
 import { ariesAskar } from '@hyperledger/aries-askar-nodejs'
@@ -127,16 +126,12 @@ function getCredentialRequestToCredentialMapper({
     }
 
     if (credentialConfigurationId === universityDegreeCredentialMdoc.id) {
-      const holderKey = await agentContext.dependencyManager
-        .resolve(MdocService)
-        .getKeyFromMdocCredentialHolderBinding(agentContext, holderBinding)
-
       return {
         credentialSupportedId: universityDegreeCredentialMdoc.id,
         format: ClaimFormat.MsoMdoc,
         docType: universityDegreeCredentialMdoc.doctype,
         issuerCertificate: trustedCertificates[0],
-        holderKey,
+        holderKey: holderBinding.key,
         namespaces: {
           'Leopold-Franzens-University': {
             degree: 'bachelor',
