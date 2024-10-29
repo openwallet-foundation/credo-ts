@@ -643,14 +643,6 @@ export class OpenId4VcSiopVerifierService {
           isValid = verificationResult.isValid
         }
 
-        // FIXME: we throw an error here as there's a bug in sphereon library where they
-        // don't check the returned 'verified' property and only catch errors thrown.
-        // Once https://github.com/Sphereon-Opensource/SIOP-OID4VP/pull/70 is merged we
-        // can remove this.
-        if (!isValid) {
-          throw new CredoError('Presentation verification failed.')
-        }
-
         return {
           verified: isValid,
         }
