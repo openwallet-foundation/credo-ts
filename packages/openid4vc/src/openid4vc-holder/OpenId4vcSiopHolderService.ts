@@ -152,6 +152,7 @@ export class OpenId4VcSiopHolderService {
       }
     )
 
+    
     const createJarmResponse = async (opts: {
       authorizationResponsePayload: AuthorizationResponsePayload
       requestObjectPayload: RequestObjectPayload
@@ -191,7 +192,6 @@ export class OpenId4VcSiopHolderService {
 
       return { response: jwe }
     }
-
     const response = await openidProvider.submitAuthorizationResponse(
       authorizationResponseWithCorrelationId,
       createJarmResponse

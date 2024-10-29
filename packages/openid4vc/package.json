@@ -32,9 +32,12 @@
     "@sphereon/oid4vci-client": "0.16.1-next.66",
     "@sphereon/oid4vci-common": "0.16.1-next.66",
     "@sphereon/oid4vci-issuer": "0.16.1-next.66",
-    "@sphereon/ssi-types": "0.29.1-unstable.121",
+    "@sphereon/ssi-types": "^0.30.1",
     "class-transformer": "^0.5.1",
-    "rxjs": "^7.8.0"
+    "oauth4webapi": "^3.0.1",
+    "rxjs": "^7.8.0",
+    "zod": "^3.23.8",
+    "@animo-id/oid4vci": "0.0.2-alpha-20241024080134"
   },
   "devDependencies": {
     "@credo-ts/tenants": "workspace:*",

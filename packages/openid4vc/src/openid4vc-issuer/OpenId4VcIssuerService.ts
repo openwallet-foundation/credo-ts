@@ -16,6 +16,7 @@ import type {
   OpenId4VciCredentialRequest,
 } from '../shared'
 import type { AgentContext, DidDocument, Query, QueryOptions } from '@credo-ts/core'
+import { PRE_AUTH_GRANT_LITERAL } from '@sphereon/oid4vci-common'
 import type {
   CredentialOfferPayloadV1_0_11,
   CredentialOfferPayloadV1_0_13,
@@ -108,34 +109,9 @@ export class OpenId4VcIssuerService {
 
     const vcIssuer = this.getVcIssuer(agentContext, issuer)
 
-    if (
-      preAuthorizedCodeFlowConfig &&
-      preAuthorizedCodeFlowConfig.userPinRequired === false &&
-      preAuthorizedCodeFlowConfig.txCode
-    ) {
-      throw new CredoError('The userPinRequired option must be set to true when using txCode.')
-    }
-
-    if (
-      preAuthorizedCodeFlowConfig &&
-      preAuthorizedCodeFlowConfig.userPinRequired &&
-      !preAuthorizedCodeFlowConfig.txCode
-    ) {
-      preAuthorizedCodeFlowConfig.txCode = {}
-    }
-
-    if (
-      preAuthorizedCodeFlowConfig &&
-      preAuthorizedCodeFlowConfig.txCode &&
-      !preAuthorizedCodeFlowConfig.userPinRequired
-    ) {
-      preAuthorizedCodeFlowConfig.userPinRequired = true
-    }
-
     // this checks if the structure of the credentials is correct
     // it throws an error if a offered credential cannot be found in the credentialsSupported
     getOfferedCredentials(
-      agentContext,
       options.offeredCredentials,
       vcIssuer.issuerMetadata.credential_configurations_supported
     )
@@ -156,28 +132,30 @@ export class OpenId4VcIssuerService {
     // TODO: The wallet MUST use that value in the scope Authorization parameter.
     // TODO: add support for scope in the credential offer in sphereon-oid4vci
     const issuerMetadata = this.getIssuerMetadata(agentContext, issuer)
+    this.verifyGrantAuthorizationServers(issuerMetadata, preAuthorizedCodeFlowConfig, authorizationCodeFlowConfig)
 
-    if (
-      authorizationCodeFlowConfig &&
-      (issuerMetadata.authorizationServers?.length ?? 0 > 1) &&
-      authorizationCodeFlowConfig?.authorizationServerUrl
-    ) {
-      throw new CredoError(
-        'The authorization code flow requires an explicit authorization server url, if multiple authorization servers are present.'
-      )
-    }
-
+    const hasMultipleAuthorizationServers = issuerMetadata.authorizationServers?.length ?? 0 > 1
     const grants = await this.getGrantsFromConfig(agentContext, {
-      preAuthorizedCodeFlowConfig,
+      preAuthorizedCodeFlowConfig: preAuthorizedCodeFlowConfig
+        ? {
+            ...preAuthorizedCodeFlowConfig,
+
+            // FIXME: this is removed from the offer. Need to wait for
+            // https://github.com/Sphereon-Opensource/OID4VC/pull/159
+            // Must only be used if multiple authorization servers are present
+            authorizationServerUrl: hasMultipleAuthorizationServers
+              ? preAuthorizedCodeFlowConfig?.authorizationServerUrl
+              : undefined,
+          }
+        : undefined,
       authorizationCodeFlowConfig: authorizationCodeFlowConfig
         ? {
             ...authorizationCodeFlowConfig,
 
             // Must only be used if multiple authorization servers are present
-            authorizationServerUrl:
-              issuerMetadata.authorizationServers?.length ?? 0 > 1
-                ? authorizationCodeFlowConfig?.authorizationServerUrl
-                : undefined,
+            authorizationServerUrl: hasMultipleAuthorizationServers
+              ? authorizationCodeFlowConfig?.authorizationServerUrl
+              : undefined,
           }
         : undefined,
     })
@@ -189,7 +167,7 @@ export class OpenId4VcIssuerService {
       credentialOfferUri: hostedCredentialOfferUri,
       baseUri: options.baseUri,
       credentialDataSupplierInput: options.issuanceMetadata,
-      pinLength: grants['urn:ietf:params:oauth:grant-type:pre-authorized_code']?.tx_code?.length,
+      pinLength: grants[PRE_AUTH_GRANT_LITERAL]?.tx_code?.length,
     })
 
     // FIXME: https://github.com/Sphereon-Opensource/OID4VCI/issues/102
@@ -202,16 +180,14 @@ export class OpenId4VcIssuerService {
       credentialOfferUri: hostedCredentialOfferUri,
     })
 
+    // TODO: is isuer_state stored?
+    // issuanceSession.issuerState = grants.authorization_code?.issuer_state
+
     if (options.version !== 'v1.draft13') {
       const v13CredentialOfferPayload = issuanceSession.credentialOfferPayload as CredentialOfferPayloadV1_0_13
       const v11CredentialOfferPayload: CredentialOfferPayloadV1_0_11 = {
         ...v13CredentialOfferPayload,
         credentials: v13CredentialOfferPayload.credential_configuration_ids,
-      }
-      if (v11CredentialOfferPayload.grants?.['urn:ietf:params:oauth:grant-type:pre-authorized_code']) {
-        // property was always defined in v11
-        v11CredentialOfferPayload.grants['urn:ietf:params:oauth:grant-type:pre-authorized_code'].user_pin_required =
-          preAuthorizedCodeFlowConfig?.userPinRequired ?? false
       }
 
       issuanceSession.credentialOfferPayload = v11CredentialOfferPayload
@@ -412,16 +388,16 @@ export class OpenId4VcIssuerService {
 
     const authorizationServers =
       issuerRecord.authorizationServerConfigs && issuerRecord.authorizationServerConfigs.length > 0
-        ? issuerRecord.authorizationServerConfigs.map((authorizationServer) => authorizationServer.baseUrl)
+        ? [
+            ...issuerRecord.authorizationServerConfigs.map((authorizationServer) => authorizationServer.issuer),
+            // Our issuer is also a valid authorization server (only for pre-auth)
+            issuerUrl,
+          ]
         : undefined
-
-    const tokenEndpoint = authorizationServers
-      ? undefined
-      : joinUriParts(issuerUrl, [config.accessTokenEndpoint.endpointPath])
 
     const issuerMetadata = {
       issuerUrl,
-      tokenEndpoint,
+      tokenEndpoint: joinUriParts(issuerUrl, [config.accessTokenEndpoint.endpointPath]),
       credentialEndpoint: joinUriParts(issuerUrl, [config.credentialEndpoint.endpointPath]),
       credentialsSupported: issuerRecord.credentialsSupported,
       credentialConfigurationsSupported:
@@ -491,9 +467,6 @@ export class OpenId4VcIssuerService {
     if (issuerMetadata.authorizationServers) {
       builder.withAuthorizationServers(issuerMetadata.authorizationServers)
     } else {
-      if (!issuerMetadata.tokenEndpoint) {
-        throw new CredoError('Missing required token endpoint. No authorization server is set.')
-      }
       builder.withTokenEndpoint(issuerMetadata.tokenEndpoint)
     }
 
@@ -502,6 +475,61 @@ export class OpenId4VcIssuerService {
     }
 
     return builder.build()
+  }
+
+  private verifyGrantAuthorizationServers(
+    issuerMetadata: OpenId4VcIssuerMetadata,
+    preAuthorizedCodeFlowConfig?: OpenId4VciPreAuthorizedCodeFlowConfig,
+    authorizationCodeFlowConfig?: OpenId4VciAuthorizationCodeFlowConfig
+  ) {
+    const hasMultipleAuthorizationServers = issuerMetadata.authorizationServers?.length ?? 0 > 1
+    if (
+      authorizationCodeFlowConfig &&
+      hasMultipleAuthorizationServers &&
+      !authorizationCodeFlowConfig.authorizationServerUrl
+    ) {
+      throw new CredoError(
+        'The authorization code flow requires an explicit authorization server url if multiple authorization servers are present in the credential issuer metadata.'
+      )
+    }
+
+    if (
+      issuerMetadata.authorizationServers &&
+      authorizationCodeFlowConfig?.authorizationServerUrl &&
+      !issuerMetadata.authorizationServers.includes(authorizationCodeFlowConfig.authorizationServerUrl)
+    ) {
+      throw new CredoError(
+        `The authorizationServerlUrl '${
+          authorizationCodeFlowConfig.authorizationServerUrl
+        }' in authorization code flow config is not present in issuer metadata authorization_servers. Allowed values are ${issuerMetadata.authorizationServers.join(
+          ', '
+        )}`
+      )
+    }
+
+    if (
+      issuerMetadata.authorizationServers &&
+      preAuthorizedCodeFlowConfig?.authorizationServerUrl &&
+      !issuerMetadata.authorizationServers.includes(preAuthorizedCodeFlowConfig.authorizationServerUrl)
+    ) {
+      throw new CredoError(
+        `The authorizationServerlUrl '${
+          preAuthorizedCodeFlowConfig.authorizationServerUrl
+        }' in pre authorized code flow config is not present in issuer metadata authorization_servers. Allowed values are ${issuerMetadata.authorizationServers.join(
+          ', '
+        )}`
+      )
+    }
+
+    if (
+      preAuthorizedCodeFlowConfig &&
+      hasMultipleAuthorizationServers &&
+      !preAuthorizedCodeFlowConfig.authorizationServerUrl
+    ) {
+      throw new CredoError(
+        'The pre authorized code flow requires an explicit authorization server url if multiple authorization servers are present in the credential issuer metadata.'
+      )
+    }
   }
 
   private async getGrantsFromConfig(
@@ -513,23 +541,31 @@ export class OpenId4VcIssuerService {
   ) {
     const { preAuthorizedCodeFlowConfig, authorizationCodeFlowConfig } = config
 
-    const grants: Grant = {
-      ...(preAuthorizedCodeFlowConfig && {
-        'urn:ietf:params:oauth:grant-type:pre-authorized_code': {
-          'pre-authorized_code':
-            preAuthorizedCodeFlowConfig.preAuthorizedCode ?? (await agentContext.wallet.generateNonce()),
-          // v11 only
-          user_pin_required: preAuthorizedCodeFlowConfig.userPinRequired ?? false,
-          tx_code: preAuthorizedCodeFlowConfig.txCode,
-        },
-      }),
+    const grants: Grant = {}
 
-      ...(authorizationCodeFlowConfig && {
-        authorization_code: {
-          issuer_state: authorizationCodeFlowConfig.issuerState,
-          authorization_server: authorizationCodeFlowConfig.authorizationServerUrl,
-        },
-      }),
+    // Pre auth
+    if (preAuthorizedCodeFlowConfig) {
+      const { userPinRequired, txCode, authorizationServerUrl, preAuthorizedCode } = preAuthorizedCodeFlowConfig
+
+      if (userPinRequired === false && txCode) {
+        throw new CredoError('The userPinRequired option must be set to true when using txCode.')
+      }
+
+      grants[PRE_AUTH_GRANT_LITERAL] = {
+        'pre-authorized_code': preAuthorizedCode ?? (await agentContext.wallet.generateNonce()),
+        tx_code: txCode ?? (userPinRequired ? {} : undefined),
+        authorization_server: authorizationServerUrl,
+        // v11 only
+        user_pin_required: userPinRequired ?? txCode !== undefined,
+      }
+    }
+
+    // Auth
+    if (authorizationCodeFlowConfig) {
+      grants.authorization_code = {
+        issuer_state: authorizationCodeFlowConfig.issuerState ?? (await agentContext.wallet.generateNonce()),
+        authorization_server: authorizationCodeFlowConfig.authorizationServerUrl,
+      }
     }
 
     return grants
@@ -547,8 +583,7 @@ export class OpenId4VcIssuerService {
       : credentialOffer.credentials
 
     const { credentialConfigurationsSupported: offeredCredentialConfigurations } = getOfferedCredentials(
-      agentContext,
-      offeredCredentialsData,
+      offeredCredentialsData as string[],
       allCredentialConfigurationsSupported
     )
 

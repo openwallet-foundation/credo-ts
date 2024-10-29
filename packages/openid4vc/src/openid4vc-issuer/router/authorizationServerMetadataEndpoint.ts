@@ -1,8 +1,8 @@
 import type { OpenId4VcIssuanceRequest } from './requestContext'
-import type { AuthorizationServerMetadata } from '@sphereon/oid4vci-common'
+import type { AuthorizationServerMetadata } from '@animo-id/oid4vci'
 import type { Router, Response } from 'express'
 
-import { getRequestContext, sendErrorResponse } from '../../shared/router'
+import { getRequestContext, sendErrorResponse, sendJsonResponse } from '../../shared/router'
 import { OpenId4VcIssuerService } from '../OpenId4VcIssuerService'
 
 /**
@@ -23,19 +23,12 @@ export function configureOAuthAuthorizationServerMetadataEndpoint(router: Router
           token_endpoint: issuerMetadata.tokenEndpoint,
           dpop_signing_alg_values_supported: issuerMetadata.dpopSigningAlgValuesSupported,
           'pre-authorized_grant_anonymous_access_supported': true,
-
-          // Required by sphereon types, but OID4VCI mentions it can be omitted if
-          // only the pre-auth code flow is supported. We use empty array
-          response_types_supported: []
         } satisfies AuthorizationServerMetadata
 
-        response.status(200).json(authorizationServerMetadata)
+        return sendJsonResponse(response, next, authorizationServerMetadata)
       } catch (e) {
-        sendErrorResponse(response, agentContext.config.logger, 500, 'invalid_request', e)
+        return sendErrorResponse(response, next, agentContext.config.logger, 500, 'invalid_request', e)
       }
-
-      // NOTE: if we don't call next, the agentContext session handler will NOT be called
-      next()
     }
   )
 }

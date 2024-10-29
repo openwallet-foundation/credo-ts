@@ -141,11 +141,19 @@ export async function openIdTokenIssuerToJwtIssuer(
     }
 
     if (
-      !leafCertificate.sanUriNames?.includes(openId4VcTokenIssuer.issuer) &&
-      !leafCertificate.sanDnsNames?.includes(getDomainFromUrl(openId4VcTokenIssuer.issuer))
+      !leafCertificate.sanUriNames.includes(openId4VcTokenIssuer.issuer) &&
+      !leafCertificate.sanDnsNames.includes(getDomainFromUrl(openId4VcTokenIssuer.issuer))
     ) {
+      const sanUriMessage =
+        leafCertificate.sanUriNames.length > 0
+          ? `SAN-URI names are ${leafCertificate.sanUriNames.join(', ')}`
+          : 'there are no SAN-URI names'
+      const sanDnsMessage =
+        leafCertificate.sanDnsNames.length > 0
+          ? `SAN-DNS names are ${leafCertificate.sanDnsNames.join(', ')}`
+          : 'there are no SAN-DNS names'
       throw new Error(
-        `The 'iss' claim in the payload does not match a 'SAN-URI' or 'SAN-DNS' name in the x5c certificate.`
+        `The 'iss' claim in the payload does not match a 'SAN-URI' or 'SAN-DNS' name in the x5c certificate. 'iss' value is '${openId4VcTokenIssuer.issuer}', ${sanUriMessage}, ${sanDnsMessage} (for SAN-DNS only domain has to match)`
       )
     }
 

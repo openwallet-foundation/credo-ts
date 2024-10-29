@@ -2,6 +2,7 @@ import type { AgentType, TenantType } from './utils'
 import type { OpenId4VciCredentialBindingResolver } from '../src/openid4vc-holder'
 import type { DifPresentationExchangeDefinitionV2, SdJwtVc } from '@credo-ts/core'
 import type { Server } from 'http'
+import { createHttpsProxy, disableSslVerification } from '../../../tests/https-proxy'
 
 import {
   CredoError,
@@ -48,14 +49,17 @@ import {
 } from './utilsVci'
 import { openBadgePresentationDefinition, universityDegreePresentationDefinition } from './utilsVp'
 
+const proxyPort = 3443
 const serverPort = 1234
-const baseUrl = `http://localhost:${serverPort}`
+const baseUrl = `https://localhost:${proxyPort}`
 const issuanceBaseUrl = `${baseUrl}/oid4vci`
 const verificationBaseUrl = `${baseUrl}/oid4vp`
 
 describe('OpenId4Vc', () => {
   let expressApp: Express
   let expressServer: Server
+  let proxyServer: Server
+  let resetSslVerification: () => void
 
   let issuer: AgentType<{
     openId4VcIssuer: OpenId4VcIssuerModule
@@ -77,6 +81,14 @@ describe('OpenId4Vc', () => {
   }>
   let verifier1: TenantType
   let verifier2: TenantType
+
+  beforeAll(() => {
+    resetSslVerification = disableSslVerification()
+  })
+
+  afterAll(() => {
+    resetSslVerification()
+  })
 
   beforeEach(async () => {
     expressApp = express()
@@ -125,7 +137,7 @@ describe('OpenId4Vc', () => {
         tenants: new TenantsModule(),
       },
       '96213c3d7fc8d4d6754c7a0fd969598g'
-    )) as unknown as typeof issuer
+   )) as unknown as typeof issuer
     issuer1 = await createTenantForAgent(issuer.agent, 'iTenant1')
     issuer2 = await createTenantForAgent(issuer.agent, 'iTenant2')
 
@@ -160,10 +172,15 @@ describe('OpenId4Vc', () => {
     expressApp.use('/oid4vp', verifier.agent.modules.openId4VcVerifier.config.router)
 
     expressServer = expressApp.listen(serverPort)
+    proxyServer = createHttpsProxy({
+      port: proxyPort,
+      target: `http://localhost:${serverPort}`,
+    })
   })
 
   afterEach(async () => {
     expressServer?.close()
+    proxyServer?.close()
 
     await issuer.agent.shutdown()
     await issuer.agent.wallet.delete()
@@ -269,26 +286,28 @@ describe('OpenId4Vc', () => {
       credentialOffer1
     )
 
-    expect(resolvedCredentialOffer1.metadata.credentialIssuerMetadata?.dpop_signing_alg_values_supported).toEqual([
-      'EdDSA',
-    ])
-    expect(resolvedCredentialOffer1.offeredCredentials).toEqual([
-      {
-        id: 'universityDegree',
+    expect(resolvedCredentialOffer1.metadata.credentialIssuer?.dpop_signing_alg_values_supported).toEqual(['EdDSA'])
+    expect(resolvedCredentialOffer1.offeredCredentialConfigurations).toEqual({
+      universityDegree: {
         format: 'vc+sd-jwt',
         cryptographic_binding_methods_supported: ['did:key'],
+        proof_types_supported: {
+          jwt: {
+            proof_signing_alg_values_supported: ['EdDSA'],
+          },
+        },
         vct: universityDegreeCredentialConfigurationSupported.vct,
         scope: universityDegreeCredentialConfigurationSupported.scope,
       },
-    ])
+    })
 
-    expect(resolvedCredentialOffer1.credentialOfferRequestWithBaseUrl.credential_offer.credential_issuer).toEqual(
+    expect(resolvedCredentialOffer1.credentialOfferPayload.credential_issuer).toEqual(
       `${issuanceBaseUrl}/${openIdIssuerTenant1.issuerId}`
     )
-    expect(resolvedCredentialOffer1.metadata.credentialIssuerMetadata?.token_endpoint).toEqual(
+    expect(resolvedCredentialOffer1.metadata.credentialIssuer?.token_endpoint).toEqual(
       `${issuanceBaseUrl}/${openIdIssuerTenant1.issuerId}/token`
     )
-    expect(resolvedCredentialOffer1.metadata.credentialIssuerMetadata?.credential_endpoint).toEqual(
+    expect(resolvedCredentialOffer1.metadata.credentialIssuer?.credential_endpoint).toEqual(
       `${issuanceBaseUrl}/${openIdIssuerTenant1.issuerId}/credential`
     )
 
@@ -345,13 +364,13 @@ describe('OpenId4Vc', () => {
       contextCorrelationId: issuer2.tenantId,
     })
 
-    expect(resolvedCredentialOffer2.credentialOfferRequestWithBaseUrl.credential_offer.credential_issuer).toEqual(
+    expect(resolvedCredentialOffer2.credentialOfferPayload.credential_issuer).toEqual(
       `${issuanceBaseUrl}/${openIdIssuerTenant2.issuerId}`
     )
-    expect(resolvedCredentialOffer2.metadata.credentialIssuerMetadata?.token_endpoint).toEqual(
+    expect(resolvedCredentialOffer2.metadata.credentialIssuer?.token_endpoint).toEqual(
       `${issuanceBaseUrl}/${openIdIssuerTenant2.issuerId}/token`
     )
-    expect(resolvedCredentialOffer2.metadata.credentialIssuerMetadata?.credential_endpoint).toEqual(
+    expect(resolvedCredentialOffer2.metadata.credentialIssuer?.credential_endpoint).toEqual(
       `${issuanceBaseUrl}/${openIdIssuerTenant2.issuerId}/credential`
     )
 
@@ -395,6 +414,90 @@ describe('OpenId4Vc', () => {
     expect(sdJwtVcTenant2.payload.vct).toEqual('UniversityDegreeCredential2')
 
     await holderTenant1.endSession()
+  })
+
+  it.skip('e2e flow with tenants, issuer endpoints requesting a sd-jwt-vc using authorization code flow', async () => {
+    const issuerTenant = await issuer.agent.modules.tenants.getTenantAgent({ tenantId: issuer1.tenantId })
+    const holderTenant = await holder.agent.modules.tenants.getTenantAgent({ tenantId: holder1.tenantId })
+
+    const openIdIssuerTenant = await issuerTenant.modules.openId4VcIssuer.createIssuer({
+      dpopSigningAlgValuesSupported: [JwaSignatureAlgorithm.EdDSA],
+      credentialConfigurationsSupported: {
+        universityDegree: universityDegreeCredentialConfigurationSupported,
+      },
+      authorizationServerConfigs: [
+        {
+          issuer: 'https://localhost:3042',
+          serverType: 'oidc',
+          clientId: 'issuer-server',
+          clientSecret: 'issuer-server',
+        },
+      ],
+    })
+
+    const { issuanceSession, credentialOffer } = await issuerTenant.modules.openId4VcIssuer.createCredentialOffer({
+      issuerId: openIdIssuerTenant.issuerId,
+      offeredCredentials: ['universityDegree'],
+      authorizationCodeFlowConfig: {
+        authorizationServerUrl: 'https://localhost:3042',
+      },
+      version: 'v1.draft13',
+    })
+
+    await issuerTenant.endSession()
+
+    const resolvedCredentialOffer = await holderTenant.modules.openId4VcHolder.resolveCredentialOffer(credentialOffer)
+
+    console.log(JSON.stringify(resolvedCredentialOffer, null, 2))
+
+    let code = new Promise<string>((resolve) => {
+      expressApp.get('/redirect', (req, res) => {
+        console.log('incoming request', req.query)
+        if (req.query.code) {
+          resolve(req.query.code as string)
+        }
+        res.send('')
+      })
+    })
+
+    const auth = await holderTenant.modules.openId4VcHolder.resolveIssuanceAuthorizationRequest(
+      resolvedCredentialOffer,
+      {
+        clientId: 'foo',
+        redirectUri: 'https://localhost:3443/redirect',
+        scope: ['UniversityDegreeCredential'],
+      }
+    )
+
+    console.log(JSON.stringify(auth))
+
+    // Bind to JWK
+    const tokenResponseTenant = await holderTenant.modules.openId4VcHolder.requestToken({
+      resolvedCredentialOffer,
+      code: await code,
+      resolvedAuthorizationRequest: auth,
+    })
+
+    console.log(JSON.stringify(tokenResponseTenant))
+
+    const credentials = await holderTenant.modules.openId4VcHolder.requestCredentials({
+      resolvedCredentialOffer,
+      ...tokenResponseTenant,
+      credentialBindingResolver,
+    })
+
+    await waitForCredentialIssuanceSessionRecordSubject(issuer.replaySubject, {
+      state: OpenId4VcIssuanceSessionState.Completed,
+      issuanceSessionId: issuanceSession.id,
+      contextCorrelationId: issuer1.tenantId,
+    })
+
+    expect(credentials).toHaveLength(1)
+    const compactSdJwtVcTenant1 = (credentials[0].credential as SdJwtVc).compact
+    const sdJwtVcTenant1 = holderTenant.sdJwtVc.fromCompact(compactSdJwtVcTenant1)
+    expect(sdJwtVcTenant1.payload.vct).toEqual('UniversityDegreeCredential')
+
+    await holderTenant.endSession()
   })
 
   it('e2e flow with tenants only requesting an id-token', async () => {
@@ -731,7 +834,7 @@ describe('OpenId4Vc', () => {
 
     const certificate = await verifier.agent.x509.createSelfSignedCertificate({
       key: await verifier.agent.wallet.createKey({ keyType: KeyType.Ed25519 }),
-      extensions: [[{ type: 'dns', value: 'localhost:1234' }]],
+      extensions: [[{ type: 'dns', value: `localhost:${proxyPort}` }]],
     })
 
     const rawCertificate = certificate.toString('base64')
@@ -769,12 +872,6 @@ describe('OpenId4Vc', () => {
       ],
     } satisfies DifPresentationExchangeDefinitionV2
 
-    // Hack to make it work with x5c check
-    // @ts-expect-error
-    verifier.agent.modules.openId4VcVerifier.config.options.baseUrl =
-      // @ts-expect-error
-      verifier.agent.modules.openId4VcVerifier.config.options.baseUrl.replace('http://', 'https://')
-
     const { authorizationRequest, verificationSession } =
       await verifier.agent.modules.openId4VcVerifier.createAuthorizationRequest({
         verifierId: openIdVerifier.verifierId,
@@ -789,28 +886,14 @@ describe('OpenId4Vc', () => {
         },
       })
 
-    // Hack to make it work with x5c checks
-    verificationSession.authorizationRequestUri = verificationSession.authorizationRequestUri.replace('https', 'http')
-    const verificationSessionRepoitory = verifier.agent.dependencyManager.resolve(
-      OpenId4VcVerificationSessionRepository
-    )
-    await verificationSessionRepoitory.update(verifier.agent.context, verificationSession)
-
-    // Hack to make it work with x5c check
-    // @ts-expect-error
-    verifier.agent.modules.openId4VcVerifier.config.options.baseUrl =
-      // @ts-expect-error
-      verifier.agent.modules.openId4VcVerifier.config.options.baseUrl.replace('https://', 'http://')
-
-    expect(authorizationRequest.replace('https', 'http')).toEqual(
-      `openid4vp://?client_id=localhost%3A1234&request_uri=${encodeURIComponent(
+    expect(authorizationRequest).toEqual(
+      `openid4vp://?client_id=localhost%3A3443&request_uri=${encodeURIComponent(
         verificationSession.authorizationRequestUri
       )}`
     )
 
     const resolvedAuthorizationRequest = await holder.agent.modules.openId4VcHolder.resolveSiopAuthorizationRequest(
-      // hack to make it work on localhost
-      authorizationRequest.replace('https', 'http')
+      authorizationRequest
     )
     expect(resolvedAuthorizationRequest.authorizationRequest.payload?.response_mode).toEqual('direct_post.jwt')
 
@@ -863,107 +946,108 @@ describe('OpenId4Vc', () => {
       resolvedAuthorizationRequest.presentationExchange.credentialsForRequest
     )
 
-    // Hack to make it work with x5c
-    resolvedAuthorizationRequest.authorizationRequest.responseURI =
-      resolvedAuthorizationRequest.authorizationRequest.responseURI?.replace('https', 'http')
+    try {
+      const { serverResponse, submittedResponse } =
+        await holder.agent.modules.openId4VcHolder.acceptSiopAuthorizationRequest({
+          authorizationRequest: resolvedAuthorizationRequest.authorizationRequest,
+          presentationExchange: {
+            credentials: selectedCredentials,
+          },
+        })
 
-    const { serverResponse, submittedResponse } =
-      await holder.agent.modules.openId4VcHolder.acceptSiopAuthorizationRequest({
-        authorizationRequest: resolvedAuthorizationRequest.authorizationRequest,
-        presentationExchange: {
-          credentials: selectedCredentials,
+      // path_nested should not be used for sd-jwt
+      expect(submittedResponse.presentation_submission?.descriptor_map[0].path_nested).toBeUndefined()
+      expect(submittedResponse).toEqual({
+        presentation_submission: {
+          definition_id: 'OpenBadgeCredential',
+          descriptor_map: [
+            {
+              format: 'vc+sd-jwt',
+              id: 'OpenBadgeCredentialDescriptor',
+              path: '$',
+            },
+          ],
+          id: expect.any(String),
         },
+        state: expect.any(String),
+        vp_token: expect.any(String),
+      })
+      expect(serverResponse).toMatchObject({
+        status: 200,
       })
 
-    // path_nested should not be used for sd-jwt
-    expect(submittedResponse.presentation_submission?.descriptor_map[0].path_nested).toBeUndefined()
-    expect(submittedResponse).toEqual({
-      presentation_submission: {
-        definition_id: 'OpenBadgeCredential',
-        descriptor_map: [
-          {
-            format: 'vc+sd-jwt',
-            id: 'OpenBadgeCredentialDescriptor',
-            path: '$',
-          },
-        ],
-        id: expect.any(String),
-      },
-      state: expect.any(String),
-      vp_token: expect.any(String),
-    })
-    expect(serverResponse).toMatchObject({
-      status: 200,
-    })
+      // The RP MUST validate that the aud (audience) Claim contains the value of the client_id
+      // that the RP sent in the Authorization Request as an audience.
+      // When the request has been signed, the value might be an HTTPS URL, or a Decentralized Identifier.
+      await waitForVerificationSessionRecordSubject(verifier.replaySubject, {
+        contextCorrelationId: verifier.agent.context.contextCorrelationId,
+        state: OpenId4VcVerificationSessionState.ResponseVerified,
+        verificationSessionId: verificationSession.id,
+      })
+      const { idToken, presentationExchange } =
+        await verifier.agent.modules.openId4VcVerifier.getVerifiedAuthorizationResponse(verificationSession.id)
 
-    // The RP MUST validate that the aud (audience) Claim contains the value of the client_id
-    // that the RP sent in the Authorization Request as an audience.
-    // When the request has been signed, the value might be an HTTPS URL, or a Decentralized Identifier.
-    await waitForVerificationSessionRecordSubject(verifier.replaySubject, {
-      contextCorrelationId: verifier.agent.context.contextCorrelationId,
-      state: OpenId4VcVerificationSessionState.ResponseVerified,
-      verificationSessionId: verificationSession.id,
-    })
-    const { idToken, presentationExchange } =
-      await verifier.agent.modules.openId4VcVerifier.getVerifiedAuthorizationResponse(verificationSession.id)
+      expect(idToken).toBeUndefined()
 
-    expect(idToken).toBeUndefined()
+      const presentation = presentationExchange?.presentations[0] as SdJwtVc
 
-    const presentation = presentationExchange?.presentations[0] as SdJwtVc
+      // name SHOULD NOT be disclosed
+      expect(presentation.prettyClaims).not.toHaveProperty('name')
 
-    // name SHOULD NOT be disclosed
-    expect(presentation.prettyClaims).not.toHaveProperty('name')
+      // university and name SHOULD NOT be in the signed payload
+      expect(presentation.payload).not.toHaveProperty('university')
+      expect(presentation.payload).not.toHaveProperty('name')
 
-    // university and name SHOULD NOT be in the signed payload
-    expect(presentation.payload).not.toHaveProperty('university')
-    expect(presentation.payload).not.toHaveProperty('name')
-
-    expect(presentationExchange).toEqual({
-      definition: presentationDefinition,
-      submission: {
-        definition_id: 'OpenBadgeCredential',
-        descriptor_map: [
-          {
-            format: 'vc+sd-jwt',
-            id: 'OpenBadgeCredentialDescriptor',
-            path: '$',
-          },
-        ],
-        id: expect.any(String),
-      },
-      presentations: [
-        {
-          compact: expect.any(String),
-          header: {
-            alg: 'EdDSA',
-            kid: '#z6MkrzQPBr4pyqC776KKtrz13SchM5ePPbssuPuQZb5t4uKQ',
-            typ: 'vc+sd-jwt',
-          },
-          payload: {
-            _sd: [expect.any(String), expect.any(String)],
-            _sd_alg: 'sha-256',
-            cnf: {
-              kid: 'did:key:z6MkpGR4gs4Rc3Zph4vj8wRnjnAxgAPSxcR8MAVKutWspQzc#z6MkpGR4gs4Rc3Zph4vj8wRnjnAxgAPSxcR8MAVKutWspQzc',
+      expect(presentationExchange).toEqual({
+        definition: presentationDefinition,
+        submission: {
+          definition_id: 'OpenBadgeCredential',
+          descriptor_map: [
+            {
+              format: 'vc+sd-jwt',
+              id: 'OpenBadgeCredentialDescriptor',
+              path: '$',
             },
-            iat: expect.any(Number),
-            iss: 'did:key:z6MkrzQPBr4pyqC776KKtrz13SchM5ePPbssuPuQZb5t4uKQ',
-            vct: 'OpenBadgeCredential',
-            degree: 'bachelor',
-          },
-          // university SHOULD be disclosed
-          prettyClaims: {
-            cnf: {
-              kid: 'did:key:z6MkpGR4gs4Rc3Zph4vj8wRnjnAxgAPSxcR8MAVKutWspQzc#z6MkpGR4gs4Rc3Zph4vj8wRnjnAxgAPSxcR8MAVKutWspQzc',
-            },
-            iat: expect.any(Number),
-            iss: 'did:key:z6MkrzQPBr4pyqC776KKtrz13SchM5ePPbssuPuQZb5t4uKQ',
-            vct: 'OpenBadgeCredential',
-            degree: 'bachelor',
-            university: 'innsbruck',
-          },
+          ],
+          id: expect.any(String),
         },
-      ],
-    })
+        presentations: [
+          {
+            compact: expect.any(String),
+            header: {
+              alg: 'EdDSA',
+              kid: '#z6MkrzQPBr4pyqC776KKtrz13SchM5ePPbssuPuQZb5t4uKQ',
+              typ: 'vc+sd-jwt',
+            },
+            payload: {
+              _sd: [expect.any(String), expect.any(String)],
+              _sd_alg: 'sha-256',
+              cnf: {
+                kid: 'did:key:z6MkpGR4gs4Rc3Zph4vj8wRnjnAxgAPSxcR8MAVKutWspQzc#z6MkpGR4gs4Rc3Zph4vj8wRnjnAxgAPSxcR8MAVKutWspQzc',
+              },
+              iat: expect.any(Number),
+              iss: 'did:key:z6MkrzQPBr4pyqC776KKtrz13SchM5ePPbssuPuQZb5t4uKQ',
+              vct: 'OpenBadgeCredential',
+              degree: 'bachelor',
+            },
+            // university SHOULD be disclosed
+            prettyClaims: {
+              cnf: {
+                kid: 'did:key:z6MkpGR4gs4Rc3Zph4vj8wRnjnAxgAPSxcR8MAVKutWspQzc#z6MkpGR4gs4Rc3Zph4vj8wRnjnAxgAPSxcR8MAVKutWspQzc',
+              },
+              iat: expect.any(Number),
+              iss: 'did:key:z6MkrzQPBr4pyqC776KKtrz13SchM5ePPbssuPuQZb5t4uKQ',
+              vct: 'OpenBadgeCredential',
+              degree: 'bachelor',
+              university: 'innsbruck',
+            },
+          },
+        ],
+      })
+    } catch (error) {
+      console.error('error', error)
+      throw error
+    }
   })
 
   it('e2e flow with verifier endpoints verifying a sd-jwt-vc with selective disclosure', async () => {
@@ -988,7 +1072,7 @@ describe('OpenId4Vc', () => {
 
     const certificate = await verifier.agent.x509.createSelfSignedCertificate({
       key: await verifier.agent.wallet.createKey({ keyType: KeyType.Ed25519 }),
-      extensions: [[{ type: 'dns', value: 'localhost:1234' }]],
+      extensions: [[{ type: 'dns', value: `localhost:${proxyPort}` }]],
     })
 
     const rawCertificate = certificate.toString('base64')
@@ -1026,12 +1110,6 @@ describe('OpenId4Vc', () => {
       ],
     } satisfies DifPresentationExchangeDefinitionV2
 
-    // Hack to make it work with x5c check
-    // @ts-expect-error
-    verifier.agent.modules.openId4VcVerifier.config.options.baseUrl =
-      // @ts-expect-error
-      verifier.agent.modules.openId4VcVerifier.config.options.baseUrl.replace('http://', 'https://')
-
     const { authorizationRequest, verificationSession } =
       await verifier.agent.modules.openId4VcVerifier.createAuthorizationRequest({
         verifierId: openIdVerifier.verifierId,
@@ -1045,28 +1123,14 @@ describe('OpenId4Vc', () => {
         },
       })
 
-    // Hack to make it work with x5c checks
-    verificationSession.authorizationRequestUri = verificationSession.authorizationRequestUri.replace('https', 'http')
-    const verificationSessionRepoitory = verifier.agent.dependencyManager.resolve(
-      OpenId4VcVerificationSessionRepository
-    )
-    await verificationSessionRepoitory.update(verifier.agent.context, verificationSession)
-
-    // Hack to make it work with x5c check
-    // @ts-expect-error
-    verifier.agent.modules.openId4VcVerifier.config.options.baseUrl =
-      // @ts-expect-error
-      verifier.agent.modules.openId4VcVerifier.config.options.baseUrl.replace('https://', 'http://')
-
-    expect(authorizationRequest.replace('https', 'http')).toEqual(
-      `openid4vp://?client_id=localhost%3A1234&request_uri=${encodeURIComponent(
+    expect(authorizationRequest).toEqual(
+      `openid4vp://?client_id=localhost%3A3443&request_uri=${encodeURIComponent(
         verificationSession.authorizationRequestUri
       )}`
     )
 
     const resolvedAuthorizationRequest = await holder.agent.modules.openId4VcHolder.resolveSiopAuthorizationRequest(
-      // hack to make it work on localhost
-      authorizationRequest.replace('https', 'http')
+      authorizationRequest
     )
 
     expect(resolvedAuthorizationRequest.presentationExchange?.credentialsForRequest).toEqual({
@@ -1117,10 +1181,6 @@ describe('OpenId4Vc', () => {
     const selectedCredentials = presentationExchangeService.selectCredentialsForRequest(
       resolvedAuthorizationRequest.presentationExchange.credentialsForRequest
     )
-
-    // Hack to make it work with x5c
-    resolvedAuthorizationRequest.authorizationRequest.responseURI =
-      resolvedAuthorizationRequest.authorizationRequest.responseURI?.replace('https', 'http')
 
     const { serverResponse, submittedResponse } =
       await holder.agent.modules.openId4VcHolder.acceptSiopAuthorizationRequest({
@@ -1260,7 +1320,7 @@ describe('OpenId4Vc', () => {
 
     const certificate = await verifier.agent.x509.createSelfSignedCertificate({
       key: await verifier.agent.wallet.createKey({ keyType: KeyType.Ed25519 }),
-      extensions: [[{ type: 'dns', value: 'localhost:1234' }]],
+      extensions: [[{ type: 'dns', value: `localhost:${proxyPort}` }]],
     })
 
     const rawCertificate = certificate.toString('base64')
@@ -1322,11 +1382,6 @@ describe('OpenId4Vc', () => {
       ],
     } satisfies DifPresentationExchangeDefinitionV2
 
-    // Hack to make it work with x5c check
-    // @ts-expect-error
-    verifier.agent.modules.openId4VcVerifier.config.options.baseUrl =
-      // @ts-expect-error
-      verifier.agent.modules.openId4VcVerifier.config.options.baseUrl.replace('http://', 'https://')
     const { authorizationRequest, verificationSession } =
       await verifier.agent.modules.openId4VcVerifier.createAuthorizationRequest({
         verifierId: openIdVerifier.verifierId,
@@ -1340,28 +1395,14 @@ describe('OpenId4Vc', () => {
         },
       })
 
-    // Hack to make it work with x5c checks
-    verificationSession.authorizationRequestUri = verificationSession.authorizationRequestUri.replace('https', 'http')
-    const verificationSessionRepoitory = verifier.agent.dependencyManager.resolve(
-      OpenId4VcVerificationSessionRepository
-    )
-    await verificationSessionRepoitory.update(verifier.agent.context, verificationSession)
-
-    // Hack to make it work with x5c check
-    // @ts-expect-error
-    verifier.agent.modules.openId4VcVerifier.config.options.baseUrl =
-      // @ts-expect-error
-      verifier.agent.modules.openId4VcVerifier.config.options.baseUrl.replace('https://', 'http://')
-
-    expect(authorizationRequest.replace('https', 'http')).toEqual(
-      `openid4vp://?client_id=localhost%3A1234&request_uri=${encodeURIComponent(
+    expect(authorizationRequest).toEqual(
+      `openid4vp://?client_id=localhost%3A3443&request_uri=${encodeURIComponent(
         verificationSession.authorizationRequestUri
       )}`
     )
 
     const resolvedAuthorizationRequest = await holder.agent.modules.openId4VcHolder.resolveSiopAuthorizationRequest(
-      // hack to make it work on localhost
-      authorizationRequest.replace('https', 'http')
+      authorizationRequest
     )
 
     expect(resolvedAuthorizationRequest.presentationExchange?.credentialsForRequest).toEqual({
@@ -1442,10 +1483,6 @@ describe('OpenId4Vc', () => {
     const selectedCredentials = presentationExchangeService.selectCredentialsForRequest(
       resolvedAuthorizationRequest.presentationExchange.credentialsForRequest
     )
-
-    // Hack to make it work with x5c
-    resolvedAuthorizationRequest.authorizationRequest.responseURI =
-      resolvedAuthorizationRequest.authorizationRequest.responseURI?.replace('https', 'http')
 
     const { serverResponse, submittedResponse } =
       await holder.agent.modules.openId4VcHolder.acceptSiopAuthorizationRequest({

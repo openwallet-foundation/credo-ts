@@ -5,12 +5,16 @@ const oidc = new Provider('http://localhost:3042', {
   clients: [
     {
       client_id: 'foo',
-      client_secret: 'bar',
-      redirect_uris: ['http://example.com'],
-      scope: 'openid',
+      // client_secret: 'bar',
+      redirect_uris: ['http://localhost:1234/redirect'],
       grant_types: ['authorization_code'],
     },
+    {
+      client_id: 'issuer-server',
+      client_secret: 'issuer-server',
+    },
   ],
+  // scopes: ['UniversityDegreeCredential'],
   pkce: {
     methods: ['S256'],
     required: () => {
@@ -18,20 +22,44 @@ const oidc = new Provider('http://localhost:3042', {
       return true
     },
   },
+  extraTokenClaims: async (context, token) => {
+    if (token.kind === 'AccessToken') {
+      console.log(context.body)
+      return {
+        issuer_state: (context.body as Record<string, unknown>).issuer_state,
+      }
+    }
+    return undefined
+  },
   features: {
     dPoP: { enabled: false },
     pushedAuthorizationRequests: {
       enabled: true,
       //requirePushedAuthorizationRequests: true,
     },
+    resourceIndicators: {
+      defaultResource: () => 'http://localhost:1234',
+      enabled: true,
+      getResourceServerInfo: (ctx, resourceIndicator, client) => {
+        return {
+          scope: 'UniversityDegreeCredential',
+          accessTokenTTL: 5 * 60, // 5 minutes
+          accessTokenFormat: 'jwt',
+        }
+      },
+      useGrantedResource: (ctx, model) => {
+        // @param ctx - koa request context
+        // @param model - depending on the request's grant_type this can be either an AuthorizationCode, BackchannelAuthenticationRequest,
+        //                RefreshToken, or DeviceCode model instance.
+        return true
+      },
+    },
   },
 
   async findAccount(ctx, id) {
-    console.log('called findAccount')
     return {
       accountId: id,
       async claims(use, scope) {
-        console.log('called claims', scope)
         return { sub: id }
       },
     }
@@ -48,7 +76,7 @@ oidc.use(async (ctx, next) => {
 
   if (ctx.path.includes('request')) {
     console.log(ctx.request.body)
-    ctx.request.body.client_secret = 'bar'
+    // ctx.request.body.client_secret = 'bar'
   }
 
   if (ctx.path.includes('auth')) {
@@ -59,7 +87,7 @@ oidc.use(async (ctx, next) => {
 
   if (ctx.path.includes('token')) {
     console.log('token endpoint')
-    ctx.request.body.client_secret = 'bar'
+    // ctx.request.body.client_secret = 'bar'
   }
 
   await next()

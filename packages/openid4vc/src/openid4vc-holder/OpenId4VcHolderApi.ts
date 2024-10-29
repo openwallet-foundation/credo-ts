@@ -147,8 +147,7 @@ export class OpenId4VcHolderApi {
    */
   public async requestToken(options: OpenId4VciRequestTokenOptions): Promise<OpenId4VciRequestTokenResponse> {
     const {
-      access_token: accessToken,
-      c_nonce: cNonce,
+      accessTokenResponse: { access_token: accessToken, c_nonce: cNonce },
       dpop,
     } = await this.openId4VciHolderService.requestAccessToken(this.agentContext, options)
     return { accessToken, cNonce, dpop }
@@ -179,6 +178,12 @@ export class OpenId4VcHolderApi {
    * @param options OpenId4VciSendNotificationOptions
    */
   public async sendNotification(options: OpenId4VciSendNotificationOptions) {
-    return this.openId4VciHolderService.sendNotification(options)
+    return this.openId4VciHolderService.sendNotification(this.agentContext, {
+      accessToken: options.accessToken,
+      metadata: await this.openId4VciHolderService.resolveIssuerMetadata(this.agentContext, {}),
+      notificationEvent: options.notificationEvent,
+      notificationId: options.notificationMetadata.notificationId,
+      dpop: options.dpop
+    })
   }
 }

@@ -18,6 +18,7 @@ import {
   configureIssuerMetadataEndpoint,
   configureOAuthAuthorizationServerMetadataEndpoint,
 } from './router'
+import { Response } from 'express'
 
 /**
  * @public
@@ -91,7 +92,7 @@ export class OpenId4VcIssuerModule implements Module {
         // FIXME: should we create combined openId actor record?
         agentContext = await getAgentContextForActorId(rootAgentContext, issuerId)
         const issuerApi = agentContext.dependencyManager.resolve(OpenId4VcIssuerApi)
-        const issuer = await issuerApi.getByIssuerId(issuerId)
+        const issuer = await issuerApi.getIssuerByIssuerId(issuerId)
 
         req.requestContext = {
           agentContext,
@@ -126,13 +127,26 @@ export class OpenId4VcIssuerModule implements Module {
     contextRouter.use(async (req: OpenId4VcIssuanceRequest, _res: unknown, next) => {
       const { agentContext } = getRequestContext(req)
       await agentContext.endSession()
+
       next()
     })
 
     // This one will be called for all errors that are thrown
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    contextRouter.use(async (_error: unknown, req: OpenId4VcIssuanceRequest, _res: unknown, next: any) => {
+    contextRouter.use(async (_error: unknown, req: OpenId4VcIssuanceRequest, res: Response, next: any) => {
       const { agentContext } = getRequestContext(req)
+
+      if (!res.headersSent) {
+        agentContext.config.logger.warn(
+          'Error was thrown but openid4vci endpoint did not send a response. Sending generic server_error.'
+        )
+
+        res.status(500).json({
+          error: 'server_error',
+          error_description: 'An unexpected error occurred on the server.',
+        })
+      }
+
       await agentContext.endSession()
       next()
     })

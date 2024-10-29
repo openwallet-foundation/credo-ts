@@ -25,22 +25,29 @@ import type {
 
 export interface OpenId4VciPreAuthorizedCodeFlowConfig {
   preAuthorizedCode?: string
+
   /**
    * The user pin required flag indicates whether the user needs to enter a pin to authorize the transaction.
    * Only compatible with v11
    */
   userPinRequired?: boolean
+
   /**
    * The user pin required flag indicates whether the user needs to enter a pin to authorize the transaction.
    * Only compatible with v13
    */
   txCode?: OpenId4VciTxCode
+
+  // OPTIONAL string that the Wallet can use to identify the Authorization Server to use with this grant
+  // type when authorization_servers parameter in the Credential Issuer metadata has multiple entries.
+  authorizationServerUrl?: string
 }
 
 export interface OpenId4VciAuthorizationCodeFlowConfig {
   // OPTIONAL. String value created by the Credential Issuer and opaque to the Wallet
   // that is used to bind the subsequent Authorization Request with the Credential Issuer
   // to a context set up during previous steps.
+  // If not provided, a value will be generated.
   issuerState?: string
 
   // OPTIONAL string that the Wallet can use to identify the Authorization Server to use with this grant
@@ -52,7 +59,7 @@ export type OpenId4VcIssuerMetadata = {
   // The Credential Issuer's identifier. (URL using the https scheme)
   issuerUrl: string
   credentialEndpoint: string
-  tokenEndpoint?: string
+  tokenEndpoint: string
   authorizationServers?: string[]
 
   issuerDisplay?: OpenId4VciIssuerMetadataDisplay[]
@@ -74,7 +81,6 @@ export interface OpenId4VciCreateCredentialOfferOptions {
   baseUri?: string
 
   preAuthorizedCodeFlowConfig?: OpenId4VciPreAuthorizedCodeFlowConfig
-
   authorizationCodeFlowConfig?: OpenId4VciAuthorizationCodeFlowConfig
 
   /**

@@ -48,8 +48,6 @@ export class Holder extends BaseAgent<ReturnType<typeof getOpenIdHolderModules>>
       }
     )
 
-    console.log(resolvedAuthorizationRequest.authorizationRequestUri)
-
     let code = 'not a valid code!'
     code = 'MU_MtTZjjhjmzuzGZdsLSam2GcC-7c4g_k5ukV2XO3i'
 

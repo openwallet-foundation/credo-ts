@@ -153,17 +153,36 @@ export class Issuer extends BaseAgent<{
     issuer.issuerRecord = await issuer.agent.modules.openId4VcIssuer.createIssuer({
       issuerId: '726222ad-7624-4f12-b15b-e08aa7042ffa',
       credentialsSupported,
-      authorizationServerConfigs: [{ baseUrl: 'http://localhost:3042' }],
+      // FIXME: should be extraAuthorizationServerConfigs.
+      authorizationServerConfigs: [
+        {
+          issuer: 'http://localhost:3042',
+          serverType: 'oidc',
+          clientId: 'issuer-server',
+          clientSecret: 'issuer-server',
+        },
+      ],
     })
 
     return issuer
   }
 
   public async createCredentialOffer(offeredCredentials: string[]) {
-    const { credentialOffer } = await this.agent.modules.openId4VcIssuer.createCredentialOffer({
+    // const issuerMetadata = await this.agent.modules.openId4VcIssuer.getIssuerMetadata(this.issuerRecord.issuerId)
+
+    const { credentialOffer, issuanceSession } = await this.agent.modules.openId4VcIssuer.createCredentialOffer({
       issuerId: this.issuerRecord.issuerId,
       offeredCredentials,
-      authorizationCodeFlowConfig: { issuerState: 'f498b73c-144f-4eea-bd6b-7be89b35936e' },
+      // FIXME: wait for PR in OID4VCI repo
+      // // Pre-auth using our own server
+      // preAuthorizedCodeFlowConfig: {
+      //   authorizationServerUrl: issuerMetadata.issuerUrl,
+      // },
+      // Auth using external authorization server
+      authorizationCodeFlowConfig: {
+        authorizationServerUrl: 'http://localhost:3042',
+        issuerState: 'f498b73c-144f-4eea-bd6b-7be89b35936e',
+      },
     })
 
     return credentialOffer

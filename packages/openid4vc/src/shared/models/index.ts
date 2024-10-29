@@ -1,3 +1,4 @@
+import { CredentialConfigurationSupported, CredentialIssuerMetadata } from '@animo-id/oid4vci';
 import type {
   VerifiedAuthorizationRequest,
   AuthorizationRequestPayload,
@@ -25,14 +26,11 @@ import type {
 export type OpenId4VciCredentialSupported = CredentialsSupportedLegacy & { id?: string; scope?: string }
 export type OpenId4VciCredentialSupportedWithId = CredentialsSupportedLegacy & { id: string; scope?: string }
 export type OpenId4VciCredentialSupportedWithIdAndScope = OpenId4VciCredentialSupportedWithId & { scope: string }
-export type OpenId4VciCredentialConfigurationSupported = CredentialConfigurationSupportedV1_0_13
+export type OpenId4VciCredentialConfigurationSupported = CredentialConfigurationSupported
 export type OpenId4VciCredentialConfigurationsSupported = Record<string, OpenId4VciCredentialConfigurationSupported>
 export type OpenId4VciTxCode = TxCode
 
-export type OpenId4VciIssuerMetadataV1Draft11 = CredentialIssuerMetadataV1_0_11
-export type OpenId4VciIssuerMetadataV1Draft13 = CredentialIssuerMetadataV1_0_13
-export type OpenId4VciIssuerMetadata = OpenId4VciIssuerMetadataV1Draft11 | OpenId4VciIssuerMetadataV1Draft13
-
+export type OpenId4VciIssuerMetadata = CredentialIssuerMetadata
 export type OpenId4VciIssuerMetadataDisplay = MetadataDisplay
 
 export type OpenId4VciCredentialRequest = UniformCredentialRequest

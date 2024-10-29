@@ -10,6 +10,7 @@ import type { CredentialOfferFormatV1_0_11 } from '@sphereon/oid4vci-common'
 import { CredoError } from '@credo-ts/core'
 
 import { getSupportedJwaSignatureAlgorithms } from './utils'
+import { CredentialConfigurationSupported } from '@animo-id/oid4vci'
 
 /**
  * Get all `types` from a `CredentialSupported` object.
@@ -185,55 +186,30 @@ export function credentialsSupportedV11ToV13(
 }
 
 /**
- * Returns all entries from the credential offer with the associated metadata resolved. For 'id' entries, the associated `credentials_supported` object is resolved from the issuer metadata.
- * For inline entries, an error is thrown.
+ * Returns all entries from the credential offer with the associated metadata resolved.
  */
 export function getOfferedCredentials(
-  agentContext: AgentContext,
-  offeredCredentials: Array<string | CredentialOfferFormatV1_0_11>,
-  credentialsSupportedOrConfigurations: OpenId4VciCredentialConfigurationsSupported | OpenId4VciCredentialSupported[]
+  offeredCredentialConfigurationIds: Array<string>,
+  credentialConfigurationsSupported: Record<string, CredentialConfigurationSupported>
 ): {
-  credentialsSupported: OpenId4VciCredentialSupportedWithId[]
-  credentialConfigurationsSupported: OpenId4VciCredentialConfigurationsSupported
+  credentialConfigurationsSupported: Record<string, CredentialConfigurationSupported>
 } {
-  const offeredCredentialConfigurations: OpenId4VciCredentialConfigurationsSupported = {}
-  const offeredCredentialsSupported: OpenId4VciCredentialSupportedWithId[] = []
+  const offeredCredentialConfigurations: Record<string, CredentialConfigurationSupported> = {}
 
-  const credentialsSupported = Array.isArray(credentialsSupportedOrConfigurations)
-    ? credentialsSupportedOrConfigurations.filter((s): s is OpenId4VciCredentialSupportedWithId => s.id !== undefined)
-    : credentialsSupportedV13ToV11(credentialsSupportedOrConfigurations)
-
-  const credentialConfigurationsSupported = Array.isArray(credentialsSupportedOrConfigurations)
-    ? credentialsSupportedV11ToV13(
-        agentContext,
-        credentialsSupportedOrConfigurations.filter((s): s is OpenId4VciCredentialSupportedWithId => s.id !== undefined)
-      )
-    : credentialsSupportedOrConfigurations
-
-  for (const offeredCredential of offeredCredentials) {
-    // In draft 12 inline credential offers are removed. It's easier to already remove support now.
-    if (typeof offeredCredential !== 'string') {
-      throw new CredoError(
-        'Only referenced credentials pointing to an id in credentials_supported issuer metadata are supported'
-      )
-    }
-
-    const foundCredentialConfiguration = credentialConfigurationsSupported[offeredCredential]
-    const foundCredentialSupported = credentialsSupported.find((supported) => supported.id === offeredCredential)
+  for (const offeredCredentialConfigurationId of offeredCredentialConfigurationIds) {
+    const foundCredentialConfiguration = credentialConfigurationsSupported[offeredCredentialConfigurationId]
 
     // Make sure the issuer metadata includes the offered credential.
-    if (!foundCredentialConfiguration || !foundCredentialSupported) {
+    if (!foundCredentialConfiguration) {
       throw new Error(
-        `Offered credential '${offeredCredential}' is not part of credentials_supported/credential_configurations_supported of the issuer metadata.`
+        `Offered credential configuration id '${offeredCredentialConfigurationId}' is not part of credential_configurations_supported of the issuer metadata.`
       )
     }
 
-    offeredCredentialConfigurations[offeredCredential] = foundCredentialConfiguration
-    offeredCredentialsSupported.push(foundCredentialSupported)
+    offeredCredentialConfigurations[offeredCredentialConfigurationId] = foundCredentialConfiguration
   }
 
   return {
     credentialConfigurationsSupported: offeredCredentialConfigurations,
-    credentialsSupported: offeredCredentialsSupported,
   }
 }

@@ -1,20 +1,14 @@
 import type {
   OpenId4VcCredentialHolderBinding,
-  OpenId4VciCredentialSupportedWithId,
-  OpenId4VciIssuerMetadata,
-  OpenId4VciCredentialOfferPayload,
-  OpenId4VciCredentialConfigurationsSupported,
 } from '../shared'
 import type { JwaSignatureAlgorithm, Jwk, KeyType } from '@credo-ts/core'
 import type { VerifiableCredential } from '@credo-ts/core/src/modules/dif-presentation-exchange/models/index'
 import type {
   AccessTokenResponse,
-  CredentialOfferRequestWithBaseUrl,
-  EndpointMetadataResult,
-  OpenId4VCIVersion,
 } from '@sphereon/oid4vci-common'
 
 import { OpenId4VciCredentialFormatProfile } from '../shared/models/OpenId4VciCredentialFormatProfile'
+import { CredentialConfigurationSupported, CredentialIssuerMetadata, CredentialOfferObject, IssuerMetadataResult } from '@animo-id/oid4vci'
 
 export type OpenId4VciSupportedCredentialFormats =
   | OpenId4VciCredentialFormatProfile.JwtVcJson
@@ -46,7 +40,7 @@ export type OpenId4VciTokenResponse = Pick<AccessTokenResponse, 'access_token' |
 export type OpenId4VciRequestTokenResponse = {
   accessToken: string
   cNonce?: string
-  dpop?: { jwk: Jwk; nonce?: string }
+  dpop?: { jwk: Jwk; alg: JwaSignatureAlgorithm; nonce?: string }
 }
 
 export interface OpenId4VciCredentialResponse {
@@ -55,18 +49,23 @@ export interface OpenId4VciCredentialResponse {
 }
 
 export interface OpenId4VciResolvedCredentialOffer {
-  metadata: Omit<EndpointMetadataResult, 'credentialIssuerMetadata'> & {
-    credentialIssuerMetadata: OpenId4VciIssuerMetadata
-  }
-  credentialOfferRequestWithBaseUrl: CredentialOfferRequestWithBaseUrl
-  credentialOfferPayload: OpenId4VciCredentialOfferPayload
-  offeredCredentials: OpenId4VciCredentialSupportedWithId[]
-  offeredCredentialConfigurations: OpenId4VciCredentialConfigurationsSupported
-  version: OpenId4VCIVersion
+  metadata: IssuerMetadataResult
+  credentialOfferPayload: CredentialOfferObject
+
+  /**
+   * Uses the flexible type meaning it can include any format string.
+   * You can cast it to `CredentialConfigurationSupportedWithFormat` for only supported formats.
+   */
+  offeredCredentialConfigurations: Record<string, CredentialConfigurationSupported>
 }
 
 export interface OpenId4VciResolvedAuthorizationRequest extends OpenId4VciAuthCodeFlowOptions {
-  codeVerifier: string
+  /**
+   * The authorization server used for creating the authorization request url
+   */
+  authorizationServer: string
+  
+  codeVerifier?: string
   authorizationRequestUri: string
 }
 
@@ -93,6 +92,8 @@ export interface OpenId4VciSendNotificationOptions {
    * 'credential_failure' otherwise.
    */
   notificationEvent: OpenId4VciNotificationEvent
+
+  dpop?: { jwk: Jwk; alg: JwaSignatureAlgorithm; nonce?: string }
 }
 
 interface OpenId4VcTokenRequestBaseOptions {
@@ -118,7 +119,7 @@ export interface OpenId4VciCredentialRequestOptions extends Omit<OpenId4VciAccep
   resolvedCredentialOffer: OpenId4VciResolvedCredentialOffer
   accessToken: string
   cNonce?: string
-  dpop?: { jwk: Jwk; nonce?: string }
+  dpop?: { jwk: Jwk; alg: JwaSignatureAlgorithm; nonce?: string }
 
   /**
    * The client id used for authorization. Only required if authorization_code flow was used.

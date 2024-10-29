@@ -2,7 +2,7 @@ import type { OpenId4VcIssuanceRequest } from './requestContext'
 import type { CredentialIssuerMetadata } from '@sphereon/oid4vci-common'
 import type { Router, Response } from 'express'
 
-import { getRequestContext, sendErrorResponse } from '../../shared/router'
+import { getRequestContext, sendErrorResponse, sendJsonResponse } from '../../shared/router'
 import { OpenId4VcIssuerService } from '../OpenId4VcIssuerService'
 
 export function configureIssuerMetadataEndpoint(router: Router) {
@@ -33,13 +33,10 @@ export function configureIssuerMetadataEndpoint(router: Router) {
           dpop_signing_alg_values_supported: issuerMetadata.dpopSigningAlgValuesSupported,
         } satisfies CredentialIssuerMetadata
 
-        response.status(200).json(transformedMetadata)
+        return sendJsonResponse(response, next, transformedMetadata)
       } catch (e) {
-        sendErrorResponse(response, agentContext.config.logger, 500, 'invalid_request', e)
+        return sendErrorResponse(response, next, agentContext.config.logger, 500, 'invalid_request', e)
       }
-
-      // NOTE: if we don't call next, the agentContext session handler will NOT be called
-      next()
     }
   )
 }

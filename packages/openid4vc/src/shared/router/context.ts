@@ -1,5 +1,5 @@
 import type { AgentContext, Logger } from '@credo-ts/core'
-import type { Response, Request } from 'express'
+import type { Response, Request, NextFunction } from 'express'
 
 import { CredoError } from '@credo-ts/core'
 
@@ -11,16 +11,34 @@ export interface OpenId4VcRequestContext {
   agentContext: AgentContext
 }
 
-export function sendErrorResponse(response: Response, logger: Logger, code: number, message: string, error: unknown) {
+export function sendErrorResponse(
+  response: Response,
+  next: NextFunction,
+  logger: Logger,
+  code: number,
+  message: string,
+  error: unknown,
+  additionalPayload?: Record<string, unknown>
+) {
   const error_description =
     error instanceof Error ? error.message : typeof error === 'string' ? error : 'An unknown error occurred.'
 
-  const body = { error: message, error_description }
-  logger.warn(`[OID4VCI] Sending error response: ${JSON.stringify(body)}`, {
+  const body = { error: message, error_description, ...additionalPayload }
+  logger.warn(`[OID4VC] Sending error response: ${JSON.stringify(body)}`, {
     error,
   })
 
-  return response.status(code).json(body)
+  response.status(code).json(body)
+
+  const throwError =
+    error instanceof Error ? error : new CredoError('Unknown error in openid4vc error response handler')
+  next(throwError)
+}
+
+export function sendJsonResponse(response: Response, next: NextFunction, body: any) {
+  response.status(200).json(body)
+
+  next()
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

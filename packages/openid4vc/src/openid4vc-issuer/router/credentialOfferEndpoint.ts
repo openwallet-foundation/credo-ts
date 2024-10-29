@@ -4,7 +4,7 @@ import type { Router, Response } from 'express'
 
 import { joinUriParts, EventEmitter } from '@credo-ts/core'
 
-import { getRequestContext, sendErrorResponse } from '../../shared/router'
+import { getRequestContext, sendErrorResponse, sendJsonResponse } from '../../shared/router'
 import { OpenId4VcIssuanceSessionState } from '../OpenId4VcIssuanceSessionState'
 import { OpenId4VcIssuerEvents } from '../OpenId4VcIssuerEvents'
 import { OpenId4VcIssuerModuleConfig } from '../OpenId4VcIssuerModuleConfig'
@@ -30,6 +30,7 @@ export function configureCredentialOfferEndpoint(router: Router, config: OpenId4
       if (!request.params.credentialOfferId || typeof request.params.credentialOfferId !== 'string') {
         return sendErrorResponse(
           response,
+          next,
           agentContext.config.logger,
           400,
           'invalid_request',
@@ -56,7 +57,14 @@ export function configureCredentialOfferEndpoint(router: Router, config: OpenId4
         })
 
         if (!openId4VcIssuanceSession || !openId4VcIssuanceSession.credentialOfferPayload) {
-          return sendErrorResponse(response, agentContext.config.logger, 404, 'not_found', 'Credential offer not found')
+          return sendErrorResponse(
+            response,
+            next,
+            agentContext.config.logger,
+            404,
+            'not_found',
+            'Credential offer not found'
+          )
         }
 
         if (
@@ -66,6 +74,7 @@ export function configureCredentialOfferEndpoint(router: Router, config: OpenId4
         ) {
           return sendErrorResponse(
             response,
+            next,
             agentContext.config.logger,
             400,
             'invalid_request',
@@ -91,13 +100,10 @@ export function configureCredentialOfferEndpoint(router: Router, config: OpenId4
             })
         }
 
-        response.json(openId4VcIssuanceSession.credentialOfferPayload)
+        return sendJsonResponse(response, next, openId4VcIssuanceSession.credentialOfferPayload)
       } catch (error) {
-        sendErrorResponse(response, agentContext.config.logger, 500, 'invalid_request', error)
+        return sendErrorResponse(response, next, agentContext.config.logger, 500, 'invalid_request', error)
       }
-
-      // NOTE: if we don't call next, the agentContext session handler will NOT be called
-      next()
     }
   )
 }
