@@ -213,7 +213,7 @@ export class DifPresentationExchangeService {
         verifiablePresentationResultsWithFormat.push({
           verifiablePresentationResult: {
             presentationSubmission: presentationSubmission,
-            verifiablePresentation: deviceResponseBase64Url,
+            verifiablePresentations: [deviceResponseBase64Url],
             presentationSubmissionLocation: PresentationSubmissionLocation.EXTERNAL,
           },
           claimFormat: presentationToCreate.claimFormat,
@@ -282,10 +282,9 @@ export class DifPresentationExchangeService {
     })
 
     return {
-      verifiablePresentations: verifiablePresentationResultsWithFormat.map((resultWithFormat) =>
-        getVerifiablePresentationFromEncoded(
-          agentContext,
-          resultWithFormat.verifiablePresentationResult.verifiablePresentation
+      verifiablePresentations: verifiablePresentationResultsWithFormat.flatMap((resultWithFormat) =>
+        resultWithFormat.verifiablePresentationResult.verifiablePresentations.map((vp) =>
+          getVerifiablePresentationFromEncoded(agentContext, vp)
         )
       ),
       presentationSubmission,
