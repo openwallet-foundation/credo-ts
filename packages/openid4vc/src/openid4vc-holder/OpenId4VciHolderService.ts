@@ -706,7 +706,7 @@ export class OpenId4VciHolderService {
 
     // The cryptographic_binding_methods_supported describe the cryptographic key material that the issued Credential is bound to.
     const supportsCoseKey = issuerSupportedBindingMethods?.includes('cose_key') ?? false
-    const supportsJwk = issuerSupportedBindingMethods?.includes('jwk') ?? supportsCoseKey ?? false
+    const supportsJwk = issuerSupportedBindingMethods?.includes('jwk') || supportsCoseKey
 
     return {
       signatureAlgorithm,
