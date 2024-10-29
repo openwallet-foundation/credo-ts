@@ -607,6 +607,7 @@ export class OpenId4VcSiopVerifierService {
         if (!encodedPresentation) throw new CredoError('Did not receive a presentation for verification.')
 
         let isValid: boolean
+        let reason: string | undefined
 
         // TODO: it might be better here to look at the presentation submission to know
         // If presentation includes a ~, we assume it's an SD-JWT-VC
@@ -622,6 +623,7 @@ export class OpenId4VcSiopVerifierService {
           })
 
           isValid = verificationResult.verification.isValid
+          reason = verificationResult.isValid ? undefined : verificationResult.error.message
         } else if (typeof encodedPresentation === 'string') {
           const verificationResult = await this.w3cCredentialService.verifyPresentation(agentContext, {
             presentation: encodedPresentation,
@@ -633,6 +635,7 @@ export class OpenId4VcSiopVerifierService {
           })
 
           isValid = verificationResult.isValid
+          reason = verificationResult.error?.message
         } else {
           const verificationResult = await this.w3cCredentialService.verifyPresentation(agentContext, {
             presentation: JsonTransformer.fromJSON(encodedPresentation, W3cJsonLdVerifiablePresentation),
@@ -641,10 +644,12 @@ export class OpenId4VcSiopVerifierService {
           })
 
           isValid = verificationResult.isValid
+          reason = verificationResult.error?.message
         }
 
         return {
           verified: isValid,
+          reason,
         }
       } catch (error) {
         agentContext.config.logger.warn('Error occurred during verification of presentation', {
