@@ -1,4 +1,4 @@
-import { CredentialConfigurationSupported, CredentialIssuerMetadata } from '@animo-id/oid4vci';
+import { CredentialConfigurationSupported, CredentialIssuerMetadata, CredentialRequest } from '@animo-id/oid4vci';
 import type {
   VerifiedAuthorizationRequest,
   AuthorizationRequestPayload,
@@ -7,9 +7,6 @@ import type {
 } from '@sphereon/did-auth-siop'
 import type {
   AssertedUniformCredentialOffer,
-  CredentialConfigurationSupportedV1_0_13,
-  CredentialIssuerMetadataV1_0_11,
-  CredentialIssuerMetadataV1_0_13,
   CredentialOfferPayloadV1_0_11,
   CredentialOfferPayloadV1_0_13,
   CredentialRequestJwtVcJson,
@@ -20,7 +17,6 @@ import type {
   CredentialsSupportedLegacy,
   MetadataDisplay,
   TxCode,
-  UniformCredentialRequest,
 } from '@sphereon/oid4vci-common'
 
 export type OpenId4VciCredentialSupported = CredentialsSupportedLegacy & { id?: string; scope?: string }
@@ -33,7 +29,7 @@ export type OpenId4VciTxCode = TxCode
 export type OpenId4VciIssuerMetadata = CredentialIssuerMetadata
 export type OpenId4VciIssuerMetadataDisplay = MetadataDisplay
 
-export type OpenId4VciCredentialRequest = UniformCredentialRequest
+export type OpenId4VciCredentialRequest = CredentialRequest
 
 export type OpenId4VciCredentialRequestJwtVcJson = CredentialRequestJwtVcJson | CredentialRequestJwtVcJsonV1_0_13
 

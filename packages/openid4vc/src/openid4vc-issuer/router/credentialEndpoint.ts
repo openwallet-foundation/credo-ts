@@ -40,7 +40,7 @@ export function configureCredentialEndpoint(router: Router, config: OpenId4VciCr
     if (!verifyAccessTokenResult) return
 
     try {
-      const credentialRequest = request.body as OpenId4VciCredentialRequest
+      const credentialRequest = request.body
       const issuanceSessionRepository = agentContext.dependencyManager.resolve(OpenId4VcIssuanceSessionRepository)
 
       let issuanceSession: OpenId4VcIssuanceSessionRecord | null

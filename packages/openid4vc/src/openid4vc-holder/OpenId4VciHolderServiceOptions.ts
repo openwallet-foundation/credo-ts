@@ -8,7 +8,7 @@ import type {
 } from '@sphereon/oid4vci-common'
 
 import { OpenId4VciCredentialFormatProfile } from '../shared/models/OpenId4VciCredentialFormatProfile'
-import { CredentialConfigurationSupported, CredentialIssuerMetadata, CredentialOfferObject, IssuerMetadataResult } from '@animo-id/oid4vci'
+import { CredentialConfigurationSupported, CredentialOfferObject, IssuerMetadataResult } from '@animo-id/oid4vci'
 
 export type OpenId4VciSupportedCredentialFormats =
   | OpenId4VciCredentialFormatProfile.JwtVcJson

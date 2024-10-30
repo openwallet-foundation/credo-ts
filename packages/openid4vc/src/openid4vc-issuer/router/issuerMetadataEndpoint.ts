@@ -1,5 +1,5 @@
 import type { OpenId4VcIssuanceRequest } from './requestContext'
-import type { CredentialIssuerMetadata } from '@sphereon/oid4vci-common'
+import type { OpenId4VciIssuerMetadata } from '../../shared'
 import type { Router, Response } from 'express'
 
 import { getRequestContext, sendErrorResponse, sendJsonResponse } from '../../shared/router'
@@ -31,7 +31,7 @@ export function configureIssuerMetadataEndpoint(router: Router) {
           // metadata. For backwards compatiblity we will keep them in now.
           token_endpoint: issuerMetadata.tokenEndpoint,
           dpop_signing_alg_values_supported: issuerMetadata.dpopSigningAlgValuesSupported,
-        } satisfies CredentialIssuerMetadata
+        } satisfies OpenId4VciIssuerMetadata
 
         return sendJsonResponse(response, next, transformedMetadata)
       } catch (e) {

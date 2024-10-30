@@ -5,45 +5,13 @@ import type {
   OpenId4VciCredentialSupportedWithId,
 } from './models'
 import type { AgentContext, JwaSignatureAlgorithm } from '@credo-ts/core'
-import type { CredentialOfferFormatV1_0_11 } from '@sphereon/oid4vci-common'
 
 import { CredoError } from '@credo-ts/core'
 
 import { getSupportedJwaSignatureAlgorithms } from './utils'
 import { CredentialConfigurationSupported } from '@animo-id/oid4vci'
 
-/**
- * Get all `types` from a `CredentialSupported` object.
- *
- * Depending on the format, the types may be nested, or have different a different name/type
- */
-export function getTypesFromCredentialSupported(
-  credentialSupported: OpenId4VciCredentialConfigurationSupported
-): string[] | undefined {
-  if (
-    credentialSupported.format === 'jwt_vc_json-ld' ||
-    credentialSupported.format === 'ldp_vc' ||
-    credentialSupported.format === 'jwt_vc_json' ||
-    credentialSupported.format === 'jwt_vc'
-  ) {
-    if (!credentialSupported.credential_definition || !Array.isArray(credentialSupported.credential_definition.type)) {
-      throw Error(
-        `Unable to extract types from credentials supported for format ${credentialSupported.format}. credential_definition.type is not defined`
-      )
-    }
 
-    return credentialSupported.credential_definition.type
-  } else if (credentialSupported.format === 'vc+sd-jwt') {
-    if (!credentialSupported.vct) {
-      throw Error(
-        `Unable to extract types from credentials supported for format ${credentialSupported.format}. vct is not defined`
-      )
-    }
-    return credentialSupported.vct ? [credentialSupported.vct] : undefined
-  }
-
-  throw Error(`Unable to extract types from credentials supported. Unknown format ${credentialSupported.format}`)
-}
 
 export function credentialConfigurationSupportedToCredentialSupported(
   id: string,
