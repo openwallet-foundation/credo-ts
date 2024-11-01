@@ -5,7 +5,7 @@ import type { PresentationDefinition } from '@protokoll/mdoc-client'
 import type { InputDescriptorV2 } from '@sphereon/pex-models'
 
 import {
-  limitDisclosureToInputDescriptor as mdocLimitDisclosureToId,
+  limitDisclosureToInputDescriptor as mdocLimitDisclosureToInputDescriptor,
   COSEKey,
   DeviceResponse,
   MDoc,
@@ -13,6 +13,7 @@ import {
   Verifier,
   MDocStatus,
   cborEncode,
+  parseDeviceResponse,
 } from '@protokoll/mdoc-client'
 
 import { CredoError } from '../../error'
@@ -26,7 +27,29 @@ import { getMdocContext } from './MdocContext'
 import { MdocError } from './MdocError'
 
 export class MdocDeviceResponse {
-  public constructor() {}
+  private constructor(public base64Url: string, public documents: Mdoc[]) {}
+
+  public static fromBase64Url(base64Url: string) {
+    const parsed = parseDeviceResponse(TypedArrayEncoder.fromBase64(base64Url))
+    if (parsed.status !== MDocStatus.OK) {
+      throw new MdocError(`Parsing Mdoc Device Response failed.`)
+    }
+
+    const documents = parsed.documents.map((doc) => {
+      const prepared = doc.prepare()
+      const docType = prepared.get('docType') as string
+      const issuerSigned = cborEncode(prepared.get('issuerSigned'))
+      const deviceSigned = cborEncode(prepared.get('deviceSigned'))
+
+      return Mdoc.fromDeviceSignedDocument(
+        TypedArrayEncoder.toBase64URL(issuerSigned),
+        TypedArrayEncoder.toBase64URL(deviceSigned),
+        docType
+      )
+    })
+
+    return new MdocDeviceResponse(base64Url, documents)
+  }
 
   private static assertMdocInputDescriptor(inputDescriptor: InputDescriptorV2) {
     if (!inputDescriptor.format || !inputDescriptor.format.mso_mdoc) {
@@ -113,7 +136,18 @@ export class MdocDeviceResponse {
 
     const inputDescriptor = this.assertMdocInputDescriptor(options.inputDescriptor)
     const _mdoc = parseIssuerSigned(TypedArrayEncoder.fromBase64(mdoc.base64Url), mdoc.docType)
-    return mdocLimitDisclosureToId({ mdoc: _mdoc, inputDescriptor })
+
+    const disclosure = mdocLimitDisclosureToInputDescriptor(_mdoc, inputDescriptor)
+    const disclosedPayloadAsRecord = Object.fromEntries(
+      Object.entries(disclosure).map(([namespace, issuerSignedItem]) => {
+        return [
+          namespace,
+          Object.fromEntries(issuerSignedItem.map((item) => [item.elementIdentifier, item.elementValue])),
+        ]
+      })
+    )
+
+    return disclosedPayloadAsRecord
   }
 
   public static async createOpenId4VpDeviceResponse(
@@ -160,32 +194,30 @@ export class MdocDeviceResponse {
     }
   }
 
-  public static async verify(agentContext: AgentContext, options: MdocDeviceResponseVerifyOptions) {
+  public async verify(agentContext: AgentContext, options: Omit<MdocDeviceResponseVerifyOptions, 'deviceResponse'>) {
     const verifier = new Verifier()
     const mdocContext = getMdocContext(agentContext)
 
-    let trustedCerts: [string, ...string[]] | undefined
-    if (options?.trustedCertificates) {
-      trustedCerts = options.trustedCertificates
-    } else if (options?.verificationContext) {
-      agentContext.dependencyManager.resolve(X509ModuleConfig).getTrustedCertificatesForVerification
-      trustedCerts = await agentContext.dependencyManager
-        .resolve(X509ModuleConfig)
-        .getTrustedCertificatesForVerification?.(agentContext, options.verificationContext)
-    } else {
-      trustedCerts = agentContext.dependencyManager.resolve(X509ModuleConfig).trustedCertificates
-    }
+    const x509ModuleConfig = agentContext.dependencyManager.resolve(X509ModuleConfig)
+    const getTrustedCertificatesForVerification = x509ModuleConfig.getTrustedCertificatesForVerification
 
-    if (!trustedCerts) {
+    const trustedCertificates =
+      options.trustedCertificates ??
+      (await getTrustedCertificatesForVerification?.(agentContext, options.verificationContext)) ??
+      x509ModuleConfig?.trustedCertificates
+
+    if (!trustedCertificates) {
       throw new MdocError('No trusted certificates found. Cannot verify mdoc.')
     }
 
     const result = await verifier.verifyDeviceResponse(
       {
-        encodedDeviceResponse: TypedArrayEncoder.fromBase64(options.deviceResponse),
+        encodedDeviceResponse: TypedArrayEncoder.fromBase64(this.base64Url),
         //ephemeralReaderKey: options.verifierKey ? getJwkFromKey(options.verifierKey).toJson() : undefined,
         encodedSessionTranscript: DeviceResponse.calculateSessionTranscriptForOID4VP(options.sessionTranscriptOptions),
-        trustedCertificates: trustedCerts.map((cert) => X509Certificate.fromEncodedCertificate(cert).rawCertificate),
+        trustedCertificates: trustedCertificates.map(
+          (cert) => X509Certificate.fromEncodedCertificate(cert).rawCertificate
+        ),
         now: options.now,
       },
       mdocContext
@@ -199,17 +231,6 @@ export class MdocDeviceResponse {
       throw new MdocError('Device response verification failed. An unknown error occurred.')
     }
 
-    return result.documents.map((doc) => {
-      const prepared = doc.prepare()
-      const docType = prepared.get('docType') as string
-      const issuerSigned = cborEncode(prepared.get('issuerSigned'))
-      const deviceSigned = cborEncode(prepared.get('deviceSigned'))
-
-      return Mdoc.fromIssuerSignedDocument(
-        TypedArrayEncoder.toBase64URL(issuerSigned),
-        TypedArrayEncoder.toBase64URL(deviceSigned),
-        docType
-      )
-    })
+    return this.documents
   }
 }

@@ -34,24 +34,26 @@ export class Mdoc {
     return new Mdoc(issuerSignedDocument)
   }
 
-  public static fromIssuerSignedDocument(
+  public static fromIssuerSignedDocument(issuerSignedBase64Url: string, expectedDocType?: string): Mdoc {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
+    return new Mdoc(parseIssuerSigned(TypedArrayEncoder.fromBase64(issuerSignedBase64Url), expectedDocType))
+  }
+
+  public static fromDeviceSignedDocument(
     issuerSignedBase64Url: string,
-    deviceSignedBase64Url?: string,
+    deviceSignedBase64Url: string,
     expectedDocType?: string
   ): Mdoc {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
 
-    if (deviceSignedBase64Url) {
-      return new Mdoc(
-        parseDeviceSigned(
-          TypedArrayEncoder.fromBase64(deviceSignedBase64Url),
-          TypedArrayEncoder.fromBase64(issuerSignedBase64Url),
-          expectedDocType
-        )
+    return new Mdoc(
+      parseDeviceSigned(
+        TypedArrayEncoder.fromBase64(deviceSignedBase64Url),
+        TypedArrayEncoder.fromBase64(issuerSignedBase64Url),
+        expectedDocType
       )
-    } else {
-      return new Mdoc(parseIssuerSigned(TypedArrayEncoder.fromBase64(issuerSignedBase64Url), expectedDocType))
-    }
+    )
   }
 
   public get docType(): string {

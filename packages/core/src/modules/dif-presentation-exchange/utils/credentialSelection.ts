@@ -8,6 +8,7 @@ import type { IPresentationDefinition, SelectResults, SubmissionRequirementMatch
 import type { InputDescriptorV1, InputDescriptorV2, SubmissionRequirement } from '@sphereon/pex-models'
 
 import { decodeSdJwtSync, getClaimsSync } from '@sd-jwt/decode'
+import { Status } from '@sphereon/pex'
 import { SubmissionRequirementMatchType } from '@sphereon/pex/dist/main/lib/evaluation/core'
 import { Rules } from '@sphereon/pex-models'
 import { default as jp } from 'jsonpath'
@@ -41,6 +42,11 @@ export async function getCredentialsForRequest(
 
   const selectResults: CredentialRecordSelectResults = {
     ...selectResultsRaw,
+    areRequiredCredentialsPresent:
+      nonMdocPresentationDefinition.input_descriptors.length === 0 &&
+      mdocPresentationDefinition.input_descriptors.length > 0
+        ? Status.INFO
+        : selectResultsRaw.areRequiredCredentialsPresent,
     // Map the encoded credential to their respective w3c credential record
     verifiableCredential: selectResultsRaw.verifiableCredential?.map((selectedEncoded): SubmissionEntryCredential => {
       const credentialRecordIndex = encodedCredentials.findIndex((encoded) => {

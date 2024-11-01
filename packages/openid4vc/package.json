@@ -27,12 +27,12 @@
   },
   "dependencies": {
     "@credo-ts/core": "workspace:*",
-    "@sphereon/did-auth-siop": "0.16.1-next.168",
-    "@sphereon/oid4vc-common": "0.16.1-next.168",
-    "@sphereon/oid4vci-client": "0.16.1-next.168",
-    "@sphereon/oid4vci-common": "0.16.1-next.168",
-    "@sphereon/oid4vci-issuer": "0.16.1-next.168",
-    "@sphereon/ssi-types": "^0.30.1",
+    "@sphereon/did-auth-siop": "0.16.1-fix.173",
+    "@sphereon/oid4vc-common": "0.16.1-fix.173",
+    "@sphereon/oid4vci-client": "0.16.1-fix.173",
+    "@sphereon/oid4vci-common": "0.16.1-fix.173",
+    "@sphereon/oid4vci-issuer": "0.16.1-fix.173",
+    "@sphereon/ssi-types": "0.30.2-next.135",
     "class-transformer": "^0.5.1",
     "rxjs": "^7.8.0"
   },
