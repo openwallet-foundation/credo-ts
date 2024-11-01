@@ -71,12 +71,11 @@ describe('mdoc device-response test', () => {
       },
     })
 
-    expect(Object.keys(limitedDisclosedPayload)).toHaveLength(1)
-    expect(limitedDisclosedPayload.hello).toBeDefined()
-    expect(limitedDisclosedPayload.hello).toHaveLength(2)
-    expect(limitedDisclosedPayload.hello[0].elementIdentifier).toEqual('world')
-    expect(limitedDisclosedPayload.hello[0].elementValue).toEqual('from-mdoc')
-    expect(limitedDisclosedPayload.hello[1].elementIdentifier).toEqual('nicer')
-    expect(limitedDisclosedPayload.hello[1].elementValue).toEqual('dicer')
+    expect(limitedDisclosedPayload).toStrictEqual({
+      hello: {
+        world: 'from-mdoc',
+        nicer: 'dicer',
+      },
+    })
   })
 })

@@ -23,7 +23,7 @@ interface JwtOptions {
 }
 
 export class Jwt {
-  private static format = /^[A-Za-z0-9-_=]+\.[A-Za-z0-9-_=]+\.?[A-Za-z0-9-_.+/=]*$/
+  public static format = /^[A-Za-z0-9-_=]+\.[A-Za-z0-9-_=]+\.?[A-Za-z0-9-_.+/=]*$/
 
   public readonly payload: JwtPayload
   public readonly header: JwtHeader

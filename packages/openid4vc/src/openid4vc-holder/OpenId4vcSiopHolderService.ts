@@ -25,7 +25,7 @@ import {
   getJwkFromJson,
   injectable,
   parseDid,
-  MdocVerifiablePresentation,
+  MdocDeviceResponse,
 } from '@credo-ts/core'
 import { OP, ResponseIss, ResponseMode, ResponseType, SupportedVersion, VPTokenLocation } from '@sphereon/did-auth-siop'
 
@@ -104,6 +104,13 @@ export class OpenId4VcSiopHolderService {
         throw new CredoError("Unable to extract 'client_id' from authorization request")
       }
 
+      const responseUri =
+        (await authorizationRequest.authorizationRequest.getMergedProperty<string>('response_uri')) ??
+        (await authorizationRequest.authorizationRequest.getMergedProperty<string>('redirect_uri'))
+      if (!responseUri) {
+        throw new CredoError("Unable to extract 'response_uri' from authorization request")
+      }
+
       const { verifiablePresentations, presentationSubmission } =
         await this.presentationExchangeService.createPresentation(agentContext, {
           credentialsForInputDescriptor: presentationExchange.credentials,
@@ -113,9 +120,7 @@ export class OpenId4VcSiopHolderService {
           presentationSubmissionLocation: DifPresentationExchangeSubmissionLocation.EXTERNAL,
           openid4vp: {
             mdocGeneratedNonce: authorizationResponseNonce,
-            responseUri:
-              authorizationRequest.authorizationRequestPayload.response_uri ??
-              authorizationRequest.authorizationRequestPayload.request_uri,
+            responseUri,
           },
         })
 
@@ -283,7 +288,7 @@ export class OpenId4VcSiopHolderService {
           "JWT W3C Verifiable presentation does not include did in JWT header 'kid'. Unable to extract openIdTokenIssuer from verifiable presentation"
         )
       }
-    } else if (verifiablePresentation instanceof MdocVerifiablePresentation) {
+    } else if (verifiablePresentation instanceof MdocDeviceResponse) {
       throw new CredoError('Mdoc Verifiable Presentations are not yet supported')
     } else {
       const cnf = verifiablePresentation.payload.cnf
@@ -384,7 +389,7 @@ export class OpenId4VcSiopHolderService {
         kid: jwkJson.kid,
       },
       encryptionAlgorithm: options.enc,
-      apu: TypedArrayEncoder.toBase64URL(TypedArrayEncoder.fromString(await agentContext.wallet.generateNonce())),
+      apu: TypedArrayEncoder.toBase64URL(TypedArrayEncoder.fromString(options.authorizationResponseNonce)),
       apv: TypedArrayEncoder.toBase64URL(TypedArrayEncoder.fromString(options.authorizationRequestNonce)),
     })
 

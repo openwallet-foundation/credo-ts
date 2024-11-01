@@ -42,7 +42,8 @@ export class MdocService {
   }
 
   public async verifyDeviceResponse(agentContext: AgentContext, options: MdocDeviceResponseVerifyOptions) {
-    return MdocDeviceResponse.verify(agentContext, options)
+    const deviceResponse = MdocDeviceResponse.fromBase64Url(options.deviceResponse)
+    return deviceResponse.verify(agentContext, options)
   }
 
   public async store(agentContext: AgentContext, mdoc: Mdoc) {

@@ -211,7 +211,7 @@ describe('mdoc device-response openid4vp test', () => {
       const docType = prepared.get('docType') as string
       const issuerSigned = cborEncode(prepared.get('issuerSigned'))
       const deviceSigned = cborEncode(prepared.get('deviceSigned'))
-      parsedDocument = Mdoc.fromIssuerSignedDocument(
+      parsedDocument = Mdoc.fromDeviceSignedDocument(
         TypedArrayEncoder.toBase64URL(issuerSigned),
         TypedArrayEncoder.toBase64URL(deviceSigned),
         docType
@@ -220,8 +220,8 @@ describe('mdoc device-response openid4vp test', () => {
   })
 
   it('should be verifiable', async () => {
-    const res = await MdocDeviceResponse.verify(agent.context, {
-      deviceResponse,
+    const mdocDeviceResponse = MdocDeviceResponse.fromBase64Url(deviceResponse)
+    const res = await mdocDeviceResponse.verify(agent.context, {
       trustedCertificates: [ISSUER_CERTIFICATE],
       sessionTranscriptOptions: {
         clientId,
@@ -246,9 +246,9 @@ describe('mdoc device-response openid4vp test', () => {
       }
       it(`with a different ${name}`, async () => {
         try {
-          await MdocDeviceResponse.verify(agent.context, {
+          const mdocDeviceResponse = MdocDeviceResponse.fromBase64Url(deviceResponse)
+          await mdocDeviceResponse.verify(agent.context, {
             trustedCertificates: [ISSUER_CERTIFICATE],
-            deviceResponse,
             sessionTranscriptOptions: {
               clientId: values.clientId,
               responseUri: values.responseUri,
