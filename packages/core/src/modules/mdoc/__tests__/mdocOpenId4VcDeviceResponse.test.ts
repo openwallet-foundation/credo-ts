@@ -211,7 +211,7 @@ describe('mdoc device-response openid4vp test', () => {
       const docType = prepared.get('docType') as string
       const issuerSigned = cborEncode(prepared.get('issuerSigned'))
       const deviceSigned = cborEncode(prepared.get('deviceSigned'))
-      parsedDocument = Mdoc.fromIssuerSignedDocument(
+      parsedDocument = Mdoc.fromDeviceSignedDocument(
         TypedArrayEncoder.toBase64URL(issuerSigned),
         TypedArrayEncoder.toBase64URL(deviceSigned),
         docType
