@@ -220,8 +220,8 @@ describe('mdoc device-response openid4vp test', () => {
   })
 
   it('should be verifiable', async () => {
-    const res = await MdocDeviceResponse.verify(agent.context, {
-      deviceResponse,
+    const mdocDeviceResponse = MdocDeviceResponse.fromBase64Url(deviceResponse)
+    const res = await mdocDeviceResponse.verify(agent.context, {
       trustedCertificates: [ISSUER_CERTIFICATE],
       sessionTranscriptOptions: {
         clientId,
@@ -246,9 +246,9 @@ describe('mdoc device-response openid4vp test', () => {
       }
       it(`with a different ${name}`, async () => {
         try {
-          await MdocDeviceResponse.verify(agent.context, {
+          const mdocDeviceResponse = MdocDeviceResponse.fromBase64Url(deviceResponse)
+          await mdocDeviceResponse.verify(agent.context, {
             trustedCertificates: [ISSUER_CERTIFICATE],
-            deviceResponse,
             sessionTranscriptOptions: {
               clientId: values.clientId,
               responseUri: values.responseUri,

@@ -8,9 +8,11 @@ import type {
   W3CVerifiablePresentation as SphereonW3CVerifiablePresentation,
 } from '@sphereon/ssi-types'
 
-import { CredoError } from '../../../error'
-import { JsonTransformer } from '../../../utils'
-import { MdocVerifiablePresentation } from '../../mdoc/MdocVerifiablePresentation'
+import { com } from '@sphereon/kmp-mdl-mdoc'
+
+import { Jwt } from '../../../crypto'
+import { JsonTransformer, TypedArrayEncoder } from '../../../utils'
+import { MdocDeviceResponse } from '../../mdoc'
 import { SdJwtVcApi } from '../../sd-jwt-vc'
 import { W3cCredentialRecord, W3cJsonLdVerifiablePresentation, W3cJwtVerifiablePresentation } from '../../vc'
 
@@ -32,8 +34,10 @@ export function getSphereonOriginalVerifiablePresentation(
     verifiablePresentation instanceof W3cJsonLdVerifiablePresentation
   ) {
     return verifiablePresentation.encoded as SphereonOriginalVerifiablePresentation
-  } else if (verifiablePresentation instanceof MdocVerifiablePresentation) {
-    throw new CredoError('Mdoc verifiable presentation is not yet supported by Sphereon.')
+  } else if (verifiablePresentation instanceof MdocDeviceResponse) {
+    return com.sphereon.mdoc.data.device.DeviceResponseCbor.Static.cborDecode(
+      new Int8Array(TypedArrayEncoder.fromBase64(verifiablePresentation.base64Url))
+    )
   } else {
     return verifiablePresentation.compact
   }
@@ -47,12 +51,11 @@ export function getVerifiablePresentationFromEncoded(
   if (typeof encodedVerifiablePresentation === 'string' && encodedVerifiablePresentation.includes('~')) {
     const sdJwtVcApi = agentContext.dependencyManager.resolve(SdJwtVcApi)
     return sdJwtVcApi.fromCompact(encodedVerifiablePresentation)
-  } else if (typeof encodedVerifiablePresentation === 'string') {
+  } else if (typeof encodedVerifiablePresentation === 'string' && Jwt.format.test(encodedVerifiablePresentation)) {
     return W3cJwtVerifiablePresentation.fromSerializedJwt(encodedVerifiablePresentation)
   } else if (typeof encodedVerifiablePresentation === 'object' && '@context' in encodedVerifiablePresentation) {
     return JsonTransformer.fromJSON(encodedVerifiablePresentation, W3cJsonLdVerifiablePresentation)
   } else {
-    // TODO: WE NEED TO ADD SUPPORT FOR MDOC VERIFIABLE PRESENTATION
-    throw new CredoError('Unsupported verifiable presentation format')
+    return MdocDeviceResponse.fromBase64Url(encodedVerifiablePresentation)
   }
 }

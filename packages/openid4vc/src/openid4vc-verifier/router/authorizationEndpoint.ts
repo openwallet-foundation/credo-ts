@@ -4,7 +4,7 @@ import type { AgentContext } from '@credo-ts/core'
 import type { AuthorizationResponsePayload, DecryptCompact } from '@sphereon/did-auth-siop'
 import type { Response, Router } from 'express'
 
-import { CredoError, Key, TypedArrayEncoder } from '@credo-ts/core'
+import { CredoError, Hasher, JsonEncoder, Key, TypedArrayEncoder } from '@credo-ts/core'
 import { AuthorizationRequest, RP } from '@sphereon/did-auth-siop'
 
 import { getRequestContext, sendErrorResponse } from '../../shared/router'
@@ -73,6 +73,7 @@ export function configureAuthorizationEndpoint(router: Router, config: OpenId4Vc
 
       let verificationSession: OpenId4VcVerificationSessionRecord | undefined
       let authorizationResponsePayload: AuthorizationResponsePayload
+      let jarmHeader: { apu?: string; apv?: string } | undefined = undefined
 
       if (request.body.response) {
         const res = await RP.processJarmAuthorizationResponse(request.body.response, {
@@ -91,8 +92,11 @@ export function configureAuthorizationEndpoint(router: Router, config: OpenId4Vc
             return { authRequestParams: requestObjectPayload }
           },
           decryptCompact: decryptJarmResponse(agentContext),
+          hasher: Hasher.hash,
         })
 
+        const [header] = request.body.response.split('.')
+        jarmHeader = JsonEncoder.fromBase64(header)
         // FIXME: verify the apv matches the nonce of the authorization reuqest
         authorizationResponsePayload = res.authResponseParams as AuthorizationResponsePayload
       } else {
@@ -122,6 +126,7 @@ export function configureAuthorizationEndpoint(router: Router, config: OpenId4Vc
       await openId4VcVerifierService.verifyAuthorizationResponse(agentContext, {
         authorizationResponse: authorizationResponsePayload,
         verificationSession,
+        jarmHeader,
       })
       response.status(200).send()
     } catch (error) {

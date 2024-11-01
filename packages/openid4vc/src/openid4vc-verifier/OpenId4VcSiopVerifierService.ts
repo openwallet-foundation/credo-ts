@@ -40,6 +40,8 @@ import {
   getDomainFromUrl,
   KeyType,
   getJwkFromKey,
+  MdocDeviceResponse,
+  TypedArrayEncoder,
 } from '@credo-ts/core'
 import {
   AuthorizationRequest,
@@ -54,7 +56,7 @@ import {
   RP,
   SupportedVersion,
 } from '@sphereon/did-auth-siop'
-import { extractPresentationsFromAuthorizationResponse } from '@sphereon/did-auth-siop/dist/authorization-response/OpenID4VP'
+import { extractPresentationsFromVpToken } from '@sphereon/did-auth-siop/dist/authorization-response/OpenID4VP'
 import { filter, first, firstValueFrom, map, timeout } from 'rxjs'
 
 import { storeActorIdForContextCorrelationId } from '../shared/router'
@@ -214,6 +216,7 @@ export class OpenId4VcSiopVerifierService {
     agentContext: AgentContext,
     options: OpenId4VcSiopVerifyAuthorizationResponseOptions & {
       verificationSession: OpenId4VcVerificationSessionRecord
+      jarmHeader?: { apu?: string; apv?: string }
     }
   ): Promise<OpenId4VcSiopVerifiedAuthorizationResponse & { verificationSession: OpenId4VcVerificationSessionRecord }> {
     // Assert state
@@ -229,6 +232,7 @@ export class OpenId4VcSiopVerifierService {
     const requestClientId = await authorizationRequest.getMergedProperty<string>('client_id')
     const requestNonce = await authorizationRequest.getMergedProperty<string>('nonce')
     const requestState = await authorizationRequest.getMergedProperty<string>('state')
+    const responseUri = await authorizationRequest.getMergedProperty<string>('response_uri')
     const presentationDefinitionsWithLocation = await authorizationRequest.getPresentationDefinitions()
 
     if (!requestNonce || !requestClientId || !requestState) {
@@ -286,6 +290,10 @@ export class OpenId4VcSiopVerifierService {
           correlationId: options.verificationSession.id,
           nonce: requestNonce,
           audience: requestClientId,
+          responseUri,
+          mdocGeneratedNonce: options.jarmHeader?.apu
+            ? TypedArrayEncoder.toUtf8String(TypedArrayEncoder.fromBase64(options.jarmHeader.apu))
+            : undefined,
         }),
       },
     })
@@ -323,9 +331,11 @@ export class OpenId4VcSiopVerifierService {
 
     const presentationDefinitions = await authorizationRequest.getPresentationDefinitions()
     if (presentationDefinitions && presentationDefinitions.length > 0) {
-      const presentations = await extractPresentationsFromAuthorizationResponse(authorizationResponse, {
-        hasher: Hasher.hash,
-      })
+      const presentations = authorizationResponse.payload.vp_token
+        ? await extractPresentationsFromVpToken(authorizationResponse.payload.vp_token, {
+            hasher: Hasher.hash,
+          })
+        : []
 
       // TODO: Probably wise to check against request for the location of the submission_data
       const submission =
@@ -553,9 +563,9 @@ export class OpenId4VcSiopVerifierService {
         // to fix that in Sphereon lib
         client_id: clientId,
         passBy: PassBy.VALUE,
-        responseTypesSupported: [ResponseType.VP_TOKEN],
+        response_types_supported: [ResponseType.VP_TOKEN],
         subject_syntax_types_supported: supportedDidMethods.map((m) => `did:${m}`),
-        vpFormatsSupported: {
+        vp_formats_supported: {
           mso_mdoc: {
             alg: supportedAlgs,
           },
@@ -597,7 +607,13 @@ export class OpenId4VcSiopVerifierService {
 
   private getPresentationVerificationCallback(
     agentContext: AgentContext,
-    options: { nonce: string; audience: string; correlationId: string }
+    options: {
+      nonce: string
+      audience: string
+      correlationId: string
+      responseUri?: string
+      mdocGeneratedNonce?: string
+    }
   ): PresentationVerificationCallback {
     return async (encodedPresentation, presentationSubmission) => {
       try {
@@ -608,9 +624,28 @@ export class OpenId4VcSiopVerifierService {
 
         let isValid: boolean
 
-        // TODO: it might be better here to look at the presentation submission to know
-        // If presentation includes a ~, we assume it's an SD-JWT-VC
-        if (typeof encodedPresentation === 'string' && encodedPresentation.includes('~')) {
+        if (typeof encodedPresentation === 'string' && MdocDeviceResponse.isBase64DeviceResponse(encodedPresentation)) {
+          if (!options.responseUri || !options.mdocGeneratedNonce) {
+            isValid = false
+          } else {
+            const mdocDeviceResponse = MdocDeviceResponse.fromBase64Url(encodedPresentation)
+            await mdocDeviceResponse.verify(agentContext, {
+              sessionTranscriptOptions: {
+                clientId: options.audience,
+                mdocGeneratedNonce: options.mdocGeneratedNonce,
+                responseUri: options.responseUri,
+                verifierGeneratedNonce: options.nonce,
+              },
+              verificationContext: {
+                openId4VcVerificationSessionId: options.correlationId,
+              },
+            })
+            isValid = true
+          }
+        } else if (typeof encodedPresentation === 'string' && encodedPresentation.includes('~')) {
+          // TODO: it might be better here to look at the presentation submission to know
+          // If presentation includes a ~, we assume it's an SD-JWT-VC
+
           const sdJwtVcApi = agentContext.dependencyManager.resolve(SdJwtVcApi)
 
           const verificationResult = await sdJwtVcApi.verify({

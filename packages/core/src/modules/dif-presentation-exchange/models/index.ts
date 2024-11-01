@@ -1,6 +1,5 @@
 export * from './DifPexCredentialsForRequest'
-import type { Mdoc } from '../../mdoc'
-import type { MdocVerifiablePresentation } from '../../mdoc/MdocVerifiablePresentation'
+import type { Mdoc, MdocDeviceResponse } from '../../mdoc'
 import type { SdJwtVc } from '../../sd-jwt-vc'
 import type { W3cVerifiableCredential, W3cVerifiablePresentation } from '../../vc'
 import type { PresentationDefinitionV1, PresentationDefinitionV2, PresentationSubmission } from '@sphereon/pex-models'
@@ -15,5 +14,5 @@ export type DifPresentationExchangeSubmission = PresentationSubmission
 export { PresentationSubmissionLocation as DifPresentationExchangeSubmissionLocation }
 
 // TODO: we might want to move this to another place at some point
-export type VerifiablePresentation = W3cVerifiablePresentation | SdJwtVc | MdocVerifiablePresentation
+export type VerifiablePresentation = W3cVerifiablePresentation | SdJwtVc | MdocDeviceResponse
 export type VerifiableCredential = W3cVerifiableCredential | SdJwtVc | Mdoc

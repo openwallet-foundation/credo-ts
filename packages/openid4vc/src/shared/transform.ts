@@ -15,7 +15,8 @@ import {
   W3cJsonLdVerifiableCredential,
   JsonEncoder,
   Mdoc,
-  MdocVerifiablePresentation,
+  TypedArrayEncoder,
+  MdocDeviceResponse,
 } from '@credo-ts/core'
 
 export function getSphereonVerifiableCredential(
@@ -37,7 +38,7 @@ export function getSphereonVerifiableCredential(
 
 export function getSphereonVerifiablePresentation(
   verifiablePresentation: VerifiablePresentation
-): SphereonW3cVerifiablePresentation | SphereonCompactSdJwtVc {
+): SphereonW3cVerifiablePresentation | SphereonCompactSdJwtVc | string {
   // encoded sd-jwt or jwt
   if (typeof verifiablePresentation === 'string') {
     return verifiablePresentation
@@ -45,11 +46,8 @@ export function getSphereonVerifiablePresentation(
     return JsonTransformer.toJSON(verifiablePresentation) as SphereonW3cVerifiablePresentation
   } else if (verifiablePresentation instanceof W3cJwtVerifiablePresentation) {
     return verifiablePresentation.serializedJwt
-  } else if (verifiablePresentation instanceof MdocVerifiablePresentation) {
-    throw new CredoError('Mdoc verifiable presentation is not yet supported.')
-
-    // TODO: CHECK IF THIS IS WHAT IS EXPECTED
-    // return verifiablePresentation.deviceSignedBase64Url
+  } else if (verifiablePresentation instanceof MdocDeviceResponse) {
+    return verifiablePresentation.base64Url
   } else {
     return verifiablePresentation.compact
   }
@@ -78,9 +76,12 @@ export function getVerifiablePresentationFromSphereonWrapped(
     } satisfies SdJwtVc
   } else if (wrappedVerifiablePresentation.format === 'mso_mdoc') {
     if (typeof wrappedVerifiablePresentation.original !== 'string') {
-      throw new CredoError('Invalid format of original verifiable presentation. DeviceResponseCbor is not supported')
+      const base64Url = TypedArrayEncoder.toBase64URL(
+        new Uint8Array(wrappedVerifiablePresentation.original.cborEncode())
+      )
+      return MdocDeviceResponse.fromBase64Url(base64Url)
     }
-    return new MdocVerifiablePresentation(wrappedVerifiablePresentation.original)
+    return MdocDeviceResponse.fromBase64Url(wrappedVerifiablePresentation.original)
   }
 
   throw new CredoError(`Unsupported presentation format: ${wrappedVerifiablePresentation.format}`)
