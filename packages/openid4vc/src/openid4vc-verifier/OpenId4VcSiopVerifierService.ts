@@ -641,6 +641,7 @@ export class OpenId4VcSiopVerifierService {
           })
 
           isValid = verificationResult.verification.isValid
+          reason = verificationResult.isValid ? undefined : verificationResult.error.message
         } else if (typeof encodedPresentation === 'string' && !Jwt.format.test(encodedPresentation)) {
           if (!options.responseUri || !options.mdocGeneratedNonce) {
             isValid = false
@@ -671,6 +672,7 @@ export class OpenId4VcSiopVerifierService {
           })
 
           isValid = verificationResult.isValid
+          reason = verificationResult.error?.message
         } else {
           const verificationResult = await this.w3cCredentialService.verifyPresentation(agentContext, {
             presentation: JsonTransformer.fromJSON(encodedPresentation, W3cJsonLdVerifiablePresentation),
@@ -679,14 +681,7 @@ export class OpenId4VcSiopVerifierService {
           })
 
           isValid = verificationResult.isValid
-        }
-
-        // FIXME: we throw an error here as there's a bug in sphereon library where they
-        // don't check the returned 'verified' property and only catch errors thrown.
-        // Once https://github.com/Sphereon-Opensource/SIOP-OID4VP/pull/70 is merged we
-        // can remove this.
-        if (!isValid) {
-          throw new CredoError('Presentation verification failed.')
+          reason = verificationResult.error?.message
         }
 
         return {
