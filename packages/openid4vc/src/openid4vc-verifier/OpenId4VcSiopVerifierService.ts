@@ -42,6 +42,7 @@ import {
   getJwkFromKey,
   MdocDeviceResponse,
   TypedArrayEncoder,
+  Jwt,
 } from '@credo-ts/core'
 import {
   AuthorizationRequest,
@@ -623,10 +624,27 @@ export class OpenId4VcSiopVerifierService {
         if (!encodedPresentation) throw new CredoError('Did not receive a presentation for verification.')
 
         let isValid: boolean
+        let reason: string | undefined = undefined
 
-        if (typeof encodedPresentation === 'string' && MdocDeviceResponse.isBase64DeviceResponse(encodedPresentation)) {
+        if (typeof encodedPresentation === 'string' && encodedPresentation.includes('~')) {
+          // TODO: it might be better here to look at the presentation submission to know
+          // If presentation includes a ~, we assume it's an SD-JWT-VC
+
+          const sdJwtVcApi = agentContext.dependencyManager.resolve(SdJwtVcApi)
+
+          const verificationResult = await sdJwtVcApi.verify({
+            compactSdJwtVc: encodedPresentation,
+            keyBinding: {
+              audience: options.audience,
+              nonce: options.nonce,
+            },
+          })
+
+          isValid = verificationResult.verification.isValid
+        } else if (typeof encodedPresentation === 'string' && !Jwt.format.test(encodedPresentation)) {
           if (!options.responseUri || !options.mdocGeneratedNonce) {
             isValid = false
+            reason = 'Mdoc device response verification failed. Response uri and the mdocGeneratedNonce are not set'
           } else {
             const mdocDeviceResponse = MdocDeviceResponse.fromBase64Url(encodedPresentation)
             await mdocDeviceResponse.verify(agentContext, {
@@ -642,22 +660,7 @@ export class OpenId4VcSiopVerifierService {
             })
             isValid = true
           }
-        } else if (typeof encodedPresentation === 'string' && encodedPresentation.includes('~')) {
-          // TODO: it might be better here to look at the presentation submission to know
-          // If presentation includes a ~, we assume it's an SD-JWT-VC
-
-          const sdJwtVcApi = agentContext.dependencyManager.resolve(SdJwtVcApi)
-
-          const verificationResult = await sdJwtVcApi.verify({
-            compactSdJwtVc: encodedPresentation,
-            keyBinding: {
-              audience: options.audience,
-              nonce: options.nonce,
-            },
-          })
-
-          isValid = verificationResult.verification.isValid
-        } else if (typeof encodedPresentation === 'string') {
+        } else if (typeof encodedPresentation === 'string' && Jwt.format.test(encodedPresentation)) {
           const verificationResult = await this.w3cCredentialService.verifyPresentation(agentContext, {
             presentation: encodedPresentation,
             challenge: options.nonce,
@@ -688,6 +691,7 @@ export class OpenId4VcSiopVerifierService {
 
         return {
           verified: isValid,
+          reason,
         }
       } catch (error) {
         agentContext.config.logger.warn('Error occurred during verification of presentation', {

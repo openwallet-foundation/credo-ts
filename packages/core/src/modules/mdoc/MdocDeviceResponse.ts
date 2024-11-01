@@ -5,7 +5,7 @@ import type { PresentationDefinition } from '@protokoll/mdoc-client'
 import type { InputDescriptorV2 } from '@sphereon/pex-models'
 
 import {
-  limitDisclosureToInputDescriptor as mdocLimitDisclosureToId,
+  limitDisclosureToInputDescriptor as mdocLimitDisclosureToInputDescriptor,
   COSEKey,
   DeviceResponse,
   MDoc,
@@ -29,18 +29,6 @@ import { MdocError } from './MdocError'
 export class MdocDeviceResponse {
   private constructor(public base64Url: string, public documents: Mdoc[]) {}
 
-  public static isBase64DeviceResponse(base64Url: string) {
-    try {
-      const parsed = parseDeviceResponse(TypedArrayEncoder.fromBase64(base64Url))
-      if (parsed.status === MDocStatus.OK) return true
-      return false
-    } catch (error) {
-      // no-op
-    }
-
-    return false
-  }
-
   public static fromBase64Url(base64Url: string) {
     const parsed = parseDeviceResponse(TypedArrayEncoder.fromBase64(base64Url))
     if (parsed.status !== MDocStatus.OK) {
@@ -53,7 +41,7 @@ export class MdocDeviceResponse {
       const issuerSigned = cborEncode(prepared.get('issuerSigned'))
       const deviceSigned = cborEncode(prepared.get('deviceSigned'))
 
-      return Mdoc.fromIssuerSignedDocument(
+      return Mdoc.fromDeviceSignedDocument(
         TypedArrayEncoder.toBase64URL(issuerSigned),
         TypedArrayEncoder.toBase64URL(deviceSigned),
         docType
@@ -149,7 +137,7 @@ export class MdocDeviceResponse {
     const inputDescriptor = this.assertMdocInputDescriptor(options.inputDescriptor)
     const _mdoc = parseIssuerSigned(TypedArrayEncoder.fromBase64(mdoc.base64Url), mdoc.docType)
 
-    const disclosure = mdocLimitDisclosureToId(_mdoc, inputDescriptor)
+    const disclosure = mdocLimitDisclosureToInputDescriptor(_mdoc, inputDescriptor)
     const disclosedPayloadAsRecord = Object.fromEntries(
       Object.entries(disclosure).map(([namespace, issuerSignedItem]) => {
         return [
@@ -210,10 +198,8 @@ export class MdocDeviceResponse {
     const verifier = new Verifier()
     const mdocContext = getMdocContext(agentContext)
 
-    const x509ModuleConfig = agentContext.dependencyManager.isRegistered(X509ModuleConfig)
-      ? agentContext.dependencyManager.resolve(X509ModuleConfig)
-      : undefined
-    const getTrustedCertificatesForVerification = x509ModuleConfig?.getTrustedCertificatesForVerification
+    const x509ModuleConfig = agentContext.dependencyManager.resolve(X509ModuleConfig)
+    const getTrustedCertificatesForVerification = x509ModuleConfig.getTrustedCertificatesForVerification
 
     const trustedCertificates =
       options.trustedCertificates ??

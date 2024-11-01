@@ -8,10 +8,8 @@ import type {
   W3CVerifiablePresentation as SphereonW3CVerifiablePresentation,
 } from '@sphereon/ssi-types'
 
-import { com } from '@sphereon/kmp-mdl-mdoc'
-
 import { Jwt } from '../../../crypto'
-import { JsonTransformer, TypedArrayEncoder } from '../../../utils'
+import { JsonTransformer } from '../../../utils'
 import { MdocDeviceResponse } from '../../mdoc'
 import { SdJwtVcApi } from '../../sd-jwt-vc'
 import { W3cCredentialRecord, W3cJsonLdVerifiablePresentation, W3cJwtVerifiablePresentation } from '../../vc'
@@ -35,9 +33,7 @@ export function getSphereonOriginalVerifiablePresentation(
   ) {
     return verifiablePresentation.encoded as SphereonOriginalVerifiablePresentation
   } else if (verifiablePresentation instanceof MdocDeviceResponse) {
-    return com.sphereon.mdoc.data.device.DeviceResponseCbor.Static.cborDecode(
-      new Int8Array(TypedArrayEncoder.fromBase64(verifiablePresentation.base64Url))
-    )
+    return verifiablePresentation.base64Url
   } else {
     return verifiablePresentation.compact
   }

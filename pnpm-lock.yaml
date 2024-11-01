@@ -453,18 +453,15 @@ importers:
       '@sd-jwt/utils':
         specifier: ^0.7.0
         version: 0.7.2
-      '@sphereon/kmp-mdl-mdoc':
-        specifier: 0.2.0-SNAPSHOT.22
-        version: 0.2.0-SNAPSHOT.22
       '@sphereon/pex':
-        specifier: 5.0.0-unstable.18
-        version: 5.0.0-unstable.18(ts-node@10.9.2(@swc/core@1.7.40)(@types/node@18.18.8)(typescript@5.5.4))
+        specifier: 5.0.0-unstable.25
+        version: 5.0.0-unstable.25
       '@sphereon/pex-models':
         specifier: ^2.3.1
         version: 2.3.1
       '@sphereon/ssi-types':
-        specifier: 0.30.2-next.129
-        version: 0.30.2-next.129
+        specifier: 0.30.2-next.135
+        version: 0.30.2-next.135
       '@stablelib/ed25519':
         specifier: ^1.0.2
         version: 1.0.3
@@ -698,9 +695,6 @@ importers:
       '@sphereon/did-auth-siop':
         specifier: 0.16.1-fix.173
         version: 0.16.1-fix.173(ts-node@10.9.2(@swc/core@1.7.40)(@types/node@18.18.8)(typescript@5.5.4))(typescript@5.5.4)
-      '@sphereon/kmp-mdl-mdoc':
-        specifier: 0.2.0-SNAPSHOT.22
-        version: 0.2.0-SNAPSHOT.22
       '@sphereon/oid4vc-common':
         specifier: 0.16.1-fix.173
         version: 0.16.1-fix.173(ts-node@10.9.2(@swc/core@1.7.40)(@types/node@18.18.8)(typescript@5.5.4))
@@ -714,8 +708,8 @@ importers:
         specifier: 0.16.1-fix.173
         version: 0.16.1-fix.173(ts-node@10.9.2(@swc/core@1.7.40)(@types/node@18.18.8)(typescript@5.5.4))
       '@sphereon/ssi-types':
-        specifier: 0.30.2-next.129
-        version: 0.30.2-next.129
+        specifier: 0.30.2-next.135
+        version: 0.30.2-next.135
       class-transformer:
         specifier: ^0.5.1
         version: 0.5.1
@@ -2495,12 +2489,12 @@ packages:
   '@sphereon/pex-models@2.3.1':
     resolution: {integrity: sha512-SByU4cJ0XYA6VZQ/L6lsSiRcFtBPHbFioCeQ4GP7/W/jQ+PSBD7uK2oTnKQ9/0iEiMK/6JYqhKgLs4a9UX3UTQ==}
 
-  '@sphereon/pex@5.0.0-unstable.18':
-    resolution: {integrity: sha512-DOKfmfa549RbX8Bqe4yOE2rjZbCQgoRcHO+i01k+gxubgulPPQvY8k0pmFkMFMgVI5fXCjkI3b3PgQ5u/vpGGw==}
-    engines: {node: '>=18'}
-
   '@sphereon/pex@5.0.0-unstable.24':
     resolution: {integrity: sha512-CZc+kr8cJqPsFSpg4kHyamr5oB5xLVP2E5eJ0pbetOfOE2uSxqk0/A8zGazcPhU1zZILrO51hD4vW/hJRgtKJQ==}
+    engines: {node: '>=18'}
+
+  '@sphereon/pex@5.0.0-unstable.25':
+    resolution: {integrity: sha512-EUWfGa6t20PPkYf+zbfWXhc1sSWiFNywbRah8R6grJPU738pfwWpZPunSEY3x0CoxAVaSVXn91wZ/sxmgPCFkA==}
     engines: {node: '>=18'}
 
   '@sphereon/ssi-sdk-ext.did-utils@0.24.1-unstable.130':
@@ -2535,6 +2529,9 @@ packages:
 
   '@sphereon/ssi-types@0.30.2-next.129':
     resolution: {integrity: sha512-F1TDy9S5ajDJDp21cINXseGSux9kGA+x0KScAS+5+B/RdMGRp7bLOM+3YpQw1QGPqKxVc7JAd2gAn7AI0pAkZA==}
+
+  '@sphereon/ssi-types@0.30.2-next.135':
+    resolution: {integrity: sha512-YLQfFMPUlOJUxHbOS9v01nG3cgLwTk3d95/rTnOmEQx9kXgXjoXdvt7D0uGcMRL3RHeQ9biT/jWY//mDvCirVQ==}
 
   '@sqltools/formatter@1.2.5':
     resolution: {integrity: sha512-Uy0+khmZqUrUGm5dmMqVlnvufZRSK0FbYzVgp0UMstm+F5+W2/jnEEQyc9vo1ZR/E5ZI/B1WjjoTqBqwJL6Krw==}
@@ -10483,40 +10480,6 @@ snapshots:
 
   '@sphereon/pex-models@2.3.1': {}
 
-  '@sphereon/pex@5.0.0-unstable.18(ts-node@10.9.2(@swc/core@1.7.40)(@types/node@18.18.8)(typescript@5.5.4))':
-    dependencies:
-      '@astronautlabs/jsonpath': 1.1.2
-      '@sd-jwt/decode': 0.7.2
-      '@sd-jwt/present': 0.7.2
-      '@sd-jwt/types': 0.7.2
-      '@sphereon/pex-models': 2.3.1
-      '@sphereon/ssi-types': 0.30.1(ts-node@10.9.2(@swc/core@1.7.40)(@types/node@18.18.8)(typescript@5.5.4))
-      ajv: 8.17.1
-      ajv-formats: 2.1.1(ajv@8.17.1)
-      jwt-decode: 3.1.2
-      nanoid: 3.3.7
-      uint8arrays: 3.1.1
-    transitivePeerDependencies:
-      - '@google-cloud/spanner'
-      - '@sap/hana-client'
-      - better-sqlite3
-      - encoding
-      - hdb-pool
-      - ioredis
-      - mongodb
-      - mssql
-      - mysql2
-      - oracledb
-      - pg
-      - pg-native
-      - pg-query-stream
-      - redis
-      - sql.js
-      - sqlite3
-      - supports-color
-      - ts-node
-      - typeorm-aurora-data-api-driver
-
   '@sphereon/pex@5.0.0-unstable.24':
     dependencies:
       '@astronautlabs/jsonpath': 1.1.2
@@ -10525,6 +10488,22 @@ snapshots:
       '@sd-jwt/types': 0.7.2
       '@sphereon/pex-models': 2.3.1
       '@sphereon/ssi-types': 0.30.2-next.129
+      ajv: 8.17.1
+      ajv-formats: 2.1.1(ajv@8.17.1)
+      jwt-decode: 3.1.2
+      nanoid: 3.3.7
+      uint8arrays: 3.1.1
+    transitivePeerDependencies:
+      - supports-color
+
+  '@sphereon/pex@5.0.0-unstable.25':
+    dependencies:
+      '@astronautlabs/jsonpath': 1.1.2
+      '@sd-jwt/decode': 0.7.2
+      '@sd-jwt/present': 0.7.2
+      '@sd-jwt/types': 0.7.2
+      '@sphereon/pex-models': 2.3.1
+      '@sphereon/ssi-types': 0.30.2-next.135
       ajv: 8.17.1
       ajv-formats: 2.1.1(ajv@8.17.1)
       jwt-decode: 3.1.2
@@ -10758,6 +10737,16 @@ snapshots:
       - typeorm-aurora-data-api-driver
 
   '@sphereon/ssi-types@0.30.2-next.129':
+    dependencies:
+      '@sd-jwt/decode': 0.7.2
+      '@sphereon/kmp-mdl-mdoc': 0.2.0-SNAPSHOT.22
+      debug: 4.3.6
+      events: 3.3.0
+      jwt-decode: 3.1.2
+    transitivePeerDependencies:
+      - supports-color
+
+  '@sphereon/ssi-types@0.30.2-next.135':
     dependencies:
       '@sd-jwt/decode': 0.7.2
       '@sphereon/kmp-mdl-mdoc': 0.2.0-SNAPSHOT.22
