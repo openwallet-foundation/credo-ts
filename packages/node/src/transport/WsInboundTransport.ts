@@ -1,6 +1,14 @@
-import type { Agent, InboundTransport, Logger, TransportSession, EncryptedMessage, AgentContext } from '@credo-ts/core'
+import type {
+  Agent,
+  InboundTransport,
+  Logger,
+  TransportSession,
+  EncryptedMessage,
+  AgentContext,
+  AgentMessageReceivedEvent,
+} from '@credo-ts/core'
 
-import { CredoError, TransportService, utils, MessageReceiver } from '@credo-ts/core'
+import { CredoError, TransportService, utils, AgentEventTypes } from '@credo-ts/core'
 // eslint-disable-next-line import/no-named-as-default
 import WebSocket, { Server } from 'ws'
 
@@ -58,13 +66,19 @@ export class WsInboundTransport implements InboundTransport {
   }
 
   private listenOnWebSocketMessages(agent: Agent, socket: WebSocket, session: TransportSession) {
-    const messageReceiver = agent.dependencyManager.resolve(MessageReceiver)
-
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     socket.addEventListener('message', async (event: any) => {
       this.logger.debug('WebSocket message event received.', { url: event.target.url })
       try {
-        await messageReceiver.receiveMessage(JSON.parse(event.data), { session })
+        const encryptedMessage = JSON.parse(event.data) as EncryptedMessage
+
+        agent.events.emit<AgentMessageReceivedEvent>(agent.context, {
+          type: AgentEventTypes.AgentMessageReceived,
+          payload: {
+            message: encryptedMessage,
+            session: session,
+          },
+        })
       } catch (error) {
         this.logger.error(`Error processing message: ${error}`)
       }

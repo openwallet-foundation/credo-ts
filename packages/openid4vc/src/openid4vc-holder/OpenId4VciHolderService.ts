@@ -23,6 +23,8 @@ import {
   Jwk,
   JwsService,
   Logger,
+  Mdoc,
+  MdocApi,
   SdJwtVcApi,
   SignatureSuiteRegistry,
   W3cCredentialService,
@@ -43,18 +45,7 @@ import { getOfferedCredentials } from '../shared/issuerMetadataUtils'
 import { getSupportedJwaSignatureAlgorithms } from '../shared/utils'
 
 import { openId4VciSupportedCredentialFormats } from './OpenId4VciHolderServiceOptions'
-import {
-  AccessTokenResponse,
-  authorizationCodeGrantIdentifier,
-  CredentialResponse,
-  determineAuthorizationServerForOffer,
-  IssuerMetadataResult,
-  JwtSigner,
-  Oid4vciClient,
-  preAuthorizedCodeGrantIdentifier,
-  RequestDpopOptions,
-  SignJwtCallback,
-} from '@animo-id/oid4vci'
+import { CredentialResponse, IssuerMetadataResult, Oid4vciClient } from '@animo-id/oid4vci'
 
 @injectable()
 export class OpenId4VciHolderService {
@@ -93,7 +84,8 @@ export class OpenId4VciHolderService {
     const metadata = await client.resolveIssuerMetadata(credentialOfferObject.credential_issuer)
     this.logger.debug('fetched credential offer and issuer metadata', { metadata, credentialOfferObject })
 
-    const { credentialConfigurationsSupported } = getOfferedCredentials(
+    // TODO: only extract known offers
+    const credentialConfigurationsSupported = getOfferedCredentials(
       credentialOfferObject.credential_configuration_ids,
       metadata.credentialIssuer.credential_configurations_supported
     )
@@ -116,14 +108,7 @@ export class OpenId4VciHolderService {
 
     const client = this.getClient(agentContext)
 
-    const authorizationServerMetadata = determineAuthorizationServerForOffer({
-      credentialOffer: credentialOfferPayload,
-      grantType: authorizationCodeGrantIdentifier,
-      issuerMetadata: metadata,
-    })
-
-    const { authorizationRequestUrl, pkce, authorizationServer } = await client.createAuthorizationRequestUrl({
-      authorizationServer: authorizationServerMetadata.issuer,
+    const { authorizationRequestUrl, pkce, authorizationServer } = await client.initiateAuthorization({
       clientId,
       issuerMetadata: metadata,
       credentialOffer: credentialOfferPayload,
@@ -560,6 +545,7 @@ export class OpenId4VciHolderService {
         case OpenId4VciCredentialFormatProfile.JwtVcJson:
         case OpenId4VciCredentialFormatProfile.JwtVcJsonLd:
         case OpenId4VciCredentialFormatProfile.SdJwtVc:
+        case OpenId4VciCredentialFormatProfile.MsoMdoc:
           signatureAlgorithm = options.possibleProofOfPossessionSignatureAlgorithms.find((signatureAlgorithm) =>
             proofSigningAlgsSupported.includes(signatureAlgorithm)
           )
@@ -592,7 +578,7 @@ export class OpenId4VciHolderService {
 
     // The cryptographic_binding_methods_supported describe the cryptographic key material that the issued Credential is bound to.
     const supportsCoseKey = issuerSupportedBindingMethods?.includes('cose_key') ?? false
-    const supportsJwk = issuerSupportedBindingMethods?.includes('jwk') ?? supportsCoseKey ?? false
+    const supportsJwk = issuerSupportedBindingMethods?.includes('jwk') || supportsCoseKey
 
     return {
       signatureAlgorithm,
@@ -696,6 +682,24 @@ export class OpenId4VciHolderService {
       }
 
       return { credential, notificationMetadata }
+    } else if (format === OpenId4VciCredentialFormatProfile.MsoMdoc) {
+      if (typeof credentialResponse.successBody.credential !== 'string')
+        throw new CredoError(
+          `Received a credential of format ${
+            OpenId4VciCredentialFormatProfile.MsoMdoc
+          }, but the credential is not a string. ${JSON.stringify(credentialResponse.successBody.credential)}`
+        )
+
+      const mdocApi = agentContext.dependencyManager.resolve(MdocApi)
+      const mdoc = Mdoc.fromBase64Url(credentialResponse.successBody.credential)
+      const verificationResult = await mdocApi.verify(mdoc, {})
+
+      if (!verificationResult.isValid) {
+        agentContext.config.logger.error('Failed to validate credential', { verificationResult })
+        throw new CredoError(`Failed to validate mdoc credential. Results = ${verificationResult.error}`)
+      }
+
+      return { credential: mdoc, notificationMetadata }
     }
 
     throw new CredoError(`Unsupported credential format`)

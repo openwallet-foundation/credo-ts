@@ -14,11 +14,14 @@ import {
   W3cJwtVerifiableCredential,
   W3cJsonLdVerifiableCredential,
   JsonEncoder,
+  Mdoc,
+  TypedArrayEncoder,
+  MdocDeviceResponse,
 } from '@credo-ts/core'
 
 export function getSphereonVerifiableCredential(
   verifiableCredential: VerifiableCredential
-): SphereonW3cVerifiableCredential | SphereonCompactSdJwtVc {
+): SphereonW3cVerifiableCredential | SphereonCompactSdJwtVc | string {
   // encoded sd-jwt or jwt
   if (typeof verifiableCredential === 'string') {
     return verifiableCredential
@@ -26,6 +29,8 @@ export function getSphereonVerifiableCredential(
     return JsonTransformer.toJSON(verifiableCredential) as SphereonW3cVerifiableCredential
   } else if (verifiableCredential instanceof W3cJwtVerifiableCredential) {
     return verifiableCredential.serializedJwt
+  } else if (verifiableCredential instanceof Mdoc) {
+    return verifiableCredential.base64Url
   } else {
     return verifiableCredential.compact
   }
@@ -33,7 +38,7 @@ export function getSphereonVerifiableCredential(
 
 export function getSphereonVerifiablePresentation(
   verifiablePresentation: VerifiablePresentation
-): SphereonW3cVerifiablePresentation | SphereonCompactSdJwtVc {
+): SphereonW3cVerifiablePresentation | SphereonCompactSdJwtVc | string {
   // encoded sd-jwt or jwt
   if (typeof verifiablePresentation === 'string') {
     return verifiablePresentation
@@ -41,6 +46,8 @@ export function getSphereonVerifiablePresentation(
     return JsonTransformer.toJSON(verifiablePresentation) as SphereonW3cVerifiablePresentation
   } else if (verifiablePresentation instanceof W3cJwtVerifiablePresentation) {
     return verifiablePresentation.serializedJwt
+  } else if (verifiablePresentation instanceof MdocDeviceResponse) {
+    return verifiablePresentation.base64Url
   } else {
     return verifiablePresentation.compact
   }
@@ -67,6 +74,14 @@ export function getVerifiablePresentationFromSphereonWrapped(
       payload: wrappedVerifiablePresentation.presentation.signedPayload,
       prettyClaims: wrappedVerifiablePresentation.presentation.decodedPayload,
     } satisfies SdJwtVc
+  } else if (wrappedVerifiablePresentation.format === 'mso_mdoc') {
+    if (typeof wrappedVerifiablePresentation.original !== 'string') {
+      const base64Url = TypedArrayEncoder.toBase64URL(
+        new Uint8Array(wrappedVerifiablePresentation.original.cborEncode())
+      )
+      return MdocDeviceResponse.fromBase64Url(base64Url)
+    }
+    return MdocDeviceResponse.fromBase64Url(wrappedVerifiablePresentation.original)
   }
 
   throw new CredoError(`Unsupported presentation format: ${wrappedVerifiablePresentation.format}`)

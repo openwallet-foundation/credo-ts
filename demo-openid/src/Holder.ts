@@ -5,6 +5,7 @@ import {
   W3cJwtVerifiableCredential,
   W3cJsonLdVerifiableCredential,
   DifPresentationExchangeService,
+  Mdoc,
 } from '@credo-ts/core'
 import { OpenId4VcHolderModule } from '@credo-ts/openid4vc'
 import { ariesAskar } from '@hyperledger/aries-askar-nodejs'
@@ -27,6 +28,12 @@ export class Holder extends BaseAgent<ReturnType<typeof getOpenIdHolderModules>>
   public static async build(): Promise<Holder> {
     const holder = new Holder(3000, 'OpenId4VcHolder ' + Math.random().toString())
     await holder.initializeAgent('96213c3d7fc8d4d6754c7a0fd969598e')
+
+    // Set trusted issuer certificates. Required fro verifying mdoc credentials
+    const trustedCertificates: string[] = []
+    await holder.agent.x509.setTrustedCertificates(
+      trustedCertificates.length === 0 ? undefined : (trustedCertificates as [string, ...string[]])
+    )
 
     return holder
   }
@@ -72,6 +79,8 @@ export class Holder extends BaseAgent<ReturnType<typeof getOpenIdHolderModules>>
         const credential = response.credential
         if (credential instanceof W3cJwtVerifiableCredential || credential instanceof W3cJsonLdVerifiableCredential) {
           return this.agent.w3cCredentials.storeCredential({ credential })
+        } else if (credential instanceof Mdoc) {
+          return this.agent.mdoc.store(credential)
         } else {
           return this.agent.sdJwtVc.store(credential.compact)
         }
