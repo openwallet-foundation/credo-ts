@@ -37,7 +37,8 @@
     "oauth4webapi": "^3.0.1",
     "rxjs": "^7.8.0",
     "zod": "^3.23.8",
-    "@animo-id/oid4vci": "0.0.2-alpha-20241024080134"
+    "@animo-id/oid4vci": "0.0.2-alpha-20241104215631",
+    "@animo-id/oauth2": "0.0.2-alpha-20241104215631"
   },
   "devDependencies": {
     "@credo-ts/tenants": "workspace:*",

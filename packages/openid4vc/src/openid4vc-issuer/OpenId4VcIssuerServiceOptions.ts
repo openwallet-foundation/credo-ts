@@ -7,10 +7,11 @@ import type {
 import type {
   OpenId4VcCredentialHolderBinding,
   OpenId4VciCredentialConfigurationsSupported,
-  OpenId4VciCredentialOffer,
+  OpenId4VciCredentialConfigurationsSupportedWithFormats,
+  OpenId4VciCredentialConfigurationSupportedWithFormats,
+  OpenId4VciCredentialOfferPayload,
   OpenId4VciCredentialRequest,
-  OpenId4VciCredentialSupported,
-  OpenId4VciCredentialSupportedWithId,
+  OpenId4VciCredentialRequestWithFormats,
   OpenId4VciIssuerMetadataDisplay,
   OpenId4VciTxCode,
 } from '../shared'
@@ -63,7 +64,6 @@ export type OpenId4VcIssuerMetadata = {
   authorizationServers?: string[]
 
   issuerDisplay?: OpenId4VciIssuerMetadataDisplay[]
-  credentialsSupported: OpenId4VciCredentialSupportedWithId[]
   credentialConfigurationsSupported: OpenId4VciCredentialConfigurationsSupported
   dpopSigningAlgValuesSupported?: [JwaSignatureAlgorithm, ...JwaSignatureAlgorithm[]]
 }
@@ -127,12 +127,12 @@ export type OpenId4VciCredentialRequestToCredentialMapper = (options: {
   /**
    * The credential request received from the wallet
    */
-  credentialRequest: OpenId4VciCredentialRequest
+  credentialRequest: OpenId4VciCredentialRequestWithFormats
 
   /**
    * The offer associated with the credential request
    */
-  credentialOffer: OpenId4VciCredentialOffer
+  credentialOffer: OpenId4VciCredentialOfferPayload
 
   /**
    * Verified key binding material that should be included in the credential
@@ -142,14 +142,10 @@ export type OpenId4VciCredentialRequestToCredentialMapper = (options: {
   holderBinding: OpenId4VcCredentialHolderBinding
 
   /**
-   * @deprecated use credentialConfigurations instead
-   *
-   * The credentials supported entries from the issuer metadata that were offered
-   * and match the incoming request
-   *
-   * NOTE: in v12 this will probably become a single entry, as it will be matched on id
+   * The credential configurations supported entries from the issuer metadata
+   * that were offered and match the incoming request.
    */
-  credentialsSupported: OpenId4VciCredentialSupported[]
+  credentialConfigurationsSupported: OpenId4VciCredentialConfigurationsSupportedWithFormats
 
   /**
    * v13: The ids of the credential configurations that were offered and match the request

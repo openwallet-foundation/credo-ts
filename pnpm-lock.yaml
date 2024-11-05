@@ -714,9 +714,12 @@ importers:
 
   packages/openid4vc:
     dependencies:
+      '@animo-id/oauth2':
+        specifier: 0.0.2-alpha-20241104215631
+        version: 0.0.2-alpha-20241104215631(typescript@5.5.4)
       '@animo-id/oid4vci':
-        specifier: 0.0.2-alpha-20241024080134
-        version: 0.0.2-alpha-20241024080134(typescript@5.5.4)
+        specifier: 0.0.2-alpha-20241104215631
+        version: 0.0.2-alpha-20241104215631(typescript@5.5.4)
       '@credo-ts/core':
         specifier: workspace:*
         version: link:../core
@@ -934,8 +937,14 @@ packages:
       react: '*'
       react-native: '*'
 
-  '@animo-id/oid4vci@0.0.2-alpha-20241024080134':
-    resolution: {integrity: sha512-0+t/xQhQbaFKa8huQBrDWT87LqZ6E/7zecLYj+WOZVV/vrNnk6RvmTMy3zDh0NBXRx28cw12qI+OwdoVtGegCQ==}
+  '@animo-id/oauth2-utils@0.0.2-alpha-20241104215631':
+    resolution: {integrity: sha512-HRDkLU+hJBRiFG1P1ZOXcjCeE4dv8Novbvc7/VcHAl5eUv4exFCwvUgei3J3EM4E/vsO595PVpUsSXpVhXvLxg==}
+
+  '@animo-id/oauth2@0.0.2-alpha-20241104215631':
+    resolution: {integrity: sha512-EZr1i5DD9va8uFBVv0b0wtO/cifpfgbD+NOHhuZP7Eo266S2Nka+NmVWOmB6KBlz+hI8fi1aEvo2zGKAxZ1VYw==}
+
+  '@animo-id/oid4vci@0.0.2-alpha-20241104215631':
+    resolution: {integrity: sha512-khS+7h3A43kvo0cjO97TijsbGVdwFE2VDkFE47ptJpJAfHtvgZlQ4CuffK3PA8iVF0FsT9PAUbZveKQKNxtDVw==}
 
   '@animo-id/react-native-bbs-signatures@0.1.0':
     resolution: {integrity: sha512-7qvsiWhGfUev8ngE8YzF6ON9PtCID5LiYVYM4EC5eyj80gCdhx3R46CI7K1qbqIlGsoTYQ/Xx5Ubo5Ji9eaUEA==}
@@ -2915,6 +2924,7 @@ packages:
 
   '@sphereon/kmp-mdl-mdoc@0.2.0-SNAPSHOT.22':
     resolution: {integrity: sha512-uAZZExVy+ug9JLircejWa5eLtAZ7bnBP6xb7DO2+86LRsHNLh2k2jMWJYxp+iWtGHTsh6RYsZl14ScQLvjiQ/A==}
+    bundledDependencies: []
 
   '@sphereon/oid4vc-common@0.16.1-next.66':
     resolution: {integrity: sha512-PqMFDMfWHn9jiUxa5k018huQTYxHfYJJstQNyRrle/pV37gv6Lh+yjwML6LE8eUQksw05tfXeq1hk8M2Gl1HWA==}
@@ -8208,9 +8218,24 @@ snapshots:
       react: 18.3.1
       react-native: 0.71.19(@babel/core@7.25.8)(@babel/preset-env@7.25.8(@babel/core@7.25.8))(react@18.3.1)
 
-  '@animo-id/oid4vci@0.0.2-alpha-20241024080134(typescript@5.5.4)':
+  '@animo-id/oauth2-utils@0.0.2-alpha-20241104215631(typescript@5.5.4)':
     dependencies:
       buffer: 6.0.3
+      valibot: 0.42.1(typescript@5.5.4)
+    transitivePeerDependencies:
+      - typescript
+
+  '@animo-id/oauth2@0.0.2-alpha-20241104215631(typescript@5.5.4)':
+    dependencies:
+      '@animo-id/oauth2-utils': 0.0.2-alpha-20241104215631(typescript@5.5.4)
+      valibot: 0.42.1(typescript@5.5.4)
+    transitivePeerDependencies:
+      - typescript
+
+  '@animo-id/oid4vci@0.0.2-alpha-20241104215631(typescript@5.5.4)':
+    dependencies:
+      '@animo-id/oauth2': 0.0.2-alpha-20241104215631(typescript@5.5.4)
+      '@animo-id/oauth2-utils': 0.0.2-alpha-20241104215631(typescript@5.5.4)
       valibot: 0.42.1(typescript@5.5.4)
     transitivePeerDependencies:
       - typescript

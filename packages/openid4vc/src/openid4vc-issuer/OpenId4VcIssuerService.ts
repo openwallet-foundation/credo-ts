@@ -16,6 +16,7 @@ import type {
   OpenId4VciCredentialRequest,
 } from '../shared'
 import type { AgentContext, DidDocument, Query, QueryOptions } from '@credo-ts/core'
+import {preAuthorizedCodeGrantIdentifier } from '@animo-id/oauth2'
 import { PRE_AUTH_GRANT_LITERAL } from '@sphereon/oid4vci-common'
 import type {
   CredentialOfferPayloadV1_0_11,
@@ -167,7 +168,7 @@ export class OpenId4VcIssuerService {
       credentialOfferUri: hostedCredentialOfferUri,
       baseUri: options.baseUri,
       credentialDataSupplierInput: options.issuanceMetadata,
-      pinLength: grants[PRE_AUTH_GRANT_LITERAL]?.tx_code?.length,
+      pinLength: grants[preAuthorizedCodeGrantIdentifier]?.tx_code?.length,
     })
 
     // FIXME: https://github.com/Sphereon-Opensource/OID4VCI/issues/102
