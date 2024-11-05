@@ -1,5 +1,6 @@
 import type { OpenId4VcSiopAuthorizationEndpointConfig } from './router/authorizationEndpoint'
 import type { OpenId4VcSiopAuthorizationRequestEndpointConfig } from './router/authorizationRequestEndpoint'
+import type { OpenId4VcSiopFederationEndpointConfig } from './router/federationEndpoint'
 import type { Optional } from '@credo-ts/core'
 import type { Router } from 'express'
 
@@ -24,6 +25,7 @@ export interface OpenId4VcVerifierModuleConfigOptions {
   endpoints?: {
     authorization?: Optional<OpenId4VcSiopAuthorizationEndpointConfig, 'endpointPath'>
     authorizationRequest?: Optional<OpenId4VcSiopAuthorizationRequestEndpointConfig, 'endpointPath'>
+    federation?: Optional<OpenId4VcSiopFederationEndpointConfig, 'endpointPath'>
   }
 }
 
@@ -58,6 +60,17 @@ export class OpenId4VcVerifierModuleConfig {
     return {
       ...userOptions,
       endpointPath: userOptions?.endpointPath ?? '/authorize',
+    }
+  }
+
+  public get federationEndpoint(): OpenId4VcSiopFederationEndpointConfig | undefined {
+    // Use user supplied options, or return defaults.
+    const userOptions = this.options.endpoints?.federation
+    if (!userOptions) return undefined
+
+    return {
+      ...userOptions,
+      endpointPath: userOptions.endpointPath ?? '/.well-known/openid-federation',
     }
   }
 }

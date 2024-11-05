@@ -113,5 +113,44 @@ describe('OpenId4VcVerifier', () => {
       expect(jwt.payload.iss).toEqual(verifier.did)
       expect(jwt.payload.sub).toEqual(verifier.did)
     })
+
+    it('check openid proof request format (entity id)', async () => {
+      const openIdVerifier = await verifier.agent.modules.openId4VcVerifier.createVerifier()
+      const { authorizationRequest, verificationSession } =
+        await verifier.agent.modules.openId4VcVerifier.createAuthorizationRequest({
+          requestSigner: {
+            method: 'openid-federation',
+            clientId: 'http://localhost:3001/verifier',
+          },
+          verifierId: openIdVerifier.verifierId,
+        })
+
+      expect(
+        authorizationRequest.startsWith(
+          `openid://?client_id=${encodeURIComponent(verifier.did)}&request_uri=http%3A%2F%2Fredirect-uri%2F${
+            openIdVerifier.verifierId
+          }%2Fauthorization-requests%2F`
+        )
+      ).toBe(true)
+
+      const jwt = Jwt.fromSerializedJwt(verificationSession.authorizationRequestJwt)
+
+      expect(jwt.header.kid)
+
+      expect(jwt.header.kid).toEqual(verifier.kid)
+      expect(jwt.header.alg).toEqual(SigningAlgo.EDDSA)
+      expect(jwt.header.typ).toEqual('JWT')
+      expect(jwt.payload.additionalClaims.scope).toEqual('openid')
+      expect(jwt.payload.additionalClaims.client_id).toEqual(verifier.did)
+      expect(jwt.payload.additionalClaims.response_uri).toEqual(
+        `http://redirect-uri/${openIdVerifier.verifierId}/authorize`
+      )
+      expect(jwt.payload.additionalClaims.response_mode).toEqual('direct_post')
+      expect(jwt.payload.additionalClaims.nonce).toBeDefined()
+      expect(jwt.payload.additionalClaims.state).toBeDefined()
+      expect(jwt.payload.additionalClaims.response_type).toEqual('id_token')
+      expect(jwt.payload.iss).toEqual(verifier.did)
+      expect(jwt.payload.sub).toEqual(verifier.did)
+    })
   })
 })

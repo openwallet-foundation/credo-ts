@@ -17,6 +17,7 @@ import {
   configureCredentialEndpoint,
   configureIssuerMetadataEndpoint,
 } from './router'
+import { configureFederationEndpoint } from './router/federationEndpoint'
 
 /**
  * @public
@@ -119,6 +120,11 @@ export class OpenId4VcIssuerModule implements Module {
     configureCredentialOfferEndpoint(endpointRouter, this.config.credentialOfferEndpoint)
     configureAccessTokenEndpoint(endpointRouter, this.config.accessTokenEndpoint)
     configureCredentialEndpoint(endpointRouter, this.config.credentialEndpoint)
+
+    // The federation endpoint is optional
+    if (this.config.federationEndpoint) {
+      configureFederationEndpoint(endpointRouter, this.config.federationEndpoint)
+    }
 
     // First one will be called for all requests (when next is called)
     contextRouter.use(async (req: OpenId4VcIssuanceRequest, _res: unknown, next) => {

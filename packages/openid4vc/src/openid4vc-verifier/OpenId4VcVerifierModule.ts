@@ -12,7 +12,7 @@ import { OpenId4VcVerifierApi } from './OpenId4VcVerifierApi'
 import { OpenId4VcVerifierModuleConfig } from './OpenId4VcVerifierModuleConfig'
 import { OpenId4VcVerifierRepository } from './repository'
 import { OpenId4VcRelyingPartyEventHandler } from './repository/OpenId4VcRelyingPartyEventEmitter'
-import { configureAuthorizationEndpoint } from './router'
+import { configureAuthorizationEndpoint, configureFederationEndpoint } from './router'
 import { configureAuthorizationRequestEndpoint } from './router/authorizationRequestEndpoint'
 
 /**
@@ -115,6 +115,9 @@ export class OpenId4VcVerifierModule implements Module {
     // Configure endpoints
     configureAuthorizationEndpoint(endpointRouter, this.config.authorizationEndpoint)
     configureAuthorizationRequestEndpoint(endpointRouter, this.config.authorizationRequestEndpoint)
+    if (this.config.federationEndpoint) {
+      configureFederationEndpoint(endpointRouter, this.config.federationEndpoint)
+    }
 
     // First one will be called for all requests (when next is called)
     contextRouter.use(async (req: OpenId4VcVerificationRequest, _res: unknown, next) => {

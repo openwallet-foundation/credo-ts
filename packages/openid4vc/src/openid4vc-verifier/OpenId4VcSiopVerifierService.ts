@@ -142,6 +142,14 @@ export class OpenId4VcSiopVerifierService {
     } else if (jwtIssuer.method === 'did') {
       clientId = jwtIssuer.didUrl.split('#')[0]
       clientIdScheme = 'did'
+    } else if (jwtIssuer.method === 'custom') {
+      if (!jwtIssuer.options) throw new CredoError(`Custom jwtIssuer must have options defined.`)
+      if (!jwtIssuer.options.clientId) throw new CredoError(`Custom jwtIssuer must have clientId defined.`)
+      if (typeof jwtIssuer.options.clientId !== 'string')
+        throw new CredoError(`Custom jwtIssuer's clientId must be a string.`)
+
+      clientIdScheme = 'entity_id'
+      clientId = jwtIssuer.options.clientId
     } else {
       throw new CredoError(
         `Unsupported jwt issuer method '${options.requestSigner.method}'. Only 'did' and 'x5c' are supported.`
@@ -231,6 +239,8 @@ export class OpenId4VcSiopVerifierService {
     )
 
     const requestClientId = await authorizationRequest.getMergedProperty<string>('client_id')
+    // TODO: Is this needed for the verification of the federation?
+    const requestClientIdScheme = await authorizationRequest.getMergedProperty<ClientIdScheme>('client_id_scheme')
     const requestNonce = await authorizationRequest.getMergedProperty<string>('nonce')
     const requestState = await authorizationRequest.getMergedProperty<string>('state')
     const responseUri = await authorizationRequest.getMergedProperty<string>('response_uri')
@@ -251,6 +261,7 @@ export class OpenId4VcSiopVerifierService {
       presentationDefinition: presentationDefinitionsWithLocation?.[0]?.definition,
       authorizationResponseUrl,
       clientId: requestClientId,
+      clientIdScheme: requestClientIdScheme,
     })
 
     // This is very unfortunate, but storing state in sphereon's SiOP-OID4VP library
@@ -463,7 +474,7 @@ export class OpenId4VcSiopVerifierService {
     return this.openId4VcVerificationSessionRepository.getById(agentContext, verificationSessionId)
   }
 
-  private async getRelyingParty(
+  public async getRelyingParty(
     agentContext: AgentContext,
     verifierId: string,
     {

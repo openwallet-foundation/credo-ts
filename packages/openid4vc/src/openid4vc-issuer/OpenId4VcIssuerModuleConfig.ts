@@ -3,6 +3,7 @@ import type {
   OpenId4VciCredentialEndpointConfig,
   OpenId4VciCredentialOfferEndpointConfig,
 } from './router'
+import type { OpenId4VcSiopFederationEndpointConfig } from './router/federationEndpoint'
 import type { Optional } from '@credo-ts/core'
 import type { Router } from 'express'
 
@@ -35,6 +36,7 @@ export interface OpenId4VcIssuerModuleConfigOptions {
       OpenId4VciAccessTokenEndpointConfig,
       'cNonceExpiresInSeconds' | 'endpointPath' | 'preAuthorizedCodeExpirationInSeconds' | 'tokenExpiresInSeconds'
     >
+    federation?: Optional<OpenId4VcSiopFederationEndpointConfig, 'endpointPath'>
   }
 }
 
@@ -92,6 +94,16 @@ export class OpenId4VcIssuerModuleConfig {
     return {
       ...userOptions,
       endpointPath: userOptions.endpointPath ?? '/offers',
+    }
+  }
+
+  public get federationEndpoint(): OpenId4VcSiopFederationEndpointConfig | undefined {
+    const userOptions = this.options.endpoints.federation
+    if (!userOptions) return undefined
+
+    return {
+      ...userOptions,
+      endpointPath: userOptions.endpointPath ?? '/.well-known/openid-federation',
     }
   }
 }

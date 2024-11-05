@@ -871,4 +871,6 @@ export class OpenId4VciHolderService {
       return jws
     }
   }
+
+  // TODO: Add a function for resolving the entity statement. Which will be used in the holder to verify the entity statement and to show to the user
 }
