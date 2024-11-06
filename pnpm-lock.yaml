@@ -693,8 +693,8 @@ importers:
         specifier: workspace:*
         version: link:../core
       '@openid-federation/core':
-        specifier: 0.1.1-alpha.5
-        version: 0.1.1-alpha.5
+        specifier: 0.1.1-alpha.6
+        version: 0.1.1-alpha.6
       '@sphereon/did-auth-siop':
         specifier: 0.16.1-fix.173
         version: 0.16.1-fix.173(ts-node@10.9.2(@swc/core@1.7.40)(@types/node@18.18.8)(typescript@5.5.4))(typescript@5.5.4)
@@ -2227,8 +2227,8 @@ packages:
     resolution: {integrity: sha512-q9CRWjpHCMIh5sVyefoD1cA7PkvILqCZsnSOEUUivORLjxCO/Irmue2DprETiNgEqktDBZaM1Bi+jrarx1XdCg==}
     engines: {node: ^14.17.0 || ^16.13.0 || >=18.0.0}
 
-  '@openid-federation/core@0.1.1-alpha.5':
-    resolution: {integrity: sha512-DDrFtsrIpvw7JScIEm8KJU7H19lkgQ3AKweJld0Os3AQyOPlb0EvFaLdhS1EMmiWduGuxq3nHnWrWrod0MwyJA==}
+  '@openid-federation/core@0.1.1-alpha.6':
+    resolution: {integrity: sha512-ipQtZYtFMUr2BvUmOxlQNVF7eILEq8isoO7rDYwIj4xafifdPAMxznzDxqlu3sHqbOO49PRDRjo9ESsHUfJLfg==}
 
   '@peculiar/asn1-cms@2.3.13':
     resolution: {integrity: sha512-joqu8A7KR2G85oLPq+vB+NFr2ro7Ls4ol13Zcse/giPSzUNN0n2k3v8kMpf6QdGUhI13e5SzQYN8AKP8sJ8v4w==}
@@ -2470,6 +2470,7 @@ packages:
 
   '@sphereon/kmp-mdl-mdoc@0.2.0-SNAPSHOT.22':
     resolution: {integrity: sha512-uAZZExVy+ug9JLircejWa5eLtAZ7bnBP6xb7DO2+86LRsHNLh2k2jMWJYxp+iWtGHTsh6RYsZl14ScQLvjiQ/A==}
+    bundledDependencies: []
 
   '@sphereon/oid4vc-common@0.16.1-fix.173':
     resolution: {integrity: sha512-+AAUvEEFs0vzz1mrgjSgvDkcBtr18d2XEVgJex7QlAqxCKVGfjzZlqL2Q2vOLKYVaXsazhD5LnYiY6B5WMTC3Q==}
@@ -2529,9 +2530,6 @@ packages:
 
   '@sphereon/ssi-types@0.29.1-unstable.161':
     resolution: {integrity: sha512-ifMADjk6k0f97/isK/4Qw/PX6n4k+qS5k6mmmH47MTD3KMDddVghoXycsvNw7wObJdLUalHBX630ghr+u21oMg==}
-
-  '@sphereon/ssi-types@0.29.1-unstable.208':
-    resolution: {integrity: sha512-3YAFzy//BojsYN+RYoEjndWP3w5a8a3qRZi5dS0Gh6s4yMCiykqTJM1agJVeoaLce8JxFFaCWSpkzwbmJYGTaQ==}
 
   '@sphereon/ssi-types@0.30.1':
     resolution: {integrity: sha512-vbYaxQXb71sOPwDj7TRDlUGfIHKVVs8PiHfImPBgSBshrD7VpEHOrB+EwwavMm5MAQvWK/yblGmzk7FHds7SHA==}
@@ -9811,7 +9809,7 @@ snapshots:
     dependencies:
       semver: 7.6.3
 
-  '@openid-federation/core@0.1.1-alpha.5':
+  '@openid-federation/core@0.1.1-alpha.6':
     dependencies:
       buffer: 6.0.3
       zod: 3.23.8
@@ -10524,7 +10522,25 @@ snapshots:
       nanoid: 3.3.7
       uint8arrays: 3.1.1
     transitivePeerDependencies:
+      - '@google-cloud/spanner'
+      - '@sap/hana-client'
+      - better-sqlite3
+      - encoding
+      - hdb-pool
+      - ioredis
+      - mongodb
+      - mssql
+      - mysql2
+      - oracledb
+      - pg
+      - pg-native
+      - pg-query-stream
+      - redis
+      - sql.js
+      - sqlite3
       - supports-color
+      - ts-node
+      - typeorm-aurora-data-api-driver
 
   '@sphereon/ssi-sdk-ext.did-utils@0.24.1-unstable.130(ts-node@10.9.2(@swc/core@1.7.40)(@types/node@18.18.8)(typescript@5.5.4))':
     dependencies:
@@ -10715,16 +10731,6 @@ snapshots:
   '@sphereon/ssi-types@0.29.1-unstable.161':
     dependencies:
       '@sd-jwt/decode': 0.6.1
-      debug: 4.3.6
-      events: 3.3.0
-      jwt-decode: 3.1.2
-    transitivePeerDependencies:
-      - supports-color
-
-  '@sphereon/ssi-types@0.29.1-unstable.208':
-    dependencies:
-      '@sd-jwt/decode': 0.6.1
-      '@sphereon/kmp-mdl-mdoc': 0.2.0-SNAPSHOT.22
       debug: 4.3.6
       events: 3.3.0
       jwt-decode: 3.1.2

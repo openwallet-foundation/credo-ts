@@ -8,7 +8,10 @@ import type {
   OpenId4VciSendNotificationOptions,
   OpenId4VciRequestTokenResponse,
 } from './OpenId4VciHolderServiceOptions'
-import type { OpenId4VcSiopAcceptAuthorizationRequestOptions } from './OpenId4vcSiopHolderServiceOptions'
+import type {
+  OpenId4VcSiopAcceptAuthorizationRequestOptions,
+  OpenId4VcSiopResolveAuthorizationRequestOptions,
+} from './OpenId4vcSiopHolderServiceOptions'
 
 import { injectable, AgentContext } from '@credo-ts/core'
 
@@ -40,8 +43,11 @@ export class OpenId4VcHolderApi {
    * @param requestJwtOrUri JWT or an SIOPv2 request URI
    * @returns the resolved and verified authentication request.
    */
-  public async resolveSiopAuthorizationRequest(requestJwtOrUri: string) {
-    return this.openId4VcSiopHolderService.resolveAuthorizationRequest(this.agentContext, requestJwtOrUri)
+  public async resolveSiopAuthorizationRequest(
+    requestJwtOrUri: string,
+    options: OpenId4VcSiopResolveAuthorizationRequestOptions = {}
+  ) {
+    return this.openId4VcSiopHolderService.resolveAuthorizationRequest(this.agentContext, requestJwtOrUri, options)
   }
 
   /**

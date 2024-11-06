@@ -1,7 +1,7 @@
 import type { OpenId4VcIssuerX5c, OpenId4VcJwtIssuer } from './models'
 import type { AgentContext, JwaSignatureAlgorithm, JwkJson, Key } from '@credo-ts/core'
 import type { JwtIssuerWithContext as VpJwtIssuerWithContext, VerifyJwtCallback } from '@sphereon/did-auth-siop'
-import type { DPoPJwtIssuerWithContext, CreateJwtCallback, JwtIssuer, JwtIssuerBase } from '@sphereon/oid4vc-common'
+import type { DPoPJwtIssuerWithContext, CreateJwtCallback, JwtIssuer } from '@sphereon/oid4vc-common'
 import type { CredentialOfferPayloadV1_0_11, CredentialOfferPayloadV1_0_13 } from '@sphereon/oid4vci-common'
 
 import {
@@ -18,7 +18,7 @@ import {
   getJwkFromKey,
   getKeyFromVerificationMethod,
 } from '@credo-ts/core'
-import { fetchEntityConfiguration, fetchEntityConfigurationChains } from '@openid-federation/core'
+import { fetchEntityConfiguration, resolveTrustChains } from '@openid-federation/core'
 
 /**
  * Returns the JWA Signature Algorithms that are supported by the wallet.
@@ -52,7 +52,9 @@ async function getKeyFromDid(agentContext: AgentContext, didUrl: string) {
 }
 
 type VerifyJwtCallbackOptions = {
-  trustedEntityIds?: string[]
+  federation?: {
+    trustedEntityIds?: string[]
+  }
 }
 
 export function getVerifyJwtCallback(
@@ -61,23 +63,28 @@ export function getVerifyJwtCallback(
 ): VerifyJwtCallback {
   return async (jwtVerifier, jwt) => {
     const jwsService = agentContext.dependencyManager.resolve(JwsService)
+
     if (jwtVerifier.method === 'did') {
       const key = await getKeyFromDid(agentContext, jwtVerifier.didUrl)
       const jwk = getJwkFromKey(key)
 
       const res = await jwsService.verifyJws(agentContext, { jws: jwt.raw, jwkResolver: () => jwk })
       return res.isValid
-    } else if (jwtVerifier.method === 'x5c' || jwtVerifier.method === 'jwk') {
+    }
+
+    if (jwtVerifier.method === 'x5c' || jwtVerifier.method === 'jwk') {
       const res = await jwsService.verifyJws(agentContext, { jws: jwt.raw })
       return res.isValid
-    } else if (jwtVerifier.method === 'openid-federation') {
+    }
+
+    if (jwtVerifier.method === 'openid-federation') {
       const { entityId } = jwtVerifier
-      const trustedEntityIds = options.trustedEntityIds ?? [entityId] // TODO: Just for testing
+      const trustedEntityIds = options.federation?.trustedEntityIds
       if (!trustedEntityIds)
         throw new CredoError('No trusted entity ids provided but is required for the openid-federation method.')
 
-      const entityConfigurationChains = await fetchEntityConfigurationChains({
-        leafEntityId: entityId,
+      const validTrustChains = await resolveTrustChains({
+        entityId,
         trustAnchorEntityIds: trustedEntityIds,
         verifyJwtCallback: async ({ data, signature, jwk }) => {
           const jws = `${TypedArrayEncoder.toUtf8String(data)}.${TypedArrayEncoder.toBase64URL(signature)}`
@@ -86,17 +93,20 @@ export function getVerifyJwtCallback(
             jws,
             jwkResolver: () => getJwkFromJson(jwk),
           })
+
           return res.isValid
         },
       })
 
       // TODO: There is no check yet for the policies
 
+      // TODO: When this function results in a `false` it gives a really misleading error message: 'Error verifying the DID Auth Token signature.'
+
       // TODO: I think this is correct but not sure?
-      return entityConfigurationChains.length > 0
-    } else {
-      throw new Error(`Unsupported jwt verifier method: '${jwtVerifier.method}'`)
+      return validTrustChains.length > 0
     }
+
+    throw new Error(`Unsupported jwt verifier method: '${jwtVerifier.method}'`)
   }
 }
 
@@ -150,7 +160,7 @@ export function getCreateJwtCallback(
       if (!options.clientId) throw new CredoError(`Custom jwtIssuer must have clientId defined.`)
       if (typeof options.clientId !== 'string') throw new CredoError(`Custom jwtIssuer's clientId must be a string.`)
 
-      const clientId = options.clientId
+      const { clientId } = options
 
       const entityConfiguration = await fetchEntityConfiguration({
         entityId: clientId as string,
@@ -164,6 +174,7 @@ export function getCreateJwtCallback(
       // TODO: Not 100% sure what key to pick here I think the one that matches the kid in the jwt header of the entity configuration or we should pass a alg and pick a jwk based on that?
       const jwk = getJwkFromJson(entityConfiguration.jwks.keys[0])
 
+      // TODO: This gives a weird error when the private key is not available in the wallet
       const jws = await jwsService.createJwsCompact(agentContext, {
         protectedHeaderOptions: { ...jwt.header, jwk, alg: jwk.supportedSignatureAlgorithms[0] },
         payload: JwtPayload.fromJson(jwt.payload),

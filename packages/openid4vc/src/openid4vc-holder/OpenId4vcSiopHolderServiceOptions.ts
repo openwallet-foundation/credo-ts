@@ -48,6 +48,17 @@ export interface OpenId4VcSiopAcceptAuthorizationRequestOptions {
    * The verified authorization request.
    */
   authorizationRequest: OpenId4VcSiopVerifiedAuthorizationRequest
+
+  // TODO: Not sure if this also needs the federation because the validation of the authorization is already done with the ResolveAuthorizationRequest
+}
+
+export interface OpenId4VcSiopResolveAuthorizationRequestOptions {
+  federation?: {
+    /**
+     * The entity IDs of the trusted issuers.
+     */
+    trustedEntityIds?: string[]
+  }
 }
 
 // FIXME: rethink properties
@@ -55,4 +66,13 @@ export interface OpenId4VcSiopAuthorizationResponseSubmission {
   ok: boolean
   status: number
   submittedResponse: OpenId4VcSiopAuthorizationResponsePayload
+}
+
+export interface OpenId4VcSiopGetOpenIdProviderOptions {
+  federation?: {
+    /**
+     * The entity IDs of the trusted issuers.
+     */
+    trustedEntityIds?: string[]
+  }
 }

@@ -1,5 +1,7 @@
 import type {
   OpenId4VcSiopAcceptAuthorizationRequestOptions,
+  OpenId4VcSiopGetOpenIdProviderOptions,
+  OpenId4VcSiopResolveAuthorizationRequestOptions,
   OpenId4VcSiopResolvedAuthorizationRequest,
 } from './OpenId4vcSiopHolderServiceOptions'
 import type { OpenId4VcJwtIssuer } from '../shared'
@@ -38,9 +40,12 @@ export class OpenId4VcSiopHolderService {
 
   public async resolveAuthorizationRequest(
     agentContext: AgentContext,
-    requestJwtOrUri: string
+    requestJwtOrUri: string,
+    options: OpenId4VcSiopResolveAuthorizationRequestOptions = {}
   ): Promise<OpenId4VcSiopResolvedAuthorizationRequest> {
-    const openidProvider = await this.getOpenIdProvider(agentContext)
+    const openidProvider = await this.getOpenIdProvider(agentContext, {
+      federation: options.federation,
+    })
 
     // parsing happens automatically in verifyAuthorizationRequest
     const verifiedAuthorizationRequest = await openidProvider.verifyAuthorizationRequest(requestJwtOrUri)
@@ -231,7 +236,7 @@ export class OpenId4VcSiopHolderService {
     }
   }
 
-  private async getOpenIdProvider(agentContext: AgentContext) {
+  private async getOpenIdProvider(agentContext: AgentContext, options: OpenId4VcSiopGetOpenIdProviderOptions = {}) {
     const builder = OP.builder()
       .withExpiresIn(6000)
       .withIssuer(ResponseIss.SELF_ISSUED_V2)
@@ -242,7 +247,11 @@ export class OpenId4VcSiopHolderService {
         SupportedVersion.SIOPv2_D12_OID4VP_D20,
       ])
       .withCreateJwtCallback(getCreateJwtCallback(agentContext))
-      .withVerifyJwtCallback(getVerifyJwtCallback(agentContext))
+      .withVerifyJwtCallback(
+        getVerifyJwtCallback(agentContext, {
+          federation: options.federation,
+        })
+      )
       .withHasher(Hasher.hash)
 
     const openidProvider = builder.build()

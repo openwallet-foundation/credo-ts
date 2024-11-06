@@ -50,8 +50,6 @@ describe('OpenId4Vc', () => {
     tenants: TenantsModule<{ openId4VcIssuer: OpenId4VcIssuerModule }>
     x509: X509Module
   }>
-  let issuer1: TenantType
-  let issuer2: TenantType
 
   let holder: AgentType<{
     openId4VcHolder: OpenId4VcHolderModule
@@ -143,8 +141,6 @@ describe('OpenId4Vc', () => {
       },
       '96213c3d7fc8d4d6754c7a0fd969598g'
     )) as unknown as typeof issuer
-    issuer1 = await createTenantForAgent(issuer.agent, 'iTenant1')
-    issuer2 = await createTenantForAgent(issuer.agent, 'iTenant2')
 
     holder = (await createAgentFromModules(
       'holder',
@@ -276,7 +272,12 @@ describe('OpenId4Vc', () => {
     await verifierTenant2.endSession()
 
     const resolvedProofRequest1 = await holderTenant.modules.openId4VcHolder.resolveSiopAuthorizationRequest(
-      authorizationRequestUri1
+      authorizationRequestUri1,
+      {
+        federation: {
+          trustedEntityIds: [`http://localhost:1234/oid4vp/${openIdVerifierTenant1.verifierId}`],
+        },
+      }
     )
 
     expect(resolvedProofRequest1.presentationExchange?.credentialsForRequest).toMatchObject({
@@ -302,7 +303,12 @@ describe('OpenId4Vc', () => {
     })
 
     const resolvedProofRequest2 = await holderTenant.modules.openId4VcHolder.resolveSiopAuthorizationRequest(
-      authorizationRequestUri2
+      authorizationRequestUri2,
+      {
+        federation: {
+          trustedEntityIds: [`http://localhost:1234/oid4vp/${openIdVerifierTenant2.verifierId}`],
+        },
+      }
     )
 
     expect(resolvedProofRequest2.presentationExchange?.credentialsForRequest).toMatchObject({

@@ -143,6 +143,7 @@ export class OpenId4VcSiopVerifierService {
       clientId = jwtIssuer.didUrl.split('#')[0]
       clientIdScheme = 'did'
     } else if (jwtIssuer.method === 'custom') {
+      // TODO: Currently used as openid federation, but the jwtIssuer should also be openid-federation
       if (!jwtIssuer.options) throw new CredoError(`Custom jwtIssuer must have options defined.`)
       if (!jwtIssuer.options.clientId) throw new CredoError(`Custom jwtIssuer must have clientId defined.`)
       if (typeof jwtIssuer.options.clientId !== 'string')
