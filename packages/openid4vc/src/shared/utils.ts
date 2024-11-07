@@ -184,6 +184,7 @@ export function getCreateJwtCallback(
       return jws
     }
 
+    // @ts-expect-error - All methods are supported currently so there is no unsupported method anymore
     throw new Error(`Unsupported jwt issuer method '${jwtIssuer.method}'`)
   }
 }
