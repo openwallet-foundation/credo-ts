@@ -2,7 +2,7 @@
   "name": "@credo-ts/tenants",
   "main": "src/index",
   "types": "src/index",
-  "version": "0.5.12",
+  "version": "0.5.13",
   "files": [
     "build"
   ],
