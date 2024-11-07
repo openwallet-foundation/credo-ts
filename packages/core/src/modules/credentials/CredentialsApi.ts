@@ -635,8 +635,8 @@ export class CredentialsApi<CPs extends CredentialProtocol[]> implements Credent
    *
    * @returns List containing all credential records matching specified query paramaters
    */
-  public findAllByQuery(query: Query<CredentialExchangeRecord>) {
-    return this.credentialRepository.findByQuery(this.agentContext, query)
+  public findAllByQuery(query: Query<CredentialExchangeRecord>, queryOptions?: QueryOptions) {
+    return this.credentialRepository.findByQuery(this.agentContext, query, queryOptions)
   }
 
   /**
