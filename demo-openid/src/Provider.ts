@@ -1,18 +1,26 @@
 import { bodyParser } from '@koa/bodyparser'
 import { Provider } from 'oidc-provider'
 
+// I can't figure out how to bind a custom request parameter to the session
+// so it can be bound to the access token. This is a very hacky 'global' issuer_state
+// and only works if only person is authenticating. Of course very unsecure, but it's a demo
+let issuer_state: string | undefined = undefined
+
 const oidc = new Provider('http://localhost:3042', {
+  clientAuthMethods: ['client_secret_basic', 'client_secret_post', 'none'],
   clients: [
     {
-      client_id: 'foo',
-      client_secret: 'bar',
-      redirect_uris: ['http://localhost:3000/redirect'],
+      client_id: 'wallet',
+      client_secret: 'wallet',
       grant_types: ['authorization_code'],
       id_token_signed_response_alg: 'ES256',
+      redirect_uris: [],
     },
     {
       client_id: 'issuer-server',
       client_secret: 'issuer-server',
+      id_token_signed_response_alg: 'ES256',
+      redirect_uris: [],
     },
   ],
   jwks: {
@@ -41,16 +49,23 @@ const oidc = new Provider('http://localhost:3042', {
   extraTokenClaims: async (context, token) => {
     if (token.kind === 'AccessToken') {
       return {
-        issuer_state: context.request.body.issuer_state,
+        issuer_state,
       }
     }
     return undefined
+  },
+  clientBasedCORS: () => true,
+  extraParams: {
+    issuer_state: (_, value) => {
+      issuer_state = value
+    },
   },
   features: {
     dPoP: { enabled: true },
     pushedAuthorizationRequests: {
       enabled: true,
       requirePushedAuthorizationRequests: true,
+      allowUnregisteredRedirectUris: true,
     },
     introspection: {
       enabled: true,
@@ -62,7 +77,9 @@ const oidc = new Provider('http://localhost:3042', {
         return {
           scope: 'openid4vc:credential:OpenBadgeCredential-sdjwt',
           accessTokenTTL: 5 * 60, // 5 minutes
-          accessTokenFormat: 'opaque',
+
+          // NOTE: switch this between opaque and jwt to use JWT tokens or Token introspection
+          accessTokenFormat: 'jwt',
           audience: 'http://localhost:2000/oid4vci/726222ad-7624-4f12-b15b-e08aa7042ffa',
           jwt: {
             sign: {
@@ -90,36 +107,30 @@ const oidc = new Provider('http://localhost:3042', {
 
 oidc.use(bodyParser())
 oidc.use(async (ctx, next) => {
-  console.log('pre middleware', ctx.method, ctx.path)
-
-  // We hack the client secret (to allow public client)
-  if (ctx.path.includes('request')) {
-    ctx.request.body.client_secret = 'bar'
+  if (!ctx.path.startsWith('/interaction') && !ctx.path.startsWith('/.well-known/')) {
+    console.log(
+      'Request',
+      JSON.stringify({ path: ctx.path, body: ctx.request.body, headers: ctx.request.headers }, null, 2)
+    )
   }
 
-  if (ctx.path.includes('auth')) {
-    const match = ctx.body?.match(/code=([^&]*)/)
-    const code = match ? match[1] : null
-    console.log('code', code)
-  }
-
-  if (ctx.path.includes('token')) {
-    console.log('token endpoint')
-    console.log(ctx.request.body)
-    ctx.request.body.client_id = 'foo'
-    ctx.request.body.client_secret = 'bar'
+  // We hack the client secret (to allow public client with unregistered redirect uri)
+  if (ctx.path === '/request' || ctx.path === '/token') {
+    ctx.request.body.client_id = 'wallet'
+    ctx.request.body.client_secret = 'wallet'
   }
 
   await next()
 
-  /** post-processing
-   * since internal route matching was already executed you may target a specific action here
-   * checking `ctx.oidc.route`, the unique route names used are
-   */
-
-  console.log('post middleware', ctx.method, ctx.oidc?.route)
-  if (ctx.path.includes('token')) {
-    console.log('token endpoint', ctx.response.body)
+  if (!ctx.path.startsWith('/interaction') && !ctx.path.startsWith('/.well-known/')) {
+    console.log(
+      'Response',
+      JSON.stringify(
+        { path: ctx.path, body: ctx.response.body, status: ctx.response.status, headers: ctx.response.headers },
+        null,
+        2
+      )
+    )
   }
 })
 

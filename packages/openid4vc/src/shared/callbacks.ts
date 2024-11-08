@@ -75,9 +75,9 @@ export function getOid4vciCallbacks(agentContext: AgentContext) {
   } satisfies Partial<CallbackContext>
 }
 
-/*
- * // Allows us to authenticate when making requests to an external
- *      // authorizatin server
+/**
+ * Allows us to authenticate when making requests to an external
+ * authorizatin server
  */
 export function dynamicOid4vciClientAuthentication(
   agentContext: AgentContext,
@@ -88,17 +88,20 @@ export function dynamicOid4vciClientAuthentication(
       (a) => a.issuer === callbackOptions.authorizationServerMetata.issuer
     )
 
-    // No client authentication if authorization server is not configured
-    agentContext.config.logger.debug(
-      `Unknown authorization server '${callbackOptions.authorizationServerMetata.issuer}' for issuer '${issuerRecord.issuerId}' for request to '${callbackOptions.url}'`
-    )
-    if (!authorizationServer) return
+    if (!authorizationServer) {
+      // No client authentication if authorization server is not configured
+      agentContext.config.logger.debug(
+        `Unknown authorization server '${callbackOptions.authorizationServerMetata.issuer}' for issuer '${issuerRecord.issuerId}' for request to '${callbackOptions.url}'`
+      )
+      return
+    }
 
     if (!authorizationServer.clientAuthentication) {
       throw new CredoError(
         `Unable to authenticate to authorization server '${authorizationServer.issuer}' for issuer '${issuerRecord.issuerId}' for request to '${callbackOptions.url}'. Make sure to configure a 'clientId' and 'clientSecret' for the authorization server on the issuer record.`
       )
     }
+
     return clientAuthenticationDynamic({
       clientId: authorizationServer.clientAuthentication.clientId,
       clientSecret: authorizationServer.clientAuthentication.clientSecret,

@@ -15,7 +15,7 @@ export function configureIssuerMetadataEndpoint(router: Router) {
       try {
         const openId4VcIssuerService = agentContext.dependencyManager.resolve(OpenId4VcIssuerService)
         const issuerMetadata = await openId4VcIssuerService.getIssuerMetadata(agentContext, issuer)
-        const vcIssuer = openId4VcIssuerService.getIssuer(agentContext, issuer)
+        const vcIssuer = openId4VcIssuerService.getIssuer(agentContext)
         const issuerAuthorizationServer = getAuthorizationServerMetadataFromList(
           issuerMetadata.authorizationServers,
           issuerMetadata.credentialIssuer.credential_issuer

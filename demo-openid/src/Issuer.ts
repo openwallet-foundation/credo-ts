@@ -36,6 +36,10 @@ export const credentialConfigurationsSupported = {
   'UniversityDegreeCredential-jwtvcjson': {
     format: OpenId4VciCredentialFormatProfile.JwtVcJson,
     scope: 'openid4vc:credential:UniversityDegreeCredential-jwtvcjson',
+    // TODO: we should validate this against what is supported by credo
+    // as otherwise it's very easy to create invalid configurations?
+    cryptographic_binding_methods_supported: ['did:key', 'did:jwk'],
+    credential_signing_alg_values_supported: ['ES256', 'EdDSA'],
     credential_definition: {
       type: ['VerifiableCredential', 'UniversityDegreeCredential'],
     },
@@ -44,11 +48,15 @@ export const credentialConfigurationsSupported = {
     format: OpenId4VciCredentialFormatProfile.SdJwtVc,
     vct: 'UniversityDegreeCredential',
     scope: 'openid4vc:credential:OpenBadgeCredential-sdjwt',
+    cryptographic_binding_methods_supported: ['jwk'],
+    credential_signing_alg_values_supported: ['ES256', 'EdDSA'],
   },
   'UniversityDegreeCredential-mdoc': {
     format: OpenId4VciCredentialFormatProfile.MsoMdoc,
     doctype: 'UniversityDegreeCredential',
     scope: 'openid4vc:credential:OpenBadgeCredential-mdoc',
+    cryptographic_binding_methods_supported: ['jwk'],
+    credential_signing_alg_values_supported: ['ES256', 'EdDSA'],
   },
 } satisfies OpenId4VciCredentialConfigurationsSupportedWithFormats
 
@@ -200,16 +208,21 @@ export class Issuer extends BaseAgent<{
     return issuer
   }
 
-  public async createCredentialOffer(options: { credentialConfigurationIds: string[]; requireAuthorization: boolean }) {
+  public async createCredentialOffer(options: {
+    credentialConfigurationIds: string[]
+    requireAuthorization: boolean
+    requirePin: boolean
+  }) {
     const issuerMetadata = await this.agent.modules.openId4VcIssuer.getIssuerMetadata(this.issuerRecord.issuerId)
 
-    const { credentialOffer } = await this.agent.modules.openId4VcIssuer.createCredentialOffer({
+    const { credentialOffer, issuanceSession } = await this.agent.modules.openId4VcIssuer.createCredentialOffer({
       issuerId: this.issuerRecord.issuerId,
       offeredCredentials: options.credentialConfigurationIds,
       // Pre-auth using our own server
       preAuthorizedCodeFlowConfig: !options.requireAuthorization
         ? {
             authorizationServerUrl: issuerMetadata.credentialIssuer.credential_issuer,
+            txCode: options.requirePin ? {} : undefined,
           }
         : undefined,
       // Auth using external authorization server
@@ -222,7 +235,7 @@ export class Issuer extends BaseAgent<{
         : undefined,
     })
 
-    return credentialOffer
+    return { credentialOffer, issuanceSession }
   }
 
   public async exit() {

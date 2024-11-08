@@ -38,7 +38,7 @@ export function configureCredentialEndpoint(router: Router, config: OpenId4VciCr
     // TODO: we should allow delaying fetching auth metadat until it's needed
     // also we should cache it. (both request and response)
     const issuerMetadata = await openId4VcIssuerService.getIssuerMetadata(agentContext, issuer, true)
-    const resourceServer = openId4VcIssuerService.getResourceServer(agentContext)
+    const resourceServer = openId4VcIssuerService.getResourceServer(agentContext, issuer)
 
     const fullRequestUrl = joinUriParts(issuerMetadata.credentialIssuer.credential_issuer, [config.endpointPath])
     const resourceRequestResult = await resourceServer
@@ -66,7 +66,11 @@ export function configureCredentialEndpoint(router: Router, config: OpenId4VciCr
       issuerId: issuer.issuerId,
       // TODO: maybe make pre-auth also custom prop to be more explicit
       ...(typeof tokenPayload.issuer_state === 'string'
-        ? { issuerState: tokenPayload.issuer_state }
+        ? // TODO: we should bind the issuance session to the `sub` of this token
+          // after we've matched it against the issuer_state, otherwise someone can
+          // get hold of an access token by providing an issuer_state value used in previous
+          // sessions from someone else and hijack the session
+          { issuerState: tokenPayload.issuer_state }
         : { preAuthorizedCode: tokenPayload.sub }),
     })
 

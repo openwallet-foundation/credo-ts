@@ -3,7 +3,7 @@ import { textSync } from 'figlet'
 
 import { BaseInquirer } from './BaseInquirer'
 import { credentialConfigurationsSupported, Issuer } from './Issuer'
-import { Title, purpleText } from './OutputClass'
+import { Title, greenText, purpleText } from './OutputClass'
 
 export const runIssuer = async () => {
   clear()
@@ -51,12 +51,18 @@ export class IssuerInquirer extends BaseInquirer {
   public async createCredentialOffer() {
     const credentialConfigurationIds = await this.pickMultiple(Object.keys(credentialConfigurationsSupported))
     const requireAuthorization = await this.inquireConfirmation('Require authorization?')
-    const offerRequest = await this.issuer.createCredentialOffer({
+    const requirePin = !requireAuthorization ? await this.inquireConfirmation('Require pin?') : false
+    const { credentialOffer, issuanceSession } = await this.issuer.createCredentialOffer({
       credentialConfigurationIds,
       requireAuthorization,
+      requirePin,
     })
 
-    console.log(purpleText(`credential offer: '${offerRequest}'`))
+    console.log(purpleText(`credential offer: '${credentialOffer}'`, true))
+
+    if (issuanceSession.userPin) {
+      console.log(greenText(`\nEnter PIN ${issuanceSession.userPin} when asked`, true))
+    }
   }
 
   public async exit() {

@@ -246,7 +246,6 @@ export class OpenId4VciHolderService {
 
   public async requestAccessToken(agentContext: AgentContext, options: OpenId4VciTokenRequestOptions) {
     const { metadata, credentialOfferPayload } = options.resolvedCredentialOffer
-
     const client = this.getClient(agentContext)
     const oauth2Client = this.getOauth2Client(agentContext)
 
@@ -277,8 +276,8 @@ export class OpenId4VciHolderService {
           pkceCodeVerifier: options.codeVerifier,
           redirectUri: options.redirectUri,
           additionalRequestPayload: {
-            // TODO: remove after new release of oid4vci-ts
-            issuer_state: credentialOfferPayload.grants?.authorization_code?.issuer_state,
+            // TODO: should we make this a param? Or should we handle it as part of client auth?
+            client_id: options.clientId,
           },
         })
       : await client.retrievePreAuthorizedCodeAccessTokenFromOffer({
@@ -356,34 +355,31 @@ export class OpenId4VciHolderService {
     // If we don't have a nonce yet, we need to first get one
     if (!cNonce) {
       // Best option is to use nonce endpoint (draft 14+)
-      if (metadata.credentialIssuer.nonce_endpoint) {
-        cNonce = (
-          await client.requestNonce({
+      if (!metadata.credentialIssuer.nonce_endpoint) {
+        const nonceResponse = await client.requestNonce({ issuerMetadata: metadata })
+        cNonce = nonceResponse.c_nonce
+      } else {
+        // Otherwise we will send a dummy request
+        await client
+          .retrieveCredentials({
             issuerMetadata: metadata,
+            accessToken: options.accessToken,
+            credentialConfigurationId: credentialConfigurationsToRequest[0][0],
+            // TODO: do we already catch the dpop from error response?
+            dpop: options.dpop
+              ? await this.getDpopOptions(agentContext, {
+                  ...options.dpop,
+                  nonce: dpopNonce,
+                  dpopSigningAlgValuesSupported: [options.dpop.alg],
+                })
+              : undefined,
           })
-        ).c_nonce
+          .catch((e) => {
+            if (e instanceof Oid4vciRetrieveCredentialsError && e.response.credentialErrorResponseResult?.success) {
+              cNonce = e.response.credentialErrorResponseResult.output.c_nonce
+            }
+          })
       }
-
-      // Otherwise we will send a dummy request
-      await client
-        .retrieveCredentials({
-          issuerMetadata: metadata,
-          accessToken: options.accessToken,
-          credentialConfigurationId: credentialConfigurationsToRequest[0][0],
-          // TODO: do we already catch the dpop from error response?
-          dpop: options.dpop
-            ? await this.getDpopOptions(agentContext, {
-                ...options.dpop,
-                nonce: dpopNonce,
-                dpopSigningAlgValuesSupported: [options.dpop.alg],
-              })
-            : undefined,
-        })
-        .catch((e) => {
-          if (e instanceof Oid4vciRetrieveCredentialsError && e.response.credentialErrorResponseResult?.success) {
-            cNonce = e.response.credentialErrorResponseResult.output.c_nonce
-          }
-        })
     }
 
     if (!cNonce) {
@@ -506,6 +502,7 @@ export class OpenId4VciHolderService {
       getSupportedVerificationMethodTypesFromKeyType(keyType)
     )
     const format = options.offeredCredential.configuration.format as OpenId4VciSupportedCredentialFormats
+    const supportsAnyMethod = supportedDidMethods !== undefined || supportsAllDidMethods || supportsJwk
 
     // Now we need to determine how the credential will be bound to us
     const credentialBinding = await options.credentialBindingResolver({
@@ -528,7 +525,9 @@ export class OpenId4VciHolderService {
         // If supportedDidMethods is undefined, it means the issuer didn't include the binding methods in the metadata
         // The user can still select a verification method, but we can't validate it
         supportedDidMethods !== undefined &&
-        !supportedDidMethods.find((supportedDidMethod) => credentialBinding.didUrl.startsWith(supportedDidMethod))
+        !supportedDidMethods.find(
+          (supportedDidMethod) => credentialBinding.didUrl.startsWith(supportedDidMethod) && supportsAnyMethod
+        )
       ) {
         const { method } = parseDid(credentialBinding.didUrl)
         const supportedDidMethodsString = supportedDidMethods.join(', ')
@@ -547,7 +546,7 @@ export class OpenId4VciHolderService {
         )
       }
     } else if (credentialBinding.method === 'jwk') {
-      if (!supportsJwk) {
+      if (!supportsJwk && supportsAnyMethod) {
         throw new CredoError(
           `Resolved credential binding for proof of possession uses jwk, but openid issuer does not support 'jwk' or 'cose_key' cryptographic binding method`
         )

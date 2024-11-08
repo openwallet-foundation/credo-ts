@@ -29,6 +29,11 @@ function getOpenIdHolderModules() {
 }
 
 export class Holder extends BaseAgent<ReturnType<typeof getOpenIdHolderModules>> {
+  public client = {
+    clientId: 'wallet',
+    redirectUri: 'http://localhost:3000/redirect',
+  }
+
   public constructor(port: number, name: string) {
     super({ port, name, modules: getOpenIdHolderModules() })
   }
@@ -62,8 +67,8 @@ export class Holder extends BaseAgent<ReturnType<typeof getOpenIdHolderModules>>
       const resolvedAuthorizationRequest = await this.agent.modules.openId4VcHolder.resolveIssuanceAuthorizationRequest(
         resolvedCredentialOffer,
         {
-          clientId: 'foo',
-          redirectUri: 'http://localhost:3000/redirect',
+          clientId: this.client.clientId,
+          redirectUri: this.client.redirectUri,
           scope: Object.entries(resolvedCredentialOffer.offeredCredentialConfigurations)
             .map(([id, value]) => (credentialsToRequest.includes(id) ? value.scope : undefined))
             .filter((v): v is string => Boolean(v)),
@@ -88,7 +93,14 @@ export class Holder extends BaseAgent<ReturnType<typeof getOpenIdHolderModules>>
 
   public async requestAndStoreCredentials(
     resolvedCredentialOffer: OpenId4VciResolvedCredentialOffer,
-    options: { clientId?: string; codeVerifier?: string; credentialsToRequest: string[]; code?: string }
+    options: {
+      clientId?: string
+      codeVerifier?: string
+      credentialsToRequest: string[]
+      code?: string
+      redirectUri?: string
+      txCode?: string
+    }
   ) {
     const tokenResponse = await this.agent.modules.openId4VcHolder.requestToken(
       options.code && options.clientId
@@ -97,16 +109,18 @@ export class Holder extends BaseAgent<ReturnType<typeof getOpenIdHolderModules>>
             clientId: options.clientId,
             codeVerifier: options.codeVerifier,
             code: options.code,
+            redirectUri: options.redirectUri,
           }
         : {
             resolvedCredentialOffer,
+            txCode: options.txCode,
           }
     )
 
     const credentialResponse = await this.agent.modules.openId4VcHolder.requestCredentials({
       resolvedCredentialOffer,
       credentialConfigurationIds: options.credentialsToRequest,
-      credentialBindingResolver: async ({ keyTypes, supportsJwk, supportedDidMethods, supportsAllDidMethods }) => {
+      credentialBindingResolver: async ({ keyTypes, supportedDidMethods, supportsAllDidMethods }) => {
         const key = await this.agent.wallet.createKey({
           keyType: keyTypes[0],
         })
@@ -127,14 +141,12 @@ export class Holder extends BaseAgent<ReturnType<typeof getOpenIdHolderModules>>
             didUrl: `${didJwk.did}#0`,
           }
         }
-        if (supportsJwk) {
-          return {
-            method: 'jwk',
-            jwk: getJwkFromKey(key),
-          }
-        }
 
-        throw new Error('unable to determine holder binding')
+        // We fall back on jwk binding
+        return {
+          method: 'jwk',
+          jwk: getJwkFromKey(key),
+        }
       },
       ...tokenResponse,
     })

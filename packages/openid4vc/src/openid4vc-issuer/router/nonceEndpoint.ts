@@ -32,7 +32,7 @@ export function configureNonceEndpoint(router: Router, config: OpenId4VciNonceEn
 
       try {
         const openId4VcIssuerService = agentContext.dependencyManager.resolve(OpenId4VcIssuerService)
-        const vcIssuer = openId4VcIssuerService.getIssuer(agentContext, issuer)
+        const vcIssuer = openId4VcIssuerService.getIssuer(agentContext)
 
         const { cNonce, cNonceExpiresInSeconds } = await openId4VcIssuerService.createNonce(agentContext, issuer)
 

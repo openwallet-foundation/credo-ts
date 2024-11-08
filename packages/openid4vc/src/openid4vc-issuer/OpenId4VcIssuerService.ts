@@ -100,7 +100,7 @@ export class OpenId4VcIssuerService {
       throw new CredoError('Authorization Config or Pre-Authorized Config must be provided.')
     }
 
-    const vcIssuer = this.getIssuer(agentContext, issuer)
+    const vcIssuer = this.getIssuer(agentContext)
     const issuerMetadata = await this.getIssuerMetadata(agentContext, issuer)
 
     const uniqueOfferedCredentials = Array.from(new Set(options.offeredCredentials))
@@ -169,7 +169,7 @@ export class OpenId4VcIssuerService {
     ])
     const { issuanceSession } = options
     const issuer = await this.getIssuerByIssuerId(agentContext, options.issuanceSession.issuerId)
-    const vcIssuer = this.getIssuer(agentContext, issuer)
+    const vcIssuer = this.getIssuer(agentContext)
     const issuerMetadata = await this.getIssuerMetadata(agentContext, issuer)
 
     const parsedCredentialRequest = vcIssuer.parseCredentialRequest({
@@ -479,12 +479,9 @@ export class OpenId4VcIssuerService {
     }
   }
 
-  public getIssuer(agentContext: AgentContext, issuerRecord: OpenId4VcIssuerRecord) {
+  public getIssuer(agentContext: AgentContext) {
     return new Oid4vciIssuer({
-      callbacks: {
-        ...getOid4vciCallbacks(agentContext),
-        clientAuthentication: dynamicOid4vciClientAuthentication(agentContext, issuerRecord),
-      },
+      callbacks: getOid4vciCallbacks(agentContext),
     })
   }
 
@@ -500,9 +497,12 @@ export class OpenId4VcIssuerService {
     })
   }
 
-  public getResourceServer(agentContext: AgentContext) {
+  public getResourceServer(agentContext: AgentContext, issuerRecord: OpenId4VcIssuerRecord) {
     return new Oauth2ResourceServer({
-      callbacks: getOid4vciCallbacks(agentContext),
+      callbacks: {
+        ...getOid4vciCallbacks(agentContext),
+        clientAuthentication: dynamicOid4vciClientAuthentication(agentContext, issuerRecord),
+      },
     })
   }
 

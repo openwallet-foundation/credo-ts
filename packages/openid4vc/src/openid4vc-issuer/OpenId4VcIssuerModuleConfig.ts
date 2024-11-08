@@ -106,7 +106,7 @@ export class OpenId4VcIssuerModuleConfig {
     return {
       ...userOptions,
       cNonceExpiresInSeconds: userOptions.cNonceExpiresInSeconds ?? DEFAULT_C_NONCE_EXPIRES_IN,
-      endpointPath: userOptions.endpointPath ?? '/offers',
+      endpointPath: userOptions.endpointPath ?? '/nonce',
     }
   }
 }

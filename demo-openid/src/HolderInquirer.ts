@@ -1,7 +1,11 @@
 import type { MdocRecord, SdJwtVcRecord, W3cCredentialRecord } from '@credo-ts/core'
-import type { OpenId4VcSiopResolvedAuthorizationRequest, OpenId4VciResolvedCredentialOffer } from '@credo-ts/openid4vc'
 
 import { DifPresentationExchangeService, Mdoc } from '@credo-ts/core'
+import {
+  preAuthorizedCodeGrantIdentifier,
+  type OpenId4VcSiopResolvedAuthorizationRequest,
+  type OpenId4VciResolvedCredentialOffer,
+} from '@credo-ts/openid4vc'
 import console, { clear } from 'console'
 import { textSync } from 'figlet'
 
@@ -117,6 +121,7 @@ export class HolderInquirer extends BaseInquirer {
     )
     let authorizationCode: string | undefined = undefined
     let codeVerifier: string | undefined = undefined
+    let txCode: string | undefined = undefined
 
     if (resolvedAuthorization.authorizationFlow === 'Oauth2Redirect') {
       console.log(redText(`Authorization required for credential issuance`, true))
@@ -152,15 +157,21 @@ export class HolderInquirer extends BaseInquirer {
     } else if (resolvedAuthorization.authorizationFlow === 'PresentationDuringIssuance') {
       console.log(redText(`Presentation during issuance not supported yet`, true))
       return
+    } else if (resolvedAuthorization.authorizationFlow === 'PreAuthorized') {
+      if (this.resolvedCredentialOffer.credentialOfferPayload.grants?.[preAuthorizedCodeGrantIdentifier]?.tx_code) {
+        txCode = await this.inquireInput('Enter PIN')
+      }
     }
 
     console.log(greenText(`Requesting the following credential '${credentialsToRequest}'`))
 
     const credentials = await this.holder.requestAndStoreCredentials(this.resolvedCredentialOffer, {
       credentialsToRequest,
-      clientId: authorizationCode ? 'foo' : undefined,
+      clientId: authorizationCode ? this.holder.client.clientId : undefined,
       codeVerifier,
       code: authorizationCode,
+      redirectUri: authorizationCode ? this.holder.client.redirectUri : undefined,
+      txCode,
     })
 
     console.log(greenText(`Received and stored the following credentials.`, true))
