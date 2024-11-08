@@ -1,4 +1,4 @@
-import type { OpenId4VcVerificationSessionRecord } from './repository'
+import type { OpenId4VcVerificationSessionRecord, OpenId4VcVerifierRecordProps } from './repository'
 import type {
   OpenId4VcIssuerX5c,
   OpenId4VcJwtIssuer,
@@ -75,9 +75,24 @@ export interface OpenId4VcSiopVerifiedAuthorizationResponse {
   }
 }
 
+/**
+ * Verifier metadata that will be send when creating a request
+ */
+export interface OpenId4VcSiopVerifierClientMetadata {
+  client_name?: string
+  logo_uri?: string
+}
+
 export interface OpenId4VcSiopCreateVerifierOptions {
   /**
    * Id of the verifier, not the id of the verifier record. Will be exposed publicly
    */
   verifierId?: string
+
+  /**
+   * Optional client metadata that will be included in requests
+   */
+  clientMetadata?: OpenId4VcSiopVerifierClientMetadata
 }
+
+export type OpenId4VcUpdateVerifierRecordOptions = Pick<OpenId4VcVerifierRecordProps, 'verifierId' | 'clientMetadata'>

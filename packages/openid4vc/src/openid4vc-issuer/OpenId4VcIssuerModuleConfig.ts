@@ -2,13 +2,14 @@ import type {
   OpenId4VciAccessTokenEndpointConfig,
   OpenId4VciCredentialEndpointConfig,
   OpenId4VciCredentialOfferEndpointConfig,
+  OpenId4VciNonceEndpointConfig,
 } from './router'
 import type { Optional } from '@credo-ts/core'
 import type { Router } from 'express'
 
 import { importExpress } from '../shared/router'
 
-const DEFAULT_C_NONCE_EXPIRES_IN = 5 * 60 // 5 minutes
+const DEFAULT_C_NONCE_EXPIRES_IN = 1 * 60 // 1 minute
 const DEFAULT_TOKEN_EXPIRES_IN = 3 * 60 // 3 minutes
 const DEFAULT_PRE_AUTH_CODE_EXPIRES_IN = 3 * 60 // 3 minutes
 
@@ -29,11 +30,12 @@ export interface OpenId4VcIssuerModuleConfigOptions {
   router?: Router
 
   endpoints: {
+    nonce?: Optional<OpenId4VciNonceEndpointConfig, 'endpointPath' | 'cNonceExpiresInSeconds'>
     credentialOffer?: Optional<OpenId4VciCredentialOfferEndpointConfig, 'endpointPath'>
     credential: Optional<OpenId4VciCredentialEndpointConfig, 'endpointPath'>
     accessToken?: Optional<
       OpenId4VciAccessTokenEndpointConfig,
-      'cNonceExpiresInSeconds' | 'endpointPath' | 'preAuthorizedCodeExpirationInSeconds' | 'tokenExpiresInSeconds'
+      'endpointPath' | 'preAuthorizedCodeExpirationInSeconds' | 'tokenExpiresInSeconds'
     >
   }
 }
@@ -75,7 +77,6 @@ export class OpenId4VcIssuerModuleConfig {
     return {
       ...userOptions,
       endpointPath: userOptions.endpointPath ?? '/token',
-      cNonceExpiresInSeconds: userOptions.cNonceExpiresInSeconds ?? DEFAULT_C_NONCE_EXPIRES_IN,
       preAuthorizedCodeExpirationInSeconds:
         userOptions.preAuthorizedCodeExpirationInSeconds ?? DEFAULT_PRE_AUTH_CODE_EXPIRES_IN,
       tokenExpiresInSeconds: userOptions.tokenExpiresInSeconds ?? DEFAULT_TOKEN_EXPIRES_IN,
@@ -91,6 +92,20 @@ export class OpenId4VcIssuerModuleConfig {
 
     return {
       ...userOptions,
+      endpointPath: userOptions.endpointPath ?? '/offers',
+    }
+  }
+
+  /**
+   * Get the nonce endpoint config, with default values set
+   */
+  public get nonceEndpoint(): OpenId4VciNonceEndpointConfig {
+    // Use user supplied options, or return defaults.
+    const userOptions = this.options.endpoints.nonce ?? {}
+
+    return {
+      ...userOptions,
+      cNonceExpiresInSeconds: userOptions.cNonceExpiresInSeconds ?? DEFAULT_C_NONCE_EXPIRES_IN,
       endpointPath: userOptions.endpointPath ?? '/offers',
     }
   }

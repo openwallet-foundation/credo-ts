@@ -9,7 +9,6 @@ import type {
 } from '@credo-ts/core'
 import type { Express, Request, Response } from 'express'
 import type { Server } from 'http'
-import https from 'https'
 
 import { DidCommMimeType, CredoError, TransportService, utils, AgentEventTypes } from '@credo-ts/core'
 import express, { text } from 'express'

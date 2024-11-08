@@ -4,7 +4,7 @@ import type { Router, Response } from 'express'
 
 import { EventEmitter, joinUriParts } from '@credo-ts/core'
 
-import { getRequestContext, sendErrorResponse, sendJsonResponse } from '../../shared/router'
+import { getRequestContext, sendErrorResponse } from '../../shared/router'
 import { OpenId4VcSiopVerifierService } from '../OpenId4VcSiopVerifierService'
 import { OpenId4VcVerificationSessionState } from '../OpenId4VcVerificationSessionState'
 import { OpenId4VcVerifierEvents } from '../OpenId4VcVerifierEvents'

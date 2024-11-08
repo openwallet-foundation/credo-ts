@@ -1,21 +1,14 @@
+import type { OpenId4VcIssuanceSessionRecord, OpenId4VcIssuerRecordProps } from './repository'
 import type {
-  OpenId4VcIssuanceSessionRecord,
-  OpenId4VcIssuerRecordCredentialConfigurationsSupportedProps,
-  OpenId4VcIssuerRecordCredentialSupportedProps,
-  OpenId4VcIssuerRecordProps,
-} from './repository'
-import type {
-  OpenId4VcCredentialHolderBinding,
-  OpenId4VciCredentialConfigurationsSupported,
+  OpenId4VcCredentialHolderBindingWithKey,
   OpenId4VciCredentialConfigurationsSupportedWithFormats,
-  OpenId4VciCredentialConfigurationSupportedWithFormats,
   OpenId4VciCredentialOfferPayload,
   OpenId4VciCredentialRequest,
-  OpenId4VciCredentialRequestWithFormats,
-  OpenId4VciIssuerMetadataDisplay,
+  OpenId4VciCredentialRequestFormatSpecific,
+  OpenId4VciCredentialIssuerMetadataDisplay,
   OpenId4VciTxCode,
 } from '../shared'
-import type { OpenId4VciAuthorizationServerConfig } from '../shared/models/AuthorizationServer'
+import type { OpenId4VciAuthorizationServerConfig } from '../shared/models/OpenId4VciAuthorizationServerConfig'
 import type {
   AgentContext,
   ClaimFormat,
@@ -23,7 +16,7 @@ import type {
   SdJwtVcSignOptions,
   JwaSignatureAlgorithm,
   MdocSignOptions,
-  Key,
+  KeyType,
 } from '@credo-ts/core'
 
 export interface OpenId4VciPreAuthorizedCodeFlowConfig {
@@ -31,13 +24,6 @@ export interface OpenId4VciPreAuthorizedCodeFlowConfig {
 
   /**
    * The user pin required flag indicates whether the user needs to enter a pin to authorize the transaction.
-   * Only compatible with v11
-   */
-  userPinRequired?: boolean
-
-  /**
-   * The user pin required flag indicates whether the user needs to enter a pin to authorize the transaction.
-   * Only compatible with v13
    */
   txCode?: OpenId4VciTxCode
 
@@ -56,18 +42,6 @@ export interface OpenId4VciAuthorizationCodeFlowConfig {
   // OPTIONAL string that the Wallet can use to identify the Authorization Server to use with this grant
   // type when authorization_servers parameter in the Credential Issuer metadata has multiple entries.
   authorizationServerUrl?: string
-}
-
-export type OpenId4VcIssuerMetadata = {
-  // The Credential Issuer's identifier. (URL using the https scheme)
-  issuerUrl: string
-  credentialEndpoint: string
-  tokenEndpoint: string
-  authorizationServers?: string[]
-
-  issuerDisplay?: OpenId4VciIssuerMetadataDisplay[]
-  credentialConfigurationsSupported: OpenId4VciCredentialConfigurationsSupported
-  dpopSigningAlgValuesSupported?: [JwaSignatureAlgorithm, ...JwaSignatureAlgorithm[]]
 }
 
 export interface OpenId4VciCreateCredentialOfferOptions {
@@ -112,11 +86,6 @@ export interface OpenId4VciCreateCredentialResponseOptions {
   credentialRequestToCredentialMapper?: OpenId4VciCredentialRequestToCredentialMapper
 }
 
-// FIXME: Flows:
-// - provide credential data at time of offer creation (NOT SUPPORTED)
-// - provide credential data at time of calling createCredentialResponse (partially supported by passing in mapper to this method -> preferred as it gives you request data dynamically)
-// - provide credential data dynamically using this method (SUPPORTED)
-// mapper should get input data passed (which is supplied to offer or create response) like credentialDataSupplierInput in sphereon lib
 export type OpenId4VciCredentialRequestToCredentialMapper = (options: {
   agentContext: AgentContext
 
@@ -129,7 +98,14 @@ export type OpenId4VciCredentialRequestToCredentialMapper = (options: {
   /**
    * The credential request received from the wallet
    */
-  credentialRequest: OpenId4VciCredentialRequestWithFormats
+  credentialRequest: OpenId4VciCredentialRequest
+
+  /**
+   * Contains format specific credential request data. Currently it will
+   * always be defined, but may be undefined once `credential_identifier`
+   * in the credential request will be supported
+   */
+  credentialRequestFormat?: OpenId4VciCredentialRequestFormatSpecific
 
   /**
    * The offer associated with the credential request
@@ -137,11 +113,12 @@ export type OpenId4VciCredentialRequestToCredentialMapper = (options: {
   credentialOffer: OpenId4VciCredentialOfferPayload
 
   /**
-   * Verified key binding material that should be included in the credential
+   * Verified key binding material entries that should be included in the credential(s)
+   * A separate credential should be returned for each holder binding.
    *
-   * Can either be bound to did or a JWK (in case of for ex. SD-JWT)
+   * Can either be bound to did or a JWK (in case of for ex. SD-JWT).
    */
-  holderBinding: OpenId4VcCredentialHolderBinding & { key: Key }
+  holderBindings: OpenId4VcCredentialHolderBindingWithKey[]
 
   /**
    * The credential configurations supported entries from the issuer metadata
@@ -155,28 +132,32 @@ export type OpenId4VciCredentialRequestToCredentialMapper = (options: {
    * NOTE: This will probably become a single entry, as it will be matched on id
    */
   credentialConfigurationIds: [string, ...string[]]
-}) => Promise<OpenId4VciSignCredential> | OpenId4VciSignCredential
+}) => Promise<OpenId4VciSignCredentials> | OpenId4VciSignCredentials
 
-export type OpenId4VciSignCredential =
-  | OpenId4VciSignSdJwtCredential
-  | OpenId4VciSignW3cCredential
-  | OpenId4VciSignMdocCredential
+export type OpenId4VciSignCredentials =
+  | OpenId4VciSignSdJwtCredentials
+  | OpenId4VciSignW3cCredentials
+  | OpenId4VciSignMdocCredentials
 
-export interface OpenId4VciSignSdJwtCredential extends SdJwtVcSignOptions {
-  credentialSupportedId: string
+export interface OpenId4VciSignSdJwtCredentials {
+  credentialConfigurationId: string
   format: ClaimFormat.SdJwtVc | `${ClaimFormat.SdJwtVc}`
+  credentials: SdJwtVcSignOptions[]
 }
 
-export interface OpenId4VciSignMdocCredential extends MdocSignOptions {
-  credentialSupportedId: string
+export interface OpenId4VciSignMdocCredentials {
+  credentialConfigurationId: string
   format: ClaimFormat.MsoMdoc | `${ClaimFormat.MsoMdoc}`
+  credentials: MdocSignOptions[]
 }
 
-export interface OpenId4VciSignW3cCredential {
-  credentialSupportedId: string
+export interface OpenId4VciSignW3cCredentials {
+  credentialConfigurationId: string
   format: ClaimFormat.JwtVc | `${ClaimFormat.JwtVc}` | ClaimFormat.LdpVc | `${ClaimFormat.LdpVc}`
-  verificationMethod: string
-  credential: W3cCredential
+  credentials: Array<{
+    verificationMethod: string
+    credential: W3cCredential
+  }>
 }
 
 export type OpenId4VciCreateIssuerOptions = {
@@ -185,13 +166,20 @@ export type OpenId4VciCreateIssuerOptions = {
    */
   issuerId?: string
 
-  display?: OpenId4VciIssuerMetadataDisplay[]
+  /**
+   * Key type to use for signing access tokens
+   *
+   * @default KeyType.Ed25519
+   */
+  accessTokenSignerKeyType?: KeyType
+
+  display?: OpenId4VciCredentialIssuerMetadataDisplay[]
   authorizationServerConfigs?: OpenId4VciAuthorizationServerConfig[]
   dpopSigningAlgValuesSupported?: [JwaSignatureAlgorithm, ...JwaSignatureAlgorithm[]]
-} & (OpenId4VcIssuerRecordCredentialSupportedProps | OpenId4VcIssuerRecordCredentialConfigurationsSupportedProps)
+  credentialConfigurationsSupported: OpenId4VciCredentialConfigurationsSupportedWithFormats
+}
 
 export type OpenId4VcUpdateIssuerRecordOptions = Pick<
   OpenId4VcIssuerRecordProps,
-  'issuerId' | 'display' | 'dpopSigningAlgValuesSupported'
-> &
-  (OpenId4VcIssuerRecordCredentialSupportedProps | OpenId4VcIssuerRecordCredentialConfigurationsSupportedProps)
+  'issuerId' | 'display' | 'dpopSigningAlgValuesSupported' | 'credentialConfigurationsSupported'
+>

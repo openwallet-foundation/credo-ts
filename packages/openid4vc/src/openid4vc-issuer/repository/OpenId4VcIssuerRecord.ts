@@ -1,29 +1,16 @@
 import type {
   OpenId4VciAuthorizationServerConfig,
-  OpenId4VciCredentialSupportedWithId,
-  OpenId4VciCredentialConfigurationsSupported,
-  OpenId4VciIssuerMetadataDisplay,
+  OpenId4VciCredentialConfigurationsSupportedWithFormats,
+  OpenId4VciCredentialIssuerMetadataDisplay,
 } from '../../shared'
 import type { JwaSignatureAlgorithm, RecordTags, TagsBase } from '@credo-ts/core'
 
 import { BaseRecord, utils } from '@credo-ts/core'
 
-import { credentialsSupportedV13ToV11 } from '../../shared/issuerMetadataUtils'
-
 export type OpenId4VcIssuerRecordTags = RecordTags<OpenId4VcIssuerRecord>
 
 export type DefaultOpenId4VcIssuerRecordTags = {
   issuerId: string
-}
-
-export interface OpenId4VcIssuerRecordCredentialSupportedProps {
-  credentialsSupported: OpenId4VciCredentialSupportedWithId[]
-  credentialConfigurationsSupported?: never
-}
-
-export interface OpenId4VcIssuerRecordCredentialConfigurationsSupportedProps {
-  credentialsSupported?: never
-  credentialConfigurationsSupported: OpenId4VciCredentialConfigurationsSupported
 }
 
 export type OpenId4VcIssuerRecordProps = {
@@ -45,9 +32,13 @@ export type OpenId4VcIssuerRecordProps = {
    */
   dpopSigningAlgValuesSupported?: [JwaSignatureAlgorithm, ...JwaSignatureAlgorithm[]]
 
-  display?: OpenId4VciIssuerMetadataDisplay[]
+  // FIXME: migrate to v13 structure (uri vs url)
+  display?: OpenId4VciCredentialIssuerMetadataDisplay[]
   authorizationServerConfigs?: OpenId4VciAuthorizationServerConfig[]
-} & (OpenId4VcIssuerRecordCredentialSupportedProps | OpenId4VcIssuerRecordCredentialConfigurationsSupportedProps)
+
+  // TODO: with formats or without formats?
+  credentialConfigurationsSupported: OpenId4VciCredentialConfigurationsSupportedWithFormats
+}
 
 /**
  * For OID4VC you need to expos metadata files. Each issuer needs to host this metadata. This is not the case for DIDComm where we can just have one /didcomm endpoint.
@@ -61,9 +52,10 @@ export class OpenId4VcIssuerRecord extends BaseRecord<DefaultOpenId4VcIssuerReco
   public issuerId!: string
   public accessTokenPublicKeyFingerprint!: string
 
-  public credentialsSupported!: OpenId4VciCredentialSupportedWithId[]
-  public credentialConfigurationsSupported?: OpenId4VciCredentialConfigurationsSupported
-  public display?: OpenId4VciIssuerMetadataDisplay[]
+  // FIXME: migration of supported to configurations
+  public credentialsSupported?: Array<unknown>
+  public credentialConfigurationsSupported?: OpenId4VciCredentialConfigurationsSupportedWithFormats
+  public display?: OpenId4VciCredentialIssuerMetadataDisplay[]
   public authorizationServerConfigs?: OpenId4VciAuthorizationServerConfig[]
   public dpopSigningAlgValuesSupported?: [JwaSignatureAlgorithm, ...JwaSignatureAlgorithm[]]
 
@@ -77,8 +69,6 @@ export class OpenId4VcIssuerRecord extends BaseRecord<DefaultOpenId4VcIssuerReco
 
       this.issuerId = props.issuerId
       this.accessTokenPublicKeyFingerprint = props.accessTokenPublicKeyFingerprint
-      this.credentialsSupported =
-        props.credentialsSupported ?? credentialsSupportedV13ToV11(props.credentialConfigurationsSupported)
       this.credentialConfigurationsSupported = props.credentialConfigurationsSupported
       this.dpopSigningAlgValuesSupported = props.dpopSigningAlgValuesSupported
       this.display = props.display

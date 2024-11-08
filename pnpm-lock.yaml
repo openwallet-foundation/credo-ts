@@ -582,8 +582,8 @@ importers:
         specifier: ^6.0.0
         version: 6.0.3
       nock:
-        specifier: ^13.3.0
-        version: 13.5.5
+        specifier: ^14.0.0-beta.15
+        version: 14.0.0-beta.15
       rimraf:
         specifier: ^4.4.0
         version: 4.4.1
@@ -712,8 +712,8 @@ importers:
         specifier: ^8.5.4
         version: 8.5.12
       nock:
-        specifier: ^13.3.0
-        version: 13.5.5
+        specifier: ^14.0.0-beta.15
+        version: 14.0.0-beta.15
       rimraf:
         specifier: ^4.4.0
         version: 4.4.1
@@ -724,11 +724,11 @@ importers:
   packages/openid4vc:
     dependencies:
       '@animo-id/oauth2':
-        specifier: 0.0.2-alpha-20241104215631
-        version: 0.0.2-alpha-20241104215631(typescript@5.5.4)
+        specifier: 0.0.2-alpha-20241108100449
+        version: 0.0.2-alpha-20241108100449(typescript@5.5.4)
       '@animo-id/oid4vci':
-        specifier: 0.0.2-alpha-20241104215631
-        version: 0.0.2-alpha-20241104215631(typescript@5.5.4)
+        specifier: 0.0.2-alpha-20241108100449
+        version: 0.0.2-alpha-20241108100449(typescript@5.5.4)
       '@credo-ts/core':
         specifier: workspace:*
         version: link:../core
@@ -744,9 +744,6 @@ importers:
       class-transformer:
         specifier: ^0.5.1
         version: 0.5.1
-      oauth4webapi:
-        specifier: ^3.0.1
-        version: 3.0.1
       rxjs:
         specifier: ^7.8.0
         version: 7.8.1
@@ -764,8 +761,8 @@ importers:
         specifier: ^4.18.2
         version: 4.19.2
       nock:
-        specifier: ^13.3.0
-        version: 13.5.5
+        specifier: ^14.0.0-beta.15
+        version: 14.0.0-beta.15
       rimraf:
         specifier: ^4.4.0
         version: 4.4.1
@@ -937,14 +934,14 @@ packages:
       react: '*'
       react-native: '*'
 
-  '@animo-id/oauth2-utils@0.0.2-alpha-20241104215631':
-    resolution: {integrity: sha512-HRDkLU+hJBRiFG1P1ZOXcjCeE4dv8Novbvc7/VcHAl5eUv4exFCwvUgei3J3EM4E/vsO595PVpUsSXpVhXvLxg==}
+  '@animo-id/oauth2-utils@0.0.2-alpha-20241108100449':
+    resolution: {integrity: sha512-FOA172Sqr/feUlusUln7+gfcmTcRn+tuhzl2W72xQArZUPr3dgJX8ijT5cwfw7m2ZPc0alJ8ieAR6gCr4pD4wQ==}
 
-  '@animo-id/oauth2@0.0.2-alpha-20241104215631':
-    resolution: {integrity: sha512-EZr1i5DD9va8uFBVv0b0wtO/cifpfgbD+NOHhuZP7Eo266S2Nka+NmVWOmB6KBlz+hI8fi1aEvo2zGKAxZ1VYw==}
+  '@animo-id/oauth2@0.0.2-alpha-20241108100449':
+    resolution: {integrity: sha512-b21zfOb6zYORy1bQvO9MMRrshB+vHpTRQi5tAb5AUQ5VpNRqwron9ct4Huw2Sh43kBT7QadN+5kt3mKStHBXng==}
 
-  '@animo-id/oid4vci@0.0.2-alpha-20241104215631':
-    resolution: {integrity: sha512-khS+7h3A43kvo0cjO97TijsbGVdwFE2VDkFE47ptJpJAfHtvgZlQ4CuffK3PA8iVF0FsT9PAUbZveKQKNxtDVw==}
+  '@animo-id/oid4vci@0.0.2-alpha-20241108100449':
+    resolution: {integrity: sha512-GYLEwvKlqbcvxDl6mlnaE+hc+vRM/63Ah7Bwe8b1SUepnLvSfBJamkQiinMSfqiB23lp5j0NoQRURM8euc+8Bw==}
 
   '@animo-id/react-native-bbs-signatures@0.1.0':
     resolution: {integrity: sha512-7qvsiWhGfUev8ngE8YzF6ON9PtCID5LiYVYM4EC5eyj80gCdhx3R46CI7K1qbqIlGsoTYQ/Xx5Ubo5Ji9eaUEA==}
@@ -2645,6 +2642,10 @@ packages:
     resolution: {integrity: sha512-s9ccL/1TTvCP1N//4QR84j/d5D/stx/AI1kPcRgiE4O3KrxyF7ZdL9ca8fmFuN6yh9LAbn/OiGRnOXgvn38Dgg==}
     engines: {node: '>=14', yarn: 1.x}
 
+  '@mswjs/interceptors@0.36.9':
+    resolution: {integrity: sha512-mMRDUBwSNeCgjSMEWfjoh4Rm9fbyZ7xQ9SBq8eGHiiyRn1ieTip3pNEt0wxWVPPxR4i1Rv9bTkeEbkX7M4c15A==}
+    engines: {node: '>=18'}
+
   '@multiformats/base-x@4.0.1':
     resolution: {integrity: sha512-eMk0b9ReBbV23xXU693TAIrLyeO5iTgBZGSJfpqriG8UkYvr/hC9u9pyMlAakDNHWmbhMZCDs6KQO0jzKD8OTw==}
 
@@ -2681,6 +2682,15 @@ packages:
   '@npmcli/fs@3.1.1':
     resolution: {integrity: sha512-q9CRWjpHCMIh5sVyefoD1cA7PkvILqCZsnSOEUUivORLjxCO/Irmue2DprETiNgEqktDBZaM1Bi+jrarx1XdCg==}
     engines: {node: ^14.17.0 || ^16.13.0 || >=18.0.0}
+
+  '@open-draft/deferred-promise@2.2.0':
+    resolution: {integrity: sha512-CecwLWx3rhxVQF6V4bAgPS5t+So2sTbPgAzafKkVizyi7tlwpcFpdFqq+wqF2OwNBmqFuu6tOyouTuxgpMfzmA==}
+
+  '@open-draft/logger@0.3.0':
+    resolution: {integrity: sha512-X2g45fzhxH238HKO4xbSr7+wBS8Fvw6ixhTDuvLd5mqh6bJJCFAPwU9mPDxbcrRtfxv4u5IHCEH77BmxvXmmxQ==}
+
+  '@open-draft/until@2.1.0':
+    resolution: {integrity: sha512-U69T3ItWHvLwGg5eJ0n3I62nWuE6ilHlmz7zM0npLBRvPRd7e6NYmg54vvRtP5mZG7kZqZCFVdsTWo7BPtBujg==}
 
   '@peculiar/asn1-cms@2.3.13':
     resolution: {integrity: sha512-joqu8A7KR2G85oLPq+vB+NFr2ro7Ls4ol13Zcse/giPSzUNN0n2k3v8kMpf6QdGUhI13e5SzQYN8AKP8sJ8v4w==}
@@ -2926,6 +2936,7 @@ packages:
 
   '@sphereon/kmp-mdl-mdoc@0.2.0-SNAPSHOT.22':
     resolution: {integrity: sha512-uAZZExVy+ug9JLircejWa5eLtAZ7bnBP6xb7DO2+86LRsHNLh2k2jMWJYxp+iWtGHTsh6RYsZl14ScQLvjiQ/A==}
+    bundledDependencies: []
 
   '@sphereon/oid4vc-common@0.16.1-fix.173':
     resolution: {integrity: sha512-+AAUvEEFs0vzz1mrgjSgvDkcBtr18d2XEVgJex7QlAqxCKVGfjzZlqL2Q2vOLKYVaXsazhD5LnYiY6B5WMTC3Q==}
@@ -5324,6 +5335,9 @@ packages:
     resolution: {integrity: sha512-5KoIu2Ngpyek75jXodFvnafB6DJgr3u8uuK0LEZJjrU19DrMD3EVERaR8sjz8CCGgpZvxPl9SuE1GMVPFHx1mw==}
     engines: {node: '>= 0.4'}
 
+  is-node-process@1.2.0:
+    resolution: {integrity: sha512-Vg4o6/fqPxIjtxgUH5QLJhwZ7gW5diGCVlXpuUfELC62CuxM1iHcRe51f2W1FDy04Ai4KJkagKjx3XaqyfRKXw==}
+
   is-number-object@1.0.7:
     resolution: {integrity: sha512-k1U0IRzLMo7ZlYIfzRu23Oh6MiIFasgpb9X76eqfFZAqwH44UI4KTBvBYIZ1dSL9ZzChTB9ShHfLkR4pdW5krQ==}
     engines: {node: '>= 0.4'}
@@ -6324,9 +6338,9 @@ packages:
     resolution: {integrity: sha512-WDD0bdg9mbq6F4mRxEYcPWwfA1vxd0mrvKOyxI7Xj/atfRHVeutzuWByG//jfm4uPzp0y4Kj051EORCBSQMycw==}
     engines: {node: '>=12.0.0'}
 
-  nock@13.5.5:
-    resolution: {integrity: sha512-XKYnqUrCwXC8DGG1xX4YH5yNIrlh9c065uaMZZHUoeUUINTOyt+x/G+ezYk0Ft6ExSREVIs+qBJDK503viTfFA==}
-    engines: {node: '>= 10.13'}
+  nock@14.0.0-beta.15:
+    resolution: {integrity: sha512-rp72chatxoZbR/2cYHwtb+IX6n6kkanYKGN2PKn4c12JBrj9n4xGUKFykuQHB+Gkz3fynlikFbMH2LI6VoebuQ==}
+    engines: {node: '>= 18'}
 
   node-addon-api@3.2.1:
     resolution: {integrity: sha512-mmcei9JghVNDYydghQmeDX8KoAm0FAiYyIcUt/N4nhyAipB17pllZQDOJD2fotxABnt4Mdz+dKTO7eftLg4d0A==}
@@ -6407,9 +6421,6 @@ packages:
 
   nullthrows@1.1.1:
     resolution: {integrity: sha512-2vPPEi+Z7WqML2jZYddDIfy5Dqb0r2fze2zTxNNknZaFpVHU3mFB3R+DWeJWGVx0ecvttSGlJTI+WG+8Z4cDWw==}
-
-  oauth4webapi@3.0.1:
-    resolution: {integrity: sha512-72NtHQg8vCvm62NE7ckW9brybI3yBaFka5BeEs7Z4jws/k3W1e5UAt61icij/dL1cMnVpxul5jfkMcCTHLXqUQ==}
 
   ob1@0.73.10:
     resolution: {integrity: sha512-aO6EYC+QRRCkZxVJhCWhLKgVjhNuD6Gu1riGjxrIm89CqLsmKgxzYDDEsktmKsoDeRdWGQM5EdMzXDl5xcVfsw==}
@@ -6521,6 +6532,9 @@ packages:
 
   outdent@0.5.0:
     resolution: {integrity: sha512-/jHxFIzoMXdqPzTaCpFzAAWhpkSjZPF4Vsn6jAfNpmbH/ymsmd7Qc6VE9BGn0L6YMj6uwpQLxCECpus4ukKS9Q==}
+
+  outvariant@1.4.3:
+    resolution: {integrity: sha512-+Sl2UErvtsoajRDKCE5/dBz4DIvHXQQnAxtQTF04OJxY0+DyZXSo5P5Bb7XYWOh81syohlYL24hbDwxedPUJCA==}
 
   p-cancelable@3.0.0:
     resolution: {integrity: sha512-mlVgR3PGuzlo0MmTdk4cXqXWlwQDLnONTAg6sm62XkMJEiRxN3GL3SffkYvqwonbkJBcrI7Uvv5Zh9yjvn2iUw==}
@@ -7306,6 +7320,9 @@ packages:
   streamsearch@1.1.0:
     resolution: {integrity: sha512-Mcc5wHehp9aXz1ax6bZUyY5afg9u2rv5cqQI3mRrYkGC8rW2hM02jWuwjtL++LS5qinSyhj2QfLyNsuc+VsExg==}
     engines: {node: '>=10.0.0'}
+
+  strict-event-emitter@0.5.1:
+    resolution: {integrity: sha512-vMgjE/GGEPEFnhFub6pa4FmJBRBVOLpIII2hvCZ8Kzb7K0hlHo7mQv6xYrBvCL2LtAIBwFUK8wvuJgTVSQ5MFQ==}
 
   strict-uri-encode@2.0.0:
     resolution: {integrity: sha512-QwiXZgpRcKkhTj2Scnn++4PKtWsH0kpzZ62L2R6c/LUVYv7hVnZqcg2+sMuT6R7Jusu1vviK/MFsu6kNJfWlEQ==}
@@ -8189,24 +8206,24 @@ snapshots:
       react: 18.3.1
       react-native: 0.71.19(@babel/core@7.25.8)(@babel/preset-env@7.25.8(@babel/core@7.25.8))(react@18.3.1)
 
-  '@animo-id/oauth2-utils@0.0.2-alpha-20241104215631(typescript@5.5.4)':
+  '@animo-id/oauth2-utils@0.0.2-alpha-20241108100449(typescript@5.5.4)':
     dependencies:
       buffer: 6.0.3
       valibot: 0.42.1(typescript@5.5.4)
     transitivePeerDependencies:
       - typescript
 
-  '@animo-id/oauth2@0.0.2-alpha-20241104215631(typescript@5.5.4)':
+  '@animo-id/oauth2@0.0.2-alpha-20241108100449(typescript@5.5.4)':
     dependencies:
-      '@animo-id/oauth2-utils': 0.0.2-alpha-20241104215631(typescript@5.5.4)
+      '@animo-id/oauth2-utils': 0.0.2-alpha-20241108100449(typescript@5.5.4)
       valibot: 0.42.1(typescript@5.5.4)
     transitivePeerDependencies:
       - typescript
 
-  '@animo-id/oid4vci@0.0.2-alpha-20241104215631(typescript@5.5.4)':
+  '@animo-id/oid4vci@0.0.2-alpha-20241108100449(typescript@5.5.4)':
     dependencies:
-      '@animo-id/oauth2': 0.0.2-alpha-20241104215631(typescript@5.5.4)
-      '@animo-id/oauth2-utils': 0.0.2-alpha-20241104215631(typescript@5.5.4)
+      '@animo-id/oauth2': 0.0.2-alpha-20241108100449(typescript@5.5.4)
+      '@animo-id/oauth2-utils': 0.0.2-alpha-20241108100449(typescript@5.5.4)
       valibot: 0.42.1(typescript@5.5.4)
     transitivePeerDependencies:
       - typescript
@@ -11741,6 +11758,15 @@ snapshots:
       - supports-color
     optional: true
 
+  '@mswjs/interceptors@0.36.9':
+    dependencies:
+      '@open-draft/deferred-promise': 2.2.0
+      '@open-draft/logger': 0.3.0
+      '@open-draft/until': 2.1.0
+      is-node-process: 1.2.0
+      outvariant: 1.4.3
+      strict-event-emitter: 0.5.1
+
   '@multiformats/base-x@4.0.1': {}
 
   '@noble/ciphers@0.4.1': {}
@@ -11770,6 +11796,15 @@ snapshots:
   '@npmcli/fs@3.1.1':
     dependencies:
       semver: 7.6.3
+
+  '@open-draft/deferred-promise@2.2.0': {}
+
+  '@open-draft/logger@0.3.0':
+    dependencies:
+      is-node-process: 1.2.0
+      outvariant: 1.4.3
+
+  '@open-draft/until@2.1.0': {}
 
   '@peculiar/asn1-cms@2.3.13':
     dependencies:
@@ -15792,6 +15827,8 @@ snapshots:
 
   is-negative-zero@2.0.3: {}
 
+  is-node-process@1.2.0: {}
+
   is-number-object@1.0.7:
     dependencies:
       has-tostringtag: 1.0.2
@@ -17278,13 +17315,11 @@ snapshots:
 
   nocache@3.0.4: {}
 
-  nock@13.5.5:
+  nock@14.0.0-beta.15:
     dependencies:
-      debug: 4.3.6
+      '@mswjs/interceptors': 0.36.9
       json-stringify-safe: 5.0.1
       propagate: 2.0.1
-    transitivePeerDependencies:
-      - supports-color
 
   node-addon-api@3.2.1: {}
 
@@ -17354,8 +17389,6 @@ snapshots:
       set-blocking: 2.0.0
 
   nullthrows@1.1.1: {}
-
-  oauth4webapi@3.0.1: {}
 
   ob1@0.73.10: {}
 
@@ -17501,6 +17534,8 @@ snapshots:
       os-tmpdir: 1.0.2
 
   outdent@0.5.0: {}
+
+  outvariant@1.4.3: {}
 
   p-cancelable@3.0.0: {}
 
@@ -18399,6 +18434,8 @@ snapshots:
   stream-buffers@2.2.0: {}
 
   streamsearch@1.1.0: {}
+
+  strict-event-emitter@0.5.1: {}
 
   strict-uri-encode@2.0.0: {}
 

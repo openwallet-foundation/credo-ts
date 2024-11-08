@@ -1,7 +1,8 @@
 import type { OpenId4VciCredentialOfferPayload } from '../../shared'
 import type { RecordTags, TagsBase } from '@credo-ts/core'
 
-import { CredoError, BaseRecord, utils, DateTransformer } from '@credo-ts/core'
+import { PkceCodeChallengeMethod } from '@animo-id/oauth2'
+import { CredoError, BaseRecord, utils } from '@credo-ts/core'
 import { Transform } from 'class-transformer'
 
 import { OpenId4VcIssuanceSessionState } from '../OpenId4VcIssuanceSessionState'
@@ -11,9 +12,15 @@ export type OpenId4VcIssuanceSessionRecordTags = RecordTags<OpenId4VcIssuanceSes
 export type DefaultOpenId4VcIssuanceSessionRecordTags = {
   issuerId: string
   cNonce?: string
-  preAuthorizedCode?: string
   state: OpenId4VcIssuanceSessionState
   credentialOfferUri: string
+
+  // pre-auth flow
+  preAuthorizedCode?: string
+
+  // auth flow
+  authorizationCode?: string
+  issuerState?: string
 }
 
 export interface OpenId4VcIssuanceSessionRecordProps {
@@ -21,20 +28,50 @@ export interface OpenId4VcIssuanceSessionRecordProps {
   createdAt?: Date
   tags?: TagsBase
 
+  state: OpenId4VcIssuanceSessionState
   issuerId: string
 
+  /**
+   * @deprecated we now use a separate nonce store
+   * as nonces are not session bound anymore
+   */
   cNonce?: string
+  /**
+   * @deprecated we now use a separate nonce store
+   * as nonces are not session bound anymore
+   */
   cNonceExpiresAt?: Date
 
+  dpopRequired?: boolean
+
+  /**
+   * Client id will mostly be used when doing auth flow
+   */
+  clientId?: string
+
+  // Pre auth flow
   preAuthorizedCode?: string
-  issuerState?: string
   userPin?: string
 
+  // Auth flow
+  pkce?: {
+    codeChallengeMethod: PkceCodeChallengeMethod
+    codeChallenge: string
+  }
+  authorization?: {
+    code?: string
+    /**
+     * String value created by the Credential Issuer and opaque to the Wallet that
+     * is used to bind the subsequent Authorization Request with the Credential Issuer to a context set up during previous steps.
+     */
+    issuerState?: string
+  }
+
   credentialOfferUri: string
+  // FIXME: handle draft 11 structure (although they will have expired prob)
   credentialOfferPayload: OpenId4VciCredentialOfferPayload
 
   issuanceMetadata?: Record<string, unknown>
-  state: OpenId4VcIssuanceSessionState
   errorMessage?: string
 }
 
@@ -66,32 +103,49 @@ export class OpenId4VcIssuanceSessionRecord extends BaseRecord<DefaultOpenId4VcI
   public issuedCredentials: string[] = []
 
   /**
-   * cNonce that should be used in the credential request by the holder.
-   */
-  public cNonce?: string
-
-  /**
-   * The time at which the cNonce expires.
-   */
-  @DateTransformer()
-  public cNonceExpiresAt?: Date
-
-  /**
    * Pre authorized code used for the issuance session. Only used when a pre-authorized credential
    * offer is created.
    */
   public preAuthorizedCode?: string
 
   /**
-   * String value created by the Credential Issuer and opaque to the Wallet that
-   * is used to bind the subsequent Authorization Request with the Credential Issuer to a context set up during previous steps.
-   */
-  public issuerState?: string
-
-  /**
    * Optional user pin that needs to be provided by the user in the access token request.
    */
   public userPin?: string
+
+  /**
+   * Client id of the exchange
+   */
+  public clientId?: string
+
+  /**
+   * Proof Key Code Exchange
+   */
+  public pkce?: {
+    codeChallengeMethod: PkceCodeChallengeMethod
+    codeChallenge: string
+  }
+
+  public dpopRequired?: boolean
+
+  /**
+   * Authorization code flow specific metadata values
+   */
+  public authorization?: {
+    code?: string
+    /**
+     * @todo: I saw in google's library that for codes they encrypt an id with expiration time.
+     * You now the code was created by you because you can decrypt it, and you don't have to store
+     * additional metadata on your server. It's similar to the signed / encrypted nonce
+     */
+    codeExpiresAt?: Date
+
+    /**
+     * String value created by the Credential Issuer and opaque to the Wallet that
+     * is used to bind the subsequent Authorization Request with the Credential Issuer to a context set up during previous steps.
+     */
+    issuerState?: string
+  }
 
   /**
    * User-defined metadata that will be provided to the credential request to credential mapper
@@ -125,11 +179,12 @@ export class OpenId4VcIssuanceSessionRecord extends BaseRecord<DefaultOpenId4VcI
       this._tags = props.tags ?? {}
 
       this.issuerId = props.issuerId
-      this.cNonce = props.cNonce
-      this.cNonceExpiresAt = props.cNonceExpiresAt
+      this.clientId = props.clientId
       this.userPin = props.userPin
       this.preAuthorizedCode = props.preAuthorizedCode
-      this.issuerState = props.issuerState
+      this.pkce = props.pkce
+      this.dpopRequired = props.dpopRequired
+      this.authorization = props.authorization
       this.credentialOfferUri = props.credentialOfferUri
       this.credentialOfferPayload = props.credentialOfferPayload
       this.issuanceMetadata = props.issuanceMetadata
@@ -156,11 +211,15 @@ export class OpenId4VcIssuanceSessionRecord extends BaseRecord<DefaultOpenId4VcI
     return {
       ...this._tags,
       issuerId: this.issuerId,
-      cNonce: this.cNonce,
       credentialOfferUri: this.credentialOfferUri,
-      preAuthorizedCode: this.preAuthorizedCode,
-      issuerState: this.issuerState,
       state: this.state,
+
+      // Pre-auth flow
+      preAuthorizedCode: this.preAuthorizedCode,
+
+      // Auth flow
+      issuerState: this.authorization?.issuerState,
+      authorizationCode: this.authorization?.code,
     }
   }
 }

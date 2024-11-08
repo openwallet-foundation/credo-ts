@@ -1,7 +1,9 @@
 import type { OpenId4VcIssuerModuleConfigOptions } from './OpenId4VcIssuerModuleConfig'
 import type { OpenId4VcIssuanceRequest } from './router'
 import type { AgentContext, DependencyManager, Module } from '@credo-ts/core'
+import type { Response } from 'express'
 
+import { setGlobalConfig } from '@animo-id/oauth2'
 import { AgentConfig } from '@credo-ts/core'
 
 import { getAgentContextForActorId, getRequestContext, importExpress } from '../shared/router'
@@ -17,8 +19,9 @@ import {
   configureCredentialEndpoint,
   configureIssuerMetadataEndpoint,
   configureOAuthAuthorizationServerMetadataEndpoint,
+  configureJwksEndpoint,
 } from './router'
-import { Response } from 'express'
+import { configureNonceEndpoint } from './router/nonceEndpoint'
 
 /**
  * @public
@@ -32,16 +35,21 @@ export class OpenId4VcIssuerModule implements Module {
   }
 
   /**
-   * Registers the dependencies of the question answer module on the dependency manager.
+   * Registers the dependencies of the openid4vc issuer module on the dependency manager.
    */
   public register(dependencyManager: DependencyManager) {
-    // Warn about experimental module
-    dependencyManager
-      .resolve(AgentConfig)
-      .logger.warn(
-        "The '@credo-ts/openid4vc' Issuer module is experimental and could have unexpected breaking changes. When using this module, make sure to use strict versions for all @credo-ts packages."
-      )
+    const agentConfig = dependencyManager.resolve(AgentConfig)
 
+    // Warn about experimental module
+    agentConfig.logger.warn(
+      "The '@credo-ts/openid4vc' Issuer module is experimental and could have unexpected breaking changes. When using this module, make sure to use strict versions for all @credo-ts packages."
+    )
+
+    if (agentConfig.allowInsecureHttpUrls) {
+      setGlobalConfig({
+        allowInsecureUrls: true,
+      })
+    }
     // Register config
     dependencyManager.registerInstance(OpenId4VcIssuerModuleConfig, this.config)
 
@@ -118,6 +126,8 @@ export class OpenId4VcIssuerModule implements Module {
 
     // Configure endpoints
     configureIssuerMetadataEndpoint(endpointRouter)
+    configureJwksEndpoint(endpointRouter)
+    configureNonceEndpoint(endpointRouter, this.config.nonceEndpoint)
     configureOAuthAuthorizationServerMetadataEndpoint(endpointRouter)
     configureCredentialOfferEndpoint(endpointRouter, this.config.credentialOfferEndpoint)
     configureAccessTokenEndpoint(endpointRouter, this.config.accessTokenEndpoint)

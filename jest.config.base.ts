@@ -1,5 +1,4 @@
 import type { Config } from '@jest/types'
-import path from 'path'
 
 const config: Config.InitialOptions = {
   preset: 'ts-jest',
@@ -10,8 +9,6 @@ const config: Config.InitialOptions = {
   moduleNameMapper: {
     '@credo-ts/(.+)': ['<rootDir>/../../packages/$1/src', '<rootDir>/../packages/$1/src', '<rootDir>/packages/$1/src'],
   },
-  // oauth4webapi is an esm module
-  // transformIgnorePatterns: ['node_modules/.pnpm/(?!oauth4webapi)'],
   transform: {
     '\\.tsx?$': [
       'ts-jest',
@@ -19,7 +16,6 @@ const config: Config.InitialOptions = {
         isolatedModules: true,
       },
     ],
-    // '\\.jsx?$': ['babel-jest', { extends: path.join(__dirname, '.babelrc') }],
   },
 }
 

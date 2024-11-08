@@ -1,16 +1,20 @@
 import type { OpenId4VcIssuanceRequest } from './requestContext'
-import type { OpenId4VciCredentialRequest } from '../../shared'
 import type { OpenId4VciCredentialRequestToCredentialMapper } from '../OpenId4VcIssuerServiceOptions'
+import type { HttpMethod } from '@animo-id/oauth2'
 import type { Router, Response } from 'express'
 
-import { getRequestContext, sendErrorResponse, sendJsonResponse } from '../../shared/router'
-import { OpenId4VcIssuerService } from '../OpenId4VcIssuerService'
-import { getCNonceFromCredentialRequest } from '../util/credentialRequest'
+import { Oauth2ErrorCodes, Oauth2ServerErrorResponseError } from '@animo-id/oauth2'
+import { joinUriParts } from '@credo-ts/core'
 
-import { verifyResourceRequest } from '../authorization/verifyResourceRequest'
-import { OpenId4VcIssuanceSessionRecord, OpenId4VcIssuanceSessionRepository } from '../repository'
-import { OpenId4VcIssuerModuleConfig } from '../OpenId4VcIssuerModuleConfig'
-import { utils } from '@credo-ts/core'
+import {
+  getRequestContext,
+  sendJsonResponse,
+  sendOauth2ErrorResponse,
+  sendUnauthorizedError,
+  sendUnknownServerErrorResponse,
+} from '../../shared/router'
+import { OpenId4VcIssuerService } from '../OpenId4VcIssuerService'
+import { OpenId4VcIssuanceSessionRepository } from '../repository'
 
 export interface OpenId4VciCredentialEndpointConfig {
   /**
@@ -31,64 +35,64 @@ export function configureCredentialEndpoint(router: Router, config: OpenId4VciCr
   router.post(config.endpointPath, async (request: OpenId4VcIssuanceRequest, response: Response, next) => {
     const { agentContext, issuer } = getRequestContext(request)
     const openId4VcIssuerService = agentContext.dependencyManager.resolve(OpenId4VcIssuerService)
-    const issuanceModuleConfig = agentContext.dependencyManager.resolve(OpenId4VcIssuerModuleConfig)
+    // TODO: we should allow delaying fetching auth metadat until it's needed
+    // also we should cache it. (both request and response)
+    const issuerMetadata = await openId4VcIssuerService.getIssuerMetadata(agentContext, issuer, true)
+    const resourceServer = openId4VcIssuerService.getResourceServer(agentContext)
 
-    // Verify the access token (should at some point be moved to a middleware function or something)
-    const verifyAccessTokenResult = await verifyResourceRequest(agentContext, issuer, request).catch((error) => {
-      sendErrorResponse(response, next, agentContext.config.logger, 401, 'unauthorized', error)
+    const fullRequestUrl = joinUriParts(issuerMetadata.credentialIssuer.credential_issuer, [config.endpointPath])
+    const resourceRequestResult = await resourceServer
+      .verifyResourceRequest({
+        authorizationServers: issuerMetadata.authorizationServers,
+        resourceServer: issuerMetadata.credentialIssuer.credential_issuer,
+        request: {
+          // FIXME: we need to make the input type here easier
+          headers: new Headers(request.headers as Record<string, string>),
+          method: request.method as HttpMethod,
+          url: fullRequestUrl,
+        },
+      })
+      .catch((error) => {
+        sendUnauthorizedError(response, next, agentContext.config.logger, error)
+      })
+    if (!resourceRequestResult) return
+    const { tokenPayload } = resourceRequestResult
+
+    const credentialRequest = request.body
+    const issuanceSessionRepository = agentContext.dependencyManager.resolve(OpenId4VcIssuanceSessionRepository)
+
+    // TODO: we should support dynamic issuance sessions (based on config)
+    const issuanceSession = await issuanceSessionRepository.findSingleByQuery(agentContext, {
+      issuerId: issuer.issuerId,
+      // TODO: maybe make pre-auth also custom prop to be more explicit
+      ...(typeof tokenPayload.issuer_state === 'string'
+        ? { issuerState: tokenPayload.issuer_state }
+        : { preAuthorizedCode: tokenPayload.sub }),
     })
-    if (!verifyAccessTokenResult) return
 
-    try {
-      const credentialRequest = request.body
-      const issuanceSessionRepository = agentContext.dependencyManager.resolve(OpenId4VcIssuanceSessionRepository)
-
-      let issuanceSession: OpenId4VcIssuanceSessionRecord | null
-      if ('preAuthorizedCode' in verifyAccessTokenResult) {
-        issuanceSession = await issuanceSessionRepository.findSingleByQuery(agentContext, {
-          issuerId: issuer.issuerId,
-          preAuthorizedCode: verifyAccessTokenResult.preAuthorizedCode,
-        })
-      } else {
-        issuanceSession = await issuanceSessionRepository.findSingleByQuery(agentContext, {
-          issuerId: issuer.issuerId,
-          issuerState: verifyAccessTokenResult.issuerState,
-        })
-      }
-
-      if (!issuanceSession) {
-        agentContext.config.logger.warn(
-          `No issuance session found for incoming credential request for issuer ${issuer.issuerId} and access token data`,
+    if (!issuanceSession) {
+      agentContext.config.logger.warn(
+        `No issuance session found for incoming credential request for issuer ${issuer.issuerId} and access token data`,
+        {
+          tokenPayload,
+        }
+      )
+      return sendOauth2ErrorResponse(
+        response,
+        next,
+        agentContext.config.logger,
+        new Oauth2ServerErrorResponseError(
           {
-            verifyAccessTokenResult,
+            error: Oauth2ErrorCodes.CredentialRequestDenied,
+          },
+          {
+            internalMessage: `No issuance session found for incoming credential request for issuer ${issuer.issuerId} and access token data`,
           }
         )
-        return sendErrorResponse(response, next, agentContext.config.logger, 404, 'invalid_request', null)
-      }
+      )
+    }
 
-      try {
-        const cNonce = getCNonceFromCredentialRequest(credentialRequest)
-
-        if (!issuanceSession.cNonce || cNonce !== issuanceSession.cNonce) {
-          throw new Error('Invalid c_nonce')
-        }
-      } catch (error) {
-        // If no c_nonce could be extracted we generate a new one and send that in the error response
-        const expiresAtDate = new Date(
-          Date.now() + issuanceModuleConfig.accessTokenEndpoint.cNonceExpiresInSeconds * 1000
-        )
-
-        issuanceSession.cNonce = utils.uuid()
-        issuanceSession.cNonceExpiresAt = expiresAtDate
-        issuanceSessionRepository.update(agentContext, issuanceSession)
-
-        return sendErrorResponse(response, next, agentContext.config.logger, 404, 'invalid_proof', null, {
-          c_nonce: issuanceSession.cNonce,
-          c_nonce_expires_in: issuanceModuleConfig.accessTokenEndpoint.cNonceExpiresInSeconds,
-        })
-      }
-
-      // TODO: invalidate nonce if this method fails
+    try {
       const { credentialResponse } = await openId4VcIssuerService.createCredentialResponse(agentContext, {
         issuanceSession,
         credentialRequest,
@@ -96,7 +100,10 @@ export function configureCredentialEndpoint(router: Router, config: OpenId4VciCr
 
       return sendJsonResponse(response, next, credentialResponse)
     } catch (error) {
-      return sendErrorResponse(response, next, agentContext.config.logger, 500, 'invalid_request', error)
+      if (error instanceof Oauth2ServerErrorResponseError) {
+        return sendOauth2ErrorResponse(response, next, agentContext.config.logger, error)
+      }
+      return sendUnknownServerErrorResponse(response, next, agentContext.config.logger, error)
     }
   })
 }

@@ -10,6 +10,7 @@ import type { Observable } from 'rxjs'
 
 import { Agent, LogLevel, utils } from '@credo-ts/core'
 import { ReplaySubject, lastValueFrom, filter, timeout, catchError, take, map } from 'rxjs'
+
 import {
   TestLogger,
   agentDependencies,
@@ -18,12 +19,22 @@ import {
 } from '../../core/tests'
 import { OpenId4VcVerifierEvents, OpenId4VcIssuerEvents } from '../src'
 
-export async function createAgentFromModules<MM extends ModulesMap>(label: string, modulesMap: MM, secretKey: string, customFetch?: typeof global.fetch) {
+export async function createAgentFromModules<MM extends ModulesMap>(
+  label: string,
+  modulesMap: MM,
+  secretKey: string,
+  customFetch?: typeof global.fetch
+) {
   const agent = new Agent<MM>({
-    config: { label, walletConfig: { id: utils.uuid(), key: utils.uuid() }, logger: new TestLogger(LogLevel.off) },
+    config: {
+      label,
+      walletConfig: { id: utils.uuid(), key: utils.uuid() },
+      allowInsecureHttpUrls: true,
+      logger: new TestLogger(LogLevel.off),
+    },
     dependencies: {
       ...agentDependencies,
-      fetch: customFetch ?? agentDependencies.fetch
+      fetch: customFetch ?? agentDependencies.fetch,
     },
     modules: modulesMap,
   })

@@ -1,6 +1,4 @@
-
-
-import { OpenId4VciCredentialConfigurationsSupported } from './models'
+import type { OpenId4VciCredentialConfigurationsSupported } from './models'
 
 /**
  * Returns all entries from the credential offer with the associated metadata resolved.
@@ -10,7 +8,6 @@ export function getOfferedCredentials(
   credentialConfigurationsSupported: OpenId4VciCredentialConfigurationsSupported
 ): OpenId4VciCredentialConfigurationsSupported {
   const offeredCredentialConfigurations: OpenId4VciCredentialConfigurationsSupported = {}
-
   for (const offeredCredentialConfigurationId of offeredCredentialConfigurationIds) {
     const foundCredentialConfiguration = credentialConfigurationsSupported[offeredCredentialConfigurationId]
 

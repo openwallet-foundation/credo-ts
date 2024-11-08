@@ -4,9 +4,8 @@ import type { OpenId4VcSiopResolvedAuthorizationRequest, OpenId4VciResolvedCrede
 import { DifPresentationExchangeService, Mdoc } from '@credo-ts/core'
 import console, { clear } from 'console'
 import { textSync } from 'figlet'
-import { prompt } from 'inquirer'
 
-import { BaseInquirer, ConfirmOptions } from './BaseInquirer'
+import { BaseInquirer } from './BaseInquirer'
 import { Holder } from './Holder'
 import { Title, greenText, redText } from './OutputClass'
 
@@ -22,6 +21,7 @@ enum PromptOptions {
   RequestCredential = 'Accept the credential offer.',
   ResolveProofRequest = 'Resolve a proof request.',
   AcceptPresentationRequest = 'Accept the presentation request.',
+  AddTrustedCertificate = 'Add trusted certificate',
   Exit = 'Exit',
   Restart = 'Restart',
 }
@@ -42,18 +42,22 @@ export class HolderInquirer extends BaseInquirer {
   }
 
   private async getPromptChoice() {
-    const promptOptions = [PromptOptions.ResolveCredentialOffer, PromptOptions.ResolveProofRequest]
+    const promptOptions = [
+      PromptOptions.ResolveCredentialOffer,
+      PromptOptions.ResolveProofRequest,
+      PromptOptions.AddTrustedCertificate,
+    ]
 
-    if (this.resolvedCredentialOffer) promptOptions.push(PromptOptions.RequestCredential)
-    if (this.resolvedPresentationRequest) promptOptions.push(PromptOptions.AcceptPresentationRequest)
+    if (this.resolvedCredentialOffer) promptOptions.unshift(PromptOptions.RequestCredential)
+    if (this.resolvedPresentationRequest) promptOptions.unshift(PromptOptions.AcceptPresentationRequest)
 
-    return prompt([this.inquireOptions(promptOptions.map((o) => o.valueOf()))])
+    return this.pickOne(promptOptions)
   }
 
   public async processAnswer() {
     const choice = await this.getPromptChoice()
 
-    switch (choice.options) {
+    switch (choice) {
       case PromptOptions.ResolveCredentialOffer:
         await this.resolveCredentialOffer()
         break
@@ -66,6 +70,9 @@ export class HolderInquirer extends BaseInquirer {
       case PromptOptions.AcceptPresentationRequest:
         await this.acceptPresentationRequest()
         break
+      case PromptOptions.AddTrustedCertificate:
+        await this.addTrustedCertificate()
+        break
       case PromptOptions.Exit:
         await this.exit()
         break
@@ -77,21 +84,23 @@ export class HolderInquirer extends BaseInquirer {
   }
 
   public async exitUseCase(title: string) {
-    const confirm = await prompt([this.inquireConfirmation(title)])
-    if (confirm.options === ConfirmOptions.No) {
-      return false
-    } else if (confirm.options === ConfirmOptions.Yes) {
-      return true
-    }
+    return await this.inquireConfirmation(title)
   }
 
   public async resolveCredentialOffer() {
-    const credentialOffer = await prompt([this.inquireInput('Enter credential offer: ')])
-    const resolvedCredentialOffer = await this.holder.resolveCredentialOffer(credentialOffer.input)
+    const credentialOffer = await this.inquireInput('Enter credential offer: ')
+    const resolvedCredentialOffer = await this.holder.resolveCredentialOffer(credentialOffer)
     this.resolvedCredentialOffer = resolvedCredentialOffer
 
     console.log(greenText(`Received credential offer for the following credentials.`))
-    console.log(greenText(resolvedCredentialOffer.offeredCredentials.map((credential) => credential.id).join('\n')))
+    console.log(greenText(Object.keys(resolvedCredentialOffer.offeredCredentialConfigurations).join('\n')))
+  }
+
+  public async addTrustedCertificate() {
+    const trustedCertificate = await this.inquireInput('Enter trusted certificate: ')
+    await this.holder.agent.x509.addTrustedCertificate(trustedCertificate)
+
+    console.log(greenText(`Added trusted certificate`))
   }
 
   public async requestCredential() {
@@ -99,32 +108,70 @@ export class HolderInquirer extends BaseInquirer {
       throw new Error('No credential offer resolved yet.')
     }
 
-    const credentialsThatCanBeRequested = this.resolvedCredentialOffer.offeredCredentials.map(
-      (credential) => credential.id
-    )
+    const credentialsThatCanBeRequested = Object.keys(this.resolvedCredentialOffer.offeredCredentialConfigurations)
+    const credentialsToRequest = await this.pickMultiple(credentialsThatCanBeRequested)
 
-    const choice = await prompt([this.inquireOptions(credentialsThatCanBeRequested)])
-
-    const credentialToRequest = this.resolvedCredentialOffer.offeredCredentials.find(
-      (credential) => credential.id === choice.options
-    )
-    if (!credentialToRequest) throw new Error('Credential to request not found.')
-
-    console.log(greenText(`Requesting the following credential '${credentialToRequest.id}'`))
-
-    const credentials = await this.holder.requestAndStoreCredentials(
+    const resolvedAuthorization = await this.holder.initiateAuthorization(
       this.resolvedCredentialOffer,
-      this.resolvedCredentialOffer.offeredCredentials.map((o) => o.id)
+      credentialsToRequest
     )
+    let authorizationCode: string | undefined = undefined
+    let codeVerifier: string | undefined = undefined
 
-    console.log(greenText(`Received and stored the following credentials.`))
-    console.log('')
+    if (resolvedAuthorization.authorizationFlow === 'Oauth2Redirect') {
+      console.log(redText(`Authorization required for credential issuance`, true))
+      console.log("Open the following url in your browser to authorize. Once you're done come back here")
+      console.log(resolvedAuthorization.authorizationRequestUrl)
+
+      const code = new Promise<string>((resolve, reject) => {
+        this.holder.app.get('/redirect', (req, res) => {
+          if (req.query.code) {
+            resolve(req.query.code as string)
+            // Store original routes
+            const originalStack = this.holder.app._router.stack
+
+            // Remove specific GET route by path
+            this.holder.app._router.stack = originalStack.filter(
+              (layer: { route?: { path: string; methods: { get?: unknown } } }) =>
+                !(layer.route && layer.route.path === '/redirect' && layer.route.methods.get)
+            )
+            res.send('Success! You can now go back to the terminal')
+          } else {
+            console.log(redText(`Error during authorization`, true))
+            console.log(JSON.stringify(req.query, null, 2))
+            res.status(500).send('Error during authentication')
+            reject()
+          }
+        })
+      })
+
+      console.log('\n\n')
+      codeVerifier = resolvedAuthorization.codeVerifier
+      authorizationCode = await code
+      console.log(greenText('Authorization complete', true))
+    } else if (resolvedAuthorization.authorizationFlow === 'PresentationDuringIssuance') {
+      console.log(redText(`Presentation during issuance not supported yet`, true))
+      return
+    }
+
+    console.log(greenText(`Requesting the following credential '${credentialsToRequest}'`))
+
+    const credentials = await this.holder.requestAndStoreCredentials(this.resolvedCredentialOffer, {
+      credentialsToRequest,
+      clientId: authorizationCode ? 'foo' : undefined,
+      codeVerifier,
+      code: authorizationCode,
+    })
+
+    console.log(greenText(`Received and stored the following credentials.`, true))
+    this.resolvedCredentialOffer = undefined
+
     credentials.forEach(this.printCredential)
   }
 
   public async resolveProofRequest() {
-    const proofRequestUri = await prompt([this.inquireInput('Enter proof request: ')])
-    this.resolvedPresentationRequest = await this.holder.resolveProofRequest(proofRequestUri.input)
+    const proofRequestUri = await this.inquireInput('Enter proof request: ')
+    this.resolvedPresentationRequest = await this.holder.resolveProofRequest(proofRequestUri)
 
     const presentationDefinition = this.resolvedPresentationRequest?.presentationExchange?.definition
     console.log(greenText(`Presentation Purpose: '${presentationDefinition?.purpose}'`))
@@ -159,25 +206,23 @@ export class HolderInquirer extends BaseInquirer {
     } else {
       console.log(`received error status code '${serverResponse.status}'. ${JSON.stringify(serverResponse.body)}`)
     }
+
+    this.resolvedPresentationRequest = undefined
   }
 
   public async exit() {
-    const confirm = await prompt([this.inquireConfirmation(Title.ConfirmTitle)])
-    if (confirm.options === ConfirmOptions.No) {
-      return
-    } else if (confirm.options === ConfirmOptions.Yes) {
+    if (await this.inquireConfirmation(Title.ConfirmTitle)) {
       await this.holder.exit()
     }
   }
 
   public async restart() {
-    const confirm = await prompt([this.inquireConfirmation(Title.ConfirmTitle)])
-    if (confirm.options === ConfirmOptions.No) {
-      await this.processAnswer()
-      return
-    } else if (confirm.options === ConfirmOptions.Yes) {
+    const confirmed = await this.inquireConfirmation(Title.ConfirmTitle)
+    if (confirmed) {
       await this.holder.restart()
       await runHolder()
+    } else {
+      await this.processAnswer()
     }
   }
 

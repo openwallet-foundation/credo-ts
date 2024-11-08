@@ -1,30 +1,26 @@
 import type { OpenId4VcIssuanceRequest } from './requestContext'
-import type { AgentContext } from '@credo-ts/core'
-import type { JWK, SigningAlgo } from '@sphereon/oid4vc-common'
-import type { JWTSignerCallback } from '@sphereon/oid4vci-common'
+import type { HttpMethod, VerifyAccessTokenRequestReturn } from '@animo-id/oauth2'
 import type { NextFunction, Response, Router } from 'express'
 
 import {
-  getJwkFromKey,
-  CredoError,
-  JwsService,
-  JwtPayload,
-  getJwkClassFromKeyType,
-  Key,
-  joinUriParts,
-} from '@credo-ts/core'
-import { verifyDPoP } from '@sphereon/oid4vc-common'
-import { PRE_AUTH_CODE_LITERAL, TokenError, TokenErrorResponse } from '@sphereon/oid4vci-common'
+  authorizationCodeGrantIdentifier,
+  Oauth2ErrorCodes,
+  Oauth2ServerErrorResponseError,
+  preAuthorizedCodeGrantIdentifier,
+} from '@animo-id/oauth2'
+import { extractScopesForCredentialConfigurationIds } from '@animo-id/oid4vci'
+import { getJwkFromKey, joinUriParts, Key } from '@credo-ts/core'
 
-import { getRequestContext, sendErrorResponse, sendJsonResponse } from '../../shared/router'
-import { getVerifyJwtCallback } from '../../shared/utils'
-import { OpenId4VcIssuerModuleConfig } from '../OpenId4VcIssuerModuleConfig'
-import { OpenId4VcIssuerService } from '../OpenId4VcIssuerService'
-import { OpenId4VcCNonceStateManager } from '../repository/OpenId4VcCNonceStateManager'
-import { OpenId4VcCredentialOfferSessionStateManager } from '../repository/OpenId4VcCredentialOfferSessionStateManager'
-import { assertValidAccessTokenRequest, createAccessTokenResponse } from '@sphereon/oid4vci-issuer'
-import { OpenId4VcIssuanceSessionRepository } from '../repository'
+import {
+  getRequestContext,
+  sendJsonResponse,
+  sendOauth2ErrorResponse,
+  sendUnknownServerErrorResponse,
+} from '../../shared/router'
+import { addSecondsToDate } from '../../shared/utils'
 import { OpenId4VcIssuanceSessionState } from '../OpenId4VcIssuanceSessionState'
+import { OpenId4VcIssuerService } from '../OpenId4VcIssuerService'
+import { OpenId4VcIssuanceSessionRepository } from '../repository'
 
 export interface OpenId4VciAccessTokenEndpointConfig {
   /**
@@ -42,16 +38,6 @@ export interface OpenId4VciAccessTokenEndpointConfig {
   preAuthorizedCodeExpirationInSeconds: number
 
   /**
-   * The time after which the cNonce from the access token response will
-   * expire.
-   *
-   * @default 360 (5 minutes)
-   *
-   * @todo move to general config (not endpoint specific)
-   */
-  cNonceExpiresInSeconds: number
-
-  /**
    * The time after which the token will expire.
    *
    * @default 360 (5 minutes)
@@ -60,168 +46,167 @@ export interface OpenId4VciAccessTokenEndpointConfig {
 }
 
 export function configureAccessTokenEndpoint(router: Router, config: OpenId4VciAccessTokenEndpointConfig) {
-  router.post(config.endpointPath, verifyTokenRequest(config), handleTokenRequest(config))
-}
-
-function getJwtSignerCallback(
-  agentContext: AgentContext,
-  signerPublicKey: Key,
-  config: OpenId4VciAccessTokenEndpointConfig
-): JWTSignerCallback {
-  return async (jwt, _kid) => {
-    if (_kid) {
-      throw new CredoError('Kid should not be supplied externally.')
-    }
-    if (jwt.header.kid || jwt.header.jwk) {
-      throw new CredoError('kid or jwk should not be present in access token header before signing')
-    }
-
-    const jwsService = agentContext.dependencyManager.resolve(JwsService)
-
-    const alg = getJwkClassFromKeyType(signerPublicKey.keyType)?.supportedSignatureAlgorithms[0]
-    if (!alg) {
-      throw new CredoError(`No supported signature algorithms for key type: ${signerPublicKey.keyType}`)
-    }
-
-    // FIXME: the iat and exp implementation in OID4VCI is incorrect so we override the values here
-    // https://github.com/Sphereon-Opensource/OID4VCI/pull/99
-    // https://github.com/Sphereon-Opensource/OID4VCI/pull/101
-    const iat = Math.floor(new Date().getTime() / 1000)
-    jwt.payload.iat = iat
-    jwt.payload.exp = iat + config.tokenExpiresInSeconds
-
-    const jwk = getJwkFromKey(signerPublicKey)
-    const signedJwt = await jwsService.createJwsCompact(agentContext, {
-      protectedHeaderOptions: { ...jwt.header, jwk, alg },
-      payload: JwtPayload.fromJson(jwt.payload),
-      key: signerPublicKey,
-    })
-
-    return signedJwt
-  }
+  router.post(config.endpointPath, handleTokenRequest(config))
 }
 
 export function handleTokenRequest(config: OpenId4VciAccessTokenEndpointConfig) {
-  const { tokenExpiresInSeconds, cNonceExpiresInSeconds } = config
-
   return async (request: OpenId4VcIssuanceRequest, response: Response, next: NextFunction) => {
     response.set({ 'Cache-Control': 'no-store', Pragma: 'no-cache' })
-
     const requestContext = getRequestContext(request)
     const { agentContext, issuer } = requestContext
 
     const openId4VcIssuerService = agentContext.dependencyManager.resolve(OpenId4VcIssuerService)
-    const issuerMetadata = openId4VcIssuerService.getIssuerMetadata(agentContext, issuer)
+    const issuanceSessionRepository = agentContext.dependencyManager.resolve(OpenId4VcIssuanceSessionRepository)
+    const issuerMetadata = await openId4VcIssuerService.getIssuerMetadata(agentContext, issuer)
     const accessTokenSigningKey = Key.fromFingerprint(issuer.accessTokenPublicKeyFingerprint)
+    const oauth2AuthorizationServer = openId4VcIssuerService.getOauth2AuthorizationServer(agentContext)
 
-    let dpopJwk: JWK | undefined
-    if (request.headers.dpop) {
-      try {
-        const issuerConfig = agentContext.dependencyManager.resolve(OpenId4VcIssuerModuleConfig)
+    const fullRequestUrl = joinUriParts(issuerMetadata.credentialIssuer.credential_issuer, [config.endpointPath])
+    const requestLike = {
+      headers: new Headers(request.headers as Record<string, string>),
+      method: request.method as HttpMethod,
+      url: fullRequestUrl,
+    } as const
 
-        const fullUrl = joinUriParts(issuerConfig.baseUrl, [requestContext.issuer.issuerId, request.url])
-        dpopJwk = await verifyDPoP(
-          { method: request.method, headers: request.headers, fullUrl },
-          {
-            jwtVerifyCallback: getVerifyJwtCallback(agentContext),
-            expectAccessToken: false,
-            maxIatAgeInSeconds: undefined,
-            acceptedAlgorithms: issuerMetadata.dpopSigningAlgValuesSupported as SigningAlgo[] | undefined,
-          }
-        )
-      } catch (error) {
-        return sendErrorResponse(
-          response,
-          next,
-          agentContext.config.logger,
-          400,
-          TokenErrorResponse.invalid_dpop_proof,
-          error instanceof Error ? error.message : 'Unknown error'
-        )
-      }
-    }
+    // What error does this throw?
+    const { accessTokenRequest, grant, dpopJwt, pkceCodeVerifier } = oauth2AuthorizationServer.parseAccessTokenRequest({
+      accessTokenRequest: request.body,
+      request: requestLike,
+    })
 
-    try {
-      const accessTokenResponse = await createAccessTokenResponse(request.body, {
-        credentialOfferSessions: new OpenId4VcCredentialOfferSessionStateManager(agentContext, issuer.issuerId),
-        tokenExpiresIn: tokenExpiresInSeconds,
-        accessTokenIssuer: issuerMetadata.issuerUrl,
-        cNonce: await agentContext.wallet.generateNonce(),
-        cNonceExpiresIn: cNonceExpiresInSeconds,
-        cNonces: new OpenId4VcCNonceStateManager(agentContext, issuer.issuerId),
-        accessTokenSignerCallback: getJwtSignerCallback(agentContext, accessTokenSigningKey, config),
-        dPoPJwk: dpopJwk,
-      })
-
-      return sendJsonResponse(response, next, accessTokenResponse)
-    } catch (error) {
-      return sendErrorResponse(
+    const issuanceSession = await issuanceSessionRepository.findSingleByQuery(agentContext, {
+      preAuthorizedCode: grant.grantType === preAuthorizedCodeGrantIdentifier ? grant.preAuthorizedCode : undefined,
+      authorizationCode: grant.grantType === authorizationCodeGrantIdentifier ? grant.code : undefined,
+    })
+    if (!issuanceSession) {
+      return sendOauth2ErrorResponse(
         response,
         next,
         agentContext.config.logger,
-        400,
-        TokenErrorResponse.invalid_request,
-        error
+        new Oauth2ServerErrorResponseError({
+          error: Oauth2ErrorCodes.InvalidGrant,
+          error_description: 'Invalid authorization code',
+        })
       )
     }
-  }
-}
 
-export function verifyTokenRequest(options: { preAuthorizedCodeExpirationInSeconds: number }) {
-  return async (request: OpenId4VcIssuanceRequest, response: Response, next: NextFunction) => {
-    const { agentContext, issuer } = getRequestContext(request)
-
+    let verificationResult: VerifyAccessTokenRequestReturn
     try {
-      const credentialOfferSessions = new OpenId4VcCredentialOfferSessionStateManager(agentContext, issuer.issuerId)
+      if (grant.grantType === preAuthorizedCodeGrantIdentifier) {
+        if (!issuanceSession.preAuthorizedCode) {
+          throw new Oauth2ServerErrorResponseError(
+            {
+              error: Oauth2ErrorCodes.InvalidGrant,
+              error_description: 'Invalid authorization code',
+            },
+            {
+              internalMessage:
+                'Found issuance session without preAuthorizedCode. This should not happen as the issuance session is fetched based on the pre authorized code',
+            }
+          )
+        }
 
-      const preAuthorizedCode = request.body[PRE_AUTH_CODE_LITERAL]
-      if (!preAuthorizedCode || typeof preAuthorizedCode !== 'string') {
-        throw new TokenError(
-          400,
-          TokenErrorResponse.invalid_request,
-          `Missing '${PRE_AUTH_CODE_LITERAL}' parameter in access token request body`
-        )
-      }
-      const issuanceSessionRepository = agentContext.dependencyManager.resolve(OpenId4VcIssuanceSessionRepository)
-      const openId4VcIssuanceSession = await issuanceSessionRepository.getSingleByQuery(agentContext, {
-        preAuthorizedCode,
-        issuerId: issuer.issuerId,
-      })
-
-      if (
-        ![OpenId4VcIssuanceSessionState.OfferCreated, OpenId4VcIssuanceSessionState.OfferUriRetrieved].includes(
-          openId4VcIssuanceSession.state
-        )
-      ) {
-        throw new TokenError(400, TokenErrorResponse.invalid_request, 'Access token has already been retrieved')
-      }
-
-      await assertValidAccessTokenRequest(request.body, {
-        expirationDuration: options.preAuthorizedCodeExpirationInSeconds,
-        credentialOfferSessions,
-      })
-
-      next()
-    } catch (error) {
-      if (error instanceof TokenError) {
-        return sendErrorResponse(
-          response,
-          next,
-          agentContext.config.logger,
-          error.statusCode,
-          error.responseError,
-          error.getDescription()
-        )
+        verificationResult = await oauth2AuthorizationServer.verifyPreAuthorizedCodeAccessTokenRequest({
+          accessTokenRequest,
+          expectedPreAuthorizedCode: issuanceSession.preAuthorizedCode,
+          grant,
+          request: requestLike,
+          dpop: {
+            jwt: dpopJwt,
+            required: issuanceSession.dpopRequired,
+          },
+          expectedTxCode: issuanceSession.userPin,
+          preAuthorizedCodeExpiresAt: addSecondsToDate(
+            issuanceSession.createdAt,
+            config.preAuthorizedCodeExpirationInSeconds
+          ),
+        })
+      } else if (grant.grantType === authorizationCodeGrantIdentifier) {
+        if (!issuanceSession.authorization?.code || !issuanceSession.authorization?.codeExpiresAt) {
+          throw new Oauth2ServerErrorResponseError(
+            {
+              error: Oauth2ErrorCodes.InvalidGrant,
+              error_description: 'Invalid authorization code',
+            },
+            {
+              internalMessage:
+                'Found issuance session without authorization.code or authorization.codeExpiresAt. This should not happen as the issuance session is fetched based on the authorization code',
+            }
+          )
+        }
+        verificationResult = await oauth2AuthorizationServer.verifyAuthorizationCodeAccessTokenRequest({
+          accessTokenRequest,
+          expectedCode: issuanceSession.authorization.code,
+          codeExpiresAt: issuanceSession.authorization.codeExpiresAt,
+          grant,
+          request: requestLike,
+          dpop: {
+            jwt: dpopJwt,
+            required: issuanceSession.dpopRequired,
+          },
+          pkce: issuanceSession.pkce
+            ? {
+                codeChallenge: issuanceSession.pkce.codeChallenge,
+                codeChallengeMethod: issuanceSession.pkce.codeChallengeMethod,
+                codeVerifier: pkceCodeVerifier,
+              }
+            : undefined,
+        })
       } else {
-        return sendErrorResponse(
-          response,
-          next,
-          agentContext.config.logger,
-          400,
-          TokenErrorResponse.invalid_request,
-          error
-        )
+        throw new Oauth2ServerErrorResponseError({
+          error: Oauth2ErrorCodes.UnsupportedGrantType,
+          error_description: 'Unsupported grant type',
+        })
       }
+
+      await openId4VcIssuerService.updateState(
+        agentContext,
+        issuanceSession,
+        OpenId4VcIssuanceSessionState.AccessTokenRequested
+      )
+      const { cNonce, cNonceExpiresInSeconds } = await openId4VcIssuerService.createNonce(agentContext, issuer)
+
+      // Extract scopes
+      const scopes = extractScopesForCredentialConfigurationIds({
+        credentialConfigurationIds: issuanceSession.credentialOfferPayload.credential_configuration_ids,
+        issuerMetadata,
+      })
+
+      const signerJwk = getJwkFromKey(accessTokenSigningKey)
+      const accessTokenResponse = await oauth2AuthorizationServer.createAccessTokenResponse({
+        audience: issuerMetadata.credentialIssuer.credential_issuer,
+        authorizationServer: issuerMetadata.credentialIssuer.credential_issuer,
+        expiresInSeconds: config.tokenExpiresInSeconds,
+        // TODO: we need to include kid and also host the jwks?
+        // Or we should somehow bypass the jwks_uri resolving if we verify our own token (only we will verify the token)
+        signer: {
+          method: 'jwk',
+          alg: signerJwk.supportedSignatureAlgorithms[0],
+          publicJwk: signerJwk.toJson(),
+        },
+        dpopJwk: verificationResult.dpopJwk,
+        scope: scopes?.join(','),
+        clientId: issuanceSession.clientId,
+        subject: grant.grantType === preAuthorizedCodeGrantIdentifier ? grant.preAuthorizedCode : grant.code,
+
+        // NOTE: these have been removed in newer drafts. Keeping them in for now
+        cNonce,
+        cNonceExpiresIn: cNonceExpiresInSeconds,
+      })
+
+      await openId4VcIssuerService.updateState(
+        agentContext,
+        issuanceSession,
+        OpenId4VcIssuanceSessionState.AccessTokenCreated
+      )
+
+      return sendJsonResponse(response, next, accessTokenResponse)
+    } catch (error) {
+      if (error instanceof Oauth2ServerErrorResponseError) {
+        return sendOauth2ErrorResponse(response, next, agentContext.config.logger, error)
+      }
+
+      return sendUnknownServerErrorResponse(response, next, agentContext.config.logger, error)
     }
   }
 }

@@ -148,7 +148,7 @@ export class OpenId4VcSiopVerifierService {
       )
     }
 
-    const relyingParty = await this.getRelyingParty(agentContext, options.verifier.verifierId, {
+    const relyingParty = await this.getRelyingParty(agentContext, options.verifier, {
       presentationDefinition: options.presentationExchange?.definition,
       authorizationResponseUrl,
       clientId,
@@ -230,6 +230,7 @@ export class OpenId4VcSiopVerifierService {
       options.verificationSession.authorizationRequestJwt
     )
 
+    const verifier = await this.getVerifierByVerifierId(agentContext, options.verificationSession.verifierId)
     const requestClientId = await authorizationRequest.getMergedProperty<string>('client_id')
     const requestNonce = await authorizationRequest.getMergedProperty<string>('nonce')
     const requestState = await authorizationRequest.getMergedProperty<string>('state')
@@ -247,7 +248,7 @@ export class OpenId4VcSiopVerifierService {
       this.config.authorizationEndpoint.endpointPath,
     ])
 
-    const relyingParty = await this.getRelyingParty(agentContext, options.verificationSession.verifierId, {
+    const relyingParty = await this.getRelyingParty(agentContext, verifier, {
       presentationDefinition: presentationDefinitionsWithLocation?.[0]?.definition,
       authorizationResponseUrl,
       clientId: requestClientId,
@@ -444,6 +445,7 @@ export class OpenId4VcSiopVerifierService {
   public async createVerifier(agentContext: AgentContext, options?: OpenId4VcSiopCreateVerifierOptions) {
     const openId4VcVerifier = new OpenId4VcVerifierRecord({
       verifierId: options?.verifierId ?? utils.uuid(),
+      clientMetadata: options?.clientMetadata,
     })
 
     await this.openId4VcVerifierRepository.save(agentContext, openId4VcVerifier)
@@ -465,7 +467,7 @@ export class OpenId4VcSiopVerifierService {
 
   private async getRelyingParty(
     agentContext: AgentContext,
-    verifierId: string,
+    verifier: OpenId4VcVerifierRecord,
     {
       idToken,
       presentationDefinition,
@@ -510,7 +512,7 @@ export class OpenId4VcSiopVerifierService {
     // all the events are handled, and that the correct context is used for the events.
     const sphereonEventEmitter = agentContext.dependencyManager
       .resolve(OpenId4VcRelyingPartyEventHandler)
-      .getEventEmitterForVerifier(agentContext.contextCorrelationId, verifierId)
+      .getEventEmitterForVerifier(agentContext.contextCorrelationId, verifier.verifierId)
 
     const mode =
       !responseMode || responseMode === 'direct_post'
@@ -550,7 +552,7 @@ export class OpenId4VcSiopVerifierService {
       // FIXME: should allow verification of revocation
       // .withRevocationVerificationCallback()
       .withRevocationVerification(RevocationVerification.NEVER)
-      .withSessionManager(new OpenId4VcRelyingPartySessionManager(agentContext, verifierId))
+      .withSessionManager(new OpenId4VcRelyingPartySessionManager(agentContext, verifier.verifierId))
       .withEventEmitter(sphereonEventEmitter)
       .withResponseType(responseTypes)
       .withCreateJwtCallback(getCreateJwtCallback(agentContext))
@@ -559,6 +561,7 @@ export class OpenId4VcSiopVerifierService {
       // TODO: we should probably allow some dynamic values here
       .withClientMetadata({
         ...jarmClientMetadata,
+        ...verifier.clientMetadata,
         // FIXME: not passing client_id here means it will not be added
         // to the authorization request url (not the signed payload). Need
         // to fix that in Sphereon lib

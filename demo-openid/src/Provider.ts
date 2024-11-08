@@ -1,65 +1,87 @@
 import { bodyParser } from '@koa/bodyparser'
-import Provider from 'oidc-provider'
+import { Provider } from 'oidc-provider'
 
 const oidc = new Provider('http://localhost:3042', {
   clients: [
     {
       client_id: 'foo',
-      // client_secret: 'bar',
-      redirect_uris: ['http://localhost:1234/redirect'],
+      client_secret: 'bar',
+      redirect_uris: ['http://localhost:3000/redirect'],
       grant_types: ['authorization_code'],
+      id_token_signed_response_alg: 'ES256',
     },
     {
       client_id: 'issuer-server',
       client_secret: 'issuer-server',
     },
   ],
-  // scopes: ['UniversityDegreeCredential'],
+  jwks: {
+    keys: [
+      {
+        alg: 'ES256',
+        kid: 'first-key',
+        kty: 'EC',
+        d: '2hdTKWEZza_R-DF4l3aoWEuGZPy6L6PGmUT_GqeJczM',
+        crv: 'P-256',
+        x: '73lW9QyiXTvpOOXuT_LoRRvM3oEWKSLyzfNGe04sV5k',
+        y: 'AiFefLdnP-cWkdsevwozKdxNGvF_VSSZ1K5yDQ4jWwM',
+      },
+    ],
+  },
+  scopes: [
+    'openid4vc:credential:UniversityDegreeCredential-jwtvcjson',
+    'openid4vc:credential:OpenBadgeCredential-ldpvc',
+    'openid4vc:credential:OpenBadgeCredential-sdjwt',
+    'openid4vc:credential:OpenBadgeCredential-mdoc',
+  ],
   pkce: {
     methods: ['S256'],
-    required: () => {
-      console.log('checking pkce')
-      return true
-    },
+    required: () => true,
   },
   extraTokenClaims: async (context, token) => {
     if (token.kind === 'AccessToken') {
-      console.log(context.body)
       return {
-        issuer_state: (context.body as Record<string, unknown>).issuer_state,
+        issuer_state: context.request.body.issuer_state,
       }
     }
     return undefined
   },
   features: {
-    dPoP: { enabled: false },
+    dPoP: { enabled: true },
     pushedAuthorizationRequests: {
       enabled: true,
-      //requirePushedAuthorizationRequests: true,
+      requirePushedAuthorizationRequests: true,
+    },
+    introspection: {
+      enabled: true,
     },
     resourceIndicators: {
-      defaultResource: () => 'http://localhost:1234',
+      defaultResource: () => 'http://localhost:2000/oid4vci/726222ad-7624-4f12-b15b-e08aa7042ffa',
       enabled: true,
-      getResourceServerInfo: (ctx, resourceIndicator, client) => {
+      getResourceServerInfo: () => {
         return {
-          scope: 'UniversityDegreeCredential',
+          scope: 'openid4vc:credential:OpenBadgeCredential-sdjwt',
           accessTokenTTL: 5 * 60, // 5 minutes
-          accessTokenFormat: 'jwt',
+          accessTokenFormat: 'opaque',
+          audience: 'http://localhost:2000/oid4vci/726222ad-7624-4f12-b15b-e08aa7042ffa',
+          jwt: {
+            sign: {
+              kid: 'first-key',
+              alg: 'ES256',
+            },
+          },
         }
       },
-      useGrantedResource: (ctx, model) => {
-        // @param ctx - koa request context
-        // @param model - depending on the request's grant_type this can be either an AuthorizationCode, BackchannelAuthenticationRequest,
-        //                RefreshToken, or DeviceCode model instance.
+      useGrantedResource: () => {
         return true
       },
     },
   },
 
-  async findAccount(ctx, id) {
+  async findAccount(_, id) {
     return {
       accountId: id,
-      async claims(use, scope) {
+      async claims() {
         return { sub: id }
       },
     }
@@ -68,15 +90,11 @@ const oidc = new Provider('http://localhost:3042', {
 
 oidc.use(bodyParser())
 oidc.use(async (ctx, next) => {
-  /** pre-processing
-   * you may target a specific action here by matching `ctx.path`
-   */
-
   console.log('pre middleware', ctx.method, ctx.path)
 
+  // We hack the client secret (to allow public client)
   if (ctx.path.includes('request')) {
-    console.log(ctx.request.body)
-    // ctx.request.body.client_secret = 'bar'
+    ctx.request.body.client_secret = 'bar'
   }
 
   if (ctx.path.includes('auth')) {
@@ -87,7 +105,9 @@ oidc.use(async (ctx, next) => {
 
   if (ctx.path.includes('token')) {
     console.log('token endpoint')
-    // ctx.request.body.client_secret = 'bar'
+    console.log(ctx.request.body)
+    ctx.request.body.client_id = 'foo'
+    ctx.request.body.client_secret = 'bar'
   }
 
   await next()
@@ -99,8 +119,7 @@ oidc.use(async (ctx, next) => {
 
   console.log('post middleware', ctx.method, ctx.oidc?.route)
   if (ctx.path.includes('token')) {
-    console.log('token endpoint')
-    ctx.response.body
+    console.log('token endpoint', ctx.response.body)
   }
 })
 

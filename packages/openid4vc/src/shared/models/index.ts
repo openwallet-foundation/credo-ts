@@ -1,9 +1,15 @@
-import {
+import type {
   CredentialConfigurationSupported,
   CredentialConfigurationSupportedWithFormats,
   CredentialIssuerMetadata,
+  CredentialIssuerMetadataDisplayEntry,
+  CredentialOfferPreAuthorizedCodeGrantTxCode,
   CredentialRequest,
+  CredentialRequestFormatSpecific,
   CredentialRequestWithFormats,
+  IssuerMetadataResult,
+  ParseCredentialRequestReturn,
+  CredentialOfferObject,
 } from '@animo-id/oid4vci'
 import type {
   VerifiedAuthorizationRequest,
@@ -11,8 +17,8 @@ import type {
   AuthorizationResponsePayload,
   IDTokenPayload,
 } from '@sphereon/did-auth-siop'
-import { CredentialOfferObject } from '@animo-id/oid4vci'
-import { PreAuthorizedCodeGrantIdentifier } from '@animo-id/oauth2'
+
+export { preAuthorizedCodeGrantIdentifier, authorizationCodeGrantIdentifier } from '@animo-id/oauth2'
 
 export type OpenId4VciCredentialConfigurationSupportedWithFormats = CredentialConfigurationSupportedWithFormats
 export type OpenId4VciCredentialConfigurationSupported = CredentialConfigurationSupported
@@ -20,18 +26,18 @@ export type OpenId4VciCredentialConfigurationSupported = CredentialConfiguration
 export type OpenId4VciCredentialConfigurationsSupported = Record<string, OpenId4VciCredentialConfigurationSupported>
 export type OpenId4VciCredentialConfigurationsSupportedWithFormats = Record<
   string,
-  OpenId4VciCredentialConfigurationSupported
+  OpenId4VciCredentialConfigurationSupportedWithFormats
 >
 
-// TODO: export in @animo-id/oid4vc
-export type OpenId4VciTxCode = NonNullable<
-  NonNullable<NonNullable<CredentialOfferObject['grants']>[PreAuthorizedCodeGrantIdentifier]>['tx_code']
->
+export type OpenId4VciMetadata = IssuerMetadataResult
 
-export type OpenId4VciIssuerMetadata = CredentialIssuerMetadata
+export type OpenId4VciTxCode = CredentialOfferPreAuthorizedCodeGrantTxCode
+export type OpenId4VciCredentialIssuerMetadata = CredentialIssuerMetadata
 
-// TODO: export in @animo-id/oid4vc
-export type OpenId4VciIssuerMetadataDisplay = NonNullable<CredentialIssuerMetadata['display']>[number]
+export type OpenId4VciParsedCredentialRequest = ParseCredentialRequestReturn
+export type OpenId4VciCredentialRequestFormatSpecific = CredentialRequestFormatSpecific
+
+export type OpenId4VciCredentialIssuerMetadataDisplay = CredentialIssuerMetadataDisplayEntry
 
 export type OpenId4VciCredentialRequest = CredentialRequest
 export type OpenId4VciCredentialRequestWithFormats = CredentialRequestWithFormats
@@ -46,4 +52,4 @@ export type OpenId4VcSiopIdTokenPayload = IDTokenPayload
 export * from './OpenId4VcJwtIssuer'
 export * from './CredentialHolderBinding'
 export * from './OpenId4VciCredentialFormatProfile'
-export * from './AuthorizationServer'
+export * from './OpenId4VciAuthorizationServerConfig'
