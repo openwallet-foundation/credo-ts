@@ -7,8 +7,6 @@ import type {
 
 import { AgentContext, injectable } from '@credo-ts/core'
 
-import { credentialsSupportedV13ToV11, type OpenId4VciCredentialRequest } from '../shared'
-
 import { OpenId4VcIssuerModuleConfig } from './OpenId4VcIssuerModuleConfig'
 import { OpenId4VcIssuerService } from './OpenId4VcIssuerService'
 
@@ -59,19 +57,13 @@ export class OpenId4VcIssuerApi {
   }
 
   public async updateIssuerMetadata(options: OpenId4VcUpdateIssuerRecordOptions) {
-    const { issuerId, credentialConfigurationsSupported, credentialsSupported, ...issuerOptions } = options
+    const { issuerId, credentialConfigurationsSupported, display, dpopSigningAlgValuesSupported } = options
 
     const issuer = await this.openId4VcIssuerService.getIssuerByIssuerId(this.agentContext, issuerId)
 
-    if (credentialConfigurationsSupported) {
-      issuer.credentialConfigurationsSupported = credentialConfigurationsSupported
-      issuer.credentialsSupported = credentialsSupportedV13ToV11(credentialConfigurationsSupported)
-    } else {
-      issuer.credentialsSupported = credentialsSupported
-      issuer.credentialConfigurationsSupported = undefined
-    }
-    issuer.display = issuerOptions.display
-    issuer.dpopSigningAlgValuesSupported = issuerOptions.dpopSigningAlgValuesSupported
+    issuer.credentialConfigurationsSupported = credentialConfigurationsSupported
+    issuer.display = display
+    issuer.dpopSigningAlgValuesSupported = dpopSigningAlgValuesSupported
 
     return this.openId4VcIssuerService.updateIssuer(this.agentContext, issuer)
   }
@@ -100,18 +92,6 @@ export class OpenId4VcIssuerApi {
     )
 
     return await this.openId4VcIssuerService.createCredentialResponse(this.agentContext, { ...rest, issuanceSession })
-  }
-
-  public async findIssuanceSessionForCredentialRequest(options: {
-    credentialRequest: OpenId4VciCredentialRequest
-    issuerId?: string
-  }) {
-    const issuanceSession = await this.openId4VcIssuerService.findIssuanceSessionForCredentialRequest(
-      this.agentContext,
-      options
-    )
-
-    return issuanceSession
   }
 
   public async getIssuerMetadata(issuerId: string) {

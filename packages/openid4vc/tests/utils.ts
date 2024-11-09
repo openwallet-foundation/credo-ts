@@ -19,10 +19,23 @@ import {
 } from '../../core/tests'
 import { OpenId4VcVerifierEvents, OpenId4VcIssuerEvents } from '../src'
 
-export async function createAgentFromModules<MM extends ModulesMap>(label: string, modulesMap: MM, secretKey: string) {
+export async function createAgentFromModules<MM extends ModulesMap>(
+  label: string,
+  modulesMap: MM,
+  secretKey: string,
+  customFetch?: typeof global.fetch
+) {
   const agent = new Agent<MM>({
-    config: { label, walletConfig: { id: utils.uuid(), key: utils.uuid() }, logger: new TestLogger(LogLevel.off) },
-    dependencies: agentDependencies,
+    config: {
+      label,
+      walletConfig: { id: utils.uuid(), key: utils.uuid() },
+      allowInsecureHttpUrls: true,
+      logger: new TestLogger(LogLevel.off),
+    },
+    dependencies: {
+      ...agentDependencies,
+      fetch: customFetch ?? agentDependencies.fetch,
+    },
     modules: modulesMap,
   })
 

@@ -207,7 +207,6 @@ export class OpenId4VcSiopHolderService {
         return { response: jwe }
       }
     }
-
     const response = await openidProvider.submitAuthorizationResponse(
       authorizationResponseWithCorrelationId,
       getCreateJarmResponseCallback(authorizationResponseNonce)
