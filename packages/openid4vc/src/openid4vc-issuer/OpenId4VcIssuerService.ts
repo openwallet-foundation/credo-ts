@@ -749,7 +749,6 @@ export class OpenId4VcIssuerService {
   }> {
     const { issuanceSession, issuer, requestFormat, authorization } = options
     const issuerMetadata = await this.getIssuerMetadata(agentContext, issuer)
-    const verifierApi = agentContext.dependencyManager.resolve(OpenId4VcVerifierApi)
 
     const { credentialConfigurations, credentialConfigurationIds } = this.getCredentialConfigurationsForRequest({
       issuanceSession,
@@ -768,14 +767,16 @@ export class OpenId4VcIssuerService {
       holderBindings,
       credentialOffer: issuanceSession.credentialOfferPayload,
 
+      // NOTE: this will throw an error if the verifier module is registered and there is a
+      // verification session. But you can't get here without the verifier module anyway
       verification: issuanceSession.presentation?.openId4VcVerificationSessionId
         ? {
-            session: await verifierApi.getVerificationSessionById(
-              issuanceSession.presentation.openId4VcVerificationSessionId
-            ),
-            response: await verifierApi.getVerifiedAuthorizationResponse(
-              issuanceSession.presentation.openId4VcVerificationSessionId
-            ),
+            session: await agentContext.dependencyManager
+              .resolve(OpenId4VcVerifierApi)
+              .getVerificationSessionById(issuanceSession.presentation.openId4VcVerificationSessionId),
+            response: await agentContext.dependencyManager
+              .resolve(OpenId4VcVerifierApi)
+              .getVerifiedAuthorizationResponse(issuanceSession.presentation.openId4VcVerificationSessionId),
           }
         : undefined,
 
