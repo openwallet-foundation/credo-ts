@@ -37,10 +37,10 @@ const oidc = new Provider('http://localhost:3042', {
     ],
   },
   scopes: [
-    'openid4vc:credential:UniversityDegreeCredential-jwtvcjson',
-    'openid4vc:credential:OpenBadgeCredential-ldpvc',
-    'openid4vc:credential:OpenBadgeCredential-sdjwt',
-    'openid4vc:credential:OpenBadgeCredential-mdoc',
+    // 'openid4vc:credential:UniversityDegreeCredential-jwtvcjson',
+    // 'openid4vc:credential:OpenBadgeCredential-ldpvc',
+    // 'openid4vc:credential:OpenBadgeCredential-sdjwt',
+    // 'openid4vc:credential:OpenBadgeCredential-mdoc',
   ],
   pkce: {
     methods: ['S256'],
@@ -73,9 +73,9 @@ const oidc = new Provider('http://localhost:3042', {
     resourceIndicators: {
       defaultResource: () => 'http://localhost:2000/oid4vci/726222ad-7624-4f12-b15b-e08aa7042ffa',
       enabled: true,
-      getResourceServerInfo: () => {
+      getResourceServerInfo: (context) => {
         return {
-          scope: 'openid4vc:credential:OpenBadgeCredential-sdjwt',
+          scope: Array.from(context.oidc.requestParamScopes).join(' '),
           accessTokenTTL: 5 * 60, // 5 minutes
 
           // NOTE: switch this between opaque and jwt to use JWT tokens or Token introspection

@@ -79,12 +79,8 @@ const universityDegreeCredentialSdJwt = {
 const modules = {
   openId4VcIssuer: new OpenId4VcIssuerModule({
     baseUrl: 'https://openid4vc-issuer.com',
-    endpoints: {
-      credential: {
-        credentialRequestToCredentialMapper: () => {
-          throw new Error('Not implemented')
-        },
-      },
+    credentialRequestToCredentialMapper: () => {
+      throw new Error('Not implemented')
     },
   }),
   askar: new AskarModule(askarModuleConfig),
@@ -329,6 +325,17 @@ describe('OpenId4VcIssuer', () => {
     const { credentialResponse } = await issuer.modules.openId4VcIssuer.createCredentialResponse({
       issuanceSessionId: result.issuanceSession.id,
       credentialRequest,
+      authorization: {
+        authorizationServer: 'https://authorization.com',
+        accessToken: {
+          payload: {
+            active: true,
+            sub: 'something',
+            'pre-authorized_code': 'some',
+          },
+          value: 'the-access-token',
+        },
+      },
 
       credentialRequestToCredentialMapper: () => ({
         format: 'vc+sd-jwt',
@@ -418,6 +425,17 @@ describe('OpenId4VcIssuer', () => {
     const { credentialResponse } = await issuer.modules.openId4VcIssuer.createCredentialResponse({
       issuanceSessionId: result.issuanceSession.id,
       credentialRequest,
+      authorization: {
+        authorizationServer: 'https://authorization.com',
+        accessToken: {
+          payload: {
+            active: true,
+            sub: 'something',
+            'pre-authorized_code': 'some',
+          },
+          value: 'the-access-token',
+        },
+      },
 
       credentialRequestToCredentialMapper: () => ({
         format: 'vc+sd-jwt',
@@ -470,6 +488,17 @@ describe('OpenId4VcIssuer', () => {
     const { cNonce } = await issuerService.createNonce(issuer.context, openId4VcIssuer)
     const { credentialResponse } = await issuer.modules.openId4VcIssuer.createCredentialResponse({
       issuanceSessionId: result.issuanceSession.id,
+      authorization: {
+        authorizationServer: 'https://authorization.com',
+        accessToken: {
+          payload: {
+            active: true,
+            sub: 'something',
+            'pre-authorized_code': 'some',
+          },
+          value: 'the-access-token',
+        },
+      },
       credentialRequestToCredentialMapper: ({ issuanceSession }) => {
         expect(issuanceSession.id).toEqual(result.issuanceSession.id)
         expect(issuanceSession.issuanceMetadata).toEqual({
@@ -551,6 +580,17 @@ describe('OpenId4VcIssuer', () => {
     await expect(
       issuer.modules.openId4VcIssuer.createCredentialResponse({
         issuanceSessionId: result.issuanceSession.id,
+        authorization: {
+          authorizationServer: 'https://authorization.com',
+          accessToken: {
+            payload: {
+              active: true,
+              sub: 'something',
+              'pre-authorized_code': 'some',
+            },
+            value: 'the-access-token',
+          },
+        },
         credentialRequest: await createCredentialRequest(holder.context, {
           credentialConfiguration: universityDegreeCredential,
           issuerMetadata,
@@ -561,7 +601,7 @@ describe('OpenId4VcIssuer', () => {
           throw new Error('Not implemented')
         },
       })
-    ).rejects.toThrow('No offered credentials matching the credential request')
+    ).rejects.toThrow('Credential request does not match any credential configurations from credential offer')
   })
 
   it('pre authorized code flow using multiple credentials_supported', async () => {
@@ -591,6 +631,17 @@ describe('OpenId4VcIssuer', () => {
         kid: holderKid,
         nonce: cNonce,
       }),
+      authorization: {
+        authorizationServer: 'https://authorization.com',
+        accessToken: {
+          payload: {
+            active: true,
+            sub: 'something',
+            'pre-authorized_code': 'some',
+          },
+          value: 'the-access-token',
+        },
+      },
       credentialRequestToCredentialMapper: () => ({
         format: 'jwt_vc',
         credentials: [
@@ -642,6 +693,17 @@ describe('OpenId4VcIssuer', () => {
     await expect(
       issuer.modules.openId4VcIssuer.createCredentialResponse({
         issuanceSessionId: result.issuanceSession.id,
+        authorization: {
+          authorizationServer: 'https://authorization.com',
+          accessToken: {
+            payload: {
+              active: true,
+              sub: 'something',
+              'pre-authorized_code': 'some',
+            },
+            value: 'the-access-token',
+          },
+        },
         credentialRequest: await createCredentialRequest(holder.context, {
           credentialConfiguration: {
             id: 'someid',
@@ -658,7 +720,7 @@ describe('OpenId4VcIssuer', () => {
           throw new Error('Not implemented')
         },
       })
-    ).rejects.toThrow('No offered credentials matching the credential request')
+    ).rejects.toThrow('Credential request does not match any credential configurations from credential offer')
   })
 
   it('create credential offer and retrieve it from the uri (pre authorized flow)', async () => {
@@ -736,6 +798,17 @@ describe('OpenId4VcIssuer', () => {
         kid: holderKid,
         nonce: cNonce,
       }),
+      authorization: {
+        authorizationServer: 'https://authorization.com',
+        accessToken: {
+          payload: {
+            active: true,
+            sub: 'something',
+            'pre-authorized_code': 'some',
+          },
+          value: 'the-access-token',
+        },
+      },
       credentialRequestToCredentialMapper,
     })
 
@@ -758,6 +831,17 @@ describe('OpenId4VcIssuer', () => {
         kid: holderKid,
         nonce: credentialResponse.c_nonce ?? cNonce,
       }),
+      authorization: {
+        authorizationServer: 'https://authorization.com',
+        accessToken: {
+          payload: {
+            active: true,
+            sub: 'something',
+            'pre-authorized_code': 'some',
+          },
+          value: 'the-access-token',
+        },
+      },
       credentialRequestToCredentialMapper,
     })
 

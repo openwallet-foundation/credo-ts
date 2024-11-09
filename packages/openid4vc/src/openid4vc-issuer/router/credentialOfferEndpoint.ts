@@ -1,4 +1,5 @@
 import type { OpenId4VcIssuanceRequest } from './requestContext'
+import type { OpenId4VcIssuerModuleConfig } from '../OpenId4VcIssuerModuleConfig'
 import type { Router, Response } from 'express'
 
 import { joinUriParts } from '@credo-ts/core'
@@ -11,23 +12,12 @@ import {
   sendUnknownServerErrorResponse,
 } from '../../shared/router'
 import { OpenId4VcIssuanceSessionState } from '../OpenId4VcIssuanceSessionState'
-import { OpenId4VcIssuerModuleConfig } from '../OpenId4VcIssuerModuleConfig'
 import { OpenId4VcIssuerService } from '../OpenId4VcIssuerService'
 import { OpenId4VcIssuanceSessionRepository } from '../repository'
 
-export interface OpenId4VciCredentialOfferEndpointConfig {
-  /**
-   * The path at which the credential offer should should be made available. Note that it will be
-   * hosted at a subpath to take into account multiple tenants and issuers.
-   *
-   * @default /offers
-   */
-  endpointPath: string
-}
-
-export function configureCredentialOfferEndpoint(router: Router, config: OpenId4VciCredentialOfferEndpointConfig) {
+export function configureCredentialOfferEndpoint(router: Router, config: OpenId4VcIssuerModuleConfig) {
   router.get(
-    joinUriParts(config.endpointPath, [':credentialOfferId']),
+    joinUriParts(config.credentialOfferEndpointPath, [':credentialOfferId']),
     async (request: OpenId4VcIssuanceRequest, response: Response, next) => {
       const { agentContext, issuer } = getRequestContext(request)
 
@@ -48,10 +38,9 @@ export function configureCredentialOfferEndpoint(router: Router, config: OpenId4
         const openId4VcIssuanceSessionRepository = agentContext.dependencyManager.resolve(
           OpenId4VcIssuanceSessionRepository
         )
-        const issuerConfig = agentContext.dependencyManager.resolve(OpenId4VcIssuerModuleConfig)
 
         const fullCredentialOfferUri = joinUriParts(issuerMetadata.credentialIssuer.credential_issuer, [
-          issuerConfig.credentialOfferEndpoint.endpointPath,
+          config.credentialOfferEndpointPath,
           request.params.credentialOfferId,
         ])
 

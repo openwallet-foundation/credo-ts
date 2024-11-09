@@ -24,6 +24,7 @@ import {
   X509ModuleConfig,
   utils,
   TypedArrayEncoder,
+  JsonTransformer,
 } from '@credo-ts/core'
 import { OpenId4VcIssuerModule, OpenId4VciCredentialFormatProfile } from '@credo-ts/openid4vc'
 import { ariesAskar } from '@hyperledger/aries-askar-nodejs'
@@ -70,6 +71,7 @@ function getCredentialRequestToCredentialMapper({
     credentialConfigurationIds,
     credentialConfigurationsSupported: supported,
     agentContext,
+    authorization,
   }) => {
     const trustedCertificates = agentContext.dependencyManager.resolve(X509ModuleConfig).trustedCertificates
     if (trustedCertificates?.length !== 1) {
@@ -93,9 +95,13 @@ function getCredentialRequestToCredentialMapper({
               issuer: new W3cIssuer({
                 id: issuerDidKey.did,
               }),
-              credentialSubject: new W3cCredentialSubject({
-                id: parseDid(holderBinding.didUrl).did,
-              }),
+              credentialSubject: JsonTransformer.fromJSON(
+                {
+                  id: parseDid(holderBinding.didUrl).did,
+                  authorizedUser: authorization.accessToken.payload.sub,
+                },
+                W3cCredentialSubject
+              ),
               issuanceDate: w3cDate(Date.now()),
             }),
             verificationMethod: `${issuerDidKey.did}#${issuerDidKey.key.fingerprint}`,
@@ -109,13 +115,18 @@ function getCredentialRequestToCredentialMapper({
         credentialConfigurationId,
         format: ClaimFormat.SdJwtVc,
         credentials: holderBindings.map((holderBinding) => ({
-          payload: { vct: credentialConfiguration.vct, university: 'innsbruck', degree: 'bachelor' },
+          payload: {
+            vct: credentialConfiguration.vct,
+            university: 'innsbruck',
+            degree: 'bachelor',
+            authorized_user: authorization.accessToken.payload.sub,
+          },
           holder: holderBinding,
           issuer: {
             method: 'did',
             didUrl: `${issuerDidKey.did}#${issuerDidKey.key.fingerprint}`,
           },
-          disclosureFrame: { _sd: ['university', 'degree'] },
+          disclosureFrame: { _sd: ['university', 'degree', 'authorized_user'] },
         })),
       } satisfies OpenId4VciSignSdJwtCredentials
     }
@@ -130,6 +141,7 @@ function getCredentialRequestToCredentialMapper({
           namespaces: {
             'Leopold-Franzens-University': {
               degree: 'bachelor',
+              authorized_user: authorization.accessToken.payload.sub,
             },
           },
           docType: credentialConfiguration.doctype,
@@ -158,12 +170,8 @@ export class Issuer extends BaseAgent<{
         openId4VcIssuer: new OpenId4VcIssuerModule({
           baseUrl: 'http://localhost:2000/oid4vci',
           router: openId4VciRouter,
-          endpoints: {
-            credential: {
-              credentialRequestToCredentialMapper: (...args) =>
-                getCredentialRequestToCredentialMapper({ issuerDidKey: this.didKey })(...args),
-            },
-          },
+          credentialRequestToCredentialMapper: (...args) =>
+            getCredentialRequestToCredentialMapper({ issuerDidKey: this.didKey })(...args),
         }),
       },
     })
@@ -204,6 +212,9 @@ export class Issuer extends BaseAgent<{
         },
       ],
     })
+
+    const issuerMetadata = await issuer.agent.modules.openId4VcIssuer.getIssuerMetadata(issuer.issuerRecord.issuerId)
+    console.log(`\nIssuer url is ${issuerMetadata.credentialIssuer.credential_issuer}`)
 
     return issuer
   }

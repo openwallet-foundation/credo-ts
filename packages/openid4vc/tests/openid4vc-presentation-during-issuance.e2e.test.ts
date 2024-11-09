@@ -37,11 +37,11 @@ import {
   JwsService,
   JwtPayload,
 } from '@credo-ts/core'
+import { TenantsModule } from '@credo-ts/tenants'
 import express, { type Express } from 'express'
 
 import { AskarModule } from '../../askar/src'
 import { askarModuleConfig } from '../../askar/tests/helpers'
-import { TenantsModule } from '../../tenants/src'
 import {
   OpenId4VcHolderModule,
   OpenId4VcIssuanceSessionState,
@@ -347,7 +347,6 @@ describe('OpenId4Vc', () => {
           jwk: tokenResponseTenant1.dpop?.jwk.toJson() as JwkJson,
         }),
       },
-      'pre-authorized_code': expect.any(String),
       scope: 'UniversityDegreeCredential',
       aud: `http://localhost:1234/oid4vci/${openIdIssuerTenant1.issuerId}`,
       exp: expect.any(Number),
@@ -510,7 +509,6 @@ describe('OpenId4Vc', () => {
           audience: 'http://localhost:1234/oid4vci/8bc91672-6a32-466c-96ec-6efca8760068',
           expiresInSeconds: 5000,
           subject: 'something',
-          scope: 'UniversityDegreeCredential',
           additionalAccessTokenPayload: {
             issuer_state: 'dbf99eea-0131-48b0-9022-17f7ebe25ea7',
           },
@@ -570,6 +568,7 @@ describe('OpenId4Vc', () => {
       redirectUri: 'http://localhost:1234/redirect',
       codeVerifier: resolvedAuthorization.codeVerifier,
     })
+
     const credentialResponse = await holderTenant.modules.openId4VcHolder.requestCredentials({
       resolvedCredentialOffer,
       ...tokenResponseTenant,
@@ -1807,10 +1806,6 @@ describe('OpenId4Vc', () => {
           jwk: tokenResponseTenant1.dpop?.jwk.toJson() as JwkJson,
         }),
       },
-      'pre-authorized_code':
-        resolvedCredentialOffer1.credentialOfferPayload.grants?.[preAuthorizedCodeGrantIdentifier]?.[
-          'pre-authorized_code'
-        ],
       scope: 'UniversityDegreeCredential',
       aud: `http://localhost:1234/oid4vci/${openIdIssuerTenant1.issuerId}`,
       exp: expect.any(Number),

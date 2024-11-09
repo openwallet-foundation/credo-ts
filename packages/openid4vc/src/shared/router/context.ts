@@ -17,7 +17,8 @@ export function sendUnauthorizedError(
   response: Response,
   next: NextFunction,
   logger: Logger,
-  error: unknown | Oauth2ResourceUnauthorizedError
+  error: unknown | Oauth2ResourceUnauthorizedError,
+  status?: number
 ) {
   const errorMessage = error instanceof Error ? error.message : error
   logger.warn(`[OID4VC] Sending authorization error response: ${JSON.stringify(errorMessage)}`, {
@@ -32,7 +33,10 @@ export function sendUnauthorizedError(
           { scheme: SupportedAuthenticationScheme.Bearer },
         ])
 
-  response.setHeader('WWW-Authenticate', unauhorizedError.toHeaderValue()).status(401).send('Unauthorized')
+  response
+    .setHeader('WWW-Authenticate', unauhorizedError.toHeaderValue())
+    .status(status ?? 403)
+    .send()
   next(error)
 }
 
@@ -91,9 +95,18 @@ export function sendErrorResponse(
   next(throwError)
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function sendJsonResponse(response: Response, next: NextFunction, body: any, contentType?: string) {
-  response.setHeader('Content-Type', contentType ?? 'application/json').send(JSON.stringify(body))
+export function sendJsonResponse(
+  response: Response,
+  next: NextFunction,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  body: any,
+  contentType?: string,
+  status?: number
+) {
+  response
+    .setHeader('Content-Type', contentType ?? 'application/json')
+    .status(status ?? 200)
+    .send(JSON.stringify(body))
 
   next()
 }

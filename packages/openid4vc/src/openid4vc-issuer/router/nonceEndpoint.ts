@@ -1,30 +1,13 @@
 import type { OpenId4VcIssuanceRequest } from './requestContext'
+import type { OpenId4VcIssuerModuleConfig } from '../OpenId4VcIssuerModuleConfig'
 import type { NextFunction, Response, Router } from 'express'
 
 import { getRequestContext, sendJsonResponse, sendUnknownServerErrorResponse } from '../../shared/router'
 import { OpenId4VcIssuerService } from '../OpenId4VcIssuerService'
 
-export interface OpenId4VciNonceEndpointConfig {
-  /**
-   * The path at which the nonce endpoint should be made available. Note that it will be
-   * hosted at a subpath to take into account multiple tenants and issuers.
-   *
-   * @default /nonce
-   */
-  endpointPath: string
-
-  /**
-   * The time after which the cNonce from the nonce response will
-   * expire.
-   *
-   * @default 60 (1 minute)
-   */
-  cNonceExpiresInSeconds: number
-}
-
-export function configureNonceEndpoint(router: Router, config: OpenId4VciNonceEndpointConfig) {
+export function configureNonceEndpoint(router: Router, config: OpenId4VcIssuerModuleConfig) {
   router.post(
-    config.endpointPath,
+    config.nonceEndpointPath,
     async (request: OpenId4VcIssuanceRequest, response: Response, next: NextFunction) => {
       response.set({ 'Cache-Control': 'no-store', Pragma: 'no-cache' })
       const requestContext = getRequestContext(request)

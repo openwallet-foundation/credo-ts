@@ -1,15 +1,13 @@
 import type {
-  OpenId4VciAccessTokenEndpointConfig,
-  OpenId4VciCredentialEndpointConfig,
-  OpenId4VciCredentialOfferEndpointConfig,
-  OpenId4VciNonceEndpointConfig,
-} from './router'
-import type { Optional } from '@credo-ts/core'
+  OpenId4VciCredentialRequestToCredentialMapper,
+  OpenId4VciGetVerificationSessionForIssuanceSessionAuthorization,
+} from './OpenId4VcIssuerServiceOptions'
 import type { Router } from 'express'
 
 import { importExpress } from '../shared/router'
 
 const DEFAULT_C_NONCE_EXPIRES_IN = 1 * 60 // 1 minute
+const DEFAULT_AUTHORIZATION_CODE_EXPIRES_IN = 1 * 60 // 1 minute
 const DEFAULT_TOKEN_EXPIRES_IN = 3 * 60 // 3 minutes
 const DEFAULT_PRE_AUTH_CODE_EXPIRES_IN = 3 * 60 // 3 minutes
 
@@ -29,14 +27,81 @@ export interface OpenId4VcIssuerModuleConfigOptions {
    */
   router?: Router
 
-  endpoints: {
-    nonce?: Optional<OpenId4VciNonceEndpointConfig, 'endpointPath' | 'cNonceExpiresInSeconds'>
-    credentialOffer?: Optional<OpenId4VciCredentialOfferEndpointConfig, 'endpointPath'>
-    credential: Optional<OpenId4VciCredentialEndpointConfig, 'endpointPath'>
-    accessToken?: Optional<
-      OpenId4VciAccessTokenEndpointConfig,
-      'endpointPath' | 'preAuthorizedCodeExpirationInSeconds' | 'tokenExpiresInSeconds'
-    >
+  /**
+   * The time after which a cNonce will expire.
+   *
+   * @default 60 (1 minute)
+   */
+  cNonceExpiresInSeconds?: number
+
+  /**
+   * The time after which an pre-authorized code will expire.
+   *
+   * @default 360 (5 minutes)
+   */
+  preAuthorizedCodeExpirationInSeconds?: number
+
+  /**
+   * The time after which an authorization code will expire.
+   *
+   * @default 60 (1 minute)
+   */
+  authorizationCodeExpiresInSeconds?: number
+
+  /**
+   * The time after which an access token will expire.
+   *
+   * @default 360 (5 minutes)
+   */
+  accessTokenExpiresInSeconds?: number
+
+  /**
+   * A function mapping a credential request to the credential to be issued.
+   */
+  credentialRequestToCredentialMapper: OpenId4VciCredentialRequestToCredentialMapper
+
+  /**
+   * Callback to get a verification session that needs to be fulfilled for the authorization of
+   * of a credential issuance session. Once the verification session has been completed the user can
+   * retrieve an authorization code and access token and retrieve the credential(s).
+   *
+   * Required if presentation during issuance flow is used
+   */
+  getVerificationSessionForIssuanceSessionAuthorization?: OpenId4VciGetVerificationSessionForIssuanceSessionAuthorization
+
+  /**
+   * Custom the paths used for endpoints
+   */
+  endpoints?: {
+    /**
+     * @default /nonce
+     */
+    nonce?: string
+
+    /**
+     * @default /challenge
+     */
+    authorizationChallenge?: string
+
+    /**
+     * @default /offers
+     */
+    credentialOffer?: string
+
+    /**
+     * @default /credential
+     */
+    credential?: string
+
+    /**
+     * @default /token
+     */
+    accessToken?: string
+
+    /**
+     * @default /jwks
+     */
+    jwks: string
   }
 }
 
@@ -55,58 +120,98 @@ export class OpenId4VcIssuerModuleConfig {
   }
 
   /**
-   * Get the credential endpoint config, with default values set
+   * A function mapping a credential request to the credential to be issued.
    */
-  public get credentialEndpoint(): OpenId4VciCredentialEndpointConfig {
-    // Use user supplied options, or return defaults.
-    const userOptions = this.options.endpoints.credential
-
-    return {
-      ...userOptions,
-      endpointPath: userOptions.endpointPath ?? '/credential',
-    }
+  public get credentialRequestToCredentialMapper() {
+    return this.options.credentialRequestToCredentialMapper
   }
 
   /**
-   * Get the access token endpoint config, with default values set
+   * Callback to get a verification session that needs to be fulfilled for the authorization of
+   * of a credential issuance session. Once the verification session has been completed the user can
+   * retrieve an authorization code and access token and retrieve the credential(s).
+   *
+   * Required if presentation during issuance flow is used
    */
-  public get accessTokenEndpoint(): OpenId4VciAccessTokenEndpointConfig {
-    // Use user supplied options, or return defaults.
-    const userOptions = this.options.endpoints.accessToken ?? {}
-
-    return {
-      ...userOptions,
-      endpointPath: userOptions.endpointPath ?? '/token',
-      preAuthorizedCodeExpirationInSeconds:
-        userOptions.preAuthorizedCodeExpirationInSeconds ?? DEFAULT_PRE_AUTH_CODE_EXPIRES_IN,
-      tokenExpiresInSeconds: userOptions.tokenExpiresInSeconds ?? DEFAULT_TOKEN_EXPIRES_IN,
-    }
+  public get getVerificationSessionForIssuanceSessionAuthorization() {
+    return this.options.getVerificationSessionForIssuanceSessionAuthorization
   }
 
   /**
-   * Get the hosted credential offer endpoint config, with default values set
+   * The time after which a cNone will expire.
+   *
+   * @default 60 (1 minute)
    */
-  public get credentialOfferEndpoint(): OpenId4VciCredentialOfferEndpointConfig {
-    // Use user supplied options, or return defaults.
-    const userOptions = this.options.endpoints.credentialOffer ?? {}
-
-    return {
-      ...userOptions,
-      endpointPath: userOptions.endpointPath ?? '/offers',
-    }
+  public get cNonceExpiresInSeconds(): number {
+    return this.options.cNonceExpiresInSeconds ?? DEFAULT_C_NONCE_EXPIRES_IN
   }
 
   /**
-   * Get the nonce endpoint config, with default values set
+   * The time after which a pre-authorized_code will expire.
+   *
+   * @default 360 (5 minutes)
    */
-  public get nonceEndpoint(): OpenId4VciNonceEndpointConfig {
-    // Use user supplied options, or return defaults.
-    const userOptions = this.options.endpoints.nonce ?? {}
+  public get preAuthorizedCodeExpirationInSeconds(): number {
+    return this.options.preAuthorizedCodeExpirationInSeconds ?? DEFAULT_PRE_AUTH_CODE_EXPIRES_IN
+  }
 
-    return {
-      ...userOptions,
-      cNonceExpiresInSeconds: userOptions.cNonceExpiresInSeconds ?? DEFAULT_C_NONCE_EXPIRES_IN,
-      endpointPath: userOptions.endpointPath ?? '/nonce',
-    }
+  /**
+   * The time after which a cNonce will expire.
+   *
+   * @default 60 (1 minute)
+   */
+  public get authorizationCodeExpiresInSeconds(): number {
+    return this.options.authorizationCodeExpiresInSeconds ?? DEFAULT_AUTHORIZATION_CODE_EXPIRES_IN
+  }
+
+  /**
+   * The time after which an access token will expire.
+   *
+   * @default 360 (5 minutes)
+   */
+  public get accessTokenExpiresInSeconds(): number {
+    return this.options.accessTokenExpiresInSeconds ?? DEFAULT_TOKEN_EXPIRES_IN
+  }
+
+  /**
+   * @default /nonce
+   */
+  public get nonceEndpointPath(): string {
+    return this.options.endpoints?.nonce ?? '/nonce'
+  }
+
+  /**
+   * @default /challenge
+   */
+  public get authorizationChallengeEndpointPath(): string {
+    return this.options.endpoints?.authorizationChallenge ?? '/challenge'
+  }
+
+  /**
+   * @default /offers
+   */
+  public get credentialOfferEndpointPath(): string {
+    return this.options.endpoints?.credentialOffer ?? '/offers'
+  }
+
+  /**
+   * @default /credential
+   */
+  public get credentialEndpointPath(): string {
+    return this.options.endpoints?.credential ?? '/credential'
+  }
+
+  /**
+   * @default /token
+   */
+  public get accessTokenEndpointPath(): string {
+    return this.options.endpoints?.accessToken ?? '/token'
+  }
+
+  /**
+   * @default /jwks
+   */
+  public get jwksEndpointPath(): string {
+    return this.options.endpoints?.jwks ?? '/jwks'
   }
 }

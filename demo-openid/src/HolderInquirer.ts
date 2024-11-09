@@ -22,6 +22,7 @@ export const runHolder = async () => {
 
 enum PromptOptions {
   ResolveCredentialOffer = 'Resolve a credential offer.',
+  DynamicCredentialRequest = 'Dynamically request issuance of credential from issuer.',
   RequestCredential = 'Accept the credential offer.',
   ResolveProofRequest = 'Resolve a proof request.',
   AcceptPresentationRequest = 'Accept the presentation request.',
@@ -48,6 +49,7 @@ export class HolderInquirer extends BaseInquirer {
   private async getPromptChoice() {
     const promptOptions = [
       PromptOptions.ResolveCredentialOffer,
+      PromptOptions.DynamicCredentialRequest,
       PromptOptions.ResolveProofRequest,
       PromptOptions.AddTrustedCertificate,
     ]
@@ -64,6 +66,9 @@ export class HolderInquirer extends BaseInquirer {
     switch (choice) {
       case PromptOptions.ResolveCredentialOffer:
         await this.resolveCredentialOffer()
+        break
+      case PromptOptions.DynamicCredentialRequest:
+        await this.dynamicCredentialRequest()
         break
       case PromptOptions.RequestCredential:
         await this.requestCredential()
@@ -98,6 +103,31 @@ export class HolderInquirer extends BaseInquirer {
 
     console.log(greenText(`Received credential offer for the following credentials.`))
     console.log(greenText(Object.keys(resolvedCredentialOffer.offeredCredentialConfigurations).join('\n')))
+  }
+
+  public async dynamicCredentialRequest() {
+    const credentialOffer = await this.inquireInput('Enter issuer url: ')
+    const issuerMetadata = await this.holder.resolveIssuerMetadata(credentialOffer)
+    const configurationsWithScope = Object.entries(
+      issuerMetadata.credentialIssuer.credential_configurations_supported
+    ).filter(([, configuration]) => configuration.scope)
+
+    this.resolvedCredentialOffer = {
+      credentialOfferPayload: {
+        credential_configuration_ids: configurationsWithScope.map(([id]) => id),
+        credential_issuer: issuerMetadata.credentialIssuer.credential_issuer,
+        grants: {
+          authorization_code: {
+            authorization_server: issuerMetadata.authorizationServers.find((a) => a.authorization_endpoint)?.issuer,
+          },
+        },
+      },
+      metadata: issuerMetadata,
+      offeredCredentialConfigurations: Object.fromEntries(configurationsWithScope),
+    }
+
+    console.log(greenText(`We can request authorization for the following credentials.`))
+    console.log(greenText(configurationsWithScope.map(([id]) => id).join('\n')))
   }
 
   public async addTrustedCertificate() {

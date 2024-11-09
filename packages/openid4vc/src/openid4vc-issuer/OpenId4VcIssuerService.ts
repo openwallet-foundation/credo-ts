@@ -5,8 +5,13 @@ import type {
   OpenId4VciPreAuthorizedCodeFlowConfig,
   OpenId4VciSignW3cCredentials,
   OpenId4VciAuthorizationCodeFlowConfig,
+  OpenId4VciCredentialRequestAuthorization,
 } from './OpenId4VcIssuerServiceOptions'
-import type { OpenId4VcCredentialHolderBindingWithKey, OpenId4VciMetadata } from '../shared'
+import type {
+  OpenId4VcCredentialHolderBindingWithKey,
+  OpenId4VciCredentialConfigurationsSupportedWithFormats,
+  OpenId4VciMetadata,
+} from '../shared'
 import type { AgentContext, Query, QueryOptions } from '@credo-ts/core'
 
 import {
@@ -44,11 +49,13 @@ import {
   JwtPayload,
   Jwt,
   EventEmitter,
+  TypedArrayEncoder,
 } from '@credo-ts/core'
 
+import { OpenId4VcVerifierApi } from '../openid4vc-verifier'
 import { OpenId4VciCredentialFormatProfile } from '../shared'
 import { dynamicOid4vciClientAuthentication, getOid4vciCallbacks } from '../shared/callbacks'
-import { getOfferedCredentials } from '../shared/issuerMetadataUtils'
+import { getCredentialConfigurationsSupportedForScopes, getOfferedCredentials } from '../shared/issuerMetadataUtils'
 import { storeActorIdForContextCorrelationId } from '../shared/router'
 import { addSecondsToDate, dateToSeconds, getKeyFromDid, getProofTypeFromKey } from '../shared/utils'
 
@@ -110,12 +117,13 @@ export class OpenId4VcIssuerService {
 
     // We always use shortened URIs currently
     const hostedCredentialOfferUri = joinUriParts(issuerMetadata.credentialIssuer.credential_issuer, [
-      this.openId4VcIssuerConfig.credentialOfferEndpoint.endpointPath,
+      this.openId4VcIssuerConfig.credentialOfferEndpointPath,
       // It doesn't really matter what the url is, as long as it's unique
       utils.uuid(),
     ])
 
     const grants = await this.getGrantsFromConfig(agentContext, {
+      issuerMetadata,
       preAuthorizedCodeFlowConfig,
       authorizationCodeFlowConfig,
     })
@@ -137,9 +145,17 @@ export class OpenId4VcIssuerService {
       credentialOfferUri: hostedCredentialOfferUri,
       issuerId: issuer.issuerId,
       state: OpenId4VcIssuanceSessionState.OfferCreated,
-      authorization: {
-        issuerState: credentialOfferObject.grants?.authorization_code?.issuer_state,
-      },
+      authorization: credentialOfferObject.grants?.authorization_code?.issuer_state
+        ? {
+            issuerState: credentialOfferObject.grants?.authorization_code?.issuer_state,
+          }
+        : undefined,
+      presentation: authorizationCodeFlowConfig?.requirePresentationDuringIssuance
+        ? {
+            required: true,
+          }
+        : undefined,
+      // TOOD: how to mix pre-auth and auth? Need to do state checks
       preAuthorizedCode: credentialOfferObject.grants?.[preAuthorizedCodeGrantIdentifier]?.['pre-authorized_code'],
       userPin: preAuthorizedCodeFlowConfig?.txCode
         ? generateTxCode(agentContext, preAuthorizedCodeFlowConfig.txCode)
@@ -256,6 +272,7 @@ export class OpenId4VcIssuerService {
       issuanceSession,
       issuer,
       requestFormat: format,
+      authorization: options.authorization,
       credentialRequestToCredentialMapper: options.credentialRequestToCredentialMapper,
       proofSigners,
     })
@@ -290,6 +307,13 @@ export class OpenId4VcIssuerService {
     queryOptions?: QueryOptions
   ) {
     return this.openId4VcIssuanceSessionRepository.findByQuery(agentContext, query, queryOptions)
+  }
+
+  public async findSingleIssuancSessionByQuery(
+    agentContext: AgentContext,
+    query: Query<OpenId4VcIssuanceSessionRecord>
+  ) {
+    return this.openId4VcIssuanceSessionRepository.findSingleByQuery(agentContext, query)
   }
 
   public async getIssuanceSessionById(agentContext: AgentContext, issuanceSessionId: string) {
@@ -382,22 +406,20 @@ export class OpenId4VcIssuerService {
 
     const credentialIssuerMetadata = {
       credential_issuer: issuerUrl,
-      credential_endpoint: joinUriParts(issuerUrl, [config.credentialEndpoint.endpointPath]),
+      credential_endpoint: joinUriParts(issuerUrl, [config.credentialEndpointPath]),
       credential_configurations_supported: issuerRecord.credentialConfigurationsSupported ?? {},
       authorization_servers: authorizationServers,
       display: issuerRecord.display,
-      nonce_endpoint: joinUriParts(issuerUrl, [config.nonceEndpoint.endpointPath]),
+      nonce_endpoint: joinUriParts(issuerUrl, [config.nonceEndpointPath]),
     } satisfies CredentialIssuerMetadata
 
     const issuerAuthorizationServer = {
       issuer: issuerUrl,
-      token_endpoint: joinUriParts(issuerUrl, [config.accessTokenEndpoint.endpointPath]),
+      token_endpoint: joinUriParts(issuerUrl, [config.accessTokenEndpointPath]),
       'pre-authorized_grant_anonymous_access_supported': true,
 
-      jwks_uri: joinUriParts(issuerUrl, ['jwks.json']),
-
-      // TODO: presentation during issuance
-      // authorization_challenge_endpoint: ''
+      jwks_uri: joinUriParts(issuerUrl, [config.jwksEndpointPath]),
+      authorization_challenge_endpoint: joinUriParts(issuerUrl, [config.authorizationChallengeEndpointPath]),
 
       // TODO: PAR (maybe not needed as we only use this auth server for presentation during issuance)
       // pushed_authorization_request_endpoint: '',
@@ -417,7 +439,7 @@ export class OpenId4VcIssuerService {
     const issuerMetadata = await this.getIssuerMetadata(agentContext, issuer)
     const jwsService = agentContext.dependencyManager.resolve(JwsService)
 
-    const cNonceExpiresInSeconds = this.openId4VcIssuerConfig.nonceEndpoint.cNonceExpiresInSeconds
+    const cNonceExpiresInSeconds = this.openId4VcIssuerConfig.cNonceExpiresInSeconds
     const cNonceExpiresAt = addSecondsToDate(new Date(), cNonceExpiresInSeconds)
 
     const key = Key.fromFingerprint(issuer.accessTokenPublicKeyFingerprint)
@@ -526,7 +548,7 @@ export class OpenId4VcIssuerService {
     this.emitStateChangedEvent(agentContext, issuanceSession, previousState)
   }
 
-  private emitStateChangedEvent(
+  public emitStateChangedEvent(
     agentContext: AgentContext,
     issuanceSession: OpenId4VcIssuanceSessionRecord,
     previousState: OpenId4VcIssuanceSessionState | null
@@ -545,13 +567,14 @@ export class OpenId4VcIssuerService {
   private async getGrantsFromConfig(
     agentContext: AgentContext,
     config: {
+      issuerMetadata: OpenId4VciMetadata
       preAuthorizedCodeFlowConfig?: OpenId4VciPreAuthorizedCodeFlowConfig
       authorizationCodeFlowConfig?: OpenId4VciAuthorizationCodeFlowConfig
     }
   ) {
-    const { preAuthorizedCodeFlowConfig, authorizationCodeFlowConfig } = config
+    const { preAuthorizedCodeFlowConfig, authorizationCodeFlowConfig, issuerMetadata } = config
 
-    // TODO: export form @animo-id/oid4vci
+    // TOOD: export type
     const grants: Parameters<Oid4vciIssuer['createCredentialOffer']>[0]['grants'] = {}
 
     // Pre auth
@@ -567,9 +590,28 @@ export class OpenId4VcIssuerService {
 
     // Auth
     if (authorizationCodeFlowConfig) {
+      const { authorizationServerUrl, requirePresentationDuringIssuance } = authorizationCodeFlowConfig
+      if (
+        requirePresentationDuringIssuance &&
+        authorizationServerUrl &&
+        authorizationServerUrl !== issuerMetadata.credentialIssuer.credential_issuer
+      ) {
+        throw new CredoError(
+          `When 'requirePresentationDuringIssuance' is set, 'authorizationServerUrl' must be undefined or match the credential issuer identifier`
+        )
+      }
+
+      const authorization_server = requirePresentationDuringIssuance
+        ? issuerMetadata.credentialIssuer.credential_issuer
+        : authorizationCodeFlowConfig.authorizationServerUrl
+
       grants.authorization_code = {
-        issuer_state: authorizationCodeFlowConfig.issuerState ?? (await agentContext.wallet.generateNonce()),
-        authorization_server: authorizationCodeFlowConfig.authorizationServerUrl,
+        issuer_state:
+          // TODO: the issuer_state should not be guessable, so it's best if we generate it and now allow the user to provide it?
+          // but same is true for the pre-auth code
+          authorizationCodeFlowConfig.issuerState ??
+          TypedArrayEncoder.toBase64URL(agentContext.wallet.getRandomValues(32)),
+        authorization_server,
       }
     }
 
@@ -605,6 +647,93 @@ export class OpenId4VcIssuerService {
     return credentialHolderBindings
   }
 
+  private getCredentialConfigurationsForRequest(options: {
+    requestFormat: CredentialRequestFormatSpecific
+    issuerMetadata: OpenId4VciMetadata
+    issuanceSession: OpenId4VcIssuanceSessionRecord
+    authorization: OpenId4VciCredentialRequestAuthorization
+  }) {
+    const { requestFormat, issuanceSession, issuerMetadata, authorization } = options
+
+    // Check against all credential configurations
+    const configurationsMatchingRequest = getCredentialConfigurationsMatchingRequestFormat({
+      requestFormat,
+      credentialConfigurations: issuerMetadata.credentialIssuer.credential_configurations_supported,
+    })
+    if (Object.keys(configurationsMatchingRequest).length === 0) {
+      throw new Oauth2ServerErrorResponseError({
+        error: Oauth2ErrorCodes.InvalidCredentialRequest,
+        error_description: 'Credential request does not match any credential configuration',
+      })
+    }
+
+    // Limit to offered configurations
+    const configurationsMatchingRequestAndOffer = getOfferedCredentials(
+      issuanceSession.credentialOfferPayload.credential_configuration_ids,
+      configurationsMatchingRequest,
+      { ignoreNotFoundIds: true }
+    )
+    if (Object.keys(configurationsMatchingRequestAndOffer).length === 0) {
+      throw new Oauth2ServerErrorResponseError({
+        error: Oauth2ErrorCodes.InvalidCredentialRequest,
+        error_description: 'Credential request does not match any credential configurations from credential offer',
+      })
+    }
+
+    // Limit to not-issued configurations
+    const configurationsMatchingRequestAndOfferNotIssued = getOfferedCredentials(
+      issuanceSession.credentialOfferPayload.credential_configuration_ids.filter(
+        (id) => !issuanceSession.issuedCredentials.includes(id)
+      ),
+      configurationsMatchingRequestAndOffer,
+      { ignoreNotFoundIds: true }
+    )
+    if (Object.keys(configurationsMatchingRequestAndOfferNotIssued).length === 0) {
+      throw new Oauth2ServerErrorResponseError({
+        error: Oauth2ErrorCodes.InvalidCredentialRequest,
+        error_description:
+          'Credential request does not match any credential configurations from credential offer that have not been issued yet',
+      })
+    }
+
+    // For pre-auth we allow all ids from the offer
+    if (authorization.accessToken.payload['pre-authorized_code']) {
+      return {
+        credentialConfigurations:
+          configurationsMatchingRequestAndOfferNotIssued as OpenId4VciCredentialConfigurationsSupportedWithFormats,
+        credentialConfigurationIds: Object.keys(configurationsMatchingRequestAndOfferNotIssued) as [
+          string,
+          ...string[]
+        ],
+      }
+    }
+
+    // Limit to scopes from the token
+    // We only do this for auth flow, so it's not required to add a scope for every configuration.
+    const configurationsMatchingRequestOfferScope = getCredentialConfigurationsSupportedForScopes(
+      configurationsMatchingRequestAndOfferNotIssued,
+      authorization.accessToken.payload.scope?.split(' ') ?? []
+    )
+    if (Object.keys(configurationsMatchingRequestOfferScope).length === 0) {
+      throw new Oauth2ServerErrorResponseError(
+        {
+          error: Oauth2ErrorCodes.InsufficientScope,
+          error_description:
+            'Scope does not grant issuance for any requested credential configurations from credential offer',
+        },
+        {
+          status: 403,
+        }
+      )
+    }
+
+    return {
+      credentialConfigurations:
+        configurationsMatchingRequestOfferScope as OpenId4VciCredentialConfigurationsSupportedWithFormats,
+      credentialConfigurationIds: Object.keys(configurationsMatchingRequestOfferScope) as [string, ...string[]],
+    }
+  }
+
   private async getSignedCredentials(
     agentContext: AgentContext,
     options: OpenId4VciCreateCredentialResponseOptions & {
@@ -618,34 +747,19 @@ export class OpenId4VcIssuerService {
     format: `${OpenId4VciCredentialFormatProfile}`
     credentialConfigurationId: string
   }> {
-    const { issuanceSession, issuer, requestFormat } = options
+    const { issuanceSession, issuer, requestFormat, authorization } = options
     const issuerMetadata = await this.getIssuerMetadata(agentContext, issuer)
+    const verifierApi = agentContext.dependencyManager.resolve(OpenId4VcVerifierApi)
 
-    const notIssuedCredentialConfigurationIds =
-      options.issuanceSession.credentialOfferPayload.credential_configuration_ids.filter(
-        (id) => !issuanceSession.issuedCredentials.includes(id)
-      )
-
-    // TODO: this + next validation should be handeld by oid4vci lib
-    const offeredCredentialsMatchingRequest = getCredentialConfigurationsMatchingRequestFormat({
+    const { credentialConfigurations, credentialConfigurationIds } = this.getCredentialConfigurationsForRequest({
+      issuanceSession,
+      issuerMetadata,
       requestFormat,
-      credentialConfigurations: getOfferedCredentials(
-        notIssuedCredentialConfigurationIds,
-        issuerMetadata.credentialIssuer.credential_configurations_supported
-      ),
+      authorization,
     })
 
-    const matchingCredentialConfigurationIds = Object.keys(offeredCredentialsMatchingRequest) as [string, ...string[]]
-    if (matchingCredentialConfigurationIds.length === 0) {
-      throw new Oauth2ServerErrorResponseError({
-        error: Oauth2ErrorCodes.CredentialRequestDenied,
-        error_description: 'No offered credentials matching the credential request',
-      })
-    }
-
     const mapper =
-      options.credentialRequestToCredentialMapper ??
-      this.openId4VcIssuerConfig.credentialEndpoint.credentialRequestToCredentialMapper
+      options.credentialRequestToCredentialMapper ?? this.openId4VcIssuerConfig.credentialRequestToCredentialMapper
 
     const holderBindings = await this.getHolderBindingFromRequestProofs(agentContext, options.proofSigners)
     const signOptions = await mapper({
@@ -654,21 +768,35 @@ export class OpenId4VcIssuerService {
       holderBindings,
       credentialOffer: issuanceSession.credentialOfferPayload,
 
+      verification: issuanceSession.presentation?.openId4VcVerificationSessionId
+        ? {
+            session: await verifierApi.getVerificationSessionById(
+              issuanceSession.presentation.openId4VcVerificationSessionId
+            ),
+            response: await verifierApi.getVerifiedAuthorizationResponse(
+              issuanceSession.presentation.openId4VcVerificationSessionId
+            ),
+          }
+        : undefined,
+
       credentialRequest: options.credentialRequest,
       credentialRequestFormat: options.requestFormat,
 
       // Macthing credential configuration ids
-      credentialConfigurationsSupported: offeredCredentialsMatchingRequest,
-      credentialConfigurationIds: matchingCredentialConfigurationIds,
+      credentialConfigurationsSupported: credentialConfigurations,
+      credentialConfigurationIds,
+
+      // Authorization
+      authorization: options.authorization,
     })
 
-    const credentialHasAlreadyBeenIssued = issuanceSession.issuedCredentials.includes(
-      signOptions.credentialConfigurationId
-    )
-
-    if (credentialHasAlreadyBeenIssued) {
+    if (!credentialConfigurationIds.includes(signOptions.credentialConfigurationId)) {
       throw new CredoError(
-        `Credential request to credential mapper returned '${signOptions.credentials.length}' to be signed, while only '${holderBindings.length}' holder binding entries were provided. Make sure to return one credential for each holder binding entry`
+        `Credential request to credential mapper returned credential configuration id '${
+          signOptions.credentialConfigurationId
+        }' but is not part of provided input credential configuration ids. Allowed values are '${credentialConfigurationIds.join(
+          ', '
+        )}'.`
       )
     }
 

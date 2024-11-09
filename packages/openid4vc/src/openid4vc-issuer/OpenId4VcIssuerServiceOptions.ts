@@ -1,5 +1,10 @@
 import type { OpenId4VcIssuanceSessionRecord, OpenId4VcIssuerRecordProps } from './repository'
 import type {
+  OpenId4VcSiopCreateAuthorizationRequestReturn,
+  OpenId4VcSiopVerifiedAuthorizationResponse,
+  OpenId4VcVerificationSessionRecord,
+} from '../openid4vc-verifier'
+import type {
   OpenId4VcCredentialHolderBindingWithKey,
   OpenId4VciCredentialConfigurationsSupportedWithFormats,
   OpenId4VciCredentialOfferPayload,
@@ -9,6 +14,7 @@ import type {
   OpenId4VciTxCode,
 } from '../shared'
 import type { OpenId4VciAuthorizationServerConfig } from '../shared/models/OpenId4VciAuthorizationServerConfig'
+import type { AccessTokenProfileJwtPayload, TokenIntrospectionResponse } from '@animo-id/oauth2'
 import type {
   AgentContext,
   ClaimFormat,
@@ -18,6 +24,14 @@ import type {
   MdocSignOptions,
   KeyType,
 } from '@credo-ts/core'
+
+export interface OpenId4VciCredentialRequestAuthorization {
+  authorizationServer: string
+  accessToken: {
+    payload: AccessTokenProfileJwtPayload | TokenIntrospectionResponse
+    value: string
+  }
+}
 
 export interface OpenId4VciPreAuthorizedCodeFlowConfig {
   preAuthorizedCode?: string
@@ -33,15 +47,38 @@ export interface OpenId4VciPreAuthorizedCodeFlowConfig {
 }
 
 export interface OpenId4VciAuthorizationCodeFlowConfig {
-  // OPTIONAL. String value created by the Credential Issuer and opaque to the Wallet
-  // that is used to bind the subsequent Authorization Request with the Credential Issuer
-  // to a context set up during previous steps.
-  // If not provided, a value will be generated.
+  /**
+   * OPTIONAL. String value created by the Credential Issuer and opaque to the Wallet
+   * that is used to bind the subsequent Authorization Request with the Credential Issuer
+   * to a context set up during previous steps.
+   * If not provided, a value will be generated.
+   */
   issuerState?: string
 
-  // OPTIONAL string that the Wallet can use to identify the Authorization Server to use with this grant
-  // type when authorization_servers parameter in the Credential Issuer metadata has multiple entries.
+  /**
+   * OPTIONAL string that the Wallet can use to identify the Authorization Server to use with this grant
+   * type when authorization_servers parameter in the Credential Issuer metadata has multiple entries.
+   */
   authorizationServerUrl?: string
+
+  /**
+   * Whether presentation using OpenID4VP is required as part of the authorization flow. The presentation
+   * request will be created dynamically when the wallet initiates the authorization flow using the
+   * `getVerificationSessionForIssuanceSessionAuthorization` callback in the issuer module config.
+   *
+   * You can dynamically create the verification session based on the provided issuace session, or you
+   * can have a more generic implementation based on credential configurations and scopes that are being
+   * requested.
+   *
+   * In case this parameter is set to true, `authorizationServerUrl` MUST be undefined or match the
+   * `credential_issuer` value, as only Credo can handle this flow.
+   *
+   * In case this parameter is set to true, and `getVerificationSessionForIssuanceSessionAuthorization` is
+   * not configured on the issuer module an error will be thrown.
+   *
+   * @default false
+   */
+  requirePresentationDuringIssuance?: boolean
 }
 
 export interface OpenId4VciCreateCredentialOfferOptions {
@@ -75,6 +112,7 @@ export interface OpenId4VciCreateCredentialOfferOptions {
 
 export interface OpenId4VciCreateCredentialResponseOptions {
   credentialRequest: OpenId4VciCredentialRequest
+  authorization: OpenId4VciCredentialRequestAuthorization
 
   /**
    * You can optionally provide a credential request to credential mapper that will be
@@ -86,8 +124,47 @@ export interface OpenId4VciCreateCredentialResponseOptions {
   credentialRequestToCredentialMapper?: OpenId4VciCredentialRequestToCredentialMapper
 }
 
+/**
+ * Callback that is called when a verification session needs to be created to complete
+ * authorization of credential issuance.
+ *
+ *
+ */
+export type OpenId4VciGetVerificationSessionForIssuanceSessionAuthorization = (options: {
+  agentContext: AgentContext
+  issuanceSession: OpenId4VcIssuanceSessionRecord
+
+  /**
+   * The credential configurations for which authorization has been requested based on the **scope**
+   * values. It doesn't mean the wallet will request all credentials to be issued.
+   */
+  requestedCredentialConfigurations: OpenId4VciCredentialConfigurationsSupportedWithFormats
+
+  /**
+   * The scopes which were requested and are also present in the credential configurations supported
+   * that were offered. It will match with the scope values in the `requestedCredentialConfiguration`
+   * parameter
+   */
+  scopes: string[]
+}) => Promise<OpenId4VcSiopCreateAuthorizationRequestReturn>
+
 export type OpenId4VciCredentialRequestToCredentialMapper = (options: {
   agentContext: AgentContext
+
+  /**
+   * Authorization associated with the credential request
+   */
+  authorization: OpenId4VciCredentialRequestAuthorization
+
+  /**
+   * If an openid4vp verification was done as part of the authorization flow this parameter will be defined.
+   *
+   * The contents can be used to populate credential data
+   */
+  verification?: {
+    session: OpenId4VcVerificationSessionRecord
+    response: OpenId4VcSiopVerifiedAuthorizationResponse
+  }
 
   /**
    * The issuance session associated with the credential request. You can extract the

@@ -11,6 +11,8 @@ import type { OpenId4VcSiopAcceptAuthorizationRequestOptions } from './OpenId4vc
 
 import { injectable, AgentContext } from '@credo-ts/core'
 
+import { OpenId4VciMetadata } from '../shared'
+
 import { OpenId4VciHolderService } from './OpenId4VciHolderService'
 import { OpenId4VcSiopHolderService } from './OpenId4vcSiopHolderService'
 
@@ -53,6 +55,10 @@ export class OpenId4VcHolderApi {
    */
   public async acceptSiopAuthorizationRequest(options: OpenId4VcSiopAcceptAuthorizationRequestOptions) {
     return await this.openId4VcSiopHolderService.acceptAuthorizationRequest(this.agentContext, options)
+  }
+
+  public async resolveIssuerMetadata(credentialIssuer: string): Promise<OpenId4VciMetadata> {
+    return await this.openId4VciHolderService.resolveIssuerMetadata(this.agentContext, credentialIssuer)
   }
 
   /**

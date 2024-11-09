@@ -20,8 +20,9 @@ import {
   configureIssuerMetadataEndpoint,
   configureOAuthAuthorizationServerMetadataEndpoint,
   configureJwksEndpoint,
+  configureNonceEndpoint,
+  configureAuthorizationChallengeEndpoint,
 } from './router'
-import { configureNonceEndpoint } from './router/nonceEndpoint'
 
 /**
  * @public
@@ -126,12 +127,13 @@ export class OpenId4VcIssuerModule implements Module {
 
     // Configure endpoints
     configureIssuerMetadataEndpoint(endpointRouter)
-    configureJwksEndpoint(endpointRouter)
-    configureNonceEndpoint(endpointRouter, this.config.nonceEndpoint)
+    configureJwksEndpoint(endpointRouter, this.config)
+    configureNonceEndpoint(endpointRouter, this.config)
     configureOAuthAuthorizationServerMetadataEndpoint(endpointRouter)
-    configureCredentialOfferEndpoint(endpointRouter, this.config.credentialOfferEndpoint)
-    configureAccessTokenEndpoint(endpointRouter, this.config.accessTokenEndpoint)
-    configureCredentialEndpoint(endpointRouter, this.config.credentialEndpoint)
+    configureCredentialOfferEndpoint(endpointRouter, this.config)
+    configureAccessTokenEndpoint(endpointRouter, this.config)
+    configureAuthorizationChallengeEndpoint(endpointRouter, this.config)
+    configureCredentialEndpoint(endpointRouter, this.config)
 
     // First one will be called for all requests (when next is called)
     contextRouter.use(async (req: OpenId4VcIssuanceRequest, _res: unknown, next) => {

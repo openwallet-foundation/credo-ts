@@ -9,11 +9,46 @@ import { OpenId4VcIssuanceSessionState } from '../OpenId4VcIssuanceSessionState'
 
 export type OpenId4VcIssuanceSessionRecordTags = RecordTags<OpenId4VcIssuanceSessionRecord>
 
+export interface OpenId4VcIssuanceSessionAuthorization {
+  code?: string
+
+  /**
+   * @todo: I saw in google's library that for codes they encrypt an id with expiration time.
+   * You now the code was created by you because you can decrypt it, and you don't have to store
+   * additional metadata on your server. It's similar to the signed / encrypted nonce
+   */
+  codeExpiresAt?: Date
+
+  /**
+   * String value created by the Credential Issuer and opaque to the Wallet that
+   * is used to bind the subsequent Authorization Request with the Credential Issuer to a context set up during previous steps.
+   */
+  issuerState?: string
+}
+
+export interface OpenId4VcIssuanceSessionPresentation {
+  /**
+   * Whether presentation during issuance is required.
+   */
+  required: true
+
+  /**
+   * Auth session for the presentation during issuance flow
+   * @todo can't we use some other param for this, or maybe a JWT so it's stateless?
+   */
+  authSession?: string
+
+  /**
+   * The id of the `OpenId4VcVerificationSessionRecord` record this issuance session is linked to
+   */
+  openId4VcVerificationSessionId?: string
+}
+
 export type DefaultOpenId4VcIssuanceSessionRecordTags = {
   issuerId: string
   cNonce?: string
   state: OpenId4VcIssuanceSessionState
-  credentialOfferUri: string
+  credentialOfferUri?: string
 
   // pre-auth flow
   preAuthorizedCode?: string
@@ -31,17 +66,6 @@ export interface OpenId4VcIssuanceSessionRecordProps {
   state: OpenId4VcIssuanceSessionState
   issuerId: string
 
-  /**
-   * @deprecated we now use a separate nonce store
-   * as nonces are not session bound anymore
-   */
-  cNonce?: string
-  /**
-   * @deprecated we now use a separate nonce store
-   * as nonces are not session bound anymore
-   */
-  cNonceExpiresAt?: Date
-
   dpopRequired?: boolean
 
   /**
@@ -53,22 +77,25 @@ export interface OpenId4VcIssuanceSessionRecordProps {
   preAuthorizedCode?: string
   userPin?: string
 
-  // Auth flow
+  // Auth flow (move to authorization?)
   pkce?: {
     codeChallengeMethod: PkceCodeChallengeMethod
     codeChallenge: string
   }
-  authorization?: {
-    code?: string
-    /**
-     * String value created by the Credential Issuer and opaque to the Wallet that
-     * is used to bind the subsequent Authorization Request with the Credential Issuer to a context set up during previous steps.
-     */
-    issuerState?: string
-  }
 
-  credentialOfferUri: string
-  // FIXME: handle draft 11 structure (although they will have expired prob)
+  /**
+   * When authorization code flow is used, this links the authorization
+   */
+  authorization?: OpenId4VcIssuanceSessionAuthorization
+
+  /**
+   * When presentation during issuance is required this should link the
+   * `OpenId4VcVerificationSessionRecord` and state
+   */
+  presentation?: OpenId4VcIssuanceSessionPresentation
+
+  credentialOfferUri?: string
+
   credentialOfferPayload: OpenId4VciCredentialOfferPayload
 
   issuanceMetadata?: Record<string, unknown>
@@ -131,21 +158,12 @@ export class OpenId4VcIssuanceSessionRecord extends BaseRecord<DefaultOpenId4VcI
   /**
    * Authorization code flow specific metadata values
    */
-  public authorization?: {
-    code?: string
-    /**
-     * @todo: I saw in google's library that for codes they encrypt an id with expiration time.
-     * You now the code was created by you because you can decrypt it, and you don't have to store
-     * additional metadata on your server. It's similar to the signed / encrypted nonce
-     */
-    codeExpiresAt?: Date
+  public authorization?: OpenId4VcIssuanceSessionAuthorization
 
-    /**
-     * String value created by the Credential Issuer and opaque to the Wallet that
-     * is used to bind the subsequent Authorization Request with the Credential Issuer to a context set up during previous steps.
-     */
-    issuerState?: string
-  }
+  /**
+   * Presentation during issuance specific metadata values
+   */
+  public presentation?: OpenId4VcIssuanceSessionPresentation
 
   /**
    * User-defined metadata that will be provided to the credential request to credential mapper
@@ -163,7 +181,7 @@ export class OpenId4VcIssuanceSessionRecord extends BaseRecord<DefaultOpenId4VcI
    * URI of the credential offer. This is the url that cn can be used to retrieve
    * the credential offer
    */
-  public credentialOfferUri!: string
+  public credentialOfferUri?: string
 
   /**
    * Optional error message of the error that occurred during the issuance session. Will be set when state is {@link OpenId4VcIssuanceSessionState.Error}

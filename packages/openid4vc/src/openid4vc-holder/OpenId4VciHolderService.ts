@@ -12,7 +12,11 @@ import type {
   OpenId4VciSupportedCredentialFormats,
   OpenId4VciTokenRequestOptions,
 } from './OpenId4VciHolderServiceOptions'
-import type { OpenId4VciCredentialConfigurationSupported, OpenId4VciCredentialIssuerMetadata } from '../shared'
+import type {
+  OpenId4VciCredentialConfigurationSupported,
+  OpenId4VciCredentialIssuerMetadata,
+  OpenId4VciMetadata,
+} from '../shared'
 import type { AgentContext, JwaSignatureAlgorithm, KeyType } from '@credo-ts/core'
 
 import {
@@ -75,6 +79,18 @@ export class OpenId4VciHolderService {
     this.logger = logger
   }
 
+  public async resolveIssuerMetadata(
+    agentContext: AgentContext,
+    credentialIssuer: string
+  ): Promise<OpenId4VciMetadata> {
+    const client = this.getClient(agentContext)
+
+    const metadata = await client.resolveIssuerMetadata(credentialIssuer)
+    this.logger.debug('fetched credential issuer metadata', { metadata })
+
+    return metadata
+  }
+
   public async resolveCredentialOffer(
     agentContext: AgentContext,
     credentialOffer: string
@@ -130,10 +146,6 @@ export class OpenId4VciHolderService {
       codeVerifier: authorizationResult.pkce?.codeVerifier,
       authorizationRequestUrl: authorizationResult.authorizationRequestUrl,
     }
-  }
-
-  public async resolveIssuerMetadata(agentContext: AgentContext, { credentialIssuer }: { credentialIssuer: string }) {
-    return this.getClient(agentContext).resolveIssuerMetadata(credentialIssuer)
   }
 
   public async sendNotification(

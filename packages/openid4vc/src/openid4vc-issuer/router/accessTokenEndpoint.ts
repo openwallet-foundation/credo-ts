@@ -1,4 +1,5 @@
 import type { OpenId4VcIssuanceRequest } from './requestContext'
+import type { OpenId4VcIssuerModuleConfig } from '../OpenId4VcIssuerModuleConfig'
 import type { HttpMethod, VerifyAccessTokenRequestReturn } from '@animo-id/oauth2'
 import type { NextFunction, Response, Router } from 'express'
 
@@ -22,34 +23,11 @@ import { OpenId4VcIssuanceSessionState } from '../OpenId4VcIssuanceSessionState'
 import { OpenId4VcIssuerService } from '../OpenId4VcIssuerService'
 import { OpenId4VcIssuanceSessionRepository } from '../repository'
 
-export interface OpenId4VciAccessTokenEndpointConfig {
-  /**
-   * The path at which the token endpoint should be made available. Note that it will be
-   * hosted at a subpath to take into account multiple tenants and issuers.
-   *
-   * @default /token
-   */
-  endpointPath: string
-
-  /**
-   * The maximum amount of time in seconds that the pre-authorized code is valid.
-   * @default 360 (5 minutes)
-   */
-  preAuthorizedCodeExpirationInSeconds: number
-
-  /**
-   * The time after which the token will expire.
-   *
-   * @default 360 (5 minutes)
-   */
-  tokenExpiresInSeconds: number
+export function configureAccessTokenEndpoint(router: Router, config: OpenId4VcIssuerModuleConfig) {
+  router.post(config.accessTokenEndpointPath, handleTokenRequest(config))
 }
 
-export function configureAccessTokenEndpoint(router: Router, config: OpenId4VciAccessTokenEndpointConfig) {
-  router.post(config.endpointPath, handleTokenRequest(config))
-}
-
-export function handleTokenRequest(config: OpenId4VciAccessTokenEndpointConfig) {
+export function handleTokenRequest(config: OpenId4VcIssuerModuleConfig) {
   return async (request: OpenId4VcIssuanceRequest, response: Response, next: NextFunction) => {
     response.set({ 'Cache-Control': 'no-store', Pragma: 'no-cache' })
     const requestContext = getRequestContext(request)
@@ -61,7 +39,9 @@ export function handleTokenRequest(config: OpenId4VciAccessTokenEndpointConfig) 
     const accessTokenSigningKey = Key.fromFingerprint(issuer.accessTokenPublicKeyFingerprint)
     const oauth2AuthorizationServer = openId4VcIssuerService.getOauth2AuthorizationServer(agentContext)
 
-    const fullRequestUrl = joinUriParts(issuerMetadata.credentialIssuer.credential_issuer, [config.endpointPath])
+    const fullRequestUrl = joinUriParts(issuerMetadata.credentialIssuer.credential_issuer, [
+      config.accessTokenEndpointPath,
+    ])
     const requestLike = {
       headers: new Headers(request.headers as Record<string, string>),
       method: request.method as HttpMethod,
@@ -78,16 +58,15 @@ export function handleTokenRequest(config: OpenId4VciAccessTokenEndpointConfig) 
       preAuthorizedCode: grant.grantType === preAuthorizedCodeGrantIdentifier ? grant.preAuthorizedCode : undefined,
       authorizationCode: grant.grantType === authorizationCodeGrantIdentifier ? grant.code : undefined,
     })
-    if (!issuanceSession) {
-      return sendOauth2ErrorResponse(
-        response,
-        next,
-        agentContext.config.logger,
-        new Oauth2ServerErrorResponseError({
-          error: Oauth2ErrorCodes.InvalidGrant,
-          error_description: 'Invalid authorization code',
-        })
-      )
+    const allowedStates =
+      grant.grantType === preAuthorizedCodeGrantIdentifier
+        ? [OpenId4VcIssuanceSessionState.OfferCreated, OpenId4VcIssuanceSessionState.OfferUriRetrieved]
+        : [OpenId4VcIssuanceSessionState.AuthorizationGranted]
+    if (!issuanceSession || !allowedStates.includes(issuanceSession.state)) {
+      throw new Oauth2ServerErrorResponseError({
+        error: Oauth2ErrorCodes.InvalidGrant,
+        error_description: 'Invalid authorization code',
+      })
     }
 
     let verificationResult: VerifyAccessTokenRequestReturn
@@ -176,7 +155,7 @@ export function handleTokenRequest(config: OpenId4VciAccessTokenEndpointConfig) 
       const accessTokenResponse = await oauth2AuthorizationServer.createAccessTokenResponse({
         audience: issuerMetadata.credentialIssuer.credential_issuer,
         authorizationServer: issuerMetadata.credentialIssuer.credential_issuer,
-        expiresInSeconds: config.tokenExpiresInSeconds,
+        expiresInSeconds: config.accessTokenExpiresInSeconds,
         // TODO: we need to include kid and also host the jwks?
         // Or we should somehow bypass the jwks_uri resolving if we verify our own token (only we will verify the token)
         signer: {
@@ -187,6 +166,12 @@ export function handleTokenRequest(config: OpenId4VciAccessTokenEndpointConfig) 
         dpopJwk: verificationResult.dpopJwk,
         scope: scopes?.join(','),
         clientId: issuanceSession.clientId,
+
+        additionalAccessTokenPayload: {
+          'pre-authorized_code':
+            grant.grantType === preAuthorizedCodeGrantIdentifier ? grant.preAuthorizedCode : undefined,
+          issuer_state: issuanceSession.authorization?.issuerState,
+        },
         subject: grant.grantType === preAuthorizedCodeGrantIdentifier ? grant.preAuthorizedCode : grant.code,
 
         // NOTE: these have been removed in newer drafts. Keeping them in for now

@@ -206,7 +206,6 @@ export class OpenId4VcSiopVerifierService {
     }
 
     const verificationSession = await verificationSessionCreatedPromise
-
     return {
       authorizationRequest: authorizationRequestUri,
       verificationSession,

@@ -52,6 +52,10 @@ export class Holder extends BaseAgent<ReturnType<typeof getOpenIdHolderModules>>
     return await this.agent.modules.openId4VcHolder.resolveCredentialOffer(credentialOffer)
   }
 
+  public async resolveIssuerMetadata(credentialIssuer: string) {
+    return await this.agent.modules.openId4VcHolder.resolveIssuerMetadata(credentialIssuer)
+  }
+
   public async initiateAuthorization(
     resolvedCredentialOffer: OpenId4VciResolvedCredentialOffer,
     credentialsToRequest: string[]
@@ -119,6 +123,7 @@ export class Holder extends BaseAgent<ReturnType<typeof getOpenIdHolderModules>>
 
     const credentialResponse = await this.agent.modules.openId4VcHolder.requestCredentials({
       resolvedCredentialOffer,
+      clientId: options.clientId,
       credentialConfigurationIds: options.credentialsToRequest,
       credentialBindingResolver: async ({ keyTypes, supportedDidMethods, supportsAllDidMethods }) => {
         const key = await this.agent.wallet.createKey({
