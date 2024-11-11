@@ -1,6 +1,7 @@
 import type { DependencyManager, FeatureRegistry } from '@credo-ts/core'
+import type { FeatureRegistry } from '@credo-ts/didcomm'
 
-import { Protocol } from '@credo-ts/core'
+import { Protocol } from '@credo-ts/didcomm'
 
 import {
   QuestionAnswerModule,
@@ -9,20 +10,23 @@ import {
   QuestionAnswerService,
 } from '@credo-ts/question-answer'
 
-const dependencyManager = {
-  registerInstance: jest.fn(),
-  registerSingleton: jest.fn(),
-  registerContextScoped: jest.fn(),
-} as unknown as DependencyManager
-
 const featureRegistry = {
   register: jest.fn(),
 } as unknown as FeatureRegistry
 
+const dependencyManager = {
+  registerInstance: jest.fn(),
+  registerSingleton: jest.fn(),
+  registerContextScoped: jest.fn(),
+  resolve: () => {
+    return featureRegistry
+  },
+} as unknown as DependencyManager
+
 describe('QuestionAnswerModule', () => {
   test('registers dependencies on the dependency manager', () => {
     const questionAnswerModule = new QuestionAnswerModule()
-    questionAnswerModule.register(dependencyManager, featureRegistry)
+    questionAnswerModule.register(dependencyManager)
 
     expect(dependencyManager.registerSingleton).toHaveBeenCalledTimes(2)
     expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(QuestionAnswerService)

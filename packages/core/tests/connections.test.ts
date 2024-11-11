@@ -13,8 +13,8 @@ import {
   KeylistUpdateAction,
 } from '../src'
 import { Agent } from '../src/agent/Agent'
+import { OutOfBandState } from '../../didcomm/src/modules/oob/domain/OutOfBandState'
 import { didKeyToVerkey } from '../src/modules/dids/helpers'
-import { OutOfBandState } from '../src/modules/oob/domain/OutOfBandState'
 
 import { getInMemoryAgentOptions, waitForTrustPingResponseReceivedEvent } from './helpers'
 import { setupSubjectTransports } from './transport'
@@ -40,6 +40,7 @@ describe('connections', () => {
       {
         endpoints: ['rxjs:mediator'],
       },
+      {},
       {
         mediator: new MediatorModule({
           autoAcceptMediationRequests: true,

@@ -1,7 +1,7 @@
 import type { AskarWalletPostgresStorageConfig } from '../src/wallet'
-import type { Agent, InitConfig } from '@credo-ts/core'
+import type { Agent, DidCommModuleConfig, InitConfig } from '@credo-ts/core'
 
-import { ConnectionsModule, HandshakeProtocol, LogLevel, utils } from '@credo-ts/core'
+import { DidCommModule, ConnectionsModule, HandshakeProtocol, LogLevel, utils } from '@credo-ts/core'
 import { ariesAskar } from '@hyperledger/aries-askar-nodejs'
 import { registerAriesAskar } from '@hyperledger/aries-askar-shared'
 import path from 'path'
@@ -68,7 +68,12 @@ export function getAskarPostgresAgentOptions(
   } as const
 }
 
-export function getAskarSqliteAgentOptions(name: string, extraConfig: Partial<InitConfig> = {}, inMemory?: boolean) {
+export function getAskarSqliteAgentOptions(
+  name: string,
+  didcommConfig: Partial<DidCommModuleConfig> = {},
+  extraConfig: Partial<InitConfig> = {},
+  inMemory?: boolean
+) {
   const random = utils.uuid().slice(0, 4)
   const config: InitConfig = {
     label: `SQLiteAgent: ${name} - ${random}`,
@@ -86,6 +91,7 @@ export function getAskarSqliteAgentOptions(name: string, extraConfig: Partial<In
     dependencies: agentDependencies,
     modules: {
       askar: new AskarModule(askarModuleConfig),
+      didcomm: new DidCommModule(didcommConfig),
       connections: new ConnectionsModule({
         autoAcceptConnections: true,
       }),

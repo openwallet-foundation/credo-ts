@@ -14,6 +14,7 @@ const aliceInMemoryAgentOptions = getAskarSqliteAgentOptions(
   {
     endpoints: ['rxjs:alice'],
   },
+  {},
   true
 )
 const bobInMemoryAgentOptions = getAskarSqliteAgentOptions(
@@ -21,6 +22,7 @@ const bobInMemoryAgentOptions = getAskarSqliteAgentOptions(
   {
     endpoints: ['rxjs:bob'],
   },
+  {},
   true
 )
 
@@ -50,13 +52,13 @@ describe('Askar In Memory agents', () => {
     }
 
     aliceAgent = new Agent(aliceInMemoryAgentOptions)
-    aliceAgent.registerInboundTransport(new SubjectInboundTransport(aliceMessages))
-    aliceAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
+    aliceAgent.didcomm.registerInboundTransport(new SubjectInboundTransport(aliceMessages))
+    aliceAgent.didcomm.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     await aliceAgent.initialize()
 
     bobAgent = new Agent(bobInMemoryAgentOptions)
-    bobAgent.registerInboundTransport(new SubjectInboundTransport(bobMessages))
-    bobAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
+    bobAgent.didcomm.registerInboundTransport(new SubjectInboundTransport(bobMessages))
+    bobAgent.didcomm.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     await bobAgent.initialize()
 
     await e2eTest(aliceAgent, bobAgent)

@@ -1,26 +1,28 @@
-import type { DependencyManager, FeatureRegistry } from '@credo-ts/core'
+import type { DependencyManager } from '@credo-ts/core'
+import type { FeatureRegistry } from '@credo-ts/didcomm'
 
-import { Protocol } from '@credo-ts/core'
+import { Protocol } from '@credo-ts/didcomm'
 
 import { ActionMenuModule } from '../ActionMenuModule'
 import { ActionMenuRole } from '../ActionMenuRole'
 import { ActionMenuRepository } from '../repository'
 import { ActionMenuService } from '../services'
 
-const dependencyManager = {
-  registerInstance: jest.fn(),
-  registerSingleton: jest.fn(),
-  registerContextScoped: jest.fn(),
-} as unknown as DependencyManager
-
 const featureRegistry = {
   register: jest.fn(),
 } as unknown as FeatureRegistry
 
+const dependencyManager = {
+  registerInstance: jest.fn(),
+  registerSingleton: jest.fn(),
+  registerContextScoped: jest.fn(),
+  resolve: () => featureRegistry,
+} as unknown as DependencyManager
+
 describe('ActionMenuModule', () => {
   test('registers dependencies on the dependency manager', () => {
     const actionMenuModule = new ActionMenuModule()
-    actionMenuModule.register(dependencyManager, featureRegistry)
+    actionMenuModule.register(dependencyManager)
 
     expect(dependencyManager.registerSingleton).toHaveBeenCalledTimes(2)
     expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(ActionMenuService)

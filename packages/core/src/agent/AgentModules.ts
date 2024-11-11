@@ -2,19 +2,23 @@ import type { Module, DependencyManager, ApiModule } from '../plugins'
 import type { IsAny } from '../types'
 import type { Constructor } from '../utils/mixins'
 
-import { BasicMessagesModule } from '../modules/basic-messages'
 import { CacheModule } from '../modules/cache'
-import { ConnectionsModule } from '../modules/connections'
-import { CredentialsModule } from '../modules/credentials'
+import {
+  BasicMessagesModule,
+  ConnectionsModule,
+  CredentialsModule,
+  DidCommModule,
+  DiscoverFeaturesModule,
+  MediationRecipientModule,
+  MediatorModule,
+  MessagePickupModule,
+  OutOfBandModule,
+  ProofsModule,
+} from '../../../didcomm/src'
 import { DidsModule } from '../modules/dids'
 import { DifPresentationExchangeModule } from '../modules/dif-presentation-exchange'
-import { DiscoverFeaturesModule } from '../modules/discover-features'
 import { GenericRecordsModule } from '../modules/generic-records'
 import { MdocModule } from '../modules/mdoc/MdocModule'
-import { MessagePickupModule } from '../modules/message-pickup'
-import { OutOfBandModule } from '../modules/oob'
-import { ProofsModule } from '../modules/proofs'
-import { MediationRecipientModule, MediatorModule } from '../modules/routing'
 import { SdJwtVcModule } from '../modules/sd-jwt-vc'
 import { W3cCredentialsModule } from '../modules/vc'
 import { X509Module } from '../modules/x509'
@@ -131,6 +135,7 @@ function getDefaultAgentModules() {
     genericRecords: () => new GenericRecordsModule(),
     discovery: () => new DiscoverFeaturesModule(),
     dids: () => new DidsModule(),
+    didcomm: () => new DidCommModule(),
     wallet: () => new WalletModule(),
     oob: () => new OutOfBandModule(),
     w3cCredentials: () => new W3cCredentialsModule(),

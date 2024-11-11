@@ -1,23 +1,25 @@
 import type { EventReplaySubject } from './events'
-import type { AutoAcceptCredential, AutoAcceptProof, ConnectionRecord } from '../src'
+import type { AutoAcceptCredential, AutoAcceptProof, ConnectionRecord } from '../../didcomm/src'
 
 import { InMemoryWalletModule } from '../../../tests/InMemoryWalletModule'
 import { askarModule } from '../../askar/tests/helpers'
 import { BbsModule } from '../../bbs-signatures/src/BbsModule'
 import {
+  CacheModule,
+  InMemoryLruCache,
+  Agent,
+  W3cCredentialsModule,
+} from '../src'
+import {
   DifPresentationExchangeProofFormatService,
   V2ProofProtocol,
-  CacheModule,
   CredentialEventTypes,
-  InMemoryLruCache,
   ProofEventTypes,
-  Agent,
   ProofsModule,
   CredentialsModule,
   JsonLdCredentialFormatService,
   V2CredentialProtocol,
-  W3cCredentialsModule,
-} from '../src'
+} from '../../didcomm/src'
 import { customDocumentLoader } from '../src/modules/vc/data-integrity/__tests__/documentLoader'
 
 import { setupEventReplaySubjects } from './events'
@@ -116,6 +118,7 @@ export async function setupJsonLdTests<
       {
         endpoints: ['rxjs:issuer'],
       },
+      {},
       modules
     )
   )
@@ -126,6 +129,7 @@ export async function setupJsonLdTests<
       {
         endpoints: ['rxjs:holder'],
       },
+      {},
       modules
     )
   )
@@ -137,6 +141,7 @@ export async function setupJsonLdTests<
           {
             endpoints: ['rxjs:verifier'],
           },
+          {},
           modules
         )
       )

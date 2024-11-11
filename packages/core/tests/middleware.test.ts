@@ -46,13 +46,13 @@ describe('Message Handler Middleware E2E', () => {
     }
 
     faberAgent = new Agent(faberConfig)
-    faberAgent.registerInboundTransport(new SubjectInboundTransport(faberMessages))
-    faberAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
+    faberAgent.didcomm.registerInboundTransport(new SubjectInboundTransport(faberMessages))
+    faberAgent.didcomm.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     await faberAgent.initialize()
 
     aliceAgent = new Agent(aliceConfig)
-    aliceAgent.registerInboundTransport(new SubjectInboundTransport(aliceMessages))
-    aliceAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
+    aliceAgent.didcomm.registerInboundTransport(new SubjectInboundTransport(aliceMessages))
+    aliceAgent.didcomm.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     await aliceAgent.initialize()
     ;[aliceConnection, faberConnection] = await makeConnection(aliceAgent, faberAgent)
   })
@@ -66,7 +66,7 @@ describe('Message Handler Middleware E2E', () => {
 
   test('Correctly calls the fallback message handler if no message handler is defined', async () => {
     // Fallback message handler
-    aliceAgent.dependencyManager.setFallbackMessageHandler((messageContext) => {
+    aliceAgent.didcomm.setFallbackMessageHandler((messageContext) => {
       return getOutboundMessageContext(messageContext.agentContext, {
         connectionRecord: messageContext.connection,
         message: new BasicMessage({
@@ -98,17 +98,15 @@ describe('Message Handler Middleware E2E', () => {
   })
 
   test('Correctly calls the registered message handler middleware', async () => {
-    aliceAgent.dependencyManager.registerMessageHandlerMiddleware(
-      async (inboundMessageContext: InboundMessageContext, next) => {
-        await next()
+    aliceAgent.didcomm.registerMessageHandlerMiddleware(async (inboundMessageContext: InboundMessageContext, next) => {
+      await next()
 
-        if (inboundMessageContext.responseMessage) {
-          inboundMessageContext.responseMessage.message.setTiming({
-            outTime: new Date('2021-01-01'),
-          })
-        }
+      if (inboundMessageContext.responseMessage) {
+        inboundMessageContext.responseMessage.message.setTiming({
+          outTime: new Date('2021-01-01'),
+        })
       }
-    )
+    })
 
     await faberAgent.connections.sendPing(faberConnection.id, {})
     const receiveMessage = await waitForAgentMessageProcessedEvent(faberAgent, {

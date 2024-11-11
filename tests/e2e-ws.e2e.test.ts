@@ -21,6 +21,7 @@ import { WsInboundTransport } from '@credo-ts/node'
 const recipientAgentOptions = getAgentOptions(
   'E2E WS Recipient ',
   {},
+  {},
   {
     ...getAnonCredsModules({
       autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
@@ -38,6 +39,7 @@ const mediatorAgentOptions = getAgentOptions(
   {
     endpoints: [`ws://localhost:${mediatorPort}`],
   },
+  {},
   {
     ...getAnonCredsModules({
       autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
@@ -53,6 +55,7 @@ const senderAgentOptions = getAgentOptions(
   {
     endpoints: [`ws://localhost:${senderPort}`],
   },
+  {},
   {
     ...getAnonCredsModules({
       autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
@@ -87,17 +90,17 @@ describe('E2E WS tests', () => {
 
   test('Full WS flow (connect, request mediation, issue, verify)', async () => {
     // Recipient Setup
-    recipientAgent.registerOutboundTransport(new WsOutboundTransport())
+    recipientAgent.didcomm.registerOutboundTransport(new WsOutboundTransport())
     await recipientAgent.initialize()
 
     // Mediator Setup
-    mediatorAgent.registerInboundTransport(new WsInboundTransport({ port: mediatorPort }))
-    mediatorAgent.registerOutboundTransport(new WsOutboundTransport())
+    mediatorAgent.didcomm.registerInboundTransport(new WsInboundTransport({ port: mediatorPort }))
+    mediatorAgent.didcomm.registerOutboundTransport(new WsOutboundTransport())
     await mediatorAgent.initialize()
 
     // Sender Setup
-    senderAgent.registerInboundTransport(new WsInboundTransport({ port: senderPort }))
-    senderAgent.registerOutboundTransport(new WsOutboundTransport())
+    senderAgent.didcomm.registerInboundTransport(new WsInboundTransport({ port: senderPort }))
+    senderAgent.didcomm.registerOutboundTransport(new WsOutboundTransport())
     await senderAgent.initialize()
 
     await e2eTest({

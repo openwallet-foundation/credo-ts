@@ -1,24 +1,29 @@
 import type { AgentConfig } from './AgentConfig'
 import type { AgentApi, CustomOrDefaultApi, EmptyModuleMap, ModulesMap, WithoutDefaultModules } from './AgentModules'
-import type { TransportSession } from './TransportService'
 import type { Logger } from '../logger'
-import type { CredentialsModule } from '../modules/credentials'
-import type { MessagePickupModule } from '../modules/message-pickup'
-import type { ProofsModule } from '../modules/proofs'
+import type { CredentialsModule, MessagePickupModule, ProofsModule, TransportSession } from '../../../didcomm/src'
 import type { DependencyManager } from '../plugins'
 
 import { CredoError } from '../error'
-import { BasicMessagesApi } from '../modules/basic-messages'
-import { ConnectionsApi } from '../modules/connections'
-import { CredentialsApi } from '../modules/credentials'
+import {
+  BasicMessagesApi,
+  ConnectionsApi,
+  CredentialsApi,
+  DidCommApi,
+  DiscoverFeaturesApi,
+  FeatureRegistry,
+  MediatorApi,
+  MediationRecipientApi,
+  OutOfBandApi,
+  MessageReceiver,
+  MessagePickupApi,
+  MessageSender,
+  ProofsApi,
+  TransportService,
+} from '../../../didcomm/src'
 import { DidsApi } from '../modules/dids'
-import { DiscoverFeaturesApi } from '../modules/discover-features'
 import { GenericRecordsApi } from '../modules/generic-records'
 import { MdocApi } from '../modules/mdoc'
-import { MessagePickupApi } from '../modules/message-pickup/MessagePickupApi'
-import { OutOfBandApi } from '../modules/oob'
-import { ProofsApi } from '../modules/proofs'
-import { MediatorApi, MediationRecipientApi } from '../modules/routing'
 import { SdJwtVcApi } from '../modules/sd-jwt-vc'
 import { W3cCredentialsApi } from '../modules/vc/W3cCredentialsApi'
 import { X509Api } from '../modules/x509'
@@ -29,10 +34,6 @@ import { WalletError } from '../wallet/error'
 
 import { getAgentApi } from './AgentModules'
 import { EventEmitter } from './EventEmitter'
-import { FeatureRegistry } from './FeatureRegistry'
-import { MessageReceiver } from './MessageReceiver'
-import { MessageSender } from './MessageSender'
-import { TransportService } from './TransportService'
 import { AgentContext } from './context'
 
 export abstract class BaseAgent<AgentModules extends ModulesMap = EmptyModuleMap> {
@@ -58,6 +59,7 @@ export abstract class BaseAgent<AgentModules extends ModulesMap = EmptyModuleMap
   public readonly genericRecords: GenericRecordsApi
   public readonly discovery: DiscoverFeaturesApi
   public readonly dids: DidsApi
+  public readonly didcomm: DidCommApi
   public readonly wallet: WalletApi
   public readonly oob: OutOfBandApi
   public readonly w3cCredentials: W3cCredentialsApi
@@ -108,6 +110,7 @@ export abstract class BaseAgent<AgentModules extends ModulesMap = EmptyModuleMap
     this.genericRecords = this.dependencyManager.resolve(GenericRecordsApi)
     this.discovery = this.dependencyManager.resolve(DiscoverFeaturesApi)
     this.dids = this.dependencyManager.resolve(DidsApi)
+    this.didcomm = this.dependencyManager.resolve(DidCommApi)
     this.wallet = this.dependencyManager.resolve(WalletApi)
     this.oob = this.dependencyManager.resolve(OutOfBandApi)
     this.w3cCredentials = this.dependencyManager.resolve(W3cCredentialsApi)
