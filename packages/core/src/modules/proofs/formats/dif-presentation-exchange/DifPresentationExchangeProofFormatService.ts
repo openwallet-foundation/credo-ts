@@ -32,9 +32,9 @@ import type {
   ProofFormatAutoRespondPresentationOptions,
 } from '../ProofFormatServiceOptions'
 
-import { Attachment, AttachmentData } from '../../../../decorators/attachment/Attachment'
 import { CredoError } from '../../../../error'
 import { deepEquality, JsonTransformer } from '../../../../utils'
+import { Attachment, AttachmentData } from '../../../didcomm'
 import {
   DifPresentationExchangeService,
   DifPresentationExchangeSubmissionLocation,

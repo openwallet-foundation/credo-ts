@@ -1,7 +1,7 @@
-import type { ProblemReportErrorOptions } from '../../../../problem-reports'
+import type { ProblemReportErrorOptions } from '../../../../didcomm'
 import type { PresentationProblemReportReason } from '../../../errors/PresentationProblemReportReason'
 
-import { ProblemReportError } from '../../../../problem-reports/errors/ProblemReportError'
+import { ProblemReportError } from '../../../../didcomm'
 import { V2PresentationProblemReportMessage } from '../messages'
 
 interface V2PresentationProblemReportErrorOptions extends ProblemReportErrorOptions {

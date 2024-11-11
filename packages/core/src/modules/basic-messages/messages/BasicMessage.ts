@@ -1,9 +1,8 @@
 import { Expose, Transform } from 'class-transformer'
 import { IsDate, IsString } from 'class-validator'
 
-import { AgentMessage } from '../../../agent/AgentMessage'
-import { IsValidMessageType, parseMessageType } from '../../../utils/messageType'
 import { DateParser } from '../../../utils/transformers'
+import { AgentMessage, IsValidMessageType, parseMessageType } from '../../didcomm'
 
 export class BasicMessage extends AgentMessage {
   public readonly allowDidSovPrefix = true

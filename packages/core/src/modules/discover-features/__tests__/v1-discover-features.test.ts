@@ -1,4 +1,4 @@
-import type { ConnectionRecord } from '../../connections'
+import type { ConnectionRecord } from '../../didcomm/connections'
 import type {
   DiscoverFeaturesDisclosureReceivedEvent,
   DiscoverFeaturesQueryReceivedEvent,

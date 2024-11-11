@@ -2,7 +2,7 @@
 import type { OutOfBandInvitation } from '../src/modules/oob/messages'
 
 import { Agent } from '../src/agent/Agent'
-import { DidExchangeState, HandshakeProtocol } from '../src/modules/connections'
+import { DidExchangeState, HandshakeProtocol } from '../src/modules/didcomm/connections'
 import {
   MediationState,
   MediatorModule,

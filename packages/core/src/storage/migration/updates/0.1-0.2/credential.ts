@@ -1,11 +1,12 @@
 import type { BaseAgent } from '../../../../agent/BaseAgent'
 import type { CredentialExchangeRecord } from '../../../../modules/credentials'
-import type { JsonObject, PlaintextMessage } from '../../../../types'
+import type { PlaintextMessage } from '../../../../modules/didcomm'
+import type { JsonObject } from '../../../../types'
 
 import { CredentialState } from '../../../../modules/credentials/models/CredentialState'
 import { CredentialRepository } from '../../../../modules/credentials/repository/CredentialRepository'
+import { DidCommMessageRepository, DidCommMessageRecord, DidCommMessageRole } from '../../../../modules/didcomm'
 import { Metadata } from '../../../Metadata'
-import { DidCommMessageRepository, DidCommMessageRecord, DidCommMessageRole } from '../../../didcomm'
 
 /**
  * Migrates the {@link CredentialRecord} to 0.2 compatible format. It fetches all records from storage

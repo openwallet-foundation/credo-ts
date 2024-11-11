@@ -17,7 +17,7 @@ import { OutboundMessageContext } from '../../agent/models'
 import { InjectionSymbols } from '../../constants'
 import { CredoError } from '../../error'
 import { inject, injectable } from '../../plugins'
-import { ConnectionService } from '../connections/services'
+import { ConnectionService } from '../didcomm/connections/services'
 
 import { DiscoverFeaturesEventTypes } from './DiscoverFeaturesEvents'
 import { DiscoverFeaturesModuleConfig } from './DiscoverFeaturesModuleConfig'

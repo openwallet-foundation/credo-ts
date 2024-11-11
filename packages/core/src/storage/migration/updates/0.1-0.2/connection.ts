@@ -1,5 +1,5 @@
 import type { BaseAgent } from '../../../../agent/BaseAgent'
-import type { ConnectionRecord } from '../../../../modules/connections'
+import type { ConnectionRecord } from '../../../../modules/didcomm'
 import type { JsonObject } from '../../../../types'
 
 import { outOfBandServiceToInlineKeysNumAlgo2Did } from '../../../..//modules/dids/methods/peer/peerDidNumAlgo2'
@@ -11,8 +11,8 @@ import {
   DidDoc,
   ConnectionRepository,
   DidExchangeRole,
-} from '../../../../modules/connections'
-import { convertToNewDidDocument } from '../../../../modules/connections/services/helpers'
+} from '../../../../modules/didcomm'
+import { convertToNewDidDocument } from '../../../../modules/didcomm/services/connections/helpers'
 import { DidKey } from '../../../../modules/dids'
 import { DidDocumentRole } from '../../../../modules/dids/domain/DidDocumentRole'
 import { DidRecord, DidRepository } from '../../../../modules/dids/repository'

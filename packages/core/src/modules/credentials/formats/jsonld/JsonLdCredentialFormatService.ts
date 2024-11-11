@@ -24,10 +24,10 @@ import type {
   CredentialFormatAutoRespondCredentialOptions,
 } from '../CredentialFormatServiceOptions'
 
-import { Attachment, AttachmentData } from '../../../../decorators/attachment/Attachment'
 import { CredoError } from '../../../../error'
 import { JsonEncoder, areObjectsEqual } from '../../../../utils'
 import { JsonTransformer } from '../../../../utils/JsonTransformer'
+import { Attachment, AttachmentData } from '../../../didcomm'
 import { findVerificationMethodByKeyType } from '../../../dids/domain/DidDocument'
 import { DidResolverService } from '../../../dids/services/DidResolverService'
 import { ClaimFormat, W3cCredential, W3cCredentialService, W3cJsonLdVerifiableCredential } from '../../../vc'

@@ -1,9 +1,9 @@
 import type { ProofsModuleConfigOptions } from './ProofsModuleConfig'
 import type { ProofProtocol } from './protocol/ProofProtocol'
-import type { FeatureRegistry } from '../../agent/FeatureRegistry'
 import type { ApiModule, DependencyManager } from '../../plugins'
 import type { Optional } from '../../utils'
 import type { Constructor } from '../../utils/mixins'
+import type { FeatureRegistry } from '../didcomm'
 
 import { ProofsApi } from './ProofsApi'
 import { ProofsModuleConfig } from './ProofsModuleConfig'

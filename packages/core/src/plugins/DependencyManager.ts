@@ -1,14 +1,12 @@
 import type { ModulesMap } from '../agent/AgentModules'
-import type { MessageHandler } from '../agent/MessageHandler'
-import type { MessageHandlerMiddleware } from '../agent/MessageHandlerMiddleware'
+import type { MessageHandler, MessageHandlerMiddleware } from '../modules/didcomm'
 import type { Constructor } from '../utils/mixins'
 import type { DependencyContainer } from 'tsyringe'
 
 import { container as rootContainer, InjectionToken, Lifecycle } from 'tsyringe'
 
-import { FeatureRegistry } from '../agent/FeatureRegistry'
-import { MessageHandlerRegistry } from '../agent/MessageHandlerRegistry'
 import { CredoError } from '../error'
+import { FeatureRegistry, MessageHandlerRegistry } from '../modules/didcomm' // TODO: remove dependency on DIDComm
 
 export { InjectionToken }
 

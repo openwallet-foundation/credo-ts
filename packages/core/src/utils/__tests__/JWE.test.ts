@@ -1,4 +1,4 @@
-import { isValidJweStructure } from '../JWE'
+import { isValidJweStructure } from '../../modules/didcomm/util/JWE'
 
 describe('ValidJWEStructure', () => {
   test('throws error when the response message has an invalid JWE structure', async () => {

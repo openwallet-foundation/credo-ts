@@ -6,7 +6,7 @@ import { Agent } from '../../../../../agent/Agent'
 import { CredentialRepository } from '../../../../../modules/credentials/repository/CredentialRepository'
 import { JsonTransformer } from '../../../../../utils'
 import { DidCommMessageRole } from '../../../../didcomm'
-import { DidCommMessageRepository } from '../../../../didcomm/DidCommMessageRepository'
+import { DidCommMessageRepository } from '../../../../../modules/didcomm/repository/DidCommMessageRepository'
 import * as testModule from '../credential'
 
 const agentConfig = getAgentConfig('Migration CredentialRecord 0.1-0.2')

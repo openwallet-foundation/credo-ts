@@ -2,6 +2,7 @@ import type { BaseAgent } from '../../../../agent/BaseAgent'
 import type { ProofExchangeRecord } from '../../../../modules/proofs'
 
 import { CredoError } from '../../../../error'
+import { DidCommMessageRepository, DidCommMessageRole, parseMessageType } from '../../../../modules/didcomm'
 import {
   ProofRole,
   ProofRepository,
@@ -9,8 +10,6 @@ import {
   V2RequestPresentationMessage,
   V2ProposePresentationMessage,
 } from '../../../../modules/proofs'
-import { parseMessageType } from '../../../../utils/messageType'
-import { DidCommMessageRepository, DidCommMessageRole } from '../../../didcomm'
 
 /**
  * Migrates the {@link ProofExchangeExchangeRecord} to 0.5 compatible format. It fetches all proof exchange records from

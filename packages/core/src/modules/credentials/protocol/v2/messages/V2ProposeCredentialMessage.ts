@@ -1,9 +1,7 @@
 import { Expose, Type } from 'class-transformer'
 import { IsArray, IsInstance, IsOptional, IsString, ValidateNested } from 'class-validator'
 
-import { AgentMessage } from '../../../../../agent/AgentMessage'
-import { Attachment } from '../../../../../decorators/attachment/Attachment'
-import { IsValidMessageType, parseMessageType } from '../../../../../utils/messageType'
+import { AgentMessage, Attachment, IsValidMessageType, parseMessageType } from '../../../../didcomm'
 import { CredentialFormatSpec } from '../../../models'
 
 import { V2CredentialPreview } from './V2CredentialPreview'

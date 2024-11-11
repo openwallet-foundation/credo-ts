@@ -1,6 +1,6 @@
 import { Attachment } from '../../../decorators/attachment/Attachment'
 import { JsonTransformer } from '../../../utils'
-import { ConnectionInvitationMessage } from '../../connections'
+import { ConnectionInvitationMessage } from '../../didcomm/connections'
 import { OutOfBandDidCommService } from '../domain'
 import { convertToNewInvitation, convertToOldInvitation } from '../helpers'
 import { OutOfBandInvitation } from '../messages'

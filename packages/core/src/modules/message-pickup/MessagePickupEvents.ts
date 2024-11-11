@@ -1,6 +1,6 @@
 import type { MessagePickupSession } from './MessagePickupSession'
 import type { BaseEvent } from '../../agent/Events'
-import type { ConnectionRecord } from '../connections'
+import type { ConnectionRecord } from '../didcomm/connections'
 
 export enum MessagePickupEventTypes {
   LiveSessionSaved = 'LiveSessionSaved',

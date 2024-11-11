@@ -4,7 +4,7 @@ import { ProofExchangeRecord, ProofState } from '../../../../../modules/proofs'
 import { ProofRepository } from '../../../../../modules/proofs/repository/ProofRepository'
 import { JsonTransformer } from '../../../../../utils'
 import { DidCommMessageRole } from '../../../../didcomm'
-import { DidCommMessageRepository } from '../../../../didcomm/DidCommMessageRepository'
+import { DidCommMessageRepository } from '../../../../../modules/didcomm/repository/DidCommMessageRepository'
 import * as testModule from '../proof'
 
 const agentConfig = getAgentConfig('Migration ProofExchangeRecord 0.2-0.3')

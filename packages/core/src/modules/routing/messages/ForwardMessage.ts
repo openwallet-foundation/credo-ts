@@ -1,8 +1,8 @@
 import { Expose } from 'class-transformer'
 import { IsObject, IsString } from 'class-validator'
 
-import { AgentMessage } from '../../../agent/AgentMessage'
-import { EncryptedMessage } from '../../../types'
+import { AgentMessage } from '../../didcomm/AgentMessage'
+import { EncryptedMessage } from '../../didcomm/types'
 import { IsValidMessageType, parseMessageType } from '../../../utils/messageType'
 
 export interface ForwardMessageOptions {

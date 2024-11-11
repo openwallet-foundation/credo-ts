@@ -1,7 +1,6 @@
 import type { AgentContext } from '../../../agent'
-import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import type { Query, QueryOptions } from '../../../storage/StorageService'
-import type { ConnectionRecord } from '../../connections/repository/ConnectionRecord'
+import type { ConnectionRecord, InboundMessageContext } from '../../didcomm'
 import type { BasicMessageStateChangedEvent } from '../BasicMessageEvents'
 
 import { EventEmitter } from '../../../agent/EventEmitter'

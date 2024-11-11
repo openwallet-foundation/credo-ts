@@ -2,7 +2,7 @@ import type { KeylistUpdate } from './messages/KeylistUpdateMessage'
 import type { MediationState } from './models/MediationState'
 import type { MediationRecord } from './repository/MediationRecord'
 import type { BaseEvent } from '../../agent/Events'
-import type { Routing } from '../connections'
+import type { Routing } from '../didcomm/connections'
 
 export enum RoutingEventTypes {
   MediationStateChanged = 'MediationStateChanged',

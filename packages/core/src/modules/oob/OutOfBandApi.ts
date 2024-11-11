@@ -4,7 +4,7 @@ import type { AgentMessageReceivedEvent } from '../../agent/Events'
 import type { Attachment } from '../../decorators/attachment/Attachment'
 import type { Query, QueryOptions } from '../../storage/StorageService'
 import type { PlaintextMessage } from '../../types'
-import type { ConnectionInvitationMessage, ConnectionRecord, Routing } from '../connections'
+import type { ConnectionInvitationMessage, ConnectionRecord, Routing } from '../didcomm/connections'
 
 import { catchError, EmptyError, first, firstValueFrom, map, of, timeout } from 'rxjs'
 
@@ -21,15 +21,15 @@ import { CredoError } from '../../error'
 import { Logger } from '../../logger'
 import { inject, injectable } from '../../plugins'
 import { JsonEncoder, JsonTransformer } from '../../utils'
+import { parseInvitationShortUrl } from '../../utils/parseInvitation'
+import { DidCommDocumentService } from '../didcomm'
+import { ConnectionsApi, DidExchangeState, HandshakeProtocol } from '../didcomm/connections'
 import {
   parseDidCommProtocolUri,
   parseMessageType,
   supportsIncomingDidCommProtocolUri,
   supportsIncomingMessageType,
-} from '../../utils/messageType'
-import { parseInvitationShortUrl } from '../../utils/parseInvitation'
-import { ConnectionsApi, DidExchangeState, HandshakeProtocol } from '../connections'
-import { DidCommDocumentService } from '../didcomm'
+} from '../didcomm/util/messageType'
 import { DidKey } from '../dids'
 import { outOfBandServiceToInlineKeysNumAlgo2Did } from '../dids/methods/peer/peerDidNumAlgo2'
 import { RoutingService } from '../routing/services/RoutingService'

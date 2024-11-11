@@ -1,9 +1,7 @@
 import type { AgentDependencies } from './AgentDependencies'
 import type { AgentModulesInput } from './AgentModules'
-import type { AgentMessageReceivedEvent } from './Events'
+import type { AgentMessageReceivedEvent, InboundTransport, OutboundTransport } from '../modules/didcomm'
 import type { Module } from '../plugins'
-import type { InboundTransport } from '../transport/InboundTransport'
-import type { OutboundTransport } from '../transport/OutboundTransport'
 import type { InitConfig } from '../types'
 import type { Subscription } from 'rxjs'
 
@@ -14,21 +12,23 @@ import { InjectionSymbols } from '../constants'
 import { SigningProviderToken } from '../crypto'
 import { JwsService } from '../crypto/JwsService'
 import { CredoError } from '../error'
+import {
+  AgentEventTypes,
+  Dispatcher,
+  EnvelopeService,
+  FeatureRegistry,
+  MessageHandlerRegistry,
+  MessageReceiver,
+  MessageSender,
+  TransportService,
+} from '../modules/didcomm'
 import { DependencyManager } from '../plugins'
 import { DidCommMessageRepository, StorageUpdateService, StorageVersionRepository } from '../storage'
 
 import { AgentConfig } from './AgentConfig'
 import { extendModulesWithDefaultModules } from './AgentModules'
 import { BaseAgent } from './BaseAgent'
-import { Dispatcher } from './Dispatcher'
-import { EnvelopeService } from './EnvelopeService'
 import { EventEmitter } from './EventEmitter'
-import { AgentEventTypes } from './Events'
-import { FeatureRegistry } from './FeatureRegistry'
-import { MessageHandlerRegistry } from './MessageHandlerRegistry'
-import { MessageReceiver } from './MessageReceiver'
-import { MessageSender } from './MessageSender'
-import { TransportService } from './TransportService'
 import { AgentContext, DefaultAgentContextProvider } from './context'
 
 interface AgentOptions<AgentModules extends AgentModulesInput> {

@@ -14,12 +14,9 @@ import type {
   CreateCredentialProblemReportOptions,
 } from './CredentialProtocolOptions'
 import type { AgentContext } from '../../../agent'
-import type { AgentMessage } from '../../../agent/AgentMessage'
-import type { FeatureRegistry } from '../../../agent/FeatureRegistry'
-import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import type { DependencyManager } from '../../../plugins'
 import type { Query, QueryOptions } from '../../../storage/StorageService'
-import type { ProblemReportMessage } from '../../problem-reports'
+import type { AgentMessage, FeatureRegistry, InboundMessageContext, ProblemReportMessage } from '../../didcomm'
 import type { CredentialFormatService, ExtractCredentialFormats } from '../formats'
 import type { CredentialRole } from '../models'
 import type { CredentialState } from '../models/CredentialState'

@@ -1,5 +1,5 @@
-import { AgentMessage } from '../../../agent/AgentMessage'
-import { IsValidMessageType, parseMessageType } from '../../../utils/messageType'
+import { AgentMessage } from '../../didcomm/AgentMessage'
+import { IsValidMessageType, parseMessageType } from '../../didcomm/util/messageType'
 
 export interface MediationRequestMessageOptions {
   sentTime?: Date

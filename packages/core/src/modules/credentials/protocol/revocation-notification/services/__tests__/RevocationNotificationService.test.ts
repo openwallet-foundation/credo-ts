@@ -8,7 +8,7 @@ import { CredentialExchangeRecord, CredentialRole, CredentialState, InboundMessa
 import { getAgentConfig, getAgentContext, getMockConnection, mockFunction } from '../../../../../../../tests/helpers'
 import { EventEmitter } from '../../../../../../agent/EventEmitter'
 import { MessageHandlerRegistry } from '../../../../../../agent/MessageHandlerRegistry'
-import { DidExchangeState } from '../../../../../connections'
+import { DidExchangeState } from '../../../../../didcomm/connections'
 import { CredentialEventTypes } from '../../../../CredentialEvents'
 import { CredentialRepository } from '../../../../repository/CredentialRepository'
 import { V1RevocationNotificationMessage, V2RevocationNotificationMessage } from '../../messages'

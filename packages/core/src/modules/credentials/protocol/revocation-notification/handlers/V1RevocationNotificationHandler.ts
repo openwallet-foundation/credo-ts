@@ -1,4 +1,4 @@
-import type { MessageHandler, MessageHandlerInboundMessage } from '../../../../../agent/MessageHandler'
+import type { MessageHandler, MessageHandlerInboundMessage } from '../../../../didcomm'
 import type { RevocationNotificationService } from '../services'
 
 import { V1RevocationNotificationMessage } from '../messages/V1RevocationNotificationMessage'

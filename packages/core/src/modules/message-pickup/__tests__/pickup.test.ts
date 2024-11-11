@@ -11,7 +11,7 @@ import {
   waitForBasicMessage,
 } from '../../../../tests/helpers'
 import { Agent } from '../../../agent/Agent'
-import { HandshakeProtocol } from '../../connections'
+import { HandshakeProtocol } from '../../didcomm/connections'
 import { MediatorModule } from '../../routing'
 import { MessageForwardingStrategy } from '../../routing/MessageForwardingStrategy'
 import { V2MessagesReceivedMessage, V2StatusMessage } from '../protocol'

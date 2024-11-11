@@ -26,7 +26,7 @@ import { InjectionSymbols } from '../../constants'
 import { CredoError } from '../../error'
 import { Logger } from '../../logger/Logger'
 import { inject, injectable } from '../../plugins'
-import { ConnectionService } from '../connections/services'
+import { ConnectionService } from '../didcomm/connections/services'
 
 import { MessagePickupEventTypes } from './MessagePickupEvents'
 import { MessagePickupModuleConfig } from './MessagePickupModuleConfig'

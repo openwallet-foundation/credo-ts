@@ -1,6 +1,5 @@
 import type { ProofProtocol } from './ProofProtocol'
-import type { AgentMessage } from '../../../agent/AgentMessage'
-import type { ConnectionRecord } from '../../connections'
+import type { AgentMessage, ConnectionRecord } from '../../didcomm'
 import type {
   ExtractProofFormats,
   ProofFormat,

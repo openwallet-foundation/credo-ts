@@ -1,6 +1,7 @@
 import type { DependencyManager } from './DependencyManager'
 import type { AgentContext } from '../agent'
-import type { FeatureRegistry } from '../agent/FeatureRegistry'
+// TODO: Remove dependency on DIDComm
+import type { FeatureRegistry } from '../modules/didcomm'
 import type { Update } from '../storage/migration/updates'
 import type { Constructor } from '../utils/mixins'
 

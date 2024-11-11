@@ -1,5 +1,4 @@
-import { IsValidMessageType, parseMessageType } from '../../../../../utils/messageType'
-import { AckMessage } from '../../../../common/messages/AckMessage'
+import { AckMessage, IsValidMessageType, parseMessageType } from '../../../../didcomm'
 
 export class V2PresentationAckMessage extends AckMessage {
   @IsValidMessageType(V2PresentationAckMessage.type)

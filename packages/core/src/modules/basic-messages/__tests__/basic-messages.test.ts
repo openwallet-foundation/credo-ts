@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 import type { SubjectMessage } from '../../../../../../tests/transport/SubjectInboundTransport'
-import type { ConnectionRecord } from '../../../modules/connections'
+import type { ConnectionRecord } from '../../didcomm'
 
 import { Subject } from 'rxjs'
 

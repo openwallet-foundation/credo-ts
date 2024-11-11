@@ -1,7 +1,7 @@
-import type { FeatureRegistry } from '../../agent/FeatureRegistry'
 import type { DependencyManager, Module } from '../../plugins'
+import type { FeatureRegistry } from '../didcomm'
 
-import { Protocol } from '../../agent/models'
+import { Protocol } from '../didcomm'
 
 import { BasicMessageRole } from './BasicMessageRole'
 import { BasicMessagesApi } from './BasicMessagesApi'

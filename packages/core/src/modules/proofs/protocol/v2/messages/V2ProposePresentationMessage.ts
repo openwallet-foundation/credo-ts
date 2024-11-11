@@ -1,10 +1,8 @@
 import { Expose, Type } from 'class-transformer'
 import { IsArray, IsInstance, IsOptional, IsString, ValidateNested } from 'class-validator'
 
-import { AgentMessage } from '../../../../../agent/AgentMessage'
-import { Attachment } from '../../../../../decorators/attachment/Attachment'
-import { IsValidMessageType, parseMessageType } from '../../../../../utils/messageType'
 import { uuid } from '../../../../../utils/uuid'
+import { AgentMessage, Attachment, IsValidMessageType, parseMessageType } from '../../../../didcomm'
 import { ProofFormatSpec } from '../../../models/ProofFormatSpec'
 
 export interface V2ProposePresentationMessageOptions {

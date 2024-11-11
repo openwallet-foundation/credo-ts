@@ -1,11 +1,13 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
-import type { ConnectionRecord } from '../../modules/connections'
-import type { ResolvedDidCommService } from '../../modules/didcomm'
+import type {
+  AgentMessageSentEvent,
+  EncryptedMessage,
+  OutboundTransport,
+  ResolvedDidCommService,
+} from '../../modules/didcomm'
+import type { ConnectionRecord } from '../../modules/didcomm/connections'
 import type { DidDocumentService, IndyAgentService } from '../../modules/dids'
 import type { MessagePickupRepository } from '../../modules/message-pickup/storage'
-import type { OutboundTransport } from '../../transport'
-import type { EncryptedMessage } from '../../types'
-import type { AgentMessageSentEvent } from '../Events'
 
 import { Subject } from 'rxjs'
 
@@ -19,18 +21,21 @@ import {
 } from '../../../tests/helpers'
 import testLogger from '../../../tests/logger'
 import { Key, KeyType } from '../../crypto'
-import { ReturnRouteTypes } from '../../decorators/transport/TransportDecorator'
-import { DidCommDocumentService } from '../../modules/didcomm'
+import {
+  AgentEventTypes,
+  DidCommDocumentService,
+  EnvelopeService as EnvelopeServiceImpl,
+  MessageSender,
+  OutboundMessageContext,
+  OutboundMessageSendStatus,
+  ReturnRouteTypes,
+  TransportService,
+} from '../../modules/didcomm'
 import { DidResolverService, DidDocument, VerificationMethod } from '../../modules/dids'
 import { DidCommV1Service } from '../../modules/dids/domain/service/DidCommV1Service'
 import { verkeyToInstanceOfKey } from '../../modules/dids/helpers'
 import { InMemoryMessagePickupRepository } from '../../modules/message-pickup/storage'
-import { EnvelopeService as EnvelopeServiceImpl } from '../EnvelopeService'
 import { EventEmitter } from '../EventEmitter'
-import { AgentEventTypes } from '../Events'
-import { MessageSender } from '../MessageSender'
-import { TransportService } from '../TransportService'
-import { OutboundMessageContext, OutboundMessageSendStatus } from '../models'
 
 import { DummyTransportSession } from './stubs'
 

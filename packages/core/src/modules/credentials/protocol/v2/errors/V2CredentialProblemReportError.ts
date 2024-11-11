@@ -1,7 +1,7 @@
-import type { ProblemReportErrorOptions } from '../../../../problem-reports'
+import type { ProblemReportErrorOptions } from '../../../../didcomm'
 import type { CredentialProblemReportReason } from '../../../models/CredentialProblemReportReason'
 
-import { ProblemReportError } from '../../../../problem-reports/errors/ProblemReportError'
+import { ProblemReportError } from '../../../../didcomm'
 import { V2CredentialProblemReportMessage } from '../messages/V2CredentialProblemReportMessage'
 
 export interface V2CredentialProblemReportErrorOptions extends ProblemReportErrorOptions {

@@ -6,10 +6,10 @@ import type { RevocationNotification } from '../models/RevocationNotification'
 
 import { Type } from 'class-transformer'
 
-import { Attachment } from '../../../decorators/attachment/Attachment'
 import { CredoError } from '../../../error'
 import { BaseRecord } from '../../../storage/BaseRecord'
 import { uuid } from '../../../utils/uuid'
+import { Attachment } from '../../didcomm'
 import { CredentialPreviewAttribute } from '../models/CredentialPreviewAttribute'
 
 export interface CredentialExchangeRecordProps {

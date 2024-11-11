@@ -15,13 +15,10 @@ import type {
   SelectCredentialsForRequestOptions,
   SelectCredentialsForRequestReturn,
 } from './ProofProtocolOptions'
-import type { AgentMessage } from '../../../agent/AgentMessage'
-import type { FeatureRegistry } from '../../../agent/FeatureRegistry'
 import type { AgentContext } from '../../../agent/context/AgentContext'
-import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import type { DependencyManager } from '../../../plugins'
 import type { Query, QueryOptions } from '../../../storage/StorageService'
-import type { ProblemReportMessage } from '../../problem-reports'
+import type { AgentMessage, FeatureRegistry, InboundMessageContext, ProblemReportMessage } from '../../didcomm'
 import type { ExtractProofFormats, ProofFormatService } from '../formats'
 import type { ProofRole } from '../models'
 import type { ProofState } from '../models/ProofState'

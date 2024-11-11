@@ -1,7 +1,7 @@
 import type { ProofProtocol } from '../protocol/ProofProtocol'
 
-import { FeatureRegistry } from '../../../agent/FeatureRegistry'
 import { DependencyManager } from '../../../plugins/DependencyManager'
+import { FeatureRegistry } from '../../didcomm'
 import { ProofsModule } from '../ProofsModule'
 import { ProofsModuleConfig } from '../ProofsModuleConfig'
 import { V2ProofProtocol } from '../protocol/v2/V2ProofProtocol'

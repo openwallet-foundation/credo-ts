@@ -1,18 +1,20 @@
-import type { ConnectionRecord } from '../../modules/connections'
+import type { ConnectionRecord } from '../../modules/didcomm'
 
 import { Subject } from 'rxjs'
 
 import { getAgentConfig, getAgentContext } from '../../../tests/helpers'
-import { parseMessageType } from '../../utils/messageType'
-import { AgentMessage } from '../AgentMessage'
-import { Dispatcher } from '../Dispatcher'
+import {
+  AgentMessage,
+  Dispatcher,
+  MessageHandlerRegistry,
+  MessageSender,
+  getOutboundMessageContext,
+  InboundMessageContext,
+  parseMessageType,
+} from '../../modules/didcomm'
 import { EventEmitter } from '../EventEmitter'
-import { MessageHandlerRegistry } from '../MessageHandlerRegistry'
-import { MessageSender } from '../MessageSender'
-import { getOutboundMessageContext } from '../getOutboundMessageContext'
-import { InboundMessageContext } from '../models/InboundMessageContext'
 
-jest.mock('../MessageSender')
+jest.mock('../../modules/didcomm/base/MessageSender')
 
 class CustomProtocolMessage extends AgentMessage {
   public readonly type = CustomProtocolMessage.type.messageTypeUri

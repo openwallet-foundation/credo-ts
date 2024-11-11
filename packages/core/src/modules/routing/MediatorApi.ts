@@ -5,7 +5,7 @@ import { MessageHandlerRegistry } from '../../agent/MessageHandlerRegistry'
 import { MessageSender } from '../../agent/MessageSender'
 import { OutboundMessageContext } from '../../agent/models'
 import { injectable } from '../../plugins'
-import { ConnectionService } from '../connections/services'
+import { ConnectionService } from '../didcomm/connections/services'
 
 import { MediatorModuleConfig } from './MediatorModuleConfig'
 import { ForwardHandler, KeylistUpdateHandler } from './handlers'

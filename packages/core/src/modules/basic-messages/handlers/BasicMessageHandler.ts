@@ -1,4 +1,4 @@
-import type { MessageHandler, MessageHandlerInboundMessage } from '../../../agent/MessageHandler'
+import type { MessageHandler, MessageHandlerInboundMessage } from '../../didcomm'
 import type { BasicMessageService } from '../services/BasicMessageService'
 
 import { BasicMessage } from '../messages'

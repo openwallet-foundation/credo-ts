@@ -4,7 +4,7 @@ import type { InitConfig } from '../types'
 
 import { DID_COMM_TRANSPORT_QUEUE } from '../constants'
 import { ConsoleLogger, LogLevel } from '../logger'
-import { DidCommMimeType } from '../types'
+import { DidCommMimeType } from '../modules/didcomm/types'
 
 export class AgentConfig {
   private initConfig: InitConfig

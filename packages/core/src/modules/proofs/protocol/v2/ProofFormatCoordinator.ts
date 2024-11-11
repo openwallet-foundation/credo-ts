@@ -1,5 +1,5 @@
 import type { AgentContext } from '../../../../agent'
-import type { Attachment } from '../../../../decorators/attachment/Attachment'
+import type { Attachment } from '../../../didcomm'
 import type {
   ExtractProofFormats,
   ProofFormatCredentialForRequestPayload,

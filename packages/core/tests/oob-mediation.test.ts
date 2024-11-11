@@ -9,8 +9,8 @@ import { SubjectInboundTransport } from '../../../tests/transport/SubjectInbound
 import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutboundTransport'
 import { Agent } from '../src/agent/Agent'
 import { AgentEventTypes } from '../src/agent/Events'
-import { DidExchangeState, HandshakeProtocol } from '../src/modules/connections'
-import { ConnectionType } from '../src/modules/connections/models/ConnectionType'
+import { DidExchangeState, HandshakeProtocol } from '../src/modules/didcomm/connections'
+import { ConnectionType } from '../src/modules/didcomm/models/connections/ConnectionType'
 import { didKeyToVerkey } from '../src/modules/dids/helpers'
 import {
   KeylistUpdateMessage,

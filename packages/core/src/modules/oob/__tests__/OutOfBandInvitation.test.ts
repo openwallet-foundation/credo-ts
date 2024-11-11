@@ -4,7 +4,7 @@ import { Attachment } from '../../../decorators/attachment/Attachment'
 import { MessageValidator } from '../../../utils'
 import { JsonEncoder } from '../../../utils/JsonEncoder'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
-import { HandshakeProtocol } from '../../connections'
+import { HandshakeProtocol } from '../../didcomm/connections'
 import { OutOfBandDidCommService } from '../domain'
 import { OutOfBandInvitation } from '../messages/OutOfBandInvitation'
 

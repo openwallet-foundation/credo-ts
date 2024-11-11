@@ -1,5 +1,4 @@
-import { IsValidMessageType, parseMessageType } from '../../../../../utils/messageType'
-import { ProblemReportMessage } from '../../../../problem-reports/messages/ProblemReportMessage'
+import { IsValidMessageType, ProblemReportMessage, parseMessageType } from '../../../../didcomm'
 
 /**
  * @see https://github.com/hyperledger/aries-rfcs/blob/main/features/0035-report-problem/README.md

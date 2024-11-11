@@ -1,6 +1,5 @@
 import type { CredentialProtocol } from './CredentialProtocol'
-import type { AgentMessage } from '../../../agent/AgentMessage'
-import type { ConnectionRecord } from '../../connections/repository/ConnectionRecord'
+import type { AgentMessage, ConnectionRecord } from '../../didcomm'
 import type {
   CredentialFormat,
   CredentialFormatPayload,

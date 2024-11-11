@@ -1,5 +1,5 @@
 import { agentDependencies } from '../../../tests'
-import { ConnectionInvitationMessage } from '../../modules/connections'
+import { ConnectionInvitationMessage } from '../../modules/didcomm/connections'
 import { InvitationType, OutOfBandInvitation } from '../../modules/oob'
 import { convertToNewInvitation } from '../../modules/oob/helpers'
 import { JsonEncoder } from '../JsonEncoder'

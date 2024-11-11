@@ -1,9 +1,8 @@
-import type { MessageHandler, MessageHandlerInboundMessage } from '../../../../../agent/MessageHandler'
-import type { InboundMessageContext } from '../../../../../agent/models/InboundMessageContext'
+import type { InboundMessageContext, MessageHandler, MessageHandlerInboundMessage } from '../../../../didcomm'
 import type { CredentialExchangeRecord } from '../../../repository/CredentialExchangeRecord'
 import type { V2CredentialProtocol } from '../V2CredentialProtocol'
 
-import { OutboundMessageContext } from '../../../../../agent/models'
+import { OutboundMessageContext } from '../../../../didcomm'
 import { V2ProposeCredentialMessage } from '../messages/V2ProposeCredentialMessage'
 
 export class V2ProposeCredentialHandler implements MessageHandler {

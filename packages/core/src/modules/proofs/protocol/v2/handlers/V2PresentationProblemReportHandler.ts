@@ -1,4 +1,4 @@
-import type { MessageHandler, MessageHandlerInboundMessage } from '../../../../../agent/MessageHandler'
+import type { MessageHandler, MessageHandlerInboundMessage } from '../../../../didcomm'
 import type { V2ProofProtocol } from '../V2ProofProtocol'
 
 import { V2PresentationProblemReportMessage } from '../messages'

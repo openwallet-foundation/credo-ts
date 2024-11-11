@@ -10,8 +10,8 @@ import {
   CredentialRepository,
   CredentialState,
 } from '../../../../modules/credentials'
-import { parseMessageType } from '../../../../utils/messageType'
-import { DidCommMessageRepository, DidCommMessageRole } from '../../../didcomm'
+import { parseMessageType } from '../../../../modules/didcomm'
+import { DidCommMessageRepository, DidCommMessageRole } from '../../../../modules/didcomm'
 
 /**
  * Migrates the {@link CredentialExchangeRecord} to 0.5 compatible format. It fetches all credential exchange records from

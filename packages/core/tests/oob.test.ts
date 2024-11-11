@@ -15,7 +15,7 @@ import {
 } from '../../anoncreds/tests/preCreatedAnonCredsDefinition'
 import { Agent } from '../src/agent/Agent'
 import { Key } from '../src/crypto'
-import { DidExchangeState, HandshakeProtocol } from '../src/modules/connections'
+import { DidExchangeState, HandshakeProtocol } from '../src/modules/didcomm/connections'
 import { OutOfBandDidCommService } from '../src/modules/oob/domain/OutOfBandDidCommService'
 import { OutOfBandEventTypes } from '../src/modules/oob/domain/OutOfBandEvents'
 import { OutOfBandRole } from '../src/modules/oob/domain/OutOfBandRole'

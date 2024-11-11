@@ -1,11 +1,11 @@
 import type { CredentialsModuleConfigOptions } from './CredentialsModuleConfig'
 import type { CredentialProtocol } from './protocol/CredentialProtocol'
-import type { FeatureRegistry } from '../../agent/FeatureRegistry'
 import type { ApiModule, DependencyManager } from '../../plugins'
 import type { Constructor } from '../../utils/mixins'
 import type { Optional } from '../../utils/type'
+import type { FeatureRegistry } from '../didcomm'
 
-import { Protocol } from '../../agent/models'
+import { Protocol } from '../didcomm'
 
 import { CredentialsApi } from './CredentialsApi'
 import { CredentialsModuleConfig } from './CredentialsModuleConfig'

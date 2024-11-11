@@ -1,4 +1,4 @@
-import type { MessageHandler, MessageHandlerInboundMessage } from '../../../../../agent/MessageHandler'
+import type { MessageHandler, MessageHandlerInboundMessage } from '../../../../didcomm'
 import type { V2CredentialProtocol } from '../V2CredentialProtocol'
 
 import { V2CredentialAckMessage } from '../messages/V2CredentialAckMessage'

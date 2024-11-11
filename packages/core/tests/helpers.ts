@@ -21,7 +21,7 @@ import type {
   ConnectionDidRotatedEvent,
 } from '../src'
 import type { AgentModulesInput, EmptyModuleMap } from '../src/agent/AgentModules'
-import type { TrustPingReceivedEvent, TrustPingResponseReceivedEvent } from '../src/modules/connections/TrustPingEvents'
+import type { TrustPingReceivedEvent, TrustPingResponseReceivedEvent } from '../src/modules/didcomm/connections/TrustPingEvents'
 import type { ProofState } from '../src/modules/proofs/models/ProofState'
 import type { WalletConfig } from '../src/types'
 import type { Observable } from 'rxjs'

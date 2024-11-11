@@ -1,7 +1,7 @@
 import type { AgentMessage } from '../../agent/AgentMessage'
 import type { BaseEvent } from '../../agent/Events'
 import type { Feature, FeatureQueryOptions } from '../../agent/models'
-import type { ConnectionRecord } from '../connections'
+import type { ConnectionRecord } from '../didcomm/connections'
 
 export enum DiscoverFeaturesEventTypes {
   QueryReceived = 'QueryReceived',

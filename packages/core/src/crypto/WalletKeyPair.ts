@@ -2,11 +2,11 @@ import type { Key } from './Key'
 import type { LdKeyPairOptions } from '../modules/vc/data-integrity/models/LdKeyPair'
 import type { Wallet } from '../wallet'
 
+import { MessageValidator } from '../modules/didcomm'
 import { VerificationMethod } from '../modules/dids'
 import { getKeyFromVerificationMethod } from '../modules/dids/domain/key-type/keyDidMapping'
 import { LdKeyPair } from '../modules/vc/data-integrity/models/LdKeyPair'
 import { JsonTransformer } from '../utils'
-import { MessageValidator } from '../utils/MessageValidator'
 import { Buffer } from '../utils/buffer'
 
 interface WalletKeyPairOptions extends LdKeyPairOptions {

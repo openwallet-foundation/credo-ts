@@ -1,8 +1,8 @@
-import type { MessageHandler, MessageHandlerInboundMessage } from '../../../../../agent/MessageHandler'
+import type { MessageHandler, MessageHandlerInboundMessage } from '../../../../didcomm'
 import type { ProofExchangeRecord } from '../../../repository/ProofExchangeRecord'
 import type { V2ProofProtocol } from '../V2ProofProtocol'
 
-import { OutboundMessageContext } from '../../../../../agent/models'
+import { OutboundMessageContext } from '../../../../didcomm'
 import { V2ProposePresentationMessage } from '../messages/V2ProposePresentationMessage'
 
 export class V2ProposePresentationHandler implements MessageHandler {

@@ -1,10 +1,11 @@
 import type { BaseAgent } from '../../../../agent/BaseAgent'
+import type { PlaintextMessage } from '../../../../modules/didcomm'
 import type { ProofExchangeRecord } from '../../../../modules/proofs'
-import type { JsonObject, PlaintextMessage } from '../../../../types'
+import type { JsonObject } from '../../../../types'
 
+import { DidCommMessageRepository, DidCommMessageRecord, DidCommMessageRole } from '../../../../modules/didcomm'
 import { ProofState } from '../../../../modules/proofs/models'
 import { ProofRepository } from '../../../../modules/proofs/repository/ProofRepository'
-import { DidCommMessageRepository, DidCommMessageRecord, DidCommMessageRole } from '../../../didcomm'
 
 /**
  * Migrates the {@link ProofExchangeRecord} to 0.3 compatible format. It fetches all records from storage

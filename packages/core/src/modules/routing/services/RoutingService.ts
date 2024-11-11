@@ -1,6 +1,6 @@
 import type { AgentContext } from '../../../agent'
 import type { Key } from '../../../crypto'
-import type { Routing } from '../../connections'
+import type { Routing } from '../../didcomm/connections'
 import type { RoutingCreatedEvent } from '../RoutingEvents'
 
 import { EventEmitter } from '../../../agent/EventEmitter'

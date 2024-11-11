@@ -4,7 +4,7 @@ import { Expose, Transform, Type } from 'class-transformer'
 import { IsInstance, ValidateNested } from 'class-validator'
 
 import { JsonTransformer } from '../../../../../utils/JsonTransformer'
-import { IsValidMessageType, parseMessageType, replaceLegacyDidSovPrefix } from '../../../../../utils/messageType'
+import { IsValidMessageType, parseMessageType, replaceLegacyDidSovPrefix } from '../../../../didcomm'
 import { CredentialPreviewAttribute } from '../../../models/CredentialPreviewAttribute'
 
 /**

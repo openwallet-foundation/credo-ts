@@ -2,11 +2,8 @@ import type { BasicMessageRecord } from './repository/BasicMessageRecord'
 import type { Query, QueryOptions } from '../../storage/StorageService'
 
 import { AgentContext } from '../../agent'
-import { MessageHandlerRegistry } from '../../agent/MessageHandlerRegistry'
-import { MessageSender } from '../../agent/MessageSender'
-import { OutboundMessageContext } from '../../agent/models'
 import { injectable } from '../../plugins'
-import { ConnectionService } from '../connections'
+import { ConnectionService, MessageHandlerRegistry, MessageSender, OutboundMessageContext } from '../didcomm'
 
 import { BasicMessageHandler } from './handlers'
 import { BasicMessageService } from './services'

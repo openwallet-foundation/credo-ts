@@ -11,7 +11,7 @@ import { SubjectOutboundTransport } from '../../../../../../tests/transport/Subj
 import { getInMemoryAgentOptions, waitForBasicMessage } from '../../../../tests/helpers'
 import { Agent } from '../../../agent/Agent'
 import { sleep } from '../../../utils/sleep'
-import { ConnectionRecord, HandshakeProtocol } from '../../connections'
+import { ConnectionRecord, HandshakeProtocol } from '../../didcomm/connections'
 import { MediationRecipientModule } from '../MediationRecipientModule'
 import { MediatorModule } from '../MediatorModule'
 import { MediatorPickupStrategy } from '../MediatorPickupStrategy'

@@ -1,7 +1,7 @@
 import type { BaseAgent } from '../../../../agent/BaseAgent'
-import type { ConnectionRecord } from '../../../../modules/connections'
+import type { ConnectionRecord } from '../../../../modules/didcomm'
 
-import { ConnectionType, ConnectionRepository } from '../../../../modules/connections'
+import { ConnectionType, ConnectionRepository } from '../../../../modules/didcomm'
 import { MediationRepository } from '../../../../modules/routing'
 
 /**

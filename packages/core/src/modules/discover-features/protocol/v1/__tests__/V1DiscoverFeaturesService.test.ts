@@ -13,7 +13,7 @@ import { MessageHandlerRegistry } from '../../../../../agent/MessageHandlerRegis
 import { Protocol } from '../../../../../agent/models'
 import { InboundMessageContext } from '../../../../../agent/models/InboundMessageContext'
 import { ConsoleLogger } from '../../../../../logger/ConsoleLogger'
-import { DidExchangeState } from '../../../../../modules/connections'
+import { DidExchangeState } from '../../../../didcomm/connections'
 import { DiscoverFeaturesEventTypes } from '../../../DiscoverFeaturesEvents'
 import { DiscoverFeaturesModuleConfig } from '../../../DiscoverFeaturesModuleConfig'
 import { V1DiscoverFeaturesService } from '../V1DiscoverFeaturesService'

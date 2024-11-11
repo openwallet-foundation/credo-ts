@@ -1,6 +1,6 @@
 import type { OutOfBandState } from './OutOfBandState'
 import type { BaseEvent } from '../../../agent/Events'
-import type { ConnectionRecord } from '../../connections'
+import type { ConnectionRecord } from '../../didcomm/connections'
 import type { OutOfBandRecord } from '../repository'
 
 export enum OutOfBandEventTypes {

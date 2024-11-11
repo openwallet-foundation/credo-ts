@@ -1,6 +1,6 @@
 import type { OutOfBandInvitationOptions } from './messages'
 
-import { ConnectionInvitationMessage } from '../connections'
+import { ConnectionInvitationMessage } from '../didcomm/connections'
 import { didKeyToVerkey, verkeyToDidKey } from '../dids/helpers'
 
 import { OutOfBandDidCommService } from './domain/OutOfBandDidCommService'

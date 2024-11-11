@@ -7,7 +7,7 @@ import { Type } from 'class-transformer'
 
 import { CredoError } from '../../../error'
 import { BaseRecord } from '../../../storage/BaseRecord'
-import { getThreadIdFromPlainTextMessage } from '../../../utils/thread'
+import { getThreadIdFromPlainTextMessage } from '../../didcomm/util/thread'
 import { uuid } from '../../../utils/uuid'
 import { OutOfBandInvitation } from '../messages'
 

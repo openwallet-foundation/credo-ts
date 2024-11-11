@@ -1,7 +1,7 @@
-import type { ProblemReportMessageOptions } from '../../../../problem-reports/messages/ProblemReportMessage'
+import type { ProblemReportMessageOptions } from '../../../../didcomm/messages/problem-reports/ProblemReportMessage'
 
-import { IsValidMessageType, parseMessageType } from '../../../../../utils/messageType'
-import { ProblemReportMessage } from '../../../../problem-reports/messages/ProblemReportMessage'
+import { IsValidMessageType, parseMessageType } from '../../../../didcomm'
+import { ProblemReportMessage } from '../../../../didcomm/messages/problem-reports/ProblemReportMessage'
 
 export type V2CredentialProblemReportMessageOptions = ProblemReportMessageOptions
 

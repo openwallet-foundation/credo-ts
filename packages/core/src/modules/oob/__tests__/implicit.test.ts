@@ -4,8 +4,8 @@ import { setupSubjectTransports } from '../../../../tests'
 import { getInMemoryAgentOptions, waitForConnectionRecord } from '../../../../tests/helpers'
 import { Agent } from '../../../agent/Agent'
 import { KeyType } from '../../../crypto'
-import { DidExchangeState, HandshakeProtocol } from '../../connections'
-import { InMemoryDidRegistry } from '../../connections/__tests__/InMemoryDidRegistry'
+import { DidExchangeState, HandshakeProtocol } from '../../didcomm/connections'
+import { InMemoryDidRegistry } from '../../didcomm/connections/__tests__/InMemoryDidRegistry'
 import {
   DidCommV1Service,
   NewDidCommV2Service,

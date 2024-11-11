@@ -22,16 +22,13 @@ import type {
 import type { ProofProtocol } from './protocol/ProofProtocol'
 import type { ProofFormatsFromProtocols } from './protocol/ProofProtocolOptions'
 import type { ProofExchangeRecord } from './repository/ProofExchangeRecord'
-import type { AgentMessage } from '../../agent/AgentMessage'
 import type { Query, QueryOptions } from '../../storage/StorageService'
 
 import { injectable } from 'tsyringe'
 
-import { MessageSender } from '../../agent/MessageSender'
 import { AgentContext } from '../../agent/context/AgentContext'
-import { getOutboundMessageContext } from '../../agent/getOutboundMessageContext'
 import { CredoError } from '../../error'
-import { ConnectionService } from '../connections/services/ConnectionService'
+import { AgentMessage, ConnectionService, MessageSender, getOutboundMessageContext } from '../didcomm'
 
 import { ProofsModuleConfig } from './ProofsModuleConfig'
 import { ProofState } from './models/ProofState'

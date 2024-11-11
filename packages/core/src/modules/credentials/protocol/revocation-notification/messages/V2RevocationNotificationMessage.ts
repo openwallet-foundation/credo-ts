@@ -1,10 +1,9 @@
-import type { AckDecorator } from '../../../../../decorators/ack/AckDecorator'
+import type { AckDecorator } from '../../../../didcomm'
 
 import { Expose } from 'class-transformer'
 import { IsOptional, IsString } from 'class-validator'
 
-import { AgentMessage } from '../../../../../agent/AgentMessage'
-import { IsValidMessageType, parseMessageType } from '../../../../../utils/messageType'
+import { AgentMessage, IsValidMessageType, parseMessageType } from '../../../../didcomm'
 
 export interface RevocationNotificationMessageV2Options {
   revocationFormat: string

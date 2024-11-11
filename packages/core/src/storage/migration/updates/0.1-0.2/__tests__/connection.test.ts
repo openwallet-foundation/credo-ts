@@ -6,8 +6,8 @@ import {
   ConnectionState,
   DidExchangeRole,
   DidExchangeState,
-} from '../../../../../modules/connections'
-import { ConnectionRepository } from '../../../../../modules/connections/repository/ConnectionRepository'
+} from '../../../../../modules/didcomm/connections'
+import { ConnectionRepository } from '../../../../../modules/didcomm/repository/connections/ConnectionRepository'
 import { DidDocumentRole } from '../../../../../modules/dids/domain/DidDocumentRole'
 import { DidRecord } from '../../../../../modules/dids/repository'
 import { DidRepository } from '../../../../../modules/dids/repository/DidRepository'

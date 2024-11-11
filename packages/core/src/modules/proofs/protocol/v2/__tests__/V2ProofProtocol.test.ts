@@ -10,7 +10,7 @@ import { InboundMessageContext } from '../../../../../agent/models/InboundMessag
 import { Attachment, AttachmentData } from '../../../../../decorators/attachment/Attachment'
 import { DidCommMessageRepository } from '../../../../../storage'
 import { uuid } from '../../../../../utils/uuid'
-import { ConnectionService, DidExchangeState } from '../../../../connections'
+import { ConnectionService, DidExchangeState } from '../../../../didcomm/connections'
 import { ProofEventTypes } from '../../../ProofEvents'
 import { PresentationProblemReportReason } from '../../../errors/PresentationProblemReportReason'
 import { ProofRole } from '../../../models'

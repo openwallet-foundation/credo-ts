@@ -1,9 +1,6 @@
 import type { AgentContext } from '../../../../agent'
-import type { AgentMessage } from '../../../../agent/AgentMessage'
-import type { FeatureRegistry } from '../../../../agent/FeatureRegistry'
-import type { InboundMessageContext } from '../../../../agent/models/InboundMessageContext'
 import type { DependencyManager } from '../../../../plugins'
-import type { ProblemReportMessage } from '../../../problem-reports'
+import type { AgentMessage, FeatureRegistry, InboundMessageContext, ProblemReportMessage } from '../../../didcomm'
 import type {
   ExtractProofFormats,
   ProofFormat,
@@ -31,12 +28,10 @@ import type {
   SelectCredentialsForRequestReturn,
 } from '../ProofProtocolOptions'
 
-import { Protocol } from '../../../../agent/models'
 import { CredoError } from '../../../../error'
 import { DidCommMessageRepository, DidCommMessageRole } from '../../../../storage/didcomm'
 import { uuid } from '../../../../utils/uuid'
-import { AckStatus } from '../../../common'
-import { ConnectionService } from '../../../connections'
+import { AckStatus, ConnectionService, Protocol } from '../../../didcomm'
 import { ProofsModuleConfig } from '../../ProofsModuleConfig'
 import { PresentationProblemReportReason } from '../../errors/PresentationProblemReportReason'
 import { AutoAcceptProof, ProofRole, ProofState } from '../../models'

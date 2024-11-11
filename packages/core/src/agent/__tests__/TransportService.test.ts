@@ -1,9 +1,8 @@
 import { Subject } from 'rxjs'
 
 import { agentDependencies, getAgentContext, getMockConnection } from '../../../tests/helpers'
-import { DidExchangeRole } from '../../modules/connections'
+import { DidExchangeRole, TransportService } from '../../modules/didcomm'
 import { EventEmitter } from '../EventEmitter'
-import { TransportService } from '../TransportService'
 
 import { DummyTransportSession } from './stubs'
 

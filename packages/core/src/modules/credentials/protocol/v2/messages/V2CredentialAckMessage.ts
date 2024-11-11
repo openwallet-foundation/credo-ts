@@ -1,7 +1,6 @@
-import type { AckMessageOptions } from '../../../../common'
+import type { AckMessageOptions } from '../../../../didcomm'
 
-import { IsValidMessageType, parseMessageType } from '../../../../../utils/messageType'
-import { AckMessage } from '../../../../common'
+import { AckMessage, IsValidMessageType, parseMessageType } from '../../../../didcomm'
 
 export type V2CredentialAckMessageOptions = AckMessageOptions
 
