@@ -1,7 +1,6 @@
 import type { OpenId4VcCredentialHolderBinding } from '../shared'
 import type { CredentialConfigurationSupported, CredentialOfferObject, IssuerMetadataResult } from '@animo-id/oid4vci'
-import type { AgentContext, JwaSignatureAlgorithm, Jwk, KeyType } from '@credo-ts/core'
-import type { VerifiableCredential } from '@credo-ts/core/src/modules/dif-presentation-exchange/models/index'
+import type { AgentContext, JwaSignatureAlgorithm, Jwk, KeyType, VerifiableCredential } from '@credo-ts/core'
 
 import { AuthorizationFlow as OpenId4VciAuthorizationFlow } from '@animo-id/oid4vci'
 
