@@ -574,8 +574,11 @@ export class OpenId4VcSiopVerifierService {
         client_id: clientId,
         passBy: PassBy.VALUE,
         response_types_supported: [ResponseType.VP_TOKEN],
-        subject_syntax_types_supported: supportedDidMethods.map((m) => `did:${m}`),
-        vp_formats_supported: {
+        subject_syntax_types_supported: [
+          'urn:ietf:params:oauth:jwk-thumbprint',
+          ...supportedDidMethods.map((m) => `did:${m}`),
+        ],
+        vp_formats: {
           mso_mdoc: {
             alg: supportedAlgs,
           },
@@ -583,6 +586,9 @@ export class OpenId4VcSiopVerifierService {
             alg: supportedAlgs,
           },
           jwt_vc_json: {
+            alg: supportedAlgs,
+          },
+          jwt_vp_json: {
             alg: supportedAlgs,
           },
           jwt_vp: {

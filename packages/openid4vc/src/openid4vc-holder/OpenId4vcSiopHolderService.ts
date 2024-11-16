@@ -332,7 +332,6 @@ export class OpenId4VcSiopHolderService {
     authorizationRequest: VerifiedAuthorizationRequest,
     openIdTokenIssuer: OpenId4VcJwtIssuer
   ) {
-    // TODO: jwk thumbprint support
     const subjectSyntaxTypesSupported = authorizationRequest.registrationMetadataPayload.subject_syntax_types_supported
     if (!subjectSyntaxTypesSupported) {
       throw new CredoError(
@@ -346,8 +345,10 @@ export class OpenId4VcSiopHolderService {
 
       // Either did:<method> or did (for all did methods) is allowed
       allowedSubjectSyntaxTypes = [`did:${parsedDid.method}`, 'did']
+    } else if (openIdTokenIssuer.method === 'jwk') {
+      allowedSubjectSyntaxTypes = ['urn:ietf:params:oauth:jwk-thumbprint']
     } else {
-      throw new CredoError("Only 'did' is supported as openIdTokenIssuer at the moment")
+      throw new CredoError("Only 'did' and 'jwk' are supported as openIdTokenIssuer at the moment")
     }
 
     // At least one of the allowed subject syntax types must be supported by the RP

@@ -1,7 +1,7 @@
 import type { OpenId4VcIssuerModuleConfigOptions } from './OpenId4VcIssuerModuleConfig'
 import type { OpenId4VcIssuanceRequest } from './router'
 import type { AgentContext, DependencyManager, Module } from '@credo-ts/core'
-import type { Response } from 'express'
+import type { NextFunction, Response } from 'express'
 
 import { setGlobalConfig } from '@animo-id/oauth2'
 import { AgentConfig } from '@credo-ts/core'
@@ -144,8 +144,7 @@ export class OpenId4VcIssuerModule implements Module {
     })
 
     // This one will be called for all errors that are thrown
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    contextRouter.use(async (_error: unknown, req: OpenId4VcIssuanceRequest, res: Response, next: any) => {
+    contextRouter.use(async (_error: unknown, req: OpenId4VcIssuanceRequest, res: Response, next: NextFunction) => {
       const { agentContext } = getRequestContext(req)
 
       if (!res.headersSent) {

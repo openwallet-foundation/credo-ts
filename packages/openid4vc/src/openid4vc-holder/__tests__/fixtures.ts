@@ -25,7 +25,7 @@ export const matrrLaunchpadDraft11JwtVcJson = {
       {
         id: 'd2662472-891c-413d-b3c6-e2f0109001c5',
         format: 'ldp_vc',
-        // FIXME: should we make this optional? Seems a lot of types break on this
+        // TODO: should we make this optional? Seems a lot of types break on this
         '@context': [],
         types: ['VerifiableCredential', 'OpenBadgeCredential'],
         cryptographic_binding_methods_supported: ['did:key'],
@@ -42,7 +42,7 @@ export const matrrLaunchpadDraft11JwtVcJson = {
       {
         id: 'b4c4cdf5-ccc9-4945-8c19-9334558653b2',
         format: 'ldp_vc',
-        // FIXME: should we make this optional? Seems a lot of types break on this
+        // TODO: should we make this optional? Seems a lot of types break on this
         '@context': [],
         types: ['VerifiableCredential', 'Passport'],
         cryptographic_binding_methods_supported: ['did:key'],

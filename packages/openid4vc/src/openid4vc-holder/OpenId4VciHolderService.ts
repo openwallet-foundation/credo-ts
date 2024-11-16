@@ -587,7 +587,7 @@ export class OpenId4VciHolderService {
     const alg = jwk.supportedSignatureAlgorithms.find((alg) => signatureAlgorithms.includes(alg))
     if (!alg) {
       // Should not happen, to make ts happy
-      throw new CredoError(`Unable to determien alg for key type ${jwk.keyType}`)
+      throw new CredoError(`Unable to determine alg for key type ${jwk.keyType}`)
     }
 
     const jwtSigner: JwtSigner =

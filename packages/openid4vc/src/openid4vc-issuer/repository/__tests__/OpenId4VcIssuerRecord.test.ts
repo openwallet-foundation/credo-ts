@@ -10,7 +10,6 @@ describe('OpenId4VcIssuerRecord', () => {
           {
             id: 'd2662472-891c-413d-b3c6-e2f0109001c5',
             format: 'ldp_vc',
-            // FIXME: should we make this optional? Seems a lot of types break on this
             '@context': [],
             types: ['VerifiableCredential', 'OpenBadgeCredential'],
             cryptographic_binding_methods_supported: ['did:key'],
@@ -143,7 +142,6 @@ describe('OpenId4VcIssuerRecord', () => {
           {
             id: 'd2662472-891c-413d-b3c6-e2f0109001c5',
             format: 'ldp_vc',
-            // FIXME: should we make this optional? Seems a lot of types break on this
             '@context': [],
             types: ['VerifiableCredential', 'OpenBadgeCredential'],
             cryptographic_binding_methods_supported: ['did:key'],

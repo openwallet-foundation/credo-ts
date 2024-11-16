@@ -60,9 +60,6 @@ importers:
       '@typescript-eslint/parser':
         specifier: ^7.14.1
         version: 7.18.0(eslint@8.57.0)(typescript@5.5.4)
-      babel-jest:
-        specifier: ^29.7.0
-        version: 29.7.0(@babel/core@7.25.8)
       bn.js:
         specifier: ^5.2.1
         version: 5.2.1
@@ -90,9 +87,6 @@ importers:
       express:
         specifier: ^4.17.1
         version: 4.19.2
-      http-proxy-middleware:
-        specifier: ^3.0.3
-        version: 3.0.3
       jest:
         specifier: ^29.7.0
         version: 29.7.0(@types/node@18.18.8)(ts-node@10.9.2(@types/node@18.18.8)(typescript@5.5.4))
@@ -106,7 +100,7 @@ importers:
         specifier: ^29.1.2
         version: 29.2.4(@babel/core@7.25.8)(@jest/transform@29.7.0)(@jest/types@29.6.3)(babel-jest@29.7.0(@babel/core@7.25.8))(jest@29.7.0(@types/node@18.18.8)(ts-node@10.9.2(@types/node@18.18.8)(typescript@5.5.4)))(typescript@5.5.4)
       ts-node:
-        specifier: ^10.0.0
+        specifier: ^10.9.2
         version: 10.9.2(@types/node@18.18.8)(typescript@5.5.4)
       tsyringe:
         specifier: ^4.8.0
@@ -167,7 +161,7 @@ importers:
         specifier: ^1.5.2
         version: 1.7.0
       ts-node:
-        specifier: ^10.4.0
+        specifier: ^10.9.2
         version: 10.9.2(@types/node@18.18.8)(typescript@5.5.4)
 
   demo-openid:
@@ -228,7 +222,7 @@ importers:
         specifier: ^1.5.2
         version: 1.7.0
       ts-node:
-        specifier: ^10.4.0
+        specifier: ^10.9.2
         version: 10.9.2(@types/node@18.18.8)(typescript@5.5.4)
       tsx:
         specifier: ^4.11.0
@@ -876,7 +870,7 @@ importers:
         specifier: ^8.5.4
         version: 8.5.12
       ts-node:
-        specifier: ^10.4.0
+        specifier: ^10.9.2
         version: 10.9.2(@types/node@18.18.8)(typescript@5.5.4)
 
   samples/tails:
@@ -907,7 +901,7 @@ importers:
         version: 1.4.5-lts.1
     devDependencies:
       ts-node:
-        specifier: ^10.4.0
+        specifier: ^10.9.2
         version: 10.9.2(@types/node@18.18.8)(typescript@5.5.4)
 
 packages:
@@ -3131,9 +3125,6 @@ packages:
   '@types/http-errors@2.0.4':
     resolution: {integrity: sha512-D0CFMMtydbJAegzOyHjtiKPLlvnm3iTZyZRSZoLq2mRhDdmLfIWOCYPfQJ4cu2erKghU++QvjcUjp/5h7hESpA==}
 
-  '@types/http-proxy@1.17.15':
-    resolution: {integrity: sha512-25g5atgiVNTIv0LBDTg1H74Hvayx0ajtJPLLcYE3whFv75J0pWNtOBzaXJQgDTmrX1bx5U9YC2w/n65BN1HwRQ==}
-
   '@types/inquirer@8.2.10':
     resolution: {integrity: sha512-IdD5NmHyVjWM8SHWo/kPBgtzXatwPkfwzyP3fN1jF2g9BWt5WO+8hL2F4o2GKIYsU40PpqeevuUWvkS/roXJkA==}
 
@@ -4611,9 +4602,6 @@ packages:
     resolution: {integrity: sha512-i/2XbnSz/uxRCU6+NdVJgKWDTM427+MqYbkQzD321DuCQJUqOuJKIA0IM2+W2xtYHdKOmZ4dR6fExsd4SXL+WQ==}
     engines: {node: '>=6'}
 
-  eventemitter3@4.0.7:
-    resolution: {integrity: sha512-8guHBZCwKnFhYdHr2ysuRWErTwhoN2X8XELRlrRwpmfeY2jjuUN4taQMsULKUVo1K4DvZl+0pgfyoysHxvmvEw==}
-
   events@3.3.0:
     resolution: {integrity: sha512-mQw+2fkQbALzQ7V0MY0IqdnXNOeTtP4r0lN9z7AAawCXgqea7bDii20AYrIBrFd/Hx0M2Ocz6S111CaFkUcb0Q==}
     engines: {node: '>=0.8.x'}
@@ -5129,14 +5117,6 @@ packages:
     resolution: {integrity: sha512-FtwrG/euBzaEjYeRqOgly7G0qviiXoJWnvEH2Z1plBdXgbyjv34pHTSb9zoeHMyDy33+DWy5Wt9Wo+TURtOYSQ==}
     engines: {node: '>= 0.8'}
 
-  http-proxy-middleware@3.0.3:
-    resolution: {integrity: sha512-usY0HG5nyDUwtqpiZdETNbmKtw3QQ1jwYFZ9wi5iHzX2BcILwQKtYDJPo7XHTsu5Z0B2Hj3W9NNnbd+AjFWjqg==}
-    engines: {node: ^14.15.0 || ^16.10.0 || >=18.0.0}
-
-  http-proxy@1.18.1:
-    resolution: {integrity: sha512-7mz/721AbnJwIVbnaSv1Cz3Am0ZLT/UBwkC92VlxhXv/k/BBQfM2fXElQNC27BVGr0uwUpplYPQM9LnaBMR5NQ==}
-    engines: {node: '>=8.0.0'}
-
   http2-wrapper@2.2.1:
     resolution: {integrity: sha512-V5nVw1PAOgfI3Lmeaj2Exmeg7fenjhRUgz1lPSezy1CuhPYbgQtbQj4jZfEAEMlaL+vupsvhjqCyjzob0yxsmQ==}
     engines: {node: '>=10.19.0'}
@@ -5353,10 +5333,6 @@ packages:
 
   is-plain-object@2.0.4:
     resolution: {integrity: sha512-h5PpgXkWitc38BBMYawTYMWJHFZJVnBquFE57xFpjB8pJFiF6gZ+bU+WyI/yqXiFR5mdLsgYNaPe8uao6Uv9Og==}
-    engines: {node: '>=0.10.0'}
-
-  is-plain-object@5.0.0:
-    resolution: {integrity: sha512-VRSzKkbMm5jMDoKLbltAkFQ5Qr7VDiTFGXxYFXXowVj387GeGNOCsOH6Msy00SGZ3Fp84b1Naa1psqgcCIEP5Q==}
     engines: {node: '>=0.10.0'}
 
   is-regex@1.1.4:
@@ -12987,10 +12963,6 @@ snapshots:
 
   '@types/http-errors@2.0.4': {}
 
-  '@types/http-proxy@1.17.15':
-    dependencies:
-      '@types/node': 18.18.8
-
   '@types/inquirer@8.2.10':
     dependencies:
       '@types/through': 0.0.33
@@ -13514,7 +13486,7 @@ snapshots:
 
   axios@0.21.4:
     dependencies:
-      follow-redirects: 1.15.6(debug@4.3.6)
+      follow-redirects: 1.15.6
     transitivePeerDependencies:
       - debug
 
@@ -14884,8 +14856,6 @@ snapshots:
 
   event-target-shim@5.0.1: {}
 
-  eventemitter3@4.0.7: {}
-
   events@3.3.0: {}
 
   exec-async@2.2.0: {}
@@ -15286,9 +15256,7 @@ snapshots:
 
   flow-parser@0.185.2: {}
 
-  follow-redirects@1.15.6(debug@4.3.6):
-    optionalDependencies:
-      debug: 4.3.6
+  follow-redirects@1.15.6: {}
 
   fontfaceobserver@2.3.0: {}
 
@@ -15617,25 +15585,6 @@ snapshots:
       statuses: 2.0.1
       toidentifier: 1.0.1
 
-  http-proxy-middleware@3.0.3:
-    dependencies:
-      '@types/http-proxy': 1.17.15
-      debug: 4.3.6
-      http-proxy: 1.18.1(debug@4.3.6)
-      is-glob: 4.0.3
-      is-plain-object: 5.0.0
-      micromatch: 4.0.8
-    transitivePeerDependencies:
-      - supports-color
-
-  http-proxy@1.18.1(debug@4.3.6):
-    dependencies:
-      eventemitter3: 4.0.7
-      follow-redirects: 1.15.6(debug@4.3.6)
-      requires-port: 1.0.0
-    transitivePeerDependencies:
-      - debug
-
   http2-wrapper@2.2.1:
     dependencies:
       quick-lru: 5.1.1
@@ -15839,8 +15788,6 @@ snapshots:
   is-plain-object@2.0.4:
     dependencies:
       isobject: 3.0.1
-
-  is-plain-object@5.0.0: {}
 
   is-regex@1.1.4:
     dependencies:
