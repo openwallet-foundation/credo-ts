@@ -6,8 +6,8 @@ Alice, a former student of Faber College, connects with the College, is issued a
 
 ## Features
 
-- ✅ Issuing a credential without authorization (pre authorized).
-- ✅ Issuing a credenital with external authorization server
+- ✅ Issuing a credential without authorization (pre-authorized code flow).
+- ✅ Issuing a credenital with external authorization server (authorization code flow)
 - ✅ Resolving a credential offer.
 - ✅ Accepting a credential offer.
 - ✅ Requesting a credential presentation.

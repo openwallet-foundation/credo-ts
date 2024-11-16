@@ -10,7 +10,7 @@
   "license": "Apache-2.0",
   "scripts": {
     "issuer": "ts-node src/IssuerInquirer.ts",
-    "provider": "tsx src/Provider.ts",
+    "provider": "tsx src/provider.js",
     "holder": "ts-node src/HolderInquirer.ts",
     "verifier": "ts-node src/VerifierInquirer.ts"
   },
@@ -35,7 +35,7 @@
     "@types/oidc-provider": "^8.4.4",
     "clear": "^0.1.0",
     "figlet": "^1.5.2",
-    "ts-node": "^10.4.0",
+    "ts-node": "^10.9.2",
     "tsx": "^4.11.0"
   }
 }
