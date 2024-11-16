@@ -708,6 +708,9 @@ importers:
       '@types/ws':
         specifier: ^8.5.4
         version: 8.5.12
+      nock:
+        specifier: ^14.0.0-beta.15
+        version: 14.0.0-beta.15
       rimraf:
         specifier: ^4.4.0
         version: 4.4.1
