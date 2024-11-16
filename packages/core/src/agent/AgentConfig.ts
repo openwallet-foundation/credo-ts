@@ -32,6 +32,10 @@ export class AgentConfig {
     return this.initConfig.didCommMimeType ?? DidCommMimeType.V1
   }
 
+  public get allowInsecureHttpUrls() {
+    return this.initConfig.allowInsecureHttpUrls ?? false
+  }
+
   /**
    * Encode keys in did:key format instead of 'naked' keys, as stated in Aries RFC 0360.
    *
