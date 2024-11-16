@@ -31,7 +31,7 @@ export function setupNockToExpress(baseUrl: string, app: Express) {
     }
 
     // Disable automatic JSON parsing, there's something weird if a string is returned
-    testRequest.buffer(true).parse((res, cb) => {
+    testRequest = testRequest.buffer(true).parse((res, cb) => {
       let data = Buffer.from('')
       res.on('data', (chunk) => {
         data = Buffer.concat([data, chunk])
