@@ -9,7 +9,7 @@ import type {
 } from './OpenId4VciHolderServiceOptions'
 import type { OpenId4VcSiopAcceptAuthorizationRequestOptions } from './OpenId4vcSiopHolderServiceOptions'
 
-import { injectable, AgentContext } from '@credo-ts/core'
+import { injectable, AgentContext, DifPresentationExchangeService, DifPexCredentialsForRequest } from '@credo-ts/core'
 
 import { OpenId4VciMetadata } from '../shared'
 
@@ -24,7 +24,8 @@ export class OpenId4VcHolderApi {
   public constructor(
     private agentContext: AgentContext,
     private openId4VciHolderService: OpenId4VciHolderService,
-    private openId4VcSiopHolderService: OpenId4VcSiopHolderService
+    private openId4VcSiopHolderService: OpenId4VcSiopHolderService,
+    private difPresentationExchangeService: DifPresentationExchangeService
   ) {}
 
   /**
@@ -55,6 +56,14 @@ export class OpenId4VcHolderApi {
    */
   public async acceptSiopAuthorizationRequest(options: OpenId4VcSiopAcceptAuthorizationRequestOptions) {
     return await this.openId4VcSiopHolderService.acceptAuthorizationRequest(this.agentContext, options)
+  }
+
+  /**
+   * Automatically select credentials from available credentials for a request. Can be called after calling
+   * @see resolveSiopAuthorizationRequest.
+   */
+  public selectCredentialsForRequest(credentialsForRequest: DifPexCredentialsForRequest) {
+    return this.difPresentationExchangeService.selectCredentialsForRequest(credentialsForRequest)
   }
 
   public async resolveIssuerMetadata(credentialIssuer: string): Promise<OpenId4VciMetadata> {

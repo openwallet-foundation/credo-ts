@@ -81,7 +81,7 @@ export interface OpenId4VciAuthorizationCodeFlowConfig {
   requirePresentationDuringIssuance?: boolean
 }
 
-export interface OpenId4VciCreateCredentialOfferOptions {
+interface OpenId4VciCreateCredentialOfferOptionsBase {
   // NOTE: v11 of OID4VCI supports both inline and referenced (to credentials_supported.id) credential offers.
   // In draft 12 the inline credential offers have been removed and to make the migration to v12 easier
   // we only support referenced credentials in an offer
@@ -93,6 +93,25 @@ export interface OpenId4VciCreateCredentialOfferOptions {
    */
   baseUri?: string
 
+  /**
+   * @default v1.draft11-13
+   */
+  version?: 'v1.draft11-13' | 'v1.draft13'
+}
+
+export interface OpenId4VciCreateStatelessCredentialOfferOptions extends OpenId4VciCreateCredentialOfferOptionsBase {
+  authorizationCodeFlowConfig: Required<Pick<OpenId4VciAuthorizationCodeFlowConfig, 'authorizationServerUrl'>>
+
+  /**
+   * For stateless credential offers we need an external authorization server, which also means we need to
+   * support `authorization_servers`, therefore only draft 13 offers are supported
+   *
+   * @default v1.draft13
+   */
+  version?: 'v1.draft13'
+}
+
+export interface OpenId4VciCreateCredentialOfferOptions extends OpenId4VciCreateCredentialOfferOptionsBase {
   preAuthorizedCodeFlowConfig?: OpenId4VciPreAuthorizedCodeFlowConfig
   authorizationCodeFlowConfig?: OpenId4VciAuthorizationCodeFlowConfig
 
@@ -103,11 +122,6 @@ export interface OpenId4VciCreateCredentialOfferOptions {
    * data.
    */
   issuanceMetadata?: Record<string, unknown>
-
-  /**
-   * @default v1.draft11-13
-   */
-  version?: 'v1.draft11-13' | 'v1.draft13'
 }
 
 export interface OpenId4VciCreateCredentialResponseOptions {
@@ -146,7 +160,18 @@ export type OpenId4VciGetVerificationSessionForIssuanceSessionAuthorization = (o
    * parameter
    */
   scopes: string[]
-}) => Promise<OpenId4VcSiopCreateAuthorizationRequestReturn>
+}) => Promise<
+  OpenId4VcSiopCreateAuthorizationRequestReturn & {
+    /**
+     * The scopes which will be granted by successfully completing the verification
+     * session.
+     *
+     * @todo do we need more granular support? I.e. every input descriptor can satisfy a
+     * different scope?
+     */
+    scopes: string[]
+  }
+>
 
 export type OpenId4VciCredentialRequestToCredentialMapper = (options: {
   agentContext: AgentContext
@@ -237,6 +262,13 @@ export interface OpenId4VciSignW3cCredentials {
   }>
 }
 
+export interface OpenId4VciBatchCredentialIssuanceOptions {
+  /**
+   * The maximum batch size
+   */
+  batchSize: number
+}
+
 export type OpenId4VciCreateIssuerOptions = {
   /**
    * Id of the issuer, not the id of the issuer record. Will be exposed publicly
@@ -254,9 +286,18 @@ export type OpenId4VciCreateIssuerOptions = {
   authorizationServerConfigs?: OpenId4VciAuthorizationServerConfig[]
   dpopSigningAlgValuesSupported?: [JwaSignatureAlgorithm, ...JwaSignatureAlgorithm[]]
   credentialConfigurationsSupported: OpenId4VciCredentialConfigurationsSupportedWithFormats
+
+  /**
+   * Indicate support for batch issuane of credentials
+   */
+  batchCredentialIssuance?: OpenId4VciBatchCredentialIssuanceOptions
 }
 
 export type OpenId4VcUpdateIssuerRecordOptions = Pick<
   OpenId4VcIssuerRecordProps,
-  'issuerId' | 'display' | 'dpopSigningAlgValuesSupported' | 'credentialConfigurationsSupported'
+  | 'issuerId'
+  | 'display'
+  | 'dpopSigningAlgValuesSupported'
+  | 'credentialConfigurationsSupported'
+  | 'batchCredentialIssuance'
 >

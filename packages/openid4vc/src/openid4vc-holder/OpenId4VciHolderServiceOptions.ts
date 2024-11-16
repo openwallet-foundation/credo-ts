@@ -1,6 +1,6 @@
 import type { OpenId4VcCredentialHolderBinding } from '../shared'
 import type { CredentialConfigurationSupported, CredentialOfferObject, IssuerMetadataResult } from '@animo-id/oid4vci'
-import type { JwaSignatureAlgorithm, Jwk, KeyType } from '@credo-ts/core'
+import type { AgentContext, JwaSignatureAlgorithm, Jwk, KeyType } from '@credo-ts/core'
 import type { VerifiableCredential } from '@credo-ts/core/src/modules/dif-presentation-exchange/models/index'
 
 import { AuthorizationFlow as OpenId4VciAuthorizationFlow } from '@animo-id/oid4vci'
@@ -67,6 +67,7 @@ export type OpenId4VciResolvedAuthorizationRequest =
   | {
       oid4vpRequestUrl: string
       authorizationFlow: OpenId4VciAuthorizationFlow.PresentationDuringIssuance
+      authSession: string
     }
   | {
       authorizationRequestUrl: string
@@ -129,7 +130,7 @@ export interface OpenId4VciRetrieveAuthorizationCodeUsingPresentationOptions {
   /**
    * Presentation during issuance session returned by the verifier after submitting a valid presentation
    */
-  presentationDuringIssuanceSession: string
+  presentationDuringIssuanceSession?: string
 }
 
 export interface OpenId4VciCredentialRequestOptions extends Omit<OpenId4VciAcceptCredentialOfferOptions, 'userPin'> {
@@ -155,6 +156,19 @@ export interface OpenId4VciAcceptCredentialOfferOptions {
    * If not provided all offered credentials will be requested.
    */
   credentialConfigurationIds?: string[]
+
+  /**
+   * Whether to request a batch of credentials if supported by the crednetial issuer.
+   *
+   * You can also provide a number to indicate the batch size. If `true` is provided
+   * the max size from the credential issuer will be used.
+   *
+   * If a number is passed that is higher than the max batch size of the credential issuer,
+   * an error will be thrown.
+   *
+   * @default false
+   */
+  requestBatch?: boolean | number
 
   verifyCredentialStatus?: boolean
 
@@ -199,6 +213,8 @@ export interface OpenId4VciAuthCodeFlowOptions {
 }
 
 export interface OpenId4VciCredentialBindingOptions {
+  agentContext: AgentContext
+
   /**
    * The credential format that will be requested from the issuer.
    * E.g. `jwt_vc` or `ldp_vc`.

@@ -207,6 +207,9 @@ describe('OpenId4Vc', () => {
 
     await holder.agent.shutdown()
     await holder.agent.wallet.delete()
+
+    await verifier.agent.shutdown()
+    await verifier.agent.wallet.delete()
   })
 
   const credentialBindingResolver: OpenId4VciCredentialBindingResolver = ({ supportsJwk, supportedDidMethods }) => {
@@ -245,7 +248,7 @@ describe('OpenId4Vc', () => {
     expect(issuer1Record.credentialConfigurationsSupported).toEqual({
       universityDegree: {
         format: 'vc+sd-jwt',
-        cryptographic_binding_methods_supported: ['did:key'],
+        cryptographic_binding_methods_supported: ['did:key', 'jwk'],
         proof_types_supported: {
           jwt: {
             proof_signing_alg_values_supported: ['EdDSA', 'ES256'],
@@ -285,7 +288,6 @@ describe('OpenId4Vc', () => {
         version: 'v1.draft11-13',
       })
 
-    await issuerTenant1.endSession()
     await issuerTenant2.endSession()
 
     await waitForCredentialIssuanceSessionRecordSubject(issuer.replaySubject, {
@@ -309,7 +311,7 @@ describe('OpenId4Vc', () => {
     expect(resolvedCredentialOffer1.offeredCredentialConfigurations).toEqual({
       universityDegree: {
         format: 'vc+sd-jwt',
-        cryptographic_binding_methods_supported: ['did:key'],
+        cryptographic_binding_methods_supported: ['did:key', 'jwk'],
         proof_types_supported: {
           jwt: {
             proof_signing_alg_values_supported: ['EdDSA', 'ES256'],
@@ -336,6 +338,10 @@ describe('OpenId4Vc', () => {
       txCode: issuanceSession1.userPin,
     })
 
+    const expectedSubject = (await issuerTenant1.modules.openId4VcIssuer.getIssuanceSessionById(issuanceSession1.id))
+      .authorization?.subject
+    await issuerTenant1.endSession()
+
     expect(tokenResponseTenant1.accessToken).toBeDefined()
     expect(tokenResponseTenant1.dpop?.jwk).toBeInstanceOf(Jwk)
     const { payload } = Jwt.fromSerializedJwt(tokenResponseTenant1.accessToken)
@@ -348,16 +354,13 @@ describe('OpenId4Vc', () => {
         }),
       },
       'pre-authorized_code': expect.any(String),
-      scope: 'UniversityDegreeCredential',
       aud: `http://localhost:1234/oid4vci/${openIdIssuerTenant1.issuerId}`,
       exp: expect.any(Number),
       iat: expect.any(Number),
       iss: `http://localhost:1234/oid4vci/${openIdIssuerTenant1.issuerId}`,
       jti: expect.any(String),
       nbf: undefined,
-      sub: resolvedCredentialOffer1.credentialOfferPayload.grants?.[preAuthorizedCodeGrantIdentifier]?.[
-        'pre-authorized_code'
-      ],
+      sub: expectedSubject,
     })
 
     const credentialsTenant1 = await holderTenant1.modules.openId4VcHolder.requestCredentials({
@@ -1031,9 +1034,7 @@ describe('OpenId4Vc', () => {
       throw new Error('Presentation exchange not defined')
     }
 
-    // TODO: better way to auto-select
-    const presentationExchangeService = holder.agent.dependencyManager.resolve(DifPresentationExchangeService)
-    const selectedCredentials = presentationExchangeService.selectCredentialsForRequest(
+    const selectedCredentials = holder.agent.modules.openId4VcHolder.selectCredentialsForRequest(
       resolvedAuthorizationRequest.presentationExchange.credentialsForRequest
     )
 
@@ -1133,6 +1134,7 @@ describe('OpenId4Vc', () => {
           },
         },
       ],
+      descriptors: expect.any(Array),
     })
   })
 
@@ -1262,9 +1264,7 @@ describe('OpenId4Vc', () => {
       throw new Error('Presentation exchange not defined')
     }
 
-    // TODO: better way to auto-select
-    const presentationExchangeService = holder.agent.dependencyManager.resolve(DifPresentationExchangeService)
-    const selectedCredentials = presentationExchangeService.selectCredentialsForRequest(
+    const selectedCredentials = holder.agent.modules.openId4VcHolder.selectCredentialsForRequest(
       resolvedAuthorizationRequest.presentationExchange.credentialsForRequest
     )
 
@@ -1364,6 +1364,7 @@ describe('OpenId4Vc', () => {
           },
         },
       ],
+      descriptors: expect.any(Array),
     })
   })
 
@@ -1564,9 +1565,7 @@ describe('OpenId4Vc', () => {
       throw new Error('Presentation exchange not defined')
     }
 
-    // TODO: better way to auto-select
-    const presentationExchangeService = holder.agent.dependencyManager.resolve(DifPresentationExchangeService)
-    const selectedCredentials = presentationExchangeService.selectCredentialsForRequest(
+    const selectedCredentials = holder.agent.modules.openId4VcHolder.selectCredentialsForRequest(
       resolvedAuthorizationRequest.presentationExchange.credentialsForRequest
     )
 
@@ -1705,6 +1704,7 @@ describe('OpenId4Vc', () => {
           },
         },
       ],
+      descriptors: expect.any(Array),
     })
   })
 
@@ -1811,16 +1811,14 @@ describe('OpenId4Vc', () => {
         resolvedCredentialOffer1.credentialOfferPayload.grants?.[preAuthorizedCodeGrantIdentifier]?.[
           'pre-authorized_code'
         ],
-      scope: 'UniversityDegreeCredential',
+
       aud: `http://localhost:1234/oid4vci/${openIdIssuerTenant1.issuerId}`,
       exp: expect.any(Number),
       iat: expect.any(Number),
       iss: `http://localhost:1234/oid4vci/${openIdIssuerTenant1.issuerId}`,
       jti: expect.any(String),
       nbf: undefined,
-      sub: resolvedCredentialOffer1.credentialOfferPayload.grants?.[preAuthorizedCodeGrantIdentifier]?.[
-        'pre-authorized_code'
-      ],
+      sub: expect.stringContaining('credo:'),
     })
 
     const credentialsTenant1 = await holderTenant1.modules.openId4VcHolder.requestCredentials({
@@ -2065,9 +2063,7 @@ describe('OpenId4Vc', () => {
       throw new Error('Presentation exchange not defined')
     }
 
-    // TODO: better way to auto-select
-    const presentationExchangeService = holder.agent.dependencyManager.resolve(DifPresentationExchangeService)
-    const selectedCredentials = presentationExchangeService.selectCredentialsForRequest(
+    const selectedCredentials = holder.agent.modules.openId4VcHolder.selectCredentialsForRequest(
       resolvedAuthorizationRequest.presentationExchange.credentialsForRequest
     )
 
@@ -2199,6 +2195,7 @@ describe('OpenId4Vc', () => {
           },
         },
       ],
+      descriptors: expect.any(Array),
     })
   })
 
@@ -2399,9 +2396,7 @@ describe('OpenId4Vc', () => {
       throw new Error('Presentation exchange not defined')
     }
 
-    // TODO: better way to auto-select
-    const presentationExchangeService = holder.agent.dependencyManager.resolve(DifPresentationExchangeService)
-    const selectedCredentials = presentationExchangeService.selectCredentialsForRequest(
+    const selectedCredentials = holder.agent.modules.openId4VcHolder.selectCredentialsForRequest(
       resolvedAuthorizationRequest.presentationExchange.credentialsForRequest
     )
 
@@ -2540,6 +2535,7 @@ describe('OpenId4Vc', () => {
           },
         },
       ],
+      descriptors: expect.any(Array),
     })
   })
 })

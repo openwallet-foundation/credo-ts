@@ -128,7 +128,10 @@ export function configureAuthorizationEndpoint(router: Router, config: OpenId4Vc
         verificationSession,
         jarmHeader,
       })
-      return sendJsonResponse(response, next, {})
+      return sendJsonResponse(response, next, {
+        // Used only for presentation during issuance flow, to prevent session fixation.
+        presentation_during_issuance_session: verificationSession.presentationDuringIssuanceSession,
+      })
     } catch (error) {
       return sendErrorResponse(response, next, agentContext.config.logger, 500, 'invalid_request', error)
     }

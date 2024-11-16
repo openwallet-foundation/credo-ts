@@ -58,7 +58,7 @@ import {
 
 import { OpenId4VciCredentialFormatProfile } from '../shared'
 import { getOid4vciCallbacks } from '../shared/callbacks'
-import { getOfferedCredentials } from '../shared/issuerMetadataUtils'
+import { getOfferedCredentials, getScopesFromCredentialConfigurationsSupported } from '../shared/issuerMetadataUtils'
 import { getKeyFromDid, getSupportedJwaSignatureAlgorithms } from '../shared/utils'
 
 import { openId4VciSupportedCredentialFormats } from './OpenId4VciHolderServiceOptions'
@@ -118,18 +118,20 @@ export class OpenId4VciHolderService {
     resolvedCredentialOffer: OpenId4VciResolvedCredentialOffer,
     authCodeFlowOptions: OpenId4VciAuthCodeFlowOptions
   ): Promise<OpenId4VciResolvedAuthorizationRequest> {
-    // TODO: add support for scope based on metadata
-    const { clientId, redirectUri, scope } = authCodeFlowOptions
-    const { metadata, credentialOfferPayload } = resolvedCredentialOffer
+    const { clientId, redirectUri } = authCodeFlowOptions
+    const { metadata, credentialOfferPayload, offeredCredentialConfigurations } = resolvedCredentialOffer
 
     const client = this.getClient(agentContext)
 
-    // TODO: we should already support DPoP at the PAR endpoint.
+    // If scope is not provided, we request scope for all offered credentials
+    const scope =
+      authCodeFlowOptions.scope ?? getScopesFromCredentialConfigurationsSupported(offeredCredentialConfigurations)
+
     const authorizationResult = await client.initiateAuthorization({
       clientId,
       issuerMetadata: metadata,
       credentialOffer: credentialOfferPayload,
-      scope: scope?.join(' '),
+      scope: scope.join(' '),
       redirectUri,
     })
 
@@ -137,6 +139,7 @@ export class OpenId4VciHolderService {
       return {
         authorizationFlow: AuthorizationFlow.PresentationDuringIssuance,
         oid4vpRequestUrl: authorizationResult.oid4vpRequestUrl,
+        authSession: authorizationResult.authSession,
       }
     }
 
@@ -242,7 +245,6 @@ export class OpenId4VciHolderService {
     //   : undefined
 
     // TODO: we should support DPoP in this request as well
-    // TODO: this should not return pkce (it's only needed if we fallback from auth challenge to PAR)
     const { authorizationChallengeResponse } = await client.retrieveAuthorizationCodeUsingPresentation({
       authSession: options.authSession,
       presentationDuringIssuanceSession: options.presentationDuringIssuanceSession,
@@ -288,7 +290,8 @@ export class OpenId4VciHolderService {
           pkceCodeVerifier: options.codeVerifier,
           redirectUri: options.redirectUri,
           additionalRequestPayload: {
-            // TODO: should we make this a param? Or should we handle it as part of client auth?
+            // TODO: handle it as part of client auth once we support
+            // assertion based client authentication
             client_id: options.clientId,
           },
         })
@@ -324,7 +327,7 @@ export class OpenId4VciHolderService {
   ) {
     const { resolvedCredentialOffer, acceptCredentialOfferOptions } = options
     const { metadata, offeredCredentialConfigurations } = resolvedCredentialOffer
-    const { credentialConfigurationIds, credentialBindingResolver, verifyCredentialStatus } =
+    const { credentialConfigurationIds, credentialBindingResolver, verifyCredentialStatus, requestBatch } =
       acceptCredentialOfferOptions
     const client = this.getClient(agentContext)
 
@@ -377,7 +380,6 @@ export class OpenId4VciHolderService {
             issuerMetadata: metadata,
             accessToken: options.accessToken,
             credentialConfigurationId: credentialConfigurationsToRequest[0][0],
-            // TODO: do we already catch the dpop from error response?
             dpop: options.dpop
               ? await this.getDpopOptions(agentContext, {
                   ...options.dpop,
@@ -398,8 +400,12 @@ export class OpenId4VciHolderService {
       throw new CredoError('No cNonce provided and unable to acquire cNonce from the credential issuer')
     }
 
-    // TODO: batch issuance should be optional
-    const batchSize = metadata.credentialIssuer.batch_credential_issuance?.batch_size ?? 1
+    // If true: use max from issuer or otherwise 1
+    // If number not 0: use the number
+    // Else: use 1
+    const batchSize =
+      requestBatch === true ? metadata.credentialIssuer.batch_credential_issuance?.batch_size ?? 1 : requestBatch || 1
+
     for (const [offeredCredentialId, offeredCredentialConfiguration] of credentialConfigurationsToRequest) {
       // Get all options for the credential request (such as which kid to use, the signature algorithm, etc)
       const { jwtSigner } = await this.getCredentialRequestOptions(agentContext, {
@@ -518,6 +524,7 @@ export class OpenId4VciHolderService {
 
     // Now we need to determine how the credential will be bound to us
     const credentialBinding = await options.credentialBindingResolver({
+      agentContext,
       credentialFormat: format,
       signatureAlgorithms,
       supportedVerificationMethods,
@@ -846,10 +853,10 @@ export class OpenId4VciHolderService {
       if (!result.every((r) => r.result.isValid)) {
         agentContext.config.logger.error('Failed to validate credentials', { result })
         throw new CredoError(
-          `Failed to validate mdoc credential. Results = ${result
-            .map((r) => (r.result.isValid ? undefined : r.result.error))
+          `Failed to validate mdoc credential(s). \n - ${result
+            .map((r, i) => (r.result.isValid ? undefined : `(${i}) ${r.result.error}`))
             .filter(Boolean)
-            .join(', ')}`
+            .join('\n - ')}`
         )
       }
 

@@ -8,21 +8,22 @@ import type { BaseEvent, ModulesMap, X509Module } from '@credo-ts/core'
 import type { TenantsModule } from '@credo-ts/tenants'
 import type { Observable } from 'rxjs'
 
-import { Agent, LogLevel, utils } from '@credo-ts/core'
+import { Agent, getDomainFromUrl, getJwkFromKey, LogLevel, utils } from '@credo-ts/core'
 import { ReplaySubject, lastValueFrom, filter, timeout, catchError, take, map } from 'rxjs'
 
 import {
   TestLogger,
   agentDependencies,
   createDidKidVerificationMethod,
+  createX509Certificate,
   setupEventReplaySubjects,
 } from '../../core/tests'
-import { OpenId4VcVerifierEvents, OpenId4VcIssuerEvents } from '../src'
+import { OpenId4VcVerifierEvents, OpenId4VcIssuerEvents, OpenId4VcIssuerModule, OpenId4VcVerifierModule } from '../src'
 
 export async function createAgentFromModules<MM extends ModulesMap>(
   label: string,
   modulesMap: MM,
-  secretKey: string,
+  secretKey?: string,
   customFetch?: typeof global.fetch
 ) {
   const agent = new Agent<MM>({
@@ -30,7 +31,7 @@ export async function createAgentFromModules<MM extends ModulesMap>(
       label,
       walletConfig: { id: utils.uuid(), key: utils.uuid() },
       allowInsecureHttpUrls: true,
-      logger: new TestLogger(LogLevel.off),
+      logger: new TestLogger(LogLevel.debug),
     },
     dependencies: {
       ...agentDependencies,
@@ -39,8 +40,16 @@ export async function createAgentFromModules<MM extends ModulesMap>(
     modules: modulesMap,
   })
 
+  let dns: string = 'localhost'
+  if (modulesMap.openId4VcIssuer instanceof OpenId4VcIssuerModule) {
+    dns = getDomainFromUrl(modulesMap.openId4VcIssuer.config.baseUrl)
+  } else if (modulesMap.openId4VcVerifier instanceof OpenId4VcVerifierModule) {
+    dns = getDomainFromUrl(modulesMap.openId4VcVerifier.config.baseUrl)
+  }
+
   await agent.initialize()
   const data = await createDidKidVerificationMethod(agent.context, secretKey)
+  const certificate = await createX509Certificate(agent.context, dns, data.key)
 
   const [replaySubject] = setupEventReplaySubjects(
     [agent],
@@ -49,6 +58,8 @@ export async function createAgentFromModules<MM extends ModulesMap>(
 
   return {
     ...data,
+    jwk: getJwkFromKey(data.key),
+    certificate: certificate.certificate,
     agent,
     replaySubject,
   }

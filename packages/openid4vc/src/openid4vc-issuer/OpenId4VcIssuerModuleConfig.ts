@@ -9,7 +9,7 @@ import { importExpress } from '../shared/router'
 const DEFAULT_C_NONCE_EXPIRES_IN = 1 * 60 // 1 minute
 const DEFAULT_AUTHORIZATION_CODE_EXPIRES_IN = 1 * 60 // 1 minute
 const DEFAULT_TOKEN_EXPIRES_IN = 3 * 60 // 3 minutes
-const DEFAULT_PRE_AUTH_CODE_EXPIRES_IN = 3 * 60 // 3 minutes
+const DEFAULT_STATEFULL_CREDENTIAL_OFFER_EXPIRES_IN = 3 * 60 // 3 minutes
 
 export interface OpenId4VcIssuerModuleConfigOptions {
   /**
@@ -35,11 +35,13 @@ export interface OpenId4VcIssuerModuleConfigOptions {
   cNonceExpiresInSeconds?: number
 
   /**
-   * The time after which an pre-authorized code will expire.
+   * The time after which a statefull credential offer not bound to a subject expires. Once the offer has been bound
+   * to a subject the access token expiration takes effect. This is to prevent long-lived `pre-authorized_code` and
+   * `issuer_state` values.
    *
-   * @default 360 (5 minutes)
+   * @default 180 (3 minutes)
    */
-  preAuthorizedCodeExpirationInSeconds?: number
+  statefullCredentialOfferExpirationInSeconds?: number
 
   /**
    * The time after which an authorization code will expire.
@@ -51,9 +53,30 @@ export interface OpenId4VcIssuerModuleConfigOptions {
   /**
    * The time after which an access token will expire.
    *
-   * @default 360 (5 minutes)
+   * @default 180 (3 minutes)
    */
   accessTokenExpiresInSeconds?: number
+
+  /**
+   * Whether DPoP is required for all issuance sessions. This value can be overridden when creating
+   * a credential offer. If dpop is not required, but used by a client in the first request to credo,
+   * DPoP will be required going forward.
+   *
+   * @default false
+   */
+  dpopRequired?: boolean
+
+  /**
+   * Whether to allow dynamic issuance sessions based on a credential request.
+   *
+   * This requires an external authorization server which issues access tokens without
+   * a `pre-authorized_code` or `issuer_state` parameter.
+   *
+   * Credo only support statefull crednetial offer sessions (pre-auth or presentation during issuance)
+   *
+   * @default false
+   */
+  allowDynamicIssuanceSessions?: boolean
 
   /**
    * A function mapping a credential request to the credential to be issued.
@@ -147,12 +170,14 @@ export class OpenId4VcIssuerModuleConfig {
   }
 
   /**
-   * The time after which a pre-authorized_code will expire.
+   * The time after which a statefull credential offer not bound to a subject expires. Once the offer has been bound
+   * to a subject the access token expiration takes effect. This is to prevent long-lived `pre-authorized_code` and
+   * `issuer_state` values.
    *
    * @default 360 (5 minutes)
    */
-  public get preAuthorizedCodeExpirationInSeconds(): number {
-    return this.options.preAuthorizedCodeExpirationInSeconds ?? DEFAULT_PRE_AUTH_CODE_EXPIRES_IN
+  public get statefullCredentialOfferExpirationInSeconds(): number {
+    return this.options.statefullCredentialOfferExpirationInSeconds ?? DEFAULT_STATEFULL_CREDENTIAL_OFFER_EXPIRES_IN
   }
 
   /**
@@ -171,6 +196,31 @@ export class OpenId4VcIssuerModuleConfig {
    */
   public get accessTokenExpiresInSeconds(): number {
     return this.options.accessTokenExpiresInSeconds ?? DEFAULT_TOKEN_EXPIRES_IN
+  }
+
+  /**
+   * Whether DPoP is required for all issuance sessions. This value can be overridden when creating
+   * a credential offer. If dpop is not required, but used by a client in the first request to credo,
+   * DPoP will be required going forward.
+   *
+   * @default false
+   */
+  public get dpopRequired(): boolean {
+    return this.options.dpopRequired ?? false
+  }
+
+  /**
+   * Whether to allow dynamic issuance sessions based on a credential request.
+   *
+   * This requires an external authorization server which issues access tokens without
+   * a `pre-authorized_code` or `issuer_state` parameter.
+   *
+   * Credo only supports statefull crednetial offer sessions (pre-auth or presentation during issuance)
+   *
+   * @default false
+   */
+  public get allowDynamicIssuanceSessions(): boolean {
+    return this.options.allowDynamicIssuanceSessions ?? false
   }
 
   /**

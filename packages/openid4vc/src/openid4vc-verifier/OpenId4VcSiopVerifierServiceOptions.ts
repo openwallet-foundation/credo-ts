@@ -10,6 +10,7 @@ import type {
   DifPresentationExchangeSubmission,
   DifPresentationExchangeDefinitionV2,
   VerifiablePresentation,
+  DifPexPresentationWithDescriptor,
 } from '@credo-ts/core'
 
 export type ResponseMode = 'direct_post' | 'direct_post.jwt'
@@ -60,6 +61,14 @@ export interface OpenId4VcSiopCreateAuthorizationRequestReturn {
   verificationSession: OpenId4VcVerificationSessionRecord
 }
 
+export interface OpenId4VcSiopVerifiedAuthorizationResponsePresentationExchange {
+  submission: DifPresentationExchangeSubmission
+  definition: DifPresentationExchangeDefinition
+  presentations: Array<VerifiablePresentation>
+
+  descriptors: DifPexPresentationWithDescriptor[]
+}
+
 /**
  * Either `idToken` and/or `presentationExchange` will be present.
  */
@@ -68,11 +77,7 @@ export interface OpenId4VcSiopVerifiedAuthorizationResponse {
     payload: OpenId4VcSiopIdTokenPayload
   }
 
-  presentationExchange?: {
-    submission: DifPresentationExchangeSubmission
-    definition: DifPresentationExchangeDefinition
-    presentations: Array<VerifiablePresentation>
-  }
+  presentationExchange?: OpenId4VcSiopVerifiedAuthorizationResponsePresentationExchange
 }
 
 /**

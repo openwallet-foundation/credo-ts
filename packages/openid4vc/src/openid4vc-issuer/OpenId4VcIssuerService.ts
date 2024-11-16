@@ -6,6 +6,7 @@ import type {
   OpenId4VciSignW3cCredentials,
   OpenId4VciAuthorizationCodeFlowConfig,
   OpenId4VciCredentialRequestAuthorization,
+  OpenId4VciCreateStatelessCredentialOfferOptions,
 } from './OpenId4VcIssuerServiceOptions'
 import type {
   OpenId4VcCredentialHolderBindingWithKey,
@@ -28,6 +29,7 @@ import {
 import {
   CredentialIssuerMetadata,
   CredentialRequestFormatSpecific,
+  extractScopesForCredentialConfigurationIds,
   getCredentialConfigurationsMatchingRequestFormat,
   Oid4vciDraftVersion,
   Oid4vciIssuer,
@@ -92,6 +94,50 @@ export class OpenId4VcIssuerService {
     this.openId4VcIssuanceSessionRepository = openId4VcIssuanceSessionRepository
   }
 
+  public async createStatelessCredentialOffer(
+    agentContext: AgentContext,
+    options: OpenId4VciCreateStatelessCredentialOfferOptions & { issuer: OpenId4VcIssuerRecord }
+  ) {
+    const { authorizationCodeFlowConfig, issuer, offeredCredentials } = options
+    const vcIssuer = this.getIssuer(agentContext)
+    const issuerMetadata = await this.getIssuerMetadata(agentContext, issuer)
+
+    const uniqueOfferedCredentials = Array.from(new Set(options.offeredCredentials))
+    if (uniqueOfferedCredentials.length !== offeredCredentials.length) {
+      throw new CredoError('All offered credentials must have unique ids.')
+    }
+
+    // Check if all the offered credential configuration ids have a scope value. If not, it won't be possible to actually request
+    // issuance of the crednetial later on
+    extractScopesForCredentialConfigurationIds({
+      credentialConfigurationIds: options.offeredCredentials,
+      issuerMetadata,
+      throwOnConfigurationWithoutScope: true,
+    })
+
+    if (authorizationCodeFlowConfig.authorizationServerUrl === issuerMetadata.credentialIssuer.credential_issuer) {
+      throw new CredoError(
+        'Stateless offers can only be created for external authorization servers. Make sure to configure an external authorization server on the issuer record, and provide the authoriation server url.'
+      )
+    }
+
+    const { credentialOffer, credentialOfferObject } = await vcIssuer.createCredentialOffer({
+      credentialConfigurationIds: options.offeredCredentials,
+      grants: {
+        authorization_code: {
+          authorization_server: authorizationCodeFlowConfig.authorizationServerUrl,
+        },
+      },
+      credentialOfferScheme: options.baseUri,
+      issuerMetadata,
+    })
+
+    return {
+      credentialOffer,
+      credentialOfferObject,
+    }
+  }
+
   public async createCredentialOffer(
     agentContext: AgentContext,
     options: OpenId4VciCreateCredentialOfferOptions & { issuer: OpenId4VcIssuerRecord }
@@ -121,6 +167,16 @@ export class OpenId4VcIssuerService {
       // It doesn't really matter what the url is, as long as it's unique
       utils.uuid(),
     ])
+
+    // Check if all the offered credential configuration ids have a scope value. If not, it won't be possible to actually request
+    // issuance of the crednetial later on. For pre-auth it's not needed to add a scope.
+    if (options.authorizationCodeFlowConfig) {
+      extractScopesForCredentialConfigurationIds({
+        credentialConfigurationIds: options.offeredCredentials,
+        issuerMetadata,
+        throwOnConfigurationWithoutScope: true,
+      })
+    }
 
     const grants = await this.getGrantsFromConfig(agentContext, {
       issuerMetadata,
@@ -277,7 +333,7 @@ export class OpenId4VcIssuerService {
       proofSigners,
     })
 
-    // NOTE: nonce in crednetial response is deprecated in newer drafts, but for now we keep it in
+    // NOTE: nonce in credential response is deprecated in newer drafts, but for now we keep it in
     const { cNonce, cNonceExpiresInSeconds } = await this.createNonce(agentContext, issuer)
     const credentialResponse = vcIssuer.createCredentialResponse({
       credential: credentialRequest.proof ? signedCredentials.credentials[0] : undefined,
@@ -350,6 +406,7 @@ export class OpenId4VcIssuerService {
       accessTokenPublicKeyFingerprint: accessTokenSignerKey.fingerprint,
       authorizationServerConfigs: options.authorizationServerConfigs,
       credentialConfigurationsSupported: options.credentialConfigurationsSupported,
+      batchCredentialIssuance: options.batchCredentialIssuance,
     })
 
     await this.openId4VcIssuerRepository.save(agentContext, openId4VcIssuer)
@@ -411,6 +468,11 @@ export class OpenId4VcIssuerService {
       authorization_servers: authorizationServers,
       display: issuerRecord.display,
       nonce_endpoint: joinUriParts(issuerUrl, [config.nonceEndpointPath]),
+      batch_credential_issuance: issuerRecord.batchCredentialIssuance
+        ? {
+            batch_size: issuerRecord.batchCredentialIssuance.batchSize,
+          }
+        : undefined,
     } satisfies CredentialIssuerMetadata
 
     const issuerAuthorizationServer = {
@@ -584,7 +646,7 @@ export class OpenId4VcIssuerService {
       grants[preAuthorizedCodeGrantIdentifier] = {
         'pre-authorized_code': preAuthorizedCode ?? (await agentContext.wallet.generateNonce()),
         tx_code: txCode,
-        authorization_server: authorizationServerUrl,
+        authorization_server: config.issuerMetadata.authorizationServers ? authorizationServerUrl : undefined,
       }
     }
 
@@ -601,17 +663,13 @@ export class OpenId4VcIssuerService {
         )
       }
 
-      const authorization_server = requirePresentationDuringIssuance
-        ? issuerMetadata.credentialIssuer.credential_issuer
-        : authorizationCodeFlowConfig.authorizationServerUrl
-
       grants.authorization_code = {
         issuer_state:
           // TODO: the issuer_state should not be guessable, so it's best if we generate it and now allow the user to provide it?
-          // but same is true for the pre-auth code
+          // but same is true for the pre-auth code and users of credo can also provide that value. We can't easily do unique constraint with askat
           authorizationCodeFlowConfig.issuerState ??
           TypedArrayEncoder.toBase64URL(agentContext.wallet.getRandomValues(32)),
-        authorization_server,
+        authorization_server: config.issuerMetadata.authorizationServers ? authorizationServerUrl : undefined,
       }
     }
 
@@ -767,7 +825,7 @@ export class OpenId4VcIssuerService {
       holderBindings,
       credentialOffer: issuanceSession.credentialOfferPayload,
 
-      // NOTE: this will throw an error if the verifier module is registered and there is a
+      // NOTE: this will throw an error if the verifier module is not registered and there is a
       // verification session. But you can't get here without the verifier module anyway
       verification: issuanceSession.presentation?.openId4VcVerificationSessionId
         ? {
@@ -802,7 +860,7 @@ export class OpenId4VcIssuerService {
     }
 
     // NOTE: we may want to allow a mismatch between this (as with new attestations not every key
-    // needs a separate proof), but for it needs to match
+    // needs a separate proof), but for now it needs to match
     if (signOptions.credentials.length !== holderBindings.length) {
       throw new CredoError(
         `Credential request to credential mapper returned '${signOptions.credentials.length}' to be signed, while only '${holderBindings.length}' holder binding entries were provided. Make sure to return one credential for each holder binding entry`

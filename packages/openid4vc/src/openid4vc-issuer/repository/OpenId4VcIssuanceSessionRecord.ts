@@ -2,8 +2,8 @@ import type { OpenId4VciCredentialOfferPayload } from '../../shared'
 import type { RecordTags, TagsBase } from '@credo-ts/core'
 
 import { PkceCodeChallengeMethod } from '@animo-id/oauth2'
-import { CredoError, BaseRecord, utils } from '@credo-ts/core'
-import { Transform } from 'class-transformer'
+import { CredoError, BaseRecord, utils, isJsonObject } from '@credo-ts/core'
+import { Transform, TransformationType } from 'class-transformer'
 
 import { OpenId4VcIssuanceSessionState } from '../OpenId4VcIssuanceSessionState'
 
@@ -24,6 +24,18 @@ export interface OpenId4VcIssuanceSessionAuthorization {
    * is used to bind the subsequent Authorization Request with the Credential Issuer to a context set up during previous steps.
    */
   issuerState?: string
+
+  /**
+   * Scopes that are granted when the authorization is complete.
+   */
+  scopes?: string[]
+
+  /**
+   * Subject the issuance session is bound to. For internal authorization this will be defined
+   * from the moment the token is issued. For external authorization this will be defined after
+   * the first time the credential endpoint has been called.
+   */
+  subject?: string
 }
 
 export interface OpenId4VcIssuanceSessionPresentation {
@@ -34,7 +46,6 @@ export interface OpenId4VcIssuanceSessionPresentation {
 
   /**
    * Auth session for the presentation during issuance flow
-   * @todo can't we use some other param for this, or maybe a JWT so it's stateless?
    */
   authSession?: string
 
@@ -56,6 +67,11 @@ export type DefaultOpenId4VcIssuanceSessionRecordTags = {
   // auth flow
   authorizationCode?: string
   issuerState?: string
+
+  authorizationSubject?: string
+
+  // presentation during issuance
+  presentationAuthSession?: string
 }
 
 export interface OpenId4VcIssuanceSessionRecordProps {
@@ -65,8 +81,6 @@ export interface OpenId4VcIssuanceSessionRecordProps {
 
   state: OpenId4VcIssuanceSessionState
   issuerId: string
-
-  dpopRequired?: boolean
 
   /**
    * Client id will mostly be used when doing auth flow
@@ -153,11 +167,31 @@ export class OpenId4VcIssuanceSessionRecord extends BaseRecord<DefaultOpenId4VcI
     codeChallenge: string
   }
 
-  public dpopRequired?: boolean
-
   /**
    * Authorization code flow specific metadata values
    */
+  @Transform(({ type, value }) => {
+    if (type === TransformationType.PLAIN_TO_CLASS && isJsonObject(value) && typeof value.codeExpiresAt === 'string') {
+      return {
+        ...value,
+        codeExpiresAt: new Date(value.codeExpiresAt),
+      }
+    }
+    if (type === TransformationType.CLASS_TO_CLASS && isJsonObject(value) && value.codeExpiresAt instanceof Date) {
+      return {
+        ...value,
+        codeExpiresAt: new Date(value.codeExpiresAt.getTime()),
+      }
+    }
+    if (type === TransformationType.CLASS_TO_PLAIN && isJsonObject(value) && value.codeExpiresAt instanceof Date) {
+      return {
+        ...value,
+        codeExpiresAt: value.codeExpiresAt.toISOString(),
+      }
+    }
+
+    return value
+  })
   public authorization?: OpenId4VcIssuanceSessionAuthorization
 
   /**
@@ -201,7 +235,6 @@ export class OpenId4VcIssuanceSessionRecord extends BaseRecord<DefaultOpenId4VcI
       this.userPin = props.userPin
       this.preAuthorizedCode = props.preAuthorizedCode
       this.pkce = props.pkce
-      this.dpopRequired = props.dpopRequired
       this.authorization = props.authorization
       this.credentialOfferUri = props.credentialOfferUri
       this.credentialOfferPayload = props.credentialOfferPayload
@@ -238,6 +271,11 @@ export class OpenId4VcIssuanceSessionRecord extends BaseRecord<DefaultOpenId4VcI
       // Auth flow
       issuerState: this.authorization?.issuerState,
       authorizationCode: this.authorization?.code,
+
+      authorizationSubject: this.authorization?.subject,
+
+      // Presentation during issuance
+      presentationAuthSession: this.presentation?.authSession,
     }
   }
 }

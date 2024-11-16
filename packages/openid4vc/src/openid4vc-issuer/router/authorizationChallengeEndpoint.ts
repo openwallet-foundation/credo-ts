@@ -8,7 +8,11 @@ import type { NextFunction, Response, Router } from 'express'
 import { Oauth2ErrorCodes, Oauth2ServerErrorResponseError } from '@animo-id/oauth2'
 import { TypedArrayEncoder } from '@credo-ts/core'
 
-import { OpenId4VcVerificationSessionState, OpenId4VcVerifierApi } from '../../openid4vc-verifier'
+import {
+  OpenId4VcVerificationSessionRepository,
+  OpenId4VcVerificationSessionState,
+  OpenId4VcVerifierApi,
+} from '../../openid4vc-verifier'
 import {
   getAllowedAndRequestedScopeValues,
   getCredentialConfigurationsSupportedForScopes,
@@ -110,6 +114,17 @@ async function handleAuthorizationChallengeNoAuthSession(options: {
     })
   }
 
+  // FIXME: we need to authenticate the client. Could be either using client_id/client_secret
+  // but that doesn't make sense for wallets. So for now we just allow any client_id and we will
+  // need OAuth2 Attestation Based Client Auth and dynamically allow client_ids based on wallet providers
+  // we trust. Will add this in a follow up PR (basically we do no client authentication at the moment)
+  // if (!authorizationChallengeRequest.client_id) {
+  //   throw new Oauth2ServerErrorResponseError({
+  //     error: Oauth2ErrorCodes.InvalidRequest,
+  //     error_description: `Missing required 'client_id' parameter..`,
+  //   })
+  // }
+
   const issuanceSession = await openId4VcIssuerService.findSingleIssuancSessionByQuery(agentContext, {
     issuerId: issuer.issuerId,
     issuerState: authorizationChallengeRequest.issuer_state,
@@ -136,8 +151,6 @@ async function handleAuthorizationChallengeNoAuthSession(options: {
     issuerMetadata.credentialIssuer.credential_configurations_supported
   )
 
-  // NOTE: for now we assume all credential configurations that were offered have a scope (should
-  // be checked when creating offer that requires presentation)
   const allowedScopes = getScopesFromCredentialConfigurationsSupported(offeredCredentialConfigurations)
   const requestedScopes = getAllowedAndRequestedScopeValues({
     allowedScopes,
@@ -155,20 +168,39 @@ async function handleAuthorizationChallengeNoAuthSession(options: {
     })
   }
 
-  const { authorizationRequest, verificationSession } =
-    await config.getVerificationSessionForIssuanceSessionAuthorization({
-      agentContext,
-      issuanceSession,
-      requestedCredentialConfigurations,
-      scopes: requestedScopes,
-    })
+  const {
+    authorizationRequest,
+    verificationSession,
+    scopes: presentationScopes,
+  } = await config.getVerificationSessionForIssuanceSessionAuthorization({
+    agentContext,
+    issuanceSession,
+    requestedCredentialConfigurations,
+    scopes: requestedScopes,
+  })
+
+  // Store presentation during issuance session on the record
+  verificationSession.presentationDuringIssuanceSession = TypedArrayEncoder.toBase64URL(
+    agentContext.wallet.getRandomValues(32)
+  )
+  await agentContext.dependencyManager
+    .resolve(OpenId4VcVerificationSessionRepository)
+    .update(agentContext, verificationSession)
 
   const authSession = TypedArrayEncoder.toBase64URL(agentContext.wallet.getRandomValues(32))
+  issuanceSession.authorization = {
+    ...issuanceSession.authorization,
+    scopes: presentationScopes,
+  }
   issuanceSession.presentation = {
     required: true,
     authSession,
     openId4VcVerificationSessionId: verificationSession.id,
   }
+
+  // NOTE: should only allow authenticated clients in the future.
+  issuanceSession.clientId = authorizationChallengeRequest.client_id
+
   await openId4VcIssuerService.updateState(
     agentContext,
     issuanceSession,
@@ -204,15 +236,14 @@ async function handleAuthorizationChallengeWithAuthSession(options: {
 
   const issuanceSession = await openId4VcIssuerService.findSingleIssuancSessionByQuery(agentContext, {
     issuerId: issuer.issuerId,
-    issuerState: authorizationChallengeRequest.auth_session,
+    presentationAuthSession: authorizationChallengeRequest.auth_session,
   })
   const allowedStates = [OpenId4VcIssuanceSessionState.AuthorizationInitiated]
   if (
-    !issuanceSession ||
-    !issuanceSession.presentation ||
+    !issuanceSession?.presentation ||
     !issuanceSession.presentation.openId4VcVerificationSessionId ||
     !issuanceSession.presentation.authSession ||
-    allowedStates.includes(issuanceSession.state)
+    !allowedStates.includes(issuanceSession.state)
   ) {
     throw new Oauth2ServerErrorResponseError(
       {
@@ -253,19 +284,25 @@ async function handleAuthorizationChallengeWithAuthSession(options: {
     .then(async (verificationSession) => {
       // Issuance session cannot be used anymore
       if (verificationSession.state === OpenId4VcVerificationSessionState.Error) {
-        issuanceSession.errorMessage = `Associated openId4VcVeificationSessionRecord with id '${openId4VcVerificationSessionId}' has error state`
+        issuanceSession.errorMessage = `Associated openId4VcVerificationSessionRecord with id '${openId4VcVerificationSessionId}' has error state`
         await openId4VcIssuerService.updateState(agentContext, issuanceSession, OpenId4VcIssuanceSessionState.Error)
       }
 
-      if (verificationSession.state !== OpenId4VcVerificationSessionState.ResponseVerified) {
+      if (
+        verificationSession.state !== OpenId4VcVerificationSessionState.ResponseVerified ||
+        authorizationChallengeRequest.presentation_during_issuance_session !==
+          verificationSession.presentationDuringIssuanceSession
+      ) {
         throw new Oauth2ServerErrorResponseError(
           {
-            // InsufficentAuthorization?
             error: Oauth2ErrorCodes.InvalidSession,
-            error_description: `Invalid 'auth_session'`,
+            error_description: `Invalid presentation for 'auth_session'`,
           },
           {
-            internalMessage: `Openid4vc session with id '${openId4VcVerificationSessionId}' has state '${verificationSession.state}', while '${OpenId4VcVerificationSessionState.ResponseVerified}' was expected.`,
+            internalMessage:
+              verificationSession.state !== OpenId4VcVerificationSessionState.ResponseVerified
+                ? `Openid4vc verification session with id '${openId4VcVerificationSessionId}' has state '${verificationSession.state}', while '${OpenId4VcVerificationSessionState.ResponseVerified}' was expected.`
+                : `Openid4vc verification session with id '${openId4VcVerificationSessionId}' has 'presentation_during_issuance_session' '${verificationSession.presentationDuringIssuanceSession}', but authorization challenge request provided value '${authorizationChallengeRequest.presentation_during_issuance_session}'.`,
           }
         )
       }
@@ -288,7 +325,7 @@ async function handleAuthorizationChallengeWithAuthSession(options: {
     OpenId4VcIssuanceSessionState.AuthorizationGranted
   )
 
-  const authorizationChallengeResponse = authorizationServer.createAuthorizationChallengeResponse({
+  const { authorizationChallengeResponse } = authorizationServer.createAuthorizationChallengeResponse({
     authorizationCode,
   })
 

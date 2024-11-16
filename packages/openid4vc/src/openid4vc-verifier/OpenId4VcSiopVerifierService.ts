@@ -43,6 +43,7 @@ import {
   MdocDeviceResponse,
   TypedArrayEncoder,
   Jwt,
+  extractPresentationsWithDescriptorsFromSubmission,
 } from '@credo-ts/core'
 import {
   AuthorizationRequest,
@@ -332,7 +333,7 @@ export class OpenId4VcSiopVerifierService {
 
     const presentationDefinitions = await authorizationRequest.getPresentationDefinitions()
     if (presentationDefinitions && presentationDefinitions.length > 0) {
-      const presentations = authorizationResponse.payload.vp_token
+      const rawPresentations = authorizationResponse.payload.vp_token
         ? await extractPresentationsFromVpToken(authorizationResponse.payload.vp_token, {
             hasher: Hasher.hash,
           })
@@ -346,12 +347,18 @@ export class OpenId4VcSiopVerifierService {
       }
 
       // FIXME: should return type be an array? As now it doesn't always match the submission
-      const presentationsArray = Array.isArray(presentations) ? presentations : [presentations]
+      const verifiablePresentations = Array.isArray(rawPresentations)
+        ? rawPresentations.map(getVerifiablePresentationFromSphereonWrapped)
+        : getVerifiablePresentationFromSphereonWrapped(rawPresentations)
+      const definition = presentationDefinitions[0].definition
 
       presentationExchange = {
-        definition: presentationDefinitions[0].definition,
-        presentations: presentationsArray.map(getVerifiablePresentationFromSphereonWrapped),
+        definition,
         submission,
+        // We always return this as an array
+        presentations: Array.isArray(verifiablePresentations) ? verifiablePresentations : [verifiablePresentations],
+
+        descriptors: extractPresentationsWithDescriptorsFromSubmission(verifiablePresentations, submission, definition),
       }
     }
 
@@ -686,15 +693,21 @@ export class OpenId4VcSiopVerifierService {
           reason = verificationResult.error?.message
         }
 
+        if (!isValid) {
+          throw new Error(reason)
+        }
+
         return {
-          verified: isValid,
-          reason,
+          verified: true,
         }
       } catch (error) {
         agentContext.config.logger.warn('Error occurred during verification of presentation', {
           error,
         })
-        throw error
+        return {
+          verified: false,
+          reason: error.message,
+        }
       }
     }
   }

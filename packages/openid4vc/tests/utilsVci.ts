@@ -41,7 +41,7 @@ export const universityDegreeCredentialConfigurationSupported = {
   proof_types_supported: {
     jwt: { proof_signing_alg_values_supported: ['EdDSA', 'ES256'] },
   },
-  cryptographic_binding_methods_supported: ['did:key'],
+  cryptographic_binding_methods_supported: ['did:key', 'jwk'],
 } satisfies OpenId4VciCredentialConfigurationSupportedWithFormats
 
 export const universityDegreeCredentialConfigurationSupportedMdoc = {
@@ -51,7 +51,7 @@ export const universityDegreeCredentialConfigurationSupportedMdoc = {
   proof_types_supported: {
     jwt: { proof_signing_alg_values_supported: ['ES256', 'EdDSA'] },
   },
-  cryptographic_binding_methods_supported: ['did:key'],
+  cryptographic_binding_methods_supported: ['did:key', 'jwk'],
 } satisfies OpenId4VciCredentialConfigurationSupportedWithFormats
 
 export const universityDegreeCredentialSdJwt2 = {

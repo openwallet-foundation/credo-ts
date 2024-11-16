@@ -9,8 +9,7 @@ import {
   Oauth2ServerErrorResponseError,
   preAuthorizedCodeGrantIdentifier,
 } from '@animo-id/oauth2'
-import { extractScopesForCredentialConfigurationIds } from '@animo-id/oid4vci'
-import { getJwkFromKey, joinUriParts, Key } from '@credo-ts/core'
+import { getJwkFromKey, joinUriParts, Key, utils } from '@credo-ts/core'
 
 import {
   getRequestContext,
@@ -48,7 +47,6 @@ export function handleTokenRequest(config: OpenId4VcIssuerModuleConfig) {
       url: fullRequestUrl,
     } as const
 
-    // What error does this throw?
     const { accessTokenRequest, grant, dpopJwt, pkceCodeVerifier } = oauth2AuthorizationServer.parseAccessTokenRequest({
       accessTokenRequest: request.body,
       request: requestLike,
@@ -66,6 +64,19 @@ export function handleTokenRequest(config: OpenId4VcIssuerModuleConfig) {
       throw new Oauth2ServerErrorResponseError({
         error: Oauth2ErrorCodes.InvalidGrant,
         error_description: 'Invalid authorization code',
+      })
+    }
+
+    if (
+      Date.now() >
+      addSecondsToDate(issuanceSession.createdAt, config.statefullCredentialOfferExpirationInSeconds).getTime()
+    ) {
+      issuanceSession.errorMessage = 'Credential offer has expired'
+      await openId4VcIssuerService.updateState(agentContext, issuanceSession, OpenId4VcIssuanceSessionState.Error)
+      throw new Oauth2ServerErrorResponseError({
+        // What is the best error here?
+        error: Oauth2ErrorCodes.InvalidGrant,
+        error_description: 'Session expired',
       })
     }
 
@@ -92,12 +103,14 @@ export function handleTokenRequest(config: OpenId4VcIssuerModuleConfig) {
           request: requestLike,
           dpop: {
             jwt: dpopJwt,
-            required: issuanceSession.dpopRequired,
+            // This will only have effect when DPoP is not present.
+            // If it is present it will always be verified
+            required: config.dpopRequired,
           },
           expectedTxCode: issuanceSession.userPin,
           preAuthorizedCodeExpiresAt: addSecondsToDate(
             issuanceSession.createdAt,
-            config.preAuthorizedCodeExpirationInSeconds
+            config.statefullCredentialOfferExpirationInSeconds
           ),
         })
       } else if (grant.grantType === authorizationCodeGrantIdentifier) {
@@ -121,7 +134,9 @@ export function handleTokenRequest(config: OpenId4VcIssuerModuleConfig) {
           request: requestLike,
           dpop: {
             jwt: dpopJwt,
-            required: issuanceSession.dpopRequired,
+            // This will only have effect when DPoP is not present.
+            // If it is present it will always be verified
+            required: config.dpopRequired,
           },
           pkce: issuanceSession.pkce
             ? {
@@ -145,26 +160,24 @@ export function handleTokenRequest(config: OpenId4VcIssuerModuleConfig) {
       )
       const { cNonce, cNonceExpiresInSeconds } = await openId4VcIssuerService.createNonce(agentContext, issuer)
 
-      // Extract scopes
-      const scopes = extractScopesForCredentialConfigurationIds({
-        credentialConfigurationIds: issuanceSession.credentialOfferPayload.credential_configuration_ids,
-        issuerMetadata,
-      })
+      // for authorization code flow we take the authorization scopes. For pre-auth we don't use scopes (we just
+      // use the offered credential configuration ids so a scope is not required)
+      const scopes =
+        grant.grantType === authorizationCodeGrantIdentifier ? issuanceSession.authorization?.scopes : undefined
+      const subject = `credo:${utils.uuid()}`
 
       const signerJwk = getJwkFromKey(accessTokenSigningKey)
       const accessTokenResponse = await oauth2AuthorizationServer.createAccessTokenResponse({
         audience: issuerMetadata.credentialIssuer.credential_issuer,
         authorizationServer: issuerMetadata.credentialIssuer.credential_issuer,
         expiresInSeconds: config.accessTokenExpiresInSeconds,
-        // TODO: we need to include kid and also host the jwks?
-        // Or we should somehow bypass the jwks_uri resolving if we verify our own token (only we will verify the token)
         signer: {
           method: 'jwk',
           alg: signerJwk.supportedSignatureAlgorithms[0],
           publicJwk: signerJwk.toJson(),
         },
         dpopJwk: verificationResult.dpopJwk,
-        scope: scopes?.join(','),
+        scope: scopes?.join(' '),
         clientId: issuanceSession.clientId,
 
         additionalAccessTokenPayload: {
@@ -172,13 +185,18 @@ export function handleTokenRequest(config: OpenId4VcIssuerModuleConfig) {
             grant.grantType === preAuthorizedCodeGrantIdentifier ? grant.preAuthorizedCode : undefined,
           issuer_state: issuanceSession.authorization?.issuerState,
         },
-        subject: grant.grantType === preAuthorizedCodeGrantIdentifier ? grant.preAuthorizedCode : grant.code,
+        // We generate a random subject for each access token and bind the issuance session to this.
+        subject,
 
         // NOTE: these have been removed in newer drafts. Keeping them in for now
         cNonce,
         cNonceExpiresIn: cNonceExpiresInSeconds,
       })
 
+      issuanceSession.authorization = {
+        ...issuanceSession.authorization,
+        subject,
+      }
       await openId4VcIssuerService.updateState(
         agentContext,
         issuanceSession,

@@ -3,9 +3,12 @@ import type {
   OpenId4VciCredentialConfigurationsSupportedWithFormats,
   OpenId4VciCredentialIssuerMetadataDisplay,
 } from '../../shared'
+import type { OpenId4VciBatchCredentialIssuanceOptions } from '../OpenId4VcIssuerServiceOptions'
 import type { JwaSignatureAlgorithm, RecordTags, TagsBase } from '@credo-ts/core'
 
+import { credentialsSupportedToCredentialConfigurationsSupported } from '@animo-id/oid4vci'
 import { BaseRecord, utils } from '@credo-ts/core'
+import { Transform, TransformationType } from 'class-transformer'
 
 export type OpenId4VcIssuerRecordTags = RecordTags<OpenId4VcIssuerRecord>
 
@@ -36,12 +39,16 @@ export type OpenId4VcIssuerRecordProps = {
   display?: OpenId4VciCredentialIssuerMetadataDisplay[]
   authorizationServerConfigs?: OpenId4VciAuthorizationServerConfig[]
 
-  // TODO: with formats or without formats?
   credentialConfigurationsSupported: OpenId4VciCredentialConfigurationsSupportedWithFormats
+
+  /**
+   * Indicate support for batch issuane of credentials
+   */
+  batchCredentialIssuance?: OpenId4VciBatchCredentialIssuanceOptions
 }
 
 /**
- * For OID4VC you need to expos metadata files. Each issuer needs to host this metadata. This is not the case for DIDComm where we can just have one /didcomm endpoint.
+ * For OID4VC you need to expose metadata files. Each issuer needs to host this metadata. This is not the case for DIDComm where we can just have one /didcomm endpoint.
  * So we create a record per openid issuer/verifier that you want, and each tenant can create multiple issuers/verifiers which have different endpoints
  * and metadata files
  * */
@@ -52,12 +59,45 @@ export class OpenId4VcIssuerRecord extends BaseRecord<DefaultOpenId4VcIssuerReco
   public issuerId!: string
   public accessTokenPublicKeyFingerprint!: string
 
-  // FIXME: migration of supported to configurations
-  public credentialsSupported?: Array<unknown>
-  public credentialConfigurationsSupported?: OpenId4VciCredentialConfigurationsSupportedWithFormats
+  /**
+   * Only here for class transformation. If credentialsSupported is set we transform
+   * it to the new credentialConfigurationsSupported format
+   */
+  private set credentialsSupported(credentialsSupported: Array<unknown>) {
+    if (this.credentialConfigurationsSupported) return
+
+    this.credentialConfigurationsSupported =
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      credentialsSupportedToCredentialConfigurationsSupported(credentialsSupported as any) as any
+  }
+
+  public credentialConfigurationsSupported!: OpenId4VciCredentialConfigurationsSupportedWithFormats
+
+  // Draft 11 to draft 13+ syntax
+  @Transform(({ type, value }) => {
+    if (type === TransformationType.PLAIN_TO_CLASS && Array.isArray(value)) {
+      return value.map((display) => {
+        if (display.logo?.uri) return display
+
+        const { url, ...logoRest } = display.logo ?? {}
+        return {
+          ...display,
+          logo: url
+            ? {
+                ...logoRest,
+                uri: url,
+              }
+            : undefined,
+        }
+      })
+    }
+
+    return value
+  })
   public display?: OpenId4VciCredentialIssuerMetadataDisplay[]
   public authorizationServerConfigs?: OpenId4VciAuthorizationServerConfig[]
   public dpopSigningAlgValuesSupported?: [JwaSignatureAlgorithm, ...JwaSignatureAlgorithm[]]
+  public batchCredentialIssuance?: OpenId4VciBatchCredentialIssuanceOptions
 
   public constructor(props: OpenId4VcIssuerRecordProps) {
     super()
@@ -73,6 +113,7 @@ export class OpenId4VcIssuerRecord extends BaseRecord<DefaultOpenId4VcIssuerReco
       this.dpopSigningAlgValuesSupported = props.dpopSigningAlgValuesSupported
       this.display = props.display
       this.authorizationServerConfigs = props.authorizationServerConfigs
+      this.batchCredentialIssuance = props.batchCredentialIssuance
     }
   }
 
