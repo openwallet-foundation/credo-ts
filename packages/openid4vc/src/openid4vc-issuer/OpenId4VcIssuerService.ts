@@ -7,6 +7,7 @@ import type {
   OpenId4VciAuthorizationCodeFlowConfig,
   OpenId4VciCredentialRequestAuthorization,
   OpenId4VciCreateStatelessCredentialOfferOptions,
+  OpenId4VciCredentialRequestToCredentialMapperOptions,
 } from './OpenId4VcIssuerServiceOptions'
 import type {
   OpenId4VcCredentialHolderBindingWithKey,
@@ -396,9 +397,6 @@ export class OpenId4VcIssuerService {
       keyType: options.accessTokenSignerKeyType ?? KeyType.Ed25519,
     })
 
-    // this is required for HAIP
-    // TODO: do we also need to provide some way to let the wallet know which authorization server
-    // TODO: can issue which credentials?
     const openId4VcIssuer = new OpenId4VcIssuerRecord({
       issuerId: options.issuerId ?? utils.uuid(),
       display: options.display,
@@ -818,6 +816,31 @@ export class OpenId4VcIssuerService {
     const mapper =
       options.credentialRequestToCredentialMapper ?? this.openId4VcIssuerConfig.credentialRequestToCredentialMapper
 
+    let verification: OpenId4VciCredentialRequestToCredentialMapperOptions['verification'] = undefined
+
+    // NOTE: this will throw an error if the verifier module is not registered and there is a
+    // verification session. But you can't get here without the verifier module anyway
+    if (issuanceSession.presentation?.openId4VcVerificationSessionId) {
+      const verifierApi = agentContext.dependencyManager.resolve(OpenId4VcVerifierApi)
+      const session = await verifierApi.getVerificationSessionById(
+        issuanceSession.presentation.openId4VcVerificationSessionId
+      )
+
+      const response = await verifierApi.getVerifiedAuthorizationResponse(
+        issuanceSession.presentation.openId4VcVerificationSessionId
+      )
+      if (!response.presentationExchange) {
+        throw new CredoError(
+          `Verified authorization response for verification session with id '${session.id}' does not have presenationExchange defined.`
+        )
+      }
+
+      verification = {
+        session,
+        presentationExchange: response.presentationExchange,
+      }
+    }
+
     const holderBindings = await this.getHolderBindingFromRequestProofs(agentContext, options.proofSigners)
     const signOptions = await mapper({
       agentContext,
@@ -825,18 +848,7 @@ export class OpenId4VcIssuerService {
       holderBindings,
       credentialOffer: issuanceSession.credentialOfferPayload,
 
-      // NOTE: this will throw an error if the verifier module is not registered and there is a
-      // verification session. But you can't get here without the verifier module anyway
-      verification: issuanceSession.presentation?.openId4VcVerificationSessionId
-        ? {
-            session: await agentContext.dependencyManager
-              .resolve(OpenId4VcVerifierApi)
-              .getVerificationSessionById(issuanceSession.presentation.openId4VcVerificationSessionId),
-            response: await agentContext.dependencyManager
-              .resolve(OpenId4VcVerifierApi)
-              .getVerifiedAuthorizationResponse(issuanceSession.presentation.openId4VcVerificationSessionId),
-          }
-        : undefined,
+      verification,
 
       credentialRequest: options.credentialRequest,
       credentialRequestFormat: options.requestFormat,

@@ -310,8 +310,6 @@ export class OpenId4VcSiopVerifierService {
     }
   }
 
-  // TODO: we can also choose to store this in the verification session, however we can easily derive it
-  // so it's probably easier to make changes in the future if we just store the raw payload.
   public async getVerifiedAuthorizationResponse(
     verificationSession: OpenId4VcVerificationSessionRecord
   ): Promise<OpenId4VcSiopVerifiedAuthorizationResponse> {

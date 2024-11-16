@@ -35,7 +35,6 @@ export type OpenId4VcIssuerRecordProps = {
    */
   dpopSigningAlgValuesSupported?: [JwaSignatureAlgorithm, ...JwaSignatureAlgorithm[]]
 
-  // FIXME: migrate to v13 structure (uri vs url)
   display?: OpenId4VciCredentialIssuerMetadataDisplay[]
   authorizationServerConfigs?: OpenId4VciAuthorizationServerConfig[]
 

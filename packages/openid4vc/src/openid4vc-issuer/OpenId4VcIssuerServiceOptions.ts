@@ -1,7 +1,7 @@
 import type { OpenId4VcIssuanceSessionRecord, OpenId4VcIssuerRecordProps } from './repository'
 import type {
   OpenId4VcSiopCreateAuthorizationRequestReturn,
-  OpenId4VcSiopVerifiedAuthorizationResponse,
+  OpenId4VcSiopVerifiedAuthorizationResponsePresentationExchange,
   OpenId4VcVerificationSessionRecord,
 } from '../openid4vc-verifier'
 import type {
@@ -173,7 +173,7 @@ export type OpenId4VciGetVerificationSessionForIssuanceSessionAuthorization = (o
   }
 >
 
-export type OpenId4VciCredentialRequestToCredentialMapper = (options: {
+export interface OpenId4VciCredentialRequestToCredentialMapperOptions {
   agentContext: AgentContext
 
   /**
@@ -188,7 +188,7 @@ export type OpenId4VciCredentialRequestToCredentialMapper = (options: {
    */
   verification?: {
     session: OpenId4VcVerificationSessionRecord
-    response: OpenId4VcSiopVerifiedAuthorizationResponse
+    presentationExchange: OpenId4VcSiopVerifiedAuthorizationResponsePresentationExchange
   }
 
   /**
@@ -234,7 +234,10 @@ export type OpenId4VciCredentialRequestToCredentialMapper = (options: {
    * NOTE: This will probably become a single entry, as it will be matched on id
    */
   credentialConfigurationIds: [string, ...string[]]
-}) => Promise<OpenId4VciSignCredentials> | OpenId4VciSignCredentials
+}
+export type OpenId4VciCredentialRequestToCredentialMapper = (
+  options: OpenId4VciCredentialRequestToCredentialMapperOptions
+) => Promise<OpenId4VciSignCredentials> | OpenId4VciSignCredentials
 
 export type OpenId4VciSignCredentials =
   | OpenId4VciSignSdJwtCredentials

@@ -1,10 +1,10 @@
 import type { AgentType } from './utils'
 import type { OpenId4VciCredentialBindingResolver } from '../src/openid4vc-holder'
-import type { Server } from 'http'
 
 import { getJwkFromKey } from '@credo-ts/core'
 import express, { type Express } from 'express'
 
+import { setupNockToExpress } from '../../../tests/nockToExpress'
 import { AskarModule } from '../../askar/src'
 import { askarModuleConfig } from '../../askar/tests/helpers'
 import {
@@ -17,14 +17,12 @@ import {
 import { waitForCredentialIssuanceSessionRecordSubject, createAgentFromModules } from './utils'
 import { universityDegreeCredentialConfigurationSupportedMdoc } from './utilsVci'
 
-// TODO: replace actual server listen with a non-port express direct app call
-const serverPort = 3991
-const baseUrl = `http://localhost:${serverPort}`
+const baseUrl = 'http://localhost:3991'
 const issuerBaseUrl = `${baseUrl}/oid4vci`
 
 describe('OpenId4Vc Presentation During Issuance', () => {
   let expressApp: Express
-  let expressServer: Server
+  let clearNock: () => void
 
   let issuer: AgentType<{
     openId4VcIssuer: OpenId4VcIssuerModule
@@ -86,13 +84,11 @@ describe('OpenId4Vc Presentation During Issuance', () => {
 
     // We let AFJ create the router, so we have a fresh one each time
     expressApp.use('/oid4vci', issuer.agent.modules.openId4VcIssuer.config.router)
-
-    expressServer = expressApp.listen(serverPort)
+    clearNock = setupNockToExpress(baseUrl, expressApp)
   })
 
   afterEach(async () => {
-    expressServer?.close()
-
+    clearNock()
     await issuer.agent.shutdown()
     await issuer.agent.wallet.delete()
 

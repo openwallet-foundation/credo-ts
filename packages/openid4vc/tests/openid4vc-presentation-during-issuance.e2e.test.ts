@@ -2,12 +2,12 @@ import type { AgentType } from './utils'
 import type { OpenId4VciSignSdJwtCredentials } from '../src'
 import type { OpenId4VciCredentialBindingResolver } from '../src/openid4vc-holder'
 import type { DifPresentationExchangeDefinitionV2, SdJwtVc, SdJwtVcIssuer } from '@credo-ts/core'
-import type { Server } from 'http'
 
 import { AuthorizationFlow } from '@animo-id/oid4vci'
 import { ClaimFormat, getJwkFromKey } from '@credo-ts/core'
 import express, { type Express } from 'express'
 
+import { setupNockToExpress } from '../../../tests/nockToExpress'
 import { AskarModule } from '../../askar/src'
 import { askarModuleConfig } from '../../askar/tests/helpers'
 import {
@@ -56,15 +56,13 @@ const presentationDefinition = {
   ],
 } as const satisfies DifPresentationExchangeDefinitionV2
 
-// TODO: replace actual server listen with a non-port express direct app call
-const serverPort = 4871
-const baseUrl = `http://localhost:${serverPort}`
+const baseUrl = 'http://localhost:4871'
 const issuerBaseUrl = `${baseUrl}/oid4vci`
 const verifierBaseUrl = `${baseUrl}/oid4vp`
 
 describe('OpenId4Vc Presentation During Issuance', () => {
   let expressApp: Express
-  let expressServer: Server
+  let clearNock: () => void
 
   let issuer: AgentType<{
     openId4VcIssuer: OpenId4VcIssuerModule
@@ -111,19 +109,17 @@ describe('OpenId4Vc Presentation During Issuance', () => {
           credentialConfigurationIds,
           verification,
         }) => {
-          // TODO: only pass presentation exchange?
-          // Might be more flexible to keep it like this for when DCQL will be supported
-          if (!verification || !verification.response.presentationExchange) {
+          if (!verification) {
             throw new Error('Expected verification in credential request mapper')
           }
 
           const credentialConfigurationId = credentialConfigurationIds[0]
-          const descriptor = verification.response.presentationExchange.descriptors.find(
+          const descriptor = verification.presentationExchange.descriptors.find(
             (descriptor) => descriptor.descriptor.id === presentationDefinition.input_descriptors[0].id
           )
 
           if (!descriptor || descriptor.format !== ClaimFormat.SdJwtVc) {
-            throw new Error('')
+            throw new Error('Expected descriptor with sd-jwt vc format')
           }
 
           const fullName = `${descriptor.credential.prettyClaims.given_name} ${descriptor.credential.prettyClaims.family_name}`
@@ -168,11 +164,11 @@ describe('OpenId4Vc Presentation During Issuance', () => {
     expressApp.use('/oid4vci', issuer.agent.modules.openId4VcIssuer.config.router)
     expressApp.use('/oid4vp', issuer.agent.modules.openId4VcVerifier.config.router)
 
-    expressServer = expressApp.listen(serverPort)
+    clearNock = setupNockToExpress(baseUrl, expressApp)
   })
 
   afterEach(async () => {
-    expressServer?.close()
+    clearNock()
 
     await issuer.agent.shutdown()
     await issuer.agent.wallet.delete()
