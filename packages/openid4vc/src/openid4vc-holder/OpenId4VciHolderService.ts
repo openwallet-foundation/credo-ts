@@ -28,7 +28,6 @@ import {
 } from '@animo-id/oauth2'
 import {
   AuthorizationFlow,
-  CredentialConfigurationsSupportedWithFormats,
   CredentialResponse,
   IssuerMetadataResult,
   Oid4vciClient,
@@ -104,7 +103,7 @@ export class OpenId4VciHolderService {
     const credentialConfigurationsSupported = getOfferedCredentials(
       credentialOfferObject.credential_configuration_ids,
       client.getKnownCredentialConfigurationsSupported(metadata.credentialIssuer)
-    ) as CredentialConfigurationsSupportedWithFormats
+    )
 
     return {
       metadata,

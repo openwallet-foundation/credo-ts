@@ -1,5 +1,8 @@
-import type { OpenId4VcCredentialHolderBinding } from '../shared'
-import type { CredentialConfigurationSupported, CredentialOfferObject, IssuerMetadataResult } from '@animo-id/oid4vci'
+import type {
+  OpenId4VcCredentialHolderBinding,
+  OpenId4VciCredentialConfigurationsSupportedWithFormats,
+} from '../shared'
+import type { CredentialOfferObject, IssuerMetadataResult } from '@animo-id/oid4vci'
 import type { AgentContext, JwaSignatureAlgorithm, Jwk, KeyType, VerifiableCredential } from '@credo-ts/core'
 
 import { AuthorizationFlow as OpenId4VciAuthorizationFlow } from '@animo-id/oid4vci'
@@ -56,10 +59,9 @@ export interface OpenId4VciResolvedCredentialOffer {
   credentialOfferPayload: CredentialOfferObject
 
   /**
-   * Uses the flexible type meaning it can include any format string.
-   * You can cast it to `CredentialConfigurationSupportedWithFormat` for only supported formats.
+   * Offered credential configurations with known formats
    */
-  offeredCredentialConfigurations: Record<string, CredentialConfigurationSupported>
+  offeredCredentialConfigurations: OpenId4VciCredentialConfigurationsSupportedWithFormats
 }
 
 export type OpenId4VciResolvedAuthorizationRequest =
