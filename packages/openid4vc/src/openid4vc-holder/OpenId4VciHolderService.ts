@@ -3,38 +3,39 @@ import type {
   OpenId4VciAuthCodeFlowOptions,
   OpenId4VciCredentialBindingResolver,
   OpenId4VciCredentialResponse,
+  OpenId4VciDpopRequestOptions,
   OpenId4VciNotificationEvent,
   OpenId4VciProofOfPossessionRequirements,
   OpenId4VciResolvedAuthorizationRequest,
-  OpenId4VciResolvedAuthorizationRequestWithCode,
   OpenId4VciResolvedCredentialOffer,
+  OpenId4VciRetrieveAuthorizationCodeUsingPresentationOptions,
   OpenId4VciSupportedCredentialFormats,
   OpenId4VciTokenRequestOptions,
 } from './OpenId4VciHolderServiceOptions'
 import type {
   OpenId4VciCredentialConfigurationSupported,
-  OpenId4VciCredentialSupported,
-  OpenId4VciIssuerMetadata,
+  OpenId4VciCredentialIssuerMetadata,
+  OpenId4VciMetadata,
 } from '../shared'
-import type { AgentContext, JwaSignatureAlgorithm, JwkJson, Key } from '@credo-ts/core'
-import type {
-  AccessTokenResponse,
-  AuthorizationDetails,
-  AuthorizationDetailsJwtVcJson,
-  AuthorizationDetailsJwtVcJsonLdAndLdpVc,
-  AuthorizationDetailsMsoMdoc,
-  AuthorizationDetailsSdJwtVc,
-  CredentialResponse,
-  Jwt,
-  OpenIDResponse,
-} from '@sphereon/oid4vci-common'
+import type { AgentContext, JwaSignatureAlgorithm, KeyType } from '@credo-ts/core'
 
 import {
+  getAuthorizationServerMetadataFromList,
+  JwtSigner,
+  Oauth2Client,
+  preAuthorizedCodeGrantIdentifier,
+  RequestDpopOptions,
+} from '@animo-id/oauth2'
+import {
+  AuthorizationFlow,
+  CredentialResponse,
+  IssuerMetadataResult,
+  Oid4vciClient,
+  Oid4vciRetrieveCredentialsError,
+} from '@animo-id/oid4vci'
+import {
   CredoError,
-  DidsApi,
-  Hasher,
   InjectionSymbols,
-  JsonEncoder,
   Jwk,
   JwsService,
   Logger,
@@ -42,43 +43,24 @@ import {
   MdocApi,
   SdJwtVcApi,
   SignatureSuiteRegistry,
-  TypedArrayEncoder,
   W3cCredentialService,
   W3cJsonLdVerifiableCredential,
   W3cJwtVerifiableCredential,
   getJwkClassFromJwaSignatureAlgorithm,
   getJwkFromJson,
   getJwkFromKey,
-  getKeyFromVerificationMethod,
   getSupportedVerificationMethodTypesFromKeyType,
   inject,
   injectable,
   parseDid,
 } from '@credo-ts/core'
-import { CreateDPoPClientOpts, CreateDPoPJwtPayloadProps, SigningAlgo } from '@sphereon/oid4vc-common'
-import {
-  AccessTokenClient,
-  CredentialRequestClientBuilder,
-  OpenID4VCIClient,
-  OpenID4VCIClientStateV1_0_13,
-  OpenID4VCIClientV1_0_11,
-  OpenID4VCIClientV1_0_13,
-  ProofOfPossessionBuilder,
-} from '@sphereon/oid4vci-client'
-import {
-  CodeChallengeMethod,
-  DPoPResponseParams,
-  EndpointMetadataResult,
-  OpenId4VCIVersion,
-  PARMode,
-  post,
-} from '@sphereon/oid4vci-common'
 
 import { OpenId4VciCredentialFormatProfile } from '../shared'
-import { getOfferedCredentials, getTypesFromCredentialSupported } from '../shared/issuerMetadataUtils'
-import { getCreateJwtCallback, getSupportedJwaSignatureAlgorithms, isCredentialOfferV1Draft13 } from '../shared/utils'
+import { getOid4vciCallbacks } from '../shared/callbacks'
+import { getOfferedCredentials, getScopesFromCredentialConfigurationsSupported } from '../shared/issuerMetadataUtils'
+import { getKeyFromDid, getSupportedJwaSignatureAlgorithms } from '../shared/utils'
 
-import { OpenId4VciNotificationMetadata, openId4VciSupportedCredentialFormats } from './OpenId4VciHolderServiceOptions'
+import { openId4VciSupportedCredentialFormats } from './OpenId4VciHolderServiceOptions'
 
 @injectable()
 export class OpenId4VciHolderService {
@@ -96,101 +78,37 @@ export class OpenId4VciHolderService {
     this.logger = logger
   }
 
+  public async resolveIssuerMetadata(
+    agentContext: AgentContext,
+    credentialIssuer: string
+  ): Promise<OpenId4VciMetadata> {
+    const client = this.getClient(agentContext)
+
+    const metadata = await client.resolveIssuerMetadata(credentialIssuer)
+    this.logger.debug('fetched credential issuer metadata', { metadata })
+
+    return metadata
+  }
+
   public async resolveCredentialOffer(
     agentContext: AgentContext,
     credentialOffer: string
   ): Promise<OpenId4VciResolvedCredentialOffer> {
-    const client = await OpenID4VCIClient.fromURI({
-      uri: credentialOffer,
-      resolveOfferUri: true,
-      retrieveServerMetadata: true,
-      // This is a separate call, so we don't fetch it here, however it may be easier to just construct it here?
-      createAuthorizationRequestURL: false,
-    })
+    const client = this.getClient(agentContext)
 
-    if (!client.credentialOffer?.credential_offer) {
-      throw new CredoError(`Could not resolve credential offer from '${credentialOffer}'`)
-    }
+    const credentialOfferObject = await client.resolveCredentialOffer(credentialOffer)
+    const metadata = await client.resolveIssuerMetadata(credentialOfferObject.credential_issuer)
+    this.logger.debug('fetched credential offer and issuer metadata', { metadata, credentialOfferObject })
 
-    const metadata = client.endpointMetadata
-    const credentialIssuerMetadata = metadata.credentialIssuerMetadata as OpenId4VciIssuerMetadata
-
-    if (!credentialIssuerMetadata) {
-      throw new CredoError(`Could not retrieve issuer metadata from '${metadata.issuer}'`)
-    }
-
-    this.logger.info('Fetched server metadata', {
-      issuer: metadata.issuer,
-      credentialEndpoint: metadata.credential_endpoint,
-      tokenEndpoint: metadata.token_endpoint,
-    })
-
-    this.logger.debug('Full server metadata', metadata)
-
-    const credentialOfferPayload = client.credentialOffer.credential_offer
-
-    const offeredCredentialsData = isCredentialOfferV1Draft13(credentialOfferPayload)
-      ? credentialOfferPayload.credential_configuration_ids
-      : credentialOfferPayload.credentials
-
-    const { credentialConfigurationsSupported, credentialsSupported } = getOfferedCredentials(
-      agentContext,
-      offeredCredentialsData,
-      credentialIssuerMetadata.credentials_supported ?? credentialIssuerMetadata.credential_configurations_supported
+    const credentialConfigurationsSupported = getOfferedCredentials(
+      credentialOfferObject.credential_configuration_ids,
+      client.getKnownCredentialConfigurationsSupported(metadata.credentialIssuer)
     )
 
     return {
-      metadata: {
-        ...metadata,
-        credentialIssuerMetadata: credentialIssuerMetadata,
-      },
-      offeredCredentials: credentialsSupported,
+      metadata,
       offeredCredentialConfigurations: credentialConfigurationsSupported,
-      credentialOfferPayload,
-      credentialOfferRequestWithBaseUrl: client.credentialOffer,
-      version: client.version(),
-    }
-  }
-
-  private getAuthDetailsFromOfferedCredential(
-    offeredCredential: OpenId4VciCredentialSupported,
-    authDetailsLocation: string | undefined
-  ): AuthorizationDetails | undefined {
-    const { format } = offeredCredential
-    const type = 'openid_credential'
-
-    const locations = authDetailsLocation ? [authDetailsLocation] : undefined
-    if (format === OpenId4VciCredentialFormatProfile.JwtVcJson) {
-      return { type, format, types: offeredCredential.types, locations } satisfies AuthorizationDetailsJwtVcJson
-    } else if (
-      format === OpenId4VciCredentialFormatProfile.LdpVc ||
-      format === OpenId4VciCredentialFormatProfile.JwtVcJsonLd
-    ) {
-      const credential_definition = {
-        '@context': offeredCredential['@context'],
-        credentialSubject: offeredCredential.credentialSubject,
-        types: offeredCredential.types,
-      }
-
-      return { type, format, locations, credential_definition } satisfies AuthorizationDetailsJwtVcJsonLdAndLdpVc
-    } else if (format === OpenId4VciCredentialFormatProfile.SdJwtVc) {
-      return {
-        type,
-        format,
-        locations,
-        vct: offeredCredential.vct,
-        claims: offeredCredential.claims,
-      } satisfies AuthorizationDetailsSdJwtVc
-    } else if (format === OpenId4VciCredentialFormatProfile.MsoMdoc) {
-      return {
-        type,
-        format,
-        locations,
-        claims: offeredCredential.claims,
-        doctype: offeredCredential.doctype,
-      } satisfies AuthorizationDetailsMsoMdoc
-    } else {
-      throw new CredoError(`Cannot create authorization_details. Unsupported credential format '${format}'.`)
+      credentialOfferPayload: credentialOfferObject,
     }
   }
 
@@ -199,181 +117,199 @@ export class OpenId4VciHolderService {
     resolvedCredentialOffer: OpenId4VciResolvedCredentialOffer,
     authCodeFlowOptions: OpenId4VciAuthCodeFlowOptions
   ): Promise<OpenId4VciResolvedAuthorizationRequest> {
-    const { metadata, offeredCredentials } = resolvedCredentialOffer
-    const codeVerifier = (
-      await Promise.all([agentContext.wallet.generateNonce(), agentContext.wallet.generateNonce()])
-    ).join('')
-    const codeVerifierSha256 = Hasher.hash(codeVerifier, 'sha-256')
-    const codeChallenge = TypedArrayEncoder.toBase64URL(codeVerifierSha256)
+    const { clientId, redirectUri } = authCodeFlowOptions
+    const { metadata, credentialOfferPayload, offeredCredentialConfigurations } = resolvedCredentialOffer
 
-    this.logger.debug('Converted code_verifier to code_challenge', {
-      codeVerifier: codeVerifier,
-      sha256: codeVerifierSha256.toString(),
-      base64Url: codeChallenge,
+    const client = this.getClient(agentContext)
+
+    // If scope is not provided, we request scope for all offered credentials
+    const scope =
+      authCodeFlowOptions.scope ?? getScopesFromCredentialConfigurationsSupported(offeredCredentialConfigurations)
+
+    const authorizationResult = await client.initiateAuthorization({
+      clientId,
+      issuerMetadata: metadata,
+      credentialOffer: credentialOfferPayload,
+      scope: scope.join(' '),
+      redirectUri,
     })
 
-    const authDetailsLocation = metadata.credentialIssuerMetadata.authorization_server
-      ? metadata.credentialIssuerMetadata.authorization_server
-      : undefined
-
-    const authDetails = offeredCredentials
-      .map((credential) => this.getAuthDetailsFromOfferedCredential(credential, authDetailsLocation))
-      .filter((authDetail): authDetail is AuthorizationDetails => authDetail !== undefined)
-
-    const { clientId, redirectUri, scope } = authCodeFlowOptions
-
-    const vciClientState = {
-      state: {
-        credentialOffer: resolvedCredentialOffer.credentialOfferRequestWithBaseUrl,
-        clientId,
-        credentialIssuer: metadata.issuer,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        endpointMetadata: metadata as unknown as any, // will be v11 / v13 based on version
-        pkce: {
-          codeChallenge,
-          codeChallengeMethod: CodeChallengeMethod.S256,
-          codeVerifier,
-        },
-      } satisfies OpenID4VCIClientStateV1_0_13,
-    }
-
-    const client =
-      resolvedCredentialOffer.version === OpenId4VCIVersion.VER_1_0_11
-        ? await OpenID4VCIClientV1_0_11.fromState(vciClientState)
-        : await OpenID4VCIClientV1_0_13.fromState(vciClientState)
-
-    const authorizationRequestUri = await client.createAuthorizationRequestUrl({
-      authorizationRequest: {
-        redirectUri,
-        scope: scope ? scope.join(' ') : undefined,
-        authorizationDetails: authDetails,
-        parMode: PARMode.AUTO,
-      },
-    })
-
-    return {
-      ...authCodeFlowOptions,
-      codeVerifier,
-      authorizationRequestUri,
-    }
-  }
-
-  public async sendNotification(options: {
-    notificationMetadata: OpenId4VciNotificationMetadata
-    notificationEvent: OpenId4VciNotificationEvent
-    accessToken: string
-  }) {
-    const { notificationMetadata, notificationEvent } = options
-    const { notificationId, notificationEndpoint } = notificationMetadata
-
-    const response = await post(
-      notificationEndpoint,
-      { notification_id: notificationId, event: notificationEvent },
-      {
-        bearerToken: options.accessToken,
-        contentType: 'application/json',
+    if (authorizationResult.authorizationFlow === AuthorizationFlow.PresentationDuringIssuance) {
+      return {
+        authorizationFlow: AuthorizationFlow.PresentationDuringIssuance,
+        oid4vpRequestUrl: authorizationResult.oid4vpRequestUrl,
+        authSession: authorizationResult.authSession,
       }
-    )
+    }
 
-    if (!response.successBody) {
-      throw new CredoError(`Failed to send notification event '${notificationId}' to '${notificationEndpoint}'`)
+    // Normal Oauth2Redirect flow
+    return {
+      authorizationFlow: AuthorizationFlow.Oauth2Redirect,
+      codeVerifier: authorizationResult.pkce?.codeVerifier,
+      authorizationRequestUrl: authorizationResult.authorizationRequestUrl,
     }
   }
 
-  private async getCreateDpopOptions(
+  public async sendNotification(
     agentContext: AgentContext,
-    metadata: Pick<EndpointMetadataResult, 'authorizationServerMetadata'> & {
-      credentialIssuerMetadata: OpenId4VciIssuerMetadata
-    },
-    resourceRequestOptions?: {
-      jwk: Jwk
-      jwtPayloadProps: Omit<CreateDPoPJwtPayloadProps, 'htu' | 'htm'>
+    options: {
+      metadata: IssuerMetadataResult
+      notificationId: string
+      notificationEvent: OpenId4VciNotificationEvent
+      accessToken: string
+      dpop?: { jwk: Jwk; alg: JwaSignatureAlgorithm; nonce?: string }
     }
   ) {
-    const dpopSigningAlgValuesSupported =
-      metadata.authorizationServerMetadata?.dpop_signing_alg_values_supported ??
-      metadata.credentialIssuerMetadata.dpop_signing_alg_values_supported
+    const client = this.getClient(agentContext)
+    await client.sendNotification({
+      accessToken: options.accessToken,
+      dpop: options.dpop
+        ? await this.getDpopOptions(agentContext, {
+            ...options.dpop,
+            dpopSigningAlgValuesSupported: [options.dpop.alg],
+          })
+        : undefined,
+      issuerMetadata: options.metadata,
+      notification: {
+        event: options.notificationEvent,
+        notificationId: options.notificationId,
+      },
+    })
+  }
 
-    if (!dpopSigningAlgValuesSupported) return undefined
+  private async getDpopOptions(
+    agentContext: AgentContext,
+    {
+      jwk,
+      dpopSigningAlgValuesSupported,
+      nonce,
+    }: { dpopSigningAlgValuesSupported: string[]; jwk?: Jwk; nonce?: string }
+  ): Promise<RequestDpopOptions> {
+    if (jwk) {
+      const alg = dpopSigningAlgValuesSupported.find((alg) =>
+        jwk.supportedSignatureAlgorithms.includes(alg as JwaSignatureAlgorithm)
+      )
 
-    const alg = dpopSigningAlgValuesSupported.find((alg) => getJwkClassFromJwaSignatureAlgorithm(alg))
-
-    let jwk: Jwk
-    if (resourceRequestOptions) {
-      jwk = resourceRequestOptions.jwk
-    } else {
-      const JwkClass = alg ? getJwkClassFromJwaSignatureAlgorithm(alg) : undefined
-
-      if (!JwkClass) {
+      if (!alg) {
         throw new CredoError(
           `No supported dpop signature algorithms found in dpop_signing_alg_values_supported '${dpopSigningAlgValuesSupported.join(
             ', '
-          )}'`
+          )}' matching key type ${jwk.keyType}`
         )
       }
 
-      const key = await agentContext.wallet.createKey({ keyType: JwkClass.keyType })
-      jwk = getJwkFromKey(key)
-    }
-
-    const createDPoPOpts: CreateDPoPClientOpts = {
-      jwtIssuer: { alg: alg as unknown as SigningAlgo, jwk: jwk.toJson() },
-      dPoPSigningAlgValuesSupported: dpopSigningAlgValuesSupported,
-      jwtPayloadProps: resourceRequestOptions?.jwtPayloadProps ?? {},
-      createJwtCallback: getCreateJwtCallback(agentContext),
-    }
-    return createDPoPOpts
-  }
-
-  public async requestAccessToken(agentContext: AgentContext, options: OpenId4VciTokenRequestOptions) {
-    const { resolvedCredentialOffer, txCode, resolvedAuthorizationRequest, code } = options
-    const { metadata, credentialOfferRequestWithBaseUrl } = resolvedCredentialOffer
-
-    // acquire the access token
-    let accessTokenResponse: OpenIDResponse<AccessTokenResponse, DPoPResponseParams>
-
-    const accessTokenClient = new AccessTokenClient()
-
-    const createDPoPOpts = await this.getCreateDpopOptions(agentContext, metadata)
-
-    let dpopJwk: Jwk | undefined
-    if (createDPoPOpts) {
-      if (!createDPoPOpts.jwtIssuer.jwk.kty) {
-        throw new CredoError('Missing required key type (kty) in the jwk.')
+      return {
+        signer: {
+          method: 'jwk',
+          alg,
+          publicJwk: jwk.toJson(),
+        },
+        nonce,
       }
-      dpopJwk = getJwkFromJson(createDPoPOpts.jwtIssuer.jwk as JwkJson)
-    }
-    if (resolvedAuthorizationRequest) {
-      const { codeVerifier, redirectUri } = resolvedAuthorizationRequest
-      accessTokenResponse = await accessTokenClient.acquireAccessToken({
-        metadata: metadata,
-        credentialOffer: { credential_offer: credentialOfferRequestWithBaseUrl.credential_offer },
-        pin: txCode,
-        code,
-        codeVerifier,
-        redirectUri,
-        createDPoPOpts,
-      })
-    } else {
-      accessTokenResponse = await accessTokenClient.acquireAccessToken({
-        metadata: metadata,
-        credentialOffer: { credential_offer: credentialOfferRequestWithBaseUrl.credential_offer },
-        pin: txCode,
-        createDPoPOpts,
-      })
     }
 
-    if (!accessTokenResponse.successBody) {
+    const alg = dpopSigningAlgValuesSupported.find((alg) => getJwkClassFromJwaSignatureAlgorithm(alg))
+    const JwkClass = alg ? getJwkClassFromJwaSignatureAlgorithm(alg) : undefined
+
+    if (!alg || !JwkClass) {
       throw new CredoError(
-        `could not acquire access token from '${metadata.issuer}'. ${accessTokenResponse.errorBody?.error}: ${accessTokenResponse.errorBody?.error_description}`
+        `No supported dpop signature algorithms found in dpop_signing_alg_values_supported '${dpopSigningAlgValuesSupported.join(
+          ', '
+        )}'`
       )
     }
 
-    this.logger.debug('Requested OpenId4VCI Access Token.')
+    const key = await agentContext.wallet.createKey({ keyType: JwkClass.keyType })
+    return {
+      signer: {
+        method: 'jwk',
+        alg,
+        publicJwk: getJwkFromKey(key).toJson(),
+      },
+      nonce,
+    }
+  }
+
+  public async retrieveAuthorizationCodeUsingPresentation(
+    agentContext: AgentContext,
+    options: OpenId4VciRetrieveAuthorizationCodeUsingPresentationOptions
+  ) {
+    const client = this.getClient(agentContext)
+    // TODO: support dpop on this endpoint as well
+    // const dpop = options.dpop
+    //   ? await this.getDpopOptions(agentContext, {
+    //       ...options.dpop,
+    //       dpopSigningAlgValuesSupported: [options.dpop.alg],
+    //     })
+    //   : undefined
+
+    // TODO: we should support DPoP in this request as well
+    const { authorizationChallengeResponse } = await client.retrieveAuthorizationCodeUsingPresentation({
+      authSession: options.authSession,
+      presentationDuringIssuanceSession: options.presentationDuringIssuanceSession,
+      credentialOffer: options.resolvedCredentialOffer.credentialOfferPayload,
+      issuerMetadata: options.resolvedCredentialOffer.metadata,
+      // dpop
+    })
 
     return {
-      ...accessTokenResponse.successBody,
-      ...(dpopJwk && { dpop: { jwk: dpopJwk, nonce: accessTokenResponse.params?.dpop?.dpopNonce } }),
+      authorizationCode: authorizationChallengeResponse.authorization_code,
+    }
+  }
+
+  public async requestAccessToken(agentContext: AgentContext, options: OpenId4VciTokenRequestOptions) {
+    const { metadata, credentialOfferPayload } = options.resolvedCredentialOffer
+    const client = this.getClient(agentContext)
+    const oauth2Client = this.getOauth2Client(agentContext)
+
+    const authorizationServer = options.code
+      ? credentialOfferPayload.grants?.authorization_code?.authorization_server
+      : credentialOfferPayload.grants?.[preAuthorizedCodeGrantIdentifier]?.authorization_server
+    const authorizationServerMetadata = getAuthorizationServerMetadataFromList(
+      metadata.authorizationServers,
+      authorizationServer ?? metadata.authorizationServers[0].issuer
+    )
+
+    // TODO: should allow dpop input parameter for if it was already bound earlier
+    const isDpopSupported = oauth2Client.isDpopSupported({
+      authorizationServerMetadata,
+    })
+    const dpop = isDpopSupported.supported
+      ? await this.getDpopOptions(agentContext, {
+          dpopSigningAlgValuesSupported: isDpopSupported.dpopSigningAlgValuesSupported,
+        })
+      : undefined
+
+    const result = options.code
+      ? await client.retrieveAuthorizationCodeAccessTokenFromOffer({
+          issuerMetadata: metadata,
+          credentialOffer: credentialOfferPayload,
+          authorizationCode: options.code,
+          dpop,
+          pkceCodeVerifier: options.codeVerifier,
+          redirectUri: options.redirectUri,
+          additionalRequestPayload: {
+            // TODO: handle it as part of client auth once we support
+            // assertion based client authentication
+            client_id: options.clientId,
+          },
+        })
+      : await client.retrievePreAuthorizedCodeAccessTokenFromOffer({
+          credentialOffer: credentialOfferPayload,
+          issuerMetadata: metadata,
+          dpop,
+          txCode: options.txCode,
+        })
+
+    return {
+      ...result,
+      dpop: dpop
+        ? {
+            ...result.dpop,
+            alg: dpop.signer.alg as JwaSignatureAlgorithm,
+            jwk: getJwkFromJson(dpop.signer.publicJwk),
+          }
+        : undefined,
     }
   }
 
@@ -382,26 +318,21 @@ export class OpenId4VciHolderService {
     options: {
       resolvedCredentialOffer: OpenId4VciResolvedCredentialOffer
       acceptCredentialOfferOptions: OpenId4VciAcceptCredentialOfferOptions
-      resolvedAuthorizationRequestWithCode?: OpenId4VciResolvedAuthorizationRequestWithCode
-      accessToken?: string
+      accessToken: string
       cNonce?: string
-      dpop?: { jwk: Jwk; nonce?: string }
+      dpop?: OpenId4VciDpopRequestOptions
       clientId?: string
     }
   ) {
     const { resolvedCredentialOffer, acceptCredentialOfferOptions } = options
-    const { metadata, version, offeredCredentialConfigurations } = resolvedCredentialOffer
+    const { metadata, offeredCredentialConfigurations } = resolvedCredentialOffer
+    const { credentialConfigurationIds, credentialBindingResolver, verifyCredentialStatus, requestBatch } =
+      acceptCredentialOfferOptions
+    const client = this.getClient(agentContext)
 
-    const { credentialsToRequest, credentialBindingResolver, verifyCredentialStatus } = acceptCredentialOfferOptions
-
-    if (credentialsToRequest?.length === 0) {
-      this.logger.warn(`Accepting 0 credential offers. Returning`)
-      return []
+    if (credentialConfigurationIds?.length === 0) {
+      throw new CredoError(`'credentialConfigurationIds' may not be empty`)
     }
-
-    this.logger.info(
-      `Accepting the following credential offers '${credentialsToRequest ? credentialsToRequest.join(', ') : 'all'}`
-    )
 
     const supportedJwaSignatureAlgorithms = getSupportedJwaSignatureAlgorithms(agentContext)
 
@@ -420,26 +351,12 @@ export class OpenId4VciHolderService {
       )
     }
 
-    const tokenRequestOptions = {
-      resolvedCredentialOffer,
-      resolvedAuthorizationRequest: options.resolvedAuthorizationRequestWithCode,
-      code: options.resolvedAuthorizationRequestWithCode?.code,
-      txCode: acceptCredentialOfferOptions.userPin,
-    } as OpenId4VciTokenRequestOptions
-
-    const tokenResponse = options.accessToken
-      ? {
-          access_token: options.accessToken,
-          c_nonce: options.cNonce,
-          dpop: options.dpop,
-        }
-      : await this.requestAccessToken(agentContext, tokenRequestOptions)
-
     const receivedCredentials: Array<OpenId4VciCredentialResponse> = []
-    let newCNonce: string | undefined
+    let cNonce = options.cNonce
+    let dpopNonce = options.dpop?.nonce
 
-    const credentialConfigurationToRequest =
-      credentialsToRequest?.map((id) => {
+    const credentialConfigurationsToRequest =
+      credentialConfigurationIds?.map((id) => {
         if (!offeredCredentialConfigurations[id]) {
           const offeredCredentialIds = Object.keys(offeredCredentialConfigurations).join(', ')
           throw new CredoError(
@@ -449,9 +366,48 @@ export class OpenId4VciHolderService {
         return [id, offeredCredentialConfigurations[id]] as const
       }) ?? Object.entries(offeredCredentialConfigurations)
 
-    for (const [offeredCredentialId, offeredCredentialConfiguration] of credentialConfigurationToRequest) {
+    // If we don't have a nonce yet, we need to first get one
+    if (!cNonce) {
+      // Best option is to use nonce endpoint (draft 14+)
+      if (!metadata.credentialIssuer.nonce_endpoint) {
+        const nonceResponse = await client.requestNonce({ issuerMetadata: metadata })
+        cNonce = nonceResponse.c_nonce
+      } else {
+        // Otherwise we will send a dummy request
+        await client
+          .retrieveCredentials({
+            issuerMetadata: metadata,
+            accessToken: options.accessToken,
+            credentialConfigurationId: credentialConfigurationsToRequest[0][0],
+            dpop: options.dpop
+              ? await this.getDpopOptions(agentContext, {
+                  ...options.dpop,
+                  nonce: dpopNonce,
+                  dpopSigningAlgValuesSupported: [options.dpop.alg],
+                })
+              : undefined,
+          })
+          .catch((e) => {
+            if (e instanceof Oid4vciRetrieveCredentialsError && e.response.credentialErrorResponseResult?.success) {
+              cNonce = e.response.credentialErrorResponseResult.output.c_nonce
+            }
+          })
+      }
+    }
+
+    if (!cNonce) {
+      throw new CredoError('No cNonce provided and unable to acquire cNonce from the credential issuer')
+    }
+
+    // If true: use max from issuer or otherwise 1
+    // If number not 0: use the number
+    // Else: use 1
+    const batchSize =
+      requestBatch === true ? metadata.credentialIssuer.batch_credential_issuance?.batch_size ?? 1 : requestBatch || 1
+
+    for (const [offeredCredentialId, offeredCredentialConfiguration] of credentialConfigurationsToRequest) {
       // Get all options for the credential request (such as which kid to use, the signature algorithm, etc)
-      const { credentialBinding, signatureAlgorithm } = await this.getCredentialRequestOptions(agentContext, {
+      const { jwtSigner } = await this.getCredentialRequestOptions(agentContext, {
         possibleProofOfPossessionSignatureAlgorithms: possibleProofOfPossessionSigAlgs,
         offeredCredential: {
           id: offeredCredentialId,
@@ -460,82 +416,71 @@ export class OpenId4VciHolderService {
         credentialBindingResolver,
       })
 
-      // Create the proof of possession
-      const proofOfPossessionBuilder = ProofOfPossessionBuilder.fromAccessTokenResponse({
-        accessTokenResponse: tokenResponse,
-        callbacks: { signCallback: this.proofOfPossessionSignCallback(agentContext) },
-        version,
-      })
-        .withEndpointMetadata(metadata)
-        .withAlg(signatureAlgorithm)
-
-      // TODO: what if auth flow using did, and the did is different from client id. We now use the client_id
-      if (credentialBinding.method === 'did') {
-        proofOfPossessionBuilder.withClientId(parseDid(credentialBinding.didUrl).did).withKid(credentialBinding.didUrl)
-      } else if (credentialBinding.method === 'jwk') {
-        proofOfPossessionBuilder.withJWK(credentialBinding.jwk.toJson())
+      const jwts: string[] = []
+      for (let i = 0; i < batchSize; i++) {
+        const { jwt } = await client.createCredentialRequestJwtProof({
+          credentialConfigurationId: offeredCredentialId,
+          issuerMetadata: resolvedCredentialOffer.metadata,
+          signer: jwtSigner,
+          clientId: options.clientId,
+          nonce: cNonce,
+        })
+        this.logger.debug('Generated credential request proof of possesion jwt', { jwt })
+        jwts.push(jwt)
       }
 
-      // Add client id if in auth flow. This may override the clientId from the did binding method. But according to spec,
-      // the "value of this claim MUST be the client_id of the Client making the Credential request."
-      if (options.clientId || options.resolvedAuthorizationRequestWithCode?.clientId) {
-        proofOfPossessionBuilder.withClientId(
-          (options.clientId || options.resolvedAuthorizationRequestWithCode?.clientId) as string
-        )
-      }
-
-      if (newCNonce) proofOfPossessionBuilder.withAccessTokenNonce(newCNonce)
-
-      const proofOfPossession = await proofOfPossessionBuilder.build()
-      this.logger.debug('Generated JWS', proofOfPossession)
-
-      // Acquire the credential
-      const credentialRequestBuilder = CredentialRequestClientBuilder.fromCredentialOffer({
-        credentialOffer: resolvedCredentialOffer.credentialOfferRequestWithBaseUrl,
-        metadata: resolvedCredentialOffer.metadata,
-      })
-      credentialRequestBuilder
-        .withVersion(version)
-        .withCredentialEndpoint(metadata.credential_endpoint)
-        .withToken(tokenResponse.access_token)
-
-      const credentialRequestClient = credentialRequestBuilder.build()
-      // retrieve the @context from the credential configuration
-      const context =
-        offeredCredentialConfiguration.format === OpenId4VciCredentialFormatProfile.JwtVcJsonLd ||
-        offeredCredentialConfiguration.format === OpenId4VciCredentialFormatProfile.LdpVc
-          ? offeredCredentialConfiguration.credential_definition['@context']
-          : undefined
-
-      const createDpopOpts = tokenResponse.dpop
-        ? await this.getCreateDpopOptions(agentContext, metadata, {
-            jwk: tokenResponse.dpop.jwk,
-            jwtPayloadProps: { accessToken: tokenResponse.access_token, nonce: tokenResponse.dpop?.nonce },
-          })
-        : undefined
-
-      const credentialResponse = await credentialRequestClient.acquireCredentialsUsingProof({
-        proofInput: proofOfPossession,
-        credentialTypes: getTypesFromCredentialSupported(offeredCredentialConfiguration),
-        format: offeredCredentialConfiguration.format,
-        createDPoPOpts: createDpopOpts,
-        context: context,
+      const { credentialResponse, dpop } = await client.retrieveCredentials({
+        issuerMetadata: metadata,
+        accessToken: options.accessToken,
+        credentialConfigurationId: offeredCredentialId,
+        dpop: options.dpop
+          ? await this.getDpopOptions(agentContext, {
+              ...options.dpop,
+              nonce: dpopNonce,
+              dpopSigningAlgValuesSupported: [options.dpop.alg],
+            })
+          : undefined,
+        proofs: batchSize > 1 ? { jwt: jwts } : undefined,
+        proof:
+          batchSize === 1
+            ? {
+                proof_type: 'jwt',
+                jwt: jwts[0],
+              }
+            : undefined,
       })
 
-      newCNonce = credentialResponse.successBody?.c_nonce
+      // Set new nonce values
+      cNonce = credentialResponse.c_nonce
+      dpopNonce = dpop?.nonce
 
       // Create credential, but we don't store it yet (only after the user has accepted the credential)
       const credential = await this.handleCredentialResponse(agentContext, credentialResponse, {
         verifyCredentialStatus: verifyCredentialStatus ?? false,
-        credentialIssuerMetadata: metadata.credentialIssuerMetadata,
+        credentialIssuerMetadata: metadata.credentialIssuer,
         format: offeredCredentialConfiguration.format as OpenId4VciCredentialFormatProfile,
+        credentialConfigurationId: offeredCredentialId,
       })
 
-      this.logger.debug('Full credential', credential)
-      receivedCredentials.push(credential)
+      this.logger.debug(
+        'received credential',
+        credential.credentials.map((c) =>
+          c instanceof Mdoc ? { issuerSignedNamespaces: c.issuerSignedNamespaces, base64Url: c.base64Url } : c
+        )
+      )
+      receivedCredentials.push({ ...credential, credentialConfigurationId: offeredCredentialId })
     }
 
-    return receivedCredentials
+    return {
+      credentials: receivedCredentials,
+      dpop: options.dpop
+        ? {
+            ...options.dpop,
+            nonce: dpopNonce,
+          }
+        : undefined,
+      cNonce,
+    }
   }
 
   /**
@@ -555,63 +500,109 @@ export class OpenId4VciHolderService {
       }
     }
   ) {
-    const { signatureAlgorithm, supportedDidMethods, supportsAllDidMethods, supportsJwk } =
+    const { signatureAlgorithms, supportedDidMethods, supportsAllDidMethods, supportsJwk } =
       this.getProofOfPossessionRequirements(agentContext, {
         credentialToRequest: options.offeredCredential,
         possibleProofOfPossessionSignatureAlgorithms: options.possibleProofOfPossessionSignatureAlgorithms,
       })
 
-    const JwkClass = getJwkClassFromJwaSignatureAlgorithm(signatureAlgorithm)
-    if (!JwkClass) {
-      throw new CredoError(`Could not determine JWK key type of the JWA signature algorithm '${signatureAlgorithm}'`)
-    }
+    const JwkClasses = signatureAlgorithms.map((signatureAlgorithm) => {
+      const JwkClass = getJwkClassFromJwaSignatureAlgorithm(signatureAlgorithm)
+      if (!JwkClass) {
+        throw new CredoError(`Could not determine JWK key type of the JWA signature algorithm '${signatureAlgorithm}'`)
+      }
+      return JwkClass
+    })
+    const keyTypes = JwkClasses.map((JwkClass): KeyType => JwkClass.keyType)
 
-    const supportedVerificationMethods = getSupportedVerificationMethodTypesFromKeyType(JwkClass.keyType)
-
+    const supportedVerificationMethods = keyTypes.flatMap((keyType) =>
+      getSupportedVerificationMethodTypesFromKeyType(keyType)
+    )
     const format = options.offeredCredential.configuration.format as OpenId4VciSupportedCredentialFormats
+    const supportsAnyMethod = supportedDidMethods !== undefined || supportsAllDidMethods || supportsJwk
 
     // Now we need to determine how the credential will be bound to us
     const credentialBinding = await options.credentialBindingResolver({
+      agentContext,
       credentialFormat: format,
-      signatureAlgorithm,
+      signatureAlgorithms,
       supportedVerificationMethods,
-      keyType: JwkClass.keyType,
-      supportedCredentialId: options.offeredCredential.id,
+      keyTypes: JwkClasses.map((JwkClass): KeyType => JwkClass.keyType),
+      credentialConfigurationId: options.offeredCredential.id,
       supportsAllDidMethods,
       supportedDidMethods,
       supportsJwk,
     })
 
+    let jwk: Jwk
     // Make sure the issuer of proof of possession is valid according to openid issuer metadata
-    if (
-      credentialBinding.method === 'did' &&
-      !supportsAllDidMethods &&
-      // If supportedDidMethods is undefined, it means the issuer didn't include the binding methods in the metadata
-      // The user can still select a verification method, but we can't validate it
-      supportedDidMethods !== undefined &&
-      !supportedDidMethods.find((supportedDidMethod) => credentialBinding.didUrl.startsWith(supportedDidMethod))
-    ) {
-      const { method } = parseDid(credentialBinding.didUrl)
-      const supportedDidMethodsString = supportedDidMethods.join(', ')
-      throw new CredoError(
-        `Resolved credential binding for proof of possession uses did method '${method}', but issuer only supports '${supportedDidMethodsString}'`
-      )
-    } else if (credentialBinding.method === 'jwk' && !supportsJwk) {
-      throw new CredoError(
-        `Resolved credential binding for proof of possession uses jwk, but openid issuer does not support 'jwk' or 'cose_key' cryptographic binding method`
-      )
+    if (credentialBinding.method === 'did') {
+      // Test binding method
+      if (
+        !supportsAllDidMethods &&
+        // If supportedDidMethods is undefined, it means the issuer didn't include the binding methods in the metadata
+        // The user can still select a verification method, but we can't validate it
+        supportedDidMethods !== undefined &&
+        !supportedDidMethods.find(
+          (supportedDidMethod) => credentialBinding.didUrl.startsWith(supportedDidMethod) && supportsAnyMethod
+        )
+      ) {
+        const { method } = parseDid(credentialBinding.didUrl)
+        const supportedDidMethodsString = supportedDidMethods.join(', ')
+        throw new CredoError(
+          `Resolved credential binding for proof of possession uses did method '${method}', but issuer only supports '${supportedDidMethodsString}'`
+        )
+      }
+
+      const key = await getKeyFromDid(agentContext, credentialBinding.didUrl)
+      jwk = getJwkFromKey(key)
+      if (!keyTypes.includes(key.keyType)) {
+        throw new CredoError(
+          `Credential binding returned did url that points to key with type '${
+            key.keyType
+          }', but one of '${keyTypes.join(', ')}' was expected`
+        )
+      }
+    } else if (credentialBinding.method === 'jwk') {
+      if (!supportsJwk && supportsAnyMethod) {
+        throw new CredoError(
+          `Resolved credential binding for proof of possession uses jwk, but openid issuer does not support 'jwk' or 'cose_key' cryptographic binding method`
+        )
+      }
+
+      jwk = credentialBinding.jwk
+      if (!keyTypes.includes(credentialBinding.jwk.key.keyType)) {
+        throw new CredoError(
+          `Credential binding returned jwk with key with type '${
+            credentialBinding.jwk.key.keyType
+          }', but one of '${keyTypes.join(', ')}' was expected`
+        )
+      }
+    } else {
+      // @ts-expect-error currently if/else if exhaustive, but once we add new option it will give ts error
+      throw new CredoError(`Unsupported credential binding method ${credentialBinding.method}`)
     }
 
-    // FIXME: we don't have the verification method here
-    // Make sure the verification method uses a supported verification method type
-    // if (!supportedVerificationMethods.includes(verificationMethod.type)) {
-    //   const supportedVerificationMethodsString = supportedVerificationMethods.join(', ')
-    //   throw new CredoError(
-    //     `Verification method uses verification method type '${verificationMethod.type}', but only '${supportedVerificationMethodsString}' verification methods are supported for key type '${JwkClass.keyType}'`
-    //   )
-    // }
+    const alg = jwk.supportedSignatureAlgorithms.find((alg) => signatureAlgorithms.includes(alg))
+    if (!alg) {
+      // Should not happen, to make ts happy
+      throw new CredoError(`Unable to determine alg for key type ${jwk.keyType}`)
+    }
 
-    return { credentialBinding, signatureAlgorithm }
+    const jwtSigner: JwtSigner =
+      credentialBinding.method === 'did'
+        ? {
+            method: credentialBinding.method,
+            didUrl: credentialBinding.didUrl,
+            alg,
+          }
+        : {
+            method: 'jwk',
+            publicJwk: credentialBinding.jwk.toJson(),
+            alg,
+          }
+
+    return { credentialBinding, signatureAlgorithm: alg, jwtSigner }
   }
 
   /**
@@ -649,7 +640,7 @@ export class OpenId4VciHolderService {
     // For each of the supported algs, find the key types, then find the proof types
     const signatureSuiteRegistry = agentContext.dependencyManager.resolve(SignatureSuiteRegistry)
 
-    let signatureAlgorithm: JwaSignatureAlgorithm | undefined
+    let signatureAlgorithms: JwaSignatureAlgorithm[] = []
 
     if (credentialToRequest.configuration.proof_types_supported) {
       if (!credentialToRequest.configuration.proof_types_supported.jwt) {
@@ -667,19 +658,19 @@ export class OpenId4VciHolderService {
     // If undefined, it means the issuer didn't include the cryptographic suites in the metadata
     // We just guess that the first one is supported
     if (proofSigningAlgsSupported === undefined) {
-      signatureAlgorithm = options.possibleProofOfPossessionSignatureAlgorithms[0]
+      signatureAlgorithms = options.possibleProofOfPossessionSignatureAlgorithms
     } else {
       switch (credentialToRequest.configuration.format) {
         case OpenId4VciCredentialFormatProfile.JwtVcJson:
         case OpenId4VciCredentialFormatProfile.JwtVcJsonLd:
         case OpenId4VciCredentialFormatProfile.SdJwtVc:
         case OpenId4VciCredentialFormatProfile.MsoMdoc:
-          signatureAlgorithm = options.possibleProofOfPossessionSignatureAlgorithms.find((signatureAlgorithm) =>
+          signatureAlgorithms = options.possibleProofOfPossessionSignatureAlgorithms.filter((signatureAlgorithm) =>
             proofSigningAlgsSupported.includes(signatureAlgorithm)
           )
           break
         case OpenId4VciCredentialFormatProfile.LdpVc:
-          signatureAlgorithm = options.possibleProofOfPossessionSignatureAlgorithms.find((signatureAlgorithm) => {
+          signatureAlgorithms = options.possibleProofOfPossessionSignatureAlgorithms.filter((signatureAlgorithm) => {
             const JwkClass = getJwkClassFromJwaSignatureAlgorithm(signatureAlgorithm)
             if (!JwkClass) return false
 
@@ -694,9 +685,13 @@ export class OpenId4VciHolderService {
       }
     }
 
-    if (!signatureAlgorithm) {
+    if (signatureAlgorithms.length === 0) {
       throw new CredoError(
-        `Could not establish signature algorithm for format ${credentialToRequest.configuration.format} and id ${credentialToRequest.id}`
+        `Could not establish signature algorithm for format ${credentialToRequest.configuration.format} and id ${
+          credentialToRequest.id
+        }. Server supported signature algorithms are '${
+          proofSigningAlgsSupported?.join(', ') ?? 'Not defined'
+        }', available are '${options.possibleProofOfPossessionSignatureAlgorithms.join(', ')}'`
       )
     }
 
@@ -709,7 +704,7 @@ export class OpenId4VciHolderService {
     const supportsJwk = issuerSupportedBindingMethods?.includes('jwk') || supportsCoseKey
 
     return {
-      signatureAlgorithm,
+      signatureAlgorithms,
       supportedDidMethods,
       supportsAllDidMethods,
       supportsJwk,
@@ -718,157 +713,167 @@ export class OpenId4VciHolderService {
 
   private async handleCredentialResponse(
     agentContext: AgentContext,
-    credentialResponse: OpenIDResponse<CredentialResponse, DPoPResponseParams>,
+    credentialResponse: CredentialResponse,
     options: {
       verifyCredentialStatus: boolean
-      credentialIssuerMetadata: OpenId4VciIssuerMetadata
+      credentialIssuerMetadata: OpenId4VciCredentialIssuerMetadata
       format: OpenId4VciCredentialFormatProfile
+      credentialConfigurationId: string
     }
   ): Promise<OpenId4VciCredentialResponse> {
-    const { verifyCredentialStatus, credentialIssuerMetadata } = options
+    const { verifyCredentialStatus, credentialConfigurationId } = options
+    this.logger.debug('Credential response', credentialResponse)
 
-    this.logger.debug('Credential request response', credentialResponse)
-
-    if (!credentialResponse.successBody || !credentialResponse.successBody.credential) {
-      throw new CredoError(
-        `Did not receive a successful credential response. ${credentialResponse.errorBody?.error}: ${credentialResponse.errorBody?.error_description}`
-      )
+    const credentials =
+      credentialResponse.credentials ?? (credentialResponse.credential ? [credentialResponse.credential] : undefined)
+    if (!credentials) {
+      throw new CredoError(`Credential response returned neither 'credentials' nor 'credential' parameter.`)
     }
 
-    const notificationMetadata =
-      credentialIssuerMetadata.notification_endpoint && credentialResponse.successBody.notification_id
-        ? {
-            notificationEndpoint: credentialIssuerMetadata.notification_endpoint,
-            notificationId: credentialResponse.successBody.notification_id,
-          }
-        : undefined
+    const notificationId = credentialResponse.notification_id
 
     const format = options.format
     if (format === OpenId4VciCredentialFormatProfile.SdJwtVc) {
-      if (typeof credentialResponse.successBody.credential !== 'string')
+      if (!credentials.every((c) => typeof c === 'string')) {
         throw new CredoError(
-          `Received a credential of format ${
-            OpenId4VciCredentialFormatProfile.SdJwtVc
-          }, but the credential is not a string. ${JSON.stringify(credentialResponse.successBody.credential)}`
+          `Received credential(s) of format ${format}, but not all credential(s) are a string. ${JSON.stringify(
+            credentials
+          )}`
         )
+      }
 
       const sdJwtVcApi = agentContext.dependencyManager.resolve(SdJwtVcApi)
-      const verificationResult = await sdJwtVcApi.verify({
-        compactSdJwtVc: credentialResponse.successBody.credential,
-      })
-
-      if (!verificationResult.isValid) {
-        agentContext.config.logger.error('Failed to validate credential', { verificationResult })
-        throw new CredoError(`Failed to validate sd-jwt-vc credential. Results = ${JSON.stringify(verificationResult)}`)
-      }
-
-      return { credential: verificationResult.sdJwtVc, notificationMetadata }
-    } else if (
-      format === OpenId4VciCredentialFormatProfile.JwtVcJson ||
-      format === OpenId4VciCredentialFormatProfile.JwtVcJsonLd
-    ) {
-      const credential = W3cJwtVerifiableCredential.fromSerializedJwt(
-        credentialResponse.successBody.credential as string
-      )
-      const result = await this.w3cCredentialService.verifyCredential(agentContext, {
-        credential,
-        verifyCredentialStatus,
-      })
-      if (!result.isValid) {
-        agentContext.config.logger.error('Failed to validate credential', { result })
-        throw new CredoError(`Failed to validate credential, error = ${result.error?.message ?? 'Unknown'}`)
-      }
-
-      return { credential, notificationMetadata }
-    } else if (format === OpenId4VciCredentialFormatProfile.LdpVc) {
-      const credential = W3cJsonLdVerifiableCredential.fromJson(
-        credentialResponse.successBody.credential as Record<string, unknown>
-      )
-      const result = await this.w3cCredentialService.verifyCredential(agentContext, {
-        credential,
-        verifyCredentialStatus,
-      })
-      if (!result.isValid) {
-        agentContext.config.logger.error('Failed to validate credential', { result })
-        throw new CredoError(`Failed to validate credential, error = ${result.error?.message ?? 'Unknown'}`)
-      }
-
-      return { credential, notificationMetadata }
-    } else if (format === OpenId4VciCredentialFormatProfile.MsoMdoc) {
-      if (typeof credentialResponse.successBody.credential !== 'string')
-        throw new CredoError(
-          `Received a credential of format ${
-            OpenId4VciCredentialFormatProfile.MsoMdoc
-          }, but the credential is not a string. ${JSON.stringify(credentialResponse.successBody.credential)}`
+      const verificationResults = await Promise.all(
+        credentials.map((compactSdJwtVc) =>
+          sdJwtVcApi.verify({
+            compactSdJwtVc,
+          })
         )
+      )
 
-      const mdocApi = agentContext.dependencyManager.resolve(MdocApi)
-      const mdoc = Mdoc.fromBase64Url(credentialResponse.successBody.credential)
-      const verificationResult = await mdocApi.verify(mdoc, {})
-
-      if (!verificationResult.isValid) {
-        agentContext.config.logger.error('Failed to validate credential', { verificationResult })
-        throw new CredoError(`Failed to validate mdoc credential. Results = ${verificationResult.error}`)
+      if (!verificationResults.every((result) => result.isValid)) {
+        agentContext.config.logger.error('Failed to validate credential(s)', { verificationResults })
+        throw new CredoError(
+          `Failed to validate sd-jwt-vc credentials. Results = ${JSON.stringify(verificationResults)}`
+        )
       }
 
-      return { credential: mdoc, notificationMetadata }
+      return {
+        credentials: verificationResults.map((result) => result.sdJwtVc),
+        notificationId,
+        credentialConfigurationId,
+      }
+    } else if (
+      options.format === OpenId4VciCredentialFormatProfile.JwtVcJson ||
+      options.format === OpenId4VciCredentialFormatProfile.JwtVcJsonLd
+    ) {
+      if (!credentials.every((c) => typeof c === 'string')) {
+        throw new CredoError(
+          `Received credential(s) of format ${format}, but not all credential(s) are a string. ${JSON.stringify(
+            credentials
+          )}`
+        )
+      }
+
+      const result = await Promise.all(
+        credentials.map(async (c) => {
+          const credential = W3cJwtVerifiableCredential.fromSerializedJwt(c)
+          const result = await this.w3cCredentialService.verifyCredential(agentContext, {
+            credential,
+            verifyCredentialStatus,
+          })
+
+          return { credential, result }
+        })
+      )
+
+      if (!result.every((c) => c.result.isValid)) {
+        agentContext.config.logger.error('Failed to validate credentials', { result })
+        throw new CredoError(
+          `Failed to validate credential, error = ${result
+            .map((e) => e.result.error?.message)
+            .filter(Boolean)
+            .join(', ')}`
+        )
+      }
+
+      return { credentials: result.map((r) => r.credential), notificationId, credentialConfigurationId }
+    } else if (format === OpenId4VciCredentialFormatProfile.LdpVc) {
+      if (!credentials.every((c) => typeof c === 'object')) {
+        throw new CredoError(
+          `Received credential(s) of format ${format}, but not all credential(s) are an object. ${JSON.stringify(
+            credentials
+          )}`
+        )
+      }
+      const result = await Promise.all(
+        credentials.map(async (c) => {
+          const credential = W3cJsonLdVerifiableCredential.fromJson(c)
+          const result = await this.w3cCredentialService.verifyCredential(agentContext, {
+            credential,
+            verifyCredentialStatus,
+          })
+
+          return { credential, result }
+        })
+      )
+
+      if (!result.every((c) => c.result.isValid)) {
+        agentContext.config.logger.error('Failed to validate credentials', { result })
+        throw new CredoError(
+          `Failed to validate credential, error = ${result
+            .map((e) => e.result.error?.message)
+            .filter(Boolean)
+            .join(', ')}`
+        )
+      }
+
+      return { credentials: result.map((r) => r.credential), notificationId, credentialConfigurationId }
+    } else if (format === OpenId4VciCredentialFormatProfile.MsoMdoc) {
+      if (!credentials.every((c) => typeof c === 'string')) {
+        throw new CredoError(
+          `Received credential(s) of format ${format}, but not all credential(s) are a string. ${JSON.stringify(
+            credentials
+          )}`
+        )
+      }
+      const mdocApi = agentContext.dependencyManager.resolve(MdocApi)
+      const result = await Promise.all(
+        credentials.map(async (credential) => {
+          const mdoc = Mdoc.fromBase64Url(credential)
+          const result = await mdocApi.verify(mdoc, {})
+          return {
+            result,
+            mdoc,
+          }
+        })
+      )
+
+      if (!result.every((r) => r.result.isValid)) {
+        agentContext.config.logger.error('Failed to validate credentials', { result })
+        throw new CredoError(
+          `Failed to validate mdoc credential(s). \n - ${result
+            .map((r, i) => (r.result.isValid ? undefined : `(${i}) ${r.result.error}`))
+            .filter(Boolean)
+            .join('\n - ')}`
+        )
+      }
+
+      return { credentials: result.map((c) => c.mdoc), notificationId, credentialConfigurationId }
     }
 
-    throw new CredoError(`Unsupported credential format ${credentialResponse.successBody.format}`)
+    throw new CredoError(`Unsupported credential format ${options.format}`)
   }
 
-  private proofOfPossessionSignCallback(agentContext: AgentContext) {
-    return async (jwt: Jwt, kid?: string) => {
-      if (!jwt.header) throw new CredoError('No header present on JWT')
-      if (!jwt.payload) throw new CredoError('No payload present on JWT')
-      if (kid && jwt.header.jwk) {
-        throw new CredoError('Both KID and JWK are present in the callback. Only one can be present')
-      }
+  private getClient(agentContext: AgentContext) {
+    return new Oid4vciClient({
+      callbacks: getOid4vciCallbacks(agentContext),
+    })
+  }
 
-      let key: Key
-
-      if (kid) {
-        if (!kid.startsWith('did:')) {
-          throw new CredoError(`kid '${kid}' is not a DID. Only dids are supported for kid`)
-        } else if (!kid.includes('#')) {
-          throw new CredoError(
-            `kid '${kid}' does not contain a fragment. kid MUST point to a specific key in the did document.`
-          )
-        }
-
-        const didsApi = agentContext.dependencyManager.resolve(DidsApi)
-        const didDocument = await didsApi.resolveDidDocument(kid)
-        const verificationMethod = didDocument.dereferenceKey(kid, ['authentication'])
-
-        key = getKeyFromVerificationMethod(verificationMethod)
-      } else if (jwt.header.jwk) {
-        key = getJwkFromJson(jwt.header.jwk as JwkJson).key
-      } else {
-        throw new CredoError('No KID or JWK is present in the callback')
-      }
-
-      const jwk = getJwkFromKey(key)
-      if (!jwk.supportsSignatureAlgorithm(jwt.header.alg)) {
-        throw new CredoError(`key type '${jwk.keyType}', does not support the JWS signature alg '${jwt.header.alg}'`)
-      }
-
-      // We don't support these properties, remove them, so we can pass all other header properties to the JWS service
-      if (jwt.header.x5c) throw new CredoError('x5c is not supported')
-
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const { x5c: _x5c, ...supportedHeaderOptions } = jwt.header
-
-      const jws = await this.jwsService.createJwsCompact(agentContext, {
-        key,
-        payload: JsonEncoder.toBuffer(jwt.payload),
-        protectedHeaderOptions: {
-          ...supportedHeaderOptions,
-          // only pass jwk if it was present in the header
-          jwk: jwt.header.jwk ? jwk : undefined,
-        },
-      })
-
-      return jws
-    }
+  private getOauth2Client(agentContext: AgentContext) {
+    return new Oauth2Client({
+      callbacks: getOid4vciCallbacks(agentContext),
+    })
   }
 }
