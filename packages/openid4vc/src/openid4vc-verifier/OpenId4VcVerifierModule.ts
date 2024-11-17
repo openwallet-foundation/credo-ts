@@ -3,6 +3,7 @@ import type { OpenId4VcVerificationRequest } from './router'
 import type { AgentContext, DependencyManager, Module } from '@credo-ts/core'
 import type { NextFunction } from 'express'
 
+import { setGlobalConfig } from '@animo-id/oauth2'
 import { AgentConfig } from '@credo-ts/core'
 
 import { getAgentContextForActorId, getRequestContext, importExpress } from '../shared/router'
@@ -27,14 +28,21 @@ export class OpenId4VcVerifierModule implements Module {
   }
 
   /**
-   * Registers the dependencies of the question answer module on the dependency manager.
+   * Registers the dependencies of the openid4vc verifier module on the dependency manager.
    */
   public register(dependencyManager: DependencyManager) {
+    const agentConfig = dependencyManager.resolve(AgentConfig)
+
     // Warn about experimental module
-    const logger = dependencyManager.resolve(AgentConfig).logger
-    logger.warn(
-      "The '@credo-ts/openid4vc' Verifier module is experimental and could have unexpected breaking changes. When using this module, make sure to use strict versions for all @credo-ts packages."
+    agentConfig.logger.warn(
+      "The '@credo-ts/openid4vc' Holder module is experimental and could have unexpected breaking changes. When using this module, make sure to use strict versions for all @credo-ts packages."
     )
+
+    if (agentConfig.allowInsecureHttpUrls) {
+      setGlobalConfig({
+        allowInsecureUrls: true,
+      })
+    }
 
     // Register config
     dependencyManager.registerInstance(OpenId4VcVerifierModuleConfig, this.config)
