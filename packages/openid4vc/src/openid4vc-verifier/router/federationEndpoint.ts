@@ -1,31 +1,15 @@
 import type { OpenId4VcVerificationRequest } from './requestContext'
-import type { FederationKeyCallback } from '../../shared/federation'
+import type { Key, Buffer } from '@credo-ts/core'
 import type { RPRegistrationMetadataPayload } from '@sphereon/did-auth-siop'
 import type { Router, Response } from 'express'
 
-import { getJwkFromKey, type Buffer } from '@credo-ts/core'
+import { getJwkFromKey, KeyType } from '@credo-ts/core'
 import { createEntityConfiguration } from '@openid-federation/core'
 import { LanguageTagUtils, removeNullUndefined } from '@sphereon/did-auth-siop'
 
 import { getRequestContext, sendErrorResponse } from '../../shared/router'
 import { OpenId4VcSiopVerifierService } from '../OpenId4VcSiopVerifierService'
 import { OpenId4VcVerifierModuleConfig } from '../OpenId4VcVerifierModuleConfig'
-
-// TODO: Think about how we can have multiple issuers over the federation endpoint
-export interface OpenId4VcSiopFederationEndpointConfig {
-  /**
-   * The path at which the authorization request should be made available. Note that it will be
-   * hosted at a subpath to take into account multiple tenants and verifiers.
-   *
-   * @default /.well-known/openid-federation
-   */
-  endpointPath: string
-
-  // TODO: Not sure about the property name yet.
-  keyCallback: FederationKeyCallback<{
-    verifierId: string
-  }>
-}
 
 // TODO: Add types but this function is originally from the @
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -63,71 +47,101 @@ const createRPRegistrationMetadataPayload = (opts: any): RPRegistrationMetadataP
   return removeNullUndefined(rpRegistrationMetadataPayload)
 }
 
-export function configureFederationEndpoint(router: Router, config: OpenId4VcSiopFederationEndpointConfig) {
-  router.get(config.endpointPath, async (request: OpenId4VcVerificationRequest, response: Response, next) => {
-    const { agentContext, verifier } = getRequestContext(request)
-    const verifierService = agentContext.dependencyManager.resolve(OpenId4VcSiopVerifierService)
-    const verifierConfig = agentContext.dependencyManager.resolve(OpenId4VcVerifierModuleConfig)
+export function configureFederationEndpoint(router: Router) {
+  // TODO: this whole result needs to be cached and the ttl should be the expires of this node
 
-    try {
-      const { key } = await config.keyCallback(agentContext, {
-        verifierId: verifier.verifierId,
-      })
+  // TODO: This will not work for multiple instances so we have to save it in the database.
+  const federationKeyMapping = new Map<string, Key>()
+  const rpSigningKeyMapping = new Map<string, Key>()
 
-      const relyingParty = await verifierService.getRelyingParty(agentContext, verifier.verifierId, {
-        clientId: verifierConfig.baseUrl,
-        clientIdScheme: 'entity_id',
-        authorizationResponseUrl: `${verifierConfig.baseUrl}/siop/${verifier.verifierId}/authorize`,
-      })
+  router.get(
+    '/.well-known/openid-federation',
+    async (request: OpenId4VcVerificationRequest, response: Response, next) => {
+      const { agentContext, verifier } = getRequestContext(request)
+      const verifierService = agentContext.dependencyManager.resolve(OpenId4VcSiopVerifierService)
+      const verifierConfig = agentContext.dependencyManager.resolve(OpenId4VcVerifierModuleConfig)
 
-      const verifierEntityId = `${verifierConfig.baseUrl}/${verifier.verifierId}`
+      try {
+        let federationKey = federationKeyMapping.get(verifier.verifierId)
+        if (!federationKey) {
+          federationKey = await agentContext.wallet.createKey({
+            keyType: KeyType.Ed25519,
+          })
+          federationKeyMapping.set(verifier.verifierId, federationKey)
+        }
 
-      const rpMetadata = createRPRegistrationMetadataPayload(relyingParty.createRequestOptions.clientMetadata)
+        let rpSigningKey = rpSigningKeyMapping.get(verifier.verifierId)
+        if (!rpSigningKey) {
+          rpSigningKey = await agentContext.wallet.createKey({
+            keyType: KeyType.Ed25519,
+          })
+          rpSigningKeyMapping.set(verifier.verifierId, rpSigningKey)
+        }
 
-      // TODO: We also need to cache the entity configuration until it expires
-      const now = new Date()
-      // TODO: We also need to check if the x509 certificate is still valid until this expires
-      const expires = new Date(now.getTime() + 1000 * 60 * 60 * 24) // 1 day
+        const relyingParty = await verifierService.getRelyingParty(agentContext, verifier.verifierId, {
+          clientId: verifierConfig.baseUrl,
+          clientIdScheme: 'entity_id',
+          authorizationResponseUrl: `${verifierConfig.baseUrl}/siop/${verifier.verifierId}/authorize`,
+        })
 
-      const jwk = getJwkFromKey(key)
-      const alg = jwk.supportedSignatureAlgorithms[0]
-      const kid = 'key-1'
+        const verifierEntityId = `${verifierConfig.baseUrl}/${verifier.verifierId}`
 
-      const entityConfiguration = await createEntityConfiguration({
-        header: {
-          kid,
-          alg,
-          typ: 'entity-statement+jwt',
-        },
-        claims: {
-          sub: verifierEntityId,
-          iss: verifierEntityId,
-          iat: now,
-          exp: expires,
-          jwks: {
-            keys: [{ kid, alg, ...jwk.toJson() }],
+        const rpMetadata = createRPRegistrationMetadataPayload(relyingParty.createRequestOptions.clientMetadata)
+
+        // TODO: We also need to cache the entity configuration until it expires
+        const now = new Date()
+        // TODO: We also need to check if the x509 certificate is still valid until this expires
+        const expires = new Date(now.getTime() + 1000 * 60 * 60 * 24) // 1 day
+
+        const jwk = getJwkFromKey(federationKey)
+        const alg = jwk.supportedSignatureAlgorithms[0]
+        const kid = federationKey.fingerprint
+
+        const entityConfiguration = await createEntityConfiguration({
+          header: {
+            kid,
+            alg,
+            typ: 'entity-statement+jwt',
           },
-          metadata: {
-            federation_entity: {
-              organization_name: rpMetadata.client_name,
-              logo_uri: rpMetadata.logo_uri,
+          claims: {
+            sub: verifierEntityId,
+            iss: verifierEntityId,
+            iat: now,
+            exp: expires,
+            jwks: {
+              keys: [{ kid, alg, ...jwk.toJson() }],
             },
-            openid_credential_verifier: rpMetadata,
+            metadata: {
+              federation_entity: {
+                organization_name: rpMetadata.client_name,
+                logo_uri: rpMetadata.logo_uri,
+              },
+              openid_relying_party: {
+                ...rpMetadata,
+                jwks: {
+                  keys: [{ kid, alg, ...getJwkFromKey(rpSigningKey).toJson() }],
+                },
+                client_registration_types: ['automatic'], // TODO: Not really sure why we need to provide this manually
+              },
+            },
           },
-        },
-        signJwtCallback: ({ toBeSigned }) =>
-          agentContext.wallet.sign({
-            data: toBeSigned as Buffer,
-            key,
-          }),
-      })
+          signJwtCallback: ({ toBeSigned }) =>
+            agentContext.wallet.sign({
+              data: toBeSigned as Buffer,
+              key: federationKey,
+            }),
+        })
 
-      response.writeHead(200, { 'Content-Type': 'application/entity-statement+jwt' }).end(entityConfiguration)
-    } catch (error) {
-      sendErrorResponse(response, agentContext.config.logger, 500, 'invalid_request', error)
+        response.writeHead(200, { 'Content-Type': 'application/entity-statement+jwt' }).end(entityConfiguration)
+      } catch (error) {
+        agentContext.config.logger.error('Failed to create entity configuration', {
+          error,
+        })
+        sendErrorResponse(response, agentContext.config.logger, 500, 'invalid_request', error)
+      }
+
+      // NOTE: if we don't call next, the agentContext session handler will NOT be called
+      next()
     }
-
-    // NOTE: if we don't call next, the agentContext session handler will NOT be called
-    next()
-  })
+  )
 }

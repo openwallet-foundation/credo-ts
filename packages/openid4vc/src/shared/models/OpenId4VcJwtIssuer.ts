@@ -30,9 +30,8 @@ interface OpenId4VcJwtIssuerJwk {
   jwk: Jwk
 }
 
-interface OpenId4VcJwtIssuerFederation {
+export interface OpenId4VcJwtIssuerFederation {
   method: 'openid-federation'
-  clientId: string
 }
 
 export type OpenId4VcJwtIssuer =

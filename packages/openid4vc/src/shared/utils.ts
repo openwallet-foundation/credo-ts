@@ -1,4 +1,4 @@
-import type { OpenId4VcIssuerX5c, OpenId4VcJwtIssuer } from './models'
+import type { OpenId4VcIssuerX5c, OpenId4VcJwtIssuer, OpenId4VcJwtIssuerFederation } from './models'
 import type { AgentContext, JwaSignatureAlgorithm, JwkJson, Key } from '@credo-ts/core'
 import type { JwtIssuerWithContext as VpJwtIssuerWithContext, VerifyJwtCallback } from '@sphereon/did-auth-siop'
 import type { DPoPJwtIssuerWithContext, CreateJwtCallback, JwtIssuer } from '@sphereon/oid4vc-common'
@@ -10,7 +10,6 @@ import {
   JwsService,
   JwtPayload,
   SignatureSuiteRegistry,
-  TypedArrayEncoder,
   X509Service,
   getDomainFromUrl,
   getJwkClassFromKeyType,
@@ -86,24 +85,35 @@ export function getVerifyJwtCallback(
       const validTrustChains = await resolveTrustChains({
         entityId,
         trustAnchorEntityIds: trustedEntityIds,
-        verifyJwtCallback: async ({ data, signature, jwk }) => {
-          const jws = `${TypedArrayEncoder.toUtf8String(data)}.${TypedArrayEncoder.toBase64URL(signature)}`
-
+        verifyJwtCallback: async ({ jwt, jwk }) => {
           const res = await jwsService.verifyJws(agentContext, {
-            jws,
+            jws: jwt,
             jwkResolver: () => getJwkFromJson(jwk),
           })
 
           return res.isValid
         },
       })
+      // When the chain is already invalid we can return false immediately
+      if (validTrustChains.length === 0) return false
+
+      // Pick the first valid trust chain for validation of the leaf entity jwks
+      const { entityConfiguration } = validTrustChains[0]
+      // TODO: No support yet for signed jwks and external jwks
+      const rpSigningKeys = entityConfiguration?.metadata?.openid_relying_party?.jwks?.keys
+      if (!rpSigningKeys || rpSigningKeys.length === 0)
+        throw new CredoError('No rp signing keys found in the entity configuration.')
+
+      const res = await jwsService.verifyJws(agentContext, {
+        jws: jwt.raw,
+        jwkResolver: () => getJwkFromJson(rpSigningKeys[0]),
+      })
 
       // TODO: There is no check yet for the policies
 
       // TODO: When this function results in a `false` it gives a really misleading error message: 'Error verifying the DID Auth Token signature.'
 
-      // TODO: I think this is correct but not sure?
-      return validTrustChains.length > 0
+      return res.isValid
     }
 
     throw new Error(`Unsupported jwt verifier method: '${jwtVerifier.method}'`)
@@ -155,6 +165,7 @@ export function getCreateJwtCallback(
     }
 
     if (jwtIssuer.method === 'custom') {
+      // TODO: This could be used as the issuer and verifier. Based on that we need to search for a jwk in the entity configuration
       const { options } = jwtIssuer
       if (!options) throw new CredoError(`Custom jwtIssuer must have options defined.`)
       if (!options.clientId) throw new CredoError(`Custom jwtIssuer must have clientId defined.`)
@@ -163,18 +174,27 @@ export function getCreateJwtCallback(
       const { clientId } = options
 
       const entityConfiguration = await fetchEntityConfiguration({
-        entityId: clientId as string,
-        verifyJwtCallback: async ({ data, signature, jwk }) => {
-          const jws = `${TypedArrayEncoder.toUtf8String(data)}.${TypedArrayEncoder.toBase64URL(signature)}`
-          const res = await jwsService.verifyJws(agentContext, { jws, jwkResolver: () => getJwkFromJson(jwk) })
+        entityId: clientId,
+        verifyJwtCallback: async ({ jwt, jwk }) => {
+          const res = await jwsService.verifyJws(agentContext, { jws: jwt, jwkResolver: () => getJwkFromJson(jwk) })
           return res.isValid
         },
       })
 
-      // TODO: Not 100% sure what key to pick here I think the one that matches the kid in the jwt header of the entity configuration or we should pass a alg and pick a jwk based on that?
-      const jwk = getJwkFromJson(entityConfiguration.jwks.keys[0])
+      // TODO: Not really sure if this is also used for the issuer so if so we need to change this logic. But currently it's not possible to specify a issuer method with issuance so I think it's fine.
 
-      // TODO: This gives a weird error when the private key is not available in the wallet
+      // NOTE: Hardcoded part for the verifier
+      const openIdRelyingParty = entityConfiguration.metadata?.openid_relying_party
+      if (!openIdRelyingParty) throw new CredoError('No openid-relying-party found in the entity configuration.')
+
+      // NOTE: No support for signed jwks and external jwks
+      const jwks = openIdRelyingParty.jwks
+      if (!jwks) throw new CredoError('No jwks found in the openid-relying-party.')
+
+      // TODO: Not 100% sure what key to pick here I think the one that matches the kid in the jwt header of the entity configuration or we should pass a alg and pick a jwk based on that?
+      const jwk = getJwkFromJson(jwks.keys[0])
+
+      // TODO: This gives a weird error when the private key is not available in the wallet so we should handle that better
       const jws = await jwsService.createJwsCompact(agentContext, {
         protectedHeaderOptions: { ...jwt.header, jwk, alg: jwk.supportedSignatureAlgorithms[0] },
         payload: JwtPayload.fromJson(jwt.payload),
@@ -191,7 +211,10 @@ export function getCreateJwtCallback(
 
 export async function openIdTokenIssuerToJwtIssuer(
   agentContext: AgentContext,
-  openId4VcTokenIssuer: Exclude<OpenId4VcJwtIssuer, OpenId4VcIssuerX5c> | (OpenId4VcIssuerX5c & { issuer: string })
+  openId4VcTokenIssuer:
+    | Exclude<OpenId4VcJwtIssuer, OpenId4VcIssuerX5c | OpenId4VcJwtIssuerFederation>
+    | (OpenId4VcIssuerX5c & { issuer: string })
+    | (OpenId4VcJwtIssuerFederation & { clientId: string })
 ): Promise<JwtIssuer> {
   if (openId4VcTokenIssuer.method === 'did') {
     const key = await getKeyFromDid(agentContext, openId4VcTokenIssuer.didUrl)

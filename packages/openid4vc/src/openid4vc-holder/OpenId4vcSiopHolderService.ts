@@ -4,7 +4,7 @@ import type {
   OpenId4VcSiopResolveAuthorizationRequestOptions,
   OpenId4VcSiopResolvedAuthorizationRequest,
 } from './OpenId4vcSiopHolderServiceOptions'
-import type { OpenId4VcJwtIssuer } from '../shared'
+import type { OpenId4VcJwtIssuer, OpenId4VcJwtIssuerFederation } from '../shared'
 import type { AgentContext, JwkJson, VerifiablePresentation } from '@credo-ts/core'
 import type {
   AuthorizationResponsePayload,
@@ -28,7 +28,9 @@ import {
   injectable,
   parseDid,
   MdocDeviceResponse,
+  JwsService,
 } from '@credo-ts/core'
+import { fetchEntityConfiguration } from '@openid-federation/core'
 import { OP, ResponseIss, ResponseMode, ResponseType, SupportedVersion, VPTokenLocation } from '@sphereon/did-auth-siop'
 
 import { getSphereonVerifiablePresentation } from '../shared/transform'
@@ -63,6 +65,34 @@ export class OpenId4VcSiopHolderService {
     }
 
     const presentationDefinition = verifiedAuthorizationRequest.presentationDefinitions?.[0]?.definition
+
+    if (verifiedAuthorizationRequest.clientIdScheme === 'entity_id') {
+      const clientId = verifiedAuthorizationRequest.authorizationRequestPayload.client_id
+      if (!clientId) {
+        throw new CredoError("Unable to extract 'client_id' from authorization request")
+      }
+
+      const jwsService = agentContext.dependencyManager.resolve(JwsService)
+
+      const entityConfiguration = await fetchEntityConfiguration({
+        entityId: clientId,
+        verifyJwtCallback: async ({ jwt, jwk }) => {
+          const res = await jwsService.verifyJws(agentContext, {
+            jws: jwt,
+            jwkResolver: () => getJwkFromJson(jwk),
+          })
+
+          return res.isValid
+        },
+      })
+      if (!entityConfiguration) throw new CredoError(`Unable to fetch entity configuration for entityId '${clientId}'`)
+
+      const openidRelyingPartyMetadata = entityConfiguration.metadata?.openid_relying_party
+      // When the metadata is present in the federation we want to use that instead of what is passed with the request
+      if (openidRelyingPartyMetadata) {
+        verifiedAuthorizationRequest.authorizationRequestPayload.client_metadata = openidRelyingPartyMetadata
+      }
+    }
 
     return {
       authorizationRequest: verifiedAuthorizationRequest,
@@ -261,7 +291,7 @@ export class OpenId4VcSiopHolderService {
 
   private getOpenIdTokenIssuerFromVerifiablePresentation(
     verifiablePresentation: VerifiablePresentation
-  ): OpenId4VcJwtIssuer {
+  ): Exclude<OpenId4VcJwtIssuer, OpenId4VcJwtIssuerFederation> {
     let openIdTokenIssuer: OpenId4VcJwtIssuer
 
     if (verifiablePresentation instanceof W3cJsonLdVerifiablePresentation) {

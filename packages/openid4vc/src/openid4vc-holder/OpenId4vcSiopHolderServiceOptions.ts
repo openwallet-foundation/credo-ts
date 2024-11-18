@@ -2,6 +2,7 @@ import type {
   OpenId4VcJwtIssuer,
   OpenId4VcSiopVerifiedAuthorizationRequest,
   OpenId4VcSiopAuthorizationResponsePayload,
+  OpenId4VcJwtIssuerFederation,
 } from '../shared'
 import type {
   DifPexCredentialsForRequest,
@@ -42,7 +43,7 @@ export interface OpenId4VcSiopAcceptAuthorizationRequestOptions {
    * In case presentation exchange is used, and `openIdTokenIssuer` is not provided, the issuer of the ID Token
    * will be extracted from the signer of the first verifiable presentation.
    */
-  openIdTokenIssuer?: OpenId4VcJwtIssuer
+  openIdTokenIssuer?: Exclude<OpenId4VcJwtIssuer, OpenId4VcJwtIssuerFederation>
 
   /**
    * The verified authorization request.

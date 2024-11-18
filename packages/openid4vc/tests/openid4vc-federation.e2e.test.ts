@@ -7,12 +7,10 @@ import {
   DidsApi,
   DifPresentationExchangeService,
   JwaSignatureAlgorithm,
-  KeyType,
   W3cCredential,
   W3cCredentialSubject,
   w3cDate,
   W3cIssuer,
-  WalletApi,
   X509Module,
   X509ModuleConfig,
 } from '@credo-ts/core'
@@ -40,6 +38,8 @@ const serverPort = 1234
 const baseUrl = `http://localhost:${serverPort}`
 const issuanceBaseUrl = `${baseUrl}/oid4vci`
 const verificationBaseUrl = `${baseUrl}/oid4vp`
+
+// TODO: Add tests for invalid configurations so unhappy tests
 
 describe('OpenId4Vc', () => {
   let expressApp: Express
@@ -124,16 +124,6 @@ describe('OpenId4Vc', () => {
                 }
               },
             },
-            federation: {
-              keyCallback: async (agentContext) => {
-                const walletApi = agentContext.dependencyManager.resolve(WalletApi)
-                const key = await walletApi.createKey({ keyType: KeyType.Ed25519 })
-
-                return {
-                  key,
-                }
-              },
-            },
           },
         }),
         askar: new AskarModule(askarModuleConfig),
@@ -159,18 +149,6 @@ describe('OpenId4Vc', () => {
       {
         openId4VcVerifier: new OpenId4VcVerifierModule({
           baseUrl: verificationBaseUrl,
-          endpoints: {
-            federation: {
-              keyCallback: async (agentContext) => {
-                const walletApi = agentContext.dependencyManager.resolve(WalletApi)
-                const key = await walletApi.createKey({ keyType: KeyType.Ed25519 })
-
-                return {
-                  key,
-                }
-              },
-            },
-          },
         }),
         askar: new AskarModule(askarModuleConfig),
         tenants: new TenantsModule(),
@@ -237,7 +215,6 @@ describe('OpenId4Vc', () => {
         verifierId: openIdVerifierTenant1.verifierId,
         requestSigner: {
           method: 'openid-federation',
-          clientId: `http://localhost:1234/oid4vp/${openIdVerifierTenant1.verifierId}`,
         },
         presentationExchange: {
           definition: openBadgePresentationDefinition,
@@ -254,7 +231,6 @@ describe('OpenId4Vc', () => {
       await verifierTenant2.modules.openId4VcVerifier.createAuthorizationRequest({
         requestSigner: {
           method: 'openid-federation',
-          clientId: `http://localhost:1234/oid4vp/${openIdVerifierTenant2.verifierId}`,
         },
         presentationExchange: {
           definition: universityDegreePresentationDefinition,

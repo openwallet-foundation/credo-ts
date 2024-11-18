@@ -107,11 +107,18 @@ export class OpenId4VcSiopVerifierService {
       this.config.authorizationEndpoint.endpointPath,
     ])
 
+    const federationClientId = joinUriParts(this.config.baseUrl, [options.verifier.verifierId])
+
     const jwtIssuer =
       options.requestSigner.method === 'x5c'
         ? await openIdTokenIssuerToJwtIssuer(agentContext, {
             ...options.requestSigner,
             issuer: authorizationResponseUrl,
+          })
+        : options.requestSigner.method === 'openid-federation'
+        ? await openIdTokenIssuerToJwtIssuer(agentContext, {
+            ...options.requestSigner,
+            clientId: federationClientId,
           })
         : await openIdTokenIssuerToJwtIssuer(agentContext, options.requestSigner)
 
@@ -144,16 +151,12 @@ export class OpenId4VcSiopVerifierService {
       clientIdScheme = 'did'
     } else if (jwtIssuer.method === 'custom') {
       // TODO: Currently used as openid federation, but the jwtIssuer should also be openid-federation
-      if (!jwtIssuer.options) throw new CredoError(`Custom jwtIssuer must have options defined.`)
-      if (!jwtIssuer.options.clientId) throw new CredoError(`Custom jwtIssuer must have clientId defined.`)
-      if (typeof jwtIssuer.options.clientId !== 'string')
-        throw new CredoError(`Custom jwtIssuer's clientId must be a string.`)
 
       clientIdScheme = 'entity_id'
-      clientId = jwtIssuer.options.clientId
+      clientId = federationClientId
     } else {
       throw new CredoError(
-        `Unsupported jwt issuer method '${options.requestSigner.method}'. Only 'did' and 'x5c' are supported.`
+        `Unsupported jwt issuer method '${options.requestSigner.method}'. Only 'did', 'x5c' and 'custom' are supported.`
       )
     }
 
