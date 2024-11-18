@@ -162,6 +162,10 @@ export class OpenId4VcIssuerService {
       throw new CredoError('All offered credentials must have unique ids.')
     }
 
+    if (uniqueOfferedCredentials.length === 0) {
+      throw new CredoError('You need to offer at least one credential.')
+    }
+
     // We always use shortened URIs currently
     const hostedCredentialOfferUri = joinUriParts(issuerMetadata.credentialIssuer.credential_issuer, [
       this.openId4VcIssuerConfig.credentialOfferEndpointPath,
@@ -212,7 +216,7 @@ export class OpenId4VcIssuerService {
             required: true,
           }
         : undefined,
-      // TOOD: how to mix pre-auth and auth? Need to do state checks
+      // TODO: how to mix pre-auth and auth? Need to do state checks
       preAuthorizedCode: credentialOfferObject.grants?.[preAuthorizedCodeGrantIdentifier]?.['pre-authorized_code'],
       userPin: preAuthorizedCodeFlowConfig?.txCode
         ? generateTxCode(agentContext, preAuthorizedCodeFlowConfig.txCode)
@@ -650,15 +654,17 @@ export class OpenId4VcIssuerService {
 
     // Auth
     if (authorizationCodeFlowConfig) {
-      const { authorizationServerUrl, requirePresentationDuringIssuance } = authorizationCodeFlowConfig
-      if (
-        requirePresentationDuringIssuance &&
-        authorizationServerUrl &&
-        authorizationServerUrl !== issuerMetadata.credentialIssuer.credential_issuer
-      ) {
-        throw new CredoError(
-          `When 'requirePresentationDuringIssuance' is set, 'authorizationServerUrl' must be undefined or match the credential issuer identifier`
-        )
+      const { requirePresentationDuringIssuance } = authorizationCodeFlowConfig
+      let authorizationServerUrl = authorizationCodeFlowConfig.authorizationServerUrl
+
+      if (requirePresentationDuringIssuance) {
+        if (authorizationServerUrl && authorizationServerUrl !== issuerMetadata.credentialIssuer.credential_issuer) {
+          throw new CredoError(
+            `When 'requirePresentationDuringIssuance' is set, 'authorizationServerUrl' must be undefined or match the credential issuer identifier`
+          )
+        }
+
+        authorizationServerUrl = issuerMetadata.credentialIssuer.credential_issuer
       }
 
       grants.authorization_code = {

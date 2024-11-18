@@ -8,6 +8,7 @@ import type {
   OpenId4VciSignSdJwtCredentials,
   OpenId4VciSignW3cCredentials,
   OpenId4VcIssuerRecord,
+  OpenId4VcVerifierRecord,
 } from '@credo-ts/openid4vc'
 
 import { AskarModule } from '@credo-ts/askar'
@@ -26,14 +27,29 @@ import {
   TypedArrayEncoder,
   JsonTransformer,
 } from '@credo-ts/core'
-import { OpenId4VcIssuerModule, OpenId4VciCredentialFormatProfile } from '@credo-ts/openid4vc'
+import {
+  OpenId4VcIssuerModule,
+  OpenId4VcVerifierApi,
+  OpenId4VcVerifierModule,
+  OpenId4VciCredentialFormatProfile,
+} from '@credo-ts/openid4vc'
 import { ariesAskar } from '@hyperledger/aries-askar-nodejs'
 import { Router } from 'express'
 
 import { BaseAgent } from './BaseAgent'
 import { Output } from './OutputClass'
 
+const PROVIDER_HOST = process.env.PROVIDER_HOST ?? 'http://localhost:3042'
+const ISSUER_HOST = process.env.ISSUER_HOST ?? 'http://localhost:2000'
+
 export const credentialConfigurationsSupported = {
+  PresentationAuthorization: {
+    format: OpenId4VciCredentialFormatProfile.SdJwtVc,
+    vct: 'PresentationAuthorization',
+    scope: 'openid4vc:credential:PresentationAuthorization',
+    cryptographic_binding_methods_supported: ['jwk', 'did:key', 'did:jwk'],
+    credential_signing_alg_values_supported: ['ES256', 'EdDSA'],
+  },
   'UniversityDegreeCredential-jwtvcjson': {
     format: OpenId4VciCredentialFormatProfile.JwtVcJson,
     scope: 'openid4vc:credential:UniversityDegreeCredential-jwtvcjson',
@@ -80,6 +96,27 @@ function getCredentialRequestToCredentialMapper({
 
     const credentialConfigurationId = credentialConfigurationIds[0]
     const credentialConfiguration = supported[credentialConfigurationId]
+
+    if (credentialConfigurationId === 'PresentationAuthorization') {
+      return {
+        credentialConfigurationId,
+        format: ClaimFormat.SdJwtVc,
+        credentials: holderBindings.map((holderBinding) => ({
+          payload: {
+            vct: credentialConfiguration.vct,
+            authorized_user: authorization.accessToken.payload.sub,
+          },
+          holder: holderBinding,
+          issuer:
+            holderBindings[0].method === 'did'
+              ? {
+                  method: 'did',
+                  didUrl: `${issuerDidKey.did}#${issuerDidKey.key.fingerprint}`,
+                }
+              : { method: 'x5c', x5c: [trustedCertificates[0]], issuer: ISSUER_HOST },
+        })),
+      } satisfies OpenId4VciSignSdJwtCredentials
+    }
 
     if (credentialConfiguration.format === OpenId4VciCredentialFormatProfile.JwtVcJson) {
       holderBindings.forEach((holderBinding) => assertDidBasedHolderBinding(holderBinding))
@@ -156,31 +193,78 @@ function getCredentialRequestToCredentialMapper({
 export class Issuer extends BaseAgent<{
   askar: AskarModule
   openId4VcIssuer: OpenId4VcIssuerModule
+  openId4VcVerifier: OpenId4VcVerifierModule
 }> {
   public issuerRecord!: OpenId4VcIssuerRecord
+  public verifierRecord!: OpenId4VcVerifierRecord
 
-  public constructor(port: number, name: string) {
+  public constructor(url: string, port: number, name: string) {
     const openId4VciRouter = Router()
+    const openId4VpRouter = Router()
 
     super({
       port,
       name,
       modules: {
         askar: new AskarModule({ ariesAskar }),
+        openId4VcVerifier: new OpenId4VcVerifierModule({
+          baseUrl: `${url}/oid4vp`,
+          router: openId4VpRouter,
+        }),
         openId4VcIssuer: new OpenId4VcIssuerModule({
-          baseUrl: 'http://localhost:2000/oid4vci',
+          baseUrl: `${url}/oid4vci`,
           router: openId4VciRouter,
           credentialRequestToCredentialMapper: (...args) =>
             getCredentialRequestToCredentialMapper({ issuerDidKey: this.didKey })(...args),
+          getVerificationSessionForIssuanceSessionAuthorization: async ({ agentContext, scopes }) => {
+            const verifierApi = agentContext.dependencyManager.resolve(OpenId4VcVerifierApi)
+            const authorizationRequest = await verifierApi.createAuthorizationRequest({
+              verifierId: this.verifierRecord.verifierId,
+              requestSigner: {
+                method: 'did',
+                didUrl: `${this.didKey.did}#${this.didKey.key.fingerprint}`,
+              },
+              responseMode: 'direct_post.jwt',
+              presentationExchange: {
+                definition: {
+                  id: '18e2c9c3-1722-4393-a558-f0ce1e32c4ec',
+                  input_descriptors: [
+                    {
+                      id: '16f00df5-67f1-47e6-81b1-bd3e3743f84c',
+                      constraints: {
+                        fields: [
+                          {
+                            path: ['$.vct'],
+                            filter: {
+                              type: 'string',
+                              const: credentialConfigurationsSupported.PresentationAuthorization.vct,
+                            },
+                          },
+                        ],
+                      },
+                    },
+                  ],
+                  name: 'Presentation Authorization',
+                  purpose: `To issue the requested credentials, we need to verify your 'Presentation Authorization' credential`,
+                },
+              },
+            })
+
+            return {
+              scopes,
+              ...authorizationRequest,
+            }
+          },
         }),
       },
     })
 
     this.app.use('/oid4vci', openId4VciRouter)
+    this.app.use('/oid4vp', openId4VpRouter)
   }
 
   public static async build(): Promise<Issuer> {
-    const issuer = new Issuer(2000, 'OpenId4VcIssuer ' + Math.random().toString())
+    const issuer = new Issuer(ISSUER_HOST, 2000, 'OpenId4VcIssuer ' + Math.random().toString())
     await issuer.initializeAgent('96213c3d7fc8d4d6754c7a0fd969598f')
 
     const selfSignedCertificate = await X509Service.createSelfSignedCertificate(issuer.agent.context, {
@@ -190,7 +274,7 @@ export class Issuer extends BaseAgent<{
       }),
       notBefore: new Date('2000-01-01'),
       notAfter: new Date('2050-01-01'),
-      extensions: [],
+      extensions: [[{ type: 'dns', value: ISSUER_HOST.replace('https://', '').replace('http://', '') }]],
       name: 'C=DE',
     })
 
@@ -199,12 +283,15 @@ export class Issuer extends BaseAgent<{
     console.log('Set the following certficate for the holder to verify mdoc credentials.')
     console.log(issuerCertficicate)
 
+    issuer.verifierRecord = await issuer.agent.modules.openId4VcVerifier.createVerifier({
+      verifierId: '726222ad-7624-4f12-b15b-e08aa7042ffa',
+    })
     issuer.issuerRecord = await issuer.agent.modules.openId4VcIssuer.createIssuer({
       issuerId: '726222ad-7624-4f12-b15b-e08aa7042ffa',
       credentialConfigurationsSupported,
       authorizationServerConfigs: [
         {
-          issuer: 'http://localhost:3042',
+          issuer: PROVIDER_HOST,
           clientAuthentication: {
             clientId: 'issuer-server',
             clientSecret: 'issuer-server',
@@ -221,7 +308,7 @@ export class Issuer extends BaseAgent<{
 
   public async createCredentialOffer(options: {
     credentialConfigurationIds: string[]
-    requireAuthorization: boolean
+    requireAuthorization?: 'presentation' | 'browser'
     requirePin: boolean
   }) {
     const issuerMetadata = await this.agent.modules.openId4VcIssuer.getIssuerMetadata(this.issuerRecord.issuerId)
@@ -233,15 +320,22 @@ export class Issuer extends BaseAgent<{
       preAuthorizedCodeFlowConfig: !options.requireAuthorization
         ? {
             authorizationServerUrl: issuerMetadata.credentialIssuer.credential_issuer,
-            txCode: options.requirePin ? {} : undefined,
+            txCode: options.requirePin
+              ? {
+                  input_mode: 'numeric',
+                  length: 4,
+                  description: 'Pin has been printed to the terminal',
+                }
+              : undefined,
           }
         : undefined,
       // Auth using external authorization server
       authorizationCodeFlowConfig: options.requireAuthorization
         ? {
-            authorizationServerUrl: 'http://localhost:3042',
+            authorizationServerUrl: options.requireAuthorization === 'browser' ? PROVIDER_HOST : undefined,
             // TODO: should be generated by us, if we're going to use for matching
             issuerState: utils.uuid(),
+            requirePresentationDuringIssuance: options.requireAuthorization === 'presentation',
           }
         : undefined,
     })

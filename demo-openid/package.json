@@ -12,7 +12,8 @@
     "issuer": "ts-node src/IssuerInquirer.ts",
     "provider": "tsx src/provider.js",
     "holder": "ts-node src/HolderInquirer.ts",
-    "verifier": "ts-node src/VerifierInquirer.ts"
+    "verifier": "ts-node src/VerifierInquirer.ts",
+    "proxies": "ngrok --config ngrok.yml,ngrok.auth.yml start provider issuer verifier"
   },
   "dependencies": {
     "@hyperledger/anoncreds-nodejs": "^0.2.2",

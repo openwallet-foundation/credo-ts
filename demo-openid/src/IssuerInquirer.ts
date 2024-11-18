@@ -3,7 +3,7 @@ import { textSync } from 'figlet'
 
 import { BaseInquirer } from './BaseInquirer'
 import { credentialConfigurationsSupported, Issuer } from './Issuer'
-import { Title, greenText, purpleText } from './OutputClass'
+import { Title, greenText, purpleText, redText } from './OutputClass'
 
 export const runIssuer = async () => {
   clear()
@@ -49,13 +49,25 @@ export class IssuerInquirer extends BaseInquirer {
   }
 
   public async createCredentialOffer() {
-    const credentialConfigurationIds = await this.pickMultiple(Object.keys(credentialConfigurationsSupported))
-    const requireAuthorization = await this.inquireConfirmation('Require authorization?')
-    const requirePin = !requireAuthorization ? await this.inquireConfirmation('Require pin?') : false
+    let credentialConfigurationIds = await this.pickMultiple(Object.keys(credentialConfigurationsSupported))
+    while (credentialConfigurationIds.length === 0) {
+      console.log(redText('Pick at least one', true))
+      credentialConfigurationIds = await this.pickMultiple(Object.keys(credentialConfigurationsSupported))
+    }
+
+    const authorizationMethod = await this.pickOne(
+      ['Transaction Code', 'Browser', 'Presentation', 'None'],
+      'Authorization method'
+    )
     const { credentialOffer, issuanceSession } = await this.issuer.createCredentialOffer({
       credentialConfigurationIds,
-      requireAuthorization,
-      requirePin,
+      requireAuthorization:
+        authorizationMethod === 'Browser'
+          ? 'browser'
+          : authorizationMethod === 'Presentation'
+          ? 'presentation'
+          : undefined,
+      requirePin: authorizationMethod === 'Transaction Code',
     })
 
     console.log(purpleText(`credential offer: '${credentialOffer}'`, true))

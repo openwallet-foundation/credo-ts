@@ -6,7 +6,10 @@ import { Provider } from 'oidc-provider'
 // and only works if only person is authenticating. Of course very unsecure, but it's a demo
 let issuer_state: string | undefined = undefined
 
-const oidc = new Provider('http://localhost:3042', {
+const PROVIDER_HOST = process.env.PROVIDER_HOST ?? 'http://localhost:3042'
+const ISSUER_HOST = process.env.ISSUER_HOST ?? 'http://localhost:2000'
+
+const oidc = new Provider(PROVIDER_HOST, {
   clientAuthMethods: ['client_secret_basic', 'client_secret_post', 'none'],
   clients: [
     {
@@ -15,6 +18,7 @@ const oidc = new Provider('http://localhost:3042', {
       grant_types: ['authorization_code'],
       id_token_signed_response_alg: 'ES256',
       redirect_uris: [],
+      application_type: 'native',
     },
     {
       client_id: 'issuer-server',
@@ -71,7 +75,7 @@ const oidc = new Provider('http://localhost:3042', {
       enabled: true,
     },
     resourceIndicators: {
-      defaultResource: () => 'http://localhost:2000/oid4vci/726222ad-7624-4f12-b15b-e08aa7042ffa',
+      defaultResource: () => `${ISSUER_HOST}/oid4vci/726222ad-7624-4f12-b15b-e08aa7042ffa`,
       enabled: true,
       getResourceServerInfo: (context) => {
         return {
@@ -80,7 +84,7 @@ const oidc = new Provider('http://localhost:3042', {
 
           // NOTE: switch this between opaque and jwt to use JWT tokens or Token introspection
           accessTokenFormat: 'jwt',
-          audience: 'http://localhost:2000/oid4vci/726222ad-7624-4f12-b15b-e08aa7042ffa',
+          audience: `${ISSUER_HOST}/oid4vci/726222ad-7624-4f12-b15b-e08aa7042ffa`,
           jwt: {
             sign: {
               kid: 'first-key',
@@ -104,6 +108,7 @@ const oidc = new Provider('http://localhost:3042', {
     }
   },
 })
+oidc.proxy = true
 
 oidc.use(bodyParser())
 oidc.use(async (ctx, next) => {
@@ -135,5 +140,5 @@ oidc.use(async (ctx, next) => {
 })
 
 oidc.listen(3042, () => {
-  console.log('oidc-provider listening on port 3042, check http://localhost:3042/.well-known/openid-configuration')
+  console.log(`oidc-provider listening on port 3042, check ${PROVIDER_HOST}/.well-known/openid-configuration`)
 })

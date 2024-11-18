@@ -23,11 +23,11 @@ export class BaseInquirer {
     choices: [],
   }
 
-  public async pickOne(options: string[]): Promise<string> {
+  public async pickOne(options: string[], title?: string): Promise<string> {
     const result = await prompt([
       {
         ...this.optionsInquirer,
-        message: Title.OptionsTitle,
+        message: title ?? Title.OptionsTitle,
         choices: options,
       },
     ])
@@ -35,11 +35,11 @@ export class BaseInquirer {
     return result.options
   }
 
-  public async pickMultiple(options: string[]): Promise<string[]> {
+  public async pickMultiple(options: string[], title?: string): Promise<string[]> {
     const result = await prompt([
       {
         ...this.optionsInquirer,
-        message: Title.OptionsTitle,
+        message: title ?? Title.OptionsTitle,
         choices: options,
         type: 'checkbox',
       },

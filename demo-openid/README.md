@@ -109,3 +109,29 @@ Exit:
 Restart:
 
 - Select 'restart', to shutdown the current program and start a new one
+
+### Optional Proxy
+
+By default all services will be started on `localhost`, and thus won't be reachable by other external services (such as a mobile wallet). If you want to expose the required services to the public, you need to expose multiple ngrok tunnels.
+
+We can setup the tunnels automatically using ngrok. First make sure you have an ngrok account and get your access token from this page: https://dashboard.ngrok.com/get-started/setup/
+
+Then copy the `ngrok.auth.example.yml` file to `ngrok.auth.yml`:
+
+```sh
+cp ngrok.auth.example.yml ngrok.auth.yml
+```
+
+And finally set the `authtoken` to the auth token as displayed in the ngrok dashboard.
+
+Once set up, you can run the following command in a separate terminal window.
+
+```sh
+pnpm proxies
+```
+
+This will open three proxies. You should then run your demo environments with these proxies:
+
+- `PROVIDER_HOST=https://d404-123-123-123-123.ngrok-free.app ISSUER_HOST=https://d738-123-123-123-123.ngrok-free.app pnpm provider` (ngrok url for port 3042)
+- `PROVIDER_HOST=https://d404-123-123-123-123.ngrok-free.app ISSUER_HOST=https://d738-123-123-123-123.ngrok-free.app pnpm issuer` (ngrok url for port 2000)
+- `VERIFIER_HOST=https://1d91-123-123-123-123.ngrok-free.app pnpm verifier` (ngrok url for port 4000)
