@@ -1,0 +1,12 @@
+version: 2
+
+tunnels:
+  issuer:
+    proto: http
+    addr: 2000
+  provider:
+    proto: http
+    addr: 3042
+  verifier:
+    proto: http
+    addr: 4000

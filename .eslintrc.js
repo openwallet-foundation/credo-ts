@@ -116,6 +116,7 @@ module.exports = {
         'demo-openid/**',
         'scripts/**',
         '**/tests/**',
+        'tests/**',
       ],
       env: {
         jest: true,
