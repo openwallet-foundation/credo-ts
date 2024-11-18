@@ -24,18 +24,6 @@ export function configureFederationEndpoint(router: Router) {
       })
 
       const issuerMetadata = openId4VcIssuerService.getIssuerMetadata(agentContext, issuer)
-      // TODO: Use a type here from sphreon
-      const transformedMetadata = {
-        credential_issuer: issuerMetadata.issuerUrl,
-        token_endpoint: issuerMetadata.tokenEndpoint,
-        credential_endpoint: issuerMetadata.credentialEndpoint,
-        authorization_server: issuerMetadata.authorizationServer,
-        authorization_servers: issuerMetadata.authorizationServer ? [issuerMetadata.authorizationServer] : undefined,
-        credentials_supported: issuerMetadata.credentialsSupported,
-        credential_configurations_supported: issuerMetadata.credentialConfigurationsSupported,
-        display: issuerMetadata.issuerDisplay,
-        dpop_signing_alg_values_supported: issuerMetadata.dpopSigningAlgValuesSupported,
-      } as const
 
       const now = new Date()
       const expires = new Date(now.getTime() + 1000 * 60 * 60 * 24) // 1 day from now
@@ -68,7 +56,19 @@ export function configureFederationEndpoint(router: Router) {
                 }
               : undefined,
             openid_provider: {
-              ...transformedMetadata,
+              // TODO: The type isn't correct yet down the line so that needs to be updated before
+              // credential_issuer: issuerMetadata.issuerUrl,
+              // token_endpoint: issuerMetadata.tokenEndpoint,
+              // credential_endpoint: issuerMetadata.credentialEndpoint,
+              // authorization_server: issuerMetadata.authorizationServer,
+              // authorization_servers: issuerMetadata.authorizationServer
+              //   ? [issuerMetadata.authorizationServer]
+              //   : undefined,
+              // credentials_supported: issuerMetadata.credentialsSupported,
+              // credential_configurations_supported: issuerMetadata.credentialConfigurationsSupported,
+              // display: issuerMetadata.issuerDisplay,
+              // dpop_signing_alg_values_supported: issuerMetadata.dpopSigningAlgValuesSupported,
+
               client_registration_types_supported: ['automatic'],
               jwks: {
                 keys: [

@@ -96,14 +96,4 @@ export class OpenId4VcIssuerModuleConfig {
       endpointPath: userOptions.endpointPath ?? '/offers',
     }
   }
-
-  public get federationEndpoint(): OpenId4VcSiopFederationEndpointConfig | undefined {
-    const userOptions = this.options.endpoints.federation
-    if (!userOptions) return undefined
-
-    return {
-      ...userOptions,
-      endpointPath: userOptions.endpointPath ?? '/.well-known/openid-federation',
-    }
-  }
 }

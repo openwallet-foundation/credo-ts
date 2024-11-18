@@ -424,4 +424,96 @@ describe('OpenId4Vc', () => {
       ],
     })
   })
+
+  it('e2e flow with tenants, unhappy flow', async () => {
+    const holderTenant = await holder.agent.modules.tenants.getTenantAgent({ tenantId: holder1.tenantId })
+    const verifierTenant1 = await verifier.agent.modules.tenants.getTenantAgent({ tenantId: verifier1.tenantId })
+    const verifierTenant2 = await verifier.agent.modules.tenants.getTenantAgent({ tenantId: verifier2.tenantId })
+
+    const openIdVerifierTenant1 = await verifierTenant1.modules.openId4VcVerifier.createVerifier()
+    const openIdVerifierTenant2 = await verifierTenant2.modules.openId4VcVerifier.createVerifier()
+
+    const signedCredential1 = await issuer.agent.w3cCredentials.signCredential({
+      format: ClaimFormat.JwtVc,
+      credential: new W3cCredential({
+        type: ['VerifiableCredential', 'OpenBadgeCredential'],
+        issuer: new W3cIssuer({ id: issuer.did }),
+        credentialSubject: new W3cCredentialSubject({ id: holder1.did }),
+        issuanceDate: w3cDate(Date.now()),
+      }),
+      alg: JwaSignatureAlgorithm.EdDSA,
+      verificationMethod: issuer.verificationMethod.id,
+    })
+
+    const signedCredential2 = await issuer.agent.w3cCredentials.signCredential({
+      format: ClaimFormat.JwtVc,
+      credential: new W3cCredential({
+        type: ['VerifiableCredential', 'UniversityDegreeCredential'],
+        issuer: new W3cIssuer({ id: issuer.did }),
+        credentialSubject: new W3cCredentialSubject({ id: holder1.did }),
+        issuanceDate: w3cDate(Date.now()),
+      }),
+      alg: JwaSignatureAlgorithm.EdDSA,
+      verificationMethod: issuer.verificationMethod.id,
+    })
+
+    await holderTenant.w3cCredentials.storeCredential({ credential: signedCredential1 })
+    await holderTenant.w3cCredentials.storeCredential({ credential: signedCredential2 })
+
+    const { authorizationRequest: authorizationRequestUri1, verificationSession: verificationSession1 } =
+      await verifierTenant1.modules.openId4VcVerifier.createAuthorizationRequest({
+        verifierId: openIdVerifierTenant1.verifierId,
+        requestSigner: {
+          method: 'openid-federation',
+        },
+        presentationExchange: {
+          definition: openBadgePresentationDefinition,
+        },
+      })
+
+    expect(authorizationRequestUri1).toEqual(
+      `openid4vp://?client_id=${encodeURIComponent(
+        `http://localhost:1234/oid4vp/${openIdVerifierTenant1.verifierId}`
+      )}&request_uri=${encodeURIComponent(verificationSession1.authorizationRequestUri)}`
+    )
+
+    const { authorizationRequest: authorizationRequestUri2, verificationSession: verificationSession2 } =
+      await verifierTenant2.modules.openId4VcVerifier.createAuthorizationRequest({
+        requestSigner: {
+          method: 'openid-federation',
+        },
+        presentationExchange: {
+          definition: universityDegreePresentationDefinition,
+        },
+        verifierId: openIdVerifierTenant2.verifierId,
+      })
+
+    expect(authorizationRequestUri2).toEqual(
+      `openid4vp://?client_id=${encodeURIComponent(
+        `http://localhost:1234/oid4vp/${openIdVerifierTenant2.verifierId}`
+      )}&request_uri=${encodeURIComponent(verificationSession2.authorizationRequestUri)}`
+    )
+
+    await verifierTenant1.endSession()
+    await verifierTenant2.endSession()
+
+    const resolvedProofRequestWithFederationPromise =
+      holderTenant.modules.openId4VcHolder.resolveSiopAuthorizationRequest(authorizationRequestUri1, {
+        federation: {
+          // This will look for a whole different trusted entity
+          trustedEntityIds: [`http://localhost:1234/oid4vp/${openIdVerifierTenant2.verifierId}`],
+        },
+      })
+
+    // TODO: Look into this error see if we can make it more specific
+    await expect(resolvedProofRequestWithFederationPromise).rejects.toThrow(
+      `Error verifying the DID Auth Token signature.`
+    )
+
+    const resolvedProofRequestWithoutFederationPromise =
+      holderTenant.modules.openId4VcHolder.resolveSiopAuthorizationRequest(authorizationRequestUri2)
+    await expect(resolvedProofRequestWithoutFederationPromise).rejects.toThrow(
+      `Error verifying the DID Auth Token signature.`
+    )
+  })
 })

@@ -60,6 +60,8 @@ export function getVerifyJwtCallback(
   agentContext: AgentContext,
   options: VerifyJwtCallbackOptions = {}
 ): VerifyJwtCallback {
+  const logger = agentContext.config.logger
+
   return async (jwtVerifier, jwt) => {
     const jwsService = agentContext.dependencyManager.resolve(JwsService)
 
@@ -79,8 +81,10 @@ export function getVerifyJwtCallback(
     if (jwtVerifier.method === 'openid-federation') {
       const { entityId } = jwtVerifier
       const trustedEntityIds = options.federation?.trustedEntityIds
-      if (!trustedEntityIds)
-        throw new CredoError('No trusted entity ids provided but is required for the openid-federation method.')
+      if (!trustedEntityIds) {
+        logger.error('No trusted entity ids provided but is required for the "openid-federation" method.')
+        return false
+      }
 
       const validTrustChains = await resolveTrustChains({
         entityId,
@@ -95,7 +99,10 @@ export function getVerifyJwtCallback(
         },
       })
       // When the chain is already invalid we can return false immediately
-      if (validTrustChains.length === 0) return false
+      if (validTrustChains.length === 0) {
+        logger.error(`${entityId} is not part of a trusted federation.`)
+        return false
+      }
 
       // Pick the first valid trust chain for validation of the leaf entity jwks
       const { entityConfiguration } = validTrustChains[0]
@@ -108,10 +115,11 @@ export function getVerifyJwtCallback(
         jws: jwt.raw,
         jwkResolver: () => getJwkFromJson(rpSigningKeys[0]),
       })
+      if (!res.isValid) {
+        logger.error(`${entityId} does not match the expected signing key.`)
+      }
 
       // TODO: There is no check yet for the policies
-
-      // TODO: When this function results in a `false` it gives a really misleading error message: 'Error verifying the DID Auth Token signature.'
 
       return res.isValid
     }
