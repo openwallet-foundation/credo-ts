@@ -105,9 +105,9 @@ export function getVerifyJwtCallback(
       }
 
       // Pick the first valid trust chain for validation of the leaf entity jwks
-      const { entityConfiguration } = validTrustChains[0]
+      const { leafEntityConfiguration } = validTrustChains[0]
       // TODO: No support yet for signed jwks and external jwks
-      const rpSigningKeys = entityConfiguration?.metadata?.openid_relying_party?.jwks?.keys
+      const rpSigningKeys = leafEntityConfiguration?.metadata?.openid_relying_party?.jwks?.keys
       if (!rpSigningKeys || rpSigningKeys.length === 0)
         throw new CredoError('No rp signing keys found in the entity configuration.')
 

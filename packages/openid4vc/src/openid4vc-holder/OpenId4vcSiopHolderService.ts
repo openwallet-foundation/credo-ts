@@ -3,6 +3,7 @@ import type {
   OpenId4VcSiopGetOpenIdProviderOptions,
   OpenId4VcSiopResolveAuthorizationRequestOptions,
   OpenId4VcSiopResolvedAuthorizationRequest,
+  OpenId4VcSiopResolveTrustChainsOptions,
 } from './OpenId4vcSiopHolderServiceOptions'
 import type { OpenId4VcJwtIssuer, OpenId4VcJwtIssuerFederation } from '../shared'
 import type { AgentContext, JwkJson, VerifiablePresentation } from '@credo-ts/core'
@@ -30,7 +31,10 @@ import {
   MdocDeviceResponse,
   JwsService,
 } from '@credo-ts/core'
-import { fetchEntityConfiguration } from '@openid-federation/core'
+import {
+  resolveTrustChains as federationResolveTrustChains,
+  fetchEntityConfiguration as federationFetchEntityConfiguration,
+} from '@openid-federation/core'
 import { OP, ResponseIss, ResponseMode, ResponseType, SupportedVersion, VPTokenLocation } from '@sphereon/did-auth-siop'
 
 import { getSphereonVerifiablePresentation } from '../shared/transform'
@@ -74,7 +78,7 @@ export class OpenId4VcSiopHolderService {
 
       const jwsService = agentContext.dependencyManager.resolve(JwsService)
 
-      const entityConfiguration = await fetchEntityConfiguration({
+      const entityConfiguration = await federationFetchEntityConfiguration({
         entityId: clientId,
         verifyJwtCallback: async ({ jwt, jwk }) => {
           const res = await jwsService.verifyJws(agentContext, {
@@ -433,5 +437,27 @@ export class OpenId4VcSiopHolderService {
     })
 
     return jwe
+  }
+
+  public async resolveOpenIdFederationChains(
+    agentContext: AgentContext,
+    options: OpenId4VcSiopResolveTrustChainsOptions
+  ) {
+    const jwsService = agentContext.dependencyManager.resolve(JwsService)
+
+    const { entityId, trustAnchorEntityIds } = options
+
+    return federationResolveTrustChains({
+      entityId,
+      trustAnchorEntityIds,
+      verifyJwtCallback: async ({ jwt, jwk }) => {
+        const res = await jwsService.verifyJws(agentContext, {
+          jws: jwt,
+          jwkResolver: () => getJwkFromJson(jwk),
+        })
+
+        return res.isValid
+      },
+    })
   }
 }

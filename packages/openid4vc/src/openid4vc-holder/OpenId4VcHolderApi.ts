@@ -11,6 +11,7 @@ import type {
 import type {
   OpenId4VcSiopAcceptAuthorizationRequestOptions,
   OpenId4VcSiopResolveAuthorizationRequestOptions,
+  OpenId4VcSiopResolveTrustChainsOptions,
 } from './OpenId4vcSiopHolderServiceOptions'
 
 import { injectable, AgentContext } from '@credo-ts/core'
@@ -186,5 +187,9 @@ export class OpenId4VcHolderApi {
    */
   public async sendNotification(options: OpenId4VciSendNotificationOptions) {
     return this.openId4VciHolderService.sendNotification(options)
+  }
+
+  public async resolveOpenIdFederationChains(options: OpenId4VcSiopResolveTrustChainsOptions) {
+    return this.openId4VcSiopHolderService.resolveOpenIdFederationChains(this.agentContext, options)
   }
 }

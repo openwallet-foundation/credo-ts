@@ -33,7 +33,7 @@
     "@sphereon/oid4vci-common": "0.16.1-fix.173",
     "@sphereon/oid4vci-issuer": "0.16.1-fix.173",
     "@sphereon/ssi-types": "0.30.2-next.135",
-    "@openid-federation/core": "0.1.1-alpha.12",
+    "@openid-federation/core": "0.1.1-alpha.13",
     "class-transformer": "^0.5.1",
     "rxjs": "^7.8.0"
   },
