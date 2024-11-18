@@ -176,13 +176,18 @@ export function getCreateJwtCallback(
       // TODO: This could be used as the issuer and verifier. Based on that we need to search for a jwk in the entity configuration
       const { options } = jwtIssuer
       if (!options) throw new CredoError(`Custom jwtIssuer must have options defined.`)
-      if (!options.clientId) throw new CredoError(`Custom jwtIssuer must have clientId defined.`)
-      if (typeof options.clientId !== 'string') throw new CredoError(`Custom jwtIssuer's clientId must be a string.`)
+      if (!options.method) throw new CredoError(`Custom jwtIssuer's options must have a 'method' property defined.`)
+      if (options.method !== 'openid-federation')
+        throw new CredoError(
+          `Custom jwtIssuer's options 'method' property must be 'openid-federation' when using the 'custom' method.`
+        )
+      if (!options.entityId) throw new CredoError(`Custom jwtIssuer must have entityId defined.`)
+      if (typeof options.entityId !== 'string') throw new CredoError(`Custom jwtIssuer's entityId must be a string.`)
 
-      const { clientId } = options
+      const { entityId } = options
 
       const entityConfiguration = await fetchEntityConfiguration({
-        entityId: clientId,
+        entityId,
         verifyJwtCallback: async ({ jwt, jwk }) => {
           const res = await jwsService.verifyJws(agentContext, { jws: jwt, jwkResolver: () => getJwkFromJson(jwk) })
           return res.isValid
@@ -222,7 +227,7 @@ export async function openIdTokenIssuerToJwtIssuer(
   openId4VcTokenIssuer:
     | Exclude<OpenId4VcJwtIssuer, OpenId4VcIssuerX5c | OpenId4VcJwtIssuerFederation>
     | (OpenId4VcIssuerX5c & { issuer: string })
-    | (OpenId4VcJwtIssuerFederation & { clientId: string })
+    | (OpenId4VcJwtIssuerFederation & { entityId: string })
 ): Promise<JwtIssuer> {
   if (openId4VcTokenIssuer.method === 'did') {
     const key = await getKeyFromDid(agentContext, openId4VcTokenIssuer.didUrl)
@@ -283,7 +288,8 @@ export async function openIdTokenIssuerToJwtIssuer(
     return {
       method: 'custom',
       options: {
-        clientId: openId4VcTokenIssuer.clientId,
+        method: 'openid-federation',
+        entityId: openId4VcTokenIssuer.entityId,
       },
     }
   }

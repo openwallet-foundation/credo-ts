@@ -118,7 +118,7 @@ export class OpenId4VcSiopVerifierService {
         : options.requestSigner.method === 'openid-federation'
         ? await openIdTokenIssuerToJwtIssuer(agentContext, {
             ...options.requestSigner,
-            clientId: federationClientId,
+            entityId: federationClientId,
           })
         : await openIdTokenIssuerToJwtIssuer(agentContext, options.requestSigner)
 
@@ -150,10 +150,14 @@ export class OpenId4VcSiopVerifierService {
       clientId = jwtIssuer.didUrl.split('#')[0]
       clientIdScheme = 'did'
     } else if (jwtIssuer.method === 'custom') {
-      // TODO: Currently used as openid federation, but the jwtIssuer should also be openid-federation
-
-      clientIdScheme = 'entity_id'
-      clientId = federationClientId
+      if (jwtIssuer.options?.method === 'openid-federation') {
+        clientIdScheme = 'entity_id'
+        clientId = federationClientId
+      } else {
+        throw new CredoError(
+          `jwtIssuer 'method' 'custom' must have a 'method' property with value 'openid-federation' when using the 'custom' method.`
+        )
+      }
     } else {
       throw new CredoError(
         `Unsupported jwt issuer method '${options.requestSigner.method}'. Only 'did', 'x5c' and 'custom' are supported.`
