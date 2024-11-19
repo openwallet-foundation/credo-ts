@@ -10,3 +10,5 @@ coverage
 .DS_Store
 logs.txt
 logs/
+
+ngrok.auth.yml
