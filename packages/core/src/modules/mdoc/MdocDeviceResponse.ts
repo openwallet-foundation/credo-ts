@@ -1,7 +1,7 @@
 import type { MdocDeviceResponseOpenId4VpOptions, MdocDeviceResponseVerifyOptions } from './MdocOptions'
 import type { AgentContext } from '../../agent'
 import type { DifPresentationExchangeDefinition } from '../dif-presentation-exchange'
-import type { PresentationDefinition } from '@protokoll/mdoc-client'
+import type { PresentationDefinition } from '@animo-id/mdoc'
 import type { InputDescriptorV2 } from '@sphereon/pex-models'
 
 import {
@@ -14,7 +14,7 @@ import {
   MDocStatus,
   cborEncode,
   parseDeviceResponse,
-} from '@protokoll/mdoc-client'
+} from '@animo-id/mdoc'
 
 import { CredoError } from '../../error'
 import { uuid } from '../../utils/uuid'

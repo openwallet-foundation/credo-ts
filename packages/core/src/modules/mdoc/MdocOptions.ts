@@ -1,9 +1,9 @@
 import type { Mdoc } from './Mdoc'
 import type { Key } from '../../crypto/Key'
 import type { DifPresentationExchangeDefinition } from '../dif-presentation-exchange'
-import type { ValidityInfo, MdocNameSpaces } from '@protokoll/mdoc-client'
+import type { ValidityInfo, MdocNameSpaces } from '@animo-id/mdoc'
 
-export type { MdocNameSpaces } from '@protokoll/mdoc-client'
+export type { MdocNameSpaces } from '@animo-id/mdoc'
 
 export interface MdocVerificationContext {
   /**
