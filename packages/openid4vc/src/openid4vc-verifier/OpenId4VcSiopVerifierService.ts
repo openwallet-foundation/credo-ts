@@ -43,6 +43,7 @@ import {
   MdocDeviceResponse,
   TypedArrayEncoder,
   Jwt,
+  extractPresentationsWithDescriptorsFromSubmission,
 } from '@credo-ts/core'
 import {
   AuthorizationRequest,
@@ -148,7 +149,7 @@ export class OpenId4VcSiopVerifierService {
       )
     }
 
-    const relyingParty = await this.getRelyingParty(agentContext, options.verifier.verifierId, {
+    const relyingParty = await this.getRelyingParty(agentContext, options.verifier, {
       presentationDefinition: options.presentationExchange?.definition,
       authorizationResponseUrl,
       clientId,
@@ -206,7 +207,6 @@ export class OpenId4VcSiopVerifierService {
     }
 
     const verificationSession = await verificationSessionCreatedPromise
-
     return {
       authorizationRequest: authorizationRequestUri,
       verificationSession,
@@ -230,6 +230,7 @@ export class OpenId4VcSiopVerifierService {
       options.verificationSession.authorizationRequestJwt
     )
 
+    const verifier = await this.getVerifierByVerifierId(agentContext, options.verificationSession.verifierId)
     const requestClientId = await authorizationRequest.getMergedProperty<string>('client_id')
     const requestNonce = await authorizationRequest.getMergedProperty<string>('nonce')
     const requestState = await authorizationRequest.getMergedProperty<string>('state')
@@ -247,7 +248,7 @@ export class OpenId4VcSiopVerifierService {
       this.config.authorizationEndpoint.endpointPath,
     ])
 
-    const relyingParty = await this.getRelyingParty(agentContext, options.verificationSession.verifierId, {
+    const relyingParty = await this.getRelyingParty(agentContext, verifier, {
       presentationDefinition: presentationDefinitionsWithLocation?.[0]?.definition,
       authorizationResponseUrl,
       clientId: requestClientId,
@@ -309,8 +310,6 @@ export class OpenId4VcSiopVerifierService {
     }
   }
 
-  // TODO: we can also choose to store this in the verification session, however we can easily derive it
-  // so it's probably easier to make changes in the future if we just store the raw payload.
   public async getVerifiedAuthorizationResponse(
     verificationSession: OpenId4VcVerificationSessionRecord
   ): Promise<OpenId4VcSiopVerifiedAuthorizationResponse> {
@@ -332,7 +331,7 @@ export class OpenId4VcSiopVerifierService {
 
     const presentationDefinitions = await authorizationRequest.getPresentationDefinitions()
     if (presentationDefinitions && presentationDefinitions.length > 0) {
-      const presentations = authorizationResponse.payload.vp_token
+      const rawPresentations = authorizationResponse.payload.vp_token
         ? await extractPresentationsFromVpToken(authorizationResponse.payload.vp_token, {
             hasher: Hasher.hash,
           })
@@ -346,12 +345,18 @@ export class OpenId4VcSiopVerifierService {
       }
 
       // FIXME: should return type be an array? As now it doesn't always match the submission
-      const presentationsArray = Array.isArray(presentations) ? presentations : [presentations]
+      const verifiablePresentations = Array.isArray(rawPresentations)
+        ? rawPresentations.map(getVerifiablePresentationFromSphereonWrapped)
+        : getVerifiablePresentationFromSphereonWrapped(rawPresentations)
+      const definition = presentationDefinitions[0].definition
 
       presentationExchange = {
-        definition: presentationDefinitions[0].definition,
-        presentations: presentationsArray.map(getVerifiablePresentationFromSphereonWrapped),
+        definition,
         submission,
+        // We always return this as an array
+        presentations: Array.isArray(verifiablePresentations) ? verifiablePresentations : [verifiablePresentations],
+
+        descriptors: extractPresentationsWithDescriptorsFromSubmission(verifiablePresentations, submission, definition),
       }
     }
 
@@ -444,6 +449,7 @@ export class OpenId4VcSiopVerifierService {
   public async createVerifier(agentContext: AgentContext, options?: OpenId4VcSiopCreateVerifierOptions) {
     const openId4VcVerifier = new OpenId4VcVerifierRecord({
       verifierId: options?.verifierId ?? utils.uuid(),
+      clientMetadata: options?.clientMetadata,
     })
 
     await this.openId4VcVerifierRepository.save(agentContext, openId4VcVerifier)
@@ -465,7 +471,7 @@ export class OpenId4VcSiopVerifierService {
 
   private async getRelyingParty(
     agentContext: AgentContext,
-    verifierId: string,
+    verifier: OpenId4VcVerifierRecord,
     {
       idToken,
       presentationDefinition,
@@ -510,7 +516,7 @@ export class OpenId4VcSiopVerifierService {
     // all the events are handled, and that the correct context is used for the events.
     const sphereonEventEmitter = agentContext.dependencyManager
       .resolve(OpenId4VcRelyingPartyEventHandler)
-      .getEventEmitterForVerifier(agentContext.contextCorrelationId, verifierId)
+      .getEventEmitterForVerifier(agentContext.contextCorrelationId, verifier.verifierId)
 
     const mode =
       !responseMode || responseMode === 'direct_post'
@@ -550,7 +556,7 @@ export class OpenId4VcSiopVerifierService {
       // FIXME: should allow verification of revocation
       // .withRevocationVerificationCallback()
       .withRevocationVerification(RevocationVerification.NEVER)
-      .withSessionManager(new OpenId4VcRelyingPartySessionManager(agentContext, verifierId))
+      .withSessionManager(new OpenId4VcRelyingPartySessionManager(agentContext, verifier.verifierId))
       .withEventEmitter(sphereonEventEmitter)
       .withResponseType(responseTypes)
       .withCreateJwtCallback(getCreateJwtCallback(agentContext))
@@ -559,14 +565,18 @@ export class OpenId4VcSiopVerifierService {
       // TODO: we should probably allow some dynamic values here
       .withClientMetadata({
         ...jarmClientMetadata,
+        ...verifier.clientMetadata,
         // FIXME: not passing client_id here means it will not be added
         // to the authorization request url (not the signed payload). Need
         // to fix that in Sphereon lib
         client_id: clientId,
         passBy: PassBy.VALUE,
         response_types_supported: [ResponseType.VP_TOKEN],
-        subject_syntax_types_supported: supportedDidMethods.map((m) => `did:${m}`),
-        vp_formats_supported: {
+        subject_syntax_types_supported: [
+          'urn:ietf:params:oauth:jwk-thumbprint',
+          ...supportedDidMethods.map((m) => `did:${m}`),
+        ],
+        vp_formats: {
           mso_mdoc: {
             alg: supportedAlgs,
           },
@@ -574,6 +584,9 @@ export class OpenId4VcSiopVerifierService {
             alg: supportedAlgs,
           },
           jwt_vc_json: {
+            alg: supportedAlgs,
+          },
+          jwt_vp_json: {
             alg: supportedAlgs,
           },
           jwt_vp: {
@@ -684,15 +697,21 @@ export class OpenId4VcSiopVerifierService {
           reason = verificationResult.error?.message
         }
 
+        if (!isValid) {
+          throw new Error(reason)
+        }
+
         return {
-          verified: isValid,
-          reason,
+          verified: true,
         }
       } catch (error) {
         agentContext.config.logger.warn('Error occurred during verification of presentation', {
           error,
         })
-        throw error
+        return {
+          verified: false,
+          reason: error.message,
+        }
       }
     }
   }

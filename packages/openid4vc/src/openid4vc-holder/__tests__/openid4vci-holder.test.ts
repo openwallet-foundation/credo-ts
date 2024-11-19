@@ -15,6 +15,7 @@ import { AskarModule } from '../../../../askar/src'
 import { askarModuleConfig } from '../../../../askar/tests/helpers'
 import { agentDependencies } from '../../../../node/src'
 import { OpenId4VcHolderModule } from '../OpenId4VcHolderModule'
+import { OpenId4VciAuthorizationFlow } from '../OpenId4VciHolderServiceOptions'
 
 import { animoOpenIdPlaygroundDraft11SdJwtVc, matrrLaunchpadDraft11JwtVcJson, waltIdDraft11JwtVcJson } from './fixtures'
 
@@ -96,17 +97,25 @@ describe('OpenId4VcHolder', () => {
         .reply(200, fixture.wellKnownDid)
 
       const resolved = await holder.modules.openId4VcHolder.resolveCredentialOffer(fixture.credentialOffer)
-      const credentials = await holder.modules.openId4VcHolder.acceptCredentialOfferUsingPreAuthorizedCode(resolved, {
+      const accessTokenResponse = await holder.modules.openId4VcHolder.requestToken({
+        resolvedCredentialOffer: resolved,
+      })
+      const credentialsResult = await holder.modules.openId4VcHolder.requestCredentials({
+        resolvedCredentialOffer: resolved,
+        ...accessTokenResponse,
+
         verifyCredentialStatus: false,
         // We only allow EdDSa, as we've created a did with keyType ed25519. If we create
         // or determine the did dynamically we could use any signature algorithm
         allowedProofOfPossessionSignatureAlgorithms: [JwaSignatureAlgorithm.EdDSA],
-        credentialsToRequest: resolved.offeredCredentials.filter((c) => c.format === 'jwt_vc_json').map((m) => m.id),
+        credentialConfigurationIds: Object.entries(resolved.offeredCredentialConfigurations)
+          .filter(([, configuration]) => configuration.format === 'jwt_vc_json')
+          .map(([id]) => id),
         credentialBindingResolver: () => ({ method: 'did', didUrl: holderVerificationMethod }),
       })
 
-      expect(credentials).toHaveLength(1)
-      const w3cCredential = credentials[0] as W3cJwtVerifiableCredential
+      expect(credentialsResult.credentials).toHaveLength(1)
+      const w3cCredential = credentialsResult.credentials[0].credentials[0] as W3cJwtVerifiableCredential
       expect(w3cCredential).toBeInstanceOf(W3cJwtVerifiableCredential)
 
       expect(w3cCredential.credential.type).toEqual(['VerifiableCredential', 'OpenBadgeCredential'])
@@ -137,19 +146,26 @@ describe('OpenId4VcHolder', () => {
         .reply(200, fixture.credentialResponse)
 
       const resolved = await holder.modules.openId4VcHolder.resolveCredentialOffer(fixture.credentialOfferPreAuth)
+      const accessTokenResponse = await holder.modules.openId4VcHolder.requestToken({
+        resolvedCredentialOffer: resolved,
+      })
 
       await expect(() =>
-        holder.modules.openId4VcHolder.acceptCredentialOfferUsingPreAuthorizedCode(resolved, {
+        holder.modules.openId4VcHolder.requestCredentials({
+          resolvedCredentialOffer: resolved,
+          ...accessTokenResponse,
           verifyCredentialStatus: false,
           // We only allow EdDSa, as we've created a did with keyType ed25519. If we create
           // or determine the did dynamically we could use any signature algorithm
           allowedProofOfPossessionSignatureAlgorithms: [JwaSignatureAlgorithm.EdDSA],
-          credentialsToRequest: resolved.offeredCredentials.filter((c) => c.format === 'jwt_vc_json').map((m) => m.id),
+          credentialConfigurationIds: Object.entries(resolved.offeredCredentialConfigurations)
+            .filter(([, configuration]) => configuration.format === 'jwt_vc_json')
+            .map(([id]) => id),
           credentialBindingResolver: () => ({ method: 'did', didUrl: holderVerificationMethod }),
         })
       )
         // FIXME: walt.id issues jwt where nbf and issuanceDate do not match
-        .rejects.toThrowError('JWT nbf and vc.issuanceDate do not match')
+        .rejects.toThrow('JWT nbf and vc.issuanceDate do not match')
     })
 
     it('Should successfully receive credential from animo openid4vc playground using the pre-authorized flow using a jwk EdDSA subject and vc+sd-jwt credential', async () => {
@@ -192,22 +208,24 @@ describe('OpenId4VcHolder', () => {
         // We only allow EdDSa, as we've created a did with keyType ed25519. If we create
         // or determine the did dynamically we could use any signature algorithm
         allowedProofOfPossessionSignatureAlgorithms: [JwaSignatureAlgorithm.EdDSA],
-        credentialsToRequest: resolvedCredentialOffer.offeredCredentials
-          .filter((c) => c.format === 'vc+sd-jwt')
-          .map((m) => m.id),
+        credentialConfigurationIds: Object.entries(resolvedCredentialOffer.offeredCredentialConfigurations)
+          .filter(([, configuration]) => configuration.format === 'vc+sd-jwt')
+          .map(([id]) => id),
         credentialBindingResolver: () => ({ method: 'jwk', jwk: getJwkFromKey(holderKey) }),
       })
 
-      if (!credentialResponse[0]?.notificationMetadata) throw new Error("Notification metadata wasn't returned")
+      if (!credentialResponse.credentials[0]?.notificationId) throw new Error("Notification metadata wasn't returned")
 
       await holder.modules.openId4VcHolder.sendNotification({
         accessToken: tokenResponse.accessToken,
         notificationEvent: 'credential_accepted',
-        notificationMetadata: credentialResponse[0].notificationMetadata,
+        notificationId: credentialResponse.credentials[0]?.notificationId,
+        metadata: resolvedCredentialOffer.metadata,
+        dpop: credentialResponse.dpop,
       })
 
-      expect(credentialResponse).toHaveLength(1)
-      const credential = credentialResponse[0].credential as SdJwtVc
+      expect(credentialResponse.credentials).toHaveLength(1)
+      const credential = credentialResponse.credentials[0].credentials[0] as SdJwtVc
       expect(credential).toEqual({
         compact:
           'eyJhbGciOiJFZERTQSIsInR5cCI6InZjK3NkLWp3dCIsImtpZCI6IiN6Nk1raDVITlBDQ0pXWm42V1JMalJQdHR5dllaQnNrWlVkU0pmVGlad2NVU2llcXgifQ.eyJ2Y3QiOiJBbmltb09wZW5JZDRWY1BsYXlncm91bmQiLCJwbGF5Z3JvdW5kIjp7ImZyYW1ld29yayI6IkFyaWVzIEZyYW1ld29yayBKYXZhU2NyaXB0IiwiY3JlYXRlZEJ5IjoiQW5pbW8gU29sdXRpb25zIiwiX3NkIjpbImZZM0ZqUHpZSEZOcHlZZnRnVl9kX25DMlRHSVh4UnZocE00VHdrMk1yMDQiLCJwTnNqdmZJeVBZOEQwTks1c1l0alR2Nkc2R0FNVDNLTjdaZDNVNDAwZ1pZIl19LCJjbmYiOnsiandrIjp7Imt0eSI6Ik9LUCIsImNydiI6IkVkMjU1MTkiLCJ4Ijoia2MydGxwaGNadzFBSUt5a3pNNnBjY2k2UXNLQW9jWXpGTC01RmUzNmg2RSJ9fSwiaXNzIjoiZGlkOmtleTp6Nk1raDVITlBDQ0pXWm42V1JMalJQdHR5dllaQnNrWlVkU0pmVGlad2NVU2llcXgiLCJpYXQiOjE3MDU4NDM1NzQsIl9zZF9hbGciOiJzaGEtMjU2In0.2iAjaCFcuiHXTfQsrxXo6BghtwzqTrfDmhmarAAJAhY8r9yKXY3d10JY1dry2KnaEYWpq2R786thjdA5BXlPAQ~WyI5MzM3MTM0NzU4NDM3MjYyODY3NTE4NzkiLCJsYW5ndWFnZSIsIlR5cGVTY3JpcHQiXQ~WyIxMTQ3MDA5ODk2Nzc2MDYzOTc1MDUwOTMxIiwidmVyc2lvbiIsIjEuMCJd~',
@@ -298,9 +316,14 @@ describe('OpenId4VcHolder', () => {
         }
       )
 
+      if (resolvedAuthorizationRequest.authorizationFlow === OpenId4VciAuthorizationFlow.PresentationDuringIssuance) {
+        throw new Error('unexpected authorization flow')
+      }
+
       const tokenResponse = await holder.modules.openId4VcHolder.requestToken({
         resolvedCredentialOffer,
-        resolvedAuthorizationRequest,
+        clientId: 'test-client',
+        redirectUri: 'https://example.com',
         code: fixture.authorizationCode,
       })
 

@@ -1,10 +1,9 @@
 import { clear } from 'console'
 import { textSync } from 'figlet'
-import { prompt } from 'inquirer'
 
-import { BaseInquirer, ConfirmOptions } from './BaseInquirer'
-import { Issuer, credentialsSupported } from './Issuer'
-import { Title, purpleText } from './OutputClass'
+import { BaseInquirer } from './BaseInquirer'
+import { credentialConfigurationsSupported, Issuer } from './Issuer'
+import { Title, greenText, purpleText, redText } from './OutputClass'
 
 export const runIssuer = async () => {
   clear()
@@ -21,12 +20,10 @@ enum PromptOptions {
 
 export class IssuerInquirer extends BaseInquirer {
   public issuer: Issuer
-  public promptOptionsString: string[]
 
   public constructor(issuer: Issuer) {
     super()
     this.issuer = issuer
-    this.promptOptionsString = Object.values(PromptOptions)
   }
 
   public static async build(): Promise<IssuerInquirer> {
@@ -34,14 +31,10 @@ export class IssuerInquirer extends BaseInquirer {
     return new IssuerInquirer(issuer)
   }
 
-  private async getPromptChoice() {
-    return prompt([this.inquireOptions(this.promptOptionsString)])
-  }
-
   public async processAnswer() {
-    const choice = await this.getPromptChoice()
+    const choice = await this.pickOne(Object.values(PromptOptions))
 
-    switch (choice.options) {
+    switch (choice) {
       case PromptOptions.CreateCredentialOffer:
         await this.createCredentialOffer()
         break
@@ -56,31 +49,47 @@ export class IssuerInquirer extends BaseInquirer {
   }
 
   public async createCredentialOffer() {
-    const choice = await prompt([this.inquireOptions(credentialsSupported.map((credential) => credential.id))])
-    const offeredCredential = credentialsSupported.find((credential) => credential.id === choice.options)
-    if (!offeredCredential) throw new Error(`No credential of type ${choice.options} found, that can be offered.`)
-    const offerRequest = await this.issuer.createCredentialOffer([offeredCredential.id])
+    let credentialConfigurationIds = await this.pickMultiple(Object.keys(credentialConfigurationsSupported))
+    while (credentialConfigurationIds.length === 0) {
+      console.log(redText('Pick at least one', true))
+      credentialConfigurationIds = await this.pickMultiple(Object.keys(credentialConfigurationsSupported))
+    }
 
-    console.log(purpleText(`credential offer: '${offerRequest}'`))
+    const authorizationMethod = await this.pickOne(
+      ['Transaction Code', 'Browser', 'Presentation', 'None'],
+      'Authorization method'
+    )
+    const { credentialOffer, issuanceSession } = await this.issuer.createCredentialOffer({
+      credentialConfigurationIds,
+      requireAuthorization:
+        authorizationMethod === 'Browser'
+          ? 'browser'
+          : authorizationMethod === 'Presentation'
+          ? 'presentation'
+          : undefined,
+      requirePin: authorizationMethod === 'Transaction Code',
+    })
+
+    console.log(purpleText(`credential offer: '${credentialOffer}'`, true))
+
+    if (issuanceSession.userPin) {
+      console.log(greenText(`\nEnter PIN ${issuanceSession.userPin} when asked`, true))
+    }
   }
 
   public async exit() {
-    const confirm = await prompt([this.inquireConfirmation(Title.ConfirmTitle)])
-    if (confirm.options === ConfirmOptions.No) {
-      return
-    } else if (confirm.options === ConfirmOptions.Yes) {
+    if (await this.inquireConfirmation(Title.ConfirmTitle)) {
       await this.issuer.exit()
     }
   }
 
   public async restart() {
-    const confirm = await prompt([this.inquireConfirmation(Title.ConfirmTitle)])
-    if (confirm.options === ConfirmOptions.No) {
-      await this.processAnswer()
-      return
-    } else if (confirm.options === ConfirmOptions.Yes) {
+    const confirmed = await this.inquireConfirmation(Title.ConfirmTitle)
+    if (confirmed) {
       await this.issuer.restart()
       await runIssuer()
+    } else {
+      await this.processAnswer()
     }
   }
 }

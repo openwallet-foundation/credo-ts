@@ -1,8 +1,7 @@
 import type { OpenId4VcIssuerX5c, OpenId4VcJwtIssuer } from './models'
-import type { AgentContext, JwaSignatureAlgorithm, JwkJson, Key } from '@credo-ts/core'
+import type { AgentContext, DidPurpose, JwaSignatureAlgorithm, JwkJson, Key } from '@credo-ts/core'
 import type { JwtIssuerWithContext as VpJwtIssuerWithContext, VerifyJwtCallback } from '@sphereon/did-auth-siop'
 import type { DPoPJwtIssuerWithContext, CreateJwtCallback, JwtIssuer } from '@sphereon/oid4vc-common'
-import type { CredentialOfferPayloadV1_0_11, CredentialOfferPayloadV1_0_13 } from '@sphereon/oid4vci-common'
 
 import {
   CredoError,
@@ -41,10 +40,14 @@ export function getSupportedJwaSignatureAlgorithms(agentContext: AgentContext): 
   return supportedJwaSignatureAlgorithms
 }
 
-async function getKeyFromDid(agentContext: AgentContext, didUrl: string) {
+export async function getKeyFromDid(
+  agentContext: AgentContext,
+  didUrl: string,
+  allowedPurposes: DidPurpose[] = ['authentication']
+) {
   const didsApi = agentContext.dependencyManager.resolve(DidsApi)
   const didDocument = await didsApi.resolveDidDocument(didUrl)
-  const verificationMethod = didDocument.dereferenceKey(didUrl, ['authentication'])
+  const verificationMethod = didDocument.dereferenceKey(didUrl, allowedPurposes)
 
   return getKeyFromVerificationMethod(verificationMethod)
 }
@@ -136,16 +139,27 @@ export async function openIdTokenIssuerToJwtIssuer(
       throw new CredoError(`No supported signature algorithms found key type: '${jwk.keyType}'`)
     }
 
-    if (!openId4VcTokenIssuer.issuer.startsWith('https://')) {
+    if (
+      !openId4VcTokenIssuer.issuer.startsWith('https://') &&
+      !(openId4VcTokenIssuer.issuer.startsWith('http://') && agentContext.config.allowInsecureHttpUrls)
+    ) {
       throw new CredoError('The X509 certificate issuer must be a HTTPS URI.')
     }
 
     if (
-      !leafCertificate.sanUriNames?.includes(openId4VcTokenIssuer.issuer) &&
-      !leafCertificate.sanDnsNames?.includes(getDomainFromUrl(openId4VcTokenIssuer.issuer))
+      !leafCertificate.sanUriNames.includes(openId4VcTokenIssuer.issuer) &&
+      !leafCertificate.sanDnsNames.includes(getDomainFromUrl(openId4VcTokenIssuer.issuer))
     ) {
+      const sanUriMessage =
+        leafCertificate.sanUriNames.length > 0
+          ? `SAN-URI names are ${leafCertificate.sanUriNames.join(', ')}`
+          : 'there are no SAN-URI names'
+      const sanDnsMessage =
+        leafCertificate.sanDnsNames.length > 0
+          ? `SAN-DNS names are ${leafCertificate.sanDnsNames.join(', ')}`
+          : 'there are no SAN-DNS names'
       throw new Error(
-        `The 'iss' claim in the payload does not match a 'SAN-URI' or 'SAN-DNS' name in the x5c certificate.`
+        `The 'iss' claim in the payload does not match a 'SAN-URI' or 'SAN-DNS' name in the x5c certificate. 'iss' value is '${openId4VcTokenIssuer.issuer}', ${sanUriMessage}, ${sanDnsMessage} (for SAN-DNS only domain has to match)`
       )
     }
 
@@ -179,8 +193,10 @@ export function getProofTypeFromKey(agentContext: AgentContext, key: Key) {
   return supportedSignatureSuites[0].proofType
 }
 
-export const isCredentialOfferV1Draft13 = (
-  credentialOffer: CredentialOfferPayloadV1_0_11 | CredentialOfferPayloadV1_0_13
-): credentialOffer is CredentialOfferPayloadV1_0_13 => {
-  return 'credential_configuration_ids' in credentialOffer
+export function addSecondsToDate(date: Date, seconds: number) {
+  return new Date(date.getTime() + seconds * 1000)
+}
+
+export function dateToSeconds(date: Date) {
+  return Math.floor(date.getTime() * 1000)
 }

@@ -52,6 +52,9 @@ export class AgentContext {
    * End session the current agent context
    */
   public async endSession() {
+    // TODO: we need to create a custom agent context per sesion
+    // and then track if it has already been ended, because it's quite
+    // easy to mess up the session count at the moment
     const agentContextProvider = this.dependencyManager.resolve<AgentContextProvider>(
       InjectionSymbols.AgentContextProvider
     )

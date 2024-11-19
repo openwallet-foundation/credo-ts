@@ -29,6 +29,6 @@
     "@types/inquirer": "^8.2.6",
     "clear": "^0.1.0",
     "figlet": "^1.5.2",
-    "ts-node": "^10.4.0"
+    "ts-node": "^10.9.2"
   }
 }

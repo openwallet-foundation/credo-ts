@@ -129,7 +129,7 @@ jobs:
       - run: mv coverage/coverage-final.json coverage/${{ matrix.shard }}.json
       - uses: actions/upload-artifact@v4
         with:
-          name: coverage-artifacts
+          name: coverage-artifacts-${{ matrix.node-version }}
           path: coverage/${{ matrix.shard }}.json
           overwrite: true
 
@@ -184,7 +184,7 @@ jobs:
       - run: mv coverage/coverage-final.json coverage/e2e.json
       - uses: actions/upload-artifact@v4
         with:
-          name: coverage-artifacts
+          name: coverage-artifacts-${{ matrix.node-version }}
           path: coverage/e2e.json
           overwrite: true
 
@@ -195,9 +195,10 @@ jobs:
     steps:
       - uses: actions/download-artifact@v4
         with:
-          name: coverage-artifacts
+          name: coverage-artifacts-20
           path: coverage
 
       - uses: codecov/codecov-action@v4
         with:
           directory: coverage
+          token: ${{ secrets.CODECOV_TOKEN }}

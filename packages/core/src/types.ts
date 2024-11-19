@@ -84,6 +84,19 @@ export interface InitConfig {
   autoUpdateStorageOnStartup?: boolean
   backupBeforeStorageUpdate?: boolean
   processDidCommMessagesConcurrently?: boolean
+
+  /**
+   * Allow insecure http urls in places where this is usually required.
+   * Unsecure http urls may still be allowed in places where this is not checked (e.g. didcomm)
+   *
+   * For some flows this config option is set globally, which means that different agent configurations
+   * will fight for the configuration. It is meant as a local development option.
+   *
+   * Use with caution
+   *
+   * @default false
+   */
+  allowInsecureHttpUrls?: boolean
 }
 
 export type ProtocolVersion = `${number}.${number}`

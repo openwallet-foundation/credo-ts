@@ -1,5 +1,6 @@
 import type { DependencyManager, Module } from '@credo-ts/core'
 
+import { setGlobalConfig } from '@animo-id/oauth2'
 import { AgentConfig } from '@credo-ts/core'
 
 import { OpenId4VcHolderApi } from './OpenId4VcHolderApi'
@@ -17,12 +18,18 @@ export class OpenId4VcHolderModule implements Module {
    * Registers the dependencies of the question answer module on the dependency manager.
    */
   public register(dependencyManager: DependencyManager) {
+    const agentConfig = dependencyManager.resolve(AgentConfig)
+
     // Warn about experimental module
-    dependencyManager
-      .resolve(AgentConfig)
-      .logger.warn(
-        "The '@credo-ts/openid4vc' Holder module is experimental and could have unexpected breaking changes. When using this module, make sure to use strict versions for all @credo-ts packages."
-      )
+    agentConfig.logger.warn(
+      "The '@credo-ts/openid4vc' Holder module is experimental and could have unexpected breaking changes. When using this module, make sure to use strict versions for all @credo-ts packages."
+    )
+
+    if (agentConfig.allowInsecureHttpUrls) {
+      setGlobalConfig({
+        allowInsecureUrls: true,
+      })
+    }
 
     // Services
     dependencyManager.registerSingleton(OpenId4VciHolderService)

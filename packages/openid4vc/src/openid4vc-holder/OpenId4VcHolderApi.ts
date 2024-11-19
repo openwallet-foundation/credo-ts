@@ -1,16 +1,17 @@
 import type {
   OpenId4VciResolvedCredentialOffer,
-  OpenId4VciResolvedAuthorizationRequest,
   OpenId4VciAuthCodeFlowOptions,
-  OpenId4VciAcceptCredentialOfferOptions,
   OpenId4VciTokenRequestOptions as OpenId4VciRequestTokenOptions,
   OpenId4VciCredentialRequestOptions as OpenId4VciRequestCredentialOptions,
   OpenId4VciSendNotificationOptions,
   OpenId4VciRequestTokenResponse,
+  OpenId4VciRetrieveAuthorizationCodeUsingPresentationOptions,
 } from './OpenId4VciHolderServiceOptions'
 import type { OpenId4VcSiopAcceptAuthorizationRequestOptions } from './OpenId4vcSiopHolderServiceOptions'
 
-import { injectable, AgentContext } from '@credo-ts/core'
+import { injectable, AgentContext, DifPresentationExchangeService, DifPexCredentialsForRequest } from '@credo-ts/core'
+
+import { OpenId4VciMetadata } from '../shared'
 
 import { OpenId4VciHolderService } from './OpenId4VciHolderService'
 import { OpenId4VcSiopHolderService } from './OpenId4vcSiopHolderService'
@@ -23,7 +24,8 @@ export class OpenId4VcHolderApi {
   public constructor(
     private agentContext: AgentContext,
     private openId4VciHolderService: OpenId4VciHolderService,
-    private openId4VcSiopHolderService: OpenId4VcSiopHolderService
+    private openId4VcSiopHolderService: OpenId4VcSiopHolderService,
+    private difPresentationExchangeService: DifPresentationExchangeService
   ) {}
 
   /**
@@ -57,6 +59,18 @@ export class OpenId4VcHolderApi {
   }
 
   /**
+   * Automatically select credentials from available credentials for a request. Can be called after calling
+   * @see resolveSiopAuthorizationRequest.
+   */
+  public selectCredentialsForRequest(credentialsForRequest: DifPexCredentialsForRequest) {
+    return this.difPresentationExchangeService.selectCredentialsForRequest(credentialsForRequest)
+  }
+
+  public async resolveIssuerMetadata(credentialIssuer: string): Promise<OpenId4VciMetadata> {
+    return await this.openId4VciHolderService.resolveIssuerMetadata(this.agentContext, credentialIssuer)
+  }
+
+  /**
    * Resolves a credential offer given as credential offer URL, or issuance initiation URL,
    * into a unified format with metadata.
    *
@@ -72,8 +86,14 @@ export class OpenId4VcHolderApi {
    *
    * Not to be confused with the {@link resolveSiopAuthorizationRequest}, which is only used for SIOP requests.
    *
-   * It will generate the authorization request URI based on the provided options.
-   * The authorization request URI is used to obtain the authorization code. Currently this needs to be done manually.
+   * It will generate an authorization session based on the provided options.
+   *
+   * There are two possible flows:
+   * - Oauth2Recirect: an authorization request URI is returend which can be used to obtain the authorization code.
+   *   This needs to be done manually (e.g. by opening a browser window)
+   * - PresentationDuringIssuance: an openid4vp presentation request needs to be handled. A oid4vpRequestUri is returned
+   *   which can be parsed using `resolveSiopAuthorizationRequest`. After the presentation session has been completed,
+   *   the resulting `presentationDuringIssuanceSession` can be used to obtain an authorization code
    *
    * Authorization to request credentials can be requested via authorization_details or scopes.
    * This function automatically generates the authorization_details for all offered credentials.
@@ -95,70 +115,31 @@ export class OpenId4VcHolderApi {
   }
 
   /**
-   * Accepts a credential offer using the pre-authorized code flow.
-   * @deprecated use @see requestToken and @see requestCredentials instead
+   * Retrieve an authorization code using an `presentationDuringIssuanceSession`.
    *
-   * @param resolvedCredentialOffer Obtained through @see resolveCredentialOffer
-   * @param acceptCredentialOfferOptions
+   * The authorization code can be exchanged for an `accessToken` @see requestToken
    */
-  public async acceptCredentialOfferUsingPreAuthorizedCode(
-    resolvedCredentialOffer: OpenId4VciResolvedCredentialOffer,
-    acceptCredentialOfferOptions: OpenId4VciAcceptCredentialOfferOptions
+  public async retrieveAuthorizationCodeUsingPresentation(
+    options: OpenId4VciRetrieveAuthorizationCodeUsingPresentationOptions
   ) {
-    const credentialResponse = await this.openId4VciHolderService.acceptCredentialOffer(this.agentContext, {
-      resolvedCredentialOffer,
-      acceptCredentialOfferOptions,
-    })
-
-    return credentialResponse.map((credentialResponse) => credentialResponse.credential)
-  }
-
-  /**
-   * Accepts a credential offer using the authorization code flow.
-   * @deprecated use @see requestToken and @see requestCredentials instead
-   *
-   * @param resolvedCredentialOffer Obtained through @see resolveCredentialOffer
-   * @param resolvedAuthorizationRequest Obtained through @see resolveIssuanceAuthorizationRequest
-   * @param code The authorization code obtained via the authorization request URI
-   * @param acceptCredentialOfferOptions
-   */
-  public async acceptCredentialOfferUsingAuthorizationCode(
-    resolvedCredentialOffer: OpenId4VciResolvedCredentialOffer,
-    resolvedAuthorizationRequest: OpenId4VciResolvedAuthorizationRequest,
-    code: string,
-    acceptCredentialOfferOptions: OpenId4VciAcceptCredentialOfferOptions
-  ) {
-    const credentialResponse = await this.openId4VciHolderService.acceptCredentialOffer(this.agentContext, {
-      resolvedCredentialOffer,
-      resolvedAuthorizationRequestWithCode: { ...resolvedAuthorizationRequest, code },
-      acceptCredentialOfferOptions,
-    })
-
-    return credentialResponse.map((credentialResponse) => credentialResponse.credential)
+    return await this.openId4VciHolderService.retrieveAuthorizationCodeUsingPresentation(this.agentContext, options)
   }
 
   /**
    * Requests the token to be used for credential requests.
-   *
-   * @param options.resolvedCredentialOffer Obtained through @see resolveCredentialOffer
-   * @param options.userPin The user's PIN
-   * @param options.resolvedAuthorizationRequest Obtained through @see resolveIssuanceAuthorizationRequest
-   * @param options.code The authorization code obtained via the authorization request URI
    */
   public async requestToken(options: OpenId4VciRequestTokenOptions): Promise<OpenId4VciRequestTokenResponse> {
-    const {
-      access_token: accessToken,
-      c_nonce: cNonce,
-      dpop,
-    } = await this.openId4VciHolderService.requestAccessToken(this.agentContext, options)
-    return { accessToken, cNonce, dpop }
+    const { accessTokenResponse, dpop } = await this.openId4VciHolderService.requestAccessToken(
+      this.agentContext,
+      options
+    )
+
+    return { accessToken: accessTokenResponse.access_token, cNonce: accessTokenResponse.c_nonce, dpop }
   }
 
   /**
-   * Request a credential. Can be used with both the pre-authorized code flow and the authorization code flow.
-   *
-   * @param options.resolvedCredentialOffer Obtained through @see resolveCredentialOffer
-   * @param options.tokenResponse Obtained through @see requestAccessToken
+   * Request a set of credentials from the credential isser.
+   * Can be used with both the pre-authorized code flow and the authorization code flow.
    */
   public async requestCredentials(options: OpenId4VciRequestCredentialOptions) {
     const { resolvedCredentialOffer, cNonce, accessToken, dpop, clientId, ...credentialRequestOptions } = options
@@ -175,10 +156,8 @@ export class OpenId4VcHolderApi {
 
   /**
    * Send a notification event to the credential issuer
-   *
-   * @param options OpenId4VciSendNotificationOptions
    */
   public async sendNotification(options: OpenId4VciSendNotificationOptions) {
-    return this.openId4VciHolderService.sendNotification(options)
+    return this.openId4VciHolderService.sendNotification(this.agentContext, options)
   }
 }

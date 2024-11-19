@@ -52,6 +52,7 @@ import {
   ProofEventTypes,
   TrustPingEventTypes,
   DidsApi,
+  X509Api,
 } from '../src'
 import { Key, KeyType } from '../src/crypto'
 import { DidKey } from '../src/modules/dids/methods/key'
@@ -759,5 +760,20 @@ export async function createDidKidVerificationMethod(agentContext: AgentContext,
   const verificationMethod = didCreateResult.didState.didDocument?.dereferenceKey(kid, ['authentication'])
   if (!verificationMethod) throw new Error('No verification method found')
 
-  return { did, kid, verificationMethod }
+  return { did, kid, verificationMethod, key: didKey.key }
+}
+
+export async function createX509Certificate(agentContext: AgentContext, dns: string, key?: Key) {
+  const x509 = agentContext.dependencyManager.resolve(X509Api)
+  const certificate = await x509.createSelfSignedCertificate({
+    key:
+      key ??
+      (await agentContext.wallet.createKey({
+        keyType: KeyType.Ed25519,
+      })),
+    name: 'C=DE',
+    extensions: [[{ type: 'dns', value: dns }]],
+  })
+
+  return { certificate, base64Certificate: certificate.toString('base64') }
 }

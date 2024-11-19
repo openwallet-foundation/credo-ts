@@ -369,7 +369,7 @@ export class W3cJwtCredentialService {
             return {
               isValid: false,
               error: new CredoError(
-                'Credential is of format ldp_vc. presentations in jwp_vp format can only contain credentials in jwt_vc format'
+                'Credential is of format ldp_vc. presentations in jwt_vp format can only contain credentials in jwt_vc format'
               ),
               validations: {},
             }

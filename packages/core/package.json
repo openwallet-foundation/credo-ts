@@ -75,7 +75,6 @@
     "@types/object-inspect": "^1.8.0",
     "@types/uuid": "^9.0.1",
     "@types/varint": "^6.0.0",
-    "nock": "^13.3.0",
     "rimraf": "^4.4.0",
     "tslog": "^4.8.2",
     "typescript": "~5.5.2"

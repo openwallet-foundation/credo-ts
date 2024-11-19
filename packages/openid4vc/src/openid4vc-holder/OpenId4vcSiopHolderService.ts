@@ -207,28 +207,41 @@ export class OpenId4VcSiopHolderService {
         return { response: jwe }
       }
     }
-
     const response = await openidProvider.submitAuthorizationResponse(
       authorizationResponseWithCorrelationId,
       getCreateJarmResponseCallback(authorizationResponseNonce)
     )
-    let responseDetails: string | Record<string, unknown> | undefined = undefined
-    try {
-      responseDetails = await response.text()
-      if (responseDetails.includes('{')) {
-        responseDetails = JSON.parse(responseDetails)
-      }
-    } catch (error) {
-      // no-op
+    const responseText = await response
+      .clone()
+      .text()
+      .catch(() => null)
+    const responseJson = (await response
+      .clone()
+      .json()
+      .catch(() => null)) as null | Record<string, unknown>
+
+    if (!response.ok) {
+      return {
+        ok: false,
+        serverResponse: {
+          status: response.status,
+          body: responseJson ?? responseText,
+        },
+        submittedResponse: authorizationResponseWithCorrelationId.response.payload,
+      } as const
     }
 
     return {
+      ok: true,
       serverResponse: {
         status: response.status,
-        body: responseDetails,
+        body: responseJson ?? {},
       },
       submittedResponse: authorizationResponseWithCorrelationId.response.payload,
-    }
+
+      redirectUri: responseJson?.redirect_uri as string | undefined,
+      presentationDuringIssuanceSession: responseJson?.presentation_during_issuance_session as string | undefined,
+    } as const
   }
 
   private async getOpenIdProvider(agentContext: AgentContext) {
@@ -319,7 +332,6 @@ export class OpenId4VcSiopHolderService {
     authorizationRequest: VerifiedAuthorizationRequest,
     openIdTokenIssuer: OpenId4VcJwtIssuer
   ) {
-    // TODO: jwk thumbprint support
     const subjectSyntaxTypesSupported = authorizationRequest.registrationMetadataPayload.subject_syntax_types_supported
     if (!subjectSyntaxTypesSupported) {
       throw new CredoError(
@@ -333,8 +345,10 @@ export class OpenId4VcSiopHolderService {
 
       // Either did:<method> or did (for all did methods) is allowed
       allowedSubjectSyntaxTypes = [`did:${parsedDid.method}`, 'did']
+    } else if (openIdTokenIssuer.method === 'jwk') {
+      allowedSubjectSyntaxTypes = ['urn:ietf:params:oauth:jwk-thumbprint']
     } else {
-      throw new CredoError("Only 'did' is supported as openIdTokenIssuer at the moment")
+      throw new CredoError("Only 'did' and 'jwk' are supported as openIdTokenIssuer at the moment")
     }
 
     // At least one of the allowed subject syntax types must be supported by the RP

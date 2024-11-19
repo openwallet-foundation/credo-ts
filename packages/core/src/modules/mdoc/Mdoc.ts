@@ -102,14 +102,21 @@ export class Mdoc {
     }
 
     const cert = X509Certificate.fromEncodedCertificate(issuerCertificate)
-    const issuerKey = await getJwkFromKey(cert.publicKey)
+    const issuerKey = getJwkFromKey(cert.publicKey)
 
     const alg = issuerKey.supportedSignatureAlgorithms.find(
-      (alg): alg is JwaSignatureAlgorithm.ES256 | JwaSignatureAlgorithm.ES384 | JwaSignatureAlgorithm.ES512 => {
+      (
+        alg
+      ): alg is
+        | JwaSignatureAlgorithm.ES256
+        | JwaSignatureAlgorithm.ES384
+        | JwaSignatureAlgorithm.ES512
+        | JwaSignatureAlgorithm.EdDSA => {
         return (
           alg === JwaSignatureAlgorithm.ES256 ||
           alg === JwaSignatureAlgorithm.ES384 ||
-          alg === JwaSignatureAlgorithm.ES512
+          alg === JwaSignatureAlgorithm.ES512 ||
+          alg === JwaSignatureAlgorithm.EdDSA
         )
       }
     )

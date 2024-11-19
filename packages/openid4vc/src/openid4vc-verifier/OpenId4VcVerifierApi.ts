@@ -3,6 +3,7 @@ import type {
   OpenId4VcSiopVerifyAuthorizationResponseOptions,
   OpenId4VcSiopCreateAuthorizationRequestReturn,
   OpenId4VcSiopCreateVerifierOptions,
+  OpenId4VcUpdateVerifierRecordOptions,
 } from './OpenId4VcSiopVerifierServiceOptions'
 import type { OpenId4VcVerificationSessionRecord } from './repository'
 import type { OpenId4VcSiopAuthorizationResponsePayload } from '../shared'
@@ -43,6 +44,16 @@ export class OpenId4VcVerifierApi {
    */
   public async createVerifier(options?: OpenId4VcSiopCreateVerifierOptions) {
     return this.openId4VcSiopVerifierService.createVerifier(this.agentContext, options)
+  }
+
+  public async updateVerifierMetadata(options: OpenId4VcUpdateVerifierRecordOptions) {
+    const { verifierId, clientMetadata } = options
+
+    const verifier = await this.openId4VcSiopVerifierService.getVerifierByVerifierId(this.agentContext, verifierId)
+
+    verifier.clientMetadata = clientMetadata
+
+    return this.openId4VcSiopVerifierService.updateVerifier(this.agentContext, verifier)
   }
 
   public async findVerificationSessionsByQuery(

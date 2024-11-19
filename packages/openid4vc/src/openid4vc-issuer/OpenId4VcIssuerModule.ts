@@ -1,7 +1,9 @@
 import type { OpenId4VcIssuerModuleConfigOptions } from './OpenId4VcIssuerModuleConfig'
 import type { OpenId4VcIssuanceRequest } from './router'
 import type { AgentContext, DependencyManager, Module } from '@credo-ts/core'
+import type { NextFunction, Response } from 'express'
 
+import { setGlobalConfig } from '@animo-id/oauth2'
 import { AgentConfig } from '@credo-ts/core'
 
 import { getAgentContextForActorId, getRequestContext, importExpress } from '../shared/router'
@@ -16,6 +18,10 @@ import {
   configureAccessTokenEndpoint,
   configureCredentialEndpoint,
   configureIssuerMetadataEndpoint,
+  configureOAuthAuthorizationServerMetadataEndpoint,
+  configureJwksEndpoint,
+  configureNonceEndpoint,
+  configureAuthorizationChallengeEndpoint,
 } from './router'
 
 /**
@@ -30,16 +36,21 @@ export class OpenId4VcIssuerModule implements Module {
   }
 
   /**
-   * Registers the dependencies of the question answer module on the dependency manager.
+   * Registers the dependencies of the openid4vc issuer module on the dependency manager.
    */
   public register(dependencyManager: DependencyManager) {
-    // Warn about experimental module
-    dependencyManager
-      .resolve(AgentConfig)
-      .logger.warn(
-        "The '@credo-ts/openid4vc' Issuer module is experimental and could have unexpected breaking changes. When using this module, make sure to use strict versions for all @credo-ts packages."
-      )
+    const agentConfig = dependencyManager.resolve(AgentConfig)
 
+    // Warn about experimental module
+    agentConfig.logger.warn(
+      "The '@credo-ts/openid4vc' Issuer module is experimental and could have unexpected breaking changes. When using this module, make sure to use strict versions for all @credo-ts packages."
+    )
+
+    if (agentConfig.allowInsecureHttpUrls) {
+      setGlobalConfig({
+        allowInsecureUrls: true,
+      })
+    }
     // Register config
     dependencyManager.registerInstance(OpenId4VcIssuerModuleConfig, this.config)
 
@@ -90,7 +101,7 @@ export class OpenId4VcIssuerModule implements Module {
         // FIXME: should we create combined openId actor record?
         agentContext = await getAgentContextForActorId(rootAgentContext, issuerId)
         const issuerApi = agentContext.dependencyManager.resolve(OpenId4VcIssuerApi)
-        const issuer = await issuerApi.getByIssuerId(issuerId)
+        const issuer = await issuerApi.getIssuerByIssuerId(issuerId)
 
         req.requestContext = {
           agentContext,
@@ -116,21 +127,37 @@ export class OpenId4VcIssuerModule implements Module {
 
     // Configure endpoints
     configureIssuerMetadataEndpoint(endpointRouter)
-    configureCredentialOfferEndpoint(endpointRouter, this.config.credentialOfferEndpoint)
-    configureAccessTokenEndpoint(endpointRouter, this.config.accessTokenEndpoint)
-    configureCredentialEndpoint(endpointRouter, this.config.credentialEndpoint)
+    configureJwksEndpoint(endpointRouter, this.config)
+    configureNonceEndpoint(endpointRouter, this.config)
+    configureOAuthAuthorizationServerMetadataEndpoint(endpointRouter)
+    configureCredentialOfferEndpoint(endpointRouter, this.config)
+    configureAccessTokenEndpoint(endpointRouter, this.config)
+    configureAuthorizationChallengeEndpoint(endpointRouter, this.config)
+    configureCredentialEndpoint(endpointRouter, this.config)
 
     // First one will be called for all requests (when next is called)
     contextRouter.use(async (req: OpenId4VcIssuanceRequest, _res: unknown, next) => {
       const { agentContext } = getRequestContext(req)
       await agentContext.endSession()
+
       next()
     })
 
     // This one will be called for all errors that are thrown
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    contextRouter.use(async (_error: unknown, req: OpenId4VcIssuanceRequest, _res: unknown, next: any) => {
+    contextRouter.use(async (_error: unknown, req: OpenId4VcIssuanceRequest, res: Response, next: NextFunction) => {
       const { agentContext } = getRequestContext(req)
+
+      if (!res.headersSent) {
+        agentContext.config.logger.warn(
+          'Error was thrown but openid4vci endpoint did not send a response. Sending generic server_error.'
+        )
+
+        res.status(500).json({
+          error: 'server_error',
+          error_description: 'An unexpected error occurred on the server.',
+        })
+      }
+
       await agentContext.endSession()
       next()
     })

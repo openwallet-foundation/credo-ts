@@ -27,6 +27,12 @@ export interface OpenId4VcVerificationSessionRecordProps {
   authorizationRequestJwt: string
 
   authorizationResponsePayload?: OpenId4VcSiopAuthorizationResponsePayload
+
+  /**
+   * Presentation during issuance session. This is used when issuance of a credential requires a presentation, and helps
+   * prevent session fixation attacks
+   */
+  presentationDuringIssuanceSession?: string
 }
 
 export class OpenId4VcVerificationSessionRecord extends BaseRecord<DefaultOpenId4VcVerificationSessionRecordTags> {
@@ -64,6 +70,12 @@ export class OpenId4VcVerificationSessionRecord extends BaseRecord<DefaultOpenId
    */
   public authorizationResponsePayload?: OpenId4VcSiopAuthorizationResponsePayload
 
+  /**
+   * Presentation during issuance session. This is used when issuance of a credential requires a presentation, and helps
+   * prevent session fixation attacks
+   */
+  public presentationDuringIssuanceSession?: string
+
   public constructor(props: OpenId4VcVerificationSessionRecordProps) {
     super()
 
@@ -78,6 +90,8 @@ export class OpenId4VcVerificationSessionRecord extends BaseRecord<DefaultOpenId
       this.authorizationRequestJwt = props.authorizationRequestJwt
       this.authorizationRequestUri = props.authorizationRequestUri
       this.authorizationResponsePayload = props.authorizationResponsePayload
+
+      this.presentationDuringIssuanceSession = props.presentationDuringIssuanceSession
     }
   }
 

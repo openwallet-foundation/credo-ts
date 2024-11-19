@@ -182,8 +182,8 @@ export class SdJwtVcService {
     return compactDerivedSdJwtVc
   }
 
-  private assertValidX5cJwtIssuer(iss: string, leafCertificate: X509Certificate) {
-    if (!iss.startsWith('https://')) {
+  private assertValidX5cJwtIssuer(agentContext: AgentContext, iss: string, leafCertificate: X509Certificate) {
+    if (!iss.startsWith('https://') && !(iss.startsWith('http://') && agentContext.config.allowInsecureHttpUrls)) {
       throw new SdJwtVcError('The X509 certificate issuer must be a HTTPS URI.')
     }
 
@@ -423,7 +423,7 @@ export class SdJwtVcService {
       }
       const alg = supportedSignatureAlgorithms[0]
 
-      this.assertValidX5cJwtIssuer(issuer.issuer, leafCertificate)
+      this.assertValidX5cJwtIssuer(agentContext, issuer.issuer, leafCertificate)
 
       return {
         key,

@@ -1,20 +1,15 @@
 import type {
   OpenId4VcCredentialHolderBinding,
-  OpenId4VciCredentialSupportedWithId,
-  OpenId4VciIssuerMetadata,
-  OpenId4VciCredentialOfferPayload,
-  OpenId4VciCredentialConfigurationsSupported,
+  OpenId4VciCredentialConfigurationsSupportedWithFormats,
 } from '../shared'
-import type { JwaSignatureAlgorithm, Jwk, KeyType } from '@credo-ts/core'
-import type { VerifiableCredential } from '@credo-ts/core/src/modules/dif-presentation-exchange/models/index'
-import type {
-  AccessTokenResponse,
-  CredentialOfferRequestWithBaseUrl,
-  EndpointMetadataResult,
-  OpenId4VCIVersion,
-} from '@sphereon/oid4vci-common'
+import type { CredentialOfferObject, IssuerMetadataResult } from '@animo-id/oid4vci'
+import type { AgentContext, JwaSignatureAlgorithm, Jwk, KeyType, VerifiableCredential } from '@credo-ts/core'
+
+import { AuthorizationFlow as OpenId4VciAuthorizationFlow } from '@animo-id/oid4vci'
 
 import { OpenId4VciCredentialFormatProfile } from '../shared/models/OpenId4VciCredentialFormatProfile'
+
+export { OpenId4VciAuthorizationFlow }
 
 export type OpenId4VciSupportedCredentialFormats =
   | OpenId4VciCredentialFormatProfile.JwtVcJson
@@ -31,9 +26,10 @@ export const openId4VciSupportedCredentialFormats: OpenId4VciSupportedCredential
   OpenId4VciCredentialFormatProfile.MsoMdoc,
 ]
 
-export interface OpenId4VciNotificationMetadata {
-  notificationId: string
-  notificationEndpoint: string
+export interface OpenId4VciDpopRequestOptions {
+  jwk: Jwk
+  alg: JwaSignatureAlgorithm
+  nonce?: string
 }
 
 /**
@@ -43,44 +39,47 @@ export interface OpenId4VciNotificationMetadata {
  */
 export type OpenId4VciNotificationEvent = 'credential_accepted' | 'credential_failure' | 'credential_deleted'
 
-export type OpenId4VciTokenResponse = Pick<AccessTokenResponse, 'access_token' | 'c_nonce'>
-
 export type OpenId4VciRequestTokenResponse = {
   accessToken: string
   cNonce?: string
-  dpop?: { jwk: Jwk; nonce?: string }
+  dpop?: OpenId4VciDpopRequestOptions
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type UnionToArrayUnion<T> = T extends any ? T[] : never
+
 export interface OpenId4VciCredentialResponse {
-  credential: VerifiableCredential
-  notificationMetadata?: OpenId4VciNotificationMetadata
+  credentialConfigurationId: string
+  credentials: UnionToArrayUnion<VerifiableCredential>
+  notificationId?: string
 }
 
 export interface OpenId4VciResolvedCredentialOffer {
-  metadata: Omit<EndpointMetadataResult, 'credentialIssuerMetadata'> & {
-    credentialIssuerMetadata: OpenId4VciIssuerMetadata
-  }
-  credentialOfferRequestWithBaseUrl: CredentialOfferRequestWithBaseUrl
-  credentialOfferPayload: OpenId4VciCredentialOfferPayload
-  offeredCredentials: OpenId4VciCredentialSupportedWithId[]
-  offeredCredentialConfigurations: OpenId4VciCredentialConfigurationsSupported
-  version: OpenId4VCIVersion
+  metadata: IssuerMetadataResult
+  credentialOfferPayload: CredentialOfferObject
+
+  /**
+   * Offered credential configurations with known formats
+   */
+  offeredCredentialConfigurations: OpenId4VciCredentialConfigurationsSupportedWithFormats
 }
 
-export interface OpenId4VciResolvedAuthorizationRequest extends OpenId4VciAuthCodeFlowOptions {
-  codeVerifier: string
-  authorizationRequestUri: string
-}
-
-export interface OpenId4VciResolvedAuthorizationRequestWithCode extends OpenId4VciResolvedAuthorizationRequest {
-  code: string
-}
+export type OpenId4VciResolvedAuthorizationRequest =
+  | {
+      oid4vpRequestUrl: string
+      authorizationFlow: OpenId4VciAuthorizationFlow.PresentationDuringIssuance
+      authSession: string
+    }
+  | {
+      authorizationRequestUrl: string
+      authorizationFlow: OpenId4VciAuthorizationFlow.Oauth2Redirect
+      codeVerifier?: string
+    }
 
 export interface OpenId4VciSendNotificationOptions {
-  /**
-   * The notification metadata received from @see requestCredential
-   */
-  notificationMetadata: OpenId4VciNotificationMetadata
+  metadata: IssuerMetadataResult
+
+  notificationId: string
 
   /**
    * The access token obtained through @see requestToken
@@ -95,32 +94,51 @@ export interface OpenId4VciSendNotificationOptions {
    * 'credential_failure' otherwise.
    */
   notificationEvent: OpenId4VciNotificationEvent
+
+  dpop?: OpenId4VciDpopRequestOptions
 }
 
-interface OpenId4VcTokenRequestBaseOptions {
+export interface OpenId4VcAuthorizationCodeTokenRequestOptions {
+  resolvedCredentialOffer: OpenId4VciResolvedCredentialOffer
+  code: string
+  clientId: string
+  codeVerifier?: string
+  redirectUri?: string
+
+  txCode?: never
+}
+
+export interface OpenId4VciPreAuthorizedTokenRequestOptions {
   resolvedCredentialOffer: OpenId4VciResolvedCredentialOffer
   txCode?: string
-}
 
-export interface OpenId4VcAuthorizationCodeTokenRequestOptions extends OpenId4VcTokenRequestBaseOptions {
-  resolvedAuthorizationRequest: OpenId4VciResolvedAuthorizationRequest
-  code: string
-}
-
-export interface OpenId4VciPreAuthorizedTokenRequestOptions extends OpenId4VcTokenRequestBaseOptions {
-  resolvedAuthorizationRequest?: never
-  code?: never
+  code?: undefined
 }
 
 export type OpenId4VciTokenRequestOptions =
   | OpenId4VciPreAuthorizedTokenRequestOptions
   | OpenId4VcAuthorizationCodeTokenRequestOptions
 
+export interface OpenId4VciRetrieveAuthorizationCodeUsingPresentationOptions {
+  resolvedCredentialOffer: OpenId4VciResolvedCredentialOffer
+  dpop?: OpenId4VciDpopRequestOptions
+
+  /**
+   * auth session returned at an earlier call to the authorization challenge endpoint
+   */
+  authSession: string
+
+  /**
+   * Presentation during issuance session returned by the verifier after submitting a valid presentation
+   */
+  presentationDuringIssuanceSession?: string
+}
+
 export interface OpenId4VciCredentialRequestOptions extends Omit<OpenId4VciAcceptCredentialOfferOptions, 'userPin'> {
   resolvedCredentialOffer: OpenId4VciResolvedCredentialOffer
   accessToken: string
   cNonce?: string
-  dpop?: { jwk: Jwk; nonce?: string }
+  dpop?: OpenId4VciDpopRequestOptions
 
   /**
    * The client id used for authorization. Only required if authorization_code flow was used.
@@ -134,17 +152,24 @@ export interface OpenId4VciCredentialRequestOptions extends Omit<OpenId4VciAccep
  */
 export interface OpenId4VciAcceptCredentialOfferOptions {
   /**
-   * String value containing a user PIN. This value MUST be present if user_pin_required was set to true in the Credential Offer.
-   * This parameter MUST only be used, if the grant_type is urn:ietf:params:oauth:grant-type:pre-authorized_code.
-   */
-  userPin?: string
-
-  /**
-   * This is the list of credentials that will be requested from the issuer.
+   * This is the list of credentials configuration ids that will be requested from the issuer.
    * Should be a list of ids of the credentials that are included in the credential offer.
    * If not provided all offered credentials will be requested.
    */
-  credentialsToRequest?: string[]
+  credentialConfigurationIds?: string[]
+
+  /**
+   * Whether to request a batch of credentials if supported by the crednetial issuer.
+   *
+   * You can also provide a number to indicate the batch size. If `true` is provided
+   * the max size from the credential issuer will be used.
+   *
+   * If a number is passed that is higher than the max batch size of the credential issuer,
+   * an error will be thrown.
+   *
+   * @default false
+   */
+  requestBatch?: boolean | number
 
   verifyCredentialStatus?: boolean
 
@@ -189,6 +214,8 @@ export interface OpenId4VciAuthCodeFlowOptions {
 }
 
 export interface OpenId4VciCredentialBindingOptions {
+  agentContext: AgentContext
+
   /**
    * The credential format that will be requested from the issuer.
    * E.g. `jwt_vc` or `ldp_vc`.
@@ -196,11 +223,11 @@ export interface OpenId4VciCredentialBindingOptions {
   credentialFormat: OpenId4VciSupportedCredentialFormats
 
   /**
-   * The JWA Signature Algorithm that will be used in the proof of possession.
+   * The JWA Signature Algorithm(s) that can be used in the proof of possession.
    * This is based on the `allowedProofOfPossessionSignatureAlgorithms` passed
    * to the request credential method, and the supported signature algorithms.
    */
-  signatureAlgorithm: JwaSignatureAlgorithm
+  signatureAlgorithms: JwaSignatureAlgorithm[]
 
   /**
    * This is a list of verification methods types that are supported
@@ -210,20 +237,17 @@ export interface OpenId4VciCredentialBindingOptions {
   supportedVerificationMethods: string[]
 
   /**
-   * The key type that will be used to create the proof of possession signature.
+   * The key type that can be used to create the proof of possession signature.
    * This is related to the verification method and the signature algorithm, and
    * is added for convenience.
    */
-  keyType: KeyType
+  keyTypes: KeyType[]
 
   /**
    * The credential type that will be requested from the issuer. This is
    * based on the credential types that are included the credential offer.
-   *
-   * If the offered credential is an inline credential offer, the value
-   * will be `undefined`.
    */
-  supportedCredentialId?: string
+  credentialConfigurationId?: string
 
   /**
    * Whether the issuer supports the `did` cryptographic binding method,
@@ -273,7 +297,7 @@ export type OpenId4VciCredentialBindingResolver = (
  * @internal
  */
 export interface OpenId4VciProofOfPossessionRequirements {
-  signatureAlgorithm: JwaSignatureAlgorithm
+  signatureAlgorithms: JwaSignatureAlgorithm[]
   supportedDidMethods?: string[]
   supportsAllDidMethods: boolean
   supportsJwk: boolean
