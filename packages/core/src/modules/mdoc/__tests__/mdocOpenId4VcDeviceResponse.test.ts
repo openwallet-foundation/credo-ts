@@ -1,5 +1,5 @@
-// eslint-disable-next-line import/no-extraneous-dependencies
 import { cborEncode, parseDeviceResponse } from '@animo-id/mdoc'
+// eslint-disable-next-line import/no-extraneous-dependencies
 import { Key as AskarKey, Jwk } from '@hyperledger/aries-askar-nodejs'
 
 import { Agent, KeyType } from '../../..'
