@@ -1,4 +1,4 @@
-import type { OpenId4VcVerificationSessionRecord } from './repository'
+import type { OpenId4VcVerificationSessionRecord, OpenId4VcVerifierRecordProps } from './repository'
 import type {
   OpenId4VcIssuerX5c,
   OpenId4VcJwtIssuer,
@@ -10,6 +10,7 @@ import type {
   DifPresentationExchangeSubmission,
   DifPresentationExchangeDefinitionV2,
   VerifiablePresentation,
+  DifPexPresentationWithDescriptor,
 } from '@credo-ts/core'
 
 export type ResponseMode = 'direct_post' | 'direct_post.jwt'
@@ -60,6 +61,14 @@ export interface OpenId4VcSiopCreateAuthorizationRequestReturn {
   verificationSession: OpenId4VcVerificationSessionRecord
 }
 
+export interface OpenId4VcSiopVerifiedAuthorizationResponsePresentationExchange {
+  submission: DifPresentationExchangeSubmission
+  definition: DifPresentationExchangeDefinition
+  presentations: Array<VerifiablePresentation>
+
+  descriptors: DifPexPresentationWithDescriptor[]
+}
+
 /**
  * Either `idToken` and/or `presentationExchange` will be present.
  */
@@ -68,11 +77,15 @@ export interface OpenId4VcSiopVerifiedAuthorizationResponse {
     payload: OpenId4VcSiopIdTokenPayload
   }
 
-  presentationExchange?: {
-    submission: DifPresentationExchangeSubmission
-    definition: DifPresentationExchangeDefinition
-    presentations: Array<VerifiablePresentation>
-  }
+  presentationExchange?: OpenId4VcSiopVerifiedAuthorizationResponsePresentationExchange
+}
+
+/**
+ * Verifier metadata that will be send when creating a request
+ */
+export interface OpenId4VcSiopVerifierClientMetadata {
+  client_name?: string
+  logo_uri?: string
 }
 
 export interface OpenId4VcSiopCreateVerifierOptions {
@@ -80,4 +93,11 @@ export interface OpenId4VcSiopCreateVerifierOptions {
    * Id of the verifier, not the id of the verifier record. Will be exposed publicly
    */
   verifierId?: string
+
+  /**
+   * Optional client metadata that will be included in requests
+   */
+  clientMetadata?: OpenId4VcSiopVerifierClientMetadata
 }
+
+export type OpenId4VcUpdateVerifierRecordOptions = Pick<OpenId4VcVerifierRecordProps, 'verifierId' | 'clientMetadata'>

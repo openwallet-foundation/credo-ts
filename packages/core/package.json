@@ -2,7 +2,7 @@
   "name": "@credo-ts/core",
   "main": "src/index",
   "types": "src/index",
-  "version": "0.5.12",
+  "version": "0.5.13",
   "files": [
     "build"
   ],
@@ -35,7 +35,7 @@
     "@peculiar/asn1-schema": "^2.3.8",
     "@peculiar/asn1-x509": "^2.3.8",
     "@peculiar/x509": "^1.11.0",
-    "@protokoll/mdoc-client": "0.2.36",
+    "@animo-id/mdoc": "0.2.38",
     "@sd-jwt/core": "^0.7.0",
     "@sd-jwt/decode": "^0.7.0",
     "@sd-jwt/jwt-status-list": "^0.7.0",
@@ -75,7 +75,6 @@
     "@types/object-inspect": "^1.8.0",
     "@types/uuid": "^9.0.1",
     "@types/varint": "^6.0.0",
-    "nock": "^13.3.0",
     "rimraf": "^4.4.0",
     "tslog": "^4.8.2",
     "typescript": "~5.5.2"

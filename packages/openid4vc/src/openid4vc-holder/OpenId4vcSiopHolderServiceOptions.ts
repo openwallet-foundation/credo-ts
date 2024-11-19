@@ -1,7 +1,6 @@
 import type {
   OpenId4VcJwtIssuer,
   OpenId4VcSiopVerifiedAuthorizationRequest,
-  OpenId4VcSiopAuthorizationResponsePayload,
   OpenId4VcJwtIssuerFederation,
 } from '../shared'
 import type {
@@ -60,13 +59,6 @@ export interface OpenId4VcSiopResolveAuthorizationRequestOptions {
      */
     trustedEntityIds?: string[]
   }
-}
-
-// FIXME: rethink properties
-export interface OpenId4VcSiopAuthorizationResponseSubmission {
-  ok: boolean
-  status: number
-  submittedResponse: OpenId4VcSiopAuthorizationResponsePayload
 }
 
 export interface OpenId4VcSiopGetOpenIdProviderOptions {

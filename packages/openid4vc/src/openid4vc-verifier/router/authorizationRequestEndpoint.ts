@@ -33,6 +33,7 @@ export function configureAuthorizationRequestEndpoint(
       if (!request.params.authorizationRequestId || typeof request.params.authorizationRequestId !== 'string') {
         return sendErrorResponse(
           response,
+          next,
           agentContext.config.logger,
           400,
           'invalid_request',
@@ -62,6 +63,7 @@ export function configureAuthorizationRequestEndpoint(
         if (!verificationSession) {
           return sendErrorResponse(
             response,
+            next,
             agentContext.config.logger,
             404,
             'not_found',
@@ -77,6 +79,7 @@ export function configureAuthorizationRequestEndpoint(
         ) {
           return sendErrorResponse(
             response,
+            next,
             agentContext.config.logger,
             400,
             'invalid_request',
@@ -102,13 +105,11 @@ export function configureAuthorizationRequestEndpoint(
             })
         }
 
-        response.status(200).send(verificationSession.authorizationRequestJwt)
+        response.type('application/oauth-authz-req+jwt').status(200).send(verificationSession.authorizationRequestJwt)
+        next()
       } catch (error) {
-        sendErrorResponse(response, agentContext.config.logger, 500, 'invalid_request', error)
+        return sendErrorResponse(response, next, agentContext.config.logger, 500, 'invalid_request', error)
       }
-
-      // NOTE: if we don't call next, the agentContext session handler will NOT be called
-      next()
     }
   )
 }

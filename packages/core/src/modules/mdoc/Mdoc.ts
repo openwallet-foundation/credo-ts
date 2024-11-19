@@ -1,6 +1,6 @@
 import type { MdocSignOptions, MdocNameSpaces, MdocVerifyOptions } from './MdocOptions'
 import type { AgentContext } from '../../agent'
-import type { IssuerSignedDocument } from '@protokoll/mdoc-client'
+import type { IssuerSignedDocument } from '@animo-id/mdoc'
 
 import {
   DeviceSignedDocument,
@@ -9,7 +9,7 @@ import {
   cborEncode,
   parseDeviceSigned,
   parseIssuerSigned,
-} from '@protokoll/mdoc-client'
+} from '@animo-id/mdoc'
 
 import { getJwkFromKey, JwaSignatureAlgorithm } from '../../crypto'
 import { X509Certificate, X509ModuleConfig } from '../x509'
@@ -102,14 +102,21 @@ export class Mdoc {
     }
 
     const cert = X509Certificate.fromEncodedCertificate(issuerCertificate)
-    const issuerKey = await getJwkFromKey(cert.publicKey)
+    const issuerKey = getJwkFromKey(cert.publicKey)
 
     const alg = issuerKey.supportedSignatureAlgorithms.find(
-      (alg): alg is JwaSignatureAlgorithm.ES256 | JwaSignatureAlgorithm.ES384 | JwaSignatureAlgorithm.ES512 => {
+      (
+        alg
+      ): alg is
+        | JwaSignatureAlgorithm.ES256
+        | JwaSignatureAlgorithm.ES384
+        | JwaSignatureAlgorithm.ES512
+        | JwaSignatureAlgorithm.EdDSA => {
         return (
           alg === JwaSignatureAlgorithm.ES256 ||
           alg === JwaSignatureAlgorithm.ES384 ||
-          alg === JwaSignatureAlgorithm.ES512
+          alg === JwaSignatureAlgorithm.ES512 ||
+          alg === JwaSignatureAlgorithm.EdDSA
         )
       }
     )
