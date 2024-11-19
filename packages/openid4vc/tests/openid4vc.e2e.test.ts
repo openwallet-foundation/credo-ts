@@ -1769,7 +1769,7 @@ describe('OpenId4Vc', () => {
     expect(resolvedCredentialOffer1.offeredCredentialConfigurations).toEqual({
       universityDegree: {
         doctype: 'UniversityDegreeCredential',
-        cryptographic_binding_methods_supported: ['did:key'],
+        cryptographic_binding_methods_supported: ['did:key', 'jwk'],
         format: 'mso_mdoc',
         scope: universityDegreeCredentialConfigurationSupportedMdoc.scope,
         proof_types_supported: {
