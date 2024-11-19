@@ -648,7 +648,9 @@ export class OpenId4VcIssuerService {
       grants[preAuthorizedCodeGrantIdentifier] = {
         'pre-authorized_code': preAuthorizedCode ?? (await agentContext.wallet.generateNonce()),
         tx_code: txCode,
-        authorization_server: config.issuerMetadata.authorizationServers ? authorizationServerUrl : undefined,
+        authorization_server: config.issuerMetadata.credentialIssuer.authorization_servers
+          ? authorizationServerUrl
+          : undefined,
       }
     }
 
@@ -673,7 +675,9 @@ export class OpenId4VcIssuerService {
           // but same is true for the pre-auth code and users of credo can also provide that value. We can't easily do unique constraint with askat
           authorizationCodeFlowConfig.issuerState ??
           TypedArrayEncoder.toBase64URL(agentContext.wallet.getRandomValues(32)),
-        authorization_server: config.issuerMetadata.authorizationServers ? authorizationServerUrl : undefined,
+        authorization_server: config.issuerMetadata.credentialIssuer.authorization_servers
+          ? authorizationServerUrl
+          : undefined,
       }
     }
 

@@ -31,7 +31,7 @@ export async function createAgentFromModules<MM extends ModulesMap>(
       label,
       walletConfig: { id: utils.uuid(), key: utils.uuid() },
       allowInsecureHttpUrls: true,
-      logger: new TestLogger(LogLevel.debug),
+      logger: new TestLogger(LogLevel.off),
     },
     dependencies: {
       ...agentDependencies,
