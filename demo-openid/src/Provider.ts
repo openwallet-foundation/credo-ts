@@ -40,12 +40,7 @@ const oidc = new Provider(PROVIDER_HOST, {
       },
     ],
   },
-  scopes: [
-    // 'openid4vc:credential:UniversityDegreeCredential-jwtvcjson',
-    // 'openid4vc:credential:OpenBadgeCredential-ldpvc',
-    // 'openid4vc:credential:OpenBadgeCredential-sdjwt',
-    // 'openid4vc:credential:OpenBadgeCredential-mdoc',
-  ],
+  scopes: [],
   pkce: {
     methods: ['S256'],
     required: () => true,

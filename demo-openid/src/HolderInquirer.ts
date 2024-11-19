@@ -1,11 +1,12 @@
 import type { MdocRecord, SdJwtVcRecord, W3cCredentialRecord } from '@credo-ts/core'
+import type {
+  OpenId4VciCredentialConfigurationsSupportedWithFormats,
+  OpenId4VcSiopResolvedAuthorizationRequest,
+  OpenId4VciResolvedCredentialOffer,
+} from '@credo-ts/openid4vc'
 
 import { DifPresentationExchangeService, Mdoc } from '@credo-ts/core'
-import {
-  preAuthorizedCodeGrantIdentifier,
-  type OpenId4VcSiopResolvedAuthorizationRequest,
-  type OpenId4VciResolvedCredentialOffer,
-} from '@credo-ts/openid4vc'
+import { preAuthorizedCodeGrantIdentifier } from '@credo-ts/openid4vc'
 import console, { clear } from 'console'
 import { textSync } from 'figlet'
 
@@ -123,7 +124,9 @@ export class HolderInquirer extends BaseInquirer {
         },
       },
       metadata: issuerMetadata,
-      offeredCredentialConfigurations: Object.fromEntries(configurationsWithScope),
+      offeredCredentialConfigurations: Object.fromEntries(
+        configurationsWithScope
+      ) as OpenId4VciCredentialConfigurationsSupportedWithFormats,
     }
 
     console.log(greenText(`We can request authorization for the following credentials.`))
