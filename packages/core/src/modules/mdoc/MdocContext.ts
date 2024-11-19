@@ -1,6 +1,6 @@
 import type { AgentContext } from '../../agent'
 import type { JwkJson } from '../../crypto'
-import type { MdocContext, X509Context } from '@protokoll/mdoc-client'
+import type { MdocContext, X509Context } from '@animo-id/mdoc'
 
 import { p256 } from '@noble/curves/p256'
 import { hkdf } from '@noble/hashes/hkdf'

@@ -1,6 +1,6 @@
 import type { MdocSignOptions, MdocNameSpaces, MdocVerifyOptions } from './MdocOptions'
 import type { AgentContext } from '../../agent'
-import type { IssuerSignedDocument } from '@protokoll/mdoc-client'
+import type { IssuerSignedDocument } from '@animo-id/mdoc'
 
 import {
   DeviceSignedDocument,
@@ -9,7 +9,7 @@ import {
   cborEncode,
   parseDeviceSigned,
   parseIssuerSigned,
-} from '@protokoll/mdoc-client'
+} from '@animo-id/mdoc'
 
 import { getJwkFromKey, JwaSignatureAlgorithm } from '../../crypto'
 import { X509Certificate, X509ModuleConfig } from '../x509'
