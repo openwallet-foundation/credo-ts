@@ -1,7 +1,7 @@
 import type { MdocRecord } from '../../mdoc'
 import type { SdJwtVcRecord } from '../../sd-jwt-vc'
 import type { ClaimFormat, W3cCredentialRecord } from '../../vc'
-import type { MdocNameSpaces } from '@protokoll/mdoc-client'
+import type { MdocNameSpaces } from '@animo-id/mdoc'
 
 export interface DifPexCredentialsForRequest {
   /**

@@ -1,6 +1,6 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
+import { cborEncode, parseDeviceResponse } from '@animo-id/mdoc'
 import { Key as AskarKey, Jwk } from '@hyperledger/aries-askar-nodejs'
-import { cborEncode, parseDeviceResponse } from '@protokoll/mdoc-client'
 
 import { Agent, KeyType } from '../../..'
 import { getInMemoryAgentOptions } from '../../../../tests'
