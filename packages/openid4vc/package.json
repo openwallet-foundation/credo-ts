@@ -33,14 +33,14 @@
     "class-transformer": "^0.5.1",
     "rxjs": "^7.8.0",
     "zod": "^3.23.8",
-    "@animo-id/oid4vci": "0.0.2-alpha-20241118112201",
-    "@animo-id/oauth2": "0.0.2-alpha-20241118112201"
+    "@animo-id/oid4vci": "0.1.3",
+    "@animo-id/oauth2": "0.1.3"
   },
   "devDependencies": {
     "@credo-ts/tenants": "workspace:*",
     "@types/express": "^4.17.21",
     "express": "^4.18.2",
-    "nock": "^14.0.0-beta.15",
+    "nock": "^14.0.0-beta.16",
     "rimraf": "^4.4.0",
     "typescript": "~5.5.2"
   }

@@ -709,8 +709,8 @@ importers:
         specifier: ^8.5.4
         version: 8.5.12
       nock:
-        specifier: ^14.0.0-beta.15
-        version: 14.0.0-beta.15
+        specifier: ^14.0.0-beta.16
+        version: 14.0.0-beta.16
       rimraf:
         specifier: ^4.4.0
         version: 4.4.1
@@ -721,11 +721,11 @@ importers:
   packages/openid4vc:
     dependencies:
       '@animo-id/oauth2':
-        specifier: 0.0.2-alpha-20241118112201
-        version: 0.0.2-alpha-20241118112201(typescript@5.5.4)
+        specifier: 0.1.3
+        version: 0.1.3(typescript@5.5.4)
       '@animo-id/oid4vci':
-        specifier: 0.0.2-alpha-20241118112201
-        version: 0.0.2-alpha-20241118112201(typescript@5.5.4)
+        specifier: 0.1.3
+        version: 0.1.3(typescript@5.5.4)
       '@credo-ts/core':
         specifier: workspace:*
         version: link:../core
@@ -758,8 +758,8 @@ importers:
         specifier: ^4.18.2
         version: 4.19.2
       nock:
-        specifier: ^14.0.0-beta.15
-        version: 14.0.0-beta.15
+        specifier: ^14.0.0-beta.16
+        version: 14.0.0-beta.16
       rimraf:
         specifier: ^4.4.0
         version: 4.4.1
@@ -934,14 +934,14 @@ packages:
   '@animo-id/mdoc@0.2.38':
     resolution: {integrity: sha512-98KQ0jvwTYsFOffTGvvHXBDo23b5xmhYjPiMIX6e807I6iS4fZZ9ypfBySdA5IiGUvXELKqEv27AUaayQa/9bg==}
 
-  '@animo-id/oauth2-utils@0.0.2-alpha-20241118112201':
-    resolution: {integrity: sha512-Su+dr1OJdxod7HWlPWqA1PHnO8uWVZMyAnWCt5AjxCFiLxiudtCfvwifeGnA3CLeB1BGu5GJexBN9KryDCK/4A==}
+  '@animo-id/oauth2-utils@0.1.3':
+    resolution: {integrity: sha512-PzAx57LbDmmhI1qnF6Y/soYHLyHXxheSzlle+8rHexZmnWHXwxJ5nyOn/EQhGOqk5UEXLHYsD+27oyrMH3iR4A==}
 
-  '@animo-id/oauth2@0.0.2-alpha-20241118112201':
-    resolution: {integrity: sha512-WcqpXK9yL5+dtxg/nTrYZo4Ln9yK59lfGenQ+jDKrGGxJKscpibWsDfVtSnvxLHgqU+zqMKCg4skHLdxXNGxDg==}
+  '@animo-id/oauth2@0.1.3':
+    resolution: {integrity: sha512-e4i+9nn3hyaxJ5LFTRb8Ri43VCAN5xpOvD0o2DcL6U90Y5ih3L+GVU6pzYylwk0iX/VD/HCMayDvF9qusDBh4w==}
 
-  '@animo-id/oid4vci@0.0.2-alpha-20241118112201':
-    resolution: {integrity: sha512-3AjbXjTAqafCw4CjJlXajPpU6wXRGffjyPoptDntzA5mIeevyA9sgbVh3ldqFexuxLgjquqEv02pPC3rvh3mRQ==}
+  '@animo-id/oid4vci@0.1.3':
+    resolution: {integrity: sha512-01ka6sIQUVXNcrw6/fcWCbFpso60bb9Ejv4WUunA/7pGiowdzmmf4aaMRd2em/v5riRpo2tsIqv23SAbyTl41A==}
 
   '@animo-id/react-native-bbs-signatures@0.1.0':
     resolution: {integrity: sha512-7qvsiWhGfUev8ngE8YzF6ON9PtCID5LiYVYM4EC5eyj80gCdhx3R46CI7K1qbqIlGsoTYQ/Xx5Ubo5Ji9eaUEA==}
@@ -6349,6 +6349,10 @@ packages:
     resolution: {integrity: sha512-rp72chatxoZbR/2cYHwtb+IX6n6kkanYKGN2PKn4c12JBrj9n4xGUKFykuQHB+Gkz3fynlikFbMH2LI6VoebuQ==}
     engines: {node: '>= 18'}
 
+  nock@14.0.0-beta.16:
+    resolution: {integrity: sha512-H6ZyT+Naz9wfy0gNrhD0m+VIkCq9li/eaNQPEUEjXg06gsLR3/jDctROt44Z+iT3gFnkTQ0wXtwKJPdvbueBbg==}
+    engines: {node: '>= 18'}
+
   node-addon-api@3.2.1:
     resolution: {integrity: sha512-mmcei9JghVNDYydghQmeDX8KoAm0FAiYyIcUt/N4nhyAipB17pllZQDOJD2fotxABnt4Mdz+dKTO7eftLg4d0A==}
 
@@ -8217,24 +8221,24 @@ snapshots:
     dependencies:
       compare-versions: 6.1.1
 
-  '@animo-id/oauth2-utils@0.0.2-alpha-20241118112201(typescript@5.5.4)':
+  '@animo-id/oauth2-utils@0.1.3(typescript@5.5.4)':
     dependencies:
       buffer: 6.0.3
       valibot: 0.42.1(typescript@5.5.4)
     transitivePeerDependencies:
       - typescript
 
-  '@animo-id/oauth2@0.0.2-alpha-20241118112201(typescript@5.5.4)':
+  '@animo-id/oauth2@0.1.3(typescript@5.5.4)':
     dependencies:
-      '@animo-id/oauth2-utils': 0.0.2-alpha-20241118112201(typescript@5.5.4)
+      '@animo-id/oauth2-utils': 0.1.3(typescript@5.5.4)
       valibot: 0.42.1(typescript@5.5.4)
     transitivePeerDependencies:
       - typescript
 
-  '@animo-id/oid4vci@0.0.2-alpha-20241118112201(typescript@5.5.4)':
+  '@animo-id/oid4vci@0.1.3(typescript@5.5.4)':
     dependencies:
-      '@animo-id/oauth2': 0.0.2-alpha-20241118112201(typescript@5.5.4)
-      '@animo-id/oauth2-utils': 0.0.2-alpha-20241118112201(typescript@5.5.4)
+      '@animo-id/oauth2': 0.1.3(typescript@5.5.4)
+      '@animo-id/oauth2-utils': 0.1.3(typescript@5.5.4)
       valibot: 0.42.1(typescript@5.5.4)
     transitivePeerDependencies:
       - typescript
@@ -17320,6 +17324,12 @@ snapshots:
   nocache@3.0.4: {}
 
   nock@14.0.0-beta.15:
+    dependencies:
+      '@mswjs/interceptors': 0.36.9
+      json-stringify-safe: 5.0.1
+      propagate: 2.0.1
+
+  nock@14.0.0-beta.16:
     dependencies:
       '@mswjs/interceptors': 0.36.9
       json-stringify-safe: 5.0.1
