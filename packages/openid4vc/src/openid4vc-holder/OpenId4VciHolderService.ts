@@ -744,9 +744,11 @@ export class OpenId4VciHolderService {
 
       const sdJwtVcApi = agentContext.dependencyManager.resolve(SdJwtVcApi)
       const verificationResults = await Promise.all(
-        credentials.map((compactSdJwtVc) =>
+        credentials.map((compactSdJwtVc, index) =>
           sdJwtVcApi.verify({
             compactSdJwtVc,
+            // Only load and verify it for the first instance
+            fetchTypeMetadata: index === 0,
           })
         )
       )
