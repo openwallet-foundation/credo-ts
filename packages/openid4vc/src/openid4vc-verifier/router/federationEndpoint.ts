@@ -78,7 +78,7 @@ export function configureFederationEndpoint(router: Router) {
           rpSigningKeyMapping.set(verifier.verifierId, rpSigningKey)
         }
 
-        const relyingParty = await verifierService.getRelyingParty(agentContext, verifier.verifierId, {
+        const relyingParty = await verifierService.getRelyingParty(agentContext, verifier, {
           clientId: verifierConfig.baseUrl,
           clientIdScheme: 'entity_id',
           authorizationResponseUrl: `${verifierConfig.baseUrl}/siop/${verifier.verifierId}/authorize`,
@@ -137,7 +137,8 @@ export function configureFederationEndpoint(router: Router) {
         agentContext.config.logger.error('Failed to create entity configuration', {
           error,
         })
-        sendErrorResponse(response, agentContext.config.logger, 500, 'invalid_request', error)
+        sendErrorResponse(response, next, agentContext.config.logger, 500, 'invalid_request', error)
+        return
       }
 
       // NOTE: if we don't call next, the agentContext session handler will NOT be called

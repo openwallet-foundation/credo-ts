@@ -6,7 +6,6 @@ import { Key, getJwkFromKey, KeyType } from '@credo-ts/core'
 import { createEntityConfiguration } from '@openid-federation/core'
 
 import { getRequestContext, sendErrorResponse } from '../../shared/router'
-import { OpenId4VcIssuerService } from '../OpenId4VcIssuerService'
 
 // TODO: It's also possible that the issuer and the verifier can have the same openid-federation endpoint. In that case we need to combine them.
 
@@ -15,15 +14,12 @@ export function configureFederationEndpoint(router: Router) {
 
   router.get('/.well-known/openid-federation', async (request: OpenId4VcIssuanceRequest, response: Response, next) => {
     const { agentContext, issuer } = getRequestContext(request)
-    const openId4VcIssuerService = agentContext.dependencyManager.resolve(OpenId4VcIssuerService)
 
     try {
       // TODO: Should be only created once per issuer and be used between instances
       const federationKey = await agentContext.wallet.createKey({
         keyType: KeyType.Ed25519,
       })
-
-      const issuerMetadata = openId4VcIssuerService.getIssuerMetadata(agentContext, issuer)
 
       const now = new Date()
       const expires = new Date(now.getTime() + 1000 * 60 * 60 * 24) // 1 day from now
@@ -35,14 +31,14 @@ export function configureFederationEndpoint(router: Router) {
       const kid = federationKey.fingerprint
       const alg = jwk.supportedSignatureAlgorithms[0]
 
-      const issuerDisplay = issuerMetadata.issuerDisplay?.[0]
+      const issuerDisplay = issuer.display?.[0]
 
       const accessTokenSigningKey = Key.fromFingerprint(issuer.accessTokenPublicKeyFingerprint)
 
       const entityConfiguration = await createEntityConfiguration({
         claims: {
-          sub: issuerMetadata.issuerUrl,
-          iss: issuerMetadata.issuerUrl,
+          sub: issuer.issuerId,
+          iss: issuer.issuerId,
           iat: now,
           exp: expires,
           jwks: {
@@ -52,7 +48,7 @@ export function configureFederationEndpoint(router: Router) {
             federation_entity: issuerDisplay
               ? {
                   organization_name: issuerDisplay.name,
-                  logo_uri: issuerDisplay.logo?.url,
+                  logo_uri: issuerDisplay.logo?.uri,
                 }
               : undefined,
             openid_provider: {
@@ -99,7 +95,8 @@ export function configureFederationEndpoint(router: Router) {
       agentContext.config.logger.error('Failed to create entity configuration', {
         error,
       })
-      sendErrorResponse(response, agentContext.config.logger, 500, 'invalid_request', error)
+      sendErrorResponse(response, next, agentContext.config.logger, 500, 'invalid_request', error)
+      return
     }
 
     // NOTE: if we don't call next, the agentContext session handler will NOT be called
