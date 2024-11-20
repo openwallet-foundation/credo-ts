@@ -94,8 +94,8 @@ importers:
         specifier: ^29.7.0
         version: 29.7.0(@types/node@18.18.8)(ts-node@10.9.2(@types/node@18.18.8)(typescript@5.5.4))
       nock:
-        specifier: ^14.0.0-beta.15
-        version: 14.0.0-beta.15
+        specifier: ^14.0.0-beta.16
+        version: 14.0.0-beta.16
       prettier:
         specifier: ^2.3.1
         version: 2.8.8
@@ -581,6 +581,9 @@ importers:
       '@types/varint':
         specifier: ^6.0.0
         version: 6.0.3
+      nock:
+        specifier: ^14.0.0-beta.16
+        version: 14.0.0-beta.16
       rimraf:
         specifier: ^4.4.0
         version: 4.4.1
@@ -6344,10 +6347,6 @@ packages:
   nocache@3.0.4:
     resolution: {integrity: sha512-WDD0bdg9mbq6F4mRxEYcPWwfA1vxd0mrvKOyxI7Xj/atfRHVeutzuWByG//jfm4uPzp0y4Kj051EORCBSQMycw==}
     engines: {node: '>=12.0.0'}
-
-  nock@14.0.0-beta.15:
-    resolution: {integrity: sha512-rp72chatxoZbR/2cYHwtb+IX6n6kkanYKGN2PKn4c12JBrj9n4xGUKFykuQHB+Gkz3fynlikFbMH2LI6VoebuQ==}
-    engines: {node: '>= 18'}
 
   nock@14.0.0-beta.16:
     resolution: {integrity: sha512-H6ZyT+Naz9wfy0gNrhD0m+VIkCq9li/eaNQPEUEjXg06gsLR3/jDctROt44Z+iT3gFnkTQ0wXtwKJPdvbueBbg==}
@@ -17322,12 +17321,6 @@ snapshots:
   nice-try@1.0.5: {}
 
   nocache@3.0.4: {}
-
-  nock@14.0.0-beta.15:
-    dependencies:
-      '@mswjs/interceptors': 0.36.9
-      json-stringify-safe: 5.0.1
-      propagate: 2.0.1
 
   nock@14.0.0-beta.16:
     dependencies:
