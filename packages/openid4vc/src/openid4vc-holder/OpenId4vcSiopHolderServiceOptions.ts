@@ -74,3 +74,7 @@ export interface OpenId4VcSiopResolveTrustChainsOptions {
   entityId: string
   trustAnchorEntityIds: [string, ...string[]]
 }
+
+export interface OpenId4VcSiopFetchEntityConfigurationOptions {
+  entityId: string
+}

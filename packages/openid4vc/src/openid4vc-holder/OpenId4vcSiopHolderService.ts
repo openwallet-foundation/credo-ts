@@ -1,5 +1,6 @@
 import type {
   OpenId4VcSiopAcceptAuthorizationRequestOptions,
+  OpenId4VcSiopFetchEntityConfigurationOptions,
   OpenId4VcSiopGetOpenIdProviderOptions,
   OpenId4VcSiopResolveAuthorizationRequestOptions,
   OpenId4VcSiopResolvedAuthorizationRequest,
@@ -464,6 +465,27 @@ export class OpenId4VcSiopHolderService {
     return federationResolveTrustChains({
       entityId,
       trustAnchorEntityIds,
+      verifyJwtCallback: async ({ jwt, jwk }) => {
+        const res = await jwsService.verifyJws(agentContext, {
+          jws: jwt,
+          jwkResolver: () => getJwkFromJson(jwk),
+        })
+
+        return res.isValid
+      },
+    })
+  }
+
+  public async fetchOpenIdFederationEntityConfiguration(
+    agentContext: AgentContext,
+    options: OpenId4VcSiopFetchEntityConfigurationOptions
+  ) {
+    const jwsService = agentContext.dependencyManager.resolve(JwsService)
+
+    const { entityId } = options
+
+    return federationFetchEntityConfiguration({
+      entityId,
       verifyJwtCallback: async ({ jwt, jwk }) => {
         const res = await jwsService.verifyJws(agentContext, {
           jws: jwt,
