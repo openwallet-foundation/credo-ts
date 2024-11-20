@@ -134,7 +134,12 @@ export class OpenId4VcHolderApi {
       options
     )
 
-    return { accessToken: accessTokenResponse.access_token, cNonce: accessTokenResponse.c_nonce, dpop }
+    return {
+      accessToken: accessTokenResponse.access_token,
+      cNonce: accessTokenResponse.c_nonce,
+      dpop,
+      accessTokenResponse,
+    }
   }
 
   /**
