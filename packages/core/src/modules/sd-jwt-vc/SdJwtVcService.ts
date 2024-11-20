@@ -29,10 +29,9 @@ import { X509Certificate, X509ModuleConfig } from '../x509'
 import { SdJwtVcError } from './SdJwtVcError'
 import { decodeSdJwtVc, sdJwtVcHasher } from './decodeSdJwtVc'
 import { SdJwtVcRecord, SdJwtVcRepository } from './repository'
+import { SdJwtVcTypeMetadata } from './typeMetadata'
 
 type SdJwtVcConfig = SDJwtVcInstance['userConfig']
-
-export type SdJwtVcTypeMetadata = NonNullable<Awaited<ReturnType<SDJwtVcInstance['verify']>>['typeMetadataFormat']>
 
 export interface SdJwtVc<
   Header extends SdJwtVcHeader = SdJwtVcHeader,
@@ -201,7 +200,7 @@ export class SdJwtVcService {
       ...this.getBaseSdJwtConfig(agentContext),
       // FIXME: will break if using url but no type metadata
       // https://github.com/openwallet-foundation/sd-jwt-js/issues/258
-      loadTypeMetadataFormat: false,
+      // loadTypeMetadataFormat: false,
     })
 
     const verificationResult: VerificationResult = {
@@ -616,7 +615,6 @@ export class SdJwtVcService {
       hasher: sdJwtVcHasher,
       statusListFetcher: this.getStatusListFetcher(agentContext),
       saltGenerator: agentContext.wallet.generateNonce,
-      loadTypeMetadataFormat: false,
     }
   }
 

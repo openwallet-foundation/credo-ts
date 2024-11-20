@@ -1,6 +1,7 @@
 import type { TagsBase } from '../../../storage/BaseRecord'
 import type { Constructable } from '../../../utils/mixins'
-import type { SdJwtVc, SdJwtVcTypeMetadata } from '../SdJwtVcService'
+import type { SdJwtVc } from '../SdJwtVcService'
+import type { SdJwtVcTypeMetadata } from '../typeMetadata'
 
 import { decodeSdJwtSync } from '@sd-jwt/decode'
 

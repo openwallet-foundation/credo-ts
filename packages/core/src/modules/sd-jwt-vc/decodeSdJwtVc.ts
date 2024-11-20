@@ -1,5 +1,5 @@
 import type { SdJwtVcHeader, SdJwtVcPayload } from './SdJwtVcOptions'
-import type { SdJwtVcTypeMetadata } from './SdJwtVcService'
+import type { SdJwtVcTypeMetadata } from './typeMetadata'
 
 import { decodeSdJwtSync, getClaimsSync } from '@sd-jwt/decode'
 
