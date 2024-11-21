@@ -3,6 +3,7 @@ import type {
   OpenId4VcSiopCreateAuthorizationRequestReturn,
   OpenId4VcSiopCreateVerifierOptions,
   OpenId4VcSiopVerifiedAuthorizationResponse,
+  OpenId4VcSiopVerifiedAuthorizationResponseDcql,
   OpenId4VcSiopVerifyAuthorizationResponseOptions,
   ResponseMode,
 } from './OpenId4VcSiopVerifierServiceOptions'
@@ -10,6 +11,7 @@ import type { OpenId4VcVerificationSessionRecord } from './repository'
 import type { OpenId4VcSiopAuthorizationResponsePayload } from '../shared'
 import type {
   AgentContext,
+  DcqlQuery,
   DifPresentationExchangeDefinition,
   JwkJson,
   Query,
@@ -58,7 +60,10 @@ import {
   RP,
   SupportedVersion,
 } from '@sphereon/did-auth-siop'
-import { extractPresentationsFromVpToken } from '@sphereon/did-auth-siop/dist/authorization-response/OpenID4VP'
+import {
+  extractPresentationRecordFromDcqlVpToken,
+  extractPresentationsFromVpToken,
+} from '@sphereon/did-auth-siop/dist/authorization-response/OpenID4VP'
 import { filter, first, firstValueFrom, map, timeout } from 'rxjs'
 
 import { storeActorIdForContextCorrelationId } from '../shared/router'
@@ -151,6 +156,7 @@ export class OpenId4VcSiopVerifierService {
 
     const relyingParty = await this.getRelyingParty(agentContext, options.verifier, {
       presentationDefinition: options.presentationExchange?.definition,
+      dcqlQuery: options.dcql?.query,
       authorizationResponseUrl,
       clientId,
       clientIdScheme,
@@ -200,7 +206,7 @@ export class OpenId4VcSiopVerifierService {
     // NOTE: it's not possible to set the uri scheme when using the RP to create an auth request, only lower level
     // functions allow this. So we need to replace the uri scheme manually.
     let authorizationRequestUri = (await authorizationRequest.uri()).encodedUri
-    if (options.presentationExchange && !options.idToken) {
+    if ((options.presentationExchange || options.dcql) && !options.idToken) {
       authorizationRequestUri = authorizationRequestUri.replace('openid://', 'openid4vp://')
     } else {
       authorizationRequestUri = authorizationRequestUri.replace('openid4vp://', 'openid://')
@@ -236,6 +242,7 @@ export class OpenId4VcSiopVerifierService {
     const requestState = await authorizationRequest.getMergedProperty<string>('state')
     const responseUri = await authorizationRequest.getMergedProperty<string>('response_uri')
     const presentationDefinitionsWithLocation = await authorizationRequest.getPresentationDefinitions()
+    const dcqlQuery = await authorizationRequest.getDcqlQuery()
 
     if (!requestNonce || !requestClientId || !requestState) {
       throw new CredoError(
@@ -250,6 +257,7 @@ export class OpenId4VcSiopVerifierService {
 
     const relyingParty = await this.getRelyingParty(agentContext, verifier, {
       presentationDefinition: presentationDefinitionsWithLocation?.[0]?.definition,
+      dcqlQuery,
       authorizationResponseUrl,
       clientId: requestClientId,
     })
@@ -287,6 +295,7 @@ export class OpenId4VcSiopVerifierService {
       correlationId: options.verificationSession.id,
       state: requestState,
       presentationDefinitions: presentationDefinitionsWithLocation,
+      dcqlQuery,
       verification: {
         presentationVerificationCallback: this.getPresentationVerificationCallback(agentContext, {
           correlationId: options.verificationSession.id,
@@ -360,13 +369,29 @@ export class OpenId4VcSiopVerifierService {
       }
     }
 
-    if (!idToken && !presentationExchange) {
+    let dcql: OpenId4VcSiopVerifiedAuthorizationResponseDcql | undefined = undefined
+    const dcqlQuery = await authorizationRequest.getDcqlQuery()
+    if (dcqlQuery) {
+      const dcqlQueryVpToken = authorizationResponse.payload.vp_token
+      const presentationRecord = Object.fromEntries(
+        Object.entries(
+          extractPresentationRecordFromDcqlVpToken(dcqlQueryVpToken as string, { hasher: Hasher.hash })
+        ).map(([key, value]) => {
+          return [key, getVerifiablePresentationFromSphereonWrapped(value)]
+        })
+      )
+
+      dcql = { query: dcqlQuery, presentationRecord }
+    }
+
+    if (!idToken && !(presentationExchange || dcqlQuery)) {
       throw new CredoError('No idToken or presentationExchange found in the response.')
     }
 
     return {
       idToken,
       presentationExchange,
+      dcql,
     }
   }
 
@@ -475,6 +500,7 @@ export class OpenId4VcSiopVerifierService {
     {
       idToken,
       presentationDefinition,
+      dcqlQuery,
       clientId,
       clientIdScheme,
       authorizationResponseUrl,
@@ -483,6 +509,7 @@ export class OpenId4VcSiopVerifierService {
       responseMode?: ResponseMode
       idToken?: boolean
       presentationDefinition?: DifPresentationExchangeDefinition
+      dcqlQuery?: DcqlQuery
       clientId: string
       authorizationResponseUrl: string
       clientIdScheme?: ClientIdScheme
@@ -497,13 +524,13 @@ export class OpenId4VcSiopVerifierService {
     const builder = RP.builder()
 
     const responseTypes: ResponseType[] = []
-    if (!presentationDefinition && idToken === false) {
+    if (!(presentationDefinition && dcqlQuery) && idToken === false) {
       throw new CredoError('Either `presentationExchange` or `idToken` must be enabled')
     }
-    if (presentationDefinition) {
+    if (presentationDefinition || dcqlQuery) {
       responseTypes.push(ResponseType.VP_TOKEN)
     }
-    if (idToken === true || !presentationDefinition) {
+    if (idToken === true || !(presentationDefinition || dcqlQuery)) {
       responseTypes.push(ResponseType.ID_TOKEN)
     }
 
@@ -611,6 +638,9 @@ export class OpenId4VcSiopVerifierService {
 
     if (presentationDefinition) {
       builder.withPresentationDefinition({ definition: presentationDefinition }, [PropertyTarget.REQUEST_OBJECT])
+    }
+    if (dcqlQuery) {
+      builder.withDcqlQuery(JSON.stringify(dcqlQuery))
     }
     if (responseTypes.includes(ResponseType.ID_TOKEN)) {
       builder.withScope('openid')
