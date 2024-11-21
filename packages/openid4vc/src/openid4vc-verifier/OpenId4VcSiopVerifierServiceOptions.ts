@@ -10,6 +10,8 @@ import type {
   DifPresentationExchangeSubmission,
   DifPresentationExchangeDefinitionV2,
   VerifiablePresentation,
+  DcqlQuery,
+  DcqlPresentationRecord,
   DifPexPresentationWithDescriptor,
 } from '@credo-ts/core'
 
@@ -37,6 +39,13 @@ export interface OpenId4VcSiopCreateAuthorizationRequestOptions {
    */
   presentationExchange?: {
     definition: DifPresentationExchangeDefinitionV2
+  }
+
+  /**
+   * A Digital Credentials Query Language (DCQL) can be provided to request the presentation of a Verifiable Credentials.
+   */
+  dcql?: {
+    query: DcqlQuery
   }
 
   /**
@@ -69,6 +78,11 @@ export interface OpenId4VcSiopVerifiedAuthorizationResponsePresentationExchange 
   descriptors: DifPexPresentationWithDescriptor[]
 }
 
+export interface OpenId4VcSiopVerifiedAuthorizationResponseDcql {
+  query: DcqlQuery
+  presentationRecord: DcqlPresentationRecord
+}
+
 /**
  * Either `idToken` and/or `presentationExchange` will be present.
  */
@@ -78,6 +92,8 @@ export interface OpenId4VcSiopVerifiedAuthorizationResponse {
   }
 
   presentationExchange?: OpenId4VcSiopVerifiedAuthorizationResponsePresentationExchange
+
+  dcql?: OpenId4VcSiopVerifiedAuthorizationResponseDcql
 }
 
 /**
