@@ -24,6 +24,7 @@ import { TypedArrayEncoder, nowInSeconds } from '../../utils'
 import { getDomainFromUrl } from '../../utils/domain'
 import { fetchWithTimeout } from '../../utils/fetch'
 import { DidResolverService, parseDid, getKeyFromVerificationMethod } from '../dids'
+import { ClaimFormat } from '../vc'
 import { X509Certificate, X509ModuleConfig } from '../x509'
 
 import { SdJwtVcError } from './SdJwtVcError'
@@ -37,6 +38,7 @@ export interface SdJwtVc<
   Header extends SdJwtVcHeader = SdJwtVcHeader,
   Payload extends SdJwtVcPayload = SdJwtVcPayload
 > {
+  claimFormat: ClaimFormat.SdJwtVc
   compact: string
   header: Header
 
@@ -133,6 +135,7 @@ export class SdJwtVcService {
       prettyClaims,
       header: header,
       payload: sdjwtPayload,
+      claimFormat: ClaimFormat.SdJwtVc,
     } satisfies SdJwtVc<typeof header, Payload>
   }
 
@@ -226,6 +229,7 @@ export class SdJwtVcService {
       header: sdJwtVc.jwt.header as Header,
       compact: compactSdJwtVc,
       prettyClaims: await sdJwtVc.getClaims(sdJwtVcHasher),
+      claimFormat: ClaimFormat.SdJwtVc,
     } satisfies SdJwtVc<Header, Payload>
 
     try {

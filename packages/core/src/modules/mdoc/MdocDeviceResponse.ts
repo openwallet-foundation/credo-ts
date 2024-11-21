@@ -25,6 +25,7 @@ import {
 
 import { CredoError } from '../../error'
 import { uuid } from '../../utils/uuid'
+import { ClaimFormat } from '../vc'
 import { X509Certificate } from '../x509/X509Certificate'
 import { X509ModuleConfig } from '../x509/X509ModuleConfig'
 
@@ -35,6 +36,10 @@ import { MdocError } from './MdocError'
 
 export class MdocDeviceResponse {
   private constructor(public base64Url: string, public documents: Mdoc[]) {}
+
+  public get claimFormat() {
+    return ClaimFormat.MsoMdoc as const
+  }
 
   public static fromBase64Url(base64Url: string) {
     const parsed = parseDeviceResponse(TypedArrayEncoder.fromBase64(base64Url))
