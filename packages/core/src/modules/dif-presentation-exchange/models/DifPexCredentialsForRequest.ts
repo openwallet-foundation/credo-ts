@@ -1,7 +1,6 @@
-import type { MdocRecord } from '../../mdoc'
+import type { MdocNameSpacesRecord, MdocRecord } from '../../mdoc'
 import type { SdJwtVcRecord } from '../../sd-jwt-vc'
 import type { ClaimFormat, W3cCredentialRecord } from '../../vc'
-import type { MdocNameSpaces } from '@animo-id/mdoc'
 
 export interface DifPexCredentialsForRequest {
   /**
@@ -134,7 +133,7 @@ export type SubmissionEntryCredential =
   | {
       type: ClaimFormat.MsoMdoc
       credentialRecord: MdocRecord
-      disclosedPayload: MdocNameSpaces
+      disclosedPayload: MdocNameSpacesRecord
     }
 
 /**
