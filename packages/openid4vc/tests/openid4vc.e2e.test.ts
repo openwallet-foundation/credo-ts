@@ -45,7 +45,6 @@ import {
   JwtPayload,
   SdJwtVcRecord,
   MdocRecord,
-  DcqlService,
 } from '@credo-ts/core'
 import express, { type Express } from 'express'
 
@@ -56,7 +55,6 @@ import {
   OpenId4VcHolderModule,
   OpenId4VcIssuanceSessionState,
   OpenId4VcIssuerModule,
-  OpenId4VcVerificationSessionRepository,
   OpenId4VcVerificationSessionState,
   OpenId4VcVerifierModule,
 } from '../src'
@@ -1045,7 +1043,7 @@ describe('OpenId4Vc', () => {
       throw new Error('Presentation exchange not defined')
     }
 
-    const selectedCredentials = holder.agent.modules.openId4VcHolder.selectCredentialsForRequest(
+    const selectedCredentials = holder.agent.modules.openId4VcHolder.selectCredentialsForPresentationExchangeRequest(
       resolvedAuthorizationRequest.presentationExchange.credentialsForRequest
     )
 
@@ -1275,7 +1273,7 @@ describe('OpenId4Vc', () => {
       throw new Error('Presentation exchange not defined')
     }
 
-    const selectedCredentials = holder.agent.modules.openId4VcHolder.selectCredentialsForRequest(
+    const selectedCredentials = holder.agent.modules.openId4VcHolder.selectCredentialsForPresentationExchangeRequest(
       resolvedAuthorizationRequest.presentationExchange.credentialsForRequest
     )
 
@@ -1576,7 +1574,7 @@ describe('OpenId4Vc', () => {
       throw new Error('Presentation exchange not defined')
     }
 
-    const selectedCredentials = holder.agent.modules.openId4VcHolder.selectCredentialsForRequest(
+    const selectedCredentials = holder.agent.modules.openId4VcHolder.selectCredentialsForPresentationExchangeRequest(
       resolvedAuthorizationRequest.presentationExchange.credentialsForRequest
     )
 
@@ -2074,7 +2072,7 @@ describe('OpenId4Vc', () => {
       throw new Error('Presentation exchange not defined')
     }
 
-    const selectedCredentials = holder.agent.modules.openId4VcHolder.selectCredentialsForRequest(
+    const selectedCredentials = holder.agent.modules.openId4VcHolder.selectCredentialsForPresentationExchangeRequest(
       resolvedAuthorizationRequest.presentationExchange.credentialsForRequest
     )
 
@@ -2303,28 +2301,8 @@ describe('OpenId4Vc', () => {
         dcql: { query: dcqlQuery },
       })
 
-    // Hack to make it work with x5c checks
-    verificationSession.authorizationRequestUri = verificationSession.authorizationRequestUri.replace('https', 'http')
-    const verificationSessionRepoitory = verifier.agent.dependencyManager.resolve(
-      OpenId4VcVerificationSessionRepository
-    )
-    await verificationSessionRepoitory.update(verifier.agent.context, verificationSession)
-
-    // Hack to make it work with x5c check
-    // @ts-expect-error
-    verifier.agent.modules.openId4VcVerifier.config.options.baseUrl =
-      // @ts-expect-error
-      verifier.agent.modules.openId4VcVerifier.config.options.baseUrl.replace('https://', 'http://')
-
-    expect(authorizationRequest.replace('https', 'http')).toEqual(
-      `openid4vp://?client_id=localhost%3A1234&request_uri=${encodeURIComponent(
-        verificationSession.authorizationRequestUri
-      )}`
-    )
-
     const resolvedAuthorizationRequest = await holder.agent.modules.openId4VcHolder.resolveSiopAuthorizationRequest(
-      // hack to make it work on localhost
-      authorizationRequest.replace('https', 'http')
+      authorizationRequest
     )
 
     expect(resolvedAuthorizationRequest.dcql).toEqual({
@@ -2390,13 +2368,9 @@ describe('OpenId4Vc', () => {
       throw new Error('Dcql not defined')
     }
 
-    // TODO: better way to auto-select
-    const dcqlService = holder.agent.dependencyManager.resolve(DcqlService)
-    const selectedCredentials = dcqlService.selectCredentialsForRequest(resolvedAuthorizationRequest.dcql.queryResult)
-
-    // Hack to make it work with x5c
-    resolvedAuthorizationRequest.authorizationRequest.responseURI =
-      resolvedAuthorizationRequest.authorizationRequest.responseURI?.replace('https', 'http')
+    const selectedCredentials = holder.agent.modules.openId4VcHolder.selectCredentialsForDcqlRequest(
+      resolvedAuthorizationRequest.dcql.queryResult
+    )
 
     const { serverResponse, submittedResponse } =
       await holder.agent.modules.openId4VcHolder.acceptSiopAuthorizationRequest({
@@ -2635,7 +2609,7 @@ describe('OpenId4Vc', () => {
       throw new Error('Presentation exchange not defined')
     }
 
-    const selectedCredentials = holder.agent.modules.openId4VcHolder.selectCredentialsForRequest(
+    const selectedCredentials = holder.agent.modules.openId4VcHolder.selectCredentialsForPresentationExchangeRequest(
       resolvedAuthorizationRequest.presentationExchange.credentialsForRequest
     )
 

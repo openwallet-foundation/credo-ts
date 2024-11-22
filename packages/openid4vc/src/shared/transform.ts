@@ -17,6 +17,7 @@ import {
   Mdoc,
   TypedArrayEncoder,
   MdocDeviceResponse,
+  ClaimFormat,
 } from '@credo-ts/core'
 
 export function getSphereonVerifiableCredential(
@@ -73,6 +74,7 @@ export function getVerifiablePresentationFromSphereonWrapped(
       header,
       payload: wrappedVerifiablePresentation.presentation.signedPayload,
       prettyClaims: wrappedVerifiablePresentation.presentation.decodedPayload,
+      claimFormat: ClaimFormat.SdJwtVc,
     } satisfies SdJwtVc
   } else if (wrappedVerifiablePresentation.format === 'mso_mdoc') {
     if (typeof wrappedVerifiablePresentation.original !== 'string') {
