@@ -15,8 +15,13 @@ import {
 } from '../vc'
 
 import { DcqlError } from './DcqlError'
-import { DcqlQueryResult, DcqlCredentialsForRequest, DcqlPresentationRecord } from './models'
-import { dcqlGetPresentationsToCreate } from './utils'
+import {
+  DcqlQueryResult,
+  DcqlCredentialsForRequest,
+  DcqlPresentation as DcqlPresentation,
+  DcqlEncodedPresentations,
+} from './models'
+import { dcqlGetPresentationsToCreate as getDcqlVcPresentationsToCreate } from './utils'
 
 /**
  * @todo create a public api for using dif presentation exchange
@@ -27,7 +32,7 @@ export class DcqlService {
    * Queries the wallet for credentials that match the given presentation definition. This only does an initial query based on the
    * schema of the input descriptors. It does not do any further filtering based on the constraints in the input descriptors.
    */
-  private async queryCredentialForPresentationDefinition(
+  private async queryCredentialsForDcqlQuery(
     agentContext: AgentContext,
     dcqlQuery: DcqlQuery
   ): Promise<Array<SdJwtVcRecord | W3cCredentialRecord | MdocRecord>> {
@@ -62,7 +67,7 @@ export class DcqlService {
   }
 
   public async getCredentialsForRequest(agentContext: AgentContext, dcqlQuery: DcqlQuery): Promise<DcqlQueryResult> {
-    const credentialRecords = await this.queryCredentialForPresentationDefinition(agentContext, dcqlQuery)
+    const credentialRecords = await this.queryCredentialsForDcqlQuery(agentContext, dcqlQuery)
 
     const mappedCredentials: DcqlCredentialRepresentation[] = credentialRecords.map((record) => {
       if (record.type === 'MdocRecord') {
@@ -125,11 +130,17 @@ export class DcqlService {
 
           if (credential.success && credential.record.type === 'MdocRecord' && 'namespaces' in credential.output) {
             credentials[credentialQueryId] = {
+              claimFormat: ClaimFormat.MsoMdoc,
               credentialRecord: credential.record,
               disclosedPayload: credential.output.namespaces,
             }
-          } else if (credential.success && credential.record.type !== 'MdocRecord' && 'claims' in credential.output) {
+          } else if (
+            credential.success &&
+            credential.record.type === 'SdJwtVcRecord' &&
+            'claims' in credential.output
+          ) {
             credentials[credentialQueryId] = {
+              claimFormat: ClaimFormat.SdJwtVc,
               credentialRecord: credential.record,
               disclosedPayload: credential.output.claims,
             }
@@ -143,11 +154,13 @@ export class DcqlService {
         const credential = dcqlQueryResult.credential_matches[credentialQuery.id]
         if (credential.success && credential.record.type === 'MdocRecord' && 'namespaces' in credential.output) {
           credentials[credentialQuery.id] = {
+            claimFormat: ClaimFormat.MsoMdoc,
             credentialRecord: credential.record,
             disclosedPayload: credential.output.namespaces,
           }
-        } else if (credential.success && credential.record.type !== 'MdocRecord' && 'claims' in credential.output) {
+        } else if (credential.success && credential.record.type === 'SdJwtVcRecord' && 'claims' in credential.output) {
           credentials[credentialQuery.id] = {
+            claimFormat: ClaimFormat.SdJwtVc,
             credentialRecord: credential.record,
             disclosedPayload: credential.output.claims,
           }
@@ -179,7 +192,7 @@ export class DcqlService {
     return frame
   }
 
-  public async createPresentationRecord(
+  public async createPresentation(
     agentContext: AgentContext,
     options: {
       credentialQueryToCredential: DcqlCredentialsForRequest
@@ -187,13 +200,13 @@ export class DcqlService {
       domain?: string
       openid4vp?: Omit<MdocOpenId4VpSessionTranscriptOptions, 'verifierGeneratedNonce' | 'clientId'>
     }
-  ): Promise<DcqlPresentationRecord> {
+  ): Promise<DcqlPresentation> {
     const { domain, challenge, openid4vp } = options
 
-    const presentationRecord: DcqlPresentationRecord = {}
+    const dcqlPresentation: DcqlPresentation = {}
 
-    const presentationsToCreate = dcqlGetPresentationsToCreate(options.credentialQueryToCredential)
-    for (const [credentialQueryId, presentationToCreate] of Object.entries(presentationsToCreate)) {
+    const vcPresentationsToCreate = getDcqlVcPresentationsToCreate(options.credentialQueryToCredential)
+    for (const [credentialQueryId, presentationToCreate] of Object.entries(vcPresentationsToCreate)) {
       if (presentationToCreate.claimFormat === ClaimFormat.MsoMdoc) {
         const mdocRecord = presentationToCreate.credentialRecord
         if (!openid4vp) {
@@ -223,7 +236,7 @@ export class DcqlService {
           },
         })
 
-        presentationRecord[credentialQueryId] = MdocDeviceResponse.fromBase64Url(deviceResponseBase64Url)
+        dcqlPresentation[credentialQueryId] = MdocDeviceResponse.fromBase64Url(deviceResponseBase64Url)
       } else if (presentationToCreate.claimFormat === ClaimFormat.SdJwtVc) {
         const presentationFrame = this.createPresentationFrame(presentationToCreate.disclosedPayload)
 
@@ -242,18 +255,18 @@ export class DcqlService {
           },
         })
 
-        presentationRecord[credentialQueryId] = sdJwtVcApi.fromCompact(presentation)
+        dcqlPresentation[credentialQueryId] = sdJwtVcApi.fromCompact(presentation)
       } else {
-        throw new DcqlError('Only MDOC presentations are supported')
+        throw new DcqlError('W3c Presentation are not yet supported in combination with DCQL.')
       }
     }
 
-    return presentationRecord
+    return dcqlPresentation
   }
 
-  public async getEncodedPresentationRecord(presentationRecord: DcqlPresentationRecord) {
+  public getEncodedPresentations(dcqlPresentation: DcqlPresentation): DcqlEncodedPresentations {
     return Object.fromEntries(
-      Object.entries(presentationRecord).map(([key, value]) => {
+      Object.entries(dcqlPresentation).map(([key, value]) => {
         if (value instanceof MdocDeviceResponse) {
           return [key, value.base64Url]
         } else if (value instanceof W3cJsonLdVerifiablePresentation) {

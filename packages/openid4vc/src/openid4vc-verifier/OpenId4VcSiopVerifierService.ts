@@ -59,6 +59,7 @@ import {
   RevocationVerification,
   RP,
   SupportedVersion,
+  assertValidDcqlPresentationRecord,
 } from '@sphereon/did-auth-siop'
 import {
   extractPresentationRecordFromDcqlVpToken,
@@ -373,7 +374,7 @@ export class OpenId4VcSiopVerifierService {
     const dcqlQuery = await authorizationRequest.getDcqlQuery()
     if (dcqlQuery) {
       const dcqlQueryVpToken = authorizationResponse.payload.vp_token
-      const presentationRecord = Object.fromEntries(
+      const dcqlPresentation = Object.fromEntries(
         Object.entries(
           extractPresentationRecordFromDcqlVpToken(dcqlQueryVpToken as string, { hasher: Hasher.hash })
         ).map(([key, value]) => {
@@ -381,7 +382,13 @@ export class OpenId4VcSiopVerifierService {
         })
       )
 
-      dcql = { query: dcqlQuery, presentationRecord }
+      const presentationQueryResult = await assertValidDcqlPresentationRecord(
+        authorizationResponse.payload.vp_token as string,
+        dcqlQuery,
+        { hasher: Hasher.hash }
+      )
+
+      dcql = { presentation: dcqlPresentation, presentationQueryResult }
     }
 
     if (!idToken && !(presentationExchange || dcqlQuery)) {
@@ -525,7 +532,7 @@ export class OpenId4VcSiopVerifierService {
 
     const responseTypes: ResponseType[] = []
     if (!(presentationDefinition && dcqlQuery) && idToken === false) {
-      throw new CredoError('Either `presentationExchange` or `idToken` must be enabled')
+      throw new CredoError('`PresentationExchange` `DcqlQuery` or `idToken` must be enabled.')
     }
     if (presentationDefinition || dcqlQuery) {
       responseTypes.push(ResponseType.VP_TOKEN)

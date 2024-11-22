@@ -26,7 +26,7 @@
   },
   "dependencies": {
     "@digitalcredentials/jsonld": "^6.0.0",
-    "dcql": "^0.2.8",
+    "dcql": "^0.2.10",
     "@digitalcredentials/jsonld-signatures": "^9.4.0",
     "@digitalcredentials/vc": "^6.0.1",
     "@multiformats/base-x": "^4.0.1",

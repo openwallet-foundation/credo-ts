@@ -120,7 +120,40 @@ export class OpenId4VcSiopHolderService {
         throw new CredoError("Unable to extract 'response_uri' from authorization request")
       }
 
-      if (authorizationRequest.presentationDefinitions && authorizationRequest.presentationDefinitions.length > 0) {
+      if (authorizationRequest.dcqlQuery) {
+        if (!dcql) {
+          throw new CredoError(
+            'Authorization request included dcql query. `dcql` MUST be supplied to accept authorization requests.'
+          )
+        }
+
+        const dcqlPresentation = await this.dcqlService.createPresentation(agentContext, {
+          credentialQueryToCredential: dcql.credentials,
+          challenge: nonce,
+          domain: clientId,
+          openid4vp: {
+            mdocGeneratedNonce: authorizationResponseNonce,
+            responseUri,
+          },
+        })
+
+        dcqlOptions = {
+          encodedPresentations: await this.dcqlService.getEncodedPresentations(dcqlPresentation),
+        }
+
+        if (wantsIdToken && !openIdTokenIssuer) {
+          const nonMdocPresentation = Object.values(dcqlPresentation).find(
+            (presentation) => presentation instanceof MdocDeviceResponse === false
+          )
+
+          if (nonMdocPresentation) {
+            openIdTokenIssuer = this.getOpenIdTokenIssuerFromVerifiablePresentation(nonMdocPresentation)
+          }
+        }
+      } else if (
+        authorizationRequest.presentationDefinitions &&
+        authorizationRequest.presentationDefinitions.length > 0
+      ) {
         if (!presentationExchange) {
           throw new CredoError(
             'Authorization request included presentation definition. `presentationExchange` MUST be supplied to accept authorization requests.'
@@ -149,41 +182,13 @@ export class OpenId4VcSiopHolderService {
           presentationSubmission,
           vpTokenLocation: VPTokenLocation.AUTHORIZATION_RESPONSE,
         }
-      } else {
-        if (!dcql) {
-          throw new CredoError(
-            'Authorization request included dcql query. `dcql` MUST be supplied to accept authorization requests.'
-          )
-        }
-
-        const presentationRecord = await this.dcqlService.createPresentationRecord(agentContext, {
-          credentialQueryToCredential: dcql.credentials,
-          challenge: nonce,
-          domain: clientId,
-          openid4vp: {
-            mdocGeneratedNonce: authorizationResponseNonce,
-            responseUri,
-          },
-        })
-
-        dcqlOptions = {
-          encodedPresentationRecord: await this.dcqlService.getEncodedPresentationRecord(presentationRecord),
-        }
-
-        if (wantsIdToken && !openIdTokenIssuer) {
-          const nonMdocPresentation = Object.values(presentationRecord).find(
-            (presentation) => presentation instanceof MdocDeviceResponse === false
-          )
-
-          if (nonMdocPresentation) {
-            openIdTokenIssuer = this.getOpenIdTokenIssuerFromVerifiablePresentation(nonMdocPresentation)
-          }
-        }
       }
     } else if (options.presentationExchange) {
       throw new CredoError(
         '`presentationExchange` was supplied, but no presentation definition was found in the presentation request.'
       )
+    } else if (options.dcql) {
+      throw new CredoError('`dcql` was supplied, but no dcql_query was found in the presentation request.')
     }
 
     if (wantsIdToken) {

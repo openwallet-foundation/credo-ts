@@ -1,7 +1,7 @@
 import type { JsonObject } from '../../../types'
 import type { MdocRecord } from '../../mdoc'
 import type { SdJwtVcRecord } from '../../sd-jwt-vc'
-import type { W3cCredentialRecord } from '../../vc'
+import type { ClaimFormat, W3cCredentialRecord } from '../../vc'
 import type { MdocNameSpaces } from '@animo-id/mdoc'
 
 /**
@@ -10,11 +10,18 @@ import type { MdocNameSpaces } from '@animo-id/mdoc'
 export type DcqlCredentialsForRequest = Record<
   string,
   | {
+      claimFormat: ClaimFormat.MsoMdoc
       credentialRecord: MdocRecord
       disclosedPayload: MdocNameSpaces
     }
   | {
-      credentialRecord: W3cCredentialRecord | SdJwtVcRecord
+      claimFormat: ClaimFormat.SdJwtVc
+      credentialRecord: SdJwtVcRecord
+      disclosedPayload: JsonObject
+    }
+  | {
+      claimFormat: ClaimFormat.JwtVc | ClaimFormat.LdpVc
+      credentialRecord: W3cCredentialRecord
       disclosedPayload: JsonObject
     }
 >

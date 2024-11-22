@@ -2291,12 +2291,6 @@ describe('OpenId4Vc', () => {
       ],
     } satisfies DcqlQuery
 
-    // Hack to make it work with x5c check
-    // @ts-expect-error
-    verifier.agent.modules.openId4VcVerifier.config.options.baseUrl =
-      // @ts-expect-error
-      verifier.agent.modules.openId4VcVerifier.config.options.baseUrl.replace('http://', 'https://')
-
     const { authorizationRequest, verificationSession } =
       await verifier.agent.modules.openId4VcVerifier.createAuthorizationRequest({
         responseMode: 'direct_post.jwt',
@@ -2430,10 +2424,10 @@ describe('OpenId4Vc', () => {
     )
 
     expect(idToken).toBeUndefined()
-    const presentation = dcql?.presentationRecord['orgeuuniversity'] as MdocDeviceResponse
+    const presentation = dcql?.presentation['orgeuuniversity'] as MdocDeviceResponse
     expect(presentation.documents).toHaveLength(1)
 
-    const sdJwtPresentation = dcql?.presentationRecord['OpenBadgeCredentialDescriptor'] as SdJwtVc
+    const sdJwtPresentation = dcql?.presentation['OpenBadgeCredentialDescriptor'] as SdJwtVc
     expect(sdJwtPresentation.prettyClaims).toEqual({
       vct: 'OpenBadgeCredential',
       degree: 'bachelor',
