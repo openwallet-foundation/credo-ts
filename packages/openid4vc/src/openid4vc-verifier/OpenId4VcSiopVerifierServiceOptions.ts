@@ -13,7 +13,7 @@ import type {
   DcqlQuery,
   DcqlPresentation,
   DifPexPresentationWithDescriptor,
-  DcqlPresentationQueryResult,
+  DcqlPresentationResult,
 } from '@credo-ts/core'
 
 export type ResponseMode = 'direct_post' | 'direct_post.jwt'
@@ -81,7 +81,7 @@ export interface OpenId4VcSiopVerifiedAuthorizationResponsePresentationExchange 
 
 export interface OpenId4VcSiopVerifiedAuthorizationResponseDcql {
   presentation: DcqlPresentation
-  presentationQueryResult: DcqlPresentationQueryResult
+  presentationResult: DcqlPresentationResult
 }
 
 /**

@@ -59,10 +59,10 @@ import {
   RevocationVerification,
   RP,
   SupportedVersion,
-  assertValidDcqlPresentationRecord,
+  assertValidDcqlPresentationResult,
 } from '@sphereon/did-auth-siop'
 import {
-  extractPresentationRecordFromDcqlVpToken,
+  extractDcqlPresentationFromDcqlVpToken,
   extractPresentationsFromVpToken,
 } from '@sphereon/did-auth-siop/dist/authorization-response/OpenID4VP'
 import { filter, first, firstValueFrom, map, timeout } from 'rxjs'
@@ -375,20 +375,20 @@ export class OpenId4VcSiopVerifierService {
     if (dcqlQuery) {
       const dcqlQueryVpToken = authorizationResponse.payload.vp_token
       const dcqlPresentation = Object.fromEntries(
-        Object.entries(
-          extractPresentationRecordFromDcqlVpToken(dcqlQueryVpToken as string, { hasher: Hasher.hash })
-        ).map(([key, value]) => {
-          return [key, getVerifiablePresentationFromSphereonWrapped(value)]
-        })
+        Object.entries(extractDcqlPresentationFromDcqlVpToken(dcqlQueryVpToken as string, { hasher: Hasher.hash })).map(
+          ([key, value]) => {
+            return [key, getVerifiablePresentationFromSphereonWrapped(value)]
+          }
+        )
       )
 
-      const presentationQueryResult = await assertValidDcqlPresentationRecord(
+      const presentationQueryResult = await assertValidDcqlPresentationResult(
         authorizationResponse.payload.vp_token as string,
         dcqlQuery,
         { hasher: Hasher.hash }
       )
 
-      dcql = { presentation: dcqlPresentation, presentationQueryResult }
+      dcql = { presentation: dcqlPresentation, presentationResult: presentationQueryResult }
     }
 
     if (!idToken && !(presentationExchange || dcqlQuery)) {

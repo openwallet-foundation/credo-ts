@@ -1,6 +1,6 @@
 import type { AgentContext } from '../../agent'
 
-import { DcqlCredentialRepresentation, DcqlMdocRepresentation, DcqlQuery, DcqlSdJwtVcRepresentation } from 'dcql'
+import { DcqlCredential, DcqlMdocCredential, DcqlQuery, DcqlSdJwtVcCredential } from 'dcql'
 import { injectable } from 'tsyringe'
 
 import { JsonValue } from '../../types'
@@ -34,7 +34,7 @@ export class DcqlService {
    */
   private async queryCredentialsForDcqlQuery(
     agentContext: AgentContext,
-    dcqlQuery: DcqlQuery
+    dcqlQuery: DcqlQuery.Input
   ): Promise<Array<SdJwtVcRecord | W3cCredentialRecord | MdocRecord>> {
     const w3cCredentialRepository = agentContext.dependencyManager.resolve(W3cCredentialRepository)
 
@@ -47,47 +47,83 @@ export class DcqlService {
 
     const allRecords: Array<SdJwtVcRecord | W3cCredentialRecord | MdocRecord> = []
 
-    // query the wallet ourselves first to avoid the need to query the pex library for all
-    // credentials for every proof request
     const w3cCredentialRecords =
       formats.has('jwt_vc_json') || formats.has('jwt_vc_json-ld')
         ? await w3cCredentialRepository.getAll(agentContext)
         : []
     allRecords.push(...w3cCredentialRecords)
 
-    const sdJwtVcApi = this.getSdJwtVcApi(agentContext)
-    const sdJwtVcRecords = formats.has('vc+sd-jwt') ? await sdJwtVcApi.getAll() : []
-    allRecords.push(...sdJwtVcRecords)
+    // query the wallet ourselves first to avoid the need to query the pex library for all
+    // credentials for every proof request
+    const mdocDoctypes = dcqlQuery.credentials
+      .filter((credentialQuery) => credentialQuery.format === 'mso_mdoc')
+      .map((c) => c.meta?.doctype_value)
+    const allMdocCredentialQueriesSpecifyDoctype = mdocDoctypes.every((doctype) => doctype)
 
     const mdocApi = this.getMdocApi(agentContext)
-    const mdocRecords = formats.has('mso_mdoc') ? await mdocApi.getAll() : []
-    allRecords.push(...mdocRecords)
+    if (allMdocCredentialQueriesSpecifyDoctype) {
+      const mdocRecords = await mdocApi.findAllByQuery({
+        $or: mdocDoctypes.map((docType) => ({
+          docType: docType as string,
+        })),
+      })
+      allRecords.push(...mdocRecords)
+    } else {
+      const mdocRecords = await mdocApi.getAll()
+      allRecords.push(...mdocRecords)
+    }
+
+    // query the wallet ourselves first to avoid the need to query the pex library for all
+    // credentials for every proof request
+    const sdJwtVctValues = dcqlQuery.credentials
+      .filter((credentialQuery) => credentialQuery.format === 'vc+sd-jwt')
+      .flatMap((c) => c.meta?.vct_values)
+
+    const allSdJwtVcQueriesSpecifyDoctype = sdJwtVctValues.every((vct) => vct)
+
+    const sdJwtVcApi = this.getSdJwtVcApi(agentContext)
+    if (allSdJwtVcQueriesSpecifyDoctype) {
+      const sdjwtVcRecords = await sdJwtVcApi.findAllByQuery({
+        $or: sdJwtVctValues.map((vct) => ({
+          vct: vct as string,
+        })),
+      })
+      allRecords.push(...sdjwtVcRecords)
+    } else {
+      const sdJwtVcRecords = await sdJwtVcApi.getAll()
+      allRecords.push(...sdJwtVcRecords)
+    }
 
     return allRecords
   }
 
-  public async getCredentialsForRequest(agentContext: AgentContext, dcqlQuery: DcqlQuery): Promise<DcqlQueryResult> {
+  public async getCredentialsForRequest(
+    agentContext: AgentContext,
+    dcqlQuery: DcqlQuery.Input
+  ): Promise<DcqlQueryResult> {
     const credentialRecords = await this.queryCredentialsForDcqlQuery(agentContext, dcqlQuery)
 
-    const mappedCredentials: DcqlCredentialRepresentation[] = credentialRecords.map((record) => {
+    const dcqlCredentials: DcqlCredential[] = credentialRecords.map((record) => {
       if (record.type === 'MdocRecord') {
         return {
-          docType: record.getTags().docType,
+          credentialFormat: 'mso_mdoc',
+          doctype: record.getTags().docType,
           namespaces: Mdoc.fromBase64Url(record.base64Url).issuerSignedNamespaces,
-        } satisfies DcqlMdocRepresentation
+        } satisfies DcqlMdocCredential
       } else if (record.type === 'SdJwtVcRecord') {
         return {
+          credentialFormat: 'vc+sd-jwt',
           vct: record.getTags().vct,
           claims: this.getSdJwtVcApi(agentContext).fromCompact(record.compactSdJwtVc)
-            .prettyClaims as DcqlSdJwtVcRepresentation.Claims,
-        } satisfies DcqlSdJwtVcRepresentation
+            .prettyClaims as DcqlSdJwtVcCredential.Claims,
+        } satisfies DcqlSdJwtVcCredential
       } else {
         // TODO:
         throw new DcqlError('W3C credentials are not supported yet')
       }
     })
 
-    const queryResult = DcqlQuery.query(dcqlQuery, mappedCredentials)
+    const queryResult = DcqlQuery.query(DcqlQuery.parse(dcqlQuery), dcqlCredentials)
     const matchesWithRecord = Object.fromEntries(
       Object.entries(queryResult.credential_matches).map(([credential_query_id, result]) => {
         return [credential_query_id, { ...result, record: credentialRecords[result.credential_index] }]

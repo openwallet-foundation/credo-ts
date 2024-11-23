@@ -138,7 +138,7 @@ export class OpenId4VcSiopHolderService {
         })
 
         dcqlOptions = {
-          encodedPresentations: await this.dcqlService.getEncodedPresentations(dcqlPresentation),
+          dcqlPresentation: await this.dcqlService.getEncodedPresentations(dcqlPresentation),
         }
 
         if (wantsIdToken && !openIdTokenIssuer) {
