@@ -174,7 +174,7 @@ export class MdocDeviceResponse {
 
     const publicDeviceJwk = COSEKey.import(deviceKeyInfo.deviceKey).toJWK()
 
-    const deviceResponseBuilder = await DeviceResponse.from(mdoc)
+    const deviceResponseBuilder = DeviceResponse.from(mdoc)
       .usingPresentationDefinition(presentationDefinition)
       .usingSessionTranscriptForOID4VP(sessionTranscriptOptions)
       .authenticateWithSignature(publicDeviceJwk, 'ES256')
