@@ -2,7 +2,6 @@ import type { SdJwtVc, VerifiablePresentation, VerifiableCredential } from '@cre
 import type {
   W3CVerifiableCredential as SphereonW3cVerifiableCredential,
   W3CVerifiablePresentation as SphereonW3cVerifiablePresentation,
-  CompactSdJwtVc as SphereonCompactSdJwtVc,
   WrappedVerifiablePresentation,
 } from '@sphereon/ssi-types'
 
@@ -11,10 +10,7 @@ import {
   CredoError,
   W3cJsonLdVerifiablePresentation,
   W3cJwtVerifiablePresentation,
-  W3cJwtVerifiableCredential,
-  W3cJsonLdVerifiableCredential,
   JsonEncoder,
-  Mdoc,
   TypedArrayEncoder,
   MdocDeviceResponse,
   ClaimFormat,
@@ -22,36 +18,14 @@ import {
 
 export function getSphereonVerifiableCredential(
   verifiableCredential: VerifiableCredential
-): SphereonW3cVerifiableCredential | SphereonCompactSdJwtVc | string {
-  // encoded sd-jwt or jwt
-  if (typeof verifiableCredential === 'string') {
-    return verifiableCredential
-  } else if (verifiableCredential instanceof W3cJsonLdVerifiableCredential) {
-    return JsonTransformer.toJSON(verifiableCredential) as SphereonW3cVerifiableCredential
-  } else if (verifiableCredential instanceof W3cJwtVerifiableCredential) {
-    return verifiableCredential.serializedJwt
-  } else if (verifiableCredential instanceof Mdoc) {
-    return verifiableCredential.base64Url
-  } else {
-    return verifiableCredential.compact
-  }
+): SphereonW3cVerifiableCredential {
+  return verifiableCredential.encoded as SphereonW3cVerifiableCredential
 }
 
 export function getSphereonVerifiablePresentation(
   verifiablePresentation: VerifiablePresentation
-): SphereonW3cVerifiablePresentation | SphereonCompactSdJwtVc | string {
-  // encoded sd-jwt or jwt
-  if (typeof verifiablePresentation === 'string') {
-    return verifiablePresentation
-  } else if (verifiablePresentation instanceof W3cJsonLdVerifiablePresentation) {
-    return JsonTransformer.toJSON(verifiablePresentation) as SphereonW3cVerifiablePresentation
-  } else if (verifiablePresentation instanceof W3cJwtVerifiablePresentation) {
-    return verifiablePresentation.serializedJwt
-  } else if (verifiablePresentation instanceof MdocDeviceResponse) {
-    return verifiablePresentation.base64Url
-  } else {
-    return verifiablePresentation.compact
-  }
+): SphereonW3cVerifiablePresentation {
+  return verifiablePresentation.encoded as SphereonW3cVerifiablePresentation
 }
 
 export function getVerifiablePresentationFromSphereonWrapped(
@@ -71,6 +45,7 @@ export function getVerifiablePresentationFromSphereonWrapped(
     const header = JsonEncoder.fromBase64(encodedHeader)
     return {
       compact: wrappedVerifiablePresentation.presentation.compactSdJwtVc,
+      encoded: wrappedVerifiablePresentation.presentation.compactSdJwtVc,
       header,
       payload: wrappedVerifiablePresentation.presentation.signedPayload,
       prettyClaims: wrappedVerifiablePresentation.presentation.decodedPayload,

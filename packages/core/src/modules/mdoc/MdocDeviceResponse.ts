@@ -33,12 +33,23 @@ import { TypedArrayEncoder } from './../../utils'
 import { Mdoc } from './Mdoc'
 import { getMdocContext } from './MdocContext'
 import { MdocError } from './MdocError'
+import { nameSpacesRecordToMap } from './mdocUtil'
 
 export class MdocDeviceResponse {
   private constructor(public base64Url: string, public documents: Mdoc[]) {}
 
+  /**
+   * claim format is convenience method added to all credential instances
+   */
   public get claimFormat() {
     return ClaimFormat.MsoMdoc as const
+  }
+
+  /**
+   * Encoded is convenience method added to all credential instances
+   */
+  public get encoded() {
+    return this.base64Url
   }
 
   public static fromBase64Url(base64Url: string) {
@@ -151,7 +162,7 @@ export class MdocDeviceResponse {
 
     const disclosure = mdocLimitDisclosureToInputDescriptor(_mdoc, inputDescriptor)
     const disclosedPayloadAsRecord = Object.fromEntries(
-      Object.entries(disclosure).map(([namespace, issuerSignedItem]) => {
+      Array.from(disclosure.entries()).map(([namespace, issuerSignedItem]) => {
         return [
           namespace,
           Object.fromEntries(issuerSignedItem.map((item) => [item.elementIdentifier, item.elementValue])),
@@ -189,14 +200,23 @@ export class MdocDeviceResponse {
 
     const publicDeviceJwk = COSEKey.import(deviceKeyInfo.deviceKey).toJWK()
 
-    const deviceResponseBuilder = await DeviceResponse.from(mdoc)
+    const deviceResponseBuilder = DeviceResponse.from(mdoc)
       .usingSessionTranscriptForOID4VP(sessionTranscriptOptions)
       .authenticateWithSignature(publicDeviceJwk, 'ES256')
 
     if (options.presentationDefinition) {
       deviceResponseBuilder.usingPresentationDefinition(options.presentationDefinition)
     } else if (options.docRequests) {
-      const deviceRequest = DeviceRequest.from('1.0', options.docRequests)
+      const deviceRequest = DeviceRequest.from(
+        '1.0',
+        options.docRequests.map((r) => ({
+          ...r,
+          itemsRequestData: {
+            ...r.itemsRequestData,
+            nameSpaces: nameSpacesRecordToMap(r.itemsRequestData.nameSpaces),
+          },
+        }))
+      )
       deviceResponseBuilder.usingDeviceRequest(deviceRequest)
     }
 

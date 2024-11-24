@@ -6,13 +6,7 @@ import { injectable } from 'tsyringe'
 import { JsonValue } from '../../types'
 import { Mdoc, MdocApi, MdocDeviceResponse, MdocOpenId4VpSessionTranscriptOptions, MdocRecord } from '../mdoc'
 import { IPresentationFrame, SdJwtVcApi, SdJwtVcRecord } from '../sd-jwt-vc'
-import {
-  ClaimFormat,
-  W3cCredentialRecord,
-  W3cCredentialRepository,
-  W3cJsonLdVerifiablePresentation,
-  W3cJwtVerifiablePresentation,
-} from '../vc'
+import { ClaimFormat, W3cCredentialRecord, W3cCredentialRepository } from '../vc'
 
 import { DcqlError } from './DcqlError'
 import {
@@ -301,19 +295,7 @@ export class DcqlService {
   }
 
   public getEncodedPresentations(dcqlPresentation: DcqlPresentation): DcqlEncodedPresentations {
-    return Object.fromEntries(
-      Object.entries(dcqlPresentation).map(([key, value]) => {
-        if (value instanceof MdocDeviceResponse) {
-          return [key, value.base64Url]
-        } else if (value instanceof W3cJsonLdVerifiablePresentation) {
-          return [key, value.toJson()]
-        } else if (value instanceof W3cJwtVerifiablePresentation) {
-          return [key, value.encoded]
-        } else {
-          return [key, value.compact]
-        }
-      })
-    )
+    return Object.fromEntries(Object.entries(dcqlPresentation).map(([key, value]) => [key, value.encoded]))
   }
 
   private getSdJwtVcApi(agentContext: AgentContext) {

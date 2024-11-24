@@ -1,8 +1,7 @@
 import type { JsonObject } from '../../../types'
-import type { MdocRecord } from '../../mdoc'
+import type { MdocNameSpaces, MdocRecord } from '../../mdoc'
 import type { SdJwtVcRecord } from '../../sd-jwt-vc'
 import type { ClaimFormat, W3cCredentialRecord } from '../../vc'
-import type { MdocNameSpaces } from '@animo-id/mdoc'
 
 /**
  * Mapping of credential query IDs to the selected credential record and the disclosed payload.

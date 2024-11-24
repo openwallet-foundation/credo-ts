@@ -1113,7 +1113,9 @@ describe('OpenId4Vc', () => {
       },
       presentations: [
         {
+          claimFormat: 'vc+sd-jwt',
           compact: expect.any(String),
+          encoded: expect.any(String),
           header: {
             alg: 'EdDSA',
             kid: '#z6MkrzQPBr4pyqC776KKtrz13SchM5ePPbssuPuQZb5t4uKQ',
@@ -1343,7 +1345,9 @@ describe('OpenId4Vc', () => {
       },
       presentations: [
         {
+          claimFormat: 'vc+sd-jwt',
           compact: expect.any(String),
+          encoded: expect.any(String),
           header: {
             alg: 'EdDSA',
             kid: '#z6MkrzQPBr4pyqC776KKtrz13SchM5ePPbssuPuQZb5t4uKQ',
@@ -1654,7 +1658,9 @@ describe('OpenId4Vc', () => {
       },
       presentations: [
         {
+          claimFormat: 'vc+sd-jwt',
           compact: expect.any(String),
+          encoded: expect.any(String),
           header: {
             alg: 'EdDSA',
             kid: '#z6MkrzQPBr4pyqC776KKtrz13SchM5ePPbssuPuQZb5t4uKQ',
@@ -1684,7 +1690,9 @@ describe('OpenId4Vc', () => {
           },
         },
         {
+          claimFormat: 'vc+sd-jwt',
           compact: expect.any(String),
+          encoded: expect.any(String),
           header: {
             alg: 'EdDSA',
             kid: '#z6MkrzQPBr4pyqC776KKtrz13SchM5ePPbssuPuQZb5t4uKQ',
@@ -2162,9 +2170,7 @@ describe('OpenId4Vc', () => {
               issuerSignedDocument: {
                 docType: 'org.eu.university',
                 issuerSigned: {
-                  nameSpaces: {
-                    'eu.europa.ec.eudi.pid.1': [{}, {}],
-                  },
+                  nameSpaces: new Map([['eu.europa.ec.eudi.pid.1', [{}, {}]]]),
                   issuerAuth: expect.any(Object),
                 },
                 deviceSigned: expect.any(Object),
@@ -2174,7 +2180,9 @@ describe('OpenId4Vc', () => {
           ],
         },
         {
+          claimFormat: 'vc+sd-jwt',
           compact: expect.any(String),
+          encoded: expect.any(String),
           header: {
             alg: 'EdDSA',
             kid: '#z6MkrzQPBr4pyqC776KKtrz13SchM5ePPbssuPuQZb5t4uKQ',
@@ -2689,7 +2697,9 @@ describe('OpenId4Vc', () => {
       },
       presentations: [
         {
+          claimFormat: 'vc+sd-jwt',
           compact: expect.any(String),
+          encoded: expect.any(String),
           header: {
             alg: 'EdDSA',
             kid: '#z6MkrzQPBr4pyqC776KKtrz13SchM5ePPbssuPuQZb5t4uKQ',
@@ -2719,7 +2729,9 @@ describe('OpenId4Vc', () => {
           },
         },
         {
+          claimFormat: 'vc+sd-jwt',
           compact: expect.any(String),
+          encoded: expect.any(String),
           header: {
             alg: 'EdDSA',
             kid: '#z6MkrzQPBr4pyqC776KKtrz13SchM5ePPbssuPuQZb5t4uKQ',

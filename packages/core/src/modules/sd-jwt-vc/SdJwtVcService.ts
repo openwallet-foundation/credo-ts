@@ -38,7 +38,15 @@ export interface SdJwtVc<
   Header extends SdJwtVcHeader = SdJwtVcHeader,
   Payload extends SdJwtVcPayload = SdJwtVcPayload
 > {
+  /**
+   * claim format is convenience method added to all credential instances
+   */
   claimFormat: ClaimFormat.SdJwtVc
+  /**
+   * encoded is convenience method added to all credential instances
+   */
+  encoded: string
+
   compact: string
   header: Header
 
@@ -136,6 +144,7 @@ export class SdJwtVcService {
       header: header,
       payload: sdjwtPayload,
       claimFormat: ClaimFormat.SdJwtVc,
+      encoded: compact,
     } satisfies SdJwtVc<typeof header, Payload>
   }
 
@@ -230,6 +239,7 @@ export class SdJwtVcService {
       compact: compactSdJwtVc,
       prettyClaims: await sdJwtVc.getClaims(sdJwtVcHasher),
       claimFormat: ClaimFormat.SdJwtVc,
+      encoded: compactSdJwtVc,
     } satisfies SdJwtVc<Header, Payload>
 
     try {

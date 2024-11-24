@@ -164,7 +164,7 @@ describe('OpenId4Vc Presentation During Issuance', () => {
 
             credential = descriptor.credential
           } else {
-            const presentation = verification.dcql.presentationRecord[verification.dcql.query.credentials[0].id]
+            const presentation = verification.dcql.presentation[verification.dcql.presentationResult.credentials[0].id]
 
             if (presentation.claimFormat !== ClaimFormat.SdJwtVc) {
               throw new Error('Expected preentation with sd-jwt vc format')
