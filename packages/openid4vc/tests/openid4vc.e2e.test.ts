@@ -2153,9 +2153,7 @@ describe('OpenId4Vc', () => {
               issuerSignedDocument: {
                 docType: 'org.eu.university',
                 issuerSigned: {
-                  nameSpaces: {
-                    'eu.europa.ec.eudi.pid.1': [{}, {}],
-                  },
+                  nameSpaces: new Map([['eu.europa.ec.eudi.pid.1', [{}, {}]]]),
                   issuerAuth: expect.any(Object),
                 },
                 deviceSigned: expect.any(Object),
