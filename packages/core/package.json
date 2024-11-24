@@ -35,7 +35,7 @@
     "@peculiar/asn1-schema": "^2.3.8",
     "@peculiar/asn1-x509": "^2.3.8",
     "@peculiar/x509": "^1.11.0",
-    "@animo-id/mdoc": "0.2.38",
+    "@animo-id/mdoc": "0.2.39",
     "@sd-jwt/core": "^0.7.0",
     "@sd-jwt/decode": "^0.7.0",
     "@sd-jwt/jwt-status-list": "^0.7.0",
