@@ -1,4 +1,4 @@
-import type { MdocNameSpacesRecord, MdocRecord } from '../../mdoc'
+import type { MdocNameSpaces, MdocRecord } from '../../mdoc'
 import type { SdJwtVcRecord } from '../../sd-jwt-vc'
 import type { ClaimFormat, W3cCredentialRecord } from '../../vc'
 
@@ -133,7 +133,7 @@ export type SubmissionEntryCredential =
   | {
       type: ClaimFormat.MsoMdoc
       credentialRecord: MdocRecord
-      disclosedPayload: MdocNameSpacesRecord
+      disclosedPayload: MdocNameSpaces
     }
 
 /**

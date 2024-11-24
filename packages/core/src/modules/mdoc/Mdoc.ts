@@ -1,4 +1,4 @@
-import type { MdocSignOptions, MdocNameSpacesRecord, MdocVerifyOptions } from './MdocOptions'
+import type { MdocSignOptions, MdocNameSpaces, MdocVerifyOptions } from './MdocOptions'
 import type { AgentContext } from '../../agent'
 import type { IssuerSignedDocument } from '@animo-id/mdoc'
 
@@ -75,7 +75,7 @@ export class Mdoc {
     return this.issuerSignedDocument.issuerSigned.issuerAuth.decodedPayload.validityInfo
   }
 
-  public get deviceSignedNamespaces(): MdocNameSpacesRecord {
+  public get deviceSignedNamespaces(): MdocNameSpaces {
     if (this.issuerSignedDocument instanceof DeviceSignedDocument === false) {
       throw new MdocError(`Cannot get 'device-namespaces from a IssuerSignedDocument. Must be a DeviceSignedDocument.`)
     }
@@ -88,7 +88,7 @@ export class Mdoc {
     )
   }
 
-  public get issuerSignedNamespaces(): MdocNameSpacesRecord {
+  public get issuerSignedNamespaces(): MdocNameSpaces {
     return Object.fromEntries(
       Array.from(this.issuerSignedDocument.allIssuerSignedNamespaces.entries()).map(([namespace, value]) => [
         namespace,
