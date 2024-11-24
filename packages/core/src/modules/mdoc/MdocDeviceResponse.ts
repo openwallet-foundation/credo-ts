@@ -139,7 +139,7 @@ export class MdocDeviceResponse {
 
     const disclosure = mdocLimitDisclosureToInputDescriptor(_mdoc, inputDescriptor)
     const disclosedPayloadAsRecord = Object.fromEntries(
-      Object.entries(disclosure).map(([namespace, issuerSignedItem]) => {
+      Array.from(disclosure.entries()).map(([namespace, issuerSignedItem]) => {
         return [
           namespace,
           Object.fromEntries(issuerSignedItem.map((item) => [item.elementIdentifier, item.elementValue])),
