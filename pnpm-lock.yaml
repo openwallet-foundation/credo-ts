@@ -439,6 +439,12 @@ importers:
       '@animo-id/mdoc':
         specifier: 0.2.39
         version: 0.2.39
+      '@animo-id/pex':
+        specifier: 4.1.1-alpha.0
+        version: 4.1.1-alpha.0
+      '@astronautlabs/jsonpath':
+        specifier: ^1.1.2
+        version: 1.1.2
       '@digitalcredentials/jsonld':
         specifier: ^6.0.0
         version: 6.0.0(expo@51.0.29(@babel/core@7.25.2)(@babel/preset-env@7.25.8(@babel/core@7.25.2)))(react-native@0.71.19(@babel/core@7.25.2)(@babel/preset-env@7.25.8(@babel/core@7.25.2))(react@18.3.1))(web-streams-polyfill@3.3.3)
@@ -487,9 +493,6 @@ importers:
       '@sd-jwt/utils':
         specifier: ^0.7.0
         version: 0.7.2
-      '@sphereon/pex':
-        specifier: 5.0.0-unstable.25
-        version: 5.0.0-unstable.25
       '@sphereon/pex-models':
         specifier: ^2.3.1
         version: 2.3.1
@@ -523,9 +526,6 @@ importers:
       did-resolver:
         specifier: ^4.1.0
         version: 4.1.0
-      jsonpath:
-        specifier: ^1.1.1
-        version: 1.1.1
       lru_map:
         specifier: ^0.4.1
         version: 0.4.1
@@ -566,9 +566,6 @@ importers:
       '@types/events':
         specifier: ^3.0.0
         version: 3.0.3
-      '@types/jsonpath':
-        specifier: ^0.2.4
-        version: 0.2.4
       '@types/luxon':
         specifier: ^3.2.0
         version: 3.4.2
@@ -945,6 +942,10 @@ packages:
 
   '@animo-id/oid4vci@0.1.4':
     resolution: {integrity: sha512-0Tc8RFpY5dW/MOVA2Fz8f7giM/eIAk3G3OZUjy5POqg5Tkiv92CcaOxMk84JBNAMOks3LpKjf9PAiNh6pCDzeQ==}
+
+  '@animo-id/pex@4.1.1-alpha.0':
+    resolution: {integrity: sha512-6ieHhH9UE9DLFOJegMCabG3qUFlQk4TLhBefxInpyjx2Ly6kuloVMScJYcnQTs/E6nuHGMd7ebUaKy4+0+ZbOA==}
+    engines: {node: '>=18'}
 
   '@animo-id/react-native-bbs-signatures@0.1.0':
     resolution: {integrity: sha512-7qvsiWhGfUev8ngE8YzF6ON9PtCID5LiYVYM4EC5eyj80gCdhx3R46CI7K1qbqIlGsoTYQ/Xx5Ubo5Ji9eaUEA==}
@@ -2946,10 +2947,6 @@ packages:
     resolution: {integrity: sha512-CZc+kr8cJqPsFSpg4kHyamr5oB5xLVP2E5eJ0pbetOfOE2uSxqk0/A8zGazcPhU1zZILrO51hD4vW/hJRgtKJQ==}
     engines: {node: '>=18'}
 
-  '@sphereon/pex@5.0.0-unstable.25':
-    resolution: {integrity: sha512-EUWfGa6t20PPkYf+zbfWXhc1sSWiFNywbRah8R6grJPU738pfwWpZPunSEY3x0CoxAVaSVXn91wZ/sxmgPCFkA==}
-    engines: {node: '>=18'}
-
   '@sphereon/ssi-sdk-ext.did-utils@0.24.1-unstable.130':
     resolution: {integrity: sha512-I+0VjitRjisABWm8RtTPQG57tFwfUS13Wud30OvBoADRxnaA0guUrkS82AYtV6YD0TBHdrd0D6a0RCJwK9SvDg==}
 
@@ -3157,9 +3154,6 @@ packages:
 
   '@types/json5@0.0.29':
     resolution: {integrity: sha512-dRLjCWHYg4oaA77cxO64oO+7JwCwnIzkZPdrrC71jQmQtlhM556pwKo5bUzqvZndkVbeFLIIi+9TC40JNF5hNQ==}
-
-  '@types/jsonpath@0.2.4':
-    resolution: {integrity: sha512-K3hxB8Blw0qgW6ExKgMbXQv2UPZBoE2GqLpVY+yr7nMD2Pq86lsuIzyAaiQ7eMqFL5B6di6pxSkogLJEyEHoGA==}
 
   '@types/keygrip@1.0.6':
     resolution: {integrity: sha512-lZuNAY9xeJt7Bx4t4dx0rYCDqGPW8RXhQZK1td7d4H6E9zYbLoOtjBvfwdTKpsyxQI/2jv+armjX/RW+ZNpXOQ==}
@@ -4584,11 +4578,6 @@ packages:
     resolution: {integrity: sha512-oruZaFkjorTpF32kDSI5/75ViwGeZginGGy2NoOSg3Q9bnwlnmDm4HLnkl0RE3n+njDXR037aY1+x58Z/zFdwQ==}
     engines: {node: ^12.22.0 || ^14.17.0 || >=16.0.0}
 
-  esprima@1.2.2:
-    resolution: {integrity: sha512-+JpPZam9w5DuJ3Q67SqsMGtiHKENSMRVoxvArfJZK01/BfLEObtZ6orJa/MtoGNR/rfMgp5837T41PAmTwAv/A==}
-    engines: {node: '>=0.4.0'}
-    hasBin: true
-
   esprima@4.0.1:
     resolution: {integrity: sha512-eGuFFw7Upda+g4p+QHvnW0RyTX/SVeJBDM/gCtMARO0cLuT2HcEKnTPvhjV6aGeqrCB/sbNop0Kszm0jsaWU4A==}
     engines: {node: '>=4'}
@@ -5776,9 +5765,6 @@ packages:
   jsonld@8.3.2:
     resolution: {integrity: sha512-MwBbq95szLwt8eVQ1Bcfwmgju/Y5P2GdtlHE2ncyfuYjIdEhluUVyj1eudacf1mOkWIoS9GpDBTECqhmq7EOaA==}
     engines: {node: '>=14'}
-
-  jsonpath@1.1.1:
-    resolution: {integrity: sha512-l6Cg7jRpixfbgoWgkrl77dgEj8RPvND0wMH6TwQmi9Qs4TFfS9u5cUFnbeKTwj5ga5Y3BTGGNI28k117LJ009w==}
 
   jsonpointer@5.0.1:
     resolution: {integrity: sha512-p/nXbhSEcu3pZRdkW1OfJhpsVtW1gd4Wa1fnQc9YLiTfAjn0312eMKimbdIQzuZl9aa9xUGaRlP9T/CJE/ditQ==}
@@ -7801,9 +7787,6 @@ packages:
   unbox-primitive@1.0.2:
     resolution: {integrity: sha512-61pPlCD9h51VoreyJ0BReideM3MDKMKnh6+V9L08331ipq6Q8OFXZYiqP6n/tbHx4s5I9uRhcye6BrbkizkBDw==}
 
-  underscore@1.12.1:
-    resolution: {integrity: sha512-hEQt0+ZLDVUMhebKxL4x1BTtDY7bavVofhZ9KZ4aI26X9SRaE+Y3m83XUL1UP2jn8ynjndwCCpEHdUG+9pP1Tw==}
-
   undici-types@5.26.5:
     resolution: {integrity: sha512-JlCMO+ehdEIKqlFxk6IfVoAUVmgz7cU7zD/h9XZ0qzeosSHmUJVOzSQvvYSYWXkFXC+IfLKSIffhv0sVZup6pA==}
 
@@ -8241,6 +8224,22 @@ snapshots:
       valibot: 0.42.1(typescript@5.5.4)
     transitivePeerDependencies:
       - typescript
+
+  '@animo-id/pex@4.1.1-alpha.0':
+    dependencies:
+      '@astronautlabs/jsonpath': 1.1.2
+      '@sd-jwt/decode': 0.7.2
+      '@sd-jwt/present': 0.7.2
+      '@sd-jwt/types': 0.7.2
+      '@sphereon/pex-models': 2.3.1
+      '@sphereon/ssi-types': 0.30.2-next.135
+      ajv: 8.17.1
+      ajv-formats: 2.1.1(ajv@8.17.1)
+      jwt-decode: 3.1.2
+      nanoid: 3.3.7
+      uint8arrays: 3.1.1
+    transitivePeerDependencies:
+      - supports-color
 
   '@animo-id/react-native-bbs-signatures@0.1.0(react-native@0.71.19(@babel/core@7.25.8)(@babel/preset-env@7.25.8(@babel/core@7.25.8))(react@18.3.1))(react@18.3.1)':
     dependencies:
@@ -12536,22 +12535,6 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@sphereon/pex@5.0.0-unstable.25':
-    dependencies:
-      '@astronautlabs/jsonpath': 1.1.2
-      '@sd-jwt/decode': 0.7.2
-      '@sd-jwt/present': 0.7.2
-      '@sd-jwt/types': 0.7.2
-      '@sphereon/pex-models': 2.3.1
-      '@sphereon/ssi-types': 0.30.2-next.135
-      ajv: 8.17.1
-      ajv-formats: 2.1.1(ajv@8.17.1)
-      jwt-decode: 3.1.2
-      nanoid: 3.3.7
-      uint8arrays: 3.1.1
-    transitivePeerDependencies:
-      - supports-color
-
   '@sphereon/ssi-sdk-ext.did-utils@0.24.1-unstable.130(ts-node@10.9.2(@types/node@18.18.8)(typescript@5.5.4))':
     dependencies:
       '@ethersproject/networks': 5.7.1
@@ -13021,8 +13004,6 @@ snapshots:
   '@types/json-schema@7.0.15': {}
 
   '@types/json5@0.0.29': {}
-
-  '@types/jsonpath@0.2.4': {}
 
   '@types/keygrip@1.0.6': {}
 
@@ -14880,8 +14861,6 @@ snapshots:
       acorn-jsx: 5.3.2(acorn@8.12.1)
       eslint-visitor-keys: 3.4.3
 
-  esprima@1.2.2: {}
-
   esprima@4.0.1: {}
 
   esquery@1.6.0:
@@ -16555,12 +16534,6 @@ snapshots:
       rdf-canonize: 3.4.0
     transitivePeerDependencies:
       - web-streams-polyfill
-
-  jsonpath@1.1.1:
-    dependencies:
-      esprima: 1.2.2
-      static-eval: 2.0.2
-      underscore: 1.12.1
 
   jsonpointer@5.0.1: {}
 
@@ -18892,8 +18865,6 @@ snapshots:
       has-bigints: 1.0.2
       has-symbols: 1.0.3
       which-boxed-primitive: 1.0.2
-
-  underscore@1.12.1: {}
 
   undici-types@5.26.5: {}
 
