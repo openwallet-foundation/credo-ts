@@ -8339,7 +8339,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@animo-id/react-native-bbs-signatures@0.1.0(react-native@0.71.19(@babel/core@7.26.0)(@babel/preset-env@7.26.0(@babel/core@7.26.0))(react@18.3.1))(react@18.3.1)':
+  '@animo-id/react-native-bbs-signatures@0.1.0(react-native@0.71.19(@babel/core@7.25.8)(@babel/preset-env@7.25.8(@babel/core@7.25.8))(react@18.3.1))(react@18.3.1)':
     dependencies:
       react: 18.3.1
       react-native: 0.71.19(@babel/core@7.26.0)(@babel/preset-env@7.26.0(@babel/core@7.26.0))(react@18.3.1)
