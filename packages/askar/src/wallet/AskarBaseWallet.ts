@@ -206,7 +206,7 @@ export abstract class AskarBaseWallet implements Wallet {
 
         // Generate a hardware-backed P-256 keypair
         secureEnvironment.generateKeypair(kid)
-        const publicKeyBytes = secureEnvironment.getPublicBytesForKeyId(kid)
+        const publicKeyBytes = await secureEnvironment.getPublicBytesForKeyId(kid)
         const publicKeyBase58 = TypedArrayEncoder.toBase58(publicKeyBytes)
 
         await this.storeSecureEnvironmentKeyById({
