@@ -12,6 +12,7 @@ import {
 } from '@animo-id/mdoc'
 
 import { getJwkFromKey, JwaSignatureAlgorithm } from '../../crypto'
+import { ClaimFormat } from '../vc'
 import { X509Certificate, X509ModuleConfig } from '../x509'
 
 import { TypedArrayEncoder } from './../../utils'
@@ -27,6 +28,20 @@ export class Mdoc {
   private constructor(private issuerSignedDocument: IssuerSignedDocument) {
     const issuerSigned = issuerSignedDocument.prepare().get('issuerSigned')
     this.base64Url = TypedArrayEncoder.toBase64URL(cborEncode(issuerSigned))
+  }
+
+  /**
+   * claim format is convenience method added to all credential instances
+   */
+  public get claimFormat() {
+    return ClaimFormat.MsoMdoc as const
+  }
+
+  /**
+   * Encoded is convenience method added to all credential instances
+   */
+  public get encoded() {
+    return this.base64Url
   }
 
   public static fromBase64Url(mdocBase64Url: string, expectedDocType?: string): Mdoc {
