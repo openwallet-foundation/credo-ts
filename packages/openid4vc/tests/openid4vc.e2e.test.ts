@@ -2339,7 +2339,7 @@ describe('OpenId4Vc', () => {
             success: true,
             output: {
               doctype: 'org.eu.university',
-              credentialFormat: 'mso_mdoc',
+              credential_format: 'mso_mdoc',
               namespaces: {
                 'eu.europa.ec.eudi.pid.1': {
                   name: 'John Doe',
@@ -2347,7 +2347,7 @@ describe('OpenId4Vc', () => {
                 },
               },
             },
-            credential_index: 0,
+            input_credential_index: 0,
             claim_set_index: undefined,
             all: expect.any(Array),
             record: expect.any(MdocRecord),
@@ -2356,13 +2356,13 @@ describe('OpenId4Vc', () => {
             typed: true,
             success: true,
             output: {
-              credentialFormat: 'vc+sd-jwt',
+              credential_format: 'vc+sd-jwt',
               vct: 'OpenBadgeCredential',
               claims: {
                 university: 'innsbruck',
               },
             },
-            credential_index: 1,
+            input_credential_index: 1,
             claim_set_index: undefined,
             all: expect.any(Array),
             record: expect.any(SdJwtVcRecord),

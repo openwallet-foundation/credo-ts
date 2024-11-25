@@ -3,9 +3,9 @@ import type { AgentContext } from '../../agent'
 import { DcqlCredential, DcqlMdocCredential, DcqlQuery, DcqlSdJwtVcCredential } from 'dcql'
 import { injectable } from 'tsyringe'
 
-import { JsonValue } from '../../types'
 import { Mdoc, MdocApi, MdocDeviceResponse, MdocOpenId4VpSessionTranscriptOptions, MdocRecord } from '../mdoc'
-import { IPresentationFrame, SdJwtVcApi, SdJwtVcRecord } from '../sd-jwt-vc'
+import { SdJwtVcApi, SdJwtVcRecord, SdJwtVcService } from '../sd-jwt-vc'
+import { buildDisclosureFrameForPayload } from '../sd-jwt-vc/disclosureFrame'
 import { ClaimFormat, W3cCredentialRecord, W3cCredentialRepository } from '../vc'
 
 import { DcqlError } from './DcqlError'
@@ -100,13 +100,13 @@ export class DcqlService {
     const dcqlCredentials: DcqlCredential[] = credentialRecords.map((record) => {
       if (record.type === 'MdocRecord') {
         return {
-          credentialFormat: 'mso_mdoc',
+          credential_format: 'mso_mdoc',
           doctype: record.getTags().docType,
           namespaces: Mdoc.fromBase64Url(record.base64Url).issuerSignedNamespaces,
         } satisfies DcqlMdocCredential
       } else if (record.type === 'SdJwtVcRecord') {
         return {
-          credentialFormat: 'vc+sd-jwt',
+          credential_format: 'vc+sd-jwt',
           vct: record.getTags().vct,
           claims: this.getSdJwtVcApi(agentContext).fromCompact(record.compactSdJwtVc)
             .prettyClaims as DcqlSdJwtVcCredential.Claims,
@@ -120,7 +120,18 @@ export class DcqlService {
     const queryResult = DcqlQuery.query(DcqlQuery.parse(dcqlQuery), dcqlCredentials)
     const matchesWithRecord = Object.fromEntries(
       Object.entries(queryResult.credential_matches).map(([credential_query_id, result]) => {
-        return [credential_query_id, { ...result, record: credentialRecords[result.credential_index] }]
+        if (result.success) {
+          if (result.output.credential_format === 'vc+sd-jwt') {
+            const sdJwtVcRecord = credentialRecords[result.input_credential_index] as SdJwtVcRecord
+            agentContext.dependencyManager
+              .resolve(SdJwtVcService)
+              .applyDisclosuresForPayload(sdJwtVcRecord.compactSdJwtVc, result.output.claims)
+          }
+
+          return [credential_query_id, { ...result, record: credentialRecords[result.input_credential_index] }]
+        } else {
+          return [credential_query_id, result]
+        }
       })
     )
 
@@ -207,21 +218,6 @@ export class DcqlService {
     return DcqlQuery.parse(dcqlQuery)
   }
 
-  // TODO: this IS WRONG
-  private createPresentationFrame(obj: Record<string, JsonValue>): IPresentationFrame {
-    const frame: IPresentationFrame = {}
-
-    for (const [key, value] of Object.entries(obj)) {
-      if (typeof value === 'object' && value !== null) {
-        frame[key] = true
-      } else {
-        frame[key] = !!value
-      }
-    }
-
-    return frame
-  }
-
   public async createPresentation(
     agentContext: AgentContext,
     options: {
@@ -268,7 +264,7 @@ export class DcqlService {
 
         dcqlPresentation[credentialQueryId] = MdocDeviceResponse.fromBase64Url(deviceResponseBase64Url)
       } else if (presentationToCreate.claimFormat === ClaimFormat.SdJwtVc) {
-        const presentationFrame = this.createPresentationFrame(presentationToCreate.disclosedPayload)
+        const presentationFrame = buildDisclosureFrameForPayload(presentationToCreate.disclosedPayload)
 
         if (!domain) {
           throw new DcqlError('Missing domain property for creating SdJwtVc presentation.')

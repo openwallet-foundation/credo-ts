@@ -27,7 +27,7 @@
   },
   "dependencies": {
     "@credo-ts/core": "workspace:*",
-    "@sphereon/did-auth-siop": "https://gitpkg.vercel.app/animo/OID4VC/packages/siop-oid4vp?funke",
+    "@sphereon/did-auth-siop": "link:/../../../CODE/OID4VC/packages/siop-oid4vp",
     "@sphereon/oid4vc-common": "0.16.1-fix.173",
     "@sphereon/ssi-types": "0.30.2-next.135",
     "class-transformer": "^0.5.1",

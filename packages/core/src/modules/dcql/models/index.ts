@@ -20,9 +20,14 @@ export type DcqlMdocCredential = _DcqlMdocCredential.Model['Input']
 export type DcqlSdJwtVcCredential = _DcqlSdJwtVcCredential.Model['Input']
 export type DcqlW3cVcCredential = _DcqlW3cVcCredential.Model['Input']
 
-export type DcqlMatchWithRecord = {
-  record: W3cCredentialRecord | SdJwtVcRecord | MdocRecord
-} & _DcqlQueryResult['credential_matches'][number]
+export type DcqlMatchWithRecord =
+  | (_DcqlQueryResult['credential_matches'][number] & {
+      success: true
+      record: MdocRecord | SdJwtVcRecord | W3cCredentialRecord
+    })
+  | (_DcqlQueryResult['credential_matches'][number] & {
+      success: false
+    })
 
 export type DcqlQueryResult = Omit<_DcqlQueryResult.Input, 'credential_matches'> & {
   credential_matches: Record<string, DcqlMatchWithRecord>

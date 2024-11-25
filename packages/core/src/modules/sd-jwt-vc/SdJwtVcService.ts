@@ -22,6 +22,7 @@ import { AgentContext } from '../../agent'
 import { JwtPayload, Jwk, getJwkFromJson, getJwkFromKey, Hasher } from '../../crypto'
 import { CredoError } from '../../error'
 import { X509Service } from '../../modules/x509/X509Service'
+import { JsonObject } from '../../types'
 import { TypedArrayEncoder, nowInSeconds } from '../../utils'
 import { getDomainFromUrl } from '../../utils/domain'
 import { fetchWithTimeout } from '../../utils/fetch'
@@ -31,7 +32,7 @@ import { X509Certificate, X509ModuleConfig } from '../x509'
 
 import { SdJwtVcError } from './SdJwtVcError'
 import { decodeSdJwtVc, sdJwtVcHasher } from './decodeSdJwtVc'
-import { buildDisclosureFrameFromPayload } from './disclosureFrame'
+import { buildDisclosureFrameForPayload } from './disclosureFrame'
 import { SdJwtVcRecord, SdJwtVcRepository } from './repository'
 import { SdJwtVcTypeMetadata } from './typeMetadata'
 
@@ -158,9 +159,9 @@ export class SdJwtVcService {
     return decodeSdJwtVc(compactSdJwtVc, typeMetadata)
   }
 
-  public applyDisclosuresForPayload(compactSdJwtVc: string, requestedPayload: Record<string, unknown>): SdJwtVc {
+  public applyDisclosuresForPayload(compactSdJwtVc: string, requestedPayload: JsonObject): SdJwtVc {
     const decoded = decodeSdJwtSync(compactSdJwtVc, Hasher.hash)
-    const presentationFrame = buildDisclosureFrameFromPayload(requestedPayload) ?? {}
+    const presentationFrame = buildDisclosureFrameForPayload(requestedPayload) ?? {}
 
     if (decoded.kbJwt) {
       throw new SdJwtVcError('Cannot apply limit disclosure on an sd-jwt with key binding jwt')

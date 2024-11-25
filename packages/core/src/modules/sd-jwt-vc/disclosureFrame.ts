@@ -1,32 +1,23 @@
+import type { JsonObject } from '../../types'
+
+import { isObject } from 'class-validator'
+
 type DisclosureFrame = {
   [key: string]: boolean | DisclosureFrame
 }
 
-export function buildDisclosureFrameFromPayload(input: Record<string, unknown>): DisclosureFrame | null {
-  // Handle objects recursively
-  const result: DisclosureFrame = {}
-
-  // Base case: input is null or undefined
-  if (input === null || input === undefined) {
-    return result
-  }
-
-  for (const [key, value] of Object.entries(input)) {
-    // Ignore non-value values
-    if (value === null || value === undefined) continue
-
-    if (typeof value === 'object') {
+export function buildDisclosureFrameForPayload(input: JsonObject): DisclosureFrame {
+  return Object.fromEntries(
+    Object.entries(input).map(([key, value]) => {
+      // TODO: Array disclosure frames are not yet supported - treating entire array as disclosed
       if (Array.isArray(value)) {
-        // TODO: Array disclosure frames are not yet supported - treating entire array as disclosed
-        result[key] = true
+        return [key, true]
+      } else if (isObject(value)) {
+        if (Object.keys.length === 0) return [key, false]
+        return [key, buildDisclosureFrameForPayload(value)]
       } else {
-        result[key] = buildDisclosureFrameFromPayload(value as Record<string, unknown>) ?? false
+        return [key, true]
       }
-    } else {
-      // Handle primitive values
-      result[key] = true
-    }
-  }
-
-  return Object.keys(result).length > 0 ? result : null
+    })
+  )
 }
