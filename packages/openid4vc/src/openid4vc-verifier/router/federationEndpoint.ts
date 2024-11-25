@@ -119,13 +119,12 @@ export function configureFederationEndpoint(
             jwks: {
               keys: [{ kid, alg, ...jwk.toJson() }],
             },
-            // TODO: Think about this how we want to provide this
             authority_hints: authorityHints,
             metadata: {
               federation_entity: {
                 organization_name: rpMetadata.client_name,
                 logo_uri: rpMetadata.logo_uri,
-                federation_fetch_endpoint: `${verifierConfig.baseUrl}/openid-federation/fetch`,
+                federation_fetch_endpoint: `${verifierEntityId}/openid-federation/fetch`,
               },
               openid_relying_party: {
                 ...rpMetadata,
@@ -221,10 +220,19 @@ export function configureFederationEndpoint(
       federationKeyMapping.set(verifier.verifierId, federationKey)
     }
 
+    const jwk = getJwkFromKey(federationKey)
+    const alg = jwk.supportedSignatureAlgorithms[0]
+    const kid = federationKey.fingerprint
+
     const entityStatement = await createEntityStatement({
+      header: {
+        kid,
+        alg,
+        typ: 'entity-statement+jwt',
+      },
       jwk: {
-        ...getJwkFromKey(federationKey).toJson(),
-        kid: federationKey.fingerprint,
+        ...jwk.toJson(),
+        kid,
       },
       claims: {
         sub: sub,
