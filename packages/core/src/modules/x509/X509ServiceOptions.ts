@@ -19,6 +19,7 @@ export interface X509ValidateCertificateChainOptions {
 export interface X509CreateSelfSignedCertificateOptions {
   key: Key
   extensions?: ExtensionInput
+  includeAuthorityKeyIdentifier?: boolean
   notBefore?: Date
   notAfter?: Date
   name?: string

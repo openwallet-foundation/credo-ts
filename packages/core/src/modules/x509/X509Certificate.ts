@@ -2,7 +2,12 @@ import type { X509CreateSelfSignedCertificateOptions } from './X509ServiceOption
 import type { CredoWebCrypto } from '../../crypto/webcrypto'
 
 import { AsnParser } from '@peculiar/asn1-schema'
-import { id_ce_subjectAltName, SubjectPublicKeyInfo } from '@peculiar/asn1-x509'
+import {
+  id_ce_authorityKeyIdentifier,
+  id_ce_subjectAltName,
+  id_ce_subjectKeyIdentifier,
+  SubjectPublicKeyInfo,
+} from '@peculiar/asn1-x509'
 import * as x509 from '@peculiar/x509'
 
 import { Key } from '../../crypto/Key'
@@ -14,7 +19,16 @@ import { TypedArrayEncoder } from '../../utils'
 
 import { X509Error } from './X509Error'
 
-type Extension = Record<string, undefined | Array<{ type: string; value: string }>>
+type ExtensionObjectIdentifier = string
+
+type SubjectAlternativeNameExtension = Array<{ type: 'url' | 'dns'; value: string }>
+type AuthorityKeyIdentifierExtension = { keyId: string }
+type SubjectKeyIdentifierExtension = { keyId: string }
+
+type ExtensionValues = SubjectAlternativeNameExtension | AuthorityKeyIdentifierExtension | SubjectKeyIdentifierExtension
+
+type Extension = Record<ExtensionObjectIdentifier, ExtensionValues>
+
 export type ExtensionInput = Array<Array<{ type: 'dns' | 'url'; value: string }>>
 
 export type X509CertificateOptions = {
@@ -67,38 +81,87 @@ export class X509Certificate {
 
     const key = new Key(keyBytes, keyType)
 
+    const extensions = certificate.extensions
+      .map((e) => {
+        if (e instanceof x509.AuthorityKeyIdentifierExtension) {
+          return { [e.type]: { keyId: e.keyId as string } }
+        } else if (e instanceof x509.SubjectKeyIdentifierExtension) {
+          return { [e.type]: { keyId: e.keyId } }
+        } else if (e instanceof x509.SubjectAlternativeNameExtension) {
+          return { [e.type]: JSON.parse(JSON.stringify(e.names)) as SubjectAlternativeNameExtension }
+        }
+
+        // TODO: We could throw an error when we don't understand the extension?
+        // This will break everytime we do not understand an extension though
+        return undefined
+      })
+      .filter((e): e is Exclude<typeof e, undefined> => e !== undefined)
+
     return new X509Certificate({
       publicKey: key,
       privateKey,
-      extensions: certificate.extensions
-        ?.map((e) => JSON.parse(JSON.stringify(e)))
-        .map((e) => ({ [e.type]: e.names })) as Array<Extension>,
+      extensions,
       rawCertificate: new Uint8Array(certificate.rawData),
     })
   }
 
-  private getMatchingExtensions<T>(name: string, type: string): Array<T> | undefined {
-    const extensionsWithName = this.extensions
-      ?.filter((e) => e[name])
-      ?.flatMap((e) => e[name])
-      ?.filter((e): e is Exclude<typeof e, undefined> => e !== undefined && e.type === type)
-      ?.map((e) => e.value)
-
-    return extensionsWithName as Array<T>
+  private getMatchingExtensions<T extends ExtensionValues>(objectIdentifier: string): Array<T> | undefined {
+    return this.extensions?.map((e) => e[objectIdentifier])?.filter(Boolean) as Array<T> | undefined
   }
 
   public get sanDnsNames() {
-    const subjectAlternativeNameExtensionDns = this.getMatchingExtensions<string>(id_ce_subjectAltName, 'dns')
-    return subjectAlternativeNameExtensionDns?.filter((e) => typeof e === 'string') ?? []
+    const san = this.getMatchingExtensions<SubjectAlternativeNameExtension>(id_ce_subjectAltName)
+    return (
+      san
+        ?.flatMap((e) => e)
+        ?.filter((e) => e.type === 'dns')
+        ?.map((e) => e.value) ?? []
+    )
   }
 
   public get sanUriNames() {
-    const subjectAlternativeNameExtensionUri = this.getMatchingExtensions<string>(id_ce_subjectAltName, 'url')
-    return subjectAlternativeNameExtensionUri?.filter((e) => typeof e === 'string') ?? []
+    const san = this.getMatchingExtensions<SubjectAlternativeNameExtension>(id_ce_subjectAltName)
+    return (
+      san
+        ?.flatMap((e) => e)
+        ?.filter((e) => e.type === 'url')
+        ?.map((e) => e.value) ?? []
+    )
+  }
+
+  public get authorityKeyIdentifier() {
+    const keyIds = this.getMatchingExtensions<AuthorityKeyIdentifierExtension>(id_ce_authorityKeyIdentifier)?.map(
+      (e) => e.keyId
+    )
+
+    if (keyIds && keyIds.length > 1) {
+      throw new X509Error('Multiple Authority Key Identifiers are not allowed')
+    }
+
+    return keyIds?.[0]
+  }
+
+  public get subjectKeyIdentifier() {
+    const keyIds = this.getMatchingExtensions<SubjectKeyIdentifierExtension>(id_ce_subjectKeyIdentifier)?.map(
+      (e) => e.keyId
+    )
+
+    if (keyIds && keyIds.length > 1) {
+      throw new X509Error('Multiple Subject Key Identifiers are not allowed')
+    }
+
+    return keyIds?.[0]
   }
 
   public static async createSelfSigned(
-    { key, extensions, notAfter, notBefore, name }: X509CreateSelfSignedCertificateOptions,
+    {
+      key,
+      extensions,
+      notAfter,
+      notBefore,
+      name,
+      includeAuthorityKeyIdentifier = true,
+    }: X509CreateSelfSignedCertificateOptions,
     webCrypto: CredoWebCrypto
   ) {
     const cryptoKeyAlgorithm = credoKeyTypeIntoCryptoKeyAlgorithm(key.keyType)
@@ -120,11 +183,23 @@ export class X509Certificate {
         ]
       : name
 
+    const hexPublicKey = TypedArrayEncoder.toHex(key.publicKey)
+
+    const x509Extensions: Array<x509.Extension> = [new x509.SubjectKeyIdentifierExtension(hexPublicKey)]
+
+    if (includeAuthorityKeyIdentifier) {
+      x509Extensions.push(new x509.AuthorityKeyIdentifierExtension(hexPublicKey))
+    }
+
+    for (const extension of extensions ?? []) {
+      x509Extensions.push(new x509.SubjectAlternativeNameExtension(extension))
+    }
+
     const certificate = await x509.X509CertificateGenerator.createSelfSigned(
       {
         keys: { publicKey, privateKey },
         name: issuerName,
-        extensions: extensions?.map((extension) => new x509.SubjectAlternativeNameExtension(extension)),
+        extensions: x509Extensions,
         notAfter,
         notBefore,
       },
