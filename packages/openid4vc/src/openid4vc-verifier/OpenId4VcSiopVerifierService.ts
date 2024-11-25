@@ -599,8 +599,8 @@ export class OpenId4VcSiopVerifierService {
             proof_type: supportedProofTypes,
           },
           'vc+sd-jwt': {
-            kb_jwt_alg_values: supportedAlgs,
-            sd_jwt_alg_values: supportedAlgs,
+            'kb-jwt_alg_values': supportedAlgs,
+            'sd-jwt_alg_values': supportedAlgs,
           },
         },
       })
