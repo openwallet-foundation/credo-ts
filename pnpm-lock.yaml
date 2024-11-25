@@ -730,8 +730,8 @@ importers:
         specifier: workspace:*
         version: link:../core
       '@openid-federation/core':
-        specifier: 0.1.1-alpha.13
-        version: 0.1.1-alpha.13
+        specifier: 0.1.1-alpha.14
+        version: 0.1.1-alpha.14
       '@sphereon/did-auth-siop':
         specifier: 0.16.1-fix.173
         version: 0.16.1-fix.173(ts-node@10.9.2(@swc/core@1.7.40)(@types/node@18.18.8)(typescript@5.5.4))(typescript@5.5.4)
@@ -2689,8 +2689,8 @@ packages:
   '@open-draft/until@2.1.0':
     resolution: {integrity: sha512-U69T3ItWHvLwGg5eJ0n3I62nWuE6ilHlmz7zM0npLBRvPRd7e6NYmg54vvRtP5mZG7kZqZCFVdsTWo7BPtBujg==}
 
-  '@openid-federation/core@0.1.1-alpha.13':
-    resolution: {integrity: sha512-QC4DSbiJ7eWstLs1O3XrX/yKFgaj+3ch8cA4N/02BywVNmkiYgW9qXhcvY50ULINuCeYdqIMIqCuHbaTa0A1hw==}
+  '@openid-federation/core@0.1.1-alpha.14':
+    resolution: {integrity: sha512-Eocgms2frXErfUClihUrdIoDLTWxDN2qB8aytLNyNYpFOjoVW8GB/Ppi8f6QWrq3CkjM22ZEDGCjobKa96F/0Q==}
 
   '@peculiar/asn1-cms@2.3.13':
     resolution: {integrity: sha512-joqu8A7KR2G85oLPq+vB+NFr2ro7Ls4ol13Zcse/giPSzUNN0n2k3v8kMpf6QdGUhI13e5SzQYN8AKP8sJ8v4w==}
@@ -10945,7 +10945,7 @@ snapshots:
 
   '@open-draft/until@2.1.0': {}
 
-  '@openid-federation/core@0.1.1-alpha.13':
+  '@openid-federation/core@0.1.1-alpha.14':
     dependencies:
       buffer: 6.0.3
       zod: 3.23.8
@@ -13728,7 +13728,7 @@ snapshots:
       debug: 4.3.6
       enhanced-resolve: 5.17.1
       eslint: 8.57.0
-      eslint-module-utils: 2.8.1(@typescript-eslint/parser@7.18.0(eslint@8.57.0)(typescript@5.5.4))(eslint-import-resolver-node@0.3.9)(eslint-import-resolver-typescript@3.6.1(@typescript-eslint/parser@7.18.0(eslint@8.57.0)(typescript@5.5.4))(eslint-plugin-import@2.29.1)(eslint@8.57.0))(eslint@8.57.0)
+      eslint-module-utils: 2.8.1(@typescript-eslint/parser@7.18.0(eslint@8.57.0)(typescript@5.5.4))(eslint-import-resolver-node@0.3.9)(eslint-import-resolver-typescript@3.6.1)(eslint@8.57.0)
       eslint-plugin-import: 2.29.1(@typescript-eslint/parser@7.18.0(eslint@8.57.0)(typescript@5.5.4))(eslint-import-resolver-typescript@3.6.1)(eslint@8.57.0)
       fast-glob: 3.3.2
       get-tsconfig: 4.7.6
@@ -13740,7 +13740,7 @@ snapshots:
       - eslint-import-resolver-webpack
       - supports-color
 
-  eslint-module-utils@2.8.1(@typescript-eslint/parser@7.18.0(eslint@8.57.0)(typescript@5.5.4))(eslint-import-resolver-node@0.3.9)(eslint-import-resolver-typescript@3.6.1(@typescript-eslint/parser@7.18.0(eslint@8.57.0)(typescript@5.5.4))(eslint-plugin-import@2.29.1)(eslint@8.57.0))(eslint@8.57.0):
+  eslint-module-utils@2.8.1(@typescript-eslint/parser@7.18.0(eslint@8.57.0)(typescript@5.5.4))(eslint-import-resolver-node@0.3.9)(eslint-import-resolver-typescript@3.6.1)(eslint@8.57.0):
     dependencies:
       debug: 3.2.7
     optionalDependencies:
@@ -13761,7 +13761,7 @@ snapshots:
       doctrine: 2.1.0
       eslint: 8.57.0
       eslint-import-resolver-node: 0.3.9
-      eslint-module-utils: 2.8.1(@typescript-eslint/parser@7.18.0(eslint@8.57.0)(typescript@5.5.4))(eslint-import-resolver-node@0.3.9)(eslint-import-resolver-typescript@3.6.1(@typescript-eslint/parser@7.18.0(eslint@8.57.0)(typescript@5.5.4))(eslint-plugin-import@2.29.1)(eslint@8.57.0))(eslint@8.57.0)
+      eslint-module-utils: 2.8.1(@typescript-eslint/parser@7.18.0(eslint@8.57.0)(typescript@5.5.4))(eslint-import-resolver-node@0.3.9)(eslint-import-resolver-typescript@3.6.1)(eslint@8.57.0)
       hasown: 2.0.2
       is-core-module: 2.15.0
       is-glob: 4.0.3
