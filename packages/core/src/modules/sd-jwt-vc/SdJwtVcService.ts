@@ -12,12 +12,14 @@ import type { Query, QueryOptions } from '../../storage/StorageService'
 import type { SDJwt } from '@sd-jwt/core'
 import type { Signer, Verifier, PresentationFrame, DisclosureFrame } from '@sd-jwt/types'
 
+import { decodeSdJwtSync } from '@sd-jwt/decode'
+import { selectDisclosures } from '@sd-jwt/present'
 import { SDJwtVcInstance } from '@sd-jwt/sd-jwt-vc'
 import { uint8ArrayToBase64Url } from '@sd-jwt/utils'
 import { injectable } from 'tsyringe'
 
 import { AgentContext } from '../../agent'
-import { JwtPayload, Jwk, getJwkFromJson, getJwkFromKey } from '../../crypto'
+import { JwtPayload, Jwk, getJwkFromJson, getJwkFromKey, Hasher } from '../../crypto'
 import { CredoError } from '../../error'
 import { X509Service } from '../../modules/x509/X509Service'
 import { TypedArrayEncoder, nowInSeconds } from '../../utils'
@@ -29,6 +31,7 @@ import { X509Certificate, X509ModuleConfig } from '../x509'
 
 import { SdJwtVcError } from './SdJwtVcError'
 import { decodeSdJwtVc, sdJwtVcHasher } from './decodeSdJwtVc'
+import { buildDisclosureFrameFromPayload } from './disclosureFrame'
 import { SdJwtVcRecord, SdJwtVcRepository } from './repository'
 import { SdJwtVcTypeMetadata } from './typeMetadata'
 
@@ -153,6 +156,32 @@ export class SdJwtVcService {
     typeMetadata?: SdJwtVcTypeMetadata
   ): SdJwtVc<Header, Payload> {
     return decodeSdJwtVc(compactSdJwtVc, typeMetadata)
+  }
+
+  public applyDisclosuresForPayload(compactSdJwtVc: string, requestedPayload: Record<string, unknown>): SdJwtVc {
+    const decoded = decodeSdJwtSync(compactSdJwtVc, Hasher.hash)
+    const presentationFrame = buildDisclosureFrameFromPayload(requestedPayload) ?? {}
+
+    if (decoded.kbJwt) {
+      throw new SdJwtVcError('Cannot apply limit disclosure on an sd-jwt with key binding jwt')
+    }
+
+    const requiredDisclosures = selectDisclosures(
+      decoded.jwt.payload,
+      // Map to sd-jwt disclosure format
+      decoded.disclosures.map((d) => ({
+        digest: d.digestSync({ alg: 'sha-256', hasher: Hasher.hash }),
+        encoded: d.encode(),
+        key: d.key,
+        salt: d.salt,
+        value: d.value,
+      })),
+      presentationFrame as { [key: string]: boolean }
+    )
+    const [jwt] = compactSdJwtVc.split('~')
+    const sdJwt = `${jwt}~${requiredDisclosures.map((d) => d.encoded).join('~')}~`
+    const disclosedDecoded = decodeSdJwtVc(sdJwt)
+    return disclosedDecoded
   }
 
   public async present<Payload extends SdJwtVcPayload = SdJwtVcPayload>(

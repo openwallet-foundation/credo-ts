@@ -26,6 +26,6 @@ export function decodeSdJwtVc<
     prettyClaims: prettyClaims as Payload,
     typeMetadata,
     claimFormat: ClaimFormat.SdJwtVc,
-    encoded: compactSdJwtVc
+    encoded: compactSdJwtVc,
   }
 }

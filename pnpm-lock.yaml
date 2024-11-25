@@ -486,6 +486,9 @@ importers:
       '@sd-jwt/jwt-status-list':
         specifier: ^0.7.0
         version: 0.7.2
+      '@sd-jwt/present':
+        specifier: ^0.7.0
+        version: 0.7.2
       '@sd-jwt/sd-jwt-vc':
         specifier: ^0.7.0
         version: 0.7.2
@@ -811,13 +814,13 @@ importers:
     devDependencies:
       react-native:
         specifier: ^0.71.4
-        version: 0.71.19(@babel/core@7.26.0)(@babel/preset-env@7.26.0(@babel/core@7.26.0))(react@18.2.0)
+        version: 0.71.19(@babel/core@7.26.0)(@babel/preset-env@7.26.0(@babel/core@7.26.0))(react@18.3.1)
       react-native-fs:
         specifier: ^2.20.0
-        version: 2.20.0(react-native@0.71.19(@babel/core@7.26.0)(@babel/preset-env@7.26.0(@babel/core@7.26.0))(react@18.2.0))
+        version: 2.20.0(react-native@0.71.19(@babel/core@7.26.0)(@babel/preset-env@7.26.0(@babel/core@7.26.0))(react@18.3.1))
       react-native-get-random-values:
         specifier: ^1.8.0
-        version: 1.11.0(react-native@0.71.19(@babel/core@7.26.0)(@babel/preset-env@7.26.0(@babel/core@7.26.0))(react@18.2.0))
+        version: 1.11.0(react-native@0.71.19(@babel/core@7.26.0)(@babel/preset-env@7.26.0(@babel/core@7.26.0))(react@18.3.1))
       rimraf:
         specifier: ^4.4.0
         version: 4.4.1
@@ -2672,6 +2675,7 @@ packages:
 
   '@sphereon/kmp-mdl-mdoc@0.2.0-SNAPSHOT.22':
     resolution: {integrity: sha512-uAZZExVy+ug9JLircejWa5eLtAZ7bnBP6xb7DO2+86LRsHNLh2k2jMWJYxp+iWtGHTsh6RYsZl14ScQLvjiQ/A==}
+    bundledDependencies: []
 
   '@sphereon/oid4vc-common@0.16.1-fix.173':
     resolution: {integrity: sha512-+AAUvEEFs0vzz1mrgjSgvDkcBtr18d2XEVgJex7QlAqxCKVGfjzZlqL2Q2vOLKYVaXsazhD5LnYiY6B5WMTC3Q==}
@@ -2719,6 +2723,9 @@ packages:
 
   '@sphereon/ssi-types@0.30.2-next.135':
     resolution: {integrity: sha512-YLQfFMPUlOJUxHbOS9v01nG3cgLwTk3d95/rTnOmEQx9kXgXjoXdvt7D0uGcMRL3RHeQ9biT/jWY//mDvCirVQ==}
+
+  '@sphereon/ssi-types@0.30.2-next.279':
+    resolution: {integrity: sha512-8I+wlZIKICKqwTJ0lObJWao2KKYHA3hoRzB4mDapPAIPKUbojJCIh9ei37DnEf5AEDAtUS1gOlEDmC/cKJrtpA==}
 
   '@sqltools/formatter@1.2.5':
     resolution: {integrity: sha512-Uy0+khmZqUrUGm5dmMqVlnvufZRSK0FbYzVgp0UMstm+F5+W2/jnEEQyc9vo1ZR/E5ZI/B1WjjoTqBqwJL6Krw==}
@@ -6619,10 +6626,6 @@ packages:
     resolution: {integrity: sha512-oScf2FqQ9LFVQgA73vr86xl2NaOIX73rh+YFqcOp68CWj56tSfgtGKrEbyhCj0rSijyG9M1CYprTh39fBi5hzA==}
     peerDependencies:
       react: ^16.0.0 || ^17.0.0 || ^18.0.0
-
-  react@18.2.0:
-    resolution: {integrity: sha512-/3IjMdb2L9QbBdWiW5e3P2/npwMBaU9mHCSCUzNln0ZCYbcfTsGbTJrU/kGemdH2IWmB2ioZ+zkxtmq6g09fGQ==}
-    engines: {node: '>=0.10.0'}
 
   react@18.3.1:
     resolution: {integrity: sha512-wS+hAgJShR0KhEvPJArfuPVN1+Hz1t0Y6n5jLrGQbkb4urgPE/0Rve+1kMB1v/oWgHgm4WIcV+i7F2pTVj+2iQ==}
@@ -10680,7 +10683,7 @@ snapshots:
       '@sphereon/oid4vc-common': 0.16.1-fix.173(ts-node@10.9.2(@types/node@18.18.8)(typescript@5.5.4))
       '@sphereon/pex': 5.0.0-unstable.24
       '@sphereon/pex-models': 2.3.1
-      '@sphereon/ssi-types': 0.30.2-next.129
+      '@sphereon/ssi-types': 0.30.2-next.279
       cross-fetch: 4.0.0
       dcql: 0.2.13(typescript@5.5.4)
       debug: 4.3.7
@@ -11032,6 +11035,16 @@ snapshots:
       - supports-color
 
   '@sphereon/ssi-types@0.30.2-next.135':
+    dependencies:
+      '@sd-jwt/decode': 0.7.2
+      '@sphereon/kmp-mdl-mdoc': 0.2.0-SNAPSHOT.22
+      debug: 4.3.7
+      events: 3.3.0
+      jwt-decode: 3.1.2
+    transitivePeerDependencies:
+      - supports-color
+
+  '@sphereon/ssi-types@0.30.2-next.279':
     dependencies:
       '@sd-jwt/decode': 0.7.2
       '@sphereon/kmp-mdl-mdoc': 0.2.0-SNAPSHOT.22
@@ -15845,16 +15858,16 @@ snapshots:
       - '@babel/preset-env'
       - supports-color
 
-  react-native-fs@2.20.0(react-native@0.71.19(@babel/core@7.26.0)(@babel/preset-env@7.26.0(@babel/core@7.26.0))(react@18.2.0)):
+  react-native-fs@2.20.0(react-native@0.71.19(@babel/core@7.26.0)(@babel/preset-env@7.26.0(@babel/core@7.26.0))(react@18.3.1)):
     dependencies:
       base-64: 0.1.0
-      react-native: 0.71.19(@babel/core@7.26.0)(@babel/preset-env@7.26.0(@babel/core@7.26.0))(react@18.2.0)
+      react-native: 0.71.19(@babel/core@7.26.0)(@babel/preset-env@7.26.0(@babel/core@7.26.0))(react@18.3.1)
       utf8: 3.0.0
 
-  react-native-get-random-values@1.11.0(react-native@0.71.19(@babel/core@7.26.0)(@babel/preset-env@7.26.0(@babel/core@7.26.0))(react@18.2.0)):
+  react-native-get-random-values@1.11.0(react-native@0.71.19(@babel/core@7.26.0)(@babel/preset-env@7.26.0(@babel/core@7.26.0))(react@18.3.1)):
     dependencies:
       fast-base64-decode: 1.0.0
-      react-native: 0.71.19(@babel/core@7.26.0)(@babel/preset-env@7.26.0(@babel/core@7.26.0))(react@18.2.0)
+      react-native: 0.71.19(@babel/core@7.26.0)(@babel/preset-env@7.26.0(@babel/core@7.26.0))(react@18.3.1)
 
   react-native-gradle-plugin@0.71.19: {}
 
@@ -15863,52 +15876,6 @@ snapshots:
       base64-js: 1.5.1
       react-native: 0.71.19(@babel/core@7.26.0)(@babel/preset-env@7.26.0(@babel/core@7.26.0))(react@18.3.1)
     optional: true
-
-  react-native@0.71.19(@babel/core@7.26.0)(@babel/preset-env@7.26.0(@babel/core@7.26.0))(react@18.2.0):
-    dependencies:
-      '@jest/create-cache-key-function': 29.7.0
-      '@react-native-community/cli': 10.2.7(@babel/core@7.26.0)
-      '@react-native-community/cli-platform-android': 10.2.0
-      '@react-native-community/cli-platform-ios': 10.2.5
-      '@react-native/assets': 1.0.0
-      '@react-native/normalize-color': 2.1.0
-      '@react-native/polyfills': 2.0.0
-      abort-controller: 3.0.0
-      anser: 1.4.10
-      ansi-regex: 5.0.1
-      base64-js: 1.5.1
-      deprecated-react-native-prop-types: 3.0.2
-      event-target-shim: 5.0.1
-      invariant: 2.2.4
-      jest-environment-node: 29.7.0
-      jsc-android: 250231.0.0
-      memoize-one: 5.2.1
-      metro-react-native-babel-transformer: 0.73.10(@babel/core@7.26.0)
-      metro-runtime: 0.73.10
-      metro-source-map: 0.73.10
-      mkdirp: 0.5.6
-      nullthrows: 1.1.1
-      pretty-format: 26.6.2
-      promise: 8.3.0
-      react: 18.2.0
-      react-devtools-core: 4.28.5
-      react-native-codegen: 0.71.6(@babel/preset-env@7.26.0(@babel/core@7.26.0))
-      react-native-gradle-plugin: 0.71.19
-      react-refresh: 0.4.3
-      react-shallow-renderer: 16.15.0(react@18.2.0)
-      regenerator-runtime: 0.13.11
-      scheduler: 0.23.2
-      stacktrace-parser: 0.1.10
-      use-sync-external-store: 1.2.2(react@18.2.0)
-      whatwg-fetch: 3.6.20
-      ws: 6.2.3
-    transitivePeerDependencies:
-      - '@babel/core'
-      - '@babel/preset-env'
-      - bufferutil
-      - encoding
-      - supports-color
-      - utf-8-validate
 
   react-native@0.71.19(@babel/core@7.26.0)(@babel/preset-env@7.26.0(@babel/core@7.26.0))(react@18.3.1):
     dependencies:
@@ -15960,21 +15927,11 @@ snapshots:
 
   react-refresh@0.4.3: {}
 
-  react-shallow-renderer@16.15.0(react@18.2.0):
-    dependencies:
-      object-assign: 4.1.1
-      react: 18.2.0
-      react-is: 18.3.1
-
   react-shallow-renderer@16.15.0(react@18.3.1):
     dependencies:
       object-assign: 4.1.1
       react: 18.3.1
       react-is: 18.3.1
-
-  react@18.2.0:
-    dependencies:
-      loose-envify: 1.4.0
 
   react@18.3.1:
     dependencies:
@@ -16895,10 +16852,6 @@ snapshots:
     dependencies:
       querystringify: 2.2.0
       requires-port: 1.0.0
-
-  use-sync-external-store@1.2.2(react@18.2.0):
-    dependencies:
-      react: 18.2.0
 
   use-sync-external-store@1.2.2(react@18.3.1):
     dependencies:
