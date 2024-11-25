@@ -11,6 +11,8 @@ import { CredoWebCrypto, CredoWebCryptoKey } from '../../../crypto/webcrypto'
 import { X509Error } from '../X509Error'
 import { X509Service } from '../X509Service'
 
+import { TypedArrayEncoder } from '@credo-ts/core'
+
 /**
  *
  * Get the next month, accounting for a new year
@@ -199,6 +201,8 @@ describe('X509Service', () => {
     expect(x509Certificate).toMatchObject({
       sanDnsNames: expect.arrayContaining(['paradym.id', 'wallet.paradym.id', 'animo.id']),
       sanUriNames: expect.arrayContaining(['animo.id']),
+      authorityKeyIdentifier: TypedArrayEncoder.toHex(key.publicKey),
+      subjectKeyIdentifier: TypedArrayEncoder.toHex(key.publicKey),
     })
 
     expect(x509Certificate.publicKey.publicKey.length).toStrictEqual(33)
@@ -258,12 +262,14 @@ describe('X509Service', () => {
 
     const selfSignedCertificate = await X509Service.createSelfSignedCertificate(agentContext, {
       key,
+      name: 'C=DOO',
       extensions: [
         [
           { type: 'dns', value: 'dns:me' },
           { type: 'url', value: 'some://scheme' },
         ],
       ],
+      includeAuthorityKeyIdentifier: true,
     })
 
     expect(selfSignedCertificate.publicKey).toMatchObject({
