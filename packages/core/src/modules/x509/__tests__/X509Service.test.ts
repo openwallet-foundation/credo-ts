@@ -203,7 +203,7 @@ describe('X509Service', () => {
       sanUriNames: expect.arrayContaining(['animo.id']),
       authorityKeyIdentifier: TypedArrayEncoder.toHex(key.publicKey),
       subjectKeyIdentifier: TypedArrayEncoder.toHex(key.publicKey),
-      keyUsage: KeyUsage.DigitalSignature
+      keyUsage: [KeyUsage.DigitalSignature, KeyUsage.KeyCertSign],
     })
 
     expect(x509Certificate.publicKey.publicKey.length).toStrictEqual(33)

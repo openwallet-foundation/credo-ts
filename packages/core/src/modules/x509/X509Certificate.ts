@@ -27,7 +27,11 @@ type AuthorityKeyIdentifierExtension = { keyId: string }
 type SubjectKeyIdentifierExtension = { keyId: string }
 type KeyUsageExtension = { usage: KeyUsage }
 
-type ExtensionValues = SubjectAlternativeNameExtension | AuthorityKeyIdentifierExtension | SubjectKeyIdentifierExtension | KeyUsageExtension
+type ExtensionValues =
+  | SubjectAlternativeNameExtension
+  | AuthorityKeyIdentifierExtension
+  | SubjectKeyIdentifierExtension
+  | KeyUsageExtension
 
 type Extension = Record<ExtensionObjectIdentifier, ExtensionValues>
 
@@ -42,7 +46,7 @@ export enum KeyUsage {
   KeyCertSign = 32,
   CrlSign = 64,
   EncipherOnly = 128,
-  DecipherOnly = 256
+  DecipherOnly = 256,
 }
 
 export type X509CertificateOptions = {
@@ -170,15 +174,9 @@ export class X509Certificate {
   }
 
   public get keyUsage() {
-    const usage = this.getMatchingExtensions<KeyUsageExtension>(id_ce_keyUsage)?.map(
-      (e) => e.usage
-    )
+    const usage = this.getMatchingExtensions<KeyUsageExtension>(id_ce_keyUsage)?.map((e) => e.usage)
 
-    if (usage && usage.length > 1) {
-      throw new X509Error('Multiple Key Usages are not allowed')
-    }
-
-    return usage?.[0]
+    return usage ?? []
   }
 
   public static async createSelfSigned(
@@ -197,23 +195,13 @@ export class X509Certificate {
     const publicKey = new CredoWebCryptoKey(key, cryptoKeyAlgorithm, true, 'public', ['verify'])
     const privateKey = new CredoWebCryptoKey(key, cryptoKeyAlgorithm, false, 'private', ['sign'])
 
-    const issuerName = name?.includes(',')
-      ? [
-          Object.fromEntries(
-            name.split(', ').map((s) => {
-              const keyValPairs = s.trim().split('=')
-              if (keyValPairs.some((pair) => pair.length !== 2)) {
-                throw new X509Error(`Cannot create self-signed certificate. Name parsing failed. '${name}'`)
-              }
-              return keyValPairs.map(([key, val]) => [key, [val]] as [string, string[]])
-            })
-          ),
-        ]
-      : name
-
     const hexPublicKey = TypedArrayEncoder.toHex(key.publicKey)
 
-    const x509Extensions: Array<x509.Extension> = [new x509.SubjectKeyIdentifierExtension(hexPublicKey), new x509.KeyUsagesExtension(x509.KeyUsageFlags.digitalSignature)]
+    const x509Extensions: Array<x509.Extension> = [
+      new x509.SubjectKeyIdentifierExtension(hexPublicKey),
+      new x509.KeyUsagesExtension(x509.KeyUsageFlags.digitalSignature),
+      new x509.KeyUsagesExtension(x509.KeyUsageFlags.keyCertSign),
+    ]
 
     if (includeAuthorityKeyIdentifier) {
       x509Extensions.push(new x509.AuthorityKeyIdentifierExtension(hexPublicKey))
@@ -226,7 +214,7 @@ export class X509Certificate {
     const certificate = await x509.X509CertificateGenerator.createSelfSigned(
       {
         keys: { publicKey, privateKey },
-        name: issuerName,
+        name,
         extensions: x509Extensions,
         notAfter,
         notBefore,
