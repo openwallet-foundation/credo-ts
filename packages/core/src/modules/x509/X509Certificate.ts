@@ -4,6 +4,7 @@ import type { CredoWebCrypto } from '../../crypto/webcrypto'
 import { AsnParser } from '@peculiar/asn1-schema'
 import {
   id_ce_authorityKeyIdentifier,
+  id_ce_keyUsage,
   id_ce_subjectAltName,
   id_ce_subjectKeyIdentifier,
   SubjectPublicKeyInfo,
@@ -24,12 +25,25 @@ type ExtensionObjectIdentifier = string
 type SubjectAlternativeNameExtension = Array<{ type: 'url' | 'dns'; value: string }>
 type AuthorityKeyIdentifierExtension = { keyId: string }
 type SubjectKeyIdentifierExtension = { keyId: string }
+type KeyUsageExtension = { usage: KeyUsage }
 
-type ExtensionValues = SubjectAlternativeNameExtension | AuthorityKeyIdentifierExtension | SubjectKeyIdentifierExtension
+type ExtensionValues = SubjectAlternativeNameExtension | AuthorityKeyIdentifierExtension | SubjectKeyIdentifierExtension | KeyUsageExtension
 
 type Extension = Record<ExtensionObjectIdentifier, ExtensionValues>
 
 export type ExtensionInput = Array<Array<{ type: 'dns' | 'url'; value: string }>>
+
+export enum KeyUsage {
+  DigitalSignature = 1,
+  NonRepudiation = 2,
+  KeyEncipherment = 4,
+  DataEncipherment = 8,
+  KeyAgreement = 16,
+  KeyCertSign = 32,
+  CrlSign = 64,
+  EncipherOnly = 128,
+  DecipherOnly = 256
+}
 
 export type X509CertificateOptions = {
   publicKey: Key
@@ -89,6 +103,8 @@ export class X509Certificate {
           return { [e.type]: { keyId: e.keyId } }
         } else if (e instanceof x509.SubjectAlternativeNameExtension) {
           return { [e.type]: JSON.parse(JSON.stringify(e.names)) as SubjectAlternativeNameExtension }
+        } else if (e instanceof x509.KeyUsagesExtension) {
+          return { [e.type]: { usage: e.usages as unknown as KeyUsage } }
         }
 
         // TODO: We could throw an error when we don't understand the extension?
@@ -153,6 +169,18 @@ export class X509Certificate {
     return keyIds?.[0]
   }
 
+  public get keyUsage() {
+    const usage = this.getMatchingExtensions<KeyUsageExtension>(id_ce_keyUsage)?.map(
+      (e) => e.usage
+    )
+
+    if (usage && usage.length > 1) {
+      throw new X509Error('Multiple Key Usages are not allowed')
+    }
+
+    return usage?.[0]
+  }
+
   public static async createSelfSigned(
     {
       key,
@@ -185,7 +213,7 @@ export class X509Certificate {
 
     const hexPublicKey = TypedArrayEncoder.toHex(key.publicKey)
 
-    const x509Extensions: Array<x509.Extension> = [new x509.SubjectKeyIdentifierExtension(hexPublicKey)]
+    const x509Extensions: Array<x509.Extension> = [new x509.SubjectKeyIdentifierExtension(hexPublicKey), new x509.KeyUsagesExtension(x509.KeyUsageFlags.digitalSignature)]
 
     if (includeAuthorityKeyIdentifier) {
       x509Extensions.push(new x509.AuthorityKeyIdentifierExtension(hexPublicKey))
