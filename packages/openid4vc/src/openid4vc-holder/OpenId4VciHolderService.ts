@@ -413,18 +413,21 @@ export class OpenId4VciHolderService {
     }
 
     for (const [offeredCredentialId, offeredCredentialConfiguration] of credentialConfigurationsToRequest) {
-      // Get all options for the credential request (such as which kid to use, the signature algorithm, etc)
-      const { jwtSigner } = await this.getCredentialRequestOptions(agentContext, {
-        possibleProofOfPossessionSignatureAlgorithms: possibleProofOfPossessionSigAlgs,
-        offeredCredential: {
-          id: offeredCredentialId,
-          configuration: offeredCredentialConfiguration,
-        },
-        credentialBindingResolver,
-      })
-
       const jwts: string[] = []
+
       for (let i = 0; i < batchSize; i++) {
+        // TODO: we should call this method once with a keyLength. Gives more control to the user and better aligns with key attestations
+        // Get a key instance for each entry in the batch.
+        // Get all options for the credential request (such as which kid to use, the signature algorithm, etc)
+        const { jwtSigner } = await this.getCredentialRequestOptions(agentContext, {
+          possibleProofOfPossessionSignatureAlgorithms: possibleProofOfPossessionSigAlgs,
+          offeredCredential: {
+            id: offeredCredentialId,
+            configuration: offeredCredentialConfiguration,
+          },
+          credentialBindingResolver,
+        })
+
         const { jwt } = await client.createCredentialRequestJwtProof({
           credentialConfigurationId: offeredCredentialId,
           issuerMetadata: resolvedCredentialOffer.metadata,
