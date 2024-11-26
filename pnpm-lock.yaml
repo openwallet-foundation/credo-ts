@@ -529,8 +529,8 @@ importers:
         specifier: 0.14.1
         version: 0.14.1
       dcql:
-        specifier: ^0.2.16
-        version: 0.2.16(typescript@5.5.4)
+        specifier: ^0.2.17
+        version: 0.2.17(typescript@5.5.4)
       did-resolver:
         specifier: ^4.1.0
         version: 4.1.0
@@ -3870,8 +3870,8 @@ packages:
   dayjs@1.11.13:
     resolution: {integrity: sha512-oaMBel6gjolK862uaPQOVTA7q3TZhuSvuMQAAglQDOWYO9A91IrAOUJEyKVlqJlHE0vq5p5UXxzdPfMH/x6xNg==}
 
-  dcql@0.2.16:
-    resolution: {integrity: sha512-sZpx8QZYc/vdPsOy0PyFWPNmTrDTPyLGsV0wPJJ6u/F+RFkQlw5LHV4fIfzPefdDKUF5YvGm3oDiBt3qzz9/zg==}
+  dcql@0.2.17:
+    resolution: {integrity: sha512-YKNJR2anEiWooUCg7cJt/QmSFxpBS+SJQurcsNA60+8qUrjOuroh1Wd+lka/yOAV2VUdRzdNY6ISouxTV6SUaQ==}
 
   debug@2.6.9:
     resolution: {integrity: sha512-bC7ElrdJaJnPbAP+1EotYvqZsb3ecl5wi6Bfi6BJTUcNowp6cvspg0jXznRTKDjm/E7AdgFBVeAPVMNcKGsHMA==}
@@ -7558,16 +7558,16 @@ packages:
     resolution: {integrity: sha512-kiGUalWN+rgBJ/1OHZsBtU4rXZOfj/7rKQxULKlIzwzQSvMJUUNgPwJEEh7gU6xEVxC0ahoOBvN2YI8GH6FNgA==}
     engines: {node: '>=10.12.0'}
 
-  valibot@0.37.0:
-    resolution: {integrity: sha512-FQz52I8RXgFgOHym3XHYSREbNtkgSjF9prvMFH1nBsRyfL6SfCzoT1GuSDTlbsuPubM7/6Kbw0ZMQb8A+V+VsQ==}
+  valibot@0.42.1:
+    resolution: {integrity: sha512-3keXV29Ar5b//Hqi4MbSdV7lfVp6zuYLZuA9V1PvQUsXqogr+u5lvLPLk3A4f74VUXDnf/JfWMN6sB+koJ/FFw==}
     peerDependencies:
       typescript: '>=5'
     peerDependenciesMeta:
       typescript:
         optional: true
 
-  valibot@0.42.1:
-    resolution: {integrity: sha512-3keXV29Ar5b//Hqi4MbSdV7lfVp6zuYLZuA9V1PvQUsXqogr+u5lvLPLk3A4f74VUXDnf/JfWMN6sB+koJ/FFw==}
+  valibot@1.0.0-beta.8:
+    resolution: {integrity: sha512-OPAwJZtowb0j91b+bd77+ny7D1VVzsCzD7Jl9waLUlMprTsfI9Y3HHbW3hAQD7wKDKHsmGEesuiYWaYvcZL2wg==}
     peerDependencies:
       typescript: '>=5'
     peerDependenciesMeta:
@@ -12364,9 +12364,9 @@ snapshots:
 
   dayjs@1.11.13: {}
 
-  dcql@0.2.16(typescript@5.5.4):
+  dcql@0.2.17(typescript@5.5.4):
     dependencies:
-      valibot: 0.37.0(typescript@5.5.4)
+      valibot: 1.0.0-beta.8(typescript@5.5.4)
     transitivePeerDependencies:
       - typescript
 
@@ -16748,11 +16748,11 @@ snapshots:
       '@types/istanbul-lib-coverage': 2.0.6
       convert-source-map: 2.0.0
 
-  valibot@0.37.0(typescript@5.5.4):
+  valibot@0.42.1(typescript@5.5.4):
     optionalDependencies:
       typescript: 5.5.4
 
-  valibot@0.42.1(typescript@5.5.4):
+  valibot@1.0.0-beta.8(typescript@5.5.4):
     optionalDependencies:
       typescript: 5.5.4
 
