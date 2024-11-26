@@ -47,6 +47,7 @@ export class MdocDeviceResponse {
         docType
       )
     })
+    documents[0].deviceSignedNamespaces
 
     return new MdocDeviceResponse(base64Url, documents)
   }
@@ -197,14 +198,30 @@ export class MdocDeviceResponse {
   public async verify(agentContext: AgentContext, options: Omit<MdocDeviceResponseVerifyOptions, 'deviceResponse'>) {
     const verifier = new Verifier()
     const mdocContext = getMdocContext(agentContext)
+    const x509Config = agentContext.dependencyManager.resolve(X509ModuleConfig)
 
-    const x509ModuleConfig = agentContext.dependencyManager.resolve(X509ModuleConfig)
-    const getTrustedCertificatesForVerification = x509ModuleConfig.getTrustedCertificatesForVerification
-
-    const trustedCertificates =
-      options.trustedCertificates ??
-      (await getTrustedCertificatesForVerification?.(agentContext, options.verificationContext)) ??
-      x509ModuleConfig?.trustedCertificates
+    // TODO: no way to currently have a per document x509 certificates in a presentation
+    // but this also the case for other
+    // FIXME: we can't pass multiple certificate chains. We should just verify each document separately
+    let trustedCertificates = options.trustedCertificates
+    if (!trustedCertificates) {
+      trustedCertificates = (
+        await Promise.all(
+          this.documents.map((mdoc) => {
+            const certificateChain = mdoc.issuerSignedCertificateChain.map(X509Certificate.fromRawCertificate)
+            return x509Config.getTrustedCertificatesForVerification?.(agentContext, {
+              certificateChain,
+              verification: {
+                type: 'credential',
+                credential: mdoc,
+              },
+            })
+          })
+        )
+      )
+        .filter((c): c is string[] => c !== undefined)
+        .flatMap((c) => c)
+    }
 
     if (!trustedCertificates) {
       throw new MdocError('No trusted certificates found. Cannot verify mdoc.')

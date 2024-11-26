@@ -7,6 +7,7 @@ import type { W3cCredential } from './models/credential/W3cCredential'
 import type { W3cPresentation } from './models/presentation/W3cPresentation'
 import type { JwaSignatureAlgorithm } from '../../crypto/jose/jwa'
 import type { SingleOrArray } from '../../utils/type'
+import type { EncodedX509Certificate } from '../x509'
 
 export type W3cSignCredentialOptions<Format extends ClaimFormat.JwtVc | ClaimFormat.LdpVc | undefined = undefined> =
   Format extends ClaimFormat.JwtVc
@@ -179,22 +180,9 @@ interface W3cVerifyPresentationOptionsBase {
   verifyCredentialStatus?: boolean
 }
 
-export interface VerificationContext {
-  /**
-   * The `id` of the `ProofRecord` that this verification is bound to.
-   */
-  didcommProofRecordId?: string
-
-  /**
-   * The `id` of the `OpenId4VcVerificationSessionRecord` that this verification is bound to.
-   */
-  openId4VcVerificationSessionId?: string
-}
-
 export interface W3cJwtVerifyPresentationOptions extends W3cVerifyPresentationOptionsBase {
   presentation: W3cJwtVerifiablePresentation | string // string must be encoded VP JWT
-  trustedCertificates?: [string, ...string[]]
-  verificationContext?: VerificationContext
+  trustedCertificates?: EncodedX509Certificate[]
 }
 
 export interface W3cJsonLdVerifyPresentationOptions extends W3cVerifyPresentationOptionsBase {
