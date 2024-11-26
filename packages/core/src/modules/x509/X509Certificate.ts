@@ -25,7 +25,7 @@ type ExtensionObjectIdentifier = string
 type SubjectAlternativeNameExtension = Array<{ type: 'url' | 'dns'; value: string }>
 type AuthorityKeyIdentifierExtension = { keyId: string }
 type SubjectKeyIdentifierExtension = { keyId: string }
-type KeyUsageExtension = { usage: KeyUsage }
+type KeyUsageExtension = { usage: number }
 
 type ExtensionValues =
   | SubjectAlternativeNameExtension
@@ -108,7 +108,7 @@ export class X509Certificate {
         } else if (e instanceof x509.SubjectAlternativeNameExtension) {
           return { [e.type]: JSON.parse(JSON.stringify(e.names)) as SubjectAlternativeNameExtension }
         } else if (e instanceof x509.KeyUsagesExtension) {
-          return { [e.type]: { usage: e.usages as unknown as KeyUsage } }
+          return { [e.type]: { usage: e.usages as number } }
         }
 
         // TODO: We could throw an error when we don't understand the extension?
@@ -173,10 +173,21 @@ export class X509Certificate {
     return keyIds?.[0]
   }
 
-  public get keyUsage() {
-    const usage = this.getMatchingExtensions<KeyUsageExtension>(id_ce_keyUsage)?.map((e) => e.usage)
+  public get keyUsage(): Array<KeyUsage> {
+    const keyUsages = this.getMatchingExtensions<KeyUsageExtension>(id_ce_keyUsage)?.map((e) => e.usage)
 
-    return usage ?? []
+    if (keyUsages && keyUsages.length > 1) {
+      throw new X509Error('Multiple Key Usages are not allowed')
+    }
+
+    if (keyUsages) {
+      return Object.values(KeyUsage)
+        .filter((key): key is number => typeof key === 'number')
+        .filter((flagValue) => (keyUsages[0] & flagValue) === flagValue)
+        .map((flagValue) => flagValue as KeyUsage)
+    }
+
+    return []
   }
 
   public static async createSelfSigned(
@@ -199,8 +210,7 @@ export class X509Certificate {
 
     const x509Extensions: Array<x509.Extension> = [
       new x509.SubjectKeyIdentifierExtension(hexPublicKey),
-      new x509.KeyUsagesExtension(x509.KeyUsageFlags.digitalSignature),
-      new x509.KeyUsagesExtension(x509.KeyUsageFlags.keyCertSign),
+      new x509.KeyUsagesExtension(x509.KeyUsageFlags.digitalSignature | x509.KeyUsageFlags.keyCertSign),
     ]
 
     if (includeAuthorityKeyIdentifier) {
