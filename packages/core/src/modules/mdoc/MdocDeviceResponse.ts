@@ -208,7 +208,9 @@ export class MdocDeviceResponse {
       trustedCertificates = (
         await Promise.all(
           this.documents.map((mdoc) => {
-            const certificateChain = mdoc.issuerSignedCertificateChain.map(X509Certificate.fromRawCertificate)
+            const certificateChain = mdoc.issuerSignedCertificateChain.map((cert) =>
+              X509Certificate.fromRawCertificate(cert)
+            )
             return x509Config.getTrustedCertificatesForVerification?.(agentContext, {
               certificateChain,
               verification: {

@@ -84,7 +84,7 @@ export function getVerifyJwtCallback(
     } else if (jwtVerifier.method === 'x5c' || jwtVerifier.method === 'jwk') {
       if (jwtVerifier.type === 'request-object') {
         const x509Config = agentContext.dependencyManager.resolve(X509ModuleConfig)
-        const certificateChain = jwt.header.x5c?.map(X509Certificate.fromEncodedCertificate)
+        const certificateChain = jwt.header.x5c?.map((cert) => X509Certificate.fromEncodedCertificate(cert))
 
         if (!trustedCertificates) {
           trustedCertificates = certificateChain

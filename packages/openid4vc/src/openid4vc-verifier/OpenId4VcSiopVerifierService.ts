@@ -688,7 +688,9 @@ export class OpenId4VcSiopVerifierService {
             const trustedCertificates = (
               await Promise.all(
                 mdocDeviceResponse.documents.map(async (mdoc) => {
-                  const certificateChain = mdoc.issuerSignedCertificateChain.map(X509Certificate.fromRawCertificate)
+                  const certificateChain = mdoc.issuerSignedCertificateChain.map((cert) =>
+                    X509Certificate.fromRawCertificate(cert)
+                  )
                   return (
                     (await x509Config.getTrustedCertificatesForVerification?.(agentContext, {
                       certificateChain,
