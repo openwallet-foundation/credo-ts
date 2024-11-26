@@ -3,7 +3,6 @@ import type { AgentContext } from '../../agent'
 import { DcqlCredential, DcqlMdocCredential, DcqlQuery, DcqlSdJwtVcCredential } from 'dcql'
 import { injectable } from 'tsyringe'
 
-import { JsonValue } from '../../types'
 import { Mdoc, MdocApi, MdocDeviceResponse, MdocOpenId4VpSessionTranscriptOptions, MdocRecord } from '../mdoc'
 import { SdJwtVcApi, SdJwtVcRecord, SdJwtVcService } from '../sd-jwt-vc'
 import { buildDisclosureFrameForPayload } from '../sd-jwt-vc/disclosureFrame'
@@ -17,19 +16,6 @@ import {
   DcqlEncodedPresentations,
 } from './models'
 import { dcqlGetPresentationsToCreate as getDcqlVcPresentationsToCreate } from './utils'
-
-interface HasToJson {
-  toJson(): JsonValue
-}
-
-function isToJsonable(value: unknown): value is HasToJson {
-  return (
-    value !== null &&
-    typeof value === 'object' &&
-    'toJson' in value &&
-    typeof (value as HasToJson).toJson === 'function'
-  )
-}
 
 /**
  * @todo create a public api for using dif presentation exchange
@@ -113,23 +99,11 @@ export class DcqlService {
 
     const dcqlCredentials: DcqlCredential[] = credentialRecords.map((record) => {
       if (record.type === 'MdocRecord') {
-        const transformValue = (value: unknown): unknown => {
-          if (typeof value !== 'function' && typeof value !== 'object') return value
-          return isToJsonable(value) ? value.toJson() : 'unknown json representation'
-        }
-
         const mdoc = Mdoc.fromBase64Url(record.base64Url)
-
-        const namespaces = Object.fromEntries(
-          Object.entries(mdoc.issuerSignedNamespaces).map(([key, namespace]) => [
-            key,
-            Object.fromEntries(Object.entries(namespace).map(([k, v]) => [k, transformValue(v)])),
-          ])
-        )
         return {
           credential_format: 'mso_mdoc',
           doctype: record.getTags().docType,
-          namespaces,
+          namespaces: mdoc.issuerSignedNamespaces,
         } satisfies DcqlMdocCredential
       } else if (record.type === 'SdJwtVcRecord') {
         return {
@@ -152,7 +126,7 @@ export class DcqlService {
             const sdJwtVcRecord = credentialRecords[result.input_credential_index] as SdJwtVcRecord
             const claims = agentContext.dependencyManager
               .resolve(SdJwtVcService)
-              .applyDisclosuresForPayload(sdJwtVcRecord.compactSdJwtVc, result.output.claims)
+              .applyDisclosuresForPayload(sdJwtVcRecord.compactSdJwtVc, result.output.claims).prettyClaims
             return [
               credential_query_id,
               {

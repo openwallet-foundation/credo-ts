@@ -3,6 +3,8 @@ import type { Key } from '../../crypto/Key'
 import type { DifPresentationExchangeDefinition } from '../dif-presentation-exchange'
 import type { ValidityInfo } from '@animo-id/mdoc'
 
+export { DateOnly } from '@animo-id/mdoc'
+
 export type MdocNameSpaces = Record<string, Record<string, unknown>>
 
 export interface MdocVerificationContext {

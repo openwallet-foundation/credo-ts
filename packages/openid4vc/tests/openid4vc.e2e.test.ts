@@ -45,6 +45,7 @@ import {
   JwtPayload,
   SdJwtVcRecord,
   MdocRecord,
+  DateOnly,
 } from '@credo-ts/core'
 import express, { type Express } from 'express'
 
@@ -2252,6 +2253,8 @@ describe('OpenId4Vc', () => {
 
     const holderKey = await holder.agent.context.wallet.createKey({ keyType: KeyType.P256 })
 
+    const date = new DateOnly()
+
     const signedMdoc = await issuer.agent.mdoc.sign({
       docType: 'org.eu.university',
       holderKey,
@@ -2260,6 +2263,7 @@ describe('OpenId4Vc', () => {
         'eu.europa.ec.eudi.pid.1': {
           university: 'innsbruck',
           degree: 'bachelor',
+          date: date,
           name: 'John Doe',
           not: 'disclosed',
         },
@@ -2286,6 +2290,7 @@ describe('OpenId4Vc', () => {
           claims: [
             { namespace: 'eu.europa.ec.eudi.pid.1', claim_name: 'name' },
             { namespace: 'eu.europa.ec.eudi.pid.1', claim_name: 'degree' },
+            { namespace: 'eu.europa.ec.eudi.pid.1', claim_name: 'date' },
           ],
         },
         {
@@ -2322,6 +2327,7 @@ describe('OpenId4Vc', () => {
             claims: [
               { namespace: 'eu.europa.ec.eudi.pid.1', claim_name: 'name' },
               { namespace: 'eu.europa.ec.eudi.pid.1', claim_name: 'degree' },
+              { namespace: 'eu.europa.ec.eudi.pid.1', claim_name: 'date' },
             ],
             meta: { doctype_value: 'org.eu.university' },
           },
@@ -2342,6 +2348,7 @@ describe('OpenId4Vc', () => {
               credential_format: 'mso_mdoc',
               namespaces: {
                 'eu.europa.ec.eudi.pid.1': {
+                  date: expect.any(DateOnly),
                   name: 'John Doe',
                   degree: 'bachelor',
                 },
@@ -2359,7 +2366,14 @@ describe('OpenId4Vc', () => {
               credential_format: 'vc+sd-jwt',
               vct: 'OpenBadgeCredential',
               claims: {
+                cnf: {
+                  kid: 'did:key:z6MkpGR4gs4Rc3Zph4vj8wRnjnAxgAPSxcR8MAVKutWspQzc#z6MkpGR4gs4Rc3Zph4vj8wRnjnAxgAPSxcR8MAVKutWspQzc',
+                },
+                degree: 'bachelor',
+                iat: expect.any(Number),
+                iss: 'did:key:z6MkrzQPBr4pyqC776KKtrz13SchM5ePPbssuPuQZb5t4uKQ',
                 university: 'innsbruck',
+                vct: 'OpenBadgeCredential',
               },
             },
             input_credential_index: 1,
@@ -2408,6 +2422,14 @@ describe('OpenId4Vc', () => {
     expect(idToken).toBeUndefined()
     const presentation = dcql?.presentation['orgeuuniversity'] as MdocDeviceResponse
     expect(presentation.documents).toHaveLength(1)
+
+    expect(presentation.documents[0].issuerSignedNamespaces).toEqual({
+      'eu.europa.ec.eudi.pid.1': {
+        date,
+        name: 'John Doe',
+        degree: 'bachelor',
+      },
+    })
 
     const sdJwtPresentation = dcql?.presentation['OpenBadgeCredentialDescriptor'] as SdJwtVc
     expect(sdJwtPresentation.prettyClaims).toEqual({
@@ -2566,14 +2588,7 @@ describe('OpenId4Vc', () => {
                   }),
                   // Name is NOT in here
                   disclosedPayload: {
-                    cnf: {
-                      kid: 'did:key:z6MkpGR4gs4Rc3Zph4vj8wRnjnAxgAPSxcR8MAVKutWspQzc#z6MkpGR4gs4Rc3Zph4vj8wRnjnAxgAPSxcR8MAVKutWspQzc',
-                    },
-                    degree: 'bachelor',
-                    iat: expect.any(Number),
-                    iss: 'did:key:z6MkrzQPBr4pyqC776KKtrz13SchM5ePPbssuPuQZb5t4uKQ',
                     university: 'innsbruck',
-                    vct: 'OpenBadgeCredential',
                   },
                 },
               ],
