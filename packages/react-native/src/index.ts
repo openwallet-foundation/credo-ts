@@ -7,6 +7,8 @@ import { EventEmitter } from 'events'
 
 import { ReactNativeFileSystem } from './ReactNativeFileSystem'
 
+export { SecureEnvironmentKeyManagementService } from './kms/SecureEnvironmentKeyManagementService'
+
 const fetch = global.fetch as unknown as AgentDependencies['fetch']
 const WebSocket = global.WebSocket as unknown as AgentDependencies['WebSocketClass']
 

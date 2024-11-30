@@ -7,6 +7,8 @@ import { Key } from '../../Key'
 export interface JwkJson {
   kty: string
   use?: string
+  kid?: string
+  key_ops?: string[]
   [key: string]: unknown
 }
 

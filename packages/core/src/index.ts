@@ -29,6 +29,7 @@ export type {
   WalletExportImportConfig,
   WalletStorageConfig,
 } from './types'
+export type { CanBePromise } from './utils/type'
 export { DidCommMimeType, KeyDerivationMethod } from './types'
 export type { FileSystem, DownloadToFileOptions } from './storage/FileSystem'
 export * from './storage/BaseRecord'
@@ -65,6 +66,7 @@ export * from './modules/cache'
 export * from './modules/dif-presentation-exchange'
 export * from './modules/sd-jwt-vc'
 export * from './modules/mdoc'
+export * as Kms from './modules/kms'
 export {
   JsonEncoder,
   JsonTransformer,

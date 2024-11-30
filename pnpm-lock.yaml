@@ -330,8 +330,8 @@ importers:
         version: 4.8.0
     devDependencies:
       '@animo-id/expo-secure-environment':
-        specifier: ^0.1.0-alpha.11
-        version: 0.1.0-alpha.11(expo@51.0.29(@babel/core@7.25.8)(@babel/preset-env@7.25.8(@babel/core@7.25.8)))(react-native@0.71.19(@babel/core@7.25.8)(@babel/preset-env@7.25.8(@babel/core@7.25.8))(react@18.3.1))(react@18.3.1)
+        specifier: ^0.1.0-alpha.12
+        version: 0.1.0-alpha.12(expo@51.0.29(@babel/core@7.25.8)(@babel/preset-env@7.25.8(@babel/core@7.25.8)))(react-native@0.71.19(@babel/core@7.25.8)(@babel/preset-env@7.25.8(@babel/core@7.25.8))(react@18.3.1))(react@18.3.1)
       '@hyperledger/aries-askar-nodejs':
         specifier: ^0.2.3
         version: 0.2.3
@@ -553,6 +553,9 @@ importers:
       uuid:
         specifier: ^9.0.0
         version: 9.0.1
+      valibot:
+        specifier: 1.0.0-beta.8
+        version: 1.0.0-beta.8(typescript@5.5.4)
       varint:
         specifier: ^6.0.0
         version: 6.0.0
@@ -924,8 +927,8 @@ packages:
     resolution: {integrity: sha512-30iZtAPgz+LTIYoeivqYo853f02jBYSd5uGnGpkFV0M3xOt9aN73erkgYAmZU43x4VfqcnLxW9Kpg3R5LC4YYw==}
     engines: {node: '>=6.0.0'}
 
-  '@animo-id/expo-secure-environment@0.1.0-alpha.11':
-    resolution: {integrity: sha512-cAwsK8QWZc4ywxH6r0sqrH5yGdp5bKkw3fUr41CSs/TDZ42FIMeIK+tEdc78Bp+szykEywnnZpaAKdoTAd3ebw==}
+  '@animo-id/expo-secure-environment@0.1.0-alpha.12':
+    resolution: {integrity: sha512-7bvLSwRWHWs7m4Y7J/ptvmPW9FqmwPkmwaJcOcOwqrM5HPwCU6ZiS7CSQ+b3fRXpvAHhYiMq88SCHNt2DycK1A==}
     peerDependencies:
       expo: '*'
       react: '*'
@@ -7906,6 +7909,14 @@ packages:
       typescript:
         optional: true
 
+  valibot@1.0.0-beta.8:
+    resolution: {integrity: sha512-OPAwJZtowb0j91b+bd77+ny7D1VVzsCzD7Jl9waLUlMprTsfI9Y3HHbW3hAQD7wKDKHsmGEesuiYWaYvcZL2wg==}
+    peerDependencies:
+      typescript: '>=5'
+    peerDependenciesMeta:
+      typescript:
+        optional: true
+
   valid-url@1.0.9:
     resolution: {integrity: sha512-QQDsV8OnSf5Uc30CKSwG9lnhMPe6exHtTXLRYX8uMwKENy640pU+2BgBL0LRbDh/eYRahNCS7aewCx0wf3NYVA==}
 
@@ -8190,7 +8201,7 @@ snapshots:
       '@jridgewell/gen-mapping': 0.3.5
       '@jridgewell/trace-mapping': 0.3.25
 
-  '@animo-id/expo-secure-environment@0.1.0-alpha.11(expo@51.0.29(@babel/core@7.25.8)(@babel/preset-env@7.25.8(@babel/core@7.25.8)))(react-native@0.71.19(@babel/core@7.25.8)(@babel/preset-env@7.25.8(@babel/core@7.25.8))(react@18.3.1))(react@18.3.1)':
+  '@animo-id/expo-secure-environment@0.1.0-alpha.12(expo@51.0.29(@babel/core@7.25.8)(@babel/preset-env@7.25.8(@babel/core@7.25.8)))(react-native@0.71.19(@babel/core@7.25.8)(@babel/preset-env@7.25.8(@babel/core@7.25.8))(react@18.3.1))(react@18.3.1)':
     dependencies:
       '@peculiar/asn1-ecc': 2.3.13
       '@peculiar/asn1-schema': 2.3.13
@@ -14736,7 +14747,7 @@ snapshots:
       debug: 4.3.6
       enhanced-resolve: 5.17.1
       eslint: 8.57.0
-      eslint-module-utils: 2.8.1(@typescript-eslint/parser@7.18.0(eslint@8.57.0)(typescript@5.5.4))(eslint-import-resolver-node@0.3.9)(eslint-import-resolver-typescript@3.6.1)(eslint@8.57.0)
+      eslint-module-utils: 2.8.1(@typescript-eslint/parser@7.18.0(eslint@8.57.0)(typescript@5.5.4))(eslint-import-resolver-node@0.3.9)(eslint-import-resolver-typescript@3.6.1(@typescript-eslint/parser@7.18.0(eslint@8.57.0)(typescript@5.5.4))(eslint-plugin-import@2.29.1)(eslint@8.57.0))(eslint@8.57.0)
       eslint-plugin-import: 2.29.1(@typescript-eslint/parser@7.18.0(eslint@8.57.0)(typescript@5.5.4))(eslint-import-resolver-typescript@3.6.1)(eslint@8.57.0)
       fast-glob: 3.3.2
       get-tsconfig: 4.7.6
@@ -14748,7 +14759,7 @@ snapshots:
       - eslint-import-resolver-webpack
       - supports-color
 
-  eslint-module-utils@2.8.1(@typescript-eslint/parser@7.18.0(eslint@8.57.0)(typescript@5.5.4))(eslint-import-resolver-node@0.3.9)(eslint-import-resolver-typescript@3.6.1)(eslint@8.57.0):
+  eslint-module-utils@2.8.1(@typescript-eslint/parser@7.18.0(eslint@8.57.0)(typescript@5.5.4))(eslint-import-resolver-node@0.3.9)(eslint-import-resolver-typescript@3.6.1(@typescript-eslint/parser@7.18.0(eslint@8.57.0)(typescript@5.5.4))(eslint-plugin-import@2.29.1)(eslint@8.57.0))(eslint@8.57.0):
     dependencies:
       debug: 3.2.7
     optionalDependencies:
@@ -14769,7 +14780,7 @@ snapshots:
       doctrine: 2.1.0
       eslint: 8.57.0
       eslint-import-resolver-node: 0.3.9
-      eslint-module-utils: 2.8.1(@typescript-eslint/parser@7.18.0(eslint@8.57.0)(typescript@5.5.4))(eslint-import-resolver-node@0.3.9)(eslint-import-resolver-typescript@3.6.1)(eslint@8.57.0)
+      eslint-module-utils: 2.8.1(@typescript-eslint/parser@7.18.0(eslint@8.57.0)(typescript@5.5.4))(eslint-import-resolver-node@0.3.9)(eslint-import-resolver-typescript@3.6.1(@typescript-eslint/parser@7.18.0(eslint@8.57.0)(typescript@5.5.4))(eslint-plugin-import@2.29.1)(eslint@8.57.0))(eslint@8.57.0)
       hasown: 2.0.2
       is-core-module: 2.15.0
       is-glob: 4.0.3
@@ -18963,6 +18974,10 @@ snapshots:
       convert-source-map: 2.0.0
 
   valibot@0.42.1(typescript@5.5.4):
+    optionalDependencies:
+      typescript: 5.5.4
+
+  valibot@1.0.0-beta.8(typescript@5.5.4):
     optionalDependencies:
       typescript: 5.5.4
 

@@ -31,6 +31,7 @@
     "events": "^3.3.0"
   },
   "devDependencies": {
+    "@animo-id/expo-secure-environment": "^0.1.0-alpha.12",
     "react-native": "^0.71.4",
     "react-native-fs": "^2.20.0",
     "react-native-get-random-values": "^1.8.0",
@@ -40,6 +41,12 @@
   "peerDependencies": {
     "react-native": ">=0.71.4",
     "react-native-fs": "^2.20.0",
-    "react-native-get-random-values": "^1.8.0"
+    "react-native-get-random-values": "^1.8.0",
+    "@animo-id/expo-secure-environment": "^0.1.0-alpha.12"
+  },
+  "peerDependenciesMeta": {
+    "@animo-id/expo-secure-environment": {
+      "optional": true
+    }
   }
 }

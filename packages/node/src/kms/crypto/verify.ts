@@ -1,0 +1,56 @@
+import type { CanBePromise, Kms } from '@credo-ts/core'
+
+import { TypedArrayEncoder } from '@credo-ts/core'
+import {
+  constants,
+  createHmac,
+  verify as _verify,
+  createPublicKey,
+  timingSafeEqual,
+  createSecretKey,
+} from 'node:crypto'
+import { promisify } from 'node:util'
+
+import { mapJwaSignatureAlgorithmToNode } from './sign'
+
+const verify = promisify(_verify)
+
+export function performVerify(
+  key: Kms.KmsJwkPrivate | Kms.KmsJwkPublicEc | Kms.KmsJwkPublicOkp | Kms.KmsJwkPublicRsa,
+  algorithm: Kms.KnownJwaSignatureAlgorithm,
+  data: Uint8Array,
+  signature: Uint8Array
+): CanBePromise<boolean> {
+  const nodeAlgorithm = mapJwaSignatureAlgorithmToNode(algorithm)
+  const nodeKey =
+    key.kty === 'oct' ? createSecretKey(TypedArrayEncoder.fromBase64(key.k)) : createPublicKey({ format: 'jwk', key })
+
+  switch (key.kty) {
+    case 'RSA':
+    case 'EC':
+    case 'OKP': {
+      const nodeKeyInput = algorithm.startsWith('PS')
+        ? // For RSA-PSS, we need to set padding
+          {
+            key: nodeKey,
+            padding: constants.RSA_PKCS1_PSS_PADDING,
+            saltLength: parseInt(algorithm.slice(2)) / 8,
+          }
+        : nodeKey
+
+      return verify(nodeAlgorithm, data, nodeKeyInput, signature)
+    }
+    case 'oct': {
+      const expectedHmac = createHmac(nodeAlgorithm as string, nodeKey)
+        .update(data)
+        .digest()
+
+      // eslint-disable-next-line no-restricted-globals
+      return timingSafeEqual(expectedHmac, Buffer.from(signature))
+    }
+    default:
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-expect-error
+      throw new Kms.KeyManagementAlgorithmNotSupportedError(`kty '${key.kty}'`, 'node')
+  }
+}
