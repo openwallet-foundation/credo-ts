@@ -3,9 +3,8 @@ import type { CredentialProtocol } from './protocol/CredentialProtocol'
 import type { ApiModule, DependencyManager } from '../../plugins'
 import type { Constructor } from '../../utils/mixins'
 import type { Optional } from '../../utils/type'
-import type { FeatureRegistry } from '../didcomm'
 
-import { Protocol } from '../didcomm'
+import { FeatureRegistry, MessageHandlerRegistry, Protocol } from '../didcomm'
 
 import { CredentialsApi } from './CredentialsApi'
 import { CredentialsModuleConfig } from './CredentialsModuleConfig'
@@ -44,7 +43,7 @@ export class CredentialsModule<CredentialProtocols extends CredentialProtocol[] 
   /**
    * Registers the dependencies of the credentials module on the dependency manager.
    */
-  public register(dependencyManager: DependencyManager, featureRegistry: FeatureRegistry) {
+  public register(dependencyManager: DependencyManager) {
     // Config
     dependencyManager.registerInstance(CredentialsModuleConfig, this.config)
 
@@ -55,6 +54,9 @@ export class CredentialsModule<CredentialProtocols extends CredentialProtocol[] 
     dependencyManager.registerSingleton(CredentialRepository)
 
     // Features
+    const messageHandlerRegistry = dependencyManager.resolve(MessageHandlerRegistry)
+    const featureRegistry = dependencyManager.resolve(FeatureRegistry)
+
     featureRegistry.register(
       new Protocol({
         id: 'https://didcomm.org/revocation_notification/1.0',
@@ -68,7 +70,7 @@ export class CredentialsModule<CredentialProtocols extends CredentialProtocol[] 
 
     // Protocol needs to register feature registry items and handlers
     for (const credentialProtocol of this.config.credentialProtocols) {
-      credentialProtocol.register(dependencyManager, featureRegistry)
+      credentialProtocol.register(messageHandlerRegistry, featureRegistry)
     }
   }
 }

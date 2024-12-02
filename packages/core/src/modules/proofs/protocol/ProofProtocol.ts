@@ -16,9 +16,14 @@ import type {
   SelectCredentialsForRequestReturn,
 } from './ProofProtocolOptions'
 import type { AgentContext } from '../../../agent/context/AgentContext'
-import type { DependencyManager } from '../../../plugins'
 import type { Query, QueryOptions } from '../../../storage/StorageService'
-import type { AgentMessage, FeatureRegistry, InboundMessageContext, ProblemReportMessage } from '../../didcomm'
+import type {
+  AgentMessage,
+  FeatureRegistry,
+  InboundMessageContext,
+  MessageHandlerRegistry,
+  ProblemReportMessage,
+} from '../../didcomm'
 import type { ExtractProofFormats, ProofFormatService } from '../formats'
 import type { ProofRole } from '../models'
 import type { ProofState } from '../models/ProofState'
@@ -121,5 +126,5 @@ export interface ProofProtocol<PFs extends ProofFormatService[] = ProofFormatSer
   ): Promise<ProofExchangeRecord | null>
   update(agentContext: AgentContext, proofRecord: ProofExchangeRecord): Promise<void>
 
-  register(dependencyManager: DependencyManager, featureRegistry: FeatureRegistry): void
+  register(messageHandlerRegistry: MessageHandlerRegistry, featureRegistry: FeatureRegistry): void
 }

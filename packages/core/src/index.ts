@@ -30,18 +30,18 @@ export * from './storage/migration'
 export { getDirFromFilePath, joinUriParts } from './utils/path'
 export { InjectionSymbols } from './constants'
 export * from './wallet'
-export { VersionString } from './util/version'
+export { VersionString } from './utils/version'
 
 export * from './plugins'
 export * from './modules/basic-messages'
 export * from './modules/x509'
 export * from './modules/credentials'
 export * from './modules/didcomm'
-export * from './modules/discover-features'
-export * from './modules/message-pickup'
+export * from './modules/didcomm/discover-features'
+export * from './modules/didcomm/message-pickup'
 export * from './modules/proofs'
-export * from './modules/routing'
-export * from './modules/oob'
+export * from './modules/didcomm/routing'
+export * from './modules/didcomm/oob'
 export * from './modules/dids'
 export * from './modules/vc'
 export * from './modules/cache'
@@ -52,7 +52,6 @@ export {
   JsonEncoder,
   JsonTransformer,
   isJsonObject,
-  isValidJweStructure,
   TypedArrayEncoder,
   Buffer,
   deepEquality,

@@ -10,14 +10,10 @@ import { BasicMessagesApi } from '../../modules/basic-messages/BasicMessagesApi'
 import { CredentialRepository } from '../../modules/credentials'
 import { CredentialsApi } from '../../modules/credentials/CredentialsApi'
 import { Dispatcher, EnvelopeService, FeatureRegistry, MessageReceiver, MessageSender } from '../../modules/didcomm'
-import { DidRotateService } from '../../modules/didcomm/connections'
+import { ConnectionService, DidRotateService, TrustPingService } from '../../modules/didcomm'
 import { ConnectionsApi } from '../../modules/didcomm/connections/ConnectionsApi'
+import { MessagePickupApi, InMemoryMessagePickupRepository } from '../../modules/didcomm/message-pickup'
 import { ConnectionRepository } from '../../modules/didcomm/repository/connections/ConnectionRepository'
-import { ConnectionService } from '../../modules/didcomm/connections/services/ConnectionService'
-import { TrustPingService } from '../../modules/didcomm/connections/services/TrustPingService'
-import { MessagePickupApi, InMemoryMessagePickupRepository } from '../../modules/message-pickup'
-import { ProofRepository } from '../../modules/proofs'
-import { ProofsApi } from '../../modules/proofs/ProofsApi'
 import {
   MediationRecipientService,
   MediationRepository,
@@ -25,7 +21,9 @@ import {
   MediatorService,
   MediationRecipientApi,
   MediationRecipientModule,
-} from '../../modules/routing'
+} from '../../modules/didcomm/routing'
+import { ProofRepository } from '../../modules/proofs'
+import { ProofsApi } from '../../modules/proofs/ProofsApi'
 import { WalletError } from '../../wallet/error'
 import { Agent } from '../Agent'
 

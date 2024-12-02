@@ -1,7 +1,7 @@
 import type { DummyModuleConfigOptions } from './DummyModuleConfig'
-import type { DependencyManager, FeatureRegistry, Module } from '@credo-ts/core'
+import type { DependencyManager, Module } from '@credo-ts/core'
 
-import { Protocol } from '@credo-ts/core'
+import { FeatureRegistry, Protocol } from '@credo-ts/core'
 
 import { DummyApi } from './DummyApi'
 import { DummyModuleConfig } from './DummyModuleConfig'
@@ -17,7 +17,7 @@ export class DummyModule implements Module {
     this.config = new DummyModuleConfig(config)
   }
 
-  public register(dependencyManager: DependencyManager, featureRegistry: FeatureRegistry) {
+  public register(dependencyManager: DependencyManager) {
     // Config
     dependencyManager.registerInstance(DummyModuleConfig, this.config)
 
@@ -25,6 +25,8 @@ export class DummyModule implements Module {
     dependencyManager.registerSingleton(DummyService)
 
     // Features
+    const featureRegistry = dependencyManager.resolve(FeatureRegistry)
+
     featureRegistry.register(
       new Protocol({
         id: 'https://didcomm.org/dummy/1.0',

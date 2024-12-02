@@ -1,5 +1,5 @@
 import type { JsonObject } from '../../../../types'
-import type { OutOfBandDidCommService } from '../../../oob/domain/OutOfBandDidCommService'
+import type { OutOfBandDidCommService } from '../../../didcomm/oob/domain/OutOfBandDidCommService'
 import type { DidDocument, VerificationMethod } from '../../domain'
 
 import { Key } from '../../../../crypto/Key'

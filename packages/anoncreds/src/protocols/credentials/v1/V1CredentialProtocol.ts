@@ -2,13 +2,13 @@ import type { LegacyIndyCredentialFormatService } from '../../../formats'
 import type {
   AgentContext,
   AgentMessage,
-  DependencyManager,
-  FeatureRegistry,
   CredentialProtocolOptions,
   InboundMessageContext,
   ProblemReportMessage,
   ExtractCredentialFormats,
   CredentialProtocol,
+  FeatureRegistry,
+  MessageHandlerRegistry,
 } from '@credo-ts/core'
 
 import {
@@ -82,9 +82,9 @@ export class V1CredentialProtocol
   /**
    * Registers the protocol implementation (handlers, feature registry) on the agent.
    */
-  public register(dependencyManager: DependencyManager, featureRegistry: FeatureRegistry) {
+  public register(messageHandlerRegistry: MessageHandlerRegistry, featureRegistry: FeatureRegistry) {
     // Register message handlers for the Issue Credential V1 Protocol
-    dependencyManager.registerMessageHandlers([
+    messageHandlerRegistry.registerMessageHandlers([
       new V1ProposeCredentialHandler(this),
       new V1OfferCredentialHandler(this),
       new V1RequestCredentialHandler(this),

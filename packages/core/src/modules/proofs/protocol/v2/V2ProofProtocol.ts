@@ -1,6 +1,12 @@
 import type { AgentContext } from '../../../../agent'
 import type { DependencyManager } from '../../../../plugins'
-import type { AgentMessage, FeatureRegistry, InboundMessageContext, ProblemReportMessage } from '../../../didcomm'
+import type {
+  AgentMessage,
+  FeatureRegistry,
+  InboundMessageContext,
+  MessageHandlerRegistry,
+  ProblemReportMessage,
+} from '../../../didcomm'
 import type {
   ExtractProofFormats,
   ProofFormat,
@@ -29,9 +35,15 @@ import type {
 } from '../ProofProtocolOptions'
 
 import { CredoError } from '../../../../error'
-import { DidCommMessageRepository, DidCommMessageRole } from '../../../../storage/didcomm'
 import { uuid } from '../../../../utils/uuid'
-import { AckStatus, ConnectionService, Protocol } from '../../../didcomm'
+import {
+  AckStatus,
+  ConnectionService,
+  DidCommApi,
+  DidCommMessageRepository,
+  DidCommMessageRole,
+  Protocol,
+} from '../../../didcomm'
 import { ProofsModuleConfig } from '../../ProofsModuleConfig'
 import { PresentationProblemReportReason } from '../../errors/PresentationProblemReportReason'
 import { AutoAcceptProof, ProofRole, ProofState } from '../../models'
@@ -73,9 +85,9 @@ export class V2ProofProtocol<PFs extends ProofFormatService[] = ProofFormatServi
    */
   public readonly version = 'v2' as const
 
-  public register(dependencyManager: DependencyManager, featureRegistry: FeatureRegistry) {
+  public register(messageHandlerRegistry: MessageHandlerRegistry, featureRegistry: FeatureRegistry) {
     // Register message handlers for the Present Proof V2 Protocol
-    dependencyManager.registerMessageHandlers([
+    messageHandlerRegistry.registerMessageHandlers([
       new V2ProposePresentationHandler(this),
       new V2RequestPresentationHandler(this),
       new V2PresentationHandler(this),

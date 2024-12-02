@@ -1,4 +1,4 @@
-import type { OutOfBandDidCommService } from '../../../oob/domain/OutOfBandDidCommService'
+import type { OutOfBandDidCommService } from '../../../didcomm/oob/domain/OutOfBandDidCommService'
 
 import { CredoError } from '../../../../error'
 import {

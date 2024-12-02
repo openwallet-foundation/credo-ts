@@ -7,15 +7,18 @@ import type { CreateCredentialOfferOptions } from '../../CredentialProtocolOptio
 import { Subject } from 'rxjs'
 
 import { getAgentConfig, getAgentContext, getMockConnection, mockFunction } from '../../../../../../tests/helpers'
-import { Dispatcher } from '../../../../../agent/Dispatcher'
 import { EventEmitter } from '../../../../../agent/EventEmitter'
-import { InboundMessageContext } from '../../../../../agent/models/InboundMessageContext'
-import { Attachment, AttachmentData } from '../../../../../decorators/attachment/Attachment'
-import { DidCommMessageRepository } from '../../../../../storage'
 import { JsonTransformer } from '../../../../../utils'
-import { DidExchangeState } from '../../../../didcomm/connections'
-import { ConnectionService } from '../../../../didcomm/connections/services/ConnectionService'
-import { RoutingService } from '../../../../routing/services/RoutingService'
+import {
+  Attachment,
+  AttachmentData,
+  DidCommMessageRepository,
+  ConnectionService,
+  Dispatcher,
+  DidExchangeState,
+  InboundMessageContext,
+} from '../../../../didcomm'
+import { RoutingService } from '../../../../didcomm/routing/services/RoutingService'
 import { CredentialEventTypes } from '../../../CredentialEvents'
 import { CredentialFormatSpec } from '../../../models'
 import { CredentialState } from '../../../models/CredentialState'

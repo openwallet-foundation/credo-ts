@@ -2,7 +2,7 @@ import type { BaseAgent } from '../../../../agent/BaseAgent'
 import type { ConnectionRecord } from '../../../../modules/didcomm'
 
 import { ConnectionType, ConnectionRepository } from '../../../../modules/didcomm'
-import { MediationRepository } from '../../../../modules/routing'
+import { MediationRepository } from '../../../../modules/didcomm/routing'
 
 /**
  * Migrate the {@link ConnectionRecord} to a 0.3 compatible format.

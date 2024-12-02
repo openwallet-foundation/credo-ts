@@ -17,13 +17,12 @@ import type {
   SelectCredentialsForRequestReturn,
 } from './ProofProtocolOptions'
 import type { AgentContext } from '../../../agent/context/AgentContext'
-import type { DependencyManager } from '../../../plugins'
 import type { Query, QueryOptions } from '../../../storage/StorageService'
-import {
+import type {
   AgentMessage,
-  ConnectionService,
   FeatureRegistry,
   InboundMessageContext,
+  MessageHandlerRegistry,
   ProblemReportMessage,
 } from '../../didcomm'
 import type { ProofStateChangedEvent } from '../ProofEvents'
@@ -32,7 +31,7 @@ import type { ProofRole } from '../models'
 import type { ProofExchangeRecord } from '../repository'
 
 import { EventEmitter } from '../../../agent/EventEmitter'
-import { DidCommMessageRepository } from '../../../storage/didcomm'
+import { ConnectionService, DidCommMessageRepository } from '../../didcomm'
 import {} from '../../didcomm/connections'
 import { ProofEventTypes } from '../ProofEvents'
 import { ProofState } from '../models/ProofState'
@@ -43,7 +42,7 @@ export abstract class BaseProofProtocol<PFs extends ProofFormatService[] = Proof
 {
   public abstract readonly version: string
 
-  public abstract register(dependencyManager: DependencyManager, featureRegistry: FeatureRegistry): void
+  public abstract register(messageHandlerRegistry: MessageHandlerRegistry, featureRegistry: FeatureRegistry): void
 
   // methods for proposal
   public abstract createProposal(

@@ -17,6 +17,12 @@ export class MessageHandlerRegistry {
     this.messageHandlers.push(messageHandler)
   }
 
+  public registerMessageHandlers(messageHandlers: MessageHandler[]) {
+    for (const messageHandler of messageHandlers) {
+      this.registerMessageHandler(messageHandler)
+    }
+  }
+
   public registerMessageHandlerMiddleware(messageHandlerMiddleware: MessageHandlerMiddleware) {
     this.messageHandlerMiddlewares.push(messageHandlerMiddleware)
   }

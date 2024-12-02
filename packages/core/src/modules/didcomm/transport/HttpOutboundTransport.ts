@@ -1,5 +1,5 @@
 import type { OutboundTransport } from './OutboundTransport'
-import type { Agent } from '../../../agent/Agent'
+import type { AgentContext } from '../../../agent'
 import type { Logger } from '../../../logger'
 import type { AgentMessageReceivedEvent } from '../Events'
 import type { OutboundPackage } from '../types'
@@ -7,13 +7,15 @@ import type { OutboundPackage } from '../types'
 import { AbortController } from 'abort-controller'
 import { Subject } from 'rxjs'
 
+import { EventEmitter } from '../../../agent/EventEmitter'
 import { CredoError } from '../../../error'
 import { JsonEncoder } from '../../../utils'
+import { DidCommModuleConfig } from '../DidCommModuleConfig'
 import { AgentEventTypes } from '../Events'
 import { isValidJweStructure } from '../util/JWE'
 
 export class HttpOutboundTransport implements OutboundTransport {
-  private agent!: Agent
+  private agentContext!: AgentContext
   private logger!: Logger
   private fetch!: typeof fetch
   private isActive = false
@@ -23,10 +25,10 @@ export class HttpOutboundTransport implements OutboundTransport {
 
   public supportedSchemes = ['http', 'https']
 
-  public async start(agent: Agent): Promise<void> {
-    this.agent = agent
-    this.logger = this.agent.config.logger
-    this.fetch = this.agent.config.agentDependencies.fetch
+  public async start(agentContext: AgentContext): Promise<void> {
+    this.agentContext = agentContext
+    this.logger = this.agentContext.config.logger
+    this.fetch = this.agentContext.config.agentDependencies.fetch
     this.isActive = true
     this.outboundSessionCount = 0
 
@@ -38,18 +40,22 @@ export class HttpOutboundTransport implements OutboundTransport {
     this.isActive = false
 
     if (this.outboundSessionCount === 0) {
-      this.agent.config.logger.debug('No open outbound HTTP sessions. Immediately stopping HttpOutboundTransport')
+      this.agentContext.config.logger.debug(
+        'No open outbound HTTP sessions. Immediately stopping HttpOutboundTransport'
+      )
       return
     }
 
-    this.agent.config.logger.debug(
+    this.agentContext.config.logger.debug(
       `Still ${this.outboundSessionCount} open outbound HTTP sessions. Waiting for sessions to close before stopping HttpOutboundTransport`
     )
     // Track all 'closed' sessions
     // TODO: add timeout? -> we have a timeout on the request
     return new Promise((resolve) =>
       this.outboundSessionsObservable.subscribe(() => {
-        this.agent.config.logger.debug(`${this.outboundSessionCount} HttpOutboundTransport sessions still active`)
+        this.agentContext.config.logger.debug(
+          `${this.outboundSessionCount} HttpOutboundTransport sessions still active`
+        )
         if (this.outboundSessionCount === 0) resolve()
       })
     )
@@ -57,6 +63,7 @@ export class HttpOutboundTransport implements OutboundTransport {
 
   public async sendMessage(outboundPackage: OutboundPackage) {
     const { payload, endpoint } = outboundPackage
+    const didCommMimeType = this.agentContext.dependencyManager.resolve(DidCommModuleConfig).didCommMimeType
 
     if (!this.isActive) {
       throw new CredoError('Outbound transport is not active. Not sending message.')
@@ -81,7 +88,7 @@ export class HttpOutboundTransport implements OutboundTransport {
         response = await this.fetch(endpoint, {
           method: 'POST',
           body: JSON.stringify(payload),
-          headers: { 'Content-Type': this.agent.config.didCommMimeType },
+          headers: { 'Content-Type': didCommMimeType },
           signal: abortController.signal as NonNullable<RequestInit['signal']>,
         })
         clearTimeout(id)
@@ -118,7 +125,8 @@ export class HttpOutboundTransport implements OutboundTransport {
             return
           }
           // Emit event with the received agent message.
-          this.agent.events.emit<AgentMessageReceivedEvent>(this.agent.context, {
+          const eventEmitter = this.agentContext.dependencyManager.resolve(EventEmitter)
+          eventEmitter.emit<AgentMessageReceivedEvent>(this.agentContext, {
             type: AgentEventTypes.AgentMessageReceived,
             payload: {
               message: encryptedMessage,
@@ -135,7 +143,7 @@ export class HttpOutboundTransport implements OutboundTransport {
         error,
         message: error.message,
         body: payload,
-        didCommMimeType: this.agent.config.didCommMimeType,
+        didCommMimeType,
       })
       throw new CredoError(`Error sending message to ${endpoint}: ${error.message}`, { cause: error })
     } finally {

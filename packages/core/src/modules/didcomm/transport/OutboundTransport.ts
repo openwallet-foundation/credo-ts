@@ -1,4 +1,4 @@
-import type { Agent } from '../../../agent/Agent'
+import type { AgentContext } from '../../../agent'
 import type { OutboundPackage } from '../types'
 
 export interface OutboundTransport {
@@ -7,6 +7,6 @@ export interface OutboundTransport {
   sendMessage(outboundPackage: OutboundPackage): Promise<void>
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  start(agent: Agent<any>): Promise<void>
+  start(agentContext: AgentContext): Promise<void>
   stop(): Promise<void>
 }

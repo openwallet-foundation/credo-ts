@@ -26,7 +26,7 @@ import { LinkedAttachment } from '../../../../../utils/LinkedAttachment'
 import { uuid } from '../../../../../utils/uuid'
 import { HandshakeProtocol } from '../../../../didcomm/connections'
 import { CredentialEventTypes } from '../../../../credentials'
-import { MediatorModule, MediatorPickupStrategy, MediationRecipientModule } from '../../../../routing'
+import { MediatorModule, MediatorPickupStrategy, MediationRecipientModule } from '../../../../didcomm/routing'
 import { ProofEventTypes } from '../../../ProofEvents'
 import { AutoAcceptProof, ProofState } from '../../../models'
 

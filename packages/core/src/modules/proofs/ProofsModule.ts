@@ -3,7 +3,6 @@ import type { ProofProtocol } from './protocol/ProofProtocol'
 import type { ApiModule, DependencyManager } from '../../plugins'
 import type { Optional } from '../../utils'
 import type { Constructor } from '../../utils/mixins'
-import type { FeatureRegistry } from '../didcomm'
 
 import { ProofsApi } from './ProofsApi'
 import { ProofsModuleConfig } from './ProofsModuleConfig'
@@ -38,7 +37,7 @@ export class ProofsModule<ProofProtocols extends ProofProtocol[] = DefaultProofP
   /**
    * Registers the dependencies of the proofs module on the dependency manager.
    */
-  public register(dependencyManager: DependencyManager, featureRegistry: FeatureRegistry) {
+  public register(dependencyManager: DependencyManager) {
     // Config
     dependencyManager.registerInstance(ProofsModuleConfig, this.config)
 
@@ -46,7 +45,7 @@ export class ProofsModule<ProofProtocols extends ProofProtocol[] = DefaultProofP
     dependencyManager.registerSingleton(ProofRepository)
 
     for (const proofProtocol of this.config.proofProtocols) {
-      proofProtocol.register(dependencyManager, featureRegistry)
+      proofProtocol.register(dependencyManager)
     }
   }
 }

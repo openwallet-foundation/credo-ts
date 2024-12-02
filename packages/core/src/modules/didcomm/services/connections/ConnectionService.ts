@@ -1,11 +1,12 @@
 import type { AgentContext } from '../../../../agent'
 import type { Query, QueryOptions } from '../../../../storage/StorageService'
-import type { OutOfBandDidCommService } from '../../../oob/domain/OutOfBandDidCommService'
-import type { OutOfBandRecord } from '../../../oob/repository'
 import type { AgentMessage } from '../../AgentMessage'
+import type { ConnectionStateChangedEvent } from '../../connections/ConnectionEvents'
 import type { AckMessage, ConnectionProblemReportMessage } from '../../messages'
 import type { InboundMessageContext } from '../../models'
 import type { ConnectionType } from '../../models/connections'
+import type { OutOfBandDidCommService } from '../../oob/domain/OutOfBandDidCommService'
+import type { OutOfBandRecord } from '../../oob/repository'
 import type { ConnectionRecordProps } from '../../repository/connections/ConnectionRecord'
 
 import { firstValueFrom, ReplaySubject } from 'rxjs'
@@ -26,13 +27,8 @@ import { didKeyToVerkey } from '../../../dids/helpers'
 import { didDocumentJsonToNumAlgo1Did } from '../../../dids/methods/peer/peerDidNumAlgo1'
 import { DidRecord, DidRepository } from '../../../dids/repository'
 import { DidRecordMetadataKeys } from '../../../dids/repository/didRecordMetadataTypes'
-import { OutOfBandService } from '../../../oob/OutOfBandService'
-import { OutOfBandRole } from '../../../oob/domain/OutOfBandRole'
-import { OutOfBandState } from '../../../oob/domain/OutOfBandState'
-import { InvitationType } from '../../../oob/messages'
-import { OutOfBandRepository } from '../../../oob/repository'
-import { OutOfBandRecordMetadataKeys } from '../../../oob/repository/outOfBandRecordMetadataTypes'
-import { ConnectionEventTypes, ConnectionStateChangedEvent } from '../../connections/ConnectionEvents'
+import { DidCommModuleConfig } from '../../DidCommModuleConfig'
+import { ConnectionEventTypes } from '../../connections/ConnectionEvents'
 import { ConnectionProblemReportError, ConnectionProblemReportReason } from '../../connections/errors'
 import { signData, unpackAndVerifySignatureDecorator } from '../../decorators/signature/SignatureDecoratorUtils'
 import { ConnectionRequestMessage, ConnectionResponseMessage, TrustPingMessage } from '../../messages'
@@ -46,6 +42,12 @@ import {
   HandshakeProtocol,
   ReferencedAuthentication,
 } from '../../models/connections'
+import { OutOfBandService } from '../../oob/OutOfBandService'
+import { OutOfBandRole } from '../../oob/domain/OutOfBandRole'
+import { OutOfBandState } from '../../oob/domain/OutOfBandState'
+import { InvitationType } from '../../oob/messages'
+import { OutOfBandRepository } from '../../oob/repository'
+import { OutOfBandRecordMetadataKeys } from '../../oob/repository/outOfBandRecordMetadataTypes'
 import { ConnectionRecord } from '../../repository/connections/ConnectionRecord'
 import { ConnectionRepository } from '../../repository/connections/ConnectionRepository'
 
@@ -111,11 +113,13 @@ export class ConnectionService {
     })
 
     const { label, imageUrl } = config
+    const didcommConfig = agentContext.dependencyManager.resolve(DidCommModuleConfig)
+
     const connectionRequest = new ConnectionRequestMessage({
       label: label ?? agentContext.config.label,
       did: didDoc.id,
       didDoc,
-      imageUrl: imageUrl ?? agentContext.config.connectionImageUrl,
+      imageUrl: imageUrl ?? didcommConfig.connectionImageUrl,
     })
 
     connectionRequest.setThread({

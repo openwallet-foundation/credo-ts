@@ -1,11 +1,11 @@
 import type { AgentContext } from '../../../../agent'
-import type { DependencyManager } from '../../../../plugins'
 import type {
   AgentMessage,
-  FeatureRegistry,
   MessageHandlerInboundMessage,
   InboundMessageContext,
   ProblemReportMessage,
+  FeatureRegistry,
+  MessageHandlerRegistry,
 } from '../../../didcomm'
 import type {
   CredentialFormat,
@@ -84,9 +84,9 @@ export class V2CredentialProtocol<CFs extends CredentialFormatService[] = Creden
   /**
    * Registers the protocol implementation (handlers, feature registry) on the agent.
    */
-  public register(dependencyManager: DependencyManager, featureRegistry: FeatureRegistry) {
+  public register(messageHandlerRegistry: MessageHandlerRegistry, featureRegistry: FeatureRegistry) {
     // Register message handlers for the Issue Credential V2 Protocol
-    dependencyManager.registerMessageHandlers([
+    messageHandlerRegistry.registerMessageHandlers([
       new V2ProposeCredentialHandler(this),
       new V2OfferCredentialHandler(this),
       new V2RequestCredentialHandler(this),

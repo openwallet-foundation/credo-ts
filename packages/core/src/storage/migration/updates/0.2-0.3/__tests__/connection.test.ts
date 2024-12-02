@@ -1,5 +1,5 @@
 import type { ConnectionRecordProps, CustomConnectionTags } from '../../../../../modules/didcomm/connections'
-import type { MediationRecordProps } from '../../../../../modules/routing'
+import type { MediationRecordProps } from '../../../../../modules/didcomm/routing'
 
 import { getAgentConfig, getAgentContext, mockFunction } from '../../../../../../tests/helpers'
 import { Agent } from '../../../../../agent/Agent'
@@ -10,7 +10,7 @@ import {
   DidExchangeRole,
   DidExchangeState,
 } from '../../../../../modules/didcomm/connections'
-import { MediationRecord, MediationState, MediationRepository, MediationRole } from '../../../../../modules/routing'
+import { MediationRecord, MediationState, MediationRepository, MediationRole } from '../../../../../modules/didcomm/routing'
 import { JsonTransformer } from '../../../../../utils'
 import * as testModule from '../connection'
 

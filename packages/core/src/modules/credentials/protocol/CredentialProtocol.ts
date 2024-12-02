@@ -14,9 +14,14 @@ import type {
   CreateCredentialProblemReportOptions,
 } from './CredentialProtocolOptions'
 import type { AgentContext } from '../../../agent'
-import type { DependencyManager } from '../../../plugins'
 import type { Query, QueryOptions } from '../../../storage/StorageService'
-import type { AgentMessage, FeatureRegistry, InboundMessageContext, ProblemReportMessage } from '../../didcomm'
+import type {
+  AgentMessage,
+  FeatureRegistry,
+  InboundMessageContext,
+  MessageHandlerRegistry,
+  ProblemReportMessage,
+} from '../../didcomm'
 import type { CredentialFormatService, ExtractCredentialFormats } from '../formats'
 import type { CredentialRole } from '../models'
 import type { CredentialState } from '../models/CredentialState'
@@ -129,5 +134,5 @@ export interface CredentialProtocol<CFs extends CredentialFormatService[] = Cred
   ): Promise<CredentialExchangeRecord | null>
   update(agentContext: AgentContext, credentialRecord: CredentialExchangeRecord): Promise<void>
 
-  register(dependencyManager: DependencyManager, featureRegistry: FeatureRegistry): void
+  register(messageHandlerRegistry: MessageHandlerRegistry, featureRegistry: FeatureRegistry): void
 }

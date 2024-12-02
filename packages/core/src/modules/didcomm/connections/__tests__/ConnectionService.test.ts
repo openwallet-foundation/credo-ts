@@ -1,6 +1,6 @@
 import type { AgentContext } from '../../../../agent'
 import type { Wallet } from '../../../../wallet/Wallet'
-import type { Routing } from '../services/ConnectionService'
+import type { Routing } from '../../services'
 
 import { Subject } from 'rxjs'
 
@@ -12,25 +12,20 @@ import {
   getMockOutOfBand,
   mockFunction,
 } from '../../../../../tests/helpers'
-import { AgentMessage } from '../../../agent/AgentMessage'
 import { EventEmitter } from '../../../../agent/EventEmitter'
-import { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import { Key, KeyType } from '../../../../crypto'
-import { signData, unpackAndVerifySignatureDecorator } from '../../decorators/signature/SignatureDecoratorUtils'
 import { JsonTransformer } from '../../../../utils/JsonTransformer'
 import { indyDidFromPublicKeyBase58 } from '../../../../utils/did'
 import { uuid } from '../../../../utils/uuid'
-import { AckMessage, AckStatus } from '../../../common'
 import { DidKey, IndyAgentService } from '../../../dids'
 import { DidDocumentRole } from '../../../dids/domain/DidDocumentRole'
 import { DidCommV1Service } from '../../../dids/domain/service/DidCommV1Service'
 import { didDocumentJsonToNumAlgo1Did } from '../../../dids/methods/peer/peerDidNumAlgo1'
 import { DidRecord, DidRepository } from '../../../dids/repository'
-import { OutOfBandService } from '../../../oob/OutOfBandService'
-import { OutOfBandRole } from '../../../oob/domain/OutOfBandRole'
-import { OutOfBandState } from '../../../oob/domain/OutOfBandState'
-import { OutOfBandRepository } from '../../../oob/repository/OutOfBandRepository'
-import { ConnectionRequestMessage, ConnectionResponseMessage, TrustPingMessage } from '../messages'
+import { AgentMessage } from '../../AgentMessage'
+import { signData, unpackAndVerifySignatureDecorator } from '../../decorators/signature/SignatureDecoratorUtils'
+import { AckMessage, AckStatus } from '../../messages'
+import { InboundMessageContext } from '../../models'
 import {
   Connection,
   DidDoc,
@@ -41,9 +36,14 @@ import {
   ReferencedAuthentication,
   authenticationTypes,
 } from '../../models/connections'
+import { OutOfBandService } from '../../oob/OutOfBandService'
+import { OutOfBandRole } from '../../oob/domain/OutOfBandRole'
+import { OutOfBandState } from '../../oob/domain/OutOfBandState'
+import { OutOfBandRepository } from '../../oob/repository/OutOfBandRepository'
 import { ConnectionRepository } from '../../repository/connections/ConnectionRepository'
-import { ConnectionService } from '../services/ConnectionService'
-import { convertToNewDidDocument } from '../services/helpers'
+import { ConnectionService } from '../../services'
+import { convertToNewDidDocument } from '../../services/connections/helpers'
+import { ConnectionRequestMessage, ConnectionResponseMessage, TrustPingMessage } from '../messages'
 
 jest.mock('../repository/ConnectionRepository')
 jest.mock('../../oob/repository/OutOfBandRepository')

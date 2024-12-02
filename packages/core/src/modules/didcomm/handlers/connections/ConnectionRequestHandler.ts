@@ -1,6 +1,6 @@
 import type { DidRepository } from '../../../dids/repository'
-import type { OutOfBandService } from '../../../oob/OutOfBandService'
-import type { RoutingService } from '../../../routing/services/RoutingService'
+import type { OutOfBandService } from '../../oob/OutOfBandService'
+import type { RoutingService } from '../../routing/services/RoutingService'
 import type { ConnectionsModuleConfig } from '../../connections/ConnectionsModuleConfig'
 import type { ConnectionService } from '../../services'
 import type { MessageHandler, MessageHandlerInboundMessage } from '../MessageHandler'

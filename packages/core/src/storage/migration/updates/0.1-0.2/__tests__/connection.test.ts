@@ -6,15 +6,15 @@ import {
   ConnectionState,
   DidExchangeRole,
   DidExchangeState,
-} from '../../../../../modules/didcomm/connections'
+} from '../../../../../modules/didcomm'
+import { OutOfBandRole } from '../../../../../modules/didcomm/oob/domain/OutOfBandRole'
+import { OutOfBandState } from '../../../../../modules/didcomm/oob/domain/OutOfBandState'
+import { OutOfBandRecord } from '../../../../../modules/didcomm/oob/repository'
+import { OutOfBandRepository } from '../../../../../modules/didcomm/oob/repository/OutOfBandRepository'
 import { ConnectionRepository } from '../../../../../modules/didcomm/repository/connections/ConnectionRepository'
 import { DidDocumentRole } from '../../../../../modules/dids/domain/DidDocumentRole'
 import { DidRecord } from '../../../../../modules/dids/repository'
 import { DidRepository } from '../../../../../modules/dids/repository/DidRepository'
-import { OutOfBandRole } from '../../../../../modules/oob/domain/OutOfBandRole'
-import { OutOfBandState } from '../../../../../modules/oob/domain/OutOfBandState'
-import { OutOfBandRecord } from '../../../../../modules/oob/repository'
-import { OutOfBandRepository } from '../../../../../modules/oob/repository/OutOfBandRepository'
 import { JsonTransformer } from '../../../../../utils'
 import * as testModule from '../connection'
 

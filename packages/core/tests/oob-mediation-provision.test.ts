@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
-import type { OutOfBandInvitation } from '../src/modules/oob/messages'
+import type { OutOfBandInvitation } from '../src/modules/didcomm/oob/messages'
 
 import { Agent } from '../src/agent/Agent'
 import { DidExchangeState, HandshakeProtocol } from '../src/modules/didcomm/connections'
@@ -8,7 +8,7 @@ import {
   MediatorModule,
   MediatorPickupStrategy,
   MediationRecipientModule,
-} from '../src/modules/routing'
+} from '../src/modules/didcomm/routing'
 
 import { getInMemoryAgentOptions, waitForBasicMessage } from './helpers'
 import { setupSubjectTransports } from './transport'

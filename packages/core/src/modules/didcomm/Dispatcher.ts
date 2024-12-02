@@ -41,10 +41,12 @@ class Dispatcher {
   private defaultHandlerMiddleware: MessageHandlerMiddleware = async (inboundMessageContext, next) => {
     let messageHandler = inboundMessageContext.messageHandler
 
-    if (!messageHandler && inboundMessageContext.agentContext.dependencyManager.fallbackMessageHandler) {
+    const fallbackMessageHandler =
+      inboundMessageContext.agentContext.dependencyManager.resolve(MessageHandlerRegistry).fallbackMessageHandler
+    if (!messageHandler && fallbackMessageHandler) {
       messageHandler = {
         supportedMessages: [],
-        handle: inboundMessageContext.agentContext.dependencyManager.fallbackMessageHandler,
+        handle: fallbackMessageHandler,
       }
     }
 
@@ -77,7 +79,9 @@ class Dispatcher {
     let outboundMessage: OutboundMessageContext<AgentMessage> | undefined
 
     try {
-      const middlewares = [...agentContext.dependencyManager.messageHandlerMiddlewares, this.defaultHandlerMiddleware]
+      const messageHandlerMiddlewares =
+        agentContext.dependencyManager.resolve(MessageHandlerRegistry).messageHandlerMiddlewares
+      const middlewares = [...messageHandlerMiddlewares, this.defaultHandlerMiddleware]
       await MessageHandlerMiddlewareRunner.run(middlewares, messageContext)
 
       outboundMessage = messageContext.responseMessage

@@ -7,7 +7,12 @@ import { Transform } from 'class-transformer'
 import { CredoError } from '../../../../error'
 import { BaseRecord } from '../../../../storage/BaseRecord'
 import { uuid } from '../../../../utils/uuid'
-import { rfc0160StateFromDidExchangeState, DidExchangeRole, DidExchangeState, HandshakeProtocol } from '../../models/connections'
+import {
+  rfc0160StateFromDidExchangeState,
+  DidExchangeRole,
+  DidExchangeState,
+  HandshakeProtocol,
+} from '../../models/connections'
 
 export interface ConnectionRecordProps {
   id?: string

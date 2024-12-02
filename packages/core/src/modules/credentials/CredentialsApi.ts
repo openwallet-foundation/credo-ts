@@ -30,7 +30,7 @@ import { Logger } from '../../logger'
 import { inject, injectable } from '../../plugins'
 import { AgentMessage, ConnectionService, MessageSender, getOutboundMessageContext } from '../didcomm'
 import { DidCommMessageRepository } from '../didcomm/repository/DidCommMessageRepository'
-import { RoutingService } from '../routing/services/RoutingService'
+import { RoutingService } from '../didcomm/routing/services/RoutingService'
 
 import { CredentialsModuleConfig } from './CredentialsModuleConfig'
 import { CredentialState } from './models/CredentialState'

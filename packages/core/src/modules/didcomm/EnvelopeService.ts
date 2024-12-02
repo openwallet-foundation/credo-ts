@@ -6,7 +6,9 @@ import { InjectionSymbols } from '../../constants'
 import { Key, KeyType } from '../../crypto'
 import { Logger } from '../../logger'
 import { inject, injectable } from '../../plugins'
-import { ForwardMessage } from '../routing/messages'
+
+import { DidCommModuleConfig } from './DidCommModuleConfig'
+import { ForwardMessage } from './routing/messages'
 
 export interface EnvelopeKeys {
   recipientKeys: Key[]
@@ -27,13 +29,15 @@ export class EnvelopeService {
     payload: AgentMessage,
     keys: EnvelopeKeys
   ): Promise<EncryptedMessage> {
+    const didcommConfig = agentContext.dependencyManager.resolve(DidCommModuleConfig)
+
     const { recipientKeys, routingKeys, senderKey } = keys
     let recipientKeysBase58 = recipientKeys.map((key) => key.publicKeyBase58)
     const routingKeysBase58 = routingKeys.map((key) => key.publicKeyBase58)
     const senderKeyBase58 = senderKey && senderKey.publicKeyBase58
 
     // pass whether we want to use legacy did sov prefix
-    const message = payload.toJSON({ useDidSovPrefixWhereAllowed: agentContext.config.useDidSovPrefixWhereAllowed })
+    const message = payload.toJSON({ useDidSovPrefixWhereAllowed: didcommConfig.useDidSovPrefixWhereAllowed })
 
     this.logger.debug(`Pack outbound message ${message['@type']}`)
 
@@ -50,7 +54,7 @@ export class EnvelopeService {
       this.logger.debug('Forward message created', forwardMessage)
 
       const forwardJson = forwardMessage.toJSON({
-        useDidSovPrefixWhereAllowed: agentContext.config.useDidSovPrefixWhereAllowed,
+        useDidSovPrefixWhereAllowed: didcommConfig.useDidSovPrefixWhereAllowed,
       })
 
       // Forward messages are anon packed

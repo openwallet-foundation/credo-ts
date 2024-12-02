@@ -1,7 +1,7 @@
 import type { ConnectionsModuleConfigOptions } from './ConnectionsModuleConfig'
 import type { DependencyManager, Module } from '../../../plugins'
-import type { FeatureRegistry } from '../FeatureRegistry'
 
+import { FeatureRegistry } from '../FeatureRegistry'
 import { Protocol } from '../models'
 import { ConnectionRole, DidExchangeRole, DidRotateRole } from '../models/connections'
 import { ConnectionRepository } from '../repository/connections'
@@ -22,7 +22,7 @@ export class ConnectionsModule implements Module {
   /**
    * Registers the dependencies of the connections module on the dependency manager.
    */
-  public register(dependencyManager: DependencyManager, featureRegistry: FeatureRegistry) {
+  public register(dependencyManager: DependencyManager) {
     // Config
     dependencyManager.registerInstance(ConnectionsModuleConfig, this.config)
 
@@ -36,6 +36,8 @@ export class ConnectionsModule implements Module {
     dependencyManager.registerSingleton(ConnectionRepository)
 
     // Features
+    const featureRegistry = dependencyManager.resolve(FeatureRegistry)
+
     featureRegistry.register(
       new Protocol({
         id: 'https://didcomm.org/connections/1.0',

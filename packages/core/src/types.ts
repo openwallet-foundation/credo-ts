@@ -39,17 +39,11 @@ export interface InitConfig {
   /**
    * Agent public endpoints, sorted by priority (higher priority first)
    */
-  endpoints?: string[]
   label: string
   walletConfig?: WalletConfig
   logger?: Logger
-  didCommMimeType?: DidCommMimeType
-  useDidKeyInProtocols?: boolean
-  useDidSovPrefixWhereAllowed?: boolean
-  connectionImageUrl?: string
   autoUpdateStorageOnStartup?: boolean
   backupBeforeStorageUpdate?: boolean
-  processDidCommMessagesConcurrently?: boolean
 }
 
 export type JsonValue = string | number | boolean | null | JsonObject | JsonArray

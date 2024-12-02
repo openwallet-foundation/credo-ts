@@ -1,11 +1,12 @@
 import type { OutboundTransport } from './OutboundTransport'
 import type { OutboundWebSocketClosedEvent, OutboundWebSocketOpenedEvent } from './TransportEventTypes'
-import type { Agent } from '../../../agent/Agent'
+import type { AgentContext } from '../../../agent'
 import type { Logger } from '../../../logger'
 import type { AgentMessageReceivedEvent } from '../Events'
 import type { OutboundPackage } from '../types'
 import type { WebSocket } from 'ws'
 
+import { EventEmitter } from '../../../agent/EventEmitter'
 import { CredoError } from '../../../error'
 import { JsonEncoder } from '../../../utils'
 import { Buffer } from '../../../utils/buffer'
@@ -16,19 +17,19 @@ import { TransportEventTypes } from './TransportEventTypes'
 
 export class WsOutboundTransport implements OutboundTransport {
   private transportTable: Map<string, WebSocket> = new Map<string, WebSocket>()
-  private agent!: Agent
+  private agentContext!: AgentContext
   private logger!: Logger
   private WebSocketClass!: typeof WebSocket
   public supportedSchemes = ['ws', 'wss']
   private isActive = false
 
-  public async start(agent: Agent): Promise<void> {
-    this.agent = agent
+  public async start(agentContext: AgentContext): Promise<void> {
+    this.agentContext = agentContext
 
-    this.logger = agent.config.logger
+    this.logger = agentContext.config.logger
 
     this.logger.debug('Starting WS outbound transport')
-    this.WebSocketClass = agent.config.agentDependencies.WebSocketClass
+    this.WebSocketClass = agentContext.config.agentDependencies.WebSocketClass
 
     this.isActive = true
   }
@@ -128,7 +129,9 @@ export class WsOutboundTransport implements OutboundTransport {
     }
     this.logger.debug('Payload received from mediator:', payload)
 
-    this.agent.events.emit<AgentMessageReceivedEvent>(this.agent.context, {
+    const eventEmitter = this.agentContext.dependencyManager.resolve(EventEmitter)
+
+    eventEmitter.emit<AgentMessageReceivedEvent>(this.agentContext, {
       type: AgentEventTypes.AgentMessageReceived,
       payload: {
         message: payload,
@@ -152,12 +155,13 @@ export class WsOutboundTransport implements OutboundTransport {
     return new Promise((resolve, reject) => {
       this.logger.debug(`Connecting to WebSocket ${endpoint}`)
       const socket = new this.WebSocketClass(endpoint)
+      const eventEmitter = this.agentContext.dependencyManager.resolve(EventEmitter)
 
       socket.onopen = () => {
         this.logger.debug(`Successfully connected to WebSocket ${endpoint}`)
         resolve(socket)
 
-        this.agent.events.emit<OutboundWebSocketOpenedEvent>(this.agent.context, {
+        eventEmitter.emit<OutboundWebSocketOpenedEvent>(this.agentContext, {
           type: TransportEventTypes.OutboundWebSocketOpenedEvent,
           payload: {
             socketId,
@@ -178,7 +182,7 @@ export class WsOutboundTransport implements OutboundTransport {
         socket.removeEventListener('message', this.handleMessageEvent)
         this.transportTable.delete(socketId)
 
-        this.agent.events.emit<OutboundWebSocketClosedEvent>(this.agent.context, {
+        eventEmitter.emit<OutboundWebSocketClosedEvent>(this.agentContext, {
           type: TransportEventTypes.OutboundWebSocketClosedEvent,
           payload: {
             socketId,

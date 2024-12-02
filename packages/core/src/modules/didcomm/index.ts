@@ -24,6 +24,10 @@ export { MessageSender } from './MessageSender'
 export { MessageReceiver } from './MessageReceiver'
 export { MessageHandlerRegistry } from './MessageHandlerRegistry'
 
+export { DidCommApi } from './DidCommApi'
+export { DidCommModule } from './DidCommModule'
+export { DidCommModuleConfig } from './DidCommModuleConfig'
+
 export { getOutboundMessageContext } from './getOutboundMessageContext'
 
 export {
@@ -37,3 +41,4 @@ export { MessageValidator } from '../../utils/MessageValidator'
 export { LinkedAttachment, LinkedAttachmentOptions } from './util/LinkedAttachment'
 export { parseInvitationUrl } from './util/parseInvitation'
 export { encodeAttachment, isLinkedAttachment } from './util/attachment'
+export { isValidJweStructure } from './util/JWE'

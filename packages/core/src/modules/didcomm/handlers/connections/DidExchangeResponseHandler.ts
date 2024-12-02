@@ -1,11 +1,11 @@
 import type { DidResolverService } from '../../../dids'
-import type { OutOfBandService } from '../../../oob/OutOfBandService'
+import type { OutOfBandService } from '../../oob/OutOfBandService'
 import type { ConnectionsModuleConfig, DidExchangeProtocol } from '../../connections'
 import type { ConnectionService } from '../../services'
 import type { MessageHandler, MessageHandlerInboundMessage } from '../MessageHandler'
 
 import { CredoError } from '../../../../error'
-import { OutOfBandState } from '../../../oob/domain/OutOfBandState'
+import { OutOfBandState } from '../../oob/domain/OutOfBandState'
 import { ReturnRouteTypes } from '../../decorators/transport/TransportDecorator'
 import { DidExchangeResponseMessage } from '../../messages'
 import { DidExchangeRole, HandshakeProtocol, OutboundMessageContext } from '../../models'

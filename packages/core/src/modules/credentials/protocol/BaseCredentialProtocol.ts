@@ -15,9 +15,14 @@ import type {
   CreateCredentialProblemReportOptions,
 } from './CredentialProtocolOptions'
 import type { AgentContext } from '../../../agent'
-import type { DependencyManager } from '../../../plugins'
 import type { Query, QueryOptions } from '../../../storage/StorageService'
-import type { AgentMessage, FeatureRegistry, InboundMessageContext, ProblemReportMessage } from '../../didcomm'
+import type {
+  AgentMessage,
+  FeatureRegistry,
+  InboundMessageContext,
+  MessageHandlerRegistry,
+  ProblemReportMessage,
+} from '../../didcomm'
 import type { CredentialStateChangedEvent } from '../CredentialEvents'
 import type { CredentialFormatService, ExtractCredentialFormats } from '../formats'
 import type { CredentialRole } from '../models'
@@ -122,7 +127,7 @@ export abstract class BaseCredentialProtocol<CFs extends CredentialFormatService
     credentialExchangeId: string
   ): Promise<GetCredentialFormatDataReturn<ExtractCredentialFormats<CFs>>>
 
-  public abstract register(dependencyManager: DependencyManager, featureRegistry: FeatureRegistry): void
+  public abstract register(messageHandlerRegistry: MessageHandlerRegistry, featureRegistry: FeatureRegistry): void
 
   /**
    * Process a received credential {@link ProblemReportMessage}.

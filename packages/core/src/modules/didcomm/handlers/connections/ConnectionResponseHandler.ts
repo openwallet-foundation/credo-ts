@@ -1,5 +1,5 @@
 import type { DidResolverService } from '../../../dids'
-import type { OutOfBandService } from '../../../oob/OutOfBandService'
+import type { OutOfBandService } from '../../oob/OutOfBandService'
 import type { ConnectionsModuleConfig } from '../../connections/ConnectionsModuleConfig'
 import type { ConnectionService } from '../../services'
 import type { MessageHandler, MessageHandlerInboundMessage } from '../MessageHandler'

@@ -1,13 +1,13 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
 import type {
   AgentMessageSentEvent,
+  ConnectionRecord,
   EncryptedMessage,
   OutboundTransport,
   ResolvedDidCommService,
 } from '../../modules/didcomm'
-import type { ConnectionRecord } from '../../modules/didcomm/connections'
+import type { MessagePickupRepository } from '../../modules/didcomm/message-pickup/storage'
 import type { DidDocumentService, IndyAgentService } from '../../modules/dids'
-import type { MessagePickupRepository } from '../../modules/message-pickup/storage'
 
 import { Subject } from 'rxjs'
 
@@ -31,10 +31,10 @@ import {
   ReturnRouteTypes,
   TransportService,
 } from '../../modules/didcomm'
+import { InMemoryMessagePickupRepository } from '../../modules/didcomm/message-pickup/storage'
 import { DidResolverService, DidDocument, VerificationMethod } from '../../modules/dids'
 import { DidCommV1Service } from '../../modules/dids/domain/service/DidCommV1Service'
 import { verkeyToInstanceOfKey } from '../../modules/dids/helpers'
-import { InMemoryMessagePickupRepository } from '../../modules/message-pickup/storage'
 import { EventEmitter } from '../EventEmitter'
 
 import { DummyTransportSession } from './stubs'

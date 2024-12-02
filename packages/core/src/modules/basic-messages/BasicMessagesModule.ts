@@ -1,7 +1,6 @@
 import type { DependencyManager, Module } from '../../plugins'
-import type { FeatureRegistry } from '../didcomm'
 
-import { Protocol } from '../didcomm'
+import { FeatureRegistry, Protocol } from '../didcomm'
 
 import { BasicMessageRole } from './BasicMessageRole'
 import { BasicMessagesApi } from './BasicMessagesApi'
@@ -14,7 +13,7 @@ export class BasicMessagesModule implements Module {
   /**
    * Registers the dependencies of the basic message module on the dependency manager.
    */
-  public register(dependencyManager: DependencyManager, featureRegistry: FeatureRegistry) {
+  public register(dependencyManager: DependencyManager) {
     // Services
     dependencyManager.registerSingleton(BasicMessageService)
 
@@ -22,6 +21,8 @@ export class BasicMessagesModule implements Module {
     dependencyManager.registerSingleton(BasicMessageRepository)
 
     // Features
+    const featureRegistry = dependencyManager.resolve(FeatureRegistry)
+
     featureRegistry.register(
       new Protocol({
         id: 'https://didcomm.org/basicmessage/1.0',

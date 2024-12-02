@@ -1,10 +1,10 @@
-import type { OutOfBandService } from '../../../oob/OutOfBandService'
+import type { OutOfBandService } from '../../oob/OutOfBandService'
 import type { DidExchangeProtocol } from '../../connections/DidExchangeProtocol'
 import type { MessageHandler, MessageHandlerInboundMessage } from '../MessageHandler'
 
 import { CredoError } from '../../../../error'
 import { tryParseDid } from '../../../dids/domain/parse'
-import { OutOfBandState } from '../../../oob/domain/OutOfBandState'
+import { OutOfBandState } from '../../oob/domain/OutOfBandState'
 import { DidExchangeCompleteMessage } from '../../messages'
 import { HandshakeProtocol } from '../../models'
 

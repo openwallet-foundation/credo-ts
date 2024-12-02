@@ -17,7 +17,7 @@ import {
   getNumAlgoFromPeerDid,
   isValidPeerDid,
 } from '../../../dids'
-import { getMediationRecordForDidDocument } from '../../../routing/services/helpers'
+import { getMediationRecordForDidDocument } from '../../routing/services/helpers'
 import { ConnectionEventTypes } from '../../connections/ConnectionEvents'
 import { ConnectionsModuleConfig } from '../../connections/ConnectionsModuleConfig'
 import {

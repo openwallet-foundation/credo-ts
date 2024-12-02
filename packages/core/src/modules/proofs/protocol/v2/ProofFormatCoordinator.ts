@@ -1,5 +1,4 @@
 import type { AgentContext } from '../../../../agent'
-import type { Attachment } from '../../../didcomm'
 import type {
   ExtractProofFormats,
   ProofFormatCredentialForRequestPayload,
@@ -10,7 +9,7 @@ import type { ProofFormatSpec } from '../../models/ProofFormatSpec'
 import type { ProofExchangeRecord } from '../../repository'
 
 import { CredoError } from '../../../../error'
-import { DidCommMessageRepository, DidCommMessageRole } from '../../../../storage/didcomm'
+import { DidCommMessageRepository, DidCommMessageRole, type Attachment } from '../../../didcomm'
 
 import { V2PresentationMessage, V2ProposePresentationMessage, V2RequestPresentationMessage } from './messages'
 

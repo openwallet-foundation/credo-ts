@@ -6,13 +6,13 @@ import { parseUrl } from 'query-string'
 import { CredoError } from '../../../error'
 import { JsonEncoder } from '../../../utils/JsonEncoder'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
-import { OutOfBandDidCommService } from '../../oob/domain/OutOfBandDidCommService'
-import { convertToNewInvitation } from '../../oob/helpers'
-import { InvitationType, OutOfBandInvitation } from '../../oob/messages'
+import { MessageValidator } from '../../../utils/MessageValidator'
 import { AgentMessage } from '../AgentMessage'
 import { ConnectionInvitationMessage } from '../messages'
+import { OutOfBandDidCommService } from '../oob/domain/OutOfBandDidCommService'
+import { convertToNewInvitation } from '../oob/helpers'
+import { InvitationType, OutOfBandInvitation } from '../oob/messages'
 
-import { MessageValidator } from '../../../utils/MessageValidator'
 import { parseMessageType, supportsIncomingMessageType } from './messageType'
 
 const fetchShortUrl = async (invitationUrl: string, dependencies: AgentDependencies) => {

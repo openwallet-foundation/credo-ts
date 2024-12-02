@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 import type { SubjectMessage } from '../../../tests/transport/SubjectInboundTransport'
 import type { AgentMessageProcessedEvent } from '../src/agent/Events'
-import type { OutOfBandDidCommService } from '../src/modules/oob'
+import type { OutOfBandDidCommService } from '../src/modules/didcomm/oob'
 
 import { filter, firstValueFrom, map, Subject, timeout } from 'rxjs'
 
@@ -19,7 +19,7 @@ import {
   MediatorPickupStrategy,
   MediationRecipientModule,
   MediatorModule,
-} from '../src/modules/routing'
+} from '../src/modules/didcomm/routing'
 
 import { getInMemoryAgentOptions, waitForBasicMessage } from './helpers'
 
