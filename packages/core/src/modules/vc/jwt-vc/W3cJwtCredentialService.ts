@@ -16,6 +16,7 @@ import { injectable } from '../../../plugins'
 import { asArray, isDid, MessageValidator } from '../../../utils'
 import { getKeyDidMappingByKeyType, DidResolverService, getKeyFromVerificationMethod } from '../../dids'
 import { X509ModuleConfig } from '../../x509'
+import { extractX509CertificatesFromJwt } from '../../x509/extraction'
 import { W3cJsonLdVerifiableCredential } from '../data-integrity'
 
 import { W3cJwtVerifiableCredential } from './W3cJwtVerifiableCredential'
@@ -309,9 +310,19 @@ export class W3cJwtCredentialService {
       const proverPublicKey = getKeyFromVerificationMethod(proverVerificationMethod)
       const proverPublicJwk = getJwkFromKey(proverPublicKey)
 
-      const getTrustedCertificatesForVerification = agentContext.dependencyManager.isRegistered(X509ModuleConfig)
-        ? agentContext.dependencyManager.resolve(X509ModuleConfig).getTrustedCertificatesForVerification
-        : undefined
+      let trustedCertificates = options.trustedCertificates
+      const certificateChain = extractX509CertificatesFromJwt(presentation.jwt)
+      if (certificateChain && !trustedCertificates) {
+        const getTrustedCertificatesForVerification =
+          agentContext.dependencyManager.resolve(X509ModuleConfig).getTrustedCertificatesForVerification
+        trustedCertificates = await getTrustedCertificatesForVerification?.(agentContext, {
+          certificateChain,
+          verification: {
+            type: 'credential',
+            credential: presentation,
+          },
+        })
+      }
 
       let signatureResult: VerifyJwsResult | undefined = undefined
       try {
@@ -320,9 +331,7 @@ export class W3cJwtCredentialService {
           jws: presentation.jwt.serializedJwt,
           // We have pre-fetched the key based on the singer/holder of the presentation
           jwkResolver: () => proverPublicJwk,
-          trustedCertificates:
-            options.trustedCertificates ??
-            (await getTrustedCertificatesForVerification?.(agentContext, options.verificationContext)),
+          trustedCertificates,
         })
 
         if (!signatureResult.isValid) {

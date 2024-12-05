@@ -88,6 +88,10 @@ export class Mdoc {
     )
   }
 
+  public get issuerSignedCertificateChain() {
+    return this.issuerSignedDocument.issuerSigned.issuerAuth.certificateChain
+  }
+
   public get issuerSignedNamespaces(): MdocNameSpaces {
     return Object.fromEntries(
       Array.from(this.issuerSignedDocument.allIssuerSignedNamespaces.entries()).map(([namespace, value]) => [
@@ -156,16 +160,22 @@ export class Mdoc {
     agentContext: AgentContext,
     options?: MdocVerifyOptions
   ): Promise<{ isValid: true } | { isValid: false; error: string }> {
-    let trustedCerts: [string, ...string[]] | undefined
+    const x509ModuleConfig = agentContext.dependencyManager.resolve(X509ModuleConfig)
+    const certificateChain = this.issuerSignedDocument.issuerSigned.issuerAuth.certificateChain.map(
+      X509Certificate.fromRawCertificate
+    )
 
-    if (options?.trustedCertificates) {
-      trustedCerts = options.trustedCertificates
-    } else if (options?.verificationContext) {
-      trustedCerts = await agentContext.dependencyManager
-        .resolve(X509ModuleConfig)
-        .getTrustedCertificatesForVerification?.(agentContext, options.verificationContext)
-    } else {
-      trustedCerts = agentContext.dependencyManager.resolve(X509ModuleConfig).trustedCertificates
+    let trustedCerts = options?.trustedCertificates
+    if (!trustedCerts) {
+      // TODO: how to prevent call to trusted certificates for verification twice?
+      trustedCerts =
+        (await x509ModuleConfig.getTrustedCertificatesForVerification?.(agentContext, {
+          verification: {
+            type: 'credential',
+            credential: this,
+          },
+          certificateChain,
+        })) ?? x509ModuleConfig.trustedCertificates
     }
 
     if (!trustedCerts) {

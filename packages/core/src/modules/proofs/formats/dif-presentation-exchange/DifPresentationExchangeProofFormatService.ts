@@ -48,6 +48,7 @@ import {
   W3cJsonLdVerifiablePresentation,
   W3cJwtVerifiablePresentation,
 } from '../../../vc'
+import { extractX509CertificatesFromJwt, X509ModuleConfig } from '../../../x509'
 import { ProofFormatSpec } from '../../models'
 
 const PRESENTATION_EXCHANGE_PRESENTATION_PROPOSAL = 'dif/presentation-exchange/definitions@v1.0'
@@ -301,13 +302,25 @@ export class DifPresentationExchangeProofFormatService
       // whether it's a JWT or JSON-LD VP even though the input is the same.
       // Not sure how to fix
       if (parsedPresentation.claimFormat === ClaimFormat.JwtVp) {
+        const x509Config = agentContext.dependencyManager.resolve(X509ModuleConfig)
+
+        const certificateChain = extractX509CertificatesFromJwt(parsedPresentation.jwt)
+        const trustedCertificates = certificateChain
+          ? await x509Config.getTrustedCertificatesForVerification?.(agentContext, {
+              certificateChain,
+              verification: {
+                type: 'credential',
+                credential: parsedPresentation,
+                didcommProofRecordId: proofRecord.id,
+              },
+            })
+          : x509Config.trustedCertificates ?? []
+
         verificationResult = await w3cCredentialService.verifyPresentation(agentContext, {
           presentation: parsedPresentation,
           challenge: request.options.challenge,
           domain: request.options.domain,
-          verificationContext: {
-            didcommProofRecordId: proofRecord.id,
-          },
+          trustedCertificates,
         })
       } else if (parsedPresentation.claimFormat === ClaimFormat.LdpVp) {
         if (
