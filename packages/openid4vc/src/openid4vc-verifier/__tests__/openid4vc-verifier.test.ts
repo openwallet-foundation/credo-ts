@@ -1,6 +1,5 @@
 import { Jwt } from '@credo-ts/core'
 import { SigningAlgo } from '@sphereon/oid4vc-common'
-import { cleanAll, enableNetConnect } from 'nock'
 
 import { AskarModule } from '../../../../askar/src'
 import { askarModuleConfig } from '../../../../askar/tests/helpers'
@@ -28,11 +27,6 @@ describe('OpenId4VcVerifier', () => {
   })
 
   describe('Verification', () => {
-    afterEach(() => {
-      cleanAll()
-      enableNetConnect()
-    })
-
     it('check openid proof request format (vp token)', async () => {
       const openIdVerifier = await verifier.agent.modules.openId4VcVerifier.createVerifier()
       const { authorizationRequest, verificationSession } =

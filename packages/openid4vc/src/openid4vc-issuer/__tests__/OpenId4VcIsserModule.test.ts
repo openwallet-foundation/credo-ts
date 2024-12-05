@@ -22,12 +22,8 @@ describe('OpenId4VcIssuerModule', () => {
   test('registers dependencies on the dependency manager', async () => {
     const options = {
       baseUrl: 'http://localhost:3000',
-      endpoints: {
-        credential: {
-          credentialRequestToCredentialMapper: () => {
-            throw new Error('Not implemented')
-          },
-        },
+      credentialRequestToCredentialMapper: () => {
+        throw new Error('Not implemented')
       },
       router: Router(),
     } as const

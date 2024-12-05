@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.5.13
+
+### Patch Changes
+
+- 595c3d6: feat: mdoc device response and presentation over oid4vp
+
 ## 0.5.12
 
 ### Patch Changes

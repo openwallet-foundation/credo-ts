@@ -1,7 +1,15 @@
 import type { InitConfig, KeyDidCreateOptions, ModulesMap, VerificationMethod } from '@credo-ts/core'
 import type { Express } from 'express'
 
-import { Agent, DidKey, HttpOutboundTransport, KeyType, TypedArrayEncoder } from '@credo-ts/core'
+import {
+  Agent,
+  ConsoleLogger,
+  DidKey,
+  HttpOutboundTransport,
+  KeyType,
+  LogLevel,
+  TypedArrayEncoder,
+} from '@credo-ts/core'
 import { HttpInboundTransport, agentDependencies } from '@credo-ts/node'
 import express from 'express'
 
@@ -26,6 +34,8 @@ export class BaseAgent<AgentModules extends ModulesMap> {
     const config = {
       label: name,
       walletConfig: { id: name, key: name },
+      allowInsecureHttpUrls: true,
+      logger: new ConsoleLogger(LogLevel.off),
     } satisfies InitConfig
 
     this.config = config

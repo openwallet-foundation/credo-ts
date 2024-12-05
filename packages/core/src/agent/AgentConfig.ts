@@ -24,6 +24,10 @@ export class AgentConfig {
     return this.initConfig.walletConfig
   }
 
+  public get allowInsecureHttpUrls() {
+    return this.initConfig.allowInsecureHttpUrls ?? false
+  }
+
   public get autoUpdateStorageOnStartup() {
     return this.initConfig.autoUpdateStorageOnStartup ?? false
   }

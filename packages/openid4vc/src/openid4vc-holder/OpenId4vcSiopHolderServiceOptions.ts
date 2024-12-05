@@ -1,8 +1,4 @@
-import type {
-  OpenId4VcJwtIssuer,
-  OpenId4VcSiopVerifiedAuthorizationRequest,
-  OpenId4VcSiopAuthorizationResponsePayload,
-} from '../shared'
+import type { OpenId4VcJwtIssuer, OpenId4VcSiopVerifiedAuthorizationRequest } from '../shared'
 import type {
   DifPexCredentialsForRequest,
   DifPexInputDescriptorToCredentials,
@@ -48,11 +44,4 @@ export interface OpenId4VcSiopAcceptAuthorizationRequestOptions {
    * The verified authorization request.
    */
   authorizationRequest: OpenId4VcSiopVerifiedAuthorizationRequest
-}
-
-// FIXME: rethink properties
-export interface OpenId4VcSiopAuthorizationResponseSubmission {
-  ok: boolean
-  status: number
-  submittedResponse: OpenId4VcSiopAuthorizationResponsePayload
 }

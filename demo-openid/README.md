@@ -6,7 +6,8 @@ Alice, a former student of Faber College, connects with the College, is issued a
 
 ## Features
 
-- ✅ Issuing a credential.
+- ✅ Issuing a credential without authorization (pre-authorized code flow).
+- ✅ Issuing a credenital with external authorization server (authorization code flow)
 - ✅ Resolving a credential offer.
 - ✅ Accepting a credential offer.
 - ✅ Requesting a credential presentation.
@@ -29,7 +30,7 @@ Clone the Credo git repository:
 git clone https://github.com/openwallet-foundation/credo-ts.git
 ```
 
-Open three different terminals next to each other and in both, go to the demo folder:
+Open four different terminals next to each other and in each, go to the demo folder:
 
 ```sh
 cd credo-ts/demo-openid
@@ -41,13 +42,19 @@ Install the project in one of the terminals:
 pnpm install
 ```
 
-In the first terminal run the Issuer:
+In the first terminal run the OpenID Provider:
+
+```sh
+pnpm provider
+```
+
+In the second terminal run the Issuer:
 
 ```sh
 pnpm issuer
 ```
 
-In the second terminal run the Holder:
+In the third terminal run the Holder:
 
 ```sh
 pnpm holder
@@ -65,7 +72,8 @@ To create a credential offer:
 
 - Go to the Issuer terminal.
 - Select `Create a credential offer`.
-- Select `UniversityDegreeCredential`.
+- Choose whether authorization is required
+- Select the credential(s) you want to issue.
 - Now copy the content INSIDE the quotes (without the quotes).
 
 To resolve and accept the credential:
@@ -74,6 +82,8 @@ To resolve and accept the credential:
 - Select `Resolve a credential offer`.
 - Paste the content copied from the credential offer and hit enter.
 - Select `Accept the credential offer`.
+- Choose which credential(s) to accept
+- If authorization is required a link will be printed in the terminal, open this in your browser. You can sign in using any username and password. Once authenticated return to the terminal
 - You have now stored your credential.
 
 To create a presentation request:
@@ -99,3 +109,29 @@ Exit:
 Restart:
 
 - Select 'restart', to shutdown the current program and start a new one
+
+### Optional Proxy
+
+By default all services will be started on `localhost`, and thus won't be reachable by other external services (such as a mobile wallet). If you want to expose the required services to the public, you need to expose multiple ngrok tunnels.
+
+We can setup the tunnels automatically using ngrok. First make sure you have an ngrok account and get your access token from this page: https://dashboard.ngrok.com/get-started/setup/
+
+Then copy the `ngrok.auth.example.yml` file to `ngrok.auth.yml`:
+
+```sh
+cp ngrok.auth.example.yml ngrok.auth.yml
+```
+
+And finally set the `authtoken` to the auth token as displayed in the ngrok dashboard.
+
+Once set up, you can run the following command in a separate terminal window.
+
+```sh
+pnpm proxies
+```
+
+This will open three proxies. You should then run your demo environments with these proxies:
+
+- `PROVIDER_HOST=https://d404-123-123-123-123.ngrok-free.app ISSUER_HOST=https://d738-123-123-123-123.ngrok-free.app pnpm provider` (ngrok url for port 3042)
+- `PROVIDER_HOST=https://d404-123-123-123-123.ngrok-free.app ISSUER_HOST=https://d738-123-123-123-123.ngrok-free.app pnpm issuer` (ngrok url for port 2000)
+- `VERIFIER_HOST=https://1d91-123-123-123-123.ngrok-free.app pnpm verifier` (ngrok url for port 4000)

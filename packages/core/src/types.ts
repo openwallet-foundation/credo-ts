@@ -1,5 +1,4 @@
 import type { Logger } from './logger'
-import type { DidCommMimeType } from './modules/didcomm' // TODO: Remove dependency on DIDComm
 
 export enum KeyDerivationMethod {
   /** default value in indy-sdk. Will be used when no value is provided */
@@ -44,6 +43,19 @@ export interface InitConfig {
   logger?: Logger
   autoUpdateStorageOnStartup?: boolean
   backupBeforeStorageUpdate?: boolean
+
+  /**
+   * Allow insecure http urls in places where this is usually required.
+   * Unsecure http urls may still be allowed in places where this is not checked (e.g. didcomm)
+   *
+   * For some flows this config option is set globally, which means that different agent configurations
+   * will fight for the configuration. It is meant as a local development option.
+   *
+   * Use with caution
+   *
+   * @default false
+   */
+  allowInsecureHttpUrls?: boolean
 }
 
 export type JsonValue = string | number | boolean | null | JsonObject | JsonArray

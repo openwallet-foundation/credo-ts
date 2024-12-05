@@ -1,52 +1,58 @@
-import type { OpenId4VciCredentialConfigurationSupported, OpenId4VciCredentialSupportedWithId } from '../src'
+import type { OpenId4VciCredentialConfigurationSupportedWithFormats } from '../src'
 
 import { OpenId4VciCredentialFormatProfile } from '../src'
 
-export const openBadgeCredential: OpenId4VciCredentialSupportedWithId = {
+export const openBadgeCredential = {
   id: `/credentials/OpenBadgeCredential`,
   format: OpenId4VciCredentialFormatProfile.JwtVcJson,
-  types: ['VerifiableCredential', 'OpenBadgeCredential'],
-}
+  credential_definition: {
+    type: ['VerifiableCredential', 'OpenBadgeCredential'],
+  },
+} satisfies OpenId4VciCredentialConfigurationSupportedWithFormats
 
-export const universityDegreeCredential: OpenId4VciCredentialSupportedWithId = {
+export const universityDegreeCredential = {
   id: `/credentials/UniversityDegreeCredential`,
   format: OpenId4VciCredentialFormatProfile.JwtVcJson,
-  types: ['VerifiableCredential', 'UniversityDegreeCredential'],
-}
+  credential_definition: {
+    type: ['VerifiableCredential', 'UniversityDegreeCredential'],
+  },
+} satisfies OpenId4VciCredentialConfigurationSupportedWithFormats
 
-export const universityDegreeCredentialLd: OpenId4VciCredentialSupportedWithId = {
+export const universityDegreeCredentialLd = {
   id: `/credentials/UniversityDegreeCredentialLd`,
   format: OpenId4VciCredentialFormatProfile.JwtVcJsonLd,
-  types: ['VerifiableCredential', 'UniversityDegreeCredential'],
-  '@context': ['context'],
-}
+  credential_definition: {
+    type: ['VerifiableCredential', 'UniversityDegreeCredential'],
+    '@context': ['context'],
+  },
+} satisfies OpenId4VciCredentialConfigurationSupportedWithFormats
 
 export const universityDegreeCredentialSdJwt = {
   id: 'https://openid4vc-issuer.com/credentials/UniversityDegreeCredentialSdJwt',
   format: OpenId4VciCredentialFormatProfile.SdJwtVc,
   vct: 'UniversityDegreeCredential',
   cryptographic_binding_methods_supported: ['did:key'],
-} satisfies OpenId4VciCredentialSupportedWithId
+} satisfies OpenId4VciCredentialConfigurationSupportedWithFormats
 
 export const universityDegreeCredentialConfigurationSupported = {
   format: OpenId4VciCredentialFormatProfile.SdJwtVc,
   scope: 'UniversityDegreeCredential',
   vct: 'UniversityDegreeCredential',
   proof_types_supported: {
-    jwt: { proof_signing_alg_values_supported: ['EdDSA'] },
+    jwt: { proof_signing_alg_values_supported: ['EdDSA', 'ES256'] },
   },
-  cryptographic_binding_methods_supported: ['did:key'],
-} satisfies OpenId4VciCredentialConfigurationSupported
+  cryptographic_binding_methods_supported: ['did:key', 'jwk'],
+} satisfies OpenId4VciCredentialConfigurationSupportedWithFormats
 
 export const universityDegreeCredentialConfigurationSupportedMdoc = {
   format: OpenId4VciCredentialFormatProfile.MsoMdoc,
   scope: 'UniversityDegreeCredential',
   doctype: 'UniversityDegreeCredential',
   proof_types_supported: {
-    jwt: { proof_signing_alg_values_supported: ['ES256'] },
+    jwt: { proof_signing_alg_values_supported: ['ES256', 'EdDSA'] },
   },
-  cryptographic_binding_methods_supported: ['did:key'],
-} satisfies OpenId4VciCredentialConfigurationSupported
+  cryptographic_binding_methods_supported: ['did:key', 'jwk'],
+} satisfies OpenId4VciCredentialConfigurationSupportedWithFormats
 
 export const universityDegreeCredentialSdJwt2 = {
   id: 'https://openid4vc-issuer.com/credentials/UniversityDegreeCredentialSdJwt2',
@@ -54,12 +60,4 @@ export const universityDegreeCredentialSdJwt2 = {
   vct: 'UniversityDegreeCredential2',
   // FIXME: should this be dynamically generated? I think static is fine for now
   cryptographic_binding_methods_supported: ['jwk'],
-} satisfies OpenId4VciCredentialSupportedWithId
-
-export const allCredentialsSupported = [
-  openBadgeCredential,
-  universityDegreeCredential,
-  universityDegreeCredentialLd,
-  universityDegreeCredentialSdJwt,
-  universityDegreeCredentialSdJwt2,
-]
+} satisfies OpenId4VciCredentialConfigurationSupportedWithFormats

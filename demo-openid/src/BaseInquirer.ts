@@ -8,48 +8,66 @@ export enum ConfirmOptions {
 }
 
 export class BaseInquirer {
-  public optionsInquirer: { type: string; prefix: string; name: string; message: string; choices: string[] }
-  public inputInquirer: { type: string; prefix: string; name: string; message: string; choices: string[] }
-
-  public constructor() {
-    this.optionsInquirer = {
-      type: 'list',
-      prefix: '',
-      name: 'options',
-      message: '',
-      choices: [],
-    }
-
-    this.inputInquirer = {
-      type: 'input',
-      prefix: '',
-      name: 'input',
-      message: '',
-      choices: [],
-    }
+  private optionsInquirer = {
+    type: 'list',
+    prefix: '',
+    name: 'options',
+    message: '',
+    choices: [],
+  }
+  private inputInquirer = {
+    type: 'input',
+    prefix: '',
+    name: 'input',
+    message: '',
+    choices: [],
   }
 
-  public inquireOptions(promptOptions: string[]) {
-    this.optionsInquirer.message = Title.OptionsTitle
-    this.optionsInquirer.choices = promptOptions
-    return this.optionsInquirer
+  public async pickOne(options: string[], title?: string): Promise<string> {
+    const result = await prompt([
+      {
+        ...this.optionsInquirer,
+        message: title ?? Title.OptionsTitle,
+        choices: options,
+      },
+    ])
+
+    return result.options
   }
 
-  public inquireInput(title: string) {
-    this.inputInquirer.message = title
-    return this.inputInquirer
+  public async pickMultiple(options: string[], title?: string): Promise<string[]> {
+    const result = await prompt([
+      {
+        ...this.optionsInquirer,
+        message: title ?? Title.OptionsTitle,
+        choices: options,
+        type: 'checkbox',
+      },
+    ])
+
+    return result.options
   }
 
-  public inquireConfirmation(title: string) {
-    this.optionsInquirer.message = title
-    this.optionsInquirer.choices = [ConfirmOptions.Yes, ConfirmOptions.No]
-    return this.optionsInquirer
+  public async inquireInput(title: string): Promise<string> {
+    const result = await prompt([
+      {
+        ...this.inputInquirer,
+        message: title,
+      },
+    ])
+
+    return result.input
   }
 
-  public async inquireMessage() {
-    this.inputInquirer.message = Title.MessageTitle
-    const message = await prompt([this.inputInquirer])
+  public async inquireConfirmation(title: string) {
+    const result = await prompt([
+      {
+        ...this.optionsInquirer,
+        choices: [ConfirmOptions.Yes, ConfirmOptions.No],
+        message: title,
+      },
+    ])
 
-    return message.input[0] === 'q' ? null : message.input
+    return result.options === ConfirmOptions.Yes
   }
 }

@@ -85,7 +85,7 @@ describe('OpenId4VcHolder | OpenID4VP', () => {
 
     expect(serverResponse).toEqual({
       status: 200,
-      body: '',
+      body: {},
     })
 
     expect(submittedResponse).toMatchObject({

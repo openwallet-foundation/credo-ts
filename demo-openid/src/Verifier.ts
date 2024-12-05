@@ -9,6 +9,8 @@ import { Router } from 'express'
 import { BaseAgent } from './BaseAgent'
 import { Output } from './OutputClass'
 
+const VERIFIER_HOST = process.env.VERIFIER_HOST ?? 'http://localhost:4000'
+
 const universityDegreePresentationDefinition = {
   id: 'UniversityDegreeCredential',
   purpose: 'Present your UniversityDegreeCredential to verify your education level.',
@@ -61,7 +63,7 @@ export const presentationDefinitions = [
 export class Verifier extends BaseAgent<{ askar: AskarModule; openId4VcVerifier: OpenId4VcVerifierModule }> {
   public verifierRecord!: OpenId4VcVerifierRecord
 
-  public constructor(port: number, name: string) {
+  public constructor(url: string, port: number, name: string) {
     const openId4VcSiopRouter = Router()
 
     super({
@@ -70,7 +72,7 @@ export class Verifier extends BaseAgent<{ askar: AskarModule; openId4VcVerifier:
       modules: {
         askar: new AskarModule({ ariesAskar }),
         openId4VcVerifier: new OpenId4VcVerifierModule({
-          baseUrl: 'http://localhost:4000/siop',
+          baseUrl: `${url}/siop`,
           router: openId4VcSiopRouter,
         }),
       },
@@ -80,7 +82,7 @@ export class Verifier extends BaseAgent<{ askar: AskarModule; openId4VcVerifier:
   }
 
   public static async build(): Promise<Verifier> {
-    const verifier = new Verifier(4000, 'OpenId4VcVerifier ' + Math.random().toString())
+    const verifier = new Verifier(VERIFIER_HOST, 4000, 'OpenId4VcVerifier ' + Math.random().toString())
     await verifier.initializeAgent('96213c3d7fc8d4d6754c7a0fd969598g')
     verifier.verifierRecord = await verifier.agent.modules.openId4VcVerifier.createVerifier()
 

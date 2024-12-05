@@ -46,6 +46,7 @@ jobs:
           # This expects you to have a script called release which does a build for your packages and calls changeset publish
           publish: pnpm release
           title: 'chore(release): new version'
+          commit: 'chore(release): new version'
           createGithubReleases: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -56,7 +57,7 @@ jobs:
         run: echo "CURRENT_PACKAGE_VERSION=$(node -p "require('./packages/core/package.json').version")" >> $GITHUB_ENV
 
       - name: Create Github Release
-        if: steps.changesets.outputs.published == 'true'
+        if: "startsWith(github.event.head_commit.message, 'chore(release): new version')"
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ env.CURRENT_PACKAGE_VERSION }}

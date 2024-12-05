@@ -7,7 +7,7 @@ import type { Response, Router } from 'express'
 import { CredoError, Hasher, JsonEncoder, Key, TypedArrayEncoder } from '@credo-ts/core'
 import { AuthorizationRequest, RP } from '@sphereon/did-auth-siop'
 
-import { getRequestContext, sendErrorResponse } from '../../shared/router'
+import { getRequestContext, sendErrorResponse, sendJsonResponse } from '../../shared/router'
 import { OpenId4VcSiopVerifierService } from '../OpenId4VcSiopVerifierService'
 
 export interface OpenId4VcSiopAuthorizationEndpointConfig {
@@ -128,12 +128,12 @@ export function configureAuthorizationEndpoint(router: Router, config: OpenId4Vc
         verificationSession,
         jarmHeader,
       })
-      response.status(200).send()
+      return sendJsonResponse(response, next, {
+        // Used only for presentation during issuance flow, to prevent session fixation.
+        presentation_during_issuance_session: verificationSession.presentationDuringIssuanceSession,
+      })
     } catch (error) {
-      sendErrorResponse(response, agentContext.config.logger, 500, 'invalid_request', error)
+      return sendErrorResponse(response, next, agentContext.config.logger, 500, 'invalid_request', error)
     }
-
-    // NOTE: if we don't call next, the agentContext session handler will NOT be called
-    next()
   })
 }

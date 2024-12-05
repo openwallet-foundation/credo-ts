@@ -3,6 +3,7 @@ export const matrrLaunchpadDraft11JwtVcJson = {
     'openid-credential-offer://?credential_offer=%7B%22credential_issuer%22%3A%22https%3A%2F%2Flaunchpad.vii.electron.mattrlabs.io%22%2C%22credentials%22%3A%5B%22613ecbbb-0a4c-4041-bb78-c64943139d5f%22%5D%2C%22grants%22%3A%7B%22urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Apre-authorized_code%22%3A%7B%22pre-authorized_code%22%3A%22Jd6TUmLJct1DNyJpKKmt0i85scznBoJrEe_y_SlMW0j%22%7D%7D%7D',
   getMetadataResponse: {
     issuer: 'https://launchpad.vii.electron.mattrlabs.io',
+    credential_issuer: 'https://launchpad.vii.electron.mattrlabs.io',
     authorization_endpoint: 'https://launchpad.vii.electron.mattrlabs.io/oidc/v1/auth/authorize',
     token_endpoint: 'https://launchpad.vii.electron.mattrlabs.io/oidc/v1/auth/token',
     jwks_uri: 'https://launchpad.vii.electron.mattrlabs.io/oidc/v1/auth/jwks',
@@ -24,6 +25,8 @@ export const matrrLaunchpadDraft11JwtVcJson = {
       {
         id: 'd2662472-891c-413d-b3c6-e2f0109001c5',
         format: 'ldp_vc',
+        // TODO: should we make this optional? Seems a lot of types break on this
+        '@context': [],
         types: ['VerifiableCredential', 'OpenBadgeCredential'],
         cryptographic_binding_methods_supported: ['did:key'],
         cryptographic_suites_supported: ['Ed25519Signature2018'],
@@ -39,6 +42,8 @@ export const matrrLaunchpadDraft11JwtVcJson = {
       {
         id: 'b4c4cdf5-ccc9-4945-8c19-9334558653b2',
         format: 'ldp_vc',
+        // TODO: should we make this optional? Seems a lot of types break on this
+        '@context': [],
         types: ['VerifiableCredential', 'Passport'],
         cryptographic_binding_methods_supported: ['did:key'],
         cryptographic_suites_supported: ['Ed25519Signature2018'],
@@ -116,6 +121,7 @@ export const matrrLaunchpadDraft11JwtVcJson = {
     expires_in: 3600,
     scope: 'OpenBadgeCredential',
     token_type: 'Bearer',
+    c_nonce: '4fb1359d-e9cd-44f2-a2b0-739162b68760',
   },
 
   credentialResponse: {
@@ -140,7 +146,7 @@ export const waltIdDraft11JwtVcJson = {
     response_modes_supported: ['query', 'fragment'],
     grant_types_supported: ['authorization_code', 'urn:ietf:params:oauth:grant-type:pre-authorized_code'],
     subject_types_supported: ['public'],
-    credential_issuer: 'https://issuer.portal.walt.id/.well-known/openid-credential-issuer',
+    credential_issuer: 'https://issuer.portal.walt.id',
     credential_endpoint: 'https://issuer.portal.walt.id/credential',
     credentials_supported: [
       {
@@ -247,7 +253,7 @@ export const waltIdDraft11JwtVcJson = {
 
   par: {
     request_uri: 'urn:ietf:params:oauth:request_uri:738f2ac2-18ac-4162-b0a8-5e0e6ba2270b',
-    expires_in: 'PT3M46.132011234S',
+    expires_in: 132011234,
   },
 
   credentialResponse: {

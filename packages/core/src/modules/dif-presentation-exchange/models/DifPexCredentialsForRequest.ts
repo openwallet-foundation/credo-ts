@@ -1,7 +1,6 @@
-import type { MdocRecord } from '../../mdoc'
+import type { MdocNameSpaces, MdocRecord } from '../../mdoc'
 import type { SdJwtVcRecord } from '../../sd-jwt-vc'
 import type { ClaimFormat, W3cCredentialRecord } from '../../vc'
-import type { MdocNameSpaces } from '@protokoll/mdoc-client'
 
 export interface DifPexCredentialsForRequest {
   /**
