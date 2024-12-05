@@ -114,7 +114,7 @@ export class AnonCredsCredentialFormatService implements CredentialFormatService
       anoncredsFormat.attributes,
       anoncredsFormat.linkedAttachments
     )
-
+ 
     // Set the metadata
     credentialRecord.metadata.set<AnonCredsCredentialMetadata>(AnonCredsCredentialMetadataKey, {
       schemaId: proposal.schemaId,
