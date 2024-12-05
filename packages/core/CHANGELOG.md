@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.6.0
+
+### Patch Changes
+
+- 607659a: feat: fetch sd-jwt type metadata
+
 ## 0.5.13
 
 ### Patch Changes
