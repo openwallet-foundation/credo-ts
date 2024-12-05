@@ -320,7 +320,7 @@ export class AnonCredsRsIssuerService implements AnonCredsIssuerService {
       }
 
       let revocationConfiguration: CredentialRevocationConfig | undefined
-      if (revocationRegistryDefinitionId && revocationStatusList && revocationRegistryIndex) {
+      if (revocationRegistryDefinitionId && revocationStatusList && revocationRegistryIndex !== undefined) {
         const revocationRegistryDefinitionRecord = await agentContext.dependencyManager
           .resolve(AnonCredsRevocationRegistryDefinitionRepository)
           .getByRevocationRegistryDefinitionId(agentContext, revocationRegistryDefinitionId)
