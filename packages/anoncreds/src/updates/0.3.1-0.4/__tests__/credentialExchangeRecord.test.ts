@@ -2,7 +2,7 @@ import type { CredentialRecordBinding, CredentialState } from '../../../../../co
 
 import { CredentialExchangeRecord, JsonTransformer } from '../../../../../core/src'
 import { Agent } from '../../../../../core/src/agent/Agent'
-import { CredentialRepository } from '../../../../../core/src/modules/credentials/repository/CredentialRepository'
+import { CredentialRepository } from '../../../../../core/src/modules/didcomm'
 import { getAgentConfig, getAgentContext, mockFunction } from '../../../../../core/tests'
 import {
   migrateIndyCredentialMetadataToAnonCredsMetadata,

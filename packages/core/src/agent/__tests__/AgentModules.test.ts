@@ -2,7 +2,7 @@ import type { Module } from '../../plugins'
 
 import { BasicMessagesModule } from '../../modules/basic-messages'
 import { CacheModule } from '../../modules/cache'
-import { CredentialsModule } from '../../modules/credentials'
+import { CredentialsModule } from '../../modules/didcomm/modules/credentials'
 import { ConnectionsModule, DidCommModule } from '../../modules/didcomm'
 import { DiscoverFeaturesModule } from '../../modules/didcomm/discover-features'
 import { MessagePickupModule } from '../../modules/didcomm/modules/message-pickup'

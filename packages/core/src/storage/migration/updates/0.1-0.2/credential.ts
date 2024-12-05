@@ -1,10 +1,10 @@
 import type { BaseAgent } from '../../../../agent/BaseAgent'
-import type { CredentialExchangeRecord } from '../../../../modules/credentials'
+import type { CredentialExchangeRecord } from '../../../../modules/didcomm/modules/credentials'
 import type { PlaintextMessage } from '../../../../modules/didcomm'
 import type { JsonObject } from '../../../../types'
 
-import { CredentialState } from '../../../../modules/credentials/models/CredentialState'
-import { CredentialRepository } from '../../../../modules/credentials/repository/CredentialRepository'
+import { CredentialState } from '../../../../modules/didcomm/modules/credentials/models/CredentialState'
+import { CredentialRepository } from '../../../../modules/didcomm/modules/credentials/repository/CredentialRepository'
 import { DidCommMessageRepository, DidCommMessageRecord, DidCommMessageRole } from '../../../../modules/didcomm'
 import { Metadata } from '../../../Metadata'
 

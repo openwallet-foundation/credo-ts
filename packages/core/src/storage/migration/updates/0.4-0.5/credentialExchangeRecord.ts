@@ -1,5 +1,5 @@
 import type { BaseAgent } from '../../../../agent/BaseAgent'
-import type { CredentialExchangeRecord } from '../../../../modules/credentials'
+import type { CredentialExchangeRecord } from '../../../../modules/didcomm/modules/credentials'
 
 import { CredoError } from '../../../../error'
 import {
@@ -9,7 +9,7 @@ import {
   CredentialRole,
   CredentialRepository,
   CredentialState,
-} from '../../../../modules/credentials'
+} from '../../../../modules/didcomm/modules/credentials'
 import { parseMessageType } from '../../../../modules/didcomm'
 import { DidCommMessageRepository, DidCommMessageRole } from '../../../../modules/didcomm'
 

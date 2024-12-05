@@ -1,20 +1,17 @@
-import type { ConnectionRecord } from '..'
-
 import { Subject } from 'rxjs'
 
 import { getAgentConfig, getAgentContext } from '../../../../tests/helpers'
-import {
-  AgentMessage,
-  Dispatcher,
-  MessageHandlerRegistry,
-  MessageSender,
-  getOutboundMessageContext,
-  InboundMessageContext,
-  parseMessageType,
-} from '..'
 import { EventEmitter } from '../../../agent/EventEmitter'
+import { AgentMessage } from '../AgentMessage'
+import { Dispatcher } from '../Dispatcher'
+import { MessageHandlerRegistry } from '../MessageHandlerRegistry'
+import { MessageSender } from '../MessageSender'
+import { getOutboundMessageContext } from '../getOutboundMessageContext'
+import { InboundMessageContext } from '../models'
+import { type ConnectionRecord } from '../modules/connections'
+import { parseMessageType } from '../util/messageType'
 
-jest.mock('../../modules/didcomm/base/MessageSender')
+jest.mock('../MessageSender')
 
 class CustomProtocolMessage extends AgentMessage {
   public readonly type = CustomProtocolMessage.type.messageTypeUri
@@ -96,8 +93,8 @@ describe('Dispatcher', () => {
 
       const firstMiddleware = jest.fn().mockImplementation(async (_, next) => next())
       const secondMiddleware = jest.fn()
-      agentContext.dependencyManager.registerMessageHandlerMiddleware(firstMiddleware)
-      agentContext.dependencyManager.registerMessageHandlerMiddleware(secondMiddleware)
+      agentContext.dependencyManager.resolve(MessageHandlerRegistry).registerMessageHandlerMiddleware(firstMiddleware)
+      agentContext.dependencyManager.resolve(MessageHandlerRegistry).registerMessageHandlerMiddleware(secondMiddleware)
 
       await dispatcher.dispatch(inboundMessageContext)
 
@@ -130,8 +127,8 @@ describe('Dispatcher', () => {
 
       const firstMiddleware = jest.fn().mockImplementation(async (_, next) => next())
       const secondMiddleware = jest.fn()
-      agentContext.dependencyManager.registerMessageHandlerMiddleware(firstMiddleware)
-      agentContext.dependencyManager.registerMessageHandlerMiddleware(secondMiddleware)
+      agentContext.dependencyManager.resolve(MessageHandlerRegistry).registerMessageHandlerMiddleware(firstMiddleware)
+      agentContext.dependencyManager.resolve(MessageHandlerRegistry).registerMessageHandlerMiddleware(secondMiddleware)
 
       await dispatcher.dispatch(inboundMessageContext)
 
@@ -163,7 +160,7 @@ describe('Dispatcher', () => {
       const inboundMessageContext = new InboundMessageContext(customProtocolMessage, { agentContext })
 
       const fallbackMessageHandler = jest.fn()
-      agentContext.dependencyManager.setFallbackMessageHandler(fallbackMessageHandler)
+      agentContext.dependencyManager.resolve(MessageHandlerRegistry).setFallbackMessageHandler(fallbackMessageHandler)
 
       await dispatcher.dispatch(inboundMessageContext)
 
@@ -189,7 +186,7 @@ describe('Dispatcher', () => {
       const inboundMessageContext = new InboundMessageContext(customProtocolMessage, { agentContext })
 
       const mockHandle = jest.fn()
-      agentContext.dependencyManager.registerMessageHandlers([
+      agentContext.dependencyManager.resolve(MessageHandlerRegistry).registerMessageHandlers([
         {
           supportedMessages: [CustomProtocolMessage],
           handle: mockHandle,
@@ -197,7 +194,7 @@ describe('Dispatcher', () => {
       ])
 
       const middleware = jest.fn()
-      agentContext.dependencyManager.registerMessageHandlerMiddleware(middleware)
+      agentContext.dependencyManager.resolve(MessageHandlerRegistry).registerMessageHandlerMiddleware(middleware)
       await dispatcher.dispatch(inboundMessageContext)
       expect(mockHandle).not.toHaveBeenCalled()
 
@@ -237,7 +234,7 @@ describe('Dispatcher', () => {
           await next()
         })
 
-      agentContext.dependencyManager.registerMessageHandlerMiddleware(middleware)
+      agentContext.dependencyManager.resolve(MessageHandlerRegistry).registerMessageHandlerMiddleware(middleware)
       await dispatcher.dispatch(inboundMessageContext)
       expect(middleware).toHaveBeenCalled()
       expect(handle).toHaveBeenCalled()
@@ -279,7 +276,7 @@ describe('Dispatcher', () => {
         })
       })
 
-      agentContext.dependencyManager.registerMessageHandlerMiddleware(middleware)
+      agentContext.dependencyManager.resolve(MessageHandlerRegistry).registerMessageHandlerMiddleware(middleware)
       await dispatcher.dispatch(inboundMessageContext)
       expect(middleware).toHaveBeenCalled()
       expect(messageSenderMock.sendMessage).toHaveBeenCalledWith({

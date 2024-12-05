@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 import type { SubjectMessage } from '../../../tests/transport/SubjectInboundTransport'
 import type { AnonCredsCredentialFormatService } from '../../anoncreds/src'
-import type { CreateCredentialOfferOptions, V2CredentialProtocol } from '../src/modules/credentials'
+import type { CreateCredentialOfferOptions, V2CredentialProtocol } from '../src/modules/didcomm/modules/credentials'
 import type { AgentMessage, AgentMessageReceivedEvent } from '@credo-ts/core'
 
 import { Subject } from 'rxjs'

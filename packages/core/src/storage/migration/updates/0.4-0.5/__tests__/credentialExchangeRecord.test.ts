@@ -1,9 +1,9 @@
-import type { CredentialRecordBinding } from '../../../../../modules/credentials'
+import type { CredentialRecordBinding } from '../../../../../modules/didcomm/modules/credentials'
 
 import { getAgentConfig, getAgentContext, mockFunction } from '../../../../../../tests'
 import { Agent } from '../../../../../agent/Agent'
-import { CredentialRole, CredentialState, CredentialExchangeRecord } from '../../../../../modules/credentials'
-import { CredentialRepository } from '../../../../../modules/credentials/repository/CredentialRepository'
+import { CredentialRole, CredentialState, CredentialExchangeRecord } from '../../../../../modules/didcomm/modules/credentials'
+import { CredentialRepository } from '../../../../../modules/didcomm/modules/credentials/repository/CredentialRepository'
 import { DidCommMessageRecord, DidCommMessageRole } from '../../../../../modules/didcomm'
 import { DidCommMessageRepository } from '../../../../../modules/didcomm/repository/DidCommMessageRepository'
 import { JsonTransformer } from '../../../../../utils'

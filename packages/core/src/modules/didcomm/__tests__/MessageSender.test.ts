@@ -1,13 +1,20 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
-import type {
-  AgentMessageSentEvent,
-  ConnectionRecord,
-  EncryptedMessage,
-  OutboundTransport,
-  ResolvedDidCommService,
+import {
+  AgentEventTypes,
+  DidCommDocumentService,
+  MessageSender,
+  OutboundMessageContext,
+  OutboundMessageSendStatus,
+  ReturnRouteTypes,
+  TransportService,
+  type AgentMessageSentEvent,
+  type ConnectionRecord,
+  type EncryptedMessage,
+  type OutboundTransport,
+  type ResolvedDidCommService,
 } from '..'
-import type { MessagePickupRepository } from '../modules/message-pickup/storage'
 import type { DidDocumentService, IndyAgentService } from '../../dids'
+import type { MessagePickupRepository } from '../modules/message-pickup/storage'
 
 import { Subject } from 'rxjs'
 
@@ -20,22 +27,12 @@ import {
   mockFunction,
 } from '../../../../tests/helpers'
 import testLogger from '../../../../tests/logger'
+import { EventEmitter } from '../../../agent/EventEmitter'
 import { Key, KeyType } from '../../../crypto'
-import {
-  AgentEventTypes,
-  DidCommDocumentService,
-  EnvelopeService as EnvelopeServiceImpl,
-  MessageSender,
-  OutboundMessageContext,
-  OutboundMessageSendStatus,
-  ReturnRouteTypes,
-  TransportService,
-} from '..'
-import { InMemoryMessagePickupRepository } from '../modules/message-pickup/storage'
 import { DidResolverService, DidDocument, VerificationMethod } from '../../dids'
 import { DidCommV1Service } from '../../dids/domain/service/DidCommV1Service'
 import { verkeyToInstanceOfKey } from '../../dids/helpers'
-import { EventEmitter } from '../../../agent/EventEmitter'
+import { InMemoryMessagePickupRepository } from '../modules/message-pickup/storage'
 
 import { DummyTransportSession } from './stubs'
 
