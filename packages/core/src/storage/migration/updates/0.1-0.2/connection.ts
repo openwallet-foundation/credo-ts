@@ -1,5 +1,5 @@
 import type { BaseAgent } from '../../../../agent/BaseAgent'
-import type { ConnectionRecord } from '../../../../modules/didcomm'
+import type { ConnectionRecord } from '../../../../modules/didcomm/modules/connections'
 import type { JsonObject } from '../../../../types'
 
 import { outOfBandServiceToInlineKeysNumAlgo2Did } from '../../../..//modules/dids/methods/peer/peerDidNumAlgo2'
@@ -11,16 +11,16 @@ import {
   DidDoc,
   ConnectionRepository,
   DidExchangeRole,
-} from '../../../../modules/didcomm'
-import { convertToNewDidDocument } from '../../../../modules/didcomm/services/connections/helpers'
+} from '../../../../modules/didcomm/modules/connections'
+import { convertToNewDidDocument } from '../../../../modules/didcomm/modules/connections/services/helpers'
+import { OutOfBandRole } from '../../../../modules/didcomm/modules/oob/domain/OutOfBandRole'
+import { OutOfBandState } from '../../../../modules/didcomm/modules/oob/domain/OutOfBandState'
+import { convertToNewInvitation } from '../../../../modules/didcomm/modules/oob/helpers'
+import { OutOfBandRecord, OutOfBandRepository } from '../../../../modules/didcomm/modules/oob/repository'
 import { DidKey } from '../../../../modules/dids'
 import { DidDocumentRole } from '../../../../modules/dids/domain/DidDocumentRole'
 import { DidRecord, DidRepository } from '../../../../modules/dids/repository'
 import { DidRecordMetadataKeys } from '../../../../modules/dids/repository/didRecordMetadataTypes'
-import { OutOfBandRole } from '../../../../modules/didcomm/oob/domain/OutOfBandRole'
-import { OutOfBandState } from '../../../../modules/didcomm/oob/domain/OutOfBandState'
-import { convertToNewInvitation } from '../../../../modules/didcomm/oob/helpers'
-import { OutOfBandRecord, OutOfBandRepository } from '../../../../modules/didcomm/oob/repository'
 import { JsonEncoder, JsonTransformer } from '../../../../utils'
 
 /**

@@ -19,8 +19,8 @@ import {
   MessageReceiver,
   MessageSender,
 } from '../../modules/didcomm'
-import { ConnectionsApi } from '../../modules/didcomm/connections/ConnectionsApi'
-import { MessagePickupApi, InMemoryMessagePickupRepository } from '../../modules/didcomm/message-pickup'
+import { ConnectionsApi } from '../../modules/didcomm/modules/connections/ConnectionsApi'
+import { MessagePickupApi, InMemoryMessagePickupRepository } from '../../modules/didcomm/modules/message-pickup'
 import { ConnectionRepository } from '../../modules/didcomm/repository/connections/ConnectionRepository'
 import {
   MediationRecipientService,
@@ -29,7 +29,7 @@ import {
   MediatorService,
   MediationRecipientApi,
   MediationRecipientModule,
-} from '../../modules/didcomm/routing'
+} from '../../modules/didcomm/modules/routing'
 import { ProofRepository } from '../../modules/proofs'
 import { ProofsApi } from '../../modules/proofs/ProofsApi'
 import { WalletError } from '../../wallet/error'

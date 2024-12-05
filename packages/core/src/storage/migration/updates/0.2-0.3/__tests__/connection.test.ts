@@ -1,5 +1,5 @@
 import type { ConnectionRecordProps, CustomConnectionTags } from '../../../../../modules/didcomm'
-import type { MediationRecordProps } from '../../../../../modules/didcomm/routing'
+import type { MediationRecordProps } from '../../../../../modules/didcomm/modules/routing'
 
 import { getAgentConfig, getAgentContext, mockFunction } from '../../../../../../tests/helpers'
 import { Agent } from '../../../../../agent/Agent'

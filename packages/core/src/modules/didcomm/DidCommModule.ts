@@ -36,8 +36,9 @@ export class DidCommModule implements Module {
     // Config
     dependencyManager.registerInstance(DidCommModuleConfig, this.config)
 
-    //dependencyManager.registerSingleton(MessageHandlerRegistry)
-    //dependencyManager.registerSingleton(FeatureRegistry)
+    // Registries
+    dependencyManager.registerSingleton(MessageHandlerRegistry)
+    dependencyManager.registerSingleton(FeatureRegistry)
 
     // Services
     dependencyManager.registerSingleton(MessageSender)

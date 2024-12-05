@@ -24,7 +24,7 @@ import { Agent } from '../../../../../agent/Agent'
 import { uuid } from '../../../../../utils/uuid'
 import { CredentialEventTypes } from '../../../../credentials'
 import { Attachment, AttachmentData, HandshakeProtocol, LinkedAttachment } from '../../../../didcomm'
-import { MediatorModule, MediatorPickupStrategy, MediationRecipientModule } from '../../../../didcomm/routing'
+import { MediatorModule, MediatorPickupStrategy, MediationRecipientModule } from '../../../../didcomm/modules/routing'
 import { ProofEventTypes } from '../../../ProofEvents'
 import { AutoAcceptProof, ProofState } from '../../../models'
 

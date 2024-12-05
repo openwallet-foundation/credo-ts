@@ -1,8 +1,8 @@
 import type { V0_1ToV0_2UpdateConfig } from './index'
 import type { BaseAgent } from '../../../../agent/BaseAgent'
-import type { MediationRecord } from '../../../../modules/didcomm/routing'
+import type { MediationRecord } from '../../../../modules/didcomm/modules/routing'
 
-import { MediationRepository, MediationRole } from '../../../../modules/didcomm/routing'
+import { MediationRepository, MediationRole } from '../../../../modules/didcomm/modules/routing'
 
 /**
  * Migrates the {@link MediationRecord} to 0.2 compatible format. It fetches all records from storage

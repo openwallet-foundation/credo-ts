@@ -1,14 +1,14 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
-import type { OutOfBandInvitation } from '../src/modules/didcomm/oob/messages'
+import type { OutOfBandInvitation } from '../src/modules/didcomm/modules/oob/messages'
 
 import { Agent } from '../src/agent/Agent'
-import { DidExchangeState, HandshakeProtocol } from '../src/modules/didcomm'
+import { DidExchangeState, HandshakeProtocol } from '../src/modules/didcomm/modules/connections'
 import {
   MediationState,
   MediatorModule,
   MediatorPickupStrategy,
   MediationRecipientModule,
-} from '../src/modules/didcomm/routing'
+} from '../src/modules/didcomm/modules/routing'
 
 import { getInMemoryAgentOptions, waitForBasicMessage } from './helpers'
 import { setupSubjectTransports } from './transport'

@@ -1,5 +1,6 @@
 import type { CredentialsModuleConfigOptions } from './CredentialsModuleConfig'
 import type { CredentialProtocol } from './protocol/CredentialProtocol'
+import type { AgentContext } from '../../agent'
 import type { ApiModule, DependencyManager } from '../../plugins'
 import type { Constructor } from '../../utils/mixins'
 import type { Optional } from '../../utils/type'
@@ -52,10 +53,11 @@ export class CredentialsModule<CredentialProtocols extends CredentialProtocol[] 
 
     // Repositories
     dependencyManager.registerSingleton(CredentialRepository)
+  }
 
-    // Features
-    const messageHandlerRegistry = dependencyManager.resolve(MessageHandlerRegistry)
-    const featureRegistry = dependencyManager.resolve(FeatureRegistry)
+  public async initialize(agentContext: AgentContext): Promise<void> {
+    const messageHandlerRegistry = agentContext.dependencyManager.resolve(MessageHandlerRegistry)
+    const featureRegistry = agentContext.dependencyManager.resolve(FeatureRegistry)
 
     featureRegistry.register(
       new Protocol({

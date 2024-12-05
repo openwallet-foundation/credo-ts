@@ -1,5 +1,4 @@
 import type { AgentContext } from '../../../../agent'
-import type { DependencyManager } from '../../../../plugins'
 import type {
   AgentMessage,
   FeatureRegistry,
@@ -36,14 +35,8 @@ import type {
 
 import { CredoError } from '../../../../error'
 import { uuid } from '../../../../utils/uuid'
-import {
-  AckStatus,
-  ConnectionService,
-  DidCommApi,
-  DidCommMessageRepository,
-  DidCommMessageRole,
-  Protocol,
-} from '../../../didcomm'
+import { AckStatus, DidCommMessageRepository, DidCommMessageRole, Protocol } from '../../../didcomm'
+import { ConnectionService } from '../../../didcomm/modules/connections'
 import { ProofsModuleConfig } from '../../ProofsModuleConfig'
 import { PresentationProblemReportReason } from '../../errors/PresentationProblemReportReason'
 import { AutoAcceptProof, ProofRole, ProofState } from '../../models'

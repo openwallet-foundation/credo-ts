@@ -1,10 +1,8 @@
-export * from './connections'
 export * from './errors'
 export * from './handlers'
 export * from './messages'
 export * from './models'
 export * from './repository'
-export * from './routing'
 export * from './services'
 export * from './transport'
 export * from './types'
@@ -27,7 +25,7 @@ export { MessageHandlerRegistry } from './MessageHandlerRegistry'
 
 export { DidCommApi } from './DidCommApi'
 export { DidCommModule } from './DidCommModule'
-export { DidCommModuleConfig } from './DidCommModuleConfig'
+export { DidCommModuleConfig, DidCommModuleConfigOptions } from './DidCommModuleConfig'
 
 export { getOutboundMessageContext } from './getOutboundMessageContext'
 

@@ -11,9 +11,9 @@ import { FeatureRegistry } from './FeatureRegistry'
 import { MessageHandlerRegistry } from './MessageHandlerRegistry'
 import { MessageReceiver } from './MessageReceiver'
 import { MessageSender } from './MessageSender'
-import { ConnectionsApi } from './connections'
-import { OutOfBandApi } from './oob'
-import { MediationRecipientApi } from './routing'
+import { ConnectionsApi } from './modules/connections'
+import { OutOfBandApi } from './modules/oob'
+import { MediationRecipientApi } from './modules/routing'
 
 @injectable()
 export class DidCommApi {

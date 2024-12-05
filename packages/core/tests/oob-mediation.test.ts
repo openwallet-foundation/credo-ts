@@ -1,25 +1,23 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 import type { SubjectMessage } from '../../../tests/transport/SubjectInboundTransport'
 import type { AgentMessageProcessedEvent } from '../src/modules/didcomm'
-import type { OutOfBandDidCommService } from '../src/modules/didcomm/oob'
+import type { OutOfBandDidCommService } from '../src/modules/didcomm/modules/oob'
 
 import { filter, firstValueFrom, map, Subject, timeout } from 'rxjs'
 
 import { SubjectInboundTransport } from '../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutboundTransport'
 import { Agent } from '../src/agent/Agent'
+import { AgentEventTypes } from '../src/modules/didcomm'
+import { ConnectionType, DidExchangeState, HandshakeProtocol } from '../src/modules/didcomm/modules/connections'
 import {
-  AgentEventTypes,
-  DidExchangeState,
-  HandshakeProtocol,
-  KeylistUpdateMessage,
   KeylistUpdateAction,
-  MediationState,
-  MediatorPickupStrategy,
+  KeylistUpdateMessage,
   MediationRecipientModule,
+  MediationState,
   MediatorModule,
-} from '../src/modules/didcomm'
-import { ConnectionType } from '../src/modules/didcomm/models/connections/ConnectionType'
+  MediatorPickupStrategy,
+} from '../src/modules/didcomm/modules/routing'
 import { didKeyToVerkey } from '../src/modules/dids/helpers'
 
 import { getInMemoryAgentOptions, waitForBasicMessage } from './helpers'

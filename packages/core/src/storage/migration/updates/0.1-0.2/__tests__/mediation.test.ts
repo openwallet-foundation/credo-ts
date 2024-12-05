@@ -1,7 +1,7 @@
 import { getAgentConfig, getAgentContext, mockFunction } from '../../../../../../tests/helpers'
 import { Agent } from '../../../../../agent/Agent'
-import { MediationRole, MediationRecord } from '../../../../../modules/didcomm/routing'
-import { MediationRepository } from '../../../../../modules/didcomm/routing/repository/MediationRepository'
+import { MediationRole, MediationRecord } from '../../../../../modules/didcomm/modules/routing'
+import { MediationRepository } from '../../../../../modules/didcomm/modules/routing/repository/MediationRepository'
 import { JsonTransformer } from '../../../../../utils'
 import * as testModule from '../mediation'
 

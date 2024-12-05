@@ -13,7 +13,7 @@ import {
   KeylistUpdateAction,
 } from '../src'
 import { Agent } from '../src/agent/Agent'
-import { OutOfBandState } from '../src/modules/didcomm/oob/domain/OutOfBandState'
+import { OutOfBandState } from '../src/modules/didcomm/modules/oob/domain/OutOfBandState'
 import { didKeyToVerkey } from '../src/modules/dids/helpers'
 
 import { getInMemoryAgentOptions, waitForTrustPingResponseReceivedEvent } from './helpers'

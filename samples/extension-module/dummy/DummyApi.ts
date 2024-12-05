@@ -3,7 +3,6 @@ import type { Query, QueryOptions } from '@credo-ts/core'
 
 import { getOutboundMessageContext, AgentContext, ConnectionService, injectable, MessageSender } from '@credo-ts/core'
 
-import { DummyRequestHandler, DummyResponseHandler } from './handlers'
 import { DummyState } from './repository'
 import { DummyService } from './services'
 
@@ -24,11 +23,6 @@ export class DummyApi {
     this.dummyService = dummyService
     this.connectionService = connectionService
     this.agentContext = agentContext
-
-    this.agentContext.dependencyManager.registerMessageHandlers([
-      new DummyRequestHandler(this.dummyService),
-      new DummyResponseHandler(this.dummyService),
-    ])
   }
 
   /**

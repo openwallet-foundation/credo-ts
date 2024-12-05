@@ -1,6 +1,6 @@
-export * from './connections'
 export * from './features'
 export * from './problem-reports'
 export * from './InboundMessageContext'
 export * from './OutboundMessageContext'
 export * from './OutboundMessageSendStatus'
+export * from './Routing'

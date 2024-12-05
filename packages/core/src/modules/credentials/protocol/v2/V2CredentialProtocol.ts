@@ -33,7 +33,8 @@ import type {
 
 import { CredoError } from '../../../../error'
 import { uuid } from '../../../../utils/uuid'
-import { AckStatus, ConnectionService, DidCommMessageRepository, DidCommMessageRole, Protocol } from '../../../didcomm'
+import { AckStatus, DidCommMessageRepository, DidCommMessageRole, Protocol } from '../../../didcomm'
+import { ConnectionService } from '../../../didcomm/modules/connections'
 import { CredentialsModuleConfig } from '../../CredentialsModuleConfig'
 import { AutoAcceptCredential, CredentialProblemReportReason, CredentialRole, CredentialState } from '../../models'
 import { CredentialExchangeRecord, CredentialRepository } from '../../repository'

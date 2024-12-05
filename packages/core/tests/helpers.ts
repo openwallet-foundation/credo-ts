@@ -25,7 +25,7 @@ import type { DidCommModuleConfigOptions } from '../src/modules/didcomm/DidCommM
 import type {
   TrustPingReceivedEvent,
   TrustPingResponseReceivedEvent,
-} from '../src/modules/didcomm/connections/TrustPingEvents'
+} from '../src/modules/didcomm/modules/connections/TrustPingEvents'
 import type { ProofState } from '../src/modules/proofs/models/ProofState'
 import type { WalletConfig } from '../src/types'
 import type { Observable } from 'rxjs'
@@ -60,10 +60,10 @@ import {
   X509Api,
 } from '../src'
 import { Key, KeyType } from '../src/crypto'
-import { OutOfBandRole } from '../src/modules/didcomm/oob/domain/OutOfBandRole'
-import { OutOfBandState } from '../src/modules/didcomm/oob/domain/OutOfBandState'
-import { OutOfBandInvitation } from '../src/modules/didcomm/oob/messages'
-import { OutOfBandRecord } from '../src/modules/didcomm/oob/repository'
+import { OutOfBandRole } from '../src/modules/didcomm/modules/oob/domain/OutOfBandRole'
+import { OutOfBandState } from '../src/modules/didcomm/modules/oob/domain/OutOfBandState'
+import { OutOfBandInvitation } from '../src/modules/didcomm/modules/oob/messages'
+import { OutOfBandRecord } from '../src/modules/didcomm/modules/oob/repository'
 import { DidKey } from '../src/modules/dids/methods/key'
 import { KeyDerivationMethod } from '../src/types'
 import { sleep } from '../src/utils/sleep'
@@ -107,6 +107,7 @@ export function getAskarWalletConfig(
 
 export function getAgentOptions<AgentModules extends AgentModulesInput | EmptyModuleMap>(
   name: string,
+  didcommConfig: Partial<DidCommModuleConfigOptions> = {},
   extraConfig: Partial<InitConfig> = {},
   inputModules?: AgentModules,
   inMemoryWallet = true
@@ -130,6 +131,7 @@ export function getAgentOptions<AgentModules extends AgentModulesInput | EmptyMo
       new ConnectionsModule({
         autoAcceptConnections: true,
       }),
+    didcomm: m.didcomm ?? new DidCommModule(didcommConfig),
   }
 
   return { config, modules: modules as AgentModules, dependencies: agentDependencies } as const
@@ -197,9 +199,10 @@ export async function importExistingIndyDidFromPrivateKey(agent: Agent, privateK
 
 export function getAgentConfig(
   name: string,
+  didcommConfig: Partial<DidCommModuleConfigOptions> = {},
   extraConfig: Partial<InitConfig> = {}
 ): AgentConfig & { walletConfig: WalletConfig } {
-  const { config, dependencies } = getAgentOptions(name, extraConfig)
+  const { config, dependencies } = getAgentOptions(name, didcommConfig, extraConfig)
   return new AgentConfig(config, dependencies) as AgentConfig & { walletConfig: WalletConfig }
 }
 

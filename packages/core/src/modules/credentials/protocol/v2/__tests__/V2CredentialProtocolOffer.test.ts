@@ -13,12 +13,11 @@ import {
   Attachment,
   AttachmentData,
   DidCommMessageRepository,
-  ConnectionService,
   Dispatcher,
-  DidExchangeState,
   InboundMessageContext,
 } from '../../../../didcomm'
-import { RoutingService } from '../../../../didcomm/routing/services/RoutingService'
+import { ConnectionService, DidExchangeState } from '../../../../didcomm/modules/connections'
+import { RoutingService } from '../../../../didcomm/modules/routing/services/RoutingService'
 import { CredentialEventTypes } from '../../../CredentialEvents'
 import { CredentialFormatSpec } from '../../../models'
 import { CredentialState } from '../../../models/CredentialState'

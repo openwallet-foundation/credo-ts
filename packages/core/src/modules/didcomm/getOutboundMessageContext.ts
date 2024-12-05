@@ -1,20 +1,20 @@
 import type { AgentMessage } from './AgentMessage'
-import type { ConnectionRecord } from './repository'
-import type { Routing } from './services'
+import type { Routing } from './models'
+import type { ConnectionRecord } from './modules/connections/repository'
+import type { OutOfBandRecord } from './modules/oob'
 import type { ResolvedDidCommService } from './types'
 import type { AgentContext } from '../../agent/context'
 import type { BaseRecordAny } from '../../storage/BaseRecord'
-import type { OutOfBandRecord } from './oob'
 
 import { Key } from '../../crypto'
 import { CredoError } from '../../error'
 import { uuid } from '../../utils/uuid'
-import { InvitationType, OutOfBandRepository, OutOfBandRole, OutOfBandService } from './oob'
-import { OutOfBandRecordMetadataKeys } from './oob/repository/outOfBandRecordMetadataTypes'
-import { RoutingService } from './routing'
 
 import { ServiceDecorator } from './decorators/service/ServiceDecorator'
 import { OutboundMessageContext } from './models'
+import { InvitationType, OutOfBandRepository, OutOfBandRole, OutOfBandService } from './modules/oob'
+import { OutOfBandRecordMetadataKeys } from './modules/oob/repository/outOfBandRecordMetadataTypes'
+import { RoutingService } from './modules/routing'
 import { DidCommMessageRepository, DidCommMessageRole } from './repository'
 
 /**

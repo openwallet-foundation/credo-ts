@@ -28,7 +28,8 @@ import { injectable } from 'tsyringe'
 
 import { AgentContext } from '../../agent/context/AgentContext'
 import { CredoError } from '../../error'
-import { AgentMessage, ConnectionService, MessageSender, getOutboundMessageContext } from '../didcomm'
+import { AgentMessage, MessageSender, getOutboundMessageContext } from '../didcomm'
+import { ConnectionService } from '../didcomm/modules/connections'
 
 import { ProofsModuleConfig } from './ProofsModuleConfig'
 import { ProofState } from './models/ProofState'

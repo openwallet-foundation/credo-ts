@@ -1,9 +1,9 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 
-import type { ConnectionRecord } from '../src/modules/didcomm'
+import type { ConnectionRecord } from '../src/modules/didcomm/modules/connections'
 
 import { Agent } from '../src/agent/Agent'
-import { HandshakeProtocol } from '../src/modules/didcomm'
+import { HandshakeProtocol } from '../src/modules/didcomm/modules/connections'
 
 import { waitForBasicMessage, getInMemoryAgentOptions } from './helpers'
 import { setupSubjectTransports } from './transport'

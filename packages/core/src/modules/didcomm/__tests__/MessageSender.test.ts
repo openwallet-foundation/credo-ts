@@ -6,7 +6,7 @@ import type {
   OutboundTransport,
   ResolvedDidCommService,
 } from '..'
-import type { MessagePickupRepository } from '../message-pickup/storage'
+import type { MessagePickupRepository } from '../modules/message-pickup/storage'
 import type { DidDocumentService, IndyAgentService } from '../../dids'
 
 import { Subject } from 'rxjs'
@@ -31,7 +31,7 @@ import {
   ReturnRouteTypes,
   TransportService,
 } from '..'
-import { InMemoryMessagePickupRepository } from '../message-pickup/storage'
+import { InMemoryMessagePickupRepository } from '../modules/message-pickup/storage'
 import { DidResolverService, DidDocument, VerificationMethod } from '../../dids'
 import { DidCommV1Service } from '../../dids/domain/service/DidCommV1Service'
 import { verkeyToInstanceOfKey } from '../../dids/helpers'

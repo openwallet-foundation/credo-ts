@@ -27,6 +27,7 @@ const bobAgentOptions = getAgentOptions(
   {
     endpoints: ['rxjs:bob'],
   },
+  {},
   modules
 )
 
@@ -35,6 +36,7 @@ const aliceAgentOptions = getAgentOptions(
   {
     endpoints: ['rxjs:alice'],
   },
+  {},
   modules
 )
 
@@ -52,14 +54,14 @@ describe('Dummy extension module test', () => {
     }
 
     bobAgent = new Agent(bobAgentOptions)
-    bobAgent.registerInboundTransport(new SubjectInboundTransport(bobMessages))
-    bobAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
+    bobAgent.didcomm.registerInboundTransport(new SubjectInboundTransport(bobMessages))
+    bobAgent.didcomm.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     await bobAgent.initialize()
 
     aliceAgent = new Agent(aliceAgentOptions)
 
-    aliceAgent.registerInboundTransport(new SubjectInboundTransport(aliceMessages))
-    aliceAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
+    aliceAgent.didcomm.registerInboundTransport(new SubjectInboundTransport(aliceMessages))
+    aliceAgent.didcomm.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     await aliceAgent.initialize()
     ;[aliceConnection] = await makeConnection(aliceAgent, bobAgent)
   })

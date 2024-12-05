@@ -116,6 +116,7 @@ export async function setupJsonLdTests<
       {
         endpoints: ['rxjs:issuer'],
       },
+      {},
       modules
     )
   )
@@ -126,6 +127,7 @@ export async function setupJsonLdTests<
       {
         endpoints: ['rxjs:holder'],
       },
+      {},
       modules
     )
   )
@@ -137,6 +139,7 @@ export async function setupJsonLdTests<
           {
             endpoints: ['rxjs:verifier'],
           },
+          {},
           modules
         )
       )

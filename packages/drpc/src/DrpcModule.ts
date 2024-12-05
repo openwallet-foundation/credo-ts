@@ -1,4 +1,4 @@
-import type { DependencyManager, Module } from '@credo-ts/core'
+import type { AgentContext, DependencyManager, Module } from '@credo-ts/core'
 
 import { FeatureRegistry, Protocol, AgentConfig } from '@credo-ts/core'
 
@@ -26,9 +26,10 @@ export class DrpcModule implements Module {
 
     // Repositories
     dependencyManager.registerSingleton(DrpcRepository)
+  }
 
-    // Features
-    const featureRegistry = dependencyManager.resolve(FeatureRegistry)
+  public async initialize(agentContext: AgentContext): Promise<void> {
+    const featureRegistry = agentContext.dependencyManager.resolve(FeatureRegistry)
 
     featureRegistry.register(
       new Protocol({

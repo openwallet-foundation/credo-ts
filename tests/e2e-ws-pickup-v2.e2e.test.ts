@@ -27,6 +27,7 @@ const mediatorOptions = getAgentOptions(
   {
     endpoints: [`ws://localhost:${mediatorPort}`],
   },
+  {},
   {
     ...getAnonCredsModules({
       autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
@@ -45,6 +46,7 @@ const senderOptions = getAgentOptions(
   {
     endpoints: [`ws://localhost:${senderPort}`],
   },
+  {},
   {
     ...getAnonCredsModules({
       autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
@@ -78,6 +80,7 @@ describe('E2E WS Pickup V2 tests', () => {
     const recipientOptions = getAgentOptions(
       'E2E WS Pickup V2 Recipient polling mode',
       {},
+      {},
       {
         ...getAnonCredsModules({
           autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
@@ -93,17 +96,17 @@ describe('E2E WS Pickup V2 tests', () => {
     recipientAgent = new Agent(recipientOptions) as unknown as AnonCredsTestsAgent
 
     // Recipient Setup
-    recipientAgent.registerOutboundTransport(new WsOutboundTransport())
+    recipientAgent.didcomm.registerOutboundTransport(new WsOutboundTransport())
     await recipientAgent.initialize()
 
     // Mediator Setup
-    mediatorAgent.registerInboundTransport(new WsInboundTransport({ port: mediatorPort }))
-    mediatorAgent.registerOutboundTransport(new WsOutboundTransport())
+    mediatorAgent.didcomm.registerInboundTransport(new WsInboundTransport({ port: mediatorPort }))
+    mediatorAgent.didcomm.registerOutboundTransport(new WsOutboundTransport())
     await mediatorAgent.initialize()
 
     // Sender Setup
-    senderAgent.registerInboundTransport(new WsInboundTransport({ port: senderPort }))
-    senderAgent.registerOutboundTransport(new WsOutboundTransport())
+    senderAgent.didcomm.registerInboundTransport(new WsInboundTransport({ port: senderPort }))
+    senderAgent.didcomm.registerOutboundTransport(new WsOutboundTransport())
     await senderAgent.initialize()
 
     await e2eTest({
@@ -116,6 +119,7 @@ describe('E2E WS Pickup V2 tests', () => {
   test('Full WS flow (connect, request mediation, issue, verify) using Message Pickup V2 live mode', async () => {
     const recipientOptions = getAgentOptions(
       'E2E WS Pickup V2 Recipient live mode',
+      {},
       {},
       {
         ...getAnonCredsModules({
@@ -131,17 +135,17 @@ describe('E2E WS Pickup V2 tests', () => {
     recipientAgent = new Agent(recipientOptions) as unknown as AnonCredsTestsAgent
 
     // Recipient Setup
-    recipientAgent.registerOutboundTransport(new WsOutboundTransport())
+    recipientAgent.didcomm.registerOutboundTransport(new WsOutboundTransport())
     await recipientAgent.initialize()
 
     // Mediator Setup
-    mediatorAgent.registerInboundTransport(new WsInboundTransport({ port: mediatorPort }))
-    mediatorAgent.registerOutboundTransport(new WsOutboundTransport())
+    mediatorAgent.didcomm.registerInboundTransport(new WsInboundTransport({ port: mediatorPort }))
+    mediatorAgent.didcomm.registerOutboundTransport(new WsOutboundTransport())
     await mediatorAgent.initialize()
 
     // Sender Setup
-    senderAgent.registerInboundTransport(new WsInboundTransport({ port: senderPort }))
-    senderAgent.registerOutboundTransport(new WsOutboundTransport())
+    senderAgent.didcomm.registerInboundTransport(new WsInboundTransport({ port: senderPort }))
+    senderAgent.didcomm.registerOutboundTransport(new WsOutboundTransport())
     await senderAgent.initialize()
 
     await e2eTest({

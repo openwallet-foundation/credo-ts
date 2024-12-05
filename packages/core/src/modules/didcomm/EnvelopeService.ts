@@ -8,7 +8,7 @@ import { Logger } from '../../logger'
 import { inject, injectable } from '../../plugins'
 
 import { DidCommModuleConfig } from './DidCommModuleConfig'
-import { ForwardMessage } from './routing/messages'
+import { ForwardMessage } from './modules/routing/messages'
 
 export interface EnvelopeKeys {
   recipientKeys: Key[]

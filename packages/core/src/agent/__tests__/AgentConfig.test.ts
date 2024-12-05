@@ -7,9 +7,13 @@ describe('AgentConfig', () => {
       expect.assertions(2)
       const newLabel = 'Agent: Agent Class Test 2'
 
-      const agentConfig = getAgentConfig('AgentConfig Test', {
-        label: 'Test',
-      })
+      const agentConfig = getAgentConfig(
+        'AgentConfig Test',
+        {},
+        {
+          label: 'Test',
+        }
+      )
       expect(agentConfig.label).toBe('Test')
 
       agentConfig.label = newLabel

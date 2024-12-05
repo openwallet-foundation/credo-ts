@@ -3,7 +3,7 @@ import type { AgentContext } from '../../../agent/context'
 import type { Key } from '../../../crypto'
 import type { AgentMessage } from '../AgentMessage'
 import type { MessageHandler } from '../handlers'
-import type { ConnectionRecord } from '../repository'
+import type { ConnectionRecord } from '../modules/connections/repository'
 import type { EncryptedMessage } from '../types'
 
 import { CredoError } from '../../../error'

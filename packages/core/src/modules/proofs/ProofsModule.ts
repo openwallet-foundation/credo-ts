@@ -1,5 +1,6 @@
 import type { ProofsModuleConfigOptions } from './ProofsModuleConfig'
 import type { ProofProtocol } from './protocol/ProofProtocol'
+import type { AgentContext } from '../../agent'
 import type { ApiModule, DependencyManager } from '../../plugins'
 import type { Optional } from '../../utils'
 import type { Constructor } from '../../utils/mixins'
@@ -45,9 +46,11 @@ export class ProofsModule<ProofProtocols extends ProofProtocol[] = DefaultProofP
 
     // Repositories
     dependencyManager.registerSingleton(ProofRepository)
+  }
 
-    const messageHandlerRegistry = dependencyManager.resolve(MessageHandlerRegistry)
-    const featureRegistry = dependencyManager.resolve(FeatureRegistry)
+  public async initialize(agentContext: AgentContext): Promise<void> {
+    const messageHandlerRegistry = agentContext.dependencyManager.resolve(MessageHandlerRegistry)
+    const featureRegistry = agentContext.dependencyManager.resolve(FeatureRegistry)
     for (const proofProtocol of this.config.proofProtocols) {
       proofProtocol.register(messageHandlerRegistry, featureRegistry)
     }
