@@ -83,7 +83,7 @@ export function sendErrorResponse(
   error: unknown,
   additionalPayload?: Record<string, unknown>
 ) {
-  const body = { error: message, ...additionalPayload }
+  const body = { error: message, ...(error instanceof Error && { cause: error.message }), ...additionalPayload }
   logger.warn(`[OID4VC] Sending error response: ${JSON.stringify(body)}`, {
     error,
   })
