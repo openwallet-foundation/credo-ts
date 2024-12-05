@@ -3,10 +3,10 @@ name: Release
 on:
   push:
     branches:
-      - main
+      - v0.5.x
   pull_request:
     branches:
-      - main
+      - v0.5.x
     types:
       - opened
       - synchronize
@@ -21,7 +21,7 @@ jobs:
   release:
     name: Release
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/v0.5.x'
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v4
