@@ -78,10 +78,10 @@ export class AnonCredsRsIssuerService implements AnonCredsIssuerService {
 
     let createReturnObj:
       | {
-          credentialDefinition: CredentialDefinition
-          credentialDefinitionPrivate: CredentialDefinitionPrivate
-          keyCorrectnessProof: KeyCorrectnessProof
-        }
+        credentialDefinition: CredentialDefinition
+        credentialDefinitionPrivate: CredentialDefinitionPrivate
+        keyCorrectnessProof: KeyCorrectnessProof
+      }
       | undefined
     try {
       createReturnObj = CredentialDefinition.create({
@@ -114,9 +114,9 @@ export class AnonCredsRsIssuerService implements AnonCredsIssuerService {
 
     let createReturnObj:
       | {
-          revocationRegistryDefinition: RevocationRegistryDefinition
-          revocationRegistryDefinitionPrivate: RevocationRegistryDefinitionPrivate
-        }
+        revocationRegistryDefinition: RevocationRegistryDefinition
+        revocationRegistryDefinitionPrivate: RevocationRegistryDefinitionPrivate
+      }
       | undefined
     try {
       createReturnObj = RevocationRegistryDefinition.create({
@@ -320,7 +320,7 @@ export class AnonCredsRsIssuerService implements AnonCredsIssuerService {
       }
 
       let revocationConfiguration: CredentialRevocationConfig | undefined
-      if (revocationRegistryDefinitionId && revocationStatusList && revocationRegistryIndex) {
+      if (revocationRegistryDefinitionId && revocationStatusList && revocationRegistryIndex !== undefined) {
         const revocationRegistryDefinitionRecord = await agentContext.dependencyManager
           .resolve(AnonCredsRevocationRegistryDefinitionRepository)
           .getByRevocationRegistryDefinitionId(agentContext, revocationRegistryDefinitionId)
