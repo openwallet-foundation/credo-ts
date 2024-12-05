@@ -567,7 +567,7 @@ export class AnonCredsCredentialFormatService implements CredentialFormatService
     // if the proposal has an attachment Id use that, otherwise the generated id of the formats object
     const format = new CredentialFormatSpec({
       attachmentId: attachmentId,
-      format: ANONCREDS_CREDENTIAL,
+      format: ANONCREDS_CREDENTIAL_OFFER,
     })
 
     const offer = await anonCredsIssuerService.createCredentialOffer(agentContext, {
