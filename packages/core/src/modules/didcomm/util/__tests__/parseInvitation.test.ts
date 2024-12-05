@@ -1,11 +1,10 @@
-import { agentDependencies } from '../../../tests'
-import { ConnectionInvitationMessage } from '../../modules/didcomm/connections'
-import { InvitationType, OutOfBandInvitation } from '../../modules/didcomm/oob'
-import { convertToNewInvitation } from '../../modules/didcomm/oob/helpers'
-import { JsonEncoder } from '../JsonEncoder'
-import { JsonTransformer } from '../JsonTransformer'
-import { MessageValidator } from '../MessageValidator'
-import { oobInvitationFromShortUrl, parseInvitationShortUrl } from '../parseInvitation'
+import { agentDependencies } from '../../../../../tests'
+import { ConnectionInvitationMessage, oobInvitationFromShortUrl, parseInvitationShortUrl } from '../..'
+import { InvitationType, OutOfBandInvitation } from '../../oob'
+import { convertToNewInvitation } from '../../oob/helpers'
+import { JsonEncoder } from '../../../../utils/JsonEncoder'
+import { JsonTransformer } from '../../../../utils/JsonTransformer'
+import { MessageValidator } from '../../../../utils/MessageValidator'
 
 const mockOobInvite = {
   '@type': 'did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/out-of-band/1.0/invitation',

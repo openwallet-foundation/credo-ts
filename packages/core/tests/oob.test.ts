@@ -25,6 +25,7 @@ import { JsonEncoder, JsonTransformer } from '../src/utils'
 
 import { TestMessage } from './TestMessage'
 import { getInMemoryAgentOptions, waitForCredentialRecord } from './helpers'
+import testLogger from './logger'
 
 import { AgentEventTypes, CredoError, AutoAcceptCredential, CredentialState } from '@credo-ts/core'
 
@@ -33,6 +34,7 @@ const faberAgentOptions = getInMemoryAgentOptions(
   {
     endpoints: ['rxjs:faber'],
   },
+  {},
   getAnonCredsIndyModules({
     autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
   })
@@ -41,6 +43,9 @@ const aliceAgentOptions = getInMemoryAgentOptions(
   'Alice Agent OOB',
   {
     endpoints: ['rxjs:alice'],
+  },
+  {
+    logger: testLogger,
   },
   getAnonCredsIndyModules({
     autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
@@ -81,16 +86,16 @@ describe('out of band', () => {
 
     faberAgent = new Agent(faberAgentOptions)
 
-    faberAgent.registerInboundTransport(new SubjectInboundTransport(faberMessages))
-    faberAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
+    faberAgent.didcomm.registerInboundTransport(new SubjectInboundTransport(faberMessages))
+    faberAgent.didcomm.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     await faberAgent.initialize()
 
     aliceAgent = new Agent(aliceAgentOptions)
-    aliceAgent.registerInboundTransport(new SubjectInboundTransport(aliceMessages))
-    aliceAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
+    aliceAgent.didcomm.registerInboundTransport(new SubjectInboundTransport(aliceMessages))
+    aliceAgent.didcomm.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     await aliceAgent.initialize()
 
-    await aliceAgent.modules.anoncreds.createLinkSecret()
+    //await aliceAgent.modules.anoncreds.createLinkSecret()
 
     const { credentialDefinitionId } = await storePreCreatedAnonCredsDefinition(
       faberAgent,
@@ -376,6 +381,7 @@ describe('out of band', () => {
 
     test('process credential offer requests based on OOB message', async () => {
       const { message } = await faberAgent.credentials.createOffer(credentialTemplate)
+
       const { outOfBandInvitation } = await faberAgent.oob.createInvitation({
         ...issueCredentialConfig,
         messages: [message],

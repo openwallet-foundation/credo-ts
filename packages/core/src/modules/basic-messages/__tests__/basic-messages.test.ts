@@ -1,6 +1,5 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 import type { SubjectMessage } from '../../../../../../tests/transport/SubjectInboundTransport'
-import type { ConnectionRecord } from '../../didcomm'
 
 import { Subject } from 'rxjs'
 
@@ -9,7 +8,8 @@ import { SubjectOutboundTransport } from '../../../../../../tests/transport/Subj
 import { getInMemoryAgentOptions, makeConnection, waitForBasicMessage } from '../../../../tests/helpers'
 import testLogger from '../../../../tests/logger'
 import { Agent } from '../../../agent/Agent'
-import { MessageSendingError, RecordNotFoundError } from '../../../error'
+import { RecordNotFoundError } from '../../../error'
+import { MessageSendingError, type ConnectionRecord } from '../../didcomm'
 import { BasicMessage } from '../messages'
 import { BasicMessageRecord } from '../repository'
 
@@ -36,13 +36,13 @@ describe('Basic Messages E2E', () => {
     }
 
     faberAgent = new Agent(faberConfig)
-    faberAgent.registerInboundTransport(new SubjectInboundTransport(faberMessages))
-    faberAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
+    faberAgent.didcomm.registerInboundTransport(new SubjectInboundTransport(faberMessages))
+    faberAgent.didcomm.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     await faberAgent.initialize()
 
     aliceAgent = new Agent(aliceConfig)
-    aliceAgent.registerInboundTransport(new SubjectInboundTransport(aliceMessages))
-    aliceAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
+    aliceAgent.didcomm.registerInboundTransport(new SubjectInboundTransport(aliceMessages))
+    aliceAgent.didcomm.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     await aliceAgent.initialize()
     ;[aliceConnection, faberConnection] = await makeConnection(aliceAgent, faberAgent)
   })
@@ -127,7 +127,9 @@ describe('Basic Messages E2E', () => {
   test('Alice is unable to send a message', async () => {
     testLogger.test('Alice sends message to Faber that is undeliverable')
 
-    const spy = jest.spyOn(aliceAgent.outboundTransports[0], 'sendMessage').mockRejectedValue(new Error('any error'))
+    const spy = jest
+      .spyOn(aliceAgent.didcomm.outboundTransports[0], 'sendMessage')
+      .mockRejectedValue(new Error('any error'))
 
     await expect(aliceAgent.basicMessages.sendMessage(aliceConnection.id, 'Hello')).rejects.toThrowError(
       MessageSendingError

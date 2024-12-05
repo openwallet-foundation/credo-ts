@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 import type { SubjectMessage } from '../../../tests/transport/SubjectInboundTransport'
-import type { AgentMessageProcessedEvent } from '../src/agent/Events'
+import type { AgentMessageProcessedEvent } from '../src/modules/didcomm'
 import type { OutOfBandDidCommService } from '../src/modules/didcomm/oob'
 
 import { filter, firstValueFrom, map, Subject, timeout } from 'rxjs'
@@ -8,18 +8,19 @@ import { filter, firstValueFrom, map, Subject, timeout } from 'rxjs'
 import { SubjectInboundTransport } from '../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutboundTransport'
 import { Agent } from '../src/agent/Agent'
-import { AgentEventTypes } from '../src/agent/Events'
-import { DidExchangeState, HandshakeProtocol } from '../src/modules/didcomm/connections'
-import { ConnectionType } from '../src/modules/didcomm/models/connections/ConnectionType'
-import { didKeyToVerkey } from '../src/modules/dids/helpers'
 import {
+  AgentEventTypes,
+  DidExchangeState,
+  HandshakeProtocol,
   KeylistUpdateMessage,
   KeylistUpdateAction,
   MediationState,
   MediatorPickupStrategy,
   MediationRecipientModule,
   MediatorModule,
-} from '../src/modules/didcomm/routing'
+} from '../src/modules/didcomm'
+import { ConnectionType } from '../src/modules/didcomm/models/connections/ConnectionType'
+import { didKeyToVerkey } from '../src/modules/dids/helpers'
 
 import { getInMemoryAgentOptions, waitForBasicMessage } from './helpers'
 
@@ -31,6 +32,7 @@ const aliceAgentOptions = getInMemoryAgentOptions(
   {
     endpoints: ['rxjs:alice'],
   },
+  {},
   {
     mediationRecipient: new MediationRecipientModule({
       mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
@@ -42,6 +44,7 @@ const mediatorAgentOptions = getInMemoryAgentOptions(
   {
     endpoints: ['rxjs:mediator'],
   },
+  {},
   { mediator: new MediatorModule({ autoAcceptMediationRequests: true }) }
 )
 
@@ -69,18 +72,18 @@ describe('out of band with mediation', () => {
     }
 
     faberAgent = new Agent(faberAgentOptions)
-    faberAgent.registerInboundTransport(new SubjectInboundTransport(faberMessages))
-    faberAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
+    faberAgent.didcomm.registerInboundTransport(new SubjectInboundTransport(faberMessages))
+    faberAgent.didcomm.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     await faberAgent.initialize()
 
     aliceAgent = new Agent(aliceAgentOptions)
-    aliceAgent.registerInboundTransport(new SubjectInboundTransport(aliceMessages))
-    aliceAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
+    aliceAgent.didcomm.registerInboundTransport(new SubjectInboundTransport(aliceMessages))
+    aliceAgent.didcomm.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     await aliceAgent.initialize()
 
     mediatorAgent = new Agent(mediatorAgentOptions)
-    mediatorAgent.registerInboundTransport(new SubjectInboundTransport(mediatorMessages))
-    mediatorAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
+    mediatorAgent.didcomm.registerInboundTransport(new SubjectInboundTransport(mediatorMessages))
+    mediatorAgent.didcomm.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     await mediatorAgent.initialize()
 
     // ========== Make a connection between Alice and Mediator agents ==========

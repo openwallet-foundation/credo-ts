@@ -1,8 +1,8 @@
-import type { ConnectionRecord } from '../../modules/didcomm'
+import type { ConnectionRecord } from '..'
 
 import { Subject } from 'rxjs'
 
-import { getAgentConfig, getAgentContext } from '../../../tests/helpers'
+import { getAgentConfig, getAgentContext } from '../../../../tests/helpers'
 import {
   AgentMessage,
   Dispatcher,
@@ -11,8 +11,8 @@ import {
   getOutboundMessageContext,
   InboundMessageContext,
   parseMessageType,
-} from '../../modules/didcomm'
-import { EventEmitter } from '../EventEmitter'
+} from '..'
+import { EventEmitter } from '../../../agent/EventEmitter'
 
 jest.mock('../../modules/didcomm/base/MessageSender')
 

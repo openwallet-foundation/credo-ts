@@ -1,6 +1,6 @@
 import { getAgentContext, getMockConnection } from '../../../../tests/helpers'
 import { EventEmitter } from '../../../agent/EventEmitter'
-import { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
+import { InboundMessageContext } from '../../didcomm'
 import { BasicMessageRole } from '../BasicMessageRole'
 import { BasicMessage } from '../messages'
 import { BasicMessageRecord } from '../repository/BasicMessageRecord'

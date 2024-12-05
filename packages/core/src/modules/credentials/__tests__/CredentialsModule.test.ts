@@ -1,30 +1,31 @@
+import type { DependencyManager } from '../../../plugins/DependencyManager'
+import type { FeatureRegistry } from '../../didcomm'
 import type { CredentialProtocol } from '../protocol/CredentialProtocol'
 
-import { FeatureRegistry } from '../../../agent/FeatureRegistry'
-import { Protocol } from '../../../agent/models/features/Protocol'
-import { DependencyManager } from '../../../plugins/DependencyManager'
+import { Protocol } from '../../didcomm'
 import { CredentialsModule } from '../CredentialsModule'
 import { CredentialsModuleConfig } from '../CredentialsModuleConfig'
 import { V2CredentialProtocol } from '../protocol'
 import { RevocationNotificationService } from '../protocol/revocation-notification/services'
 import { CredentialRepository } from '../repository'
 
-jest.mock('../../../plugins/DependencyManager')
-const DependencyManagerMock = DependencyManager as jest.Mock<DependencyManager>
+const featureRegistry = {
+  register: jest.fn(),
+} as unknown as FeatureRegistry
 
-const dependencyManager = new DependencyManagerMock()
-
-jest.mock('../../../agent/FeatureRegistry')
-const FeatureRegistryMock = FeatureRegistry as jest.Mock<FeatureRegistry>
-
-const featureRegistry = new FeatureRegistryMock()
+const dependencyManager = {
+  registerInstance: jest.fn(),
+  registerSingleton: jest.fn(),
+  registerContextScoped: jest.fn(),
+  resolve: () => featureRegistry,
+} as unknown as DependencyManager
 
 describe('CredentialsModule', () => {
   test('registers dependencies on the dependency manager', () => {
     const credentialsModule = new CredentialsModule({
       credentialProtocols: [],
     })
-    credentialsModule.register(dependencyManager, featureRegistry)
+    credentialsModule.register(dependencyManager)
 
     expect(dependencyManager.registerInstance).toHaveBeenCalledTimes(1)
     expect(dependencyManager.registerInstance).toHaveBeenCalledWith(CredentialsModuleConfig, credentialsModule.config)
@@ -65,7 +66,7 @@ describe('CredentialsModule', () => {
 
     expect(credentialsModule.config.credentialProtocols).toEqual([credentialProtocol])
 
-    credentialsModule.register(dependencyManager, featureRegistry)
+    credentialsModule.register(dependencyManager)
 
     expect(registerMock).toHaveBeenCalledTimes(1)
     expect(registerMock).toHaveBeenCalledWith(dependencyManager, featureRegistry)

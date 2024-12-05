@@ -1,4 +1,4 @@
-import { AgentMessage } from '../../agent/AgentMessage'
+import { AgentMessage } from '../../AgentMessage'
 import {
   canHandleMessageType,
   parseDidCommProtocolUri,

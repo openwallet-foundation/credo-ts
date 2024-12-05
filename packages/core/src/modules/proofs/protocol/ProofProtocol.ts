@@ -17,13 +17,7 @@ import type {
 } from './ProofProtocolOptions'
 import type { AgentContext } from '../../../agent/context/AgentContext'
 import type { Query, QueryOptions } from '../../../storage/StorageService'
-import type {
-  AgentMessage,
-  FeatureRegistry,
-  InboundMessageContext,
-  MessageHandlerRegistry,
-  ProblemReportMessage,
-} from '../../didcomm'
+import type { AgentMessage, FeatureRegistry, InboundMessageContext, MessageHandlerRegistry, ProblemReportMessage } from '../../didcomm'
 import type { ExtractProofFormats, ProofFormatService } from '../formats'
 import type { ProofRole } from '../models'
 import type { ProofState } from '../models/ProofState'

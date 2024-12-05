@@ -10,7 +10,7 @@ import type { DependencyManager } from '../plugins'
 import { CredoError } from '../error'
 import { BasicMessagesApi } from '../modules/basic-messages'
 import { CredentialsApi } from '../modules/credentials'
-import { FeatureRegistry, MessageReceiver, MessageSender, TransportService } from '../modules/didcomm'
+import { DidCommApi, FeatureRegistry, MessageReceiver, MessageSender, TransportService } from '../modules/didcomm'
 import { ConnectionsApi } from '../modules/didcomm/connections'
 import { DiscoverFeaturesApi } from '../modules/didcomm/discover-features'
 import { MessagePickupApi } from '../modules/didcomm/message-pickup/MessagePickupApi'
@@ -55,6 +55,7 @@ export abstract class BaseAgent<AgentModules extends ModulesMap = EmptyModuleMap
   public readonly genericRecords: GenericRecordsApi
   public readonly discovery: DiscoverFeaturesApi
   public readonly dids: DidsApi
+  public readonly didcomm: DidCommApi
   public readonly wallet: WalletApi
   public readonly oob: OutOfBandApi
   public readonly w3cCredentials: W3cCredentialsApi
@@ -105,6 +106,7 @@ export abstract class BaseAgent<AgentModules extends ModulesMap = EmptyModuleMap
     this.genericRecords = this.dependencyManager.resolve(GenericRecordsApi)
     this.discovery = this.dependencyManager.resolve(DiscoverFeaturesApi)
     this.dids = this.dependencyManager.resolve(DidsApi)
+    this.didcomm = this.dependencyManager.resolve(DidCommApi)
     this.wallet = this.dependencyManager.resolve(WalletApi)
     this.oob = this.dependencyManager.resolve(OutOfBandApi)
     this.w3cCredentials = this.dependencyManager.resolve(W3cCredentialsApi)

@@ -96,6 +96,7 @@ describe('Presentation Exchange ProofFormatService', () => {
       getInMemoryAgentOptions(
         'PresentationExchangeProofFormatService',
         {},
+        {},
         {
           pex: new DifPresentationExchangeModule(),
           proofs: new ProofsModule({

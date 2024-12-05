@@ -1,7 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import type { AgentContext } from '../../../../../agent'
-import type { GetAgentMessageOptions } from '../../../../../storage'
-import type { PlaintextMessage } from '../../../../../types'
+import type { GetAgentMessageOptions, PlaintextMessage } from '../../../../didcomm'
 import type { CredentialStateChangedEvent } from '../../../CredentialEvents'
 import type {
   CredentialFormat,
@@ -17,14 +16,19 @@ import { Subject } from 'rxjs'
 import { CredoError, CredentialFormatSpec, CredentialRole } from '../../../../..'
 import { getAgentConfig, getAgentContext, getMockConnection, mockFunction } from '../../../../../../tests/helpers'
 import { EventEmitter } from '../../../../../agent/EventEmitter'
-import { InboundMessageContext } from '../../../../../agent/models/InboundMessageContext'
-import { Attachment, AttachmentData } from '../../../../../decorators/attachment/Attachment'
-import { DidCommMessageRecord, DidCommMessageRole, DidCommMessageRepository } from '../../../../../storage'
 import { JsonTransformer } from '../../../../../utils'
 import { JsonEncoder } from '../../../../../utils/JsonEncoder'
-import { AckStatus } from '../../../../didcomm/messages/common/AckMessage'
-import { DidExchangeState } from '../../../../didcomm/connections'
-import { ConnectionService } from '../../../../didcomm/connections/services/ConnectionService'
+import {
+  AckStatus,
+  Attachment,
+  AttachmentData,
+  ConnectionService,
+  DidExchangeState,
+  DidCommMessageRecord,
+  DidCommMessageRole,
+  DidCommMessageRepository,
+  InboundMessageContext,
+} from '../../../../didcomm'
 import { CredentialEventTypes } from '../../../CredentialEvents'
 import { credReq } from '../../../__tests__/fixtures'
 import { CredentialProblemReportReason } from '../../../models/CredentialProblemReportReason'
@@ -40,11 +44,12 @@ import { V2OfferCredentialMessage } from '../messages/V2OfferCredentialMessage'
 import { V2RequestCredentialMessage } from '../messages/V2RequestCredentialMessage'
 
 // Mock classes
+
 jest.mock('../../../repository/CredentialRepository')
-jest.mock('../../../../../storage/didcomm/DidCommMessageRepository')
-jest.mock('../../../../routing/services/RoutingService')
-jest.mock('../../../../connections/services/ConnectionService')
-jest.mock('../../../../../agent/Dispatcher')
+jest.mock('../../../../didcomm/repository/DidCommMessageRepository')
+jest.mock('../../../../didcomm/routing/services/RoutingService')
+jest.mock('../../../../didcomm/services/connections/ConnectionService')
+jest.mock('../../../../didcomm/Dispatcher')
 
 // Mock typed object
 const CredentialRepositoryMock = CredentialRepository as jest.Mock<CredentialRepository>

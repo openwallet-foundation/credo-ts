@@ -21,6 +21,7 @@ export class DidCommModuleConfig {
 
   public constructor(options?: DidCommModuleConfigOptions) {
     this.options = options ?? {}
+    this._endpoints = options?.endpoints
   }
 
   public get endpoints(): [string, ...string[]] {

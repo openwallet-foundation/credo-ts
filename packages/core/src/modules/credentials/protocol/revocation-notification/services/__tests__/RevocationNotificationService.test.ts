@@ -7,8 +7,7 @@ import { Subject } from 'rxjs'
 import { CredentialExchangeRecord, CredentialRole, CredentialState, InboundMessageContext } from '../../../../../..'
 import { getAgentConfig, getAgentContext, getMockConnection, mockFunction } from '../../../../../../../tests/helpers'
 import { EventEmitter } from '../../../../../../agent/EventEmitter'
-import { MessageHandlerRegistry } from '../../../../../../agent/MessageHandlerRegistry'
-import { DidExchangeState } from '../../../../../didcomm/connections'
+import { DidExchangeState, MessageHandlerRegistry } from '../../../../../didcomm'
 import { CredentialEventTypes } from '../../../../CredentialEvents'
 import { CredentialRepository } from '../../../../repository/CredentialRepository'
 import { V1RevocationNotificationMessage, V2RevocationNotificationMessage } from '../../messages'
@@ -18,7 +17,7 @@ jest.mock('../../../../repository/CredentialRepository')
 const CredentialRepositoryMock = CredentialRepository as jest.Mock<CredentialRepository>
 const credentialRepository = new CredentialRepositoryMock()
 
-jest.mock('../../../../../../agent/MessageHandlerRegistry')
+jest.mock('../../../../../didcomm/MessageHandlerRegistry')
 const MessageHandlerRegistryMock = MessageHandlerRegistry as jest.Mock<MessageHandlerRegistry>
 const messageHandlerRegistry = new MessageHandlerRegistryMock()
 

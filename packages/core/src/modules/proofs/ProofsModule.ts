@@ -4,6 +4,8 @@ import type { ApiModule, DependencyManager } from '../../plugins'
 import type { Optional } from '../../utils'
 import type { Constructor } from '../../utils/mixins'
 
+import { FeatureRegistry, MessageHandlerRegistry } from '../didcomm'
+
 import { ProofsApi } from './ProofsApi'
 import { ProofsModuleConfig } from './ProofsModuleConfig'
 import { V2ProofProtocol } from './protocol'
@@ -44,8 +46,10 @@ export class ProofsModule<ProofProtocols extends ProofProtocol[] = DefaultProofP
     // Repositories
     dependencyManager.registerSingleton(ProofRepository)
 
+    const messageHandlerRegistry = dependencyManager.resolve(MessageHandlerRegistry)
+    const featureRegistry = dependencyManager.resolve(FeatureRegistry)
     for (const proofProtocol of this.config.proofProtocols) {
-      proofProtocol.register(dependencyManager)
+      proofProtocol.register(messageHandlerRegistry, featureRegistry)
     }
   }
 }

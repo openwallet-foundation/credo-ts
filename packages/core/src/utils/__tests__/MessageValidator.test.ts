@@ -1,5 +1,5 @@
 import { ClassValidationError } from '../../error/ClassValidationError'
-import { ConnectionInvitationMessage } from '../../modules/didcomm/connections'
+import { ConnectionInvitationMessage } from '../../modules/didcomm/messages'
 import { MessageValidator } from '../MessageValidator'
 
 describe('MessageValidator', () => {

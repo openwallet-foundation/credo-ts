@@ -1,4 +1,4 @@
-import { AgentMessage } from '../src/agent/AgentMessage'
+import { AgentMessage } from '../src/modules/didcomm'
 
 export class TestMessage extends AgentMessage {
   public constructor() {

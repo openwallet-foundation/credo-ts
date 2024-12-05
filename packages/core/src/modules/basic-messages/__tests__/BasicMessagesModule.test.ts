@@ -1,22 +1,24 @@
-import { FeatureRegistry } from '../../../agent/FeatureRegistry'
-import { DependencyManager } from '../../../plugins/DependencyManager'
+import type { DependencyManager } from '../../../plugins/DependencyManager'
+import type { FeatureRegistry } from '../../didcomm'
+
 import { BasicMessagesModule } from '../BasicMessagesModule'
 import { BasicMessageRepository } from '../repository'
 import { BasicMessageService } from '../services'
 
-jest.mock('../../../plugins/DependencyManager')
-const DependencyManagerMock = DependencyManager as jest.Mock<DependencyManager>
+const featureRegistry = {
+  register: jest.fn(),
+} as unknown as FeatureRegistry
 
-const dependencyManager = new DependencyManagerMock()
-
-jest.mock('../../../agent/FeatureRegistry')
-const FeatureRegistryMock = FeatureRegistry as jest.Mock<FeatureRegistry>
-
-const featureRegistry = new FeatureRegistryMock()
+const dependencyManager = {
+  registerInstance: jest.fn(),
+  registerSingleton: jest.fn(),
+  registerContextScoped: jest.fn(),
+  resolve: () => featureRegistry,
+} as unknown as DependencyManager
 
 describe('BasicMessagesModule', () => {
   test('registers dependencies on the dependency manager', () => {
-    new BasicMessagesModule().register(dependencyManager, featureRegistry)
+    new BasicMessagesModule().register(dependencyManager)
 
     expect(dependencyManager.registerSingleton).toHaveBeenCalledTimes(2)
     expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(BasicMessageService)

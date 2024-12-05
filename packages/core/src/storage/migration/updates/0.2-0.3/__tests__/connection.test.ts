@@ -1,4 +1,4 @@
-import type { ConnectionRecordProps, CustomConnectionTags } from '../../../../../modules/didcomm/connections'
+import type { ConnectionRecordProps, CustomConnectionTags } from '../../../../../modules/didcomm'
 import type { MediationRecordProps } from '../../../../../modules/didcomm/routing'
 
 import { getAgentConfig, getAgentContext, mockFunction } from '../../../../../../tests/helpers'
@@ -9,19 +9,22 @@ import {
   ConnectionType,
   DidExchangeRole,
   DidExchangeState,
-} from '../../../../../modules/didcomm/connections'
-import { MediationRecord, MediationState, MediationRepository, MediationRole } from '../../../../../modules/didcomm/routing'
+  MediationRecord,
+  MediationState,
+  MediationRepository,
+  MediationRole,
+} from '../../../../../modules/didcomm'
 import { JsonTransformer } from '../../../../../utils'
 import * as testModule from '../connection'
 
 const agentConfig = getAgentConfig('Migration ConnectionRecord 0.2-0.3')
 const agentContext = getAgentContext()
 
-jest.mock('../../../../../modules/connections/repository/ConnectionRepository')
+jest.mock('../../../../../modules/didcomm/repository/connections/ConnectionRepository')
 const ConnectionRepositoryMock = ConnectionRepository as jest.Mock<ConnectionRepository>
 const connectionRepository = new ConnectionRepositoryMock()
 
-jest.mock('../../../../../modules/routing/repository/MediationRepository')
+jest.mock('../../../../../modules/didcomm/routing/repository/MediationRepository')
 const MediationRepositoryMock = MediationRepository as jest.Mock<MediationRepository>
 const mediationRepository = new MediationRepositoryMock()
 

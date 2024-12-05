@@ -5,6 +5,7 @@ import type { Constructor } from '../utils/mixins'
 import { BasicMessagesModule } from '../modules/basic-messages'
 import { CacheModule } from '../modules/cache'
 import { CredentialsModule } from '../modules/credentials'
+import { DidCommModule } from '../modules/didcomm'
 import { ConnectionsModule } from '../modules/didcomm/connections'
 import { DiscoverFeaturesModule } from '../modules/didcomm/discover-features'
 import { MessagePickupModule } from '../modules/didcomm/message-pickup'
@@ -131,6 +132,7 @@ function getDefaultAgentModules() {
     genericRecords: () => new GenericRecordsModule(),
     discovery: () => new DiscoverFeaturesModule(),
     dids: () => new DidsModule(),
+    didcomm: () => new DidCommModule(),
     wallet: () => new WalletModule(),
     oob: () => new OutOfBandModule(),
     w3cCredentials: () => new W3cCredentialsModule(),

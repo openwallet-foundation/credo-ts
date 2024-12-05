@@ -2,7 +2,7 @@
 import type { OutOfBandInvitation } from '../src/modules/didcomm/oob/messages'
 
 import { Agent } from '../src/agent/Agent'
-import { DidExchangeState, HandshakeProtocol } from '../src/modules/didcomm/connections'
+import { DidExchangeState, HandshakeProtocol } from '../src/modules/didcomm'
 import {
   MediationState,
   MediatorModule,
@@ -21,6 +21,7 @@ const aliceAgentOptions = getInMemoryAgentOptions(
   {
     endpoints: ['rxjs:alice'],
   },
+  {},
   {
     mediationRecipient: new MediationRecipientModule({
       mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
@@ -32,6 +33,7 @@ const mediatorAgentOptions = getInMemoryAgentOptions(
   {
     endpoints: ['rxjs:mediator'],
   },
+  {},
   { mediator: new MediatorModule({ autoAcceptMediationRequests: true }) }
 )
 

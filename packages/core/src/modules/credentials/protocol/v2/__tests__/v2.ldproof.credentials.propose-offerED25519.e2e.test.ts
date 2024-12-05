@@ -117,6 +117,7 @@ describe('V2 Credentials - JSON-LD - Ed25519', () => {
         {
           endpoints: ['rxjs:faber'],
         },
+        {},
         getIndyJsonLdModules()
       )
     )
@@ -126,6 +127,7 @@ describe('V2 Credentials - JSON-LD - Ed25519', () => {
         {
           endpoints: ['rxjs:alice'],
         },
+        {},
         getIndyJsonLdModules()
       )
     )

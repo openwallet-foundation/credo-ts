@@ -1,26 +1,29 @@
+import type { DependencyManager } from '../../../plugins/DependencyManager'
+import type { FeatureRegistry } from '../../didcomm'
 import type { ProofProtocol } from '../protocol/ProofProtocol'
 
-import { DependencyManager } from '../../../plugins/DependencyManager'
-import { FeatureRegistry } from '../../didcomm'
 import { ProofsModule } from '../ProofsModule'
 import { ProofsModuleConfig } from '../ProofsModuleConfig'
 import { V2ProofProtocol } from '../protocol/v2/V2ProofProtocol'
 import { ProofRepository } from '../repository'
 
-jest.mock('../../../plugins/DependencyManager')
-jest.mock('../../../agent/FeatureRegistry')
+const featureRegistry = {
+  register: jest.fn(),
+} as unknown as FeatureRegistry
 
-const DependencyManagerMock = DependencyManager as jest.Mock<DependencyManager>
-const dependencyManager = new DependencyManagerMock()
-const FeatureRegistryMock = FeatureRegistry as jest.Mock<FeatureRegistry>
-const featureRegistry = new FeatureRegistryMock()
+const dependencyManager = {
+  registerInstance: jest.fn(),
+  registerSingleton: jest.fn(),
+  registerContextScoped: jest.fn(),
+  resolve: () => featureRegistry,
+} as unknown as DependencyManager
 
 describe('ProofsModule', () => {
   test('registers dependencies on the dependency manager', () => {
     const proofsModule = new ProofsModule({
       proofProtocols: [],
     })
-    proofsModule.register(dependencyManager, featureRegistry)
+    proofsModule.register(dependencyManager)
 
     expect(dependencyManager.registerInstance).toHaveBeenCalledTimes(1)
     expect(dependencyManager.registerInstance).toHaveBeenCalledWith(ProofsModuleConfig, proofsModule.config)
@@ -47,7 +50,7 @@ describe('ProofsModule', () => {
 
     expect(proofsModule.config.proofProtocols).toEqual([proofProtocol])
 
-    proofsModule.register(dependencyManager, featureRegistry)
+    proofsModule.register(dependencyManager)
 
     expect(registerMock).toHaveBeenCalledTimes(1)
     expect(registerMock).toHaveBeenCalledWith(dependencyManager, featureRegistry)

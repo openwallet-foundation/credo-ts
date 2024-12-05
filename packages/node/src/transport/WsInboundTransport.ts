@@ -1,5 +1,4 @@
 import type {
-  Agent,
   InboundTransport,
   Logger,
   TransportSession,
@@ -8,7 +7,7 @@ import type {
   AgentMessageReceivedEvent,
 } from '@credo-ts/core'
 
-import { CredoError, TransportService, utils, AgentEventTypes, EventEmitter } from '@credo-ts/core'
+import { CredoError, TransportService, utils, AgentEventTypes, EventEmitter, DidCommModuleConfig } from '@credo-ts/core'
 // eslint-disable-next-line import/no-named-as-default
 import WebSocket, { Server } from 'ws'
 
@@ -28,8 +27,8 @@ export class WsInboundTransport implements InboundTransport {
 
     this.logger = agentContext.config.logger
 
-    const didcommConfig = agentContext.dependencyManager.resolve(Didcommco)
-    const wsEndpoint = agentContext.config.endpoints.find((e) => e.startsWith('ws'))
+    const didcommConfig = agentContext.dependencyManager.resolve(DidCommModuleConfig)
+    const wsEndpoint = didcommConfig.endpoints.find((e) => e.startsWith('ws'))
     this.logger.debug(`Starting WS inbound transport`, {
       endpoint: wsEndpoint,
     })

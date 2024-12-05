@@ -6,11 +6,15 @@ import { Subject } from 'rxjs'
 
 import { getAgentConfig, getAgentContext, getMockConnection, mockFunction } from '../../../../../../tests/helpers'
 import { EventEmitter } from '../../../../../agent/EventEmitter'
-import { InboundMessageContext } from '../../../../../agent/models/InboundMessageContext'
-import { Attachment, AttachmentData } from '../../../../../decorators/attachment/Attachment'
-import { DidCommMessageRepository } from '../../../../../storage'
 import { uuid } from '../../../../../utils/uuid'
-import { ConnectionService, DidExchangeState } from '../../../../didcomm/connections'
+import {
+  Attachment,
+  AttachmentData,
+  ConnectionService,
+  DidCommMessageRepository,
+  DidExchangeState,
+  InboundMessageContext,
+} from '../../../../didcomm'
 import { ProofEventTypes } from '../../../ProofEvents'
 import { PresentationProblemReportReason } from '../../../errors/PresentationProblemReportReason'
 import { ProofRole } from '../../../models'

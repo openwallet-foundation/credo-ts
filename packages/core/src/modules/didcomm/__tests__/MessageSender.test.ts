@@ -5,22 +5,22 @@ import type {
   EncryptedMessage,
   OutboundTransport,
   ResolvedDidCommService,
-} from '../../modules/didcomm'
-import type { MessagePickupRepository } from '../../modules/didcomm/message-pickup/storage'
-import type { DidDocumentService, IndyAgentService } from '../../modules/dids'
+} from '..'
+import type { MessagePickupRepository } from '../message-pickup/storage'
+import type { DidDocumentService, IndyAgentService } from '../../dids'
 
 import { Subject } from 'rxjs'
 
-import { TestMessage } from '../../../tests/TestMessage'
+import { TestMessage } from '../../../../tests/TestMessage'
 import {
   agentDependencies,
   getAgentConfig,
   getAgentContext,
   getMockConnection,
   mockFunction,
-} from '../../../tests/helpers'
-import testLogger from '../../../tests/logger'
-import { Key, KeyType } from '../../crypto'
+} from '../../../../tests/helpers'
+import testLogger from '../../../../tests/logger'
+import { Key, KeyType } from '../../../crypto'
 import {
   AgentEventTypes,
   DidCommDocumentService,
@@ -30,12 +30,12 @@ import {
   OutboundMessageSendStatus,
   ReturnRouteTypes,
   TransportService,
-} from '../../modules/didcomm'
-import { InMemoryMessagePickupRepository } from '../../modules/didcomm/message-pickup/storage'
-import { DidResolverService, DidDocument, VerificationMethod } from '../../modules/dids'
-import { DidCommV1Service } from '../../modules/dids/domain/service/DidCommV1Service'
-import { verkeyToInstanceOfKey } from '../../modules/dids/helpers'
-import { EventEmitter } from '../EventEmitter'
+} from '..'
+import { InMemoryMessagePickupRepository } from '../message-pickup/storage'
+import { DidResolverService, DidDocument, VerificationMethod } from '../../dids'
+import { DidCommV1Service } from '../../dids/domain/service/DidCommV1Service'
+import { verkeyToInstanceOfKey } from '../../dids/helpers'
+import { EventEmitter } from '../../../agent/EventEmitter'
 
 import { DummyTransportSession } from './stubs'
 

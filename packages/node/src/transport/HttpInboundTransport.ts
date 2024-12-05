@@ -1,6 +1,5 @@
 import type {
   InboundTransport,
-  Agent,
   TransportSession,
   EncryptedMessage,
   AgentContext,
@@ -10,7 +9,15 @@ import type {
 import type { Express, Request, Response } from 'express'
 import type { Server } from 'http'
 
-import { DidCommMimeType, CredoError, TransportService, utils, AgentEventTypes, EventEmitter } from '@credo-ts/core'
+import {
+  DidCommMimeType,
+  CredoError,
+  TransportService,
+  utils,
+  AgentEventTypes,
+  EventEmitter,
+  DidCommModuleConfig,
+} from '@credo-ts/core'
 import express, { text } from 'express'
 import { filter, firstValueFrom, ReplaySubject, timeout } from 'rxjs'
 
@@ -146,7 +153,8 @@ export class HttpTransportSession implements TransportSession {
     }
 
     // By default we take the agent config's default DIDComm content-type
-    let responseMimeType = agentContext.config.didCommMimeType as string
+    const didcommConfig = agentContext.dependencyManager.resolve(DidCommModuleConfig)
+    let responseMimeType = didcommConfig.didCommMimeType as string
 
     // However, if the request mime-type is a mime-type that is supported by us, we use that
     // to minimize the chance of interoperability issues

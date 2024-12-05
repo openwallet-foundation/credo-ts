@@ -4,9 +4,9 @@ import { CredentialExchangeRecord, CredentialState } from '../../../../../../src
 import { getAgentConfig, getAgentContext, mockFunction } from '../../../../../../tests/helpers'
 import { Agent } from '../../../../../agent/Agent'
 import { CredentialRepository } from '../../../../../modules/credentials/repository/CredentialRepository'
-import { JsonTransformer } from '../../../../../utils'
-import { DidCommMessageRole } from '../../../../didcomm'
+import { DidCommMessageRole } from '../../../../../modules/didcomm'
 import { DidCommMessageRepository } from '../../../../../modules/didcomm/repository/DidCommMessageRepository'
+import { JsonTransformer } from '../../../../../utils'
 import * as testModule from '../credential'
 
 const agentConfig = getAgentConfig('Migration CredentialRecord 0.1-0.2')
@@ -16,7 +16,7 @@ jest.mock('../../../../../modules/credentials/repository/CredentialRepository')
 const CredentialRepositoryMock = CredentialRepository as jest.Mock<CredentialRepository>
 const credentialRepository = new CredentialRepositoryMock()
 
-jest.mock('../../../../didcomm/DidCommMessageRepository')
+jest.mock('../../../../../modules/didcomm/repository/DidCommMessageRepository')
 const DidCommMessageRepositoryMock = DidCommMessageRepository as jest.Mock<DidCommMessageRepository>
 const didCommMessageRepository = new DidCommMessageRepositoryMock()
 

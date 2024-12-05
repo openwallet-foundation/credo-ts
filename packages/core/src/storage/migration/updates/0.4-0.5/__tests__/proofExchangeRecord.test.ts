@@ -1,8 +1,8 @@
 import { getAgentConfig, getAgentContext, mockFunction } from '../../../../../../tests'
 import { Agent } from '../../../../../agent/Agent'
+import { DidCommMessageRecord, DidCommMessageRepository, DidCommMessageRole } from '../../../../../modules/didcomm'
 import { ProofExchangeRecord, ProofRepository, ProofRole, ProofState } from '../../../../../modules/proofs'
 import { JsonTransformer } from '../../../../../utils'
-import { DidCommMessageRecord, DidCommMessageRepository, DidCommMessageRole } from '../../../../didcomm'
 import * as testModule from '../proofExchangeRecord'
 
 const agentConfig = getAgentConfig('Migration - Proof Exchange Record - 0.4-0.5')
@@ -12,7 +12,7 @@ jest.mock('../../../../../modules/proofs/repository/ProofRepository')
 const ProofRepositoryMock = ProofRepository as jest.Mock<ProofRepository>
 const proofRepository = new ProofRepositoryMock()
 
-jest.mock('../../../../didcomm/DidCommMessageRepository')
+jest.mock('../../../../../modules/didcomm/repository/DidCommMessageRepository')
 const DidCommMessageRepositoryMock = DidCommMessageRepository as jest.Mock<DidCommMessageRepository>
 const didCommMessageRepository = new DidCommMessageRepositoryMock()
 

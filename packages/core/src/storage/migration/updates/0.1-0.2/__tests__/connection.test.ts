@@ -26,7 +26,7 @@ import legacyDidPeerR1xKJw17sUoXhejEpugMYJ from './__fixtures__/legacyDidPeerR1x
 const agentConfig = getAgentConfig('Migration ConnectionRecord 0.1-0.2')
 const agentContext = getAgentContext()
 
-jest.mock('../../../../../modules/connections/repository/ConnectionRepository')
+jest.mock('../../../../../modules/didcomm/repository/connections/ConnectionRepository')
 const ConnectionRepositoryMock = ConnectionRepository as jest.Mock<ConnectionRepository>
 const connectionRepository = new ConnectionRepositoryMock()
 
@@ -34,7 +34,7 @@ jest.mock('../../../../../modules/dids/repository/DidRepository')
 const DidRepositoryMock = DidRepository as jest.Mock<DidRepository>
 const didRepository = new DidRepositoryMock()
 
-jest.mock('../../../../../modules/oob/repository/OutOfBandRepository')
+jest.mock('../../../../../modules/didcomm/oob/repository/OutOfBandRepository')
 const OutOfBandRepositoryMock = OutOfBandRepository as jest.Mock<OutOfBandRepository>
 const outOfBandRepository = new OutOfBandRepositoryMock()
 

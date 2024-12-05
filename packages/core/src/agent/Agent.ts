@@ -9,6 +9,8 @@ import { InjectionSymbols } from '../constants'
 import { SigningProviderToken } from '../crypto'
 import { JwsService } from '../crypto/JwsService'
 import { CredoError } from '../error'
+import { FeatureRegistry } from '../modules/didcomm/FeatureRegistry'
+import { MessageHandlerRegistry } from '../modules/didcomm/MessageHandlerRegistry'
 import { DependencyManager } from '../plugins'
 import { StorageUpdateService, StorageVersionRepository } from '../storage'
 
@@ -36,6 +38,12 @@ export class Agent<AgentModules extends AgentModulesInput = any> extends BaseAge
     dependencyManager.registerSingleton(JwsService)
     dependencyManager.registerSingleton(StorageVersionRepository)
     dependencyManager.registerSingleton(StorageUpdateService)
+
+    // FIXME: These two registries are part of DIDComm, but they should be registered before all DIDComm-related modules
+    // are registered. Maybe message handler and feature registration should be moved to module.initialize() method to ensure that
+    // FeatureRegistry and MessageHandlerRegistry are available?
+    dependencyManager.registerSingleton(MessageHandlerRegistry)
+    dependencyManager.registerSingleton(FeatureRegistry)
 
     // This is a really ugly hack to make tsyringe work without any SigningProviders registered
     // It is currently impossible to use @injectAll if there are no instances registered for the

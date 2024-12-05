@@ -8,7 +8,7 @@ import * as testModule from '../mediation'
 const agentConfig = getAgentConfig('Migration MediationRecord 0.1-0.2')
 const agentContext = getAgentContext()
 
-jest.mock('../../../../../modules/routing/repository/MediationRepository')
+jest.mock('../../../../../modules/didcomm/routing/repository/MediationRepository')
 const MediationRepositoryMock = MediationRepository as jest.Mock<MediationRepository>
 const mediationRepository = new MediationRepositoryMock()
 

@@ -21,7 +21,11 @@ import type {
   ConnectionDidRotatedEvent,
 } from '../src'
 import type { AgentModulesInput, EmptyModuleMap } from '../src/agent/AgentModules'
-import type { TrustPingReceivedEvent, TrustPingResponseReceivedEvent } from '../src/modules/didcomm/connections/TrustPingEvents'
+import type { DidCommModuleConfigOptions } from '../src/modules/didcomm/DidCommModuleConfig'
+import type {
+  TrustPingReceivedEvent,
+  TrustPingResponseReceivedEvent,
+} from '../src/modules/didcomm/connections/TrustPingEvents'
 import type { ProofState } from '../src/modules/proofs/models/ProofState'
 import type { WalletConfig } from '../src/types'
 import type { Observable } from 'rxjs'
@@ -52,13 +56,14 @@ import {
   ProofEventTypes,
   TrustPingEventTypes,
   DidsApi,
+  DidCommModule,
 } from '../src'
 import { Key, KeyType } from '../src/crypto'
-import { DidKey } from '../src/modules/dids/methods/key'
 import { OutOfBandRole } from '../src/modules/didcomm/oob/domain/OutOfBandRole'
 import { OutOfBandState } from '../src/modules/didcomm/oob/domain/OutOfBandState'
 import { OutOfBandInvitation } from '../src/modules/didcomm/oob/messages'
 import { OutOfBandRecord } from '../src/modules/didcomm/oob/repository'
+import { DidKey } from '../src/modules/dids/methods/key'
 import { KeyDerivationMethod } from '../src/types'
 import { sleep } from '../src/utils/sleep'
 import { uuid } from '../src/utils/uuid'
@@ -131,9 +136,14 @@ export function getAgentOptions<AgentModules extends AgentModulesInput | EmptyMo
 
 export function getInMemoryAgentOptions<AgentModules extends AgentModulesInput | EmptyModuleMap>(
   name: string,
+  didcommExtraConfig: Partial<DidCommModuleConfigOptions> = {},
   extraConfig: Partial<InitConfig> = {},
   inputModules?: AgentModules
-): { config: InitConfig; modules: AgentModules; dependencies: AgentDependencies } {
+): {
+  config: InitConfig
+  modules: AgentModules
+  dependencies: AgentDependencies
+} {
   const random = uuid().slice(0, 4)
   const config: InitConfig = {
     label: `Agent: ${name} - ${random}`,
@@ -147,6 +157,8 @@ export function getInMemoryAgentOptions<AgentModules extends AgentModulesInput |
     ...extraConfig,
   }
 
+  const didcommConfig: DidCommModuleConfigOptions = { ...didcommExtraConfig }
+
   const m = (inputModules ?? {}) as AgentModulesInput
   const modules = {
     ...m,
@@ -157,9 +169,14 @@ export function getInMemoryAgentOptions<AgentModules extends AgentModulesInput |
       new ConnectionsModule({
         autoAcceptConnections: true,
       }),
+    didcomm: m.didcomm ?? new DidCommModule(didcommConfig),
   }
 
-  return { config, modules: modules as unknown as AgentModules, dependencies: agentDependencies } as const
+  return {
+    config,
+    modules: modules as unknown as AgentModules,
+    dependencies: agentDependencies,
+  } as const
 }
 
 export async function importExistingIndyDidFromPrivateKey(agent: Agent, privateKey: Buffer) {

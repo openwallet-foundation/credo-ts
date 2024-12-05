@@ -9,8 +9,16 @@ import { BasicMessageRepository, BasicMessageService } from '../../modules/basic
 import { BasicMessagesApi } from '../../modules/basic-messages/BasicMessagesApi'
 import { CredentialRepository } from '../../modules/credentials'
 import { CredentialsApi } from '../../modules/credentials/CredentialsApi'
-import { Dispatcher, EnvelopeService, FeatureRegistry, MessageReceiver, MessageSender } from '../../modules/didcomm'
-import { ConnectionService, DidRotateService, TrustPingService } from '../../modules/didcomm'
+import {
+  ConnectionService,
+  DidRotateService,
+  TrustPingService,
+  Dispatcher,
+  EnvelopeService,
+  FeatureRegistry,
+  MessageReceiver,
+  MessageSender,
+} from '../../modules/didcomm'
 import { ConnectionsApi } from '../../modules/didcomm/connections/ConnectionsApi'
 import { MessagePickupApi, InMemoryMessagePickupRepository } from '../../modules/didcomm/message-pickup'
 import { ConnectionRepository } from '../../modules/didcomm/repository/connections/ConnectionRepository'

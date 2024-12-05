@@ -2,8 +2,7 @@
 
 import { ReplaySubject, first, firstValueFrom, timeout } from 'rxjs'
 
-import { MessageSender } from '../../..//agent/MessageSender'
-import { setupSubjectTransports, testLogger } from '../../../../../tests'
+import { setupSubjectTransports } from '../../../../../tests'
 import {
   getInMemoryAgentOptions,
   makeConnection,
@@ -12,13 +11,13 @@ import {
   waitForDidRotate,
 } from '../../../../../tests/helpers'
 import { Agent } from '../../../../agent/Agent'
-import { getOutboundMessageContext } from '../../../agent/getOutboundMessageContext'
 import { RecordNotFoundError } from '../../../../error'
 import { uuid } from '../../../../utils/uuid'
 import { BasicMessage } from '../../../basic-messages'
 import { createPeerDidDocumentFromServices } from '../../../dids'
-import { ConnectionsModule } from '../ConnectionsModule'
-import { DidRotateProblemReportMessage, HangupMessage, DidRotateAckMessage } from '../messages'
+import { MessageSender } from '../../MessageSender'
+import { getOutboundMessageContext } from '../../getOutboundMessageContext'
+import { DidRotateProblemReportMessage, HangupMessage, DidRotateAckMessage } from '../../messages'
 import { ConnectionRecord } from '../../repository/connections'
 
 import { InMemoryDidRegistry } from './InMemoryDidRegistry'
@@ -31,32 +30,12 @@ describe('Rotation E2E tests', () => {
   let bobAliceConnection: ConnectionRecord | undefined
 
   beforeEach(async () => {
-    const aliceAgentOptions = getInMemoryAgentOptions(
-      'DID Rotate Alice',
-      {
-        label: 'alice',
-        endpoints: ['rxjs:alice'],
-        logger: testLogger,
-      },
-      {
-        connections: new ConnectionsModule({
-          autoAcceptConnections: true,
-        }),
-      }
-    )
-    const bobAgentOptions = getInMemoryAgentOptions(
-      'DID Rotate Bob',
-      {
-        label: 'bob',
-        endpoints: ['rxjs:bob'],
-        logger: testLogger,
-      },
-      {
-        connections: new ConnectionsModule({
-          autoAcceptConnections: true,
-        }),
-      }
-    )
+    const aliceAgentOptions = getInMemoryAgentOptions('DID Rotate Alice', {
+      endpoints: ['rxjs:alice'],
+    })
+    const bobAgentOptions = getInMemoryAgentOptions('DID Rotate Bob', {
+      endpoints: ['rxjs:bob'],
+    })
 
     aliceAgent = new Agent(aliceAgentOptions)
     bobAgent = new Agent(bobAgentOptions)

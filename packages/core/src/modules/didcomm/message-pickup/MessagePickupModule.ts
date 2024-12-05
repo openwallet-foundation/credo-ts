@@ -61,10 +61,10 @@ export class MessagePickupModule<MessagePickupProtocols extends MessagePickupPro
     }
 
     // Protocol needs to register feature registry items and handlers
-    for (const protocol of this.config.protocols) {
-      const messageHandlerRegistry = dependencyManager.resolve(MessageHandlerRegistry)
-      const featureRegistry = dependencyManager.resolve(FeatureRegistry)
+    const messageHandlerRegistry = dependencyManager.resolve(MessageHandlerRegistry)
+    const featureRegistry = dependencyManager.resolve(FeatureRegistry)
 
+    for (const protocol of this.config.protocols) {
       protocol.register(messageHandlerRegistry, featureRegistry)
     }
   }

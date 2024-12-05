@@ -21,11 +21,9 @@ import {
   getInMemoryAgentOptions,
 } from '../../../../../../tests'
 import { Agent } from '../../../../../agent/Agent'
-import { Attachment, AttachmentData } from '../../../../../decorators/attachment/Attachment'
-import { LinkedAttachment } from '../../../../../utils/LinkedAttachment'
 import { uuid } from '../../../../../utils/uuid'
-import { HandshakeProtocol } from '../../../../didcomm/connections'
 import { CredentialEventTypes } from '../../../../credentials'
+import { Attachment, AttachmentData, HandshakeProtocol, LinkedAttachment } from '../../../../didcomm'
 import { MediatorModule, MediatorPickupStrategy, MediationRecipientModule } from '../../../../didcomm/routing'
 import { ProofEventTypes } from '../../../ProofEvents'
 import { AutoAcceptProof, ProofState } from '../../../models'
@@ -270,6 +268,7 @@ describe('V2 Connectionless Proofs - Indy', () => {
       {
         endpoints: ['rxjs:mediator'],
       },
+      {},
       {
         ...getAnonCredsIndyModules({
           autoAcceptProofs: AutoAcceptProof.Always,
@@ -285,8 +284,8 @@ describe('V2 Connectionless Proofs - Indy', () => {
 
     // Initialize mediator
     const mediatorAgent = new Agent(mediatorOptions)
-    mediatorAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
-    mediatorAgent.registerInboundTransport(new SubjectInboundTransport(mediatorMessages))
+    mediatorAgent.didcomm.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
+    mediatorAgent.didcomm.registerInboundTransport(new SubjectInboundTransport(mediatorMessages))
     await mediatorAgent.initialize()
 
     const faberMediationOutOfBandRecord = await mediatorAgent.oob.createInvitation({
@@ -301,6 +300,7 @@ describe('V2 Connectionless Proofs - Indy', () => {
 
     const faberOptions = getInMemoryAgentOptions(
       `Connectionless proofs with mediator Faber-${unique}`,
+      {},
       {},
       {
         ...getAnonCredsIndyModules({
@@ -318,6 +318,7 @@ describe('V2 Connectionless Proofs - Indy', () => {
     const aliceOptions = getInMemoryAgentOptions(
       `Connectionless proofs with mediator Alice-${unique}`,
       {},
+      {},
       {
         ...getAnonCredsIndyModules({
           autoAcceptProofs: AutoAcceptProof.Always,
@@ -332,11 +333,11 @@ describe('V2 Connectionless Proofs - Indy', () => {
     )
 
     const faberAgent = new Agent(faberOptions)
-    faberAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
+    faberAgent.didcomm.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     await faberAgent.initialize()
 
     const aliceAgent = new Agent(aliceOptions)
-    aliceAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
+    aliceAgent.didcomm.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     await aliceAgent.initialize()
 
     const [faberReplay, aliceReplay] = setupEventReplaySubjects(
@@ -524,8 +525,8 @@ describe('V2 Connectionless Proofs - Indy', () => {
       domain: 'rxjs:faber',
     })
 
-    for (const transport of faberAgent.outboundTransports) {
-      await faberAgent.unregisterOutboundTransport(transport)
+    for (const transport of faberAgent.didcomm.outboundTransports) {
+      await faberAgent.didcomm.unregisterOutboundTransport(transport)
     }
 
     await aliceAgent.receiveMessage(requestMessage.toJSON())
@@ -610,8 +611,8 @@ describe('V2 Connectionless Proofs - Indy', () => {
       domain: 'rxjs:faber',
     })
 
-    for (const transport of faberAgent.outboundTransports) {
-      await faberAgent.unregisterOutboundTransport(transport)
+    for (const transport of faberAgent.didcomm.outboundTransports) {
+      await faberAgent.didcomm.unregisterOutboundTransport(transport)
     }
 
     const aliceProofExchangeRecordPromise = waitForProofExchangeRecord(aliceAgent, {

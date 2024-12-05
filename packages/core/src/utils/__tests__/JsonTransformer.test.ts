@@ -1,4 +1,4 @@
-import { ConnectionInvitationMessage } from '../../modules/didcomm/connections'
+import { ConnectionInvitationMessage } from '../../modules/didcomm'
 import { DidDocument, VerificationMethod } from '../../modules/dids'
 import { JsonTransformer } from '../JsonTransformer'
 

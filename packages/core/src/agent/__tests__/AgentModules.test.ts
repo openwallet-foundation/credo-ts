@@ -3,7 +3,7 @@ import type { Module } from '../../plugins'
 import { BasicMessagesModule } from '../../modules/basic-messages'
 import { CacheModule } from '../../modules/cache'
 import { CredentialsModule } from '../../modules/credentials'
-import { ConnectionsModule } from '../../modules/didcomm'
+import { ConnectionsModule, DidCommModule } from '../../modules/didcomm'
 import { DiscoverFeaturesModule } from '../../modules/didcomm/discover-features'
 import { MessagePickupModule } from '../../modules/didcomm/message-pickup'
 import { OutOfBandModule } from '../../modules/didcomm/oob'
@@ -70,6 +70,7 @@ describe('AgentModules', () => {
         genericRecords: expect.any(GenericRecordsModule),
         discovery: expect.any(DiscoverFeaturesModule),
         dids: expect.any(DidsModule),
+        didcomm: expect.any(DidCommModule),
         wallet: expect.any(WalletModule),
         oob: expect.any(OutOfBandModule),
         w3cCredentials: expect.any(W3cCredentialsModule),
@@ -98,6 +99,7 @@ describe('AgentModules', () => {
         genericRecords: expect.any(GenericRecordsModule),
         discovery: expect.any(DiscoverFeaturesModule),
         dids: expect.any(DidsModule),
+        didcomm: expect.any(DidCommModule),
         wallet: expect.any(WalletModule),
         oob: expect.any(OutOfBandModule),
         w3cCredentials: expect.any(W3cCredentialsModule),
@@ -129,6 +131,7 @@ describe('AgentModules', () => {
         genericRecords: expect.any(GenericRecordsModule),
         discovery: expect.any(DiscoverFeaturesModule),
         dids: expect.any(DidsModule),
+        didcomm: expect.any(DidCommModule),
         wallet: expect.any(WalletModule),
         oob: expect.any(OutOfBandModule),
         w3cCredentials: expect.any(W3cCredentialsModule),

@@ -1,8 +1,8 @@
-import { TestMessage } from '../../../tests/TestMessage'
-import { ClassValidationError } from '../../error/ClassValidationError'
-import { JsonTransformer } from '../../utils'
-import { IsValidMessageType, parseMessageType } from '../../utils/messageType'
+import { TestMessage } from '../../../../tests/TestMessage'
+import { ClassValidationError } from '../../../error/ClassValidationError'
+import { JsonTransformer } from '../../../utils'
 import { AgentMessage } from '../AgentMessage'
+import { IsValidMessageType, parseMessageType } from '../util/messageType'
 
 class CustomProtocolMessage extends AgentMessage {
   @IsValidMessageType(CustomProtocolMessage.type)

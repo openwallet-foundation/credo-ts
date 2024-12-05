@@ -1,11 +1,19 @@
 import type { DidCommModuleConfigOptions } from './DidCommModuleConfig'
+import type { AgentMessageReceivedEvent } from './Events'
 import type { AgentContext } from '../../agent'
 import type { DependencyManager, Module } from '../../plugins'
+import type { Subject } from 'rxjs'
+
+import { mergeMap, takeUntil } from 'rxjs'
+
+import { EventEmitter } from '../../agent/EventEmitter'
+import { InjectionSymbols } from '../../constants'
 
 import { DidCommApi } from './DidCommApi'
 import { DidCommModuleConfig } from './DidCommModuleConfig'
 import { Dispatcher } from './Dispatcher'
 import { EnvelopeService } from './EnvelopeService'
+import { AgentEventTypes } from './Events'
 import { FeatureRegistry } from './FeatureRegistry'
 import { MessageHandlerRegistry } from './MessageHandlerRegistry'
 import { MessageReceiver } from './MessageReceiver'
@@ -28,14 +36,15 @@ export class DidCommModule implements Module {
     // Config
     dependencyManager.registerInstance(DidCommModuleConfig, this.config)
 
+    //dependencyManager.registerSingleton(MessageHandlerRegistry)
+    //dependencyManager.registerSingleton(FeatureRegistry)
+
     // Services
-    dependencyManager.registerSingleton(MessageHandlerRegistry)
     dependencyManager.registerSingleton(MessageSender)
     dependencyManager.registerSingleton(MessageReceiver)
     dependencyManager.registerSingleton(TransportService)
     dependencyManager.registerSingleton(Dispatcher)
     dependencyManager.registerSingleton(EnvelopeService)
-    dependencyManager.registerSingleton(FeatureRegistry)
 
     // Repositories
     dependencyManager.registerSingleton(DidCommMessageRepository)
@@ -44,8 +53,51 @@ export class DidCommModule implements Module {
     // TODO: Constraints?
   }
 
+  public async initialize(agentContext: AgentContext): Promise<void> {
+    const stop$ = agentContext.dependencyManager.resolve<Subject<boolean>>(InjectionSymbols.Stop$)
+    const eventEmitter = agentContext.dependencyManager.resolve(EventEmitter)
+    const messageReceiver = agentContext.dependencyManager.resolve(MessageReceiver)
+    const messageSender = agentContext.dependencyManager.resolve(MessageSender)
+
+    // Listen for new messages (either from transports or somewhere else in the framework / extensions)
+    // We create this before doing any other initialization, so the initialization could already receive messages
+    eventEmitter
+      .observable<AgentMessageReceivedEvent>(AgentEventTypes.AgentMessageReceived)
+      .pipe(
+        takeUntil(stop$),
+        mergeMap(
+          (e) =>
+            messageReceiver
+              .receiveMessage(e.payload.message, {
+                connection: e.payload.connection,
+                contextCorrelationId: e.payload.contextCorrelationId,
+                session: e.payload.session,
+              })
+              .catch((error) => {
+                agentContext.config.logger.error('Failed to process message', { error })
+              }),
+          this.config.processDidCommMessagesConcurrently ? undefined : 1
+        )
+      )
+      .subscribe()
+
+    for (const transport of messageReceiver.inboundTransports) {
+      await transport.start(agentContext)
+    }
+
+    for (const transport of messageSender.outboundTransports) {
+      await transport.start(agentContext)
+    }
+  }
+
+  // TODO: Shall shutdown and initialize be part of API (so Agent can be stopped/restarted without creating a new instance)?
   public async shutdown(agentContext: AgentContext) {
-    const didcommApi = agentContext.dependencyManager.resolve(DidCommApi)
-    await didcommApi.shutdown()
+    const messageReceiver = agentContext.dependencyManager.resolve(MessageReceiver)
+    const messageSender = agentContext.dependencyManager.resolve(MessageSender)
+
+    // Stop transports
+    const allTransports = [...messageReceiver.inboundTransports, ...messageSender.outboundTransports]
+    const transportPromises = allTransports.map((transport) => transport.stop())
+    await Promise.all(transportPromises)
   }
 }
