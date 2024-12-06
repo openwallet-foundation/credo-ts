@@ -1,5 +1,5 @@
 import type { BaseAgent } from '../../../../agent/BaseAgent'
-import type { CredentialExchangeRecord } from '../../../../modules/didcomm/modules/credentials'
+import type { CredentialExchangeRecord } from '../../modules/credentials'
 
 import { CredoError } from '../../../../error'
 import {
@@ -9,9 +9,9 @@ import {
   CredentialRole,
   CredentialRepository,
   CredentialState,
-} from '../../../../modules/didcomm/modules/credentials'
-import { parseMessageType } from '../../../../modules/didcomm'
-import { DidCommMessageRepository, DidCommMessageRole } from '../../../../modules/didcomm'
+} from '../../modules/credentials'
+import { DidCommMessageRepository, DidCommMessageRole } from '../../repository'
+import { parseMessageType } from '../../util/messageType'
 
 /**
  * Migrates the {@link CredentialExchangeRecord} to 0.5 compatible format. It fetches all credential exchange records from

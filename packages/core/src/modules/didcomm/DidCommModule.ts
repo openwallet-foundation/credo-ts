@@ -2,6 +2,7 @@ import type { DidCommModuleConfigOptions } from './DidCommModuleConfig'
 import type { AgentMessageReceivedEvent } from './Events'
 import type { AgentContext } from '../../agent'
 import type { DependencyManager, Module } from '../../plugins'
+import type { Update } from '../../storage'
 import type { Subject } from 'rxjs'
 
 import { mergeMap, takeUntil } from 'rxjs'
@@ -20,6 +21,9 @@ import { MessageReceiver } from './MessageReceiver'
 import { MessageSender } from './MessageSender'
 import { TransportService } from './TransportService'
 import { DidCommMessageRepository } from './repository'
+import { updateV0_1ToV0_2 } from './updates/0.1-0.2'
+import { updateV0_2ToV0_3 } from './updates/0.2-0.3'
+import { updateV0_4ToV0_5 } from './updates/0.4-0.5'
 
 export class DidCommModule implements Module {
   public readonly config: DidCommModuleConfig
@@ -101,4 +105,22 @@ export class DidCommModule implements Module {
     const transportPromises = allTransports.map((transport) => transport.stop())
     await Promise.all(transportPromises)
   }
+
+  public updates = [
+    {
+      fromVersion: '0.1',
+      toVersion: '0.2',
+      doUpdate: updateV0_1ToV0_2,
+    },
+    {
+      fromVersion: '0.2',
+      toVersion: '0.3',
+      doUpdate: updateV0_2ToV0_3,
+    },
+    {
+      fromVersion: '0.4',
+      toVersion: '0.5',
+      doUpdate: updateV0_4ToV0_5,
+    },
+  ] satisfies Update[]
 }
