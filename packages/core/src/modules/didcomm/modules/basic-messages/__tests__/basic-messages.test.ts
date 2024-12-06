@@ -1,8 +1,9 @@
+import type { SubjectMessage } from '../../../../../../../../tests/transport/SubjectInboundTransport'
 import type { ConnectionRecord } from '../../connections'
 
 import { Subject } from 'rxjs'
 
-import { SubjectInboundTransport, SubjectMessage } from '../../../../../../../../tests/transport/SubjectInboundTransport'
+import { SubjectInboundTransport } from '../../../../../../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from '../../../../../../../../tests/transport/SubjectOutboundTransport'
 import { getInMemoryAgentOptions, makeConnection, waitForBasicMessage } from '../../../../../../tests/helpers'
 import testLogger from '../../../../../../tests/logger'
@@ -11,7 +12,6 @@ import { RecordNotFoundError } from '../../../../../error'
 import { MessageSendingError } from '../../../errors'
 import { BasicMessage } from '../messages'
 import { BasicMessageRecord } from '../repository'
-
 
 const faberConfig = getInMemoryAgentOptions('Faber Basic Messages', {
   endpoints: ['rxjs:faber'],

@@ -26,7 +26,7 @@ import type {
   TrustPingReceivedEvent,
   TrustPingResponseReceivedEvent,
 } from '../src/modules/didcomm/modules/connections/TrustPingEvents'
-import type { ProofState } from '../src/modules/proofs/models/ProofState'
+import type { ProofState } from '../src/modules/didcomm/modules/proofs'
 import type { WalletConfig } from '../src/types'
 import type { Observable } from 'rxjs'
 
