@@ -85,3 +85,22 @@ export type Awaited<T> = T extends Promise<infer U> ? U : never
  * Type util that returns `true` or `false` based on whether the input type `T` is of type `any`
  */
 export type IsAny<T> = unknown extends T ? ([keyof T] extends [never] ? false : true) : false
+
+// FIXME: the following types are duplicated in DIDComm module. They were placed here to remove dependency
+// to that module
+export interface PlaintextMessage {
+  '@type': string
+  '@id': string
+  '~thread'?: {
+    thid?: string
+    pthid?: string
+  }
+  [key: string]: unknown
+}
+
+export type EncryptedMessage = {
+  protected: string
+  iv: string
+  ciphertext: string
+  tag: string
+}

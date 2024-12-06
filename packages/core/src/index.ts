@@ -66,6 +66,8 @@ export { getDomainFromUrl } from './utils/domain'
 import { parseInvitationUrl } from './modules/didcomm'
 import { uuid, isValidUuid } from './utils/uuid'
 
+export { MessageValidator } from './utils'
+
 const utils = {
   uuid,
   isValidUuid,

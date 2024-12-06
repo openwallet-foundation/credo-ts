@@ -37,7 +37,6 @@ export {
   replaceLegacyDidSovPrefix,
 } from './util/messageType'
 
-export { MessageValidator } from '../../utils/MessageValidator'
 export { LinkedAttachment, LinkedAttachmentOptions } from './util/LinkedAttachment'
 export { oobInvitationFromShortUrl, parseInvitationUrl, parseInvitationShortUrl } from './util/parseInvitation'
 export { encodeAttachment, isLinkedAttachment } from './util/attachment'

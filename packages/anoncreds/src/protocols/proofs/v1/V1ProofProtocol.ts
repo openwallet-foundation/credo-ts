@@ -33,7 +33,6 @@ import {
   AutoAcceptProof,
   JsonEncoder,
   utils,
-  DidCommApi,
 } from '@credo-ts/core'
 
 import { composeProofAutoAccept, createRequestFromPreview } from '../../../utils'

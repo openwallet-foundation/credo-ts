@@ -1,13 +1,26 @@
 import type { AgentConfig } from './AgentConfig'
 import type { AgentApi, CustomOrDefaultApi, EmptyModuleMap, ModulesMap, WithoutDefaultModules } from './AgentModules'
 import type { Logger } from '../logger'
-import type { CredentialsModule, ProofsModule, TransportSession  } from '../modules/didcomm'
-
-import type { MessagePickupModule } from '../modules/didcomm/modules/message-pickup'
+import type { CredentialsModule, MessagePickupModule, ProofsModule, TransportSession } from '../modules/didcomm'
 import type { DependencyManager } from '../plugins'
 
 import { CredoError } from '../error'
-import { BasicMessagesApi,ConnectionsApi, CredentialsApi, DidCommApi,  DiscoverFeaturesApi, FeatureRegistry, MediatorApi, MediationRecipientApi, OutOfBandApi, MessageReceiver, MessagePickupApi, MessageSender, ProofsApi, TransportService } from '../modules/didcomm'
+import {
+  BasicMessagesApi,
+  ConnectionsApi,
+  CredentialsApi,
+  DidCommApi,
+  DiscoverFeaturesApi,
+  FeatureRegistry,
+  MediatorApi,
+  MediationRecipientApi,
+  OutOfBandApi,
+  MessageReceiver,
+  MessagePickupApi,
+  MessageSender,
+  ProofsApi,
+  TransportService,
+} from '../modules/didcomm'
 import { DidsApi } from '../modules/dids'
 import { GenericRecordsApi } from '../modules/generic-records'
 import { MdocApi } from '../modules/mdoc'

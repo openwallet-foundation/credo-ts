@@ -3,8 +3,18 @@ import type { IsAny } from '../types'
 import type { Constructor } from '../utils/mixins'
 
 import { CacheModule } from '../modules/cache'
-import { BasicMessagesModule, ConnectionsModule, CredentialsModule, DidCommModule, DiscoverFeaturesModule, MediationRecipientModule, MediatorModule, MessagePickupModule, ProofsModule } from '../modules/didcomm'
-import { OutOfBandModule } from '../modules/didcomm/modules/oob'
+import {
+  BasicMessagesModule,
+  ConnectionsModule,
+  CredentialsModule,
+  DidCommModule,
+  DiscoverFeaturesModule,
+  MediationRecipientModule,
+  MediatorModule,
+  MessagePickupModule,
+  OutOfBandModule,
+  ProofsModule,
+} from '../modules/didcomm'
 import { DidsModule } from '../modules/dids'
 import { DifPresentationExchangeModule } from '../modules/dif-presentation-exchange'
 import { GenericRecordsModule } from '../modules/generic-records'

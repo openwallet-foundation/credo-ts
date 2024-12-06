@@ -1,9 +1,13 @@
 import type { Key, KeyType } from '../crypto'
 import type { KeyBackend } from '../crypto/KeyBackend'
-// TODO: Remove dependency on DIDComm
-import type { EncryptedMessage, PlaintextMessage } from '../modules/didcomm'
 import type { Disposable } from '../plugins'
-import type { WalletConfig, WalletConfigRekey, WalletExportImportConfig } from '../types'
+import type {
+  EncryptedMessage,
+  PlaintextMessage,
+  WalletConfig,
+  WalletConfigRekey,
+  WalletExportImportConfig,
+} from '../types'
 import type { Buffer } from '../utils/buffer'
 
 // Split up into WalletManager and Wallet instance
