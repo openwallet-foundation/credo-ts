@@ -19,17 +19,21 @@ export function didcommV1Pack(payload: Record<string, unknown>, recipientKeys: s
     for (const recipientKey of recipientKeys) {
       let targetExchangeKey: AskarKey | undefined
       try {
+        // Replace with convert method from credo (no KMS)
+        // Or allow in KMS to encrypt with Ed25519 key (special handling)
         targetExchangeKey = AskarKey.fromPublicBytes({
           publicKey: Key.fromPublicKeyBase58(recipientKey, KeyType.Ed25519).publicKey,
           algorithm: KeyAlgs.Ed25519,
         }).convertkey({ algorithm: KeyAlgs.X25519 })
 
         if (senderKey && senderExchangeKey) {
+          // encrypts our public key based on public key of recipient
           const encryptedSender = CryptoBox.seal({
             recipientKey: targetExchangeKey,
             message: TypedArrayEncoder.fromString(TypedArrayEncoder.toBase58(senderKey.publicBytes)),
           })
           const nonce = CryptoBox.randomNonce()
+          // encrypts the CEK based on our private x25519 key and their public x25519 key
           const encryptedCek = CryptoBox.cryptoBox({
             recipientKey: targetExchangeKey,
             senderKey: senderExchangeKey,

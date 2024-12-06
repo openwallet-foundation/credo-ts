@@ -1,5 +1,4 @@
-import * as v from 'valibot'
-
+import * as v from '../../../utils/valibot'
 import { vKmsCreateKeyType } from '../options/KmsCreateKeyOptions'
 
 describe('CreateKeyOptions', () => {

@@ -1,4 +1,5 @@
 import type { MediatorModuleConfigOptions } from './MediatorModuleConfig'
+import type { AgentContext } from '../../agent'
 import type { FeatureRegistry } from '../../agent/FeatureRegistry'
 import type { DependencyManager, Module } from '../../plugins'
 
@@ -39,5 +40,13 @@ export class MediatorModule implements Module {
         roles: [MediationRole.Mediator],
       })
     )
+  }
+
+  public async onInitializeContext(agentContext: AgentContext): Promise<void> {
+    // Mediator initialization only supported for root agent
+    if (agentContext.contextCorrelationId !== 'default') return
+
+    const mediatorApi = agentContext.dependencyManager.resolve(MediatorApi)
+    await mediatorApi.initialize()
   }
 }

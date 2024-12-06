@@ -1,6 +1,8 @@
 import type { KmsJwkPublic } from './jwk/knownJwk'
-import type { KmsCreateKeyOptions, KmsCreateKeyReturn } from './options/KmsCreateKeyOptions'
+import type { KmsDecryptOptions, KmsDecryptReturn } from './options'
+import type { KmsCreateKeyOptions, KmsCreateKeyReturn, KmsCreateKeyType } from './options/KmsCreateKeyOptions'
 import type { KmsDeleteKeyOptions } from './options/KmsDeleteKeyOptions'
+import type { KmsEncryptOptions, KmsEncryptReturn } from './options/KmsEncryptOptions'
 import type { KmsImportKeyOptions, KmsImportKeyReturn } from './options/KmsImportKeyOptions'
 import type { KmsSignOptions, KmsSignReturn } from './options/KmsSignOptions'
 import type { KmsVerifyOptions, KmsVerifyReturn } from './options/KmsVerifyOptions'
@@ -24,7 +26,10 @@ export interface KeyManagementService {
   /**
    * Create a key
    */
-  createKey(agentContext: AgentContext, options: KmsCreateKeyOptions): Promise<KmsCreateKeyReturn>
+  createKey<Type extends KmsCreateKeyType>(
+    agentContext: AgentContext,
+    options: KmsCreateKeyOptions<Type>
+  ): Promise<KmsCreateKeyReturn<Type>>
 
   /**
    * Import a key
@@ -45,4 +50,14 @@ export interface KeyManagementService {
    * Verify with a specific key
    */
   verify(agentContext: AgentContext, options: KmsVerifyOptions): Promise<KmsVerifyReturn>
+
+  /**
+   * Encrypt data
+   */
+  encrypt(agentContext: AgentContext, options: KmsEncryptOptions): Promise<KmsEncryptReturn>
+
+  /**
+   * Decrypt data
+   */
+  decrypt(agentContext: AgentContext, options: KmsDecryptOptions): Promise<KmsDecryptReturn>
 }

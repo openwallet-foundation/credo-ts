@@ -5,9 +5,11 @@ import { parseWithErrorHandling } from '../../utils/valibot'
 
 import { KeyManagementModuleConfig } from './KeyManagementModuleConfig'
 import { KeyManagementError } from './error/KeyManagementError'
-import { KmsDeleteKeyOptions, KmsGetPublicKeyOptions, KmsImportKeyOptions } from './options'
-import { KmsCreateKeyOptions, vKmsCreateKeyOptions } from './options/KmsCreateKeyOptions'
+import { KmsDecryptOptions, KmsDeleteKeyOptions, KmsGetPublicKeyOptions, KmsImportKeyOptions } from './options'
+import { KmsCreateKeyOptions, KmsCreateKeyType, vKmsCreateKeyOptions } from './options/KmsCreateKeyOptions'
+import { vKmsDecryptOptions } from './options/KmsDecryptOptions'
 import { vKmsDeleteKeyOptions } from './options/KmsDeleteKeyOptions'
+import { KmsEncryptOptions, vKmsEncryptOptions } from './options/KmsEncryptOptions'
 import { vKmsGetPublicKeyOptions } from './options/KmsGetPublicKeyOptions'
 import { vKmsImportKeyOptions } from './options/KmsImportKeyOptions'
 import { KmsSignOptions, vKmsSignOptions } from './options/KmsSignOptions'
@@ -21,7 +23,7 @@ export class KeyManagementApi {
   /**
    * Create a key.
    */
-  public async createKey(options: WithBackend<KmsCreateKeyOptions>) {
+  public async createKey<Type extends KmsCreateKeyType>(options: WithBackend<KmsCreateKeyOptions<Type>>) {
     const { backend, ...kmsOptions } = parseWithErrorHandling(
       vWithBackend(vKmsCreateKeyOptions),
       options,
@@ -58,6 +60,34 @@ export class KeyManagementApi {
 
     const kms = this.getKms(backend)
     return await kms.verify(this.agentContext, kmsOptions)
+  }
+
+  /**
+   * Encrypt.
+   */
+  public async encrypt(options: WithBackend<KmsEncryptOptions>) {
+    const { backend, ...kmsOptions } = parseWithErrorHandling(
+      vWithBackend(vKmsEncryptOptions),
+      options,
+      'Invalid options provided to encrypt method'
+    )
+
+    const kms = this.getKms(backend)
+    return await kms.encrypt(this.agentContext, kmsOptions)
+  }
+
+  /**
+   * Decrypt.
+   */
+  public async decrypt(options: WithBackend<KmsDecryptOptions>) {
+    const { backend, ...kmsOptions } = parseWithErrorHandling(
+      vWithBackend(vKmsDecryptOptions),
+      options,
+      'Invalid options provided to decrypt method'
+    )
+
+    const kms = this.getKms(backend)
+    return await kms.decrypt(this.agentContext, kmsOptions)
   }
 
   /**

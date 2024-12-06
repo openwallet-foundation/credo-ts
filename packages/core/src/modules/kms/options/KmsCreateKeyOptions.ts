@@ -1,7 +1,10 @@
 import type { KmsJwkPublic } from '../jwk/knownJwk'
+import type { KmsJwkPublicEc } from '../jwk/kty/ec'
+import type { KmsJwkPublicOct } from '../jwk/kty/oct'
+import type { KmsJwkPublicOkp } from '../jwk/kty/okp'
+import type { KmsJwkPublicRsa } from '../jwk/kty/rsa'
 
-import * as v from 'valibot'
-
+import * as v from '../../../utils/valibot'
 import { vKmsJwkPublicEc } from '../jwk/kty/ec'
 import { vKmsJwkPublicOct } from '../jwk/kty/oct'
 import { vKmsJwkPublicOkp } from '../jwk/kty/okp'
@@ -28,9 +31,9 @@ export type KmsCreateKeyTypeRsa = v.InferOutput<typeof vKmsCreateKeyTypeRsa>
 /**
  * Represents an octect sequence for symmetric keys
  */
-const vKmsCreateKeyTypeOct = v.variant('algorithm', [
+export const vKmsCreateKeyTypeOct = v.variant('algorithm', [
   v.object({
-    ...v.pick(vKmsJwkPublicOct, ['kty']).entries,
+    kty: vKmsJwkPublicOct.entries.kty,
     algorithm: v.literal('aes'),
     length: v.union([
       v.literal(128),
@@ -44,12 +47,12 @@ const vKmsCreateKeyTypeOct = v.variant('algorithm', [
     ]),
   }),
   v.object({
-    ...v.pick(vKmsJwkPublicOct, ['kty']).entries,
+    kty: vKmsJwkPublicOct.entries.kty,
     algorithm: v.pipe(v.literal('hmac'), v.description('For usage with HS256, HS384 and HS512')),
     length: v.picklist([256, 384, 512]),
   }),
   v.object({
-    ...v.pick(vKmsJwkPublicOct, ['kty']).entries,
+    kty: vKmsJwkPublicOct.entries.kty,
     algorithm: v.pipe(v.literal('c20p'), v.description('For usage with ChaCha20-Poly1305 and XChaCha20-Poly1305')),
   }),
 ])
@@ -68,7 +71,7 @@ export const vKmsCreateKeyOptions = v.object({
   type: vKmsCreateKeyType,
 })
 
-export interface KmsCreateKeyOptions {
+export interface KmsCreateKeyOptions<Type extends KmsCreateKeyType = KmsCreateKeyType> {
   /**
    * The `kid` for the key. If not provided the public key will be used as the key id
    */
@@ -77,17 +80,28 @@ export interface KmsCreateKeyOptions {
   /**
    * The type of key to generate
    */
-  type: KmsCreateKeyType
+  type: Type
 }
 
-export interface KmsCreateKeyReturn {
+export type KmsJwkPublicFromCreateType<Type extends KmsCreateKeyType> = Type extends KmsCreateKeyTypeRsa
+  ? KmsJwkPublicRsa
+  : Type extends KmsCreateKeyTypeOct
+  ? KmsJwkPublicOct
+  : Type extends KmsCreateKeyTypeOkp
+  ? KmsJwkPublicOkp & { crv: Type['crv'] }
+  : Type extends KmsCreateKeyTypeEc
+  ? KmsJwkPublicEc & { crv: Type['crv'] }
+  : KmsJwkPublic
+
+export interface KmsCreateKeyReturn<Type extends KmsCreateKeyType = KmsCreateKeyType> {
   keyId: string
 
   /**
-   * The public JWK representation of the created key.
+   * The public JWK representation of the created key. `kid` will always
+   * be defined.
    *
    * In case of a symmetric (oct) key this won't include any key material, but
    * will include additional JWK claims such as `use`, `kty`, and `kid`
    */
-  publicJwk: KmsJwkPublic
+  publicJwk: KmsJwkPublicFromCreateType<Type> & { kid: string }
 }

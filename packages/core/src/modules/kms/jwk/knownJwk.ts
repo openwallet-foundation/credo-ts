@@ -5,6 +5,12 @@ import { vKmsJwkPrivateOct, vKmsJwkPrivateToPublicOct, vKmsJwkPublicOct } from '
 import { vKmsJwkPrivateOkp, vKmsJwkPrivateToPublicOkp, vKmsJwkPublicOkp } from './kty/okp'
 import { vKmsJwkPrivateRsa, vKmsJwkPrivateToPublicRsa, vKmsJwkPublicRsa } from './kty/rsa'
 
+export const vKmsJwkPublicAsymmetric = v.variant('kty', [vKmsJwkPublicEc, vKmsJwkPublicRsa, vKmsJwkPublicOkp])
+export type KmsJwkPublicAsymmetric = v.InferOutput<typeof vKmsJwkPublicAsymmetric>
+
+export const vKmsJwkPublicCrv = v.variant('kty', [vKmsJwkPublicEc, vKmsJwkPublicOkp])
+export type KmsJwkPublicCrv = v.InferOutput<typeof vKmsJwkPublicCrv>
+
 export const vKmsJwkPublic = v.variant('kty', [vKmsJwkPublicEc, vKmsJwkPublicRsa, vKmsJwkPublicOct, vKmsJwkPublicOkp])
 export type KmsJwkPublic = v.InferOutput<typeof vKmsJwkPublic>
 
@@ -14,6 +20,9 @@ const vKmsJwkPrivateToPublic = v.variant('kty', [
   vKmsJwkPrivateToPublicOct,
   vKmsJwkPrivateToPublicOkp,
 ])
+
+export const vKmsJwkPrivateCrv = v.variant('kty', [vKmsJwkPrivateEc, vKmsJwkPrivateOkp])
+export type KmsJwkPrivateCrv = v.InferOutput<typeof vKmsJwkPrivateCrv>
 
 export const vKmsJwkPrivate = v.variant('kty', [
   vKmsJwkPrivateEc,

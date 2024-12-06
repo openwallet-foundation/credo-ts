@@ -1,7 +1,6 @@
 import type { KnownJwaSignatureAlgorithm } from '../jwk/jwa'
 
-import * as v from 'valibot'
-
+import * as v from '../../../utils/valibot'
 import { vKnownJwaSignatureAlgorithm } from '../jwk/jwa'
 
 export const vKmsSignOptions = v.object({

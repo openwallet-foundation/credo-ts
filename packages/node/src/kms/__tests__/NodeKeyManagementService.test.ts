@@ -1,4 +1,5 @@
 import { Kms } from '@credo-ts/core'
+import { randomBytes } from 'node:crypto'
 
 import { ValibotValidationError } from '../../../../core/src/error/ValibotValidationError'
 import { getAgentContext } from '../../../../core/tests'
@@ -110,6 +111,46 @@ describe('NodeKeyManagementService', () => {
           kid: result.keyId,
         },
       })
+    })
+
+    it('creates EC secp256k1 key successfully', async () => {
+      const result = await service.createKey(agentContext, {
+        type: { kty: 'EC', crv: 'secp256k1' },
+      })
+
+      const publicJwk = await service.getPublicKey(agentContext, result.keyId)
+      expect(result.publicJwk).toEqual(publicJwk)
+
+      expect(result).toEqual({
+        keyId: result.keyId,
+        publicJwk: {
+          kty: 'EC',
+          crv: 'secp256k1',
+          x: expect.any(String),
+          y: expect.any(String),
+          kid: result.keyId,
+        },
+      })
+    })
+
+    it('throws error for unsupported EC key BLS12381G1', async () => {
+      await expect(
+        service.createKey(agentContext, {
+          type: { kty: 'EC', crv: 'BLS12381G1' },
+        })
+      ).rejects.toThrow(
+        new Kms.KeyManagementAlgorithmNotSupportedError(`crv 'BLS12381G1' for kty 'EC'`, service.backend)
+      )
+    })
+
+    it('throws error for unsupported EC key BLS12381G2', async () => {
+      await expect(
+        service.createKey(agentContext, {
+          type: { kty: 'EC', crv: 'BLS12381G2' },
+        })
+      ).rejects.toThrow(
+        new Kms.KeyManagementAlgorithmNotSupportedError(`crv 'BLS12381G2' for kty 'EC'`, service.backend)
+      )
     })
 
     it('creates RSA key successfully', async () => {
@@ -1155,6 +1196,34 @@ describe('NodeKeyManagementService', () => {
       })
 
       expect(result).toEqual({ verified: false })
+    })
+  })
+
+  describe('decrypt', () => {
+    it('signs with RS256', async () => {
+      const { keyId } = await service.createKey(agentContext, {
+        type: { kty: 'oct', algorithm: 'aes', length: 256 },
+      })
+
+      const iv = randomBytes(12)
+      const { encrypted, tag } = await service.encrypt(agentContext, {
+        key: keyId,
+        dataEncryption: {
+          algorithm: 'A256GCM',
+          iv,
+        },
+        data: Buffer.from('heelllo', 'utf-8'),
+      })
+
+      const { data } = await service.decrypt(agentContext, {
+        keyId,
+        dataDecryption: {
+          algorithm: 'A128GCM',
+          iv,
+          tag: tag as Uint8Array,
+        },
+        encrypted,
+      })
     })
   })
 

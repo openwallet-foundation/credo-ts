@@ -275,7 +275,7 @@ describe('TenantSessionCoordinator', () => {
 
       // Should have removed tenant1
       expect(tenantSessionCoordinator.tenantAgentContextMapping.tenant1).toBeUndefined()
-      expect(tenant1AgentContext.dependencyManager.dispose).toHaveBeenCalledTimes(1)
+      expect(tenant1AgentContext.dependencyManager.closeAgentContext).toHaveBeenCalledTimes(1)
       expect(tenantSessionMutexMock.releaseSession).toHaveBeenCalledTimes(1)
     })
   })

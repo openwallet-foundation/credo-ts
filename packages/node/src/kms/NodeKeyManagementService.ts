@@ -13,6 +13,9 @@ import {
   assertNodeSupportedOkpCrv,
   assertNodeSupportedOctAlgorithm,
 } from './crypto/createKey'
+import { performDecrypt } from './crypto/decrypt'
+import { deriveKey } from './crypto/deriveKey'
+import { performEncrypt } from './crypto/encrypt'
 import { performSign } from './crypto/sign'
 import { performVerify } from './crypto/verify'
 
@@ -81,7 +84,10 @@ export class NodeKeyManagementService implements Kms.KeyManagementService {
 
       return {
         keyId: privateJwk.kid,
-        publicJwk,
+        publicJwk: {
+          ...publicJwk,
+          kid: privateJwk.kid,
+        },
       }
     } catch (error) {
       if (error instanceof Kms.KeyManagementError) throw error
@@ -94,10 +100,10 @@ export class NodeKeyManagementService implements Kms.KeyManagementService {
     return await this.#storage.delete(agentContext, options.keyId)
   }
 
-  public async createKey(
+  public async createKey<Type extends Kms.KmsCreateKeyType>(
     agentContext: AgentContext,
-    options: Kms.KmsCreateKeyOptions
-  ): Promise<Kms.KmsCreateKeyReturn> {
+    options: Kms.KmsCreateKeyOptions<Type>
+  ): Promise<Kms.KmsCreateKeyReturn<Type>> {
     const { type, keyId } = options
 
     if (keyId) await this.assertKeyNotExists(agentContext, keyId)
@@ -127,7 +133,7 @@ export class NodeKeyManagementService implements Kms.KeyManagementService {
       await this.#storage.set(agentContext, jwks.privateJwk.kid, jwks.privateJwk)
 
       return {
-        publicJwk: jwks.publicJwk,
+        publicJwk: jwks.publicJwk as Kms.KmsCreateKeyReturn<Type>['publicJwk'],
         keyId: jwks.publicJwk.kid,
       }
     } catch (error) {
@@ -145,7 +151,7 @@ export class NodeKeyManagementService implements Kms.KeyManagementService {
 
     try {
       // 2. Validate alg and use for key
-      Kms.assertAllowedAlgForSigningKey(key, algorithm)
+      Kms.assertAllowedSigningAlgForKey(key, algorithm)
       Kms.assertKeyAllowsSign(key)
 
       // 3. Perform the signing operation
@@ -168,21 +174,22 @@ export class NodeKeyManagementService implements Kms.KeyManagementService {
       let key: Exclude<Kms.KmsJwkPublic, Kms.KmsJwkPublicOct> | Kms.KmsJwkPrivate
       if (typeof options.key === 'string') {
         key = await this.getKeyAsserted(agentContext, options.key)
-      } else if (options.key.kty === 'oct') {
-        // If passing a key with `kty` the kid MUST be present
-        if (!options.key.kid) {
-          throw new Kms.KeyManagementError(
-            `When providing a jwk key in the verify method with kty of 'oct', the 'kid' must be present.`
-          )
-        }
-
-        key = await this.getKeyAsserted(agentContext, options.key.kid)
-      } else {
+      } else if (options.key.kty === 'EC') {
+        assertNodeSupportedEcCrv(options.key)
         key = options.key
+      } else if (options.key.kty === 'OKP') {
+        assertNodeSupportedOkpCrv(options.key)
+        key = options.key
+      } else if (options.key.kty === 'RSA') {
+        key = options.key
+      } else {
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-expect-error
+        throw new Kms.KeyManagementAlgorithmNotSupportedError(`kty ${options.key.kty}`, this.backend)
       }
 
       // 2. Validate alg and use for key
-      Kms.assertAllowedAlgForSigningKey(key, algorithm)
+      Kms.assertAllowedSigningAlgForKey(key, algorithm)
       Kms.assertKeyAllowsVerify(key)
 
       // 3. Perform the verify operation
@@ -201,6 +208,69 @@ export class NodeKeyManagementService implements Kms.KeyManagementService {
       if (error instanceof Kms.KeyManagementError) throw error
 
       throw new Kms.KeyManagementError('Error verifying with key', { cause: error })
+    }
+  }
+
+  public async encrypt(agentContext: AgentContext, options: Kms.KmsEncryptOptions): Promise<Kms.KmsEncryptReturn> {
+    const { data, encryption } = options
+
+    const key = typeof options.key === 'string' ? await this.getKeyAsserted(agentContext, options.key) : options.key
+    if (key.kty !== 'oct') {
+      throw new Kms.KeyManagementAlgorithmNotSupportedError(`kty '${key.kty} for content encryption'`, this.backend)
+    }
+    try {
+      // 2. Validate alg and use for key
+      Kms.assertAllowedContentEncryptionAlgForKey(key, encryption.algorithm)
+      Kms.assertKeyAllowsEncrypt(key)
+
+      // 3. Perform the encryption operation
+      return await performEncrypt(key, options.encryption, data)
+    } catch (error) {
+      if (error instanceof Kms.KeyManagementError) throw error
+
+      throw new Kms.KeyManagementError('Error encrypting', { cause: error })
+    }
+  }
+
+  public async decrypt(agentContext: AgentContext, options: Kms.KmsDecryptOptions): Promise<Kms.KmsDecryptReturn> {
+    const { decryption, encrypted } = options
+
+    const key = typeof options.key === 'string' ? await this.getKeyAsserted(agentContext, options.key) : options.key
+    if (key.kty !== 'oct') {
+      throw new Kms.KeyManagementAlgorithmNotSupportedError(`kty '${key.kty} for content encryption'`, this.backend)
+    }
+
+    try {
+      // 2. Validate alg and use for key
+      Kms.assertAllowedContentEncryptionAlgForKey(key, decryption.algorithm)
+      Kms.assertKeyAllowsEncrypt(key)
+
+      // 3. Perform the decryption operation
+      return await performDecrypt(key, decryption, encrypted)
+    } catch (error) {
+      if (error instanceof Kms.KeyManagementError) throw error
+
+      throw new Kms.KeyManagementError('Error decrypting', { cause: error })
+    }
+  }
+
+  public async deriveKey(agentContext: AgentContext, options: Kms.KmsDeriveKeyOptions) {
+    // We don't retrieve key from KMS. This is needed for X20C derivation
+    // But not for the algorithms we currently support in Node.JS
+
+    try {
+      Kms.assertAllowedKeyDerivationAlgForKey(options.publicJwk, options.algorithm)
+      Kms.assertKeyAllowsDerive(options.publicJwk)
+
+      const derivedKey = await deriveKey(options)
+
+      return {
+        derivedKey,
+      }
+    } catch (error) {
+      if (error instanceof Kms.KeyManagementError) throw error
+
+      throw new Kms.KeyManagementError('Error decrypting', { cause: error })
     }
   }
 

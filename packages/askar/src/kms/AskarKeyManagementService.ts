@@ -1,29 +1,33 @@
-import type { AgentContext } from '@credo-ts/core'
-import type { JwkProps, KeyEntryObject, Session, Store } from '@hyperledger/aries-askar-shared'
+import type { JwkProps, KeyEntryObject, Session } from '@hyperledger/aries-askar-shared'
 
-import { Kms, utils } from '@credo-ts/core'
+import { Kms, utils, type AgentContext } from '@credo-ts/core'
 import { ariesAskar, Jwk, Key, KeyAlgs, KeyEntryList, SigAlgs } from '@hyperledger/aries-askar-shared'
 import { randomUUID } from 'node:crypto'
 
+import { AskarStoreManager } from '../AskarStoreManager'
 import { AskarErrorCode, isAskarError } from '../utils'
 
 export class AksarKeyManagementService implements Kms.KeyManagementService {
   public readonly backend = 'askar'
 
-  public constructor(private store: Store) {}
-
-  private static algToSigType: Record<Kms.JwaSignatureAlgorithm, SigAlgs> = {
+  private static algToSigType: Partial<Record<Kms.KnownJwaSignatureAlgorithm, SigAlgs>> = {
     EdDSA: SigAlgs.EdDSA,
     ES256K: SigAlgs.ES256K,
     ES256: SigAlgs.ES256,
     ES384: SigAlgs.ES384,
   }
 
-  private static crvToAlg: Record<Kms.KmsJwkPublicEc['crv'] | Kms.KmsJwkPublicOkp['crv'], KeyAlgs | undefined> = {
+  private static crvToAlg: Partial<
+    Record<Kms.KmsJwkPublicEc['crv'] | Kms.KmsJwkPublicOkp['crv'], KeyAlgs | undefined>
+  > = {
     // EC
     secp256k1: KeyAlgs.EcSecp256k1,
     'P-256': KeyAlgs.EcSecp256r1,
     'P-384': KeyAlgs.EcSecp384r1,
+
+    // TODO: we need to get the JWK key representation right first
+    // BLS12381G1: KeyAlgs.Bls12381G1,
+    // BLS12381G2: KeyAlgs.Bls12381G2,
 
     // P-521 not supported by askar
     'P-521': undefined,
@@ -44,57 +48,8 @@ export class AksarKeyManagementService implements Kms.KeyManagementService {
     KeyAlgs.Chacha20XC20P,
   ]
 
-  private defaultContextProfile: string | undefined = undefined
-
-  /**
-   * Run callback with the session provided, the session will
-   * be closed once the callback resolves or rejects if it is not closed yet.
-   *
-   * TODO: update to new `using` syntax so we don't have to use a callback
-   */
-  public async withSession<Return>(
-    agentContext: AgentContext,
-    callback: (session: Session) => Return
-  ): Promise<Awaited<Return>> {
-    let session: Session | undefined = undefined
-    try {
-      let profile = agentContext.contextCorrelationId
-
-      // TODO: we should probably have a constant for the default context correlation id
-      const isDefaultContext = profile === 'default'
-
-      // When using the 'default' context we need to get the default profile from the
-      // store. In previous versions of Credo the wallet id has been the default profile
-      if (isDefaultContext) {
-        // Cache the default context profile if not defined yet (for efficiency)
-        this.defaultContextProfile ??= await this.store.getDefaultProfile()
-        profile = this.defaultContextProfile
-      }
-
-      // TODO: If we use database per wallet i'm not sure if this approach works
-      session = await this.store
-        .session(profile)
-        .open()
-        .catch(async (error) => {
-          // If the profile does not exist yet we create it
-          // TODO: do we want some guards around this? I think this is really the easist approach to
-          // just create it if it doesn't exist yet.
-          if (isAskarError(error, AskarErrorCode.NotFound)) {
-            await this.store.createProfile(agentContext.contextCorrelationId)
-            return await this.store.session(agentContext.contextCorrelationId).open()
-          }
-
-          throw error
-        })
-
-      const result = await callback(session)
-
-      return result
-    } finally {
-      if (session?.handle) {
-        await session.close()
-      }
-    }
+  private withSession<Return>(agentContext: AgentContext, callback: (session: Session) => Return) {
+    return agentContext.dependencyManager.resolve(AskarStoreManager).withSession(agentContext, callback)
   }
 
   public async getPublicKey(agentContext: AgentContext, keyId: string): Promise<Kms.KmsJwkPublic | null> {
@@ -154,7 +109,10 @@ export class AksarKeyManagementService implements Kms.KeyManagementService {
 
       return {
         keyId: privateJwk.kid,
-        publicJwk,
+        publicJwk: {
+          ...publicJwk,
+          kid: privateJwk.kid,
+        },
       }
     } catch (error) {
       if (error instanceof Kms.KeyManagementError) throw error
@@ -184,10 +142,10 @@ export class AksarKeyManagementService implements Kms.KeyManagementService {
     }
   }
 
-  public async createKey(
+  public async createKey<Type extends Kms.KmsCreateKeyType>(
     agentContext: AgentContext,
-    options: Kms.KmsCreateKeyOptions
-  ): Promise<Kms.KmsCreateKeyReturn> {
+    options: Kms.KmsCreateKeyOptions<Type>
+  ): Promise<Kms.KmsCreateKeyReturn<Type>> {
     const { type, keyId } = options
 
     const kid = keyId ?? utils.uuid()
@@ -235,13 +193,13 @@ export class AksarKeyManagementService implements Kms.KeyManagementService {
         throw new Kms.KeyManagementAlgorithmNotSupportedError(`kty '${type.kty}'`, this.backend)
       }
 
-      const publicJwk = this.publicJwkFromKey(_key, { kid })
+      const publicJwk = this.publicJwkFromKey(_key, { kid }) as Kms.KmsCreateKeyReturn<Type>['publicJwk']
       await this.withSession(agentContext, (session) => session.insertKey({ name: kid, key: _key }))
 
       return {
-        publicJwk: publicJwk,
+        publicJwk,
         keyId: kid,
-      }
+      } as Kms.KmsCreateKeyReturn<Type>
     } catch (error) {
       if (error instanceof Kms.KeyManagementError) throw error
 
@@ -274,7 +232,7 @@ export class AksarKeyManagementService implements Kms.KeyManagementService {
       const privateJwk = this.privateJwkFromKey(key.key, { kid: keyId })
 
       // 2. Validate alg and use for key
-      Kms.assertAllowedAlgForSigningKey(privateJwk, algorithm)
+      Kms.assertAllowedSigningAlgForKey(privateJwk, algorithm)
       Kms.assertKeyAllowsSign(publicJwk)
 
       // 3. Perform the signing operation
@@ -312,19 +270,13 @@ export class AksarKeyManagementService implements Kms.KeyManagementService {
     try {
       if (typeof keyInput === 'string') {
         askarKey = await this.getKeyAsserted(agentContext, keyInput)
-      } else if (keyInput.kty === 'oct') {
-        const { kid } = keyInput
+      } else if (keyInput.kty === 'EC' || keyInput.kty === 'OKP') {
+        // Throws error if not supported
+        this.assertAskarAlgForJwkCrv(keyInput.kty, keyInput.crv)
 
-        // If passing a key with `kty` the kid MUST be present
-        if (!kid) {
-          throw new Kms.KeyManagementError(
-            `When providing a jwk key in the verify method with kty of 'oct', the 'kid' must be present.`
-          )
-        }
-
-        askarKey = await this.getKeyAsserted(agentContext, kid)
-      } else {
         askarKey = Key.fromJwk({ jwk: Jwk.fromJson(keyInput as JwkProps) })
+      } else {
+        throw new Kms.KeyManagementAlgorithmNotSupportedError(`kty ${keyInput.kty}`, this.backend)
       }
 
       const signingKey = askarKey instanceof Key ? askarKey : askarKey?.key
@@ -340,7 +292,7 @@ export class AksarKeyManagementService implements Kms.KeyManagementService {
       const privateJwk = this.privateJwkFromKey(signingKey, { kid: keyId })
 
       // 2. Validate alg and use for key
-      Kms.assertAllowedAlgForSigningKey(privateJwk, algorithm)
+      Kms.assertAllowedSigningAlgForKey(privateJwk, algorithm)
       Kms.assertKeyAllowsVerify(publicJwk)
 
       // 4. Perform the verify operation
@@ -386,10 +338,7 @@ export class AksarKeyManagementService implements Kms.KeyManagementService {
   }
 
   private publicJwkFromKey(key: Key, partialJwkPublic?: Partial<Kms.KmsJwkPublic>) {
-    return {
-      ...partialJwkPublic,
-      ...Kms.publicJwkFromPrivateJwk(key.jwkSecret as Kms.KmsJwkPrivate),
-    } as Kms.KmsJwkPublic
+    return Kms.publicJwkFromPrivateJwk(this.privateJwkFromKey(key, partialJwkPublic))
   }
 
   private privateJwkFromKey(key: Key, partialJwkPrivate?: Partial<Kms.KmsJwkPrivate>) {

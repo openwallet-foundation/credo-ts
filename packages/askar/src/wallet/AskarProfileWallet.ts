@@ -44,15 +44,6 @@ export class AskarProfileWallet extends AskarBaseWallet {
     return this.walletConfig.id
   }
 
-  /**
-   * Dispose method is called when an agent context is disposed.
-   */
-  public async dispose() {
-    if (this.isInitialized) {
-      await this.close()
-    }
-  }
-
   public async create(walletConfig: WalletConfig): Promise<void> {
     this.logger.debug(`Creating wallet for profile '${walletConfig.id}'`)
 

@@ -209,7 +209,9 @@ export class TenantAgentContextProvider implements AgentContextProvider {
   ) {
     try {
       // Update the tenant storage
-      const tenantAgent = new TenantAgent(agentContext)
+      const tenantAgent = new TenantAgent(agentContext, {
+        TOOD: 'SET PERSISTED MODULE CONFIG',
+      })
       const updateAssistant = new UpdateAssistant(tenantAgent)
       await updateAssistant.initialize()
       await updateAssistant.update({

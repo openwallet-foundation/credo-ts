@@ -6,7 +6,7 @@ const generateKeyPair = promisify(_generateKeyPair)
 const generateKey = promisify(_generateKey)
 
 const nodeSupportedEcCrvs = ['P-256', 'P-384', 'P-521', 'secp256k1'] satisfies Kms.KmsJwkPublicEc['crv'][]
-type NodeKmsSupportedEcCrvs = (typeof nodeSupportedEcCrvs)[number]
+export type NodeKmsSupportedEcCrvs = (typeof nodeSupportedEcCrvs)[number]
 export function assertNodeSupportedEcCrv(
   options: Kms.KmsCreateKeyTypeEc
 ): asserts options is Kms.KmsCreateKeyTypeEc & { crv: NodeKmsSupportedEcCrvs } {
@@ -29,8 +29,8 @@ export async function createEcKey({ crv }: Kms.KmsCreateKeyTypeEc & { crv: NodeK
   })
 
   return {
-    privateJwk: privateJwk as Kms.KmsJwkPrivate,
-    publicJwk: publicJwk as Kms.KmsJwkPublic,
+    privateJwk: privateJwk as Kms.KmsJwkPrivateEc,
+    publicJwk: publicJwk as Kms.KmsJwkPublicEc,
   }
 }
 
@@ -48,8 +48,8 @@ export async function createRsaKey({ modulusLength }: Kms.KmsCreateKeyTypeRsa) {
   })
 
   return {
-    privateJwk: privateJwk as Kms.KmsJwkPrivate,
-    publicJwk: publicJwk as Kms.KmsJwkPublic,
+    privateJwk: privateJwk as Kms.KmsJwkPrivateRsa,
+    publicJwk: publicJwk as Kms.KmsJwkPublicRsa,
   }
 }
 
@@ -76,8 +76,8 @@ export async function createOkpKey({ crv }: Kms.KmsCreateKeyTypeOkp & { crv: Nod
   })
 
   return {
-    privateJwk: privateJwk as Kms.KmsJwkPrivate,
-    publicJwk: publicJwk as Kms.KmsJwkPublic,
+    privateJwk: privateJwk as Kms.KmsJwkPrivateOkp,
+    publicJwk: publicJwk as Kms.KmsJwkPublicOkp,
   }
 }
 
@@ -103,7 +103,7 @@ export async function createOctKey(options: Kms.KmsCreateKeyTypeOct & { algorith
   const { k, ...publicJwk } = privateJwk
 
   return {
-    privateJwk: privateJwk as Kms.KmsJwkPrivate,
-    publicJwk: publicJwk as Kms.KmsJwkPublic,
+    privateJwk: privateJwk as Kms.KmsJwkPrivateOct,
+    publicJwk: publicJwk as Kms.KmsJwkPublicOct,
   }
 }

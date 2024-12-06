@@ -1,6 +1,5 @@
 import type { Key, KeyType } from '../crypto'
 import type { KeyBackend } from '../crypto/KeyBackend'
-import type { Disposable } from '../plugins'
 import type {
   EncryptedMessage,
   PlaintextMessage,
@@ -14,13 +13,13 @@ import type { Buffer } from '../utils/buffer'
 // WalletManager is responsible for:
 //  - create, open, delete, close, export, import
 // Wallet is responsible for:
-//  - createKey, sign, verify, pack, unpack, generateNonce, generateWalletKey
+//  - createKey, sign, verify, pack, unpack, generateNonce
 
 // - Split storage initialization from wallet initialization, as storage and wallet are not required to be the same
 //     - wallet handles key management, signing, and encryption
 //     - storage handles record storage and retrieval
 
-export interface Wallet extends Disposable {
+export interface Wallet {
   isInitialized: boolean
   isProvisioned: boolean
 
@@ -59,7 +58,6 @@ export interface Wallet extends Disposable {
   unpack(encryptedMessage: EncryptedMessage): Promise<UnpackedMessageContext>
   generateNonce(): Promise<string>
   getRandomValues(length: number): Uint8Array
-  generateWalletKey(): Promise<string>
 
   // Methods to faciliate OpenID4VP response encryption, should be unified/generalized at some
   // point. Ideally all the didcomm/oid4vc/encryption/decryption is generalized, but it's a bit complex

@@ -1,3 +1,4 @@
+import type { AskarModuleConfigStoreOptions } from '../AskarModuleConfig'
 import type { WalletConfig } from '@credo-ts/core'
 
 import { KeyDerivationMethod, WalletError } from '@credo-ts/core'
@@ -8,18 +9,89 @@ import {
   isAskarWalletSqliteStorageConfig,
 } from '../wallet/AskarWalletStorageConfig'
 
+const correspondenceTable = {
+  [KeyDerivationMethod.Raw]: KdfMethod.Raw,
+  [KeyDerivationMethod.Argon2IInt]: KdfMethod.Argon2IInt,
+  [KeyDerivationMethod.Argon2IMod]: KdfMethod.Argon2IMod,
+}
 export const keyDerivationMethodToStoreKeyMethod = (keyDerivationMethod: KeyDerivationMethod) => {
-  const correspondenceTable = {
-    [KeyDerivationMethod.Raw]: KdfMethod.Raw,
-    [KeyDerivationMethod.Argon2IInt]: KdfMethod.Argon2IInt,
-    [KeyDerivationMethod.Argon2IMod]: KdfMethod.Argon2IMod,
-  }
-
   return new StoreKeyMethod(correspondenceTable[keyDerivationMethod])
 }
 
 /**
- * Creates a proper askar wallet URI value based on walletConfig
+ * Creates an askar wallet URI value based on store config
+ * @param credoDataPath framework data path (used in case walletConfig.storage.path is undefined)
+ * @returns string containing the askar wallet URI
+ */
+export const uriFromStoreConfig = (
+  storeConfig: AskarModuleConfigStoreOptions,
+  credoDataPath: string
+): { uri: string; path?: string } => {
+  let uri = ''
+  let path
+
+  const urlParams = []
+
+  const database = storeConfig.database ?? { type: 'sqlite' }
+  if (isAskarWalletSqliteStorageConfig(database)) {
+    if (database.config?.inMemory) {
+      uri = 'sqlite://:memory:'
+    } else {
+      path = database.config?.path ?? `${credoDataPath}/wallet/${storeConfig.id}/sqlite.db`
+      uri = `sqlite://${path}`
+    }
+  } else if (isAskarWalletPostgresStorageConfig(database)) {
+    if (!database.config || !database.credentials) {
+      throw new WalletError('Invalid storage configuration for postgres wallet')
+    }
+
+    if (database.config.connectTimeout !== undefined) {
+      urlParams.push(`connect_timeout=${encodeURIComponent(database.config.connectTimeout)}`)
+    }
+    if (database.config.idleTimeout !== undefined) {
+      urlParams.push(`idle_timeout=${encodeURIComponent(database.config.idleTimeout)}`)
+    }
+    if (database.credentials.adminAccount !== undefined) {
+      urlParams.push(`admin_account=${encodeURIComponent(database.credentials.adminAccount)}`)
+    }
+    if (database.credentials.adminPassword !== undefined) {
+      urlParams.push(`admin_password=${encodeURIComponent(database.credentials.adminPassword)}`)
+    }
+
+    uri = `postgres://${encodeURIComponent(database.credentials.account)}:${encodeURIComponent(
+      database.credentials.password
+    )}@${database.config.host}/${encodeURIComponent(storeConfig.id)}`
+  } else {
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-expect-error
+    throw new WalletError(`Storage type not supported: ${database.type}`)
+  }
+
+  // Common config options
+  if (database.config?.maxConnections !== undefined) {
+    urlParams.push(`max_connections=${encodeURIComponent(database.config.maxConnections)}`)
+  }
+  if (database.config?.minConnections !== undefined) {
+    urlParams.push(`min_connections=${encodeURIComponent(database.config.minConnections)}`)
+  }
+
+  if (urlParams.length > 0) {
+    uri = `${uri}?${urlParams.join('&')}`
+  }
+
+  return { uri, path }
+}
+
+export function keyDerivationMethodFromStoreConfig(
+  keyDerivationMethod?: AskarModuleConfigStoreOptions['keyDerivationMethod']
+) {
+  return new StoreKeyMethod(
+    (keyDerivationMethod ?? KdfMethod.Argon2IMod) satisfies `${KdfMethod}` | KdfMethod as KdfMethod
+  )
+}
+
+/**
+ * Creates an askar wallet URI value based on walletConfig
  * @param walletConfig WalletConfig object
  * @param credoDataPath framework data path (used in case walletConfig.storage.path is undefined)
  * @returns string containing the askar wallet URI
@@ -28,60 +100,27 @@ export const uriFromWalletConfig = (
   walletConfig: WalletConfig,
   credoDataPath: string
 ): { uri: string; path?: string } => {
-  let uri = ''
-  let path
+  return uriFromStoreConfig(
+    {
+      id: walletConfig.id,
+      key: walletConfig.key,
+      keyDerivationMethod: correspondenceTable[
+        walletConfig.keyDerivationMethod ?? KeyDerivationMethod.Argon2IMod
+      ] as AskarModuleConfigStoreOptions['keyDerivationMethod'],
+      database: walletConfig.storage as AskarModuleConfigStoreOptions['database'],
+    },
+    credoDataPath
+  )
+}
 
-  // By default use sqlite as database backend
-  if (!walletConfig.storage) {
-    walletConfig.storage = { type: 'sqlite' }
-  }
+export function isSqliteInMemoryUri(uri: string) {
+  return uri.startsWith('sqlite://:memory:')
+}
 
-  const urlParams = []
+export function isSqliteFileUri(uri: string) {
+  return uri.startsWith('sqlite://') && !isSqliteInMemoryUri(uri)
+}
 
-  const storageConfig = walletConfig.storage
-  if (isAskarWalletSqliteStorageConfig(storageConfig)) {
-    if (storageConfig.config?.inMemory) {
-      uri = 'sqlite://:memory:'
-    } else {
-      path = storageConfig.config?.path ?? `${credoDataPath}/wallet/${walletConfig.id}/sqlite.db`
-      uri = `sqlite://${path}`
-    }
-  } else if (isAskarWalletPostgresStorageConfig(storageConfig)) {
-    if (!storageConfig.config || !storageConfig.credentials) {
-      throw new WalletError('Invalid storage configuration for postgres wallet')
-    }
-
-    if (storageConfig.config.connectTimeout !== undefined) {
-      urlParams.push(`connect_timeout=${encodeURIComponent(storageConfig.config.connectTimeout)}`)
-    }
-    if (storageConfig.config.idleTimeout !== undefined) {
-      urlParams.push(`idle_timeout=${encodeURIComponent(storageConfig.config.idleTimeout)}`)
-    }
-    if (storageConfig.credentials.adminAccount !== undefined) {
-      urlParams.push(`admin_account=${encodeURIComponent(storageConfig.credentials.adminAccount)}`)
-    }
-    if (storageConfig.credentials.adminPassword !== undefined) {
-      urlParams.push(`admin_password=${encodeURIComponent(storageConfig.credentials.adminPassword)}`)
-    }
-
-    uri = `postgres://${encodeURIComponent(storageConfig.credentials.account)}:${encodeURIComponent(
-      storageConfig.credentials.password
-    )}@${storageConfig.config.host}/${encodeURIComponent(walletConfig.id)}`
-  } else {
-    throw new WalletError(`Storage type not supported: ${storageConfig.type}`)
-  }
-
-  // Common config options
-  if (storageConfig.config?.maxConnections !== undefined) {
-    urlParams.push(`max_connections=${encodeURIComponent(storageConfig.config.maxConnections)}`)
-  }
-  if (storageConfig.config?.minConnections !== undefined) {
-    urlParams.push(`min_connections=${encodeURIComponent(storageConfig.config.minConnections)}`)
-  }
-
-  if (urlParams.length > 0) {
-    uri = `${uri}?${urlParams.join('&')}`
-  }
-
-  return { uri, path }
+export function isPostgresUri(uri: string) {
+  return uri.startsWith('postgres://')
 }

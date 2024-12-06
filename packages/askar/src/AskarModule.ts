@@ -1,13 +1,13 @@
 import type { AskarModuleConfigOptions } from './AskarModuleConfig'
 import type { AgentContext, DependencyManager, Module } from '@credo-ts/core'
 
-import { CredoError, InjectionSymbols } from '@credo-ts/core'
-import { Store } from '@hyperledger/aries-askar-shared'
+import { AgentConfig, CredoError, InjectionSymbols, Kms } from '@credo-ts/core'
 
+import { AskarApi } from './AskarApi'
 import { AskarMultiWalletDatabaseScheme, AskarModuleConfig } from './AskarModuleConfig'
+import { AskarStoreManager } from './AskarStoreManager'
+import { AksarKeyManagementService } from './kms/AskarKeyManagementService'
 import { AskarStorageService } from './storage'
-import { assertAskarWallet } from './utils/assertAskarWallet'
-import { AskarProfileWallet, AskarWallet } from './wallet'
 
 export class AskarModule implements Module {
   public readonly config: AskarModuleConfig
@@ -16,52 +16,68 @@ export class AskarModule implements Module {
     this.config = new AskarModuleConfig(config)
   }
 
+  public api = AskarApi
+
   public register(dependencyManager: DependencyManager) {
     dependencyManager.registerInstance(AskarModuleConfig, this.config)
 
-    if (dependencyManager.isRegistered(InjectionSymbols.Wallet)) {
-      throw new CredoError('There is an instance of Wallet already registered')
-    } else {
-      dependencyManager.registerContextScoped(InjectionSymbols.Wallet, AskarWallet)
-
-      // If the multiWalletDatabaseScheme is set to ProfilePerWallet, we want to register the AskarProfileWallet
-      if (this.config.multiWalletDatabaseScheme === AskarMultiWalletDatabaseScheme.ProfilePerWallet) {
-        dependencyManager.registerContextScoped(AskarProfileWallet)
-      }
+    if (!this.config.enableKms && !this.config.enableStorage) {
+      dependencyManager
+        .resolve(AgentConfig)
+        .logger.warn(`Both 'enableKms' and 'enableStorage' are disabled, meaning Askar won't be used by the agent.`)
     }
 
-    if (dependencyManager.isRegistered(InjectionSymbols.StorageService)) {
-      throw new CredoError('There is an instance of StorageService already registered')
-    } else {
+    if (this.config.enableKms) {
+      const kmsConfig = dependencyManager.resolve(Kms.KeyManagementModuleConfig)
+      kmsConfig.registerBackend(new AksarKeyManagementService())
+    }
+
+    if (this.config.enableStorage) {
+      if (dependencyManager.isRegistered(InjectionSymbols.StorageService)) {
+        throw new CredoError(
+          'Unable to register AskatStoreService. There is an instance of StorageService already registered'
+        )
+      }
       dependencyManager.registerSingleton(InjectionSymbols.StorageService, AskarStorageService)
+    }
+
+    dependencyManager.registerSingleton(AskarStoreManager)
+  }
+
+  public async onInitializeContext(agentContext: AgentContext, metadata: Record<string, unknown>) {
+    // TODO: I think we should also register the store here
+    if (agentContext.contextCorrelationId === 'default') {
+      const storeManager = agentContext.dependencyManager.resolve(AskarStoreManager)
+      await storeManager.getInitializedStoreWithProfile(agentContext)
+      return
+    } else if (this.config.multiWalletDatabaseScheme === AskarMultiWalletDatabaseScheme.DatabasePerWallet) {
+      agentContext.dependencyManager.registerInstance('AskarContextMetadata', metadata)
+      const storeManager = agentContext.dependencyManager.resolve(AskarStoreManager)
+      await storeManager.getInitializedStoreWithProfile(agentContext)
     }
   }
 
-  public async initialize(agentContext: AgentContext): Promise<void> {
-    // We MUST use an askar wallet here
-    assertAskarWallet(agentContext.wallet)
+  public async onProvisionContext(agentContext: AgentContext) {
+    // We don't have any side effects to run
+    if (agentContext.contextCorrelationId === 'default') return null
+    if (this.config.multiWalletDatabaseScheme === AskarMultiWalletDatabaseScheme.ProfilePerWallet) return null
 
-    const wallet = agentContext.wallet
-
-    // Register the Askar store instance on the dependency manager
-    // This allows it to be re-used for tenants
-    agentContext.dependencyManager.registerInstance(Store, agentContext.wallet.store)
-
-    // If the multiWalletDatabaseScheme is set to ProfilePerWallet, we want to register the AskarProfileWallet
-    // and return that as the wallet for all tenants, but not for the main agent, that should use the AskarWallet
-    if (this.config.multiWalletDatabaseScheme === AskarMultiWalletDatabaseScheme.ProfilePerWallet) {
-      agentContext.dependencyManager.container.register(InjectionSymbols.Wallet, {
-        useFactory: (container) => {
-          // If the container is the same as the root dependency manager container
-          // it means we are in the main agent, and we should use the root wallet
-          if (container === agentContext.dependencyManager.container) {
-            return wallet
-          }
-
-          // Otherwise we want to return the AskarProfileWallet
-          return container.resolve(AskarProfileWallet)
-        },
-      })
+    // For new stores (so not profiles) we need to generate a wallet key
+    return {
+      walletKey: this.config.ariesAskar.storeGenerateRawKey({}),
     }
+  }
+
+  public async onDeleteContext(agentContext: AgentContext) {
+    const storeManager = agentContext.dependencyManager.resolve(AskarStoreManager)
+
+    // Will delete either the store (when root agent context or database per wallet) or profile (when not root agent context and profile per wallet)
+    await storeManager.deleteContext(agentContext)
+  }
+
+  public async onCloseContext(agentContext: AgentContext): Promise<void> {
+    const storeManager = agentContext.dependencyManager.resolve(AskarStoreManager)
+
+    await storeManager.closeContext(agentContext)
   }
 }

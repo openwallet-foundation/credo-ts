@@ -6,7 +6,7 @@ export interface KeyManagementModuleConfigOptions {
   /**
    * The backends to use for key management and cryptographic operations.
    */
-  backends: [KeyManagementService, ...KeyManagementService[]]
+  backends?: KeyManagementService[]
 
   /**
    * The default backend to use, indicated by the `backend` property
@@ -21,34 +21,37 @@ export interface KeyManagementModuleConfigOptions {
 }
 
 export class KeyManagementModuleConfig {
-  #defaultBackend: KeyManagementService
+  #defaultBackend?: string
   #backends: KeyManagementService[]
 
   public constructor(options: KeyManagementModuleConfigOptions) {
-    this.#backends = [...options.backends]
+    this.#backends = options.backends ? [...options.backends] : []
 
-    if (this.#backends.length === 0) {
-      throw new KeyManagementError(
-        `Empty array provided in KeyManagementModuleConfig 'backends', make sure to provide at least one backend.`
-      )
+    if (options.defaultBackend) {
+      const defaultBackend = this.#backends.find((kms) => kms.backend === options.defaultBackend)
+      if (!defaultBackend) {
+        throw new KeyManagementError(
+          `Default backend '${options.defaultBackend}' provided in KeyManagementModuleConfig, but not found in 'backends'. Make sure the backend identifier matches with a registered backend.`
+        )
+      }
+      this.#defaultBackend = options.defaultBackend
     }
-
-    const defaultBackend = this.#backends.find(
-      (kms) => !options.defaultBackend || kms.backend === options.defaultBackend
-    )
-    if (!defaultBackend) {
-      throw new KeyManagementError(
-        `Default backend '${options.defaultBackend}' provided in KeyManagementModuleConfig, but not found in 'backends'. Make sure the backend identifier matches with a registered backend.`
-      )
-    }
-    this.#defaultBackend = defaultBackend
   }
 
   public get backends() {
     return this.#backends
   }
 
+  public registerBackend(backend: KeyManagementService) {
+    this.backends.push(backend)
+  }
+
   public get defaultBackend() {
-    return this.#defaultBackend
+    const backend = this.backends.find((kms) => !this.#defaultBackend || this.#defaultBackend === kms.backend)
+    if (!backend) {
+      throw new KeyManagementError('Unable to determine default backend. ')
+    }
+
+    return backend
   }
 }

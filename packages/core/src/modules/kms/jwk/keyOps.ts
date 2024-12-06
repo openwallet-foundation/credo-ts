@@ -3,7 +3,7 @@ import type { KmsJwkPrivate, KmsJwkPublic } from './knownJwk'
 import * as v from '../../../utils/valibot'
 import { KeyManagementError } from '../error/KeyManagementError'
 
-import { getJwkHumanDescription } from './alg'
+import { getJwkHumanDescription } from './humanDescription'
 
 export const vKnownJwkUse = v.union([
   v.pipe(v.literal('sig'), v.description('signature')),
@@ -28,6 +28,23 @@ export type KnownJwkKeyOps = v.InferOutput<typeof vKnownJwkKeyOps>
 
 export const vJwkKeyOps = v.uniqueArray(v.union([vKnownJwkKeyOps, v.string()]))
 export type JwkKeyOps = v.InferOutput<typeof vJwkKeyOps>
+
+export function keyAllowsDerive(key: KmsJwkPublic | KmsJwkPrivate): boolean {
+  // Check if key has use/key_ops restrictions
+  if (key.use && key.use !== 'enc') {
+    return false
+  }
+  if (key.key_ops && !key.key_ops.includes('deriveKey')) {
+    return false
+  }
+  return true
+}
+
+export function assertKeyAllowsDerive(jwk: KmsJwkPrivate | KmsJwkPublic) {
+  if (!keyAllowsDerive(jwk)) {
+    throw new KeyManagementError(`${getJwkHumanDescription(jwk)} usage does not allow key derivation operations`)
+  }
+}
 
 export function keyAllowsVerify(key: KmsJwkPublic | KmsJwkPrivate): boolean {
   // Check if key has use/key_ops restrictions
@@ -60,6 +77,40 @@ export function keyAllowsSign(key: KmsJwkPrivate | KmsJwkPublic): boolean {
 export function assertKeyAllowsSign(jwk: KmsJwkPrivate | KmsJwkPublic) {
   if (!keyAllowsSign(jwk)) {
     throw new KeyManagementError(`${getJwkHumanDescription(jwk)} usage does not allow signing operations`)
+  }
+}
+
+export function keyAllowsEncrypt(key: KmsJwkPublic | KmsJwkPrivate): boolean {
+  // Check if key has use/key_ops restrictions
+  if (key.use && key.use !== 'enc') {
+    return false
+  }
+  if (key.key_ops && !key.key_ops.includes('encrypt')) {
+    return false
+  }
+  return true
+}
+
+export function assertKeyAllowsEncrypt(jwk: KmsJwkPrivate | KmsJwkPublic) {
+  if (!keyAllowsEncrypt(jwk)) {
+    throw new KeyManagementError(`${getJwkHumanDescription(jwk)} usage does not allow encryption operations`)
+  }
+}
+
+export function keyAllowsDecrypt(key: KmsJwkPublic | KmsJwkPrivate): boolean {
+  // Check if key has use/key_ops restrictions
+  if (key.use && key.use !== 'enc') {
+    return false
+  }
+  if (key.key_ops && !key.key_ops.includes('decrypt')) {
+    return false
+  }
+  return true
+}
+
+export function assertKeyAllowsDecrypt(jwk: KmsJwkPrivate | KmsJwkPublic) {
+  if (!keyAllowsDecrypt(jwk)) {
+    throw new KeyManagementError(`${getJwkHumanDescription(jwk)} usage does not allow decryption operations`)
   }
 }
 

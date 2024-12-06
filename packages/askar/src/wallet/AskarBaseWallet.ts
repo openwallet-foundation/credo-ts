@@ -13,7 +13,7 @@ import type {
   SigningProviderRegistry,
   WalletDirectEncryptCompactJwtEcdhEsOptions,
 } from '@credo-ts/core'
-import type { Session } from '@hyperledger/aries-askar-shared'
+import type { Session, Store } from '@hyperledger/aries-askar-shared'
 
 import {
   WalletKeyExistsError,
@@ -29,15 +29,7 @@ import {
   KeyType,
   utils,
 } from '@credo-ts/core'
-import {
-  CryptoBox,
-  Store,
-  Key as AskarKey,
-  keyAlgFromString,
-  EcdhEs,
-  KeyAlgs,
-  Jwk,
-} from '@hyperledger/aries-askar-shared'
+import { CryptoBox, Key as AskarKey, keyAlgFromString, EcdhEs, KeyAlgs, Jwk } from '@hyperledger/aries-askar-shared'
 import BigNumber from 'bn.js'
 
 import { importSecureEnvironment } from '../secureEnvironment'
@@ -75,7 +67,6 @@ export abstract class AskarBaseWallet implements Wallet {
   public abstract delete(): Promise<void>
   public abstract export(exportConfig: WalletExportImportConfig): Promise<void>
   public abstract import(walletConfig: WalletConfig, importConfig: WalletExportImportConfig): Promise<void>
-  public abstract dispose(): void | Promise<void>
   public abstract profile: string
 
   protected abstract store: Store
@@ -621,14 +612,6 @@ export abstract class AskarBaseWallet implements Wallet {
         throw new CredoError('Attempted to throw error, but it was not of type Error', { cause: error })
       }
       throw new WalletError('Error generating nonce', { cause: error })
-    }
-  }
-
-  public async generateWalletKey() {
-    try {
-      return Store.generateRawKey()
-    } catch (error) {
-      throw new WalletError('Error generating wallet key', { cause: error })
     }
   }
 

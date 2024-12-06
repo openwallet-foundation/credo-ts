@@ -10,6 +10,7 @@ import { DidsModule } from '../modules/dids'
 import { DifPresentationExchangeModule } from '../modules/dif-presentation-exchange'
 import { DiscoverFeaturesModule } from '../modules/discover-features'
 import { GenericRecordsModule } from '../modules/generic-records'
+import { KeyManagementModule } from '../modules/kms'
 import { MdocModule } from '../modules/mdoc/MdocModule'
 import { MessagePickupModule } from '../modules/message-pickup'
 import { OutOfBandModule } from '../modules/oob'
@@ -139,6 +140,7 @@ function getDefaultAgentModules() {
     sdJwtVc: () => new SdJwtVcModule(),
     x509: () => new X509Module(),
     mdoc: () => new MdocModule(),
+    kms: () => new KeyManagementModule({}),
   } as const
 }
 
@@ -151,18 +153,21 @@ function getDefaultAgentModules() {
 export function extendModulesWithDefaultModules<AgentModules extends AgentModulesInput>(
   modules?: AgentModules
 ): AgentModules & DefaultAgentModules {
-  const extendedModules: Record<string, Module> = { ...modules }
   const defaultAgentModules = getDefaultAgentModules()
+  const defaultAgentModuleKeys = Object.keys(defaultAgentModules)
+
+  const defaultModules: Array<[string, Module]> = []
+  const customModules: Array<[string, Module]> = Object.entries(modules ?? {}).filter(
+    ([key]) => !defaultAgentModuleKeys.includes(key)
+  )
 
   // Register all default modules, if not registered yet
   for (const [moduleKey, getConfiguredModule] of Object.entries(defaultAgentModules)) {
-    // Do not register if the module is already registered.
-    if (modules && modules[moduleKey]) continue
-
-    extendedModules[moduleKey] = getConfiguredModule()
+    // Prefer user-registered module, otherwise initialize the default module
+    defaultModules.push([moduleKey, modules?.[moduleKey] ?? getConfiguredModule()])
   }
 
-  return extendedModules as AgentModules & DefaultAgentModules
+  return Object.fromEntries([...defaultModules, ...customModules]) as AgentModules & DefaultAgentModules
 }
 
 /**

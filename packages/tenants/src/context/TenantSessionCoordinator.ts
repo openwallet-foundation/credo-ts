@@ -1,17 +1,7 @@
 import type { TenantRecord } from '../repository'
 import type { MutexInterface } from 'async-mutex'
 
-import {
-  AgentConfig,
-  AgentContext,
-  CredoError,
-  inject,
-  injectable,
-  InjectionSymbols,
-  Logger,
-  WalletApi,
-  WalletError,
-} from '@credo-ts/core'
+import { AgentConfig, AgentContext, CredoError, inject, injectable, InjectionSymbols, Logger } from '@credo-ts/core'
 import { Mutex, withTimeout } from 'async-mutex'
 
 import { TenantsModuleConfig } from '../TenantsModuleConfig'
@@ -213,16 +203,7 @@ export class TenantSessionCoordinator {
 
   private async createAgentContext(tenantRecord: TenantRecord) {
     const tenantDependencyManager = this.rootAgentContext.dependencyManager.createChild()
-
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { id, key, keyDerivationMethod, ...strippedWalletConfig } = this.rootAgentContext.config?.walletConfig ?? {}
-    const tenantConfig = this.rootAgentContext.config.extend({
-      ...tenantRecord.config,
-      walletConfig: {
-        ...strippedWalletConfig,
-        ...tenantRecord.config.walletConfig,
-      },
-    })
+    const tenantConfig = this.rootAgentContext.config.extend({})
 
     const agentContext = new AgentContext({
       contextCorrelationId: tenantRecord.id,
@@ -232,22 +213,16 @@ export class TenantSessionCoordinator {
     tenantDependencyManager.registerInstance(AgentContext, agentContext)
     tenantDependencyManager.registerInstance(AgentConfig, tenantConfig)
 
-    // NOTE: we're using the wallet api here because that correctly handle creating if it doesn't exist yet
-    // and will also write the storage version to the storage, which is needed by the update assistant. We either
-    // need to move this out of the module, or just keep using the module here.
-    const walletApi = agentContext.dependencyManager.resolve(WalletApi)
-
-    if (!tenantConfig.walletConfig) {
-      throw new WalletError('Cannot initialize tenant without Wallet config.')
-    }
-    await walletApi.initialize(tenantConfig.walletConfig)
+    const moduleMetadata =
+      tenantRecord.metadata.get<Record<string, Record<string, unknown> | undefined>>('ModuleMetadata')
+    await this.rootAgentContext.dependencyManager.initializeAgentContext(agentContext, moduleMetadata ?? {})
 
     return agentContext
   }
 
   private async closeAgentContext(agentContext: AgentContext) {
     this.logger.debug(`Closing agent context for tenant '${agentContext.contextCorrelationId}'`)
-    await agentContext.dependencyManager.dispose()
+    await agentContext.dependencyManager.closeAgentContext(agentContext)
   }
 }
 

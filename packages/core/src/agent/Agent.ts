@@ -1,7 +1,6 @@
 import type { AgentDependencies } from './AgentDependencies'
 import type { AgentModulesInput } from './AgentModules'
 import type { AgentMessageReceivedEvent } from './Events'
-import type { Module } from '../plugins'
 import type { InboundTransport } from '../transport/InboundTransport'
 import type { OutboundTransport } from '../transport/OutboundTransport'
 import type { InitConfig } from '../types'
@@ -146,6 +145,7 @@ export class Agent<AgentModules extends AgentModulesInput = any> extends BaseAge
   public async initialize() {
     const stop$ = this.dependencyManager.resolve<Subject<boolean>>(InjectionSymbols.Stop$)
 
+    // TODO: move to DIDComm module (along with transports)
     // Listen for new messages (either from transports or somewhere else in the framework / extensions)
     // We create this before doing any other initialization, so the initialization could already receive messages
     this.messageSubscription = this.eventEmitter
@@ -168,13 +168,8 @@ export class Agent<AgentModules extends AgentModulesInput = any> extends BaseAge
       )
       .subscribe()
 
+    await this.dependencyManager.initializeModules(this.agentContext)
     await super.initialize()
-
-    for (const [, module] of Object.entries(this.dependencyManager.registeredModules) as [string, Module][]) {
-      if (module.initialize) {
-        await module.initialize(this.agentContext)
-      }
-    }
 
     for (const transport of this.inboundTransports) {
       await transport.start(this)
@@ -184,70 +179,25 @@ export class Agent<AgentModules extends AgentModulesInput = any> extends BaseAge
       await transport.start(this)
     }
 
-    // Connect to mediator through provided invitation if provided in config
-    // Also requests mediation ans sets as default mediator
-    // Because this requires the connections module, we do this in the agent constructor
-    if (this.mediationRecipient.config.mediatorInvitationUrl) {
-      this.logger.debug('Provision mediation with invitation', {
-        mediatorInvitationUrl: this.mediationRecipient.config.mediatorInvitationUrl,
-      })
-      const mediationConnection = await this.getMediationConnection(
-        this.mediationRecipient.config.mediatorInvitationUrl
-      )
-      await this.mediationRecipient.provision(mediationConnection)
-    }
-
-    await this.messagePickup.initialize()
-    await this.mediator.initialize()
-    await this.mediationRecipient.initialize()
-
     this._isInitialized = true
   }
 
   public async shutdown() {
+    // TODO: relace stop$, should be replaced by module specific lifecycle methods
     const stop$ = this.dependencyManager.resolve<Subject<boolean>>(InjectionSymbols.Stop$)
     // All observables use takeUntil with the stop$ observable
     // this means all observables will stop running if a value is emitted on this observable
     stop$.next(true)
 
+    // TODO: move to DIDComm module
     // Stop transports
     const allTransports = [...this.inboundTransports, ...this.outboundTransports]
     const transportPromises = allTransports.map((transport) => transport.stop())
     await Promise.all(transportPromises)
 
-    if (this.wallet.isInitialized) {
-      await this.wallet.close()
-    }
+    await this.dependencyManager.closeAgentContext(this.agentContext)
+    await this.dependencyManager.shutdownModules(this.agentContext)
 
     this._isInitialized = false
-  }
-
-  protected async getMediationConnection(mediatorInvitationUrl: string) {
-    const outOfBandInvitation = await this.oob.parseInvitation(mediatorInvitationUrl)
-    const outOfBandRecord = await this.oob.findByReceivedInvitationId(outOfBandInvitation.id)
-    const [connection] = outOfBandRecord ? await this.connections.findAllByOutOfBandId(outOfBandRecord.id) : []
-
-    if (!connection) {
-      this.logger.debug('Mediation connection does not exist, creating connection')
-      // We don't want to use the current default mediator when connecting to another mediator
-      const routing = await this.mediationRecipient.getRouting({ useDefaultMediator: false })
-
-      this.logger.debug('Routing created', routing)
-      const { connectionRecord: newConnection } = await this.oob.receiveInvitation(outOfBandInvitation, {
-        routing,
-      })
-      this.logger.debug(`Mediation invitation processed`, { outOfBandInvitation })
-
-      if (!newConnection) {
-        throw new CredoError('No connection record to provision mediation.')
-      }
-
-      return this.connections.returnWhenIsConnected(newConnection.id)
-    }
-
-    if (!connection.isReady) {
-      return this.connections.returnWhenIsConnected(connection.id)
-    }
-    return connection
   }
 }

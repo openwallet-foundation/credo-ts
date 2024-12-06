@@ -1,13 +1,12 @@
 import type { KnownJwaSignatureAlgorithm } from '../jwk/jwa'
-import type { KmsJwkPublic } from '../jwk/knownJwk'
+import type { KmsJwkPublic, KmsJwkPublicAsymmetric } from '../jwk/knownJwk'
 
-import * as v from 'valibot'
-
+import * as v from '../../../utils/valibot'
 import { vKnownJwaSignatureAlgorithm } from '../jwk/jwa'
-import { vKmsJwkPublic } from '../jwk/knownJwk'
+import { vKmsJwkPublicAsymmetric } from '../jwk/knownJwk'
 
 export const vKmsVerifyOptions = v.object({
-  key: v.union([v.string(), vKmsJwkPublic]),
+  key: v.union([v.string(), vKmsJwkPublicAsymmetric]),
 
   algorithm: v.pipe(vKnownJwaSignatureAlgorithm, v.description('The JWA signature algorithm to use for verification')),
 
@@ -18,14 +17,13 @@ export const vKmsVerifyOptions = v.object({
 // NOTE: we don't use the InferOutput here as it doesn't allow for JSDoc comments
 export interface KmsVerifyOptions {
   /**
-   * The key to verify with. Either a string referring to a keyId, or a `KmsJwtPublic` for verifying with a
-   * public JWK.
+   * The key to verify with. Either a string referring to a keyId, or a `KmsJwkPublicAssymetric` for verifying with a
+   * public asymmetric JWK.
    *
-   * If a public symmetric JWK is passed (meaning there's no key material in the JWK) the JWK
-   * MUST have a `kid` parameter.  It is currently not possible to verify a signature with symmetric
+   * It is currently not possible to verify a signature with symmetric a
    * key that is not already present in the KMS.
    */
-  key: string | KmsJwkPublic
+  key: string | KmsJwkPublicAsymmetric
 
   /**
    * The JWA signature algorithm to use for verification

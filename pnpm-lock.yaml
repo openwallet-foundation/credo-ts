@@ -810,6 +810,9 @@ importers:
         specifier: ^3.3.0
         version: 3.3.0
     devDependencies:
+      '@animo-id/expo-secure-environment':
+        specifier: ^0.1.0-alpha.12
+        version: 0.1.0-alpha.12(expo@51.0.29(@babel/core@7.25.2)(@babel/preset-env@7.25.8(@babel/core@7.25.2)))(react-native@0.71.19(@babel/core@7.25.2)(@babel/preset-env@7.25.8(@babel/core@7.25.2))(react@18.3.1))(react@18.3.1)
       react-native:
         specifier: ^0.71.4
         version: 0.71.19(@babel/core@7.25.2)(@babel/preset-env@7.25.8(@babel/core@7.25.2))(react@18.3.1)
@@ -8201,6 +8204,15 @@ snapshots:
       '@jridgewell/gen-mapping': 0.3.5
       '@jridgewell/trace-mapping': 0.3.25
 
+  '@animo-id/expo-secure-environment@0.1.0-alpha.12(expo@51.0.29(@babel/core@7.25.2)(@babel/preset-env@7.25.8(@babel/core@7.25.2)))(react-native@0.71.19(@babel/core@7.25.2)(@babel/preset-env@7.25.8(@babel/core@7.25.2))(react@18.3.1))(react@18.3.1)':
+    dependencies:
+      '@peculiar/asn1-ecc': 2.3.13
+      '@peculiar/asn1-schema': 2.3.13
+      '@peculiar/asn1-x509': 2.3.13
+      expo: 51.0.29(@babel/core@7.25.2)(@babel/preset-env@7.25.8(@babel/core@7.25.2))
+      react: 18.3.1
+      react-native: 0.71.19(@babel/core@7.25.2)(@babel/preset-env@7.25.8(@babel/core@7.25.2))(react@18.3.1)
+
   '@animo-id/expo-secure-environment@0.1.0-alpha.12(expo@51.0.29(@babel/core@7.25.8)(@babel/preset-env@7.25.8(@babel/core@7.25.8)))(react-native@0.71.19(@babel/core@7.25.8)(@babel/preset-env@7.25.8(@babel/core@7.25.8))(react@18.3.1))(react@18.3.1)':
     dependencies:
       '@peculiar/asn1-ecc': 2.3.13
@@ -8834,7 +8846,6 @@ snapshots:
       '@babel/plugin-syntax-decorators': 7.24.7(@babel/core@7.25.2)
     transitivePeerDependencies:
       - supports-color
-    optional: true
 
   '@babel/plugin-proposal-decorators@7.24.7(@babel/core@7.25.8)':
     dependencies:
@@ -8868,7 +8879,6 @@ snapshots:
       '@babel/core': 7.25.2
       '@babel/helper-plugin-utils': 7.25.7
       '@babel/plugin-syntax-logical-assignment-operators': 7.10.4(@babel/core@7.25.2)
-    optional: true
 
   '@babel/plugin-proposal-logical-assignment-operators@7.20.7(@babel/core@7.25.8)':
     dependencies:
@@ -8893,7 +8903,6 @@ snapshots:
       '@babel/core': 7.25.2
       '@babel/helper-plugin-utils': 7.25.7
       '@babel/plugin-syntax-numeric-separator': 7.10.4(@babel/core@7.25.2)
-    optional: true
 
   '@babel/plugin-proposal-numeric-separator@7.18.6(@babel/core@7.25.8)':
     dependencies:
@@ -8991,7 +9000,6 @@ snapshots:
     dependencies:
       '@babel/core': 7.25.2
       '@babel/helper-plugin-utils': 7.25.7
-    optional: true
 
   '@babel/plugin-syntax-decorators@7.24.7(@babel/core@7.25.8)':
     dependencies:
@@ -9082,7 +9090,6 @@ snapshots:
     dependencies:
       '@babel/core': 7.25.2
       '@babel/helper-plugin-utils': 7.24.8
-    optional: true
 
   '@babel/plugin-syntax-logical-assignment-operators@7.10.4(@babel/core@7.25.8)':
     dependencies:
@@ -9103,7 +9110,6 @@ snapshots:
     dependencies:
       '@babel/core': 7.25.2
       '@babel/helper-plugin-utils': 7.24.8
-    optional: true
 
   '@babel/plugin-syntax-numeric-separator@7.10.4(@babel/core@7.25.8)':
     dependencies:
@@ -9924,7 +9930,6 @@ snapshots:
       '@babel/plugin-transform-react-jsx': 7.25.2(@babel/core@7.25.2)
     transitivePeerDependencies:
       - supports-color
-    optional: true
 
   '@babel/plugin-transform-react-jsx-development@7.24.7(@babel/core@7.25.8)':
     dependencies:
@@ -9980,7 +9985,6 @@ snapshots:
       '@babel/core': 7.25.2
       '@babel/helper-annotate-as-pure': 7.25.7
       '@babel/helper-plugin-utils': 7.25.7
-    optional: true
 
   '@babel/plugin-transform-react-pure-annotations@7.24.7(@babel/core@7.25.8)':
     dependencies:
@@ -10396,7 +10400,6 @@ snapshots:
       '@babel/plugin-transform-react-pure-annotations': 7.24.7(@babel/core@7.25.2)
     transitivePeerDependencies:
       - supports-color
-    optional: true
 
   '@babel/preset-react@7.24.7(@babel/core@7.25.8)':
     dependencies:
@@ -12170,7 +12173,6 @@ snapshots:
     transitivePeerDependencies:
       - '@babel/preset-env'
       - supports-color
-    optional: true
 
   '@react-native/babel-plugin-codegen@0.74.87(@babel/preset-env@7.25.8(@babel/core@7.25.8))':
     dependencies:
@@ -12227,7 +12229,6 @@ snapshots:
     transitivePeerDependencies:
       - '@babel/preset-env'
       - supports-color
-    optional: true
 
   '@react-native/babel-preset@0.74.87(@babel/core@7.25.8)(@babel/preset-env@7.25.8(@babel/core@7.25.8))':
     dependencies:
@@ -12290,7 +12291,6 @@ snapshots:
       nullthrows: 1.1.1
     transitivePeerDependencies:
       - supports-color
-    optional: true
 
   '@react-native/codegen@0.74.87(@babel/preset-env@7.25.8(@babel/core@7.25.8))':
     dependencies:
@@ -13635,7 +13635,6 @@ snapshots:
       '@babel/plugin-syntax-flow': 7.24.7(@babel/core@7.25.2)
     transitivePeerDependencies:
       - '@babel/core'
-    optional: true
 
   babel-plugin-transform-flow-enums@0.0.2(@babel/core@7.25.8):
     dependencies:
@@ -13678,7 +13677,6 @@ snapshots:
       - '@babel/core'
       - '@babel/preset-env'
       - supports-color
-    optional: true
 
   babel-preset-expo@11.0.14(@babel/core@7.25.8)(@babel/preset-env@7.25.8(@babel/core@7.25.8)):
     dependencies:
@@ -14943,7 +14941,6 @@ snapshots:
       md5-file: 3.2.3
     transitivePeerDependencies:
       - supports-color
-    optional: true
 
   expo-asset@10.0.10(expo@51.0.29(@babel/core@7.25.8)(@babel/preset-env@7.25.8(@babel/core@7.25.8))):
     dependencies:
@@ -14961,7 +14958,6 @@ snapshots:
       expo: 51.0.29(@babel/core@7.25.2)(@babel/preset-env@7.25.8(@babel/core@7.25.2))
     transitivePeerDependencies:
       - supports-color
-    optional: true
 
   expo-constants@16.0.2(expo@51.0.29(@babel/core@7.25.8)(@babel/preset-env@7.25.8(@babel/core@7.25.8))):
     dependencies:
@@ -14974,7 +14970,6 @@ snapshots:
   expo-file-system@17.0.1(expo@51.0.29(@babel/core@7.25.2)(@babel/preset-env@7.25.8(@babel/core@7.25.2))):
     dependencies:
       expo: 51.0.29(@babel/core@7.25.2)(@babel/preset-env@7.25.8(@babel/core@7.25.2))
-    optional: true
 
   expo-file-system@17.0.1(expo@51.0.29(@babel/core@7.25.8)(@babel/preset-env@7.25.8(@babel/core@7.25.8))):
     dependencies:
@@ -14984,7 +14979,6 @@ snapshots:
     dependencies:
       expo: 51.0.29(@babel/core@7.25.2)(@babel/preset-env@7.25.8(@babel/core@7.25.2))
       fontfaceobserver: 2.3.0
-    optional: true
 
   expo-font@12.0.9(expo@51.0.29(@babel/core@7.25.8)(@babel/preset-env@7.25.8(@babel/core@7.25.8))):
     dependencies:
@@ -14994,7 +14988,6 @@ snapshots:
   expo-keep-awake@13.0.2(expo@51.0.29(@babel/core@7.25.2)(@babel/preset-env@7.25.8(@babel/core@7.25.2))):
     dependencies:
       expo: 51.0.29(@babel/core@7.25.2)(@babel/preset-env@7.25.8(@babel/core@7.25.2))
-    optional: true
 
   expo-keep-awake@13.0.2(expo@51.0.29(@babel/core@7.25.8)(@babel/preset-env@7.25.8(@babel/core@7.25.8))):
     dependencies:
@@ -15053,7 +15046,6 @@ snapshots:
       - encoding
       - supports-color
       - utf-8-validate
-    optional: true
 
   expo@51.0.29(@babel/core@7.25.8)(@babel/preset-env@7.25.8(@babel/core@7.25.8)):
     dependencies:

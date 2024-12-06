@@ -1,5 +1,6 @@
 import type { MessagePickupModuleConfigOptions } from './MessagePickupModuleConfig'
 import type { MessagePickupProtocol } from './protocol/MessagePickupProtocol'
+import type { AgentContext } from '../../agent'
 import type { FeatureRegistry } from '../../agent/FeatureRegistry'
 import type { ApiModule, DependencyManager } from '../../plugins'
 import type { Optional } from '../../utils'
@@ -62,5 +63,13 @@ export class MessagePickupModule<MessagePickupProtocols extends MessagePickupPro
     for (const protocol of this.config.protocols) {
       protocol.register(dependencyManager, featureRegistry)
     }
+  }
+
+  public async onInitializeContext(agentContext: AgentContext): Promise<void> {
+    // Message pickup initialization only supported for root agent
+    if (agentContext.contextCorrelationId !== 'default') return
+
+    const messagePickupApi = agentContext.dependencyManager.resolve(MessagePickupApi)
+    await messagePickupApi.initialize()
   }
 }

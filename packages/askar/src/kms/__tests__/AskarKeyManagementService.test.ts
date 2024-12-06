@@ -1,28 +1,44 @@
-import { Kms } from '@credo-ts/core'
-import { KdfMethod, Store, StoreKeyMethod } from '@hyperledger/aries-askar-shared'
+import { InjectionSymbols, Kms } from '@credo-ts/core'
+import { ariesAskar, Store } from '@hyperledger/aries-askar-shared'
 
-import { getAgentContext } from '../../../../core/tests'
+import { getAgentConfig, getAgentContext } from '../../../../core/tests'
+import { NodeFileSystem } from '../../../../node/src/NodeFileSystem'
+import { AskarModuleConfig, AskarMultiWalletDatabaseScheme } from '../../AskarModuleConfig'
+import { AskarStoreManager } from '../../AskarStoreManager'
 import { AksarKeyManagementService } from '../AskarKeyManagementService'
 
-const agentContext = getAgentContext({ contextCorrelationId: 'default' })
-const agentContextTenant = getAgentContext({ contextCorrelationId: '1a2eb2ed-49e4-43bf-bbca-de1cfbf1d890' })
+const agentContext = getAgentContext({
+  contextCorrelationId: 'default',
+  agentConfig: getAgentConfig('AskarKeyManagementService'),
+  registerInstances: [
+    [InjectionSymbols.FileSystem, new NodeFileSystem()],
+    [
+      AskarModuleConfig,
+      new AskarModuleConfig({
+        multiWalletDatabaseScheme: AskarMultiWalletDatabaseScheme.ProfilePerWallet,
+        ariesAskar: ariesAskar,
+        store: {
+          id: 'default',
+          key: 'CwNJroKHTSSj3XvE7ZAnuKiTn2C4QkFvxEqfm5rzhNrb',
+          keyDerivationMethod: 'raw',
+          database: {
+            type: 'sqlite',
+            config: {
+              inMemory: true,
+            },
+          },
+        },
+      }),
+    ],
+  ],
+})
+const agentContextTenant = getAgentContext({
+  contextCorrelationId: '1a2eb2ed-49e4-43bf-bbca-de1cfbf1d890',
+  dependencyManager: agentContext.dependencyManager.createChild(),
+})
+const service = new AksarKeyManagementService()
 
 describe('AskarKeyManagementService', () => {
-  let service: AksarKeyManagementService
-  let store: Store
-
-  beforeEach(async () => {
-    // TODO: askar module should allow easy creation and setup of an askar wallet?
-    store = await Store.provision({
-      uri: 'sqlite://:memory:',
-      recreate: true,
-      keyMethod: new StoreKeyMethod(KdfMethod.Argon2IMod),
-      passKey: 'some-secure-key',
-      profile: 'default',
-    })
-    service = new AksarKeyManagementService(store)
-  })
-
   it('correctly identifies backend as askar', () => {
     expect(service.backend).toBe('askar')
   })
@@ -34,18 +50,21 @@ describe('AskarKeyManagementService', () => {
         keyId: 'key-1',
       })
 
-      const session = await store.openSession()
-      expect(await session.fetchKey({ name: 'key-1' })).toEqual({
+      const askarStoreManager = agentContext.dependencyManager.resolve(AskarStoreManager)
+      const sessionKey = await askarStoreManager.withSession(agentContext, (session) =>
+        session.fetchKey({ name: 'key-1' })
+      )
+      expect(sessionKey).toEqual({
         algorithm: 'p256',
         key: expect.any(Object),
         metadata: null,
         name: 'key-1',
         tags: {},
       })
-      await session.close()
     })
 
     it("automatically creates a profile if it doesn't exist yet", async () => {
+      const store = agentContextTenant.dependencyManager.resolve(Store)
       expect(await store.listProfiles()).toEqual(['default'])
 
       await service.createKey(agentContextTenant, {
@@ -53,8 +72,8 @@ describe('AskarKeyManagementService', () => {
         keyId: 'key-2',
       })
 
-      expect(await store.listProfiles()).toEqual([agentContextTenant.contextCorrelationId, 'default'])
-      const session = await store.session(agentContextTenant.contextCorrelationId).open()
+      expect(await store.listProfiles()).toEqual(['default', `wallet-${agentContextTenant.contextCorrelationId}`])
+      const session = await store.session(`wallet-${agentContextTenant.contextCorrelationId}`).open()
       expect(await session.fetchKey({ name: 'key-2' })).toEqual({
         algorithm: 'p256',
         key: expect.any(Object),
@@ -122,12 +141,52 @@ describe('AskarKeyManagementService', () => {
       })
     })
 
-    it('throw error for unsupported EC key P-521', async () => {
+    it('throws error for unsupported EC key P-521', async () => {
       await expect(
         service.createKey(agentContext, {
           type: { kty: 'EC', crv: 'P-521' },
         })
       ).rejects.toThrow(new Kms.KeyManagementAlgorithmNotSupportedError(`crv 'P-521' for kty 'EC'`, service.backend))
+    })
+
+    it('creates EC secp256k1 key successfully', async () => {
+      const result = await service.createKey(agentContext, {
+        type: { kty: 'EC', crv: 'secp256k1' },
+      })
+
+      const publicJwk = await service.getPublicKey(agentContext, result.keyId)
+      expect(result.publicJwk).toEqual(publicJwk)
+
+      expect(result).toEqual({
+        keyId: result.keyId,
+        publicJwk: {
+          kty: 'EC',
+          crv: 'secp256k1',
+          x: expect.any(String),
+          y: expect.any(String),
+          kid: result.keyId,
+        },
+      })
+    })
+
+    it('throws error for unsupported EC key BLS12381G1', async () => {
+      await expect(
+        service.createKey(agentContext, {
+          type: { kty: 'EC', crv: 'BLS12381G1' },
+        })
+      ).rejects.toThrow(
+        new Kms.KeyManagementAlgorithmNotSupportedError(`crv 'BLS12381G1' for kty 'EC'`, service.backend)
+      )
+    })
+
+    it('throws error for unsupported EC key BLS12381G2', async () => {
+      await expect(
+        service.createKey(agentContext, {
+          type: { kty: 'EC', crv: 'BLS12381G2' },
+        })
+      ).rejects.toThrow(
+        new Kms.KeyManagementAlgorithmNotSupportedError(`crv 'BLS12381G2' for kty 'EC'`, service.backend)
+      )
     })
 
     it('throws error for unsupported key type RSA', async () => {

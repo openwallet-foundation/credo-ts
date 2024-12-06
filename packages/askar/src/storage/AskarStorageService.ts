@@ -8,26 +8,30 @@ import type {
 } from '@credo-ts/core'
 
 import { RecordDuplicateError, WalletError, RecordNotFoundError, injectable, JsonTransformer } from '@credo-ts/core'
-import { Scan } from '@hyperledger/aries-askar-shared'
+import { Scan, Session } from '@hyperledger/aries-askar-shared'
 
+import { AskarStoreManager } from '../AskarStoreManager'
 import { AskarErrorCode, isAskarError } from '../utils/askarError'
-import { assertAskarWallet } from '../utils/assertAskarWallet'
 
 import { askarQueryFromSearchQuery, recordToInstance, transformFromRecordTagValues } from './utils'
 
 @injectable()
 export class AskarStorageService<T extends BaseRecord> implements StorageService<T> {
+  public constructor(private askarStoreManager: AskarStoreManager) {}
+
+  private withSession<Return>(agentContext: AgentContext, callback: (session: Session) => Return) {
+    return this.askarStoreManager.withSession(agentContext, callback)
+  }
+
   /** @inheritDoc */
   public async save(agentContext: AgentContext, record: T) {
-    assertAskarWallet(agentContext.wallet)
-
     record.updatedAt = new Date()
 
     const value = JsonTransformer.serialize(record)
     const tags = transformFromRecordTagValues(record.getTags()) as Record<string, string>
 
     try {
-      await agentContext.wallet.withSession((session) =>
+      await this.withSession(agentContext, (session) =>
         session.insert({ category: record.type, name: record.id, value, tags })
       )
     } catch (error) {
@@ -41,15 +45,13 @@ export class AskarStorageService<T extends BaseRecord> implements StorageService
 
   /** @inheritDoc */
   public async update(agentContext: AgentContext, record: T): Promise<void> {
-    assertAskarWallet(agentContext.wallet)
-
     record.updatedAt = new Date()
 
     const value = JsonTransformer.serialize(record)
     const tags = transformFromRecordTagValues(record.getTags()) as Record<string, string>
 
     try {
-      await agentContext.wallet.withSession((session) =>
+      await this.withSession(agentContext, (session) =>
         session.replace({ category: record.type, name: record.id, value, tags })
       )
     } catch (error) {
@@ -66,10 +68,8 @@ export class AskarStorageService<T extends BaseRecord> implements StorageService
 
   /** @inheritDoc */
   public async delete(agentContext: AgentContext, record: T) {
-    assertAskarWallet(agentContext.wallet)
-
     try {
-      await agentContext.wallet.withSession((session) => session.remove({ category: record.type, name: record.id }))
+      await this.withSession(agentContext, (session) => session.remove({ category: record.type, name: record.id }))
     } catch (error) {
       if (isAskarError(error, AskarErrorCode.NotFound)) {
         throw new RecordNotFoundError(`record with id ${record.id} not found.`, {
@@ -87,10 +87,8 @@ export class AskarStorageService<T extends BaseRecord> implements StorageService
     recordClass: BaseRecordConstructor<T>,
     id: string
   ): Promise<void> {
-    assertAskarWallet(agentContext.wallet)
-
     try {
-      await agentContext.wallet.withSession((session) => session.remove({ category: recordClass.type, name: id }))
+      await this.withSession(agentContext, (session) => session.remove({ category: recordClass.type, name: id }))
     } catch (error) {
       if (isAskarError(error, AskarErrorCode.NotFound)) {
         throw new RecordNotFoundError(`record with id ${id} not found.`, {
@@ -104,10 +102,8 @@ export class AskarStorageService<T extends BaseRecord> implements StorageService
 
   /** @inheritDoc */
   public async getById(agentContext: AgentContext, recordClass: BaseRecordConstructor<T>, id: string): Promise<T> {
-    assertAskarWallet(agentContext.wallet)
-
     try {
-      const record = await agentContext.wallet.withSession((session) =>
+      const record = await this.withSession(agentContext, (session) =>
         session.fetch({ category: recordClass.type, name: id })
       )
       if (!record) {
@@ -124,9 +120,7 @@ export class AskarStorageService<T extends BaseRecord> implements StorageService
 
   /** @inheritDoc */
   public async getAll(agentContext: AgentContext, recordClass: BaseRecordConstructor<T>): Promise<T[]> {
-    assertAskarWallet(agentContext.wallet)
-
-    const records = await agentContext.wallet.withSession((session) => session.fetchAll({ category: recordClass.type }))
+    const records = await this.withSession(agentContext, (session) => session.fetchAll({ category: recordClass.type }))
 
     const instances = []
     for (const record of records) {
@@ -142,16 +136,14 @@ export class AskarStorageService<T extends BaseRecord> implements StorageService
     query: Query<T>,
     queryOptions?: QueryOptions
   ): Promise<T[]> {
-    const wallet = agentContext.wallet
-    assertAskarWallet(wallet)
-
     const askarQuery = askarQueryFromSearchQuery(query)
 
+    const { store, profile } = await this.askarStoreManager.getInitializedStoreWithProfile(agentContext)
     const scan = new Scan({
       category: recordClass.type,
-      store: wallet.store,
+      store,
       tagFilter: askarQuery,
-      profile: wallet.profile,
+      profile,
       offset: queryOptions?.offset,
       limit: queryOptions?.limit,
     })
