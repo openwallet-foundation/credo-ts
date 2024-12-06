@@ -21,6 +21,7 @@ import {
 const recipientAgentOptions = getInMemoryAgentOptions(
   'E2E Subject Recipient',
   {},
+  {},
   {
     ...getAnonCredsModules({
       autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
@@ -35,6 +36,7 @@ const mediatorAgentOptions = getInMemoryAgentOptions(
   {
     endpoints: ['rxjs:mediator'],
   },
+  {},
   {
     ...getAnonCredsModules({
       autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
@@ -47,6 +49,7 @@ const senderAgentOptions = getInMemoryAgentOptions(
   {
     endpoints: ['rxjs:sender'],
   },
+  {},
   {
     ...getAnonCredsModules({
       autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
@@ -88,17 +91,17 @@ describe('E2E Subject tests', () => {
     }
 
     // Recipient Setup
-    recipientAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
+    recipientAgent.didcomm.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     await recipientAgent.initialize()
 
     // Mediator Setup
-    mediatorAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
-    mediatorAgent.registerInboundTransport(new SubjectInboundTransport(mediatorMessages))
+    mediatorAgent.didcomm.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
+    mediatorAgent.didcomm.registerInboundTransport(new SubjectInboundTransport(mediatorMessages))
     await mediatorAgent.initialize()
 
     // Sender Setup
-    senderAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
-    senderAgent.registerInboundTransport(new SubjectInboundTransport(senderMessages))
+    senderAgent.didcomm.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
+    senderAgent.didcomm.registerInboundTransport(new SubjectInboundTransport(senderMessages))
     await senderAgent.initialize()
 
     await e2eTest({

@@ -2,7 +2,7 @@ import type { AnonCredsTestsAgent } from '../packages/anoncreds/tests/anoncredsS
 
 import { getAnonCredsModules } from '../packages/anoncreds/tests/anoncredsSetup'
 import { askarModule } from '../packages/askar/tests/helpers'
-import { MessageForwardingStrategy } from '../packages/core/src/modules/routing/MessageForwardingStrategy'
+import { MessageForwardingStrategy } from '../packages/core/src/modules/didcomm/modules/routing/MessageForwardingStrategy'
 import { getAgentOptions } from '../packages/core/tests/helpers'
 
 import { e2eTest } from './e2e-test'
