@@ -7,16 +7,21 @@ import { getInMemoryAgentOptions } from '../../../tests/helpers'
 import { InjectionSymbols } from '../../constants'
 import { BasicMessageRepository, BasicMessageService } from '../../modules/basic-messages'
 import { BasicMessagesApi } from '../../modules/basic-messages/BasicMessagesApi'
-import { DidRotateService } from '../../modules/connections'
-import { ConnectionsApi } from '../../modules/connections/ConnectionsApi'
-import { ConnectionRepository } from '../../modules/connections/repository/ConnectionRepository'
-import { ConnectionService } from '../../modules/connections/services/ConnectionService'
-import { TrustPingService } from '../../modules/connections/services/TrustPingService'
 import { CredentialRepository } from '../../modules/credentials'
 import { CredentialsApi } from '../../modules/credentials/CredentialsApi'
-import { MessagePickupApi, InMemoryMessagePickupRepository } from '../../modules/message-pickup'
-import { ProofRepository } from '../../modules/proofs'
-import { ProofsApi } from '../../modules/proofs/ProofsApi'
+import {
+  ConnectionService,
+  DidRotateService,
+  TrustPingService,
+  Dispatcher,
+  EnvelopeService,
+  FeatureRegistry,
+  MessageReceiver,
+  MessageSender,
+} from '../../modules/didcomm'
+import { ConnectionsApi } from '../../modules/didcomm/modules/connections/ConnectionsApi'
+import { MessagePickupApi, InMemoryMessagePickupRepository } from '../../modules/didcomm/modules/message-pickup'
+import { ConnectionRepository } from '../../modules/didcomm/repository/connections/ConnectionRepository'
 import {
   MediationRecipientService,
   MediationRepository,
@@ -24,14 +29,11 @@ import {
   MediatorService,
   MediationRecipientApi,
   MediationRecipientModule,
-} from '../../modules/routing'
+} from '../../modules/didcomm/modules/routing'
+import { ProofRepository } from '../../modules/proofs'
+import { ProofsApi } from '../../modules/proofs/ProofsApi'
 import { WalletError } from '../../wallet/error'
 import { Agent } from '../Agent'
-import { Dispatcher } from '../Dispatcher'
-import { EnvelopeService } from '../EnvelopeService'
-import { FeatureRegistry } from '../FeatureRegistry'
-import { MessageReceiver } from '../MessageReceiver'
-import { MessageSender } from '../MessageSender'
 
 const agentOptions = getInMemoryAgentOptions('Agent Class Test')
 

@@ -11,8 +11,8 @@ export function setupSubjectTransports(agents: Agent[]) {
 
   for (const agent of agents) {
     const messages = new Subject<SubjectMessage>()
-    subjectMap[agent.config.endpoints[0]] = messages
-    agent.registerInboundTransport(new SubjectInboundTransport(messages))
-    agent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
+    subjectMap[agent.didcomm.config.endpoints[0]] = messages
+    agent.didcomm.registerInboundTransport(new SubjectInboundTransport(messages))
+    agent.didcomm.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
   }
 }

@@ -1,5 +1,5 @@
 import { JsonTransformer } from '../../../../../utils'
-import { OutOfBandDidCommService } from '../../../../oob/domain/OutOfBandDidCommService'
+import { OutOfBandDidCommService } from '../../../../didcomm/oob/domain/OutOfBandDidCommService'
 import { DidDocument } from '../../../domain'
 import { didDocumentToNumAlgo4Did, didToNumAlgo4DidDocument, outOfBandServiceToNumAlgo4Did } from '../peerDidNumAlgo4'
 

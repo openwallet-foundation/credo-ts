@@ -74,7 +74,7 @@ import {
 // Helper type to get the type of the agents (with the custom modules) for the credential tests
 export type AnonCredsTestsAgent = Agent<
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  ReturnType<typeof getAnonCredsIndyModules> & { mediationRecipient?: any; mediator?: any }
+  ReturnType<typeof getAnonCredsIndyModules> & { didcomm?: any; mediationRecipient?: any; mediator?: any }
 >
 
 export const getAnonCredsIndyModules = ({
@@ -327,6 +327,9 @@ export async function setupAnonCredsTests<
       {
         endpoints: ['rxjs:issuer'],
       },
+      {
+        logger: testLogger,
+      },
       getAnonCredsIndyModules({
         autoAcceptCredentials,
         autoAcceptProofs,
@@ -340,6 +343,7 @@ export async function setupAnonCredsTests<
       {
         endpoints: ['rxjs:holder'],
       },
+      {},
       getAnonCredsIndyModules({
         autoAcceptCredentials,
         autoAcceptProofs,
@@ -354,6 +358,7 @@ export async function setupAnonCredsTests<
           {
             endpoints: ['rxjs:verifier'],
           },
+          {},
           getAnonCredsIndyModules({
             autoAcceptCredentials,
             autoAcceptProofs,

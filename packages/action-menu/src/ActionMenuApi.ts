@@ -13,6 +13,7 @@ import {
   MessageSender,
   injectable,
   getOutboundMessageContext,
+  MessageHandlerRegistry,
 } from '@credo-ts/core'
 
 import { ActionMenuRole } from './ActionMenuRole'
@@ -45,12 +46,14 @@ export class ActionMenuApi {
     this.actionMenuService = actionMenuService
     this.agentContext = agentContext
 
-    this.agentContext.dependencyManager.registerMessageHandlers([
-      new ActionMenuProblemReportHandler(this.actionMenuService),
-      new MenuMessageHandler(this.actionMenuService),
-      new MenuRequestMessageHandler(this.actionMenuService),
-      new PerformMessageHandler(this.actionMenuService),
-    ])
+    this.agentContext.dependencyManager
+      .resolve(MessageHandlerRegistry)
+      .registerMessageHandlers([
+        new ActionMenuProblemReportHandler(this.actionMenuService),
+        new MenuMessageHandler(this.actionMenuService),
+        new MenuRequestMessageHandler(this.actionMenuService),
+        new PerformMessageHandler(this.actionMenuService),
+      ])
   }
 
   /**
