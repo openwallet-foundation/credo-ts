@@ -11,7 +11,7 @@ import {
 import { waitForCredentialRecord, waitForCredentialRecordSubject } from '../../../../../../../../tests'
 import testLogger from '../../../../../../../../tests/logger'
 import { JsonTransformer } from '../../../../../../../utils'
-import { DidCommMessageRepository } from '../../../../..'
+import { DidCommMessageRepository } from '../../../../../repository'
 import { CredentialRole } from '../../../models'
 import { CredentialState } from '../../../models/CredentialState'
 import { CredentialExchangeRecord } from '../../../repository/CredentialExchangeRecord'

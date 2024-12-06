@@ -9,7 +9,7 @@ import { Type } from 'class-transformer'
 import { CredoError } from '../../../../../error'
 import { BaseRecord } from '../../../../../storage/BaseRecord'
 import { uuid } from '../../../../../utils/uuid'
-import { Attachment } from '../../..'
+import { Attachment } from '../../../decorators/attachment/Attachment'
 import { CredentialPreviewAttribute } from '../models/CredentialPreviewAttribute'
 
 export interface CredentialExchangeRecordProps {

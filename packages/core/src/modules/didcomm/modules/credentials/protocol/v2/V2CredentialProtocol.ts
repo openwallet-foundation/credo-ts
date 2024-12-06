@@ -1,12 +1,10 @@
 import type { AgentContext } from '../../../../../../agent'
-import type {
-  AgentMessage,
-  MessageHandlerInboundMessage,
-  InboundMessageContext,
-  ProblemReportMessage,
-  FeatureRegistry,
-  MessageHandlerRegistry,
-} from '../../../..'
+import type { AgentMessage } from '../../../../AgentMessage'
+import type { FeatureRegistry } from '../../../../FeatureRegistry'
+import type { MessageHandlerRegistry } from '../../../../MessageHandlerRegistry'
+import type { MessageHandlerInboundMessage } from '../../../../handlers'
+import type { ProblemReportMessage } from '../../../../messages'
+import type { InboundMessageContext } from '../../../../models'
 import type {
   CredentialFormat,
   CredentialFormatPayload,
@@ -33,7 +31,9 @@ import type {
 
 import { CredoError } from '../../../../../../error'
 import { uuid } from '../../../../../../utils/uuid'
-import { AckStatus, DidCommMessageRepository, DidCommMessageRole, Protocol } from '../../../..'
+import { AckStatus } from '../../../../messages'
+import { Protocol } from '../../../../models'
+import { DidCommMessageRepository, DidCommMessageRole } from '../../../../repository'
 import { ConnectionService } from '../../../connections'
 import { CredentialsModuleConfig } from '../../CredentialsModuleConfig'
 import { AutoAcceptCredential, CredentialProblemReportReason, CredentialRole, CredentialState } from '../../models'

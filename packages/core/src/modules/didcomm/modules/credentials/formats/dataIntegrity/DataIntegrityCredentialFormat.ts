@@ -6,8 +6,9 @@ import type {
   DidCommSignedAttachmentCredentialRequestOptions as DidCommSignedAttachmentAcceptOfferOptions,
   W3C_VC_DATA_MODEL_VERSION,
 } from './dataIntegrityExchange'
-import type { CredentialFormat, JsonObject } from '../../../../../..'
+import type { JsonObject } from '../../../../../../types'
 import type { W3cCredential } from '../../../../../vc'
+import type { CredentialFormat } from '../CredentialFormat'
 
 export interface AnonCredsLinkSecretCreateOfferOptions {
   credentialDefinitionId: string

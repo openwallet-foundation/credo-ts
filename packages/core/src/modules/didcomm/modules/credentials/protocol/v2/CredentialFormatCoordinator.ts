@@ -1,11 +1,11 @@
 import type { AgentContext } from '../../../../../../agent'
-import type { Attachment } from '../../../..'
+import type { Attachment } from '../../../../decorators/attachment/Attachment'
 import type { CredentialFormatPayload, CredentialFormatService, ExtractCredentialFormats } from '../../formats'
 import type { CredentialFormatSpec } from '../../models'
 import type { CredentialExchangeRecord } from '../../repository/CredentialExchangeRecord'
 
 import { CredoError } from '../../../../../../error/CredoError'
-import { DidCommMessageRepository, DidCommMessageRole } from '../../../..'
+import { DidCommMessageRepository, DidCommMessageRole } from '../../../../repository'
 
 import {
   V2IssueCredentialMessage,

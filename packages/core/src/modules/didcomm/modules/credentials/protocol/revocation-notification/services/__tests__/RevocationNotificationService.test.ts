@@ -4,12 +4,19 @@ import type { AnonCredsCredentialMetadata } from '@credo-ts/anoncreds'
 
 import { Subject } from 'rxjs'
 
-import { CredentialExchangeRecord, CredentialRole, CredentialState, InboundMessageContext } from '../../../../../../../..'
-import { getAgentConfig, getAgentContext, getMockConnection, mockFunction } from '../../../../../../../../../tests/helpers'
+import {
+  getAgentConfig,
+  getAgentContext,
+  getMockConnection,
+  mockFunction,
+} from '../../../../../../../../../tests/helpers'
 import { EventEmitter } from '../../../../../../../../agent/EventEmitter'
-import { MessageHandlerRegistry } from '../../../../../..'
+import { MessageHandlerRegistry } from '../../../../../../MessageHandlerRegistry'
+import { InboundMessageContext } from '../../../../../../models'
 import { DidExchangeState } from '../../../../../connections'
 import { CredentialEventTypes } from '../../../../CredentialEvents'
+import { CredentialState, CredentialRole } from '../../../../models'
+import { CredentialExchangeRecord } from '../../../../repository'
 import { CredentialRepository } from '../../../../repository/CredentialRepository'
 import { V1RevocationNotificationMessage, V2RevocationNotificationMessage } from '../../messages'
 import { RevocationNotificationService } from '../RevocationNotificationService'

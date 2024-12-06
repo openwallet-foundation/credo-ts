@@ -5,7 +5,9 @@ import type { ApiModule, DependencyManager } from '../../../../plugins'
 import type { Constructor } from '../../../../utils/mixins'
 import type { Optional } from '../../../../utils/type'
 
-import { FeatureRegistry, MessageHandlerRegistry, Protocol } from '../..'
+import { FeatureRegistry } from '../../FeatureRegistry'
+import { MessageHandlerRegistry } from '../../MessageHandlerRegistry'
+import { Protocol } from '../../models'
 
 import { CredentialsApi } from './CredentialsApi'
 import { CredentialsModuleConfig } from './CredentialsModuleConfig'

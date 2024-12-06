@@ -1,5 +1,6 @@
 import type { CredentialProtocol } from './CredentialProtocol'
-import type { AgentMessage } from '../../..'
+import type { AgentMessage } from '../../../AgentMessage'
+import type { ConnectionRecord } from '../../connections'
 import type {
   CredentialFormat,
   CredentialFormatPayload,
@@ -9,7 +10,6 @@ import type {
 import type { CredentialPreviewAttributeOptions } from '../models'
 import type { AutoAcceptCredential } from '../models/CredentialAutoAcceptType'
 import type { CredentialExchangeRecord } from '../repository/CredentialExchangeRecord'
-import { ConnectionRecord } from '../../connections'
 
 /**
  * Get the format data payload for a specific message from a list of CredentialFormat interfaces and a message

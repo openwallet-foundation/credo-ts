@@ -27,11 +27,11 @@ import type {
 import { CredoError } from '../../../../../../error'
 import { JsonEncoder, areObjectsEqual } from '../../../../../../utils'
 import { JsonTransformer } from '../../../../../../utils/JsonTransformer'
-import { Attachment, AttachmentData } from '../../../..'
 import { findVerificationMethodByKeyType } from '../../../../../dids/domain/DidDocument'
 import { DidResolverService } from '../../../../../dids/services/DidResolverService'
 import { ClaimFormat, W3cCredential, W3cCredentialService, W3cJsonLdVerifiableCredential } from '../../../../../vc'
 import { W3cJsonLdCredentialService } from '../../../../../vc/data-integrity/W3cJsonLdCredentialService'
+import { Attachment, AttachmentData } from '../../../../decorators/attachment/Attachment'
 import { CredentialFormatSpec } from '../../models/CredentialFormatSpec'
 
 import { JsonLdCredentialDetail } from './JsonLdCredentialDetail'

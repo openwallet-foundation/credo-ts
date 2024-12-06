@@ -1,4 +1,4 @@
-import type { MessageHandler, MessageHandlerInboundMessage } from '../../../../..'
+import type { MessageHandler, MessageHandlerInboundMessage } from '../../../../../handlers'
 import type { V2CredentialProtocol } from '../V2CredentialProtocol'
 
 import { V2CredentialProblemReportMessage } from '../messages/V2CredentialProblemReportMessage'

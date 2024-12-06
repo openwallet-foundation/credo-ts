@@ -9,13 +9,10 @@ import { Subject } from 'rxjs'
 import { getAgentConfig, getAgentContext, getMockConnection, mockFunction } from '../../../../../../../../tests/helpers'
 import { EventEmitter } from '../../../../../../../agent/EventEmitter'
 import { JsonTransformer } from '../../../../../../../utils'
-import {
-  Attachment,
-  AttachmentData,
-  DidCommMessageRepository,
-  Dispatcher,
-  InboundMessageContext,
-} from '../../../../..'
+import { Dispatcher } from '../../../../../Dispatcher'
+import { Attachment, AttachmentData } from '../../../../../decorators/attachment/Attachment'
+import { InboundMessageContext } from '../../../../../models'
+import { DidCommMessageRepository } from '../../../../../repository'
 import { ConnectionService, DidExchangeState } from '../../../../connections'
 import { RoutingService } from '../../../../routing/services/RoutingService'
 import { CredentialEventTypes } from '../../../CredentialEvents'

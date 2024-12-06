@@ -1,9 +1,10 @@
-import type { MessageHandler, MessageHandlerInboundMessage, InboundMessageContext } from '../../../../..'
+import type { MessageHandler, MessageHandlerInboundMessage } from '../../../../../handlers'
+import type { InboundMessageContext } from '../../../../../models'
 import type { CredentialExchangeRecord } from '../../../repository/CredentialExchangeRecord'
 import type { V2CredentialProtocol } from '../V2CredentialProtocol'
 
 import { CredoError } from '../../../../../../../error'
-import { getOutboundMessageContext } from '../../../../..'
+import { getOutboundMessageContext } from '../../../../../getOutboundMessageContext'
 import { V2IssueCredentialMessage } from '../messages/V2IssueCredentialMessage'
 
 export class V2IssueCredentialHandler implements MessageHandler {

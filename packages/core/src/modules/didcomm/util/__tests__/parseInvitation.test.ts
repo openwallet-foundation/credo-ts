@@ -1,10 +1,11 @@
 import { agentDependencies } from '../../../../../tests'
-import { ConnectionInvitationMessage, oobInvitationFromShortUrl, parseInvitationShortUrl } from '../..'
-import { InvitationType, OutOfBandInvitation } from '../../oob'
-import { convertToNewInvitation } from '../../oob/helpers'
 import { JsonEncoder } from '../../../../utils/JsonEncoder'
 import { JsonTransformer } from '../../../../utils/JsonTransformer'
 import { MessageValidator } from '../../../../utils/MessageValidator'
+import { ConnectionInvitationMessage } from '../../modules/connections'
+import { InvitationType, OutOfBandInvitation } from '../../modules/oob'
+import { convertToNewInvitation } from '../../modules/oob/helpers'
+import { oobInvitationFromShortUrl, parseInvitationShortUrl } from '../../util/parseInvitation'
 
 const mockOobInvite = {
   '@type': 'did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/out-of-band/1.0/invitation',

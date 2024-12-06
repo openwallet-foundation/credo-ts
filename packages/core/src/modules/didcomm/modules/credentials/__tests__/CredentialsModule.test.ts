@@ -1,8 +1,8 @@
 import type { DependencyManager } from '../../../../../plugins/DependencyManager'
-import type { FeatureRegistry } from '../../..'
+import type { FeatureRegistry } from '../../../FeatureRegistry'
 import type { CredentialProtocol } from '../protocol/CredentialProtocol'
 
-import { Protocol } from '../../..'
+import { Protocol } from '../../../models'
 import { CredentialsModule } from '../CredentialsModule'
 import { CredentialsModuleConfig } from '../CredentialsModuleConfig'
 import { V2CredentialProtocol } from '../protocol'

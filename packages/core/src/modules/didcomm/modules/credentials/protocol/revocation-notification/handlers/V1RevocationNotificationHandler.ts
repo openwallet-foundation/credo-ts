@@ -1,4 +1,4 @@
-import type { MessageHandler, MessageHandlerInboundMessage } from '../../../../..'
+import type { MessageHandler, MessageHandlerInboundMessage } from '../../../../../handlers'
 import type { RevocationNotificationService } from '../services'
 
 import { V1RevocationNotificationMessage } from '../messages/V1RevocationNotificationMessage'

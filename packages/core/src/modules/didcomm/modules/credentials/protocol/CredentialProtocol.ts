@@ -15,13 +15,11 @@ import type {
 } from './CredentialProtocolOptions'
 import type { AgentContext } from '../../../../../agent'
 import type { Query, QueryOptions } from '../../../../../storage/StorageService'
-import type {
-  AgentMessage,
-  FeatureRegistry,
-  InboundMessageContext,
-  MessageHandlerRegistry,
-  ProblemReportMessage,
-} from '../../..'
+import type { AgentMessage } from '../../../AgentMessage'
+import type { FeatureRegistry } from '../../../FeatureRegistry'
+import type { MessageHandlerRegistry } from '../../../MessageHandlerRegistry'
+import type { ProblemReportMessage } from '../../../messages'
+import type { InboundMessageContext } from '../../../models'
 import type { CredentialFormatService, ExtractCredentialFormats } from '../formats'
 import type { CredentialRole } from '../models'
 import type { CredentialState } from '../models/CredentialState'

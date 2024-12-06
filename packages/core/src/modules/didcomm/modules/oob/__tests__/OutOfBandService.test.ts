@@ -1,4 +1,4 @@
-import type { DidCommDocumentService } from '../..'
+import type { DidCommDocumentService } from '../../../services'
 
 import { Subject } from 'rxjs'
 
@@ -8,12 +8,12 @@ import {
   getMockConnection,
   getMockOutOfBand,
   mockFunction,
-} from '../../../../../tests/helpers'
-import { EventEmitter } from '../../../../agent/EventEmitter'
-import { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
-import { KeyType, Key } from '../../../../crypto'
-import { CredoError } from '../../../../error'
-import { DidExchangeState } from '../../models/connections'
+} from '../../../../../../tests/helpers'
+import { EventEmitter } from '../../../../../agent/EventEmitter'
+import { KeyType, Key } from '../../../../../crypto'
+import { CredoError } from '../../../../../error'
+import { InboundMessageContext } from '../../../models'
+import { DidExchangeState } from '../../connections'
 import { OutOfBandService } from '../OutOfBandService'
 import { OutOfBandEventTypes } from '../domain/OutOfBandEvents'
 import { OutOfBandRole } from '../domain/OutOfBandRole'

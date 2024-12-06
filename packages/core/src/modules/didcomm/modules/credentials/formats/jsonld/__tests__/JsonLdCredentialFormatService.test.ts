@@ -1,13 +1,12 @@
-import type { CredentialFormatService } from '../..'
 import type { AgentContext } from '../../../../../../../agent'
 import type { CredentialPreviewAttribute } from '../../../models/CredentialPreviewAttribute'
 import type { CustomCredentialTags } from '../../../repository/CredentialExchangeRecord'
+import type { CredentialFormatService } from '../../CredentialFormatService'
 import type { JsonCredential, JsonLdCredentialFormat, JsonLdCredentialDetailFormat } from '../JsonLdCredentialFormat'
 
 import { getAgentConfig, getAgentContext, mockFunction } from '../../../../../../../../tests/helpers'
 import { JsonTransformer } from '../../../../../../../utils'
 import { JsonEncoder } from '../../../../../../../utils/JsonEncoder'
-import { Attachment, AttachmentData } from '../../../../..'
 import { DidDocument } from '../../../../../../dids'
 import { DidResolverService } from '../../../../../../dids/services/DidResolverService'
 import {
@@ -18,6 +17,7 @@ import {
 } from '../../../../../../vc'
 import { W3cJsonLdCredentialService } from '../../../../../../vc/data-integrity/W3cJsonLdCredentialService'
 import { Ed25519Signature2018Fixtures } from '../../../../../../vc/data-integrity/__tests__/fixtures'
+import { Attachment, AttachmentData } from '../../../../../decorators/attachment/Attachment'
 import { CredentialState, CredentialRole } from '../../../models'
 import { V2CredentialPreview } from '../../../protocol/v2/messages'
 import { CredentialExchangeRecord } from '../../../repository/CredentialExchangeRecord'

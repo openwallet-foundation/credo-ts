@@ -1,8 +1,9 @@
-import type { InboundMessageContext, MessageHandler, MessageHandlerInboundMessage } from '../../../../..'
+import type { MessageHandler, MessageHandlerInboundMessage } from '../../../../../handlers'
+import type { InboundMessageContext } from '../../../../../models'
 import type { CredentialExchangeRecord } from '../../../repository/CredentialExchangeRecord'
 import type { V2CredentialProtocol } from '../V2CredentialProtocol'
 
-import { OutboundMessageContext } from '../../../../..'
+import { OutboundMessageContext } from '../../../../../models'
 import { V2ProposeCredentialMessage } from '../messages/V2ProposeCredentialMessage'
 
 export class V2ProposeCredentialHandler implements MessageHandler {
