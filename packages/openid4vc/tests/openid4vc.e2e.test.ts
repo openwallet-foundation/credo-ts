@@ -37,6 +37,7 @@ import {
   JwsService,
   JwtPayload,
 } from '@credo-ts/core'
+import { ResponseMode } from '@sphereon/did-auth-siop'
 import express, { type Express } from 'express'
 
 import { AskarModule } from '../../askar/src'
@@ -1855,6 +1856,112 @@ describe('OpenId4Vc', () => {
     expect(mdoc.docType).toEqual('UniversityDegreeCredential')
 
     await holderTenant1.endSession()
+  })
+
+  it('e2e flow with verifier endpoints verifying a mdoc fails without direct_post.jwt', async () => {
+    const openIdVerifier = await verifier.agent.modules.openId4VcVerifier.createVerifier()
+
+    const selfSignedCertificate = await X509Service.createSelfSignedCertificate(issuer.agent.context, {
+      key: await issuer.agent.context.wallet.createKey({ keyType: KeyType.P256 }),
+      extensions: [],
+      name: 'C=DE',
+    })
+
+    await verifier.agent.x509.setTrustedCertificates([selfSignedCertificate.toString('pem')])
+
+    const holderKey = await holder.agent.context.wallet.createKey({ keyType: KeyType.P256 })
+    const signedMdoc = await issuer.agent.mdoc.sign({
+      docType: 'org.eu.university',
+      holderKey,
+      issuerCertificate: selfSignedCertificate.toString('pem'),
+      namespaces: {
+        'eu.europa.ec.eudi.pid.1': {
+          university: 'innsbruck',
+          degree: 'bachelor',
+          name: 'John Doe',
+          not: 'disclosed',
+        },
+      },
+    })
+
+    const certificate = await verifier.agent.x509.createSelfSignedCertificate({
+      key: await verifier.agent.wallet.createKey({ keyType: KeyType.Ed25519 }),
+      extensions: [[{ type: 'dns', value: 'localhost:1234' }]],
+    })
+
+    const rawCertificate = certificate.toString('base64')
+    await holder.agent.mdoc.store(signedMdoc)
+
+    await holder.agent.x509.addTrustedCertificate(rawCertificate)
+    await verifier.agent.x509.addTrustedCertificate(rawCertificate)
+
+    const presentationDefinition = {
+      id: 'mDL-sample-req',
+      input_descriptors: [
+        {
+          id: 'org.eu.university',
+          format: {
+            mso_mdoc: {
+              alg: ['ES256', 'ES384', 'ES512', 'EdDSA', 'ESB256', 'ESB320', 'ESB384', 'ESB512'],
+            },
+          },
+          constraints: {
+            fields: [
+              {
+                path: ["$['eu.europa.ec.eudi.pid.1']['name']"],
+                intent_to_retain: false,
+              },
+              {
+                path: ["$['eu.europa.ec.eudi.pid.1']['degree']"],
+                intent_to_retain: false,
+              },
+            ],
+            limit_disclosure: 'required',
+          },
+        },
+      ],
+    } satisfies DifPresentationExchangeDefinitionV2
+
+    const { authorizationRequest } = await verifier.agent.modules.openId4VcVerifier.createAuthorizationRequest({
+      responseMode: 'direct_post.jwt',
+      verifierId: openIdVerifier.verifierId,
+      requestSigner: {
+        method: 'x5c',
+        x5c: [rawCertificate],
+        issuer: 'https://example.com/hakuna/matadata',
+      },
+      presentationExchange: { definition: presentationDefinition },
+    })
+
+    const resolvedAuthorizationRequest = await holder.agent.modules.openId4VcHolder.resolveSiopAuthorizationRequest(
+      authorizationRequest
+    )
+
+    if (!resolvedAuthorizationRequest.presentationExchange) {
+      throw new Error('Presentation exchange not defined')
+    }
+
+    const selectedCredentials = holder.agent.modules.openId4VcHolder.selectCredentialsForRequest(
+      resolvedAuthorizationRequest.presentationExchange.credentialsForRequest
+    )
+
+    const requestPayload =
+      await resolvedAuthorizationRequest.authorizationRequest.authorizationRequest.requestObject?.getPayload()
+    if (!requestPayload) {
+      throw new Error('No payload')
+    }
+
+    // setting this to direct_post to simulate the result of sending a non encrypted response to an authorization request that requires enryption
+    requestPayload.response_mode = ResponseMode.DIRECT_POST
+
+    await expect(
+      holder.agent.modules.openId4VcHolder.acceptSiopAuthorizationRequest({
+        authorizationRequest: resolvedAuthorizationRequest.authorizationRequest,
+        presentationExchange: {
+          credentials: selectedCredentials,
+        },
+      })
+    ).rejects.toThrow(/JARM response is required/)
   })
 
   it('e2e flow with verifier endpoints verifying a mdoc and sd-jwt (jarm)', async () => {
