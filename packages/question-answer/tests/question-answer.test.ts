@@ -17,6 +17,7 @@ const bobAgentOptions = getInMemoryAgentOptions(
   {
     endpoints: ['rxjs:bob'],
   },
+  {},
   modules
 )
 
@@ -25,6 +26,7 @@ const aliceAgentOptions = getInMemoryAgentOptions(
   {
     endpoints: ['rxjs:alice'],
   },
+  {},
   modules
 )
 

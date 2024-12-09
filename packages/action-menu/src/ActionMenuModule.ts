@@ -1,6 +1,6 @@
-import type { DependencyManager, FeatureRegistry, Module } from '@credo-ts/core'
+import type { DependencyManager, Module } from '@credo-ts/core'
 
-import { Protocol } from '@credo-ts/core'
+import { FeatureRegistry, Protocol } from '@credo-ts/core'
 
 import { ActionMenuApi } from './ActionMenuApi'
 import { ActionMenuRole } from './ActionMenuRole'
@@ -16,7 +16,7 @@ export class ActionMenuModule implements Module {
   /**
    * Registers the dependencies of the question answer module on the dependency manager.
    */
-  public register(dependencyManager: DependencyManager, featureRegistry: FeatureRegistry) {
+  public register(dependencyManager: DependencyManager) {
     // Services
     dependencyManager.registerSingleton(ActionMenuService)
 
@@ -24,6 +24,8 @@ export class ActionMenuModule implements Module {
     dependencyManager.registerSingleton(ActionMenuRepository)
 
     // Feature Registry
+    const featureRegistry = dependencyManager.resolve(FeatureRegistry)
+
     featureRegistry.register(
       new Protocol({
         id: 'https://didcomm.org/action-menu/1.0',
