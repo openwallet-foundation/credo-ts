@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.6.0
+
+### Patch Changes
+
+- Updated dependencies [14673b1]
+- Updated dependencies [607659a]
+  - @credo-ts/core@0.6.0
+  - @credo-ts/anoncreds@0.6.0
+  - @credo-ts/askar@0.6.0
+  - @credo-ts/node@0.6.0
+
 ## 0.5.13
 
 ### Patch Changes
