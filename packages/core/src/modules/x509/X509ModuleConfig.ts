@@ -1,10 +1,11 @@
-import type { X509Certificate } from './X509Certificate'
 import type { AgentContext } from '../../agent'
 import type { JwtPayload } from '../../crypto'
 import type { Mdoc } from '../mdoc/Mdoc'
 import type { MdocDeviceResponse } from '../mdoc/MdocDeviceResponse'
 import type { SdJwtVc } from '../sd-jwt-vc'
 import type { W3cJwtVerifiableCredential, W3cJwtVerifiablePresentation } from '../vc'
+
+import { X509Certificate } from './X509Certificate'
 
 type X509VerificationTypeCredential = {
   type: 'credential'
@@ -67,6 +68,7 @@ export interface X509ModuleConfigOptions {
 
 export class X509ModuleConfig {
   private options: X509ModuleConfigOptions
+  #trustedCertificates?: X509Certificate[]
 
   public constructor(options?: X509ModuleConfigOptions) {
     this.options = {
@@ -76,7 +78,9 @@ export class X509ModuleConfig {
   }
 
   public get trustedCertificates() {
-    return this.options.trustedCertificates
+    // TODO: we should probably update this API to return the instances, but don't want to
+    // break too much now
+    return this.#trustedCertificates?.map((cert) => cert.toString('pem'))
   }
 
   public get getTrustedCertificatesForVerification() {
@@ -88,14 +92,16 @@ export class X509ModuleConfig {
   }
 
   public setTrustedCertificates(trustedCertificates?: [string, ...string[]]) {
-    this.options.trustedCertificates = trustedCertificates ? [...trustedCertificates] : undefined
+    this.#trustedCertificates = trustedCertificates
+      ? trustedCertificates.map((certificate) => X509Certificate.fromEncodedCertificate(certificate))
+      : undefined
   }
 
   public addTrustedCertificate(trustedCertificate: string) {
-    if (!this.options.trustedCertificates) {
-      this.options.trustedCertificates = [trustedCertificate]
+    if (!this.#trustedCertificates) {
+      this.#trustedCertificates = [X509Certificate.fromEncodedCertificate(trustedCertificate)]
       return
     }
-    this.options.trustedCertificates.push(trustedCertificate)
+    this.#trustedCertificates.push(X509Certificate.fromEncodedCertificate(trustedCertificate))
   }
 }

@@ -305,16 +305,22 @@ export class DifPresentationExchangeProofFormatService
         const x509Config = agentContext.dependencyManager.resolve(X509ModuleConfig)
 
         const certificateChain = extractX509CertificatesFromJwt(parsedPresentation.jwt)
-        const trustedCertificates = certificateChain
-          ? await x509Config.getTrustedCertificatesForVerification?.(agentContext, {
-              certificateChain,
-              verification: {
-                type: 'credential',
-                credential: parsedPresentation,
-                didcommProofRecordId: proofRecord.id,
-              },
-            })
-          : x509Config.trustedCertificates ?? []
+        let trustedCertificates: string[] | undefined
+
+        if (certificateChain && x509Config.getTrustedCertificatesForVerification) {
+          trustedCertificates = await x509Config.getTrustedCertificatesForVerification?.(agentContext, {
+            certificateChain,
+            verification: {
+              type: 'credential',
+              credential: parsedPresentation,
+              didcommProofRecordId: proofRecord.id,
+            },
+          })
+        }
+
+        if (!trustedCertificates) {
+          trustedCertificates = x509Config.trustedCertificates ?? []
+        }
 
         verificationResult = await w3cCredentialService.verifyPresentation(agentContext, {
           presentation: parsedPresentation,

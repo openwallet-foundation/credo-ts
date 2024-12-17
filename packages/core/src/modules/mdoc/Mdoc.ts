@@ -165,10 +165,9 @@ export class Mdoc {
       X509Certificate.fromRawCertificate(certificate)
     )
 
-    let trustedCerts = options?.trustedCertificates
-    if (!trustedCerts) {
-      // TODO: how to prevent call to trusted certificates for verification twice?
-      trustedCerts =
+    let trustedCertificates = options?.trustedCertificates
+    if (!trustedCertificates) {
+      trustedCertificates =
         (await x509ModuleConfig.getTrustedCertificatesForVerification?.(agentContext, {
           verification: {
             type: 'credential',
@@ -178,7 +177,7 @@ export class Mdoc {
         })) ?? x509ModuleConfig.trustedCertificates
     }
 
-    if (!trustedCerts) {
+    if (!trustedCertificates) {
       throw new MdocError('No trusted certificates found. Cannot verify mdoc.')
     }
 
@@ -187,7 +186,9 @@ export class Mdoc {
       const verifier = new Verifier()
       await verifier.verifyIssuerSignature(
         {
-          trustedCertificates: trustedCerts.map((cert) => X509Certificate.fromEncodedCertificate(cert).rawCertificate),
+          trustedCertificates: trustedCertificates.map(
+            (cert) => X509Certificate.fromEncodedCertificate(cert).rawCertificate
+          ),
           issuerAuth: this.issuerSignedDocument.issuerSigned.issuerAuth,
           disableCertificateChainValidation: false,
           now: options?.now,

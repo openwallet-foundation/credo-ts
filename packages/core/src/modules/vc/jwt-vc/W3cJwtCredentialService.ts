@@ -309,13 +309,12 @@ export class W3cJwtCredentialService {
       })
       const proverPublicKey = getKeyFromVerificationMethod(proverVerificationMethod)
       const proverPublicJwk = getJwkFromKey(proverPublicKey)
+      const x509Config = agentContext.dependencyManager.resolve(X509ModuleConfig)
 
       let trustedCertificates = options.trustedCertificates
       const certificateChain = extractX509CertificatesFromJwt(presentation.jwt)
       if (certificateChain && !trustedCertificates) {
-        const getTrustedCertificatesForVerification =
-          agentContext.dependencyManager.resolve(X509ModuleConfig).getTrustedCertificatesForVerification
-        trustedCertificates = await getTrustedCertificatesForVerification?.(agentContext, {
+        trustedCertificates = await x509Config.getTrustedCertificatesForVerification?.(agentContext, {
           certificateChain,
           verification: {
             type: 'credential',

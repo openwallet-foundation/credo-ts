@@ -488,7 +488,8 @@ export class SdJwtVcService {
 
       let trustedCertificates = _trustedCertificates
       const certificateChain = sdJwtVc.jwt.header.x5c.map((cert) => X509Certificate.fromEncodedCertificate(cert))
-      if (certificateChain && !trustedCertificates) {
+
+      if (!trustedCertificates) {
         trustedCertificates =
           (await x509Config.getTrustedCertificatesForVerification?.(agentContext, {
             certificateChain,
@@ -498,6 +499,7 @@ export class SdJwtVcService {
             },
           })) ?? x509Config.trustedCertificates
       }
+
       if (!trustedCertificates) {
         throw new SdJwtVcError(
           'No trusted certificates configured for X509 certificate chain validation. Issuer cannot be verified.'

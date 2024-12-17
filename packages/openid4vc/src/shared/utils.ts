@@ -86,20 +86,22 @@ export function getVerifyJwtCallback(
         const x509Config = agentContext.dependencyManager.resolve(X509ModuleConfig)
         const certificateChain = jwt.header.x5c?.map((cert) => X509Certificate.fromEncodedCertificate(cert))
 
+        if (!trustedCertificates && certificateChain && x509Config.getTrustedCertificatesForVerification) {
+          trustedCertificates = await x509Config.getTrustedCertificatesForVerification(agentContext, {
+            certificateChain,
+            verification: {
+              type: 'oauth2SecuredAuthorizationRequest',
+              authorizationRequest: {
+                jwt: jwt.raw,
+                payload: JwtPayload.fromJson(jwt.payload),
+              },
+            },
+          })
+        }
+
         if (!trustedCertificates) {
-          trustedCertificates = certificateChain
-            ? await x509Config.getTrustedCertificatesForVerification?.(agentContext, {
-                certificateChain,
-                verification: {
-                  type: 'oauth2SecuredAuthorizationRequest',
-                  authorizationRequest: {
-                    jwt: jwt.raw,
-                    payload: JwtPayload.fromJson(jwt.payload),
-                  },
-                },
-              })
-            : // We also take from the config here to avoid the callback being called again
-              x509Config.trustedCertificates ?? []
+          // We also take from the config here to avoid the callback being called again
+          trustedCertificates = x509Config.trustedCertificates ?? []
         }
       }
 
@@ -114,7 +116,6 @@ export function getVerifyJwtCallback(
     }
   }
 }
-
 export function getCreateJwtCallback(
   agentContext: AgentContext
 ): CreateJwtCallback<DPoPJwtIssuerWithContext | VpJwtIssuerWithContext> {

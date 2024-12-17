@@ -201,7 +201,7 @@ export class MdocDeviceResponse {
     const x509Config = agentContext.dependencyManager.resolve(X509ModuleConfig)
 
     // TODO: no way to currently have a per document x509 certificates in a presentation
-    // but this also the case for other
+    // but this also the case for other formats
     // FIXME: we can't pass multiple certificate chains. We should just verify each document separately
     let trustedCertificates = options.trustedCertificates
     if (!trustedCertificates) {
@@ -211,13 +211,15 @@ export class MdocDeviceResponse {
             const certificateChain = mdoc.issuerSignedCertificateChain.map((cert) =>
               X509Certificate.fromRawCertificate(cert)
             )
-            return x509Config.getTrustedCertificatesForVerification?.(agentContext, {
-              certificateChain,
-              verification: {
-                type: 'credential',
-                credential: mdoc,
-              },
-            })
+            return (
+              x509Config.getTrustedCertificatesForVerification?.(agentContext, {
+                certificateChain,
+                verification: {
+                  type: 'credential',
+                  credential: mdoc,
+                },
+              }) ?? x509Config.trustedCertificates
+            )
           })
         )
       )

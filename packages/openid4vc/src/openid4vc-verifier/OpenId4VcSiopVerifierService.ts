@@ -654,18 +654,23 @@ export class OpenId4VcSiopVerifierService {
           const jwt = Jwt.fromSerializedJwt(encodedPresentation.split('~')[0])
           const sdJwtVc = sdJwtVcApi.fromCompact(encodedPresentation)
           const certificateChain = extractX509CertificatesFromJwt(jwt)
-          const trustedCertificates = certificateChain
-            ? await x509Config.getTrustedCertificatesForVerification?.(agentContext, {
-                certificateChain,
-                verification: {
-                  type: 'credential',
-                  credential: sdJwtVc,
 
-                  openId4VcVerificationSessionId: options.verificationSessionRecordId,
-                },
-              })
-            : // We also take from the config here to avoid the callback being called again
-              x509Config.trustedCertificates ?? []
+          let trustedCertificates: string[] | undefined = undefined
+          if (certificateChain && x509Config.getTrustedCertificatesForVerification) {
+            trustedCertificates = await x509Config.getTrustedCertificatesForVerification(agentContext, {
+              certificateChain,
+              verification: {
+                type: 'credential',
+                credential: sdJwtVc,
+                openId4VcVerificationSessionId: options.verificationSessionRecordId,
+              },
+            })
+          }
+
+          if (!trustedCertificates) {
+            // We also take from the config here to avoid the callback being called again
+            trustedCertificates = x509Config.trustedCertificates ?? []
+          }
 
           const verificationResult = await sdJwtVcApi.verify({
             compactSdJwtVc: encodedPresentation,
@@ -691,17 +696,18 @@ export class OpenId4VcSiopVerifierService {
                   const certificateChain = mdoc.issuerSignedCertificateChain.map((cert) =>
                     X509Certificate.fromRawCertificate(cert)
                   )
-                  return (
-                    (await x509Config.getTrustedCertificatesForVerification?.(agentContext, {
-                      certificateChain,
-                      verification: {
-                        type: 'credential',
-                        credential: mdoc,
-                        openId4VcVerificationSessionId: options.verificationSessionRecordId,
-                      },
-                      // TODO: could have some duplication but not a big issue
-                    })) ?? x509Config.trustedCertificates
-                  )
+
+                  const trustedCertificates = await x509Config.getTrustedCertificatesForVerification?.(agentContext, {
+                    certificateChain,
+                    verification: {
+                      type: 'credential',
+                      credential: mdoc,
+                      openId4VcVerificationSessionId: options.verificationSessionRecordId,
+                    },
+                  })
+
+                  // TODO: could have some duplication but not a big issue
+                  return trustedCertificates ?? x509Config.trustedCertificates
                 })
               )
             )
@@ -722,17 +728,22 @@ export class OpenId4VcSiopVerifierService {
         } else if (typeof encodedPresentation === 'string' && Jwt.format.test(encodedPresentation)) {
           const presentation = W3cJwtVerifiablePresentation.fromSerializedJwt(encodedPresentation)
           const certificateChain = extractX509CertificatesFromJwt(presentation.jwt)
-          const trustedCertificates = certificateChain
-            ? await x509Config.getTrustedCertificatesForVerification?.(agentContext, {
-                certificateChain,
-                verification: {
-                  type: 'credential',
-                  credential: presentation,
 
-                  openId4VcVerificationSessionId: options.verificationSessionRecordId,
-                },
-              })
-            : x509Config.trustedCertificates ?? []
+          let trustedCertificates: string[] | undefined = undefined
+          if (certificateChain && x509Config.getTrustedCertificatesForVerification) {
+            trustedCertificates = await x509Config.getTrustedCertificatesForVerification?.(agentContext, {
+              certificateChain,
+              verification: {
+                type: 'credential',
+                credential: presentation,
+                openId4VcVerificationSessionId: options.verificationSessionRecordId,
+              },
+            })
+          }
+
+          if (!trustedCertificates) {
+            trustedCertificates = x509Config.trustedCertificates ?? []
+          }
 
           const verificationResult = await this.w3cCredentialService.verifyPresentation(agentContext, {
             presentation: encodedPresentation,
