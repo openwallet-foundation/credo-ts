@@ -1,6 +1,5 @@
 import type { AgentDependencies } from '../agent/AgentDependencies'
 
-import { AbortController } from 'abort-controller'
 import { parseUrl } from 'query-string'
 
 import { AgentMessage } from '../agent/AgentMessage'

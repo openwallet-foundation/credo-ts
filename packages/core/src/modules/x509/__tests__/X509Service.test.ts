@@ -11,7 +11,7 @@ import { CredoWebCrypto, CredoWebCryptoKey } from '../../../crypto/webcrypto'
 import { X509Error } from '../X509Error'
 import { X509Service } from '../X509Service'
 
-import { TypedArrayEncoder } from '@credo-ts/core'
+import { KeyUsage, TypedArrayEncoder } from '@credo-ts/core'
 
 /**
  *
@@ -203,6 +203,7 @@ describe('X509Service', () => {
       sanUriNames: expect.arrayContaining(['animo.id']),
       authorityKeyIdentifier: TypedArrayEncoder.toHex(key.publicKey),
       subjectKeyIdentifier: TypedArrayEncoder.toHex(key.publicKey),
+      keyUsage: [KeyUsage.DigitalSignature, KeyUsage.KeyCertSign],
     })
 
     expect(x509Certificate.publicKey.publicKey.length).toStrictEqual(33)

@@ -4,10 +4,11 @@ import type { AgentContext } from '@credo-ts/core'
 import type { AuthorizationResponsePayload, DecryptCompact } from '@sphereon/did-auth-siop'
 import type { Response, Router } from 'express'
 
+import { Oauth2ErrorCodes, Oauth2ServerErrorResponseError } from '@animo-id/oauth2'
 import { CredoError, Hasher, JsonEncoder, Key, TypedArrayEncoder } from '@credo-ts/core'
 import { AuthorizationRequest, RP } from '@sphereon/did-auth-siop'
 
-import { getRequestContext, sendErrorResponse, sendJsonResponse } from '../../shared/router'
+import { getRequestContext, sendErrorResponse, sendJsonResponse, sendOauth2ErrorResponse } from '../../shared/router'
 import { OpenId4VcSiopVerifierService } from '../OpenId4VcSiopVerifierService'
 
 export interface OpenId4VcSiopAuthorizationEndpointConfig {
@@ -68,6 +69,8 @@ export function configureAuthorizationEndpoint(router: Router, config: OpenId4Vc
   router.post(config.endpointPath, async (request: OpenId4VcVerificationRequest, response: Response, next) => {
     const { agentContext, verifier } = getRequestContext(request)
 
+    let jarmResponseType: string | undefined
+
     try {
       const openId4VcVerifierService = agentContext.dependencyManager.resolve(OpenId4VcSiopVerifierService)
 
@@ -94,6 +97,8 @@ export function configureAuthorizationEndpoint(router: Router, config: OpenId4Vc
           decryptCompact: decryptJarmResponse(agentContext),
           hasher: Hasher.hash,
         })
+
+        jarmResponseType = res.type
 
         const [header] = request.body.response.split('.')
         jarmHeader = JsonEncoder.fromBase64(header)
@@ -123,6 +128,29 @@ export function configureAuthorizationEndpoint(router: Router, config: OpenId4Vc
         throw new CredoError('Missing verification session, cannot verify authorization response.')
       }
 
+      const authorizationRequest = await AuthorizationRequest.fromUriOrJwt(verificationSession.authorizationRequestJwt)
+      const response_mode = await authorizationRequest.getMergedProperty<string>('response_mode')
+      if (response_mode?.includes('jwt') && !jarmResponseType) {
+        throw new Oauth2ServerErrorResponseError({
+          error: Oauth2ErrorCodes.InvalidRequest,
+          error_description: `JARM response is required for JWT response mode '${response_mode}'.`,
+        })
+      }
+
+      if (!response_mode?.includes('jwt') && jarmResponseType) {
+        throw new Oauth2ServerErrorResponseError({
+          error: Oauth2ErrorCodes.InvalidRequest,
+          error_description: `Recieved JARM response which is incompatible with response mode '${response_mode}'.`,
+        })
+      }
+
+      if (jarmResponseType && jarmResponseType !== 'encrypted') {
+        throw new Oauth2ServerErrorResponseError({
+          error: Oauth2ErrorCodes.InvalidRequest,
+          error_description: `Only encrypted JARM responses are supported, received '${jarmResponseType}'.`,
+        })
+      }
+
       await openId4VcVerifierService.verifyAuthorizationResponse(agentContext, {
         authorizationResponse: authorizationResponsePayload,
         verificationSession,
@@ -133,6 +161,10 @@ export function configureAuthorizationEndpoint(router: Router, config: OpenId4Vc
         presentation_during_issuance_session: verificationSession.presentationDuringIssuanceSession,
       })
     } catch (error) {
+      if (error instanceof Oauth2ServerErrorResponseError) {
+        return sendOauth2ErrorResponse(response, next, agentContext.config.logger, error)
+      }
+
       return sendErrorResponse(response, next, agentContext.config.logger, 500, 'invalid_request', error)
     }
   })
