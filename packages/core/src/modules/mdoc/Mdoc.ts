@@ -161,8 +161,8 @@ export class Mdoc {
     options?: MdocVerifyOptions
   ): Promise<{ isValid: true } | { isValid: false; error: string }> {
     const x509ModuleConfig = agentContext.dependencyManager.resolve(X509ModuleConfig)
-    const certificateChain = this.issuerSignedDocument.issuerSigned.issuerAuth.certificateChain.map(
-      X509Certificate.fromRawCertificate
+    const certificateChain = this.issuerSignedDocument.issuerSigned.issuerAuth.certificateChain.map((certificate) =>
+      X509Certificate.fromRawCertificate(certificate)
     )
 
     let trustedCerts = options?.trustedCertificates
