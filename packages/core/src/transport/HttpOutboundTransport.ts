@@ -4,7 +4,6 @@ import type { AgentMessageReceivedEvent } from '../agent/Events'
 import type { Logger } from '../logger'
 import type { OutboundPackage } from '../types'
 
-import { AbortController } from 'abort-controller'
 import { Subject } from 'rxjs'
 
 import { AgentEventTypes } from '../agent/Events'
