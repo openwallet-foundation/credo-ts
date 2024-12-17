@@ -1,4 +1,5 @@
 import type { JwkJson, Jwk, HashName } from '../../crypto'
+import type { EncodedX509Certificate } from '../x509'
 
 // TODO: extend with required claim names for input (e.g. vct)
 export type SdJwtVcPayload = Record<string, unknown>
@@ -125,4 +126,6 @@ export type SdJwtVcVerifyOptions = {
    * It will will not influence the verification result if fetching of type metadata fails
    */
   fetchTypeMetadata?: boolean
+
+  trustedCertificates?: EncodedX509Certificate[]
 }
