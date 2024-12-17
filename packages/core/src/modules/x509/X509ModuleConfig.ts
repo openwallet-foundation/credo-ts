@@ -67,13 +67,13 @@ export interface X509ModuleConfigOptions {
 }
 
 export class X509ModuleConfig {
-  private options: X509ModuleConfigOptions
   #trustedCertificates?: X509Certificate[]
+  #getTrustedCertificatesForVerification?: X509ModuleConfigOptions['getTrustedCertificatesForVerification']
 
   public constructor(options?: X509ModuleConfigOptions) {
-    this.options = {
-      getTrustedCertificatesForVerification: options?.getTrustedCertificatesForVerification,
-      trustedCertificates: options?.trustedCertificates ? [...options.trustedCertificates] : undefined,
+    this.setTrustedCertificates(options?.trustedCertificates)
+    if (options?.getTrustedCertificatesForVerification) {
+      this.setTrustedCertificatesForVerification(options.getTrustedCertificatesForVerification)
     }
   }
 
@@ -84,11 +84,11 @@ export class X509ModuleConfig {
   }
 
   public get getTrustedCertificatesForVerification() {
-    return this.options.getTrustedCertificatesForVerification
+    return this.#getTrustedCertificatesForVerification
   }
 
   public setTrustedCertificatesForVerification(fn: X509ModuleConfigOptions['getTrustedCertificatesForVerification']) {
-    this.options.getTrustedCertificatesForVerification = fn
+    this.#getTrustedCertificatesForVerification = fn
   }
 
   public setTrustedCertificates(trustedCertificates?: [string, ...string[]]) {
