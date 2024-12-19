@@ -4,7 +4,6 @@ import type { OutboundPackage } from '../types'
 import type { AgentContext, Logger } from '@credo-ts/core'
 
 import { EventEmitter, CredoError, JsonEncoder } from '@credo-ts/core'
-import { AbortController } from 'abort-controller'
 import { Subject } from 'rxjs'
 
 import { DidCommModuleConfig } from '../DidCommModuleConfig'

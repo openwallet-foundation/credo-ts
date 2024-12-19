@@ -1,6 +1,5 @@
 import type { AgentDependencies } from '@credo-ts/core'
 
-import { AbortController } from 'abort-controller'
 import { parseUrl } from 'query-string'
 
 import { CredoError, JsonEncoder, JsonTransformer, MessageValidator } from '@credo-ts/core'
