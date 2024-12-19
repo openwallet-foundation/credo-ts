@@ -1,4 +1,4 @@
-import type { ConnectionRecord, CredentialExchangeRecord, ProofExchangeRecord } from '@credo-ts/core'
+import type { ConnectionRecord, CredentialExchangeRecord, ProofExchangeRecord } from '@credo-ts/didcomm'
 
 import { BaseAgent } from './BaseAgent'
 import { greenText, Output, redText } from './OutputClass'

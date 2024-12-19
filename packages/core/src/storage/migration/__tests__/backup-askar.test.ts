@@ -9,7 +9,7 @@ import { getAgentOptions, getAskarWalletConfig } from '../../../../tests/helpers
 import { Agent } from '../../../agent/Agent'
 import { InjectionSymbols } from '../../../constants'
 import { CredoError } from '../../../error'
-import { CredentialExchangeRecord, CredentialRepository } from '../../../modules/credentials'
+import { CredentialExchangeRecord, CredentialRepository } from '../../../../../didcomm/src/modules/credentials'
 import { JsonTransformer } from '../../../utils'
 import { StorageUpdateService } from '../StorageUpdateService'
 import { UpdateAssistant } from '../UpdateAssistant'

@@ -1,4 +1,4 @@
-import type { CredentialExchangeRecord, ProofExchangeRecord } from '@credo-ts/core'
+import type { CredentialExchangeRecord, ProofExchangeRecord } from '@credo-ts/didcomm'
 
 import { clear } from 'console'
 import { textSync } from 'figlet'

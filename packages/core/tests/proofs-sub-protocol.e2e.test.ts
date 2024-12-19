@@ -2,7 +2,7 @@ import type { EventReplaySubject } from './events'
 import type { AnonCredsTestsAgent } from '../../anoncreds/tests/legacyAnonCredsSetup'
 
 import { issueLegacyAnonCredsCredential, setupAnonCredsTests } from '../../anoncreds/tests/legacyAnonCredsSetup'
-import { ProofState } from '../src/modules/proofs/models/ProofState'
+import { ProofState } from '../../didcomm/src/modules/proofs'
 import { uuid } from '../src/utils/uuid'
 
 import { waitForProofExchangeRecord } from './helpers'

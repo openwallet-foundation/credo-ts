@@ -1,18 +1,18 @@
 import type { Module } from '../../plugins'
 
-import { BasicMessagesModule } from '../../modules/basic-messages'
+import { BasicMessagesModule } from '../../../../didcomm/src/modules/basic-messages'
 import { CacheModule } from '../../modules/cache'
-import { ConnectionsModule } from '../../modules/connections'
-import { CredentialsModule } from '../../modules/credentials'
+import { CredentialsModule } from '../../../../didcomm/src/modules/credentials'
+import { ConnectionsModule, DidCommModule } from '../../../../didcomm/src'
+import { DiscoverFeaturesModule } from '../../../../didcomm/src/modules/discover-features'
+import { MessagePickupModule } from '../../../../didcomm/src/modules/message-pickup'
+import { OutOfBandModule } from '../../../../didcomm/src/modules/oob'
+import { MediationRecipientModule, MediatorModule } from '../../../../didcomm/src/modules/routing'
 import { DidsModule } from '../../modules/dids'
 import { DifPresentationExchangeModule } from '../../modules/dif-presentation-exchange'
-import { DiscoverFeaturesModule } from '../../modules/discover-features'
 import { GenericRecordsModule } from '../../modules/generic-records'
 import { MdocModule } from '../../modules/mdoc'
-import { MessagePickupModule } from '../../modules/message-pickup'
-import { OutOfBandModule } from '../../modules/oob'
-import { ProofsModule } from '../../modules/proofs'
-import { MediationRecipientModule, MediatorModule } from '../../modules/routing'
+import { ProofsModule } from '../../../../didcomm/src/modules/proofs'
 import { SdJwtVcModule } from '../../modules/sd-jwt-vc'
 import { W3cCredentialsModule } from '../../modules/vc'
 import { X509Module } from '../../modules/x509'
@@ -70,6 +70,7 @@ describe('AgentModules', () => {
         genericRecords: expect.any(GenericRecordsModule),
         discovery: expect.any(DiscoverFeaturesModule),
         dids: expect.any(DidsModule),
+        didcomm: expect.any(DidCommModule),
         wallet: expect.any(WalletModule),
         oob: expect.any(OutOfBandModule),
         w3cCredentials: expect.any(W3cCredentialsModule),
@@ -98,6 +99,7 @@ describe('AgentModules', () => {
         genericRecords: expect.any(GenericRecordsModule),
         discovery: expect.any(DiscoverFeaturesModule),
         dids: expect.any(DidsModule),
+        didcomm: expect.any(DidCommModule),
         wallet: expect.any(WalletModule),
         oob: expect.any(OutOfBandModule),
         w3cCredentials: expect.any(W3cCredentialsModule),
@@ -129,6 +131,7 @@ describe('AgentModules', () => {
         genericRecords: expect.any(GenericRecordsModule),
         discovery: expect.any(DiscoverFeaturesModule),
         dids: expect.any(DidsModule),
+        didcomm: expect.any(DidCommModule),
         wallet: expect.any(WalletModule),
         oob: expect.any(OutOfBandModule),
         w3cCredentials: expect.any(W3cCredentialsModule),

@@ -1,11 +1,10 @@
-import type { AgentMessageProcessedEvent } from '../src/agent/Events'
+import type { AgentMessageProcessedEvent } from '../../didcomm/src'
 
 import { filter, firstValueFrom, timeout } from 'rxjs'
 
 import { parseMessageType, MessageSender, AgentMessage, IsValidMessageType } from '../src'
 import { Agent } from '../src/agent/Agent'
-import { AgentEventTypes } from '../src/agent/Events'
-import { OutboundMessageContext } from '../src/agent/models'
+import { AgentEventTypes, OutboundMessageContext } from '../../didcomm/src'
 
 import { getInMemoryAgentOptions } from './helpers'
 import { setupSubjectTransports } from './transport'
@@ -35,7 +34,7 @@ describe('multi version protocols', () => {
 
     // Register the test handler with the v1.3 version of the message
     const mockHandle = jest.fn()
-    aliceAgent.dependencyManager.registerMessageHandlers([{ supportedMessages: [TestMessageV13], handle: mockHandle }])
+    aliceAgent.didcomm.registerMessageHandlers([{ supportedMessages: [TestMessageV13], handle: mockHandle }])
 
     await aliceAgent.initialize()
     await bobAgent.initialize()

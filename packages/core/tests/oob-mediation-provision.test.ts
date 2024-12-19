@@ -1,14 +1,14 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
-import type { OutOfBandInvitation } from '../src/modules/oob/messages'
+import type { OutOfBandInvitation } from '../../didcomm/src/modules/oob/messages'
 
 import { Agent } from '../src/agent/Agent'
-import { DidExchangeState, HandshakeProtocol } from '../src/modules/connections'
+import { DidExchangeState, HandshakeProtocol } from '../../didcomm/src/modules/connections'
 import {
   MediationState,
   MediatorModule,
   MediatorPickupStrategy,
   MediationRecipientModule,
-} from '../src/modules/routing'
+} from '../../didcomm/src/modules/routing'
 
 import { getInMemoryAgentOptions, waitForBasicMessage } from './helpers'
 import { setupSubjectTransports } from './transport'
@@ -21,6 +21,7 @@ const aliceAgentOptions = getInMemoryAgentOptions(
   {
     endpoints: ['rxjs:alice'],
   },
+  {},
   {
     mediationRecipient: new MediationRecipientModule({
       mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
@@ -32,6 +33,7 @@ const mediatorAgentOptions = getInMemoryAgentOptions(
   {
     endpoints: ['rxjs:mediator'],
   },
+  {},
   { mediator: new MediatorModule({ autoAcceptMediationRequests: true }) }
 )
 

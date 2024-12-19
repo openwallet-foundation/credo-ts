@@ -1,28 +1,34 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 import type { AskarWalletSqliteStorageConfig } from '../../askar/src/wallet'
 import type {
-  AgentDependencies,
-  BaseEvent,
   BasicMessage,
   BasicMessageStateChangedEvent,
   ConnectionRecordProps,
   CredentialStateChangedEvent,
-  InitConfig,
-  InjectionToken,
   ProofStateChangedEvent,
-  Wallet,
-  Agent,
   CredentialState,
   ConnectionStateChangedEvent,
-  Buffer,
   AgentMessageProcessedEvent,
   RevocationNotificationReceivedEvent,
-  KeyDidCreateOptions,
   ConnectionDidRotatedEvent,
+} from '../../didcomm/src'
+import type { DidCommModuleConfigOptions } from '../../didcomm/src/DidCommModuleConfig'
+import type {
+  TrustPingReceivedEvent,
+  TrustPingResponseReceivedEvent,
+} from '../../didcomm/src/modules/connections/TrustPingEvents'
+import type { ProofState } from '../../didcomm/src/modules/proofs'
+import type {
+  AgentDependencies,
+  BaseEvent,
+  InitConfig,
+  InjectionToken,
+  Wallet,
+  Agent,
+  Buffer,
+  KeyDidCreateOptions,
 } from '../src'
 import type { AgentModulesInput, EmptyModuleMap } from '../src/agent/AgentModules'
-import type { TrustPingReceivedEvent, TrustPingResponseReceivedEvent } from '../src/modules/connections/TrustPingEvents'
-import type { ProofState } from '../src/modules/proofs/models/ProofState'
 import type { WalletConfig } from '../src/types'
 import type { Observable } from 'rxjs'
 
@@ -32,34 +38,37 @@ import { lastValueFrom, firstValueFrom, ReplaySubject } from 'rxjs'
 import { catchError, filter, map, take, timeout } from 'rxjs/operators'
 
 import { InMemoryWalletModule } from '../../../tests/InMemoryWalletModule'
-import { agentDependencies } from '../../node/src'
 import {
   AgentEventTypes,
   OutOfBandDidCommService,
   ConnectionsModule,
   ConnectionEventTypes,
-  TypedArrayEncoder,
-  AgentConfig,
-  AgentContext,
   BasicMessageEventTypes,
   ConnectionRecord,
   CredentialEventTypes,
-  DependencyManager,
   DidExchangeRole,
   DidExchangeState,
   HandshakeProtocol,
-  InjectionSymbols,
   ProofEventTypes,
   TrustPingEventTypes,
+  DidCommModule,
+} from '../../didcomm/src'
+import { OutOfBandRole } from '../../didcomm/src/modules/oob/domain/OutOfBandRole'
+import { OutOfBandState } from '../../didcomm/src/modules/oob/domain/OutOfBandState'
+import { OutOfBandInvitation } from '../../didcomm/src/modules/oob/messages'
+import { OutOfBandRecord } from '../../didcomm/src/modules/oob/repository'
+import { agentDependencies } from '../../node/src'
+import {
   DidsApi,
   X509Api,
+  TypedArrayEncoder,
+  AgentConfig,
+  AgentContext,
+  DependencyManager,
+  InjectionSymbols,
 } from '../src'
 import { Key, KeyType } from '../src/crypto'
 import { DidKey } from '../src/modules/dids/methods/key'
-import { OutOfBandRole } from '../src/modules/oob/domain/OutOfBandRole'
-import { OutOfBandState } from '../src/modules/oob/domain/OutOfBandState'
-import { OutOfBandInvitation } from '../src/modules/oob/messages'
-import { OutOfBandRecord } from '../src/modules/oob/repository'
 import { KeyDerivationMethod } from '../src/types'
 import { sleep } from '../src/utils/sleep'
 import { uuid } from '../src/utils/uuid'
@@ -102,6 +111,7 @@ export function getAskarWalletConfig(
 
 export function getAgentOptions<AgentModules extends AgentModulesInput | EmptyModuleMap>(
   name: string,
+  didcommConfig: Partial<DidCommModuleConfigOptions> = {},
   extraConfig: Partial<InitConfig> = {},
   inputModules?: AgentModules,
   inMemoryWallet = true
@@ -125,6 +135,7 @@ export function getAgentOptions<AgentModules extends AgentModulesInput | EmptyMo
       new ConnectionsModule({
         autoAcceptConnections: true,
       }),
+    didcomm: m.didcomm ?? new DidCommModule(didcommConfig),
   }
 
   return { config, modules: modules as AgentModules, dependencies: agentDependencies } as const
@@ -132,9 +143,14 @@ export function getAgentOptions<AgentModules extends AgentModulesInput | EmptyMo
 
 export function getInMemoryAgentOptions<AgentModules extends AgentModulesInput | EmptyModuleMap>(
   name: string,
+  didcommExtraConfig: Partial<DidCommModuleConfigOptions> = {},
   extraConfig: Partial<InitConfig> = {},
   inputModules?: AgentModules
-): { config: InitConfig; modules: AgentModules; dependencies: AgentDependencies } {
+): {
+  config: InitConfig
+  modules: AgentModules
+  dependencies: AgentDependencies
+} {
   const random = uuid().slice(0, 4)
   const config: InitConfig = {
     label: `Agent: ${name} - ${random}`,
@@ -148,6 +164,8 @@ export function getInMemoryAgentOptions<AgentModules extends AgentModulesInput |
     ...extraConfig,
   }
 
+  const didcommConfig: DidCommModuleConfigOptions = { ...didcommExtraConfig }
+
   const m = (inputModules ?? {}) as AgentModulesInput
   const modules = {
     ...m,
@@ -158,9 +176,14 @@ export function getInMemoryAgentOptions<AgentModules extends AgentModulesInput |
       new ConnectionsModule({
         autoAcceptConnections: true,
       }),
+    didcomm: m.didcomm ?? new DidCommModule(didcommConfig),
   }
 
-  return { config, modules: modules as unknown as AgentModules, dependencies: agentDependencies } as const
+  return {
+    config,
+    modules: modules as unknown as AgentModules,
+    dependencies: agentDependencies,
+  } as const
 }
 
 export async function importExistingIndyDidFromPrivateKey(agent: Agent, privateKey: Buffer) {
@@ -180,9 +203,10 @@ export async function importExistingIndyDidFromPrivateKey(agent: Agent, privateK
 
 export function getAgentConfig(
   name: string,
+  didcommConfig: Partial<DidCommModuleConfigOptions> = {},
   extraConfig: Partial<InitConfig> = {}
 ): AgentConfig & { walletConfig: WalletConfig } {
-  const { config, dependencies } = getAgentOptions(name, extraConfig)
+  const { config, dependencies } = getAgentOptions(name, didcommConfig, extraConfig)
   return new AgentConfig(config, dependencies) as AgentConfig & { walletConfig: WalletConfig }
 }
 
