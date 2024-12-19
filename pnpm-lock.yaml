@@ -532,9 +532,6 @@ importers:
       lru_map:
         specifier: ^0.4.1
         version: 0.4.1
-      luxon:
-        specifier: ^3.5.0
-        version: 3.5.0
       make-error:
         specifier: ^1.3.6
         version: 1.3.6
@@ -566,9 +563,6 @@ importers:
       '@types/events':
         specifier: ^3.0.0
         version: 3.0.3
-      '@types/luxon':
-        specifier: ^3.2.0
-        version: 3.4.2
       '@types/object-inspect':
         specifier: ^1.8.0
         version: 1.13.0
@@ -602,6 +596,9 @@ importers:
       class-validator:
         specifier: 0.14.1
         version: 0.14.1
+      luxon:
+        specifier: ^3.5.0
+        version: 3.5.0
       query-string:
         specifier: ^7.0.1
         version: 7.1.3
@@ -609,6 +606,9 @@ importers:
         specifier: ^7.8.0
         version: 7.8.1
     devDependencies:
+      '@types/luxon':
+        specifier: ^3.2.0
+        version: 3.4.2
       reflect-metadata:
         specifier: ^0.1.13
         version: 0.1.14
