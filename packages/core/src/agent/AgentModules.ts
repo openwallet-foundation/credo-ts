@@ -3,18 +3,6 @@ import type { IsAny } from '../types'
 import type { Constructor } from '../utils/mixins'
 
 import { CacheModule } from '../modules/cache'
-import {
-  BasicMessagesModule,
-  ConnectionsModule,
-  CredentialsModule,
-  DidCommModule,
-  DiscoverFeaturesModule,
-  MediationRecipientModule,
-  MediatorModule,
-  MessagePickupModule,
-  OutOfBandModule,
-  ProofsModule,
-} from '../../../didcomm/src'
 import { DidsModule } from '../modules/dids'
 import { DifPresentationExchangeModule } from '../modules/dif-presentation-exchange'
 import { GenericRecordsModule } from '../modules/generic-records'
@@ -36,18 +24,7 @@ export type EmptyModuleMap = {}
  * Default modules can be optionally defined to provide custom configuration. This type makes it so that it is not
  * possible to use a different key for the default modules
  */
-export type AgentModulesInput = Partial<DefaultAgentModulesInput> & ModulesMap
-
-/**
- * Defines the input type for the default agent modules. This is overwritten as we
- * want the input type to allow for generics to be passed in for the credentials module.
- */
-export type DefaultAgentModulesInput = Omit<DefaultAgentModules, 'credentials' | 'proofs'> & {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  credentials: CredentialsModule<any>
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  proofs: ProofsModule<any>
-}
+export type AgentModulesInput = ModulesMap
 
 /**
  * Type that represents the default agent modules. This is the {@link ModulesMap} variant for the default modules in the framework.
@@ -125,19 +102,9 @@ export type CustomOrDefaultApi<
  */
 function getDefaultAgentModules() {
   return {
-    connections: () => new ConnectionsModule(),
-    credentials: () => new CredentialsModule(),
-    proofs: () => new ProofsModule(),
-    mediator: () => new MediatorModule(),
-    mediationRecipient: () => new MediationRecipientModule(),
-    messagePickup: () => new MessagePickupModule(),
-    basicMessages: () => new BasicMessagesModule(),
     genericRecords: () => new GenericRecordsModule(),
-    discovery: () => new DiscoverFeaturesModule(),
     dids: () => new DidsModule(),
-    didcomm: () => new DidCommModule(),
     wallet: () => new WalletModule(),
-    oob: () => new OutOfBandModule(),
     w3cCredentials: () => new W3cCredentialsModule(),
     cache: () => new CacheModule(),
     pex: () => new DifPresentationExchangeModule(),

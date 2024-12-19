@@ -1,8 +1,8 @@
 import type { AgentDependencies } from '@credo-ts/core'
 
+import { CredoError, JsonEncoder, JsonTransformer, MessageValidator } from '@credo-ts/core'
 import { parseUrl } from 'query-string'
 
-import { CredoError, JsonEncoder, JsonTransformer, MessageValidator } from '@credo-ts/core'
 import { AgentMessage } from '../AgentMessage'
 import { ConnectionInvitationMessage } from '../modules/connections/messages'
 import { OutOfBandDidCommService } from '../modules/oob/domain/OutOfBandDidCommService'
