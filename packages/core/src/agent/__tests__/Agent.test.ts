@@ -3,13 +3,9 @@ import type { Module } from '../../plugins'
 import { injectable } from 'tsyringe'
 
 import { InMemoryWalletModule } from '../../../../../tests/InMemoryWalletModule'
-import { getInMemoryAgentOptions } from '../../../tests/helpers'
-import { InjectionSymbols } from '../../constants'
-import { BasicMessageRepository, BasicMessageService } from '../../../../didcomm/src'
-import { BasicMessagesApi } from '../../../../didcomm/src/modules/basic-messages/BasicMessagesApi'
-import { CredentialRepository } from '../../../../didcomm/src/modules/credentials'
-import { CredentialsApi } from '../../../../didcomm/src/modules/credentials/CredentialsApi'
 import {
+  BasicMessageRepository,
+  BasicMessageService,
   ConnectionService,
   DidRotateService,
   TrustPingService,
@@ -19,8 +15,12 @@ import {
   MessageReceiver,
   MessageSender,
 } from '../../../../didcomm/src'
+import { BasicMessagesApi } from '../../../../didcomm/src/modules/basic-messages/BasicMessagesApi'
 import { ConnectionsApi, ConnectionRepository } from '../../../../didcomm/src/modules/connections'
+import { CredentialRepository } from '../../../../didcomm/src/modules/credentials'
+import { CredentialsApi } from '../../../../didcomm/src/modules/credentials/CredentialsApi'
 import { MessagePickupApi, InMemoryMessagePickupRepository } from '../../../../didcomm/src/modules/message-pickup'
+import { ProofsApi, ProofRepository } from '../../../../didcomm/src/modules/proofs'
 import {
   MediationRecipientService,
   MediationRepository,
@@ -29,7 +29,9 @@ import {
   MediationRecipientApi,
   MediationRecipientModule,
 } from '../../../../didcomm/src/modules/routing'
-import { ProofsApi, ProofRepository } from '../../../../didcomm/src/modules/proofs'
+import { getDefaultDidcommModules } from '../../../../didcomm/src/util/modules'
+import { getInMemoryAgentOptions } from '../../../tests/helpers'
+import { InjectionSymbols } from '../../constants'
 import { WalletError } from '../../wallet/error'
 import { Agent } from '../Agent'
 
@@ -51,11 +53,15 @@ class MyModule implements Module {
 describe('Agent', () => {
   describe('Module registration', () => {
     test('does not return default modules on modules key if no modules were provided', () => {
-      const agent = new Agent(agentOptions)
+      const agent = new Agent({
+        ...agentOptions,
+        modules: {
+          inMemory: new InMemoryWalletModule(),
+        },
+      })
 
       expect(agent.modules).toEqual({})
     })
-
     test('registers custom and default modules if custom modules are provided', () => {
       const agent = new Agent({
         ...agentOptions,
@@ -75,6 +81,7 @@ describe('Agent', () => {
       const agent = new Agent({
         ...agentOptions,
         modules: {
+          ...getDefaultDidcommModules(),
           myModule: new MyModule(),
           mediationRecipient: new MediationRecipientModule({
             maximumMessagePickup: 42,
@@ -84,10 +91,8 @@ describe('Agent', () => {
       })
 
       // Should be custom module config property, not the default value
-      expect(agent.mediationRecipient.config.maximumMessagePickup).toBe(42)
-      expect(agent.modules).toEqual({
-        myModule: expect.any(MyApi),
-      })
+      expect(agent.modules.mediationRecipient.config.maximumMessagePickup).toBe(42)
+      expect(agent.modules.myModule).toEqual(expect.any(MyApi))
     })
   })
 

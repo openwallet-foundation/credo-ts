@@ -1,8 +1,8 @@
 import type { ConnectionRecord } from './repository'
-import type { AgentContext } from '@credo-ts/core'
 import type { Routing } from '../../models'
 import type { ResolvedDidCommService } from '../../types'
 import type { OutOfBandRecord } from '../oob/repository'
+import type { AgentContext } from '@credo-ts/core'
 
 import {
   InjectionSymbols,
@@ -33,6 +33,7 @@ import {
   didKeyToInstanceOfKey,
   DidRepository,
 } from '@credo-ts/core'
+
 import { Attachment, AttachmentData } from '../../decorators/attachment/Attachment'
 import { InboundMessageContext } from '../../models'
 import { ParsedMessageType } from '../../util/messageType'

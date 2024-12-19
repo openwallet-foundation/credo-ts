@@ -6,14 +6,14 @@ import { getAgentOptions } from '../packages/core/tests/helpers'
 
 import { e2eTest } from './e2e-test'
 
+import { Agent } from '@credo-ts/core'
 import {
-  Agent,
   WsOutboundTransport,
   AutoAcceptCredential,
   MediatorPickupStrategy,
   MediationRecipientModule,
   MediatorModule,
-} from '@credo-ts/core'
+} from '@credo-ts/didcomm'
 import { WsInboundTransport } from '@credo-ts/node'
 
 // FIXME: somehow if we use the in memory wallet and storage service in the WS test it will fail,
@@ -90,17 +90,17 @@ describe('E2E WS tests', () => {
 
   test('Full WS flow (connect, request mediation, issue, verify)', async () => {
     // Recipient Setup
-    recipientAgent.didcomm.registerOutboundTransport(new WsOutboundTransport())
+    recipientAgent.modules.didcomm.registerOutboundTransport(new WsOutboundTransport())
     await recipientAgent.initialize()
 
     // Mediator Setup
-    mediatorAgent.didcomm.registerInboundTransport(new WsInboundTransport({ port: mediatorPort }))
-    mediatorAgent.didcomm.registerOutboundTransport(new WsOutboundTransport())
+    mediatorAgent.modules.didcomm.registerInboundTransport(new WsInboundTransport({ port: mediatorPort }))
+    mediatorAgent.modules.didcomm.registerOutboundTransport(new WsOutboundTransport())
     await mediatorAgent.initialize()
 
     // Sender Setup
-    senderAgent.didcomm.registerInboundTransport(new WsInboundTransport({ port: senderPort }))
-    senderAgent.didcomm.registerOutboundTransport(new WsOutboundTransport())
+    senderAgent.modules.didcomm.registerInboundTransport(new WsInboundTransport({ port: senderPort }))
+    senderAgent.modules.didcomm.registerOutboundTransport(new WsOutboundTransport())
     await senderAgent.initialize()
 
     await e2eTest({

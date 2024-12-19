@@ -1,11 +1,12 @@
 import type { OutOfBandDidCommService } from './domain'
 import type { HandshakeReusedEvent, OutOfBandStateChangedEvent } from './domain/OutOfBandEvents'
-import type { AgentContext, Key, Query, QueryOptions } from '@credo-ts/core'
-
 import type { InboundMessageContext } from '../../models'
 import type { ConnectionRecord, HandshakeProtocol } from '../connections'
+import type { AgentContext, Key, Query, QueryOptions } from '@credo-ts/core'
 
 import { EventEmitter, CredoError, injectable, DidsApi, parseDid } from '@credo-ts/core'
+
+import { DidCommDocumentService } from '../../services'
 
 import { OutOfBandEventTypes } from './domain/OutOfBandEvents'
 import { OutOfBandRole } from './domain/OutOfBandRole'
@@ -13,7 +14,6 @@ import { OutOfBandState } from './domain/OutOfBandState'
 import { HandshakeReuseMessage, OutOfBandInvitation } from './messages'
 import { HandshakeReuseAcceptedMessage } from './messages/HandshakeReuseAcceptedMessage'
 import { OutOfBandRecord, OutOfBandRepository } from './repository'
-import { DidCommDocumentService } from '../../services'
 
 export interface CreateFromImplicitInvitationConfig {
   did: string

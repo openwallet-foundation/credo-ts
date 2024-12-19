@@ -32,7 +32,11 @@ export class DependencyManager {
       if (module.api) {
         this.registerContextScoped(module.api)
       }
-      module.register(this)
+      try {
+        module.register(this)
+      } catch (error) {
+        throw new CredoError(`Cannot register ${moduleKey}: ${error}`)
+      }
     }
   }
 

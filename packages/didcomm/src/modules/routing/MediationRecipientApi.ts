@@ -1,11 +1,8 @@
 import type { MediationStateChangedEvent } from './RoutingEvents'
 import type { MediationRecord } from './repository'
 import type { GetRoutingOptions } from './services/RoutingService'
-import type { ConnectionRecord } from '../connections/repository'
 import type { OutboundWebSocketOpenedEvent, OutboundWebSocketClosedEvent } from '../../transport'
-
-import { firstValueFrom, interval, merge, ReplaySubject, Subject, timer } from 'rxjs'
-import { delayWhen, filter, first, takeUntil, tap, throttleTime, timeout } from 'rxjs/operators'
+import type { ConnectionRecord } from '../connections/repository'
 
 import {
   AgentContext,
@@ -19,20 +16,22 @@ import {
   DidsApi,
   verkeyToDidKey,
 } from '@credo-ts/core'
+import { firstValueFrom, interval, merge, ReplaySubject, Subject, timer } from 'rxjs'
+import { delayWhen, filter, first, takeUntil, tap, throttleTime, timeout } from 'rxjs/operators'
 
 import { DidCommModuleConfig } from '../../DidCommModuleConfig'
 import { MessageHandlerRegistry } from '../../MessageHandlerRegistry'
 import { MessageSender } from '../../MessageSender'
+import { OutboundMessageContext } from '../../models'
+import { TransportEventTypes } from '../../transport'
 import { ConnectionsApi } from '../connections'
+import { ConnectionMetadataKeys } from '../connections/repository/ConnectionMetadataTypes'
+import { ConnectionService } from '../connections/services'
 import { DiscoverFeaturesApi } from '../discover-features'
 import { MessagePickupApi } from '../message-pickup/MessagePickupApi'
 import { V1BatchPickupMessage } from '../message-pickup/protocol/v1'
 import { V2StatusMessage } from '../message-pickup/protocol/v2'
-import { OutboundMessageContext } from '../../models'
 import { OutOfBandApi } from '../oob'
-import { ConnectionMetadataKeys } from '../connections/repository/ConnectionMetadataTypes'
-import { ConnectionService } from '../connections/services'
-import { TransportEventTypes } from '../../transport'
 
 import { MediationRecipientModuleConfig } from './MediationRecipientModuleConfig'
 import { MediatorPickupStrategy } from './MediatorPickupStrategy'

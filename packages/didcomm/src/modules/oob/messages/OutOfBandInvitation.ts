@@ -1,10 +1,9 @@
 import type { PlaintextMessage } from '../../../types'
 
+import { CredoError, JsonEncoder, JsonTransformer, IsStringOrInstance } from '@credo-ts/core'
 import { Exclude, Expose, Transform, TransformationType, Type } from 'class-transformer'
 import { ArrayNotEmpty, IsArray, IsInstance, IsOptional, IsUrl, ValidateNested } from 'class-validator'
 import { parseUrl } from 'query-string'
-
-import { CredoError, JsonEncoder, JsonTransformer, IsStringOrInstance } from '@credo-ts/core'
 
 import { AgentMessage } from '../../../AgentMessage'
 import { Attachment, AttachmentData } from '../../../decorators/attachment/Attachment'

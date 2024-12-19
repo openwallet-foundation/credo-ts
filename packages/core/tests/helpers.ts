@@ -18,6 +18,7 @@ import type {
   TrustPingResponseReceivedEvent,
 } from '../../didcomm/src/modules/connections/TrustPingEvents'
 import type { ProofState } from '../../didcomm/src/modules/proofs'
+import type { DefaultAgentModulesInput } from '../../didcomm/src/util/modules'
 import type {
   AgentDependencies,
   BaseEvent,
@@ -51,12 +52,12 @@ import {
   HandshakeProtocol,
   ProofEventTypes,
   TrustPingEventTypes,
-  DidCommModule,
 } from '../../didcomm/src'
 import { OutOfBandRole } from '../../didcomm/src/modules/oob/domain/OutOfBandRole'
 import { OutOfBandState } from '../../didcomm/src/modules/oob/domain/OutOfBandState'
 import { OutOfBandInvitation } from '../../didcomm/src/modules/oob/messages'
 import { OutOfBandRecord } from '../../didcomm/src/modules/oob/repository'
+import { getDefaultDidcommModules } from '../../didcomm/src/util/modules'
 import { agentDependencies } from '../../node/src'
 import {
   DidsApi,
@@ -128,6 +129,7 @@ export function getAgentOptions<AgentModules extends AgentModulesInput | EmptyMo
 
   const m = (inputModules ?? {}) as AgentModulesInput
   const modules = {
+    ...getDefaultDidcommModules(didcommConfig),
     ...m,
     // Make sure connections module is always defined so we can set autoAcceptConnections
     connections:
@@ -135,13 +137,14 @@ export function getAgentOptions<AgentModules extends AgentModulesInput | EmptyMo
       new ConnectionsModule({
         autoAcceptConnections: true,
       }),
-    didcomm: m.didcomm ?? new DidCommModule(didcommConfig),
   }
 
-  return { config, modules: modules as AgentModules, dependencies: agentDependencies } as const
+  return { config, modules: modules as unknown as AgentModules, dependencies: agentDependencies } as const
 }
 
-export function getInMemoryAgentOptions<AgentModules extends AgentModulesInput | EmptyModuleMap>(
+export function getInMemoryAgentOptions<
+  AgentModules extends DefaultAgentModulesInput | AgentModulesInput | EmptyModuleMap
+>(
   name: string,
   didcommExtraConfig: Partial<DidCommModuleConfigOptions> = {},
   extraConfig: Partial<InitConfig> = {},
@@ -168,6 +171,7 @@ export function getInMemoryAgentOptions<AgentModules extends AgentModulesInput |
 
   const m = (inputModules ?? {}) as AgentModulesInput
   const modules = {
+    ...getDefaultDidcommModules(didcommConfig),
     ...m,
     inMemory: new InMemoryWalletModule(),
     // Make sure connections module is always defined so we can set autoAcceptConnections
@@ -176,7 +180,6 @@ export function getInMemoryAgentOptions<AgentModules extends AgentModulesInput |
       new ConnectionsModule({
         autoAcceptConnections: true,
       }),
-    didcomm: m.didcomm ?? new DidCommModule(didcommConfig),
   }
 
   return {
@@ -711,16 +714,18 @@ export function getMockOutOfBand({
   return outOfBandRecord
 }
 
-export async function makeConnection(agentA: Agent, agentB: Agent) {
-  const agentAOutOfBand = await agentA.oob.createInvitation({
+export async function makeConnection(agentA: Agent<DefaultAgentModulesInput>, agentB: Agent<DefaultAgentModulesInput>) {
+  const agentAOutOfBand = await agentA.modules.oob.createInvitation({
     handshakeProtocols: [HandshakeProtocol.Connections],
   })
 
-  let { connectionRecord: agentBConnection } = await agentB.oob.receiveInvitation(agentAOutOfBand.outOfBandInvitation)
+  let { connectionRecord: agentBConnection } = await agentB.modules.oob.receiveInvitation(
+    agentAOutOfBand.outOfBandInvitation
+  )
 
-  agentBConnection = await agentB.connections.returnWhenIsConnected(agentBConnection!.id)
-  let [agentAConnection] = await agentA.connections.findAllByOutOfBandId(agentAOutOfBand.id)
-  agentAConnection = await agentA.connections.returnWhenIsConnected(agentAConnection!.id)
+  agentBConnection = await agentB.modules.connections.returnWhenIsConnected(agentBConnection!.id)
+  let [agentAConnection] = await agentA.modules.connections.findAllByOutOfBandId(agentAOutOfBand.id)
+  agentAConnection = await agentA.modules.connections.returnWhenIsConnected(agentAConnection!.id)
 
   return [agentAConnection, agentBConnection]
 }

@@ -6,10 +6,11 @@ import type { ConnectionRecord } from './modules/connections/repository'
 import type { OutOfBandRecord } from './modules/oob/repository'
 import type { OutboundTransport } from './transport/OutboundTransport'
 import type { EncryptedMessage, OutboundPackage, ResolvedDidCommService } from './types'
-import { AgentContext, DidDocument, utils } from '@credo-ts/core'
 
-import { DID_COMM_TRANSPORT_QUEUE } from './constants'
 import {
+  AgentContext,
+  DidDocument,
+  utils,
   CredoError,
   DidKey,
   DidResolverService,
@@ -27,6 +28,7 @@ import {
 import { EnvelopeService } from './EnvelopeService'
 import { AgentEventTypes } from './Events'
 import { TransportService } from './TransportService'
+import { DID_COMM_TRANSPORT_QUEUE } from './constants'
 import { ReturnRouteTypes } from './decorators/transport/TransportDecorator'
 import { MessageSendingError } from './errors'
 import { OutboundMessageContext, OutboundMessageSendStatus } from './models'

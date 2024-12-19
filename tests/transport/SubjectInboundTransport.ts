@@ -4,9 +4,9 @@ import type { Subscription } from 'rxjs'
 
 import { Subject } from 'rxjs'
 
-import { EventEmitter, MessageReceiver } from '../../packages/core/src'
-import { TransportService } from '../../packages/didcomm/src'
+import { EventEmitter } from '../../packages/core/src'
 import { uuid } from '../../packages/core/src/utils/uuid'
+import { MessageReceiver, TransportService } from '../../packages/didcomm/src'
 
 export type SubjectMessage = { message: EncryptedMessage; replySubject?: Subject<SubjectMessage> }
 

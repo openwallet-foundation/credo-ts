@@ -5,12 +5,6 @@ import { InMemoryWalletModule } from '../../../tests/InMemoryWalletModule'
 import { askarModule } from '../../askar/tests/helpers'
 import { BbsModule } from '../../bbs-signatures/src/BbsModule'
 import {
-  CacheModule,
-  InMemoryLruCache,
-  Agent,
-  W3cCredentialsModule,
-} from '../src'
-import {
   DifPresentationExchangeProofFormatService,
   V2ProofProtocol,
   CredentialEventTypes,
@@ -20,6 +14,7 @@ import {
   JsonLdCredentialFormatService,
   V2CredentialProtocol,
 } from '../../didcomm/src'
+import { CacheModule, InMemoryLruCache, Agent, W3cCredentialsModule } from '../src'
 import { customDocumentLoader } from '../src/modules/vc/data-integrity/__tests__/documentLoader'
 
 import { setupEventReplaySubjects } from './events'

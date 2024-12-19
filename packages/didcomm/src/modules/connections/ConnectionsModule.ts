@@ -1,5 +1,5 @@
 import type { ConnectionsModuleConfigOptions } from './ConnectionsModuleConfig'
-import type { DependencyManager, Module } from '@credo-ts/core'
+import type { AgentContext, DependencyManager, Module } from '@credo-ts/core'
 
 import { FeatureRegistry } from '../../FeatureRegistry'
 import { Protocol } from '../../models'
@@ -34,9 +34,11 @@ export class ConnectionsModule implements Module {
 
     // Repositories
     dependencyManager.registerSingleton(ConnectionRepository)
+  }
 
+  public async initialize(agentContext: AgentContext): Promise<void> {
     // Features
-    const featureRegistry = dependencyManager.resolve(FeatureRegistry)
+    const featureRegistry = agentContext.dependencyManager.resolve(FeatureRegistry)
 
     featureRegistry.register(
       new Protocol({

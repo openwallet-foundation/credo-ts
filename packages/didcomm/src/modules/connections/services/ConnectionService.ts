@@ -1,4 +1,3 @@
-import type { AgentContext, Query, QueryOptions } from '@credo-ts/core'
 import type { AgentMessage } from '../../../AgentMessage'
 import type { AckMessage } from '../../../messages'
 import type { InboundMessageContext } from '../../../models'
@@ -8,9 +7,7 @@ import type { ConnectionStateChangedEvent } from '../ConnectionEvents'
 import type { ConnectionProblemReportMessage } from '../messages'
 import type { ConnectionType } from '../models'
 import type { ConnectionRecordProps } from '../repository'
-
-import { firstValueFrom, ReplaySubject } from 'rxjs'
-import { first, map, timeout } from 'rxjs/operators'
+import type { AgentContext, Query, QueryOptions } from '@credo-ts/core'
 
 import {
   EventEmitter,
@@ -32,6 +29,9 @@ import {
   DidDocumentRole,
   didKeyToVerkey,
 } from '@credo-ts/core'
+import { firstValueFrom, ReplaySubject } from 'rxjs'
+import { first, map, timeout } from 'rxjs/operators'
+
 import { DidCommModuleConfig } from '../../../DidCommModuleConfig'
 import { signData, unpackAndVerifySignatureDecorator } from '../../../decorators/signature/SignatureDecoratorUtils'
 import { Routing } from '../../../models'
