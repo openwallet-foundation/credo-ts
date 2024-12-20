@@ -1,6 +1,5 @@
-import type { BaseAgent, JsonObject } from '@credo-ts/core'
-
 import type { ConnectionRecord } from '../../modules/connections'
+import type { BaseAgent, JsonObject } from '@credo-ts/core'
 
 import {
   DidKey,
@@ -22,9 +21,10 @@ import {
   DidExchangeRole,
 } from '../../modules/connections'
 import { convertToNewDidDocument } from '../../modules/connections/services/helpers'
+import { convertToNewInvitation } from '../../modules/oob/converters'
 import { OutOfBandRole } from '../../modules/oob/domain/OutOfBandRole'
 import { OutOfBandState } from '../../modules/oob/domain/OutOfBandState'
-import { convertToNewInvitation, outOfBandServiceToInlineKeysNumAlgo2Did } from '../../modules/oob/helpers'
+import { outOfBandServiceToInlineKeysNumAlgo2Did } from '../../modules/oob/helpers'
 import { OutOfBandRecord, OutOfBandRepository } from '../../modules/oob/repository'
 
 /**

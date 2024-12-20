@@ -1,18 +1,10 @@
 import type { Module } from '../../plugins'
 
-import { BasicMessagesModule } from '../../../../didcomm/src/modules/basic-messages'
 import { CacheModule } from '../../modules/cache'
-import { CredentialsModule } from '../../../../didcomm/src/modules/credentials'
-import { ConnectionsModule, DidCommModule } from '../../../../didcomm/src'
-import { DiscoverFeaturesModule } from '../../../../didcomm/src/modules/discover-features'
-import { MessagePickupModule } from '../../../../didcomm/src/modules/message-pickup'
-import { OutOfBandModule } from '../../../../didcomm/src/modules/oob'
-import { MediationRecipientModule, MediatorModule } from '../../../../didcomm/src/modules/routing'
 import { DidsModule } from '../../modules/dids'
 import { DifPresentationExchangeModule } from '../../modules/dif-presentation-exchange'
 import { GenericRecordsModule } from '../../modules/generic-records'
 import { MdocModule } from '../../modules/mdoc'
-import { ProofsModule } from '../../../../didcomm/src/modules/proofs'
 import { SdJwtVcModule } from '../../modules/sd-jwt-vc'
 import { W3cCredentialsModule } from '../../modules/vc'
 import { X509Module } from '../../modules/x509'
@@ -59,20 +51,10 @@ describe('AgentModules', () => {
       const extendedModules = extendModulesWithDefaultModules()
 
       expect(extendedModules).toEqual({
-        connections: expect.any(ConnectionsModule),
-        credentials: expect.any(CredentialsModule),
-        proofs: expect.any(ProofsModule),
-        mediator: expect.any(MediatorModule),
-        mediationRecipient: expect.any(MediationRecipientModule),
-        messagePickup: expect.any(MessagePickupModule),
-        basicMessages: expect.any(BasicMessagesModule),
         pex: expect.any(DifPresentationExchangeModule),
         genericRecords: expect.any(GenericRecordsModule),
-        discovery: expect.any(DiscoverFeaturesModule),
         dids: expect.any(DidsModule),
-        didcomm: expect.any(DidCommModule),
         wallet: expect.any(WalletModule),
-        oob: expect.any(OutOfBandModule),
         w3cCredentials: expect.any(W3cCredentialsModule),
         sdJwtVc: expect.any(SdJwtVcModule),
         mdoc: expect.any(MdocModule),
@@ -88,20 +70,10 @@ describe('AgentModules', () => {
       })
 
       expect(extendedModules).toEqual({
-        connections: expect.any(ConnectionsModule),
-        credentials: expect.any(CredentialsModule),
-        proofs: expect.any(ProofsModule),
-        mediator: expect.any(MediatorModule),
-        mediationRecipient: expect.any(MediationRecipientModule),
-        messagePickup: expect.any(MessagePickupModule),
-        basicMessages: expect.any(BasicMessagesModule),
         pex: expect.any(DifPresentationExchangeModule),
         genericRecords: expect.any(GenericRecordsModule),
-        discovery: expect.any(DiscoverFeaturesModule),
         dids: expect.any(DidsModule),
-        didcomm: expect.any(DidCommModule),
         wallet: expect.any(WalletModule),
-        oob: expect.any(OutOfBandModule),
         w3cCredentials: expect.any(W3cCredentialsModule),
         cache: expect.any(CacheModule),
         sdJwtVc: expect.any(SdJwtVcModule),
@@ -113,27 +85,17 @@ describe('AgentModules', () => {
 
     test('does not override default module if provided as custom module', () => {
       const myModule = new MyModuleWithApi()
-      const connections = new ConnectionsModule()
+      const genericRecords = new GenericRecordsModule()
       const extendedModules = extendModulesWithDefaultModules({
         myModule,
-        connections,
+        genericRecords,
       })
 
       expect(extendedModules).toEqual({
-        connections: connections,
-        credentials: expect.any(CredentialsModule),
-        proofs: expect.any(ProofsModule),
-        mediator: expect.any(MediatorModule),
-        mediationRecipient: expect.any(MediationRecipientModule),
-        messagePickup: expect.any(MessagePickupModule),
-        basicMessages: expect.any(BasicMessagesModule),
+        genericRecords: genericRecords,
         pex: expect.any(DifPresentationExchangeModule),
-        genericRecords: expect.any(GenericRecordsModule),
-        discovery: expect.any(DiscoverFeaturesModule),
         dids: expect.any(DidsModule),
-        didcomm: expect.any(DidCommModule),
         wallet: expect.any(WalletModule),
-        oob: expect.any(OutOfBandModule),
         w3cCredentials: expect.any(W3cCredentialsModule),
         cache: expect.any(CacheModule),
         sdJwtVc: expect.any(SdJwtVcModule),

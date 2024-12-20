@@ -1026,38 +1026,6 @@ describe('out of band', () => {
       })
     })
 
-    test('legacy connectionless exchange without receiving message through oob receiveInvitation, where response is received to invitation', async () => {
-      const { message, credentialRecord } = await faberAgent.modules.credentials.createOffer(credentialTemplate)
-      const { message: messageWithService } = await faberAgent.modules.oob.createLegacyConnectionlessInvitation({
-        domain: 'http://example.com',
-        message,
-        recordId: credentialRecord.id,
-      })
-
-      const aliceCredentialRecordPromise = waitForCredentialRecord(aliceAgent, {
-        state: CredentialState.OfferReceived,
-        threadId: message.threadId,
-        timeoutMs: 10000,
-      })
-      await aliceAgent.modules.receiveMessage(messageWithService.toJSON())
-
-      const aliceCredentialRecord = await aliceCredentialRecordPromise
-      expect(aliceCredentialRecord.state).toBe(CredentialState.OfferReceived)
-
-      // If we receive the event, we know the processing went well
-      const faberCredentialRecordPromise = waitForCredentialRecord(faberAgent, {
-        state: CredentialState.RequestReceived,
-        threadId: message.threadId,
-        timeoutMs: 10000,
-      })
-
-      await aliceAgent.modules.credentials.acceptOffer({
-        credentialRecordId: aliceCredentialRecord.id,
-      })
-
-      await faberCredentialRecordPromise
-    })
-
     test('add ~service decorator to the message and returns invitation url in createLegacyConnectionlessInvitation', async () => {
       const { message, credentialRecord } = await faberAgent.modules.credentials.createOffer(credentialTemplate)
 

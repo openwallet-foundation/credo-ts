@@ -1,9 +1,9 @@
-import type { BaseAgent, JsonObject } from '@credo-ts/core'
-
 import type { CredentialExchangeRecord } from '../../modules/credentials'
 import type { PlaintextMessage } from '../../types'
+import type { BaseAgent, JsonObject } from '@credo-ts/core'
 
 import { Metadata } from '@credo-ts/core'
+
 import { CredentialState } from '../../modules/credentials/models/CredentialState'
 import { CredentialRepository } from '../../modules/credentials/repository/CredentialRepository'
 import { DidCommMessageRole, DidCommMessageRepository, DidCommMessageRecord } from '../../repository'

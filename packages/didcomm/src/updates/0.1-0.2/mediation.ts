@@ -1,6 +1,5 @@
-import type { BaseAgent } from '@credo-ts/core'
-import type { V0_1ToV0_2UpdateConfig } from '@credo-ts/core'
 import type { MediationRecord } from '../../modules/routing'
+import type { BaseAgent, V0_1ToV0_2UpdateConfig } from '@credo-ts/core'
 
 import { MediationRepository, MediationRole } from '../../modules/routing'
 

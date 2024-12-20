@@ -3,6 +3,7 @@ import type { FeatureRegistry } from '@credo-ts/didcomm'
 
 import { Protocol } from '@credo-ts/didcomm'
 
+import { getAgentContext } from '../../../core/tests'
 import { ActionMenuModule } from '../ActionMenuModule'
 import { ActionMenuRole } from '../ActionMenuRole'
 import { ActionMenuRepository } from '../repository'
@@ -20,13 +21,16 @@ const dependencyManager = {
 } as unknown as DependencyManager
 
 describe('ActionMenuModule', () => {
-  test('registers dependencies on the dependency manager', () => {
+  test('registers dependencies on the dependency manager', async () => {
     const actionMenuModule = new ActionMenuModule()
     actionMenuModule.register(dependencyManager)
 
     expect(dependencyManager.registerSingleton).toHaveBeenCalledTimes(2)
     expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(ActionMenuService)
     expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(ActionMenuRepository)
+    expect(featureRegistry.register).toHaveBeenCalledTimes(0)
+
+    await actionMenuModule.initialize(getAgentContext({ dependencyManager }))
 
     expect(featureRegistry.register).toHaveBeenCalledTimes(1)
     expect(featureRegistry.register).toHaveBeenCalledWith(

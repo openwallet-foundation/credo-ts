@@ -29,6 +29,16 @@ export const DEFAULT_UPDATE_CONFIG: UpdateConfig = {
 
 export const supportedUpdates = [
   {
+    fromVersion: '0.1',
+    toVersion: '0.2',
+    doUpdate: () => {}, // Nothing to do in Core module
+  },
+  {
+    fromVersion: '0.2',
+    toVersion: '0.3',
+    doUpdate: () => {}, // Nothing to do in Core module
+  },
+  {
     fromVersion: '0.3',
     toVersion: '0.3.1',
     doUpdate: updateV0_3ToV0_3_1,
