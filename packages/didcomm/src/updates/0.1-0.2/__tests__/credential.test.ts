@@ -1,26 +1,27 @@
-import type { CredentialRecordBinding } from '../../../../../modules/didcomm/modules/credentials'
+import type { CredentialRecordBinding } from '../../../modules/credentials'
 
-import { CredentialExchangeRecord, CredentialState } from '../../../../../modules/didcomm/modules/credentials'
-import { getAgentConfig, getAgentContext, mockFunction } from '@credo-ts/core/tests/helpers'
-import { Agent } from '@credo-ts/core/src/agent/Agent'
-import { CredentialRepository } from '../../../../../modules/didcomm/modules/credentials/repository/CredentialRepository'
-import { DidCommMessageRole } from '../../../../../modules/didcomm'
-import { DidCommMessageRepository } from '../../../../../modules/didcomm/repository/DidCommMessageRepository'
 import { JsonTransformer } from '@credo-ts/core/src/utils'
+import { getAgentConfig, getAgentContext, mockFunction } from '@credo-ts/core/tests/helpers'
+
+import { Agent } from '../../../../../core/src/agent/Agent'
+import { CredentialExchangeRecord, CredentialState } from '../../../modules/credentials'
+import { CredentialRepository } from '../../../modules/credentials/repository/CredentialRepository'
+import { DidCommMessageRole } from '../../../repository'
+import { DidCommMessageRepository } from '../../../repository/DidCommMessageRepository'
 import * as testModule from '../credential'
 
 const agentConfig = getAgentConfig('Migration CredentialRecord 0.1-0.2')
 const agentContext = getAgentContext()
 
-jest.mock('../../../../../modules/credentials/repository/CredentialRepository')
+jest.mock('../../../modules/credentials/repository/CredentialRepository')
 const CredentialRepositoryMock = CredentialRepository as jest.Mock<CredentialRepository>
 const credentialRepository = new CredentialRepositoryMock()
 
-jest.mock('../../../../../modules/didcomm/repository/DidCommMessageRepository')
+jest.mock('../../../repository/DidCommMessageRepository')
 const DidCommMessageRepositoryMock = DidCommMessageRepository as jest.Mock<DidCommMessageRepository>
 const didCommMessageRepository = new DidCommMessageRepositoryMock()
 
-jest.mock('../../../../../agent/Agent', () => {
+jest.mock('../../../../../core/src/agent/Agent', () => {
   return {
     Agent: jest.fn(() => ({
       config: agentConfig,

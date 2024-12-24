@@ -1,6 +1,4 @@
-import { ClassValidationError } from '@credo-ts/core/src/error/ClassValidationError'
-import { JsonTransformer } from '@credo-ts/core/src/utils/JsonTransformer'
-import { MessageValidator } from '@credo-ts/core/src/utils/MessageValidator'
+import { ClassValidationError, JsonTransformer, MessageValidator } from '../../../../core'
 
 import { TransportDecorator, ReturnRouteTypes } from './TransportDecorator'
 

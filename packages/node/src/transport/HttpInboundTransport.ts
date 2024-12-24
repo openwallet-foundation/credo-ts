@@ -9,17 +9,8 @@ import type {
 import type { Express, Request, Response } from 'express'
 import type { Server } from 'http'
 
-import {
-  CredoError,
-  utils,
-  EventEmitter,
-} from '@credo-ts/core'
-import {
-  DidCommMimeType,
-  TransportService,
-  AgentEventTypes,
-  DidCommModuleConfig,
-} from '@credo-ts/didcomm'
+import { CredoError, utils, EventEmitter } from '@credo-ts/core'
+import { DidCommMimeType, TransportService, AgentEventTypes, DidCommModuleConfig } from '@credo-ts/didcomm'
 import express, { text } from 'express'
 import { filter, firstValueFrom, ReplaySubject, timeout } from 'rxjs'
 

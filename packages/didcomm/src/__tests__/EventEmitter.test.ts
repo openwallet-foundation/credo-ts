@@ -2,8 +2,8 @@ import type { EventEmitter as NativeEventEmitter } from 'events'
 
 import { Subject } from 'rxjs'
 
-import { agentDependencies, getAgentContext } from '@credo-ts/core/tests/helpers'
-import { EventEmitter } from '@credo-ts/core/src/agent/EventEmitter'
+import { EventEmitter } from '../../../core/src/agent/EventEmitter'
+import { agentDependencies, getAgentContext } from '../../../core/tests/helpers'
 
 const mockEmit = jest.fn()
 const mockOn = jest.fn()

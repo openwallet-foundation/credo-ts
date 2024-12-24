@@ -1,7 +1,9 @@
-import type { DependencyManager, FeatureRegistry } from '@credo-ts/core'
+import type { DependencyManager } from '@credo-ts/core'
 import type { FeatureRegistry } from '@credo-ts/didcomm'
 
 import { Protocol } from '@credo-ts/didcomm'
+
+import { getAgentContext } from '../../../core/tests'
 
 import {
   QuestionAnswerModule,
@@ -24,7 +26,7 @@ const dependencyManager = {
 } as unknown as DependencyManager
 
 describe('QuestionAnswerModule', () => {
-  test('registers dependencies on the dependency manager', () => {
+  test('registers dependencies on the dependency manager', async () => {
     const questionAnswerModule = new QuestionAnswerModule()
     questionAnswerModule.register(dependencyManager)
 
@@ -32,6 +34,7 @@ describe('QuestionAnswerModule', () => {
     expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(QuestionAnswerService)
     expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(QuestionAnswerRepository)
 
+    await questionAnswerModule.initialize(getAgentContext({ dependencyManager }))
     expect(featureRegistry.register).toHaveBeenCalledTimes(1)
     expect(featureRegistry.register).toHaveBeenCalledWith(
       new Protocol({

@@ -1,9 +1,8 @@
-import type { Wallet } from '../../wallet'
+import type { Wallet } from '../../../../core'
 
 import { InMemoryWallet } from '../../../../../tests/InMemoryWallet'
-import { getAgentConfig } from '../../../tests/helpers'
-import { KeyType } from '../../crypto'
-import { TypedArrayEncoder } from '../../utils'
+import { KeyType, TypedArrayEncoder } from '../../../../core'
+import { getAgentConfig } from '../../../../core/tests/helpers'
 
 import { SignatureDecorator } from './SignatureDecorator'
 import { signData, unpackAndVerifySignatureDecorator } from './SignatureDecoratorUtils'

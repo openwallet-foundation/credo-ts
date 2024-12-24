@@ -1,7 +1,8 @@
 import type { DummyRecord } from './repository/DummyRecord'
 import type { Query, QueryOptions } from '@credo-ts/core'
 
-import { getOutboundMessageContext, AgentContext, ConnectionService, injectable, MessageSender } from '@credo-ts/core'
+import { AgentContext, injectable } from '@credo-ts/core'
+import { getOutboundMessageContext, ConnectionService, MessageSender } from '@credo-ts/didcomm'
 
 import { DummyState } from './repository'
 import { DummyService } from './services'

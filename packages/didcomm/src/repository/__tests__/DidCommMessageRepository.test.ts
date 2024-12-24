@@ -1,13 +1,14 @@
-import type { StorageService } from '../StorageService'
+import type { StorageService } from '@credo-ts/core'
 
+import { EventEmitter, JsonTransformer } from '@credo-ts/core'
 import { Subject } from 'rxjs'
 
 import { InMemoryStorageService } from '../../../../../tests/InMemoryStorageService'
-import { getAgentConfig, getAgentContext, mockFunction } from '../../../tests/helpers'
-import { EventEmitter } from '../../agent/EventEmitter'
-import { ConnectionInvitationMessage } from '../../modules/didcomm/connections'
-import { JsonTransformer } from '../../utils/JsonTransformer'
-import { DidCommMessageRecord, DidCommMessageRepository, DidCommMessageRole } from '../didcomm'
+import { getAgentConfig, getAgentContext, mockFunction } from '../../../../core/tests'
+import { ConnectionInvitationMessage } from '../../modules'
+import { DidCommMessageRecord } from '../DidCommMessageRecord'
+import { DidCommMessageRepository } from '../DidCommMessageRepository'
+import { DidCommMessageRole } from '../DidCommMessageRole'
 
 jest.mock('../../../../../tests/InMemoryStorageService')
 

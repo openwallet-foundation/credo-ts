@@ -1,8 +1,9 @@
-import { getAgentConfig, getAgentContext, mockFunction } from '@credo-ts/core/tests'
-import { Agent } from '@credo-ts/core/src/agent/Agent'
-import { DidCommMessageRecord, DidCommMessageRepository, DidCommMessageRole } from '../../../../../modules/didcomm'
-import { ProofExchangeRecord, ProofRepository, ProofRole, ProofState } from '../../../../../modules/proofs'
-import { JsonTransformer } from '@credo-ts/core/src/utils'
+import { Agent } from '../../../../../core/src/agent/Agent'
+import { JsonTransformer } from '../../../../../core/src/utils'
+import { getAgentConfig, getAgentContext, mockFunction } from '../../../../../core/tests'
+import { ProofExchangeRecord, ProofRepository, ProofRole, ProofState } from '../../../modules/proofs'
+import { DidCommMessageRecord, DidCommMessageRole } from '../../../repository'
+import { DidCommMessageRepository } from '../../../repository/DidCommMessageRepository'
 import * as testModule from '../proofExchangeRecord'
 
 const agentConfig = getAgentConfig('Migration - Proof Exchange Record - 0.4-0.5')
@@ -12,7 +13,7 @@ jest.mock('../../../../../modules/proofs/repository/ProofRepository')
 const ProofRepositoryMock = ProofRepository as jest.Mock<ProofRepository>
 const proofRepository = new ProofRepositoryMock()
 
-jest.mock('../../../../../modules/didcomm/repository/DidCommMessageRepository')
+jest.mock('../../../repository/DidCommMessageRepository')
 const DidCommMessageRepositoryMock = DidCommMessageRepository as jest.Mock<DidCommMessageRepository>
 const didCommMessageRepository = new DidCommMessageRepositoryMock()
 

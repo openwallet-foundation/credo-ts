@@ -1,5 +1,5 @@
-import type { BaseAgent } from '@credo-ts/core'
 import type { ConnectionRecord } from '../../modules/connections'
+import type { BaseAgent } from '@credo-ts/core'
 
 import { ConnectionType, ConnectionRepository } from '../../modules/connections'
 import { MediationRepository } from '../../modules/routing'

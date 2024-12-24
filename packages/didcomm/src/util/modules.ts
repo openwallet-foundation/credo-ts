@@ -25,7 +25,6 @@ export type DefaultDidCommModules = {
   >[moduleKey]
 }
 
-
 export type WithoutDefaultDidCommModules<Modules extends ModulesMap> = {
   [moduleKey in Exclude<keyof Modules, keyof DefaultDidCommModules>]: Modules[moduleKey]
 }

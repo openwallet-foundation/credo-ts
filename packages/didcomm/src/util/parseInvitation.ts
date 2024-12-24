@@ -5,8 +5,8 @@ import { parseUrl } from 'query-string'
 
 import { AgentMessage } from '../AgentMessage'
 import { ConnectionInvitationMessage } from '../modules/connections/messages'
+import { convertToNewInvitation } from '../modules/oob/converters'
 import { OutOfBandDidCommService } from '../modules/oob/domain/OutOfBandDidCommService'
-import { convertToNewInvitation } from '../modules/oob/helpers'
 import { InvitationType, OutOfBandInvitation } from '../modules/oob/messages'
 
 import { parseMessageType, supportsIncomingMessageType } from './messageType'

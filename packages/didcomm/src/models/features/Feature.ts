@@ -1,7 +1,6 @@
+import { CredoError, JsonTransformer } from '@credo-ts/core'
 import { Expose } from 'class-transformer'
 import { IsString } from 'class-validator'
-
-import { CredoError, JsonTransformer } from '@credo-ts/core'
 
 export interface FeatureOptions {
   id: string

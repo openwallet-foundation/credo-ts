@@ -1,5 +1,6 @@
-import { EventEmitter } from '@credo-ts/core/src/agent/EventEmitter'
-import { getAgentContext, getMockConnection } from '@credo-ts/core/tests/helpers'
+import { EventEmitter } from '@credo-ts/core'
+
+import { getAgentContext, getMockConnection } from '../../../../../core/tests/helpers'
 import { InboundMessageContext } from '../../../models'
 import { BasicMessageRole } from '../BasicMessageRole'
 import { BasicMessage } from '../messages'

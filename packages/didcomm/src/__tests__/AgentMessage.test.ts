@@ -1,7 +1,7 @@
-import { TestMessage } from '@credo-ts/core/tests/TestMessage'
-import { ClassValidationError } from '@credo-ts/core/src/error/ClassValidationError'
-import { JsonTransformer } from '@credo-ts/core/src/utils'
-import { AgentMessage } from '@credo-ts/core/src/modules/didcomm/AgentMessage'
+import { ClassValidationError } from '../../../core/src/error/ClassValidationError'
+import { JsonTransformer } from '../../../core/src/utils'
+import { AgentMessage } from '../AgentMessage'
+import { TestMessage } from '../util/__tests__/messageType.test'
 import { IsValidMessageType, parseMessageType } from '../util/messageType'
 
 class CustomProtocolMessage extends AgentMessage {
@@ -26,11 +26,11 @@ describe('AgentMessage', () => {
 
       // useDidSovPrefixWhereAllowed & allowDidSovPrefix are both false
       let testMessageJson = message.toJSON()
-      expect(testMessageJson['@type']).toBe('https://didcomm.org/connections/1.0/invitation')
+      expect(testMessageJson['@type']).toBe('https://didcomm.org/fake-protocol/1.5/invitation')
 
       // useDidSovPrefixWhereAllowed is true, but allowDidSovPrefix is false
       testMessageJson = message.toJSON({ useDidSovPrefixWhereAllowed: true })
-      expect(testMessageJson['@type']).toBe('https://didcomm.org/connections/1.0/invitation')
+      expect(testMessageJson['@type']).toBe('https://didcomm.org/fake-protocol/1.5/invitation')
 
       // useDidSovPrefixWhereAllowed is false, but allowDidSovPrefix is true
       testMessageJson = legacyPrefixMessage.toJSON()

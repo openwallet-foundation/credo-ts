@@ -1,21 +1,17 @@
-import { getAgentConfig, getAgentContext, mockFunction } from '@credo-ts/core/tests/helpers'
-import { Agent } from '@credo-ts/core/src/agent/Agent'
+import { Agent, DidDocumentRole, DidRecord, DidRepository, JsonTransformer } from '../../../../../core'
+import { getAgentConfig, getAgentContext, mockFunction } from '../../../../../core/tests/helpers'
 import {
+  ConnectionRepository,
+  OutOfBandRepository,
   ConnectionRecord,
-  ConnectionRole,
-  ConnectionState,
+  OutOfBandRole,
+  OutOfBandState,
+  OutOfBandRecord,
   DidExchangeRole,
   DidExchangeState,
-} from '../../../../../modules/didcomm'
-import { OutOfBandRole } from '../../../../../modules/didcomm/oob/domain/OutOfBandRole'
-import { OutOfBandState } from '../../../../../modules/didcomm/oob/domain/OutOfBandState'
-import { OutOfBandRecord } from '../../../../../modules/didcomm/oob/repository'
-import { OutOfBandRepository } from '../../../../../modules/didcomm/oob/repository/OutOfBandRepository'
-import { ConnectionRepository } from '../../../../../modules/didcomm/repository/connections/ConnectionRepository'
-import { DidDocumentRole } from '@credo-ts/core/src/modules/dids/domain/DidDocumentRole'
-import { DidRecord } from '@credo-ts/core/src/modules/dids/repository'
-import { DidRepository } from '@credo-ts/core/src/modules/dids/repository/DidRepository'
-import { JsonTransformer } from '@credo-ts/core/src/utils'
+  ConnectionRole,
+  ConnectionState,
+} from '../../../modules'
 import * as testModule from '../connection'
 
 import didPeer4kgVt6CidfKgo1MoWMqsQX from './__fixtures__/didPeer4kgVt6CidfKgo1MoWMqsQX.json'

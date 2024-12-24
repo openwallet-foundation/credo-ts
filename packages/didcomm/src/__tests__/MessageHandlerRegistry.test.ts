@@ -1,8 +1,8 @@
-import type { MessageHandler } from '../MessageHandler'
+import type { MessageHandler } from '../handlers/MessageHandler'
 
-import { parseDidCommProtocolUri, parseMessageType } from '../../utils/messageType'
-import { AgentMessage } from '@credo-ts/core/src/modules/didcomm/AgentMessage'
-import { MessageHandlerRegistry } from '@credo-ts/core/src/modules/didcomm/MessageHandlerRegistry'
+import { AgentMessage } from '../AgentMessage'
+import { MessageHandlerRegistry } from '../MessageHandlerRegistry'
+import { parseDidCommProtocolUri, parseMessageType } from '../util/messageType'
 
 class ConnectionInvitationTestMessage extends AgentMessage {
   public static readonly type = parseMessageType('https://didcomm.org/connections/1.0/invitation')

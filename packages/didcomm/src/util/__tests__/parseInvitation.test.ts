@@ -1,10 +1,9 @@
-import { agentDependencies } from '@credo-ts/core/tests'
-import { JsonEncoder } from '@credo-ts/core/src/utils/JsonEncoder'
-import { JsonTransformer } from '@credo-ts/core/src/utils/JsonTransformer'
-import { MessageValidator } from '@credo-ts/core/src/utils/MessageValidator'
+import { JsonEncoder, JsonTransformer, MessageValidator } from '@credo-ts/core'
+
+import { agentDependencies } from '../../../../core/tests'
 import { ConnectionInvitationMessage } from '../../modules/connections'
 import { InvitationType, OutOfBandInvitation } from '../../modules/oob'
-import { convertToNewInvitation } from '../../modules/oob/helpers'
+import { convertToNewInvitation } from '../../modules/oob/converters'
 import { oobInvitationFromShortUrl, parseInvitationShortUrl } from '../parseInvitation'
 
 const mockOobInvite = {

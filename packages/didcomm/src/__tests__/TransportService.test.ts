@@ -1,8 +1,9 @@
 import { Subject } from 'rxjs'
 
-import { agentDependencies, getAgentContext, getMockConnection } from '@credo-ts/core/tests/helpers'
-import { DidExchangeRole, TransportService } from '@credo-ts/core/src/modules/didcomm'
-import { EventEmitter } from '@credo-ts/core/src/agent/EventEmitter'
+import { EventEmitter } from '../../../core/src/agent/EventEmitter'
+import { agentDependencies, getAgentContext, getMockConnection } from '../../../core/tests/helpers'
+import { TransportService } from '../TransportService'
+import { DidExchangeRole } from '../modules'
 
 import { DummyTransportSession } from './stubs'
 

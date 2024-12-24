@@ -1,7 +1,7 @@
-import * as didJwsz6Mkf from '@credo-ts/core/src/crypto/__tests__/__fixtures__/didJwsz6Mkf'
-import * as didJwsz6Mkv from '@credo-ts/core/src/crypto/__tests__/__fixtures__/didJwsz6Mkv'
-import { JsonEncoder } from '@credo-ts/core/src/utils/JsonEncoder'
-import { JsonTransformer } from '@credo-ts/core/src/utils/JsonTransformer'
+import * as didJwsz6Mkf from '../../../../../core/src/crypto/__tests__/__fixtures__/didJwsz6Mkf'
+import * as didJwsz6Mkv from '../../../../../core/src/crypto/__tests__/__fixtures__/didJwsz6Mkv'
+import { JsonEncoder } from '../../../../../core/src/utils/JsonEncoder'
+import { JsonTransformer } from '../../../../../core/src/utils/JsonTransformer'
 import { Attachment, AttachmentData } from '../Attachment'
 
 const mockJson = {

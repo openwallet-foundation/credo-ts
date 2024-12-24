@@ -32,6 +32,7 @@ export class ActionMenuModule implements Module {
       new Protocol({
         id: 'https://didcomm.org/action-menu/1.0',
         roles: [ActionMenuRole.Requester, ActionMenuRole.Responder],
-      }))
+      })
+    )
   }
 }

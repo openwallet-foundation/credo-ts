@@ -893,6 +893,9 @@ importers:
       '@credo-ts/core':
         specifier: workspace:*
         version: link:../../packages/core
+      '@credo-ts/didcomm':
+        specifier: workspace:*
+        version: link:../../packages/didcomm
       '@credo-ts/node':
         specifier: workspace:*
         version: link:../../packages/node

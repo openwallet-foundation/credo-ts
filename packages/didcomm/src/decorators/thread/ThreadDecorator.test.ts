@@ -1,4 +1,4 @@
-import { JsonTransformer } from '@credo-ts/core/src/utils/JsonTransformer'
+import { JsonTransformer } from '../../../../core'
 
 import { ThreadDecorator } from './ThreadDecorator'
 

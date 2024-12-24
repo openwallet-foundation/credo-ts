@@ -1,5 +1,5 @@
-import { JsonTransformer } from '@credo-ts/core/src/utils/JsonTransformer'
-import { Compose } from '@credo-ts/core/src/utils/mixins'
+import { JsonTransformer } from '../../../../core/src/utils/JsonTransformer'
+import { Compose } from '../../../../core/src/utils/mixins'
 import { BaseMessage } from '../../BaseMessage'
 
 import { ServiceDecorated } from './ServiceDecoratorExtension'

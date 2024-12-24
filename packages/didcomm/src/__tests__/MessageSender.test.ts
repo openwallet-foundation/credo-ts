@@ -1,45 +1,44 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
-import {
-  AgentEventTypes,
-  DidCommDocumentService,
-  MessageSender,
-  OutboundMessageContext,
-  OutboundMessageSendStatus,
-  ReturnRouteTypes,
-  TransportService,
-  type AgentMessageSentEvent,
-  type ConnectionRecord,
-  type EncryptedMessage,
-  type OutboundTransport,
-  type ResolvedDidCommService,
-} from '@credo-ts/core/src/modules/didcomm'
-import type { DidDocumentService, IndyAgentService } from '@credo-ts/core/src/modules/dids'
+
+import type { DidDocumentService, IndyAgentService } from '../../../core/src/modules/dids'
+import type { AgentMessageSentEvent } from '../Events'
+import type { ConnectionRecord } from '../modules'
 import type { MessagePickupRepository } from '../modules/message-pickup/storage'
+import type { OutboundTransport } from '../transport'
+import type { EncryptedMessage, ResolvedDidCommService } from '../types'
 
 import { Subject } from 'rxjs'
 
-import { TestMessage } from '@credo-ts/core/tests/TestMessage'
+import { EventEmitter } from '../../../core/src/agent/EventEmitter'
+import { Key, KeyType } from '../../../core/src/crypto'
+import { DidDocument, VerificationMethod } from '../../../core/src/modules/dids'
+import { DidCommV1Service } from '../../../core/src/modules/dids/domain/service/DidCommV1Service'
+import { verkeyToInstanceOfKey } from '../../../core/src/modules/dids/helpers'
+import { DidResolverService } from '../../../core/src/modules/dids/services/DidResolverService'
+import { TestMessage } from '../../../core/tests/TestMessage'
 import {
   agentDependencies,
   getAgentConfig,
   getAgentContext,
   getMockConnection,
   mockFunction,
-} from '@credo-ts/core/tests/helpers'
-import testLogger from '@credo-ts/core/tests/logger'
-import { EventEmitter } from '@credo-ts/core/src/agent/EventEmitter'
-import { Key, KeyType } from '@credo-ts/core/src/crypto'
-import { DidResolverService, DidDocument, VerificationMethod } from '@credo-ts/core/src/modules/dids'
-import { DidCommV1Service } from '@credo-ts/core/src/modules/dids/domain/service/DidCommV1Service'
-import { verkeyToInstanceOfKey } from '@credo-ts/core/src/modules/dids/helpers'
+} from '../../../core/tests/helpers'
+import testLogger from '../../../core/tests/logger'
+import { EnvelopeService as EnvelopeServiceImpl } from '../EnvelopeService'
+import { AgentEventTypes } from '../Events'
+import { MessageSender } from '../MessageSender'
+import { TransportService } from '../TransportService'
+import { ReturnRouteTypes } from '../decorators/transport/TransportDecorator'
+import { OutboundMessageContext, OutboundMessageSendStatus } from '../models'
 import { InMemoryMessagePickupRepository } from '../modules/message-pickup/storage'
+import { DidCommDocumentService } from '../services/DidCommDocumentService'
 
 import { DummyTransportSession } from './stubs'
 
 jest.mock('../TransportService')
 jest.mock('../EnvelopeService')
-jest.mock('../../modules/dids/services/DidResolverService')
-jest.mock('../../modules/didcomm/services/DidCommDocumentService')
+jest.mock('../../../core/src/modules/dids/services/DidResolverService')
+jest.mock('../services/DidCommDocumentService')
 
 const logger = testLogger
 

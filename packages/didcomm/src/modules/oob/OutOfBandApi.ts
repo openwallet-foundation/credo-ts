@@ -1,11 +1,9 @@
 import type { HandshakeReusedEvent } from './domain/OutOfBandEvents'
-import type { Query, QueryOptions } from '@credo-ts/core'
 import type { AgentMessage } from '../../AgentMessage'
 import type { Attachment } from '../../decorators/attachment/Attachment'
 import type { Routing } from '../../models'
 import type { PlaintextMessage } from '../../types'
-
-import { catchError, EmptyError, first, firstValueFrom, map, of, timeout } from 'rxjs'
+import type { Query, QueryOptions } from '@credo-ts/core'
 
 import {
   AgentContext,
@@ -21,6 +19,7 @@ import {
   JsonTransformer,
   DidKey,
 } from '@credo-ts/core'
+import { catchError, EmptyError, first, firstValueFrom, map, of, timeout } from 'rxjs'
 
 import { DidCommModuleConfig } from '../../DidCommModuleConfig'
 import { AgentEventTypes, type AgentMessageReceivedEvent } from '../../Events'
@@ -41,13 +40,14 @@ import { ConnectionsApi } from '../connections/ConnectionsApi'
 import { RoutingService } from '../routing/services/RoutingService'
 
 import { OutOfBandService } from './OutOfBandService'
+import { convertToNewInvitation, convertToOldInvitation } from './converters'
 import { OutOfBandDidCommService } from './domain/OutOfBandDidCommService'
 import { OutOfBandEventTypes } from './domain/OutOfBandEvents'
 import { OutOfBandRole } from './domain/OutOfBandRole'
 import { OutOfBandState } from './domain/OutOfBandState'
 import { HandshakeReuseHandler } from './handlers'
 import { HandshakeReuseAcceptedHandler } from './handlers/HandshakeReuseAcceptedHandler'
-import { convertToNewInvitation, convertToOldInvitation, outOfBandServiceToInlineKeysNumAlgo2Did } from './helpers'
+import { outOfBandServiceToInlineKeysNumAlgo2Did } from './helpers'
 import { InvitationType, OutOfBandInvitation } from './messages'
 import { OutOfBandRepository } from './repository'
 import { OutOfBandRecord } from './repository/OutOfBandRecord'

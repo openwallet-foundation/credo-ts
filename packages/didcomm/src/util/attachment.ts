@@ -1,6 +1,5 @@
-import type { HashName, BaseName } from '@credo-ts/core'
-
 import type { Attachment } from '../decorators/attachment/Attachment'
+import type { HashName, BaseName } from '@credo-ts/core'
 
 import { CredoError, HashlinkEncoder, TypedArrayEncoder } from '@credo-ts/core'
 

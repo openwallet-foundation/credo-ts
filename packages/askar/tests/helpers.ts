@@ -1,13 +1,16 @@
+import type { DidCommModuleConfig } from '../..//didcomm'
 import type { AskarWalletPostgresStorageConfig } from '../src/wallet'
-import type { Agent, DidCommModuleConfig, InitConfig } from '@credo-ts/core'
+import type { Agent, InitConfig } from '@credo-ts/core'
 
-import { DidCommModule, ConnectionsModule, HandshakeProtocol, LogLevel, utils } from '@credo-ts/core'
+import { LogLevel, utils } from '@credo-ts/core'
 import { ariesAskar } from '@hyperledger/aries-askar-nodejs'
 import { registerAriesAskar } from '@hyperledger/aries-askar-shared'
 import path from 'path'
 
 import { waitForBasicMessage } from '../../core/tests/helpers'
 import { TestLogger } from '../../core/tests/logger'
+import { ConnectionsModule, HandshakeProtocol } from '../../didcomm'
+import { getDefaultDidcommModules } from '../../didcomm/src/util/modules'
 import { agentDependencies } from '../../node/src'
 import { AskarModule } from '../src/AskarModule'
 import { AskarModuleConfig } from '../src/AskarModuleConfig'
@@ -41,6 +44,7 @@ export const askarPostgresStorageConfig: AskarWalletPostgresStorageConfig = {
 
 export function getAskarPostgresAgentOptions(
   name: string,
+  didcommConfig: Partial<DidCommModuleConfig> = {},
   storageConfig: AskarWalletPostgresStorageConfig,
   extraConfig: Partial<InitConfig> = {}
 ) {
@@ -60,6 +64,7 @@ export function getAskarPostgresAgentOptions(
     config,
     dependencies: agentDependencies,
     modules: {
+      ...getDefaultDidcommModules(didcommConfig),
       askar: new AskarModule(askarModuleConfig),
       connections: new ConnectionsModule({
         autoAcceptConnections: true,
@@ -90,8 +95,8 @@ export function getAskarSqliteAgentOptions(
     config,
     dependencies: agentDependencies,
     modules: {
+      ...getDefaultDidcommModules(didcommConfig),
       askar: new AskarModule(askarModuleConfig),
-      didcomm: new DidCommModule(didcommConfig),
       connections: new ConnectionsModule({
         autoAcceptConnections: true,
       }),
@@ -105,24 +110,24 @@ export function getAskarSqliteAgentOptions(
  * @param receiverAgent
  */
 export async function e2eTest(senderAgent: Agent, receiverAgent: Agent) {
-  const senderReceiverOutOfBandRecord = await senderAgent.oob.createInvitation({
+  const senderReceiverOutOfBandRecord = await senderAgent.modules.oob.createInvitation({
     handshakeProtocols: [HandshakeProtocol.Connections],
   })
 
-  const { connectionRecord: bobConnectionAtReceiversender } = await receiverAgent.oob.receiveInvitation(
+  const { connectionRecord: bobConnectionAtReceiversender } = await receiverAgent.modules.oob.receiveInvitation(
     senderReceiverOutOfBandRecord.outOfBandInvitation
   )
   if (!bobConnectionAtReceiversender) throw new Error('Connection not created')
 
-  await receiverAgent.connections.returnWhenIsConnected(bobConnectionAtReceiversender.id)
+  await receiverAgent.modules.connections.returnWhenIsConnected(bobConnectionAtReceiversender.id)
 
-  const [senderConnectionAtReceiver] = await senderAgent.connections.findAllByOutOfBandId(
+  const [senderConnectionAtReceiver] = await senderAgent.modules.connections.findAllByOutOfBandId(
     senderReceiverOutOfBandRecord.id
   )
-  const senderConnection = await senderAgent.connections.returnWhenIsConnected(senderConnectionAtReceiver.id)
+  const senderConnection = await senderAgent.modules.connections.returnWhenIsConnected(senderConnectionAtReceiver.id)
 
   const message = 'hello, world'
-  await senderAgent.basicMessages.sendMessage(senderConnection.id, message)
+  await senderAgent.modules.basicMessages.sendMessage(senderConnection.id, message)
 
   const basicMessage = await waitForBasicMessage(receiverAgent, {
     content: message,

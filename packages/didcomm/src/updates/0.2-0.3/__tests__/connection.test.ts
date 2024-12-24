@@ -1,30 +1,23 @@
-import type { ConnectionRecordProps, CustomConnectionTags } from '../../../../../modules/didcomm'
-import type { MediationRecordProps } from '../../../../../modules/didcomm/modules/routing'
+import type { MediationRecordProps } from '../../../modules'
+import type { ConnectionRecordProps, CustomConnectionTags } from '../../../modules/connections'
 
-import { getAgentConfig, getAgentContext, mockFunction } from '@credo-ts/core/tests/helpers'
-import { Agent } from '@credo-ts/core/src/agent/Agent'
-import {
-  ConnectionRecord,
-  ConnectionRepository,
-  ConnectionType,
-  DidExchangeRole,
-  DidExchangeState,
-  MediationRecord,
-  MediationState,
-  MediationRepository,
-  MediationRole,
-} from '../../../../../modules/didcomm'
-import { JsonTransformer } from '@credo-ts/core/src/utils'
+import { Agent } from '../../../../..//core/src/agent/Agent'
+import { JsonTransformer } from '../../../../..//core/src/utils'
+import { getAgentConfig, getAgentContext, mockFunction } from '../../../../..//core/tests/helpers'
+import { MediationRecord, MediationRole, MediationState } from '../../../modules'
+import { ConnectionRecord, ConnectionType, DidExchangeRole, DidExchangeState } from '../../../modules/connections'
+import { ConnectionRepository } from '../../../modules/connections/repository/ConnectionRepository'
+import { MediationRepository } from '../../../modules/routing/repository/MediationRepository'
 import * as testModule from '../connection'
 
 const agentConfig = getAgentConfig('Migration ConnectionRecord 0.2-0.3')
 const agentContext = getAgentContext()
 
-jest.mock('../../../../../modules/didcomm/repository/connections/ConnectionRepository')
+jest.mock('../../../modules/connections/repository/ConnectionRepository')
 const ConnectionRepositoryMock = ConnectionRepository as jest.Mock<ConnectionRepository>
 const connectionRepository = new ConnectionRepositoryMock()
 
-jest.mock('../../../../../modules/didcomm/routing/repository/MediationRepository')
+jest.mock('../../../modules/routing/repository/MediationRepository')
 const MediationRepositoryMock = MediationRepository as jest.Mock<MediationRepository>
 const mediationRepository = new MediationRepositoryMock()
 

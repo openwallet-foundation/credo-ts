@@ -52,13 +52,13 @@ describe('Askar In Memory agents', () => {
     }
 
     aliceAgent = new Agent(aliceInMemoryAgentOptions)
-    aliceAgent.didcomm.registerInboundTransport(new SubjectInboundTransport(aliceMessages))
-    aliceAgent.didcomm.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
+    aliceAgent.modules.didcomm.registerInboundTransport(new SubjectInboundTransport(aliceMessages))
+    aliceAgent.modules.didcomm.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     await aliceAgent.initialize()
 
     bobAgent = new Agent(bobInMemoryAgentOptions)
-    bobAgent.didcomm.registerInboundTransport(new SubjectInboundTransport(bobMessages))
-    bobAgent.didcomm.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
+    bobAgent.modules.didcomm.registerInboundTransport(new SubjectInboundTransport(bobMessages))
+    bobAgent.modules.didcomm.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     await bobAgent.initialize()
 
     await e2eTest(aliceAgent, bobAgent)

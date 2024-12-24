@@ -1,5 +1,6 @@
-import { ConnectionInvitationMessage } from '../../modules/didcomm/connections'
-import { DidCommMessageRecord, DidCommMessageRole } from '../didcomm'
+import { ConnectionInvitationMessage } from '../../modules'
+import { DidCommMessageRecord } from '../DidCommMessageRecord'
+import { DidCommMessageRole } from '../DidCommMessageRole'
 
 describe('DidCommMessageRecord', () => {
   it('correctly computes message type tags', () => {

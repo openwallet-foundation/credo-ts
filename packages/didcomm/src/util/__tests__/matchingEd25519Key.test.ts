@@ -1,7 +1,7 @@
-import type { VerificationMethod } from '@credo-ts/core/src/modules/dids'
+import type { VerificationMethod } from '@credo-ts/core'
 
-import { Key, KeyType } from '@credo-ts/core/src/crypto'
-import { DidDocument } from '@credo-ts/core/src/modules/dids'
+import { DidDocument, Key, KeyType } from '@credo-ts/core'
+
 import { findMatchingEd25519Key } from '../matchingEd25519Key'
 
 describe('findMatchingEd25519Key', () => {

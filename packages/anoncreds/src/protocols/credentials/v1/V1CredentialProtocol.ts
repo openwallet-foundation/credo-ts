@@ -31,7 +31,6 @@ import {
   isLinkedAttachment,
 } from '@credo-ts/didcomm'
 
-
 import { AnonCredsCredentialProposal } from '../../../models/AnonCredsCredentialProposal'
 import { composeCredentialAutoAccept, areCredentialPreviewAttributesEqual } from '../../../utils'
 

@@ -1,13 +1,5 @@
-import type {
-  Logger,
-  AgentContext,
-} from '@credo-ts/core'
-import type {
-  InboundTransport,
-  TransportSession,
-  EncryptedMessage,
-  AgentMessageReceivedEvent,
-} from '@credo-ts/didcomm'
+import type { Logger, AgentContext } from '@credo-ts/core'
+import type { InboundTransport, TransportSession, EncryptedMessage, AgentMessageReceivedEvent } from '@credo-ts/didcomm'
 
 import { CredoError, utils, EventEmitter } from '@credo-ts/core'
 import { TransportService, AgentEventTypes, DidCommModuleConfig } from '@credo-ts/didcomm'

@@ -1,8 +1,8 @@
-import { ClassValidationError } from '@credo-ts/core/src/error/ClassValidationError'
-import { JsonTransformer } from '@credo-ts/core/src/utils/JsonTransformer'
-import { Compose } from '@credo-ts/core/src/utils/mixins'
+import { ClassValidationError } from '../../../../core/src/error/ClassValidationError'
+import { JsonTransformer } from '../../../../core/src/utils/JsonTransformer'
+import { MessageValidator } from '../../../../core/src/utils/MessageValidator'
+import { Compose } from '../../../../core/src/utils/mixins'
 import { BaseMessage } from '../../BaseMessage'
-import { MessageValidator } from '@credo-ts/core/src/utils/MessageValidator'
 
 import { AckValues } from './AckDecorator'
 import { AckDecorated } from './AckDecoratorExtension'

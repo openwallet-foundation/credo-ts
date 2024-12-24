@@ -1,18 +1,18 @@
-import { getAgentConfig, getAgentContext, mockFunction } from '@credo-ts/core/tests/helpers'
-import { Agent } from '@credo-ts/core/src/agent/Agent'
-import { MediationRole, MediationRecord } from '../../../../../modules/didcomm/modules/routing'
-import { MediationRepository } from '../../../../../modules/didcomm/modules/routing/repository/MediationRepository'
-import { JsonTransformer } from '@credo-ts/core/src/utils'
+import { Agent } from '../../../../../core/src/agent/Agent'
+import { JsonTransformer } from '../../../../../core/src/utils'
+import { getAgentConfig, getAgentContext, mockFunction } from '../../../../../core/tests/helpers'
+import { MediationRole, MediationRecord } from '../../../modules/routing'
+import { MediationRepository } from '../../../modules/routing/repository/MediationRepository'
 import * as testModule from '../mediation'
 
 const agentConfig = getAgentConfig('Migration MediationRecord 0.1-0.2')
 const agentContext = getAgentContext()
 
-jest.mock('../../../../../modules/didcomm/routing/repository/MediationRepository')
+jest.mock('../../../modules/routing/repository/MediationRepository')
 const MediationRepositoryMock = MediationRepository as jest.Mock<MediationRepository>
 const mediationRepository = new MediationRepositoryMock()
 
-jest.mock('../../../../../agent/Agent', () => {
+jest.mock('../../../../../core/src/agent/Agent', () => {
   return {
     Agent: jest.fn(() => ({
       config: agentConfig,
