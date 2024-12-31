@@ -41,7 +41,6 @@ export interface IndyVdrPoolConfig {
 
 export class IndyVdrPool {
   private _pool?: indyVdrPool
-  private _archievedPool?: indyVdrPool
   private poolConfig: IndyVdrPoolConfig
   public authorAgreement?: AuthorAgreement | null
 
@@ -59,12 +58,6 @@ export class IndyVdrPool {
 
   public connect() {
     if (this._pool) {
-      throw new IndyVdrError('Cannot connect to pool, already connected.')
-    }
-
-    if (this._archievedPool) {
-      this._pool = this._archievedPool
-      this._archievedPool = undefined
       return
     }
 
@@ -103,11 +96,8 @@ export class IndyVdrPool {
       throw new IndyVdrError("Can't close pool. Pool is not connected")
     }
 
-    // FIXME: Currently, the close method is not working coorectly in the indy-vdr-shared package
+    // FIXME: Currently, the close method is not working correctly in the indy-vdr-shared package
     // this.pool.close()
-    // Hence, a workaround to reset the _pool
-    this._archievedPool = this._pool
-    this._pool = undefined
   }
 
   public async prepareWriteRequest<Request extends IndyVdrRequest>(
