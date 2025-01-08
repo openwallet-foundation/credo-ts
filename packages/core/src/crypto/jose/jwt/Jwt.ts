@@ -11,6 +11,7 @@ interface JwtHeader {
   alg: string
   kid?: string
   jwk?: JwkJson
+  x5c?: string[]
   [key: string]: unknown
 }
 

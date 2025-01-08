@@ -1,6 +1,6 @@
 import type { AgentContext } from '../../..'
 
-import { KeyType, X509Service } from '../../..'
+import { KeyType, X509ModuleConfig, X509Service } from '../../..'
 import { InMemoryWallet } from '../../../../../../tests/InMemoryWallet'
 import { getAgentConfig, getAgentContext } from '../../../../tests'
 import { Mdoc } from '../Mdoc'
@@ -14,7 +14,7 @@ describe('mdoc service test', () => {
   beforeAll(async () => {
     const agentConfig = getAgentConfig('mdoc')
     wallet = new InMemoryWallet()
-    agentContext = getAgentContext({ wallet })
+    agentContext = getAgentContext({ wallet, registerInstances: [[X509ModuleConfig, new X509ModuleConfig()]] })
 
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     await wallet.createAndOpen(agentConfig.walletConfig!)

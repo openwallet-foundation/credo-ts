@@ -1,5 +1,12 @@
 import type { OpenId4VcIssuerX5c, OpenId4VcJwtIssuer } from './models'
-import type { AgentContext, DidPurpose, JwaSignatureAlgorithm, JwkJson, Key } from '@credo-ts/core'
+import type {
+  AgentContext,
+  DidPurpose,
+  EncodedX509Certificate,
+  JwaSignatureAlgorithm,
+  JwkJson,
+  Key,
+} from '@credo-ts/core'
 import type { JwtIssuerWithContext as VpJwtIssuerWithContext, VerifyJwtCallback } from '@sphereon/did-auth-siop'
 import type { DPoPJwtIssuerWithContext, CreateJwtCallback, JwtIssuer } from '@sphereon/oid4vc-common'
 
@@ -9,6 +16,8 @@ import {
   JwsService,
   JwtPayload,
   SignatureSuiteRegistry,
+  X509Certificate,
+  X509ModuleConfig,
   X509Service,
   getDomainFromUrl,
   getJwkClassFromKeyType,
@@ -52,24 +61,61 @@ export async function getKeyFromDid(
   return getKeyFromVerificationMethod(verificationMethod)
 }
 
-export function getVerifyJwtCallback(agentContext: AgentContext): VerifyJwtCallback {
+export function getVerifyJwtCallback(
+  agentContext: AgentContext,
+  _trustedCertificates?: EncodedX509Certificate[]
+): VerifyJwtCallback {
   return async (jwtVerifier, jwt) => {
     const jwsService = agentContext.dependencyManager.resolve(JwsService)
+
+    let trustedCertificates = _trustedCertificates
+
     if (jwtVerifier.method === 'did') {
       const key = await getKeyFromDid(agentContext, jwtVerifier.didUrl)
       const jwk = getJwkFromKey(key)
 
-      const res = await jwsService.verifyJws(agentContext, { jws: jwt.raw, jwkResolver: () => jwk })
+      const res = await jwsService.verifyJws(agentContext, {
+        jws: jwt.raw,
+        jwkResolver: () => jwk,
+        // No certificates trusted
+        trustedCertificates: [],
+      })
       return res.isValid
     } else if (jwtVerifier.method === 'x5c' || jwtVerifier.method === 'jwk') {
-      const res = await jwsService.verifyJws(agentContext, { jws: jwt.raw })
+      if (jwtVerifier.type === 'request-object') {
+        const x509Config = agentContext.dependencyManager.resolve(X509ModuleConfig)
+        const certificateChain = jwt.header.x5c?.map((cert) => X509Certificate.fromEncodedCertificate(cert))
+
+        if (!trustedCertificates && certificateChain && x509Config.getTrustedCertificatesForVerification) {
+          trustedCertificates = await x509Config.getTrustedCertificatesForVerification(agentContext, {
+            certificateChain,
+            verification: {
+              type: 'oauth2SecuredAuthorizationRequest',
+              authorizationRequest: {
+                jwt: jwt.raw,
+                payload: JwtPayload.fromJson(jwt.payload),
+              },
+            },
+          })
+        }
+
+        if (!trustedCertificates) {
+          // We also take from the config here to avoid the callback being called again
+          trustedCertificates = x509Config.trustedCertificates ?? []
+        }
+      }
+
+      const res = await jwsService.verifyJws(agentContext, {
+        jws: jwt.raw,
+        // Only allowed for request object
+        trustedCertificates: jwtVerifier.type === 'request-object' ? trustedCertificates : [],
+      })
       return res.isValid
     } else {
       throw new Error(`Unsupported jwt verifier method: '${jwtVerifier.method}'`)
     }
   }
 }
-
 export function getCreateJwtCallback(
   agentContext: AgentContext
 ): CreateJwtCallback<DPoPJwtIssuerWithContext | VpJwtIssuerWithContext> {

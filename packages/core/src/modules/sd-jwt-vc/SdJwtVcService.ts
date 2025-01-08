@@ -24,7 +24,7 @@ import { TypedArrayEncoder, nowInSeconds } from '../../utils'
 import { getDomainFromUrl } from '../../utils/domain'
 import { fetchWithTimeout } from '../../utils/fetch'
 import { DidResolverService, parseDid, getKeyFromVerificationMethod } from '../dids'
-import { X509Certificate, X509ModuleConfig } from '../x509'
+import { EncodedX509Certificate, X509Certificate, X509ModuleConfig } from '../x509'
 
 import { SdJwtVcError } from './SdJwtVcError'
 import { decodeSdJwtVc, sdJwtVcHasher } from './decodeSdJwtVc'
@@ -191,7 +191,7 @@ export class SdJwtVcService {
 
   public async verify<Header extends SdJwtVcHeader = SdJwtVcHeader, Payload extends SdJwtVcPayload = SdJwtVcPayload>(
     agentContext: AgentContext,
-    { compactSdJwtVc, keyBinding, requiredClaimKeys, fetchTypeMetadata }: SdJwtVcVerifyOptions
+    { compactSdJwtVc, keyBinding, requiredClaimKeys, fetchTypeMetadata, trustedCertificates }: SdJwtVcVerifyOptions
   ): Promise<
     | { isValid: true; verification: VerificationResult; sdJwtVc: SdJwtVc<Header, Payload> }
     | { isValid: false; verification: VerificationResult; sdJwtVc?: SdJwtVc<Header, Payload>; error: Error }
@@ -229,7 +229,12 @@ export class SdJwtVcService {
     } satisfies SdJwtVc<Header, Payload>
 
     try {
-      const credentialIssuer = await this.parseIssuerFromCredential(agentContext, sdJwtVc)
+      const credentialIssuer = await this.parseIssuerFromCredential(
+        agentContext,
+        sdJwtVc,
+        returnSdJwtVc,
+        trustedCertificates
+      )
       const issuer = await this.extractKeyFromIssuer(agentContext, credentialIssuer)
       const holderBinding = this.parseHolderBindingFromCredential(sdJwtVc)
       const holder = holderBinding ? await this.extractKeyFromHolderBinding(agentContext, holderBinding) : undefined
@@ -455,8 +460,11 @@ export class SdJwtVcService {
 
   private async parseIssuerFromCredential<Header extends SdJwtVcHeader, Payload extends SdJwtVcPayload>(
     agentContext: AgentContext,
-    sdJwtVc: SDJwt<Header, Payload>
+    sdJwtVc: SDJwt<Header, Payload>,
+    credoSdJwtVc: SdJwtVc<Header, Payload>,
+    _trustedCertificates?: EncodedX509Certificate[]
   ): Promise<SdJwtVcIssuer> {
+    const x509Config = agentContext.dependencyManager.resolve(X509ModuleConfig)
     if (!sdJwtVc.jwt?.payload) {
       throw new SdJwtVcError('Credential not exist')
     }
@@ -478,7 +486,20 @@ export class SdJwtVcService {
         throw new SdJwtVcError('Invalid x5c header in credential. Not an array of strings.')
       }
 
-      const trustedCertificates = agentContext.dependencyManager.resolve(X509ModuleConfig).trustedCertificates
+      let trustedCertificates = _trustedCertificates
+      const certificateChain = sdJwtVc.jwt.header.x5c.map((cert) => X509Certificate.fromEncodedCertificate(cert))
+
+      if (!trustedCertificates) {
+        trustedCertificates =
+          (await x509Config.getTrustedCertificatesForVerification?.(agentContext, {
+            certificateChain,
+            verification: {
+              type: 'credential',
+              credential: credoSdJwtVc,
+            },
+          })) ?? x509Config.trustedCertificates
+      }
+
       if (!trustedCertificates) {
         throw new SdJwtVcError(
           'No trusted certificates configured for X509 certificate chain validation. Issuer cannot be verified.'

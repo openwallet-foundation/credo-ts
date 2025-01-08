@@ -1,8 +1,14 @@
 import type { ExtensionInput } from './X509Certificate'
 import type { Key } from '../../crypto/Key'
 
+/**
+ * Base64 or PEM
+ */
+export type EncodedX509Certificate = string
+
 export interface X509ValidateCertificateChainOptions {
-  certificateChain: Array<string>
+  certificateChain: Array<EncodedX509Certificate>
+
   certificate?: string
   /**
    * The date for which the certificate chain should be valid
@@ -13,7 +19,8 @@ export interface X509ValidateCertificateChainOptions {
    * otherwise, the validation will fail
    */
   verificationDate?: Date
-  trustedCertificates?: [string, ...string[]]
+
+  trustedCertificates?: EncodedX509Certificate[]
 }
 
 export interface X509CreateSelfSignedCertificateOptions {

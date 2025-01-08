@@ -5,6 +5,7 @@ import base from './jest.config.base'
 const config: Config.InitialOptions = {
   ...base,
   roots: ['<rootDir>'],
+  coverageReporters: ['text-summary', 'lcov', 'json'],
   coveragePathIgnorePatterns: ['/build/', '/node_modules/', '/__tests__/', 'tests'],
   coverageDirectory: '<rootDir>/coverage/',
   projects: [
