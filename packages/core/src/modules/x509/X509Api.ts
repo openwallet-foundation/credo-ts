@@ -10,18 +10,14 @@ import { X509CreateSelfSignedCertificateOptions, X509ValidateCertificateChainOpt
  */
 @injectable()
 export class X509Api {
-  public constructor(
-    private agentContext: AgentContext,
-    private x509ModuleConfig: X509ModuleConfig,
-    private x509Service: X509Service
-  ) {}
+  public constructor(private agentContext: AgentContext, private x509ModuleConfig: X509ModuleConfig) {}
 
   /**
    * Adds a trusted certificate to the X509 Module Config.
    *
    * @param certificate
    */
-  public async addTrustedCertificate(certificate: string) {
+  public addTrustedCertificate(certificate: string) {
     this.x509ModuleConfig.addTrustedCertificate(certificate)
   }
 

@@ -44,6 +44,10 @@ import {
   TypedArrayEncoder,
   Jwt,
   extractPresentationsWithDescriptorsFromSubmission,
+  X509ModuleConfig,
+  extractX509CertificatesFromJwt,
+  W3cJwtVerifiablePresentation,
+  X509Certificate,
 } from '@credo-ts/core'
 import {
   AuthorizationRequest,
@@ -296,6 +300,7 @@ export class OpenId4VcSiopVerifierService {
           mdocGeneratedNonce: options.jarmHeader?.apu
             ? TypedArrayEncoder.toUtf8String(TypedArrayEncoder.fromBase64(options.jarmHeader.apu))
             : undefined,
+          verificationSessionRecordId: options.verificationSession.id,
         }),
       },
     })
@@ -627,6 +632,7 @@ export class OpenId4VcSiopVerifierService {
       correlationId: string
       responseUri?: string
       mdocGeneratedNonce?: string
+      verificationSessionRecordId: string
     }
   ): PresentationVerificationCallback {
     return async (encodedPresentation, presentationSubmission) => {
@@ -635,6 +641,7 @@ export class OpenId4VcSiopVerifierService {
         this.logger.debug(`Presentation submission`, presentationSubmission)
 
         if (!encodedPresentation) throw new CredoError('Did not receive a presentation for verification.')
+        const x509Config = agentContext.dependencyManager.resolve(X509ModuleConfig)
 
         let isValid: boolean
         let reason: string | undefined = undefined
@@ -642,8 +649,28 @@ export class OpenId4VcSiopVerifierService {
         if (typeof encodedPresentation === 'string' && encodedPresentation.includes('~')) {
           // TODO: it might be better here to look at the presentation submission to know
           // If presentation includes a ~, we assume it's an SD-JWT-VC
-
           const sdJwtVcApi = agentContext.dependencyManager.resolve(SdJwtVcApi)
+
+          const jwt = Jwt.fromSerializedJwt(encodedPresentation.split('~')[0])
+          const sdJwtVc = sdJwtVcApi.fromCompact(encodedPresentation)
+          const certificateChain = extractX509CertificatesFromJwt(jwt)
+
+          let trustedCertificates: string[] | undefined = undefined
+          if (certificateChain && x509Config.getTrustedCertificatesForVerification) {
+            trustedCertificates = await x509Config.getTrustedCertificatesForVerification(agentContext, {
+              certificateChain,
+              verification: {
+                type: 'credential',
+                credential: sdJwtVc,
+                openId4VcVerificationSessionId: options.verificationSessionRecordId,
+              },
+            })
+          }
+
+          if (!trustedCertificates) {
+            // We also take from the config here to avoid the callback being called again
+            trustedCertificates = x509Config.trustedCertificates ?? []
+          }
 
           const verificationResult = await sdJwtVcApi.verify({
             compactSdJwtVc: encodedPresentation,
@@ -651,6 +678,7 @@ export class OpenId4VcSiopVerifierService {
               audience: options.audience,
               nonce: options.nonce,
             },
+            trustedCertificates,
           })
 
           isValid = verificationResult.verification.isValid
@@ -661,6 +689,31 @@ export class OpenId4VcSiopVerifierService {
             reason = 'Mdoc device response verification failed. Response uri and the mdocGeneratedNonce are not set'
           } else {
             const mdocDeviceResponse = MdocDeviceResponse.fromBase64Url(encodedPresentation)
+
+            const trustedCertificates = (
+              await Promise.all(
+                mdocDeviceResponse.documents.map(async (mdoc) => {
+                  const certificateChain = mdoc.issuerSignedCertificateChain.map((cert) =>
+                    X509Certificate.fromRawCertificate(cert)
+                  )
+
+                  const trustedCertificates = await x509Config.getTrustedCertificatesForVerification?.(agentContext, {
+                    certificateChain,
+                    verification: {
+                      type: 'credential',
+                      credential: mdoc,
+                      openId4VcVerificationSessionId: options.verificationSessionRecordId,
+                    },
+                  })
+
+                  // TODO: could have some duplication but not a big issue
+                  return trustedCertificates ?? x509Config.trustedCertificates
+                })
+              )
+            )
+              .filter((c): c is string[] => c !== undefined)
+              .flatMap((c) => c)
+
             await mdocDeviceResponse.verify(agentContext, {
               sessionTranscriptOptions: {
                 clientId: options.audience,
@@ -668,20 +721,35 @@ export class OpenId4VcSiopVerifierService {
                 responseUri: options.responseUri,
                 verifierGeneratedNonce: options.nonce,
               },
-              verificationContext: {
-                openId4VcVerificationSessionId: options.correlationId,
-              },
+              trustedCertificates,
             })
             isValid = true
           }
         } else if (typeof encodedPresentation === 'string' && Jwt.format.test(encodedPresentation)) {
+          const presentation = W3cJwtVerifiablePresentation.fromSerializedJwt(encodedPresentation)
+          const certificateChain = extractX509CertificatesFromJwt(presentation.jwt)
+
+          let trustedCertificates: string[] | undefined = undefined
+          if (certificateChain && x509Config.getTrustedCertificatesForVerification) {
+            trustedCertificates = await x509Config.getTrustedCertificatesForVerification?.(agentContext, {
+              certificateChain,
+              verification: {
+                type: 'credential',
+                credential: presentation,
+                openId4VcVerificationSessionId: options.verificationSessionRecordId,
+              },
+            })
+          }
+
+          if (!trustedCertificates) {
+            trustedCertificates = x509Config.trustedCertificates ?? []
+          }
+
           const verificationResult = await this.w3cCredentialService.verifyPresentation(agentContext, {
             presentation: encodedPresentation,
             challenge: options.nonce,
             domain: options.audience,
-            verificationContext: {
-              openId4VcVerificationSessionId: options.correlationId,
-            },
+            trustedCertificates,
           })
 
           isValid = verificationResult.isValid

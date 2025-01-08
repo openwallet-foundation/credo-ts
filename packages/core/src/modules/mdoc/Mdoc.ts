@@ -88,6 +88,10 @@ export class Mdoc {
     )
   }
 
+  public get issuerSignedCertificateChain() {
+    return this.issuerSignedDocument.issuerSigned.issuerAuth.certificateChain
+  }
+
   public get issuerSignedNamespaces(): MdocNameSpaces {
     return Object.fromEntries(
       Array.from(this.issuerSignedDocument.allIssuerSignedNamespaces.entries()).map(([namespace, value]) => [
@@ -156,19 +160,24 @@ export class Mdoc {
     agentContext: AgentContext,
     options?: MdocVerifyOptions
   ): Promise<{ isValid: true } | { isValid: false; error: string }> {
-    let trustedCerts: [string, ...string[]] | undefined
+    const x509ModuleConfig = agentContext.dependencyManager.resolve(X509ModuleConfig)
+    const certificateChain = this.issuerSignedDocument.issuerSigned.issuerAuth.certificateChain.map((certificate) =>
+      X509Certificate.fromRawCertificate(certificate)
+    )
 
-    if (options?.trustedCertificates) {
-      trustedCerts = options.trustedCertificates
-    } else if (options?.verificationContext) {
-      trustedCerts = await agentContext.dependencyManager
-        .resolve(X509ModuleConfig)
-        .getTrustedCertificatesForVerification?.(agentContext, options.verificationContext)
-    } else {
-      trustedCerts = agentContext.dependencyManager.resolve(X509ModuleConfig).trustedCertificates
+    let trustedCertificates = options?.trustedCertificates
+    if (!trustedCertificates) {
+      trustedCertificates =
+        (await x509ModuleConfig.getTrustedCertificatesForVerification?.(agentContext, {
+          verification: {
+            type: 'credential',
+            credential: this,
+          },
+          certificateChain,
+        })) ?? x509ModuleConfig.trustedCertificates
     }
 
-    if (!trustedCerts) {
+    if (!trustedCertificates) {
       throw new MdocError('No trusted certificates found. Cannot verify mdoc.')
     }
 
@@ -177,7 +186,9 @@ export class Mdoc {
       const verifier = new Verifier()
       await verifier.verifyIssuerSignature(
         {
-          trustedCertificates: trustedCerts.map((cert) => X509Certificate.fromEncodedCertificate(cert).rawCertificate),
+          trustedCertificates: trustedCertificates.map(
+            (cert) => X509Certificate.fromEncodedCertificate(cert).rawCertificate
+          ),
           issuerAuth: this.issuerSignedDocument.issuerSigned.issuerAuth,
           disableCertificateChainValidation: false,
           now: options?.now,
