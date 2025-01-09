@@ -310,9 +310,12 @@ export class CheqdAnonCredsRegistry implements AnonCredsRegistry {
 
       const cheqdDidRegistrar = agentContext.dependencyManager.resolve(CheqdDidRegistrar)
 
+      const revocDefName = `${credentialDefinitionName}-${revocationRegistryDefinition.tag}`
+      const revocDefNameHashedBuffer = Hasher.hash(revocDefName, 'sha-256')
+
       const revocationRegistryDefinitionResource = {
         id: utils.uuid(),
-        name: `${credentialDefinitionName}-${revocationRegistryDefinition.tag}`,
+        name: TypedArrayEncoder.toHex(revocDefNameHashedBuffer),
         resourceType: cheqdAnonCredsResourceTypes.revocationRegistryDefinition,
         data: {
           credDefId: revocationRegistryDefinition.credDefId,
