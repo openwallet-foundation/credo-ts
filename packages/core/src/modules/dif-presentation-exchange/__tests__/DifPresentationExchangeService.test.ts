@@ -1,4 +1,3 @@
-import { MDoc } from '@animo-id/mdoc'
 import { Subject } from 'rxjs'
 
 import { InMemoryStorageService } from '../../../../../../tests/InMemoryStorageService'
