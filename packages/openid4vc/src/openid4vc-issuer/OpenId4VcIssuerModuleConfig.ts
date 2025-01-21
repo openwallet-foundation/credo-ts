@@ -2,9 +2,6 @@ import type {
   OpenId4VciCredentialRequestToCredentialMapper,
   OpenId4VciGetVerificationSessionForIssuanceSessionAuthorization,
 } from './OpenId4VcIssuerServiceOptions'
-import type { Router } from 'express'
-
-import { importExpress } from '../shared/router'
 
 const DEFAULT_C_NONCE_EXPIRES_IN = 1 * 60 // 1 minute
 const DEFAULT_AUTHORIZATION_CODE_EXPIRES_IN = 1 * 60 // 1 minute
@@ -17,15 +14,6 @@ export interface OpenId4VcIssuerModuleConfigOptions {
    * this path as prefix.
    */
   baseUrl: string
-
-  /**
-   * Express router on which the openid4vci endpoints will be registered. If
-   * no router is provided, a new one will be created.
-   *
-   * NOTE: you must manually register the router on your express app and
-   * expose this on a public url that is reachable when `baseUrl` is called.
-   */
-  router?: Router
 
   /**
    * The time after which a cNonce will expire.
@@ -130,12 +118,12 @@ export interface OpenId4VcIssuerModuleConfigOptions {
 
 export class OpenId4VcIssuerModuleConfig {
   private options: OpenId4VcIssuerModuleConfigOptions
-  public readonly router: Router
+  // public readonly router: Router
 
   public constructor(options: OpenId4VcIssuerModuleConfigOptions) {
     this.options = options
 
-    this.router = options.router ?? importExpress().Router()
+    // this.router = options.router ??
   }
 
   public get baseUrl() {

@@ -25,9 +25,8 @@ describe('OpenId4VcIssuerModule', () => {
       credentialRequestToCredentialMapper: () => {
         throw new Error('Not implemented')
       },
-      router: Router(),
     } as const
-    const openId4VcClientModule = new OpenId4VcIssuerModule(options)
+    const openId4VcClientModule = new OpenId4VcIssuerModule(options, Router())
     openId4VcClientModule.register(dependencyManager)
 
     expect(dependencyManager.registerInstance).toHaveBeenCalledTimes(1)
@@ -43,6 +42,6 @@ describe('OpenId4VcIssuerModule', () => {
 
     await openId4VcClientModule.initialize(agentContext)
 
-    expect(openId4VcClientModule.config.router).toBeDefined()
+    expect(openId4VcClientModule.contextRouter).toBeDefined()
   })
 })

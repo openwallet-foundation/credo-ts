@@ -194,7 +194,10 @@ describe('OpenId4Vc', () => {
     verifier2 = await createTenantForAgent(verifier.agent, 'vTenant2')
 
     // We let AFJ create the router, so we have a fresh one each time
-    expressApp.use('/oid4vci', issuer.agent.modules.openId4VcIssuer.config.router)
+    expressApp.use(
+      '/oid4vci',
+      (issuer.agent.dependencyManager.registeredModules['openId4VcIssuer'] as OpenId4VcIssuerModule).contextRouter
+    )
     expressApp.use('/oid4vp', verifier.agent.modules.openId4VcVerifier.config.router)
 
     expressServer = expressApp.listen(serverPort)
