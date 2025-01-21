@@ -18,7 +18,7 @@ export function configureCredentialEndpoint(router: Router, config: OpenId4VcIss
   router.post(config.credentialEndpointPath, async (request: OpenId4VcIssuanceRequest, response: Response, next) => {
     const requestContext = getRequestContext(request)
     try {
-      const credentialResponse = credentialEndpointHandler(request.body, request, requestContext)
+      const credentialResponse = await credentialEndpointHandler(request.body, request, requestContext)
       return sendJsonResponse(response, next, credentialResponse)
     } catch (error) {
       if (error instanceof Oauth2ServerErrorResponseError) {
