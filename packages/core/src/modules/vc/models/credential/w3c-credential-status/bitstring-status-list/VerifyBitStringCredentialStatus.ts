@@ -15,6 +15,7 @@ const fetchBitStringStatusListCredential = async (
   if (!response.ok) {
     throw new CredoError(`Failed to fetch BitStringStatusListCredential status list. HTTP Status: ${response.status}`)
   }
+  // Validate signature
 
   try {
     return (await response.json()) as BitStringStatusListCredential
