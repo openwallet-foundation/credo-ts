@@ -8,7 +8,7 @@ import {
   verifyBitStringCredentialStatus,
 } from '../../models/credential/w3c-credential-status'
 import { W3cCredentialStatusSupportedTypes } from '../../models/credential/w3c-credential-status/W3cCredentialStatus'
-import { JsonTransformer, SingleOrArray } from 'packages/core/src/utils'
+import { JsonTransformer, SingleOrArray } from '../../../../utils'
 
 // Function to validate the status using the updated method
 export const validateStatus = async (
