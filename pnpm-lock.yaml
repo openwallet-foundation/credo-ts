@@ -151,6 +151,9 @@ importers:
       '@credo-ts/core':
         specifier: workspace:*
         version: link:../packages/core
+      '@credo-ts/didcomm':
+        specifier: workspace:*
+        version: link:../packages/didcomm
       '@credo-ts/indy-vdr':
         specifier: workspace:*
         version: link:../packages/indy-vdr
