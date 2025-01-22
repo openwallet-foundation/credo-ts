@@ -235,7 +235,7 @@ export class JsonLdCredentialFormatService implements CredentialFormatService<Js
     const options = credentialRequest.options
 
     // Get a list of fields found in the options that are not supported at the moment
-    const unsupportedFields = ['challenge', 'domain', 'credentialStatus', 'created'] as const
+    const unsupportedFields = ['challenge', 'domain', 'created'] as const
     const foundFields = unsupportedFields.filter((field) => options[field] !== undefined)
 
     if (foundFields.length > 0) {
