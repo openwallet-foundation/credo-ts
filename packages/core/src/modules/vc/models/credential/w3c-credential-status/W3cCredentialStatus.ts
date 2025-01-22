@@ -13,6 +13,10 @@ export interface W3cCredentialStatusOptions {
   type: string
 }
 
+export type CredentialStatusBasedOnType = W3cCredentialStatus extends { type: 'BitstringStatusListEntry' }
+  ? BitStringStatusListEntry
+  : W3cCredentialStatus | BitStringStatusListEntry
+
 export enum W3cCredentialStatusSupportedTypes {
   BitstringStatusListEntry = 'BitstringStatusListEntry',
 }
