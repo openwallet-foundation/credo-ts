@@ -2,12 +2,8 @@ import { Type } from 'class-transformer'
 import { IsEnum, IsNumber, IsString } from 'class-validator'
 
 import { W3cCredentialStatus } from '../W3cCredentialStatus'
+import { BitstringStatusListCredentialStatusPurpose } from './BitStringStatusListCredential'
 
-// The purpose can be anything apart from this as well
-export enum BitstringStatusListCredentialStatusPurpose {
-  Revocation = 'revocation',
-  Suspension = 'suspension',
-}
 
 export interface BitStringStatusListMessageOptions {
   // a string representing the hexadecimal value of the status prefixed with 0x

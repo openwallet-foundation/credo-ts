@@ -1,4 +1,5 @@
-import type { BitStringStatusListCredential, BitStringStatusListEntry } from './BitStringStatusList'
+import type { BitStringStatusListEntry } from './BitStringStatusList'
+import type { BitStringStatusListCredential } from './BitStringStatusListCredential'
 import type { AgentContext } from '../../../../../../agent/context'
 
 import { ungzip } from 'pako'
