@@ -10,5 +10,5 @@ coverage
 .DS_Store
 logs.txt
 logs/
-
+.pnpm-store
 ngrok.auth.yml
