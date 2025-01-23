@@ -26,14 +26,14 @@ jobs:
     name: Validate
     if: github.event_name != 'pull_request_review' ||  github.event.pull_request.head.ref == 'changeset-release/main'
     steps:
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
 
       - name: Setup NodeJS
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: 'pnpm'
+          cache: pnpm
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -65,15 +65,14 @@ jobs:
         shard: [1, 2]
 
     steps:
-      - name: Checkout credo
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
 
       - name: Setup NodeJS
         id: setup-node
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
-      - uses: pnpm/action-setup@v4
 
       # See https://github.com/actions/setup-node/issues/641#issuecomment-1358859686
       - name: pnpm cache path
@@ -114,8 +113,7 @@ jobs:
         node-version: [18, 20]
 
     steps:
-      - name: Checkout credo
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       # setup dependencies
       - name: Setup services
