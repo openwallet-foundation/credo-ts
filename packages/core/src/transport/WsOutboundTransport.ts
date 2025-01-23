@@ -41,15 +41,17 @@ export class WsOutboundTransport implements OutboundTransport {
     this.transportTable.forEach((socket) => {
       socket.removeEventListener('message', this.handleMessageEvent)
       if (socket.readyState !== this.WebSocketClass.CLOSED) {
-        stillOpenSocketClosingPromises.push(new Promise((resolve) => {
-          const closeHandler = () => {
-            socket.removeEventListener('close', closeHandler)
-            resolve()
-          }
-          
-          socket.addEventListener('close', closeHandler)
-        }))
-        
+        stillOpenSocketClosingPromises.push(
+          new Promise((resolve) => {
+            const closeHandler = () => {
+              socket.removeEventListener('close', closeHandler)
+              resolve()
+            }
+
+            socket.addEventListener('close', closeHandler)
+          })
+        )
+
         socket.close()
       }
     })
