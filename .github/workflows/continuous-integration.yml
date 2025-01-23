@@ -4,13 +4,10 @@ on:
   pull_request:
     branches:
       - main
-      - '**-pre'
-    types: [opened, synchronize, reopened, labeled]
   push:
     branches:
       - main
-      - '**-pre'
-  workflow_dispatch:
+  pull_request_review:
 
 env:
   NODE_OPTIONS: --max_old_space_size=6144
@@ -24,44 +21,19 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # PRs created by github actions won't trigger CI. Before we can merge a PR we need to run the tests and
-  # validation scripts. To still be able to run the CI we can manually trigger it by adding the 'ci-test'
-  # label to the pull request
-  ci-trigger:
-    runs-on: ubuntu-20.04
-    outputs:
-      triggered: ${{ steps.check.outputs.triggered }}
-    steps:
-      - name: Determine if CI should run
-        id: check
-        run: |
-          if [[ "${{ github.event.action }}" == "labeled" && "${{ github.event.label.name }}" == "ci-test" ]]; then
-              export SHOULD_RUN='true'
-          elif [[ "${{ github.event.action }}" == "labeled" && "${{ github.event.label.name }}" != "ci-test" ]]; then
-              export SHOULD_RUN='false'
-          else
-              export SHOULD_RUN='true'
-          fi
-
-          echo "SHOULD_RUN: ${SHOULD_RUN}"
-          echo triggered="${SHOULD_RUN}" >> "$GITHUB_OUTPUT"
-
   validate:
     runs-on: ubuntu-20.04
     name: Validate
+    if: github.event_name != 'pull_request_review' ||  github.event.pull_request.head.ref == 'changeset-release/main'
     steps:
-      - name: Checkout credo-ts
-        uses: actions/checkout@v4
-
-      - uses: pnpm/action-setup@v2
-        with:
-          version: 9.1.0
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
 
       - name: Setup NodeJS
         uses: actions/setup-node@v4
         with:
-          node-version: 18
-          cache: 'pnpm'
+          node-version: 22
+          cache: pnpm
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -81,29 +53,26 @@ jobs:
   unit-tests:
     runs-on: ubuntu-20.04
     name: Unit Tests
+    if: github.event_name != 'pull_request_review' ||  github.event.pull_request.head.ref == 'changeset-release/main'
 
     strategy:
       fail-fast: false
       matrix:
-        node-version: [18, 20]
+        node-version: [18, 20, 22]
         # Each shard runs a set of the tests
         # Make sure to UPDATE THE TEST command with the total length of
         # the shards if you change this!!
         shard: [1, 2]
 
     steps:
-      - name: Checkout credo
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
 
       - name: Setup NodeJS
         id: setup-node
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
-
-      - uses: pnpm/action-setup@v2
-        with:
-          version: 9.1.0
 
       # See https://github.com/actions/setup-node/issues/641#issuecomment-1358859686
       - name: pnpm cache path
@@ -136,15 +105,15 @@ jobs:
   e2e-tests:
     runs-on: ubuntu-20.04
     name: E2E Tests
+    if: github.event_name != 'pull_request_review' ||  github.event.pull_request.head.ref == 'changeset-release/main'
 
     strategy:
       fail-fast: false
       matrix:
-        node-version: [18, 20]
+        node-version: [18, 20, 22]
 
     steps:
-      - name: Checkout credo
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       # setup dependencies
       - name: Setup services
@@ -156,9 +125,7 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
 
-      - uses: pnpm/action-setup@v2
-        with:
-          version: 9.1.0
+      - uses: pnpm/action-setup@v4
 
       # See https://github.com/actions/setup-node/issues/641#issuecomment-1358859686
       - name: pnpm cache path

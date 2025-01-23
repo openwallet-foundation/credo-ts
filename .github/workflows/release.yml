@@ -23,18 +23,14 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     steps:
-      - name: Checkout Repo
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
 
-      - uses: pnpm/action-setup@v2
-        with:
-          version: 9.1.0
-
-      - name: Setup Node.js 20.x
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20.x
-          cache: 'pnpm'
+          node-version: 22
+          cache: pnpm
 
       - name: Install Dependencies
         run: pnpm install --frozen-lockfile
@@ -43,11 +39,10 @@ jobs:
         id: changesets
         uses: changesets/action@v1
         with:
-          # This expects you to have a script called release which does a build for your packages and calls changeset publish
-          publish: pnpm release
           title: 'chore(release): new version'
           commit: 'chore(release): new version'
-          createGithubReleases: false
+          publish: pnpm release
+          version: pnpm changeset-version
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_PUBLISH }}
@@ -65,9 +60,6 @@ jobs:
   release-unstable:
     name: Release Unstable
     runs-on: ubuntu-latest
-    # We don't want to run release and release-unstable concurrently as NPM doesn't allow publishing packages while another version of the same package is
-    # still processing. So we wait for release to finish, and the always() ensure that it will run no matter the result of release.
-    needs: [release]
     if: "always() && (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == 'openwallet-foundation/credo-ts') || (github.event_name == 'push' && !startsWith(github.event.head_commit.message, 'chore(release): new version'))"
     steps:
       - uses: snnaplab/get-labels-action@v1
@@ -77,18 +69,14 @@ jobs:
       - if: github.event_name == 'pull_request' && !contains(fromJSON(env.LABELS), 'alpha-release')
         run: exit 0
 
-      - name: Checkout Repo
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
 
-      - uses: pnpm/action-setup@v2
-        with:
-          version: 9.1.0
-
-      - name: Setup Node.js 20.x
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20.x
-          cache: 'pnpm'
+          node-version: 22
+          cache: pnpm
 
       - name: Install Dependencies
         run: pnpm install --frozen-lockfile
