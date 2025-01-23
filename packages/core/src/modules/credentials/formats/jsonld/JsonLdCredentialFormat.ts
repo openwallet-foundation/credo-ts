@@ -1,6 +1,7 @@
 import type { JsonObject } from '../../../../types'
 import type { SingleOrArray } from '../../../../utils'
 import type { W3cIssuerOptions } from '../../../vc/models/credential/W3cIssuer'
+import type { CredentialStatusBasedOnType } from '../../../vc/models/credential/w3c-credential-status/W3cCredentialStatus'
 import type { CredentialFormat } from '../CredentialFormat'
 
 export interface JsonCredential {
@@ -11,6 +12,7 @@ export interface JsonCredential {
   issuanceDate: string
   expirationDate?: string
   credentialSubject: SingleOrArray<JsonObject>
+  credentialStatus?: SingleOrArray<CredentialStatusBasedOnType>
   [key: string]: unknown
 }
 

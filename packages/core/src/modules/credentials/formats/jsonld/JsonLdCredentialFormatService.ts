@@ -26,7 +26,7 @@ import type {
 
 import { Attachment, AttachmentData } from '../../../../decorators/attachment/Attachment'
 import { CredoError } from '../../../../error'
-import { JsonEncoder, areObjectsEqual } from '../../../../utils'
+import { JsonEncoder, areObjectsEqual, deepEquality } from '../../../../utils'
 import { JsonTransformer } from '../../../../utils/JsonTransformer'
 import { findVerificationMethodByKeyType } from '../../../dids/domain/DidDocument'
 import { DidResolverService } from '../../../dids/services/DidResolverService'
@@ -235,7 +235,7 @@ export class JsonLdCredentialFormatService implements CredentialFormatService<Js
     const options = credentialRequest.options
 
     // Get a list of fields found in the options that are not supported at the moment
-    const unsupportedFields = ['challenge', 'domain', 'credentialStatus', 'created'] as const
+    const unsupportedFields = ['challenge', 'domain', 'created'] as const
     const foundFields = unsupportedFields.filter((field) => options[field] !== undefined)
 
     if (foundFields.length > 0) {
@@ -359,6 +359,12 @@ export class JsonLdCredentialFormatService implements CredentialFormatService<Js
 
     if (credential.proof.proofPurpose !== request.options.proofPurpose) {
       throw new CredoError('Received credential proof purpose does not match proof purpose from credential request')
+    }
+
+    if (deepEquality(credential.credentialStatus, request.credential.credentialStatus)) {
+      throw new CredoError(
+        'Received credential credentialStatus does not match credentialStatus from credential request'
+      )
     }
 
     // Check whether the received credential (minus the proof) matches the credential request
