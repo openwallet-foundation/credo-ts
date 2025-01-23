@@ -1,7 +1,9 @@
-import type { DependencyManager } from '@credo-ts/core/src/plugins/DependencyManager'
-import type { FeatureRegistry } from '../../../FeatureRegistry'
+import type { DependencyManager } from '../../../../../core/src/plugins/DependencyManager'
 import type { CredentialProtocol } from '../protocol/CredentialProtocol'
 
+import { getAgentContext } from '../../../../../core/tests'
+import { FeatureRegistry } from '../../../FeatureRegistry'
+import { MessageHandlerRegistry } from '../../../MessageHandlerRegistry'
 import { Protocol } from '../../../models'
 import { CredentialsModule } from '../CredentialsModule'
 import { CredentialsModuleConfig } from '../CredentialsModuleConfig'
@@ -34,6 +36,37 @@ describe('CredentialsModule', () => {
 
     expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(RevocationNotificationService)
     expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(CredentialRepository)
+  })
+
+  test('registers V2CredentialProtocol if no credentialProtocols are configured', () => {
+    const credentialsModule = new CredentialsModule()
+
+    expect(credentialsModule.config.credentialProtocols).toEqual([expect.any(V2CredentialProtocol)])
+  })
+
+  test('calls register on the provided CredentialProtocols', async () => {
+    const registerMock = jest.fn()
+    const credentialProtocol = {
+      register: registerMock,
+    } as unknown as CredentialProtocol
+
+    const credentialsModule = new CredentialsModule({
+      credentialProtocols: [credentialProtocol],
+    })
+
+    expect(credentialsModule.config.credentialProtocols).toEqual([credentialProtocol])
+
+    const messageHandlerRegistry = new MessageHandlerRegistry()
+    const agentContext = getAgentContext({
+      registerInstances: [
+        [MessageHandlerRegistry, messageHandlerRegistry],
+        [FeatureRegistry, featureRegistry],
+      ],
+    })
+    await credentialsModule.initialize(agentContext)
+
+    expect(registerMock).toHaveBeenCalledTimes(1)
+    expect(registerMock).toHaveBeenCalledWith(messageHandlerRegistry, featureRegistry)
 
     expect(featureRegistry.register).toHaveBeenCalledTimes(1)
     expect(featureRegistry.register).toHaveBeenCalledWith(
@@ -46,29 +79,5 @@ describe('CredentialsModule', () => {
         roles: ['holder'],
       })
     )
-  })
-
-  test('registers V2CredentialProtocol if no credentialProtocols are configured', () => {
-    const credentialsModule = new CredentialsModule()
-
-    expect(credentialsModule.config.credentialProtocols).toEqual([expect.any(V2CredentialProtocol)])
-  })
-
-  test('calls register on the provided CredentialProtocols', () => {
-    const registerMock = jest.fn()
-    const credentialProtocol = {
-      register: registerMock,
-    } as unknown as CredentialProtocol
-
-    const credentialsModule = new CredentialsModule({
-      credentialProtocols: [credentialProtocol],
-    })
-
-    expect(credentialsModule.config.credentialProtocols).toEqual([credentialProtocol])
-
-    credentialsModule.register(dependencyManager)
-
-    expect(registerMock).toHaveBeenCalledTimes(1)
-    expect(registerMock).toHaveBeenCalledWith(dependencyManager, featureRegistry)
   })
 })

@@ -1,10 +1,10 @@
 import { validateOrReject } from 'class-validator'
 import { parseUrl } from 'query-string'
 
+import { ClassValidationError } from '../../../../../core/src/error/ClassValidationError'
+import { JsonEncoder } from '../../../../../core/src/utils/JsonEncoder'
+import { JsonTransformer } from '../../../../../core/src/utils/JsonTransformer'
 import { Attachment } from '../../../decorators/attachment/Attachment'
-import { ClassValidationError } from '@credo-ts/core/src/error/ClassValidationError'
-import { JsonEncoder } from '@credo-ts/core/src/utils/JsonEncoder'
-import { JsonTransformer } from '@credo-ts/core/src/utils/JsonTransformer'
 import { ConnectionInvitationMessage } from '../messages/ConnectionInvitationMessage'
 
 describe('ConnectionInvitationMessage', () => {

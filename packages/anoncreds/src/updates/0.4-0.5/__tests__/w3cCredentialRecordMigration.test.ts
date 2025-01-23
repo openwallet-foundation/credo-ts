@@ -1,11 +1,8 @@
 import type { DidRepository, Wallet } from '@credo-ts/core'
 
 import {
-  CredentialState,
   Agent,
   CacheModuleConfig,
-  CredentialExchangeRecord,
-  CredentialRole,
   CredoError,
   DidResolverService,
   DidsModuleConfig,
@@ -14,8 +11,8 @@ import {
   SignatureSuiteToken,
   W3cCredentialRepository,
   W3cCredentialsModuleConfig,
-  CredentialRepository,
 } from '@credo-ts/core'
+import { CredentialState, CredentialExchangeRecord, CredentialRole, CredentialRepository } from '@credo-ts/didcomm'
 import { Subject } from 'rxjs'
 
 import { InMemoryStorageService } from '../../../../../../tests/InMemoryStorageService'

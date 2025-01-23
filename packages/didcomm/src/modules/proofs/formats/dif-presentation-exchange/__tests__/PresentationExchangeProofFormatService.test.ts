@@ -1,19 +1,22 @@
-import type { DifPresentationExchangeDefinitionV1 } from '../../../../dif-presentation-exchange'
+import type { DifPresentationExchangeDefinitionV1 } from '../../../../../../../core'
 import type { ProofFormatService } from '../../ProofFormatService'
 import type { DifPresentationExchangeProofFormat } from '../DifPresentationExchangeProofFormat'
 
 import { PresentationSubmissionLocation } from '@animo-id/pex'
 
-import { getInMemoryAgentOptions } from '../../../../../../tests'
-import { Agent } from '../../../../../agent/Agent'
-import { DifPresentationExchangeModule, DifPresentationExchangeService } from '../../../../dif-presentation-exchange'
+import { Agent } from '../../../../../../../core/src/agent/Agent'
+import {
+  DifPresentationExchangeModule,
+  DifPresentationExchangeService,
+} from '../../../../../../../core/src/modules/dif-presentation-exchange'
 import {
   W3cJsonLdVerifiableCredential,
   W3cCredentialRecord,
   W3cCredentialRepository,
   CREDENTIALS_CONTEXT_V1_URL,
   W3cJsonLdVerifiablePresentation,
-} from '../../../../vc'
+} from '../../../../../../../core/src/modules/vc'
+import { getInMemoryAgentOptions } from '../../../../../../../core/tests'
 import { ProofsModule } from '../../../ProofsModule'
 import { ProofRole, ProofState } from '../../../models'
 import { V2ProofProtocol } from '../../../protocol'

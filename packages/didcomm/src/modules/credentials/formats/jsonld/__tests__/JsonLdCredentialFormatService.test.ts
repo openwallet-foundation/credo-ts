@@ -1,31 +1,31 @@
-import type { AgentContext } from '@credo-ts/core/src/agent'
+import type { AgentContext } from '../../../../../../../core/src/agent'
 import type { CredentialPreviewAttribute } from '../../../models/CredentialPreviewAttribute'
 import type { CustomCredentialTags } from '../../../repository/CredentialExchangeRecord'
 import type { CredentialFormatService } from '../../CredentialFormatService'
 import type { JsonCredential, JsonLdCredentialFormat, JsonLdCredentialDetailFormat } from '../JsonLdCredentialFormat'
 
-import { getAgentConfig, getAgentContext, mockFunction } from '@credo-ts/core/tests/helpers'
-import { JsonTransformer } from '@credo-ts/core/src/utils'
-import { JsonEncoder } from '@credo-ts/core/src/utils/JsonEncoder'
-import { DidDocument } from '@credo-ts/core/src/modules/dids'
-import { DidResolverService } from '@credo-ts/core/src/modules/dids/services/DidResolverService'
+import { DidDocument } from '../../../../../../../core/src/modules/dids'
+import { DidResolverService } from '../../../../../../../core/src/modules/dids/services/DidResolverService'
 import {
   CREDENTIALS_CONTEXT_V1_URL,
   W3cCredentialRecord,
   W3cJsonLdVerifiableCredential,
   W3cCredentialService,
-} from '@credo-ts/core/src/modules/vc'
-import { W3cJsonLdCredentialService } from '@credo-ts/core/src/modules/vc/data-integrity/W3cJsonLdCredentialService'
-import { Ed25519Signature2018Fixtures } from '@credo-ts/core/src/modules/vc/data-integrity/__tests__/fixtures'
+} from '../../../../../../../core/src/modules/vc'
+import { W3cJsonLdCredentialService } from '../../../../../../../core/src/modules/vc/data-integrity/W3cJsonLdCredentialService'
+import { Ed25519Signature2018Fixtures } from '../../../../../../../core/src/modules/vc/data-integrity/__tests__/fixtures'
+import { JsonTransformer } from '../../../../../../../core/src/utils'
+import { JsonEncoder } from '../../../../../../../core/src/utils/JsonEncoder'
+import { getAgentConfig, getAgentContext, mockFunction } from '../../../../../../../core/tests/helpers'
 import { Attachment, AttachmentData } from '../../../../../decorators/attachment/Attachment'
 import { CredentialState, CredentialRole } from '../../../models'
 import { V2CredentialPreview } from '../../../protocol/v2/messages'
 import { CredentialExchangeRecord } from '../../../repository/CredentialExchangeRecord'
 import { JsonLdCredentialFormatService } from '../JsonLdCredentialFormatService'
 
-jest.mock('../../../../vc/W3cCredentialService')
-jest.mock('../../../../vc/data-integrity/W3cJsonLdCredentialService')
-jest.mock('../../../../dids/services/DidResolverService')
+jest.mock('../../../../../../../core/src/modules/vc/W3cCredentialService')
+jest.mock('../../../../../../../core/src/modules/vc/data-integrity/W3cJsonLdCredentialService')
+jest.mock('../../../../../../../core/src/modules/dids/services/DidResolverService')
 
 const W3cCredentialServiceMock = W3cCredentialService as jest.Mock<W3cCredentialService>
 const W3cJsonLdCredentialServiceMock = W3cJsonLdCredentialService as jest.Mock<W3cJsonLdCredentialService>

@@ -1,31 +1,37 @@
+import type { Routing } from '../../../models'
 import type { AgentContext } from '@credo-ts/core/src/agent'
 import type { Wallet } from '@credo-ts/core/src/wallet/Wallet'
-import type { Routing } from '../../../services'
 
 import { Subject } from 'rxjs'
 
 import { InMemoryWallet } from '../../../../../../tests/InMemoryWallet'
+import { EventEmitter } from '../../../../../core/src/agent/EventEmitter'
+import { Key, KeyType } from '../../../../../core/src/crypto'
+import { DidKey, IndyAgentService } from '../../../../../core/src/modules/dids'
+import { DidDocumentRole } from '../../../../../core/src/modules/dids/domain/DidDocumentRole'
+import { DidCommV1Service } from '../../../../../core/src/modules/dids/domain/service/DidCommV1Service'
+import { didDocumentJsonToNumAlgo1Did } from '../../../../../core/src/modules/dids/methods/peer/peerDidNumAlgo1'
+import { DidRecord, DidRepository } from '../../../../../core/src/modules/dids/repository'
+import { JsonTransformer } from '../../../../../core/src/utils/JsonTransformer'
+import { indyDidFromPublicKeyBase58 } from '../../../../../core/src/utils/did'
+import { uuid } from '../../../../../core/src/utils/uuid'
 import {
   getAgentConfig,
   getAgentContext,
   getMockConnection,
   getMockOutOfBand,
   mockFunction,
-} from '@credo-ts/core/tests/helpers'
-import { EventEmitter } from '@credo-ts/core/src/agent/EventEmitter'
-import { Key, KeyType } from '@credo-ts/core/src/crypto'
-import { JsonTransformer } from '@credo-ts/core/src/utils/JsonTransformer'
-import { indyDidFromPublicKeyBase58 } from '@credo-ts/core/src/utils/did'
-import { uuid } from '@credo-ts/core/src/utils/uuid'
-import { DidKey, IndyAgentService } from '@credo-ts/core/src/modules/dids'
-import { DidDocumentRole } from '@credo-ts/core/src/modules/dids/domain/DidDocumentRole'
-import { DidCommV1Service } from '@credo-ts/core/src/modules/dids/domain/service/DidCommV1Service'
-import { didDocumentJsonToNumAlgo1Did } from '@credo-ts/core/src/modules/dids/methods/peer/peerDidNumAlgo1'
-import { DidRecord, DidRepository } from '@credo-ts/core/src/modules/dids/repository'
+} from '../../../../../core/tests/helpers'
 import { AgentMessage } from '../../../AgentMessage'
+import { DidCommModuleConfig } from '../../../DidCommModuleConfig'
 import { signData, unpackAndVerifySignatureDecorator } from '../../../decorators/signature/SignatureDecoratorUtils'
 import { AckMessage, AckStatus } from '../../../messages'
 import { InboundMessageContext } from '../../../models'
+import { OutOfBandService } from '../../oob/OutOfBandService'
+import { OutOfBandRole } from '../../oob/domain/OutOfBandRole'
+import { OutOfBandState } from '../../oob/domain/OutOfBandState'
+import { OutOfBandRepository } from '../../oob/repository/OutOfBandRepository'
+import { ConnectionRequestMessage, ConnectionResponseMessage, TrustPingMessage } from '../messages'
 import {
   Connection,
   DidDoc,
@@ -35,20 +41,15 @@ import {
   DidExchangeState,
   ReferencedAuthentication,
   authenticationTypes,
-} from '../../../models/connections'
-import { OutOfBandService } from '../../oob/OutOfBandService'
-import { OutOfBandRole } from '../../oob/domain/OutOfBandRole'
-import { OutOfBandState } from '../../oob/domain/OutOfBandState'
-import { OutOfBandRepository } from '../../oob/repository/OutOfBandRepository'
-import { ConnectionRepository } from '../../../repository/connections/ConnectionRepository'
-import { ConnectionService } from '../../../services'
-import { convertToNewDidDocument } from '../../services/connections/helpers'
-import { ConnectionRequestMessage, ConnectionResponseMessage, TrustPingMessage } from '../messages'
+} from '../models'
+import { ConnectionRepository } from '../repository'
+import { ConnectionService } from '../services'
+import { convertToNewDidDocument } from '../services/helpers'
 
 jest.mock('../repository/ConnectionRepository')
 jest.mock('../../oob/repository/OutOfBandRepository')
 jest.mock('../../oob/OutOfBandService')
-jest.mock('../../dids/repository/DidRepository')
+jest.mock('../../../../../core/src/modules/dids/repository/DidRepository')
 const ConnectionRepositoryMock = ConnectionRepository as jest.Mock<ConnectionRepository>
 const OutOfBandRepositoryMock = OutOfBandRepository as jest.Mock<OutOfBandRepository>
 const OutOfBandServiceMock = OutOfBandService as jest.Mock<OutOfBandService>
@@ -56,8 +57,9 @@ const DidRepositoryMock = DidRepository as jest.Mock<DidRepository>
 
 const connectionImageUrl = 'https://example.com/image.png'
 
+const endpoint = 'http://agent.com:8080'
 const agentConfig = getAgentConfig('ConnectionServiceTest', {
-  endpoints: ['http://agent.com:8080'],
+  endpoints: [endpoint],
   connectionImageUrl,
 })
 
@@ -83,6 +85,7 @@ describe('ConnectionService', () => {
         [OutOfBandRepository, outOfBandRepository],
         [OutOfBandService, outOfBandService],
         [DidRepository, didRepository],
+        [DidCommModuleConfig, new DidCommModuleConfig({ endpoints: [endpoint], connectionImageUrl })],
       ],
     })
     await wallet.createAndOpen(agentConfig.walletConfig)
@@ -98,7 +101,7 @@ describe('ConnectionService', () => {
     connectionService = new ConnectionService(agentConfig.logger, connectionRepository, didRepository, eventEmitter)
     myRouting = {
       recipientKey: Key.fromFingerprint('z6MkwFkSP4uv5PhhKJCGehtjuZedkotC7VF64xtMsxuM8R3W'),
-      endpoints: agentConfig.endpoints ?? [],
+      endpoints: [endpoint],
       routingKeys: [],
       mediatorId: 'fakeMediatorId',
     }
@@ -142,7 +145,7 @@ describe('ConnectionService', () => {
           service: [
             new IndyAgentService({
               id: `XpwgBjsC2wh3eHcMW6ZRJT#IndyAgentService-1`,
-              serviceEndpoint: agentConfig.endpoints[0],
+              serviceEndpoint: endpoint,
               recipientKeys: ['HoVPnpfUjrDECoMZy8vu4U6dwEcLhbzjNwyS3gwLDCG8'],
               routingKeys: [],
             }),

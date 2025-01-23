@@ -3,6 +3,7 @@ import type { MessagePickupProtocol } from './protocol/MessagePickupProtocol'
 import type { ApiModule, DependencyManager, AgentContext, Constructor, Optional } from '@credo-ts/core'
 
 import { InjectionSymbols } from '@credo-ts/core'
+
 import { FeatureRegistry } from '../../FeatureRegistry'
 import { MessageHandlerRegistry } from '../../MessageHandlerRegistry'
 

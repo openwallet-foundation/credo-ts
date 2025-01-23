@@ -1,5 +1,5 @@
-import { JsonTransformer } from '@credo-ts/core/src/utils'
-import { DidExchangeRole, DidExchangeState, HandshakeProtocol } from '../../../../models/connections'
+import { JsonTransformer } from '../../../../../../core/src/utils'
+import { DidExchangeRole, DidExchangeState, HandshakeProtocol } from '../../models'
 import { ConnectionRecord } from '../ConnectionRecord'
 
 describe('ConnectionRecord', () => {

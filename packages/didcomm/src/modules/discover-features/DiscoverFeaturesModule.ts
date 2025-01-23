@@ -1,5 +1,5 @@
 import type { DiscoverFeaturesModuleConfigOptions } from './DiscoverFeaturesModuleConfig'
-import type { DependencyManager, Module } from '@credo-ts/core'
+import type { DependencyManager, Module, AgentContext } from '@credo-ts/core'
 
 import { FeatureRegistry } from '../../FeatureRegistry'
 import { Protocol } from '../../models'
@@ -8,7 +8,6 @@ import { DiscoverFeaturesApi } from './DiscoverFeaturesApi'
 import { DiscoverFeaturesModuleConfig } from './DiscoverFeaturesModuleConfig'
 import { V1DiscoverFeaturesService } from './protocol/v1'
 import { V2DiscoverFeaturesService } from './protocol/v2'
-import { AgentContext } from '@credo-ts/core'
 
 export class DiscoverFeaturesModule implements Module {
   public readonly api = DiscoverFeaturesApi

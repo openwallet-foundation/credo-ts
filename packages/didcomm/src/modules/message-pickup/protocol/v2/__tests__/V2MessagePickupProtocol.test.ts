@@ -1,17 +1,16 @@
 import type { EncryptedMessage } from '../../../../../types'
 
-import { getAgentContext, getMockConnection, mockFunction } from '@credo-ts/core/tests/helpers'
-import { EventEmitter } from '@credo-ts/core/src/agent/EventEmitter'
-import { InjectionSymbols } from '@credo-ts/core/src/constants'
-import { CredoError } from '@credo-ts/core/src/error'
-import { verkeyToDidKey } from '@credo-ts/core/src/modules/dids/helpers'
-import { uuid } from '@credo-ts/core/src/utils/uuid'
+import { EventEmitter } from '../../../../../../../core/src/agent/EventEmitter'
+import { InjectionSymbols } from '../../../../../../../core/src/constants'
+import { CredoError } from '../../../../../../../core/src/error'
+import { verkeyToDidKey } from '../../../../../../../core/src/modules/dids/helpers'
+import { uuid } from '../../../../../../../core/src/utils/uuid'
+import { getAgentContext, getMockConnection, mockFunction } from '../../../../../../../core/tests/helpers'
 import { AgentEventTypes } from '../../../../../Events'
 import { MessageSender } from '../../../../../MessageSender'
 import { Attachment } from '../../../../../decorators/attachment/Attachment'
-import { TrustPingMessage } from '../../../../../messages'
-import { DidExchangeState, InboundMessageContext } from '../../../../../models'
-import { ConnectionService } from '../../../../../services'
+import { InboundMessageContext } from '../../../../../models'
+import { TrustPingMessage, ConnectionService, DidExchangeState } from '../../../../connections'
 import { MessagePickupModuleConfig } from '../../../MessagePickupModuleConfig'
 import { InMemoryMessagePickupRepository } from '../../../storage/InMemoryMessagePickupRepository'
 import { V1MessagePickupProtocol } from '../../v1'
@@ -30,8 +29,8 @@ const mockConnection = getMockConnection({
 
 // Mock classes
 jest.mock('../../../storage/InMemoryMessagePickupRepository')
-jest.mock('../../../../../agent/EventEmitter')
-jest.mock('../../../../../agent/MessageSender')
+jest.mock('../../../../../../../core/src/agent/EventEmitter')
+jest.mock('../../../../../MessageSender')
 jest.mock('../../../../connections/services/ConnectionService')
 
 // Mock typed object

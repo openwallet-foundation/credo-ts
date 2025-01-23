@@ -12,9 +12,10 @@ import {
   anoncredsDefinitionFourAttributesNoRevocation,
   storePreCreatedAnonCredsDefinition,
 } from '../../../../../../../anoncreds/tests/preCreatedAnonCredsDefinition'
-import { waitForCredentialRecordSubject, getInMemoryAgentOptions } from '@credo-ts/core/tests/helpers'
-import testLogger from '@credo-ts/core/tests/logger'
-import { Agent } from '@credo-ts/core/src/agent/Agent'
+import { Agent } from '../../../../../../../core/src/agent/Agent'
+import { waitForCredentialRecordSubject, getInMemoryAgentOptions } from '../../../../../../../core/tests/helpers'
+import testLogger from '../../../../../../../core/tests/logger'
+import { MessageReceiver } from '../../../../../MessageReceiver'
 import { CredentialEventTypes } from '../../../CredentialEvents'
 import { AutoAcceptCredential } from '../../../models/CredentialAutoAcceptType'
 import { CredentialState } from '../../../models/CredentialState'
@@ -61,13 +62,13 @@ describe('V2 Connectionless Credentials', () => {
       'rxjs:alice': aliceMessages,
     }
     faberAgent = new Agent(faberAgentOptions)
-    faberAgent.didcomm.registerInboundTransport(new SubjectInboundTransport(faberMessages))
-    faberAgent.didcomm.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
+    faberAgent.modules.didcomm.registerInboundTransport(new SubjectInboundTransport(faberMessages))
+    faberAgent.modules.didcomm.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     await faberAgent.initialize()
 
     aliceAgent = new Agent(aliceAgentOptions)
-    aliceAgent.didcomm.registerInboundTransport(new SubjectInboundTransport(aliceMessages))
-    aliceAgent.didcomm.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
+    aliceAgent.modules.didcomm.registerInboundTransport(new SubjectInboundTransport(aliceMessages))
+    aliceAgent.modules.didcomm.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     await aliceAgent.initialize()
 
     // Make sure the pre-created credential definition is in the wallet
@@ -95,7 +96,7 @@ describe('V2 Connectionless Credentials', () => {
     testLogger.test('Faber sends credential offer to Alice')
 
     // eslint-disable-next-line prefer-const
-    let { message, credentialRecord: faberCredentialRecord } = await faberAgent.credentials.createOffer({
+    let { message, credentialRecord: faberCredentialRecord } = await faberAgent.modules.credentials.createOffer({
       comment: 'V2 Out of Band offer',
       credentialFormats: {
         anoncreds: {
@@ -106,13 +107,13 @@ describe('V2 Connectionless Credentials', () => {
       protocolVersion: 'v2',
     })
 
-    const { message: offerMessage } = await faberAgent.oob.createLegacyConnectionlessInvitation({
+    const { message: offerMessage } = await faberAgent.modules.oob.createLegacyConnectionlessInvitation({
       recordId: faberCredentialRecord.id,
       message,
       domain: 'https://a-domain.com',
     })
 
-    await aliceAgent.receiveMessage(offerMessage.toJSON())
+    await aliceAgent.dependencyManager.resolve(MessageReceiver).receiveMessage(offerMessage.toJSON())
 
     let aliceCredentialRecord = await waitForCredentialRecordSubject(aliceReplay, {
       threadId: faberCredentialRecord.threadId,
@@ -123,7 +124,7 @@ describe('V2 Connectionless Credentials', () => {
     const acceptOfferOptions: AcceptCredentialOfferOptions = {
       credentialRecordId: aliceCredentialRecord.id,
     }
-    const credentialRecord = await aliceAgent.credentials.acceptOffer(acceptOfferOptions)
+    const credentialRecord = await aliceAgent.modules.credentials.acceptOffer(acceptOfferOptions)
 
     testLogger.test('Faber waits for credential request from Alice')
     faberCredentialRecord = await waitForCredentialRecordSubject(faberReplay, {
@@ -136,7 +137,7 @@ describe('V2 Connectionless Credentials', () => {
       credentialRecordId: faberCredentialRecord.id,
       comment: 'V2 Indy Credential',
     }
-    faberCredentialRecord = await faberAgent.credentials.acceptRequest(options)
+    faberCredentialRecord = await faberAgent.modules.credentials.acceptRequest(options)
 
     testLogger.test('Alice waits for credential from Faber')
     aliceCredentialRecord = await waitForCredentialRecordSubject(aliceReplay, {
@@ -145,7 +146,7 @@ describe('V2 Connectionless Credentials', () => {
     })
 
     testLogger.test('Alice sends credential ack to Faber')
-    aliceCredentialRecord = await aliceAgent.credentials.acceptCredential({
+    aliceCredentialRecord = await aliceAgent.modules.credentials.acceptCredential({
       credentialRecordId: aliceCredentialRecord.id,
     })
 
@@ -194,7 +195,7 @@ describe('V2 Connectionless Credentials', () => {
 
   test('Faber starts with connection-less credential offer to Alice with auto-accept enabled', async () => {
     // eslint-disable-next-line prefer-const
-    let { message, credentialRecord: faberCredentialRecord } = await faberAgent.credentials.createOffer({
+    let { message, credentialRecord: faberCredentialRecord } = await faberAgent.modules.credentials.createOffer({
       comment: 'V2 Out of Band offer',
       credentialFormats: {
         anoncreds: {
@@ -206,14 +207,14 @@ describe('V2 Connectionless Credentials', () => {
       autoAcceptCredential: AutoAcceptCredential.ContentApproved,
     })
 
-    const { message: offerMessage } = await faberAgent.oob.createLegacyConnectionlessInvitation({
+    const { message: offerMessage } = await faberAgent.modules.oob.createLegacyConnectionlessInvitation({
       recordId: faberCredentialRecord.id,
       message,
       domain: 'https://a-domain.com',
     })
 
     // Receive Message
-    await aliceAgent.receiveMessage(offerMessage.toJSON())
+    await aliceAgent.context.dependencyManager.resolve(MessageReceiver).receiveMessage(offerMessage.toJSON())
 
     // Wait for it to be processed
     let aliceCredentialRecord = await waitForCredentialRecordSubject(aliceReplay, {
@@ -221,7 +222,7 @@ describe('V2 Connectionless Credentials', () => {
       state: CredentialState.OfferReceived,
     })
 
-    await aliceAgent.credentials.acceptOffer({
+    await aliceAgent.modules.credentials.acceptOffer({
       credentialRecordId: aliceCredentialRecord.id,
       autoAcceptCredential: AutoAcceptCredential.ContentApproved,
     })

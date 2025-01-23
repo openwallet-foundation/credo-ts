@@ -1,26 +1,26 @@
-import { FeatureRegistry } from '../../../agent/FeatureRegistry'
-import { DependencyManager } from '@credo-ts/core/src/plugins/DependencyManager'
+import type { DependencyManager } from '../../../../../core/src/plugins/DependencyManager'
+
+import { getAgentContext } from '../../../../../core/tests'
+import { FeatureRegistry } from '../../../FeatureRegistry'
+import { Protocol } from '../../../models'
 import { ConnectionsModule } from '../ConnectionsModule'
 import { ConnectionsModuleConfig } from '../ConnectionsModuleConfig'
 import { DidExchangeProtocol } from '../DidExchangeProtocol'
-import { ConnectionRepository } from '../../../repository/connections'
+import { ConnectionRole, DidExchangeRole, DidRotateRole } from '../models'
+import { ConnectionRepository } from '../repository'
 import { ConnectionService, TrustPingService } from '../services'
 import { DidRotateService } from '../services/DidRotateService'
 
-jest.mock('../../../plugins/DependencyManager')
-const DependencyManagerMock = DependencyManager as jest.Mock<DependencyManager>
-
-const dependencyManager = new DependencyManagerMock()
-
-jest.mock('../../../agent/FeatureRegistry')
-const FeatureRegistryMock = FeatureRegistry as jest.Mock<FeatureRegistry>
-
-const featureRegistry = new FeatureRegistryMock()
-
 describe('ConnectionsModule', () => {
   test('registers dependencies on the dependency manager', () => {
+    const dependencyManager = {
+      registerInstance: jest.fn(),
+      registerSingleton: jest.fn(),
+      registerContextScoped: jest.fn(),
+    } as unknown as DependencyManager
+
     const connectionsModule = new ConnectionsModule()
-    connectionsModule.register(dependencyManager, featureRegistry)
+    connectionsModule.register(dependencyManager)
 
     expect(dependencyManager.registerInstance).toHaveBeenCalledTimes(1)
     expect(dependencyManager.registerInstance).toHaveBeenCalledWith(ConnectionsModuleConfig, connectionsModule.config)
@@ -31,5 +31,26 @@ describe('ConnectionsModule', () => {
     expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(TrustPingService)
     expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(DidRotateService)
     expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(ConnectionRepository)
+  })
+
+  test('registers features on the feature registry', async () => {
+    const featureRegistry = new FeatureRegistry()
+    const agentContext = getAgentContext({ registerInstances: [[FeatureRegistry, featureRegistry]] })
+    await new ConnectionsModule().initialize(agentContext)
+
+    expect(featureRegistry.query({ featureType: 'protocol', match: '*' })).toEqual([
+      new Protocol({
+        id: 'https://didcomm.org/connections/1.0',
+        roles: [ConnectionRole.Invitee, ConnectionRole.Inviter],
+      }),
+      new Protocol({
+        id: 'https://didcomm.org/didexchange/1.1',
+        roles: [DidExchangeRole.Requester, DidExchangeRole.Responder],
+      }),
+      new Protocol({
+        id: 'https://didcomm.org/did-rotate/1.0',
+        roles: [DidRotateRole.RotatingParty, DidRotateRole.ObservingParty],
+      }),
+    ])
   })
 })

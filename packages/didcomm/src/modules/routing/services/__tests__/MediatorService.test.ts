@@ -1,10 +1,11 @@
 import { Subject } from 'rxjs'
 
-import { getAgentConfig, getAgentContext, getMockConnection, mockFunction } from '@credo-ts/core/tests/helpers'
-import { EventEmitter } from '@credo-ts/core/src/agent/EventEmitter'
-import { InboundMessageContext } from '../../../../agent/models/InboundMessageContext'
+import { EventEmitter } from '../../../../../../core/src/agent/EventEmitter'
+import { isDidKey } from '../../../../../../core/src/modules/dids/helpers'
+import { getAgentConfig, getAgentContext, getMockConnection, mockFunction } from '../../../../../../core/tests/helpers'
+import { DidCommModuleConfig } from '../../../../DidCommModuleConfig'
+import { InboundMessageContext } from '../../../../models/InboundMessageContext'
 import { ConnectionService, DidExchangeState } from '../../../connections'
-import { isDidKey } from '@credo-ts/core/src/modules/dids/helpers'
 import { MessagePickupApi } from '../../../message-pickup'
 import { KeylistUpdateAction, KeylistUpdateMessage, KeylistUpdateResult } from '../../messages'
 import { MediationRole, MediationState } from '../../models'
@@ -39,6 +40,7 @@ describe('MediatorService - default config', () => {
 
   const agentContext = getAgentContext({
     agentConfig,
+    registerInstances: [[DidCommModuleConfig, new DidCommModuleConfig()]],
   })
 
   const mediatorService = new MediatorService(
@@ -166,6 +168,7 @@ describe('MediatorService - useDidKeyInProtocols set to false', () => {
 
   const agentContext = getAgentContext({
     agentConfig,
+    registerInstances: [[DidCommModuleConfig, new DidCommModuleConfig({ useDidKeyInProtocols: false })]],
   })
 
   const mediatorService = new MediatorService(

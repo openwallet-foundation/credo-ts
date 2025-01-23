@@ -1,11 +1,11 @@
 import type { AnonCredsTestsAgent } from '../../../../../../../anoncreds/tests/legacyAnonCredsSetup'
-import type { EventReplaySubject } from '../../../../../../tests'
+import type { EventReplaySubject } from '../../../../../../../core/tests'
 
 import {
   setupAnonCredsTests,
   issueLegacyAnonCredsCredential,
 } from '../../../../../../../anoncreds/tests/legacyAnonCredsSetup'
-import { waitForProofExchangeRecordSubject, testLogger } from '../../../../../../tests'
+import { waitForProofExchangeRecordSubject, testLogger } from '../../../../../../../core/tests'
 import { ProofState } from '../../../models/ProofState'
 import { ProofExchangeRecord } from '../../../repository/ProofExchangeRecord'
 
@@ -68,7 +68,7 @@ describe('V2 Proofs - Indy', () => {
   test(`Alice Creates and sends Proof Proposal to Faber`, async () => {
     testLogger.test('Alice sends proof proposal to Faber')
 
-    let aliceProofExchangeRecord = await aliceAgent.proofs.proposeProof({
+    let aliceProofExchangeRecord = await aliceAgent.modules.proofs.proposeProof({
       connectionId: aliceConnectionId,
       protocolVersion: 'v2',
       proofFormats: {
@@ -100,7 +100,7 @@ describe('V2 Proofs - Indy', () => {
       state: ProofState.ProposalReceived,
     })
 
-    const proposal = await faberAgent.proofs.findProposalMessage(faberProofExchangeRecord.id)
+    const proposal = await faberAgent.modules.proofs.findProposalMessage(faberProofExchangeRecord.id)
     expect(proposal).toMatchObject({
       type: 'https://didcomm.org/present-proof/2.0/propose-presentation',
       formats: [
@@ -130,7 +130,7 @@ describe('V2 Proofs - Indy', () => {
 
     // Accept Proposal
     testLogger.test('Faber accepts presentation proposal from Alice')
-    faberProofExchangeRecord = await faberAgent.proofs.acceptProposal({
+    faberProofExchangeRecord = await faberAgent.modules.proofs.acceptProposal({
       proofRecordId: faberProofExchangeRecord.id,
     })
 
@@ -140,7 +140,7 @@ describe('V2 Proofs - Indy', () => {
       state: ProofState.RequestReceived,
     })
 
-    const request = await faberAgent.proofs.findRequestMessage(faberProofExchangeRecord.id)
+    const request = await faberAgent.modules.proofs.findRequestMessage(faberProofExchangeRecord.id)
     expect(request).toMatchObject({
       type: 'https://didcomm.org/present-proof/2.0/request-presentation',
       formats: [
@@ -173,11 +173,11 @@ describe('V2 Proofs - Indy', () => {
     // Alice retrieves the requested credentials and accepts the presentation request
     testLogger.test('Alice accepts presentation request from Faber')
 
-    const requestedCredentials = await aliceAgent.proofs.selectCredentialsForRequest({
+    const requestedCredentials = await aliceAgent.modules.proofs.selectCredentialsForRequest({
       proofRecordId: aliceProofExchangeRecord.id,
     })
 
-    await aliceAgent.proofs.acceptRequest({
+    await aliceAgent.modules.proofs.acceptRequest({
       proofRecordId: aliceProofExchangeRecord.id,
       proofFormats: { indy: requestedCredentials.proofFormats.indy },
     })
@@ -190,7 +190,7 @@ describe('V2 Proofs - Indy', () => {
     // Faber waits for the presentation from Alice
     testLogger.test('Faber waits for presentation from Alice')
 
-    const presentation = await faberAgent.proofs.findPresentationMessage(faberProofExchangeRecord.id)
+    const presentation = await faberAgent.modules.proofs.findPresentationMessage(faberProofExchangeRecord.id)
     expect(presentation).toMatchObject({
       type: 'https://didcomm.org/present-proof/2.0/presentation',
       formats: [
@@ -227,7 +227,7 @@ describe('V2 Proofs - Indy', () => {
 
     // Faber accepts the presentation provided by Alice
     testLogger.test('Faber accepts the presentation provided by Alice')
-    await faberAgent.proofs.acceptPresentation({ proofRecordId: faberProofExchangeRecord.id })
+    await faberAgent.modules.proofs.acceptPresentation({ proofRecordId: faberProofExchangeRecord.id })
 
     // Alice waits until she received a presentation acknowledgement
     testLogger.test('Alice waits until she receives a presentation acknowledgement')

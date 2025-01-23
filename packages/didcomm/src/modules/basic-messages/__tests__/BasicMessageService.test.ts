@@ -1,5 +1,4 @@
-import { EventEmitter } from '@credo-ts/core'
-
+import { EventEmitter } from '../../../../../core/src/agent/EventEmitter'
 import { getAgentContext, getMockConnection } from '../../../../../core/tests/helpers'
 import { InboundMessageContext } from '../../../models'
 import { BasicMessageRole } from '../BasicMessageRole'
@@ -12,7 +11,7 @@ jest.mock('../repository/BasicMessageRepository')
 const BasicMessageRepositoryMock = BasicMessageRepository as jest.Mock<BasicMessageRepository>
 const basicMessageRepository = new BasicMessageRepositoryMock()
 
-jest.mock('../../../../../agent/EventEmitter')
+jest.mock('../../../../../core/src/agent/EventEmitter')
 const EventEmitterMock = EventEmitter as jest.Mock<EventEmitter>
 const eventEmitter = new EventEmitterMock()
 

@@ -1,4 +1,4 @@
-import type { ConnectionRecord } from '../../repository'
+import type { ConnectionRecord } from '../../connections'
 import type {
   DiscoverFeaturesDisclosureReceivedEvent,
   DiscoverFeaturesQueryReceivedEvent,
@@ -6,9 +6,10 @@ import type {
 
 import { ReplaySubject } from 'rxjs'
 
-import { setupSubjectTransports } from '../../../../../tests'
-import { getInMemoryAgentOptions, makeConnection } from '../../../../../tests/helpers'
-import { Agent } from '../../../../agent/Agent'
+import { Agent } from '../../../../../core/src/agent/Agent'
+import { setupSubjectTransports } from '../../../../../core/tests'
+import { getInMemoryAgentOptions, makeConnection } from '../../../../../core/tests/helpers'
+import { Feature, GoalCode } from '../../../models'
 import { DiscoverFeaturesEventTypes } from '../DiscoverFeaturesEvents'
 
 import { waitForDisclosureSubject, waitForQuerySubject } from './helpers'
@@ -48,7 +49,7 @@ describe('v2 discover features', () => {
     const faberReplay = new ReplaySubject<DiscoverFeaturesDisclosureReceivedEvent>()
     const aliceReplay = new ReplaySubject<DiscoverFeaturesQueryReceivedEvent>()
 
-    faberAgent.discovery.config.autoAcceptQueries
+    faberAgent.modules.discovery.config.autoAcceptQueries
     faberAgent.events
       .observable<DiscoverFeaturesDisclosureReceivedEvent>(DiscoverFeaturesEventTypes.DisclosureReceived)
       .subscribe(faberReplay)
@@ -56,7 +57,7 @@ describe('v2 discover features', () => {
       .observable<DiscoverFeaturesQueryReceivedEvent>(DiscoverFeaturesEventTypes.QueryReceived)
       .subscribe(aliceReplay)
 
-    await faberAgent.discovery.queryFeatures({
+    await faberAgent.modules.discovery.queryFeatures({
       connectionId: faberConnection.id,
       protocolVersion: 'v2',
       queries: [{ featureType: 'protocol', match: 'https://didcomm.org/revocation_notification/*' }],
@@ -92,9 +93,12 @@ describe('v2 discover features', () => {
       .subscribe(faberReplay)
 
     // Register some goal codes
-    faberAgent.features.register(new GoalCode({ id: 'faber.vc.issuance' }), new GoalCode({ id: 'faber.vc.query' }))
+    faberAgent.modules.didcomm.features.register(
+      new GoalCode({ id: 'faber.vc.issuance' }),
+      new GoalCode({ id: 'faber.vc.query' })
+    )
 
-    await aliceAgent.discovery.queryFeatures({
+    await aliceAgent.modules.discovery.queryFeatures({
       connectionId: aliceConnection.id,
       protocolVersion: 'v2',
       queries: [{ featureType: 'goal-code', match: '*' }],
@@ -140,9 +144,11 @@ describe('v2 discover features', () => {
     }
 
     // Register a custom feature
-    faberAgent.features.register(new GenericFeature({ id: 'custom-feature', genericField: 'custom-field' }))
+    faberAgent.modules.didcomm.features.register(
+      new GenericFeature({ id: 'custom-feature', genericField: 'custom-field' })
+    )
 
-    await aliceAgent.discovery.queryFeatures({
+    await aliceAgent.modules.discovery.queryFeatures({
       connectionId: aliceConnection.id,
       protocolVersion: 'v2',
       queries: [{ featureType: 'generic', match: 'custom-feature' }],
@@ -181,13 +187,13 @@ describe('v2 discover features', () => {
       .subscribe(faberReplay)
 
     // Register a custom feature
-    faberAgent.features.register(
+    faberAgent.modules.didcomm.features.register(
       new Feature({ id: 'AIP2.0', type: 'aip' }),
       new Feature({ id: 'AIP2.0/INDYCRED', type: 'aip' }),
       new Feature({ id: 'AIP2.0/MEDIATE', type: 'aip' })
     )
 
-    await faberAgent.discovery.discloseFeatures({
+    await faberAgent.modules.discovery.discloseFeatures({
       connectionId: faberConnection.id,
       protocolVersion: 'v2',
       disclosureQueries: [{ featureType: 'aip', match: '*' }],
@@ -206,7 +212,7 @@ describe('v2 discover features', () => {
   })
 
   test('Faber asks Alice for issue credential protocol support synchronously', async () => {
-    const matchingFeatures = await faberAgent.discovery.queryFeatures({
+    const matchingFeatures = await faberAgent.modules.discovery.queryFeatures({
       connectionId: faberConnection.id,
       protocolVersion: 'v2',
       queries: [{ featureType: 'protocol', match: 'https://didcomm.org/revocation_notification/*' }],

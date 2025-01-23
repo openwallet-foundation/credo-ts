@@ -1,11 +1,12 @@
-import type { EventReplaySubject, JsonLdTestsAgent } from '@credo-ts/core/tests'
+import type { EventReplaySubject, JsonLdTestsAgent } from '../../../../../../../core/tests'
 import type { V2OfferCredentialMessage } from '../messages/V2OfferCredentialMessage'
 
-import { setupJsonLdTests, waitForCredentialRecordSubject } from '@credo-ts/core/tests'
-import testLogger from '@credo-ts/core/tests/logger'
-import { KeyType } from '@credo-ts/core/src/crypto'
-import { TypedArrayEncoder } from '@credo-ts/core/src/utils'
-import { CREDENTIALS_CONTEXT_V1_URL } from '@credo-ts/core/src/modules/vc/constants'
+import { KeyType } from '../../../../../../../core/src/crypto'
+import { CREDENTIALS_CONTEXT_V1_URL } from '../../../../../../../core/src/modules/vc/constants'
+import { TypedArrayEncoder } from '../../../../../../../core/src/utils'
+import { setupJsonLdTests, waitForCredentialRecordSubject } from '../../../../../../../core/tests'
+import testLogger from '../../../../../../../core/tests/logger'
+import { MessageReceiver } from '../../../../../MessageReceiver'
 import { CredentialState } from '../../../models'
 import { CredentialExchangeRecord } from '../../../repository'
 
@@ -63,7 +64,7 @@ describe('credentials', () => {
     testLogger.test('Faber sends credential offer to Alice')
 
     // eslint-disable-next-line prefer-const
-    let { message, credentialRecord: faberCredentialRecord } = await faberAgent.credentials.createOffer({
+    let { message, credentialRecord: faberCredentialRecord } = await faberAgent.modules.credentials.createOffer({
       comment: 'V2 Out of Band offer (W3C)',
       credentialFormats: {
         jsonld: signCredentialOptions,
@@ -93,12 +94,14 @@ describe('credentials', () => {
       },
     })
 
-    const { message: connectionlessOfferMessage } = await faberAgent.oob.createLegacyConnectionlessInvitation({
+    const { message: connectionlessOfferMessage } = await faberAgent.modules.oob.createLegacyConnectionlessInvitation({
       recordId: faberCredentialRecord.id,
       message,
       domain: 'https://a-domain.com',
     })
-    await aliceAgent.receiveMessage(connectionlessOfferMessage.toJSON())
+    await aliceAgent.context.dependencyManager
+      .resolve(MessageReceiver)
+      .receiveMessage(connectionlessOfferMessage.toJSON())
 
     let aliceCredentialRecord = await waitForCredentialRecordSubject(aliceReplay, {
       threadId: faberCredentialRecord.threadId,
@@ -107,7 +110,7 @@ describe('credentials', () => {
 
     testLogger.test('Alice sends credential request to Faber')
 
-    const credentialRecord = await aliceAgent.credentials.acceptOffer({
+    const credentialRecord = await aliceAgent.modules.credentials.acceptOffer({
       credentialRecordId: aliceCredentialRecord.id,
     })
 
@@ -118,7 +121,7 @@ describe('credentials', () => {
     })
 
     testLogger.test('Faber sends credential to Alice')
-    faberCredentialRecord = await faberAgent.credentials.acceptRequest({
+    faberCredentialRecord = await faberAgent.modules.credentials.acceptRequest({
       credentialRecordId: faberCredentialRecord.id,
       comment: 'V2 Indy Credential',
     })
@@ -130,7 +133,7 @@ describe('credentials', () => {
     })
 
     testLogger.test('Alice sends credential ack to Faber')
-    aliceCredentialRecord = await aliceAgent.credentials.acceptCredential({
+    aliceCredentialRecord = await aliceAgent.modules.credentials.acceptCredential({
       credentialRecordId: aliceCredentialRecord.id,
     })
 

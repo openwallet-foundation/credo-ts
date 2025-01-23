@@ -6,18 +6,19 @@ import type { DiscoverFeaturesProtocolMsgReturnType } from '../../../DiscoverFea
 
 import { Subject } from 'rxjs'
 
-import { agentDependencies, getAgentContext, getMockConnection } from '../../../../../../../tests/helpers'
-import { EventEmitter } from '../../../../../../agent/EventEmitter'
-import { ConsoleLogger } from '../../../../../../logger'
-import { FeatureRegistry } from '../../../../FeatureRegistry'
-import { MessageHandlerRegistry } from '../../../../MessageHandlerRegistry'
-import { Protocol, GoalCode, DidExchangeState, InboundMessageContext } from '../../../../models'
+import { EventEmitter } from '../../../../../../../core/src/agent/EventEmitter'
+import { ConsoleLogger } from '../../../../../../../core/src/logger'
+import { agentDependencies, getAgentContext, getMockConnection } from '../../../../../../../core/tests/helpers'
+import { FeatureRegistry } from '../../../../../FeatureRegistry'
+import { MessageHandlerRegistry } from '../../../../../MessageHandlerRegistry'
+import { Protocol, InboundMessageContext, GoalCode } from '../../../../../models'
+import { DidExchangeState } from '../../../../connections'
 import { DiscoverFeaturesEventTypes } from '../../../DiscoverFeaturesEvents'
 import { DiscoverFeaturesModuleConfig } from '../../../DiscoverFeaturesModuleConfig'
 import { V2DiscoverFeaturesService } from '../V2DiscoverFeaturesService'
 import { V2DisclosuresMessage, V2QueriesMessage } from '../messages'
 
-jest.mock('../../../../MessageHandlerRegistry')
+jest.mock('../../../../../MessageHandlerRegistry')
 const MessageHandlerRegistryMock = MessageHandlerRegistry as jest.Mock<MessageHandlerRegistry>
 const eventEmitter = new EventEmitter(agentDependencies, new Subject())
 const featureRegistry = new FeatureRegistry()
@@ -28,7 +29,7 @@ featureRegistry.register(new GoalCode({ id: 'aries.vc.1' }))
 featureRegistry.register(new GoalCode({ id: 'aries.vc.2' }))
 featureRegistry.register(new GoalCode({ id: 'caries.vc.3' }))
 
-jest.mock('../../../../../logger/Logger')
+jest.mock('../../../../../../../core/src/logger')
 const LoggerMock = ConsoleLogger as jest.Mock<ConsoleLogger>
 
 describe('V2DiscoverFeaturesService - auto accept queries', () => {

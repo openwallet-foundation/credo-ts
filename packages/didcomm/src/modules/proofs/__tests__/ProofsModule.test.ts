@@ -1,21 +1,18 @@
-import type { DependencyManager } from '../../../plugins/DependencyManager'
-import type { FeatureRegistry } from '../../didcomm'
+import type { DependencyManager } from '../../../../../core'
 import type { ProofProtocol } from '../protocol/ProofProtocol'
 
+import { getAgentContext } from '../../../../../core/tests'
+import { FeatureRegistry } from '../../../FeatureRegistry'
+import { MessageHandlerRegistry } from '../../../MessageHandlerRegistry'
 import { ProofsModule } from '../ProofsModule'
 import { ProofsModuleConfig } from '../ProofsModuleConfig'
 import { V2ProofProtocol } from '../protocol/v2/V2ProofProtocol'
 import { ProofRepository } from '../repository'
 
-const featureRegistry = {
-  register: jest.fn(),
-} as unknown as FeatureRegistry
-
 const dependencyManager = {
   registerInstance: jest.fn(),
   registerSingleton: jest.fn(),
   registerContextScoped: jest.fn(),
-  resolve: () => featureRegistry,
 } as unknown as DependencyManager
 
 describe('ProofsModule', () => {
@@ -38,7 +35,7 @@ describe('ProofsModule', () => {
     expect(proofsModule.config.proofProtocols).toEqual([expect.any(V2ProofProtocol)])
   })
 
-  test('calls register on the provided ProofProtocols', () => {
+  test('calls register on the provided ProofProtocols', async () => {
     const registerMock = jest.fn()
     const proofProtocol = {
       register: registerMock,
@@ -50,9 +47,17 @@ describe('ProofsModule', () => {
 
     expect(proofsModule.config.proofProtocols).toEqual([proofProtocol])
 
-    proofsModule.register(dependencyManager)
+    const featureRegistry = new FeatureRegistry()
+    const messageHandlerRegistry = new MessageHandlerRegistry()
+    const agentContext = getAgentContext({
+      registerInstances: [
+        [MessageHandlerRegistry, messageHandlerRegistry],
+        [FeatureRegistry, featureRegistry],
+      ],
+    })
+    await proofsModule.initialize(agentContext)
 
     expect(registerMock).toHaveBeenCalledTimes(1)
-    expect(registerMock).toHaveBeenCalledWith(dependencyManager, featureRegistry)
+    expect(registerMock).toHaveBeenCalledWith(messageHandlerRegistry, featureRegistry)
   })
 })

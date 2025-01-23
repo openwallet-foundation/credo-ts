@@ -1,5 +1,5 @@
-import { ClassValidationError } from '@credo-ts/core/src/error/ClassValidationError'
-import { MessageValidator } from '../../../utils/MessageValidator'
+import { ClassValidationError } from '../../../../../core/src/error/ClassValidationError'
+import { MessageValidator } from '../../../../../core/src/utils'
 import { ConnectionRequestMessage } from '../messages/ConnectionRequestMessage'
 
 describe('ConnectionRequestMessage', () => {

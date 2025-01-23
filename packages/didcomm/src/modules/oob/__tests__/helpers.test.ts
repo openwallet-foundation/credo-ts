@@ -1,8 +1,8 @@
+import { JsonTransformer } from '../../../../../core/src/utils'
 import { Attachment } from '../../../decorators/attachment/Attachment'
-import { JsonTransformer } from '../../../../utils'
 import { ConnectionInvitationMessage } from '../../connections'
+import { convertToNewInvitation, convertToOldInvitation } from '../converters'
 import { OutOfBandDidCommService } from '../domain'
-import { convertToNewInvitation, convertToOldInvitation } from '../helpers'
 import { OutOfBandInvitation } from '../messages'
 
 describe('convertToNewInvitation', () => {

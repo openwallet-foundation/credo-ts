@@ -1,4 +1,4 @@
-import { CredentialPreviewAttribute } from '@credo-ts/core'
+import { CredentialPreviewAttribute } from '@credo-ts/didcomm'
 
 import {
   assertCredentialValuesMatch,

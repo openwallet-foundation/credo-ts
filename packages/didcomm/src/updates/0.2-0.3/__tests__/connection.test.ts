@@ -2,8 +2,8 @@ import type { MediationRecordProps } from '../../../modules'
 import type { ConnectionRecordProps, CustomConnectionTags } from '../../../modules/connections'
 
 import { Agent } from '../../../../..//core/src/agent/Agent'
-import { JsonTransformer } from '../../../../..//core/src/utils'
-import { getAgentConfig, getAgentContext, mockFunction } from '../../../../..//core/tests/helpers'
+import { JsonTransformer } from '../../../../../core/src/utils'
+import { getAgentConfig, getAgentContext, mockFunction } from '../../../../../core/tests/helpers'
 import { MediationRecord, MediationRole, MediationState } from '../../../modules'
 import { ConnectionRecord, ConnectionType, DidExchangeRole, DidExchangeState } from '../../../modules/connections'
 import { ConnectionRepository } from '../../../modules/connections/repository/ConnectionRepository'
@@ -21,7 +21,7 @@ jest.mock('../../../modules/routing/repository/MediationRepository')
 const MediationRepositoryMock = MediationRepository as jest.Mock<MediationRepository>
 const mediationRepository = new MediationRepositoryMock()
 
-jest.mock('../../../../../agent/Agent', () => {
+jest.mock('../../../../../core/src/agent/Agent', () => {
   return {
     Agent: jest.fn(() => ({
       config: agentConfig,

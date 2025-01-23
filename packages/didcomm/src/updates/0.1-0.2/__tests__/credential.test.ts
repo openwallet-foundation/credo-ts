@@ -1,9 +1,8 @@
 import type { CredentialRecordBinding } from '../../../modules/credentials'
 
-import { JsonTransformer } from '@credo-ts/core/src/utils'
-import { getAgentConfig, getAgentContext, mockFunction } from '@credo-ts/core/tests/helpers'
-
 import { Agent } from '../../../../../core/src/agent/Agent'
+import { JsonTransformer } from '../../../../../core/src/utils'
+import { getAgentConfig, getAgentContext, mockFunction } from '../../../../../core/tests/helpers'
 import { CredentialExchangeRecord, CredentialState } from '../../../modules/credentials'
 import { CredentialRepository } from '../../../modules/credentials/repository/CredentialRepository'
 import { DidCommMessageRole } from '../../../repository'

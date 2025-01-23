@@ -7,7 +7,7 @@ import { getAgentConfig } from '../../../../core/tests/helpers'
 import { SignatureDecorator } from './SignatureDecorator'
 import { signData, unpackAndVerifySignatureDecorator } from './SignatureDecoratorUtils'
 
-jest.mock('../../utils/timestamp', () => {
+jest.mock('../../../../core/src/utils/timestamp', () => {
   return {
     __esModule: true,
     default: jest.fn(() => Uint8Array.of(0, 0, 0, 0, 0, 0, 0, 0)),

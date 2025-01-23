@@ -1,9 +1,9 @@
-import type { ClassValidationError } from '../../../../error/ClassValidationError'
+import type { ClassValidationError } from '../../../../../core/src/error/ClassValidationError'
 
+import { MessageValidator } from '../../../../../core/src/utils'
+import { JsonEncoder } from '../../../../../core/src/utils/JsonEncoder'
+import { JsonTransformer } from '../../../../../core/src/utils/JsonTransformer'
 import { Attachment } from '../../../decorators/attachment/Attachment'
-import { MessageValidator } from '../../../../utils'
-import { JsonEncoder } from '../../../../utils/JsonEncoder'
-import { JsonTransformer } from '../../../../utils/JsonTransformer'
 import { HandshakeProtocol } from '../../connections'
 import { OutOfBandDidCommService } from '../domain'
 import { OutOfBandInvitation } from '../messages/OutOfBandInvitation'

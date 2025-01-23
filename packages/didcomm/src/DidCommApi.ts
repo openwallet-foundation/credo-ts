@@ -1,54 +1,34 @@
 import type { MessageHandler, MessageHandlerMiddleware } from './handlers'
 import type { InboundTransport, OutboundTransport } from './transport'
-import type { Subscription } from 'rxjs'
 
-import { AgentContext, EventEmitter, injectable } from '@credo-ts/core'
+import { injectable } from '@credo-ts/core'
 
 import { DidCommModuleConfig } from './DidCommModuleConfig'
 import { FeatureRegistry } from './FeatureRegistry'
 import { MessageHandlerRegistry } from './MessageHandlerRegistry'
 import { MessageReceiver } from './MessageReceiver'
 import { MessageSender } from './MessageSender'
-import { ConnectionsApi } from './modules/connections'
-import { OutOfBandApi } from './modules/oob'
-import { MediationRecipientApi } from './modules/routing'
 
 @injectable()
 export class DidCommApi {
   public config: DidCommModuleConfig
 
-  private eventEmitter: EventEmitter
   private featureRegistry: FeatureRegistry
   private messageSender: MessageSender
   private messageReceiver: MessageReceiver
-  private agentContext: AgentContext
-  private messageSubscription?: Subscription
-  private mediationRecipient: MediationRecipientApi
-  private connections: ConnectionsApi
-  private oob: OutOfBandApi
   private messageHandlerRegistry: MessageHandlerRegistry
 
   public constructor(
-    eventEmitter: EventEmitter,
     messageHandlerRegistry: MessageHandlerRegistry,
     messageSender: MessageSender,
     messageReceiver: MessageReceiver,
     featureRegistry: FeatureRegistry,
-    agentContext: AgentContext,
-    config: DidCommModuleConfig,
-    mediationRecipient: MediationRecipientApi,
-    connections: ConnectionsApi,
-    oob: OutOfBandApi
+    config: DidCommModuleConfig
   ) {
-    this.eventEmitter = eventEmitter
     this.messageReceiver = messageReceiver
     this.messageSender = messageSender
     this.featureRegistry = featureRegistry
-    this.agentContext = agentContext
     this.config = config
-    this.mediationRecipient = mediationRecipient
-    this.connections = connections
-    this.oob = oob
     this.messageHandlerRegistry = messageHandlerRegistry
   }
 

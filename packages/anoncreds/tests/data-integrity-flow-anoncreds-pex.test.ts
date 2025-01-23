@@ -2,15 +2,8 @@ import type { AnonCredsTestsAgent } from './anoncredsSetup'
 import type { EventReplaySubject } from '../../core/tests'
 import type { InputDescriptorV2 } from '@sphereon/pex-models'
 
-import {
-  AutoAcceptCredential,
-  CredentialExchangeRecord,
-  CredentialState,
-  ProofState,
-  W3cCredential,
-  W3cCredentialService,
-  W3cCredentialSubject,
-} from '@credo-ts/core'
+import { W3cCredential, W3cCredentialService, W3cCredentialSubject } from '@credo-ts/core'
+import { AutoAcceptCredential, CredentialExchangeRecord, CredentialState, ProofState } from '@credo-ts/didcomm'
 
 import {
   createDidKidVerificationMethod,
@@ -148,7 +141,7 @@ async function anonCredsFlowTest(options: {
   })
 
   // issuer offers credential
-  let issuerRecord = await issuer.credentials.offerCredential({
+  let issuerRecord = await issuer.modules.credentials.offerCredential({
     protocolVersion: 'v2',
     autoAcceptCredential: AutoAcceptCredential.Never,
     connectionId: issuerHolderConnectionId,
@@ -171,7 +164,7 @@ async function anonCredsFlowTest(options: {
     state: CredentialState.OfferReceived,
     threadId: issuerRecord.threadId,
   })
-  holderRecord = await holder.credentials.acceptOffer({
+  holderRecord = await holder.modules.credentials.acceptOffer({
     credentialRecordId: holderRecord.id,
     autoAcceptCredential: AutoAcceptCredential.Never,
     credentialFormats: {
@@ -188,7 +181,7 @@ async function anonCredsFlowTest(options: {
     state: CredentialState.RequestReceived,
     threadId: holderRecord.threadId,
   })
-  issuerRecord = await issuer.credentials.acceptRequest({
+  issuerRecord = await issuer.modules.credentials.acceptRequest({
     credentialRecordId: issuerRecord.id,
     autoAcceptCredential: AutoAcceptCredential.Never,
     credentialFormats: {
@@ -200,7 +193,7 @@ async function anonCredsFlowTest(options: {
     state: CredentialState.CredentialReceived,
     threadId: issuerRecord.threadId,
   })
-  holderRecord = await holder.credentials.acceptCredential({
+  holderRecord = await holder.modules.credentials.acceptCredential({
     credentialRecordId: holderRecord.id,
   })
 
@@ -249,7 +242,7 @@ async function anonCredsFlowTest(options: {
   if (!revocationRegistryDefinitionId)
     pdCopy.input_descriptors.forEach((ide: InputDescriptorV2) => delete ide.constraints?.statuses)
 
-  let holderProofExchangeRecord = await holder.proofs.proposeProof({
+  let holderProofExchangeRecord = await holder.modules.proofs.proposeProof({
     protocolVersion: 'v2',
     connectionId: holderIssuerConnectionId,
     proofFormats: {
@@ -265,13 +258,13 @@ async function anonCredsFlowTest(options: {
     state: ProofState.RequestReceived,
   })
 
-  issuerProofExchangeRecord = await issuer.proofs.acceptProposal({
+  issuerProofExchangeRecord = await issuer.modules.proofs.acceptProposal({
     proofRecordId: issuerProofExchangeRecord.id,
   })
 
   holderProofExchangeRecord = await holderProofExchangeRecordPromise
 
-  const requestedCredentials = await holder.proofs.selectCredentialsForRequest({
+  const requestedCredentials = await holder.modules.proofs.selectCredentialsForRequest({
     proofRecordId: holderProofExchangeRecord.id,
   })
 
@@ -285,7 +278,7 @@ async function anonCredsFlowTest(options: {
     state: ProofState.PresentationReceived,
   })
 
-  await holder.proofs.acceptRequest({
+  await holder.modules.proofs.acceptRequest({
     proofRecordId: holderProofExchangeRecord.id,
     proofFormats: {
       presentationExchange: {
@@ -300,7 +293,7 @@ async function anonCredsFlowTest(options: {
     state: ProofState.Done,
   })
 
-  await issuer.proofs.acceptPresentation({ proofRecordId: issuerProofExchangeRecord.id })
+  await issuer.modules.proofs.acceptPresentation({ proofRecordId: issuerProofExchangeRecord.id })
 
   holderProofExchangeRecord = await holderProofExchangeRecordPromise
 }

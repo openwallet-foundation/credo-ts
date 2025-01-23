@@ -4,12 +4,12 @@ import type { ConnectionStateChangedEvent } from '../ConnectionEvents'
 import { firstValueFrom } from 'rxjs'
 import { filter, first, map, timeout } from 'rxjs/operators'
 
-import { setupSubjectTransports } from '../../../../tests'
-import { getInMemoryAgentOptions } from '../../../../tests/helpers'
-import { Agent } from '../../../agent/Agent'
+import { Agent } from '../../../../../core/src/agent/Agent'
+import { setupSubjectTransports } from '../../../../../core/tests'
+import { getInMemoryAgentOptions } from '../../../../../core/tests/helpers'
 import { ConnectionEventTypes } from '../ConnectionEvents'
 import { ConnectionsModule } from '../ConnectionsModule'
-import { DidExchangeState } from '../../../models/connections'
+import { DidExchangeState } from '../models'
 
 function waitForRequest(agent: Agent, theirLabel: string) {
   return firstValueFrom(
@@ -48,8 +48,10 @@ describe('Manual Connection Flow', () => {
     const aliceAgentOptions = getInMemoryAgentOptions(
       'Manual Connection Flow Alice',
       {
-        label: 'alice',
         endpoints: ['rxjs:alice'],
+      },
+      {
+        label: 'alice',
       },
       {
         connections: new ConnectionsModule({
@@ -60,8 +62,10 @@ describe('Manual Connection Flow', () => {
     const bobAgentOptions = getInMemoryAgentOptions(
       'Manual Connection Flow Bob',
       {
-        label: 'bob',
         endpoints: ['rxjs:bob'],
+      },
+      {
+        label: 'bob',
       },
       {
         connections: new ConnectionsModule({
@@ -74,6 +78,7 @@ describe('Manual Connection Flow', () => {
       {
         endpoints: ['rxjs:faber'],
       },
+      {},
       {
         connections: new ConnectionsModule({
           autoAcceptConnections: false,
@@ -90,7 +95,7 @@ describe('Manual Connection Flow', () => {
     await bobAgent.initialize()
     await faberAgent.initialize()
 
-    const faberOutOfBandRecord = await faberAgent.oob.createInvitation({
+    const faberOutOfBandRecord = await faberAgent.modules.oob.createInvitation({
       autoAcceptConnection: false,
       multiUseInvitation: true,
     })
@@ -98,7 +103,7 @@ describe('Manual Connection Flow', () => {
     const waitForAliceRequest = waitForRequest(faberAgent, 'alice')
     const waitForBobRequest = waitForRequest(faberAgent, 'bob')
 
-    let { connectionRecord: aliceConnectionRecord } = await aliceAgent.oob.receiveInvitation(
+    let { connectionRecord: aliceConnectionRecord } = await aliceAgent.modules.oob.receiveInvitation(
       faberOutOfBandRecord.outOfBandInvitation,
       {
         autoAcceptInvitation: true,
@@ -106,7 +111,7 @@ describe('Manual Connection Flow', () => {
       }
     )
 
-    let { connectionRecord: bobConnectionRecord } = await bobAgent.oob.receiveInvitation(
+    let { connectionRecord: bobConnectionRecord } = await bobAgent.modules.oob.receiveInvitation(
       faberOutOfBandRecord.outOfBandInvitation,
       {
         autoAcceptInvitation: true,
@@ -120,19 +125,21 @@ describe('Manual Connection Flow', () => {
     const waitForAliceResponse = waitForResponse(aliceAgent, aliceConnectionRecord!.id)
     const waitForBobResponse = waitForResponse(bobAgent, bobConnectionRecord!.id)
 
-    await faberAgent.connections.acceptRequest(faberAliceConnectionRecord.id)
-    await faberAgent.connections.acceptRequest(faberBobConnectionRecord.id)
+    await faberAgent.modules.connections.acceptRequest(faberAliceConnectionRecord.id)
+    await faberAgent.modules.connections.acceptRequest(faberBobConnectionRecord.id)
 
     aliceConnectionRecord = await waitForAliceResponse
-    await aliceAgent.connections.acceptResponse(aliceConnectionRecord!.id)
+    await aliceAgent.modules.connections.acceptResponse(aliceConnectionRecord!.id)
 
     bobConnectionRecord = await waitForBobResponse
-    await bobAgent.connections.acceptResponse(bobConnectionRecord!.id)
+    await bobAgent.modules.connections.acceptResponse(bobConnectionRecord!.id)
 
-    aliceConnectionRecord = await aliceAgent.connections.returnWhenIsConnected(aliceConnectionRecord!.id)
-    bobConnectionRecord = await bobAgent.connections.returnWhenIsConnected(bobConnectionRecord!.id)
-    faberAliceConnectionRecord = await faberAgent.connections.returnWhenIsConnected(faberAliceConnectionRecord!.id)
-    faberBobConnectionRecord = await faberAgent.connections.returnWhenIsConnected(faberBobConnectionRecord!.id)
+    aliceConnectionRecord = await aliceAgent.modules.connections.returnWhenIsConnected(aliceConnectionRecord!.id)
+    bobConnectionRecord = await bobAgent.modules.connections.returnWhenIsConnected(bobConnectionRecord!.id)
+    faberAliceConnectionRecord = await faberAgent.modules.connections.returnWhenIsConnected(
+      faberAliceConnectionRecord!.id
+    )
+    faberBobConnectionRecord = await faberAgent.modules.connections.returnWhenIsConnected(faberBobConnectionRecord!.id)
 
     expect(aliceConnectionRecord).toBeConnectedWith(faberAliceConnectionRecord)
     expect(bobConnectionRecord).toBeConnectedWith(faberBobConnectionRecord)

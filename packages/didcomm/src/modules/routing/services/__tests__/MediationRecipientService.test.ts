@@ -1,17 +1,17 @@
-import type { AgentContext } from '@credo-ts/core/src/agent'
-import type { Routing } from '../../../didcomm/connections/services/ConnectionService'
+import type { AgentContext } from '../../../../../../core/src/agent'
+import type { Routing } from '../../../../models'
 
-import { getAgentConfig, getAgentContext, getMockConnection, mockFunction } from '@credo-ts/core/tests/helpers'
-import { EventEmitter } from '@credo-ts/core/src/agent/EventEmitter'
-import { MessageSender } from '../../../../agent/MessageSender'
-import { InboundMessageContext } from '../../../../agent/models/InboundMessageContext'
-import { Key } from '@credo-ts/core/src/crypto'
-import { uuid } from '@credo-ts/core/src/utils/uuid'
+import { EventEmitter } from '../../../../../../core/src/agent/EventEmitter'
+import { Key } from '../../../../../../core/src/crypto'
+import { DidRepository } from '../../../../../../core/src/modules/dids/repository/DidRepository'
+import { uuid } from '../../../../../../core/src/utils/uuid'
+import { getAgentConfig, getAgentContext, getMockConnection, mockFunction } from '../../../../../../core/tests/helpers'
+import { MessageSender } from '../../../../MessageSender'
+import { InboundMessageContext } from '../../../../models/InboundMessageContext'
 import { DidExchangeState } from '../../../connections'
-import { ConnectionMetadataKeys } from '../../../../repository/connections/ConnectionMetadataTypes'
-import { ConnectionRepository } from '../../../../repository/connections/ConnectionRepository'
-import { ConnectionService } from '../../../didcomm/connections/services/ConnectionService'
-import { DidRepository } from '@credo-ts/core/src/modules/dids/repository/DidRepository'
+import { ConnectionMetadataKeys } from '../../../connections/repository/ConnectionMetadataTypes'
+import { ConnectionRepository } from '../../../connections/repository/ConnectionRepository'
+import { ConnectionService } from '../../../connections/services/ConnectionService'
 import { RoutingEventTypes } from '../../RoutingEvents'
 import {
   KeylistUpdateAction,
@@ -30,13 +30,13 @@ const MediationRepositoryMock = MediationRepository as jest.Mock<MediationReposi
 jest.mock('../../../connections/repository/ConnectionRepository')
 const ConnectionRepositoryMock = ConnectionRepository as jest.Mock<ConnectionRepository>
 
-jest.mock('../../../dids/repository/DidRepository')
+jest.mock('../../../../../../core/src/modules/dids/repository/DidRepository')
 const DidRepositoryMock = DidRepository as jest.Mock<DidRepository>
 
-jest.mock('../../../../agent/EventEmitter')
+jest.mock('../../../../../../core/src/agent/EventEmitter')
 const EventEmitterMock = EventEmitter as jest.Mock<EventEmitter>
 
-jest.mock('../../../../agent/MessageSender')
+jest.mock('../../../../MessageSender')
 const MessageSenderMock = MessageSender as jest.Mock<MessageSender>
 
 const connectionImageUrl = 'https://example.com/image.png'

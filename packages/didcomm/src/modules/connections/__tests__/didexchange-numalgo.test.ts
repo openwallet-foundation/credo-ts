@@ -4,14 +4,14 @@ import type { ConnectionStateChangedEvent } from '../ConnectionEvents'
 import { firstValueFrom } from 'rxjs'
 import { filter, first, map, timeout } from 'rxjs/operators'
 
-import { setupSubjectTransports } from '@credo-ts/core/tests'
-import { getInMemoryAgentOptions } from '@credo-ts/core/tests/helpers'
-import { Agent } from '@credo-ts/core/src/agent/Agent'
-import { uuid } from '@credo-ts/core/src/utils/uuid'
-import { DidsModule, PeerDidNumAlgo, createPeerDidDocumentFromServices } from '@credo-ts/core/src/modules/dids'
+import { Agent } from '../../../../../core/src/agent/Agent'
+import { DidsModule, PeerDidNumAlgo, createPeerDidDocumentFromServices } from '../../../../../core/src/modules/dids'
+import { uuid } from '../../../../../core/src/utils/uuid'
+import { setupSubjectTransports } from '../../../../../core/tests'
+import { getInMemoryAgentOptions } from '../../../../../core/tests/helpers'
 import { ConnectionEventTypes } from '../ConnectionEvents'
 import { ConnectionsModule } from '../ConnectionsModule'
-import { DidExchangeState } from '../../../models/connections'
+import { DidExchangeState } from '../models'
 
 import { InMemoryDidRegistry } from './InMemoryDidRegistry'
 
@@ -98,8 +98,10 @@ async function didExchangeNumAlgoBaseTest(options: {
   const aliceAgentOptions = getInMemoryAgentOptions(
     'DID Exchange numalgo settings Alice',
     {
-      label: 'alice',
       endpoints: ['rxjs:alice'],
+    },
+    {
+      label: 'alice',
     },
     {
       connections: new ConnectionsModule({
@@ -114,6 +116,7 @@ async function didExchangeNumAlgoBaseTest(options: {
     {
       endpoints: ['rxjs:faber'],
     },
+    {},
     {
       connections: new ConnectionsModule({
         autoAcceptConnections: false,
@@ -130,7 +133,7 @@ async function didExchangeNumAlgoBaseTest(options: {
   await aliceAgent.initialize()
   await faberAgent.initialize()
 
-  const faberOutOfBandRecord = await faberAgent.oob.createInvitation({
+  const faberOutOfBandRecord = await faberAgent.modules.oob.createInvitation({
     autoAcceptConnection: false,
     multiUseInvitation: false,
   })
@@ -140,7 +143,7 @@ async function didExchangeNumAlgoBaseTest(options: {
   let ourDid, routing
   if (options.createExternalDidForRequester) {
     // Create did externally
-    const didRouting = await aliceAgent.mediationRecipient.getRouting({})
+    const didRouting = await aliceAgent.modules.mediationRecipient.getRouting({})
     ourDid = `did:inmemory:${uuid()}`
     const didDocument = createPeerDidDocumentFromServices([
       {
@@ -158,7 +161,7 @@ async function didExchangeNumAlgoBaseTest(options: {
     })
   }
 
-  let { connectionRecord: aliceConnectionRecord } = await aliceAgent.oob.receiveInvitation(
+  let { connectionRecord: aliceConnectionRecord } = await aliceAgent.modules.oob.receiveInvitation(
     faberOutOfBandRecord.outOfBandInvitation,
     {
       autoAcceptInvitation: true,
@@ -172,13 +175,15 @@ async function didExchangeNumAlgoBaseTest(options: {
 
   const waitForAliceResponse = waitForResponse(aliceAgent, aliceConnectionRecord!.id)
 
-  await faberAgent.connections.acceptRequest(faberAliceConnectionRecord.id)
+  await faberAgent.modules.connections.acceptRequest(faberAliceConnectionRecord.id)
 
   aliceConnectionRecord = await waitForAliceResponse
-  await aliceAgent.connections.acceptResponse(aliceConnectionRecord!.id)
+  await aliceAgent.modules.connections.acceptResponse(aliceConnectionRecord!.id)
 
-  aliceConnectionRecord = await aliceAgent.connections.returnWhenIsConnected(aliceConnectionRecord!.id)
-  faberAliceConnectionRecord = await faberAgent.connections.returnWhenIsConnected(faberAliceConnectionRecord!.id)
+  aliceConnectionRecord = await aliceAgent.modules.connections.returnWhenIsConnected(aliceConnectionRecord!.id)
+  faberAliceConnectionRecord = await faberAgent.modules.connections.returnWhenIsConnected(
+    faberAliceConnectionRecord!.id
+  )
 
   expect(aliceConnectionRecord).toBeConnectedWith(faberAliceConnectionRecord)
 

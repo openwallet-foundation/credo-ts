@@ -95,7 +95,6 @@ export const getAnonCredsIndyModules = ({
   const legacyIndyProofFormatService = new LegacyIndyProofFormatService()
 
   const modules = {
-    ...getDefaultDidcommModules(),
     credentials: new CredentialsModule({
       autoAcceptCredentials,
       credentialProtocols: [

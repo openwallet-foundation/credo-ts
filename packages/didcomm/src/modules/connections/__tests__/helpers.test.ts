@@ -1,4 +1,4 @@
-import { DidCommV1Service, IndyAgentService, VerificationMethod } from '@credo-ts/core/src/modules/dids'
+import { DidCommV1Service, IndyAgentService, VerificationMethod } from '../../../../../core/src/modules/dids'
 import {
   DidDoc,
   Ed25119Sig2018,
@@ -6,7 +6,7 @@ import {
   EmbeddedAuthentication,
   ReferencedAuthentication,
   RsaSig2018,
-} from '../../../models/connections'
+} from '../models'
 import { convertToNewDidDocument } from '../services/helpers'
 
 const key = new Ed25119Sig2018({

@@ -1,10 +1,11 @@
-import type { Wallet } from '@credo-ts/core/src/wallet'
+import type { Wallet } from '../../../../../../core/src/wallet'
 
 import { Subject } from 'rxjs'
 
-import { getAgentConfig, getAgentContext, mockFunction } from '@credo-ts/core/tests/helpers'
-import { EventEmitter } from '@credo-ts/core/src/agent/EventEmitter'
-import { Key } from '@credo-ts/core/src/crypto'
+import { EventEmitter } from '../../../../../../core/src/agent/EventEmitter'
+import { Key } from '../../../../../../core/src/crypto'
+import { getAgentConfig, getAgentContext, mockFunction } from '../../../../../../core/tests/helpers'
+import { DidCommModuleConfig } from '../../../../DidCommModuleConfig'
 import { RoutingEventTypes } from '../../RoutingEvents'
 import { MediationRecipientService } from '../MediationRecipientService'
 import { RoutingService } from '../RoutingService'
@@ -24,6 +25,7 @@ const wallet = {
 const agentContext = getAgentContext({
   wallet: wallet as unknown as Wallet,
   agentConfig,
+  registerInstances: [[DidCommModuleConfig, new DidCommModuleConfig({ endpoints: ['http://endpoint.com'] })]],
 })
 const mediationRecipientService = new MediationRecipientServiceMock()
 const routingService = new RoutingService(mediationRecipientService, eventEmitter)

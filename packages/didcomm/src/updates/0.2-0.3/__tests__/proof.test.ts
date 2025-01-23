@@ -10,15 +10,15 @@ import * as testModule from '../proof'
 const agentConfig = getAgentConfig('Migration ProofExchangeRecord 0.2-0.3')
 const agentContext = getAgentContext()
 
-jest.mock('../../../../../modules/proofs/repository/ProofRepository')
+jest.mock('../../../modules/proofs/repository/ProofRepository')
 const ProofRepositoryMock = ProofRepository as jest.Mock<ProofRepository>
 const proofRepository = new ProofRepositoryMock()
 
-jest.mock('../../../../../modules/didcomm/repository/DidCommMessageRepository')
+jest.mock('../../../repository/DidCommMessageRepository')
 const DidCommMessageRepositoryMock = DidCommMessageRepository as jest.Mock<DidCommMessageRepository>
 const didCommMessageRepository = new DidCommMessageRepositoryMock()
 
-jest.mock('../../../../..//core/src/agent/Agent', () => {
+jest.mock('../../../../../core/src/agent/Agent', () => {
   return {
     Agent: jest.fn(() => ({
       config: agentConfig,

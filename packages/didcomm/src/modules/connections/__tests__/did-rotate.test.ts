@@ -2,23 +2,23 @@
 
 import { ReplaySubject, first, firstValueFrom, timeout } from 'rxjs'
 
-import { setupSubjectTransports } from '@credo-ts/core/tests'
+import { Agent } from '../../../../../core/src/agent/Agent'
+import { RecordNotFoundError } from '../../../../../core/src/error'
+import { createPeerDidDocumentFromServices } from '../../../../../core/src/modules/dids'
+import { uuid } from '../../../../../core/src/utils/uuid'
+import { setupSubjectTransports } from '../../../../../core/tests'
 import {
   getInMemoryAgentOptions,
   makeConnection,
   waitForAgentMessageProcessedEvent,
   waitForBasicMessage,
   waitForDidRotate,
-} from '@credo-ts/core/tests/helpers'
-import { Agent } from '@credo-ts/core/src/agent/Agent'
-import { RecordNotFoundError } from '@credo-ts/core/src/error'
-import { uuid } from '@credo-ts/core/src/utils/uuid'
-import { BasicMessage } from '../../../../basic-messages'
-import { createPeerDidDocumentFromServices } from '@credo-ts/core/src/modules/dids'
+} from '../../../../../core/tests/helpers'
 import { MessageSender } from '../../../MessageSender'
 import { getOutboundMessageContext } from '../../../getOutboundMessageContext'
-import { DidRotateProblemReportMessage, HangupMessage, DidRotateAckMessage } from '../../../messages'
-import { ConnectionRecord } from '../../../repository/connections'
+import { BasicMessage } from '../../basic-messages'
+import { DidRotateProblemReportMessage, HangupMessage, DidRotateAckMessage } from '../messages'
+import { ConnectionRecord } from '../repository'
 
 import { InMemoryDidRegistry } from './InMemoryDidRegistry'
 
@@ -59,19 +59,19 @@ describe('Rotation E2E tests', () => {
       expect(bobAliceConnection!.theirDid).toEqual(oldDid)
 
       // Send message to initial did
-      await bobAgent.basicMessages.sendMessage(bobAliceConnection!.id, 'Hello initial did')
+      await bobAgent.modules.basicMessages.sendMessage(bobAliceConnection!.id, 'Hello initial did')
 
       await waitForBasicMessage(aliceAgent, { content: 'Hello initial did' })
 
       // Do did rotate
-      const { newDid } = await aliceAgent.connections.rotate({ connectionId: aliceBobConnection!.id })
+      const { newDid } = await aliceAgent.modules.connections.rotate({ connectionId: aliceBobConnection!.id })
 
       // Wait for acknowledge
       await waitForAgentMessageProcessedEvent(aliceAgent, { messageType: DidRotateAckMessage.type.messageTypeUri })
 
       // Check that new did is taken into account by both parties
-      const newAliceBobConnection = await aliceAgent.connections.getById(aliceBobConnection!.id)
-      const newBobAliceConnection = await bobAgent.connections.getById(bobAliceConnection!.id)
+      const newAliceBobConnection = await aliceAgent.modules.connections.getById(aliceBobConnection!.id)
+      const newBobAliceConnection = await bobAgent.modules.connections.getById(bobAliceConnection!.id)
 
       expect(newAliceBobConnection.did).toEqual(newDid)
       expect(newBobAliceConnection.theirDid).toEqual(newDid)
@@ -81,14 +81,14 @@ describe('Rotation E2E tests', () => {
       expect(newBobAliceConnection.previousTheirDids).toContain(oldDid)
 
       // Send message to new did
-      await bobAgent.basicMessages.sendMessage(bobAliceConnection!.id, 'Hello new did')
+      await bobAgent.modules.basicMessages.sendMessage(bobAliceConnection!.id, 'Hello new did')
 
       await waitForBasicMessage(aliceAgent, { content: 'Hello new did', connectionId: aliceBobConnection!.id })
     })
 
     test('Rotate succesfully and send messages to previous did afterwards', async () => {
       // Send message to initial did
-      await bobAgent.basicMessages.sendMessage(bobAliceConnection!.id, 'Hello initial did')
+      await bobAgent.modules.basicMessages.sendMessage(bobAliceConnection!.id, 'Hello initial did')
 
       await waitForBasicMessage(aliceAgent, { content: 'Hello initial did' })
 
@@ -98,7 +98,7 @@ describe('Rotation E2E tests', () => {
       })
 
       // Do did rotate
-      await aliceAgent.connections.rotate({ connectionId: aliceBobConnection!.id })
+      await aliceAgent.modules.connections.rotate({ connectionId: aliceBobConnection!.id })
 
       // Wait for acknowledge
       await waitForAgentMessageProcessedEvent(aliceAgent, { messageType: DidRotateAckMessage.type.messageTypeUri })
@@ -119,7 +119,7 @@ describe('Rotation E2E tests', () => {
       expect(bobAliceConnection!.theirDid).toEqual(oldDid)
 
       // Send message to initial did
-      await bobAgent.basicMessages.sendMessage(bobAliceConnection!.id, 'Hello initial did')
+      await bobAgent.modules.basicMessages.sendMessage(bobAliceConnection!.id, 'Hello initial did')
 
       await waitForBasicMessage(aliceAgent, { content: 'Hello initial did' })
 
@@ -132,7 +132,7 @@ describe('Rotation E2E tests', () => {
       bobAgent.dids.config.addRegistrar(didRegistry)
       bobAgent.dids.config.addResolver(didRegistry)
 
-      const didRouting = await aliceAgent.mediationRecipient.getRouting({})
+      const didRouting = await aliceAgent.modules.mediationRecipient.getRouting({})
       const did = `did:inmemory:${uuid()}`
       const didDocument = createPeerDidDocumentFromServices([
         {
@@ -150,7 +150,7 @@ describe('Rotation E2E tests', () => {
       })
 
       // Do did rotate
-      const { newDid } = await aliceAgent.connections.rotate({
+      const { newDid } = await aliceAgent.modules.connections.rotate({
         connectionId: aliceBobConnection!.id,
         toDid: did,
       })
@@ -159,8 +159,8 @@ describe('Rotation E2E tests', () => {
       await waitForAgentMessageProcessedEvent(aliceAgent, { messageType: DidRotateAckMessage.type.messageTypeUri })
 
       // Check that new did is taken into account by both parties
-      const newAliceBobConnection = await aliceAgent.connections.getById(aliceBobConnection!.id)
-      const newBobAliceConnection = await bobAgent.connections.getById(bobAliceConnection!.id)
+      const newAliceBobConnection = await aliceAgent.modules.connections.getById(aliceBobConnection!.id)
+      const newBobAliceConnection = await bobAgent.modules.connections.getById(bobAliceConnection!.id)
 
       expect(newAliceBobConnection.did).toEqual(newDid)
       expect(newBobAliceConnection.theirDid).toEqual(newDid)
@@ -170,14 +170,14 @@ describe('Rotation E2E tests', () => {
       expect(newBobAliceConnection.previousTheirDids).toContain(oldDid)
 
       // Send message to new did
-      await bobAgent.basicMessages.sendMessage(bobAliceConnection!.id, 'Hello new did')
+      await bobAgent.modules.basicMessages.sendMessage(bobAliceConnection!.id, 'Hello new did')
 
       await waitForBasicMessage(aliceAgent, { content: 'Hello new did', connectionId: aliceBobConnection!.id })
     })
 
     test('Rotate succesfully and send messages to previous did afterwards', async () => {
       // Send message to initial did
-      await bobAgent.basicMessages.sendMessage(bobAliceConnection!.id, 'Hello initial did')
+      await bobAgent.modules.basicMessages.sendMessage(bobAliceConnection!.id, 'Hello initial did')
 
       await waitForBasicMessage(aliceAgent, { content: 'Hello initial did' })
 
@@ -195,7 +195,7 @@ describe('Rotation E2E tests', () => {
       bobAgent.dids.config.addRegistrar(didRegistry)
       bobAgent.dids.config.addResolver(didRegistry)
 
-      const didRouting = await aliceAgent.mediationRecipient.getRouting({})
+      const didRouting = await aliceAgent.modules.mediationRecipient.getRouting({})
       const did = `did:inmemory:${uuid()}`
       const didDocument = createPeerDidDocumentFromServices([
         {
@@ -215,7 +215,7 @@ describe('Rotation E2E tests', () => {
       const waitForAllDidRotate = Promise.all([waitForDidRotate(aliceAgent, {}), waitForDidRotate(bobAgent, {})])
 
       // Do did rotate
-      await aliceAgent.connections.rotate({ connectionId: aliceBobConnection!.id, toDid: did })
+      await aliceAgent.modules.connections.rotate({ connectionId: aliceBobConnection!.id, toDid: did })
 
       // Wait for acknowledge
       await waitForAgentMessageProcessedEvent(aliceAgent, { messageType: DidRotateAckMessage.type.messageTypeUri })
@@ -251,7 +251,7 @@ describe('Rotation E2E tests', () => {
 
     test('Rotate failed and send messages to previous did afterwards', async () => {
       // Send message to initial did
-      await bobAgent.basicMessages.sendMessage(bobAliceConnection!.id, 'Hello initial did')
+      await bobAgent.modules.basicMessages.sendMessage(bobAliceConnection!.id, 'Hello initial did')
 
       await waitForBasicMessage(aliceAgent, { content: 'Hello initial did' })
 
@@ -267,7 +267,7 @@ describe('Rotation E2E tests', () => {
       aliceAgent.dids.config.addRegistrar(didRegistry)
       aliceAgent.dids.config.addResolver(didRegistry)
 
-      const didRouting = await aliceAgent.mediationRecipient.getRouting({})
+      const didRouting = await aliceAgent.modules.mediationRecipient.getRouting({})
       const did = `did:inmemory:${uuid()}`
       const didDocument = createPeerDidDocumentFromServices([
         {
@@ -285,7 +285,7 @@ describe('Rotation E2E tests', () => {
       })
 
       // Do did rotate
-      await aliceAgent.connections.rotate({ connectionId: aliceBobConnection!.id, toDid: did })
+      await aliceAgent.modules.connections.rotate({ connectionId: aliceBobConnection!.id, toDid: did })
 
       // Wait for a problem report
       await waitForAgentMessageProcessedEvent(aliceAgent, {
@@ -301,7 +301,7 @@ describe('Rotation E2E tests', () => {
       })
 
       // Send message to stored did (should be the previous one)
-      await bobAgent.basicMessages.sendMessage(bobAliceConnection!.id, 'Message after did rotation failure')
+      await bobAgent.modules.basicMessages.sendMessage(bobAliceConnection!.id, 'Message after did rotation failure')
 
       await waitForBasicMessage(aliceAgent, {
         content: 'Message after did rotation failure',
@@ -313,7 +313,7 @@ describe('Rotation E2E tests', () => {
   describe('Hangup', () => {
     test('Hangup without record deletion', async () => {
       // Send message to initial did
-      await bobAgent.basicMessages.sendMessage(bobAliceConnection!.id, 'Hello initial did')
+      await bobAgent.modules.basicMessages.sendMessage(bobAliceConnection!.id, 'Hello initial did')
 
       await waitForBasicMessage(aliceAgent, { content: 'Hello initial did' })
 
@@ -324,7 +324,7 @@ describe('Rotation E2E tests', () => {
         connectionRecord: bobAliceConnection!.clone(),
       })
 
-      await aliceAgent.connections.hangup({ connectionId: aliceBobConnection!.id })
+      await aliceAgent.modules.connections.hangup({ connectionId: aliceBobConnection!.id })
 
       // Wait for hangup
       await waitForAgentMessageProcessedEvent(bobAgent, {
@@ -332,7 +332,9 @@ describe('Rotation E2E tests', () => {
       })
 
       // If Bob attempts to send a message to Alice after they received the hangup, framework should reject it
-      expect(bobAgent.basicMessages.sendMessage(bobAliceConnection!.id, 'Message after hangup')).rejects.toThrowError()
+      expect(
+        bobAgent.modules.basicMessages.sendMessage(bobAliceConnection!.id, 'Message after hangup')
+      ).rejects.toThrowError()
 
       // If Bob sends a message afterwards, Alice should still be able to receive it
       await bobAgent.dependencyManager.resolve(MessageSender).sendMessage(messageBeforeHangup)
@@ -345,7 +347,7 @@ describe('Rotation E2E tests', () => {
 
     test('Hangup and delete connection record', async () => {
       // Send message to initial did
-      await bobAgent.basicMessages.sendMessage(bobAliceConnection!.id, 'Hello initial did')
+      await bobAgent.modules.basicMessages.sendMessage(bobAliceConnection!.id, 'Hello initial did')
 
       await waitForBasicMessage(aliceAgent, { content: 'Hello initial did' })
 
@@ -356,10 +358,10 @@ describe('Rotation E2E tests', () => {
         connectionRecord: bobAliceConnection!.clone(),
       })
 
-      await aliceAgent.connections.hangup({ connectionId: aliceBobConnection!.id, deleteAfterHangup: true })
+      await aliceAgent.modules.connections.hangup({ connectionId: aliceBobConnection!.id, deleteAfterHangup: true })
 
       // Verify that alice connection has been effectively deleted
-      expect(aliceAgent.connections.getById(aliceBobConnection!.id)).rejects.toThrow(RecordNotFoundError)
+      expect(aliceAgent.modules.connections.getById(aliceBobConnection!.id)).rejects.toThrow(RecordNotFoundError)
 
       // Wait for hangup
       await waitForAgentMessageProcessedEvent(bobAgent, {
@@ -376,7 +378,7 @@ describe('Rotation E2E tests', () => {
       observable.pipe(first(), timeout({ first: 10000 })).subscribe(subject)
       await firstValueFrom(subject)
 
-      const aliceBasicMessages = await aliceAgent.basicMessages.findAllByQuery({})
+      const aliceBasicMessages = await aliceAgent.modules.basicMessages.findAllByQuery({})
       expect(aliceBasicMessages.find((message) => message.content === 'Message before hangup')).toBeUndefined()
     })
   })

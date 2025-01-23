@@ -1,14 +1,19 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import type { AgentContext } from '@credo-ts/core/src/agent'
+import type { AgentContext } from '../../../../../../../core/src/agent'
 import type { CredentialStateChangedEvent } from '../../../CredentialEvents'
 import type { CredentialFormat, CredentialFormatCreateOfferOptions, CredentialFormatService } from '../../../formats'
 import type { CreateCredentialOfferOptions } from '../../CredentialProtocolOptions'
 
 import { Subject } from 'rxjs'
 
-import { getAgentConfig, getAgentContext, getMockConnection, mockFunction } from '@credo-ts/core/tests/helpers'
-import { EventEmitter } from '@credo-ts/core/src/agent/EventEmitter'
-import { JsonTransformer } from '@credo-ts/core/src/utils'
+import { EventEmitter } from '../../../../../../../core/src/agent/EventEmitter'
+import { JsonTransformer } from '../../../../../../../core/src/utils'
+import {
+  getAgentConfig,
+  getAgentContext,
+  getMockConnection,
+  mockFunction,
+} from '../../../../../../../core/tests/helpers'
 import { Dispatcher } from '../../../../../Dispatcher'
 import { Attachment, AttachmentData } from '../../../../../decorators/attachment/Attachment'
 import { InboundMessageContext } from '../../../../../models'
@@ -78,10 +83,10 @@ export const testCredentialFormatService = {
 
 // Mock classes
 jest.mock('../../../repository/CredentialRepository')
-jest.mock('../../../../../storage/didcomm/DidCommMessageRepository')
+jest.mock('../../../../../repository/DidCommMessageRepository')
 jest.mock('../../../../routing/services/RoutingService')
 jest.mock('../../../../connections/services/ConnectionService')
-jest.mock('../../../../../agent/Dispatcher')
+jest.mock('../../../../../Dispatcher')
 
 // Mock typed object
 const CredentialRepositoryMock = CredentialRepository as jest.Mock<CredentialRepository>

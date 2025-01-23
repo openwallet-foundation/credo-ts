@@ -14,7 +14,6 @@ import {
   JsonLdCredentialFormatService,
   V2CredentialProtocol,
 } from '../../didcomm/src'
-import { getDefaultDidcommModules } from '../../didcomm/src/util/modules'
 import { CacheModule, InMemoryLruCache, Agent, W3cCredentialsModule } from '../src'
 import { customDocumentLoader } from '../src/modules/vc/data-integrity/__tests__/documentLoader'
 
@@ -30,7 +29,6 @@ export const getJsonLdModules = ({
   useBbs = false,
 }: { autoAcceptCredentials?: AutoAcceptCredential; autoAcceptProofs?: AutoAcceptProof; useBbs?: boolean } = {}) =>
   ({
-    ...getDefaultDidcommModules(),
     credentials: new CredentialsModule({
       credentialProtocols: [new V2CredentialProtocol({ credentialFormats: [new JsonLdCredentialFormatService()] })],
       autoAcceptCredentials,

@@ -4,17 +4,17 @@ import type { CustomProofTags } from '../../../repository/ProofExchangeRecord'
 
 import { Subject } from 'rxjs'
 
-import { getAgentConfig, getAgentContext, getMockConnection, mockFunction } from '../../../../../../tests/helpers'
-import { EventEmitter } from '../../../../../agent/EventEmitter'
-import { uuid } from '../../../../../utils/uuid'
+import { EventEmitter } from '../../../../../../../core/src/agent/EventEmitter'
+import { uuid } from '../../../../../../../core/src/utils/uuid'
 import {
-  Attachment,
-  AttachmentData,
-  ConnectionService,
-  DidCommMessageRepository,
-  DidExchangeState,
-  InboundMessageContext,
-} from '../../../../didcomm'
+  getAgentConfig,
+  getAgentContext,
+  getMockConnection,
+  mockFunction,
+} from '../../../../../../../core/tests/helpers'
+import { Attachment, AttachmentData, DidExchangeState, InboundMessageContext } from '../../../../../../src'
+import { DidCommMessageRepository } from '../../../../../repository/DidCommMessageRepository'
+import { ConnectionService } from '../../../../connections/services/ConnectionService'
 import { ProofEventTypes } from '../../../ProofEvents'
 import { PresentationProblemReportReason } from '../../../errors/PresentationProblemReportReason'
 import { ProofRole } from '../../../models'
@@ -28,7 +28,7 @@ import { V2PresentationProblemReportMessage, V2RequestPresentationMessage } from
 // Mock classes
 jest.mock('../../../repository/ProofRepository')
 jest.mock('../../../../connections/services/ConnectionService')
-jest.mock('../../../../../storage/Repository')
+jest.mock('../../../../../repository/DidCommMessageRepository')
 
 // Mock typed object
 const ProofRepositoryMock = ProofRepository as jest.Mock<ProofRepository>

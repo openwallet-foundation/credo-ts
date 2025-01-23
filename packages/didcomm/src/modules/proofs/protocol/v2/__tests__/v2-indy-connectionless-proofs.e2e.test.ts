@@ -12,6 +12,8 @@ import {
   prepareForAnonCredsIssuance,
   setupAnonCredsTests,
 } from '../../../../../../../anoncreds/tests/legacyAnonCredsSetup'
+import { Agent } from '../../../../../../../core'
+import { uuid } from '../../../../../../../core/src/utils/uuid'
 import {
   waitForProofExchangeRecordSubject,
   makeConnection,
@@ -19,14 +21,21 @@ import {
   setupEventReplaySubjects,
   waitForProofExchangeRecord,
   getInMemoryAgentOptions,
-} from '../../../../../../tests'
-import { Agent } from '../../../../../agent/Agent'
-import { uuid } from '../../../../../utils/uuid'
-import { CredentialEventTypes } from '../../../../credentials'
-import { Attachment, AttachmentData, HandshakeProtocol, LinkedAttachment } from '../../../../didcomm'
-import { MediatorModule, MediatorPickupStrategy, MediationRecipientModule } from '../../../../didcomm/modules/routing'
-import { ProofEventTypes } from '../../../ProofEvents'
-import { AutoAcceptProof, ProofState } from '../../../models'
+} from '../../../../../../../core/tests'
+import {
+  Attachment,
+  AttachmentData,
+  AutoAcceptProof,
+  CredentialEventTypes,
+  HandshakeProtocol,
+  LinkedAttachment,
+  MediationRecipientModule,
+  MediatorModule,
+  MediatorPickupStrategy,
+  MessageReceiver,
+  ProofEventTypes,
+  ProofState,
+} from '../../../../../../src'
 
 describe('V2 Connectionless Proofs - Indy', () => {
   let agents: Agent[]
@@ -78,7 +87,7 @@ describe('V2 Connectionless Proofs - Indy', () => {
     testLogger.test('Faber sends presentation request to Alice')
 
     // eslint-disable-next-line prefer-const
-    let { proofRecord: faberProofExchangeRecord, message } = await faberAgent.proofs.createRequest({
+    let { proofRecord: faberProofExchangeRecord, message } = await faberAgent.modules.proofs.createRequest({
       protocolVersion: 'v2',
       proofFormats: {
         indy: {
@@ -110,13 +119,13 @@ describe('V2 Connectionless Proofs - Indy', () => {
       },
     })
 
-    const { message: requestMessage } = await faberAgent.oob.createLegacyConnectionlessInvitation({
+    const { message: requestMessage } = await faberAgent.modules.oob.createLegacyConnectionlessInvitation({
       recordId: faberProofExchangeRecord.id,
       message,
       domain: 'https://a-domain.com',
     })
 
-    await aliceAgent.receiveMessage(requestMessage.toJSON())
+    await aliceAgent.dependencyManager.resolve(MessageReceiver).receiveMessage(requestMessage.toJSON())
 
     testLogger.test('Alice waits for presentation request from Faber')
     let aliceProofExchangeRecord = await waitForProofExchangeRecordSubject(aliceReplay, {
@@ -124,11 +133,11 @@ describe('V2 Connectionless Proofs - Indy', () => {
     })
 
     testLogger.test('Alice accepts presentation request from Faber')
-    const requestedCredentials = await aliceAgent.proofs.selectCredentialsForRequest({
+    const requestedCredentials = await aliceAgent.modules.proofs.selectCredentialsForRequest({
       proofRecordId: aliceProofExchangeRecord.id,
     })
 
-    aliceProofExchangeRecord = await aliceAgent.proofs.acceptRequest({
+    aliceProofExchangeRecord = await aliceAgent.modules.proofs.acceptRequest({
       proofRecordId: aliceProofExchangeRecord.id,
       useReturnRoute: returnRoute,
       proofFormats: { indy: requestedCredentials.proofFormats.indy },
@@ -140,13 +149,13 @@ describe('V2 Connectionless Proofs - Indy', () => {
       state: ProofState.PresentationReceived,
     })
 
-    const sentPresentationMessage = aliceAgent.proofs.findPresentationMessage(aliceProofExchangeRecord.id)
+    const sentPresentationMessage = aliceAgent.modules.proofs.findPresentationMessage(aliceProofExchangeRecord.id)
 
     // assert presentation is valid
     expect(faberProofExchangeRecord.isVerified).toBe(true)
 
     // Faber accepts presentation
-    await faberAgent.proofs.acceptPresentation({ proofRecordId: faberProofExchangeRecord.id })
+    await faberAgent.modules.proofs.acceptPresentation({ proofRecordId: faberProofExchangeRecord.id })
 
     // Alice waits until it receives presentation ack
     aliceProofExchangeRecord = await waitForProofExchangeRecordSubject(aliceReplay, {
@@ -201,7 +210,7 @@ describe('V2 Connectionless Proofs - Indy', () => {
     agents = [aliceAgent, faberAgent]
 
     // eslint-disable-next-line prefer-const
-    let { message, proofRecord: faberProofExchangeRecord } = await faberAgent.proofs.createRequest({
+    let { message, proofRecord: faberProofExchangeRecord } = await faberAgent.modules.proofs.createRequest({
       protocolVersion: 'v2',
       proofFormats: {
         indy: {
@@ -234,13 +243,13 @@ describe('V2 Connectionless Proofs - Indy', () => {
       autoAcceptProof: AutoAcceptProof.ContentApproved,
     })
 
-    const { message: requestMessage } = await faberAgent.oob.createLegacyConnectionlessInvitation({
+    const { message: requestMessage } = await faberAgent.modules.oob.createLegacyConnectionlessInvitation({
       recordId: faberProofExchangeRecord.id,
       message,
       domain: 'https://a-domain.com',
     })
 
-    await aliceAgent.receiveMessage(requestMessage.toJSON())
+    await aliceAgent.dependencyManager.resolve(MessageReceiver).receiveMessage(requestMessage.toJSON())
 
     await waitForProofExchangeRecordSubject(aliceReplay, {
       state: ProofState.Done,
@@ -284,16 +293,16 @@ describe('V2 Connectionless Proofs - Indy', () => {
 
     // Initialize mediator
     const mediatorAgent = new Agent(mediatorOptions)
-    mediatorAgent.didcomm.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
-    mediatorAgent.didcomm.registerInboundTransport(new SubjectInboundTransport(mediatorMessages))
+    mediatorAgent.modules.didcomm.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
+    mediatorAgent.modules.didcomm.registerInboundTransport(new SubjectInboundTransport(mediatorMessages))
     await mediatorAgent.initialize()
 
-    const faberMediationOutOfBandRecord = await mediatorAgent.oob.createInvitation({
+    const faberMediationOutOfBandRecord = await mediatorAgent.modules.oob.createInvitation({
       label: 'faber invitation',
       handshakeProtocols: [HandshakeProtocol.Connections],
     })
 
-    const aliceMediationOutOfBandRecord = await mediatorAgent.oob.createInvitation({
+    const aliceMediationOutOfBandRecord = await mediatorAgent.modules.oob.createInvitation({
       label: 'alice invitation',
       handshakeProtocols: [HandshakeProtocol.Connections],
     })
@@ -333,12 +342,14 @@ describe('V2 Connectionless Proofs - Indy', () => {
     )
 
     const faberAgent = new Agent(faberOptions)
-    faberAgent.didcomm.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
+    faberAgent.modules.didcomm.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     await faberAgent.initialize()
+    await faberAgent.modules.mediationRecipient.initialize()
 
     const aliceAgent = new Agent(aliceOptions)
-    aliceAgent.didcomm.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
+    aliceAgent.modules.didcomm.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     await aliceAgent.initialize()
+    await aliceAgent.modules.mediationRecipient.initialize()
 
     const [faberReplay, aliceReplay] = setupEventReplaySubjects(
       [faberAgent, aliceAgent],
@@ -382,7 +393,7 @@ describe('V2 Connectionless Proofs - Indy', () => {
     })
 
     // eslint-disable-next-line prefer-const
-    let { message, proofRecord: faberProofExchangeRecord } = await faberAgent.proofs.createRequest({
+    let { message, proofRecord: faberProofExchangeRecord } = await faberAgent.modules.proofs.createRequest({
       protocolVersion: 'v2',
       proofFormats: {
         indy: {
@@ -415,13 +426,13 @@ describe('V2 Connectionless Proofs - Indy', () => {
       autoAcceptProof: AutoAcceptProof.ContentApproved,
     })
 
-    const { message: requestMessage } = await faberAgent.oob.createLegacyConnectionlessInvitation({
+    const { message: requestMessage } = await faberAgent.modules.oob.createLegacyConnectionlessInvitation({
       recordId: faberProofExchangeRecord.id,
       message,
       domain: 'https://a-domain.com',
     })
 
-    const mediationRecord = await faberAgent.mediationRecipient.findDefaultMediator()
+    const mediationRecord = await faberAgent.modules.mediationRecipient.findDefaultMediator()
     if (!mediationRecord) throw new Error('Faber agent has no default mediator')
 
     expect(requestMessage).toMatchObject({
@@ -432,7 +443,7 @@ describe('V2 Connectionless Proofs - Indy', () => {
       },
     })
 
-    await aliceAgent.receiveMessage(requestMessage.toJSON())
+    await aliceAgent.dependencyManager.resolve(MessageReceiver).receiveMessage(requestMessage.toJSON())
 
     await waitForProofExchangeRecordSubject(aliceReplay, {
       state: ProofState.Done,
@@ -486,7 +497,7 @@ describe('V2 Connectionless Proofs - Indy', () => {
     agents = [aliceAgent, faberAgent]
 
     // eslint-disable-next-line prefer-const
-    let { message, proofRecord: faberProofExchangeRecord } = await faberAgent.proofs.createRequest({
+    let { message, proofRecord: faberProofExchangeRecord } = await faberAgent.modules.proofs.createRequest({
       protocolVersion: 'v2',
       proofFormats: {
         indy: {
@@ -519,17 +530,17 @@ describe('V2 Connectionless Proofs - Indy', () => {
       autoAcceptProof: AutoAcceptProof.ContentApproved,
     })
 
-    const { message: requestMessage } = await faberAgent.oob.createLegacyConnectionlessInvitation({
+    const { message: requestMessage } = await faberAgent.modules.oob.createLegacyConnectionlessInvitation({
       recordId: faberProofExchangeRecord.id,
       message,
       domain: 'rxjs:faber',
     })
 
-    for (const transport of faberAgent.didcomm.outboundTransports) {
-      await faberAgent.didcomm.unregisterOutboundTransport(transport)
+    for (const transport of faberAgent.modules.didcomm.outboundTransports) {
+      await faberAgent.modules.didcomm.unregisterOutboundTransport(transport)
     }
 
-    await aliceAgent.receiveMessage(requestMessage.toJSON())
+    await aliceAgent.dependencyManager.resolve(MessageReceiver).receiveMessage(requestMessage.toJSON())
     await waitForProofExchangeRecordSubject(aliceReplay, {
       state: ProofState.Done,
       threadId: requestMessage.threadId,
@@ -583,7 +594,7 @@ describe('V2 Connectionless Proofs - Indy', () => {
 
     // eslint-disable-next-line prefer-const
     // eslint-disable-next-line prefer-const
-    let { message, proofRecord: faberProofExchangeRecord } = await faberAgent.proofs.createRequest({
+    let { message, proofRecord: faberProofExchangeRecord } = await faberAgent.modules.proofs.createRequest({
       protocolVersion: 'v2',
       proofFormats: {
         indy: {
@@ -605,24 +616,27 @@ describe('V2 Connectionless Proofs - Indy', () => {
       autoAcceptProof: AutoAcceptProof.ContentApproved,
     })
 
-    const { message: requestMessage } = await faberAgent.oob.createLegacyConnectionlessInvitation({
+    const { message: requestMessage } = await faberAgent.modules.oob.createLegacyConnectionlessInvitation({
       recordId: faberProofExchangeRecord.id,
       message,
       domain: 'rxjs:faber',
     })
 
-    for (const transport of faberAgent.didcomm.outboundTransports) {
-      await faberAgent.didcomm.unregisterOutboundTransport(transport)
+    for (const transport of faberAgent.modules.didcomm.outboundTransports) {
+      await faberAgent.modules.didcomm.unregisterOutboundTransport(transport)
     }
 
     const aliceProofExchangeRecordPromise = waitForProofExchangeRecord(aliceAgent, {
       state: ProofState.RequestReceived,
     })
 
-    await aliceAgent.receiveMessage(requestMessage.toJSON())
+    await aliceAgent.dependencyManager.resolve(MessageReceiver).receiveMessage(requestMessage.toJSON())
     const aliceProofExchangeRecord = await aliceProofExchangeRecordPromise
 
-    await aliceAgent.proofs.declineRequest({ proofRecordId: aliceProofExchangeRecord.id, sendProblemReport: true })
+    await aliceAgent.modules.proofs.declineRequest({
+      proofRecordId: aliceProofExchangeRecord.id,
+      sendProblemReport: true,
+    })
 
     await waitForProofExchangeRecordSubject(aliceReplay, {
       state: ProofState.Declined,

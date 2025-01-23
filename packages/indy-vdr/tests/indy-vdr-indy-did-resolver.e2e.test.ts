@@ -11,6 +11,7 @@ const agent = new Agent(
   getInMemoryAgentOptions(
     'Indy VDR Indy DID resolver',
     {},
+    {},
     {
       indyVdr: new IndyVdrModule({
         indyVdr,

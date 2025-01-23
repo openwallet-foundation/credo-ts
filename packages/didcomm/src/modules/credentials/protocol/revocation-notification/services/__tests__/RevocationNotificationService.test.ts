@@ -1,11 +1,16 @@
-import type { AgentContext } from '@credo-ts/core/src/agent'
+import type { AnonCredsCredentialMetadata } from '../../../../../../../../anoncreds'
+import type { AgentContext } from '../../../../../../../../core/src/agent'
 import type { RevocationNotificationReceivedEvent } from '../../../../CredentialEvents'
-import type { AnonCredsCredentialMetadata } from '@credo-ts/anoncreds'
 
 import { Subject } from 'rxjs'
 
-import { getAgentConfig, getAgentContext, getMockConnection, mockFunction } from '@credo-ts/core/tests/helpers'
-import { EventEmitter } from '@credo-ts/core/src/agent/EventEmitter'
+import { EventEmitter } from '../../../../../../../../core/src/agent/EventEmitter'
+import {
+  getAgentConfig,
+  getAgentContext,
+  getMockConnection,
+  mockFunction,
+} from '../../../../../../../../core/tests/helpers'
 import { MessageHandlerRegistry } from '../../../../../../MessageHandlerRegistry'
 import { InboundMessageContext } from '../../../../../../models'
 import { DidExchangeState } from '../../../../../connections'
@@ -20,7 +25,7 @@ jest.mock('../../../../repository/CredentialRepository')
 const CredentialRepositoryMock = CredentialRepository as jest.Mock<CredentialRepository>
 const credentialRepository = new CredentialRepositoryMock()
 
-jest.mock('../../../../../didcomm/MessageHandlerRegistry')
+jest.mock('../../../../../../MessageHandlerRegistry')
 const MessageHandlerRegistryMock = MessageHandlerRegistry as jest.Mock<MessageHandlerRegistry>
 const messageHandlerRegistry = new MessageHandlerRegistryMock()
 

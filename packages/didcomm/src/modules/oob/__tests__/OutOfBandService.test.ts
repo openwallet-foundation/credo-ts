@@ -2,16 +2,16 @@ import type { DidCommDocumentService } from '../../../services'
 
 import { Subject } from 'rxjs'
 
+import { EventEmitter } from '../../../../../core/src/agent/EventEmitter'
+import { KeyType, Key } from '../../../../../core/src/crypto'
+import { CredoError } from '../../../../../core/src/error'
 import {
   agentDependencies,
   getAgentContext,
   getMockConnection,
   getMockOutOfBand,
   mockFunction,
-} from '@credo-ts/core/tests/helpers'
-import { EventEmitter } from '@credo-ts/core/src/agent/EventEmitter'
-import { KeyType, Key } from '@credo-ts/core/src/crypto'
-import { CredoError } from '@credo-ts/core/src/error'
+} from '../../../../../core/tests/helpers'
 import { InboundMessageContext } from '../../../models'
 import { DidExchangeState } from '../../connections'
 import { OutOfBandService } from '../OutOfBandService'

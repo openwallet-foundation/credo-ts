@@ -1,4 +1,4 @@
-import { JsonTransformer } from '@credo-ts/core/src/utils'
+import { JsonTransformer } from '../../../../../../core'
 import { OutOfBandDidCommService } from '../../domain/OutOfBandDidCommService'
 import { OutOfBandRole } from '../../domain/OutOfBandRole'
 import { OutOfBandState } from '../../domain/OutOfBandState'

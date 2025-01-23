@@ -1,14 +1,14 @@
 import type { AgentContext } from '../../../..//core/src/agent'
-import type { VerificationMethod } from '../../../..//core/src/modules/dids'
+import type { VerificationMethod } from '../../../../core/src/modules/dids'
 
-import { Key, KeyType } from '../../../..//core/src/crypto'
+import { Key, KeyType } from '../../../../core/src/crypto'
 import { DidCommV1Service, DidDocument, IndyAgentService } from '../../../../core/src/modules/dids'
 import { verkeyToInstanceOfKey } from '../../../../core/src/modules/dids/helpers'
 import { DidResolverService } from '../../../../core/src/modules/dids/services/DidResolverService'
 import { getAgentContext, mockFunction } from '../../../../core/tests/helpers'
 import { DidCommDocumentService } from '../DidCommDocumentService'
 
-jest.mock('../../../dids/services/DidResolverService')
+jest.mock('../../../../core/src/modules/dids/services/DidResolverService')
 const DidResolverServiceMock = DidResolverService as jest.Mock<DidResolverService>
 
 describe('DidCommDocumentService', () => {

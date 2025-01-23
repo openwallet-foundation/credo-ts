@@ -1,12 +1,12 @@
-import type { JsonLdTestsAgent } from '@credo-ts/core/tests'
+import type { JsonLdTestsAgent } from '../../../../../../../core/tests'
 
-import { setupJsonLdTests } from '@credo-ts/core/tests'
-import { waitForCredentialRecord } from '@credo-ts/core/tests/helpers'
-import testLogger from '@credo-ts/core/tests/logger'
-import { KeyType } from '@credo-ts/core/src/crypto'
-import { CredoError } from '@credo-ts/core/src/error/CredoError'
-import { TypedArrayEncoder } from '@credo-ts/core/src/utils'
-import { CREDENTIALS_CONTEXT_V1_URL } from '@credo-ts/core/src/modules/vc/constants'
+import { KeyType } from '../../../../../../../core/src/crypto'
+import { CredoError } from '../../../../../../../core/src/error/CredoError'
+import { CREDENTIALS_CONTEXT_V1_URL } from '../../../../../../../core/src/modules/vc/constants'
+import { TypedArrayEncoder } from '../../../../../../../core/src/utils'
+import { setupJsonLdTests } from '../../../../../../../core/tests'
+import { waitForCredentialRecord } from '../../../../../../../core/tests/helpers'
+import testLogger from '../../../../../../../core/tests/logger'
 import { AutoAcceptCredential, CredentialRole, CredentialState } from '../../../models'
 import { CredentialExchangeRecord } from '../../../repository/CredentialExchangeRecord'
 
@@ -64,7 +64,7 @@ describe('V2 Credentials - JSON-LD - Auto Accept Always', () => {
     test("Alice starts with V2 credential proposal to Faber, both with autoAcceptCredential on 'always'", async () => {
       testLogger.test('Alice sends credential proposal to Faber')
 
-      const aliceCredentialExchangeRecord = await aliceAgent.credentials.proposeCredential({
+      const aliceCredentialExchangeRecord = await aliceAgent.modules.credentials.proposeCredential({
         connectionId: aliceConnectionId,
         protocolVersion: 'v2',
         credentialFormats: {
@@ -96,14 +96,15 @@ describe('V2 Credentials - JSON-LD - Auto Accept Always', () => {
     test("Faber starts with V2 credential offer to Alice, both with autoAcceptCredential on 'always'", async () => {
       testLogger.test('Faber sends V2 credential offer to Alice as start of protocol process')
 
-      const faberCredentialExchangeRecord: CredentialExchangeRecord = await faberAgent.credentials.offerCredential({
-        comment: 'some comment about credential',
-        connectionId: faberConnectionId,
-        credentialFormats: {
-          jsonld: signCredentialOptions,
-        },
-        protocolVersion: 'v2',
-      })
+      const faberCredentialExchangeRecord: CredentialExchangeRecord =
+        await faberAgent.modules.credentials.offerCredential({
+          comment: 'some comment about credential',
+          connectionId: faberConnectionId,
+          credentialFormats: {
+            jsonld: signCredentialOptions,
+          },
+          protocolVersion: 'v2',
+        })
       testLogger.test('Alice waits for credential from Faber')
       let aliceCredentialRecord = await waitForCredentialRecord(aliceAgent, {
         threadId: faberCredentialExchangeRecord.threadId,
@@ -164,7 +165,7 @@ describe('V2 Credentials - JSON-LD - Auto Accept Always', () => {
 
     test("Alice starts with V2 credential proposal to Faber, both with autoAcceptCredential on 'contentApproved'", async () => {
       testLogger.test('Alice sends credential proposal to Faber')
-      const aliceCredentialExchangeRecord = await aliceAgent.credentials.proposeCredential({
+      const aliceCredentialExchangeRecord = await aliceAgent.modules.credentials.proposeCredential({
         connectionId: aliceConnectionId,
         protocolVersion: 'v2',
         credentialFormats: {
@@ -180,7 +181,7 @@ describe('V2 Credentials - JSON-LD - Auto Accept Always', () => {
       })
 
       testLogger.test('Faber sends credential offer to Alice')
-      const faberCredentialExchangeRecord = await faberAgent.credentials.acceptProposal({
+      const faberCredentialExchangeRecord = await faberAgent.modules.credentials.acceptProposal({
         credentialRecordId: faberCredentialRecord.id,
         comment: 'V2 JsonLd Offer',
       })
@@ -217,7 +218,7 @@ describe('V2 Credentials - JSON-LD - Auto Accept Always', () => {
     test("Faber starts with V2 credential offer to Alice, both with autoAcceptCredential on 'contentApproved'", async () => {
       testLogger.test('Faber sends credential offer to Alice')
 
-      let faberCredentialExchangeRecord = await faberAgent.credentials.offerCredential({
+      let faberCredentialExchangeRecord = await faberAgent.modules.credentials.offerCredential({
         comment: 'some comment about credential',
         connectionId: faberConnectionId,
         credentialFormats: {
@@ -249,7 +250,7 @@ describe('V2 Credentials - JSON-LD - Auto Accept Always', () => {
       // we do not need to specify connection id in this object
       // it is either connectionless or included in the offer message
       testLogger.test('Alice sends credential request to faber')
-      faberCredentialExchangeRecord = await aliceAgent.credentials.acceptOffer({
+      faberCredentialExchangeRecord = await aliceAgent.modules.credentials.acceptOffer({
         credentialRecordId: aliceCredentialRecord.id,
       })
 
@@ -284,14 +285,15 @@ describe('V2 Credentials - JSON-LD - Auto Accept Always', () => {
     test("Faber starts with V2 credential offer to Alice, both have autoAcceptCredential on 'contentApproved' and attributes did change", async () => {
       testLogger.test('Faber sends credential offer to Alice')
 
-      const faberCredentialExchangeRecord: CredentialExchangeRecord = await faberAgent.credentials.offerCredential({
-        comment: 'some comment about credential',
-        connectionId: faberConnectionId,
-        credentialFormats: {
-          jsonld: signCredentialOptions,
-        },
-        protocolVersion: 'v2',
-      })
+      const faberCredentialExchangeRecord: CredentialExchangeRecord =
+        await faberAgent.modules.credentials.offerCredential({
+          comment: 'some comment about credential',
+          connectionId: faberConnectionId,
+          credentialFormats: {
+            jsonld: signCredentialOptions,
+          },
+          protocolVersion: 'v2',
+        })
       testLogger.test('Alice waits for credential from Faber')
       let aliceCredentialRecord = await waitForCredentialRecord(aliceAgent, {
         threadId: faberCredentialExchangeRecord.threadId,
@@ -311,7 +313,7 @@ describe('V2 Credentials - JSON-LD - Auto Accept Always', () => {
 
       testLogger.test('Alice sends credential request to Faber')
 
-      const aliceExchangeCredentialRecord = await aliceAgent.credentials.negotiateOffer({
+      const aliceExchangeCredentialRecord = await aliceAgent.modules.credentials.negotiateOffer({
         credentialRecordId: aliceCredentialRecord.id,
         credentialFormats: {
           // Send a different object
@@ -336,16 +338,16 @@ describe('V2 Credentials - JSON-LD - Auto Accept Always', () => {
       })
 
       // Check if the state of faber credential record did not change
-      const faberRecord = await faberAgent.credentials.getById(faberCredentialRecord.id)
+      const faberRecord = await faberAgent.modules.credentials.getById(faberCredentialRecord.id)
       faberRecord.assertState(CredentialState.ProposalReceived)
 
-      aliceCredentialRecord = await aliceAgent.credentials.getById(aliceCredentialRecord.id)
+      aliceCredentialRecord = await aliceAgent.modules.credentials.getById(aliceCredentialRecord.id)
       aliceCredentialRecord.assertState(CredentialState.ProposalSent)
     })
 
     test("Alice starts with V2 credential proposal to Faber, both have autoAcceptCredential on 'contentApproved' and attributes did change", async () => {
       testLogger.test('Alice sends credential proposal to Faber')
-      const aliceCredentialExchangeRecord = await aliceAgent.credentials.proposeCredential({
+      const aliceCredentialExchangeRecord = await aliceAgent.modules.credentials.proposeCredential({
         connectionId: aliceConnectionId,
         protocolVersion: 'v2',
         credentialFormats: {
@@ -360,7 +362,7 @@ describe('V2 Credentials - JSON-LD - Auto Accept Always', () => {
         state: CredentialState.ProposalReceived,
       })
 
-      await faberAgent.credentials.negotiateProposal({
+      await faberAgent.modules.credentials.negotiateProposal({
         credentialRecordId: faberCredentialRecord.id,
         credentialFormats: {
           // Send a different object
@@ -396,10 +398,10 @@ describe('V2 Credentials - JSON-LD - Auto Accept Always', () => {
       expect(record.type).toBe(CredentialExchangeRecord.type)
 
       // Check if the state of the credential records did not change
-      faberCredentialRecord = await faberAgent.credentials.getById(faberCredentialRecord.id)
+      faberCredentialRecord = await faberAgent.modules.credentials.getById(faberCredentialRecord.id)
       faberCredentialRecord.assertState(CredentialState.OfferSent)
 
-      const aliceRecord = await aliceAgent.credentials.getById(record.id)
+      const aliceRecord = await aliceAgent.modules.credentials.getById(record.id)
       aliceRecord.assertState(CredentialState.OfferReceived)
     })
   })

@@ -1,11 +1,7 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 
-import { setupSubjectTransports } from '../../../../../tests'
-import { getInMemoryAgentOptions, waitForConnectionRecord } from '../../../../../tests/helpers'
-import { Agent } from '../../../../agent/Agent'
-import { KeyType } from '../../../../crypto'
-import { DidExchangeState, HandshakeProtocol } from '../../connections'
-import { InMemoryDidRegistry } from '../../connections/__tests__/InMemoryDidRegistry'
+import { Agent } from '../../../../../core/src/agent/Agent'
+import { KeyType } from '../../../../../core/src/crypto'
 import {
   DidCommV1Service,
   NewDidCommV2Service,
@@ -14,7 +10,11 @@ import {
   getEd25519VerificationKey2018,
   DidsModule,
   NewDidCommV2ServiceEndpoint,
-} from '../../../dids'
+} from '../../../../../core/src/modules/dids'
+import { setupSubjectTransports } from '../../../../../core/tests'
+import { getInMemoryAgentOptions, waitForConnectionRecord } from '../../../../../core/tests/helpers'
+import { DidExchangeState, HandshakeProtocol } from '../../connections'
+import { InMemoryDidRegistry } from '../../connections/__tests__/InMemoryDidRegistry'
 
 const inMemoryDidsRegistry = new InMemoryDidRegistry()
 
@@ -23,6 +23,7 @@ const faberAgentOptions = getInMemoryAgentOptions(
   {
     endpoints: ['rxjs:faber'],
   },
+  {},
   {
     dids: new DidsModule({
       resolvers: [inMemoryDidsRegistry],
@@ -35,6 +36,7 @@ const aliceAgentOptions = getInMemoryAgentOptions(
   {
     endpoints: ['rxjs:alice'],
   },
+  {},
   {
     dids: new DidsModule({
       resolvers: [inMemoryDidsRegistry],
@@ -64,9 +66,9 @@ describe('out of band implicit', () => {
   })
 
   afterEach(async () => {
-    const connections = await faberAgent.connections.getAll()
+    const connections = await faberAgent.modules.connections.getAll()
     for (const connection of connections) {
-      await faberAgent.connections.deleteById(connection.id)
+      await faberAgent.modules.connections.deleteById(connection.id)
     }
 
     jest.resetAllMocks()
@@ -75,7 +77,7 @@ describe('out of band implicit', () => {
   test(`make a connection with ${HandshakeProtocol.DidExchange} based on implicit OOB invitation`, async () => {
     const inMemoryDid = await createInMemoryDid(faberAgent, 'rxjs:faber')
 
-    let { connectionRecord: aliceFaberConnection } = await aliceAgent.oob.receiveImplicitInvitation({
+    let { connectionRecord: aliceFaberConnection } = await aliceAgent.modules.oob.receiveImplicitInvitation({
       did: inMemoryDid,
       alias: 'Faber public',
       label: 'Alice',
@@ -84,12 +86,12 @@ describe('out of band implicit', () => {
 
     // Wait for a connection event in faber agent and accept the request
     let faberAliceConnection = await waitForConnectionRecord(faberAgent, { state: DidExchangeState.RequestReceived })
-    await faberAgent.connections.acceptRequest(faberAliceConnection.id)
-    faberAliceConnection = await faberAgent.connections.returnWhenIsConnected(faberAliceConnection!.id)
+    await faberAgent.modules.connections.acceptRequest(faberAliceConnection.id)
+    faberAliceConnection = await faberAgent.modules.connections.returnWhenIsConnected(faberAliceConnection!.id)
     expect(faberAliceConnection.state).toBe(DidExchangeState.Completed)
 
     // Alice should now be connected
-    aliceFaberConnection = await aliceAgent.connections.returnWhenIsConnected(aliceFaberConnection!.id)
+    aliceFaberConnection = await aliceAgent.modules.connections.returnWhenIsConnected(aliceFaberConnection!.id)
     expect(aliceFaberConnection.state).toBe(DidExchangeState.Completed)
 
     expect(aliceFaberConnection).toBeConnectedWith(faberAliceConnection)
@@ -99,7 +101,7 @@ describe('out of band implicit', () => {
     expect(aliceFaberConnection.invitationDid).toBe(inMemoryDid)
 
     // It is possible for an agent to check if it has already a connection to a certain public entity
-    expect(await aliceAgent.connections.findByInvitationDid(inMemoryDid)).toEqual([aliceFaberConnection])
+    expect(await aliceAgent.modules.connections.findByInvitationDid(inMemoryDid)).toEqual([aliceFaberConnection])
   })
 
   test(`make a connection with ${HandshakeProtocol.DidExchange} based on implicit OOB invitation pointing to specific service`, async () => {
@@ -107,7 +109,7 @@ describe('out of band implicit', () => {
     const inMemoryDidDocument = await faberAgent.dids.resolveDidDocument(inMemoryDid)
     const serviceUrl = inMemoryDidDocument.service![1].id
 
-    let { connectionRecord: aliceFaberConnection } = await aliceAgent.oob.receiveImplicitInvitation({
+    let { connectionRecord: aliceFaberConnection } = await aliceAgent.modules.oob.receiveImplicitInvitation({
       did: serviceUrl,
       alias: 'Faber public',
       label: 'Alice',
@@ -116,12 +118,12 @@ describe('out of band implicit', () => {
 
     // Wait for a connection event in faber agent and accept the request
     let faberAliceConnection = await waitForConnectionRecord(faberAgent, { state: DidExchangeState.RequestReceived })
-    await faberAgent.connections.acceptRequest(faberAliceConnection.id)
-    faberAliceConnection = await faberAgent.connections.returnWhenIsConnected(faberAliceConnection!.id)
+    await faberAgent.modules.connections.acceptRequest(faberAliceConnection.id)
+    faberAliceConnection = await faberAgent.modules.connections.returnWhenIsConnected(faberAliceConnection!.id)
     expect(faberAliceConnection.state).toBe(DidExchangeState.Completed)
 
     // Alice should now be connected
-    aliceFaberConnection = await aliceAgent.connections.returnWhenIsConnected(aliceFaberConnection!.id)
+    aliceFaberConnection = await aliceAgent.modules.connections.returnWhenIsConnected(aliceFaberConnection!.id)
     expect(aliceFaberConnection.state).toBe(DidExchangeState.Completed)
 
     expect(aliceFaberConnection).toBeConnectedWith(faberAliceConnection)
@@ -131,13 +133,13 @@ describe('out of band implicit', () => {
     expect(aliceFaberConnection.invitationDid).toBe(serviceUrl)
 
     // It is possible for an agent to check if it has already a connection to a certain public entity
-    expect(await aliceAgent.connections.findByInvitationDid(serviceUrl)).toEqual([aliceFaberConnection])
+    expect(await aliceAgent.modules.connections.findByInvitationDid(serviceUrl)).toEqual([aliceFaberConnection])
   })
 
   test(`make a connection with ${HandshakeProtocol.Connections} based on implicit OOB invitation`, async () => {
     const inMemoryDid = await createInMemoryDid(faberAgent, 'rxjs:faber')
 
-    let { connectionRecord: aliceFaberConnection } = await aliceAgent.oob.receiveImplicitInvitation({
+    let { connectionRecord: aliceFaberConnection } = await aliceAgent.modules.oob.receiveImplicitInvitation({
       did: inMemoryDid,
       alias: 'Faber public',
       label: 'Alice',
@@ -146,12 +148,12 @@ describe('out of band implicit', () => {
 
     // Wait for a connection event in faber agent and accept the request
     let faberAliceConnection = await waitForConnectionRecord(faberAgent, { state: DidExchangeState.RequestReceived })
-    await faberAgent.connections.acceptRequest(faberAliceConnection.id)
-    faberAliceConnection = await faberAgent.connections.returnWhenIsConnected(faberAliceConnection!.id)
+    await faberAgent.modules.connections.acceptRequest(faberAliceConnection.id)
+    faberAliceConnection = await faberAgent.modules.connections.returnWhenIsConnected(faberAliceConnection!.id)
     expect(faberAliceConnection.state).toBe(DidExchangeState.Completed)
 
     // Alice should now be connected
-    aliceFaberConnection = await aliceAgent.connections.returnWhenIsConnected(aliceFaberConnection!.id)
+    aliceFaberConnection = await aliceAgent.modules.connections.returnWhenIsConnected(aliceFaberConnection!.id)
     expect(aliceFaberConnection.state).toBe(DidExchangeState.Completed)
 
     expect(aliceFaberConnection).toBeConnectedWith(faberAliceConnection)
@@ -161,12 +163,12 @@ describe('out of band implicit', () => {
     expect(aliceFaberConnection.invitationDid).toBe(inMemoryDid)
 
     // It is possible for an agent to check if it has already a connection to a certain public entity
-    expect(await aliceAgent.connections.findByInvitationDid(inMemoryDid)).toEqual([aliceFaberConnection])
+    expect(await aliceAgent.modules.connections.findByInvitationDid(inMemoryDid)).toEqual([aliceFaberConnection])
   })
 
   test(`receive an implicit invitation using an unresolvable did`, async () => {
     await expect(
-      aliceAgent.oob.receiveImplicitInvitation({
+      aliceAgent.modules.oob.receiveImplicitInvitation({
         did: 'did:sov:ZSEqSci581BDZCFPa29ScB',
         alias: 'Faber public',
         label: 'Alice',
@@ -178,7 +180,7 @@ describe('out of band implicit', () => {
   test(`create two connections using the same implicit invitation`, async () => {
     const inMemoryDid = await createInMemoryDid(faberAgent, 'rxjs:faber')
 
-    let { connectionRecord: aliceFaberConnection } = await aliceAgent.oob.receiveImplicitInvitation({
+    let { connectionRecord: aliceFaberConnection } = await aliceAgent.modules.oob.receiveImplicitInvitation({
       did: inMemoryDid,
       alias: 'Faber public',
       label: 'Alice',
@@ -187,12 +189,12 @@ describe('out of band implicit', () => {
 
     // Wait for a connection event in faber agent and accept the request
     let faberAliceConnection = await waitForConnectionRecord(faberAgent, { state: DidExchangeState.RequestReceived })
-    await faberAgent.connections.acceptRequest(faberAliceConnection.id)
-    faberAliceConnection = await faberAgent.connections.returnWhenIsConnected(faberAliceConnection!.id)
+    await faberAgent.modules.connections.acceptRequest(faberAliceConnection.id)
+    faberAliceConnection = await faberAgent.modules.connections.returnWhenIsConnected(faberAliceConnection!.id)
     expect(faberAliceConnection.state).toBe(DidExchangeState.Completed)
 
     // Alice should now be connected
-    aliceFaberConnection = await aliceAgent.connections.returnWhenIsConnected(aliceFaberConnection!.id)
+    aliceFaberConnection = await aliceAgent.modules.connections.returnWhenIsConnected(aliceFaberConnection!.id)
     expect(aliceFaberConnection.state).toBe(DidExchangeState.Completed)
 
     expect(aliceFaberConnection).toBeConnectedWith(faberAliceConnection)
@@ -202,7 +204,7 @@ describe('out of band implicit', () => {
     expect(aliceFaberConnection.invitationDid).toBe(inMemoryDid)
 
     // Repeat implicit invitation procedure
-    let { connectionRecord: aliceFaberNewConnection } = await aliceAgent.oob.receiveImplicitInvitation({
+    let { connectionRecord: aliceFaberNewConnection } = await aliceAgent.modules.oob.receiveImplicitInvitation({
       did: inMemoryDid,
       alias: 'Faber public New',
       label: 'Alice New',
@@ -211,12 +213,12 @@ describe('out of band implicit', () => {
 
     // Wait for a connection event in faber agent
     let faberAliceNewConnection = await waitForConnectionRecord(faberAgent, { state: DidExchangeState.RequestReceived })
-    await faberAgent.connections.acceptRequest(faberAliceNewConnection.id)
-    faberAliceNewConnection = await faberAgent.connections.returnWhenIsConnected(faberAliceNewConnection!.id)
+    await faberAgent.modules.connections.acceptRequest(faberAliceNewConnection.id)
+    faberAliceNewConnection = await faberAgent.modules.connections.returnWhenIsConnected(faberAliceNewConnection!.id)
     expect(faberAliceNewConnection.state).toBe(DidExchangeState.Completed)
 
     // Alice should now be connected
-    aliceFaberNewConnection = await aliceAgent.connections.returnWhenIsConnected(aliceFaberNewConnection!.id)
+    aliceFaberNewConnection = await aliceAgent.modules.connections.returnWhenIsConnected(aliceFaberNewConnection!.id)
     expect(aliceFaberNewConnection.state).toBe(DidExchangeState.Completed)
 
     expect(aliceFaberNewConnection).toBeConnectedWith(faberAliceNewConnection)
@@ -226,7 +228,7 @@ describe('out of band implicit', () => {
     expect(aliceFaberNewConnection.invitationDid).toBe(inMemoryDid)
 
     // Both connections will be associated to the same invitation did
-    const connectionsFromFaberPublicDid = await aliceAgent.connections.findByInvitationDid(inMemoryDid)
+    const connectionsFromFaberPublicDid = await aliceAgent.modules.connections.findByInvitationDid(inMemoryDid)
     expect(connectionsFromFaberPublicDid).toHaveLength(2)
     expect(connectionsFromFaberPublicDid).toEqual(
       expect.arrayContaining([aliceFaberConnection, aliceFaberNewConnection])

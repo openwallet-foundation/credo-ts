@@ -1,13 +1,11 @@
-import type { getJsonLdModules } from '../../../../../../tests'
-import type { Agent } from '../../../../../agent/Agent'
+import type { Agent } from '../../../../../../../core'
+import type { getJsonLdModules } from '../../../../../../../core/tests'
 
-import { waitForCredentialRecord, setupJsonLdTests, waitForProofExchangeRecord } from '../../../../../../tests'
-import testLogger from '../../../../../../tests/logger'
-import { KeyType } from '../../../../../crypto'
-import { TypedArrayEncoder } from '../../../../../utils'
+import { KeyType, TypedArrayEncoder, CREDENTIALS_CONTEXT_V1_URL } from '../../../../../../../core'
+import { waitForCredentialRecord, setupJsonLdTests, waitForProofExchangeRecord } from '../../../../../../../core/tests'
+import testLogger from '../../../../../../../core/tests/logger'
+import { DidCommMessageRepository } from '../../../../../repository'
 import { AutoAcceptCredential, CredentialState } from '../../../../credentials'
-import { DidCommMessageRepository } from '../../../../didcomm'
-import { CREDENTIALS_CONTEXT_V1_URL } from '../../../../vc'
 import { ProofState } from '../../../models/ProofState'
 import { V2PresentationMessage, V2RequestPresentationMessage } from '../messages'
 import { V2ProposePresentationMessage } from '../messages/V2ProposePresentationMessage'
@@ -68,7 +66,7 @@ describe('Present Proof', () => {
       keyType: KeyType.Ed25519,
     })
 
-    await issuerAgent.credentials.offerCredential({
+    await issuerAgent.modules.credentials.offerCredential({
       connectionId: issuerProverConnectionId,
       protocolVersion: 'v2',
       credentialFormats: { jsonld },
@@ -92,7 +90,7 @@ describe('Present Proof', () => {
       state: ProofState.ProposalReceived,
     })
 
-    await proverAgent.proofs.proposeProof({
+    await proverAgent.modules.proofs.proposeProof({
       connectionId: proverVerifierConnectionId,
       protocolVersion: 'v2',
       proofFormats: {
@@ -150,7 +148,7 @@ describe('Present Proof', () => {
   test(`Verifier accepts the Proposal send by the Prover`, async () => {
     testLogger.test('Prover sends proof proposal to a Verifier')
 
-    let proverProofExchangeRecord = await proverAgent.proofs.proposeProof({
+    let proverProofExchangeRecord = await proverAgent.modules.proofs.proposeProof({
       connectionId: proverVerifierConnectionId,
       protocolVersion: 'v2',
       proofFormats: {
@@ -175,7 +173,7 @@ describe('Present Proof', () => {
 
     testLogger.test('Verifier accepts presentation proposal from the Prover')
     let verifierProofExchangeRecord = await verifierPresentationRecordPromise
-    verifierProofExchangeRecord = await verifierAgent.proofs.acceptProposal({
+    verifierProofExchangeRecord = await verifierAgent.modules.proofs.acceptProposal({
       proofRecordId: verifierProofExchangeRecord.id,
     })
 
@@ -233,7 +231,7 @@ describe('Present Proof', () => {
   test(`Prover accepts presentation request from the Verifier`, async () => {
     testLogger.test('Prover sends proof proposal to a Verifier')
 
-    let proverProofExchangeRecord = await proverAgent.proofs.proposeProof({
+    let proverProofExchangeRecord = await proverAgent.modules.proofs.proposeProof({
       connectionId: proverVerifierConnectionId,
       protocolVersion: 'v2',
       proofFormats: {
@@ -258,7 +256,7 @@ describe('Present Proof', () => {
 
     testLogger.test('Verifier accepts presentation proposal from the Prover')
     let verifierProofExchangeRecord = await verifierProposalReceivedPresentationRecordPromise
-    verifierProofExchangeRecord = await verifierAgent.proofs.acceptProposal({
+    verifierProofExchangeRecord = await verifierAgent.modules.proofs.acceptProposal({
       proofRecordId: verifierProofExchangeRecord.id,
     })
 
@@ -273,7 +271,7 @@ describe('Present Proof', () => {
       state: ProofState.PresentationReceived,
     })
 
-    await proverAgent.proofs.acceptRequest({
+    await proverAgent.modules.proofs.acceptRequest({
       proofRecordId: proverProofExchangeRecord.id,
     })
 
@@ -370,7 +368,7 @@ describe('Present Proof', () => {
   test(`Verifier accepts the presentation provided by the Prover`, async () => {
     testLogger.test('Prover sends proof proposal to a Verifier')
 
-    let proverProofExchangeRecord = await proverAgent.proofs.proposeProof({
+    let proverProofExchangeRecord = await proverAgent.modules.proofs.proposeProof({
       connectionId: proverVerifierConnectionId,
       protocolVersion: 'v2',
       proofFormats: {
@@ -395,7 +393,7 @@ describe('Present Proof', () => {
 
     testLogger.test('Verifier accepts presentation proposal from the Prover')
     let verifierProofExchangeRecord = await verifierProposalReceivedPresentationRecordPromise
-    verifierProofExchangeRecord = await verifierAgent.proofs.acceptProposal({
+    verifierProofExchangeRecord = await verifierAgent.modules.proofs.acceptProposal({
       proofRecordId: verifierProofExchangeRecord.id,
     })
 
@@ -410,7 +408,7 @@ describe('Present Proof', () => {
       state: ProofState.PresentationReceived,
     })
 
-    await proverAgent.proofs.acceptRequest({
+    await proverAgent.modules.proofs.acceptRequest({
       proofRecordId: proverProofExchangeRecord.id,
     })
 
@@ -425,7 +423,7 @@ describe('Present Proof', () => {
 
     // Verifier accepts the presentation provided by by the Prover
     testLogger.test('Verifier accepts the presentation provided by the Prover')
-    await verifierAgent.proofs.acceptPresentation({ proofRecordId: verifierProofExchangeRecord.id })
+    await verifierAgent.modules.proofs.acceptPresentation({ proofRecordId: verifierProofExchangeRecord.id })
 
     // Prover waits until she received a presentation acknowledgement
     testLogger.test('Prover waits until she receives a presentation acknowledgement')

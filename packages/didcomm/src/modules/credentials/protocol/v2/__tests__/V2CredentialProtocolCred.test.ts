@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import type { AgentContext } from '@credo-ts/core/src/agent'
+import type { AgentContext } from '../../../../../../../core/src/agent'
 import type { GetAgentMessageOptions } from '../../../../../repository'
 import type { PlaintextMessage } from '../../../../../types'
 import type { CredentialStateChangedEvent } from '../../../CredentialEvents'
@@ -14,16 +14,22 @@ import type { CustomCredentialTags } from '../../../repository/CredentialExchang
 
 import { Subject } from 'rxjs'
 
-import { getAgentConfig, getAgentContext, getMockConnection, mockFunction } from '@credo-ts/core/tests/helpers'
-import { EventEmitter } from '@credo-ts/core/src/agent/EventEmitter'
-import { CredoError } from '@credo-ts/core/src/error'
-import { JsonTransformer } from '@credo-ts/core/src/utils'
-import { JsonEncoder } from '@credo-ts/core/src/utils/JsonEncoder'
+import { EventEmitter } from '../../../../../../../core/src/agent/EventEmitter'
+import { CredoError } from '../../../../../../../core/src/error'
+import { JsonTransformer } from '../../../../../../../core/src/utils'
+import { JsonEncoder } from '../../../../../../../core/src/utils/JsonEncoder'
+import {
+  getAgentConfig,
+  getAgentContext,
+  getMockConnection,
+  mockFunction,
+} from '../../../../../../../core/tests/helpers'
 import { Attachment, AttachmentData } from '../../../../../decorators/attachment/Attachment'
 import { AckStatus } from '../../../../../messages'
 import { InboundMessageContext } from '../../../../../models'
 import { DidCommMessageRepository, DidCommMessageRecord, DidCommMessageRole } from '../../../../../repository'
-import { ConnectionService, DidExchangeState } from '../../../../connections'
+import { DidExchangeState } from '../../../../connections'
+import { ConnectionService } from '../../../../connections/services/ConnectionService'
 import { CredentialEventTypes } from '../../../CredentialEvents'
 import { credReq } from '../../../__tests__/fixtures'
 import { CredentialFormatSpec, CredentialRole } from '../../../models'
@@ -38,13 +44,11 @@ import { V2CredentialProblemReportMessage } from '../messages/V2CredentialProble
 import { V2IssueCredentialMessage } from '../messages/V2IssueCredentialMessage'
 import { V2OfferCredentialMessage } from '../messages/V2OfferCredentialMessage'
 import { V2RequestCredentialMessage } from '../messages/V2RequestCredentialMessage'
-
 // Mock classes
 
 jest.mock('../../../repository/CredentialRepository')
 jest.mock('../../../../../repository/DidCommMessageRepository')
-jest.mock('../../../../../routing/services/RoutingService')
-jest.mock('../../../../../services/connections/ConnectionService')
+jest.mock('../../../../connections/services/ConnectionService')
 jest.mock('../../../../../Dispatcher')
 
 // Mock typed object
