@@ -3,7 +3,7 @@ import type { AgentContext } from '../../../agent'
 import { InMemoryWallet } from '../../../../../../tests/InMemoryWallet'
 import { getAgentConfig, getAgentContext } from '../../../../tests'
 import { KeyType } from '../../../crypto'
-import { X509Service } from '../../x509'
+import { X509ModuleConfig, X509Service } from '../../x509'
 import { Mdoc } from '../Mdoc'
 
 import { sprindFunkeTestVectorBase64Url, sprindFunkeX509TrustedCertificate } from './mdoc.fixtures'
@@ -15,7 +15,7 @@ describe('mdoc service test', () => {
   beforeAll(async () => {
     const agentConfig = getAgentConfig('mdoc')
     wallet = new InMemoryWallet()
-    agentContext = getAgentContext({ wallet })
+    agentContext = getAgentContext({ wallet, registerInstances: [[X509ModuleConfig, new X509ModuleConfig()]] })
 
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     await wallet.createAndOpen(agentConfig.walletConfig!)

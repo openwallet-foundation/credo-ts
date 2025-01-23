@@ -1,21 +1,14 @@
 import type { Mdoc } from './Mdoc'
 import type { Key } from '../../crypto/Key'
 import type { DifPresentationExchangeDefinition } from '../dif-presentation-exchange'
+import type { EncodedX509Certificate } from '../x509'
 import type { ValidityInfo } from '@animo-id/mdoc'
 
 export type MdocNameSpaces = Record<string, Record<string, unknown>>
 
-export interface MdocVerificationContext {
-  /**
-   * The `id` of the `OpenId4VcVerificationSessionRecord` that this verification is bound to.
-   */
-  openId4VcVerificationSessionId?: string
-}
-
 export type MdocVerifyOptions = {
-  trustedCertificates?: [string, ...string[]]
+  trustedCertificates?: EncodedX509Certificate[]
   now?: Date
-  verificationContext?: MdocVerificationContext
 }
 
 export type MdocOpenId4VpSessionTranscriptOptions = {
@@ -33,14 +26,13 @@ export type MdocDeviceResponseOpenId4VpOptions = {
 }
 
 export type MdocDeviceResponseVerifyOptions = {
-  trustedCertificates?: [string, ...string[]]
+  trustedCertificates?: EncodedX509Certificate[]
   sessionTranscriptOptions: MdocOpenId4VpSessionTranscriptOptions
   /**
    * The base64Url-encoded device response string.
    */
   deviceResponse: string
   now?: Date
-  verificationContext?: MdocVerificationContext
 }
 
 export type MdocSignOptions = {

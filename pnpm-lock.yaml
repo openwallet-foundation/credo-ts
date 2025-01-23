@@ -94,7 +94,7 @@ importers:
         specifier: ^29.7.0
         version: 29.7.0(@types/node@18.18.8)(ts-node@10.9.2(@types/node@18.18.8)(typescript@5.5.4))
       nock:
-        specifier: ^14.0.0-beta.16
+        specifier: ^14.0.0-beta.19
         version: 14.0.0-beta.19
       prettier:
         specifier: ^2.3.1
@@ -576,7 +576,7 @@ importers:
         specifier: ^6.0.0
         version: 6.0.3
       nock:
-        specifier: ^14.0.0-beta.16
+        specifier: ^14.0.0-beta.19
         version: 14.0.0-beta.19
       rimraf:
         specifier: ^4.4.0
@@ -746,7 +746,7 @@ importers:
         specifier: ^8.5.4
         version: 8.5.10
       nock:
-        specifier: ^14.0.0-beta.16
+        specifier: ^14.0.0-beta.19
         version: 14.0.0-beta.19
       rimraf:
         specifier: ^4.4.0
@@ -795,7 +795,7 @@ importers:
         specifier: ^4.18.2
         version: 4.19.2
       nock:
-        specifier: ^14.0.0-beta.16
+        specifier: ^14.0.0-beta.19
         version: 14.0.0-beta.19
       rimraf:
         specifier: ^4.4.0
@@ -2669,8 +2669,8 @@ packages:
     resolution: {integrity: sha512-s9ccL/1TTvCP1N//4QR84j/d5D/stx/AI1kPcRgiE4O3KrxyF7ZdL9ca8fmFuN6yh9LAbn/OiGRnOXgvn38Dgg==}
     engines: {node: '>=14', yarn: 1.x}
 
-  '@mswjs/interceptors@0.37.3':
-    resolution: {integrity: sha512-USvgCL/uOGFtVa6SVyRrC8kIAedzRohxIXN5LISlg5C5vLZCn7dgMFVSNhSF9cuBEFrm/O2spDWEZeMnw4ZXYg==}
+  '@mswjs/interceptors@0.37.5':
+    resolution: {integrity: sha512-AAwRb5vXFcY4L+FvZ7LZusDuZ0vEe0Zm8ohn1FM6/X7A3bj4mqmkAcGRWuvC2JwSygNwHAAmMnAI73vPHeqsHA==}
     engines: {node: '>=18'}
 
   '@multiformats/base-x@4.0.1':
@@ -10977,7 +10977,7 @@ snapshots:
       - supports-color
     optional: true
 
-  '@mswjs/interceptors@0.37.3':
+  '@mswjs/interceptors@0.37.5':
     dependencies:
       '@open-draft/deferred-promise': 2.2.0
       '@open-draft/logger': 0.3.0
@@ -16255,7 +16255,7 @@ snapshots:
 
   nock@14.0.0-beta.19:
     dependencies:
-      '@mswjs/interceptors': 0.37.3
+      '@mswjs/interceptors': 0.37.5
       json-stringify-safe: 5.0.1
       propagate: 2.0.1
 

@@ -4,17 +4,6 @@ import type {
   DifPresentationExchangeProposal,
   DifPresentationExchangeRequest,
 } from './DifPresentationExchangeProofFormat'
-import type { AgentContext, JsonValue } from '@credo-ts/core'
-
-import type {
-  DifPexInputDescriptorToCredentials,
-  DifPresentationExchangeSubmission,
-  IAnonCredsDataIntegrityService,
-  W3cVerifiablePresentation,
-  W3cVerifyPresentationResult,
-  W3cJsonPresentation,
-} from '@credo-ts/core'
-
 import type { ProofFormatService } from '../ProofFormatService'
 import type {
   ProofFormatCreateProposalOptions,
@@ -30,6 +19,16 @@ import type {
   ProofFormatAutoRespondRequestOptions,
   ProofFormatAutoRespondPresentationOptions,
 } from '../ProofFormatServiceOptions'
+import type {
+  AgentContext,
+  JsonValue,
+  DifPexInputDescriptorToCredentials,
+  DifPresentationExchangeSubmission,
+  IAnonCredsDataIntegrityService,
+  W3cVerifiablePresentation,
+  W3cVerifyPresentationResult,
+  W3cJsonPresentation,
+} from '@credo-ts/core'
 
 import {
   CredoError,
@@ -44,6 +43,8 @@ import {
   ClaimFormat,
   W3cJsonLdVerifiablePresentation,
   W3cJwtVerifiablePresentation,
+  extractX509CertificatesFromJwt,
+  X509ModuleConfig,
 } from '@credo-ts/core'
 
 import { Attachment, AttachmentData } from '../../../../decorators/attachment/Attachment'
@@ -300,13 +301,31 @@ export class DifPresentationExchangeProofFormatService
       // whether it's a JWT or JSON-LD VP even though the input is the same.
       // Not sure how to fix
       if (parsedPresentation.claimFormat === ClaimFormat.JwtVp) {
+        const x509Config = agentContext.dependencyManager.resolve(X509ModuleConfig)
+
+        const certificateChain = extractX509CertificatesFromJwt(parsedPresentation.jwt)
+        let trustedCertificates: string[] | undefined
+
+        if (certificateChain && x509Config.getTrustedCertificatesForVerification) {
+          trustedCertificates = await x509Config.getTrustedCertificatesForVerification?.(agentContext, {
+            certificateChain,
+            verification: {
+              type: 'credential',
+              credential: parsedPresentation,
+              didcommProofRecordId: proofRecord.id,
+            },
+          })
+        }
+
+        if (!trustedCertificates) {
+          trustedCertificates = x509Config.trustedCertificates ?? []
+        }
+
         verificationResult = await w3cCredentialService.verifyPresentation(agentContext, {
           presentation: parsedPresentation,
           challenge: request.options.challenge,
           domain: request.options.domain,
-          verificationContext: {
-            didcommProofRecordId: proofRecord.id,
-          },
+          trustedCertificates,
         })
       } else if (parsedPresentation.claimFormat === ClaimFormat.LdpVp) {
         if (
