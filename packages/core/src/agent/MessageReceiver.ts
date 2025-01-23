@@ -258,11 +258,11 @@ export class MessageReceiver {
     try {
       messageTransformed = JsonTransformer.fromJSON(message, MessageClass)
     } catch (error) {
-      this.logger.error(`Error validating message ${message.type}`, {
+      this.logger.error(`Error validating message ${message['@type']}`, {
         errors: error,
         message: JSON.stringify(message),
       })
-      throw new ProblemReportError(`Error validating message ${message.type}`, {
+      throw new ProblemReportError(`Error validating message ${message['@type']}`, {
         problemCode: ProblemReportReason.MessageParseFailure,
       })
     }
