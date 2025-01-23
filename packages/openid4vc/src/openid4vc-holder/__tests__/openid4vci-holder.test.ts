@@ -8,6 +8,7 @@ import {
   KeyType,
   TypedArrayEncoder,
   W3cJwtVerifiableCredential,
+  W3cCredentialService,
 } from '@credo-ts/core'
 import nock, { cleanAll, enableNetConnect } from 'nock'
 
@@ -100,6 +101,13 @@ describe('OpenId4VcHolder', () => {
       const accessTokenResponse = await holder.modules.openId4VcHolder.requestToken({
         resolvedCredentialOffer: resolved,
       })
+
+      // The credential issued by mattr launchpad is expired, so we mock the verification...
+      const w3cCredentialService = holder.dependencyManager.resolve(W3cCredentialService)
+      jest
+        .spyOn(w3cCredentialService, 'verifyCredential')
+        .mockImplementationOnce(async () => ({ isValid: true, validations: {} }))
+
       const credentialsResult = await holder.modules.openId4VcHolder.requestCredentials({
         resolvedCredentialOffer: resolved,
         ...accessTokenResponse,
