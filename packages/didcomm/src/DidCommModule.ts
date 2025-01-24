@@ -3,9 +3,8 @@ import type { AgentMessageReceivedEvent } from './Events'
 import type { AgentContext, DependencyManager, Module, Update } from '@credo-ts/core'
 import type { Subject } from 'rxjs'
 
-import { mergeMap, takeUntil } from 'rxjs'
-
 import { EventEmitter, InjectionSymbols } from '@credo-ts/core'
+import { mergeMap, takeUntil } from 'rxjs'
 
 import { DidCommApi } from './DidCommApi'
 import { DidCommModuleConfig } from './DidCommModuleConfig'

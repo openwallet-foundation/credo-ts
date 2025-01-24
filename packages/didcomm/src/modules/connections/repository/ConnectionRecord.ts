@@ -1,10 +1,10 @@
 import type { ConnectionMetadata } from './ConnectionMetadataTypes'
-import type { TagsBase } from '@credo-ts/core'
 import type { ConnectionType } from '../models'
-
-import { Transform } from 'class-transformer'
+import type { TagsBase } from '@credo-ts/core'
 
 import { BaseRecord, CredoError, utils } from '@credo-ts/core'
+import { Transform } from 'class-transformer'
+
 import { rfc0160StateFromDidExchangeState, DidExchangeRole, DidExchangeState, HandshakeProtocol } from '../models'
 
 export interface ConnectionRecordProps {

@@ -2,6 +2,7 @@ import type { BasicMessageRecord } from './repository/BasicMessageRecord'
 import type { Query, QueryOptions } from '@credo-ts/core'
 
 import { AgentContext, injectable } from '@credo-ts/core'
+
 import { MessageHandlerRegistry } from '../../MessageHandlerRegistry'
 import { MessageSender } from '../../MessageSender'
 import { OutboundMessageContext } from '../../models'

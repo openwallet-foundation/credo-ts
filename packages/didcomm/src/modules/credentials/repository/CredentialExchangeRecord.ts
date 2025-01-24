@@ -1,12 +1,12 @@
-import type { TagsBase } from '@credo-ts/core'
 import type { CredentialRole } from '../models'
 import type { AutoAcceptCredential } from '../models/CredentialAutoAcceptType'
 import type { CredentialState } from '../models/CredentialState'
 import type { RevocationNotification } from '../models/RevocationNotification'
-
-import { Type } from 'class-transformer'
+import type { TagsBase } from '@credo-ts/core'
 
 import { CredoError, BaseRecord, utils } from '@credo-ts/core'
+import { Type } from 'class-transformer'
+
 import { Attachment } from '../../../decorators/attachment/Attachment'
 import { CredentialPreviewAttribute } from '../models/CredentialPreviewAttribute'
 

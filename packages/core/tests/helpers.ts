@@ -116,7 +116,12 @@ export function getAgentOptions<AgentModules extends AgentModulesInput | EmptyMo
   extraConfig: Partial<InitConfig> = {},
   inputModules?: AgentModules,
   inMemoryWallet = true
-): { config: InitConfig; modules: AgentModules; dependencies: AgentDependencies; inMemory?: boolean } {
+): {
+  config: InitConfig
+  modules: AgentModules & DefaultAgentModulesInput
+  dependencies: AgentDependencies
+  inMemory?: boolean
+} {
   const random = uuid().slice(0, 4)
   const config: InitConfig = {
     label: `Agent: ${name} - ${random}`,
@@ -139,7 +144,11 @@ export function getAgentOptions<AgentModules extends AgentModulesInput | EmptyMo
       }),
   }
 
-  return { config, modules: modules as unknown as AgentModules, dependencies: agentDependencies } as const
+  return {
+    config,
+    modules: modules as unknown as AgentModules & DefaultAgentModulesInput,
+    dependencies: agentDependencies,
+  } as const
 }
 
 export function getInMemoryAgentOptions<
@@ -151,7 +160,7 @@ export function getInMemoryAgentOptions<
   inputModules?: AgentModules
 ): {
   config: InitConfig
-  modules: AgentModules
+  modules: AgentModules & DefaultAgentModulesInput
   dependencies: AgentDependencies
 } {
   const random = uuid().slice(0, 4)
@@ -184,7 +193,7 @@ export function getInMemoryAgentOptions<
 
   return {
     config,
-    modules: modules as unknown as AgentModules,
+    modules: modules as unknown as AgentModules & DefaultAgentModulesInput,
     dependencies: agentDependencies,
   } as const
 }

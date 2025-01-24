@@ -1,7 +1,8 @@
-import type { BaseAgent } from '@credo-ts/core'
 import type { CredentialExchangeRecord } from '../../modules/credentials'
+import type { BaseAgent } from '@credo-ts/core'
 
 import { CredoError } from '@credo-ts/core'
+
 import {
   V2RequestCredentialMessage,
   V2ProposeCredentialMessage,

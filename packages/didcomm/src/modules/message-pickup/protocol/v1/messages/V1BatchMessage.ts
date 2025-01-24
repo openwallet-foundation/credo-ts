@@ -1,7 +1,7 @@
+import { utils } from '@credo-ts/core'
 import { Type, Expose } from 'class-transformer'
 import { Matches, IsArray, ValidateNested, IsObject, IsInstance } from 'class-validator'
 
-import { utils } from '@credo-ts/core'
 import { AgentMessage } from '../../../../../AgentMessage'
 import { MessageIdRegExp } from '../../../../../BaseMessage'
 import { EncryptedMessage } from '../../../../../types'

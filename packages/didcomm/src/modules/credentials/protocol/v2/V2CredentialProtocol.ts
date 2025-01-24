@@ -1,4 +1,3 @@
-import type { AgentContext } from '@credo-ts/core'
 import type { AgentMessage } from '../../../../AgentMessage'
 import type { FeatureRegistry } from '../../../../FeatureRegistry'
 import type { MessageHandlerRegistry } from '../../../../MessageHandlerRegistry'
@@ -28,8 +27,10 @@ import type {
   NegotiateCredentialOfferOptions,
   NegotiateCredentialProposalOptions,
 } from '../CredentialProtocolOptions'
+import type { AgentContext } from '@credo-ts/core'
 
 import { CredoError, utils } from '@credo-ts/core'
+
 import { AckStatus } from '../../../../messages'
 import { Protocol } from '../../../../models'
 import { DidCommMessageRepository, DidCommMessageRole } from '../../../../repository'

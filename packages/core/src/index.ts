@@ -67,7 +67,6 @@ export * from './agent/Events'
 export * from './crypto'
 
 // TODO: Clean up these exports used by DIDComm module
-export { getKeyFromVerificationMethod } from './modules/dids/domain/key-type'
 export {
   didKeyToInstanceOfKey,
   didKeyToVerkey,
@@ -80,18 +79,21 @@ export { base64ToBase64URL } from './utils/base64'
 export { DidRecordMetadataKeys } from './modules/dids/repository/didRecordMetadataTypes'
 export { didDocumentJsonToNumAlgo1Did } from './modules/dids/methods/peer/peerDidNumAlgo1'
 export { didDocumentToNumAlgo2Did } from './modules/dids/methods/peer/peerDidNumAlgo2'
+export { didDocumentToNumAlgo4Did } from './modules/dids/methods/peer/peerDidNumAlgo4'
 
 export { SingleOrArray } from './utils'
 
 // TODO: clean up util exports
 export type { Optional } from './utils'
 export { getDomainFromUrl } from './utils/domain'
-import { uuid, isValidUuid } from './utils/uuid'
-import { getProtocolScheme } from './utils/uri'
-import { indyDidFromPublicKeyBase58 } from './utils/did'
-import timestamp from './utils/timestamp'
 export { MessageValidator } from './utils'
+
+import { indyDidFromPublicKeyBase58 } from './utils/did'
 import { areObjectsEqual } from './utils/objectEquality'
+import timestamp from './utils/timestamp'
+import { getProtocolScheme } from './utils/uri'
+import { uuid, isValidUuid } from './utils/uuid'
+
 const utils = {
   areObjectsEqual,
   uuid,

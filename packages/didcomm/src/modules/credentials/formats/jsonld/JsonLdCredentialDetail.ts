@@ -1,6 +1,5 @@
-import { Expose, Type } from 'class-transformer'
-
 import { W3cCredential } from '@credo-ts/core'
+import { Expose, Type } from 'class-transformer'
 
 import { JsonLdCredentialDetailOptions } from './JsonLdCredentialDetailOptions'
 

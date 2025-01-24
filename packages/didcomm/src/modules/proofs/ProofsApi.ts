@@ -24,9 +24,7 @@ import type { ProofFormatsFromProtocols } from './protocol/ProofProtocolOptions'
 import type { ProofExchangeRecord } from './repository/ProofExchangeRecord'
 import type { Query, QueryOptions } from '@credo-ts/core'
 
-import { injectable } from 'tsyringe'
-
-import { AgentContext, CredoError } from '@credo-ts/core'
+import { AgentContext, CredoError, injectable } from '@credo-ts/core'
 
 import { AgentMessage } from '../../AgentMessage'
 import { MessageSender } from '../../MessageSender'

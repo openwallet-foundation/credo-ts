@@ -2,6 +2,7 @@ import type { ConnectionRecord } from './repository'
 import type { ParsedMessageType } from '../../util/messageType'
 
 import { CredoError } from '@credo-ts/core'
+
 import { canHandleMessageType } from '../../util/messageType'
 
 import { DidExchangeRequestMessage, DidExchangeResponseMessage, DidExchangeCompleteMessage } from './messages'

@@ -16,8 +16,6 @@ import type {
   SelectCredentialsForRequestOptions,
   SelectCredentialsForRequestReturn,
 } from './ProofProtocolOptions'
-import type { AgentContext, Query, QueryOptions } from '@credo-ts/core'
-
 import type { AgentMessage } from '../../../AgentMessage'
 import type { FeatureRegistry } from '../../../FeatureRegistry'
 import type { MessageHandlerRegistry } from '../../../MessageHandlerRegistry'
@@ -27,8 +25,10 @@ import type { ProofStateChangedEvent } from '../ProofEvents'
 import type { ExtractProofFormats, ProofFormatService } from '../formats'
 import type { ProofRole } from '../models'
 import type { ProofExchangeRecord } from '../repository'
+import type { AgentContext, Query, QueryOptions } from '@credo-ts/core'
 
 import { EventEmitter } from '@credo-ts/core'
+
 import { DidCommMessageRepository } from '../../../repository'
 import { ConnectionService } from '../../connections'
 import { ProofEventTypes } from '../ProofEvents'

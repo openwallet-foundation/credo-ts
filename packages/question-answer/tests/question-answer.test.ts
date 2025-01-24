@@ -31,8 +31,8 @@ const aliceAgentOptions = getInMemoryAgentOptions(
 )
 
 describe('Question Answer', () => {
-  let bobAgent: Agent<typeof modules>
-  let aliceAgent: Agent<typeof modules>
+  let bobAgent: Agent<typeof bobAgentOptions.modules>
+  let aliceAgent: Agent<typeof aliceAgentOptions.modules>
   let aliceConnection: ConnectionRecord
 
   beforeEach(async () => {

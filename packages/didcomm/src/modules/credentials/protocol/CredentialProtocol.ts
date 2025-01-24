@@ -13,7 +13,6 @@ import type {
   GetCredentialFormatDataReturn,
   CreateCredentialProblemReportOptions,
 } from './CredentialProtocolOptions'
-import type { AgentContext, Query, QueryOptions } from '@credo-ts/core'
 import type { AgentMessage } from '../../../AgentMessage'
 import type { FeatureRegistry } from '../../../FeatureRegistry'
 import type { MessageHandlerRegistry } from '../../../MessageHandlerRegistry'
@@ -23,6 +22,7 @@ import type { CredentialFormatService, ExtractCredentialFormats } from '../forma
 import type { CredentialRole } from '../models'
 import type { CredentialState } from '../models/CredentialState'
 import type { CredentialExchangeRecord } from '../repository'
+import type { AgentContext, Query, QueryOptions } from '@credo-ts/core'
 
 export interface CredentialProtocol<CFs extends CredentialFormatService[] = CredentialFormatService[]> {
   readonly version: string

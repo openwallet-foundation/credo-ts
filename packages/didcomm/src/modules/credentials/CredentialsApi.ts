@@ -24,6 +24,7 @@ import type { CredentialExchangeRecord } from './repository/CredentialExchangeRe
 import type { Query, QueryOptions } from '@credo-ts/core'
 
 import { AgentContext, InjectionSymbols, CredoError, Logger, inject, injectable } from '@credo-ts/core'
+
 import { AgentMessage } from '../../AgentMessage'
 import { MessageSender } from '../../MessageSender'
 import { getOutboundMessageContext } from '../../getOutboundMessageContext'

@@ -1,9 +1,8 @@
 import type { ResolvedDidCommService } from '../../../types'
 import type { ValidationOptions } from 'class-validator'
 
-import { ArrayNotEmpty, buildMessage, IsOptional, isString, IsString, ValidateBy } from 'class-validator'
-
 import { DidDocumentService, DidKey, isDid, IsUri } from '@credo-ts/core'
+import { ArrayNotEmpty, buildMessage, IsOptional, isString, IsString, ValidateBy } from 'class-validator'
 
 export class OutOfBandDidCommService extends DidDocumentService {
   public constructor(options: {

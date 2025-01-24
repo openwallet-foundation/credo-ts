@@ -1,11 +1,10 @@
+import type { ProofFormat } from '../ProofFormat'
 import type {
   DifPexInputDescriptorToCredentials,
   DifPexCredentialsForRequest,
   DifPresentationExchangeDefinitionV1,
   W3cJsonPresentation,
 } from '@credo-ts/core'
-
-import type { ProofFormat } from '../ProofFormat'
 
 export type DifPresentationExchangeProposal = DifPresentationExchangeDefinitionV1
 

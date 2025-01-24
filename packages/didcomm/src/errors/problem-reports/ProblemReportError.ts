@@ -1,4 +1,5 @@
 import { CredoError } from '@credo-ts/core'
+
 import { ProblemReportMessage } from '../../messages/problem-reports/ProblemReportMessage'
 
 export interface ProblemReportErrorOptions {

@@ -1,7 +1,7 @@
-import type { AgentContext, DidDocument, PeerDidNumAlgo } from '@credo-ts/core'
 import type { Routing } from '../../../models'
 import type { ResolvedDidCommService } from '../../../types'
 import type { DidDoc, PublicKey } from '../models'
+import type { AgentContext, DidDocument, PeerDidNumAlgo } from '@credo-ts/core'
 
 import {
   Key,

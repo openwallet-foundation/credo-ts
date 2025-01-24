@@ -4,6 +4,7 @@ import type { TrustPingMessage } from '../messages'
 import type { ConnectionRecord } from '../repository'
 
 import { EventEmitter, injectable } from '@credo-ts/core'
+
 import { OutboundMessageContext } from '../../../models'
 import { TrustPingEventTypes } from '../TrustPingEvents'
 import { TrustPingResponseMessage } from '../messages'

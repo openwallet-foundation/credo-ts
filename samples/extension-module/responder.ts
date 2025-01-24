@@ -1,7 +1,8 @@
 import type { DummyStateChangedEvent } from './dummy'
 import type { Socket } from 'net'
 
-import { Agent, ConnectionsModule, ConsoleLogger, DidCommModule, LogLevel } from '@credo-ts/core'
+import { Agent, ConsoleLogger, LogLevel } from '@credo-ts/core'
+import { ConnectionsModule, DidCommModule, OutOfBandModule } from '@credo-ts/didcomm'
 import { agentDependencies, HttpInboundTransport, WsInboundTransport } from '@credo-ts/node'
 import express from 'express'
 import { Server } from 'ws'
@@ -30,6 +31,7 @@ const run = async () => {
     },
     modules: {
       didcomm: new DidCommModule({ endpoints: [`http://localhost:${port}`] }),
+      oob: new OutOfBandModule(),
       dummy: new DummyModule({ autoAcceptRequests }),
       connections: new ConnectionsModule({
         autoAcceptConnections: true,
@@ -39,12 +41,12 @@ const run = async () => {
   })
 
   // Register transports
-  agent.didcomm.registerInboundTransport(httpInboundTransport)
-  agent.didcomm.registerInboundTransport(wsInboundTransport)
+  agent.modules.didcomm.registerInboundTransport(httpInboundTransport)
+  agent.modules.didcomm.registerInboundTransport(wsInboundTransport)
 
   // Allow to create invitation, no other way to ask for invitation yet
   app.get('/invitation', async (req, res) => {
-    const { outOfBandInvitation } = await agent.oob.createInvitation()
+    const { outOfBandInvitation } = await agent.modules.oob.createInvitation()
     res.send(outOfBandInvitation.toUrl({ domain: `http://localhost:${port}/invitation` }))
   })
 

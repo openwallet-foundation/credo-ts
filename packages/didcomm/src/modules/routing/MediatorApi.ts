@@ -1,6 +1,7 @@
 import type { MediationRecord } from './repository'
 
 import { AgentContext, injectable } from '@credo-ts/core'
+
 import { MessageHandlerRegistry } from '../../MessageHandlerRegistry'
 import { MessageSender } from '../../MessageSender'
 import { OutboundMessageContext } from '../../models'

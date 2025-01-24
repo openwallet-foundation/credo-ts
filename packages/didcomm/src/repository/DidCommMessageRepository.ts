@@ -1,6 +1,6 @@
 import type { DidCommMessageRole } from './DidCommMessageRole'
-import type { AgentContext } from '@credo-ts/core'
 import type { AgentMessage, ConstructableAgentMessage } from '../AgentMessage'
+import type { AgentContext } from '@credo-ts/core'
 
 import { EventEmitter, InjectionSymbols, inject, injectable, Repository, StorageService } from '@credo-ts/core'
 

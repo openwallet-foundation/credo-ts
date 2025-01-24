@@ -1,6 +1,7 @@
 import type { BaseAgent } from '@credo-ts/core'
 
 import { CredoError } from '@credo-ts/core'
+
 import {
   ProofRepository,
   ProofRole,

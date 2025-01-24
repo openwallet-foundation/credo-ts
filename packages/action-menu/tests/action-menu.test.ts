@@ -31,8 +31,8 @@ const aliceAgentOptions = getInMemoryAgentOptions(
 )
 
 describe('Action Menu', () => {
-  let faberAgent: Agent<typeof modules>
-  let aliceAgent: Agent<typeof modules>
+  let faberAgent: Agent<typeof faberAgentOptions.modules>
+  let aliceAgent: Agent<typeof aliceAgentOptions.modules>
   let faberConnection: ConnectionRecord
   let aliceConnection: ConnectionRecord
 

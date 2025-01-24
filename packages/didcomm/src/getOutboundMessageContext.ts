@@ -3,9 +3,9 @@ import type { Routing } from './models'
 import type { ConnectionRecord } from './modules/connections/repository'
 import type { OutOfBandRecord } from './modules/oob'
 import type { ResolvedDidCommService } from './types'
-import { AgentContext, BaseRecordAny, CredoError, Key } from '@credo-ts/core'
+import type { AgentContext, BaseRecordAny } from '@credo-ts/core'
 
-import { utils } from '@credo-ts/core'
+import { CredoError, Key, utils } from '@credo-ts/core'
 
 import { ServiceDecorator } from './decorators/service/ServiceDecorator'
 import { OutboundMessageContext } from './models'

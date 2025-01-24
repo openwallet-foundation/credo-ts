@@ -1,7 +1,6 @@
+import { JsonTransformer } from '@credo-ts/core'
 import { Expose } from 'class-transformer'
 import { IsMimeType, IsOptional, IsString } from 'class-validator'
-
-import { JsonTransformer } from '@credo-ts/core'
 
 export interface CredentialPreviewAttributeOptions {
   name: string

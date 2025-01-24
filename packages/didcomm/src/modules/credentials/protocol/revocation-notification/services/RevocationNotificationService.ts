@@ -1,8 +1,8 @@
 import type { V2CreateRevocationNotificationMessageOptions } from './RevocationNotificationServiceOptions'
-import type { AgentContext } from '@credo-ts/core'
 import type { InboundMessageContext } from '../../../../../models'
 import type { RevocationNotificationReceivedEvent } from '../../../CredentialEvents'
 import type { V1RevocationNotificationMessage } from '../messages/V1RevocationNotificationMessage'
+import type { AgentContext } from '@credo-ts/core'
 
 import { EventEmitter, InjectionSymbols, CredoError, Logger, inject, injectable } from '@credo-ts/core'
 

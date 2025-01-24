@@ -16,9 +16,8 @@ import type { V1MessagePickupProtocol, V2MessagePickupProtocol } from './protoco
 import type { MessagePickupProtocol } from './protocol/MessagePickupProtocol'
 import type { MessagePickupRepository } from './storage/MessagePickupRepository'
 
-import { ReplaySubject, Subject, filter, first, firstValueFrom, takeUntil, timeout } from 'rxjs'
-
 import { AgentContext, EventEmitter, InjectionSymbols, CredoError, Logger, inject, injectable } from '@credo-ts/core'
+import { ReplaySubject, Subject, filter, first, firstValueFrom, takeUntil, timeout } from 'rxjs'
 
 import { MessageSender } from '../../MessageSender'
 import { OutboundMessageContext } from '../../models'

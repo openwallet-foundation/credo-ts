@@ -2,6 +2,7 @@ import type { MessageHandler, MessageHandlerInboundMessage } from '../../../hand
 import type { ConnectionService, TrustPingService } from '../services'
 
 import { CredoError } from '@credo-ts/core'
+
 import { TrustPingMessage } from '../messages'
 import { DidExchangeState } from '../models'
 

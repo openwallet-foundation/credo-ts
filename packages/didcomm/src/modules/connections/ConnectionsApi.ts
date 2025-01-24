@@ -1,8 +1,8 @@
 import type { ConnectionType } from './models'
 import type { ConnectionRecord } from './repository'
-import type { Query, QueryOptions } from '@credo-ts/core'
 import type { Routing } from '../../models'
 import type { OutOfBandRecord } from '../oob/repository'
+import type { Query, QueryOptions } from '@credo-ts/core'
 
 import { AgentContext, CredoError, injectable, DidResolverService, DidRepository } from '@credo-ts/core'
 

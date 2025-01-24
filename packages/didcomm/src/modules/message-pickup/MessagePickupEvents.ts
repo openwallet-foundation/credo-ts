@@ -1,6 +1,6 @@
 import type { MessagePickupSession } from './MessagePickupSession'
-import type { BaseEvent } from '@credo-ts/core'
 import type { ConnectionRecord } from '../connections/repository'
+import type { BaseEvent } from '@credo-ts/core'
 
 export enum MessagePickupEventTypes {
   LiveSessionSaved = 'LiveSessionSaved',

@@ -1,6 +1,5 @@
-import type { BaseAgent, JsonObject } from '@credo-ts/core'
-
 import type { PlaintextMessage } from '../../types'
+import type { BaseAgent, JsonObject } from '@credo-ts/core'
 
 import { ProofRepository, ProofState, type ProofExchangeRecord } from '../../modules/proofs'
 import { DidCommMessageRole, DidCommMessageRepository, DidCommMessageRecord } from '../../repository'

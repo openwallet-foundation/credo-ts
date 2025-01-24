@@ -3,7 +3,7 @@ import type { MessageHandler } from './handlers/MessageHandler'
 import type { MessageHandlerMiddleware } from './handlers/MessageHandlerMiddleware'
 import type { ParsedDidCommProtocolUri } from './util/messageType'
 
-import { injectable } from 'tsyringe'
+import { injectable } from '@credo-ts/core'
 
 import { supportsIncomingDidCommProtocolUri, canHandleMessageType, parseMessageType } from './util/messageType'
 

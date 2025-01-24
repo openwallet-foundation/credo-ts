@@ -4,10 +4,9 @@ import type { TransportSessionRemovedEvent, TransportSessionSavedEvent } from '.
 import type { EncryptedMessage } from './types'
 import type { DidDocument } from '@credo-ts/core'
 
-import { AgentContext } from '@credo-ts/core'
-import { DID_COMM_TRANSPORT_QUEUE } from './constants'
-import { CredoError, EventEmitter, injectable } from '@credo-ts/core'
+import { AgentContext, CredoError, EventEmitter, injectable } from '@credo-ts/core'
 
+import { DID_COMM_TRANSPORT_QUEUE } from './constants'
 import { TransportEventTypes } from './transport'
 
 @injectable()

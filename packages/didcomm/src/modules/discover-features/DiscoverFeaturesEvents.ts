@@ -1,7 +1,7 @@
-import type { BaseEvent } from '@credo-ts/core'
 import type { AgentMessage } from '../../AgentMessage'
 import type { FeatureQueryOptions, Feature } from '../../models'
 import type { ConnectionRecord } from '../connections'
+import type { BaseEvent } from '@credo-ts/core'
 
 export enum DiscoverFeaturesEventTypes {
   QueryReceived = 'QueryReceived',

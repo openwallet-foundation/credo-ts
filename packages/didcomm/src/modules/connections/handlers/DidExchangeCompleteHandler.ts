@@ -3,6 +3,7 @@ import type { OutOfBandService } from '../../oob/OutOfBandService'
 import type { DidExchangeProtocol } from '../DidExchangeProtocol'
 
 import { CredoError, tryParseDid } from '@credo-ts/core'
+
 import { OutOfBandState } from '../../oob/domain/OutOfBandState'
 import { DidExchangeCompleteMessage } from '../messages'
 import { HandshakeProtocol } from '../models'

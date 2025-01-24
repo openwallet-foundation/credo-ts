@@ -1,8 +1,8 @@
-import type { AgentContext, Query, QueryOptions } from '@credo-ts/core'
 import type { InboundMessageContext } from '../../../models'
 import type { ConnectionRecord } from '../../connections/repository'
 import type { MediationStateChangedEvent } from '../RoutingEvents'
 import type { ForwardMessage, MediationRequestMessage } from '../messages'
+import type { AgentContext, Query, QueryOptions } from '@credo-ts/core'
 
 import {
   EventEmitter,
@@ -20,10 +20,10 @@ import {
 
 import { DidCommModuleConfig } from '../../../DidCommModuleConfig'
 import { MessageSender } from '../../../MessageSender'
-import { MessagePickupApi } from '../../message-pickup'
-import { MessagePickupSessionRole } from '../../message-pickup/MessagePickupSession'
 import { ConnectionMetadataKeys } from '../../connections/repository/ConnectionMetadataTypes'
 import { ConnectionService } from '../../connections/services'
+import { MessagePickupApi } from '../../message-pickup'
+import { MessagePickupSessionRole } from '../../message-pickup/MessagePickupSession'
 import { MediatorModuleConfig } from '../MediatorModuleConfig'
 import { MessageForwardingStrategy } from '../MessageForwardingStrategy'
 import { RoutingEventTypes } from '../RoutingEvents'

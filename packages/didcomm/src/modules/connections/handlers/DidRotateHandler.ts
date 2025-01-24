@@ -2,6 +2,7 @@ import type { MessageHandler, MessageHandlerInboundMessage } from '../../../hand
 import type { ConnectionService, DidRotateService } from '../services'
 
 import { CredoError } from '@credo-ts/core'
+
 import { DidRotateMessage } from '../messages'
 
 export class DidRotateHandler implements MessageHandler {

@@ -1,5 +1,5 @@
-import type { AgentContext } from '@credo-ts/core'
 import type { DidExchangeRole } from '../models'
+import type { AgentContext } from '@credo-ts/core'
 
 import { EventEmitter, InjectionSymbols, injectable, inject, Repository, StorageService } from '@credo-ts/core'
 

@@ -1,9 +1,7 @@
 import type { ResolvedDidCommService } from '../../types'
 
+import { utils, verkeyToInstanceOfKey } from '@credo-ts/core'
 import { IsArray, IsOptional, IsString } from 'class-validator'
-
-import { utils } from '@credo-ts/core'
-import { verkeyToInstanceOfKey } from '@credo-ts/core'
 
 export interface ServiceDecoratorOptions {
   recipientKeys: string[]

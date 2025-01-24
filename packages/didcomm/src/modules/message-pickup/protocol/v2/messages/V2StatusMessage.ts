@@ -1,10 +1,10 @@
 import { Expose, Transform } from 'class-transformer'
 import { IsBoolean, IsDate, IsInt, IsOptional, IsString } from 'class-validator'
 
-import { DateParser } from '../../../../../util/transformers'
 import { AgentMessage } from '../../../../../AgentMessage'
 import { ReturnRouteTypes } from '../../../../../decorators/transport/TransportDecorator'
 import { IsValidMessageType, parseMessageType } from '../../../../../util/messageType'
+import { DateParser } from '../../../../../util/transformers'
 
 export interface V2StatusMessageOptions {
   id?: string

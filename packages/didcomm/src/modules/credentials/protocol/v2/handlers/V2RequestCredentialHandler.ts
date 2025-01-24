@@ -4,6 +4,7 @@ import type { CredentialExchangeRecord } from '../../../repository'
 import type { V2CredentialProtocol } from '../V2CredentialProtocol'
 
 import { CredoError } from '@credo-ts/core'
+
 import { getOutboundMessageContext } from '../../../../../getOutboundMessageContext'
 import { V2RequestCredentialMessage } from '../messages/V2RequestCredentialMessage'
 

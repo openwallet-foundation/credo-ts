@@ -1,5 +1,3 @@
-import type { EventEmitter } from '@credo-ts/core'
-import type { Logger } from '@credo-ts/core'
 import type { AgentMessage } from '../../../AgentMessage'
 import type { FeatureRegistry } from '../../../FeatureRegistry'
 import type { InboundMessageContext } from '../../../models'
@@ -9,6 +7,7 @@ import type {
   CreateQueryOptions,
   DiscoverFeaturesProtocolMsgReturnType,
 } from '../DiscoverFeaturesServiceOptions'
+import type { Logger, EventEmitter } from '@credo-ts/core'
 
 export abstract class DiscoverFeaturesService {
   protected featureRegistry: FeatureRegistry

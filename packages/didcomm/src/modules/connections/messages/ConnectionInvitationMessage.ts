@@ -1,10 +1,10 @@
 import type { Attachment } from '../../../decorators/attachment/Attachment'
 
+import { CredoError, JsonEncoder, JsonTransformer } from '@credo-ts/core'
 import { Transform } from 'class-transformer'
 import { ArrayNotEmpty, IsArray, IsOptional, IsString, IsUrl, ValidateIf } from 'class-validator'
 import { parseUrl } from 'query-string'
 
-import { CredoError, JsonEncoder, JsonTransformer } from '@credo-ts/core'
 import { AgentMessage } from '../../../AgentMessage'
 import { IsValidMessageType, parseMessageType, replaceLegacyDidSovPrefix } from '../../../util/messageType'
 

@@ -1,11 +1,10 @@
 import type { OutOfBandRecordMetadata } from './outOfBandRecordMetadataTypes'
-import type { TagsBase } from '@credo-ts/core'
 import type { OutOfBandRole } from '../domain/OutOfBandRole'
 import type { OutOfBandState } from '../domain/OutOfBandState'
-
-import { Type } from 'class-transformer'
+import type { TagsBase } from '@credo-ts/core'
 
 import { CredoError, BaseRecord, utils } from '@credo-ts/core'
+import { Type } from 'class-transformer'
 
 import { getThreadIdFromPlainTextMessage } from '../../../util/thread'
 import { OutOfBandInvitation } from '../messages'

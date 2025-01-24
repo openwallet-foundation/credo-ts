@@ -1,8 +1,7 @@
 import type { MediationRole } from '../models/MediationRole'
 
-import { Transform } from 'class-transformer'
-
 import { CredoError, BaseRecord, utils } from '@credo-ts/core'
+import { Transform } from 'class-transformer'
 
 import { MediatorPickupStrategy } from '../MediatorPickupStrategy'
 import { MediationState } from '../models/MediationState'

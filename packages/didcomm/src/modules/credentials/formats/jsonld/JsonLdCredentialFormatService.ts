@@ -4,7 +4,6 @@ import type {
   JsonLdFormatDataCredentialDetail,
   JsonLdFormatDataVerifiableCredential,
 } from './JsonLdCredentialFormat'
-import type { AgentContext } from '@credo-ts/core'
 import type { CredentialFormatService } from '../CredentialFormatService'
 import type {
   CredentialFormatAcceptOfferOptions,
@@ -23,6 +22,7 @@ import type {
   CredentialFormatProcessOptions,
   CredentialFormatAutoRespondCredentialOptions,
 } from '../CredentialFormatServiceOptions'
+import type { AgentContext } from '@credo-ts/core'
 
 import {
   CredoError,

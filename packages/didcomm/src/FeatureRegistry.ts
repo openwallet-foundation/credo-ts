@@ -1,6 +1,6 @@
 import type { FeatureQuery, Feature } from './models'
 
-import { injectable } from 'tsyringe'
+import { injectable } from '@credo-ts/core'
 
 @injectable()
 class FeatureRegistry {

@@ -1,4 +1,3 @@
-import type { AgentContext } from '@credo-ts/core'
 import type { AgentMessage } from '../../../../AgentMessage'
 import type { AgentMessageReceivedEvent } from '../../../../Events'
 import type { FeatureRegistry } from '../../../../FeatureRegistry'
@@ -13,6 +12,7 @@ import type {
   PickupMessagesProtocolReturnType,
   SetLiveDeliveryModeProtocolReturnType,
 } from '../MessagePickupProtocolOptions'
+import type { AgentContext } from '@credo-ts/core'
 
 import { EventEmitter, InjectionSymbols, CredoError, injectable } from '@credo-ts/core'
 

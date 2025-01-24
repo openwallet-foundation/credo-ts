@@ -37,7 +37,6 @@ import {
   waitForProofExchangeRecordSubject,
 } from '../../core/tests/helpers'
 import testLogger from '../../core/tests/logger'
-import { getDefaultDidcommModules } from '../../didcomm/src/util/modules'
 import {
   IndyVdrAnonCredsRegistry,
   IndyVdrSovDidResolver,

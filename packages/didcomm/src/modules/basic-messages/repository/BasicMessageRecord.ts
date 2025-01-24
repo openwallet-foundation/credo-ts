@@ -1,5 +1,5 @@
-import type { RecordTags, TagsBase } from '@credo-ts/core'
 import type { BasicMessageRole } from '../BasicMessageRole'
+import type { RecordTags, TagsBase } from '@credo-ts/core'
 
 import { BaseRecord, utils } from '@credo-ts/core'
 

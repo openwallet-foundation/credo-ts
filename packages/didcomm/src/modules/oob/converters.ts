@@ -1,6 +1,13 @@
 import type { OutOfBandInvitationOptions } from './messages'
 
-import { didKeyToVerkey, verkeyToDidKey } from '@credo-ts/core'
+import {
+  DidCommV1Service,
+  DidDocumentBuilder,
+  DidKey,
+  didKeyToVerkey,
+  verkeyToDidKey,
+  didDocumentToNumAlgo4Did,
+} from '@credo-ts/core'
 
 import { ConnectionInvitationMessage } from '../connections/messages/ConnectionInvitationMessage'
 
@@ -69,4 +76,29 @@ export function convertToOldInvitation(newInvitation: OutOfBandInvitation) {
 
   const connectionInvitationMessage = new ConnectionInvitationMessage(options)
   return connectionInvitationMessage
+}
+
+export function outOfBandServiceToNumAlgo4Did(service: OutOfBandDidCommService) {
+  // FIXME: add the key entries for the recipientKeys to the did document.
+  const didDocument = new DidDocumentBuilder('')
+    .addService(
+      new DidCommV1Service({
+        id: service.id,
+        serviceEndpoint: service.serviceEndpoint,
+        accept: service.accept,
+        // FIXME: this should actually be local key references, not did:key:123#456 references
+        recipientKeys: service.recipientKeys.map((recipientKey) => {
+          const did = DidKey.fromDid(recipientKey)
+          return `${did.did}#${did.key.fingerprint}`
+        }),
+        // Map did:key:xxx to actual did:key:xxx#123
+        routingKeys: service.routingKeys?.map((routingKey) => {
+          const did = DidKey.fromDid(routingKey)
+          return `${did.did}#${did.key.fingerprint}`
+        }),
+      })
+    )
+    .build()
+
+  return didDocumentToNumAlgo4Did(didDocument)
 }

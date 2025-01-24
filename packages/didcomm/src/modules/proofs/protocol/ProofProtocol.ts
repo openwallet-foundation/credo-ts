@@ -15,8 +15,6 @@ import type {
   SelectCredentialsForRequestOptions,
   SelectCredentialsForRequestReturn,
 } from './ProofProtocolOptions'
-import type { AgentContext, Query, QueryOptions } from '@credo-ts/core'
-
 import type { AgentMessage } from '../../../AgentMessage'
 import type { FeatureRegistry } from '../../../FeatureRegistry'
 import type { MessageHandlerRegistry } from '../../../MessageHandlerRegistry'
@@ -26,6 +24,7 @@ import type { ExtractProofFormats, ProofFormatService } from '../formats'
 import type { ProofRole } from '../models'
 import type { ProofState } from '../models/ProofState'
 import type { ProofExchangeRecord } from '../repository'
+import type { AgentContext, Query, QueryOptions } from '@credo-ts/core'
 
 export interface ProofProtocol<PFs extends ProofFormatService[] = ProofFormatService[]> {
   readonly version: string

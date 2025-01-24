@@ -1,10 +1,11 @@
-import type { DidResolverService } from '@credo-ts/core'
 import type { MessageHandler, MessageHandlerInboundMessage } from '../../../handlers'
 import type { OutOfBandService } from '../../oob/OutOfBandService'
 import type { ConnectionsModuleConfig } from '../ConnectionsModuleConfig'
 import type { ConnectionService } from '../services'
+import type { DidResolverService } from '@credo-ts/core'
 
 import { CredoError } from '@credo-ts/core'
+
 import { ReturnRouteTypes } from '../../../decorators/transport/TransportDecorator'
 import { OutboundMessageContext } from '../../../models'
 import { ConnectionResponseMessage } from '../messages'

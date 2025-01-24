@@ -1,3 +1,4 @@
+import type { Key } from './crypto'
 import type { Logger } from './logger'
 
 export enum KeyDerivationMethod {
@@ -88,6 +89,13 @@ export type IsAny<T> = unknown extends T ? ([keyof T] extends [never] ? false : 
 
 // FIXME: the following types are duplicated in DIDComm module. They were placed here to remove dependency
 // to that module
+export interface ResolvedDidCommService {
+  id: string
+  serviceEndpoint: string
+  recipientKeys: Key[]
+  routingKeys: Key[]
+}
+
 export interface PlaintextMessage {
   '@type': string
   '@id': string

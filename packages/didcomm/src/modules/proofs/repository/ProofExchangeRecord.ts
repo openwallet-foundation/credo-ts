@@ -1,6 +1,6 @@
-import type { TagsBase } from '@credo-ts/core'
 import type { ProofRole, ProofState } from '../models'
 import type { AutoAcceptProof } from '../models/ProofAutoAcceptType'
+import type { TagsBase } from '@credo-ts/core'
 
 import { CredoError, BaseRecord, utils } from '@credo-ts/core'
 

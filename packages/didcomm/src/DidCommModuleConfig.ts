@@ -1,5 +1,4 @@
 import { DID_COMM_TRANSPORT_QUEUE } from './constants'
-
 import { DidCommMimeType } from './types'
 
 /**

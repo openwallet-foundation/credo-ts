@@ -7,10 +7,9 @@ import type { DiscoverFeaturesDisclosureReceivedEvent } from './DiscoverFeatures
 import type { DiscoverFeaturesService } from './services'
 import type { Feature } from '../../models'
 
+import { AgentContext, EventEmitter, InjectionSymbols, CredoError, inject, injectable } from '@credo-ts/core'
 import { firstValueFrom, of, ReplaySubject, Subject } from 'rxjs'
 import { catchError, filter, first, map, takeUntil, timeout } from 'rxjs/operators'
-
-import { AgentContext, EventEmitter, InjectionSymbols, CredoError, inject, injectable } from '@credo-ts/core'
 
 import { MessageSender } from '../../MessageSender'
 import { OutboundMessageContext } from '../../models'

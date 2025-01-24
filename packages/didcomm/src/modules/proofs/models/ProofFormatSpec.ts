@@ -1,7 +1,6 @@
+import { utils } from '@credo-ts/core'
 import { Expose } from 'class-transformer'
 import { IsString } from 'class-validator'
-
-import { utils } from '@credo-ts/core'
 
 export interface ProofFormatSpecOptions {
   attachmentId?: string

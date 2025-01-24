@@ -1,5 +1,5 @@
-import type { AgentContext } from '@credo-ts/core'
 import type { OutboundPackage } from '../types'
+import type { AgentContext } from '@credo-ts/core'
 
 export interface OutboundTransport {
   supportedSchemes: string[]

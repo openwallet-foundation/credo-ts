@@ -1,4 +1,3 @@
-import type { AgentContext } from '@credo-ts/core'
 import type { Attachment } from '../../../../decorators/attachment/Attachment'
 import type {
   ExtractProofFormats,
@@ -8,8 +7,10 @@ import type {
 } from '../../formats'
 import type { ProofFormatSpec } from '../../models/ProofFormatSpec'
 import type { ProofExchangeRecord } from '../../repository'
+import type { AgentContext } from '@credo-ts/core'
 
 import { CredoError } from '@credo-ts/core'
+
 import { DidCommMessageRepository, DidCommMessageRole } from '../../../../repository'
 
 import { V2PresentationMessage, V2ProposePresentationMessage, V2RequestPresentationMessage } from './messages'

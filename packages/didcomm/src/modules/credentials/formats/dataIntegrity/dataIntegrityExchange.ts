@@ -1,7 +1,6 @@
+import { JsonObject, JsonTransformer, W3cCredential } from '@credo-ts/core'
 import { Expose, Type } from 'class-transformer'
 import { ArrayNotEmpty, IsBoolean, IsEnum, IsOptional, IsString, ValidateNested } from 'class-validator'
-
-import { JsonObject, JsonTransformer, W3cCredential } from '@credo-ts/core'
 
 const SUPPORTED_W3C_VC_DATA_MODEL_VERSIONS = ['1.1', '2.0'] as const
 export type W3C_VC_DATA_MODEL_VERSION = (typeof SUPPORTED_W3C_VC_DATA_MODEL_VERSIONS)[number]

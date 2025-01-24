@@ -2,9 +2,8 @@ import type { PlaintextMessage } from './types'
 import type { ParsedMessageType } from './util/messageType'
 import type { Constructor } from '@credo-ts/core'
 
-import { Exclude } from 'class-transformer'
-
 import { JsonTransformer } from '@credo-ts/core'
+import { Exclude } from 'class-transformer'
 
 import { BaseMessage } from './BaseMessage'
 import { AckDecorated } from './decorators/ack/AckDecoratorExtension'

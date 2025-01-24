@@ -1,7 +1,7 @@
-import type { AgentContext } from '@credo-ts/core'
 import type { InboundMessageContext, Routing } from '../../../models'
 import type { ConnectionDidRotatedEvent } from '../ConnectionEvents'
 import type { ConnectionRecord } from '../repository'
+import type { AgentContext } from '@credo-ts/core'
 
 import {
   EventEmitter,
@@ -17,6 +17,7 @@ import {
   injectable,
   Logger,
 } from '@credo-ts/core'
+
 import { AckStatus } from '../../../messages'
 import { OutboundMessageContext } from '../../../models'
 import { getMediationRecordForDidDocument } from '../../routing/services/helpers'

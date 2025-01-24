@@ -14,8 +14,6 @@ import type {
   GetCredentialFormatDataReturn,
   CreateCredentialProblemReportOptions,
 } from './CredentialProtocolOptions'
-import type { AgentContext } from '@credo-ts/core'
-import type { Query, QueryOptions } from '@credo-ts/core'
 import type { AgentMessage } from '../../../AgentMessage'
 import type { FeatureRegistry } from '../../../FeatureRegistry'
 import type { MessageHandlerRegistry } from '../../../MessageHandlerRegistry'
@@ -25,8 +23,10 @@ import type { CredentialStateChangedEvent } from '../CredentialEvents'
 import type { CredentialFormatService, ExtractCredentialFormats } from '../formats'
 import type { CredentialRole } from '../models'
 import type { CredentialExchangeRecord } from '../repository'
+import type { Query, QueryOptions, AgentContext } from '@credo-ts/core'
 
 import { EventEmitter } from '@credo-ts/core'
+
 import { DidCommMessageRepository } from '../../../repository'
 import { ConnectionService } from '../../connections'
 import { CredentialEventTypes } from '../CredentialEvents'
