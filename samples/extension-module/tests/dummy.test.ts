@@ -8,7 +8,6 @@ import { Subject } from 'rxjs'
 
 import { getAgentOptions, makeConnection } from '../../../packages/core/tests/helpers'
 import testLogger from '../../../packages/core/tests/logger'
-import { getDefaultDidcommModules } from '../../../packages/didcomm/src/util/modules'
 import { SubjectInboundTransport } from '../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutboundTransport'
 import { DummyModule } from '../dummy/DummyModule'
@@ -17,7 +16,6 @@ import { DummyState } from '../dummy/repository'
 import { waitForDummyRecord } from './helpers'
 
 const modules = {
-  ...getDefaultDidcommModules(),
   dummy: new DummyModule(),
   askar: new AskarModule({
     ariesAskar,
@@ -43,8 +41,8 @@ const aliceAgentOptions = getAgentOptions(
 )
 
 describe('Dummy extension module test', () => {
-  let bobAgent: Agent<typeof modules>
-  let aliceAgent: Agent<typeof modules>
+  let bobAgent: Agent<typeof bobAgentOptions.modules>
+  let aliceAgent: Agent<typeof aliceAgentOptions.modules>
   let aliceConnection: ConnectionRecord
 
   beforeEach(async () => {

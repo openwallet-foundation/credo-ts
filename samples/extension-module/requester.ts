@@ -1,5 +1,6 @@
 import type { DummyRecord, DummyStateChangedEvent } from './dummy'
 
+import { AskarModule } from '@credo-ts/askar'
 import { Agent, CredoError, ConsoleLogger, LogLevel } from '@credo-ts/core'
 import {
   HttpOutboundTransport,
@@ -7,8 +8,10 @@ import {
   ConnectionsModule,
   DidCommModule,
   OutOfBandModule,
+  MessagePickupModule,
 } from '@credo-ts/didcomm'
 import { agentDependencies } from '@credo-ts/node'
+import { ariesAskar } from '@hyperledger/aries-askar-nodejs'
 import { filter, first, firstValueFrom, map, ReplaySubject, timeout } from 'rxjs'
 
 import { DummyEventTypes, DummyState, DummyModule } from './dummy'
@@ -30,8 +33,10 @@ const run = async () => {
       logger: new ConsoleLogger(LogLevel.info),
     },
     modules: {
+      askar: new AskarModule({ ariesAskar }),
       didcomm: new DidCommModule(),
       oob: new OutOfBandModule(),
+      messagePickup: new MessagePickupModule(),
       dummy: new DummyModule(),
       connections: new ConnectionsModule({
         autoAcceptConnections: true,
