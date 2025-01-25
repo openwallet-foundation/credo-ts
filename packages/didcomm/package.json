@@ -35,6 +35,7 @@
   },
   "devDependencies": {
     "@animo-id/pex": "4.1.1-alpha.0",
+    "@sphereon/pex-models": "^2.3.1",
     "@types/luxon": "^3.2.0",
     "reflect-metadata": "^0.1.13",
     "rimraf": "^4.4.0",
