@@ -1,4 +1,6 @@
-import type { AgentMessage, EnvelopeKeys, TransportSession } from '@credo-ts/core'
+import type { AgentMessage } from '../AgentMessage'
+import type { EnvelopeKeys } from '../EnvelopeService'
+import type { TransportSession } from '../TransportService'
 
 export class DummyTransportSession implements TransportSession {
   public id: string

@@ -36,27 +36,31 @@ import testLogger from './logger'
 
 import { CredoError } from '@credo-ts/core'
 
-const faberAgentOptions = getInMemoryAgentOptions(
-  'Faber Agent OOB',
-  {
-    endpoints: ['rxjs:faber'],
-  },
-  {},
-  getAnonCredsIndyModules({
-    autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
-  })
+const faberAgent = new Agent(
+  getInMemoryAgentOptions(
+    'Faber Agent OOB',
+    {
+      endpoints: ['rxjs:faber'],
+    },
+    {},
+    getAnonCredsIndyModules({
+      autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
+    })
+  )
 )
-const aliceAgentOptions = getInMemoryAgentOptions(
-  'Alice Agent OOB',
-  {
-    endpoints: ['rxjs:alice'],
-  },
-  {
-    logger: testLogger,
-  },
-  getAnonCredsIndyModules({
-    autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
-  })
+const aliceAgent = new Agent(
+  getInMemoryAgentOptions(
+    'Alice Agent OOB',
+    {
+      endpoints: ['rxjs:alice'],
+    },
+    {
+      logger: testLogger,
+    },
+    getAnonCredsIndyModules({
+      autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
+    })
+  )
 )
 
 describe('out of band', () => {
@@ -79,8 +83,6 @@ describe('out of band', () => {
     autoAcceptConnection: false,
   }
 
-  let faberAgent: Agent<ReturnType<typeof getAnonCredsIndyModules>>
-  let aliceAgent: Agent<ReturnType<typeof getAnonCredsIndyModules>>
   let credentialTemplate: CreateCredentialOfferOptions<[V2CredentialProtocol<[AnonCredsCredentialFormatService]>]>
 
   beforeAll(async () => {
@@ -91,13 +93,10 @@ describe('out of band', () => {
       'rxjs:alice': aliceMessages,
     }
 
-    faberAgent = new Agent(faberAgentOptions)
-
     faberAgent.modules.didcomm.registerInboundTransport(new SubjectInboundTransport(faberMessages))
     faberAgent.modules.didcomm.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     await faberAgent.initialize()
 
-    aliceAgent = new Agent(aliceAgentOptions)
     aliceAgent.modules.didcomm.registerInboundTransport(new SubjectInboundTransport(aliceMessages))
     aliceAgent.modules.didcomm.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     await aliceAgent.initialize()

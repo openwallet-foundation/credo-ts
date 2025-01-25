@@ -1,8 +1,15 @@
+import type { TenantAgent } from '../src/TenantAgent'
 import type { InitConfig } from '@credo-ts/core'
 import type { DidCommModuleConfigOptions } from '@credo-ts/didcomm'
 
 import { Agent, CacheModule, InMemoryLruCache } from '@credo-ts/core'
-import { ConnectionsModule, OutOfBandRecord, DidCommModule } from '@credo-ts/didcomm'
+import {
+  ConnectionsModule,
+  OutOfBandRecord,
+  DidCommModule,
+  MessagePickupModule,
+  OutOfBandModule,
+} from '@credo-ts/didcomm'
 import { agentDependencies } from '@credo-ts/node'
 
 import { InMemoryWalletModule } from '../../../tests/InMemoryWalletModule'
@@ -38,11 +45,11 @@ const agent2DidcommConfig: DidCommModuleConfigOptions = {
   endpoints: ['rxjs:tenant-agent2'],
 }
 
-// Create multi-tenant agents
-const agent1 = new Agent({
-  config: agent1Config,
-  modules: {
-    didcomm: new DidCommModule(agent1DidcommConfig),
+const getTenantsAgentModules = (didcommConfig: DidCommModuleConfigOptions) =>
+  ({
+    didcomm: new DidCommModule(didcommConfig),
+    oob: new OutOfBandModule(),
+    messagePickup: new MessagePickupModule(),
     tenants: new TenantsModule(),
     inMemory: new InMemoryWalletModule(),
     connections: new ConnectionsModule({
@@ -51,23 +58,18 @@ const agent1 = new Agent({
     cache: new CacheModule({
       cache: new InMemoryLruCache({ limit: 500 }),
     }),
-  },
+  } as const)
+
+// Create multi-tenant agents
+const agent1 = new Agent({
+  config: agent1Config,
+  modules: getTenantsAgentModules(agent1DidcommConfig),
   dependencies: agentDependencies,
 })
 
 const agent2 = new Agent({
   config: agent2Config,
-  modules: {
-    didcomm: new DidCommModule(agent2DidcommConfig),
-    tenants: new TenantsModule(),
-    inMemory: new InMemoryWalletModule(),
-    connections: new ConnectionsModule({
-      autoAcceptConnections: true,
-    }),
-    cache: new CacheModule({
-      cache: new InMemoryLruCache({ limit: 500 }),
-    }),
-  },
+  modules: getTenantsAgentModules(agent2DidcommConfig),
   dependencies: agentDependencies,
 })
 
@@ -163,13 +165,13 @@ describe('Tenants E2E', () => {
       },
     })
 
-    const tenantAgent1 = await agent1.modules.tenants.getTenantAgent({
+    const tenantAgent1 = (await agent1.modules.tenants.getTenantAgent({
       tenantId: tenantRecord1.id,
-    })
+    })) as TenantAgent<ReturnType<typeof getTenantsAgentModules>>
 
-    const tenantAgent2 = await agent1.modules.tenants.getTenantAgent({
+    const tenantAgent2 = (await agent1.modules.tenants.getTenantAgent({
       tenantId: tenantRecord2.id,
-    })
+    })) as TenantAgent<ReturnType<typeof getTenantsAgentModules>>
 
     // Create and receive oob invitation in scope of tenants
     const outOfBandRecord = await tenantAgent1.modules.oob.createInvitation()
@@ -209,18 +211,18 @@ describe('Tenants E2E', () => {
         label: 'Agent 1 Tenant 1',
       },
     })
-    const tenantAgent1 = await agent1.modules.tenants.getTenantAgent({
+    const tenantAgent1 = (await agent1.modules.tenants.getTenantAgent({
       tenantId: tenantRecord1.id,
-    })
+    })) as TenantAgent<ReturnType<typeof getTenantsAgentModules>>
 
     const tenantRecord2 = await agent2.modules.tenants.createTenant({
       config: {
         label: 'Agent 2 Tenant 1',
       },
     })
-    const tenantAgent2 = await agent2.modules.tenants.getTenantAgent({
+    const tenantAgent2 = (await agent2.modules.tenants.getTenantAgent({
       tenantId: tenantRecord2.id,
-    })
+    })) as TenantAgent<ReturnType<typeof getTenantsAgentModules>>
 
     // Create and receive oob invitation in scope of tenants
     const outOfBandRecord = await tenantAgent1.modules.oob.createInvitation()
@@ -251,7 +253,9 @@ describe('Tenants E2E', () => {
     })
 
     await agent1.modules.tenants.withTenantAgent({ tenantId: tenantRecord.id }, async (tenantAgent) => {
-      const outOfBandRecord = await tenantAgent.modules.oob.createInvitation()
+      const outOfBandRecord = await (
+        tenantAgent as TenantAgent<ReturnType<typeof getTenantsAgentModules>>
+      ).modules.oob.createInvitation()
 
       expect(outOfBandRecord).toBeInstanceOf(OutOfBandRecord)
       expect(tenantAgent.context.contextCorrelationId).toBe(tenantRecord.id)
@@ -278,9 +282,9 @@ describe('Tenants E2E', () => {
       },
     })
 
-    const tenantAgent = await agent1.modules.tenants.getTenantAgent({
+    const tenantAgent = (await agent1.modules.tenants.getTenantAgent({
       tenantId: tenantRecord.id,
-    })
+    })) as TenantAgent<ReturnType<typeof getTenantsAgentModules>>
 
     expect(tenantAgent.modules.didcomm.fallbackMessageHandler).toBe(fallbackFunction)
 

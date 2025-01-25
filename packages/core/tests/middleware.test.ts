@@ -21,17 +21,19 @@ import {
   waitForBasicMessage,
 } from './helpers'
 
-const faberConfig = getInMemoryAgentOptions('Faber Message Handler Middleware', {
-  endpoints: ['rxjs:faber'],
-})
+const faberAgent = new Agent(
+  getInMemoryAgentOptions('Faber Message Handler Middleware', {
+    endpoints: ['rxjs:faber'],
+  })
+)
 
-const aliceConfig = getInMemoryAgentOptions('Alice Message Handler Middleware', {
-  endpoints: ['rxjs:alice'],
-})
+const aliceAgent = new Agent(
+  getInMemoryAgentOptions('Alice Message Handler Middleware', {
+    endpoints: ['rxjs:alice'],
+  })
+)
 
 describe('Message Handler Middleware E2E', () => {
-  let faberAgent: Agent
-  let aliceAgent: Agent
   let faberConnection: ConnectionRecord
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   let aliceConnection: ConnectionRecord
@@ -44,12 +46,10 @@ describe('Message Handler Middleware E2E', () => {
       'rxjs:alice': aliceMessages,
     }
 
-    faberAgent = new Agent(faberConfig)
     faberAgent.modules.didcomm.registerInboundTransport(new SubjectInboundTransport(faberMessages))
     faberAgent.modules.didcomm.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     await faberAgent.initialize()
 
-    aliceAgent = new Agent(aliceConfig)
     aliceAgent.modules.didcomm.registerInboundTransport(new SubjectInboundTransport(aliceMessages))
     aliceAgent.modules.didcomm.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     await aliceAgent.initialize()

@@ -1,4 +1,5 @@
 import type { EventReplaySubject } from '../../core/tests'
+import type { DefaultAgentModulesInput } from '../../didcomm/src/util/modules'
 import type {
   AnonCredsRegisterCredentialDefinitionOptions,
   AnonCredsOfferCredentialFormat,
@@ -60,10 +61,7 @@ import { anoncreds } from './helpers'
 import { anoncredsDefinitionFourAttributesNoRevocation } from './preCreatedAnonCredsDefinition'
 
 // Helper type to get the type of the agents (with the custom modules) for the credential tests
-export type AnonCredsTestsAgent = Agent<
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  ReturnType<typeof getAnonCredsModules> & { mediationRecipient?: any; mediator?: any }
->
+export type AnonCredsTestsAgent = Agent<ReturnType<typeof getAnonCredsModules> & DefaultAgentModulesInput>
 
 export const getAnonCredsModules = ({
   autoAcceptCredentials,

@@ -1,5 +1,7 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 
+import type { DefaultAgentModulesInput } from '../../../util/modules'
+
 import { ReplaySubject, first, firstValueFrom, timeout } from 'rxjs'
 
 import { Agent } from '../../../../../core/src/agent/Agent'
@@ -24,8 +26,8 @@ import { InMemoryDidRegistry } from './InMemoryDidRegistry'
 
 // This is the most common flow
 describe('Rotation E2E tests', () => {
-  let aliceAgent: Agent
-  let bobAgent: Agent
+  let aliceAgent: Agent<DefaultAgentModulesInput>
+  let bobAgent: Agent<DefaultAgentModulesInput>
   let aliceBobConnection: ConnectionRecord | undefined
   let bobAliceConnection: ConnectionRecord | undefined
 

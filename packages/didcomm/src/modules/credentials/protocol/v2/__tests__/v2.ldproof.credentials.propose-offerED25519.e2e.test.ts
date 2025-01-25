@@ -1,4 +1,5 @@
 import type { EventReplaySubject } from '../../../../../../../core/tests'
+import type { DefaultAgentModulesInput } from '../../../../../../../didcomm/src/util/modules'
 
 import {
   LegacyIndyCredentialFormatService,
@@ -103,9 +104,9 @@ const getIndyJsonLdModules = () =>
 
 // TODO: extract these very specific tests to the jsonld format
 describe('V2 Credentials - JSON-LD - Ed25519', () => {
-  let faberAgent: Agent<ReturnType<typeof getIndyJsonLdModules>>
+  let faberAgent: Agent<ReturnType<typeof getIndyJsonLdModules> & DefaultAgentModulesInput>
   let faberReplay: EventReplaySubject
-  let aliceAgent: Agent<ReturnType<typeof getIndyJsonLdModules>>
+  let aliceAgent: Agent<ReturnType<typeof getIndyJsonLdModules> & DefaultAgentModulesInput>
   let aliceReplay: EventReplaySubject
   let aliceConnectionId: string
   let credentialDefinitionId: string

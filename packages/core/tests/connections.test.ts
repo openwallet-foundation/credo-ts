@@ -20,40 +20,38 @@ import { setupSubjectTransports } from './transport'
 
 import { Key } from '@credo-ts/core'
 
+const faberAgent = new Agent(
+  getInMemoryAgentOptions('Faber Agent Connections', {
+    endpoints: ['rxjs:faber'],
+  })
+)
+const aliceAgent = new Agent(
+  getInMemoryAgentOptions('Alice Agent Connections', {
+    endpoints: ['rxjs:alice'],
+  })
+)
+const acmeAgent = new Agent(
+  getInMemoryAgentOptions('Acme Agent Connections', {
+    endpoints: ['rxjs:acme'],
+  })
+)
+const mediatorAgent = new Agent(
+  getInMemoryAgentOptions(
+    'Mediator Agent Connections',
+    {
+      endpoints: ['rxjs:mediator'],
+    },
+    {},
+    {
+      mediator: new MediatorModule({
+        autoAcceptMediationRequests: true,
+      }),
+    }
+  )
+)
+
 describe('connections', () => {
-  let faberAgent: Agent
-  let aliceAgent: Agent
-  let acmeAgent: Agent
-  let mediatorAgent: Agent
-
   beforeEach(async () => {
-    const faberAgentOptions = getInMemoryAgentOptions('Faber Agent Connections', {
-      endpoints: ['rxjs:faber'],
-    })
-    const aliceAgentOptions = getInMemoryAgentOptions('Alice Agent Connections', {
-      endpoints: ['rxjs:alice'],
-    })
-    const acmeAgentOptions = getInMemoryAgentOptions('Acme Agent Connections', {
-      endpoints: ['rxjs:acme'],
-    })
-    const mediatorAgentOptions = getInMemoryAgentOptions(
-      'Mediator Agent Connections',
-      {
-        endpoints: ['rxjs:mediator'],
-      },
-      {},
-      {
-        mediator: new MediatorModule({
-          autoAcceptMediationRequests: true,
-        }),
-      }
-    )
-
-    faberAgent = new Agent<typeof faberAgentOptions.modules>(faberAgentOptions)
-    aliceAgent = new Agent(aliceAgentOptions)
-    acmeAgent = new Agent(acmeAgentOptions)
-    mediatorAgent = new Agent(mediatorAgentOptions)
-
     setupSubjectTransports([faberAgent, aliceAgent, acmeAgent, mediatorAgent])
 
     await faberAgent.initialize()

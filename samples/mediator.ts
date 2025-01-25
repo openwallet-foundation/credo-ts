@@ -22,15 +22,17 @@ import { Server } from 'ws'
 import { TestLogger } from '../packages/core/tests/logger'
 
 import { AskarModule } from '@credo-ts/askar'
+import { Agent, LogLevel } from '@credo-ts/core'
 import {
   ConnectionsModule,
   MediatorModule,
   HttpOutboundTransport,
-  Agent,
   ConnectionInvitationMessage,
-  LogLevel,
   WsOutboundTransport,
-} from '@credo-ts/core'
+  DidCommModule,
+  MessagePickupModule,
+  OutOfBandModule,
+} from '@credo-ts/didcomm'
 import { HttpInboundTransport, agentDependencies, WsInboundTransport } from '@credo-ts/node'
 
 const port = process.env.AGENT_PORT ? Number(process.env.AGENT_PORT) : 3001
@@ -45,13 +47,11 @@ const endpoints = process.env.AGENT_ENDPOINTS?.split(',') ?? [`http://localhost:
 const logger = new TestLogger(LogLevel.info)
 
 const agentConfig: InitConfig = {
-  endpoints,
   label: process.env.AGENT_LABEL || 'Credo Mediator',
   walletConfig: {
     id: process.env.WALLET_NAME || 'Credo',
     key: process.env.WALLET_KEY || 'Credo',
   },
-
   logger,
 }
 
@@ -61,6 +61,9 @@ const agent = new Agent({
   dependencies: agentDependencies,
   modules: {
     askar: new AskarModule({ ariesAskar }),
+    didcomm: new DidCommModule({ endpoints }),
+    oob: new OutOfBandModule(),
+    messagePickup: new MessagePickupModule(),
     mediator: new MediatorModule({
       autoAcceptMediationRequests: true,
     }),
@@ -69,7 +72,6 @@ const agent = new Agent({
     }),
   },
 })
-const config = agent.config
 
 // Create all transports
 const httpInboundTransport = new HttpInboundTransport({ app, port })
@@ -78,10 +80,10 @@ const wsInboundTransport = new WsInboundTransport({ server: socketServer })
 const wsOutboundTransport = new WsOutboundTransport()
 
 // Register all Transports
-agent.registerInboundTransport(httpInboundTransport)
-agent.registerOutboundTransport(httpOutboundTransport)
-agent.registerInboundTransport(wsInboundTransport)
-agent.registerOutboundTransport(wsOutboundTransport)
+agent.modules.didcomm.registerInboundTransport(httpInboundTransport)
+agent.modules.didcomm.registerOutboundTransport(httpOutboundTransport)
+agent.modules.didcomm.registerInboundTransport(wsInboundTransport)
+agent.modules.didcomm.registerOutboundTransport(wsOutboundTransport)
 
 // Allow to create invitation, no other way to ask for invitation yet
 httpInboundTransport.app.get('/invitation', async (req, res) => {
@@ -89,8 +91,8 @@ httpInboundTransport.app.get('/invitation', async (req, res) => {
     const invitation = ConnectionInvitationMessage.fromUrl(req.url)
     res.send(invitation.toJSON())
   } else {
-    const { outOfBandInvitation } = await agent.oob.createInvitation()
-    const httpEndpoint = config.endpoints.find((e) => e.startsWith('http'))
+    const { outOfBandInvitation } = await agent.modules.oob.createInvitation()
+    const httpEndpoint = endpoints.find((e) => e.startsWith('http'))
     res.send(outOfBandInvitation.toUrl({ domain: httpEndpoint + '/invitation' }))
   }
 })

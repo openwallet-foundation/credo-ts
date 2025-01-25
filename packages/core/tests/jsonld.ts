@@ -1,5 +1,6 @@
 import type { EventReplaySubject } from './events'
 import type { AutoAcceptCredential, AutoAcceptProof, ConnectionRecord } from '../../didcomm/src'
+import type { DefaultAgentModulesInput } from '../../didcomm/src/util/modules'
 
 import { InMemoryWalletModule } from '../../../tests/InMemoryWalletModule'
 import { askarModule } from '../../askar/tests/helpers'
@@ -21,7 +22,7 @@ import { setupEventReplaySubjects } from './events'
 import { getAgentOptions, makeConnection } from './helpers'
 import { setupSubjectTransports } from './transport'
 
-export type JsonLdTestsAgent = Agent<ReturnType<typeof getJsonLdModules>>
+export type JsonLdTestsAgent = Agent<ReturnType<typeof getJsonLdModules> & DefaultAgentModulesInput>
 
 export const getJsonLdModules = ({
   autoAcceptCredentials,
