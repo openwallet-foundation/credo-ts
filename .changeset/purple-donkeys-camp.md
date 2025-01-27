@@ -44,7 +44,6 @@ Previously:
 
 Now:
 
-````ts
 ```ts
      const config = {
       label: name,
@@ -63,6 +62,6 @@ Now:
            autoAcceptConnections: true,
         })
       })
-    this.agent.modules.didcomm.registerInboundTransport(new HttpInboundTransport({ port }))
-    this.agent.modules.didcomm.registerOutboundTransport(new HttpOutboundTransport())
-````
+    agent.modules.didcomm.registerInboundTransport(new HttpInboundTransport({ port }))
+    agent.modules.didcomm.registerOutboundTransport(new HttpOutboundTransport())
+```
