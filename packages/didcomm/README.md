@@ -66,7 +66,7 @@ const agent = new Agent({
     proofs: new ProofsModule({
       /* Custom module settings */
     }),
-    /* */ 
+    /* */
     /* other custom modules */
   },
 })
@@ -82,4 +82,3 @@ const outOfBand = await this.agent.modules.oob.createInvitation()
 ```
 
 In this example, by using the convenient method `getDefaultDidcommModules` you can easily instantiate the basic DIDComm protocols: out-of-band, connections, message pickup, discover features, proof exchange, issue credentials, basic message and mediation coordination. You can of course instantiate only the ones you need for your particular implementation.
-
