@@ -1,4 +1,8 @@
-import type { MdocDeviceResponseOpenId4VpOptions, MdocDeviceResponseVerifyOptions } from './MdocOptions'
+import type {
+  MdocDeviceResponseOpenId4VpOptions,
+  MdocDeviceResponseOptions,
+  MdocDeviceResponseVerifyOptions,
+} from './MdocOptions'
 import type { AgentContext } from '../../agent'
 import type { DifPresentationExchangeDefinition } from '../dif-presentation-exchange'
 import type { PresentationDefinition } from '@animo-id/mdoc'
@@ -14,6 +18,7 @@ import {
   MDocStatus,
   cborEncode,
   parseDeviceResponse,
+  DeviceRequest,
 } from '@animo-id/mdoc'
 
 import { CredoError } from '../../error'
@@ -163,44 +168,83 @@ export class MdocDeviceResponse {
     const issuerSignedDocuments = options.mdocs.map((mdoc) =>
       parseIssuerSigned(TypedArrayEncoder.fromBase64(mdoc.base64Url), mdoc.docType)
     )
-    const mdoc = new MDoc(issuerSignedDocuments)
+    const docTypes = issuerSignedDocuments.map((i) => i.docType)
 
-    // TODO: we need to implement this differently.
-    // TODO: Multiple Mdocs can have different device keys.
-    const mso = mdoc.documents[0].issuerSigned.issuerAuth.decodedPayload
-    const deviceKeyInfo = mso.deviceKeyInfo
-    if (!deviceKeyInfo?.deviceKey) {
-      throw new CredoError('Device key info is missing')
+    const combinedDeviceResponseMdoc = new MDoc()
+
+    for (const issuerSignedDocument of issuerSignedDocuments) {
+      const deviceKey = issuerSignedDocument.issuerSigned.issuerAuth.decodedPayload.deviceKeyInfo?.deviceKey
+      if (!deviceKey) throw new CredoError(`Device key is missing in mdoc with doctype ${issuerSignedDocument.docType}`)
+
+      const publicDeviceJwk = COSEKey.import(deviceKey).toJWK()
+
+      // We do PEX filtering on a different layer, so we only include the needed input descriptor here
+      const presentationDefinitionForDocument = {
+        ...presentationDefinition,
+        input_descriptors: presentationDefinition.input_descriptors.filter(
+          (inputDescriptor) => inputDescriptor.id === issuerSignedDocument.docType
+        ),
+      }
+
+      const deviceResponseBuilder = DeviceResponse.from(new MDoc([issuerSignedDocument]))
+        .usingPresentationDefinition(presentationDefinitionForDocument)
+        .usingSessionTranscriptForOID4VP(sessionTranscriptOptions)
+        .authenticateWithSignature(publicDeviceJwk, 'ES256')
+
+      for (const [nameSpace, nameSpaceValue] of Object.entries(options.deviceNameSpaces ?? {})) {
+        deviceResponseBuilder.addDeviceNameSpace(nameSpace, nameSpaceValue)
+      }
+
+      const deviceResponseMdoc = await deviceResponseBuilder.sign(getMdocContext(agentContext))
+      combinedDeviceResponseMdoc.addDocument(deviceResponseMdoc.documents[0])
     }
-
-    const publicDeviceJwk = COSEKey.import(deviceKeyInfo.deviceKey).toJWK()
-    const docTypes = mdoc.documents.map((d) => d.docType)
-
-    // We do PEX filtering on a different layer, so we only include the needed input descriptors here
-    const presentationDefinitionForDocuments = {
-      ...presentationDefinition,
-      input_descriptors: presentationDefinition.input_descriptors.filter((inputDescriptor) =>
-        docTypes.includes(inputDescriptor.id)
-      ),
-    }
-
-    const deviceResponseBuilder = DeviceResponse.from(mdoc)
-      .usingPresentationDefinition(presentationDefinitionForDocuments)
-      .usingSessionTranscriptForOID4VP(sessionTranscriptOptions)
-      .authenticateWithSignature(publicDeviceJwk, 'ES256')
-
-    for (const [nameSpace, nameSpaceValue] of Object.entries(options.deviceNameSpaces ?? {})) {
-      deviceResponseBuilder.addDeviceNameSpace(nameSpace, nameSpaceValue)
-    }
-
-    const deviceResponseMdoc = await deviceResponseBuilder.sign(getMdocContext(agentContext))
 
     return {
-      deviceResponseBase64Url: TypedArrayEncoder.toBase64URL(deviceResponseMdoc.encode()),
+      deviceResponseBase64Url: TypedArrayEncoder.toBase64URL(combinedDeviceResponseMdoc.encode()),
       presentationSubmission: MdocDeviceResponse.createPresentationSubmission({
         id: 'MdocPresentationSubmission ' + uuid(),
-        presentationDefinition: presentationDefinitionForDocuments,
+        presentationDefinition: {
+          ...presentationDefinition,
+          input_descriptors: presentationDefinition.input_descriptors.filter((i) => docTypes.includes(i.id)),
+        },
       }),
+    }
+  }
+
+  public static async createDeviceResponse(agentContext: AgentContext, options: MdocDeviceResponseOptions) {
+    const issuerSignedDocuments = options.mdocs.map((mdoc) =>
+      parseIssuerSigned(TypedArrayEncoder.fromBase64(mdoc.base64Url), mdoc.docType)
+    )
+
+    const combinedDeviceResponseMdoc = new MDoc()
+
+    for (const issuerSignedDocument of issuerSignedDocuments) {
+      const deviceKey = issuerSignedDocument.issuerSigned.issuerAuth.decodedPayload.deviceKeyInfo?.deviceKey
+      if (!deviceKey) throw new CredoError(`Device key is missing in mdoc with doctype ${issuerSignedDocument.docType}`)
+
+      const publicDeviceJwk = COSEKey.import(deviceKey).toJWK()
+      const deviceRequestForDocument = new DeviceRequest(
+        options.deviceRequest.version,
+        options.deviceRequest.docRequests.filter(
+          (request) => request.itemsRequest.data.docType === issuerSignedDocument.docType
+        )
+      )
+
+      const deviceResponseBuilder = DeviceResponse.from(new MDoc([issuerSignedDocument]))
+        .usingSessionTranscriptBytes(options.sessionTranscriptBytes)
+        .usingDeviceRequest(deviceRequestForDocument)
+        .authenticateWithSignature(publicDeviceJwk, 'ES256')
+
+      for (const [nameSpace, nameSpaceValue] of Object.entries(options.deviceNameSpaces ?? {})) {
+        deviceResponseBuilder.addDeviceNameSpace(nameSpace, nameSpaceValue)
+      }
+
+      const deviceResponseMdoc = await deviceResponseBuilder.sign(getMdocContext(agentContext))
+      combinedDeviceResponseMdoc.addDocument(deviceResponseMdoc.documents[0])
+    }
+
+    return {
+      deviceResponseBase64Url: TypedArrayEncoder.toBase64URL(combinedDeviceResponseMdoc.encode()),
     }
   }
 
