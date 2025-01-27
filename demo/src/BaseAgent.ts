@@ -29,10 +29,7 @@ import {
   AutoAcceptCredential,
   CredentialsModule,
   HttpOutboundTransport,
-  DidCommModule,
-  OutOfBandModule,
-  MessagePickupModule,
-  BasicMessagesModule,
+  getDefaultDidcommModules,
 } from '@credo-ts/didcomm'
 import { IndyVdrIndyDidResolver, IndyVdrAnonCredsRegistry, IndyVdrModule } from '@credo-ts/indy-vdr'
 import { agentDependencies, HttpInboundTransport } from '@credo-ts/node'
@@ -97,10 +94,7 @@ function getAskarAnonCredsIndyModules(didcommConfig: DidCommModuleConfigOptions)
   const legacyIndyProofFormatService = new LegacyIndyProofFormatService()
 
   return {
-    didcomm: new DidCommModule(didcommConfig),
-    oob: new OutOfBandModule(),
-    messagePickup: new MessagePickupModule(),
-    basicMessages: new BasicMessagesModule(),
+    ...getDefaultDidcommModules(didcommConfig),
     connections: new ConnectionsModule({
       autoAcceptConnections: true,
     }),

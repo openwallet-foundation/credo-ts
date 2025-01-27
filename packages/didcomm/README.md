@@ -6,7 +6,7 @@
     height="250px"
   />
 </p>
-<h1 align="center"><b>Credo Action Menu Module</b></h1>
+<h1 align="center"><b>Credo DIDComm Module</b></h1>
 <p align="center">
   <a
     href="https://raw.githubusercontent.com/openwallet-foundation/credo-ts/main/LICENSE"
@@ -28,16 +28,27 @@
 </p>
 <br />
 
-Action Menu module for [Credo](https://github.com/openwallet-foundation/credo-ts.git). Implements [Aries RFC 0509](https://github.com/hyperledger/aries-rfcs/blob/1795d5c2d36f664f88f5e8045042ace8e573808c/features/0509-action-menu/README.md).
+Base DIDComm package for [Credo](https://github.com/openwallet-foundation/credo-ts.git). Adds all [DIDComm v1](https://hyperledger.github.io/aries-rfcs/latest/concepts/0005-didcomm/) Core protocols, such as Connections, Out-of-Band, Discover Features, Mediation Coordination, Message Pickup, Proofs and Credentials as defined in [Aries RFCs](https://github.com/hyperledger/aries-rfcs/tree/main/features).
 
 ### Quick start
 
 In order for this module to work, we have to inject it into the agent to access agent functionality. See the example for more information.
 
+> **Note**: At the moment, for a basic DIDComm agent to work, it is required to instantiate at least 3 modules besides the basic `DidCommModule`: `OutOfBandModule`, `ConnectionsModule` and `MessagePickupModule`
+
 ### Example of usage
 
 ```ts
-import { ActionMenuModule } from '@credo-ts/action-menu'
+import type { DidCommModuleConfigOptions } from '@credo-ts/didcomm'
+
+import { agentDependencies, HttpInboundTransport } from '@credo-ts/node'
+import {
+  ConnectionsModule,
+  ProofsModule,
+  CredentialsModule,
+  HttpOutboundTransport,
+  getDefaultDidcommModules,
+} from '@credo-ts/didcomm'
 
 const agent = new Agent({
   config: {
@@ -45,20 +56,30 @@ const agent = new Agent({
   },
   dependencies: agentDependencies,
   modules: {
-    actionMenu: new ActionMenuModule(),
+    ...getDefaultDidcommModules(didcommConfig),
+    connections: new ConnectionsModule({
+      /* Custom module settings */
+    }),
+    credentials: new CredentialsModule({
+      /* Custom module settings */
+    }),
+    proofs: new ProofsModule({
+      /* Custom module settings */
+    }),
+    /* */ 
     /* other custom modules */
   },
 })
 
+// Register inbound and outbound transports for DIDComm
+agent.modules.didcomm.registerInboundTransport(new HttpInboundTransport({ port }))
+agent.modules.didcomm.registerOutboundTransport(new HttpOutboundTransport())
+
 await agent.initialize()
 
-// To request root menu to a given connection (menu will be received
-// asynchronously in a ActionMenuStateChangedEvent)
-await agent.modules.actionMenu.requestMenu({ connectionId })
-
-// To select an option from the action menu
-await agent.modules.actionMenu.performAction({
-  connectionId,
-  performedAction: { name: 'option-1' },
-})
+// Create an invitation
+const outOfBand = await this.agent.modules.oob.createInvitation()
 ```
+
+In this example, by using the convenient method `getDefaultDidcommModules` you can easily instantiate the basic DIDComm protocols: out-of-band, connections, message pickup, discover features, proof exchange, issue credentials, basic message and mediation coordination. You can of course instantiate only the ones you need for your particular implementation.
+
