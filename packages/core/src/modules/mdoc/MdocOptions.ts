@@ -2,7 +2,7 @@ import type { Mdoc } from './Mdoc'
 import type { Key } from '../../crypto/Key'
 import type { DifPresentationExchangeDefinition } from '../dif-presentation-exchange'
 import type { EncodedX509Certificate } from '../x509'
-import type { ValidityInfo } from '@animo-id/mdoc'
+import type { DeviceRequest, ValidityInfo } from '@animo-id/mdoc'
 
 export type MdocNameSpaces = Record<string, Record<string, unknown>>
 
@@ -23,6 +23,13 @@ export type MdocDeviceResponseOpenId4VpOptions = {
   presentationDefinition: DifPresentationExchangeDefinition
   deviceNameSpaces?: MdocNameSpaces
   sessionTranscriptOptions: MdocOpenId4VpSessionTranscriptOptions
+}
+
+export type MdocDeviceResponseOptions = {
+  mdocs: [Mdoc, ...Mdoc[]]
+  deviceRequest: DeviceRequest
+  deviceNameSpaces?: MdocNameSpaces
+  sessionTranscriptBytes: Uint8Array
 }
 
 export type MdocDeviceResponseVerifyOptions = {

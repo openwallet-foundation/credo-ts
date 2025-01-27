@@ -1,6 +1,5 @@
 import type { AuthorizationServerMetadata } from '@animo-id/oauth2'
 import type { DifPresentationExchangeDefinitionV2, JwkJson, Mdoc, MdocDeviceResponse, SdJwtVc } from '@credo-ts/core'
-import type { Server } from 'http'
 import type { OpenId4VciSignMdocCredentials } from '../src'
 import type { OpenId4VciCredentialBindingResolver } from '../src/openid4vc-holder'
 import type { AgentType, TenantType } from './utils'
@@ -39,6 +38,7 @@ import {
 import { ResponseMode } from '@sphereon/did-auth-siop'
 import express, { type Express } from 'express'
 
+import { setupNockToExpress } from '../../../tests/nockToExpress'
 import { AskarModule } from '../../askar/src'
 import { askarModuleConfig } from '../../askar/tests/helpers'
 import { TenantsModule } from '../../tenants/src'
@@ -71,7 +71,7 @@ const verificationBaseUrl = `${baseUrl}/oid4vp`
 
 describe('OpenId4Vc', () => {
   let expressApp: Express
-  let expressServer: Server
+  let cleanupMockServer: () => void
 
   let issuer: AgentType<{
     openId4VcIssuer: OpenId4VcIssuerModule
@@ -196,11 +196,11 @@ describe('OpenId4Vc', () => {
     expressApp.use('/oid4vci', issuer.agent.modules.openId4VcIssuer.config.router)
     expressApp.use('/oid4vp', verifier.agent.modules.openId4VcVerifier.config.router)
 
-    expressServer = expressApp.listen(serverPort)
+    cleanupMockServer = setupNockToExpress(baseUrl, expressApp)
   })
 
   afterEach(async () => {
-    expressServer?.close()
+    cleanupMockServer()
 
     await issuer.agent.shutdown()
     await issuer.agent.wallet.delete()
