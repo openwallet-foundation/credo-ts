@@ -3,6 +3,7 @@ import type {
   MdocDeviceResponseOpenId4VpOptions,
   MdocDeviceResponseVerifyOptions,
   MdocVerifyOptions,
+  MdocDeviceResponseOptions,
 } from './MdocOptions'
 import type { Query, QueryOptions } from '../../storage/StorageService'
 
@@ -35,6 +36,10 @@ export class MdocService {
 
   public async verifyMdoc(agentContext: AgentContext, mdoc: Mdoc, options: MdocVerifyOptions) {
     return await mdoc.verify(agentContext, options)
+  }
+
+  public async createDeviceResponse(agentContext: AgentContext, options: MdocDeviceResponseOptions) {
+    return MdocDeviceResponse.createDeviceResponse(agentContext, options)
   }
 
   public async createOpenId4VpDeviceResponse(agentContext: AgentContext, options: MdocDeviceResponseOpenId4VpOptions) {
