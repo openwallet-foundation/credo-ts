@@ -1,3 +1,9 @@
+import type { AgentContext, JwaSignatureAlgorithm, KeyType } from '@credo-ts/core'
+import type {
+  OpenId4VciCredentialConfigurationSupported,
+  OpenId4VciCredentialIssuerMetadata,
+  OpenId4VciMetadata,
+} from '../shared'
 import type {
   OpenId4VciAcceptCredentialOfferOptions,
   OpenId4VciAuthCodeFlowOptions,
@@ -12,12 +18,6 @@ import type {
   OpenId4VciSupportedCredentialFormats,
   OpenId4VciTokenRequestOptions,
 } from './OpenId4VciHolderServiceOptions'
-import type {
-  OpenId4VciCredentialConfigurationSupported,
-  OpenId4VciCredentialIssuerMetadata,
-  OpenId4VciMetadata,
-} from '../shared'
-import type { AgentContext, JwaSignatureAlgorithm, KeyType } from '@credo-ts/core'
 
 import {
   getAuthorizationServerMetadataFromList,
@@ -35,24 +35,23 @@ import {
 } from '@animo-id/oid4vci'
 import {
   CredoError,
-  InjectionSymbols,
-  Jwk,
-  JwsService,
-  Logger,
-  Mdoc,
-  MdocApi,
-  SdJwtVcApi,
-  SignatureSuiteRegistry,
-  W3cCredentialService,
-  W3cJsonLdVerifiableCredential,
-  W3cJwtVerifiableCredential,
   getJwkClassFromJwaSignatureAlgorithm,
   getJwkFromJson,
   getJwkFromKey,
   getSupportedVerificationMethodTypesFromKeyType,
   inject,
   injectable,
+  InjectionSymbols,
+  Jwk,
+  Logger,
+  Mdoc,
+  MdocApi,
   parseDid,
+  SdJwtVcApi,
+  SignatureSuiteRegistry,
+  W3cCredentialService,
+  W3cJsonLdVerifiableCredential,
+  W3cJwtVerifiableCredential
 } from '@credo-ts/core'
 
 import { OpenId4VciCredentialFormatProfile } from '../shared'
@@ -66,15 +65,12 @@ import { openId4VciSupportedCredentialFormats } from './OpenId4VciHolderServiceO
 export class OpenId4VciHolderService {
   private logger: Logger
   private w3cCredentialService: W3cCredentialService
-  private jwsService: JwsService
 
   public constructor(
     @inject(InjectionSymbols.Logger) logger: Logger,
     w3cCredentialService: W3cCredentialService,
-    jwsService: JwsService
   ) {
     this.w3cCredentialService = w3cCredentialService
-    this.jwsService = jwsService
     this.logger = logger
   }
 

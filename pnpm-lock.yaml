@@ -718,14 +718,17 @@ importers:
   packages/openid4vc:
     dependencies:
       '@animo-id/oauth2':
-        specifier: 0.1.4
-        version: 0.1.4(typescript@5.5.4)
+        specifier: link:../../../Code/oid4vc-ts/packages/oauth2
+        version: link:../../../Code/oid4vc-ts/packages/oauth2
       '@animo-id/oid4vci':
-        specifier: 0.1.4
-        version: 0.1.4(typescript@5.5.4)
+        specifier: link:../../../Code/oid4vc-ts/packages/oid4vci
+        version: link:../../../Code/oid4vc-ts/packages/oid4vci
       '@credo-ts/core':
         specifier: workspace:*
         version: link:../core
+      '@openid4vc/oid4vp':
+        specifier: link:../../../Code/oid4vc-ts/packages/openid4vp
+        version: link:../../../Code/oid4vc-ts/packages/openid4vp
       '@sphereon/did-auth-siop':
         specifier: 0.16.1-fix.173
         version: 0.16.1-fix.173(ts-node@10.9.2(@types/node@18.18.8)(typescript@5.5.4))(typescript@5.5.4)
@@ -930,15 +933,6 @@ packages:
 
   '@animo-id/mdoc@0.2.39':
     resolution: {integrity: sha512-Fn+ltm086U8xentP4aJtGksfRFXa5YMg9/stAfDLgfpoue2gKaitwKUk7/shrl+bV1t1m5qdhKVcJ0uVMk/nLA==}
-
-  '@animo-id/oauth2-utils@0.1.4':
-    resolution: {integrity: sha512-JUIshkNCiX7myPwdiE+Da/g77OjsxZreezmfXWBSWOgCOZrnQX+t5vkhpe6Jc6DRh40Y8r9Fa1AesV0vtVpUMg==}
-
-  '@animo-id/oauth2@0.1.4':
-    resolution: {integrity: sha512-7FgiSJpkuWrMmYfh39VHcqbuQIsY3Xm66IUQiGBgy4g4DvMnRZ2Orj4LNrEnlr8qUnk4GDJ56zW2Bp55T70gSQ==}
-
-  '@animo-id/oid4vci@0.1.4':
-    resolution: {integrity: sha512-0Tc8RFpY5dW/MOVA2Fz8f7giM/eIAk3G3OZUjy5POqg5Tkiv92CcaOxMk84JBNAMOks3LpKjf9PAiNh6pCDzeQ==}
 
   '@animo-id/pex@4.1.1-alpha.0':
     resolution: {integrity: sha512-6ieHhH9UE9DLFOJegMCabG3qUFlQk4TLhBefxInpyjx2Ly6kuloVMScJYcnQTs/E6nuHGMd7ebUaKy4+0+ZbOA==}
@@ -8201,28 +8195,6 @@ snapshots:
   '@animo-id/mdoc@0.2.39':
     dependencies:
       compare-versions: 6.1.1
-
-  '@animo-id/oauth2-utils@0.1.4(typescript@5.5.4)':
-    dependencies:
-      buffer: 6.0.3
-      valibot: 0.42.1(typescript@5.5.4)
-    transitivePeerDependencies:
-      - typescript
-
-  '@animo-id/oauth2@0.1.4(typescript@5.5.4)':
-    dependencies:
-      '@animo-id/oauth2-utils': 0.1.4(typescript@5.5.4)
-      valibot: 0.42.1(typescript@5.5.4)
-    transitivePeerDependencies:
-      - typescript
-
-  '@animo-id/oid4vci@0.1.4(typescript@5.5.4)':
-    dependencies:
-      '@animo-id/oauth2': 0.1.4(typescript@5.5.4)
-      '@animo-id/oauth2-utils': 0.1.4(typescript@5.5.4)
-      valibot: 0.42.1(typescript@5.5.4)
-    transitivePeerDependencies:
-      - typescript
 
   '@animo-id/pex@4.1.1-alpha.0':
     dependencies:

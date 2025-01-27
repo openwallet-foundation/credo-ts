@@ -1,9 +1,9 @@
-import type { AgentType, TenantType } from './utils'
-import type { OpenId4VciSignMdocCredentials } from '../src'
-import type { OpenId4VciCredentialBindingResolver } from '../src/openid4vc-holder'
 import type { AuthorizationServerMetadata } from '@animo-id/oauth2'
 import type { DifPresentationExchangeDefinitionV2, JwkJson, Mdoc, MdocDeviceResponse, SdJwtVc } from '@credo-ts/core'
 import type { Server } from 'http'
+import type { OpenId4VciSignMdocCredentials } from '../src'
+import type { OpenId4VciCredentialBindingResolver } from '../src/openid4vc-holder'
+import type { AgentType, TenantType } from './utils'
 
 import {
   calculateJwkThumbprint,
@@ -14,28 +14,27 @@ import {
 } from '@animo-id/oauth2'
 import { AuthorizationFlow } from '@animo-id/oid4vci'
 import {
-  CredoError,
   ClaimFormat,
+  CredoError,
   DidsApi,
   DifPresentationExchangeService,
   getJwkFromKey,
   getKeyFromVerificationMethod,
-  JsonEncoder,
+  Hasher,
   JwaSignatureAlgorithm,
+  Jwk,
+  JwsService,
+  Jwt,
+  JwtPayload,
+  KeyType,
+  parseDid,
   W3cCredential,
   W3cCredentialSubject,
   w3cDate,
   W3cIssuer,
   X509Module,
-  KeyType,
-  Jwt,
-  Jwk,
   X509ModuleConfig,
-  parseDid,
-  X509Service,
-  Hasher,
-  JwsService,
-  JwtPayload,
+  X509Service
 } from '@credo-ts/core'
 import { ResponseMode } from '@sphereon/did-auth-siop'
 import express, { type Express } from 'express'
@@ -53,10 +52,10 @@ import {
 import { getOid4vciCallbacks } from '../src/shared/callbacks'
 
 import {
-  waitForVerificationSessionRecordSubject,
-  waitForCredentialIssuanceSessionRecordSubject,
   createAgentFromModules,
   createTenantForAgent,
+  waitForCredentialIssuanceSessionRecordSubject,
+  waitForVerificationSessionRecordSubject,
 } from './utils'
 import {
   universityDegreeCredentialConfigurationSupported,
@@ -478,7 +477,7 @@ describe('OpenId4Vc', () => {
         },
         signJwt: async (signer, { header, payload }) => {
           const jwsService = issuer.agent.dependencyManager.resolve(JwsService)
-          return jwsService.createJwsCompact(issuer.agent.context, {
+          const compact = await jwsService.createJwsCompact(issuer.agent.context, {
             key: authorizationServerKey,
             payload: JwtPayload.fromJson(payload),
             protectedHeaderOptions: {
@@ -488,9 +487,15 @@ describe('OpenId4Vc', () => {
               kid: 'first',
             },
           })
+
+            return {
+            jwt: compact,
+            signerJwk: authorizationServerJwk,
+          }
         },
       },
     })
+
     const app = express()
     app.get('/.well-known/oauth-authorization-server', (req, res) =>
       res.json({
@@ -595,75 +600,6 @@ describe('OpenId4Vc', () => {
     server.close()
   })
 
-  it('e2e flow with tenants only requesting an id-token', async () => {
-    const holderTenant = await holder.agent.modules.tenants.getTenantAgent({ tenantId: holder1.tenantId })
-    const verifierTenant1 = await verifier.agent.modules.tenants.getTenantAgent({ tenantId: verifier1.tenantId })
-
-    const openIdVerifierTenant1 = await verifierTenant1.modules.openId4VcVerifier.createVerifier()
-
-    const { authorizationRequest: authorizationRequestUri1, verificationSession: verificationSession } =
-      await verifierTenant1.modules.openId4VcVerifier.createAuthorizationRequest({
-        verifierId: openIdVerifierTenant1.verifierId,
-        requestSigner: {
-          method: 'did',
-          didUrl: verifier1.verificationMethod.id,
-        },
-      })
-
-    expect(authorizationRequestUri1).toEqual(
-      `openid://?client_id=${encodeURIComponent(verifier1.did)}&request_uri=${encodeURIComponent(
-        verificationSession.authorizationRequestUri
-      )}`
-    )
-
-    await verifierTenant1.endSession()
-
-    const resolvedAuthorizationRequest = await holderTenant.modules.openId4VcHolder.resolveSiopAuthorizationRequest(
-      authorizationRequestUri1
-    )
-
-    expect(resolvedAuthorizationRequest.presentationExchange).toBeUndefined()
-
-    const { submittedResponse: submittedResponse1, serverResponse: serverResponse1 } =
-      await holderTenant.modules.openId4VcHolder.acceptSiopAuthorizationRequest({
-        authorizationRequest: resolvedAuthorizationRequest.authorizationRequest,
-        openIdTokenIssuer: {
-          method: 'did',
-          didUrl: holder1.verificationMethod.id,
-        },
-      })
-
-    expect(submittedResponse1).toEqual({
-      id_token: expect.any(String),
-      state: expect.any(String),
-    })
-    expect(serverResponse1).toMatchObject({
-      status: 200,
-    })
-
-    // The RP MUST validate that the aud (audience) Claim contains the value of the client_id
-    // that the RP sent in the Authorization Request as an audience.
-    // When the request has been signed, the value might be an HTTPS URL, or a Decentralized Identifier.
-    const verifierTenant1_2 = await verifier.agent.modules.tenants.getTenantAgent({ tenantId: verifier1.tenantId })
-    await waitForVerificationSessionRecordSubject(verifier.replaySubject, {
-      contextCorrelationId: verifierTenant1_2.context.contextCorrelationId,
-      state: OpenId4VcVerificationSessionState.ResponseVerified,
-      verificationSessionId: verificationSession.id,
-    })
-
-    const { idToken, presentationExchange } =
-      await verifierTenant1_2.modules.openId4VcVerifier.getVerifiedAuthorizationResponse(verificationSession.id)
-
-    const requestObjectPayload = JsonEncoder.fromBase64(
-      verificationSession.authorizationRequestJwt?.split('.')[1] as string
-    )
-    expect(idToken?.payload).toMatchObject({
-      state: requestObjectPayload.state,
-      nonce: requestObjectPayload.nonce,
-    })
-
-    expect(presentationExchange).toBeUndefined()
-  })
 
   it('e2e flow with tenants, verifier endpoints verifying a jwt-vc', async () => {
     const holderTenant = await holder.agent.modules.tenants.getTenantAgent({ tenantId: holder1.tenantId })
@@ -713,7 +649,7 @@ describe('OpenId4Vc', () => {
       })
 
     expect(authorizationRequestUri1).toEqual(
-      `openid4vp://?client_id=${encodeURIComponent(verifier1.did)}&request_uri=${encodeURIComponent(
+      `openid4vp://?client_id=did%3A${encodeURIComponent(verifier1.did)}&request_uri=${encodeURIComponent(
         verificationSession1.authorizationRequestUri
       )}`
     )
@@ -731,7 +667,7 @@ describe('OpenId4Vc', () => {
       })
 
     expect(authorizationRequestUri2).toEqual(
-      `openid4vp://?client_id=${encodeURIComponent(verifier2.did)}&request_uri=${encodeURIComponent(
+      `openid4vp://?client_id=did%3A${encodeURIComponent(verifier2.did)}&request_uri=${encodeURIComponent(
         verificationSession2.authorizationRequestUri
       )}`
     )
@@ -982,7 +918,7 @@ describe('OpenId4Vc', () => {
       })
 
     expect(authorizationRequest).toEqual(
-      `openid4vp://?client_id=localhost%3A1234&request_uri=${encodeURIComponent(
+      `openid4vp://?client_id=x509_san_dns%3Alocalhost%3A1234&request_uri=${encodeURIComponent(
         verificationSession.authorizationRequestUri
       )}`
     )
@@ -990,7 +926,7 @@ describe('OpenId4Vc', () => {
     const resolvedAuthorizationRequest = await holder.agent.modules.openId4VcHolder.resolveSiopAuthorizationRequest(
       authorizationRequest
     )
-    expect(resolvedAuthorizationRequest.authorizationRequest.payload?.response_mode).toEqual('direct_post.jwt')
+    expect(resolvedAuthorizationRequest.authorizationRequest.request?.response_mode).toEqual('direct_post.jwt')
 
     expect(resolvedAuthorizationRequest.presentationExchange?.credentialsForRequest).toEqual({
       areRequirementsSatisfied: true,
@@ -1213,7 +1149,7 @@ describe('OpenId4Vc', () => {
       })
 
     expect(authorizationRequest).toEqual(
-      `openid4vp://?client_id=localhost%3A1234&request_uri=${encodeURIComponent(
+      `openid4vp://?client_id=x509_san_dns%3Alocalhost%3A1234&request_uri=${encodeURIComponent(
         verificationSession.authorizationRequestUri
       )}`
     )
@@ -1484,7 +1420,7 @@ describe('OpenId4Vc', () => {
       })
 
     expect(authorizationRequest).toEqual(
-      `openid4vp://?client_id=localhost%3A1234&request_uri=${encodeURIComponent(
+      `openid4vp://?client_id=x509_san_dns%3Alocalhost%3A1234&request_uri=${encodeURIComponent(
         verificationSession.authorizationRequestUri
       )}`
     )
@@ -1946,7 +1882,7 @@ describe('OpenId4Vc', () => {
     )
 
     const requestPayload =
-      await resolvedAuthorizationRequest.authorizationRequest.authorizationRequest.requestObject?.getPayload()
+      await resolvedAuthorizationRequest.authorizationRequest.request
     if (!requestPayload) {
       throw new Error('No payload')
     }
@@ -1954,14 +1890,18 @@ describe('OpenId4Vc', () => {
     // setting this to direct_post to simulate the result of sending a non encrypted response to an authorization request that requires enryption
     requestPayload.response_mode = ResponseMode.DIRECT_POST
 
-    await expect(
-      holder.agent.modules.openId4VcHolder.acceptSiopAuthorizationRequest({
+      const result = await holder.agent.modules.openId4VcHolder.acceptSiopAuthorizationRequest({
         authorizationRequest: resolvedAuthorizationRequest.authorizationRequest,
         presentationExchange: {
           credentials: selectedCredentials,
         },
       })
-    ).rejects.toThrow(/JARM response is required/)
+
+      expect(result.ok).toBe(false)
+      expect(result.serverResponse.body).toMatchObject({
+        error: 'invalid_request',
+        error_description: `JARM response is required for JWT response mode 'direct_post.jwt'.`,
+      })
   })
 
   it('e2e flow with verifier endpoints verifying a mdoc and sd-jwt (jarm)', async () => {
@@ -2090,7 +2030,7 @@ describe('OpenId4Vc', () => {
       })
 
     expect(authorizationRequest).toEqual(
-      `openid4vp://?client_id=localhost%3A1234&request_uri=${encodeURIComponent(
+      `openid4vp://?client_id=x509_san_dns%3Alocalhost%3A1234&request_uri=${encodeURIComponent(
         verificationSession.authorizationRequestUri
       )}`
     )
@@ -2419,7 +2359,7 @@ describe('OpenId4Vc', () => {
       })
 
     expect(authorizationRequest).toEqual(
-      `openid4vp://?client_id=localhost%3A1234&request_uri=${encodeURIComponent(
+      `openid4vp://?client_id=x509_san_dns%3Alocalhost%3A1234&request_uri=${encodeURIComponent(
         verificationSession.authorizationRequestUri
       )}`
     )

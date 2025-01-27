@@ -1,4 +1,3 @@
-import type { OpenId4VcIssuerX5c, OpenId4VcJwtIssuer } from './models'
 import type {
   AgentContext,
   DidPurpose,
@@ -7,8 +6,9 @@ import type {
   JwkJson,
   Key,
 } from '@credo-ts/core'
-import type { JwtIssuerWithContext as VpJwtIssuerWithContext, VerifyJwtCallback } from '@sphereon/did-auth-siop'
-import type { DPoPJwtIssuerWithContext, CreateJwtCallback, JwtIssuer } from '@sphereon/oid4vc-common'
+import type { VerifyJwtCallback, JwtIssuerWithContext as VpJwtIssuerWithContext } from '@sphereon/did-auth-siop'
+import type { CreateJwtCallback, DPoPJwtIssuerWithContext, JwtIssuer, JwtIssuerCustom, JwtIssuerJwk } from '@sphereon/oid4vc-common'
+import type { OpenId4VcIssuerX5c, OpenId4VcJwtIssuer } from './models'
 
 import {
   CredoError,
@@ -163,7 +163,7 @@ export function getCreateJwtCallback(
 export async function openIdTokenIssuerToJwtIssuer(
   agentContext: AgentContext,
   openId4VcTokenIssuer: Exclude<OpenId4VcJwtIssuer, OpenId4VcIssuerX5c> | (OpenId4VcIssuerX5c & { issuer: string })
-): Promise<JwtIssuer> {
+): Promise<Exclude<JwtIssuer, JwtIssuerCustom | JwtIssuerJwk> | JwtIssuerJwk & { alg: string;publicJwk: JwkJson }> {
   if (openId4VcTokenIssuer.method === 'did') {
     const key = await getKeyFromDid(agentContext, openId4VcTokenIssuer.didUrl)
     const alg = getJwkClassFromKeyType(key.keyType)?.supportedSignatureAlgorithms[0]
@@ -221,6 +221,7 @@ export async function openIdTokenIssuerToJwtIssuer(
     return {
       ...openId4VcTokenIssuer,
       jwk: openId4VcTokenIssuer.jwk.toJson(),
+      publicJwk: openId4VcTokenIssuer.jwk.toJson(),
       alg,
     }
   }

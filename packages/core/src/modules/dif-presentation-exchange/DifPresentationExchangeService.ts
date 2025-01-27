@@ -1,3 +1,16 @@
+import type { PresentationSignCallBackParams, Validated, VerifiablePresentationResult } from '@animo-id/pex'
+import type { InputDescriptorV2 } from '@sphereon/pex-models'
+import type {
+  SdJwtDecodedVerifiableCredential,
+  W3CVerifiablePresentation as SphereonW3cVerifiablePresentation,
+  W3CVerifiablePresentation,
+} from '@sphereon/ssi-types'
+import type { AgentContext } from '../../agent'
+import type { Query } from '../../storage/StorageService'
+import type { VerificationMethod } from '../dids'
+import type { SdJwtVcRecord } from '../sd-jwt-vc'
+import type { W3cCredentialRecord } from '../vc'
+import type { IAnonCredsDataIntegrityService } from '../vc/data-integrity/models/IAnonCredsDataIntegrityService'
 import type {
   DifPexCredentialsForRequest,
   DifPexInputDescriptorToCredentials,
@@ -8,19 +21,6 @@ import type {
   VerifiablePresentation,
 } from './models'
 import type { PresentationToCreate } from './utils'
-import type { AgentContext } from '../../agent'
-import type { Query } from '../../storage/StorageService'
-import type { VerificationMethod } from '../dids'
-import type { SdJwtVcRecord } from '../sd-jwt-vc'
-import type { W3cCredentialRecord } from '../vc'
-import type { IAnonCredsDataIntegrityService } from '../vc/data-integrity/models/IAnonCredsDataIntegrityService'
-import type { PresentationSignCallBackParams, Validated, VerifiablePresentationResult } from '@animo-id/pex'
-import type { InputDescriptorV2 } from '@sphereon/pex-models'
-import type {
-  SdJwtDecodedVerifiableCredential,
-  W3CVerifiablePresentation as SphereonW3cVerifiablePresentation,
-  W3CVerifiablePresentation,
-} from '@sphereon/ssi-types'
 
 import { PEVersion, PEX, PresentationSubmissionLocation, Status } from '@animo-id/pex'
 import { PartialSdJwtDecodedVerifiableCredential } from '@animo-id/pex/dist/main/lib'
@@ -41,18 +41,18 @@ import {
   W3cPresentation,
 } from '../vc'
 import {
-  AnonCredsDataIntegrityServiceSymbol,
   ANONCREDS_DATA_INTEGRITY_CRYPTOSUITE,
+  AnonCredsDataIntegrityServiceSymbol,
 } from '../vc/data-integrity/models/IAnonCredsDataIntegrityService'
 
 import { DifPresentationExchangeError } from './DifPresentationExchangeError'
 import { DifPresentationExchangeSubmissionLocation } from './models'
 import {
-  getVerifiablePresentationFromEncoded,
-  getSphereonOriginalVerifiablePresentation,
   getCredentialsForRequest,
   getPresentationsToCreate,
   getSphereonOriginalVerifiableCredential,
+  getSphereonOriginalVerifiablePresentation,
+  getVerifiablePresentationFromEncoded,
 } from './utils'
 
 /**
