@@ -1,5 +1,6 @@
 import { TypedArrayEncoder } from '@credo-ts/core'
 import nock, { cleanAll, enableNetConnect } from 'nock'
+import { homedir } from 'os'
 import path from 'path'
 
 import { NodeFileSystem } from '../src/NodeFileSystem'
@@ -36,6 +37,18 @@ describe('@credo-ts/file-system-node', () => {
             },
           }
         )
+      })
+    })
+
+    describe('migrateWalletToCredoFolder', () => {
+      test('should copy the files from .afj to .credo', async () => {
+        const filePath = `${homedir()}/.afj/data/wallet/test/testwallet.db`
+
+        await fileSystem.write(filePath, 'some-random-content')
+
+        await fileSystem.migrateWalletToCredoFolder('test')
+
+        expect(await fileSystem.exists(`${fileSystem.dataPath}/wallet/test/testwallet.db`)).toBe(true)
       })
     })
   })

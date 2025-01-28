@@ -8,7 +8,7 @@ import https from 'https'
 import { tmpdir, homedir } from 'os'
 import { dirname } from 'path'
 
-const { access, readFile, writeFile, mkdir, rm, unlink, copyFile } = promises
+const { access, readFile, writeFile, mkdir, rm, unlink, copyFile, cp } = promises
 
 export class NodeFileSystem implements FileSystem {
   public readonly dataPath
@@ -19,16 +19,61 @@ export class NodeFileSystem implements FileSystem {
    * Create new NodeFileSystem class instance.
    *
    * @param baseDataPath The base path to use for reading and writing data files used within the framework.
-   * Files will be created under baseDataPath/.afj directory. If not specified, it will be set to homedir()
+   * Files will be created under baseDataPath/.credo directory. If not specified, it will be set to homedir()
    * @param baseCachePath The base path to use for reading and writing cache files used within the framework.
-   * Files will be created under baseCachePath/.afj directory. If not specified, it will be set to homedir()
+   * Files will be created under baseCachePath/.credo directory. If not specified, it will be set to homedir()
    * @param baseTempPath The base path to use for reading and writing temporary files within the framework.
-   * Files will be created under baseTempPath/.afj directory. If not specified, it will be set to tmpdir()
+   * Files will be created under baseTempPath/.credo directory. If not specified, it will be set to tmpdir()
    */
   public constructor(options?: { baseDataPath?: string; baseCachePath?: string; baseTempPath?: string }) {
-    this.dataPath = options?.baseDataPath ? `${options?.baseDataPath}/.afj` : `${homedir()}/.afj/data`
-    this.cachePath = options?.baseCachePath ? `${options?.baseCachePath}/.afj` : `${homedir()}/.afj/cache`
-    this.tempPath = `${options?.baseTempPath ?? tmpdir()}/.afj`
+    this.dataPath = options?.baseDataPath ? `${options?.baseDataPath}/.credo` : `${homedir()}/.credo/data`
+    this.cachePath = options?.baseCachePath ? `${options?.baseCachePath}/.credo` : `${homedir()}/.credo/cache`
+    this.tempPath = `${options?.baseTempPath ?? tmpdir()}/.credo`
+  }
+
+  /**
+   * Migrate data from .afj to .credo if .afj exists.
+   * Copy the contents from old directory (.afj) to new directory (.credo).
+   */
+  public async migrateWalletToCredoFolder(walletId: string) {
+    try {
+      // We only migrate the specific wallet folder because other wallets might be using the same .afj folder
+      // which are used by different agents
+      const oldWalletPath = this.dataPath.replace('.credo/data', `.afj/data/wallet/${walletId}`)
+      const cacheAfjPath = this.cachePath.replace('.credo', '.afj')
+      const tempAfjPath = this.tempPath.replace('.credo', '.afj')
+
+      const pathsToMigrate = [
+        {
+          from: oldWalletPath,
+          // We manually construct the path to the wallet folder because we only want to migrate the specific wallet
+          to: this.dataPath + '/wallet/' + walletId,
+        },
+        {
+          from: cacheAfjPath,
+          to: this.cachePath,
+        },
+        {
+          from: tempAfjPath,
+          to: this.tempPath,
+        },
+      ]
+
+      for await (const path of pathsToMigrate) {
+        // Migrate if the old paths exist
+        if (await this.exists(path.from)) {
+          await this.copyDirectory(path.from, path.to)
+        }
+      }
+    } catch (error) {
+      throw new CredoError(`Error during migration from .afj to .credo`, {
+        cause: error,
+      })
+    }
+  }
+
+  public async copyDirectory(sourcePath: string, destinationPath: string) {
+    await cp(sourcePath, destinationPath, { recursive: true })
   }
 
   public async exists(path: string) {
@@ -49,7 +94,6 @@ export class NodeFileSystem implements FileSystem {
   }
 
   public async write(path: string, data: string): Promise<void> {
-    // Make sure parent directories exist
     await mkdir(dirname(path), { recursive: true })
 
     return writeFile(path, data, { encoding: 'utf-8' })

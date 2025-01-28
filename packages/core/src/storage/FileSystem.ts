@@ -16,4 +16,5 @@ export interface FileSystem {
   read(path: string): Promise<string>
   delete(path: string): Promise<void>
   downloadToFile(url: string, path: string, options?: DownloadToFileOptions): Promise<void>
+  migrateWalletToCredoFolder(walletId: string): Promise<void>
 }
