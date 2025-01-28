@@ -1,4 +1,4 @@
-import type { ResolvedDidCommService } from '../../../types'
+import type { ResolvedDidCommService } from '@credo-ts/core'
 import type { ValidationOptions } from 'class-validator'
 
 import { DidDocumentService, DidKey, isDid, IsUri } from '@credo-ts/core'

@@ -5,7 +5,7 @@ import type { TransportSession } from './TransportService'
 import type { ConnectionRecord } from './modules/connections/repository'
 import type { OutOfBandRecord } from './modules/oob/repository'
 import type { OutboundTransport } from './transport/OutboundTransport'
-import type { EncryptedMessage, OutboundPackage, ResolvedDidCommService } from './types'
+import type { EncryptedMessage, OutboundPackage } from './types'
 
 import {
   AgentContext,
@@ -23,6 +23,7 @@ import {
   getKeyFromVerificationMethod,
   didKeyToInstanceOfKey,
   verkeyToDidKey,
+  ResolvedDidCommService,
 } from '@credo-ts/core'
 
 import { EnvelopeService } from './EnvelopeService'

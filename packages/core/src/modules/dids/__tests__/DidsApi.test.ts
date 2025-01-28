@@ -13,7 +13,7 @@ import {
 
 const agentOptions = getInMemoryAgentOptions('DidsApi')
 
-const agent: Agent = new Agent(agentOptions)
+const agent = new Agent(agentOptions)
 
 describe('DidsApi', () => {
   beforeAll(async () => {

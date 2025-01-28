@@ -3,8 +3,7 @@ import type { InboundMessageContext } from './InboundMessageContext'
 import type { AgentMessage } from '../AgentMessage'
 import type { ConnectionRecord } from '../modules/connections/repository'
 import type { OutOfBandRecord } from '../modules/oob'
-import type { ResolvedDidCommService } from '../types'
-import type { AgentContext, BaseRecord, Key } from '@credo-ts/core'
+import type { AgentContext, BaseRecord, Key, ResolvedDidCommService } from '@credo-ts/core'
 
 import { CredoError } from '@credo-ts/core'
 

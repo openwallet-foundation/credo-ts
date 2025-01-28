@@ -1,11 +1,12 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
 
 import type { DidDocumentService, IndyAgentService } from '../../../core/src/modules/dids'
+import type { ResolvedDidCommService } from '../../../core/src/types'
 import type { AgentMessageSentEvent } from '../Events'
 import type { ConnectionRecord } from '../modules'
 import type { MessagePickupRepository } from '../modules/message-pickup/storage'
 import type { OutboundTransport } from '../transport'
-import type { EncryptedMessage, ResolvedDidCommService } from '../types'
+import type { EncryptedMessage } from '../types'
 
 import { Subject } from 'rxjs'
 

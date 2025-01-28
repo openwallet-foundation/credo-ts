@@ -1,5 +1,4 @@
-import type { ResolvedDidCommService } from '../types'
-import type { AgentContext, Key } from '@credo-ts/core'
+import type { AgentContext, Key, ResolvedDidCommService } from '@credo-ts/core'
 
 import {
   KeyType,

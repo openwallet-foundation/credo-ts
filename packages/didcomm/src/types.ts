@@ -1,12 +1,3 @@
-import type { Key } from '@credo-ts/core'
-
-export interface ResolvedDidCommService {
-  id: string
-  serviceEndpoint: string
-  recipientKeys: Key[]
-  routingKeys: Key[]
-}
-
 export type ProtocolVersion = `${number}.${number}`
 export interface PlaintextMessage {
   '@type': string

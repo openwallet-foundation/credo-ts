@@ -1,4 +1,4 @@
-import type { ResolvedDidCommService } from '../../types'
+import type { ResolvedDidCommService } from '@credo-ts/core'
 
 import { utils, verkeyToInstanceOfKey } from '@credo-ts/core'
 import { IsArray, IsOptional, IsString } from 'class-validator'

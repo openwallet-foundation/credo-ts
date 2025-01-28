@@ -16,6 +16,7 @@ export type {
   JsonArray,
   JsonObject,
   JsonValue,
+  ResolvedDidCommService,
   WalletConfigRekey,
   WalletExportImportConfig,
   WalletStorageConfig,

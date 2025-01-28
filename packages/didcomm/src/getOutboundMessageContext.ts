@@ -2,8 +2,7 @@ import type { AgentMessage } from './AgentMessage'
 import type { Routing } from './models'
 import type { ConnectionRecord } from './modules/connections/repository'
 import type { OutOfBandRecord } from './modules/oob'
-import type { ResolvedDidCommService } from './types'
-import type { AgentContext, BaseRecordAny } from '@credo-ts/core'
+import type { AgentContext, BaseRecordAny, ResolvedDidCommService } from '@credo-ts/core'
 
 import { CredoError, Key, utils } from '@credo-ts/core'
 
