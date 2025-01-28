@@ -1,18 +1,17 @@
 import type {
   AgentContext,
   DifPresentationExchangeDefinition,
+  DifPresentationExchangeSubmission,
   EncodedX509Certificate,
-  VerifiablePresentation
+  VerifiablePresentation,
 } from '@credo-ts/core'
 import {
   createOpenid4vpAuthorizationResponse,
   parseOpenid4vpRequestParams,
   processOpenid4vpAuthRequest,
-  submitOpenid4vpAuthorizationResponse
+  submitOpenid4vpAuthorizationResponse,
 } from '@openid4vc/oid4vp'
-import type {
-  PresentationExchangeResponseOpts
-} from '@sphereon/did-auth-siop'
+import type { PresentationExchangeResponseOpts } from '@sphereon/did-auth-siop'
 import type { OpenId4VcJwtIssuer } from '../shared'
 import type {
   OpenId4VcSiopAcceptAuthorizationRequestOptions,
@@ -27,7 +26,8 @@ import {
   injectable,
   MdocDeviceResponse,
   W3cJsonLdVerifiablePresentation,
-  W3cJwtVerifiablePresentation
+  W3cJwtVerifiablePresentation,
+  X509Service,
 } from '@credo-ts/core'
 import { VPTokenLocation } from '@sphereon/did-auth-siop'
 
@@ -44,12 +44,27 @@ export class OpenId4VcSiopHolderService {
     requestJwtOrUri: string,
     trustedCertificates?: EncodedX509Certificate[]
   ): Promise<OpenId4VcSiopResolvedAuthorizationRequest> {
-    const {params} = parseOpenid4vpRequestParams(requestJwtOrUri)
-    const result = await processOpenid4vpAuthRequest(params, { callbacks: getOid4vciCallbacks(agentContext, trustedCertificates) })
+    const { params } = parseOpenid4vpRequestParams(requestJwtOrUri)
+    const result = await processOpenid4vpAuthRequest(params, {
+      callbacks: {
+        ...getOid4vciCallbacks(agentContext, trustedCertificates),
+        getX509SanDnsNames: (certificate: string) => {
+          const leafCertificate = X509Service.getLeafCertificate(agentContext, { certificateChain: [certificate] })
+          return leafCertificate.sanDnsNames
+        },
+        getX509SanUriNames: (certificate: string) => {
+          const leafCertificate = X509Service.getLeafCertificate(agentContext, { certificateChain: [certificate] })
+          return leafCertificate.sanUriNames
+        },
+      },
+    })
 
-    // TODO: CHECK THE SIGNATURE OF THE JWT, AND IF THE CLIENT IS TRUSTED
-    if (result.client.scheme !== 'x509_san_dns') {
-
+    if (
+      result.client.scheme !== 'x509_san_dns' &&
+      result.client.scheme !== 'x509_san_uri' &&
+      result.client.scheme !== 'did'
+    ) {
+      throw new CredoError(`Client scheme '${result.client.scheme}' is not supported`)
     }
 
     const presentationDefinition = result.pex?.presentation_definition as unknown as
@@ -147,7 +162,6 @@ export class OpenId4VcSiopHolderService {
         ? await openIdTokenIssuerToJwtIssuer(agentContext, openIdTokenIssuer)
         : undefined
 
-
     const vpToken =
       presentationExchangeOptions?.verifiablePresentations.length === 1 &&
       presentationExchangeOptions.presentationSubmission?.descriptor_map[0]?.path === '$'
@@ -162,33 +176,32 @@ export class OpenId4VcSiopHolderService {
         vp_token: vpToken! as any,
         presentation_submission: presentationExchangeOptions?.presentationSubmission,
       },
-      jarm: authorizationRequest.request.response_mode.includes('jwt') ?{
-        // TODO: get the correct aud and iss
-        // TODO: encrypt the jwt
-        aud: authorizationRequest.request.client_id,
-        iss: authorizationRequest.request.client_id,
-        jwtSigner: jwtIssuer!,
-        jweEncryptor: {
-          nonce: authorizationResponseNonce,
-        },
-        serverMetadata: {
-          authorization_signing_alg_values_supported: ['RS256'],
-          authorization_encryption_alg_values_supported: ['ECDH-ES'],
-          authorization_encryption_enc_values_supported: ['A256GCM'],
-        },
-      } : undefined,
+      jarm: authorizationRequest.request.response_mode.includes('jwt')
+        ? {
+            jwtSigner: jwtIssuer!,
+            jweEncryptor: {
+              nonce: authorizationResponseNonce,
+            },
+            serverMetadata: {
+              authorization_signing_alg_values_supported: ['RS256'],
+              authorization_encryption_alg_values_supported: ['ECDH-ES'],
+              authorization_encryption_enc_values_supported: ['A256GCM'],
+            },
+          }
+        : undefined,
       callbacks,
     })
 
     const result = await submitOpenid4vpAuthorizationResponse({
       request: authorizationRequest.request,
       response: response.responseParams,
-      jarm: response.jarm ? {
-        responseJwt: response.jarm.responseJwt,
-      } : undefined,
+      jarm: response.jarm
+        ? {
+            responseJwt: response.jarm.responseJwt,
+          }
+        : undefined,
       callbacks,
     })
-
 
     const responseText = await result.response
       .clone()
@@ -206,7 +219,9 @@ export class OpenId4VcSiopHolderService {
           status: result.response.status,
           body: responseJson ?? responseText,
         },
-        submittedResponse: response.responseParams,
+        submittedResponse: response.responseParams as typeof response.responseParams & {
+          presentation_submission: DifPresentationExchangeSubmission
+        },
       } as const
     }
 
@@ -216,7 +231,9 @@ export class OpenId4VcSiopHolderService {
         status: result.response.status,
         body: responseJson ?? {},
       },
-      submittedResponse: response.responseParams,
+      submittedResponse: response.responseParams as typeof response.responseParams & {
+        presentation_submission: DifPresentationExchangeSubmission
+      },
       redirectUri: responseJson?.redirect_uri as string | undefined,
       presentationDuringIssuanceSession: responseJson?.presentation_during_issuance_session as string | undefined,
     } as const
@@ -286,5 +303,4 @@ export class OpenId4VcSiopHolderService {
 
     return openIdTokenIssuer
   }
-
 }

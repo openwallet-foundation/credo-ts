@@ -47,14 +47,11 @@ async function getVerificationSession(
   return session
 }
 
-
 export function configureAuthorizationEndpoint(router: Router, config: OpenId4VcSiopAuthorizationEndpointConfig) {
   router.post(config.endpointPath, async (request: OpenId4VcVerificationRequest, response: Response, next) => {
     const { agentContext, verifier } = getRequestContext(request)
 
     let jarmResponseType: string | undefined
-
-
 
     try {
       const openId4VcVerifierService = agentContext.dependencyManager.resolve(OpenId4VcSiopVerifierService)
@@ -71,16 +68,15 @@ export function configureAuthorizationEndpoint(router: Router, config: OpenId4Vc
             verificationSession = await getVerificationSession(agentContext, {
               verifierId: verifier.verifierId,
               state: input.state,
-              nonce: input.nonce as string,
+              nonce: input.nonce,
             })
-
 
             const authorizationRequest = await parseOpenid4vpRequestParams(verificationSession.authorizationRequestJwt)
             if (authorizationRequest.type === 'jar') {
-                throw new CredoError('Invalid authorization request jwt')
-              }
-            return { auth_request: authorizationRequest.params}
-          }
+              throw new CredoError('Invalid authorization request jwt')
+            }
+            return { auth_request: authorizationRequest.params }
+          },
         })
 
         jarmResponseType = res2.type
@@ -93,7 +89,8 @@ export function configureAuthorizationEndpoint(router: Router, config: OpenId4Vc
         verificationSession = await getVerificationSession(agentContext, {
           verifierId: verifier.verifierId,
           state: authorizationResponsePayload.state,
-          nonce: typeof authorizationResponsePayload.nonce === 'string' ? authorizationResponsePayload.nonce : undefined,
+          nonce:
+            typeof authorizationResponsePayload.nonce === 'string' ? authorizationResponsePayload.nonce : undefined,
         })
       }
 

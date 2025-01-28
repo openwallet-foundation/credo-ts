@@ -5,9 +5,15 @@ import type {
   JwkJson,
   Query,
   QueryOptions,
-  VerifiablePresentation
+  VerifiablePresentation,
 } from '@credo-ts/core'
-import { parseIfJson, parseOpenid4vpRequestParams, parsePresentationsFromVpToken, verifyOpenid4vpAuthorizationResponse, VpTokenPresentationParseResult } from '@openid4vc/oid4vp'
+import {
+  parseIfJson,
+  parseOpenid4vpRequestParams,
+  parsePresentationsFromVpToken,
+  verifyOpenid4vpAuthorizationResponse,
+  VpTokenPresentationParseResult,
+} from '@openid4vc/oid4vp'
 import type { IDTokenPayload, JarmClientMetadata } from '@sphereon/did-auth-siop'
 import type {
   OpenId4VcSiopCreateAuthorizationRequestOptions,
@@ -152,7 +158,10 @@ export class OpenId4VcSiopVerifierService {
     const authorizationRequest = await createOpenid4vpAuthorizationRequest({
       jar: { jwtSigner: jwtIssuer, requestUri: hostedAuthorizationRequestUri },
       requestParams: {
-        client_id: `${clientIdScheme}:${clientId}`,
+        client_id:
+          clientIdScheme === 'did' || (clientIdScheme as string) === 'https'
+            ? clientId
+            : `${clientIdScheme}:${clientId}`,
         nonce,
         state,
         presentation_definition: options.presentationExchange?.definition as any,
@@ -205,7 +214,7 @@ export class OpenId4VcSiopVerifierService {
     }
 
     const authorizationRequest = authRequestJwtParseResult.params
-    const {client_id: requestClientId, nonce: requestNonce, response_uri: responseUri} = authorizationRequest
+    const { client_id: requestClientId, nonce: requestNonce, response_uri: responseUri } = authorizationRequest
 
     const openId4VcRelyingPartyEventHandler = await agentContext.dependencyManager.resolve(
       OpenId4VcRelyingPartyEventHandler
@@ -216,7 +225,6 @@ export class OpenId4VcSiopVerifierService {
       result = verifyOpenid4vpAuthorizationResponse({
         requestParams: authorizationRequest,
         responseParams: options.authorizationResponse,
-        jarm: undefined,
       })
     } catch (error) {
       await openId4VcRelyingPartyEventHandler.authorizationResponseReceivedFailed(agentContext, {
@@ -244,10 +252,12 @@ export class OpenId4VcSiopVerifierService {
     let mdocGeneratedNonce: string | undefined
     if (options.jarmHeader?.apu) {
       mdocGeneratedNonce = TypedArrayEncoder.toUtf8String(TypedArrayEncoder.fromBase64(options.jarmHeader.apu))
-      // TODO: CORRECT THIS CHECK
-      //if (mdocGeneratedNonce !== requestNonce) {
-        //throw new CredoError('The nonce in the jarm header does not match the nonce in the request.')
-      //}
+    }
+    if (options.jarmHeader?.apv) {
+      const jarmRequestNonce = TypedArrayEncoder.toUtf8String(TypedArrayEncoder.fromBase64(options.jarmHeader.apv))
+      if (jarmRequestNonce !== requestNonce) {
+        throw new CredoError('The nonce in the jarm header does not match the nonce in the request.')
+      }
     }
 
     const presentations = result.pex.presentations
@@ -263,7 +273,7 @@ export class OpenId4VcSiopVerifierService {
       (presentation) => {
         return this.verifyPresentations(agentContext, {
           correlationId: options.verificationSession.id,
-          nonce: result.nonce,
+          nonce: requestNonce,
           audience: requestClientId,
           responseUri,
           mdocGeneratedNonce: mdocGeneratedNonce,
@@ -290,7 +300,7 @@ export class OpenId4VcSiopVerifierService {
             location: PresentationDefinitionLocation.TOPLEVEL_PRESENTATION_DEF,
           },
         ],
-        verificationCallback: async () => ({verified: true}),
+        verificationCallback: async () => ({ verified: true }),
         presentations: options.authorizationResponse.vp_token
           ? await extractPresentationsFromVpToken(parseIfJson(options.authorizationResponse.vp_token) as any, {
               hasher: Hasher.hash,
@@ -343,26 +353,34 @@ export class OpenId4VcSiopVerifierService {
 
     const vpToken = parseIfJson(verificationSession.authorizationResponsePayload.vp_token)
 
-    const presentationDefinition = authorizationRequest.params.presentation_definition as unknown as DifPresentationExchangeDefinition
+    const presentationDefinition = authorizationRequest.params
+      .presentation_definition as unknown as DifPresentationExchangeDefinition
     if (presentationDefinition) {
       if (!vpToken) {
         throw new CredoError('Missing vp_token in the openid4vp authorization response.')
       }
 
-      const rawPresentations = parsePresentationsFromVpToken({vp_token: vpToken })
+      const rawPresentations = parsePresentationsFromVpToken({ vp_token: vpToken })
 
-      const submission = verificationSession.authorizationResponsePayload
-        .presentation_submission as (PresentationSubmission | undefined)
+      const submission = verificationSession.authorizationResponsePayload.presentation_submission as
+        | PresentationSubmission
+        | undefined
       if (!submission) {
         throw new CredoError('Unable to extract submission from the response.')
       }
 
-      const verifiablePresentations = rawPresentations.map(presentation => this.getPresentationFromVpTokenParseResult(agentContext, presentation))
+      const verifiablePresentations = rawPresentations.map((presentation) =>
+        this.getPresentationFromVpTokenParseResult(agentContext, presentation)
+      )
       presentationExchange = {
         definition: presentationDefinition,
         submission,
         presentations: verifiablePresentations,
-        descriptors: extractPresentationsWithDescriptorsFromSubmission(verifiablePresentations, submission, presentationDefinition),
+        descriptors: extractPresentationsWithDescriptorsFromSubmission(
+          verifiablePresentations,
+          submission,
+          presentationDefinition
+        ),
       }
     }
 
@@ -545,25 +563,23 @@ export class OpenId4VcSiopVerifierService {
     }
   }
 
-
   private getPresentationFromVpTokenParseResult(
     agentContext: AgentContext,
     vpTokenPresentationParseResult: VpTokenPresentationParseResult
   ): VerifiablePresentation {
-      if (vpTokenPresentationParseResult.format === 'dc+sd-jwt') {
-        const sdJwtVcApi = agentContext.dependencyManager.resolve(SdJwtVcApi)
-        return sdJwtVcApi.fromCompact(vpTokenPresentationParseResult.presentation)
-      } else if (vpTokenPresentationParseResult.format === 'mso_mdoc') {
-         return  MdocDeviceResponse.fromBase64Url(vpTokenPresentationParseResult.presentation)
-      } else if (vpTokenPresentationParseResult.format === 'jwt_vp_json') {
-        return W3cJwtVerifiablePresentation.fromSerializedJwt(vpTokenPresentationParseResult.presentation)
-      } else if (vpTokenPresentationParseResult.format === 'ldp_vp') {
-        return JsonTransformer.fromJSON(vpTokenPresentationParseResult.presentation, W3cJsonLdVerifiablePresentation)
-      }
+    if (vpTokenPresentationParseResult.format === 'dc+sd-jwt') {
+      const sdJwtVcApi = agentContext.dependencyManager.resolve(SdJwtVcApi)
+      return sdJwtVcApi.fromCompact(vpTokenPresentationParseResult.presentation)
+    } else if (vpTokenPresentationParseResult.format === 'mso_mdoc') {
+      return MdocDeviceResponse.fromBase64Url(vpTokenPresentationParseResult.presentation)
+    } else if (vpTokenPresentationParseResult.format === 'jwt_vp_json') {
+      return W3cJwtVerifiablePresentation.fromSerializedJwt(vpTokenPresentationParseResult.presentation)
+    } else if (vpTokenPresentationParseResult.format === 'ldp_vp') {
+      return JsonTransformer.fromJSON(vpTokenPresentationParseResult.presentation, W3cJsonLdVerifiablePresentation)
+    }
 
-      throw new CredoError(`Unsupported presentation format. ${vpTokenPresentationParseResult.format}`)
+    throw new CredoError(`Unsupported presentation format. ${vpTokenPresentationParseResult.format}`)
   }
-
 
   private async verifyPresentations(
     agentContext: AgentContext,
@@ -674,7 +690,9 @@ export class OpenId4VcSiopVerifierService {
           verifiablePresentation = mdocDeviceResponse
         }
       } else if (vpTokenPresentationParseResult.format === 'jwt_vp_json') {
-        const sdJwtPresentation = W3cJwtVerifiablePresentation.fromSerializedJwt(vpTokenPresentationParseResult.presentation)
+        const sdJwtPresentation = W3cJwtVerifiablePresentation.fromSerializedJwt(
+          vpTokenPresentationParseResult.presentation
+        )
         const certificateChain = extractX509CertificatesFromJwt(sdJwtPresentation.jwt)
 
         let trustedCertificates: string[] | undefined = undefined
@@ -702,9 +720,14 @@ export class OpenId4VcSiopVerifierService {
 
         isValid = verificationResult.isValid
         reason = verificationResult.error?.message
-        verifiablePresentation = W3cJwtVerifiablePresentation.fromSerializedJwt(vpTokenPresentationParseResult.presentation)
+        verifiablePresentation = W3cJwtVerifiablePresentation.fromSerializedJwt(
+          vpTokenPresentationParseResult.presentation
+        )
       } else {
-        const w3cJsonLdVerifiablePresentation = JsonTransformer.fromJSON(vpTokenPresentationParseResult.presentation, W3cJsonLdVerifiablePresentation)
+        const w3cJsonLdVerifiablePresentation = JsonTransformer.fromJSON(
+          vpTokenPresentationParseResult.presentation,
+          W3cJsonLdVerifiablePresentation
+        )
         const verificationResult = await this.w3cCredentialService.verifyPresentation(agentContext, {
           presentation: w3cJsonLdVerifiablePresentation,
           challenge: options.nonce,
@@ -734,6 +757,4 @@ export class OpenId4VcSiopVerifierService {
       }
     }
   }
-
-
 }

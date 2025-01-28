@@ -82,7 +82,7 @@ describe('OpenId4VcVerifier', () => {
 
       expect(
         authorizationRequest.startsWith(
-          `openid://?client_id=${encodeURIComponent(verifier.did)}&request_uri=http%3A%2F%2Fredirect-uri%2F${
+          `openid://?client_id=did%3A${encodeURIComponent(verifier.did)}&request_uri=http%3A%2F%2Fredirect-uri%2F${
             openIdVerifier.verifierId
           }%2Fauthorization-requests%2F`
         )

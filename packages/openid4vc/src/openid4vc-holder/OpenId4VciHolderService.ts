@@ -51,7 +51,7 @@ import {
   SignatureSuiteRegistry,
   W3cCredentialService,
   W3cJsonLdVerifiableCredential,
-  W3cJwtVerifiableCredential
+  W3cJwtVerifiableCredential,
 } from '@credo-ts/core'
 
 import { OpenId4VciCredentialFormatProfile } from '../shared'
@@ -66,10 +66,7 @@ export class OpenId4VciHolderService {
   private logger: Logger
   private w3cCredentialService: W3cCredentialService
 
-  public constructor(
-    @inject(InjectionSymbols.Logger) logger: Logger,
-    w3cCredentialService: W3cCredentialService,
-  ) {
+  public constructor(@inject(InjectionSymbols.Logger) logger: Logger, w3cCredentialService: W3cCredentialService) {
     this.w3cCredentialService = w3cCredentialService
     this.logger = logger
   }

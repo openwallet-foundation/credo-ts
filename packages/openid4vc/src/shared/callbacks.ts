@@ -24,7 +24,10 @@ import {
 import { DecryptJweCallback, EncryptJweCallback } from '@animo-id/oauth2/src/callbacks.js'
 import { getKeyFromDid } from './utils'
 
-export function getOid4vciJwtVerifyCallback(agentContext: AgentContext, trustedCertificates?: string[]): VerifyJwtCallback {
+export function getOid4vciJwtVerifyCallback(
+  agentContext: AgentContext,
+  trustedCertificates?: string[]
+): VerifyJwtCallback {
   const jwsService = agentContext.dependencyManager.resolve(JwsService)
 
   return async (signer, { compact }) => {
@@ -50,23 +53,24 @@ export function getOid4vciJwtVerifyCallback(agentContext: AgentContext, trustedC
 
     const signerKey = signerKeys[0]
     const signerJwk = getJwkFromKey(signerKey).toJson()
-    if (!signerJwk.kid) { signerJwk.kid = signerKey.fingerprint }
+    if (signer.method === 'did') {
+      signerJwk.kid = signer.didUrl
+    }
 
     return { verified: true, signerJwk }
   }
 }
 
-
-export function getOid4vciEncryptJwtCallback(agentContext: AgentContext): EncryptJweCallback{
-
+export function getOid4vciEncryptJwtCallback(agentContext: AgentContext): EncryptJweCallback {
   return async (jwtEncryptor, compact) => {
     if (jwtEncryptor.method !== 'jwk') {
-      throw new CredoError(`Jwt encryption method '${jwtEncryptor.method}' is not supported for jwt signer. Only 'jwk' is supported.`)
+      throw new CredoError(
+        `Jwt encryption method '${jwtEncryptor.method}' is not supported for jwt signer. Only 'jwk' is supported.`
+      )
     }
 
     const jwk = getJwkFromJson(jwtEncryptor.publicJwk)
     const key = jwk.key
-
 
     if (jwtEncryptor.alg !== 'ECDH-ES') {
       throw new CredoError("Only 'ECDH-ES' is supported as 'alg' value for JARM response encryption")
@@ -101,11 +105,8 @@ export function getOid4vciEncryptJwtCallback(agentContext: AgentContext): Encryp
 
 export function getOid4vciDecryptJwtCallback(agentContext: AgentContext): DecryptJweCallback {
   return async (jwe, options) => {
-
     const [header] = jwe.split('.')
     const decodedHeader = JsonEncoder.fromBase64(header)
-
-
 
     const key = Key.fromFingerprint(options?.jwk.kid ?? decodedHeader.kid)
     if (!agentContext.wallet.directDecryptCompactJweEcdhEs) {
@@ -117,7 +118,6 @@ export function getOid4vciDecryptJwtCallback(agentContext: AgentContext): Decryp
     try {
       const decrypted = await agentContext.wallet.directDecryptCompactJweEcdhEs({ compactJwe: jwe, recipientKey: key })
       decryptedPayload = TypedArrayEncoder.toUtf8String(decrypted.data)
-
     } catch (error) {
       return {
         decrypted: false,
@@ -183,7 +183,7 @@ export function getOid4vciCallbacks(agentContext: AgentContext, trustedCertifica
     generateRandom: (length) => agentContext.wallet.getRandomValues(length),
     signJwt: getOid4vciJwtSignCallback(agentContext),
     clientAuthentication: clientAuthenticationNone(),
-    verifyJwt: getOid4vciJwtVerifyCallback(agentContext),
+    verifyJwt: getOid4vciJwtVerifyCallback(agentContext, trustedCertificates),
     fetch: agentContext.config.agentDependencies.fetch,
     encryptJwe: getOid4vciEncryptJwtCallback(agentContext),
     decryptJwe: getOid4vciDecryptJwtCallback(agentContext),
