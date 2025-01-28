@@ -1,5 +1,3 @@
-import type { OutOfBandDidCommService } from '../../../oob/domain/OutOfBandDidCommService'
-
 import { CredoError } from '../../../../error'
 import {
   JsonEncoder,
@@ -10,10 +8,8 @@ import {
   VarintEncoder,
 } from '../../../../utils'
 import { Buffer } from '../../../../utils/buffer'
-import { DidDocument, DidCommV1Service } from '../../domain'
-import { DidDocumentBuilder } from '../../domain/DidDocumentBuilder'
+import { DidDocument } from '../../domain'
 import { parseDid } from '../../domain/parse'
-import { DidKey } from '../key'
 
 const LONG_RE = new RegExp(`^did:peer:4(z[1-9a-km-zA-HJ-NP-Z]{46}):(z[1-9a-km-zA-HJ-NP-Z]{6,})$`)
 const SHORT_RE = new RegExp(`^did:peer:4(z[1-9a-km-zA-HJ-NP-Z]{46})$`)
@@ -110,29 +106,4 @@ export function didDocumentToNumAlgo4Did(didDocument: DidDocument) {
   const longFormDid = `${shortFormDid}:${encodedDocument}`
 
   return { shortFormDid, longFormDid }
-}
-
-export function outOfBandServiceToNumAlgo4Did(service: OutOfBandDidCommService) {
-  // FIXME: add the key entries for the recipientKeys to the did document.
-  const didDocument = new DidDocumentBuilder('')
-    .addService(
-      new DidCommV1Service({
-        id: service.id,
-        serviceEndpoint: service.serviceEndpoint,
-        accept: service.accept,
-        // FIXME: this should actually be local key references, not did:key:123#456 references
-        recipientKeys: service.recipientKeys.map((recipientKey) => {
-          const did = DidKey.fromDid(recipientKey)
-          return `${did.did}#${did.key.fingerprint}`
-        }),
-        // Map did:key:xxx to actual did:key:xxx#123
-        routingKeys: service.routingKeys?.map((routingKey) => {
-          const did = DidKey.fromDid(routingKey)
-          return `${did.did}#${did.key.fingerprint}`
-        }),
-      })
-    )
-    .build()
-
-  return didDocumentToNumAlgo4Did(didDocument)
 }

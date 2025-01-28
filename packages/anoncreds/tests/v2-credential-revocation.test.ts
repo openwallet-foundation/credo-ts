@@ -1,15 +1,15 @@
 import type { AnonCredsTestsAgent } from './anoncredsSetup'
 import type { EventReplaySubject } from '../../core/tests'
 
+import { JsonTransformer } from '@credo-ts/core'
 import {
   DidCommMessageRepository,
-  JsonTransformer,
   CredentialState,
   CredentialExchangeRecord,
   V2CredentialPreview,
   V2OfferCredentialMessage,
   CredentialRole,
-} from '@credo-ts/core'
+} from '@credo-ts/didcomm'
 
 import { waitForCredentialRecordSubject } from '../../core/tests'
 import { waitForRevocationNotification } from '../../core/tests/helpers'
@@ -68,7 +68,7 @@ describe('IC v2 credential revocation', () => {
   test('Alice starts with V2 credential proposal to Faber', async () => {
     testLogger.test('Alice sends (v2) credential proposal to Faber')
 
-    const credentialExchangeRecord = await aliceAgent.credentials.proposeCredential({
+    const credentialExchangeRecord = await aliceAgent.modules.credentials.proposeCredential({
       connectionId: aliceConnectionId,
       protocolVersion: 'v2',
       credentialFormats: {
@@ -99,7 +99,7 @@ describe('IC v2 credential revocation', () => {
     })
 
     testLogger.test('Faber sends credential offer to Alice')
-    await faberAgent.credentials.acceptProposal({
+    await faberAgent.modules.credentials.acceptProposal({
       credentialRecordId: faberCredentialRecord.id,
       comment: 'V2 AnonCreds Proposal',
       credentialFormats: {
@@ -171,7 +171,7 @@ describe('IC v2 credential revocation', () => {
       credentialIds: [],
     })
 
-    const offerCredentialExchangeRecord = await aliceAgent.credentials.acceptOffer({
+    const offerCredentialExchangeRecord = await aliceAgent.modules.credentials.acceptOffer({
       credentialRecordId: aliceCredentialRecord.id,
     })
 
@@ -189,7 +189,7 @@ describe('IC v2 credential revocation', () => {
     })
 
     testLogger.test('Faber sends credential to Alice')
-    await faberAgent.credentials.acceptRequest({
+    await faberAgent.modules.credentials.acceptRequest({
       credentialRecordId: faberCredentialRecord.id,
       comment: 'V2 AnonCreds Credential',
     })
@@ -200,7 +200,7 @@ describe('IC v2 credential revocation', () => {
       state: CredentialState.CredentialReceived,
     })
 
-    await aliceAgent.credentials.acceptCredential({
+    await aliceAgent.modules.credentials.acceptCredential({
       credentialRecordId: aliceCredentialRecord.id,
     })
 
@@ -228,7 +228,7 @@ describe('IC v2 credential revocation', () => {
       options: {},
     })
 
-    await faberAgent.credentials.sendRevocationNotification({
+    await faberAgent.modules.credentials.sendRevocationNotification({
       credentialRecordId: doneCredentialRecord.id,
       revocationFormat: 'anoncreds',
       revocationId: `${credentialRevocationRegistryDefinitionId}::${credentialRevocationIndex}`,
