@@ -3,9 +3,6 @@ import type { DidRepository } from '@credo-ts/core'
 
 import {
   AgentContext,
-  CredentialExchangeRecord,
-  CredentialPreviewAttribute,
-  CredentialState,
   DidResolverService,
   DidsModuleConfig,
   Ed25519Signature2018,
@@ -20,8 +17,13 @@ import {
   W3cCredentialService,
   W3cCredentialSubject,
   W3cCredentialsModuleConfig,
-  CredentialRole,
 } from '@credo-ts/core'
+import {
+  CredentialExchangeRecord,
+  CredentialPreviewAttribute,
+  CredentialState,
+  CredentialRole,
+} from '@credo-ts/didcomm'
 import { Subject } from 'rxjs'
 
 import { InMemoryStorageService } from '../../../tests/InMemoryStorageService'

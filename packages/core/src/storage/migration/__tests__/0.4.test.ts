@@ -3,6 +3,7 @@ import path from 'path'
 
 import { InMemoryStorageService } from '../../../../../../tests/InMemoryStorageService'
 import { RegisteredAskarTestWallet } from '../../../../../askar/tests/helpers'
+import { getDefaultDidcommModules } from '../../../../../didcomm/src/util/modules'
 import { agentDependencies } from '../../../../tests/helpers'
 import { Agent } from '../../../agent/Agent'
 import { InjectionSymbols } from '../../../constants'
@@ -94,8 +95,8 @@ describe('UpdateAssistant | v0.4 - v0.5', () => {
 
   it(`should correctly add role to credential exchange records`, async () => {
     // We need to mock the uuid generation to make sure we generate consistent uuids for the new records created.
-    // let uuidCounter = 1
-    // const uuidSpy = jest.spyOn(uuid, 'uuid').mockImplementation(() => `${uuidCounter++}-4e4f-41d9-94c4-f49351b811f1`)
+    let uuidCounter = 1
+    const uuidSpy = jest.spyOn(uuid, 'uuid').mockImplementation(() => `${uuidCounter++}-4e4f-41d9-94c4-f49351b811f1`)
 
     const aliceW3cCredentialRecordsString = readFileSync(
       path.join(__dirname, '__fixtures__/2-credentials-0.4.json'),
@@ -108,12 +109,14 @@ describe('UpdateAssistant | v0.4 - v0.5', () => {
     // If we register the AskarModule it will register the storage service, but we use in memory storage here
     dependencyManager.registerContextScoped(InjectionSymbols.Wallet, RegisteredAskarTestWallet)
 
+    // We need core DIDComm modules for this update to fully work
     const agent = new Agent(
       {
         config: {
           label: 'Test Agent',
           walletConfig,
         },
+        modules: getDefaultDidcommModules(),
         dependencies: agentDependencies,
       },
       dependencyManager
@@ -155,13 +158,13 @@ describe('UpdateAssistant | v0.4 - v0.5', () => {
     await agent.shutdown()
     await agent.wallet.delete()
 
-    // uuidSpy.mockReset()
+    uuidSpy.mockReset()
   })
 
   it(`should correctly add role to proof exchange records`, async () => {
     // We need to mock the uuid generation to make sure we generate consistent uuids for the new records created.
-    // let uuidCounter = 1
-    // const uuidSpy = jest.spyOn(uuid, 'uuid').mockImplementation(() => `${uuidCounter++}-4e4f-41d9-94c4-f49351b811f1`)
+    let uuidCounter = 1
+    const uuidSpy = jest.spyOn(uuid, 'uuid').mockImplementation(() => `${uuidCounter++}-4e4f-41d9-94c4-f49351b811f1`)
 
     const aliceW3cCredentialRecordsString = readFileSync(path.join(__dirname, '__fixtures__/2-proofs-0.4.json'), 'utf8')
 
@@ -171,12 +174,14 @@ describe('UpdateAssistant | v0.4 - v0.5', () => {
     // If we register the AskarModule it will register the storage service, but we use in memory storage here
     dependencyManager.registerContextScoped(InjectionSymbols.Wallet, RegisteredAskarTestWallet)
 
+    // We need core DIDComm modules for this update to fully work
     const agent = new Agent(
       {
         config: {
           label: 'Test Agent',
           walletConfig,
         },
+        modules: getDefaultDidcommModules(),
         dependencies: agentDependencies,
       },
       dependencyManager
@@ -218,6 +223,6 @@ describe('UpdateAssistant | v0.4 - v0.5', () => {
     await agent.shutdown()
     await agent.wallet.delete()
 
-    // uuidSpy.mockReset()
+    uuidSpy.mockReset()
   })
 })

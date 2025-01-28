@@ -1,4 +1,4 @@
-import type { ConnectionRecord } from '@credo-ts/core'
+import type { ConnectionRecord } from '@credo-ts/didcomm'
 
 import { Agent } from '@credo-ts/core'
 
@@ -17,6 +17,7 @@ const faberAgentOptions = getInMemoryAgentOptions(
   {
     endpoints: ['rxjs:faber'],
   },
+  {},
   modules
 )
 
@@ -25,12 +26,13 @@ const aliceAgentOptions = getInMemoryAgentOptions(
   {
     endpoints: ['rxjs:alice'],
   },
+  {},
   modules
 )
 
 describe('Action Menu', () => {
-  let faberAgent: Agent<typeof modules>
-  let aliceAgent: Agent<typeof modules>
+  let faberAgent: Agent<typeof faberAgentOptions.modules>
+  let aliceAgent: Agent<typeof aliceAgentOptions.modules>
   let faberConnection: ConnectionRecord
   let aliceConnection: ConnectionRecord
 

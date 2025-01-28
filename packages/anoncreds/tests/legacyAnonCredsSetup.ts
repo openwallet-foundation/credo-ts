@@ -1,4 +1,5 @@
 import type { PreCreatedAnonCredsDefinition } from './preCreatedAnonCredsDefinition'
+import type { DefaultAgentModulesInput } from '../..//didcomm/src/util/modules'
 import type { EventReplaySubject } from '../../core/tests'
 import type {
   AnonCredsRegisterCredentialDefinitionOptions,
@@ -9,15 +10,11 @@ import type {
   RegisterCredentialDefinitionReturnStateFinished,
   RegisterSchemaReturnStateFinished,
 } from '../src'
-import type { AutoAcceptProof, ConnectionRecord } from '@credo-ts/core'
+import type { AutoAcceptProof, ConnectionRecord } from '@credo-ts/didcomm'
 
+import { TypedArrayEncoder, CacheModule, InMemoryLruCache, Agent, CredoError, DidsModule } from '@credo-ts/core'
 import {
   AgentEventTypes,
-  TypedArrayEncoder,
-  CacheModule,
-  InMemoryLruCache,
-  Agent,
-  CredoError,
   AutoAcceptCredential,
   CredentialEventTypes,
   CredentialsModule,
@@ -27,8 +24,7 @@ import {
   ProofState,
   V2CredentialProtocol,
   V2ProofProtocol,
-  DidsModule,
-} from '@credo-ts/core'
+} from '@credo-ts/didcomm'
 import { randomUUID } from 'crypto'
 
 import { sleep } from '../../core/src/utils/sleep'
@@ -72,10 +68,7 @@ import {
 } from './preCreatedAnonCredsDefinition'
 
 // Helper type to get the type of the agents (with the custom modules) for the credential tests
-export type AnonCredsTestsAgent = Agent<
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  ReturnType<typeof getAnonCredsIndyModules> & { mediationRecipient?: any; mediator?: any }
->
+export type AnonCredsTestsAgent = Agent<ReturnType<typeof getAnonCredsIndyModules> & DefaultAgentModulesInput>
 
 export const getAnonCredsIndyModules = ({
   autoAcceptCredentials,
@@ -165,7 +158,7 @@ export async function presentLegacyAnonCredsProof({
     state: ProofState.RequestReceived,
   })
 
-  let verifierProofExchangeRecord = await verifierAgent.proofs.requestProof({
+  let verifierProofExchangeRecord = await verifierAgent.modules.proofs.requestProof({
     connectionId: verifierHolderConnectionId,
     proofFormats: {
       indy: {
@@ -180,7 +173,7 @@ export async function presentLegacyAnonCredsProof({
 
   let holderProofExchangeRecord = await holderProofExchangeRecordPromise
 
-  const selectedCredentials = await holderAgent.proofs.selectCredentialsForRequest({
+  const selectedCredentials = await holderAgent.modules.proofs.selectCredentialsForRequest({
     proofRecordId: holderProofExchangeRecord.id,
   })
 
@@ -189,7 +182,7 @@ export async function presentLegacyAnonCredsProof({
     state: ProofState.PresentationReceived,
   })
 
-  await holderAgent.proofs.acceptRequest({
+  await holderAgent.modules.proofs.acceptRequest({
     proofRecordId: holderProofExchangeRecord.id,
     proofFormats: { indy: selectedCredentials.proofFormats.indy },
   })
@@ -204,7 +197,7 @@ export async function presentLegacyAnonCredsProof({
     state: ProofState.Done,
   })
 
-  verifierProofExchangeRecord = await verifierAgent.proofs.acceptPresentation({
+  verifierProofExchangeRecord = await verifierAgent.modules.proofs.acceptPresentation({
     proofRecordId: verifierProofExchangeRecord.id,
   })
   holderProofExchangeRecord = await holderProofExchangeRecordPromise
@@ -234,7 +227,7 @@ export async function issueLegacyAnonCredsCredential({
   issuerHolderConnectionId: string
   offer: AnonCredsOfferCredentialFormat
 }) {
-  let issuerCredentialExchangeRecord = await issuerAgent.credentials.offerCredential({
+  let issuerCredentialExchangeRecord = await issuerAgent.modules.credentials.offerCredential({
     comment: 'some comment about credential',
     connectionId: issuerHolderConnectionId,
     protocolVersion: 'v1',
@@ -249,7 +242,7 @@ export async function issueLegacyAnonCredsCredential({
     state: CredentialState.OfferReceived,
   })
 
-  await holderAgent.credentials.acceptOffer({
+  await holderAgent.modules.credentials.acceptOffer({
     credentialRecordId: holderCredentialExchangeRecord.id,
     autoAcceptCredential: AutoAcceptCredential.ContentApproved,
   })
@@ -327,6 +320,9 @@ export async function setupAnonCredsTests<
       {
         endpoints: ['rxjs:issuer'],
       },
+      {
+        logger: testLogger,
+      },
       getAnonCredsIndyModules({
         autoAcceptCredentials,
         autoAcceptProofs,
@@ -340,6 +336,7 @@ export async function setupAnonCredsTests<
       {
         endpoints: ['rxjs:holder'],
       },
+      {},
       getAnonCredsIndyModules({
         autoAcceptCredentials,
         autoAcceptProofs,
@@ -354,6 +351,7 @@ export async function setupAnonCredsTests<
           {
             endpoints: ['rxjs:verifier'],
           },
+          {},
           getAnonCredsIndyModules({
             autoAcceptCredentials,
             autoAcceptProofs,

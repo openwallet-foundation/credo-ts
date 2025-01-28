@@ -1,4 +1,5 @@
 import type { InitConfig } from '@credo-ts/core'
+import type { DidCommModuleConfigOptions } from '@credo-ts/didcomm'
 import type { IndyVdrPoolConfig } from '@credo-ts/indy-vdr'
 
 import {
@@ -18,18 +19,18 @@ import {
   CheqdModule,
   CheqdModuleConfig,
 } from '@credo-ts/cheqd'
+import { DidsModule, Agent } from '@credo-ts/core'
 import {
   ConnectionsModule,
-  DidsModule,
   V2ProofProtocol,
   V2CredentialProtocol,
   ProofsModule,
   AutoAcceptProof,
   AutoAcceptCredential,
   CredentialsModule,
-  Agent,
   HttpOutboundTransport,
-} from '@credo-ts/core'
+  getDefaultDidcommModules,
+} from '@credo-ts/didcomm'
 import { IndyVdrIndyDidResolver, IndyVdrAnonCredsRegistry, IndyVdrModule } from '@credo-ts/indy-vdr'
 import { agentDependencies, HttpInboundTransport } from '@credo-ts/node'
 import { anoncreds } from '@hyperledger/anoncreds-nodejs'
@@ -68,7 +69,6 @@ export class BaseAgent {
         id: name,
         key: name,
       },
-      endpoints: [`http://localhost:${this.port}`],
     } satisfies InitConfig
 
     this.config = config
@@ -76,10 +76,10 @@ export class BaseAgent {
     this.agent = new Agent({
       config,
       dependencies: agentDependencies,
-      modules: getAskarAnonCredsIndyModules(),
+      modules: getAskarAnonCredsIndyModules({ endpoints: [`http://localhost:${this.port}`] }),
     })
-    this.agent.registerInboundTransport(new HttpInboundTransport({ port }))
-    this.agent.registerOutboundTransport(new HttpOutboundTransport())
+    this.agent.modules.didcomm.registerInboundTransport(new HttpInboundTransport({ port }))
+    this.agent.modules.didcomm.registerOutboundTransport(new HttpOutboundTransport())
   }
 
   public async initializeAgent() {
@@ -89,11 +89,12 @@ export class BaseAgent {
   }
 }
 
-function getAskarAnonCredsIndyModules() {
+function getAskarAnonCredsIndyModules(didcommConfig: DidCommModuleConfigOptions) {
   const legacyIndyCredentialFormatService = new LegacyIndyCredentialFormatService()
   const legacyIndyProofFormatService = new LegacyIndyProofFormatService()
 
   return {
+    ...getDefaultDidcommModules(didcommConfig),
     connections: new ConnectionsModule({
       autoAcceptConnections: true,
     }),

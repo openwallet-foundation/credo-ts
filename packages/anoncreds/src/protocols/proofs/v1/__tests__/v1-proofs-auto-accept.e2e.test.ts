@@ -1,8 +1,8 @@
 import type { EventReplaySubject } from '../../../../../../core/tests'
 import type { AnonCredsTestsAgent } from '../../../../../tests/legacyAnonCredsSetup'
 
-import { AutoAcceptProof, ProofState } from '../../../../../../core/src'
 import { testLogger, waitForProofExchangeRecord } from '../../../../../../core/tests'
+import { AutoAcceptProof, ProofState } from '../../../../../../didcomm/src'
 import { issueLegacyAnonCredsCredential, setupAnonCredsTests } from '../../../../../tests/legacyAnonCredsSetup'
 
 describe('Auto accept present proof', () => {
@@ -56,7 +56,7 @@ describe('Auto accept present proof', () => {
     test("Alice starts with proof proposal to Faber, both with autoAcceptProof on 'always'", async () => {
       testLogger.test('Alice sends presentation proposal to Faber')
 
-      await aliceAgent.proofs.proposeProof({
+      await aliceAgent.modules.proofs.proposeProof({
         connectionId: aliceConnectionId,
         protocolVersion: 'v1',
         proofFormats: {
@@ -93,7 +93,7 @@ describe('Auto accept present proof', () => {
     test("Faber starts with proof requests to Alice, both with autoAcceptProof on 'always'", async () => {
       testLogger.test('Faber sends presentation request to Alice')
 
-      await faberAgent.proofs.requestProof({
+      await faberAgent.modules.proofs.requestProof({
         protocolVersion: 'v1',
         connectionId: faberConnectionId,
         proofFormats: {
@@ -178,7 +178,7 @@ describe('Auto accept present proof', () => {
     test("Alice starts with proof proposal to Faber, both with autoAcceptProof on 'contentApproved'", async () => {
       testLogger.test('Alice sends presentation proposal to Faber')
 
-      const aliceProofExchangeRecord = await aliceAgent.proofs.proposeProof({
+      const aliceProofExchangeRecord = await aliceAgent.modules.proofs.proposeProof({
         connectionId: aliceConnectionId,
         protocolVersion: 'v1',
         proofFormats: {
@@ -211,7 +211,7 @@ describe('Auto accept present proof', () => {
       })
 
       testLogger.test('Faber accepts presentation proposal from Alice')
-      await faberAgent.proofs.acceptProposal({ proofRecordId: faberProofExchangeRecord.id })
+      await faberAgent.modules.proofs.acceptProposal({ proofRecordId: faberProofExchangeRecord.id })
 
       await Promise.all([
         waitForProofExchangeRecord(aliceAgent, { state: ProofState.Done }),
@@ -222,7 +222,7 @@ describe('Auto accept present proof', () => {
     test("Faber starts with proof requests to Alice, both with autoAcceptProof on 'contentApproved'", async () => {
       testLogger.test('Faber sends presentation request to Alice')
 
-      await faberAgent.proofs.requestProof({
+      await faberAgent.modules.proofs.requestProof({
         protocolVersion: 'v1',
         connectionId: faberConnectionId,
         proofFormats: {
@@ -260,8 +260,8 @@ describe('Auto accept present proof', () => {
         state: ProofState.RequestReceived,
       })
 
-      const { proofFormats } = await aliceAgent.proofs.selectCredentialsForRequest({ proofRecordId })
-      await aliceAgent.proofs.acceptRequest({ proofRecordId, proofFormats })
+      const { proofFormats } = await aliceAgent.modules.proofs.selectCredentialsForRequest({ proofRecordId })
+      await aliceAgent.modules.proofs.acceptRequest({ proofRecordId, proofFormats })
 
       await Promise.all([
         waitForProofExchangeRecord(aliceAgent, { state: ProofState.Done }),

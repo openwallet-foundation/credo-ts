@@ -1,25 +1,28 @@
-import type { DataIntegrityCredentialRequest, DidRepository } from '@credo-ts/core'
+import type { DidRepository } from '@credo-ts/core'
+import type { DataIntegrityCredentialRequest } from '@credo-ts/didcomm'
 
 import {
-  ProofRole,
-  CredentialRole,
   AgentContext,
-  CredentialExchangeRecord,
-  CredentialPreviewAttribute,
-  CredentialState,
   DidResolverService,
   DidsModuleConfig,
   InjectionSymbols,
   KeyDidRegistrar,
   KeyDidResolver,
-  ProofExchangeRecord,
-  ProofState,
   SignatureSuiteToken,
   W3cCredential,
   W3cCredentialService,
   W3cCredentialSubject,
   W3cCredentialsModuleConfig,
 } from '@credo-ts/core'
+import {
+  ProofRole,
+  CredentialRole,
+  CredentialExchangeRecord,
+  CredentialPreviewAttribute,
+  CredentialState,
+  ProofExchangeRecord,
+  ProofState,
+} from '@credo-ts/didcomm'
 import { Subject } from 'rxjs'
 
 import { InMemoryStorageService } from '../../../tests/InMemoryStorageService'

@@ -1,7 +1,7 @@
 import type { AnonCredsTestsAgent } from '../../../../../tests/legacyAnonCredsSetup'
 
-import { ProofState } from '../../../../../../core/src'
 import { testLogger, waitForProofExchangeRecord } from '../../../../../../core/tests'
+import { ProofState } from '../../../../../../didcomm/src'
 import { setupAnonCredsTests } from '../../../../../tests/legacyAnonCredsSetup'
 
 describe('Present Proof | V1ProofProtocol', () => {
@@ -39,7 +39,7 @@ describe('Present Proof | V1ProofProtocol', () => {
       state: ProofState.ProposalReceived,
     })
 
-    let aliceProofExchangeRecord = await aliceAgent.proofs.proposeProof({
+    let aliceProofExchangeRecord = await aliceAgent.modules.proofs.proposeProof({
       connectionId: aliceConnectionId,
       protocolVersion: 'v1',
       proofFormats: {
@@ -70,7 +70,7 @@ describe('Present Proof | V1ProofProtocol', () => {
     testLogger.test('Faber waits for presentation from Alice')
     let faberProofExchangeRecord = await faberProofExchangeRecordPromise
 
-    const proposal = await faberAgent.proofs.findProposalMessage(faberProofExchangeRecord.id)
+    const proposal = await faberAgent.modules.proofs.findProposalMessage(faberProofExchangeRecord.id)
     expect(proposal?.toJSON()).toMatchObject({
       '@type': 'https://didcomm.org/present-proof/1.0/propose-presentation',
       '@id': expect.any(String),
@@ -109,14 +109,14 @@ describe('Present Proof | V1ProofProtocol', () => {
 
     // Accept Proposal
     testLogger.test('Faber accepts presentation proposal from Alice')
-    faberProofExchangeRecord = await faberAgent.proofs.acceptProposal({
+    faberProofExchangeRecord = await faberAgent.modules.proofs.acceptProposal({
       proofRecordId: faberProofExchangeRecord.id,
     })
 
     testLogger.test('Alice waits for proof request from Faber')
     aliceProofExchangeRecord = await aliceProofExchangeRecordPromise
 
-    const request = await faberAgent.proofs.findRequestMessage(faberProofExchangeRecord.id)
+    const request = await faberAgent.modules.proofs.findRequestMessage(faberProofExchangeRecord.id)
     expect(request).toMatchObject({
       type: 'https://didcomm.org/present-proof/1.0/request-presentation',
       id: expect.any(String),

@@ -1,7 +1,7 @@
 import type { AnonCredsTestsAgent } from '../../../../../tests/legacyAnonCredsSetup'
 
-import { ProofState } from '../../../../../../core/src'
 import { testLogger, waitForProofExchangeRecord } from '../../../../../../core/tests'
+import { ProofState } from '../../../../../../didcomm/src'
 import { setupAnonCredsTests } from '../../../../../tests/legacyAnonCredsSetup'
 
 describe('Present Proof', () => {
@@ -39,7 +39,7 @@ describe('Present Proof', () => {
       state: ProofState.ProposalReceived,
     })
 
-    await aliceAgent.proofs.proposeProof({
+    await aliceAgent.modules.proofs.proposeProof({
       connectionId: aliceConnectionId,
       protocolVersion: 'v1',
       proofFormats: {
@@ -70,7 +70,7 @@ describe('Present Proof', () => {
     testLogger.test('Faber waits for presentation from Alice')
     const faberProofExchangeRecord = await faberProofExchangeRecordPromise
 
-    const proposal = await faberAgent.proofs.findProposalMessage(faberProofExchangeRecord.id)
+    const proposal = await faberAgent.modules.proofs.findProposalMessage(faberProofExchangeRecord.id)
     expect(proposal).toMatchObject({
       type: 'https://didcomm.org/present-proof/1.0/propose-presentation',
       id: expect.any(String),

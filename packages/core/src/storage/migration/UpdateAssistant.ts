@@ -178,7 +178,7 @@ export class UpdateAssistant<Agent extends BaseAgent<any> = BaseAgent> {
           this.agent.config.logger.info(
             `Starting update of agent storage from version ${update.fromVersion} to version ${update.toVersion}. Found ${modulesWithUpdate.length} extension module(s) with update scripts`
           )
-          await update.doUpdate(this.agent, this.updateConfig)
+          await update.doUpdate(this.agent)
 
           this.agent.config.logger.info(
             `Finished update of core agent storage from version ${update.fromVersion} to version ${update.toVersion}. Starting update of extension modules`

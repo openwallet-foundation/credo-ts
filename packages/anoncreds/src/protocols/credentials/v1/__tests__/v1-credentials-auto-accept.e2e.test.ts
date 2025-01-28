@@ -1,13 +1,8 @@
 import type { EventReplaySubject } from '../../../../../../core/tests'
 import type { AnonCredsTestsAgent } from '../../../../../tests/legacyAnonCredsSetup'
 
-import {
-  AutoAcceptCredential,
-  CredentialState,
-  CredentialExchangeRecord,
-  JsonTransformer,
-  CredentialRole,
-} from '@credo-ts/core'
+import { JsonTransformer } from '@credo-ts/core'
+import { AutoAcceptCredential, CredentialState, CredentialExchangeRecord, CredentialRole } from '@credo-ts/didcomm'
 
 import { waitForCredentialRecord, waitForCredentialRecordSubject, testLogger } from '../../../../../../core/tests'
 import { setupAnonCredsTests } from '../../../../../tests/legacyAnonCredsSetup'
@@ -65,7 +60,7 @@ describe('V1 Credentials Auto Accept', () => {
     test("Alice starts with V1 credential proposal to Faber, both with autoAcceptCredential on 'always'", async () => {
       testLogger.test('Alice sends credential proposal to Faber')
 
-      const aliceCredentialExchangeRecord = await aliceAgent.credentials.proposeCredential({
+      const aliceCredentialExchangeRecord = await aliceAgent.modules.credentials.proposeCredential({
         connectionId: aliceConnectionId,
         protocolVersion: 'v1',
         credentialFormats: {
@@ -107,7 +102,7 @@ describe('V1 Credentials Auto Accept', () => {
 
     test("Faber starts with V1 credential offer to Alice, both with autoAcceptCredential on 'always'", async () => {
       testLogger.test('Faber sends credential offer to Alice')
-      const faberCredentialExchangeRecord = await faberAgent.credentials.offerCredential({
+      const faberCredentialExchangeRecord = await faberAgent.modules.credentials.offerCredential({
         comment: 'some comment about credential',
         connectionId: faberConnectionId,
         credentialFormats: {
@@ -189,7 +184,7 @@ describe('V1 Credentials Auto Accept', () => {
     // ==========================
     test("Alice starts with V1 credential proposal to Faber, both with autoAcceptCredential on 'contentApproved'", async () => {
       testLogger.test('Alice sends credential proposal to Faber')
-      let aliceCredentialExchangeRecord = await aliceAgent.credentials.proposeCredential({
+      let aliceCredentialExchangeRecord = await aliceAgent.modules.credentials.proposeCredential({
         connectionId: aliceConnectionId,
         protocolVersion: 'v1',
         credentialFormats: {
@@ -207,7 +202,7 @@ describe('V1 Credentials Auto Accept', () => {
       })
 
       testLogger.test('Faber sends credential offer to Alice')
-      faberCredentialExchangeRecord = await faberAgent.credentials.acceptProposal({
+      faberCredentialExchangeRecord = await faberAgent.modules.credentials.acceptProposal({
         credentialRecordId: faberCredentialExchangeRecord.id,
         comment: 'V1 Indy Offer',
         credentialFormats: {
@@ -270,7 +265,7 @@ describe('V1 Credentials Auto Accept', () => {
 
     test("Faber starts with V1 credential offer to Alice, both with autoAcceptCredential on 'contentApproved'", async () => {
       testLogger.test('Faber sends credential offer to Alice')
-      let faberCredentialExchangeRecord = await faberAgent.credentials.offerCredential({
+      let faberCredentialExchangeRecord = await faberAgent.modules.credentials.offerCredential({
         comment: 'some comment about credential',
         connectionId: faberConnectionId,
         credentialFormats: {
@@ -304,7 +299,7 @@ describe('V1 Credentials Auto Accept', () => {
       })
 
       testLogger.test('alice sends credential request to faber')
-      faberCredentialExchangeRecord = await aliceAgent.credentials.acceptOffer({
+      faberCredentialExchangeRecord = await aliceAgent.modules.credentials.acceptOffer({
         credentialRecordId: aliceCredentialExchangeRecord.id,
       })
 
@@ -352,7 +347,7 @@ describe('V1 Credentials Auto Accept', () => {
 
     test("Faber starts with V1 credential offer to Alice, both have autoAcceptCredential on 'contentApproved' and attributes did change", async () => {
       testLogger.test('Faber sends credential offer to Alice')
-      let faberCredentialExchangeRecord = await faberAgent.credentials.offerCredential({
+      let faberCredentialExchangeRecord = await faberAgent.modules.credentials.offerCredential({
         comment: 'some comment about credential',
         connectionId: faberConnectionId,
         credentialFormats: {
@@ -382,7 +377,7 @@ describe('V1 Credentials Auto Accept', () => {
       })
 
       testLogger.test('Alice sends credential request to Faber')
-      const aliceExchangeCredentialRecord = await aliceAgent.credentials.negotiateOffer({
+      const aliceExchangeCredentialRecord = await aliceAgent.modules.credentials.negotiateOffer({
         credentialRecordId: aliceCredentialExchangeRecord.id,
         credentialFormats: {
           indy: {
@@ -400,16 +395,16 @@ describe('V1 Credentials Auto Accept', () => {
       })
 
       // Check if the state of fabers credential record did not change
-      const faberRecord = await faberAgent.credentials.getById(faberCredentialExchangeRecord.id)
+      const faberRecord = await faberAgent.modules.credentials.getById(faberCredentialExchangeRecord.id)
       faberRecord.assertState(CredentialState.ProposalReceived)
 
-      aliceCredentialExchangeRecord = await aliceAgent.credentials.getById(aliceCredentialExchangeRecord.id)
+      aliceCredentialExchangeRecord = await aliceAgent.modules.credentials.getById(aliceCredentialExchangeRecord.id)
       aliceCredentialExchangeRecord.assertState(CredentialState.ProposalSent)
     })
 
     test("Alice starts with V1 credential proposal to Faber, both have autoAcceptCredential on 'contentApproved' and attributes did change", async () => {
       testLogger.test('Alice sends credential proposal to Faber')
-      const aliceCredentialExchangeRecord = await aliceAgent.credentials.proposeCredential({
+      const aliceCredentialExchangeRecord = await aliceAgent.modules.credentials.proposeCredential({
         connectionId: aliceConnectionId,
         protocolVersion: 'v1',
         credentialFormats: {
@@ -427,7 +422,7 @@ describe('V1 Credentials Auto Accept', () => {
         state: CredentialState.ProposalReceived,
       })
 
-      await faberAgent.credentials.negotiateProposal({
+      await faberAgent.modules.credentials.negotiateProposal({
         credentialRecordId: faberCredentialExchangeRecord.id,
         credentialFormats: {
           indy: {
@@ -456,10 +451,10 @@ describe('V1 Credentials Auto Accept', () => {
       })
 
       // Check if the state of the credential records did not change
-      faberCredentialExchangeRecord = await faberAgent.credentials.getById(faberCredentialExchangeRecord.id)
+      faberCredentialExchangeRecord = await faberAgent.modules.credentials.getById(faberCredentialExchangeRecord.id)
       faberCredentialExchangeRecord.assertState(CredentialState.OfferSent)
 
-      const aliceRecord = await aliceAgent.credentials.getById(record.id)
+      const aliceRecord = await aliceAgent.modules.credentials.getById(record.id)
       aliceRecord.assertState(CredentialState.OfferReceived)
     })
   })

@@ -1,37 +1,29 @@
-import type {
-  AgentContext,
-  CustomCredentialTags,
-  CredentialPreviewAttribute,
-  AgentConfig,
-  CredentialStateChangedEvent,
-} from '@credo-ts/core'
+import type { AgentContext, AgentConfig } from '@credo-ts/core'
+import type { CustomCredentialTags, CredentialPreviewAttribute, CredentialStateChangedEvent } from '@credo-ts/didcomm'
 
+import { EventEmitter, JsonEncoder, CredoError, JsonTransformer } from '@credo-ts/core'
 import {
-  EventEmitter,
   DidExchangeState,
   Attachment,
   AttachmentData,
-  JsonEncoder,
   DidCommMessageRecord,
   DidCommMessageRole,
-  CredoError,
   CredentialState,
   CredentialExchangeRecord,
   CredentialFormatSpec,
   AutoAcceptCredential,
-  JsonTransformer,
   InboundMessageContext,
   CredentialEventTypes,
   AckStatus,
   CredentialProblemReportReason,
   CredentialRole,
-} from '@credo-ts/core'
+} from '@credo-ts/didcomm'
 import { Subject } from 'rxjs'
 
-import { ConnectionService } from '../../../../../../core/src/modules/connections/services/ConnectionService'
-import { CredentialRepository } from '../../../../../../core/src/modules/credentials/repository/CredentialRepository'
-import { DidCommMessageRepository } from '../../../../../../core/src/storage/didcomm/DidCommMessageRepository'
 import { getMockConnection, getAgentConfig, getAgentContext, mockFunction } from '../../../../../../core/tests/helpers'
+import { ConnectionService } from '../../../../../../didcomm/src/modules/connections/services/ConnectionService'
+import { CredentialRepository } from '../../../../../../didcomm/src/modules/credentials/repository/CredentialRepository'
+import { DidCommMessageRepository } from '../../../../../../didcomm/src/repository/DidCommMessageRepository'
 import { LegacyIndyCredentialFormatService } from '../../../../formats/LegacyIndyCredentialFormatService'
 import { convertAttributesToCredentialValues } from '../../../../utils/credential'
 import { V1CredentialProtocol } from '../V1CredentialProtocol'
@@ -49,10 +41,10 @@ import {
 } from '../messages'
 
 // Mock classes
-jest.mock('../../../../../../core/src/modules/credentials/repository/CredentialRepository')
+jest.mock('../../../../../../didcomm/src/modules/credentials/repository/CredentialRepository')
 jest.mock('../../../../formats/LegacyIndyCredentialFormatService')
-jest.mock('../../../../../../core/src/storage/didcomm/DidCommMessageRepository')
-jest.mock('../../../../../../core/src/modules/connections/services/ConnectionService')
+jest.mock('../../../../../../didcomm/src/repository/DidCommMessageRepository')
+jest.mock('../../../../../../didcomm/src/modules/connections/services/ConnectionService')
 
 // Mock typed object
 const CredentialRepositoryMock = CredentialRepository as jest.Mock<CredentialRepository>

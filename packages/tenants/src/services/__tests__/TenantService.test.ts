@@ -28,18 +28,20 @@ describe('TenantRecordService', () => {
     jest.clearAllMocks()
   })
 
+  // FIXME: connectionImageUrl is now part of DIDComm module. Tenants records do not currently
+  // store data related to module config
   describe('createTenant', () => {
     test('creates a tenant record and stores it in the tenant repository', async () => {
       const tenantRecord = await tenantRecordService.createTenant(agentContext, {
         label: 'Test Tenant',
-        connectionImageUrl: 'https://example.com/connection.png',
+        //connectionImageUrl: 'https://example.com/connection.png',
       })
 
       expect(tenantRecord).toMatchObject({
         id: expect.any(String),
         config: {
           label: 'Test Tenant',
-          connectionImageUrl: 'https://example.com/connection.png',
+          //connectionImageUrl: 'https://example.com/connection.png',
           walletConfig: {
             id: expect.any(String),
             key: 'walletKey',
