@@ -2,14 +2,14 @@ import type { Alice } from './Alice'
 import type { AliceInquirer } from './AliceInquirer'
 import type { Faber } from './Faber'
 import type { FaberInquirer } from './FaberInquirer'
+import type { Agent } from '@credo-ts/core'
 import type {
-  Agent,
   BasicMessageStateChangedEvent,
   CredentialExchangeRecord,
   CredentialStateChangedEvent,
   ProofExchangeRecord,
   ProofStateChangedEvent,
-} from '@credo-ts/core'
+} from '@credo-ts/didcomm'
 import type BottomBar from 'inquirer/lib/ui/bottom-bar'
 
 import {
@@ -19,7 +19,7 @@ import {
   CredentialState,
   ProofEventTypes,
   ProofState,
-} from '@credo-ts/core'
+} from '@credo-ts/didcomm'
 import { ui } from 'inquirer'
 
 import { Color, purpleText } from './OutputClass'

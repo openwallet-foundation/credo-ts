@@ -54,6 +54,7 @@ const agent = new Agent(
   getInMemoryAgentOptions(
     'sdjwtvcserviceagent',
     {},
+    {},
     {
       dids: new DidsModule({
         resolvers: [new KeyDidResolver()],

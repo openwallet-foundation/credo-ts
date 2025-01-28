@@ -1,7 +1,10 @@
-import type { CustomProofTags, AgentConfig, AgentContext, ProofStateChangedEvent } from '../../../../../../core/src'
+import type { AgentConfig, AgentContext } from '../../../../../../core/src'
+import type { CustomProofTags, ProofStateChangedEvent } from '../../../../../../didcomm/src'
 
 import { Subject } from 'rxjs'
 
+import { EventEmitter } from '../../../../../../core/src'
+import { getMockConnection, getAgentConfig, getAgentContext, mockFunction } from '../../../../../../core/tests'
 import {
   ProofRole,
   DidExchangeState,
@@ -12,22 +15,20 @@ import {
   InboundMessageContext,
   ProofEventTypes,
   PresentationProblemReportReason,
-  EventEmitter,
-} from '../../../../../../core/src'
-import { ConnectionService } from '../../../../../../core/src/modules/connections/services/ConnectionService'
-import { ProofRepository } from '../../../../../../core/src/modules/proofs/repository/ProofRepository'
-import { DidCommMessageRepository } from '../../../../../../core/src/storage/didcomm/DidCommMessageRepository'
-import { getMockConnection, getAgentConfig, getAgentContext, mockFunction } from '../../../../../../core/tests'
+} from '../../../../../../didcomm/src'
+import { ConnectionService } from '../../../../../../didcomm/src/modules/connections/services/ConnectionService'
+import { ProofRepository } from '../../../../../../didcomm/src/modules/proofs/repository/ProofRepository'
+import { DidCommMessageRepository } from '../../../../../../didcomm/src/repository/DidCommMessageRepository'
 import { LegacyIndyProofFormatService } from '../../../../formats/LegacyIndyProofFormatService'
 import { V1ProofProtocol } from '../V1ProofProtocol'
 import { INDY_PROOF_REQUEST_ATTACHMENT_ID, V1RequestPresentationMessage } from '../messages'
 import { V1PresentationProblemReportMessage } from '../messages/V1PresentationProblemReportMessage'
 
 // Mock classes
-jest.mock('../../../../../../core/src/modules/proofs/repository/ProofRepository')
+jest.mock('../../../../../../didcomm/src/modules/proofs/repository/ProofRepository')
 jest.mock('../../../../formats/LegacyIndyProofFormatService')
-jest.mock('../../../../../../core/src/storage/didcomm/DidCommMessageRepository')
-jest.mock('../../../../../../core/src/modules/connections/services/ConnectionService')
+jest.mock('../../../../../../didcomm/src/repository/DidCommMessageRepository')
+jest.mock('../../../../../../didcomm/src/modules/connections/services/ConnectionService')
 
 // Mock typed object
 const ProofRepositoryMock = ProofRepository as jest.Mock<ProofRepository>
