@@ -78,9 +78,9 @@ describe('Tenants Storage Update', () => {
       await agent.modules.tenants.getTenantAgent({ tenantId: '1d45d3c2-3480-4375-ac6f-47c322f091b0' })
     ).endSession()
 
-    // Expect tenant storage version to be 0.5
+    // Expect tenant storage version to be 0.6
     const updatedTenant = await agent.modules.tenants.getTenantById('1d45d3c2-3480-4375-ac6f-47c322f091b0')
-    expect(updatedTenant.storageVersion).toBe('0.5')
+    expect(updatedTenant.storageVersion).toBe('0.6')
 
     await agent.wallet.delete()
     await agent.shutdown()
@@ -208,9 +208,9 @@ describe('Tenants Storage Update', () => {
     // Should have closed session after upgrade
     expect(tenantSessionCoordinator.getSessionCountForTenant(tenant.id)).toBe(0)
 
-    // Expect tenant storage version to be 0.5
+    // Expect tenant storage version to be 0.6
     const updatedTenant = await agent.modules.tenants.getTenantById('1d45d3c2-3480-4375-ac6f-47c322f091b0')
-    expect(updatedTenant.storageVersion).toBe('0.5')
+    expect(updatedTenant.storageVersion).toBe('0.6')
 
     // Getting tenant should now work
     await expect(
