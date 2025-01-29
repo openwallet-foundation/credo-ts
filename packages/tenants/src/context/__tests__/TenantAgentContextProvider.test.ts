@@ -57,7 +57,7 @@ describe('TenantAgentContextProvider', () => {
             key: 'test-wallet-key',
           },
         },
-        storageVersion: '0.5',
+        storageVersion: '0.6',
       })
 
       const tenantAgentContext = jest.fn() as unknown as AgentContext
@@ -86,7 +86,7 @@ describe('TenantAgentContextProvider', () => {
             key: 'test-wallet-key',
           },
         },
-        storageVersion: '0.5',
+        storageVersion: '0.6',
       })
 
       const tenantAgentContext = jest.fn() as unknown as AgentContext
@@ -131,7 +131,7 @@ describe('TenantAgentContextProvider', () => {
             key: 'test-wallet-key',
           },
         },
-        storageVersion: '0.5',
+        storageVersion: '0.6',
       })
 
       const tenantAgentContext = jest.fn() as unknown as AgentContext
