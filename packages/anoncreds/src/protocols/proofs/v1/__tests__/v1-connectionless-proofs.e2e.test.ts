@@ -5,9 +5,17 @@ import { Subject } from 'rxjs'
 
 import { SubjectInboundTransport } from '../../../../../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from '../../../../../../../tests/transport/SubjectOutboundTransport'
+import { Agent } from '../../../../../../core/src'
+import { uuid } from '../../../../../../core/src/utils/uuid'
+import {
+  testLogger,
+  waitForProofExchangeRecordSubject,
+  makeConnection,
+  setupEventReplaySubjects,
+  getInMemoryAgentOptions,
+} from '../../../../../../core/tests'
 import {
   CredentialEventTypes,
-  Agent,
   AutoAcceptProof,
   ProofState,
   HandshakeProtocol,
@@ -18,15 +26,8 @@ import {
   ProofEventTypes,
   MediatorModule,
   MediationRecipientModule,
-} from '../../../../../../core/src'
-import { uuid } from '../../../../../../core/src/utils/uuid'
-import {
-  testLogger,
-  waitForProofExchangeRecordSubject,
-  makeConnection,
-  setupEventReplaySubjects,
-  getInMemoryAgentOptions,
-} from '../../../../../../core/tests'
+  MessageReceiver,
+} from '../../../../../../didcomm/src'
 import {
   getAnonCredsIndyModules,
   issueLegacyAnonCredsCredential,
@@ -87,7 +88,7 @@ describe('V1 Proofs - Connectionless - Indy', () => {
     testLogger.test('Faber sends presentation request to Alice')
 
     // eslint-disable-next-line prefer-const
-    let { proofRecord: faberProofExchangeRecord, message } = await faberAgent.proofs.createRequest({
+    let { proofRecord: faberProofExchangeRecord, message } = await faberAgent.modules.proofs.createRequest({
       protocolVersion: 'v1',
       proofFormats: {
         indy: {
@@ -119,11 +120,11 @@ describe('V1 Proofs - Connectionless - Indy', () => {
       },
     })
 
-    const outOfBandRecord = await faberAgent.oob.createInvitation({
+    const outOfBandRecord = await faberAgent.modules.oob.createInvitation({
       messages: [message],
       handshake: false,
     })
-    await aliceAgent.oob.receiveInvitation(outOfBandRecord.outOfBandInvitation)
+    await aliceAgent.modules.oob.receiveInvitation(outOfBandRecord.outOfBandInvitation)
 
     testLogger.test('Alice waits for presentation request from Faber')
     let aliceProofExchangeRecord = await waitForProofExchangeRecordSubject(aliceReplay, {
@@ -131,11 +132,11 @@ describe('V1 Proofs - Connectionless - Indy', () => {
     })
 
     testLogger.test('Alice accepts presentation request from Faber')
-    const requestedCredentials = await aliceAgent.proofs.selectCredentialsForRequest({
+    const requestedCredentials = await aliceAgent.modules.proofs.selectCredentialsForRequest({
       proofRecordId: aliceProofExchangeRecord.id,
     })
 
-    await aliceAgent.proofs.acceptRequest({
+    await aliceAgent.modules.proofs.acceptRequest({
       proofRecordId: aliceProofExchangeRecord.id,
       useReturnRoute: returnRoute,
       proofFormats: { indy: requestedCredentials.proofFormats.indy },
@@ -147,12 +148,12 @@ describe('V1 Proofs - Connectionless - Indy', () => {
       state: ProofState.PresentationReceived,
     })
 
-    const sentPresentationMessage = aliceAgent.proofs.findPresentationMessage(aliceProofExchangeRecord.id)
+    const sentPresentationMessage = aliceAgent.modules.proofs.findPresentationMessage(aliceProofExchangeRecord.id)
     // assert presentation is valid
     expect(faberProofExchangeRecord.isVerified).toBe(true)
 
     // Faber accepts presentation
-    await faberAgent.proofs.acceptPresentation({ proofRecordId: faberProofExchangeRecord.id })
+    await faberAgent.modules.proofs.acceptPresentation({ proofRecordId: faberProofExchangeRecord.id })
 
     // Alice waits till it receives presentation ack
     aliceProofExchangeRecord = await waitForProofExchangeRecordSubject(aliceReplay, {
@@ -204,7 +205,7 @@ describe('V1 Proofs - Connectionless - Indy', () => {
 
     agents = [aliceAgent, faberAgent]
 
-    const { message, proofRecord: faberProofExchangeRecord } = await faberAgent.proofs.createRequest({
+    const { message, proofRecord: faberProofExchangeRecord } = await faberAgent.modules.proofs.createRequest({
       protocolVersion: 'v1',
       proofFormats: {
         indy: {
@@ -237,13 +238,13 @@ describe('V1 Proofs - Connectionless - Indy', () => {
       autoAcceptProof: AutoAcceptProof.ContentApproved,
     })
 
-    const { message: requestMessage } = await faberAgent.oob.createLegacyConnectionlessInvitation({
+    const { message: requestMessage } = await faberAgent.modules.oob.createLegacyConnectionlessInvitation({
       recordId: faberProofExchangeRecord.id,
       message,
       domain: 'https://a-domain.com',
     })
 
-    await aliceAgent.receiveMessage(requestMessage.toJSON())
+    await aliceAgent.context.dependencyManager.resolve(MessageReceiver).receiveMessage(requestMessage.toJSON())
 
     await waitForProofExchangeRecordSubject(aliceReplay, {
       state: ProofState.Done,
@@ -294,7 +295,7 @@ describe('V1 Proofs - Connectionless - Indy', () => {
 
     agents = [aliceAgent, faberAgent]
 
-    const { message } = await faberAgent.proofs.createRequest({
+    const { message } = await faberAgent.modules.proofs.createRequest({
       protocolVersion: 'v1',
       proofFormats: {
         indy: {
@@ -327,16 +328,17 @@ describe('V1 Proofs - Connectionless - Indy', () => {
       autoAcceptProof: AutoAcceptProof.ContentApproved,
     })
 
-    const { invitationUrl, message: requestMessage } = await faberAgent.oob.createLegacyConnectionlessInvitation({
-      message,
-      domain: 'https://a-domain.com',
-    })
+    const { invitationUrl, message: requestMessage } =
+      await faberAgent.modules.oob.createLegacyConnectionlessInvitation({
+        message,
+        domain: 'https://a-domain.com',
+      })
 
-    for (const transport of faberAgent.outboundTransports) {
-      await faberAgent.unregisterOutboundTransport(transport)
+    for (const transport of faberAgent.modules.didcomm.outboundTransports) {
+      await faberAgent.modules.didcomm.unregisterOutboundTransport(transport)
     }
 
-    await aliceAgent.oob.receiveInvitationFromUrl(invitationUrl)
+    await aliceAgent.modules.oob.receiveInvitationFromUrl(invitationUrl)
 
     await waitForProofExchangeRecordSubject(aliceReplay, {
       state: ProofState.Done,
@@ -364,6 +366,7 @@ describe('V1 Proofs - Connectionless - Indy', () => {
       {
         endpoints: ['rxjs:mediator'],
       },
+      {},
       {
         mediator: new MediatorModule({
           autoAcceptMediationRequests: true,
@@ -376,22 +379,23 @@ describe('V1 Proofs - Connectionless - Indy', () => {
 
     // Initialize mediator
     const mediatorAgent = new Agent(mediatorAgentOptions)
-    mediatorAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
-    mediatorAgent.registerInboundTransport(new SubjectInboundTransport(mediatorMessages))
+    mediatorAgent.modules.didcomm.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
+    mediatorAgent.modules.didcomm.registerInboundTransport(new SubjectInboundTransport(mediatorMessages))
     await mediatorAgent.initialize()
 
-    const faberMediationOutOfBandRecord = await mediatorAgent.oob.createInvitation({
+    const faberMediationOutOfBandRecord = await mediatorAgent.modules.oob.createInvitation({
       label: 'faber invitation',
       handshakeProtocols: [HandshakeProtocol.Connections],
     })
 
-    const aliceMediationOutOfBandRecord = await mediatorAgent.oob.createInvitation({
+    const aliceMediationOutOfBandRecord = await mediatorAgent.modules.oob.createInvitation({
       label: 'alice invitation',
       handshakeProtocols: [HandshakeProtocol.Connections],
     })
 
     const faberAgentOptions = getInMemoryAgentOptions(
       `Connectionless proofs with mediator Faber-${unique}`,
+      {},
       {},
       {
         ...getAnonCredsIndyModules({
@@ -409,6 +413,7 @@ describe('V1 Proofs - Connectionless - Indy', () => {
     const aliceAgentOptions = getInMemoryAgentOptions(
       `Connectionless proofs with mediator Alice-${unique}`,
       {},
+      {},
       {
         ...getAnonCredsIndyModules({
           autoAcceptProofs: AutoAcceptProof.Always,
@@ -423,12 +428,16 @@ describe('V1 Proofs - Connectionless - Indy', () => {
     )
 
     const faberAgent = new Agent(faberAgentOptions)
-    faberAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
+    faberAgent.modules.didcomm.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
+    // FIXME: This should be done automatically when agent initializes
     await faberAgent.initialize()
+    await faberAgent.modules.mediationRecipient.initialize()
 
     const aliceAgent = new Agent(aliceAgentOptions)
-    aliceAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
+    aliceAgent.modules.didcomm.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     await aliceAgent.initialize()
+    // FIXME: This should be done automatically when agent initializes
+    await aliceAgent.modules.mediationRecipient.initialize()
 
     const [faberReplay, aliceReplay] = setupEventReplaySubjects(
       [faberAgent, aliceAgent],
@@ -474,7 +483,7 @@ describe('V1 Proofs - Connectionless - Indy', () => {
     })
 
     // eslint-disable-next-line prefer-const
-    let { message, proofRecord: faberProofExchangeRecord } = await faberAgent.proofs.createRequest({
+    let { message, proofRecord: faberProofExchangeRecord } = await faberAgent.modules.proofs.createRequest({
       protocolVersion: 'v1',
       proofFormats: {
         indy: {
@@ -507,13 +516,13 @@ describe('V1 Proofs - Connectionless - Indy', () => {
       autoAcceptProof: AutoAcceptProof.ContentApproved,
     })
 
-    const { message: requestMessage } = await faberAgent.oob.createLegacyConnectionlessInvitation({
+    const { message: requestMessage } = await faberAgent.modules.oob.createLegacyConnectionlessInvitation({
       recordId: faberProofExchangeRecord.id,
       message,
       domain: 'https://a-domain.com',
     })
 
-    const mediationRecord = await faberAgent.mediationRecipient.findDefaultMediator()
+    const mediationRecord = await faberAgent.modules.mediationRecipient.findDefaultMediator()
     if (!mediationRecord) {
       throw new Error('Faber agent has no default mediator')
     }
@@ -526,7 +535,7 @@ describe('V1 Proofs - Connectionless - Indy', () => {
       },
     })
 
-    await aliceAgent.receiveMessage(requestMessage.toJSON())
+    await aliceAgent.context.dependencyManager.resolve(MessageReceiver).receiveMessage(requestMessage.toJSON())
 
     await waitForProofExchangeRecordSubject(aliceReplay, {
       state: ProofState.Done,
@@ -538,7 +547,7 @@ describe('V1 Proofs - Connectionless - Indy', () => {
       threadId: requestMessage.threadId,
     })
 
-    await aliceAgent.mediationRecipient.stopMessagePickup()
-    await faberAgent.mediationRecipient.stopMessagePickup()
+    await aliceAgent.modules.mediationRecipient.stopMessagePickup()
+    await faberAgent.modules.mediationRecipient.stopMessagePickup()
   })
 })
