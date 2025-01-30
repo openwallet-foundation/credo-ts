@@ -1,7 +1,6 @@
 import type { EncryptedMessage } from '../../../../../types'
 
 import { EventEmitter } from '../../../../../../../core/src/agent/EventEmitter'
-import { InjectionSymbols } from '../../../../../../../core/src/constants'
 import { CredoError } from '../../../../../../../core/src/error'
 import { verkeyToDidKey } from '../../../../../../../core/src/modules/dids/helpers'
 import { uuid } from '../../../../../../../core/src/utils/uuid'
@@ -39,18 +38,18 @@ const EventEmitterMock = EventEmitter as jest.Mock<EventEmitter>
 const MessageSenderMock = MessageSender as jest.Mock<MessageSender>
 const ConnectionServiceMock = ConnectionService as jest.Mock<ConnectionService>
 
-const messagePickupModuleConfig = new MessagePickupModuleConfig({
-  maximumBatchSize: 10,
-  protocols: [new V1MessagePickupProtocol(), new V2MessagePickupProtocol()],
-})
 const messageSender = new MessageSenderMock()
 const eventEmitter = new EventEmitterMock()
 const connectionService = new ConnectionServiceMock()
 const messagePickupRepository = new InMessageRepositoryMock()
+const messagePickupModuleConfig = new MessagePickupModuleConfig({
+  maximumBatchSize: 10,
+  protocols: [new V1MessagePickupProtocol(), new V2MessagePickupProtocol()],
+  messagePickupRepository,
+})
 
 const agentContext = getAgentContext({
   registerInstances: [
-    [InjectionSymbols.MessagePickupRepository, messagePickupRepository],
     [EventEmitter, eventEmitter],
     [MessageSender, messageSender],
     [ConnectionService, connectionService],

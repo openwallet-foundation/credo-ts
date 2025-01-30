@@ -5,7 +5,6 @@ import type { MessageHandlerRegistry } from '../../../../MessageHandlerRegistry'
 import type { InboundMessageContext } from '../../../../models'
 import type { EncryptedMessage } from '../../../../types'
 import type { MessagePickupCompletedEvent } from '../../MessagePickupEvents'
-import type { MessagePickupRepository } from '../../storage/MessagePickupRepository'
 import type {
   DeliverMessagesProtocolOptions,
   DeliverMessagesProtocolReturnType,
@@ -16,7 +15,7 @@ import type {
 } from '../MessagePickupProtocolOptions'
 import type { AgentContext } from '@credo-ts/core'
 
-import { EventEmitter, InjectionSymbols, injectable, verkeyToDidKey } from '@credo-ts/core'
+import { EventEmitter, injectable, verkeyToDidKey } from '@credo-ts/core'
 
 import { AgentEventTypes } from '../../../../Events'
 import { Attachment } from '../../../../decorators/attachment/Attachment'
@@ -95,9 +94,8 @@ export class V2MessagePickupProtocol extends BaseMessagePickupProtocol {
     const { connectionRecord, recipientKey, messages } = options
     connectionRecord.assertReady()
 
-    const messagePickupRepository = agentContext.dependencyManager.resolve<MessagePickupRepository>(
-      InjectionSymbols.MessagePickupRepository
-    )
+    const messagePickupRepository =
+      agentContext.dependencyManager.resolve(MessagePickupModuleConfig).messagePickupRepository
 
     // Get available messages from queue, but don't delete them
     const messagesToDeliver =
@@ -144,13 +142,14 @@ export class V2MessagePickupProtocol extends BaseMessagePickupProtocol {
   }
 
   public async processStatusRequest(messageContext: InboundMessageContext<V2StatusRequestMessage>) {
+    const { agentContext, message } = messageContext
+
     // Assert ready connection
     const connection = messageContext.assertReadyConnection()
-    const recipientKey = messageContext.message.recipientKey
+    const recipientKey = message.recipientKey
 
-    const messagePickupRepository = messageContext.agentContext.dependencyManager.resolve<MessagePickupRepository>(
-      InjectionSymbols.MessagePickupRepository
-    )
+    const messagePickupRepository =
+      agentContext.dependencyManager.resolve(MessagePickupModuleConfig).messagePickupRepository
 
     const statusMessage = new V2StatusMessage({
       threadId: messageContext.message.threadId,
@@ -161,10 +160,7 @@ export class V2MessagePickupProtocol extends BaseMessagePickupProtocol {
       }),
     })
 
-    return new OutboundMessageContext(statusMessage, {
-      agentContext: messageContext.agentContext,
-      connection,
-    })
+    return new OutboundMessageContext(statusMessage, { agentContext, connection })
   }
 
   public async processDeliveryRequest(messageContext: InboundMessageContext<V2DeliveryRequestMessage>) {
@@ -172,11 +168,10 @@ export class V2MessagePickupProtocol extends BaseMessagePickupProtocol {
     const connection = messageContext.assertReadyConnection()
     const recipientKey = messageContext.message.recipientKey
 
-    const { message } = messageContext
+    const { agentContext, message } = messageContext
 
-    const messagePickupRepository = messageContext.agentContext.dependencyManager.resolve<MessagePickupRepository>(
-      InjectionSymbols.MessagePickupRepository
-    )
+    const messagePickupRepository =
+      agentContext.dependencyManager.resolve(MessagePickupModuleConfig).messagePickupRepository
 
     // Get available messages from queue, but don't delete them
     const messages = await messagePickupRepository.takeFromQueue({
@@ -209,29 +204,25 @@ export class V2MessagePickupProtocol extends BaseMessagePickupProtocol {
             messageCount: 0,
           })
 
-    return new OutboundMessageContext(outboundMessageContext, {
-      agentContext: messageContext.agentContext,
-      connection,
-    })
+    return new OutboundMessageContext(outboundMessageContext, { agentContext, connection })
   }
 
   public async processMessagesReceived(messageContext: InboundMessageContext<V2MessagesReceivedMessage>) {
     // Assert ready connection
     const connection = messageContext.assertReadyConnection()
 
-    const { message } = messageContext
+    const { agentContext, message } = messageContext
 
-    const messageRepository = messageContext.agentContext.dependencyManager.resolve<MessagePickupRepository>(
-      InjectionSymbols.MessagePickupRepository
-    )
+    const messagePickupRepository =
+      agentContext.dependencyManager.resolve(MessagePickupModuleConfig).messagePickupRepository
 
     if (message.messageIdList.length) {
-      await messageRepository.removeMessages({ connectionId: connection.id, messageIds: message.messageIdList })
+      await messagePickupRepository.removeMessages({ connectionId: connection.id, messageIds: message.messageIdList })
     }
 
     const statusMessage = new V2StatusMessage({
       threadId: messageContext.message.threadId,
-      messageCount: await messageRepository.getAvailableMessageCount({ connectionId: connection.id }),
+      messageCount: await messagePickupRepository.getAvailableMessageCount({ connectionId: connection.id }),
     })
 
     return new OutboundMessageContext(statusMessage, {
@@ -241,18 +232,18 @@ export class V2MessagePickupProtocol extends BaseMessagePickupProtocol {
   }
 
   public async processStatus(messageContext: InboundMessageContext<V2StatusMessage>) {
-    const { message: statusMessage } = messageContext
+    const { agentContext, message: statusMessage } = messageContext
     const { messageCount, recipientKey } = statusMessage
 
     const connection = messageContext.assertReadyConnection()
 
-    const messagePickupModuleConfig = messageContext.agentContext.dependencyManager.resolve(MessagePickupModuleConfig)
+    const messagePickupModuleConfig = agentContext.dependencyManager.resolve(MessagePickupModuleConfig)
 
-    const eventEmitter = messageContext.agentContext.dependencyManager.resolve(EventEmitter)
+    const eventEmitter = agentContext.dependencyManager.resolve(EventEmitter)
 
     //No messages to be retrieved: message pick-up is completed
     if (messageCount === 0) {
-      eventEmitter.emit<MessagePickupCompletedEvent>(messageContext.agentContext, {
+      eventEmitter.emit<MessagePickupCompletedEvent>(agentContext, {
         type: MessagePickupEventTypes.MessagePickupCompleted,
         payload: {
           connection,
@@ -278,10 +269,10 @@ export class V2MessagePickupProtocol extends BaseMessagePickupProtocol {
 
     const connection = messageContext.assertReadyConnection()
 
-    const messagePickupRepository = messageContext.agentContext.dependencyManager.resolve<MessagePickupRepository>(
-      InjectionSymbols.MessagePickupRepository
-    )
-    const sessionService = messageContext.agentContext.dependencyManager.resolve(MessagePickupSessionService)
+    const messagePickupRepository =
+      agentContext.dependencyManager.resolve(MessagePickupModuleConfig).messagePickupRepository
+
+    const sessionService = agentContext.dependencyManager.resolve(MessagePickupSessionService)
 
     if (message.liveDelivery) {
       sessionService.saveLiveSession(agentContext, {
@@ -299,7 +290,7 @@ export class V2MessagePickupProtocol extends BaseMessagePickupProtocol {
       messageCount: await messagePickupRepository.getAvailableMessageCount({ connectionId: connection.id }),
     })
 
-    return new OutboundMessageContext(statusMessage, { agentContext: messageContext.agentContext, connection })
+    return new OutboundMessageContext(statusMessage, { agentContext, connection })
   }
 
   public async processDelivery(messageContext: InboundMessageContext<V2MessageDeliveryMessage>) {

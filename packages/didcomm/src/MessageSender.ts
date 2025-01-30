@@ -1,6 +1,6 @@
 import type { AgentMessage } from './AgentMessage'
 import type { EnvelopeKeys } from './EnvelopeService'
-import type { AgentMessageSentEvent } from './Events'
+import type { AgentMessageSentEvent, QueuePackedMessageForPickupEvent } from './Events'
 import type { TransportSession } from './TransportService'
 import type { ConnectionRecord } from './modules/connections/repository'
 import type { OutOfBandRecord } from './modules/oob/repository'
@@ -33,7 +33,6 @@ import { DID_COMM_TRANSPORT_QUEUE } from './constants'
 import { ReturnRouteTypes } from './decorators/transport/TransportDecorator'
 import { MessageSendingError } from './errors'
 import { OutboundMessageContext, OutboundMessageSendStatus } from './models'
-import { MessagePickupRepository } from './modules/message-pickup/storage'
 import { DidCommDocumentService } from './services/DidCommDocumentService'
 
 export interface TransportPriorityOptions {
@@ -45,7 +44,6 @@ export interface TransportPriorityOptions {
 export class MessageSender {
   private envelopeService: EnvelopeService
   private transportService: TransportService
-  private messagePickupRepository: MessagePickupRepository
   private logger: Logger
   private didResolverService: DidResolverService
   private didCommDocumentService: DidCommDocumentService
@@ -55,7 +53,6 @@ export class MessageSender {
   public constructor(
     envelopeService: EnvelopeService,
     transportService: TransportService,
-    @inject(InjectionSymbols.MessagePickupRepository) messagePickupRepository: MessagePickupRepository,
     @inject(InjectionSymbols.Logger) logger: Logger,
     didResolverService: DidResolverService,
     didCommDocumentService: DidCommDocumentService,
@@ -63,7 +60,6 @@ export class MessageSender {
   ) {
     this.envelopeService = envelopeService
     this.transportService = transportService
-    this.messagePickupRepository = messagePickupRepository
     this.logger = logger
     this.didResolverService = didResolverService
     this.didCommDocumentService = didCommDocumentService
@@ -185,7 +181,7 @@ export class MessageSender {
     // If the other party shared a queue service endpoint in their did doc we queue the message
     if (queueService) {
       this.logger.debug(`Queue packed message for connection ${connection.id} (${connection.theirLabel})`)
-      await this.messagePickupRepository.addMessage({
+      this.emitQueuePackedMessageForPickupEvent(agentContext, {
         connectionId: connection.id,
         recipientDids: [verkeyToDidKey(recipientKey)],
         payload: encryptedMessage,
@@ -341,7 +337,10 @@ export class MessageSender {
       }
 
       const encryptedMessage = await this.envelopeService.packMessage(agentContext, message, keys)
-      await this.messagePickupRepository.addMessage({
+
+      // This is an internal event that will be catched by Message Pickup module and queued, in case the
+      // Agent supports it
+      this.emitQueuePackedMessageForPickupEvent(agentContext, {
         connectionId: connection.id,
         recipientDids: keys.recipientKeys.map((item) => new DidKey(item).did),
         payload: encryptedMessage,
@@ -551,6 +550,22 @@ export class MessageSender {
       payload: {
         message: outboundMessageContext,
         status,
+      },
+    })
+  }
+
+  private emitQueuePackedMessageForPickupEvent(
+    agentContext: AgentContext,
+    options: { connectionId: string; recipientDids: string[]; payload: EncryptedMessage }
+  ) {
+    const { connectionId, recipientDids, payload } = options
+
+    this.eventEmitter.emit<QueuePackedMessageForPickupEvent>(agentContext, {
+      type: AgentEventTypes.QueuePackedMessageForPickup,
+      payload: {
+        connectionId,
+        recipientDids,
+        payload,
       },
     })
   }

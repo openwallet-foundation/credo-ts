@@ -14,6 +14,7 @@ import {
 import { HandshakeProtocol } from '../../connections'
 import { MediatorModule } from '../../routing'
 import { MessageForwardingStrategy } from '../../routing/MessageForwardingStrategy'
+import { MessagePickupModuleConfig } from '../MessagePickupModuleConfig'
 import { V2MessagesReceivedMessage, V2StatusMessage } from '../protocol'
 
 const recipientOptions = getInMemoryAgentOptions('Mediation Pickup Loop Recipient')
@@ -92,8 +93,19 @@ describe('E2E Pick Up protocol', () => {
     await recipientAgent.shutdown()
     await recipientAgent.initialize()
 
+    const messagePickupRepository =
+      mediatorAgent.dependencyManager.resolve(MessagePickupModuleConfig).messagePickupRepository
+
+    expect(
+      await messagePickupRepository.getAvailableMessageCount({ connectionId: mediatorRecipientConnection.id })
+    ).toBe(0)
+
     const message = 'hello pickup V1'
     await mediatorAgent.modules.basicMessages.sendMessage(mediatorRecipientConnection.id, message)
+
+    expect(
+      await messagePickupRepository.getAvailableMessageCount({ connectionId: mediatorRecipientConnection.id })
+    ).toBe(1)
 
     await recipientAgent.modules.messagePickup.pickupMessages({
       connectionId: recipientMediatorConnection.id,
@@ -105,6 +117,10 @@ describe('E2E Pick Up protocol', () => {
     })
 
     expect(basicMessage.content).toBe(message)
+
+    expect(
+      await messagePickupRepository.getAvailableMessageCount({ connectionId: mediatorRecipientConnection.id })
+    ).toBe(0)
   })
 
   test('E2E manual Pick Up V1 loop - waiting for completion', async () => {
@@ -223,9 +239,20 @@ describe('E2E Pick Up protocol', () => {
     await recipientAgent.shutdown()
     await recipientAgent.initialize()
 
+    const messagePickupRepository =
+      mediatorAgent.dependencyManager.resolve(MessagePickupModuleConfig).messagePickupRepository
+
+    expect(
+      await messagePickupRepository.getAvailableMessageCount({ connectionId: mediatorRecipientConnection.id })
+    ).toBe(0)
+
     const message = 'hello pickup V2'
 
     await mediatorAgent.modules.basicMessages.sendMessage(mediatorRecipientConnection.id, message)
+
+    expect(
+      await messagePickupRepository.getAvailableMessageCount({ connectionId: mediatorRecipientConnection.id })
+    ).toBe(1)
 
     const basicMessagePromise = waitForBasicMessage(recipientAgent, {
       content: message,
@@ -254,6 +281,10 @@ describe('E2E Pick Up protocol', () => {
     })
 
     expect((secondStatusMessage as V2StatusMessage).messageCount).toBe(0)
+
+    expect(
+      await messagePickupRepository.getAvailableMessageCount({ connectionId: mediatorRecipientConnection.id })
+    ).toBe(0)
   })
 
   test('E2E manual Pick Up V2 loop - waiting for completion', async () => {

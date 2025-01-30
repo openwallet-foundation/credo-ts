@@ -3,7 +3,7 @@ import type { Socket } from 'net'
 
 import { AskarModule } from '@credo-ts/askar'
 import { Agent, ConsoleLogger, LogLevel } from '@credo-ts/core'
-import { ConnectionsModule, DidCommModule, MessagePickupModule, OutOfBandModule } from '@credo-ts/didcomm'
+import { ConnectionsModule, DidCommModule, OutOfBandModule } from '@credo-ts/didcomm'
 import { agentDependencies, HttpInboundTransport, WsInboundTransport } from '@credo-ts/node'
 import { ariesAskar } from '@hyperledger/aries-askar-nodejs'
 import express from 'express'
@@ -35,7 +35,6 @@ const run = async () => {
       askar: new AskarModule({ ariesAskar }),
       didcomm: new DidCommModule({ endpoints: [`http://localhost:${port}`] }),
       oob: new OutOfBandModule(),
-      messagePickup: new MessagePickupModule(),
       dummy: new DummyModule({ autoAcceptRequests }),
       connections: new ConnectionsModule({
         autoAcceptConnections: true,

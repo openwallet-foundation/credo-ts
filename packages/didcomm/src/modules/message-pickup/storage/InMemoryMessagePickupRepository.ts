@@ -17,10 +17,10 @@ interface InMemoryQueuedMessage extends QueuedMessage {
 
 @injectable()
 export class InMemoryMessagePickupRepository implements MessagePickupRepository {
-  private logger: Logger
+  private logger?: Logger
   private messages: InMemoryQueuedMessage[]
 
-  public constructor(@inject(InjectionSymbols.Logger) logger: Logger) {
+  public constructor(@inject(InjectionSymbols.Logger) logger?: Logger) {
     this.logger = logger
     this.messages = []
   }
@@ -51,7 +51,7 @@ export class InMemoryMessagePickupRepository implements MessagePickupRepository 
 
     messages = messages.slice(0, messagesToTake)
 
-    this.logger.debug(`Taking ${messagesToTake} messages from queue for connection ${connectionId}`)
+    this.logger?.debug(`Taking ${messagesToTake} messages from queue for connection ${connectionId}`)
 
     // Mark taken messages in order to prevent them of being retrieved again
     messages.forEach((msg) => {

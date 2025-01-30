@@ -34,7 +34,7 @@ Base DIDComm package for [Credo](https://github.com/openwallet-foundation/credo-
 
 In order for this module to work, we have to inject it into the agent to access agent functionality. See the example for more information.
 
-> **Note**: At the moment, for a basic DIDComm agent to work, it is required to instantiate at least 3 modules besides the basic `DidCommModule`: `OutOfBandModule`, `ConnectionsModule` and `MessagePickupModule`
+> **Note**: At the moment, for a basic DIDComm agent to work, it is required to instantiate at least 2 modules besides the basic `DidCommModule`: `OutOfBandModule` and `ConnectionsModule`
 
 ### Example of usage
 

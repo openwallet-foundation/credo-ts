@@ -8,7 +8,6 @@ import {
   ConnectionsModule,
   DidCommModule,
   OutOfBandModule,
-  MessagePickupModule,
 } from '@credo-ts/didcomm'
 import { agentDependencies } from '@credo-ts/node'
 import { ariesAskar } from '@hyperledger/aries-askar-nodejs'
@@ -36,7 +35,6 @@ const run = async () => {
       askar: new AskarModule({ ariesAskar }),
       didcomm: new DidCommModule(),
       oob: new OutOfBandModule(),
-      messagePickup: new MessagePickupModule(),
       dummy: new DummyModule(),
       connections: new ConnectionsModule({
         autoAcceptConnections: true,

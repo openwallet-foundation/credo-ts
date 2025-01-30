@@ -4,7 +4,6 @@ import type { FeatureRegistry } from '../../../../FeatureRegistry'
 import type { MessageHandlerRegistry } from '../../../../MessageHandlerRegistry'
 import type { InboundMessageContext } from '../../../../models'
 import type { MessagePickupCompletedEvent } from '../../MessagePickupEvents'
-import type { MessagePickupRepository } from '../../storage/MessagePickupRepository'
 import type {
   DeliverMessagesProtocolOptions,
   DeliverMessagesProtocolReturnType,
@@ -14,7 +13,7 @@ import type {
 } from '../MessagePickupProtocolOptions'
 import type { AgentContext } from '@credo-ts/core'
 
-import { EventEmitter, InjectionSymbols, CredoError, injectable } from '@credo-ts/core'
+import { EventEmitter, CredoError, injectable } from '@credo-ts/core'
 
 import { AgentEventTypes } from '../../../../Events'
 import { Protocol, OutboundMessageContext } from '../../../../models'
@@ -68,13 +67,12 @@ export class V1MessagePickupProtocol extends BaseMessagePickupProtocol {
     const { connectionRecord, batchSize, messages } = options
     connectionRecord.assertReady()
 
-    const pickupMessageQueue = agentContext.dependencyManager.resolve<MessagePickupRepository>(
-      InjectionSymbols.MessagePickupRepository
-    )
+    const pickupMessageRepository =
+      agentContext.dependencyManager.resolve(MessagePickupModuleConfig).messagePickupRepository
 
     const messagesToDeliver =
       messages ??
-      (await pickupMessageQueue.takeFromQueue({
+      (await pickupMessageRepository.takeFromQueue({
         connectionId: connectionRecord.id,
         limit: batchSize, // TODO: Define as config parameter for message holder side
         deleteMessages: true,
@@ -105,13 +103,12 @@ export class V1MessagePickupProtocol extends BaseMessagePickupProtocol {
     // Assert ready connection
     const connection = messageContext.assertReadyConnection()
 
-    const { message } = messageContext
+    const { message, agentContext } = messageContext
 
-    const pickupMessageQueue = messageContext.agentContext.dependencyManager.resolve<MessagePickupRepository>(
-      InjectionSymbols.MessagePickupRepository
-    )
+    const pickupMessageRepository =
+      agentContext.dependencyManager.resolve(MessagePickupModuleConfig).messagePickupRepository
 
-    const messages = await pickupMessageQueue.takeFromQueue({
+    const messages = await pickupMessageRepository.takeFromQueue({
       connectionId: connection.id,
       limit: message.batchSize,
       deleteMessages: true,

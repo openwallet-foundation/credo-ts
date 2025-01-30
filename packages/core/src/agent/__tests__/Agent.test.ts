@@ -19,7 +19,7 @@ import { BasicMessagesApi } from '../../../../didcomm/src/modules/basic-messages
 import { ConnectionsApi, ConnectionRepository } from '../../../../didcomm/src/modules/connections'
 import { CredentialRepository } from '../../../../didcomm/src/modules/credentials'
 import { CredentialsApi } from '../../../../didcomm/src/modules/credentials/CredentialsApi'
-import { MessagePickupApi, InMemoryMessagePickupRepository } from '../../../../didcomm/src/modules/message-pickup'
+import { MessagePickupApi } from '../../../../didcomm/src/modules/message-pickup'
 import { ProofsApi, ProofRepository } from '../../../../didcomm/src/modules/proofs'
 import {
   MediationRecipientService,
@@ -185,9 +185,6 @@ describe('Agent', () => {
 
       // Symbols, interface based
       expect(container.resolve(InjectionSymbols.Logger)).toBe(agentOptions.config.logger)
-      expect(container.resolve(InjectionSymbols.MessagePickupRepository)).toBeInstanceOf(
-        InMemoryMessagePickupRepository
-      )
 
       // Agent
       expect(container.resolve(MessageSender)).toBeInstanceOf(MessageSender)
@@ -226,9 +223,6 @@ describe('Agent', () => {
 
       // Symbols, interface based
       expect(container.resolve(InjectionSymbols.Logger)).toBe(container.resolve(InjectionSymbols.Logger))
-      expect(container.resolve(InjectionSymbols.MessagePickupRepository)).toBe(
-        container.resolve(InjectionSymbols.MessagePickupRepository)
-      )
       expect(container.resolve(InjectionSymbols.StorageService)).toBe(
         container.resolve(InjectionSymbols.StorageService)
       )

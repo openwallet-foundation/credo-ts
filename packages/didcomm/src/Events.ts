@@ -9,6 +9,7 @@ export enum AgentEventTypes {
   AgentMessageReceived = 'AgentMessageReceived',
   AgentMessageProcessed = 'AgentMessageProcessed',
   AgentMessageSent = 'AgentMessageSent',
+  QueuePackedMessageForPickup = 'QueuePackedMessageForPickup',
 }
 
 export interface AgentMessageReceivedEvent extends BaseEvent {
@@ -37,5 +38,14 @@ export interface AgentMessageSentEvent extends BaseEvent {
   payload: {
     message: OutboundMessageContext
     status: OutboundMessageSendStatus
+  }
+}
+
+export interface QueuePackedMessageForPickupEvent extends BaseEvent {
+  type: typeof AgentEventTypes.QueuePackedMessageForPickup
+  payload: {
+    connectionId: string
+    recipientDids: string[]
+    payload: EncryptedMessage
   }
 }
