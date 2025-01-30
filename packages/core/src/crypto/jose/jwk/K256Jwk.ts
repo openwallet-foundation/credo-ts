@@ -1,6 +1,7 @@
 import type { JwkJson } from './Jwk'
 import type { JwaEncryptionAlgorithm } from '../jwa/alg'
 
+import { CredoError } from '../../../error'
 import { TypedArrayEncoder } from '../../../utils'
 import { KeyType } from '../../KeyType'
 import { JwaCurve, JwaKeyType } from '../jwa'
@@ -15,7 +16,6 @@ import {
   PREFIX_UNCOMPRESSED,
 } from './ecCompression'
 import { hasKty, hasCrv, hasX, hasY, hasValidUse } from './validate'
-import { CredoError } from '../../../error'
 
 export class K256Jwk extends Jwk {
   public static readonly supportedEncryptionAlgorithms: JwaEncryptionAlgorithm[] = []

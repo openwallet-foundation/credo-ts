@@ -2,9 +2,9 @@ import type { KeyType } from './KeyType'
 
 import { MultiBaseEncoder, TypedArrayEncoder, VarintEncoder } from '../utils'
 
+import { compressIfPossible, expandIfPossible } from './jose/jwk/ecCompression'
 import { isEncryptionSupportedForKeyType, isSigningSupportedForKeyType } from './keyUtils'
 import { getKeyTypeByMultiCodecPrefix, getMultiCodecPrefixByKeyType } from './multiCodecKey'
-import { compressIfPossible, expandIfPossible } from './jose/jwk/ecCompression'
 
 export class Key {
   public readonly publicKey: Uint8Array

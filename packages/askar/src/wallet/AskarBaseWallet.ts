@@ -28,6 +28,7 @@ import {
   KeyBackend,
   KeyType,
   utils,
+  expandIfPossible,
 } from '@credo-ts/core'
 import {
   CryptoBox,
@@ -50,7 +51,6 @@ import {
 } from '../utils'
 
 import { didcommV1Pack, didcommV1Unpack } from './didcommV1'
-import { compressIfPossible, expandIfPossible } from 'packages/core/src/crypto/jose/jwk/ecCompression'
 
 const isError = (error: unknown): error is Error => error instanceof Error
 

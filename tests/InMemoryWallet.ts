@@ -13,6 +13,7 @@ import BigNumber from 'bn.js'
 
 import { convertToAskarKeyBackend } from '../packages/askar/src/utils/askarKeyBackend'
 import { didcommV1Pack, didcommV1Unpack } from '../packages/askar/src/wallet/didcommV1'
+import { expandIfPossible } from '../packages/core/src/crypto/jose/jwk/ecCompression'
 
 import {
   JsonEncoder,
@@ -28,7 +29,6 @@ import {
   TypedArrayEncoder,
   KeyBackend,
 } from '@credo-ts/core'
-import { expandIfPossible } from '../packages/core/src/crypto/jose/jwk/ecCompression'
 
 const inMemoryWallets: InMemoryWallets = {}
 

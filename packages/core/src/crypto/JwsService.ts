@@ -9,12 +9,11 @@ import type { Key } from './Key'
 import type { Jwk } from './jose/jwk'
 import type { JwkJson } from './jose/jwk/Jwk'
 import type { AgentContext } from '../agent'
-import { Buffer } from '../utils'
 
 import { CredoError } from '../error'
 import { EncodedX509Certificate, X509ModuleConfig } from '../modules/x509'
 import { injectable } from '../plugins'
-import { isJsonObject, JsonEncoder, TypedArrayEncoder } from '../utils'
+import { Buffer, isJsonObject, JsonEncoder, TypedArrayEncoder } from '../utils'
 import { WalletError } from '../wallet/error'
 
 import { X509Service } from './../modules/x509/X509Service'

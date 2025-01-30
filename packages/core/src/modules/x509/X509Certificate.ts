@@ -12,8 +12,6 @@ import {
 import * as x509 from '@peculiar/x509'
 
 import { Key } from '../../crypto/Key'
-import { KeyType } from '../../crypto/KeyType'
-import { compress } from '../../crypto/jose/jwk/ecCompression'
 import { CredoWebCrypto, CredoWebCryptoKey } from '../../crypto/webcrypto'
 import { credoKeyTypeIntoCryptoKeyAlgorithm, spkiAlgorithmIntoCredoKeyType } from '../../crypto/webcrypto/utils'
 import { TypedArrayEncoder } from '../../utils'
