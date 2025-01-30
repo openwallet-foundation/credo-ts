@@ -50,6 +50,7 @@ import {
 } from '../utils'
 
 import { didcommV1Pack, didcommV1Unpack } from './didcommV1'
+import { compressIfPossible, expandIfPossible } from 'packages/core/src/crypto/jose/jwk/ecCompression'
 
 const isError = (error: unknown): error is Error => error instanceof Error
 
@@ -206,7 +207,9 @@ export abstract class AskarBaseWallet implements Wallet {
 
         // Generate a hardware-backed P-256 keypair
         await secureEnvironment.generateKeypair(kid)
-        const publicKeyBytes = await secureEnvironment.getPublicBytesForKeyId(kid)
+        const compressedPublicKeyBytes = await secureEnvironment.getPublicBytesForKeyId(kid)
+
+        const publicKeyBytes = expandIfPossible(compressedPublicKeyBytes, keyType)
         const publicKeyBase58 = TypedArrayEncoder.toBase58(publicKeyBytes)
 
         await this.storeSecureEnvironmentKeyById({
