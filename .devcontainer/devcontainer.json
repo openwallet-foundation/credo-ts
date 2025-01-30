@@ -1,12 +1,16 @@
 {
-  "image": "node:18",
-  "runArgs": ["--env-file", ".devcontainer/devcontainer.env"],
-  "workspaceMount": "source=${localWorkspaceFolder},target=/work,type=bind",
+  "name": "Credo",
+  "dockerComposeFile": ["docker-compose.yml"], // if you are on arm, change this to docker-compose.arm.yml
+  "service": "credo",
+  "remoteUser": "node",
   "workspaceFolder": "/work",
+  "containerEnv": {
+    "COREPACK_ENABLE_STRICT": "1"
+  },
+  "postCreateCommand": "sudo chown node node_modules && sudo sudo corepack enable && yes | corepack prepare pnpm --activate && yes | pnpm install --frozen-lockfile",
   "customizations": {
     "vscode": {
       "extensions": ["esbenp.prettier-vscode"]
     }
-  },
-  "postCreateCommand": "pnpm install"
+  }
 }
