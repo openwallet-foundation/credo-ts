@@ -85,19 +85,9 @@ export class X509Certificate {
     const privateKey = certificate.privateKey ? new Uint8Array(certificate.privateKey.rawData) : undefined
 
     const keyType = spkiAlgorithmIntoCredoKeyType(publicKey.algorithm)
+    const publicKeyBytes = new Uint8Array(publicKey.subjectPublicKey)
 
-    // TODO(crypto): Currently this only does point-compression for P256.
-    //               We should either store all keys as uncompressed, or we should compress all supported keys here correctly
-    let keyBytes = new Uint8Array(publicKey.subjectPublicKey)
-    if (publicKey.subjectPublicKey.byteLength === 65 && keyType === KeyType.P256) {
-      if (keyBytes[0] !== 0x04) {
-        throw new X509Error('Received P256 key with 65 bytes, but key did not start with 0x04. Invalid key')
-      }
-      // TODO(crypto): the compress method is bugged because it does not expect the required `0x04` prefix. Here we strip that and receive the expected result
-      keyBytes = compress(keyBytes.slice(1))
-    }
-
-    const key = new Key(keyBytes, keyType)
+    const key = new Key(publicKeyBytes, keyType)
 
     const extensions = certificate.extensions
       .map((e) => {

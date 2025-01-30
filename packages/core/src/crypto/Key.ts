@@ -15,6 +15,10 @@ export class Key {
     this.keyType = keyType
   }
 
+  public get compressedPublicKey() {
+    return compressIfPossible(this.publicKey, this.keyType)
+  }
+
   public static fromPublicKey(publicKey: Uint8Array, keyType: KeyType) {
     return new Key(publicKey, keyType)
   }

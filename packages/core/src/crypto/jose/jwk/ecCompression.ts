@@ -9,7 +9,7 @@ import bigInt from 'big-integer'
 import { Buffer } from '../../../utils/buffer'
 import { KeyType } from '../../KeyType'
 
-type CompressableKey = KeyType.K256 | KeyType.P256 | KeyType.P384 | KeyType.P521
+export type CompressableKey = KeyType.K256 | KeyType.P256 | KeyType.P384 | KeyType.P521
 
 const curveToPointLength: Record<CompressableKey, number> = {
   [KeyType.K256]: 64,

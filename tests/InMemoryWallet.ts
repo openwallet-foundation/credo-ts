@@ -28,6 +28,7 @@ import {
   TypedArrayEncoder,
   KeyBackend,
 } from '@credo-ts/core'
+import { expandIfPossible } from '../packages/core/src/crypto/jose/jwk/ecCompression'
 
 const inMemoryWallets: InMemoryWallets = {}
 
@@ -183,8 +184,9 @@ export class InMemoryWallet implements Wallet {
           : AskarKey.generate(algorithm, convertToAskarKeyBackend(keyBackend))
 
         const keyPublicBytes = key.publicBytes
+
         // Store key
-        this.getInMemoryKeys()[TypedArrayEncoder.toBase58(keyPublicBytes)] = {
+        this.getInMemoryKeys()[TypedArrayEncoder.toBase58(expandIfPossible(keyPublicBytes, keyType))] = {
           publicKeyBytes: keyPublicBytes,
           secretKeyBytes: key.secretBytes,
           keyType,
@@ -260,7 +262,7 @@ export class InMemoryWallet implements Wallet {
     try {
       askarKey = AskarKey.fromPublicBytes({
         algorithm: keyAlgFromString(key.keyType),
-        publicKey: key.publicKey,
+        publicKey: key.compressedPublicKey,
       })
       return askarKey.verifySignature({ message: data as Buffer, signature })
     } finally {
