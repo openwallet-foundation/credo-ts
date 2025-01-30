@@ -58,7 +58,7 @@ export class ConnectionsModuleConfig {
 
   /** See {@link ConnectionsModuleConfigOptions.peerNumAlgoForDidExchangeRequests} */
   public get peerNumAlgoForDidExchangeRequests() {
-    return this.#peerNumAlgoForDidExchangeRequests ?? PeerDidNumAlgo.GenesisDoc
+    return this.#peerNumAlgoForDidExchangeRequests ?? PeerDidNumAlgo.ShortFormAndLongForm
   }
 
   /** See {@link ConnectionsModuleConfigOptions.peerNumAlgoForDidExchangeRequests} */

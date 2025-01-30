@@ -767,7 +767,7 @@ describe('out of band', () => {
 
       // Use the invitation did from the first connection to create the second connection
       const outOfBandRecord2 = await faberAgent.modules.oob.createInvitation({
-        invitationDid: outOfBandRecord1.outOfBandInvitation.invitationDids[0],
+        invitationDid: faberAliceConnection.did,
       })
 
       let { connectionRecord: aliceFaberConnection2 } = await aliceAgent.modules.oob.receiveInvitation(

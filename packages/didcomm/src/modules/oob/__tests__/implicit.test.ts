@@ -46,8 +46,8 @@ const aliceAgentOptions = getInMemoryAgentOptions(
 )
 
 describe('out of band implicit', () => {
-  let faberAgent: Agent
-  let aliceAgent: Agent
+  let faberAgent: Agent<typeof faberAgentOptions.modules>
+  let aliceAgent: Agent<typeof aliceAgentOptions.modules>
 
   beforeAll(async () => {
     faberAgent = new Agent(faberAgentOptions)
@@ -80,7 +80,7 @@ describe('out of band implicit', () => {
     let { connectionRecord: aliceFaberConnection } = await aliceAgent.modules.oob.receiveImplicitInvitation({
       did: inMemoryDid,
       alias: 'Faber public',
-      label: 'Alice',
+      label: 'Custom Alice',
       handshakeProtocols: [HandshakeProtocol.DidExchange],
     })
 
@@ -96,8 +96,8 @@ describe('out of band implicit', () => {
 
     expect(aliceFaberConnection).toBeConnectedWith(faberAliceConnection)
     expect(faberAliceConnection).toBeConnectedWith(aliceFaberConnection)
-    expect(faberAliceConnection.theirLabel).toBe('Alice')
-    expect(aliceFaberConnection.alias).toBe('Faber public')
+    expect(faberAliceConnection.theirLabel).toBe('Custom Alice')
+    expect(aliceFaberConnection.theirLabel).toBe('Faber public')
     expect(aliceFaberConnection.invitationDid).toBe(inMemoryDid)
 
     // It is possible for an agent to check if it has already a connection to a certain public entity
@@ -112,7 +112,6 @@ describe('out of band implicit', () => {
     let { connectionRecord: aliceFaberConnection } = await aliceAgent.modules.oob.receiveImplicitInvitation({
       did: serviceUrl,
       alias: 'Faber public',
-      label: 'Alice',
       handshakeProtocols: [HandshakeProtocol.DidExchange],
     })
 
@@ -128,8 +127,8 @@ describe('out of band implicit', () => {
 
     expect(aliceFaberConnection).toBeConnectedWith(faberAliceConnection)
     expect(faberAliceConnection).toBeConnectedWith(aliceFaberConnection)
-    expect(faberAliceConnection.theirLabel).toBe('Alice')
-    expect(aliceFaberConnection.alias).toBe('Faber public')
+    expect(faberAliceConnection.theirLabel).toBe(aliceAgent.config.label)
+    expect(aliceFaberConnection.theirLabel).toBe('Faber public')
     expect(aliceFaberConnection.invitationDid).toBe(serviceUrl)
 
     // It is possible for an agent to check if it has already a connection to a certain public entity
@@ -142,7 +141,6 @@ describe('out of band implicit', () => {
     let { connectionRecord: aliceFaberConnection } = await aliceAgent.modules.oob.receiveImplicitInvitation({
       did: inMemoryDid,
       alias: 'Faber public',
-      label: 'Alice',
       handshakeProtocols: [HandshakeProtocol.Connections],
     })
 
@@ -158,8 +156,8 @@ describe('out of band implicit', () => {
 
     expect(aliceFaberConnection).toBeConnectedWith(faberAliceConnection)
     expect(faberAliceConnection).toBeConnectedWith(aliceFaberConnection)
-    expect(faberAliceConnection.theirLabel).toBe('Alice')
-    expect(aliceFaberConnection.alias).toBe('Faber public')
+    expect(faberAliceConnection.theirLabel).toBe(aliceAgent.config.label)
+    expect(aliceFaberConnection.theirLabel).toBe('Faber public')
     expect(aliceFaberConnection.invitationDid).toBe(inMemoryDid)
 
     // It is possible for an agent to check if it has already a connection to a certain public entity
@@ -171,7 +169,6 @@ describe('out of band implicit', () => {
       aliceAgent.modules.oob.receiveImplicitInvitation({
         did: 'did:sov:ZSEqSci581BDZCFPa29ScB',
         alias: 'Faber public',
-        label: 'Alice',
         handshakeProtocols: [HandshakeProtocol.DidExchange],
       })
     ).rejects.toThrow(/Unable to resolve did/)
@@ -183,7 +180,6 @@ describe('out of band implicit', () => {
     let { connectionRecord: aliceFaberConnection } = await aliceAgent.modules.oob.receiveImplicitInvitation({
       did: inMemoryDid,
       alias: 'Faber public',
-      label: 'Alice',
       handshakeProtocols: [HandshakeProtocol.Connections],
     })
 
@@ -199,8 +195,8 @@ describe('out of band implicit', () => {
 
     expect(aliceFaberConnection).toBeConnectedWith(faberAliceConnection)
     expect(faberAliceConnection).toBeConnectedWith(aliceFaberConnection)
-    expect(faberAliceConnection.theirLabel).toBe('Alice')
-    expect(aliceFaberConnection.alias).toBe('Faber public')
+    expect(faberAliceConnection.theirLabel).toBe(aliceAgent.config.label)
+    expect(aliceFaberConnection.theirLabel).toBe('Faber public')
     expect(aliceFaberConnection.invitationDid).toBe(inMemoryDid)
 
     // Repeat implicit invitation procedure
@@ -224,7 +220,7 @@ describe('out of band implicit', () => {
     expect(aliceFaberNewConnection).toBeConnectedWith(faberAliceNewConnection)
     expect(faberAliceNewConnection).toBeConnectedWith(aliceFaberNewConnection)
     expect(faberAliceNewConnection.theirLabel).toBe('Alice New')
-    expect(aliceFaberNewConnection.alias).toBe('Faber public New')
+    expect(aliceFaberNewConnection.theirLabel).toBe('Faber public New')
     expect(aliceFaberNewConnection.invitationDid).toBe(inMemoryDid)
 
     // Both connections will be associated to the same invitation did
