@@ -1,61 +1,61 @@
 import type { AgentContext, JwaSignatureAlgorithm, KeyType } from '@credo-ts/core'
 import type {
-  OpenId4VciCredentialConfigurationSupported,
-  OpenId4VciCredentialIssuerMetadata,
-  OpenId4VciMetadata,
+    OpenId4VciCredentialConfigurationSupported,
+    OpenId4VciCredentialIssuerMetadata,
+    OpenId4VciMetadata,
 } from '../shared'
 import type {
-  OpenId4VciAcceptCredentialOfferOptions,
-  OpenId4VciAuthCodeFlowOptions,
-  OpenId4VciCredentialBindingResolver,
-  OpenId4VciCredentialResponse,
-  OpenId4VciDpopRequestOptions,
-  OpenId4VciNotificationEvent,
-  OpenId4VciProofOfPossessionRequirements,
-  OpenId4VciResolvedAuthorizationRequest,
-  OpenId4VciResolvedCredentialOffer,
-  OpenId4VciRetrieveAuthorizationCodeUsingPresentationOptions,
-  OpenId4VciSupportedCredentialFormats,
-  OpenId4VciTokenRequestOptions,
+    OpenId4VciAcceptCredentialOfferOptions,
+    OpenId4VciAuthCodeFlowOptions,
+    OpenId4VciCredentialBindingResolver,
+    OpenId4VciCredentialResponse,
+    OpenId4VciDpopRequestOptions,
+    OpenId4VciNotificationEvent,
+    OpenId4VciProofOfPossessionRequirements,
+    OpenId4VciResolvedAuthorizationRequest,
+    OpenId4VciResolvedCredentialOffer,
+    OpenId4VciRetrieveAuthorizationCodeUsingPresentationOptions,
+    OpenId4VciSupportedCredentialFormats,
+    OpenId4VciTokenRequestOptions,
 } from './OpenId4VciHolderServiceOptions'
 
 import {
-  getAuthorizationServerMetadataFromList,
-  JwtSigner,
-  Oauth2Client,
-  preAuthorizedCodeGrantIdentifier,
-  RequestDpopOptions,
+    getAuthorizationServerMetadataFromList,
+    JwtSigner,
+    Oauth2Client,
+    preAuthorizedCodeGrantIdentifier,
+    RequestDpopOptions,
 } from '@animo-id/oauth2'
 import {
-  AuthorizationFlow,
-  CredentialResponse,
-  IssuerMetadataResult,
-  Oid4vciClient,
-  Oid4vciRetrieveCredentialsError,
+    AuthorizationFlow,
+    CredentialResponse,
+    IssuerMetadataResult,
+    Oid4vciClient,
+    Oid4vciRetrieveCredentialsError,
 } from '@animo-id/oid4vci'
 import {
-  CredoError,
-  getJwkClassFromJwaSignatureAlgorithm,
-  getJwkFromJson,
-  getJwkFromKey,
-  getSupportedVerificationMethodTypesFromKeyType,
-  inject,
-  injectable,
-  InjectionSymbols,
-  Jwk,
-  Logger,
-  Mdoc,
-  MdocApi,
-  parseDid,
-  SdJwtVcApi,
-  SignatureSuiteRegistry,
-  W3cCredentialService,
-  W3cJsonLdVerifiableCredential,
-  W3cJwtVerifiableCredential,
+    CredoError,
+    getJwkClassFromJwaSignatureAlgorithm,
+    getJwkFromJson,
+    getJwkFromKey,
+    getSupportedVerificationMethodTypesFromKeyType,
+    inject,
+    injectable,
+    InjectionSymbols,
+    Jwk,
+    Logger,
+    Mdoc,
+    MdocApi,
+    parseDid,
+    SdJwtVcApi,
+    SignatureSuiteRegistry,
+    W3cCredentialService,
+    W3cJsonLdVerifiableCredential,
+    W3cJwtVerifiableCredential,
 } from '@credo-ts/core'
 
 import { OpenId4VciCredentialFormatProfile } from '../shared'
-import { getOid4vciCallbacks } from '../shared/callbacks'
+import { getOid4vcCallbacks } from '../shared/callbacks'
 import { getOfferedCredentials, getScopesFromCredentialConfigurationsSupported } from '../shared/issuerMetadataUtils'
 import { getKeyFromDid, getSupportedJwaSignatureAlgorithms } from '../shared/utils'
 
@@ -872,13 +872,13 @@ export class OpenId4VciHolderService {
 
   private getClient(agentContext: AgentContext) {
     return new Oid4vciClient({
-      callbacks: getOid4vciCallbacks(agentContext),
+      callbacks: getOid4vcCallbacks(agentContext),
     })
   }
 
   private getOauth2Client(agentContext: AgentContext) {
     return new Oauth2Client({
-      callbacks: getOid4vciCallbacks(agentContext),
+      callbacks: getOid4vcCallbacks(agentContext),
     })
   }
 }

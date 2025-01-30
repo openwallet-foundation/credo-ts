@@ -33,12 +33,11 @@ import {
   W3cIssuer,
   X509Module,
   X509ModuleConfig,
-  X509Service
+  X509Service,
 } from '@credo-ts/core'
 import { ResponseMode } from '@sphereon/did-auth-siop'
 import express, { type Express } from 'express'
 
-import { setupNockToExpress } from '../../../tests/nockToExpress'
 import { AskarModule } from '../../askar/src'
 import { askarModuleConfig } from '../../askar/tests/helpers'
 import { TenantsModule } from '../../tenants/src'
@@ -51,6 +50,7 @@ import {
 } from '../src'
 import { getOid4vciCallbacks } from '../src/shared/callbacks'
 
+import { Server } from 'http'
 import {
   createAgentFromModules,
   createTenantForAgent,
@@ -71,7 +71,7 @@ const verificationBaseUrl = `${baseUrl}/oid4vp`
 
 describe('OpenId4Vc', () => {
   let expressApp: Express
-  let cleanupMockServer: () => void
+  let expressServer: Server
 
   let issuer: AgentType<{
     openId4VcIssuer: OpenId4VcIssuerModule
@@ -196,11 +196,11 @@ describe('OpenId4Vc', () => {
     expressApp.use('/oid4vci', issuer.agent.modules.openId4VcIssuer.config.router)
     expressApp.use('/oid4vp', verifier.agent.modules.openId4VcVerifier.config.router)
 
-    cleanupMockServer = setupNockToExpress(baseUrl, expressApp)
+    expressServer = expressApp.listen(serverPort)
   })
 
   afterEach(async () => {
-    cleanupMockServer()
+    expressServer?.close()
 
     await issuer.agent.shutdown()
     await issuer.agent.wallet.delete()
@@ -488,7 +488,7 @@ describe('OpenId4Vc', () => {
             },
           })
 
-            return {
+          return {
             jwt: compact,
             signerJwk: authorizationServerJwk,
           }
@@ -600,7 +600,6 @@ describe('OpenId4Vc', () => {
     server.close()
   })
 
-
   it('e2e flow with tenants, verifier endpoints verifying a jwt-vc', async () => {
     const holderTenant = await holder.agent.modules.tenants.getTenantAgent({ tenantId: holder1.tenantId })
     const verifierTenant1 = await verifier.agent.modules.tenants.getTenantAgent({ tenantId: verifier1.tenantId })
@@ -649,7 +648,7 @@ describe('OpenId4Vc', () => {
       })
 
     expect(authorizationRequestUri1).toEqual(
-      `openid4vp://?client_id=did%3A${encodeURIComponent(verifier1.did)}&request_uri=${encodeURIComponent(
+      `openid4vp://?client_id=${encodeURIComponent(verifier1.did)}&request_uri=${encodeURIComponent(
         verificationSession1.authorizationRequestUri
       )}`
     )
@@ -667,7 +666,7 @@ describe('OpenId4Vc', () => {
       })
 
     expect(authorizationRequestUri2).toEqual(
-      `openid4vp://?client_id=did%3A${encodeURIComponent(verifier2.did)}&request_uri=${encodeURIComponent(
+      `openid4vp://?client_id=${encodeURIComponent(verifier2.did)}&request_uri=${encodeURIComponent(
         verificationSession2.authorizationRequestUri
       )}`
     )
@@ -914,6 +913,13 @@ describe('OpenId4Vc', () => {
         },
         presentationExchange: {
           definition: presentationDefinition,
+          transactionData: [
+            {
+              type: 'OpenBadgeTx',
+              credential_ids: ['OpenBadgeCredentialDescriptor'],
+              transaction_data_hashes_alg: ['sha-256'],
+            },
+          ],
         },
       })
 
@@ -926,7 +932,7 @@ describe('OpenId4Vc', () => {
     const resolvedAuthorizationRequest = await holder.agent.modules.openId4VcHolder.resolveSiopAuthorizationRequest(
       authorizationRequest
     )
-    expect(resolvedAuthorizationRequest.authorizationRequest.request?.response_mode).toEqual('direct_post.jwt')
+    expect(resolvedAuthorizationRequest.authorizationRequest.payload.response_mode).toEqual('direct_post.jwt')
 
     expect(resolvedAuthorizationRequest.presentationExchange?.credentialsForRequest).toEqual({
       areRequirementsSatisfied: true,
@@ -1145,6 +1151,13 @@ describe('OpenId4Vc', () => {
         },
         presentationExchange: {
           definition: presentationDefinition,
+          transactionData: [
+            {
+              type: 'OpenBadgeTx',
+              credential_ids: ['OpenBadgeCredentialDescriptor'],
+              transaction_data_hashes_alg: ['sha-256'],
+            },
+          ],
         },
       })
 
@@ -1881,8 +1894,7 @@ describe('OpenId4Vc', () => {
       resolvedAuthorizationRequest.presentationExchange.credentialsForRequest
     )
 
-    const requestPayload =
-      await resolvedAuthorizationRequest.authorizationRequest.request
+    const requestPayload = await resolvedAuthorizationRequest.authorizationRequest.payload
     if (!requestPayload) {
       throw new Error('No payload')
     }
@@ -1890,18 +1902,18 @@ describe('OpenId4Vc', () => {
     // setting this to direct_post to simulate the result of sending a non encrypted response to an authorization request that requires enryption
     requestPayload.response_mode = ResponseMode.DIRECT_POST
 
-      const result = await holder.agent.modules.openId4VcHolder.acceptSiopAuthorizationRequest({
-        authorizationRequest: resolvedAuthorizationRequest.authorizationRequest,
-        presentationExchange: {
-          credentials: selectedCredentials,
-        },
-      })
+    const result = await holder.agent.modules.openId4VcHolder.acceptSiopAuthorizationRequest({
+      authorizationRequest: resolvedAuthorizationRequest.authorizationRequest,
+      presentationExchange: {
+        credentials: selectedCredentials,
+      },
+    })
 
-      expect(result.ok).toBe(false)
-      expect(result.serverResponse.body).toMatchObject({
-        error: 'invalid_request',
-        error_description: `JARM response is required for JWT response mode 'direct_post.jwt'.`,
-      })
+    expect(result.ok).toBe(false)
+    expect(result.serverResponse.body).toMatchObject({
+      error: 'invalid_request',
+      error_description: `JARM response is required for JWT response mode 'direct_post.jwt'.`,
+    })
   })
 
   it('e2e flow with verifier endpoints verifying a mdoc and sd-jwt (jarm)', async () => {

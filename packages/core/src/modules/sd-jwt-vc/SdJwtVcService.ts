@@ -1,29 +1,29 @@
+import type { SDJwt } from '@sd-jwt/core'
+import type { DisclosureFrame, PresentationFrame, Signer, Verifier } from '@sd-jwt/types'
+import type { JwkJson, Key } from '../../crypto'
+import type { Query, QueryOptions } from '../../storage/StorageService'
 import type {
-  SdJwtVcSignOptions,
-  SdJwtVcPresentOptions,
-  SdJwtVcVerifyOptions,
-  SdJwtVcPayload,
   SdJwtVcHeader,
   SdJwtVcHolderBinding,
   SdJwtVcIssuer,
+  SdJwtVcPayload,
+  SdJwtVcPresentOptions,
+  SdJwtVcSignOptions,
+  SdJwtVcVerifyOptions,
 } from './SdJwtVcOptions'
-import type { JwkJson, Key } from '../../crypto'
-import type { Query, QueryOptions } from '../../storage/StorageService'
-import type { SDJwt } from '@sd-jwt/core'
-import type { Signer, Verifier, PresentationFrame, DisclosureFrame } from '@sd-jwt/types'
 
 import { SDJwtVcInstance } from '@sd-jwt/sd-jwt-vc'
 import { uint8ArrayToBase64Url } from '@sd-jwt/utils'
 import { injectable } from 'tsyringe'
 
 import { AgentContext } from '../../agent'
-import { JwtPayload, Jwk, getJwkFromJson, getJwkFromKey } from '../../crypto'
+import { Hasher, Jwk, JwtPayload, getJwkFromJson, getJwkFromKey } from '../../crypto'
 import { CredoError } from '../../error'
 import { X509Service } from '../../modules/x509/X509Service'
-import { TypedArrayEncoder, nowInSeconds } from '../../utils'
+import { JsonEncoder, TypedArrayEncoder, nowInSeconds } from '../../utils'
 import { getDomainFromUrl } from '../../utils/domain'
 import { fetchWithTimeout } from '../../utils/fetch'
-import { DidResolverService, parseDid, getKeyFromVerificationMethod } from '../dids'
+import { DidResolverService, getKeyFromVerificationMethod, parseDid } from '../dids'
 import { EncodedX509Certificate, X509Certificate, X509ModuleConfig } from '../x509'
 
 import { SdJwtVcError } from './SdJwtVcError'
@@ -43,6 +43,11 @@ export interface SdJwtVc<
   // TODO: payload type here is a lie, as it is the signed payload (so fields replaced with _sd)
   payload: Payload
   prettyClaims: Payload
+
+  transactionData?: {
+    hashes: string[]
+    hashes_alg?: string
+  }
 
   typeMetadata?: SdJwtVcTypeMetadata
 }
@@ -162,6 +167,44 @@ export class SdJwtVcService {
       kbSignAlg: holder?.alg,
     })
 
+    let transactionVerifierMetadata:
+      | {
+          transaction_data_hashes: string[]
+          transaction_data_hashes_alg?: string
+        }
+      | undefined = undefined
+
+    if (verifierMetadata?.transactionData) {
+      if (!holder) {
+        throw new SdJwtVcError('Cannot sign transaction data without including a holder binding')
+      }
+
+      const transactionDataHashes = verifierMetadata.transactionData.map((tdEntry) => {
+        const supportedHashAlgs = ['sha-256', 'sha-1']
+
+        const hashName = (tdEntry.transaction_data_hashes_alg ?? ['sha-256']).find((val) =>
+          supportedHashAlgs.includes(val)
+        )
+        if (!hashName) {
+          throw new SdJwtVcError(
+            `Cannot hash transaction data. Not suitable hashing algorithm found in '${tdEntry.transaction_data_hashes_alg?.join(
+              ', '
+            )}'`
+          )
+        }
+
+        const encodedTdEntry = JsonEncoder.toBase64URL(tdEntry)
+        const hashed = Hasher.hash(encodedTdEntry, hashName)
+        return TypedArrayEncoder.toBase64URL(hashed)
+      })
+
+      transactionVerifierMetadata = {
+        transaction_data_hashes: transactionDataHashes,
+        // this just makes no sense
+        transaction_data_hashes_alg: 'sha-256',
+      }
+    }
+
     const compactDerivedSdJwtVc = await sdjwt.present(compactSdJwtVc, presentationFrame as PresentationFrame<Payload>, {
       kb: verifierMetadata
         ? {
@@ -169,6 +212,7 @@ export class SdJwtVcService {
               iat: verifierMetadata.issuedAt,
               nonce: verifierMetadata.nonce,
               aud: verifierMetadata.audience,
+              ...transactionVerifierMetadata,
             },
           }
         : undefined,
@@ -186,6 +230,32 @@ export class SdJwtVcService {
       throw new SdJwtVcError(
         `The 'iss' claim in the payload does not match a 'SAN-URI' name and the domain extracted from the HTTPS URI does not match a 'SAN-DNS' name in the x5c certificate.`
       )
+    }
+  }
+
+  private getTransactionDataHashes(sdJwt: SDJwt): SdJwtVc['transactionData'] {
+    const kbJwtPayload = sdJwt.kbJwt?.payload as Record<string, unknown> & {
+      transaction_data_hashes?: string[]
+      transaction_data_hashes_alg?: string
+    }
+
+    if (!kbJwtPayload || !kbJwtPayload.transaction_data_hashes) {
+      return
+    }
+
+    const transactionDataHashes = kbJwtPayload.transaction_data_hashes
+    if ((!Array.isArray(transactionDataHashes) || transactionDataHashes.some((hash) => typeof hash !== 'string'))) {
+      throw new SdJwtVcError('transaction_data_hashes must be an array of string')
+    }
+
+    const transactionDataHashesAlg = kbJwtPayload.transaction_data_hashes_alg
+    if (transactionDataHashesAlg && typeof transactionDataHashesAlg !== 'string') {
+      throw new SdJwtVcError('transaction_data_hashes_alg must be a string')
+    }
+
+    return {
+      hashes: transactionDataHashes,
+      ...(transactionDataHashesAlg && { hashes_alg: transactionDataHashesAlg }),
     }
   }
 
@@ -226,6 +296,7 @@ export class SdJwtVcService {
       header: sdJwtVc.jwt.header as Header,
       compact: compactSdJwtVc,
       prettyClaims: await sdJwtVc.getClaims(sdJwtVcHasher),
+      transactionData: this.getTransactionDataHashes(sdJwtVc),
     } satisfies SdJwtVc<Header, Payload>
 
     try {

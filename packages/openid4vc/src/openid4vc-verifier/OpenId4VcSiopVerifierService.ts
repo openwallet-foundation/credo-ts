@@ -5,16 +5,21 @@ import type {
   JwkJson,
   Query,
   QueryOptions,
+  TransactionData,
+  TransactionDataMeta,
+  TransactionDataResult,
   VerifiablePresentation,
 } from '@credo-ts/core'
 import {
+  JarmClientMetadata,
   parseIfJson,
   parseOpenid4vpRequestParams,
   parsePresentationsFromVpToken,
+  parseTransactionData,
   verifyOpenid4vpAuthorizationResponse,
   VpTokenPresentationParseResult,
 } from '@openid4vc/oid4vp'
-import type { IDTokenPayload, JarmClientMetadata } from '@sphereon/did-auth-siop'
+import type { IDTokenPayload } from '@sphereon/did-auth-siop'
 import type {
   OpenId4VcSiopCreateAuthorizationRequestOptions,
   OpenId4VcSiopCreateAuthorizationRequestReturn,
@@ -38,6 +43,7 @@ import {
   injectable,
   InjectionSymbols,
   joinUriParts,
+  JsonEncoder,
   JsonTransformer,
   Jwt,
   KeyType,
@@ -64,9 +70,8 @@ import { storeActorIdForContextCorrelationId } from '../shared/router'
 import { getSupportedJwaSignatureAlgorithms, openIdTokenIssuerToJwtIssuer } from '../shared/utils'
 
 import { ClientIdScheme, createOpenid4vpAuthorizationRequest } from '@openid4vc/oid4vp'
-import { PresentationSubmission } from '@sphereon/ssi-types'
-import { getOid4vciCallbacks } from '../shared/callbacks'
-import { OpenId4VcSiopAuthorizationResponsePayload } from '../shared/index.js'
+import { getOid4vcCallbacks } from '../shared/callbacks'
+import { OpenId4VcSiopAuthorizationResponsePayload } from '../shared/index'
 import { OpenId4VcVerificationSessionState } from './OpenId4VcVerificationSessionState'
 import { OpenId4VcVerifierModuleConfig } from './OpenId4VcVerifierModuleConfig'
 import {
@@ -153,29 +158,34 @@ export class OpenId4VcSiopVerifierService {
       utils.uuid(),
     ])
 
-    const callbacks = getOid4vciCallbacks(agentContext)
+    const callbacks = getOid4vcCallbacks(agentContext)
+
+    const transaction_data =
+      options.presentationExchange?.transactionData?.map((tdEntry) => JsonEncoder.toBase64URL(tdEntry)) ?? undefined
+
+    const client_id =
+      clientIdScheme === 'did' || (clientIdScheme as string) === 'https' ? clientId : `${clientIdScheme}:${clientId}`
+    const client_metadata = {
+      ...(await this.getClientMetadata(agentContext, {
+        responseMode: options.responseMode ?? 'direct_post',
+        verifier: options.verifier,
+        clientId,
+        authorizationResponseUrl,
+      })),
+    }
 
     const authorizationRequest = await createOpenid4vpAuthorizationRequest({
       jar: { jwtSigner: jwtIssuer, requestUri: hostedAuthorizationRequestUri },
       requestParams: {
-        client_id:
-          clientIdScheme === 'did' || (clientIdScheme as string) === 'https'
-            ? clientId
-            : `${clientIdScheme}:${clientId}`,
+        client_id,
         nonce,
         state,
         presentation_definition: options.presentationExchange?.definition as any,
+        transaction_data,
         response_uri: authorizationResponseUrl,
         response_mode: options.responseMode ?? 'direct_post',
         response_type: 'vp_token',
-        client_metadata: {
-          ...(await this.getClientMetadata(agentContext, {
-            responseMode: options.responseMode ?? 'direct_post',
-            verifier: options.verifier,
-            clientId,
-            authorizationResponseUrl,
-          })),
-        },
+        client_metadata,
       },
       callbacks,
     })
@@ -269,10 +279,14 @@ export class OpenId4VcSiopVerifierService {
       result.pex.presentation_submission as unknown as DifPresentationExchangeSubmission
     )
 
+    const transactionData = authorizationRequest.transaction_data
+      ? parseTransactionData(authorizationRequest.transaction_data)
+      : undefined
     const presentationVerificationPromises = (Array.isArray(presentations) ? presentations : [presentations]).map(
       (presentation) => {
         return this.verifyPresentations(agentContext, {
           correlationId: options.verificationSession.id,
+          transactionData,
           nonce: requestNonce,
           audience: requestClientId,
           responseUri,
@@ -289,6 +303,27 @@ export class OpenId4VcSiopVerifierService {
 
       if (presentationVerificationResults.some((result) => !result.verified)) {
         throw new CredoError('One or more presentations failed verification.')
+      }
+
+      const transactionDataMeta: [string, TransactionDataMeta][] = []
+      for (const result of presentationVerificationResults) {
+        if (result.verified && result.transactionDataMeta) {
+          transactionDataMeta.push([result.transactionDataMeta.inputDescriptor, result.transactionDataMeta])
+        }
+      }
+
+      if (transactionData) {
+        const inputDescriptorToTransactionDataMeta = Object.fromEntries(transactionDataMeta)
+
+        if (
+          !transactionData.every((tdEntry) => {
+            return tdEntry.credential_ids.some((credentialId) => inputDescriptorToTransactionDataMeta[credentialId])
+          })
+        ) {
+          throw new CredoError(
+            'One ore more required transaction data entries were not found in the signed transaction data.'
+          )
+        }
       }
 
       // This should be provided by pex-light!
@@ -329,7 +364,7 @@ export class OpenId4VcSiopVerifierService {
     const verificationSession = await this.getVerificationSessionById(agentContext, options.verificationSession.id)
     const verifiedAuthorizationResponse = await this.getVerifiedAuthorizationResponse(agentContext, verificationSession)
 
-    return { ...verifiedAuthorizationResponse, verificationSession }
+    return { ...verifiedAuthorizationResponse, verificationSession, transactionData }
   }
 
   public async getVerifiedAuthorizationResponse(
@@ -363,7 +398,7 @@ export class OpenId4VcSiopVerifierService {
       const rawPresentations = parsePresentationsFromVpToken({ vp_token: vpToken })
 
       const submission = verificationSession.authorizationResponsePayload.presentation_submission as
-        | PresentationSubmission
+        | DifPresentationExchangeSubmission
         | undefined
       if (!submission) {
         throw new CredoError('Unable to extract submission from the response.')
@@ -581,6 +616,46 @@ export class OpenId4VcSiopVerifierService {
     throw new CredoError(`Unsupported presentation format. ${vpTokenPresentationParseResult.format}`)
   }
 
+  private getTransactionDataMeta(options: {
+    presentationSubmission: DifPresentationExchangeSubmission
+    vpTokenPresentationParseResult: VpTokenPresentationParseResult
+    transactionData?: TransactionData
+    transactionDataResult: TransactionDataResult
+  }) {
+    const { presentationSubmission, vpTokenPresentationParseResult, transactionData, transactionDataResult } = options
+    const inputDescriptor = presentationSubmission.descriptor_map.find(
+      (descriptorMapEntry) => descriptorMapEntry.path === vpTokenPresentationParseResult.path
+    )
+    if (!inputDescriptor) {
+      throw new CredoError(`Could not map transaction data entry to input descriptor.`)
+    }
+
+    if (!transactionData) {
+      throw new CredoError('Could not map transaction data result to the request')
+    }
+
+    const hashName = transactionDataResult.hashes_alg ?? 'sha-256'
+    const presentationHashes = transactionDataResult.hashes
+
+    const transactionDataEntriesWithHash = transactionData.map((tdEntry) => {
+      const hash = TypedArrayEncoder.toBase64URL(Hasher.hash(JsonEncoder.toBase64URL(tdEntry), hashName))
+      return hash
+    })
+
+    for (const [idx, hash] of transactionDataEntriesWithHash.entries()) {
+      if (presentationHashes[idx] !== hash) {
+        throw new CredoError(`Transaction data entry ${idx} does not match hash ${hash}`)
+      }
+    }
+
+    return {
+      inputDescriptor: inputDescriptor.id,
+      path: vpTokenPresentationParseResult.path,
+      transactionData,
+      transactionDataResult,
+    }
+  }
+
   private async verifyPresentations(
     agentContext: AgentContext,
     options: {
@@ -589,12 +664,22 @@ export class OpenId4VcSiopVerifierService {
       correlationId: string
       responseUri?: string
       mdocGeneratedNonce?: string
+      transactionData?: TransactionData
       verificationSessionRecordId: string
       vpTokenPresentationParseResult: VpTokenPresentationParseResult
-      presentationSubmission: PresentationSubmission
+      presentationSubmission: DifPresentationExchangeSubmission
     }
-  ): Promise<{ verified: true; presentation: VerifiablePresentation } | { verified: false; reason: string }> {
-    const { vpTokenPresentationParseResult, presentationSubmission } = options
+  ): Promise<
+    | {
+        verified: true
+        presentation: VerifiablePresentation
+        transactionDataMeta?: TransactionDataMeta
+      }
+    | { verified: false; reason: string }
+  > {
+    const { vpTokenPresentationParseResult, presentationSubmission, transactionData } = options
+
+    let transactionDataMeta: TransactionDataMeta | undefined = undefined
 
     try {
       this.logger.debug(`Presentation response`, JsonTransformer.toJSON(vpTokenPresentationParseResult.presentation))
@@ -641,6 +726,15 @@ export class OpenId4VcSiopVerifierService {
           },
           trustedCertificates,
         })
+
+        if (verificationResult.sdJwtVc?.transactionData) {
+          transactionDataMeta = this.getTransactionDataMeta({
+            presentationSubmission,
+            vpTokenPresentationParseResult,
+            transactionData,
+            transactionDataResult: verificationResult.sdJwtVc.transactionData,
+          })
+        }
 
         isValid = verificationResult.verification.isValid
         reason = verificationResult.isValid ? undefined : verificationResult.error.message
@@ -745,6 +839,7 @@ export class OpenId4VcSiopVerifierService {
 
       return {
         verified: true,
+        transactionDataMeta,
         presentation: verifiablePresentation,
       }
     } catch (error) {

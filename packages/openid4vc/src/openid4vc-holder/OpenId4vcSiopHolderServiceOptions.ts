@@ -1,9 +1,10 @@
-import type { OpenId4VcJwtIssuer, OpenId4VcSiopVerifiedAuthorizationRequest } from '../shared'
 import type {
   DifPexCredentialsForRequest,
   DifPexInputDescriptorToCredentials,
   DifPresentationExchangeDefinition,
+  TransactionDataRequest,
 } from '@credo-ts/core'
+import type { OpenId4VcJwtIssuer, OpenId4VcSiopVerifiedAuthorizationRequest } from '../shared'
 
 export interface OpenId4VcSiopResolvedAuthorizationRequest {
   /**
@@ -19,6 +20,11 @@ export interface OpenId4VcSiopResolvedAuthorizationRequest {
    * The verified authorization request.
    */
   authorizationRequest: OpenId4VcSiopVerifiedAuthorizationRequest
+
+  /**
+   * The transaction data.
+   */
+  transactionData?: TransactionDataRequest
 }
 
 export interface OpenId4VcSiopAcceptAuthorizationRequestOptions {

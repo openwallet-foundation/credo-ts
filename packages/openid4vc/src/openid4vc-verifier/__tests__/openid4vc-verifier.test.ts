@@ -1,5 +1,4 @@
 import { Jwt } from '@credo-ts/core'
-import { SigningAlgo } from '@sphereon/oid4vc-common'
 
 import { AskarModule } from '../../../../askar/src'
 import { askarModuleConfig } from '../../../../askar/tests/helpers'
@@ -54,7 +53,7 @@ describe('OpenId4VcVerifier', () => {
       expect(jwt.header.kid)
 
       expect(jwt.header.kid).toEqual(verifier.kid)
-      expect(jwt.header.alg).toEqual(SigningAlgo.EDDSA)
+      expect(jwt.header.alg).toEqual('EdDSA')
       expect(jwt.header.typ).toEqual('JWT')
       expect(jwt.payload.additionalClaims.scope).toEqual(undefined)
       expect(jwt.payload.additionalClaims.client_id).toEqual(verifier.did)
@@ -93,7 +92,7 @@ describe('OpenId4VcVerifier', () => {
       expect(jwt.header.kid)
 
       expect(jwt.header.kid).toEqual(verifier.kid)
-      expect(jwt.header.alg).toEqual(SigningAlgo.EDDSA)
+      expect(jwt.header.alg).toEqual('EdDSA')
       expect(jwt.header.typ).toEqual('JWT')
       expect(jwt.payload.additionalClaims.scope).toEqual('openid')
       expect(jwt.payload.additionalClaims.client_id).toEqual(verifier.did)

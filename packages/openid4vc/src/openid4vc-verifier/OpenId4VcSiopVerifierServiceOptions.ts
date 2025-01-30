@@ -3,6 +3,7 @@ import type {
   DifPresentationExchangeDefinition,
   DifPresentationExchangeDefinitionV2,
   DifPresentationExchangeSubmission,
+  TransactionData,
   VerifiablePresentation,
 } from '@credo-ts/core'
 import type {
@@ -37,6 +38,7 @@ export interface OpenId4VcSiopCreateAuthorizationRequestOptions {
    */
   presentationExchange?: {
     definition: DifPresentationExchangeDefinitionV2
+    transactionData?: TransactionData
   }
 
   /**
@@ -78,6 +80,8 @@ export interface OpenId4VcSiopVerifiedAuthorizationResponse {
   }
 
   presentationExchange?: OpenId4VcSiopVerifiedAuthorizationResponsePresentationExchange
+
+  transactionData?: TransactionData
 }
 
 /**

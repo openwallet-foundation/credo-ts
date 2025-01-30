@@ -7,7 +7,7 @@ import { Oauth2ErrorCodes, Oauth2ServerErrorResponseError } from '@animo-id/oaut
 import { CredoError, JsonEncoder } from '@credo-ts/core'
 
 import { jarmAuthResponseHandle, Openid4vpAuthResponse, parseOpenid4vpRequestParams } from '@openid4vc/oid4vp'
-import { getOid4vciCallbacks } from '../../shared/callbacks'
+import { getOid4vcCallbacks } from '../../shared/callbacks'
 import { getRequestContext, sendErrorResponse, sendJsonResponse, sendOauth2ErrorResponse } from '../../shared/router'
 import { OpenId4VcSiopVerifierService } from '../OpenId4VcSiopVerifierService'
 
@@ -63,7 +63,7 @@ export function configureAuthorizationEndpoint(router: Router, config: OpenId4Vc
       if (request.body.response) {
         const res2 = await jarmAuthResponseHandle({
           jarm_auth_response_jwt: request.body.response,
-          callbacks: getOid4vciCallbacks(agentContext),
+          callbacks: getOid4vcCallbacks(agentContext),
           getAuthRequest: async (input) => {
             verificationSession = await getVerificationSession(agentContext, {
               verifierId: verifier.verifierId,

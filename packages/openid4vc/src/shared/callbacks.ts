@@ -177,7 +177,7 @@ export function getOid4vciJwtSignCallback(agentContext: AgentContext): SignJwtCa
   }
 }
 
-export function getOid4vciCallbacks(agentContext: AgentContext, trustedCertificates?: string[]) {
+export function getOid4vcCallbacks(agentContext: AgentContext, trustedCertificates?: string[]) {
   return {
     hash: (data, alg) => Hasher.hash(data, alg.toLowerCase()),
     generateRandom: (length) => agentContext.wallet.getRandomValues(length),
@@ -188,6 +188,19 @@ export function getOid4vciCallbacks(agentContext: AgentContext, trustedCertifica
     encryptJwe: getOid4vciEncryptJwtCallback(agentContext),
     decryptJwe: getOid4vciDecryptJwtCallback(agentContext),
   } satisfies Partial<CallbackContext>
+}
+
+export function getOid4vpX509Callbacks(agentContext: AgentContext) {
+  return {
+    getX509SanDnsNames: (certificate: string) => {
+      const leafCertificate = X509Service.getLeafCertificate(agentContext, { certificateChain: [certificate] })
+      return leafCertificate.sanDnsNames
+    },
+    getX509SanUriNames: (certificate: string) => {
+      const leafCertificate = X509Service.getLeafCertificate(agentContext, { certificateChain: [certificate] })
+      return leafCertificate.sanUriNames
+    },
+  }
 }
 
 /**

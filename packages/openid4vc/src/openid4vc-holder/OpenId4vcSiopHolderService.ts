@@ -3,6 +3,9 @@ import type {
   DifPresentationExchangeDefinition,
   DifPresentationExchangeSubmission,
   EncodedX509Certificate,
+  SubmissionEntryCredential,
+  TransactionData,
+  TransactionDataRequest,
   VerifiablePresentation,
 } from '@credo-ts/core'
 import {
@@ -11,7 +14,6 @@ import {
   processOpenid4vpAuthRequest,
   submitOpenid4vpAuthorizationResponse,
 } from '@openid4vc/oid4vp'
-import type { PresentationExchangeResponseOpts } from '@sphereon/did-auth-siop'
 import type { OpenId4VcJwtIssuer } from '../shared'
 import type {
   OpenId4VcSiopAcceptAuthorizationRequestOptions,
@@ -27,17 +29,63 @@ import {
   MdocDeviceResponse,
   W3cJsonLdVerifiablePresentation,
   W3cJwtVerifiablePresentation,
-  X509Service,
 } from '@credo-ts/core'
-import { VPTokenLocation } from '@sphereon/did-auth-siop'
 
-import { getOid4vciCallbacks } from '../shared/callbacks'
-import { getSphereonVerifiablePresentation } from '../shared/transform'
+import { getOid4vcCallbacks, getOid4vpX509Callbacks } from '../shared/callbacks'
 import { openIdTokenIssuerToJwtIssuer } from '../shared/utils'
 
 @injectable()
 export class OpenId4VcSiopHolderService {
   public constructor(private presentationExchangeService: DifPresentationExchangeService) {}
+
+  private async handlePresentationExchangeRequest(
+    agentContext: AgentContext,
+    _presentationDefinition: unknown,
+    transactionData?: TransactionData
+  ) {
+    const presentationDefinition = _presentationDefinition as DifPresentationExchangeDefinition
+    this.presentationExchangeService.validatePresentationDefinition(presentationDefinition)
+
+    const presentationExchange = {
+      definition: presentationDefinition,
+      credentialsForRequest: await this.presentationExchangeService.getCredentialsForRequest(
+        agentContext,
+        presentationDefinition
+      ),
+    }
+
+    let credentialsForTransactionData: TransactionDataRequest | undefined = undefined
+    // for each transaction data entry, get all submission entries that can be used to sign the respective transaction
+    if (transactionData) {
+      credentialsForTransactionData = []
+
+      for (const transactionDataEntry of transactionData) {
+        if (!presentationExchange) {
+          throw new CredoError('Cannot resolve transaction data. Presentation exchange is not defined.')
+        }
+
+        for (const requirement of presentationExchange.credentialsForRequest.requirements) {
+          const recordSet: Set<SubmissionEntryCredential> = new Set()
+          const filtered = requirement.submissionEntry.filter((submission) =>
+            transactionDataEntry.credential_ids.includes(submission.inputDescriptorId)
+          )
+
+          for (const submission of filtered) {
+            for (const credential of submission.verifiableCredentials) {
+              recordSet.add(credential)
+            }
+          }
+
+          credentialsForTransactionData.push({
+            transactionDataEntry,
+            submissionEntry: { ...filtered[0], verifiableCredentials: Array.from(recordSet) },
+          })
+        }
+      }
+    }
+
+    return { presentationExchange, credentialsForTransactionData }
+  }
 
   public async resolveAuthorizationRequest(
     agentContext: AgentContext,
@@ -45,52 +93,30 @@ export class OpenId4VcSiopHolderService {
     trustedCertificates?: EncodedX509Certificate[]
   ): Promise<OpenId4VcSiopResolvedAuthorizationRequest> {
     const { params } = parseOpenid4vpRequestParams(requestJwtOrUri)
-    const result = await processOpenid4vpAuthRequest(params, {
+    const verifiedAuthRequest = await processOpenid4vpAuthRequest(params, {
       callbacks: {
-        ...getOid4vciCallbacks(agentContext, trustedCertificates),
-        getX509SanDnsNames: (certificate: string) => {
-          const leafCertificate = X509Service.getLeafCertificate(agentContext, { certificateChain: [certificate] })
-          return leafCertificate.sanDnsNames
-        },
-        getX509SanUriNames: (certificate: string) => {
-          const leafCertificate = X509Service.getLeafCertificate(agentContext, { certificateChain: [certificate] })
-          return leafCertificate.sanUriNames
-        },
+        ...getOid4vcCallbacks(agentContext, trustedCertificates),
+        ...getOid4vpX509Callbacks(agentContext),
       },
     })
 
-    if (
-      result.client.scheme !== 'x509_san_dns' &&
-      result.client.scheme !== 'x509_san_uri' &&
-      result.client.scheme !== 'did'
-    ) {
-      throw new CredoError(`Client scheme '${result.client.scheme}' is not supported`)
+    const { client, pex, transactionData } = verifiedAuthRequest
+
+    if (client.scheme !== 'x509_san_dns' && client.scheme !== 'x509_san_uri' && client.scheme !== 'did') {
+      throw new CredoError(`Client scheme '${client.scheme}' is not supported`)
     }
 
-    const presentationDefinition = result.pex?.presentation_definition as unknown as
-      | DifPresentationExchangeDefinition
-      | undefined
-
-    if (presentationDefinition) {
-      this.presentationExchangeService.validatePresentationDefinition(presentationDefinition)
-    }
+    const { presentationExchange, credentialsForTransactionData } = pex?.presentation_definition
+      ? await this.handlePresentationExchangeRequest(agentContext, pex.presentation_definition, transactionData)
+      : { presentationExchange: undefined, credentialsForTransactionData: undefined }
 
     agentContext.config.logger.debug(`verified SIOP Authorization Request`)
     agentContext.config.logger.debug(`requestJwtOrUri '${requestJwtOrUri}'`)
 
     return {
-      authorizationRequest: result,
-
-      // Parameters related to DIF Presentation Exchange
-      presentationExchange: presentationDefinition
-        ? {
-            definition: presentationDefinition,
-            credentialsForRequest: await this.presentationExchangeService.getCredentialsForRequest(
-              agentContext,
-              presentationDefinition
-            ),
-          }
-        : undefined,
+      authorizationRequest: verifiedAuthRequest,
+      transactionData: credentialsForTransactionData,
+      presentationExchange: presentationExchange,
     }
   }
 
@@ -100,9 +126,14 @@ export class OpenId4VcSiopHolderService {
   ) {
     const { authorizationRequest, presentationExchange } = options
     let openIdTokenIssuer = options.openIdTokenIssuer
-    let presentationExchangeOptions: PresentationExchangeResponseOpts | undefined = undefined
+    let presentationExchangeOptions:
+      | {
+          presentationSubmission: DifPresentationExchangeSubmission
+          verifiablePresentations: (string | W3cJsonLdVerifiablePresentation)[]
+        }
+      | undefined = undefined
 
-    const wantsIdToken = await authorizationRequest.request.response_type.includes('id_token')
+    const wantsIdToken = authorizationRequest.payload.response_type.includes('id_token')
     const authorizationResponseNonce = await agentContext.wallet.generateNonce()
 
     // Handle presentation exchange part
@@ -113,32 +144,58 @@ export class OpenId4VcSiopHolderService {
         )
       }
 
-      const nonce = authorizationRequest.request.nonce
-      const clientId = authorizationRequest.request.client_id
-      const responseUri = authorizationRequest.request.response_uri ?? authorizationRequest.request.redirect_uri
+      const nonce = authorizationRequest.payload.nonce
+      const clientId = authorizationRequest.payload.client_id
+      const responseUri = authorizationRequest.payload.response_uri ?? authorizationRequest.payload.redirect_uri
       if (!responseUri) {
         throw new CredoError("Unable to extract 'response_uri' from authorization request")
       }
 
-      const { verifiablePresentations, presentationSubmission } =
+      let inputDescriptorsToSignTransactionData: string[] | undefined = undefined
+
+      // check if all credentials are present for the transaction data
+      // This needs a deep integration into pex and out pex requirements
+      if (authorizationRequest.transactionData && presentationExchange) {
+        inputDescriptorsToSignTransactionData = []
+        for (const tdEntry of authorizationRequest.transactionData) {
+          // find a inputDescriptor in the credential_ids which is present in the response
+          // and use it to sign of the transaction
+          const inputDescriptorForCredential = tdEntry.credential_ids.find(
+            (credentialId) => presentationExchange.credentials[credentialId]
+          )
+
+          if (!inputDescriptorForCredential) {
+            throw new CredoError(
+              'Cannot create authorization response. No credentials found for signing transaction data.'
+            )
+          }
+
+          inputDescriptorsToSignTransactionData.push(inputDescriptorForCredential)
+        }
+      }
+
+      const { presentationSubmission, encodedVerifiablePresentations, verifiablePresentations } =
         await this.presentationExchangeService.createPresentation(agentContext, {
           credentialsForInputDescriptor: presentationExchange.credentials,
+          transactionDataAuthorization:
+            authorizationRequest.transactionData && inputDescriptorsToSignTransactionData
+              ? {
+                  inputDescriptors: inputDescriptorsToSignTransactionData,
+                  transactionData: authorizationRequest.transactionData,
+                }
+              : undefined,
           presentationDefinition: authorizationRequest.pex
             .presentation_definition as unknown as DifPresentationExchangeDefinition,
           challenge: nonce,
           domain: clientId,
           presentationSubmissionLocation: DifPresentationExchangeSubmissionLocation.EXTERNAL,
-          openid4vp: {
-            mdocGeneratedNonce: authorizationResponseNonce,
-            responseUri,
-          },
+          openid4vp: { mdocGeneratedNonce: authorizationResponseNonce, responseUri },
         })
 
-      presentationExchangeOptions = {
-        verifiablePresentations: verifiablePresentations.map((vp) => getSphereonVerifiablePresentation(vp)),
-        presentationSubmission,
-        vpTokenLocation: VPTokenLocation.AUTHORIZATION_RESPONSE,
-      }
+
+
+      presentationExchangeOptions = { verifiablePresentations: encodedVerifiablePresentations, presentationSubmission }
+
 
       if (wantsIdToken && !openIdTokenIssuer) {
         openIdTokenIssuer = this.getOpenIdTokenIssuerFromVerifiablePresentation(verifiablePresentations[0])
@@ -168,15 +225,15 @@ export class OpenId4VcSiopHolderService {
         ? presentationExchangeOptions.verifiablePresentations[0]
         : presentationExchangeOptions?.verifiablePresentations
 
-    const callbacks = getOid4vciCallbacks(agentContext)
+    const callbacks = getOid4vcCallbacks(agentContext)
 
     const response = await createOpenid4vpAuthorizationResponse({
-      requestParams: authorizationRequest.request,
+      requestParams: authorizationRequest.payload,
       responseParams: {
         vp_token: vpToken! as any,
         presentation_submission: presentationExchangeOptions?.presentationSubmission,
       },
-      jarm: authorizationRequest.request.response_mode.includes('jwt')
+      jarm: authorizationRequest.payload.response_mode.includes('jwt')
         ? {
             jwtSigner: jwtIssuer!,
             jweEncryptor: {
@@ -193,13 +250,9 @@ export class OpenId4VcSiopHolderService {
     })
 
     const result = await submitOpenid4vpAuthorizationResponse({
-      request: authorizationRequest.request,
+      request: authorizationRequest.payload,
       response: response.responseParams,
-      jarm: response.jarm
-        ? {
-            responseJwt: response.jarm.responseJwt,
-          }
-        : undefined,
+      jarm: response.jarm ? { responseJwt: response.jarm.responseJwt } : undefined,
       callbacks,
     })
 
