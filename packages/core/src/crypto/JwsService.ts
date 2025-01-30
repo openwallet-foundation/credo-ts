@@ -9,7 +9,7 @@ import type { Key } from './Key'
 import type { Jwk } from './jose/jwk'
 import type { JwkJson } from './jose/jwk/Jwk'
 import type { AgentContext } from '../agent'
-import type { Buffer } from '../utils'
+import { Buffer } from '../utils'
 
 import { CredoError } from '../error'
 import { EncodedX509Certificate, X509ModuleConfig } from '../modules/x509'
@@ -33,14 +33,18 @@ export class JwsService {
       const certificate = X509Service.getLeafCertificate(agentContext, { certificateChain: x5c })
       if (
         certificate.publicKey.keyType !== options.key.keyType ||
-        !certificate.publicKey.publicKey.equals(options.key.publicKey)
+        !Buffer.from(certificate.publicKey.publicKey).equals(Buffer.from(options.key.publicKey))
       ) {
         throw new CredoError(`Protected header x5c does not match key for signing.`)
       }
     }
 
     // Make sure the options.key and jwk from protectedHeader are the same.
-    if (jwk && (jwk.key.keyType !== options.key.keyType || !jwk.key.publicKey.equals(options.key.publicKey))) {
+    if (
+      jwk &&
+      (jwk.key.keyType !== options.key.keyType ||
+        !Buffer.from(jwk.key.publicKey).equals(Buffer.from(options.key.publicKey)))
+    ) {
       throw new CredoError(`Protected header JWK does not match key for signing.`)
     }
 

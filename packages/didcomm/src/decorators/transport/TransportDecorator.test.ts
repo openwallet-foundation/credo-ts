@@ -6,7 +6,7 @@ const validTransport = (transportJson: Record<string, unknown>) =>
   MessageValidator.validateSync(JsonTransformer.fromJSON(transportJson, TransportDecorator))
 const expectValid = (transportJson: Record<string, unknown>) => expect(validTransport(transportJson)).toBeUndefined()
 const expectInvalid = (transportJson: Record<string, unknown>) =>
-  expect(() => validTransport(transportJson)).toThrowError(ClassValidationError)
+  expect(() => validTransport(transportJson)).toThrow(ClassValidationError)
 
 const valid = {
   all: {

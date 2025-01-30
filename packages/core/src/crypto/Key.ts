@@ -1,21 +1,22 @@
 import type { KeyType } from './KeyType'
 
-import { Buffer, MultiBaseEncoder, TypedArrayEncoder, VarintEncoder } from '../utils'
+import { MultiBaseEncoder, TypedArrayEncoder, VarintEncoder } from '../utils'
 
 import { isEncryptionSupportedForKeyType, isSigningSupportedForKeyType } from './keyUtils'
 import { getKeyTypeByMultiCodecPrefix, getMultiCodecPrefixByKeyType } from './multiCodecKey'
+import { compressIfPossible, expandIfPossible } from './jose/jwk/ecCompression'
 
 export class Key {
-  public readonly publicKey: Buffer
+  public readonly publicKey: Uint8Array
   public readonly keyType: KeyType
 
   public constructor(publicKey: Uint8Array, keyType: KeyType) {
-    this.publicKey = Buffer.from(publicKey)
+    this.publicKey = expandIfPossible(publicKey, keyType)
     this.keyType = keyType
   }
 
   public static fromPublicKey(publicKey: Uint8Array, keyType: KeyType) {
-    return new Key(Buffer.from(publicKey), keyType)
+    return new Key(publicKey, keyType)
   }
 
   public static fromPublicKeyBase58(publicKey: string, keyType: KeyType) {
@@ -28,7 +29,7 @@ export class Key {
     const { data } = MultiBaseEncoder.decode(fingerprint)
     const [code, byteLength] = VarintEncoder.decode(data)
 
-    const publicKey = Buffer.from(data.slice(byteLength))
+    const publicKey = data.slice(byteLength)
     const keyType = getKeyTypeByMultiCodecPrefix(code)
 
     return new Key(publicKey, keyType)
@@ -40,8 +41,11 @@ export class Key {
     // Create Buffer with length of the prefix bytes, then use varint to fill the prefix bytes
     const prefixBytes = VarintEncoder.encode(multiCodecPrefix)
 
+    // Multicodec requires compressable keys to be compressed
+    const possiblyCompressedKey = compressIfPossible(this.publicKey, this.keyType)
+
     // Combine prefix with public key
-    return Buffer.concat([prefixBytes, this.publicKey])
+    return new Uint8Array([...prefixBytes, ...possiblyCompressedKey])
   }
 
   public get fingerprint() {
@@ -62,7 +66,7 @@ export class Key {
 
   // We return an object structure based on the key, so that when this object is
   // serialized to JSON it will be nicely formatted instead of the bytes printed
-  private toJSON() {
+  public toJSON() {
     return {
       keyType: this.keyType,
       publicKeyBase58: this.publicKeyBase58,

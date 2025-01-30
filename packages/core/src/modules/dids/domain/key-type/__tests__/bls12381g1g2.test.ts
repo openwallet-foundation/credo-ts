@@ -52,7 +52,7 @@ describe('bls12381g1g2', () => {
     expect(key.publicKeyBase58).toBe(TEST_BLS12381G1G2_BASE58_KEY)
     expect(key.publicKey).toEqual(TypedArrayEncoder.fromBase58(TEST_BLS12381G1G2_BASE58_KEY))
     expect(key.keyType).toBe(KeyType.Bls12381g1g2)
-    expect(key.prefixedPublicKey.equals(TEST_BLS12381G1G2_PREFIX_BYTES)).toBe(true)
+    expect(Buffer.from(key.prefixedPublicKey).equals(TEST_BLS12381G1G2_PREFIX_BYTES)).toBe(true)
   })
 
   it('should return a valid verification method', async () => {
@@ -73,7 +73,7 @@ describe('bls12381g1g2', () => {
       VerificationMethod
     )
 
-    expect(() => keyDidBls12381g1g2.getKeyFromVerificationMethod(verificationMethod)).toThrowError(
+    expect(() => keyDidBls12381g1g2.getKeyFromVerificationMethod(verificationMethod)).toThrow(
       'Not supported for bls12381g1g2 key'
     )
   })

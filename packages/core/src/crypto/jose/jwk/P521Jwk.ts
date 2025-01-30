@@ -1,28 +1,38 @@
 import type { JwkJson } from './Jwk'
 import type { JwaEncryptionAlgorithm } from '../jwa/alg'
 
-import { TypedArrayEncoder, Buffer } from '../../../utils'
+import { TypedArrayEncoder } from '../../../utils'
 import { KeyType } from '../../KeyType'
 import { JwaCurve, JwaKeyType } from '../jwa'
 import { JwaSignatureAlgorithm } from '../jwa/alg'
 
 import { Jwk } from './Jwk'
-import { compress, expand } from './ecCompression'
+import {
+  compressECPoint,
+  expand,
+  isValidCompressedPublicKey,
+  isValidUncompressedPublicKey,
+  PREFIX_UNCOMPRESSED,
+} from './ecCompression'
 import { hasKty, hasCrv, hasX, hasY, hasValidUse } from './validate'
+import { CredoError } from '../../../error'
 
 export class P521Jwk extends Jwk {
   public static readonly supportedEncryptionAlgorithms: JwaEncryptionAlgorithm[] = []
   public static readonly supportedSignatureAlgorithms: JwaSignatureAlgorithm[] = [JwaSignatureAlgorithm.ES512]
   public static readonly keyType = KeyType.P521
 
-  public readonly x: string
-  public readonly y: string
+  private readonly _x: Uint8Array
+  private readonly _y: Uint8Array
 
-  public constructor({ x, y }: { x: string; y: string }) {
+  public constructor({ x, y }: { x: string | Uint8Array; y: string | Uint8Array }) {
     super()
 
-    this.x = x
-    this.y = y
+    const xAsBytes = typeof x === 'string' ? TypedArrayEncoder.fromBase64(x) : x
+    const yAsBytes = typeof y === 'string' ? TypedArrayEncoder.fromBase64(y) : y
+
+    this._x = xAsBytes
+    this._y = yAsBytes
   }
 
   public get kty() {
@@ -45,17 +55,26 @@ export class P521Jwk extends Jwk {
     return P521Jwk.supportedSignatureAlgorithms
   }
 
+  public get x() {
+    return TypedArrayEncoder.toBase64URL(this._x)
+  }
+
+  public get y() {
+    return TypedArrayEncoder.toBase64URL(this._y)
+  }
+
   /**
-   * Returns the public key of the P-521 JWK.
-   *
-   * NOTE: this is the compressed variant. We still need to add support for the
-   * uncompressed variant.
+   * Returns the uncompressed public key of the P-521 JWK.
    */
   public get publicKey() {
-    const publicKeyBuffer = Buffer.concat([TypedArrayEncoder.fromBase64(this.x), TypedArrayEncoder.fromBase64(this.y)])
-    const compressedPublicKey = compress(publicKeyBuffer)
+    return new Uint8Array([PREFIX_UNCOMPRESSED, ...this._x, ...this._y])
+  }
 
-    return Buffer.from(compressedPublicKey)
+  /**
+   * Returns the compressed public key of the P-521 JWK.
+   */
+  public get publicKeyCompressed() {
+    return compressECPoint(this._x, this._y)
   }
 
   public toJson() {
@@ -78,15 +97,25 @@ export class P521Jwk extends Jwk {
     })
   }
 
-  public static fromPublicKey(publicKey: Buffer) {
-    const expanded = expand(publicKey, JwaCurve.P521)
-    const x = expanded.slice(0, expanded.length / 2)
-    const y = expanded.slice(expanded.length / 2)
+  public static fromPublicKey(publicKey: Uint8Array) {
+    if (isValidCompressedPublicKey(publicKey, this.keyType)) {
+      const expanded = expand(publicKey, this.keyType)
+      const x = expanded.slice(1, expanded.length / 2 + 1)
+      const y = expanded.slice(expanded.length / 2 + 1)
 
-    return new P521Jwk({
-      x: TypedArrayEncoder.toBase64URL(x),
-      y: TypedArrayEncoder.toBase64URL(y),
-    })
+      return new P521Jwk({ x, y })
+    }
+
+    if (isValidUncompressedPublicKey(publicKey, this.keyType)) {
+      const x = publicKey.slice(1, publicKey.length / 2 + 1)
+      const y = publicKey.slice(publicKey.length / 2 + 1)
+
+      return new P521Jwk({ x, y })
+    }
+
+    throw new CredoError(
+      `${this.keyType} public key is neither a valid compressed or uncompressed key. Key prefix '${publicKey[0]}', key length '${publicKey.length}'`
+    )
   }
 }
 

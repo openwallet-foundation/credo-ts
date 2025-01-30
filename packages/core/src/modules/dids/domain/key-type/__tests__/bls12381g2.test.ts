@@ -43,7 +43,7 @@ describe('bls12381g2', () => {
     expect(key.publicKeyBase58).toBe(TEST_BLS12381G2_BASE58_KEY)
     expect(key.publicKey).toEqual(TypedArrayEncoder.fromBase58(TEST_BLS12381G2_BASE58_KEY))
     expect(key.keyType).toBe(KeyType.Bls12381g2)
-    expect(key.prefixedPublicKey.equals(TEST_BLS12381G2_PREFIX_BYTES)).toBe(true)
+    expect(Buffer.from(key.prefixedPublicKey).equals(TEST_BLS12381G2_PREFIX_BYTES)).toBe(true)
   })
 
   it('should return a valid verification method', async () => {

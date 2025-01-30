@@ -1,5 +1,4 @@
 import type { JwkJson } from './Jwk'
-import type { Buffer } from '../../../utils'
 import type { JwaEncryptionAlgorithm } from '../jwa/alg'
 
 import { TypedArrayEncoder } from '../../../utils'
@@ -65,7 +64,7 @@ export class Ed25519Jwk extends Jwk {
     })
   }
 
-  public static fromPublicKey(publicKey: Buffer) {
+  public static fromPublicKey(publicKey: Uint8Array) {
     return new Ed25519Jwk({
       x: TypedArrayEncoder.toBase64URL(publicKey),
     })

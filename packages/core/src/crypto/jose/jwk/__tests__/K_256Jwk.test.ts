@@ -1,14 +1,14 @@
 import { TypedArrayEncoder } from '../../../../utils'
 import { KeyType } from '../../../KeyType'
-import { P521Jwk } from '../P521Jwk'
+import { K256Jwk } from '../K256Jwk'
 import { compress } from '../ecCompression'
 
 // Generated with https://mkjwk.org
 const jwkJson = {
   kty: 'EC',
-  crv: 'P-521',
-  x: 'AAyV8qWafv5UPexMB3ohAPSFuz_zFdaHAjb-XlzO8qBkx-lZtN1PN1E9AHipP6esSNBPilGOAkiZYnQ48hPJgJQG',
-  y: 'AccbmJnVXJhxJ8vFS4GcG1eM27XtSOjKz1dX52wbJ0YN6U5KEOPQ-3krxvLAqlFG2BCbZkpnrfateEdervmp3Q3G',
+  crv: 'secp256k1',
+  x: '0CtFvFuEzkEhPOTKHi3k2OvEgJmQ1dH-IXXme3JBzVY',
+  y: 'vIr8423MqTswmAebHhCaOoiYdp1kyOiduZinD3JBXxU',
 }
 
 const uncompressedPublicKey = new Uint8Array([
@@ -18,39 +18,39 @@ const uncompressedPublicKey = new Uint8Array([
 ])
 const compressedPublicKey = compress(uncompressedPublicKey)
 
-describe('P_521JWk', () => {
+describe('K_256JWk', () => {
   test('has correct properties', () => {
-    const jwk = new P521Jwk({ x: jwkJson.x, y: jwkJson.y })
+    const jwk = new K256Jwk({ x: jwkJson.x, y: jwkJson.y })
 
     expect(jwk.kty).toEqual('EC')
-    expect(jwk.crv).toEqual('P-521')
-    expect(jwk.keyType).toEqual(KeyType.P521)
+    expect(jwk.crv).toEqual('secp256k1')
+    expect(jwk.keyType).toEqual(KeyType.K256)
     expect(jwk.supportedEncryptionAlgorithms).toEqual([])
-    expect(jwk.supportedSignatureAlgorithms).toEqual(['ES512'])
-    expect(jwk.key.keyType).toEqual(KeyType.P521)
+    expect(jwk.supportedSignatureAlgorithms).toEqual(['ES256K'])
+    expect(jwk.key.keyType).toEqual(KeyType.K256)
     expect(jwk.toJson()).toEqual(jwkJson)
 
     expect(jwk.publicKey).toEqual(uncompressedPublicKey)
-    expect(jwk.publicKey.length).toEqual(133)
-    expect(jwk.publicKeyCompressed.length).toEqual(67)
+    expect(jwk.publicKey.length).toEqual(65)
+    expect(jwk.publicKeyCompressed.length).toEqual(33)
   })
 
   test('fromJson', () => {
-    const jwk = P521Jwk.fromJson(jwkJson)
+    const jwk = K256Jwk.fromJson(jwkJson)
     expect(jwk.x).toEqual(jwkJson.x)
     expect(jwk.y).toEqual(jwkJson.y)
 
-    expect(() => P521Jwk.fromJson({ ...jwkJson, kty: 'test' })).toThrow("Invalid 'P-521' JWK.")
+    expect(() => K256Jwk.fromJson({ ...jwkJson, kty: 'test' })).toThrow("Invalid 'K-256' JWK.")
   })
 
   test('fromUncompressedPublicKey', () => {
-    const jwk = P521Jwk.fromPublicKey(uncompressedPublicKey)
+    const jwk = K256Jwk.fromPublicKey(uncompressedPublicKey)
     expect(jwk.x).toEqual(jwkJson.x)
     expect(jwk.y).toEqual(jwkJson.y)
   })
 
   test('fromCompressedPublicKey', () => {
-    const jwk = P521Jwk.fromPublicKey(compressedPublicKey)
+    const jwk = K256Jwk.fromPublicKey(compressedPublicKey)
     expect(jwk.x).toEqual(jwkJson.x)
     expect(jwk.y).toEqual(jwkJson.y)
   })
