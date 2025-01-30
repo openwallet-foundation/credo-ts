@@ -1,13 +1,12 @@
-import type { V2IssueCredentialMessage } from '../../core/src/modules/credentials/protocol/v2/messages/V2IssueCredentialMessage'
 import type { EventReplaySubject, JsonLdTestsAgent } from '../../core/tests'
+import type { V2IssueCredentialMessage } from '../../didcomm'
 
 import { TypedArrayEncoder } from '../../core/src'
 import { KeyType } from '../../core/src/crypto'
-import { CredentialState } from '../../core/src/modules/credentials/models'
-import { CredentialExchangeRecord } from '../../core/src/modules/credentials/repository/CredentialExchangeRecord'
 import { CREDENTIALS_CONTEXT_V1_URL, SECURITY_CONTEXT_BBS_URL } from '../../core/src/modules/vc'
 import { JsonTransformer } from '../../core/src/utils/JsonTransformer'
 import { waitForCredentialRecordSubject, setupJsonLdTests, testLogger } from '../../core/tests'
+import { CredentialState, CredentialExchangeRecord } from '../../didcomm'
 
 import { describeSkipNode18 } from './util'
 
@@ -87,7 +86,7 @@ describeSkipNode18('credentials, BBS+ signature', () => {
 
   test('Alice starts with V2 (ld format, BbsBlsSignature2020 signature) credential proposal to Faber', async () => {
     testLogger.test('Alice sends (v2 jsonld) credential proposal to Faber')
-    const credentialExchangeRecord = await aliceAgent.credentials.proposeCredential({
+    const credentialExchangeRecord = await aliceAgent.modules.credentials.proposeCredential({
       connectionId: aliceConnectionId,
       protocolVersion: 'v2',
       credentialFormats: {
@@ -108,7 +107,7 @@ describeSkipNode18('credentials, BBS+ signature', () => {
     })
 
     testLogger.test('Faber sends credential offer to Alice')
-    await faberAgent.credentials.acceptProposal({
+    await faberAgent.modules.credentials.acceptProposal({
       credentialRecordId: faberCredentialRecord.id,
       comment: 'V2 W3C Offer',
     })
@@ -119,7 +118,7 @@ describeSkipNode18('credentials, BBS+ signature', () => {
       state: CredentialState.OfferReceived,
     })
 
-    const offerMessage = await faberAgent.credentials.findOfferMessage(faberCredentialRecord.id)
+    const offerMessage = await faberAgent.modules.credentials.findOfferMessage(faberCredentialRecord.id)
     expect(JsonTransformer.toJSON(offerMessage)).toMatchObject({
       '@type': 'https://didcomm.org/issue-credential/2.0/offer-credential',
       '@id': expect.any(String),
@@ -157,7 +156,7 @@ describeSkipNode18('credentials, BBS+ signature', () => {
     expect(aliceCredentialRecord.id).not.toBeNull()
     expect(aliceCredentialRecord.type).toBe(CredentialExchangeRecord.type)
 
-    const offerCredentialExchangeRecord = await aliceAgent.credentials.acceptOffer({
+    const offerCredentialExchangeRecord = await aliceAgent.modules.credentials.acceptOffer({
       credentialRecordId: aliceCredentialRecord.id,
       credentialFormats: {
         jsonld: undefined,
@@ -176,7 +175,7 @@ describeSkipNode18('credentials, BBS+ signature', () => {
     })
 
     testLogger.test('Faber sends credential to Alice')
-    await faberAgent.credentials.acceptRequest({
+    await faberAgent.modules.credentials.acceptRequest({
       credentialRecordId: faberCredentialRecord.id,
       comment: 'V2 W3C Offer',
     })
@@ -188,7 +187,7 @@ describeSkipNode18('credentials, BBS+ signature', () => {
     })
 
     testLogger.test('Alice sends credential ack to Faber')
-    await aliceAgent.credentials.acceptCredential({ credentialRecordId: aliceCredentialRecord.id })
+    await aliceAgent.modules.credentials.acceptCredential({ credentialRecordId: aliceCredentialRecord.id })
 
     testLogger.test('Faber waits for credential ack from Alice')
     faberCredentialRecord = await waitForCredentialRecordSubject(faberReplay, {
@@ -204,7 +203,7 @@ describeSkipNode18('credentials, BBS+ signature', () => {
       state: CredentialState.CredentialReceived,
     })
 
-    const credentialMessage = await faberAgent.credentials.findCredentialMessage(faberCredentialRecord.id)
+    const credentialMessage = await faberAgent.modules.credentials.findCredentialMessage(faberCredentialRecord.id)
     const w3cCredential = (credentialMessage as V2IssueCredentialMessage).credentialAttachments[0].getDataAsJson()
 
     expect(w3cCredential).toMatchObject({

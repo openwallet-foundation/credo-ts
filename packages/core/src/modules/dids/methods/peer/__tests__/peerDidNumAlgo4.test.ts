@@ -1,7 +1,8 @@
+import { OutOfBandDidCommService } from '../../../../../../../didcomm/src/modules/oob'
+import { outOfBandServiceToNumAlgo4Did } from '../../../../../../../didcomm/src/modules/oob/converters'
 import { JsonTransformer } from '../../../../../utils'
-import { OutOfBandDidCommService } from '../../../../oob/domain/OutOfBandDidCommService'
 import { DidDocument } from '../../../domain'
-import { didDocumentToNumAlgo4Did, didToNumAlgo4DidDocument, outOfBandServiceToNumAlgo4Did } from '../peerDidNumAlgo4'
+import { didDocumentToNumAlgo4Did, didToNumAlgo4DidDocument } from '../peerDidNumAlgo4'
 
 import didPeer4zQmUJdJ from './__fixtures__/didPeer4zQmUJdJ.json'
 import didPeer4zQmd8Cp from './__fixtures__/didPeer4zQmd8Cp.json'

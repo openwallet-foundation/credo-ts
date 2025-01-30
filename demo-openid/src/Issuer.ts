@@ -345,12 +345,12 @@ export class Issuer extends BaseAgent<{
 
   public async exit() {
     console.log(Output.Exit)
-    await this.agent.shutdown()
+    await this.shutdown()
     process.exit(0)
   }
 
   public async restart() {
-    await this.agent.shutdown()
+    await this.shutdown()
   }
 }
 

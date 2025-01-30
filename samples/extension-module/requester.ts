@@ -1,15 +1,17 @@
 import type { DummyRecord, DummyStateChangedEvent } from './dummy'
 
+import { AskarModule } from '@credo-ts/askar'
+import { Agent, CredoError, ConsoleLogger, LogLevel } from '@credo-ts/core'
 import {
   HttpOutboundTransport,
-  Agent,
-  CredoError,
-  ConsoleLogger,
-  LogLevel,
   WsOutboundTransport,
   ConnectionsModule,
-} from '@credo-ts/core'
+  DidCommModule,
+  OutOfBandModule,
+  MessagePickupModule,
+} from '@credo-ts/didcomm'
 import { agentDependencies } from '@credo-ts/node'
+import { ariesAskar } from '@hyperledger/aries-askar-nodejs'
 import { filter, first, firstValueFrom, map, ReplaySubject, timeout } from 'rxjs'
 
 import { DummyEventTypes, DummyState, DummyModule } from './dummy'
@@ -31,6 +33,10 @@ const run = async () => {
       logger: new ConsoleLogger(LogLevel.info),
     },
     modules: {
+      askar: new AskarModule({ ariesAskar }),
+      didcomm: new DidCommModule(),
+      oob: new OutOfBandModule(),
+      messagePickup: new MessagePickupModule(),
       dummy: new DummyModule(),
       connections: new ConnectionsModule({
         autoAcceptConnections: true,
@@ -40,8 +46,8 @@ const run = async () => {
   })
 
   // Register transports
-  agent.registerOutboundTransport(wsOutboundTransport)
-  agent.registerOutboundTransport(httpOutboundTransport)
+  agent.modules.didcomm.registerOutboundTransport(wsOutboundTransport)
+  agent.modules.didcomm.registerOutboundTransport(httpOutboundTransport)
 
   // Now agent will handle messages and events from Dummy protocol
 
@@ -50,11 +56,11 @@ const run = async () => {
 
   // Connect to responder using its invitation endpoint
   const invitationUrl = await (await agentDependencies.fetch(`http://localhost:${port}/invitation`)).text()
-  const { connectionRecord } = await agent.oob.receiveInvitationFromUrl(invitationUrl)
+  const { connectionRecord } = await agent.modules.oob.receiveInvitationFromUrl(invitationUrl)
   if (!connectionRecord) {
     throw new CredoError('Connection record for out-of-band invitation was not created.')
   }
-  await agent.connections.returnWhenIsConnected(connectionRecord.id)
+  await agent.modules.connections.returnWhenIsConnected(connectionRecord.id)
 
   // Create observable for Response Received event
   const observable = agent.events.observable<DummyStateChangedEvent>(DummyEventTypes.StateChanged)
