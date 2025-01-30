@@ -24,7 +24,7 @@ export class Key {
   }
 
   public static fromPublicKeyBase58(publicKey: string, keyType: KeyType) {
-    const publicKeyBytes = TypedArrayEncoder.fromBase58(publicKey)
+    const publicKeyBytes = Uint8Array.from(TypedArrayEncoder.fromBase58(publicKey))
 
     return Key.fromPublicKey(publicKeyBytes, keyType)
   }
@@ -70,7 +70,7 @@ export class Key {
 
   // We return an object structure based on the key, so that when this object is
   // serialized to JSON it will be nicely formatted instead of the bytes printed
-  public toJSON() {
+  private toJSON() {
     return {
       keyType: this.keyType,
       publicKeyBase58: this.publicKeyBase58,
