@@ -1,0 +1,70 @@
+version: '3'
+
+networks:
+  local_credo_network:
+    name: local_credo_network
+
+services:
+  credo:
+    image: mcr.microsoft.com/devcontainers/javascript-node:1-20-bullseye
+    working_dir: /work
+    tty: true
+    volumes:
+      - ../:/work
+      - /work/node_modules
+    networks:
+      - local_credo_network
+    env_file:
+      - devcontainer.env
+
+  postgres:
+    networks:
+      - local_credo_network
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - '5432:5432'
+
+  indy-pool:
+    networks:
+      - local_credo_network
+    build:
+      context: ../.
+      dockerfile: network/indy-pool.dockerfile
+    ports:
+      - '9701-9708:9701-9708'
+    # Start supervisord in bg, run commands, bring supervisor to fg
+    command: >
+      /bin/bash -c "
+        /usr/bin/supervisord &
+        indy-cli-setup &&
+        add-did-from-seed 00000000000000000000000Endorser9 ENDORSER &&
+        add-did-from-seed 000000000000000000000000Trustee9 TRUSTEE &&
+        /usr/bin/supervisord -n
+      "
+
+  cheqd-ledger:
+    networks:
+      - local_credo_network
+    image: ghcr.io/cheqd/cheqd-testnet:latest
+    platform: linux/amd64
+    ports:
+      - '26657:26657'
+    command: >
+      /bin/bash -c '
+      run-testnet &
+      export RUN_TESTNET_PID=$! &&
+      sleep 10 &&
+      (echo "sketch mountain erode window enact net enrich smoke claim kangaroo another visual write meat latin bacon pulp similar forum guilt father state erase bright"; echo "12345678"; echo "12345678";) | cheqd-noded keys add base --recover &&
+      (echo "silk theme damp share lens select artefact orbit artwork weather mixture alarm remain oppose own wolf reduce melody cheap venture lady spy wise loud"; echo "12345678";) | cheqd-noded keys add extra1 --recover &&
+      (echo "lobster pizza cost soft else rather rich find rose pride catch bar cube switch help joy stable dirt stumble voyage bind cabbage cram exist"; echo "12345678";) | cheqd-noded keys add extra2 --recover &&
+      (echo "state online hedgehog turtle daring lab panda bottom agent pottery mixture venue letter decade bridge win snake mandate trust village emerge awkward fire mimic"; echo "12345678";) | cheqd-noded keys add extra3 --recover &&
+      (echo "12345678";) | cheqd-noded tx bank send cheqd1rnr5jrt4exl0samwj0yegv99jeskl0hsxmcz96 cheqd1yeahnxhfa583wwpm9xt452xzet4xsgsqacgjkr 10000000000000000ncheq --from base --gas auto --fees 100000000ncheq --chain-id cheqd -y &&
+      sleep 2 &&
+      (echo "12345678";) | cheqd-noded tx bank send cheqd1rnr5jrt4exl0samwj0yegv99jeskl0hsxmcz96 cheqd14y3xeqd2xmhl9sxn8cf974k6nntqrveufqpqrs 10000000000000000ncheq --from base --gas auto --fees 100000000ncheq --chain-id cheqd -y &&
+      sleep 2 &&
+      (echo "12345678";) | cheqd-noded tx bank send cheqd1rnr5jrt4exl0samwj0yegv99jeskl0hsxmcz96 cheqd10qh2vl0jrax6yh2mzes03cm6vt27vd47geu375 10000000000000000ncheq --from base --gas auto --fees 100000000ncheq --chain-id cheqd -y &&
+      wait $RUN_TESTNET_PID
+      '
