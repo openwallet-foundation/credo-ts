@@ -28,8 +28,8 @@ export class P384Jwk extends Jwk {
   public constructor({ x, y }: { x: string | Uint8Array; y: string | Uint8Array }) {
     super()
 
-    const xAsBytes = typeof x === 'string' ? TypedArrayEncoder.fromBase64(x) : x
-    const yAsBytes = typeof y === 'string' ? TypedArrayEncoder.fromBase64(y) : y
+    const xAsBytes = typeof x === 'string' ? Uint8Array.from(TypedArrayEncoder.fromBase64(x)) : x
+    const yAsBytes = typeof y === 'string' ? Uint8Array.from(TypedArrayEncoder.fromBase64(y)) : y
 
     this._x = xAsBytes
     this._y = yAsBytes

@@ -97,8 +97,8 @@ export interface Wallet extends Disposable {
 
 export interface WalletCreateKeyOptions {
   keyType: KeyType
-  seed?: Buffer
-  privateKey?: Buffer
+  seed?: Uint8Array
+  privateKey?: Uint8Array
   keyBackend?: KeyBackend
   keyId?: string
 }

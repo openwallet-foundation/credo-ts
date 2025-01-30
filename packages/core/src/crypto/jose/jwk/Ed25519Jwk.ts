@@ -14,12 +14,16 @@ export class Ed25519Jwk extends Jwk {
   public static readonly supportedSignatureAlgorithms: JwaSignatureAlgorithm[] = [JwaSignatureAlgorithm.EdDSA]
   public static readonly keyType = KeyType.Ed25519
 
-  public readonly x: string
+  private readonly _x: Uint8Array
 
-  public constructor({ x }: { x: string }) {
+  public constructor({ x }: { x: string | Uint8Array }) {
     super()
 
-    this.x = x
+    this._x = typeof x === 'string' ? Uint8Array.from(TypedArrayEncoder.fromBase64(x)) : x
+  }
+
+  public get x() {
+    return TypedArrayEncoder.toBase64URL(this._x)
   }
 
   public get kty() {
@@ -31,7 +35,7 @@ export class Ed25519Jwk extends Jwk {
   }
 
   public get publicKey() {
-    return TypedArrayEncoder.fromBase64(this.x)
+    return this._x
   }
 
   public get keyType() {
@@ -65,9 +69,7 @@ export class Ed25519Jwk extends Jwk {
   }
 
   public static fromPublicKey(publicKey: Uint8Array) {
-    return new Ed25519Jwk({
-      x: TypedArrayEncoder.toBase64URL(publicKey),
-    })
+    return new Ed25519Jwk({ x: publicKey })
   }
 }
 
