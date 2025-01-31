@@ -31,6 +31,8 @@ import {
   tryParseDid,
   didKeyToInstanceOfKey,
   DidRepository,
+  didKeyToVerkey,
+  parseDid,
 } from '@credo-ts/core'
 
 import { Attachment, AttachmentData } from '../../decorators/attachment/Attachment'
@@ -284,32 +286,33 @@ export class DidExchangeProtocol {
     const didDocument = await createPeerDidFromServices(agentContext, services, numAlgo)
     const message = new DidExchangeResponseMessage({ did: didDocument.id, threadId })
 
+    // DID Rotate attachment should be signed with invitation keys
+    const invitationRecipientKeys = outOfBandRecord.outOfBandInvitation
+      .getInlineServices()
+      .map((s) => s.recipientKeys)
+      .reduce((acc, curr) => acc.concat(curr), [])
+
+    // Consider also pure-DID services, used when DID Exchange is started with an implicit invitation or a public DID
+    for (const did of outOfBandRecord.outOfBandInvitation.getDidServices()) {
+      invitationRecipientKeys.push(
+        ...(await getDidDocumentForCreatedDid(agentContext, parseDid(did).did)).recipientKeys.map(
+          (key) => key.publicKeyBase58
+        )
+      )
+    }
+
     if (numAlgo === PeerDidNumAlgo.GenesisDoc) {
       message.didDoc = await this.createSignedAttachment(
         agentContext,
         didDocument.toJSON(),
-        Array.from(
-          new Set(
-            services
-              .map((s) => s.recipientKeys)
-              .reduce((acc, curr) => acc.concat(curr), [])
-              .map((key) => key.publicKeyBase58)
-          )
-        )
+        Array.from(new Set(invitationRecipientKeys.map(didKeyToVerkey)))
       )
     } else {
       // We assume any other case is a resolvable did (e.g. did:peer:2 or did:peer:4)
       message.didRotate = await this.createSignedAttachment(
         agentContext,
         didDocument.id,
-        Array.from(
-          new Set(
-            services
-              .map((s) => s.recipientKeys)
-              .reduce((acc, curr) => acc.concat(curr), [])
-              .map((key) => key.publicKeyBase58)
-          )
-        )
+        Array.from(new Set(invitationRecipientKeys.map(didKeyToVerkey)))
       )
     }
 
@@ -462,6 +465,7 @@ export class DidExchangeProtocol {
     data: string | Record<string, unknown>,
     verkeys: string[]
   ) {
+    this.logger.debug(`Creating signed attachment with keys ${JSON.stringify(verkeys)}`)
     const signedAttach = new Attachment({
       mimeType: typeof data === 'string' ? undefined : 'application/json',
       data: new AttachmentData({
