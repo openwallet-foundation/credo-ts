@@ -132,12 +132,14 @@ export function routingToServices(routing: Routing): ResolvedDidCommService[] {
 }
 
 export async function getDidDocumentForCreatedDid(agentContext: AgentContext, did: string) {
+  // Ensure that the DID has been created by us
   const didRecord = await agentContext.dependencyManager.resolve(DidRepository).findCreatedDid(agentContext, did)
-
-  if (!didRecord?.didDocument) {
-    throw new CredoError(`Could not get DidDocument for created did ${did}`)
+  if (!didRecord) {
+    throw new CredoError(`Could not find created did ${did}`)
   }
-  return didRecord.didDocument
+
+  const didsApi = agentContext.dependencyManager.resolve(DidsApi)
+  return await didsApi.resolveDidDocument(did)
 }
 
 /**

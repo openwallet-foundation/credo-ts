@@ -396,7 +396,7 @@ export class OutOfBandApi {
 
     const invitation = new OutOfBandInvitation({
       id: config.did,
-      label: config.label ?? '',
+      label: config.alias ?? '',
       services: [config.did],
       handshakeProtocols,
     })
