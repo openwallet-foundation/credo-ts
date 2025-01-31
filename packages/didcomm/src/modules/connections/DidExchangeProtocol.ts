@@ -292,7 +292,7 @@ export class DidExchangeProtocol {
       .map((s) => s.recipientKeys)
       .reduce((acc, curr) => acc.concat(curr), [])
 
-    // In case the DID Exchange started with an implicit invitation, take all recipient keys from the corresponding DID
+    // Consider also pure-DID services, used when DID Exchange is started with an implicit invitation or a public DID
     for (const did of outOfBandRecord.outOfBandInvitation.getDidServices()) {
       invitationRecipientKeys.push(
         ...(await getDidDocumentForCreatedDid(agentContext, parseDid(did).did)).recipientKeys.map(

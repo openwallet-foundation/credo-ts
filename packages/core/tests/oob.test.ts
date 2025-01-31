@@ -766,6 +766,7 @@ describe('out of band', () => {
       expect(faberAliceConnection?.state).toBe(DidExchangeState.Completed)
 
       // Use the invitation did from the first connection to create the second connection
+      // (first connection's did matches the one used in invitation, since no rotation has been done (multiUse=false))
       const outOfBandRecord2 = await faberAgent.modules.oob.createInvitation({
         invitationDid: faberAliceConnection.did,
       })
