@@ -48,6 +48,7 @@ import {
   extractX509CertificatesFromJwt,
   W3cJwtVerifiablePresentation,
   X509Certificate,
+  isMdocSupportedSignatureAlgorithm,
 } from '@credo-ts/core'
 import {
   AuthorizationRequest,
@@ -495,7 +496,8 @@ export class OpenId4VcSiopVerifierService {
   ) {
     const signatureSuiteRegistry = agentContext.dependencyManager.resolve(SignatureSuiteRegistry)
 
-    const supportedAlgs = getSupportedJwaSignatureAlgorithms(agentContext) as string[]
+    const supportedAlgs = getSupportedJwaSignatureAlgorithms(agentContext)
+    const supportedMdocAlgs = supportedAlgs.filter(isMdocSupportedSignatureAlgorithm)
     const supportedProofTypes = signatureSuiteRegistry.supportedProofTypes
 
     // Check: audience must be set to the issuer with dynamic disc otherwise self-issued.me/v2.
@@ -583,7 +585,7 @@ export class OpenId4VcSiopVerifierService {
         ],
         vp_formats: {
           mso_mdoc: {
-            alg: supportedAlgs,
+            alg: supportedMdocAlgs,
           },
           jwt_vc: {
             alg: supportedAlgs,
