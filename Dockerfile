@@ -1,4 +1,4 @@
-FROM node:22
+FROM node:23
 
 # Set working directory
 WORKDIR /www
