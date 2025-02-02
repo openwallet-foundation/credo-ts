@@ -1,8 +1,15 @@
 import { Type } from 'class-transformer'
-import { IsEnum, IsNumber, IsString } from 'class-validator'
+import {
+  IsNumberString,
+  IsString,
+  registerDecorator,
+  ValidationArguments,
+  ValidationOptions,
+} from 'class-validator'
 
 import { W3cCredentialStatus } from '../W3cCredentialStatus'
 import { BitstringStatusListCredentialStatusPurpose } from './BitStringStatusListCredential'
+import { JsonTransformer } from '../../../../../../utils'
 
 
 export interface BitStringStatusListMessageOptions {
@@ -51,9 +58,8 @@ export class BitStringStatusListEntry extends W3cCredentialStatus {
     }
   }
 
-  @IsEnum(BitstringStatusListCredentialStatusPurpose)
-  @IsString()
-  public statusPurpose!: BitstringStatusListCredentialStatusPurpose
+  @IsSupportedStatusPurpose({ message: 'Invalid statusPurpose value' })
+  public statusPurpose!: string
 
   @IsString()
   public statusListIndex!: string
@@ -61,11 +67,16 @@ export class BitStringStatusListEntry extends W3cCredentialStatus {
   @IsString()
   public statusListCredential!: string
 
-  @IsNumber()
-  public statusSize?: number
+  @IsNumberString()
+  public statusSize?: string
 
   @Type(() => BitStringStatusListMessage)
   public statusMessage?: BitStringStatusListStatusMessage[]
+
+
+  public static fromJson(json: Record<string, unknown>) {
+    return JsonTransformer.fromJSON(json, BitStringStatusListEntry)
+  }
 }
 
 export interface BitStringStatusListStatusMessage {
@@ -79,14 +90,14 @@ export interface BitStringStatusListStatusMessage {
 
 export interface IBitStringStatusListEntryOptions {
   id: string
-  type: 'BitstringStatusListEntry'
-  statusPurpose: BitstringStatusListCredentialStatusPurpose
+  type: string
+  statusPurpose: string
   // Unique identifier for specific credential
   statusListIndex: string
   // Must be url referencing to a VC of type 'BitstringStatusListCredential'
   statusListCredential: string
   // The statusSize indicates the size of the status entry in bits
-  statusSize?: number
+  statusSize?: string
   // Must be preset if statusPurpose is message
   /**
    * the length of which MUST equal the number of possible status messages indicated by statusSize
@@ -98,3 +109,23 @@ export interface IBitStringStatusListEntryOptions {
   statusReference?: string | string[]
 }
 
+export function IsSupportedStatusPurpose(validationOptions?: ValidationOptions) {
+  return function (object: Object, propertyName: string) {
+    registerDecorator({
+      name: 'isSupportedStatusPurpose',
+      target: object.constructor,
+      propertyName: propertyName,
+      options: validationOptions,
+      validator: {
+        validate(value: any, args: ValidationArguments) {
+          return Object.values(BitstringStatusListCredentialStatusPurpose).includes(value)
+        },
+        defaultMessage(args: ValidationArguments) {
+          return `The statusPurpose must be one of the following: ${Object.values(
+            BitstringStatusListCredentialStatusPurpose
+          ).join(', ')}`
+        },
+      },
+    })
+  }
+}

@@ -5,6 +5,7 @@ import { W3cCredential, W3cCredentialOptions } from '../../W3cCredential'
 import { W3cCredentialSubject, W3cCredentialSubjectOptions } from '../../index'
 import { mapSingleOrArray, SingleOrArray } from '../../../../../../utils'
 import { CredoError } from '../../../../../../error'
+import { IsSupportedStatusPurpose } from './BitStringStatusList'
 
 // The purpose can be anything apart from this as well
 export enum BitstringStatusListCredentialStatusPurpose {
@@ -20,13 +21,11 @@ export interface BitStringStatusListCredentialOptions extends W3cCredentialOptio
 // Define an interface for `credentialSubject`
 export interface BitStringStatusListCredentialSubjectOptions extends W3cCredentialSubjectOptions {
   type: string
-  statusPurpose: BitstringStatusListCredentialStatusPurpose
+  statusPurpose: string
   encodedList: string
 }
 
 export class BitStringStatusListCredentialSubject extends W3cCredentialSubject {
-  // public static type = 'BitstringStatusList'
-
   public constructor(options: BitStringStatusListCredentialSubjectOptions) {
     super({
       id: options.id,
@@ -41,9 +40,8 @@ export class BitStringStatusListCredentialSubject extends W3cCredentialSubject {
   @IsString()
   public type!: string
 
-  @IsEnum(BitstringStatusListCredentialStatusPurpose)
-  @IsString()
-  public statusPurpose!: BitstringStatusListCredentialStatusPurpose
+  @IsSupportedStatusPurpose()
+  public statusPurpose!: string
 
   @IsString()
   public encodedList!: string
@@ -135,7 +133,7 @@ export function BitStringStatusListCredentialSubjectTransformer() {
             id,
             type: type as string,
             claims: claims as Record<string, unknown> | undefined,
-            statusPurpose: statusPurpose as BitstringStatusListCredentialStatusPurpose,
+            statusPurpose: statusPurpose as string,
             encodedList,
           })
         }
