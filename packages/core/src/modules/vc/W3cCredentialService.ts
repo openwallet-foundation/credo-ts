@@ -195,22 +195,23 @@ export class W3cCredentialService {
    * @returns Revoke credential notification message
    *
    */
-  public async revokeCredential<Format extends ClaimFormat.JwtVp | ClaimFormat.LdpVp>(
+  public async revokeCredential<Format extends ClaimFormat.JwtVc | ClaimFormat.LdpVc>(
     agentContext: AgentContext,
-    options: RevokeCredentialOptions
+    options: RevokeCredentialOptions<Format>
   ) {
-    const credentialRecod = await this.getCredentialRecordById(agentContext, options.credentialRecordId)
-    if (!credentialRecod) {
-      throw new CredoError(`Credential with id ${options.credentialRecordId} not found`)
-    }
-    const tags = credentialRecod.getTags()
+    // Considering a revoker of a credential can be anyone apart from the issuer
+    // Not sure, if we need to get Credential record, as it might not be present for ayone apart from the issuer
+    // const credentialRecod = await this.getCredentialRecordById(agentContext, options.credentialRecordId)
+    // if (!credentialRecod) {
+    //   throw new CredoError(`Credential with id ${options.credentialRecordId} not found`)
+    // }
 
-    if (tags.claimFormat === ClaimFormat.JwtVc) {
+    if (options.format === ClaimFormat.JwtVc) {
       const revoked = await this.w3cJwtCredentialService.revokeCredential(agentContext, options)
-      return revoked as unknown as W3cVerifiablePresentation<Format>
-    } else if (tags.claimFormat === ClaimFormat.LdpVc) {
+      return revoked as unknown as W3cVerifiableCredential<Format>
+    } else if (options.format === ClaimFormat.LdpVc) {
       const revoked = await this.w3cJsonLdCredentialService.revokeCredential(agentContext, options)
-      return revoked as unknown as W3cVerifiablePresentation<Format>
+      return revoked as unknown as W3cVerifiableCredential<Format>
     } else {
       throw new CredoError(`Unsupported format in options. Format must be either 'jwt_vc' or 'ldp_vc'`)
     }

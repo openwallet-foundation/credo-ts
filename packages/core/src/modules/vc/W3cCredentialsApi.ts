@@ -15,8 +15,8 @@ import { AgentContext } from '../../agent'
 import { injectable } from '../../plugins'
 
 import { W3cCredentialService } from './W3cCredentialService'
-import { W3cJsonLdVerifiablePresentation } from './data-integrity'
-import { W3cJwtVerifiablePresentation } from './jwt-vc'
+import { W3cJsonLdVerifiableCredential } from './data-integrity'
+import { W3cJwtVerifiableCredential } from './jwt-vc'
 
 /**
  * @public
@@ -48,10 +48,10 @@ export class W3cCredentialsApi {
   }
 
   // Revoke Credential Methods
-  public async revokeCredential(
-    options: RevokeCredentialOptions
-  ): Promise<W3cJwtVerifiablePresentation | W3cJsonLdVerifiablePresentation> {
-    return this.w3cCredentialService.revokeCredential(this.agentContext, options)
+  public async revokeCredential<Format extends ClaimFormat.JwtVc | ClaimFormat.LdpVc>(
+    options: RevokeCredentialOptions<Format>
+  ): Promise<W3cJwtVerifiableCredential | W3cJsonLdVerifiableCredential> {
+    return this.w3cCredentialService.revokeCredential<Format>(this.agentContext, options)
   }
 
   public async findCredentialRecordsByQuery(
