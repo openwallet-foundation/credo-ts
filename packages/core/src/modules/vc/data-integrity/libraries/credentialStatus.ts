@@ -8,7 +8,7 @@ import {
   verifyBitStringCredentialStatus,
 } from '../../models/credential/w3c-credential-status'
 import { W3cCredentialStatusSupportedTypes } from '../../models/credential/w3c-credential-status/W3cCredentialStatus'
-import { JsonTransformer, SingleOrArray } from '../../../../utils'
+import { SingleOrArray } from '../../../../utils'
 
 // Function to validate the status using the updated method
 export const validateStatus = async (
@@ -26,9 +26,8 @@ export const validateStatus = async (
   switch (credentialStatus.type) {
     case W3cCredentialStatusSupportedTypes.BitstringStatusListEntry:
       agentContext.config.logger.debug('Credential status type is BitstringStatusListEntry')
-      const entry = JsonTransformer.fromJSON(credentialStatus, BitStringStatusListEntry)
       try {
-        await verifyBitStringCredentialStatus(entry, agentContext)
+        await verifyBitStringCredentialStatus(credentialStatus as unknown as BitStringStatusListEntry, agentContext)
       } catch (errors) {
         throw new CredoError(`Error while validating credential status`, errors)
       }
