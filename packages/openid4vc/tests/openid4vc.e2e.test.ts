@@ -48,7 +48,7 @@ import {
   OpenId4VcVerificationSessionState,
   OpenId4VcVerifierModule,
 } from '../src'
-import { getOid4vciCallbacks } from '../src/shared/callbacks'
+import { getOid4vcCallbacks } from '../src/shared/callbacks'
 
 import { Server } from 'http'
 import {
@@ -349,7 +349,7 @@ describe('OpenId4Vc', () => {
       cnf: {
         jkt: await calculateJwkThumbprint({
           hashAlgorithm: HashAlgorithm.Sha256,
-          hashCallback: getOid4vciCallbacks(holderTenant1.context).hash,
+          hashCallback: getOid4vcCallbacks(holderTenant1.context).hash,
           jwk: tokenResponseTenant1.dpop?.jwk.toJson() as JwkJson,
         }),
       },
@@ -1419,6 +1419,10 @@ describe('OpenId4Vc', () => {
       ],
     } satisfies DifPresentationExchangeDefinitionV2
 
+    const transactionData = [
+      { type: 'type1', credential_ids: ['OpenBadgeCredentialDescriptor'] },
+      { type: 'type2', credential_ids: ['OpenBadgeCredentialDescriptor2'] },
+    ]
     const { authorizationRequest, verificationSession } =
       await verifier.agent.modules.openId4VcVerifier.createAuthorizationRequest({
         verifierId: openIdVerifier.verifierId,
@@ -1429,6 +1433,7 @@ describe('OpenId4Vc', () => {
         },
         presentationExchange: {
           definition: presentationDefinition,
+          transactionData,
         },
       })
 
@@ -1441,6 +1446,77 @@ describe('OpenId4Vc', () => {
     const resolvedAuthorizationRequest = await holder.agent.modules.openId4VcHolder.resolveSiopAuthorizationRequest(
       authorizationRequest
     )
+
+    const receivedTd = [
+      {
+        transactionDataEntry: {
+          type: 'type1',
+          credential_ids: ['OpenBadgeCredentialDescriptor'],
+        },
+        submissionEntry: {
+          inputDescriptorId: 'OpenBadgeCredentialDescriptor',
+          name: undefined,
+          purpose: undefined,
+          verifiableCredentials: [
+            {
+              type: 'vc+sd-jwt',
+              credentialRecord: {
+                _tags: { alg: 'EdDSA', sdAlg: 'sha-256', vct: 'OpenBadgeCredential' },
+                type: 'SdJwtVcRecord',
+                metadata: { data: {} },
+                id: expect.any(String),
+                createdAt: expect.any(Date),
+                compactSdJwtVc: expect.any(String),
+                updatedAt: expect.any(Date),
+              },
+              disclosedPayload: {
+                vct: 'OpenBadgeCredential',
+                degree: 'bachelor',
+                cnf: { kid: expect.any(String) },
+                iss: expect.any(String),
+                iat: expect.any(Number),
+                university: 'innsbruck',
+              },
+            },
+          ],
+        },
+      },
+      {
+        transactionDataEntry: {
+          type: 'type2',
+          credential_ids: ['OpenBadgeCredentialDescriptor2'],
+        },
+        submissionEntry: {
+          inputDescriptorId: 'OpenBadgeCredentialDescriptor2',
+          name: undefined,
+          purpose: undefined,
+          verifiableCredentials: [
+            {
+              type: 'vc+sd-jwt',
+              credentialRecord: {
+                _tags: { alg: 'EdDSA', sdAlg: 'sha-256', vct: 'OpenBadgeCredential2' },
+                type: 'SdJwtVcRecord',
+                metadata: { data: {} },
+                id: expect.any(String),
+                createdAt: expect.any(Date),
+                compactSdJwtVc: expect.any(String),
+                updatedAt: expect.any(Date),
+              },
+              disclosedPayload: {
+                vct: 'OpenBadgeCredential2',
+                degree: 'bachelor2',
+                cnf: { kid: expect.any(String) },
+                iss: expect.any(String),
+                iat: expect.any(Number),
+                name: 'John Doe2',
+              },
+            },
+          ],
+        },
+      },
+    ]
+
+    expect(resolvedAuthorizationRequest.transactionData).toMatchObject(receivedTd)
 
     expect(resolvedAuthorizationRequest.presentationExchange?.credentialsForRequest).toEqual({
       areRequirementsSatisfied: true,
@@ -1753,7 +1829,7 @@ describe('OpenId4Vc', () => {
       cnf: {
         jkt: await calculateJwkThumbprint({
           hashAlgorithm: HashAlgorithm.Sha256,
-          hashCallback: getOid4vciCallbacks(holderTenant1.context).hash,
+          hashCallback: getOid4vcCallbacks(holderTenant1.context).hash,
           jwk: tokenResponseTenant1.dpop?.jwk.toJson() as JwkJson,
         }),
       },

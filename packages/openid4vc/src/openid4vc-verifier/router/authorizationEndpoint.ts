@@ -6,7 +6,7 @@ import type { OpenId4VcVerificationRequest } from './requestContext'
 import { Oauth2ErrorCodes, Oauth2ServerErrorResponseError } from '@animo-id/oauth2'
 import { CredoError, JsonEncoder } from '@credo-ts/core'
 
-import { jarmAuthResponseHandle, Openid4vpAuthResponse, parseOpenid4vpRequestParams } from '@openid4vc/oid4vp'
+import { verifyJarmAuthResponse, Openid4vpAuthResponse, parseOpenid4vpRequestParams } from '@openid4vc/oid4vp'
 import { getOid4vcCallbacks } from '../../shared/callbacks'
 import { getRequestContext, sendErrorResponse, sendJsonResponse, sendOauth2ErrorResponse } from '../../shared/router'
 import { OpenId4VcSiopVerifierService } from '../OpenId4VcSiopVerifierService'
@@ -61,8 +61,8 @@ export function configureAuthorizationEndpoint(router: Router, config: OpenId4Vc
       let jarmHeader: { apu?: string; apv?: string } | undefined = undefined
 
       if (request.body.response) {
-        const res2 = await jarmAuthResponseHandle({
-          jarm_auth_response_jwt: request.body.response,
+        const verifiedJarmResponse = await verifyJarmAuthResponse({
+          jarmAuthResponseJwt: request.body.response,
           callbacks: getOid4vcCallbacks(agentContext),
           getAuthRequest: async (input) => {
             verificationSession = await getVerificationSession(agentContext, {
@@ -75,15 +75,15 @@ export function configureAuthorizationEndpoint(router: Router, config: OpenId4Vc
             if (authorizationRequest.type === 'jar') {
               throw new CredoError('Invalid authorization request jwt')
             }
-            return { auth_request: authorizationRequest.params }
+            return { authRequest: authorizationRequest.params }
           },
         })
 
-        jarmResponseType = res2.type
+        jarmResponseType = verifiedJarmResponse.type
 
         const [header] = request.body.response.split('.')
         jarmHeader = JsonEncoder.fromBase64(header)
-        authorizationResponsePayload = res2.auth_response as Openid4vpAuthResponse
+        authorizationResponsePayload = verifiedJarmResponse.jarmAuthResponse as Openid4vpAuthResponse
       } else {
         authorizationResponsePayload = request.body
         verificationSession = await getVerificationSession(agentContext, {

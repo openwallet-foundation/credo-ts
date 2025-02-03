@@ -244,7 +244,7 @@ export class SdJwtVcService {
     }
 
     const transactionDataHashes = kbJwtPayload.transaction_data_hashes
-    if ((!Array.isArray(transactionDataHashes) || transactionDataHashes.some((hash) => typeof hash !== 'string'))) {
+    if (!Array.isArray(transactionDataHashes) || transactionDataHashes.some((hash) => typeof hash !== 'string')) {
       throw new SdJwtVcError('transaction_data_hashes must be an array of string')
     }
 

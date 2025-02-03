@@ -1,5 +1,6 @@
 import type {
   AgentContext,
+  DifPexInputDescriptorToCredentials,
   DifPresentationExchangeDefinition,
   DifPresentationExchangeSubmission,
   EncodedX509Certificate,
@@ -11,8 +12,8 @@ import type {
 import {
   createOpenid4vpAuthorizationResponse,
   parseOpenid4vpRequestParams,
-  processOpenid4vpAuthRequest,
   submitOpenid4vpAuthorizationResponse,
+  verifyOpenid4vpAuthRequest,
 } from '@openid4vc/oid4vp'
 import type { OpenId4VcJwtIssuer } from '../shared'
 import type {
@@ -76,6 +77,10 @@ export class OpenId4VcSiopHolderService {
             }
           }
 
+          if (recordSet.size === 0) {
+            continue
+          }
+
           credentialsForTransactionData.push({
             transactionDataEntry,
             submissionEntry: { ...filtered[0], verifiableCredentials: Array.from(recordSet) },
@@ -93,7 +98,7 @@ export class OpenId4VcSiopHolderService {
     trustedCertificates?: EncodedX509Certificate[]
   ): Promise<OpenId4VcSiopResolvedAuthorizationRequest> {
     const { params } = parseOpenid4vpRequestParams(requestJwtOrUri)
-    const verifiedAuthRequest = await processOpenid4vpAuthRequest(params, {
+    const verifiedAuthRequest = await verifyOpenid4vpAuthRequest(params, {
       callbacks: {
         ...getOid4vcCallbacks(agentContext, trustedCertificates),
         ...getOid4vpX509Callbacks(agentContext),
@@ -118,6 +123,41 @@ export class OpenId4VcSiopHolderService {
       transactionData: credentialsForTransactionData,
       presentationExchange: presentationExchange,
     }
+  }
+
+  private async getInputDescriptorsToSignTransactionData(
+    presentationExchange: {
+      credentials: DifPexInputDescriptorToCredentials
+    },
+    transactionData: TransactionData
+  ) {
+    // check if all credentials are present for the transaction data
+    // This needs a deep integration into pex and out pex requirements
+
+    let inputDescriptorsToSignTransactionData: string[] | undefined = undefined
+
+    // check if all credentials are present for the transaction data
+    // This needs a deep integration into pex and out pex requirements
+    if (transactionData && presentationExchange) {
+      inputDescriptorsToSignTransactionData = []
+      for (const tdEntry of transactionData) {
+        // find a inputDescriptor in the credential_ids which is present in the response
+        // and use it to sign of the transaction
+        const inputDescriptorForCredential = tdEntry.credential_ids.find(
+          (credentialId) => presentationExchange.credentials[credentialId]
+        )
+
+        if (!inputDescriptorForCredential) {
+          throw new CredoError(
+            'Cannot create authorization response. No credentials found for signing transaction data.'
+          )
+        }
+
+        inputDescriptorsToSignTransactionData.push(inputDescriptorForCredential)
+      }
+    }
+
+    return inputDescriptorsToSignTransactionData
   }
 
   public async acceptAuthorizationRequest(
@@ -152,26 +192,11 @@ export class OpenId4VcSiopHolderService {
       }
 
       let inputDescriptorsToSignTransactionData: string[] | undefined = undefined
-
-      // check if all credentials are present for the transaction data
-      // This needs a deep integration into pex and out pex requirements
       if (authorizationRequest.transactionData && presentationExchange) {
-        inputDescriptorsToSignTransactionData = []
-        for (const tdEntry of authorizationRequest.transactionData) {
-          // find a inputDescriptor in the credential_ids which is present in the response
-          // and use it to sign of the transaction
-          const inputDescriptorForCredential = tdEntry.credential_ids.find(
-            (credentialId) => presentationExchange.credentials[credentialId]
-          )
-
-          if (!inputDescriptorForCredential) {
-            throw new CredoError(
-              'Cannot create authorization response. No credentials found for signing transaction data.'
-            )
-          }
-
-          inputDescriptorsToSignTransactionData.push(inputDescriptorForCredential)
-        }
+        inputDescriptorsToSignTransactionData = await this.getInputDescriptorsToSignTransactionData(
+          presentationExchange,
+          authorizationRequest.transactionData
+        )
       }
 
       const { presentationSubmission, encodedVerifiablePresentations, verifiablePresentations } =
@@ -192,10 +217,7 @@ export class OpenId4VcSiopHolderService {
           openid4vp: { mdocGeneratedNonce: authorizationResponseNonce, responseUri },
         })
 
-
-
       presentationExchangeOptions = { verifiablePresentations: encodedVerifiablePresentations, presentationSubmission }
-
 
       if (wantsIdToken && !openIdTokenIssuer) {
         openIdTokenIssuer = this.getOpenIdTokenIssuerFromVerifiablePresentation(verifiablePresentations[0])
@@ -236,9 +258,7 @@ export class OpenId4VcSiopHolderService {
       jarm: authorizationRequest.payload.response_mode.includes('jwt')
         ? {
             jwtSigner: jwtIssuer!,
-            jweEncryptor: {
-              nonce: authorizationResponseNonce,
-            },
+            jweEncryptor: { nonce: authorizationResponseNonce },
             serverMetadata: {
               authorization_signing_alg_values_supported: ['RS256'],
               authorization_encryption_alg_values_supported: ['ECDH-ES'],
@@ -260,6 +280,7 @@ export class OpenId4VcSiopHolderService {
       .clone()
       .text()
       .catch(() => null)
+
     const responseJson = (await result.response
       .clone()
       .json()

@@ -300,8 +300,12 @@ export class DifPresentationExchangeService {
           getVerifiablePresentationFromEncoded(agentContext, vp)
         )
       ),
-      encodedVerifiablePresentations: verifiablePresentationResultsWithFormat.flatMap((resultWithFormat) =>
-        resultWithFormat.verifiablePresentationResult.verifiablePresentations as unknown as (string | W3cJsonLdVerifiablePresentation)[]
+      encodedVerifiablePresentations: verifiablePresentationResultsWithFormat.flatMap(
+        (resultWithFormat) =>
+          resultWithFormat.verifiablePresentationResult.verifiablePresentations as unknown as (
+            | string
+            | W3cJsonLdVerifiablePresentation
+          )[]
       ),
       presentationSubmission,
       presentationSubmissionLocation:

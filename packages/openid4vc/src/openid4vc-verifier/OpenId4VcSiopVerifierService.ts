@@ -12,7 +12,6 @@ import type {
 } from '@credo-ts/core'
 import {
   JarmClientMetadata,
-  parseIfJson,
   parseOpenid4vpRequestParams,
   parsePresentationsFromVpToken,
   parseTransactionData,
@@ -67,7 +66,7 @@ import {
 } from '@sphereon/did-auth-siop/dist/authorization-response/OpenID4VP'
 
 import { storeActorIdForContextCorrelationId } from '../shared/router'
-import { getSupportedJwaSignatureAlgorithms, openIdTokenIssuerToJwtIssuer } from '../shared/utils'
+import { getSupportedJwaSignatureAlgorithms, openIdTokenIssuerToJwtIssuer, parseIfJson } from '../shared/utils'
 
 import { ClientIdScheme, createOpenid4vpAuthorizationRequest } from '@openid4vc/oid4vp'
 import { getOid4vcCallbacks } from '../shared/callbacks'
@@ -158,8 +157,6 @@ export class OpenId4VcSiopVerifierService {
       utils.uuid(),
     ])
 
-    const callbacks = getOid4vcCallbacks(agentContext)
-
     const transaction_data =
       options.presentationExchange?.transactionData?.map((tdEntry) => JsonEncoder.toBase64URL(tdEntry)) ?? undefined
 
@@ -174,6 +171,7 @@ export class OpenId4VcSiopVerifierService {
       })),
     }
 
+    const callbacks = getOid4vcCallbacks(agentContext)
     const authorizationRequest = await createOpenid4vpAuthorizationRequest({
       jar: { jwtSigner: jwtIssuer, requestUri: hostedAuthorizationRequestUri },
       requestParams: {
@@ -273,10 +271,10 @@ export class OpenId4VcSiopVerifierService {
     const presentations = result.pex.presentations
     const pex = agentContext.dependencyManager.resolve(DifPresentationExchangeService)
     pex.validatePresentationDefinition(
-      result.pex.presentation_definition as unknown as DifPresentationExchangeDefinition
+      result.pex.presentationDefinition as unknown as DifPresentationExchangeDefinition
     )
     pex.validatePresentationSubmission(
-      result.pex.presentation_submission as unknown as DifPresentationExchangeSubmission
+      result.pex.presentationSubmission as unknown as DifPresentationExchangeSubmission
     )
 
     const transactionData = authorizationRequest.transaction_data
@@ -293,7 +291,7 @@ export class OpenId4VcSiopVerifierService {
           mdocGeneratedNonce: mdocGeneratedNonce,
           verificationSessionRecordId: options.verificationSession.id,
           vpTokenPresentationParseResult: presentation,
-          presentationSubmission: result.pex.presentation_submission as any,
+          presentationSubmission: result.pex.presentationSubmission as any,
         })
       }
     )
@@ -331,7 +329,7 @@ export class OpenId4VcSiopVerifierService {
       assertValidVerifiablePresentations({
         presentationDefinitions: [
           {
-            definition: result.pex.presentation_definition as any,
+            definition: result.pex.presentationDefinition as any,
             location: PresentationDefinitionLocation.TOPLEVEL_PRESENTATION_DEF,
           },
         ],
@@ -343,7 +341,7 @@ export class OpenId4VcSiopVerifierService {
           : [],
         opts: {
           hasher: Hasher.hash,
-          presentationSubmission: result.pex.presentation_submission as any,
+          presentationSubmission: result.pex.presentationSubmission as any,
         },
       })
     } catch (error) {
@@ -395,7 +393,7 @@ export class OpenId4VcSiopVerifierService {
         throw new CredoError('Missing vp_token in the openid4vp authorization response.')
       }
 
-      const rawPresentations = parsePresentationsFromVpToken({ vp_token: vpToken })
+      const rawPresentations = parsePresentationsFromVpToken({ vpToken })
 
       const submission = verificationSession.authorizationResponsePayload.presentation_submission as
         | DifPresentationExchangeSubmission

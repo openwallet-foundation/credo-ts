@@ -54,7 +54,7 @@ describe('OpenId4VcVerifier', () => {
 
       expect(jwt.header.kid).toEqual(verifier.kid)
       expect(jwt.header.alg).toEqual('EdDSA')
-      expect(jwt.header.typ).toEqual('JWT')
+      expect(jwt.header.typ).toEqual('oauth-authz-req+jwt')
       expect(jwt.payload.additionalClaims.scope).toEqual(undefined)
       expect(jwt.payload.additionalClaims.client_id).toEqual(verifier.did)
       expect(jwt.payload.additionalClaims.response_uri).toEqual(
@@ -64,8 +64,6 @@ describe('OpenId4VcVerifier', () => {
       expect(jwt.payload.additionalClaims.nonce).toBeDefined()
       expect(jwt.payload.additionalClaims.state).toBeDefined()
       expect(jwt.payload.additionalClaims.response_type).toEqual('vp_token')
-      expect(jwt.payload.iss).toEqual(verifier.did)
-      expect(jwt.payload.sub).toEqual(verifier.did)
     })
 
     it('check openid proof request format (id token)', async () => {
