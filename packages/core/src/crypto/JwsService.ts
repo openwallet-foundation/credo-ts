@@ -1,3 +1,5 @@
+import type { AgentContext } from '../agent'
+import type { Buffer } from '../utils'
 import type {
   Jws,
   JwsDetachedFormat,
@@ -8,8 +10,6 @@ import type {
 import type { Key } from './Key'
 import type { Jwk } from './jose/jwk'
 import type { JwkJson } from './jose/jwk/Jwk'
-import type { AgentContext } from '../agent'
-import type { Buffer } from '../utils'
 
 import { CredoError } from '../error'
 import { EncodedX509Certificate, X509ModuleConfig } from '../modules/x509'
@@ -235,7 +235,7 @@ export class JwsService {
       jwkResolver,
       jws,
       payload,
-      trustedCertificates: trustedCertificatesFromOptions = [],
+      trustedCertificates: trustedCertificatesFromOptions = undefined,
     } = options
 
     if ([protectedHeader.jwk, protectedHeader.kid, protectedHeader.x5c].filter(Boolean).length > 1) {

@@ -1,17 +1,18 @@
-import type { OpenId4VcVerificationSessionRecord, OpenId4VcVerifierRecordProps } from './repository'
+import type {
+  DifPexPresentationWithDescriptor,
+  DifPresentationExchangeDefinition,
+  DifPresentationExchangeDefinitionV2,
+  DifPresentationExchangeSubmission,
+  TransactionData,
+  VerifiablePresentation,
+} from '@credo-ts/core'
 import type {
   OpenId4VcIssuerX5c,
   OpenId4VcJwtIssuer,
   OpenId4VcSiopAuthorizationResponsePayload,
   OpenId4VcSiopIdTokenPayload,
 } from '../shared'
-import type {
-  DifPresentationExchangeDefinition,
-  DifPresentationExchangeSubmission,
-  DifPresentationExchangeDefinitionV2,
-  VerifiablePresentation,
-  DifPexPresentationWithDescriptor,
-} from '@credo-ts/core'
+import type { OpenId4VcVerificationSessionRecord, OpenId4VcVerifierRecordProps } from './repository'
 
 export type ResponseMode = 'direct_post' | 'direct_post.jwt'
 
@@ -37,6 +38,7 @@ export interface OpenId4VcSiopCreateAuthorizationRequestOptions {
    */
   presentationExchange?: {
     definition: DifPresentationExchangeDefinitionV2
+    transactionData?: TransactionData
   }
 
   /**
@@ -78,6 +80,8 @@ export interface OpenId4VcSiopVerifiedAuthorizationResponse {
   }
 
   presentationExchange?: OpenId4VcSiopVerifiedAuthorizationResponsePresentationExchange
+
+  transactionData?: TransactionData
 }
 
 /**

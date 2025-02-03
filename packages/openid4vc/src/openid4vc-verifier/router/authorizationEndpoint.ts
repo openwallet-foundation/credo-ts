@@ -1,13 +1,13 @@
-import type { OpenId4VcVerificationRequest } from './requestContext'
-import type { OpenId4VcVerificationSessionRecord } from '../repository'
 import type { AgentContext } from '@credo-ts/core'
-import type { AuthorizationResponsePayload, DecryptCompact } from '@sphereon/did-auth-siop'
 import type { Response, Router } from 'express'
+import type { OpenId4VcVerificationSessionRecord } from '../repository'
+import type { OpenId4VcVerificationRequest } from './requestContext'
 
 import { Oauth2ErrorCodes, Oauth2ServerErrorResponseError } from '@animo-id/oauth2'
-import { CredoError, Hasher, JsonEncoder, Key, TypedArrayEncoder } from '@credo-ts/core'
-import { AuthorizationRequest, RP } from '@sphereon/did-auth-siop'
+import { CredoError, JsonEncoder } from '@credo-ts/core'
 
+import { verifyJarmAuthResponse, Openid4vpAuthResponse, parseOpenid4vpRequestParams } from '@openid4vc/oid4vp'
+import { getOid4vcCallbacks } from '../../shared/callbacks'
 import { getRequestContext, sendErrorResponse, sendJsonResponse, sendOauth2ErrorResponse } from '../../shared/router'
 import { OpenId4VcSiopVerifierService } from '../OpenId4VcSiopVerifierService'
 
@@ -47,24 +47,6 @@ async function getVerificationSession(
   return session
 }
 
-const decryptJarmResponse = (agentContext: AgentContext): DecryptCompact => {
-  return async (input) => {
-    const { jwe: compactJwe, jwk: jwkJson } = input
-    const key = Key.fromFingerprint(jwkJson.kid)
-    if (!agentContext.wallet.directDecryptCompactJweEcdhEs) {
-      throw new CredoError('Cannot decrypt Jarm Response, wallet does not support directDecryptCompactJweEcdhEs')
-    }
-
-    const { data, header } = await agentContext.wallet.directDecryptCompactJweEcdhEs({ compactJwe, recipientKey: key })
-    const decryptedPayload = TypedArrayEncoder.toUtf8String(data)
-
-    return {
-      plaintext: decryptedPayload,
-      protectedHeader: header as Record<string, unknown> & { alg: string; enc: string },
-    }
-  }
-}
-
 export function configureAuthorizationEndpoint(router: Router, config: OpenId4VcSiopAuthorizationEndpointConfig) {
   router.post(config.endpointPath, async (request: OpenId4VcVerificationRequest, response: Response, next) => {
     const { agentContext, verifier } = getRequestContext(request)
@@ -75,72 +57,70 @@ export function configureAuthorizationEndpoint(router: Router, config: OpenId4Vc
       const openId4VcVerifierService = agentContext.dependencyManager.resolve(OpenId4VcSiopVerifierService)
 
       let verificationSession: OpenId4VcVerificationSessionRecord | undefined
-      let authorizationResponsePayload: AuthorizationResponsePayload
+      let authorizationResponsePayload: Openid4vpAuthResponse
       let jarmHeader: { apu?: string; apv?: string } | undefined = undefined
 
       if (request.body.response) {
-        const res = await RP.processJarmAuthorizationResponse(request.body.response, {
-          getAuthRequestPayload: async (input) => {
+        const verifiedJarmResponse = await verifyJarmAuthResponse({
+          jarmAuthResponseJwt: request.body.response,
+          callbacks: getOid4vcCallbacks(agentContext),
+          getAuthRequest: async (input) => {
             verificationSession = await getVerificationSession(agentContext, {
               verifierId: verifier.verifierId,
               state: input.state,
-              nonce: input.nonce as string,
+              nonce: input.nonce,
             })
 
-            const req = await AuthorizationRequest.fromUriOrJwt(verificationSession.authorizationRequestJwt)
-            const requestObjectPayload = await req.requestObject?.getPayload()
-            if (!requestObjectPayload) {
-              throw new CredoError('No request object payload found.')
+            const authorizationRequest = await parseOpenid4vpRequestParams(verificationSession.authorizationRequestJwt)
+            if (authorizationRequest.type === 'jar') {
+              throw new CredoError('Invalid authorization request jwt')
             }
-            return { authRequestParams: requestObjectPayload }
+            return { authRequest: authorizationRequest.params }
           },
-          decryptCompact: decryptJarmResponse(agentContext),
-          hasher: Hasher.hash,
         })
 
-        jarmResponseType = res.type
+        jarmResponseType = verifiedJarmResponse.type
 
         const [header] = request.body.response.split('.')
         jarmHeader = JsonEncoder.fromBase64(header)
-        // FIXME: verify the apv matches the nonce of the authorization reuqest
-        authorizationResponsePayload = res.authResponseParams as AuthorizationResponsePayload
+        authorizationResponsePayload = verifiedJarmResponse.jarmAuthResponse as Openid4vpAuthResponse
       } else {
         authorizationResponsePayload = request.body
         verificationSession = await getVerificationSession(agentContext, {
           verifierId: verifier.verifierId,
           state: authorizationResponsePayload.state,
-          nonce: authorizationResponsePayload.nonce,
+          nonce:
+            typeof authorizationResponsePayload.nonce === 'string' ? authorizationResponsePayload.nonce : undefined,
         })
       }
-      if (typeof authorizationResponsePayload.presentation_submission === 'string') {
-        authorizationResponsePayload.presentation_submission = JSON.parse(request.body.presentation_submission)
-      }
 
-      // This feels hacky, and should probably be moved to OID4VP lib. However the OID4VP spec allows either object, string, or array...
-      if (
-        typeof authorizationResponsePayload.vp_token === 'string' &&
-        (authorizationResponsePayload.vp_token.startsWith('{') || authorizationResponsePayload.vp_token.startsWith('['))
-      ) {
-        authorizationResponsePayload.vp_token = JSON.parse(authorizationResponsePayload.vp_token)
+      if (typeof authorizationResponsePayload.presentation_submission === 'string') {
+        authorizationResponsePayload.presentation_submission = JSON.parse(
+          decodeURIComponent(request.body.presentation_submission)
+        )
       }
 
       if (!verificationSession) {
         throw new CredoError('Missing verification session, cannot verify authorization response.')
       }
 
-      const authorizationRequest = await AuthorizationRequest.fromUriOrJwt(verificationSession.authorizationRequestJwt)
-      const response_mode = await authorizationRequest.getMergedProperty<string>('response_mode')
-      if (response_mode?.includes('jwt') && !jarmResponseType) {
+      const authorizationRequest = await parseOpenid4vpRequestParams(verificationSession.authorizationRequestJwt)
+      if (authorizationRequest.provided !== 'jwt' || authorizationRequest.type !== 'openid4vp') {
+        throw new CredoError('Invalid authorization request. Cannot verify authorization response.')
+      }
+
+      const responseMode = authorizationRequest.params.response_mode
+      if (responseMode?.includes('jwt') && !jarmResponseType) {
         throw new Oauth2ServerErrorResponseError({
           error: Oauth2ErrorCodes.InvalidRequest,
-          error_description: `JARM response is required for JWT response mode '${response_mode}'.`,
+          error_description: `JARM response is required for JWT response mode '${responseMode}'.`,
         })
       }
 
-      if (!response_mode?.includes('jwt') && jarmResponseType) {
+      if (!responseMode?.includes('jwt') && jarmResponseType) {
         throw new Oauth2ServerErrorResponseError({
           error: Oauth2ErrorCodes.InvalidRequest,
-          error_description: `Recieved JARM response which is incompatible with response mode '${response_mode}'.`,
+          error_description: `Recieved JARM response which is incompatible with response mode '${responseMode}'.`,
         })
       }
 
@@ -156,6 +136,7 @@ export function configureAuthorizationEndpoint(router: Router, config: OpenId4Vc
         verificationSession,
         jarmHeader,
       })
+
       return sendJsonResponse(response, next, {
         // Used only for presentation during issuance flow, to prevent session fixation.
         presentation_during_issuance_session: verificationSession.presentationDuringIssuanceSession,
