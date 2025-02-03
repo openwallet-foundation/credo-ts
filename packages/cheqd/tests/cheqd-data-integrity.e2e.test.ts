@@ -1,21 +1,14 @@
 import type { AnonCredsTestsAgent } from '../../anoncreds/tests/anoncredsSetup'
+import type { DifPresentationExchangeDefinitionV2 } from '../../core'
 import type { EventReplaySubject } from '../../core/tests'
-import type { DifPresentationExchangeDefinitionV2 } from '@credo-ts/core'
-
-import {
-  AutoAcceptCredential,
-  CredentialExchangeRecord,
-  CredentialState,
-  ProofState,
-  W3cCredential,
-  W3cCredentialSubject,
-} from '@credo-ts/core'
 
 import { InMemoryAnonCredsRegistry } from '../../anoncreds/tests/InMemoryAnonCredsRegistry'
 import { setupAnonCredsTests } from '../../anoncreds/tests/anoncredsSetup'
 import { presentationDefinition } from '../../anoncreds/tests/fixtures/presentation-definition'
+import { W3cCredential, W3cCredentialSubject } from '../../core'
 import { createDidKidVerificationMethod } from '../../core/tests'
 import { waitForCredentialRecordSubject, waitForProofExchangeRecord } from '../../core/tests/helpers'
+import { AutoAcceptCredential, CredentialExchangeRecord, CredentialState, ProofState } from '../../didcomm'
 
 import { cheqdPayerSeeds } from './setupCheqdModule'
 
@@ -79,7 +72,7 @@ describe('anoncreds w3c data integrity e2e tests', () => {
     })
 
     // issuer offers credential
-    let issuerRecord = await issuerAgent.credentials.offerCredential({
+    let issuerRecord = await issuerAgent.modules.credentials.offerCredential({
       protocolVersion: 'v2',
       autoAcceptCredential: AutoAcceptCredential.Never,
       connectionId: issuerHolderConnectionId,
@@ -102,7 +95,7 @@ describe('anoncreds w3c data integrity e2e tests', () => {
       state: CredentialState.OfferReceived,
       threadId: issuerRecord.threadId,
     })
-    holderRecord = await holderAgent.credentials.acceptOffer({
+    holderRecord = await holderAgent.modules.credentials.acceptOffer({
       credentialRecordId: holderRecord.id,
       autoAcceptCredential: AutoAcceptCredential.Never,
       credentialFormats: {
@@ -119,7 +112,7 @@ describe('anoncreds w3c data integrity e2e tests', () => {
       state: CredentialState.RequestReceived,
       threadId: holderRecord.threadId,
     })
-    issuerRecord = await issuerAgent.credentials.acceptRequest({
+    issuerRecord = await issuerAgent.modules.credentials.acceptRequest({
       credentialRecordId: issuerRecord.id,
       autoAcceptCredential: AutoAcceptCredential.Never,
       credentialFormats: {
@@ -131,7 +124,7 @@ describe('anoncreds w3c data integrity e2e tests', () => {
       state: CredentialState.CredentialReceived,
       threadId: issuerRecord.threadId,
     })
-    holderRecord = await holderAgent.credentials.acceptCredential({
+    holderRecord = await holderAgent.modules.credentials.acceptCredential({
       credentialRecordId: holderRecord.id,
     })
 
@@ -178,7 +171,7 @@ describe('anoncreds w3c data integrity e2e tests', () => {
       }
     })
 
-    let holderProofExchangeRecord = await holderAgent.proofs.proposeProof({
+    let holderProofExchangeRecord = await holderAgent.modules.proofs.proposeProof({
       protocolVersion: 'v2',
       connectionId: holderIssuerConnectionId,
       proofFormats: {
@@ -194,13 +187,13 @@ describe('anoncreds w3c data integrity e2e tests', () => {
       state: ProofState.RequestReceived,
     })
 
-    issuerProofExchangeRecord = await issuerAgent.proofs.acceptProposal({
+    issuerProofExchangeRecord = await issuerAgent.modules.proofs.acceptProposal({
       proofRecordId: issuerProofExchangeRecord.id,
     })
 
     holderProofExchangeRecord = await holderProofExchangeRecordPromise
 
-    const requestedCredentials = await holderAgent.proofs.selectCredentialsForRequest({
+    const requestedCredentials = await holderAgent.modules.proofs.selectCredentialsForRequest({
       proofRecordId: holderProofExchangeRecord.id,
     })
 
@@ -214,7 +207,7 @@ describe('anoncreds w3c data integrity e2e tests', () => {
       state: ProofState.PresentationReceived,
     })
 
-    await holderAgent.proofs.acceptRequest({
+    await holderAgent.modules.proofs.acceptRequest({
       proofRecordId: holderProofExchangeRecord.id,
       proofFormats: {
         presentationExchange: {
@@ -229,7 +222,7 @@ describe('anoncreds w3c data integrity e2e tests', () => {
       state: ProofState.Done,
     })
 
-    await issuerAgent.proofs.acceptPresentation({ proofRecordId: issuerProofExchangeRecord.id })
+    await issuerAgent.modules.proofs.acceptPresentation({ proofRecordId: issuerProofExchangeRecord.id })
 
     holderProofExchangeRecord = await holderProofExchangeRecordPromise
   })

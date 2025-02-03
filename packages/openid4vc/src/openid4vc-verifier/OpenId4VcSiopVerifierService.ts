@@ -58,6 +58,7 @@ import {
   X509Certificate,
   X509ModuleConfig,
   X509Service,
+  isMdocSupportedSignatureAlgorithm,
 } from '@credo-ts/core'
 import { PresentationDefinitionLocation } from '@sphereon/did-auth-siop'
 import {
@@ -528,7 +529,8 @@ export class OpenId4VcSiopVerifierService {
     const { responseMode, verifier, clientId } = options
 
     const signatureSuiteRegistry = agentContext.dependencyManager.resolve(SignatureSuiteRegistry)
-    const supportedAlgs = getSupportedJwaSignatureAlgorithms(agentContext) as string[]
+    const supportedAlgs = getSupportedJwaSignatureAlgorithms(agentContext)
+    const supportedMdocAlgs = supportedAlgs.filter(isMdocSupportedSignatureAlgorithm)
     const supportedProofTypes = signatureSuiteRegistry.supportedProofTypes
 
     // FIXME: we now manually remove did:peer, we should probably allow the user to configure this
@@ -568,7 +570,7 @@ export class OpenId4VcSiopVerifierService {
       authorization_signed_response_alg: 'RS256',
       vp_formats: {
         mso_mdoc: {
-          alg: supportedAlgs,
+          alg: supportedMdocAlgs,
         },
         jwt_vc: {
           alg: supportedAlgs,

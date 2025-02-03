@@ -17,6 +17,7 @@ import { X509Certificate, X509ModuleConfig } from '../x509'
 import { TypedArrayEncoder } from './../../utils'
 import { getMdocContext } from './MdocContext'
 import { MdocError } from './MdocError'
+import { isMdocSupportedSignatureAlgorithm, mdocSupporteSignatureAlgorithms } from './mdocSupportedAlgs'
 
 /**
  * This class represents a IssuerSigned Mdoc Document,
@@ -118,28 +119,14 @@ export class Mdoc {
     const cert = X509Certificate.fromEncodedCertificate(issuerCertificate)
     const issuerKey = getJwkFromKey(cert.publicKey)
 
-    const alg = issuerKey.supportedSignatureAlgorithms.find(
-      (
-        alg
-      ): alg is
-        | JwaSignatureAlgorithm.ES256
-        | JwaSignatureAlgorithm.ES384
-        | JwaSignatureAlgorithm.ES512
-        | JwaSignatureAlgorithm.EdDSA => {
-        return (
-          alg === JwaSignatureAlgorithm.ES256 ||
-          alg === JwaSignatureAlgorithm.ES384 ||
-          alg === JwaSignatureAlgorithm.ES512 ||
-          alg === JwaSignatureAlgorithm.EdDSA
-        )
-      }
-    )
-
+    const alg = issuerKey.supportedSignatureAlgorithms.find(isMdocSupportedSignatureAlgorithm)
     if (!alg) {
       throw new MdocError(
-        `Cannot find a suitable JwaSignatureAlgorithm for signing the mdoc. Supported algorithms are 'ES256', 'ES384', 'ES512'. The issuer key supports: ${issuerKey.supportedSignatureAlgorithms.join(
+        `Unable to create sign mdoc. No supported signature algorithm found to sign mdoc for jwk with key type ${
+          issuerKey.keyType
+        }. Key supports algs ${issuerKey.supportedSignatureAlgorithms.join(
           ', '
-        )}`
+        )}. mdoc supports algs ${mdocSupporteSignatureAlgorithms.join(', ')}`
       )
     }
 
