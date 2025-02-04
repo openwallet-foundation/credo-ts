@@ -38,28 +38,29 @@
     "rules": {
       "recommended": true,
       "style": {
-        "noRestrictedGlobals": {
-          "level": "error",
-          "options": {
-            "deniedGlobals": ["URL", "URLSearchParams", "fetch", "Response", "Headers"]
-          }
-        }
+        "useImportType": "error",
+        "useNodejsImportProtocol": "off"
       },
       "correctness": {
         "recommended": true,
         "noUnusedImports": "error"
+      },
+      "suspicious": {
+        "noConfusingVoidType": "off"
       }
     }
   },
   "overrides": [
     {
-      "include": ["*.test.ts", "**/tests/*"],
+      "include": ["packages/core/**"],
       "linter": {
         "rules": {
           "style": {
             "noRestrictedGlobals": {
-              "level": "info",
-              "options": {}
+              "level": "error",
+              "options": {
+                "deniedGlobals": ["Buffer"]
+              }
             }
           }
         }
