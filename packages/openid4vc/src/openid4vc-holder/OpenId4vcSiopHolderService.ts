@@ -182,7 +182,7 @@ export class OpenId4VcSiopHolderService {
           client_metadata: requestObjectPayload.client_metadata,
           server_metadata: {
             authorization_encryption_alg_values_supported: ['ECDH-ES'],
-            authorization_encryption_enc_values_supported: ['A256GCM'],
+            authorization_encryption_enc_values_supported: ['A256GCM', 'A128CBC-HS256'],
           },
         })
 
