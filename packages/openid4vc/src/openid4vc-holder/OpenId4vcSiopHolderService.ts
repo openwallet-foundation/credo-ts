@@ -388,8 +388,10 @@ export class OpenId4VcSiopHolderService {
       throw new CredoError("Only 'ECDH-ES' is supported as 'alg' value for JARM response encryption")
     }
 
-    if (options.enc !== 'A256GCM') {
-      throw new CredoError("Only 'A256GCM' is supported as 'enc' value for JARM response encryption")
+    if (options.enc !== 'A256GCM' && options.enc !== 'A128CBC-HS256') {
+      throw new CredoError(
+        "Only 'A256GCM' and 'A128CBC-HS256' are supported as 'enc' value for JARM response encryption"
+      )
     }
 
     if (key.keyType !== KeyType.P256) {
