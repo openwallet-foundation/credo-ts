@@ -3,12 +3,12 @@ import type {
   ClientAuthenticationCallback,
   SignJwtCallback,
   VerifyJwtCallback,
-} from '@animo-id/oauth2'
+} from '@openid4vc/oauth2'
 import type { AgentContext } from '@credo-ts/core'
 import { Buffer, Key, TypedArrayEncoder } from '@credo-ts/core'
 import type { OpenId4VcIssuerRecord } from '../openid4vc-issuer/repository'
 
-import { clientAuthenticationDynamic, clientAuthenticationNone } from '@animo-id/oauth2'
+import { clientAuthenticationDynamic, clientAuthenticationNone } from '@openid4vc/oauth2'
 import {
   CredoError,
   getJwkFromJson,
@@ -21,7 +21,7 @@ import {
   X509Service,
 } from '@credo-ts/core'
 
-import { DecryptJweCallback, EncryptJweCallback } from '@animo-id/oauth2/src/callbacks.js'
+import { DecryptJwtCallback, EncryptJweCallback } from '@openid4vc/oauth2/src/callbacks'
 import { getKeyFromDid } from './utils'
 
 export function getOid4vciJwtVerifyCallback(
@@ -103,7 +103,7 @@ export function getOid4vciEncryptJwtCallback(agentContext: AgentContext): Encryp
   }
 }
 
-export function getOid4vciDecryptJwtCallback(agentContext: AgentContext): DecryptJweCallback {
+export function getOid4vciDecryptJwtCallback(agentContext: AgentContext): DecryptJwtCallback {
   return async (jwe, options) => {
     const [header] = jwe.split('.')
     const decodedHeader = JsonEncoder.fromBase64(header)
@@ -129,7 +129,7 @@ export function getOid4vciDecryptJwtCallback(agentContext: AgentContext): Decryp
 
     return {
       decrypted: true,
-      encryptionJwk: getJwkFromKey(key).toJson(),
+      decryptionJwk: getJwkFromKey(key).toJson(),
       payload: decryptedPayload,
       header: decodedHeader,
     }
@@ -186,7 +186,7 @@ export function getOid4vcCallbacks(agentContext: AgentContext, trustedCertificat
     verifyJwt: getOid4vciJwtVerifyCallback(agentContext, trustedCertificates),
     fetch: agentContext.config.agentDependencies.fetch,
     encryptJwe: getOid4vciEncryptJwtCallback(agentContext),
-    decryptJwe: getOid4vciDecryptJwtCallback(agentContext),
+    decryptJwt: getOid4vciDecryptJwtCallback(agentContext),
   } satisfies Partial<CallbackContext>
 }
 

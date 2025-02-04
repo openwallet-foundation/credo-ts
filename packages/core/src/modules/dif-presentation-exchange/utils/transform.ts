@@ -17,28 +17,13 @@ import { W3cCredentialRecord, W3cJsonLdVerifiablePresentation, W3cJwtVerifiableP
 export function getSphereonOriginalVerifiableCredential(
   credentialRecord: W3cCredentialRecord | SdJwtVcRecord | MdocRecord
 ): SphereonOriginalVerifiableCredential {
-  if (credentialRecord instanceof W3cCredentialRecord) {
-    return credentialRecord.credential.encoded as SphereonOriginalVerifiableCredential
-  } else if (credentialRecord instanceof MdocRecord) {
-    return credentialRecord.base64Url
-  } else {
-    return credentialRecord.compactSdJwtVc
-  }
+  return credentialRecord.encoded as SphereonOriginalVerifiableCredential
 }
 
 export function getSphereonOriginalVerifiablePresentation(
   verifiablePresentation: VerifiablePresentation
 ): SphereonOriginalVerifiablePresentation {
-  if (
-    verifiablePresentation instanceof W3cJwtVerifiablePresentation ||
-    verifiablePresentation instanceof W3cJsonLdVerifiablePresentation
-  ) {
-    return verifiablePresentation.encoded as SphereonOriginalVerifiablePresentation
-  } else if (verifiablePresentation instanceof MdocDeviceResponse) {
-    return verifiablePresentation.base64Url
-  } else {
-    return verifiablePresentation.compact
-  }
+  return verifiablePresentation.encoded as SphereonOriginalVerifiablePresentation
 }
 
 // TODO: we might want to move this to some generic vc transformation util

@@ -1,4 +1,4 @@
-import type { AccessTokenResponse } from '@animo-id/oauth2'
+import type { AccessTokenResponse } from '@openid4vc/oauth2'
 import type {
   CredentialConfigurationSupported,
   CredentialConfigurationSupportedWithFormats,
@@ -11,11 +11,11 @@ import type {
   CredentialRequestWithFormats,
   IssuerMetadataResult,
   ParseCredentialRequestReturn,
-} from '@animo-id/oid4vci'
+} from '@openid4vc/oid4vci'
 import { Openid4vpAuthResponse, VerifiedOpenid4vpAuthRequest } from '@openid4vc/oid4vp'
 import type { AuthorizationRequestPayload, IDTokenPayload } from '@sphereon/did-auth-siop'
 
-export { authorizationCodeGrantIdentifier, preAuthorizedCodeGrantIdentifier } from '@animo-id/oauth2'
+export { authorizationCodeGrantIdentifier, preAuthorizedCodeGrantIdentifier } from '@openid4vc/oauth2'
 export { Openid4vpAuthRequest } from '@openid4vc/oid4vp'
 
 export type OpenId4VciCredentialConfigurationSupportedWithFormats = CredentialConfigurationSupportedWithFormats

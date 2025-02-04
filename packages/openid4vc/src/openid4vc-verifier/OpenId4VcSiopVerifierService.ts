@@ -1,5 +1,6 @@
 import type {
   AgentContext,
+  DcqlQuery,
   DifPresentationExchangeDefinition,
   DifPresentationExchangeSubmission,
   JwkJson,
@@ -24,6 +25,7 @@ import type {
   OpenId4VcSiopCreateAuthorizationRequestReturn,
   OpenId4VcSiopCreateVerifierOptions,
   OpenId4VcSiopVerifiedAuthorizationResponse,
+  OpenId4VcSiopVerifiedAuthorizationResponseDcql,
   OpenId4VcSiopVerifyAuthorizationResponseOptions,
   ResponseMode,
 } from './OpenId4VcSiopVerifierServiceOptions'
@@ -59,6 +61,7 @@ import {
   X509ModuleConfig,
   X509Service,
   isMdocSupportedSignatureAlgorithm,
+  DcqlService,
 } from '@credo-ts/core'
 import { PresentationDefinitionLocation } from '@sphereon/did-auth-siop'
 import {
@@ -159,7 +162,9 @@ export class OpenId4VcSiopVerifierService {
     ])
 
     const transaction_data =
-      options.presentationExchange?.transactionData?.map((tdEntry) => JsonEncoder.toBase64URL(tdEntry)) ?? undefined
+      (options.dcql?.transactionData ?? options.presentationExchange?.transactionData)?.map((tdEntry) =>
+        JsonEncoder.toBase64URL(tdEntry)
+      ) ?? undefined
 
     const client_id =
       clientIdScheme === 'did' || (clientIdScheme as string) === 'https' ? clientId : `${clientIdScheme}:${clientId}`
@@ -180,6 +185,7 @@ export class OpenId4VcSiopVerifierService {
         nonce,
         state,
         presentation_definition: options.presentationExchange?.definition as any,
+        dcql_query: options.dcql?.query,
         transaction_data,
         response_uri: authorizationResponseUrl,
         response_mode: options.responseMode ?? 'direct_post',
@@ -202,6 +208,34 @@ export class OpenId4VcSiopVerifierService {
       authorizationRequest: authorizationRequest.uri,
       verificationSession,
     }
+  }
+
+  private getDcqlVerifiedResponse(
+    agentContext: AgentContext,
+    _dcqlQuery: unknown,
+    presentation: Record<string, VpTokenPresentationParseResult>
+  ) {
+    const dcqlService = agentContext.dependencyManager.resolve(DcqlService)
+    const dcqlQuery = dcqlService.validateDcqlQuery(_dcqlQuery as DcqlQuery)
+
+    const dcqlPresentationEntries = Object.entries(presentation)
+    const dcqlPresentation = Object.fromEntries(
+      dcqlPresentationEntries.map((presentation) => {
+        const [credentialId, vpTokenPresentationParseResult] = presentation
+        return [credentialId, this.decodePresentation(agentContext, { vpTokenPresentationParseResult })]
+      })
+    )
+
+    const dcqlPresentationResult = dcqlService.assertValidDcqlPresentation(dcqlPresentation, dcqlQuery)
+    if (dcqlPresentationResult.canBeSatisfied) {
+      throw new CredoError('The dcql query cannot be satisfied.')
+    }
+
+    return {
+      query: dcqlQuery,
+      presentation: dcqlPresentation,
+      presentationResult: dcqlPresentationResult,
+    } satisfies OpenId4VcSiopVerifiedAuthorizationResponseDcql
   }
 
   public async verifyAuthorizationResponse(
@@ -246,16 +280,6 @@ export class OpenId4VcSiopVerifierService {
       throw error
     }
 
-    // validating the id token
-    // verifying the presentations
-    // validating the presentations against the presentation definition
-    // checking the revocation status of the presentations
-    // checking the nonce of the presentations matches the nonce of the request
-
-    if (result.type === 'dcql') {
-      throw new CredoError('DCQL is not supported yet')
-    }
-
     // for us verifying the presentations also checks the nonces match only thing we need to do manually is check if the mdoc
     // nonce in the jarm header matches the nonce in the request
     let mdocGeneratedNonce: string | undefined
@@ -269,21 +293,22 @@ export class OpenId4VcSiopVerifierService {
       }
     }
 
-    const presentations = result.pex.presentations
-    const pex = agentContext.dependencyManager.resolve(DifPresentationExchangeService)
-    pex.validatePresentationDefinition(
-      result.pex.presentationDefinition as unknown as DifPresentationExchangeDefinition
-    )
-    pex.validatePresentationSubmission(
-      result.pex.presentationSubmission as unknown as DifPresentationExchangeSubmission
-    )
-
     const transactionData = authorizationRequest.transaction_data
       ? parseTransactionData(authorizationRequest.transaction_data)
       : undefined
-    const presentationVerificationPromises = (Array.isArray(presentations) ? presentations : [presentations]).map(
-      (presentation) => {
-        return this.verifyPresentations(agentContext, {
+
+    // validating the id token
+    // verifying the presentations
+    // validating the presentations against the presentation definition
+    // checking the revocation status of the presentations
+    // checking the nonce of the presentations matches the nonce of the request
+    let presentationVerificationResults: Awaited<ReturnType<typeof this.verifyPresentations>>[] = []
+
+    if (result.type === 'dcql') {
+      const dcqlPresentationEntries = Object.entries(result.dcql.presentation)
+      const presentationVerificationPromises = dcqlPresentationEntries.map(async (presentation) => {
+        const [credentialId, vpTokenPresentationParseResult] = presentation
+        return await this.verifyPresentations(agentContext, {
           correlationId: options.verificationSession.id,
           transactionData,
           nonce: requestNonce,
@@ -291,39 +316,23 @@ export class OpenId4VcSiopVerifierService {
           responseUri,
           mdocGeneratedNonce: mdocGeneratedNonce,
           verificationSessionRecordId: options.verificationSession.id,
-          vpTokenPresentationParseResult: presentation,
-          presentationSubmission: result.pex.presentationSubmission as any,
+          vpTokenPresentationParseResult,
+          credentialId,
         })
-      }
-    )
+      })
 
-    try {
-      const presentationVerificationResults = await Promise.all(presentationVerificationPromises)
+      presentationVerificationResults = await Promise.all(presentationVerificationPromises)
+    }
 
-      if (presentationVerificationResults.some((result) => !result.verified)) {
-        throw new CredoError('One or more presentations failed verification.')
-      }
-
-      const transactionDataMeta: [string, TransactionDataMeta][] = []
-      for (const result of presentationVerificationResults) {
-        if (result.verified && result.transactionDataMeta) {
-          transactionDataMeta.push([result.transactionDataMeta.inputDescriptor, result.transactionDataMeta])
-        }
-      }
-
-      if (transactionData) {
-        const inputDescriptorToTransactionDataMeta = Object.fromEntries(transactionDataMeta)
-
-        if (
-          !transactionData.every((tdEntry) => {
-            return tdEntry.credential_ids.some((credentialId) => inputDescriptorToTransactionDataMeta[credentialId])
-          })
-        ) {
-          throw new CredoError(
-            'One ore more required transaction data entries were not found in the signed transaction data.'
-          )
-        }
-      }
+    if (result.type === 'pex') {
+      const presentations = result.pex.presentations
+      const pex = agentContext.dependencyManager.resolve(DifPresentationExchangeService)
+      pex.validatePresentationDefinition(
+        result.pex.presentationDefinition as unknown as DifPresentationExchangeDefinition
+      )
+      pex.validatePresentationSubmission(
+        result.pex.presentationSubmission as unknown as DifPresentationExchangeSubmission
+      )
 
       // This should be provided by pex-light!
       // It must check if the presentations match the presentation definition
@@ -345,6 +354,58 @@ export class OpenId4VcSiopVerifierService {
           presentationSubmission: result.pex.presentationSubmission as any,
         },
       })
+
+      const presentationVerificationPromises = (Array.isArray(presentations) ? presentations : [presentations]).map(
+        (presentation) => {
+          const inputDescriptor = (
+            result.pex.presentationSubmission as DifPresentationExchangeSubmission
+          ).descriptor_map.find((descriptorMapEntry) => descriptorMapEntry.path === presentation.path)
+          if (!inputDescriptor) {
+            throw new CredoError(`Could not map transaction data entry to input descriptor.`)
+          }
+
+          return this.verifyPresentations(agentContext, {
+            correlationId: options.verificationSession.id,
+            transactionData,
+            nonce: requestNonce,
+            audience: requestClientId,
+            responseUri,
+            mdocGeneratedNonce: mdocGeneratedNonce,
+            verificationSessionRecordId: options.verificationSession.id,
+            vpTokenPresentationParseResult: presentation,
+            credentialId: inputDescriptor.id,
+          })
+        }
+      )
+
+      presentationVerificationResults = await Promise.all(presentationVerificationPromises)
+    }
+
+    try {
+      if (presentationVerificationResults.some((result) => !result.verified)) {
+        throw new CredoError('One or more presentations failed verification.')
+      }
+
+      const transactionDataMeta: [string, TransactionDataMeta][] = []
+      for (const result of presentationVerificationResults) {
+        if (result.verified && result.transactionDataMeta) {
+          transactionDataMeta.push([result.transactionDataMeta.credentialId, result.transactionDataMeta])
+        }
+      }
+
+      if (transactionData) {
+        const inputDescriptorToTransactionDataMeta = Object.fromEntries(transactionDataMeta)
+
+        if (
+          !transactionData.every((tdEntry) => {
+            return tdEntry.credential_ids.some((credentialId) => inputDescriptorToTransactionDataMeta[credentialId])
+          })
+        ) {
+          throw new CredoError(
+            'One ore more required transaction data entries were not found in the signed transaction data.'
+          )
+        }
+      }
     } catch (error) {
       await openId4VcRelyingPartyEventHandler.authorizationResponseVerifiedFailed(agentContext, {
         verifierId: options.verificationSession.verifierId,
@@ -383,7 +444,20 @@ export class OpenId4VcSiopVerifierService {
       throw new CredoError('Invalid authorization request jwt')
     }
 
+    const result = verifyOpenid4vpAuthorizationResponse({
+      requestParams: authorizationRequest.params,
+      responseParams: verificationSession.authorizationResponsePayload,
+    })
+
+    const transactionData = authorizationRequest.params.transaction_data
+      ? parseTransactionData(authorizationRequest.params.transaction_data)
+      : undefined
+
     let presentationExchange: OpenId4VcSiopVerifiedAuthorizationResponse['presentationExchange'] | undefined = undefined
+    let dcql =
+      result.type === 'dcql'
+        ? this.getDcqlVerifiedResponse(agentContext, authorizationRequest.params.dcql_query, result.dcql.presentation)
+        : undefined
 
     const vpToken = parseIfJson(verificationSession.authorizationResponsePayload.vp_token)
 
@@ -418,13 +492,15 @@ export class OpenId4VcSiopVerifierService {
       }
     }
 
-    if (!idToken && !presentationExchange) {
+    if (!idToken && !presentationExchange && !dcql) {
       throw new CredoError('No idToken or presentationExchange found in the response.')
     }
 
     return {
       idToken: idTokenPayload ? { payload: idTokenPayload as IDTokenPayload } : undefined,
       presentationExchange,
+      dcql,
+      transactionData,
     }
   }
 
@@ -617,18 +693,12 @@ export class OpenId4VcSiopVerifierService {
   }
 
   private getTransactionDataMeta(options: {
-    presentationSubmission: DifPresentationExchangeSubmission
     vpTokenPresentationParseResult: VpTokenPresentationParseResult
     transactionData?: TransactionData
     transactionDataResult: TransactionDataResult
+    credentialId: string
   }) {
-    const { presentationSubmission, vpTokenPresentationParseResult, transactionData, transactionDataResult } = options
-    const inputDescriptor = presentationSubmission.descriptor_map.find(
-      (descriptorMapEntry) => descriptorMapEntry.path === vpTokenPresentationParseResult.path
-    )
-    if (!inputDescriptor) {
-      throw new CredoError(`Could not map transaction data entry to input descriptor.`)
-    }
+    const { vpTokenPresentationParseResult, transactionData, transactionDataResult, credentialId } = options
 
     if (!transactionData) {
       throw new CredoError('Could not map transaction data result to the request')
@@ -649,10 +719,33 @@ export class OpenId4VcSiopVerifierService {
     }
 
     return {
-      inputDescriptor: inputDescriptor.id,
-      path: vpTokenPresentationParseResult.path,
+      credentialId,
       transactionData,
       transactionDataResult,
+      path: vpTokenPresentationParseResult.path,
+    }
+  }
+
+  private decodePresentation(
+    agentContext: AgentContext,
+    options: { vpTokenPresentationParseResult: VpTokenPresentationParseResult }
+  ): VerifiablePresentation {
+    const { vpTokenPresentationParseResult } = options
+
+    if (vpTokenPresentationParseResult.format === 'dc+sd-jwt') {
+      // TODO: it might be better here to look at the presentation submission to know
+      // If presentation includes a ~, we assume it's an SD-JWT-VC
+      const sdJwtVcApi = agentContext.dependencyManager.resolve(SdJwtVcApi)
+
+      const sdJwtVc = sdJwtVcApi.fromCompact(vpTokenPresentationParseResult.presentation)
+      return sdJwtVc
+    } else if (vpTokenPresentationParseResult.format === 'mso_mdoc') {
+      const mdocDeviceResponse = MdocDeviceResponse.fromBase64Url(vpTokenPresentationParseResult.presentation)
+      return mdocDeviceResponse
+    } else if (vpTokenPresentationParseResult.format === 'jwt_vp_json') {
+      return W3cJwtVerifiablePresentation.fromSerializedJwt(vpTokenPresentationParseResult.presentation)
+    } else {
+      return JsonTransformer.fromJSON(vpTokenPresentationParseResult.presentation, W3cJsonLdVerifiablePresentation)
     }
   }
 
@@ -667,23 +760,23 @@ export class OpenId4VcSiopVerifierService {
       transactionData?: TransactionData
       verificationSessionRecordId: string
       vpTokenPresentationParseResult: VpTokenPresentationParseResult
-      presentationSubmission: DifPresentationExchangeSubmission
+      credentialId: string
     }
   ): Promise<
     | {
         verified: true
         presentation: VerifiablePresentation
         transactionDataMeta?: TransactionDataMeta
+        credentialId: string
       }
-    | { verified: false; reason: string }
+    | { verified: false; reason: string; credentialId: string }
   > {
-    const { vpTokenPresentationParseResult, presentationSubmission, transactionData } = options
+    const { vpTokenPresentationParseResult, transactionData } = options
 
     let transactionDataMeta: TransactionDataMeta | undefined = undefined
 
     try {
       this.logger.debug(`Presentation response`, JsonTransformer.toJSON(vpTokenPresentationParseResult.presentation))
-      this.logger.debug(`Presentation submission`, presentationSubmission)
 
       if (!vpTokenPresentationParseResult) throw new CredoError('Did not receive a presentation for verification.')
       const x509Config = agentContext.dependencyManager.resolve(X509ModuleConfig)
@@ -729,10 +822,10 @@ export class OpenId4VcSiopVerifierService {
 
         if (verificationResult.sdJwtVc?.transactionData) {
           transactionDataMeta = this.getTransactionDataMeta({
-            presentationSubmission,
             vpTokenPresentationParseResult,
             transactionData,
             transactionDataResult: verificationResult.sdJwtVc.transactionData,
+            credentialId: options.credentialId,
           })
         }
 
@@ -841,6 +934,7 @@ export class OpenId4VcSiopVerifierService {
         verified: true,
         transactionDataMeta,
         presentation: verifiablePresentation,
+        credentialId: options.credentialId,
       }
     } catch (error) {
       agentContext.config.logger.warn('Error occurred during verification of presentation', {
@@ -849,6 +943,7 @@ export class OpenId4VcSiopVerifierService {
       return {
         verified: false,
         reason: error.message,
+        credentialId: options.credentialId,
       }
     }
   }

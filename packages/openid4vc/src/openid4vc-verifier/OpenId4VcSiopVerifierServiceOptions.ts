@@ -1,4 +1,7 @@
 import type {
+  DcqlPresentation,
+  DcqlPresentationResult,
+  DcqlQuery,
   DifPexPresentationWithDescriptor,
   DifPresentationExchangeDefinition,
   DifPresentationExchangeDefinitionV2,
@@ -42,6 +45,14 @@ export interface OpenId4VcSiopCreateAuthorizationRequestOptions {
   }
 
   /**
+   * A Digital Credentials Query Language (DCQL) can be provided to request the presentation of a Verifiable Credentials.
+   */
+  dcql?: {
+    query: DcqlQuery
+    transactionData?: TransactionData
+  }
+
+  /**
    * The response mode to use for the authorization request.
    * @default to `direct_post`.
    *
@@ -67,8 +78,13 @@ export interface OpenId4VcSiopVerifiedAuthorizationResponsePresentationExchange 
   submission: DifPresentationExchangeSubmission
   definition: DifPresentationExchangeDefinition
   presentations: Array<VerifiablePresentation>
-
   descriptors: DifPexPresentationWithDescriptor[]
+}
+
+export interface OpenId4VcSiopVerifiedAuthorizationResponseDcql {
+  query: DcqlQuery
+  presentation: DcqlPresentation
+  presentationResult: DcqlPresentationResult
 }
 
 /**
@@ -80,7 +96,7 @@ export interface OpenId4VcSiopVerifiedAuthorizationResponse {
   }
 
   presentationExchange?: OpenId4VcSiopVerifiedAuthorizationResponsePresentationExchange
-
+  dcql?: OpenId4VcSiopVerifiedAuthorizationResponseDcql
   transactionData?: TransactionData
 }
 

@@ -4,7 +4,7 @@ import type { DifPexInputDescriptorToCredentials, TransactionData } from '../mod
 import { CredoError } from '../../../error/CredoError'
 import { MdocRecord } from '../../mdoc'
 import { ClaimFormat, W3cCredentialRecord } from '../../vc'
-import { TransactionDataAuthorization } from '../models/TransactionData.js'
+import { TransactionDataAuthorization } from '../models/TransactionData'
 
 //  - the credentials included in the presentation
 export interface SdJwtVcPresentationToCreate {
@@ -70,7 +70,7 @@ export function getPresentationsToCreate(
   // to create a separate proof (either on the same presentation or if not allowed by proof format on separate)
   // presentations
   for (const [inputDescriptorId, credentials] of Object.entries(credentialsForInputDescriptor)) {
-    const transactionData = transactionDataAuthorization?.inputDescriptors.includes(inputDescriptorId)
+    const transactionData = transactionDataAuthorization?.credentials.includes(inputDescriptorId)
     if (transactionData && credentials.some((c) => c instanceof SdJwtVcRecord) === false) {
       throw new CredoError('Transaction data is currently only supported for SD-JWT-VC')
     }

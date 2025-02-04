@@ -1,5 +1,8 @@
 import type {
   AgentContext,
+  DcqlCredentialsForRequest,
+  DcqlQuery,
+  DcqlTransactionDataRequest,
   DifPexInputDescriptorToCredentials,
   DifPresentationExchangeDefinition,
   DifPresentationExchangeSubmission,
@@ -25,6 +28,7 @@ import {
   asArray,
   CredoError,
   DifPresentationExchangeService,
+  DcqlService,
   DifPresentationExchangeSubmissionLocation,
   injectable,
   MdocDeviceResponse,
@@ -37,7 +41,10 @@ import { openIdTokenIssuerToJwtIssuer } from '../shared/utils'
 
 @injectable()
 export class OpenId4VcSiopHolderService {
-  public constructor(private presentationExchangeService: DifPresentationExchangeService) {}
+  public constructor(
+    private presentationExchangeService: DifPresentationExchangeService,
+    private dcqlService: DcqlService
+  ) {}
 
   private async handlePresentationExchangeRequest(
     agentContext: AgentContext,
@@ -61,10 +68,6 @@ export class OpenId4VcSiopHolderService {
       credentialsForTransactionData = []
 
       for (const transactionDataEntry of transactionData) {
-        if (!presentationExchange) {
-          throw new CredoError('Cannot resolve transaction data. Presentation exchange is not defined.')
-        }
-
         for (const requirement of presentationExchange.credentialsForRequest.requirements) {
           const recordSet: Set<SubmissionEntryCredential> = new Set()
           const filtered = requirement.submissionEntry.filter((submission) =>
@@ -89,7 +92,43 @@ export class OpenId4VcSiopHolderService {
       }
     }
 
-    return { presentationExchange, credentialsForTransactionData }
+    return { pex: { ...presentationExchange, transactionData: credentialsForTransactionData } }
+  }
+
+  private async handleDcqlRequest(agentContext: AgentContext, dcql: unknown, transactionData?: TransactionData) {
+    const dcqlQuery = this.dcqlService.validateDcqlQuery(dcql as DcqlQuery)
+    const dcqlQueryResult = await this.dcqlService.getCredentialsForRequest(agentContext, dcqlQuery)
+
+    let credentialsForTransactionData: DcqlTransactionDataRequest | undefined = undefined
+    // for each transaction data entry, get all submission entries that can be used to sign the respective transaction
+    if (transactionData) {
+      credentialsForTransactionData = []
+
+      for (const transactionDataEntry of transactionData) {
+        const result = transactionDataEntry.credential_ids
+          .map((credentialId) => {
+            const match = dcqlQueryResult.credential_matches[credentialId]
+            if (!match) {
+              throw new CredoError(`Credential with id ${credentialId} not found`)
+            }
+
+            if (!match.success) return undefined
+            return {
+              transactionDataEntry,
+              dcql: {
+                record: match.record,
+                credentialQueryId: match.input_credential_index,
+                claimSetId: match.claim_set_index,
+              },
+            }
+          })
+          .filter((r): r is DcqlTransactionDataRequest[number] => r !== undefined)
+
+        credentialsForTransactionData.push(...result)
+      }
+    }
+
+    return { dcql: { queryResult: dcqlQueryResult, transactionData: credentialsForTransactionData } }
   }
 
   public async resolveAuthorizationRequest(
@@ -105,24 +144,52 @@ export class OpenId4VcSiopHolderService {
       },
     })
 
-    const { client, pex, transactionData } = verifiedAuthRequest
+    const { client, pex, transactionData, dcql } = verifiedAuthRequest
 
     if (client.scheme !== 'x509_san_dns' && client.scheme !== 'x509_san_uri' && client.scheme !== 'did') {
       throw new CredoError(`Client scheme '${client.scheme}' is not supported`)
     }
 
-    const { presentationExchange, credentialsForTransactionData } = pex?.presentation_definition
+    const { pex: pexResult } = pex?.presentation_definition
       ? await this.handlePresentationExchangeRequest(agentContext, pex.presentation_definition, transactionData)
-      : { presentationExchange: undefined, credentialsForTransactionData: undefined }
+      : { pex: undefined }
+
+    const { dcql: dcqlResult } = dcql?.query
+      ? await this.handleDcqlRequest(agentContext, dcql.query, transactionData)
+      : { dcql: undefined }
 
     agentContext.config.logger.debug(`verified SIOP Authorization Request`)
     agentContext.config.logger.debug(`requestJwtOrUri '${requestJwtOrUri}'`)
 
     return {
       authorizationRequest: verifiedAuthRequest,
-      transactionData: credentialsForTransactionData,
-      presentationExchange: presentationExchange,
+      presentationExchange: pexResult,
+      dcql: dcqlResult,
     }
+  }
+
+  private async getCredentialQueryIdsToSignTransactionData(
+    dcql: {
+      credentials: DcqlCredentialsForRequest
+    },
+    transactionData: TransactionData
+  ) {
+    // check if all credentials are present for the transaction data
+    // This needs a deep integration into pex and out pex requirements
+    const dcqlCredentialQueryIds: string[] = []
+    for (const tdEntry of transactionData) {
+      // find a inputDescriptor in the credential_ids which is present in the response
+      // and use it to sign of the transaction
+      const dcqlCredentialForRequest = tdEntry.credential_ids.find((credentialId) => dcql.credentials[credentialId])
+
+      if (!dcqlCredentialForRequest) {
+        throw new CredoError('Cannot create authorization response. No credentials found for signing transaction data.')
+      }
+
+      dcqlCredentialQueryIds.push(dcqlCredentialForRequest)
+    }
+
+    return dcqlCredentialQueryIds
   }
 
   private async getInputDescriptorsToSignTransactionData(
@@ -133,28 +200,19 @@ export class OpenId4VcSiopHolderService {
   ) {
     // check if all credentials are present for the transaction data
     // This needs a deep integration into pex and out pex requirements
+    const inputDescriptorsToSignTransactionData: string[] = []
+    for (const tdEntry of transactionData) {
+      // find a inputDescriptor in the credential_ids which is present in the response
+      // and use it to sign of the transaction
+      const inputDescriptorForCredential = tdEntry.credential_ids.find(
+        (credentialId) => presentationExchange.credentials[credentialId]
+      )
 
-    let inputDescriptorsToSignTransactionData: string[] | undefined = undefined
-
-    // check if all credentials are present for the transaction data
-    // This needs a deep integration into pex and out pex requirements
-    if (transactionData && presentationExchange) {
-      inputDescriptorsToSignTransactionData = []
-      for (const tdEntry of transactionData) {
-        // find a inputDescriptor in the credential_ids which is present in the response
-        // and use it to sign of the transaction
-        const inputDescriptorForCredential = tdEntry.credential_ids.find(
-          (credentialId) => presentationExchange.credentials[credentialId]
-        )
-
-        if (!inputDescriptorForCredential) {
-          throw new CredoError(
-            'Cannot create authorization response. No credentials found for signing transaction data.'
-          )
-        }
-
-        inputDescriptorsToSignTransactionData.push(inputDescriptorForCredential)
+      if (!inputDescriptorForCredential) {
+        throw new CredoError('Cannot create authorization response. No credentials found for signing transaction data.')
       }
+
+      inputDescriptorsToSignTransactionData.push(inputDescriptorForCredential)
     }
 
     return inputDescriptorsToSignTransactionData
@@ -164,14 +222,29 @@ export class OpenId4VcSiopHolderService {
     agentContext: AgentContext,
     options: OpenId4VcSiopAcceptAuthorizationRequestOptions
   ) {
-    const { authorizationRequest, presentationExchange } = options
+    const { authorizationRequest, presentationExchange, dcql } = options
     let openIdTokenIssuer = options.openIdTokenIssuer
     let presentationExchangeOptions:
       | {
           presentationSubmission: DifPresentationExchangeSubmission
-          verifiablePresentations: (string | W3cJsonLdVerifiablePresentation)[]
+          verifiablePresentations: VerifiablePresentation[]
+          encodedVerifiablePresentations: (string | W3cJsonLdVerifiablePresentation)[]
         }
       | undefined = undefined
+
+    let dcqlOptions:
+      | {
+          verifiablePresentations: Record<string, VerifiablePresentation>
+          encodedVerifiablePresentations: string
+        }
+      | undefined = undefined
+
+    const nonce = authorizationRequest.payload.nonce
+    const clientId = authorizationRequest.payload.client_id
+    const responseUri = authorizationRequest.payload.response_uri ?? authorizationRequest.payload.redirect_uri
+    if (!responseUri) {
+      throw new CredoError("Unable to extract 'response_uri' from authorization request")
+    }
 
     const wantsIdToken = authorizationRequest.payload.response_type.includes('id_token')
     const authorizationResponseNonce = await agentContext.wallet.generateNonce()
@@ -182,13 +255,6 @@ export class OpenId4VcSiopHolderService {
         throw new CredoError(
           'Authorization request included presentation definition. `presentationExchange` MUST be supplied to accept authorization requests.'
         )
-      }
-
-      const nonce = authorizationRequest.payload.nonce
-      const clientId = authorizationRequest.payload.client_id
-      const responseUri = authorizationRequest.payload.response_uri ?? authorizationRequest.payload.redirect_uri
-      if (!responseUri) {
-        throw new CredoError("Unable to extract 'response_uri' from authorization request")
       }
 
       let inputDescriptorsToSignTransactionData: string[] | undefined = undefined
@@ -205,7 +271,7 @@ export class OpenId4VcSiopHolderService {
           transactionDataAuthorization:
             authorizationRequest.transactionData && inputDescriptorsToSignTransactionData
               ? {
-                  inputDescriptors: inputDescriptorsToSignTransactionData,
+                  credentials: inputDescriptorsToSignTransactionData,
                   transactionData: authorizationRequest.transactionData,
                 }
               : undefined,
@@ -217,18 +283,64 @@ export class OpenId4VcSiopHolderService {
           openid4vp: { mdocGeneratedNonce: authorizationResponseNonce, responseUri },
         })
 
-      presentationExchangeOptions = { verifiablePresentations: encodedVerifiablePresentations, presentationSubmission }
-
-      if (wantsIdToken && !openIdTokenIssuer) {
-        openIdTokenIssuer = this.getOpenIdTokenIssuerFromVerifiablePresentation(verifiablePresentations[0])
-      }
+      presentationExchangeOptions = { verifiablePresentations, encodedVerifiablePresentations, presentationSubmission }
     } else if (options.presentationExchange) {
       throw new CredoError(
         '`presentationExchange` was supplied, but no presentation definition was found in the presentation request.'
       )
     }
 
+    if (authorizationRequest.dcql) {
+      if (!dcql) {
+        throw new CredoError(
+          'Authorization request included dcql request. `dcql` MUST be supplied to accept authorization requests.'
+        )
+      }
+
+      let credentialQuerIdsToSignTd: string[] | undefined = undefined
+      if (authorizationRequest.transactionData) {
+        credentialQuerIdsToSignTd = await this.getCredentialQueryIdsToSignTransactionData(
+          dcql,
+          authorizationRequest.transactionData
+        )
+      }
+
+      const { dcqlPresentation, encodedDcqlPresentation } = await this.dcqlService.createPresentation(agentContext, {
+        credentialQueryToCredential: dcql.credentials,
+        transactionDataAuthorization:
+          authorizationRequest.transactionData && credentialQuerIdsToSignTd
+            ? {
+                credentials: credentialQuerIdsToSignTd,
+                transactionData: authorizationRequest.transactionData,
+              }
+            : undefined,
+        challenge: nonce,
+        domain: clientId,
+        openid4vp: { mdocGeneratedNonce: authorizationResponseNonce, responseUri },
+      })
+
+      dcqlOptions = {
+        verifiablePresentations: dcqlPresentation,
+        encodedVerifiablePresentations: encodedDcqlPresentation,
+      }
+    } else if (options.dcql) {
+      throw new CredoError('`dcql` was supplied, but no dcql request was found in the presentation request.')
+    }
+
     if (wantsIdToken) {
+      const presentations =
+        presentationExchangeOptions?.verifiablePresentations ??
+        (dcqlOptions?.verifiablePresentations ? Object.values(dcqlOptions.verifiablePresentations) : []) ??
+        []
+
+      const nonMdocPresentation = presentations.find(
+        (presentation) => presentation instanceof MdocDeviceResponse === false
+      )
+
+      if (nonMdocPresentation) {
+        openIdTokenIssuer = this.getOpenIdTokenIssuerFromVerifiablePresentation(nonMdocPresentation)
+      }
+
       if (!openIdTokenIssuer) {
         throw new CredoError(
           'Unable to create authorization response. openIdTokenIssuer MUST be supplied when no presentation is active and the ResponseType includes id_token.'
@@ -241,11 +353,20 @@ export class OpenId4VcSiopHolderService {
         ? await openIdTokenIssuerToJwtIssuer(agentContext, openIdTokenIssuer)
         : undefined
 
-    const vpToken =
-      presentationExchangeOptions?.verifiablePresentations.length === 1 &&
+    let vpToken:
+      | (string | W3cJsonLdVerifiablePresentation)[]
+      | string
+      | W3cJsonLdVerifiablePresentation
+      | undefined
+      | Record<string, string | W3cJsonLdVerifiablePresentation> =
+      presentationExchangeOptions?.encodedVerifiablePresentations.length === 1 &&
       presentationExchangeOptions.presentationSubmission?.descriptor_map[0]?.path === '$'
-        ? presentationExchangeOptions.verifiablePresentations[0]
-        : presentationExchangeOptions?.verifiablePresentations
+        ? presentationExchangeOptions.encodedVerifiablePresentations[0]
+        : presentationExchangeOptions?.encodedVerifiablePresentations
+
+    if (dcqlOptions?.encodedVerifiablePresentations) {
+      vpToken = dcqlOptions.encodedVerifiablePresentations
+    }
 
     const callbacks = getOid4vcCallbacks(agentContext)
 
@@ -294,7 +415,7 @@ export class OpenId4VcSiopHolderService {
           body: responseJson ?? responseText,
         },
         submittedResponse: response.responseParams as typeof response.responseParams & {
-          presentation_submission: DifPresentationExchangeSubmission
+          presentation_submission?: DifPresentationExchangeSubmission
         },
       } as const
     }
@@ -306,7 +427,7 @@ export class OpenId4VcSiopHolderService {
         body: responseJson ?? {},
       },
       submittedResponse: response.responseParams as typeof response.responseParams & {
-        presentation_submission: DifPresentationExchangeSubmission
+        presentation_submission?: DifPresentationExchangeSubmission
       },
       redirectUri: responseJson?.redirect_uri as string | undefined,
       presentationDuringIssuanceSession: responseJson?.presentation_during_issuance_session as string | undefined,

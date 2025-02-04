@@ -1,4 +1,7 @@
-import { DifPexCredentialsForRequestSubmissionEntry } from './DifPexCredentialsForRequest.js'
+import { MdocRecord } from '../../mdoc/index'
+import { SdJwtVcRecord } from '../../sd-jwt-vc/index'
+import { W3cCredentialRecord } from '../../vc/index'
+import { DifPexCredentialsForRequestSubmissionEntry } from './DifPexCredentialsForRequest'
 
 export type TransactionDataEntry = {
   type: string
@@ -14,14 +17,13 @@ export type TransactionDataResult = {
 }
 
 export type TransactionDataMeta = {
-  inputDescriptor: string
-  path: string
+  credentialId: string
   transactionData: TransactionDataEntry[]
   transactionDataResult: TransactionDataResult
 }
 
 export type TransactionDataAuthorization = {
-  inputDescriptors: string[]
+  credentials: string[]
   transactionData: TransactionDataEntry[]
 }
 
@@ -30,5 +32,14 @@ export type TransactionDataRequest =
       transactionDataEntry: TransactionDataEntry
       submissionEntry: DifPexCredentialsForRequestSubmissionEntry
     }[]
+
+export type DcqlTransactionDataRequest = {
+  transactionDataEntry: TransactionDataEntry
+  dcql: {
+    credentialQueryId: number
+    claimSetId: number
+    record: W3cCredentialRecord | SdJwtVcRecord | MdocRecord
+  }
+}[]
 
 export type InputDescriptorToTransactionDataEntry = Record<string, TransactionDataEntry[]>

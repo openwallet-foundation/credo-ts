@@ -1,7 +1,7 @@
 import type { AgentContext, DidPurpose, JwaSignatureAlgorithm, Key } from '@credo-ts/core'
 import type { OpenId4VcIssuerX5c, OpenId4VcJwtIssuer } from './models'
 
-import { JwtSigner, JwtSignerX5c } from '@animo-id/oauth2'
+import { JwtSigner, JwtSignerX5c } from '@openid4vc/oauth2'
 import {
   CredoError,
   DidsApi,

@@ -1,4 +1,7 @@
 import type {
+  DcqlCredentialsForRequest,
+  DcqlQueryResult,
+  DcqlTransactionDataRequest,
   DifPexCredentialsForRequest,
   DifPexInputDescriptorToCredentials,
   DifPresentationExchangeDefinition,
@@ -14,17 +17,18 @@ export interface OpenId4VcSiopResolvedAuthorizationRequest {
   presentationExchange?: {
     definition: DifPresentationExchangeDefinition
     credentialsForRequest: DifPexCredentialsForRequest
+    transactionData?: TransactionDataRequest
+  }
+
+  dcql?: {
+    queryResult: DcqlQueryResult
+    transactionData?: DcqlTransactionDataRequest
   }
 
   /**
    * The verified authorization request.
    */
   authorizationRequest: OpenId4VcSiopVerifiedAuthorizationRequest
-
-  /**
-   * The transaction data.
-   */
-  transactionData?: TransactionDataRequest
 }
 
 export interface OpenId4VcSiopAcceptAuthorizationRequestOptions {
@@ -34,6 +38,14 @@ export interface OpenId4VcSiopAcceptAuthorizationRequestOptions {
    */
   presentationExchange?: {
     credentials: DifPexInputDescriptorToCredentials
+  }
+
+  /**
+   * Parameters related to Dcql. MUST be present when the resolved
+   * authorization request included a `dcql` parameter.
+   */
+  dcql?: {
+    credentials: DcqlCredentialsForRequest
   }
 
   /**

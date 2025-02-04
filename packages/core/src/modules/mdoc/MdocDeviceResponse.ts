@@ -1,4 +1,5 @@
 import type {
+  MdocDcqlDeviceResponseOpenId4VpOptions,
   MdocDeviceResponseOpenId4VpOptions,
   MdocDeviceResponseOptions,
   MdocDeviceResponseVerifyOptions,
@@ -33,9 +34,25 @@ import { Mdoc } from './Mdoc'
 import { getMdocContext } from './MdocContext'
 import { MdocError } from './MdocError'
 import { isMdocSupportedSignatureAlgorithm, mdocSupporteSignatureAlgorithms } from './mdocSupportedAlgs'
+import { ClaimFormat } from '../vc/index'
+import { nameSpacesRecordToMap } from './mdocUtil'
 
 export class MdocDeviceResponse {
   private constructor(public base64Url: string, public documents: Mdoc[]) {}
+
+  /**
+   * claim format is convenience method added to all credential instances
+   */
+  public get claimFormat() {
+    return ClaimFormat.MsoMdoc as const
+  }
+
+  /**
+   * Encoded is convenience method added to all credential instances
+   */
+  public get encoded() {
+    return this.base64Url
+  }
 
   public static fromBase64Url(base64Url: string) {
     const parsed = parseDeviceResponse(TypedArrayEncoder.fromBase64(base64Url))
@@ -159,10 +176,7 @@ export class MdocDeviceResponse {
     return disclosedPayloadAsRecord
   }
 
-  public static async createOpenId4VpDeviceResponse(
-    agentContext: AgentContext,
-    options: MdocDeviceResponseOpenId4VpOptions
-  ) {
+  static async createOpenId4VpDeviceResponse(agentContext: AgentContext, options: MdocDeviceResponseOpenId4VpOptions) {
     const { sessionTranscriptOptions } = options
     const presentationDefinition = this.partitionPresentationDefinition(
       options.presentationDefinition
@@ -210,6 +224,57 @@ export class MdocDeviceResponse {
           input_descriptors: presentationDefinition.input_descriptors.filter((i) => docTypes.includes(i.id)),
         },
       }),
+    }
+  }
+
+  static async createOpenId4VpDcqlDeviceResponse(
+    agentContext: AgentContext,
+    options: MdocDcqlDeviceResponseOpenId4VpOptions
+  ) {
+    const { sessionTranscriptOptions } = options
+
+    const issuerSignedDocuments = options.mdocs.map((mdoc) =>
+      parseIssuerSigned(TypedArrayEncoder.fromBase64(mdoc.base64Url), mdoc.docType)
+    )
+    const docTypes = issuerSignedDocuments.map((i) => i.docType)
+
+    const combinedDeviceResponseMdoc = new MDoc()
+
+    for (const issuerSignedDocument of issuerSignedDocuments) {
+      const { publicDeviceJwk, alg } = this.parseDeviceKeyFromIssuerSigned(issuerSignedDocument)
+      const deviceKey = issuerSignedDocument.issuerSigned.issuerAuth.decodedPayload.deviceKeyInfo?.deviceKey
+      if (!deviceKey) throw new MdocError(`Device key is missing in mdoc with doctype ${issuerSignedDocument.docType}`)
+
+      // We do dcql filtering on a different layer, so we only include the needed input descriptor here
+      const docRequestsForDocument = options.docRequests.filter(
+        (r) => r.itemsRequestData.docType === issuerSignedDocument.docType
+      )
+      const deviceRequest = DeviceRequest.from(
+        '1.0',
+        docRequestsForDocument.map((r) => ({
+          ...r,
+          itemsRequestData: {
+            ...r.itemsRequestData,
+            nameSpaces: nameSpacesRecordToMap(r.itemsRequestData.nameSpaces),
+          },
+        }))
+      )
+
+      const deviceResponseBuilder = DeviceResponse.from(new MDoc([issuerSignedDocument]))
+        .usingDeviceRequest(deviceRequest)
+        .usingSessionTranscriptForOID4VP(sessionTranscriptOptions)
+        .authenticateWithSignature(publicDeviceJwk, alg)
+
+      for (const [nameSpace, nameSpaceValue] of Object.entries(options.deviceNameSpaces ?? {})) {
+        deviceResponseBuilder.addDeviceNameSpace(nameSpace, nameSpaceValue)
+      }
+
+      const deviceResponseMdoc = await deviceResponseBuilder.sign(getMdocContext(agentContext))
+      combinedDeviceResponseMdoc.addDocument(deviceResponseMdoc.documents[0])
+    }
+
+    return {
+      deviceResponseBase64Url: TypedArrayEncoder.toBase64URL(combinedDeviceResponseMdoc.encode()),
     }
   }
 

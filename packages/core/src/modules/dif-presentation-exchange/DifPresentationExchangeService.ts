@@ -48,7 +48,7 @@ import {
 
 import { DifPresentationExchangeError } from './DifPresentationExchangeError'
 import { DifPresentationExchangeSubmissionLocation } from './models'
-import { TransactionDataAuthorization } from './models/TransactionData.js'
+import { TransactionDataAuthorization } from './models/TransactionData'
 import {
   getCredentialsForRequest,
   getPresentationsToCreate,

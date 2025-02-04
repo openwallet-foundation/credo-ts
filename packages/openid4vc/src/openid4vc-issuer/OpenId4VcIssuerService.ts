@@ -26,7 +26,7 @@ import {
   Oauth2ServerErrorResponseError,
   PkceCodeChallengeMethod,
   preAuthorizedCodeGrantIdentifier,
-} from '@animo-id/oauth2'
+} from '@openid4vc/oauth2'
 import {
   CredentialIssuerMetadata,
   CredentialRequestFormatSpecific,
@@ -34,7 +34,7 @@ import {
   getCredentialConfigurationsMatchingRequestFormat,
   Oid4vciDraftVersion,
   Oid4vciIssuer,
-} from '@animo-id/oid4vci'
+} from '@openid4vc/oid4vci'
 import {
   ClaimFormat,
   CredoError,
@@ -839,15 +839,21 @@ export class OpenId4VcIssuerService {
       const response = await verifierApi.getVerifiedAuthorizationResponse(
         issuanceSession.presentation.openId4VcVerificationSessionId
       )
-      if (!response.presentationExchange) {
-        throw new CredoError(
-          `Verified authorization response for verification session with id '${session.id}' does not have presenationExchange defined.`
-        )
-      }
 
-      verification = {
-        session,
-        presentationExchange: response.presentationExchange,
+      if (response.presentationExchange) {
+        verification = {
+          session,
+          presentationExchange: response.presentationExchange,
+        }
+      } else if (response.dcql) {
+        verification = {
+          session,
+          dcql: response.dcql,
+        }
+      } else {
+        throw new CredoError(
+          `Verified authorization response for verification session with id '${session.id}' does not have presenationExchange or dcql defined.`
+        )
       }
     }
 

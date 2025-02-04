@@ -25,14 +25,14 @@ import {
   Oauth2Client,
   preAuthorizedCodeGrantIdentifier,
   RequestDpopOptions,
-} from '@animo-id/oauth2'
+} from '@openid4vc/oauth2'
 import {
   AuthorizationFlow,
   CredentialResponse,
   IssuerMetadataResult,
   Oid4vciClient,
   Oid4vciRetrieveCredentialsError,
-} from '@animo-id/oid4vci'
+} from '@openid4vc/oid4vci'
 import {
   CredoError,
   getJwkClassFromJwaSignatureAlgorithm,

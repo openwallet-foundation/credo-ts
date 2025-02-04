@@ -1,10 +1,13 @@
-import type { OpenId4VciResolvedCredentialOffer, OpenId4VcSiopResolvedAuthorizationRequest } from '@credo-ts/openid4vc'
+import type {
+  OpenId4VciMetadata,
+  OpenId4VciResolvedCredentialOffer,
+  OpenId4VcSiopResolvedAuthorizationRequest,
+} from '@credo-ts/openid4vc'
 
 import { AskarModule } from '@credo-ts/askar'
 import {
   W3cJwtVerifiableCredential,
   W3cJsonLdVerifiableCredential,
-  DifPresentationExchangeService,
   Mdoc,
   DidKey,
   DidJwk,
@@ -64,7 +67,7 @@ export class Holder extends BaseAgent<ReturnType<typeof getOpenIdHolderModules>>
     return await this.agent.modules.openId4VcHolder.resolveCredentialOffer(credentialOffer)
   }
 
-  public async resolveIssuerMetadata(credentialIssuer: string) {
+  public async resolveIssuerMetadata(credentialIssuer: string): Promise<OpenId4VciMetadata> {
     return await this.agent.modules.openId4VcHolder.resolveIssuerMetadata(credentialIssuer)
   }
 
@@ -192,21 +195,27 @@ export class Holder extends BaseAgent<ReturnType<typeof getOpenIdHolderModules>>
   }
 
   public async acceptPresentationRequest(resolvedPresentationRequest: OpenId4VcSiopResolvedAuthorizationRequest) {
-    const presentationExchangeService = this.agent.dependencyManager.resolve(DifPresentationExchangeService)
-
-    if (!resolvedPresentationRequest.presentationExchange) {
-      throw new Error('Missing presentation exchange on resolved authorization request')
+    if (!resolvedPresentationRequest.presentationExchange && !resolvedPresentationRequest.dcql) {
+      throw new Error('Missing presentation exchange or dcql on resolved authorization request')
     }
 
     const submissionResult = await this.agent.modules.openId4VcHolder.acceptSiopAuthorizationRequest({
       authorizationRequest: resolvedPresentationRequest.authorizationRequest,
-      presentationExchange: {
-        credentials: presentationExchangeService.selectCredentialsForRequest(
-          resolvedPresentationRequest.presentationExchange.credentialsForRequest
-        ),
-      },
+      presentationExchange: resolvedPresentationRequest.presentationExchange
+        ? {
+            credentials: this.agent.modules.openId4VcHolder.selectCredentialsForPresentationExchangeRequest(
+              resolvedPresentationRequest.presentationExchange.credentialsForRequest
+            ),
+          }
+        : undefined,
+      dcql: resolvedPresentationRequest.dcql
+        ? {
+            credentials: this.agent.modules.openId4VcHolder.selectCredentialsForDcqlRequest(
+              resolvedPresentationRequest.dcql.queryResult
+            ),
+          }
+        : undefined,
     })
-
     return submissionResult.serverResponse
   }
 

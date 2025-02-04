@@ -13,6 +13,7 @@ export {
   TransactionDataMeta,
   TransactionDataRequest,
   TransactionDataResult,
+  DcqlTransactionDataRequest,
 } from './TransactionData'
 export { PresentationSubmissionLocation as DifPresentationExchangeSubmissionLocation }
 

@@ -3,7 +3,7 @@ import type { Response, Router } from 'express'
 import type { OpenId4VcVerificationSessionRecord } from '../repository'
 import type { OpenId4VcVerificationRequest } from './requestContext'
 
-import { Oauth2ErrorCodes, Oauth2ServerErrorResponseError } from '@animo-id/oauth2'
+import { Oauth2ErrorCodes, Oauth2ServerErrorResponseError } from '@openid4vc/oauth2'
 import { CredoError, JsonEncoder } from '@credo-ts/core'
 
 import { verifyJarmAuthResponse, Openid4vpAuthResponse, parseOpenid4vpRequestParams } from '@openid4vc/oid4vp'

@@ -30,6 +30,12 @@ import { SdJwtVcError } from './SdJwtVcError'
 import { decodeSdJwtVc, sdJwtVcHasher } from './decodeSdJwtVc'
 import { SdJwtVcRecord, SdJwtVcRepository } from './repository'
 import { SdJwtVcTypeMetadata } from './typeMetadata'
+import { ClaimFormat } from '../vc/index'
+import { decodeSdJwtSync } from '@sd-jwt/decode'
+import { buildDisclosureFrameForPayload } from './disclosureFrame'
+import { selectDisclosures } from '@sd-jwt/present'
+import { JsonObject } from '../../types'
+import { getTransactionDataHashes, getTransactionDataVerifierMetadata } from './SdJwtVcTransactionData'
 
 type SdJwtVcConfig = SDJwtVcInstance['userConfig']
 
@@ -37,6 +43,14 @@ export interface SdJwtVc<
   Header extends SdJwtVcHeader = SdJwtVcHeader,
   Payload extends SdJwtVcPayload = SdJwtVcPayload
 > {
+  /**
+   * claim format is convenience method added to all credential instances
+   */
+  claimFormat: ClaimFormat.SdJwtVc
+  /**
+   * encoded is convenience method added to all credential instances
+   */
+  encoded: string
   compact: string
   header: Header
 
@@ -138,6 +152,9 @@ export class SdJwtVcService {
       prettyClaims,
       header: header,
       payload: sdjwtPayload,
+      claimFormat: ClaimFormat.SdJwtVc,
+      encoded: compact,
+      ...(a.kbJwt?.payload && { transactionData: getTransactionDataHashes(a.kbJwt.payload) }),
     } satisfies SdJwtVc<typeof header, Payload>
   }
 
@@ -146,6 +163,32 @@ export class SdJwtVcService {
     typeMetadata?: SdJwtVcTypeMetadata
   ): SdJwtVc<Header, Payload> {
     return decodeSdJwtVc(compactSdJwtVc, typeMetadata)
+  }
+
+  public applyDisclosuresForPayload(compactSdJwtVc: string, requestedPayload: JsonObject): SdJwtVc {
+    const decoded = decodeSdJwtSync(compactSdJwtVc, Hasher.hash)
+    const presentationFrame = buildDisclosureFrameForPayload(requestedPayload) ?? {}
+
+    if (decoded.kbJwt) {
+      throw new SdJwtVcError('Cannot apply limit disclosure on an sd-jwt with key binding jwt')
+    }
+
+    const requiredDisclosures = selectDisclosures(
+      decoded.jwt.payload,
+      // Map to sd-jwt disclosure format
+      decoded.disclosures.map((d) => ({
+        digest: d.digestSync({ alg: 'sha-256', hasher: Hasher.hash }),
+        encoded: d.encode(),
+        key: d.key,
+        salt: d.salt,
+        value: d.value,
+      })),
+      presentationFrame as { [key: string]: boolean }
+    )
+    const [jwt] = compactSdJwtVc.split('~')
+    const sdJwt = `${jwt}~${requiredDisclosures.map((d) => d.encoded).join('~')}~`
+    const disclosedDecoded = decodeSdJwtVc(sdJwt)
+    return disclosedDecoded
   }
 
   public async present<Payload extends SdJwtVcPayload = SdJwtVcPayload>(
@@ -167,42 +210,12 @@ export class SdJwtVcService {
       kbSignAlg: holder?.alg,
     })
 
-    let transactionVerifierMetadata:
-      | {
-          transaction_data_hashes: string[]
-          transaction_data_hashes_alg?: string
-        }
-      | undefined = undefined
+    const transactionVerifierMetadata = verifierMetadata?.transactionData
+      ? getTransactionDataVerifierMetadata(verifierMetadata.transactionData)
+      : undefined
 
-    if (verifierMetadata?.transactionData) {
-      if (!holder) {
-        throw new SdJwtVcError('Cannot sign transaction data without including a holder binding')
-      }
-
-      const transactionDataHashes = verifierMetadata.transactionData.map((tdEntry) => {
-        const supportedHashAlgs = ['sha-256', 'sha-1']
-
-        const hashName = (tdEntry.transaction_data_hashes_alg ?? ['sha-256']).find((val) =>
-          supportedHashAlgs.includes(val)
-        )
-        if (!hashName) {
-          throw new SdJwtVcError(
-            `Cannot hash transaction data. Not suitable hashing algorithm found in '${tdEntry.transaction_data_hashes_alg?.join(
-              ', '
-            )}'`
-          )
-        }
-
-        const encodedTdEntry = JsonEncoder.toBase64URL(tdEntry)
-        const hashed = Hasher.hash(encodedTdEntry, hashName)
-        return TypedArrayEncoder.toBase64URL(hashed)
-      })
-
-      transactionVerifierMetadata = {
-        transaction_data_hashes: transactionDataHashes,
-        // this just makes no sense
-        transaction_data_hashes_alg: 'sha-256',
-      }
+    if (transactionVerifierMetadata && !holder) {
+      throw new SdJwtVcError('Cannot sign transaction data without including a holder binding')
     }
 
     const compactDerivedSdJwtVc = await sdjwt.present(compactSdJwtVc, presentationFrame as PresentationFrame<Payload>, {
@@ -230,32 +243,6 @@ export class SdJwtVcService {
       throw new SdJwtVcError(
         `The 'iss' claim in the payload does not match a 'SAN-URI' name and the domain extracted from the HTTPS URI does not match a 'SAN-DNS' name in the x5c certificate.`
       )
-    }
-  }
-
-  private getTransactionDataHashes(sdJwt: SDJwt): SdJwtVc['transactionData'] {
-    const kbJwtPayload = sdJwt.kbJwt?.payload as Record<string, unknown> & {
-      transaction_data_hashes?: string[]
-      transaction_data_hashes_alg?: string
-    }
-
-    if (!kbJwtPayload || !kbJwtPayload.transaction_data_hashes) {
-      return
-    }
-
-    const transactionDataHashes = kbJwtPayload.transaction_data_hashes
-    if (!Array.isArray(transactionDataHashes) || transactionDataHashes.some((hash) => typeof hash !== 'string')) {
-      throw new SdJwtVcError('transaction_data_hashes must be an array of string')
-    }
-
-    const transactionDataHashesAlg = kbJwtPayload.transaction_data_hashes_alg
-    if (transactionDataHashesAlg && typeof transactionDataHashesAlg !== 'string') {
-      throw new SdJwtVcError('transaction_data_hashes_alg must be a string')
-    }
-
-    return {
-      hashes: transactionDataHashes,
-      ...(transactionDataHashesAlg && { hashes_alg: transactionDataHashesAlg }),
     }
   }
 
@@ -296,7 +283,9 @@ export class SdJwtVcService {
       header: sdJwtVc.jwt.header as Header,
       compact: compactSdJwtVc,
       prettyClaims: await sdJwtVc.getClaims(sdJwtVcHasher),
-      transactionData: this.getTransactionDataHashes(sdJwtVc),
+      ...(sdJwtVc.kbJwt?.payload && { transactionData: getTransactionDataHashes(sdJwtVc.kbJwt.payload) }),
+      claimFormat: ClaimFormat.SdJwtVc,
+      encoded: compactSdJwtVc,
     } satisfies SdJwtVc<Header, Payload>
 
     try {
