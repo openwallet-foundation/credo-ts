@@ -483,12 +483,13 @@ export abstract class AskarBaseWallet implements Wallet {
     data,
     header,
   }: WalletDirectEncryptCompactJwtEcdhEsOptions) {
-    if (encryptionAlgorithm !== 'A256GCM') {
-      throw new WalletError(`Encryption algorithm ${encryptionAlgorithm} is not supported. Only A256GCM is supported`)
+    if (encryptionAlgorithm !== 'A256GCM' && encryptionAlgorithm !== 'A128CBC-HS256') {
+      throw new WalletError(
+        `Encryption algorithm ${encryptionAlgorithm} is not supported. Only A256GCM and A128CBC-HS256 are supported`
+      )
     }
 
-    // Only one supported for now
-    const encAlg = KeyAlgs.AesA256Gcm
+    const encAlg = encryptionAlgorithm === 'A256GCM' ? KeyAlgs.AesA256Gcm : KeyAlgs.AesA128CbcHs256
 
     // Create ephemeral key
     const ephemeralKey = AskarKey.generate(keyAlgFromString(recipientKey.keyType))
@@ -497,7 +498,7 @@ export abstract class AskarBaseWallet implements Wallet {
       ...header,
       apv,
       apu,
-      enc: 'A256GCM',
+      enc: encryptionAlgorithm,
       alg: 'ECDH-ES',
       epk: ephemeralKey.jwkPublic,
     }
@@ -548,8 +549,8 @@ export abstract class AskarBaseWallet implements Wallet {
     if (header.alg !== 'ECDH-ES') {
       throw new WalletError('Only ECDH-ES alg value is supported')
     }
-    if (header.enc !== 'A256GCM') {
-      throw new WalletError('Only A256GCM enc value is supported')
+    if (header.enc !== 'A256GCM' && header.enc !== 'A128CBC-HS256') {
+      throw new WalletError('Only A256GCM and A128CBC-HS256 enc values are supported')
     }
     if (!header.epk || typeof header.epk !== 'object') {
       throw new WalletError('header epk value must contain a JWK')
@@ -566,9 +567,7 @@ export abstract class AskarBaseWallet implements Wallet {
       throw new WalletError('Key entry not found')
     }
 
-    // Only one supported for now
-    const encAlg = KeyAlgs.AesA256Gcm
-
+    const encAlg = header.enc === 'A256GCM' ? KeyAlgs.AesA256Gcm : KeyAlgs.AesA128CbcHs256
     const ecdh = new EcdhEs({
       algId: Uint8Array.from(Buffer.from(header.enc)),
       apu: header.apu ? Uint8Array.from(TypedArrayEncoder.fromBase64(header.apu)) : Uint8Array.from([]),
