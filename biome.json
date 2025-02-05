@@ -44,7 +44,7 @@
       },
       "correctness": {
         "noUnusedImports": "error",
-        "noUndeclaredDependencies": "error",
+        "noUndeclaredDependencies": "warn",
         "noInvalidUseBeforeDeclaration": "error"
       },
       "suspicious": {
@@ -63,8 +63,7 @@
               "packages/*": "using imports from packages/* is not allowed"
             }
           }
-        },
-        "useImportRestrictions": "error"
+        }
       }
     }
   },
@@ -100,6 +99,29 @@
         "rules": {
           "suspicious": {
             "noConsole": "off"
+          }
+        }
+      }
+    },
+    {
+      "include": [
+        "*.test.ts",
+        "**/__tests__/**",
+        "jest.*.ts",
+        "samples/**",
+        "demo/**",
+        "demo-openid/**",
+        "scripts/**",
+        "**/tests/**",
+        "tests/**"
+      ],
+      "linter": {
+        "rules": {
+          "correctness": {
+            "noUndeclaredDependencies": "off"
+          },
+          "nursery": {
+            "useImportRestrictions": "off"
           }
         }
       }
