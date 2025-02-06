@@ -90,7 +90,7 @@ export function compressIfPossible(publicKey: Uint8Array, keyType: KeyType): Uin
   return isValidUncompressedPublicKey(publicKey, keyType) ? compress(publicKey) : publicKey
 }
 
-export function expandIfPossible(publicKey: Uint8Array, keyType: KeyType): Uint8Array {
+export function expandPublicKeyIfPossible(publicKey: Uint8Array, keyType: KeyType): Uint8Array {
   return isValidCompressedPublicKey(publicKey, keyType) ? expand(publicKey, keyType as CompressableKey) : publicKey
 }
 

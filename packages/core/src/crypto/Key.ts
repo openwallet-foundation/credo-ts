@@ -2,7 +2,7 @@ import type { KeyType } from './KeyType'
 
 import { MultiBaseEncoder, TypedArrayEncoder, VarintEncoder } from '../utils'
 
-import { compressIfPossible, expandIfPossible } from './jose/jwk/ecCompression'
+import { compressIfPossible, expandPublicKeyIfPossible } from './jose/jwk/ecCompression'
 import { isEncryptionSupportedForKeyType, isSigningSupportedForKeyType } from './keyUtils'
 import { getKeyTypeByMultiCodecPrefix, getMultiCodecPrefixByKeyType } from './multiCodecKey'
 
@@ -11,7 +11,7 @@ export class Key {
   public readonly keyType: KeyType
 
   public constructor(publicKey: Uint8Array, keyType: KeyType) {
-    this.publicKey = expandIfPossible(publicKey, keyType)
+    this.publicKey = expandPublicKeyIfPossible(publicKey, keyType)
     this.keyType = keyType
   }
 

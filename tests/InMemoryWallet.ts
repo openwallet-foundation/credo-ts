@@ -12,7 +12,7 @@ import { CryptoBox, Store, Key as AskarKey, keyAlgFromString } from '@hyperledge
 
 import { convertToAskarKeyBackend } from '../packages/askar/src/utils/askarKeyBackend'
 import { didcommV1Pack, didcommV1Unpack } from '../packages/askar/src/wallet/didcommV1'
-import { expandIfPossible } from '../packages/core/src/crypto/jose/jwk/ecCompression'
+import { expandPublicKeyIfPossible } from '../packages/core'
 
 import {
   JsonEncoder,
@@ -185,7 +185,7 @@ export class InMemoryWallet implements Wallet {
         const keyPublicBytes = key.publicBytes
 
         // Store key
-        this.getInMemoryKeys()[TypedArrayEncoder.toBase58(expandIfPossible(keyPublicBytes, keyType))] = {
+        this.getInMemoryKeys()[TypedArrayEncoder.toBase58(expandPublicKeyIfPossible(keyPublicBytes, keyType))] = {
           publicKeyBytes: keyPublicBytes,
           secretKeyBytes: key.secretBytes,
           keyType,
