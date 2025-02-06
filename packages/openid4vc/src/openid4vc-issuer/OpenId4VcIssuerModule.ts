@@ -1,7 +1,7 @@
 import type { OpenId4VcIssuerModuleConfigOptions } from './OpenId4VcIssuerModuleConfig'
 import type { OpenId4VcIssuanceRequest } from './router'
 import type { AgentContext, DependencyManager, Module } from '@credo-ts/core'
-import type { NextFunction, Response } from 'express'
+import type { NextFunction, Response, Router } from 'express'
 
 import { setGlobalConfig } from '@animo-id/oauth2'
 import { AgentConfig } from '@credo-ts/core'
@@ -30,9 +30,11 @@ import {
 export class OpenId4VcIssuerModule implements Module {
   public readonly api = OpenId4VcIssuerApi
   public readonly config: OpenId4VcIssuerModuleConfig
+  public readonly contextRouter: Router
 
-  public constructor(options: OpenId4VcIssuerModuleConfigOptions) {
+  public constructor(options: OpenId4VcIssuerModuleConfigOptions, router?: Router) {
     this.config = new OpenId4VcIssuerModuleConfig(options)
+    this.contextRouter = router ?? importExpress().Router()
   }
 
   /**
@@ -82,14 +84,13 @@ export class OpenId4VcIssuerModule implements Module {
     // We use separate context router and endpoint router. Context router handles the linking of the request
     // to a specific agent context. Endpoint router only knows about a single context
     const endpointRouter = Router()
-    const contextRouter = this.config.router
 
     // parse application/x-www-form-urlencoded
-    contextRouter.use(urlencoded({ extended: false }))
+    this.contextRouter.use(urlencoded({ extended: false }))
     // parse application/json
-    contextRouter.use(json())
+    this.contextRouter.use(json())
 
-    contextRouter.param('issuerId', async (req: OpenId4VcIssuanceRequest, _res, next, issuerId: string) => {
+    this.contextRouter.param('issuerId', async (req: OpenId4VcIssuanceRequest, _res, next, issuerId: string) => {
       if (!issuerId) {
         rootAgentContext.config.logger.debug('No issuerId provided for incoming oid4vci request, returning 404')
         _res.status(404).send('Not found')
@@ -123,7 +124,7 @@ export class OpenId4VcIssuerModule implements Module {
       next()
     })
 
-    contextRouter.use('/:issuerId', endpointRouter)
+    this.contextRouter.use('/:issuerId', endpointRouter)
 
     // Configure endpoints
     configureIssuerMetadataEndpoint(endpointRouter)
@@ -136,7 +137,7 @@ export class OpenId4VcIssuerModule implements Module {
     configureCredentialEndpoint(endpointRouter, this.config)
 
     // First one will be called for all requests (when next is called)
-    contextRouter.use(async (req: OpenId4VcIssuanceRequest, _res: unknown, next) => {
+    this.contextRouter.use(async (req: OpenId4VcIssuanceRequest, _res: unknown, next) => {
       const { agentContext } = getRequestContext(req)
       await agentContext.endSession()
 
@@ -144,22 +145,24 @@ export class OpenId4VcIssuerModule implements Module {
     })
 
     // This one will be called for all errors that are thrown
-    contextRouter.use(async (_error: unknown, req: OpenId4VcIssuanceRequest, res: Response, next: NextFunction) => {
-      const { agentContext } = getRequestContext(req)
+    this.contextRouter.use(
+      async (_error: unknown, req: OpenId4VcIssuanceRequest, res: Response, next: NextFunction) => {
+        const { agentContext } = getRequestContext(req)
 
-      if (!res.headersSent) {
-        agentContext.config.logger.warn(
-          'Error was thrown but openid4vci endpoint did not send a response. Sending generic server_error.'
-        )
+        if (!res.headersSent) {
+          agentContext.config.logger.warn(
+            'Error was thrown but openid4vci endpoint did not send a response. Sending generic server_error.'
+          )
 
-        res.status(500).json({
-          error: 'server_error',
-          error_description: 'An unexpected error occurred on the server.',
-        })
+          res.status(500).json({
+            error: 'server_error',
+            error_description: 'An unexpected error occurred on the server.',
+          })
+        }
+
+        await agentContext.endSession()
+        next()
       }
-
-      await agentContext.endSession()
-      next()
-    })
+    )
   }
 }

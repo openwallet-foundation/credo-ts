@@ -6,10 +6,10 @@ import { Oauth2ResourceUnauthorizedError, SupportedAuthenticationScheme } from '
 import { CredoError } from '@credo-ts/core'
 
 export interface OpenId4VcRequest<RC extends Record<string, unknown> = Record<string, never>> extends Request {
-  requestContext?: RC & OpenId4VcRequestContext
+  requestContext?: OpenId4VcRequestContext<RC>
 }
 
-export interface OpenId4VcRequestContext {
+export type OpenId4VcRequestContext<RC extends Record<string, unknown> = Record<string, never>> = RC & {
   agentContext: AgentContext
 }
 
