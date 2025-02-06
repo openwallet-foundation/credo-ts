@@ -1,9 +1,8 @@
 import type { AnonCredsSchema, AnonCredsCredentialValues } from '../models'
 import type { CredentialPreviewAttributeOptions, LinkedAttachment } from '@credo-ts/didcomm'
 
-import { Buffer, CredoError, Hasher, TypedArrayEncoder } from '@credo-ts/core'
+import { CredoError, Hasher, TypedArrayEncoder } from '@credo-ts/core'
 import { encodeAttachment } from '@credo-ts/didcomm'
-import bigInt from 'big-integer'
 
 export type AnonCredsClaimRecord = Record<string, string | number>
 
@@ -66,9 +65,11 @@ export function encodeCredentialValue(value: unknown) {
 
   const buffer = TypedArrayEncoder.fromString(String(value))
   const hash = Hasher.hash(buffer, 'sha-256')
-  const hex = Buffer.from(hash).toString('hex')
 
-  return bigInt(hex, 16).toString()
+  return hash
+    .slice(1)
+    .reduce((acc, byte) => (acc << 8n) | BigInt(byte), 0n)
+    .toString()
 }
 
 export const mapAttributeRawValuesToAnonCredsCredentialValues = (

@@ -39,7 +39,6 @@ import {
   KeyAlgs,
   Jwk,
 } from '@hyperledger/aries-askar-shared'
-import BigNumber from 'bn.js'
 
 import { importSecureEnvironment } from '../secureEnvironment'
 import {
@@ -597,7 +596,7 @@ export abstract class AskarBaseWallet implements Wallet {
     try {
       // generate an 80-bit nonce suitable for AnonCreds proofs
       const nonce = CryptoBox.randomNonce().slice(0, 10)
-      return new BigNumber(nonce).toString()
+      return nonce.reduce((acc, byte) => (acc << 8n) | BigInt(byte), 0n).toString()
     } catch (error) {
       if (!isError(error)) {
         throw new CredoError('Attempted to throw error, but it was not of type Error', { cause: error })

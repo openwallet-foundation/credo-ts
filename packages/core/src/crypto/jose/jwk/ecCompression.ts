@@ -1,11 +1,3 @@
-/**
- * Based on https://github.com/transmute-industries/verifiable-data/blob/main/packages/web-crypto-key-pair/src/compression/ec-compression.ts
- */
-
-// TODO(crypto): can remove this?
-// native BigInteger is only supported in React Native 0.70+, so we use big-integer for now.
-import bigInt from 'big-integer'
-
 import { Buffer } from '../../../utils/buffer'
 import { KeyType } from '../../KeyType'
 
@@ -18,59 +10,53 @@ const curveToPointLength: Record<CompressableKey, number> = {
   [KeyType.P521]: 132,
 }
 
+/**
+ *
+ * Get constants for a specified curve
+ *
+ * pIdent = (p + 1) / 4 but precomputed for performance
+ *
+ */
 function getConstantsForCurve(curve: KeyType) {
-  let two, prime, b, pIdent
+  let p, b, pIdent
 
+  // https://neuromancer.sk/std/nist/P-256
   if (curve === KeyType.P256) {
-    two = bigInt(2)
-    prime = two.pow(256).subtract(two.pow(224)).add(two.pow(192)).add(two.pow(96)).subtract(1)
-
-    pIdent = prime.add(1).divide(4)
-
-    b = bigInt('5ac635d8aa3a93e7b3ebbd55769886bc651d06b0cc53b0f63bce3c3e27d2604b', 16)
+    p = 0xffffffff00000001000000000000000000000000ffffffffffffffffffffffffn
+    pIdent = 0x3fffffffc0000000400000000000000000000000400000000000000000000000n
+    b = 0x5ac635d8aa3a93e7b3ebbd55769886bc651d06b0cc53b0f63bce3c3e27d2604bn
   }
 
+  // https://neuromancer.sk/std/nist/P-384
   if (curve === KeyType.P384) {
-    two = bigInt(2)
-    prime = two.pow(384).subtract(two.pow(128)).subtract(two.pow(96)).add(two.pow(32)).subtract(1)
-
-    pIdent = prime.add(1).divide(4)
-    b = bigInt('b3312fa7e23ee7e4988e056be3f82d19181d9c6efe8141120314088f5013875ac656398d8a2ed19d2a85c8edd3ec2aef', 16)
+    p = 0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffeffffffff0000000000000000ffffffffn
+    pIdent = 0x3fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffbfffffffc00000000000000040000000n
+    b = 0xb3312fa7e23ee7e4988e056be3f82d19181d9c6efe8141120314088f5013875ac656398d8a2ed19d2a85c8edd3ec2aefn
   }
 
+  // https://neuromancer.sk/std/nist/P-521
   if (curve === KeyType.P521) {
-    two = bigInt(2)
-    prime = two.pow(521).subtract(1)
-    b = bigInt(
-      '00000051953eb9618e1c9a1f929a21a0b68540eea2da725b99b315f3b8b489918ef109e156193951ec7e937b1652c0bd3bb1bf073573df883d2c34f1ef451fd46b503f00',
-      16
-    )
-    pIdent = prime.add(1).divide(4)
+    p =
+      6864797660130609714981900799081393217269435300143305409394463459185543183397656052122559640661454554977296311391480858037121987999716643812574028291115057151n
+    p =
+      0x01ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffn
+    pIdent =
+      0x8000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000n
+    b =
+      0x0051953eb9618e1c9a1f929a21a0b68540eea2da725b99b315f3b8b489918ef109e156193951ec7e937b1652c0bd3bb1bf073573df883d2c34f1ef451fd46b503f00n
   }
 
-  // https://en.bitcoin.it/wiki/Secp256k1
-  // p = FFFFFFFF FFFFFFFF FFFFFFFF FFFFFFFF FFFFFFFF FFFFFFFF FFFFFFFE FFFFFC2F
-  // P = 2256 - 232 - 29 - 28 - 27 - 26 - 24 - 1
   if (curve === KeyType.K256) {
-    two = bigInt(2)
-    prime = two
-      .pow(256)
-      .subtract(two.pow(32))
-      .subtract(two.pow(9))
-      .subtract(two.pow(8))
-      .subtract(two.pow(7))
-      .subtract(two.pow(6))
-      .subtract(two.pow(4))
-      .subtract(1)
-    b = bigInt(7)
-    pIdent = prime.add(1).divide(4)
+    p = 0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffefffffc2fn
+    pIdent = 0x3fffffffffffffffffffffffffffffffffffffffffffffffffffffffbfffff0cn
+    b = 0x7n
   }
 
-  if (!prime || !b || !pIdent) {
+  if (!p || !b || !pIdent) {
     throw new Error(`Unsupported curve ${curve}`)
   }
 
-  return { prime, b, pIdent }
+  return { p, b, pIdent }
 }
 
 // see https://stackoverflow.com/questions/17171542/algorithm-for-elliptic-curve-point-compression
@@ -109,27 +95,20 @@ export function expandIfPossible(publicKey: Uint8Array, keyType: KeyType): Uint8
 }
 
 export function expand(publicKey: Uint8Array, curve: CompressableKey): Uint8Array {
-  const publicKeyComponent = Buffer.from(publicKey).toString('hex')
-  const { prime, b, pIdent } = getConstantsForCurve(curve)
-  const signY = new Number(publicKeyComponent[1]).valueOf() - 2
-  const x = bigInt(publicKeyComponent.substring(2), 16)
+  const { p, b, pIdent } = getConstantsForCurve(curve)
 
-  // y^2 = x^3 - 3x + b
-  let y = x.pow(3).subtract(x.multiply(3)).add(b).modPow(pIdent, prime)
+  const signY = publicKey[0]
+  const x = publicKey.slice(1).reduce((acc, byte) => (acc << 8n) | BigInt(byte), 0n)
 
-  if (curve === KeyType.K256) {
-    // y^2 = x^3 + 7
-    y = x.pow(3).add(7).modPow(pIdent, prime)
-  }
+  let y = curve === KeyType.K256 ? x ** 3n + 7n : x ** 3n - x * 3n + b
+  y = modPow(y, pIdent, p)
 
-  // If the parity doesn't match it's the *other* root
-  if (y.mod(2).toJSNumber() !== signY) {
-    // y = prime - y
-    y = prime.subtract(y)
+  if (signY % 2 === 1) {
+    y = p - y
   }
 
   return Uint8Array.from([
-    0x04,
+    PREFIX_UNCOMPRESSED,
     ...Buffer.from(
       padWithZeroes(x.toString(16), curveToPointLength[curve]) +
         padWithZeroes(y.toString(16), curveToPointLength[curve]),
@@ -179,4 +158,29 @@ export function isValidCompressedPublicKey(publicKey: Uint8Array, keyType: KeyTy
 
 export function isValidUncompressedPublicKey(publicKey: Uint8Array, keyType: KeyType) {
   return isUncompressedKeyValidLength(publicKey.length, keyType) && publicKey[0] === PREFIX_UNCOMPRESSED
+}
+
+/**
+ *
+ * Modular exponentiation optimalization
+ *
+ * Equivalent to: base ** exponent % modulus
+ * However, because base ** exponent can be very large, this optimalization has to be done
+ * to keep the number managable for the BigInt type in JS
+ *
+ */
+function modPow(base: bigint, exponent: bigint, modulus: bigint) {
+  if (modulus === 1n) return 0n
+
+  let result = 1n
+  base = ((base % modulus) + modulus) % modulus
+
+  while (exponent > 0n) {
+    if (exponent & 1n) {
+      result = (result * base) % modulus
+    }
+    base = (base * base) % modulus
+    exponent >>= 1n
+  }
+  return result
 }
