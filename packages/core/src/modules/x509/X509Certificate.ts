@@ -1,5 +1,5 @@
 import type { X509CreateSelfSignedCertificateOptions } from './X509ServiceOptions'
-import type { CredoWebCrypto } from '../../crypto/webcrypto'
+import type { AgentContext } from '../../agent'
 
 import { AsnParser } from '@peculiar/asn1-schema'
 import {
@@ -14,7 +14,7 @@ import * as x509 from '@peculiar/x509'
 import { Key } from '../../crypto/Key'
 import { KeyType } from '../../crypto/KeyType'
 import { compress } from '../../crypto/jose/jwk/ecCompression'
-import { CredoWebCryptoKey } from '../../crypto/webcrypto'
+import { CredoWebCrypto, CredoWebCryptoKey } from '../../crypto/webcrypto'
 import { credoKeyTypeIntoCryptoKeyAlgorithm, spkiAlgorithmIntoCredoKeyType } from '../../crypto/webcrypto/utils'
 import { TypedArrayEncoder } from '../../utils'
 
@@ -271,16 +271,30 @@ export class X509Certificate {
     }
   }
 
-  public async getData(crypto?: CredoWebCrypto) {
+  /**
+   * Get the thumprint of the X509 certificate in hex format.
+   */
+  public async getThumprint(agentContext: AgentContext) {
     const certificate = new x509.X509Certificate(this.rawCertificate)
 
-    const thumbprint = await certificate.getThumbprint(crypto)
+    const thumbprint = await certificate.getThumbprint(new CredoWebCrypto(agentContext))
     const thumbprintHex = TypedArrayEncoder.toHex(new Uint8Array(thumbprint))
+
+    return thumbprintHex
+  }
+
+  /**
+   * Get the data elements of the x509 certificate
+   */
+  public get data() {
+    const certificate = new x509.X509Certificate(this.rawCertificate)
+
     return {
       issuerName: certificate.issuerName.toString(),
+      issuer: certificate.issuer,
       subjectName: certificate.subjectName.toString(),
+      subject: certificate.subject,
       serialNumber: certificate.serialNumber,
-      thumbprint: thumbprintHex,
       pem: certificate.toString(),
       notBefore: certificate.notBefore,
       notAfter: certificate.notAfter,
