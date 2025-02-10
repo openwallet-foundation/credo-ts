@@ -1,8 +1,9 @@
 import type { KeyType } from './KeyType'
 
+import { decompressPublicKeyIfPossible } from 'ec-compression'
+
 import { MultiBaseEncoder, TypedArrayEncoder, VarintEncoder } from '../utils'
 
-import { compressIfPossible, expandPublicKeyIfPossible } from './jose/jwk/ecCompression'
 import { isEncryptionSupportedForKeyType, isSigningSupportedForKeyType } from './keyUtils'
 import { getKeyTypeByMultiCodecPrefix, getMultiCodecPrefixByKeyType } from './multiCodecKey'
 
@@ -11,12 +12,12 @@ export class Key {
   public readonly keyType: KeyType
 
   public constructor(publicKey: Uint8Array, keyType: KeyType) {
-    this.publicKey = expandPublicKeyIfPossible(publicKey, keyType)
+    this.publicKey = decompressPublicKeyIfPossible(publicKey, keyType)
     this.keyType = keyType
   }
 
   public get compressedPublicKey() {
-    return compressIfPossible(this.publicKey, this.keyType)
+    return decompressPublicKeyIfPossible(this.publicKey, this.keyType)
   }
 
   public static fromPublicKey(publicKey: Uint8Array, keyType: KeyType) {
@@ -45,11 +46,9 @@ export class Key {
     // Create Buffer with length of the prefix bytes, then use varint to fill the prefix bytes
     const prefixBytes = VarintEncoder.encode(multiCodecPrefix)
 
-    // Multicodec requires compressable keys to be compressed
-    const possiblyCompressedKey = compressIfPossible(this.publicKey, this.keyType)
-
     // Combine prefix with public key
-    return new Uint8Array([...prefixBytes, ...possiblyCompressedKey])
+    // Multicodec requires compressable keys to be compressed
+    return new Uint8Array([...prefixBytes, ...this.compressedPublicKey])
   }
 
   public get fingerprint() {

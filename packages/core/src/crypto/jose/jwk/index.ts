@@ -1,5 +1,4 @@
 export * from './transform'
-export * from './ecCompression'
 export { Ed25519Jwk } from './Ed25519Jwk'
 export { X25519Jwk } from './X25519Jwk'
 export { P256Jwk } from './P256Jwk'

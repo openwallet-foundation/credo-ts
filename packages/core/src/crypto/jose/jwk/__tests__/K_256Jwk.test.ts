@@ -1,7 +1,7 @@
+import { compressPublicKeyIfPossible } from 'ec-compression'
 import { TypedArrayEncoder } from '../../../../utils'
 import { KeyType } from '../../../KeyType'
 import { K256Jwk } from '../K256Jwk'
-import { compress } from '../ecCompression'
 
 // Generated with https://mkjwk.org
 const jwkJson = {
@@ -16,7 +16,7 @@ const uncompressedPublicKey = new Uint8Array([
   ...TypedArrayEncoder.fromBase64(jwkJson.x),
   ...TypedArrayEncoder.fromBase64(jwkJson.y),
 ])
-const compressedPublicKey = compress(uncompressedPublicKey)
+const compressedPublicKey = compressPublicKeyIfPossible(uncompressedPublicKey, 'k-256')
 
 describe('K_256JWk', () => {
   test('has correct properties', () => {
