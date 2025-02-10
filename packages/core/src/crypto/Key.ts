@@ -1,6 +1,6 @@
 import type { KeyType } from './KeyType'
 
-import { decompressPublicKeyIfPossible } from 'ec-compression'
+import { compressPublicKeyIfPossible, decompressPublicKeyIfPossible } from 'ec-compression'
 
 import { MultiBaseEncoder, TypedArrayEncoder, VarintEncoder } from '../utils'
 
@@ -17,7 +17,7 @@ export class Key {
   }
 
   public get compressedPublicKey() {
-    return decompressPublicKeyIfPossible(this.publicKey, this.keyType)
+    return compressPublicKeyIfPossible(this.publicKey, this.keyType)
   }
 
   public static fromPublicKey(publicKey: Uint8Array, keyType: KeyType) {

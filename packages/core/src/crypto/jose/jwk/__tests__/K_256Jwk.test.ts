@@ -1,4 +1,5 @@
 import { compressPublicKeyIfPossible } from 'ec-compression'
+
 import { TypedArrayEncoder } from '../../../../utils'
 import { KeyType } from '../../../KeyType'
 import { K256Jwk } from '../K256Jwk'

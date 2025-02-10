@@ -26,6 +26,7 @@ import {
   getDidIndyRevocationRegistryDefinitionId,
   getDidIndySchemaId,
 } from '../../indy-vdr/src/anoncreds/utils/identifiers'
+import { bytesToBigint } from '../src/utils/bytesToBigint'
 import {
   getUnQualifiedDidIndyDid,
   getUnqualifiedRevocationRegistryDefinitionId,
@@ -377,8 +378,5 @@ export class InMemoryAnonCredsRegistry implements AnonCredsRegistry {
  */
 function getSeqNoFromSchemaId(schemaId: string) {
   const hash = Hasher.hash(schemaId, 'sha-256')
-  const hashNumber = hash.reduce((acc, byte) => (acc << 8n) | BigInt(byte), 0n)
-  const seqNo = Number(hashNumber.toString().slice(0, 5))
-
-  return seqNo
+  return bytesToBigint(hash).toString().slice(0, 5)
 }

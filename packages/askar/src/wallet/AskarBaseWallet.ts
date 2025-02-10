@@ -28,7 +28,6 @@ import {
   KeyBackend,
   KeyType,
   utils,
-  expandPublicKeyIfPossible,
 } from '@credo-ts/core'
 import {
   CryptoBox,
@@ -181,7 +180,7 @@ export abstract class AskarBaseWallet implements Wallet {
           // This will be fixed once we use the new 'using' syntax
           key = _key
 
-          const keyPublicBytes = expandPublicKeyIfPossible(key.publicBytes, keyType)
+          const keyPublicBytes = new Key(key.publicBytes, keyType).publicKey
 
           // Store key
           await this.withSession((session) =>
@@ -208,7 +207,7 @@ export abstract class AskarBaseWallet implements Wallet {
         await secureEnvironment.generateKeypair(kid)
         const compressedPublicKeyBytes = await secureEnvironment.getPublicBytesForKeyId(kid)
 
-        const publicKeyBytes = expandPublicKeyIfPossible(compressedPublicKeyBytes, keyType)
+        const publicKeyBytes = new Key(compressedPublicKeyBytes, keyType).publicKey
         const publicKeyBase58 = TypedArrayEncoder.toBase58(publicKeyBytes)
 
         await this.storeSecureEnvironmentKeyById({

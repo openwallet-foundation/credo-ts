@@ -12,8 +12,6 @@ import { CryptoBox, Store, Key as AskarKey, keyAlgFromString } from '@hyperledge
 
 import { convertToAskarKeyBackend } from '../packages/askar/src/utils/askarKeyBackend'
 import { didcommV1Pack, didcommV1Unpack } from '../packages/askar/src/wallet/didcommV1'
-import { expandPublicKeyIfPossible } from '../packages/core'
-
 import {
   JsonEncoder,
   WalletNotFoundError,
@@ -27,7 +25,7 @@ import {
   Key,
   TypedArrayEncoder,
   KeyBackend,
-} from '@credo-ts/core'
+} from '../packages/core'
 
 const inMemoryWallets: InMemoryWallets = {}
 
@@ -185,7 +183,8 @@ export class InMemoryWallet implements Wallet {
         const keyPublicBytes = key.publicBytes
 
         // Store key
-        this.getInMemoryKeys()[TypedArrayEncoder.toBase58(expandPublicKeyIfPossible(keyPublicBytes, keyType))] = {
+        const _key = new Key(keyPublicBytes, keyType)
+        this.getInMemoryKeys()[TypedArrayEncoder.toBase58(_key.publicKey)] = {
           publicKeyBytes: keyPublicBytes,
           secretKeyBytes: key.secretBytes,
           keyType,

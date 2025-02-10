@@ -1,6 +1,13 @@
 import type { JwkJson } from './Jwk'
 import type { JwaEncryptionAlgorithm } from '../jwa/alg'
 
+import {
+  AffinePoint,
+  isValidCompressedPublicKeyFormat,
+  isValidDecompressedPublicKeyFormat,
+  Secp521r1,
+} from 'ec-compression'
+
 import { CredoError } from '../../../error'
 import { TypedArrayEncoder } from '../../../utils'
 import { KeyType } from '../../KeyType'
@@ -9,13 +16,6 @@ import { JwaSignatureAlgorithm } from '../jwa/alg'
 
 import { Jwk } from './Jwk'
 import { hasKty, hasCrv, hasX, hasY, hasValidUse } from './validate'
-import {
-  AffinePoint,
-  bytesToBigint,
-  isValidCompressedPublicKeyFormat,
-  isValidDecompressedPublicKeyFormat,
-  Secp521r1,
-} from 'ec-compression'
 
 export class P521Jwk extends Jwk {
   public static readonly supportedEncryptionAlgorithms: JwaEncryptionAlgorithm[] = []
@@ -30,7 +30,7 @@ export class P521Jwk extends Jwk {
     const xAsBytes = typeof x === 'string' ? Uint8Array.from(TypedArrayEncoder.fromBase64(x)) : x
     const yAsBytes = typeof y === 'string' ? Uint8Array.from(TypedArrayEncoder.fromBase64(y)) : y
 
-    this.affinePoint = new AffinePoint(bytesToBigint(xAsBytes), bytesToBigint(yAsBytes))
+    this.affinePoint = new AffinePoint(xAsBytes, yAsBytes)
   }
 
   public get kty() {
@@ -54,11 +54,11 @@ export class P521Jwk extends Jwk {
   }
 
   public get x() {
-    return TypedArrayEncoder.toBase64URL(this.affinePoint.xAsBytes)
+    return TypedArrayEncoder.toBase64URL(this.affinePoint.xBytes)
   }
 
   public get y() {
-    return TypedArrayEncoder.toBase64URL(this.affinePoint.yAsBytes)
+    return TypedArrayEncoder.toBase64URL(this.affinePoint.yBytes)
   }
 
   /**
@@ -97,13 +97,13 @@ export class P521Jwk extends Jwk {
 
   public static fromPublicKey(publicKey: Uint8Array) {
     if (isValidCompressedPublicKeyFormat(publicKey, Secp521r1)) {
-      const affinePoint = AffinePoint.fromCompressedPoint(bytesToBigint(publicKey), Secp521r1)
-      return new P521Jwk({ x: affinePoint.xAsBytes, y: affinePoint.yAsBytes })
+      const affinePoint = AffinePoint.fromCompressedPoint(publicKey, Secp521r1)
+      return new P521Jwk({ x: affinePoint.xBytes, y: affinePoint.yBytes })
     }
 
     if (isValidDecompressedPublicKeyFormat(publicKey, Secp521r1)) {
-      const affinePoint = AffinePoint.fromDecompressedPoint(bytesToBigint(publicKey), Secp521r1)
-      return new P521Jwk({ x: affinePoint.xAsBytes, y: affinePoint.yAsBytes })
+      const affinePoint = AffinePoint.fromDecompressedPoint(publicKey, Secp521r1)
+      return new P521Jwk({ x: affinePoint.xBytes, y: affinePoint.yBytes })
     }
 
     throw new CredoError(
