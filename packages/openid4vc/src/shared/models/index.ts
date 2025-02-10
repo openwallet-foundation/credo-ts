@@ -12,11 +12,11 @@ import type {
   IssuerMetadataResult,
   ParseCredentialRequestReturn,
 } from '@openid4vc/oid4vci'
-import { Openid4vpAuthResponse, VerifiedOpenid4vpAuthRequest } from '@openid4vc/oid4vp'
+import { Openid4vpAuthorizationResponse, ResolvedOpenid4vpAuthRequest } from '@openid4vc/oid4vp'
 import type { AuthorizationRequestPayload, IDTokenPayload } from '@sphereon/did-auth-siop'
 
 export { authorizationCodeGrantIdentifier, preAuthorizedCodeGrantIdentifier } from '@openid4vc/oauth2'
-export { Openid4vpAuthRequest } from '@openid4vc/oid4vp'
+export { Openid4vpAuthorizationRequest} from '@openid4vc/oid4vp'
 
 export type OpenId4VciCredentialConfigurationSupportedWithFormats = CredentialConfigurationSupportedWithFormats
 export type OpenId4VciCredentialConfigurationSupported = CredentialConfigurationSupported
@@ -43,9 +43,9 @@ export type OpenId4VciCredentialRequestWithFormats = CredentialRequestWithFormat
 
 export type OpenId4VciCredentialOfferPayload = CredentialOfferObject
 
-export type OpenId4VcSiopVerifiedAuthorizationRequest = VerifiedOpenid4vpAuthRequest
+export type OpenId4VcSiopVerifiedAuthorizationRequest = ResolvedOpenid4vpAuthRequest
 export type OpenId4VcSiopAuthorizationRequestPayload = AuthorizationRequestPayload
-export type OpenId4VcSiopAuthorizationResponsePayload = Openid4vpAuthResponse
+export type OpenId4VcSiopAuthorizationResponsePayload = Openid4vpAuthorizationResponse
 export type OpenId4VcSiopIdTokenPayload = IDTokenPayload
 
 export * from './CredentialHolderBinding'

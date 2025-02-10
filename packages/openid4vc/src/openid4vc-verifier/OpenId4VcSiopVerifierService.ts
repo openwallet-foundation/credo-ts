@@ -12,12 +12,12 @@ import type {
   VerifiablePresentation,
 } from '@credo-ts/core'
 import {
+  Oid4vcVerifier,
   JarmClientMetadata,
-  parseOpenid4vpRequestParams,
-  parsePresentationsFromVpToken,
-  parseTransactionData,
-  verifyOpenid4vpAuthorizationResponse,
   VpTokenPresentationParseResult,
+  parseOpenid4vpAuthorizationResponse,
+  parseOpenid4vpAuthorizationRequestPayload,
+  ParsedOpenid4vpAuthorizationResponse,
 } from '@openid4vc/oid4vp'
 import type { IDTokenPayload } from '@sphereon/did-auth-siop'
 import type {
@@ -72,7 +72,7 @@ import {
 import { storeActorIdForContextCorrelationId } from '../shared/router'
 import { getSupportedJwaSignatureAlgorithms, openIdTokenIssuerToJwtIssuer, parseIfJson } from '../shared/utils'
 
-import { ClientIdScheme, createOpenid4vpAuthorizationRequest } from '@openid4vc/oid4vp'
+import { ClientIdScheme } from '@openid4vc/oid4vp'
 import { getOid4vcCallbacks } from '../shared/callbacks'
 import { OpenId4VcSiopAuthorizationResponsePayload } from '../shared/index'
 import { OpenId4VcVerificationSessionState } from './OpenId4VcVerificationSessionState'
@@ -83,6 +83,8 @@ import {
   OpenId4VcVerifierRepository,
 } from './repository'
 import { OpenId4VcRelyingPartyEventHandler } from './repository/OpenId4VcRelyingPartyEventEmitter'
+import { Oauth2ErrorCodes, Oauth2ServerErrorResponseError } from '@openid4vc/oauth2'
+import { zOpenid4vpAuthorizationResponse } from '@openid4vc/oid4vp'
 
 /**
  * @internal
@@ -96,6 +98,13 @@ export class OpenId4VcSiopVerifierService {
     private config: OpenId4VcVerifierModuleConfig,
     private openId4VcVerificationSessionRepository: OpenId4VcVerificationSessionRepository
   ) {}
+
+  private getOpenid4vpVerifier(agentContext: AgentContext) {
+    const callbacks = getOid4vcCallbacks(agentContext)
+    const openid4vpClient = new Oid4vcVerifier({ callbacks })
+
+    return openid4vpClient
+  }
 
   public async createAuthorizationRequest(
     agentContext: AgentContext,
@@ -177,8 +186,8 @@ export class OpenId4VcSiopVerifierService {
       })),
     }
 
-    const callbacks = getOid4vcCallbacks(agentContext)
-    const authorizationRequest = await createOpenid4vpAuthorizationRequest({
+    const openid4vpVerifier = this.getOpenid4vpVerifier(agentContext)
+    const authorizationRequest = await openid4vpVerifier.createOpenId4vpAuthorizationRequest({
       jar: { jwtSigner: jwtIssuer, requestUri: hostedAuthorizationRequestUri },
       requestParams: {
         client_id,
@@ -192,7 +201,6 @@ export class OpenId4VcSiopVerifierService {
         response_type: 'vp_token',
         client_metadata,
       },
-      callbacks,
     })
 
     const verificationSession = await agentContext.dependencyManager
@@ -205,7 +213,7 @@ export class OpenId4VcSiopVerifierService {
       })
 
     return {
-      authorizationRequest: authorizationRequest.uri,
+      authorizationRequest: authorizationRequest.authRequest,
       verificationSession,
     }
   }
@@ -238,63 +246,132 @@ export class OpenId4VcSiopVerifierService {
     } satisfies OpenId4VcSiopVerifiedAuthorizationResponseDcql
   }
 
+  public async parseAuthorizationResponse(
+    agentContext: AgentContext,
+    options: {
+      verifierId: string
+      responsePayload: Record<string, unknown>
+      setResponseState?: boolean
+    }
+  ): Promise<ParsedOpenid4vpAuthorizationResponse & { verificationSession: OpenId4VcVerificationSessionRecord }> {
+    const { verifierId, responsePayload } = options
+
+    let verificationSession: OpenId4VcVerificationSessionRecord | undefined
+    let parsedAuthResponse: ParsedOpenid4vpAuthorizationResponse
+
+    let rawResponsePayload = responsePayload
+
+    try {
+      parsedAuthResponse = await parseOpenid4vpAuthorizationResponse({
+        responsePayload,
+        callbacks: {
+          ...getOid4vcCallbacks(agentContext),
+          getOpenid4vpAuthorizationRequest: async (responsePayload) => {
+            const { state, nonce } = responsePayload
+            rawResponsePayload = responsePayload
+            const openId4VcVerifierService = agentContext.dependencyManager.resolve(OpenId4VcSiopVerifierService)
+            const session = await openId4VcVerifierService.findVerificationSessionForAuthorizationResponse(
+              agentContext,
+              { authorizationResponseParams: { state, nonce }, verifierId }
+            )
+
+            if (!session) {
+              agentContext.config.logger.warn(
+                `No verification session found for incoming authorization response for verifier ${verifierId}`
+              )
+              throw new CredoError(`No state or nonce provided in authorization response for verifier ${verifierId}`)
+            }
+            verificationSession = session
+
+            const authorizationRequest = parseOpenid4vpAuthorizationRequestPayload({ requestPayload: verificationSession.authorizationRequestJwt })
+            if (authorizationRequest.type !== 'openid4vp') {
+              throw new CredoError(
+                `Invalid authorization request jwt. Expected 'openid4vp' request, received '${authorizationRequest.type}'.`
+              )
+            }
+            return { authRequest: authorizationRequest.params }
+          },
+        },
+      })
+    } catch (error) {
+      if (
+        options.setResponseState &&
+        verificationSession &&
+        (verificationSession.state === OpenId4VcVerificationSessionState.RequestUriRetrieved ||
+          verificationSession.state === OpenId4VcVerificationSessionState.RequestCreated)
+      ) {
+        const parsed = zOpenid4vpAuthorizationResponse.safeParse(rawResponsePayload)
+        if (!parsed.success) throw new error
+
+        await agentContext.dependencyManager
+          .resolve(OpenId4VcRelyingPartyEventHandler)
+          .authorizationResponseReceivedFailed(agentContext, {
+            verifierId,
+            correlationId: verificationSession.id,
+            authorizationResponsePayload: parsed.data,
+            errorMessage: error.message,
+          })
+      }
+
+      throw error
+    }
+    if (
+      parsedAuthResponse.authResponsePayload.presentation_submission &&
+      typeof parsedAuthResponse.authResponsePayload.presentation_submission === 'string'
+    ) {
+      const decoded = decodeURIComponent(parsedAuthResponse.authResponsePayload.presentation_submission)
+      const parsed = JSON.parse(decoded)
+      parsedAuthResponse.authResponsePayload.presentation_submission = parsed
+      if (parsedAuthResponse.type === 'pex') {
+        parsedAuthResponse.pex.presentationSubmission = parsed
+      }
+    }
+
+    if (!verificationSession) {
+      throw new CredoError('Missing verification session, cannot verify authorization response.')
+    }
+
+    if (parsedAuthResponse.jarm && parsedAuthResponse.jarm.type !== 'encrypted') {
+      throw new Oauth2ServerErrorResponseError({
+        error: Oauth2ErrorCodes.InvalidRequest,
+        error_description: `Only encrypted JARM responses are supported, received '${parsedAuthResponse.jarm.type}'.`,
+      })
+    }
+
+    return {
+      ...parsedAuthResponse,
+      verificationSession,
+    }
+  }
+
   public async verifyAuthorizationResponse(
     agentContext: AgentContext,
     options: OpenId4VcSiopVerifyAuthorizationResponseOptions & {
-      verificationSession: OpenId4VcVerificationSessionRecord
+      verifierId: string
       jarmHeader?: { apu?: string; apv?: string }
     }
   ): Promise<OpenId4VcSiopVerifiedAuthorizationResponse & { verificationSession: OpenId4VcVerificationSessionRecord }> {
-    // Assert state
-    options.verificationSession.assertState([
-      OpenId4VcVerificationSessionState.RequestUriRetrieved,
-      OpenId4VcVerificationSessionState.RequestCreated,
-    ])
-
-    const authRequestJwtParseResult = parseOpenid4vpRequestParams(options.verificationSession.authorizationRequestJwt)
-    if (authRequestJwtParseResult.provided !== 'jwt' || authRequestJwtParseResult.type === 'jar') {
-      throw new CredoError('Invalid authorization request jwt')
-    }
-
-    const authorizationRequest = authRequestJwtParseResult.params
-    const { client_id: requestClientId, nonce: requestNonce, response_uri: responseUri } = authorizationRequest
-
+    const openid4vpVerifier = this.getOpenid4vpVerifier(agentContext)
     const openId4VcRelyingPartyEventHandler = await agentContext.dependencyManager.resolve(
       OpenId4VcRelyingPartyEventHandler
     )
 
-    let result: ReturnType<typeof verifyOpenid4vpAuthorizationResponse>
-    try {
-      result = verifyOpenid4vpAuthorizationResponse({
-        requestParams: authorizationRequest,
-        responseParams: options.authorizationResponse,
-      })
-    } catch (error) {
-      await openId4VcRelyingPartyEventHandler.authorizationResponseReceivedFailed(agentContext, {
-        verifierId: options.verificationSession.verifierId,
-        correlationId: options.verificationSession.id,
-        authorizationResponsePayload: options.authorizationResponse,
-        errorMessage: error.message,
-      })
+    const result = await this.parseAuthorizationResponse(agentContext, {
+      verifierId: options.verifierId,
+      responsePayload: options.authorizationResponse,
+      setResponseState: true,
+    })
 
-      throw error
-    }
+    result.verificationSession.assertState([
+      OpenId4VcVerificationSessionState.RequestUriRetrieved,
+      OpenId4VcVerificationSessionState.RequestCreated,
+    ])
 
-    // for us verifying the presentations also checks the nonces match only thing we need to do manually is check if the mdoc
-    // nonce in the jarm header matches the nonce in the request
-    let mdocGeneratedNonce: string | undefined
-    if (options.jarmHeader?.apu) {
-      mdocGeneratedNonce = TypedArrayEncoder.toUtf8String(TypedArrayEncoder.fromBase64(options.jarmHeader.apu))
-    }
-    if (options.jarmHeader?.apv) {
-      const jarmRequestNonce = TypedArrayEncoder.toUtf8String(TypedArrayEncoder.fromBase64(options.jarmHeader.apv))
-      if (jarmRequestNonce !== requestNonce) {
-        throw new CredoError('The nonce in the jarm header does not match the nonce in the request.')
-      }
-    }
+    const authorizationRequest = result.authRequestPayload
+    const { client_id: requestClientId, nonce: requestNonce, response_uri: responseUri } = authorizationRequest
 
     const transactionData = authorizationRequest.transaction_data
-      ? parseTransactionData(authorizationRequest.transaction_data)
+      ? openid4vpVerifier.parseTransactionData({ transactionData: authorizationRequest.transaction_data })
       : undefined
 
     // validating the id token
@@ -309,13 +386,13 @@ export class OpenId4VcSiopVerifierService {
       const presentationVerificationPromises = dcqlPresentationEntries.map(async (presentation) => {
         const [credentialId, vpTokenPresentationParseResult] = presentation
         return await this.verifyPresentations(agentContext, {
-          correlationId: options.verificationSession.id,
+          correlationId: result.verificationSession.id,
           transactionData,
           nonce: requestNonce,
           audience: requestClientId,
           responseUri,
-          mdocGeneratedNonce: mdocGeneratedNonce,
-          verificationSessionRecordId: options.verificationSession.id,
+          mdocGeneratedNonce: result.jarm?.mdocGeneratedNonce,
+          verificationSessionRecordId: result.verificationSession.id,
           vpTokenPresentationParseResult,
           credentialId,
         })
@@ -344,8 +421,8 @@ export class OpenId4VcSiopVerifierService {
           },
         ],
         verificationCallback: async () => ({ verified: true }),
-        presentations: options.authorizationResponse.vp_token
-          ? await extractPresentationsFromVpToken(parseIfJson(options.authorizationResponse.vp_token) as any, {
+        presentations: result.authResponsePayload.vp_token
+          ? await extractPresentationsFromVpToken(parseIfJson(result.authResponsePayload.vp_token) as any, {
               hasher: Hasher.hash,
             })
           : [],
@@ -365,13 +442,13 @@ export class OpenId4VcSiopVerifierService {
           }
 
           return this.verifyPresentations(agentContext, {
-            correlationId: options.verificationSession.id,
+            correlationId: result.verificationSession.id,
             transactionData,
             nonce: requestNonce,
             audience: requestClientId,
             responseUri,
-            mdocGeneratedNonce: mdocGeneratedNonce,
-            verificationSessionRecordId: options.verificationSession.id,
+            mdocGeneratedNonce: result.jarm?.mdocGeneratedNonce,
+            verificationSessionRecordId: result.verificationSession.id,
             vpTokenPresentationParseResult: presentation,
             credentialId: inputDescriptor.id,
           })
@@ -408,20 +485,20 @@ export class OpenId4VcSiopVerifierService {
       }
     } catch (error) {
       await openId4VcRelyingPartyEventHandler.authorizationResponseVerifiedFailed(agentContext, {
-        verifierId: options.verificationSession.verifierId,
-        correlationId: options.verificationSession.id,
+        verifierId: options.verifierId,
+        correlationId: result.verificationSession.id,
         errorMessage: error.message,
       })
       throw error
     }
 
     await openId4VcRelyingPartyEventHandler.authorizationResponseVerifiedSuccess(agentContext, {
-      verifierId: options.verificationSession.verifierId,
-      correlationId: options.verificationSession.id,
-      authorizationResponsePayload: options.authorizationResponse,
+      verifierId: options.verifierId,
+      correlationId: result.verificationSession.id,
+      authorizationResponsePayload: result.authResponsePayload,
     })
 
-    const verificationSession = await this.getVerificationSessionById(agentContext, options.verificationSession.id)
+    const verificationSession = await this.getVerificationSessionById(agentContext, result.verificationSession.id)
     const verifiedAuthorizationResponse = await this.getVerifiedAuthorizationResponse(agentContext, verificationSession)
 
     return { ...verifiedAuthorizationResponse, verificationSession, transactionData }
@@ -439,18 +516,21 @@ export class OpenId4VcSiopVerifierService {
     const idToken = verificationSession.authorizationResponsePayload.id_token
     const idTokenPayload = idToken ? Jwt.fromSerializedJwt(idToken).payload : undefined
 
-    const authorizationRequest = parseOpenid4vpRequestParams(verificationSession.authorizationRequestJwt)
+    const openid4vpVerifier = this.getOpenid4vpVerifier(agentContext)
+    const authorizationRequest = openid4vpVerifier.parseOpenid4vpAuthorizationRequestPayload({
+      requestPayload: verificationSession.authorizationRequestJwt,
+    })
     if (authorizationRequest.provided !== 'jwt' || authorizationRequest.type === 'jar') {
       throw new CredoError('Invalid authorization request jwt')
     }
 
-    const result = verifyOpenid4vpAuthorizationResponse({
-      requestParams: authorizationRequest.params,
-      responseParams: verificationSession.authorizationResponsePayload,
+    const result = openid4vpVerifier.validateOpenid4vpAuthorizationResponse({
+      authorizationRequest: authorizationRequest.params,
+      authorizationResponse: verificationSession.authorizationResponsePayload,
     })
 
     const transactionData = authorizationRequest.params.transaction_data
-      ? parseTransactionData(authorizationRequest.params.transaction_data)
+      ? openid4vpVerifier.parseTransactionData({ transactionData: authorizationRequest.params.transaction_data })
       : undefined
 
     let presentationExchange: OpenId4VcSiopVerifiedAuthorizationResponse['presentationExchange'] | undefined = undefined
@@ -468,7 +548,7 @@ export class OpenId4VcSiopVerifierService {
         throw new CredoError('Missing vp_token in the openid4vp authorization response.')
       }
 
-      const rawPresentations = parsePresentationsFromVpToken({ vpToken })
+      const rawPresentations = openid4vpVerifier.parsePresentationsFromVpToken({ vpToken })
 
       const submission = verificationSession.authorizationResponsePayload.presentation_submission as
         | DifPresentationExchangeSubmission

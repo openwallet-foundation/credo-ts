@@ -21,7 +21,7 @@ import {
   X509Service,
 } from '@credo-ts/core'
 
-import { DecryptJwtCallback, EncryptJweCallback } from '@openid4vc/oauth2/src/callbacks'
+import { DecryptJweCallback, EncryptJweCallback } from '@openid4vc/oauth2/src/callbacks'
 import { getKeyFromDid } from './utils'
 
 export function getOid4vciJwtVerifyCallback(
@@ -103,7 +103,7 @@ export function getOid4vciEncryptJwtCallback(agentContext: AgentContext): Encryp
   }
 }
 
-export function getOid4vciDecryptJwtCallback(agentContext: AgentContext): DecryptJwtCallback {
+export function getOid4vciDecryptJweCallback(agentContext: AgentContext): DecryptJweCallback {
   return async (jwe, options) => {
     const [header] = jwe.split('.')
     const decodedHeader = JsonEncoder.fromBase64(header)
@@ -186,19 +186,18 @@ export function getOid4vcCallbacks(agentContext: AgentContext, trustedCertificat
     verifyJwt: getOid4vciJwtVerifyCallback(agentContext, trustedCertificates),
     fetch: agentContext.config.agentDependencies.fetch,
     encryptJwe: getOid4vciEncryptJwtCallback(agentContext),
-    decryptJwt: getOid4vciDecryptJwtCallback(agentContext),
+    decryptJwe: getOid4vciDecryptJweCallback(agentContext),
   } satisfies Partial<CallbackContext>
 }
 
 export function getOid4vpX509Callbacks(agentContext: AgentContext) {
   return {
-    getX509SanDnsNames: (certificate: string) => {
+    getX509CertificateMetadata: (certificate: string) => {
       const leafCertificate = X509Service.getLeafCertificate(agentContext, { certificateChain: [certificate] })
-      return leafCertificate.sanDnsNames
-    },
-    getX509SanUriNames: (certificate: string) => {
-      const leafCertificate = X509Service.getLeafCertificate(agentContext, { certificateChain: [certificate] })
-      return leafCertificate.sanUriNames
+      return {
+        sanDnsNames: leafCertificate.sanDnsNames,
+        sanUriNames: leafCertificate.sanUriNames,
+      }
     },
   }
 }

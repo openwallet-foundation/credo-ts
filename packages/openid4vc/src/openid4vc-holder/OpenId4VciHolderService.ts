@@ -384,7 +384,7 @@ export class OpenId4VciHolderService {
           })
           .catch((e) => {
             if (e instanceof Oid4vciRetrieveCredentialsError && e.response.credentialErrorResponseResult?.success) {
-              cNonce = e.response.credentialErrorResponseResult.output.c_nonce
+              cNonce = e.response.credentialErrorResponseResult.data.c_nonce
             }
           })
       }

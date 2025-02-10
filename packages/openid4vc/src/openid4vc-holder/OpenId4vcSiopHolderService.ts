@@ -12,12 +12,7 @@ import type {
   TransactionDataRequest,
   VerifiablePresentation,
 } from '@credo-ts/core'
-import {
-  createOpenid4vpAuthorizationResponse,
-  parseOpenid4vpRequestParams,
-  submitOpenid4vpAuthorizationResponse,
-  verifyOpenid4vpAuthRequest,
-} from '@openid4vc/oid4vp'
+import { isJarmResponseMode, Oid4vpClient } from '@openid4vc/oid4vp'
 import type { OpenId4VcJwtIssuer } from '../shared'
 import type {
   OpenId4VcSiopAcceptAuthorizationRequestOptions,
@@ -36,7 +31,7 @@ import {
   W3cJwtVerifiablePresentation,
 } from '@credo-ts/core'
 
-import { getOid4vcCallbacks, getOid4vpX509Callbacks } from '../shared/callbacks'
+import { getOid4vcCallbacks } from '../shared/callbacks'
 import { openIdTokenIssuerToJwtIssuer } from '../shared/utils'
 
 @injectable()
@@ -45,6 +40,11 @@ export class OpenId4VcSiopHolderService {
     private presentationExchangeService: DifPresentationExchangeService,
     private dcqlService: DcqlService
   ) {}
+
+  private getOid4vpClient(agentContext: AgentContext, trustedCertificates?: EncodedX509Certificate[]) {
+    const callbacks = getOid4vcCallbacks(agentContext, trustedCertificates)
+    return new Oid4vpClient({ callbacks })
+  }
 
   private async handlePresentationExchangeRequest(
     agentContext: AgentContext,
@@ -108,10 +108,6 @@ export class OpenId4VcSiopHolderService {
         const result = transactionDataEntry.credential_ids
           .map((credentialId) => {
             const match = dcqlQueryResult.credential_matches[credentialId]
-            if (!match) {
-              throw new CredoError(`Credential with id ${credentialId} not found`)
-            }
-
             if (!match.success) return undefined
             return {
               transactionDataEntry,
@@ -136,13 +132,9 @@ export class OpenId4VcSiopHolderService {
     requestJwtOrUri: string,
     trustedCertificates?: EncodedX509Certificate[]
   ): Promise<OpenId4VcSiopResolvedAuthorizationRequest> {
-    const { params } = parseOpenid4vpRequestParams(requestJwtOrUri)
-    const verifiedAuthRequest = await verifyOpenid4vpAuthRequest(params, {
-      callbacks: {
-        ...getOid4vcCallbacks(agentContext, trustedCertificates),
-        ...getOid4vpX509Callbacks(agentContext),
-      },
-    })
+    const openid4vpClient = this.getOid4vpClient(agentContext, trustedCertificates)
+    const { params } = openid4vpClient.parseOpenid4vpAuthorizationRequestPayload({ requestPayload: requestJwtOrUri })
+    const verifiedAuthRequest = await openid4vpClient.resolveOpenId4vpAuthorizationRequest({ request: params })
 
     const { client, pex, transactionData, dcql } = verifiedAuthRequest
 
@@ -368,18 +360,17 @@ export class OpenId4VcSiopHolderService {
       vpToken = dcqlOptions.encodedVerifiablePresentations
     }
 
-    const callbacks = getOid4vcCallbacks(agentContext)
-
-    const response = await createOpenid4vpAuthorizationResponse({
+    const openid4vpClient = this.getOid4vpClient(agentContext)
+    const response = await openid4vpClient.createOpenid4vpAuthorizationResponse({
       requestParams: authorizationRequest.payload,
       responseParams: {
         vp_token: vpToken! as any,
         presentation_submission: presentationExchangeOptions?.presentationSubmission,
       },
-      jarm: authorizationRequest.payload.response_mode.includes('jwt')
+      jarm: authorizationRequest.payload.response_mode && isJarmResponseMode(authorizationRequest.payload.response_mode)
         ? {
             jwtSigner: jwtIssuer!,
-            jweEncryptor: { nonce: authorizationResponseNonce },
+            encryption: { nonce: authorizationResponseNonce },
             serverMetadata: {
               authorization_signing_alg_values_supported: ['RS256'],
               authorization_encryption_alg_values_supported: ['ECDH-ES'],
@@ -387,14 +378,12 @@ export class OpenId4VcSiopHolderService {
             },
           }
         : undefined,
-      callbacks,
     })
 
-    const result = await submitOpenid4vpAuthorizationResponse({
+    const result = await openid4vpClient.submitOpenid4vpAuthorizationResponse({
       request: authorizationRequest.payload,
       response: response.responseParams,
       jarm: response.jarm ? { responseJwt: response.jarm.responseJwt } : undefined,
-      callbacks,
     })
 
     const responseText = await result.response

@@ -2038,8 +2038,8 @@ describe('OpenId4Vc', () => {
 
     expect(result.ok).toBe(false)
     expect(result.serverResponse.body).toMatchObject({
-      error: 'invalid_request',
-      error_description: `JARM response is required for JWT response mode 'direct_post.jwt'.`,
+      error: "invalid_request",
+      error_description: "Invalid response mode for openid4vp response. Expected jarm response.",
     })
   })
 

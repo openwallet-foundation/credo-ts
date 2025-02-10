@@ -17,7 +17,7 @@ import { EventEmitter as NativeEventEmitter } from 'events'
 import { OpenId4VcVerificationSessionState } from '../OpenId4VcVerificationSessionState'
 import { OpenId4VcVerifierEvents } from '../OpenId4VcVerifierEvents'
 
-import { Openid4vpAuthResponse } from '@openid4vc/oid4vp'
+import { Openid4vpAuthorizationResponse } from '@openid4vc/oid4vp'
 import { OpenId4VcVerificationSessionRecord } from './OpenId4VcVerificationSessionRecord'
 import { OpenId4VcVerificationSessionRepository } from './OpenId4VcVerificationSessionRepository'
 
@@ -132,7 +132,7 @@ export class OpenId4VcRelyingPartyEventHandler {
     options: {
       verifierId: string
       correlationId: string
-      authorizationResponsePayload: Openid4vpAuthResponse
+      authorizationResponsePayload: Openid4vpAuthorizationResponse
       errorMessage: string
     }
   ): Promise<void> => {
@@ -153,7 +153,7 @@ export class OpenId4VcRelyingPartyEventHandler {
     options: {
       verifierId: string
       correlationId: string
-      authorizationResponsePayload: Openid4vpAuthResponse
+      authorizationResponsePayload: Openid4vpAuthorizationResponse
     }
   ): Promise<void> => {
     await this.withSession(agentContext.contextCorrelationId, async (agentContext, verificationSessionRepository) => {
