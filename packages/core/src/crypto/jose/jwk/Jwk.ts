@@ -1,4 +1,3 @@
-import type { Buffer } from '../../../utils'
 import type { KeyType } from '../../KeyType'
 import type { JwaKeyType, JwaEncryptionAlgorithm, JwaSignatureAlgorithm } from '../jwa'
 
@@ -11,7 +10,7 @@ export interface JwkJson {
 }
 
 export abstract class Jwk {
-  public abstract publicKey: Buffer
+  public abstract publicKey: Uint8Array
   public abstract supportedSignatureAlgorithms: JwaSignatureAlgorithm[]
   public abstract supportedEncryptionAlgorithms: JwaEncryptionAlgorithm[]
 

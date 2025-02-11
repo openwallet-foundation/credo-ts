@@ -147,7 +147,7 @@ describe('JwsService', () => {
         jwsService.verifyJws(agentContext, {
           jws: { signatures: [], payload: '' },
         })
-      ).rejects.toThrowError('Unable to verify JWS, no signatures present in JWS.')
+      ).rejects.toThrow('Unable to verify JWS, no signatures present in JWS.')
     })
   })
 })

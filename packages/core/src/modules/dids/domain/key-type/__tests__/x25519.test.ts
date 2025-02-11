@@ -39,9 +39,9 @@ describe('x25519', () => {
 
     expect(didKey.fingerprint).toBe(TEST_X25519_FINGERPRINT)
     expect(didKey.publicKeyBase58).toBe(TEST_X25519_BASE58_KEY)
-    expect(didKey.publicKey).toEqual(TypedArrayEncoder.fromBase58(TEST_X25519_BASE58_KEY))
+    expect(didKey.publicKey).toEqual(Uint8Array.from(TypedArrayEncoder.fromBase58(TEST_X25519_BASE58_KEY)))
     expect(didKey.keyType).toBe(KeyType.X25519)
-    expect(didKey.prefixedPublicKey.equals(TEST_X25519_PREFIX_BYTES)).toBe(true)
+    expect(Buffer.from(didKey.prefixedPublicKey).equals(TEST_X25519_PREFIX_BYTES)).toBe(true)
   })
 
   it('should return a valid verification method', async () => {

@@ -50,9 +50,9 @@ describe('bls12381g1g2', () => {
 
     expect(key.fingerprint).toBe(TEST_BLS12381G1G2_FINGERPRINT)
     expect(key.publicKeyBase58).toBe(TEST_BLS12381G1G2_BASE58_KEY)
-    expect(key.publicKey).toEqual(TypedArrayEncoder.fromBase58(TEST_BLS12381G1G2_BASE58_KEY))
+    expect(key.publicKey).toEqual(Uint8Array.from(TypedArrayEncoder.fromBase58(TEST_BLS12381G1G2_BASE58_KEY)))
     expect(key.keyType).toBe(KeyType.Bls12381g1g2)
-    expect(key.prefixedPublicKey.equals(TEST_BLS12381G1G2_PREFIX_BYTES)).toBe(true)
+    expect(Buffer.from(key.prefixedPublicKey).equals(TEST_BLS12381G1G2_PREFIX_BYTES)).toBe(true)
   })
 
   it('should return a valid verification method', async () => {
@@ -73,7 +73,7 @@ describe('bls12381g1g2', () => {
       VerificationMethod
     )
 
-    expect(() => keyDidBls12381g1g2.getKeyFromVerificationMethod(verificationMethod)).toThrowError(
+    expect(() => keyDidBls12381g1g2.getKeyFromVerificationMethod(verificationMethod)).toThrow(
       'Not supported for bls12381g1g2 key'
     )
   })
@@ -86,7 +86,7 @@ describe('bls12381g1g2', () => {
 
     expect(g1DidKey.fingerprint).toBe(TEST_BLS12381G1_FINGERPRINT)
     expect(g1DidKey.publicKeyBase58).toBe(TEST_BLS12381G1_BASE58_KEY)
-    expect(g1DidKey.publicKey).toEqual(TypedArrayEncoder.fromBase58(TEST_BLS12381G1_BASE58_KEY))
+    expect(g1DidKey.publicKey).toEqual(Uint8Array.from(TypedArrayEncoder.fromBase58(TEST_BLS12381G1_BASE58_KEY)))
     expect(g1DidKey.keyType).toBe(KeyType.Bls12381g1)
   })
 
@@ -98,7 +98,7 @@ describe('bls12381g1g2', () => {
 
     expect(g2DidKey.fingerprint).toBe(TEST_BLS12381G2_FINGERPRINT)
     expect(g2DidKey.publicKeyBase58).toBe(TEST_BLS12381G2_BASE58_KEY)
-    expect(g2DidKey.publicKey).toEqual(TypedArrayEncoder.fromBase58(TEST_BLS12381G2_BASE58_KEY))
+    expect(g2DidKey.publicKey).toEqual(Uint8Array.from(TypedArrayEncoder.fromBase58(TEST_BLS12381G2_BASE58_KEY)))
     expect(g2DidKey.keyType).toBe(KeyType.Bls12381g2)
   })
 })

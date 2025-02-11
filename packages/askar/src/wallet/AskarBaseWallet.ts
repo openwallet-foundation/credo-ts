@@ -38,7 +38,6 @@ import {
   KeyAlgs,
   Jwk,
 } from '@hyperledger/aries-askar-shared'
-import BigNumber from 'bn.js'
 
 import { importSecureEnvironment } from '../secureEnvironment'
 import {
@@ -181,7 +180,7 @@ export abstract class AskarBaseWallet implements Wallet {
           // This will be fixed once we use the new 'using' syntax
           key = _key
 
-          const keyPublicBytes = key.publicBytes
+          const keyPublicBytes = new Key(key.publicBytes, keyType).publicKey
 
           // Store key
           await this.withSession((session) =>
@@ -206,7 +205,9 @@ export abstract class AskarBaseWallet implements Wallet {
 
         // Generate a hardware-backed P-256 keypair
         await secureEnvironment.generateKeypair(kid)
-        const publicKeyBytes = await secureEnvironment.getPublicBytesForKeyId(kid)
+        const compressedPublicKeyBytes = await secureEnvironment.getPublicBytesForKeyId(kid)
+
+        const publicKeyBytes = new Key(compressedPublicKeyBytes, keyType).publicKey
         const publicKeyBase58 = TypedArrayEncoder.toBase58(publicKeyBytes)
 
         await this.storeSecureEnvironmentKeyById({
@@ -349,7 +350,12 @@ export abstract class AskarBaseWallet implements Wallet {
       if (!isError(error)) {
         throw new CredoError('Attempted to throw error, but it was not of type Error', { cause: error })
       }
-      throw new WalletError(`Error signing data with verkey ${key.publicKeyBase58}. ${error.message}`, { cause: error })
+      throw new WalletError(
+        `Error signing data with key associated with publicKeyBase58 ${key.publicKeyBase58}. ${error.message}`,
+        {
+          cause: error,
+        }
+      )
     } finally {
       askarKey?.handle.free()
     }
@@ -592,7 +598,7 @@ export abstract class AskarBaseWallet implements Wallet {
     try {
       // generate an 80-bit nonce suitable for AnonCreds proofs
       const nonce = CryptoBox.randomNonce().slice(0, 10)
-      return new BigNumber(nonce).toString()
+      return nonce.reduce((acc, byte) => (acc << 8n) | BigInt(byte), 0n).toString()
     } catch (error) {
       if (!isError(error)) {
         throw new CredoError('Attempted to throw error, but it was not of type Error', { cause: error })

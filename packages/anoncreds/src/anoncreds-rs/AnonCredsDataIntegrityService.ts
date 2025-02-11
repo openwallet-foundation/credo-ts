@@ -24,10 +24,10 @@ import {
   injectable,
   ClaimFormat,
 } from '@credo-ts/core'
-import BigNumber from 'bn.js'
 
 import { AnonCredsHolderServiceSymbol, AnonCredsVerifierServiceSymbol } from '../services'
 import { fetchCredentialDefinitions, fetchSchemas } from '../utils/anonCredsObjects'
+import { bytesToBigint } from '../utils/bytesToBigint'
 import { assertLinkSecretsMatch } from '../utils/linkSecret'
 import { getAnonCredsTagsFromRecord } from '../utils/w3cAnonCredsUtils'
 
@@ -163,7 +163,7 @@ export class AnonCredsDataIntegrityService implements IAnonCredsDataIntegritySer
     const credentialsWithMetadata: CredentialWithRevocationMetadata[] = []
 
     const hash = Hasher.hash(TypedArrayEncoder.fromString(challenge), 'sha-256')
-    const nonce = new BigNumber(hash).toString().slice(0, 20)
+    const nonce = bytesToBigint(hash).toString().slice(0, 20)
 
     const anonCredsProofRequest: AnonCredsProofRequest = {
       version: '1.0',
