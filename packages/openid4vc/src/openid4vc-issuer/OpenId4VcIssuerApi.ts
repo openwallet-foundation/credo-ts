@@ -69,8 +69,8 @@ export class OpenId4VcIssuerApi {
   }
 
   /**
-   * Creates a stateless credential offer. This can only be used with an external authorization server, as credo only supports statefull
-   * crednetial offers.
+   * Creates a stateless credential offer. This can only be used with an external authorization server, as credo only supports stateful
+   * credential offers.
    */
   public async createStatelessCredentialOffer(
     options: OpenId4VciCreateStatelessCredentialOfferOptions & { issuerId: string }

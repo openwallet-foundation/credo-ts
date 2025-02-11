@@ -151,10 +151,10 @@ export function configureCredentialEndpoint(router: Router, config: OpenId4VcIss
           )
         }
       }
-      // Statefull session expired
+      // Stateful session expired
       else if (
         Date.now() >
-        addSecondsToDate(issuanceSession.createdAt, config.statefullCredentialOfferExpirationInSeconds).getTime()
+        addSecondsToDate(issuanceSession.createdAt, config.statefulCredentialOfferExpirationInSeconds).getTime()
       ) {
         issuanceSession.errorMessage = 'Credential offer has expired'
         await openId4VcIssuerService.updateState(agentContext, issuanceSession, OpenId4VcIssuanceSessionState.Error)
@@ -233,7 +233,7 @@ export function configureCredentialEndpoint(router: Router, config: OpenId4VcIss
             error: Oauth2ErrorCodes.CredentialRequestDenied,
           },
           {
-            internalMessage: `Access token without 'issuer_state' or 'pre-authorized_code' issued by external authorization server provided, but 'allowDynamicIssuanceSessions' is disabled. Either bind the access token to a statefull credential offer, or enable 'allowDynamicIssuanceSessions'.`,
+            internalMessage: `Access token without 'issuer_state' or 'pre-authorized_code' issued by external authorization server provided, but 'allowDynamicIssuanceSessions' is disabled. Either bind the access token to a stateful credential offer, or enable 'allowDynamicIssuanceSessions'.`,
           }
         )
       )
