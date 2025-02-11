@@ -1,5 +1,5 @@
 import type { BaseRecord, BaseRecordConstructor, Query, TagsBase } from '@credo-ts/core'
-import type { EntryObject } from '@hyperledger/aries-askar-shared'
+import type { EntryObject } from '@openwallet-foundation/askar-shared'
 
 import { JsonTransformer } from '@credo-ts/core'
 

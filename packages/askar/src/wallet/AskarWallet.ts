@@ -15,7 +15,7 @@ import {
   WalletImportPathExistsError,
   WalletExportUnsupportedError,
 } from '@credo-ts/core'
-import { Store } from '@hyperledger/aries-askar-shared'
+import { Store } from '@openwallet-foundation/askar-shared'
 import { inject, injectable } from 'tsyringe'
 
 import { AskarErrorCode, isAskarError, keyDerivationMethodToStoreKeyMethod, uriFromWalletConfig } from '../utils'
@@ -351,7 +351,7 @@ export class AskarWallet extends AskarBaseWallet {
       const defaultProfile = await sourceWalletStore.getDefaultProfile()
       if (defaultProfile !== importWalletConfig.profile) {
         throw new WalletError(
-          `Trying to import wallet with walletConfig.id ${importWalletConfig.profile}, however the wallet contains a default profile with id ${defaultProfile}. The walletConfig.id MUST match with the default profile. In the future this behavior may be changed. See https://github.com/hyperledger/aries-askar/issues/221 for more information.`
+          `Trying to import wallet with walletConfig.id ${importWalletConfig.profile}, however the wallet contains a default profile with id ${defaultProfile}. The walletConfig.id MUST match with the default profile. In the future this behavior may be changed. See https://github.com/openwallet-foundation/askar/issues/221 for more information.`
         )
       }
 

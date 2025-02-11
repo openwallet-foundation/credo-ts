@@ -2,7 +2,7 @@ import type { AskarModuleConfigOptions } from './AskarModuleConfig'
 import type { AgentContext, DependencyManager, Module } from '@credo-ts/core'
 
 import { CredoError, InjectionSymbols } from '@credo-ts/core'
-import { Store } from '@hyperledger/aries-askar-shared'
+import { Store } from '@openwallet-foundation/askar-shared'
 
 import { AskarMultiWalletDatabaseScheme, AskarModuleConfig } from './AskarModuleConfig'
 import { AskarStorageService } from './storage'
