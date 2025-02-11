@@ -15,7 +15,7 @@
 import type { InitConfig } from '@credo-ts/core'
 import type { Socket } from 'net'
 
-import { ariesAskar } from '@hyperledger/aries-askar-nodejs'
+import { askar } from '@openwallet-foundation/askar-nodejs'
 import express from 'express'
 import { Server } from 'ws'
 
@@ -60,7 +60,7 @@ const agent = new Agent({
   config: agentConfig,
   dependencies: agentDependencies,
   modules: {
-    askar: new AskarModule({ ariesAskar }),
+    askar: new AskarModule({ askar }),
     didcomm: new DidCommModule({ endpoints }),
     oob: new OutOfBandModule(),
     messagePickup: new MessagePickupModule(),

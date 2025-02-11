@@ -25,6 +25,9 @@
     "prepublishOnly": "pnpm run build"
   },
   "dependencies": {
+    "@animo-id/mdoc": "0.3.0",
+    "@animo-id/pex": "4.1.1-alpha.0",
+    "@astronautlabs/jsonpath": "^1.1.2",
     "@digitalcredentials/jsonld": "^6.0.0",
     "@digitalcredentials/jsonld-signatures": "^9.4.0",
     "@digitalcredentials/vc": "^6.0.1",
@@ -35,25 +38,22 @@
     "@peculiar/asn1-schema": "^2.3.13",
     "@peculiar/asn1-x509": "^2.3.13",
     "@peculiar/x509": "^1.12.1",
-    "@animo-id/mdoc": "0.3.0",
     "@sd-jwt/core": "^0.7.2",
     "@sd-jwt/decode": "^0.7.2",
     "@sd-jwt/jwt-status-list": "^0.7.2",
     "@sd-jwt/sd-jwt-vc": "^0.7.2",
     "@sd-jwt/types": "^0.7.2",
     "@sd-jwt/utils": "^0.7.2",
-    "@animo-id/pex": "4.1.1-alpha.0",
     "@sphereon/pex-models": "^2.3.1",
     "@sphereon/ssi-types": "0.30.2-next.135",
     "@stablelib/ed25519": "^1.0.2",
     "@types/ws": "^8.5.4",
-    "big-integer": "^1.6.51",
     "borc": "^3.0.0",
     "buffer": "^6.0.3",
     "class-transformer": "0.5.1",
     "class-validator": "0.14.1",
     "did-resolver": "^4.1.0",
-    "@astronautlabs/jsonpath": "^1.1.2",
+    "ec-compression": "0.0.1-alpha.9",
     "lru_map": "^0.4.1",
     "make-error": "^1.3.6",
     "object-inspect": "^1.10.3",
@@ -70,9 +70,9 @@
     "@types/object-inspect": "^1.8.0",
     "@types/uuid": "^9.0.1",
     "@types/varint": "^6.0.0",
+    "nock": "^14.0.0-beta.19",
     "rimraf": "^4.4.0",
     "tslog": "^4.8.2",
-    "typescript": "~5.5.2",
-    "nock": "^14.0.0-beta.19"
+    "typescript": "~5.5.2"
   }
 }

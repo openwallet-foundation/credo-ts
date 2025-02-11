@@ -1,7 +1,7 @@
 import type { WalletConfig } from '@credo-ts/core'
 
 import { KeyDerivationMethod, WalletError } from '@credo-ts/core'
-import { KdfMethod, StoreKeyMethod } from '@hyperledger/aries-askar-shared'
+import { KdfMethod, StoreKeyMethod } from '@openwallet-foundation/askar-shared'
 
 import {
   isAskarWalletPostgresStorageConfig,

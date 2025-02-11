@@ -8,7 +8,7 @@ import type {
 } from '@credo-ts/core'
 
 import { RecordDuplicateError, WalletError, RecordNotFoundError, injectable, JsonTransformer } from '@credo-ts/core'
-import { Scan } from '@hyperledger/aries-askar-shared'
+import { Scan } from '@openwallet-foundation/askar-shared'
 
 import { AskarErrorCode, isAskarError } from '../utils/askarError'
 import { assertAskarWallet } from '../utils/assertAskarWallet'

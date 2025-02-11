@@ -8,7 +8,7 @@ import {
   WalletInvalidKeyError,
   WalletNotFoundError,
 } from '@credo-ts/core'
-import { Store } from '@hyperledger/aries-askar-shared'
+import { Store } from '@openwallet-foundation/askar-shared'
 import { tmpdir } from 'os'
 import path from 'path'
 
@@ -162,7 +162,7 @@ describe('Askar SQLite agents', () => {
     await expect(
       bobAgent.wallet.import({ id: backupWalletName, key: backupWalletName }, { path: backupPath, key: backupKey })
     ).rejects.toThrow(
-      `Error importing wallet '${backupWalletName}': Trying to import wallet with walletConfig.id ${backupWalletName}, however the wallet contains a default profile with id ${bobAgent.config.walletConfig.id}. The walletConfig.id MUST match with the default profile. In the future this behavior may be changed. See https://github.com/hyperledger/aries-askar/issues/221 for more information.`
+      `Error importing wallet '${backupWalletName}': Trying to import wallet with walletConfig.id ${backupWalletName}, however the wallet contains a default profile with id ${bobAgent.config.walletConfig.id}. The walletConfig.id MUST match with the default profile. In the future this behavior may be changed. See https://github.com/openwallet-foundation/askar/issues/221 for more information.`
     )
   })
 
