@@ -35,7 +35,7 @@
     "@babel/core": "^7.25.8",
     "@babel/preset-env": "^7.25.8",
     "@changesets/cli": "^2.27.5",
-    "@hyperledger/aries-askar-nodejs": "^0.2.3",
+    "@openwallet-foundation/askar-nodejs": "^0.3.1",
     "@jest/types": "^29.6.3",
     "@types/cors": "^2.8.10",
     "@types/eslint": "^8.21.2",

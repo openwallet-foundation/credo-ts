@@ -8,7 +8,7 @@ import type {
   Wallet,
 } from '@credo-ts/core'
 
-import { CryptoBox, Store, Key as AskarKey, keyAlgFromString } from '@hyperledger/aries-askar-nodejs'
+import { CryptoBox, Store, Key as AskarKey, keyAlgFromString } from '@openwallet-foundation/askar-nodejs'
 
 import { convertToAskarKeyBackend } from '../packages/askar/src/utils/askarKeyBackend'
 import { didcommV1Pack, didcommV1Unpack } from '../packages/askar/src/wallet/didcommV1'

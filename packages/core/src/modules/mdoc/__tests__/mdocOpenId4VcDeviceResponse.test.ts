@@ -2,7 +2,7 @@ import type { DifPresentationExchangeDefinition } from '../../dif-presentation-e
 
 import { cborEncode, parseDeviceResponse } from '@animo-id/mdoc'
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { Key as AskarKey, Jwk } from '@hyperledger/aries-askar-nodejs'
+import { Key as AskarKey, Jwk } from '@openwallet-foundation/askar-nodejs'
 
 import { getInMemoryAgentOptions } from '../../../../tests'
 import { Agent } from '../../../agent/Agent'
