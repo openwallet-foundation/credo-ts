@@ -34,8 +34,8 @@
   },
   "devDependencies": {
     "@animo-id/expo-secure-environment": "^0.1.0-alpha.12",
-    "@hyperledger/aries-askar-nodejs": "^0.2.3",
-    "@hyperledger/aries-askar-shared": "^0.2.3",
+    "@openwallet-foundation/askar-nodejs": "^0.3.1",
+    "@openwallet-foundation/askar-shared": "^0.3.1",
     "@types/ref-array-di": "^1.2.6",
     "@types/ref-struct-di": "^1.1.10",
     "reflect-metadata": "^0.1.13",
@@ -43,7 +43,7 @@
     "typescript": "~5.5.2"
   },
   "peerDependencies": {
-    "@hyperledger/aries-askar-shared": "^0.2.3",
+    "@openwallet-foundation/askar-shared": "^0.3.1",
     "@animo-id/expo-secure-environment": "^0.1.0-alpha.11"
   },
   "peerDependenciesMeta": {

@@ -70,7 +70,7 @@ describeSkipNode18('credentials, BBS+ signature', () => {
       privateKey: TypedArrayEncoder.fromString('testseed000000000000000000000001'),
     })
     // FIXME: askar doesn't create the same privateKey based on the same seed as when generated used askar BBS library...
-    // See https://github.com/hyperledger/aries-askar/issues/219
+    // See https://github.com/openwallet-foundation/askar/issues/219
     await faberAgent.context.wallet.createKey({
       keyType: KeyType.Bls12381g2,
       privateKey: TypedArrayEncoder.fromBase58('2szQ7zB4tKLJPsGK3YTp9SNQ6hoWYFG5rGhmgfQM4nb7'),

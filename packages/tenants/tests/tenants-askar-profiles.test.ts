@@ -23,7 +23,7 @@ describe('Tenants Askar database schemes E2E', () => {
       modules: {
         tenants: new TenantsModule(),
         askar: new AskarModule({
-          ariesAskar: askarModuleConfig.ariesAskar,
+          askar: askarModuleConfig.askar,
           // Database per wallet
           multiWalletDatabaseScheme: AskarMultiWalletDatabaseScheme.DatabasePerWallet,
         }),
@@ -81,7 +81,7 @@ describe('Tenants Askar database schemes E2E', () => {
       modules: {
         tenants: new TenantsModule(),
         askar: new AskarModule({
-          ariesAskar: askarModuleConfig.ariesAskar,
+          askar: askarModuleConfig.askar,
           // Profile per wallet
           multiWalletDatabaseScheme: AskarMultiWalletDatabaseScheme.ProfilePerWallet,
         }),

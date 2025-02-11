@@ -3,8 +3,8 @@ import type { AskarWalletPostgresStorageConfig } from '../src/wallet'
 import type { Agent, InitConfig } from '@credo-ts/core'
 
 import { LogLevel, utils } from '@credo-ts/core'
-import { ariesAskar } from '@hyperledger/aries-askar-nodejs'
-import { registerAriesAskar } from '@hyperledger/aries-askar-shared'
+import { askar } from '@openwallet-foundation/askar-nodejs'
+import { registerAskar } from '@openwallet-foundation/askar-shared'
 import path from 'path'
 
 import { waitForBasicMessage } from '../../core/tests/helpers'
@@ -16,10 +16,10 @@ import { AskarModule } from '../src/AskarModule'
 import { AskarModuleConfig } from '../src/AskarModuleConfig'
 import { AskarWallet } from '../src/wallet'
 
-export const askarModuleConfig = new AskarModuleConfig({ ariesAskar })
-registerAriesAskar({ askar: askarModuleConfig.ariesAskar })
+export const askarModuleConfig = new AskarModuleConfig({ askar })
+registerAskar({ askar: askarModuleConfig.askar })
 export const askarModule = new AskarModule(askarModuleConfig)
-export { ariesAskar }
+export { askar }
 
 // When using the AskarWallet directly, the native dependency won't be loaded by default.
 // So in tests depending on Askar, we import this wallet so we're sure the native dependency is loaded.

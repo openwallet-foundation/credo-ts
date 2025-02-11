@@ -5,7 +5,7 @@ import { AskarModule } from '@credo-ts/askar'
 import { Agent, ConsoleLogger, LogLevel } from '@credo-ts/core'
 import { ConnectionsModule, DidCommModule, MessagePickupModule, OutOfBandModule } from '@credo-ts/didcomm'
 import { agentDependencies, HttpInboundTransport, WsInboundTransport } from '@credo-ts/node'
-import { ariesAskar } from '@hyperledger/aries-askar-nodejs'
+import { askar } from '@openwallet-foundation/askar-nodejs'
 import express from 'express'
 import { Server } from 'ws'
 
@@ -32,7 +32,7 @@ const run = async () => {
       logger: new ConsoleLogger(LogLevel.debug),
     },
     modules: {
-      askar: new AskarModule({ ariesAskar }),
+      askar: new AskarModule({ askar }),
       didcomm: new DidCommModule({ endpoints: [`http://localhost:${port}`] }),
       oob: new OutOfBandModule(),
       messagePickup: new MessagePickupModule(),

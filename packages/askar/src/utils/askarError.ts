@@ -1,4 +1,4 @@
-import { AriesAskarError } from '@hyperledger/aries-askar-shared'
+import { AskarError } from '@openwallet-foundation/askar-shared'
 
 export enum AskarErrorCode {
   Success = 0,
@@ -13,5 +13,5 @@ export enum AskarErrorCode {
   Custom = 100,
 }
 
-export const isAskarError = (error: Error, askarErrorCode?: AskarErrorCode): error is AriesAskarError =>
-  error instanceof AriesAskarError && (askarErrorCode === undefined || error.code === askarErrorCode)
+export const isAskarError = (error: Error, askarErrorCode?: AskarErrorCode): error is AskarError =>
+  error instanceof AskarError && (askarErrorCode === undefined || error.code === askarErrorCode)

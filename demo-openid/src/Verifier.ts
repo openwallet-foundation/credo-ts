@@ -3,7 +3,7 @@ import type { OpenId4VcVerifierRecord } from '@credo-ts/openid4vc'
 
 import { AskarModule } from '@credo-ts/askar'
 import { OpenId4VcVerifierModule } from '@credo-ts/openid4vc'
-import { ariesAskar } from '@hyperledger/aries-askar-nodejs'
+import { askar } from '@openwallet-foundation/askar-nodejs'
 import { Router } from 'express'
 
 import { BaseAgent } from './BaseAgent'
@@ -70,7 +70,7 @@ export class Verifier extends BaseAgent<{ askar: AskarModule; openId4VcVerifier:
       port,
       name,
       modules: {
-        askar: new AskarModule({ ariesAskar }),
+        askar: new AskarModule({ askar }),
         openId4VcVerifier: new OpenId4VcVerifierModule({
           baseUrl: `${url}/siop`,
           router: openId4VcSiopRouter,

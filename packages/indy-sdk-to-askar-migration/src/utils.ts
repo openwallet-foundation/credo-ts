@@ -1,7 +1,7 @@
 import type { TagsBase } from '@credo-ts/core'
 
 import { KeyDerivationMethod } from '@credo-ts/core'
-import { KdfMethod, StoreKeyMethod } from '@hyperledger/aries-askar-shared'
+import { KdfMethod, StoreKeyMethod } from '@openwallet-foundation/askar-shared'
 
 /**
  * Adopted from `AskarStorageService` implementation and should be kept in sync.

@@ -6,7 +6,7 @@ import type {
   SignOptions,
   VerifyOptions,
 } from '@credo-ts/core'
-import type { JwkProps } from '@hyperledger/aries-askar-shared'
+import type { JwkProps } from '@openwallet-foundation/askar-shared'
 
 import {
   WalletKeyExistsError,
@@ -22,8 +22,8 @@ import {
   Buffer,
   JsonEncoder,
 } from '@credo-ts/core'
-import { Key as AskarKey } from '@hyperledger/aries-askar-nodejs'
-import { Jwk, Store } from '@hyperledger/aries-askar-shared'
+import { Key as AskarKey } from '@openwallet-foundation/askar-nodejs'
+import { Jwk, Store } from '@openwallet-foundation/askar-shared'
 import { readFileSync } from 'fs'
 import path from 'path'
 

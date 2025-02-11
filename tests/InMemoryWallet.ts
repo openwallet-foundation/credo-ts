@@ -8,7 +8,7 @@ import type {
   Wallet,
 } from '@credo-ts/core'
 
-import { CryptoBox, Store, Key as AskarKey, keyAlgFromString } from '@hyperledger/aries-askar-nodejs'
+import { CryptoBox, Store, Key as AskarKey, keyAlgorithmFromString } from '@openwallet-foundation/askar-nodejs'
 
 import { convertToAskarKeyBackend } from '../packages/askar/src/utils/askarKeyBackend'
 import { didcommV1Pack, didcommV1Unpack } from '../packages/askar/src/wallet/didcommV1'
@@ -169,7 +169,7 @@ export class InMemoryWallet implements Wallet {
         throw new WalletError(`Unsupported key type: '${keyType}'`)
       }
 
-      const algorithm = keyAlgFromString(keyType)
+      const algorithm = keyAlgorithmFromString(keyType)
 
       // Create key
       let key: AskarKey | undefined
@@ -227,7 +227,7 @@ export class InMemoryWallet implements Wallet {
     try {
       const inMemoryKey = this.getInMemoryKeys()[key.publicKeyBase58]
       askarKey = AskarKey.fromSecretBytes({
-        algorithm: keyAlgFromString(inMemoryKey.keyType),
+        algorithm: keyAlgorithmFromString(inMemoryKey.keyType),
         secretKey: inMemoryKey.secretKeyBytes,
       })
 
@@ -259,7 +259,7 @@ export class InMemoryWallet implements Wallet {
     let askarKey: AskarKey | undefined
     try {
       askarKey = AskarKey.fromPublicBytes({
-        algorithm: keyAlgFromString(key.keyType),
+        algorithm: keyAlgorithmFromString(key.keyType),
         publicKey: key.compressedPublicKey,
       })
       return askarKey.verifySignature({ message: data as Buffer, signature })
@@ -289,7 +289,7 @@ export class InMemoryWallet implements Wallet {
 
     const askarSenderKey = senderKey
       ? AskarKey.fromSecretBytes({
-          algorithm: keyAlgFromString(senderKey.keyType),
+          algorithm: keyAlgorithmFromString(senderKey.keyType),
           secretKey: senderKey.secretKeyBytes,
         })
       : undefined
@@ -317,7 +317,7 @@ export class InMemoryWallet implements Wallet {
       const recipientKey = this.getInMemoryKeys()[recipientKid]
       const recipientAskarKey = recipientKey
         ? AskarKey.fromSecretBytes({
-            algorithm: keyAlgFromString(recipientKey.keyType),
+            algorithm: keyAlgorithmFromString(recipientKey.keyType),
             secretKey: recipientKey.secretKeyBytes,
           })
         : undefined

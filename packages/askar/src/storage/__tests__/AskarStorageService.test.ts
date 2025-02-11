@@ -1,7 +1,7 @@
 import type { AgentContext, TagsBase } from '@credo-ts/core'
 
 import { TypedArrayEncoder, SigningProviderRegistry, RecordDuplicateError, RecordNotFoundError } from '@credo-ts/core'
-import { ariesAskar } from '@hyperledger/aries-askar-nodejs'
+import { askar } from '@openwallet-foundation/askar-nodejs'
 
 import { TestRecord } from '../../../../core/src/storage/__tests__/TestRecord'
 import { agentDependencies, getAgentConfig, getAgentContext } from '../../../../core/tests/helpers'
@@ -60,7 +60,7 @@ describe('AskarStorageService', () => {
       })
 
       const retrieveRecord = await wallet.withSession((session) =>
-        ariesAskar.sessionFetch({
+        askar.sessionFetch({
           category: record.type,
           name: record.id,
           // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
@@ -85,7 +85,7 @@ describe('AskarStorageService', () => {
     it('should correctly transform tag values from string after retrieving', async () => {
       await wallet.withSession(
         async (session) =>
-          await ariesAskar.sessionUpdate({
+          await askar.sessionUpdate({
             category: TestRecord.type,
             name: 'some-id',
             // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
