@@ -144,7 +144,7 @@ function getAskarAnonCredsIndyModules(didcommConfig: DidCommModuleConfigOptions)
       registrars: [new CheqdDidRegistrar()],
     }),
     askar: new AskarModule({
-      askar: askar,
+      askar,
     }),
   } as const
 }

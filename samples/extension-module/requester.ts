@@ -33,7 +33,7 @@ const run = async () => {
       logger: new ConsoleLogger(LogLevel.info),
     },
     modules: {
-      askar: new AskarModule({ askar: askar }),
+      askar: new AskarModule({ askar }),
       didcomm: new DidCommModule(),
       oob: new OutOfBandModule(),
       messagePickup: new MessagePickupModule(),

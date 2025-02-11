@@ -518,7 +518,7 @@ export abstract class AskarBaseWallet implements Wallet {
     })
 
     const { ciphertext, tag, nonce } = ecdh.encryptDirect({
-      encAlg,
+      encryptionAlgorithm: encAlg,
       ephemeralKey,
       message: Uint8Array.from(data),
       recipientKey: AskarKey.fromPublicBytes({
@@ -583,7 +583,7 @@ export abstract class AskarBaseWallet implements Wallet {
     const plaintext = ecdh.decryptDirect({
       nonce: TypedArrayEncoder.fromBase64(encodedIv),
       ciphertext: TypedArrayEncoder.fromBase64(encodedCiphertext),
-      encAlg,
+      encryptionAlgorithm: encAlg,
       ephemeralKey: Jwk.fromJson(header.epk),
       recipientKey: askarKey,
       tag: TypedArrayEncoder.fromBase64(encodedTag),

@@ -60,7 +60,7 @@ const agent = new Agent({
   config: agentConfig,
   dependencies: agentDependencies,
   modules: {
-    askar: new AskarModule({ askar: askar }),
+    askar: new AskarModule({ askar }),
     didcomm: new DidCommModule({ endpoints }),
     oob: new OutOfBandModule(),
     messagePickup: new MessagePickupModule(),

@@ -32,7 +32,7 @@ const run = async () => {
       logger: new ConsoleLogger(LogLevel.debug),
     },
     modules: {
-      askar: new AskarModule({ askar: askar }),
+      askar: new AskarModule({ askar }),
       didcomm: new DidCommModule({ endpoints: [`http://localhost:${port}`] }),
       oob: new OutOfBandModule(),
       messagePickup: new MessagePickupModule(),
