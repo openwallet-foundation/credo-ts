@@ -223,7 +223,7 @@ describe('MediationRecipientService', () => {
 
       expect(extendedRouting).toMatchObject({
         endpoints: ['https://a-mediator-endpoint.com'],
-        routingKeys: [routingKey],
+        routingKeys: routing.routingKeys,
       })
       expect(mediationRepository.findSingleByQuery).toHaveBeenCalledWith(agentContext, { default: true })
     })

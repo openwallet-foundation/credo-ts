@@ -1,25 +1,31 @@
 import type { KeyType } from './KeyType'
 
-import { Buffer, MultiBaseEncoder, TypedArrayEncoder, VarintEncoder } from '../utils'
+import { compressPublicKeyIfPossible, decompressPublicKeyIfPossible } from 'ec-compression'
+
+import { MultiBaseEncoder, TypedArrayEncoder, VarintEncoder } from '../utils'
 
 import { isEncryptionSupportedForKeyType, isSigningSupportedForKeyType } from './keyUtils'
 import { getKeyTypeByMultiCodecPrefix, getMultiCodecPrefixByKeyType } from './multiCodecKey'
 
 export class Key {
-  public readonly publicKey: Buffer
+  public readonly publicKey: Uint8Array
   public readonly keyType: KeyType
 
   public constructor(publicKey: Uint8Array, keyType: KeyType) {
-    this.publicKey = Buffer.from(publicKey)
+    this.publicKey = decompressPublicKeyIfPossible(publicKey, keyType)
     this.keyType = keyType
   }
 
+  public get compressedPublicKey() {
+    return compressPublicKeyIfPossible(this.publicKey, this.keyType)
+  }
+
   public static fromPublicKey(publicKey: Uint8Array, keyType: KeyType) {
-    return new Key(Buffer.from(publicKey), keyType)
+    return new Key(publicKey, keyType)
   }
 
   public static fromPublicKeyBase58(publicKey: string, keyType: KeyType) {
-    const publicKeyBytes = TypedArrayEncoder.fromBase58(publicKey)
+    const publicKeyBytes = Uint8Array.from(TypedArrayEncoder.fromBase58(publicKey))
 
     return Key.fromPublicKey(publicKeyBytes, keyType)
   }
@@ -28,7 +34,7 @@ export class Key {
     const { data } = MultiBaseEncoder.decode(fingerprint)
     const [code, byteLength] = VarintEncoder.decode(data)
 
-    const publicKey = Buffer.from(data.slice(byteLength))
+    const publicKey = data.slice(byteLength)
     const keyType = getKeyTypeByMultiCodecPrefix(code)
 
     return new Key(publicKey, keyType)
@@ -41,7 +47,8 @@ export class Key {
     const prefixBytes = VarintEncoder.encode(multiCodecPrefix)
 
     // Combine prefix with public key
-    return Buffer.concat([prefixBytes, this.publicKey])
+    // Multicodec requires compressable keys to be compressed
+    return new Uint8Array([...prefixBytes, ...this.compressedPublicKey])
   }
 
   public get fingerprint() {
