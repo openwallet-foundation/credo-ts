@@ -428,8 +428,8 @@ importers:
   packages/core:
     dependencies:
       '@animo-id/mdoc':
-        specifier: 0.3.0
-        version: 0.3.0
+        specifier: 0.4.0
+        version: 0.4.0
       '@animo-id/pex':
         specifier: 4.1.1-alpha.0
         version: 4.1.1-alpha.0
@@ -965,8 +965,8 @@ packages:
       react: '*'
       react-native: '*'
 
-  '@animo-id/mdoc@0.3.0':
-    resolution: {integrity: sha512-igpkhrmUbH6VEm0yoKmLyHS3yWdPp2rzdAmBz43Isqot5J5RePM8GFLxi7O0svGYBumoduS4LKddXSqmHNp7zQ==}
+  '@animo-id/mdoc@0.4.0':
+    resolution: {integrity: sha512-ziuaAn4MnocSwoGZzKbgDB3g5ohfl79USR8Ly/uGImPRdZ6qxaB/cqO3dP0162PhKFbWsywgsgpghCiOeYoVBA==}
 
   '@animo-id/oauth2-utils@0.1.4':
     resolution: {integrity: sha512-JUIshkNCiX7myPwdiE+Da/g77OjsxZreezmfXWBSWOgCOZrnQX+t5vkhpe6Jc6DRh40Y8r9Fa1AesV0vtVpUMg==}
@@ -8365,7 +8365,7 @@ snapshots:
       react: 18.3.1
       react-native: 0.71.19(@babel/core@7.26.0)(@babel/preset-env@7.26.0(@babel/core@7.26.0))(react@18.3.1)
 
-  '@animo-id/mdoc@0.3.0':
+  '@animo-id/mdoc@0.4.0':
     dependencies:
       compare-versions: 6.1.1
 

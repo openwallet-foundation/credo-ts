@@ -25,7 +25,7 @@
     "prepublishOnly": "pnpm run build"
   },
   "dependencies": {
-    "@animo-id/mdoc": "0.3.0",
+    "@animo-id/mdoc": "0.4.0",
     "@animo-id/pex": "4.1.1-alpha.0",
     "@astronautlabs/jsonpath": "^1.1.2",
     "@digitalcredentials/jsonld": "^6.0.0",

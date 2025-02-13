@@ -74,7 +74,6 @@ const DEVICE_REQUEST_1 = DeviceRequest.from('1.0', [
 ])
 
 describe('mdoc device-response proximity test', () => {
-  let deviceResponse: string
   let mdoc: Mdoc
   let parsedDocument: Mdoc
   let agent: Agent
@@ -152,9 +151,8 @@ describe('mdoc device-response proximity test', () => {
           'com.foobar-device': { test: 1234 },
         },
       })
-      deviceResponse = result.deviceResponseBase64Url
 
-      const parsed = parseDeviceResponse(TypedArrayEncoder.fromBase64(deviceResponse))
+      const parsed = parseDeviceResponse(result)
       expect(parsed.documents).toHaveLength(1)
 
       const prepared = parsed.documents[0].prepare()
