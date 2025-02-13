@@ -245,9 +245,7 @@ export class MdocDeviceResponse {
       combinedDeviceResponseMdoc.addDocument(deviceResponseMdoc.documents[0])
     }
 
-    return {
-      deviceResponseBase64Url: TypedArrayEncoder.toBase64URL(combinedDeviceResponseMdoc.encode()),
-    }
+    return combinedDeviceResponseMdoc.encode()
   }
 
   public async verify(agentContext: AgentContext, options: Omit<MdocDeviceResponseVerifyOptions, 'deviceResponse'>) {
