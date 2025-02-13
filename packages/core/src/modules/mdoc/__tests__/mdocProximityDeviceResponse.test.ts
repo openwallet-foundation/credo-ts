@@ -74,7 +74,6 @@ const DEVICE_REQUEST_1 = DeviceRequest.from('1.0', [
 ])
 
 describe('mdoc device-response proximity test', () => {
-  let deviceResponse: string
   let mdoc: Mdoc
   let parsedDocument: Mdoc
   let agent: Agent
