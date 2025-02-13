@@ -512,8 +512,8 @@ importers:
         specifier: ^4.1.0
         version: 4.1.0
       ec-compression:
-        specifier: 0.0.1-alpha.9
-        version: 0.0.1-alpha.9
+        specifier: 0.0.1-alpha.10
+        version: 0.0.1-alpha.10
       lru_map:
         specifier: ^0.4.1
         version: 0.4.1
@@ -4413,8 +4413,8 @@ packages:
   eastasianwidth@0.2.0:
     resolution: {integrity: sha512-I88TYZWc9XiYHRQ4/3c5rjjfgkjhLyW2luGIheGERbNQ6OY7yTybanSpDXZa8y7VUP9YmDcYa+eyq4ca7iLqWA==}
 
-  ec-compression@0.0.1-alpha.9:
-    resolution: {integrity: sha512-x0U9mYW69oBMM/XpteYAm9BL7/hbJhIzCmj9LTdQyBbfi5SbOFeZqGCGf8bNLmM22cwWmbXvQ5QoOqTKeFOBng==}
+  ec-compression@0.0.1-alpha.10:
+    resolution: {integrity: sha512-40i890RKwkaxUqAI8XZkELoKWhQS4VDfHU0D0lYwrFjfA7vtUZWaCNCbpoGwCMZqrPrWGfXqej76/N44kVKxMg==}
 
   ed25519-signature-2018-context@1.1.0:
     resolution: {integrity: sha512-ppDWYMNwwp9bploq0fS4l048vHIq41nWsAbPq6H4mNVx9G/GxW3fwg4Ln0mqctP13MoEpREK7Biz8TbVVdYXqA==}
@@ -13515,7 +13515,7 @@ snapshots:
 
   eastasianwidth@0.2.0: {}
 
-  ec-compression@0.0.1-alpha.9: {}
+  ec-compression@0.0.1-alpha.10: {}
 
   ed25519-signature-2018-context@1.1.0: {}
 
