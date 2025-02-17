@@ -18,6 +18,8 @@ import {
   parseOpenid4vpAuthorizationResponse,
   parseOpenid4vpAuthorizationRequestPayload,
   ParsedOpenid4vpAuthorizationResponse,
+  isOpenid4vpAuthorizationResponseDcApi,
+  isJarmResponseMode,
 } from '@openid4vc/oid4vp'
 import type { IDTokenPayload } from '@sphereon/did-auth-siop'
 import type {
@@ -200,6 +202,7 @@ export class OpenId4VcSiopVerifierService {
         response_mode: options.responseMode ?? 'direct_post',
         response_type: 'vp_token',
         client_metadata,
+        expected_origins: options.expectedOrigins,
       },
     })
 
@@ -349,6 +352,7 @@ export class OpenId4VcSiopVerifierService {
     options: OpenId4VcSiopVerifyAuthorizationResponseOptions & {
       verifierId: string
       jarmHeader?: { apu?: string; apv?: string }
+      origin?: string
     }
   ): Promise<OpenId4VcSiopVerifiedAuthorizationResponse & { verificationSession: OpenId4VcVerificationSessionRecord }> {
     const openid4vpVerifier = this.getOpenid4vpVerifier(agentContext)
@@ -513,7 +517,12 @@ export class OpenId4VcSiopVerifierService {
     if (!verificationSession.authorizationResponsePayload) {
       throw new CredoError('No authorization response payload found in the verification session.')
     }
-    const idToken = verificationSession.authorizationResponsePayload.id_token
+
+    const openid4vpAuthorizationResponsePayload = isOpenid4vpAuthorizationResponseDcApi(verificationSession.authorizationResponsePayload)
+      ? verificationSession.authorizationResponsePayload.data
+      : verificationSession.authorizationResponsePayload
+
+    const idToken = openid4vpAuthorizationResponsePayload.id_token
     const idTokenPayload = idToken ? Jwt.fromSerializedJwt(idToken).payload : undefined
 
     const openid4vpVerifier = this.getOpenid4vpVerifier(agentContext)
@@ -526,7 +535,7 @@ export class OpenId4VcSiopVerifierService {
 
     const result = openid4vpVerifier.validateOpenid4vpAuthorizationResponse({
       authorizationRequest: authorizationRequest.params,
-      authorizationResponse: verificationSession.authorizationResponsePayload,
+      authorizationResponse: openid4vpAuthorizationResponsePayload,
     })
 
     const transactionData = authorizationRequest.params.transaction_data
@@ -539,7 +548,7 @@ export class OpenId4VcSiopVerifierService {
         ? this.getDcqlVerifiedResponse(agentContext, authorizationRequest.params.dcql_query, result.dcql.presentation)
         : undefined
 
-    const vpToken = parseIfJson(verificationSession.authorizationResponsePayload.vp_token)
+    const vpToken = parseIfJson(openid4vpAuthorizationResponsePayload.vp_token)
 
     const presentationDefinition = authorizationRequest.params
       .presentation_definition as unknown as DifPresentationExchangeDefinition
@@ -550,7 +559,7 @@ export class OpenId4VcSiopVerifierService {
 
       const rawPresentations = openid4vpVerifier.parsePresentationsFromVpToken({ vpToken })
 
-      const submission = verificationSession.authorizationResponsePayload.presentation_submission as
+      const submission = openid4vpAuthorizationResponsePayload.presentation_submission as
         | DifPresentationExchangeSubmission
         | undefined
       if (!submission) {
@@ -697,7 +706,7 @@ export class OpenId4VcSiopVerifierService {
     type JarmEncryptionJwk = JwkJson & { kid: string; use: 'enc' }
     let jarmEncryptionJwk: JarmEncryptionJwk | undefined
 
-    if (responseMode === 'direct_post.jwt') {
+    if (isJarmResponseMode(responseMode)) {
       const key = await agentContext.wallet.createKey({ keyType: KeyType.P256 })
       jarmEncryptionJwk = { ...getJwkFromKey(key).toJson(), kid: key.fingerprint, use: 'enc' }
     }

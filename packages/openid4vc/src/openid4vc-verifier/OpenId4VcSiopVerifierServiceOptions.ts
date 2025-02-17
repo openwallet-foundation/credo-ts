@@ -17,7 +17,7 @@ import type {
 } from '../shared'
 import type { OpenId4VcVerificationSessionRecord, OpenId4VcVerifierRecordProps } from './repository'
 
-export type ResponseMode = 'direct_post' | 'direct_post.jwt'
+export type ResponseMode = 'direct_post' | 'direct_post.jwt' | 'dc_api' | 'dc_api.jwt'
 
 export interface OpenId4VcSiopCreateAuthorizationRequestOptions {
   /**
@@ -60,6 +60,12 @@ export interface OpenId4VcSiopCreateAuthorizationRequestOptions {
    * With response_mode `direct_post.jwt` the response will be `signed` `encrypted` or `signed and encrypted` and then posted to the `response_uri` provided in the request.
    */
   responseMode?: ResponseMode
+
+  /**
+   * The expected origins of the authorization response.
+   * REQUIRED when signed requests defined in Appendix A.3.2 are used with the Digital Credentials API (DC API). An array of strings, each string representing an Origin of the Verifier that is making the request.
+   */
+  expectedOrigins?: string[]
 }
 
 export interface OpenId4VcSiopVerifyAuthorizationResponseOptions {

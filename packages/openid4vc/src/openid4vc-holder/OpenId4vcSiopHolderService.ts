@@ -12,7 +12,7 @@ import type {
   TransactionDataRequest,
   VerifiablePresentation,
 } from '@credo-ts/core'
-import { isJarmResponseMode, Oid4vpClient } from '@openid4vc/oid4vp'
+import { isJarmResponseMode, isOpenid4vpAuthorizationRequestDcApi, Oid4vpClient, Openid4vpAuthorizationResponseDcApi } from '@openid4vc/oid4vp'
 import type { OpenId4VcJwtIssuer } from '../shared'
 import type {
   OpenId4VcSiopAcceptAuthorizationRequestOptions,
@@ -130,15 +130,16 @@ export class OpenId4VcSiopHolderService {
   public async resolveAuthorizationRequest(
     agentContext: AgentContext,
     requestJwtOrUri: string,
-    trustedCertificates?: EncodedX509Certificate[]
+    trustedCertificates?: EncodedX509Certificate[],
+    origin?: string
   ): Promise<OpenId4VcSiopResolvedAuthorizationRequest> {
     const openid4vpClient = this.getOid4vpClient(agentContext, trustedCertificates)
     const { params } = openid4vpClient.parseOpenid4vpAuthorizationRequestPayload({ requestPayload: requestJwtOrUri })
-    const verifiedAuthRequest = await openid4vpClient.resolveOpenId4vpAuthorizationRequest({ request: params })
+    const verifiedAuthRequest = await openid4vpClient.resolveOpenId4vpAuthorizationRequest({ request: params, origin })
 
     const { client, pex, transactionData, dcql } = verifiedAuthRequest
 
-    if (client.scheme !== 'x509_san_dns' && client.scheme !== 'x509_san_uri' && client.scheme !== 'did') {
+    if (client.scheme !== 'x509_san_dns' && client.scheme !== 'x509_san_uri' && client.scheme !== 'did' && client.scheme !== 'web-origin') {
       throw new CredoError(`Client scheme '${client.scheme}' is not supported`)
     }
 
@@ -233,9 +234,21 @@ export class OpenId4VcSiopHolderService {
 
     const nonce = authorizationRequest.payload.nonce
     const clientId = authorizationRequest.payload.client_id
-    const responseUri = authorizationRequest.payload.response_uri ?? authorizationRequest.payload.redirect_uri
-    if (!responseUri) {
-      throw new CredoError("Unable to extract 'response_uri' from authorization request")
+
+
+    let responseUri: string
+    if (isOpenid4vpAuthorizationRequestDcApi(authorizationRequest.payload)) {
+      const _responseUri = authorizationRequest.client.identifier ?? options.origin
+      if (!_responseUri) {
+        throw new CredoError('Missing required parameter `origin` parameter for accepting openid4vp dc api requests.')
+      }
+      responseUri = _responseUri
+    } else {
+      const _responseUri = authorizationRequest.payload.response_uri ?? authorizationRequest.payload.redirect_uri
+      if (!_responseUri) {
+        throw new CredoError('Missing required parameter `response_uri` or `redirect_uri` in the authorization request.')
+      }
+      responseUri = _responseUri
     }
 
     const wantsIdToken = authorizationRequest.payload.response_type.includes('id_token')
@@ -379,6 +392,10 @@ export class OpenId4VcSiopHolderService {
           }
         : undefined,
     })
+
+    if (isOpenid4vpAuthorizationRequestDcApi(authorizationRequest.payload)) {
+      throw new CredoError('Submission of DC API responses is not yet supported.')
+    }
 
     const result = await openid4vpClient.submitOpenid4vpAuthorizationResponse({
       request: authorizationRequest.payload,

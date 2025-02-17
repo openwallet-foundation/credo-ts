@@ -51,8 +51,8 @@ export class OpenId4VcHolderApi {
    * @param requestJwtOrUri JWT or an SIOPv2 request URI
    * @returns the resolved and verified authentication request.
    */
-  public async resolveSiopAuthorizationRequest(requestJwtOrUri: string) {
-    return this.openId4VcSiopHolderService.resolveAuthorizationRequest(this.agentContext, requestJwtOrUri)
+  public async resolveSiopAuthorizationRequest(requestJwtOrUri: string, origin?: string) {
+    return this.openId4VcSiopHolderService.resolveAuthorizationRequest(this.agentContext, requestJwtOrUri, undefined, origin)
   }
 
   /**

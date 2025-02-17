@@ -17,7 +17,7 @@ import { EventEmitter as NativeEventEmitter } from 'events'
 import { OpenId4VcVerificationSessionState } from '../OpenId4VcVerificationSessionState'
 import { OpenId4VcVerifierEvents } from '../OpenId4VcVerifierEvents'
 
-import { Openid4vpAuthorizationResponse } from '@openid4vc/oid4vp'
+import { isOpenid4vpAuthorizationResponseDcApi, Openid4vpAuthorizationResponse, Openid4vpAuthorizationResponseDcApi } from '@openid4vc/oid4vp'
 import { OpenId4VcVerificationSessionRecord } from './OpenId4VcVerificationSessionRecord'
 import { OpenId4VcVerificationSessionRepository } from './OpenId4VcVerificationSessionRepository'
 
@@ -153,7 +153,7 @@ export class OpenId4VcRelyingPartyEventHandler {
     options: {
       verifierId: string
       correlationId: string
-      authorizationResponsePayload: Openid4vpAuthorizationResponse
+      authorizationResponsePayload: Openid4vpAuthorizationResponse | Openid4vpAuthorizationResponseDcApi
     }
   ): Promise<void> => {
     await this.withSession(agentContext.contextCorrelationId, async (agentContext, verificationSessionRepository) => {
@@ -164,7 +164,7 @@ export class OpenId4VcRelyingPartyEventHandler {
         verificationSession.state !== OpenId4VcVerificationSessionState.ResponseVerified
       ) {
         const previousState = verificationSession.state
-        verificationSession.authorizationResponsePayload = options.authorizationResponsePayload
+        verificationSession.authorizationResponsePayload = isOpenid4vpAuthorizationResponseDcApi(options.authorizationResponsePayload) ? options.authorizationResponsePayload.data : options.authorizationResponsePayload
         verificationSession.state = OpenId4VcVerificationSessionState.ResponseVerified
         await verificationSessionRepository.update(agentContext, verificationSession)
         this.emitStateChangedEvent(agentContext, verificationSession, previousState)

@@ -62,4 +62,10 @@ export interface OpenId4VcSiopAcceptAuthorizationRequestOptions {
    * The verified authorization request.
    */
   authorizationRequest: OpenId4VcSiopVerifiedAuthorizationRequest
+
+  /**
+   * The origin of the verifier that is making the request.
+   * Required in combination with the DC Api
+   */
+  origin?: string
 }

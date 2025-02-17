@@ -3002,4 +3002,229 @@ describe('OpenId4Vc', () => {
       },
     })
   })
+
+  it('e2e flow with verifier endpoints verifying a mdoc and sd-jwt (jarm) (dcql) (transaction data) (dc api)', async () => {
+    const openIdVerifier = await verifier.agent.modules.openId4VcVerifier.createVerifier()
+
+    const signedSdJwtVc = await issuer.agent.sdJwtVc.sign({
+      holder: { method: 'did', didUrl: holder.kid },
+      issuer: {
+        method: 'did',
+        didUrl: issuer.kid,
+      },
+      payload: {
+        vct: 'OpenBadgeCredential',
+        university: 'innsbruck',
+        degree: 'bachelor',
+        name: 'John Doe',
+      },
+      disclosureFrame: {
+        _sd: ['university', 'name'],
+      },
+    })
+    await holder.agent.sdJwtVc.store(signedSdJwtVc.compact)
+
+    const selfSignedCertificate = await X509Service.createSelfSignedCertificate(issuer.agent.context, {
+      key: await issuer.agent.context.wallet.createKey({ keyType: KeyType.P256 }),
+      extensions: [],
+      name: 'C=DE',
+    })
+
+    await verifier.agent.x509.setTrustedCertificates([selfSignedCertificate.toString('pem')])
+
+    const parsedDid = parseDid(issuer.kid)
+    if (!parsedDid.fragment) {
+      throw new Error(`didUrl '${parsedDid.didUrl}' does not contain a '#'. Unable to derive key from did document.`)
+    }
+
+    const holderKey = await holder.agent.context.wallet.createKey({ keyType: KeyType.P256 })
+
+    const date = new DateOnly()
+
+    const signedMdoc = await issuer.agent.mdoc.sign({
+      docType: 'org.eu.university',
+      holderKey,
+      issuerCertificate: selfSignedCertificate.toString('pem'),
+      namespaces: {
+        'eu.europa.ec.eudi.pid.1': {
+          university: 'innsbruck',
+          degree: 'bachelor',
+          date: date,
+          name: 'John Doe',
+          not: 'disclosed',
+        },
+      },
+    })
+
+    const certificate = await verifier.agent.x509.createSelfSignedCertificate({
+      key: await verifier.agent.wallet.createKey({ keyType: KeyType.Ed25519 }),
+      extensions: [[{ type: 'dns', value: 'localhost:1234' }]],
+    })
+
+    const rawCertificate = certificate.toString('base64')
+    await holder.agent.mdoc.store(signedMdoc)
+
+    await holder.agent.x509.addTrustedCertificate(rawCertificate)
+    await verifier.agent.x509.addTrustedCertificate(rawCertificate)
+
+    const dcqlQuery = {
+      credentials: [
+        {
+          id: 'orgeuuniversity',
+          format: ClaimFormat.MsoMdoc,
+          meta: { doctype_value: 'org.eu.university' },
+          claims: [
+            { namespace: 'eu.europa.ec.eudi.pid.1', claim_name: 'name' },
+            { namespace: 'eu.europa.ec.eudi.pid.1', claim_name: 'degree' },
+            { namespace: 'eu.europa.ec.eudi.pid.1', claim_name: 'date' },
+          ],
+        },
+        {
+          id: 'OpenBadgeCredentialDescriptor',
+          format: ClaimFormat.SdJwtVc,
+          meta: { vct_values: ['OpenBadgeCredential'] },
+          claims: [{ path: ['university'] }],
+        },
+      ],
+    } satisfies DcqlQuery
+
+    const { authorizationRequest, verificationSession } =
+      await verifier.agent.modules.openId4VcVerifier.createAuthorizationRequest({
+        responseMode: 'dc_api.jwt',
+        expectedOrigins: ['https://example.com'],
+        verifierId: openIdVerifier.verifierId,
+        requestSigner: {
+          method: 'x5c',
+          x5c: [rawCertificate],
+          issuer: 'https://example.com/hakuna/matadata',
+        },
+        dcql: {
+          query: dcqlQuery,
+          transactionData: [
+            {
+              type: 'OpenBadgeTx',
+              credential_ids: ['OpenBadgeCredentialDescriptor'],
+              transaction_data_hashes_alg: ['sha-256'],
+            },
+          ],
+        },
+      })
+
+    const resolvedAuthorizationRequest = await holder.agent.modules.openId4VcHolder.resolveSiopAuthorizationRequest(
+      authorizationRequest,
+      'https://example.com'
+    )
+
+    expect(resolvedAuthorizationRequest.dcql).toEqual({
+      queryResult: {
+        credentials: [
+          {
+            id: 'orgeuuniversity',
+            format: 'mso_mdoc',
+            claims: [
+              { namespace: 'eu.europa.ec.eudi.pid.1', claim_name: 'name' },
+              { namespace: 'eu.europa.ec.eudi.pid.1', claim_name: 'degree' },
+              { namespace: 'eu.europa.ec.eudi.pid.1', claim_name: 'date' },
+            ],
+            meta: { doctype_value: 'org.eu.university' },
+          },
+          {
+            id: 'OpenBadgeCredentialDescriptor',
+            format: 'vc+sd-jwt',
+            claims: [{ path: ['university'] }],
+            meta: { vct_values: ['OpenBadgeCredential'] },
+          },
+        ],
+        canBeSatisfied: true,
+        credential_matches: {
+          orgeuuniversity: {
+            typed: true,
+            success: true,
+            output: {
+              doctype: 'org.eu.university',
+              credential_format: 'mso_mdoc',
+              namespaces: {
+                'eu.europa.ec.eudi.pid.1': {
+                  date: expect.any(DateOnly),
+                  name: 'John Doe',
+                  degree: 'bachelor',
+                },
+              },
+            },
+            input_credential_index: 0,
+            claim_set_index: undefined,
+            all: expect.any(Array),
+            record: expect.any(MdocRecord),
+          },
+          OpenBadgeCredentialDescriptor: {
+            typed: true,
+            success: true,
+            output: {
+              credential_format: 'vc+sd-jwt',
+              vct: 'OpenBadgeCredential',
+              claims: {
+                cnf: {
+                  kid: 'did:key:z6MkpGR4gs4Rc3Zph4vj8wRnjnAxgAPSxcR8MAVKutWspQzc#z6MkpGR4gs4Rc3Zph4vj8wRnjnAxgAPSxcR8MAVKutWspQzc',
+                },
+                degree: 'bachelor',
+                iat: expect.any(Number),
+                iss: 'did:key:z6MkrzQPBr4pyqC776KKtrz13SchM5ePPbssuPuQZb5t4uKQ',
+                university: 'innsbruck',
+                vct: 'OpenBadgeCredential',
+              },
+            },
+            input_credential_index: 1,
+            claim_set_index: undefined,
+            all: expect.any(Array),
+            record: expect.any(SdJwtVcRecord),
+          },
+        },
+        credential_sets: undefined,
+      },
+      transactionData: [
+        {
+          transactionDataEntry: {
+            type: 'OpenBadgeTx',
+            credential_ids: ['OpenBadgeCredentialDescriptor'],
+            transaction_data_hashes_alg: ['sha-256'],
+          },
+          dcql: {
+            record: {
+              _tags: {
+                alg: 'EdDSA',
+                sdAlg: 'sha-256',
+                vct: 'OpenBadgeCredential',
+              },
+              type: 'SdJwtVcRecord',
+              metadata: {
+                data: {},
+              },
+              id: expect.any(String),
+              createdAt: expect.any(Date),
+              compactSdJwtVc: expect.any(String),
+              updatedAt: expect.any(Date),
+            },
+            credentialQueryId: 1,
+            claimSetId: undefined,
+          },
+        },
+      ],
+    })
+
+    if (!resolvedAuthorizationRequest.dcql) {
+      throw new Error('Dcql not defined')
+    }
+
+    const selectedCredentials = holder.agent.modules.openId4VcHolder.selectCredentialsForDcqlRequest(
+      resolvedAuthorizationRequest.dcql.queryResult
+    )
+
+      await expect(holder.agent.modules.openId4VcHolder.acceptSiopAuthorizationRequest({
+        authorizationRequest: resolvedAuthorizationRequest.authorizationRequest,
+        dcql: {
+          credentials: selectedCredentials,
+        },
+      })).rejects.toThrow('Submission of DC API responses is not yet supported.')
+
+  })
 })
