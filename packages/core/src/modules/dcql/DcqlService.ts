@@ -261,7 +261,7 @@ export class DcqlService {
     }
   ): Promise<{
     dcqlPresentation: DcqlPresentation
-    encodedDcqlPresentation: string
+    encodedDcqlPresentation: Record<string, string>
   }> {
     const { domain, challenge, openid4vp } = options
 
@@ -334,7 +334,7 @@ export class DcqlService {
 
     return {
       dcqlPresentation: dcqlPresentation,
-      encodedDcqlPresentation: JSON.stringify(encodedDcqlPresentation),
+      encodedDcqlPresentation: encodedDcqlPresentation,
     }
   }
 

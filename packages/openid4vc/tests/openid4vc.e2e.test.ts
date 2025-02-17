@@ -2953,7 +2953,7 @@ describe('OpenId4Vc', () => {
 
     // path_nested should not be used for sd-jwt
     expect(submittedResponse.presentation_submission).toBeUndefined()
-    expect(submittedResponse).toEqual({ state: expect.any(String), vp_token: expect.any(String) })
+    expect(submittedResponse).toEqual({ state: expect.any(String), vp_token: expect.any(Object) })
     expect(serverResponse).toMatchObject({ status: 200 })
 
     // The RP MUST validate that the aud (audience) Claim contains the value of the client_id

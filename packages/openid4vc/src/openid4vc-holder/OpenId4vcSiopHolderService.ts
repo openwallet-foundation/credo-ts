@@ -228,7 +228,7 @@ export class OpenId4VcSiopHolderService {
     let dcqlOptions:
       | {
           verifiablePresentations: Record<string, VerifiablePresentation>
-          encodedVerifiablePresentations: string
+          encodedVerifiablePresentations: Record<string, string>
         }
       | undefined = undefined
 
