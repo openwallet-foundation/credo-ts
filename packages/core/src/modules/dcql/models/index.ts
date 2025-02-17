@@ -21,11 +21,22 @@ export type DcqlSdJwtVcCredential = _DcqlSdJwtVcCredential.Model['Input']
 export type DcqlW3cVcCredential = _DcqlW3cVcCredential.Model['Input']
 
 export type DcqlMatchWithRecord =
-  | (_DcqlQueryResult['credential_matches'][number] & {
+  | (_DcqlQueryResult['credential_matches'][string] & {
       success: true
       record: MdocRecord | SdJwtVcRecord | W3cCredentialRecord
+      all: Array<
+        Array<
+          | (_DcqlQueryResult['credential_matches'][string]['all'][number][number] & {
+              success: true
+              record: MdocRecord | SdJwtVcRecord | W3cCredentialRecord
+            })
+          | (_DcqlQueryResult['credential_matches'][string]['all'][number][number] & {
+              success: false
+            })
+        >
+      >
     })
-  | (_DcqlQueryResult['credential_matches'][number] & {
+  | (_DcqlQueryResult['credential_matches'][string] & {
       success: false
     })
 

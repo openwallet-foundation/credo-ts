@@ -1,4 +1,13 @@
 import type {
+  OpenId4VcSiopCreateAuthorizationRequestOptions,
+  OpenId4VcSiopCreateAuthorizationRequestReturn,
+  OpenId4VcSiopCreateVerifierOptions,
+  OpenId4VcSiopVerifiedAuthorizationResponse,
+  OpenId4VcSiopVerifiedAuthorizationResponseDcql,
+  OpenId4VcSiopVerifyAuthorizationResponseOptions,
+  ResponseMode,
+} from './OpenId4VcSiopVerifierServiceOptions'
+import type {
   AgentContext,
   DcqlQuery,
   DifPresentationExchangeDefinition,
@@ -11,27 +20,7 @@ import type {
   TransactionDataResult,
   VerifiablePresentation,
 } from '@credo-ts/core'
-import {
-  Oid4vcVerifier,
-  JarmClientMetadata,
-  VpTokenPresentationParseResult,
-  parseOpenid4vpAuthorizationResponse,
-  parseOpenid4vpAuthorizationRequestPayload,
-  ParsedOpenid4vpAuthorizationResponse,
-  isOpenid4vpAuthorizationResponseDcApi,
-  isJarmResponseMode,
-} from '@openid4vc/oid4vp'
 import type { IDTokenPayload } from '@sphereon/did-auth-siop'
-import type {
-  OpenId4VcSiopCreateAuthorizationRequestOptions,
-  OpenId4VcSiopCreateAuthorizationRequestReturn,
-  OpenId4VcSiopCreateVerifierOptions,
-  OpenId4VcSiopVerifiedAuthorizationResponse,
-  OpenId4VcSiopVerifiedAuthorizationResponseDcql,
-  OpenId4VcSiopVerifyAuthorizationResponseOptions,
-  ResponseMode,
-} from './OpenId4VcSiopVerifierServiceOptions'
-import { OpenId4VcVerificationSessionRecord } from './repository'
 
 import {
   CredoError,
@@ -65,28 +54,39 @@ import {
   isMdocSupportedSignatureAlgorithm,
   DcqlService,
 } from '@credo-ts/core'
+import { Oauth2ErrorCodes, Oauth2ServerErrorResponseError } from '@openid4vc/oauth2'
+import {
+  ClientIdScheme,
+  Oid4vcVerifier,
+  JarmClientMetadata,
+  VpTokenPresentationParseResult,
+  parseOpenid4vpAuthorizationResponse,
+  parseOpenid4vpAuthorizationRequestPayload,
+  ParsedOpenid4vpAuthorizationResponse,
+  isOpenid4vpAuthorizationResponseDcApi,
+  isJarmResponseMode,
+  zOpenid4vpAuthorizationResponse,
+} from '@openid4vc/oid4vp'
 import { PresentationDefinitionLocation } from '@sphereon/did-auth-siop'
 import {
   assertValidVerifiablePresentations,
   extractPresentationsFromVpToken,
 } from '@sphereon/did-auth-siop/dist/authorization-response/OpenID4VP'
 
+import { getOid4vcCallbacks } from '../shared/callbacks'
+import { OpenId4VcSiopAuthorizationResponsePayload } from '../shared/index'
 import { storeActorIdForContextCorrelationId } from '../shared/router'
 import { getSupportedJwaSignatureAlgorithms, openIdTokenIssuerToJwtIssuer, parseIfJson } from '../shared/utils'
 
-import { ClientIdScheme } from '@openid4vc/oid4vp'
-import { getOid4vcCallbacks } from '../shared/callbacks'
-import { OpenId4VcSiopAuthorizationResponsePayload } from '../shared/index'
 import { OpenId4VcVerificationSessionState } from './OpenId4VcVerificationSessionState'
 import { OpenId4VcVerifierModuleConfig } from './OpenId4VcVerifierModuleConfig'
 import {
+  OpenId4VcVerificationSessionRecord,
   OpenId4VcVerificationSessionRepository,
   OpenId4VcVerifierRecord,
   OpenId4VcVerifierRepository,
 } from './repository'
 import { OpenId4VcRelyingPartyEventHandler } from './repository/OpenId4VcRelyingPartyEventEmitter'
-import { Oauth2ErrorCodes, Oauth2ServerErrorResponseError } from '@openid4vc/oauth2'
-import { zOpenid4vpAuthorizationResponse } from '@openid4vc/oid4vp'
 
 /**
  * @internal
@@ -286,7 +286,9 @@ export class OpenId4VcSiopVerifierService {
             }
             verificationSession = session
 
-            const authorizationRequest = parseOpenid4vpAuthorizationRequestPayload({ requestPayload: verificationSession.authorizationRequestJwt })
+            const authorizationRequest = parseOpenid4vpAuthorizationRequestPayload({
+              requestPayload: verificationSession.authorizationRequestJwt,
+            })
             if (authorizationRequest.type !== 'openid4vp') {
               throw new CredoError(
                 `Invalid authorization request jwt. Expected 'openid4vp' request, received '${authorizationRequest.type}'.`
@@ -304,7 +306,7 @@ export class OpenId4VcSiopVerifierService {
           verificationSession.state === OpenId4VcVerificationSessionState.RequestCreated)
       ) {
         const parsed = zOpenid4vpAuthorizationResponse.safeParse(rawResponsePayload)
-        if (!parsed.success) throw new error
+        if (!parsed.success) throw new error()
 
         await agentContext.dependencyManager
           .resolve(OpenId4VcRelyingPartyEventHandler)
@@ -417,7 +419,7 @@ export class OpenId4VcSiopVerifierService {
 
       // This should be provided by pex-light!
       // It must check if the presentations match the presentation definition
-      assertValidVerifiablePresentations({
+      await assertValidVerifiablePresentations({
         presentationDefinitions: [
           {
             definition: result.pex.presentationDefinition as any,
@@ -518,7 +520,9 @@ export class OpenId4VcSiopVerifierService {
       throw new CredoError('No authorization response payload found in the verification session.')
     }
 
-    const openid4vpAuthorizationResponsePayload = isOpenid4vpAuthorizationResponseDcApi(verificationSession.authorizationResponsePayload)
+    const openid4vpAuthorizationResponsePayload = isOpenid4vpAuthorizationResponseDcApi(
+      verificationSession.authorizationResponsePayload
+    )
       ? verificationSession.authorizationResponsePayload.data
       : verificationSession.authorizationResponsePayload
 
@@ -543,7 +547,7 @@ export class OpenId4VcSiopVerifierService {
       : undefined
 
     let presentationExchange: OpenId4VcSiopVerifiedAuthorizationResponse['presentationExchange'] | undefined = undefined
-    let dcql =
+    const dcql =
       result.type === 'dcql'
         ? this.getDcqlVerifiedResponse(agentContext, authorizationRequest.params.dcql_query, result.dcql.presentation)
         : undefined
@@ -756,6 +760,10 @@ export class OpenId4VcSiopVerifierService {
           proof_type: supportedProofTypes,
         },
         'vc+sd-jwt': {
+          'kb-jwt_alg_values': supportedAlgs,
+          'sd-jwt_alg_values': supportedAlgs,
+        },
+        'dc+sd-jwt': {
           'kb-jwt_alg_values': supportedAlgs,
           'sd-jwt_alg_values': supportedAlgs,
         },
