@@ -7,6 +7,10 @@ settings:
 overrides:
   '@types/node': 18.18.8
   undici: ^6.20.1
+  '@openid4vc/oid4vci': file:./local/openid4vc-oid4vci-0.2.0.tgz
+  '@openid4vc/oid4vp': file:./local/openid4vc-oid4vp-0.1.4.tgz
+  '@openid4vc/oauth2': file:./local/openid4vc-oauth2-0.2.0.tgz
+  '@openid4vc/utils': file:./local/openid4vc-utils-0.2.0.tgz
 
 importers:
 
@@ -773,17 +777,23 @@ importers:
         specifier: workspace:*
         version: link:../core
       '@openid4vc/oauth2':
-        specifier: link:../../../Code/oid4vc-ts/packages/oauth2
-        version: link:../../../Code/oid4vc-ts/packages/oauth2
+        specifier: file:../../local/openid4vc-oauth2-0.2.0.tgz
+        version: file:local/openid4vc-oauth2-0.2.0.tgz
       '@openid4vc/oid4vci':
-        specifier: link:../../../Code/oid4vc-ts/packages/oid4vci
-        version: link:../../../Code/oid4vc-ts/packages/oid4vci
+        specifier: file:../../local/openid4vc-oid4vci-0.2.0.tgz
+        version: file:local/openid4vc-oid4vci-0.2.0.tgz
       '@openid4vc/oid4vp':
-        specifier: link:../../../Code/oid4vc-ts/packages/openid4vp
-        version: link:../../../Code/oid4vc-ts/packages/openid4vp
+        specifier: file:../../local/openid4vc-oid4vp-0.1.4.tgz
+        version: file:local/openid4vc-oid4vp-0.1.4.tgz
       '@sphereon/did-auth-siop':
         specifier: 0.16.1-fix.173
         version: 0.16.1-fix.173(ts-node@10.9.2(@types/node@18.18.8)(typescript@5.5.4))(typescript@5.5.4)
+      '@sphereon/oid4vc-common':
+        specifier: 0.16.1-fix.173
+        version: 0.16.1-fix.173(ts-node@10.9.2(@types/node@18.18.8)(typescript@5.5.4))
+      '@sphereon/ssi-types':
+        specifier: 0.30.2-next.135
+        version: 0.30.2-next.135
       class-transformer:
         specifier: ^0.5.1
         version: 0.5.1
@@ -791,7 +801,7 @@ importers:
         specifier: ^7.8.0
         version: 7.8.1
       zod:
-        specifier: ^3.24.1
+        specifier: ^3.23.8
         version: 3.24.1
     devDependencies:
       '@credo-ts/tenants':
@@ -2472,6 +2482,22 @@ packages:
   '@open-draft/until@2.1.0':
     resolution: {integrity: sha512-U69T3ItWHvLwGg5eJ0n3I62nWuE6ilHlmz7zM0npLBRvPRd7e6NYmg54vvRtP5mZG7kZqZCFVdsTWo7BPtBujg==}
 
+  '@openid4vc/oauth2@file:local/openid4vc-oauth2-0.2.0.tgz':
+    resolution: {integrity: sha512-JMNjT2TjTav0Erfm2Nme9svU3ORg6BVpvCzADcSow/Wb42py32/tNQs/QLGpLamiqhYz+eAkF/sIxlrKVSx/NQ==, tarball: file:local/openid4vc-oauth2-0.2.0.tgz}
+    version: 0.2.0
+
+  '@openid4vc/oid4vci@file:local/openid4vc-oid4vci-0.2.0.tgz':
+    resolution: {integrity: sha512-OG7GU5QJZ38hRdAaiKYi1T5NjMmL+DswNn/oB410rb+/LEFsCbrAc0NlH+AVdl+SYIYI3GKX8x66Dxl6tHmBEg==, tarball: file:local/openid4vc-oid4vci-0.2.0.tgz}
+    version: 0.2.0
+
+  '@openid4vc/oid4vp@file:local/openid4vc-oid4vp-0.1.4.tgz':
+    resolution: {integrity: sha512-FVQsf6FdmKFtkzTt+LofrYFpCiavMxU6F5W74LwEcMaEG7bvzGjju3AOzTwSJvi97XyzOV2ULc0rSRWGMlABrQ==, tarball: file:local/openid4vc-oid4vp-0.1.4.tgz}
+    version: 0.1.4
+
+  '@openid4vc/utils@file:local/openid4vc-utils-0.2.0.tgz':
+    resolution: {integrity: sha512-59Gp7g+7PdtVier4CT3Jit3fzF+nebuNkFjpzFOtW0Y76tkXSRv9t4LNMHHKsskFylo+CEpg81TQFtd/SiTIWw==, tarball: file:local/openid4vc-utils-0.2.0.tgz}
+    version: 0.2.0
+
   '@peculiar/asn1-cms@2.3.13':
     resolution: {integrity: sha512-joqu8A7KR2G85oLPq+vB+NFr2ro7Ls4ol13Zcse/giPSzUNN0n2k3v8kMpf6QdGUhI13e5SzQYN8AKP8sJ8v4w==}
 
@@ -2710,6 +2736,7 @@ packages:
 
   '@sphereon/kmp-mdl-mdoc@0.2.0-SNAPSHOT.22':
     resolution: {integrity: sha512-uAZZExVy+ug9JLircejWa5eLtAZ7bnBP6xb7DO2+86LRsHNLh2k2jMWJYxp+iWtGHTsh6RYsZl14ScQLvjiQ/A==}
+    bundledDependencies: []
 
   '@sphereon/oid4vc-common@0.16.1-fix.173':
     resolution: {integrity: sha512-+AAUvEEFs0vzz1mrgjSgvDkcBtr18d2XEVgJex7QlAqxCKVGfjzZlqL2Q2vOLKYVaXsazhD5LnYiY6B5WMTC3Q==}
@@ -10366,6 +10393,28 @@ snapshots:
       outvariant: 1.4.3
 
   '@open-draft/until@2.1.0': {}
+
+  '@openid4vc/oauth2@file:local/openid4vc-oauth2-0.2.0.tgz':
+    dependencies:
+      '@openid4vc/utils': file:local/openid4vc-utils-0.2.0.tgz
+      zod: 3.24.1
+
+  '@openid4vc/oid4vci@file:local/openid4vc-oid4vci-0.2.0.tgz':
+    dependencies:
+      '@openid4vc/oauth2': file:local/openid4vc-oauth2-0.2.0.tgz
+      '@openid4vc/utils': file:local/openid4vc-utils-0.2.0.tgz
+      zod: 3.24.1
+
+  '@openid4vc/oid4vp@file:local/openid4vc-oid4vp-0.1.4.tgz':
+    dependencies:
+      '@openid4vc/oauth2': file:local/openid4vc-oauth2-0.2.0.tgz
+      '@openid4vc/utils': file:local/openid4vc-utils-0.2.0.tgz
+      zod: 3.24.1
+
+  '@openid4vc/utils@file:local/openid4vc-utils-0.2.0.tgz':
+    dependencies:
+      buffer: 6.0.3
+      zod: 3.24.1
 
   '@peculiar/asn1-cms@2.3.13':
     dependencies:
