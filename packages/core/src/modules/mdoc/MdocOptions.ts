@@ -4,6 +4,8 @@ import type { DifPresentationExchangeDefinition } from '../dif-presentation-exch
 import type { EncodedX509Certificate } from '../x509'
 import type { DeviceRequest, ValidityInfo } from '@animo-id/mdoc'
 
+export { DateOnly } from '@animo-id/mdoc'
+
 export type MdocNameSpaces = Record<string, Record<string, unknown>>
 
 export type MdocVerifyOptions = {
@@ -30,6 +32,20 @@ export type MdocDeviceResponseOptions = {
   deviceRequest: DeviceRequest
   deviceNameSpaces?: MdocNameSpaces
   sessionTranscriptBytes: Uint8Array
+}
+
+export type MdocDocRequest = {
+  itemsRequestData: {
+    docType: string
+    nameSpaces: Record<string, Record<string, boolean>>
+  }
+}
+
+export type MdocDcqlDeviceResponseOpenId4VpOptions = {
+  mdocs: [Mdoc, ...Mdoc[]]
+  docRequests: MdocDocRequest[]
+  deviceNameSpaces?: MdocNameSpaces
+  sessionTranscriptOptions: MdocOpenId4VpSessionTranscriptOptions
 }
 
 export type MdocDeviceResponseVerifyOptions = {
