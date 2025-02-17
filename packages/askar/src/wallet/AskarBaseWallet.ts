@@ -180,15 +180,17 @@ export abstract class AskarBaseWallet implements Wallet {
           // This will be fixed once we use the new 'using' syntax
           key = _key
 
-          const keyPublicBytes = new Key(key.publicBytes, keyType).publicKey
+          const keyInstance = new Key(key.publicBytes, keyType)
 
           // Store key
           await this.withSession((session) =>
-            session.insertKey({ key: _key, name: keyId ?? TypedArrayEncoder.toBase58(keyPublicBytes) })
+            // NOTE: askar by default uses the compressed variant of EC keys. To not break existing wallets we keep using
+            // the compressed variant of the public key as the key identifier
+            session.insertKey({ key: _key, name: keyId ?? TypedArrayEncoder.toBase58(keyInstance.compressedPublicKey) })
           )
 
           key.handle.free()
-          return Key.fromPublicKey(keyPublicBytes, keyType)
+          return keyInstance
         } catch (error) {
           key?.handle.free()
           // Handle case where key already exists
@@ -207,16 +209,15 @@ export abstract class AskarBaseWallet implements Wallet {
         await secureEnvironment.generateKeypair(kid)
         const compressedPublicKeyBytes = await secureEnvironment.getPublicBytesForKeyId(kid)
 
-        const publicKeyBytes = new Key(compressedPublicKeyBytes, keyType).publicKey
-        const publicKeyBase58 = TypedArrayEncoder.toBase58(publicKeyBytes)
+        const publicKeyInstance = new Key(compressedPublicKeyBytes, keyType)
 
         await this.storeSecureEnvironmentKeyById({
           keyType,
-          publicKeyBase58,
+          publicKeyBase58: TypedArrayEncoder.toBase58(publicKeyInstance.compressedPublicKey),
           keyId: kid,
         })
 
-        return new Key(publicKeyBytes, keyType)
+        return publicKeyInstance
       } else {
         // Check if there is a signing key provider for the specified key type.
         if (this.signingKeyProviderRegistry.hasProviderForKeyType(keyType)) {
@@ -254,7 +255,10 @@ export abstract class AskarBaseWallet implements Wallet {
     try {
       if (isKeyTypeSupportedByAskarForPurpose(key.keyType, AskarKeyTypePurpose.KeyManagement)) {
         askarKey = await this.withSession(
-          async (session) => (await session.fetchKey({ name: key.publicKeyBase58 }))?.key
+          async (session) =>
+            (
+              await session.fetchKey({ name: TypedArrayEncoder.toBase58(key.compressedPublicKey) })
+            )?.key
         )
       }
 
@@ -265,7 +269,7 @@ export abstract class AskarBaseWallet implements Wallet {
       // where a key wasn't supported at first by the wallet, but now is
       if (!askarKey) {
         // TODO: we should probably make retrieveKeyPair + insertKey + deleteKeyPair a transaction
-        keyPair = await this.retrieveKeyPair(key.publicKeyBase58)
+        keyPair = await this.retrieveKeyPair(TypedArrayEncoder.toBase58(key.compressedPublicKey))
 
         // If we have the key stored in a custom record, but it is now supported by Askar,
         // we 'import' the key into askar storage and remove the custom key record
@@ -278,16 +282,16 @@ export abstract class AskarBaseWallet implements Wallet {
 
           await this.withSession((session) =>
             session.insertKey({
-              name: key.publicKeyBase58,
+              name: TypedArrayEncoder.toBase58(key.compressedPublicKey),
               key: _askarKey,
             })
           )
 
           // Now we can remove it from the custom record as we have imported it into Askar
-          await this.deleteKeyPair(key.publicKeyBase58)
+          await this.deleteKeyPair(TypedArrayEncoder.toBase58(key.compressedPublicKey))
           keyPair = undefined
         } else {
-          const { keyId } = await this.getSecureEnvironmentKey(key.publicKeyBase58)
+          const { keyId } = await this.getSecureEnvironmentKey(TypedArrayEncoder.toBase58(key.compressedPublicKey))
 
           if (Array.isArray(data[0])) {
             throw new WalletError('Multi signature is not supported for the Secure Environment')
@@ -566,7 +570,10 @@ export abstract class AskarBaseWallet implements Wallet {
     let askarKey: AskarKey | null | undefined
     if (isKeyTypeSupportedByAskarForPurpose(recipientKey.keyType, AskarKeyTypePurpose.KeyManagement)) {
       askarKey = await this.withSession(
-        async (session) => (await session.fetchKey({ name: recipientKey.publicKeyBase58 }))?.key
+        async (session) =>
+          (
+            await session.fetchKey({ name: TypedArrayEncoder.toBase58(recipientKey.compressedPublicKey) })
+          )?.key
       )
     }
     if (!askarKey) {
@@ -676,7 +683,9 @@ export abstract class AskarBaseWallet implements Wallet {
       await this.withSession((session) =>
         session.insert({
           category: 'KeyPairRecord',
-          name: `key-${keyPair.publicKeyBase58}`,
+          name: `key-${TypedArrayEncoder.toBase58(
+            Key.fromPublicKeyBase58(keyPair.publicKeyBase58, keyPair.keyType).compressedPublicKey
+          )}`,
           value: JSON.stringify(keyPair),
           tags: {
             keyType: keyPair.keyType,
