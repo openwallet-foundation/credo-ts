@@ -122,7 +122,7 @@ export interface UnpackedMessageContext {
 
 export interface WalletDirectEncryptCompactJwtEcdhEsOptions {
   recipientKey: Key
-  encryptionAlgorithm: 'A256GCM'
+  encryptionAlgorithm: 'A256GCM' | 'A128CBC-HS256'
   apu?: string
   apv?: string
   data: Buffer

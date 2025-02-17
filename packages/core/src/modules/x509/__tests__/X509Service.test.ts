@@ -128,13 +128,16 @@ describe('X509Service', () => {
 
     const x509Certificate = X509Service.parseCertificate(agentContext, { encodedCertificate })
 
-    expect(x509Certificate.publicKey.publicKey.length).toStrictEqual(33)
-    expect(x509Certificate.publicKey.publicKeyBase58).toStrictEqual('23vfBuUJkWXTC3zZWMh1TR57CTubFjFfhm4CGfgszRMHU')
+    expect(x509Certificate.publicKey.keyType).toStrictEqual(KeyType.P256)
+    expect(x509Certificate.publicKey.publicKey.length).toStrictEqual(65)
+    expect(x509Certificate.publicKey.publicKeyBase58).toStrictEqual(
+      'QDaLvg9KroUnpuviZ9W7Q3DauqAuKiJN4sKC6cLo4HtxnpJCwwayNBLzRpsCHfHsLJsiKDeTCV8LqmCBSPkmiJNe'
+    )
 
     const jwk = getJwkFromKey(x509Certificate.publicKey)
 
     expect(jwk).toBeInstanceOf(P256Jwk)
-    expect(jwk).toMatchObject({
+    expect(jwk.toJson()).toMatchObject({
       x: 'iTwtg0eQbcbNabf2Nq9L_VM_lhhPCq2s0Qgw2kRx29s',
       y: 'YKwXDRz8U0-uLZ3NSI93R_35eNkl6jHp6Qg8OCup7VM',
     })
@@ -164,7 +167,7 @@ describe('X509Service', () => {
       sanUriNames: expect.arrayContaining(['animo.id']),
     })
 
-    expect(x509Certificate.publicKey.publicKey.length).toStrictEqual(33)
+    expect(x509Certificate.publicKey.publicKey.length).toStrictEqual(65)
   })
 
   it('should correctly parse x5c chain provided as a test-vector', async () => {
@@ -206,7 +209,7 @@ describe('X509Service', () => {
       keyUsage: [KeyUsage.DigitalSignature, KeyUsage.KeyCertSign],
     })
 
-    expect(x509Certificate.publicKey.publicKey.length).toStrictEqual(33)
+    expect(x509Certificate.publicKey.publicKey.length).toStrictEqual(65)
   })
 
   it('should validate a valid certificate chain', async () => {

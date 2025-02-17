@@ -25,15 +25,12 @@ importers:
       '@changesets/cli':
         specifier: ^2.27.5
         version: 2.27.5
-      '@hyperledger/aries-askar-nodejs':
-        specifier: ^0.2.3
-        version: 0.2.3
       '@jest/types':
         specifier: ^29.6.3
         version: 29.6.3
-      '@types/bn.js':
-        specifier: ^5.1.5
-        version: 5.1.5
+      '@openwallet-foundation/askar-nodejs':
+        specifier: ^0.3.1
+        version: 0.3.1
       '@types/cors':
         specifier: ^2.8.10
         version: 2.8.17
@@ -67,9 +64,6 @@ importers:
       '@typescript-eslint/parser':
         specifier: ^7.14.1
         version: 7.18.0(eslint@8.57.0)(typescript@5.5.4)
-      bn.js:
-        specifier: ^5.2.1
-        version: 5.2.1
       cors:
         specifier: ^2.8.5
         version: 2.8.5
@@ -133,12 +127,12 @@ importers:
       '@hyperledger/anoncreds-nodejs':
         specifier: ^0.2.2
         version: 0.2.2
-      '@hyperledger/aries-askar-nodejs':
-        specifier: ^0.2.3
-        version: 0.2.3
       '@hyperledger/indy-vdr-nodejs':
         specifier: ^0.2.2
         version: 0.2.2
+      '@openwallet-foundation/askar-nodejs':
+        specifier: ^0.3.1
+        version: 0.3.1
       inquirer:
         specifier: ^8.2.5
         version: 8.2.6
@@ -185,15 +179,15 @@ importers:
       '@hyperledger/anoncreds-nodejs':
         specifier: ^0.2.2
         version: 0.2.2
-      '@hyperledger/aries-askar-nodejs':
-        specifier: ^0.2.3
-        version: 0.2.3
       '@hyperledger/indy-vdr-nodejs':
         specifier: ^0.2.2
         version: 0.2.2
       '@koa/bodyparser':
         specifier: ^5.1.1
         version: 5.1.1(koa@2.15.3)
+      '@openwallet-foundation/askar-nodejs':
+        specifier: ^0.3.1
+        version: 0.3.1
       express:
         specifier: ^4.18.1
         version: 4.19.2
@@ -286,12 +280,6 @@ importers:
       '@sphereon/pex-models':
         specifier: ^2.3.1
         version: 2.3.2
-      big-integer:
-        specifier: ^1.6.51
-        version: 1.6.52
-      bn.js:
-        specifier: ^5.2.1
-        version: 5.2.1
       class-transformer:
         specifier: 0.5.1
         version: 0.5.1
@@ -326,9 +314,6 @@ importers:
       '@credo-ts/core':
         specifier: workspace:*
         version: link:../core
-      bn.js:
-        specifier: ^5.2.1
-        version: 5.2.1
       class-transformer:
         specifier: 0.5.1
         version: 0.5.1
@@ -343,17 +328,14 @@ importers:
         version: 4.8.0
     devDependencies:
       '@animo-id/expo-secure-environment':
-        specifier: ^0.1.0-alpha.11
+        specifier: ^0.1.0-alpha.12
         version: 0.1.0-alpha.12(expo@51.0.14(@babel/core@7.26.0)(@babel/preset-env@7.26.0(@babel/core@7.26.0)))(react-native@0.71.19(@babel/core@7.26.0)(@babel/preset-env@7.26.0(@babel/core@7.26.0))(react@18.3.1))(react@18.3.1)
-      '@hyperledger/aries-askar-nodejs':
-        specifier: ^0.2.3
-        version: 0.2.3
-      '@hyperledger/aries-askar-shared':
-        specifier: ^0.2.3
-        version: 0.2.3
-      '@types/bn.js':
-        specifier: ^5.1.0
-        version: 5.1.5
+      '@openwallet-foundation/askar-nodejs':
+        specifier: ^0.3.1
+        version: 0.3.1
+      '@openwallet-foundation/askar-shared':
+        specifier: ^0.3.1
+        version: 0.3.1
       '@types/ref-array-di':
         specifier: ^1.2.6
         version: 1.2.8
@@ -404,11 +386,11 @@ importers:
   packages/cheqd:
     dependencies:
       '@cheqd/sdk':
-        specifier: 2.5.1
-        version: 2.5.1
+        specifier: ~2.6.0
+        version: 2.6.0
       '@cheqd/ts-proto':
-        specifier: ~2.3.2
-        version: 2.3.2
+        specifier: ~2.4.0
+        version: 2.4.0
       '@cosmjs/crypto':
         specifier: ~0.30.0
         version: 0.30.1
@@ -450,11 +432,11 @@ importers:
   packages/core:
     dependencies:
       '@animo-id/mdoc':
-        specifier: 0.3.0
-        version: 0.3.0
+        specifier: 0.4.0
+        version: 0.4.0
       '@animo-id/pex':
-        specifier: 4.1.1-alpha.0
-        version: 4.1.1-alpha.0
+        specifier: 4.1.1-alpha.1
+        version: 4.1.1-alpha.1
       '@astronautlabs/jsonpath':
         specifier: ^1.1.2
         version: 1.1.2
@@ -521,9 +503,6 @@ importers:
       '@types/ws':
         specifier: ^8.5.4
         version: 8.5.10
-      big-integer:
-        specifier: ^1.6.51
-        version: 1.6.52
       borc:
         specifier: ^3.0.0
         version: 3.0.0
@@ -537,11 +516,14 @@ importers:
         specifier: 0.14.1
         version: 0.14.1
       dcql:
-        specifier: ^0.2.17
-        version: 0.2.19(typescript@5.5.4)
+        specifier: ^0.2.20
+        version: 0.2.20(typescript@5.5.4)
       did-resolver:
         specifier: ^4.1.0
         version: 4.1.0
+      ec-compression:
+        specifier: 0.0.1-alpha.10
+        version: 0.0.1-alpha.10
       lru_map:
         specifier: ^0.4.1
         version: 0.4.1
@@ -681,12 +663,12 @@ importers:
         specifier: workspace:*
         version: link:../node
     devDependencies:
-      '@hyperledger/aries-askar-nodejs':
-        specifier: ^0.2.3
-        version: 0.2.3
-      '@hyperledger/aries-askar-shared':
-        specifier: ^0.2.3
-        version: 0.2.3
+      '@openwallet-foundation/askar-nodejs':
+        specifier: ^0.3.1
+        version: 0.3.1
+      '@openwallet-foundation/askar-shared':
+        specifier: ^0.3.1
+        version: 0.3.1
       rimraf:
         specifier: ^4.4.0
         version: 4.4.1
@@ -921,9 +903,9 @@ importers:
       '@credo-ts/node':
         specifier: workspace:*
         version: link:../../packages/node
-      '@hyperledger/aries-askar-nodejs':
-        specifier: ^0.2.3
-        version: 0.2.3
+      '@openwallet-foundation/askar-nodejs':
+        specifier: ^0.3.1
+        version: 0.3.1
       class-validator:
         specifier: 0.14.1
         version: 0.14.1
@@ -996,11 +978,15 @@ packages:
       react: '*'
       react-native: '*'
 
-  '@animo-id/mdoc@0.3.0':
-    resolution: {integrity: sha512-igpkhrmUbH6VEm0yoKmLyHS3yWdPp2rzdAmBz43Isqot5J5RePM8GFLxi7O0svGYBumoduS4LKddXSqmHNp7zQ==}
+  '@animo-id/mdoc@0.4.0':
+    resolution: {integrity: sha512-ziuaAn4MnocSwoGZzKbgDB3g5ohfl79USR8Ly/uGImPRdZ6qxaB/cqO3dP0162PhKFbWsywgsgpghCiOeYoVBA==}
 
   '@animo-id/pex@4.1.1-alpha.0':
     resolution: {integrity: sha512-6ieHhH9UE9DLFOJegMCabG3qUFlQk4TLhBefxInpyjx2Ly6kuloVMScJYcnQTs/E6nuHGMd7ebUaKy4+0+ZbOA==}
+    engines: {node: '>=18'}
+
+  '@animo-id/pex@4.1.1-alpha.1':
+    resolution: {integrity: sha512-b1VH2y3EYnLir7wiu4sap2iajmGmG05j0O+3AiAMSuLSWDeRyiTR+BumUmAxYDTZuXuoe3L82mJ5VTXPUNFM1g==}
     engines: {node: '>=18'}
 
   '@animo-id/react-native-bbs-signatures@0.1.0':
@@ -1769,6 +1755,9 @@ packages:
   '@bcoe/v8-coverage@0.2.3':
     resolution: {integrity: sha512-0hYQ8SB4Db5zvZB4axdMHGwEaQjkZzFjQiN9LVYvIFB2nSUHW9tYpxWriPrWDASIxiaXax83REcLxuSdnGPZtw==}
 
+  '@bufbuild/protobuf@2.2.3':
+    resolution: {integrity: sha512-tFQoXHJdkEOSwj5tRIZSPNUuXK3RaR7T1nUrPgbYX1pUbvqqaaZAsfo+NXBPsz5rZMSKVFrgK1WL8Q/MSLvprg==}
+
   '@changesets/apply-release-plan@7.0.3':
     resolution: {integrity: sha512-klL6LCdmfbEe9oyfLxnidIf/stFXmrbFO/3gT5LU5pcyoZytzJe4gWpTBx3BPmyNPl16dZ1xrkcW7b98e3tYkA==}
 
@@ -1824,13 +1813,13 @@ packages:
   '@changesets/write@0.3.1':
     resolution: {integrity: sha512-SyGtMXzH3qFqlHKcvFY2eX+6b0NGiFcNav8AFsYwy5l8hejOeoeTDemu5Yjmke2V5jpzY+pBvM0vCCQ3gdZpfw==}
 
-  '@cheqd/sdk@2.5.1':
-    resolution: {integrity: sha512-Vm9hwFIzgXhK1/ilaciauPnfa2mm8/aGPVRxM/O3LCLUyBdmS+dKIY6G6FKN/ttcsfUJSRmpR50weFY/vMqs3g==}
+  '@cheqd/sdk@2.6.0':
+    resolution: {integrity: sha512-Lx3/0dT7QoKaWfQcc4PzhcaFud5Fkgm1//Q7KfPXakerSLuOkyaVy95VnFnnoLERuWZcE6r3nI1xoKq1GFckDg==}
     engines: {node: '>=18'}
 
-  '@cheqd/ts-proto@2.3.2':
-    resolution: {integrity: sha512-WqwthQGyF16tx3LyqwJlLq/4DfTigNsCWtGY3ct9RSfTNTPI/JZ1qLE7eSkcE9Glk4Yk95d+SYbqOeoSNP442Q==}
-    engines: {node: '>=18'}
+  '@cheqd/ts-proto@2.4.0':
+    resolution: {integrity: sha512-+iPJujk1IfeWdcbVzMEjleVXab1leYshiFZNQGpDw6PCOWkRRZ/0BOJgRm6/LQjcj70ceDje4Io/8+CIh+9A5g==}
+    engines: {node: '>=20'}
 
   '@confio/ics23@0.6.8':
     resolution: {integrity: sha512-wB6uo+3A50m0sW/EWcU64xpV/8wShZ6bMTa7pF8eYsTrSkQA7oLUIJcs/wb8g4y2Oyq701BaGiO6n/ak5WXO1w==}
@@ -2252,13 +2241,6 @@ packages:
   '@hyperledger/anoncreds-shared@0.2.2':
     resolution: {integrity: sha512-dfYpqbAkqtHJkRkuGmWdJruHfLegLUIbu/dSAWnz5dMRKd8ad8rEnQkwRnockQZ/pc7QDr8kxfG6bT2YDGZeMw==}
 
-  '@hyperledger/aries-askar-nodejs@0.2.3':
-    resolution: {integrity: sha512-2BnGqK08Y96DEB8tDuXy2x+soetChyMGB0+L1yqdHx1Xv5FvRerYrTXdTjJXTW6ANb48k2Np8WlJ4YNePSo6ww==}
-    engines: {node: '>= 18'}
-
-  '@hyperledger/aries-askar-shared@0.2.3':
-    resolution: {integrity: sha512-g9lao8qa80kPCLqqp02ovNqEfQIrm6cAf4xZVzD5P224VmOhf4zM6AKplQTvQx7USNKoXroe93JrOOSVxPeqrA==}
-
   '@hyperledger/indy-vdr-nodejs@0.2.2':
     resolution: {integrity: sha512-mc0iKuHCtKuOV0sMnGOTVWnQrpfBMS+1tIRyob+CvGCvwC2llGo3Hu5AvgPcR9nqCo/wJ0LoKBo66dYYb0uZbw==}
     engines: {node: '>= 18'}
@@ -2497,6 +2479,13 @@ packages:
   '@openid4vc/utils@file:local/openid4vc-utils-0.2.0.tgz':
     resolution: {integrity: sha512-59Gp7g+7PdtVier4CT3Jit3fzF+nebuNkFjpzFOtW0Y76tkXSRv9t4LNMHHKsskFylo+CEpg81TQFtd/SiTIWw==, tarball: file:local/openid4vc-utils-0.2.0.tgz}
     version: 0.2.0
+
+  '@openwallet-foundation/askar-nodejs@0.3.1':
+    resolution: {integrity: sha512-m3L8KEPC+qgA3MAFssMtjSqJiAQtrawZEWPmW6eiB7OPjZvkKjodMhx/cuUV5YTl4eQlSix2EY4vXMzk4vt+cQ==}
+    engines: {node: '>= 18'}
+
+  '@openwallet-foundation/askar-shared@0.3.1':
+    resolution: {integrity: sha512-KpkVuLHnKkJ7nPYZ/6PJ8b9gq+elC6Mhg8UiG+wLOKchVi6Vbv/nOsAdKK9j1/CCZ3DzvfTbhV+KRk6YNXmIsA==}
 
   '@peculiar/asn1-cms@2.3.13':
     resolution: {integrity: sha512-joqu8A7KR2G85oLPq+vB+NFr2ro7Ls4ol13Zcse/giPSzUNN0n2k3v8kMpf6QdGUhI13e5SzQYN8AKP8sJ8v4w==}
@@ -2881,9 +2870,6 @@ packages:
 
   '@types/babel__traverse@7.20.6':
     resolution: {integrity: sha512-r1bzfrm0tomOI8g1SzvCaQHo6Lcv6zu0EA+W2kHrt8dyrHQxGzBBL4kdkzIS+jBMV+EYcMAEAqXqYaLJq5rOZg==}
-
-  '@types/bn.js@5.1.5':
-    resolution: {integrity: sha512-V46N0zwKRF5Q00AZ6hWtN0T8gGmDUaUzLWQvHFo5yThtVwK/VCenFY3wXVbOvNfajEpsTfQM4IN9k/d6gUVX3A==}
 
   '@types/body-parser@1.19.5':
     resolution: {integrity: sha512-fB3Zu92ucau0iQ0JMCFQE7b/dv8Ot07NI3KaZIkIUNXq82k4eBAqUaneXfleGY9JWskeS9y+u0nXMyspcuQrCg==}
@@ -3989,8 +3975,8 @@ packages:
   dayjs@1.11.11:
     resolution: {integrity: sha512-okzr3f11N6WuqYtZSvm+F776mB41wRZMhKP+hc34YdW+KmtYYK9iqvHSwo2k9FEH3fhGXvOPV6yz2IcSrfRUDg==}
 
-  dcql@0.2.19:
-    resolution: {integrity: sha512-/EvT8tArlg8zFsTQbRn6PijfeQ3nUwuEeCRDpptWcYqE8Wyt8J9Sb44gMPFzVCoIEb3R0M7Hl+XWkUMobC8jXQ==}
+  dcql@0.2.20:
+    resolution: {integrity: sha512-r45vIFfjFcBLWWs2n2MVgVNJne0Rp0FezUD7lPWZ8LFtG/xJdwtGDwRoHp1XqOIFpqJcY1nn1/KW2BxjmDfKBA==}
 
   debug@2.6.9:
     resolution: {integrity: sha512-bC7ElrdJaJnPbAP+1EotYvqZsb3ecl5wi6Bfi6BJTUcNowp6cvspg0jXznRTKDjm/E7AdgFBVeAPVMNcKGsHMA==}
@@ -4180,6 +4166,9 @@ packages:
 
   eastasianwidth@0.2.0:
     resolution: {integrity: sha512-I88TYZWc9XiYHRQ4/3c5rjjfgkjhLyW2luGIheGERbNQ6OY7yTybanSpDXZa8y7VUP9YmDcYa+eyq4ca7iLqWA==}
+
+  ec-compression@0.0.1-alpha.10:
+    resolution: {integrity: sha512-40i890RKwkaxUqAI8XZkELoKWhQS4VDfHU0D0lYwrFjfA7vtUZWaCNCbpoGwCMZqrPrWGfXqej76/N44kVKxMg==}
 
   ed25519-signature-2018-context@1.1.0:
     resolution: {integrity: sha512-ppDWYMNwwp9bploq0fS4l048vHIq41nWsAbPq6H4mNVx9G/GxW3fwg4Ln0mqctP13MoEpREK7Biz8TbVVdYXqA==}
@@ -8088,11 +8077,27 @@ snapshots:
       react: 18.3.1
       react-native: 0.71.19(@babel/core@7.26.0)(@babel/preset-env@7.26.0(@babel/core@7.26.0))(react@18.3.1)
 
-  '@animo-id/mdoc@0.3.0':
+  '@animo-id/mdoc@0.4.0':
     dependencies:
       compare-versions: 6.1.1
 
   '@animo-id/pex@4.1.1-alpha.0':
+    dependencies:
+      '@astronautlabs/jsonpath': 1.1.2
+      '@sd-jwt/decode': 0.7.2
+      '@sd-jwt/present': 0.7.2
+      '@sd-jwt/types': 0.7.2
+      '@sphereon/pex-models': 2.3.2
+      '@sphereon/ssi-types': 0.30.2-next.135
+      ajv: 8.16.0
+      ajv-formats: 2.1.1(ajv@8.16.0)
+      jwt-decode: 3.1.2
+      nanoid: 3.3.7
+      uint8arrays: 3.1.1
+    transitivePeerDependencies:
+      - supports-color
+
+  '@animo-id/pex@4.1.1-alpha.1':
     dependencies:
       '@astronautlabs/jsonpath': 1.1.2
       '@sd-jwt/decode': 0.7.2
@@ -9057,6 +9062,8 @@ snapshots:
 
   '@bcoe/v8-coverage@0.2.3': {}
 
+  '@bufbuild/protobuf@2.2.3': {}
+
   '@changesets/apply-release-plan@7.0.3':
     dependencies:
       '@babel/runtime': 7.24.7
@@ -9214,9 +9221,9 @@ snapshots:
       human-id: 1.0.2
       prettier: 2.8.8
 
-  '@cheqd/sdk@2.5.1':
+  '@cheqd/sdk@2.6.0':
     dependencies:
-      '@cheqd/ts-proto': 2.3.2
+      '@cheqd/ts-proto': 2.4.0
       '@cosmjs/amino': 0.30.1
       '@cosmjs/crypto': 0.30.1
       '@cosmjs/encoding': 0.30.1
@@ -9240,8 +9247,9 @@ snapshots:
       - debug
       - utf-8-validate
 
-  '@cheqd/ts-proto@2.3.2':
+  '@cheqd/ts-proto@2.4.0':
     dependencies:
+      '@bufbuild/protobuf': 2.2.3
       long: 5.2.3
       protobufjs: 7.4.0
 
@@ -9996,22 +10004,6 @@ snapshots:
 
   '@hyperledger/anoncreds-shared@0.2.2': {}
 
-  '@hyperledger/aries-askar-nodejs@0.2.3':
-    dependencies:
-      '@2060.io/ffi-napi': 4.0.9
-      '@2060.io/ref-napi': 3.0.6
-      '@hyperledger/aries-askar-shared': 0.2.3
-      '@mapbox/node-pre-gyp': 1.0.11
-      ref-array-di: 1.2.2
-      ref-struct-di: 1.1.1
-    transitivePeerDependencies:
-      - encoding
-      - supports-color
-
-  '@hyperledger/aries-askar-shared@0.2.3':
-    dependencies:
-      buffer: 6.0.3
-
   '@hyperledger/indy-vdr-nodejs@0.2.2':
     dependencies:
       '@2060.io/ffi-napi': 4.0.9
@@ -10415,6 +10407,22 @@ snapshots:
     dependencies:
       buffer: 6.0.3
       zod: 3.24.1
+
+  '@openwallet-foundation/askar-nodejs@0.3.1':
+    dependencies:
+      '@2060.io/ffi-napi': 4.0.9
+      '@2060.io/ref-napi': 3.0.6
+      '@mapbox/node-pre-gyp': 1.0.11
+      '@openwallet-foundation/askar-shared': 0.3.1
+      ref-array-di: 1.2.2
+      ref-struct-di: 1.1.1
+    transitivePeerDependencies:
+      - encoding
+      - supports-color
+
+  '@openwallet-foundation/askar-shared@0.3.1':
+    dependencies:
+      buffer: 6.0.3
 
   '@peculiar/asn1-cms@2.3.13':
     dependencies:
@@ -11391,10 +11399,6 @@ snapshots:
   '@types/babel__traverse@7.20.6':
     dependencies:
       '@babel/types': 7.26.3
-
-  '@types/bn.js@5.1.5':
-    dependencies:
-      '@types/node': 18.18.8
 
   '@types/body-parser@1.19.5':
     dependencies:
@@ -12731,7 +12735,7 @@ snapshots:
 
   dayjs@1.11.11: {}
 
-  dcql@0.2.19(typescript@5.5.4):
+  dcql@0.2.20(typescript@5.5.4):
     dependencies:
       valibot: 1.0.0-beta.8(typescript@5.5.4)
     transitivePeerDependencies:
@@ -12915,6 +12919,8 @@ snapshots:
   dotenv@16.4.5: {}
 
   eastasianwidth@0.2.0: {}
+
+  ec-compression@0.0.1-alpha.10: {}
 
   ed25519-signature-2018-context@1.1.0: {}
 

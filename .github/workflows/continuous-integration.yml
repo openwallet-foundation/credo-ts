@@ -17,7 +17,7 @@ env:
 # "When concurrency is specified at the job level, order is not guaranteed for jobs or runs that queue within 5 minutes of each other."
 concurrency:
   # Cancel previous runs that are not completed yet
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ github.event_name }}
   cancel-in-progress: true
 
 jobs:

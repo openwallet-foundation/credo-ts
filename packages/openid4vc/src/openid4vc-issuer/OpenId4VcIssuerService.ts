@@ -109,7 +109,7 @@ export class OpenId4VcIssuerService {
     }
 
     // Check if all the offered credential configuration ids have a scope value. If not, it won't be possible to actually request
-    // issuance of the crednetial later on
+    // issuance of the credential later on
     extractScopesForCredentialConfigurationIds({
       credentialConfigurationIds: options.offeredCredentials,
       issuerMetadata,
@@ -174,7 +174,7 @@ export class OpenId4VcIssuerService {
     ])
 
     // Check if all the offered credential configuration ids have a scope value. If not, it won't be possible to actually request
-    // issuance of the crednetial later on. For pre-auth it's not needed to add a scope.
+    // issuance of the credential later on. For pre-auth it's not needed to add a scope.
     if (options.authorizationCodeFlowConfig) {
       extractScopesForCredentialConfigurationIds({
         credentialConfigurationIds: options.offeredCredentials,
