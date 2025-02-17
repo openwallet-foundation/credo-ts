@@ -1,11 +1,11 @@
 import type { OpenId4VcIssuanceRequest } from './requestContext'
 import type { OpenId4VciCredentialConfigurationsSupportedWithFormats } from '../../shared'
 import type { OpenId4VcIssuerRecord } from '../repository'
-import type { AuthorizationChallengeRequest } from '@animo-id/oauth2'
+import type { AuthorizationChallengeRequest } from '@openid4vc/oauth2'
 import type { AgentContext } from '@credo-ts/core'
 import type { NextFunction, Response, Router } from 'express'
 
-import { Oauth2ErrorCodes, Oauth2ServerErrorResponseError } from '@animo-id/oauth2'
+import { Oauth2ErrorCodes, Oauth2ServerErrorResponseError } from '@openid4vc/oauth2'
 import { TypedArrayEncoder } from '@credo-ts/core'
 
 import {

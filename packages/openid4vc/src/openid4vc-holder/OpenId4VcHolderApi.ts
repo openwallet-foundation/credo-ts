@@ -1,15 +1,23 @@
 import type {
-  OpenId4VciResolvedCredentialOffer,
   OpenId4VciAuthCodeFlowOptions,
-  OpenId4VciTokenRequestOptions as OpenId4VciRequestTokenOptions,
   OpenId4VciCredentialRequestOptions as OpenId4VciRequestCredentialOptions,
-  OpenId4VciSendNotificationOptions,
+  OpenId4VciTokenRequestOptions as OpenId4VciRequestTokenOptions,
   OpenId4VciRequestTokenResponse,
+  OpenId4VciResolvedCredentialOffer,
   OpenId4VciRetrieveAuthorizationCodeUsingPresentationOptions,
+  OpenId4VciSendNotificationOptions,
 } from './OpenId4VciHolderServiceOptions'
 import type { OpenId4VcSiopAcceptAuthorizationRequestOptions } from './OpenId4vcSiopHolderServiceOptions'
 
-import { injectable, AgentContext, DifPresentationExchangeService, DifPexCredentialsForRequest } from '@credo-ts/core'
+import {
+  AgentContext,
+  DcqlQueryResult,
+  DcqlService,
+  DifPexCredentialsForRequest,
+  DifPresentationExchangeService,
+  injectable,
+  TransactionDataRequest,
+} from '@credo-ts/core'
 
 import { OpenId4VciMetadata } from '../shared'
 
@@ -25,7 +33,8 @@ export class OpenId4VcHolderApi {
     private agentContext: AgentContext,
     private openId4VciHolderService: OpenId4VciHolderService,
     private openId4VcSiopHolderService: OpenId4VcSiopHolderService,
-    private difPresentationExchangeService: DifPresentationExchangeService
+    private difPresentationExchangeService: DifPresentationExchangeService,
+    private dcqlService: DcqlService
   ) {}
 
   /**
@@ -42,8 +51,8 @@ export class OpenId4VcHolderApi {
    * @param requestJwtOrUri JWT or an SIOPv2 request URI
    * @returns the resolved and verified authentication request.
    */
-  public async resolveSiopAuthorizationRequest(requestJwtOrUri: string) {
-    return this.openId4VcSiopHolderService.resolveAuthorizationRequest(this.agentContext, requestJwtOrUri)
+  public async resolveSiopAuthorizationRequest(requestJwtOrUri: string, origin?: string) {
+    return this.openId4VcSiopHolderService.resolveAuthorizationRequest(this.agentContext, requestJwtOrUri, undefined, origin)
   }
 
   /**
@@ -59,11 +68,22 @@ export class OpenId4VcHolderApi {
   }
 
   /**
-   * Automatically select credentials from available credentials for a request. Can be called after calling
+   * Automatically select credentials from available credentials for a presentation exchange request. Can be called after calling
    * @see resolveSiopAuthorizationRequest.
    */
-  public selectCredentialsForRequest(credentialsForRequest: DifPexCredentialsForRequest) {
-    return this.difPresentationExchangeService.selectCredentialsForRequest(credentialsForRequest)
+  public selectCredentialsForPresentationExchangeRequest(
+    credentialsForRequest: DifPexCredentialsForRequest,
+    transactionData?: TransactionDataRequest
+  ) {
+    return this.difPresentationExchangeService.selectCredentialsForRequest(credentialsForRequest, transactionData)
+  }
+
+  /**
+   * Automatically select credentials from available credentials for a dcql request. Can be called after calling
+   * @see resolveSiopAuthorizationRequest.
+   */
+  public selectCredentialsForDcqlRequest(dcqlQueryResult: DcqlQueryResult) {
+    return this.dcqlService.selectCredentialsForRequest(dcqlQueryResult)
   }
 
   public async resolveIssuerMetadata(credentialIssuer: string): Promise<OpenId4VciMetadata> {
