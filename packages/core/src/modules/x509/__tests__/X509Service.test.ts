@@ -1,6 +1,8 @@
+/* eslint-disable @typescript-eslint/no-non-null-assertion */
+
 import type { AgentContext } from '../../../agent'
 
-import { id_ce_extKeyUsage, id_ce_keyUsage } from '@peculiar/asn1-x509'
+import { id_ce_basicConstraints, id_ce_extKeyUsage, id_ce_keyUsage } from '@peculiar/asn1-x509'
 import * as x509 from '@peculiar/x509'
 
 import { InMemoryWallet } from '../../../../../../tests/InMemoryWallet'
@@ -122,7 +124,6 @@ describe('X509Service', () => {
     expect(certificate.publicKey.keyType).toStrictEqual(KeyType.P256)
     expect(certificate.publicKey.publicKey.length).toStrictEqual(65)
     expect(certificate.subject).toStrictEqual('CN=credo')
-    expect(certificate.extensions).toBeUndefined()
   })
 
   it('should create a valid self-signed certificate with a critical extension', async () => {
@@ -176,6 +177,97 @@ describe('X509Service', () => {
       keyUsage: expect.arrayContaining([X509KeyUsage.DigitalSignature]),
       extendedKeyUsage: expect.arrayContaining([X509ExtendedKeyUsage.MdlDs]),
       subjectKeyIdentifier: TypedArrayEncoder.toHex(authorityKey.publicKey),
+    })
+  })
+
+  it('should create a valid self-signed certifcate as IACA Root + DCS for mDoc', async () => {
+    const authorityKey = await wallet.createKey({ keyType: KeyType.P256 })
+    const documentSignerKey = await wallet.createKey({ keyType: KeyType.P256 })
+
+    const mdocRootCertificate = await X509Service.createCertificate(agentContext, {
+      authorityKey,
+      issuer: { commonName: 'credo', countryName: 'NL' },
+      validity: {
+        notBefore: getLastMonth(),
+        notAfter: getNextMonth(),
+      },
+      extensions: {
+        subjectKeyIdentifier: {
+          include: true,
+        },
+        keyUsage: {
+          usages: [X509KeyUsage.KeyCertSign, X509KeyUsage.CrlSign],
+          markAsCritical: true,
+        },
+        issuerAlternativeName: {
+          name: [{ type: 'url', value: 'animo.id' }],
+        },
+        basicConstraints: {
+          ca: true,
+          pathLenConstraint: 0,
+          markAsCritical: true,
+        },
+        crlDistributionPoints: {
+          urls: ['https://animo.id'],
+        },
+      },
+    })
+
+    expect(mdocRootCertificate.isExtensionCritical(id_ce_basicConstraints)).toStrictEqual(true)
+    expect(mdocRootCertificate.isExtensionCritical(id_ce_keyUsage)).toStrictEqual(true)
+
+    expect(mdocRootCertificate).toMatchObject({
+      ianUriNames: expect.arrayContaining(['animo.id']),
+      keyUsage: expect.arrayContaining([X509KeyUsage.KeyCertSign, X509KeyUsage.CrlSign]),
+      subjectKeyIdentifier: TypedArrayEncoder.toHex(authorityKey.publicKey),
+    })
+
+    const mdocDocumentSignerCertificate = await X509Service.createCertificate(agentContext, {
+      authorityKey,
+      subjectPublicKey: new Key(documentSignerKey.publicKey, KeyType.P256),
+      issuer: mdocRootCertificate.issuer,
+      subject: { commonName: 'credo dcs', countryName: 'NL' },
+      validity: {
+        notBefore: getLastMonth(),
+        notAfter: getNextMonth(),
+      },
+      extensions: {
+        authorityKeyIdentifier: {
+          include: true,
+        },
+        subjectKeyIdentifier: {
+          include: true,
+        },
+        keyUsage: {
+          usages: [X509KeyUsage.DigitalSignature],
+          markAsCritical: true,
+        },
+        subjectAlternativeName: {
+          name: [{ type: 'url', value: 'paradym.id' }],
+        },
+        issuerAlternativeName: {
+          name: mdocRootCertificate.issuerAlternativeNames!,
+        },
+        extendedKeyUsage: {
+          usages: [X509ExtendedKeyUsage.MdlDs],
+          markAsCritical: true,
+        },
+        crlDistributionPoints: {
+          urls: ['https://animo.id'],
+        },
+      },
+    })
+
+    expect(mdocDocumentSignerCertificate.isExtensionCritical(id_ce_keyUsage)).toStrictEqual(true)
+    expect(mdocDocumentSignerCertificate.isExtensionCritical(id_ce_extKeyUsage)).toStrictEqual(true)
+
+    expect(mdocDocumentSignerCertificate).toMatchObject({
+      ianUriNames: expect.arrayContaining(['animo.id']),
+      sanUriNames: expect.arrayContaining(['paradym.id']),
+      keyUsage: expect.arrayContaining([X509KeyUsage.DigitalSignature]),
+      extendedKeyUsage: expect.arrayContaining([X509ExtendedKeyUsage.MdlDs]),
+      subjectKeyIdentifier: TypedArrayEncoder.toHex(documentSignerKey.publicKey),
+      authorityKeyIdentifier: TypedArrayEncoder.toHex(authorityKey.publicKey),
     })
   })
 

@@ -67,6 +67,9 @@ export type X509CertificateExtensionsOptions = AddMarkAsCritical<{
     ca: boolean
     pathLenConstraint?: number
   }
+  crlDistributionPoints?: {
+    urls: Array<string>
+  }
 }>
 
 export interface X509CertificateIssuerAndSubjectOptions {
