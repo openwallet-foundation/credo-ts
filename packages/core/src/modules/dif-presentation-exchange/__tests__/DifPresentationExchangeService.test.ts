@@ -491,7 +491,12 @@ describe('DifPresentationExchangeService', () => {
       presentationDefinition,
       domain: 'hello',
       presentationSubmissionLocation: DifPresentationExchangeSubmissionLocation.EXTERNAL,
-      openid4vp: { mdocGeneratedNonce: 'something', responseUri: 'https://response.com' },
+      openid4vp: {
+        type: 'openId4Vp',
+        clientId: 'hello',
+        mdocGeneratedNonce: 'something',
+        responseUri: 'https://response.com',
+      },
     })
 
     expect(presentation).toMatchObject({
@@ -631,7 +636,12 @@ describe('DifPresentationExchangeService', () => {
       presentationDefinition,
       domain: 'hello',
       presentationSubmissionLocation: DifPresentationExchangeSubmissionLocation.EXTERNAL,
-      openid4vp: { mdocGeneratedNonce: 'something', responseUri: 'https://response.com' },
+      openid4vp: {
+        type: 'openId4Vp',
+        clientId: 'hello',
+        mdocGeneratedNonce: 'something',
+        responseUri: 'https://response.com',
+      },
     })
 
     expect(presentation).toMatchObject({

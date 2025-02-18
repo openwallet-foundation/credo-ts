@@ -1,5 +1,5 @@
 import type { Module } from '../../plugins'
-
+import { DcqlModule } from '../../modules/dcql'
 import { CacheModule } from '../../modules/cache'
 import { DidsModule } from '../../modules/dids'
 import { DifPresentationExchangeModule } from '../../modules/dif-presentation-exchange'
@@ -51,6 +51,7 @@ describe('AgentModules', () => {
       const extendedModules = extendModulesWithDefaultModules()
 
       expect(extendedModules).toEqual({
+        dcql: expect.any(DcqlModule),
         pex: expect.any(DifPresentationExchangeModule),
         genericRecords: expect.any(GenericRecordsModule),
         dids: expect.any(DidsModule),
@@ -70,6 +71,7 @@ describe('AgentModules', () => {
       })
 
       expect(extendedModules).toEqual({
+        dcql: expect.any(DcqlModule),
         pex: expect.any(DifPresentationExchangeModule),
         genericRecords: expect.any(GenericRecordsModule),
         dids: expect.any(DidsModule),
@@ -94,6 +96,7 @@ describe('AgentModules', () => {
       expect(extendedModules).toEqual({
         genericRecords: genericRecords,
         pex: expect.any(DifPresentationExchangeModule),
+        dcql: expect.any(DcqlModule),
         dids: expect.any(DidsModule),
         wallet: expect.any(WalletModule),
         w3cCredentials: expect.any(W3cCredentialsModule),
