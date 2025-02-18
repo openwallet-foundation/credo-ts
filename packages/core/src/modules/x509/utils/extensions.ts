@@ -8,6 +8,7 @@ import {
   SubjectKeyIdentifierExtension,
   SubjectAlternativeNameExtension,
   BasicConstraintsExtension,
+  CRLDistributionPointsExtension,
 } from '@peculiar/x509'
 
 import { TypedArrayEncoder } from '../../../utils'
@@ -68,4 +69,12 @@ export const createBasicConstraintsExtension = (options: X509CertificateExtensio
   if (!options) return
 
   return new BasicConstraintsExtension(options.ca, options.pathLenConstraint, options.markAsCritical)
+}
+
+export const createCrlDistributionPointsExtension = (
+  options: X509CertificateExtensionsOptions['crlDistributionPoints']
+) => {
+  if (!options) return
+
+  return new CRLDistributionPointsExtension(options.urls, options.markAsCritical)
 }
