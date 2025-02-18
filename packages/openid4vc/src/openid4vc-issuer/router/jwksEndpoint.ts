@@ -1,6 +1,6 @@
 import type { OpenId4VcIssuanceRequest } from './requestContext'
 import type { OpenId4VcIssuerModuleConfig } from '../OpenId4VcIssuerModuleConfig'
-import type { JwkSet } from '@animo-id/oauth2'
+import type { JwkSet } from '@openid4vc/oauth2'
 import type { Router, Response } from 'express'
 
 import { getJwkFromKey, Key } from '@credo-ts/core'

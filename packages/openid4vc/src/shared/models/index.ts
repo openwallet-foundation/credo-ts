@@ -1,25 +1,22 @@
-import type { AccessTokenResponse } from '@animo-id/oauth2'
+import type { AccessTokenResponse } from '@openid4vc/oauth2'
 import type {
   CredentialConfigurationSupported,
   CredentialConfigurationSupportedWithFormats,
   CredentialIssuerMetadata,
   CredentialIssuerMetadataDisplayEntry,
+  CredentialOfferObject,
   CredentialOfferPreAuthorizedCodeGrantTxCode,
   CredentialRequest,
   CredentialRequestFormatSpecific,
   CredentialRequestWithFormats,
   IssuerMetadataResult,
   ParseCredentialRequestReturn,
-  CredentialOfferObject,
-} from '@animo-id/oid4vci'
-import type {
-  VerifiedAuthorizationRequest,
-  AuthorizationRequestPayload,
-  AuthorizationResponsePayload,
-  IDTokenPayload,
-} from '@sphereon/did-auth-siop'
+} from '@openid4vc/oid4vci'
+import { Openid4vpAuthorizationResponse, Openid4vpAuthorizationResponseDcApi, ResolvedOpenid4vpAuthRequest } from '@openid4vc/oid4vp'
+import type { AuthorizationRequestPayload, IDTokenPayload } from '@sphereon/did-auth-siop'
 
-export { preAuthorizedCodeGrantIdentifier, authorizationCodeGrantIdentifier } from '@animo-id/oauth2'
+export { authorizationCodeGrantIdentifier, preAuthorizedCodeGrantIdentifier } from '@openid4vc/oauth2'
+export { Openid4vpAuthorizationRequest} from '@openid4vc/oid4vp'
 
 export type OpenId4VciCredentialConfigurationSupportedWithFormats = CredentialConfigurationSupportedWithFormats
 export type OpenId4VciCredentialConfigurationSupported = CredentialConfigurationSupported
@@ -46,12 +43,12 @@ export type OpenId4VciCredentialRequestWithFormats = CredentialRequestWithFormat
 
 export type OpenId4VciCredentialOfferPayload = CredentialOfferObject
 
-export type OpenId4VcSiopVerifiedAuthorizationRequest = VerifiedAuthorizationRequest
+export type OpenId4VcSiopVerifiedAuthorizationRequest = ResolvedOpenid4vpAuthRequest
 export type OpenId4VcSiopAuthorizationRequestPayload = AuthorizationRequestPayload
-export type OpenId4VcSiopAuthorizationResponsePayload = AuthorizationResponsePayload
+export type OpenId4VcSiopAuthorizationResponsePayload = Openid4vpAuthorizationResponse | Openid4vpAuthorizationResponseDcApi['data']
 export type OpenId4VcSiopIdTokenPayload = IDTokenPayload
 
-export * from './OpenId4VcJwtIssuer'
 export * from './CredentialHolderBinding'
-export * from './OpenId4VciCredentialFormatProfile'
 export * from './OpenId4VciAuthorizationServerConfig'
+export * from './OpenId4VciCredentialFormatProfile'
+export * from './OpenId4VcJwtIssuer'

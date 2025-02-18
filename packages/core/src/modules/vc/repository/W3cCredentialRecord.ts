@@ -93,4 +93,11 @@ export class W3cCredentialRecord extends BaseRecord<DefaultW3cCredentialTags, Cu
   public clone(): this {
     return JsonTransformer.fromJSON(JsonTransformer.toJSON(this), this.constructor as Constructable<this>)
   }
+
+  /**
+   * encoded is convenience method added to all credential records
+   */
+  public get encoded() {
+    return this.credential.encoded
+  }
 }

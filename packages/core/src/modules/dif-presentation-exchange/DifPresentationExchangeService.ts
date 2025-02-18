@@ -1,19 +1,3 @@
-import type {
-  DifPexCredentialsForRequest,
-  DifPexInputDescriptorToCredentials,
-  DifPresentationExchangeDefinition,
-  DifPresentationExchangeDefinitionV1,
-  DifPresentationExchangeDefinitionV2,
-  DifPresentationExchangeSubmission,
-  VerifiablePresentation,
-} from './models'
-import type { PresentationToCreate } from './utils'
-import type { AgentContext } from '../../agent'
-import type { Query } from '../../storage/StorageService'
-import type { VerificationMethod } from '../dids'
-import type { SdJwtVcRecord } from '../sd-jwt-vc'
-import type { W3cCredentialRecord } from '../vc'
-import type { IAnonCredsDataIntegrityService } from '../vc/data-integrity/models/IAnonCredsDataIntegrityService'
 import type { PresentationSignCallBackParams, Validated, VerifiablePresentationResult } from '@animo-id/pex'
 import type { InputDescriptorV2 } from '@sphereon/pex-models'
 import type {
@@ -21,6 +5,23 @@ import type {
   W3CVerifiablePresentation as SphereonW3cVerifiablePresentation,
   W3CVerifiablePresentation,
 } from '@sphereon/ssi-types'
+import type { AgentContext } from '../../agent'
+import type { Query } from '../../storage/StorageService'
+import type { VerificationMethod } from '../dids'
+import type { SdJwtVcRecord } from '../sd-jwt-vc'
+import type { W3cCredentialRecord, W3cJsonLdVerifiablePresentation } from '../vc'
+import type { IAnonCredsDataIntegrityService } from '../vc/data-integrity/models/IAnonCredsDataIntegrityService'
+import type {
+  DifPexCredentialsForRequest,
+  DifPexInputDescriptorToCredentials,
+  DifPresentationExchangeDefinition,
+  DifPresentationExchangeDefinitionV1,
+  DifPresentationExchangeDefinitionV2,
+  DifPresentationExchangeSubmission,
+  TransactionDataRequest,
+  VerifiablePresentation,
+} from './models'
+import type { PresentationToCreate } from './utils'
 
 import { PEVersion, PEX, Status } from '@animo-id/pex'
 import { PartialSdJwtDecodedVerifiableCredential } from '@animo-id/pex/dist/main/lib'
@@ -41,18 +42,19 @@ import {
   W3cPresentation,
 } from '../vc'
 import {
-  AnonCredsDataIntegrityServiceSymbol,
   ANONCREDS_DATA_INTEGRITY_CRYPTOSUITE,
+  AnonCredsDataIntegrityServiceSymbol,
 } from '../vc/data-integrity/models/IAnonCredsDataIntegrityService'
 
 import { DifPresentationExchangeError } from './DifPresentationExchangeError'
 import { DifPresentationExchangeSubmissionLocation } from './models'
+import { TransactionDataAuthorization } from './models/TransactionData'
 import {
-  getVerifiablePresentationFromEncoded,
-  getSphereonOriginalVerifiablePresentation,
   getCredentialsForRequest,
   getPresentationsToCreate,
   getSphereonOriginalVerifiableCredential,
+  getSphereonOriginalVerifiablePresentation,
+  getVerifiablePresentationFromEncoded,
 } from './utils'
 
 /**
@@ -77,7 +79,8 @@ export class DifPresentationExchangeService {
    * Use this method if you don't want to manually select the credentials yourself.
    */
   public selectCredentialsForRequest(
-    credentialsForRequest: DifPexCredentialsForRequest
+    credentialsForRequest: DifPexCredentialsForRequest,
+    transactionData?: TransactionDataRequest
   ): DifPexInputDescriptorToCredentials {
     if (!credentialsForRequest.areRequirementsSatisfied) {
       throw new CredoError('Could not find the required credentials for the presentation submission')
@@ -156,6 +159,7 @@ export class DifPresentationExchangeService {
       challenge: string
       domain?: string
       openid4vp?: Omit<MdocOpenId4VpSessionTranscriptOptions, 'verifierGeneratedNonce' | 'clientId'>
+      transactionDataAuthorization?: TransactionDataAuthorization
     }
   ) {
     const { presentationDefinition, domain, challenge, openid4vp } = options
@@ -167,7 +171,10 @@ export class DifPresentationExchangeService {
       claimFormat: PresentationToCreate['claimFormat']
     }> = []
 
-    const presentationsToCreate = getPresentationsToCreate(options.credentialsForInputDescriptor)
+    const presentationsToCreate = getPresentationsToCreate(
+      options.credentialsForInputDescriptor,
+      options.transactionDataAuthorization
+    )
     for (const presentationToCreate of presentationsToCreate) {
       // We create a presentation for each subject
       // Thus for each subject we need to filter all the related input descriptors and credentials
@@ -292,6 +299,13 @@ export class DifPresentationExchangeService {
         resultWithFormat.verifiablePresentationResult.verifiablePresentations.map((vp) =>
           getVerifiablePresentationFromEncoded(agentContext, vp)
         )
+      ),
+      encodedVerifiablePresentations: verifiablePresentationResultsWithFormat.flatMap(
+        (resultWithFormat) =>
+          resultWithFormat.verifiablePresentationResult.verifiablePresentations as unknown as (
+            | string
+            | W3cJsonLdVerifiablePresentation
+          )[]
       ),
       presentationSubmission,
       presentationSubmissionLocation:
@@ -564,6 +578,7 @@ export class DifPresentationExchangeService {
           verifierMetadata: {
             audience: domain,
             nonce: challenge,
+            transactionData: presentationToCreate.verifiableCredentials[0].transactionData,
             // TODO: we should make this optional
             issuedAt: Math.floor(Date.now() / 1000),
           },

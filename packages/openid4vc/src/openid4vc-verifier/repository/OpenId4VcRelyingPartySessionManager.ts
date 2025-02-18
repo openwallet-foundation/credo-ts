@@ -1,6 +1,11 @@
-import type { OpenId4VcVerificationSessionRecord } from './OpenId4VcVerificationSessionRecord'
 import type { AgentContext } from '@credo-ts/core'
-import type { AuthorizationRequestState, AuthorizationResponseState, IRPSessionManager } from '@sphereon/did-auth-siop'
+import type {
+  AuthorizationRequestState,
+  AuthorizationResponsePayload,
+  AuthorizationResponseState,
+  IRPSessionManager,
+} from '@sphereon/did-auth-siop'
+import type { OpenId4VcVerificationSessionRecord } from './OpenId4VcVerificationSessionRecord'
 
 import { CredoError } from '@credo-ts/core'
 import {
@@ -177,7 +182,9 @@ export class OpenId4VcRelyingPartySessionManager implements IRPSessionManager {
       correlationId: sessionRecord.id,
       // Not so nice that the session manager expects an error instance.....
       error: sessionRecord.errorMessage ? new Error(sessionRecord.errorMessage) : undefined,
-      response: await AuthorizationResponse.fromPayload(sessionRecord.authorizationResponsePayload),
+      response: await AuthorizationResponse.fromPayload(
+        sessionRecord.authorizationResponsePayload as AuthorizationResponsePayload & { vp_token: any }
+      ),
       status: sphereonAuthorizationResponseStateFromOpenId4VcVerificationState(sessionRecord.state),
     }
   }
