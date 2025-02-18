@@ -16,7 +16,7 @@ import { injectable } from '../../../plugins'
 import { asArray, isDid, MessageValidator } from '../../../utils'
 import { getKeyDidMappingByKeyType, DidResolverService, getKeyFromVerificationMethod } from '../../dids'
 import { X509ModuleConfig } from '../../x509'
-import { extractX509CertificatesFromJwt } from '../../x509/utils'
+import { extractX509CertificatesFromJwt } from '../../x509/extraction'
 import { W3cJsonLdVerifiableCredential } from '../data-integrity'
 
 import { W3cJwtVerifiableCredential } from './W3cJwtVerifiableCredential'

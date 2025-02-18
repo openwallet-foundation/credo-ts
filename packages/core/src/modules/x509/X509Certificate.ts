@@ -12,8 +12,6 @@ import {
 } from '@peculiar/asn1-x509'
 import * as x509 from '@peculiar/x509'
 
-x509.KeyUsageFlags
-
 import { Key } from '../../crypto/Key'
 import { CredoWebCrypto, CredoWebCryptoKey } from '../../crypto/webcrypto'
 import { credoKeyTypeIntoCryptoKeyAlgorithm, spkiAlgorithmIntoCredoKeyType } from '../../crypto/webcrypto/utils'

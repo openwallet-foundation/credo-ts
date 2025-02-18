@@ -1,5 +1,6 @@
 import type { AgentContext } from '../../../agent'
 
+import { id_ce_extKeyUsage, id_ce_keyUsage } from '@peculiar/asn1-x509'
 import * as x509 from '@peculiar/x509'
 
 import { InMemoryWallet } from '../../../../../../tests/InMemoryWallet'
@@ -11,7 +12,6 @@ import { X509Error } from '../X509Error'
 import { X509Service } from '../X509Service'
 
 import { X509KeyUsage, TypedArrayEncoder, X509ExtendedKeyUsage, Key } from '@credo-ts/core'
-import { id_ce_extKeyUsage, id_ce_keyUsage } from '@peculiar/asn1-x509'
 
 /**
  *
