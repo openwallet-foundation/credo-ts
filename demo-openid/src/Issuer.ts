@@ -267,18 +267,24 @@ export class Issuer extends BaseAgent<{
     const issuer = new Issuer(ISSUER_HOST, 2000, 'OpenId4VcIssuer ' + Math.random().toString())
     await issuer.initializeAgent('96213c3d7fc8d4d6754c7a0fd969598f')
 
-    const selfSignedCertificate = await X509Service.createSelfSignedCertificate(issuer.agent.context, {
-      key: await issuer.agent.context.wallet.createKey({
+    const certificate = await X509Service.createCertificate(issuer.agent.context, {
+      authorityKey: await issuer.agent.context.wallet.createKey({
         keyType: KeyType.P256,
         seed: TypedArrayEncoder.fromString('e5f18b10cd15cdb76818bc6ae8b71eb475e6eac76875ed085d3962239bbcf42f'),
       }),
-      notBefore: new Date('2000-01-01'),
-      notAfter: new Date('2050-01-01'),
-      extensions: [[{ type: 'dns', value: ISSUER_HOST.replace('https://', '').replace('http://', '') }]],
-      name: 'C=DE',
+      validity: {
+        notBefore: new Date('2000-01-01'),
+        notAfter: new Date('2050-01-01'),
+      },
+      extensions: {
+        subjectAlternativeName: {
+          name: [{ type: 'dns', value: ISSUER_HOST.replace('https://', '').replace('http://', '') }],
+        },
+      },
+      issuer: 'C=DE',
     })
 
-    const issuerCertficicate = selfSignedCertificate.toString('base64url')
+    const issuerCertficicate = certificate.toString('base64url')
     await issuer.agent.x509.setTrustedCertificates([issuerCertficicate])
     console.log('Set the following certficate for the holder to verify mdoc credentials.')
     console.log(issuerCertficicate)

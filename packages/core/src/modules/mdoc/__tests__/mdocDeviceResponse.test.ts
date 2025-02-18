@@ -26,14 +26,16 @@ describe('mdoc device-response test', () => {
     const nextDay = new Date(currentDate)
     nextDay.setDate(currentDate.getDate() + 2)
 
-    const selfSignedCertificate = await X509Service.createSelfSignedCertificate(agent.context, {
-      key: issuerKey,
-      notBefore: currentDate,
-      notAfter: nextDay,
-      extensions: [],
+    const certificate = await X509Service.createCertificate(agent.context, {
+      issuer: 'CN=credo',
+      authorityKey: issuerKey,
+      validity: {
+        notBefore: currentDate,
+        notAfter: nextDay,
+      },
     })
 
-    const issuerCertificate = selfSignedCertificate.toString('pem')
+    const issuerCertificate = certificate.toString('pem')
 
     const mdoc = await Mdoc.sign(agent.context, {
       docType: 'org.iso.18013.5.1.mDL',

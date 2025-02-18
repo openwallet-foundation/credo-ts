@@ -803,14 +803,18 @@ export async function createDidKidVerificationMethod(agentContext: AgentContext,
 
 export async function createX509Certificate(agentContext: AgentContext, dns: string, key?: Key) {
   const x509 = agentContext.dependencyManager.resolve(X509Api)
-  const certificate = await x509.createSelfSignedCertificate({
-    key:
+  const certificate = await x509.createCertificate({
+    authorityKey:
       key ??
       (await agentContext.wallet.createKey({
         keyType: KeyType.Ed25519,
       })),
-    name: 'C=DE',
-    extensions: [[{ type: 'dns', value: dns }]],
+    issuer: 'C=DE',
+    extensions: {
+      subjectAlternativeName: {
+        name: [{ type: 'dns', value: dns }],
+      },
+    },
   })
 
   return { certificate, base64Certificate: certificate.toString('base64') }

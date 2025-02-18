@@ -107,7 +107,7 @@ export const getMdocContext = (agentContext: AgentContext): MdocContext => {
         const x509Certificate = X509Certificate.fromRawCertificate(certificate)
         return {
           ...x509Certificate.data,
-          thumbprint: await x509Certificate.getThumprint(agentContext),
+          thumbprint: await x509Certificate.getThumprintInHex(agentContext),
         }
       },
     } satisfies X509Context,

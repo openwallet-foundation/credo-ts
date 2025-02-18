@@ -3,7 +3,7 @@ import { injectable } from '../../plugins'
 
 import { X509ModuleConfig } from './X509ModuleConfig'
 import { X509Service } from './X509Service'
-import { X509CreateSelfSignedCertificateOptions, X509ValidateCertificateChainOptions } from './X509ServiceOptions'
+import { X509CreateCertificateOptions, X509ValidateCertificateChainOptions } from './X509ServiceOptions'
 
 /**
  * @public
@@ -31,12 +31,12 @@ export class X509Api {
   }
 
   /**
-   * Creates a self-signed certificate.
+   * Creates a X.509 certificate.
    *
-   * @param options X509CreateSelfSignedCertificateOptions
+   * @param options X509CreateCertificateOptions
    */
-  public async createSelfSignedCertificate(options: X509CreateSelfSignedCertificateOptions) {
-    return await X509Service.createSelfSignedCertificate(this.agentContext, options)
+  public async createCertificate(options: X509CreateCertificateOptions) {
+    return await X509Service.createCertificate(this.agentContext, options)
   }
 
   /**

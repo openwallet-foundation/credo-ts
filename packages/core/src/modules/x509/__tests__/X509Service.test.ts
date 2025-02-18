@@ -1,17 +1,17 @@
 import type { AgentContext } from '../../../agent'
-import type { KeyGenAlgorithm, KeySignParams } from '../../../crypto/webcrypto/types'
 
+import { id_ce_extKeyUsage, id_ce_keyUsage } from '@peculiar/asn1-x509'
 import * as x509 from '@peculiar/x509'
 
 import { InMemoryWallet } from '../../../../../../tests/InMemoryWallet'
 import { getAgentConfig, getAgentContext } from '../../../../tests'
 import { KeyType } from '../../../crypto/KeyType'
 import { getJwkFromKey, P256Jwk } from '../../../crypto/jose/jwk'
-import { CredoWebCrypto, CredoWebCryptoKey } from '../../../crypto/webcrypto'
+import { CredoWebCrypto } from '../../../crypto/webcrypto'
 import { X509Error } from '../X509Error'
 import { X509Service } from '../X509Service'
 
-import { KeyUsage, TypedArrayEncoder } from '@credo-ts/core'
+import { X509KeyUsage, TypedArrayEncoder, X509ExtendedKeyUsage, Key } from '@credo-ts/core'
 
 /**
  *
@@ -45,7 +45,7 @@ const getLastMonth = () => {
 describe('X509Service', () => {
   let wallet: InMemoryWallet
   let agentContext: AgentContext
-  let x5c: Array<string>
+  let certificateChain: Array<string>
 
   beforeAll(async () => {
     const agentConfig = getAgentConfig('X509Service')
@@ -55,71 +55,154 @@ describe('X509Service', () => {
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     await wallet.createAndOpen(agentConfig.walletConfig!)
 
-    const algorithm: KeyGenAlgorithm = { name: 'ECDSA', namedCurve: 'P-256' }
-    const signingAlgorithm: KeySignParams = { name: 'ECDSA', hash: 'SHA-256' }
-
     const rootKey = await wallet.createKey({ keyType: KeyType.P256 })
-    const webCryptoRootKeys = {
-      publicKey: new CredoWebCryptoKey(rootKey, algorithm, true, 'public', ['verify']),
-      privateKey: new CredoWebCryptoKey(rootKey, algorithm, false, 'private', ['sign']),
-    }
-
     const intermediateKey = await wallet.createKey({ keyType: KeyType.P256 })
-    const webCryptoIntermediateKeys = {
-      publicKey: new CredoWebCryptoKey(intermediateKey, algorithm, true, 'public', ['verify']),
-      privateKey: new CredoWebCryptoKey(intermediateKey, algorithm, false, 'private', ['sign']),
-    }
-
     const leafKey = await wallet.createKey({ keyType: KeyType.P256 })
-    const webCryptoLeafKeys = {
-      publicKey: new CredoWebCryptoKey(leafKey, algorithm, true, 'public', ['verify']),
-      privateKey: new CredoWebCryptoKey(leafKey, algorithm, false, 'private', ['sign']),
-    }
 
     x509.cryptoProvider.set(new CredoWebCrypto(agentContext))
 
-    const rootCert = await x509.X509CertificateGenerator.createSelfSigned({
+    const rootCert = await X509Service.createCertificate(agentContext, {
       serialNumber: '01',
-      name: 'CN=Root',
-      notBefore: getLastMonth(),
-      notAfter: getNextMonth(),
-      keys: webCryptoRootKeys,
-      signingAlgorithm,
+      issuer: { commonName: 'Root' },
+      authorityKey: rootKey,
+      validity: {
+        notBefore: getLastMonth(),
+        notAfter: getNextMonth(),
+      },
     })
 
-    const intermediateCert = await x509.X509CertificateGenerator.create({
+    const intermediateCert = await X509Service.createCertificate(agentContext, {
       serialNumber: '02',
-      subject: 'CN=Intermediate',
       issuer: rootCert.subject,
-      notBefore: getLastMonth(),
-      notAfter: getNextMonth(),
-      signingKey: webCryptoRootKeys.privateKey,
-      publicKey: webCryptoIntermediateKeys.publicKey,
-      signingAlgorithm,
+      authorityKey: rootKey,
+      subject: { commonName: 'Intermediate' },
+      subjectPublicKey: intermediateKey,
+      validity: {
+        notBefore: getLastMonth(),
+        notAfter: getNextMonth(),
+      },
     })
 
-    const leafCert = await x509.X509CertificateGenerator.create({
+    const leafCert = await X509Service.createCertificate(agentContext, {
       serialNumber: '03',
-      subject: 'CN=Leaf',
       issuer: intermediateCert.subject,
-      notBefore: getLastMonth(),
-      notAfter: getNextMonth(),
-      signingKey: webCryptoIntermediateKeys.privateKey,
-      publicKey: webCryptoLeafKeys.publicKey,
-      signingAlgorithm,
+      authorityKey: intermediateKey,
+      subject: { commonName: 'Leaf' },
+      subjectPublicKey: leafKey,
+      validity: {
+        notBefore: getLastMonth(),
+        notAfter: getNextMonth(),
+      },
     })
 
-    const chain = new x509.X509ChainBuilder({
-      certificates: [rootCert, intermediateCert, leafCert],
+    const builder = new x509.X509ChainBuilder({
+      certificates: [
+        new x509.X509Certificate(rootCert.rawCertificate),
+        new x509.X509Certificate(intermediateCert.rawCertificate),
+      ],
     })
-
-    x5c = (await chain.build(leafCert)).map((cert) => cert.toString('base64'))
+    certificateChain = (await builder.build(new x509.X509Certificate(leafCert.rawCertificate))).map((c) =>
+      c.toString('base64')
+    )
 
     x509.cryptoProvider.clear()
   })
 
   afterAll(async () => {
     await wallet.close()
+  })
+
+  it('should create a valid self-signed certificate', async () => {
+    const authorityKey = await wallet.createKey({ keyType: KeyType.P256 })
+    const certificate = await X509Service.createCertificate(agentContext, {
+      authorityKey,
+      issuer: { commonName: 'credo' },
+    })
+
+    expect(certificate.publicKey.keyType).toStrictEqual(KeyType.P256)
+    expect(certificate.publicKey.publicKey.length).toStrictEqual(65)
+    expect(certificate.subject).toStrictEqual('CN=credo')
+    expect(certificate.extensions).toBeUndefined()
+  })
+
+  it('should create a valid self-signed certificate with a critical extension', async () => {
+    const authorityKey = await wallet.createKey({ keyType: KeyType.P256 })
+    const certificate = await X509Service.createCertificate(agentContext, {
+      authorityKey,
+      issuer: { commonName: 'credo' },
+      extensions: {
+        keyUsage: {
+          usages: [X509KeyUsage.CrlSign, X509KeyUsage.KeyCertSign],
+          markAsCritical: true,
+        },
+        extendedKeyUsage: {
+          usages: [X509ExtendedKeyUsage.MdlDs],
+          markAsCritical: false,
+        },
+      },
+    })
+
+    expect(certificate.isExtensionCritical(id_ce_keyUsage)).toStrictEqual(true)
+    expect(certificate.isExtensionCritical(id_ce_extKeyUsage)).toStrictEqual(false)
+  })
+
+  it('should create a valid self-signed certifcate with extensions', async () => {
+    const authorityKey = await wallet.createKey({ keyType: KeyType.P256 })
+    const certificate = await X509Service.createCertificate(agentContext, {
+      authorityKey,
+      issuer: { commonName: 'credo' },
+      extensions: {
+        subjectAlternativeName: {
+          name: [
+            { type: 'url', value: 'animo.id' },
+            { type: 'dns', value: 'paradym.id' },
+          ],
+        },
+        keyUsage: {
+          usages: [X509KeyUsage.DigitalSignature],
+        },
+        extendedKeyUsage: {
+          usages: [X509ExtendedKeyUsage.MdlDs],
+        },
+        subjectKeyIdentifier: {
+          include: true,
+        },
+      },
+    })
+
+    expect(certificate).toMatchObject({
+      sanDnsNames: expect.arrayContaining(['paradym.id']),
+      sanUriNames: expect.arrayContaining(['animo.id']),
+      keyUsage: expect.arrayContaining([X509KeyUsage.DigitalSignature]),
+      extendedKeyUsage: expect.arrayContaining([X509ExtendedKeyUsage.MdlDs]),
+      subjectKeyIdentifier: TypedArrayEncoder.toHex(authorityKey.publicKey),
+    })
+  })
+
+  it('should create a valid leaf certificate', async () => {
+    const authorityKey = await wallet.createKey({ keyType: KeyType.P256 })
+    const subjectKey = await wallet.createKey({ keyType: KeyType.P256 })
+
+    const certificate = await X509Service.createCertificate(agentContext, {
+      authorityKey,
+      subjectPublicKey: new Key(subjectKey.publicKey, KeyType.P256),
+      issuer: { commonName: 'credo' },
+      subject: { commonName: 'DCS credo' },
+      extensions: {
+        subjectKeyIdentifier: { include: true },
+        authorityKeyIdentifier: { include: true },
+      },
+    })
+
+    expect(certificate.subjectKeyIdentifier).toStrictEqual(TypedArrayEncoder.toHex(subjectKey.publicKey))
+    expect(certificate.authorityKeyIdentifier).toStrictEqual(TypedArrayEncoder.toHex(authorityKey.publicKey))
+    expect(certificate.publicKey.keyType).toStrictEqual(KeyType.P256)
+    expect(certificate.publicKey.publicKey.length).toStrictEqual(65)
+    expect(certificate.subject).toStrictEqual('CN=DCS credo')
+    expect(certificate).toMatchObject({
+      subjectKeyIdentifier: TypedArrayEncoder.toHex(subjectKey.publicKey),
+      authorityKeyIdentifier: TypedArrayEncoder.toHex(authorityKey.publicKey),
+    })
   })
 
   it('should correctly parse an X.509 certificate with an uncompressed key to a JWK', async () => {
@@ -143,77 +226,20 @@ describe('X509Service', () => {
     })
   })
 
-  it('should parse a valid X.509 certificate', async () => {
-    const key = await agentContext.wallet.createKey({ keyType: KeyType.P256 })
-    const certificate = await X509Service.createSelfSignedCertificate(agentContext, {
-      key,
-      extensions: [
-        [
-          { type: 'url', value: 'animo.id' },
-          { type: 'dns', value: 'paradym.id' },
-        ],
-        [
-          { type: 'dns', value: 'wallet.paradym.id' },
-          { type: 'dns', value: 'animo.id' },
-        ],
-      ],
-    })
-    const encodedCertificate = certificate.toString('base64')
-
-    const x509Certificate = X509Service.parseCertificate(agentContext, { encodedCertificate })
-
-    expect(x509Certificate).toMatchObject({
-      sanDnsNames: expect.arrayContaining(['paradym.id', 'wallet.paradym.id', 'animo.id']),
-      sanUriNames: expect.arrayContaining(['animo.id']),
-    })
-
-    expect(x509Certificate.publicKey.publicKey.length).toStrictEqual(65)
-  })
-
   it('should correctly parse x5c chain provided as a test-vector', async () => {
-    const x5c = [
+    const certificateChain = [
       'MIICaTCCAg+gAwIBAgIUShyxcIZGiPV3wBRp4YOlNp1I13YwCgYIKoZIzj0EAwIwgYkxCzAJBgNVBAYTAkRFMQ8wDQYDVQQIDAZiZHIuZGUxDzANBgNVBAcMBkJlcmxpbjEMMAoGA1UECgwDQkRSMQ8wDQYDVQQLDAZNYXVyZXIxHTAbBgNVBAMMFGlzc3VhbmNlLXRlc3QuYmRyLmRlMRowGAYJKoZIhvcNAQkBFgt0ZXN0QGJkci5kZTAeFw0yNDA1MjgwODIyMjdaFw0zNDA0MDYwODIyMjdaMIGJMQswCQYDVQQGEwJERTEPMA0GA1UECAwGYmRyLmRlMQ8wDQYDVQQHDAZCZXJsaW4xDDAKBgNVBAoMA0JEUjEPMA0GA1UECwwGTWF1cmVyMR0wGwYDVQQDDBRpc3N1YW5jZS10ZXN0LmJkci5kZTEaMBgGCSqGSIb3DQEJARYLdGVzdEBiZHIuZGUwWTATBgcqhkjOPQIBBggqhkjOPQMBBwNCAASygZ1Ma0m9uif4n8g3CiCP+E1r2KWFxVmS6LRWqUBMgn5fODKIBftdzVSbv/38gujy5qxh/q5bLcT+yLilazCao1MwUTAdBgNVHQ4EFgQUMGdPNMIdo3iHfqt2jlTnBNCfRNAwHwYDVR0jBBgwFoAUMGdPNMIdo3iHfqt2jlTnBNCfRNAwDwYDVR0TAQH/BAUwAwEB/zAKBggqhkjOPQQDAgNIADBFAiAu2h5xulXReb5IhgpkYiYR1BONTtsjT7nfzQAhL4ISOQIhAK6jKwwf6fTTSZwvJUOAu7dz1Dy/DmH19Lef0zqaNNht',
     ]
 
-    const chain = await X509Service.validateCertificateChain(agentContext, { certificateChain: x5c })
+    const chain = await X509Service.validateCertificateChain(agentContext, { certificateChain })
 
     expect(chain.length).toStrictEqual(1)
     expect(chain[0].sanDnsNames).toStrictEqual([])
     expect(chain[0].sanUriNames).toStrictEqual([])
   })
 
-  it('should parse a valid X.509 certificate', async () => {
-    const key = await agentContext.wallet.createKey({ keyType: KeyType.P256 })
-    const certificate = await X509Service.createSelfSignedCertificate(agentContext, {
-      key,
-      extensions: [
-        [
-          { type: 'url', value: 'animo.id' },
-          { type: 'dns', value: 'paradym.id' },
-        ],
-        [
-          { type: 'dns', value: 'wallet.paradym.id' },
-          { type: 'dns', value: 'animo.id' },
-        ],
-      ],
-    })
-    const encodedCertificate = certificate.toString('base64')
-
-    const x509Certificate = X509Service.parseCertificate(agentContext, { encodedCertificate })
-
-    expect(x509Certificate).toMatchObject({
-      sanDnsNames: expect.arrayContaining(['paradym.id', 'wallet.paradym.id', 'animo.id']),
-      sanUriNames: expect.arrayContaining(['animo.id']),
-      authorityKeyIdentifier: TypedArrayEncoder.toHex(key.publicKey),
-      subjectKeyIdentifier: TypedArrayEncoder.toHex(key.publicKey),
-      keyUsage: [KeyUsage.DigitalSignature, KeyUsage.KeyCertSign],
-    })
-
-    expect(x509Certificate.publicKey.publicKey.length).toStrictEqual(65)
-  })
-
   it('should validate a valid certificate chain', async () => {
-    const validatedChain = await X509Service.validateCertificateChain(agentContext, { certificateChain: x5c })
+    const validatedChain = await X509Service.validateCertificateChain(agentContext, { certificateChain })
 
     expect(validatedChain.length).toStrictEqual(3)
 
@@ -227,108 +253,53 @@ describe('X509Service', () => {
     })
   })
 
-  it('should generate a self-signed X509 Certificate with Ed25519', async () => {
-    const key = await agentContext.wallet.createKey({ keyType: KeyType.Ed25519 })
-
-    const selfSignedCertificate = await X509Service.createSelfSignedCertificate(agentContext, {
-      key,
-    })
-
-    expect(selfSignedCertificate.publicKey.publicKeyBase58).toStrictEqual(key.publicKeyBase58)
-    expect(selfSignedCertificate.sanDnsNames).toStrictEqual([])
-    expect(selfSignedCertificate.sanUriNames).toStrictEqual([])
-
-    const pemCertificate = selfSignedCertificate.toString('pem')
-
-    expect(pemCertificate.startsWith('-----BEGIN CERTIFICATE-----\n')).toBeTruthy()
-    expect(pemCertificate.endsWith('\n-----END CERTIFICATE-----')).toBeTruthy()
-  })
-
-  it('should generate a self-signed X509 Certificate with P256', async () => {
-    const key = await agentContext.wallet.createKey({ keyType: KeyType.P256 })
-
-    const selfSignedCertificate = await X509Service.createSelfSignedCertificate(agentContext, {
-      key,
-    })
-
-    expect(selfSignedCertificate.publicKey.publicKeyBase58).toStrictEqual(key.publicKeyBase58)
-    expect(selfSignedCertificate.sanDnsNames).toStrictEqual([])
-    expect(selfSignedCertificate.sanUriNames).toStrictEqual([])
-
-    const pemCertificate = selfSignedCertificate.toString('pem')
-
-    expect(pemCertificate.startsWith('-----BEGIN CERTIFICATE-----\n')).toBeTruthy()
-    expect(pemCertificate.endsWith('\n-----END CERTIFICATE-----')).toBeTruthy()
-  })
-
-  it('should generate a self-signed X509 Certificate with extensions', async () => {
-    const key = await agentContext.wallet.createKey({ keyType: KeyType.P256 })
-
-    const selfSignedCertificate = await X509Service.createSelfSignedCertificate(agentContext, {
-      key,
-      name: 'C=DOO',
-      extensions: [
-        [
-          { type: 'dns', value: 'dns:me' },
-          { type: 'url', value: 'some://scheme' },
-        ],
-      ],
-      includeAuthorityKeyIdentifier: true,
-    })
-
-    expect(selfSignedCertificate.publicKey).toMatchObject({
-      publicKeyBase58: key.publicKeyBase58,
-    })
-
-    expect(selfSignedCertificate).toMatchObject({
-      sanDnsNames: expect.arrayContaining(['dns:me']),
-      sanUriNames: expect.arrayContaining(['some://scheme']),
-    })
-  })
-
   it('should not validate a certificate with a `notBefore` of > Date.now', async () => {
-    const key = await agentContext.wallet.createKey({ keyType: KeyType.P256 })
+    const authorityKey = await agentContext.wallet.createKey({ keyType: KeyType.P256 })
 
-    const selfSignedCertificate = (
-      await X509Service.createSelfSignedCertificate(agentContext, {
-        key,
-        notBefore: getNextMonth(),
+    const certificate = (
+      await X509Service.createCertificate(agentContext, {
+        authorityKey,
+        issuer: 'CN=credo',
+        validity: {
+          notBefore: getNextMonth(),
+        },
       })
     ).toString('base64')
 
     expect(
       async () =>
         await X509Service.validateCertificateChain(agentContext, {
-          certificateChain: [selfSignedCertificate],
+          certificateChain: [certificate],
         })
     ).rejects.toThrow(X509Error)
   })
 
   it('should not validate a certificate with a `notAfter` of < Date.now', async () => {
-    const key = await agentContext.wallet.createKey({ keyType: KeyType.P256 })
+    const authorityKey = await agentContext.wallet.createKey({ keyType: KeyType.P256 })
 
-    const selfSignedCertificate = (
-      await X509Service.createSelfSignedCertificate(agentContext, {
-        key,
-        notAfter: getLastMonth(),
+    const certificate = (
+      await X509Service.createCertificate(agentContext, {
+        authorityKey,
+        issuer: 'CN=credo',
+        validity: {
+          notAfter: getLastMonth(),
+        },
       })
     ).toString('base64')
 
     expect(
       async () =>
         await X509Service.validateCertificateChain(agentContext, {
-          certificateChain: [selfSignedCertificate],
+          certificateChain: [certificate],
         })
     ).rejects.toThrow(X509Error)
   })
 
   it('should not validate a certificate chain if incorrect signing order', async () => {
-    const certificateChain = [x5c[1], x5c[2], x5c[0]]
-
     expect(
       async () =>
         await X509Service.validateCertificateChain(agentContext, {
-          certificateChain,
+          certificateChain: [certificateChain[1], certificateChain[2], certificateChain[0]],
         })
     ).rejects.toThrow(X509Error)
   })
