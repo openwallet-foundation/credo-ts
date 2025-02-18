@@ -21,7 +21,6 @@ import {
   isOpenid4vpAuthorizationResponseDcApi,
   isJarmResponseMode,
 } from '@openid4vc/oid4vp'
-import type { IDTokenPayload } from '@sphereon/did-auth-siop'
 import type {
   OpenId4VcSiopCreateAuthorizationRequestOptions,
   OpenId4VcSiopCreateAuthorizationRequestReturn,
@@ -522,8 +521,6 @@ export class OpenId4VcSiopVerifierService {
       ? verificationSession.authorizationResponsePayload.data
       : verificationSession.authorizationResponsePayload
 
-    const idToken = openid4vpAuthorizationResponsePayload.id_token
-    const idTokenPayload = idToken ? Jwt.fromSerializedJwt(idToken).payload : undefined
 
     const openid4vpVerifier = this.getOpenid4vpVerifier(agentContext)
     const authorizationRequest = openid4vpVerifier.parseOpenid4vpAuthorizationRequestPayload({
@@ -581,12 +578,11 @@ export class OpenId4VcSiopVerifierService {
       }
     }
 
-    if (!idToken && !presentationExchange && !dcql) {
-      throw new CredoError('No idToken or presentationExchange found in the response.')
+    if (!presentationExchange && !dcql) {
+      throw new CredoError('No presentationExchange or dcql found in the response.')
     }
 
     return {
-      idToken: idTokenPayload ? { payload: idTokenPayload as IDTokenPayload } : undefined,
       presentationExchange,
       dcql,
       transactionData,

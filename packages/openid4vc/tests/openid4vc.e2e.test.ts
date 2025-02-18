@@ -23,7 +23,6 @@ import {
   ClaimFormat,
   CredoError,
   DidsApi,
-  DifPresentationExchangeService,
   getJwkFromKey,
   getKeyFromVerificationMethod,
   Hasher,
@@ -45,7 +44,6 @@ import {
   MdocRecord,
   DateOnly,
 } from '@credo-ts/core'
-import { ResponseMode } from '@sphereon/did-auth-siop'
 import express, { type Express } from 'express'
 
 import { AskarModule } from '../../askar/src'
@@ -787,10 +785,9 @@ describe('OpenId4Vc', () => {
       verificationSessionId: verificationSession1.id,
     })
 
-    const { idToken: idToken1, presentationExchange: presentationExchange1 } =
+    const { presentationExchange: presentationExchange1 } =
       await verifierTenant1_2.modules.openId4VcVerifier.getVerifiedAuthorizationResponse(verificationSession1.id)
 
-    expect(idToken1).toBeUndefined()
     expect(presentationExchange1).toMatchObject({
       definition: openBadgePresentationDefinition,
       submission: {
@@ -831,9 +828,8 @@ describe('OpenId4Vc', () => {
       state: OpenId4VcVerificationSessionState.ResponseVerified,
       verificationSessionId: verificationSession2.id,
     })
-    const { idToken: idToken2, presentationExchange: presentationExchange2 } =
+    const { presentationExchange: presentationExchange2 } =
       await verifierTenant2_2.modules.openId4VcVerifier.getVerifiedAuthorizationResponse(verificationSession2.id)
-    expect(idToken2).toBeUndefined()
 
     expect(presentationExchange2).toMatchObject({
       definition: universityDegreePresentationDefinition,
@@ -1030,12 +1026,9 @@ describe('OpenId4Vc', () => {
       verificationSessionId: verificationSession.id,
     })
     const {
-      idToken,
       presentationExchange,
       transactionData: _transactionData,
     } = await verifier.agent.modules.openId4VcVerifier.getVerifiedAuthorizationResponse(verificationSession.id)
-
-    expect(idToken).toBeUndefined()
 
     const presentation = presentationExchange?.presentations[0] as SdJwtVc
     expect(transactionData).toEqual(_transactionData)
@@ -1279,10 +1272,8 @@ describe('OpenId4Vc', () => {
       state: OpenId4VcVerificationSessionState.ResponseVerified,
       verificationSessionId: verificationSession.id,
     })
-    const { idToken, presentationExchange } =
+    const { presentationExchange } =
       await verifier.agent.modules.openId4VcVerifier.getVerifiedAuthorizationResponse(verificationSession.id)
-
-    expect(idToken).toBeUndefined()
 
     const presentation = presentationExchange?.presentations[0] as SdJwtVc
 
@@ -1671,14 +1662,11 @@ describe('OpenId4Vc', () => {
       verificationSessionId: verificationSession.id,
     })
     const {
-      idToken,
       presentationExchange,
       transactionData: tdResult,
     } = await verifier.agent.modules.openId4VcVerifier.getVerifiedAuthorizationResponse(verificationSession.id)
 
     expect(transactionData).toEqual(tdResult)
-
-    expect(idToken).toBeUndefined()
 
     const presentation = presentationExchange?.presentations[0] as SdJwtVc
     // name SHOULD NOT be disclosed
@@ -2027,7 +2015,7 @@ describe('OpenId4Vc', () => {
     }
 
     // setting this to direct_post to simulate the result of sending a non encrypted response to an authorization request that requires enryption
-    requestPayload.response_mode = ResponseMode.DIRECT_POST
+    requestPayload.response_mode = 'direct_post'
 
     const result = await holder.agent.modules.openId4VcHolder.acceptSiopAuthorizationRequest({
       authorizationRequest: resolvedAuthorizationRequest.authorizationRequest,
@@ -2295,10 +2283,8 @@ describe('OpenId4Vc', () => {
       state: OpenId4VcVerificationSessionState.ResponseVerified,
       verificationSessionId: verificationSession.id,
     })
-    const { idToken, presentationExchange } =
+    const { presentationExchange } =
       await verifier.agent.modules.openId4VcVerifier.getVerifiedAuthorizationResponse(verificationSession.id)
-
-    expect(idToken).toBeUndefined()
 
     const presentation = presentationExchange?.presentations[0] as MdocDeviceResponse
     expect(presentation.documents).toHaveLength(1)
@@ -2628,10 +2614,8 @@ describe('OpenId4Vc', () => {
       state: OpenId4VcVerificationSessionState.ResponseVerified,
       verificationSessionId: verificationSession.id,
     })
-    const { idToken, presentationExchange } =
+    const { presentationExchange } =
       await verifier.agent.modules.openId4VcVerifier.getVerifiedAuthorizationResponse(verificationSession.id)
-
-    expect(idToken).toBeUndefined()
 
     const presentation = presentationExchange?.presentations[0] as SdJwtVc
 
@@ -2965,9 +2949,8 @@ describe('OpenId4Vc', () => {
       verificationSessionId: verificationSession.id,
     })
 
-    const { idToken, dcql, transactionData } =
+    const { dcql, transactionData } =
       await verifier.agent.modules.openId4VcVerifier.getVerifiedAuthorizationResponse(verificationSession.id)
-    expect(idToken).toBeUndefined()
 
     expect(transactionData).toEqual([
       {
