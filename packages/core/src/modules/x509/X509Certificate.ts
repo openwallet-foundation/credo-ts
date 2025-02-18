@@ -108,28 +108,28 @@ export class X509Certificate {
 
   public get subjectAlternativeNames() {
     const san = this.getMatchingExtensions<x509.SubjectAlternativeNameExtension>(id_ce_subjectAltName)
-    return san?.flatMap((s) => s.names.items).map((i) => ({ type: i.type, value: i.value }))
+    return san?.flatMap((s) => s.names.items).map((i) => ({ type: i.type, value: i.value })) ?? []
   }
 
   public get issuerAlternativeNames() {
     const ian = this.getMatchingExtensions<IssuerAlternativeNameExtension>(id_ce_issuerAltName)
-    return ian?.flatMap((i) => i.names.items).map((i) => ({ type: i.type, value: i.value }))
+    return ian?.flatMap((i) => i.names.items).map((i) => ({ type: i.type, value: i.value })) ?? []
   }
 
   public get sanDnsNames() {
-    return this.subjectAlternativeNames?.filter((san) => san.type === 'dns').map((san) => san.value)
+    return this.subjectAlternativeNames.filter((san) => san.type === 'dns').map((san) => san.value)
   }
 
   public get sanUriNames() {
-    return this.subjectAlternativeNames?.filter((ian) => ian.type === 'url').map((ian) => ian.value)
+    return this.subjectAlternativeNames.filter((ian) => ian.type === 'url').map((ian) => ian.value)
   }
 
   public get ianDnsNames() {
-    return this.issuerAlternativeNames?.filter((san) => san.type === 'dns').map((san) => san.value)
+    return this.issuerAlternativeNames.filter((san) => san.type === 'dns').map((san) => san.value)
   }
 
   public get ianUriNames() {
-    return this.issuerAlternativeNames?.filter((ian) => ian.type === 'url').map((ian) => ian.value)
+    return this.issuerAlternativeNames.filter((ian) => ian.type === 'url').map((ian) => ian.value)
   }
 
   public get authorityKeyIdentifier() {

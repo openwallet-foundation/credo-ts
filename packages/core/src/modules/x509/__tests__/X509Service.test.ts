@@ -172,8 +172,8 @@ describe('X509Service', () => {
     })
 
     expect(certificate).toMatchObject({
-      // sanDnsNames: expect.arrayContaining(['paradym.id']),
-      // sanUriNames: expect.arrayContaining(['animo.id']),
+      sanDnsNames: expect.arrayContaining(['paradym.id']),
+      sanUriNames: expect.arrayContaining(['animo.id']),
       keyUsage: expect.arrayContaining([X509KeyUsage.DigitalSignature]),
       extendedKeyUsage: expect.arrayContaining([X509ExtendedKeyUsage.MdlDs]),
       subjectKeyIdentifier: TypedArrayEncoder.toHex(authorityKey.publicKey),
