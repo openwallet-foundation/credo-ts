@@ -2465,15 +2465,15 @@ packages:
     resolution: {integrity: sha512-U69T3ItWHvLwGg5eJ0n3I62nWuE6ilHlmz7zM0npLBRvPRd7e6NYmg54vvRtP5mZG7kZqZCFVdsTWo7BPtBujg==}
 
   '@openid4vc/oauth2@file:local/openid4vc-oauth2-0.2.0.tgz':
-    resolution: {integrity: sha512-JMNjT2TjTav0Erfm2Nme9svU3ORg6BVpvCzADcSow/Wb42py32/tNQs/QLGpLamiqhYz+eAkF/sIxlrKVSx/NQ==, tarball: file:local/openid4vc-oauth2-0.2.0.tgz}
+    resolution: {integrity: sha512-n51ygKJD1ijgOjarkq8Xk0UuTfSPJjj/aX1L6bzrpHQAZGuiel7gew2Fgj7Z+mExWKSOViQ63iGaTI7G6yMcdQ==, tarball: file:local/openid4vc-oauth2-0.2.0.tgz}
     version: 0.2.0
 
   '@openid4vc/oid4vci@file:local/openid4vc-oid4vci-0.2.0.tgz':
-    resolution: {integrity: sha512-OG7GU5QJZ38hRdAaiKYi1T5NjMmL+DswNn/oB410rb+/LEFsCbrAc0NlH+AVdl+SYIYI3GKX8x66Dxl6tHmBEg==, tarball: file:local/openid4vc-oid4vci-0.2.0.tgz}
+    resolution: {integrity: sha512-OSgSaFMdwh6hEuUpCVrKiA5ost8xVXcHPJPQcr89WqLyqxtPmFAWsjfeiCL6ZhMZHTyjCEYzhYiwtSnrpakqfQ==, tarball: file:local/openid4vc-oid4vci-0.2.0.tgz}
     version: 0.2.0
 
   '@openid4vc/oid4vp@file:local/openid4vc-oid4vp-0.1.4.tgz':
-    resolution: {integrity: sha512-FVQsf6FdmKFtkzTt+LofrYFpCiavMxU6F5W74LwEcMaEG7bvzGjju3AOzTwSJvi97XyzOV2ULc0rSRWGMlABrQ==, tarball: file:local/openid4vc-oid4vp-0.1.4.tgz}
+    resolution: {integrity: sha512-zcgbpJ+6T+2rQzORyR/ZfltRd4nrjG4AMz/G4jHjM1NREgtyOwG7vISkzYAL30ySHFk9d2PjE0u8hqkJxszTXQ==, tarball: file:local/openid4vc-oid4vp-0.1.4.tgz}
     version: 0.1.4
 
   '@openid4vc/utils@file:local/openid4vc-utils-0.2.0.tgz':
