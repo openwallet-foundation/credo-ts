@@ -1,5 +1,4 @@
 import type { AgentContext } from '@credo-ts/core'
-import type { AuthorizationEvent, AuthorizationRequest } from '@sphereon/did-auth-siop'
 import type { OpenId4VcVerificationSessionStateChangedEvent } from '../OpenId4VcVerifierEvents'
 
 import {
@@ -11,7 +10,6 @@ import {
   injectable,
   InjectionSymbols,
 } from '@credo-ts/core'
-import { AuthorizationEvents } from '@sphereon/did-auth-siop'
 import { EventEmitter as NativeEventEmitter } from 'events'
 
 import { OpenId4VcVerificationSessionState } from '../OpenId4VcVerificationSessionState'
@@ -20,6 +18,70 @@ import { OpenId4VcVerifierEvents } from '../OpenId4VcVerifierEvents'
 import { isOpenid4vpAuthorizationResponseDcApi, Openid4vpAuthorizationResponse, Openid4vpAuthorizationResponseDcApi } from '@openid4vc/oid4vp'
 import { OpenId4VcVerificationSessionRecord } from './OpenId4VcVerificationSessionRecord'
 import { OpenId4VcVerificationSessionRepository } from './OpenId4VcVerificationSessionRepository'
+import { OpenId4VcSiopAuthorizationRequestPayload } from '../../shared/index'
+
+
+export enum AuthorizationEvents {
+  ON_AUTH_REQUEST_CREATED_SUCCESS = 'onAuthRequestCreatedSuccess',
+  ON_AUTH_REQUEST_CREATED_FAILED = 'onAuthRequestCreatedFailed',
+
+  ON_AUTH_REQUEST_SENT_SUCCESS = 'onAuthRequestSentSuccess',
+  ON_AUTH_REQUEST_SENT_FAILED = 'onAuthRequestSentFailed',
+
+  ON_AUTH_REQUEST_RECEIVED_SUCCESS = 'onAuthRequestReceivedSuccess',
+  ON_AUTH_REQUEST_RECEIVED_FAILED = 'onAuthRequestReceivedFailed',
+
+  ON_AUTH_REQUEST_VERIFIED_SUCCESS = 'onAuthRequestVerifiedSuccess',
+  ON_AUTH_REQUEST_VERIFIED_FAILED = 'onAuthRequestVerifiedFailed',
+
+  ON_AUTH_RESPONSE_CREATE_SUCCESS = 'onAuthResponseCreateSuccess',
+  ON_AUTH_RESPONSE_CREATE_FAILED = 'onAuthResponseCreateFailed',
+
+  ON_AUTH_RESPONSE_SENT_SUCCESS = 'onAuthResponseSentSuccess',
+  ON_AUTH_RESPONSE_SENT_FAILED = 'onAuthResponseSentFailed',
+
+  ON_AUTH_RESPONSE_RECEIVED_SUCCESS = 'onAuthResponseReceivedSuccess',
+  ON_AUTH_RESPONSE_RECEIVED_FAILED = 'onAuthResponseReceivedFailed',
+
+  ON_AUTH_RESPONSE_VERIFIED_SUCCESS = 'onAuthResponseVerifiedSuccess',
+  ON_AUTH_RESPONSE_VERIFIED_FAILED = 'onAuthResponseVerifiedFailed',
+}
+
+export class AuthorizationEvent<T> {
+  private readonly _subject: T | undefined
+  private readonly _error?: Error
+  private readonly _timestamp: number
+  private readonly _correlationId: string
+
+  public constructor(args: { correlationId: string; subject?: T; error?: Error }) {
+    //fixme: Create correlationId if not provided. Might need to be deferred to registry though
+    this._correlationId = args.correlationId
+    this._timestamp = Date.now()
+    this._subject = args.subject
+    this._error = args.error
+  }
+
+  get subject(): T | undefined {
+    return this._subject
+  }
+
+  get timestamp(): number {
+    return this._timestamp
+  }
+
+  get error(): Error | undefined {
+    return this._error
+  }
+
+  public hasError(): boolean {
+    return !!this._error
+  }
+
+  get correlationId(): string {
+    return this._correlationId
+  }
+}
+
 
 interface RelyingPartyEventEmitterContext {
   contextCorrelationId: string
@@ -111,7 +173,7 @@ export class OpenId4VcRelyingPartyEventHandler {
   }
 
   private onAuthorizationRequestSentSuccess = async (
-    event: AuthorizationEvent<AuthorizationRequest>,
+    event: AuthorizationEvent<OpenId4VcSiopAuthorizationRequestPayload>,
     context: RelyingPartyEventEmitterContext
   ): Promise<void> => {
     await this.withSession(context.contextCorrelationId, async (agentContext, verificationSessionRepository) => {

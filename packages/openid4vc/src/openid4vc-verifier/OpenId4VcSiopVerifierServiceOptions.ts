@@ -13,7 +13,6 @@ import type {
   OpenId4VcIssuerX5c,
   OpenId4VcJwtIssuer,
   OpenId4VcSiopAuthorizationResponsePayload,
-  OpenId4VcSiopIdTokenPayload,
 } from '../shared'
 import type { OpenId4VcVerificationSessionRecord, OpenId4VcVerifierRecordProps } from './repository'
 
@@ -97,10 +96,6 @@ export interface OpenId4VcSiopVerifiedAuthorizationResponseDcql {
  * Either `idToken` and/or `presentationExchange` will be present.
  */
 export interface OpenId4VcSiopVerifiedAuthorizationResponse {
-  idToken?: {
-    payload: OpenId4VcSiopIdTokenPayload
-  }
-
   presentationExchange?: OpenId4VcSiopVerifiedAuthorizationResponsePresentationExchange
   dcql?: OpenId4VcSiopVerifiedAuthorizationResponseDcql
   transactionData?: TransactionData

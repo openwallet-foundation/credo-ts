@@ -20,10 +20,10 @@ import type {
   TransactionDataResult,
   VerifiablePresentation,
 } from '@credo-ts/core'
-import type { IDTokenPayload } from '@sphereon/did-auth-siop'
 
 import {
   CredoError,
+  DcqlService,
   DidsApi,
   DifPresentationExchangeService,
   extractPresentationsWithDescriptorsFromSubmission,
@@ -34,6 +34,7 @@ import {
   inject,
   injectable,
   InjectionSymbols,
+  isMdocSupportedSignatureAlgorithm,
   joinUriParts,
   JsonEncoder,
   JsonTransformer,
@@ -51,20 +52,18 @@ import {
   X509Certificate,
   X509ModuleConfig,
   X509Service,
-  isMdocSupportedSignatureAlgorithm,
-  DcqlService,
 } from '@credo-ts/core'
 import { Oauth2ErrorCodes, Oauth2ServerErrorResponseError } from '@openid4vc/oauth2'
 import {
   ClientIdScheme,
-  Oid4vcVerifier,
-  JarmClientMetadata,
-  VpTokenPresentationParseResult,
-  parseOpenid4vpAuthorizationResponse,
-  parseOpenid4vpAuthorizationRequestPayload,
-  ParsedOpenid4vpAuthorizationResponse,
-  isOpenid4vpAuthorizationResponseDcApi,
   isJarmResponseMode,
+  isOpenid4vpAuthorizationResponseDcApi,
+  JarmClientMetadata,
+  Oid4vcVerifier,
+  ParsedOpenid4vpAuthorizationResponse,
+  parseOpenid4vpAuthorizationRequestPayload,
+  parseOpenid4vpAuthorizationResponse,
+  VpTokenPresentationParseResult,
   zOpenid4vpAuthorizationResponse,
 } from '@openid4vc/oid4vp'
 import { PresentationDefinitionLocation } from '@sphereon/did-auth-siop'
@@ -526,9 +525,6 @@ export class OpenId4VcSiopVerifierService {
       ? verificationSession.authorizationResponsePayload.data
       : verificationSession.authorizationResponsePayload
 
-    const idToken = openid4vpAuthorizationResponsePayload.id_token
-    const idTokenPayload = idToken ? Jwt.fromSerializedJwt(idToken).payload : undefined
-
     const openid4vpVerifier = this.getOpenid4vpVerifier(agentContext)
     const authorizationRequest = openid4vpVerifier.parseOpenid4vpAuthorizationRequestPayload({
       requestPayload: verificationSession.authorizationRequestJwt,
@@ -585,12 +581,11 @@ export class OpenId4VcSiopVerifierService {
       }
     }
 
-    if (!idToken && !presentationExchange && !dcql) {
-      throw new CredoError('No idToken or presentationExchange found in the response.')
+    if (!presentationExchange && !dcql) {
+      throw new CredoError('No presentationExchange or dcql found in the response.')
     }
 
     return {
-      idToken: idTokenPayload ? { payload: idTokenPayload as IDTokenPayload } : undefined,
       presentationExchange,
       dcql,
       transactionData,
