@@ -963,6 +963,7 @@ export class OpenId4VcSiopVerifierService {
 
           await mdocDeviceResponse.verify(agentContext, {
             sessionTranscriptOptions: {
+              type: 'openId4Vp',
               clientId: options.audience,
               mdocGeneratedNonce: options.mdocGeneratedNonce,
               responseUri: options.responseUri,

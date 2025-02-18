@@ -1,6 +1,7 @@
 import type {
   OpenId4VcSiopAcceptAuthorizationRequestOptions,
   OpenId4VcSiopResolvedAuthorizationRequest,
+  ResolveSiopAuthorizationRequestOptions,
 } from './OpenId4vcSiopHolderServiceOptions'
 import type { OpenId4VcJwtIssuer } from '../shared'
 import type {
@@ -29,12 +30,7 @@ import {
   W3cJsonLdVerifiablePresentation,
   W3cJwtVerifiablePresentation,
 } from '@credo-ts/core'
-import {
-  isJarmResponseMode,
-  isOpenid4vpAuthorizationRequestDcApi,
-  Oid4vpClient,
-  Openid4vpAuthorizationResponseDcApi,
-} from '@openid4vc/oid4vp'
+import { isJarmResponseMode, isOpenid4vpAuthorizationRequestDcApi, Oid4vpClient } from '@openid4vc/oid4vp'
 
 import { getOid4vcCallbacks } from '../shared/callbacks'
 import { openIdTokenIssuerToJwtIssuer } from '../shared/utils'
@@ -134,13 +130,21 @@ export class OpenId4VcSiopHolderService {
 
   public async resolveAuthorizationRequest(
     agentContext: AgentContext,
-    requestJwtOrUri: string,
-    trustedCertificates?: EncodedX509Certificate[],
-    origin?: string
+    /**
+     * Can be:
+     * - JWT
+     * - URI containing request or request_uri param
+     * - Request payload
+     */
+    request: string | Record<string, unknown>,
+    options?: ResolveSiopAuthorizationRequestOptions
   ): Promise<OpenId4VcSiopResolvedAuthorizationRequest> {
-    const openid4vpClient = this.getOid4vpClient(agentContext, trustedCertificates)
-    const { params } = openid4vpClient.parseOpenid4vpAuthorizationRequestPayload({ requestPayload: requestJwtOrUri })
-    const verifiedAuthRequest = await openid4vpClient.resolveOpenId4vpAuthorizationRequest({ request: params, origin })
+    const openid4vpClient = this.getOid4vpClient(agentContext, options?.trustedCertificates)
+    const { params } = openid4vpClient.parseOpenid4vpAuthorizationRequestPayload({ requestPayload: request })
+    const verifiedAuthRequest = await openid4vpClient.resolveOpenId4vpAuthorizationRequest({
+      request: params,
+      origin: options?.origin,
+    })
 
     const { client, pex, transactionData, dcql } = verifiedAuthRequest
 
@@ -161,8 +165,8 @@ export class OpenId4VcSiopHolderService {
       ? await this.handleDcqlRequest(agentContext, dcql.query, transactionData)
       : { dcql: undefined }
 
-    agentContext.config.logger.debug(`verified SIOP Authorization Request`)
-    agentContext.config.logger.debug(`requestJwtOrUri '${requestJwtOrUri}'`)
+    agentContext.config.logger.debug(`verified Authorization Request`)
+    agentContext.config.logger.debug(`request '${request}'`)
 
     return {
       authorizationRequest: verifiedAuthRequest,
@@ -225,7 +229,7 @@ export class OpenId4VcSiopHolderService {
     agentContext: AgentContext,
     options: OpenId4VcSiopAcceptAuthorizationRequestOptions
   ) {
-    const { authorizationRequest, presentationExchange, dcql } = options
+    const { authorizationRequest, presentationExchange, dcql, origin } = options
     let openIdTokenIssuer = options.openIdTokenIssuer
     let presentationExchangeOptions:
       | {
@@ -242,8 +246,20 @@ export class OpenId4VcSiopHolderService {
         }
       | undefined = undefined
 
+    const isDcApiRequest =
+      authorizationRequest.payload.response_mode === 'dc_api' ||
+      authorizationRequest.payload.response_mode === 'dc_api.jwt'
     const nonce = authorizationRequest.payload.nonce
-    const clientId = authorizationRequest.payload.client_id
+
+    // FIXME: we should always set this in oid4vc-ts, based on the origin if using DC API
+    let clientId = authorizationRequest.client.identifier
+    if (!clientId && isDcApiRequest) {
+      if (!origin) throw new CredoError('Missing required origin')
+
+      clientId = `web-origin:${origin}`
+    } else if (!clientId) {
+      throw new CredoError('Could not extract client identifier')
+    }
 
     let responseUri: string
     if (isOpenid4vpAuthorizationRequestDcApi(authorizationRequest.payload)) {
@@ -296,7 +312,10 @@ export class OpenId4VcSiopHolderService {
           challenge: nonce,
           domain: clientId,
           presentationSubmissionLocation: DifPresentationExchangeSubmissionLocation.EXTERNAL,
-          openid4vp: { mdocGeneratedNonce: authorizationResponseNonce, responseUri },
+          openid4vp:
+            isDcApiRequest && origin
+              ? { type: 'openId4VpDcApi', clientId, origin }
+              : { type: 'openId4Vp', mdocGeneratedNonce: authorizationResponseNonce, responseUri, clientId },
         })
 
       presentationExchangeOptions = { verifiablePresentations, encodedVerifiablePresentations, presentationSubmission }
@@ -332,7 +351,10 @@ export class OpenId4VcSiopHolderService {
             : undefined,
         challenge: nonce,
         domain: clientId,
-        openid4vp: { mdocGeneratedNonce: authorizationResponseNonce, responseUri },
+        openid4vp:
+          isDcApiRequest && origin
+            ? { type: 'openId4VpDcApi', clientId, origin }
+            : { type: 'openId4Vp', mdocGeneratedNonce: authorizationResponseNonce, responseUri, clientId },
       })
 
       dcqlOptions = {

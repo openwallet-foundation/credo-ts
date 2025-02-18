@@ -7,7 +7,10 @@ import type {
   OpenId4VciRetrieveAuthorizationCodeUsingPresentationOptions,
   OpenId4VciSendNotificationOptions,
 } from './OpenId4VciHolderServiceOptions'
-import type { OpenId4VcSiopAcceptAuthorizationRequestOptions } from './OpenId4vcSiopHolderServiceOptions'
+import type {
+  OpenId4VcSiopAcceptAuthorizationRequestOptions,
+  ResolveSiopAuthorizationRequestOptions,
+} from './OpenId4vcSiopHolderServiceOptions'
 
 import {
   AgentContext,
@@ -48,11 +51,18 @@ export class OpenId4VcHolderApi {
    * incoming request. When `presentationExchange` is present, you MUST supply `presentationExchange`
    * when calling `acceptSiopAuthorizationRequest` as well.
    *
-   * @param requestJwtOrUri JWT or an SIOPv2 request URI
+   * @param request
+   * Can be:
+   * - JWT
+   * - URI containing request or request_uri param
+   * - Request payload
    * @returns the resolved and verified authentication request.
    */
-  public async resolveSiopAuthorizationRequest(requestJwtOrUri: string, origin?: string) {
-    return this.openId4VcSiopHolderService.resolveAuthorizationRequest(this.agentContext, requestJwtOrUri, undefined, origin)
+  public async resolveSiopAuthorizationRequest(
+    request: string | Record<string, unknown>,
+    options?: ResolveSiopAuthorizationRequestOptions
+  ) {
+    return this.openId4VcSiopHolderService.resolveAuthorizationRequest(this.agentContext, request, options)
   }
 
   /**

@@ -1,4 +1,6 @@
-import type { AuthorizationServerMetadata } from '@openid4vc/oauth2'
+import type { AgentType, TenantType } from './utils'
+import type { OpenId4VciSignMdocCredentials } from '../src'
+import type { OpenId4VciCredentialBindingResolver } from '../src/openid4vc-holder'
 import type {
   DifPresentationExchangeDefinitionV2,
   JwkJson,
@@ -7,23 +9,13 @@ import type {
   SdJwtVc,
   DcqlQuery,
 } from '@credo-ts/core'
-import type { OpenId4VciSignMdocCredentials } from '../src'
-import type { OpenId4VciCredentialBindingResolver } from '../src/openid4vc-holder'
-import type { AgentType, TenantType } from './utils'
+import type { AuthorizationServerMetadata } from '@openid4vc/oauth2'
+import type { Server } from 'http'
 
-import {
-  calculateJwkThumbprint,
-  clientAuthenticationNone,
-  HashAlgorithm,
-  Oauth2AuthorizationServer,
-  preAuthorizedCodeGrantIdentifier,
-} from '@openid4vc/oauth2'
-import { AuthorizationFlow } from '@openid4vc/oid4vci'
 import {
   ClaimFormat,
   CredoError,
   DidsApi,
-  DifPresentationExchangeService,
   getJwkFromKey,
   getKeyFromVerificationMethod,
   Hasher,
@@ -45,6 +37,14 @@ import {
   MdocRecord,
   DateOnly,
 } from '@credo-ts/core'
+import {
+  calculateJwkThumbprint,
+  clientAuthenticationNone,
+  HashAlgorithm,
+  Oauth2AuthorizationServer,
+  preAuthorizedCodeGrantIdentifier,
+} from '@openid4vc/oauth2'
+import { AuthorizationFlow } from '@openid4vc/oid4vci'
 import { ResponseMode } from '@sphereon/did-auth-siop'
 import express, { type Express } from 'express'
 
@@ -60,7 +60,6 @@ import {
 } from '../src'
 import { getOid4vcCallbacks } from '../src/shared/callbacks'
 
-import { Server } from 'http'
 import {
   createAgentFromModules,
   createTenantForAgent,
@@ -1781,8 +1780,6 @@ describe('OpenId4Vc', () => {
       ],
       descriptors: expect.any(Array),
     })
-
-    console.log('test')
   })
 
   it('e2e flow with tenants, issuer endpoints requesting a mdoc', async () => {
@@ -2038,8 +2035,8 @@ describe('OpenId4Vc', () => {
 
     expect(result.ok).toBe(false)
     expect(result.serverResponse.body).toMatchObject({
-      error: "invalid_request",
-      error_description: "Invalid response mode for openid4vp response. Expected jarm response.",
+      error: 'invalid_request',
+      error_description: 'Invalid response mode for openid4vp response. Expected jarm response.',
     })
   })
 
@@ -3088,31 +3085,32 @@ describe('OpenId4Vc', () => {
       ],
     } satisfies DcqlQuery
 
-    const { authorizationRequest, verificationSession } =
-      await verifier.agent.modules.openId4VcVerifier.createAuthorizationRequest({
-        responseMode: 'dc_api.jwt',
-        expectedOrigins: ['https://example.com'],
-        verifierId: openIdVerifier.verifierId,
-        requestSigner: {
-          method: 'x5c',
-          x5c: [rawCertificate],
-          issuer: 'https://example.com/hakuna/matadata',
-        },
-        dcql: {
-          query: dcqlQuery,
-          transactionData: [
-            {
-              type: 'OpenBadgeTx',
-              credential_ids: ['OpenBadgeCredentialDescriptor'],
-              transaction_data_hashes_alg: ['sha-256'],
-            },
-          ],
-        },
-      })
+    const { authorizationRequest } = await verifier.agent.modules.openId4VcVerifier.createAuthorizationRequest({
+      responseMode: 'dc_api.jwt',
+      expectedOrigins: ['https://example.com'],
+      verifierId: openIdVerifier.verifierId,
+      requestSigner: {
+        method: 'x5c',
+        x5c: [rawCertificate],
+        issuer: 'https://example.com/hakuna/matadata',
+      },
+      dcql: {
+        query: dcqlQuery,
+        transactionData: [
+          {
+            type: 'OpenBadgeTx',
+            credential_ids: ['OpenBadgeCredentialDescriptor'],
+            transaction_data_hashes_alg: ['sha-256'],
+          },
+        ],
+      },
+    })
 
     const resolvedAuthorizationRequest = await holder.agent.modules.openId4VcHolder.resolveSiopAuthorizationRequest(
       authorizationRequest,
-      'https://example.com'
+      {
+        origin: 'https://example.com',
+      }
     )
 
     expect(resolvedAuthorizationRequest.dcql).toEqual({
@@ -3219,12 +3217,13 @@ describe('OpenId4Vc', () => {
       resolvedAuthorizationRequest.dcql.queryResult
     )
 
-      await expect(holder.agent.modules.openId4VcHolder.acceptSiopAuthorizationRequest({
+    await expect(
+      holder.agent.modules.openId4VcHolder.acceptSiopAuthorizationRequest({
         authorizationRequest: resolvedAuthorizationRequest.authorizationRequest,
         dcql: {
           credentials: selectedCredentials,
         },
-      })).rejects.toThrow('Submission of DC API responses is not yet supported.')
-
+      })
+    ).rejects.toThrow('Submission of DC API responses is not yet supported.')
   })
 })
