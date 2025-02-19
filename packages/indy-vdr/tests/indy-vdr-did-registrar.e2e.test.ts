@@ -32,6 +32,7 @@ const endorser = new Agent(
   getInMemoryAgentOptions(
     'Indy VDR Indy DID Registrar',
     {},
+    {},
     {
       indyVdr: new IndyVdrModule({
         networks: indyVdrModuleConfig.networks,
@@ -47,6 +48,7 @@ const endorser = new Agent(
 const agent = new Agent(
   getInMemoryAgentOptions(
     'Indy VDR Indy DID Registrar',
+    {},
     {},
     {
       indyVdr: new IndyVdrModule({

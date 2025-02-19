@@ -1,7 +1,9 @@
 import { Optionality } from '@sphereon/pex-models'
 
-import { Agent, KeyType, X509Service } from '../../..'
 import { getInMemoryAgentOptions } from '../../../../tests'
+import { Agent } from '../../../agent/Agent'
+import { KeyType } from '../../../crypto'
+import { X509Service } from '../../x509'
 import { Mdoc } from '../Mdoc'
 import { MdocDeviceResponse } from '../MdocDeviceResponse'
 
@@ -24,14 +26,16 @@ describe('mdoc device-response test', () => {
     const nextDay = new Date(currentDate)
     nextDay.setDate(currentDate.getDate() + 2)
 
-    const selfSignedCertificate = await X509Service.createSelfSignedCertificate(agent.context, {
-      key: issuerKey,
-      notBefore: currentDate,
-      notAfter: nextDay,
-      extensions: [],
+    const certificate = await X509Service.createCertificate(agent.context, {
+      issuer: 'CN=credo',
+      authorityKey: issuerKey,
+      validity: {
+        notBefore: currentDate,
+        notAfter: nextDay,
+      },
     })
 
-    const issuerCertificate = selfSignedCertificate.toString('pem')
+    const issuerCertificate = certificate.toString('pem')
 
     const mdoc = await Mdoc.sign(agent.context, {
       docType: 'org.iso.18013.5.1.mDL',

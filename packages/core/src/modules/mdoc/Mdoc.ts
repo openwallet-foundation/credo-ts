@@ -17,6 +17,7 @@ import { X509Certificate, X509ModuleConfig } from '../x509'
 import { TypedArrayEncoder } from './../../utils'
 import { getMdocContext } from './MdocContext'
 import { MdocError } from './MdocError'
+import { isMdocSupportedSignatureAlgorithm, mdocSupporteSignatureAlgorithms } from './mdocSupportedAlgs'
 
 /**
  * This class represents a IssuerSigned Mdoc Document,
@@ -88,6 +89,10 @@ export class Mdoc {
     )
   }
 
+  public get issuerSignedCertificateChain() {
+    return this.issuerSignedDocument.issuerSigned.issuerAuth.certificateChain
+  }
+
   public get issuerSignedNamespaces(): MdocNameSpaces {
     return Object.fromEntries(
       Array.from(this.issuerSignedDocument.allIssuerSignedNamespaces.entries()).map(([namespace, value]) => [
@@ -114,28 +119,14 @@ export class Mdoc {
     const cert = X509Certificate.fromEncodedCertificate(issuerCertificate)
     const issuerKey = getJwkFromKey(cert.publicKey)
 
-    const alg = issuerKey.supportedSignatureAlgorithms.find(
-      (
-        alg
-      ): alg is
-        | JwaSignatureAlgorithm.ES256
-        | JwaSignatureAlgorithm.ES384
-        | JwaSignatureAlgorithm.ES512
-        | JwaSignatureAlgorithm.EdDSA => {
-        return (
-          alg === JwaSignatureAlgorithm.ES256 ||
-          alg === JwaSignatureAlgorithm.ES384 ||
-          alg === JwaSignatureAlgorithm.ES512 ||
-          alg === JwaSignatureAlgorithm.EdDSA
-        )
-      }
-    )
-
+    const alg = issuerKey.supportedSignatureAlgorithms.find(isMdocSupportedSignatureAlgorithm)
     if (!alg) {
       throw new MdocError(
-        `Cannot find a suitable JwaSignatureAlgorithm for signing the mdoc. Supported algorithms are 'ES256', 'ES384', 'ES512'. The issuer key supports: ${issuerKey.supportedSignatureAlgorithms.join(
+        `Unable to create sign mdoc. No supported signature algorithm found to sign mdoc for jwk with key type ${
+          issuerKey.keyType
+        }. Key supports algs ${issuerKey.supportedSignatureAlgorithms.join(
           ', '
-        )}`
+        )}. mdoc supports algs ${mdocSupporteSignatureAlgorithms.join(', ')}`
       )
     }
 
@@ -156,19 +147,24 @@ export class Mdoc {
     agentContext: AgentContext,
     options?: MdocVerifyOptions
   ): Promise<{ isValid: true } | { isValid: false; error: string }> {
-    let trustedCerts: [string, ...string[]] | undefined
+    const x509ModuleConfig = agentContext.dependencyManager.resolve(X509ModuleConfig)
+    const certificateChain = this.issuerSignedDocument.issuerSigned.issuerAuth.certificateChain.map((certificate) =>
+      X509Certificate.fromRawCertificate(certificate)
+    )
 
-    if (options?.trustedCertificates) {
-      trustedCerts = options.trustedCertificates
-    } else if (options?.verificationContext) {
-      trustedCerts = await agentContext.dependencyManager
-        .resolve(X509ModuleConfig)
-        .getTrustedCertificatesForVerification?.(agentContext, options.verificationContext)
-    } else {
-      trustedCerts = agentContext.dependencyManager.resolve(X509ModuleConfig).trustedCertificates
+    let trustedCertificates = options?.trustedCertificates
+    if (!trustedCertificates) {
+      trustedCertificates =
+        (await x509ModuleConfig.getTrustedCertificatesForVerification?.(agentContext, {
+          verification: {
+            type: 'credential',
+            credential: this,
+          },
+          certificateChain,
+        })) ?? x509ModuleConfig.trustedCertificates
     }
 
-    if (!trustedCerts) {
+    if (!trustedCertificates) {
       throw new MdocError('No trusted certificates found. Cannot verify mdoc.')
     }
 
@@ -177,7 +173,9 @@ export class Mdoc {
       const verifier = new Verifier()
       await verifier.verifyIssuerSignature(
         {
-          trustedCertificates: trustedCerts.map((cert) => X509Certificate.fromEncodedCertificate(cert).rawCertificate),
+          trustedCertificates: trustedCertificates.map(
+            (cert) => X509Certificate.fromEncodedCertificate(cert).rawCertificate
+          ),
           issuerAuth: this.issuerSignedDocument.issuerSigned.issuerAuth,
           disableCertificateChainValidation: false,
           now: options?.now,

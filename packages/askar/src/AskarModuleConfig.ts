@@ -1,5 +1,5 @@
 import type { AskarWalletPostgresStorageConfig, AskarWalletSqliteStorageConfig } from './wallet'
-import type { AriesAskar, KdfMethod } from '@hyperledger/aries-askar-shared'
+import type { Askar, KdfMethod } from '@openwallet-foundation/askar-shared'
 
 export enum AskarMultiWalletDatabaseScheme {
   /**
@@ -60,14 +60,14 @@ export interface AskarModuleConfigOptions {
    * ## Node.JS
    *
    * ```ts
-   * import { ariesAskar } from '@hyperledger/aries-askar-nodejs'
+   * import { askar } from '@openwallet-foundation/askar-nodejs'
    *
    * const agent = new Agent({
    *  config: {},
    *  dependencies: agentDependencies,
    *  modules: {
-   *   ariesAskar: new AskarModule({
-   *      ariesAskar,
+   *   askar: new AskarModule({
+   *      askar,
    *   })
    *  }
    * })
@@ -76,20 +76,20 @@ export interface AskarModuleConfigOptions {
    * ## React Native
    *
    * ```ts
-   * import { ariesAskar } from '@hyperledger/aries-askar-react-native'
+   * import { askar } from '@openwallet-foundation/askar-react-native'
    *
    * const agent = new Agent({
    *  config: {},
    *  dependencies: agentDependencies,
    *  modules: {
-   *   ariesAskar: new AskarModule({
-   *      ariesAskar,
+   *   askar: new AskarModule({
+   *      askar,
    *   })
    *  }
    * })
    * ```
    */
-  ariesAskar: AriesAskar
+  askar: Askar
 
   /**
    * Determine the strategy for storing wallets if multiple wallets are used in a single agent.
@@ -126,9 +126,9 @@ export class AskarModuleConfig {
     this.options = options
   }
 
-  /** See {@link AskarModuleConfigOptions.ariesAskar} */
-  public get ariesAskar() {
-    return this.options.ariesAskar
+  /** See {@link AskarModuleConfigOptions.askar} */
+  public get askar() {
+    return this.options.askar
   }
 
   /** See {@link AskarModuleConfigOptions.multiWalletDatabaseScheme} */

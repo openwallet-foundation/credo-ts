@@ -1,7 +1,12 @@
-import type { MdocDeviceResponseOpenId4VpOptions, MdocDeviceResponseVerifyOptions } from './MdocOptions'
+import type {
+  MdocDeviceResponseOpenId4VpOptions,
+  MdocDeviceResponseOptions,
+  MdocDeviceResponseVerifyOptions,
+} from './MdocOptions'
 import type { AgentContext } from '../../agent'
+import type { JwkJson } from '../../crypto'
 import type { DifPresentationExchangeDefinition } from '../dif-presentation-exchange'
-import type { PresentationDefinition } from '@animo-id/mdoc'
+import type { IssuerSignedDocument, PresentationDefinition } from '@animo-id/mdoc'
 import type { InputDescriptorV2 } from '@sphereon/pex-models'
 
 import {
@@ -14,8 +19,10 @@ import {
   MDocStatus,
   cborEncode,
   parseDeviceResponse,
+  DeviceRequest,
 } from '@animo-id/mdoc'
 
+import { getJwkFromJson } from '../../crypto'
 import { CredoError } from '../../error'
 import { uuid } from '../../utils/uuid'
 import { X509Certificate } from '../x509/X509Certificate'
@@ -25,6 +32,7 @@ import { TypedArrayEncoder } from './../../utils'
 import { Mdoc } from './Mdoc'
 import { getMdocContext } from './MdocContext'
 import { MdocError } from './MdocError'
+import { isMdocSupportedSignatureAlgorithm, mdocSupporteSignatureAlgorithms } from './mdocSupportedAlgs'
 
 export class MdocDeviceResponse {
   private constructor(public base64Url: string, public documents: Mdoc[]) {}
@@ -47,6 +55,7 @@ export class MdocDeviceResponse {
         docType
       )
     })
+    documents[0].deviceSignedNamespaces
 
     return new MdocDeviceResponse(base64Url, documents)
   }
@@ -162,49 +171,114 @@ export class MdocDeviceResponse {
     const issuerSignedDocuments = options.mdocs.map((mdoc) =>
       parseIssuerSigned(TypedArrayEncoder.fromBase64(mdoc.base64Url), mdoc.docType)
     )
-    const mdoc = new MDoc(issuerSignedDocuments)
+    const docTypes = issuerSignedDocuments.map((i) => i.docType)
 
-    // TODO: we need to implement this differently.
-    // TODO: Multiple Mdocs can have different device keys.
-    const mso = mdoc.documents[0].issuerSigned.issuerAuth.decodedPayload
-    const deviceKeyInfo = mso.deviceKeyInfo
-    if (!deviceKeyInfo?.deviceKey) {
-      throw new CredoError('Device key info is missing')
+    const combinedDeviceResponseMdoc = new MDoc()
+
+    for (const issuerSignedDocument of issuerSignedDocuments) {
+      const { publicDeviceJwk, alg } = this.parseDeviceKeyFromIssuerSigned(issuerSignedDocument)
+      const deviceKey = issuerSignedDocument.issuerSigned.issuerAuth.decodedPayload.deviceKeyInfo?.deviceKey
+      if (!deviceKey) throw new MdocError(`Device key is missing in mdoc with doctype ${issuerSignedDocument.docType}`)
+
+      // We do PEX filtering on a different layer, so we only include the needed input descriptor here
+      const presentationDefinitionForDocument = {
+        ...presentationDefinition,
+        input_descriptors: presentationDefinition.input_descriptors.filter(
+          (inputDescriptor) => inputDescriptor.id === issuerSignedDocument.docType
+        ),
+      }
+
+      const deviceResponseBuilder = DeviceResponse.from(new MDoc([issuerSignedDocument]))
+        .usingPresentationDefinition(presentationDefinitionForDocument)
+        .usingSessionTranscriptForOID4VP(sessionTranscriptOptions)
+        .authenticateWithSignature(publicDeviceJwk, alg)
+
+      for (const [nameSpace, nameSpaceValue] of Object.entries(options.deviceNameSpaces ?? {})) {
+        deviceResponseBuilder.addDeviceNameSpace(nameSpace, nameSpaceValue)
+      }
+
+      const deviceResponseMdoc = await deviceResponseBuilder.sign(getMdocContext(agentContext))
+      combinedDeviceResponseMdoc.addDocument(deviceResponseMdoc.documents[0])
     }
-
-    const publicDeviceJwk = COSEKey.import(deviceKeyInfo.deviceKey).toJWK()
-
-    const deviceResponseBuilder = DeviceResponse.from(mdoc)
-      .usingPresentationDefinition(presentationDefinition)
-      .usingSessionTranscriptForOID4VP(sessionTranscriptOptions)
-      .authenticateWithSignature(publicDeviceJwk, 'ES256')
-
-    for (const [nameSpace, nameSpaceValue] of Object.entries(options.deviceNameSpaces ?? {})) {
-      deviceResponseBuilder.addDeviceNameSpace(nameSpace, nameSpaceValue)
-    }
-
-    const deviceResponseMdoc = await deviceResponseBuilder.sign(getMdocContext(agentContext))
 
     return {
-      deviceResponseBase64Url: TypedArrayEncoder.toBase64URL(deviceResponseMdoc.encode()),
+      deviceResponseBase64Url: TypedArrayEncoder.toBase64URL(combinedDeviceResponseMdoc.encode()),
       presentationSubmission: MdocDeviceResponse.createPresentationSubmission({
         id: 'MdocPresentationSubmission ' + uuid(),
-        presentationDefinition,
+        presentationDefinition: {
+          ...presentationDefinition,
+          input_descriptors: presentationDefinition.input_descriptors.filter((i) => docTypes.includes(i.id)),
+        },
       }),
     }
+  }
+
+  public static async createDeviceResponse(agentContext: AgentContext, options: MdocDeviceResponseOptions) {
+    const issuerSignedDocuments = options.mdocs.map((mdoc) =>
+      parseIssuerSigned(TypedArrayEncoder.fromBase64(mdoc.base64Url), mdoc.docType)
+    )
+
+    const combinedDeviceResponseMdoc = new MDoc()
+
+    for (const issuerSignedDocument of issuerSignedDocuments) {
+      const { publicDeviceJwk, alg } = this.parseDeviceKeyFromIssuerSigned(issuerSignedDocument)
+      const deviceKey = issuerSignedDocument.issuerSigned.issuerAuth.decodedPayload.deviceKeyInfo?.deviceKey
+      if (!deviceKey) throw new CredoError(`Device key is missing in mdoc with doctype ${issuerSignedDocument.docType}`)
+
+      const deviceRequestForDocument = new DeviceRequest(
+        options.deviceRequest.version,
+        options.deviceRequest.docRequests.filter(
+          (request) => request.itemsRequest.data.docType === issuerSignedDocument.docType
+        )
+      )
+
+      const deviceResponseBuilder = DeviceResponse.from(new MDoc([issuerSignedDocument]))
+        .usingSessionTranscriptBytes(options.sessionTranscriptBytes)
+        .usingDeviceRequest(deviceRequestForDocument)
+        .authenticateWithSignature(publicDeviceJwk, alg)
+
+      for (const [nameSpace, nameSpaceValue] of Object.entries(options.deviceNameSpaces ?? {})) {
+        deviceResponseBuilder.addDeviceNameSpace(nameSpace, nameSpaceValue)
+      }
+
+      const deviceResponseMdoc = await deviceResponseBuilder.sign(getMdocContext(agentContext))
+      combinedDeviceResponseMdoc.addDocument(deviceResponseMdoc.documents[0])
+    }
+
+    return combinedDeviceResponseMdoc.encode()
   }
 
   public async verify(agentContext: AgentContext, options: Omit<MdocDeviceResponseVerifyOptions, 'deviceResponse'>) {
     const verifier = new Verifier()
     const mdocContext = getMdocContext(agentContext)
+    const x509Config = agentContext.dependencyManager.resolve(X509ModuleConfig)
 
-    const x509ModuleConfig = agentContext.dependencyManager.resolve(X509ModuleConfig)
-    const getTrustedCertificatesForVerification = x509ModuleConfig.getTrustedCertificatesForVerification
-
-    const trustedCertificates =
-      options.trustedCertificates ??
-      (await getTrustedCertificatesForVerification?.(agentContext, options.verificationContext)) ??
-      x509ModuleConfig?.trustedCertificates
+    // TODO: no way to currently have a per document x509 certificates in a presentation
+    // but this also the case for other formats
+    // FIXME: we can't pass multiple certificate chains. We should just verify each document separately
+    let trustedCertificates = options.trustedCertificates
+    if (!trustedCertificates) {
+      trustedCertificates = (
+        await Promise.all(
+          this.documents.map((mdoc) => {
+            const certificateChain = mdoc.issuerSignedCertificateChain.map((cert) =>
+              X509Certificate.fromRawCertificate(cert)
+            )
+            return (
+              x509Config.getTrustedCertificatesForVerification?.(agentContext, {
+                certificateChain,
+                verification: {
+                  type: 'credential',
+                  credential: mdoc,
+                },
+              }) ?? x509Config.trustedCertificates
+            )
+          })
+        )
+      )
+        .filter((c): c is string[] => c !== undefined)
+        .flatMap((c) => c)
+    }
 
     if (!trustedCertificates) {
       throw new MdocError('No trusted certificates found. Cannot verify mdoc.')
@@ -213,8 +287,10 @@ export class MdocDeviceResponse {
     const result = await verifier.verifyDeviceResponse(
       {
         encodedDeviceResponse: TypedArrayEncoder.fromBase64(this.base64Url),
-        //ephemeralReaderKey: options.verifierKey ? getJwkFromKey(options.verifierKey).toJson() : undefined,
-        encodedSessionTranscript: DeviceResponse.calculateSessionTranscriptForOID4VP(options.sessionTranscriptOptions),
+        encodedSessionTranscript: await DeviceResponse.calculateSessionTranscriptForOID4VP({
+          ...options.sessionTranscriptOptions,
+          context: mdocContext,
+        }),
         trustedCertificates: trustedCertificates.map(
           (cert) => X509Certificate.fromEncodedCertificate(cert).rawCertificate
         ),
@@ -232,5 +308,29 @@ export class MdocDeviceResponse {
     }
 
     return this.documents
+  }
+
+  private static parseDeviceKeyFromIssuerSigned(issuerSignedDocument: IssuerSignedDocument) {
+    const deviceKey = issuerSignedDocument.issuerSigned.issuerAuth.decodedPayload.deviceKeyInfo?.deviceKey
+    if (!deviceKey) throw new MdocError(`Device key is missing in mdoc with doctype ${issuerSignedDocument.docType}`)
+
+    const publicDeviceJwk = COSEKey.import(deviceKey).toJWK()
+
+    const jwkInstance = getJwkFromJson(publicDeviceJwk as JwkJson)
+    const signatureAlgorithm = jwkInstance.supportedSignatureAlgorithms.find(isMdocSupportedSignatureAlgorithm)
+    if (!signatureAlgorithm) {
+      throw new MdocError(
+        `Unable to create mdoc device response. No supported signature algorithm found to sign device response for jwk with key type ${
+          jwkInstance.keyType
+        }. Key supports algs ${jwkInstance.supportedSignatureAlgorithms.join(
+          ', '
+        )}. mdoc supports algs ${mdocSupporteSignatureAlgorithms.join(', ')}`
+      )
+    }
+
+    return {
+      publicDeviceJwk,
+      alg: signatureAlgorithm,
+    }
   }
 }

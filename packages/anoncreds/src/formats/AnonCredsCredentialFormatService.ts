@@ -2,9 +2,9 @@ import type { AnonCredsCredentialFormat, AnonCredsCredentialProposalFormat } fro
 import type { AnonCredsCredential, AnonCredsCredentialOffer, AnonCredsCredentialRequest } from '../models'
 import type { AnonCredsIssuerService, AnonCredsHolderService } from '../services'
 import type { AnonCredsCredentialMetadata, AnonCredsCredentialRequestMetadata } from '../utils/metadata'
+import type { AgentContext } from '@credo-ts/core'
 import type {
   CredentialFormatService,
-  AgentContext,
   CredentialFormatCreateProposalOptions,
   CredentialFormatCreateProposalReturn,
   CredentialFormatProcessOptions,
@@ -22,19 +22,10 @@ import type {
   CredentialExchangeRecord,
   CredentialPreviewAttributeOptions,
   LinkedAttachment,
-} from '@credo-ts/core'
+} from '@credo-ts/didcomm'
 
-import {
-  ProblemReportError,
-  MessageValidator,
-  CredentialFormatSpec,
-  CredoError,
-  Attachment,
-  JsonEncoder,
-  utils,
-  CredentialProblemReportReason,
-  JsonTransformer,
-} from '@credo-ts/core'
+import { MessageValidator, CredoError, JsonEncoder, utils, JsonTransformer } from '@credo-ts/core'
+import { ProblemReportError, CredentialFormatSpec, Attachment, CredentialProblemReportReason } from '@credo-ts/didcomm'
 
 import { AnonCredsCredentialProposal } from '../models/AnonCredsCredentialProposal'
 import {
@@ -567,7 +558,7 @@ export class AnonCredsCredentialFormatService implements CredentialFormatService
     // if the proposal has an attachment Id use that, otherwise the generated id of the formats object
     const format = new CredentialFormatSpec({
       attachmentId: attachmentId,
-      format: ANONCREDS_CREDENTIAL,
+      format: ANONCREDS_CREDENTIAL_OFFER,
     })
 
     const offer = await anonCredsIssuerService.createCredentialOffer(agentContext, {

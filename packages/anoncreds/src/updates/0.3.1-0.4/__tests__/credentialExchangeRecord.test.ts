@@ -1,9 +1,10 @@
-import type { CredentialRecordBinding, CredentialState } from '../../../../../core/src'
+import type { CredentialRecordBinding, CredentialState } from '../../../../../didcomm/src'
 
-import { CredentialExchangeRecord, JsonTransformer } from '../../../../../core/src'
+import { JsonTransformer } from '../../../../../core/src'
 import { Agent } from '../../../../../core/src/agent/Agent'
-import { CredentialRepository } from '../../../../../core/src/modules/credentials/repository/CredentialRepository'
 import { getAgentConfig, getAgentContext, mockFunction } from '../../../../../core/tests'
+import { CredentialExchangeRecord } from '../../../../../didcomm/src'
+import { CredentialRepository } from '../../../../../didcomm/src/modules/credentials/repository/CredentialRepository'
 import {
   migrateIndyCredentialMetadataToAnonCredsMetadata,
   migrateIndyCredentialTypeToAnonCredsCredential,
@@ -13,7 +14,7 @@ import * as testModule from '../credentialExchangeRecord'
 const agentConfig = getAgentConfig('AnonCreds Migration - Credential Exchange Record - 0.3.1-0.4.0')
 const agentContext = getAgentContext()
 
-jest.mock('../../../../../core/src/modules/credentials/repository/CredentialRepository')
+jest.mock('../../../../../didcomm/src/modules/credentials/repository/CredentialRepository')
 const CredentialRepositoryMock = CredentialRepository as jest.Mock<CredentialRepository>
 const credentialRepository = new CredentialRepositoryMock()
 

@@ -6,7 +6,7 @@ import type {
   SignOptions,
   VerifyOptions,
 } from '@credo-ts/core'
-import type { JwkProps } from '@hyperledger/aries-askar-shared'
+import type { JwkProps } from '@openwallet-foundation/askar-shared'
 
 import {
   WalletKeyExistsError,
@@ -22,8 +22,8 @@ import {
   Buffer,
   JsonEncoder,
 } from '@credo-ts/core'
-import { Key as AskarKey } from '@hyperledger/aries-askar-nodejs'
-import { Jwk, Store } from '@hyperledger/aries-askar-shared'
+import { Key as AskarKey } from '@openwallet-foundation/askar-nodejs'
+import { Jwk, Store } from '@openwallet-foundation/askar-shared'
 import { readFileSync } from 'fs'
 import path from 'path'
 
@@ -176,7 +176,7 @@ describe('AskarWallet basic operations', () => {
     await expect(askarWallet.verify({ key: k256Key, data: message, signature })).resolves.toStrictEqual(true)
   })
 
-  test('Encrypt and decrypt using JWE ECDH-ES', async () => {
+  test('Encrypt and decrypt using JWE ECDH-ES A256GCM', async () => {
     const recipientKey = await askarWallet.createKey({
       keyType: KeyType.P256,
     })
@@ -205,6 +205,46 @@ describe('AskarWallet basic operations', () => {
       apv,
       apu,
       enc: 'A256GCM',
+      alg: 'ECDH-ES',
+      epk: {
+        kty: 'EC',
+        crv: 'P-256',
+        x: expect.any(String),
+        y: expect.any(String),
+      },
+    })
+    expect(JsonEncoder.fromBuffer(data)).toEqual({ vp_token: ['something'] })
+  })
+
+  test('Encrypt and decrypt using JWE ECDH-ES A128CBC-HS256', async () => {
+    const recipientKey = await askarWallet.createKey({
+      keyType: KeyType.P256,
+    })
+
+    const apv = TypedArrayEncoder.toBase64URL(TypedArrayEncoder.fromString('nonce-from-auth-request'))
+    const apu = TypedArrayEncoder.toBase64URL(TypedArrayEncoder.fromString(await askarWallet.generateNonce()))
+
+    const compactJwe = await askarWallet.directEncryptCompactJweEcdhEs({
+      data: JsonEncoder.toBuffer({ vp_token: ['something'] }),
+      apu,
+      apv,
+      encryptionAlgorithm: 'A128CBC-HS256',
+      header: {
+        kid: 'some-kid',
+      },
+      recipientKey,
+    })
+
+    const { data, header } = await askarWallet.directDecryptCompactJweEcdhEs({
+      compactJwe,
+      recipientKey,
+    })
+
+    expect(header).toEqual({
+      kid: 'some-kid',
+      apv,
+      apu,
+      enc: 'A128CBC-HS256',
       alg: 'ECDH-ES',
       epk: {
         kty: 'EC',

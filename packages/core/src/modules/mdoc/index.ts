@@ -1,3 +1,5 @@
+export { DateOnly } from '@animo-id/mdoc'
+
 export * from './MdocApi'
 export * from './MdocModule'
 export * from './MdocService'
@@ -6,3 +8,4 @@ export * from './MdocOptions'
 export * from './repository'
 export * from './Mdoc'
 export * from './MdocDeviceResponse'
+export { isMdocSupportedSignatureAlgorithm, MdocSupportedSignatureAlgorithm } from './mdocSupportedAlgs'

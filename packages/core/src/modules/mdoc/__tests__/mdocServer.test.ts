@@ -1,8 +1,9 @@
-import type { AgentContext } from '../../..'
+import type { AgentContext } from '../../../agent'
 
-import { KeyType, X509Service } from '../../..'
 import { InMemoryWallet } from '../../../../../../tests/InMemoryWallet'
 import { getAgentConfig, getAgentContext } from '../../../../tests'
+import { KeyType } from '../../../crypto'
+import { X509ModuleConfig, X509Service } from '../../x509'
 import { Mdoc } from '../Mdoc'
 
 import { sprindFunkeTestVectorBase64Url, sprindFunkeX509TrustedCertificate } from './mdoc.fixtures'
@@ -14,7 +15,7 @@ describe('mdoc service test', () => {
   beforeAll(async () => {
     const agentConfig = getAgentConfig('mdoc')
     wallet = new InMemoryWallet()
-    agentContext = getAgentContext({ wallet })
+    agentContext = getAgentContext({ wallet, registerInstances: [[X509ModuleConfig, new X509ModuleConfig()]] })
 
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     await wallet.createAndOpen(agentConfig.walletConfig!)
@@ -43,15 +44,16 @@ describe('mdoc service test', () => {
     const nextDay = new Date(currentDate)
     nextDay.setDate(currentDate.getDate() + 2)
 
-    const selfSignedCertificate = await X509Service.createSelfSignedCertificate(agentContext, {
-      key: issuerKey,
-      notBefore: currentDate,
-      notAfter: nextDay,
-      extensions: [],
-      name: 'C=DE',
+    const certificate = await X509Service.createCertificate(agentContext, {
+      authorityKey: issuerKey,
+      validity: {
+        notBefore: currentDate,
+        notAfter: nextDay,
+      },
+      issuer: 'C=DE',
     })
 
-    const issuerCertificate = selfSignedCertificate.toString('pem')
+    const issuerCertificate = certificate.toString('pem')
 
     const mdoc = await Mdoc.sign(agentContext, {
       docType: 'org.iso.18013.5.1.mDL',
@@ -77,7 +79,7 @@ describe('mdoc service test', () => {
     expect(() => mdoc.deviceSignedNamespaces).toThrow()
 
     const { isValid } = await mdoc.verify(agentContext, {
-      trustedCertificates: [selfSignedCertificate.toString('base64')],
+      trustedCertificates: [certificate.toString('base64')],
     })
     expect(isValid).toBeTruthy()
   })

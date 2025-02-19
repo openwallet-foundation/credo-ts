@@ -1,8 +1,8 @@
 import type {
   X509ValidateCertificateChainOptions,
-  X509CreateSelfSignedCertificateOptions,
-  X509GetLefCertificateOptions,
+  X509GetLeafCertificateOptions,
   X509ParseCertificateOptions,
+  X509CreateCertificateOptions,
 } from './X509ServiceOptions'
 
 import * as x509 from '@peculiar/x509'
@@ -101,7 +101,7 @@ export class X509Service {
 
   public static getLeafCertificate(
     _agentContext: AgentContext,
-    { certificateChain }: X509GetLefCertificateOptions
+    { certificateChain }: X509GetLeafCertificateOptions
   ): X509Certificate {
     if (certificateChain.length === 0) throw new X509Error('Certificate chain is empty')
 
@@ -110,13 +110,10 @@ export class X509Service {
     return certificate
   }
 
-  public static async createSelfSignedCertificate(
-    agentContext: AgentContext,
-    options: X509CreateSelfSignedCertificateOptions
-  ) {
+  public static async createCertificate(agentContext: AgentContext, options: X509CreateCertificateOptions) {
     const webCrypto = new CredoWebCrypto(agentContext)
 
-    const certificate = await X509Certificate.createSelfSigned(options, webCrypto)
+    const certificate = await X509Certificate.create(options, webCrypto)
 
     return certificate
   }

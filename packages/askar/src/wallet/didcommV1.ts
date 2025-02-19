@@ -1,7 +1,7 @@
 import type { EncryptedMessage } from '@credo-ts/core'
 
 import { WalletError, JsonEncoder, JsonTransformer, Key, KeyType, TypedArrayEncoder, Buffer } from '@credo-ts/core'
-import { CryptoBox, Key as AskarKey, KeyAlgs } from '@hyperledger/aries-askar-shared'
+import { CryptoBox, Key as AskarKey, KeyAlgorithm } from '@openwallet-foundation/askar-shared'
 
 import { JweEnvelope, JweRecipient } from './JweEnvelope'
 
@@ -10,9 +10,9 @@ export function didcommV1Pack(payload: Record<string, unknown>, recipientKeys: s
   let senderExchangeKey: AskarKey | undefined
 
   try {
-    cek = AskarKey.generate(KeyAlgs.Chacha20C20P)
+    cek = AskarKey.generate(KeyAlgorithm.Chacha20C20P)
 
-    senderExchangeKey = senderKey ? senderKey.convertkey({ algorithm: KeyAlgs.X25519 }) : undefined
+    senderExchangeKey = senderKey ? senderKey.convertkey({ algorithm: KeyAlgorithm.X25519 }) : undefined
 
     const recipients: JweRecipient[] = []
 
@@ -23,8 +23,8 @@ export function didcommV1Pack(payload: Record<string, unknown>, recipientKeys: s
         // Or allow in KMS to encrypt with Ed25519 key (special handling)
         targetExchangeKey = AskarKey.fromPublicBytes({
           publicKey: Key.fromPublicKeyBase58(recipientKey, KeyType.Ed25519).publicKey,
-          algorithm: KeyAlgs.Ed25519,
-        }).convertkey({ algorithm: KeyAlgs.X25519 })
+          algorithm: KeyAlgorithm.Ed25519,
+        }).convertkey({ algorithm: KeyAlgorithm.X25519 })
 
         if (senderKey && senderExchangeKey) {
           // encrypts our public key based on public key of recipient
@@ -129,7 +129,7 @@ export function didcommV1Unpack(messagePackage: EncryptedMessage, recipientKey: 
   let recip_x: AskarKey | undefined
 
   try {
-    recip_x = recipientKey.convertkey({ algorithm: KeyAlgs.X25519 })
+    recip_x = recipientKey.convertkey({ algorithm: KeyAlgorithm.X25519 })
 
     if (sender && iv) {
       senderKey = TypedArrayEncoder.toUtf8String(
@@ -139,9 +139,9 @@ export function didcommV1Unpack(messagePackage: EncryptedMessage, recipientKey: 
         })
       )
       sender_x = AskarKey.fromPublicBytes({
-        algorithm: KeyAlgs.Ed25519,
+        algorithm: KeyAlgorithm.Ed25519,
         publicKey: TypedArrayEncoder.fromBase58(senderKey),
-      }).convertkey({ algorithm: KeyAlgs.X25519 })
+      }).convertkey({ algorithm: KeyAlgorithm.X25519 })
 
       payloadKey = CryptoBox.open({
         recipientKey: recip_x,
@@ -163,7 +163,7 @@ export function didcommV1Unpack(messagePackage: EncryptedMessage, recipientKey: 
 
   let cek: AskarKey | undefined
   try {
-    cek = AskarKey.fromSecretBytes({ algorithm: KeyAlgs.Chacha20C20P, secretKey: payloadKey })
+    cek = AskarKey.fromSecretBytes({ algorithm: KeyAlgorithm.Chacha20C20P, secretKey: payloadKey })
     const message = cek.aeadDecrypt({
       ciphertext: TypedArrayEncoder.fromBase64(messagePackage.ciphertext),
       nonce: TypedArrayEncoder.fromBase64(messagePackage.iv),

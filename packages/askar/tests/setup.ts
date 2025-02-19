@@ -1,4 +1,4 @@
 import 'reflect-metadata'
-import '@hyperledger/aries-askar-nodejs'
+import '@openwallet-foundation/askar-nodejs'
 
 jest.setTimeout(180000)

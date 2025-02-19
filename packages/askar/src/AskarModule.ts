@@ -64,7 +64,7 @@ export class AskarModule implements Module {
 
     // For new stores (so not profiles) we need to generate a wallet key
     return {
-      walletKey: this.config.ariesAskar.storeGenerateRawKey({}),
+      walletKey: this.config.askar.storeGenerateRawKey({}),
     }
   }
 

@@ -1,33 +1,21 @@
 import type { AgentDependencies } from './AgentDependencies'
 import type { AgentModulesInput } from './AgentModules'
-import type { AgentMessageReceivedEvent } from './Events'
-import type { InboundTransport } from '../transport/InboundTransport'
-import type { OutboundTransport } from '../transport/OutboundTransport'
+import type { Module } from '../plugins'
 import type { InitConfig } from '../types'
-import type { Subscription } from 'rxjs'
 
 import { Subject } from 'rxjs'
-import { mergeMap, takeUntil } from 'rxjs/operators'
 
 import { InjectionSymbols } from '../constants'
 import { SigningProviderToken } from '../crypto'
 import { JwsService } from '../crypto/JwsService'
 import { CredoError } from '../error'
 import { DependencyManager } from '../plugins'
-import { DidCommMessageRepository, StorageUpdateService, StorageVersionRepository } from '../storage'
+import { StorageUpdateService, StorageVersionRepository } from '../storage'
 
 import { AgentConfig } from './AgentConfig'
 import { extendModulesWithDefaultModules } from './AgentModules'
 import { BaseAgent } from './BaseAgent'
-import { Dispatcher } from './Dispatcher'
-import { EnvelopeService } from './EnvelopeService'
 import { EventEmitter } from './EventEmitter'
-import { AgentEventTypes } from './Events'
-import { FeatureRegistry } from './FeatureRegistry'
-import { MessageHandlerRegistry } from './MessageHandlerRegistry'
-import { MessageReceiver } from './MessageReceiver'
-import { MessageSender } from './MessageSender'
-import { TransportService } from './TransportService'
 import { AgentContext, DefaultAgentContextProvider } from './context'
 
 interface AgentOptions<AgentModules extends AgentModulesInput> {
@@ -39,23 +27,13 @@ interface AgentOptions<AgentModules extends AgentModulesInput> {
 // Any makes sure you can use Agent as a type without always needing to specify the exact generics for the agent
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export class Agent<AgentModules extends AgentModulesInput = any> extends BaseAgent<AgentModules> {
-  private messageSubscription?: Subscription
-
   public constructor(options: AgentOptions<AgentModules>, dependencyManager = new DependencyManager()) {
     const agentConfig = new AgentConfig(options.config, options.dependencies)
     const modulesWithDefaultModules = extendModulesWithDefaultModules(options.modules)
 
     // Register internal dependencies
-    dependencyManager.registerSingleton(MessageHandlerRegistry)
     dependencyManager.registerSingleton(EventEmitter)
-    dependencyManager.registerSingleton(MessageSender)
-    dependencyManager.registerSingleton(MessageReceiver)
-    dependencyManager.registerSingleton(TransportService)
-    dependencyManager.registerSingleton(Dispatcher)
-    dependencyManager.registerSingleton(EnvelopeService)
-    dependencyManager.registerSingleton(FeatureRegistry)
     dependencyManager.registerSingleton(JwsService)
-    dependencyManager.registerSingleton(DidCommMessageRepository)
     dependencyManager.registerSingleton(StorageVersionRepository)
     dependencyManager.registerSingleton(StorageUpdateService)
 
@@ -107,77 +85,13 @@ export class Agent<AgentModules extends AgentModulesInput = any> extends BaseAge
     super(agentConfig, dependencyManager)
   }
 
-  public registerInboundTransport(inboundTransport: InboundTransport) {
-    this.messageReceiver.registerInboundTransport(inboundTransport)
-  }
-
-  public async unregisterInboundTransport(inboundTransport: InboundTransport) {
-    await this.messageReceiver.unregisterInboundTransport(inboundTransport)
-  }
-
-  public get inboundTransports() {
-    return this.messageReceiver.inboundTransports
-  }
-
-  public registerOutboundTransport(outboundTransport: OutboundTransport) {
-    this.messageSender.registerOutboundTransport(outboundTransport)
-  }
-
-  public async unregisterOutboundTransport(outboundTransport: OutboundTransport) {
-    await this.messageSender.unregisterOutboundTransport(outboundTransport)
-  }
-
-  public get outboundTransports() {
-    return this.messageSender.outboundTransports
-  }
-
   public get events() {
     return this.eventEmitter
   }
 
-  /**
-   * Agent's feature registry
-   */
-  public get features() {
-    return this.featureRegistry
-  }
-
   public async initialize() {
-    const stop$ = this.dependencyManager.resolve<Subject<boolean>>(InjectionSymbols.Stop$)
-
-    // TODO: move to DIDComm module (along with transports)
-    // Listen for new messages (either from transports or somewhere else in the framework / extensions)
-    // We create this before doing any other initialization, so the initialization could already receive messages
-    this.messageSubscription = this.eventEmitter
-      .observable<AgentMessageReceivedEvent>(AgentEventTypes.AgentMessageReceived)
-      .pipe(
-        takeUntil(stop$),
-        mergeMap(
-          (e) =>
-            this.messageReceiver
-              .receiveMessage(e.payload.message, {
-                connection: e.payload.connection,
-                contextCorrelationId: e.payload.contextCorrelationId,
-                session: e.payload.session,
-              })
-              .catch((error) => {
-                this.logger.error('Failed to process message', { error })
-              }),
-          this.agentConfig.processDidCommMessagesConcurrently ? undefined : 1
-        )
-      )
-      .subscribe()
-
-    await this.dependencyManager.initializeModules(this.agentContext)
     await super.initialize()
-
-    for (const transport of this.inboundTransports) {
-      await transport.start(this)
-    }
-
-    for (const transport of this.outboundTransports) {
-      await transport.start(this)
-    }
+    await this.dependencyManager.initializeModules(this.agentContext)
 
     this._isInitialized = true
   }
@@ -188,12 +102,6 @@ export class Agent<AgentModules extends AgentModulesInput = any> extends BaseAge
     // All observables use takeUntil with the stop$ observable
     // this means all observables will stop running if a value is emitted on this observable
     stop$.next(true)
-
-    // TODO: move to DIDComm module
-    // Stop transports
-    const allTransports = [...this.inboundTransports, ...this.outboundTransports]
-    const transportPromises = allTransports.map((transport) => transport.stop())
-    await Promise.all(transportPromises)
 
     await this.dependencyManager.closeAgentContext(this.agentContext)
     await this.dependencyManager.shutdownModules(this.agentContext)

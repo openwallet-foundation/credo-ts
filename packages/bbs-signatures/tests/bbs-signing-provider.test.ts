@@ -52,7 +52,7 @@ describeSkipNode18('BBS Signing Provider', () => {
         key,
       })
     ).rejects.toThrow(
-      'Error signing data with verkey AeAihfn5UFf7y9oesemKE1oLmTwKMRv7fafTepespr3qceF4RUMggAbogkoC8n6rXgtJytq4oGy59DsVHxmNj9WGWwkiRnP3Sz2r924RLVbc2NdP4T7yEPsSFZPsWmLjgnP1vXHpj4bVXNcTmkUmF6mSXinF3HehnQVip14vRFuMzYVxMUh28ofTJzbtUqxMWZQRu. Unsupported keyType: bls12381g1g2'
+      'Error signing data with key associated with publicKeyBase58 AeAihfn5UFf7y9oesemKE1oLmTwKMRv7fafTepespr3qceF4RUMggAbogkoC8n6rXgtJytq4oGy59DsVHxmNj9WGWwkiRnP3Sz2r924RLVbc2NdP4T7yEPsSFZPsWmLjgnP1vXHpj4bVXNcTmkUmF6mSXinF3HehnQVip14vRFuMzYVxMUh28ofTJzbtUqxMWZQRu. Unsupported keyType: bls12381g1g2'
     )
   })
 

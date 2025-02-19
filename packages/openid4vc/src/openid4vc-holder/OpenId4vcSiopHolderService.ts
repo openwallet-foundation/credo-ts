@@ -3,7 +3,7 @@ import type {
   OpenId4VcSiopResolvedAuthorizationRequest,
 } from './OpenId4vcSiopHolderServiceOptions'
 import type { OpenId4VcJwtIssuer } from '../shared'
-import type { AgentContext, JwkJson, VerifiablePresentation } from '@credo-ts/core'
+import type { AgentContext, EncodedX509Certificate, JwkJson, VerifiablePresentation } from '@credo-ts/core'
 import type {
   AuthorizationResponsePayload,
   PresentationExchangeResponseOpts,
@@ -38,9 +38,10 @@ export class OpenId4VcSiopHolderService {
 
   public async resolveAuthorizationRequest(
     agentContext: AgentContext,
-    requestJwtOrUri: string
+    requestJwtOrUri: string,
+    trustedCertificates?: EncodedX509Certificate[]
   ): Promise<OpenId4VcSiopResolvedAuthorizationRequest> {
-    const openidProvider = await this.getOpenIdProvider(agentContext)
+    const openidProvider = await this.getOpenIdProvider(agentContext, trustedCertificates)
 
     // parsing happens automatically in verifyAuthorizationRequest
     const verifiedAuthorizationRequest = await openidProvider.verifyAuthorizationRequest(requestJwtOrUri)
@@ -181,7 +182,7 @@ export class OpenId4VcSiopHolderService {
           client_metadata: requestObjectPayload.client_metadata,
           server_metadata: {
             authorization_encryption_alg_values_supported: ['ECDH-ES'],
-            authorization_encryption_enc_values_supported: ['A256GCM'],
+            authorization_encryption_enc_values_supported: ['A256GCM', 'A128CBC-HS256'],
           },
         })
 
@@ -244,7 +245,7 @@ export class OpenId4VcSiopHolderService {
     } as const
   }
 
-  private async getOpenIdProvider(agentContext: AgentContext) {
+  private async getOpenIdProvider(agentContext: AgentContext, trustedCertificates?: EncodedX509Certificate[]) {
     const builder = OP.builder()
       .withExpiresIn(6000)
       .withIssuer(ResponseIss.SELF_ISSUED_V2)
@@ -255,7 +256,7 @@ export class OpenId4VcSiopHolderService {
         SupportedVersion.SIOPv2_D12_OID4VP_D20,
       ])
       .withCreateJwtCallback(getCreateJwtCallback(agentContext))
-      .withVerifyJwtCallback(getVerifyJwtCallback(agentContext))
+      .withVerifyJwtCallback(getVerifyJwtCallback(agentContext, trustedCertificates))
       .withHasher(Hasher.hash)
 
     const openidProvider = builder.build()
@@ -387,8 +388,10 @@ export class OpenId4VcSiopHolderService {
       throw new CredoError("Only 'ECDH-ES' is supported as 'alg' value for JARM response encryption")
     }
 
-    if (options.enc !== 'A256GCM') {
-      throw new CredoError("Only 'A256GCM' is supported as 'enc' value for JARM response encryption")
+    if (options.enc !== 'A256GCM' && options.enc !== 'A128CBC-HS256') {
+      throw new CredoError(
+        "Only 'A256GCM' and 'A128CBC-HS256' are supported as 'enc' value for JARM response encryption"
+      )
     }
 
     if (key.keyType !== KeyType.P256) {

@@ -23,6 +23,7 @@ const endorser = new Agent(
   getInMemoryAgentOptions(
     'IndyVdrAnonCredsRegistryEndorser',
     {},
+    {},
     {
       indyVdr: new IndyVdrModule({
         indyVdr,
@@ -39,6 +40,7 @@ const endorser = new Agent(
 const agent = new Agent(
   getInMemoryAgentOptions(
     'IndyVdrAnonCredsRegistryAgent',
+    {},
     {},
     {
       indyVdr: new IndyVdrModule({

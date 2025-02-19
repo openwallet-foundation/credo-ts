@@ -1,12 +1,11 @@
 import type { DependencyManager } from './DependencyManager'
 import type { AgentContext } from '../agent'
-import type { FeatureRegistry } from '../agent/FeatureRegistry'
 import type { Update } from '../storage/migration/updates'
 import type { Constructor } from '../utils/mixins'
 
 export interface Module {
   api?: Constructor<unknown>
-  register(dependencyManager: DependencyManager, featureRegistry: FeatureRegistry): void
+  register(dependencyManager: DependencyManager): void
 
   /**
    * Method that will be called to initialize a module. This method is only called once on startup

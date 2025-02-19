@@ -9,6 +9,7 @@ import {
   DidKey,
   DidJwk,
   getJwkFromKey,
+  X509Module,
 } from '@credo-ts/core'
 import {
   authorizationCodeGrantIdentifier,
@@ -16,15 +17,29 @@ import {
   OpenId4VciAuthorizationFlow,
   preAuthorizedCodeGrantIdentifier,
 } from '@credo-ts/openid4vc'
-import { ariesAskar } from '@hyperledger/aries-askar-nodejs'
+import { askar } from '@openwallet-foundation/askar-nodejs'
 
 import { BaseAgent } from './BaseAgent'
-import { Output } from './OutputClass'
+import { greenText, Output } from './OutputClass'
 
 function getOpenIdHolderModules() {
   return {
-    askar: new AskarModule({ ariesAskar }),
+    askar: new AskarModule({ askar }),
     openId4VcHolder: new OpenId4VcHolderModule(),
+    x509: new X509Module({
+      getTrustedCertificatesForVerification: (agentContext, { certificateChain, verification }) => {
+        console.log(
+          greenText(
+            `dyncamically trusting certificate ${certificateChain[0].getIssuerNameField('C')} for verification of ${
+              verification.type
+            }`,
+            true
+          )
+        )
+
+        return [certificateChain[0].toString('pem')]
+      },
+    }),
   } as const
 }
 
@@ -41,9 +56,6 @@ export class Holder extends BaseAgent<ReturnType<typeof getOpenIdHolderModules>>
   public static async build(): Promise<Holder> {
     const holder = new Holder(3000, 'OpenId4VcHolder ' + Math.random().toString())
     await holder.initializeAgent('96213c3d7fc8d4d6754c7a0fd969598e')
-    await holder.agent.x509.addTrustedCertificate(
-      'MIH7MIGioAMCAQICEFvUcSkwWUaPlEWnrOmu_EYwCgYIKoZIzj0EAwIwDTELMAkGA1UEBhMCREUwIBcNMDAwMTAxMDAwMDAwWhgPMjA1MDAxMDEwMDAwMDBaMA0xCzAJBgNVBAYTAkRFMDkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDIgAC3A9V8ynqRcVjADqlfpZ9X8mwbew0TuQldH_QOpkadsWjAjAAMAoGCCqGSM49BAMCA0gAMEUCIQDXGNookSkHqRXiOP_0fVUdNIScY13h3DWkqSopFIYB2QIgUzNFnZ-SEdm-7UMzggaPiFgtznVzmHw2h4vVtuLzWlA'
-    )
 
     return holder
   }
@@ -200,11 +212,11 @@ export class Holder extends BaseAgent<ReturnType<typeof getOpenIdHolderModules>>
 
   public async exit() {
     console.log(Output.Exit)
-    await this.agent.shutdown()
+    await this.shutdown()
     process.exit(0)
   }
 
   public async restart() {
-    await this.agent.shutdown()
+    await this.shutdown()
   }
 }

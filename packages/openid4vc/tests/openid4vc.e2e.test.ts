@@ -3,7 +3,6 @@ import type { OpenId4VciSignMdocCredentials } from '../src'
 import type { OpenId4VciCredentialBindingResolver } from '../src/openid4vc-holder'
 import type { AuthorizationServerMetadata } from '@animo-id/oauth2'
 import type { DifPresentationExchangeDefinitionV2, JwkJson, Mdoc, MdocDeviceResponse, SdJwtVc } from '@credo-ts/core'
-import type { Server } from 'http'
 
 import {
   calculateJwkThumbprint,
@@ -37,8 +36,10 @@ import {
   JwsService,
   JwtPayload,
 } from '@credo-ts/core'
+import { ResponseMode } from '@sphereon/did-auth-siop'
 import express, { type Express } from 'express'
 
+import { setupNockToExpress } from '../../../tests/nockToExpress'
 import { AskarModule } from '../../askar/src'
 import { askarModuleConfig } from '../../askar/tests/helpers'
 import { TenantsModule } from '../../tenants/src'
@@ -71,7 +72,7 @@ const verificationBaseUrl = `${baseUrl}/oid4vp`
 
 describe('OpenId4Vc', () => {
   let expressApp: Express
-  let expressServer: Server
+  let cleanupMockServer: () => void
 
   let issuer: AgentType<{
     openId4VcIssuer: OpenId4VcIssuerModule
@@ -196,11 +197,11 @@ describe('OpenId4Vc', () => {
     expressApp.use('/oid4vci', issuer.agent.modules.openId4VcIssuer.config.router)
     expressApp.use('/oid4vp', verifier.agent.modules.openId4VcVerifier.config.router)
 
-    expressServer = expressApp.listen(serverPort)
+    cleanupMockServer = setupNockToExpress(baseUrl, expressApp)
   })
 
   afterEach(async () => {
-    expressServer?.close()
+    cleanupMockServer()
 
     await issuer.agent.shutdown()
     await issuer.agent.wallet.delete()
@@ -926,16 +927,17 @@ describe('OpenId4Vc', () => {
       },
     })
 
-    const certificate = await verifier.agent.x509.createSelfSignedCertificate({
-      key: await verifier.agent.wallet.createKey({ keyType: KeyType.Ed25519 }),
-      extensions: [[{ type: 'dns', value: `localhost:${serverPort}` }]],
+    const certificate = await verifier.agent.x509.createCertificate({
+      issuer: 'CN=credo',
+      authorityKey: await verifier.agent.wallet.createKey({ keyType: KeyType.Ed25519 }),
+      extensions: { subjectAlternativeName: { name: [{ type: 'dns', value: `localhost:${serverPort}` }] } },
     })
 
     const rawCertificate = certificate.toString('base64')
     await holder.agent.sdJwtVc.store(signedSdJwtVc.compact)
 
-    await holder.agent.x509.addTrustedCertificate(rawCertificate)
-    await verifier.agent.x509.addTrustedCertificate(rawCertificate)
+    holder.agent.x509.addTrustedCertificate(rawCertificate)
+    verifier.agent.x509.addTrustedCertificate(rawCertificate)
 
     const presentationDefinition = {
       id: 'OpenBadgeCredential',
@@ -1158,16 +1160,17 @@ describe('OpenId4Vc', () => {
       },
     })
 
-    const certificate = await verifier.agent.x509.createSelfSignedCertificate({
-      key: await verifier.agent.wallet.createKey({ keyType: KeyType.Ed25519 }),
-      extensions: [[{ type: 'dns', value: `localhost:${serverPort}` }]],
+    const certificate = await verifier.agent.x509.createCertificate({
+      issuer: 'CN=credo',
+      authorityKey: await verifier.agent.wallet.createKey({ keyType: KeyType.Ed25519 }),
+      extensions: { subjectAlternativeName: { name: [{ type: 'dns', value: `localhost:${serverPort}` }] } },
     })
 
     const rawCertificate = certificate.toString('base64')
     await holder.agent.sdJwtVc.store(signedSdJwtVc.compact)
 
-    await holder.agent.x509.addTrustedCertificate(rawCertificate)
-    await verifier.agent.x509.addTrustedCertificate(rawCertificate)
+    holder.agent.x509.addTrustedCertificate(rawCertificate)
+    verifier.agent.x509.addTrustedCertificate(rawCertificate)
 
     const presentationDefinition = {
       id: 'OpenBadgeCredential',
@@ -1405,17 +1408,18 @@ describe('OpenId4Vc', () => {
       },
     })
 
-    const certificate = await verifier.agent.x509.createSelfSignedCertificate({
-      key: await verifier.agent.wallet.createKey({ keyType: KeyType.Ed25519 }),
-      extensions: [[{ type: 'dns', value: `localhost:${serverPort}` }]],
+    const certificate = await verifier.agent.x509.createCertificate({
+      issuer: 'CN=credo',
+      authorityKey: await verifier.agent.wallet.createKey({ keyType: KeyType.Ed25519 }),
+      extensions: { subjectAlternativeName: { name: [{ type: 'dns', value: `localhost:${serverPort}` }] } },
     })
 
     const rawCertificate = certificate.toString('base64')
     await holder.agent.sdJwtVc.store(signedSdJwtVc.compact)
     await holder.agent.sdJwtVc.store(signedSdJwtVc2.compact)
 
-    await holder.agent.x509.addTrustedCertificate(rawCertificate)
-    await verifier.agent.x509.addTrustedCertificate(rawCertificate)
+    holder.agent.x509.addTrustedCertificate(rawCertificate)
+    verifier.agent.x509.addTrustedCertificate(rawCertificate)
 
     const presentationDefinition = {
       id: 'OpenBadgeCredentials',
@@ -1711,13 +1715,12 @@ describe('OpenId4Vc', () => {
   it('e2e flow with tenants, issuer endpoints requesting a mdoc', async () => {
     const issuerTenant1 = await issuer.agent.modules.tenants.getTenantAgent({ tenantId: issuer1.tenantId })
 
-    const selfSignedIssuerCertificate = await issuerTenant1.x509.createSelfSignedCertificate({
-      key: await issuerTenant1.wallet.createKey({ keyType: KeyType.P256 }),
-      extensions: [],
-      name: 'C=DE',
+    const issuerCertificate = await issuerTenant1.x509.createCertificate({
+      authorityKey: await issuerTenant1.wallet.createKey({ keyType: KeyType.P256 }),
+      issuer: 'C=DE',
     })
-    const selfSignedIssuerCertPem = selfSignedIssuerCertificate.toString('pem')
-    await issuerTenant1.x509.setTrustedCertificates([selfSignedIssuerCertPem])
+    const issuerCertificatePem = issuerCertificate.toString('pem')
+    await issuerTenant1.x509.setTrustedCertificates([issuerCertificatePem])
 
     const openIdIssuerTenant1 = await issuerTenant1.modules.openId4VcIssuer.createIssuer({
       dpopSigningAlgValuesSupported: [JwaSignatureAlgorithm.ES256],
@@ -1759,7 +1762,7 @@ describe('OpenId4Vc', () => {
     })
 
     const holderTenant1 = await holder.agent.modules.tenants.getTenantAgent({ tenantId: holder1.tenantId })
-    await holderTenant1.x509.setTrustedCertificates([selfSignedIssuerCertPem])
+    await holderTenant1.x509.setTrustedCertificates([issuerCertificatePem])
 
     const resolvedCredentialOffer1 = await holderTenant1.modules.openId4VcHolder.resolveCredentialOffer(
       credentialOffer1
@@ -1857,6 +1860,112 @@ describe('OpenId4Vc', () => {
     await holderTenant1.endSession()
   })
 
+  it('e2e flow with verifier endpoints verifying a mdoc fails without direct_post.jwt', async () => {
+    const openIdVerifier = await verifier.agent.modules.openId4VcVerifier.createVerifier()
+
+    const issuerCertificate = await X509Service.createCertificate(issuer.agent.context, {
+      authorityKey: await issuer.agent.context.wallet.createKey({ keyType: KeyType.P256 }),
+      issuer: 'C=DE',
+    })
+
+    await verifier.agent.x509.setTrustedCertificates([issuerCertificate.toString('pem')])
+
+    const holderKey = await holder.agent.context.wallet.createKey({ keyType: KeyType.P256 })
+    const signedMdoc = await issuer.agent.mdoc.sign({
+      docType: 'org.eu.university',
+      holderKey,
+      issuerCertificate: issuerCertificate.toString('pem'),
+      namespaces: {
+        'eu.europa.ec.eudi.pid.1': {
+          university: 'innsbruck',
+          degree: 'bachelor',
+          name: 'John Doe',
+          not: 'disclosed',
+        },
+      },
+    })
+
+    const certificate = await verifier.agent.x509.createCertificate({
+      authorityKey: await verifier.agent.wallet.createKey({ keyType: KeyType.Ed25519 }),
+      extensions: { subjectAlternativeName: { name: [{ type: 'dns', value: 'localhost:1234' }] } },
+      issuer: 'CN=credo',
+    })
+
+    const rawCertificate = certificate.toString('base64')
+    await holder.agent.mdoc.store(signedMdoc)
+
+    holder.agent.x509.addTrustedCertificate(rawCertificate)
+    verifier.agent.x509.addTrustedCertificate(rawCertificate)
+
+    const presentationDefinition = {
+      id: 'mDL-sample-req',
+      input_descriptors: [
+        {
+          id: 'org.eu.university',
+          format: {
+            mso_mdoc: {
+              alg: ['ES256', 'ES384', 'ES512', 'EdDSA', 'ESB256', 'ESB320', 'ESB384', 'ESB512'],
+            },
+          },
+          constraints: {
+            fields: [
+              {
+                path: ["$['eu.europa.ec.eudi.pid.1']['name']"],
+                intent_to_retain: false,
+              },
+              {
+                path: ["$['eu.europa.ec.eudi.pid.1']['degree']"],
+                intent_to_retain: false,
+              },
+            ],
+            limit_disclosure: 'required',
+          },
+        },
+      ],
+    } satisfies DifPresentationExchangeDefinitionV2
+
+    const { authorizationRequest } = await verifier.agent.modules.openId4VcVerifier.createAuthorizationRequest({
+      responseMode: 'direct_post.jwt',
+      verifierId: openIdVerifier.verifierId,
+      requestSigner: {
+        method: 'x5c',
+        x5c: [rawCertificate],
+        issuer: 'https://example.com/hakuna/matadata',
+      },
+      presentationExchange: { definition: presentationDefinition },
+    })
+
+    const resolvedAuthorizationRequest = await holder.agent.modules.openId4VcHolder.resolveSiopAuthorizationRequest(
+      authorizationRequest
+    )
+
+    if (!resolvedAuthorizationRequest.presentationExchange) {
+      throw new Error('Presentation exchange not defined')
+    }
+
+    const selectedCredentials = holder.agent.modules.openId4VcHolder.selectCredentialsForRequest(
+      resolvedAuthorizationRequest.presentationExchange.credentialsForRequest
+    )
+
+    const requestPayload =
+      await resolvedAuthorizationRequest.authorizationRequest.authorizationRequest.requestObject?.getPayload()
+    if (!requestPayload) {
+      throw new Error('No payload')
+    }
+
+    // setting this to direct_post to simulate the result of sending a non encrypted response to an authorization request that requires enryption
+    requestPayload.response_mode = ResponseMode.DIRECT_POST
+
+    await expect(
+      holder.agent.modules.openId4VcHolder.acceptSiopAuthorizationRequest({
+        authorizationRequest: resolvedAuthorizationRequest.authorizationRequest,
+        presentationExchange: {
+          credentials: selectedCredentials,
+        },
+      })
+    ).rejects.toThrow(/JARM response is required/)
+  })
+
   it('e2e flow with verifier endpoints verifying a mdoc and sd-jwt (jarm)', async () => {
     const openIdVerifier = await verifier.agent.modules.openId4VcVerifier.createVerifier()
 
@@ -1878,13 +1987,12 @@ describe('OpenId4Vc', () => {
     })
     await holder.agent.sdJwtVc.store(signedSdJwtVc.compact)
 
-    const selfSignedCertificate = await X509Service.createSelfSignedCertificate(issuer.agent.context, {
-      key: await issuer.agent.context.wallet.createKey({ keyType: KeyType.P256 }),
-      extensions: [],
-      name: 'C=DE',
+    const issuerCertificate = await X509Service.createCertificate(issuer.agent.context, {
+      authorityKey: await issuer.agent.context.wallet.createKey({ keyType: KeyType.P256 }),
+      issuer: 'C=DE',
     })
 
-    await verifier.agent.x509.setTrustedCertificates([selfSignedCertificate.toString('pem')])
+    await verifier.agent.x509.setTrustedCertificates([issuerCertificate.toString('pem')])
 
     const parsedDid = parseDid(issuer.kid)
     if (!parsedDid.fragment) {
@@ -1896,7 +2004,7 @@ describe('OpenId4Vc', () => {
     const signedMdoc = await issuer.agent.mdoc.sign({
       docType: 'org.eu.university',
       holderKey,
-      issuerCertificate: selfSignedCertificate.toString('pem'),
+      issuerCertificate: issuerCertificate.toString('pem'),
       namespaces: {
         'eu.europa.ec.eudi.pid.1': {
           university: 'innsbruck',
@@ -1907,16 +2015,17 @@ describe('OpenId4Vc', () => {
       },
     })
 
-    const certificate = await verifier.agent.x509.createSelfSignedCertificate({
-      key: await verifier.agent.wallet.createKey({ keyType: KeyType.Ed25519 }),
-      extensions: [[{ type: 'dns', value: 'localhost:1234' }]],
+    const certificate = await verifier.agent.x509.createCertificate({
+      issuer: 'CN=credo',
+      authorityKey: await verifier.agent.wallet.createKey({ keyType: KeyType.Ed25519 }),
+      extensions: { subjectAlternativeName: { name: [{ type: 'dns', value: 'localhost:1234' }] } },
     })
 
     const rawCertificate = certificate.toString('base64')
     await holder.agent.mdoc.store(signedMdoc)
 
-    await holder.agent.x509.addTrustedCertificate(rawCertificate)
-    await verifier.agent.x509.addTrustedCertificate(rawCertificate)
+    holder.agent.x509.addTrustedCertificate(rawCertificate)
+    verifier.agent.x509.addTrustedCertificate(rawCertificate)
 
     const presentationDefinition = {
       id: 'mDL-sample-req',
@@ -2234,17 +2343,18 @@ describe('OpenId4Vc', () => {
       },
     })
 
-    const certificate = await verifier.agent.x509.createSelfSignedCertificate({
-      key: await verifier.agent.wallet.createKey({ keyType: KeyType.Ed25519 }),
-      extensions: [[{ type: 'dns', value: 'localhost:1234' }]],
+    const certificate = await verifier.agent.x509.createCertificate({
+      issuer: 'CN=credo',
+      authorityKey: await verifier.agent.wallet.createKey({ keyType: KeyType.Ed25519 }),
+      extensions: { subjectAlternativeName: { name: [{ type: 'dns', value: 'localhost:1234' }] } },
     })
 
     const rawCertificate = certificate.toString('base64')
     await holder.agent.sdJwtVc.store(signedSdJwtVc.compact)
     await holder.agent.sdJwtVc.store(signedSdJwtVc2.compact)
 
-    await holder.agent.x509.addTrustedCertificate(rawCertificate)
-    await verifier.agent.x509.addTrustedCertificate(rawCertificate)
+    holder.agent.x509.addTrustedCertificate(rawCertificate)
+    verifier.agent.x509.addTrustedCertificate(rawCertificate)
 
     const presentationDefinition = {
       id: 'OpenBadgeCredentials',

@@ -15,7 +15,7 @@ describe('X25519JWk', () => {
     expect(jwk.kty).toEqual('OKP')
     expect(jwk.crv).toEqual('X25519')
     expect(jwk.keyType).toEqual(KeyType.X25519)
-    expect(jwk.publicKey).toEqual(TypedArrayEncoder.fromBase64(jwkJson.x))
+    expect(jwk.publicKey).toEqual(Uint8Array.from(TypedArrayEncoder.fromBase64(jwkJson.x)))
     expect(jwk.supportedEncryptionAlgorithms).toEqual(['ECDH-ES+A128KW', 'ECDH-ES+A192KW', 'ECDH-ES+A256KW', 'ECDH-ES'])
     expect(jwk.supportedSignatureAlgorithms).toEqual([])
     expect(jwk.key.keyType).toEqual(KeyType.X25519)
@@ -26,7 +26,7 @@ describe('X25519JWk', () => {
     const jwk = X25519Jwk.fromJson(jwkJson)
     expect(jwk.x).toEqual(jwkJson.x)
 
-    expect(() => X25519Jwk.fromJson({ ...jwkJson, kty: 'test' })).toThrowError("Invalid 'X25519' JWK.")
+    expect(() => X25519Jwk.fromJson({ ...jwkJson, kty: 'test' })).toThrow("Invalid 'X25519' JWK.")
   })
 
   test('fromPublicKey', () => {

@@ -1,19 +1,14 @@
 import type { InitConfig, FileSystem } from '@credo-ts/core'
 
-import {
-  UpdateAssistant,
-  InjectionSymbols,
-  ConnectionsModule,
-  Agent,
-  CacheModule,
-  InMemoryLruCache,
-} from '@credo-ts/core'
+import { UpdateAssistant, InjectionSymbols, Agent, CacheModule, InMemoryLruCache } from '@credo-ts/core'
+import { ConnectionsModule } from '@credo-ts/didcomm'
 import { agentDependencies } from '@credo-ts/node'
 import path from 'path'
 
 import { AskarModule, AskarMultiWalletDatabaseScheme } from '../../askar/src'
-import { ariesAskar } from '../../askar/tests/helpers'
+import { askar } from '../../askar/tests/helpers'
 import { testLogger } from '../../core/tests'
+import { getDefaultDidcommModules } from '../../didcomm/src/util/modules'
 import { TenantSessionCoordinator } from '../src/context/TenantSessionCoordinator'
 
 import { TenantsModule } from '@credo-ts/tenants'
@@ -28,9 +23,10 @@ const agentConfig = {
 } satisfies InitConfig
 
 const modules = {
+  ...getDefaultDidcommModules(),
   tenants: new TenantsModule(),
   askar: new AskarModule({
-    ariesAskar,
+    askar: askar,
     multiWalletDatabaseScheme: AskarMultiWalletDatabaseScheme.ProfilePerWallet,
   }),
   connections: new ConnectionsModule({
