@@ -82,7 +82,7 @@ export class AksarKeyManagementService implements Kms.KeyManagementService {
     let key: Key | undefined = undefined
     try {
       if (privateJwk.kty === 'oct') {
-        // TOOD: we need to look at how to import symmetric keys, as we need the alg
+        // TODO: we need to look at how to import symmetric keys, as we need the alg
         // Should we do the same as we do for createKey?
         throw new Kms.KeyManagementAlgorithmNotSupportedError(
           `importing keys with kty '${privateJwk.kty}'`,

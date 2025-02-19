@@ -44,7 +44,7 @@ export class KeyManagementApi {
       'Invalid options provided to sign method'
     )
 
-    const kms = this.getKms(backend)
+    const kms = backend ? this.getKms(backend) : (await this.getKmsForKeyId(options.keyId)).kms
     return await kms.sign(this.agentContext, kmsOptions)
   }
 
@@ -58,7 +58,11 @@ export class KeyManagementApi {
       'Invalid options provided to verify method'
     )
 
-    const kms = this.getKms(backend)
+    // TODO: we need to ask the backend whether it can perform a specfic operation.
+    // because otherwise we will always take the first configured backend for crypto operations
+
+    const kms =
+      backend || typeof options.key !== 'string' ? this.getKms(backend) : (await this.getKmsForKeyId(options.key)).kms
     return await kms.verify(this.agentContext, kmsOptions)
   }
 
@@ -72,7 +76,9 @@ export class KeyManagementApi {
       'Invalid options provided to encrypt method'
     )
 
-    const kms = this.getKms(backend)
+    const kms =
+      backend || typeof options.key !== 'string' ? this.getKms(backend) : (await this.getKmsForKeyId(options.key)).kms
+
     return await kms.encrypt(this.agentContext, kmsOptions)
   }
 
@@ -86,7 +92,9 @@ export class KeyManagementApi {
       'Invalid options provided to decrypt method'
     )
 
-    const kms = this.getKms(backend)
+    const kms =
+      backend || typeof options.key !== 'string' ? this.getKms(backend) : (await this.getKmsForKeyId(options.key)).kms
+
     return await kms.decrypt(this.agentContext, kmsOptions)
   }
 
@@ -114,8 +122,13 @@ export class KeyManagementApi {
       'Invalid options provided to getPublicKey method'
     )
 
-    const kms = this.getKms(backend)
-    return await kms.getPublicKey(this.agentContext, keyId)
+    if (backend) {
+      const kms = this.getKms(backend)
+      return await kms.getPublicKey(this.agentContext, keyId)
+    }
+
+    const { publicKey } = await this.getKmsForKeyId(options.keyId)
+    return publicKey
   }
 
   /**
@@ -130,6 +143,35 @@ export class KeyManagementApi {
 
     const kms = this.getKms(backend)
     return await kms.deleteKey(this.agentContext, kmsOptions)
+  }
+
+  /**
+   * Get the kms associated with a specific `keyId`.
+   *
+   * This uses a naive approach of fetching the key for each configured kms
+   * until it finds the registered key.
+   *
+   * In the future this approach might be optimized based on:
+   * - caching
+   * - keeping a registry
+   * - backend specific key prefixes
+   */
+  private async getKmsForKeyId(keyId: string) {
+    for (const kms of this.keyManagementConfig.backends) {
+      const publicKey = await kms.getPublicKey(this.agentContext, keyId)
+      if (publicKey)
+        return {
+          publicKey,
+          kms,
+        }
+    }
+
+    const availableBackends = this.keyManagementConfig.backends.map((kms) => `'${kms.backend}'`)
+    throw new KeyManagementError(
+      `No key management service has a key with keyId '${keyId}'. Available backends are ${availableBackends.join(
+        ', '
+      )}`
+    )
   }
 
   private getKms(backend?: string) {

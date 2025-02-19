@@ -18,7 +18,7 @@ export interface KeyManagementService {
    * Get the public representation of a key.
    *
    * In case of a symmetric key the returned JWK won't include
-   * any key cryptographic key material itself, but will include
+   * any cryptographic key material itself, but will include
    * all the key related metadata.
    */
   getPublicKey(agentContext: AgentContext, keyId: string): Promise<KmsJwkPublic | null>
