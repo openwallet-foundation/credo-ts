@@ -1,10 +1,19 @@
 import type { AgentContext } from '../../agent'
+import type { VerifiablePresentation } from '../dif-presentation-exchange/index'
+import type { TransactionDataAuthorization } from '../dif-presentation-exchange/models/TransactionData'
 
 import { DcqlCredential, DcqlMdocCredential, DcqlPresentationResult, DcqlQuery, DcqlSdJwtVcCredential } from 'dcql'
-
 import { injectable } from 'tsyringe'
 
-import { Mdoc, MdocApi, MdocDeviceResponse, MdocOpenId4VpSessionTranscriptOptions, MdocRecord } from '../mdoc'
+import { TypedArrayEncoder } from '../../utils'
+import {
+  Mdoc,
+  MdocApi,
+  MdocDeviceResponse,
+  MdocOpenId4VpDcApiSessionTranscriptOptions,
+  MdocOpenId4VpSessionTranscriptOptions,
+  MdocRecord,
+} from '../mdoc'
 import { SdJwtVcApi, SdJwtVcRecord, SdJwtVcService } from '../sd-jwt-vc'
 import { buildDisclosureFrameForPayload } from '../sd-jwt-vc/disclosureFrame'
 import { ClaimFormat, W3cCredentialRecord, W3cCredentialRepository } from '../vc'
@@ -12,8 +21,6 @@ import { ClaimFormat, W3cCredentialRecord, W3cCredentialRepository } from '../vc
 import { DcqlError } from './DcqlError'
 import { DcqlCredentialsForRequest, DcqlEncodedPresentations, DcqlPresentation, DcqlQueryResult } from './models'
 import { dcqlGetPresentationsToCreate as getDcqlVcPresentationsToCreate } from './utils'
-import { TransactionDataAuthorization } from '../dif-presentation-exchange/models/TransactionData'
-import { VerifiablePresentation } from '../dif-presentation-exchange/index'
 
 @injectable()
 export class DcqlService {
@@ -30,7 +37,13 @@ export class DcqlService {
 
     const formats = new Set(dcqlQuery.credentials.map((c) => c.format))
     for (const format of formats) {
-      if (format !== 'vc+sd-jwt' && format !== 'jwt_vc_json' && format !== 'jwt_vc_json-ld' && format !== 'mso_mdoc') {
+      if (
+        format !== 'vc+sd-jwt' &&
+        format !== 'dc+sd-jwt' &&
+        format !== 'jwt_vc_json' &&
+        format !== 'jwt_vc_json-ld' &&
+        format !== 'mso_mdoc'
+      ) {
         throw new DcqlError(`Unsupported credential format ${format}.`)
       }
     }
@@ -63,7 +76,8 @@ export class DcqlService {
 
     const sdJwtVctValues = dcqlQuery.credentials
       .filter(
-        (credentialQuery): credentialQuery is DcqlSdJwtVcCredential.Model => credentialQuery.format === 'vc+sd-jwt'
+        (credentialQuery): credentialQuery is DcqlSdJwtVcCredential.Model =>
+          credentialQuery.format === 'vc+sd-jwt' || credentialQuery.format === 'dc+sd-jwt'
       )
       .flatMap((c) => c.meta?.vct_values)
 
@@ -135,26 +149,51 @@ export class DcqlService {
     const queryResult = DcqlQuery.query(DcqlQuery.parse(dcqlQuery), dcqlCredentials)
     const matchesWithRecord = Object.fromEntries(
       Object.entries(queryResult.credential_matches).map(([credential_query_id, result]) => {
+        const all = result.all.map((entry) =>
+          entry.map((inner) => {
+            if (!inner || !inner.success) return inner
+
+            const record = credentialRecords[inner.input_credential_index]
+
+            return {
+              ...inner,
+              output:
+                record.type === 'SdJwtVcRecord' &&
+                (inner.output.credential_format === 'dc+sd-jwt' || inner.output.credential_format === 'vc+sd-jwt')
+                  ? {
+                      ...inner.output,
+                      claims: agentContext.dependencyManager
+                        .resolve(SdJwtVcService)
+                        .applyDisclosuresForPayload(record.compactSdJwtVc, inner.output.claims).prettyClaims,
+                    }
+                  : inner.output,
+              record: credentialRecords[inner.input_credential_index],
+            }
+          })
+        )
+
         if (result.success) {
-          if (result.output.credential_format === 'vc+sd-jwt') {
+          if (result.output.credential_format === 'vc+sd-jwt' || result.output.credential_format === 'dc+sd-jwt') {
             const sdJwtVcRecord = credentialRecords[result.input_credential_index] as SdJwtVcRecord
             const claims = agentContext.dependencyManager
               .resolve(SdJwtVcService)
               .applyDisclosuresForPayload(sdJwtVcRecord.compactSdJwtVc, result.output.claims).prettyClaims
+
             return [
               credential_query_id,
               {
                 ...result,
+                all,
                 output: { ...result.output, claims },
                 record: credentialRecords[result.input_credential_index],
               },
             ]
           }
 
-          return [credential_query_id, { ...result, record: credentialRecords[result.input_credential_index] }]
-        } else {
-          return [credential_query_id, result]
+          return [credential_query_id, { ...result, record: credentialRecords[result.input_credential_index], all }]
         }
+
+        return [credential_query_id, { ...result, all }]
       })
     )
 
@@ -256,7 +295,9 @@ export class DcqlService {
       credentialQueryToCredential: DcqlCredentialsForRequest
       challenge: string
       domain?: string
-      openid4vp?: Omit<MdocOpenId4VpSessionTranscriptOptions, 'verifierGeneratedNonce' | 'clientId'>
+      openid4vp?:
+        | Omit<MdocOpenId4VpSessionTranscriptOptions, 'verifierGeneratedNonce'>
+        | Omit<MdocOpenId4VpDcApiSessionTranscriptOptions, 'verifierGeneratedNonce'>
       transactionDataAuthorization?: TransactionDataAuthorization
     }
   ): Promise<{
@@ -279,30 +320,25 @@ export class DcqlService {
           throw new DcqlError('Missing openid4vp options for creating MDOC presentation.')
         }
 
-        if (!domain) {
-          throw new DcqlError('Missing domain property for creating MDOC presentation.')
-        }
-
-        const { deviceResponseBase64Url } = await MdocDeviceResponse.createOpenId4VpDcqlDeviceResponse(agentContext, {
+        const deviceResponse = await MdocDeviceResponse.createDeviceResponse(agentContext, {
           mdocs: [Mdoc.fromBase64Url(mdocRecord.base64Url)],
-          docRequests: [
+          documentRequests: [
             {
-              itemsRequestData: {
-                docType: mdocRecord.getTags().docType,
-                nameSpaces: Object.fromEntries(
-                  Object.entries(presentationToCreate.disclosedPayload).map(([key, value]) => {
-                    return [key, Object.fromEntries(Object.entries(value).map(([key]) => [key, true]))]
-                  })
-                ),
-              },
+              docType: mdocRecord.getTags().docType,
+              nameSpaces: Object.fromEntries(
+                Object.entries(presentationToCreate.disclosedPayload).map(([key, value]) => {
+                  // FIXME: we need the DCQL query here to get the intent_to_retain from query (currnetly hardcoded to false)
+                  return [key, Object.fromEntries(Object.entries(value).map(([key]) => [key, false]))]
+                })
+              ),
             },
           ],
           sessionTranscriptOptions: {
             ...openid4vp,
-            clientId: domain,
             verifierGeneratedNonce: challenge,
           },
         })
+        const deviceResponseBase64Url = TypedArrayEncoder.toBase64URL(deviceResponse)
 
         encodedDcqlPresentation[credentialQueryId] = deviceResponseBase64Url
         dcqlPresentation[credentialQueryId] = MdocDeviceResponse.fromBase64Url(deviceResponseBase64Url)

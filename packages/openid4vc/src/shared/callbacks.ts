@@ -21,7 +21,7 @@ import {
   X509Service,
 } from '@credo-ts/core'
 
-import { DecryptJweCallback, EncryptJweCallback } from '@openid4vc/oauth2/src/callbacks'
+import { DecryptJweCallback, EncryptJweCallback } from '@openid4vc/oauth2'
 import { getKeyFromDid } from './utils'
 
 export function getOid4vciJwtVerifyCallback(

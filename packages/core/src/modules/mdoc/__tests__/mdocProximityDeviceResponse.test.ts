@@ -1,6 +1,6 @@
 import { cborEncode, DeviceRequest, parseDeviceResponse } from '@animo-id/mdoc'
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { Key as AskarKey, Jwk } from '@hyperledger/aries-askar-nodejs'
+import { Key as AskarKey, Jwk } from '@openwallet-foundation/askar-nodejs'
 
 import { Agent, KeyType } from '../../..'
 import { getInMemoryAgentOptions } from '../../../../tests'
@@ -8,6 +8,7 @@ import { getJwkFromJson } from '../../../crypto/jose/jwk/transform'
 import { Buffer, TypedArrayEncoder } from '../../../utils'
 import { Mdoc } from '../Mdoc'
 import { MdocDeviceResponse } from '../MdocDeviceResponse'
+import { namespacesMapToRecord } from '../mdocUtil'
 
 const DEVICE_JWK_PUBLIC = {
   kty: 'EC',
@@ -74,7 +75,6 @@ const DEVICE_REQUEST_1 = DeviceRequest.from('1.0', [
 ])
 
 describe('mdoc device-response proximity test', () => {
-  let deviceResponse: string
   let mdoc: Mdoc
   let parsedDocument: Mdoc
   let agent: Agent
@@ -145,16 +145,23 @@ describe('mdoc device-response proximity test', () => {
     {
       const result = await MdocDeviceResponse.createDeviceResponse(agent.context, {
         mdocs: [mdoc],
-        deviceRequest: DEVICE_REQUEST_1,
-        // TODO: we should also add methods for Credo to create device requests with session transcript bytes.
-        sessionTranscriptBytes: cborEncode(new Uint8Array([1, 2, 3])),
+
+        documentRequests: DEVICE_REQUEST_1.docRequests.map((v) => {
+          return {
+            docType: v.itemsRequest.data.docType,
+            nameSpaces: namespacesMapToRecord(v.itemsRequest.data.nameSpaces),
+          }
+        }),
+        sessionTranscriptOptions: {
+          type: 'sesionTranscriptBytes',
+          sessionTranscriptBytes: cborEncode(new Uint8Array([1, 2, 3])),
+        },
         deviceNameSpaces: {
           'com.foobar-device': { test: 1234 },
         },
       })
-      deviceResponse = result.deviceResponseBase64Url
 
-      const parsed = parseDeviceResponse(TypedArrayEncoder.fromBase64(deviceResponse))
+      const parsed = parseDeviceResponse(result)
       expect(parsed.documents).toHaveLength(1)
 
       const prepared = parsed.documents[0].prepare()

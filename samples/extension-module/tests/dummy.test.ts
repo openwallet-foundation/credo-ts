@@ -3,7 +3,7 @@ import type { ConnectionRecord } from '@credo-ts/didcomm'
 
 import { AskarModule } from '@credo-ts/askar'
 import { Agent } from '@credo-ts/core'
-import { ariesAskar } from '@hyperledger/aries-askar-nodejs'
+import { askar } from '@openwallet-foundation/askar-nodejs'
 import { Subject } from 'rxjs'
 
 import { getAgentOptions, makeConnection } from '../../../packages/core/tests/helpers'
@@ -18,7 +18,7 @@ import { waitForDummyRecord } from './helpers'
 const modules = {
   dummy: new DummyModule(),
   askar: new AskarModule({
-    ariesAskar,
+    askar: askar,
   }),
 }
 

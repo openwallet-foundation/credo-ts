@@ -9,7 +9,7 @@ import { importExpress } from '../shared/router'
 const DEFAULT_C_NONCE_EXPIRES_IN = 1 * 60 // 1 minute
 const DEFAULT_AUTHORIZATION_CODE_EXPIRES_IN = 1 * 60 // 1 minute
 const DEFAULT_TOKEN_EXPIRES_IN = 3 * 60 // 3 minutes
-const DEFAULT_STATEFULL_CREDENTIAL_OFFER_EXPIRES_IN = 3 * 60 // 3 minutes
+const DEFAULT_STATEFUL_CREDENTIAL_OFFER_EXPIRES_IN = 3 * 60 // 3 minutes
 
 export interface OpenId4VcIssuerModuleConfigOptions {
   /**
@@ -35,13 +35,13 @@ export interface OpenId4VcIssuerModuleConfigOptions {
   cNonceExpiresInSeconds?: number
 
   /**
-   * The time after which a statefull credential offer not bound to a subject expires. Once the offer has been bound
+   * The time after which a stateful credential offer not bound to a subject expires. Once the offer has been bound
    * to a subject the access token expiration takes effect. This is to prevent long-lived `pre-authorized_code` and
    * `issuer_state` values.
    *
    * @default 180 (3 minutes)
    */
-  statefullCredentialOfferExpirationInSeconds?: number
+  statefulCredentialOfferExpirationInSeconds?: number
 
   /**
    * The time after which an authorization code will expire.
@@ -72,7 +72,7 @@ export interface OpenId4VcIssuerModuleConfigOptions {
    * This requires an external authorization server which issues access tokens without
    * a `pre-authorized_code` or `issuer_state` parameter.
    *
-   * Credo only support statefull crednetial offer sessions (pre-auth or presentation during issuance)
+   * Credo only support stateful credential offer sessions (pre-auth or presentation during issuance)
    *
    * @default false
    */
@@ -170,14 +170,14 @@ export class OpenId4VcIssuerModuleConfig {
   }
 
   /**
-   * The time after which a statefull credential offer not bound to a subject expires. Once the offer has been bound
+   * The time after which a stateful credential offer not bound to a subject expires. Once the offer has been bound
    * to a subject the access token expiration takes effect. This is to prevent long-lived `pre-authorized_code` and
    * `issuer_state` values.
    *
    * @default 360 (5 minutes)
    */
-  public get statefullCredentialOfferExpirationInSeconds(): number {
-    return this.options.statefullCredentialOfferExpirationInSeconds ?? DEFAULT_STATEFULL_CREDENTIAL_OFFER_EXPIRES_IN
+  public get statefulCredentialOfferExpirationInSeconds(): number {
+    return this.options.statefulCredentialOfferExpirationInSeconds ?? DEFAULT_STATEFUL_CREDENTIAL_OFFER_EXPIRES_IN
   }
 
   /**
@@ -215,7 +215,7 @@ export class OpenId4VcIssuerModuleConfig {
    * This requires an external authorization server which issues access tokens without
    * a `pre-authorized_code` or `issuer_state` parameter.
    *
-   * Credo only supports statefull crednetial offer sessions (pre-auth or presentation during issuance)
+   * Credo only supports stateful credential offer sessions (pre-auth or presentation during issuance)
    *
    * @default false
    */

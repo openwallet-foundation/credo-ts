@@ -9,7 +9,7 @@ import {
   SigningProviderRegistry,
   WalletError,
 } from '@credo-ts/core'
-import { Store } from '@hyperledger/aries-askar-shared'
+import { Store } from '@openwallet-foundation/askar-shared'
 import { inject, injectable } from 'tsyringe'
 
 import { AskarErrorCode, isAskarError } from '../utils'
@@ -151,12 +151,12 @@ export class AskarProfileWallet extends AskarBaseWallet {
   }
 
   public async export() {
-    // This PR should help with this: https://github.com/hyperledger/aries-askar/pull/159
+    // This PR should help with this: https://github.com/openwallet-foundation/askar/pull/159
     throw new WalletExportUnsupportedError('Exporting a profile is not supported.')
   }
 
   public async import() {
-    // This PR should help with this: https://github.com/hyperledger/aries-askar/pull/159
+    // This PR should help with this: https://github.com/openwallet-foundation/askar/pull/159
     throw new WalletError('Importing a profile is not supported.')
   }
 
