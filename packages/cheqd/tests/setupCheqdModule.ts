@@ -21,7 +21,7 @@ export const getCheqdModuleConfig = (seed?: string, rpcUrl?: string) =>
   ({
     networks: [
       {
-        rpcUrl: rpcUrl || 'http://localhost:26657',
+        rpcUrl: rpcUrl || 'https://rpc.cheqd.network',
         network: 'testnet',
         cosmosPayerSeed:
           seed ||
