@@ -211,8 +211,17 @@ export class JwsService {
   }
 
   private buildProtected(options: JwsProtectedHeaderOptions) {
-    if ([options.jwk, options.kid, options.x5c].filter(Boolean).length != 1) {
-      throw new CredoError('Only one of JWK, kid or x5c can and must be provided.')
+    const x5cJwkCount = [options.jwk, options.x5c].filter(Boolean).length
+
+    // FIXME: checking for kid starting with '#' is not good.
+    // but now we don't really limit that kid (did key reference)
+    // cannot be combined with x5c/jwk
+    if (options.kid?.startsWith('did:')) {
+      if (x5cJwkCount > 0) {
+        throw new CredoError("When 'kid' is a did, 'jwk' and 'x5c' cannot be provided.")
+      }
+    } else if (x5cJwkCount > 1 || (x5cJwkCount === 0 && !options.kid)) {
+      throw new CredoError("Header must contain one of 'kid' with a did value, 'x5c', or 'jwk'.")
     }
 
     return {
@@ -241,8 +250,17 @@ export class JwsService {
       trustedCertificates: trustedCertificatesFromOptions = [],
     } = options
 
-    if ([protectedHeader.jwk, protectedHeader.kid, protectedHeader.x5c].filter(Boolean).length > 1) {
-      throw new CredoError('Only one of jwk, kid and x5c headers can and must be provided.')
+    const x5cJwkCount = [protectedHeader.jwk, protectedHeader.x5c].filter(Boolean)
+
+    // FIXME: checking for kid starting with '#' is not good.
+    // but now we don't really limit that kid (did key reference)
+    // cannot be combined with x5c/jwk
+    if (typeof protectedHeader.kid === 'string' && protectedHeader.kid?.startsWith('did:')) {
+      if (x5cJwkCount.length > 0) {
+        throw new CredoError("When 'kid' is a did, 'jwk' and 'x5c' cannot be provided.")
+      }
+    } else if (x5cJwkCount.length > 1) {
+      throw new CredoError("Header must contain one of 'kid' with a did value, 'x5c', or 'jwk'.")
     }
 
     if (protectedHeader.x5c) {
@@ -250,7 +268,7 @@ export class JwsService {
         !Array.isArray(protectedHeader.x5c) ||
         protectedHeader.x5c.some((certificate) => typeof certificate !== 'string')
       ) {
-        throw new CredoError('x5c header is not a valid JSON array of string.')
+        throw new CredoError('x5c header is not a valid JSON array of strings.')
       }
 
       const trustedCertificatesFromConfig =
@@ -278,7 +296,9 @@ export class JwsService {
     }
 
     if (!jwkResolver) {
-      throw new CredoError(`jwkResolver is required when the JWS protected header does not contain a 'jwk' property.`)
+      throw new CredoError(
+        `jwkResolver is required when the JWS protected header does not contain a 'jwk' or 'x5c' property.`
+      )
     }
 
     try {

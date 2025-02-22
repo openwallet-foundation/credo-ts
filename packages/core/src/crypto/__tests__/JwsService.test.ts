@@ -1,5 +1,5 @@
 import type { AgentContext } from '../../agent'
-import type { Key, Wallet } from '@credo-ts/core'
+import { X509Certificate, X509ModuleConfig, X509Service, type Key, type Wallet } from '@credo-ts/core'
 
 import { InMemoryWallet } from '../../../../../tests/InMemoryWallet'
 import { getAgentConfig, getAgentContext } from '../../../tests/helpers'
@@ -19,6 +19,7 @@ describe('JwsService', () => {
   let agentContext: AgentContext
   let jwsService: JwsService
   let didJwsz6MkfKey: Key
+  let didJwsz6MkfCertificate: X509Certificate
   let didJwsz6MkvKey: Key
   let didJwszDnaeyKey: Key
 
@@ -27,13 +28,21 @@ describe('JwsService', () => {
     wallet = new InMemoryWallet()
     agentContext = getAgentContext({
       wallet,
+      registerInstances: [[X509ModuleConfig, new X509ModuleConfig()]],
     })
     await wallet.createAndOpen(config.walletConfig)
 
     jwsService = new JwsService()
+
     didJwsz6MkfKey = await wallet.createKey({
       privateKey: TypedArrayEncoder.fromString(didJwsz6Mkf.SEED),
       keyType: KeyType.Ed25519,
+    })
+    didJwsz6MkfCertificate = await X509Service.createCertificate(agentContext, {
+      authorityKey: didJwsz6MkfKey,
+      issuer: {
+        countryName: 'NL',
+      },
     })
 
     didJwsz6MkvKey = await wallet.createKey({
@@ -102,6 +111,80 @@ describe('JwsService', () => {
     )
   })
 
+  it('allows both x5c/jwk and kid (no did) to be present', async () => {
+    const payload = JsonEncoder.toBuffer(didJwsz6Mkf.DATA_JSON)
+
+    const signed1 = await jwsService.createJwsCompact(agentContext, {
+      payload,
+      key: didJwsz6MkfKey,
+      protectedHeaderOptions: {
+        alg: JwaSignatureAlgorithm.EdDSA,
+        jwk: getJwkFromKey(didJwsz6MkfKey),
+        kid: 'something',
+      },
+    })
+    const { isValid: isValid1 } = await jwsService.verifyJws(agentContext, {
+      jws: signed1,
+    })
+    expect(isValid1).toEqual(true)
+
+    const signed2 = await jwsService.createJwsCompact(agentContext, {
+      payload,
+      key: didJwsz6MkfKey,
+      protectedHeaderOptions: {
+        alg: JwaSignatureAlgorithm.EdDSA,
+        x5c: [didJwsz6MkfCertificate.toString('base64url')],
+        kid: 'something',
+      },
+    })
+
+    const { isValid: isValid2 } = await jwsService.verifyJws(agentContext, {
+      jws: signed2,
+      trustedCertificates: [didJwsz6MkfCertificate.toString('base64url')],
+    })
+    expect(isValid2).toEqual(true)
+  })
+
+  it('throws error whens signing jws with more than one of x5c, jwk, kid (with did)', async () => {
+    const payload = JsonEncoder.toBuffer(didJwsz6Mkf.DATA_JSON)
+
+    await expect(
+      jwsService.createJwsCompact(agentContext, {
+        payload,
+        key: didJwsz6MkfKey,
+        protectedHeaderOptions: {
+          alg: JwaSignatureAlgorithm.EdDSA,
+          jwk: getJwkFromKey(didJwsz6MkfKey),
+          kid: 'did:example:123',
+        },
+      })
+    ).rejects.toThrow("When 'kid' is a did, 'jwk' and 'x5c' cannot be provided.")
+
+    await expect(
+      jwsService.createJwsCompact(agentContext, {
+        payload,
+        key: didJwsz6MkfKey,
+        protectedHeaderOptions: {
+          alg: JwaSignatureAlgorithm.EdDSA,
+          jwk: getJwkFromKey(didJwsz6MkfKey),
+          x5c: [didJwsz6MkfCertificate.toString('base64url')],
+        },
+      })
+    ).rejects.toThrow("Header must contain one of 'kid' with a did value, 'x5c', or 'jwk'.")
+
+    await expect(
+      jwsService.createJwsCompact(agentContext, {
+        payload,
+        key: didJwsz6MkfKey,
+        protectedHeaderOptions: {
+          alg: JwaSignatureAlgorithm.EdDSA,
+          kid: 'did:example:123',
+          x5c: [didJwsz6MkfCertificate.toString('base64url')],
+        },
+      })
+    ).rejects.toThrow("When 'kid' is a did, 'jwk' and 'x5c' cannot be provided.")
+  })
+
   describe('verifyJws', () => {
     it('returns true if the jws signature matches the payload', async () => {
       const { isValid, signerKeys } = await jwsService.verifyJws(agentContext, {
@@ -148,6 +231,70 @@ describe('JwsService', () => {
           jws: { signatures: [], payload: '' },
         })
       ).rejects.toThrow('Unable to verify JWS, no signatures present in JWS.')
+    })
+
+    it('throws error when verifying jws with more than one of x5c, jwk, kid (with did)', async () => {
+      const payload = JsonEncoder.toBuffer(didJwsz6Mkf.DATA_JSON)
+
+      await expect(
+        jwsService.verifyJws(agentContext, {
+          jws: {
+            header: {},
+            protected: JsonEncoder.toBase64URL({
+              alg: JwaSignatureAlgorithm.EdDSA,
+              jwk: getJwkFromKey(didJwsz6MkfKey).toJson(),
+              kid: 'did:example:123',
+            }),
+            payload: '',
+            signature: '',
+          },
+        })
+      ).rejects.toThrow("When 'kid' is a did, 'jwk' and 'x5c' cannot be provided.")
+
+      await expect(
+        jwsService.verifyJws(agentContext, {
+          jws: {
+            header: {},
+            protected: JsonEncoder.toBase64URL({
+              alg: JwaSignatureAlgorithm.EdDSA,
+              jwk: getJwkFromKey(didJwsz6MkfKey).toJson(),
+              kid: 'did:example:123',
+            }),
+            payload: '',
+            signature: '',
+          },
+        })
+      ).rejects.toThrow("When 'kid' is a did, 'jwk' and 'x5c' cannot be provided.")
+
+      await expect(
+        jwsService.verifyJws(agentContext, {
+          jws: {
+            header: {},
+            protected: JsonEncoder.toBase64URL({
+              alg: JwaSignatureAlgorithm.EdDSA,
+              jwk: getJwkFromKey(didJwsz6MkfKey).toJson(),
+              x5c: [didJwsz6MkfCertificate.toString('base64url')],
+            }),
+            payload: '',
+            signature: '',
+          },
+        })
+      ).rejects.toThrow("Header must contain one of 'kid' with a did value, 'x5c', or 'jwk'.")
+
+      await expect(
+        jwsService.verifyJws(agentContext, {
+          jws: {
+            header: {},
+            protected: JsonEncoder.toBase64URL({
+              alg: JwaSignatureAlgorithm.EdDSA,
+              kid: 'did:example:123',
+              x5c: [didJwsz6MkfCertificate.toString('base64url')],
+            }),
+            payload: '',
+            signature: '',
+          },
+        })
+      ).rejects.toThrow("When 'kid' is a did, 'jwk' and 'x5c' cannot be provided.")
     })
   })
 })
