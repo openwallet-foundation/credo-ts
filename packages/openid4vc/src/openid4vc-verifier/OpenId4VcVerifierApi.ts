@@ -1,15 +1,15 @@
+import type { Query, QueryOptions } from '@credo-ts/core'
+import type { OpenId4VcSiopAuthorizationResponsePayload } from '../shared'
 import type {
   OpenId4VcSiopCreateAuthorizationRequestOptions,
-  OpenId4VcSiopVerifyAuthorizationResponseOptions,
   OpenId4VcSiopCreateAuthorizationRequestReturn,
   OpenId4VcSiopCreateVerifierOptions,
+  OpenId4VcSiopVerifyAuthorizationResponseOptions,
   OpenId4VcUpdateVerifierRecordOptions,
 } from './OpenId4VcSiopVerifierServiceOptions'
 import type { OpenId4VcVerificationSessionRecord } from './repository'
-import type { OpenId4VcSiopAuthorizationResponsePayload } from '../shared'
-import type { Query, QueryOptions } from '@credo-ts/core'
 
-import { injectable, AgentContext } from '@credo-ts/core'
+import { AgentContext, injectable } from '@credo-ts/core'
 
 import { OpenId4VcSiopVerifierService } from './OpenId4VcSiopVerifierService'
 import { OpenId4VcVerifierModuleConfig } from './OpenId4VcVerifierModuleConfig'
@@ -106,13 +106,13 @@ export class OpenId4VcVerifierApi {
     const verificationSession = await this.getVerificationSessionById(verificationSessionId)
     return await this.openId4VcSiopVerifierService.verifyAuthorizationResponse(this.agentContext, {
       ...otherOptions,
-      verificationSession,
+      verifierId: verificationSession.verifierId,
     })
   }
 
   public async getVerifiedAuthorizationResponse(verificationSessionId: string) {
     const verificationSession = await this.getVerificationSessionById(verificationSessionId)
-    return this.openId4VcSiopVerifierService.getVerifiedAuthorizationResponse(verificationSession)
+    return this.openId4VcSiopVerifierService.getVerifiedAuthorizationResponse(this.agentContext, verificationSession)
   }
 
   public async findVerificationSessionForAuthorizationResponse(options: {
