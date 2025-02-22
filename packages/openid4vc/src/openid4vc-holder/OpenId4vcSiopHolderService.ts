@@ -253,10 +253,9 @@ export class OpenId4VcSiopHolderService {
 
     // FIXME: we should always set this in oid4vc-ts, based on the origin if using DC API
     let clientId = authorizationRequest.client.identifier
-    if (!clientId && isDcApiRequest) {
+    if (isDcApiRequest) {
       if (!origin) throw new CredoError('Missing required origin')
-
-      clientId = `web-origin:${origin}`
+      if (!clientId) clientId = `web-origin:${origin}`
     } else if (!clientId) {
       throw new CredoError('Could not extract client identifier')
     }
