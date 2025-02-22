@@ -1,5 +1,5 @@
 import type { AgentContext } from '../../agent'
-import { X509Certificate, X509ModuleConfig, X509Service, type Key, type Wallet } from '@credo-ts/core'
+import type { X509Certificate, Key, Wallet } from '@credo-ts/core'
 
 import { InMemoryWallet } from '../../../../../tests/InMemoryWallet'
 import { getAgentConfig, getAgentContext } from '../../../tests/helpers'
@@ -13,6 +13,8 @@ import { getJwkFromKey } from '../jose/jwk'
 import * as didJwsz6Mkf from './__fixtures__/didJwsz6Mkf'
 import * as didJwsz6Mkv from './__fixtures__/didJwsz6Mkv'
 import * as didJwszDnaey from './__fixtures__/didJwszDnaey'
+
+import { X509ModuleConfig, X509Service } from '@credo-ts/core'
 
 describe('JwsService', () => {
   let wallet: Wallet
@@ -234,8 +236,6 @@ describe('JwsService', () => {
     })
 
     it('throws error when verifying jws with more than one of x5c, jwk, kid (with did)', async () => {
-      const payload = JsonEncoder.toBuffer(didJwsz6Mkf.DATA_JSON)
-
       await expect(
         jwsService.verifyJws(agentContext, {
           jws: {
