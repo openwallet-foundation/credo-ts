@@ -1,28 +1,28 @@
-import * as v from '../../../../utils/valibot'
+import * as z from '../../../../utils/zod'
 import { vJwkCommon } from '../jwk'
 
-export const vKmsJwkPublicOkp = v.object({
-  ...vJwkCommon.entries,
-  kty: v.literal('OKP'),
-  crv: v.picklist(['X25519', 'Ed25519']),
+export const vKmsJwkPublicOkp = z.object({
+  ...vJwkCommon.shape,
+  kty: z.literal('OKP'),
+  crv: z.enum(['X25519', 'Ed25519']),
 
   // Public
-  x: v.base64Url,
+  x: z.base64Url,
 
   // Private
-  d: v.optional(v.base64Url),
+  d: z.optional(z.base64Url),
 })
-export type KmsJwkPublicOkp = v.InferOutput<typeof vKmsJwkPublicOkp>
+export type KmsJwkPublicOkp = z.output<typeof vKmsJwkPublicOkp>
 
-export const vKmsJwkPrivateToPublicOkp = v.object({
-  ...vKmsJwkPublicOkp.entries,
-  d: v.optionalToUndefined(v.base64Url),
+export const vKmsJwkPrivateToPublicOkp = z.object({
+  ...vKmsJwkPublicOkp.shape,
+  d: z.optionalToUndefined(z.base64Url),
 })
 
-export const vKmsJwkPrivateOkp = v.object({
-  ...vKmsJwkPublicOkp.entries,
+export const vKmsJwkPrivateOkp = z.object({
+  ...vKmsJwkPublicOkp.shape,
 
   // Private
-  d: v.base64Url,
+  d: z.base64Url,
 })
-export type KmsJwkPrivateOkp = v.InferOutput<typeof vKmsJwkPrivateOkp>
+export type KmsJwkPrivateOkp = z.output<typeof vKmsJwkPrivateOkp>

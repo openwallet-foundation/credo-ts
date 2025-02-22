@@ -74,7 +74,9 @@ export class MediationRecipientModule implements Module {
     const defaultMediator = await mediationRecipientApi.findDefaultMediator()
     if (defaultMediator) {
       mediationRecipientApi.initiateMessagePickup(defaultMediator).catch((error) => {
-        agentContext.config.logger.warn(`Error initiating message pickup with mediator ${defaultMediator.id}`, { error })
+        agentContext.config.logger.warn(`Error initiating message pickup with mediator ${defaultMediator.id}`, {
+          error,
+        })
       })
     }
   }

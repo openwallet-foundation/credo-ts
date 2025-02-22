@@ -1,21 +1,11 @@
 import type { KnownJwaSignatureAlgorithm } from '../jwk/jwa'
 import type { KmsJwkPublic, KmsJwkPublicAsymmetric } from '../jwk/knownJwk'
 
-import * as v from '../../../utils/valibot'
+import * as z from '../../../utils/zod'
 import { vKnownJwaSignatureAlgorithm } from '../jwk/jwa'
 import { vKmsJwkPublicAsymmetric } from '../jwk/knownJwk'
 
-export const vKmsVerifyOptions = v.object({
-  key: v.union([v.string(), vKmsJwkPublicAsymmetric]),
-
-  algorithm: v.pipe(vKnownJwaSignatureAlgorithm, v.description('The JWA signature algorithm to use for verification')),
-
-  data: v.pipe(v.instance(Uint8Array), v.description('The data to verify')),
-  signature: v.pipe(v.instance(Uint8Array), v.description('The signature on the data to verify')),
-})
-
-// NOTE: we don't use the InferOutput here as it doesn't allow for JSDoc comments
-export interface KmsVerifyOptions {
+export const vKmsVerifyOptions = z.object({
   /**
    * The key to verify with. Either a string referring to a keyId, or a `KmsJwkPublicAssymetric` for verifying with a
    * public asymmetric JWK.
@@ -23,23 +13,25 @@ export interface KmsVerifyOptions {
    * It is currently not possible to verify a signature with symmetric a
    * key that is not already present in the KMS.
    */
-  key: string | KmsJwkPublicAsymmetric
+  key: z.union([z.string(), vKmsJwkPublicAsymmetric]),
 
   /**
    * The JWA signature algorithm to use for verification
    */
-  algorithm: KnownJwaSignatureAlgorithm
+  algorithm: vKnownJwaSignatureAlgorithm.describe('The JWA signature algorithm to use for verification'),
 
   /**
    * The data to verify
    */
-  data: Uint8Array
+  data: z.instanceof(Uint8Array).describe('The data to verify'),
 
   /**
    * The signature to verify the data against
    */
-  signature: Uint8Array
-}
+  signature: z.instanceof(Uint8Array).describe('The signature on the data to verify'),
+})
+
+export type KmsVerifyOptions = z.output<typeof vKmsVerifyOptions>
 
 export type KmsVerifyReturn =
   | {

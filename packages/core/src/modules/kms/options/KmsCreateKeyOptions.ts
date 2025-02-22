@@ -4,70 +4,69 @@ import type { KmsJwkPublicOct } from '../jwk/kty/oct'
 import type { KmsJwkPublicOkp } from '../jwk/kty/okp'
 import type { KmsJwkPublicRsa } from '../jwk/kty/rsa'
 
-import * as v from '../../../utils/valibot'
+import * as z from '../../../utils/zod'
 import { vKmsJwkPublicEc } from '../jwk/kty/ec'
 import { vKmsJwkPublicOct } from '../jwk/kty/oct'
 import { vKmsJwkPublicOkp } from '../jwk/kty/okp'
 import { vKmsJwkPublicRsa } from '../jwk/kty/rsa'
 
-const vKmsCreateKeyTypeEc = v.pick(vKmsJwkPublicEc, ['kty', 'crv'])
-export type KmsCreateKeyTypeEc = v.InferOutput<typeof vKmsCreateKeyTypeEc>
+const vKmsCreateKeyTypeEc = vKmsJwkPublicEc.pick({ kty: true, crv: true })
+export type KmsCreateKeyTypeEc = z.output<typeof vKmsCreateKeyTypeEc>
 
 /**
  * Octer key pair, commonly used for Ed25519 and X25519 key types
  */
-const vKmsCreateKeyTypeOkp = v.pick(vKmsJwkPublicOkp, ['kty', 'crv'])
-export type KmsCreateKeyTypeOkp = v.InferOutput<typeof vKmsCreateKeyTypeOkp>
+const vKmsCreateKeyTypeOkp = vKmsJwkPublicOkp.pick({ kty: true, crv: true })
+export type KmsCreateKeyTypeOkp = z.output<typeof vKmsCreateKeyTypeOkp>
 
 /**
  * RSA key pair.
  */
-const vKmsCreateKeyTypeRsa = v.object({
-  ...v.pick(vKmsJwkPublicRsa, ['kty']).entries,
-  modulusLength: v.pipe(v.picklist([2048, 3072, 4096])),
+const vKmsCreateKeyTypeRsa = vKmsJwkPublicRsa.pick({ kty: true }).extend({
+  modulusLength: z.union([z.literal(2048), z.literal(3072), z.literal(4096)]),
 })
-export type KmsCreateKeyTypeRsa = v.InferOutput<typeof vKmsCreateKeyTypeRsa>
+export type KmsCreateKeyTypeRsa = z.output<typeof vKmsCreateKeyTypeRsa>
 
 /**
  * Represents an octect sequence for symmetric keys
  */
-export const vKmsCreateKeyTypeOct = v.variant('algorithm', [
-  v.object({
-    kty: vKmsJwkPublicOct.entries.kty,
-    algorithm: v.literal('aes'),
-    length: v.union([
-      v.literal(128),
-      v.literal(192),
-      v.literal(256),
-      v.pipe(
-        v.number(),
-        v.integer(),
-        v.check((length) => length % 8 === 0, 'aes key length must be multiple of 8')
-      ),
+export const vKmsCreateKeyTypeOct = z.discriminatedUnion('algorithm', [
+  z.object({
+    kty: vKmsJwkPublicOct.shape.kty,
+    algorithm: z.literal('aes'),
+    length: z.union([
+      z.literal(128),
+      z.literal(192),
+      z.literal(256),
+      z
+        .number()
+        .int()
+        .refine((length) => length % 8 === 0, 'aes key length must be multiple of 8'),
     ]),
   }),
-  v.object({
-    kty: vKmsJwkPublicOct.entries.kty,
-    algorithm: v.pipe(v.literal('hmac'), v.description('For usage with HS256, HS384 and HS512')),
-    length: v.picklist([256, 384, 512]),
+  z.object({
+    kty: vKmsJwkPublicOct.shape.kty,
+    algorithm: z.literal('hmac').describe('For usage with HS256, HS384 and HS512'),
+    length: z.union([z.literal(256), z.literal(384), z.literal(512)]),
   }),
-  v.object({
-    kty: vKmsJwkPublicOct.entries.kty,
-    algorithm: v.pipe(v.literal('c20p'), v.description('For usage with ChaCha20-Poly1305 and XChaCha20-Poly1305')),
+  z.object({
+    kty: vKmsJwkPublicOct.shape.kty,
+    algorithm: z.literal('c20p').describe('For usage with ChaCha20-Poly1305 and XChaCha20-Poly1305'),
   }),
 ])
-export type KmsCreateKeyTypeOct = v.InferOutput<typeof vKmsCreateKeyTypeOct>
+export type KmsCreateKeyTypeOct = z.output<typeof vKmsCreateKeyTypeOct>
 
-export const vKmsCreateKeyType = v.variant('kty', [
+// TOOD: see if we can use nested discriminated union with zod?
+export const vKmsCreateKeyType = z.union([
   vKmsCreateKeyTypeEc,
   vKmsCreateKeyTypeOkp,
   vKmsCreateKeyTypeRsa,
   vKmsCreateKeyTypeOct,
 ])
-export type KmsCreateKeyType = v.InferOutput<typeof vKmsCreateKeyType>
+export type KmsCreateKeyType = z.output<typeof vKmsCreateKeyType>
 
-export const vKmsCreateKeyOptions = v.object({
-  keyId: v.optional(v.string()),
+export const vKmsCreateKeyOptions = z.object({
+  keyId: z.optional(z.string()),
   type: vKmsCreateKeyType,
 })
 

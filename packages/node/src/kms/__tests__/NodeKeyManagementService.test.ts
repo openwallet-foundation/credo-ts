@@ -1,7 +1,6 @@
-import { Kms } from '@credo-ts/core'
+import { Kms, ZodValidationError } from '@credo-ts/core'
 import { randomBytes } from 'node:crypto'
 
-import { ValibotValidationError } from '../../../../core/src/error/ValibotValidationError'
 import { getAgentContext } from '../../../../core/tests'
 import { NodeInMemoryKeyManagementStorage } from '../NodeInMemoryKeyManagementStorage'
 import { NodeKeyManagementService } from '../NodeKeyManagementService'
@@ -1200,7 +1199,63 @@ describe('NodeKeyManagementService', () => {
   })
 
   describe('decrypt', () => {
-    it('signs with RS256', async () => {
+    it('decrypts with A128GCM', async () => {
+      const { keyId } = await service.createKey(agentContext, {
+        type: { kty: 'oct', algorithm: 'aes', length: 128 },
+      })
+
+      const iv = randomBytes(12)
+      const { encrypted, tag } = await service.encrypt(agentContext, {
+        key: keyId,
+        encryption: {
+          algorithm: 'A128GCM',
+          iv,
+        },
+        data: Buffer.from('heelllo', 'utf-8'),
+      })
+
+      const { data } = await service.decrypt(agentContext, {
+        key: keyId,
+        decryption: {
+          algorithm: 'A128GCM',
+          iv,
+          tag: tag as Uint8Array,
+        },
+        encrypted,
+      })
+
+      expect(Buffer.from(data).toString('utf-8')).toEqual('heelllo')
+    })
+
+    it('decrypts with A192GCM', async () => {
+      const { keyId } = await service.createKey(agentContext, {
+        type: { kty: 'oct', algorithm: 'aes', length: 192 },
+      })
+
+      const iv = randomBytes(12)
+      const { encrypted, tag } = await service.encrypt(agentContext, {
+        key: keyId,
+        encryption: {
+          algorithm: 'A192GCM',
+          iv,
+        },
+        data: Buffer.from('heelllo', 'utf-8'),
+      })
+
+      const { data } = await service.decrypt(agentContext, {
+        key: keyId,
+        decryption: {
+          algorithm: 'A192GCM',
+          iv,
+          tag: tag as Uint8Array,
+        },
+        encrypted,
+      })
+
+      expect(Buffer.from(data).toString('utf-8')).toEqual('heelllo')
+    })
+
+    it('decrypts with A256GCM', async () => {
       const { keyId } = await service.createKey(agentContext, {
         type: { kty: 'oct', algorithm: 'aes', length: 256 },
       })
@@ -1208,7 +1263,7 @@ describe('NodeKeyManagementService', () => {
       const iv = randomBytes(12)
       const { encrypted, tag } = await service.encrypt(agentContext, {
         key: keyId,
-        dataEncryption: {
+        encryption: {
           algorithm: 'A256GCM',
           iv,
         },
@@ -1216,14 +1271,44 @@ describe('NodeKeyManagementService', () => {
       })
 
       const { data } = await service.decrypt(agentContext, {
-        keyId,
-        dataDecryption: {
+        key: keyId,
+        decryption: {
+          algorithm: 'A256GCM',
+          iv,
+          tag: tag as Uint8Array,
+        },
+        encrypted,
+      })
+
+      expect(Buffer.from(data).toString('utf-8')).toEqual('heelllo')
+    })
+
+    it('decrypts with A128CBC-HS256', async () => {
+      const { keyId } = await service.createKey(agentContext, {
+        type: { kty: 'oct', algorithm: 'aes', length: 512 },
+      })
+
+      const iv = randomBytes(12)
+      const { encrypted, tag } = await service.encrypt(agentContext, {
+        key: keyId,
+        encryption: {
+          algorithm: 'A128CBC-HS256',
+          iv,
+        },
+        data: Buffer.from('heelllo', 'utf-8'),
+      })
+
+      const { data } = await service.decrypt(agentContext, {
+        key: keyId,
+        decryption: {
           algorithm: 'A128GCM',
           iv,
           tag: tag as Uint8Array,
         },
         encrypted,
       })
+
+      expect(Buffer.from(data).toString('utf-8')).toEqual('heelllo')
     })
   })
 
@@ -1676,7 +1761,7 @@ describe('NodeKeyManagementService', () => {
         .then(() => undefined)
         .catch((e) => e)
       expect(error).toBeInstanceOf(Kms.KeyManagementError)
-      expect(error.cause).toBeInstanceOf(ValibotValidationError)
+      expect(error.cause).toBeInstanceOf(ZodValidationError)
       expect(error.cause.message).toContain('Must be a base64url string')
     })
 

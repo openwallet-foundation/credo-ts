@@ -1,8 +1,8 @@
-import * as v from '../../../utils/valibot'
+import * as z from '../../../utils/zod'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const vWithBackend = <Schema extends v.BaseSchema<any, any, any>>(schema: Schema) =>
-  v.intersect([schema, v.object({ backend: v.optional(v.string()) })])
+export const zWithBackend = <Schema extends z.BaseSchema>(schema: Schema) =>
+  schema.and(z.object({ backend: z.optional(z.string()) }))
 
 export type WithBackend<T> = T & {
   /**

@@ -220,7 +220,7 @@ export class NodeKeyManagementService implements Kms.KeyManagementService {
     }
     try {
       // 2. Validate alg and use for key
-      Kms.assertAllowedContentEncryptionAlgForKey(key, encryption.algorithm)
+      Kms.assertAllowedEncryptionAlgForKey(key, encryption.algorithm)
       Kms.assertKeyAllowsEncrypt(key)
 
       // 3. Perform the encryption operation
@@ -242,7 +242,7 @@ export class NodeKeyManagementService implements Kms.KeyManagementService {
 
     try {
       // 2. Validate alg and use for key
-      Kms.assertAllowedContentEncryptionAlgForKey(key, decryption.algorithm)
+      Kms.assertAllowedEncryptionAlgForKey(key, decryption.algorithm)
       Kms.assertKeyAllowsEncrypt(key)
 
       // 3. Perform the decryption operation

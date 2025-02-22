@@ -164,9 +164,6 @@ export class DependencyManager {
     }
   }
 
-  
-
-
   public registerSingleton<T>(from: InjectionToken<T>, to: InjectionToken<T>): void
   public registerSingleton<T>(token: Constructor<T>): void
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

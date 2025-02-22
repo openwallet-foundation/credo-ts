@@ -1,33 +1,30 @@
 import type { KmsJwkPrivate, KmsJwkPublic } from './knownJwk'
 
-import * as v from '../../../utils/valibot'
+import * as z from '../../../utils/zod'
 import { KeyManagementError } from '../error/KeyManagementError'
 
 import { getJwkHumanDescription } from './humanDescription'
 
-export const vKnownJwkUse = v.union([
-  v.pipe(v.literal('sig'), v.description('signature')),
-  v.pipe(v.literal('enc'), v.description('encryption')),
+export const vKnownJwkUse = z.union([z.literal('sig').describe('signature'), z.literal('enc').describe('encryption')])
+export type KnownJwkUse = z.output<typeof vKnownJwkUse>
+
+export const vJwkUse = z.union([vKnownJwkUse, z.string()])
+export type JwkUse = z.output<typeof vJwkUse>
+
+export const vKnownJwkKeyOps = z.union([
+  z.literal('sign').describe('compute digital signature or MAC'),
+  z.literal('verify').describe('verify digital signature or MAC'),
+  z.literal('encrypt').describe('encrypt content'),
+  z.literal('decrypt').describe('decrypt content and validate decryption, if applicable'),
+  z.literal('wrapKey').describe('encrypt key'),
+  z.literal('unwrapKey').describe('decrypt key and validate decryption, if applicable'),
+  z.literal('deriveKey').describe('derive key'),
+  z.literal('deriveBits').describe('derive bits not to be used as a key'),
 ])
-export type KnownJwkUse = v.InferOutput<typeof vKnownJwkUse>
+export type KnownJwkKeyOps = z.output<typeof vKnownJwkKeyOps>
 
-export const vJwkUse = v.union([vKnownJwkUse, v.string()])
-export type JwkUse = v.InferOutput<typeof vJwkUse>
-
-export const vKnownJwkKeyOps = v.union([
-  v.pipe(v.literal('sign'), v.description('compute digital signature or MAC')),
-  v.pipe(v.literal('verify'), v.description('verify digital signature or MAC')),
-  v.pipe(v.literal('encrypt'), v.description('encrypt content')),
-  v.pipe(v.literal('decrypt'), v.description('decrypt content and validate decryption, if applicable')),
-  v.pipe(v.literal('wrapKey'), v.description('encrypt key')),
-  v.pipe(v.literal('unwrapKey'), v.description('decrypt key and validate decryption, if applicable')),
-  v.pipe(v.literal('deriveKey'), v.description('derive key')),
-  v.pipe(v.literal('deriveBits'), v.description('derive bits not to be used as a key')),
-])
-export type KnownJwkKeyOps = v.InferOutput<typeof vKnownJwkKeyOps>
-
-export const vJwkKeyOps = v.uniqueArray(v.union([vKnownJwkKeyOps, v.string()]))
-export type JwkKeyOps = v.InferOutput<typeof vJwkKeyOps>
+export const vJwkKeyOps = z.uniqueArray(z.union([vKnownJwkKeyOps, z.string()]))
+export type JwkKeyOps = z.output<typeof vJwkKeyOps>
 
 export function keyAllowsDerive(key: KmsJwkPublic | KmsJwkPrivate): boolean {
   // Check if key has use/key_ops restrictions

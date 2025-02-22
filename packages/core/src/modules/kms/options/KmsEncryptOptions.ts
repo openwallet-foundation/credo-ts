@@ -1,6 +1,6 @@
 import type { KmsJwkPrivateOct } from '../jwk'
 
-import * as v from '../../../utils/valibot'
+import * as z from '../../../utils/zod'
 import { vKnownJwaContentEncryptionAlgorithms, vKnownJwaKeyEncryptionAlgorithms } from '../jwk/jwa'
 import { vKmsJwkPrivateOct } from '../jwk/kty/oct'
 
@@ -8,116 +8,101 @@ import { vKmsJwkPrivateOct } from '../jwk/kty/oct'
 // NOTE: we might want to extract this to a separate
 // wrapKey method that only supports key wrapping algorithms
 // but for now it's also possible to just do it using encrypt?
-const vKmsEncryptKeyWrappingAesKw = v.object({
-  algorithm: v.union([
-    vKnownJwaKeyEncryptionAlgorithms.A128KW,
-    vKnownJwaKeyEncryptionAlgorithms.A192KW,
-    vKnownJwaKeyEncryptionAlgorithms.A256KW,
+const vKmsEncryptKeyWrappingAesKw = z.object({
+  algorithm: z.enum([
+    vKnownJwaKeyEncryptionAlgorithms.A128KW.value,
+    vKnownJwaKeyEncryptionAlgorithms.A192KW.value,
+    vKnownJwaKeyEncryptionAlgorithms.A256KW.value,
   ]),
 })
-export type KmsEncryptKeyWrappingAesKw = v.InferOutput<typeof vKmsEncryptKeyWrappingAesKw>
+export type KmsEncryptKeyWrappingAesKw = z.output<typeof vKmsEncryptKeyWrappingAesKw>
 
-const vKmsEncryptDataEncryptionAesGcm = v.object({
+const vKmsEncryptDataEncryptionAesGcm = z.object({
   // AES-GCM Content Encryption
-  algorithm: v.union([
-    vKnownJwaContentEncryptionAlgorithms.A128GCM,
-    vKnownJwaContentEncryptionAlgorithms.A192GCM,
-    vKnownJwaContentEncryptionAlgorithms.A256GCM,
+  algorithm: z.enum([
+    vKnownJwaContentEncryptionAlgorithms.A128GCM.value,
+    vKnownJwaContentEncryptionAlgorithms.A192GCM.value,
+    vKnownJwaContentEncryptionAlgorithms.A256GCM.value,
   ]),
 
-  iv: v.optional(
-    v.pipe(
-      v.instance(Uint8Array),
-      v.check((iv) => iv.length === 12, `iv must be 12 bytes for AES GCM`)
-    )
-  ),
-  aad: v.optional(v.instance(Uint8Array)),
+  iv: z.optional(z.instanceof(Uint8Array).refine((iv) => iv.length === 12, `iv must be 12 bytes for AES GCM`)),
+  aad: z.optional(z.instanceof(Uint8Array)),
 })
-export type KmsEncryptDataEncryptionAesGcm = v.InferOutput<typeof vKmsEncryptDataEncryptionAesGcm>
+export type KmsEncryptDataEncryptionAesGcm = z.output<typeof vKmsEncryptDataEncryptionAesGcm>
 
 // AES-CBC Content Encryption
-const vKmsEncryptDataEncryptionAesCbc = v.object({
-  algorithm: v.union([vKnownJwaContentEncryptionAlgorithms.A128CBC, vKnownJwaContentEncryptionAlgorithms.A256CBC]),
-  iv: v.optional(
-    v.pipe(
-      v.instance(Uint8Array),
-      v.check((iv) => iv.length === 16, `iv must be 16 bytes for AES CBC`)
-    )
-  ),
+const vKmsEncryptDataEncryptionAesCbc = z.object({
+  algorithm: z.enum([
+    vKnownJwaContentEncryptionAlgorithms.A128CBC.value,
+    vKnownJwaContentEncryptionAlgorithms.A256CBC.value,
+  ]),
+  iv: z.optional(z.instanceof(Uint8Array).refine((iv) => iv.length === 16, `iv must be 16 bytes for AES CBC`)),
 })
-export type KmsEncryptDataEncryptionAesCbc = v.InferOutput<typeof vKmsEncryptDataEncryptionAesCbc>
+export type KmsEncryptDataEncryptionAesCbc = z.output<typeof vKmsEncryptDataEncryptionAesCbc>
 
 // AES-CBC with HMAC-SHA2 Content Encryption
-const vKmsEncryptDataEncryptionAesCbcHmac = v.object({
-  algorithm: v.union([
-    vKnownJwaContentEncryptionAlgorithms.A128CBC_HS256,
-    vKnownJwaContentEncryptionAlgorithms.A192CBC_HS384,
-    vKnownJwaContentEncryptionAlgorithms.A256CBC_HS512,
+const vKmsEncryptDataEncryptionAesCbcHmac = z.object({
+  algorithm: z.enum([
+    vKnownJwaContentEncryptionAlgorithms.A128CBC_HS256.value,
+    vKnownJwaContentEncryptionAlgorithms.A192CBC_HS384.value,
+    vKnownJwaContentEncryptionAlgorithms.A256CBC_HS512.value,
   ]),
-  iv: v.optional(
-    v.pipe(
-      v.instance(Uint8Array),
-      v.check((iv) => iv.length === 16, `iv must be 16 bytes for AES CBC with HMAC`)
-    )
+  iv: z.optional(
+    z.instanceof(Uint8Array).refine((iv) => iv.length === 16, `iv must be 16 bytes for AES CBC with HMAC`)
   ),
-  aad: v.optional(v.instance(Uint8Array)),
+  aad: z.optional(z.instanceof(Uint8Array)),
 })
-export type KmsEncryptDataEncryptionAesCbcHmac = v.InferOutput<typeof vKmsEncryptDataEncryptionAesCbcHmac>
+export type KmsEncryptDataEncryptionAesCbcHmac = z.output<typeof vKmsEncryptDataEncryptionAesCbcHmac>
 
 // ChaCha20-Poly130 Content Encryption
-const vKmsEncryptDataEncryptionC20p = v.pipe(
-  v.object({
-    algorithm: v.union([vKnownJwaContentEncryptionAlgorithms.C20P, vKnownJwaContentEncryptionAlgorithms.XC20P]),
-    iv: v.optional(v.instance(Uint8Array)),
-    aad: v.optional(v.instance(Uint8Array)),
-  }),
-  v.check(
-    ({ iv, algorithm }) => !iv || iv.length === (algorithm === 'C20P' ? 12 : 24),
-    `iv must be 12 bytes for C20P (ChaCha20-Poly1305) or 24 bytes for XC20P (XChaCha20-Poly1305)`
-  )
-)
-export type KmsEncryptDataEncryptionX20c = v.InferOutput<typeof vKmsEncryptDataEncryptionC20p>
+const vKmsEncryptDataEncryptionC20p = z.object({
+  algorithm: z.enum([
+    vKnownJwaContentEncryptionAlgorithms.C20P.value,
+    vKnownJwaContentEncryptionAlgorithms.XC20P.value,
+  ]),
+  iv: z.optional(z.instanceof(Uint8Array)),
+  aad: z.optional(z.instanceof(Uint8Array)),
+})
+// FIXME: if we use refine, we can't use discriminated union. and that makes the error handlnig shitty
+// .refine(
+//   ({ iv, algorithm }) => !iv || iv.length === (algorithm === 'C20P' ? 12 : 24),
+//   `iv must be 12 bytes for C20P (ChaCha20-Poly1305) or 24 bytes for XC20P (XChaCha20-Poly1305)`
+// )
 
-export const vKmsEncryptDataEncryption = v.variant('algorithm', [
+export type KmsEncryptDataEncryptionX20c = z.output<typeof vKmsEncryptDataEncryptionC20p>
+
+export const vKmsEncryptDataEncryption = z.discriminatedUnion('algorithm', [
   vKmsEncryptDataEncryptionAesCbc,
   vKmsEncryptDataEncryptionAesCbcHmac,
   vKmsEncryptDataEncryptionAesGcm,
   vKmsEncryptDataEncryptionC20p,
   vKmsEncryptKeyWrappingAesKw,
 ])
-export type KmsEncryptDataEncryption = v.InferOutput<typeof vKmsEncryptDataEncryption>
+export type KmsEncryptDataEncryption = z.output<typeof vKmsEncryptDataEncryption>
 
-export const vKmsEncryptOptions = v.object({
-  key: v.union([v.string(), vKmsJwkPrivateOct]),
-
-  encryption: v.pipe(
-    vKmsEncryptDataEncryption,
-    v.description('Options related to the encryption algorithm to use for encrypting the data')
-  ),
-
-  data: v.pipe(v.instance(Uint8Array), v.description('The data to encrypt')),
-})
-
-export interface KmsEncryptOptions {
+export const vKmsEncryptOptions = z.object({
   /**
    * The key to use for encrypting.
    *
    * Either a key id reference or a private oct (symmetric) key jwk
    */
-  key: string | KmsJwkPrivateOct
+  key: z.union([z.string(), vKmsJwkPrivateOct]),
 
   /**
    * The encryption algorithm used to encrypt the data/content.
    * In JWE this parameter is referred to as "enc".
    */
-  encryption: KmsEncryptDataEncryption
+  encryption: vKmsEncryptDataEncryption.describe(
+    'Options related to the encryption algorithm to use for encrypting the data'
+  ),
 
   /**
    * The data to encrypt
    */
-  data: Uint8Array
-}
+  data: z.instanceof(Uint8Array).describe('The data to encrypt'),
+})
 
+export type KmsEncryptOptions = z.output<typeof vKmsEncryptOptions>
 export interface KmsEncryptReturn {
   /**
    * The encrypted data, also known as "ciphertext" in JWE

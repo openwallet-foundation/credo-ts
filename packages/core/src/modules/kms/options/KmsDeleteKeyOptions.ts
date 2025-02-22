@@ -1,12 +1,10 @@
-import * as v from '../../../utils/valibot'
+import * as z from '../../../utils/zod'
 
-export const vKmsDeleteKeyOptions = v.object({
-  keyId: v.string(),
-})
-
-export interface KmsDeleteKeyOptions {
+export const vKmsDeleteKeyOptions = z.object({
   /**
    * The `kid` for the key.
    */
-  keyId: string
-}
+  keyId: z.string(),
+})
+
+export type KmsDeleteKeyOptions = z.output<typeof vKmsDeleteKeyOptions>

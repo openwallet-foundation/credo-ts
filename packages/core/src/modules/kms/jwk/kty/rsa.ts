@@ -1,55 +1,57 @@
-import * as v from '../../../../utils/valibot'
+import * as z from '../../../../utils/zod'
 import { vJwkCommon } from '../jwk'
 
-const vKmsJwkPrivateRsaOth = v.array(
-  v.looseObject({
-    d: v.optional(v.base64Url),
-    r: v.optional(v.base64Url),
-    t: v.optional(v.base64Url),
-  })
+const vKmsJwkPrivateRsaOth = z.array(
+  z
+    .object({
+      d: z.optional(z.base64Url),
+      r: z.optional(z.base64Url),
+      t: z.optional(z.base64Url),
+    })
+    .passthrough()
 )
 
-export const vKmsJwkPublicRsa = v.object({
-  ...vJwkCommon.entries,
-  kty: v.literal('RSA'),
+export const vKmsJwkPublicRsa = z.object({
+  ...vJwkCommon.shape,
+  kty: z.literal('RSA'),
 
   // Public
-  n: v.base64Url, // Modulus
-  e: v.base64Url, // Public exponent
+  n: z.base64Url, // Modulus
+  e: z.base64Url, // Public exponent
 
   // Private
-  d: v.optional(v.undefined()), // Private exponent
-  p: v.optional(v.undefined()), // First prime factor
-  q: v.optional(v.undefined()), // Second prime factor
-  dp: v.optional(v.undefined()), // First factor CRT exponent
-  dq: v.optional(v.undefined()), // Second factor CRT exponent
-  qi: v.optional(v.undefined()), // First CRT coefficient
-  oth: v.optional(v.undefined()),
+  d: z.optional(z.undefined()), // Private exponent
+  p: z.optional(z.undefined()), // First prime factor
+  q: z.optional(z.undefined()), // Second prime factor
+  dp: z.optional(z.undefined()), // First factor CRT exponent
+  dq: z.optional(z.undefined()), // Second factor CRT exponent
+  qi: z.optional(z.undefined()), // First CRT coefficient
+  oth: z.optional(z.undefined()),
 })
-export type KmsJwkPublicRsa = v.InferOutput<typeof vKmsJwkPublicRsa>
+export type KmsJwkPublicRsa = z.output<typeof vKmsJwkPublicRsa>
 
-export const vKmsJwkPrivateToPublicRsa = v.object({
-  ...vKmsJwkPublicRsa.entries,
+export const vKmsJwkPrivateToPublicRsa = z.object({
+  ...vKmsJwkPublicRsa.shape,
 
-  d: v.optionalToUndefined(v.base64Url), // Private exponent
-  p: v.optionalToUndefined(v.base64Url), // First prime factor
-  q: v.optionalToUndefined(v.base64Url), // Second prime factor
-  dp: v.optionalToUndefined(v.base64Url), // First factor CRT exponent
-  dq: v.optionalToUndefined(v.base64Url), // Second factor CRT exponent
-  qi: v.optionalToUndefined(v.base64Url), // First CRT coefficient
-  oth: v.optionalToUndefined(vKmsJwkPrivateRsaOth),
+  d: z.optionalToUndefined(z.base64Url), // Private exponent
+  p: z.optionalToUndefined(z.base64Url), // First prime factor
+  q: z.optionalToUndefined(z.base64Url), // Second prime factor
+  dp: z.optionalToUndefined(z.base64Url), // First factor CRT exponent
+  dq: z.optionalToUndefined(z.base64Url), // Second factor CRT exponent
+  qi: z.optionalToUndefined(z.base64Url), // First CRT coefficient
+  oth: z.optionalToUndefined(vKmsJwkPrivateRsaOth),
 })
 
-export const vKmsJwkPrivateRsa = v.object({
-  ...vKmsJwkPublicRsa.entries,
+export const vKmsJwkPrivateRsa = z.object({
+  ...vKmsJwkPublicRsa.shape,
 
   // Private
-  d: v.base64Url, // Private exponent
-  p: v.base64Url, // First prime factor
-  q: v.base64Url, // Second prime factor
-  dp: v.base64Url, // First factor CRT exponent
-  dq: v.base64Url, // Second factor CRT exponent
-  qi: v.base64Url, // First CRT coefficient
-  oth: v.optional(vKmsJwkPrivateRsaOth),
+  d: z.base64Url, // Private exponent
+  p: z.base64Url, // First prime factor
+  q: z.base64Url, // Second prime factor
+  dp: z.base64Url, // First factor CRT exponent
+  dq: z.base64Url, // Second factor CRT exponent
+  qi: z.base64Url, // First CRT coefficient
+  oth: z.optional(vKmsJwkPrivateRsaOth),
 })
-export type KmsJwkPrivateRsa = v.InferOutput<typeof vKmsJwkPrivateRsa>
+export type KmsJwkPrivateRsa = z.output<typeof vKmsJwkPrivateRsa>

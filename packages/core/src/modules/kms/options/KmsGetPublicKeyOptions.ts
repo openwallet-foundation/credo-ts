@@ -1,12 +1,10 @@
-import * as v from '../../../utils/valibot'
+import * as z from '../../../utils/zod'
 
-export const vKmsGetPublicKeyOptions = v.object({
-  keyId: v.string(),
-})
-
-export interface KmsGetPublicKeyOptions {
+export const vKmsGetPublicKeyOptions = z.object({
   /**
    * The key id of the key to get the public bytes for.
    */
-  keyId: string
-}
+  keyId: z.string(),
+})
+
+export type KmsGetPublicKeyOptions = z.output<typeof vKmsGetPublicKeyOptions>

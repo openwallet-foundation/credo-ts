@@ -1,32 +1,26 @@
 import type { KnownJwaSignatureAlgorithm } from '../jwk/jwa'
 
-import * as v from '../../../utils/valibot'
+import * as z from '../../../utils/zod'
 import { vKnownJwaSignatureAlgorithm } from '../jwk/jwa'
 
-export const vKmsSignOptions = v.object({
-  keyId: v.string(),
-  algorithm: v.pipe(vKnownJwaSignatureAlgorithm, v.description('The JWA signature algorithm to use for signing')),
-
-  data: v.pipe(v.instance(Uint8Array), v.description('The data to sign')),
-})
-
-export interface KmsSignOptions {
+export const vKmsSignOptions = z.object({
   /**
    * The key to use for signing
    */
-  keyId: string
+  keyId: z.string(),
 
   /**
    * The JWA signature algorithm to use for signing
    */
-  algorithm: KnownJwaSignatureAlgorithm
+  algorithm: vKnownJwaSignatureAlgorithm.describe('The JWA signature algorithm to use for signing'),
 
   /**
    * The data to sign
    */
-  data: Uint8Array
-}
+  data: z.instanceof(Uint8Array).describe('The data to sign'),
+})
 
+export type KmsSignOptions = z.output<typeof vKmsSignOptions>
 export interface KmsSignReturn {
   signature: Uint8Array
 }

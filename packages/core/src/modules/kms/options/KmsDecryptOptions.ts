@@ -1,103 +1,92 @@
 import type { KmsJwkPrivateOct } from '../jwk/kty/oct'
 
-import * as v from '../../../utils/valibot'
+import * as z from '../../../utils/zod'
 import { vKnownJwaContentEncryptionAlgorithms } from '../jwk/jwa'
 import { vKmsJwkPrivateOct } from '../jwk/kty/oct'
 
-const vKmsDecryptDataDecryptionAesGcm = v.object({
+const vKmsDecryptDataDecryptionAesGcm = z.object({
   // AES-GCM Content Decryption
-  algorithm: v.union([
-    vKnownJwaContentEncryptionAlgorithms.A128GCM,
-    vKnownJwaContentEncryptionAlgorithms.A192GCM,
-    vKnownJwaContentEncryptionAlgorithms.A256GCM,
+  algorithm: z.enum([
+    vKnownJwaContentEncryptionAlgorithms.A128GCM.value,
+    vKnownJwaContentEncryptionAlgorithms.A192GCM.value,
+    vKnownJwaContentEncryptionAlgorithms.A256GCM.value,
   ]),
 
-  iv: v.pipe(
-    v.instance(Uint8Array),
-    v.check((iv) => iv.length === 12, `iv must be 12 bytes for AES GCM`)
-  ),
-  aad: v.optional(v.instance(Uint8Array)),
-  tag: v.instance(Uint8Array),
+  iv: z.instanceof(Uint8Array).refine((iv) => iv.length === 12, `iv must be 12 bytes for AES GCM`),
+  aad: z.optional(z.instanceof(Uint8Array)),
+  tag: z.instanceof(Uint8Array),
 })
-export type KmsDecryptDataDecryptionAesGcm = v.InferOutput<typeof vKmsDecryptDataDecryptionAesGcm>
+export type KmsDecryptDataDecryptionAesGcm = z.output<typeof vKmsDecryptDataDecryptionAesGcm>
 
 // AES-CBC Content Decryption
-const vKmsDecryptDataDecryptionAesCbc = v.object({
-  algorithm: v.union([vKnownJwaContentEncryptionAlgorithms.A128CBC, vKnownJwaContentEncryptionAlgorithms.A256CBC]),
-  iv: v.pipe(
-    v.instance(Uint8Array),
-    v.check((iv) => iv.length === 16, `iv must be 16 bytes for AES CBC`)
-  ),
-})
-export type KmsDecryptDataDecryptionAesCbc = v.InferOutput<typeof vKmsDecryptDataDecryptionAesCbc>
-
-// AES-CBC Content Decryption
-const vKmsDecryptDataDecryptionAesCbcHmac = v.object({
-  algorithm: v.union([
-    vKnownJwaContentEncryptionAlgorithms.A128CBC_HS256,
-    vKnownJwaContentEncryptionAlgorithms.A192CBC_HS384,
-    vKnownJwaContentEncryptionAlgorithms.A256CBC_HS512,
+const vKmsDecryptDataDecryptionAesCbc = z.object({
+  algorithm: z.enum([
+    vKnownJwaContentEncryptionAlgorithms.A128CBC.value,
+    vKnownJwaContentEncryptionAlgorithms.A256CBC.value,
   ]),
-  iv: v.pipe(
-    v.instance(Uint8Array),
-    v.check((iv) => iv.length === 16, `iv must be 16 bytes for AES CBC with HMAC`)
-  ),
-  aad: v.optional(v.instance(Uint8Array)),
-  tag: v.instance(Uint8Array),
+  iv: z.instanceof(Uint8Array).refine((iv) => iv.length === 16, `iv must be 16 bytes for AES CBC`),
 })
-export type KmsDecryptDataDecryptionAesCbcHmac = v.InferOutput<typeof vKmsDecryptDataDecryptionAesCbcHmac>
+export type KmsDecryptDataDecryptionAesCbc = z.output<typeof vKmsDecryptDataDecryptionAesCbc>
+
+// AES-CBC Content Decryption
+const vKmsDecryptDataDecryptionAesCbcHmac = z.object({
+  algorithm: z.enum([
+    vKnownJwaContentEncryptionAlgorithms.A128CBC_HS256.value,
+    vKnownJwaContentEncryptionAlgorithms.A192CBC_HS384.value,
+    vKnownJwaContentEncryptionAlgorithms.A256CBC_HS512.value,
+  ]),
+  iv: z.instanceof(Uint8Array).refine((iv) => iv.length === 16, `iv must be 16 bytes for AES CBC with HMAC`),
+  aad: z.optional(z.instanceof(Uint8Array)),
+  tag: z.instanceof(Uint8Array),
+})
+export type KmsDecryptDataDecryptionAesCbcHmac = z.output<typeof vKmsDecryptDataDecryptionAesCbcHmac>
 
 // ChaCha20-Poly1305 Content Decryption
-const vKmsDecryptDataDecryptionC20p = v.pipe(
-  v.object({
-    algorithm: v.union([vKnownJwaContentEncryptionAlgorithms.C20P, vKnownJwaContentEncryptionAlgorithms.XC20P]),
-    iv: v.instance(Uint8Array),
-    aad: v.optional(v.instance(Uint8Array)),
-    tag: v.instance(Uint8Array),
-  }),
-  v.check(
-    ({ iv, algorithm }) => iv.length === (algorithm === 'C20P' ? 12 : 24),
-    `iv must be 12 bytes for C20P (ChaCha20-Poly1305) or 24 bytes for XC20P (XChaCha20-Poly1305)`
-  )
-)
-export type KmsDecryptDataDecryptionC20p = v.InferOutput<typeof vKmsDecryptDataDecryptionC20p>
+const vKmsDecryptDataDecryptionC20p = z.object({
+  algorithm: z.enum([
+    vKnownJwaContentEncryptionAlgorithms.C20P.value,
+    vKnownJwaContentEncryptionAlgorithms.XC20P.value,
+  ]),
+  iv: z.instanceof(Uint8Array),
+  aad: z.optional(z.instanceof(Uint8Array)),
+  tag: z.instanceof(Uint8Array),
+})
+// FIXME: see how we can do refine with the discriminated union
+// .refine(
+//   ({ iv, algorithm }) => iv.length === (algorithm === 'C20P' ? 12 : 24),
+//   `iv must be 12 bytes for C20P (ChaCha20-Poly1305) or 24 bytes for XC20P (XChaCha20-Poly1305)`
+// )
+export type KmsDecryptDataDecryptionC20p = z.output<typeof vKmsDecryptDataDecryptionC20p>
 
-const vKmsDecryptDataDecryption = v.variant('algorithm', [
+const vKmsDecryptDataDecryption = z.discriminatedUnion('algorithm', [
   vKmsDecryptDataDecryptionAesCbc,
   vKmsDecryptDataDecryptionAesCbcHmac,
   vKmsDecryptDataDecryptionAesGcm,
   vKmsDecryptDataDecryptionC20p,
 ])
-export type KmsDecryptDataDecryption = v.InferOutput<typeof vKmsDecryptDataDecryption>
+export type KmsDecryptDataDecryption = z.output<typeof vKmsDecryptDataDecryption>
 
-export const vKmsDecryptOptions = v.object({
-  key: v.union([v.string(), vKmsJwkPrivateOct]),
-
-  decryption: v.pipe(
-    vKmsDecryptDataDecryption,
-    v.description('Options related to the decryption algorithm to use for decrypting the data')
-  ),
-
-  encrypted: v.pipe(v.instance(Uint8Array), v.description('The encrypted data to decrypt')),
-})
-
-export interface KmsDecryptOptions {
+export const vKmsDecryptOptions = z.object({
   /**
    * The keyId to use for decrypting.
    */
-  key: string | KmsJwkPrivateOct
+  key: z.union([z.string(), vKmsJwkPrivateOct]),
 
   /**
    * The decryption algorithm used to decrypt the data/content.
    * In JWE this parameter is referred to as "enc".
    */
-  decryption: KmsDecryptDataDecryption
+  decryption: vKmsDecryptDataDecryption.describe(
+    'Options related to the decryption algorithm to use for decrypting the data'
+  ),
 
   /**
    * The encrypted data to decrypt
    */
-  encrypted: Uint8Array
-}
+  encrypted: z.instanceof(Uint8Array).describe('The encrypted data to decrypt'),
+})
+
+export type KmsDecryptOptions = z.output<typeof vKmsDecryptOptions>
 
 export interface KmsDecryptReturn {
   /**

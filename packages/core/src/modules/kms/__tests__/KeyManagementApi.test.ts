@@ -1,7 +1,7 @@
 import { NodeKeyManagementService, NodeInMemoryKeyManagementStorage } from '../../../../../node/src'
 import { getInMemoryAgentOptions } from '../../../../tests/helpers'
 import { Agent } from '../../../agent/Agent'
-import { ValibotValidationError } from '../../../error/ValibotValidationError'
+import { ZodValidationError } from '../../../error/ZodValidationError'
 import { KeyManagementModule } from '../KeyManagementModule'
 import { KeyManagementError } from '../error/KeyManagementError'
 
@@ -83,7 +83,7 @@ describe('KeyManagementApi', () => {
           crv: 'P-something',
         },
       })
-    ).rejects.toThrow(ValibotValidationError)
+    ).rejects.toThrow(ZodValidationError)
   })
 
   test('throws error on invalid input for getPublicKey', async () => {
@@ -93,7 +93,7 @@ describe('KeyManagementApi', () => {
         // @ts-expect-error
         keyId: undefined,
       })
-    ).rejects.toThrow(ValibotValidationError)
+    ).rejects.toThrow(ZodValidationError)
   })
 
   test('throws error on invalid input for deleteKey', async () => {
@@ -103,7 +103,7 @@ describe('KeyManagementApi', () => {
         // @ts-expect-error
         keyId: undefined,
       })
-    ).rejects.toThrow(ValibotValidationError)
+    ).rejects.toThrow(ZodValidationError)
   })
 
   test('successfully sign and verify with key', async () => {
@@ -139,7 +139,7 @@ describe('KeyManagementApi', () => {
         // @ts-expect-error
         keyId: undefined,
       })
-    ).rejects.toThrow(ValibotValidationError)
+    ).rejects.toThrow(ZodValidationError)
   })
 
   test('throws error on invalid input to verify', async () => {
@@ -149,6 +149,6 @@ describe('KeyManagementApi', () => {
         // @ts-expect-error
         key: undefined,
       })
-    ).rejects.toThrow(ValibotValidationError)
+    ).rejects.toThrow(ZodValidationError)
   })
 })

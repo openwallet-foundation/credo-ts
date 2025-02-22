@@ -1,7 +1,7 @@
 export {
-  allowedContentEncryptionAlgsForKey,
-  assertAllowedContentEncryptionAlgForKey,
-  supportedContentEncryptionAlgsForKey,
+  allowedEncryptionAlgsForKey,
+  assertAllowedEncryptionAlgForKey,
+  supportedEncryptionAlgsForKey,
 } from './encryption'
 export { allowedSigningAlgsForSigningKey, assertAllowedSigningAlgForKey, supportedSigningAlgsForKey } from './signing'
 export {

@@ -1,10 +1,9 @@
-import * as v from '../../../utils/valibot'
 import { vKmsCreateKeyType } from '../options/KmsCreateKeyOptions'
 
 describe('CreateKeyOptions', () => {
   test('should throw error for invalid create key type', async () => {
     await expect(
-      v.parseAsync(vKmsCreateKeyType, {
+      vKmsCreateKeyType.parseAsync({
         kty: 'oct',
         algorithm: 'AES',
       })
@@ -13,7 +12,7 @@ describe('CreateKeyOptions', () => {
 
   test('should correctly parse create key type', async () => {
     expect(() =>
-      v.parse(vKmsCreateKeyType, {
+      vKmsCreateKeyType.parse({
         kty: 'oct',
         algorithm: 'AES',
         length: 128,
@@ -21,21 +20,21 @@ describe('CreateKeyOptions', () => {
     ).not.toThrow()
 
     expect(() =>
-      v.parse(vKmsCreateKeyType, {
+      vKmsCreateKeyType.parse({
         kty: 'RSA',
         modulusLength: 4096,
       })
     ).not.toThrow()
 
     expect(() =>
-      v.parse(vKmsCreateKeyType, {
+      vKmsCreateKeyType.parse({
         kty: 'EC',
         crv: 'P-256',
       })
     ).not.toThrow()
 
     expect(() =>
-      v.parse(vKmsCreateKeyType, {
+      vKmsCreateKeyType.parse({
         kty: 'OKP',
         crv: 'Ed25519',
       })

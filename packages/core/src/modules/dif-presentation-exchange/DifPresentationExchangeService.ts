@@ -22,8 +22,8 @@ import type {
   W3CVerifiablePresentation,
 } from '@sphereon/ssi-types'
 
-import { PEVersion, PEX, Status } from '@animo-id/pex'
-import { PartialSdJwtDecodedVerifiableCredential } from '@animo-id/pex/dist/main/lib'
+// import { PEVersion, PEX, Status } from '@animo-id/pex'
+// import { PartialSdJwtDecodedVerifiableCredential } from '@animo-id/pex/dist/main/lib'
 import { injectable } from 'tsyringe'
 
 import { Hasher, getJwkFromKey } from '../../crypto'

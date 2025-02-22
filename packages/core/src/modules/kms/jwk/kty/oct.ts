@@ -1,25 +1,25 @@
-import * as v from '../../../../utils/valibot'
+import * as z from '../../../../utils/zod'
 import { vJwkCommon } from '../jwk'
 
-export const vKmsJwkPublicOct = v.object({
-  ...vJwkCommon.entries,
-  kty: v.literal('oct'),
+export const vKmsJwkPublicOct = z.object({
+  ...vJwkCommon.shape,
+  kty: z.literal('oct'),
 
   // Private
-  k: v.optional(v.undefined()), // Key
+  k: z.optional(z.undefined()), // Key
 })
-export type KmsJwkPublicOct = v.InferOutput<typeof vKmsJwkPublicOct>
+export type KmsJwkPublicOct = z.output<typeof vKmsJwkPublicOct>
 
-export const vKmsJwkPrivateToPublicOct = v.object({
-  ...vKmsJwkPublicOct.entries,
+export const vKmsJwkPrivateToPublicOct = z.object({
+  ...vKmsJwkPublicOct.shape,
 
-  k: v.optionalToUndefined(v.base64Url), // Key
+  k: z.optionalToUndefined(z.base64Url), // Key
 })
 
-export const vKmsJwkPrivateOct = v.object({
-  ...vKmsJwkPublicOct.entries,
+export const vKmsJwkPrivateOct = z.object({
+  ...vKmsJwkPublicOct.shape,
 
   // Private
-  k: v.base64Url, // Key
+  k: z.base64Url, // Key
 })
-export type KmsJwkPrivateOct = v.InferOutput<typeof vKmsJwkPrivateOct>
+export type KmsJwkPrivateOct = z.output<typeof vKmsJwkPrivateOct>
