@@ -1,7 +1,7 @@
 import type { OpenId4VciCredentialOfferPayload } from '../../shared'
 import type { RecordTags, TagsBase } from '@credo-ts/core'
 
-import { PkceCodeChallengeMethod } from '@animo-id/oauth2'
+import { PkceCodeChallengeMethod } from '@openid4vc/oauth2'
 import { CredoError, BaseRecord, utils, isJsonObject } from '@credo-ts/core'
 import { Transform, TransformationType } from 'class-transformer'
 
