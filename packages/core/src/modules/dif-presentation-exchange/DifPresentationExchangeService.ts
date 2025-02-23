@@ -127,13 +127,17 @@ export class DifPresentationExchangeService {
 
   public validatePresentation(
     presentationDefinition: DifPresentationExchangeDefinition,
-    presentation: VerifiablePresentation
+    presentations: VerifiablePresentation | VerifiablePresentation[],
+    presentationSubmission: DifPresentationExchangeSubmission
   ) {
     const { errors } = this.pex.evaluatePresentation(
       presentationDefinition,
-      getSphereonOriginalVerifiablePresentation(presentation),
+      Array.isArray(presentations)
+        ? presentations.map(getSphereonOriginalVerifiablePresentation)
+        : getSphereonOriginalVerifiablePresentation(presentations),
       {
         limitDisclosureSignatureSuites: ['BbsBlsSignatureProof2020', 'DataIntegrityProof.anoncreds-2023'],
+        presentationSubmission,
       }
     )
 

@@ -13,6 +13,7 @@ import type {
   DifPresentationExchangeDefinition,
   DifPresentationExchangeSubmission,
   JwkJson,
+  MdocSessionTranscriptOptions,
   Query,
   QueryOptions,
   TransactionData,
@@ -66,11 +67,6 @@ import {
   VpTokenPresentationParseResult,
   zOpenid4vpAuthorizationResponse,
 } from '@openid4vc/oid4vp'
-import { PresentationDefinitionLocation } from '@sphereon/did-auth-siop'
-import {
-  assertValidVerifiablePresentations,
-  extractPresentationsFromVpToken,
-} from '@sphereon/did-auth-siop/dist/authorization-response/OpenID4VP'
 
 import { getOid4vcCallbacks } from '../shared/callbacks'
 import { OpenId4VcSiopAuthorizationResponsePayload } from '../shared/index'
@@ -237,9 +233,6 @@ export class OpenId4VcSiopVerifierService {
     )
 
     const dcqlPresentationResult = dcqlService.assertValidDcqlPresentation(dcqlPresentation, dcqlQuery)
-    if (!dcqlPresentationResult.canBeSatisfied) {
-      throw new CredoError('The dcql query cannot be satisfied.')
-    }
 
     return {
       query: dcqlQuery,
@@ -371,7 +364,9 @@ export class OpenId4VcSiopVerifierService {
     ])
 
     const authorizationRequest = result.authRequestPayload
-    const { client_id: requestClientId, nonce: requestNonce, response_uri: responseUri } = authorizationRequest
+
+    let requestClientId = authorizationRequest.client_id
+    const responseUri = 'response_uri' in authorizationRequest ? authorizationRequest.response_uri : undefined
 
     const transactionData = authorizationRequest.transaction_data
       ? openid4vpVerifier.parseTransactionData({ transactionData: authorizationRequest.transaction_data })
@@ -379,6 +374,13 @@ export class OpenId4VcSiopVerifierService {
 
     const isDcApiRequest =
       authorizationRequest.response_mode === 'dc_api' || authorizationRequest.response_mode === 'dc_api.jwt'
+
+    if (isDcApiRequest) {
+      if (!options.origin) throw new CredoError('origin is required for Digital Credentials API')
+      if (!requestClientId) requestClientId = `web-origin:${options.origin}`
+    } else if (!requestClientId) {
+      throw new CredoError('Missing required client_id')
+    }
 
     // validating the id token
     // verifying the presentations
@@ -394,8 +396,9 @@ export class OpenId4VcSiopVerifierService {
         return await this.verifyPresentations(agentContext, {
           correlationId: result.verificationSession.id,
           transactionData,
-          nonce: requestNonce,
+          nonce: authorizationRequest.nonce,
           audience: requestClientId,
+          origin: options.origin,
           responseUri,
           mdocGeneratedNonce: result.jarm?.mdocGeneratedNonce,
           verificationSessionRecordId: result.verificationSession.id,
@@ -417,49 +420,28 @@ export class OpenId4VcSiopVerifierService {
         result.pex.presentationSubmission as unknown as DifPresentationExchangeSubmission
       )
 
-      // This should be provided by pex-light!
-      // It must check if the presentations match the presentation definition
-      await assertValidVerifiablePresentations({
-        presentationDefinitions: [
-          {
-            definition: result.pex.presentationDefinition as any,
-            location: PresentationDefinitionLocation.TOPLEVEL_PRESENTATION_DEF,
-          },
-        ],
-        verificationCallback: async () => ({ verified: true }),
-        presentations: result.authResponsePayload.vp_token
-          ? await extractPresentationsFromVpToken(parseIfJson(result.authResponsePayload.vp_token) as any, {
-              hasher: Hasher.hash,
-            })
-          : [],
-        opts: {
-          hasher: Hasher.hash,
-          presentationSubmission: result.pex.presentationSubmission as any,
-        },
-      })
+      const presentationsArray = Array.isArray(presentations) ? presentations : [presentations]
 
-      const presentationVerificationPromises = (Array.isArray(presentations) ? presentations : [presentations]).map(
-        (presentation) => {
-          const inputDescriptor = (
-            result.pex.presentationSubmission as DifPresentationExchangeSubmission
-          ).descriptor_map.find((descriptorMapEntry) => descriptorMapEntry.path === presentation.path)
-          if (!inputDescriptor) {
-            throw new CredoError(`Could not map transaction data entry to input descriptor.`)
-          }
-
-          return this.verifyPresentations(agentContext, {
-            correlationId: result.verificationSession.id,
-            transactionData,
-            nonce: requestNonce,
-            audience: requestClientId,
-            responseUri,
-            mdocGeneratedNonce: result.jarm?.mdocGeneratedNonce,
-            verificationSessionRecordId: result.verificationSession.id,
-            vpTokenPresentationParseResult: presentation,
-            credentialId: inputDescriptor.id,
-          })
+      const presentationVerificationPromises = presentationsArray.map((presentation) => {
+        const inputDescriptor = (
+          result.pex.presentationSubmission as DifPresentationExchangeSubmission
+        ).descriptor_map.find((descriptorMapEntry) => descriptorMapEntry.path === presentation.path)
+        if (!inputDescriptor) {
+          throw new CredoError(`Could not map transaction data entry to input descriptor.`)
         }
-      )
+
+        return this.verifyPresentations(agentContext, {
+          correlationId: result.verificationSession.id,
+          transactionData,
+          nonce: authorizationRequest.nonce,
+          audience: requestClientId,
+          responseUri,
+          mdocGeneratedNonce: result.jarm?.mdocGeneratedNonce,
+          verificationSessionRecordId: result.verificationSession.id,
+          vpTokenPresentationParseResult: presentation,
+          credentialId: inputDescriptor.id,
+        })
+      })
 
       presentationVerificationResults = await Promise.all(presentationVerificationPromises)
     }
@@ -467,6 +449,33 @@ export class OpenId4VcSiopVerifierService {
     try {
       if (presentationVerificationResults.some((result) => !result.verified)) {
         throw new CredoError('One or more presentations failed verification.')
+      }
+
+      // Validate the presentations against the query
+      if (result.type === 'pex') {
+        const pex = agentContext.dependencyManager.resolve(DifPresentationExchangeService)
+
+        const presentations = presentationVerificationResults
+          .map((p) => (p.verified ? p.presentation : undefined))
+          .filter((p) => p !== undefined)
+
+        pex.validatePresentation(
+          // FIXME: type. it should always be an object as we created it
+          result.pex.presentationDefinition as unknown as DifPresentationExchangeDefinition,
+          presentations,
+          result.pex.presentationSubmission as DifPresentationExchangeSubmission
+        )
+      } else {
+        const dcql = agentContext.dependencyManager.resolve(DcqlService)
+
+        const presentations = presentationVerificationResults.reduce(
+          (all, p) => (p.verified ? { ...all, [p.credentialId]: p.presentation } : all),
+          {}
+        )
+
+        // FIXME: type for this parameter
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        dcql.assertValidDcqlPresentation(presentations, result.dcql.query as any)
       }
 
       const transactionDataMeta: [string, TransactionDataMeta][] = []
@@ -850,6 +859,7 @@ export class OpenId4VcSiopVerifierService {
       correlationId: string
       responseUri?: string
       mdocGeneratedNonce?: string
+      origin?: string
       transactionData?: TransactionData
       verificationSessionRecordId: string
       vpTokenPresentationParseResult: VpTokenPresentationParseResult
@@ -926,50 +936,61 @@ export class OpenId4VcSiopVerifierService {
         reason = verificationResult.isValid ? undefined : verificationResult.error.message
         verifiablePresentation = sdJwtVc
       } else if (vpTokenPresentationParseResult.format === 'mso_mdoc') {
-        if (!options.responseUri || !options.mdocGeneratedNonce) {
-          throw new CredoError(
-            'Mdoc device response verification failed. Response uri and the mdocGeneratedNonce are not set'
-          )
-        } else {
-          const mdocDeviceResponse = MdocDeviceResponse.fromBase64Url(vpTokenPresentationParseResult.presentation)
+        const mdocDeviceResponse = MdocDeviceResponse.fromBase64Url(vpTokenPresentationParseResult.presentation)
 
-          const trustedCertificates = (
-            await Promise.all(
-              mdocDeviceResponse.documents.map(async (mdoc) => {
-                const certificateChain = mdoc.issuerSignedCertificateChain.map((cert) =>
-                  X509Certificate.fromRawCertificate(cert)
-                )
+        const trustedCertificates = (
+          await Promise.all(
+            mdocDeviceResponse.documents.map(async (mdoc) => {
+              const certificateChain = mdoc.issuerSignedCertificateChain.map((cert) =>
+                X509Certificate.fromRawCertificate(cert)
+              )
 
-                const trustedCertificates = await x509Config.getTrustedCertificatesForVerification?.(agentContext, {
-                  certificateChain,
-                  verification: {
-                    type: 'credential',
-                    credential: mdoc,
-                    openId4VcVerificationSessionId: options.verificationSessionRecordId,
-                  },
-                })
-
-                // TODO: could have some duplication but not a big issue
-                return trustedCertificates ?? x509Config.trustedCertificates
+              const trustedCertificates = await x509Config.getTrustedCertificatesForVerification?.(agentContext, {
+                certificateChain,
+                verification: {
+                  type: 'credential',
+                  credential: mdoc,
+                  openId4VcVerificationSessionId: options.verificationSessionRecordId,
+                },
               })
-            )
-          )
-            .filter((c): c is string[] => c !== undefined)
-            .flatMap((c) => c)
 
-          await mdocDeviceResponse.verify(agentContext, {
-            sessionTranscriptOptions: {
-              type: 'openId4Vp',
-              clientId: options.audience,
-              mdocGeneratedNonce: options.mdocGeneratedNonce,
-              responseUri: options.responseUri,
-              verifierGeneratedNonce: options.nonce,
-            },
-            trustedCertificates,
-          })
-          isValid = true
-          verifiablePresentation = mdocDeviceResponse
+              // TODO: could have some duplication but not a big issue
+              return trustedCertificates ?? x509Config.trustedCertificates
+            })
+          )
+        )
+          .filter((c): c is string[] => c !== undefined)
+          .flatMap((c) => c)
+
+        let sessionTranscriptOptions: MdocSessionTranscriptOptions
+        if (options.origin) {
+          sessionTranscriptOptions = {
+            type: 'openId4VpDcApi',
+            clientId: options.audience,
+            verifierGeneratedNonce: options.nonce,
+            origin: options.nonce,
+          }
+        } else {
+          if (!options.mdocGeneratedNonce || !options.responseUri) {
+            throw new CredoError(
+              'mdocGeneratedNonce and responseUri are required for mdoc openid4vp session transcript calculation'
+            )
+          }
+          sessionTranscriptOptions = {
+            type: 'openId4Vp',
+            clientId: options.audience,
+            mdocGeneratedNonce: options.mdocGeneratedNonce,
+            responseUri: options.responseUri,
+            verifierGeneratedNonce: options.nonce,
+          }
         }
+
+        await mdocDeviceResponse.verify(agentContext, {
+          sessionTranscriptOptions,
+          trustedCertificates,
+        })
+        isValid = true
+        verifiablePresentation = mdocDeviceResponse
       } else if (vpTokenPresentationParseResult.format === 'jwt_vp_json') {
         const sdJwtPresentation = W3cJwtVerifiablePresentation.fromSerializedJwt(
           vpTokenPresentationParseResult.presentation
