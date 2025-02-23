@@ -1,3 +1,9 @@
+import type { AgentContext, JwaSignatureAlgorithm, KeyType } from '@credo-ts/core'
+import type {
+  OpenId4VciCredentialConfigurationSupported,
+  OpenId4VciCredentialIssuerMetadata,
+  OpenId4VciMetadata,
+} from '../shared'
 import type {
   OpenId4VciAcceptCredentialOfferOptions,
   OpenId4VciAuthCodeFlowOptions,
@@ -12,12 +18,6 @@ import type {
   OpenId4VciSupportedCredentialFormats,
   OpenId4VciTokenRequestOptions,
 } from './OpenId4VciHolderServiceOptions'
-import type {
-  OpenId4VciCredentialConfigurationSupported,
-  OpenId4VciCredentialIssuerMetadata,
-  OpenId4VciMetadata,
-} from '../shared'
-import type { AgentContext, JwaSignatureAlgorithm, KeyType } from '@credo-ts/core'
 
 import {
   getAuthorizationServerMetadataFromList,
@@ -25,38 +25,37 @@ import {
   Oauth2Client,
   preAuthorizedCodeGrantIdentifier,
   RequestDpopOptions,
-} from '@animo-id/oauth2'
+} from '@openid4vc/oauth2'
 import {
   AuthorizationFlow,
   CredentialResponse,
   IssuerMetadataResult,
   Oid4vciClient,
   Oid4vciRetrieveCredentialsError,
-} from '@animo-id/oid4vci'
+} from '@openid4vc/oid4vci'
 import {
   CredoError,
-  InjectionSymbols,
-  Jwk,
-  JwsService,
-  Logger,
-  Mdoc,
-  MdocApi,
-  SdJwtVcApi,
-  SignatureSuiteRegistry,
-  W3cCredentialService,
-  W3cJsonLdVerifiableCredential,
-  W3cJwtVerifiableCredential,
   getJwkClassFromJwaSignatureAlgorithm,
   getJwkFromJson,
   getJwkFromKey,
   getSupportedVerificationMethodTypesFromKeyType,
   inject,
   injectable,
+  InjectionSymbols,
+  Jwk,
+  Logger,
+  Mdoc,
+  MdocApi,
   parseDid,
+  SdJwtVcApi,
+  SignatureSuiteRegistry,
+  W3cCredentialService,
+  W3cJsonLdVerifiableCredential,
+  W3cJwtVerifiableCredential,
 } from '@credo-ts/core'
 
 import { OpenId4VciCredentialFormatProfile } from '../shared'
-import { getOid4vciCallbacks } from '../shared/callbacks'
+import { getOid4vcCallbacks } from '../shared/callbacks'
 import { getOfferedCredentials, getScopesFromCredentialConfigurationsSupported } from '../shared/issuerMetadataUtils'
 import { getKeyFromDid, getSupportedJwaSignatureAlgorithms } from '../shared/utils'
 
@@ -66,15 +65,9 @@ import { openId4VciSupportedCredentialFormats } from './OpenId4VciHolderServiceO
 export class OpenId4VciHolderService {
   private logger: Logger
   private w3cCredentialService: W3cCredentialService
-  private jwsService: JwsService
 
-  public constructor(
-    @inject(InjectionSymbols.Logger) logger: Logger,
-    w3cCredentialService: W3cCredentialService,
-    jwsService: JwsService
-  ) {
+  public constructor(@inject(InjectionSymbols.Logger) logger: Logger, w3cCredentialService: W3cCredentialService) {
     this.w3cCredentialService = w3cCredentialService
-    this.jwsService = jwsService
     this.logger = logger
   }
 
@@ -391,7 +384,7 @@ export class OpenId4VciHolderService {
           })
           .catch((e) => {
             if (e instanceof Oid4vciRetrieveCredentialsError && e.response.credentialErrorResponseResult?.success) {
-              cNonce = e.response.credentialErrorResponseResult.output.c_nonce
+              cNonce = e.response.credentialErrorResponseResult.data.c_nonce
             }
           })
       }
@@ -879,13 +872,13 @@ export class OpenId4VciHolderService {
 
   private getClient(agentContext: AgentContext) {
     return new Oid4vciClient({
-      callbacks: getOid4vciCallbacks(agentContext),
+      callbacks: getOid4vcCallbacks(agentContext),
     })
   }
 
   private getOauth2Client(agentContext: AgentContext) {
     return new Oauth2Client({
-      callbacks: getOid4vciCallbacks(agentContext),
+      callbacks: getOid4vcCallbacks(agentContext),
     })
   }
 }
