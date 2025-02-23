@@ -251,7 +251,7 @@ export class OpenId4VcSiopHolderService {
       authorizationRequest.payload.response_mode === 'dc_api.jwt'
     const nonce = authorizationRequest.payload.nonce
 
-    // FIXME: we should always set this in oid4vc-ts, based on the origin if using DC API
+    // FIXME: we should always set this in oid4vc-ts, based on the origin if using DC  API
     let clientId = authorizationRequest.client.originalValue
     if (isDcApiRequest) {
       if (!origin) throw new CredoError('Missing required origin')
