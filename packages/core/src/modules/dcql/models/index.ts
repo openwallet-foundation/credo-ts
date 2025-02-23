@@ -14,7 +14,7 @@ import type {
   DcqlPresentationResult as _DcqlPresentationResult,
 } from 'dcql'
 
-export type DcqlQuery = _DcqlQuery.Input
+export type DcqlQuery = _DcqlQuery.Input | _DcqlQuery.Output
 export type DcqlCredential = _DcqlCredential.Model['Input']
 export type DcqlMdocCredential = _DcqlMdocCredential.Model['Input']
 export type DcqlSdJwtVcCredential = _DcqlSdJwtVcCredential.Model['Input']

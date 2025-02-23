@@ -219,7 +219,14 @@ export class DcqlService {
         return [key, this.getDcqlCredentialRepresentation(value)]
       })
     )
-    return DcqlPresentationResult.fromDcqlPresentation(internalDcqlPresentation, { dcqlQuery })
+    const presentationResult = DcqlPresentationResult.fromDcqlPresentation(internalDcqlPresentation, { dcqlQuery })
+
+    // TODO: better error handling
+    if (!presentationResult.canBeSatisfied) {
+      throw new DcqlError('Invalid presentations. Presentations do not satisfy the credential query.')
+    }
+
+    return presentationResult
   }
 
   /**
