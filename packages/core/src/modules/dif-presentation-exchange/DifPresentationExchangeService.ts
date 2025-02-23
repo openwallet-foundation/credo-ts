@@ -128,7 +128,7 @@ export class DifPresentationExchangeService {
   public validatePresentation(
     presentationDefinition: DifPresentationExchangeDefinition,
     presentations: VerifiablePresentation | VerifiablePresentation[],
-    presentationSubmission: DifPresentationExchangeSubmission
+    presentationSubmission?: DifPresentationExchangeSubmission
   ) {
     const { errors } = this.pex.evaluatePresentation(
       presentationDefinition,
