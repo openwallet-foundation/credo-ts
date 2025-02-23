@@ -102,7 +102,9 @@ export class DcqlService {
   public getDcqlCredentialRepresentation(presentation: VerifiablePresentation): DcqlQueryResult['credentials'] {
     if (presentation.claimFormat === ClaimFormat.SdJwtVc) {
       return {
-        credential_format: 'vc+sd-jwt',
+        // FIXME: we hardcode it to dc+sd-jwt for now. Need to think about backwards compat
+        // We can either handle both in dcql library. Or we derive it  based on the query value
+        credential_format: 'dc+sd-jwt',
         vct: presentation.prettyClaims,
         claims: presentation.prettyClaims as DcqlSdJwtVcCredential.Claims,
       } satisfies DcqlSdJwtVcCredential
@@ -125,7 +127,7 @@ export class DcqlService {
   ): Promise<DcqlQueryResult> {
     const credentialRecords = await this.queryCredentialsForDcqlQuery(agentContext, dcqlQuery)
 
-    const dcqlCredentials: DcqlCredential[] = credentialRecords.map((record) => {
+    const dcqlCredentials: DcqlCredential[] = credentialRecords.flatMap((record) => {
       if (record.type === 'MdocRecord') {
         const mdoc = Mdoc.fromBase64Url(record.base64Url)
         return {
@@ -134,12 +136,20 @@ export class DcqlService {
           namespaces: mdoc.issuerSignedNamespaces,
         } satisfies DcqlMdocCredential
       } else if (record.type === 'SdJwtVcRecord') {
-        return {
-          credential_format: 'vc+sd-jwt',
-          vct: record.getTags().vct,
-          claims: this.getSdJwtVcApi(agentContext).fromCompact(record.compactSdJwtVc)
-            .prettyClaims as DcqlSdJwtVcCredential.Claims,
-        } satisfies DcqlSdJwtVcCredential
+        return [
+          {
+            credential_format: 'vc+sd-jwt',
+            vct: record.getTags().vct,
+            claims: this.getSdJwtVcApi(agentContext).fromCompact(record.compactSdJwtVc)
+              .prettyClaims as DcqlSdJwtVcCredential.Claims,
+          } satisfies DcqlSdJwtVcCredential,
+          {
+            credential_format: 'dc+sd-jwt',
+            vct: record.getTags().vct,
+            claims: this.getSdJwtVcApi(agentContext).fromCompact(record.compactSdJwtVc)
+              .prettyClaims as DcqlSdJwtVcCredential.Claims,
+          } satisfies DcqlSdJwtVcCredential,
+        ]
       } else {
         // TODO:
         throw new DcqlError('W3C credentials are not supported yet')

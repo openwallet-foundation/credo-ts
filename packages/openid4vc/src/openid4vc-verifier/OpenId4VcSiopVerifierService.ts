@@ -237,7 +237,7 @@ export class OpenId4VcSiopVerifierService {
     )
 
     const dcqlPresentationResult = dcqlService.assertValidDcqlPresentation(dcqlPresentation, dcqlQuery)
-    if (dcqlPresentationResult.canBeSatisfied) {
+    if (!dcqlPresentationResult.canBeSatisfied) {
       throw new CredoError('The dcql query cannot be satisfied.')
     }
 
@@ -357,9 +357,7 @@ export class OpenId4VcSiopVerifierService {
     }
   ): Promise<OpenId4VcSiopVerifiedAuthorizationResponse & { verificationSession: OpenId4VcVerificationSessionRecord }> {
     const openid4vpVerifier = this.getOpenid4vpVerifier(agentContext)
-    const openId4VcRelyingPartyEventHandler = await agentContext.dependencyManager.resolve(
-      OpenId4VcRelyingPartyEventHandler
-    )
+    const openId4VcRelyingPartyEventHandler = agentContext.dependencyManager.resolve(OpenId4VcRelyingPartyEventHandler)
 
     const result = await this.parseAuthorizationResponse(agentContext, {
       verifierId: options.verifierId,
@@ -378,6 +376,9 @@ export class OpenId4VcSiopVerifierService {
     const transactionData = authorizationRequest.transaction_data
       ? openid4vpVerifier.parseTransactionData({ transactionData: authorizationRequest.transaction_data })
       : undefined
+
+    const isDcApiRequest =
+      authorizationRequest.response_mode === 'dc_api' || authorizationRequest.response_mode === 'dc_api.jwt'
 
     // validating the id token
     // verifying the presentations
