@@ -127,7 +127,7 @@ export class DcqlService {
   ): Promise<DcqlQueryResult> {
     const credentialRecords = await this.queryCredentialsForDcqlQuery(agentContext, dcqlQuery)
 
-    const dcqlCredentials: DcqlCredential[] = credentialRecords.flatMap((record) => {
+    const dcqlCredentials: DcqlCredential[] = credentialRecords.map((record) => {
       if (record.type === 'MdocRecord') {
         const mdoc = Mdoc.fromBase64Url(record.base64Url)
         return {
@@ -136,20 +136,13 @@ export class DcqlService {
           namespaces: mdoc.issuerSignedNamespaces,
         } satisfies DcqlMdocCredential
       } else if (record.type === 'SdJwtVcRecord') {
-        return [
-          {
-            credential_format: 'vc+sd-jwt',
-            vct: record.getTags().vct,
-            claims: this.getSdJwtVcApi(agentContext).fromCompact(record.compactSdJwtVc)
-              .prettyClaims as DcqlSdJwtVcCredential.Claims,
-          } satisfies DcqlSdJwtVcCredential,
-          {
-            credential_format: 'dc+sd-jwt',
-            vct: record.getTags().vct,
-            claims: this.getSdJwtVcApi(agentContext).fromCompact(record.compactSdJwtVc)
-              .prettyClaims as DcqlSdJwtVcCredential.Claims,
-          } satisfies DcqlSdJwtVcCredential,
-        ]
+        // FIXME: support vc+sd-jwt
+        return {
+          credential_format: 'dc+sd-jwt',
+          vct: record.getTags().vct,
+          claims: this.getSdJwtVcApi(agentContext).fromCompact(record.compactSdJwtVc)
+            .prettyClaims as DcqlSdJwtVcCredential.Claims,
+        } satisfies DcqlSdJwtVcCredential
       } else {
         // TODO:
         throw new DcqlError('W3C credentials are not supported yet')
