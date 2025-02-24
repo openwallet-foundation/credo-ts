@@ -3,10 +3,10 @@ import type {
   OpenId4VciAccessTokenResponse,
   OpenId4VciCredentialConfigurationsSupportedWithFormats,
 } from '../shared'
-import type { CredentialOfferObject, IssuerMetadataResult } from '@animo-id/oid4vci'
+import type { CredentialOfferObject, IssuerMetadataResult } from '@openid4vc/oid4vci'
 import type { AgentContext, JwaSignatureAlgorithm, Jwk, KeyType, VerifiableCredential } from '@credo-ts/core'
 
-import { AuthorizationFlow as OpenId4VciAuthorizationFlow } from '@animo-id/oid4vci'
+import { AuthorizationFlow as OpenId4VciAuthorizationFlow } from '@openid4vc/oid4vci'
 
 import { OpenId4VciCredentialFormatProfile } from '../shared/models/OpenId4VciCredentialFormatProfile'
 

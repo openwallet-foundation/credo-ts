@@ -31,6 +31,13 @@ describe('mdoc service test', () => {
     expect(mdoc.docType).toBe('eu.europa.ec.eudi.pid.1')
   })
 
+  test('can get device key', async () => {
+    const mdoc = Mdoc.fromBase64Url(sprindFunkeTestVectorBase64Url)
+    const deviceKey = mdoc.deviceKey
+    expect(deviceKey?.keyType).toBe(KeyType.P256)
+    expect(deviceKey?.fingerprint).toBe('zDnaeq8nbXthvXNTYAzxdyvdWXgm5ev5xLEUtjZpfj1YtQ5g2')
+  })
+
   test('can create and verify mdoc', async () => {
     const holderKey = await agentContext.wallet.createKey({
       keyType: KeyType.P256,

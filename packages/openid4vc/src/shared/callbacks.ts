@@ -1,23 +1,39 @@
-import type { OpenId4VcIssuerRecord } from '../openid4vc-issuer/repository'
 import type {
   CallbackContext,
   ClientAuthenticationCallback,
   SignJwtCallback,
   VerifyJwtCallback,
-} from '@animo-id/oauth2'
+} from '@openid4vc/oauth2'
 import type { AgentContext } from '@credo-ts/core'
+import { Buffer, Key, TypedArrayEncoder } from '@credo-ts/core'
+import type { OpenId4VcIssuerRecord } from '../openid4vc-issuer/repository'
 
-import { clientAuthenticationDynamic, clientAuthenticationNone } from '@animo-id/oauth2'
-import { CredoError, getJwkFromJson, getJwkFromKey, Hasher, JsonEncoder, JwsService } from '@credo-ts/core'
+import { clientAuthenticationDynamic, clientAuthenticationNone } from '@openid4vc/oauth2'
+import {
+  CredoError,
+  getJwkFromJson,
+  getJwkFromKey,
+  Hasher,
+  JsonEncoder,
+  JwsService,
+  JwtPayload,
+  KeyType,
+  X509Service,
+} from '@credo-ts/core'
 
+import { DecryptJweCallback, EncryptJweCallback } from '@openid4vc/oauth2'
 import { getKeyFromDid } from './utils'
 
-export function getOid4vciJwtVerifyCallback(agentContext: AgentContext): VerifyJwtCallback {
+export function getOid4vciJwtVerifyCallback(
+  agentContext: AgentContext,
+  trustedCertificates?: string[]
+): VerifyJwtCallback {
   const jwsService = agentContext.dependencyManager.resolve(JwsService)
 
   return async (signer, { compact }) => {
-    const { isValid } = await jwsService.verifyJws(agentContext, {
+    const { isValid, signerKeys } = await jwsService.verifyJws(agentContext, {
       jws: compact,
+      trustedCertificates,
       // Only handles kid as did resolution. JWK is handled by jws service
       jwkResolver: async () => {
         if (signer.method === 'jwk') {
@@ -31,7 +47,92 @@ export function getOid4vciJwtVerifyCallback(agentContext: AgentContext): VerifyJ
       },
     })
 
-    return isValid
+    if (!isValid) {
+      return { verified: false, signerJwk: undefined }
+    }
+
+    const signerKey = signerKeys[0]
+    const signerJwk = getJwkFromKey(signerKey).toJson()
+    if (signer.method === 'did') {
+      signerJwk.kid = signer.didUrl
+    }
+
+    return { verified: true, signerJwk }
+  }
+}
+
+export function getOid4vciEncryptJwtCallback(agentContext: AgentContext): EncryptJweCallback {
+  return async (jwtEncryptor, compact) => {
+    if (jwtEncryptor.method !== 'jwk') {
+      throw new CredoError(
+        `Jwt encryption method '${jwtEncryptor.method}' is not supported for jwt signer. Only 'jwk' is supported.`
+      )
+    }
+
+    const jwk = getJwkFromJson(jwtEncryptor.publicJwk)
+    const key = jwk.key
+
+    if (jwtEncryptor.alg !== 'ECDH-ES') {
+      throw new CredoError("Only 'ECDH-ES' is supported as 'alg' value for JARM response encryption")
+    }
+
+    if (jwtEncryptor.enc !== 'A256GCM') {
+      throw new CredoError("Only 'A256GCM' is supported as 'enc' value for JARM response encryption")
+    }
+
+    if (key.keyType !== KeyType.P256) {
+      throw new CredoError(`Only '${KeyType.P256}' key type is supported for JARM response encryption`)
+    }
+
+    if (!agentContext.wallet.directEncryptCompactJweEcdhEs) {
+      throw new CredoError(
+        'Cannot decrypt Jarm Response, wallet does not support directEncryptCompactJweEcdhEs. You need to upgrade your wallet implementation.'
+      )
+    }
+
+    const jwe = await agentContext.wallet.directEncryptCompactJweEcdhEs({
+      data: Buffer.from(compact),
+      recipientKey: key,
+      header: { kid: jwtEncryptor.publicJwk.kid },
+      encryptionAlgorithm: jwtEncryptor.enc,
+      apu: jwtEncryptor.apu ? TypedArrayEncoder.toBase64URL(TypedArrayEncoder.fromString(jwtEncryptor.apu)) : undefined,
+      apv: jwtEncryptor.apv ? TypedArrayEncoder.toBase64URL(TypedArrayEncoder.fromString(jwtEncryptor.apv)) : undefined,
+    })
+
+    return { encryptionJwk: jwtEncryptor.publicJwk, jwe }
+  }
+}
+
+export function getOid4vciDecryptJweCallback(agentContext: AgentContext): DecryptJweCallback {
+  return async (jwe, options) => {
+    const [header] = jwe.split('.')
+    const decodedHeader = JsonEncoder.fromBase64(header)
+
+    const key = Key.fromFingerprint(options?.jwk.kid ?? decodedHeader.kid)
+    if (!agentContext.wallet.directDecryptCompactJweEcdhEs) {
+      throw new CredoError('Cannot decrypt Jarm Response, wallet does not support directDecryptCompactJweEcdhEs')
+    }
+
+    let decryptedPayload: string
+
+    try {
+      const decrypted = await agentContext.wallet.directDecryptCompactJweEcdhEs({ compactJwe: jwe, recipientKey: key })
+      decryptedPayload = TypedArrayEncoder.toUtf8String(decrypted.data)
+    } catch (error) {
+      return {
+        decrypted: false,
+        encryptionJwk: options?.jwk,
+        payload: undefined,
+        header: decodedHeader,
+      }
+    }
+
+    return {
+      decrypted: true,
+      decryptionJwk: getJwkFromKey(key).toJson(),
+      payload: decryptedPayload,
+      header: decodedHeader,
+    }
   }
 }
 
@@ -39,8 +140,20 @@ export function getOid4vciJwtSignCallback(agentContext: AgentContext): SignJwtCa
   const jwsService = agentContext.dependencyManager.resolve(JwsService)
 
   return async (signer, { payload, header }) => {
-    if (signer.method === 'custom' || signer.method === 'x5c') {
+    if (signer.method === 'custom' || signer.method === 'trustChain') {
       throw new CredoError(`Jwt signer method 'custom' and 'x5c' are not supported for jwt signer.`)
+    }
+
+    if (signer.method === 'x5c') {
+      const leafCertificate = X509Service.getLeafCertificate(agentContext, { certificateChain: signer.x5c })
+
+      const jws = await jwsService.createJwsCompact(agentContext, {
+        protectedHeaderOptions: { ...header, alg: signer.alg, jwk: undefined },
+        payload: JwtPayload.fromJson(payload),
+        key: leafCertificate.publicKey,
+      })
+
+      return { jwt: jws, signerJwk: getJwkFromKey(leafCertificate.publicKey).toJson() }
     }
 
     const key =
@@ -60,19 +173,33 @@ export function getOid4vciJwtSignCallback(agentContext: AgentContext): SignJwtCa
       key,
     })
 
-    return jwt
+    return { jwt, signerJwk: getJwkFromKey(key).toJson() }
   }
 }
 
-export function getOid4vciCallbacks(agentContext: AgentContext) {
+export function getOid4vcCallbacks(agentContext: AgentContext, trustedCertificates?: string[]) {
   return {
     hash: (data, alg) => Hasher.hash(data, alg.toLowerCase()),
     generateRandom: (length) => agentContext.wallet.getRandomValues(length),
     signJwt: getOid4vciJwtSignCallback(agentContext),
     clientAuthentication: clientAuthenticationNone(),
-    verifyJwt: getOid4vciJwtVerifyCallback(agentContext),
+    verifyJwt: getOid4vciJwtVerifyCallback(agentContext, trustedCertificates),
     fetch: agentContext.config.agentDependencies.fetch,
+    encryptJwe: getOid4vciEncryptJwtCallback(agentContext),
+    decryptJwe: getOid4vciDecryptJweCallback(agentContext),
   } satisfies Partial<CallbackContext>
+}
+
+export function getOid4vpX509Callbacks(agentContext: AgentContext) {
+  return {
+    getX509CertificateMetadata: (certificate: string) => {
+      const leafCertificate = X509Service.getLeafCertificate(agentContext, { certificateChain: [certificate] })
+      return {
+        sanDnsNames: leafCertificate.sanDnsNames,
+        sanUriNames: leafCertificate.sanUriNames,
+      }
+    },
+  }
 }
 
 /**

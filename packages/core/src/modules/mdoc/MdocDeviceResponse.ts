@@ -1,12 +1,13 @@
 import type {
-  MdocDeviceResponseOpenId4VpOptions,
   MdocDeviceResponseOptions,
+  MdocDeviceResponsePresentationDefinitionOptions,
   MdocDeviceResponseVerifyOptions,
+  MdocSessionTranscriptOptions,
 } from './MdocOptions'
 import type { AgentContext } from '../../agent'
 import type { JwkJson } from '../../crypto'
 import type { DifPresentationExchangeDefinition } from '../dif-presentation-exchange'
-import type { IssuerSignedDocument, PresentationDefinition } from '@animo-id/mdoc'
+import type { IssuerSignedDocument, MdocContext, PresentationDefinition } from '@animo-id/mdoc'
 import type { InputDescriptorV2 } from '@sphereon/pex-models'
 
 import {
@@ -25,6 +26,7 @@ import {
 import { getJwkFromJson } from '../../crypto'
 import { CredoError } from '../../error'
 import { uuid } from '../../utils/uuid'
+import { ClaimFormat } from '../vc'
 import { X509Certificate } from '../x509/X509Certificate'
 import { X509ModuleConfig } from '../x509/X509ModuleConfig'
 
@@ -33,9 +35,24 @@ import { Mdoc } from './Mdoc'
 import { getMdocContext } from './MdocContext'
 import { MdocError } from './MdocError'
 import { isMdocSupportedSignatureAlgorithm, mdocSupporteSignatureAlgorithms } from './mdocSupportedAlgs'
+import { nameSpacesRecordToMap } from './mdocUtil'
 
 export class MdocDeviceResponse {
   private constructor(public base64Url: string, public documents: Mdoc[]) {}
+
+  /**
+   * claim format is convenience method added to all credential instances
+   */
+  public get claimFormat() {
+    return ClaimFormat.MsoMdoc as const
+  }
+
+  /**
+   * Encoded is convenience method added to all credential instances
+   */
+  public get encoded() {
+    return this.base64Url
+  }
 
   public static fromBase64Url(base64Url: string) {
     const parsed = parseDeviceResponse(TypedArrayEncoder.fromBase64(base64Url))
@@ -159,11 +176,10 @@ export class MdocDeviceResponse {
     return disclosedPayloadAsRecord
   }
 
-  public static async createOpenId4VpDeviceResponse(
+  public static async createPresentationDefinitionDeviceResponse(
     agentContext: AgentContext,
-    options: MdocDeviceResponseOpenId4VpOptions
+    options: MdocDeviceResponsePresentationDefinitionOptions
   ) {
-    const { sessionTranscriptOptions } = options
     const presentationDefinition = this.partitionPresentationDefinition(
       options.presentationDefinition
     ).mdocPresentationDefinition
@@ -190,12 +206,13 @@ export class MdocDeviceResponse {
 
       const deviceResponseBuilder = DeviceResponse.from(new MDoc([issuerSignedDocument]))
         .usingPresentationDefinition(presentationDefinitionForDocument)
-        .usingSessionTranscriptForOID4VP(sessionTranscriptOptions)
         .authenticateWithSignature(publicDeviceJwk, alg)
 
       for (const [nameSpace, nameSpaceValue] of Object.entries(options.deviceNameSpaces ?? {})) {
         deviceResponseBuilder.addDeviceNameSpace(nameSpace, nameSpaceValue)
       }
+
+      MdocDeviceResponse.usingSessionTranscript(deviceResponseBuilder, options.sessionTranscriptOptions)
 
       const deviceResponseMdoc = await deviceResponseBuilder.sign(getMdocContext(agentContext))
       combinedDeviceResponseMdoc.addDocument(deviceResponseMdoc.documents[0])
@@ -225,17 +242,23 @@ export class MdocDeviceResponse {
       const deviceKey = issuerSignedDocument.issuerSigned.issuerAuth.decodedPayload.deviceKeyInfo?.deviceKey
       if (!deviceKey) throw new CredoError(`Device key is missing in mdoc with doctype ${issuerSignedDocument.docType}`)
 
-      const deviceRequestForDocument = new DeviceRequest(
-        options.deviceRequest.version,
-        options.deviceRequest.docRequests.filter(
-          (request) => request.itemsRequest.data.docType === issuerSignedDocument.docType
-        )
+      const deviceRequestForDocument = DeviceRequest.from(
+        '1.0',
+        options.documentRequests
+          .filter((request) => request.docType === issuerSignedDocument.docType)
+          .map((request) => ({
+            itemsRequestData: {
+              docType: request.docType,
+              nameSpaces: nameSpacesRecordToMap(request.nameSpaces),
+            },
+          }))
       )
 
       const deviceResponseBuilder = DeviceResponse.from(new MDoc([issuerSignedDocument]))
-        .usingSessionTranscriptBytes(options.sessionTranscriptBytes)
-        .usingDeviceRequest(deviceRequestForDocument)
         .authenticateWithSignature(publicDeviceJwk, alg)
+        .usingDeviceRequest(deviceRequestForDocument)
+
+      MdocDeviceResponse.usingSessionTranscript(deviceResponseBuilder, options.sessionTranscriptOptions)
 
       for (const [nameSpace, nameSpaceValue] of Object.entries(options.deviceNameSpaces ?? {})) {
         deviceResponseBuilder.addDeviceNameSpace(nameSpace, nameSpaceValue)
@@ -287,10 +310,10 @@ export class MdocDeviceResponse {
     const result = await verifier.verifyDeviceResponse(
       {
         encodedDeviceResponse: TypedArrayEncoder.fromBase64(this.base64Url),
-        encodedSessionTranscript: await DeviceResponse.calculateSessionTranscriptForOID4VP({
-          ...options.sessionTranscriptOptions,
-          context: mdocContext,
-        }),
+        encodedSessionTranscript: await MdocDeviceResponse.getSessionTranscriptBytesForOptions(
+          mdocContext,
+          options.sessionTranscriptOptions
+        ),
         trustedCertificates: trustedCertificates.map(
           (cert) => X509Certificate.fromEncodedCertificate(cert).rawCertificate
         ),
@@ -308,6 +331,47 @@ export class MdocDeviceResponse {
     }
 
     return this.documents
+  }
+
+  private static async getSessionTranscriptBytesForOptions(
+    context: MdocContext,
+    options: MdocSessionTranscriptOptions
+  ) {
+    if (options.type === 'sesionTranscriptBytes') {
+      return options.sessionTranscriptBytes
+    }
+
+    if (options.type === 'openId4Vp') {
+      return await DeviceResponse.calculateSessionTranscriptForOID4VP({
+        ...options,
+        context,
+      })
+    }
+
+    if (options.type === 'openId4VpDcApi') {
+      return await DeviceResponse.calculateSessionTranscriptForOID4VPDCApi({
+        ...options,
+        context,
+      })
+    }
+
+    throw new MdocError('Unsupported session transcript option')
+  }
+
+  private static usingSessionTranscript(deviceResponse: DeviceResponse, options: MdocSessionTranscriptOptions) {
+    if (options.type === 'sesionTranscriptBytes') {
+      return deviceResponse.usingSessionTranscriptBytes(options.sessionTranscriptBytes)
+    }
+
+    if (options.type === 'openId4Vp') {
+      return deviceResponse.usingSessionTranscriptForOID4VP(options)
+    }
+
+    if (options.type === 'openId4VpDcApi') {
+      return deviceResponse.usingSessionTranscriptForForOID4VPDCApi(options)
+    }
+
+    throw new MdocError('Unsupported session transcript option')
   }
 
   private static parseDeviceKeyFromIssuerSigned(issuerSignedDocument: IssuerSignedDocument) {

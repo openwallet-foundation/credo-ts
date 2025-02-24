@@ -1,20 +1,20 @@
-import type {
-  OpenId4VciCreateCredentialResponseOptions,
-  OpenId4VciCreateCredentialOfferOptions,
-  OpenId4VciCreateIssuerOptions,
-  OpenId4VciPreAuthorizedCodeFlowConfig,
-  OpenId4VciSignW3cCredentials,
-  OpenId4VciAuthorizationCodeFlowConfig,
-  OpenId4VciCredentialRequestAuthorization,
-  OpenId4VciCreateStatelessCredentialOfferOptions,
-  OpenId4VciCredentialRequestToCredentialMapperOptions,
-} from './OpenId4VcIssuerServiceOptions'
+import type { AgentContext, Query, QueryOptions } from '@credo-ts/core'
 import type {
   OpenId4VcCredentialHolderBindingWithKey,
   OpenId4VciCredentialConfigurationsSupportedWithFormats,
   OpenId4VciMetadata,
 } from '../shared'
-import type { AgentContext, Query, QueryOptions } from '@credo-ts/core'
+import type {
+  OpenId4VciAuthorizationCodeFlowConfig,
+  OpenId4VciCreateCredentialOfferOptions,
+  OpenId4VciCreateCredentialResponseOptions,
+  OpenId4VciCreateIssuerOptions,
+  OpenId4VciCreateStatelessCredentialOfferOptions,
+  OpenId4VciCredentialRequestAuthorization,
+  OpenId4VciCredentialRequestToCredentialMapperOptions,
+  OpenId4VciPreAuthorizedCodeFlowConfig,
+  OpenId4VciSignW3cCredentials,
+} from './OpenId4VcIssuerServiceOptions'
 
 import {
   AuthorizationServerMetadata,
@@ -26,7 +26,7 @@ import {
   Oauth2ServerErrorResponseError,
   PkceCodeChallengeMethod,
   preAuthorizedCodeGrantIdentifier,
-} from '@animo-id/oauth2'
+} from '@openid4vc/oauth2'
 import {
   CredentialIssuerMetadata,
   CredentialRequestFormatSpecific,
@@ -34,30 +34,30 @@ import {
   getCredentialConfigurationsMatchingRequestFormat,
   Oid4vciDraftVersion,
   Oid4vciIssuer,
-} from '@animo-id/oid4vci'
+} from '@openid4vc/oid4vci'
 import {
-  SdJwtVcApi,
-  CredoError,
   ClaimFormat,
+  CredoError,
+  EventEmitter,
   getJwkFromJson,
   getJwkFromKey,
   injectable,
   joinUriParts,
   JwsService,
+  Jwt,
+  JwtPayload,
+  Key,
   KeyType,
+  MdocApi,
+  SdJwtVcApi,
+  TypedArrayEncoder,
   utils,
   W3cCredentialService,
-  MdocApi,
-  Key,
-  JwtPayload,
-  Jwt,
-  EventEmitter,
-  TypedArrayEncoder,
 } from '@credo-ts/core'
 
 import { OpenId4VcVerifierApi } from '../openid4vc-verifier'
 import { OpenId4VciCredentialFormatProfile } from '../shared'
-import { dynamicOid4vciClientAuthentication, getOid4vciCallbacks } from '../shared/callbacks'
+import { dynamicOid4vciClientAuthentication, getOid4vcCallbacks } from '../shared/callbacks'
 import { getCredentialConfigurationsSupportedForScopes, getOfferedCredentials } from '../shared/issuerMetadataUtils'
 import { storeActorIdForContextCorrelationId } from '../shared/router'
 import { addSecondsToDate, dateToSeconds, getKeyFromDid, getProofTypeFromKey } from '../shared/utils'
@@ -66,10 +66,10 @@ import { OpenId4VcIssuanceSessionState } from './OpenId4VcIssuanceSessionState'
 import { OpenId4VcIssuanceSessionStateChangedEvent, OpenId4VcIssuerEvents } from './OpenId4VcIssuerEvents'
 import { OpenId4VcIssuerModuleConfig } from './OpenId4VcIssuerModuleConfig'
 import {
-  OpenId4VcIssuerRepository,
-  OpenId4VcIssuerRecord,
-  OpenId4VcIssuanceSessionRepository,
   OpenId4VcIssuanceSessionRecord,
+  OpenId4VcIssuanceSessionRepository,
+  OpenId4VcIssuerRecord,
+  OpenId4VcIssuerRepository,
 } from './repository'
 import { generateTxCode } from './util/txCode'
 
@@ -567,26 +567,26 @@ export class OpenId4VcIssuerService {
 
   public getIssuer(agentContext: AgentContext) {
     return new Oid4vciIssuer({
-      callbacks: getOid4vciCallbacks(agentContext),
+      callbacks: getOid4vcCallbacks(agentContext),
     })
   }
 
   public getOauth2Client(agentContext: AgentContext) {
     return new Oauth2Client({
-      callbacks: getOid4vciCallbacks(agentContext),
+      callbacks: getOid4vcCallbacks(agentContext),
     })
   }
 
   public getOauth2AuthorizationServer(agentContext: AgentContext) {
     return new Oauth2AuthorizationServer({
-      callbacks: getOid4vciCallbacks(agentContext),
+      callbacks: getOid4vcCallbacks(agentContext),
     })
   }
 
   public getResourceServer(agentContext: AgentContext, issuerRecord: OpenId4VcIssuerRecord) {
     return new Oauth2ResourceServer({
       callbacks: {
-        ...getOid4vciCallbacks(agentContext),
+        ...getOid4vcCallbacks(agentContext),
         clientAuthentication: dynamicOid4vciClientAuthentication(agentContext, issuerRecord),
       },
     })
@@ -839,15 +839,21 @@ export class OpenId4VcIssuerService {
       const response = await verifierApi.getVerifiedAuthorizationResponse(
         issuanceSession.presentation.openId4VcVerificationSessionId
       )
-      if (!response.presentationExchange) {
-        throw new CredoError(
-          `Verified authorization response for verification session with id '${session.id}' does not have presenationExchange defined.`
-        )
-      }
 
-      verification = {
-        session,
-        presentationExchange: response.presentationExchange,
+      if (response.presentationExchange) {
+        verification = {
+          session,
+          presentationExchange: response.presentationExchange,
+        }
+      } else if (response.dcql) {
+        verification = {
+          session,
+          dcql: response.dcql,
+        }
+      } else {
+        throw new CredoError(
+          `Verified authorization response for verification session with id '${session.id}' does not have presenationExchange or dcql defined.`
+        )
       }
     }
 

@@ -1,19 +1,22 @@
-import type { OpenId4VcVerificationSessionRecord, OpenId4VcVerifierRecordProps } from './repository'
+import type {
+  DcqlPresentation,
+  DcqlPresentationResult,
+  DcqlQuery,
+  DifPexPresentationWithDescriptor,
+  DifPresentationExchangeDefinition,
+  DifPresentationExchangeDefinitionV2,
+  DifPresentationExchangeSubmission,
+  TransactionData,
+  VerifiablePresentation,
+} from '@credo-ts/core'
 import type {
   OpenId4VcIssuerX5c,
   OpenId4VcJwtIssuer,
   OpenId4VcSiopAuthorizationResponsePayload,
-  OpenId4VcSiopIdTokenPayload,
 } from '../shared'
-import type {
-  DifPresentationExchangeDefinition,
-  DifPresentationExchangeSubmission,
-  DifPresentationExchangeDefinitionV2,
-  VerifiablePresentation,
-  DifPexPresentationWithDescriptor,
-} from '@credo-ts/core'
+import type { OpenId4VcVerificationSessionRecord, OpenId4VcVerifierRecordProps } from './repository'
 
-export type ResponseMode = 'direct_post' | 'direct_post.jwt'
+export type ResponseMode = 'direct_post' | 'direct_post.jwt' | 'dc_api' | 'dc_api.jwt'
 
 export interface OpenId4VcSiopCreateAuthorizationRequestOptions {
   /**
@@ -37,6 +40,15 @@ export interface OpenId4VcSiopCreateAuthorizationRequestOptions {
    */
   presentationExchange?: {
     definition: DifPresentationExchangeDefinitionV2
+    transactionData?: TransactionData
+  }
+
+  /**
+   * A Digital Credentials Query Language (DCQL) can be provided to request the presentation of a Verifiable Credentials.
+   */
+  dcql?: {
+    query: DcqlQuery
+    transactionData?: TransactionData
   }
 
   /**
@@ -47,6 +59,12 @@ export interface OpenId4VcSiopCreateAuthorizationRequestOptions {
    * With response_mode `direct_post.jwt` the response will be `signed` `encrypted` or `signed and encrypted` and then posted to the `response_uri` provided in the request.
    */
   responseMode?: ResponseMode
+
+  /**
+   * The expected origins of the authorization response.
+   * REQUIRED when signed requests defined in Appendix A.3.2 are used with the Digital Credentials API (DC API). An array of strings, each string representing an Origin of the Verifier that is making the request.
+   */
+  expectedOrigins?: string[]
 }
 
 export interface OpenId4VcSiopVerifyAuthorizationResponseOptions {
@@ -65,19 +83,22 @@ export interface OpenId4VcSiopVerifiedAuthorizationResponsePresentationExchange 
   submission: DifPresentationExchangeSubmission
   definition: DifPresentationExchangeDefinition
   presentations: Array<VerifiablePresentation>
-
   descriptors: DifPexPresentationWithDescriptor[]
+}
+
+export interface OpenId4VcSiopVerifiedAuthorizationResponseDcql {
+  query: DcqlQuery
+  presentation: DcqlPresentation
+  presentationResult: DcqlPresentationResult
 }
 
 /**
  * Either `idToken` and/or `presentationExchange` will be present.
  */
 export interface OpenId4VcSiopVerifiedAuthorizationResponse {
-  idToken?: {
-    payload: OpenId4VcSiopIdTokenPayload
-  }
-
   presentationExchange?: OpenId4VcSiopVerifiedAuthorizationResponsePresentationExchange
+  dcql?: OpenId4VcSiopVerifiedAuthorizationResponseDcql
+  transactionData?: TransactionData
 }
 
 /**

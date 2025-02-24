@@ -11,6 +11,7 @@ import { SdJwtVcModule } from '../modules/sd-jwt-vc'
 import { W3cCredentialsModule } from '../modules/vc'
 import { X509Module } from '../modules/x509'
 import { WalletModule } from '../wallet'
+import { DcqlModule } from '../modules/dcql/DcqlModule'
 
 /**
  * Simple utility type that represent a map of modules. This is used to map from moduleKey (api key) to the api in the framework.
@@ -102,6 +103,7 @@ export type CustomOrDefaultApi<
  */
 function getDefaultAgentModules() {
   return {
+    dcql: () => new DcqlModule(),
     genericRecords: () => new GenericRecordsModule(),
     dids: () => new DidsModule(),
     wallet: () => new WalletModule(),

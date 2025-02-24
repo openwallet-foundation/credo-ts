@@ -1,24 +1,87 @@
-import type { OpenId4VcVerificationSessionStateChangedEvent } from '../OpenId4VcVerifierEvents'
 import type { AgentContext } from '@credo-ts/core'
-import type { AuthorizationEvent, AuthorizationRequest, AuthorizationResponse } from '@sphereon/did-auth-siop'
+import type { OpenId4VcVerificationSessionStateChangedEvent } from '../OpenId4VcVerifierEvents'
 
 import {
-  CredoError,
-  injectable,
   AgentContextProvider,
-  inject,
-  InjectionSymbols,
-  EventEmitter,
   AgentDependencies,
+  CredoError,
+  EventEmitter,
+  inject,
+  injectable,
+  InjectionSymbols,
 } from '@credo-ts/core'
-import { AuthorizationEvents } from '@sphereon/did-auth-siop'
 import { EventEmitter as NativeEventEmitter } from 'events'
 
 import { OpenId4VcVerificationSessionState } from '../OpenId4VcVerificationSessionState'
 import { OpenId4VcVerifierEvents } from '../OpenId4VcVerifierEvents'
 
+import { isOpenid4vpAuthorizationResponseDcApi, Openid4vpAuthorizationResponse, Openid4vpAuthorizationResponseDcApi } from '@openid4vc/oid4vp'
 import { OpenId4VcVerificationSessionRecord } from './OpenId4VcVerificationSessionRecord'
 import { OpenId4VcVerificationSessionRepository } from './OpenId4VcVerificationSessionRepository'
+import { OpenId4VcSiopAuthorizationRequestPayload } from '../../shared/index'
+
+
+export enum AuthorizationEvents {
+  ON_AUTH_REQUEST_CREATED_SUCCESS = 'onAuthRequestCreatedSuccess',
+  ON_AUTH_REQUEST_CREATED_FAILED = 'onAuthRequestCreatedFailed',
+
+  ON_AUTH_REQUEST_SENT_SUCCESS = 'onAuthRequestSentSuccess',
+  ON_AUTH_REQUEST_SENT_FAILED = 'onAuthRequestSentFailed',
+
+  ON_AUTH_REQUEST_RECEIVED_SUCCESS = 'onAuthRequestReceivedSuccess',
+  ON_AUTH_REQUEST_RECEIVED_FAILED = 'onAuthRequestReceivedFailed',
+
+  ON_AUTH_REQUEST_VERIFIED_SUCCESS = 'onAuthRequestVerifiedSuccess',
+  ON_AUTH_REQUEST_VERIFIED_FAILED = 'onAuthRequestVerifiedFailed',
+
+  ON_AUTH_RESPONSE_CREATE_SUCCESS = 'onAuthResponseCreateSuccess',
+  ON_AUTH_RESPONSE_CREATE_FAILED = 'onAuthResponseCreateFailed',
+
+  ON_AUTH_RESPONSE_SENT_SUCCESS = 'onAuthResponseSentSuccess',
+  ON_AUTH_RESPONSE_SENT_FAILED = 'onAuthResponseSentFailed',
+
+  ON_AUTH_RESPONSE_RECEIVED_SUCCESS = 'onAuthResponseReceivedSuccess',
+  ON_AUTH_RESPONSE_RECEIVED_FAILED = 'onAuthResponseReceivedFailed',
+
+  ON_AUTH_RESPONSE_VERIFIED_SUCCESS = 'onAuthResponseVerifiedSuccess',
+  ON_AUTH_RESPONSE_VERIFIED_FAILED = 'onAuthResponseVerifiedFailed',
+}
+
+export class AuthorizationEvent<T> {
+  private readonly _subject: T | undefined
+  private readonly _error?: Error
+  private readonly _timestamp: number
+  private readonly _correlationId: string
+
+  public constructor(args: { correlationId: string; subject?: T; error?: Error }) {
+    //fixme: Create correlationId if not provided. Might need to be deferred to registry though
+    this._correlationId = args.correlationId
+    this._timestamp = Date.now()
+    this._subject = args.subject
+    this._error = args.error
+  }
+
+  get subject(): T | undefined {
+    return this._subject
+  }
+
+  get timestamp(): number {
+    return this._timestamp
+  }
+
+  get error(): Error | undefined {
+    return this._error
+  }
+
+  public hasError(): boolean {
+    return !!this._error
+  }
+
+  get correlationId(): string {
+    return this._correlationId
+  }
+}
+
 
 interface RelyingPartyEventEmitterContext {
   contextCorrelationId: string
@@ -37,7 +100,7 @@ export class OpenId4VcRelyingPartyEventHandler {
 
     this.nativeEventEmitter.on(
       AuthorizationEvents.ON_AUTH_REQUEST_CREATED_SUCCESS,
-      this.onAuthorizationRequestCreatedSuccess
+      this.authorizationRequestCreatedSuccess
     )
 
     // We don't want to do anything currently when a request creation failed, as then the method that
@@ -57,16 +120,16 @@ export class OpenId4VcRelyingPartyEventHandler {
 
     this.nativeEventEmitter.on(
       AuthorizationEvents.ON_AUTH_RESPONSE_RECEIVED_FAILED,
-      this.onAuthorizationResponseReceivedFailed
+      this.authorizationResponseReceivedFailed
     )
 
     this.nativeEventEmitter.on(
       AuthorizationEvents.ON_AUTH_RESPONSE_VERIFIED_SUCCESS,
-      this.onAuthorizationResponseVerifiedSuccess
+      this.authorizationResponseVerifiedSuccess
     )
     this.nativeEventEmitter.on(
       AuthorizationEvents.ON_AUTH_RESPONSE_VERIFIED_FAILED,
-      this.onAuthorizationResponseVerifiedFailed
+      this.authorizationResponseVerifiedFailed
     )
   }
 
@@ -74,36 +137,43 @@ export class OpenId4VcRelyingPartyEventHandler {
     return new OpenId4VcRelyingPartyEventEmitter(this.nativeEventEmitter, contextCorrelationId, verifierId)
   }
 
-  private onAuthorizationRequestCreatedSuccess = async (
-    event: AuthorizationEvent<AuthorizationRequest>,
-    context: RelyingPartyEventEmitterContext
-  ): Promise<void> => {
-    const authorizationRequestJwt = await event.subject?.requestObjectJwt()
+  public authorizationRequestCreatedSuccess = async (
+    agentContext: AgentContext,
+    options: {
+      verifierId: string
+      correlationId: string
+      authorizationRequestJwt?: string
+      authorizationRequestUri?: string
+    }
+  ) => {
+    const { verifierId, correlationId, authorizationRequestJwt, authorizationRequestUri } = options
+
     if (!authorizationRequestJwt) {
       throw new CredoError('Authorization request object JWT is missing')
     }
 
-    const authorizationRequestUri = event.subject?.payload.request_uri
     if (!authorizationRequestUri) {
       throw new CredoError('Authorization request URI is missing')
     }
 
     const verificationSession = new OpenId4VcVerificationSessionRecord({
-      id: event.correlationId,
+      id: correlationId,
       authorizationRequestJwt,
       authorizationRequestUri,
       state: OpenId4VcVerificationSessionState.RequestCreated,
-      verifierId: context.verifierId,
+      verifierId: verifierId,
     })
 
-    await this.withSession(context.contextCorrelationId, async (agentContext, verificationSessionRepository) => {
+    await this.withSession(agentContext.contextCorrelationId, async (agentContext, verificationSessionRepository) => {
       await verificationSessionRepository.save(agentContext, verificationSession)
       this.emitStateChangedEvent(agentContext, verificationSession, null)
     })
+
+    return verificationSession
   }
 
   private onAuthorizationRequestSentSuccess = async (
-    event: AuthorizationEvent<AuthorizationRequest>,
+    event: AuthorizationEvent<OpenId4VcSiopAuthorizationRequestPayload>,
     context: RelyingPartyEventEmitterContext
   ): Promise<void> => {
     await this.withSession(context.contextCorrelationId, async (agentContext, verificationSessionRepository) => {
@@ -119,35 +189,44 @@ export class OpenId4VcRelyingPartyEventHandler {
     })
   }
 
-  private onAuthorizationResponseReceivedFailed = async (
-    event: AuthorizationEvent<AuthorizationResponse>,
-    context: RelyingPartyEventEmitterContext
+  public authorizationResponseReceivedFailed = async (
+    agentContext: AgentContext,
+    options: {
+      verifierId: string
+      correlationId: string
+      authorizationResponsePayload: Openid4vpAuthorizationResponse
+      errorMessage: string
+    }
   ): Promise<void> => {
-    await this.withSession(context.contextCorrelationId, async (agentContext, verificationSessionRepository) => {
-      const verificationSession = await verificationSessionRepository.getById(agentContext, event.correlationId)
+    await this.withSession(agentContext.contextCorrelationId, async (agentContext, verificationSessionRepository) => {
+      const verificationSession = await verificationSessionRepository.getById(agentContext, options.correlationId)
 
       const previousState = verificationSession.state
       verificationSession.state = OpenId4VcVerificationSessionState.Error
-      verificationSession.authorizationResponsePayload = event.subject?.payload
-      verificationSession.errorMessage = event.error?.message
+      verificationSession.authorizationResponsePayload = options.authorizationResponsePayload
+      verificationSession.errorMessage = options.errorMessage
       await verificationSessionRepository.update(agentContext, verificationSession)
       this.emitStateChangedEvent(agentContext, verificationSession, previousState)
     })
   }
 
-  private onAuthorizationResponseVerifiedSuccess = async (
-    event: AuthorizationEvent<AuthorizationResponse>,
-    context: RelyingPartyEventEmitterContext
+  public authorizationResponseVerifiedSuccess = async (
+    agentContext: AgentContext,
+    options: {
+      verifierId: string
+      correlationId: string
+      authorizationResponsePayload: Openid4vpAuthorizationResponse | Openid4vpAuthorizationResponseDcApi
+    }
   ): Promise<void> => {
-    await this.withSession(context.contextCorrelationId, async (agentContext, verificationSessionRepository) => {
-      const verificationSession = await verificationSessionRepository.getById(agentContext, event.correlationId)
+    await this.withSession(agentContext.contextCorrelationId, async (agentContext, verificationSessionRepository) => {
+      const verificationSession = await verificationSessionRepository.getById(agentContext, options.correlationId)
 
       if (
         verificationSession.state !== OpenId4VcVerificationSessionState.Error &&
         verificationSession.state !== OpenId4VcVerificationSessionState.ResponseVerified
       ) {
         const previousState = verificationSession.state
-        verificationSession.authorizationResponsePayload = event.subject?.payload
+        verificationSession.authorizationResponsePayload = isOpenid4vpAuthorizationResponseDcApi(options.authorizationResponsePayload) ? options.authorizationResponsePayload.data : options.authorizationResponsePayload
         verificationSession.state = OpenId4VcVerificationSessionState.ResponseVerified
         await verificationSessionRepository.update(agentContext, verificationSession)
         this.emitStateChangedEvent(agentContext, verificationSession, previousState)
@@ -155,16 +234,20 @@ export class OpenId4VcRelyingPartyEventHandler {
     })
   }
 
-  private onAuthorizationResponseVerifiedFailed = async (
-    event: AuthorizationEvent<AuthorizationResponse>,
-    context: RelyingPartyEventEmitterContext
+  public authorizationResponseVerifiedFailed = async (
+    agentContext: AgentContext,
+    options: {
+      verifierId: string
+      correlationId: string
+      errorMessage: string
+    }
   ): Promise<void> => {
-    await this.withSession(context.contextCorrelationId, async (agentContext, verificationSessionRepository) => {
-      const verificationSession = await verificationSessionRepository.getById(agentContext, event.correlationId)
+    await this.withSession(agentContext.contextCorrelationId, async (agentContext, verificationSessionRepository) => {
+      const verificationSession = await verificationSessionRepository.getById(agentContext, options.correlationId)
 
       const previousState = verificationSession.state
       verificationSession.state = OpenId4VcVerificationSessionState.Error
-      verificationSession.errorMessage = event.error?.message
+      verificationSession.errorMessage = options.errorMessage
       await verificationSessionRepository.update(agentContext, verificationSession)
       this.emitStateChangedEvent(agentContext, verificationSession, previousState)
     })

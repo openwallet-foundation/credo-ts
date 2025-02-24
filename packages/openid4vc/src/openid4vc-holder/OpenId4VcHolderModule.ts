@@ -1,6 +1,6 @@
 import type { DependencyManager, Module } from '@credo-ts/core'
 
-import { setGlobalConfig } from '@animo-id/oauth2'
+import { setGlobalConfig } from '@openid4vc/oauth2'
 import { AgentConfig } from '@credo-ts/core'
 
 import { OpenId4VcHolderApi } from './OpenId4VcHolderApi'

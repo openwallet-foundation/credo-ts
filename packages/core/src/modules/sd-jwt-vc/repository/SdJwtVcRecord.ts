@@ -76,4 +76,18 @@ export class SdJwtVcRecord extends BaseRecord<DefaultSdJwtVcRecordTags> {
   public clone(): this {
     return JsonTransformer.fromJSON(JsonTransformer.toJSON(this), this.constructor as Constructable<this>)
   }
+
+  /**
+   * credential is convenience method added to all credential records
+   */
+  public get credential(): SdJwtVc {
+    return decodeSdJwtVc(this.compactSdJwtVc, this.typeMetadata)
+  }
+
+  /**
+   * encoded is convenience method added to all credential records
+   */
+  public get encoded(): string {
+    return this.compactSdJwtVc
+  }
 }

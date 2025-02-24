@@ -1,6 +1,6 @@
 import type { OpenId4VcIssuanceRequest } from './requestContext'
 import type { OpenId4VcIssuerModuleConfig } from '../OpenId4VcIssuerModuleConfig'
-import type { HttpMethod, VerifyAccessTokenRequestReturn } from '@animo-id/oauth2'
+import type { HttpMethod, VerifyAccessTokenRequestReturn } from '@openid4vc/oauth2'
 import type { NextFunction, Response, Router } from 'express'
 
 import {
@@ -8,7 +8,7 @@ import {
   Oauth2ErrorCodes,
   Oauth2ServerErrorResponseError,
   preAuthorizedCodeGrantIdentifier,
-} from '@animo-id/oauth2'
+} from '@openid4vc/oauth2'
 import { getJwkFromKey, joinUriParts, Key, utils } from '@credo-ts/core'
 
 import {

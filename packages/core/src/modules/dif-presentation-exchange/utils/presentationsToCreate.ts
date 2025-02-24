@@ -1,8 +1,10 @@
-import type { SdJwtVcRecord } from '../../sd-jwt-vc'
-import type { DifPexInputDescriptorToCredentials } from '../models'
+import { SdJwtVcRecord } from '../../sd-jwt-vc'
+import type { DifPexInputDescriptorToCredentials, TransactionData } from '../models'
 
+import { CredoError } from '../../../error/CredoError'
 import { MdocRecord } from '../../mdoc'
-import { W3cCredentialRecord, ClaimFormat } from '../../vc'
+import { ClaimFormat, W3cCredentialRecord } from '../../vc'
+import { TransactionDataAuthorization } from '../models/TransactionData'
 
 //  - the credentials included in the presentation
 export interface SdJwtVcPresentationToCreate {
@@ -12,6 +14,7 @@ export interface SdJwtVcPresentationToCreate {
     {
       credential: SdJwtVcRecord
       inputDescriptorId: string
+      transactionData?: TransactionData
     }
   ] // only one credential supported for SD-JWT-VC
 }
@@ -57,13 +60,21 @@ export type PresentationToCreate =
 // to make sure the presentation we are going to create is a presentation format supported by the verifier.
 // In addition we should allow to pass an override 'format' object, as specification like OID4VP do not use the
 // PD formats, but define their own.
-export function getPresentationsToCreate(credentialsForInputDescriptor: DifPexInputDescriptorToCredentials) {
+export function getPresentationsToCreate(
+  credentialsForInputDescriptor: DifPexInputDescriptorToCredentials,
+  transactionDataAuthorization?: TransactionDataAuthorization
+) {
   const presentationsToCreate: Array<PresentationToCreate> = []
 
   // We map all credentials for a input descriptor to the different subject ids. Each subjectId will need
   // to create a separate proof (either on the same presentation or if not allowed by proof format on separate)
   // presentations
   for (const [inputDescriptorId, credentials] of Object.entries(credentialsForInputDescriptor)) {
+    const transactionData = transactionDataAuthorization?.credentials.includes(inputDescriptorId)
+    if (transactionData && credentials.some((c) => c instanceof SdJwtVcRecord) === false) {
+      throw new CredoError('Transaction data is currently only supported for SD-JWT-VC')
+    }
+
     for (const credential of credentials) {
       if (credential instanceof W3cCredentialRecord) {
         const subjectId = credential.credential.credentialSubjectIds[0]
@@ -98,7 +109,9 @@ export function getPresentationsToCreate(credentialsForInputDescriptor: DifPexIn
         presentationsToCreate.push({
           claimFormat: ClaimFormat.SdJwtVc,
           subjectIds: [],
-          verifiableCredentials: [{ inputDescriptorId, credential }],
+          verifiableCredentials: [
+            { inputDescriptorId, credential, transactionData: transactionDataAuthorization?.transactionData },
+          ],
         })
       }
     }

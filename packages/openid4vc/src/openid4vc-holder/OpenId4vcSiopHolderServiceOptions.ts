@@ -1,9 +1,19 @@
 import type { OpenId4VcJwtIssuer, OpenId4VcSiopVerifiedAuthorizationRequest } from '../shared'
 import type {
+  DcqlCredentialsForRequest,
+  DcqlQueryResult,
+  DcqlTransactionDataRequest,
   DifPexCredentialsForRequest,
   DifPexInputDescriptorToCredentials,
   DifPresentationExchangeDefinition,
+  EncodedX509Certificate,
+  TransactionDataRequest,
 } from '@credo-ts/core'
+
+export interface ResolveSiopAuthorizationRequestOptions {
+  trustedCertificates?: EncodedX509Certificate[]
+  origin?: string
+}
 
 export interface OpenId4VcSiopResolvedAuthorizationRequest {
   /**
@@ -13,6 +23,12 @@ export interface OpenId4VcSiopResolvedAuthorizationRequest {
   presentationExchange?: {
     definition: DifPresentationExchangeDefinition
     credentialsForRequest: DifPexCredentialsForRequest
+    transactionData?: TransactionDataRequest
+  }
+
+  dcql?: {
+    queryResult: DcqlQueryResult
+    transactionData?: DcqlTransactionDataRequest
   }
 
   /**
@@ -31,6 +47,14 @@ export interface OpenId4VcSiopAcceptAuthorizationRequestOptions {
   }
 
   /**
+   * Parameters related to Dcql. MUST be present when the resolved
+   * authorization request included a `dcql` parameter.
+   */
+  dcql?: {
+    credentials: DcqlCredentialsForRequest
+  }
+
+  /**
    * The issuer of the ID Token.
    *
    * REQUIRED when presentation exchange is not used.
@@ -44,4 +68,10 @@ export interface OpenId4VcSiopAcceptAuthorizationRequestOptions {
    * The verified authorization request.
    */
   authorizationRequest: OpenId4VcSiopVerifiedAuthorizationRequest
+
+  /**
+   * The origin of the verifier that is making the request.
+   * Required in combination with the DC Api
+   */
+  origin?: string
 }

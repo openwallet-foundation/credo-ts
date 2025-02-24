@@ -1,5 +1,5 @@
 import type { Express } from 'express'
-import type { ReplyFnContext, Body } from 'nock'
+import type { Body, ReplyFnContext } from 'nock'
 
 import nock, { cleanAll } from 'nock'
 import request from 'supertest'

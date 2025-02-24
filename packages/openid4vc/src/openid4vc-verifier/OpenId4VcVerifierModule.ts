@@ -3,7 +3,7 @@ import type { OpenId4VcVerificationRequest } from './router'
 import type { AgentContext, DependencyManager, Module } from '@credo-ts/core'
 import type { NextFunction } from 'express'
 
-import { setGlobalConfig } from '@animo-id/oauth2'
+import { setGlobalConfig } from '@openid4vc/oauth2'
 import { AgentConfig } from '@credo-ts/core'
 
 import { getAgentContextForActorId, getRequestContext, importExpress } from '../shared/router'

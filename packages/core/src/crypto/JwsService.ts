@@ -238,7 +238,7 @@ export class JwsService {
       jwkResolver,
       jws,
       payload,
-      trustedCertificates: trustedCertificatesFromOptions = [],
+      trustedCertificates: trustedCertificatesFromOptions = undefined,
     } = options
 
     if ([protectedHeader.jwk, protectedHeader.kid, protectedHeader.x5c].filter(Boolean).length > 1) {

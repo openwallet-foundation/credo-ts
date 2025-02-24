@@ -1,20 +1,53 @@
-import type { OpenId4VcVerificationSessionRecord } from './OpenId4VcVerificationSessionRecord'
 import type { AgentContext } from '@credo-ts/core'
-import type { AuthorizationRequestState, AuthorizationResponseState, IRPSessionManager } from '@sphereon/did-auth-siop'
+import type { OpenId4VcVerificationSessionRecord } from './OpenId4VcVerificationSessionRecord'
 
 import { CredoError } from '@credo-ts/core'
-import {
-  AuthorizationRequest,
-  AuthorizationRequestStateStatus,
-  AuthorizationResponse,
-  AuthorizationResponseStateStatus,
-} from '@sphereon/did-auth-siop'
 
 import { OpenId4VcVerificationSessionState } from '../OpenId4VcVerificationSessionState'
 
 import { OpenId4VcVerificationSessionRepository } from './OpenId4VcVerificationSessionRepository'
+import { parseOpenid4vpAuthorizationRequestPayload } from '@openid4vc/oid4vp'
+import { OpenId4VcSiopAuthorizationRequestPayload, OpenId4VcSiopAuthorizationResponsePayload } from '../../shared/index'
 
-export class OpenId4VcRelyingPartySessionManager implements IRPSessionManager {
+
+export interface AuthorizationRequestState {
+  correlationId?: string
+  request: OpenId4VcSiopAuthorizationRequestPayload
+  status: AuthorizationRequestStateStatus
+  timestamp: number
+  lastUpdated: number
+  error?: Error
+}
+
+export interface AuthorizationResponseState {
+  correlationId?: string
+  response: OpenId4VcSiopAuthorizationResponsePayload
+  status: AuthorizationResponseStateStatus
+  timestamp: number
+  lastUpdated: number
+  error?: Error
+}
+
+export enum AuthorizationRequestStateStatus {
+  CREATED = 'created',
+  SENT = 'sent',
+  RECEIVED = 'received',
+  VERIFIED = 'verified',
+  ERROR = 'error',
+}
+
+export enum AuthorizationResponseStateStatus {
+  CREATED = 'created',
+  SENT = 'sent',
+  RECEIVED = 'received',
+  VERIFIED = 'verified',
+  ERROR = 'error',
+}
+
+
+
+
+export class OpenId4VcRelyingPartySessionManager  {
   private openId4VcVerificationSessionRepository: OpenId4VcVerificationSessionRepository
 
   public constructor(private agentContext: AgentContext, private verifierId: string) {
@@ -148,13 +181,18 @@ export class OpenId4VcRelyingPartySessionManager implements IRPSessionManager {
     sessionRecord: OpenId4VcVerificationSessionRecord
   ): Promise<AuthorizationRequestState> {
     const lastUpdated = sessionRecord.updatedAt?.getTime() ?? sessionRecord.createdAt.getTime()
+    const parsed = parseOpenid4vpAuthorizationRequestPayload({requestPayload: sessionRecord.authorizationRequestJwt})
+    if (parsed.type === 'jar') {
+      throw new CredoError('Parsed authorization request jwt as jar request.')
+    }
+
     return {
       lastUpdated,
       timestamp: lastUpdated,
       correlationId: sessionRecord.id,
       // Not so nice that the session manager expects an error instance.....
       error: sessionRecord.errorMessage ? new Error(sessionRecord.errorMessage) : undefined,
-      request: await AuthorizationRequest.fromUriOrJwt(sessionRecord.authorizationRequestJwt),
+      request: parsed.params,
       status: sphereonAuthorizationRequestStateFromOpenId4VcVerificationState(sessionRecord.state),
     }
   }
@@ -177,7 +215,7 @@ export class OpenId4VcRelyingPartySessionManager implements IRPSessionManager {
       correlationId: sessionRecord.id,
       // Not so nice that the session manager expects an error instance.....
       error: sessionRecord.errorMessage ? new Error(sessionRecord.errorMessage) : undefined,
-      response: await AuthorizationResponse.fromPayload(sessionRecord.authorizationResponsePayload),
+      response: sessionRecord.authorizationResponsePayload,
       status: sphereonAuthorizationResponseStateFromOpenId4VcVerificationState(sessionRecord.state),
     }
   }
