@@ -113,8 +113,6 @@ export class OpenId4VcSiopVerifierService {
     // Correlation id will be the id of the verification session record
     const correlationId = utils.uuid()
 
-    const isDcApiRequest = options.responseMode === 'dc_api' || options.responseMode === 'dc_api.jwt'
-
     // No response url for DC API
     let authorizationResponseUrl = joinUriParts(this.config.baseUrl, [
       options.verifier.verifierId,
