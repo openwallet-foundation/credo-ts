@@ -1,9 +1,3 @@
-import type { AgentContext, JwaSignatureAlgorithm, KeyType } from '@credo-ts/core'
-import type {
-  OpenId4VciCredentialConfigurationSupported,
-  OpenId4VciCredentialIssuerMetadata,
-  OpenId4VciMetadata,
-} from '../shared'
 import type {
   OpenId4VciAcceptCredentialOfferOptions,
   OpenId4VciAuthCodeFlowOptions,
@@ -18,21 +12,13 @@ import type {
   OpenId4VciSupportedCredentialFormats,
   OpenId4VciTokenRequestOptions,
 } from './OpenId4VciHolderServiceOptions'
+import type {
+  OpenId4VciCredentialConfigurationSupported,
+  OpenId4VciCredentialIssuerMetadata,
+  OpenId4VciMetadata,
+} from '../shared'
+import type { AgentContext, JwaSignatureAlgorithm, KeyType } from '@credo-ts/core'
 
-import {
-  getAuthorizationServerMetadataFromList,
-  JwtSigner,
-  Oauth2Client,
-  preAuthorizedCodeGrantIdentifier,
-  RequestDpopOptions,
-} from '@openid4vc/oauth2'
-import {
-  AuthorizationFlow,
-  CredentialResponse,
-  IssuerMetadataResult,
-  Oid4vciClient,
-  Oid4vciRetrieveCredentialsError,
-} from '@openid4vc/oid4vci'
 import {
   CredoError,
   getJwkClassFromJwaSignatureAlgorithm,
@@ -53,6 +39,20 @@ import {
   W3cJsonLdVerifiableCredential,
   W3cJwtVerifiableCredential,
 } from '@credo-ts/core'
+import {
+  getAuthorizationServerMetadataFromList,
+  JwtSigner,
+  Oauth2Client,
+  preAuthorizedCodeGrantIdentifier,
+  RequestDpopOptions,
+} from '@openid4vc/oauth2'
+import {
+  AuthorizationFlow,
+  CredentialResponse,
+  IssuerMetadataResult,
+  Openid4vciClient,
+  Openid4vciRetrieveCredentialsError,
+} from '@openid4vc/openid4vci'
 
 import { OpenId4VciCredentialFormatProfile } from '../shared'
 import { getOid4vcCallbacks } from '../shared/callbacks'
@@ -132,7 +132,7 @@ export class OpenId4VciHolderService {
     if (authorizationResult.authorizationFlow === AuthorizationFlow.PresentationDuringIssuance) {
       return {
         authorizationFlow: AuthorizationFlow.PresentationDuringIssuance,
-        oid4vpRequestUrl: authorizationResult.oid4vpRequestUrl,
+        openid4vpRequestUrl: authorizationResult.openid4vpRequestUrl,
         authSession: authorizationResult.authSession,
       }
     }
@@ -383,7 +383,7 @@ export class OpenId4VciHolderService {
               : undefined,
           })
           .catch((e) => {
-            if (e instanceof Oid4vciRetrieveCredentialsError && e.response.credentialErrorResponseResult?.success) {
+            if (e instanceof Openid4vciRetrieveCredentialsError && e.response.credentialErrorResponseResult?.success) {
               cNonce = e.response.credentialErrorResponseResult.data.c_nonce
             }
           })
@@ -871,7 +871,7 @@ export class OpenId4VciHolderService {
   }
 
   private getClient(agentContext: AgentContext) {
-    return new Oid4vciClient({
+    return new Openid4vciClient({
       callbacks: getOid4vcCallbacks(agentContext),
     })
   }

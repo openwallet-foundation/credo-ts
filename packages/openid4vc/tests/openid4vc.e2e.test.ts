@@ -44,7 +44,7 @@ import {
   Oauth2AuthorizationServer,
   preAuthorizedCodeGrantIdentifier,
 } from '@openid4vc/oauth2'
-import { AuthorizationFlow } from '@openid4vc/oid4vci'
+import { AuthorizationFlow } from '@openid4vc/openid4vci'
 import express, { type Express } from 'express'
 
 import { AskarModule } from '../../askar/src'

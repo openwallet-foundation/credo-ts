@@ -60,13 +60,13 @@ import {
   isJarmResponseMode,
   isOpenid4vpAuthorizationResponseDcApi,
   JarmClientMetadata,
-  Oid4vcVerifier,
+  Openid4vpVerifier,
   ParsedOpenid4vpAuthorizationResponse,
   parseOpenid4vpAuthorizationRequestPayload,
   parseOpenid4vpAuthorizationResponse,
   VpTokenPresentationParseResult,
   zOpenid4vpAuthorizationResponse,
-} from '@openid4vc/oid4vp'
+} from '@openid4vc/openid4vp'
 
 import { getOid4vcCallbacks } from '../shared/callbacks'
 import { OpenId4VcSiopAuthorizationResponsePayload } from '../shared/index'
@@ -98,7 +98,7 @@ export class OpenId4VcSiopVerifierService {
 
   private getOpenid4vpVerifier(agentContext: AgentContext) {
     const callbacks = getOid4vcCallbacks(agentContext)
-    const openid4vpClient = new Oid4vcVerifier({ callbacks })
+    const openid4vpClient = new Openid4vpVerifier({ callbacks })
 
     return openid4vpClient
   }
@@ -190,34 +190,32 @@ export class OpenId4VcSiopVerifierService {
       authorizationResponseUrl,
     })
 
+    const requestParamsBase = {
+      client_id,
+      nonce,
+      presentation_definition: options.presentationExchange?.definition,
+      dcql_query: options.dcql?.query,
+      transaction_data,
+      response_mode: options.responseMode,
+      response_type: 'vp_token',
+      client_metadata,
+    } as const
+
     const openid4vpVerifier = this.getOpenid4vpVerifier(agentContext)
     const authorizationRequest = await openid4vpVerifier.createOpenId4vpAuthorizationRequest({
       jar: jwtIssuer ? { jwtSigner: jwtIssuer, requestUri: hostedAuthorizationRequestUri } : undefined,
       requestParams:
-        // !clientId is to make TS happy (it will only happen if isDcApiRequest is true)
-        options.responseMode === 'dc_api.jwt' || options.responseMode === 'dc_api'
+        requestParamsBase.response_mode === 'dc_api.jwt' || requestParamsBase.response_mode === 'dc_api'
           ? {
-              client_id,
-              nonce,
-              presentation_definition: options.presentationExchange?.definition as any,
-              dcql_query: options.dcql?.query,
-              transaction_data,
-              response_mode: options.responseMode,
-              response_type: 'vp_token',
-              client_metadata,
+              ...requestParamsBase,
+              response_mode: requestParamsBase.response_mode,
               expected_origins: options.expectedOrigins,
             }
           : {
+              ...requestParamsBase,
               client_id: clientId as string,
-              nonce,
               state,
-              presentation_definition: options.presentationExchange?.definition as any,
-              dcql_query: options.dcql?.query,
-              transaction_data,
               response_uri: authorizationResponseUrl,
-              response_mode: options.responseMode ?? 'direct_post',
-              response_type: 'vp_token',
-              client_metadata,
             },
     })
 

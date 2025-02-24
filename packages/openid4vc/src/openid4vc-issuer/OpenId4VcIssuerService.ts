@@ -1,9 +1,3 @@
-import type { AgentContext, Query, QueryOptions } from '@credo-ts/core'
-import type {
-  OpenId4VcCredentialHolderBindingWithKey,
-  OpenId4VciCredentialConfigurationsSupportedWithFormats,
-  OpenId4VciMetadata,
-} from '../shared'
 import type {
   OpenId4VciAuthorizationCodeFlowConfig,
   OpenId4VciCreateCredentialOfferOptions,
@@ -15,26 +9,13 @@ import type {
   OpenId4VciPreAuthorizedCodeFlowConfig,
   OpenId4VciSignW3cCredentials,
 } from './OpenId4VcIssuerServiceOptions'
+import type {
+  OpenId4VcCredentialHolderBindingWithKey,
+  OpenId4VciCredentialConfigurationsSupportedWithFormats,
+  OpenId4VciMetadata,
+} from '../shared'
+import type { AgentContext, Query, QueryOptions } from '@credo-ts/core'
 
-import {
-  AuthorizationServerMetadata,
-  JwtSigner,
-  Oauth2AuthorizationServer,
-  Oauth2Client,
-  Oauth2ErrorCodes,
-  Oauth2ResourceServer,
-  Oauth2ServerErrorResponseError,
-  PkceCodeChallengeMethod,
-  preAuthorizedCodeGrantIdentifier,
-} from '@openid4vc/oauth2'
-import {
-  CredentialIssuerMetadata,
-  CredentialRequestFormatSpecific,
-  extractScopesForCredentialConfigurationIds,
-  getCredentialConfigurationsMatchingRequestFormat,
-  Oid4vciDraftVersion,
-  Oid4vciIssuer,
-} from '@openid4vc/oid4vci'
 import {
   ClaimFormat,
   CredoError,
@@ -54,6 +35,25 @@ import {
   utils,
   W3cCredentialService,
 } from '@credo-ts/core'
+import {
+  AuthorizationServerMetadata,
+  JwtSigner,
+  Oauth2AuthorizationServer,
+  Oauth2Client,
+  Oauth2ErrorCodes,
+  Oauth2ResourceServer,
+  Oauth2ServerErrorResponseError,
+  PkceCodeChallengeMethod,
+  preAuthorizedCodeGrantIdentifier,
+} from '@openid4vc/oauth2'
+import {
+  CredentialIssuerMetadata,
+  CredentialRequestFormatSpecific,
+  extractScopesForCredentialConfigurationIds,
+  getCredentialConfigurationsMatchingRequestFormat,
+  Openid4vciDraftVersion,
+  Openid4vciIssuer,
+} from '@openid4vc/openid4vci'
 
 import { OpenId4VcVerifierApi } from '../openid4vc-verifier'
 import { OpenId4VciCredentialFormatProfile } from '../shared'
@@ -195,7 +195,8 @@ export class OpenId4VcIssuerService {
       credentialOfferUri: hostedCredentialOfferUri,
       credentialOfferScheme: options.baseUri,
       issuerMetadata: {
-        originalDraftVersion: version === 'v1.draft11-13' ? Oid4vciDraftVersion.Draft11 : Oid4vciDraftVersion.Draft14,
+        originalDraftVersion:
+          version === 'v1.draft11-13' ? Openid4vciDraftVersion.Draft11 : Openid4vciDraftVersion.Draft14,
         ...issuerMetadata,
       },
     })
@@ -566,7 +567,7 @@ export class OpenId4VcIssuerService {
   }
 
   public getIssuer(agentContext: AgentContext) {
-    return new Oid4vciIssuer({
+    return new Openid4vciIssuer({
       callbacks: getOid4vcCallbacks(agentContext),
     })
   }
@@ -639,7 +640,7 @@ export class OpenId4VcIssuerService {
     const { preAuthorizedCodeFlowConfig, authorizationCodeFlowConfig, issuerMetadata } = config
 
     // TOOD: export type
-    const grants: Parameters<Oid4vciIssuer['createCredentialOffer']>[0]['grants'] = {}
+    const grants: Parameters<Openid4vciIssuer['createCredentialOffer']>[0]['grants'] = {}
 
     // Pre auth
     if (preAuthorizedCodeFlowConfig) {

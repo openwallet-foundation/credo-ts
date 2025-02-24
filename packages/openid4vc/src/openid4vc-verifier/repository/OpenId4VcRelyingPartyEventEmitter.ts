@@ -15,7 +15,7 @@ import { EventEmitter as NativeEventEmitter } from 'events'
 import { OpenId4VcVerificationSessionState } from '../OpenId4VcVerificationSessionState'
 import { OpenId4VcVerifierEvents } from '../OpenId4VcVerifierEvents'
 
-import { isOpenid4vpAuthorizationResponseDcApi, Openid4vpAuthorizationResponse, Openid4vpAuthorizationResponseDcApi } from '@openid4vc/oid4vp'
+import { isOpenid4vpAuthorizationResponseDcApi, Openid4vpAuthorizationResponse, Openid4vpAuthorizationResponseDcApi } from '@openid4vc/openid4vp'
 import { OpenId4VcVerificationSessionRecord } from './OpenId4VcVerificationSessionRecord'
 import { OpenId4VcVerificationSessionRepository } from './OpenId4VcVerificationSessionRepository'
 import { OpenId4VcSiopAuthorizationRequestPayload } from '../../shared/index'

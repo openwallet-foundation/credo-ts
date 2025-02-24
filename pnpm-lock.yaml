@@ -7,10 +7,6 @@ settings:
 overrides:
   '@types/node': 18.18.8
   undici: ^6.20.1
-  '@openid4vc/oid4vci': file:./local/openid4vc-oid4vci-0.2.0.tgz
-  '@openid4vc/oid4vp': file:./local/openid4vc-oid4vp-0.1.4.tgz
-  '@openid4vc/oauth2': file:./local/openid4vc-oauth2-0.2.0.tgz
-  '@openid4vc/utils': file:./local/openid4vc-utils-0.2.0.tgz
 
 importers:
 
@@ -759,17 +755,14 @@ importers:
         specifier: workspace:*
         version: link:../core
       '@openid4vc/oauth2':
-        specifier: file:../../local/openid4vc-oauth2-0.2.0.tgz
-        version: file:local/openid4vc-oauth2-0.2.0.tgz
-      '@openid4vc/oid4vci':
-        specifier: file:../../local/openid4vc-oid4vci-0.2.0.tgz
-        version: file:local/openid4vc-oid4vci-0.2.0.tgz
-      '@openid4vc/oid4vp':
-        specifier: file:../../local/openid4vc-oid4vp-0.1.4.tgz
-        version: file:local/openid4vc-oid4vp-0.1.4.tgz
-      '@sphereon/ssi-types':
-        specifier: 0.30.2-next.135
-        version: 0.30.2-next.135
+        specifier: 0.3.0-alpha-20250224151429
+        version: 0.3.0-alpha-20250224151429
+      '@openid4vc/openid4vci':
+        specifier: 0.3.0-alpha-20250224151429
+        version: 0.3.0-alpha-20250224151429
+      '@openid4vc/openid4vp':
+        specifier: 0.3.0-alpha-20250224151429
+        version: 0.3.0-alpha-20250224151429
       class-transformer:
         specifier: ^0.5.1
         version: 0.5.1
@@ -2416,21 +2409,17 @@ packages:
   '@open-draft/until@2.1.0':
     resolution: {integrity: sha512-U69T3ItWHvLwGg5eJ0n3I62nWuE6ilHlmz7zM0npLBRvPRd7e6NYmg54vvRtP5mZG7kZqZCFVdsTWo7BPtBujg==}
 
-  '@openid4vc/oauth2@file:local/openid4vc-oauth2-0.2.0.tgz':
-    resolution: {integrity: sha512-n51ygKJD1ijgOjarkq8Xk0UuTfSPJjj/aX1L6bzrpHQAZGuiel7gew2Fgj7Z+mExWKSOViQ63iGaTI7G6yMcdQ==, tarball: file:local/openid4vc-oauth2-0.2.0.tgz}
-    version: 0.2.0
+  '@openid4vc/oauth2@0.3.0-alpha-20250224151429':
+    resolution: {integrity: sha512-xYPDytaexVyf1d1gy1z7nXI4vbGC2++v1IGMDLzD0UxTlewxVJmscVrUQQROzUJ4hBocPtfSIOEUJMukGZlnLw==}
 
-  '@openid4vc/oid4vci@file:local/openid4vc-oid4vci-0.2.0.tgz':
-    resolution: {integrity: sha512-OSgSaFMdwh6hEuUpCVrKiA5ost8xVXcHPJPQcr89WqLyqxtPmFAWsjfeiCL6ZhMZHTyjCEYzhYiwtSnrpakqfQ==, tarball: file:local/openid4vc-oid4vci-0.2.0.tgz}
-    version: 0.2.0
+  '@openid4vc/openid4vci@0.3.0-alpha-20250224151429':
+    resolution: {integrity: sha512-jjub+oHpYOOJewSEMhcUq8Ad7s9mn3sgjCMX86BSRZdLp+qHil/F4n73KYEypnilucmDBIdxwVduhNCeHdFD+Q==}
 
-  '@openid4vc/oid4vp@file:local/openid4vc-oid4vp-0.1.4.tgz':
-    resolution: {integrity: sha512-lMnAu5mH+ePmWVDXKp1swzoU8Vy0+7XOiGSBY+CPI0ogDAgxdbu7v17R4SSRyNxzItFpu72iKocak41TPBSREQ==, tarball: file:local/openid4vc-oid4vp-0.1.4.tgz}
-    version: 0.1.4
+  '@openid4vc/openid4vp@0.3.0-alpha-20250224151429':
+    resolution: {integrity: sha512-60TLBeY+B5NSGudnKpOTwn0wLn/hIGxc2BqReQ1p1dF3TkVYYY0Tjkc2y/VHKBeEnO5VX+6FU4xsKw5xuPZBPQ==}
 
-  '@openid4vc/utils@file:local/openid4vc-utils-0.2.0.tgz':
-    resolution: {integrity: sha512-59Gp7g+7PdtVier4CT3Jit3fzF+nebuNkFjpzFOtW0Y76tkXSRv9t4LNMHHKsskFylo+CEpg81TQFtd/SiTIWw==, tarball: file:local/openid4vc-utils-0.2.0.tgz}
-    version: 0.2.0
+  '@openid4vc/utils@0.3.0-alpha-20250224151429':
+    resolution: {integrity: sha512-Lxn0mcuk8X5f7w9+KC1KFD7DVtoZVlnUIyHEt8LQDZvcgiG8bcO4kV24C8UycnY1tklDd9Kq3LKG5jpO2BWxOQ==}
 
   '@openwallet-foundation/askar-nodejs@0.3.1':
     resolution: {integrity: sha512-m3L8KEPC+qgA3MAFssMtjSqJiAQtrawZEWPmW6eiB7OPjZvkKjodMhx/cuUV5YTl4eQlSix2EY4vXMzk4vt+cQ==}
@@ -9891,24 +9880,24 @@ snapshots:
 
   '@open-draft/until@2.1.0': {}
 
-  '@openid4vc/oauth2@file:local/openid4vc-oauth2-0.2.0.tgz':
+  '@openid4vc/oauth2@0.3.0-alpha-20250224151429':
     dependencies:
-      '@openid4vc/utils': file:local/openid4vc-utils-0.2.0.tgz
+      '@openid4vc/utils': 0.3.0-alpha-20250224151429
       zod: 3.24.1
 
-  '@openid4vc/oid4vci@file:local/openid4vc-oid4vci-0.2.0.tgz':
+  '@openid4vc/openid4vci@0.3.0-alpha-20250224151429':
     dependencies:
-      '@openid4vc/oauth2': file:local/openid4vc-oauth2-0.2.0.tgz
-      '@openid4vc/utils': file:local/openid4vc-utils-0.2.0.tgz
+      '@openid4vc/oauth2': 0.3.0-alpha-20250224151429
+      '@openid4vc/utils': 0.3.0-alpha-20250224151429
       zod: 3.24.1
 
-  '@openid4vc/oid4vp@file:local/openid4vc-oid4vp-0.1.4.tgz':
+  '@openid4vc/openid4vp@0.3.0-alpha-20250224151429':
     dependencies:
-      '@openid4vc/oauth2': file:local/openid4vc-oauth2-0.2.0.tgz
-      '@openid4vc/utils': file:local/openid4vc-utils-0.2.0.tgz
+      '@openid4vc/oauth2': 0.3.0-alpha-20250224151429
+      '@openid4vc/utils': 0.3.0-alpha-20250224151429
       zod: 3.24.1
 
-  '@openid4vc/utils@file:local/openid4vc-utils-0.2.0.tgz':
+  '@openid4vc/utils@0.3.0-alpha-20250224151429':
     dependencies:
       buffer: 6.0.3
       zod: 3.24.1

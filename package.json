@@ -68,14 +68,6 @@
     "undici": "^6.20.1",
     "ws": "^8.13.0"
   },
-  "pnpm": {
-    "overrides": {
-      "@openid4vc/oid4vci": "file:./local/openid4vc-oid4vci-0.2.0.tgz",
-      "@openid4vc/oid4vp": "file:./local/openid4vc-oid4vp-0.1.4.tgz",
-      "@openid4vc/oauth2": "file:./local/openid4vc-oauth2-0.2.0.tgz",
-      "@openid4vc/utils": "file:./local/openid4vc-utils-0.2.0.tgz"
-    }
-  },
   "resolutions": {
     "@types/node": "18.18.8",
     "undici": "^6.20.1"

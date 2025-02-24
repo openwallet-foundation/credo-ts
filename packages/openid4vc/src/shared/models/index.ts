@@ -11,17 +11,17 @@ import type {
   CredentialRequestWithFormats,
   IssuerMetadataResult,
   ParseCredentialRequestReturn,
-} from '@openid4vc/oid4vci'
+} from '@openid4vc/openid4vci'
 import type {
   Openid4vpAuthorizationResponse,
   Openid4vpAuthorizationResponseDcApi,
   ResolvedOpenid4vpAuthRequest,
   Openid4vpAuthorizationRequest,
   Openid4vpAuthorizationRequestDcApi,
-} from '@openid4vc/oid4vp'
+} from '@openid4vc/openid4vp'
 
 export { authorizationCodeGrantIdentifier, preAuthorizedCodeGrantIdentifier } from '@openid4vc/oauth2'
-export { Openid4vpAuthorizationRequest } from '@openid4vc/oid4vp'
+export { Openid4vpAuthorizationRequest } from '@openid4vc/openid4vp'
 
 export type OpenId4VciCredentialConfigurationSupportedWithFormats = CredentialConfigurationSupportedWithFormats
 export type OpenId4VciCredentialConfigurationSupported = CredentialConfigurationSupported

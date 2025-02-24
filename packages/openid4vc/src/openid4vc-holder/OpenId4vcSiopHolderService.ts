@@ -30,7 +30,7 @@ import {
   W3cJsonLdVerifiablePresentation,
   W3cJwtVerifiablePresentation,
 } from '@credo-ts/core'
-import { isJarmResponseMode, isOpenid4vpAuthorizationRequestDcApi, Oid4vpClient } from '@openid4vc/oid4vp'
+import { isJarmResponseMode, isOpenid4vpAuthorizationRequestDcApi, Openid4vpClient } from '@openid4vc/openid4vp'
 
 import { getOid4vcCallbacks } from '../shared/callbacks'
 import { openIdTokenIssuerToJwtIssuer } from '../shared/utils'
@@ -42,9 +42,9 @@ export class OpenId4VcSiopHolderService {
     private dcqlService: DcqlService
   ) {}
 
-  private getOid4vpClient(agentContext: AgentContext, trustedCertificates?: EncodedX509Certificate[]) {
+  private getOpenid4vpClient(agentContext: AgentContext, trustedCertificates?: EncodedX509Certificate[]) {
     const callbacks = getOid4vcCallbacks(agentContext, trustedCertificates)
-    return new Oid4vpClient({ callbacks })
+    return new Openid4vpClient({ callbacks })
   }
 
   private async handlePresentationExchangeRequest(
@@ -139,7 +139,7 @@ export class OpenId4VcSiopHolderService {
     request: string | Record<string, unknown>,
     options?: ResolveSiopAuthorizationRequestOptions
   ): Promise<OpenId4VcSiopResolvedAuthorizationRequest> {
-    const openid4vpClient = this.getOid4vpClient(agentContext, options?.trustedCertificates)
+    const openid4vpClient = this.getOpenid4vpClient(agentContext, options?.trustedCertificates)
     const { params } = openid4vpClient.parseOpenid4vpAuthorizationRequestPayload({ requestPayload: request })
     const verifiedAuthRequest = await openid4vpClient.resolveOpenId4vpAuthorizationRequest({
       request: params,
@@ -405,7 +405,7 @@ export class OpenId4VcSiopHolderService {
       vpToken = dcqlOptions.encodedVerifiablePresentations
     }
 
-    const openid4vpClient = this.getOid4vpClient(agentContext)
+    const openid4vpClient = this.getOpenid4vpClient(agentContext)
     const response = await openid4vpClient.createOpenid4vpAuthorizationResponse({
       requestParams: authorizationRequest.payload,
       responseParams: {

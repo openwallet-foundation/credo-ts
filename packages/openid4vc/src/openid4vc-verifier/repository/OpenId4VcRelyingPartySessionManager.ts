@@ -6,7 +6,7 @@ import { CredoError } from '@credo-ts/core'
 import { OpenId4VcVerificationSessionState } from '../OpenId4VcVerificationSessionState'
 
 import { OpenId4VcVerificationSessionRepository } from './OpenId4VcVerificationSessionRepository'
-import { parseOpenid4vpAuthorizationRequestPayload } from '@openid4vc/oid4vp'
+import { parseOpenid4vpAuthorizationRequestPayload } from '@openid4vc/openid4vp'
 import { OpenId4VcSiopAuthorizationRequestPayload, OpenId4VcSiopAuthorizationResponsePayload } from '../../shared/index'
 
 

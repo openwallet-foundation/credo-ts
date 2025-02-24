@@ -9,7 +9,7 @@ import {
   Oauth2ResourceUnauthorizedError,
   SupportedAuthenticationScheme,
 } from '@openid4vc/oauth2'
-import { getCredentialConfigurationsMatchingRequestFormat } from '@openid4vc/oid4vci'
+import { getCredentialConfigurationsMatchingRequestFormat } from '@openid4vc/openid4vci'
 import { joinUriParts } from '@credo-ts/core'
 
 import { getCredentialConfigurationsSupportedForScopes } from '../../shared'

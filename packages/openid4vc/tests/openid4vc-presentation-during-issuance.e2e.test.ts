@@ -6,8 +6,8 @@ import type {
 import type { OpenId4VciCredentialBindingResolver } from '../src/openid4vc-holder'
 import type { DcqlQuery, DifPresentationExchangeDefinitionV2, SdJwtVc, SdJwtVcIssuer } from '@credo-ts/core'
 
-import { AuthorizationFlow } from '@openid4vc/oid4vci'
 import { ClaimFormat, getJwkFromKey } from '@credo-ts/core'
+import { AuthorizationFlow } from '@openid4vc/openid4vci'
 import express, { type Express } from 'express'
 
 import { setupNockToExpress } from '../../../tests/nockToExpress'
@@ -294,7 +294,7 @@ describe('OpenId4Vc Presentation During Issuance', () => {
       throw new Error('Not supported')
     }
     const resolvedPresentationRequest = await holder.agent.modules.openId4VcHolder.resolveSiopAuthorizationRequest(
-      resolvedAuthorization.oid4vpRequestUrl
+      resolvedAuthorization.openid4vpRequestUrl
     )
     if (!resolvedPresentationRequest.presentationExchange) {
       throw new Error('Missing presentation exchange')
@@ -417,7 +417,7 @@ describe('OpenId4Vc Presentation During Issuance', () => {
       throw new Error('Not supported')
     }
     const resolvedPresentationRequest = await holder.agent.modules.openId4VcHolder.resolveSiopAuthorizationRequest(
-      resolvedAuthorization.oid4vpRequestUrl
+      resolvedAuthorization.openid4vpRequestUrl
     )
     if (!resolvedPresentationRequest.dcql) {
       throw new Error('Missing dcql')
@@ -537,7 +537,7 @@ describe('OpenId4Vc Presentation During Issuance', () => {
       throw new Error('Not supported')
     }
     const resolvedPresentationRequest = await holder.agent.modules.openId4VcHolder.resolveSiopAuthorizationRequest(
-      resolvedAuthorization.oid4vpRequestUrl
+      resolvedAuthorization.openid4vpRequestUrl
     )
     if (!resolvedPresentationRequest.presentationExchange) {
       throw new Error('Missing presentation exchange')

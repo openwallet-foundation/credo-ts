@@ -6,7 +6,7 @@ import type {
 import type { OpenId4VciBatchCredentialIssuanceOptions } from '../OpenId4VcIssuerServiceOptions'
 import type { JwaSignatureAlgorithm, RecordTags, TagsBase } from '@credo-ts/core'
 
-import { credentialsSupportedToCredentialConfigurationsSupported } from '@openid4vc/oid4vci'
+import { credentialsSupportedToCredentialConfigurationsSupported } from '@openid4vc/openid4vci'
 import { BaseRecord, utils } from '@credo-ts/core'
 import { Transform, TransformationType } from 'class-transformer'
 
