@@ -1,5 +1,94 @@
 # Changelog
 
+## 0.6.0
+
+### Minor Changes
+
+- 312a7b2: `createDeviceResponse` now returns bytes and not base64 encoded bytes
+- 297d209: - Rely on Uint8Array instead of Buffer for internal key bytes representation
+  - Remove dependency on external Big Number libraries
+  - Default to use of uncompressed keys for Secp256k1, Secp256r1, Secp384r1 and Secp521r1
+- bea846b: refactor: split async `getData` method on x509 certificate to sync `.data` getter and async `getThumbprint` method
+- dca4fdf: - X.509 self-signed certificate creation is now done via the `agent.x509.createCertificate` API where the `subjectPublicKey` is not supplied or equal to the `authorityKey`
+  - allow to create more complex X.509 certificates
+- 14673b1: Remove dependency on `abort-controller` library. Abort Controller has been supported on all platforms for quite some time already.
+- 5f08bc6: feat: allow dynamicaly providing x509 certificates for all types of verifications
+- 1a4182e: - Included `CRLDistributionPoints` as extension
+  - Access to extensions and adding them made easier
+- 70c849d: update target for tsc compiler to ES2020. Generally this should not have an impact for the supported environments (Node.JS / React Native). However this will have to be tested in React Native
+- 897c834: DIDComm has been extracted out of the Core. This means that now all DIDComm related modules (e.g. proofs, credentials) must be explicitly added when creating an `Agent` instance. Therefore, their API will be accesable under `agent.modules.[moduleAPI]` instead of `agent.[moduleAPI]`. Some `Agent` DIDComm-related properties and methods where also moved to the API of a new DIDComm module (e.g. `agent.registerInboundTransport` turned into `agent.modules.didcomm.registerInboundTransport`).
+
+  **Example of DIDComm Agent**
+
+  Previously:
+
+  ```ts
+       const config = {
+        label: name,
+        endpoints: ['https://myendpoint'],
+        walletConfig: {
+          id: name,
+          key: name,
+        },
+      } satisfies InitConfig
+
+      const agent = new Agent({
+        config,
+        dependencies: agentDependencies,
+        modules: {
+          connections: new ConnectionsModule({
+             autoAcceptConnections: true,
+          })
+        })
+      this.agent.registerInboundTransport(new HttpInboundTransport({ port }))
+      this.agent.registerOutboundTransport(new HttpOutboundTransport())
+
+  ```
+
+  Now:
+
+  ```ts
+       const config = {
+        label: name,
+        walletConfig: {
+          id: name,
+          key: name,
+        },
+      } satisfies InitConfig
+
+      const agent = new Agent({
+        config,
+        dependencies: agentDependencies,
+        modules: {
+          ...getDefaultDidcommModules({ endpoints: ['https://myendpoint'] }),
+          connections: new ConnectionsModule({
+             autoAcceptConnections: true,
+          })
+        })
+      agent.modules.didcomm.registerInboundTransport(new HttpInboundTransport({ port }))
+      agent.modules.didcomm.registerOutboundTransport(new HttpOutboundTransport())
+  ```
+
+- 27f971d: feat: support ISO 18013-7 Draft 2024-03-12.
+
+  This mostly changes the structure of the calculated session transcript bytes for usage with OpenID4VP. This is a breaking change and incompatible with older versions.
+
+### Patch Changes
+
+- 2d10ec3: fix: presentation exchange handling when multiple mdocs in presentation definition
+- 6d83136: fix: support verification of certificate chain where the root certificate is not included in the certificate chain but present in the trusted certificates
+- 11827cc: allow kid (when not a did) to be combined with x5c/jwk header params in JWT/JWS. This is a pattern commonly used and breaks interop with Credo.
+- 297d209: - Remove usage of Big Number libraries and rely on native implementations
+  - By default rely on uncompressed keys instead of compressed (for P256, P384, P521 and K256)
+  - Utilze Uint8Array more instead of Buffer (i.e. for internally representing a key)
+- 13cd8cb: feat: support node 22
+- 607659a: feat: fetch sd-jwt type metadata
+- 27f971d: feat: support EdDSA, P384 and P512 for mdoc holder binding
+- 2d10ec3: fix: issue where all available credentials were selected for queried DIF PEX definition. Now it only selects `needsCount` credentials, so it won't disclose more credentials than neccesary.
+- a53fc54: feat: support A128CBC-HS256 encryption algorithm for JWE
+- edd2edc: feat(mdoc): support creating device response with multiple mdocs for usage in proximity flow
+- e80794b: fix: error during shutdown of agent in React Native due to usage of unavailable event method on socket `.once`
+
 ## 0.5.13
 
 ### Patch Changes
