@@ -1,15 +1,18 @@
+import type { OpenId4VcIssuerRecord } from '../openid4vc-issuer/repository'
+import type { AgentContext } from '@credo-ts/core'
 import type {
   CallbackContext,
   ClientAuthenticationCallback,
   SignJwtCallback,
   VerifyJwtCallback,
+  DecryptJweCallback,
+  EncryptJweCallback,
 } from '@openid4vc/oauth2'
-import type { AgentContext } from '@credo-ts/core'
-import { Buffer, Key, TypedArrayEncoder } from '@credo-ts/core'
-import type { OpenId4VcIssuerRecord } from '../openid4vc-issuer/repository'
 
-import { clientAuthenticationDynamic, clientAuthenticationNone } from '@openid4vc/oauth2'
 import {
+  Buffer,
+  Key,
+  TypedArrayEncoder,
   CredoError,
   getJwkFromJson,
   getJwkFromKey,
@@ -20,11 +23,11 @@ import {
   KeyType,
   X509Service,
 } from '@credo-ts/core'
+import { clientAuthenticationDynamic, clientAuthenticationNone } from '@openid4vc/oauth2'
 
-import { DecryptJweCallback, EncryptJweCallback } from '@openid4vc/oauth2'
 import { getKeyFromDid } from './utils'
 
-export function getOid4vciJwtVerifyCallback(
+export function getOid4vcJwtVerifyCallback(
   agentContext: AgentContext,
   trustedCertificates?: string[]
 ): VerifyJwtCallback {
@@ -61,23 +64,25 @@ export function getOid4vciJwtVerifyCallback(
   }
 }
 
-export function getOid4vciEncryptJwtCallback(agentContext: AgentContext): EncryptJweCallback {
-  return async (jwtEncryptor, compact) => {
-    if (jwtEncryptor.method !== 'jwk') {
+export function getOid4vcEncryptJweCallback(agentContext: AgentContext): EncryptJweCallback {
+  return async (jweEncryptor, compact) => {
+    if (jweEncryptor.method !== 'jwk') {
       throw new CredoError(
-        `Jwt encryption method '${jwtEncryptor.method}' is not supported for jwt signer. Only 'jwk' is supported.`
+        `Jwt encryption method '${jweEncryptor.method}' is not supported for jwt signer. Only 'jwk' is supported.`
       )
     }
 
-    const jwk = getJwkFromJson(jwtEncryptor.publicJwk)
+    const jwk = getJwkFromJson(jweEncryptor.publicJwk)
     const key = jwk.key
 
-    if (jwtEncryptor.alg !== 'ECDH-ES') {
+    if (jweEncryptor.alg !== 'ECDH-ES') {
       throw new CredoError("Only 'ECDH-ES' is supported as 'alg' value for JARM response encryption")
     }
 
-    if (jwtEncryptor.enc !== 'A256GCM') {
-      throw new CredoError("Only 'A256GCM' is supported as 'enc' value for JARM response encryption")
+    if (jweEncryptor.enc !== 'A256GCM' && jweEncryptor.enc !== 'A128GCM' && jweEncryptor.enc !== 'A128CBC-HS256') {
+      throw new CredoError(
+        "Only 'A256GCM', 'A128GCM', and 'A128CBC-HS256' is supported as 'enc' value for JARM response encryption"
+      )
     }
 
     if (key.keyType !== KeyType.P256) {
@@ -93,17 +98,17 @@ export function getOid4vciEncryptJwtCallback(agentContext: AgentContext): Encryp
     const jwe = await agentContext.wallet.directEncryptCompactJweEcdhEs({
       data: Buffer.from(compact),
       recipientKey: key,
-      header: { kid: jwtEncryptor.publicJwk.kid },
-      encryptionAlgorithm: jwtEncryptor.enc,
-      apu: jwtEncryptor.apu ? TypedArrayEncoder.toBase64URL(TypedArrayEncoder.fromString(jwtEncryptor.apu)) : undefined,
-      apv: jwtEncryptor.apv ? TypedArrayEncoder.toBase64URL(TypedArrayEncoder.fromString(jwtEncryptor.apv)) : undefined,
+      header: { kid: jweEncryptor.publicJwk.kid },
+      encryptionAlgorithm: jweEncryptor.enc,
+      apu: jweEncryptor.apu ? TypedArrayEncoder.toBase64URL(TypedArrayEncoder.fromString(jweEncryptor.apu)) : undefined,
+      apv: jweEncryptor.apv ? TypedArrayEncoder.toBase64URL(TypedArrayEncoder.fromString(jweEncryptor.apv)) : undefined,
     })
 
-    return { encryptionJwk: jwtEncryptor.publicJwk, jwe }
+    return { encryptionJwk: jweEncryptor.publicJwk, jwe }
   }
 }
 
-export function getOid4vciDecryptJweCallback(agentContext: AgentContext): DecryptJweCallback {
+export function getOid4vcDecryptJweCallback(agentContext: AgentContext): DecryptJweCallback {
   return async (jwe, options) => {
     const [header] = jwe.split('.')
     const decodedHeader = JsonEncoder.fromBase64(header)
@@ -136,7 +141,7 @@ export function getOid4vciDecryptJweCallback(agentContext: AgentContext): Decryp
   }
 }
 
-export function getOid4vciJwtSignCallback(agentContext: AgentContext): SignJwtCallback {
+export function getOid4vcJwtSignCallback(agentContext: AgentContext): SignJwtCallback {
   const jwsService = agentContext.dependencyManager.resolve(JwsService)
 
   return async (signer, { payload, header }) => {
@@ -181,12 +186,12 @@ export function getOid4vcCallbacks(agentContext: AgentContext, trustedCertificat
   return {
     hash: (data, alg) => Hasher.hash(data, alg.toLowerCase()),
     generateRandom: (length) => agentContext.wallet.getRandomValues(length),
-    signJwt: getOid4vciJwtSignCallback(agentContext),
+    signJwt: getOid4vcJwtSignCallback(agentContext),
     clientAuthentication: clientAuthenticationNone(),
-    verifyJwt: getOid4vciJwtVerifyCallback(agentContext, trustedCertificates),
+    verifyJwt: getOid4vcJwtVerifyCallback(agentContext, trustedCertificates),
     fetch: agentContext.config.agentDependencies.fetch,
-    encryptJwe: getOid4vciEncryptJwtCallback(agentContext),
-    decryptJwe: getOid4vciDecryptJweCallback(agentContext),
+    encryptJwe: getOid4vcEncryptJweCallback(agentContext),
+    decryptJwe: getOid4vcDecryptJweCallback(agentContext),
   } satisfies Partial<CallbackContext>
 }
 

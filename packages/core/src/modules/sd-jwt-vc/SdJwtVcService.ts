@@ -1,7 +1,3 @@
-import type { SDJwt } from '@sd-jwt/core'
-import type { DisclosureFrame, PresentationFrame, Signer, Verifier } from '@sd-jwt/types'
-import type { JwkJson, Key } from '../../crypto'
-import type { Query, QueryOptions } from '../../storage/StorageService'
 import type {
   SdJwtVcHeader,
   SdJwtVcHolderBinding,
@@ -11,7 +7,13 @@ import type {
   SdJwtVcSignOptions,
   SdJwtVcVerifyOptions,
 } from './SdJwtVcOptions'
+import type { JwkJson, Key } from '../../crypto'
+import type { Query, QueryOptions } from '../../storage/StorageService'
+import type { SDJwt } from '@sd-jwt/core'
+import type { DisclosureFrame, PresentationFrame, Signer, Verifier } from '@sd-jwt/types'
 
+import { decodeSdJwtSync } from '@sd-jwt/decode'
+import { selectDisclosures } from '@sd-jwt/present'
 import { SDJwtVcInstance } from '@sd-jwt/sd-jwt-vc'
 import { uint8ArrayToBase64Url } from '@sd-jwt/utils'
 import { injectable } from 'tsyringe'
@@ -20,22 +22,20 @@ import { AgentContext } from '../../agent'
 import { Hasher, Jwk, JwtPayload, getJwkFromJson, getJwkFromKey } from '../../crypto'
 import { CredoError } from '../../error'
 import { X509Service } from '../../modules/x509/X509Service'
-import { JsonEncoder, TypedArrayEncoder, nowInSeconds } from '../../utils'
+import { JsonObject } from '../../types'
+import { TypedArrayEncoder, nowInSeconds } from '../../utils'
 import { getDomainFromUrl } from '../../utils/domain'
 import { fetchWithTimeout } from '../../utils/fetch'
 import { DidResolverService, getKeyFromVerificationMethod, parseDid } from '../dids'
+import { ClaimFormat } from '../vc/index'
 import { EncodedX509Certificate, X509Certificate, X509ModuleConfig } from '../x509'
 
 import { SdJwtVcError } from './SdJwtVcError'
+import { getTransactionDataHashes, getTransactionDataVerifierMetadata } from './SdJwtVcTransactionData'
 import { decodeSdJwtVc, sdJwtVcHasher } from './decodeSdJwtVc'
+import { buildDisclosureFrameForPayload } from './disclosureFrame'
 import { SdJwtVcRecord, SdJwtVcRepository } from './repository'
 import { SdJwtVcTypeMetadata } from './typeMetadata'
-import { ClaimFormat } from '../vc/index'
-import { decodeSdJwtSync } from '@sd-jwt/decode'
-import { buildDisclosureFrameForPayload } from './disclosureFrame'
-import { selectDisclosures } from '@sd-jwt/present'
-import { JsonObject } from '../../types'
-import { getTransactionDataHashes, getTransactionDataVerifierMetadata } from './SdJwtVcTransactionData'
 
 type SdJwtVcConfig = SDJwtVcInstance['userConfig']
 

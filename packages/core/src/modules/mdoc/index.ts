@@ -1,5 +1,3 @@
-export { DateOnly } from '@animo-id/mdoc'
-
 export * from './MdocApi'
 export * from './MdocModule'
 export * from './MdocService'

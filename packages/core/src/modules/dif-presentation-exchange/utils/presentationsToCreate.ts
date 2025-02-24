@@ -1,10 +1,10 @@
-import { SdJwtVcRecord } from '../../sd-jwt-vc'
 import type { DifPexInputDescriptorToCredentials, TransactionData } from '../models'
+import type { TransactionDataAuthorization } from '../models/TransactionData'
 
 import { CredoError } from '../../../error/CredoError'
 import { MdocRecord } from '../../mdoc'
+import { SdJwtVcRecord } from '../../sd-jwt-vc'
 import { ClaimFormat, W3cCredentialRecord } from '../../vc'
-import { TransactionDataAuthorization } from '../models/TransactionData'
 
 //  - the credentials included in the presentation
 export interface SdJwtVcPresentationToCreate {

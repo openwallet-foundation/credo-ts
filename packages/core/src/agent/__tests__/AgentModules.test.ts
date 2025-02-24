@@ -1,6 +1,7 @@
 import type { Module } from '../../plugins'
-import { DcqlModule } from '../../modules/dcql'
+
 import { CacheModule } from '../../modules/cache'
+import { DcqlModule } from '../../modules/dcql'
 import { DidsModule } from '../../modules/dids'
 import { DifPresentationExchangeModule } from '../../modules/dif-presentation-exchange'
 import { GenericRecordsModule } from '../../modules/generic-records'

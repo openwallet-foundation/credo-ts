@@ -1,4 +1,5 @@
 import type { DependencyManager } from '../../../plugins'
+
 import { DcqlModule } from '../DcqlModule'
 import { DcqlService } from '../DcqlService'
 

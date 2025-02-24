@@ -1,9 +1,11 @@
+import type { SdJwtVc } from './SdJwtVcService'
+import type { TransactionData } from '../dif-presentation-exchange/index'
+
 import { Hasher } from '../../crypto/index'
 import { JsonEncoder } from '../../utils/JsonEncoder'
 import { TypedArrayEncoder } from '../../utils/TypedArrayEncoder'
-import { TransactionData } from '../dif-presentation-exchange/index'
+
 import { SdJwtVcError } from './SdJwtVcError'
-import { SdJwtVc } from './SdJwtVcService'
 
 export function getTransactionDataHashes(
   kbJwtPayload: Record<string, unknown> & {

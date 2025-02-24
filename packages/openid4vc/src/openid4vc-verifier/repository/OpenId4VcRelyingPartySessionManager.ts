@@ -1,14 +1,16 @@
-import type { AgentContext } from '@credo-ts/core'
 import type { OpenId4VcVerificationSessionRecord } from './OpenId4VcVerificationSessionRecord'
+import type {
+  OpenId4VcSiopAuthorizationRequestPayload,
+  OpenId4VcSiopAuthorizationResponsePayload,
+} from '../../shared/index'
+import type { AgentContext } from '@credo-ts/core'
 
 import { CredoError } from '@credo-ts/core'
+import { parseOpenid4vpAuthorizationRequestPayload } from '@openid4vc/openid4vp'
 
 import { OpenId4VcVerificationSessionState } from '../OpenId4VcVerificationSessionState'
 
 import { OpenId4VcVerificationSessionRepository } from './OpenId4VcVerificationSessionRepository'
-import { parseOpenid4vpAuthorizationRequestPayload } from '@openid4vc/openid4vp'
-import { OpenId4VcSiopAuthorizationRequestPayload, OpenId4VcSiopAuthorizationResponsePayload } from '../../shared/index'
-
 
 export interface AuthorizationRequestState {
   correlationId?: string
@@ -44,10 +46,7 @@ export enum AuthorizationResponseStateStatus {
   ERROR = 'error',
 }
 
-
-
-
-export class OpenId4VcRelyingPartySessionManager  {
+export class OpenId4VcRelyingPartySessionManager {
   private openId4VcVerificationSessionRepository: OpenId4VcVerificationSessionRepository
 
   public constructor(private agentContext: AgentContext, private verifierId: string) {
@@ -181,7 +180,7 @@ export class OpenId4VcRelyingPartySessionManager  {
     sessionRecord: OpenId4VcVerificationSessionRecord
   ): Promise<AuthorizationRequestState> {
     const lastUpdated = sessionRecord.updatedAt?.getTime() ?? sessionRecord.createdAt.getTime()
-    const parsed = parseOpenid4vpAuthorizationRequestPayload({requestPayload: sessionRecord.authorizationRequestJwt})
+    const parsed = parseOpenid4vpAuthorizationRequestPayload({ requestPayload: sessionRecord.authorizationRequestJwt })
     if (parsed.type === 'jar') {
       throw new CredoError('Parsed authorization request jwt as jar request.')
     }

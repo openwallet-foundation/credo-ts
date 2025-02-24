@@ -1,11 +1,12 @@
 import type { SdJwtVcHeader, SdJwtVcPayload } from './SdJwtVcOptions'
+import type { SdJwtVc } from './SdJwtVcService'
 import type { SdJwtVcTypeMetadata } from './typeMetadata'
 
 import { decodeSdJwtSync, getClaimsSync } from '@sd-jwt/decode'
 
 import { Hasher } from '../../crypto'
 import { ClaimFormat } from '../vc/index'
-import { SdJwtVc } from './SdJwtVcService'
+
 import { getTransactionDataHashes } from './SdJwtVcTransactionData'
 
 export function sdJwtVcHasher(data: string | ArrayBufferLike, alg: string) {

@@ -15,7 +15,6 @@ import type {
   OpenId4VciTxCode,
 } from '../shared'
 import type { OpenId4VciAuthorizationServerConfig } from '../shared/models/OpenId4VciAuthorizationServerConfig'
-import type { AccessTokenProfileJwtPayload, TokenIntrospectionResponse } from '@openid4vc/oauth2'
 import type {
   AgentContext,
   ClaimFormat,
@@ -25,6 +24,7 @@ import type {
   MdocSignOptions,
   KeyType,
 } from '@credo-ts/core'
+import type { AccessTokenProfileJwtPayload, TokenIntrospectionResponse } from '@openid4vc/oauth2'
 
 export interface OpenId4VciCredentialRequestAuthorization {
   authorizationServer: string

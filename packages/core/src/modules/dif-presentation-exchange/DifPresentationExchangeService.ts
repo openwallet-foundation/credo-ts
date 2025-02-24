@@ -5,7 +5,6 @@ import type {
   DifPresentationExchangeDefinitionV1,
   DifPresentationExchangeDefinitionV2,
   DifPresentationExchangeSubmission,
-  TransactionDataRequest,
   VerifiablePresentation,
 } from './models'
 import type { PresentationToCreate } from './utils'
@@ -13,7 +12,7 @@ import type { AgentContext } from '../../agent'
 import type { Query } from '../../storage/StorageService'
 import type { VerificationMethod } from '../dids'
 import type { SdJwtVcRecord } from '../sd-jwt-vc'
-import type { W3cCredentialRecord, W3cJsonLdVerifiablePresentation } from '../vc'
+import type { W3cCredentialRecord, W3cJsonPresentation } from '../vc'
 import type { IAnonCredsDataIntegrityService } from '../vc/data-integrity/models/IAnonCredsDataIntegrityService'
 import type { PresentationSignCallBackParams, Validated, VerifiablePresentationResult } from '@animo-id/pex'
 import type { InputDescriptorV2 } from '@sphereon/pex-models'
@@ -85,8 +84,7 @@ export class DifPresentationExchangeService {
    * Use this method if you don't want to manually select the credentials yourself.
    */
   public selectCredentialsForRequest(
-    credentialsForRequest: DifPexCredentialsForRequest,
-    transactionData?: TransactionDataRequest
+    credentialsForRequest: DifPexCredentialsForRequest
   ): DifPexInputDescriptorToCredentials {
     if (!credentialsForRequest.areRequirementsSatisfied) {
       throw new CredoError('Could not find the required credentials for the presentation submission')
@@ -316,7 +314,7 @@ export class DifPresentationExchangeService {
         (resultWithFormat) =>
           resultWithFormat.verifiablePresentationResult.verifiablePresentations as unknown as (
             | string
-            | W3cJsonLdVerifiablePresentation
+            | W3cJsonPresentation
           )[]
       ),
       presentationSubmission,

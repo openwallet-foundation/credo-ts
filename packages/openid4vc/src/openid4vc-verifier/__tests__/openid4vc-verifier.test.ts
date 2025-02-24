@@ -65,6 +65,5 @@ describe('OpenId4VcVerifier', () => {
       expect(jwt.payload.additionalClaims.state).toBeDefined()
       expect(jwt.payload.additionalClaims.response_type).toEqual('vp_token')
     })
-
   })
 })

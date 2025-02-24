@@ -1,7 +1,7 @@
-import { MdocRecord } from '../../mdoc/index'
-import { SdJwtVcRecord } from '../../sd-jwt-vc/index'
-import { W3cCredentialRecord } from '../../vc/index'
-import { DifPexCredentialsForRequestSubmissionEntry } from './DifPexCredentialsForRequest'
+import type { DifPexCredentialsForRequestSubmissionEntry } from './DifPexCredentialsForRequest'
+import type { MdocRecord } from '../../mdoc/index'
+import type { SdJwtVcRecord } from '../../sd-jwt-vc/index'
+import type { W3cCredentialRecord } from '../../vc/index'
 
 export type TransactionDataEntry = {
   type: string

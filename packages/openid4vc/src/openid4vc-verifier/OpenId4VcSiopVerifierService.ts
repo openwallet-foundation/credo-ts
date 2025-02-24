@@ -71,7 +71,7 @@ import {
 import { getOid4vcCallbacks } from '../shared/callbacks'
 import { OpenId4VcSiopAuthorizationResponsePayload } from '../shared/index'
 import { storeActorIdForContextCorrelationId } from '../shared/router'
-import { getSupportedJwaSignatureAlgorithms, openIdTokenIssuerToJwtIssuer, parseIfJson } from '../shared/utils'
+import { getSupportedJwaSignatureAlgorithms, requestSignerToJwtIssuer, parseIfJson } from '../shared/utils'
 
 import { OpenId4VcVerificationSessionState } from './OpenId4VcVerificationSessionState'
 import { OpenId4VcVerifierModuleConfig } from './OpenId4VcVerifierModuleConfig'
@@ -120,14 +120,14 @@ export class OpenId4VcSiopVerifierService {
     ])
 
     const jwtIssuer =
-      options.requestSigner.method === 'x5c'
-        ? await openIdTokenIssuerToJwtIssuer(agentContext, {
+      options.requestSigner.method === 'none'
+        ? undefined
+        : options.requestSigner.method === 'x5c'
+        ? await requestSignerToJwtIssuer(agentContext, {
             ...options.requestSigner,
             issuer: authorizationResponseUrl,
           })
-        : options.requestSigner.method === 'none'
-        ? undefined
-        : await openIdTokenIssuerToJwtIssuer(agentContext, options.requestSigner)
+        : await requestSignerToJwtIssuer(agentContext, options.requestSigner)
 
     let clientIdScheme: ClientIdScheme
     let clientId: string | undefined

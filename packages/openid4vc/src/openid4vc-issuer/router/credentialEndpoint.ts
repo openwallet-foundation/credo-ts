@@ -3,6 +3,7 @@ import type { OpenId4VcIssuerModuleConfig } from '../OpenId4VcIssuerModuleConfig
 import type { HttpMethod } from '@openid4vc/oauth2'
 import type { Router, Response } from 'express'
 
+import { joinUriParts } from '@credo-ts/core'
 import {
   Oauth2ErrorCodes,
   Oauth2ServerErrorResponseError,
@@ -10,7 +11,6 @@ import {
   SupportedAuthenticationScheme,
 } from '@openid4vc/oauth2'
 import { getCredentialConfigurationsMatchingRequestFormat } from '@openid4vc/openid4vci'
-import { joinUriParts } from '@credo-ts/core'
 
 import { getCredentialConfigurationsSupportedForScopes } from '../../shared'
 import {

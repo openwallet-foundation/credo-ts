@@ -1,5 +1,6 @@
 import type { MdocSignOptions, MdocNameSpaces, MdocVerifyOptions } from './MdocOptions'
 import type { AgentContext } from '../../agent'
+import type { JwkJson, Key } from '../../crypto'
 import type { IssuerSignedDocument } from '@animo-id/mdoc'
 
 import {
@@ -12,14 +13,14 @@ import {
   parseIssuerSigned,
 } from '@animo-id/mdoc'
 
-import { getJwkFromJson, getJwkFromKey, JwaSignatureAlgorithm, JwkJson, Key } from '../../crypto'
+import { getJwkFromJson, getJwkFromKey, JwaSignatureAlgorithm } from '../../crypto'
+import { ClaimFormat } from '../vc/index'
 import { X509Certificate, X509ModuleConfig } from '../x509'
 
 import { TypedArrayEncoder } from './../../utils'
 import { getMdocContext } from './MdocContext'
 import { MdocError } from './MdocError'
 import { isMdocSupportedSignatureAlgorithm, mdocSupporteSignatureAlgorithms } from './mdocSupportedAlgs'
-import { ClaimFormat } from '../vc/index'
 
 /**
  * This class represents a IssuerSigned Mdoc Document,

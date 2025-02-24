@@ -1,4 +1,4 @@
-import type { OpenId4VcJwtIssuer, OpenId4VcSiopVerifiedAuthorizationRequest } from '../shared'
+import type { OpenId4VcSiopVerifiedAuthorizationRequest } from '../shared'
 import type {
   DcqlCredentialsForRequest,
   DcqlQueryResult,
@@ -53,16 +53,6 @@ export interface OpenId4VcSiopAcceptAuthorizationRequestOptions {
   dcql?: {
     credentials: DcqlCredentialsForRequest
   }
-
-  /**
-   * The issuer of the ID Token.
-   *
-   * REQUIRED when presentation exchange is not used.
-   *
-   * In case presentation exchange is used, and `openIdTokenIssuer` is not provided, the issuer of the ID Token
-   * will be extracted from the signer of the first verifiable presentation.
-   */
-  openIdTokenIssuer?: OpenId4VcJwtIssuer
 
   /**
    * The verified authorization request.

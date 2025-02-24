@@ -1,5 +1,5 @@
 import type { OpenId4VcVerificationSessionRecord, OpenId4VcVerifierRecordProps } from './repository'
-import type { OpenId4VcIssuerX5c, OpenId4VcJwtIssuer, OpenId4VcSiopAuthorizationResponsePayload } from '../shared'
+import type { OpenId4VcJwtIssuer, OpenId4VcJwtIssuerJwk, OpenId4VcSiopAuthorizationResponsePayload } from '../shared'
 import type {
   DcqlPresentation,
   DcqlPresentationResult,
@@ -18,12 +18,9 @@ export interface OpenId4VcSiopCreateAuthorizationRequestOptions {
   /**
    * Signing information for the request JWT. This will be used to sign the request JWT
    * and to set the client_id and client_id_scheme for registration of client_metadata.
-   *
-   * For x5c signer's the issuer value can be omitted as it can be derived from the authorization response endpoint.
    */
   requestSigner:
-    | Exclude<OpenId4VcJwtIssuer, OpenId4VcIssuerX5c>
-    | (Omit<OpenId4VcIssuerX5c, 'issuer'> & { issuer?: string })
+    | Exclude<OpenId4VcJwtIssuer, OpenId4VcJwtIssuerJwk>
     | {
         /**
          * Do not sign the request. Only available for DC API
@@ -32,16 +29,11 @@ export interface OpenId4VcSiopCreateAuthorizationRequestOptions {
       }
 
   /**
-   * Whether to reuqest an ID Token. Enabled by defualt when `presentationExchange` is not provided,
-   * disabled by default when `presentationExchange` is provided.
-   */
-  idToken?: boolean
-
-  /**
    * A DIF Presentation Definition (v2) can be provided to request a Verifiable Presentation using OpenID4VP.
    */
   presentationExchange?: {
     definition: DifPresentationExchangeDefinitionV2
+    // TODO: mvoe transactino data out of the presentationExchange/dcql objects to top level
     transactionData?: TransactionData
   }
 
@@ -94,9 +86,6 @@ export interface OpenId4VcSiopVerifiedAuthorizationResponseDcql {
   presentationResult: DcqlPresentationResult
 }
 
-/**
- * Either `idToken` and/or `presentationExchange` will be present.
- */
 export interface OpenId4VcSiopVerifiedAuthorizationResponse {
   presentationExchange?: OpenId4VcSiopVerifiedAuthorizationResponsePresentationExchange
   dcql?: OpenId4VcSiopVerifiedAuthorizationResponseDcql

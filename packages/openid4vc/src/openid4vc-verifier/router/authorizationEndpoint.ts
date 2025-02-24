@@ -1,5 +1,5 @@
-import type { Response, Router } from 'express'
 import type { OpenId4VcVerificationRequest } from './requestContext'
+import type { Response, Router } from 'express'
 
 import { Oauth2ServerErrorResponseError } from '@openid4vc/oauth2'
 
@@ -24,7 +24,7 @@ export function configureAuthorizationEndpoint(router: Router, config: OpenId4Vc
       const openId4VcVerifierService = agentContext.dependencyManager.resolve(OpenId4VcSiopVerifierService)
 
       const result = await openId4VcVerifierService.verifyAuthorizationResponse(agentContext, {
-        authorizationResponse: request.body as any,
+        authorizationResponse: request.body,
         verifierId: verifier.verifierId,
       })
 

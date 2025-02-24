@@ -1,5 +1,5 @@
-import type { AgentContext } from '@credo-ts/core'
 import type { OpenId4VcVerificationSessionStateChangedEvent } from '../OpenId4VcVerifierEvents'
+import type { AgentContext } from '@credo-ts/core'
 
 import {
   AgentContextProvider,
@@ -10,16 +10,19 @@ import {
   injectable,
   InjectionSymbols,
 } from '@credo-ts/core'
+import {
+  isOpenid4vpAuthorizationResponseDcApi,
+  Openid4vpAuthorizationResponse,
+  Openid4vpAuthorizationResponseDcApi,
+} from '@openid4vc/openid4vp'
 import { EventEmitter as NativeEventEmitter } from 'events'
 
+import { OpenId4VcSiopAuthorizationRequestPayload } from '../../shared/index'
 import { OpenId4VcVerificationSessionState } from '../OpenId4VcVerificationSessionState'
 import { OpenId4VcVerifierEvents } from '../OpenId4VcVerifierEvents'
 
-import { isOpenid4vpAuthorizationResponseDcApi, Openid4vpAuthorizationResponse, Openid4vpAuthorizationResponseDcApi } from '@openid4vc/openid4vp'
 import { OpenId4VcVerificationSessionRecord } from './OpenId4VcVerificationSessionRecord'
 import { OpenId4VcVerificationSessionRepository } from './OpenId4VcVerificationSessionRepository'
-import { OpenId4VcSiopAuthorizationRequestPayload } from '../../shared/index'
-
 
 export enum AuthorizationEvents {
   ON_AUTH_REQUEST_CREATED_SUCCESS = 'onAuthRequestCreatedSuccess',
@@ -61,15 +64,15 @@ export class AuthorizationEvent<T> {
     this._error = args.error
   }
 
-  get subject(): T | undefined {
+  public get subject(): T | undefined {
     return this._subject
   }
 
-  get timestamp(): number {
+  public get timestamp(): number {
     return this._timestamp
   }
 
-  get error(): Error | undefined {
+  public get error(): Error | undefined {
     return this._error
   }
 
@@ -77,11 +80,10 @@ export class AuthorizationEvent<T> {
     return !!this._error
   }
 
-  get correlationId(): string {
+  public get correlationId(): string {
     return this._correlationId
   }
 }
-
 
 interface RelyingPartyEventEmitterContext {
   contextCorrelationId: string
@@ -226,7 +228,11 @@ export class OpenId4VcRelyingPartyEventHandler {
         verificationSession.state !== OpenId4VcVerificationSessionState.ResponseVerified
       ) {
         const previousState = verificationSession.state
-        verificationSession.authorizationResponsePayload = isOpenid4vpAuthorizationResponseDcApi(options.authorizationResponsePayload) ? options.authorizationResponsePayload.data : options.authorizationResponsePayload
+        verificationSession.authorizationResponsePayload = isOpenid4vpAuthorizationResponseDcApi(
+          options.authorizationResponsePayload
+        )
+          ? options.authorizationResponsePayload.data
+          : options.authorizationResponsePayload
         verificationSession.state = OpenId4VcVerificationSessionState.ResponseVerified
         await verificationSessionRepository.update(agentContext, verificationSession)
         this.emitStateChangedEvent(agentContext, verificationSession, previousState)
