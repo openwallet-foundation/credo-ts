@@ -69,15 +69,6 @@ export class AskarWallet extends AskarBaseWallet {
   }
 
   /**
-   * Dispose method is called when an agent context is disposed.
-   */
-  public async dispose() {
-    if (this.isInitialized) {
-      await this.close()
-    }
-  }
-
-  /**
    * @throws {WalletDuplicateError} if the wallet already exists
    * @throws {WalletError} if another error occurs
    */

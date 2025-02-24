@@ -50,6 +50,6 @@ export class DefaultAgentContextProvider implements AgentContextProvider {
       )
     }
 
-    // We won't dispose the agent context as we don't keep track of the total number of sessions for the root agent context.65
+    // We won't dispose the agent context as we don't keep track of the total number of sessions for the root agent context.
   }
 }

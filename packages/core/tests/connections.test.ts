@@ -228,8 +228,9 @@ describe('connections', () => {
     const { outOfBandInvitation: mediatorOutOfBandInvitation } = await mediatorAgent.modules.oob.createInvitation({})
     let { connectionRecord } = await faberAgent.modules.oob.receiveInvitation(mediatorOutOfBandInvitation)
     connectionRecord = await faberAgent.modules.connections.returnWhenIsConnected(connectionRecord!.id)
-    await faberAgent.modules.mediationRecipient.provision(connectionRecord!)
-    await faberAgent.modules.mediationRecipient.initialize()
+
+    const mediationRecord = await faberAgent.modules.mediationRecipient.provision(connectionRecord!)
+    faberAgent.modules.mediationRecipient.initiateMessagePickup(mediationRecord)
 
     // Create observable for event
     const keyAddMessageObservable = mediatorAgent.events

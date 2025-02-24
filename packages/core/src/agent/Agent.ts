@@ -91,31 +91,20 @@ export class Agent<AgentModules extends AgentModulesInput = any> extends BaseAge
 
   public async initialize() {
     await super.initialize()
-
-    for (const [, module] of Object.entries(this.dependencyManager.registeredModules) as [string, Module][]) {
-      if (module.initialize) {
-        await module.initialize(this.agentContext)
-      }
-    }
+    await this.dependencyManager.initializeModules(this.agentContext)
 
     this._isInitialized = true
   }
 
   public async shutdown() {
+    // TODO: relace stop$, should be replaced by module specific lifecycle methods
     const stop$ = this.dependencyManager.resolve<Subject<boolean>>(InjectionSymbols.Stop$)
     // All observables use takeUntil with the stop$ observable
     // this means all observables will stop running if a value is emitted on this observable
     stop$.next(true)
 
-    for (const [, module] of Object.entries(this.dependencyManager.registeredModules) as [string, Module][]) {
-      if (module.shutdown) {
-        await module.shutdown(this.agentContext)
-      }
-    }
-
-    if (this.wallet.isInitialized) {
-      await this.wallet.close()
-    }
+    await this.dependencyManager.closeAgentContext(this.agentContext)
+    await this.dependencyManager.shutdownModules(this.agentContext)
 
     this._isInitialized = false
   }

@@ -68,12 +68,4 @@ export class MockWallet implements Wallet {
   public getRandomValues(_length: number): Uint8Array {
     throw new Error('Method not implemented.')
   }
-
-  public generateWalletKey(): Promise<string> {
-    throw new Error('Method not implemented.')
-  }
-
-  public dispose() {
-    // Nothing to do here
-  }
 }

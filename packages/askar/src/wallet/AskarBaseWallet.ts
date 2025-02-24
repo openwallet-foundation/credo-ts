@@ -74,7 +74,6 @@ export abstract class AskarBaseWallet implements Wallet {
   public abstract delete(): Promise<void>
   public abstract export(exportConfig: WalletExportImportConfig): Promise<void>
   public abstract import(walletConfig: WalletConfig, importConfig: WalletExportImportConfig): Promise<void>
-  public abstract dispose(): void | Promise<void>
   public abstract profile: string
 
   protected abstract store: Store
@@ -633,14 +632,6 @@ export abstract class AskarBaseWallet implements Wallet {
         throw new CredoError('Attempted to throw error, but it was not of type Error', { cause: error })
       }
       throw new WalletError('Error generating nonce', { cause: error })
-    }
-  }
-
-  public async generateWalletKey() {
-    try {
-      return Store.generateRawKey()
-    } catch (error) {
-      throw new WalletError('Error generating wallet key', { cause: error })
     }
   }
 

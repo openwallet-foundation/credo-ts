@@ -45,7 +45,9 @@ export class TenantsApi<AgentModules extends ModulesMap = DefaultAgentModules> {
     const tenantContext = await this.agentContextProvider.getAgentContextForContextCorrelationId(tenantId)
 
     this.logger.trace(`Got tenant context for tenant '${tenantId}'`)
-    const tenantAgent = new TenantAgent<AgentModules>(tenantContext)
+    const tenantAgent = new TenantAgent<AgentModules>(tenantContext, {
+      TODO: 'SET PERSISTED MODULE METADATA',
+    })
     await tenantAgent.initialize()
     this.logger.trace(`Initializing tenant agent for tenant '${tenantId}'`)
 
@@ -74,6 +76,8 @@ export class TenantsApi<AgentModules extends ModulesMap = DefaultAgentModules> {
 
   public async createTenant(options: CreateTenantOptions) {
     this.logger.debug(`Creating tenant with label ${options.config.label}`)
+
+    const a: number = 'TODO: store persitedModuleMetadata'
     const tenantRecord = await this.tenantRecordService.createTenant(this.rootAgentContext, options.config)
 
     // This initializes the tenant agent, creates the wallet etc...
@@ -101,7 +105,8 @@ export class TenantsApi<AgentModules extends ModulesMap = DefaultAgentModules> {
     const tenantAgent = await this.getTenantAgent({ tenantId })
 
     this.logger.trace(`Deleting wallet for tenant '${tenantId}'`)
-    await tenantAgent.wallet.delete()
+    // TODO: delete on context?
+    await tenantAgent.context.dependencyManager.deleteAgentContext(tenantAgent.context)
     this.logger.trace(`Shutting down agent for tenant '${tenantId}'`)
     await tenantAgent.endSession()
 

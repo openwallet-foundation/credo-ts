@@ -5,8 +5,11 @@ import { CredoError, BaseAgent } from '@credo-ts/core'
 export class TenantAgent<AgentModules extends ModulesMap = DefaultAgentModules> extends BaseAgent<AgentModules> {
   private sessionHasEnded = false
 
-  public constructor(agentContext: AgentContext) {
-    super(agentContext.config, agentContext.dependencyManager)
+  public constructor(
+    agentContext: AgentContext,
+    persistedModuleMetadata?: Record<string, Record<string, unknown> | undefined>
+  ) {
+    super(agentContext.config, agentContext.dependencyManager, persistedModuleMetadata)
   }
 
   public async initialize() {
