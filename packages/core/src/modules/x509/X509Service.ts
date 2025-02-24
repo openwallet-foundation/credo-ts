@@ -43,9 +43,13 @@ export class X509Service {
 
     const parsedLeafCertificate = new x509.X509Certificate(certificate)
 
-    const parsedCertificates = certificateChain.map((c) => new x509.X509Certificate(c))
+    const certificatesToBuildChain = [...certificateChain, ...(trustedCertificates ?? [])].map(
+      (c) => new x509.X509Certificate(c)
+    )
 
-    const certificateChainBuilder = new x509.X509ChainBuilder({ certificates: parsedCertificates })
+    const certificateChainBuilder = new x509.X509ChainBuilder({
+      certificates: certificatesToBuildChain,
+    })
 
     const chain = await certificateChainBuilder.build(parsedLeafCertificate, webCrypto)
 
@@ -53,7 +57,9 @@ export class X509Service {
     // has the leaf certificate as the first entry, while the `x509` library expects this as the last
     let parsedChain = chain.map((c) => X509Certificate.fromRawCertificate(new Uint8Array(c.rawData))).reverse()
 
-    if (parsedChain.length !== certificateChain.length) {
+    // We allow longer parsed chain, in case the root cert was not part of the chain, but in the
+    // list of trusted certificates
+    if (parsedChain.length < certificateChain.length) {
       throw new X509Error('Could not parse the full chain. Likely due to incorrect ordering')
     }
 

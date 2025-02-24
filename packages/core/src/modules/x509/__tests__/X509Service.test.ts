@@ -345,6 +345,81 @@ describe('X509Service', () => {
     })
   })
 
+  it('should verify a certificate chain where the root certificate is not in the provided chain, but is in trusted certificates', async () => {
+    const authorityKey = await wallet.createKey({ keyType: KeyType.P256 })
+    const documentSignerKey = await wallet.createKey({ keyType: KeyType.P256 })
+
+    const mdocRootCertificate = await X509Service.createCertificate(agentContext, {
+      authorityKey,
+      issuer: { commonName: 'credo', countryName: 'NL' },
+      validity: {
+        notBefore: getLastMonth(),
+        notAfter: getNextMonth(),
+      },
+      extensions: {
+        subjectKeyIdentifier: {
+          include: true,
+        },
+        keyUsage: {
+          usages: [X509KeyUsage.KeyCertSign, X509KeyUsage.CrlSign],
+          markAsCritical: true,
+        },
+        issuerAlternativeName: {
+          name: [{ type: 'url', value: 'animo.id' }],
+        },
+        basicConstraints: {
+          ca: true,
+          pathLenConstraint: 0,
+          markAsCritical: true,
+        },
+        crlDistributionPoints: {
+          urls: ['https://animo.id'],
+        },
+      },
+    })
+
+    const mdocDocumentSignerCertificate = await X509Service.createCertificate(agentContext, {
+      authorityKey,
+      subjectPublicKey: new Key(documentSignerKey.publicKey, KeyType.P256),
+      issuer: mdocRootCertificate.issuer,
+      subject: { commonName: 'credo dcs', countryName: 'NL' },
+      validity: {
+        notBefore: getLastMonth(),
+        notAfter: getNextMonth(),
+      },
+      extensions: {
+        authorityKeyIdentifier: {
+          include: true,
+        },
+        subjectKeyIdentifier: {
+          include: true,
+        },
+        keyUsage: {
+          usages: [X509KeyUsage.DigitalSignature],
+          markAsCritical: true,
+        },
+        subjectAlternativeName: {
+          name: [{ type: 'url', value: 'paradym.id' }],
+        },
+        issuerAlternativeName: {
+          name: mdocRootCertificate.issuerAlternativeNames!,
+        },
+        extendedKeyUsage: {
+          usages: [X509ExtendedKeyUsage.MdlDs],
+          markAsCritical: true,
+        },
+        crlDistributionPoints: {
+          urls: ['https://animo.id'],
+        },
+      },
+    })
+
+    await X509Service.validateCertificateChain(agentContext, {
+      certificateChain: [mdocDocumentSignerCertificate.toString('base64url')],
+      trustedCertificates: [mdocRootCertificate.toString('pem')],
+    })
+  })
+
   it('should not validate a certificate with a `notBefore` of > Date.now', async () => {
     const authorityKey = await agentContext.wallet.createKey({ keyType: KeyType.P256 })
 
