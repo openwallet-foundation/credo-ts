@@ -211,17 +211,15 @@ export class JwsService {
   }
 
   private buildProtected(options: JwsProtectedHeaderOptions) {
-    const x5cJwkCount = [options.jwk, options.x5c].filter(Boolean).length
-
     // FIXME: checking for kid starting with '#' is not good.
     // but now we don't really limit that kid (did key reference)
     // cannot be combined with x5c/jwk
     if (options.kid?.startsWith('did:')) {
-      if (x5cJwkCount > 0) {
+      if (options.jwk || options.x5c) {
         throw new CredoError("When 'kid' is a did, 'jwk' and 'x5c' cannot be provided.")
       }
-    } else if (x5cJwkCount > 1 || (x5cJwkCount === 0 && !options.kid)) {
-      throw new CredoError("Header must contain one of 'kid' with a did value, 'x5c', or 'jwk'.")
+    } else if ((options.jwk && options.x5c) || (!options.jwk && !options.x5c && !options.kid)) {
+      throw new CredoError("Header must contain one of 'x5c', 'jwk' or 'kid' with a did value.")
     }
 
     return {
@@ -250,17 +248,15 @@ export class JwsService {
       trustedCertificates: trustedCertificatesFromOptions = [],
     } = options
 
-    const x5cJwkCount = [protectedHeader.jwk, protectedHeader.x5c].filter(Boolean)
-
     // FIXME: checking for kid starting with '#' is not good.
     // but now we don't really limit that kid (did key reference)
     // cannot be combined with x5c/jwk
     if (typeof protectedHeader.kid === 'string' && protectedHeader.kid?.startsWith('did:')) {
-      if (x5cJwkCount.length > 0) {
+      if (protectedHeader.jwk || protectedHeader.x5c) {
         throw new CredoError("When 'kid' is a did, 'jwk' and 'x5c' cannot be provided.")
       }
-    } else if (x5cJwkCount.length > 1) {
-      throw new CredoError("Header must contain one of 'kid' with a did value, 'x5c', or 'jwk'.")
+    } else if (protectedHeader.jwk && protectedHeader.x5c) {
+      throw new CredoError("Header must contain one of 'x5c', 'jwk' or 'kid' with a did value.")
     }
 
     if (protectedHeader.x5c) {

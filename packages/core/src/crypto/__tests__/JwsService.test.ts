@@ -172,7 +172,7 @@ describe('JwsService', () => {
           x5c: [didJwsz6MkfCertificate.toString('base64url')],
         },
       })
-    ).rejects.toThrow("Header must contain one of 'kid' with a did value, 'x5c', or 'jwk'.")
+    ).rejects.toThrow("Header must contain one of 'x5c', 'jwk' or 'kid' with a did value.")
 
     await expect(
       jwsService.createJwsCompact(agentContext, {
@@ -279,7 +279,7 @@ describe('JwsService', () => {
             signature: '',
           },
         })
-      ).rejects.toThrow("Header must contain one of 'kid' with a did value, 'x5c', or 'jwk'.")
+      ).rejects.toThrow("Header must contain one of 'x5c', 'jwk' or 'kid' with a did value.")
 
       await expect(
         jwsService.verifyJws(agentContext, {
