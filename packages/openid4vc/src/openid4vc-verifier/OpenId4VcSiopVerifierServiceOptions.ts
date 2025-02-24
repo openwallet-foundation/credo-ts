@@ -1,3 +1,5 @@
+import type { OpenId4VcVerificationSessionRecord, OpenId4VcVerifierRecordProps } from './repository'
+import type { OpenId4VcIssuerX5c, OpenId4VcJwtIssuer, OpenId4VcSiopAuthorizationResponsePayload } from '../shared'
 import type {
   DcqlPresentation,
   DcqlPresentationResult,
@@ -9,12 +11,6 @@ import type {
   TransactionData,
   VerifiablePresentation,
 } from '@credo-ts/core'
-import type {
-  OpenId4VcIssuerX5c,
-  OpenId4VcJwtIssuer,
-  OpenId4VcSiopAuthorizationResponsePayload,
-} from '../shared'
-import type { OpenId4VcVerificationSessionRecord, OpenId4VcVerifierRecordProps } from './repository'
 
 export type ResponseMode = 'direct_post' | 'direct_post.jwt' | 'dc_api' | 'dc_api.jwt'
 
@@ -28,6 +24,12 @@ export interface OpenId4VcSiopCreateAuthorizationRequestOptions {
   requestSigner:
     | Exclude<OpenId4VcJwtIssuer, OpenId4VcIssuerX5c>
     | (Omit<OpenId4VcIssuerX5c, 'issuer'> & { issuer?: string })
+    | {
+        /**
+         * Do not sign the request. Only available for DC API
+         */
+        method: 'none'
+      }
 
   /**
    * Whether to reuqest an ID Token. Enabled by defualt when `presentationExchange` is not provided,

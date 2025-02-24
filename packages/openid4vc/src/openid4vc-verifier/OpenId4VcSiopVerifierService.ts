@@ -113,6 +113,9 @@ export class OpenId4VcSiopVerifierService {
     // Correlation id will be the id of the verification session record
     const correlationId = utils.uuid()
 
+    const isDcApiRequest = options.responseMode === 'dc_api' || options.responseMode === 'dc_api.jwt'
+
+    // No response url for DC API
     let authorizationResponseUrl = joinUriParts(this.config.baseUrl, [
       options.verifier.verifierId,
       this.config.authorizationEndpoint.endpointPath,
@@ -124,12 +127,21 @@ export class OpenId4VcSiopVerifierService {
             ...options.requestSigner,
             issuer: authorizationResponseUrl,
           })
+        : options.requestSigner.method === 'none'
+        ? undefined
         : await openIdTokenIssuerToJwtIssuer(agentContext, options.requestSigner)
 
     let clientIdScheme: ClientIdScheme
-    let clientId: string
+    let clientId: string | undefined
 
-    if (jwtIssuer.method === 'x5c') {
+    if (!jwtIssuer) {
+      if (options.responseMode !== 'dc_api' && options.responseMode !== 'dc_api.jwt') {
+        throw new Error("requestSigner method 'none' is only supported for response mode 'dc_api' and 'dc_api.jwt'")
+      }
+
+      clientIdScheme = 'web-origin'
+      clientId = undefined
+    } else if (jwtIssuer?.method === 'x5c') {
       if (jwtIssuer.issuer !== authorizationResponseUrl) {
         throw new CredoError(
           `The jwtIssuer's issuer field must match the verifier's authorizationResponseUrl '${authorizationResponseUrl}'.`
@@ -150,7 +162,7 @@ export class OpenId4VcSiopVerifierService {
           `With jwtIssuer 'method' 'x5c' the jwtIssuer's 'issuer' field must either match the match a sanDnsName (FQDN) or sanUriName in the leaf x509 chain's leaf certificate.`
         )
       }
-    } else if (jwtIssuer.method === 'did') {
+    } else if (jwtIssuer?.method === 'did') {
       clientId = jwtIssuer.didUrl.split('#')[0]
       clientIdScheme = 'did'
     } else {
@@ -174,31 +186,41 @@ export class OpenId4VcSiopVerifierService {
 
     const client_id =
       clientIdScheme === 'did' || (clientIdScheme as string) === 'https' ? clientId : `${clientIdScheme}:${clientId}`
-    const client_metadata = {
-      ...(await this.getClientMetadata(agentContext, {
-        responseMode: options.responseMode ?? 'direct_post',
-        verifier: options.verifier,
-        clientId,
-        authorizationResponseUrl,
-      })),
-    }
+    const client_metadata = await this.getClientMetadata(agentContext, {
+      responseMode: options.responseMode ?? 'direct_post',
+      verifier: options.verifier,
+      authorizationResponseUrl,
+    })
 
     const openid4vpVerifier = this.getOpenid4vpVerifier(agentContext)
     const authorizationRequest = await openid4vpVerifier.createOpenId4vpAuthorizationRequest({
-      jar: { jwtSigner: jwtIssuer, requestUri: hostedAuthorizationRequestUri },
-      requestParams: {
-        client_id,
-        nonce,
-        state,
-        presentation_definition: options.presentationExchange?.definition as any,
-        dcql_query: options.dcql?.query,
-        transaction_data,
-        response_uri: authorizationResponseUrl,
-        response_mode: options.responseMode ?? 'direct_post',
-        response_type: 'vp_token',
-        client_metadata,
-        expected_origins: options.expectedOrigins,
-      },
+      jar: jwtIssuer ? { jwtSigner: jwtIssuer, requestUri: hostedAuthorizationRequestUri } : undefined,
+      requestParams:
+        // !clientId is to make TS happy (it will only happen if isDcApiRequest is true)
+        options.responseMode === 'dc_api.jwt' || options.responseMode === 'dc_api'
+          ? {
+              client_id,
+              nonce,
+              presentation_definition: options.presentationExchange?.definition as any,
+              dcql_query: options.dcql?.query,
+              transaction_data,
+              response_mode: options.responseMode,
+              response_type: 'vp_token',
+              client_metadata,
+              expected_origins: options.expectedOrigins,
+            }
+          : {
+              client_id: clientId as string,
+              nonce,
+              state,
+              presentation_definition: options.presentationExchange?.definition as any,
+              dcql_query: options.dcql?.query,
+              transaction_data,
+              response_uri: authorizationResponseUrl,
+              response_mode: options.responseMode ?? 'direct_post',
+              response_type: 'vp_token',
+              client_metadata,
+            },
     })
 
     const verificationSession = await agentContext.dependencyManager
@@ -696,11 +718,10 @@ export class OpenId4VcSiopVerifierService {
     options: {
       responseMode: ResponseMode
       verifier: OpenId4VcVerifierRecord
-      clientId: string
       authorizationResponseUrl: string
     }
   ) {
-    const { responseMode, verifier, clientId } = options
+    const { responseMode, verifier } = options
 
     const signatureSuiteRegistry = agentContext.dependencyManager.resolve(SignatureSuiteRegistry)
     const supportedAlgs = getSupportedJwaSignatureAlgorithms(agentContext)
@@ -732,10 +753,6 @@ export class OpenId4VcSiopVerifierService {
     return {
       ...jarmClientMetadata,
       ...verifier.clientMetadata,
-      // FIXME: not passing client_id here means it will not be added
-      // to the authorization request url (not the signed payload). Need
-      // to fix that in Sphereon lib
-      client_id: clientId,
       response_types_supported: ['vp_token'],
       subject_syntax_types_supported: [
         'urn:ietf:params:oauth:jwk-thumbprint',
