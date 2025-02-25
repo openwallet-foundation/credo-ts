@@ -35,6 +35,11 @@ export interface OpenId4VcSiopResolvedAuthorizationRequest {
    * The verified authorization request.
    */
   authorizationRequest: OpenId4VcSiopVerifiedAuthorizationRequest
+
+  /**
+   * Origin of the request, to be used with Digital Credentials API
+   */
+  origin?: string
 }
 
 export interface OpenId4VcSiopAcceptAuthorizationRequestOptions {

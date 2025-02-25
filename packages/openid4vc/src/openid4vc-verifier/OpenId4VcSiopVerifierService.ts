@@ -59,7 +59,6 @@ import { Oauth2ErrorCodes, Oauth2ServerErrorResponseError } from '@openid4vc/oau
 import {
   ClientIdScheme,
   isJarmResponseMode,
-  isOpenid4vpAuthorizationResponseDcApi,
   JarmClientMetadata,
   Openid4vpVerifier,
   ParsedOpenid4vpAuthorizationResponse,
@@ -215,7 +214,7 @@ export class OpenId4VcSiopVerifierService {
       jar: jwtIssuer
         ? {
             jwtSigner: jwtIssuer,
-            // FIXME: cast can be removed when PR 40 is merged in oid4vc-ts
+            // FIXME: cast can be removed when PR 41 is merged in oid4vc-ts
             requestUri: hostedAuthorizationRequestUri as string,
           }
         : undefined,
@@ -303,7 +302,7 @@ export class OpenId4VcSiopVerifierService {
             verificationSession = session
 
             const authorizationRequest = parseOpenid4vpAuthorizationRequestPayload({
-              requestPayload: verificationSession.request,
+              authorizationRequest: verificationSession.request,
             })
             if (authorizationRequest.type !== 'openid4vp' && authorizationRequest.type !== 'openid4vp_dc_api') {
               throw new CredoError(
@@ -313,7 +312,7 @@ export class OpenId4VcSiopVerifierService {
 
             if (authorizationRequest.params.client_id) {
               return {
-                authRequest: {
+                authorizationRequest: {
                   ...authorizationRequest.params,
                   client_id: authorizationRequest.params.client_id,
                 },
@@ -324,7 +323,7 @@ export class OpenId4VcSiopVerifierService {
               throw new CredoError('Origin must be provided when client id is not set.')
             }
             return {
-              authRequest: {
+              authorizationRequest: {
                 ...authorizationRequest.params,
                 client_id: authorizationRequest.params.client_id ?? `web-origin:${options.origin}`,
               },
@@ -363,7 +362,8 @@ export class OpenId4VcSiopVerifierService {
       throw new CredoError('Missing verification session, cannot verify authorization response.')
     }
 
-    if (parsedAuthResponse.jarm && parsedAuthResponse.jarm.type !== 'encrypted') {
+    // FIXME: export JarmMode from openid4vp
+    if (parsedAuthResponse.jarm && `${parsedAuthResponse.jarm.type}` !== 'Encrypted') {
       throw new Oauth2ServerErrorResponseError({
         error: Oauth2ErrorCodes.InvalidRequest,
         error_description: `Only encrypted JARM responses are supported, received '${parsedAuthResponse.jarm.type}'.`,
@@ -537,13 +537,7 @@ export class OpenId4VcSiopVerifierService {
       throw error
     }
 
-    // FIXME: we can just use the payload once
-    // https://github.com/openwallet-foundation-labs/oid4vc-ts/pull/40 is merged
-    result.verificationSession.authorizationResponsePayload = isOpenid4vpAuthorizationResponseDcApi(
-      result.authResponsePayload
-    )
-      ? result.authResponsePayload.data
-      : result.authResponsePayload
+    result.verificationSession.authorizationResponsePayload = result.authResponsePayload
     await this.updateState(agentContext, result.verificationSession, OpenId4VcVerificationSessionState.ResponseVerified)
 
     const verifiedAuthorizationResponse = await this.getVerifiedAuthorizationResponse(
@@ -568,7 +562,7 @@ export class OpenId4VcSiopVerifierService {
 
     const openid4vpVerifier = this.getOpenid4vpVerifier(agentContext)
     const authorizationRequest = openid4vpVerifier.parseOpenid4vpAuthorizationRequestPayload({
-      requestPayload: verificationSession.request,
+      authorizationRequest: verificationSession.request,
     })
     if (authorizationRequest.provided !== 'jwt' || authorizationRequest.type === 'jar') {
       throw new CredoError('Invalid authorization request jwt')
@@ -994,7 +988,7 @@ export class OpenId4VcSiopVerifierService {
             type: 'openId4VpDcApi',
             clientId: options.audience,
             verifierGeneratedNonce: options.nonce,
-            origin: options.nonce,
+            origin: options.origin,
           }
         } else {
           if (!options.mdocGeneratedNonce || !options.responseUri) {

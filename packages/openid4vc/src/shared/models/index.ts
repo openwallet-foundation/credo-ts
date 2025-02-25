@@ -14,7 +14,6 @@ import type {
 } from '@openid4vc/openid4vci'
 import type {
   Openid4vpAuthorizationResponse,
-  Openid4vpAuthorizationResponseDcApi,
   ResolvedOpenid4vpAuthRequest,
   Openid4vpAuthorizationRequest,
   Openid4vpAuthorizationRequestDcApi,
@@ -52,9 +51,7 @@ export type OpenId4VcSiopVerifiedAuthorizationRequest = ResolvedOpenid4vpAuthReq
 export type OpenId4VcSiopAuthorizationRequestPayload =
   | Openid4vpAuthorizationRequest
   | Openid4vpAuthorizationRequestDcApi
-export type OpenId4VcSiopAuthorizationResponsePayload =
-  | Openid4vpAuthorizationResponse
-  | Openid4vpAuthorizationResponseDcApi['data']
+export type OpenId4VcSiopAuthorizationResponsePayload = Openid4vpAuthorizationResponse
 
 export * from './CredentialHolderBinding'
 export * from './OpenId4VciAuthorizationServerConfig'

@@ -134,7 +134,7 @@ export class OpenId4VcSiopHolderService {
     options?: ResolveSiopAuthorizationRequestOptions
   ): Promise<OpenId4VcSiopResolvedAuthorizationRequest> {
     const openid4vpClient = this.getOpenid4vpClient(agentContext, options?.trustedCertificates)
-    const { params } = openid4vpClient.parseOpenid4vpAuthorizationRequestPayload({ requestPayload: request })
+    const { params } = openid4vpClient.parseOpenid4vpAuthorizationRequestPayload({ authorizationRequest: request })
     const verifiedAuthRequest = await openid4vpClient.resolveOpenId4vpAuthorizationRequest({
       request: params,
       origin: options?.origin,
@@ -166,6 +166,7 @@ export class OpenId4VcSiopHolderService {
       authorizationRequest: verifiedAuthRequest,
       presentationExchange: pexResult,
       dcql: dcqlResult,
+      origin: options?.origin,
     }
   }
 
@@ -225,19 +226,9 @@ export class OpenId4VcSiopHolderService {
   ) {
     const { authorizationRequest, presentationExchange, dcql, origin } = options
 
-    const isDcApiRequest =
-      authorizationRequest.payload.response_mode === 'dc_api' ||
-      authorizationRequest.payload.response_mode === 'dc_api.jwt'
+    const isDcApiRequest = isOpenid4vpAuthorizationRequestDcApi(authorizationRequest.payload)
     const nonce = authorizationRequest.payload.nonce
-
-    // FIXME: we should always set this in oid4vc-ts, based on the origin if using DC API
-    let clientId = authorizationRequest.client.originalValue
-    if (isDcApiRequest) {
-      if (!origin) throw new CredoError('Missing required origin')
-      if (!clientId) clientId = `web-origin:${origin}`
-    } else if (!clientId) {
-      throw new CredoError('Could not extract client identifier')
-    }
+    const clientId = authorizationRequest.client.originalValue
 
     let responseUri: string
     if (isOpenid4vpAuthorizationRequestDcApi(authorizationRequest.payload)) {
@@ -340,9 +331,7 @@ export class OpenId4VcSiopHolderService {
     const response = await openid4vpClient.createOpenid4vpAuthorizationResponse({
       requestParams: authorizationRequest.payload,
       responseParams: {
-        // FIXME: update once https://github.com/openwallet-foundation-labs/oid4vc-ts/pull/39 is released
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        vp_token: vpToken as any,
+        vp_token: vpToken,
         presentation_submission: presentationSubmission,
       },
       jarm:

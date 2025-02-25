@@ -260,6 +260,7 @@ describe('OpenId4Vc', () => {
     const resolvedAuthorizationRequest = await holder.agent.modules.openId4VcHolder.resolveSiopAuthorizationRequest(
       // FIXME: using authorization request fails here, due to incorrect decoding of url encoded
       // we need to be aware of object types and parse those from string to object
+      // https://github.com/openwallet-foundation-labs/oid4vc-ts/issues/42
       authorizationRequestObject,
       { origin: 'https://example.com' }
     )
@@ -275,9 +276,7 @@ describe('OpenId4Vc', () => {
       dcql: {
         credentials: selectedCredentials,
       },
-      // FIXME: add origin to resolvedAuthorizationRequest.authorizationRequest
-      // so we don't have to keep passing it around
-      origin: 'https://example.com',
+      origin: resolvedAuthorizationRequest.origin,
     })
 
     expect(result).toEqual({
@@ -324,9 +323,7 @@ describe('OpenId4Vc', () => {
       dcql: {
         credentials: selectedCredentials,
       },
-      // FIXME: add origin to resolvedAuthorizationRequest.authorizationRequest
-      // so we don't have to keep passing it around
-      origin: 'https://example.com',
+      origin: resolvedAuthorizationRequest.origin,
     })
 
     expect(result).toEqual({
