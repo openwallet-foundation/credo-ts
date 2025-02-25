@@ -199,7 +199,8 @@ export async function extractDidDocument<Agent extends BaseAgent>(agent: Agent, 
 
     agent.config.logger.debug('Deleting old did document from connection record and storing new did:peer did')
     // Remove didDoc and assign the new did:peer did to did
-    untypedConnectionRecord.didDoc = undefined
+    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+    untypedConnectionRecord.didDoc = undefined as any
     connectionRecord.did = newOurDidDocument.id
   } else {
     agent.config.logger.debug(
@@ -250,7 +251,8 @@ export async function extractDidDocument<Agent extends BaseAgent>(agent: Agent, 
 
     agent.config.logger.debug('Deleting old theirDidDoc from connection record and storing new did:peer theirDid')
     // Remove theirDidDoc and assign the new did:peer did to theirDid
-    untypedConnectionRecord.theirDidDoc = undefined
+    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+    untypedConnectionRecord.theirDidDoc = undefined as any
     connectionRecord.theirDid = newTheirDidDocument.id
   } else {
     agent.config.logger.debug(
@@ -259,7 +261,8 @@ export async function extractDidDocument<Agent extends BaseAgent>(agent: Agent, 
   }
 
   // Delete legacy verkey property
-  untypedConnectionRecord.verkey = undefined
+  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+  untypedConnectionRecord.verkey = undefined as any
 }
 
 /**
@@ -393,13 +396,15 @@ export async function migrateToOobRecord<Agent extends BaseAgent>(
     connectionRecord.invitationDid = invitationDid
 
     // Remove invitation and assign the oob id to the connection record
-    untypedConnectionRecord.invitation = undefined
+    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+    untypedConnectionRecord.invitation = undefined as any
     connectionRecord.outOfBandId = oobRecord.id
   }
 
   agent.config.logger.debug('Removing multiUseInvitation property from connection record')
   // multiUseInvitation is now stored as reusable in the out of band record
-  untypedConnectionRecord.multiUseInvitation = undefined
+  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+  untypedConnectionRecord.multiUseInvitation = undefined as any
 
   return connectionRecord
 }

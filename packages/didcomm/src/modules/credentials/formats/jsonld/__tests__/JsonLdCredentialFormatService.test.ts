@@ -299,7 +299,8 @@ describe('JsonLd CredentialFormatService', () => {
         'Ed25519VerificationKey2018',
       ])
 
-      const service = jsonLdFormatService as JsonLdCredentialFormatService
+      // biome-ignore lint/suspicious/noExplicitAny: derive verification method is private from JsonLdCredentialFormatService
+      const service = jsonLdFormatService as any
       const credentialRequest = requestAttachment.getDataAsJson<JsonLdCredentialDetailFormat>()
 
       // calls private method in the format service

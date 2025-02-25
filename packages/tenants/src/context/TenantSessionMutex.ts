@@ -15,7 +15,7 @@ export class TenantSessionMutex {
   private sessionMutex: MutexInterface
   private logger: Logger
 
-  public constructor(logger: Logger, maxSessions, sessionAcquireTimeout: number) {
+  public constructor(logger: Logger, maxSessions: number, sessionAcquireTimeout: number) {
     this.logger = logger
 
     this.maxSessions = maxSessions

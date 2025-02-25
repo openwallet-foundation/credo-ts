@@ -359,7 +359,10 @@ export class DifPresentationExchangeProofFormatService
         }
       } else {
         agentContext.config.logger.error(
-          `Received presentation in PEX proof format with unsupported format ${parsedPresentation.claimFormat}.`
+          `Received presentation in PEX proof format with unsupported format ${
+            // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+            (parsedPresentation as any).claimFormat
+          }.`
         )
         return false
       }

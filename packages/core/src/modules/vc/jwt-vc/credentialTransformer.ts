@@ -62,7 +62,8 @@ export function getJwtPayloadFromCredential(credential: W3cCredential) {
     payloadOptions.sub = credentialSubjectId
 
     if (Array.isArray(vc.credentialSubject)) {
-      vc.credentialSubject[0].id = undefined
+      // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+      vc.credentialSubject[0].id = undefined as any
     } else {
       // biome-ignore lint/performance/noDelete: <explanation>
       delete vc.credentialSubject?.id

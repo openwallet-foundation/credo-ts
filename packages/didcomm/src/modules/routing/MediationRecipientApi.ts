@@ -7,6 +7,7 @@ import type { GetRoutingOptions } from './services/RoutingService'
 import {
   AgentContext,
   CredoError,
+  DidDocument,
   DidsApi,
   EventEmitter,
   InjectionSymbols,
@@ -152,7 +153,7 @@ export class MediationRecipientApi {
 
     const websocketSchemes = ['ws', 'wss']
     const didDocument = connectionRecord.theirDid && (await this.dids.resolveDidDocument(connectionRecord.theirDid))
-    const services = didDocument?.didCommServices
+    const services = (didDocument as DidDocument)?.didCommServices || []
     const hasWebSocketTransport = services?.some((s) => websocketSchemes.includes(s.protocolScheme))
 
     if (!hasWebSocketTransport) {

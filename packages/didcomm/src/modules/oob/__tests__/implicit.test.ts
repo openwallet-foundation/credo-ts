@@ -91,7 +91,8 @@ describe('out of band implicit', () => {
     expect(faberAliceConnection.state).toBe(DidExchangeState.Completed)
 
     // Alice should now be connected
-    aliceFaberConnection = await aliceAgent.modules.connections.returnWhenIsConnected(aliceFaberConnection?.id)
+    // biome-ignore lint/style/noNonNullAssertion: <explanation>
+    aliceFaberConnection = await aliceAgent.modules.connections.returnWhenIsConnected(aliceFaberConnection?.id!)
     expect(aliceFaberConnection.state).toBe(DidExchangeState.Completed)
 
     expect(aliceFaberConnection).toBeConnectedWith(faberAliceConnection)
@@ -110,7 +111,8 @@ describe('out of band implicit', () => {
     const serviceUrl = inMemoryDidDocument.service?.[1].id
 
     let { connectionRecord: aliceFaberConnection } = await aliceAgent.modules.oob.receiveImplicitInvitation({
-      did: serviceUrl,
+      // biome-ignore lint/style/noNonNullAssertion: <explanation>
+      did: serviceUrl!,
       alias: 'Faber public',
       handshakeProtocols: [HandshakeProtocol.DidExchange],
     })
@@ -122,7 +124,8 @@ describe('out of band implicit', () => {
     expect(faberAliceConnection.state).toBe(DidExchangeState.Completed)
 
     // Alice should now be connected
-    aliceFaberConnection = await aliceAgent.modules.connections.returnWhenIsConnected(aliceFaberConnection?.id)
+    // biome-ignore lint/style/noNonNullAssertion: <explanation>
+    aliceFaberConnection = await aliceAgent.modules.connections.returnWhenIsConnected(aliceFaberConnection?.id!)
     expect(aliceFaberConnection.state).toBe(DidExchangeState.Completed)
 
     expect(aliceFaberConnection).toBeConnectedWith(faberAliceConnection)
@@ -132,7 +135,8 @@ describe('out of band implicit', () => {
     expect(aliceFaberConnection.invitationDid).toBe(serviceUrl)
 
     // It is possible for an agent to check if it has already a connection to a certain public entity
-    expect(await aliceAgent.modules.connections.findByInvitationDid(serviceUrl)).toEqual([aliceFaberConnection])
+    // biome-ignore lint/style/noNonNullAssertion: <explanation>
+    expect(await aliceAgent.modules.connections.findByInvitationDid(serviceUrl!)).toEqual([aliceFaberConnection])
   })
 
   test(`make a connection with ${HandshakeProtocol.Connections} based on implicit OOB invitation`, async () => {
@@ -151,7 +155,8 @@ describe('out of band implicit', () => {
     expect(faberAliceConnection.state).toBe(DidExchangeState.Completed)
 
     // Alice should now be connected
-    aliceFaberConnection = await aliceAgent.modules.connections.returnWhenIsConnected(aliceFaberConnection?.id)
+    // biome-ignore lint/style/noNonNullAssertion: <explanation>
+    aliceFaberConnection = await aliceAgent.modules.connections.returnWhenIsConnected(aliceFaberConnection?.id!)
     expect(aliceFaberConnection.state).toBe(DidExchangeState.Completed)
 
     expect(aliceFaberConnection).toBeConnectedWith(faberAliceConnection)
@@ -190,7 +195,8 @@ describe('out of band implicit', () => {
     expect(faberAliceConnection.state).toBe(DidExchangeState.Completed)
 
     // Alice should now be connected
-    aliceFaberConnection = await aliceAgent.modules.connections.returnWhenIsConnected(aliceFaberConnection?.id)
+    // biome-ignore lint/style/noNonNullAssertion: <explanation>
+    aliceFaberConnection = await aliceAgent.modules.connections.returnWhenIsConnected(aliceFaberConnection?.id!)
     expect(aliceFaberConnection.state).toBe(DidExchangeState.Completed)
 
     expect(aliceFaberConnection).toBeConnectedWith(faberAliceConnection)
@@ -214,7 +220,8 @@ describe('out of band implicit', () => {
     expect(faberAliceNewConnection.state).toBe(DidExchangeState.Completed)
 
     // Alice should now be connected
-    aliceFaberNewConnection = await aliceAgent.modules.connections.returnWhenIsConnected(aliceFaberNewConnection?.id)
+    // biome-ignore lint/style/noNonNullAssertion: <explanation>
+    aliceFaberNewConnection = await aliceAgent.modules.connections.returnWhenIsConnected(aliceFaberNewConnection?.id!)
     expect(aliceFaberNewConnection.state).toBe(DidExchangeState.Completed)
 
     expect(aliceFaberNewConnection).toBeConnectedWith(faberAliceNewConnection)

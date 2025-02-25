@@ -1,5 +1,4 @@
 import type { Observable } from 'rxjs'
-/* eslint-disable @typescript-eslint/no-non-null-assertion */
 import type { AskarWalletSqliteStorageConfig } from '../../askar/src/wallet'
 import type {
   AgentMessageProcessedEvent,
@@ -732,7 +731,8 @@ export async function makeConnection(agentA: Agent<DefaultAgentModulesInput>, ag
     agentAOutOfBand.outOfBandInvitation
   )
 
-  agentBConnection = await agentB.modules.connections.returnWhenIsConnected(agentBConnection?.id)
+  // biome-ignore lint/style/noNonNullAssertion: <explanation>
+  agentBConnection = await agentB.modules.connections.returnWhenIsConnected(agentBConnection?.id!)
   let [agentAConnection] = await agentA.modules.connections.findAllByOutOfBandId(agentAOutOfBand.id)
   agentAConnection = await agentA.modules.connections.returnWhenIsConnected(agentAConnection?.id)
 

@@ -122,8 +122,10 @@ describe('Manual Connection Flow', () => {
     let faberAliceConnectionRecord = await waitForAliceRequest
     let faberBobConnectionRecord = await waitForBobRequest
 
-    const waitForAliceResponse = waitForResponse(aliceAgent, aliceConnectionRecord?.id)
-    const waitForBobResponse = waitForResponse(bobAgent, bobConnectionRecord?.id)
+    // biome-ignore lint/style/noNonNullAssertion: <explanation>
+    const waitForAliceResponse = waitForResponse(aliceAgent, aliceConnectionRecord?.id!)
+    // biome-ignore lint/style/noNonNullAssertion: <explanation>
+    const waitForBobResponse = waitForResponse(bobAgent, bobConnectionRecord?.id!)
 
     await faberAgent.modules.connections.acceptRequest(faberAliceConnectionRecord.id)
     await faberAgent.modules.connections.acceptRequest(faberBobConnectionRecord.id)
