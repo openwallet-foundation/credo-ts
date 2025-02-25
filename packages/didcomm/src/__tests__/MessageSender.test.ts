@@ -122,12 +122,12 @@ describe('MessageSender', () => {
   const transportServiceHasInboundEndpoint = mockFunction(transportService.hasInboundEndpoint)
 
   const firstDidCommService = new DidCommV1Service({
-    id: `<did>;indy`,
+    id: '<did>;indy',
     serviceEndpoint: 'https://www.first-endpoint.com',
     recipientKeys: ['#authentication-1'],
   })
   const secondDidCommService = new DidCommV1Service({
-    id: `<did>;indy`,
+    id: '<did>;indy',
     serviceEndpoint: 'https://www.second-endpoint.com',
     recipientKeys: ['#authentication-1'],
   })
@@ -209,7 +209,7 @@ describe('MessageSender', () => {
       didResolverServiceResolveDidServicesMock.mockResolvedValue([])
 
       await expect(messageSender.sendMessage(outboundMessageContext)).rejects.toThrow(
-        `Message is undeliverable to connection test-123 (Test 123)`
+        'Message is undeliverable to connection test-123 (Test 123)'
       )
       expect(eventListenerMock).toHaveBeenCalledWith({
         type: AgentEventTypes.AgentMessageSent,
@@ -525,7 +525,7 @@ describe('MessageSender', () => {
         },
       })
       await expect(messageSender.sendMessage(outboundMessageContext)).rejects.toThrow(
-        `Agent has no outbound transport!`
+        'Agent has no outbound transport!'
       )
 
       expect(eventListenerMock).toHaveBeenCalledWith({

@@ -1,5 +1,5 @@
-import type { AgentType } from './utils'
 import type { OpenId4VciCredentialBindingResolver } from '../src/openid4vc-holder'
+import type { AgentType } from './utils'
 
 import { getJwkFromKey } from '@credo-ts/core'
 import express, { type Express } from 'express'
@@ -14,7 +14,7 @@ import {
   OpenId4VciCredentialFormatProfile,
 } from '../src'
 
-import { waitForCredentialIssuanceSessionRecordSubject, createAgentFromModules } from './utils'
+import { createAgentFromModules, waitForCredentialIssuanceSessionRecordSubject } from './utils'
 import { universityDegreeCredentialConfigurationSupportedMdoc } from './utilsVci'
 
 const baseUrl = 'http://localhost:3991'

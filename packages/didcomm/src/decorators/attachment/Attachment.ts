@@ -141,11 +141,11 @@ export class Attachment {
   public getDataAsJson<T>(): T {
     if (typeof this.data.base64 === 'string') {
       return JsonEncoder.fromBase64(this.data.base64) as T
-    } else if (this.data.json) {
-      return this.data.json as T
-    } else {
-      throw new CredoError('No attachment data found in `json` or `base64` data fields.')
     }
+    if (this.data.json) {
+      return this.data.json as T
+    }
+    throw new CredoError('No attachment data found in `json` or `base64` data fields.')
   }
 
   public addJws(jws: JwsDetachedFormat) {

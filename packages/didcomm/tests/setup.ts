@@ -16,10 +16,9 @@ function toBeConnectedWith(actual: ConnectionRecord, expected: ConnectionRecord)
       message: () => `expected connection ${actual.theirDid} not to be connected to with ${expected.did}`,
       pass: true,
     }
-  } else {
-    return {
-      message: () => `expected connection ${actual.theirDid} to be connected to with ${expected.did}`,
-      pass: false,
-    }
+  }
+  return {
+    message: () => `expected connection ${actual.theirDid} to be connected to with ${expected.did}`,
+    pass: false,
   }
 }

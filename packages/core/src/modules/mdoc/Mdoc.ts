@@ -1,6 +1,6 @@
-import type { MdocSignOptions, MdocNameSpaces, MdocVerifyOptions } from './MdocOptions'
-import type { AgentContext } from '../../agent'
 import type { IssuerSignedDocument } from '@animo-id/mdoc'
+import type { AgentContext } from '../../agent'
+import type { MdocNameSpaces, MdocSignOptions, MdocVerifyOptions } from './MdocOptions'
 
 import {
   DeviceSignedDocument,
@@ -11,7 +11,7 @@ import {
   parseIssuerSigned,
 } from '@animo-id/mdoc'
 
-import { getJwkFromKey, JwaSignatureAlgorithm } from '../../crypto'
+import { JwaSignatureAlgorithm, getJwkFromKey } from '../../crypto'
 import { X509Certificate, X509ModuleConfig } from '../x509'
 
 import { TypedArrayEncoder } from './../../utils'

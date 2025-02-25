@@ -1,15 +1,15 @@
-import type { DummyStateChangedEvent } from './dummy'
 import type { Socket } from 'net'
+import type { DummyStateChangedEvent } from './dummy'
 
 import { AskarModule } from '@credo-ts/askar'
 import { Agent, ConsoleLogger, LogLevel } from '@credo-ts/core'
 import { ConnectionsModule, DidCommModule, MessagePickupModule, OutOfBandModule } from '@credo-ts/didcomm'
-import { agentDependencies, HttpInboundTransport, WsInboundTransport } from '@credo-ts/node'
+import { HttpInboundTransport, WsInboundTransport, agentDependencies } from '@credo-ts/node'
 import { askar } from '@openwallet-foundation/askar-nodejs'
 import express from 'express'
 import { Server } from 'ws'
 
-import { DummyModule, DummyEventTypes, DummyState } from './dummy'
+import { DummyEventTypes, DummyModule, DummyState } from './dummy'
 
 const run = async () => {
   // Create transports

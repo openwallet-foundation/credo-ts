@@ -1,65 +1,65 @@
+import type { AgentContext } from '@credo-ts/core'
 import type {
-  AnonCredsCredentialsForProofRequest,
-  AnonCredsGetCredentialsForProofRequestOptions,
-} from './AnonCredsProofFormat'
-import type { LegacyIndyProofFormat } from './LegacyIndyProofFormat'
+  FormatCreateRequestOptions,
+  ProofFormatAcceptProposalOptions,
+  ProofFormatAcceptRequestOptions,
+  ProofFormatAutoRespondPresentationOptions,
+  ProofFormatAutoRespondProposalOptions,
+  ProofFormatAutoRespondRequestOptions,
+  ProofFormatCreateProposalOptions,
+  ProofFormatCreateReturn,
+  ProofFormatGetCredentialsForRequestOptions,
+  ProofFormatGetCredentialsForRequestReturn,
+  ProofFormatProcessOptions,
+  ProofFormatProcessPresentationOptions,
+  ProofFormatSelectCredentialsForRequestOptions,
+  ProofFormatSelectCredentialsForRequestReturn,
+  ProofFormatService,
+} from '@credo-ts/didcomm'
 import type {
   AnonCredsCredentialDefinition,
   AnonCredsCredentialInfo,
   AnonCredsProof,
+  AnonCredsProofRequest,
   AnonCredsRequestedAttribute,
   AnonCredsRequestedAttributeMatch,
   AnonCredsRequestedPredicate,
   AnonCredsRequestedPredicateMatch,
   AnonCredsSchema,
   AnonCredsSelectedCredentials,
-  AnonCredsProofRequest,
 } from '../models'
 import type { AnonCredsHolderService, AnonCredsVerifierService, GetCredentialsForProofRequestReturn } from '../services'
-import type { AgentContext } from '@credo-ts/core'
 import type {
-  ProofFormatService,
-  ProofFormatCreateReturn,
-  FormatCreateRequestOptions,
-  ProofFormatCreateProposalOptions,
-  ProofFormatProcessOptions,
-  ProofFormatAcceptProposalOptions,
-  ProofFormatAcceptRequestOptions,
-  ProofFormatProcessPresentationOptions,
-  ProofFormatGetCredentialsForRequestOptions,
-  ProofFormatGetCredentialsForRequestReturn,
-  ProofFormatSelectCredentialsForRequestOptions,
-  ProofFormatSelectCredentialsForRequestReturn,
-  ProofFormatAutoRespondProposalOptions,
-  ProofFormatAutoRespondRequestOptions,
-  ProofFormatAutoRespondPresentationOptions,
-} from '@credo-ts/didcomm'
+  AnonCredsCredentialsForProofRequest,
+  AnonCredsGetCredentialsForProofRequestOptions,
+} from './AnonCredsProofFormat'
+import type { LegacyIndyProofFormat } from './LegacyIndyProofFormat'
 
 import { CredoError, JsonEncoder, JsonTransformer } from '@credo-ts/core'
 import { Attachment, AttachmentData, ProofFormatSpec } from '@credo-ts/didcomm'
 
 import { AnonCredsProofRequest as AnonCredsProofRequestClass } from '../models/AnonCredsProofRequest'
-import { AnonCredsVerifierServiceSymbol, AnonCredsHolderServiceSymbol } from '../services'
+import { AnonCredsHolderServiceSymbol, AnonCredsVerifierServiceSymbol } from '../services'
 import {
-  sortRequestedCredentialsMatches,
-  createRequestFromPreview,
   areAnonCredsProofRequestsEqual,
   assertBestPracticeRevocationInterval,
-  checkValidCredentialValueEncoding,
   assertNoDuplicateGroupsNamesInProofRequest,
-  getRevocationRegistriesForRequest,
-  getRevocationRegistriesForProof,
-  fetchSchema,
+  checkValidCredentialValueEncoding,
+  createRequestFromPreview,
   fetchCredentialDefinition,
   fetchRevocationStatusList,
+  fetchSchema,
+  getRevocationRegistriesForProof,
+  getRevocationRegistriesForRequest,
+  sortRequestedCredentialsMatches,
 } from '../utils'
 import { encodeCredentialValue } from '../utils/credential'
 import {
   getUnQualifiedDidIndyDid,
+  getUnqualifiedDidIndyCredentialDefinition,
+  getUnqualifiedDidIndySchema,
   isUnqualifiedCredentialDefinitionId,
   isUnqualifiedSchemaId,
-  getUnqualifiedDidIndySchema,
-  getUnqualifiedDidIndyCredentialDefinition,
 } from '../utils/indyIdentifiers'
 import { dateToTimestamp } from '../utils/timestamp'
 
@@ -432,9 +432,8 @@ export class LegacyIndyProofFormatService implements ProofFormatService<LegacyIn
     Object.keys(credentialsForRequest.predicates).forEach((attributeName) => {
       if (credentialsForRequest.predicates[attributeName].length === 0) {
         throw new CredoError('Unable to automatically select requested predicates.')
-      } else {
-        selectedCredentials.predicates[attributeName] = credentialsForRequest.predicates[attributeName][0]
       }
+      selectedCredentials.predicates[attributeName] = credentialsForRequest.predicates[attributeName][0]
     })
 
     return selectedCredentials
@@ -534,7 +533,7 @@ export class LegacyIndyProofFormatService implements ProofFormatService<LegacyIn
     )
 
     // Item is revoked when the value at the index is 1
-    const isRevoked = revocationStatusList.revocationList[parseInt(credentialRevocationId)] === 1
+    const isRevoked = revocationStatusList.revocationList[Number.parseInt(credentialRevocationId)] === 1
 
     agentContext.config.logger.trace(
       `Credential with credential revocation index '${credentialRevocationId}' is ${

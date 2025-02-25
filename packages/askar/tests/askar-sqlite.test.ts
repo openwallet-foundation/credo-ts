@@ -1,16 +1,16 @@
+import { tmpdir } from 'os'
+import path from 'path'
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 import {
   Agent,
   KeyDerivationMethod,
   TypedArrayEncoder,
-  utils,
   WalletDuplicateError,
   WalletInvalidKeyError,
   WalletNotFoundError,
+  utils,
 } from '@credo-ts/core'
 import { Store } from '@openwallet-foundation/askar-shared'
-import { tmpdir } from 'os'
-import path from 'path'
 
 import { BasicMessageRecord, BasicMessageRepository, BasicMessageRole } from '../..//didcomm'
 

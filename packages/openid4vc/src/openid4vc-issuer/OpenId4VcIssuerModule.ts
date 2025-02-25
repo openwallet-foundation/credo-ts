@@ -1,7 +1,7 @@
-import type { OpenId4VcIssuerModuleConfigOptions } from './OpenId4VcIssuerModuleConfig'
-import type { OpenId4VcIssuanceRequest } from './router'
 import type { AgentContext, DependencyManager, Module } from '@credo-ts/core'
 import type { NextFunction, Response } from 'express'
+import type { OpenId4VcIssuerModuleConfigOptions } from './OpenId4VcIssuerModuleConfig'
+import type { OpenId4VcIssuanceRequest } from './router'
 
 import { setGlobalConfig } from '@animo-id/oauth2'
 import { AgentConfig } from '@credo-ts/core'
@@ -14,14 +14,14 @@ import { OpenId4VcIssuerService } from './OpenId4VcIssuerService'
 import { OpenId4VcIssuanceSessionRepository } from './repository'
 import { OpenId4VcIssuerRepository } from './repository/OpenId4VcIssuerRepository'
 import {
-  configureCredentialOfferEndpoint,
   configureAccessTokenEndpoint,
+  configureAuthorizationChallengeEndpoint,
   configureCredentialEndpoint,
+  configureCredentialOfferEndpoint,
   configureIssuerMetadataEndpoint,
-  configureOAuthAuthorizationServerMetadataEndpoint,
   configureJwksEndpoint,
   configureNonceEndpoint,
-  configureAuthorizationChallengeEndpoint,
+  configureOAuthAuthorizationServerMetadataEndpoint,
 } from './router'
 
 /**

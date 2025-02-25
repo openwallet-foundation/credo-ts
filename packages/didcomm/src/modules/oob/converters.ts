@@ -4,9 +4,9 @@ import {
   DidCommV1Service,
   DidDocumentBuilder,
   DidKey,
+  didDocumentToNumAlgo4Did,
   didKeyToVerkey,
   verkeyToDidKey,
-  didDocumentToNumAlgo4Did,
 } from '@credo-ts/core'
 
 import { ConnectionInvitationMessage } from '../connections/messages/ConnectionInvitationMessage'

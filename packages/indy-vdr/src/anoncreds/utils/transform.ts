@@ -1,4 +1,4 @@
-import type { AnonCredsRevocationStatusList, AnonCredsRevocationRegistryDefinition } from '@credo-ts/anoncreds'
+import type { AnonCredsRevocationRegistryDefinition, AnonCredsRevocationStatusList } from '@credo-ts/anoncreds'
 
 import { CredoError } from '@credo-ts/core'
 
@@ -10,8 +10,8 @@ export type RevocationRegistryDelta = {
 }
 
 enum RevocationState {
-  Active,
-  Revoked,
+  Active = 0,
+  Revoked = 1,
 }
 
 export function anonCredsRevocationStatusListFromIndyVdr(

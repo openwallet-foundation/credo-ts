@@ -1,5 +1,5 @@
-import type { CredentialFormat } from '../CredentialFormat'
 import type { JsonObject, SingleOrArray, W3cIssuerOptions } from '@credo-ts/core'
+import type { CredentialFormat } from '../CredentialFormat'
 
 export interface JsonCredential {
   '@context': Array<string> | JsonObject

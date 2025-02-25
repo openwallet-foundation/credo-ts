@@ -11,7 +11,7 @@ describe('ConnectionRequestMessage', () => {
 
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore
-    delete connectionRequest.connection
+    connectionRequest.connection = undefined
 
     expect(() => MessageValidator.validateSync(connectionRequest)).toThrowError(ClassValidationError)
   })

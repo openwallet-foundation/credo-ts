@@ -2,7 +2,6 @@
 
 import { BaseLogger } from './BaseLogger'
 import { LogLevel } from './Logger'
-import { replaceError } from './replaceError'
 
 export class ConsoleLogger extends BaseLogger {
   // Map our log levels to console levels
@@ -28,9 +27,7 @@ export class ConsoleLogger extends BaseLogger {
 
     // Log, with or without data
     if (data) {
-      console[consoleLevel](`${prefix}: ${message}`, JSON.stringify(data, replaceError, 2))
     } else {
-      console[consoleLevel](`${prefix}: ${message}`)
     }
   }
 

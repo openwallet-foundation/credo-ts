@@ -49,18 +49,19 @@ export const parseInvitationJson = (invitationJson: Record<string, unknown>): Ou
     MessageValidator.validateSync(invitation)
     invitation.invitationType = InvitationType.OutOfBand
     return invitation
-  } else if (supportsIncomingMessageType(parsedMessageType, ConnectionInvitationMessage.type)) {
+  }
+  if (supportsIncomingMessageType(parsedMessageType, ConnectionInvitationMessage.type)) {
     const invitation = JsonTransformer.fromJSON(invitationJson, ConnectionInvitationMessage)
     MessageValidator.validateSync(invitation)
     const outOfBandInvitation = convertToNewInvitation(invitation)
     outOfBandInvitation.invitationType = InvitationType.Connection
     return outOfBandInvitation
-  } else if (invitationJson['~service']) {
+  }
+  if (invitationJson['~service']) {
     // This is probably a legacy connectionless invitation
     return transformLegacyConnectionlessInvitationToOutOfBandInvitation(invitationJson)
-  } else {
-    throw new CredoError(`Invitation with '@type' ${parsedMessageType.messageTypeUri} not supported.`)
   }
+  throw new CredoError(`Invitation with '@type' ${parsedMessageType.messageTypeUri} not supported.`)
 }
 
 /**
@@ -73,7 +74,7 @@ export const parseInvitationJson = (invitationJson: Record<string, unknown>): Ou
 export const parseInvitationUrl = (invitationUrl: string): OutOfBandInvitation => {
   const parsedUrl = parseUrl(invitationUrl).query
 
-  const encodedInvitation = parsedUrl['oob'] ?? parsedUrl['c_i'] ?? parsedUrl['d_m']
+  const encodedInvitation = parsedUrl.oob ?? parsedUrl.c_i ?? parsedUrl.d_m
 
   if (typeof encodedInvitation === 'string') {
     const invitationJson = JsonEncoder.fromBase64(encodedInvitation) as Record<string, unknown>
@@ -90,13 +91,14 @@ export const oobInvitationFromShortUrl = async (response: Response): Promise<Out
     if (response.headers.get('Content-Type')?.startsWith('application/json') && response.ok) {
       const invitationJson = (await response.json()) as Record<string, unknown>
       return parseInvitationJson(invitationJson)
-    } else if (response['url']) {
+    }
+    if (response.url) {
       // The following if else is for here for trinsic shorten urls
       // Because the redirect targets a deep link the automatic redirect does not occur
       let responseUrl
       const location = response.headers.get('Location')
       if ((response.status === 302 || response.status === 301) && location) responseUrl = location
-      else responseUrl = response['url']
+      else responseUrl = response.url
 
       return parseInvitationUrl(responseUrl)
     }
@@ -143,22 +145,21 @@ export const parseInvitationShortUrl = async (
   dependencies: AgentDependencies
 ): Promise<OutOfBandInvitation> => {
   const parsedUrl = parseUrl(invitationUrl).query
-  if (parsedUrl['oob'] || parsedUrl['c_i']) {
+  if (parsedUrl.oob || parsedUrl.c_i) {
     return parseInvitationUrl(invitationUrl)
   }
   // Legacy connectionless invitation
-  else if (parsedUrl['d_m']) {
-    const messageJson = JsonEncoder.fromBase64(parsedUrl['d_m'] as string)
+  if (parsedUrl.d_m) {
+    const messageJson = JsonEncoder.fromBase64(parsedUrl.d_m as string)
     return transformLegacyConnectionlessInvitationToOutOfBandInvitation(messageJson)
-  } else {
-    try {
-      const outOfBandInvitation = await oobInvitationFromShortUrl(await fetchShortUrl(invitationUrl, dependencies))
-      outOfBandInvitation.invitationType = InvitationType.OutOfBand
-      return outOfBandInvitation
-    } catch (error) {
-      throw new CredoError(
-        'InvitationUrl is invalid. It needs to contain one, and only one, of the following parameters: `oob`, `c_i` or `d_m`, or be valid shortened URL'
-      )
-    }
+  }
+  try {
+    const outOfBandInvitation = await oobInvitationFromShortUrl(await fetchShortUrl(invitationUrl, dependencies))
+    outOfBandInvitation.invitationType = InvitationType.OutOfBand
+    return outOfBandInvitation
+  } catch (error) {
+    throw new CredoError(
+      'InvitationUrl is invalid. It needs to contain one, and only one, of the following parameters: `oob`, `c_i` or `d_m`, or be valid shortened URL'
+    )
   }
 }

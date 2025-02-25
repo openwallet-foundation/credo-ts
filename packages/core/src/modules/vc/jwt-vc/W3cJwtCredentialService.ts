@@ -10,11 +10,11 @@ import type {
 import type { SingleValidationResult, W3cVerifyCredentialResult, W3cVerifyPresentationResult } from '../models'
 
 import { JwsService } from '../../../crypto'
-import { getJwkFromKey, getJwkClassFromJwaSignatureAlgorithm } from '../../../crypto/jose/jwk'
+import { getJwkClassFromJwaSignatureAlgorithm, getJwkFromKey } from '../../../crypto/jose/jwk'
 import { CredoError } from '../../../error'
 import { injectable } from '../../../plugins'
-import { asArray, isDid, MessageValidator } from '../../../utils'
-import { getKeyDidMappingByKeyType, DidResolverService, getKeyFromVerificationMethod } from '../../dids'
+import { MessageValidator, asArray, isDid } from '../../../utils'
+import { DidResolverService, getKeyDidMappingByKeyType, getKeyFromVerificationMethod } from '../../dids'
 import { X509ModuleConfig } from '../../x509'
 import { extractX509CertificatesFromJwt } from '../../x509/extraction'
 import { W3cJsonLdVerifiableCredential } from '../data-integrity'
@@ -51,7 +51,7 @@ export class W3cJwtCredentialService {
     const jwtPayload = getJwtPayloadFromCredential(options.credential)
 
     if (!isDid(options.verificationMethod)) {
-      throw new CredoError(`Only did identifiers are supported as verification method`)
+      throw new CredoError('Only did identifiers are supported as verification method')
     }
 
     const verificationMethod = await this.resolveVerificationMethod(agentContext, options.verificationMethod, [
@@ -528,7 +528,8 @@ export class W3cJwtCredentialService {
         throw new CredoError(
           `No verification methods found for signer '${signerId}' and key type '${jwkClass.keyType}' for alg '${credential.jwt.header.alg}'. Unable to determine which public key is associated with the credential.`
         )
-      } else if (verificationMethods.length > 1) {
+      }
+      if (verificationMethods.length > 1) {
         throw new CredoError(
           `Multiple verification methods found for signer '${signerId}' and key type '${jwkClass.keyType}' for alg '${credential.jwt.header.alg}'. Unable to determine which public key is associated with the credential.`
         )

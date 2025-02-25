@@ -1,8 +1,8 @@
+import type { DidResolverService } from '@credo-ts/core'
 import type { ConnectionsModuleConfig, DidExchangeProtocol } from '..'
 import type { MessageHandler, MessageHandlerInboundMessage } from '../../../handlers'
 import type { OutOfBandService } from '../../oob/OutOfBandService'
 import type { ConnectionService } from '../services'
-import type { DidResolverService } from '@credo-ts/core'
 
 import { CredoError } from '@credo-ts/core'
 

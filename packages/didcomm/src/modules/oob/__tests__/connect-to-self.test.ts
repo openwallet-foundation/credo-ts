@@ -7,7 +7,7 @@ import { SubjectInboundTransport } from '../../../../../../tests/transport/Subje
 import { SubjectOutboundTransport } from '../../../../../../tests/transport/SubjectOutboundTransport'
 import { Agent } from '../../../../../core'
 import { getInMemoryAgentOptions } from '../../../../../core/tests/helpers'
-import { HandshakeProtocol, DidExchangeState } from '../../connections'
+import { DidExchangeState, HandshakeProtocol } from '../../connections'
 import { OutOfBandState } from '../domain/OutOfBandState'
 
 const faberAgentOptions = getInMemoryAgentOptions('Faber Agent OOB Connect to Self', {
@@ -47,7 +47,7 @@ describe('out of band', () => {
       expect(receivedOutOfBandRecord.state).toBe(OutOfBandState.PrepareResponse)
 
       receiverSenderConnection = await faberAgent.modules.connections.returnWhenIsConnected(
-        receiverSenderConnection!.id
+        receiverSenderConnection?.id
       )
       expect(receiverSenderConnection.state).toBe(DidExchangeState.Completed)
 
@@ -60,7 +60,7 @@ describe('out of band', () => {
       expect(senderReceiverConnection).toBeConnectedWith(receiverSenderConnection)
     })
 
-    test(`make a connection with self using https://didcomm.org/didexchange/1.1 protocol, but invitation using https://didcomm.org/didexchange/1.0`, async () => {
+    test('make a connection with self using https://didcomm.org/didexchange/1.1 protocol, but invitation using https://didcomm.org/didexchange/1.0', async () => {
       const outOfBandRecord = await faberAgent.modules.oob.createInvitation()
 
       const { outOfBandInvitation } = outOfBandRecord
@@ -73,7 +73,7 @@ describe('out of band', () => {
       expect(receivedOutOfBandRecord.state).toBe(OutOfBandState.PrepareResponse)
 
       receiverSenderConnection = await faberAgent.modules.connections.returnWhenIsConnected(
-        receiverSenderConnection!.id
+        receiverSenderConnection?.id
       )
       expect(receiverSenderConnection.state).toBe(DidExchangeState.Completed)
 
@@ -99,7 +99,7 @@ describe('out of band', () => {
       expect(receivedOutOfBandRecord.state).toBe(OutOfBandState.PrepareResponse)
 
       receiverSenderConnection = await faberAgent.modules.connections.returnWhenIsConnected(
-        receiverSenderConnection!.id
+        receiverSenderConnection?.id
       )
       expect(receiverSenderConnection.state).toBe(DidExchangeState.Completed)
 

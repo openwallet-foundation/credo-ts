@@ -166,7 +166,7 @@ describe('anoncreds w3c data integrity e2e tests', () => {
     const pdCopy = JSON.parse(JSON.stringify(presentationDefinition))
     pdCopy.input_descriptors.forEach((ide: DifPresentationExchangeDefinitionV2['input_descriptors'][number]) => {
       delete ide.constraints?.statuses
-      if (ide.constraints.fields && ide.constraints.fields[0].filter?.const) {
+      if (ide.constraints.fields?.[0].filter?.const) {
         ide.constraints.fields[0].filter.const = issuerId
       }
     })

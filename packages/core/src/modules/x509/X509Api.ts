@@ -10,7 +10,10 @@ import { X509CreateCertificateOptions, X509ValidateCertificateChainOptions } fro
  */
 @injectable()
 export class X509Api {
-  public constructor(private agentContext: AgentContext, private x509ModuleConfig: X509ModuleConfig) {}
+  public constructor(
+    private agentContext: AgentContext,
+    private x509ModuleConfig: X509ModuleConfig
+  ) {}
 
   /**
    * Adds a trusted certificate to the X509 Module Config.

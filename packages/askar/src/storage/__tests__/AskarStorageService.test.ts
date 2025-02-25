@@ -1,6 +1,6 @@
 import type { AgentContext, TagsBase } from '@credo-ts/core'
 
-import { TypedArrayEncoder, SigningProviderRegistry, RecordDuplicateError, RecordNotFoundError } from '@credo-ts/core'
+import { RecordDuplicateError, RecordNotFoundError, SigningProviderRegistry, TypedArrayEncoder } from '@credo-ts/core'
 import { askar } from '@openwallet-foundation/askar-nodejs'
 
 import { TestRecord } from '../../../../core/src/storage/__tests__/TestRecord'

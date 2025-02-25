@@ -1,4 +1,3 @@
-import type { OpenId4VcIssuerRecord } from '../openid4vc-issuer/repository'
 import type {
   CallbackContext,
   ClientAuthenticationCallback,
@@ -6,9 +5,10 @@ import type {
   VerifyJwtCallback,
 } from '@animo-id/oauth2'
 import type { AgentContext } from '@credo-ts/core'
+import type { OpenId4VcIssuerRecord } from '../openid4vc-issuer/repository'
 
 import { clientAuthenticationDynamic, clientAuthenticationNone } from '@animo-id/oauth2'
-import { CredoError, getJwkFromJson, getJwkFromKey, Hasher, JsonEncoder, JwsService } from '@credo-ts/core'
+import { CredoError, Hasher, JsonEncoder, JwsService, getJwkFromJson, getJwkFromKey } from '@credo-ts/core'
 
 import { getKeyFromDid } from './utils'
 
@@ -22,7 +22,8 @@ export function getOid4vciJwtVerifyCallback(agentContext: AgentContext): VerifyJ
       jwkResolver: async () => {
         if (signer.method === 'jwk') {
           return getJwkFromJson(signer.publicJwk)
-        } else if (signer.method === 'did') {
+        }
+        if (signer.method === 'did') {
           const key = await getKeyFromDid(agentContext, signer.didUrl)
           return getJwkFromKey(key)
         }

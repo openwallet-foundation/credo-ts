@@ -1,6 +1,6 @@
 import type { ProblemReportMessageOptions } from '@credo-ts/didcomm'
 
-import { ProblemReportMessage, IsValidMessageType, parseMessageType } from '@credo-ts/didcomm'
+import { IsValidMessageType, ProblemReportMessage, parseMessageType } from '@credo-ts/didcomm'
 
 export type V1CredentialProblemReportMessageOptions = ProblemReportMessageOptions
 
@@ -9,14 +9,6 @@ export type V1CredentialProblemReportMessageOptions = ProblemReportMessageOption
  */
 export class V1CredentialProblemReportMessage extends ProblemReportMessage {
   public readonly allowDidSovPrefix = true
-
-  /**
-   * Create new CredentialProblemReportMessage instance.
-   * @param options
-   */
-  public constructor(options: V1CredentialProblemReportMessageOptions) {
-    super(options)
-  }
 
   @IsValidMessageType(V1CredentialProblemReportMessage.type)
   public readonly type = V1CredentialProblemReportMessage.type.messageTypeUri

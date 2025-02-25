@@ -15,7 +15,7 @@ import { MessageHandlerRegistry } from '../../../../../../MessageHandlerRegistry
 import { InboundMessageContext } from '../../../../../../models'
 import { DidExchangeState } from '../../../../../connections'
 import { CredentialEventTypes } from '../../../../CredentialEvents'
-import { CredentialState, CredentialRole } from '../../../../models'
+import { CredentialRole, CredentialState } from '../../../../models'
 import { CredentialExchangeRecord } from '../../../../repository'
 import { CredentialRepository } from '../../../../repository/CredentialRepository'
 import { V1RevocationNotificationMessage, V2RevocationNotificationMessage } from '../../messages'

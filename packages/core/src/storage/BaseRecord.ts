@@ -28,7 +28,7 @@ export abstract class BaseRecord<
   // We want an empty object, as Record<string, unknown> will make typescript
   // not infer the types correctly
   // eslint-disable-next-line @typescript-eslint/ban-types
-  MetadataValues = {}
+  MetadataValues = {},
 > {
   protected _tags: CustomTags = {} as CustomTags
 

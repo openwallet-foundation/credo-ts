@@ -1,8 +1,8 @@
-import type { Logger, AgentContext } from '@credo-ts/core'
-import type { InboundTransport, TransportSession, EncryptedMessage, AgentMessageReceivedEvent } from '@credo-ts/didcomm'
+import type { AgentContext, Logger } from '@credo-ts/core'
+import type { AgentMessageReceivedEvent, EncryptedMessage, InboundTransport, TransportSession } from '@credo-ts/didcomm'
 
-import { CredoError, utils, EventEmitter } from '@credo-ts/core'
-import { TransportService, AgentEventTypes, DidCommModuleConfig } from '@credo-ts/didcomm'
+import { CredoError, EventEmitter, utils } from '@credo-ts/core'
+import { AgentEventTypes, DidCommModuleConfig, TransportService } from '@credo-ts/didcomm'
 // eslint-disable-next-line import/no-named-as-default
 import WebSocket, { Server } from 'ws'
 
@@ -24,7 +24,7 @@ export class WsInboundTransport implements InboundTransport {
 
     const didcommConfig = agentContext.dependencyManager.resolve(DidCommModuleConfig)
     const wsEndpoint = didcommConfig.endpoints.find((e) => e.startsWith('ws'))
-    this.logger.debug(`Starting WS inbound transport`, {
+    this.logger.debug('Starting WS inbound transport', {
       endpoint: wsEndpoint,
     })
 
@@ -99,12 +99,11 @@ export class WebSocketTransportSession implements TransportSession {
       throw new CredoError(`${this.type} transport session has been closed.`)
     }
     this.socket.send(JSON.stringify(encryptedMessage), (error?) => {
-      if (error != undefined) {
+      if (error !== undefined) {
         this.logger.debug(`Error sending message: ${error}`)
         throw new CredoError(`${this.type} send message failed.`, { cause: error })
-      } else {
-        this.logger.debug(`${this.type} sent message successfully.`)
       }
+      this.logger.debug(`${this.type} sent message successfully.`)
     })
   }
 

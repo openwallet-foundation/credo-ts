@@ -15,12 +15,12 @@ import {
 import { Agent } from '../../../../../../../core'
 import { uuid } from '../../../../../../../core/src/utils/uuid'
 import {
-  waitForProofExchangeRecordSubject,
-  makeConnection,
-  testLogger,
-  setupEventReplaySubjects,
-  waitForProofExchangeRecord,
   getInMemoryAgentOptions,
+  makeConnection,
+  setupEventReplaySubjects,
+  testLogger,
+  waitForProofExchangeRecord,
+  waitForProofExchangeRecordSubject,
 } from '../../../../../../../core/tests'
 import {
   Attachment,
@@ -210,7 +210,7 @@ describe('V2 Connectionless Proofs - Indy', () => {
     agents = [aliceAgent, faberAgent]
 
     // eslint-disable-next-line prefer-const
-    let { message, proofRecord: faberProofExchangeRecord } = await faberAgent.modules.proofs.createRequest({
+    const { message, proofRecord: faberProofExchangeRecord } = await faberAgent.modules.proofs.createRequest({
       protocolVersion: 'v2',
       proofFormats: {
         indy: {
@@ -393,7 +393,7 @@ describe('V2 Connectionless Proofs - Indy', () => {
     })
 
     // eslint-disable-next-line prefer-const
-    let { message, proofRecord: faberProofExchangeRecord } = await faberAgent.modules.proofs.createRequest({
+    const { message, proofRecord: faberProofExchangeRecord } = await faberAgent.modules.proofs.createRequest({
       protocolVersion: 'v2',
       proofFormats: {
         indy: {
@@ -497,7 +497,7 @@ describe('V2 Connectionless Proofs - Indy', () => {
     agents = [aliceAgent, faberAgent]
 
     // eslint-disable-next-line prefer-const
-    let { message, proofRecord: faberProofExchangeRecord } = await faberAgent.modules.proofs.createRequest({
+    const { message, proofRecord: faberProofExchangeRecord } = await faberAgent.modules.proofs.createRequest({
       protocolVersion: 'v2',
       proofFormats: {
         indy: {
@@ -594,7 +594,7 @@ describe('V2 Connectionless Proofs - Indy', () => {
 
     // eslint-disable-next-line prefer-const
     // eslint-disable-next-line prefer-const
-    let { message, proofRecord: faberProofExchangeRecord } = await faberAgent.modules.proofs.createRequest({
+    const { message, proofRecord: faberProofExchangeRecord } = await faberAgent.modules.proofs.createRequest({
       protocolVersion: 'v2',
       proofFormats: {
         indy: {

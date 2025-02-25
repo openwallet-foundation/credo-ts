@@ -1,13 +1,13 @@
 import type { AgentContext, DifPresentationExchangeDefinitionV2, VerificationMethod } from '@credo-ts/core'
 
 import {
-  getKeyFromVerificationMethod,
-  W3cCredential,
-  W3cIssuer,
-  W3cCredentialSubject,
-  W3cCredentialService,
-  ClaimFormat,
   CREDENTIALS_CONTEXT_V1_URL,
+  ClaimFormat,
+  W3cCredential,
+  W3cCredentialService,
+  W3cCredentialSubject,
+  W3cIssuer,
+  getKeyFromVerificationMethod,
 } from '@credo-ts/core'
 
 import { getProofTypeFromKey } from '../src/shared/utils'

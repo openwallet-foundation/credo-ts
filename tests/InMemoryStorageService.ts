@@ -1,15 +1,15 @@
 import type { AgentContext } from '../packages/core/src/agent'
 import type { BaseRecord, TagsBase } from '../packages/core/src/storage/BaseRecord'
 import type {
-  StorageService,
   BaseRecordConstructor,
   Query,
   QueryOptions,
+  StorageService,
 } from '../packages/core/src/storage/StorageService'
 
 import { InMemoryWallet } from './InMemoryWallet'
 
-import { RecordNotFoundError, RecordDuplicateError, JsonTransformer, injectable } from '@credo-ts/core'
+import { JsonTransformer, RecordDuplicateError, RecordNotFoundError, injectable } from '@credo-ts/core'
 
 interface StorageRecord {
   value: Record<string, unknown>
@@ -92,7 +92,7 @@ export class InMemoryStorageService<T extends BaseRecord<any, any, any> = BaseRe
   public async update(agentContext: AgentContext, record: T): Promise<void> {
     record.updatedAt = new Date()
     const value = JsonTransformer.toJSON(record)
-    delete value._tags
+    value._tags = undefined
 
     if (!this.getRecordsForContext(agentContext)[record.id]) {
       throw new RecordNotFoundError(`record with id ${record.id} not found.`, {

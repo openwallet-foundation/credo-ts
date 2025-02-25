@@ -1,6 +1,6 @@
+import type { RecordTags, TagsBase } from '@credo-ts/core'
 import type { DrpcRequest, DrpcResponse } from '../messages'
 import type { DrpcRole, DrpcState } from '../models'
-import type { RecordTags, TagsBase } from '@credo-ts/core'
 
 import { BaseRecord, CredoError, utils } from '@credo-ts/core'
 

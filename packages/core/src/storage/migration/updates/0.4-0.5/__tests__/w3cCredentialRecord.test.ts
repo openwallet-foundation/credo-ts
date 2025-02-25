@@ -32,9 +32,11 @@ const w3cJsonLdCredentialService = {
 dependencyManager.resolve = (injectionToken: unknown) => {
   if (injectionToken === W3cJsonLdCredentialService) {
     return w3cJsonLdCredentialService
-  } else if (injectionToken === W3cCredentialRepository) {
+  }
+  if (injectionToken === W3cCredentialRepository) {
     return repository
-  } else if (injectionToken === AgentConfig) {
+  }
+  if (injectionToken === AgentConfig) {
     return agentConfig
   }
 

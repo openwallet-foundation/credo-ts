@@ -7,7 +7,7 @@ import type {
 } from './MessagePickupRepositoryOptions'
 import type { QueuedMessage } from './QueuedMessage'
 
-import { InjectionSymbols, Logger, injectable, inject, utils } from '@credo-ts/core'
+import { InjectionSymbols, Logger, inject, injectable, utils } from '@credo-ts/core'
 
 interface InMemoryQueuedMessage extends QueuedMessage {
   connectionId: string

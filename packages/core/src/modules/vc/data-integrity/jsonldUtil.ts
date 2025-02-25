@@ -1,7 +1,7 @@
+import type { JsonObject, JsonValue } from '../../../types'
 import type { GetProofsOptions } from './models/GetProofsOptions'
 import type { GetProofsResult } from './models/GetProofsResult'
 import type { GetTypeOptions } from './models/GetTypeOptions'
-import type { JsonObject, JsonValue } from '../../../types'
 
 import { CredoError } from '../../../error'
 import { SECURITY_CONTEXT_URL } from '../constants'
@@ -86,7 +86,7 @@ export const getProofs = async (options: GetProofsOptions): Promise<GetProofsRes
   delete document[PROOF_PROPERTY]
 
   if (typeof proofType === 'string') {
-    proofs = proofs.filter((_: Record<string, unknown>) => _.type == proofType)
+    proofs = proofs.filter((_: Record<string, unknown>) => _.type === proofType)
   }
   if (Array.isArray(proofType)) {
     proofs = proofs.filter((_: Record<string, unknown>) => proofType.includes(_.type))
@@ -125,13 +125,13 @@ export const getTypeInfo = async (
     documentLoader,
   })
 
-  delete compacted['@context']
+  compacted['@context'] = undefined
 
   const alias = Object.keys(compacted)[0]
 
   // optimize: expand only `@type` and `type` values
   /* eslint-disable prefer-const */
-  let toExpand: Record<string, unknown> = { '@context': context }
+  const toExpand: Record<string, unknown> = { '@context': context }
 
   // eslint-disable-next-line @typescript-eslint/ban-ts-comment
   // @ts-ignore - needed because getValues is not part of the public API.

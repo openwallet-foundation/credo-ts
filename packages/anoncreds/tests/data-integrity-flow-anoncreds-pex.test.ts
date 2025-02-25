@@ -1,6 +1,6 @@
-import type { AnonCredsTestsAgent } from './anoncredsSetup'
-import type { EventReplaySubject } from '../../core/tests'
 import type { InputDescriptorV2 } from '@sphereon/pex-models'
+import type { EventReplaySubject } from '../../core/tests'
+import type { AnonCredsTestsAgent } from './anoncredsSetup'
 
 import { W3cCredential, W3cCredentialService, W3cCredentialSubject } from '@credo-ts/core'
 import { AutoAcceptCredential, CredentialExchangeRecord, CredentialState, ProofState } from '@credo-ts/didcomm'

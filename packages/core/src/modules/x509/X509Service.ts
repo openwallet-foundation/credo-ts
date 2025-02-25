@@ -1,8 +1,8 @@
 import type {
-  X509ValidateCertificateChainOptions,
+  X509CreateCertificateOptions,
   X509GetLeafCertificateOptions,
   X509ParseCertificateOptions,
-  X509CreateCertificateOptions,
+  X509ValidateCertificateChainOptions,
 } from './X509ServiceOptions'
 
 import * as x509 from '@peculiar/x509'

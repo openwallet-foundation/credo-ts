@@ -9,7 +9,7 @@ import {
   setupAnonCredsTests,
 } from '../../../../../../../anoncreds/tests/legacyAnonCredsSetup'
 import { JsonTransformer } from '../../../../../../../core/src/utils/JsonTransformer'
-import { waitForProofExchangeRecordSubject, testLogger } from '../../../../../../../core/tests'
+import { testLogger, waitForProofExchangeRecordSubject } from '../../../../../../../core/tests'
 import { ProofState } from '../../../models/ProofState'
 
 describe('V2 Proofs Negotiation - Indy', () => {
@@ -68,7 +68,7 @@ describe('V2 Proofs Negotiation - Indy', () => {
     await aliceAgent.wallet.delete()
   })
 
-  test(`Proof negotiation between Alice and Faber`, async () => {
+  test('Proof negotiation between Alice and Faber', async () => {
     testLogger.test('Alice sends proof proposal to Faber')
 
     let aliceProofExchangeRecord = await aliceAgent.modules.proofs.proposeProof({

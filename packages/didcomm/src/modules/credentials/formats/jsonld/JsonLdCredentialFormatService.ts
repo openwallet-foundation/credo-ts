@@ -1,14 +1,10 @@
-import type {
-  JsonLdCredentialFormat,
-  JsonCredential,
-  JsonLdFormatDataCredentialDetail,
-  JsonLdFormatDataVerifiableCredential,
-} from './JsonLdCredentialFormat'
+import type { AgentContext } from '@credo-ts/core'
 import type { CredentialFormatService } from '../CredentialFormatService'
 import type {
   CredentialFormatAcceptOfferOptions,
   CredentialFormatAcceptProposalOptions,
   CredentialFormatAcceptRequestOptions,
+  CredentialFormatAutoRespondCredentialOptions,
   CredentialFormatAutoRespondOfferOptions,
   CredentialFormatAutoRespondProposalOptions,
   CredentialFormatAutoRespondRequestOptions,
@@ -20,22 +16,26 @@ import type {
   CredentialFormatCreateReturn,
   CredentialFormatProcessCredentialOptions,
   CredentialFormatProcessOptions,
-  CredentialFormatAutoRespondCredentialOptions,
 } from '../CredentialFormatServiceOptions'
-import type { AgentContext } from '@credo-ts/core'
+import type {
+  JsonCredential,
+  JsonLdCredentialFormat,
+  JsonLdFormatDataCredentialDetail,
+  JsonLdFormatDataVerifiableCredential,
+} from './JsonLdCredentialFormat'
 
 import {
-  CredoError,
-  JsonEncoder,
-  utils,
-  JsonTransformer,
-  findVerificationMethodByKeyType,
-  DidResolverService,
-  W3cJsonLdCredentialService,
   ClaimFormat,
+  CredoError,
+  DidResolverService,
+  JsonEncoder,
+  JsonTransformer,
   W3cCredential,
   W3cCredentialService,
+  W3cJsonLdCredentialService,
   W3cJsonLdVerifiableCredential,
+  findVerificationMethodByKeyType,
+  utils,
 } from '@credo-ts/core'
 
 import { Attachment, AttachmentData } from '../../../../decorators/attachment/Attachment'
@@ -342,7 +342,7 @@ export class JsonLdCredentialFormatService implements CredentialFormatService<Js
     request: JsonLdFormatDataCredentialDetail
   ): void {
     const jsonCredential = JsonTransformer.toJSON(credential)
-    delete jsonCredential.proof
+    jsonCredential.proof = undefined
 
     if (Array.isArray(credential.proof)) {
       throw new CredoError('Credential proof arrays are not supported')

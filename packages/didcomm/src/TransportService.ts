@@ -1,8 +1,8 @@
+import type { DidDocument } from '@credo-ts/core'
 import type { AgentMessage } from './AgentMessage'
 import type { EnvelopeKeys } from './EnvelopeService'
 import type { TransportSessionRemovedEvent, TransportSessionSavedEvent } from './transport'
 import type { EncryptedMessage } from './types'
-import type { DidDocument } from '@credo-ts/core'
 
 import { AgentContext, CredoError, EventEmitter, injectable } from '@credo-ts/core'
 

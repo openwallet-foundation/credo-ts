@@ -10,7 +10,7 @@ import { BaseLogger } from '../src/logger/BaseLogger'
 import { replaceError } from '../src/logger/replaceError'
 
 function logToTransport(logObject: ILogObj) {
-  appendFileSync('logs.txt', JSON.stringify(logObject) + '\n')
+  appendFileSync('logs.txt', `${JSON.stringify(logObject)}\n`)
 }
 
 export class TestLogger extends BaseLogger {
@@ -48,12 +48,12 @@ export class TestLogger extends BaseLogger {
     if (logger) {
       this.logger = logger.getSubLogger({
         name,
-        minLevel: this.logLevel == LogLevel.off ? undefined : this.tsLogLevelNumberMap[this.logLevel],
+        minLevel: this.logLevel === LogLevel.off ? undefined : this.tsLogLevelNumberMap[this.logLevel],
       })
     } else {
       this.logger = new Logger({
         name,
-        minLevel: this.logLevel == LogLevel.off ? undefined : this.tsLogLevelNumberMap[this.logLevel],
+        minLevel: this.logLevel === LogLevel.off ? undefined : this.tsLogLevelNumberMap[this.logLevel],
         attachedTransports: [logToTransport],
       })
     }

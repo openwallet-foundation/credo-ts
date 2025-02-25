@@ -1,11 +1,11 @@
-import type { JwkJson } from './Jwk'
 import type { JwaEncryptionAlgorithm } from '../jwa/alg'
+import type { JwkJson } from './Jwk'
 
 import {
   AffinePoint,
+  Secp384r1,
   isValidCompressedPublicKeyFormat,
   isValidDecompressedPublicKeyFormat,
-  Secp384r1,
 } from 'ec-compression'
 
 import { CredoError } from '../../../error'
@@ -15,7 +15,7 @@ import { JwaCurve, JwaKeyType } from '../jwa'
 import { JwaSignatureAlgorithm } from '../jwa/alg'
 
 import { Jwk } from './Jwk'
-import { hasKty, hasCrv, hasX, hasY, hasValidUse } from './validate'
+import { hasCrv, hasKty, hasValidUse, hasX, hasY } from './validate'
 
 export class P384Jwk extends Jwk {
   public static readonly supportedEncryptionAlgorithms: JwaEncryptionAlgorithm[] = []
@@ -107,7 +107,7 @@ export class P384Jwk extends Jwk {
     }
 
     throw new CredoError(
-      `${this.keyType} public key is neither a valid compressed or uncompressed key. Key prefix '${publicKey[0]}', key length '${publicKey.length}'`
+      `${P384Jwk.keyType} public key is neither a valid compressed or uncompressed key. Key prefix '${publicKey[0]}', key length '${publicKey.length}'`
     )
   }
 }

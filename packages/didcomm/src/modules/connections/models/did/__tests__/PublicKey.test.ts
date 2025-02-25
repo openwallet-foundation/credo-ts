@@ -3,12 +3,12 @@ import type { ClassConstructor } from 'class-transformer'
 import { instanceToPlain, plainToInstance } from 'class-transformer'
 
 import {
-  PublicKeyTransformer,
-  PublicKey,
-  publicKeyTypes,
-  EddsaSaSigSecp256k1,
   Ed25119Sig2018,
+  EddsaSaSigSecp256k1,
+  PublicKey,
+  PublicKeyTransformer,
   RsaSig2018,
+  publicKeyTypes,
 } from '../publicKey'
 
 const publicKeysJson = [

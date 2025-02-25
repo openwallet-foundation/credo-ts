@@ -1,53 +1,53 @@
+import type { AgentContext } from '@credo-ts/core'
+import type { CredentialDefinitionPrivate, JsonObject, KeyCorrectnessProof } from '@hyperledger/anoncreds-shared'
 import type {
-  AnonCredsSchema,
+  AnonCredsCredential,
   AnonCredsCredentialDefinition,
+  AnonCredsCredentialOffer,
   AnonCredsRevocationRegistryDefinition,
   AnonCredsRevocationStatusList,
-  AnonCredsCredentialOffer,
-  AnonCredsCredential,
+  AnonCredsSchema,
 } from '../models'
 import type {
   AnonCredsIssuerService,
-  CreateSchemaOptions,
   CreateCredentialDefinitionOptions,
   CreateCredentialDefinitionReturn,
+  CreateCredentialOfferOptions,
+  CreateCredentialOptions,
+  CreateCredentialReturn,
   CreateRevocationRegistryDefinitionOptions,
   CreateRevocationRegistryDefinitionReturn,
   CreateRevocationStatusListOptions,
+  CreateSchemaOptions,
   UpdateRevocationStatusListOptions,
-  CreateCredentialOptions,
-  CreateCredentialReturn,
-  CreateCredentialOfferOptions,
 } from '../services'
-import type { AgentContext } from '@credo-ts/core'
-import type { CredentialDefinitionPrivate, JsonObject, KeyCorrectnessProof } from '@hyperledger/anoncreds-shared'
 
-import { injectable, CredoError } from '@credo-ts/core'
+import { CredoError, injectable } from '@credo-ts/core'
 import {
-  RevocationStatusList,
-  RevocationRegistryDefinitionPrivate,
-  RevocationRegistryDefinition,
-  CredentialRevocationConfig,
   Credential,
   CredentialDefinition,
   CredentialOffer,
+  CredentialRevocationConfig,
+  RevocationRegistryDefinition,
+  RevocationRegistryDefinitionPrivate,
+  RevocationStatusList,
   Schema,
 } from '@hyperledger/anoncreds-shared'
 
 import { AnonCredsRsError } from '../error'
 import {
-  AnonCredsCredentialDefinitionRepository,
-  AnonCredsRevocationRegistryDefinitionPrivateRepository,
-  AnonCredsKeyCorrectnessProofRepository,
   AnonCredsCredentialDefinitionPrivateRepository,
+  AnonCredsCredentialDefinitionRepository,
+  AnonCredsKeyCorrectnessProofRepository,
+  AnonCredsRevocationRegistryDefinitionPrivateRepository,
   AnonCredsRevocationRegistryDefinitionRepository,
   AnonCredsRevocationRegistryState,
 } from '../repository'
 import {
-  isUnqualifiedCredentialDefinitionId,
-  parseIndySchemaId,
   getUnqualifiedSchemaId,
+  isUnqualifiedCredentialDefinitionId,
   parseIndyDid,
+  parseIndySchemaId,
 } from '../utils/indyIdentifiers'
 
 @injectable()

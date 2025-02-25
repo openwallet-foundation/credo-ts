@@ -1,9 +1,9 @@
+import type { DidRepository } from '@credo-ts/core'
 import type { MessageHandler, MessageHandlerInboundMessage } from '../../../handlers'
 import type { OutOfBandService } from '../../oob/OutOfBandService'
 import type { RoutingService } from '../../routing/services/RoutingService'
 import type { ConnectionsModuleConfig } from '../ConnectionsModuleConfig'
 import type { ConnectionService } from '../services'
-import type { DidRepository } from '@credo-ts/core'
 
 import { CredoError, tryParseDid } from '@credo-ts/core'
 

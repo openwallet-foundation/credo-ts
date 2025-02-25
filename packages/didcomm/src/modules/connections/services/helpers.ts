@@ -1,20 +1,20 @@
+import type { AgentContext, DidDocument, PeerDidNumAlgo, ResolvedDidCommService } from '@credo-ts/core'
 import type { Routing } from '../../../models'
 import type { DidDoc, PublicKey } from '../models'
-import type { AgentContext, DidDocument, PeerDidNumAlgo, ResolvedDidCommService } from '@credo-ts/core'
 
 import {
-  Key,
-  KeyType,
   CredoError,
-  IndyAgentService,
   DidCommV1Service,
   DidDocumentBuilder,
-  getEd25519VerificationKey2018,
+  DidDocumentRole,
   DidRepository,
   DidsApi,
+  IndyAgentService,
+  Key,
+  KeyType,
   createPeerDidDocumentFromServices,
-  DidDocumentRole,
   didDocumentJsonToNumAlgo1Did,
+  getEd25519VerificationKey2018,
 } from '@credo-ts/core'
 
 import { EmbeddedAuthentication } from '../models'

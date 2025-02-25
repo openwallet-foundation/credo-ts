@@ -1,7 +1,7 @@
-import type { CustomDidTags } from './DidRecord'
 import type { AgentContext } from '../../../agent'
 import type { Key } from '../../../crypto'
 import type { DidDocument } from '../domain'
+import type { CustomDidTags } from './DidRecord'
 
 import { EventEmitter } from '../../../agent/EventEmitter'
 import { InjectionSymbols } from '../../../constants'

@@ -26,7 +26,7 @@ export function IsValidDrpcRequest(validationOptions?: ValidationOptions): Prope
             return isValid
           },
           defaultMessage: buildMessage(
-            (eachPrefix) => eachPrefix + '$property is not a valid DrpcRequest',
+            (eachPrefix) => `${eachPrefix}$property is not a valid DrpcRequest`,
             validationOptions
           ),
         },

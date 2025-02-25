@@ -25,7 +25,7 @@ const agentOptions = getAgentOptions(
   { askar: askarModule }
 )
 // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-agentOptions.config.walletConfig!.storage!.inMemory = false
+agentOptions.config.walletConfig?.storage!.inMemory = false
 
 const aliceCredentialRecordsString = readFileSync(
   path.join(__dirname, '__fixtures__/alice-4-credentials-0.1.json'),

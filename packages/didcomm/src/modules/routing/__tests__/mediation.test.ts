@@ -17,11 +17,11 @@ import { MediatorModule } from '../MediatorModule'
 import { MediatorPickupStrategy } from '../MediatorPickupStrategy'
 import { MediationState } from '../models/MediationState'
 
-const getRecipientAgentOptions = (useDidKeyInProtocols: boolean = true) =>
+const getRecipientAgentOptions = (useDidKeyInProtocols = true) =>
   getInMemoryAgentOptions('Mediation: Recipient', {
     useDidKeyInProtocols,
   })
-const getMediatorAgentOptions = (useDidKeyInProtocols: boolean = true) =>
+const getMediatorAgentOptions = (useDidKeyInProtocols = true) =>
   getInMemoryAgentOptions(
     'Mediation: Mediator',
     {
@@ -109,7 +109,7 @@ describe('mediator establishment', () => {
     const recipientMediator = await recipientAgent.modules.mediationRecipient.findDefaultMediator()
     // eslint-disable-next-line @typescript-eslint/no-non-null-asserted-optional-chain, @typescript-eslint/no-non-null-assertion
     const recipientMediatorConnection = await recipientAgent.modules.connections.getById(
-      recipientMediator!.connectionId
+      recipientMediator?.connectionId
     )
 
     expect(recipientMediatorConnection).toBeInstanceOf(ConnectionRecord)
@@ -118,7 +118,7 @@ describe('mediator establishment', () => {
     const [mediatorRecipientConnection] = await mediatorAgent.modules.connections.findAllByOutOfBandId(
       mediatorOutOfBandRecord.id
     )
-    expect(mediatorRecipientConnection!.isReady).toBe(true)
+    expect(mediatorRecipientConnection?.isReady).toBe(true)
 
     expect(mediatorRecipientConnection).toBeConnectedWith(recipientMediatorConnection)
     expect(recipientMediatorConnection).toBeConnectedWith(mediatorRecipientConnection!)
@@ -143,7 +143,7 @@ describe('mediator establishment', () => {
     )
 
     senderRecipientConnection = await senderAgent.modules.connections.returnWhenIsConnected(
-      senderRecipientConnection!.id
+      senderRecipientConnection?.id
     )
 
     let [recipientSenderConnection] = await recipientAgent.modules.connections.findAllByOutOfBandId(
@@ -151,11 +151,11 @@ describe('mediator establishment', () => {
     )
     expect(recipientSenderConnection).toBeConnectedWith(senderRecipientConnection)
     expect(senderRecipientConnection).toBeConnectedWith(recipientSenderConnection!)
-    expect(recipientSenderConnection!.isReady).toBe(true)
+    expect(recipientSenderConnection?.isReady).toBe(true)
     expect(senderRecipientConnection.isReady).toBe(true)
 
     recipientSenderConnection = await recipientAgent.modules.connections.returnWhenIsConnected(
-      recipientSenderConnection!.id
+      recipientSenderConnection?.id
     )
 
     const message = 'hello, world'
@@ -231,14 +231,14 @@ describe('mediator establishment', () => {
 
     const recipientMediator = await recipientAgent.modules.mediationRecipient.findDefaultMediator()
     const recipientMediatorConnection = await recipientAgent.modules.connections.getById(
-      recipientMediator!.connectionId
+      recipientMediator?.connectionId
     )
     expect(recipientMediatorConnection?.isReady).toBe(true)
 
     const [mediatorRecipientConnection] = await mediatorAgent.modules.connections.findAllByOutOfBandId(
       mediatorOutOfBandRecord.id
     )
-    expect(mediatorRecipientConnection!.isReady).toBe(true)
+    expect(mediatorRecipientConnection?.isReady).toBe(true)
 
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     expect(mediatorRecipientConnection).toBeConnectedWith(recipientMediatorConnection!)
@@ -270,7 +270,7 @@ describe('mediator establishment', () => {
     )
 
     senderRecipientConnection = await senderAgent.modules.connections.returnWhenIsConnected(
-      senderRecipientConnection!.id
+      senderRecipientConnection?.id
     )
     const [recipientSenderConnection] = await recipientAgent.modules.connections.findAllByOutOfBandId(
       recipientOutOfBandRecord.id
@@ -278,7 +278,7 @@ describe('mediator establishment', () => {
     expect(recipientSenderConnection).toBeConnectedWith(senderRecipientConnection)
     expect(senderRecipientConnection).toBeConnectedWith(recipientSenderConnection!)
 
-    expect(recipientSenderConnection!.isReady).toBe(true)
+    expect(recipientSenderConnection?.isReady).toBe(true)
     expect(senderRecipientConnection.isReady).toBe(true)
 
     const message = 'hello, world'

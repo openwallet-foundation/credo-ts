@@ -1,8 +1,8 @@
-import type { SigningProvider } from './SigningProvider'
 import type { KeyType } from '../KeyType'
+import type { SigningProvider } from './SigningProvider'
 
 import { CredoError } from '../../error'
-import { injectable, injectAll } from '../../plugins'
+import { injectAll, injectable } from '../../plugins'
 
 export const SigningProviderToken = Symbol('SigningProviderToken')
 

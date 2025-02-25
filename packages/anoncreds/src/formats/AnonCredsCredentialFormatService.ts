@@ -1,31 +1,31 @@
-import type { AnonCredsCredentialFormat, AnonCredsCredentialProposalFormat } from './AnonCredsCredentialFormat'
-import type { AnonCredsCredential, AnonCredsCredentialOffer, AnonCredsCredentialRequest } from '../models'
-import type { AnonCredsIssuerService, AnonCredsHolderService } from '../services'
-import type { AnonCredsCredentialMetadata, AnonCredsCredentialRequestMetadata } from '../utils/metadata'
 import type { AgentContext } from '@credo-ts/core'
 import type {
-  CredentialFormatService,
+  CredentialExchangeRecord,
+  CredentialFormatAcceptOfferOptions,
+  CredentialFormatAcceptProposalOptions,
+  CredentialFormatAcceptRequestOptions,
+  CredentialFormatAutoRespondCredentialOptions,
+  CredentialFormatAutoRespondOfferOptions,
+  CredentialFormatAutoRespondProposalOptions,
+  CredentialFormatAutoRespondRequestOptions,
+  CredentialFormatCreateOfferOptions,
+  CredentialFormatCreateOfferReturn,
   CredentialFormatCreateProposalOptions,
   CredentialFormatCreateProposalReturn,
-  CredentialFormatProcessOptions,
-  CredentialFormatAcceptProposalOptions,
-  CredentialFormatCreateOfferReturn,
-  CredentialFormatCreateOfferOptions,
-  CredentialFormatAcceptOfferOptions,
   CredentialFormatCreateReturn,
-  CredentialFormatAcceptRequestOptions,
   CredentialFormatProcessCredentialOptions,
-  CredentialFormatAutoRespondProposalOptions,
-  CredentialFormatAutoRespondOfferOptions,
-  CredentialFormatAutoRespondRequestOptions,
-  CredentialFormatAutoRespondCredentialOptions,
-  CredentialExchangeRecord,
+  CredentialFormatProcessOptions,
+  CredentialFormatService,
   CredentialPreviewAttributeOptions,
   LinkedAttachment,
 } from '@credo-ts/didcomm'
+import type { AnonCredsCredential, AnonCredsCredentialOffer, AnonCredsCredentialRequest } from '../models'
+import type { AnonCredsHolderService, AnonCredsIssuerService } from '../services'
+import type { AnonCredsCredentialMetadata, AnonCredsCredentialRequestMetadata } from '../utils/metadata'
+import type { AnonCredsCredentialFormat, AnonCredsCredentialProposalFormat } from './AnonCredsCredentialFormat'
 
-import { MessageValidator, CredoError, JsonEncoder, utils, JsonTransformer } from '@credo-ts/core'
-import { ProblemReportError, CredentialFormatSpec, Attachment, CredentialProblemReportReason } from '@credo-ts/didcomm'
+import { CredoError, JsonEncoder, JsonTransformer, MessageValidator, utils } from '@credo-ts/core'
+import { Attachment, CredentialFormatSpec, CredentialProblemReportReason, ProblemReportError } from '@credo-ts/didcomm'
 
 import { AnonCredsCredentialProposal } from '../models/AnonCredsCredentialProposal'
 import {
@@ -33,7 +33,7 @@ import {
   AnonCredsRevocationRegistryDefinitionPrivateRepository,
   AnonCredsRevocationRegistryState,
 } from '../repository'
-import { AnonCredsIssuerServiceSymbol, AnonCredsHolderServiceSymbol } from '../services'
+import { AnonCredsHolderServiceSymbol, AnonCredsIssuerServiceSymbol } from '../services'
 import {
   dateToTimestamp,
   fetchCredentialDefinition,
@@ -42,10 +42,10 @@ import {
   fetchSchema,
 } from '../utils'
 import {
-  convertAttributesToCredentialValues,
+  assertAttributesMatch,
   assertCredentialValuesMatch,
   checkCredentialValuesMatch,
-  assertAttributesMatch,
+  convertAttributesToCredentialValues,
   createAndLinkAttachmentsToPreview,
 } from '../utils/credential'
 import { AnonCredsCredentialMetadataKey, AnonCredsCredentialRequestMetadataKey } from '../utils/metadata'

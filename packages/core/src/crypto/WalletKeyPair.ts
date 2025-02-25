@@ -1,6 +1,6 @@
-import type { Key } from './Key'
 import type { LdKeyPairOptions } from '../modules/vc/data-integrity/models/LdKeyPair'
 import type { Wallet } from '../wallet'
+import type { Key } from './Key'
 
 import { VerificationMethod } from '../modules/dids'
 import { getKeyFromVerificationMethod } from '../modules/dids/domain/key-type/keyDidMapping'

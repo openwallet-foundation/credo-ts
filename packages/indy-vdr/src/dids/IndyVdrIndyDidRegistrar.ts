@@ -1,5 +1,3 @@
-import type { IndyEndpointAttrib } from './didSovUtil'
-import type { IndyVdrPool } from '../pool'
 import type {
   AgentContext,
   Buffer,
@@ -13,11 +11,13 @@ import type {
   DidUpdateResult,
 } from '@credo-ts/core'
 import type { IndyVdrRequest } from '@hyperledger/indy-vdr-shared'
+import type { IndyVdrPool } from '../pool'
+import type { IndyEndpointAttrib } from './didSovUtil'
 
 import { parseIndyDid } from '@credo-ts/anoncreds'
 import {
   DidCommV1Service,
-  NewDidCommV2Service,
+  DidCommV2Service,
   DidDocumentRole,
   DidRecord,
   DidRepository,
@@ -25,7 +25,7 @@ import {
   IndyAgentService,
   Key,
   KeyType,
-  DidCommV2Service,
+  NewDidCommV2Service,
   TypedArrayEncoder,
 } from '@credo-ts/core'
 import { AttribRequest, CustomRequest, NymRequest } from '@hyperledger/indy-vdr-shared'
@@ -364,7 +364,7 @@ export class IndyVdrIndyDidRegistrar implements DidRegistrar {
       didRegistrationMetadata: {},
       didState: {
         state: 'failed',
-        reason: `notImplemented: updating did:indy not implemented yet`,
+        reason: 'notImplemented: updating did:indy not implemented yet',
       },
     }
   }
@@ -375,7 +375,7 @@ export class IndyVdrIndyDidRegistrar implements DidRegistrar {
       didRegistrationMetadata: {},
       didState: {
         state: 'failed',
-        reason: `notImplemented: deactivating did:indy not implemented yet`,
+        reason: 'notImplemented: deactivating did:indy not implemented yet',
       },
     }
   }

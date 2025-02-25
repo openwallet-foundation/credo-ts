@@ -1,8 +1,8 @@
+import type { AgentContext, BaseRecordAny, ResolvedDidCommService } from '@credo-ts/core'
 import type { AgentMessage } from './AgentMessage'
 import type { Routing } from './models'
 import type { ConnectionRecord } from './modules/connections/repository'
 import type { OutOfBandRecord } from './modules/oob'
-import type { AgentContext, BaseRecordAny, ResolvedDidCommService } from '@credo-ts/core'
 
 import { CredoError, Key, utils } from '@credo-ts/core'
 
@@ -184,7 +184,7 @@ async function getServicesForMessage(
 
     if (!recipientService) {
       throw new CredoError(
-        `Could not find a service to send the message to. Please make sure the connection has a service or provide a service to send the message to.`
+        'Could not find a service to send the message to. Please make sure the connection has a service or provide a service to send the message to.'
       )
     }
 
@@ -203,7 +203,7 @@ async function getServicesForMessage(
 
     if (lastSentMessage && !ourService) {
       throw new CredoError(
-        `Could not find a service to send the message to. Please make sure the connection has a service or provide a service to send the message to.`
+        'Could not find a service to send the message to. Please make sure the connection has a service or provide a service to send the message to.'
       )
     }
   }

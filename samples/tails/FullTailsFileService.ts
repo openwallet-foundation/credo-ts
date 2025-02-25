@@ -1,10 +1,10 @@
 import type { AnonCredsRevocationRegistryDefinition } from '@credo-ts/anoncreds'
 import type { AgentContext } from '@credo-ts/core'
 
+import fs from 'fs'
 import { BasicTailsFileService } from '@credo-ts/anoncreds'
 import { utils } from '@credo-ts/core'
 import FormData from 'form-data'
-import fs from 'fs'
 
 export class FullTailsFileService extends BasicTailsFileService {
   private tailsServerBaseUrl?: string

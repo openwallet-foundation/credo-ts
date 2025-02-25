@@ -8,25 +8,25 @@ import { SubjectOutboundTransport } from '../../../../../../../tests/transport/S
 import { Agent } from '../../../../../../core/src'
 import { uuid } from '../../../../../../core/src/utils/uuid'
 import {
-  testLogger,
-  waitForProofExchangeRecordSubject,
+  getInMemoryAgentOptions,
   makeConnection,
   setupEventReplaySubjects,
-  getInMemoryAgentOptions,
+  testLogger,
+  waitForProofExchangeRecordSubject,
 } from '../../../../../../core/tests'
 import {
-  CredentialEventTypes,
-  AutoAcceptProof,
-  ProofState,
-  HandshakeProtocol,
-  MediatorPickupStrategy,
-  LinkedAttachment,
   Attachment,
   AttachmentData,
-  ProofEventTypes,
-  MediatorModule,
+  AutoAcceptProof,
+  CredentialEventTypes,
+  HandshakeProtocol,
+  LinkedAttachment,
   MediationRecipientModule,
+  MediatorModule,
+  MediatorPickupStrategy,
   MessageReceiver,
+  ProofEventTypes,
+  ProofState,
 } from '../../../../../../didcomm/src'
 import {
   getAnonCredsIndyModules,
@@ -483,7 +483,7 @@ describe('V1 Proofs - Connectionless - Indy', () => {
     })
 
     // eslint-disable-next-line prefer-const
-    let { message, proofRecord: faberProofExchangeRecord } = await faberAgent.modules.proofs.createRequest({
+    const { message, proofRecord: faberProofExchangeRecord } = await faberAgent.modules.proofs.createRequest({
       protocolVersion: 'v1',
       proofFormats: {
         indy: {

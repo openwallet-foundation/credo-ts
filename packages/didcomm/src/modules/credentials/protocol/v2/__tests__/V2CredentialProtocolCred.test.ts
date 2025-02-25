@@ -27,7 +27,7 @@ import {
 import { Attachment, AttachmentData } from '../../../../../decorators/attachment/Attachment'
 import { AckStatus } from '../../../../../messages'
 import { InboundMessageContext } from '../../../../../models'
-import { DidCommMessageRepository, DidCommMessageRecord, DidCommMessageRole } from '../../../../../repository'
+import { DidCommMessageRecord, DidCommMessageRepository, DidCommMessageRole } from '../../../../../repository'
 import { DidExchangeState } from '../../../../connections'
 import { ConnectionService } from '../../../../connections/services/ConnectionService'
 import { CredentialEventTypes } from '../../../CredentialEvents'
@@ -327,7 +327,7 @@ describe('credentialProtocol', () => {
 
     const validState = CredentialState.OfferReceived
     const invalidCredentialStates = Object.values(CredentialState).filter((state) => state !== validState)
-    test(`throws an error when state transition is invalid`, async () => {
+    test('throws an error when state transition is invalid', async () => {
       await Promise.all(
         invalidCredentialStates.map(async (state) => {
           await expect(
@@ -386,7 +386,7 @@ describe('credentialProtocol', () => {
 
     const validState = CredentialState.OfferSent
     const invalidCredentialStates = Object.values(CredentialState).filter((state) => state !== validState)
-    test(`throws an error when state transition is invalid`, async () => {
+    test('throws an error when state transition is invalid', async () => {
       const messageContext = new InboundMessageContext(credentialRequestMessage, {
         connection,
         agentContext,
@@ -583,7 +583,7 @@ describe('credentialProtocol', () => {
 
     const validState = CredentialState.CredentialReceived
     const invalidCredentialStates = Object.values(CredentialState).filter((state) => state !== validState)
-    test(`throws an error when state transition is invalid`, async () => {
+    test('throws an error when state transition is invalid', async () => {
       await Promise.all(
         invalidCredentialStates.map(async (state) => {
           await expect(
@@ -674,7 +674,7 @@ describe('credentialProtocol', () => {
       agentContext,
     })
 
-    test(`updates problem report error message and returns credential record`, async () => {
+    test('updates problem report error message and returns credential record', async () => {
       const credentialRecord = mockCredentialRecord({
         state: CredentialState.OfferReceived,
       })

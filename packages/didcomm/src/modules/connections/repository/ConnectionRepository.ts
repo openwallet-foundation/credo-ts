@@ -1,7 +1,7 @@
-import type { DidExchangeRole } from '../models'
 import type { AgentContext } from '@credo-ts/core'
+import type { DidExchangeRole } from '../models'
 
-import { EventEmitter, InjectionSymbols, injectable, inject, Repository, StorageService } from '@credo-ts/core'
+import { EventEmitter, InjectionSymbols, Repository, StorageService, inject, injectable } from '@credo-ts/core'
 
 import { ConnectionRecord } from './ConnectionRecord'
 

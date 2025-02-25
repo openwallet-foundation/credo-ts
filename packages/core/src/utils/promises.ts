@@ -20,14 +20,14 @@ export function allSettled<T>(promises: Promise<T>[]) {
             ({
               status: 'fulfilled',
               value,
-            } as AllSettledFulfilled<T>)
+            }) as AllSettledFulfilled<T>
         )
         .catch(
           (reason) =>
             ({
               status: 'rejected',
               reason,
-            } as AllSettledRejected)
+            }) as AllSettledRejected
         )
     )
   )

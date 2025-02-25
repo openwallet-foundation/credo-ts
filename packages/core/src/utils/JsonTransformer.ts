@@ -1,6 +1,4 @@
-import type { Validate } from 'class-validator'
-
-import { instanceToPlain, plainToInstance, instanceToInstance } from 'class-transformer'
+import { instanceToInstance, instanceToPlain, plainToInstance } from 'class-transformer'
 
 import { ClassValidationError } from '../error/ClassValidationError'
 
@@ -47,7 +45,7 @@ export class JsonTransformer {
   }
 
   public static serialize<T>(classInstance: T): string {
-    return JSON.stringify(this.toJSON(classInstance))
+    return JSON.stringify(JsonTransformer.toJSON(classInstance))
   }
 
   public static deserialize<T>(
@@ -56,6 +54,6 @@ export class JsonTransformer {
     cls: { new (...args: any[]): T },
     { validate = true }: Validate = {}
   ): T {
-    return this.fromJSON(JSON.parse(jsonString), cls, { validate })
+    return JsonTransformer.fromJSON(JSON.parse(jsonString), cls, { validate })
   }
 }

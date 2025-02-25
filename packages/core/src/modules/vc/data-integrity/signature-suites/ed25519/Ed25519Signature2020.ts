@@ -75,7 +75,8 @@ export class Ed25519Signature2020 extends JwsLinkedDataSignature {
       throw new Error(
         `Unsupported verification method type '${verificationMethodType}'. Verification method type MUST be 'Ed25519VerificationKey2020'.`
       )
-    } else if (_isEd2020Key(document) && !_includesEd2020Context(document)) {
+    }
+    if (_isEd2020Key(document) && !_includesEd2020Context(document)) {
       throw new Error(
         `For verification method type 'Ed25519VerificationKey2020' the '@context' MUST contain the context url "${ED25519_SUITE_CONTEXT_URL_2020}".`
       )

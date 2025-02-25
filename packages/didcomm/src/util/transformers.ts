@@ -7,7 +7,7 @@ import { DateTime } from 'luxon'
 
 export function DateParser(value: string): Date {
   const parsedDate = new Date(value)
-  if (parsedDate instanceof Date && !isNaN(parsedDate.getTime())) {
+  if (parsedDate instanceof Date && !Number.isNaN(parsedDate.getTime())) {
     return parsedDate
   }
   const luxonDate = DateTime.fromSQL(value)

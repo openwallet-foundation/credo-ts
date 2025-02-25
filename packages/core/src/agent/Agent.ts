@@ -1,7 +1,7 @@
-import type { AgentDependencies } from './AgentDependencies'
-import type { AgentModulesInput } from './AgentModules'
 import type { Module } from '../plugins'
 import type { InitConfig } from '../types'
+import type { AgentDependencies } from './AgentDependencies'
+import type { AgentModulesInput } from './AgentModules'
 
 import { Subject } from 'rxjs'
 

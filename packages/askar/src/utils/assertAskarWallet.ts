@@ -2,7 +2,7 @@ import type { Wallet } from '@credo-ts/core'
 
 import { CredoError } from '@credo-ts/core'
 
-import { AskarWallet, AskarProfileWallet } from '../wallet'
+import { AskarProfileWallet, AskarWallet } from '../wallet'
 
 export function assertAskarWallet(wallet: Wallet): asserts wallet is AskarProfileWallet | AskarWallet {
   if (!(wallet instanceof AskarProfileWallet) && !(wallet instanceof AskarWallet)) {

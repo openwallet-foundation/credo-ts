@@ -1,5 +1,5 @@
-import type { SubjectMessage } from '../../../tests/transport/SubjectInboundTransport'
 import type { ConnectionRecord } from '@credo-ts/didcomm'
+import type { SubjectMessage } from '../../../tests/transport/SubjectInboundTransport'
 
 import { AskarModule } from '@credo-ts/askar'
 import { Agent } from '@credo-ts/core'

@@ -1,28 +1,28 @@
 import type {
-  OpenId4VciCredentialConfigurationSupportedWithFormats,
-  OpenId4VciCredentialRequest,
-  OpenId4VciMetadata,
-} from '../../shared'
-import type { OpenId4VciCredentialRequestToCredentialMapper } from '../OpenId4VcIssuerServiceOptions'
-import type { OpenId4VcIssuerRecord } from '../repository'
-import type {
   AgentContext,
   KeyDidCreateOptions,
   VerificationMethod,
   W3cVerifiableCredential,
   W3cVerifyCredentialResult,
 } from '@credo-ts/core'
+import type {
+  OpenId4VciCredentialConfigurationSupportedWithFormats,
+  OpenId4VciCredentialRequest,
+  OpenId4VciMetadata,
+} from '../../shared'
+import type { OpenId4VciCredentialRequestToCredentialMapper } from '../OpenId4VcIssuerServiceOptions'
+import type { OpenId4VcIssuerRecord } from '../repository'
 
 import {
-  SdJwtVcApi,
-  JwtPayload,
   Agent,
   CredoError,
   DidKey,
   DidsApi,
   JsonTransformer,
   JwsService,
+  JwtPayload,
   KeyType,
+  SdJwtVcApi,
   TypedArrayEncoder,
   W3cCredential,
   W3cCredentialService,
@@ -124,7 +124,8 @@ const createCredentialRequest = async (
 
   if (credentialConfiguration.format === OpenId4VciCredentialFormatProfile.JwtVcJson) {
     return { ...credentialConfiguration, proof: { jwt: jws, proof_type: 'jwt' } }
-  } else if (
+  }
+  if (
     credentialConfiguration.format === OpenId4VciCredentialFormatProfile.JwtVcJsonLd ||
     credentialConfiguration.format === OpenId4VciCredentialFormatProfile.LdpVc
   ) {
@@ -137,7 +138,8 @@ const createCredentialRequest = async (
 
       proof: { jwt: jws, proof_type: 'jwt' },
     }
-  } else if (credentialConfiguration.format === OpenId4VciCredentialFormatProfile.SdJwtVc) {
+  }
+  if (credentialConfiguration.format === OpenId4VciCredentialFormatProfile.SdJwtVc) {
     return { ...credentialConfiguration, proof: { jwt: jws, proof_type: 'jwt' } }
   }
 
@@ -261,7 +263,7 @@ describe('OpenId4VcIssuer', () => {
       w3cVerifiableCredential = JsonTransformer.fromJSON(credentialInResponse, W3cJsonLdVerifiableCredential)
       result = await w3cCredentialService.verifyCredential(holder.context, { credential: w3cVerifiableCredential })
     } else {
-      throw new CredoError(`Unsupported credential format`)
+      throw new CredoError('Unsupported credential format')
     }
 
     if (!result.isValid) {

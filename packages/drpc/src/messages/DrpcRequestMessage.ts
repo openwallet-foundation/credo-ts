@@ -1,4 +1,4 @@
-import { IsValidMessageType, parseMessageType, AgentMessage } from '@credo-ts/didcomm'
+import { AgentMessage, IsValidMessageType, parseMessageType } from '@credo-ts/didcomm'
 import { Expose } from 'class-transformer'
 
 import { IsValidDrpcRequest } from '../models'

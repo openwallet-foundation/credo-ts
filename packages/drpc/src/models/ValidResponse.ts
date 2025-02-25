@@ -26,7 +26,7 @@ export function IsValidDrpcResponse(validationOptions?: ValidationOptions): Prop
             return isValid
           },
           defaultMessage: buildMessage(
-            (eachPrefix) => eachPrefix + '$property is not a valid DrpcResponse',
+            (eachPrefix) => `${eachPrefix}$property is not a valid DrpcResponse`,
             validationOptions
           ),
         },

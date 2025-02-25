@@ -1,8 +1,8 @@
-import type { Mdoc } from './Mdoc'
+import type { DeviceRequest, ValidityInfo } from '@animo-id/mdoc'
 import type { Key } from '../../crypto/Key'
 import type { DifPresentationExchangeDefinition } from '../dif-presentation-exchange'
 import type { EncodedX509Certificate } from '../x509'
-import type { DeviceRequest, ValidityInfo } from '@animo-id/mdoc'
+import type { Mdoc } from './Mdoc'
 
 export type MdocNameSpaces = Record<string, Record<string, unknown>>
 

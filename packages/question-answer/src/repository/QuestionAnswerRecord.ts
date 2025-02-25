@@ -1,8 +1,8 @@
+import type { RecordTags, TagsBase } from '@credo-ts/core'
 import type { QuestionAnswerRole } from '../QuestionAnswerRole'
 import type { QuestionAnswerState, ValidResponse } from '../models'
-import type { RecordTags, TagsBase } from '@credo-ts/core'
 
-import { CredoError, utils, BaseRecord } from '@credo-ts/core'
+import { BaseRecord, CredoError, utils } from '@credo-ts/core'
 
 export type CustomQuestionAnswerTags = TagsBase
 export type DefaultQuestionAnswerTags = {

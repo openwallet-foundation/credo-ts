@@ -13,7 +13,7 @@ export async function migrateW3cCredentialRecordToV0_5<Agent extends BaseAgent>(
 
   const w3cCredentialRepository = agent.dependencyManager.resolve(W3cCredentialRepository)
 
-  agent.config.logger.debug(`Fetching all w3c credential records from storage`)
+  agent.config.logger.debug('Fetching all w3c credential records from storage')
   const records = await w3cCredentialRepository.getAll(agent.context)
 
   agent.config.logger.debug(`Found a total of ${records.length} w3c credential records to update.`)

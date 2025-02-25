@@ -6,7 +6,7 @@ import { CredoError } from '../../../../error'
 import { JsonEncoder, JsonTransformer } from '../../../../utils'
 import { DidDocumentService } from '../../domain'
 import { DidDocumentBuilder } from '../../domain/DidDocumentBuilder'
-import { getKeyFromVerificationMethod, getKeyDidMappingByKeyType } from '../../domain/key-type'
+import { getKeyDidMappingByKeyType, getKeyFromVerificationMethod } from '../../domain/key-type'
 import { parseDid } from '../../domain/parse'
 
 enum DidPeerPurpose {
@@ -146,7 +146,7 @@ export function didDocumentToNumAlgo2Did(didDocument: DidDocument) {
     const abbreviatedServices = didDocument.service.map((service) => {
       // Transform to JSON, remove id property
       const serviceJson = JsonTransformer.toJSON(service)
-      delete serviceJson.id
+      serviceJson.id = undefined
 
       return abbreviateServiceJson(serviceJson)
     })

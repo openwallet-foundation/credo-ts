@@ -1,9 +1,9 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import {
-  suites as JsonLdSuites,
-  purposes as JsonLdPurposes,
   constants as JsonLdConstants,
+  purposes as JsonLdPurposes,
+  suites as JsonLdSuites,
   // No type definitions available for this library
   // eslint-disable-next-line @typescript-eslint/ban-ts-comment
   //@ts-ignore

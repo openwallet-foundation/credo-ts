@@ -1,10 +1,10 @@
+import type { JwaSignatureAlgorithm, RecordTags, TagsBase } from '@credo-ts/core'
 import type {
   OpenId4VciAuthorizationServerConfig,
   OpenId4VciCredentialConfigurationsSupportedWithFormats,
   OpenId4VciCredentialIssuerMetadataDisplay,
 } from '../../shared'
 import type { OpenId4VciBatchCredentialIssuanceOptions } from '../OpenId4VcIssuerServiceOptions'
-import type { JwaSignatureAlgorithm, RecordTags, TagsBase } from '@credo-ts/core'
 
 import { credentialsSupportedToCredentialConfigurationsSupported } from '@animo-id/oid4vci'
 import { BaseRecord, utils } from '@credo-ts/core'

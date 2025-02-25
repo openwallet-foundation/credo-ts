@@ -20,11 +20,11 @@ import { TypedArrayEncoder } from '../../../../../../../core/src/utils'
 import { JsonTransformer } from '../../../../../../../core/src/utils/JsonTransformer'
 import {
   getInMemoryAgentOptions,
+  makeConnection,
   setupEventReplaySubjects,
   setupSubjectTransports,
-  waitForCredentialRecordSubject,
   testLogger,
-  makeConnection,
+  waitForCredentialRecordSubject,
 } from '../../../../../../../core/tests'
 import { ProofEventTypes, ProofsModule, V2ProofProtocol } from '../../../../proofs'
 import { CredentialEventTypes } from '../../../CredentialEvents'
@@ -100,7 +100,7 @@ const getIndyJsonLdModules = () =>
     w3cCredentials: new W3cCredentialsModule({
       documentLoader: customDocumentLoader,
     }),
-  } as const)
+  }) as const
 
 // TODO: extract these very specific tests to the jsonld format
 describe('V2 Credentials - JSON-LD - Ed25519', () => {

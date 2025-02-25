@@ -20,7 +20,8 @@ export class MessageValidator {
         classType: classInstance.constructor.name,
         validationErrors: errors,
       })
-    } else if (errors.length !== 0) {
+    }
+    if (errors.length !== 0) {
       throw new ClassValidationError('An unknown validation error occurred.', {
         classType: Object.prototype.constructor(classInstance).name,
       })

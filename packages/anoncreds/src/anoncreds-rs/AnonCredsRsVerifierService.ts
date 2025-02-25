@@ -1,6 +1,3 @@
-import type { AnonCredsProof, AnonCredsProofRequest, AnonCredsNonRevokedInterval } from '../models'
-import type { CredentialWithRevocationMetadata } from '../models/utils'
-import type { AnonCredsVerifierService, VerifyProofOptions, VerifyW3cPresentationOptions } from '../services'
 import type { AgentContext } from '@credo-ts/core'
 import type {
   JsonObject,
@@ -8,9 +5,12 @@ import type {
   RevocationRegistryDefinition,
   VerifyW3cPresentationOptions as VerifyAnonCredsW3cPresentationOptions,
 } from '@hyperledger/anoncreds-shared'
+import type { AnonCredsNonRevokedInterval, AnonCredsProof, AnonCredsProofRequest } from '../models'
+import type { CredentialWithRevocationMetadata } from '../models/utils'
+import type { AnonCredsVerifierService, VerifyProofOptions, VerifyW3cPresentationOptions } from '../services'
 
 import { JsonTransformer, injectable } from '@credo-ts/core'
-import { Presentation, W3cPresentation, W3cCredential as AnonCredsW3cCredential } from '@hyperledger/anoncreds-shared'
+import { W3cCredential as AnonCredsW3cCredential, Presentation, W3cPresentation } from '@hyperledger/anoncreds-shared'
 
 import { fetchRevocationStatusList } from '../utils'
 
@@ -192,7 +192,7 @@ export class AnonCredsRsVerifierService implements AnonCredsVerifierService {
 
     let result = false
     const presentationJson = JsonTransformer.toJSON(options.presentation)
-    if ('presentation_submission' in presentationJson) delete presentationJson.presentation_submission
+    if ('presentation_submission' in presentationJson) presentationJson.presentation_submission = undefined
 
     let w3cPresentation: W3cPresentation | undefined
     try {

@@ -1,5 +1,5 @@
 import type { Express } from 'express'
-import type { ReplyFnContext, Body } from 'nock'
+import type { Body, ReplyFnContext } from 'nock'
 
 import nock, { cleanAll } from 'nock'
 import request from 'supertest'
@@ -36,7 +36,7 @@ export function setupNockToExpress(baseUrl: string, app: Express) {
       res.on('data', (chunk) => {
         data = Buffer.concat([data, chunk])
       })
-      res.on('end', function () {
+      res.on('end', () => {
         cb(null, data.toString())
       })
     })
@@ -45,8 +45,6 @@ export function setupNockToExpress(baseUrl: string, app: Express) {
       const response = await testRequest
       return [response.status, response.body, response.headers]
     } catch (error) {
-      // eslint-disable-next-line no-console
-      console.error('Error forwarding request:', error)
       return [500, { error: 'Internal Server Error' }]
     }
   }

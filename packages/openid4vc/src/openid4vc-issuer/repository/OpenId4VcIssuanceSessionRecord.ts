@@ -1,8 +1,8 @@
-import type { OpenId4VciCredentialOfferPayload } from '../../shared'
 import type { RecordTags, TagsBase } from '@credo-ts/core'
+import type { OpenId4VciCredentialOfferPayload } from '../../shared'
 
 import { PkceCodeChallengeMethod } from '@animo-id/oauth2'
-import { CredoError, BaseRecord, utils, isJsonObject } from '@credo-ts/core'
+import { BaseRecord, CredoError, isJsonObject, utils } from '@credo-ts/core'
 import { Transform, TransformationType } from 'class-transformer'
 
 import { OpenId4VcIssuanceSessionState } from '../OpenId4VcIssuanceSessionState'

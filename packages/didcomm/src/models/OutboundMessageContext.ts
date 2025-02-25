@@ -1,9 +1,9 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-import type { InboundMessageContext } from './InboundMessageContext'
+import type { AgentContext, BaseRecord, Key, ResolvedDidCommService } from '@credo-ts/core'
 import type { AgentMessage } from '../AgentMessage'
 import type { ConnectionRecord } from '../modules/connections/repository'
 import type { OutOfBandRecord } from '../modules/oob'
-import type { AgentContext, BaseRecord, Key, ResolvedDidCommService } from '@credo-ts/core'
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import type { InboundMessageContext } from './InboundMessageContext'
 
 import { CredoError } from '@credo-ts/core'
 

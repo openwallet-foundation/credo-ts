@@ -1,8 +1,8 @@
+import type { DependencyContainer } from 'tsyringe'
 import type { ModulesMap } from '../agent/AgentModules'
 import type { Constructor } from '../utils/mixins'
-import type { DependencyContainer } from 'tsyringe'
 
-import { container as rootContainer, InjectionToken, Lifecycle } from 'tsyringe'
+import { InjectionToken, Lifecycle, container as rootContainer } from 'tsyringe'
 
 import { CredoError } from '../error'
 

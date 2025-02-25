@@ -4,8 +4,8 @@ import {
   DidCommV1Service,
   DidDocumentBuilder,
   DidKey,
-  didDocumentToNumAlgo2Did,
   createPeerDidDocumentFromServices,
+  didDocumentToNumAlgo2Did,
   didKeyToInstanceOfKey,
 } from '@credo-ts/core'
 

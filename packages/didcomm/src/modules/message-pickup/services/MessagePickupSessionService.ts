@@ -1,10 +1,10 @@
+import type { AgentContext } from '@credo-ts/core'
 import type { TransportSessionRemovedEvent } from '../../../transport'
 import type { MessagePickupLiveSessionRemovedEvent, MessagePickupLiveSessionSavedEvent } from '../MessagePickupEvents'
 import type { MessagePickupSession, MessagePickupSessionRole } from '../MessagePickupSession'
-import type { AgentContext } from '@credo-ts/core'
 
 import { EventEmitter, InjectionSymbols, injectable, utils } from '@credo-ts/core'
-import { takeUntil, type Subject } from 'rxjs'
+import { type Subject, takeUntil } from 'rxjs'
 
 import { TransportEventTypes } from '../../../transport'
 import { MessagePickupEventTypes } from '../MessagePickupEvents'

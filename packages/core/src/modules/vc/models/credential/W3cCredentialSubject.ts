@@ -49,7 +49,8 @@ export function W3cCredentialSubjectTransformer() {
       }
 
       return Array.isArray(value) ? value.map(vToClass) : vToClass(value)
-    } else if (type === TransformationType.CLASS_TO_PLAIN) {
+    }
+    if (type === TransformationType.CLASS_TO_PLAIN) {
       const vToJson = (v: unknown) => {
         if (v instanceof W3cCredentialSubject) return v.id ? { ...v.claims, id: v.id } : { ...v.claims }
         return v
@@ -72,7 +73,7 @@ export function IsW3cCredentialSubject(validationOptions?: ValidationOptions): P
         },
         defaultMessage: buildMessage(
           (eachPrefix) =>
-            eachPrefix + '$property must be an object or an array of objects with an optional id property',
+            `${eachPrefix}$property must be an object or an array of objects with an optional id property`,
           validationOptions
         ),
       },

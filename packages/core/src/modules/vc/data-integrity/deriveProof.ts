@@ -56,7 +56,7 @@ export const deriveProof = async (
   })
 
   if (proofs.length === 0) {
-    throw new Error(`There were not any proofs provided that can be used to derive a proof with this suite.`)
+    throw new Error('There were not any proofs provided that can be used to derive a proof with this suite.')
   }
 
   let derivedProof = await suite.deriveProof({
@@ -89,7 +89,7 @@ export const deriveProof = async (
 
   if (!skipProofCompaction) {
     /* eslint-disable prefer-const */
-    let expandedProof: Record<string, unknown> = {
+    const expandedProof: Record<string, unknown> = {
       [SECURITY_PROOF_URL]: {
         '@graph': derivedProof.proof,
       },
@@ -110,7 +110,7 @@ export const deriveProof = async (
     })
 
     delete compactProof[alias]
-    delete compactProof['@context']
+    compactProof['@context'] = undefined
 
     /**
      * removes the @included tag when multiple proofs exist because the
@@ -125,7 +125,7 @@ export const deriveProof = async (
     const key = Object.keys(compactProof)[0]
     jsonld.addValue(derivedProof.document, key, compactProof[key])
   } else {
-    delete derivedProof.proof['@context']
+    derivedProof.proof['@context'] = undefined
     jsonld.addValue(derivedProof.document, 'proof', derivedProof.proof)
   }
 

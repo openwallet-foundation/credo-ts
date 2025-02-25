@@ -1,17 +1,17 @@
-import type { DidCommModuleConfigOptions } from '../DidCommModuleConfig'
 import type { Agent, ModulesMap } from '@credo-ts/core'
+import type { DidCommModuleConfigOptions } from '../DidCommModuleConfig'
 
 import { DidCommModule } from '../DidCommModule'
 import {
+  BasicMessagesModule,
   ConnectionsModule,
   CredentialsModule,
-  ProofsModule,
-  MediatorModule,
   DiscoverFeaturesModule,
   MediationRecipientModule,
+  MediatorModule,
   MessagePickupModule,
-  BasicMessagesModule,
   OutOfBandModule,
+  ProofsModule,
 } from '../modules'
 
 /**

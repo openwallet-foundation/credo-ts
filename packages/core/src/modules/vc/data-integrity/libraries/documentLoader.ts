@@ -1,5 +1,5 @@
-import type { DocumentLoader } from './jsonld'
 import type { AgentContext } from '../../../../agent/context/AgentContext'
+import type { DocumentLoader } from './jsonld'
 
 import { CredoError } from '../../../../error/CredoError'
 import { isDid } from '../../../../utils'

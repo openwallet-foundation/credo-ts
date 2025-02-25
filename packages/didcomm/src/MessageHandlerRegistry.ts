@@ -5,7 +5,7 @@ import type { ParsedDidCommProtocolUri } from './util/messageType'
 
 import { injectable } from '@credo-ts/core'
 
-import { supportsIncomingDidCommProtocolUri, canHandleMessageType, parseMessageType } from './util/messageType'
+import { canHandleMessageType, parseMessageType, supportsIncomingDidCommProtocolUri } from './util/messageType'
 
 @injectable()
 export class MessageHandlerRegistry {

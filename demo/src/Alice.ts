@@ -1,7 +1,7 @@
 import type { ConnectionRecord, CredentialExchangeRecord, ProofExchangeRecord } from '@credo-ts/didcomm'
 
 import { BaseAgent } from './BaseAgent'
-import { greenText, Output, redText } from './OutputClass'
+import { Output, greenText, redText } from './OutputClass'
 
 export class Alice extends BaseAgent {
   public connected: boolean

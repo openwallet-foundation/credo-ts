@@ -13,7 +13,7 @@ import {
   storePreCreatedAnonCredsDefinition,
 } from '../../../../../../../anoncreds/tests/preCreatedAnonCredsDefinition'
 import { Agent } from '../../../../../../../core/src/agent/Agent'
-import { waitForCredentialRecordSubject, getInMemoryAgentOptions } from '../../../../../../../core/tests/helpers'
+import { getInMemoryAgentOptions, waitForCredentialRecordSubject } from '../../../../../../../core/tests/helpers'
 import testLogger from '../../../../../../../core/tests/logger'
 import { MessageReceiver } from '../../../../../MessageReceiver'
 import { CredentialEventTypes } from '../../../CredentialEvents'

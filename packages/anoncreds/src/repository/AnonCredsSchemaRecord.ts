@@ -1,6 +1,6 @@
-import type { AnonCredsSchemaRecordMetadata } from './anonCredsSchemaRecordMetadataTypes'
-import type { AnonCredsSchema } from '../models'
 import type { TagsBase } from '@credo-ts/core'
+import type { AnonCredsSchema } from '../models'
+import type { AnonCredsSchemaRecordMetadata } from './anonCredsSchemaRecordMetadataTypes'
 
 import { BaseRecord, utils } from '@credo-ts/core'
 

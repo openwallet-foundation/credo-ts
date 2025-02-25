@@ -22,7 +22,7 @@ export class DidExchangeCompleteHandler implements MessageHandler {
     const { connection: connectionRecord } = messageContext
 
     if (!connectionRecord) {
-      throw new CredoError(`Connection is missing in message context`)
+      throw new CredoError('Connection is missing in message context')
     }
 
     const { protocol } = connectionRecord
@@ -35,7 +35,7 @@ export class DidExchangeCompleteHandler implements MessageHandler {
     const { message } = messageContext
     const parentThreadId = message.thread?.parentThreadId
     if (!parentThreadId) {
-      throw new CredoError(`Message does not contain pthid attribute`)
+      throw new CredoError('Message does not contain pthid attribute')
     }
     const outOfBandRecord = await this.outOfBandService.findByCreatedInvitationId(
       messageContext.agentContext,

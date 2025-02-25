@@ -1,6 +1,6 @@
-import type { AnonCredsRevocationRegistryDefinitionRecordMetadata } from './anonCredsRevocationRegistryDefinitionRecordMetadataTypes'
-import type { AnonCredsRevocationRegistryDefinition } from '../models'
 import type { TagsBase } from '@credo-ts/core'
+import type { AnonCredsRevocationRegistryDefinition } from '../models'
+import type { AnonCredsRevocationRegistryDefinitionRecordMetadata } from './anonCredsRevocationRegistryDefinitionRecordMetadataTypes'
 
 import { BaseRecord, utils } from '@credo-ts/core'
 

@@ -1,4 +1,4 @@
-import type { JwkJson, Jwk, HashName } from '../../crypto'
+import type { HashName, Jwk, JwkJson } from '../../crypto'
 import type { EncodedX509Certificate } from '../x509'
 
 // TODO: extend with required claim names for input (e.g. vct)

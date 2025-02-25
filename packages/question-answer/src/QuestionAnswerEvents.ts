@@ -1,6 +1,6 @@
+import type { BaseEvent } from '@credo-ts/core'
 import type { QuestionAnswerState } from './models'
 import type { QuestionAnswerRecord } from './repository'
-import type { BaseEvent } from '@credo-ts/core'
 
 export enum QuestionAnswerEventTypes {
   QuestionAnswerStateChanged = 'QuestionAnswerStateChanged',

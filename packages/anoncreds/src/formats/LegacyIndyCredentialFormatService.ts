@@ -1,40 +1,40 @@
-import type { LegacyIndyCredentialFormat, LegacyIndyCredentialProposalFormat } from './LegacyIndyCredentialFormat'
-import type { AnonCredsCredential, AnonCredsCredentialOffer, AnonCredsCredentialRequest } from '../models'
-import type { AnonCredsIssuerService, AnonCredsHolderService } from '../services'
-import type { AnonCredsCredentialMetadata, AnonCredsCredentialRequestMetadata } from '../utils/metadata'
 import type { AgentContext } from '@credo-ts/core'
 import type {
-  CredentialFormatService,
+  CredentialExchangeRecord,
+  CredentialFormatAcceptOfferOptions,
+  CredentialFormatAcceptProposalOptions,
+  CredentialFormatAcceptRequestOptions,
+  CredentialFormatAutoRespondCredentialOptions,
+  CredentialFormatAutoRespondOfferOptions,
+  CredentialFormatAutoRespondProposalOptions,
+  CredentialFormatAutoRespondRequestOptions,
+  CredentialFormatCreateOfferOptions,
+  CredentialFormatCreateOfferReturn,
   CredentialFormatCreateProposalOptions,
   CredentialFormatCreateProposalReturn,
-  CredentialFormatProcessOptions,
-  CredentialFormatAcceptProposalOptions,
-  CredentialFormatCreateOfferReturn,
-  CredentialFormatCreateOfferOptions,
-  CredentialFormatAcceptOfferOptions,
   CredentialFormatCreateReturn,
-  CredentialFormatAcceptRequestOptions,
   CredentialFormatProcessCredentialOptions,
-  CredentialFormatAutoRespondProposalOptions,
-  CredentialFormatAutoRespondOfferOptions,
-  CredentialFormatAutoRespondRequestOptions,
-  CredentialFormatAutoRespondCredentialOptions,
-  CredentialExchangeRecord,
+  CredentialFormatProcessOptions,
+  CredentialFormatService,
   CredentialPreviewAttributeOptions,
   LinkedAttachment,
 } from '@credo-ts/didcomm'
+import type { AnonCredsCredential, AnonCredsCredentialOffer, AnonCredsCredentialRequest } from '../models'
+import type { AnonCredsHolderService, AnonCredsIssuerService } from '../services'
+import type { AnonCredsCredentialMetadata, AnonCredsCredentialRequestMetadata } from '../utils/metadata'
+import type { LegacyIndyCredentialFormat, LegacyIndyCredentialProposalFormat } from './LegacyIndyCredentialFormat'
 
-import { MessageValidator, CredoError, JsonEncoder, JsonTransformer } from '@credo-ts/core'
-import { ProblemReportError, CredentialFormatSpec, Attachment, CredentialProblemReportReason } from '@credo-ts/didcomm'
+import { CredoError, JsonEncoder, JsonTransformer, MessageValidator } from '@credo-ts/core'
+import { Attachment, CredentialFormatSpec, CredentialProblemReportReason, ProblemReportError } from '@credo-ts/didcomm'
 
 import { AnonCredsCredentialProposal } from '../models/AnonCredsCredentialProposal'
-import { AnonCredsIssuerServiceSymbol, AnonCredsHolderServiceSymbol } from '../services'
+import { AnonCredsHolderServiceSymbol, AnonCredsIssuerServiceSymbol } from '../services'
 import { fetchCredentialDefinition, fetchRevocationRegistryDefinition, fetchSchema } from '../utils'
 import {
-  convertAttributesToCredentialValues,
+  assertAttributesMatch,
   assertCredentialValuesMatch,
   checkCredentialValuesMatch,
-  assertAttributesMatch,
+  convertAttributesToCredentialValues,
   createAndLinkAttachmentsToPreview,
 } from '../utils/credential'
 import { isUnqualifiedCredentialDefinitionId, isUnqualifiedSchemaId } from '../utils/indyIdentifiers'

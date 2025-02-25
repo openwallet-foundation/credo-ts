@@ -6,13 +6,13 @@ import { Subject } from 'rxjs'
 import { SubjectInboundTransport } from '../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutboundTransport'
 import {
-  TrustPingResponseMessage,
-  BasicMessage,
-  getOutboundMessageContext,
-  MessageSender,
   AgentMessage,
+  BasicMessage,
+  MessageSender,
+  TrustPingResponseMessage,
+  getOutboundMessageContext,
 } from '../../didcomm/src'
-import { JsonTransformer, Agent } from '../src'
+import { Agent, JsonTransformer } from '../src'
 
 import {
   getInMemoryAgentOptions,

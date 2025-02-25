@@ -11,11 +11,11 @@
  * limitations under the License.
  */
 
-import type { DeriveProofOptions, VerifyProofOptions, CreateVerifyDataOptions, CanonizeOptions } from '../types'
+import type { DocumentLoader, JsonObject, Proof } from '@credo-ts/core'
+import type { CanonizeOptions, CreateVerifyDataOptions, DeriveProofOptions, VerifyProofOptions } from '../types'
 import type { VerifyProofResult } from '../types/VerifyProofResult'
-import type { JsonObject, DocumentLoader, Proof } from '@credo-ts/core'
 
-import { CredoError, TypedArrayEncoder, SECURITY_CONTEXT_URL, vcLibraries } from '@credo-ts/core'
+import { CredoError, SECURITY_CONTEXT_URL, TypedArrayEncoder, vcLibraries } from '@credo-ts/core'
 import { blsCreateProof, blsVerifyProof } from '@mattrglobal/bbs-signatures'
 import { Bls12381G2KeyPair } from '@mattrglobal/bls12381-key-pair'
 import { randomBytes } from '@stablelib/random'
@@ -298,8 +298,8 @@ export class BbsBlsSignatureProof2020 extends LinkedDataProof {
     const { documentLoader } = options
     proof = { ...proof }
 
-    delete proof.nonce
-    delete proof.proofValue
+    proof.nonce = undefined
+    proof.proofValue = undefined
 
     return this.canonize(proof, {
       documentLoader,

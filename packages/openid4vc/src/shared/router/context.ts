@@ -1,6 +1,6 @@
 import type { Oauth2ErrorCodes, Oauth2ServerErrorResponseError } from '@animo-id/oauth2'
 import type { AgentContext, Logger } from '@credo-ts/core'
-import type { Response, Request, NextFunction } from 'express'
+import type { NextFunction, Request, Response } from 'express'
 
 import { Oauth2ResourceUnauthorizedError, SupportedAuthenticationScheme } from '@animo-id/oauth2'
 import { CredoError } from '@credo-ts/core'
@@ -54,7 +54,7 @@ export function sendOauth2ErrorResponse(
   next(error)
 }
 export function sendUnknownServerErrorResponse(response: Response, next: NextFunction, logger: Logger, error: unknown) {
-  logger.error(`[OID4VC] Sending unknown server error response`, {
+  logger.error('[OID4VC] Sending unknown server error response', {
     error,
   })
 

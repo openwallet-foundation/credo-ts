@@ -1,14 +1,14 @@
+import type { Feature } from '../../models'
 import type {
   DiscloseFeaturesOptions,
-  QueryFeaturesOptions,
   DiscoverFeaturesServiceMap,
+  QueryFeaturesOptions,
 } from './DiscoverFeaturesApiOptions'
 import type { DiscoverFeaturesDisclosureReceivedEvent } from './DiscoverFeaturesEvents'
 import type { DiscoverFeaturesService } from './services'
-import type { Feature } from '../../models'
 
-import { AgentContext, EventEmitter, InjectionSymbols, CredoError, inject, injectable } from '@credo-ts/core'
-import { firstValueFrom, of, ReplaySubject, Subject } from 'rxjs'
+import { AgentContext, CredoError, EventEmitter, InjectionSymbols, inject, injectable } from '@credo-ts/core'
+import { ReplaySubject, Subject, firstValueFrom, of } from 'rxjs'
 import { catchError, filter, first, map, takeUntil, timeout } from 'rxjs/operators'
 
 import { MessageSender } from '../../MessageSender'
@@ -29,7 +29,7 @@ export interface DiscoverFeaturesApi<DFSs extends DiscoverFeaturesService[]> {
 }
 @injectable()
 export class DiscoverFeaturesApi<
-  DFSs extends DiscoverFeaturesService[] = [V1DiscoverFeaturesService, V2DiscoverFeaturesService]
+  DFSs extends DiscoverFeaturesService[] = [V1DiscoverFeaturesService, V2DiscoverFeaturesService],
 > implements DiscoverFeaturesApi<DFSs>
 {
   /**

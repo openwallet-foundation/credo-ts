@@ -1,7 +1,7 @@
-import type { Update, UpdateConfig, UpdateToVersion } from './updates'
 import type { BaseAgent } from '../../agent/BaseAgent'
 import type { Module } from '../../plugins'
 import type { FileSystem } from '../FileSystem'
+import type { Update, UpdateConfig, UpdateToVersion } from './updates'
 
 import { InjectionSymbols } from '../../constants'
 import { CredoError } from '../../error'
@@ -11,7 +11,7 @@ import { WalletError } from '../../wallet/error/WalletError'
 
 import { StorageUpdateService } from './StorageUpdateService'
 import { StorageUpdateError } from './error/StorageUpdateError'
-import { DEFAULT_UPDATE_CONFIG, CURRENT_FRAMEWORK_STORAGE_VERSION, supportedUpdates } from './updates'
+import { CURRENT_FRAMEWORK_STORAGE_VERSION, DEFAULT_UPDATE_CONFIG, supportedUpdates } from './updates'
 
 export interface UpdateAssistantUpdateOptions {
   updateToVersion?: UpdateToVersion

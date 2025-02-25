@@ -1,7 +1,7 @@
 import type { AgentContext, AgentContextProvider } from '@credo-ts/core'
 import type { TenantsModule } from '@credo-ts/tenants'
 
-import { getApiForModuleByName, InjectionSymbols } from '@credo-ts/core'
+import { InjectionSymbols, getApiForModuleByName } from '@credo-ts/core'
 
 const OPENID4VC_ACTOR_IDS_METADATA_KEY = '_openid4vc/openId4VcActorIds'
 

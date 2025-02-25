@@ -4,12 +4,12 @@ import type { AgentMessageProcessedEvent, KeylistUpdate } from '../../didcomm/sr
 import { filter, firstValueFrom, map, timeout } from 'rxjs'
 
 import {
-  MediatorModule,
   AgentEventTypes,
-  KeylistUpdateMessage,
   DidExchangeState,
   HandshakeProtocol,
   KeylistUpdateAction,
+  KeylistUpdateMessage,
+  MediatorModule,
 } from '../../didcomm/src'
 import { OutOfBandState } from '../../didcomm/src/modules/oob/domain/OutOfBandState'
 import { Agent } from '../src/agent/Agent'
@@ -81,10 +81,9 @@ describe('connections', () => {
     const invitationUrl = invitation.toUrl({ domain: 'https://example.com' })
 
     // Receive invitation with alice agent
-    let { connectionRecord: aliceFaberConnection } = await aliceAgent.modules.oob.receiveInvitationFromUrl(
-      invitationUrl
-    )
-    aliceFaberConnection = await aliceAgent.modules.connections.returnWhenIsConnected(aliceFaberConnection!.id)
+    let { connectionRecord: aliceFaberConnection } =
+      await aliceAgent.modules.oob.receiveInvitationFromUrl(invitationUrl)
+    aliceFaberConnection = await aliceAgent.modules.connections.returnWhenIsConnected(aliceFaberConnection?.id)
     expect(aliceFaberConnection.state).toBe(DidExchangeState.Completed)
 
     const ping = await aliceAgent.modules.connections.sendPing(aliceFaberConnection.id, {})
@@ -102,10 +101,9 @@ describe('connections', () => {
     const invitationUrl = invitation.toUrl({ domain: 'https://example.com' })
 
     // Receive invitation first time with alice agent
-    let { connectionRecord: aliceFaberConnection } = await aliceAgent.modules.oob.receiveInvitationFromUrl(
-      invitationUrl
-    )
-    aliceFaberConnection = await aliceAgent.modules.connections.returnWhenIsConnected(aliceFaberConnection!.id)
+    let { connectionRecord: aliceFaberConnection } =
+      await aliceAgent.modules.oob.receiveInvitationFromUrl(invitationUrl)
+    aliceFaberConnection = await aliceAgent.modules.connections.returnWhenIsConnected(aliceFaberConnection?.id)
     expect(aliceFaberConnection.state).toBe(DidExchangeState.Completed)
 
     // Receive invitation second time with acme agent
@@ -115,7 +113,7 @@ describe('connections', () => {
         reuseConnection: false,
       }
     )
-    acmeFaberConnection = await acmeAgent.modules.connections.returnWhenIsConnected(acmeFaberConnection!.id)
+    acmeFaberConnection = await acmeAgent.modules.connections.returnWhenIsConnected(acmeFaberConnection?.id)
     expect(acmeFaberConnection.state).toBe(DidExchangeState.Completed)
 
     let faberAliceConnection = await faberAgent.modules.connections.getByThreadId(aliceFaberConnection.threadId!)
@@ -142,10 +140,9 @@ describe('connections', () => {
     const invitationUrl = invitation.toUrl({ domain: 'https://example.com' })
 
     // Receive invitation first time with alice agent
-    let { connectionRecord: aliceFaberConnection } = await aliceAgent.modules.oob.receiveInvitationFromUrl(
-      invitationUrl
-    )
-    aliceFaberConnection = await aliceAgent.modules.connections.returnWhenIsConnected(aliceFaberConnection!.id)
+    let { connectionRecord: aliceFaberConnection } =
+      await aliceAgent.modules.oob.receiveInvitationFromUrl(invitationUrl)
+    aliceFaberConnection = await aliceAgent.modules.connections.returnWhenIsConnected(aliceFaberConnection?.id)
     expect(aliceFaberConnection.state).toBe(DidExchangeState.Completed)
 
     // Mark connection with three different types
@@ -193,10 +190,9 @@ describe('connections', () => {
     const invitationUrl = invitation.toUrl({ domain: 'https://example.com' })
 
     // Create first connection
-    let { connectionRecord: aliceFaberConnection1 } = await aliceAgent.modules.oob.receiveInvitationFromUrl(
-      invitationUrl
-    )
-    aliceFaberConnection1 = await aliceAgent.modules.connections.returnWhenIsConnected(aliceFaberConnection1!.id)
+    let { connectionRecord: aliceFaberConnection1 } =
+      await aliceAgent.modules.oob.receiveInvitationFromUrl(invitationUrl)
+    aliceFaberConnection1 = await aliceAgent.modules.connections.returnWhenIsConnected(aliceFaberConnection1?.id)
     expect(aliceFaberConnection1.state).toBe(DidExchangeState.Completed)
 
     // Create second connection
@@ -206,7 +202,7 @@ describe('connections', () => {
         reuseConnection: false,
       }
     )
-    aliceFaberConnection2 = await aliceAgent.modules.connections.returnWhenIsConnected(aliceFaberConnection2!.id)
+    aliceFaberConnection2 = await aliceAgent.modules.connections.returnWhenIsConnected(aliceFaberConnection2?.id)
     expect(aliceFaberConnection2.state).toBe(DidExchangeState.Completed)
 
     let faberAliceConnection1 = await faberAgent.modules.connections.getByThreadId(aliceFaberConnection1.threadId!)
@@ -227,7 +223,7 @@ describe('connections', () => {
     // Make Faber use a mediator
     const { outOfBandInvitation: mediatorOutOfBandInvitation } = await mediatorAgent.modules.oob.createInvitation({})
     let { connectionRecord } = await faberAgent.modules.oob.receiveInvitation(mediatorOutOfBandInvitation)
-    connectionRecord = await faberAgent.modules.connections.returnWhenIsConnected(connectionRecord!.id)
+    connectionRecord = await faberAgent.modules.connections.returnWhenIsConnected(connectionRecord?.id)
     await faberAgent.modules.mediationRecipient.provision(connectionRecord!)
     await faberAgent.modules.mediationRecipient.initialize()
 
@@ -257,10 +253,9 @@ describe('connections', () => {
     const invitationUrl = invitation.toUrl({ domain: 'https://example.com' })
 
     // Receive invitation first time with alice agent
-    let { connectionRecord: aliceFaberConnection } = await aliceAgent.modules.oob.receiveInvitationFromUrl(
-      invitationUrl
-    )
-    aliceFaberConnection = await aliceAgent.modules.connections.returnWhenIsConnected(aliceFaberConnection!.id)
+    let { connectionRecord: aliceFaberConnection } =
+      await aliceAgent.modules.oob.receiveInvitationFromUrl(invitationUrl)
+    aliceFaberConnection = await aliceAgent.modules.connections.returnWhenIsConnected(aliceFaberConnection?.id)
     expect(aliceFaberConnection.state).toBe(DidExchangeState.Completed)
 
     // Receive invitation second time with acme agent
@@ -270,7 +265,7 @@ describe('connections', () => {
         reuseConnection: false,
       }
     )
-    acmeFaberConnection = await acmeAgent.modules.connections.returnWhenIsConnected(acmeFaberConnection!.id)
+    acmeFaberConnection = await acmeAgent.modules.connections.returnWhenIsConnected(acmeFaberConnection?.id)
     expect(acmeFaberConnection.state).toBe(DidExchangeState.Completed)
 
     let faberAliceConnection = await faberAgent.modules.connections.getByThreadId(aliceFaberConnection.threadId!)

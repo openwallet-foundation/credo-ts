@@ -1,6 +1,6 @@
-import type { GetNymResponseData, IndyEndpointAttrib } from './didSovUtil'
-import type { IndyVdrPool } from '../pool'
 import type { AgentContext } from '@credo-ts/core'
+import type { IndyVdrPool } from '../pool'
+import type { GetNymResponseData, IndyEndpointAttrib } from './didSovUtil'
 
 import { parseIndyDid } from '@credo-ts/anoncreds'
 import {
@@ -47,7 +47,6 @@ export function createKeyAgreementKey(verkey: string) {
 
 const deepMerge = (a: Record<string, unknown>, b: Record<string, unknown>) => {
   const output: Record<string, unknown> = {}
-
   ;[...new Set([...Object.keys(a), ...Object.keys(b)])].forEach((key) => {
     // Only an object includes a given key: just output it
     if (a[key] && !b[key]) {
@@ -73,7 +72,7 @@ const deepMerge = (a: Record<string, unknown>, b: Record<string, unknown>) => {
         const arr = b[key] as Array<any>
         output[key] = Array.from(new Set(...arr, a[key]))
         // Both elements are objects: recursive merge
-      } else if (typeof a[key] == 'object' && typeof b[key] == 'object') {
+      } else if (typeof a[key] === 'object' && typeof b[key] === 'object') {
         output[key] = deepMerge(a, b)
       }
     }
@@ -124,7 +123,7 @@ export function didDocDiff(extra: Record<string, unknown>, base: Record<string, 
           }
         }
       } // They are both objects: do recursive diff
-      else if (typeof extra[key] == 'object' && typeof base[key] == 'object') {
+      else if (typeof extra[key] === 'object' && typeof base[key] === 'object') {
         output[key] = didDocDiff(extra[key] as Record<string, unknown>, base[key] as Record<string, unknown>)
       } else {
         output[key] = extra[key]
@@ -270,15 +269,14 @@ export async function buildDidDocument(agentContext: AgentContext, pool: IndyVdr
       addServicesFromEndpointsAttrib(builder, did, endpoints, keyAgreementId)
     }
     return builder.build()
-  } else {
-    // Combine it with didDoc
-    let diddocContent
-    try {
-      diddocContent = JSON.parse(nym.diddocContent) as Record<string, unknown>
-    } catch (error) {
-      agentContext.config.logger.error(`Nym diddocContent is not a valid json string: ${diddocContent}`)
-      throw new IndyVdrError(`Nym diddocContent failed to parse as JSON: ${error}`)
-    }
-    return combineDidDocumentWithJson(builder.build(), diddocContent)
   }
+  // Combine it with didDoc
+  let diddocContent
+  try {
+    diddocContent = JSON.parse(nym.diddocContent) as Record<string, unknown>
+  } catch (error) {
+    agentContext.config.logger.error(`Nym diddocContent is not a valid json string: ${diddocContent}`)
+    throw new IndyVdrError(`Nym diddocContent failed to parse as JSON: ${error}`)
+  }
+  return combineDidDocumentWithJson(builder.build(), diddocContent)
 }

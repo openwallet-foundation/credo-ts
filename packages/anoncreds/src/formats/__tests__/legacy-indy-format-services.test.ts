@@ -1,23 +1,23 @@
-import type { AnonCredsCredentialRequest } from '../../models'
 import type { DidRepository } from '@credo-ts/core'
+import type { AnonCredsCredentialRequest } from '../../models'
 
 import {
-  KeyType,
-  EventEmitter,
-  InjectionSymbols,
-  SignatureSuiteToken,
-  W3cCredentialsModuleConfig,
   DidResolverService,
   DidsModuleConfig,
+  EventEmitter,
+  InjectionSymbols,
+  KeyType,
+  SignatureSuiteToken,
+  W3cCredentialsModuleConfig,
 } from '@credo-ts/core'
 import {
-  CredentialState,
   CredentialExchangeRecord,
   CredentialPreviewAttribute,
-  ProofExchangeRecord,
-  ProofState,
-  ProofRole,
   CredentialRole,
+  CredentialState,
+  ProofExchangeRecord,
+  ProofRole,
+  ProofState,
 } from '@credo-ts/didcomm'
 import { Subject } from 'rxjs'
 

@@ -1,14 +1,14 @@
+import type { AgentContext } from '../../agent'
+import type { JwkJson } from '../jose'
 import type {
   JsonWebKey,
-  KeyGenAlgorithm,
   KeyFormat,
+  KeyGenAlgorithm,
   KeyImportParams,
   KeySignParams,
   KeyUsage,
   KeyVerifyParams,
 } from './types'
-import type { AgentContext } from '../../agent'
-import type { JwkJson } from '../jose'
 
 import { AsnConvert, AsnParser } from '@peculiar/asn1-schema'
 import { SubjectPublicKeyInfo } from '@peculiar/asn1-x509'
