@@ -82,6 +82,7 @@ export class QuestionAnswerRecord extends BaseRecord<DefaultQuestionAnswerTags, 
 
   public assertState(expectedStates: QuestionAnswerState | QuestionAnswerState[]) {
     if (!Array.isArray(expectedStates)) {
+      // biome-ignore lint/style/noParameterAssign: <explanation>
       expectedStates = [expectedStates]
     }
 

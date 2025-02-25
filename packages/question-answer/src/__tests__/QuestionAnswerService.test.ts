@@ -63,7 +63,7 @@ describe('QuestionAnswerService', () => {
     agentConfig = getAgentConfig('QuestionAnswerServiceTest')
     wallet = new InMemoryWallet()
     agentContext = getAgentContext()
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    // biome-ignore lint/style/noNonNullAssertion: <explanation>
     await wallet.createAndOpen(agentConfig.walletConfig!)
   })
 
