@@ -1,8 +1,8 @@
 import type {
   X509ValidateCertificateChainOptions,
-  X509CreateSelfSignedCertificateOptions,
-  X509GetLefCertificateOptions,
+  X509GetLeafCertificateOptions,
   X509ParseCertificateOptions,
+  X509CreateCertificateOptions,
 } from './X509ServiceOptions'
 
 import * as x509 from '@peculiar/x509'
@@ -43,9 +43,13 @@ export class X509Service {
 
     const parsedLeafCertificate = new x509.X509Certificate(certificate)
 
-    const parsedCertificates = certificateChain.map((c) => new x509.X509Certificate(c))
+    const certificatesToBuildChain = [...certificateChain, ...(trustedCertificates ?? [])].map(
+      (c) => new x509.X509Certificate(c)
+    )
 
-    const certificateChainBuilder = new x509.X509ChainBuilder({ certificates: parsedCertificates })
+    const certificateChainBuilder = new x509.X509ChainBuilder({
+      certificates: certificatesToBuildChain,
+    })
 
     const chain = await certificateChainBuilder.build(parsedLeafCertificate, webCrypto)
 
@@ -53,7 +57,9 @@ export class X509Service {
     // has the leaf certificate as the first entry, while the `x509` library expects this as the last
     let parsedChain = chain.map((c) => X509Certificate.fromRawCertificate(new Uint8Array(c.rawData))).reverse()
 
-    if (parsedChain.length !== certificateChain.length) {
+    // We allow longer parsed chain, in case the root cert was not part of the chain, but in the
+    // list of trusted certificates
+    if (parsedChain.length < certificateChain.length) {
       throw new X509Error('Could not parse the full chain. Likely due to incorrect ordering')
     }
 
@@ -101,7 +107,7 @@ export class X509Service {
 
   public static getLeafCertificate(
     _agentContext: AgentContext,
-    { certificateChain }: X509GetLefCertificateOptions
+    { certificateChain }: X509GetLeafCertificateOptions
   ): X509Certificate {
     if (certificateChain.length === 0) throw new X509Error('Certificate chain is empty')
 
@@ -110,13 +116,10 @@ export class X509Service {
     return certificate
   }
 
-  public static async createSelfSignedCertificate(
-    agentContext: AgentContext,
-    options: X509CreateSelfSignedCertificateOptions
-  ) {
+  public static async createCertificate(agentContext: AgentContext, options: X509CreateCertificateOptions) {
     const webCrypto = new CredoWebCrypto(agentContext)
 
-    const certificate = await X509Certificate.createSelfSigned(options, webCrypto)
+    const certificate = await X509Certificate.create(options, webCrypto)
 
     return certificate
   }

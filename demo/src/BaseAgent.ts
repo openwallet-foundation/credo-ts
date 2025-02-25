@@ -34,8 +34,8 @@ import {
 import { IndyVdrIndyDidResolver, IndyVdrAnonCredsRegistry, IndyVdrModule } from '@credo-ts/indy-vdr'
 import { agentDependencies, HttpInboundTransport } from '@credo-ts/node'
 import { anoncreds } from '@hyperledger/anoncreds-nodejs'
-import { ariesAskar } from '@hyperledger/aries-askar-nodejs'
 import { indyVdr } from '@hyperledger/indy-vdr-nodejs'
+import { askar } from '@openwallet-foundation/askar-nodejs'
 
 import { greenText } from './OutputClass'
 
@@ -144,7 +144,7 @@ function getAskarAnonCredsIndyModules(didcommConfig: DidCommModuleConfigOptions)
       registrars: [new CheqdDidRegistrar()],
     }),
     askar: new AskarModule({
-      ariesAskar,
+      askar,
     }),
   } as const
 }

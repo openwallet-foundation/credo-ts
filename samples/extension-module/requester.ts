@@ -11,7 +11,7 @@ import {
   MessagePickupModule,
 } from '@credo-ts/didcomm'
 import { agentDependencies } from '@credo-ts/node'
-import { ariesAskar } from '@hyperledger/aries-askar-nodejs'
+import { askar } from '@openwallet-foundation/askar-nodejs'
 import { filter, first, firstValueFrom, map, ReplaySubject, timeout } from 'rxjs'
 
 import { DummyEventTypes, DummyState, DummyModule } from './dummy'
@@ -33,7 +33,7 @@ const run = async () => {
       logger: new ConsoleLogger(LogLevel.info),
     },
     modules: {
-      askar: new AskarModule({ ariesAskar }),
+      askar: new AskarModule({ askar }),
       didcomm: new DidCommModule(),
       oob: new OutOfBandModule(),
       messagePickup: new MessagePickupModule(),

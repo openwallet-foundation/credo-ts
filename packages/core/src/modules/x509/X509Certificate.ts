@@ -1,9 +1,12 @@
-import type { X509CreateSelfSignedCertificateOptions } from './X509ServiceOptions'
+import type { X509CreateCertificateOptions } from './X509ServiceOptions'
+import type { IssuerAlternativeNameExtension } from './extensions'
 import type { AgentContext } from '../../agent'
 
 import { AsnParser } from '@peculiar/asn1-schema'
 import {
   id_ce_authorityKeyIdentifier,
+  id_ce_extKeyUsage,
+  id_ce_issuerAltName,
   id_ce_keyUsage,
   id_ce_subjectAltName,
   id_ce_subjectKeyIdentifier,
@@ -12,32 +15,24 @@ import {
 import * as x509 from '@peculiar/x509'
 
 import { Key } from '../../crypto/Key'
-import { KeyType } from '../../crypto/KeyType'
-import { compress } from '../../crypto/jose/jwk/ecCompression'
 import { CredoWebCrypto, CredoWebCryptoKey } from '../../crypto/webcrypto'
 import { credoKeyTypeIntoCryptoKeyAlgorithm, spkiAlgorithmIntoCredoKeyType } from '../../crypto/webcrypto/utils'
 import { TypedArrayEncoder } from '../../utils'
 
 import { X509Error } from './X509Error'
+import {
+  convertName,
+  createAuthorityKeyIdentifierExtension,
+  createBasicConstraintsExtension,
+  createCrlDistributionPointsExtension,
+  createExtendedKeyUsagesExtension,
+  createIssuerAlternativeNameExtension,
+  createKeyUsagesExtension,
+  createSubjectAlternativeNameExtension,
+  createSubjectKeyIdentifierExtension,
+} from './utils'
 
-type ExtensionObjectIdentifier = string
-
-type SubjectAlternativeNameExtension = Array<{ type: 'url' | 'dns'; value: string }>
-type AuthorityKeyIdentifierExtension = { keyId: string }
-type SubjectKeyIdentifierExtension = { keyId: string }
-type KeyUsageExtension = { usage: number }
-
-type ExtensionValues =
-  | SubjectAlternativeNameExtension
-  | AuthorityKeyIdentifierExtension
-  | SubjectKeyIdentifierExtension
-  | KeyUsageExtension
-
-type Extension = Record<ExtensionObjectIdentifier, ExtensionValues>
-
-export type ExtensionInput = Array<Array<{ type: 'dns' | 'url'; value: string }>>
-
-export enum KeyUsage {
+export enum X509KeyUsage {
   DigitalSignature = 1,
   NonRepudiation = 2,
   KeyEncipherment = 4,
@@ -49,22 +44,32 @@ export enum KeyUsage {
   DecipherOnly = 256,
 }
 
+export enum X509ExtendedKeyUsage {
+  ServerAuth = '1.3.6.1.5.5.7.3.1',
+  ClientAuth = '1.3.6.1.5.5.7.3.2',
+  CodeSigning = '1.3.6.1.5.5.7.3.3',
+  EmailProtection = '1.3.6.1.5.5.7.3.4',
+  TimeStamping = '1.3.6.1.5.5.7.3.8',
+  OcspSigning = '1.3.6.1.5.5.7.3.9',
+  MdlDs = '1.0.18013.5.1.2',
+}
+
 export type X509CertificateOptions = {
   publicKey: Key
   privateKey?: Uint8Array
-  extensions?: Array<Extension>
+  extensions?: Array<x509.Extension>
   rawCertificate: Uint8Array
 }
 
 export class X509Certificate {
   public publicKey: Key
   public privateKey?: Uint8Array
-  public extensions?: Array<Extension>
+  private extensions: Array<x509.Extension>
 
   public readonly rawCertificate: Uint8Array
 
   public constructor(options: X509CertificateOptions) {
-    this.extensions = options.extensions
+    this.extensions = options.extensions ?? []
     this.publicKey = options.publicKey
     this.privateKey = options.privateKey
     this.rawCertificate = options.rawCertificate
@@ -85,72 +90,50 @@ export class X509Certificate {
     const privateKey = certificate.privateKey ? new Uint8Array(certificate.privateKey.rawData) : undefined
 
     const keyType = spkiAlgorithmIntoCredoKeyType(publicKey.algorithm)
+    const publicKeyBytes = new Uint8Array(publicKey.subjectPublicKey)
 
-    // TODO(crypto): Currently this only does point-compression for P256.
-    //               We should either store all keys as uncompressed, or we should compress all supported keys here correctly
-    let keyBytes = new Uint8Array(publicKey.subjectPublicKey)
-    if (publicKey.subjectPublicKey.byteLength === 65 && keyType === KeyType.P256) {
-      if (keyBytes[0] !== 0x04) {
-        throw new X509Error('Received P256 key with 65 bytes, but key did not start with 0x04. Invalid key')
-      }
-      // TODO(crypto): the compress method is bugged because it does not expect the required `0x04` prefix. Here we strip that and receive the expected result
-      keyBytes = compress(keyBytes.slice(1))
-    }
-
-    const key = new Key(keyBytes, keyType)
-
-    const extensions = certificate.extensions
-      .map((e) => {
-        if (e instanceof x509.AuthorityKeyIdentifierExtension) {
-          return { [e.type]: { keyId: e.keyId as string } }
-        } else if (e instanceof x509.SubjectKeyIdentifierExtension) {
-          return { [e.type]: { keyId: e.keyId } }
-        } else if (e instanceof x509.SubjectAlternativeNameExtension) {
-          return { [e.type]: JSON.parse(JSON.stringify(e.names)) as SubjectAlternativeNameExtension }
-        } else if (e instanceof x509.KeyUsagesExtension) {
-          return { [e.type]: { usage: e.usages as number } }
-        }
-
-        // TODO: We could throw an error when we don't understand the extension?
-        // This will break everytime we do not understand an extension though
-        return undefined
-      })
-      .filter((e): e is Exclude<typeof e, undefined> => e !== undefined)
+    const key = new Key(publicKeyBytes, keyType)
 
     return new X509Certificate({
       publicKey: key,
       privateKey,
-      extensions,
+      extensions: certificate.extensions,
       rawCertificate: new Uint8Array(certificate.rawData),
     })
   }
 
-  private getMatchingExtensions<T extends ExtensionValues>(objectIdentifier: string): Array<T> | undefined {
-    return this.extensions?.map((e) => e[objectIdentifier])?.filter(Boolean) as Array<T> | undefined
+  private getMatchingExtensions<T = { critical: boolean }>(objectIdentifier: string): Array<T> | undefined {
+    return this.extensions.filter((e) => e.type === objectIdentifier) as Array<T> | undefined
+  }
+
+  public get subjectAlternativeNames() {
+    const san = this.getMatchingExtensions<x509.SubjectAlternativeNameExtension>(id_ce_subjectAltName)
+    return san?.flatMap((s) => s.names.items).map((i) => ({ type: i.type, value: i.value })) ?? []
+  }
+
+  public get issuerAlternativeNames() {
+    const ian = this.getMatchingExtensions<IssuerAlternativeNameExtension>(id_ce_issuerAltName)
+    return ian?.flatMap((i) => i.names.items).map((i) => ({ type: i.type, value: i.value })) ?? []
   }
 
   public get sanDnsNames() {
-    const san = this.getMatchingExtensions<SubjectAlternativeNameExtension>(id_ce_subjectAltName)
-    return (
-      san
-        ?.flatMap((e) => e)
-        ?.filter((e) => e.type === 'dns')
-        ?.map((e) => e.value) ?? []
-    )
+    return this.subjectAlternativeNames.filter((san) => san.type === 'dns').map((san) => san.value)
   }
 
   public get sanUriNames() {
-    const san = this.getMatchingExtensions<SubjectAlternativeNameExtension>(id_ce_subjectAltName)
-    return (
-      san
-        ?.flatMap((e) => e)
-        ?.filter((e) => e.type === 'url')
-        ?.map((e) => e.value) ?? []
-    )
+    return this.subjectAlternativeNames.filter((ian) => ian.type === 'url').map((ian) => ian.value)
+  }
+
+  public get ianDnsNames() {
+    return this.issuerAlternativeNames.filter((san) => san.type === 'dns').map((san) => san.value)
+  }
+
+  public get ianUriNames() {
+    return this.issuerAlternativeNames.filter((ian) => ian.type === 'url').map((ian) => ian.value)
   }
 
   public get authorityKeyIdentifier() {
-    const keyIds = this.getMatchingExtensions<AuthorityKeyIdentifierExtension>(id_ce_authorityKeyIdentifier)?.map(
+    const keyIds = this.getMatchingExtensions<x509.AuthorityKeyIdentifierExtension>(id_ce_authorityKeyIdentifier)?.map(
       (e) => e.keyId
     )
 
@@ -162,7 +145,7 @@ export class X509Certificate {
   }
 
   public get subjectKeyIdentifier() {
-    const keyIds = this.getMatchingExtensions<SubjectKeyIdentifierExtension>(id_ce_subjectKeyIdentifier)?.map(
+    const keyIds = this.getMatchingExtensions<x509.SubjectKeyIdentifierExtension>(id_ce_subjectKeyIdentifier)?.map(
       (e) => e.keyId
     )
 
@@ -173,61 +156,112 @@ export class X509Certificate {
     return keyIds?.[0]
   }
 
-  public get keyUsage(): Array<KeyUsage> {
-    const keyUsages = this.getMatchingExtensions<KeyUsageExtension>(id_ce_keyUsage)?.map((e) => e.usage)
+  public get keyUsage() {
+    const keyUsages = this.getMatchingExtensions<x509.KeyUsagesExtension>(id_ce_keyUsage)?.map((e) => e.usages)
 
     if (keyUsages && keyUsages.length > 1) {
       throw new X509Error('Multiple Key Usages are not allowed')
     }
 
     if (keyUsages) {
-      return Object.values(KeyUsage)
+      return Object.values(X509KeyUsage)
         .filter((key): key is number => typeof key === 'number')
         .filter((flagValue) => (keyUsages[0] & flagValue) === flagValue)
-        .map((flagValue) => flagValue as KeyUsage)
+        .map((flagValue) => flagValue as X509KeyUsage)
     }
-
-    return []
   }
 
-  public static async createSelfSigned(
-    {
-      key,
-      extensions,
-      notAfter,
-      notBefore,
-      name,
-      includeAuthorityKeyIdentifier = true,
-    }: X509CreateSelfSignedCertificateOptions,
-    webCrypto: CredoWebCrypto
-  ) {
-    const cryptoKeyAlgorithm = credoKeyTypeIntoCryptoKeyAlgorithm(key.keyType)
+  public get extendedKeyUsage() {
+    const extendedKeyUsages = this.getMatchingExtensions<x509.ExtendedKeyUsageExtension>(id_ce_extKeyUsage)?.map(
+      (e) => e.usages
+    )
 
-    const publicKey = new CredoWebCryptoKey(key, cryptoKeyAlgorithm, true, 'public', ['verify'])
-    const privateKey = new CredoWebCryptoKey(key, cryptoKeyAlgorithm, false, 'private', ['sign'])
-
-    const hexPublicKey = TypedArrayEncoder.toHex(key.publicKey)
-
-    const x509Extensions: Array<x509.Extension> = [
-      new x509.SubjectKeyIdentifierExtension(hexPublicKey),
-      new x509.KeyUsagesExtension(x509.KeyUsageFlags.digitalSignature | x509.KeyUsageFlags.keyCertSign),
-    ]
-
-    if (includeAuthorityKeyIdentifier) {
-      x509Extensions.push(new x509.AuthorityKeyIdentifierExtension(hexPublicKey))
+    if (extendedKeyUsages && extendedKeyUsages.length > 1) {
+      throw new X509Error('Multiple Key Usages are not allowed')
     }
 
-    for (const extension of extensions ?? []) {
-      x509Extensions.push(new x509.SubjectAlternativeNameExtension(extension))
+    return extendedKeyUsages?.[0] as X509ExtendedKeyUsage | undefined
+  }
+
+  public isExtensionCritical(id: string): boolean {
+    const extension = this.getMatchingExtensions(id)
+    if (!extension) {
+      throw new X509Error(`extension with id '${id}' is not found`)
     }
 
-    const certificate = await x509.X509CertificateGenerator.createSelfSigned(
+    return !!extension[0].critical
+  }
+
+  public static async create(options: X509CreateCertificateOptions, webCrypto: CredoWebCrypto) {
+    const subjectPublicKey = options.subjectPublicKey ?? options.authorityKey
+    const isSelfSignedCertificate = options.authorityKey.publicKeyBase58 === subjectPublicKey.publicKeyBase58
+
+    const signingKey = new CredoWebCryptoKey(
+      options.authorityKey,
+      credoKeyTypeIntoCryptoKeyAlgorithm(options.authorityKey.keyType),
+      false,
+      'private',
+      ['sign']
+    )
+    const publicKey = new CredoWebCryptoKey(
+      subjectPublicKey,
+      credoKeyTypeIntoCryptoKeyAlgorithm(options.authorityKey.keyType),
+      true,
+      'public',
+      ['verify']
+    )
+
+    const issuerName = convertName(options.issuer)
+
+    const extensions: Array<x509.Extension | undefined> = []
+    extensions.push(
+      createSubjectKeyIdentifierExtension(options.extensions?.subjectKeyIdentifier, { key: subjectPublicKey })
+    )
+    extensions.push(createKeyUsagesExtension(options.extensions?.keyUsage))
+    extensions.push(createExtendedKeyUsagesExtension(options.extensions?.extendedKeyUsage))
+    extensions.push(
+      createAuthorityKeyIdentifierExtension(options.extensions?.authorityKeyIdentifier, { key: options.authorityKey })
+    )
+    extensions.push(createIssuerAlternativeNameExtension(options.extensions?.issuerAlternativeName))
+    extensions.push(createSubjectAlternativeNameExtension(options.extensions?.subjectAlternativeName))
+    extensions.push(createBasicConstraintsExtension(options.extensions?.basicConstraints))
+    extensions.push(createCrlDistributionPointsExtension(options.extensions?.crlDistributionPoints))
+
+    if (isSelfSignedCertificate) {
+      if (options.subject) {
+        throw new X509Error('Do not provide a subject name when the certificate is supposed to be self signed')
+      }
+
+      const certificate = await x509.X509CertificateGenerator.createSelfSigned(
+        {
+          keys: { publicKey, privateKey: signingKey },
+          name: issuerName,
+          notBefore: options.validity?.notBefore,
+          notAfter: options.validity?.notAfter,
+          extensions: extensions.filter((e) => e !== undefined),
+          serialNumber: options.serialNumber,
+        },
+        webCrypto
+      )
+
+      return X509Certificate.parseCertificate(certificate)
+    }
+
+    if (!options.subject) {
+      throw new X509Error('Provide a subject name when the certificate is not supposed to be self signed')
+    }
+
+    const subjectName = convertName(options.subject)
+
+    const certificate = await x509.X509CertificateGenerator.create(
       {
-        keys: { publicKey, privateKey },
-        name,
-        extensions: x509Extensions,
-        notAfter,
-        notBefore,
+        signingKey,
+        publicKey,
+        issuer: issuerName,
+        subject: subjectName,
+        notBefore: options.validity?.notBefore,
+        notAfter: options.validity?.notAfter,
+        extensions: extensions.filter((e) => e !== undefined),
       },
       webCrypto
     )
@@ -238,6 +272,11 @@ export class X509Certificate {
   public get subject() {
     const certificate = new x509.X509Certificate(this.rawCertificate)
     return certificate.subject
+  }
+
+  public get issuer() {
+    const certificate = new x509.X509Certificate(this.rawCertificate)
+    return certificate.issuer
   }
 
   public async verify(
@@ -262,6 +301,7 @@ export class X509Certificate {
     if (!isSignatureValid) {
       throw new X509Error(`Certificate: '${certificate.subject}' has an invalid signature`)
     }
+
     if (!isNotBeforeValid) {
       throw new X509Error(`Certificate: '${certificate.subject}' used before it is allowed`)
     }
@@ -274,7 +314,7 @@ export class X509Certificate {
   /**
    * Get the thumprint of the X509 certificate in hex format.
    */
-  public async getThumprint(agentContext: AgentContext) {
+  public async getThumprintInHex(agentContext: AgentContext) {
     const certificate = new x509.X509Certificate(this.rawCertificate)
 
     const thumbprint = await certificate.getThumbprint(new CredoWebCrypto(agentContext))

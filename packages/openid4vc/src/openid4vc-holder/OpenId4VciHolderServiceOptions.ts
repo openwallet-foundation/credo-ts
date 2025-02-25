@@ -162,7 +162,7 @@ export interface OpenId4VciAcceptCredentialOfferOptions {
   credentialConfigurationIds?: string[]
 
   /**
-   * Whether to request a batch of credentials if supported by the crednetial issuer.
+   * Whether to request a batch of credentials if supported by the credential issuer.
    *
    * You can also provide a number to indicate the batch size. If `true` is provided
    * the max size from the credential issuer will be used.

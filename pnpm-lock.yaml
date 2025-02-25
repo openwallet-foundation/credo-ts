@@ -24,15 +24,12 @@ importers:
       '@changesets/cli':
         specifier: ^2.27.5
         version: 2.27.5
-      '@hyperledger/aries-askar-nodejs':
-        specifier: ^0.2.3
-        version: 0.2.3
       '@jest/types':
         specifier: ^29.6.3
         version: 29.6.3
-      '@types/bn.js':
-        specifier: ^5.1.5
-        version: 5.1.5
+      '@openwallet-foundation/askar-nodejs':
+        specifier: ^0.3.1
+        version: 0.3.1
       '@types/cors':
         specifier: ^2.8.10
         version: 2.8.17
@@ -57,9 +54,6 @@ importers:
       '@types/ws':
         specifier: ^8.5.4
         version: 8.5.10
-      bn.js:
-        specifier: ^5.2.1
-        version: 5.2.1
       cors:
         specifier: ^2.8.5
         version: 2.8.5
@@ -102,12 +96,12 @@ importers:
       '@hyperledger/anoncreds-nodejs':
         specifier: ^0.2.2
         version: 0.2.2
-      '@hyperledger/aries-askar-nodejs':
-        specifier: ^0.2.3
-        version: 0.2.3
       '@hyperledger/indy-vdr-nodejs':
         specifier: ^0.2.2
         version: 0.2.2
+      '@openwallet-foundation/askar-nodejs':
+        specifier: ^0.3.1
+        version: 0.3.1
       inquirer:
         specifier: ^8.2.5
         version: 8.2.6
@@ -154,15 +148,15 @@ importers:
       '@hyperledger/anoncreds-nodejs':
         specifier: ^0.2.2
         version: 0.2.2
-      '@hyperledger/aries-askar-nodejs':
-        specifier: ^0.2.3
-        version: 0.2.3
       '@hyperledger/indy-vdr-nodejs':
         specifier: ^0.2.2
         version: 0.2.2
       '@koa/bodyparser':
         specifier: ^5.1.1
         version: 5.1.1(koa@2.15.3)
+      '@openwallet-foundation/askar-nodejs':
+        specifier: ^0.3.1
+        version: 0.3.1
       express:
         specifier: ^4.18.1
         version: 4.19.2
@@ -255,12 +249,6 @@ importers:
       '@sphereon/pex-models':
         specifier: ^2.3.1
         version: 2.3.2
-      big-integer:
-        specifier: ^1.6.51
-        version: 1.6.52
-      bn.js:
-        specifier: ^5.2.1
-        version: 5.2.1
       class-transformer:
         specifier: 0.5.1
         version: 0.5.1
@@ -295,9 +283,6 @@ importers:
       '@credo-ts/core':
         specifier: workspace:*
         version: link:../core
-      bn.js:
-        specifier: ^5.2.1
-        version: 5.2.1
       class-transformer:
         specifier: 0.5.1
         version: 0.5.1
@@ -312,17 +297,14 @@ importers:
         version: 4.8.0
     devDependencies:
       '@animo-id/expo-secure-environment':
-        specifier: ^0.1.0-alpha.11
+        specifier: ^0.1.0-alpha.12
         version: 0.1.0-alpha.12(expo@51.0.14(@babel/core@7.26.0)(@babel/preset-env@7.26.0(@babel/core@7.26.0)))(react-native@0.71.19(@babel/core@7.26.0)(@babel/preset-env@7.26.0(@babel/core@7.26.0))(react@18.3.1))(react@18.3.1)
-      '@hyperledger/aries-askar-nodejs':
-        specifier: ^0.2.3
-        version: 0.2.3
-      '@hyperledger/aries-askar-shared':
-        specifier: ^0.2.3
-        version: 0.2.3
-      '@types/bn.js':
-        specifier: ^5.1.0
-        version: 5.1.5
+      '@openwallet-foundation/askar-nodejs':
+        specifier: ^0.3.1
+        version: 0.3.1
+      '@openwallet-foundation/askar-shared':
+        specifier: ^0.3.1
+        version: 0.3.1
       '@types/ref-array-di':
         specifier: ^1.2.6
         version: 1.2.8
@@ -419,11 +401,11 @@ importers:
   packages/core:
     dependencies:
       '@animo-id/mdoc':
-        specifier: 0.3.0
-        version: 0.3.0
+        specifier: 0.4.0
+        version: 0.4.0
       '@animo-id/pex':
-        specifier: 4.1.1-alpha.0
-        version: 4.1.1-alpha.0
+        specifier: 4.1.1-alpha.1
+        version: 4.1.1-alpha.1
       '@astronautlabs/jsonpath':
         specifier: ^1.1.2
         version: 1.1.2
@@ -487,9 +469,6 @@ importers:
       '@types/ws':
         specifier: ^8.5.4
         version: 8.5.10
-      big-integer:
-        specifier: ^1.6.51
-        version: 1.6.52
       borc:
         specifier: ^3.0.0
         version: 3.0.0
@@ -505,6 +484,9 @@ importers:
       did-resolver:
         specifier: ^4.1.0
         version: 4.1.0
+      ec-compression:
+        specifier: 0.0.1-alpha.10
+        version: 0.0.1-alpha.10
       lru_map:
         specifier: ^0.4.1
         version: 0.4.1
@@ -583,8 +565,8 @@ importers:
         version: 7.8.1
     devDependencies:
       '@animo-id/pex':
-        specifier: 4.1.1-alpha.0
-        version: 4.1.1-alpha.0
+        specifier: 4.1.1-alpha.1
+        version: 4.1.1-alpha.1
       '@sphereon/pex-models':
         specifier: ^2.3.1
         version: 2.3.2
@@ -644,12 +626,12 @@ importers:
         specifier: workspace:*
         version: link:../node
     devDependencies:
-      '@hyperledger/aries-askar-nodejs':
-        specifier: ^0.2.3
-        version: 0.2.3
-      '@hyperledger/aries-askar-shared':
-        specifier: ^0.2.3
-        version: 0.2.3
+      '@openwallet-foundation/askar-nodejs':
+        specifier: ^0.3.1
+        version: 0.3.1
+      '@openwallet-foundation/askar-shared':
+        specifier: ^0.3.1
+        version: 0.3.1
       rimraf:
         specifier: ^4.4.0
         version: 4.4.1
@@ -881,9 +863,9 @@ importers:
       '@credo-ts/node':
         specifier: workspace:*
         version: link:../../packages/node
-      '@hyperledger/aries-askar-nodejs':
-        specifier: ^0.2.3
-        version: 0.2.3
+      '@openwallet-foundation/askar-nodejs':
+        specifier: ^0.3.1
+        version: 0.3.1
       class-validator:
         specifier: 0.14.1
         version: 0.14.1
@@ -956,8 +938,8 @@ packages:
       react: '*'
       react-native: '*'
 
-  '@animo-id/mdoc@0.3.0':
-    resolution: {integrity: sha512-igpkhrmUbH6VEm0yoKmLyHS3yWdPp2rzdAmBz43Isqot5J5RePM8GFLxi7O0svGYBumoduS4LKddXSqmHNp7zQ==}
+  '@animo-id/mdoc@0.4.0':
+    resolution: {integrity: sha512-ziuaAn4MnocSwoGZzKbgDB3g5ohfl79USR8Ly/uGImPRdZ6qxaB/cqO3dP0162PhKFbWsywgsgpghCiOeYoVBA==}
 
   '@animo-id/oauth2-utils@0.1.4':
     resolution: {integrity: sha512-JUIshkNCiX7myPwdiE+Da/g77OjsxZreezmfXWBSWOgCOZrnQX+t5vkhpe6Jc6DRh40Y8r9Fa1AesV0vtVpUMg==}
@@ -968,8 +950,8 @@ packages:
   '@animo-id/oid4vci@0.1.4':
     resolution: {integrity: sha512-0Tc8RFpY5dW/MOVA2Fz8f7giM/eIAk3G3OZUjy5POqg5Tkiv92CcaOxMk84JBNAMOks3LpKjf9PAiNh6pCDzeQ==}
 
-  '@animo-id/pex@4.1.1-alpha.0':
-    resolution: {integrity: sha512-6ieHhH9UE9DLFOJegMCabG3qUFlQk4TLhBefxInpyjx2Ly6kuloVMScJYcnQTs/E6nuHGMd7ebUaKy4+0+ZbOA==}
+  '@animo-id/pex@4.1.1-alpha.1':
+    resolution: {integrity: sha512-b1VH2y3EYnLir7wiu4sap2iajmGmG05j0O+3AiAMSuLSWDeRyiTR+BumUmAxYDTZuXuoe3L82mJ5VTXPUNFM1g==}
     engines: {node: '>=18'}
 
   '@animo-id/react-native-bbs-signatures@0.1.0':
@@ -2493,13 +2475,6 @@ packages:
   '@hyperledger/anoncreds-shared@0.2.2':
     resolution: {integrity: sha512-dfYpqbAkqtHJkRkuGmWdJruHfLegLUIbu/dSAWnz5dMRKd8ad8rEnQkwRnockQZ/pc7QDr8kxfG6bT2YDGZeMw==}
 
-  '@hyperledger/aries-askar-nodejs@0.2.3':
-    resolution: {integrity: sha512-2BnGqK08Y96DEB8tDuXy2x+soetChyMGB0+L1yqdHx1Xv5FvRerYrTXdTjJXTW6ANb48k2Np8WlJ4YNePSo6ww==}
-    engines: {node: '>= 18'}
-
-  '@hyperledger/aries-askar-shared@0.2.3':
-    resolution: {integrity: sha512-g9lao8qa80kPCLqqp02ovNqEfQIrm6cAf4xZVzD5P224VmOhf4zM6AKplQTvQx7USNKoXroe93JrOOSVxPeqrA==}
-
   '@hyperledger/indy-vdr-nodejs@0.2.2':
     resolution: {integrity: sha512-mc0iKuHCtKuOV0sMnGOTVWnQrpfBMS+1tIRyob+CvGCvwC2llGo3Hu5AvgPcR9nqCo/wJ0LoKBo66dYYb0uZbw==}
     engines: {node: '>= 18'}
@@ -2727,6 +2702,13 @@ packages:
   '@open-draft/until@2.1.0':
     resolution: {integrity: sha512-U69T3ItWHvLwGg5eJ0n3I62nWuE6ilHlmz7zM0npLBRvPRd7e6NYmg54vvRtP5mZG7kZqZCFVdsTWo7BPtBujg==}
 
+  '@openwallet-foundation/askar-nodejs@0.3.1':
+    resolution: {integrity: sha512-m3L8KEPC+qgA3MAFssMtjSqJiAQtrawZEWPmW6eiB7OPjZvkKjodMhx/cuUV5YTl4eQlSix2EY4vXMzk4vt+cQ==}
+    engines: {node: '>= 18'}
+
+  '@openwallet-foundation/askar-shared@0.3.1':
+    resolution: {integrity: sha512-KpkVuLHnKkJ7nPYZ/6PJ8b9gq+elC6Mhg8UiG+wLOKchVi6Vbv/nOsAdKK9j1/CCZ3DzvfTbhV+KRk6YNXmIsA==}
+
   '@peculiar/asn1-cms@2.3.13':
     resolution: {integrity: sha512-joqu8A7KR2G85oLPq+vB+NFr2ro7Ls4ol13Zcse/giPSzUNN0n2k3v8kMpf6QdGUhI13e5SzQYN8AKP8sJ8v4w==}
 
@@ -2750,9 +2732,6 @@ packages:
 
   '@peculiar/asn1-schema@2.3.13':
     resolution: {integrity: sha512-3Xq3a01WkHRZL8X04Zsfg//mGaA21xlL4tlVn4v2xGT0JStiztATRkMwa5b+f/HXmY2smsiLXYK46Gwgzvfg3g==}
-
-  '@peculiar/asn1-schema@2.3.8':
-    resolution: {integrity: sha512-ULB1XqHKx1WBU/tTFIA+uARuRoBVZ4pNdOA878RDrRbBfBGcSzi5HBkdScC6ZbHn8z7L8gmKCgPC1LHRrP46tA==}
 
   '@peculiar/asn1-x509-attr@2.3.13':
     resolution: {integrity: sha512-WpEos6CcnUzJ6o2Qb68Z7Dz5rSjRGv/DtXITCNBtjZIRWRV12yFVci76SVfOX8sisL61QWMhpLKQibrG8pi2Pw==}
@@ -3113,9 +3092,6 @@ packages:
 
   '@types/babel__traverse@7.20.6':
     resolution: {integrity: sha512-r1bzfrm0tomOI8g1SzvCaQHo6Lcv6zu0EA+W2kHrt8dyrHQxGzBBL4kdkzIS+jBMV+EYcMAEAqXqYaLJq5rOZg==}
-
-  '@types/bn.js@5.1.5':
-    resolution: {integrity: sha512-V46N0zwKRF5Q00AZ6hWtN0T8gGmDUaUzLWQvHFo5yThtVwK/VCenFY3wXVbOvNfajEpsTfQM4IN9k/d6gUVX3A==}
 
   '@types/body-parser@1.19.5':
     resolution: {integrity: sha512-fB3Zu92ucau0iQ0JMCFQE7b/dv8Ot07NI3KaZIkIUNXq82k4eBAqUaneXfleGY9JWskeS9y+u0nXMyspcuQrCg==}
@@ -4330,6 +4306,9 @@ packages:
 
   eastasianwidth@0.2.0:
     resolution: {integrity: sha512-I88TYZWc9XiYHRQ4/3c5rjjfgkjhLyW2luGIheGERbNQ6OY7yTybanSpDXZa8y7VUP9YmDcYa+eyq4ca7iLqWA==}
+
+  ec-compression@0.0.1-alpha.10:
+    resolution: {integrity: sha512-40i890RKwkaxUqAI8XZkELoKWhQS4VDfHU0D0lYwrFjfA7vtUZWaCNCbpoGwCMZqrPrWGfXqej76/N44kVKxMg==}
 
   ed25519-signature-2018-context@1.1.0:
     resolution: {integrity: sha512-ppDWYMNwwp9bploq0fS4l048vHIq41nWsAbPq6H4mNVx9G/GxW3fwg4Ln0mqctP13MoEpREK7Biz8TbVVdYXqA==}
@@ -5797,9 +5776,11 @@ packages:
 
   lodash.get@4.4.2:
     resolution: {integrity: sha512-z+Uw/vLuy6gQe8cfaFWD7p0wVv8fJl3mbzXh33RS+0oW2wvUqiRXiQ69gLWSLpgB5/6sU+r6BlQR0MBILadqTQ==}
+    deprecated: This package is deprecated. Use the optional chaining (?.) operator instead.
 
   lodash.isequal@4.5.0:
     resolution: {integrity: sha512-pDo3lu8Jhfjqls6GkMgpahsF9kCyayhgykjyLMNFTKWrpVdAQtYyB4muAMWozBB4ig/dtWAmsMxLEI8wuz+DYQ==}
+    deprecated: This package is deprecated. Use require('node:util').isDeepStrictEqual instead.
 
   lodash.isplainobject@4.0.6:
     resolution: {integrity: sha512-oSXzaWypCMHkPC3NvBEaPHf0KsA5mvPrOPgQWDsbg8n7orZ290M0BmC/jgRZ4vcJ6DTAhjrsSYgdsW/F+MFOBA==}
@@ -7297,6 +7278,7 @@ packages:
 
   sudo-prompt@9.2.1:
     resolution: {integrity: sha512-Mu7R0g4ig9TUuGSxJavny5Rv0egCEtpZRNMrZaYS1vxkiIxGiGUwoezU3LazIQ+KE04hTrTfNPgxU5gzi7F5Pw==}
+    deprecated: Package no longer supported. Contact Support at https://www.npmjs.com/support for more info.
 
   superagent@9.0.2:
     resolution: {integrity: sha512-xuW7dzkUpcJq7QnhOsnNUgtYp3xRwpt2F7abdRYIpCsAt0hhUqia0EdxyXZQQpNmGtsCzYHryaKSV3q3GJnq7w==}
@@ -8077,13 +8059,13 @@ snapshots:
   '@animo-id/expo-secure-environment@0.1.0-alpha.12(expo@51.0.14(@babel/core@7.26.0)(@babel/preset-env@7.26.0(@babel/core@7.26.0)))(react-native@0.71.19(@babel/core@7.26.0)(@babel/preset-env@7.26.0(@babel/core@7.26.0))(react@18.3.1))(react@18.3.1)':
     dependencies:
       '@peculiar/asn1-ecc': 2.3.14
-      '@peculiar/asn1-schema': 2.3.8
+      '@peculiar/asn1-schema': 2.3.13
       '@peculiar/asn1-x509': 2.3.13
       expo: 51.0.14(@babel/core@7.26.0)(@babel/preset-env@7.26.0(@babel/core@7.26.0))
       react: 18.3.1
       react-native: 0.71.19(@babel/core@7.26.0)(@babel/preset-env@7.26.0(@babel/core@7.26.0))(react@18.3.1)
 
-  '@animo-id/mdoc@0.3.0':
+  '@animo-id/mdoc@0.4.0':
     dependencies:
       compare-versions: 6.1.1
 
@@ -8109,7 +8091,7 @@ snapshots:
     transitivePeerDependencies:
       - typescript
 
-  '@animo-id/pex@4.1.1-alpha.0':
+  '@animo-id/pex@4.1.1-alpha.1':
     dependencies:
       '@astronautlabs/jsonpath': 1.1.2
       '@sd-jwt/decode': 0.7.2
@@ -10324,22 +10306,6 @@ snapshots:
 
   '@hyperledger/anoncreds-shared@0.2.2': {}
 
-  '@hyperledger/aries-askar-nodejs@0.2.3':
-    dependencies:
-      '@2060.io/ffi-napi': 4.0.9
-      '@2060.io/ref-napi': 3.0.6
-      '@hyperledger/aries-askar-shared': 0.2.3
-      '@mapbox/node-pre-gyp': 1.0.11
-      ref-array-di: 1.2.2
-      ref-struct-di: 1.1.1
-    transitivePeerDependencies:
-      - encoding
-      - supports-color
-
-  '@hyperledger/aries-askar-shared@0.2.3':
-    dependencies:
-      buffer: 6.0.3
-
   '@hyperledger/indy-vdr-nodejs@0.2.2':
     dependencies:
       '@2060.io/ffi-napi': 4.0.9
@@ -10724,6 +10690,22 @@ snapshots:
 
   '@open-draft/until@2.1.0': {}
 
+  '@openwallet-foundation/askar-nodejs@0.3.1':
+    dependencies:
+      '@2060.io/ffi-napi': 4.0.9
+      '@2060.io/ref-napi': 3.0.6
+      '@mapbox/node-pre-gyp': 1.0.11
+      '@openwallet-foundation/askar-shared': 0.3.1
+      ref-array-di: 1.2.2
+      ref-struct-di: 1.1.1
+    transitivePeerDependencies:
+      - encoding
+      - supports-color
+
+  '@openwallet-foundation/askar-shared@0.3.1':
+    dependencies:
+      buffer: 6.0.3
+
   '@peculiar/asn1-cms@2.3.13':
     dependencies:
       '@peculiar/asn1-schema': 2.3.13
@@ -10785,12 +10767,6 @@ snapshots:
       asn1js: 3.0.5
       pvtsutils: 1.3.5
       tslib: 2.8.1
-
-  '@peculiar/asn1-schema@2.3.8':
-    dependencies:
-      asn1js: 3.0.5
-      pvtsutils: 1.3.5
-      tslib: 2.6.3
 
   '@peculiar/asn1-x509-attr@2.3.13':
     dependencies:
@@ -11705,10 +11681,6 @@ snapshots:
   '@types/babel__traverse@7.20.6':
     dependencies:
       '@babel/types': 7.24.7
-
-  '@types/bn.js@5.1.5':
-    dependencies:
-      '@types/node': 18.18.8
 
   '@types/body-parser@1.19.5':
     dependencies:
@@ -13104,6 +13076,8 @@ snapshots:
   dotenv@16.4.5: {}
 
   eastasianwidth@0.2.0: {}
+
+  ec-compression@0.0.1-alpha.10: {}
 
   ed25519-signature-2018-context@1.1.0: {}
 

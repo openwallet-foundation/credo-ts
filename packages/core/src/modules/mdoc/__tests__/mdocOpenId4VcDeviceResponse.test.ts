@@ -2,7 +2,7 @@ import type { DifPresentationExchangeDefinition } from '../../dif-presentation-e
 
 import { cborEncode, parseDeviceResponse } from '@animo-id/mdoc'
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { Key as AskarKey, Jwk } from '@hyperledger/aries-askar-nodejs'
+import { Key as AskarKey, Jwk } from '@openwallet-foundation/askar-nodejs'
 
 import { getInMemoryAgentOptions } from '../../../../tests'
 import { Agent } from '../../../agent/Agent'
@@ -305,11 +305,13 @@ describe('mdoc device-response openid4vp test', () => {
         keyType: KeyType.Ed25519,
       })
 
-      const issuerCertificate = await agent.x509.createSelfSignedCertificate({
-        key: issuerKey,
-        name: 'C=US,ST=New York',
-        notBefore: new Date('2020-01-01'),
-        notAfter: new Date(Date.now() + 1000 * 3600),
+      const issuerCertificate = await agent.x509.createCertificate({
+        authorityKey: issuerKey,
+        issuer: 'C=US,ST=New York',
+        validity: {
+          notBefore: new Date('2020-01-01'),
+          notAfter: new Date(Date.now() + 1000 * 3600),
+        },
       })
 
       const mdoc = await Mdoc.sign(agent.context, {

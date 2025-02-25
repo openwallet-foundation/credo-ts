@@ -1,13 +1,20 @@
 import type { JwkJson } from './Jwk'
 import type { JwaEncryptionAlgorithm } from '../jwa/alg'
 
-import { TypedArrayEncoder, Buffer } from '../../../utils'
+import {
+  AffinePoint,
+  isValidCompressedPublicKeyFormat,
+  isValidDecompressedPublicKeyFormat,
+  Secp256k1,
+} from 'ec-compression'
+
+import { CredoError } from '../../../error'
+import { TypedArrayEncoder } from '../../../utils'
 import { KeyType } from '../../KeyType'
 import { JwaCurve, JwaKeyType } from '../jwa'
 import { JwaSignatureAlgorithm } from '../jwa/alg'
 
 import { Jwk } from './Jwk'
-import { compress, expand } from './ecCompression'
 import { hasKty, hasCrv, hasX, hasY, hasValidUse } from './validate'
 
 export class K256Jwk extends Jwk {
@@ -15,14 +22,15 @@ export class K256Jwk extends Jwk {
   public static readonly supportedSignatureAlgorithms: JwaSignatureAlgorithm[] = [JwaSignatureAlgorithm.ES256K]
   public static readonly keyType = KeyType.K256
 
-  public readonly x: string
-  public readonly y: string
+  private readonly affinePoint: AffinePoint
 
-  public constructor({ x, y }: { x: string; y: string }) {
+  public constructor({ x, y }: { x: string | Uint8Array; y: string | Uint8Array }) {
     super()
 
-    this.x = x
-    this.y = y
+    const xAsBytes = typeof x === 'string' ? Uint8Array.from(TypedArrayEncoder.fromBase64(x)) : x
+    const yAsBytes = typeof y === 'string' ? Uint8Array.from(TypedArrayEncoder.fromBase64(y)) : y
+
+    this.affinePoint = new AffinePoint(xAsBytes, yAsBytes)
   }
 
   public get kty() {
@@ -33,17 +41,26 @@ export class K256Jwk extends Jwk {
     return JwaCurve.Secp256k1 as const
   }
 
+  public get x() {
+    return TypedArrayEncoder.toBase64URL(this.affinePoint.xBytes)
+  }
+
+  public get y() {
+    return TypedArrayEncoder.toBase64URL(this.affinePoint.yBytes)
+  }
+
   /**
-   * Returns the public key of the K-256 JWK.
-   *
-   * NOTE: this is the compressed variant. We still need to add support for the
-   * uncompressed variant.
+   * Returns the uncompressed public key of the P-256 JWK.
    */
   public get publicKey() {
-    const publicKeyBuffer = Buffer.concat([TypedArrayEncoder.fromBase64(this.x), TypedArrayEncoder.fromBase64(this.y)])
-    const compressedPublicKey = compress(publicKeyBuffer)
+    return this.affinePoint.decompressedForm
+  }
 
-    return Buffer.from(compressedPublicKey)
+  /**
+   * Returns the compressed public key of the K-256 JWK.
+   */
+  public get publicKeyCompressed() {
+    return this.affinePoint.compressedForm
   }
 
   public get keyType() {
@@ -78,15 +95,20 @@ export class K256Jwk extends Jwk {
     })
   }
 
-  public static fromPublicKey(publicKey: Buffer) {
-    const expanded = expand(publicKey, JwaCurve.Secp256k1)
-    const x = expanded.slice(0, expanded.length / 2)
-    const y = expanded.slice(expanded.length / 2)
+  public static fromPublicKey(publicKey: Uint8Array) {
+    if (isValidCompressedPublicKeyFormat(publicKey, Secp256k1)) {
+      const affinePoint = AffinePoint.fromCompressedPoint(publicKey, Secp256k1)
+      return new K256Jwk({ x: affinePoint.xBytes, y: affinePoint.yBytes })
+    }
 
-    return new K256Jwk({
-      x: TypedArrayEncoder.toBase64URL(x),
-      y: TypedArrayEncoder.toBase64URL(y),
-    })
+    if (isValidDecompressedPublicKeyFormat(publicKey, Secp256k1)) {
+      const affinePoint = AffinePoint.fromDecompressedPoint(publicKey, Secp256k1)
+      return new K256Jwk({ x: affinePoint.xBytes, y: affinePoint.yBytes })
+    }
+
+    throw new CredoError(
+      `${this.keyType} public key is neither a valid compressed or uncompressed key. Key prefix '${publicKey[0]}', key length '${publicKey.length}'`
+    )
   }
 }
 

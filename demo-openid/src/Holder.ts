@@ -17,14 +17,14 @@ import {
   OpenId4VciAuthorizationFlow,
   preAuthorizedCodeGrantIdentifier,
 } from '@credo-ts/openid4vc'
-import { ariesAskar } from '@hyperledger/aries-askar-nodejs'
+import { askar } from '@openwallet-foundation/askar-nodejs'
 
 import { BaseAgent } from './BaseAgent'
 import { greenText, Output } from './OutputClass'
 
 function getOpenIdHolderModules() {
   return {
-    askar: new AskarModule({ ariesAskar }),
+    askar: new AskarModule({ askar }),
     openId4VcHolder: new OpenId4VcHolderModule(),
     x509: new X509Module({
       getTrustedCertificatesForVerification: (agentContext, { certificateChain, verification }) => {
