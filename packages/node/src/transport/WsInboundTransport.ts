@@ -61,7 +61,7 @@ export class WsInboundTransport implements InboundTransport {
   }
 
   private listenOnWebSocketMessages(agentContext: AgentContext, socket: WebSocket, session: TransportSession) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
     socket.addEventListener('message', async (event: any) => {
       this.logger.debug('WebSocket message event received.', { url: event.target.url })
       try {
