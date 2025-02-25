@@ -271,7 +271,7 @@ export class HolderInquirer extends BaseInquirer {
     if (serverResponse && serverResponse.status >= 200 && serverResponse.status < 300) {
       console.log(`received success status code '${serverResponse.status}'`)
     } else {
-      console.log(`received error status code '${serverResponse?.status}'. ${JSON.stringify(serverResponse.body)}`)
+      console.log(`received error status code '${serverResponse?.status}'. ${JSON.stringify(serverResponse?.body)}`)
     }
 
     this.resolvedPresentationRequest = undefined
