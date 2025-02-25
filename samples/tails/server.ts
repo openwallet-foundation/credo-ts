@@ -40,6 +40,7 @@ function fileHash(filePath: string, algorithm = 'sha256') {
 }
 
 const fileStorage = diskStorage({
+  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
   filename: (req: any, file: { originalname: string }, cb: (arg0: null, arg1: string) => void) => {
     cb(null, `${file.originalname}-${new Date().toISOString()}`)
   },

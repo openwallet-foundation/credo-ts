@@ -37,8 +37,8 @@
     "rules": {
       "style": {
         "useImportType": {
-          "fix": "safe",
-          "level": "info"
+          "fix": "none",
+          "level": "warn"
         },
         "useNodejsImportProtocol": "off",
         "noNonNullAssertion": "error"

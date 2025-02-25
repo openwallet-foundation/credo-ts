@@ -30,7 +30,7 @@ interface ContextCorrelationIdToRecords {
 }
 
 @injectable()
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+// biome-ignore lint/suspicious/noExplicitAny: <explanation>
 export class InMemoryStorageService<T extends BaseRecord<any, any, any> = BaseRecord<any, any, any>>
   implements StorageService<T>
 {
@@ -175,7 +175,7 @@ export class InMemoryStorageService<T extends BaseRecord<any, any, any> = BaseRe
   }
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+// biome-ignore lint/suspicious/noExplicitAny: <explanation>
 function filterByQuery<T extends BaseRecord<any, any, any>>(record: StorageRecord, query: Query<T>) {
   const { $and, $or, $not, ...restQuery } = query
 
@@ -201,7 +201,7 @@ function filterByQuery<T extends BaseRecord<any, any, any>>(record: StorageRecor
   return true
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+// biome-ignore lint/suspicious/noExplicitAny: <explanation>
 function matchSimpleQuery<T extends BaseRecord<any, any, any>>(record: StorageRecord, query: Query<T>) {
   const tags = record.tags as TagsBase
 

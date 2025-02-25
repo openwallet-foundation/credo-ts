@@ -310,7 +310,7 @@ export class InMemoryWallet implements Wallet {
    */
   public async unpack(messagePackage: EncryptedMessage): Promise<UnpackedMessageContext> {
     const protectedJson = JsonEncoder.fromBase64(messagePackage.protected)
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
     const recipientKids: string[] = protectedJson.recipients.map((r: any) => r.header.kid)
 
     for (const recipientKid of recipientKids) {

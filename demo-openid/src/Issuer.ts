@@ -119,7 +119,9 @@ function getCredentialRequestToCredentialMapper({
     }
 
     if (credentialConfiguration.format === OpenId4VciCredentialFormatProfile.JwtVcJson) {
-      holderBindings.forEach((holderBinding) => assertDidBasedHolderBinding(holderBinding))
+      for (const holderBinding of holderBindings) {
+        assertDidBasedHolderBinding(holderBinding)
+      }
 
       return {
         credentialConfigurationId,

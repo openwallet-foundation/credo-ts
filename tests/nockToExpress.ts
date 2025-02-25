@@ -16,11 +16,11 @@ export function setupNockToExpress(baseUrl: string, app: Express) {
     let testRequest = supertestInstance[method.toLowerCase() as 'post'](path)
 
     // Add original headers (excluding some that might interfere)
-    Object.entries(headers).forEach(([key, value]) => {
+    for (const [key, value] of Object.entries(headers)) {
       if (!['host', 'content-length'].includes(key.toLowerCase())) {
         testRequest = testRequest.set(key, value)
       }
-    })
+    }
 
     // Add marker header to prevent infinite loops
     testRequest = testRequest.set('x-forwarded-from-nock', 'true')

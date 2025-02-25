@@ -84,6 +84,7 @@ export class ActionMenuRecord
 
   public assertState(expectedStates: ActionMenuState | ActionMenuState[]) {
     if (!Array.isArray(expectedStates)) {
+      // biome-ignore lint/style/noParameterAssign: <explanation>
       expectedStates = [expectedStates]
     }
 
