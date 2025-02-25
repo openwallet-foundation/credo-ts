@@ -28,10 +28,10 @@ export const transformFromRecordTagValues = (tags: TagsBase): { [key: string]: s
     // If the value is an array we create a tag for each array
     // item ("tagName:arrayItem" = "1")
     else if (Array.isArray(value)) {
-      value.forEach((item) => {
+      for (const item of value) {
         const tagName = `${key}:${item}`
         transformedTags[tagName] = '1'
-      })
+      }
     }
     // Otherwise just use the value
     else {
