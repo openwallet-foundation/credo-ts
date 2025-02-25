@@ -34,6 +34,7 @@ exports[`UpdateAssistant | AnonCreds | v0.3.1 - v0.4 should correctly update the
     },
     "type": "CredentialRecord",
     "value": {
+      "_tags": undefined,
       "createdAt": "2023-03-18T18:54:00.023Z",
       "credentialAttributes": [
         {
@@ -218,6 +219,7 @@ exports[`UpdateAssistant | AnonCreds | v0.3.1 - v0.4 should correctly update the
     },
     "type": "CredentialRecord",
     "value": {
+      "_tags": undefined,
       "createdAt": "2023-03-18T18:54:01.133Z",
       "credentials": [],
       "id": "93a327ad-2bf3-4ec4-b01c-bdd58ba2f6e3",
@@ -233,6 +235,7 @@ exports[`UpdateAssistant | AnonCreds | v0.3.1 - v0.4 should correctly update the
     "tags": {},
     "type": "StorageVersionRecord",
     "value": {
+      "_tags": undefined,
       "createdAt": "2023-03-18T18:53:44.041Z",
       "id": "STORAGE_VERSION_RECORD_ID",
       "metadata": {},
@@ -373,6 +376,7 @@ exports[`UpdateAssistant | AnonCreds | v0.3.1 - v0.4 should correctly update the
     },
     "type": "AnonCredsCredentialDefinitionRecord",
     "value": {
+      "_tags": undefined,
       "credentialDefinition": {
         "issuerId": "did:indy:bcovrin:test:A4CYPASJYRZRt98YWrac3H",
         "schemaId": "did:indy:bcovrin:test:A4CYPASJYRZRt98YWrac3H/anoncreds/v0/SCHEMA/AnotherSchema/5.12",
@@ -472,6 +476,7 @@ exports[`UpdateAssistant | AnonCreds | v0.3.1 - v0.4 should correctly update the
     },
     "type": "AnonCredsCredentialDefinitionRecord",
     "value": {
+      "_tags": undefined,
       "credentialDefinition": {
         "issuerId": "did:indy:bcovrin:test:A4CYPASJYRZRt98YWrac3H",
         "schemaId": "did:indy:bcovrin:test:A4CYPASJYRZRt98YWrac3H/anoncreds/v0/SCHEMA/Test Schema/5.0",
@@ -503,6 +508,7 @@ exports[`UpdateAssistant | AnonCreds | v0.3.1 - v0.4 should correctly update the
     "tags": {},
     "type": "StorageVersionRecord",
     "value": {
+      "_tags": undefined,
       "createdAt": "2023-03-18T18:53:43.140Z",
       "id": "STORAGE_VERSION_RECORD_ID",
       "metadata": {},
@@ -522,6 +528,7 @@ exports[`UpdateAssistant | AnonCreds | v0.3.1 - v0.4 should correctly update the
     },
     "type": "CredentialRecord",
     "value": {
+      "_tags": undefined,
       "createdAt": "2023-03-18T18:53:59.859Z",
       "credentialAttributes": [
         {
@@ -617,6 +624,7 @@ exports[`UpdateAssistant | AnonCreds | v0.3.1 - v0.4 should correctly update the
     },
     "type": "CredentialRecord",
     "value": {
+      "_tags": undefined,
       "createdAt": "2023-03-18T18:53:59.068Z",
       "credentialAttributes": [
         {
@@ -713,6 +721,7 @@ exports[`UpdateAssistant | AnonCreds | v0.3.1 - v0.4 should correctly update the
     },
     "type": "AnonCredsSchemaRecord",
     "value": {
+      "_tags": undefined,
       "id": "de4c170b-b277-4220-b9dc-7e645ff4f041",
       "metadata": {},
       "methodName": "indy",
@@ -812,6 +821,7 @@ exports[`UpdateAssistant | AnonCreds | v0.3.1 - v0.4 should correctly update the
     },
     "type": "AnonCredsSchemaRecord",
     "value": {
+      "_tags": undefined,
       "id": "fcdba9cd-3132-4e46-9677-f78c5a146cf0",
       "metadata": {},
       "methodName": "indy",

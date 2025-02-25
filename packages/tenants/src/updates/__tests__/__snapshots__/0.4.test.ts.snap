@@ -10,6 +10,7 @@ exports[`UpdateAssistant | Tenants | v0.4 - v0.5 should correctly update the ten
     },
     "type": "TenantRecord",
     "value": {
+      "_tags": undefined,
       "config": {
         "label": "Tenant 1",
         "walletConfig": {
@@ -33,6 +34,7 @@ exports[`UpdateAssistant | Tenants | v0.4 - v0.5 should correctly update the ten
     },
     "type": "TenantRecord",
     "value": {
+      "_tags": undefined,
       "config": {
         "label": "Tenant 2",
         "walletConfig": {
@@ -53,6 +55,7 @@ exports[`UpdateAssistant | Tenants | v0.4 - v0.5 should correctly update the ten
     "tags": {},
     "type": "StorageVersionRecord",
     "value": {
+      "_tags": undefined,
       "createdAt": "2023-11-23T22:50:20.522Z",
       "id": "STORAGE_VERSION_RECORD_ID",
       "metadata": {},

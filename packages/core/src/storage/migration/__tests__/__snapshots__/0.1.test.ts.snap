@@ -387,6 +387,7 @@ exports[`UpdateAssistant | v0.1 - v0.2 should correctly update credential record
     },
     "type": "CredentialRecord",
     "value": {
+      "_tags": undefined,
       "autoAcceptCredential": "contentApproved",
       "connectionId": "0b6de73d-b376-430f-b2b4-f6e51407bb66",
       "createdAt": "2022-03-21T22:50:20.522Z",
@@ -436,6 +437,7 @@ exports[`UpdateAssistant | v0.1 - v0.2 should correctly update credential record
     },
     "type": "CredentialRecord",
     "value": {
+      "_tags": undefined,
       "autoAcceptCredential": "contentApproved",
       "connectionId": "54b61a2c-59ae-4e63-a441-7f1286350132",
       "createdAt": "2022-03-21T22:50:20.535Z",
@@ -456,6 +458,7 @@ exports[`UpdateAssistant | v0.1 - v0.2 should correctly update credential record
           "value": "2020-01-01",
         },
       ],
+      "credentialId": undefined,
       "credentials": [
         {
           "credentialRecordId": "a77114e1-c812-4bff-a53c-3d5003fcc278",
@@ -667,6 +670,7 @@ exports[`UpdateAssistant | v0.1 - v0.2 should correctly update credential record
     "tags": {},
     "type": "StorageVersionRecord",
     "value": {
+      "_tags": undefined,
       "createdAt": "2022-01-21T22:50:20.522Z",
       "id": "STORAGE_VERSION_RECORD_ID",
       "metadata": {},
@@ -686,6 +690,7 @@ exports[`UpdateAssistant | v0.1 - v0.2 should correctly update credential record
     },
     "type": "CredentialRecord",
     "value": {
+      "_tags": undefined,
       "autoAcceptCredential": "contentApproved",
       "connectionId": "cd66cbf1-5721-449e-8724-f4d8dcef1bc4",
       "createdAt": "2022-03-21T22:50:20.740Z",
@@ -735,6 +740,7 @@ exports[`UpdateAssistant | v0.1 - v0.2 should correctly update credential record
     },
     "type": "CredentialRecord",
     "value": {
+      "_tags": undefined,
       "autoAcceptCredential": "contentApproved",
       "connectionId": "d8f23338-9e99-469a-bd57-1c9a26c0080f",
       "createdAt": "2022-03-21T22:50:20.746Z",
@@ -755,6 +761,7 @@ exports[`UpdateAssistant | v0.1 - v0.2 should correctly update credential record
           "value": "2020-01-01",
         },
       ],
+      "credentialId": undefined,
       "credentials": [
         {
           "credentialRecordId": "19c1f29f-d2df-486c-b8c6-950c403fa7d9",
@@ -1136,6 +1143,7 @@ exports[`UpdateAssistant | v0.1 - v0.2 should correctly update the connection re
     },
     "type": "OutOfBandRecord",
     "value": {
+      "_tags": undefined,
       "alias": undefined,
       "autoAcceptConnection": true,
       "createdAt": "2022-04-30T13:02:21.646Z",
@@ -1271,22 +1279,28 @@ exports[`UpdateAssistant | v0.1 - v0.2 should correctly update the connection re
     },
     "type": "ConnectionRecord",
     "value": {
+      "_tags": undefined,
       "autoAcceptConnection": false,
       "connectionTypes": [],
       "createdAt": "2022-04-30T13:02:21.628Z",
       "did": "did:peer:1zQmSMBVNMDrh7fyE8bkAmk1ZatshjinpsEqPA3nx8JYjuKb",
+      "didDoc": undefined,
       "id": "7781341d-be29-441b-9b79-4a957d8c6d37",
+      "invitation": undefined,
       "invitationDid": "did:peer:2.SeyJzIjoicnhqczphbGljZSIsInQiOiJkaWQtY29tbXVuaWNhdGlvbiIsInByaW9yaXR5IjowLCJyZWNpcGllbnRLZXlzIjpbImRpZDprZXk6ejZNa3QxdHNwMTVjbkREN3dCQ0ZnZWhpUjJTeEhYMWFQeHQ0c3VlRTI0dHdIOUJkI3o2TWt0MXRzcDE1Y25ERDd3QkNGZ2VoaVIyU3hIWDFhUHh0NHN1ZUUyNHR3SDlCZCJdLCJyIjpbXX0",
       "metadata": {},
+      "multiUseInvitation": undefined,
       "outOfBandId": "3-4e4f-41d9-94c4-f49351b811f1",
       "previousDids": [],
       "previousTheirDids": [],
       "role": "responder",
       "state": "request-received",
       "theirDid": "did:peer:1zQmc3BZoTinpVaG3oZ4PmRVN4JMdNZGCmPkS6smmTNLnvEZ",
+      "theirDidDoc": undefined,
       "theirLabel": "Agent: PopulateWallet2",
       "threadId": "a0c0e4d2-1501-42a2-a09b-7d5adc90b353",
       "updatedAt": "2022-01-21T22:50:20.522Z",
+      "verkey": undefined,
     },
   },
   "8f4908ee-15ad-4058-9106-eda26eae735c": {
@@ -1309,22 +1323,28 @@ exports[`UpdateAssistant | v0.1 - v0.2 should correctly update the connection re
     },
     "type": "ConnectionRecord",
     "value": {
+      "_tags": undefined,
       "alias": "connection alias",
       "connectionTypes": [],
       "createdAt": "2022-04-30T13:02:21.577Z",
       "did": "did:peer:1zQmRAfQ6J5qk4qcbHyoStFVkhusazLT9xQcFhdC9dhhQ1cJ",
+      "didDoc": undefined,
       "id": "8f4908ee-15ad-4058-9106-eda26eae735c",
+      "invitation": undefined,
       "invitationDid": "did:peer:2.SeyJzIjoicnhqczpmYWJlciIsInQiOiJkaWQtY29tbXVuaWNhdGlvbiIsInByaW9yaXR5IjowLCJyZWNpcGllbnRLZXlzIjpbImRpZDprZXk6ejZNa2ZpUE1QeENRZVNEWkdNa0N2bTFZMnJCb1BzbXc0WkhNdjcxalh0Y1dSUmlNI3o2TWtmaVBNUHhDUWVTRFpHTWtDdm0xWTJyQm9Qc213NFpITXY3MWpYdGNXUlJpTSJdLCJyIjpbXX0",
       "metadata": {},
+      "multiUseInvitation": undefined,
       "outOfBandId": "1-4e4f-41d9-94c4-f49351b811f1",
       "previousDids": [],
       "previousTheirDids": [],
       "role": "requester",
       "state": "completed",
       "theirDid": "did:peer:1zQmeHpGaZ48DnAP2k3KntXB1vmd8MgLEdcb4EQzqWJDHcbX",
+      "theirDidDoc": undefined,
       "theirLabel": "Agent: PopulateWallet2",
       "threadId": "fe287ec6-711b-4582-bb2b-d155aee86e61",
       "updatedAt": "2022-01-21T22:50:20.522Z",
+      "verkey": undefined,
     },
   },
   "9383d8e5-c002-4aae-8300-4a21384c919e": {
@@ -1347,21 +1367,27 @@ exports[`UpdateAssistant | v0.1 - v0.2 should correctly update the connection re
     },
     "type": "ConnectionRecord",
     "value": {
+      "_tags": undefined,
       "connectionTypes": [],
       "createdAt": "2022-04-30T13:02:21.608Z",
       "did": "did:peer:1zQmP96nW6vbNjzwPt19z1NYqhnAfgnAFqfLHcktkmdUFzhT",
+      "didDoc": undefined,
       "id": "9383d8e5-c002-4aae-8300-4a21384c919e",
+      "invitation": undefined,
       "invitationDid": "did:peer:2.SeyJzIjoicnhqczphbGljZSIsInQiOiJkaWQtY29tbXVuaWNhdGlvbiIsInByaW9yaXR5IjowLCJyZWNpcGllbnRLZXlzIjpbImRpZDprZXk6ejZNa3RDWkFRTkd2V2I0V0hBandCcVB0WGhaZERZb3JiU0prR1c5dmoxdWh3MUhEI3o2TWt0Q1pBUU5HdldiNFdIQWp3QnFQdFhoWmREWW9yYlNKa0dXOXZqMXVodzFIRCJdLCJyIjpbXX0",
       "metadata": {},
+      "multiUseInvitation": undefined,
       "outOfBandId": "2-4e4f-41d9-94c4-f49351b811f1",
       "previousDids": [],
       "previousTheirDids": [],
       "role": "responder",
       "state": "completed",
       "theirDid": "did:peer:1zQmXYj3nNwsF37WXXdb8XkCAtsTCBpJJbsLKPPGfi2PWCTU",
+      "theirDidDoc": undefined,
       "theirLabel": "Agent: PopulateWallet2",
       "threadId": "0b2f1133-ced9-49f1-83a1-eb6ba1c24cdf",
       "updatedAt": "2022-01-21T22:50:20.522Z",
+      "verkey": undefined,
     },
   },
   "STORAGE_VERSION_RECORD_ID": {
@@ -1369,6 +1395,7 @@ exports[`UpdateAssistant | v0.1 - v0.2 should correctly update the connection re
     "tags": {},
     "type": "StorageVersionRecord",
     "value": {
+      "_tags": undefined,
       "createdAt": "2022-01-21T22:50:20.522Z",
       "id": "STORAGE_VERSION_RECORD_ID",
       "metadata": {},
@@ -1395,19 +1422,24 @@ exports[`UpdateAssistant | v0.1 - v0.2 should correctly update the connection re
     },
     "type": "ConnectionRecord",
     "value": {
+      "_tags": undefined,
       "autoAcceptConnection": true,
       "connectionTypes": [],
       "createdAt": "2022-04-30T13:02:21.653Z",
       "did": "did:peer:1zQmfDAtfDZcK4trJBsvVTXrBx9uaLCHSUZH9X2LFaAd3JKv",
+      "didDoc": undefined,
       "id": "b65c2ccd-277c-4140-9d87-c8dd30e7a98c",
+      "invitation": undefined,
       "invitationDid": "did:peer:2.SeyJzIjoicnhqczphbGljZSIsInQiOiJkaWQtY29tbXVuaWNhdGlvbiIsInByaW9yaXR5IjowLCJyZWNpcGllbnRLZXlzIjpbImRpZDprZXk6ejZNa3VXVEVtSDFtVW82Vzk2elNXeUg2MTJoRkhvd1J6TkVzY1BZQkwyQ0NNeUMyI3o2TWt1V1RFbUgxbVVvNlc5NnpTV3lINjEyaEZIb3dSek5Fc2NQWUJMMkNDTXlDMiJdLCJyIjpbXX0",
       "metadata": {},
+      "multiUseInvitation": undefined,
       "outOfBandId": "7-4e4f-41d9-94c4-f49351b811f1",
       "previousDids": [],
       "previousTheirDids": [],
       "role": "responder",
       "state": "invitation-sent",
       "updatedAt": "2022-01-21T22:50:20.522Z",
+      "verkey": undefined,
     },
   },
   "da518433-0e55-4b74-a05b-aa75c1095a99": {
@@ -1430,22 +1462,28 @@ exports[`UpdateAssistant | v0.1 - v0.2 should correctly update the connection re
     },
     "type": "ConnectionRecord",
     "value": {
+      "_tags": undefined,
       "autoAcceptConnection": true,
       "connectionTypes": [],
       "createdAt": "2022-04-30T13:02:21.646Z",
       "did": "did:peer:1zQmPbGa8KDwyjcw9UgwCCgJMV7jU5kKCyvBuwFVc88WxA56",
+      "didDoc": undefined,
       "id": "da518433-0e55-4b74-a05b-aa75c1095a99",
+      "invitation": undefined,
       "invitationDid": "did:peer:2.SeyJzIjoicnhqczphbGljZSIsInQiOiJkaWQtY29tbXVuaWNhdGlvbiIsInByaW9yaXR5IjowLCJyZWNpcGllbnRLZXlzIjpbImRpZDprZXk6ejZNa28zMURORTNncU1SWmoxSk5odjJCSGIxY2FRc2hjZDluamdLa0VRWHNnRlJwI3o2TWtvMzFETkUzZ3FNUlpqMUpOaHYyQkhiMWNhUXNoY2Q5bmpnS2tFUVhzZ0ZScCJdLCJyIjpbXX0",
       "metadata": {},
+      "multiUseInvitation": undefined,
       "outOfBandId": "6-4e4f-41d9-94c4-f49351b811f1",
       "previousDids": [],
       "previousTheirDids": [],
       "role": "responder",
       "state": "response-sent",
       "theirDid": "did:peer:1zQmadmBfngrYSWhYYxZ24fpW29iwhKhQ6CB6euLabbSK6ga",
+      "theirDidDoc": undefined,
       "theirLabel": "Agent: PopulateWallet2",
       "threadId": "6eeb6a80-cd75-491d-b2e0-7bae65ced1c3",
       "updatedAt": "2022-01-21T22:50:20.522Z",
+      "verkey": undefined,
     },
   },
   "did:peer:1zQmP96nW6vbNjzwPt19z1NYqhnAfgnAFqfLHcktkmdUFzhT": {
@@ -2378,22 +2416,28 @@ exports[`UpdateAssistant | v0.1 - v0.2 should correctly update the connection re
     },
     "type": "ConnectionRecord",
     "value": {
+      "_tags": undefined,
       "autoAcceptConnection": false,
       "connectionTypes": [],
       "createdAt": "2022-04-30T13:02:21.641Z",
       "did": "did:peer:1zQma8LpnJ22GxQdyASV5jP6psacAGtJ6ytk4pVayYp4erRf",
+      "didDoc": undefined,
       "id": "e3f9bc2b-f0a1-4a2c-ab81-2f0a3488c199",
+      "invitation": undefined,
       "invitationDid": "did:peer:2.SeyJzIjoicnhqczpmYWJlciIsInQiOiJkaWQtY29tbXVuaWNhdGlvbiIsInByaW9yaXR5IjowLCJyZWNpcGllbnRLZXlzIjpbImRpZDprZXk6ejZNa2pESkw0WDdZR29INmdqYW1oWlIyTnpvd1BacXRKZlg1a1B1TnVXaVZkak1yI3o2TWtqREpMNFg3WUdvSDZnamFtaFpSMk56b3dQWnF0SmZYNWtQdU51V2lWZGpNciJdLCJyIjpbXX0",
       "metadata": {},
+      "multiUseInvitation": undefined,
       "outOfBandId": "5-4e4f-41d9-94c4-f49351b811f1",
       "previousDids": [],
       "previousTheirDids": [],
       "role": "requester",
       "state": "response-received",
       "theirDid": "did:peer:1zQmcXZepLE55VGCMELEFjMd4nKrzp3GGyRR3r3MYermagui",
+      "theirDidDoc": undefined,
       "theirLabel": "Agent: PopulateWallet2",
       "threadId": "daf3372c-1ee2-4246-a1f4-f62f54f7d68b",
       "updatedAt": "2022-01-21T22:50:20.522Z",
+      "verkey": undefined,
     },
   },
   "ee88e2e1-e27e-46a6-a910-f87690109e32": {
@@ -2415,12 +2459,16 @@ exports[`UpdateAssistant | v0.1 - v0.2 should correctly update the connection re
     },
     "type": "ConnectionRecord",
     "value": {
+      "_tags": undefined,
       "connectionTypes": [],
       "createdAt": "2022-04-30T13:02:21.635Z",
       "did": "did:peer:1zQmduuYkxRKJuVyvDqttdd9eDfBwDnF1DAU5FFQo4whx7Uw",
+      "didDoc": undefined,
       "id": "ee88e2e1-e27e-46a6-a910-f87690109e32",
+      "invitation": undefined,
       "invitationDid": "did:peer:2.SeyJzIjoicnhqczpmYWJlciIsInQiOiJkaWQtY29tbXVuaWNhdGlvbiIsInByaW9yaXR5IjowLCJyZWNpcGllbnRLZXlzIjpbImRpZDprZXk6ejZNa21vZDh2cDJuVVJWa3RWQzVjZVFleXIyVlV6MjZpdTJaQU5MTlZnOXBNYXdhI3o2TWttb2Q4dnAyblVSVmt0VkM1Y2VRZXlyMlZVejI2aXUyWkFOTE5WZzlwTWF3YSJdLCJyIjpbXX0",
       "metadata": {},
+      "multiUseInvitation": undefined,
       "outOfBandId": "4-4e4f-41d9-94c4-f49351b811f1",
       "previousDids": [],
       "previousTheirDids": [],
@@ -2428,6 +2476,7 @@ exports[`UpdateAssistant | v0.1 - v0.2 should correctly update the connection re
       "state": "request-sent",
       "theirLabel": "Agent: PopulateWallet2",
       "updatedAt": "2022-01-21T22:50:20.522Z",
+      "verkey": undefined,
     },
   },
 }
@@ -2820,6 +2869,7 @@ exports[`UpdateAssistant | v0.1 - v0.2 should correctly update the credential re
     },
     "type": "CredentialRecord",
     "value": {
+      "_tags": undefined,
       "autoAcceptCredential": "contentApproved",
       "connectionId": "0b6de73d-b376-430f-b2b4-f6e51407bb66",
       "createdAt": "2022-03-21T22:50:20.522Z",
@@ -2869,6 +2919,7 @@ exports[`UpdateAssistant | v0.1 - v0.2 should correctly update the credential re
     },
     "type": "CredentialRecord",
     "value": {
+      "_tags": undefined,
       "autoAcceptCredential": "contentApproved",
       "connectionId": "54b61a2c-59ae-4e63-a441-7f1286350132",
       "createdAt": "2022-03-21T22:50:20.535Z",
@@ -2889,6 +2940,7 @@ exports[`UpdateAssistant | v0.1 - v0.2 should correctly update the credential re
           "value": "2020-01-01",
         },
       ],
+      "credentialId": undefined,
       "credentials": [
         {
           "credentialRecordId": "a77114e1-c812-4bff-a53c-3d5003fcc278",
@@ -3100,6 +3152,7 @@ exports[`UpdateAssistant | v0.1 - v0.2 should correctly update the credential re
     "tags": {},
     "type": "StorageVersionRecord",
     "value": {
+      "_tags": undefined,
       "createdAt": "2022-01-21T22:50:20.522Z",
       "id": "STORAGE_VERSION_RECORD_ID",
       "metadata": {},
@@ -3119,6 +3172,7 @@ exports[`UpdateAssistant | v0.1 - v0.2 should correctly update the credential re
     },
     "type": "CredentialRecord",
     "value": {
+      "_tags": undefined,
       "autoAcceptCredential": "contentApproved",
       "connectionId": "cd66cbf1-5721-449e-8724-f4d8dcef1bc4",
       "createdAt": "2022-03-21T22:50:20.740Z",
@@ -3168,6 +3222,7 @@ exports[`UpdateAssistant | v0.1 - v0.2 should correctly update the credential re
     },
     "type": "CredentialRecord",
     "value": {
+      "_tags": undefined,
       "autoAcceptCredential": "contentApproved",
       "connectionId": "d8f23338-9e99-469a-bd57-1c9a26c0080f",
       "createdAt": "2022-03-21T22:50:20.746Z",
@@ -3188,6 +3243,7 @@ exports[`UpdateAssistant | v0.1 - v0.2 should correctly update the credential re
           "value": "2020-01-01",
         },
       ],
+      "credentialId": undefined,
       "credentials": [
         {
           "credentialRecordId": "19c1f29f-d2df-486c-b8c6-950c403fa7d9",
@@ -3231,6 +3287,7 @@ exports[`UpdateAssistant | v0.1 - v0.2 should correctly update the role in the m
     },
     "type": "MediationRecord",
     "value": {
+      "_tags": undefined,
       "connectionId": "88e2093e-97b9-4665-aff0-ffdcb4afee60",
       "createdAt": "2022-03-21T22:50:17.157Z",
       "endpoint": "rxjs:alice",
@@ -3257,6 +3314,7 @@ exports[`UpdateAssistant | v0.1 - v0.2 should correctly update the role in the m
     },
     "type": "MediationRecord",
     "value": {
+      "_tags": undefined,
       "connectionId": "85a78484-105d-4844-8c01-9f9877362708",
       "createdAt": "2022-03-21T22:50:17.126Z",
       "endpoint": "rxjs:alice",
@@ -3283,6 +3341,7 @@ exports[`UpdateAssistant | v0.1 - v0.2 should correctly update the role in the m
     },
     "type": "MediationRecord",
     "value": {
+      "_tags": undefined,
       "connectionId": "ca5b148a-250f-46b0-8537-ae88014d8bd7",
       "createdAt": "2022-03-21T22:50:17.161Z",
       "id": "802ef124-36b7-490f-b152-e9d090ddf073",
@@ -3300,6 +3359,7 @@ exports[`UpdateAssistant | v0.1 - v0.2 should correctly update the role in the m
     "tags": {},
     "type": "StorageVersionRecord",
     "value": {
+      "_tags": undefined,
       "createdAt": "2022-01-21T22:50:20.522Z",
       "id": "STORAGE_VERSION_RECORD_ID",
       "metadata": {},
@@ -3318,6 +3378,7 @@ exports[`UpdateAssistant | v0.1 - v0.2 should correctly update the role in the m
     },
     "type": "MediationRecord",
     "value": {
+      "_tags": undefined,
       "connectionId": "dbb3367e-55aa-4c03-b10a-d1fc34392bea",
       "createdAt": "2022-03-21T22:50:17.132Z",
       "id": "a29b39fb-f030-41ac-b6e1-ed7f3f6a05cd",
@@ -3346,6 +3407,7 @@ exports[`UpdateAssistant | v0.1 - v0.2 should correctly update the role in the m
     },
     "type": "MediationRecord",
     "value": {
+      "_tags": undefined,
       "connectionId": "88e2093e-97b9-4665-aff0-ffdcb4afee60",
       "createdAt": "2022-03-21T22:50:17.157Z",
       "endpoint": "rxjs:alice",
@@ -3372,6 +3434,7 @@ exports[`UpdateAssistant | v0.1 - v0.2 should correctly update the role in the m
     },
     "type": "MediationRecord",
     "value": {
+      "_tags": undefined,
       "connectionId": "85a78484-105d-4844-8c01-9f9877362708",
       "createdAt": "2022-03-21T22:50:17.126Z",
       "endpoint": "rxjs:alice",
@@ -3398,6 +3461,7 @@ exports[`UpdateAssistant | v0.1 - v0.2 should correctly update the role in the m
     },
     "type": "MediationRecord",
     "value": {
+      "_tags": undefined,
       "connectionId": "ca5b148a-250f-46b0-8537-ae88014d8bd7",
       "createdAt": "2022-03-21T22:50:17.161Z",
       "id": "802ef124-36b7-490f-b152-e9d090ddf073",
@@ -3415,6 +3479,7 @@ exports[`UpdateAssistant | v0.1 - v0.2 should correctly update the role in the m
     "tags": {},
     "type": "StorageVersionRecord",
     "value": {
+      "_tags": undefined,
       "createdAt": "2022-01-21T22:50:20.522Z",
       "id": "STORAGE_VERSION_RECORD_ID",
       "metadata": {},
@@ -3433,6 +3498,7 @@ exports[`UpdateAssistant | v0.1 - v0.2 should correctly update the role in the m
     },
     "type": "MediationRecord",
     "value": {
+      "_tags": undefined,
       "connectionId": "dbb3367e-55aa-4c03-b10a-d1fc34392bea",
       "createdAt": "2022-03-21T22:50:17.132Z",
       "id": "a29b39fb-f030-41ac-b6e1-ed7f3f6a05cd",
@@ -3461,6 +3527,7 @@ exports[`UpdateAssistant | v0.1 - v0.2 should correctly update the role in the m
     },
     "type": "MediationRecord",
     "value": {
+      "_tags": undefined,
       "connectionId": "88e2093e-97b9-4665-aff0-ffdcb4afee60",
       "createdAt": "2022-03-21T22:50:17.157Z",
       "endpoint": "rxjs:alice",
@@ -3487,6 +3554,7 @@ exports[`UpdateAssistant | v0.1 - v0.2 should correctly update the role in the m
     },
     "type": "MediationRecord",
     "value": {
+      "_tags": undefined,
       "connectionId": "85a78484-105d-4844-8c01-9f9877362708",
       "createdAt": "2022-03-21T22:50:17.126Z",
       "endpoint": "rxjs:alice",
@@ -3513,6 +3581,7 @@ exports[`UpdateAssistant | v0.1 - v0.2 should correctly update the role in the m
     },
     "type": "MediationRecord",
     "value": {
+      "_tags": undefined,
       "connectionId": "ca5b148a-250f-46b0-8537-ae88014d8bd7",
       "createdAt": "2022-03-21T22:50:17.161Z",
       "id": "802ef124-36b7-490f-b152-e9d090ddf073",
@@ -3530,6 +3599,7 @@ exports[`UpdateAssistant | v0.1 - v0.2 should correctly update the role in the m
     "tags": {},
     "type": "StorageVersionRecord",
     "value": {
+      "_tags": undefined,
       "createdAt": "2022-01-21T22:50:20.522Z",
       "id": "STORAGE_VERSION_RECORD_ID",
       "metadata": {},
@@ -3548,6 +3618,7 @@ exports[`UpdateAssistant | v0.1 - v0.2 should correctly update the role in the m
     },
     "type": "MediationRecord",
     "value": {
+      "_tags": undefined,
       "connectionId": "dbb3367e-55aa-4c03-b10a-d1fc34392bea",
       "createdAt": "2022-03-21T22:50:17.132Z",
       "id": "a29b39fb-f030-41ac-b6e1-ed7f3f6a05cd",
@@ -3576,6 +3647,7 @@ exports[`UpdateAssistant | v0.1 - v0.2 should correctly update the role in the m
     },
     "type": "MediationRecord",
     "value": {
+      "_tags": undefined,
       "connectionId": "88e2093e-97b9-4665-aff0-ffdcb4afee60",
       "createdAt": "2022-03-21T22:50:17.157Z",
       "endpoint": "rxjs:alice",
@@ -3602,6 +3674,7 @@ exports[`UpdateAssistant | v0.1 - v0.2 should correctly update the role in the m
     },
     "type": "MediationRecord",
     "value": {
+      "_tags": undefined,
       "connectionId": "85a78484-105d-4844-8c01-9f9877362708",
       "createdAt": "2022-03-21T22:50:17.126Z",
       "endpoint": "rxjs:alice",
@@ -3628,6 +3701,7 @@ exports[`UpdateAssistant | v0.1 - v0.2 should correctly update the role in the m
     },
     "type": "MediationRecord",
     "value": {
+      "_tags": undefined,
       "connectionId": "ca5b148a-250f-46b0-8537-ae88014d8bd7",
       "createdAt": "2022-03-21T22:50:17.161Z",
       "id": "802ef124-36b7-490f-b152-e9d090ddf073",
@@ -3645,6 +3719,7 @@ exports[`UpdateAssistant | v0.1 - v0.2 should correctly update the role in the m
     "tags": {},
     "type": "StorageVersionRecord",
     "value": {
+      "_tags": undefined,
       "createdAt": "2022-01-21T22:50:20.522Z",
       "id": "STORAGE_VERSION_RECORD_ID",
       "metadata": {},
@@ -3663,6 +3738,7 @@ exports[`UpdateAssistant | v0.1 - v0.2 should correctly update the role in the m
     },
     "type": "MediationRecord",
     "value": {
+      "_tags": undefined,
       "connectionId": "dbb3367e-55aa-4c03-b10a-d1fc34392bea",
       "createdAt": "2022-03-21T22:50:17.132Z",
       "id": "a29b39fb-f030-41ac-b6e1-ed7f3f6a05cd",

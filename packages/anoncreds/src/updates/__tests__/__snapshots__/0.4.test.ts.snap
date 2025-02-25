@@ -45,6 +45,7 @@ exports[`UpdateAssistant | AnonCreds | v0.4 - v0.5 should correctly update the c
     },
     "type": "W3cCredentialRecord",
     "value": {
+      "_tags": undefined,
       "createdAt": "2024-02-28T22:50:20.522Z",
       "credential": {
         "@context": [
@@ -143,6 +144,7 @@ exports[`UpdateAssistant | AnonCreds | v0.4 - v0.5 should correctly update the c
     "tags": {},
     "type": "StorageVersionRecord",
     "value": {
+      "_tags": undefined,
       "createdAt": "2023-03-18T18:53:44.041Z",
       "id": "STORAGE_VERSION_RECORD_ID",
       "metadata": {},
