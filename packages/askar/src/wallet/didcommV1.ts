@@ -101,7 +101,7 @@ export function didcommV1Unpack(messagePackage: EncryptedMessage, recipientKey: 
   }
 
   const recipient = protectedJson.recipients.find(
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
     (r: any) => r.header.kid === TypedArrayEncoder.toBase58(recipientKey.publicBytes)
   )
 
@@ -120,8 +120,8 @@ export function didcommV1Unpack(messagePackage: EncryptedMessage, recipientKey: 
     throw new WalletError('Unexpected IV')
   }
 
-  let payloadKey
-  let senderKey
+  let payloadKey: Uint8Array
+  let senderKey: string | undefined
 
   let sender_x: AskarKey | undefined
   let recip_x: AskarKey | undefined

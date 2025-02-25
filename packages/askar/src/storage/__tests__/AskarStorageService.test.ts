@@ -63,7 +63,7 @@ describe('AskarStorageService', () => {
         askar.sessionFetch({
           category: record.type,
           name: record.id,
-          // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+          // biome-ignore lint/style/noNonNullAssertion: <explanation>
           sessionHandle: session.handle!,
           forUpdate: false,
         })
@@ -88,7 +88,7 @@ describe('AskarStorageService', () => {
           await askar.sessionUpdate({
             category: TestRecord.type,
             name: 'some-id',
-            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+            // biome-ignore lint/style/noNonNullAssertion: <explanation>
             sessionHandle: session.handle!,
             value: TypedArrayEncoder.fromString('{}'),
             tags: {
