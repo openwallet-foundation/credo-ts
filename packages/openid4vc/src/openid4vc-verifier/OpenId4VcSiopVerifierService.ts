@@ -27,6 +27,7 @@ import {
   DcqlService,
   DidsApi,
   DifPresentationExchangeService,
+  EventEmitter,
   extractPresentationsWithDescriptorsFromSubmission,
   extractX509CertificatesFromJwt,
   getDomainFromUrl,
@@ -74,6 +75,7 @@ import { storeActorIdForContextCorrelationId } from '../shared/router'
 import { getSupportedJwaSignatureAlgorithms, requestSignerToJwtIssuer, parseIfJson } from '../shared/utils'
 
 import { OpenId4VcVerificationSessionState } from './OpenId4VcVerificationSessionState'
+import { OpenId4VcVerificationSessionStateChangedEvent, OpenId4VcVerifierEvents } from './OpenId4VcVerifierEvents'
 import { OpenId4VcVerifierModuleConfig } from './OpenId4VcVerifierModuleConfig'
 import {
   OpenId4VcVerificationSessionRecord,
@@ -81,7 +83,6 @@ import {
   OpenId4VcVerifierRecord,
   OpenId4VcVerifierRepository,
 } from './repository'
-import { OpenId4VcRelyingPartyEventHandler } from './repository/OpenId4VcRelyingPartyEventEmitter'
 
 /**
  * @internal
@@ -110,8 +111,8 @@ export class OpenId4VcSiopVerifierService {
     const nonce = await agentContext.wallet.generateNonce()
     const state = await agentContext.wallet.generateNonce()
 
-    // Correlation id will be the id of the verification session record
-    const correlationId = utils.uuid()
+    const isDcApiRequest = options.responseMode === 'dc_api' || options.responseMode === 'dc_api.jwt'
+    const responseMode = options.responseMode ?? 'direct_post.jwt'
 
     // No response url for DC API
     let authorizationResponseUrl = joinUriParts(this.config.baseUrl, [
@@ -133,18 +134,13 @@ export class OpenId4VcSiopVerifierService {
     let clientId: string | undefined
 
     if (!jwtIssuer) {
-      if (options.responseMode !== 'dc_api' && options.responseMode !== 'dc_api.jwt') {
+      if (!isDcApiRequest) {
         throw new Error("requestSigner method 'none' is only supported for response mode 'dc_api' and 'dc_api.jwt'")
       }
 
       clientIdScheme = 'web-origin'
       clientId = undefined
     } else if (jwtIssuer?.method === 'x5c') {
-      if (jwtIssuer.issuer !== authorizationResponseUrl) {
-        throw new CredoError(
-          `The jwtIssuer's issuer field must match the verifier's authorizationResponseUrl '${authorizationResponseUrl}'.`
-        )
-      }
       const leafCertificate = X509Service.getLeafCertificate(agentContext, { certificateChain: jwtIssuer.x5c })
 
       if (leafCertificate.sanDnsNames.includes(getDomainFromUrl(jwtIssuer.issuer))) {
@@ -170,67 +166,77 @@ export class OpenId4VcSiopVerifierService {
     }
 
     // We always use shortened URIs currently
-    const hostedAuthorizationRequestUri = joinUriParts(this.config.baseUrl, [
-      options.verifier.verifierId,
-      this.config.authorizationRequestEndpoint.endpointPath,
-      // It doesn't really matter what the url is, as long as it's unique
-      utils.uuid(),
-    ])
-
-    const transaction_data =
-      (options.dcql?.transactionData ?? options.presentationExchange?.transactionData)?.map((tdEntry) =>
-        JsonEncoder.toBase64URL(tdEntry)
-      ) ?? undefined
+    const hostedAuthorizationRequestUri = !isDcApiRequest
+      ? joinUriParts(this.config.baseUrl, [
+          options.verifier.verifierId,
+          this.config.authorizationRequestEndpoint.endpointPath,
+          // It doesn't really matter what the url is, as long as it's unique
+          utils.uuid(),
+        ])
+      : // No hosted request needed when using DC API
+        undefined
 
     const client_id =
       clientIdScheme === 'did' || (clientIdScheme as string) === 'https' ? clientId : `${clientIdScheme}:${clientId}`
     const client_metadata = await this.getClientMetadata(agentContext, {
-      responseMode: options.responseMode ?? 'direct_post',
+      responseMode,
       verifier: options.verifier,
       authorizationResponseUrl,
     })
 
     const requestParamsBase = {
-      client_id,
       nonce,
       presentation_definition: options.presentationExchange?.definition,
       dcql_query: options.dcql?.query,
-      transaction_data,
-      response_mode: options.responseMode,
+      transaction_data: options.transactionData?.map((entry) => JsonEncoder.toBase64URL(entry)),
+      response_mode: responseMode,
       response_type: 'vp_token',
       client_metadata,
     } as const
 
+    const authorizationRequestPayload =
+      requestParamsBase.response_mode === 'dc_api.jwt' || requestParamsBase.response_mode === 'dc_api'
+        ? {
+            ...requestParamsBase,
+            // No client_id for unsigned requests
+            client_id: jwtIssuer ? client_id : undefined,
+            response_mode: requestParamsBase.response_mode,
+            expected_origins: options.expectedOrigins,
+          }
+        : {
+            ...requestParamsBase,
+            client_id: client_id as string,
+            state,
+            response_uri: authorizationResponseUrl,
+          }
+
     const openid4vpVerifier = this.getOpenid4vpVerifier(agentContext)
     const authorizationRequest = await openid4vpVerifier.createOpenId4vpAuthorizationRequest({
-      jar: jwtIssuer ? { jwtSigner: jwtIssuer, requestUri: hostedAuthorizationRequestUri } : undefined,
-      requestParams:
-        requestParamsBase.response_mode === 'dc_api.jwt' || requestParamsBase.response_mode === 'dc_api'
-          ? {
-              ...requestParamsBase,
-              response_mode: requestParamsBase.response_mode,
-              expected_origins: options.expectedOrigins,
-            }
-          : {
-              ...requestParamsBase,
-              client_id: clientId as string,
-              state,
-              response_uri: authorizationResponseUrl,
-            },
+      jar: jwtIssuer
+        ? {
+            jwtSigner: jwtIssuer,
+            // FIXME: cast can be removed when PR 40 is merged in oid4vc-ts
+            requestUri: hostedAuthorizationRequestUri as string,
+          }
+        : undefined,
+      requestParams: authorizationRequestPayload,
     })
 
-    const verificationSession = await agentContext.dependencyManager
-      .resolve(OpenId4VcRelyingPartyEventHandler)
-      .authorizationRequestCreatedSuccess(agentContext, {
-        verifierId: options.verifier.verifierId,
-        correlationId,
-        authorizationRequestJwt: authorizationRequest.jar?.requestObjectJwt,
-        authorizationRequestUri: authorizationRequest.jar?.requestUri,
-      })
+    const verificationSession = new OpenId4VcVerificationSessionRecord({
+      // Only store payload for unsiged requests
+      authorizationRequestPayload: authorizationRequest.jar ? undefined : authorizationRequestPayload,
+      authorizationRequestJwt: authorizationRequest.jar?.requestObjectJwt,
+      authorizationRequestUri: authorizationRequest.jar?.requestUri,
+      state: OpenId4VcVerificationSessionState.RequestCreated,
+      verifierId: options.verifier.verifierId,
+    })
+    await this.openId4VcVerificationSessionRepository.save(agentContext, verificationSession)
+    this.emitStateChangedEvent(agentContext, verificationSession, null)
 
     return {
       authorizationRequest: authorizationRequest.authRequest,
       verificationSession,
+      authorizationRequestObject: authorizationRequest.authRequestObject,
     }
   }
 
@@ -259,12 +265,12 @@ export class OpenId4VcSiopVerifierService {
     } satisfies OpenId4VcSiopVerifiedAuthorizationResponseDcql
   }
 
-  public async parseAuthorizationResponse(
+  private async parseAuthorizationResponse(
     agentContext: AgentContext,
     options: {
       verifierId: string
       responsePayload: Record<string, unknown>
-      setResponseState?: boolean
+      origin?: string
     }
   ): Promise<ParsedOpenid4vpAuthorizationResponse & { verificationSession: OpenId4VcVerificationSessionRecord }> {
     const { verifierId, responsePayload } = options
@@ -282,11 +288,11 @@ export class OpenId4VcSiopVerifierService {
           getOpenid4vpAuthorizationRequest: async (responsePayload) => {
             const { state, nonce } = responsePayload
             rawResponsePayload = responsePayload
-            const openId4VcVerifierService = agentContext.dependencyManager.resolve(OpenId4VcSiopVerifierService)
-            const session = await openId4VcVerifierService.findVerificationSessionForAuthorizationResponse(
-              agentContext,
-              { authorizationResponseParams: { state, nonce }, verifierId }
-            )
+
+            const session = await this.findVerificationSessionForAuthorizationResponse(agentContext, {
+              authorizationResponseParams: { state, nonce },
+              verifierId,
+            })
 
             if (!session) {
               agentContext.config.logger.warn(
@@ -297,39 +303,50 @@ export class OpenId4VcSiopVerifierService {
             verificationSession = session
 
             const authorizationRequest = parseOpenid4vpAuthorizationRequestPayload({
-              requestPayload: verificationSession.authorizationRequestJwt,
+              requestPayload: verificationSession.request,
             })
-            if (authorizationRequest.type !== 'openid4vp') {
+            if (authorizationRequest.type !== 'openid4vp' && authorizationRequest.type !== 'openid4vp_dc_api') {
               throw new CredoError(
-                `Invalid authorization request jwt. Expected 'openid4vp' request, received '${authorizationRequest.type}'.`
+                `Invalid authorization request jwt. Expected 'openid4vp' or 'openid4vp_dc_api' request, received '${authorizationRequest.type}'.`
               )
             }
-            return { authRequest: authorizationRequest.params }
+
+            if (authorizationRequest.params.client_id) {
+              return {
+                authRequest: {
+                  ...authorizationRequest.params,
+                  client_id: authorizationRequest.params.client_id,
+                },
+              }
+            }
+
+            if (!options.origin) {
+              throw new CredoError('Origin must be provided when client id is not set.')
+            }
+            return {
+              authRequest: {
+                ...authorizationRequest.params,
+                client_id: authorizationRequest.params.client_id ?? `web-origin:${options.origin}`,
+              },
+            }
           },
         },
       })
     } catch (error) {
       if (
-        options.setResponseState &&
-        verificationSession &&
-        (verificationSession.state === OpenId4VcVerificationSessionState.RequestUriRetrieved ||
-          verificationSession.state === OpenId4VcVerificationSessionState.RequestCreated)
+        verificationSession?.state === OpenId4VcVerificationSessionState.RequestUriRetrieved ||
+        verificationSession?.state === OpenId4VcVerificationSessionState.RequestCreated
       ) {
         const parsed = zOpenid4vpAuthorizationResponse.safeParse(rawResponsePayload)
-        if (!parsed.success) throw new error()
 
-        await agentContext.dependencyManager
-          .resolve(OpenId4VcRelyingPartyEventHandler)
-          .authorizationResponseReceivedFailed(agentContext, {
-            verifierId,
-            correlationId: verificationSession.id,
-            authorizationResponsePayload: parsed.data,
-            errorMessage: error.message,
-          })
+        verificationSession.authorizationResponsePayload = parsed.success ? parsed.data : undefined
+        verificationSession.errorMessage = error.message
+        await this.updateState(agentContext, verificationSession, OpenId4VcVerificationSessionState.Error)
       }
 
       throw error
     }
+
     if (
       parsedAuthResponse.authResponsePayload.presentation_submission &&
       typeof parsedAuthResponse.authResponsePayload.presentation_submission === 'string'
@@ -368,12 +385,10 @@ export class OpenId4VcSiopVerifierService {
     }
   ): Promise<OpenId4VcSiopVerifiedAuthorizationResponse & { verificationSession: OpenId4VcVerificationSessionRecord }> {
     const openid4vpVerifier = this.getOpenid4vpVerifier(agentContext)
-    const openId4VcRelyingPartyEventHandler = agentContext.dependencyManager.resolve(OpenId4VcRelyingPartyEventHandler)
 
     const result = await this.parseAuthorizationResponse(agentContext, {
       verifierId: options.verifierId,
       responsePayload: options.authorizationResponse,
-      setResponseState: true,
     })
 
     result.verificationSession.assertState([
@@ -517,24 +532,26 @@ export class OpenId4VcSiopVerifierService {
         }
       }
     } catch (error) {
-      await openId4VcRelyingPartyEventHandler.authorizationResponseVerifiedFailed(agentContext, {
-        verifierId: options.verifierId,
-        correlationId: result.verificationSession.id,
-        errorMessage: error.message,
-      })
+      result.verificationSession.errorMessage = error.message
+      await this.updateState(agentContext, result.verificationSession, OpenId4VcVerificationSessionState.Error)
       throw error
     }
 
-    await openId4VcRelyingPartyEventHandler.authorizationResponseVerifiedSuccess(agentContext, {
-      verifierId: options.verifierId,
-      correlationId: result.verificationSession.id,
-      authorizationResponsePayload: result.authResponsePayload,
-    })
+    // FIXME: we can just use the payload once
+    // https://github.com/openwallet-foundation-labs/oid4vc-ts/pull/40 is merged
+    result.verificationSession.authorizationResponsePayload = isOpenid4vpAuthorizationResponseDcApi(
+      result.authResponsePayload
+    )
+      ? result.authResponsePayload.data
+      : result.authResponsePayload
+    await this.updateState(agentContext, result.verificationSession, OpenId4VcVerificationSessionState.ResponseVerified)
 
-    const verificationSession = await this.getVerificationSessionById(agentContext, result.verificationSession.id)
-    const verifiedAuthorizationResponse = await this.getVerifiedAuthorizationResponse(agentContext, verificationSession)
+    const verifiedAuthorizationResponse = await this.getVerifiedAuthorizationResponse(
+      agentContext,
+      result.verificationSession
+    )
 
-    return { ...verifiedAuthorizationResponse, verificationSession, transactionData }
+    return { ...verifiedAuthorizationResponse, verificationSession: result.verificationSession }
   }
 
   public async getVerifiedAuthorizationResponse(
@@ -547,15 +564,11 @@ export class OpenId4VcSiopVerifierService {
       throw new CredoError('No authorization response payload found in the verification session.')
     }
 
-    const openid4vpAuthorizationResponsePayload = isOpenid4vpAuthorizationResponseDcApi(
-      verificationSession.authorizationResponsePayload
-    )
-      ? verificationSession.authorizationResponsePayload.data
-      : verificationSession.authorizationResponsePayload
+    const openid4vpAuthorizationResponsePayload = verificationSession.authorizationResponsePayload
 
     const openid4vpVerifier = this.getOpenid4vpVerifier(agentContext)
     const authorizationRequest = openid4vpVerifier.parseOpenid4vpAuthorizationRequestPayload({
-      requestPayload: verificationSession.authorizationRequestJwt,
+      requestPayload: verificationSession.request,
     })
     if (authorizationRequest.provided !== 'jwt' || authorizationRequest.type === 'jar') {
       throw new CredoError('Invalid authorization request jwt')
@@ -1074,5 +1087,41 @@ export class OpenId4VcSiopVerifierService {
         credentialId: options.credentialId,
       }
     }
+  }
+
+  /**
+   * Update the record to a new state and emit an state changed event. Also updates the record
+   * in storage.
+   */
+  public async updateState(
+    agentContext: AgentContext,
+    verificationSession: OpenId4VcVerificationSessionRecord,
+    newState: OpenId4VcVerificationSessionState
+  ) {
+    agentContext.config.logger.debug(
+      `Updating openid4vc verification session record ${verificationSession.id} to state ${newState} (previous=${verificationSession.state})`
+    )
+
+    const previousState = verificationSession.state
+    verificationSession.state = newState
+    await this.openId4VcVerificationSessionRepository.update(agentContext, verificationSession)
+
+    this.emitStateChangedEvent(agentContext, verificationSession, previousState)
+  }
+
+  protected emitStateChangedEvent(
+    agentContext: AgentContext,
+    verificationSession: OpenId4VcVerificationSessionRecord,
+    previousState: OpenId4VcVerificationSessionState | null
+  ) {
+    const eventEmitter = agentContext.dependencyManager.resolve(EventEmitter)
+
+    eventEmitter.emit<OpenId4VcVerificationSessionStateChangedEvent>(agentContext, {
+      type: OpenId4VcVerifierEvents.VerificationSessionStateChanged,
+      payload: {
+        verificationSession: verificationSession.clone(),
+        previousState,
+      },
+    })
   }
 }

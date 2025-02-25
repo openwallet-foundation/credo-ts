@@ -336,11 +336,6 @@ export class OpenId4VcSiopHolderService {
       throw new CredoError('Either pex or dcql must be provided')
     }
 
-    // const jwtIssuer =
-    //   wantsIdToken && openIdTokenIssuer
-    //     ? await openIdTokenIssuerToJwtIssuer(agentContext, openIdTokenIssuer)
-    //     : undefined
-
     const openid4vpClient = this.getOpenid4vpClient(agentContext)
     const response = await openid4vpClient.createOpenid4vpAuthorizationResponse({
       requestParams: authorizationRequest.payload,
@@ -363,8 +358,16 @@ export class OpenId4VcSiopHolderService {
           : undefined,
     })
 
+    // TODO: we should include more typing here that the user
+    // still needs to submit the resposne. or as we discussed, split
+    // this method up in create and submit
     if (isOpenid4vpAuthorizationRequestDcApi(authorizationRequest.payload)) {
-      throw new CredoError('Submission of DC API responses is not yet supported.')
+      return {
+        ok: true,
+        authorizationResponse: response.responseParams as typeof response.responseParams & {
+          presentation_submission?: DifPresentationExchangeSubmission
+        },
+      } as const
     }
 
     const result = await openid4vpClient.submitOpenid4vpAuthorizationResponse({
@@ -390,7 +393,7 @@ export class OpenId4VcSiopHolderService {
           status: result.response.status,
           body: responseJson ?? responseText,
         },
-        submittedResponse: response.responseParams as typeof response.responseParams & {
+        authorizationResponse: response.responseParams as typeof response.responseParams & {
           presentation_submission?: DifPresentationExchangeSubmission
         },
       } as const
@@ -402,7 +405,7 @@ export class OpenId4VcSiopHolderService {
         status: result.response.status,
         body: responseJson ?? {},
       },
-      submittedResponse: response.responseParams as typeof response.responseParams & {
+      authorizationResponse: response.responseParams as typeof response.responseParams & {
         presentation_submission?: DifPresentationExchangeSubmission
       },
       redirectUri: responseJson?.redirect_uri as string | undefined,

@@ -1,5 +1,5 @@
 import type { OpenId4VcVerificationSessionRecord, OpenId4VcVerifierRecordProps } from './repository'
-import type { OpenId4VcJwtIssuer, OpenId4VcJwtIssuerJwk, OpenId4VcSiopAuthorizationResponsePayload } from '../shared'
+import type { OpenId4VcIssuerX5c, OpenId4VcJwtIssuerDid, OpenId4VcSiopAuthorizationResponsePayload } from '../shared'
 import type {
   DcqlPresentation,
   DcqlPresentationResult,
@@ -11,6 +11,7 @@ import type {
   TransactionData,
   VerifiablePresentation,
 } from '@credo-ts/core'
+import type { createOpenid4vpAuthorizationRequest } from '@openid4vc/openid4vp'
 
 export type ResponseMode = 'direct_post' | 'direct_post.jwt' | 'dc_api' | 'dc_api.jwt'
 
@@ -20,7 +21,8 @@ export interface OpenId4VcSiopCreateAuthorizationRequestOptions {
    * and to set the client_id and client_id_scheme for registration of client_metadata.
    */
   requestSigner:
-    | Exclude<OpenId4VcJwtIssuer, OpenId4VcJwtIssuerJwk>
+    | OpenId4VcJwtIssuerDid
+    | Omit<OpenId4VcIssuerX5c, 'issuer'>
     | {
         /**
          * Do not sign the request. Only available for DC API
@@ -28,13 +30,13 @@ export interface OpenId4VcSiopCreateAuthorizationRequestOptions {
         method: 'none'
       }
 
+  transactionData?: TransactionData
+
   /**
    * A DIF Presentation Definition (v2) can be provided to request a Verifiable Presentation using OpenID4VP.
    */
   presentationExchange?: {
     definition: DifPresentationExchangeDefinitionV2
-    // TODO: mvoe transactino data out of the presentationExchange/dcql objects to top level
-    transactionData?: TransactionData
   }
 
   /**
@@ -42,7 +44,6 @@ export interface OpenId4VcSiopCreateAuthorizationRequestOptions {
    */
   dcql?: {
     query: DcqlQuery
-    transactionData?: TransactionData
   }
 
   /**
@@ -71,6 +72,9 @@ export interface OpenId4VcSiopVerifyAuthorizationResponseOptions {
 export interface OpenId4VcSiopCreateAuthorizationRequestReturn {
   authorizationRequest: string
   verificationSession: OpenId4VcVerificationSessionRecord
+  // TODO: type needs to be exported. It can also be a JAR object, so we use
+  // return value for now
+  authorizationRequestObject: Awaited<ReturnType<typeof createOpenid4vpAuthorizationRequest>>['authRequestObject']
 }
 
 export interface OpenId4VcSiopVerifiedAuthorizationResponsePresentationExchange {

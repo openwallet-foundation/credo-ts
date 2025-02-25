@@ -87,7 +87,7 @@ jest.spyOn(DifPresentationExchangeService.prototype, 'createPresentation').mockR
   presentationSubmission,
   verifiablePresentations: [verifiablePresentation],
   presentationSubmissionLocation: PresentationSubmissionLocation.PRESENTATION,
-  encodedVerifiablePresentations: [verifiablePresentation],
+  encodedVerifiablePresentations: [verifiablePresentation.toJSON()],
 })
 
 describe('Presentation Exchange ProofFormatService', () => {

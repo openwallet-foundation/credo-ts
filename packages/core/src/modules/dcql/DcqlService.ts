@@ -105,7 +105,7 @@ export class DcqlService {
         // FIXME: we hardcode it to dc+sd-jwt for now. Need to think about backwards compat
         // We can either handle both in dcql library. Or we derive it  based on the query value
         credential_format: 'dc+sd-jwt',
-        vct: presentation.prettyClaims,
+        vct: presentation.prettyClaims.vct,
         claims: presentation.prettyClaims as DcqlSdJwtVcCredential.Claims,
       } satisfies DcqlSdJwtVcCredential
     } else if (presentation.claimFormat === ClaimFormat.MsoMdoc) {

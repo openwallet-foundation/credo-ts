@@ -72,7 +72,6 @@ export class MdocDeviceResponse {
         docType
       )
     })
-    documents[0].deviceSignedNamespaces
 
     return new MdocDeviceResponse(base64Url, documents)
   }

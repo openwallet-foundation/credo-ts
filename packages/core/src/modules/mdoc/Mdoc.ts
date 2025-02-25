@@ -104,9 +104,9 @@ export class Mdoc {
     return this.issuerSignedDocument.issuerSigned.issuerAuth.decodedPayload.validityInfo
   }
 
-  public get deviceSignedNamespaces(): MdocNameSpaces {
+  public get deviceSignedNamespaces(): MdocNameSpaces | null {
     if (this.issuerSignedDocument instanceof DeviceSignedDocument === false) {
-      throw new MdocError(`Cannot get 'device-namespaces from a IssuerSignedDocument. Must be a DeviceSignedDocument.`)
+      return null
     }
 
     return Object.fromEntries(

@@ -48,7 +48,7 @@ describe('OpenId4VcVerifier', () => {
         )
       ).toBe(true)
 
-      const jwt = Jwt.fromSerializedJwt(verificationSession.authorizationRequestJwt)
+      const jwt = Jwt.fromSerializedJwt(verificationSession.authorizationRequestJwt as string)
 
       expect(jwt.header.kid)
 

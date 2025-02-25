@@ -19,7 +19,6 @@ import {
   DifPexCredentialsForRequest,
   DifPresentationExchangeService,
   injectable,
-  TransactionDataRequest,
 } from '@credo-ts/core'
 
 import { OpenId4VciMetadata } from '../shared'
@@ -69,9 +68,11 @@ export class OpenId4VcHolderApi {
    * Accepts the authentication request after it has been resolved and verified with {@link resolveSiopAuthorizationRequest}.
    *
    * If the resolved authorization request included a `presentationExchange` property, you MUST supply `presentationExchange`
-   * in the `options` parameter.
+   * in the `options` parameter. The same is true for `dcql`.
    *
-   * If no `presentationExchange` property is present, you MUST supply `openIdTokenIssuer` in the `options` parameter.
+   * For response mode of `direct_post` or `direct_post.jwt` the response will be submitted directly
+   * to the response url. For `dc_api` and `dc_api.jwt` the response will be returned but without a
+   * `serverResponse`, and you have to submit the response yourself.
    */
   public async acceptSiopAuthorizationRequest(options: OpenId4VcSiopAcceptAuthorizationRequestOptions) {
     return await this.openId4VcSiopHolderService.acceptAuthorizationRequest(this.agentContext, options)
@@ -81,11 +82,8 @@ export class OpenId4VcHolderApi {
    * Automatically select credentials from available credentials for a presentation exchange request. Can be called after calling
    * @see resolveSiopAuthorizationRequest.
    */
-  public selectCredentialsForPresentationExchangeRequest(
-    credentialsForRequest: DifPexCredentialsForRequest,
-    transactionData?: TransactionDataRequest
-  ) {
-    return this.difPresentationExchangeService.selectCredentialsForRequest(credentialsForRequest, transactionData)
+  public selectCredentialsForPresentationExchangeRequest(credentialsForRequest: DifPexCredentialsForRequest) {
+    return this.difPresentationExchangeService.selectCredentialsForRequest(credentialsForRequest)
   }
 
   /**
