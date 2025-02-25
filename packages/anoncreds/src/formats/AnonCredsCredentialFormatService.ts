@@ -19,7 +19,12 @@ import type {
   CredentialPreviewAttributeOptions,
   LinkedAttachment,
 } from '@credo-ts/didcomm'
-import type { AnonCredsCredential, AnonCredsCredentialOffer, AnonCredsCredentialRequest } from '../models'
+import type {
+  AnonCredsCredential,
+  AnonCredsCredentialOffer,
+  AnonCredsCredentialRequest,
+  AnonCredsRevocationStatusList,
+} from '../models'
 import type { AnonCredsHolderService, AnonCredsIssuerService } from '../services'
 import type { AnonCredsCredentialMetadata, AnonCredsCredentialRequestMetadata } from '../utils/metadata'
 import type { AnonCredsCredentialFormat, AnonCredsCredentialProposalFormat } from './AnonCredsCredentialFormat'
@@ -297,9 +302,9 @@ export class AnonCredsCredentialFormatService implements CredentialFormatService
         .getByCredentialDefinitionId(agentContext, credentialRequest.cred_def_id)
     ).credentialDefinition.value
 
-    let revocationRegistryDefinitionId
-    let revocationRegistryIndex
-    let revocationStatusList
+    let revocationRegistryDefinitionId: string | undefined
+    let revocationRegistryIndex: number | undefined
+    let revocationStatusList: AnonCredsRevocationStatusList | undefined
 
     if (credentialDefinition.revocation) {
       const credentialMetadata =

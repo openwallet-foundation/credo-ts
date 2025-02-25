@@ -291,10 +291,10 @@ export class AnonCredsRsIssuerService implements AnonCredsIssuerService {
       const attributeRawValues: Record<string, string> = {}
       const attributeEncodedValues: Record<string, string> = {}
 
-      Object.keys(credentialValues).forEach((key) => {
+      for (const key of Object.keys(credentialValues)) {
         attributeRawValues[key] = credentialValues[key].raw
         attributeEncodedValues[key] = credentialValues[key].encoded
-      })
+      }
 
       const credentialDefinitionRecord = await agentContext.dependencyManager
         .resolve(AnonCredsCredentialDefinitionRepository)

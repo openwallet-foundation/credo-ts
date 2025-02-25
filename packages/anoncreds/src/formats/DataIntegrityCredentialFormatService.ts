@@ -925,6 +925,7 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
     { offerAttachment, proposalAttachment }: CredentialFormatAutoRespondProposalOptions
   ) {
     throw new CredoError('Not implemented')
+    // biome-ignore lint/correctness/noUnreachable: <explanation>
     return false
   }
 

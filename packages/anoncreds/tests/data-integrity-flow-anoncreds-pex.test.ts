@@ -1,4 +1,3 @@
-import type { InputDescriptorV2 } from '@sphereon/pex-models'
 import type { EventReplaySubject } from '../../core/tests'
 import type { AnonCredsTestsAgent } from './anoncredsSetup'
 
@@ -239,8 +238,12 @@ async function anonCredsFlowTest(options: {
   })
 
   const pdCopy = JSON.parse(JSON.stringify(presentationDefinition))
-  if (!revocationRegistryDefinitionId)
-    pdCopy.input_descriptors.forEach((ide: InputDescriptorV2) => delete ide.constraints?.statuses)
+  if (!revocationRegistryDefinitionId) {
+    for (const ide of pdCopy.input_descriptors) {
+      // biome-ignore lint/performance/noDelete: <explanation>
+      delete ide.constraints?.statuses
+    }
+  }
 
   let holderProofExchangeRecord = await holder.modules.proofs.proposeProof({
     protocolVersion: 'v2',

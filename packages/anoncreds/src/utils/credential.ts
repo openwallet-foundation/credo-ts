@@ -63,11 +63,13 @@ export function encodeCredentialValue(value: unknown) {
   }
 
   if (isNumber(value)) {
+    // biome-ignore lint/style/noParameterAssign: <explanation>
     value = value.toString()
   }
 
   // If value is null we must use the string value 'None'
   if (value === null || value === undefined) {
+    // biome-ignore lint/style/noParameterAssign: <explanation>
     value = 'None'
   }
 
@@ -108,14 +110,12 @@ export const mapAttributeRawValuesToAnonCredsCredentialValues = (
 export function convertAttributesToCredentialValues(
   attributes: CredentialPreviewAttributeOptions[]
 ): AnonCredsCredentialValues {
-  return attributes.reduce((credentialValues, attribute) => {
-    return {
-      [attribute.name]: {
-        raw: attribute.value,
-        encoded: encodeCredentialValue(attribute.value),
-      },
-      ...credentialValues,
+  return attributes.reduce<AnonCredsCredentialValues>((credentialValues, attribute) => {
+    credentialValues[attribute.name] = {
+      raw: attribute.value,
+      encoded: encodeCredentialValue(attribute.value),
     }
+    return credentialValues
   }, {})
 }
 
@@ -221,7 +221,7 @@ export function createAndLinkAttachmentsToPreview(
   const credentialPreviewAttributeNames = previewAttributes.map((attribute) => attribute.name)
   const newPreviewAttributes = [...previewAttributes]
 
-  attachments.forEach((linkedAttachment) => {
+  for (const linkedAttachment of attachments) {
     if (credentialPreviewAttributeNames.includes(linkedAttachment.attributeName)) {
       throw new CredoError(`linkedAttachment ${linkedAttachment.attributeName} already exists in the preview`)
     }
@@ -230,7 +230,7 @@ export function createAndLinkAttachmentsToPreview(
       mimeType: linkedAttachment.attachment.mimeType,
       value: encodeAttachment(linkedAttachment.attachment),
     })
-  })
+  }
 
   return newPreviewAttributes
 }

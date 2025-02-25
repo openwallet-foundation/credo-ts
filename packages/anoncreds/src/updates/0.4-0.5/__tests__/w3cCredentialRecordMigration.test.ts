@@ -95,7 +95,7 @@ jest.mock('../../../../../core/src/agent/Agent', () => {
       config: agentConfig,
       context: agentContext,
       dependencyManager: {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        // biome-ignore lint/suspicious/noExplicitAny: <explanation>
         resolve: jest.fn((repo: any) => {
           if (repo.prototype.constructor.name === 'AnonCredsCredentialRepository') {
             return anonCredsRepo

@@ -497,8 +497,8 @@ export async function prepareForAnonCredsIssuance(
   // Wait some time pass to let ledger settle the object
   await sleep(1000)
 
-  let revocationRegistryDefinition
-  let revocationStatusList
+  let revocationRegistryDefinition: RegisterRevocationRegistryDefinitionReturnStateFinished | undefined
+  let revocationStatusList: RegisterRevocationStatusListReturnStateFinished | undefined
   if (supportRevocation) {
     revocationRegistryDefinition = await registerRevocationRegistryDefinition(agent, {
       issuerId,

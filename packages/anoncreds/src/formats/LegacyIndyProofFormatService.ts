@@ -419,7 +419,7 @@ export class LegacyIndyProofFormatService implements ProofFormatService<LegacyIn
       selfAttestedAttributes: {},
     }
 
-    Object.keys(credentialsForRequest.attributes).forEach((attributeName) => {
+    for (const attributeName of Object.keys(credentialsForRequest.attributes)) {
       const attributeArray = credentialsForRequest.attributes[attributeName]
 
       if (attributeArray.length === 0) {
@@ -427,14 +427,14 @@ export class LegacyIndyProofFormatService implements ProofFormatService<LegacyIn
       }
 
       selectedCredentials.attributes[attributeName] = attributeArray[0]
-    })
+    }
 
-    Object.keys(credentialsForRequest.predicates).forEach((attributeName) => {
+    for (const attributeName of Object.keys(credentialsForRequest.predicates)) {
       if (credentialsForRequest.predicates[attributeName].length === 0) {
         throw new CredoError('Unable to automatically select requested predicates.')
       }
       selectedCredentials.predicates[attributeName] = credentialsForRequest.predicates[attributeName][0]
-    })
+    }
 
     return selectedCredentials
   }

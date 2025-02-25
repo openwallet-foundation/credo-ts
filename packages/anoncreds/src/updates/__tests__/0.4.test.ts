@@ -109,7 +109,7 @@ describe('UpdateAssistant | AnonCreds | v0.4 - v0.5', () => {
     )) {
       if (record.type !== W3cCredentialRecord.type) continue
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      // biome-ignore lint/suspicious/noExplicitAny: <explanation>
       const recordValue = record.value as any
       recordValue.credential.issuanceDate = new Date()
     }

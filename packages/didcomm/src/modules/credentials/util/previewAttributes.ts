@@ -7,9 +7,12 @@ export function arePreviewAttributesEqual(
   if (firstAttributes.length !== secondAttributes.length) return false
 
   const secondAttributeMap = secondAttributes.reduce<Record<string, CredentialPreviewAttribute>>(
-    (attributeMap, attribute) => ({ ...attributeMap, [attribute.name]: attribute }),
+    (attributeMap, attribute) => {
+      attributeMap[attribute.name] = attribute;
+      return attributeMap;
+    },
     {}
-  )
+  );
 
   // check if no duplicate keys exist
   if (new Set(firstAttributes.map((attribute) => attribute.name)).size !== firstAttributes.length) return false
