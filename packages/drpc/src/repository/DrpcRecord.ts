@@ -65,6 +65,7 @@ export class DrpcRecord extends BaseRecord<DefaultDrpcMessageTags, CustomDrpcMes
 
   public assertState(expectedStates: DrpcState | DrpcState[]) {
     if (!Array.isArray(expectedStates)) {
+      // biome-ignore lint/style/noParameterAssign: <explanation>
       expectedStates = [expectedStates]
     }
 

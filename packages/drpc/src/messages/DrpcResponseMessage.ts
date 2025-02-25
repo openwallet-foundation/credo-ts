@@ -10,13 +10,13 @@ export type DrpcResponse = DrpcResponseObject | (DrpcResponseObject | Record<str
 export interface DrpcResponseError {
   code: DrpcErrorCode
   message: string
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
   data?: any
 }
 
 export interface DrpcResponseObject {
   jsonrpc: string
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
   result?: any
   error?: DrpcResponseError
   id: string | number | null

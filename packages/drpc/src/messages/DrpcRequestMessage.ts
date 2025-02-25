@@ -6,7 +6,7 @@ import { IsValidDrpcRequest } from '../models'
 export interface DrpcRequestObject {
   jsonrpc: string
   method: string
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
   params?: any[] | object
   id: string | number | null
 }
