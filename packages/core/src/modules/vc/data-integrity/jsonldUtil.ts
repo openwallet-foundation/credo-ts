@@ -70,6 +70,7 @@ export const getProofs = async (options: GetProofsOptions): Promise<GetProofsRes
   const { proofType, skipProofCompaction, documentLoader } = options
   let { document } = options
 
+  // biome-ignore lint/suspicious/noImplicitAnyLet: <explanation>
   let proofs
   if (!skipProofCompaction) {
     // If we must compact the proof then we must first compact the input

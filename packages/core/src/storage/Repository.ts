@@ -8,7 +8,7 @@ import { RecordDuplicateError, RecordNotFoundError } from '../error'
 
 import { RepositoryEventTypes } from './RepositoryEvents'
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+// biome-ignore lint/suspicious/noExplicitAny: <explanation>
 export class Repository<T extends BaseRecord<any, any, any>> {
   private storageService: StorageService<T>
   private recordClass: BaseRecordConstructor<T>

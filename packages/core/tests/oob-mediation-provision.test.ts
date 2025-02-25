@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-non-null-assertion */
 import type { OutOfBandInvitation } from '../../didcomm/src/modules/oob/messages'
 
 import { DidExchangeState, HandshakeProtocol } from '../../didcomm/src/modules/connections'
@@ -68,6 +67,7 @@ describe('out of band with mediation set up with provision method', () => {
 
     let { connectionRecord } = await aliceAgent.modules.oob.receiveInvitation(mediatorOutOfBandInvitation)
     connectionRecord = await aliceAgent.modules.connections.returnWhenIsConnected(connectionRecord?.id)
+    // biome-ignore lint/style/noNonNullAssertion: <explanation>
     await aliceAgent.modules.mediationRecipient.provision(connectionRecord!)
     await aliceAgent.modules.mediationRecipient.initialize()
   })
@@ -116,6 +116,7 @@ describe('out of band with mediation set up with provision method', () => {
     const [reusedAliceMediatorConnection] = reusedOutOfBandRecord
       ? await aliceAgent.modules.connections.findAllByOutOfBandId(reusedOutOfBandRecord.id)
       : []
+    // biome-ignore lint/style/noNonNullAssertion: <explanation>
     await aliceAgent.modules.mediationRecipient.provision(reusedAliceMediatorConnection!)
     const mediators = await aliceAgent.modules.mediationRecipient.getMediators()
     expect(mediators).toHaveLength(1)

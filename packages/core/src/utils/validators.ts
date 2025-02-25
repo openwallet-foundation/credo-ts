@@ -7,7 +7,7 @@ import { ValidateBy, buildMessage, isInstance, isString } from 'class-validator'
 import { asArray } from './array'
 
 export interface IsInstanceOrArrayOfInstancesValidationOptions extends ValidationOptions {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
   classType: SingleOrArray<new (...args: any[]) => any>
 
   /**
@@ -72,7 +72,7 @@ export function IsInstanceOrArrayOfInstances(
   )
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+// biome-ignore lint/suspicious/noExplicitAny: <explanation>
 export function isStringArray(value: any): value is string[] {
   return Array.isArray(value) && value.every((v) => typeof v === 'string')
 }

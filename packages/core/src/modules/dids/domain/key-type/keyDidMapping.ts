@@ -46,6 +46,7 @@ const verificationMethodKeyDidMapping = Object.values(KeyType).reduce<Record<str
   (mapping, keyType) => {
     const supported = keyDidMapping[keyType].supportedVerificationMethodTypes.reduce<Record<string, KeyDidMapping>>(
       (accumulator, vMethodKeyType) => ({
+        // biome-ignore lint/performance/noAccumulatingSpread: <explanation>
         ...accumulator,
         [vMethodKeyType]: keyDidMapping[keyType],
       }),
@@ -53,6 +54,7 @@ const verificationMethodKeyDidMapping = Object.values(KeyType).reduce<Record<str
     )
 
     return {
+      // biome-ignore lint/performance/noAccumulatingSpread: <explanation>
       ...mapping,
       ...supported,
     }

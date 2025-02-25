@@ -156,6 +156,7 @@ export class X509Certificate {
     return keyIds?.[0]
   }
 
+  // biome-ignore lint/suspicious/useGetterReturn: <explanation>
   public get keyUsage() {
     const keyUsages = this.getMatchingExtensions<x509.KeyUsagesExtension>(id_ce_keyUsage)?.map((e) => e.usages)
 

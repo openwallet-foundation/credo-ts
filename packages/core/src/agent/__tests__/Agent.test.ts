@@ -143,7 +143,7 @@ describe('Agent', () => {
       expect(agent.isInitialized).toBe(false)
       expect(agent.wallet.isInitialized).toBe(false)
 
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      // biome-ignore lint/style/noNonNullAssertion: <explanation>
       await agent.wallet.initialize(walletConfig!)
       expect(agent.isInitialized).toBe(false)
       expect(agent.wallet.isInitialized).toBe(true)

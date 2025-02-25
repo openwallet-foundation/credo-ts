@@ -127,6 +127,7 @@ export class JwsLinkedDataSignature extends LinkedDataSignature {
     // add payload into detached content signature
     const [encodedHeader /*payload*/, , encodedSignature] = options.proof.jws.split('.')
 
+    // biome-ignore lint/suspicious/noImplicitAnyLet: <explanation>
     let header
     try {
       header = JsonEncoder.fromBase64(encodedHeader)
@@ -212,7 +213,7 @@ export class JwsLinkedDataSignature extends LinkedDataSignature {
   public async matchProof(options: {
     proof: Proof
     document: VerificationMethod
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
     purpose: any
     documentLoader?: DocumentLoader
   }) {

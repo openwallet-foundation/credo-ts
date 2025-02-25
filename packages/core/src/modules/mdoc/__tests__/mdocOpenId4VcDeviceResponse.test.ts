@@ -1,7 +1,6 @@
 import type { DifPresentationExchangeDefinition } from '../../dif-presentation-exchange'
 
 import { cborEncode, parseDeviceResponse } from '@animo-id/mdoc'
-// eslint-disable-next-line import/no-extraneous-dependencies
 import { Key as AskarKey, Jwk } from '@openwallet-foundation/askar-nodejs'
 
 import { getInMemoryAgentOptions } from '../../../../tests'
@@ -25,6 +24,7 @@ const DEVICE_JWK_PRIVATE_P256 = {
   d: 'eRpAZr3eV5xMMnPG3kWjg90Y-bBff9LqmlQuk49HUtA',
 }
 
+// biome-ignore lint/suspicious/noExportsInTest: <explanation>
 export const ISSUER_PRIVATE_KEY_JWK_P256 = {
   kty: 'EC',
   kid: '1234',
@@ -240,6 +240,7 @@ describe('mdoc device-response openid4vp test', () => {
     describe('should not be verifiable', () => {
       const testCases = ['clientId', 'responseUri', 'verifierGeneratedNonce', 'mdocGeneratedNonce']
 
+      // biome-ignore lint/complexity/noForEach: <explanation>
       testCases.forEach((name) => {
         const values = {
           clientId,

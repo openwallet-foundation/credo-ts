@@ -7,7 +7,7 @@ export type AllSettledFulfilled<T> = {
 
 export type AllSettledRejected = {
   status: 'rejected'
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
   reason: any
 }
 

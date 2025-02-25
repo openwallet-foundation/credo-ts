@@ -17,7 +17,7 @@ import { WalletModule } from '../wallet'
  */
 export type ModulesMap = { [key: string]: Module }
 
-// eslint-disable-next-line @typescript-eslint/ban-types
+// biome-ignore lint/complexity/noBannedTypes: <explanation>
 export type EmptyModuleMap = {}
 
 /**
@@ -185,6 +185,7 @@ export function getAgentApi<AgentModules extends ModulesMap>(
 
     // Api is excluded
     if (excludedApis.includes(apiInstance)) return api
+    // biome-ignore lint/performance/noAccumulatingSpread: <explanation>
     return { ...api, [moduleKey]: apiInstance }
   }, {}) as AgentApi<AgentModules>
 

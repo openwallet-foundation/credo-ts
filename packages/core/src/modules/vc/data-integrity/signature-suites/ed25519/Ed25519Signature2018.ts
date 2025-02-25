@@ -163,7 +163,7 @@ export class Ed25519Signature2018 extends JwsLinkedDataSignature {
   public async matchProof(options: {
     proof: Proof
     document: VerificationMethod
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
     purpose: any
     documentLoader?: DocumentLoader
   }) {

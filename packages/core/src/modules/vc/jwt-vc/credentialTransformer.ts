@@ -64,6 +64,7 @@ export function getJwtPayloadFromCredential(credential: W3cCredential) {
     if (Array.isArray(vc.credentialSubject)) {
       vc.credentialSubject[0].id = undefined
     } else {
+      // biome-ignore lint/performance/noDelete: <explanation>
       delete vc.credentialSubject?.id
     }
   }

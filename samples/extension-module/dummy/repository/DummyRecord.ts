@@ -42,7 +42,6 @@ export class DummyRecord extends BaseRecord implements DummyStorageProps {
   public assertState(dummyStates: DummyState | DummyState[]) {
     let expectedStates: DummyState[] = []
     if (!Array.isArray(dummyStates)) {
-      // biome-ignore lint/style/noParameterAssign: <explanation>
       expectedStates = [dummyStates]
     }
 

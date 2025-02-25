@@ -24,6 +24,7 @@ const hexTable = {
   contentType: 0x0e,
 }
 
+// biome-ignore lint/complexity/noStaticOnlyClass: <explanation>
 export class HashlinkEncoder {
   /**
    * Encodes a buffer, with optional metadata, into a hashlink
@@ -114,7 +115,7 @@ export class HashlinkEncoder {
     const obj = { urls: [] as string[], contentType: '' }
     const { data } = MultiBaseEncoder.decode(mb)
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      // biome-ignore lint/suspicious/noExplicitAny: <explanation>
       const cborData: Map<number, any> = cbor.decode(data)
       cborData.forEach((value, key) => {
         if (key === hexTable.urls) {

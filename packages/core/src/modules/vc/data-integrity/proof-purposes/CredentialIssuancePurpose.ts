@@ -54,7 +54,7 @@ export class CredentialIssuancePurpose extends AssertionProofPurpose {
       verificationMethod: string
       documentLoader?: DocumentLoader
     }
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
   ): Promise<{ valid: boolean; error?: any }> {
     try {
       const result = await super.validate(proof, options)

@@ -18,7 +18,7 @@ export interface UpdateAssistantUpdateOptions {
   backupBeforeStorageUpdate?: boolean
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+// biome-ignore lint/suspicious/noExplicitAny: <explanation>
 export class UpdateAssistant<Agent extends BaseAgent<any> = BaseAgent> {
   private agent: Agent
   private storageUpdateService: StorageUpdateService

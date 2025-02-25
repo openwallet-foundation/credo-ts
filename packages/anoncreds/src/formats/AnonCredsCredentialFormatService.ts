@@ -420,9 +420,9 @@ export class AnonCredsCredentialFormatService implements CredentialFormatService
         schema,
         revocationRegistry: revocationRegistryResult?.revocationRegistryDefinition
           ? {
-            definition: revocationRegistryResult.revocationRegistryDefinition,
-            id: revocationRegistryResult.revocationRegistryDefinitionId,
-          }
+              definition: revocationRegistryResult.revocationRegistryDefinition,
+              id: revocationRegistryResult.revocationRegistryDefinitionId,
+            }
           : undefined,
       },
       indyNamespace

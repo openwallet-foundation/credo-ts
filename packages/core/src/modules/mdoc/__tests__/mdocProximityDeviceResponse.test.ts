@@ -22,6 +22,7 @@ const DEVICE_JWK_PRIVATE = {
   d: 'eRpAZr3eV5xMMnPG3kWjg90Y-bBff9LqmlQuk49HUtA',
 }
 
+// biome-ignore lint/suspicious/noExportsInTest: <explanation>
 export const ISSUER_PRIVATE_KEY_JWK = {
   kty: 'EC',
   kid: '1234',

@@ -3,6 +3,7 @@ import { validateSync } from 'class-validator'
 import { ClassValidationError } from '../error'
 import { isValidationErrorArray } from '../error/ValidationErrorUtils'
 
+// biome-ignore lint/complexity/noStaticOnlyClass: <explanation>
 export class MessageValidator {
   /**
    *

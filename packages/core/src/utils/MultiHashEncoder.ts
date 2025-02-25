@@ -19,10 +19,12 @@ const multiHashNameMap: MultiHashNameMap = {
 }
 
 const multiHashCodeMap: MultiHashCodeMap = Object.entries(multiHashNameMap).reduce(
+  // biome-ignore lint/performance/noAccumulatingSpread: <explanation>
   (map, [hashName, hashCode]) => ({ ...map, [hashCode]: hashName }),
   {}
 )
 
+// biome-ignore lint/complexity/noStaticOnlyClass: <explanation>
 export class MultiHashEncoder {
   /**
    *

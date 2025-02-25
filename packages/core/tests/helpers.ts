@@ -746,7 +746,7 @@ export async function makeConnection(agentA: Agent<DefaultAgentModulesInput>, ag
  * @param fn function you want to mock
  * @returns mock function with type annotations
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+// biome-ignore lint/suspicious/noExplicitAny: <explanation>
 export function mockFunction<T extends (...args: any[]) => any>(fn: T): jest.MockedFunction<T> {
   return fn as jest.MockedFunction<T>
 }

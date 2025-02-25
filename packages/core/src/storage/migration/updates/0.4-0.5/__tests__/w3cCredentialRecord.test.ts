@@ -16,7 +16,7 @@ const dependencyManager = {
 
 const agentConfig = getAgentConfig('Migration W3cCredentialRecord 0.4-0.5')
 const agentContext = getAgentContext({
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
   dependencyManager: dependencyManager as any,
 })
 

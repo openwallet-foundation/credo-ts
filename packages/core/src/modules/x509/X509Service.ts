@@ -15,6 +15,7 @@ import { X509Certificate } from './X509Certificate'
 import { X509Error } from './X509Error'
 
 @injectable()
+// biome-ignore lint/complexity/noStaticOnlyClass: <explanation>
 export class X509Service {
   /**
    *

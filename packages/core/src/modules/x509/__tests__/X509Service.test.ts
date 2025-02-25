@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-non-null-assertion */
-
 import type { AgentContext } from '../../../agent'
 
 import { id_ce_basicConstraints, id_ce_extKeyUsage, id_ce_keyUsage } from '@peculiar/asn1-x509'
@@ -54,7 +52,7 @@ describe('X509Service', () => {
     wallet = new InMemoryWallet()
     agentContext = getAgentContext({ wallet })
 
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    // biome-ignore lint/style/noNonNullAssertion: <explanation>
     await wallet.createAndOpen(agentConfig.walletConfig!)
 
     const rootKey = await wallet.createKey({ keyType: KeyType.P256 })
@@ -246,6 +244,7 @@ describe('X509Service', () => {
           name: [{ type: 'url', value: 'paradym.id' }],
         },
         issuerAlternativeName: {
+          // biome-ignore lint/style/noNonNullAssertion: <explanation>
           name: mdocRootCertificate.issuerAlternativeNames!,
         },
         extendedKeyUsage: {
@@ -402,6 +401,7 @@ describe('X509Service', () => {
           name: [{ type: 'url', value: 'paradym.id' }],
         },
         issuerAlternativeName: {
+          // biome-ignore lint/style/noNonNullAssertion: <explanation>
           name: mdocRootCertificate.issuerAlternativeNames!,
         },
         extendedKeyUsage: {

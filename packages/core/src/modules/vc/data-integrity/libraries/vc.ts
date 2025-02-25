@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 import type { JsonObject } from '../../../../types'
 
 // No type definitions available for this package
@@ -8,10 +6,15 @@ import type { JsonObject } from '../../../../types'
 import vc from '@digitalcredentials/vc'
 
 export interface VC {
+  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
   issue(options: any): Promise<Record<string, unknown>>
+  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
   verifyCredential(options: any): Promise<W3cVerifyCredentialResult>
+  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
   createPresentation(options: any): Promise<Record<string, unknown>>
+  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
   signPresentation(options: any): Promise<Record<string, unknown>>
+  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
   verify(options: any): Promise<W3cVerifyPresentationResult>
 }
 

@@ -1,5 +1,3 @@
-/* eslint-disable no-console,@typescript-eslint/no-explicit-any */
-
 import { BaseLogger } from './BaseLogger'
 import { LogLevel } from './Logger'
 
@@ -15,6 +13,7 @@ export class ConsoleLogger extends BaseLogger {
     [LogLevel.fatal]: 'error',
   } as const
 
+  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
   private log(level: Exclude<LogLevel, LogLevel.off>, message: string, data?: Record<string, any>): void {
     // Get console method from mapping
     const consoleLevel = this.consoleLogMap[level]
@@ -31,30 +30,37 @@ export class ConsoleLogger extends BaseLogger {
     }
   }
 
+  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
   public test(message: string, data?: Record<string, any>): void {
     this.log(LogLevel.test, message, data)
   }
 
+  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
   public trace(message: string, data?: Record<string, any>): void {
     this.log(LogLevel.trace, message, data)
   }
 
+  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
   public debug(message: string, data?: Record<string, any>): void {
     this.log(LogLevel.debug, message, data)
   }
 
+  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
   public info(message: string, data?: Record<string, any>): void {
     this.log(LogLevel.info, message, data)
   }
 
+  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
   public warn(message: string, data?: Record<string, any>): void {
     this.log(LogLevel.warn, message, data)
   }
 
+  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
   public error(message: string, data?: Record<string, any>): void {
     this.log(LogLevel.error, message, data)
   }
 
+  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
   public fatal(message: string, data?: Record<string, any>): void {
     this.log(LogLevel.fatal, message, data)
   }
