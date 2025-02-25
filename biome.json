@@ -36,7 +36,7 @@
   "linter": {
     "rules": {
       "style": {
-        "useImportType": "error",
+        "useImportType": "off",
         "useNodejsImportProtocol": "off",
         "noNonNullAssertion": "error"
       },
