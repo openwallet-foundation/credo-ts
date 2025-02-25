@@ -48,7 +48,7 @@ export type OpenId4VciRequestTokenResponse = {
   accessTokenResponse: OpenId4VciAccessTokenResponse
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+// biome-ignore lint/suspicious/noExplicitAny: <explanation>
 type UnionToArrayUnion<T> = T extends any ? T[] : never
 
 export interface OpenId4VciCredentialResponse {

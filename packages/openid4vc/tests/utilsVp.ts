@@ -103,7 +103,7 @@ export const combinePresentationDefinitions = (
   }
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+// biome-ignore lint/suspicious/noExplicitAny: <explanation>
 export function waitForMockFunction(mockFn: jest.Mock<any, any, any>) {
   return new Promise((resolve, reject) => {
     const intervalId = setInterval(() => {

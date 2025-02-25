@@ -246,6 +246,7 @@ export class OpenId4VcIssuanceSessionRecord extends BaseRecord<DefaultOpenId4VcI
 
   public assertState(expectedStates: OpenId4VcIssuanceSessionState | OpenId4VcIssuanceSessionState[]) {
     if (!Array.isArray(expectedStates)) {
+      // biome-ignore lint/style/noParameterAssign: <explanation>
       expectedStates = [expectedStates]
     }
 

@@ -38,7 +38,7 @@ describe('OpenId4VcHolder | OpenID4VP', () => {
   let holder: AgentType<typeof holderModules>
   let verifierApp: Express
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
   let verifierServer: Server<any, any>
 
   beforeEach(async () => {

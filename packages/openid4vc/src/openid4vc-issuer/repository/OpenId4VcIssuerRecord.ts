@@ -66,7 +66,7 @@ export class OpenId4VcIssuerRecord extends BaseRecord<DefaultOpenId4VcIssuerReco
     if (this.credentialConfigurationsSupported) return
 
     this.credentialConfigurationsSupported =
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      // biome-ignore lint/suspicious/noExplicitAny: <explanation>
       credentialsSupportedToCredentialConfigurationsSupported(credentialsSupported as any) as any
   }
 

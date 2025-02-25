@@ -67,13 +67,13 @@ export async function createAgentFromModules<MM extends ModulesMap>(
 
 export type AgentType<MM extends ModulesMap> = Awaited<ReturnType<typeof createAgentFromModules<MM>>>
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+// biome-ignore lint/suspicious/noExplicitAny: <explanation>
 type AgentWithTenantsModule = Agent<{ tenants: TenantsModule<any>; x509: X509Module }>
 
 export async function createTenantForAgent(
   // FIXME: we need to make some improvements on the agent typing. It'a quite hard
   // to get it right at the moment
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
   agent: AgentWithTenantsModule & any,
   label: string
 ) {
