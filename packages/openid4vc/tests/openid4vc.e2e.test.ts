@@ -868,16 +868,17 @@ describe('OpenId4Vc', () => {
       },
     })
 
-    const certificate = await verifier.agent.x509.createSelfSignedCertificate({
-      key: await verifier.agent.wallet.createKey({ keyType: KeyType.Ed25519 }),
-      extensions: [[{ type: 'dns', value: `localhost:${serverPort}` }]],
+    const certificate = await verifier.agent.x509.createCertificate({
+      issuer: 'CN=credo',
+      authorityKey: await verifier.agent.wallet.createKey({ keyType: KeyType.Ed25519 }),
+      extensions: { subjectAlternativeName: { name: [{ type: 'dns', value: `localhost:${serverPort}` }] } },
     })
 
     const rawCertificate = certificate.toString('base64')
     await holder.agent.sdJwtVc.store(signedSdJwtVc.compact)
 
-    await holder.agent.x509.addTrustedCertificate(rawCertificate)
-    await verifier.agent.x509.addTrustedCertificate(rawCertificate)
+    holder.agent.x509.addTrustedCertificate(rawCertificate)
+    verifier.agent.x509.addTrustedCertificate(rawCertificate)
 
     const presentationDefinition = {
       id: 'OpenBadgeCredential',
@@ -1115,16 +1116,17 @@ describe('OpenId4Vc', () => {
       },
     })
 
-    const certificate = await verifier.agent.x509.createSelfSignedCertificate({
-      key: await verifier.agent.wallet.createKey({ keyType: KeyType.Ed25519 }),
-      extensions: [[{ type: 'dns', value: `localhost:${serverPort}` }]],
+    const certificate = await verifier.agent.x509.createCertificate({
+      issuer: 'CN=credo',
+      authorityKey: await verifier.agent.wallet.createKey({ keyType: KeyType.Ed25519 }),
+      extensions: { subjectAlternativeName: { name: [{ type: 'dns', value: `localhost:${serverPort}` }] } },
     })
 
     const rawCertificate = certificate.toString('base64')
     await holder.agent.sdJwtVc.store(signedSdJwtVc.compact)
 
-    await holder.agent.x509.addTrustedCertificate(rawCertificate)
-    await verifier.agent.x509.addTrustedCertificate(rawCertificate)
+    holder.agent.x509.addTrustedCertificate(rawCertificate)
+    verifier.agent.x509.addTrustedCertificate(rawCertificate)
 
     const presentationDefinition = {
       id: 'OpenBadgeCredential',
@@ -1376,17 +1378,18 @@ describe('OpenId4Vc', () => {
       },
     })
 
-    const certificate = await verifier.agent.x509.createSelfSignedCertificate({
-      key: await verifier.agent.wallet.createKey({ keyType: KeyType.Ed25519 }),
-      extensions: [[{ type: 'dns', value: `localhost:${serverPort}` }]],
+    const certificate = await verifier.agent.x509.createCertificate({
+      issuer: 'CN=credo',
+      authorityKey: await verifier.agent.wallet.createKey({ keyType: KeyType.Ed25519 }),
+      extensions: { subjectAlternativeName: { name: [{ type: 'dns', value: `localhost:${serverPort}` }] } },
     })
 
     const rawCertificate = certificate.toString('base64')
     await holder.agent.sdJwtVc.store(signedSdJwtVc.compact)
     await holder.agent.sdJwtVc.store(signedSdJwtVc2.compact)
 
-    await holder.agent.x509.addTrustedCertificate(rawCertificate)
-    await verifier.agent.x509.addTrustedCertificate(rawCertificate)
+    holder.agent.x509.addTrustedCertificate(rawCertificate)
+    verifier.agent.x509.addTrustedCertificate(rawCertificate)
 
     const presentationDefinition = {
       id: 'OpenBadgeCredentials',
@@ -1769,13 +1772,12 @@ describe('OpenId4Vc', () => {
   it('e2e flow with tenants, issuer endpoints requesting a mdoc', async () => {
     const issuerTenant1 = await issuer.agent.modules.tenants.getTenantAgent({ tenantId: issuer1.tenantId })
 
-    const selfSignedIssuerCertificate = await issuerTenant1.x509.createSelfSignedCertificate({
-      key: await issuerTenant1.wallet.createKey({ keyType: KeyType.P256 }),
-      extensions: [],
-      name: 'C=DE',
+    const issuerCertificate = await issuerTenant1.x509.createCertificate({
+      authorityKey: await issuerTenant1.wallet.createKey({ keyType: KeyType.P256 }),
+      issuer: 'C=DE',
     })
-    const selfSignedIssuerCertPem = selfSignedIssuerCertificate.toString('pem')
-    await issuerTenant1.x509.setTrustedCertificates([selfSignedIssuerCertPem])
+    const issuerCertificatePem = issuerCertificate.toString('pem')
+    await issuerTenant1.x509.setTrustedCertificates([issuerCertificatePem])
 
     const openIdIssuerTenant1 = await issuerTenant1.modules.openId4VcIssuer.createIssuer({
       dpopSigningAlgValuesSupported: [JwaSignatureAlgorithm.ES256],
@@ -1817,7 +1819,7 @@ describe('OpenId4Vc', () => {
     })
 
     const holderTenant1 = await holder.agent.modules.tenants.getTenantAgent({ tenantId: holder1.tenantId })
-    await holderTenant1.x509.setTrustedCertificates([selfSignedIssuerCertPem])
+    await holderTenant1.x509.setTrustedCertificates([issuerCertificatePem])
 
     const resolvedCredentialOffer1 = await holderTenant1.modules.openId4VcHolder.resolveCredentialOffer(
       credentialOffer1
@@ -1918,19 +1920,18 @@ describe('OpenId4Vc', () => {
   it('e2e flow with verifier endpoints verifying a mdoc fails without direct_post.jwt', async () => {
     const openIdVerifier = await verifier.agent.modules.openId4VcVerifier.createVerifier()
 
-    const selfSignedCertificate = await X509Service.createSelfSignedCertificate(issuer.agent.context, {
-      key: await issuer.agent.context.wallet.createKey({ keyType: KeyType.P256 }),
-      extensions: [],
-      name: 'C=DE',
+    const issuerCertificate = await X509Service.createCertificate(issuer.agent.context, {
+      authorityKey: await issuer.agent.context.wallet.createKey({ keyType: KeyType.P256 }),
+      issuer: 'C=DE',
     })
 
-    await verifier.agent.x509.setTrustedCertificates([selfSignedCertificate.toString('pem')])
+    await verifier.agent.x509.setTrustedCertificates([issuerCertificate.toString('pem')])
 
     const holderKey = await holder.agent.context.wallet.createKey({ keyType: KeyType.P256 })
     const signedMdoc = await issuer.agent.mdoc.sign({
       docType: 'org.eu.university',
       holderKey,
-      issuerCertificate: selfSignedCertificate.toString('pem'),
+      issuerCertificate: issuerCertificate.toString('pem'),
       namespaces: {
         'eu.europa.ec.eudi.pid.1': {
           university: 'innsbruck',
@@ -1941,16 +1942,17 @@ describe('OpenId4Vc', () => {
       },
     })
 
-    const certificate = await verifier.agent.x509.createSelfSignedCertificate({
-      key: await verifier.agent.wallet.createKey({ keyType: KeyType.Ed25519 }),
-      extensions: [[{ type: 'dns', value: 'localhost:1234' }]],
+    const certificate = await verifier.agent.x509.createCertificate({
+      authorityKey: await verifier.agent.wallet.createKey({ keyType: KeyType.Ed25519 }),
+      extensions: { subjectAlternativeName: { name: [{ type: 'dns', value: 'localhost:1234' }] } },
+      issuer: 'CN=credo',
     })
 
     const rawCertificate = certificate.toString('base64')
     await holder.agent.mdoc.store(signedMdoc)
 
-    await holder.agent.x509.addTrustedCertificate(rawCertificate)
-    await verifier.agent.x509.addTrustedCertificate(rawCertificate)
+    holder.agent.x509.addTrustedCertificate(rawCertificate)
+    verifier.agent.x509.addTrustedCertificate(rawCertificate)
 
     const presentationDefinition = {
       id: 'mDL-sample-req',
@@ -2044,13 +2046,12 @@ describe('OpenId4Vc', () => {
     })
     await holder.agent.sdJwtVc.store(signedSdJwtVc.compact)
 
-    const selfSignedCertificate = await X509Service.createSelfSignedCertificate(issuer.agent.context, {
-      key: await issuer.agent.context.wallet.createKey({ keyType: KeyType.P256 }),
-      extensions: [],
-      name: 'C=DE',
+    const issuerCertificate = await X509Service.createCertificate(issuer.agent.context, {
+      authorityKey: await issuer.agent.context.wallet.createKey({ keyType: KeyType.P256 }),
+      issuer: 'C=DE',
     })
 
-    await verifier.agent.x509.setTrustedCertificates([selfSignedCertificate.toString('pem')])
+    await verifier.agent.x509.setTrustedCertificates([issuerCertificate.toString('pem')])
 
     const parsedDid = parseDid(issuer.kid)
     if (!parsedDid.fragment) {
@@ -2062,7 +2063,7 @@ describe('OpenId4Vc', () => {
     const signedMdoc = await issuer.agent.mdoc.sign({
       docType: 'org.eu.university',
       holderKey,
-      issuerCertificate: selfSignedCertificate.toString('pem'),
+      issuerCertificate: issuerCertificate.toString('pem'),
       namespaces: {
         'eu.europa.ec.eudi.pid.1': {
           university: 'innsbruck',
@@ -2073,16 +2074,17 @@ describe('OpenId4Vc', () => {
       },
     })
 
-    const certificate = await verifier.agent.x509.createSelfSignedCertificate({
-      key: await verifier.agent.wallet.createKey({ keyType: KeyType.Ed25519 }),
-      extensions: [[{ type: 'dns', value: 'localhost:1234' }]],
+    const certificate = await verifier.agent.x509.createCertificate({
+      issuer: 'CN=credo',
+      authorityKey: await verifier.agent.wallet.createKey({ keyType: KeyType.Ed25519 }),
+      extensions: { subjectAlternativeName: { name: [{ type: 'dns', value: 'localhost:1234' }] } },
     })
 
     const rawCertificate = certificate.toString('base64')
     await holder.agent.mdoc.store(signedMdoc)
 
-    await holder.agent.x509.addTrustedCertificate(rawCertificate)
-    await verifier.agent.x509.addTrustedCertificate(rawCertificate)
+    holder.agent.x509.addTrustedCertificate(rawCertificate)
+    verifier.agent.x509.addTrustedCertificate(rawCertificate)
 
     const presentationDefinition = {
       id: 'mDL-sample-req',
@@ -2400,17 +2402,18 @@ describe('OpenId4Vc', () => {
       },
     })
 
-    const certificate = await verifier.agent.x509.createSelfSignedCertificate({
-      key: await verifier.agent.wallet.createKey({ keyType: KeyType.Ed25519 }),
-      extensions: [[{ type: 'dns', value: 'localhost:1234' }]],
+    const certificate = await verifier.agent.x509.createCertificate({
+      issuer: 'CN=credo',
+      authorityKey: await verifier.agent.wallet.createKey({ keyType: KeyType.Ed25519 }),
+      extensions: { subjectAlternativeName: { name: [{ type: 'dns', value: 'localhost:1234' }] } },
     })
 
     const rawCertificate = certificate.toString('base64')
     await holder.agent.sdJwtVc.store(signedSdJwtVc.compact)
     await holder.agent.sdJwtVc.store(signedSdJwtVc2.compact)
 
-    await holder.agent.x509.addTrustedCertificate(rawCertificate)
-    await verifier.agent.x509.addTrustedCertificate(rawCertificate)
+    holder.agent.x509.addTrustedCertificate(rawCertificate)
+    verifier.agent.x509.addTrustedCertificate(rawCertificate)
 
     const presentationDefinition = {
       id: 'OpenBadgeCredentials',
@@ -2727,10 +2730,11 @@ describe('OpenId4Vc', () => {
     })
     await holder.agent.sdJwtVc.store(signedSdJwtVc.compact)
 
-    const selfSignedCertificate = await X509Service.createSelfSignedCertificate(issuer.agent.context, {
-      key: await issuer.agent.context.wallet.createKey({ keyType: KeyType.P256 }),
-      extensions: [],
-      name: 'C=DE',
+    const selfSignedCertificate = await X509Service.createCertificate(issuer.agent.context, {
+      authorityKey: await issuer.agent.context.wallet.createKey({ keyType: KeyType.P256 }),
+      issuer: {
+        commonName: 'DE',
+      },
     })
 
     await verifier.agent.x509.setTrustedCertificates([selfSignedCertificate.toString('pem')])
@@ -2759,9 +2763,14 @@ describe('OpenId4Vc', () => {
       },
     })
 
-    const certificate = await verifier.agent.x509.createSelfSignedCertificate({
-      key: await verifier.agent.wallet.createKey({ keyType: KeyType.Ed25519 }),
-      extensions: [[{ type: 'dns', value: 'localhost:1234' }]],
+    const certificate = await verifier.agent.x509.createCertificate({
+      authorityKey: await verifier.agent.wallet.createKey({ keyType: KeyType.Ed25519 }),
+      issuer: { commonName: 'Test' },
+      extensions: {
+        subjectAlternativeName: {
+          name: [{ type: 'dns', value: 'localhost:1234' }],
+        },
+      },
     })
 
     const rawCertificate = certificate.toString('base64')

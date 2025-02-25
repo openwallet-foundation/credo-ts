@@ -192,11 +192,6 @@ export function getOid4vcCallbacks(agentContext: AgentContext, trustedCertificat
     fetch: agentContext.config.agentDependencies.fetch,
     encryptJwe: getOid4vcEncryptJweCallback(agentContext),
     decryptJwe: getOid4vcDecryptJweCallback(agentContext),
-  } satisfies Partial<CallbackContext>
-}
-
-export function getOid4vpX509Callbacks(agentContext: AgentContext) {
-  return {
     getX509CertificateMetadata: (certificate: string) => {
       const leafCertificate = X509Service.getLeafCertificate(agentContext, { certificateChain: [certificate] })
       return {
@@ -204,7 +199,7 @@ export function getOid4vpX509Callbacks(agentContext: AgentContext) {
         sanUriNames: leafCertificate.sanUriNames,
       }
     },
-  }
+  } satisfies Partial<CallbackContext>
 }
 
 /**

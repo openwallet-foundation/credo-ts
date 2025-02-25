@@ -186,10 +186,11 @@ describe('OpenId4Vc', () => {
     })
     await holder.agent.sdJwtVc.store(signedSdJwtVc.compact)
 
-    const selfSignedCertificate = await X509Service.createSelfSignedCertificate(verifier.agent.context, {
-      key: await verifier.agent.context.wallet.createKey({ keyType: KeyType.P256 }),
-      extensions: [],
-      name: 'C=DE',
+    const selfSignedCertificate = await X509Service.createCertificate(verifier.agent.context, {
+      authorityKey: await verifier.agent.context.wallet.createKey({ keyType: KeyType.P256 }),
+      issuer: {
+        commonName: 'DE',
+      },
     })
 
     await verifier.agent.x509.setTrustedCertificates([selfSignedCertificate.toString('pem')])
@@ -217,9 +218,10 @@ describe('OpenId4Vc', () => {
       },
     })
 
-    const certificate = await verifier.agent.x509.createSelfSignedCertificate({
-      key: await verifier.agent.wallet.createKey({ keyType: KeyType.Ed25519 }),
-      extensions: [[{ type: 'dns', value: 'localhost:1234' }]],
+    const certificate = await verifier.agent.x509.createCertificate({
+      authorityKey: await verifier.agent.wallet.createKey({ keyType: KeyType.Ed25519 }),
+      extensions: { subjectAlternativeName: { name: [{ type: 'dns', value: 'localhost:1234' }] } },
+      issuer: { commonName: 'Something' },
     })
 
     verifierCertificate = certificate.toString('base64')
