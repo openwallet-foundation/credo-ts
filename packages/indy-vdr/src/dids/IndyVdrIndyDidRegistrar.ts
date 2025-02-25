@@ -212,11 +212,12 @@ export class IndyVdrIndyDidRegistrar implements DidRegistrar {
   ) {
     // Create base did document
     const didDocumentBuilder = indyDidDocumentFromDid(did, verificationKey.publicKeyBase58)
+    // biome-ignore lint/suspicious/noImplicitAnyLet: <explanation>
     let diddocContent
 
     // Add services if object was passed
     if (services) {
-      services.forEach((item) => {
+      for (const item of services) {
         const prependDidIfNotPresent = (id: string) => {
           return id.startsWith('#') ? `${did}${id}` : id
         }
@@ -230,7 +231,7 @@ export class IndyVdrIndyDidRegistrar implements DidRegistrar {
         }
 
         didDocumentBuilder.addService(item)
-      })
+      }
 
       const commTypes = [IndyAgentService.type, DidCommV1Service.type, NewDidCommV2Service.type, DidCommV2Service.type]
       const serviceTypes = new Set(services.map((item) => item.type))

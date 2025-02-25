@@ -149,13 +149,17 @@ export function endpointsAttribFromServices(services: DidDocumentService[]): Ind
       (commService instanceof DidCommV1Service || commService instanceof DidCommV2Service) &&
       commService.routingKeys
     ) {
-      commService.routingKeys.forEach((item) => routingKeys.add(item))
+      for (const item of commService.routingKeys) {
+        routingKeys.add(item)
+      }
     } else if (commService instanceof NewDidCommV2Service) {
       const firstServiceEndpoint = Array.isArray(commService.serviceEndpoint)
         ? commService.serviceEndpoint[0]
         : commService.serviceEndpoint
 
-      firstServiceEndpoint.routingKeys?.forEach((item) => routingKeys.add(item))
+      for (const item of firstServiceEndpoint.routingKeys ?? []) {
+        routingKeys.add(item)
+      }
     }
   }
 

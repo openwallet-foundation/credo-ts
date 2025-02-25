@@ -47,6 +47,7 @@ export function createKeyAgreementKey(verkey: string) {
 
 const deepMerge = (a: Record<string, unknown>, b: Record<string, unknown>) => {
   const output: Record<string, unknown> = {}
+  // biome-ignore lint/complexity/noForEach: <explanation>
   ;[...new Set([...Object.keys(a), ...Object.keys(b)])].forEach((key) => {
     // Only an object includes a given key: just output it
     if (a[key] && !b[key]) {
@@ -59,16 +60,18 @@ const deepMerge = (a: Record<string, unknown>, b: Record<string, unknown>) => {
       if (Array.isArray(a[key])) {
         if (Array.isArray(b[key])) {
           const element = new Set()
+          // biome-ignore lint/complexity/noForEach: <explanation>
           ;(a[key] as Array<unknown>).forEach((item: unknown) => element.add(item))
+          // biome-ignore lint/complexity/noForEach: <explanation>
           ;(b[key] as Array<unknown>).forEach((item: unknown) => element.add(item))
           output[key] = Array.from(element)
         } else {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          // biome-ignore lint/suspicious/noExplicitAny: <explanation>
           const arr = a[key] as Array<any>
           output[key] = Array.from(new Set(...arr, b[key]))
         }
       } else if (Array.isArray(b[key])) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        // biome-ignore lint/suspicious/noExplicitAny: <explanation>
         const arr = b[key] as Array<any>
         output[key] = Array.from(new Set(...arr, a[key]))
         // Both elements are objects: recursive merge
@@ -113,9 +116,9 @@ export function didDocDiff(extra: Record<string, unknown>, base: Record<string, 
       if (Array.isArray(extra[key]) && Array.isArray(base[key])) {
         // Different types: return the extra
         output[key] = []
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        // biome-ignore lint/suspicious/noExplicitAny: <explanation>
         const baseAsArray = base[key] as Array<any>
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        // biome-ignore lint/suspicious/noExplicitAny: <explanation>
         const extraAsArray = extra[key] as Array<any>
         for (const element of extraAsArray) {
           if (!baseAsArray.find((item) => item.id === element.id)) {
@@ -271,6 +274,7 @@ export async function buildDidDocument(agentContext: AgentContext, pool: IndyVdr
     return builder.build()
   }
   // Combine it with didDoc
+  // biome-ignore lint/suspicious/noImplicitAnyLet: <explanation>
   let diddocContent
   try {
     diddocContent = JSON.parse(nym.diddocContent) as Record<string, unknown>
