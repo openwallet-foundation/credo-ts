@@ -176,7 +176,8 @@ export class BbsBlsSignature2020 extends LinkedDataProof {
       proof,
       documentLoader,
     })
-    proof['@context'] = undefined
+    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+    proof['@context'] = undefined as any
 
     return proof
   }
@@ -248,6 +249,7 @@ export class BbsBlsSignature2020 extends LinkedDataProof {
 
   public async canonizeProof(proof: Record<string, unknown>, options: CanonizeOptions): Promise<string> {
     const { documentLoader } = options
+    // biome-ignore lint/style/noParameterAssign: <explanation>
     proof = { ...proof }
     delete proof[this.proofSignatureKey]
     return this.canonize(proof, {

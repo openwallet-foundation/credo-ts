@@ -93,6 +93,7 @@ export class BbsBlsSignatureProof2020 extends LinkedDataProof {
     const suite = new BbsBlsSignature2020()
 
     //Initialize the derived proof
+    // biome-ignore lint/suspicious/noImplicitAnyLet: <explanation>
     let derivedProof
     if (this.proof) {
       // use proof JSON-LD document passed to API
@@ -296,10 +297,13 @@ export class BbsBlsSignatureProof2020 extends LinkedDataProof {
 
   public async canonizeProof(proof: JsonObject, options: CanonizeOptions): Promise<string> {
     const { documentLoader } = options
+    // biome-ignore lint/style/noParameterAssign: <explanation>
     proof = { ...proof }
 
-    proof.nonce = undefined
-    proof.proofValue = undefined
+    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+    proof.nonce = undefined as any
+    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+    proof.proofValue = undefined as any
 
     return this.canonize(proof, {
       documentLoader,
