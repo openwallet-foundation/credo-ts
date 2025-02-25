@@ -75,6 +75,7 @@ export class ProofExchangeRecord extends BaseRecord<DefaultProofTags, CustomProo
 
   public assertState(expectedStates: ProofState | ProofState[]) {
     if (!Array.isArray(expectedStates)) {
+      // biome-ignore lint/style/noParameterAssign: <explanation>
       expectedStates = [expectedStates]
     }
 

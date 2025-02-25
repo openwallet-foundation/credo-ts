@@ -141,6 +141,7 @@ export class V1MessagePickupProtocol extends BaseMessagePickupProtocol {
 
     const eventEmitter = messageContext.agentContext.dependencyManager.resolve(EventEmitter)
 
+    // biome-ignore lint/complexity/noForEach: <explanation>
     messages.forEach((message) => {
       eventEmitter.emit<AgentMessageReceivedEvent>(messageContext.agentContext, {
         type: AgentEventTypes.AgentMessageReceived,

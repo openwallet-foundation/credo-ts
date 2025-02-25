@@ -110,6 +110,7 @@ export class ConnectionsApi {
       routing = await this.routingService.getRouting(this.agentContext, { mediatorId: outOfBandRecord.mediatorId })
     }
 
+    // biome-ignore lint/suspicious/noImplicitAnyLet: <explanation>
     let result
     if (protocol === HandshakeProtocol.DidExchange) {
       result = await this.didExchangeProtocol.createRequest(this.agentContext, outOfBandRecord, {
@@ -179,6 +180,7 @@ export class ConnectionsApi {
         ? await this.routingService.getRouting(this.agentContext)
         : undefined
 
+    // biome-ignore lint/suspicious/noImplicitAnyLet: <explanation>
     let outboundMessageContext
     if (connectionRecord.protocol === HandshakeProtocol.DidExchange) {
       const message = await this.didExchangeProtocol.createResponse(
@@ -226,6 +228,7 @@ export class ConnectionsApi {
   public async acceptResponse(connectionId: string): Promise<ConnectionRecord> {
     const connectionRecord = await this.connectionService.getById(this.agentContext, connectionId)
 
+    // biome-ignore lint/suspicious/noImplicitAnyLet: <explanation>
     let outboundMessageContext
     if (connectionRecord.protocol === HandshakeProtocol.DidExchange) {
       if (!connectionRecord.outOfBandId) {

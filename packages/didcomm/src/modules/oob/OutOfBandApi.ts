@@ -228,6 +228,7 @@ export class OutOfBandApi {
     })
 
     if (messages) {
+      // biome-ignore lint/complexity/noForEach: <explanation>
       messages.forEach((message) => {
         if (message.service) {
           // We can remove `~service` attribute from message. Newer OOB messages have `services` attribute instead.
@@ -559,6 +560,7 @@ export class OutOfBandApi {
     if (handshakeProtocols && handshakeProtocols.length > 0) {
       this.logger.debug('Out of band message contains handshake protocols.')
 
+      // biome-ignore lint/suspicious/noImplicitAnyLet: <explanation>
       let connectionRecord
       if (existingConnection && reuseConnection) {
         this.logger.debug(
@@ -964,6 +966,7 @@ export class OutOfBandApi {
         )
         recipientKeyFingerprints.push(
           ...resolvedDidCommServices
+            // biome-ignore lint/performance/noAccumulatingSpread: <explanation>
             .reduce<Key[]>((aggr, { recipientKeys }) => [...aggr, ...recipientKeys], [])
             .map((key) => key.fingerprint)
         )

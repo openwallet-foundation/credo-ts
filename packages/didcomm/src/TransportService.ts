@@ -23,11 +23,11 @@ export class TransportService {
   public saveSession(session: TransportSession) {
     if (session.connectionId) {
       const oldSessions = this.getExistingSessionsForConnectionIdAndType(session.connectionId, session.type)
-      oldSessions.forEach((oldSession) => {
+      for (const oldSession of oldSessions) {
         if (oldSession && oldSession.id !== session.id) {
           this.removeSession(oldSession)
         }
-      })
+      }
     }
     this.transportSessionTable[session.id] = session
 

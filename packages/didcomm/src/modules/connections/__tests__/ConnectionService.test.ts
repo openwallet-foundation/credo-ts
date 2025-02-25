@@ -536,7 +536,7 @@ describe('ConnectionService', () => {
 
       const processedConnection = await connectionService.processResponse(messageContext, outOfBandRecord)
 
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      // biome-ignore lint/style/noNonNullAssertion: <explanation>
       const peerDid = didDocumentJsonToNumAlgo1Did(convertToNewDidDocument(otherPartyConnection.didDoc!).toJSON())
 
       expect(processedConnection.state).toBe(DidExchangeState.ResponseReceived)

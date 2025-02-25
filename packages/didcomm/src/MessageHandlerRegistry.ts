@@ -64,9 +64,12 @@ export class MessageHandlerRegistry {
    * Message type format is MTURI specified at https://github.com/hyperledger/aries-rfcs/blob/main/concepts/0003-protocols/README.md#mturi.
    */
   public get supportedMessageTypes() {
-    return this.messageHandlers
-      .reduce<(typeof AgentMessage)[]>((all, cur) => [...all, ...cur.supportedMessages], [])
-      .map((m) => m.type)
+    return (
+      this.messageHandlers
+        // biome-ignore lint/performance/noAccumulatingSpread: <explanation>
+        .reduce<(typeof AgentMessage)[]>((all, cur) => [...all, ...cur.supportedMessages], [])
+        .map((m) => m.type)
+    )
   }
 
   /**

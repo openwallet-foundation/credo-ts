@@ -8,6 +8,7 @@ import { canHandleMessageType } from '../../util/messageType'
 import { DidExchangeCompleteMessage, DidExchangeRequestMessage, DidExchangeResponseMessage } from './messages'
 import { DidExchangeRole, DidExchangeState } from './models'
 
+// biome-ignore lint/complexity/noStaticOnlyClass: <explanation>
 export class DidExchangeStateMachine {
   private static createMessageStateRules = [
     {

@@ -60,7 +60,9 @@ export class DidRotateService {
       throw new CredoError(`There is already an existing opened did rotation flow for connection id ${connection.id}`)
     }
 
+    // biome-ignore lint/suspicious/noImplicitAnyLet: <explanation>
     let didDocument
+    // biome-ignore lint/suspicious/noImplicitAnyLet: <explanation>
     let mediatorId
     // If did is specified, make sure we have all key material for it
     if (toDid) {

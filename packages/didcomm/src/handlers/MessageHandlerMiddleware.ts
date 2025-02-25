@@ -5,6 +5,7 @@ export type MessageHandlerMiddleware = (
   next: () => Promise<void>
 ) => Promise<void>
 
+// biome-ignore lint/complexity/noStaticOnlyClass: <explanation>
 export class MessageHandlerMiddlewareRunner {
   public static async run(middlewares: MessageHandlerMiddleware[], inboundMessageContext: InboundMessageContext) {
     const compose = (middlewares: MessageHandlerMiddleware[]) => {

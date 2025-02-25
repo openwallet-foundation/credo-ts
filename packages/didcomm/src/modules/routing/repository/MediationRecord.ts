@@ -111,6 +111,7 @@ export class MediationRecord
 
   public assertState(expectedStates: MediationState | MediationState[]) {
     if (!Array.isArray(expectedStates)) {
+      // biome-ignore lint/style/noParameterAssign: <explanation>
       expectedStates = [expectedStates]
     }
 

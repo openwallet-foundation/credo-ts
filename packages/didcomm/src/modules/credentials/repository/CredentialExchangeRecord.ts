@@ -112,6 +112,7 @@ export class CredentialExchangeRecord extends BaseRecord<DefaultCredentialTags, 
 
   public assertState(expectedStates: CredentialState | CredentialState[]) {
     if (!Array.isArray(expectedStates)) {
+      // biome-ignore lint/style/noParameterAssign: <explanation>
       expectedStates = [expectedStates]
     }
 

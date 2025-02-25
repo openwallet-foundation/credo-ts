@@ -198,7 +198,8 @@ export async function migrateInternalCredentialRecordProperties<Agent extends Ba
       },
     ]
 
-    untypedCredentialRecord.credentialId = undefined
+    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+    untypedCredentialRecord.credentialId = undefined as any
   }
 
   agent.config.logger.debug(

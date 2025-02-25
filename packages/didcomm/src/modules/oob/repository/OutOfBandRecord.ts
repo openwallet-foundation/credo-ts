@@ -98,6 +98,7 @@ export class OutOfBandRecord extends BaseRecord<
 
   public assertState(expectedStates: OutOfBandState | OutOfBandState[]) {
     if (!Array.isArray(expectedStates)) {
+      // biome-ignore lint/style/noParameterAssign: <explanation>
       expectedStates = [expectedStates]
     }
 

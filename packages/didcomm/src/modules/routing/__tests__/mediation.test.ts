@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-non-null-assertion */
 import type { SubjectMessage } from '../../../../../../tests/transport/SubjectInboundTransport'
 import type { AgentDependencies } from '../../../../../core/src/agent/AgentDependencies'
 import type { AgentModulesInput } from '../../../../../core/src/agent/AgentModules'
@@ -121,6 +120,7 @@ describe('mediator establishment', () => {
     expect(mediatorRecipientConnection?.isReady).toBe(true)
 
     expect(mediatorRecipientConnection).toBeConnectedWith(recipientMediatorConnection)
+    // biome-ignore lint/style/noNonNullAssertion: <explanation>
     expect(recipientMediatorConnection).toBeConnectedWith(mediatorRecipientConnection!)
 
     expect(recipientMediator?.state).toBe(MediationState.Granted)
@@ -150,6 +150,7 @@ describe('mediator establishment', () => {
       recipientOutOfBandRecord.id
     )
     expect(recipientSenderConnection).toBeConnectedWith(senderRecipientConnection)
+    // biome-ignore lint/style/noNonNullAssertion: <explanation>
     expect(senderRecipientConnection).toBeConnectedWith(recipientSenderConnection!)
     expect(recipientSenderConnection?.isReady).toBe(true)
     expect(senderRecipientConnection.isReady).toBe(true)
@@ -240,8 +241,9 @@ describe('mediator establishment', () => {
     )
     expect(mediatorRecipientConnection?.isReady).toBe(true)
 
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    // biome-ignore lint/style/noNonNullAssertion: <explanation>
     expect(mediatorRecipientConnection).toBeConnectedWith(recipientMediatorConnection!)
+    // biome-ignore lint/style/noNonNullAssertion: <explanation>
     expect(recipientMediatorConnection).toBeConnectedWith(mediatorRecipientConnection!)
 
     expect(recipientMediator?.state).toBe(MediationState.Granted)
@@ -276,6 +278,7 @@ describe('mediator establishment', () => {
       recipientOutOfBandRecord.id
     )
     expect(recipientSenderConnection).toBeConnectedWith(senderRecipientConnection)
+    // biome-ignore lint/style/noNonNullAssertion: <explanation>
     expect(senderRecipientConnection).toBeConnectedWith(recipientSenderConnection!)
 
     expect(recipientSenderConnection?.isReady).toBe(true)

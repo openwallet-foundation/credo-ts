@@ -164,7 +164,7 @@ const didCommMessageRecord = new DidCommMessageRecord({
   role: DidCommMessageRole.Receiver,
 })
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+// biome-ignore lint/suspicious/noExplicitAny: <explanation>
 const getAgentMessageMock = async (_agentContext: AgentContext, options: GetAgentMessageOptions<any>) => {
   if (options.messageClass === V2ProposeCredentialMessage) {
     return credentialProposalMessage
@@ -228,6 +228,7 @@ interface TestCredentialFormat extends CredentialFormat {
 
 type TestCredentialFormatService = CredentialFormatService<TestCredentialFormat>
 
+// biome-ignore lint/suspicious/noExportsInTest: <explanation>
 export const testCredentialFormatService = {
   credentialRecordType: 'test',
   formatKey: 'test',

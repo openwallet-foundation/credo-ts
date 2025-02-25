@@ -150,6 +150,7 @@ export class ConnectionRecord extends BaseRecord<DefaultConnectionTags, CustomCo
 
   public assertState(expectedStates: DidExchangeState | DidExchangeState[]) {
     if (!Array.isArray(expectedStates)) {
+      // biome-ignore lint/style/noParameterAssign: <explanation>
       expectedStates = [expectedStates]
     }
 

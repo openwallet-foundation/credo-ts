@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-non-null-assertion */
 import type { ConnectionStateChangedEvent } from '../ConnectionEvents'
 
 import { firstValueFrom } from 'rxjs'
@@ -140,7 +139,9 @@ async function didExchangeNumAlgoBaseTest(options: {
 
   const waitForAliceRequest = waitForRequest(faberAgent, 'alice')
 
+  // biome-ignore lint/suspicious/noImplicitAnyLet: <explanation>
   let ourDid
+  // biome-ignore lint/suspicious/noImplicitAnyLet: <explanation>
   let routing
   if (options.createExternalDidForRequester) {
     // Create did externally
@@ -174,7 +175,8 @@ async function didExchangeNumAlgoBaseTest(options: {
 
   let faberAliceConnectionRecord = await waitForAliceRequest
 
-  const waitForAliceResponse = waitForResponse(aliceAgent, aliceConnectionRecord?.id)
+  // biome-ignore lint/style/noNonNullAssertion: <explanation>
+  const waitForAliceResponse = waitForResponse(aliceAgent, aliceConnectionRecord?.id!)
 
   await faberAgent.modules.connections.acceptRequest(faberAliceConnectionRecord.id)
 

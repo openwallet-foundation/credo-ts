@@ -8,7 +8,7 @@ import type { ProofFormat } from '../ProofFormat'
 
 export type DifPresentationExchangeProposal = DifPresentationExchangeDefinitionV1
 
-// eslint-disable-next-line @typescript-eslint/no-empty-interface
+// biome-ignore lint/complexity/noBannedTypes: <explanation>
 export type DifPexGetCredentialsForProofRequestOptions = {}
 
 export type DifPresentationExchangeRequest = {

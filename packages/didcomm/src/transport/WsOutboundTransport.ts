@@ -37,6 +37,7 @@ export class WsOutboundTransport implements OutboundTransport {
 
     const stillOpenSocketClosingPromises: Array<Promise<void>> = []
 
+    // biome-ignore lint/complexity/noForEach: <explanation>
     this.transportTable.forEach((socket) => {
       socket.removeEventListener('message', this.handleMessageEvent)
       if (socket.readyState !== this.WebSocketClass.CLOSED) {
@@ -125,7 +126,7 @@ export class WsOutboundTransport implements OutboundTransport {
 
   // NOTE: Because this method is passed to the event handler this must be a lambda method
   // so 'this' is scoped to the 'WsOutboundTransport' class instance
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
   private handleMessageEvent = (event: any) => {
     this.logger.trace('WebSocket message event received.', { url: event.target.url })
     const payload = JsonEncoder.fromBuffer(event.data)

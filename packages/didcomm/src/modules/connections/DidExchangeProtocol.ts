@@ -99,7 +99,9 @@ export class DidExchangeProtocol {
     // Create message
     const label = params.label ?? agentContext.config.label
 
+    // biome-ignore lint/suspicious/noImplicitAnyLet: <explanation>
     let didDocument
+    // biome-ignore lint/suspicious/noImplicitAnyLet: <explanation>
     let mediatorId
 
     // If our did is specified, make sure we have all key material for it

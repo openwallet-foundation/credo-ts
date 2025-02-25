@@ -64,6 +64,7 @@ export class DiscoverFeaturesApi<
     // Dynamically build service map. This will be extracted once services are registered dynamically
     this.serviceMap = [v1Service, v2Service].reduce(
       (serviceMap, service) => ({
+        // biome-ignore lint/performance/noAccumulatingSpread: <explanation>
         ...serviceMap,
         [service.version]: service,
       }),

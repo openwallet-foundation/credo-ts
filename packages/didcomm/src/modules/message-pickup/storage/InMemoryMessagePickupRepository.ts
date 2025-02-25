@@ -54,6 +54,7 @@ export class InMemoryMessagePickupRepository implements MessagePickupRepository 
     this.logger.debug(`Taking ${messagesToTake} messages from queue for connection ${connectionId}`)
 
     // Mark taken messages in order to prevent them of being retrieved again
+    // biome-ignore lint/complexity/noForEach: <explanation>
     messages.forEach((msg) => {
       const index = this.messages.findIndex((item) => item.id === msg.id)
       if (index !== -1) this.messages[index].state = 'sending'

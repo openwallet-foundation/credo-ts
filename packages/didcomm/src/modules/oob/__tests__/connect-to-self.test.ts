@@ -56,6 +56,7 @@ describe('out of band', () => {
       expect(senderReceiverConnection.state).toBe(DidExchangeState.Completed)
       expect(senderReceiverConnection.protocol).toBe(HandshakeProtocol.DidExchange)
 
+      // biome-ignore lint/style/noNonNullAssertion: <explanation>
       expect(receiverSenderConnection).toBeConnectedWith(senderReceiverConnection!)
       expect(senderReceiverConnection).toBeConnectedWith(receiverSenderConnection)
     })
@@ -82,6 +83,7 @@ describe('out of band', () => {
       expect(senderReceiverConnection.state).toBe(DidExchangeState.Completed)
       expect(senderReceiverConnection.protocol).toBe(HandshakeProtocol.DidExchange)
 
+      // biome-ignore lint/style/noNonNullAssertion: <explanation>
       expect(receiverSenderConnection).toBeConnectedWith(senderReceiverConnection!)
       expect(senderReceiverConnection).toBeConnectedWith(receiverSenderConnection)
     })
@@ -108,6 +110,7 @@ describe('out of band', () => {
       expect(senderReceiverConnection.state).toBe(DidExchangeState.Completed)
       expect(senderReceiverConnection.protocol).toBe(HandshakeProtocol.Connections)
 
+      // biome-ignore lint/style/noNonNullAssertion: <explanation>
       expect(receiverSenderConnection).toBeConnectedWith(senderReceiverConnection!)
       expect(senderReceiverConnection).toBeConnectedWith(receiverSenderConnection)
     })

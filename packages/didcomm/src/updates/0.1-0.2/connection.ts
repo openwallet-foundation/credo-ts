@@ -325,6 +325,7 @@ export async function migrateToOobRecord<Agent extends BaseAgent>(
     const recipientKeyFingerprints = outOfBandInvitation
       .getInlineServices()
       .map((s) => s.recipientKeys)
+      // biome-ignore lint/performance/noAccumulatingSpread: <explanation>
       .reduce((acc, curr) => [...acc, ...curr], [])
       .map((didKey) => DidKey.fromDid(didKey).key.fingerprint)
 
