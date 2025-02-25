@@ -310,7 +310,7 @@ describe('OpenId4Vc Presentation During Issuance', () => {
         credentials: selectedCredentials,
       },
     })
-    expect(siopResult.serverResponse.status).toEqual(200)
+    expect(siopResult.serverResponse?.status).toEqual(200)
     expect(siopResult.ok).toEqual(true)
     if (!siopResult.ok) {
       throw new Error('not ok')
@@ -433,7 +433,7 @@ describe('OpenId4Vc Presentation During Issuance', () => {
         credentials: selectedCredentials,
       },
     })
-    expect(siopResult.serverResponse.status).toEqual(200)
+    expect(siopResult.serverResponse?.status).toEqual(200)
     expect(siopResult.ok).toEqual(true)
     if (!siopResult.ok) {
       throw new Error('not ok')
