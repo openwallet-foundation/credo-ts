@@ -12,6 +12,8 @@ import type {
   DifPresentationExchangeDefinition,
   DifPresentationExchangeSubmission,
   EncodedX509Certificate,
+  MdocOpenId4VpDcApiSessionTranscriptOptions,
+  MdocOpenId4VpSessionTranscriptOptions,
   SingleOrArray,
   SubmissionEntryCredential,
   TransactionData,
@@ -224,30 +226,34 @@ export class OpenId4VcSiopHolderService {
     agentContext: AgentContext,
     options: OpenId4VcSiopAcceptAuthorizationRequestOptions
   ) {
-    const { authorizationRequest, presentationExchange, dcql, origin } = options
+    const { authorizationRequest, presentationExchange, dcql } = options
 
-    const isDcApiRequest = isOpenid4vpAuthorizationRequestDcApi(authorizationRequest.payload)
+    const authorizationResponseNonce = await agentContext.wallet.generateNonce()
     const nonce = authorizationRequest.payload.nonce
     const clientId = authorizationRequest.client.originalValue
 
-    let responseUri: string
+    let openid4vpOptions: MdocOpenId4VpSessionTranscriptOptions | MdocOpenId4VpDcApiSessionTranscriptOptions
     if (isOpenid4vpAuthorizationRequestDcApi(authorizationRequest.payload)) {
-      const _responseUri = authorizationRequest.client.identifier ?? options.origin
-      if (!_responseUri) {
+      if (!options.origin) {
         throw new CredoError('Missing required parameter `origin` parameter for accepting openid4vp dc api requests.')
       }
-      responseUri = _responseUri
+      openid4vpOptions = { type: 'openId4VpDcApi', clientId, origin: options.origin, verifierGeneratedNonce: nonce }
     } else {
-      const _responseUri = authorizationRequest.payload.response_uri ?? authorizationRequest.payload.redirect_uri
-      if (!_responseUri) {
+      const responseUri = authorizationRequest.payload.response_uri ?? authorizationRequest.payload.redirect_uri
+      if (!responseUri) {
         throw new CredoError(
           'Missing required parameter `response_uri` or `redirect_uri` in the authorization request.'
         )
       }
-      responseUri = _responseUri
-    }
 
-    const authorizationResponseNonce = await agentContext.wallet.generateNonce()
+      openid4vpOptions = {
+        type: 'openId4Vp',
+        mdocGeneratedNonce: authorizationResponseNonce,
+        responseUri,
+        clientId,
+        verifierGeneratedNonce: nonce,
+      }
+    }
 
     let vpToken: SingleOrArray<string | Record<string, unknown>> | Record<string, string | Record<string, unknown>>
     let presentationSubmission: DifPresentationExchangeSubmission | undefined = undefined
@@ -282,10 +288,7 @@ export class OpenId4VcSiopHolderService {
           challenge: nonce,
           domain: clientId,
           presentationSubmissionLocation: DifPresentationExchangeSubmissionLocation.EXTERNAL,
-          openid4vp:
-            isDcApiRequest && origin
-              ? { type: 'openId4VpDcApi', clientId, origin }
-              : { type: 'openId4Vp', mdocGeneratedNonce: authorizationResponseNonce, responseUri, clientId },
+          openid4vp: openid4vpOptions,
         })
 
       vpToken =
@@ -316,10 +319,7 @@ export class OpenId4VcSiopHolderService {
           : undefined,
         challenge: nonce,
         domain: clientId,
-        openid4vp:
-          isDcApiRequest && origin
-            ? { type: 'openId4VpDcApi', clientId, origin }
-            : { type: 'openId4Vp', mdocGeneratedNonce: authorizationResponseNonce, responseUri, clientId },
+        openid4vp: openid4vpOptions,
       })
 
       vpToken = encodedDcqlPresentation
@@ -347,15 +347,21 @@ export class OpenId4VcSiopHolderService {
           : undefined,
     })
 
+    const authorizationResponsePayload = response.responseParams as typeof response.responseParams & {
+      presentation_submission?: DifPresentationExchangeSubmission
+    }
+    const authorizationResponse = response.jarm?.responseJwt
+      ? { response: response.jarm.responseJwt }
+      : authorizationResponsePayload
+
     // TODO: we should include more typing here that the user
     // still needs to submit the resposne. or as we discussed, split
     // this method up in create and submit
     if (isOpenid4vpAuthorizationRequestDcApi(authorizationRequest.payload)) {
       return {
         ok: true,
-        authorizationResponse: response.responseParams as typeof response.responseParams & {
-          presentation_submission?: DifPresentationExchangeSubmission
-        },
+        authorizationResponse,
+        authorizationResponsePayload,
       } as const
     }
 
@@ -382,9 +388,8 @@ export class OpenId4VcSiopHolderService {
           status: result.response.status,
           body: responseJson ?? responseText,
         },
-        authorizationResponse: response.responseParams as typeof response.responseParams & {
-          presentation_submission?: DifPresentationExchangeSubmission
-        },
+        authorizationResponse,
+        authorizationResponsePayload,
       } as const
     }
 
@@ -394,9 +399,8 @@ export class OpenId4VcSiopHolderService {
         status: result.response.status,
         body: responseJson ?? {},
       },
-      authorizationResponse: response.responseParams as typeof response.responseParams & {
-        presentation_submission?: DifPresentationExchangeSubmission
-      },
+      authorizationResponse,
+      authorizationResponsePayload,
       redirectUri: responseJson?.redirect_uri as string | undefined,
       presentationDuringIssuanceSession: responseJson?.presentation_during_issuance_session as string | undefined,
     } as const

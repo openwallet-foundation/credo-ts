@@ -285,6 +285,7 @@ describe('OpenId4Vc', () => {
       ok: true,
       serverResponse: undefined,
       authorizationResponse: expect.any(Object),
+      authorizationResponsePayload: expect.any(Object),
     })
   })
 
@@ -331,7 +332,12 @@ describe('OpenId4Vc', () => {
     expect(result).toEqual({
       ok: true,
       serverResponse: undefined,
-      authorizationResponse: expect.any(Object),
+      authorizationResponsePayload: expect.objectContaining({
+        vp_token: expect.any(Object),
+      }),
+      authorizationResponse: {
+        response: expect.any(String),
+      },
     })
   })
 })
