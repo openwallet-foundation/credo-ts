@@ -3,6 +3,7 @@ import type {
   OpenId4VcSiopCreateAuthorizationRequestReturn,
   OpenId4VcSiopVerifiedAuthorizationResponsePresentationExchange,
   OpenId4VcVerificationSessionRecord,
+  OpenId4VcSiopVerifiedAuthorizationResponseDcql,
 } from '../openid4vc-verifier'
 import type {
   OpenId4VcCredentialHolderBindingWithKey,
@@ -14,7 +15,6 @@ import type {
   OpenId4VciTxCode,
 } from '../shared'
 import type { OpenId4VciAuthorizationServerConfig } from '../shared/models/OpenId4VciAuthorizationServerConfig'
-import type { AccessTokenProfileJwtPayload, TokenIntrospectionResponse } from '@animo-id/oauth2'
 import type {
   AgentContext,
   ClaimFormat,
@@ -24,6 +24,7 @@ import type {
   MdocSignOptions,
   KeyType,
 } from '@credo-ts/core'
+import type { AccessTokenProfileJwtPayload, TokenIntrospectionResponse } from '@openid4vc/oauth2'
 
 export interface OpenId4VciCredentialRequestAuthorization {
   authorizationServer: string
@@ -188,8 +189,16 @@ export interface OpenId4VciCredentialRequestToCredentialMapperOptions {
    */
   verification?: {
     session: OpenId4VcVerificationSessionRecord
-    presentationExchange: OpenId4VcSiopVerifiedAuthorizationResponsePresentationExchange
-  }
+  } & (
+    | {
+        presentationExchange: OpenId4VcSiopVerifiedAuthorizationResponsePresentationExchange
+        dcql?: never
+      }
+    | {
+        dcql: OpenId4VcSiopVerifiedAuthorizationResponseDcql
+        presentationExchange?: never
+      }
+  )
 
   /**
    * The issuance session associated with the credential request. You can extract the

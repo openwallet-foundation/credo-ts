@@ -6,12 +6,22 @@ import type { PresentationDefinitionV1, PresentationDefinitionV2, PresentationSu
 
 import { PresentationSubmissionLocation } from '@animo-id/pex'
 
+export {
+  InputDescriptorToTransactionDataEntry,
+  TransactionData,
+  TransactionDataEntry,
+  TransactionDataMeta,
+  TransactionDataRequest,
+  TransactionDataResult,
+  DcqlTransactionDataRequest,
+} from './TransactionData'
+export { PresentationSubmissionLocation as DifPresentationExchangeSubmissionLocation }
+
 // Re-export some types from sphereon library, but under more explicit names
 export type DifPresentationExchangeDefinition = PresentationDefinitionV1 | PresentationDefinitionV2
 export type DifPresentationExchangeDefinitionV1 = PresentationDefinitionV1
 export type DifPresentationExchangeDefinitionV2 = PresentationDefinitionV2
 export type DifPresentationExchangeSubmission = PresentationSubmission
-export { PresentationSubmissionLocation as DifPresentationExchangeSubmissionLocation }
 
 // TODO: we might want to move this to another place at some point
 export type VerifiablePresentation = W3cVerifiablePresentation | SdJwtVc | MdocDeviceResponse

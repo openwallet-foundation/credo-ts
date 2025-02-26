@@ -1,9 +1,9 @@
-import type { Oauth2ErrorCodes, Oauth2ServerErrorResponseError } from '@animo-id/oauth2'
 import type { AgentContext, Logger } from '@credo-ts/core'
+import type { Oauth2ErrorCodes, Oauth2ServerErrorResponseError } from '@openid4vc/oauth2'
 import type { Response, Request, NextFunction } from 'express'
 
-import { Oauth2ResourceUnauthorizedError, SupportedAuthenticationScheme } from '@animo-id/oauth2'
 import { CredoError } from '@credo-ts/core'
+import { Oauth2ResourceUnauthorizedError, SupportedAuthenticationScheme } from '@openid4vc/oauth2'
 
 export interface OpenId4VcRequest<RC extends Record<string, unknown> = Record<string, never>> extends Request {
   requestContext?: RC & OpenId4VcRequestContext
