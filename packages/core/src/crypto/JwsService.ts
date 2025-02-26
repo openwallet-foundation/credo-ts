@@ -245,7 +245,7 @@ export class JwsService {
       jwkResolver,
       jws,
       payload,
-      trustedCertificates: trustedCertificatesFromOptions = [],
+      trustedCertificates: trustedCertificatesFromOptions = undefined,
     } = options
 
     // FIXME: checking for kid starting with '#' is not good.

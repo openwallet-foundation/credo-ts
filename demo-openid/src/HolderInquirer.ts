@@ -5,7 +5,7 @@ import type {
   OpenId4VciResolvedCredentialOffer,
 } from '@credo-ts/openid4vc'
 
-import { DifPresentationExchangeService, Mdoc } from '@credo-ts/core'
+import { Mdoc } from '@credo-ts/core'
 import { preAuthorizedCodeGrantIdentifier } from '@credo-ts/openid4vc'
 import console, { clear } from 'console'
 import { textSync } from 'figlet'
@@ -217,24 +217,47 @@ export class HolderInquirer extends BaseInquirer {
     const proofRequestUri = await this.inquireInput('Enter proof request: ')
     this.resolvedPresentationRequest = await this.holder.resolveProofRequest(proofRequestUri)
 
-    const presentationDefinition = this.resolvedPresentationRequest?.presentationExchange?.definition
-    console.log(greenText(`Presentation Purpose: '${presentationDefinition?.purpose}'`))
-
-    if (this.resolvedPresentationRequest?.presentationExchange?.credentialsForRequest.areRequirementsSatisfied) {
-      const selectedCredentials = Object.values(
-        this.holder.agent.dependencyManager
-          .resolve(DifPresentationExchangeService)
-          .selectCredentialsForRequest(this.resolvedPresentationRequest.presentationExchange.credentialsForRequest)
-      ).flatMap((e) => e)
+    if (this.resolvedPresentationRequest.presentationExchange) {
+      const presentationDefinition = this.resolvedPresentationRequest.presentationExchange.definition
       console.log(
-        greenText(
-          `All requirements for creating the presentation are satisfied. The following credentials will be shared`,
-          true
-        )
+        greenText(`Received DIF Presentation Exchange request with purpose: '${presentationDefinition.purpose}'`)
       )
-      selectedCredentials.forEach(this.printCredential)
-    } else {
-      console.log(redText(`No credentials available that satisfy the proof request.`))
+
+      if (this.resolvedPresentationRequest.presentationExchange.credentialsForRequest.areRequirementsSatisfied) {
+        const selectedCredentials = Object.values(
+          this.holder.agent.modules.openId4VcHolder.selectCredentialsForPresentationExchangeRequest(
+            this.resolvedPresentationRequest.presentationExchange.credentialsForRequest
+          )
+        ).flatMap((e) => e)
+        console.log(
+          greenText(
+            `All requirements for creating the presentation are satisfied. The following credentials will be shared`,
+            true
+          )
+        )
+        selectedCredentials.forEach(this.printCredential)
+      } else {
+        console.log(redText(`No credentials available that satisfy the proof request.`))
+      }
+    } else if (this.resolvedPresentationRequest.dcql) {
+      console.log(greenText('Received DCQL request'))
+
+      if (this.resolvedPresentationRequest.dcql.queryResult.canBeSatisfied) {
+        const selectedCredentials = Object.values(
+          this.holder.agent.modules.openId4VcHolder.selectCredentialsForDcqlRequest(
+            this.resolvedPresentationRequest.dcql.queryResult
+          )
+        ).flatMap((e) => e.credentialRecord)
+        console.log(
+          greenText(
+            `All requirements for creating the presentation are satisfied. The following credentials will be shared`,
+            true
+          )
+        )
+        selectedCredentials.forEach(this.printCredential)
+      } else {
+        console.log(redText(`No credentials available that satisfy the proof request.`))
+      }
     }
   }
 
@@ -245,10 +268,10 @@ export class HolderInquirer extends BaseInquirer {
 
     const serverResponse = await this.holder.acceptPresentationRequest(this.resolvedPresentationRequest)
 
-    if (serverResponse.status >= 200 && serverResponse.status < 300) {
+    if (serverResponse && serverResponse.status >= 200 && serverResponse.status < 300) {
       console.log(`received success status code '${serverResponse.status}'`)
     } else {
-      console.log(`received error status code '${serverResponse.status}'. ${JSON.stringify(serverResponse.body)}`)
+      console.log(`received error status code '${serverResponse?.status}'. ${JSON.stringify(serverResponse?.body)}`)
     }
 
     this.resolvedPresentationRequest = undefined

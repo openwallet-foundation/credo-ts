@@ -1,4 +1,7 @@
-import type { OpenId4VcSiopAuthorizationResponsePayload } from '../../shared/models'
+import type {
+  OpenId4VcSiopAuthorizationRequestPayload,
+  OpenId4VcSiopAuthorizationResponsePayload,
+} from '../../shared/models'
 import type { OpenId4VcVerificationSessionState } from '../OpenId4VcVerificationSessionState'
 import type { RecordTags, TagsBase } from '@credo-ts/core'
 
@@ -10,8 +13,8 @@ export type DefaultOpenId4VcVerificationSessionRecordTags = {
   verifierId: string
   state: OpenId4VcVerificationSessionState
   nonce: string
-  payloadState: string
-  authorizationRequestUri: string
+  payloadState?: string
+  authorizationRequestUri?: string
 }
 
 export interface OpenId4VcVerificationSessionRecordProps {
@@ -23,8 +26,9 @@ export interface OpenId4VcVerificationSessionRecordProps {
   state: OpenId4VcVerificationSessionState
   errorMessage?: string
 
-  authorizationRequestUri: string
-  authorizationRequestJwt: string
+  authorizationRequestJwt?: string
+  authorizationRequestUri?: string
+  authorizationRequestPayload?: OpenId4VcSiopAuthorizationRequestPayload
 
   authorizationResponsePayload?: OpenId4VcSiopAuthorizationResponsePayload
 
@@ -57,13 +61,20 @@ export class OpenId4VcVerificationSessionRecord extends BaseRecord<DefaultOpenId
   /**
    * The signed JWT containing the authorization request
    */
-  public authorizationRequestJwt!: string
+  public authorizationRequestJwt?: string
+
+  /**
+   * Authorization request payload. This should be used only for unsigned requests
+   */
+  public authorizationRequestPayload?: OpenId4VcSiopAuthorizationRequestPayload
 
   /**
    * URI of the authorization request. This is the url that can be used to
-   * retrieve the authorization request
+   * retrieve the authorization request.
+   *
+   * Not used for requests with response_mode of dc_api or dc_api.jwt
    */
-  public authorizationRequestUri!: string
+  public authorizationRequestUri?: string
 
   /**
    * The payload of the received authorization response
@@ -87,12 +98,30 @@ export class OpenId4VcVerificationSessionRecord extends BaseRecord<DefaultOpenId
       this.verifierId = props.verifierId
       this.state = props.state
       this.errorMessage = props.errorMessage
+      this.authorizationRequestPayload = props.authorizationRequestPayload
       this.authorizationRequestJwt = props.authorizationRequestJwt
       this.authorizationRequestUri = props.authorizationRequestUri
       this.authorizationResponsePayload = props.authorizationResponsePayload
 
       this.presentationDuringIssuanceSession = props.presentationDuringIssuanceSession
     }
+  }
+
+  public get request(): string | OpenId4VcSiopAuthorizationRequestPayload {
+    if (this.authorizationRequestJwt) return this.authorizationRequestJwt
+    if (this.authorizationRequestPayload) return this.authorizationRequestPayload
+
+    throw new CredoError('Unable to extract authorization payload from openid4vc session record')
+  }
+
+  public get requestPayload(): OpenId4VcSiopAuthorizationRequestPayload {
+    if (this.authorizationRequestJwt)
+      return Jwt.fromSerializedJwt(
+        this.authorizationRequestJwt
+      ).payload.toJson() as OpenId4VcSiopAuthorizationRequestPayload
+    if (this.authorizationRequestPayload) return this.authorizationRequestPayload
+
+    throw new CredoError('Unable to extract authorization payload from openid4vc session record')
   }
 
   public assertState(expectedStates: OpenId4VcVerificationSessionState | OpenId4VcVerificationSessionState[]) {
@@ -110,21 +139,18 @@ export class OpenId4VcVerificationSessionRecord extends BaseRecord<DefaultOpenId
   }
 
   public getTags() {
-    const parsedAuthorizationRequest = Jwt.fromSerializedJwt(this.authorizationRequestJwt)
+    const request = this.requestPayload
 
-    const nonce = parsedAuthorizationRequest.payload.additionalClaims.nonce
+    const nonce = request.nonce
     if (!nonce || typeof nonce !== 'string') throw new CredoError('Expected nonce in authorization request payload')
 
-    const payloadState = parsedAuthorizationRequest.payload.additionalClaims.state
-    if (!payloadState || typeof payloadState !== 'string')
-      throw new CredoError('Expected state in authorization request payload')
+    const payloadState = 'state' in request ? (request.state as string) : undefined
 
     return {
       ...this._tags,
       verifierId: this.verifierId,
       state: this.state,
       nonce,
-      // FIXME: how do we call this property so it doesn't conflict with the record state?
       payloadState,
       authorizationRequestUri: this.authorizationRequestUri,
     }

@@ -3,8 +3,8 @@ import type { OpenId4VcVerificationRequest } from './router'
 import type { AgentContext, DependencyManager, Module } from '@credo-ts/core'
 import type { NextFunction } from 'express'
 
-import { setGlobalConfig } from '@animo-id/oauth2'
 import { AgentConfig } from '@credo-ts/core'
+import { setGlobalConfig } from '@openid4vc/oauth2'
 
 import { getAgentContextForActorId, getRequestContext, importExpress } from '../shared/router'
 
@@ -12,7 +12,6 @@ import { OpenId4VcSiopVerifierService } from './OpenId4VcSiopVerifierService'
 import { OpenId4VcVerifierApi } from './OpenId4VcVerifierApi'
 import { OpenId4VcVerifierModuleConfig } from './OpenId4VcVerifierModuleConfig'
 import { OpenId4VcVerifierRepository } from './repository'
-import { OpenId4VcRelyingPartyEventHandler } from './repository/OpenId4VcRelyingPartyEventEmitter'
 import { configureAuthorizationEndpoint } from './router'
 import { configureAuthorizationRequestEndpoint } from './router/authorizationRequestEndpoint'
 
@@ -52,9 +51,6 @@ export class OpenId4VcVerifierModule implements Module {
 
     // Repository
     dependencyManager.registerSingleton(OpenId4VcVerifierRepository)
-
-    // Global event emitter
-    dependencyManager.registerSingleton(OpenId4VcRelyingPartyEventHandler)
   }
 
   public async initialize(rootAgentContext: AgentContext): Promise<void> {
