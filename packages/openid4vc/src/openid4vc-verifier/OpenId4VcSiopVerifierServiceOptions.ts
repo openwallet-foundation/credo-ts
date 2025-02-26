@@ -1,5 +1,5 @@
 import type { OpenId4VcVerificationSessionRecord, OpenId4VcVerifierRecordProps } from './repository'
-import type { OpenId4VcIssuerX5c, OpenId4VcJwtIssuerDid, OpenId4VcSiopAuthorizationResponsePayload } from '../shared'
+import type { OpenId4VcIssuerX5c, OpenId4VcJwtIssuerDid } from '../shared'
 import type {
   DcqlPresentation,
   DcqlPresentationResult,
