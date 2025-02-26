@@ -380,8 +380,6 @@ export class OpenId4VcSiopVerifierService {
     agentContext: AgentContext,
     options: OpenId4VcSiopVerifyAuthorizationResponseOptions & {
       verifierId: string
-      jarmHeader?: { apu?: string; apv?: string }
-      origin?: string
     }
   ): Promise<OpenId4VcSiopVerifiedAuthorizationResponse & { verificationSession: OpenId4VcVerificationSessionRecord }> {
     const openid4vpVerifier = this.getOpenid4vpVerifier(agentContext)
@@ -389,6 +387,7 @@ export class OpenId4VcSiopVerifierService {
     const result = await this.parseAuthorizationResponse(agentContext, {
       verifierId: options.verifierId,
       responsePayload: options.authorizationResponse,
+      origin: options.origin,
     })
 
     result.verificationSession.assertState([
@@ -480,8 +479,11 @@ export class OpenId4VcSiopVerifierService {
     }
 
     try {
-      if (presentationVerificationResults.some((result) => !result.verified)) {
-        throw new CredoError('One or more presentations failed verification.')
+      const errorMessages = presentationVerificationResults
+        .map((result, index) => (!result.verified ? `\t- [${index}]: ${result.reason}` : undefined))
+        .filter((i) => i !== undefined)
+      if (errorMessages.length > 0) {
+        throw new CredoError(`One or more presentations failed verification. \n\t${errorMessages.join('\n')}`)
       }
 
       // Validate the presentations against the query
@@ -749,7 +751,9 @@ export class OpenId4VcSiopVerifierService {
         ? {
             jwks: { keys: [jarmEncryptionJwk] },
             authorization_encrypted_response_alg: 'ECDH-ES',
-            authorization_encrypted_response_enc: 'A256GCM',
+            // FIXME: we need to allow setting this, but also to fetch it based on the `request_uri` and
+            // `request_uri_method`
+            authorization_encrypted_response_enc: 'A128GCM',
           }
         : undefined
 
