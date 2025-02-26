@@ -2,12 +2,21 @@ import type { AgentType } from './utils'
 import type { OpenId4VcVerifierRecord } from '../src'
 import type { DcqlQuery } from '@credo-ts/core'
 
-import { ClaimFormat, DateOnly, KeyType, MdocRecord, parseDid, SdJwtVcRecord, X509Service } from '@credo-ts/core'
+import {
+  ClaimFormat,
+  DateOnly,
+  KeyType,
+  MdocDeviceResponse,
+  MdocRecord,
+  parseDid,
+  SdJwtVcRecord,
+  X509Service,
+} from '@credo-ts/core'
 
 import { AskarModule } from '../../askar/src'
 import { askarModuleConfig } from '../../askar/tests/helpers'
 import { TenantsModule } from '../../tenants/src'
-import { OpenId4VcHolderModule, OpenId4VcVerifierModule } from '../src'
+import { OpenId4VcHolderModule, OpenId4VcVerificationSessionState, OpenId4VcVerifierModule } from '../src'
 
 import { createAgentFromModules } from './utils'
 
@@ -190,6 +199,7 @@ describe('OpenId4Vc', () => {
       authorityKey: await verifier.agent.context.wallet.createKey({ keyType: KeyType.P256 }),
       issuer: {
         commonName: 'DE',
+        countryName: 'DE',
       },
     })
 
@@ -221,7 +231,7 @@ describe('OpenId4Vc', () => {
     const certificate = await verifier.agent.x509.createCertificate({
       authorityKey: await verifier.agent.wallet.createKey({ keyType: KeyType.Ed25519 }),
       extensions: { subjectAlternativeName: { name: [{ type: 'dns', value: 'localhost:1234' }] } },
-      issuer: { commonName: 'Something' },
+      issuer: { commonName: 'Something', countryName: 'Something' },
     })
 
     verifierCertificate = certificate.toString('base64')
@@ -290,25 +300,26 @@ describe('OpenId4Vc', () => {
   })
 
   it('Digital Credentials API with dcql, mdoc, sd-jwt, transaction data. signed, encrypted', async () => {
-    const { authorizationRequestObject } = await verifier.agent.modules.openId4VcVerifier.createAuthorizationRequest({
-      responseMode: 'dc_api.jwt',
-      expectedOrigins: ['https://example.com'],
-      verifierId: openIdVerifier.verifierId,
-      requestSigner: {
-        method: 'x5c',
-        x5c: [verifierCertificate],
-      },
-      transactionData: [
-        {
-          type: 'OpenBadgeTx',
-          credential_ids: ['OpenBadgeCredentialDescriptor'],
-          transaction_data_hashes_alg: ['sha-256'],
+    const { authorizationRequestObject, verificationSession } =
+      await verifier.agent.modules.openId4VcVerifier.createAuthorizationRequest({
+        responseMode: 'dc_api.jwt',
+        expectedOrigins: ['https://example.com'],
+        verifierId: openIdVerifier.verifierId,
+        requestSigner: {
+          method: 'x5c',
+          x5c: [verifierCertificate],
         },
-      ],
-      dcql: {
-        query: dcqlQuery,
-      },
-    })
+        transactionData: [
+          {
+            type: 'OpenBadgeTx',
+            credential_ids: ['OpenBadgeCredentialDescriptor'],
+            transaction_data_hashes_alg: ['sha-256'],
+          },
+        ],
+        dcql: {
+          query: dcqlQuery,
+        },
+      })
 
     const resolvedAuthorizationRequest = await holder.agent.modules.openId4VcHolder.resolveSiopAuthorizationRequest(
       authorizationRequestObject,
@@ -339,5 +350,36 @@ describe('OpenId4Vc', () => {
         response: expect.any(String),
       },
     })
+
+    const {
+      verificationSession: updatedVerificationSession,
+      dcql,
+      transactionData,
+    } = await verifier.agent.modules.openId4VcVerifier.verifyAuthorizationResponse({
+      verificationSessionId: verificationSession.id,
+      origin: resolvedAuthorizationRequest.origin,
+      authorizationResponse: result.authorizationResponse,
+    })
+
+    expect(updatedVerificationSession.state).toEqual(OpenId4VcVerificationSessionState.ResponseVerified)
+    expect(dcql).toEqual({
+      query: expect.any(Object),
+      presentation: {
+        orgeuuniversity: expect.any(MdocDeviceResponse),
+        OpenBadgeCredentialDescriptor: expect.objectContaining({
+          compact: expect.stringContaining('~'),
+        }),
+      },
+      presentationResult: expect.objectContaining({
+        canBeSatisfied: true,
+      }),
+    })
+    expect(transactionData).toEqual([
+      {
+        type: 'OpenBadgeTx',
+        credential_ids: ['OpenBadgeCredentialDescriptor'],
+        transaction_data_hashes_alg: ['sha-256'],
+      },
+    ])
   })
 })

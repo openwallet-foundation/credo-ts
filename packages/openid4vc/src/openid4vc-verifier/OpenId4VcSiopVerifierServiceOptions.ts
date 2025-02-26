@@ -66,7 +66,9 @@ export interface OpenId4VcSiopVerifyAuthorizationResponseOptions {
   /**
    * The authorization response received from the OpenID Provider (OP).
    */
-  authorizationResponse: OpenId4VcSiopAuthorizationResponsePayload
+  authorizationResponse: Record<string, unknown>
+  jarmHeader?: { apu?: string; apv?: string }
+  origin?: string
 }
 
 export interface OpenId4VcSiopCreateAuthorizationRequestReturn {
