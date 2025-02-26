@@ -267,14 +267,19 @@ export class OpenId4VcSiopVerifierService {
   private async parseAuthorizationResponse(
     agentContext: AgentContext,
     options: {
-      verifierId: string
       responsePayload: Record<string, unknown>
       origin?: string
+      verificationSession?: OpenId4VcVerificationSessionRecord
+      verifierId?: string
     }
   ): Promise<ParsedOpenid4vpAuthorizationResponse & { verificationSession: OpenId4VcVerificationSessionRecord }> {
     const { verifierId, responsePayload } = options
 
-    let verificationSession: OpenId4VcVerificationSessionRecord | undefined
+    if (!options.verificationSession && !options.verifierId) {
+      throw new CredoError('Either verificationSession or verifierId needs to be provided')
+    }
+
+    let verificationSession: OpenId4VcVerificationSessionRecord | undefined = options.verificationSession
     let parsedAuthResponse: ParsedOpenid4vpAuthorizationResponse
 
     let rawResponsePayload = responsePayload
@@ -285,21 +290,23 @@ export class OpenId4VcSiopVerifierService {
         callbacks: {
           ...getOid4vcCallbacks(agentContext),
           getOpenid4vpAuthorizationRequest: async (responsePayload) => {
-            const { state, nonce } = responsePayload
-            rawResponsePayload = responsePayload
+            if (!verificationSession) {
+              const { state, nonce } = responsePayload
+              rawResponsePayload = responsePayload
 
-            const session = await this.findVerificationSessionForAuthorizationResponse(agentContext, {
-              authorizationResponseParams: { state, nonce },
-              verifierId,
-            })
+              const session = await this.findVerificationSessionForAuthorizationResponse(agentContext, {
+                authorizationResponseParams: { state, nonce },
+                verifierId,
+              })
 
-            if (!session) {
-              agentContext.config.logger.warn(
-                `No verification session found for incoming authorization response for verifier ${verifierId}`
-              )
-              throw new CredoError(`No state or nonce provided in authorization response for verifier ${verifierId}`)
+              if (!session) {
+                agentContext.config.logger.warn(
+                  `No verification session found for incoming authorization response for verifier ${verifierId}`
+                )
+                throw new CredoError(`No state or nonce provided in authorization response for verifier ${verifierId}`)
+              }
+              verificationSession = session
             }
-            verificationSession = session
 
             const authorizationRequest = parseOpenid4vpAuthorizationRequestPayload({
               authorizationRequest: verificationSession.request,
@@ -378,14 +385,21 @@ export class OpenId4VcSiopVerifierService {
 
   public async verifyAuthorizationResponse(
     agentContext: AgentContext,
-    options: OpenId4VcSiopVerifyAuthorizationResponseOptions & {
-      verifierId: string
-    }
+    options:
+      | OpenId4VcSiopVerifyAuthorizationResponseOptions &
+          (
+            | {
+                verifierId: string
+                verificationSession?: never
+              }
+            | { verificationSession: OpenId4VcVerificationSessionRecord; verifierId?: never }
+          )
   ): Promise<OpenId4VcSiopVerifiedAuthorizationResponse & { verificationSession: OpenId4VcVerificationSessionRecord }> {
     const openid4vpVerifier = this.getOpenid4vpVerifier(agentContext)
 
     const result = await this.parseAuthorizationResponse(agentContext, {
       verifierId: options.verifierId,
+      verificationSession: options.verificationSession,
       responsePayload: options.authorizationResponse,
       origin: options.origin,
     })
@@ -566,8 +580,11 @@ export class OpenId4VcSiopVerifierService {
     const authorizationRequest = openid4vpVerifier.parseOpenid4vpAuthorizationRequestPayload({
       authorizationRequest: verificationSession.request,
     })
-    if (authorizationRequest.provided !== 'jwt' || authorizationRequest.type === 'jar') {
-      throw new CredoError('Invalid authorization request jwt')
+    if (
+      (authorizationRequest.provided !== 'jwt' && authorizationRequest.provided !== 'params') ||
+      authorizationRequest.type === 'jar'
+    ) {
+      throw new CredoError('Invalid authorization request')
     }
 
     const result = openid4vpVerifier.validateOpenid4vpAuthorizationResponse({
@@ -665,7 +682,7 @@ export class OpenId4VcSiopVerifierService {
         )
       }
     } else {
-      if (authorizationResponseParams?.nonce && !authorizationResponseParams?.state) {
+      if (!authorizationResponseParams?.nonce && !authorizationResponseParams?.state) {
         throw new CredoError(
           'Either nonce or state must be provided if no authorization response is provided. Unable to find OpenId4VcVerificationSession.'
         )
