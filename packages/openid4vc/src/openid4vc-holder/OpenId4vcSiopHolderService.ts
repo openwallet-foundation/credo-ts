@@ -1,415 +1,408 @@
 import type {
   OpenId4VcSiopAcceptAuthorizationRequestOptions,
   OpenId4VcSiopResolvedAuthorizationRequest,
+  ResolveSiopAuthorizationRequestOptions,
 } from './OpenId4vcSiopHolderServiceOptions'
-import type { OpenId4VcJwtIssuer } from '../shared'
-import type { AgentContext, EncodedX509Certificate, JwkJson, VerifiablePresentation } from '@credo-ts/core'
 import type {
-  AuthorizationResponsePayload,
-  PresentationExchangeResponseOpts,
-  RequestObjectPayload,
-  VerifiedAuthorizationRequest,
-} from '@sphereon/did-auth-siop'
+  AgentContext,
+  DcqlCredentialsForRequest,
+  DcqlQuery,
+  DcqlTransactionDataRequest,
+  DifPexInputDescriptorToCredentials,
+  DifPresentationExchangeDefinition,
+  DifPresentationExchangeSubmission,
+  EncodedX509Certificate,
+  MdocOpenId4VpDcApiSessionTranscriptOptions,
+  MdocOpenId4VpSessionTranscriptOptions,
+  SingleOrArray,
+  SubmissionEntryCredential,
+  TransactionData,
+  TransactionDataRequest,
+} from '@credo-ts/core'
 
 import {
-  Buffer,
   CredoError,
   DifPresentationExchangeService,
+  DcqlService,
   DifPresentationExchangeSubmissionLocation,
-  Hasher,
-  KeyType,
-  TypedArrayEncoder,
-  W3cJsonLdVerifiablePresentation,
-  W3cJwtVerifiablePresentation,
-  asArray,
-  getJwkFromJson,
   injectable,
-  parseDid,
-  MdocDeviceResponse,
 } from '@credo-ts/core'
-import { OP, ResponseIss, ResponseMode, ResponseType, SupportedVersion, VPTokenLocation } from '@sphereon/did-auth-siop'
+import { isJarmResponseMode, isOpenid4vpAuthorizationRequestDcApi, Openid4vpClient } from '@openid4vc/openid4vp'
 
-import { getSphereonVerifiablePresentation } from '../shared/transform'
-import { getCreateJwtCallback, getVerifyJwtCallback, openIdTokenIssuerToJwtIssuer } from '../shared/utils'
+import { getOid4vcCallbacks } from '../shared/callbacks'
 
 @injectable()
 export class OpenId4VcSiopHolderService {
-  public constructor(private presentationExchangeService: DifPresentationExchangeService) {}
+  public constructor(
+    private presentationExchangeService: DifPresentationExchangeService,
+    private dcqlService: DcqlService
+  ) {}
+
+  private getOpenid4vpClient(agentContext: AgentContext, trustedCertificates?: EncodedX509Certificate[]) {
+    const callbacks = getOid4vcCallbacks(agentContext, trustedCertificates)
+    return new Openid4vpClient({ callbacks })
+  }
+
+  private async handlePresentationExchangeRequest(
+    agentContext: AgentContext,
+    _presentationDefinition: unknown,
+    transactionData?: TransactionData
+  ) {
+    const presentationDefinition = _presentationDefinition as DifPresentationExchangeDefinition
+    this.presentationExchangeService.validatePresentationDefinition(presentationDefinition)
+
+    const presentationExchange = {
+      definition: presentationDefinition,
+      credentialsForRequest: await this.presentationExchangeService.getCredentialsForRequest(
+        agentContext,
+        presentationDefinition
+      ),
+    }
+
+    let credentialsForTransactionData: TransactionDataRequest | undefined = undefined
+    // for each transaction data entry, get all submission entries that can be used to sign the respective transaction
+    if (transactionData) {
+      credentialsForTransactionData = []
+
+      for (const transactionDataEntry of transactionData) {
+        for (const requirement of presentationExchange.credentialsForRequest.requirements) {
+          const recordSet: Set<SubmissionEntryCredential> = new Set()
+          const filtered = requirement.submissionEntry.filter((submission) =>
+            transactionDataEntry.credential_ids.includes(submission.inputDescriptorId)
+          )
+
+          for (const submission of filtered) {
+            for (const credential of submission.verifiableCredentials) {
+              recordSet.add(credential)
+            }
+          }
+
+          if (recordSet.size === 0) {
+            continue
+          }
+
+          credentialsForTransactionData.push({
+            transactionDataEntry,
+            submissionEntry: { ...filtered[0], verifiableCredentials: Array.from(recordSet) },
+          })
+        }
+      }
+    }
+
+    return { pex: { ...presentationExchange, transactionData: credentialsForTransactionData } }
+  }
+
+  private async handleDcqlRequest(agentContext: AgentContext, dcql: unknown, transactionData?: TransactionData) {
+    const dcqlQuery = this.dcqlService.validateDcqlQuery(dcql as DcqlQuery)
+    const dcqlQueryResult = await this.dcqlService.getCredentialsForRequest(agentContext, dcqlQuery)
+
+    let credentialsForTransactionData: DcqlTransactionDataRequest | undefined = undefined
+    // for each transaction data entry, get all submission entries that can be used to sign the respective transaction
+    if (transactionData) {
+      credentialsForTransactionData = []
+
+      for (const transactionDataEntry of transactionData) {
+        const result = transactionDataEntry.credential_ids
+          .map((credentialId) => {
+            const match = dcqlQueryResult.credential_matches[credentialId]
+            if (!match.success) return undefined
+            return {
+              transactionDataEntry,
+              dcql: {
+                record: match.record,
+                credentialQueryId: match.input_credential_index,
+                claimSetId: match.claim_set_index,
+              },
+            }
+          })
+          .filter((r): r is DcqlTransactionDataRequest[number] => r !== undefined)
+
+        credentialsForTransactionData.push(...result)
+      }
+    }
+
+    return { dcql: { queryResult: dcqlQueryResult, transactionData: credentialsForTransactionData } }
+  }
 
   public async resolveAuthorizationRequest(
     agentContext: AgentContext,
-    requestJwtOrUri: string,
-    trustedCertificates?: EncodedX509Certificate[]
+    /**
+     * Can be:
+     * - JWT
+     * - URI containing request or request_uri param
+     * - Request payload
+     */
+    request: string | Record<string, unknown>,
+    options?: ResolveSiopAuthorizationRequestOptions
   ): Promise<OpenId4VcSiopResolvedAuthorizationRequest> {
-    const openidProvider = await this.getOpenIdProvider(agentContext, trustedCertificates)
+    const openid4vpClient = this.getOpenid4vpClient(agentContext, options?.trustedCertificates)
+    const { params } = openid4vpClient.parseOpenid4vpAuthorizationRequestPayload({ authorizationRequest: request })
+    const verifiedAuthRequest = await openid4vpClient.resolveOpenId4vpAuthorizationRequest({
+      request: params,
+      origin: options?.origin,
+    })
 
-    // parsing happens automatically in verifyAuthorizationRequest
-    const verifiedAuthorizationRequest = await openidProvider.verifyAuthorizationRequest(requestJwtOrUri)
-
-    agentContext.config.logger.debug(
-      `verified SIOP Authorization Request for issuer '${verifiedAuthorizationRequest.issuer}'`
-    )
-    agentContext.config.logger.debug(`requestJwtOrUri '${requestJwtOrUri}'`)
+    const { client, pex, transactionData, dcql } = verifiedAuthRequest
 
     if (
-      verifiedAuthorizationRequest.presentationDefinitions &&
-      verifiedAuthorizationRequest.presentationDefinitions.length > 1
+      client.scheme !== 'x509_san_dns' &&
+      client.scheme !== 'x509_san_uri' &&
+      client.scheme !== 'did' &&
+      client.scheme !== 'web-origin'
     ) {
-      throw new CredoError('Only a single presentation definition is supported.')
+      throw new CredoError(`Client scheme '${client.scheme}' is not supported`)
     }
 
-    const presentationDefinition = verifiedAuthorizationRequest.presentationDefinitions?.[0]?.definition
+    const { pex: pexResult } = pex?.presentation_definition
+      ? await this.handlePresentationExchangeRequest(agentContext, pex.presentation_definition, transactionData)
+      : { pex: undefined }
+
+    const { dcql: dcqlResult } = dcql?.query
+      ? await this.handleDcqlRequest(agentContext, dcql.query, transactionData)
+      : { dcql: undefined }
+
+    agentContext.config.logger.debug(`verified Authorization Request`)
+    agentContext.config.logger.debug(`request '${request}'`)
 
     return {
-      authorizationRequest: verifiedAuthorizationRequest,
-
-      // Parameters related to DIF Presentation Exchange
-      presentationExchange: presentationDefinition
-        ? {
-            definition: presentationDefinition,
-            credentialsForRequest: await this.presentationExchangeService.getCredentialsForRequest(
-              agentContext,
-              presentationDefinition
-            ),
-          }
-        : undefined,
+      authorizationRequest: verifiedAuthRequest,
+      presentationExchange: pexResult,
+      dcql: dcqlResult,
+      origin: options?.origin,
     }
+  }
+
+  private async getCredentialQueryIdsToSignTransactionData(
+    dcql: {
+      credentials: DcqlCredentialsForRequest
+    },
+    transactionData: TransactionData
+  ) {
+    // check if all credentials are present for the transaction data
+    // This needs a deep integration into pex and out pex requirements
+    const dcqlCredentialQueryIds: string[] = []
+    for (const tdEntry of transactionData) {
+      // find a inputDescriptor in the credential_ids which is present in the response
+      // and use it to sign of the transaction
+      const dcqlCredentialForRequest = tdEntry.credential_ids.find((credentialId) => dcql.credentials[credentialId])
+
+      if (!dcqlCredentialForRequest) {
+        throw new CredoError('Cannot create authorization response. No credentials found for signing transaction data.')
+      }
+
+      dcqlCredentialQueryIds.push(dcqlCredentialForRequest)
+    }
+
+    return dcqlCredentialQueryIds
+  }
+
+  private async getInputDescriptorsToSignTransactionData(
+    presentationExchange: {
+      credentials: DifPexInputDescriptorToCredentials
+    },
+    transactionData: TransactionData
+  ) {
+    // check if all credentials are present for the transaction data
+    // This needs a deep integration into pex and out pex requirements
+    const inputDescriptorsToSignTransactionData: string[] = []
+    for (const tdEntry of transactionData) {
+      // find a inputDescriptor in the credential_ids which is present in the response
+      // and use it to sign of the transaction
+      const inputDescriptorForCredential = tdEntry.credential_ids.find(
+        (credentialId) => presentationExchange.credentials[credentialId]
+      )
+
+      if (!inputDescriptorForCredential) {
+        throw new CredoError('Cannot create authorization response. No credentials found for signing transaction data.')
+      }
+
+      inputDescriptorsToSignTransactionData.push(inputDescriptorForCredential)
+    }
+
+    return inputDescriptorsToSignTransactionData
   }
 
   public async acceptAuthorizationRequest(
     agentContext: AgentContext,
     options: OpenId4VcSiopAcceptAuthorizationRequestOptions
   ) {
-    const { authorizationRequest, presentationExchange } = options
-    let openIdTokenIssuer = options.openIdTokenIssuer
-    let presentationExchangeOptions: PresentationExchangeResponseOpts | undefined = undefined
+    const { authorizationRequest, presentationExchange, dcql } = options
 
-    const wantsIdToken = await authorizationRequest.authorizationRequest.containsResponseType(ResponseType.ID_TOKEN)
     const authorizationResponseNonce = await agentContext.wallet.generateNonce()
+    const nonce = authorizationRequest.payload.nonce
+    const clientId = authorizationRequest.client.originalValue
+
+    let openid4vpOptions: MdocOpenId4VpSessionTranscriptOptions | MdocOpenId4VpDcApiSessionTranscriptOptions
+    if (isOpenid4vpAuthorizationRequestDcApi(authorizationRequest.payload)) {
+      if (!options.origin) {
+        throw new CredoError('Missing required parameter `origin` parameter for accepting openid4vp dc api requests.')
+      }
+      openid4vpOptions = { type: 'openId4VpDcApi', clientId, origin: options.origin, verifierGeneratedNonce: nonce }
+    } else {
+      const responseUri = authorizationRequest.payload.response_uri ?? authorizationRequest.payload.redirect_uri
+      if (!responseUri) {
+        throw new CredoError(
+          'Missing required parameter `response_uri` or `redirect_uri` in the authorization request.'
+        )
+      }
+
+      openid4vpOptions = {
+        type: 'openId4Vp',
+        mdocGeneratedNonce: authorizationResponseNonce,
+        responseUri,
+        clientId,
+        verifierGeneratedNonce: nonce,
+      }
+    }
+
+    let vpToken: SingleOrArray<string | Record<string, unknown>> | Record<string, string | Record<string, unknown>>
+    let presentationSubmission: DifPresentationExchangeSubmission | undefined = undefined
 
     // Handle presentation exchange part
-    if (authorizationRequest.presentationDefinitions && authorizationRequest.presentationDefinitions.length > 0) {
+    if (authorizationRequest.pex || presentationExchange) {
       if (!presentationExchange) {
         throw new CredoError(
           'Authorization request included presentation definition. `presentationExchange` MUST be supplied to accept authorization requests.'
         )
       }
-
-      const nonce = await authorizationRequest.authorizationRequest.getMergedProperty<string>('nonce')
-      if (!nonce) {
-        throw new CredoError("Unable to extract 'nonce' from authorization request")
-      }
-
-      const clientId = await authorizationRequest.authorizationRequest.getMergedProperty<string>('client_id')
-      if (!clientId) {
-        throw new CredoError("Unable to extract 'client_id' from authorization request")
-      }
-
-      const responseUri =
-        (await authorizationRequest.authorizationRequest.getMergedProperty<string>('response_uri')) ??
-        (await authorizationRequest.authorizationRequest.getMergedProperty<string>('redirect_uri'))
-      if (!responseUri) {
-        throw new CredoError("Unable to extract 'response_uri' from authorization request")
-      }
-
-      const { verifiablePresentations, presentationSubmission } =
-        await this.presentationExchangeService.createPresentation(agentContext, {
-          credentialsForInputDescriptor: presentationExchange.credentials,
-          presentationDefinition: authorizationRequest.presentationDefinitions[0].definition,
-          challenge: nonce,
-          domain: clientId,
-          presentationSubmissionLocation: DifPresentationExchangeSubmissionLocation.EXTERNAL,
-          openid4vp: {
-            mdocGeneratedNonce: authorizationResponseNonce,
-            responseUri,
-          },
-        })
-
-      presentationExchangeOptions = {
-        verifiablePresentations: verifiablePresentations.map((vp) => getSphereonVerifiablePresentation(vp)),
-        presentationSubmission,
-        vpTokenLocation: VPTokenLocation.AUTHORIZATION_RESPONSE,
-      }
-
-      if (wantsIdToken && !openIdTokenIssuer) {
-        openIdTokenIssuer = this.getOpenIdTokenIssuerFromVerifiablePresentation(verifiablePresentations[0])
-      }
-    } else if (options.presentationExchange) {
-      throw new CredoError(
-        '`presentationExchange` was supplied, but no presentation definition was found in the presentation request.'
-      )
-    }
-
-    if (wantsIdToken) {
-      if (!openIdTokenIssuer) {
+      if (!authorizationRequest.pex) {
         throw new CredoError(
-          'Unable to create authorization response. openIdTokenIssuer MUST be supplied when no presentation is active and the ResponseType includes id_token.'
+          '`presentationExchange` was supplied, but no presentation definition was found in the presentation request.'
         )
       }
 
-      this.assertValidTokenIssuer(authorizationRequest, openIdTokenIssuer)
-    }
-
-    const jwtIssuer =
-      wantsIdToken && openIdTokenIssuer
-        ? await openIdTokenIssuerToJwtIssuer(agentContext, openIdTokenIssuer)
-        : undefined
-
-    const openidProvider = await this.getOpenIdProvider(agentContext)
-    const authorizationResponseWithCorrelationId = await openidProvider.createAuthorizationResponse(
-      authorizationRequest,
-      {
-        jwtIssuer,
-        presentationExchange: presentationExchangeOptions,
-        // https://openid.net/specs/openid-connect-self-issued-v2-1_0.html#name-aud-of-a-request-object
-        audience: authorizationRequest.authorizationRequestPayload.client_id,
-      }
-    )
-
-    const getCreateJarmResponseCallback = (authorizationResponseNonce: string) => {
-      return async (opts: {
-        authorizationResponsePayload: AuthorizationResponsePayload
-        requestObjectPayload: RequestObjectPayload
-      }) => {
-        const { authorizationResponsePayload, requestObjectPayload } = opts
-
-        const jwk = await OP.extractEncJwksFromClientMetadata(requestObjectPayload.client_metadata)
-        if (!jwk.kty) {
-          throw new CredoError('Missing kty in jwk.')
-        }
-
-        const validatedMetadata = OP.validateJarmMetadata({
-          client_metadata: requestObjectPayload.client_metadata,
-          server_metadata: {
-            authorization_encryption_alg_values_supported: ['ECDH-ES'],
-            authorization_encryption_enc_values_supported: ['A256GCM', 'A128CBC-HS256'],
-          },
+      const { presentationSubmission: _presentationSubmission, encodedVerifiablePresentations } =
+        await this.presentationExchangeService.createPresentation(agentContext, {
+          credentialsForInputDescriptor: presentationExchange.credentials,
+          transactionDataAuthorization: authorizationRequest.transactionData
+            ? {
+                credentials: await this.getInputDescriptorsToSignTransactionData(
+                  presentationExchange,
+                  authorizationRequest.transactionData
+                ),
+                transactionData: authorizationRequest.transactionData,
+              }
+            : undefined,
+          presentationDefinition: authorizationRequest.pex
+            .presentation_definition as unknown as DifPresentationExchangeDefinition,
+          challenge: nonce,
+          domain: clientId,
+          presentationSubmissionLocation: DifPresentationExchangeSubmissionLocation.EXTERNAL,
+          openid4vp: openid4vpOptions,
         })
 
-        if (validatedMetadata.type !== 'encrypted') {
-          throw new CredoError('Only encrypted JARM responses are supported.')
-        }
-
-        // Extract nonce from the request, we use this as the `apv`
-        const nonce = authorizationRequest.payload?.nonce
-        if (!nonce || typeof nonce !== 'string') {
-          throw new CredoError('Missing nonce in authorization request payload')
-        }
-
-        const jwe = await this.encryptJarmResponse(agentContext, {
-          jwkJson: jwk as JwkJson,
-          payload: authorizationResponsePayload,
-          authorizationRequestNonce: nonce,
-          alg: validatedMetadata.client_metadata.authorization_encrypted_response_alg,
-          enc: validatedMetadata.client_metadata.authorization_encrypted_response_enc,
-          authorizationResponseNonce,
-        })
-
-        return { response: jwe }
+      vpToken =
+        encodedVerifiablePresentations.length === 1 && _presentationSubmission?.descriptor_map[0]?.path === '$'
+          ? encodedVerifiablePresentations[0]
+          : encodedVerifiablePresentations
+      presentationSubmission = _presentationSubmission
+    } else if (authorizationRequest.dcql || dcql) {
+      if (!authorizationRequest.dcql) {
+        throw new CredoError('`dcql` was supplied, but no dcql request was found in the presentation request.')
       }
+      if (!dcql) {
+        throw new CredoError(
+          'Authorization request included dcql request. `dcql` MUST be supplied to accept authorization requests.'
+        )
+      }
+
+      const { encodedDcqlPresentation } = await this.dcqlService.createPresentation(agentContext, {
+        credentialQueryToCredential: dcql.credentials,
+        transactionDataAuthorization: authorizationRequest.transactionData
+          ? {
+              credentials: await this.getCredentialQueryIdsToSignTransactionData(
+                dcql,
+                authorizationRequest.transactionData
+              ),
+              transactionData: authorizationRequest.transactionData,
+            }
+          : undefined,
+        challenge: nonce,
+        domain: clientId,
+        openid4vp: openid4vpOptions,
+      })
+
+      vpToken = encodedDcqlPresentation
+    } else {
+      throw new CredoError('Either pex or dcql must be provided')
     }
-    const response = await openidProvider.submitAuthorizationResponse(
-      authorizationResponseWithCorrelationId,
-      getCreateJarmResponseCallback(authorizationResponseNonce)
-    )
-    const responseText = await response
+
+    const openid4vpClient = this.getOpenid4vpClient(agentContext)
+    const response = await openid4vpClient.createOpenid4vpAuthorizationResponse({
+      requestParams: authorizationRequest.payload,
+      responseParams: {
+        vp_token: vpToken,
+        presentation_submission: presentationSubmission,
+      },
+      jarm:
+        authorizationRequest.payload.response_mode && isJarmResponseMode(authorizationRequest.payload.response_mode)
+          ? {
+              encryption: { nonce: authorizationResponseNonce },
+              serverMetadata: {
+                authorization_signing_alg_values_supported: ['RS256'],
+                authorization_encryption_alg_values_supported: ['ECDH-ES'],
+                authorization_encryption_enc_values_supported: ['A128GCM', 'A256GCM', 'A128CBC-HS256'],
+              },
+            }
+          : undefined,
+    })
+
+    const authorizationResponsePayload = response.responseParams as typeof response.responseParams & {
+      presentation_submission?: DifPresentationExchangeSubmission
+    }
+    const authorizationResponse = response.jarm?.responseJwt
+      ? { response: response.jarm.responseJwt }
+      : authorizationResponsePayload
+
+    // TODO: we should include more typing here that the user
+    // still needs to submit the resposne. or as we discussed, split
+    // this method up in create and submit
+    if (isOpenid4vpAuthorizationRequestDcApi(authorizationRequest.payload)) {
+      return {
+        ok: true,
+        authorizationResponse,
+        authorizationResponsePayload,
+      } as const
+    }
+
+    const result = await openid4vpClient.submitOpenid4vpAuthorizationResponse({
+      request: authorizationRequest.payload,
+      response: response.responseParams,
+      jarm: response.jarm ? { responseJwt: response.jarm.responseJwt } : undefined,
+    })
+
+    const responseText = await result.response
       .clone()
       .text()
       .catch(() => null)
-    const responseJson = (await response
+
+    const responseJson = (await result.response
       .clone()
       .json()
       .catch(() => null)) as null | Record<string, unknown>
 
-    if (!response.ok) {
+    if (!result.response.ok) {
       return {
         ok: false,
         serverResponse: {
-          status: response.status,
+          status: result.response.status,
           body: responseJson ?? responseText,
         },
-        submittedResponse: authorizationResponseWithCorrelationId.response.payload,
+        authorizationResponse,
+        authorizationResponsePayload,
       } as const
     }
 
     return {
       ok: true,
       serverResponse: {
-        status: response.status,
+        status: result.response.status,
         body: responseJson ?? {},
       },
-      submittedResponse: authorizationResponseWithCorrelationId.response.payload,
-
+      authorizationResponse,
+      authorizationResponsePayload,
       redirectUri: responseJson?.redirect_uri as string | undefined,
       presentationDuringIssuanceSession: responseJson?.presentation_during_issuance_session as string | undefined,
     } as const
-  }
-
-  private async getOpenIdProvider(agentContext: AgentContext, trustedCertificates?: EncodedX509Certificate[]) {
-    const builder = OP.builder()
-      .withExpiresIn(6000)
-      .withIssuer(ResponseIss.SELF_ISSUED_V2)
-      .withResponseMode(ResponseMode.POST)
-      .withSupportedVersions([
-        SupportedVersion.SIOPv2_D11,
-        SupportedVersion.SIOPv2_D12_OID4VP_D18,
-        SupportedVersion.SIOPv2_D12_OID4VP_D20,
-      ])
-      .withCreateJwtCallback(getCreateJwtCallback(agentContext))
-      .withVerifyJwtCallback(getVerifyJwtCallback(agentContext, trustedCertificates))
-      .withHasher(Hasher.hash)
-
-    const openidProvider = builder.build()
-
-    return openidProvider
-  }
-
-  private getOpenIdTokenIssuerFromVerifiablePresentation(
-    verifiablePresentation: VerifiablePresentation
-  ): OpenId4VcJwtIssuer {
-    let openIdTokenIssuer: OpenId4VcJwtIssuer
-
-    if (verifiablePresentation instanceof W3cJsonLdVerifiablePresentation) {
-      const [firstProof] = asArray(verifiablePresentation.proof)
-      if (!firstProof) throw new CredoError('Verifiable presentation does not contain a proof')
-
-      if (!firstProof.verificationMethod.startsWith('did:')) {
-        throw new CredoError(
-          'Verifiable presentation proof verificationMethod is not a did. Unable to extract openIdTokenIssuer from verifiable presentation'
-        )
-      }
-
-      openIdTokenIssuer = {
-        method: 'did',
-        didUrl: firstProof.verificationMethod,
-      }
-    } else if (verifiablePresentation instanceof W3cJwtVerifiablePresentation) {
-      const kid = verifiablePresentation.jwt.header.kid
-
-      if (!kid) throw new CredoError('Verifiable Presentation does not contain a kid in the jwt header')
-      if (kid.startsWith('#') && verifiablePresentation.presentation.holderId) {
-        openIdTokenIssuer = {
-          didUrl: `${verifiablePresentation.presentation.holderId}${kid}`,
-          method: 'did',
-        }
-      } else if (kid.startsWith('did:')) {
-        openIdTokenIssuer = {
-          didUrl: kid,
-          method: 'did',
-        }
-      } else {
-        throw new CredoError(
-          "JWT W3C Verifiable presentation does not include did in JWT header 'kid'. Unable to extract openIdTokenIssuer from verifiable presentation"
-        )
-      }
-    } else if (verifiablePresentation instanceof MdocDeviceResponse) {
-      throw new CredoError('Mdoc Verifiable Presentations are not yet supported')
-    } else {
-      const cnf = verifiablePresentation.payload.cnf
-      // FIXME: SD-JWT VC should have better payload typing, so this doesn't become so ugly
-      if (
-        !cnf ||
-        typeof cnf !== 'object' ||
-        !('kid' in cnf) ||
-        typeof cnf.kid !== 'string' ||
-        !cnf.kid.startsWith('did:') ||
-        !cnf.kid.includes('#')
-      ) {
-        throw new CredoError(
-          "SD-JWT Verifiable presentation has no 'cnf' claim or does not include 'cnf' claim where 'kid' is a didUrl pointing to a key. Unable to extract openIdTokenIssuer from verifiable presentation"
-        )
-      }
-
-      openIdTokenIssuer = {
-        didUrl: cnf.kid,
-        method: 'did',
-      }
-    }
-
-    return openIdTokenIssuer
-  }
-
-  private assertValidTokenIssuer(
-    authorizationRequest: VerifiedAuthorizationRequest,
-    openIdTokenIssuer: OpenId4VcJwtIssuer
-  ) {
-    const subjectSyntaxTypesSupported = authorizationRequest.registrationMetadataPayload.subject_syntax_types_supported
-    if (!subjectSyntaxTypesSupported) {
-      throw new CredoError(
-        'subject_syntax_types_supported is not supplied in the registration metadata. subject_syntax_types is REQUIRED.'
-      )
-    }
-
-    let allowedSubjectSyntaxTypes: string[] = []
-    if (openIdTokenIssuer.method === 'did') {
-      const parsedDid = parseDid(openIdTokenIssuer.didUrl)
-
-      // Either did:<method> or did (for all did methods) is allowed
-      allowedSubjectSyntaxTypes = [`did:${parsedDid.method}`, 'did']
-    } else if (openIdTokenIssuer.method === 'jwk') {
-      allowedSubjectSyntaxTypes = ['urn:ietf:params:oauth:jwk-thumbprint']
-    } else {
-      throw new CredoError("Only 'did' and 'jwk' are supported as openIdTokenIssuer at the moment")
-    }
-
-    // At least one of the allowed subject syntax types must be supported by the RP
-    if (!allowedSubjectSyntaxTypes.some((allowed) => subjectSyntaxTypesSupported.includes(allowed))) {
-      throw new CredoError(
-        [
-          'The provided openIdTokenIssuer is not supported by the relying party.',
-          `Supported subject syntax types: '${subjectSyntaxTypesSupported.join(', ')}'`,
-        ].join('\n')
-      )
-    }
-  }
-
-  private async encryptJarmResponse(
-    agentContext: AgentContext,
-    options: {
-      jwkJson: JwkJson
-      payload: Record<string, unknown>
-      alg: string
-      enc: string
-      authorizationRequestNonce: string
-      authorizationResponseNonce: string
-    }
-  ) {
-    const { payload, jwkJson } = options
-    const jwk = getJwkFromJson(jwkJson)
-    const key = jwk.key
-
-    if (!agentContext.wallet.directEncryptCompactJweEcdhEs) {
-      throw new CredoError(
-        'Cannot decrypt Jarm Response, wallet does not support directEncryptCompactJweEcdhEs. You need to upgrade your wallet implementation.'
-      )
-    }
-
-    if (options.alg !== 'ECDH-ES') {
-      throw new CredoError("Only 'ECDH-ES' is supported as 'alg' value for JARM response encryption")
-    }
-
-    if (options.enc !== 'A256GCM' && options.enc !== 'A128CBC-HS256') {
-      throw new CredoError(
-        "Only 'A256GCM' and 'A128CBC-HS256' are supported as 'enc' value for JARM response encryption"
-      )
-    }
-
-    if (key.keyType !== KeyType.P256) {
-      throw new CredoError(`Only '${KeyType.P256}' key type is supported for JARM response encryption`)
-    }
-
-    const data = Buffer.from(JSON.stringify(payload))
-    const jwe = await agentContext.wallet.directEncryptCompactJweEcdhEs({
-      data,
-      recipientKey: key,
-      header: {
-        kid: jwkJson.kid,
-      },
-      encryptionAlgorithm: options.enc,
-      apu: TypedArrayEncoder.toBase64URL(TypedArrayEncoder.fromString(options.authorizationResponseNonce)),
-      apv: TypedArrayEncoder.toBase64URL(TypedArrayEncoder.fromString(options.authorizationRequestNonce)),
-    })
-
-    return jwe
   }
 }

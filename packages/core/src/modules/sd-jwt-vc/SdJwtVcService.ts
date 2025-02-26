@@ -1,33 +1,39 @@
 import type {
-  SdJwtVcSignOptions,
-  SdJwtVcPresentOptions,
-  SdJwtVcVerifyOptions,
-  SdJwtVcPayload,
   SdJwtVcHeader,
   SdJwtVcHolderBinding,
   SdJwtVcIssuer,
+  SdJwtVcPayload,
+  SdJwtVcPresentOptions,
+  SdJwtVcSignOptions,
+  SdJwtVcVerifyOptions,
 } from './SdJwtVcOptions'
 import type { JwkJson, Key } from '../../crypto'
 import type { Query, QueryOptions } from '../../storage/StorageService'
 import type { SDJwt } from '@sd-jwt/core'
-import type { Signer, Verifier, PresentationFrame, DisclosureFrame } from '@sd-jwt/types'
+import type { DisclosureFrame, PresentationFrame, Signer, Verifier } from '@sd-jwt/types'
 
+import { decodeSdJwtSync } from '@sd-jwt/decode'
+import { selectDisclosures } from '@sd-jwt/present'
 import { SDJwtVcInstance } from '@sd-jwt/sd-jwt-vc'
 import { uint8ArrayToBase64Url } from '@sd-jwt/utils'
 import { injectable } from 'tsyringe'
 
 import { AgentContext } from '../../agent'
-import { JwtPayload, Jwk, getJwkFromJson, getJwkFromKey } from '../../crypto'
+import { Hasher, Jwk, JwtPayload, getJwkFromJson, getJwkFromKey } from '../../crypto'
 import { CredoError } from '../../error'
 import { X509Service } from '../../modules/x509/X509Service'
+import { JsonObject } from '../../types'
 import { TypedArrayEncoder, nowInSeconds } from '../../utils'
 import { getDomainFromUrl } from '../../utils/domain'
 import { fetchWithTimeout } from '../../utils/fetch'
-import { DidResolverService, parseDid, getKeyFromVerificationMethod } from '../dids'
+import { DidResolverService, getKeyFromVerificationMethod, parseDid } from '../dids'
+import { ClaimFormat } from '../vc/index'
 import { EncodedX509Certificate, X509Certificate, X509ModuleConfig } from '../x509'
 
 import { SdJwtVcError } from './SdJwtVcError'
+import { getTransactionDataHashes, getTransactionDataVerifierMetadata } from './SdJwtVcTransactionData'
 import { decodeSdJwtVc, sdJwtVcHasher } from './decodeSdJwtVc'
+import { buildDisclosureFrameForPayload } from './disclosureFrame'
 import { SdJwtVcRecord, SdJwtVcRepository } from './repository'
 import { SdJwtVcTypeMetadata } from './typeMetadata'
 
@@ -37,12 +43,25 @@ export interface SdJwtVc<
   Header extends SdJwtVcHeader = SdJwtVcHeader,
   Payload extends SdJwtVcPayload = SdJwtVcPayload
 > {
+  /**
+   * claim format is convenience method added to all credential instances
+   */
+  claimFormat: ClaimFormat.SdJwtVc
+  /**
+   * encoded is convenience method added to all credential instances
+   */
+  encoded: string
   compact: string
   header: Header
 
   // TODO: payload type here is a lie, as it is the signed payload (so fields replaced with _sd)
   payload: Payload
   prettyClaims: Payload
+
+  transactionData?: {
+    hashes: string[]
+    hashes_alg?: string
+  }
 
   typeMetadata?: SdJwtVcTypeMetadata
 }
@@ -133,6 +152,9 @@ export class SdJwtVcService {
       prettyClaims,
       header: header,
       payload: sdjwtPayload,
+      claimFormat: ClaimFormat.SdJwtVc,
+      encoded: compact,
+      ...(a.kbJwt?.payload && { transactionData: getTransactionDataHashes(a.kbJwt.payload) }),
     } satisfies SdJwtVc<typeof header, Payload>
   }
 
@@ -141,6 +163,32 @@ export class SdJwtVcService {
     typeMetadata?: SdJwtVcTypeMetadata
   ): SdJwtVc<Header, Payload> {
     return decodeSdJwtVc(compactSdJwtVc, typeMetadata)
+  }
+
+  public applyDisclosuresForPayload(compactSdJwtVc: string, requestedPayload: JsonObject): SdJwtVc {
+    const decoded = decodeSdJwtSync(compactSdJwtVc, Hasher.hash)
+    const presentationFrame = buildDisclosureFrameForPayload(requestedPayload) ?? {}
+
+    if (decoded.kbJwt) {
+      throw new SdJwtVcError('Cannot apply limit disclosure on an sd-jwt with key binding jwt')
+    }
+
+    const requiredDisclosures = selectDisclosures(
+      decoded.jwt.payload,
+      // Map to sd-jwt disclosure format
+      decoded.disclosures.map((d) => ({
+        digest: d.digestSync({ alg: 'sha-256', hasher: Hasher.hash }),
+        encoded: d.encode(),
+        key: d.key,
+        salt: d.salt,
+        value: d.value,
+      })),
+      presentationFrame as { [key: string]: boolean }
+    )
+    const [jwt] = compactSdJwtVc.split('~')
+    const sdJwt = `${jwt}~${requiredDisclosures.map((d) => d.encoded).join('~')}~`
+    const disclosedDecoded = decodeSdJwtVc(sdJwt)
+    return disclosedDecoded
   }
 
   public async present<Payload extends SdJwtVcPayload = SdJwtVcPayload>(
@@ -162,6 +210,14 @@ export class SdJwtVcService {
       kbSignAlg: holder?.alg,
     })
 
+    const transactionVerifierMetadata = verifierMetadata?.transactionData
+      ? getTransactionDataVerifierMetadata(verifierMetadata.transactionData)
+      : undefined
+
+    if (transactionVerifierMetadata && !holder) {
+      throw new SdJwtVcError('Cannot sign transaction data without including a holder binding')
+    }
+
     const compactDerivedSdJwtVc = await sdjwt.present(compactSdJwtVc, presentationFrame as PresentationFrame<Payload>, {
       kb: verifierMetadata
         ? {
@@ -169,6 +225,7 @@ export class SdJwtVcService {
               iat: verifierMetadata.issuedAt,
               nonce: verifierMetadata.nonce,
               aud: verifierMetadata.audience,
+              ...transactionVerifierMetadata,
             },
           }
         : undefined,
@@ -226,6 +283,9 @@ export class SdJwtVcService {
       header: sdJwtVc.jwt.header as Header,
       compact: compactSdJwtVc,
       prettyClaims: await sdJwtVc.getClaims(sdJwtVcHasher),
+      ...(sdJwtVc.kbJwt?.payload && { transactionData: getTransactionDataHashes(sdJwtVc.kbJwt.payload) }),
+      claimFormat: ClaimFormat.SdJwtVc,
+      encoded: compactSdJwtVc,
     } satisfies SdJwtVc<Header, Payload>
 
     try {

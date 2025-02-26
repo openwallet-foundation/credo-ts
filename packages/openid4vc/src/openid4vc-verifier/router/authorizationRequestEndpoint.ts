@@ -1,15 +1,12 @@
 import type { OpenId4VcVerificationRequest } from './requestContext'
-import type { OpenId4VcVerificationSessionStateChangedEvent } from '../OpenId4VcVerifierEvents'
 import type { Router, Response } from 'express'
 
-import { EventEmitter, joinUriParts } from '@credo-ts/core'
+import { joinUriParts } from '@credo-ts/core'
 
 import { getRequestContext, sendErrorResponse } from '../../shared/router'
 import { OpenId4VcSiopVerifierService } from '../OpenId4VcSiopVerifierService'
 import { OpenId4VcVerificationSessionState } from '../OpenId4VcVerificationSessionState'
-import { OpenId4VcVerifierEvents } from '../OpenId4VcVerifierEvents'
 import { OpenId4VcVerifierModuleConfig } from '../OpenId4VcVerifierModuleConfig'
-import { OpenId4VcVerificationSessionRepository } from '../repository'
 
 export interface OpenId4VcSiopAuthorizationRequestEndpointConfig {
   /**
@@ -43,9 +40,6 @@ export function configureAuthorizationRequestEndpoint(
 
       try {
         const verifierService = agentContext.dependencyManager.resolve(OpenId4VcSiopVerifierService)
-        const verificationSessionRepository = agentContext.dependencyManager.resolve(
-          OpenId4VcVerificationSessionRepository
-        )
         const verifierConfig = agentContext.dependencyManager.resolve(OpenId4VcVerifierModuleConfig)
 
         // We always use shortened URIs currently
@@ -60,7 +54,8 @@ export function configureAuthorizationRequestEndpoint(
           authorizationRequestUri: fullAuthorizationRequestUri,
         })
 
-        if (!verificationSession) {
+        // Not all requets are signed, and those are not fetcheable
+        if (!verificationSession || !verificationSession.authorizationRequestJwt) {
           return sendErrorResponse(
             response,
             next,
@@ -89,20 +84,11 @@ export function configureAuthorizationRequestEndpoint(
 
         // It's okay to retrieve the offer multiple times. So we only update the state if it's not already retrieved
         if (verificationSession.state !== OpenId4VcVerificationSessionState.RequestUriRetrieved) {
-          const previousState = verificationSession.state
-
-          verificationSession.state = OpenId4VcVerificationSessionState.RequestUriRetrieved
-          await verificationSessionRepository.update(agentContext, verificationSession)
-
-          agentContext.dependencyManager
-            .resolve(EventEmitter)
-            .emit<OpenId4VcVerificationSessionStateChangedEvent>(agentContext, {
-              type: OpenId4VcVerifierEvents.VerificationSessionStateChanged,
-              payload: {
-                verificationSession: verificationSession.clone(),
-                previousState,
-              },
-            })
+          await verifierService.updateState(
+            agentContext,
+            verificationSession,
+            OpenId4VcVerificationSessionState.RequestUriRetrieved
+          )
         }
 
         response.type('application/oauth-authz-req+jwt').status(200).send(verificationSession.authorizationRequestJwt)
