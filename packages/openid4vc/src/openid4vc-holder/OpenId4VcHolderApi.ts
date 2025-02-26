@@ -1,15 +1,25 @@
 import type {
-  OpenId4VciResolvedCredentialOffer,
   OpenId4VciAuthCodeFlowOptions,
-  OpenId4VciTokenRequestOptions as OpenId4VciRequestTokenOptions,
   OpenId4VciCredentialRequestOptions as OpenId4VciRequestCredentialOptions,
-  OpenId4VciSendNotificationOptions,
+  OpenId4VciTokenRequestOptions as OpenId4VciRequestTokenOptions,
   OpenId4VciRequestTokenResponse,
+  OpenId4VciResolvedCredentialOffer,
   OpenId4VciRetrieveAuthorizationCodeUsingPresentationOptions,
+  OpenId4VciSendNotificationOptions,
 } from './OpenId4VciHolderServiceOptions'
-import type { OpenId4VcSiopAcceptAuthorizationRequestOptions } from './OpenId4vcSiopHolderServiceOptions'
+import type {
+  OpenId4VcSiopAcceptAuthorizationRequestOptions,
+  ResolveSiopAuthorizationRequestOptions,
+} from './OpenId4vcSiopHolderServiceOptions'
 
-import { injectable, AgentContext, DifPresentationExchangeService, DifPexCredentialsForRequest } from '@credo-ts/core'
+import {
+  AgentContext,
+  DcqlQueryResult,
+  DcqlService,
+  DifPexCredentialsForRequest,
+  DifPresentationExchangeService,
+  injectable,
+} from '@credo-ts/core'
 
 import { OpenId4VciMetadata } from '../shared'
 
@@ -25,7 +35,8 @@ export class OpenId4VcHolderApi {
     private agentContext: AgentContext,
     private openId4VciHolderService: OpenId4VciHolderService,
     private openId4VcSiopHolderService: OpenId4VcSiopHolderService,
-    private difPresentationExchangeService: DifPresentationExchangeService
+    private difPresentationExchangeService: DifPresentationExchangeService,
+    private dcqlService: DcqlService
   ) {}
 
   /**
@@ -39,31 +50,48 @@ export class OpenId4VcHolderApi {
    * incoming request. When `presentationExchange` is present, you MUST supply `presentationExchange`
    * when calling `acceptSiopAuthorizationRequest` as well.
    *
-   * @param requestJwtOrUri JWT or an SIOPv2 request URI
+   * @param request
+   * Can be:
+   * - JWT
+   * - URI containing request or request_uri param
+   * - Request payload
    * @returns the resolved and verified authentication request.
    */
-  public async resolveSiopAuthorizationRequest(requestJwtOrUri: string) {
-    return this.openId4VcSiopHolderService.resolveAuthorizationRequest(this.agentContext, requestJwtOrUri)
+  public async resolveSiopAuthorizationRequest(
+    request: string | Record<string, unknown>,
+    options?: ResolveSiopAuthorizationRequestOptions
+  ) {
+    return this.openId4VcSiopHolderService.resolveAuthorizationRequest(this.agentContext, request, options)
   }
 
   /**
    * Accepts the authentication request after it has been resolved and verified with {@link resolveSiopAuthorizationRequest}.
    *
    * If the resolved authorization request included a `presentationExchange` property, you MUST supply `presentationExchange`
-   * in the `options` parameter.
+   * in the `options` parameter. The same is true for `dcql`.
    *
-   * If no `presentationExchange` property is present, you MUST supply `openIdTokenIssuer` in the `options` parameter.
+   * For response mode of `direct_post` or `direct_post.jwt` the response will be submitted directly
+   * to the response url. For `dc_api` and `dc_api.jwt` the response will be returned but without a
+   * `serverResponse`, and you have to submit the response yourself.
    */
   public async acceptSiopAuthorizationRequest(options: OpenId4VcSiopAcceptAuthorizationRequestOptions) {
     return await this.openId4VcSiopHolderService.acceptAuthorizationRequest(this.agentContext, options)
   }
 
   /**
-   * Automatically select credentials from available credentials for a request. Can be called after calling
+   * Automatically select credentials from available credentials for a presentation exchange request. Can be called after calling
    * @see resolveSiopAuthorizationRequest.
    */
-  public selectCredentialsForRequest(credentialsForRequest: DifPexCredentialsForRequest) {
+  public selectCredentialsForPresentationExchangeRequest(credentialsForRequest: DifPexCredentialsForRequest) {
     return this.difPresentationExchangeService.selectCredentialsForRequest(credentialsForRequest)
+  }
+
+  /**
+   * Automatically select credentials from available credentials for a dcql request. Can be called after calling
+   * @see resolveSiopAuthorizationRequest.
+   */
+  public selectCredentialsForDcqlRequest(dcqlQueryResult: DcqlQueryResult) {
+    return this.dcqlService.selectCredentialsForRequest(dcqlQueryResult)
   }
 
   public async resolveIssuerMetadata(credentialIssuer: string): Promise<OpenId4VciMetadata> {

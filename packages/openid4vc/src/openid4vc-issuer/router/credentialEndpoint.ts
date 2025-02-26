@@ -1,16 +1,16 @@
 import type { OpenId4VcIssuanceRequest } from './requestContext'
 import type { OpenId4VcIssuerModuleConfig } from '../OpenId4VcIssuerModuleConfig'
-import type { HttpMethod } from '@animo-id/oauth2'
+import type { HttpMethod } from '@openid4vc/oauth2'
 import type { Router, Response } from 'express'
 
+import { joinUriParts } from '@credo-ts/core'
 import {
   Oauth2ErrorCodes,
   Oauth2ServerErrorResponseError,
   Oauth2ResourceUnauthorizedError,
   SupportedAuthenticationScheme,
-} from '@animo-id/oauth2'
-import { getCredentialConfigurationsMatchingRequestFormat } from '@animo-id/oid4vci'
-import { joinUriParts } from '@credo-ts/core'
+} from '@openid4vc/oauth2'
+import { getCredentialConfigurationsMatchingRequestFormat } from '@openid4vc/openid4vci'
 
 import { getCredentialConfigurationsSupportedForScopes } from '../../shared'
 import {
