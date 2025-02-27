@@ -5,6 +5,9 @@ import type { AgentContext } from '../../../../../../agent/context'
 import { inflate } from 'pako'
 
 import { CredoError } from '../../../../../../error'
+import { W3cCredentialService } from '../../../../W3cCredentialService'
+import { W3cJsonLdVerifyCredentialOptions, W3cJwtVerifyCredentialOptions } from '../../../../W3cCredentialServiceOptions'
+import { ClaimFormat } from '../../../ClaimFormat'
 
 // Function to fetch and parse the bit string status list credential
 const fetchBitStringStatusListCredential = async (
@@ -30,7 +33,8 @@ const fetchBitStringStatusListCredential = async (
 
 export const verifyBitStringCredentialStatus = async (
   credentialStatus: BitStringStatusListEntry,
-  agentContext: AgentContext
+  agentContext: AgentContext,
+  credentialFormat: ClaimFormat.JwtVc | ClaimFormat.LdpVc
 ) => {
   try {
     if (Array.isArray(credentialStatus)) {
@@ -62,7 +66,18 @@ export const verifyBitStringCredentialStatus = async (
       `This is the fetched BSLC ${JSON.stringify(bitStringStatusListCredential, null, 2)}`
     )
 
-    // TODO: Add logic to validate Credential signature
+    // verify signatures of the credential
+    const w3cCredentialService = agentContext.dependencyManager.resolve(W3cCredentialService)
+
+    let result
+    if (credentialFormat === ClaimFormat.JwtVc){
+      result = await w3cCredentialService.verifyCredential(agentContext, bitStringStatusListCredential as unknown as W3cJwtVerifyCredentialOptions)
+    } else if (credentialFormat === ClaimFormat.LdpVc){
+      result = await w3cCredentialService.verifyCredential(agentContext, bitStringStatusListCredential as unknown as W3cJsonLdVerifyCredentialOptions)
+    }
+    if (result && !result.isValid) {
+      throw new CredoError(`Failed to validate credential, error = ${result.error}`)
+    }
 
     // Decode the encoded bit string
     let decodedBitStringArray;
@@ -74,30 +89,6 @@ export const verifyBitStringCredentialStatus = async (
     } catch(err) {
       throw new CredoError('Error decoding Bitstring of fetched Bitstring StatusList Credential')
     }
-    
-    // 1st approach
-    // agentContext.config.logger.debug(`This is encodedBitString: ${encodedBitString}`)
-    // const compressedBuffer = Uint8Array.from(atob(encodedBitString), (char) => char.charCodeAt(0))
-    // agentContext.config.logger.debug('Decoding the encoded bit string for fetched BitString StatusList Credential')
-
-    // // Decompress the bit string using pako
-    // const decodedBitString = ungzip(compressedBuffer, { to: 'string' })
-
-    // 2nd approach - worked
-    // const base64ToUint8Array = (base64: string): Uint8Array => {
-    //   const binaryString = atob(base64.replace(/-/g, '+').replace(/_/g, '/')) // Handle URL-safe Base64
-    //   return new Uint8Array([...binaryString].map((char) => char.charCodeAt(0)))
-    // }
-
-    // const compressedBuffer = base64ToUint8Array(encodedBitString)
-
-    // console.debug(`compressedBuffer: ${compressedBuffer}`)
-    // console.debug('Decoding the encoded bit string for fetched BitString StatusList Credential')
-
-    // // Decompress the bit string using pako
-    // const decodedBitString = new TextDecoder().decode(ungzip(compressedBuffer))
-
-    // console.debug(`Decoded BitString: ${decodedBitString}`)
 
     const statusListIndex = Number(credentialStatus.statusListIndex)
 

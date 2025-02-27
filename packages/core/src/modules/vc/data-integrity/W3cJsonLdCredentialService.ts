@@ -9,7 +9,7 @@ import type {
   W3cJsonLdVerifyCredentialOptions,
   W3cJsonLdVerifyPresentationOptions,
 } from '../W3cCredentialServiceOptions'
-import type { W3cVerifyCredentialResult, W3cVerifyPresentationResult } from '../models'
+import { ClaimFormat, type W3cVerifyCredentialResult, type W3cVerifyPresentationResult } from '../models'
 import type { W3cJsonCredential } from '../models/credential/W3cJsonCredential'
 
 import { createWalletKeyPairClass } from '../../../crypto/WalletKeyPair'
@@ -116,7 +116,7 @@ export class W3cJsonLdCredentialService {
             // await verifyBitStringCredentialStatus(credential, agentContext)
             // Add a verification function that then checks which type of credentailStatus we have
             // If the type is supported, we validate it and return the result
-            await validateStatus(credential.credentialStatus, agentContext)
+            await validateStatus(credential.credentialStatus, agentContext, ClaimFormat.LdpVc)
           }
           return {
             verified: true,
@@ -275,7 +275,7 @@ export class W3cJsonLdCredentialService {
             // await verifyBitStringCredentialStatus(credential, agentContext)
             // Add a verification function that then checks which type of credentailStatus we have
             // If the type is supported, we validate it and return the result
-            await validateStatus(credential.credentialStatus, agentContext)
+            await validateStatus(credential.credentialStatus, agentContext, ClaimFormat.LdpVc)
           }
           return {
             verified: true,

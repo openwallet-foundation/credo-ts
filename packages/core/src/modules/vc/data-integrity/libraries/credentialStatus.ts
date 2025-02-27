@@ -9,11 +9,13 @@ import {
 } from '../../models/credential/w3c-credential-status'
 import { W3cCredentialStatusSupportedTypes } from '../../models/credential/w3c-credential-status/W3cCredentialStatus'
 import { SingleOrArray } from '../../../../utils'
+import { ClaimFormat } from '../../models'
 
 // Function to validate the status using the updated method
 export const validateStatus = async (
   credentialStatus: SingleOrArray<W3cCredentialStatus>,
-  agentContext: AgentContext
+  agentContext: AgentContext,
+  credentialFormat: ClaimFormat.JwtVc | ClaimFormat.LdpVc
 ): Promise<boolean> => {
 
   if (Array.isArray(credentialStatus)) {
@@ -27,7 +29,11 @@ export const validateStatus = async (
     case W3cCredentialStatusSupportedTypes.BitstringStatusListEntry:
       agentContext.config.logger.debug('Credential status type is BitstringStatusListEntry')
       try {
-        await verifyBitStringCredentialStatus(credentialStatus as unknown as BitStringStatusListEntry, agentContext)
+        await verifyBitStringCredentialStatus(
+          credentialStatus as unknown as BitStringStatusListEntry,
+          agentContext,
+          credentialFormat
+        )
       } catch (errors) {
         throw new CredoError(`Error while validating credential status`, errors)
       }

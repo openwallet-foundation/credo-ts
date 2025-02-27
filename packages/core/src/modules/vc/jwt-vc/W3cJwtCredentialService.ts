@@ -8,7 +8,7 @@ import type {
   W3cJwtVerifyCredentialOptions,
   W3cJwtVerifyPresentationOptions,
 } from '../W3cCredentialServiceOptions'
-import type { SingleValidationResult, W3cVerifyCredentialResult, W3cVerifyPresentationResult } from '../models'
+import { ClaimFormat, type SingleValidationResult, type W3cVerifyCredentialResult, type W3cVerifyPresentationResult } from '../models'
 
 import { JwsService } from '../../../crypto'
 import { getJwkFromKey, getJwkClassFromJwaSignatureAlgorithm } from '../../../crypto/jose/jwk'
@@ -23,6 +23,7 @@ import { W3cJwtVerifiableCredential } from './W3cJwtVerifiableCredential'
 import { W3cJwtVerifiablePresentation } from './W3cJwtVerifiablePresentation'
 import { getJwtPayloadFromCredential } from './credentialTransformer'
 import { getJwtPayloadFromPresentation } from './presentationTransformer'
+import { validateStatus } from '../data-integrity/libraries/credentialStatus'
 
 /**
  * Supports signing and verification of credentials according to the [Verifiable Credential Data Model](https://www.w3.org/TR/vc-data-model)
@@ -193,9 +194,13 @@ export class W3cJwtCredentialService {
           isValid: true,
         }
       } else if (verifyCredentialStatus && credential.credentialStatus) {
+        // TODO: Add similar verification for JWT VCs
+        // validationResults.validations.credentialStatus = {
+        //   isValid: false,
+        //   error: new CredoError('Verifying credential status is not supported for JWT VCs'),
+        // }
         validationResults.validations.credentialStatus = {
-          isValid: false,
-          error: new CredoError('Verifying credential status is not supported for JWT VCs'),
+          isValid: await validateStatus(credential.credentialStatus, agentContext, ClaimFormat.JwtVc)
         }
       }
 
@@ -376,6 +381,7 @@ export class W3cJwtCredentialService {
             }
           }
 
+          // Already verifying credentialStatus, so might not need to have to check credential status explicitly here
           const credentialResult = await this.verifyCredential(agentContext, {
             credential,
             verifyCredentialStatus: options.verifyCredentialStatus,
