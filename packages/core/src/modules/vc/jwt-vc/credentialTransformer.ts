@@ -24,32 +24,32 @@ export function getJwtPayloadFromCredential(credential: W3cCredential) {
     throw new CredoError('JWT VCs must have a valid issuance date')
   }
   payloadOptions.nbf = Math.floor(issuanceDate / 1000)
-  vc.issuanceDate = undefined
+  delete vc.issuanceDate
 
   // Extract `exp` and remove expiration date from vc
   if (credential.expirationDate) {
     const expirationDate = Date.parse(credential.expirationDate)
     if (!Number.isNaN(expirationDate)) {
       payloadOptions.exp = Math.floor(expirationDate / 1000)
-      vc.expirationDate = undefined
+      delete vc.expirationDate
     }
   }
 
   // Extract `iss` and remove issuer id from vc
   payloadOptions.iss = credential.issuerId
   if (typeof vc.issuer === 'string') {
-    vc.issuer = undefined
+    delete vc.issuer
   } else if (typeof vc.issuer === 'object') {
-    vc.issuer.id = undefined
+    delete vc.issuer.id
     if (Object.keys(vc.issuer).length === 0) {
-      vc.issuer = undefined
+      delete vc.issuer
     }
   }
 
   // Extract `jti` and remove id from vc
   if (credential.id) {
     payloadOptions.jti = credential.id
-    vc.id = undefined
+    delete vc.id
   }
 
   if (Array.isArray(credential.credentialSubject) && credential.credentialSubject.length !== 1) {
@@ -62,10 +62,8 @@ export function getJwtPayloadFromCredential(credential: W3cCredential) {
     payloadOptions.sub = credentialSubjectId
 
     if (Array.isArray(vc.credentialSubject)) {
-      // biome-ignore lint/suspicious/noExplicitAny: <explanation>
-      vc.credentialSubject[0].id = undefined as any
+      delete vc.credentialSubject[0].id
     } else {
-      // biome-ignore lint/performance/noDelete: <explanation>
       delete vc.credentialSubject?.id
     }
   }

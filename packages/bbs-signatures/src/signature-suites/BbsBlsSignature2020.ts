@@ -176,8 +176,7 @@ export class BbsBlsSignature2020 extends LinkedDataProof {
       proof,
       documentLoader,
     })
-    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
-    proof['@context'] = undefined as any
+    delete proof['@context']
 
     return proof
   }

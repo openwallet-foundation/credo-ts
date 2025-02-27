@@ -20,11 +20,11 @@ export function getJwtPayloadFromPresentation(presentation: W3cPresentation) {
     payloadOptions.iss = presentation.holderId
 
     if (typeof vp.holder === 'string') {
-      vp.holder = undefined
+      delete vp.holder
     } else if (typeof vp.holder === 'object') {
-      vp.holder.id = undefined
+      delete vp.holder.id
       if (Object.keys(vp.holder).length === 0) {
-        vp.holder = undefined
+        delete vp.holder
       }
     }
   }
@@ -32,7 +32,7 @@ export function getJwtPayloadFromPresentation(presentation: W3cPresentation) {
   // Extract `jti` and remove id from vp
   if (presentation.id) {
     payloadOptions.jti = presentation.id
-    vp.id = undefined
+    delete vp.id
   }
 
   return new JwtPayload(payloadOptions)

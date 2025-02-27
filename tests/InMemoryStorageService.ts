@@ -92,7 +92,7 @@ export class InMemoryStorageService<T extends BaseRecord<any, any, any> = BaseRe
   public async update(agentContext: AgentContext, record: T): Promise<void> {
     record.updatedAt = new Date()
     const value = JsonTransformer.toJSON(record)
-    value._tags = undefined
+    delete value._tags
 
     if (!this.getRecordsForContext(agentContext)[record.id]) {
       throw new RecordNotFoundError(`record with id ${record.id} not found.`, {

@@ -200,7 +200,7 @@ describe('W3cJwtCredentialService', () => {
 
       // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-ignore
-      jwtVc.credential.issuer = undefined
+      delete jwtVc.credential.issuer
 
       const result = await w3cJwtCredentialService.verifyCredential(agentContext, {
         credential: jwtVc,
