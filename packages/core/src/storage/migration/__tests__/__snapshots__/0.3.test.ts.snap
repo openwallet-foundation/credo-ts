@@ -29,7 +29,6 @@ exports[`UpdateAssistant | v0.3.1 - v0.4 should correctly update 'claimFormat' t
     },
     "type": "W3cCredentialRecord",
     "value": {
-      "_tags": undefined,
       "createdAt": "2024-02-05T06:44:47.543Z",
       "credential": {
         "@context": [
@@ -66,7 +65,6 @@ exports[`UpdateAssistant | v0.3.1 - v0.4 should correctly update 'claimFormat' t
     "tags": {},
     "type": "StorageVersionRecord",
     "value": {
-      "_tags": undefined,
       "createdAt": "2023-03-18T18:35:02.888Z",
       "id": "STORAGE_VERSION_RECORD_ID",
       "metadata": {},
@@ -96,7 +94,6 @@ exports[`UpdateAssistant | v0.3.1 - v0.4 should correctly update 'claimFormat' t
     },
     "type": "W3cCredentialRecord",
     "value": {
-      "_tags": undefined,
       "createdAt": "2024-02-05T06:44:47.600Z",
       "credential": "eyJhbGciOiJFZERTQSJ9.eyJpc3MiOiJkaWQ6a2V5Ono2TWtva3JzVm84RGJHRHNuTUFqbm9IaEpvdE1iRFppSGZ2eE00ajY1ZDhwclhVciIsInN1YiI6ImRpZDpleGFtcGxlOmViZmViMWY3MTJlYmM2ZjFjMjc2ZTEyZWMyMSIsInZjIjp7IkBjb250ZXh0IjpbImh0dHBzOi8vd3d3LnczLm9yZy8yMDE4L2NyZWRlbnRpYWxzL3YxIl0sImlkIjoiaHR0cDovL2V4YW1wbGUuZWR1L2NyZWRlbnRpYWxzLzM3MzIiLCJ0eXBlIjpbIlZlcmlmaWFibGVDcmVkZW50aWFsIl0sImlzc3VlciI6eyJpZCI6ImRpZDprZXk6ejZNa29rcnNWbzhEYkdEc25NQWpub0hoSm90TWJEWmlIZnZ4TTRqNjVkOHByWFVyIn0sImlzc3VhbmNlRGF0ZSI6IjIwMTAtMDEtMDFUMTk6MjM6MjRaIiwiY3JlZGVudGlhbFN1YmplY3QiOnsiaWQiOiJkaWQ6ZXhhbXBsZTplYmZlYjFmNzEyZWJjNmYxYzI3NmUxMmVjMjEifX0sImp0aSI6Imh0dHA6Ly9leGFtcGxlLmVkdS9jcmVkZW50aWFscy8zNzMyIiwibmJmIjoxMjYyMzczODA0fQ.suzrfmzM07yiiibK0vOdP9Q0dARA7XVNRUa9DSbH519EWrUDgzsq6SiIG9yyBt39yaqsZc1-8byyuMrPziyWBg",
       "id": "da65187b-f461-4f39-8597-b0d95531d40d",
@@ -122,7 +119,6 @@ exports[`UpdateAssistant | v0.3.1 - v0.4 should correctly update the did records
     },
     "type": "DidRecord",
     "value": {
-      "_tags": undefined,
       "createdAt": "2023-03-18T18:35:07.208Z",
       "did": "did:indy:bcovrin:test:Pow4pdnPgTS7JAXvWkoF2c",
       "id": "4993c740-5cd9-4c79-a7d8-23d1266d31be",
@@ -144,7 +140,6 @@ exports[`UpdateAssistant | v0.3.1 - v0.4 should correctly update the did records
     },
     "type": "DidRecord",
     "value": {
-      "_tags": undefined,
       "createdAt": "2023-03-18T18:35:04.191Z",
       "did": "did:indy:bcovrin:test:8DFqUo6UtQLLZETE7Gm29k",
       "id": "8168612b-73d1-4917-9a61-84e8102988f0",
@@ -158,7 +153,6 @@ exports[`UpdateAssistant | v0.3.1 - v0.4 should correctly update the did records
     "tags": {},
     "type": "StorageVersionRecord",
     "value": {
-      "_tags": undefined,
       "createdAt": "2023-03-18T18:35:02.888Z",
       "id": "STORAGE_VERSION_RECORD_ID",
       "metadata": {},

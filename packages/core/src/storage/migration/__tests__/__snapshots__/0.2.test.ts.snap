@@ -118,7 +118,6 @@ exports[`UpdateAssistant | v0.2 - v0.3.1 should correctly update proof records a
     "tags": {},
     "type": "StorageVersionRecord",
     "value": {
-      "_tags": undefined,
       "createdAt": "2022-09-08T19:35:53.872Z",
       "id": "STORAGE_VERSION_RECORD_ID",
       "metadata": {},
@@ -755,7 +754,6 @@ exports[`UpdateAssistant | v0.2 - v0.3.1 should correctly update the did records
     "tags": {},
     "type": "StorageVersionRecord",
     "value": {
-      "_tags": undefined,
       "createdAt": "2022-09-08T19:35:53.872Z",
       "id": "STORAGE_VERSION_RECORD_ID",
       "metadata": {},
@@ -884,7 +882,6 @@ exports[`UpdateAssistant | v0.2 - v0.3.1 should correctly update the proofs reco
     "tags": {},
     "type": "StorageVersionRecord",
     "value": {
-      "_tags": undefined,
       "createdAt": "2022-09-08T19:35:53.872Z",
       "id": "STORAGE_VERSION_RECORD_ID",
       "metadata": {},
