@@ -110,7 +110,7 @@ export const deriveProof = async (
     })
 
     delete compactProof[alias]
-    compactProof['@context'] = undefined
+    delete compactProof['@context']
 
     /**
      * removes the @included tag when multiple proofs exist because the
@@ -125,7 +125,7 @@ export const deriveProof = async (
     const key = Object.keys(compactProof)[0]
     jsonld.addValue(derivedProof.document, key, compactProof[key])
   } else {
-    derivedProof.proof['@context'] = undefined
+    delete derivedProof.proof['@context']
     jsonld.addValue(derivedProof.document, 'proof', derivedProof.proof)
   }
 

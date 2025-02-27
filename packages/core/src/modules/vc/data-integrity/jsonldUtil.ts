@@ -126,7 +126,7 @@ export const getTypeInfo = async (
     documentLoader,
   })
 
-  compacted['@context'] = undefined
+  delete compacted['@context']
 
   const alias = Object.keys(compacted)[0]
 
