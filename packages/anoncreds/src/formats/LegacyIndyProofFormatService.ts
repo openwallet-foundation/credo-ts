@@ -313,9 +313,7 @@ export class LegacyIndyProofFormatService implements ProofFormatService<LegacyIn
   }
 
   public async shouldAutoRespondToPresentation(
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     _agentContext: AgentContext,
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     _options: ProofFormatAutoRespondPresentationOptions
   ): Promise<boolean> {
     // The presentation is already verified in processPresentation, so we can just return true here.

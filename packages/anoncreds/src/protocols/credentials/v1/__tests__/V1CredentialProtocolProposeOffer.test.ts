@@ -52,7 +52,6 @@ const agentContext = getAgentContext({
   agentConfig,
 })
 
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore
 indyCredentialFormatService.credentialRecordType = 'w3c'
 

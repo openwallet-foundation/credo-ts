@@ -29,7 +29,6 @@ export class CredoWalletWebCrypto {
     return this.agentContext.wallet.getRandomValues(array.byteLength) as unknown as T
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   public async sign(key: CredoWebCryptoKey, message: Uint8Array, _algorithm: KeySignParams): Promise<Uint8Array> {
     const signature = await this.agentContext.wallet.sign({
       key: key.key,

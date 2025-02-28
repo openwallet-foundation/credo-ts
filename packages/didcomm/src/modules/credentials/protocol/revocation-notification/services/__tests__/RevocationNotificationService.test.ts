@@ -67,7 +67,6 @@ describe('RevocationNotificationService', () => {
 
       const date = new Date('2020-01-01T00:00:00.000Z')
 
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-ignore
       const dateSpy = jest.spyOn(global, 'Date').mockImplementation(() => date)
 
@@ -181,7 +180,6 @@ describe('RevocationNotificationService', () => {
 
       const date = new Date('2020-01-01T00:00:00.000Z')
 
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-ignore
       const dateSpy = jest.spyOn(global, 'Date').mockImplementation(() => date)
 

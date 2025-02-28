@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-non-null-assertion */
-
 import { Agent } from '../../../../../core/src/agent/Agent'
 import { KeyType } from '../../../../../core/src/crypto'
 import {

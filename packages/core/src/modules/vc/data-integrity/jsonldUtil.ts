@@ -81,7 +81,6 @@ export const getProofs = async (options: GetProofsOptions): Promise<GetProofsRes
     })
   }
 
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
   // @ts-ignore - needed because getValues is not part of the public API.
   proofs = jsonld.getValues(document, PROOF_PROPERTY)
   delete document[PROOF_PROPERTY]
@@ -118,7 +117,6 @@ export const getTypeInfo = async (
   const { documentLoader } = options
 
   // determine `@type` alias, if any
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
   // @ts-ignore - needed because getValues is not part of the public API.
   const context = jsonld.getValues(document, '@context')
 
@@ -131,16 +129,13 @@ export const getTypeInfo = async (
   const alias = Object.keys(compacted)[0]
 
   // optimize: expand only `@type` and `type` values
-  /* eslint-disable prefer-const */
   const toExpand: Record<string, unknown> = { '@context': context }
 
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
   // @ts-ignore - needed because getValues is not part of the public API.
   toExpand['@type'] = jsonld.getValues(document, '@type').concat(jsonld.getValues(document, alias))
 
   const expanded = (await jsonld.expand(toExpand, { documentLoader }))[0] || {}
 
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
   // @ts-ignore - needed because getValues is not part of the public API.
   return { types: jsonld.getValues(expanded, '@type'), alias }
 }

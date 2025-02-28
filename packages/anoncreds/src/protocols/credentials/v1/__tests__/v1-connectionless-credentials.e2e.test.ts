@@ -47,7 +47,6 @@ describe('V1 Connectionless Credentials', () => {
   test('Faber starts with connection-less credential offer to Alice', async () => {
     testLogger.test('Faber sends credential offer to Alice')
 
-    // eslint-disable-next-line prefer-const
     let { message, credentialRecord: faberCredentialRecord } = await faberAgent.modules.credentials.createOffer({
       comment: 'V1 Out of Band offer',
       credentialFormats: {
@@ -148,7 +147,6 @@ describe('V1 Connectionless Credentials', () => {
   })
 
   test('Faber starts with connection-less credential offer to Alice with auto-accept enabled', async () => {
-    // eslint-disable-next-line prefer-const
     let { message, credentialRecord: faberCredentialRecord } = await faberAgent.modules.credentials.createOffer({
       comment: 'V1 Out of Band offer',
       credentialFormats: {

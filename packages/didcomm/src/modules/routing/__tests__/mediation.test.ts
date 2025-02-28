@@ -106,7 +106,6 @@ describe('mediator establishment', () => {
     await recipientAgent.modules.mediationRecipient.initialize()
 
     const recipientMediator = await recipientAgent.modules.mediationRecipient.findDefaultMediator()
-    // eslint-disable-next-line @typescript-eslint/no-non-null-asserted-optional-chain, @typescript-eslint/no-non-null-assertion
     const recipientMediatorConnection = await recipientAgent.modules.connections.getById(
       recipientMediator?.connectionId
     )

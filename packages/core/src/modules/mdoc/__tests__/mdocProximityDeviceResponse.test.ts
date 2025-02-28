@@ -1,5 +1,4 @@
 import { DeviceRequest, cborEncode, parseDeviceResponse } from '@animo-id/mdoc'
-// eslint-disable-next-line import/no-extraneous-dependencies
 import { Key as AskarKey, Jwk } from '@openwallet-foundation/askar-nodejs'
 
 import { Agent, KeyType } from '../../..'

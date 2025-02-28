@@ -21,9 +21,7 @@ export class BasicTailsFileService implements TailsFileService {
   }
 
   public async uploadTailsFile(
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     _agentContext: AgentContext,
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     _options: {
       revocationRegistryDefinition: AnonCredsRevocationRegistryDefinition
     }

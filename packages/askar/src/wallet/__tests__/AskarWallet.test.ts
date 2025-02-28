@@ -305,12 +305,10 @@ describe.skip('Currently, all KeyTypes are supported by Askar natively', () => {
         }
       }
 
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       public async sign(_options: SignOptions): Promise<Buffer> {
         return new Buffer('signed')
       }
 
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       public async verify(_options: VerifyOptions): Promise<boolean> {
         return true
       }

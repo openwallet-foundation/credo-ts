@@ -198,7 +198,6 @@ describe('W3cJwtCredentialService', () => {
     test('returns invalid result when credential is not according to data model', async () => {
       const jwtVc = W3cJwtVerifiableCredential.fromSerializedJwt(CredoEs256DidJwkJwtVc)
 
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-ignore
       delete jwtVc.credential.issuer
 

@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import type { AgentContext } from '../../../../../../../core/src/agent'
 import type { CredentialStateChangedEvent } from '../../../CredentialEvents'
 import type { CredentialFormat, CredentialFormatCreateOfferOptions, CredentialFormatService } from '../../../formats'

@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-non-null-assertion */
 import type { ConnectionStateChangedEvent } from '../ConnectionEvents'
 
 import { firstValueFrom } from 'rxjs'

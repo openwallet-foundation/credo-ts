@@ -118,7 +118,6 @@ export function transformLegacyConnectionlessInvitationToOutOfBandInvitation(mes
 
   // This destructuring removes the ~service property from the message, and
   // we can can use messageWithoutService to create the out of band invitation
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { '~service': service, ...messageWithoutService } = messageJson
 
   // transform into out of band invitation

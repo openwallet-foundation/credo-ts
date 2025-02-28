@@ -20,7 +20,6 @@ export class W3cCredentialSubject {
     if (options) {
       this.id = options.id
 
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { id, ...claims } = options.claims ?? {}
       this.claims = Object.keys(claims).length > 0 ? claims : undefined
     }

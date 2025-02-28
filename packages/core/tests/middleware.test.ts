@@ -35,7 +35,6 @@ const aliceAgent = new Agent(
 
 describe('Message Handler Middleware E2E', () => {
   let faberConnection: ConnectionRecord
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   let _aliceConnection: ConnectionRecord
 
   beforeEach(async () => {

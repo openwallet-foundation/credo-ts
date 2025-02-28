@@ -87,7 +87,6 @@ describe('V1 Proofs - Connectionless - Indy', () => {
     agents = [aliceAgent, faberAgent]
     testLogger.test('Faber sends presentation request to Alice')
 
-    // eslint-disable-next-line prefer-const
     let { proofRecord: faberProofExchangeRecord, message } = await faberAgent.modules.proofs.createRequest({
       protocolVersion: 'v1',
       proofFormats: {
@@ -482,7 +481,6 @@ describe('V1 Proofs - Connectionless - Indy', () => {
       },
     })
 
-    // eslint-disable-next-line prefer-const
     const { message, proofRecord: faberProofExchangeRecord } = await faberAgent.modules.proofs.createRequest({
       protocolVersion: 'v1',
       proofFormats: {

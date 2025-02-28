@@ -1,5 +1,4 @@
 // No type definitions available for this library
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
 //@ts-ignore
 import jsonld from '@digitalcredentials/jsonld'
 

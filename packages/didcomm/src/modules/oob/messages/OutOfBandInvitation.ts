@@ -145,7 +145,6 @@ export class OutOfBandInvitation extends AgentMessage {
   @ArrayNotEmpty()
   @OutOfBandServiceTransformer()
   @IsStringOrInstance(OutOfBandDidCommService, { each: true })
-  // eslint-disable-next-line @typescript-eslint/ban-types
   private services!: Array<OutOfBandDidCommService | string | string>
 
   /**

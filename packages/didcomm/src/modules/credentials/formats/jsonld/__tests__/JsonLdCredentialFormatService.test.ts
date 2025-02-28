@@ -435,7 +435,6 @@ describe('JsonLd CredentialFormatService', () => {
 
     test('throws error if credential domain not equal to request domain', async () => {
       // this property is not supported yet by us, but could be in the credential we received
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-expect-error
       signCredentialOptionsWithProperty.options.domain = 'https://test.com'
       const requestAttachmentWithDomain = new Attachment({
@@ -460,7 +459,6 @@ describe('JsonLd CredentialFormatService', () => {
 
     test('throws error if credential challenge not equal to request challenge', async () => {
       // this property is not supported yet by us, but could be in the credential we received
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-expect-error
       signCredentialOptionsWithProperty.options.challenge = '7bf32d0b-39d4-41f3-96b6-45de52988e4c'
 

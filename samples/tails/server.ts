@@ -1,6 +1,5 @@
 import { createHash } from 'crypto'
 import fs from 'fs'
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { ConsoleLogger, LogLevel } from '@credo-ts/core'
 import express from 'express'
 import multer, { diskStorage } from 'multer'

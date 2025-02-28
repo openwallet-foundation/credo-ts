@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-non-null-assertion */
-
 import type { DefaultAgentModulesInput } from '../../../util/modules'
 
 import { ReplaySubject, first, firstValueFrom, timeout } from 'rxjs'

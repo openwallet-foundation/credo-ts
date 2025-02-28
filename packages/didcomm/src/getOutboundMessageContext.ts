@@ -92,7 +92,6 @@ export async function getConnectionlessOutboundMessageContext(
   )
 
   const outOfBandRecord = await getOutOfBandRecordForMessage(agentContext, message)
-  // eslint-disable-next-line prefer-const
   let { recipientService, ourService } = await getServicesForMessage(agentContext, {
     lastReceivedMessage,
     lastSentMessage,

@@ -93,7 +93,6 @@ export function transformFromRecordTagValues(tags: TagsBase): { [key: string]: s
  * method.
  */
 export function askarQueryFromSearchQuery<T extends BaseRecord>(query: Query<T>): Record<string, unknown> {
-  // eslint-disable-next-line prefer-const
   let { $and, $or, $not, ...tags } = query
 
   $and = ($and as Query<T>[] | undefined)?.map((q) => askarQueryFromSearchQuery(q))

@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import type { AgentContext } from '../../../../../../../core/src/agent'
 import type { GetAgentMessageOptions } from '../../../../../repository'
 import type { PlaintextMessage } from '../../../../../types'

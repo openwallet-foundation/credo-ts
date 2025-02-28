@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-non-null-assertion */
-
 import type { ConnectionRecord } from '../../didcomm/src'
 
 import { HandshakeProtocol } from '../../didcomm/src'

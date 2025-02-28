@@ -32,7 +32,6 @@ export interface DeriveProofOptions {
   /**
    * Optional custom document loader
    */
-  // eslint-disable-next-line
   documentLoader?: DocumentLoader
 
   /**

@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/ban-ts-comment */
 import type { DidRecord, RecordSavedEvent } from '@credo-ts/core'
 
 import {

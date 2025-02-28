@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-non-null-assertion */
 import type { SubjectMessage } from '../../../../../../tests/transport/SubjectInboundTransport'
 
 import { Subject } from 'rxjs'
@@ -41,7 +40,6 @@ describe('out of band', () => {
       const { outOfBandInvitation } = outOfBandRecord
       const urlMessage = outOfBandInvitation.toUrl({ domain: 'http://example.com' })
 
-      // eslint-disable-next-line prefer-const
       let { outOfBandRecord: receivedOutOfBandRecord, connectionRecord: receiverSenderConnection } =
         await faberAgent.modules.oob.receiveInvitationFromUrl(urlMessage)
       expect(receivedOutOfBandRecord.state).toBe(OutOfBandState.PrepareResponse)
@@ -68,7 +66,6 @@ describe('out of band', () => {
       outOfBandInvitation.handshakeProtocols = ['https://didcomm.org/didexchange/1.0']
       const urlMessage = outOfBandInvitation.toUrl({ domain: 'http://example.com' })
 
-      // eslint-disable-next-line prefer-const
       let { outOfBandRecord: receivedOutOfBandRecord, connectionRecord: receiverSenderConnection } =
         await faberAgent.modules.oob.receiveInvitationFromUrl(urlMessage)
       expect(receivedOutOfBandRecord.state).toBe(OutOfBandState.PrepareResponse)
@@ -95,7 +92,6 @@ describe('out of band', () => {
       const { outOfBandInvitation } = outOfBandRecord
       const urlMessage = outOfBandInvitation.toUrl({ domain: 'http://example.com' })
 
-      // eslint-disable-next-line prefer-const
       let { outOfBandRecord: receivedOutOfBandRecord, connectionRecord: receiverSenderConnection } =
         await faberAgent.modules.oob.receiveInvitationFromUrl(urlMessage)
       expect(receivedOutOfBandRecord.state).toBe(OutOfBandState.PrepareResponse)

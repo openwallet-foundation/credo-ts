@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-non-null-assertion */
 import type { SubjectMessage } from '../../../tests/transport/SubjectInboundTransport'
 import type { AnonCredsCredentialFormatService } from '../../anoncreds/src'
 import type { AgentMessage } from '../../didcomm/src/AgentMessage'
@@ -315,7 +314,6 @@ describe('out of band', () => {
       const { outOfBandInvitation } = outOfBandRecord
       const urlMessage = outOfBandInvitation.toUrl({ domain: 'http://example.com' })
 
-      // eslint-disable-next-line prefer-const
       let { outOfBandRecord: receivedOutOfBandRecord, connectionRecord: aliceFaberConnection } =
         await aliceAgent.modules.oob.receiveInvitationFromUrl(urlMessage)
       expect(receivedOutOfBandRecord.state).toBe(OutOfBandState.PrepareResponse)
@@ -413,7 +411,6 @@ describe('out of band', () => {
       const { message } = await faberAgent.modules.credentials.createOffer(credentialTemplate)
 
       // we need to override the message type to use the legacy did:sov prefix
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-ignore
       message.type = message.type.replace('https://didcomm.org', 'did:sov:BzCbsNYhMrjHiqZDTUASHg;spec')
       const { outOfBandInvitation } = await faberAgent.modules.oob.createInvitation({

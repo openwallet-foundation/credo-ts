@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-non-null-assertion */
 import type { SubjectMessage } from '../../../tests/transport/SubjectInboundTransport'
 import type { AgentMessageProcessedEvent } from '../../didcomm/src'
 import type { OutOfBandDidCommService } from '../../didcomm/src/modules/oob'

@@ -8,7 +8,6 @@ import { JsonTransformer } from '../../../../../utils'
 import * as testModule from '../w3cCredentialRecord'
 
 const dependencyManager = {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   resolve: (_injectionToken: unknown) => {
     // no-op
   },

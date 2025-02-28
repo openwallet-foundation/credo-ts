@@ -228,7 +228,6 @@ function _includesCompatibleContext(options: { document: JsonLdDoc }) {
 }
 
 function _isEd2020Key(verificationMethod: JsonLdDoc) {
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
   // @ts-ignore - .hasValue is not part of the public API
   return jsonld.hasValue(verificationMethod, 'type', 'Ed25519VerificationKey2020')
 }

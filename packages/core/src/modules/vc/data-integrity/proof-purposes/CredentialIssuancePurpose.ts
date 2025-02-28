@@ -64,7 +64,6 @@ export class CredentialIssuancePurpose extends AssertionProofPurpose {
       }
 
       // This @ts-ignore is necessary because the .getValues() method is not part of the public API.
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       //@ts-ignore
       const issuer = jsonld.util.getValues(options.document, 'issuer')
 

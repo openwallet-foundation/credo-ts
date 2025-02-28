@@ -150,7 +150,6 @@ export class Attachment {
 
   public addJws(jws: JwsDetachedFormat) {
     // Remove payload if user provided a non-detached JWS
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { payload, ...detachedJws } = jws as JwsGeneralFormat
 
     // If no JWS yet, assign to current JWS

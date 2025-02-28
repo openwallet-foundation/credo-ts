@@ -54,7 +54,6 @@ export class ConnectionInvitationMessage extends AgentMessage {
         this.routingKeys = options.routingKeys
       }
 
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-ignore
       if (options.did && (options.recipientKeys || options.routingKeys || options.serviceEndpoint)) {
         throw new CredoError(

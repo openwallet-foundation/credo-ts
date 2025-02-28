@@ -94,7 +94,6 @@ export class AnonCredsCredentialFormatService implements CredentialFormatService
 
     // We want all properties except for `attributes` and `linkedAttachments` attributes.
     // The easiest way is to destructure and use the spread operator. But that leaves the other properties unused
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { attributes, linkedAttachments, ...anoncredsCredentialProposal } = anoncredsFormat
     const proposal = new AnonCredsCredentialProposal(anoncredsCredentialProposal)
 
@@ -263,7 +262,6 @@ export class AnonCredsCredentialFormatService implements CredentialFormatService
   /**
    * We don't have any models to validate an anoncreds request object, for now this method does nothing
    */
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   public async processRequest(_agentContext: AgentContext, _options: CredentialFormatProcessOptions): Promise<void> {
     // not needed for anoncreds
   }

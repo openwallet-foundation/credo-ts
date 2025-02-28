@@ -437,9 +437,7 @@ export class DifPresentationExchangeProofFormatService
    *
    */
   public async shouldAutoRespondToPresentation(
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     _agentContext: AgentContext,
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     _options: ProofFormatAutoRespondPresentationOptions
   ): Promise<boolean> {
     return true

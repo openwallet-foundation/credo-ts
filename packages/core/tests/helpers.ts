@@ -754,7 +754,6 @@ export function mockFunction<T extends (...args: any[]) => any>(fn: T): jest.Moc
 /**
  * Set a property using a getter value on a mocked oject.
  */
-// eslint-disable-next-line @typescript-eslint/ban-types
 export function mockProperty<T extends {}, K extends keyof T>(object: T, property: K, value: T[K]) {
   Object.defineProperty(object, property, { get: () => value })
 }

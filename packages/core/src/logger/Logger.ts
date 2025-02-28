@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 export enum LogLevel {
   test = 0,
   trace = 1,

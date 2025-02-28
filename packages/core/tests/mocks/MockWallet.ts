@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import type { Wallet } from '../../src'
 import type { Key } from '../../src/crypto'
 import type { EncryptedMessage, WalletConfig, WalletConfigRekey, WalletExportImportConfig } from '../../src/types'

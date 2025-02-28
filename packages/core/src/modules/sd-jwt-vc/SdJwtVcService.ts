@@ -321,7 +321,6 @@ export class SdJwtVcService {
       }
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { isValid: _, ...allVerifications } = verificationResult
     verificationResult.isValid = Object.values(allVerifications).every((verification) => verification === true)
 

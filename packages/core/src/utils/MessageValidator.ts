@@ -11,7 +11,6 @@ export class MessageValidator {
    * @returns void
    * @throws array of validation errors {@link ValidationError}
    */
-  // eslint-disable-next-line @typescript-eslint/ban-types
   public static validateSync<T extends object>(classInstance: T & {}) {
     // NOTE: validateSync returns an Array of errors.
     // We have to transform that into an error of choice and throw that.

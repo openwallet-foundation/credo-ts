@@ -83,7 +83,6 @@ async function _customDocumentLoader(url: string): Promise<DocumentLoaderResult>
         '@embed': '@never',
         id: url,
       },
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-ignore
       { documentLoader: this }
     )
@@ -96,5 +95,4 @@ async function _customDocumentLoader(url: string): Promise<DocumentLoaderResult>
   }
 }
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export const customDocumentLoader = (_agentContext?: AgentContext) => _customDocumentLoader.bind(_customDocumentLoader)

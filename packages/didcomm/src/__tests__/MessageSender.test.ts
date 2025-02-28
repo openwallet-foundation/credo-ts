@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/ban-ts-comment */
-
 import type { DidDocumentService, IndyAgentService } from '../../../core/src/modules/dids'
 import type { ResolvedDidCommService } from '../../../core/src/types'
 import type { AgentMessageSentEvent } from '../Events'

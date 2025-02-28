@@ -85,7 +85,6 @@ export class MessageHandlerRegistry {
         seenProtocolUris.add(m.protocolUri)
         return !has
       })
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       .map(({ messageName, messageTypeUri, ...parsedProtocolUri }) => parsedProtocolUri)
 
     return protocolUris

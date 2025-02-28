@@ -3,7 +3,6 @@ import type { AgentMessageReceivedEvent, EncryptedMessage, InboundTransport, Tra
 
 import { CredoError, EventEmitter, utils } from '@credo-ts/core'
 import { AgentEventTypes, DidCommModuleConfig, TransportService } from '@credo-ts/didcomm'
-// eslint-disable-next-line import/no-named-as-default
 import WebSocket, { Server } from 'ws'
 
 export class WsInboundTransport implements InboundTransport {

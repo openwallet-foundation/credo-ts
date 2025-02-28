@@ -214,7 +214,6 @@ export class TenantSessionCoordinator {
   private async createAgentContext(tenantRecord: TenantRecord) {
     const tenantDependencyManager = this.rootAgentContext.dependencyManager.createChild()
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { id, key, keyDerivationMethod, ...strippedWalletConfig } = this.rootAgentContext.config?.walletConfig ?? {}
     const tenantConfig = this.rootAgentContext.config.extend({
       ...tenantRecord.config,

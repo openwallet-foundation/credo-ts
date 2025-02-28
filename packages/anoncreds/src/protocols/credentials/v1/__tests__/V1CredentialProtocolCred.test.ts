@@ -58,7 +58,6 @@ const didCommMessageRepository = new DidCommMessageRepositoryMock()
 const legacyIndyCredentialFormatService = new LegacyIndyCredentialFormatServiceMock()
 const connectionService = new ConnectionServiceMock()
 
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore
 legacyIndyCredentialFormatService.credentialRecordType = 'w3c'
 

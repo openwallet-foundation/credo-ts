@@ -43,7 +43,6 @@ export type MdocDeviceResponseVerifyOptions = {
 }
 
 export type MdocSignOptions = {
-  // eslint-disable-next-line @typescript-eslint/ban-types
   docType: 'org.iso.18013.5.1.mDL' | (string & {})
   validityInfo?: Partial<ValidityInfo>
   namespaces: MdocNameSpaces

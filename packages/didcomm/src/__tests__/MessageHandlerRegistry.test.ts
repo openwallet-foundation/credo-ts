@@ -38,7 +38,7 @@ class TestHandler implements MessageHandler {
   public supportedMessages
 
   // We don't need an implementation in test handler so we can disable lint.
-  // eslint-disable-next-line @typescript-eslint/no-empty-function
+  // biome-ignore lint/suspicious/noEmptyBlockStatements: <explanation>
   public async handle() {}
 }
 

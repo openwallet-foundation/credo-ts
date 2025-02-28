@@ -88,7 +88,6 @@ export const deriveProof = async (
   }
 
   if (!skipProofCompaction) {
-    /* eslint-disable prefer-const */
     const expandedProof: Record<string, unknown> = {
       [SECURITY_PROOF_URL]: {
         '@graph': derivedProof.proof,

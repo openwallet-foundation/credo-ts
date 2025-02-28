@@ -47,7 +47,6 @@ export function defaultDocumentLoader(agentContext: AgentContext): DocumentLoade
           '@embed': '@never',
           id: url,
         },
-        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
         // @ts-ignore
         { documentLoader: this }
       )
