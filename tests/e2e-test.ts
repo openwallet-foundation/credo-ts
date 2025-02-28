@@ -141,9 +141,8 @@ export async function e2eTest({
       filter((e) => pickupRequestMessages.includes(e.payload.message.message.type)),
       map((e) => e.payload.message.message.threadId)
     )
-    .subscribe((threadId) => {
-      lastSentPickupMessageThreadId = threadId
-    })
+    // biome-ignore lint/suspicious/noAssignInExpressions: <explanation>
+    .subscribe((threadId) => (lastSentPickupMessageThreadId = threadId))
 
   // Wait for the response to the pickup message to be processed
   if (lastSentPickupMessageThreadId) {

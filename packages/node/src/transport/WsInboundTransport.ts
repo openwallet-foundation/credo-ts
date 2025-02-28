@@ -99,7 +99,8 @@ export class WebSocketTransportSession implements TransportSession {
       throw new CredoError(`${this.type} transport session has been closed.`)
     }
     this.socket.send(JSON.stringify(encryptedMessage), (error?) => {
-      if (error !== undefined) {
+      // biome-ignore lint/suspicious/noDoubleEquals: If error check is added as '!==' it fails the check
+      if (error != undefined) {
         this.logger.debug(`Error sending message: ${error}`)
         throw new CredoError(`${this.type} send message failed.`, { cause: error })
       }
