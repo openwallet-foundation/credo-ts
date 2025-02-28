@@ -22,9 +22,9 @@ export class BasicTailsFileService implements TailsFileService {
 
   public async uploadTailsFile(
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    agentContext: AgentContext,
+    _agentContext: AgentContext,
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    options: {
+    _options: {
       revocationRegistryDefinition: AnonCredsRevocationRegistryDefinition
     }
   ): Promise<{ tailsFileUrl: string }> {

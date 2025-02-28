@@ -52,7 +52,7 @@ import {
 
 @injectable()
 export class AnonCredsRsIssuerService implements AnonCredsIssuerService {
-  public async createSchema(agentContext: AgentContext, options: CreateSchemaOptions): Promise<AnonCredsSchema> {
+  public async createSchema(_agentContext: AgentContext, options: CreateSchemaOptions): Promise<AnonCredsSchema> {
     const { issuerId, name, version, attrNames: attributeNames } = options
 
     let schema: Schema | undefined
@@ -71,7 +71,7 @@ export class AnonCredsRsIssuerService implements AnonCredsIssuerService {
   }
 
   public async createCredentialDefinition(
-    agentContext: AgentContext,
+    _agentContext: AgentContext,
     options: CreateCredentialDefinitionOptions
   ): Promise<CreateCredentialDefinitionReturn> {
     const { tag, supportRevocation, schema, issuerId, schemaId } = options
@@ -106,7 +106,7 @@ export class AnonCredsRsIssuerService implements AnonCredsIssuerService {
   }
 
   public async createRevocationRegistryDefinition(
-    agentContext: AgentContext,
+    _agentContext: AgentContext,
     options: CreateRevocationRegistryDefinitionOptions
   ): Promise<CreateRevocationRegistryDefinitionReturn> {
     const { tag, issuerId, credentialDefinition, credentialDefinitionId, maximumCredentialNumber, tailsDirectoryPath } =

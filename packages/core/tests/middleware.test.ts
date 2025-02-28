@@ -36,7 +36,7 @@ const aliceAgent = new Agent(
 describe('Message Handler Middleware E2E', () => {
   let faberConnection: ConnectionRecord
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  let aliceConnection: ConnectionRecord
+  let _aliceConnection: ConnectionRecord
 
   beforeEach(async () => {
     const faberMessages = new Subject<SubjectMessage>()
@@ -53,7 +53,7 @@ describe('Message Handler Middleware E2E', () => {
     aliceAgent.modules.didcomm.registerInboundTransport(new SubjectInboundTransport(aliceMessages))
     aliceAgent.modules.didcomm.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     await aliceAgent.initialize()
-    ;[aliceConnection, faberConnection] = await makeConnection(aliceAgent, faberAgent)
+    ;[_aliceConnection, faberConnection] = await makeConnection(aliceAgent, faberAgent)
   })
 
   afterEach(async () => {

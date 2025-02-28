@@ -27,7 +27,7 @@ function getOpenIdHolderModules() {
     askar: new AskarModule({ askar }),
     openId4VcHolder: new OpenId4VcHolderModule(),
     x509: new X509Module({
-      getTrustedCertificatesForVerification: (agentContext, { certificateChain, verification }) => {
+      getTrustedCertificatesForVerification: (_agentContext, { certificateChain, verification }) => {
         console.log(
           greenText(
             `dyncamically trusting certificate ${certificateChain[0].getIssuerNameField('C')} for verification of ${

@@ -65,7 +65,7 @@ export class LegacyIndyCredentialFormatService implements CredentialFormatServic
    *
    */
   public async createProposal(
-    agentContext: AgentContext,
+    _agentContext: AgentContext,
     { credentialFormats, credentialRecord }: CredentialFormatCreateProposalOptions<LegacyIndyCredentialFormat>
   ): Promise<CredentialFormatCreateProposalReturn> {
     const format = new CredentialFormatSpec({
@@ -86,7 +86,7 @@ export class LegacyIndyCredentialFormatService implements CredentialFormatServic
 
     try {
       MessageValidator.validateSync(proposal)
-    } catch (error) {
+    } catch (_error) {
       throw new CredoError(`Invalid proposal supplied: ${indyCredentialProposal} in Indy Format Service`)
     }
 
@@ -107,7 +107,7 @@ export class LegacyIndyCredentialFormatService implements CredentialFormatServic
   }
 
   public async processProposal(
-    agentContext: AgentContext,
+    _agentContext: AgentContext,
     { attachment }: CredentialFormatProcessOptions
   ): Promise<void> {
     const proposalJson = attachment.getDataAsJson()
@@ -262,7 +262,7 @@ export class LegacyIndyCredentialFormatService implements CredentialFormatServic
    * We don't have any models to validate an indy request object, for now this method does nothing
    */
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  public async processRequest(agentContext: AgentContext, options: CredentialFormatProcessOptions): Promise<void> {
+  public async processRequest(_agentContext: AgentContext, _options: CredentialFormatProcessOptions): Promise<void> {
     // not needed for Indy
   }
 
@@ -420,7 +420,7 @@ export class LegacyIndyCredentialFormatService implements CredentialFormatServic
   }
 
   public async shouldAutoRespondToProposal(
-    agentContext: AgentContext,
+    _agentContext: AgentContext,
     { offerAttachment, proposalAttachment }: CredentialFormatAutoRespondProposalOptions
   ) {
     const proposalJson = proposalAttachment.getDataAsJson<LegacyIndyCredentialProposalFormat>()
@@ -433,7 +433,7 @@ export class LegacyIndyCredentialFormatService implements CredentialFormatServic
   }
 
   public async shouldAutoRespondToOffer(
-    agentContext: AgentContext,
+    _agentContext: AgentContext,
     { offerAttachment, proposalAttachment }: CredentialFormatAutoRespondOfferOptions
   ) {
     const proposalJson = proposalAttachment.getDataAsJson<LegacyIndyCredentialProposalFormat>()
@@ -446,7 +446,7 @@ export class LegacyIndyCredentialFormatService implements CredentialFormatServic
   }
 
   public async shouldAutoRespondToRequest(
-    agentContext: AgentContext,
+    _agentContext: AgentContext,
     { offerAttachment, requestAttachment }: CredentialFormatAutoRespondRequestOptions
   ) {
     const credentialOfferJson = offerAttachment.getDataAsJson<AnonCredsCredentialOffer>()
@@ -456,7 +456,7 @@ export class LegacyIndyCredentialFormatService implements CredentialFormatServic
   }
 
   public async shouldAutoRespondToCredential(
-    agentContext: AgentContext,
+    _agentContext: AgentContext,
     { credentialRecord, requestAttachment, credentialAttachment }: CredentialFormatAutoRespondCredentialOptions
   ) {
     const credentialJson = credentialAttachment.getDataAsJson<AnonCredsCredential>()

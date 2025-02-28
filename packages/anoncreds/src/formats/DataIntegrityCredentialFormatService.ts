@@ -111,8 +111,9 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
    */
   public async createProposal(
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    agentContext: AgentContext,
+    _agentContext: AgentContext,
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    // biome-ignore lint/correctness/noUnusedVariables: <explanation>
     { credentialFormats, credentialRecord }: CredentialFormatCreateProposalOptions<DataIntegrityCredentialFormat>
   ): Promise<CredentialFormatCreateProposalReturn> {
     throw new CredoError('Not defined')
@@ -120,8 +121,9 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
 
   public async processProposal(
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    agentContext: AgentContext,
+    _agentContext: AgentContext,
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    // biome-ignore lint/correctness/noUnusedVariables: <explanation>
     { attachment }: CredentialFormatProcessOptions
   ): Promise<void> {
     throw new CredoError('Not defined')
@@ -129,9 +131,9 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
 
   public async acceptProposal(
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    agentContext: AgentContext,
+    _agentContext: AgentContext,
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    input: CredentialFormatAcceptProposalOptions<DataIntegrityCredentialFormat>
+    _input: CredentialFormatAcceptProposalOptions<DataIntegrityCredentialFormat>
   ): Promise<CredentialFormatCreateOfferReturn> {
     throw new CredoError('Not defined')
   }
@@ -423,7 +425,7 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
    * We don't have any models to validate an anoncreds request object, for now this method does nothing
    */
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  public async processRequest(agentContext: AgentContext, options: CredentialFormatProcessOptions): Promise<void> {
+  public async processRequest(_agentContext: AgentContext, _options: CredentialFormatProcessOptions): Promise<void> {
     // not needed for dataIntegrity
   }
 
@@ -920,8 +922,9 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
 
   public async shouldAutoRespondToProposal(
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    agentContext: AgentContext,
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    _agentContext: AgentContext,
+    // eslint-disable-next-line @typescript-eslint/no-unused-var
+    // biome-ignore lint/correctness/noUnusedVariables: <explanation>
     { offerAttachment, proposalAttachment }: CredentialFormatAutoRespondProposalOptions
   ) {
     throw new CredoError('Not implemented')
@@ -931,7 +934,7 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
 
   public async shouldAutoRespondToOffer(
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    agentContext: AgentContext,
+    _agentContext: AgentContext,
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     { offerAttachment }: CredentialFormatAutoRespondOfferOptions
   ) {
@@ -942,7 +945,7 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
 
   public async shouldAutoRespondToRequest(
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    agentContext: AgentContext,
+    _agentContext: AgentContext,
     { offerAttachment, requestAttachment }: CredentialFormatAutoRespondRequestOptions
   ) {
     const credentialOffer = JsonTransformer.fromJSON(offerAttachment?.getDataAsJson(), DataIntegrityCredentialOffer)
@@ -970,7 +973,7 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
         const subjectJson = credentialOffer.credential.credentialSubject
         const credentialSubject = JsonTransformer.fromJSON(subjectJson, W3cCredentialSubject)
         if (credentialSubject.id === undefined) return false
-      } catch (e) {
+      } catch (_e) {
         return false
       }
     }
@@ -989,8 +992,9 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
 
   public async shouldAutoRespondToCredential(
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    agentContext: AgentContext,
+    _agentContext: AgentContext,
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    // biome-ignore lint/correctness/noUnusedVariables: <explanation>
     { credentialRecord, requestAttachment, credentialAttachment }: CredentialFormatAutoRespondCredentialOptions
   ) {
     return true

@@ -44,6 +44,11 @@
         "noNonNullAssertion": "error"
       },
       "correctness": {
+        "noUnusedVariables": {
+          "level": "error",
+          "fix": "safe"
+        },
+        "noUnusedFunctionParameters": "off",
         "noUnusedImports": "error",
         "noUndeclaredDependencies": "warn",
         "noInvalidUseBeforeDeclaration": "error"

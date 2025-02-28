@@ -97,4 +97,4 @@ async function _customDocumentLoader(url: string): Promise<DocumentLoaderResult>
 }
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-export const customDocumentLoader = (agentContext?: AgentContext) => _customDocumentLoader.bind(_customDocumentLoader)
+export const customDocumentLoader = (_agentContext?: AgentContext) => _customDocumentLoader.bind(_customDocumentLoader)

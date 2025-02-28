@@ -474,7 +474,7 @@ describe('OpenId4Vc', () => {
         verifyJwt: () => {
           throw new Error('not implemented')
         },
-        signJwt: async (signer, { header, payload }) => {
+        signJwt: async (_signer, { header, payload }) => {
           const jwsService = issuer.agent.dependencyManager.resolve(JwsService)
           return jwsService.createJwsCompact(issuer.agent.context, {
             key: authorizationServerKey,
@@ -490,7 +490,7 @@ describe('OpenId4Vc', () => {
       },
     })
     const app = express()
-    app.get('/.well-known/oauth-authorization-server', (req, res) =>
+    app.get('/.well-known/oauth-authorization-server', (_req, res) =>
       res.json({
         jwks_uri: 'http://localhost:4747/jwks.json',
         issuer: 'http://localhost:4747',
@@ -498,14 +498,14 @@ describe('OpenId4Vc', () => {
         authorization_endpoint: 'http://localhost:4747/authorize',
       } satisfies AuthorizationServerMetadata)
     )
-    app.get('/jwks.json', (req, res) =>
+    app.get('/jwks.json', (_req, res) =>
       res.setHeader('Content-Type', 'application/jwk-set+json').send(
         JSON.stringify({
           keys: [{ ...authorizationServerJwk, kid: 'first' }],
         })
       )
     )
-    app.post('/token', async (req, res) =>
+    app.post('/token', async (_req, res) =>
       res.json(
         await authorizationServer.createAccessTokenResponse({
           authorizationServer: 'http://localhost:4747',

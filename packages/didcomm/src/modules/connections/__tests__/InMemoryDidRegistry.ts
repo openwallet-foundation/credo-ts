@@ -77,7 +77,7 @@ export class InMemoryDidRegistry implements DidRegistrar, DidResolver {
     }
   }
 
-  public async resolve(agentContext: AgentContext, did: string): Promise<DidResolutionResult> {
+  public async resolve(_agentContext: AgentContext, did: string): Promise<DidResolutionResult> {
     const didDocument = this.dids[did]
 
     if (!didDocument) {

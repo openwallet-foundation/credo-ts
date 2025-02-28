@@ -68,7 +68,7 @@ export class AnonCredsDataIntegrityService implements IAnonCredsDataIntegritySer
   }
 
   private async getCredentialMetadataForDescriptor(
-    agentContext: AgentContext,
+    _agentContext: AgentContext,
     descriptorMapObject: Descriptor,
     selectedCredentials: W3cJsonLdVerifiableCredential[]
   ) {

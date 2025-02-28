@@ -308,7 +308,7 @@ export class SdJwtVcService {
             returnSdJwtVc.typeMetadata = typeMetadata as SdJwtVcTypeMetadata
           }
         }
-      } catch (error) {
+      } catch (_error) {
         // we allow vct without type metadata for now
       }
     } catch (error) {

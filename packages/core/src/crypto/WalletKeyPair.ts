@@ -35,7 +35,7 @@ export function createWalletKeyPairClass(wallet: Wallet) {
     }
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    public verifyFingerprint(fingerprint: string): boolean {
+    public verifyFingerprint(_fingerprint: string): boolean {
       throw new Error('Method not implemented.')
     }
 

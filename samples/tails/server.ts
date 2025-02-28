@@ -33,7 +33,7 @@ function fileHash(filePath: string, algorithm = 'sha256') {
         const hash = shasum.digest('hex')
         return resolve(hash)
       })
-    } catch (error) {
+    } catch (_error) {
       return reject('error in calculation')
     }
   })
@@ -41,7 +41,7 @@ function fileHash(filePath: string, algorithm = 'sha256') {
 
 const fileStorage = diskStorage({
   // biome-ignore lint/suspicious/noExplicitAny: <explanation>
-  filename: (req: any, file: { originalname: string }, cb: (arg0: null, arg1: string) => void) => {
+  filename: (_req: any, file: { originalname: string }, cb: (arg0: null, arg1: string) => void) => {
     cb(null, `${file.originalname}-${new Date().toISOString()}`)
   },
 })
@@ -77,7 +77,7 @@ app.get('/:tailsFileId', async (req, res) => {
     const file = fs.createReadStream(path)
     res.setHeader('Content-Disposition', `attachment: filename="${fileName}"`)
     file.pipe(res)
-  } catch (error) {
+  } catch (_error) {
     logger.debug(`error reading file: ${path}`)
     res.status(500).end()
   }

@@ -130,7 +130,7 @@ export class HttpOutboundTransport implements OutboundTransport {
               message: encryptedMessage,
             },
           })
-        } catch (error) {
+        } catch (_error) {
           this.logger.debug('Unable to parse response message')
         }
       } else {

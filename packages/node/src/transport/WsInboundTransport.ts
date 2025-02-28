@@ -94,7 +94,7 @@ export class WebSocketTransportSession implements TransportSession {
     this.logger = logger
   }
 
-  public async send(agentContext: AgentContext, encryptedMessage: EncryptedMessage): Promise<void> {
+  public async send(_agentContext: AgentContext, encryptedMessage: EncryptedMessage): Promise<void> {
     if (this.socket.readyState !== WebSocket.OPEN) {
       throw new CredoError(`${this.type} transport session has been closed.`)
     }

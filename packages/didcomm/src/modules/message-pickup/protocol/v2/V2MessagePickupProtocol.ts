@@ -75,7 +75,7 @@ export class V2MessagePickupProtocol extends BaseMessagePickupProtocol {
   }
 
   public async createPickupMessage(
-    agentContext: AgentContext,
+    _agentContext: AgentContext,
     options: PickupMessagesProtocolOptions
   ): Promise<PickupMessagesProtocolReturnType<AgentMessage>> {
     const { connectionRecord, recipientDid: recipientKey } = options
@@ -131,7 +131,7 @@ export class V2MessagePickupProtocol extends BaseMessagePickupProtocol {
   }
 
   public async setLiveDeliveryMode(
-    agentContext: AgentContext,
+    _agentContext: AgentContext,
     options: SetLiveDeliveryModeProtocolOptions
   ): Promise<SetLiveDeliveryModeProtocolReturnType<AgentMessage>> {
     const { connectionRecord, liveDelivery } = options

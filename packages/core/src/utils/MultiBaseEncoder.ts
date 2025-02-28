@@ -60,7 +60,7 @@ export class MultiBaseEncoder {
     try {
       MultiBaseEncoder.decode(data)
       return true
-    } catch (error) {
+    } catch (_error) {
       return false
     }
   }

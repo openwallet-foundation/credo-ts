@@ -9,7 +9,7 @@ export class InMemoryTailsFileService extends BasicTailsFileService {
   private tailsFilePaths: Record<string, string> = {}
 
   public async uploadTailsFile(
-    agentContext: AgentContext,
+    _agentContext: AgentContext,
     options: {
       revocationRegistryDefinition: AnonCredsRevocationRegistryDefinition
     }

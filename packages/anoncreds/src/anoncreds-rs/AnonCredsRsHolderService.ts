@@ -87,7 +87,7 @@ import { getRevocationMetadata } from './utils'
 @injectable()
 export class AnonCredsRsHolderService implements AnonCredsHolderService {
   public async createLinkSecret(
-    agentContext: AgentContext,
+    _agentContext: AgentContext,
     options?: CreateLinkSecretOptions
   ): Promise<CreateLinkSecretReturn> {
     return {
@@ -329,7 +329,7 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
     }
   }
 
-  public async w3cToLegacyCredential(agentContext: AgentContext, options: W3cToLegacyCredentialOptions) {
+  public async w3cToLegacyCredential(_agentContext: AgentContext, options: W3cToLegacyCredentialOptions) {
     const credentialJson = JsonTransformer.toJSON(options.credential)
     const w3cAnonCredsCredentialObj = W3cAnonCredsCredential.fromJson(credentialJson)
     const w3cCredentialObj = w3cAnonCredsCredentialObj.toLegacy()

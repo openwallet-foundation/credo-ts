@@ -40,12 +40,12 @@ export class MessagePickupSessionService {
       })
   }
 
-  public getLiveSession(agentContext: AgentContext, sessionId: string) {
+  public getLiveSession(_agentContext: AgentContext, sessionId: string) {
     return this.sessions.find((session) => session.id === sessionId)
   }
 
   public getLiveSessionByConnectionId(
-    agentContext: AgentContext,
+    _agentContext: AgentContext,
     options: { connectionId: string; role?: MessagePickupSessionRole }
   ) {
     const { connectionId, role } = options

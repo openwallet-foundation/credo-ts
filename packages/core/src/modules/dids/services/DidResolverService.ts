@@ -45,7 +45,7 @@ export class DidResolverService {
     let parsed: ParsedDid
     try {
       parsed = parseDid(didUrl)
-    } catch (error) {
+    } catch (_error) {
       return {
         ...result,
         didResolutionMetadata: { error: 'invalidDid' },

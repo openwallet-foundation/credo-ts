@@ -14,12 +14,12 @@ export class ConsoleLogger extends BaseLogger {
   } as const
 
   // biome-ignore lint/suspicious/noExplicitAny: <explanation>
-  private log(level: Exclude<LogLevel, LogLevel.off>, message: string, data?: Record<string, any>): void {
+  private log(level: Exclude<LogLevel, LogLevel.off>, _message: string, data?: Record<string, any>): void {
     // Get console method from mapping
-    const consoleLevel = this.consoleLogMap[level]
+    const _consoleLevel = this.consoleLogMap[level]
 
     // Get logger prefix from log level names in enum
-    const prefix = LogLevel[level].toUpperCase()
+    const _prefix = LogLevel[level].toUpperCase()
 
     // Return early if logging is not enabled for this level
     if (!this.isEnabled(level)) return

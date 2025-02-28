@@ -78,7 +78,7 @@ export class AnonCredsProofFormatService implements ProofFormatService<AnonCreds
     return { attachment, format }
   }
 
-  public async processProposal(agentContext: AgentContext, { attachment }: ProofFormatProcessOptions): Promise<void> {
+  public async processProposal(_agentContext: AgentContext, { attachment }: ProofFormatProcessOptions): Promise<void> {
     const proposalJson = attachment.getDataAsJson<AnonCredsProofRequest>()
 
     // fromJson also validates
@@ -141,7 +141,7 @@ export class AnonCredsProofFormatService implements ProofFormatService<AnonCreds
     return { attachment, format }
   }
 
-  public async processRequest(agentContext: AgentContext, { attachment }: ProofFormatProcessOptions): Promise<void> {
+  public async processRequest(_agentContext: AgentContext, { attachment }: ProofFormatProcessOptions): Promise<void> {
     const requestJson = attachment.getDataAsJson<AnonCredsProofRequest>()
 
     // fromJson also validates
@@ -283,7 +283,7 @@ export class AnonCredsProofFormatService implements ProofFormatService<AnonCreds
   }
 
   public async shouldAutoRespondToRequest(
-    agentContext: AgentContext,
+    _agentContext: AgentContext,
     { proposalAttachment, requestAttachment }: ProofFormatAutoRespondRequestOptions
   ): Promise<boolean> {
     const proposalJson = proposalAttachment.getDataAsJson<AnonCredsProofRequest>()

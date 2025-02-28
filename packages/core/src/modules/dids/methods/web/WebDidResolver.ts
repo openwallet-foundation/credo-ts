@@ -23,7 +23,7 @@ export class WebDidResolver implements DidResolver {
   }
 
   public async resolve(
-    agentContext: AgentContext,
+    _agentContext: AgentContext,
     did: string,
     parsed: ParsedDid,
     didResolutionOptions: DidResolutionOptions

@@ -73,7 +73,7 @@ export class SubjectTransportSession implements TransportSession {
     this.replySubject = replySubject
   }
 
-  public async send(agentContext: AgentContext, encryptedMessage: EncryptedMessage): Promise<void> {
+  public async send(_agentContext: AgentContext, encryptedMessage: EncryptedMessage): Promise<void> {
     this.replySubject.next({ message: encryptedMessage })
   }
 

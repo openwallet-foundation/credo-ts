@@ -159,7 +159,7 @@ export const parseInvitationShortUrl = async (
     const outOfBandInvitation = await oobInvitationFromShortUrl(await fetchShortUrl(invitationUrl, dependencies))
     outOfBandInvitation.invitationType = InvitationType.OutOfBand
     return outOfBandInvitation
-  } catch (error) {
+  } catch (_error) {
     throw new CredoError(
       'InvitationUrl is invalid. It needs to contain one, and only one, of the following parameters: `oob`, `c_i` or `d_m`, or be valid shortened URL'
     )

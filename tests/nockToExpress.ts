@@ -6,7 +6,7 @@ import request from 'supertest'
 
 // Helper function to forward requests from nock to express
 export function setupNockToExpress(baseUrl: string, app: Express) {
-  async function reply(this: ReplyFnContext, uri: string, body: Body) {
+  async function reply(this: ReplyFnContext, _uri: string, body: Body) {
     // Get the original request details
     const { method, path, headers } = this.req
 
@@ -44,7 +44,7 @@ export function setupNockToExpress(baseUrl: string, app: Express) {
     try {
       const response = await testRequest
       return [response.status, response.body, response.headers]
-    } catch (error) {
+    } catch (_error) {
       return [500, { error: 'Internal Server Error' }]
     }
   }

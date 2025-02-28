@@ -84,7 +84,7 @@ export class MultiHashEncoder {
     try {
       MultiHashEncoder.decode(data)
       return true
-    } catch (e) {
+    } catch (_e) {
       return false
     }
   }

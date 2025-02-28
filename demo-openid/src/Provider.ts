@@ -45,7 +45,7 @@ const oidc = new Provider(PROVIDER_HOST, {
     methods: ['S256'],
     required: () => true,
   },
-  extraTokenClaims: async (context, token) => {
+  extraTokenClaims: async (_context, token) => {
     if (token.kind === 'AccessToken') {
       return {
         issuer_state,

@@ -49,7 +49,7 @@ const run = async () => {
   agent.modules.didcomm.registerInboundTransport(wsInboundTransport)
 
   // Allow to create invitation, no other way to ask for invitation yet
-  app.get('/invitation', async (req, res) => {
+  app.get('/invitation', async (_req, res) => {
     const { outOfBandInvitation } = await agent.modules.oob.createInvitation()
     res.send(outOfBandInvitation.toUrl({ domain: `http://localhost:${port}/invitation` }))
   })

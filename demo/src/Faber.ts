@@ -112,7 +112,7 @@ export class Faber extends BaseAgent {
 
     try {
       await this.agent.modules.connections.returnWhenIsConnected(connectionRecord.id)
-    } catch (e) {
+    } catch (_e) {
       console.log(redText('\nTimeout of 20 seconds reached.. Returning to home screen.\n'))
       return
     }
