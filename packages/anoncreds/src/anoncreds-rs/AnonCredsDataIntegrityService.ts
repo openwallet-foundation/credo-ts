@@ -1,28 +1,28 @@
-import type { AnonCredsRsVerifierService } from './AnonCredsRsVerifierService'
-import type { AnonCredsProofRequest, AnonCredsRequestedPredicate } from '../models'
-import type { CredentialWithRevocationMetadata } from '../models/utils'
-import type { AnonCredsCredentialProve, CreateW3cPresentationOptions, AnonCredsHolderService } from '../services'
 import type {
   AgentContext,
-  IAnonCredsDataIntegrityService,
   AnoncredsDataIntegrityVerifyPresentation,
   DifPresentationExchangeDefinition,
   DifPresentationExchangeSubmission,
+  IAnonCredsDataIntegrityService,
   W3cCredentialRecord,
   W3cJsonLdVerifiableCredential,
 } from '@credo-ts/core'
 import type { Descriptor, FieldV2, InputDescriptorV1, InputDescriptorV2 } from '@sphereon/pex-models'
+import type { AnonCredsProofRequest, AnonCredsRequestedPredicate } from '../models'
+import type { CredentialWithRevocationMetadata } from '../models/utils'
+import type { AnonCredsCredentialProve, AnonCredsHolderService, CreateW3cPresentationOptions } from '../services'
+import type { AnonCredsRsVerifierService } from './AnonCredsRsVerifierService'
 
 import { JSONPath } from '@astronautlabs/jsonpath'
 import {
+  ANONCREDS_DATA_INTEGRITY_CRYPTOSUITE,
+  ClaimFormat,
   CredoError,
   Hasher,
   JsonTransformer,
   TypedArrayEncoder,
-  ANONCREDS_DATA_INTEGRITY_CRYPTOSUITE,
   deepEquality,
   injectable,
-  ClaimFormat,
 } from '@credo-ts/core'
 
 import { AnonCredsHolderServiceSymbol, AnonCredsVerifierServiceSymbol } from '../services'
@@ -68,7 +68,7 @@ export class AnonCredsDataIntegrityService implements IAnonCredsDataIntegritySer
   }
 
   private async getCredentialMetadataForDescriptor(
-    agentContext: AgentContext,
+    _agentContext: AgentContext,
     descriptorMapObject: Descriptor,
     selectedCredentials: W3cJsonLdVerifiableCredential[]
   ) {
@@ -103,9 +103,8 @@ export class AnonCredsDataIntegrityService implements IAnonCredsDataIntegritySer
       (statuses.active.directive === 'allowed' || statuses.active.directive === 'required')
     ) {
       return true
-    } else {
-      throw new CredoError('Unsupported status directive')
     }
+    throw new CredoError('Unsupported status directive')
   }
 
   private getPredicateTypeAndValues(predicateFilter: NonNullable<FieldV2['filter']>) {

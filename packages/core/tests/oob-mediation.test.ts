@@ -1,9 +1,8 @@
-/* eslint-disable @typescript-eslint/no-non-null-assertion */
 import type { SubjectMessage } from '../../../tests/transport/SubjectInboundTransport'
 import type { AgentMessageProcessedEvent } from '../../didcomm/src'
 import type { OutOfBandDidCommService } from '../../didcomm/src/modules/oob'
 
-import { filter, firstValueFrom, map, Subject, timeout } from 'rxjs'
+import { Subject, filter, firstValueFrom, map, timeout } from 'rxjs'
 
 import { SubjectInboundTransport } from '../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutboundTransport'
@@ -89,11 +88,10 @@ describe('out of band with mediation', () => {
     const { outOfBandInvitation: mediatorOutOfBandInvitation } = mediationOutOfBandRecord
     const mediatorUrlMessage = mediatorOutOfBandInvitation.toUrl({ domain: 'http://example.com' })
 
-    let { connectionRecord: aliceMediatorConnection } = await aliceAgent.modules.oob.receiveInvitationFromUrl(
-      mediatorUrlMessage
-    )
+    let { connectionRecord: aliceMediatorConnection } =
+      await aliceAgent.modules.oob.receiveInvitationFromUrl(mediatorUrlMessage)
 
-    aliceMediatorConnection = await aliceAgent.modules.connections.returnWhenIsConnected(aliceMediatorConnection!.id)
+    aliceMediatorConnection = await aliceAgent.modules.connections.returnWhenIsConnected(aliceMediatorConnection?.id)
     expect(aliceMediatorConnection.state).toBe(DidExchangeState.Completed)
 
     // Tag the connection with an initial type
@@ -105,7 +103,7 @@ describe('out of band with mediation', () => {
     let [mediatorAliceConnection] = await mediatorAgent.modules.connections.findAllByOutOfBandId(
       mediationOutOfBandRecord.id
     )
-    mediatorAliceConnection = await mediatorAgent.modules.connections.returnWhenIsConnected(mediatorAliceConnection!.id)
+    mediatorAliceConnection = await mediatorAgent.modules.connections.returnWhenIsConnected(mediatorAliceConnection?.id)
     expect(mediatorAliceConnection.state).toBe(DidExchangeState.Completed)
 
     // ========== Set mediation between Alice and Mediator agents ==========
@@ -144,11 +142,11 @@ describe('out of band with mediation', () => {
 
     let { connectionRecord: aliceFaberConnection } = await aliceAgent.modules.oob.receiveInvitationFromUrl(urlMessage)
 
-    aliceFaberConnection = await aliceAgent.modules.connections.returnWhenIsConnected(aliceFaberConnection!.id)
+    aliceFaberConnection = await aliceAgent.modules.connections.returnWhenIsConnected(aliceFaberConnection?.id)
     expect(aliceFaberConnection.state).toBe(DidExchangeState.Completed)
 
     let [faberAliceConnection] = await faberAgent.modules.connections.findAllByOutOfBandId(outOfBandRecord.id)
-    faberAliceConnection = await faberAgent.modules.connections.returnWhenIsConnected(faberAliceConnection!.id)
+    faberAliceConnection = await faberAgent.modules.connections.returnWhenIsConnected(faberAliceConnection?.id)
     expect(faberAliceConnection.state).toBe(DidExchangeState.Completed)
 
     expect(aliceFaberConnection).toBeConnectedWith(faberAliceConnection)
@@ -160,7 +158,7 @@ describe('out of band with mediation', () => {
     expect(basicMessage.content).toBe('hello')
   })
 
-  test(`create and delete OOB invitation when using mediation`, async () => {
+  test('create and delete OOB invitation when using mediation', async () => {
     // Alice creates an invitation: the key is notified to her mediator
 
     const keyAddMessagePromise = firstValueFrom(

@@ -1,4 +1,4 @@
-import type { FeatureQuery, Feature } from './models'
+import type { Feature, FeatureQuery } from './models'
 
 import { injectable } from '@credo-ts/core'
 

@@ -2,7 +2,7 @@ import type { SdJwtVcRecord } from '../../sd-jwt-vc'
 import type { DifPexInputDescriptorToCredentials } from '../models'
 
 import { MdocRecord } from '../../mdoc'
-import { W3cCredentialRecord, ClaimFormat } from '../../vc'
+import { ClaimFormat, W3cCredentialRecord } from '../../vc'
 
 //  - the credentials included in the presentation
 export interface SdJwtVcPresentationToCreate {
@@ -12,7 +12,7 @@ export interface SdJwtVcPresentationToCreate {
     {
       credential: SdJwtVcRecord
       inputDescriptorId: string
-    }
+    },
   ] // only one credential supported for SD-JWT-VC
 }
 
@@ -43,7 +43,7 @@ export interface MdocPresentationToCreate {
     {
       credential: MdocRecord
       inputDescriptorId: string
-    }
+    },
   ] // only one credential supported for MDOC
 }
 

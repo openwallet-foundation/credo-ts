@@ -1,5 +1,4 @@
 import type { AnonCredsTestsAgent } from '../../anoncreds/tests/anoncredsSetup'
-import type { DifPresentationExchangeDefinitionV2 } from '../../core'
 import type { EventReplaySubject } from '../../core/tests'
 
 import { InMemoryAnonCredsRegistry } from '../../anoncreds/tests/InMemoryAnonCredsRegistry'
@@ -164,12 +163,13 @@ describe('anoncreds w3c data integrity e2e tests', () => {
     })
 
     const pdCopy = JSON.parse(JSON.stringify(presentationDefinition))
-    pdCopy.input_descriptors.forEach((ide: DifPresentationExchangeDefinitionV2['input_descriptors'][number]) => {
+    for (const ide of pdCopy.input_descriptors) {
+      // biome-ignore lint/performance/noDelete: <explanation>
       delete ide.constraints?.statuses
-      if (ide.constraints.fields && ide.constraints.fields[0].filter?.const) {
+      if (ide.constraints.fields?.[0].filter?.const) {
         ide.constraints.fields[0].filter.const = issuerId
       }
-    })
+    }
 
     let holderProofExchangeRecord = await holderAgent.modules.proofs.proposeProof({
       protocolVersion: 'v2',

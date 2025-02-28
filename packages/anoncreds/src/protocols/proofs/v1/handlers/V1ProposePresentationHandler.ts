@@ -1,5 +1,5 @@
-import type { V1ProofProtocol } from '../V1ProofProtocol'
 import type { MessageHandler, MessageHandlerInboundMessage, ProofExchangeRecord } from '@credo-ts/didcomm'
+import type { V1ProofProtocol } from '../V1ProofProtocol'
 
 import { OutboundMessageContext } from '@credo-ts/didcomm'
 
@@ -30,7 +30,7 @@ export class V1ProposePresentationHandler implements MessageHandler {
     proofRecord: ProofExchangeRecord,
     messageContext: MessageHandlerInboundMessage<V1ProposePresentationHandler>
   ) {
-    messageContext.agentContext.config.logger.info(`Automatically sending request with autoAccept`)
+    messageContext.agentContext.config.logger.info('Automatically sending request with autoAccept')
 
     if (!messageContext.connection) {
       messageContext.agentContext.config.logger.error('No connection on the messageContext, aborting auto accept')

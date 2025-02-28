@@ -3,12 +3,12 @@ import type { ClassConstructor } from 'class-transformer'
 import { instanceToPlain, plainToInstance } from 'class-transformer'
 
 import {
-  PublicKeyTransformer,
-  PublicKey,
-  publicKeyTypes,
-  EddsaSaSigSecp256k1,
   Ed25119Sig2018,
+  EddsaSaSigSecp256k1,
+  PublicKey,
+  PublicKeyTransformer,
   RsaSig2018,
+  publicKeyTypes,
 } from '../publicKey'
 
 const publicKeysJson = [
@@ -86,7 +86,7 @@ describe('Did | PublicKey', () => {
   )
 
   const publicKeyClassToJsonTests: [string, PublicKey, Record<string, string | undefined>, string][] =
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
     publicKeysJson.map((pk) => [pk.class.name, new pk.class({ ...(pk.json as any) }), pk.json, pk.valueKey])
 
   test.each(publicKeyClassToJsonTests)(

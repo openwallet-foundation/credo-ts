@@ -1,6 +1,6 @@
-import type { AgentContextProvider } from './AgentContextProvider'
 import type { DependencyManager } from '../../plugins'
 import type { Wallet } from '../../wallet'
+import type { AgentContextProvider } from './AgentContextProvider'
 
 import { InjectionSymbols } from '../../constants'
 import { AgentConfig } from '../AgentConfig'

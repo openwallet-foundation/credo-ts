@@ -1,6 +1,6 @@
+import type { AgentContext } from '@credo-ts/core'
 import type { AgentMessage } from './AgentMessage'
 import type { EncryptedMessage, PlaintextMessage } from './types'
-import type { AgentContext } from '@credo-ts/core'
 
 import { InjectionSymbols, Key, KeyType, Logger, inject, injectable } from '@credo-ts/core'
 
@@ -31,7 +31,7 @@ export class EnvelopeService {
     const { recipientKeys, routingKeys, senderKey } = keys
     let recipientKeysBase58 = recipientKeys.map((key) => key.publicKeyBase58)
     const routingKeysBase58 = routingKeys.map((key) => key.publicKeyBase58)
-    const senderKeyBase58 = senderKey && senderKey.publicKeyBase58
+    const senderKeyBase58 = senderKey?.publicKeyBase58
 
     // pass whether we want to use legacy did sov prefix
     const message = payload.toJSON({ useDidSovPrefixWhereAllowed: didcommConfig.useDidSovPrefixWhereAllowed })

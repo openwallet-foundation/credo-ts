@@ -63,7 +63,6 @@ describe('credentials', () => {
   test('Faber starts with V2 W3C connection-less credential offer to Alice', async () => {
     testLogger.test('Faber sends credential offer to Alice')
 
-    // eslint-disable-next-line prefer-const
     let { message, credentialRecord: faberCredentialRecord } = await faberAgent.modules.credentials.createOffer({
       comment: 'V2 Out of Band offer (W3C)',
       credentialFormats: {

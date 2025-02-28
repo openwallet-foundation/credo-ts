@@ -286,11 +286,12 @@ function getProof({
   id,
 }: {
   protocolVersion?: string
-  /* eslint-disable @typescript-eslint/no-explicit-any */
+  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
   proposalMessage?: any
+  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
   requestMessage?: any
+  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
   presentationMessage?: any
-  /* eslint-enable @typescript-eslint/no-explicit-any */
   state?: ProofState
   isVerified?: boolean
   id?: string

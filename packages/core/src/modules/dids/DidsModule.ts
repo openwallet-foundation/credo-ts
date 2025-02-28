@@ -1,10 +1,10 @@
-import type { DidsModuleConfigOptions } from './DidsModuleConfig'
 import type { DependencyManager, Module } from '../../plugins'
+import type { DidsModuleConfigOptions } from './DidsModuleConfig'
 
 import { DidsApi } from './DidsApi'
 import { DidsModuleConfig } from './DidsModuleConfig'
 import { DidRepository } from './repository'
-import { DidResolverService, DidRegistrarService } from './services'
+import { DidRegistrarService, DidResolverService } from './services'
 
 export class DidsModule implements Module {
   public readonly config: DidsModuleConfig

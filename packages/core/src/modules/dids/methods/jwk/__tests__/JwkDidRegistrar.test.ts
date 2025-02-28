@@ -193,7 +193,7 @@ describe('DidRegistrar', () => {
         didRegistrationMetadata: {},
         didState: {
           state: 'failed',
-          reason: `notSupported: cannot update did:jwk did`,
+          reason: 'notSupported: cannot update did:jwk did',
         },
       })
     })
@@ -206,7 +206,7 @@ describe('DidRegistrar', () => {
         didRegistrationMetadata: {},
         didState: {
           state: 'failed',
-          reason: `notSupported: cannot deactivate did:jwk did`,
+          reason: 'notSupported: cannot deactivate did:jwk did',
         },
       })
     })

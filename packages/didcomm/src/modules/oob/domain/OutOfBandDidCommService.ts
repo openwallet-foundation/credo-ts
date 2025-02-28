@@ -1,8 +1,8 @@
 import type { ResolvedDidCommService } from '@credo-ts/core'
 import type { ValidationOptions } from 'class-validator'
 
-import { DidDocumentService, DidKey, isDid, IsUri } from '@credo-ts/core'
-import { ArrayNotEmpty, buildMessage, IsOptional, isString, IsString, ValidateBy } from 'class-validator'
+import { DidDocumentService, DidKey, IsUri, isDid } from '@credo-ts/core'
+import { ArrayNotEmpty, IsOptional, IsString, ValidateBy, buildMessage, isString } from 'class-validator'
 
 export class OutOfBandDidCommService extends DidDocumentService {
   public constructor(options: {
@@ -68,7 +68,7 @@ function IsDidKeyString(validationOptions?: ValidationOptions): PropertyDecorato
       validator: {
         validate: (value): boolean => isString(value) && isDid(value, 'key'),
         defaultMessage: buildMessage(
-          (eachPrefix) => eachPrefix + '$property must be a did:key string',
+          (eachPrefix) => `${eachPrefix}$property must be a did:key string`,
           validationOptions
         ),
       },

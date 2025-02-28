@@ -29,7 +29,7 @@ export class V2ProposePresentationHandler implements MessageHandler {
     proofRecord: ProofExchangeRecord,
     messageContext: MessageHandlerInboundMessage<V2ProposePresentationHandler>
   ) {
-    messageContext.agentContext.config.logger.info(`Automatically sending request with autoAccept`)
+    messageContext.agentContext.config.logger.info('Automatically sending request with autoAccept')
 
     if (!messageContext.connection) {
       messageContext.agentContext.config.logger.error('No connection on the messageContext, aborting auto accept')

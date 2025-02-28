@@ -1,8 +1,8 @@
+import type { RecordTags, TagsBase } from '@credo-ts/core'
 import type { QuestionAnswerRole } from '../QuestionAnswerRole'
 import type { QuestionAnswerState, ValidResponse } from '../models'
-import type { RecordTags, TagsBase } from '@credo-ts/core'
 
-import { CredoError, utils, BaseRecord } from '@credo-ts/core'
+import { BaseRecord, CredoError, utils } from '@credo-ts/core'
 
 export type CustomQuestionAnswerTags = TagsBase
 export type DefaultQuestionAnswerTags = {
@@ -82,6 +82,7 @@ export class QuestionAnswerRecord extends BaseRecord<DefaultQuestionAnswerTags, 
 
   public assertState(expectedStates: QuestionAnswerState | QuestionAnswerState[]) {
     if (!Array.isArray(expectedStates)) {
+      // biome-ignore lint/style/noParameterAssign: <explanation>
       expectedStates = [expectedStates]
     }
 

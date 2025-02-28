@@ -1,5 +1,5 @@
 import type { KeyType } from '../../KeyType'
-import type { JwaKeyType, JwaEncryptionAlgorithm, JwaSignatureAlgorithm } from '../jwa'
+import type { JwaEncryptionAlgorithm, JwaKeyType, JwaSignatureAlgorithm } from '../jwa'
 
 import { Key } from '../../Key'
 

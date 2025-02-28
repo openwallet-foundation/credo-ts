@@ -1,5 +1,5 @@
 import { Expose } from 'class-transformer'
-import { IsEnum, ValidateIf, Matches, IsOptional } from 'class-validator'
+import { IsEnum, IsOptional, Matches, ValidateIf } from 'class-validator'
 
 import { MessageIdRegExp } from '../../BaseMessage'
 

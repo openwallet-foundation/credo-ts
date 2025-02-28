@@ -1,5 +1,5 @@
-import type { ApiModule, Module } from './Module'
 import type { AgentContext } from '../agent'
+import type { ApiModule, Module } from './Module'
 
 export function getRegisteredModuleByInstance<M extends Module>(
   agentContext: AgentContext,

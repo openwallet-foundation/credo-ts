@@ -1,8 +1,8 @@
-import type { ActionMenuStateChangedEvent, ActionMenuRole, ActionMenuState } from '@credo-ts/action-menu'
+import type { ActionMenuRole, ActionMenuState, ActionMenuStateChangedEvent } from '@credo-ts/action-menu'
 import type { Agent } from '@credo-ts/core'
 import type { Observable } from 'rxjs'
 
-import { catchError, filter, firstValueFrom, map, ReplaySubject, timeout } from 'rxjs'
+import { ReplaySubject, catchError, filter, firstValueFrom, map, timeout } from 'rxjs'
 
 import { ActionMenuEventTypes } from '@credo-ts/action-menu'
 

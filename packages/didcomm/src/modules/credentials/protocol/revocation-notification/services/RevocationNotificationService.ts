@@ -1,10 +1,10 @@
-import type { V2CreateRevocationNotificationMessageOptions } from './RevocationNotificationServiceOptions'
+import type { AgentContext } from '@credo-ts/core'
 import type { InboundMessageContext } from '../../../../../models'
 import type { RevocationNotificationReceivedEvent } from '../../../CredentialEvents'
 import type { V1RevocationNotificationMessage } from '../messages/V1RevocationNotificationMessage'
-import type { AgentContext } from '@credo-ts/core'
+import type { V2CreateRevocationNotificationMessageOptions } from './RevocationNotificationServiceOptions'
 
-import { EventEmitter, InjectionSymbols, CredoError, Logger, inject, injectable } from '@credo-ts/core'
+import { CredoError, EventEmitter, InjectionSymbols, Logger, inject, injectable } from '@credo-ts/core'
 
 import { MessageHandlerRegistry } from '../../../../../MessageHandlerRegistry'
 import { ConnectionRecord } from '../../../../connections'
@@ -64,7 +64,7 @@ export class RevocationNotificationService {
       ],
     }
 
-    this.logger.trace(`Getting record by query for revocation notification:`, query)
+    this.logger.trace('Getting record by query for revocation notification:', query)
     const credentialRecord = await this.credentialRepository.getSingleByQuery(agentContext, query)
 
     credentialRecord.revocationNotification = new RevocationNotification(comment)

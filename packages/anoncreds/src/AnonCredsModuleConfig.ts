@@ -1,6 +1,6 @@
+import type { Anoncreds } from '@hyperledger/anoncreds-shared'
 import type { AnonCredsRegistry } from './services'
 import type { TailsFileService } from './services/tails'
-import type { Anoncreds } from '@hyperledger/anoncreds-shared'
 
 import { BasicTailsFileService } from './services/tails'
 

@@ -1,6 +1,6 @@
+import type { BaseEvent } from '@credo-ts/core'
 import type { ActionMenuState } from './ActionMenuState'
 import type { ActionMenuRecord } from './repository'
-import type { BaseEvent } from '@credo-ts/core'
 
 /**
  * @public

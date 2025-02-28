@@ -2,7 +2,7 @@ import { JsonTransformer, W3cCredentialRecord, W3cJsonLdVerifiableCredential } f
 
 import { Ed25519Signature2018Fixtures } from '../../../../core/src/modules/vc/data-integrity/__tests__/fixtures'
 import { W3cAnonCredsCredentialMetadataKey } from '../metadata'
-import { getAnonCredsTagsFromRecord, type AnonCredsCredentialTags } from '../w3cAnonCredsUtils'
+import { type AnonCredsCredentialTags, getAnonCredsTagsFromRecord } from '../w3cAnonCredsUtils'
 
 describe('AnoncredsW3cCredentialRecord', () => {
   it('should return default tags (w3cAnoncredsCredential)', () => {

@@ -2,13 +2,13 @@ import type { CredentialProtocolOptions, CredentialStateChangedEvent } from '@cr
 
 import { EventEmitter, JsonTransformer } from '@credo-ts/core'
 import {
-  DidExchangeState,
   Attachment,
   AttachmentData,
-  CredentialState,
-  CredentialFormatSpec,
-  CredentialExchangeRecord,
   CredentialEventTypes,
+  CredentialExchangeRecord,
+  CredentialFormatSpec,
+  CredentialState,
+  DidExchangeState,
   InboundMessageContext,
 } from '@credo-ts/didcomm'
 import { Subject } from 'rxjs'
@@ -19,7 +19,7 @@ import { CredentialRepository } from '../../../../../../didcomm/src/modules/cred
 import { DidCommMessageRepository } from '../../../../../../didcomm/src/repository/DidCommMessageRepository'
 import { LegacyIndyCredentialFormatService } from '../../../../formats/LegacyIndyCredentialFormatService'
 import { V1CredentialProtocol } from '../V1CredentialProtocol'
-import { V1CredentialPreview, INDY_CREDENTIAL_OFFER_ATTACHMENT_ID, V1OfferCredentialMessage } from '../messages'
+import { INDY_CREDENTIAL_OFFER_ATTACHMENT_ID, V1CredentialPreview, V1OfferCredentialMessage } from '../messages'
 
 // Mock classes
 jest.mock('../../../../../../didcomm/src/modules/credentials/repository/CredentialRepository')
@@ -52,7 +52,6 @@ const agentContext = getAgentContext({
   agentConfig,
 })
 
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore
 indyCredentialFormatService.credentialRecordType = 'w3c'
 

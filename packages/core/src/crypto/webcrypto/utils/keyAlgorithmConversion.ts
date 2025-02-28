@@ -1,5 +1,5 @@
-import type { EcKeyGenParams, KeyGenAlgorithm } from '../types'
 import type { AlgorithmIdentifier } from '@peculiar/asn1-x509'
+import type { EcKeyGenParams, KeyGenAlgorithm } from '../types'
 
 import { KeyType } from '../../KeyType'
 import { CredoWebCryptoError } from '../CredoWebCryptoError'
@@ -51,13 +51,17 @@ export const cryptoKeyAlgorithmToCredoKeyType = (algorithm: KeyGenAlgorithm): Ke
 export const spkiAlgorithmIntoCredoKeyType = (algorithm: AlgorithmIdentifier): KeyType => {
   if (algorithm.isEqual(ecPublicKeyWithP256AlgorithmIdentifier)) {
     return KeyType.P256
-  } else if (algorithm.isEqual(ecPublicKeyWithP384AlgorithmIdentifier)) {
+  }
+  if (algorithm.isEqual(ecPublicKeyWithP384AlgorithmIdentifier)) {
     return KeyType.P384
-  } else if (algorithm.isEqual(ecPublicKeyWithK256AlgorithmIdentifier)) {
+  }
+  if (algorithm.isEqual(ecPublicKeyWithK256AlgorithmIdentifier)) {
     return KeyType.K256
-  } else if (algorithm.isEqual(ed25519AlgorithmIdentifier)) {
+  }
+  if (algorithm.isEqual(ed25519AlgorithmIdentifier)) {
     return KeyType.Ed25519
-  } else if (algorithm.isEqual(x25519AlgorithmIdentifier)) {
+  }
+  if (algorithm.isEqual(x25519AlgorithmIdentifier)) {
     return KeyType.X25519
   }
 

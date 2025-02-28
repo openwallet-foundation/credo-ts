@@ -1,10 +1,10 @@
+import type { CredentialOfferObject, IssuerMetadataResult } from '@animo-id/oid4vci'
+import type { AgentContext, JwaSignatureAlgorithm, Jwk, KeyType, VerifiableCredential } from '@credo-ts/core'
 import type {
   OpenId4VcCredentialHolderBinding,
   OpenId4VciAccessTokenResponse,
   OpenId4VciCredentialConfigurationsSupportedWithFormats,
 } from '../shared'
-import type { CredentialOfferObject, IssuerMetadataResult } from '@animo-id/oid4vci'
-import type { AgentContext, JwaSignatureAlgorithm, Jwk, KeyType, VerifiableCredential } from '@credo-ts/core'
 
 import { AuthorizationFlow as OpenId4VciAuthorizationFlow } from '@animo-id/oid4vci'
 
@@ -48,7 +48,7 @@ export type OpenId4VciRequestTokenResponse = {
   accessTokenResponse: OpenId4VciAccessTokenResponse
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+// biome-ignore lint/suspicious/noExplicitAny: <explanation>
 type UnionToArrayUnion<T> = T extends any ? T[] : never
 
 export interface OpenId4VciCredentialResponse {

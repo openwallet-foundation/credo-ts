@@ -6,7 +6,7 @@ import type {
 } from '@credo-ts/question-answer'
 import type { Observable } from 'rxjs'
 
-import { catchError, filter, firstValueFrom, map, ReplaySubject, timeout } from 'rxjs'
+import { ReplaySubject, catchError, filter, firstValueFrom, map, timeout } from 'rxjs'
 
 import { QuestionAnswerEventTypes } from '@credo-ts/question-answer'
 

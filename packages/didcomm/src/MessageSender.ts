@@ -9,21 +9,21 @@ import type { EncryptedMessage, OutboundPackage } from './types'
 
 import {
   AgentContext,
-  DidDocument,
-  utils,
   CredoError,
+  DidDocument,
   DidKey,
   DidResolverService,
   EventEmitter,
   InjectionSymbols,
-  inject,
-  injectable,
   Logger,
   MessageValidator,
-  getKeyFromVerificationMethod,
-  didKeyToInstanceOfKey,
-  verkeyToDidKey,
   ResolvedDidCommService,
+  didKeyToInstanceOfKey,
+  getKeyFromVerificationMethod,
+  inject,
+  injectable,
+  utils,
+  verkeyToDidKey,
 } from '@credo-ts/core'
 
 import { EnvelopeService } from './EnvelopeService'
@@ -156,7 +156,7 @@ export class MessageSender {
 
     // Loop trough all available services and try to send the message
     for await (const service of services) {
-      this.logger.debug(`Sending outbound message to service:`, { service })
+      this.logger.debug('Sending outbound message to service:', { service })
       try {
         const protocolScheme = utils.getProtocolScheme(service.serviceEndpoint)
         for (const transport of this.outboundTransports) {
@@ -413,7 +413,7 @@ export class MessageSender {
       throw new CredoError('Agent has no outbound transport!')
     }
 
-    this.logger.debug(`Sending outbound message to service:`, {
+    this.logger.debug('Sending outbound message to service:', {
       messageId: message.id,
       service: { ...service, recipientKeys: 'omitted...', routingKeys: 'omitted...' },
     })
@@ -476,7 +476,7 @@ export class MessageSender {
       session = this.transportService.findSessionByConnectionId(outboundContext.connection.id)
     }
 
-    return session && session.inboundMessage?.hasAnyReturnRoute() ? session : null
+    return session?.inboundMessage?.hasAnyReturnRoute() ? session : null
   }
 
   private async retrieveServicesByConnection(
@@ -530,7 +530,7 @@ export class MessageSender {
 
     // If transport priority is set we will sort services by our priority
     if (transportPriority?.schemes) {
-      services = services.sort(function (a, b) {
+      services = services.sort((a, b) => {
         const aScheme = utils.getProtocolScheme(a.serviceEndpoint)
         const bScheme = utils.getProtocolScheme(b.serviceEndpoint)
         return transportPriority?.schemes.indexOf(aScheme) - transportPriority?.schemes.indexOf(bScheme)

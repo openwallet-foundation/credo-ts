@@ -1,4 +1,4 @@
-import { KeyType, Key } from '../../crypto'
+import { Key, KeyType } from '../../crypto'
 import { isDid } from '../../utils'
 
 import { DidKey } from './methods/key'

@@ -4,12 +4,12 @@ import { getAnonCredsModules } from '../packages/anoncreds/tests/anoncredsSetup'
 import { askarModule } from '../packages/askar/tests/helpers'
 import { getAgentOptions } from '../packages/core/tests/helpers'
 import {
-  MessageForwardingStrategy,
-  WsOutboundTransport,
   AutoAcceptCredential,
-  MediatorPickupStrategy,
   MediationRecipientModule,
   MediatorModule,
+  MediatorPickupStrategy,
+  MessageForwardingStrategy,
+  WsOutboundTransport,
 } from '../packages/didcomm/src'
 
 import { e2eTest } from './e2e-test'

@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-non-null-assertion */
 import type { SubjectMessage } from '../../../../../../tests/transport/SubjectInboundTransport'
 import type { ConnectionRecord } from '../../connections'
 
@@ -156,14 +155,14 @@ describe('Basic Messages E2E', () => {
 
       testLogger.test('Created record can be found and deleted by id')
       const storedRecord = await aliceAgent.modules.basicMessages.getById(
-        thrownError.outboundMessageContext.associatedRecord!.id
+        thrownError.outboundMessageContext.associatedRecord?.id
       )
       expect(storedRecord).toBeInstanceOf(BasicMessageRecord)
       expect(storedRecord.content).toBe('Hello undeliverable')
 
       await aliceAgent.modules.basicMessages.deleteById(storedRecord.id)
       await expect(
-        aliceAgent.modules.basicMessages.getById(thrownError.outboundMessageContext.associatedRecord!.id)
+        aliceAgent.modules.basicMessages.getById(thrownError.outboundMessageContext.associatedRecord?.id)
       ).rejects.toThrowError(RecordNotFoundError)
     }
     spy.mockClear()

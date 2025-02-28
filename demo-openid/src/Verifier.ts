@@ -82,7 +82,7 @@ export class Verifier extends BaseAgent<{ askar: AskarModule; openId4VcVerifier:
   }
 
   public static async build(): Promise<Verifier> {
-    const verifier = new Verifier(VERIFIER_HOST, 4000, 'OpenId4VcVerifier ' + Math.random().toString())
+    const verifier = new Verifier(VERIFIER_HOST, 4000, `OpenId4VcVerifier ${Math.random().toString()}`)
     await verifier.initializeAgent('96213c3d7fc8d4d6754c7a0fd969598g')
     verifier.verifierRecord = await verifier.agent.modules.openId4VcVerifier.createVerifier()
 

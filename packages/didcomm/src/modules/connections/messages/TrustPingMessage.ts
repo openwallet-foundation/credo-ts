@@ -1,7 +1,7 @@
 import type { TimingDecorator } from '../../../decorators/timing/TimingDecorator'
 
 import { Expose } from 'class-transformer'
-import { IsString, IsBoolean, IsOptional } from 'class-validator'
+import { IsBoolean, IsOptional, IsString } from 'class-validator'
 
 import { AgentMessage } from '../../../AgentMessage'
 import { IsValidMessageType, parseMessageType } from '../../../util/messageType'

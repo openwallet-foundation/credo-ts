@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import type { AgentContext } from '../../../../../../../core/src/agent'
 import type { CredentialStateChangedEvent } from '../../../CredentialEvents'
 import type { CredentialFormat, CredentialFormatCreateOfferOptions, CredentialFormatService } from '../../../formats'
@@ -50,6 +49,7 @@ interface TestCredentialFormat extends CredentialFormat {
 
 type TestCredentialFormatService = CredentialFormatService<TestCredentialFormat>
 
+// biome-ignore lint/suspicious/noExportsInTest: <explanation>
 export const testCredentialFormatService = {
   credentialRecordType: 'test',
   formatKey: 'test',

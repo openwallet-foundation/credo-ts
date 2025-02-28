@@ -1,8 +1,8 @@
-import type { PlaintextMessage } from '../../types'
 import type { BaseAgent, JsonObject } from '@credo-ts/core'
+import type { PlaintextMessage } from '../../types'
 
-import { ProofRepository, ProofState, type ProofExchangeRecord } from '../../modules/proofs'
-import { DidCommMessageRole, DidCommMessageRepository, DidCommMessageRecord } from '../../repository'
+import { type ProofExchangeRecord, ProofRepository, ProofState } from '../../modules/proofs'
+import { DidCommMessageRecord, DidCommMessageRepository, DidCommMessageRole } from '../../repository'
 
 /**
  * Migrates the {@link ProofExchangeRecord} to 0.3 compatible format. It fetches all records from storage
@@ -17,7 +17,7 @@ export async function migrateProofExchangeRecordToV0_3<Agent extends BaseAgent>(
   agent.config.logger.info('Migrating proof records to storage version 0.3')
   const proofRepository = agent.dependencyManager.resolve(ProofRepository)
 
-  agent.config.logger.debug(`Fetching all proof records from storage`)
+  agent.config.logger.debug('Fetching all proof records from storage')
   const allProofs = await proofRepository.getAll(agent.context)
 
   agent.config.logger.debug(`Found a total of ${allProofs.length} proof records to update.`)
@@ -34,8 +34,8 @@ export async function migrateProofExchangeRecordToV0_3<Agent extends BaseAgent>(
 }
 
 export enum V02_03MigrationProofRole {
-  Verifier,
-  Prover,
+  Verifier = 0,
+  Prover = 1,
 }
 
 const proverProofStates = [
@@ -67,11 +67,11 @@ export function getProofRole(proofRecord: ProofExchangeRecord) {
     return V02_03MigrationProofRole.Verifier
   }
   // If proofRecord.isVerified doesn't have any value, and we're also not in state done it means we're the prover.
-  else if (proofRecord.state === ProofState.Done) {
+  if (proofRecord.state === ProofState.Done) {
     return V02_03MigrationProofRole.Prover
   }
   // For these states we know for certain that we're the prover
-  else if (proverProofStates.includes(proofRecord.state)) {
+  if (proverProofStates.includes(proofRecord.state)) {
     return V02_03MigrationProofRole.Prover
   }
 
@@ -104,7 +104,7 @@ export async function migrateInternalProofExchangeRecordProperties<Agent extends
   agent.config.logger.debug(`Migrating internal proof record ${proofRecord.id} properties to storage version 0.3`)
 
   if (!proofRecord.protocolVersion) {
-    agent.config.logger.debug(`Setting protocolVersion to v1`)
+    agent.config.logger.debug('Setting protocolVersion to v1')
     proofRecord.protocolVersion = 'v1'
   }
 

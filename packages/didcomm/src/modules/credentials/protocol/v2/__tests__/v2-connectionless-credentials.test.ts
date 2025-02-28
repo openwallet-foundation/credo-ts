@@ -13,7 +13,7 @@ import {
   storePreCreatedAnonCredsDefinition,
 } from '../../../../../../../anoncreds/tests/preCreatedAnonCredsDefinition'
 import { Agent } from '../../../../../../../core/src/agent/Agent'
-import { waitForCredentialRecordSubject, getInMemoryAgentOptions } from '../../../../../../../core/tests/helpers'
+import { getInMemoryAgentOptions, waitForCredentialRecordSubject } from '../../../../../../../core/tests/helpers'
 import testLogger from '../../../../../../../core/tests/logger'
 import { MessageReceiver } from '../../../../../MessageReceiver'
 import { CredentialEventTypes } from '../../../CredentialEvents'
@@ -95,7 +95,6 @@ describe('V2 Connectionless Credentials', () => {
   test('Faber starts with connection-less credential offer to Alice', async () => {
     testLogger.test('Faber sends credential offer to Alice')
 
-    // eslint-disable-next-line prefer-const
     let { message, credentialRecord: faberCredentialRecord } = await faberAgent.modules.credentials.createOffer({
       comment: 'V2 Out of Band offer',
       credentialFormats: {
@@ -194,7 +193,6 @@ describe('V2 Connectionless Credentials', () => {
   })
 
   test('Faber starts with connection-less credential offer to Alice with auto-accept enabled', async () => {
-    // eslint-disable-next-line prefer-const
     let { message, credentialRecord: faberCredentialRecord } = await faberAgent.modules.credentials.createOffer({
       comment: 'V2 Out of Band offer',
       credentialFormats: {

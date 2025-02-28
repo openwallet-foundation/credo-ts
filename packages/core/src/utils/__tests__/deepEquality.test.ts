@@ -68,11 +68,7 @@ describe('deepEquality', () => {
   test('evaluates to false with unequal complex types', () => {
     const fn = () => 'hello World!'
     const fnTwo = () => 'Goodbye World!'
-    class Bar {
-      public constructor() {
-        'yes'
-      }
-    }
+    class Bar {}
     expect(deepEquality(fn, fnTwo)).toBe(false)
     expect(deepEquality({ bar: 'foo' }, { a: 'b' })).toBe(false)
     expect(deepEquality({ b: 'a' }, { b: 'a', c: 'd' })).toBe(false)

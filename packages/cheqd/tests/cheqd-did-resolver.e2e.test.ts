@@ -8,6 +8,7 @@ import { getClosestResourceVersion } from '../src/dids/didCheqdUtil'
 
 import { cheqdPayerSeeds, getCheqdModules } from './setupCheqdModule'
 
+// biome-ignore lint/suspicious/noExportsInTest: <explanation>
 export const resolverAgent = new Agent(
   getInMemoryAgentOptions('Cheqd resolver', {}, {}, getCheqdModules(cheqdPayerSeeds[1]))
 )

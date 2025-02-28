@@ -1,9 +1,9 @@
-import type { OpenId4VcIssuanceRequest } from './requestContext'
-import type { OpenId4VciCredentialConfigurationsSupportedWithFormats } from '../../shared'
-import type { OpenId4VcIssuerRecord } from '../repository'
 import type { AuthorizationChallengeRequest } from '@animo-id/oauth2'
 import type { AgentContext } from '@credo-ts/core'
 import type { NextFunction, Response, Router } from 'express'
+import type { OpenId4VciCredentialConfigurationsSupportedWithFormats } from '../../shared'
+import type { OpenId4VcIssuerRecord } from '../repository'
+import type { OpenId4VcIssuanceRequest } from './requestContext'
 
 import { Oauth2ErrorCodes, Oauth2ServerErrorResponseError } from '@animo-id/oauth2'
 import { TypedArrayEncoder } from '@credo-ts/core'
@@ -254,10 +254,10 @@ async function handleAuthorizationChallengeWithAuthSession(options: {
         internalMessage: !issuanceSession
           ? `Issuance session not found for 'auth_session' parameter '${authorizationChallengeRequest.auth_session}'`
           : !issuanceSession?.presentation
-          ? `Issuance session '${issuanceSession.id}' has no 'presentation'. This should not happen and means state is corrupted`
-          : `Issuance session '${issuanceSession.id}' has state '${
-              issuanceSession.state
-            }' but expected one of ${allowedStates.join(', ')}`,
+            ? `Issuance session '${issuanceSession.id}' has no 'presentation'. This should not happen and means state is corrupted`
+            : `Issuance session '${issuanceSession.id}' has state '${
+                issuanceSession.state
+              }' but expected one of ${allowedStates.join(', ')}`,
       }
     )
   }

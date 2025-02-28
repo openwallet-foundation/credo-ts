@@ -4,19 +4,19 @@ import type {
   CredentialConfigurationSupportedWithFormats,
   CredentialIssuerMetadata,
   CredentialIssuerMetadataDisplayEntry,
+  CredentialOfferObject,
   CredentialOfferPreAuthorizedCodeGrantTxCode,
   CredentialRequest,
   CredentialRequestFormatSpecific,
   CredentialRequestWithFormats,
   IssuerMetadataResult,
   ParseCredentialRequestReturn,
-  CredentialOfferObject,
 } from '@animo-id/oid4vci'
 import type {
-  VerifiedAuthorizationRequest,
   AuthorizationRequestPayload,
   AuthorizationResponsePayload,
   IDTokenPayload,
+  VerifiedAuthorizationRequest,
 } from '@sphereon/did-auth-siop'
 
 export { preAuthorizedCodeGrantIdentifier, authorizationCodeGrantIdentifier } from '@animo-id/oauth2'

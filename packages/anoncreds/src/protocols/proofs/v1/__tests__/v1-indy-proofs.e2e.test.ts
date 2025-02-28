@@ -2,9 +2,9 @@ import type { EventReplaySubject } from '../../../../../../core/tests'
 import type { AnonCredsTestsAgent } from '../../../../../tests/legacyAnonCredsSetup'
 
 import { testLogger, waitForProofExchangeRecord } from '../../../../../../core/tests'
-import { ProofState, ProofExchangeRecord } from '../../../../../../didcomm/src'
+import { ProofExchangeRecord, ProofState } from '../../../../../../didcomm/src'
 import { issueLegacyAnonCredsCredential, setupAnonCredsTests } from '../../../../../tests/legacyAnonCredsSetup'
-import { V1ProposePresentationMessage, V1RequestPresentationMessage, V1PresentationMessage } from '../messages'
+import { V1PresentationMessage, V1ProposePresentationMessage, V1RequestPresentationMessage } from '../messages'
 
 describe('Present Proof', () => {
   let faberAgent: AnonCredsTestsAgent
@@ -484,7 +484,7 @@ describe('Present Proof', () => {
           },
         },
       })
-    ).rejects.toThrowError(`The proof request contains duplicate predicates and attributes: age`)
+    ).rejects.toThrowError('The proof request contains duplicate predicates and attributes: age')
   })
 
   test('Faber starts with proof request to Alice but gets Problem Reported', async () => {

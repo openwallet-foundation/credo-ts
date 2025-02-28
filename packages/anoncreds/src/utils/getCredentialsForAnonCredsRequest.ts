@@ -1,3 +1,4 @@
+import type { AgentContext } from '@credo-ts/core'
 import type { AnonCredsCredentialsForProofRequest, AnonCredsGetCredentialsForProofRequestOptions } from '../formats'
 import type {
   AnonCredsCredentialInfo,
@@ -8,7 +9,6 @@ import type {
   AnonCredsRequestedPredicateMatch,
 } from '../models'
 import type { AnonCredsHolderService, GetCredentialsForProofRequestReturn } from '../services'
-import type { AgentContext } from '@credo-ts/core'
 
 import { AnonCredsHolderServiceSymbol } from '../services'
 
@@ -61,7 +61,7 @@ const getRevocationStatus = async (
     requestNonRevoked.to ?? dateToTimestamp(new Date())
   )
 
-  const isRevoked = revocationStatusList.revocationList[parseInt(credentialRevocationId)] === 1
+  const isRevoked = revocationStatusList.revocationList[Number.parseInt(credentialRevocationId)] === 1
 
   agentContext.config.logger.trace(
     `Credential with credential revocation index '${credentialRevocationId}' is ${

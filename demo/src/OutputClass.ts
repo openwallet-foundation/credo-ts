@@ -1,14 +1,14 @@
 export enum Color {
-  Green = `\x1b[32m`,
-  Red = `\x1b[31m`,
-  Purple = `\x1b[35m`,
-  Reset = `\x1b[0m`,
+  Green = '\x1b[32m',
+  Red = '\x1b[31m',
+  Purple = '\x1b[35m',
+  Reset = '\x1b[0m',
 }
 
 export enum Output {
-  NoConnectionRecordFromOutOfBand = `\nNo connectionRecord has been created from invitation\n`,
-  ConnectionEstablished = `\nConnection established!`,
-  MissingConnectionRecord = `\nNo connectionRecord ID has been set yet\n`,
+  NoConnectionRecordFromOutOfBand = '\nNo connectionRecord has been created from invitation\n',
+  ConnectionEstablished = '\nConnection established!',
+  MissingConnectionRecord = '\nNo connectionRecord ID has been set yet\n',
   ConnectionLink = `\nRun 'Receive connection invitation' in Alice and paste this invitation link:\n\n`,
   Exit = 'Shutting down agent...\nExiting...',
 }

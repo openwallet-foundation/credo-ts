@@ -1,5 +1,5 @@
-import type { AnonCredsCredentialDefinition, AnonCredsRevocationStatusList, AnonCredsSchema } from '../models'
 import type { AgentContext } from '@credo-ts/core'
+import type { AnonCredsCredentialDefinition, AnonCredsRevocationStatusList, AnonCredsSchema } from '../models'
 
 import { CredoError } from '@credo-ts/core'
 

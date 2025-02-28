@@ -1,11 +1,11 @@
+import type { Agent, InitConfig } from '@credo-ts/core'
 import type { DidCommModuleConfig } from '../..//didcomm'
 import type { AskarWalletPostgresStorageConfig } from '../src/wallet'
-import type { Agent, InitConfig } from '@credo-ts/core'
 
+import path from 'path'
 import { LogLevel, utils } from '@credo-ts/core'
 import { askar } from '@openwallet-foundation/askar-nodejs'
 import { registerAskar } from '@openwallet-foundation/askar-shared'
-import path from 'path'
 
 import { waitForBasicMessage } from '../../core/tests/helpers'
 import { TestLogger } from '../../core/tests/logger'
@@ -44,7 +44,7 @@ export const askarPostgresStorageConfig: AskarWalletPostgresStorageConfig = {
 
 export function getAskarPostgresAgentOptions(
   name: string,
-  didcommConfig: Partial<DidCommModuleConfig> = {},
+  didcommConfig: Partial<DidCommModuleConfig>,
   storageConfig: AskarWalletPostgresStorageConfig,
   extraConfig: Partial<InitConfig> = {}
 ) {

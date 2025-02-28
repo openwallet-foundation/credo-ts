@@ -1,6 +1,6 @@
-import type { DidDocument } from './domain'
 import type { KeyType } from '../../crypto'
 import type { Buffer } from '../../utils'
+import type { DidDocument } from './domain'
 
 interface PrivateKey {
   keyType: KeyType

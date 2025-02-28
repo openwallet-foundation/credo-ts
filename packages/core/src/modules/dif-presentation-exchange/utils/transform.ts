@@ -1,12 +1,12 @@
-import type { AgentContext } from '../../../agent'
-import type { SdJwtVcRecord } from '../../sd-jwt-vc'
-import type { W3cJsonPresentation } from '../../vc/models/presentation/W3cJsonPresentation'
-import type { VerifiablePresentation } from '../models'
 import type {
   OriginalVerifiableCredential as SphereonOriginalVerifiableCredential,
   OriginalVerifiablePresentation as SphereonOriginalVerifiablePresentation,
   W3CVerifiablePresentation as SphereonW3CVerifiablePresentation,
 } from '@sphereon/ssi-types'
+import type { AgentContext } from '../../../agent'
+import type { SdJwtVcRecord } from '../../sd-jwt-vc'
+import type { W3cJsonPresentation } from '../../vc/models/presentation/W3cJsonPresentation'
+import type { VerifiablePresentation } from '../models'
 
 import { Jwt } from '../../../crypto'
 import { JsonTransformer } from '../../../utils'
@@ -19,11 +19,11 @@ export function getSphereonOriginalVerifiableCredential(
 ): SphereonOriginalVerifiableCredential {
   if (credentialRecord instanceof W3cCredentialRecord) {
     return credentialRecord.credential.encoded as SphereonOriginalVerifiableCredential
-  } else if (credentialRecord instanceof MdocRecord) {
-    return credentialRecord.base64Url
-  } else {
-    return credentialRecord.compactSdJwtVc
   }
+  if (credentialRecord instanceof MdocRecord) {
+    return credentialRecord.base64Url
+  }
+  return credentialRecord.compactSdJwtVc
 }
 
 export function getSphereonOriginalVerifiablePresentation(
@@ -34,11 +34,11 @@ export function getSphereonOriginalVerifiablePresentation(
     verifiablePresentation instanceof W3cJsonLdVerifiablePresentation
   ) {
     return verifiablePresentation.encoded as SphereonOriginalVerifiablePresentation
-  } else if (verifiablePresentation instanceof MdocDeviceResponse) {
-    return verifiablePresentation.base64Url
-  } else {
-    return verifiablePresentation.compact
   }
+  if (verifiablePresentation instanceof MdocDeviceResponse) {
+    return verifiablePresentation.base64Url
+  }
+  return verifiablePresentation.compact
 }
 
 // TODO: we might want to move this to some generic vc transformation util
@@ -49,11 +49,12 @@ export function getVerifiablePresentationFromEncoded(
   if (typeof encodedVerifiablePresentation === 'string' && encodedVerifiablePresentation.includes('~')) {
     const sdJwtVcApi = agentContext.dependencyManager.resolve(SdJwtVcApi)
     return sdJwtVcApi.fromCompact(encodedVerifiablePresentation)
-  } else if (typeof encodedVerifiablePresentation === 'string' && Jwt.format.test(encodedVerifiablePresentation)) {
-    return W3cJwtVerifiablePresentation.fromSerializedJwt(encodedVerifiablePresentation)
-  } else if (typeof encodedVerifiablePresentation === 'object' && '@context' in encodedVerifiablePresentation) {
-    return JsonTransformer.fromJSON(encodedVerifiablePresentation, W3cJsonLdVerifiablePresentation)
-  } else {
-    return MdocDeviceResponse.fromBase64Url(encodedVerifiablePresentation)
   }
+  if (typeof encodedVerifiablePresentation === 'string' && Jwt.format.test(encodedVerifiablePresentation)) {
+    return W3cJwtVerifiablePresentation.fromSerializedJwt(encodedVerifiablePresentation)
+  }
+  if (typeof encodedVerifiablePresentation === 'object' && '@context' in encodedVerifiablePresentation) {
+    return JsonTransformer.fromJSON(encodedVerifiablePresentation, W3cJsonLdVerifiablePresentation)
+  }
+  return MdocDeviceResponse.fromBase64Url(encodedVerifiablePresentation)
 }

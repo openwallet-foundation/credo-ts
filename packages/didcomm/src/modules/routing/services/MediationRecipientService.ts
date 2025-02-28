@@ -1,23 +1,23 @@
-import type { GetRoutingOptions, RemoveRoutingOptions } from './RoutingService'
+import type { AgentContext, Query, QueryOptions } from '@credo-ts/core'
 import type { AgentMessage } from '../../../AgentMessage'
 import type { InboundMessageContext, Routing } from '../../../models'
 import type { ConnectionRecord } from '../../connections/repository'
-import type { MediationStateChangedEvent, KeylistUpdatedEvent } from '../RoutingEvents'
+import type { KeylistUpdatedEvent, MediationStateChangedEvent } from '../RoutingEvents'
 import type { MediationDenyMessage } from '../messages'
-import type { AgentContext, Query, QueryOptions } from '@credo-ts/core'
+import type { GetRoutingOptions, RemoveRoutingOptions } from './RoutingService'
 
 import {
+  CredoError,
+  DidKey,
   EventEmitter,
-  filterContextCorrelationId,
   Key,
   KeyType,
-  CredoError,
-  injectable,
-  DidKey,
-  isDidKey,
   didKeyToVerkey,
+  filterContextCorrelationId,
+  injectable,
+  isDidKey,
 } from '@credo-ts/core'
-import { firstValueFrom, ReplaySubject } from 'rxjs'
+import { ReplaySubject, firstValueFrom } from 'rxjs'
 import { filter, first, timeout } from 'rxjs/operators'
 
 import { DidCommModuleConfig } from '../../../DidCommModuleConfig'
@@ -30,8 +30,8 @@ import { RoutingEventTypes } from '../RoutingEvents'
 import {
   KeylistUpdateAction,
   KeylistUpdateResponseMessage,
-  MediationRequestMessage,
   MediationGrantMessage,
+  MediationRequestMessage,
 } from '../messages'
 import { KeylistUpdate, KeylistUpdateMessage } from '../messages/KeylistUpdateMessage'
 import { MediationRole, MediationState } from '../models'

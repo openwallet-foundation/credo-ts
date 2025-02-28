@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-non-null-assertion */
 import type { ConnectionStateChangedEvent } from '../ConnectionEvents'
 
 import { firstValueFrom } from 'rxjs'
@@ -122,24 +121,26 @@ describe('Manual Connection Flow', () => {
     let faberAliceConnectionRecord = await waitForAliceRequest
     let faberBobConnectionRecord = await waitForBobRequest
 
-    const waitForAliceResponse = waitForResponse(aliceAgent, aliceConnectionRecord!.id)
-    const waitForBobResponse = waitForResponse(bobAgent, bobConnectionRecord!.id)
+    // biome-ignore lint/style/noNonNullAssertion: <explanation>
+    const waitForAliceResponse = waitForResponse(aliceAgent, aliceConnectionRecord?.id!)
+    // biome-ignore lint/style/noNonNullAssertion: <explanation>
+    const waitForBobResponse = waitForResponse(bobAgent, bobConnectionRecord?.id!)
 
     await faberAgent.modules.connections.acceptRequest(faberAliceConnectionRecord.id)
     await faberAgent.modules.connections.acceptRequest(faberBobConnectionRecord.id)
 
     aliceConnectionRecord = await waitForAliceResponse
-    await aliceAgent.modules.connections.acceptResponse(aliceConnectionRecord!.id)
+    await aliceAgent.modules.connections.acceptResponse(aliceConnectionRecord?.id)
 
     bobConnectionRecord = await waitForBobResponse
-    await bobAgent.modules.connections.acceptResponse(bobConnectionRecord!.id)
+    await bobAgent.modules.connections.acceptResponse(bobConnectionRecord?.id)
 
-    aliceConnectionRecord = await aliceAgent.modules.connections.returnWhenIsConnected(aliceConnectionRecord!.id)
-    bobConnectionRecord = await bobAgent.modules.connections.returnWhenIsConnected(bobConnectionRecord!.id)
+    aliceConnectionRecord = await aliceAgent.modules.connections.returnWhenIsConnected(aliceConnectionRecord?.id)
+    bobConnectionRecord = await bobAgent.modules.connections.returnWhenIsConnected(bobConnectionRecord?.id)
     faberAliceConnectionRecord = await faberAgent.modules.connections.returnWhenIsConnected(
-      faberAliceConnectionRecord!.id
+      faberAliceConnectionRecord?.id
     )
-    faberBobConnectionRecord = await faberAgent.modules.connections.returnWhenIsConnected(faberBobConnectionRecord!.id)
+    faberBobConnectionRecord = await faberAgent.modules.connections.returnWhenIsConnected(faberBobConnectionRecord?.id)
 
     expect(aliceConnectionRecord).toBeConnectedWith(faberAliceConnectionRecord)
     expect(bobConnectionRecord).toBeConnectedWith(faberBobConnectionRecord)

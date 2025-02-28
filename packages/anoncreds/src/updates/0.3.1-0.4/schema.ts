@@ -1,5 +1,5 @@
-import type { AnonCredsSchema } from '../../models'
 import type { BaseAgent } from '@credo-ts/core'
+import type { AnonCredsSchema } from '../../models'
 
 import { AnonCredsSchemaRepository } from '../../repository'
 
@@ -12,7 +12,7 @@ export async function migrateAnonCredsSchemaRecordToV0_4<Agent extends BaseAgent
   agent.config.logger.info('Migrating AnonCredsSchemaRecord records to storage version 0.4')
   const schemaRepository = agent.dependencyManager.resolve(AnonCredsSchemaRepository)
 
-  agent.config.logger.debug(`Fetching all schema records from storage`)
+  agent.config.logger.debug('Fetching all schema records from storage')
   const schemaRecords = await schemaRepository.getAll(agent.context)
 
   agent.config.logger.debug(`Found a total of ${schemaRecords.length} schema records to update.`)

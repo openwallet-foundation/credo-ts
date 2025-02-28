@@ -1,20 +1,20 @@
-import type {
-  OpenId4VciCreateCredentialResponseOptions,
-  OpenId4VciCreateCredentialOfferOptions,
-  OpenId4VciCreateIssuerOptions,
-  OpenId4VciPreAuthorizedCodeFlowConfig,
-  OpenId4VciSignW3cCredentials,
-  OpenId4VciAuthorizationCodeFlowConfig,
-  OpenId4VciCredentialRequestAuthorization,
-  OpenId4VciCreateStatelessCredentialOfferOptions,
-  OpenId4VciCredentialRequestToCredentialMapperOptions,
-} from './OpenId4VcIssuerServiceOptions'
+import type { AgentContext, Query, QueryOptions } from '@credo-ts/core'
 import type {
   OpenId4VcCredentialHolderBindingWithKey,
   OpenId4VciCredentialConfigurationsSupportedWithFormats,
   OpenId4VciMetadata,
 } from '../shared'
-import type { AgentContext, Query, QueryOptions } from '@credo-ts/core'
+import type {
+  OpenId4VciAuthorizationCodeFlowConfig,
+  OpenId4VciCreateCredentialOfferOptions,
+  OpenId4VciCreateCredentialResponseOptions,
+  OpenId4VciCreateIssuerOptions,
+  OpenId4VciCreateStatelessCredentialOfferOptions,
+  OpenId4VciCredentialRequestAuthorization,
+  OpenId4VciCredentialRequestToCredentialMapperOptions,
+  OpenId4VciPreAuthorizedCodeFlowConfig,
+  OpenId4VciSignW3cCredentials,
+} from './OpenId4VcIssuerServiceOptions'
 
 import {
   AuthorizationServerMetadata,
@@ -30,29 +30,29 @@ import {
 import {
   CredentialIssuerMetadata,
   CredentialRequestFormatSpecific,
-  extractScopesForCredentialConfigurationIds,
-  getCredentialConfigurationsMatchingRequestFormat,
   Oid4vciDraftVersion,
   Oid4vciIssuer,
+  extractScopesForCredentialConfigurationIds,
+  getCredentialConfigurationsMatchingRequestFormat,
 } from '@animo-id/oid4vci'
 import {
-  SdJwtVcApi,
-  CredoError,
   ClaimFormat,
+  CredoError,
+  EventEmitter,
+  JwsService,
+  Jwt,
+  JwtPayload,
+  Key,
+  KeyType,
+  MdocApi,
+  SdJwtVcApi,
+  TypedArrayEncoder,
+  W3cCredentialService,
   getJwkFromJson,
   getJwkFromKey,
   injectable,
   joinUriParts,
-  JwsService,
-  KeyType,
   utils,
-  W3cCredentialService,
-  MdocApi,
-  Key,
-  JwtPayload,
-  Jwt,
-  EventEmitter,
-  TypedArrayEncoder,
 } from '@credo-ts/core'
 
 import { OpenId4VcVerifierApi } from '../openid4vc-verifier'
@@ -66,10 +66,10 @@ import { OpenId4VcIssuanceSessionState } from './OpenId4VcIssuanceSessionState'
 import { OpenId4VcIssuanceSessionStateChangedEvent, OpenId4VcIssuerEvents } from './OpenId4VcIssuerEvents'
 import { OpenId4VcIssuerModuleConfig } from './OpenId4VcIssuerModuleConfig'
 import {
-  OpenId4VcIssuerRepository,
-  OpenId4VcIssuerRecord,
-  OpenId4VcIssuanceSessionRepository,
   OpenId4VcIssuanceSessionRecord,
+  OpenId4VcIssuanceSessionRepository,
+  OpenId4VcIssuerRecord,
+  OpenId4VcIssuerRepository,
 } from './repository'
 import { generateTxCode } from './util/txCode'
 
@@ -769,7 +769,7 @@ export class OpenId4VcIssuerService {
           configurationsMatchingRequestAndOfferNotIssued as OpenId4VciCredentialConfigurationsSupportedWithFormats,
         credentialConfigurationIds: Object.keys(configurationsMatchingRequestAndOfferNotIssued) as [
           string,
-          ...string[]
+          ...string[],
         ],
       }
     }
@@ -912,7 +912,8 @@ export class OpenId4VcIssuerService {
           )
         )) as string[] | Record<string, unknown>[],
       }
-    } else if (signOptions.format === ClaimFormat.SdJwtVc) {
+    }
+    if (signOptions.format === ClaimFormat.SdJwtVc) {
       if (signOptions.format !== requestFormat.format) {
         throw new CredoError(
           `Invalid credential format returned by sign options. Expected '${requestFormat.format}', received '${signOptions.format}'.`
@@ -935,7 +936,8 @@ export class OpenId4VcIssuerService {
           signOptions.credentials.map((credential) => sdJwtVcApi.sign(credential).then((signed) => signed.compact))
         ),
       }
-    } else if (signOptions.format === ClaimFormat.MsoMdoc) {
+    }
+    if (signOptions.format === ClaimFormat.MsoMdoc) {
       if (signOptions.format !== requestFormat.format) {
         throw new CredoError(
           `Invalid credential format returned by sign options. Expected '${requestFormat.format}', received '${signOptions.format}'.`
@@ -957,9 +959,8 @@ export class OpenId4VcIssuerService {
           signOptions.credentials.map((credential) => mdocApi.sign(credential).then((signed) => signed.base64Url))
         ),
       }
-    } else {
-      throw new CredoError(`Unsupported credential format ${signOptions.format}`)
     }
+    throw new CredoError(`Unsupported credential format ${signOptions.format}`)
   }
 
   private async signW3cCredential(
@@ -985,15 +986,14 @@ export class OpenId4VcIssuerService {
         verificationMethod: options.verificationMethod,
         alg,
       })
-    } else {
-      const proofType = getProofTypeFromKey(agentContext, key)
-
-      return await this.w3cCredentialService.signCredential(agentContext, {
-        format: ClaimFormat.LdpVc,
-        credential: options.credential,
-        verificationMethod: options.verificationMethod,
-        proofType: proofType,
-      })
     }
+    const proofType = getProofTypeFromKey(agentContext, key)
+
+    return await this.w3cCredentialService.signCredential(agentContext, {
+      format: ClaimFormat.LdpVc,
+      credential: options.credential,
+      verificationMethod: options.verificationMethod,
+      proofType: proofType,
+    })
   }
 }

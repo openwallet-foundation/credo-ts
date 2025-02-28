@@ -1,10 +1,10 @@
 import type { Wallet, WalletConfig } from '@credo-ts/core'
 
-import { KeyDerivationMethod, KeyType, TypedArrayEncoder, SigningProviderRegistry } from '@credo-ts/core'
+import { KeyDerivationMethod, KeyType, SigningProviderRegistry, TypedArrayEncoder } from '@credo-ts/core'
 import { BBS_SIGNATURE_LENGTH } from '@mattrglobal/bbs-signatures'
 
 import { RegisteredAskarTestWallet } from '../../askar/tests/helpers'
-import { testLogger, agentDependencies } from '../../core/tests'
+import { agentDependencies, testLogger } from '../../core/tests'
 import { Bls12381g2SigningProvider } from '../src'
 
 import { describeSkipNode18 } from './util'

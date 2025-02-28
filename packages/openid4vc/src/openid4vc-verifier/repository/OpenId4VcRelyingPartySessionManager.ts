@@ -1,6 +1,6 @@
-import type { OpenId4VcVerificationSessionRecord } from './OpenId4VcVerificationSessionRecord'
 import type { AgentContext } from '@credo-ts/core'
 import type { AuthorizationRequestState, AuthorizationResponseState, IRPSessionManager } from '@sphereon/did-auth-siop'
+import type { OpenId4VcVerificationSessionRecord } from './OpenId4VcVerificationSessionRecord'
 
 import { CredoError } from '@credo-ts/core'
 import {
@@ -17,7 +17,10 @@ import { OpenId4VcVerificationSessionRepository } from './OpenId4VcVerificationS
 export class OpenId4VcRelyingPartySessionManager implements IRPSessionManager {
   private openId4VcVerificationSessionRepository: OpenId4VcVerificationSessionRepository
 
-  public constructor(private agentContext: AgentContext, private verifierId: string) {
+  public constructor(
+    private agentContext: AgentContext,
+    private verifierId: string
+  ) {
     this.openId4VcVerificationSessionRepository = agentContext.dependencyManager.resolve(
       OpenId4VcVerificationSessionRepository
     )

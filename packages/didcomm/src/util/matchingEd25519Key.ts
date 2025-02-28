@@ -1,6 +1,6 @@
 import type { DidDocument, VerificationMethod } from '@credo-ts/core'
 
-import { getKeyFromVerificationMethod, convertPublicKeyToX25519, Key, KeyType } from '@credo-ts/core'
+import { Key, KeyType, convertPublicKeyToX25519, getKeyFromVerificationMethod } from '@credo-ts/core'
 
 /**
  * Tries to find a matching Ed25519 key to the supplied X25519 key

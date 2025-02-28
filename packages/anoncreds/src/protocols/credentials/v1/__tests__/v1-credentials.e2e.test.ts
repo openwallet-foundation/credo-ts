@@ -7,11 +7,11 @@ import { waitForCredentialRecord } from '../../../../../../core/tests/helpers'
 import testLogger from '../../../../../../core/tests/logger'
 import { setupAnonCredsTests } from '../../../../../tests/legacyAnonCredsSetup'
 import {
-  V1ProposeCredentialMessage,
-  V1RequestCredentialMessage,
+  V1CredentialPreview,
   V1IssueCredentialMessage,
   V1OfferCredentialMessage,
-  V1CredentialPreview,
+  V1ProposeCredentialMessage,
+  V1RequestCredentialMessage,
 } from '../messages'
 
 describe('V1 Credentials', () => {

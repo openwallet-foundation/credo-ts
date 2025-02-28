@@ -1,5 +1,5 @@
-import type { AnonCredsCredentialDefinition } from '../../models'
 import type { BaseAgent } from '@credo-ts/core'
+import type { AnonCredsCredentialDefinition } from '../../models'
 
 import { CredoError } from '@credo-ts/core'
 
@@ -15,7 +15,7 @@ export async function migrateAnonCredsCredentialDefinitionRecordToV0_4<Agent ext
   agent.config.logger.info('Migrating AnonCredsCredentialDefinitionRecord records to storage version 0.4')
   const credentialDefinitionRepository = agent.dependencyManager.resolve(AnonCredsCredentialDefinitionRepository)
 
-  agent.config.logger.debug(`Fetching all credential definition records from storage`)
+  agent.config.logger.debug('Fetching all credential definition records from storage')
   const credentialDefinitionRecords = await credentialDefinitionRepository.getAll(agent.context)
 
   agent.config.logger.debug(

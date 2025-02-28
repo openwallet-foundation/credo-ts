@@ -1,13 +1,13 @@
 import type { WalletConfig } from '@credo-ts/core'
 
 import {
-  WalletExportUnsupportedError,
-  WalletDuplicateError,
-  WalletNotFoundError,
   InjectionSymbols,
   Logger,
   SigningProviderRegistry,
+  WalletDuplicateError,
   WalletError,
+  WalletExportUnsupportedError,
+  WalletNotFoundError,
 } from '@credo-ts/core'
 import { Store } from '@openwallet-foundation/askar-shared'
 import { inject, injectable } from 'tsyringe'

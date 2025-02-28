@@ -1,5 +1,5 @@
-import type { AnonCredsRevocationRegistryDefinition } from '../../models'
 import type { AgentContext } from '@credo-ts/core'
+import type { AnonCredsRevocationRegistryDefinition } from '../../models'
 
 export interface TailsFileService {
   /**

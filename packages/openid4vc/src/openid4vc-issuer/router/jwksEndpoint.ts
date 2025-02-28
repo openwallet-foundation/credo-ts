@@ -1,9 +1,9 @@
-import type { OpenId4VcIssuanceRequest } from './requestContext'
-import type { OpenId4VcIssuerModuleConfig } from '../OpenId4VcIssuerModuleConfig'
 import type { JwkSet } from '@animo-id/oauth2'
-import type { Router, Response } from 'express'
+import type { Response, Router } from 'express'
+import type { OpenId4VcIssuerModuleConfig } from '../OpenId4VcIssuerModuleConfig'
+import type { OpenId4VcIssuanceRequest } from './requestContext'
 
-import { getJwkFromKey, Key } from '@credo-ts/core'
+import { Key, getJwkFromKey } from '@credo-ts/core'
 
 import { getRequestContext, sendJsonResponse, sendUnknownServerErrorResponse } from '../../shared/router'
 

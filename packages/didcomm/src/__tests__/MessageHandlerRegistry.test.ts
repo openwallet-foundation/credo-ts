@@ -30,7 +30,7 @@ class CustomProtocolMessage extends AgentMessage {
 
 class TestHandler implements MessageHandler {
   // We want to pass various classes to test various behaviours so we dont need to strictly type it.
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
   public constructor(classes: any[]) {
     this.supportedMessages = classes
   }
@@ -38,7 +38,7 @@ class TestHandler implements MessageHandler {
   public supportedMessages
 
   // We don't need an implementation in test handler so we can disable lint.
-  // eslint-disable-next-line @typescript-eslint/no-empty-function
+  // biome-ignore lint/suspicious/noEmptyBlockStatements: <explanation>
   public async handle() {}
 }
 

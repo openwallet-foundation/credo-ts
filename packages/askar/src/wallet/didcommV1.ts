@@ -1,7 +1,7 @@
 import type { EncryptedMessage } from '@credo-ts/core'
 
-import { WalletError, JsonEncoder, JsonTransformer, Key, KeyType, TypedArrayEncoder, Buffer } from '@credo-ts/core'
-import { CryptoBox, Key as AskarKey, KeyAlgorithm } from '@openwallet-foundation/askar-shared'
+import { Buffer, JsonEncoder, JsonTransformer, Key, KeyType, TypedArrayEncoder, WalletError } from '@credo-ts/core'
+import { Key as AskarKey, CryptoBox, KeyAlgorithm } from '@openwallet-foundation/askar-shared'
 
 import { JweEnvelope, JweRecipient } from './JweEnvelope'
 
@@ -101,7 +101,7 @@ export function didcommV1Unpack(messagePackage: EncryptedMessage, recipientKey: 
   }
 
   const recipient = protectedJson.recipients.find(
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
     (r: any) => r.header.kid === TypedArrayEncoder.toBase58(recipientKey.publicBytes)
   )
 
@@ -115,11 +115,13 @@ export function didcommV1Unpack(messagePackage: EncryptedMessage, recipientKey: 
 
   if (sender && !iv) {
     throw new WalletError('Missing IV')
-  } else if (!sender && iv) {
+  }
+  if (!sender && iv) {
     throw new WalletError('Unexpected IV')
   }
 
-  let payloadKey, senderKey
+  let payloadKey: Uint8Array
+  let senderKey: string | undefined
 
   let sender_x: AskarKey | undefined
   let recip_x: AskarKey | undefined

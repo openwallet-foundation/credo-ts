@@ -1,5 +1,5 @@
-import type { V1CredentialProtocol } from '../V1CredentialProtocol'
 import type { CredentialExchangeRecord, MessageHandler, MessageHandlerInboundMessage } from '@credo-ts/didcomm'
+import type { V1CredentialProtocol } from '../V1CredentialProtocol'
 
 import { getOutboundMessageContext } from '@credo-ts/didcomm'
 
@@ -33,7 +33,7 @@ export class V1ProposeCredentialHandler implements MessageHandler {
     credentialRecord: CredentialExchangeRecord,
     messageContext: MessageHandlerInboundMessage<V1ProposeCredentialHandler>
   ) {
-    messageContext.agentContext.config.logger.info(`Automatically sending offer with autoAccept`)
+    messageContext.agentContext.config.logger.info('Automatically sending offer with autoAccept')
 
     if (!messageContext.connection) {
       messageContext.agentContext.config.logger.error('No connection on the messageContext, aborting auto accept')

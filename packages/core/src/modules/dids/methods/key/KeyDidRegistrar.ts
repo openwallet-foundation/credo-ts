@@ -5,7 +5,7 @@ import type { DidRegistrar } from '../../domain/DidRegistrar'
 import type { DidCreateOptions, DidCreateResult, DidDeactivateResult, DidUpdateResult } from '../../types'
 
 import { DidDocumentRole } from '../../domain/DidDocumentRole'
-import { DidRepository, DidRecord } from '../../repository'
+import { DidRecord, DidRepository } from '../../repository'
 
 import { DidKey } from './DidKey'
 
@@ -97,7 +97,7 @@ export class KeyDidRegistrar implements DidRegistrar {
       didRegistrationMetadata: {},
       didState: {
         state: 'failed',
-        reason: `notSupported: cannot update did:key did`,
+        reason: 'notSupported: cannot update did:key did',
       },
     }
   }
@@ -108,7 +108,7 @@ export class KeyDidRegistrar implements DidRegistrar {
       didRegistrationMetadata: {},
       didState: {
         state: 'failed',
-        reason: `notSupported: cannot deactivate did:key did`,
+        reason: 'notSupported: cannot deactivate did:key did',
       },
     }
   }

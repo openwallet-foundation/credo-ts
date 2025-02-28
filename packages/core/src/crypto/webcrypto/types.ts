@@ -3,8 +3,8 @@
  * Based on: https://www.w3.org/TR/WebCryptoAPI/
  */
 
-import type { CredoWebCryptoKey } from './CredoWebCryptoKey'
 import type { JwkJson } from '../jose'
+import type { CredoWebCryptoKey } from './CredoWebCryptoKey'
 
 export type CredoWebCryptoKeyPair = {
   publicKey: CredoWebCryptoKey

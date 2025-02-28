@@ -1,5 +1,5 @@
 import { Expose, Type } from 'class-transformer'
-import { IsArray, ValidateNested, IsString, IsEnum, IsInstance } from 'class-validator'
+import { IsArray, IsEnum, IsInstance, IsString, ValidateNested } from 'class-validator'
 
 import { AgentMessage } from '../../../AgentMessage'
 import { IsValidMessageType, parseMessageType } from '../../../util/messageType'

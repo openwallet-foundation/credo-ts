@@ -108,7 +108,8 @@ export class AliceInquirer extends BaseInquirer {
     const confirm = await prompt([this.inquireConfirmation(Title.ConfirmTitle)])
     if (confirm.options === ConfirmOptions.No) {
       return
-    } else if (confirm.options === ConfirmOptions.Yes) {
+    }
+    if (confirm.options === ConfirmOptions.Yes) {
       await this.alice.exit()
     }
   }
@@ -118,7 +119,8 @@ export class AliceInquirer extends BaseInquirer {
     if (confirm.options === ConfirmOptions.No) {
       await this.processAnswer()
       return
-    } else if (confirm.options === ConfirmOptions.Yes) {
+    }
+    if (confirm.options === ConfirmOptions.Yes) {
       await this.alice.restart()
       await runAlice()
     }

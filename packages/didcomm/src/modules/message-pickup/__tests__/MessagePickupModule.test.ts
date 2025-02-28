@@ -1,9 +1,9 @@
 import type { DependencyManager } from '../../../../../core/src/plugins'
 import type { MessagePickupProtocol } from '../protocol/MessagePickupProtocol'
 
-import { MessageHandlerRegistry } from '../../..//MessageHandlerRegistry'
 import { InjectionSymbols } from '../../../../../core'
 import { getAgentContext } from '../../../../../core/tests'
+import { MessageHandlerRegistry } from '../../..//MessageHandlerRegistry'
 import { FeatureRegistry } from '../../../FeatureRegistry'
 import { MessagePickupModule } from '../MessagePickupModule'
 import { MessagePickupModuleConfig } from '../MessagePickupModuleConfig'

@@ -7,7 +7,7 @@ export type AllSettledFulfilled<T> = {
 
 export type AllSettledRejected = {
   status: 'rejected'
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
   reason: any
 }
 
@@ -20,14 +20,14 @@ export function allSettled<T>(promises: Promise<T>[]) {
             ({
               status: 'fulfilled',
               value,
-            } as AllSettledFulfilled<T>)
+            }) as AllSettledFulfilled<T>
         )
         .catch(
           (reason) =>
             ({
               status: 'rejected',
               reason,
-            } as AllSettledRejected)
+            }) as AllSettledRejected
         )
     )
   )

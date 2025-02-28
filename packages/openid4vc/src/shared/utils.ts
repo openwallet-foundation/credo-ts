@@ -1,4 +1,3 @@
-import type { OpenId4VcIssuerX5c, OpenId4VcJwtIssuer } from './models'
 import type {
   AgentContext,
   DidPurpose,
@@ -7,8 +6,9 @@ import type {
   JwkJson,
   Key,
 } from '@credo-ts/core'
-import type { JwtIssuerWithContext as VpJwtIssuerWithContext, VerifyJwtCallback } from '@sphereon/did-auth-siop'
-import type { DPoPJwtIssuerWithContext, CreateJwtCallback, JwtIssuer } from '@sphereon/oid4vc-common'
+import type { VerifyJwtCallback, JwtIssuerWithContext as VpJwtIssuerWithContext } from '@sphereon/did-auth-siop'
+import type { CreateJwtCallback, DPoPJwtIssuerWithContext, JwtIssuer } from '@sphereon/oid4vc-common'
+import type { OpenId4VcIssuerX5c, OpenId4VcJwtIssuer } from './models'
 
 import {
   CredoError,
@@ -81,7 +81,8 @@ export function getVerifyJwtCallback(
         trustedCertificates: [],
       })
       return res.isValid
-    } else if (jwtVerifier.method === 'x5c' || jwtVerifier.method === 'jwk') {
+    }
+    if (jwtVerifier.method === 'x5c' || jwtVerifier.method === 'jwk') {
       if (jwtVerifier.type === 'request-object') {
         const x509Config = agentContext.dependencyManager.resolve(X509ModuleConfig)
         const certificateChain = jwt.header.x5c?.map((cert) => X509Certificate.fromEncodedCertificate(cert))
@@ -111,9 +112,8 @@ export function getVerifyJwtCallback(
         trustedCertificates: jwtVerifier.type === 'request-object' ? trustedCertificates : [],
       })
       return res.isValid
-    } else {
-      throw new Error(`Unsupported jwt verifier method: '${jwtVerifier.method}'`)
     }
+    throw new Error(`Unsupported jwt verifier method: '${jwtVerifier.method}'`)
   }
 }
 export function getCreateJwtCallback(
@@ -131,7 +131,8 @@ export function getCreateJwtCallback(
       })
 
       return jws
-    } else if (jwtIssuer.method === 'jwk') {
+    }
+    if (jwtIssuer.method === 'jwk') {
       if (!jwtIssuer.jwk.kty) {
         throw new CredoError('Missing required key type (kty) in the jwk.')
       }
@@ -144,7 +145,8 @@ export function getCreateJwtCallback(
       })
 
       return jws
-    } else if (jwtIssuer.method === 'x5c') {
+    }
+    if (jwtIssuer.method === 'x5c') {
       const leafCertificate = X509Service.getLeafCertificate(agentContext, { certificateChain: jwtIssuer.x5c })
 
       const jws = await jwsService.createJwsCompact(agentContext, {
@@ -174,7 +176,8 @@ export async function openIdTokenIssuerToJwtIssuer(
       didUrl: openId4VcTokenIssuer.didUrl,
       alg,
     }
-  } else if (openId4VcTokenIssuer.method === 'x5c') {
+  }
+  if (openId4VcTokenIssuer.method === 'x5c') {
     const leafCertificate = X509Service.getLeafCertificate(agentContext, {
       certificateChain: openId4VcTokenIssuer.x5c,
     })
@@ -213,7 +216,8 @@ export async function openIdTokenIssuerToJwtIssuer(
       ...openId4VcTokenIssuer,
       alg,
     }
-  } else if (openId4VcTokenIssuer.method === 'jwk') {
+  }
+  if (openId4VcTokenIssuer.method === 'jwk') {
     const alg = openId4VcTokenIssuer.jwk.supportedSignatureAlgorithms[0]
     if (!alg) {
       throw new CredoError(`No supported signature algorithms for key type: '${openId4VcTokenIssuer.jwk.keyType}'`)

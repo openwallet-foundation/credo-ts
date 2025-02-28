@@ -1,5 +1,5 @@
-import type { ConnectionsModuleConfigOptions } from './ConnectionsModuleConfig'
 import type { AgentContext, DependencyManager, Module } from '@credo-ts/core'
+import type { ConnectionsModuleConfigOptions } from './ConnectionsModuleConfig'
 
 import { FeatureRegistry } from '../../FeatureRegistry'
 import { Protocol } from '../../models'

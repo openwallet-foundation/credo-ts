@@ -12,7 +12,7 @@ export async function migrateCacheToV0_4<Agent extends BaseAgent>(agent: Agent) 
 
   const storageService = agent.dependencyManager.resolve<StorageService<BaseRecord>>(InjectionSymbols.StorageService)
 
-  agent.config.logger.debug(`Fetching all cache records`)
+  agent.config.logger.debug('Fetching all cache records')
   const records = await storageService.getAll(agent.context, CacheRecord)
 
   for (const record of records) {

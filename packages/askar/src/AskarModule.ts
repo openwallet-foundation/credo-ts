@@ -1,10 +1,10 @@
-import type { AskarModuleConfigOptions } from './AskarModuleConfig'
 import type { AgentContext, DependencyManager, Module } from '@credo-ts/core'
+import type { AskarModuleConfigOptions } from './AskarModuleConfig'
 
 import { CredoError, InjectionSymbols } from '@credo-ts/core'
 import { Store } from '@openwallet-foundation/askar-shared'
 
-import { AskarMultiWalletDatabaseScheme, AskarModuleConfig } from './AskarModuleConfig'
+import { AskarModuleConfig, AskarMultiWalletDatabaseScheme } from './AskarModuleConfig'
 import { AskarStorageService } from './storage'
 import { assertAskarWallet } from './utils/assertAskarWallet'
 import { AskarProfileWallet, AskarWallet } from './wallet'
@@ -21,20 +21,18 @@ export class AskarModule implements Module {
 
     if (dependencyManager.isRegistered(InjectionSymbols.Wallet)) {
       throw new CredoError('There is an instance of Wallet already registered')
-    } else {
-      dependencyManager.registerContextScoped(InjectionSymbols.Wallet, AskarWallet)
+    }
+    dependencyManager.registerContextScoped(InjectionSymbols.Wallet, AskarWallet)
 
-      // If the multiWalletDatabaseScheme is set to ProfilePerWallet, we want to register the AskarProfileWallet
-      if (this.config.multiWalletDatabaseScheme === AskarMultiWalletDatabaseScheme.ProfilePerWallet) {
-        dependencyManager.registerContextScoped(AskarProfileWallet)
-      }
+    // If the multiWalletDatabaseScheme is set to ProfilePerWallet, we want to register the AskarProfileWallet
+    if (this.config.multiWalletDatabaseScheme === AskarMultiWalletDatabaseScheme.ProfilePerWallet) {
+      dependencyManager.registerContextScoped(AskarProfileWallet)
     }
 
     if (dependencyManager.isRegistered(InjectionSymbols.StorageService)) {
       throw new CredoError('There is an instance of StorageService already registered')
-    } else {
-      dependencyManager.registerSingleton(InjectionSymbols.StorageService, AskarStorageService)
     }
+    dependencyManager.registerSingleton(InjectionSymbols.StorageService, AskarStorageService)
   }
 
   public async initialize(agentContext: AgentContext): Promise<void> {

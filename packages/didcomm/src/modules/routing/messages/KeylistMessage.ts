@@ -34,6 +34,7 @@ export class KeylistMessage extends AgentMessage {
 
 export class Keylist {
   public constructor(options: { paginateOffset: number }) {
+    // biome-ignore lint/correctness/noConstructorReturn: <explanation>
     return options
   }
 }

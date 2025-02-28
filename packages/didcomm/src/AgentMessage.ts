@@ -1,6 +1,6 @@
+import type { Constructor } from '@credo-ts/core'
 import type { PlaintextMessage } from './types'
 import type { ParsedMessageType } from './util/messageType'
-import type { Constructor } from '@credo-ts/core'
 
 import { JsonTransformer } from '@credo-ts/core'
 import { Exclude } from 'class-transformer'

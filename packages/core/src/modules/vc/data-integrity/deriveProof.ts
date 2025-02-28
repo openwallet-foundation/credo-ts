@@ -38,7 +38,7 @@ export interface W3cJsonLdDeriveProofOptions {
 export const deriveProof = async (
   proofDocument: JsonObject,
   revealDocument: JsonObject,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
   { suite, skipProofCompaction, documentLoader, nonce }: any
 ): Promise<W3cJsonLdVerifiableCredential> => {
   if (!suite) {
@@ -56,7 +56,7 @@ export const deriveProof = async (
   })
 
   if (proofs.length === 0) {
-    throw new Error(`There were not any proofs provided that can be used to derive a proof with this suite.`)
+    throw new Error('There were not any proofs provided that can be used to derive a proof with this suite.')
   }
 
   let derivedProof = await suite.deriveProof({
@@ -88,8 +88,7 @@ export const deriveProof = async (
   }
 
   if (!skipProofCompaction) {
-    /* eslint-disable prefer-const */
-    let expandedProof: Record<string, unknown> = {
+    const expandedProof: Record<string, unknown> = {
       [SECURITY_PROOF_URL]: {
         '@graph': derivedProof.proof,
       },

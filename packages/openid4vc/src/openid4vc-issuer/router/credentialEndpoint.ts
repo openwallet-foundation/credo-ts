@@ -1,12 +1,12 @@
-import type { OpenId4VcIssuanceRequest } from './requestContext'
-import type { OpenId4VcIssuerModuleConfig } from '../OpenId4VcIssuerModuleConfig'
 import type { HttpMethod } from '@animo-id/oauth2'
-import type { Router, Response } from 'express'
+import type { Response, Router } from 'express'
+import type { OpenId4VcIssuerModuleConfig } from '../OpenId4VcIssuerModuleConfig'
+import type { OpenId4VcIssuanceRequest } from './requestContext'
 
 import {
   Oauth2ErrorCodes,
-  Oauth2ServerErrorResponseError,
   Oauth2ResourceUnauthorizedError,
+  Oauth2ServerErrorResponseError,
   SupportedAuthenticationScheme,
 } from '@animo-id/oauth2'
 import { getCredentialConfigurationsMatchingRequestFormat } from '@animo-id/oid4vci'

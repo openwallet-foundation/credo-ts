@@ -1,6 +1,6 @@
+import type { AgentContext } from '@credo-ts/core'
 import type { AnonCredsProof, AnonCredsProofRequest, AnonCredsSelectedCredentials } from '../models'
 import type { CreateProofOptions, VerifyProofOptions } from '../services'
-import type { AgentContext } from '@credo-ts/core'
 
 import { CredoError } from '@credo-ts/core'
 
@@ -20,7 +20,7 @@ export async function getRevocationRegistriesForRequest(
   let updatedSelectedCredentials = selectedCredentials
 
   try {
-    agentContext.config.logger.debug(`Retrieving revocation registries for proof request`, {
+    agentContext.config.logger.debug('Retrieving revocation registries for proof request', {
       proofRequest,
       selectedCredentials,
     })
@@ -141,13 +141,13 @@ export async function getRevocationRegistriesForRequest(
     }
     // await all revocation registry statuses asynchronously
     await Promise.all(revocationRegistryPromises)
-    agentContext.config.logger.debug(`Retrieved revocation registries for proof request`, {
+    agentContext.config.logger.debug('Retrieved revocation registries for proof request', {
       revocationRegistries,
     })
 
     return { revocationRegistries, updatedSelectedCredentials }
   } catch (error) {
-    agentContext.config.logger.error(`Error retrieving revocation registry for proof request`, {
+    agentContext.config.logger.error('Error retrieving revocation registry for proof request', {
       error,
       proofRequest,
       selectedCredentials,

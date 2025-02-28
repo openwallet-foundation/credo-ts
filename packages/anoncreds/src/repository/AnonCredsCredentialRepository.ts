@@ -1,6 +1,6 @@
 import type { AgentContext } from '@credo-ts/core'
 
-import { Repository, InjectionSymbols, StorageService, EventEmitter, injectable, inject } from '@credo-ts/core'
+import { EventEmitter, InjectionSymbols, Repository, StorageService, inject, injectable } from '@credo-ts/core'
 
 import { AnonCredsCredentialRecord } from './AnonCredsCredentialRecord'
 

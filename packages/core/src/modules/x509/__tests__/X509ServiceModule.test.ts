@@ -1,6 +1,6 @@
 import type { DependencyManager } from '../../../plugins'
 
-import { X509ModuleConfig, X509Module, type X509ModuleConfigOptions, X509Service } from './../index'
+import { X509Module, X509ModuleConfig, type X509ModuleConfigOptions, X509Service } from './../index'
 
 const dependencyManager = {
   registerInstance: jest.fn(),

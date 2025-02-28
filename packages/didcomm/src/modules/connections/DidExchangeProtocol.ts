@@ -1,38 +1,38 @@
-import type { ConnectionRecord } from './repository'
+import type { AgentContext, ResolvedDidCommService } from '@credo-ts/core'
 import type { Routing } from '../../models'
 import type { OutOfBandRecord } from '../oob/repository'
-import type { AgentContext, ResolvedDidCommService } from '@credo-ts/core'
+import type { ConnectionRecord } from './repository'
 
 import {
-  InjectionSymbols,
-  Key,
-  KeyType,
-  JwsService,
-  JwaSignatureAlgorithm,
-  getJwkFromKey,
-  Logger,
-  CredoError,
-  inject,
-  injectable,
-  TypedArrayEncoder,
-  isDid,
   Buffer,
-  JsonEncoder,
-  JsonTransformer,
-  base64ToBase64URL,
+  CredoError,
   DidDocument,
   DidKey,
-  getNumAlgoFromPeerDid,
-  PeerDidNumAlgo,
-  DidsApi,
-  isValidPeerDid,
-  getAlternativeDidsForPeerDid,
-  getKeyFromVerificationMethod,
-  tryParseDid,
-  didKeyToInstanceOfKey,
   DidRepository,
+  DidsApi,
+  InjectionSymbols,
+  JsonEncoder,
+  JsonTransformer,
+  JwaSignatureAlgorithm,
+  JwsService,
+  Key,
+  KeyType,
+  Logger,
+  PeerDidNumAlgo,
+  TypedArrayEncoder,
+  base64ToBase64URL,
+  didKeyToInstanceOfKey,
   didKeyToVerkey,
+  getAlternativeDidsForPeerDid,
+  getJwkFromKey,
+  getKeyFromVerificationMethod,
+  getNumAlgoFromPeerDid,
+  inject,
+  injectable,
+  isDid,
+  isValidPeerDid,
   parseDid,
+  tryParseDid,
 } from '@credo-ts/core'
 
 import { Attachment, AttachmentData } from '../../decorators/attachment/Attachment'
@@ -45,7 +45,7 @@ import { getMediationRecordForDidDocument } from '../routing/services/helpers'
 import { ConnectionsModuleConfig } from './ConnectionsModuleConfig'
 import { DidExchangeStateMachine } from './DidExchangeStateMachine'
 import { DidExchangeProblemReportError, DidExchangeProblemReportReason } from './errors'
-import { DidExchangeRequestMessage, DidExchangeResponseMessage, DidExchangeCompleteMessage } from './messages'
+import { DidExchangeCompleteMessage, DidExchangeRequestMessage, DidExchangeResponseMessage } from './messages'
 import { DidExchangeRole, DidExchangeState, HandshakeProtocol } from './models'
 import { ConnectionService } from './services'
 import { createPeerDidFromServices, getDidDocumentForCreatedDid, routingToServices } from './services/helpers'
@@ -99,7 +99,10 @@ export class DidExchangeProtocol {
     // Create message
     const label = params.label ?? agentContext.config.label
 
-    let didDocument, mediatorId
+    // biome-ignore lint/suspicious/noImplicitAnyLet: <explanation>
+    let didDocument
+    // biome-ignore lint/suspicious/noImplicitAnyLet: <explanation>
+    let mediatorId
 
     // If our did is specified, make sure we have all key material for it
     if (did) {
@@ -455,7 +458,7 @@ export class DidExchangeProtocol {
     messageType: ParsedMessageType,
     connectionRecord: ConnectionRecord
   ) {
-    this.logger.debug(`Updating state`, { connectionRecord })
+    this.logger.debug('Updating state', { connectionRecord })
     const nextState = DidExchangeStateMachine.nextState(messageType, connectionRecord)
     return this.connectionService.updateState(agentContext, connectionRecord, nextState)
   }

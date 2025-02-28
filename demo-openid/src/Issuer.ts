@@ -2,30 +2,30 @@ import type { DidKey } from '@credo-ts/core'
 import type {
   OpenId4VcCredentialHolderBinding,
   OpenId4VcCredentialHolderDidBinding,
+  OpenId4VcIssuerRecord,
+  OpenId4VcVerifierRecord,
   OpenId4VciCredentialConfigurationsSupportedWithFormats,
   OpenId4VciCredentialRequestToCredentialMapper,
   OpenId4VciSignMdocCredentials,
   OpenId4VciSignSdJwtCredentials,
   OpenId4VciSignW3cCredentials,
-  OpenId4VcIssuerRecord,
-  OpenId4VcVerifierRecord,
 } from '@credo-ts/openid4vc'
 
 import { AskarModule } from '@credo-ts/askar'
 import {
   ClaimFormat,
-  parseDid,
   CredoError,
+  JsonTransformer,
+  KeyType,
+  TypedArrayEncoder,
   W3cCredential,
   W3cCredentialSubject,
   W3cIssuer,
-  w3cDate,
-  X509Service,
-  KeyType,
   X509ModuleConfig,
+  X509Service,
+  parseDid,
   utils,
-  TypedArrayEncoder,
-  JsonTransformer,
+  w3cDate,
 } from '@credo-ts/core'
 import {
   OpenId4VcIssuerModule,
@@ -119,7 +119,9 @@ function getCredentialRequestToCredentialMapper({
     }
 
     if (credentialConfiguration.format === OpenId4VciCredentialFormatProfile.JwtVcJson) {
-      holderBindings.forEach((holderBinding) => assertDidBasedHolderBinding(holderBinding))
+      for (const holderBinding of holderBindings) {
+        assertDidBasedHolderBinding(holderBinding)
+      }
 
       return {
         credentialConfigurationId,
@@ -264,7 +266,7 @@ export class Issuer extends BaseAgent<{
   }
 
   public static async build(): Promise<Issuer> {
-    const issuer = new Issuer(ISSUER_HOST, 2000, 'OpenId4VcIssuer ' + Math.random().toString())
+    const issuer = new Issuer(ISSUER_HOST, 2000, `OpenId4VcIssuer ${Math.random().toString()}`)
     await issuer.initializeAgent('96213c3d7fc8d4d6754c7a0fd969598f')
 
     const certificate = await X509Service.createCertificate(issuer.agent.context, {

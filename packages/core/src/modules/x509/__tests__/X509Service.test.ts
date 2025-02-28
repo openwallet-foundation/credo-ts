@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-non-null-assertion */
-
 import type { AgentContext } from '../../../agent'
 
 import { id_ce_basicConstraints, id_ce_extKeyUsage, id_ce_keyUsage } from '@peculiar/asn1-x509'
@@ -8,12 +6,12 @@ import * as x509 from '@peculiar/x509'
 import { InMemoryWallet } from '../../../../../../tests/InMemoryWallet'
 import { getAgentConfig, getAgentContext } from '../../../../tests'
 import { KeyType } from '../../../crypto/KeyType'
-import { getJwkFromKey, P256Jwk } from '../../../crypto/jose/jwk'
+import { P256Jwk, getJwkFromKey } from '../../../crypto/jose/jwk'
 import { CredoWebCrypto } from '../../../crypto/webcrypto'
 import { X509Error } from '../X509Error'
 import { X509Service } from '../X509Service'
 
-import { X509KeyUsage, TypedArrayEncoder, X509ExtendedKeyUsage, Key } from '@credo-ts/core'
+import { Key, TypedArrayEncoder, X509ExtendedKeyUsage, X509KeyUsage } from '@credo-ts/core'
 
 /**
  *
@@ -23,7 +21,7 @@ import { X509KeyUsage, TypedArrayEncoder, X509ExtendedKeyUsage, Key } from '@cre
 const getNextMonth = () => {
   const now = new Date()
   let nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1)
-  if (now.getMonth() == 11) {
+  if (now.getMonth() === 11) {
     nextMonth = new Date(now.getFullYear() + 1, 0, 1)
   }
 
@@ -38,7 +36,7 @@ const getNextMonth = () => {
 const getLastMonth = () => {
   const now = new Date()
   let lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1)
-  if (now.getMonth() == 0) {
+  if (now.getMonth() === 0) {
     lastMonth = new Date(now.getFullYear() - 1, 0, 1)
   }
   return lastMonth
@@ -54,7 +52,7 @@ describe('X509Service', () => {
     wallet = new InMemoryWallet()
     agentContext = getAgentContext({ wallet })
 
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    // biome-ignore lint/style/noNonNullAssertion: <explanation>
     await wallet.createAndOpen(agentConfig.walletConfig!)
 
     const rootKey = await wallet.createKey({ keyType: KeyType.P256 })
@@ -246,6 +244,7 @@ describe('X509Service', () => {
           name: [{ type: 'url', value: 'paradym.id' }],
         },
         issuerAlternativeName: {
+          // biome-ignore lint/style/noNonNullAssertion: <explanation>
           name: mdocRootCertificate.issuerAlternativeNames!,
         },
         extendedKeyUsage: {
@@ -402,6 +401,7 @@ describe('X509Service', () => {
           name: [{ type: 'url', value: 'paradym.id' }],
         },
         issuerAlternativeName: {
+          // biome-ignore lint/style/noNonNullAssertion: <explanation>
           name: mdocRootCertificate.issuerAlternativeNames!,
         },
         extendedKeyUsage: {

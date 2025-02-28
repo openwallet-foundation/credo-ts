@@ -1,6 +1,6 @@
-import type { X509Certificate, X509ExtendedKeyUsage, X509KeyUsage } from './X509Certificate'
-import type { Key } from '../../crypto/Key'
 import type { GeneralNameType } from '@peculiar/x509'
+import type { Key } from '../../crypto/Key'
+import type { X509Certificate, X509ExtendedKeyUsage, X509KeyUsage } from './X509Certificate'
 
 type AddMarkAsCritical<T extends Record<string, Record<string, unknown>>> = T & {
   [K in keyof T]: T[K] & {

@@ -1,11 +1,11 @@
 import {
-  unqualifiedSchemaIdRegex,
-  unqualifiedCredentialDefinitionIdRegex,
-  unqualifiedRevocationRegistryIdRegex,
   didIndyCredentialDefinitionIdRegex,
+  didIndyRegex,
   didIndyRevocationRegistryIdRegex,
   didIndySchemaIdRegex,
-  didIndyRegex,
+  unqualifiedCredentialDefinitionIdRegex,
+  unqualifiedRevocationRegistryIdRegex,
+  unqualifiedSchemaIdRegex,
 } from '@credo-ts/anoncreds'
 
 // combines both legacy and did:indy anoncreds identifiers and also the issuer id

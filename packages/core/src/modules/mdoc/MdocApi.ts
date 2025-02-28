@@ -1,6 +1,6 @@
+import type { Query, QueryOptions } from '../../storage/StorageService'
 import type { MdocSignOptions, MdocVerifyOptions } from './MdocOptions'
 import type { MdocRecord } from './repository'
-import type { Query, QueryOptions } from '../../storage/StorageService'
 
 import { AgentContext } from '../../agent'
 import { injectable } from '../../plugins'

@@ -1,6 +1,6 @@
-import { DependencyManager, InjectionSymbols, Agent, UpdateAssistant, utils } from '@credo-ts/core'
 import { readFileSync } from 'fs'
 import path from 'path'
+import { Agent, DependencyManager, InjectionSymbols, UpdateAssistant, utils } from '@credo-ts/core'
 
 import { InMemoryStorageService } from '../../../../../tests/InMemoryStorageService'
 import { RegisteredAskarTestWallet } from '../../../../askar/tests/helpers'
@@ -19,7 +19,7 @@ const backupDate = new Date('2023-03-19T22:50:20.522Z')
 jest.useFakeTimers().setSystemTime(backupDate)
 
 describe('UpdateAssistant | AnonCreds | v0.3.1 - v0.4', () => {
-  it(`should correctly update the credential exchange records for holders`, async () => {
+  it('should correctly update the credential exchange records for holders', async () => {
     // We need to mock the uuid generation to make sure we generate consistent uuids for the new records created.
     let uuidCounter = 1
     const uuidSpy = jest.spyOn(utils, 'uuid').mockImplementation(() => `${uuidCounter++}-4e4f-41d9-94c4-f49351b811f1`)
@@ -95,7 +95,7 @@ describe('UpdateAssistant | AnonCreds | v0.3.1 - v0.4', () => {
     uuidSpy.mockReset()
   })
 
-  it(`should correctly update the schema and credential definition, and create link secret records for issuers`, async () => {
+  it('should correctly update the schema and credential definition, and create link secret records for issuers', async () => {
     // We need to mock the uuid generation to make sure we generate consistent uuids for the new records created.
     let uuidCounter = 1
     const uuidSpy = jest.spyOn(utils, 'uuid').mockImplementation(() => `${uuidCounter++}-4e4f-41d9-94c4-f49351b811f1`)

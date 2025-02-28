@@ -2,7 +2,7 @@ import { clear } from 'console'
 import { textSync } from 'figlet'
 
 import { BaseInquirer } from './BaseInquirer'
-import { credentialConfigurationsSupported, Issuer } from './Issuer'
+import { Issuer, credentialConfigurationsSupported } from './Issuer'
 import { Title, greenText, purpleText, redText } from './OutputClass'
 
 export const runIssuer = async () => {
@@ -65,8 +65,8 @@ export class IssuerInquirer extends BaseInquirer {
         authorizationMethod === 'Browser'
           ? 'browser'
           : authorizationMethod === 'Presentation'
-          ? 'presentation'
-          : undefined,
+            ? 'presentation'
+            : undefined,
       requirePin: authorizationMethod === 'Transaction Code',
     })
 

@@ -1,5 +1,5 @@
-import type { EventReplaySubject } from './events'
 import type { AnonCredsTestsAgent } from '../../anoncreds/tests/legacyAnonCredsSetup'
+import type { EventReplaySubject } from './events'
 
 import { issueLegacyAnonCredsCredential, setupAnonCredsTests } from '../../anoncreds/tests/legacyAnonCredsSetup'
 import { ProofState } from '../../didcomm/src/modules/proofs'

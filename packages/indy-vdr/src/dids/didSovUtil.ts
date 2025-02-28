@@ -1,14 +1,14 @@
 import {
-  TypedArrayEncoder,
-  DidDocumentService,
-  DidDocumentBuilder,
-  DidCommV1Service,
-  NewDidCommV2Service,
-  convertPublicKeyToX25519,
-  CredoError,
   Buffer,
-  NewDidCommV2ServiceEndpoint,
+  CredoError,
+  DidCommV1Service,
   DidCommV2Service,
+  DidDocumentBuilder,
+  DidDocumentService,
+  NewDidCommV2Service,
+  NewDidCommV2ServiceEndpoint,
+  TypedArrayEncoder,
+  convertPublicKeyToX25519,
 } from '@credo-ts/core'
 
 export type CommEndpointType = 'endpoint' | 'did-communication' | 'DIDComm' | 'DIDCommMessaging'
@@ -149,13 +149,17 @@ export function endpointsAttribFromServices(services: DidDocumentService[]): Ind
       (commService instanceof DidCommV1Service || commService instanceof DidCommV2Service) &&
       commService.routingKeys
     ) {
-      commService.routingKeys.forEach((item) => routingKeys.add(item))
+      for (const item of commService.routingKeys) {
+        routingKeys.add(item)
+      }
     } else if (commService instanceof NewDidCommV2Service) {
       const firstServiceEndpoint = Array.isArray(commService.serviceEndpoint)
         ? commService.serviceEndpoint[0]
         : commService.serviceEndpoint
 
-      firstServiceEndpoint.routingKeys?.forEach((item) => routingKeys.add(item))
+      for (const item of firstServiceEndpoint.routingKeys ?? []) {
+        routingKeys.add(item)
+      }
     }
   }
 

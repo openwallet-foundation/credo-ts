@@ -1,22 +1,22 @@
+import type { AgentContext } from '@credo-ts/core'
 import type { CredentialFormat } from './CredentialFormat'
 import type {
-  CredentialFormatCreateProposalOptions,
-  CredentialFormatCreateProposalReturn,
-  CredentialFormatProcessOptions,
-  CredentialFormatCreateOfferOptions,
-  CredentialFormatCreateOfferReturn,
-  CredentialFormatCreateRequestOptions,
-  CredentialFormatCreateReturn,
-  CredentialFormatAcceptRequestOptions,
   CredentialFormatAcceptOfferOptions,
   CredentialFormatAcceptProposalOptions,
+  CredentialFormatAcceptRequestOptions,
   CredentialFormatAutoRespondCredentialOptions,
   CredentialFormatAutoRespondOfferOptions,
   CredentialFormatAutoRespondProposalOptions,
   CredentialFormatAutoRespondRequestOptions,
+  CredentialFormatCreateOfferOptions,
+  CredentialFormatCreateOfferReturn,
+  CredentialFormatCreateProposalOptions,
+  CredentialFormatCreateProposalReturn,
+  CredentialFormatCreateRequestOptions,
+  CredentialFormatCreateReturn,
   CredentialFormatProcessCredentialOptions,
+  CredentialFormatProcessOptions,
 } from './CredentialFormatServiceOptions'
-import type { AgentContext } from '@credo-ts/core'
 
 export interface CredentialFormatService<CF extends CredentialFormat = CredentialFormat> {
   formatKey: CF['formatKey']

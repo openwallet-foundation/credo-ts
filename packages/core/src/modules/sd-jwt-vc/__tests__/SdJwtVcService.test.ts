@@ -1,9 +1,9 @@
-import type { SdJwtVcHeader } from '../SdJwtVcOptions'
 import type { AgentContext, Jwk, Key } from '@credo-ts/core'
+import type { SdJwtVcHeader } from '../SdJwtVcOptions'
 
-import { createHeaderAndPayload, StatusList } from '@sd-jwt/jwt-status-list'
-import { SDJWTException } from '@sd-jwt/utils'
 import { randomUUID } from 'crypto'
+import { StatusList, createHeaderAndPayload } from '@sd-jwt/jwt-status-list'
+import { SDJWTException } from '@sd-jwt/utils'
 
 import { agentDependencies, getInMemoryAgentOptions } from '../../../../tests'
 import * as fetchUtils from '../../../utils/fetch'
@@ -32,21 +32,21 @@ import {
   CredoError,
   DidKey,
   DidsModule,
-  getDomainFromUrl,
-  getJwkFromKey,
   JwsService,
   JwtPayload,
   KeyDidRegistrar,
   KeyDidResolver,
   KeyType,
-  parseDid,
   TypedArrayEncoder,
   X509ModuleConfig,
+  getDomainFromUrl,
+  getJwkFromKey,
+  parseDid,
 } from '@credo-ts/core'
 
 const jwkJsonWithoutUse = (jwk: Jwk) => {
   const jwkJson = jwk.toJson()
-  delete jwkJson.use
+  jwkJson.use = undefined
   return jwkJson
 }
 

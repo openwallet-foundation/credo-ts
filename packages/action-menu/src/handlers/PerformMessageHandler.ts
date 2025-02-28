@@ -1,5 +1,5 @@
-import type { ActionMenuService } from '../services'
 import type { MessageHandler, MessageHandlerInboundMessage } from '@credo-ts/didcomm'
+import type { ActionMenuService } from '../services'
 
 import { PerformMessage } from '../messages'
 

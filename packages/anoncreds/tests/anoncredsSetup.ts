@@ -1,49 +1,49 @@
+import type { CheqdDidCreateOptions } from '@credo-ts/cheqd'
+import type { AutoAcceptProof, ConnectionRecord } from '@credo-ts/didcomm'
 import type { EventReplaySubject } from '../../core/tests'
 import type { DefaultAgentModulesInput } from '../../didcomm/src/util/modules'
 import type {
-  AnonCredsRegisterCredentialDefinitionOptions,
   AnonCredsOfferCredentialFormat,
-  AnonCredsSchema,
-  RegisterCredentialDefinitionReturnStateFinished,
-  RegisterSchemaReturnStateFinished,
-  AnonCredsRegistry,
+  AnonCredsRegisterCredentialDefinitionOptions,
   AnonCredsRegisterRevocationRegistryDefinitionOptions,
-  RegisterRevocationRegistryDefinitionReturnStateFinished,
   AnonCredsRegisterRevocationStatusListOptions,
-  RegisterRevocationStatusListReturnStateFinished,
+  AnonCredsRegistry,
   AnonCredsRequestedAttribute,
   AnonCredsRequestedPredicate,
+  AnonCredsSchema,
+  RegisterCredentialDefinitionReturnStateFinished,
+  RegisterRevocationRegistryDefinitionReturnStateFinished,
+  RegisterRevocationStatusListReturnStateFinished,
+  RegisterSchemaReturnStateFinished,
 } from '../src'
-import type { CheqdDidCreateOptions } from '@credo-ts/cheqd'
-import type { AutoAcceptProof, ConnectionRecord } from '@credo-ts/didcomm'
 
+import { randomUUID } from 'crypto'
 import {
-  DidDocumentBuilder,
-  CacheModule,
-  InMemoryLruCache,
   Agent,
+  CacheModule,
   CredoError,
+  DidDocumentBuilder,
   DidsModule,
+  InMemoryLruCache,
   TypedArrayEncoder,
 } from '@credo-ts/core'
 import {
   AutoAcceptCredential,
   CredentialEventTypes,
-  CredentialsModule,
   CredentialState,
+  CredentialsModule,
+  DifPresentationExchangeProofFormatService,
   ProofEventTypes,
+  ProofState,
   ProofsModule,
   V2CredentialProtocol,
   V2ProofProtocol,
-  DifPresentationExchangeProofFormatService,
-  ProofState,
 } from '@credo-ts/didcomm'
-import { randomUUID } from 'crypto'
 
 import { CheqdDidRegistrar, CheqdDidResolver, CheqdModule } from '../../cheqd/src/index'
 import { getCheqdModuleConfig } from '../../cheqd/tests/setupCheqdModule'
 import { sleep } from '../../core/src/utils/sleep'
-import { setupSubjectTransports, setupEventReplaySubjects } from '../../core/tests'
+import { setupEventReplaySubjects, setupSubjectTransports } from '../../core/tests'
 import {
   getInMemoryAgentOptions,
   makeConnection,
@@ -51,7 +51,7 @@ import {
   waitForProofExchangeRecordSubject,
 } from '../../core/tests/helpers'
 import testLogger from '../../core/tests/logger'
-import { AnonCredsCredentialFormatService, AnonCredsProofFormatService, AnonCredsModule } from '../src'
+import { AnonCredsCredentialFormatService, AnonCredsModule, AnonCredsProofFormatService } from '../src'
 import { DataIntegrityCredentialFormatService } from '../src/formats/DataIntegrityCredentialFormatService'
 import { InMemoryAnonCredsRegistry } from '../tests/InMemoryAnonCredsRegistry'
 
@@ -302,7 +302,7 @@ export async function presentAnonCredsProof({
 
 export async function setupAnonCredsTests<
   VerifierName extends string | undefined = undefined,
-  CreateConnections extends boolean = true
+  CreateConnections extends boolean = true,
 >({
   issuerId,
   issuerName,
@@ -497,8 +497,8 @@ export async function prepareForAnonCredsIssuance(
   // Wait some time pass to let ledger settle the object
   await sleep(1000)
 
-  let revocationRegistryDefinition
-  let revocationStatusList
+  let revocationRegistryDefinition: RegisterRevocationRegistryDefinitionReturnStateFinished | undefined
+  let revocationStatusList: RegisterRevocationStatusListReturnStateFinished | undefined
   if (supportRevocation) {
     revocationRegistryDefinition = await registerRevocationRegistryDefinition(agent, {
       issuerId,

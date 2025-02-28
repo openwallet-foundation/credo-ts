@@ -1,4 +1,4 @@
-import type { Module, DependencyManager } from '../../plugins'
+import type { DependencyManager, Module } from '../../plugins'
 
 import { AgentConfig } from '../../agent/AgentConfig'
 

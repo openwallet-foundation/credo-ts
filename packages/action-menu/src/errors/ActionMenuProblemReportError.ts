@@ -1,5 +1,5 @@
-import type { ActionMenuProblemReportReason } from './ActionMenuProblemReportReason'
 import type { ProblemReportErrorOptions } from '@credo-ts/didcomm'
+import type { ActionMenuProblemReportReason } from './ActionMenuProblemReportReason'
 
 import { ProblemReportError } from '@credo-ts/didcomm'
 
@@ -18,7 +18,10 @@ interface ActionMenuProblemReportErrorOptions extends ProblemReportErrorOptions 
 export class ActionMenuProblemReportError extends ProblemReportError {
   public problemReport: ActionMenuProblemReportMessage
 
-  public constructor(public message: string, { problemCode }: ActionMenuProblemReportErrorOptions) {
+  public constructor(
+    public message: string,
+    { problemCode }: ActionMenuProblemReportErrorOptions
+  ) {
     super(message, { problemCode })
     this.problemReport = new ActionMenuProblemReportMessage({
       description: {

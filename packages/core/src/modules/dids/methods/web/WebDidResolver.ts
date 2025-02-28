@@ -1,6 +1,6 @@
 import type { AgentContext } from '../../../../agent'
 import type { DidResolver } from '../../domain/DidResolver'
-import type { ParsedDid, DidResolutionResult, DidResolutionOptions } from '../../types'
+import type { DidResolutionOptions, DidResolutionResult, ParsedDid } from '../../types'
 
 import { Resolver } from 'did-resolver'
 import * as didWeb from 'web-did-resolver'
@@ -23,7 +23,7 @@ export class WebDidResolver implements DidResolver {
   }
 
   public async resolve(
-    agentContext: AgentContext,
+    _agentContext: AgentContext,
     did: string,
     parsed: ParsedDid,
     didResolutionOptions: DidResolutionOptions

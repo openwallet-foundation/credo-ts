@@ -32,7 +32,7 @@ export class V2RequestPresentationHandler implements MessageHandler {
     proofRecord: ProofExchangeRecord,
     messageContext: MessageHandlerInboundMessage<V2RequestPresentationHandler>
   ) {
-    messageContext.agentContext.config.logger.info(`Automatically sending presentation with autoAccept`)
+    messageContext.agentContext.config.logger.info('Automatically sending presentation with autoAccept')
 
     const { message } = await this.proofProtocol.acceptRequest(messageContext.agentContext, {
       proofRecord,

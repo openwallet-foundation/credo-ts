@@ -1,11 +1,11 @@
 import type { AgentContext } from '../../../agent'
 import type {
   DidCreateOptions,
-  DidDeactivateOptions,
-  DidUpdateOptions,
   DidCreateResult,
-  DidUpdateResult,
+  DidDeactivateOptions,
   DidDeactivateResult,
+  DidUpdateOptions,
+  DidUpdateResult,
 } from '../types'
 
 export interface DidRegistrar {

@@ -1,5 +1,5 @@
-import type { DidDocument } from './domain'
 import type { DIDDocumentMetadata, DIDResolutionMetadata, DIDResolutionOptions, ParsedDID } from 'did-resolver'
+import type { DidDocument } from './domain'
 
 export type ParsedDid = ParsedDID
 export type DidDocumentMetadata = DIDDocumentMetadata
@@ -103,7 +103,7 @@ export interface DidCreateOptions {
 }
 
 export interface DidCreateResult<
-  DidOperationStateAction extends DidOperationStateActionBase = DidOperationStateActionBase
+  DidOperationStateAction extends DidOperationStateActionBase = DidOperationStateActionBase,
 > {
   jobId?: string
   didState: DidOperationStateWait | DidOperationStateAction | DidOperationStateFinished | DidOperationStateFailed

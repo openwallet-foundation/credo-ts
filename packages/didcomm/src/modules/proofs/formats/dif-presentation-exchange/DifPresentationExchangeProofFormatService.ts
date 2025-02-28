@@ -1,50 +1,50 @@
 import type {
+  AgentContext,
+  DifPexInputDescriptorToCredentials,
+  DifPresentationExchangeSubmission,
+  IAnonCredsDataIntegrityService,
+  JsonValue,
+  W3cJsonPresentation,
+  W3cVerifiablePresentation,
+  W3cVerifyPresentationResult,
+} from '@credo-ts/core'
+import type { ProofFormatService } from '../ProofFormatService'
+import type {
+  FormatCreateRequestOptions,
+  ProofFormatAcceptProposalOptions,
+  ProofFormatAcceptRequestOptions,
+  ProofFormatAutoRespondPresentationOptions,
+  ProofFormatAutoRespondProposalOptions,
+  ProofFormatAutoRespondRequestOptions,
+  ProofFormatCreateProposalOptions,
+  ProofFormatCreateReturn,
+  ProofFormatGetCredentialsForRequestOptions,
+  ProofFormatProcessOptions,
+  ProofFormatProcessPresentationOptions,
+  ProofFormatSelectCredentialsForRequestOptions,
+} from '../ProofFormatServiceOptions'
+import type {
   DifPresentationExchangePresentation,
   DifPresentationExchangeProofFormat,
   DifPresentationExchangeProposal,
   DifPresentationExchangeRequest,
 } from './DifPresentationExchangeProofFormat'
-import type { ProofFormatService } from '../ProofFormatService'
-import type {
-  ProofFormatCreateProposalOptions,
-  ProofFormatCreateReturn,
-  ProofFormatProcessOptions,
-  ProofFormatAcceptProposalOptions,
-  FormatCreateRequestOptions,
-  ProofFormatAcceptRequestOptions,
-  ProofFormatProcessPresentationOptions,
-  ProofFormatGetCredentialsForRequestOptions,
-  ProofFormatSelectCredentialsForRequestOptions,
-  ProofFormatAutoRespondProposalOptions,
-  ProofFormatAutoRespondRequestOptions,
-  ProofFormatAutoRespondPresentationOptions,
-} from '../ProofFormatServiceOptions'
-import type {
-  AgentContext,
-  JsonValue,
-  DifPexInputDescriptorToCredentials,
-  DifPresentationExchangeSubmission,
-  IAnonCredsDataIntegrityService,
-  W3cVerifiablePresentation,
-  W3cVerifyPresentationResult,
-  W3cJsonPresentation,
-} from '@credo-ts/core'
 
 import {
-  CredoError,
-  deepEquality,
-  JsonTransformer,
-  DifPresentationExchangeService,
-  DifPresentationExchangeSubmissionLocation,
-  MdocDeviceResponse,
   ANONCREDS_DATA_INTEGRITY_CRYPTOSUITE,
   AnonCredsDataIntegrityServiceSymbol,
-  W3cCredentialService,
   ClaimFormat,
+  CredoError,
+  DifPresentationExchangeService,
+  DifPresentationExchangeSubmissionLocation,
+  JsonTransformer,
+  MdocDeviceResponse,
+  W3cCredentialService,
   W3cJsonLdVerifiablePresentation,
   W3cJwtVerifiablePresentation,
-  extractX509CertificatesFromJwt,
   X509ModuleConfig,
+  deepEquality,
+  extractX509CertificatesFromJwt,
 } from '@credo-ts/core'
 
 import { Attachment, AttachmentData } from '../../../../decorators/attachment/Attachment'
@@ -229,8 +229,8 @@ export class DifPresentationExchangeProofFormatService
       firstPresentation instanceof W3cJsonLdVerifiablePresentation
         ? firstPresentation.encoded
         : firstPresentation instanceof MdocDeviceResponse
-        ? firstPresentation.base64Url
-        : firstPresentation?.compact
+          ? firstPresentation.base64Url
+          : firstPresentation?.compact
     const attachment = this.getFormatData(encodedFirstPresentation, format.attachmentId)
 
     return { attachment, format }
@@ -266,7 +266,8 @@ export class DifPresentationExchangeProofFormatService
     if (typeof presentation === 'string' && presentation.includes('~')) {
       // NOTE: we need to define in the PEX RFC where to put the presentation_submission
       throw new CredoError('Received SD-JWT VC in PEX proof format. This is not supported yet.')
-    } else if (typeof presentation === 'string') {
+    }
+    if (typeof presentation === 'string') {
       // If it's a string, we expect it to be a JWT VP
       parsedPresentation = W3cJwtVerifiablePresentation.fromSerializedJwt(presentation)
       jsonPresentation = parsedPresentation.presentation.toJSON()
@@ -358,7 +359,10 @@ export class DifPresentationExchangeProofFormatService
         }
       } else {
         agentContext.config.logger.error(
-          `Received presentation in PEX proof format with unsupported format ${parsedPresentation['claimFormat']}.`
+          `Received presentation in PEX proof format with unsupported format ${
+            // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+            (parsedPresentation as any).claimFormat
+          }.`
         )
         return false
       }
@@ -433,9 +437,7 @@ export class DifPresentationExchangeProofFormatService
    *
    */
   public async shouldAutoRespondToPresentation(
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     _agentContext: AgentContext,
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     _options: ProofFormatAutoRespondPresentationOptions
   ): Promise<boolean> {
     return true

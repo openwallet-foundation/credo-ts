@@ -1,6 +1,6 @@
 import { areObjectsEqual } from './objectEquality'
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+// biome-ignore lint/suspicious/noExplicitAny: <explanation>
 export function deepEquality(x: any, y: any): boolean {
   // We do a simple equals here to check primitives, functions, regex, etc.
   // This will only happen if the typing of the function is ignored
@@ -32,7 +32,7 @@ export function equalsIgnoreOrder<Item = string>(a: Array<Item>, b: Array<Item>)
 }
 
 // We take any here as we have to check some properties, they will be undefined if they do not exist
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+// biome-ignore lint/suspicious/noExplicitAny: <explanation>
 function simpleEqual(x: any, y: any) {
   // short circuit for easy equality
   if (x === y) return true

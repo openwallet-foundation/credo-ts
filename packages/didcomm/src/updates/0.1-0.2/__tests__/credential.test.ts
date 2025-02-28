@@ -499,12 +499,14 @@ function getCredential({
   metadata?: Record<string, unknown>
   credentialId?: string
   protocolVersion?: string
-  /* eslint-disable @typescript-eslint/no-explicit-any */
+  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
   proposalMessage?: any
+  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
   offerMessage?: any
+  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
   requestMessage?: any
+  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
   credentialMessage?: any
-  /* eslint-enable @typescript-eslint/no-explicit-any */
   state?: CredentialState
   credentials?: CredentialRecordBinding[]
   id?: string

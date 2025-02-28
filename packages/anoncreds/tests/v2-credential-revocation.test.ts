@@ -1,14 +1,14 @@
-import type { AnonCredsTestsAgent } from './anoncredsSetup'
 import type { EventReplaySubject } from '../../core/tests'
+import type { AnonCredsTestsAgent } from './anoncredsSetup'
 
 import { JsonTransformer } from '@credo-ts/core'
 import {
-  DidCommMessageRepository,
-  CredentialState,
   CredentialExchangeRecord,
+  CredentialRole,
+  CredentialState,
+  DidCommMessageRepository,
   V2CredentialPreview,
   V2OfferCredentialMessage,
-  CredentialRole,
 } from '@credo-ts/didcomm'
 
 import { waitForCredentialRecordSubject } from '../../core/tests'

@@ -1,20 +1,4 @@
-import type {
-  CreateProofProposalOptions,
-  CreateProofRequestOptions,
-  DeleteProofOptions,
-  GetProofFormatDataReturn,
-  CreateProofProblemReportOptions,
-  ProofProtocolMsgReturnType,
-  AcceptProofProposalOptions,
-  NegotiateProofProposalOptions,
-  AcceptProofRequestOptions,
-  NegotiateProofRequestOptions,
-  AcceptPresentationOptions,
-  GetCredentialsForRequestOptions,
-  GetCredentialsForRequestReturn,
-  SelectCredentialsForRequestOptions,
-  SelectCredentialsForRequestReturn,
-} from './ProofProtocolOptions'
+import type { AgentContext, Query, QueryOptions } from '@credo-ts/core'
 import type { AgentMessage } from '../../../AgentMessage'
 import type { FeatureRegistry } from '../../../FeatureRegistry'
 import type { MessageHandlerRegistry } from '../../../MessageHandlerRegistry'
@@ -24,7 +8,23 @@ import type { ExtractProofFormats, ProofFormatService } from '../formats'
 import type { ProofRole } from '../models'
 import type { ProofState } from '../models/ProofState'
 import type { ProofExchangeRecord } from '../repository'
-import type { AgentContext, Query, QueryOptions } from '@credo-ts/core'
+import type {
+  AcceptPresentationOptions,
+  AcceptProofProposalOptions,
+  AcceptProofRequestOptions,
+  CreateProofProblemReportOptions,
+  CreateProofProposalOptions,
+  CreateProofRequestOptions,
+  DeleteProofOptions,
+  GetCredentialsForRequestOptions,
+  GetCredentialsForRequestReturn,
+  GetProofFormatDataReturn,
+  NegotiateProofProposalOptions,
+  NegotiateProofRequestOptions,
+  ProofProtocolMsgReturnType,
+  SelectCredentialsForRequestOptions,
+  SelectCredentialsForRequestReturn,
+} from './ProofProtocolOptions'
 
 export interface ProofProtocol<PFs extends ProofFormatService[] = ProofFormatService[]> {
   readonly version: string

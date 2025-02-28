@@ -1,14 +1,14 @@
 import type {
-  DeliverMessagesOptions,
   DeliverMessagesFromQueueOptions,
+  DeliverMessagesFromQueueReturnType,
+  DeliverMessagesOptions,
+  DeliverMessagesReturnType,
   PickupMessagesOptions,
   PickupMessagesReturnType,
   QueueMessageOptions,
   QueueMessageReturnType,
   SetLiveDeliveryModeOptions,
   SetLiveDeliveryModeReturnType,
-  DeliverMessagesReturnType,
-  DeliverMessagesFromQueueReturnType,
 } from './MessagePickupApiOptions'
 import type { MessagePickupCompletedEvent } from './MessagePickupEvents'
 import type { MessagePickupSession, MessagePickupSessionRole } from './MessagePickupSession'
@@ -16,7 +16,7 @@ import type { V1MessagePickupProtocol, V2MessagePickupProtocol } from './protoco
 import type { MessagePickupProtocol } from './protocol/MessagePickupProtocol'
 import type { MessagePickupRepository } from './storage/MessagePickupRepository'
 
-import { AgentContext, EventEmitter, InjectionSymbols, CredoError, Logger, inject, injectable } from '@credo-ts/core'
+import { AgentContext, CredoError, EventEmitter, InjectionSymbols, Logger, inject, injectable } from '@credo-ts/core'
 import { ReplaySubject, Subject, filter, first, firstValueFrom, takeUntil, timeout } from 'rxjs'
 
 import { MessageSender } from '../../MessageSender'

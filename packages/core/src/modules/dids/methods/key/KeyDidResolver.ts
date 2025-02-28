@@ -18,7 +18,7 @@ export class KeyDidResolver implements DidResolver {
    */
   public readonly allowsLocalDidRecord = false
 
-  public async resolve(agentContext: AgentContext, did: string): Promise<DidResolutionResult> {
+  public async resolve(_agentContext: AgentContext, did: string): Promise<DidResolutionResult> {
     const didDocumentMetadata = {}
 
     try {

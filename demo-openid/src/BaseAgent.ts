@@ -1,6 +1,6 @@
+import type { Server } from 'http'
 import type { InitConfig, KeyDidCreateOptions, ModulesMap, VerificationMethod } from '@credo-ts/core'
 import type { Express } from 'express'
-import type { Server } from 'http'
 
 import { Agent, ConsoleLogger, DidKey, KeyType, LogLevel, TypedArrayEncoder } from '@credo-ts/core'
 import { agentDependencies } from '@credo-ts/node'

@@ -1,6 +1,6 @@
-import type { OpenId4VcIssuanceRequest } from './requestContext'
+import type { Response, Router } from 'express'
 import type { OpenId4VcIssuerModuleConfig } from '../OpenId4VcIssuerModuleConfig'
-import type { Router, Response } from 'express'
+import type { OpenId4VcIssuanceRequest } from './requestContext'
 
 import { joinUriParts } from '@credo-ts/core'
 

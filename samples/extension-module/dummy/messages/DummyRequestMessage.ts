@@ -1,4 +1,4 @@
-import { AgentMessage, IsValidMessageType, parseMessageType, ReturnRouteTypes } from '@credo-ts/didcomm'
+import { AgentMessage, IsValidMessageType, ReturnRouteTypes, parseMessageType } from '@credo-ts/didcomm'
 
 export interface DummyRequestMessageOptions {
   id?: string

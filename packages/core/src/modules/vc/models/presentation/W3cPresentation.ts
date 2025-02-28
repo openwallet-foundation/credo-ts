@@ -1,15 +1,15 @@
-import type { W3cHolderOptions } from './W3cHolder'
-import type { W3cJsonPresentation } from './W3cJsonPresentation'
+import type { ValidationOptions } from 'class-validator'
 import type { JsonObject } from '../../../../types'
 import type { W3cVerifiableCredential } from '../credential/W3cVerifiableCredential'
-import type { ValidationOptions } from 'class-validator'
+import type { W3cHolderOptions } from './W3cHolder'
+import type { W3cJsonPresentation } from './W3cJsonPresentation'
 
 import { Expose } from 'class-transformer'
-import { ValidateNested, buildMessage, IsOptional, ValidateBy } from 'class-validator'
+import { IsOptional, ValidateBy, ValidateNested, buildMessage } from 'class-validator'
 
 import { JsonTransformer } from '../../../../utils'
 import { SingleOrArray } from '../../../../utils/type'
-import { IsUri, IsInstanceOrArrayOfInstances } from '../../../../utils/validators'
+import { IsInstanceOrArrayOfInstances, IsUri } from '../../../../utils/validators'
 import { CREDENTIALS_CONTEXT_V1_URL, VERIFIABLE_PRESENTATION_TYPE } from '../../constants'
 import { W3cJsonLdVerifiableCredential } from '../../data-integrity/models/W3cJsonLdVerifiableCredential'
 import { W3cJwtVerifiableCredential } from '../../jwt-vc/W3cJwtVerifiableCredential'
@@ -86,7 +86,7 @@ export function IsVerifiablePresentationType(validationOptions?: ValidationOptio
           return false
         },
         defaultMessage: buildMessage(
-          (eachPrefix) => eachPrefix + '$property must be an array of strings which includes "VerifiablePresentation"',
+          (eachPrefix) => `${eachPrefix}$property must be an array of strings which includes "VerifiablePresentation"`,
           validationOptions
         ),
       },

@@ -1,18 +1,18 @@
+import type { Server } from 'http'
 import type { AgentContext } from '@credo-ts/core'
 import type {
+  AgentMessageProcessedEvent,
+  AgentMessageReceivedEvent,
+  EncryptedMessage,
   InboundTransport,
   TransportSession,
-  EncryptedMessage,
-  AgentMessageReceivedEvent,
-  AgentMessageProcessedEvent,
 } from '@credo-ts/didcomm'
 import type { Express, Request, Response } from 'express'
-import type { Server } from 'http'
 
-import { CredoError, utils, EventEmitter } from '@credo-ts/core'
-import { DidCommMimeType, TransportService, AgentEventTypes, DidCommModuleConfig } from '@credo-ts/didcomm'
+import { CredoError, EventEmitter, utils } from '@credo-ts/core'
+import { AgentEventTypes, DidCommMimeType, DidCommModuleConfig, TransportService } from '@credo-ts/didcomm'
 import express, { text } from 'express'
-import { filter, firstValueFrom, ReplaySubject, timeout } from 'rxjs'
+import { ReplaySubject, filter, firstValueFrom, timeout } from 'rxjs'
 
 const supportedContentTypes: string[] = [DidCommMimeType.V0, DidCommMimeType.V1]
 
@@ -51,7 +51,7 @@ export class HttpInboundTransport implements InboundTransport {
   public async start(agentContext: AgentContext) {
     const transportService = agentContext.dependencyManager.resolve(TransportService)
 
-    agentContext.config.logger.debug(`Starting HTTP inbound transport`, {
+    agentContext.config.logger.debug('Starting HTTP inbound transport', {
       port: this.port,
     })
 
@@ -61,7 +61,7 @@ export class HttpInboundTransport implements InboundTransport {
       if (!contentType || !supportedContentTypes.includes(contentType)) {
         return res
           .status(415)
-          .send('Unsupported content-type. Supported content-types are: ' + supportedContentTypes.join(', '))
+          .send(`Unsupported content-type. Supported content-types are: ${supportedContentTypes.join(', ')}`)
       }
 
       const session = new HttpTransportSession(utils.uuid(), req, res)

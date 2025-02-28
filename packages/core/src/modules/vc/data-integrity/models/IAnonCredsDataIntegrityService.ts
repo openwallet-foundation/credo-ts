@@ -1,4 +1,3 @@
-import type { W3cJsonLdVerifiablePresentation } from './W3cJsonLdVerifiablePresentation'
 import type { AgentContext } from '../../../../agent'
 import type {
   DifPresentationExchangeDefinition,
@@ -6,6 +5,7 @@ import type {
 } from '../../../dif-presentation-exchange'
 import type { W3cPresentation } from '../../models'
 import type { W3cCredentialRecord } from '../../repository'
+import type { W3cJsonLdVerifiablePresentation } from './W3cJsonLdVerifiablePresentation'
 
 export const ANONCREDS_DATA_INTEGRITY_CRYPTOSUITE = 'anoncreds-2023' as const
 

@@ -1,21 +1,21 @@
+import type { AgentContext } from '@credo-ts/core'
 import type { InboundMessageContext, Routing } from '../../../models'
 import type { ConnectionDidRotatedEvent } from '../ConnectionEvents'
 import type { ConnectionRecord } from '../repository'
-import type { AgentContext } from '@credo-ts/core'
 
 import {
-  EventEmitter,
-  InjectionSymbols,
   CredoError,
   DidRepository,
   DidResolverService,
+  EventEmitter,
+  InjectionSymbols,
+  Logger,
   PeerDidNumAlgo,
   getAlternativeDidsForPeerDid,
   getNumAlgoFromPeerDid,
-  isValidPeerDid,
   inject,
   injectable,
-  Logger,
+  isValidPeerDid,
 } from '@credo-ts/core'
 
 import { AckStatus } from '../../../messages'
@@ -23,7 +23,7 @@ import { OutboundMessageContext } from '../../../models'
 import { getMediationRecordForDidDocument } from '../../routing/services/helpers'
 import { ConnectionEventTypes } from '../ConnectionEvents'
 import { ConnectionsModuleConfig } from '../ConnectionsModuleConfig'
-import { DidRotateMessage, DidRotateAckMessage, DidRotateProblemReportMessage, HangupMessage } from '../messages'
+import { DidRotateAckMessage, DidRotateMessage, DidRotateProblemReportMessage, HangupMessage } from '../messages'
 import { ConnectionMetadataKeys } from '../repository/ConnectionMetadataTypes'
 
 import { ConnectionService } from './ConnectionService'
@@ -60,7 +60,10 @@ export class DidRotateService {
       throw new CredoError(`There is already an existing opened did rotation flow for connection id ${connection.id}`)
     }
 
-    let didDocument, mediatorId
+    // biome-ignore lint/suspicious/noImplicitAnyLet: <explanation>
+    let didDocument
+    // biome-ignore lint/suspicious/noImplicitAnyLet: <explanation>
+    let mediatorId
     // If did is specified, make sure we have all key material for it
     if (toDid) {
       didDocument = await getDidDocumentForCreatedDid(agentContext, toDid)

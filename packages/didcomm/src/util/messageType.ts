@@ -1,5 +1,5 @@
+import type { ValidationArguments, ValidationOptions } from 'class-validator'
 import type { PlaintextMessage } from '../types'
-import type { ValidationOptions, ValidationArguments } from 'class-validator'
 
 import { ValidateBy, buildMessage } from 'class-validator'
 
@@ -84,8 +84,8 @@ export function parseMessageType(messageType: string): ParsedMessageType {
     documentUri,
     protocolName,
     protocolVersion: `${protocolVersionMajor}.${protocolVersionMinor}`,
-    protocolMajorVersion: parseInt(protocolVersionMajor),
-    protocolMinorVersion: parseInt(protocolVersionMinor),
+    protocolMajorVersion: Number.parseInt(protocolVersionMajor),
+    protocolMinorVersion: Number.parseInt(protocolVersionMinor),
     messageName,
     protocolUri: `${documentUri}/${protocolName}/${protocolVersionMajor}.${protocolVersionMinor}`,
     messageTypeUri: messageType,
@@ -105,8 +105,8 @@ export function parseDidCommProtocolUri(didCommProtocolUri: string): ParsedDidCo
     documentUri,
     protocolName,
     protocolVersion: `${protocolVersionMajor}.${protocolVersionMinor}`,
-    protocolMajorVersion: parseInt(protocolVersionMajor),
-    protocolMinorVersion: parseInt(protocolVersionMinor),
+    protocolMajorVersion: Number.parseInt(protocolVersionMajor),
+    protocolMinorVersion: Number.parseInt(protocolVersionMinor),
     protocolUri: `${documentUri}/${protocolName}/${protocolVersionMajor}.${protocolVersionMinor}`,
   }
 }
@@ -240,7 +240,7 @@ export function IsValidMessageType(
         },
         defaultMessage: buildMessage(
           (eachPrefix) =>
-            eachPrefix + '$property does not match the expected message type (only minor version may be lower)',
+            `${eachPrefix}$property does not match the expected message type (only minor version may be lower)`,
           validationOptions
         ),
       },

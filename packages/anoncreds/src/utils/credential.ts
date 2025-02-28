@@ -1,5 +1,5 @@
-import type { AnonCredsSchema, AnonCredsCredentialValues } from '../models'
 import type { CredentialPreviewAttributeOptions, LinkedAttachment } from '@credo-ts/didcomm'
+import type { AnonCredsCredentialValues, AnonCredsSchema } from '../models'
 
 import { CredoError, Hasher, TypedArrayEncoder } from '@credo-ts/core'
 import { encodeAttachment } from '@credo-ts/didcomm'
@@ -52,16 +52,24 @@ export function encodeCredentialValue(value: unknown) {
   }
 
   // If value is an int32 number string return as number string
-  if (isString(value) && !isEmpty(value) && !isNaN(Number(value)) && isNumeric(value) && isInt32(Number(value))) {
+  if (
+    isString(value) &&
+    !isEmpty(value) &&
+    !Number.isNaN(Number(value)) &&
+    isNumeric(value) &&
+    isInt32(Number(value))
+  ) {
     return Number(value).toString()
   }
 
   if (isNumber(value)) {
+    // biome-ignore lint/style/noParameterAssign: <explanation>
     value = value.toString()
   }
 
   // If value is null we must use the string value 'None'
   if (value === null || value === undefined) {
+    // biome-ignore lint/style/noParameterAssign: <explanation>
     value = 'None'
   }
 
@@ -78,7 +86,7 @@ export const mapAttributeRawValuesToAnonCredsCredentialValues = (
 
   for (const [key, value] of Object.entries(record)) {
     if (typeof value === 'object') {
-      throw new CredoError(`Unsupported value type: object for W3cAnonCreds Credential`)
+      throw new CredoError('Unsupported value type: object for W3cAnonCreds Credential')
     }
     credentialValues[key] = {
       raw: value.toString(),
@@ -102,14 +110,12 @@ export const mapAttributeRawValuesToAnonCredsCredentialValues = (
 export function convertAttributesToCredentialValues(
   attributes: CredentialPreviewAttributeOptions[]
 ): AnonCredsCredentialValues {
-  return attributes.reduce((credentialValues, attribute) => {
-    return {
-      [attribute.name]: {
-        raw: attribute.value,
-        encoded: encodeCredentialValue(attribute.value),
-      },
-      ...credentialValues,
+  return attributes.reduce<AnonCredsCredentialValues>((credentialValues, attribute) => {
+    credentialValues[attribute.name] = {
+      raw: attribute.value,
+      encoded: encodeCredentialValue(attribute.value),
     }
+    return credentialValues
   }, {})
 }
 
@@ -215,17 +221,16 @@ export function createAndLinkAttachmentsToPreview(
   const credentialPreviewAttributeNames = previewAttributes.map((attribute) => attribute.name)
   const newPreviewAttributes = [...previewAttributes]
 
-  attachments.forEach((linkedAttachment) => {
+  for (const linkedAttachment of attachments) {
     if (credentialPreviewAttributeNames.includes(linkedAttachment.attributeName)) {
       throw new CredoError(`linkedAttachment ${linkedAttachment.attributeName} already exists in the preview`)
-    } else {
-      newPreviewAttributes.push({
-        name: linkedAttachment.attributeName,
-        mimeType: linkedAttachment.attachment.mimeType,
-        value: encodeAttachment(linkedAttachment.attachment),
-      })
     }
-  })
+    newPreviewAttributes.push({
+      name: linkedAttachment.attributeName,
+      mimeType: linkedAttachment.attachment.mimeType,
+      value: encodeAttachment(linkedAttachment.attachment),
+    })
+  }
 
   return newPreviewAttributes
 }

@@ -1,12 +1,12 @@
 import type { AgentContext, Key, ResolvedDidCommService } from '@credo-ts/core'
 
 import {
-  KeyType,
-  injectable,
-  DidResolverService,
   DidCommV1Service,
-  getKeyFromVerificationMethod,
+  DidResolverService,
   IndyAgentService,
+  KeyType,
+  getKeyFromVerificationMethod,
+  injectable,
   parseDid,
   verkeyToInstanceOfKey,
 } from '@credo-ts/core'

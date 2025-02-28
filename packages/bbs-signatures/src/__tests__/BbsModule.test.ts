@@ -2,9 +2,9 @@ import type { DependencyManager } from '@credo-ts/core'
 
 import {
   KeyType,
+  SignatureSuiteToken,
   SigningProviderToken,
   VERIFICATION_METHOD_TYPE_BLS12381G2_KEY_2020,
-  SignatureSuiteToken,
 } from '@credo-ts/core'
 
 import { BbsModule } from '../BbsModule'

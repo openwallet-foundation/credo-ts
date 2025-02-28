@@ -11,7 +11,7 @@ export function sdJwtVcHasher(data: string | ArrayBufferLike, alg: string) {
 
 export function decodeSdJwtVc<
   Header extends SdJwtVcHeader = SdJwtVcHeader,
-  Payload extends SdJwtVcPayload = SdJwtVcPayload
+  Payload extends SdJwtVcPayload = SdJwtVcPayload,
 >(compactSdJwtVc: string, typeMetadata?: SdJwtVcTypeMetadata) {
   // NOTE: we use decodeSdJwtSync so we can make this method sync
   const { jwt, disclosures } = decodeSdJwtSync(compactSdJwtVc, sdJwtVcHasher)

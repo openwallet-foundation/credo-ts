@@ -1,3 +1,4 @@
+import type { AgentContext } from '@credo-ts/core'
 import type { AgentMessage } from '../../../../AgentMessage'
 import type { FeatureRegistry } from '../../../../FeatureRegistry'
 import type { MessageHandlerRegistry } from '../../../../MessageHandlerRegistry'
@@ -13,21 +14,20 @@ import type {
 import type { CredentialFormatSpec } from '../../models/CredentialFormatSpec'
 import type { CredentialProtocol } from '../CredentialProtocol'
 import type {
-  AcceptCredentialOptions,
   AcceptCredentialOfferOptions,
+  AcceptCredentialOptions,
   AcceptCredentialProposalOptions,
   AcceptCredentialRequestOptions,
   CreateCredentialOfferOptions,
+  CreateCredentialProblemReportOptions,
   CreateCredentialProposalOptions,
   CreateCredentialRequestOptions,
-  CredentialProtocolMsgReturnType,
   CredentialFormatDataMessagePayload,
-  CreateCredentialProblemReportOptions,
+  CredentialProtocolMsgReturnType,
   GetCredentialFormatDataReturn,
   NegotiateCredentialOfferOptions,
   NegotiateCredentialProposalOptions,
 } from '../CredentialProtocolOptions'
-import type { AgentContext } from '@credo-ts/core'
 
 import { CredoError, utils } from '@credo-ts/core'
 
@@ -44,9 +44,9 @@ import { BaseCredentialProtocol } from '../BaseCredentialProtocol'
 
 import { CredentialFormatCoordinator } from './CredentialFormatCoordinator'
 import {
-  V2OfferCredentialHandler,
   V2CredentialAckHandler,
   V2IssueCredentialHandler,
+  V2OfferCredentialHandler,
   V2ProposeCredentialHandler,
   V2RequestCredentialHandler,
 } from './handlers'
@@ -129,7 +129,7 @@ export class V2CredentialProtocol<CFs extends CredentialFormatService[] = Creden
 
     const formatServices = this.getFormatServices(credentialFormats)
     if (formatServices.length === 0) {
-      throw new CredoError(`Unable to create proposal. No supported formats`)
+      throw new CredoError('Unable to create proposal. No supported formats')
     }
 
     const credentialRecord = new CredentialExchangeRecord({
@@ -181,7 +181,7 @@ export class V2CredentialProtocol<CFs extends CredentialFormatService[] = Creden
 
     const formatServices = this.getFormatServicesFromMessage(proposalMessage.formats)
     if (formatServices.length === 0) {
-      throw new CredoError(`Unable to process proposal. No supported formats`)
+      throw new CredoError('Unable to process proposal. No supported formats')
     }
 
     // credential record already exists
@@ -224,32 +224,31 @@ export class V2CredentialProtocol<CFs extends CredentialFormatService[] = Creden
       await this.updateState(messageContext.agentContext, credentialRecord, CredentialState.ProposalReceived)
 
       return credentialRecord
-    } else {
-      // Assert
-      await connectionService.assertConnectionOrOutOfBandExchange(messageContext)
-
-      // No credential record exists with thread id
-      credentialRecord = new CredentialExchangeRecord({
-        connectionId: connection?.id,
-        threadId: proposalMessage.threadId,
-        parentThreadId: proposalMessage.thread?.parentThreadId,
-        state: CredentialState.ProposalReceived,
-        role: CredentialRole.Issuer,
-        protocolVersion: 'v2',
-      })
-
-      await this.credentialFormatCoordinator.processProposal(messageContext.agentContext, {
-        credentialRecord,
-        formatServices,
-        message: proposalMessage,
-      })
-
-      // Save record and emit event
-      await credentialRepository.save(messageContext.agentContext, credentialRecord)
-      this.emitStateChangedEvent(messageContext.agentContext, credentialRecord, null)
-
-      return credentialRecord
     }
+    // Assert
+    await connectionService.assertConnectionOrOutOfBandExchange(messageContext)
+
+    // No credential record exists with thread id
+    credentialRecord = new CredentialExchangeRecord({
+      connectionId: connection?.id,
+      threadId: proposalMessage.threadId,
+      parentThreadId: proposalMessage.thread?.parentThreadId,
+      state: CredentialState.ProposalReceived,
+      role: CredentialRole.Issuer,
+      protocolVersion: 'v2',
+    })
+
+    await this.credentialFormatCoordinator.processProposal(messageContext.agentContext, {
+      credentialRecord,
+      formatServices,
+      message: proposalMessage,
+    })
+
+    // Save record and emit event
+    await credentialRepository.save(messageContext.agentContext, credentialRecord)
+    this.emitStateChangedEvent(messageContext.agentContext, credentialRecord, null)
+
+    return credentialRecord
   }
 
   public async acceptProposal(
@@ -287,7 +286,7 @@ export class V2CredentialProtocol<CFs extends CredentialFormatService[] = Creden
     // If the format services list is still empty, throw an error as we don't support any
     // of the formats
     if (formatServices.length === 0) {
-      throw new CredoError(`Unable to accept proposal. No supported formats provided as input or in proposal message`)
+      throw new CredoError('Unable to accept proposal. No supported formats provided as input or in proposal message')
     }
 
     const offerMessage = await this.credentialFormatCoordinator.acceptProposal(agentContext, {
@@ -336,7 +335,7 @@ export class V2CredentialProtocol<CFs extends CredentialFormatService[] = Creden
 
     const formatServices = this.getFormatServices(credentialFormats)
     if (formatServices.length === 0) {
-      throw new CredoError(`Unable to create offer. No supported formats`)
+      throw new CredoError('Unable to create offer. No supported formats')
     }
 
     const offerMessage = await this.credentialFormatCoordinator.createOffer(agentContext, {
@@ -378,7 +377,7 @@ export class V2CredentialProtocol<CFs extends CredentialFormatService[] = Creden
 
     const formatServices = this.getFormatServices(credentialFormats)
     if (formatServices.length === 0) {
-      throw new CredoError(`Unable to create offer. No supported formats`)
+      throw new CredoError('Unable to create offer. No supported formats')
     }
 
     const credentialRecord = new CredentialExchangeRecord({
@@ -433,7 +432,7 @@ export class V2CredentialProtocol<CFs extends CredentialFormatService[] = Creden
 
     const formatServices = this.getFormatServicesFromMessage(offerMessage.formats)
     if (formatServices.length === 0) {
-      throw new CredoError(`Unable to process offer. No supported formats`)
+      throw new CredoError('Unable to process offer. No supported formats')
     }
 
     // credential record already exists
@@ -465,34 +464,33 @@ export class V2CredentialProtocol<CFs extends CredentialFormatService[] = Creden
 
       await this.updateState(messageContext.agentContext, credentialRecord, CredentialState.OfferReceived)
       return credentialRecord
-    } else {
-      // Assert
-      await connectionService.assertConnectionOrOutOfBandExchange(messageContext)
-
-      // No credential record exists with thread id
-      agentContext.config.logger.debug('No credential record found for offer, creating a new one')
-      credentialRecord = new CredentialExchangeRecord({
-        connectionId: connection?.id,
-        threadId: offerMessage.threadId,
-        parentThreadId: offerMessage.thread?.parentThreadId,
-        state: CredentialState.OfferReceived,
-        role: CredentialRole.Holder,
-        protocolVersion: 'v2',
-      })
-
-      await this.credentialFormatCoordinator.processOffer(messageContext.agentContext, {
-        credentialRecord,
-        formatServices,
-        message: offerMessage,
-      })
-
-      // Save in repository
-      agentContext.config.logger.debug('Saving credential record and emit offer-received event')
-      await credentialRepository.save(messageContext.agentContext, credentialRecord)
-
-      this.emitStateChangedEvent(messageContext.agentContext, credentialRecord, null)
-      return credentialRecord
     }
+    // Assert
+    await connectionService.assertConnectionOrOutOfBandExchange(messageContext)
+
+    // No credential record exists with thread id
+    agentContext.config.logger.debug('No credential record found for offer, creating a new one')
+    credentialRecord = new CredentialExchangeRecord({
+      connectionId: connection?.id,
+      threadId: offerMessage.threadId,
+      parentThreadId: offerMessage.thread?.parentThreadId,
+      state: CredentialState.OfferReceived,
+      role: CredentialRole.Holder,
+      protocolVersion: 'v2',
+    })
+
+    await this.credentialFormatCoordinator.processOffer(messageContext.agentContext, {
+      credentialRecord,
+      formatServices,
+      message: offerMessage,
+    })
+
+    // Save in repository
+    agentContext.config.logger.debug('Saving credential record and emit offer-received event')
+    await credentialRepository.save(messageContext.agentContext, credentialRecord)
+
+    this.emitStateChangedEvent(messageContext.agentContext, credentialRecord, null)
+    return credentialRecord
   }
 
   public async acceptOffer(
@@ -530,7 +528,7 @@ export class V2CredentialProtocol<CFs extends CredentialFormatService[] = Creden
     // If the format services list is still empty, throw an error as we don't support any
     // of the formats
     if (formatServices.length === 0) {
-      throw new CredoError(`Unable to accept offer. No supported formats provided as input or in offer message`)
+      throw new CredoError('Unable to accept offer. No supported formats provided as input or in offer message')
     }
 
     const message = await this.credentialFormatCoordinator.acceptOffer(agentContext, {
@@ -579,7 +577,7 @@ export class V2CredentialProtocol<CFs extends CredentialFormatService[] = Creden
 
     const formatServices = this.getFormatServices(credentialFormats)
     if (formatServices.length === 0) {
-      throw new CredoError(`Unable to create proposal. No supported formats`)
+      throw new CredoError('Unable to create proposal. No supported formats')
     }
 
     const proposalMessage = await this.credentialFormatCoordinator.createProposal(agentContext, {
@@ -617,7 +615,7 @@ export class V2CredentialProtocol<CFs extends CredentialFormatService[] = Creden
 
     const formatServices = this.getFormatServices(credentialFormats)
     if (formatServices.length === 0) {
-      throw new CredoError(`Unable to create request. No supported formats`)
+      throw new CredoError('Unable to create request. No supported formats')
     }
 
     const credentialRecord = new CredentialExchangeRecord({
@@ -675,7 +673,7 @@ export class V2CredentialProtocol<CFs extends CredentialFormatService[] = Creden
 
     const formatServices = this.getFormatServicesFromMessage(requestMessage.formats)
     if (formatServices.length === 0) {
-      throw new CredoError(`Unable to process request. No supported formats`)
+      throw new CredoError('Unable to process request. No supported formats')
     }
 
     // credential record already exists
@@ -718,34 +716,33 @@ export class V2CredentialProtocol<CFs extends CredentialFormatService[] = Creden
 
       await this.updateState(messageContext.agentContext, credentialRecord, CredentialState.RequestReceived)
       return credentialRecord
-    } else {
-      // Assert
-      await connectionService.assertConnectionOrOutOfBandExchange(messageContext)
-
-      // No credential record exists with thread id
-      agentContext.config.logger.debug('No credential record found for request, creating a new one')
-      credentialRecord = new CredentialExchangeRecord({
-        connectionId: connection?.id,
-        threadId: requestMessage.threadId,
-        parentThreadId: requestMessage.thread?.parentThreadId,
-        state: CredentialState.RequestReceived,
-        role: CredentialRole.Issuer,
-        protocolVersion: 'v2',
-      })
-
-      await this.credentialFormatCoordinator.processRequest(messageContext.agentContext, {
-        credentialRecord,
-        formatServices,
-        message: requestMessage,
-      })
-
-      // Save in repository
-      agentContext.config.logger.debug('Saving credential record and emit request-received event')
-      await credentialRepository.save(messageContext.agentContext, credentialRecord)
-
-      this.emitStateChangedEvent(messageContext.agentContext, credentialRecord, null)
-      return credentialRecord
     }
+    // Assert
+    await connectionService.assertConnectionOrOutOfBandExchange(messageContext)
+
+    // No credential record exists with thread id
+    agentContext.config.logger.debug('No credential record found for request, creating a new one')
+    credentialRecord = new CredentialExchangeRecord({
+      connectionId: connection?.id,
+      threadId: requestMessage.threadId,
+      parentThreadId: requestMessage.thread?.parentThreadId,
+      state: CredentialState.RequestReceived,
+      role: CredentialRole.Issuer,
+      protocolVersion: 'v2',
+    })
+
+    await this.credentialFormatCoordinator.processRequest(messageContext.agentContext, {
+      credentialRecord,
+      formatServices,
+      message: requestMessage,
+    })
+
+    // Save in repository
+    agentContext.config.logger.debug('Saving credential record and emit request-received event')
+    await credentialRepository.save(messageContext.agentContext, credentialRecord)
+
+    this.emitStateChangedEvent(messageContext.agentContext, credentialRecord, null)
+    return credentialRecord
   }
 
   public async acceptRequest(
@@ -783,7 +780,7 @@ export class V2CredentialProtocol<CFs extends CredentialFormatService[] = Creden
     // If the format services list is still empty, throw an error as we don't support any
     // of the formats
     if (formatServices.length === 0) {
-      throw new CredoError(`Unable to accept request. No supported formats provided as input or in request message`)
+      throw new CredoError('Unable to accept request. No supported formats provided as input or in request message')
     }
     const message = await this.credentialFormatCoordinator.acceptRequest(agentContext, {
       credentialRecord,
@@ -849,7 +846,7 @@ export class V2CredentialProtocol<CFs extends CredentialFormatService[] = Creden
 
     const formatServices = this.getFormatServicesFromMessage(credentialMessage.formats)
     if (formatServices.length === 0) {
-      throw new CredoError(`Unable to process credential. No supported formats`)
+      throw new CredoError('Unable to process credential. No supported formats')
     }
 
     await this.credentialFormatCoordinator.processCredential(messageContext.agentContext, {

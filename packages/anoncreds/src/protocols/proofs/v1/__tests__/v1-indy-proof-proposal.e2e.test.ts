@@ -32,7 +32,7 @@ describe('Present Proof', () => {
     await aliceAgent.wallet.delete()
   })
 
-  test(`Alice Creates and sends Proof Proposal to Faber`, async () => {
+  test('Alice Creates and sends Proof Proposal to Faber', async () => {
     testLogger.test('Alice sends proof proposal to Faber')
 
     const faberProofExchangeRecordPromise = waitForProofExchangeRecord(faberAgent, {

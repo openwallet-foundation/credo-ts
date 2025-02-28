@@ -1,21 +1,21 @@
+import type { AgentContext } from '@credo-ts/core'
 import type { ProofFormat } from './ProofFormat'
 import type {
+  FormatCreateRequestOptions,
   ProofFormatAcceptProposalOptions,
   ProofFormatAcceptRequestOptions,
-  ProofFormatCreateProposalOptions,
-  FormatCreateRequestOptions,
-  ProofFormatProcessPresentationOptions,
-  ProofFormatCreateReturn,
-  ProofFormatProcessOptions,
-  ProofFormatGetCredentialsForRequestOptions,
-  ProofFormatGetCredentialsForRequestReturn,
-  ProofFormatSelectCredentialsForRequestOptions,
-  ProofFormatSelectCredentialsForRequestReturn,
+  ProofFormatAutoRespondPresentationOptions,
   ProofFormatAutoRespondProposalOptions,
   ProofFormatAutoRespondRequestOptions,
-  ProofFormatAutoRespondPresentationOptions,
+  ProofFormatCreateProposalOptions,
+  ProofFormatCreateReturn,
+  ProofFormatGetCredentialsForRequestOptions,
+  ProofFormatGetCredentialsForRequestReturn,
+  ProofFormatProcessOptions,
+  ProofFormatProcessPresentationOptions,
+  ProofFormatSelectCredentialsForRequestOptions,
+  ProofFormatSelectCredentialsForRequestReturn,
 } from './ProofFormatServiceOptions'
-import type { AgentContext } from '@credo-ts/core'
 
 export interface ProofFormatService<PF extends ProofFormat = ProofFormat> {
   formatKey: PF['formatKey']

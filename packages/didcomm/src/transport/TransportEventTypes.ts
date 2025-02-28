@@ -1,5 +1,5 @@
-import type { TransportSession } from '../TransportService'
 import type { BaseEvent } from '@credo-ts/core'
+import type { TransportSession } from '../TransportService'
 
 export enum TransportEventTypes {
   OutboundWebSocketClosedEvent = 'OutboundWebSocketClosedEvent',

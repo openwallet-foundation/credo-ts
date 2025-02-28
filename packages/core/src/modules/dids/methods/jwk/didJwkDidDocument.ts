@@ -3,7 +3,7 @@ import type { DidJwk } from './DidJwk'
 import { CredoError } from '../../../../error'
 import { JsonEncoder } from '../../../../utils'
 import { SECURITY_JWS_CONTEXT_URL } from '../../../vc/constants'
-import { getJsonWebKey2020, DidDocumentBuilder } from '../../domain'
+import { DidDocumentBuilder, getJsonWebKey2020 } from '../../domain'
 import { parseDid } from '../../domain/parse'
 
 export function getDidJwkDocument(didJwk: DidJwk) {

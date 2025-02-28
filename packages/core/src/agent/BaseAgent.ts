@@ -1,7 +1,7 @@
-import type { AgentConfig } from './AgentConfig'
-import type { AgentApi, EmptyModuleMap, ModulesMap, WithoutDefaultModules } from './AgentModules'
 import type { Logger } from '../logger'
 import type { DependencyManager } from '../plugins'
+import type { AgentConfig } from './AgentConfig'
+import type { AgentApi, EmptyModuleMap, ModulesMap, WithoutDefaultModules } from './AgentModules'
 
 import { CredoError } from '../error'
 import { DidsApi } from '../modules/dids'
@@ -120,10 +120,7 @@ export abstract class BaseAgent<AgentModules extends ModulesMap = EmptyModuleMap
       await this.wallet.close()
       throw new CredoError(
         // TODO: add link to where documentation on how to update can be found.
-        `Current agent storage is not up to date. ` +
-          `To prevent the framework state from getting corrupted the agent initialization is aborted. ` +
-          `Make sure to update the agent storage (currently at ${currentVersion}) to the latest version (${UpdateAssistant.frameworkStorageVersion}). ` +
-          `You can also downgrade your version of Credo.`
+        `Current agent storage is not up to date. To prevent the framework state from getting corrupted the agent initialization is aborted. Make sure to update the agent storage (currently at ${currentVersion}) to the latest version (${UpdateAssistant.frameworkStorageVersion}). You can also downgrade your version of Credo.`
       )
     }
   }

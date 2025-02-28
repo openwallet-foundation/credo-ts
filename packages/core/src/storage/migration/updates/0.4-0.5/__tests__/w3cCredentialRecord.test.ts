@@ -8,7 +8,6 @@ import { JsonTransformer } from '../../../../../utils'
 import * as testModule from '../w3cCredentialRecord'
 
 const dependencyManager = {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   resolve: (_injectionToken: unknown) => {
     // no-op
   },
@@ -16,7 +15,7 @@ const dependencyManager = {
 
 const agentConfig = getAgentConfig('Migration W3cCredentialRecord 0.4-0.5')
 const agentContext = getAgentContext({
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
   dependencyManager: dependencyManager as any,
 })
 
@@ -32,9 +31,11 @@ const w3cJsonLdCredentialService = {
 dependencyManager.resolve = (injectionToken: unknown) => {
   if (injectionToken === W3cJsonLdCredentialService) {
     return w3cJsonLdCredentialService
-  } else if (injectionToken === W3cCredentialRepository) {
+  }
+  if (injectionToken === W3cCredentialRepository) {
     return repository
-  } else if (injectionToken === AgentConfig) {
+  }
+  if (injectionToken === AgentConfig) {
     return agentConfig
   }
 

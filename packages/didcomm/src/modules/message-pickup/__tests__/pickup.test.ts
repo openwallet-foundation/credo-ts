@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-non-null-assertion */
 import type { SubjectMessage } from '../../../../../../tests/transport/SubjectInboundTransport'
 
 import { Subject } from 'rxjs'
@@ -77,7 +76,7 @@ describe('E2E Pick Up protocol', () => {
     )
 
     recipientMediatorConnection = await recipientAgent.modules.connections.returnWhenIsConnected(
-      recipientMediatorConnection!.id
+      recipientMediatorConnection?.id
     )
 
     let [mediatorRecipientConnection] = await mediatorAgent.modules.connections.findAllByOutOfBandId(
@@ -85,7 +84,7 @@ describe('E2E Pick Up protocol', () => {
     )
 
     mediatorRecipientConnection = await mediatorAgent.modules.connections.returnWhenIsConnected(
-      mediatorRecipientConnection!.id
+      mediatorRecipientConnection?.id
     )
 
     // Now they are connected, reinitialize recipient agent in order to lose the session (as with SubjectTransport it remains open)
@@ -140,7 +139,7 @@ describe('E2E Pick Up protocol', () => {
     )
 
     recipientMediatorConnection = await recipientAgent.modules.connections.returnWhenIsConnected(
-      recipientMediatorConnection!.id
+      recipientMediatorConnection?.id
     )
 
     let [mediatorRecipientConnection] = await mediatorAgent.modules.connections.findAllByOutOfBandId(
@@ -148,7 +147,7 @@ describe('E2E Pick Up protocol', () => {
     )
 
     mediatorRecipientConnection = await mediatorAgent.modules.connections.returnWhenIsConnected(
-      mediatorRecipientConnection!.id
+      mediatorRecipientConnection?.id
     )
 
     // Now they are connected, reinitialize recipient agent in order to lose the session (as with SubjectTransport it remains open)
@@ -208,7 +207,7 @@ describe('E2E Pick Up protocol', () => {
     )
 
     recipientMediatorConnection = await recipientAgent.modules.connections.returnWhenIsConnected(
-      recipientMediatorConnection!.id
+      recipientMediatorConnection?.id
     )
 
     let [mediatorRecipientConnection] = await mediatorAgent.modules.connections.findAllByOutOfBandId(
@@ -216,7 +215,7 @@ describe('E2E Pick Up protocol', () => {
     )
 
     mediatorRecipientConnection = await mediatorAgent.modules.connections.returnWhenIsConnected(
-      mediatorRecipientConnection!.id
+      mediatorRecipientConnection?.id
     )
 
     // Now they are connected, reinitialize recipient agent in order to lose the session (as with SubjectTransport it remains open)
@@ -293,7 +292,7 @@ describe('E2E Pick Up protocol', () => {
     )
 
     recipientMediatorConnection = await recipientAgent.modules.connections.returnWhenIsConnected(
-      recipientMediatorConnection!.id
+      recipientMediatorConnection?.id
     )
 
     let [mediatorRecipientConnection] = await mediatorAgent.modules.connections.findAllByOutOfBandId(
@@ -301,7 +300,7 @@ describe('E2E Pick Up protocol', () => {
     )
 
     mediatorRecipientConnection = await mediatorAgent.modules.connections.returnWhenIsConnected(
-      mediatorRecipientConnection!.id
+      mediatorRecipientConnection?.id
     )
 
     // Now they are connected, reinitialize recipient agent in order to lose the session (as with SubjectTransport it remains open)

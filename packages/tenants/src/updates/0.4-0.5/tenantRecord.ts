@@ -14,7 +14,7 @@ export async function migrateTenantRecordToV0_5<Agent extends BaseAgent>(agent: 
   agent.config.logger.info('Migrating tenant records to storage version 0.5')
   const tenantRepository = agent.dependencyManager.resolve(TenantRepository)
 
-  agent.config.logger.debug(`Fetching all tenant records from storage`)
+  agent.config.logger.debug('Fetching all tenant records from storage')
   const tenantRecords = await tenantRepository.getAll(agent.context)
 
   agent.config.logger.debug(`Found a total of ${tenantRecords.length} tenant records to update.`)

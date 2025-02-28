@@ -11,9 +11,9 @@
  * limitations under the License.
  */
 
-import type { KeyPairSigner } from './KeyPairSigner'
 import type { JsonArray, LdKeyPair } from '@credo-ts/core'
 import type { Bls12381G2KeyPair } from '@mattrglobal/bls12381-key-pair'
+import type { KeyPairSigner } from './KeyPairSigner'
 
 /**
  * Options for constructing a signature suite

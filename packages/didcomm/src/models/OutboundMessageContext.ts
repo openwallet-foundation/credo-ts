@@ -1,9 +1,8 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-import type { InboundMessageContext } from './InboundMessageContext'
+import type { AgentContext, BaseRecord, Key, ResolvedDidCommService } from '@credo-ts/core'
 import type { AgentMessage } from '../AgentMessage'
 import type { ConnectionRecord } from '../modules/connections/repository'
 import type { OutOfBandRecord } from '../modules/oob'
-import type { AgentContext, BaseRecord, Key, ResolvedDidCommService } from '@credo-ts/core'
+import type { InboundMessageContext } from './InboundMessageContext'
 
 import { CredoError } from '@credo-ts/core'
 
@@ -16,6 +15,7 @@ export interface ServiceMessageParams {
 export interface OutboundMessageContextParams {
   agentContext: AgentContext
   inboundMessageContext?: InboundMessageContext
+  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
   associatedRecord?: BaseRecord<any, any, any>
   connection?: ConnectionRecord
   serviceParams?: ServiceMessageParams
@@ -28,6 +28,7 @@ export class OutboundMessageContext<T extends AgentMessage = AgentMessage> {
   public connection?: ConnectionRecord
   public serviceParams?: ServiceMessageParams
   public outOfBand?: OutOfBandRecord
+  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
   public associatedRecord?: BaseRecord<any, any, any>
   public sessionId?: string
   public inboundMessageContext?: InboundMessageContext

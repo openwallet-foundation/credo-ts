@@ -1,5 +1,5 @@
-import type { SubjectMessage } from './transport/SubjectInboundTransport'
 import type { AnonCredsTestsAgent } from '../packages/anoncreds/tests/anoncredsSetup'
+import type { SubjectMessage } from './transport/SubjectInboundTransport'
 
 import { Subject } from 'rxjs'
 
@@ -13,9 +13,9 @@ import { SubjectOutboundTransport } from './transport/SubjectOutboundTransport'
 import { Agent } from '@credo-ts/core'
 import {
   AutoAcceptCredential,
+  MediationRecipientModule,
   MediatorModule,
   MediatorPickupStrategy,
-  MediationRecipientModule,
 } from '@credo-ts/didcomm'
 
 const recipientAgentOptions = getInMemoryAgentOptions(

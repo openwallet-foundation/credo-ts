@@ -1,25 +1,25 @@
-import type { HandshakeReusedEvent } from './domain/OutOfBandEvents'
+import type { Query, QueryOptions } from '@credo-ts/core'
 import type { AgentMessage } from '../../AgentMessage'
 import type { Attachment } from '../../decorators/attachment/Attachment'
 import type { Routing } from '../../models'
 import type { PlaintextMessage } from '../../types'
-import type { Query, QueryOptions } from '@credo-ts/core'
+import type { HandshakeReusedEvent } from './domain/OutOfBandEvents'
 
 import {
   AgentContext,
-  EventEmitter,
-  filterContextCorrelationId,
-  InjectionSymbols,
-  Key,
   CredoError,
-  Logger,
-  inject,
-  injectable,
+  DidKey,
+  EventEmitter,
+  InjectionSymbols,
   JsonEncoder,
   JsonTransformer,
-  DidKey,
+  Key,
+  Logger,
+  filterContextCorrelationId,
+  inject,
+  injectable,
 } from '@credo-ts/core'
-import { catchError, EmptyError, first, firstValueFrom, map, of, timeout } from 'rxjs'
+import { EmptyError, catchError, first, firstValueFrom, map, of, timeout } from 'rxjs'
 
 import { DidCommModuleConfig } from '../../DidCommModuleConfig'
 import { AgentEventTypes, type AgentMessageReceivedEvent } from '../../Events'
@@ -30,12 +30,12 @@ import { OutboundMessageContext } from '../../models'
 import { DidCommDocumentService } from '../../services'
 import {
   parseDidCommProtocolUri,
-  supportsIncomingDidCommProtocolUri,
   parseMessageType,
+  supportsIncomingDidCommProtocolUri,
   supportsIncomingMessageType,
 } from '../../util/messageType'
 import { parseInvitationShortUrl } from '../../util/parseInvitation'
-import { ConnectionRecord, ConnectionInvitationMessage, HandshakeProtocol, DidExchangeState } from '../connections'
+import { ConnectionInvitationMessage, ConnectionRecord, DidExchangeState, HandshakeProtocol } from '../connections'
 import { ConnectionsApi } from '../connections/ConnectionsApi'
 import { RoutingService } from '../routing/services/RoutingService'
 
@@ -228,6 +228,7 @@ export class OutOfBandApi {
     })
 
     if (messages) {
+      // biome-ignore lint/complexity/noForEach: <explanation>
       messages.forEach((message) => {
         if (message.service) {
           // We can remove `~service` attribute from message. Newer OOB messages have `services` attribute instead.
@@ -559,6 +560,7 @@ export class OutOfBandApi {
     if (handshakeProtocols && handshakeProtocols.length > 0) {
       this.logger.debug('Out of band message contains handshake protocols.')
 
+      // biome-ignore lint/suspicious/noImplicitAnyLet: <explanation>
       let connectionRecord
       if (existingConnection && reuseConnection) {
         this.logger.debug(
@@ -624,7 +626,8 @@ export class OutOfBandApi {
         }
       }
       return { outOfBandRecord, connectionRecord }
-    } else if (messages) {
+    }
+    if (messages) {
       this.logger.debug('Out of band message contains only request messages.')
       if (existingConnection && reuseConnection) {
         this.logger.debug('Connection already exists.', { connectionId: existingConnection.id })
@@ -808,7 +811,8 @@ export class OutOfBandApi {
       if (connections.length === 1) {
         const [firstConnection] = connections
         return firstConnection
-      } else if (connections.length > 1) {
+      }
+      if (connections.length > 1) {
         this.logger.warn(
           `There is more than one connection created from invitationDid ${invitationDid}. Taking the first one.`
         )
@@ -855,7 +859,7 @@ export class OutOfBandApi {
     messages: PlaintextMessage[]
   ) {
     if (!services || services.length === 0) {
-      throw new CredoError(`There are no services. We can not emit messages`)
+      throw new CredoError('There are no services. We can not emit messages')
     }
 
     const supportedMessageTypes = this.messageHandlerRegistry.supportedMessageTypes
@@ -962,6 +966,7 @@ export class OutOfBandApi {
         )
         recipientKeyFingerprints.push(
           ...resolvedDidCommServices
+            // biome-ignore lint/performance/noAccumulatingSpread: <explanation>
             .reduce<Key[]>((aggr, { recipientKeys }) => [...aggr, ...recipientKeys], [])
             .map((key) => key.fingerprint)
         )

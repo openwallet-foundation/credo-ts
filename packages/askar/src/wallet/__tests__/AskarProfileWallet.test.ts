@@ -1,8 +1,8 @@
 import type { WalletConfig } from '@credo-ts/core'
 
-import { SigningProviderRegistry, WalletDuplicateError, WalletNotFoundError, KeyDerivationMethod } from '@credo-ts/core'
+import { KeyDerivationMethod, SigningProviderRegistry, WalletDuplicateError, WalletNotFoundError } from '@credo-ts/core'
 
-import { testLogger, agentDependencies } from '../../../../core/tests'
+import { agentDependencies, testLogger } from '../../../../core/tests'
 import { AskarProfileWallet } from '../AskarProfileWallet'
 import { AskarWallet } from '../AskarWallet'
 

@@ -6,7 +6,7 @@ import type { DidCreateOptions, DidCreateResult, DidDeactivateResult, DidUpdateR
 
 import { getJwkFromKey } from '../../../../crypto/jose/jwk'
 import { DidDocumentRole } from '../../domain/DidDocumentRole'
-import { DidRepository, DidRecord } from '../../repository'
+import { DidRecord, DidRepository } from '../../repository'
 
 import { DidJwk } from './DidJwk'
 
@@ -99,7 +99,7 @@ export class JwkDidRegistrar implements DidRegistrar {
       didRegistrationMetadata: {},
       didState: {
         state: 'failed',
-        reason: `notSupported: cannot update did:jwk did`,
+        reason: 'notSupported: cannot update did:jwk did',
       },
     }
   }
@@ -110,7 +110,7 @@ export class JwkDidRegistrar implements DidRegistrar {
       didRegistrationMetadata: {},
       didState: {
         state: 'failed',
-        reason: `notSupported: cannot deactivate did:jwk did`,
+        reason: 'notSupported: cannot deactivate did:jwk did',
       },
     }
   }

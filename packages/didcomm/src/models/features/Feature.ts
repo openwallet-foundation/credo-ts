@@ -43,7 +43,7 @@ export class Feature {
         } else {
           obj1[key] = obj2[key]
         }
-      } catch (e) {
+      } catch (_e) {
         obj1[key] = obj2[key]
       }
     }

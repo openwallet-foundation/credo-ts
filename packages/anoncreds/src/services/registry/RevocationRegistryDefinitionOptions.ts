@@ -1,12 +1,12 @@
+import type { AnonCredsRevocationRegistryDefinition } from '../../models/registry'
 import type {
-  AnonCredsOperationStateWait,
+  AnonCredsOperationStateAction,
   AnonCredsOperationStateFailed,
   AnonCredsOperationStateFinished,
+  AnonCredsOperationStateWait,
   AnonCredsResolutionMetadata,
   Extensible,
-  AnonCredsOperationStateAction,
 } from './base'
-import type { AnonCredsRevocationRegistryDefinition } from '../../models/registry'
 
 export interface GetRevocationRegistryDefinitionReturn {
   revocationRegistryDefinition?: AnonCredsRevocationRegistryDefinition

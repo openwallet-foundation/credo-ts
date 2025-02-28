@@ -1,5 +1,5 @@
-import type { DrpcRequest, DrpcRequestObject, DrpcResponseObject } from '../src/messages'
 import type { ConnectionRecord } from '@credo-ts/didcomm'
+import type { DrpcRequest, DrpcRequestObject, DrpcResponseObject } from '../src/messages'
 
 import { Agent } from '../../core/src/agent/Agent'
 import { setupSubjectTransports } from '../../core/tests'

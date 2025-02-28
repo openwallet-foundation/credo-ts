@@ -13,13 +13,18 @@ export abstract class BaseLogger implements Logger {
     return logLevel >= this.logLevel
   }
 
-  /* eslint-disable @typescript-eslint/no-explicit-any */
+  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
   public abstract test(message: string, data?: Record<string, any>): void
+  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
   public abstract trace(message: string, data?: Record<string, any>): void
+  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
   public abstract debug(message: string, data?: Record<string, any>): void
+  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
   public abstract info(message: string, data?: Record<string, any>): void
+  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
   public abstract warn(message: string, data?: Record<string, any>): void
+  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
   public abstract error(message: string, data?: Record<string, any>): void
+  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
   public abstract fatal(message: string, data?: Record<string, any>): void
-  /* eslint-enable @typescript-eslint/no-explicit-any */
 }

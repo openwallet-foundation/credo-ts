@@ -1,22 +1,23 @@
+import type { OutboundWebSocketClosedEvent, OutboundWebSocketOpenedEvent } from '../../transport'
+import type { ConnectionRecord } from '../connections/repository'
 import type { MediationStateChangedEvent } from './RoutingEvents'
 import type { MediationRecord } from './repository'
 import type { GetRoutingOptions } from './services/RoutingService'
-import type { OutboundWebSocketOpenedEvent, OutboundWebSocketClosedEvent } from '../../transport'
-import type { ConnectionRecord } from '../connections/repository'
 
 import {
   AgentContext,
-  EventEmitter,
-  filterContextCorrelationId,
   CredoError,
+  DidDocument,
+  DidsApi,
+  EventEmitter,
   InjectionSymbols,
   Logger,
+  filterContextCorrelationId,
   inject,
   injectable,
-  DidsApi,
   verkeyToDidKey,
 } from '@credo-ts/core'
-import { firstValueFrom, interval, merge, ReplaySubject, Subject, timer } from 'rxjs'
+import { ReplaySubject, Subject, firstValueFrom, interval, merge, timer } from 'rxjs'
 import { delayWhen, filter, first, takeUntil, tap, throttleTime, timeout } from 'rxjs/operators'
 
 import { DidCommModuleConfig } from '../../DidCommModuleConfig'
@@ -152,8 +153,8 @@ export class MediationRecipientApi {
 
     const websocketSchemes = ['ws', 'wss']
     const didDocument = connectionRecord.theirDid && (await this.dids.resolveDidDocument(connectionRecord.theirDid))
-    const services = didDocument && didDocument?.didCommServices
-    const hasWebSocketTransport = services && services.some((s) => websocketSchemes.includes(s.protocolScheme))
+    const services = (didDocument as DidDocument)?.didCommServices || []
+    const hasWebSocketTransport = services?.some((s) => websocketSchemes.includes(s.protocolScheme))
 
     if (!hasWebSocketTransport) {
       throw new CredoError('Cannot open websocket to connection without websocket service endpoint')
@@ -534,7 +535,7 @@ export class MediationRecipientApi {
       const { connectionRecord: newConnection } = await oobApi.receiveInvitation(outOfBandInvitation, {
         routing,
       })
-      this.agentContext.config.logger.debug(`Mediation invitation processed`, { outOfBandInvitation })
+      this.agentContext.config.logger.debug('Mediation invitation processed', { outOfBandInvitation })
 
       if (!newConnection) {
         throw new CredoError('No connection record to provision mediation.')

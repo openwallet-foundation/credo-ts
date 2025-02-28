@@ -1,14 +1,14 @@
+import type { AgentContext } from '../../agent'
+import type { JwkJson } from '../jose'
 import type {
   JsonWebKey,
-  KeyGenAlgorithm,
   KeyFormat,
+  KeyGenAlgorithm,
   KeyImportParams,
   KeySignParams,
   KeyUsage,
   KeyVerifyParams,
 } from './types'
-import type { AgentContext } from '../../agent'
-import type { JwkJson } from '../jose'
 
 import { AsnConvert, AsnParser } from '@peculiar/asn1-schema'
 import { SubjectPublicKeyInfo } from '@peculiar/asn1-x509'
@@ -29,7 +29,6 @@ export class CredoWalletWebCrypto {
     return this.agentContext.wallet.getRandomValues(array.byteLength) as unknown as T
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   public async sign(key: CredoWebCryptoKey, message: Uint8Array, _algorithm: KeySignParams): Promise<Uint8Array> {
     const signature = await this.agentContext.wallet.sign({
       key: key.key,

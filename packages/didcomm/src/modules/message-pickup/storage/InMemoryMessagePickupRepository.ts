@@ -7,7 +7,7 @@ import type {
 } from './MessagePickupRepositoryOptions'
 import type { QueuedMessage } from './QueuedMessage'
 
-import { InjectionSymbols, Logger, injectable, inject, utils } from '@credo-ts/core'
+import { InjectionSymbols, Logger, inject, injectable, utils } from '@credo-ts/core'
 
 interface InMemoryQueuedMessage extends QueuedMessage {
   connectionId: string
@@ -54,6 +54,7 @@ export class InMemoryMessagePickupRepository implements MessagePickupRepository 
     this.logger.debug(`Taking ${messagesToTake} messages from queue for connection ${connectionId}`)
 
     // Mark taken messages in order to prevent them of being retrieved again
+    // biome-ignore lint/complexity/noForEach: <explanation>
     messages.forEach((msg) => {
       const index = this.messages.findIndex((item) => item.id === msg.id)
       if (index !== -1) this.messages[index].state = 'sending'

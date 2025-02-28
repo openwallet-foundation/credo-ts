@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 import type { ILogObj } from 'tslog'
 
 import { appendFileSync } from 'fs'
@@ -10,7 +8,7 @@ import { BaseLogger } from '../src/logger/BaseLogger'
 import { replaceError } from '../src/logger/replaceError'
 
 function logToTransport(logObject: ILogObj) {
-  appendFileSync('logs.txt', JSON.stringify(logObject) + '\n')
+  appendFileSync('logs.txt', `${JSON.stringify(logObject)}\n`)
 }
 
 export class TestLogger extends BaseLogger {
@@ -48,17 +46,18 @@ export class TestLogger extends BaseLogger {
     if (logger) {
       this.logger = logger.getSubLogger({
         name,
-        minLevel: this.logLevel == LogLevel.off ? undefined : this.tsLogLevelNumberMap[this.logLevel],
+        minLevel: this.logLevel === LogLevel.off ? undefined : this.tsLogLevelNumberMap[this.logLevel],
       })
     } else {
       this.logger = new Logger({
         name,
-        minLevel: this.logLevel == LogLevel.off ? undefined : this.tsLogLevelNumberMap[this.logLevel],
+        minLevel: this.logLevel === LogLevel.off ? undefined : this.tsLogLevelNumberMap[this.logLevel],
         attachedTransports: [logToTransport],
       })
     }
   }
 
+  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
   private log(level: Exclude<LogLevel, LogLevel.off>, message: string, data?: Record<string, any>): void {
     const tsLogLevel = this.tsLogLevelStringMap[level]
 
@@ -71,30 +70,37 @@ export class TestLogger extends BaseLogger {
     }
   }
 
+  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
   public test(message: string, data?: Record<string, any>): void {
     this.log(LogLevel.test, message, data)
   }
 
+  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
   public trace(message: string, data?: Record<string, any>): void {
     this.log(LogLevel.trace, message, data)
   }
 
+  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
   public debug(message: string, data?: Record<string, any>): void {
     this.log(LogLevel.debug, message, data)
   }
 
+  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
   public info(message: string, data?: Record<string, any>): void {
     this.log(LogLevel.info, message, data)
   }
 
+  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
   public warn(message: string, data?: Record<string, any>): void {
     this.log(LogLevel.warn, message, data)
   }
 
+  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
   public error(message: string, data?: Record<string, any>): void {
     this.log(LogLevel.error, message, data)
   }
 
+  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
   public fatal(message: string, data?: Record<string, any>): void {
     this.log(LogLevel.fatal, message, data)
   }

@@ -1,5 +1,5 @@
-import type { Wallet, WalletCreateKeyOptions } from './Wallet'
 import type { WalletConfig, WalletConfigRekey, WalletExportImportConfig } from '../types'
+import type { Wallet, WalletCreateKeyOptions } from './Wallet'
 
 import { AgentContext } from '../agent'
 import { InjectionSymbols } from '../constants'

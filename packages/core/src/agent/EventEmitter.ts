@@ -1,12 +1,12 @@
+import type { EventEmitter as NativeEventEmitter } from 'events'
 import type { BaseEvent } from './Events'
 import type { AgentContext } from './context'
-import type { EventEmitter as NativeEventEmitter } from 'events'
 
-import { fromEventPattern, Subject } from 'rxjs'
+import { Subject, fromEventPattern } from 'rxjs'
 import { takeUntil } from 'rxjs/operators'
 
 import { InjectionSymbols } from '../constants'
-import { injectable, inject } from '../plugins'
+import { inject, injectable } from '../plugins'
 
 import { AgentDependencies } from './AgentDependencies'
 

@@ -11,7 +11,10 @@ interface V2PresentationProblemReportErrorOptions extends ProblemReportErrorOpti
 export class V2PresentationProblemReportError extends ProblemReportError {
   public problemReport: V2PresentationProblemReportMessage
 
-  public constructor(public message: string, { problemCode }: V2PresentationProblemReportErrorOptions) {
+  public constructor(
+    public message: string,
+    { problemCode }: V2PresentationProblemReportErrorOptions
+  ) {
     super(message, { problemCode })
     this.problemReport = new V2PresentationProblemReportMessage({
       description: {

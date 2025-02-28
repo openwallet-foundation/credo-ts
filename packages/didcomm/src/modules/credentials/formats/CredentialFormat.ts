@@ -19,7 +19,7 @@
  */
 export type CredentialFormatPayload<
   CFs extends CredentialFormat[],
-  M extends keyof CredentialFormat['credentialFormats']
+  M extends keyof CredentialFormat['credentialFormats'],
 > = {
   [CredentialFormat in CFs[number] as CredentialFormat['formatKey']]?: CredentialFormat['credentialFormats'][M]
 }
