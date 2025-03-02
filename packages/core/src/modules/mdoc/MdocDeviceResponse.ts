@@ -273,6 +273,7 @@ export class MdocDeviceResponse {
 
       await document.verify(agentContext, {
         now: options.now,
+        trustedCertificates: options.trustedCertificates
       })
 
       if (!(rawDocument instanceof DeviceSignedDocument)) {
