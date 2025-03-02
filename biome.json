@@ -36,10 +36,7 @@
   "linter": {
     "rules": {
       "style": {
-        "useImportType": {
-          "fix": "none",
-          "level": "warn"
-        },
+        "useImportType": "off",
         "useNodejsImportProtocol": "off",
         "noNonNullAssertion": "error",
         "noRestrictedGlobals": {
@@ -56,7 +53,7 @@
         },
         "noUnusedFunctionParameters": "off",
         "noUnusedImports": "error",
-        "noUndeclaredDependencies": "warn",
+        "noUndeclaredDependencies": "off",
         "noInvalidUseBeforeDeclaration": "error"
       },
       "suspicious": {

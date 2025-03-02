@@ -16,5 +16,7 @@ export class ActionMenuProblemReportHandler implements MessageHandler {
 
   public async handle(messageContext: MessageHandlerInboundMessage<ActionMenuProblemReportHandler>) {
     await this.actionMenuService.processProblemReport(messageContext)
+
+    return undefined
   }
 }
