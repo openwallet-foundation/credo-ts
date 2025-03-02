@@ -64,7 +64,7 @@ export class V1MessagePickupProtocol extends BaseMessagePickupProtocol {
   public async createDeliveryMessage(
     agentContext: AgentContext,
     options: DeliverMessagesProtocolOptions
-  ): Promise<DeliverMessagesProtocolReturnType<AgentMessage> | void> {
+  ): Promise<DeliverMessagesProtocolReturnType<AgentMessage> | undefined> {
     const { connectionRecord, batchSize, messages } = options
     connectionRecord.assertReady()
 

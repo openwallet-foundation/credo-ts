@@ -91,7 +91,7 @@ export class V2MessagePickupProtocol extends BaseMessagePickupProtocol {
   public async createDeliveryMessage(
     agentContext: AgentContext,
     options: DeliverMessagesProtocolOptions
-  ): Promise<DeliverMessagesProtocolReturnType<AgentMessage> | void> {
+  ): Promise<DeliverMessagesProtocolReturnType<AgentMessage> | undefined> {
     const { connectionRecord, recipientKey, messages } = options
     connectionRecord.assertReady()
 
