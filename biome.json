@@ -41,7 +41,13 @@
           "level": "warn"
         },
         "useNodejsImportProtocol": "off",
-        "noNonNullAssertion": "error"
+        "noNonNullAssertion": "error",
+        "noRestrictedGlobals": {
+          "level": "error",
+          "options": {
+            "deniedGlobals": ["Buffer"]
+          }
+        }
       },
       "correctness": {
         "noUnusedVariables": {
@@ -80,21 +86,6 @@
     }
   },
   "overrides": [
-    {
-      "include": ["packages/core/**"],
-      "linter": {
-        "rules": {
-          "style": {
-            "noRestrictedGlobals": {
-              "level": "error",
-              "options": {
-                "deniedGlobals": ["Buffer"]
-              }
-            }
-          }
-        }
-      }
-    },
     {
       "include": ["jest.config.ts", "./scripts/**"],
       "linter": {
