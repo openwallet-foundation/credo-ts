@@ -25,6 +25,7 @@ import { isMdocSupportedSignatureAlgorithm, mdocSupporteSignatureAlgorithms } fr
  */
 export class Mdoc {
   public base64Url: string
+
   private constructor(private issuerSignedDocument: IssuerSignedDocument) {
     const issuerSigned = issuerSignedDocument.prepare().get('issuerSigned')
     this.base64Url = TypedArrayEncoder.toBase64URL(cborEncode(issuerSigned))
@@ -44,8 +45,6 @@ export class Mdoc {
     deviceSignedBase64Url: string,
     expectedDocType?: string
   ): Mdoc {
-    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
-
     return new Mdoc(
       parseDeviceSigned(
         TypedArrayEncoder.fromBase64(deviceSignedBase64Url),

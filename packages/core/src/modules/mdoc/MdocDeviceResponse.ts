@@ -13,11 +13,13 @@ import {
   COSEKey,
   DeviceRequest,
   DeviceResponse,
+  DeviceSignedDocument,
   MDoc,
   MDocStatus,
   Verifier,
   cborEncode,
   limitDisclosureToInputDescriptor as mdocLimitDisclosureToInputDescriptor,
+  defaultCallback as onCheck,
   parseDeviceResponse,
   parseIssuerSigned,
 } from '@animo-id/mdoc'
@@ -25,8 +27,6 @@ import {
 import { getJwkFromJson } from '../../crypto'
 import { CredoError } from '../../error'
 import { uuid } from '../../utils/uuid'
-import { X509Certificate } from '../x509/X509Certificate'
-import { X509ModuleConfig } from '../x509/X509ModuleConfig'
 
 import { TypedArrayEncoder } from './../../utils'
 import { Mdoc } from './Mdoc'
@@ -58,7 +58,6 @@ export class MdocDeviceResponse {
         docType
       )
     })
-    documents[0].deviceSignedNamespaces
 
     return new MdocDeviceResponse(base64Url, documents)
   }
@@ -143,7 +142,10 @@ export class MdocDeviceResponse {
     }
   }
 
-  public static limitDisclosureToInputDescriptor(options: { inputDescriptor: InputDescriptorV2; mdoc: Mdoc }) {
+  public static limitDisclosureToInputDescriptor(options: {
+    inputDescriptor: InputDescriptorV2
+    mdoc: Mdoc
+  }) {
     const { mdoc } = options
 
     const inputDescriptor = MdocDeviceResponse.assertMdocInputDescriptor(options.inputDescriptor)
@@ -254,59 +256,51 @@ export class MdocDeviceResponse {
   public async verify(agentContext: AgentContext, options: Omit<MdocDeviceResponseVerifyOptions, 'deviceResponse'>) {
     const verifier = new Verifier()
     const mdocContext = getMdocContext(agentContext)
-    const x509Config = agentContext.dependencyManager.resolve(X509ModuleConfig)
 
-    // TODO: no way to currently have a per document x509 certificates in a presentation
-    // but this also the case for other formats
-    // FIXME: we can't pass multiple certificate chains. We should just verify each document separately
-    let trustedCertificates = options.trustedCertificates
-    if (!trustedCertificates) {
-      trustedCertificates = (
-        await Promise.all(
-          this.documents.map((mdoc) => {
-            const certificateChain = mdoc.issuerSignedCertificateChain.map((cert) =>
-              X509Certificate.fromRawCertificate(cert)
-            )
-            return (
-              x509Config.getTrustedCertificatesForVerification?.(agentContext, {
-                certificateChain,
-                verification: {
-                  type: 'credential',
-                  credential: mdoc,
-                },
-              }) ?? x509Config.trustedCertificates
-            )
-          })
-        )
-      )
-        .filter((c): c is string[] => c !== undefined)
-        .flat()
-    }
+    onCheck({
+      status: this.documents.length > 0 ? 'PASSED' : 'FAILED',
+      check: 'Device Response must include at least one document.',
+      category: 'DOCUMENT_FORMAT',
+    })
 
-    if (!trustedCertificates) {
-      throw new MdocError('No trusted certificates found. Cannot verify mdoc.')
-    }
+    const deviceResponse = parseDeviceResponse(TypedArrayEncoder.fromBase64(this.base64Url))
 
-    const result = await verifier.verifyDeviceResponse(
-      {
-        encodedDeviceResponse: TypedArrayEncoder.fromBase64(this.base64Url),
-        encodedSessionTranscript: await DeviceResponse.calculateSessionTranscriptForOID4VP({
-          ...options.sessionTranscriptOptions,
-          context: mdocContext,
-        }),
-        trustedCertificates: trustedCertificates.map(
-          (cert) => X509Certificate.fromEncodedCertificate(cert).rawCertificate
-        ),
+    // NOTE: we do not use the verification from mdoc library, as it checks all documents
+    // based on the same trusted certificates. Rather, we want to
+    for (const documentIndex in this.documents) {
+      const rawDocument = deviceResponse.documents[documentIndex]
+      const document = this.documents[documentIndex]
+
+      await document.verify(agentContext, {
         now: options.now,
-      },
-      mdocContext
-    )
+      })
 
-    if (result.documentErrors.length > 1) {
+      if (!(rawDocument instanceof DeviceSignedDocument)) {
+        onCheck({
+          status: 'FAILED',
+          category: 'DEVICE_AUTH',
+          check: `The document is not signed by the device. ${document.docType}`,
+        })
+        continue
+      }
+
+      await verifier.verifyDeviceSignature(
+        {
+          sessionTranscriptBytes: await DeviceResponse.calculateSessionTranscriptForOID4VP({
+            ...options.sessionTranscriptOptions,
+            context: mdocContext,
+          }),
+          deviceSigned: rawDocument,
+        },
+        mdocContext
+      )
+    }
+
+    if (deviceResponse.documentErrors.length > 1) {
       throw new MdocError('Device response verification failed.')
     }
 
-    if (result.status !== MDocStatus.OK) {
+    if (deviceResponse.status !== MDocStatus.OK) {
       throw new MdocError('Device response verification failed. An unknown error occurred.')
     }
 
