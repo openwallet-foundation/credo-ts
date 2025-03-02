@@ -40,6 +40,7 @@ export interface MessagePickupApi<MPPs extends MessagePickupProtocol[]> {
 }
 
 @injectable()
+// biome-ignore lint/suspicious/noUnsafeDeclarationMerging: <explanation>
 export class MessagePickupApi<MPPs extends MessagePickupProtocol[] = [V1MessagePickupProtocol, V2MessagePickupProtocol]>
   implements MessagePickupApi<MPPs>
 {

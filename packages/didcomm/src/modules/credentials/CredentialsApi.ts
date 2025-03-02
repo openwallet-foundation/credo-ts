@@ -90,6 +90,7 @@ export interface CredentialsApi<CPs extends CredentialProtocol[]> {
 }
 
 @injectable()
+// biome-ignore lint/suspicious/noUnsafeDeclarationMerging: <explanation>
 export class CredentialsApi<CPs extends CredentialProtocol[]> implements CredentialsApi<CPs> {
   /**
    * Configuration for the credentials module

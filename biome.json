@@ -60,8 +60,7 @@
         "noInvalidUseBeforeDeclaration": "error"
       },
       "suspicious": {
-        "noConsole": "error",
-        "noUnsafeDeclarationMerging": "off"
+        "noConsole": "error"
       },
       "complexity": {
         "noBannedTypes": "error"
