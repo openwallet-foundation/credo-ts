@@ -9,7 +9,7 @@ import { X509Certificate } from './X509Certificate'
 
 type X509VerificationTypeCredential = {
   type: 'credential'
-  credential: SdJwtVc | Mdoc | MdocDeviceResponse | W3cJwtVerifiableCredential | W3cJwtVerifiablePresentation
+  credential: SdJwtVc | Mdoc | W3cJwtVerifiableCredential | W3cJwtVerifiablePresentation
 
   /**
    * The `id` of the `DidCommProofRecord` that this verification is bound to.
