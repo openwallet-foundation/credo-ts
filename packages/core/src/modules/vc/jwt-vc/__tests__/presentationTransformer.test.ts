@@ -74,7 +74,7 @@ describe('presentationTransformer', () => {
       expect(() => getPresentationFromJwtPayload(jwtPayload)).toThrowError("JWT does not contain a valid 'vp' claim")
     })
 
-    test(`throw error if jwt vp has an id and it does not match the jti`, () => {
+    test('throw error if jwt vp has an id and it does not match the jti', () => {
       const vp: Record<string, unknown> = {
         id: '13',
       }
@@ -88,7 +88,7 @@ describe('presentationTransformer', () => {
       expect(() => getPresentationFromJwtPayload(jwtPayload)).toThrowError('JWT jti and vp.id do not match')
     })
 
-    test(`throw error if jwt vp has an holder id and it does not match the iss`, () => {
+    test('throw error if jwt vp has an holder id and it does not match the iss', () => {
       const vp: Record<string, unknown> = {
         holder: '123',
       }
@@ -106,7 +106,7 @@ describe('presentationTransformer', () => {
       expect(() => getPresentationFromJwtPayload(jwtPayload)).toThrowError('JWT iss and vp.holder(.id) do not match')
     })
 
-    test(`throw validation error if vp is not a valid w3c vp`, () => {
+    test('throw validation error if vp is not a valid w3c vp', () => {
       const vp: Record<string, unknown> = {
         '@context': ['https://www.w3.org/2018/credentials/v1'],
         type: ['VerifiablePresentation2'],

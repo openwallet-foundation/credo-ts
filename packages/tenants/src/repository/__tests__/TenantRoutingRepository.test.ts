@@ -1,4 +1,4 @@
-import type { StorageService, EventEmitter } from '@credo-ts/core'
+import type { EventEmitter, StorageService } from '@credo-ts/core'
 
 import { Key } from '@credo-ts/core'
 

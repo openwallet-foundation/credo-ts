@@ -4,8 +4,8 @@ import type { IndyVdrRequest, RequestResponseType, IndyVdrPool as indyVdrPool } 
 import { parseIndyDid } from '@credo-ts/anoncreds'
 import { TypedArrayEncoder } from '@credo-ts/core'
 import {
-  GetTransactionAuthorAgreementRequest,
   GetAcceptanceMechanismsRequest,
+  GetTransactionAuthorAgreementRequest,
   PoolCreate,
   indyVdr,
 } from '@hyperledger/indy-vdr-shared'

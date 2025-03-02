@@ -92,9 +92,9 @@ const testVectors = {
 
 describe('utils', () => {
   test('encoding algorithm', async () => {
-    Object.values(testVectors).forEach((vector) => {
+    for (const vector of Object.values(testVectors)) {
       expect(encodeCredentialValue(vector.raw)).toEqual(vector.encoded)
-    })
+    }
   })
 
   test('test attribute record value mapping', () => {

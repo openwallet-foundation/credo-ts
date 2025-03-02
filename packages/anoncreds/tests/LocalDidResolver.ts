@@ -1,4 +1,4 @@
-import type { DidResolutionResult, DidResolver, AgentContext } from '@credo-ts/core'
+import type { AgentContext, DidResolutionResult, DidResolver } from '@credo-ts/core'
 
 import { DidsApi } from '@credo-ts/core'
 

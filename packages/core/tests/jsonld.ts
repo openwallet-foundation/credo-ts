@@ -1,21 +1,21 @@
-import type { EventReplaySubject } from './events'
 import type { AutoAcceptCredential, AutoAcceptProof, ConnectionRecord } from '../../didcomm/src'
 import type { DefaultAgentModulesInput } from '../../didcomm/src/util/modules'
+import type { EventReplaySubject } from './events'
 
 import { InMemoryWalletModule } from '../../../tests/InMemoryWalletModule'
 import { askarModule } from '../../askar/tests/helpers'
 import { BbsModule } from '../../bbs-signatures/src/BbsModule'
 import {
-  DifPresentationExchangeProofFormatService,
-  V2ProofProtocol,
   CredentialEventTypes,
+  CredentialsModule,
+  DifPresentationExchangeProofFormatService,
+  JsonLdCredentialFormatService,
   ProofEventTypes,
   ProofsModule,
-  CredentialsModule,
-  JsonLdCredentialFormatService,
   V2CredentialProtocol,
+  V2ProofProtocol,
 } from '../../didcomm/src'
-import { CacheModule, InMemoryLruCache, Agent, W3cCredentialsModule } from '../src'
+import { Agent, CacheModule, InMemoryLruCache, W3cCredentialsModule } from '../src'
 import { customDocumentLoader } from '../src/modules/vc/data-integrity/__tests__/documentLoader'
 
 import { setupEventReplaySubjects } from './events'
@@ -53,7 +53,7 @@ export const getJsonLdModules = ({
       : {
           inMemory: new InMemoryWalletModule(),
         }),
-  } as const)
+  }) as const
 
 interface SetupJsonLdTestsReturn<VerifierName extends string | undefined, CreateConnections extends boolean> {
   issuerAgent: JsonLdTestsAgent
@@ -84,7 +84,7 @@ interface SetupJsonLdTestsReturn<VerifierName extends string | undefined, Create
 
 export async function setupJsonLdTests<
   VerifierName extends string | undefined = undefined,
-  CreateConnections extends boolean = true
+  CreateConnections extends boolean = true,
 >({
   issuerName,
   holderName,

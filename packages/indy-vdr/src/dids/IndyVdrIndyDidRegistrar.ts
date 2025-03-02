@@ -1,5 +1,3 @@
-import type { IndyEndpointAttrib } from './didSovUtil'
-import type { IndyVdrPool } from '../pool'
 import type {
   AgentContext,
   Buffer,
@@ -13,11 +11,13 @@ import type {
   DidUpdateResult,
 } from '@credo-ts/core'
 import type { IndyVdrRequest } from '@hyperledger/indy-vdr-shared'
+import type { IndyVdrPool } from '../pool'
+import type { IndyEndpointAttrib } from './didSovUtil'
 
 import { parseIndyDid } from '@credo-ts/anoncreds'
 import {
   DidCommV1Service,
-  NewDidCommV2Service,
+  DidCommV2Service,
   DidDocumentRole,
   DidRecord,
   DidRepository,
@@ -25,7 +25,7 @@ import {
   IndyAgentService,
   Key,
   KeyType,
-  DidCommV2Service,
+  NewDidCommV2Service,
   TypedArrayEncoder,
 } from '@credo-ts/core'
 import { AttribRequest, CustomRequest, NymRequest } from '@hyperledger/indy-vdr-shared'
@@ -212,11 +212,12 @@ export class IndyVdrIndyDidRegistrar implements DidRegistrar {
   ) {
     // Create base did document
     const didDocumentBuilder = indyDidDocumentFromDid(did, verificationKey.publicKeyBase58)
+    // biome-ignore lint/suspicious/noImplicitAnyLet: <explanation>
     let diddocContent
 
     // Add services if object was passed
     if (services) {
-      services.forEach((item) => {
+      for (const item of services) {
         const prependDidIfNotPresent = (id: string) => {
           return id.startsWith('#') ? `${did}${id}` : id
         }
@@ -230,7 +231,7 @@ export class IndyVdrIndyDidRegistrar implements DidRegistrar {
         }
 
         didDocumentBuilder.addService(item)
-      })
+      }
 
       const commTypes = [IndyAgentService.type, DidCommV1Service.type, NewDidCommV2Service.type, DidCommV2Service.type]
       const serviceTypes = new Set(services.map((item) => item.type))
@@ -364,7 +365,7 @@ export class IndyVdrIndyDidRegistrar implements DidRegistrar {
       didRegistrationMetadata: {},
       didState: {
         state: 'failed',
-        reason: `notImplemented: updating did:indy not implemented yet`,
+        reason: 'notImplemented: updating did:indy not implemented yet',
       },
     }
   }
@@ -375,7 +376,7 @@ export class IndyVdrIndyDidRegistrar implements DidRegistrar {
       didRegistrationMetadata: {},
       didState: {
         state: 'failed',
-        reason: `notImplemented: deactivating did:indy not implemented yet`,
+        reason: 'notImplemented: deactivating did:indy not implemented yet',
       },
     }
   }

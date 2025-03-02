@@ -1,9 +1,9 @@
-import type { OutboundTransport } from './OutboundTransport'
+import type { AgentContext, Logger } from '@credo-ts/core'
 import type { AgentMessageReceivedEvent } from '../Events'
 import type { OutboundPackage } from '../types'
-import type { AgentContext, Logger } from '@credo-ts/core'
+import type { OutboundTransport } from './OutboundTransport'
 
-import { EventEmitter, CredoError, JsonEncoder } from '@credo-ts/core'
+import { CredoError, EventEmitter, JsonEncoder } from '@credo-ts/core'
 import { Subject } from 'rxjs'
 
 import { DidCommModuleConfig } from '../DidCommModuleConfig'
@@ -78,7 +78,9 @@ export class HttpOutboundTransport implements OutboundTransport {
       const id = setTimeout(() => abortController.abort(), 15000)
       this.outboundSessionCount++
 
+      // biome-ignore lint/suspicious/noImplicitAnyLet: <explanation>
       let response
+      // biome-ignore lint/suspicious/noImplicitAnyLet: <explanation>
       let responseMessage
       try {
         response = await this.fetch(endpoint, {
@@ -93,7 +95,7 @@ export class HttpOutboundTransport implements OutboundTransport {
         // Request is aborted after 15 seconds, but that doesn't necessarily mean the request
         // went wrong. ACA-Py keeps the socket alive until it has a response message. So we assume
         // that if the error was aborted and we had return routing enabled, we should ignore the error.
-        if (error.name == 'AbortError' && outboundPackage.responseRequested) {
+        if (error.name === 'AbortError' && outboundPackage.responseRequested) {
           this.logger.debug(
             'Request was aborted due to timeout. Not throwing error due to return routing on sent message'
           )
@@ -105,7 +107,7 @@ export class HttpOutboundTransport implements OutboundTransport {
       // TODO: do we just want to ignore messages that were returned if we didn't request it?
       // TODO: check response header type (and also update inbound transports to use the correct headers types)
       if (response && responseMessage) {
-        this.logger.debug(`Response received`, { responseMessage, status: response.status })
+        this.logger.debug('Response received', { responseMessage, status: response.status })
 
         // This should not happen
         if (!this.isActive) {
@@ -128,11 +130,11 @@ export class HttpOutboundTransport implements OutboundTransport {
               message: encryptedMessage,
             },
           })
-        } catch (error) {
+        } catch (_error) {
           this.logger.debug('Unable to parse response message')
         }
       } else {
-        this.logger.debug(`No response received.`)
+        this.logger.debug('No response received.')
       }
     } catch (error) {
       this.logger.error(`Error sending message to ${endpoint}: ${error.message}`, {

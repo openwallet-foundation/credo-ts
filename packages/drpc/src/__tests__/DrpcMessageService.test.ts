@@ -33,7 +33,7 @@ describe('DrpcService', () => {
   })
 
   describe('createMessage', () => {
-    it(`creates message and record, and emits message and basic message record`, async () => {
+    it('creates message and record, and emits message and basic message record', async () => {
       const messageRequest: DrpcRequestObject = {
         jsonrpc: '2.0',
         method: 'hello',
@@ -67,7 +67,7 @@ describe('DrpcService', () => {
   })
 
   describe('recieve request', () => {
-    it(`stores record and emits message and basic message record`, async () => {
+    it('stores record and emits message and basic message record', async () => {
       const drpcMessage = new DrpcRequestMessage({ request: { jsonrpc: '2.0', method: 'hello', id: 1 } })
 
       const messageContext = new InboundMessageContext(drpcMessage, { agentContext, connection: mockConnectionRecord })

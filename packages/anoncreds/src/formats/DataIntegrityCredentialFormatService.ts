@@ -1,7 +1,3 @@
-import type { AnonCredsRevocationStatusList } from '../models'
-import type { AnonCredsIssuerService, AnonCredsHolderService } from '../services'
-import type { AnonCredsClaimRecord } from '../utils/credential'
-import type { AnonCredsCredentialMetadata, AnonCredsCredentialRequestMetadata } from '../utils/metadata'
 import type {
   AgentContext,
   JsonObject,
@@ -11,61 +7,65 @@ import type {
   W3cCredentialRecord,
 } from '@credo-ts/core'
 import type {
-  W3C_VC_DATA_MODEL_VERSION,
-  DataIntegrityCredential,
-  DataIntegrityCredentialRequest,
   AnonCredsLinkSecretBindingMethod,
-  DidCommSignedAttachmentBindingMethod,
-  DataIntegrityCredentialRequestBindingProof,
   AnonCredsLinkSecretDataIntegrityBindingProof,
-  DidCommSignedAttachmentDataIntegrityBindingProof,
-  DataIntegrityOfferCredentialFormat,
-  DataIntegrityCredentialFormat,
-  CredentialFormatService,
+  CredentialExchangeRecord,
+  CredentialFormatAcceptOfferOptions,
+  CredentialFormatAcceptProposalOptions,
+  CredentialFormatAcceptRequestOptions,
+  CredentialFormatAutoRespondCredentialOptions,
+  CredentialFormatAutoRespondOfferOptions,
+  CredentialFormatAutoRespondProposalOptions,
+  CredentialFormatAutoRespondRequestOptions,
+  CredentialFormatCreateOfferOptions,
+  CredentialFormatCreateOfferReturn,
   CredentialFormatCreateProposalOptions,
   CredentialFormatCreateProposalReturn,
-  CredentialFormatProcessOptions,
-  CredentialFormatAcceptProposalOptions,
-  CredentialFormatCreateOfferReturn,
-  CredentialFormatCreateOfferOptions,
-  CredentialFormatAcceptOfferOptions,
   CredentialFormatCreateReturn,
-  CredentialFormatAcceptRequestOptions,
   CredentialFormatProcessCredentialOptions,
-  CredentialFormatAutoRespondProposalOptions,
-  CredentialFormatAutoRespondOfferOptions,
-  CredentialFormatAutoRespondRequestOptions,
-  CredentialFormatAutoRespondCredentialOptions,
-  CredentialExchangeRecord,
+  CredentialFormatProcessOptions,
+  CredentialFormatService,
   CredentialPreviewAttributeOptions,
+  DataIntegrityCredential,
+  DataIntegrityCredentialFormat,
+  DataIntegrityCredentialRequest,
+  DataIntegrityCredentialRequestBindingProof,
+  DataIntegrityOfferCredentialFormat,
+  DidCommSignedAttachmentBindingMethod,
+  DidCommSignedAttachmentDataIntegrityBindingProof,
+  W3C_VC_DATA_MODEL_VERSION,
 } from '@credo-ts/didcomm'
+import type { AnonCredsRevocationStatusList } from '../models'
+import type { AnonCredsHolderService, AnonCredsIssuerService } from '../services'
+import type { AnonCredsClaimRecord } from '../utils/credential'
+import type { AnonCredsCredentialMetadata, AnonCredsCredentialRequestMetadata } from '../utils/metadata'
 
 import {
+  ClaimFormat,
+  CredoError,
+  DidsApi,
   JsonEncoder,
   JsonTransformer,
-  W3cCredential,
-  DidsApi,
-  W3cCredentialService,
-  W3cJsonLdVerifiableCredential,
-  getJwkClassFromKeyType,
   JwsService,
-  getKeyFromVerificationMethod,
-  getJwkFromKey,
-  ClaimFormat,
   JwtPayload,
   SignatureSuiteRegistry,
-  CredoError,
-  deepEquality,
+  W3cCredential,
+  W3cCredentialService,
   W3cCredentialSubject,
+  W3cJsonLdVerifiableCredential,
+  deepEquality,
+  getJwkClassFromKeyType,
+  getJwkFromKey,
+  getKeyFromVerificationMethod,
 } from '@credo-ts/core'
 import {
-  ProblemReportError,
-  CredentialFormatSpec,
   Attachment,
-  CredentialProblemReportReason,
   AttachmentData,
+  CredentialFormatSpec,
   CredentialPreviewAttribute,
+  CredentialProblemReportReason,
   DataIntegrityCredentialOffer,
+  ProblemReportError,
 } from '@credo-ts/didcomm'
 
 import {
@@ -73,7 +73,7 @@ import {
   AnonCredsRevocationRegistryDefinitionPrivateRepository,
   AnonCredsRevocationRegistryState,
 } from '../repository'
-import { AnonCredsIssuerServiceSymbol, AnonCredsHolderServiceSymbol } from '../services'
+import { AnonCredsHolderServiceSymbol, AnonCredsIssuerServiceSymbol } from '../services'
 import {
   dateToTimestamp,
   fetchCredentialDefinition,
@@ -82,8 +82,8 @@ import {
   fetchSchema,
 } from '../utils'
 import {
-  convertAttributesToCredentialValues,
   assertAttributesMatch as assertAttributesMatchSchema,
+  convertAttributesToCredentialValues,
 } from '../utils/credential'
 import { AnonCredsCredentialMetadataKey, AnonCredsCredentialRequestMetadataKey } from '../utils/metadata'
 import { getAnonCredsTagsFromRecord } from '../utils/w3cAnonCredsUtils'
@@ -110,28 +110,24 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
    *
    */
   public async createProposal(
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    agentContext: AgentContext,
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    _agentContext: AgentContext,
+    // biome-ignore lint/correctness/noUnusedVariables: <explanation>
     { credentialFormats, credentialRecord }: CredentialFormatCreateProposalOptions<DataIntegrityCredentialFormat>
   ): Promise<CredentialFormatCreateProposalReturn> {
     throw new CredoError('Not defined')
   }
 
   public async processProposal(
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    agentContext: AgentContext,
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    _agentContext: AgentContext,
+    // biome-ignore lint/correctness/noUnusedVariables: <explanation>
     { attachment }: CredentialFormatProcessOptions
   ): Promise<void> {
     throw new CredoError('Not defined')
   }
 
   public async acceptProposal(
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    agentContext: AgentContext,
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    input: CredentialFormatAcceptProposalOptions<DataIntegrityCredentialFormat>
+    _agentContext: AgentContext,
+    _input: CredentialFormatAcceptProposalOptions<DataIntegrityCredentialFormat>
   ): Promise<CredentialFormatCreateOfferReturn> {
     throw new CredoError('Not defined')
   }
@@ -180,8 +176,8 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
     const isV2Credential = context.find((c) => c === 'https://www.w3.org/ns/credentials/v2')
 
     if (isV1Credential) return '1.1'
-    else if (isV2Credential) throw new CredoError('Received w3c credential with unsupported version 2.0.')
-    else throw new CredoError('Cannot determine credential version from @context')
+    if (isV2Credential) throw new CredoError('Received w3c credential with unsupported version 2.0.')
+    throw new CredoError('Cannot determine credential version from @context')
   }
 
   public async processOffer(
@@ -232,7 +228,8 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
 
     if (!kid.startsWith('did:')) {
       throw new CredoError(`kid '${kid}' is not a DID. Only dids are supported for kid`)
-    } else if (!kid.includes('#')) {
+    }
+    if (!kid.includes('#')) {
       throw new CredoError(
         `kid '${kid}' does not contain a fragment. kid MUST point to a specific key in the did document.`
       )
@@ -421,8 +418,7 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
   /**
    * We don't have any models to validate an anoncreds request object, for now this method does nothing
    */
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  public async processRequest(agentContext: AgentContext, options: CredentialFormatProcessOptions): Promise<void> {
+  public async processRequest(_agentContext: AgentContext, _options: CredentialFormatProcessOptions): Promise<void> {
     // not needed for dataIntegrity
   }
 
@@ -458,7 +454,8 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
       credentialSubjectIdAttribute.value !== credentialSubjectId
     ) {
       throw new CredoError('Invalid credential subject id.')
-    } else if (!credentialSubjectIdAttribute && credentialSubjectId) {
+    }
+    if (!credentialSubjectIdAttribute && credentialSubjectId) {
       credentialAttributes.push(new CredentialPreviewAttribute({ name: 'id', value: credentialSubjectId }))
     }
 
@@ -599,7 +596,6 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
 
     let credentialToBeSigned = credential
     if (credential instanceof W3cJsonLdVerifiableCredential) {
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { proof, ..._credentialToBeSigned } = credential
       credentialToBeSigned = _credentialToBeSigned as W3cCredential
     }
@@ -917,19 +913,16 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
   }
 
   public async shouldAutoRespondToProposal(
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    agentContext: AgentContext,
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    _agentContext: AgentContext, // biome-ignore lint/correctness/noUnusedVariables: <explanation>
     { offerAttachment, proposalAttachment }: CredentialFormatAutoRespondProposalOptions
   ) {
     throw new CredoError('Not implemented')
+    // biome-ignore lint/correctness/noUnreachable: <explanation>
     return false
   }
 
   public async shouldAutoRespondToOffer(
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    agentContext: AgentContext,
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    _agentContext: AgentContext,
     { offerAttachment }: CredentialFormatAutoRespondOfferOptions
   ) {
     const credentialOffer = JsonTransformer.fromJSON(offerAttachment.getDataAsJson(), DataIntegrityCredentialOffer)
@@ -938,8 +931,7 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
   }
 
   public async shouldAutoRespondToRequest(
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    agentContext: AgentContext,
+    _agentContext: AgentContext,
     { offerAttachment, requestAttachment }: CredentialFormatAutoRespondRequestOptions
   ) {
     const credentialOffer = JsonTransformer.fromJSON(offerAttachment?.getDataAsJson(), DataIntegrityCredentialOffer)
@@ -967,7 +959,7 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
         const subjectJson = credentialOffer.credential.credentialSubject
         const credentialSubject = JsonTransformer.fromJSON(subjectJson, W3cCredentialSubject)
         if (credentialSubject.id === undefined) return false
-      } catch (e) {
+      } catch (_e) {
         return false
       }
     }
@@ -985,9 +977,8 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
   }
 
   public async shouldAutoRespondToCredential(
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    agentContext: AgentContext,
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    _agentContext: AgentContext,
+    // biome-ignore lint/correctness/noUnusedVariables: <explanation>
     { credentialRecord, requestAttachment, credentialAttachment }: CredentialFormatAutoRespondCredentialOptions
   ) {
     return true

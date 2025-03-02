@@ -1,7 +1,7 @@
-import type { Module } from '../Module'
 import type { DependencyContainer } from 'tsyringe'
+import type { Module } from '../Module'
 
-import { container as rootContainer, injectable, Lifecycle } from 'tsyringe'
+import { Lifecycle, injectable, container as rootContainer } from 'tsyringe'
 
 import { DependencyManager } from '../DependencyManager'
 

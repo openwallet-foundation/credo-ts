@@ -1,6 +1,6 @@
+import type { AgentContext, ApiModule, Constructor, DependencyManager, Optional } from '@credo-ts/core'
 import type { MessagePickupModuleConfigOptions } from './MessagePickupModuleConfig'
 import type { MessagePickupProtocol } from './protocol/MessagePickupProtocol'
-import type { ApiModule, DependencyManager, AgentContext, Constructor, Optional } from '@credo-ts/core'
 
 import { InjectionSymbols } from '@credo-ts/core'
 

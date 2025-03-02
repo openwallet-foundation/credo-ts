@@ -1,5 +1,5 @@
-import type { QuestionAnswerService } from '../services'
 import type { MessageHandler, MessageHandlerInboundMessage } from '@credo-ts/didcomm'
+import type { QuestionAnswerService } from '../services'
 
 import { AnswerMessage } from '../messages'
 

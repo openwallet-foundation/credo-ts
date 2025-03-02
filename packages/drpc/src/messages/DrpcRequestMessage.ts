@@ -1,4 +1,4 @@
-import { IsValidMessageType, parseMessageType, AgentMessage } from '@credo-ts/didcomm'
+import { AgentMessage, IsValidMessageType, parseMessageType } from '@credo-ts/didcomm'
 import { Expose } from 'class-transformer'
 
 import { IsValidDrpcRequest } from '../models'
@@ -6,7 +6,7 @@ import { IsValidDrpcRequest } from '../models'
 export interface DrpcRequestObject {
   jsonrpc: string
   method: string
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
   params?: any[] | object
   id: string | number | null
 }

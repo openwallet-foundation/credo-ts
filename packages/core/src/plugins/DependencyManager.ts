@@ -1,8 +1,8 @@
+import type { DependencyContainer } from 'tsyringe'
 import type { ModulesMap } from '../agent/AgentModules'
 import type { Constructor } from '../utils/mixins'
-import type { DependencyContainer } from 'tsyringe'
 
-import { container as rootContainer, InjectionToken, Lifecycle } from 'tsyringe'
+import { InjectionToken, Lifecycle, container as rootContainer } from 'tsyringe'
 
 import { CredoError } from '../error'
 
@@ -42,7 +42,7 @@ export class DependencyManager {
 
   public registerSingleton<T>(from: InjectionToken<T>, to: InjectionToken<T>): void
   public registerSingleton<T>(token: Constructor<T>): void
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
   public registerSingleton<T = any>(fromOrToken: InjectionToken<T> | Constructor<T>, to?: any) {
     this.container.registerSingleton(fromOrToken, to)
   }
@@ -59,12 +59,12 @@ export class DependencyManager {
     return this.container.isRegistered(token)
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
   public registerContextScoped<T = any>(token: Constructor<T>): void
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
   public registerContextScoped<T = any>(token: InjectionToken<T>, provider: Constructor<T>): void
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
   public registerContextScoped(token: any, provider?: any) {
     if (provider) this.container.register(token, provider, { lifecycle: Lifecycle.ContainerScoped })
     else this.container.register(token, token, { lifecycle: Lifecycle.ContainerScoped })

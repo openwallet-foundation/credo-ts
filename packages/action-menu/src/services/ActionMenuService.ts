@@ -1,3 +1,7 @@
+import type { AgentContext, Logger, Query, QueryOptions } from '@credo-ts/core'
+import type { InboundMessageContext } from '@credo-ts/didcomm'
+import type { ActionMenuStateChangedEvent } from '../ActionMenuEvents'
+import type { ActionMenuProblemReportMessage } from '../messages'
 import type {
   ClearMenuOptions,
   CreateMenuOptions,
@@ -5,21 +9,17 @@ import type {
   CreateRequestOptions,
   FindMenuOptions,
 } from './ActionMenuServiceOptions'
-import type { ActionMenuStateChangedEvent } from '../ActionMenuEvents'
-import type { ActionMenuProblemReportMessage } from '../messages'
-import type { AgentContext, Logger, Query, QueryOptions } from '@credo-ts/core'
-import type { InboundMessageContext } from '@credo-ts/didcomm'
 
-import { AgentConfig, EventEmitter, CredoError, injectable } from '@credo-ts/core'
+import { AgentConfig, CredoError, EventEmitter, injectable } from '@credo-ts/core'
 
 import { ActionMenuEventTypes } from '../ActionMenuEvents'
 import { ActionMenuRole } from '../ActionMenuRole'
 import { ActionMenuState } from '../ActionMenuState'
 import { ActionMenuProblemReportError } from '../errors/ActionMenuProblemReportError'
 import { ActionMenuProblemReportReason } from '../errors/ActionMenuProblemReportReason'
-import { PerformMessage, MenuMessage, MenuRequestMessage } from '../messages'
-import { ActionMenuSelection, ActionMenu } from '../models'
-import { ActionMenuRepository, ActionMenuRecord } from '../repository'
+import { MenuMessage, MenuRequestMessage, PerformMessage } from '../messages'
+import { ActionMenu, ActionMenuSelection } from '../models'
+import { ActionMenuRecord, ActionMenuRepository } from '../repository'
 
 /**
  * @internal

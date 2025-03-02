@@ -51,7 +51,8 @@ export function extractPresentationsWithDescriptorsFromSubmission(
         credential: document,
         inputDescriptor,
       } as const
-    } else if (
+    }
+    if (
       presentation instanceof W3cJwtVerifiablePresentation ||
       presentation instanceof W3cJsonLdVerifiablePresentation
     ) {
@@ -80,14 +81,13 @@ export function extractPresentationsWithDescriptorsFromSubmission(
         credential: verifiableCredential,
         inputDescriptor,
       } as const
-    } else {
-      return {
-        format: ClaimFormat.SdJwtVc,
-        descriptor,
-        presentation,
-        credential: presentation,
-        inputDescriptor,
-      } as const
     }
+    return {
+      format: ClaimFormat.SdJwtVc,
+      descriptor,
+      presentation,
+      credential: presentation,
+      inputDescriptor,
+    } as const
   })
 }

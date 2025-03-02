@@ -4,7 +4,7 @@ import nock, { cleanAll } from 'nock'
 
 import { getInMemoryAgentOptions } from '../../../../tests'
 
-import { Agent, DidKey, getJwkFromKey, KeyType, TypedArrayEncoder } from '@credo-ts/core'
+import { Agent, DidKey, KeyType, TypedArrayEncoder, getJwkFromKey } from '@credo-ts/core'
 
 describe('sd-jwt-vc end to end test', () => {
   const issuer = new Agent(getInMemoryAgentOptions('sd-jwt-vc-issuer-agent'))

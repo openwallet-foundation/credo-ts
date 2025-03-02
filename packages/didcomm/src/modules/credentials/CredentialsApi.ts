@@ -1,9 +1,12 @@
+import type { Query, QueryOptions } from '@credo-ts/core'
 import type {
-  AcceptCredentialOptions,
   AcceptCredentialOfferOptions,
+  AcceptCredentialOptions,
   AcceptCredentialProposalOptions,
   AcceptCredentialRequestOptions,
   CreateCredentialOfferOptions,
+  DeclineCredentialOfferOptions,
+  DeleteCredentialOptions,
   FindCredentialMessageReturn,
   FindCredentialOfferMessageReturn,
   FindCredentialProposalMessageReturn,
@@ -14,16 +17,13 @@ import type {
   OfferCredentialOptions,
   ProposeCredentialOptions,
   SendCredentialProblemReportOptions,
-  DeleteCredentialOptions,
   SendRevocationNotificationOptions,
-  DeclineCredentialOfferOptions,
 } from './CredentialsApiOptions'
 import type { CredentialProtocol } from './protocol/CredentialProtocol'
 import type { CredentialFormatsFromProtocols } from './protocol/CredentialProtocolOptions'
 import type { CredentialExchangeRecord } from './repository/CredentialExchangeRecord'
-import type { Query, QueryOptions } from '@credo-ts/core'
 
-import { AgentContext, InjectionSymbols, CredoError, Logger, inject, injectable } from '@credo-ts/core'
+import { AgentContext, CredoError, InjectionSymbols, Logger, inject, injectable } from '@credo-ts/core'
 
 import { AgentMessage } from '../../AgentMessage'
 import { MessageSender } from '../../MessageSender'

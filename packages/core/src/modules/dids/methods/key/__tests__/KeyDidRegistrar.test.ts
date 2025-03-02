@@ -156,7 +156,7 @@ describe('DidRegistrar', () => {
         didRegistrationMetadata: {},
         didState: {
           state: 'failed',
-          reason: `notSupported: cannot update did:key did`,
+          reason: 'notSupported: cannot update did:key did',
         },
       })
     })
@@ -169,7 +169,7 @@ describe('DidRegistrar', () => {
         didRegistrationMetadata: {},
         didState: {
           state: 'failed',
-          reason: `notSupported: cannot deactivate did:key did`,
+          reason: 'notSupported: cannot deactivate did:key did',
         },
       })
     })

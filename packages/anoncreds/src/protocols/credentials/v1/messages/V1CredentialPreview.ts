@@ -8,7 +8,7 @@ import {
   replaceLegacyDidSovPrefix,
 } from '@credo-ts/didcomm'
 import { Expose, Transform, Type } from 'class-transformer'
-import { ValidateNested, IsInstance } from 'class-validator'
+import { IsInstance, ValidateNested } from 'class-validator'
 
 /**
  * Credential preview inner message class.

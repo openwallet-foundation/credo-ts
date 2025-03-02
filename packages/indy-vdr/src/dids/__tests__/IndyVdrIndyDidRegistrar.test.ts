@@ -1,22 +1,21 @@
-/* eslint-disable @typescript-eslint/ban-ts-comment */
 import type { DidRecord, RecordSavedEvent } from '@credo-ts/core'
 
 import {
   DidCommV1Service,
-  NewDidCommV2Service,
-  DidDocumentService,
   DidDocument,
   DidDocumentRole,
+  DidDocumentService,
   DidRepository,
   DidsApi,
   EventEmitter,
   JsonTransformer,
   Key,
   KeyType,
+  NewDidCommV2Service,
+  NewDidCommV2ServiceEndpoint,
   RepositoryEventTypes,
   TypedArrayEncoder,
   VerificationMethod,
-  NewDidCommV2ServiceEndpoint,
 } from '@credo-ts/core'
 import { Subject } from 'rxjs'
 
@@ -370,20 +369,20 @@ describe('IndyVdrIndyDidRegistrar', () => {
         role: 'STEWARD',
         services: [
           new DidDocumentService({
-            id: `#endpoint`,
+            id: '#endpoint',
             serviceEndpoint: 'https://example.com/endpoint',
             type: 'endpoint',
           }),
           new DidCommV1Service({
-            id: `#did-communication`,
+            id: '#did-communication',
             priority: 0,
-            recipientKeys: [`#key-agreement-1`],
+            recipientKeys: ['#key-agreement-1'],
             routingKeys: ['key-1'],
             serviceEndpoint: 'https://example.com/endpoint',
             accept: ['didcomm/aip2;env=rfc19'],
           }),
           new NewDidCommV2Service({
-            id: `#didcomm-messaging-1`,
+            id: '#didcomm-messaging-1',
             serviceEndpoint: new NewDidCommV2ServiceEndpoint({
               accept: ['didcomm/v2'],
               routingKeys: ['key-1'],
@@ -557,20 +556,20 @@ describe('IndyVdrIndyDidRegistrar', () => {
         useEndpointAttrib: true,
         services: [
           new DidDocumentService({
-            id: `#endpoint`,
+            id: '#endpoint',
             serviceEndpoint: 'https://example.com/endpoint',
             type: 'endpoint',
           }),
           new DidCommV1Service({
-            id: `#did-communication`,
+            id: '#did-communication',
             priority: 0,
-            recipientKeys: [`#key-agreement-1`],
+            recipientKeys: ['#key-agreement-1'],
             routingKeys: ['key-1'],
             serviceEndpoint: 'https://example.com/endpoint',
             accept: ['didcomm/aip2;env=rfc19'],
           }),
           new NewDidCommV2Service({
-            id: `#didcomm-messaging-1`,
+            id: '#didcomm-messaging-1',
             serviceEndpoint: new NewDidCommV2ServiceEndpoint({
               accept: ['didcomm/v2'],
               routingKeys: ['key-1'],
@@ -710,20 +709,20 @@ describe('IndyVdrIndyDidRegistrar', () => {
         role: 'STEWARD',
         services: [
           new DidDocumentService({
-            id: `#endpoint`,
+            id: '#endpoint',
             serviceEndpoint: 'https://example.com/endpoint',
             type: 'endpoint',
           }),
           new DidCommV1Service({
-            id: `#did-communication`,
+            id: '#did-communication',
             priority: 0,
-            recipientKeys: [`#key-agreement-1`],
+            recipientKeys: ['#key-agreement-1'],
             routingKeys: ['key-1'],
             serviceEndpoint: 'https://example.com/endpoint',
             accept: ['didcomm/aip2;env=rfc19'],
           }),
           new NewDidCommV2Service({
-            id: `#didcomm-messaging-1`,
+            id: '#didcomm-messaging-1',
             serviceEndpoint: new NewDidCommV2ServiceEndpoint({
               accept: ['didcomm/v2'],
               routingKeys: ['key-1'],
@@ -758,7 +757,7 @@ describe('IndyVdrIndyDidRegistrar', () => {
       didRegistrationMetadata: {},
       didState: {
         state: 'failed',
-        reason: `notImplemented: updating did:indy not implemented yet`,
+        reason: 'notImplemented: updating did:indy not implemented yet',
       },
     })
   })
@@ -771,7 +770,7 @@ describe('IndyVdrIndyDidRegistrar', () => {
       didRegistrationMetadata: {},
       didState: {
         state: 'failed',
-        reason: `notImplemented: deactivating did:indy not implemented yet`,
+        reason: 'notImplemented: deactivating did:indy not implemented yet',
       },
     })
   })

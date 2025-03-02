@@ -1,7 +1,3 @@
-import type { Alice } from './Alice'
-import type { AliceInquirer } from './AliceInquirer'
-import type { Faber } from './Faber'
-import type { FaberInquirer } from './FaberInquirer'
 import type { Agent } from '@credo-ts/core'
 import type {
   BasicMessageStateChangedEvent,
@@ -11,6 +7,10 @@ import type {
   ProofStateChangedEvent,
 } from '@credo-ts/didcomm'
 import type BottomBar from 'inquirer/lib/ui/bottom-bar'
+import type { Alice } from './Alice'
+import type { AliceInquirer } from './AliceInquirer'
+import type { Faber } from './Faber'
+import type { FaberInquirer } from './FaberInquirer'
 
 import {
   BasicMessageEventTypes,
@@ -45,9 +45,9 @@ export class Listener {
     if (credentialRecord.credentialAttributes) {
       const attribute = credentialRecord.credentialAttributes
       console.log('\n\nCredential preview:')
-      attribute.forEach((element) => {
+      for (const element of attribute) {
         console.log(purpleText(`${element.name} ${Color.Reset}${element.value}`))
-      })
+      }
     }
   }
 

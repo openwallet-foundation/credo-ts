@@ -1,7 +1,7 @@
 import type { ValidationOptions } from 'class-validator'
 
-import { Transform, TransformationType, plainToInstance, instanceToPlain } from 'class-transformer'
-import { buildMessage, isInstance, isString, ValidateBy } from 'class-validator'
+import { Transform, TransformationType, instanceToPlain, plainToInstance } from 'class-transformer'
+import { ValidateBy, buildMessage, isInstance, isString } from 'class-validator'
 
 import { IsUri, isUri } from '../../../../utils/validators'
 
@@ -29,7 +29,8 @@ export function W3cHolderTransformer() {
     if (type === TransformationType.PLAIN_TO_CLASS) {
       if (isString(value)) return value
       return plainToInstance(W3cHolder, value)
-    } else if (type === TransformationType.CLASS_TO_PLAIN) {
+    }
+    if (type === TransformationType.CLASS_TO_PLAIN) {
       if (isString(value)) return value
       return instanceToPlain(value)
     }
@@ -55,7 +56,7 @@ export function IsW3cHolder(validationOptions?: ValidationOptions): PropertyDeco
           return false
         },
         defaultMessage: buildMessage(
-          (eachPrefix) => eachPrefix + '$property must be an URI or an object with an id property which is an URI',
+          (eachPrefix) => `${eachPrefix}$property must be an URI or an object with an id property which is an URI`,
           validationOptions
         ),
       },

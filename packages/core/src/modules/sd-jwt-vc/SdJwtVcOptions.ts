@@ -1,4 +1,4 @@
-import type { JwkJson, Jwk, HashName } from '../../crypto'
+import type { HashName, Jwk, JwkJson } from '../../crypto'
 import type { EncodedX509Certificate } from '../x509'
 
 // TODO: extend with required claim names for input (e.g. vct)
@@ -74,8 +74,7 @@ export interface SdJwtVcSignOptions<Payload extends SdJwtVcPayload = SdJwtVcPayl
 }
 
 // TODO: use the payload type once types are fixed
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-export type SdJwtVcPresentOptions<Payload extends SdJwtVcPayload = SdJwtVcPayload> = {
+export type SdJwtVcPresentOptions<_Payload extends SdJwtVcPayload = SdJwtVcPayload> = {
   compactSdJwtVc: string
 
   /**

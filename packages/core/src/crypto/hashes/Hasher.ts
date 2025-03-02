@@ -5,6 +5,7 @@ import { Sha256 } from './Sha256'
 
 export type HashName = 'sha-256' | 'sha-1'
 
+// biome-ignore lint/complexity/noStaticOnlyClass: <explanation>
 export class Hasher {
   public static hash(data: Uint8Array | string, hashName: HashName | string) {
     switch (hashName.toUpperCase()) {

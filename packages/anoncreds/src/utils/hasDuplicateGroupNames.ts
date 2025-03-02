@@ -5,10 +5,14 @@ import { CredoError } from '@credo-ts/core'
 function attributeNamesToArray(proofRequest: AnonCredsProofRequest) {
   // Attributes can contain either a `name` string value or an `names` string array. We reduce it to a single array
   // containing all attribute names from the requested attributes.
-  return Object.values(proofRequest.requested_attributes).reduce<string[]>(
-    (names, a) => [...names, ...(a.name ? [a.name] : a.names ? a.names : [])],
-    []
-  )
+  return Object.values(proofRequest.requested_attributes).reduce<string[]>((names, a) => {
+    if (a.name) {
+      names.push(a.name)
+    } else if (a.names) {
+      names.push(...a.names) // Push all names if `a.names` is an array
+    }
+    return names
+  }, [])
 }
 
 function predicateNamesToArray(proofRequest: AnonCredsProofRequest) {

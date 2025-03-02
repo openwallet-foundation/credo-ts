@@ -1,11 +1,11 @@
-import type { AbstractCheqdSDKModule, CheqdSDK, DidStdFee, DIDDocument } from '@cheqd/sdk'
+import type { AbstractCheqdSDKModule, CheqdSDK, DIDDocument, DidStdFee } from '@cheqd/sdk'
 import type { QueryAllDidDocVersionsMetadataResponse, SignInfo } from '@cheqd/ts-proto/cheqd/did/v2'
 import type { MsgCreateResourcePayload } from '@cheqd/ts-proto/cheqd/resource/v2'
 import type { DirectSecp256k1HdWallet, DirectSecp256k1Wallet } from '@cosmjs/proto-signing'
 import type { DidDocumentMetadata } from '@credo-ts/core'
 
-import { createCheqdSDK, DIDModule, ResourceModule, CheqdNetwork } from '@cheqd/sdk'
-import { CredoError, inject, injectable, InjectionSymbols, Logger } from '@credo-ts/core'
+import { CheqdNetwork, DIDModule, ResourceModule, createCheqdSDK } from '@cheqd/sdk'
+import { CredoError, InjectionSymbols, Logger, inject, injectable } from '@credo-ts/core'
 
 import { CheqdModuleConfig } from '../CheqdModuleConfig'
 import { parseCheqdDid } from '../anoncreds/utils/identifiers'

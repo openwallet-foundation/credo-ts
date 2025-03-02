@@ -1,19 +1,4 @@
-import type { CredentialProtocol } from './CredentialProtocol'
-import type {
-  CreateCredentialProposalOptions,
-  CredentialProtocolMsgReturnType,
-  DeleteCredentialOptions,
-  AcceptCredentialProposalOptions,
-  NegotiateCredentialProposalOptions,
-  CreateCredentialOfferOptions,
-  NegotiateCredentialOfferOptions,
-  CreateCredentialRequestOptions,
-  AcceptCredentialOfferOptions,
-  AcceptCredentialRequestOptions,
-  AcceptCredentialOptions,
-  GetCredentialFormatDataReturn,
-  CreateCredentialProblemReportOptions,
-} from './CredentialProtocolOptions'
+import type { AgentContext, Query, QueryOptions } from '@credo-ts/core'
 import type { AgentMessage } from '../../../AgentMessage'
 import type { FeatureRegistry } from '../../../FeatureRegistry'
 import type { MessageHandlerRegistry } from '../../../MessageHandlerRegistry'
@@ -23,7 +8,22 @@ import type { CredentialStateChangedEvent } from '../CredentialEvents'
 import type { CredentialFormatService, ExtractCredentialFormats } from '../formats'
 import type { CredentialRole } from '../models'
 import type { CredentialExchangeRecord } from '../repository'
-import type { Query, QueryOptions, AgentContext } from '@credo-ts/core'
+import type { CredentialProtocol } from './CredentialProtocol'
+import type {
+  AcceptCredentialOfferOptions,
+  AcceptCredentialOptions,
+  AcceptCredentialProposalOptions,
+  AcceptCredentialRequestOptions,
+  CreateCredentialOfferOptions,
+  CreateCredentialProblemReportOptions,
+  CreateCredentialProposalOptions,
+  CreateCredentialRequestOptions,
+  CredentialProtocolMsgReturnType,
+  DeleteCredentialOptions,
+  GetCredentialFormatDataReturn,
+  NegotiateCredentialOfferOptions,
+  NegotiateCredentialProposalOptions,
+} from './CredentialProtocolOptions'
 
 import { EventEmitter } from '@credo-ts/core'
 

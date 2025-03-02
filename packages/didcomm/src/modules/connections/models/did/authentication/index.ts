@@ -1,7 +1,7 @@
 import type { ClassConstructor } from 'class-transformer'
 
 import { CredoError } from '@credo-ts/core'
-import { Transform, TransformationType, plainToInstance, instanceToPlain } from 'class-transformer'
+import { Transform, TransformationType, instanceToPlain, plainToInstance } from 'class-transformer'
 
 import { PublicKey, publicKeyTypes } from '../publicKey'
 
@@ -52,16 +52,14 @@ export function AuthenticationTransformer() {
             const publicKeyClass = (publicKeyTypes[publicKeyJson.type] ?? PublicKey) as ClassConstructor<PublicKey>
             const publicKey = plainToInstance<PublicKey, unknown>(publicKeyClass, publicKeyJson)
             return new ReferencedAuthentication(publicKey, auth.type)
-          } else {
-            // embedded
-            const publicKeyClass = (publicKeyTypes[auth.type] ?? PublicKey) as ClassConstructor<PublicKey>
-            const publicKey = plainToInstance<PublicKey, unknown>(publicKeyClass, auth)
-            return new EmbeddedAuthentication(publicKey)
           }
+          // embedded
+          const publicKeyClass = (publicKeyTypes[auth.type] ?? PublicKey) as ClassConstructor<PublicKey>
+          const publicKey = plainToInstance<PublicKey, unknown>(publicKeyClass, auth)
+          return new EmbeddedAuthentication(publicKey)
         })
-      } else {
-        return value.map((auth) => (auth instanceof EmbeddedAuthentication ? instanceToPlain(auth.publicKey) : auth))
       }
+      return value.map((auth) => (auth instanceof EmbeddedAuthentication ? instanceToPlain(auth.publicKey) : auth))
     }
   )
 }

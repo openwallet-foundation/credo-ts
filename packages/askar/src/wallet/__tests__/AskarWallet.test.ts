@@ -1,31 +1,31 @@
 import type {
-  SigningProvider,
-  WalletConfig,
   CreateKeyPairOptions,
   KeyPair,
   SignOptions,
+  SigningProvider,
   VerifyOptions,
+  WalletConfig,
 } from '@credo-ts/core'
 import type { JwkProps } from '@openwallet-foundation/askar-shared'
 
+import { readFileSync } from 'fs'
+import path from 'path'
 import {
-  WalletKeyExistsError,
+  Buffer,
+  JsonEncoder,
   Key,
-  WalletError,
-  WalletDuplicateError,
-  WalletNotFoundError,
-  WalletInvalidKeyError,
+  KeyDerivationMethod,
   KeyType,
   SigningProviderRegistry,
   TypedArrayEncoder,
-  KeyDerivationMethod,
-  Buffer,
-  JsonEncoder,
+  WalletDuplicateError,
+  WalletError,
+  WalletInvalidKeyError,
+  WalletKeyExistsError,
+  WalletNotFoundError,
 } from '@credo-ts/core'
 import { Key as AskarKey } from '@openwallet-foundation/askar-nodejs'
 import { Jwk, Store } from '@openwallet-foundation/askar-shared'
-import { readFileSync } from 'fs'
-import path from 'path'
 
 import { KeyBackend } from '../../../../core/src/crypto/KeyBackend'
 import { encodeToBase58 } from '../../../../core/src/utils/base58'
@@ -305,12 +305,10 @@ describe.skip('Currently, all KeyTypes are supported by Askar natively', () => {
         }
       }
 
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       public async sign(_options: SignOptions): Promise<Buffer> {
         return new Buffer('signed')
       }
 
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       public async verify(_options: VerifyOptions): Promise<boolean> {
         return true
       }

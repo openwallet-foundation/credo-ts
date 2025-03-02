@@ -1,5 +1,5 @@
-import type { AnonCredsRegistry } from '.'
 import type { AgentContext } from '@credo-ts/core'
+import type { AnonCredsRegistry } from '.'
 
 import { injectable } from '@credo-ts/core'
 

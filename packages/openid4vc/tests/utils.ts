@@ -1,15 +1,15 @@
+import type { BaseEvent, ModulesMap, X509Module } from '@credo-ts/core'
+import type { TenantsModule } from '@credo-ts/tenants'
+import type { Observable } from 'rxjs'
 import type {
   OpenId4VcIssuanceSessionState,
   OpenId4VcIssuanceSessionStateChangedEvent,
   OpenId4VcVerificationSessionState,
   OpenId4VcVerificationSessionStateChangedEvent,
 } from '../src'
-import type { BaseEvent, ModulesMap, X509Module } from '@credo-ts/core'
-import type { TenantsModule } from '@credo-ts/tenants'
-import type { Observable } from 'rxjs'
 
-import { Agent, getDomainFromUrl, getJwkFromKey, LogLevel, utils } from '@credo-ts/core'
-import { ReplaySubject, lastValueFrom, filter, timeout, catchError, take, map } from 'rxjs'
+import { Agent, LogLevel, getDomainFromUrl, getJwkFromKey, utils } from '@credo-ts/core'
+import { ReplaySubject, catchError, filter, lastValueFrom, map, take, timeout } from 'rxjs'
 
 import {
   TestLogger,
@@ -18,7 +18,7 @@ import {
   createX509Certificate,
   setupEventReplaySubjects,
 } from '../../core/tests'
-import { OpenId4VcVerifierEvents, OpenId4VcIssuerEvents, OpenId4VcIssuerModule, OpenId4VcVerifierModule } from '../src'
+import { OpenId4VcIssuerEvents, OpenId4VcIssuerModule, OpenId4VcVerifierEvents, OpenId4VcVerifierModule } from '../src'
 
 export async function createAgentFromModules<MM extends ModulesMap>(
   label: string,
@@ -40,7 +40,7 @@ export async function createAgentFromModules<MM extends ModulesMap>(
     modules: modulesMap,
   })
 
-  let dns: string = 'localhost'
+  let dns = 'localhost'
   if (modulesMap.openId4VcIssuer instanceof OpenId4VcIssuerModule) {
     dns = getDomainFromUrl(modulesMap.openId4VcIssuer.config.baseUrl)
   } else if (modulesMap.openId4VcVerifier instanceof OpenId4VcVerifierModule) {
@@ -67,13 +67,13 @@ export async function createAgentFromModules<MM extends ModulesMap>(
 
 export type AgentType<MM extends ModulesMap> = Awaited<ReturnType<typeof createAgentFromModules<MM>>>
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+// biome-ignore lint/suspicious/noExplicitAny: <explanation>
 type AgentWithTenantsModule = Agent<{ tenants: TenantsModule<any>; x509: X509Module }>
 
 export async function createTenantForAgent(
   // FIXME: we need to make some improvements on the agent typing. It'a quite hard
   // to get it right at the moment
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
   agent: AgentWithTenantsModule & any,
   label: string
 ) {

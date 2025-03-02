@@ -1,13 +1,13 @@
+import type { Optional } from '@credo-ts/core'
+import type { AnonCredsRevocationStatusList } from '../../models/registry'
 import type {
-  AnonCredsOperationStateWait,
+  AnonCredsOperationStateAction,
   AnonCredsOperationStateFailed,
   AnonCredsOperationStateFinished,
+  AnonCredsOperationStateWait,
   AnonCredsResolutionMetadata,
   Extensible,
-  AnonCredsOperationStateAction,
 } from './base'
-import type { AnonCredsRevocationStatusList } from '../../models/registry'
-import type { Optional } from '@credo-ts/core'
 
 export interface GetRevocationStatusListReturn {
   revocationStatusList?: AnonCredsRevocationStatusList

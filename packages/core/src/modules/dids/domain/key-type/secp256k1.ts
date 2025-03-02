@@ -1,5 +1,5 @@
-import type { KeyDidMapping } from './keyDidMapping'
 import type { VerificationMethod } from '../verificationMethod'
+import type { KeyDidMapping } from './keyDidMapping'
 
 import { KeyType } from '../../../../crypto/KeyType'
 import { CredoError } from '../../../../error'

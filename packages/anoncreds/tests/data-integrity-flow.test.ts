@@ -1,5 +1,5 @@
-import type { CreateDidKidVerificationMethodReturn } from '../../core/tests'
 import type { DidRepository } from '@credo-ts/core'
+import type { CreateDidKidVerificationMethodReturn } from '../../core/tests'
 
 import {
   AgentContext,
@@ -21,8 +21,8 @@ import {
 import {
   CredentialExchangeRecord,
   CredentialPreviewAttribute,
-  CredentialState,
   CredentialRole,
+  CredentialState,
 } from '@credo-ts/didcomm'
 import { Subject } from 'rxjs'
 

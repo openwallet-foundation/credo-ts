@@ -4,9 +4,9 @@ import {
   DidCommV1Service,
   DidDocumentBuilder,
   DidKey,
+  didDocumentToNumAlgo4Did,
   didKeyToVerkey,
   verkeyToDidKey,
-  didDocumentToNumAlgo4Did,
 } from '@credo-ts/core'
 
 import { ConnectionInvitationMessage } from '../connections/messages/ConnectionInvitationMessage'
@@ -15,6 +15,7 @@ import { OutOfBandDidCommService } from './domain/OutOfBandDidCommService'
 import { InvitationType, OutOfBandInvitation } from './messages/OutOfBandInvitation'
 
 export function convertToNewInvitation(oldInvitation: ConnectionInvitationMessage) {
+  // biome-ignore lint/suspicious/noImplicitAnyLet: <explanation>
   let service
 
   if (oldInvitation.did) {
@@ -51,6 +52,7 @@ export function convertToOldInvitation(newInvitation: OutOfBandInvitation) {
   // Taking first service, as we can only include one service in a legacy invitation.
   const [service] = newInvitation.getServices()
 
+  // biome-ignore lint/suspicious/noImplicitAnyLet: <explanation>
   let options
   if (typeof service === 'string') {
     options = {

@@ -1,9 +1,9 @@
-import type { DummyState } from '../dummy/repository'
-import type { DummyStateChangedEvent } from '../dummy/services'
 import type { Agent } from '@credo-ts/core'
 import type { Observable } from 'rxjs'
+import type { DummyState } from '../dummy/repository'
+import type { DummyStateChangedEvent } from '../dummy/services'
 
-import { catchError, filter, firstValueFrom, map, ReplaySubject, timeout } from 'rxjs'
+import { ReplaySubject, catchError, filter, firstValueFrom, map, timeout } from 'rxjs'
 
 import { DummyEventTypes } from '../dummy/services'
 

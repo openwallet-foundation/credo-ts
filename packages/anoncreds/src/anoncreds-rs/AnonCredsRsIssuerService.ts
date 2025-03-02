@@ -1,58 +1,58 @@
+import type { AgentContext } from '@credo-ts/core'
+import type { CredentialDefinitionPrivate, JsonObject, KeyCorrectnessProof } from '@hyperledger/anoncreds-shared'
 import type {
-  AnonCredsSchema,
+  AnonCredsCredential,
   AnonCredsCredentialDefinition,
+  AnonCredsCredentialOffer,
   AnonCredsRevocationRegistryDefinition,
   AnonCredsRevocationStatusList,
-  AnonCredsCredentialOffer,
-  AnonCredsCredential,
+  AnonCredsSchema,
 } from '../models'
 import type {
   AnonCredsIssuerService,
-  CreateSchemaOptions,
   CreateCredentialDefinitionOptions,
   CreateCredentialDefinitionReturn,
+  CreateCredentialOfferOptions,
+  CreateCredentialOptions,
+  CreateCredentialReturn,
   CreateRevocationRegistryDefinitionOptions,
   CreateRevocationRegistryDefinitionReturn,
   CreateRevocationStatusListOptions,
+  CreateSchemaOptions,
   UpdateRevocationStatusListOptions,
-  CreateCredentialOptions,
-  CreateCredentialReturn,
-  CreateCredentialOfferOptions,
 } from '../services'
-import type { AgentContext } from '@credo-ts/core'
-import type { CredentialDefinitionPrivate, JsonObject, KeyCorrectnessProof } from '@hyperledger/anoncreds-shared'
 
-import { injectable, CredoError } from '@credo-ts/core'
+import { CredoError, injectable } from '@credo-ts/core'
 import {
-  RevocationStatusList,
-  RevocationRegistryDefinitionPrivate,
-  RevocationRegistryDefinition,
-  CredentialRevocationConfig,
   Credential,
   CredentialDefinition,
   CredentialOffer,
+  CredentialRevocationConfig,
+  RevocationRegistryDefinition,
+  RevocationRegistryDefinitionPrivate,
+  RevocationStatusList,
   Schema,
 } from '@hyperledger/anoncreds-shared'
 
 import { AnonCredsRsError } from '../error'
 import {
-  AnonCredsCredentialDefinitionRepository,
-  AnonCredsRevocationRegistryDefinitionPrivateRepository,
-  AnonCredsKeyCorrectnessProofRepository,
   AnonCredsCredentialDefinitionPrivateRepository,
+  AnonCredsCredentialDefinitionRepository,
+  AnonCredsKeyCorrectnessProofRepository,
+  AnonCredsRevocationRegistryDefinitionPrivateRepository,
   AnonCredsRevocationRegistryDefinitionRepository,
   AnonCredsRevocationRegistryState,
 } from '../repository'
 import {
-  isUnqualifiedCredentialDefinitionId,
-  parseIndySchemaId,
   getUnqualifiedSchemaId,
+  isUnqualifiedCredentialDefinitionId,
   parseIndyDid,
+  parseIndySchemaId,
 } from '../utils/indyIdentifiers'
 
 @injectable()
 export class AnonCredsRsIssuerService implements AnonCredsIssuerService {
-  public async createSchema(agentContext: AgentContext, options: CreateSchemaOptions): Promise<AnonCredsSchema> {
+  public async createSchema(_agentContext: AgentContext, options: CreateSchemaOptions): Promise<AnonCredsSchema> {
     const { issuerId, name, version, attrNames: attributeNames } = options
 
     let schema: Schema | undefined
@@ -71,7 +71,7 @@ export class AnonCredsRsIssuerService implements AnonCredsIssuerService {
   }
 
   public async createCredentialDefinition(
-    agentContext: AgentContext,
+    _agentContext: AgentContext,
     options: CreateCredentialDefinitionOptions
   ): Promise<CreateCredentialDefinitionReturn> {
     const { tag, supportRevocation, schema, issuerId, schemaId } = options
@@ -106,7 +106,7 @@ export class AnonCredsRsIssuerService implements AnonCredsIssuerService {
   }
 
   public async createRevocationRegistryDefinition(
-    agentContext: AgentContext,
+    _agentContext: AgentContext,
     options: CreateRevocationRegistryDefinitionOptions
   ): Promise<CreateRevocationRegistryDefinitionReturn> {
     const { tag, issuerId, credentialDefinition, credentialDefinitionId, maximumCredentialNumber, tailsDirectoryPath } =
@@ -291,10 +291,10 @@ export class AnonCredsRsIssuerService implements AnonCredsIssuerService {
       const attributeRawValues: Record<string, string> = {}
       const attributeEncodedValues: Record<string, string> = {}
 
-      Object.keys(credentialValues).forEach((key) => {
+      for (const key of Object.keys(credentialValues)) {
         attributeRawValues[key] = credentialValues[key].raw
         attributeEncodedValues[key] = credentialValues[key].encoded
-      })
+      }
 
       const credentialDefinitionRecord = await agentContext.dependencyManager
         .resolve(AnonCredsCredentialDefinitionRepository)

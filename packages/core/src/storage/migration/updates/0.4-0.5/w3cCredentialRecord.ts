@@ -13,7 +13,7 @@ export async function migrateW3cCredentialRecordToV0_5<Agent extends BaseAgent>(
 
   const w3cCredentialRepository = agent.dependencyManager.resolve(W3cCredentialRepository)
 
-  agent.config.logger.debug(`Fetching all w3c credential records from storage`)
+  agent.config.logger.debug('Fetching all w3c credential records from storage')
   const records = await w3cCredentialRepository.getAll(agent.context)
 
   agent.config.logger.debug(`Found a total of ${records.length} w3c credential records to update.`)
@@ -80,7 +80,7 @@ export async function fixIncorrectExpandedTypesWithAskarStorage<Agent extends Ba
     agent.context.config.logger.info(
       `Successfully recalculated expanded types for w3c credential record with id ${w3cCredentialRecord.id} to ${newExpandedTypes} and set it on the record.`
     )
-  } catch (error) {
+  } catch (_error) {
     agent.context.config.logger.error(
       `Retrieving expandedTypes fro w3c credential record with id ${w3cCredentialRecord.id} failed. To not brick the wallet, the storage update will not fail. Make sure to recalculate the expanded types at a later point. This is probably due to a missing internet connection. See https://credo.js.org/guides/updating/versions/0.4-to-0.5 for more information.`
     )

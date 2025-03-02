@@ -1,8 +1,8 @@
-import type { OpenId4VcVerificationRequest } from './requestContext'
-import type { OpenId4VcVerificationSessionRecord } from '../repository'
 import type { AgentContext } from '@credo-ts/core'
 import type { AuthorizationResponsePayload, DecryptCompact } from '@sphereon/did-auth-siop'
 import type { Response, Router } from 'express'
+import type { OpenId4VcVerificationSessionRecord } from '../repository'
+import type { OpenId4VcVerificationRequest } from './requestContext'
 
 import { Oauth2ErrorCodes, Oauth2ServerErrorResponseError } from '@animo-id/oauth2'
 import { CredoError, Hasher, JsonEncoder, Key, TypedArrayEncoder } from '@credo-ts/core'

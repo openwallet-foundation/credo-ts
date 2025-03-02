@@ -1,3 +1,4 @@
+import type { AgentContext } from '@credo-ts/core'
 import type { AgentMessage } from '../../../../AgentMessage'
 import type { AgentMessageReceivedEvent } from '../../../../Events'
 import type { FeatureRegistry } from '../../../../FeatureRegistry'
@@ -14,7 +15,6 @@ import type {
   SetLiveDeliveryModeProtocolOptions,
   SetLiveDeliveryModeProtocolReturnType,
 } from '../MessagePickupProtocolOptions'
-import type { AgentContext } from '@credo-ts/core'
 
 import { EventEmitter, InjectionSymbols, injectable, verkeyToDidKey } from '@credo-ts/core'
 
@@ -38,12 +38,12 @@ import {
   V2StatusRequestHandler,
 } from './handlers'
 import {
-  V2MessageDeliveryMessage,
-  V2StatusMessage,
   V2DeliveryRequestMessage,
-  V2MessagesReceivedMessage,
-  V2StatusRequestMessage,
   V2LiveDeliveryChangeMessage,
+  V2MessageDeliveryMessage,
+  V2MessagesReceivedMessage,
+  V2StatusMessage,
+  V2StatusRequestMessage,
 } from './messages'
 
 @injectable()
@@ -75,7 +75,7 @@ export class V2MessagePickupProtocol extends BaseMessagePickupProtocol {
   }
 
   public async createPickupMessage(
-    agentContext: AgentContext,
+    _agentContext: AgentContext,
     options: PickupMessagesProtocolOptions
   ): Promise<PickupMessagesProtocolReturnType<AgentMessage>> {
     const { connectionRecord, recipientDid: recipientKey } = options
@@ -131,7 +131,7 @@ export class V2MessagePickupProtocol extends BaseMessagePickupProtocol {
   }
 
   public async setLiveDeliveryMode(
-    agentContext: AgentContext,
+    _agentContext: AgentContext,
     options: SetLiveDeliveryModeProtocolOptions
   ): Promise<SetLiveDeliveryModeProtocolReturnType<AgentMessage>> {
     const { connectionRecord, liveDelivery } = options

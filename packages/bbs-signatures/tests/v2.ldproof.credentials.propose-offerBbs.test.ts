@@ -5,8 +5,8 @@ import { TypedArrayEncoder } from '../../core/src'
 import { KeyType } from '../../core/src/crypto'
 import { CREDENTIALS_CONTEXT_V1_URL, SECURITY_CONTEXT_BBS_URL } from '../../core/src/modules/vc'
 import { JsonTransformer } from '../../core/src/utils/JsonTransformer'
-import { waitForCredentialRecordSubject, setupJsonLdTests, testLogger } from '../../core/tests'
-import { CredentialState, CredentialExchangeRecord } from '../../didcomm'
+import { setupJsonLdTests, testLogger, waitForCredentialRecordSubject } from '../../core/tests'
+import { CredentialExchangeRecord, CredentialState } from '../../didcomm'
 
 import { describeSkipNode18 } from './util'
 

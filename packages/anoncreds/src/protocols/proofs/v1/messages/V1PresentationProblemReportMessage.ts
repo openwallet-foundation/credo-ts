@@ -1,6 +1,6 @@
 import type { ProblemReportMessageOptions } from '@credo-ts/didcomm'
 
-import { ProblemReportMessage, IsValidMessageType, parseMessageType } from '@credo-ts/didcomm'
+import { IsValidMessageType, ProblemReportMessage, parseMessageType } from '@credo-ts/didcomm'
 
 export type V1PresentationProblemReportMessageOptions = ProblemReportMessageOptions
 
@@ -9,14 +9,6 @@ export type V1PresentationProblemReportMessageOptions = ProblemReportMessageOpti
  */
 export class V1PresentationProblemReportMessage extends ProblemReportMessage {
   public readonly allowDidSovPrefix = true
-
-  /**
-   * Create new PresentationProblemReportMessage instance.
-   * @param options description of error and multiple optional fields for reporting problem
-   */
-  public constructor(options: V1PresentationProblemReportMessageOptions) {
-    super(options)
-  }
 
   @IsValidMessageType(V1PresentationProblemReportMessage.type)
   public readonly type = V1PresentationProblemReportMessage.type.messageTypeUri

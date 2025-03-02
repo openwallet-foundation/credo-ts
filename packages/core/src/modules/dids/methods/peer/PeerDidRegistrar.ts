@@ -7,7 +7,7 @@ import type { DidCreateOptions, DidCreateResult, DidDeactivateResult, DidUpdateR
 import { JsonTransformer } from '../../../../utils'
 import { DidDocument } from '../../domain'
 import { DidDocumentRole } from '../../domain/DidDocumentRole'
-import { DidRepository, DidRecord } from '../../repository'
+import { DidRecord, DidRepository } from '../../repository'
 
 import { PeerDidNumAlgo, getAlternativeDidsForPeerDid } from './didPeer'
 import { keyToNumAlgo0DidDocument } from './peerDidNumAlgo0'
@@ -99,7 +99,7 @@ export class PeerDidRegistrar implements DidRegistrar {
           didRegistrationMetadata: {},
           didState: {
             state: 'failed',
-            reason: `Missing or incorrect numAlgo provided`,
+            reason: 'Missing or incorrect numAlgo provided',
           },
         }
       }
@@ -154,7 +154,7 @@ export class PeerDidRegistrar implements DidRegistrar {
       didRegistrationMetadata: {},
       didState: {
         state: 'failed',
-        reason: `notImplemented: updating did:peer not implemented yet`,
+        reason: 'notImplemented: updating did:peer not implemented yet',
       },
     }
   }
@@ -165,7 +165,7 @@ export class PeerDidRegistrar implements DidRegistrar {
       didRegistrationMetadata: {},
       didState: {
         state: 'failed',
-        reason: `notImplemented: deactivating did:peer not implemented yet`,
+        reason: 'notImplemented: deactivating did:peer not implemented yet',
       },
     }
   }

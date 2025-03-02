@@ -1,3 +1,5 @@
+import type { JsonObject, W3cCredential } from '@credo-ts/core'
+import type { CredentialFormat } from '../CredentialFormat'
 import type {
   AnonCredsLinkSecretCredentialRequestOptions as AnonCredsLinkSecretAcceptOfferOptions,
   DataIntegrityCredential,
@@ -6,8 +8,6 @@ import type {
   DidCommSignedAttachmentCredentialRequestOptions as DidCommSignedAttachmentAcceptOfferOptions,
   W3C_VC_DATA_MODEL_VERSION,
 } from './dataIntegrityExchange'
-import type { CredentialFormat } from '../CredentialFormat'
-import type { JsonObject, W3cCredential } from '@credo-ts/core'
 
 export interface AnonCredsLinkSecretCreateOfferOptions {
   credentialDefinitionId: string

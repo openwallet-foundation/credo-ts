@@ -1,6 +1,6 @@
-import type { OpenId4VcVerificationRequest } from './requestContext'
+import type { Response, Router } from 'express'
 import type { OpenId4VcVerificationSessionStateChangedEvent } from '../OpenId4VcVerifierEvents'
-import type { Router, Response } from 'express'
+import type { OpenId4VcVerificationRequest } from './requestContext'
 
 import { EventEmitter, joinUriParts } from '@credo-ts/core'
 

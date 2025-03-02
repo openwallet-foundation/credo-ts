@@ -4,9 +4,9 @@ import type { EventReplaySubject } from '../../../../../../../core/tests'
 import { setupAnonCredsTests } from '../../../../../../../anoncreds/tests/legacyAnonCredsSetup'
 import { anoncredsDefinitionFourAttributesNoRevocation } from '../../../../../../../anoncreds/tests/preCreatedAnonCredsDefinition'
 import {
+  waitForAgentMessageProcessedEventSubject,
   waitForCredentialRecord,
   waitForCredentialRecordSubject,
-  waitForAgentMessageProcessedEventSubject,
 } from '../../../../../../../core/tests/helpers'
 import testLogger from '../../../../../../../core/tests/logger'
 import { CredentialRole } from '../../../models'

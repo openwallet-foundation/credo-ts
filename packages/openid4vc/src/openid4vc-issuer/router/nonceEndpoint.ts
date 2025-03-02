@@ -1,6 +1,6 @@
-import type { OpenId4VcIssuanceRequest } from './requestContext'
-import type { OpenId4VcIssuerModuleConfig } from '../OpenId4VcIssuerModuleConfig'
 import type { NextFunction, Response, Router } from 'express'
+import type { OpenId4VcIssuerModuleConfig } from '../OpenId4VcIssuerModuleConfig'
+import type { OpenId4VcIssuanceRequest } from './requestContext'
 
 import { getRequestContext, sendJsonResponse, sendUnknownServerErrorResponse } from '../../shared/router'
 import { OpenId4VcIssuerService } from '../OpenId4VcIssuerService'

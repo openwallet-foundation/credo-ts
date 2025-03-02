@@ -1,3 +1,4 @@
+import type { AgentContext } from '../agent'
 import type {
   Jws,
   JwsDetachedFormat,
@@ -8,12 +9,11 @@ import type {
 import type { Key } from './Key'
 import type { Jwk } from './jose/jwk'
 import type { JwkJson } from './jose/jwk/Jwk'
-import type { AgentContext } from '../agent'
 
 import { CredoError } from '../error'
 import { EncodedX509Certificate, X509ModuleConfig } from '../modules/x509'
 import { injectable } from '../plugins'
-import { Buffer, isJsonObject, JsonEncoder, TypedArrayEncoder } from '../utils'
+import { Buffer, JsonEncoder, TypedArrayEncoder, isJsonObject } from '../utils'
 import { WalletError } from '../wallet/error'
 
 import { X509Service } from './../modules/x509/X509Service'
@@ -34,7 +34,7 @@ export class JwsService {
         certificate.publicKey.keyType !== options.key.keyType ||
         !Buffer.from(certificate.publicKey.publicKey).equals(Buffer.from(options.key.publicKey))
       ) {
-        throw new CredoError(`Protected header x5c does not match key for signing.`)
+        throw new CredoError('Protected header x5c does not match key for signing.')
       }
     }
 
@@ -44,7 +44,7 @@ export class JwsService {
       (jwk.key.keyType !== options.key.keyType ||
         !Buffer.from(jwk.key.publicKey).equals(Buffer.from(options.key.publicKey)))
     ) {
-      throw new CredoError(`Protected header JWK does not match key for signing.`)
+      throw new CredoError('Protected header JWK does not match key for signing.')
     }
 
     // Validate the options.key used for signing against the jws options

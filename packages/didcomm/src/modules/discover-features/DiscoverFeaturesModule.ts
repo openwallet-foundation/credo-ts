@@ -1,5 +1,5 @@
+import type { AgentContext, DependencyManager, Module } from '@credo-ts/core'
 import type { DiscoverFeaturesModuleConfigOptions } from './DiscoverFeaturesModuleConfig'
-import type { DependencyManager, Module, AgentContext } from '@credo-ts/core'
 
 import { FeatureRegistry } from '../../FeatureRegistry'
 import { Protocol } from '../../models'

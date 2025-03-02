@@ -1,10 +1,10 @@
 import type { InitConfig } from '@credo-ts/core'
 
-import { KeyDerivationMethod, Agent } from '@credo-ts/core'
-import { agentDependencies } from '@credo-ts/node'
 import { copyFileSync, existsSync, mkdirSync, unlinkSync } from 'fs'
 import { homedir } from 'os'
 import path from 'path'
+import { Agent, KeyDerivationMethod } from '@credo-ts/core'
+import { agentDependencies } from '@credo-ts/node'
 
 import { askarModule } from '../../askar/tests/helpers'
 import { IndySdkToAskarMigrationUpdater } from '../src'
@@ -13,9 +13,9 @@ import { IndySdkToAskarMigrationError } from '../src/errors/IndySdkToAskarMigrat
 describe('Indy SDK To Askar Migration', () => {
   test('indy-sdk sqlite to aries-askar sqlite successful migration', async () => {
     const indySdkAndAskarConfig: InitConfig = {
-      label: `indy | indy-sdk sqlite to aries-askar sqlite successful migration`,
+      label: 'indy | indy-sdk sqlite to aries-askar sqlite successful migration',
       walletConfig: {
-        id: `indy-sdk sqlite to aries-askar sqlite successful migration`,
+        id: 'indy-sdk sqlite to aries-askar sqlite successful migration',
         key: 'GfwU1DC7gEZNs3w41tjBiZYj7BNToDoFEqKY6wZXqs1A',
         keyDerivationMethod: KeyDerivationMethod.Raw,
       },
@@ -61,9 +61,9 @@ describe('Indy SDK To Askar Migration', () => {
    */
   test('indy-sdk sqlite to aries-askar sqlite fails and restores', async () => {
     const indySdkAndAskarConfig: InitConfig = {
-      label: `indy | indy-sdk sqlite to aries-askar sqlite fails and restores`,
+      label: 'indy | indy-sdk sqlite to aries-askar sqlite fails and restores',
       walletConfig: {
-        id: `indy-sdk sqlite to aries-askar sqlite fails and restores`,
+        id: 'indy-sdk sqlite to aries-askar sqlite fails and restores',
         // NOTE: wrong key passed
         key: 'wrong-key',
         keyDerivationMethod: KeyDerivationMethod.Raw,

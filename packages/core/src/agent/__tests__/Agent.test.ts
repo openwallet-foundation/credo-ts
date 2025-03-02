@@ -8,26 +8,26 @@ import {
   BasicMessageService,
   ConnectionService,
   DidRotateService,
-  TrustPingService,
   Dispatcher,
   EnvelopeService,
   FeatureRegistry,
   MessageReceiver,
   MessageSender,
+  TrustPingService,
 } from '../../../../didcomm/src'
 import { BasicMessagesApi } from '../../../../didcomm/src/modules/basic-messages/BasicMessagesApi'
-import { ConnectionsApi, ConnectionRepository } from '../../../../didcomm/src/modules/connections'
+import { ConnectionRepository, ConnectionsApi } from '../../../../didcomm/src/modules/connections'
 import { CredentialRepository } from '../../../../didcomm/src/modules/credentials'
 import { CredentialsApi } from '../../../../didcomm/src/modules/credentials/CredentialsApi'
-import { MessagePickupApi, InMemoryMessagePickupRepository } from '../../../../didcomm/src/modules/message-pickup'
-import { ProofsApi, ProofRepository } from '../../../../didcomm/src/modules/proofs'
+import { InMemoryMessagePickupRepository, MessagePickupApi } from '../../../../didcomm/src/modules/message-pickup'
+import { ProofRepository, ProofsApi } from '../../../../didcomm/src/modules/proofs'
 import {
+  MediationRecipientApi,
+  MediationRecipientModule,
   MediationRecipientService,
   MediationRepository,
   MediatorApi,
   MediatorService,
-  MediationRecipientApi,
-  MediationRecipientModule,
 } from '../../../../didcomm/src/modules/routing'
 import { getDefaultDidcommModules } from '../../../../didcomm/src/util/modules'
 import { getInMemoryAgentOptions } from '../../../tests/helpers'
@@ -143,7 +143,7 @@ describe('Agent', () => {
       expect(agent.isInitialized).toBe(false)
       expect(agent.wallet.isInitialized).toBe(false)
 
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      // biome-ignore lint/style/noNonNullAssertion: <explanation>
       await agent.wallet.initialize(walletConfig!)
       expect(agent.isInitialized).toBe(false)
       expect(agent.wallet.isInitialized).toBe(true)

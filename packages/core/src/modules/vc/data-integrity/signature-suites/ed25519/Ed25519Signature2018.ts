@@ -74,11 +74,13 @@ export class Ed25519Signature2018 extends JwsLinkedDataSignature {
       throw new Error(
         `Unsupported verification method type '${verificationMethodType}'. Verification method type MUST be 'Ed25519VerificationKey2018' or 'Ed25519VerificationKey2020'.`
       )
-    } else if (_isEd2018Key(document) && !_includesEd2018Context(document)) {
+    }
+    if (_isEd2018Key(document) && !_includesEd2018Context(document)) {
       throw new Error(
         `For verification method type 'Ed25519VerificationKey2018' the '@context' MUST contain the context url "${ED25519_SUITE_CONTEXT_URL_2018}".`
       )
-    } else if (_isEd2020Key(document) && !_includesEd2020Context(document)) {
+    }
+    if (_isEd2020Key(document) && !_includesEd2020Context(document)) {
       throw new Error(
         `For verification method type 'Ed25519VerificationKey2020' the '@context' MUST contain the context url "${ED25519_SUITE_CONTEXT_URL_2020}".`
       )
@@ -161,7 +163,7 @@ export class Ed25519Signature2018 extends JwsLinkedDataSignature {
   public async matchProof(options: {
     proof: Proof
     document: VerificationMethod
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
     purpose: any
     documentLoader?: DocumentLoader
   }) {
@@ -210,7 +212,6 @@ function _includesCompatibleContext(options: { document: JsonLdDoc }) {
 }
 
 function _isEd2018Key(verificationMethod: JsonLdDoc) {
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
   // @ts-ignore - .hasValue is not part of the public API
   return jsonld.hasValue(verificationMethod, 'type', 'Ed25519VerificationKey2018')
 }
@@ -220,7 +221,6 @@ function _includesEd2018Context(document: JsonLdDoc) {
 }
 
 function _isEd2020Key(verificationMethod: JsonLdDoc) {
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
   // @ts-ignore - .hasValue is not part of the public API
   return jsonld.hasValue(verificationMethod, 'type', 'Ed25519VerificationKey2020')
 }

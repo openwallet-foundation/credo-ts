@@ -1,11 +1,11 @@
+import type { AgentContext, BaseAgent } from '@credo-ts/core'
 import type { AnonCredsHolderService } from '../../services'
 import type { W3cAnonCredsCredentialMetadata } from '../../utils/metadata'
-import type { AgentContext, BaseAgent } from '@credo-ts/core'
 
 import { CacheModuleConfig, CredoError, W3cCredentialRepository, W3cCredentialService } from '@credo-ts/core'
 import { CredentialRepository } from '@credo-ts/didcomm'
 
-import { AnonCredsCredentialRepository, type AnonCredsCredentialRecord } from '../../repository'
+import { type AnonCredsCredentialRecord, AnonCredsCredentialRepository } from '../../repository'
 import { AnonCredsHolderServiceSymbol } from '../../services'
 import { fetchCredentialDefinition } from '../../utils/anonCredsObjects'
 import {
@@ -45,9 +45,8 @@ async function getIndyNamespace(
     }
 
     return namespace
-  } else {
-    return cachedNymResponse.indyNamespace
   }
+  return cachedNymResponse.indyNamespace
 }
 
 async function migrateLegacyToW3cCredential(agentContext: AgentContext, legacyRecord: AnonCredsCredentialRecord) {
@@ -182,7 +181,7 @@ export async function storeAnonCredsInW3cFormatV0_5<Agent extends BaseAgent>(age
 
   const anoncredsRepository = agent.dependencyManager.resolve(AnonCredsCredentialRepository)
 
-  agent.config.logger.debug(`Fetching all anoncreds credential records from storage`)
+  agent.config.logger.debug('Fetching all anoncreds credential records from storage')
   const records = await anoncredsRepository.getAll(agent.context)
 
   agent.config.logger.debug(`Found a total of ${records.length} legacy anonCreds credential records to update.`)

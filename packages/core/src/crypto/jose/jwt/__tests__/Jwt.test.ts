@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { TypedArrayEncoder } from '../../../../utils'
 import { Jwt } from '../Jwt'
 import { JwtPayload } from '../JwtPayload'

@@ -1,5 +1,5 @@
-import type { JwkJson } from './Jwk'
 import type { JwaEncryptionAlgorithm } from '../jwa/alg'
+import type { JwkJson } from './Jwk'
 
 import { TypedArrayEncoder } from '../../../utils'
 import { KeyType } from '../../KeyType'
@@ -7,7 +7,7 @@ import { JwaCurve, JwaKeyType } from '../jwa'
 import { JwaSignatureAlgorithm } from '../jwa/alg'
 
 import { Jwk } from './Jwk'
-import { hasKty, hasCrv, hasX, hasValidUse } from './validate'
+import { hasCrv, hasKty, hasValidUse, hasX } from './validate'
 
 export class Ed25519Jwk extends Jwk {
   public static readonly supportedEncryptionAlgorithms: JwaEncryptionAlgorithm[] = []

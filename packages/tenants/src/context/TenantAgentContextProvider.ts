@@ -1,21 +1,21 @@
-import type { TenantRecord } from '../repository'
 import type { AgentContextProvider, UpdateAssistantUpdateOptions } from '@credo-ts/core'
-import type { RoutingCreatedEvent, EncryptedMessage } from '@credo-ts/didcomm'
+import type { EncryptedMessage, RoutingCreatedEvent } from '@credo-ts/didcomm'
+import type { TenantRecord } from '../repository'
 
 import {
-  isStorageUpToDate,
-  UpdateAssistant,
-  CredoError,
-  injectable,
   AgentContext,
+  CredoError,
   EventEmitter,
-  inject,
-  Logger,
   InjectionSymbols,
-  KeyType,
-  Key,
   JsonEncoder,
+  Key,
+  KeyType,
+  Logger,
+  UpdateAssistant,
+  inject,
+  injectable,
   isJsonObject,
+  isStorageUpToDate,
 } from '@credo-ts/core'
 import { RoutingEventTypes, isValidJweStructure } from '@credo-ts/didcomm'
 
@@ -62,10 +62,7 @@ export class TenantAgentContextProvider implements AgentContextProvider {
     // If the tenant storage is not up to date, and autoUpdate is disabled we throw an error
     if (shouldUpdate && !this.rootAgentContext.config.autoUpdateStorageOnStartup) {
       throw new CredoError(
-        `Current agent storage for tenant ${tenantRecord.id} is not up to date. ` +
-          `To prevent the tenant state from getting corrupted the tenant initialization is aborted. ` +
-          `Make sure to update the tenant storage (currently at ${tenantRecord.storageVersion}) to the latest version (${UpdateAssistant.frameworkStorageVersion}). ` +
-          `You can also downgrade your version of Credo.`
+        `Current agent storage for tenant ${tenantRecord.id} is not up to date. To prevent the tenant state from getting corrupted the tenant initialization is aborted. Make sure to update the tenant storage (currently at ${tenantRecord.storageVersion}) to the latest version (${UpdateAssistant.frameworkStorageVersion}). You can also downgrade your version of Credo.`
       )
     }
 

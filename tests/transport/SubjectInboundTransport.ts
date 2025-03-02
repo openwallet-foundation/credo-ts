@@ -1,6 +1,6 @@
-import type { AgentContext } from '../../packages/core/src'
-import type { InboundTransport, EncryptedMessage, TransportSession } from '../../packages/didcomm/src'
 import type { Subscription } from 'rxjs'
+import type { AgentContext } from '../../packages/core/src'
+import type { EncryptedMessage, InboundTransport, TransportSession } from '../../packages/didcomm/src'
 
 import { Subject } from 'rxjs'
 
@@ -73,7 +73,7 @@ export class SubjectTransportSession implements TransportSession {
     this.replySubject = replySubject
   }
 
-  public async send(agentContext: AgentContext, encryptedMessage: EncryptedMessage): Promise<void> {
+  public async send(_agentContext: AgentContext, encryptedMessage: EncryptedMessage): Promise<void> {
     this.replySubject.next({ message: encryptedMessage })
   }
 

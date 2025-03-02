@@ -1,4 +1,4 @@
-import { Repository, StorageService, InjectionSymbols, EventEmitter, inject, injectable } from '@credo-ts/core'
+import { EventEmitter, InjectionSymbols, Repository, StorageService, inject, injectable } from '@credo-ts/core'
 
 import { OpenId4VcVerificationSessionRecord } from './OpenId4VcVerificationSessionRecord'
 

@@ -1,5 +1,5 @@
-import type { ConnectionProblemReportReason } from './ConnectionProblemReportReason'
 import type { ProblemReportErrorOptions } from '../../../errors'
+import type { ConnectionProblemReportReason } from './ConnectionProblemReportReason'
 
 import { ProblemReportError } from '../../../errors'
 import { ConnectionProblemReportMessage } from '../messages'
@@ -10,7 +10,10 @@ interface ConnectionProblemReportErrorOptions extends ProblemReportErrorOptions 
 export class ConnectionProblemReportError extends ProblemReportError {
   public problemReport: ConnectionProblemReportMessage
 
-  public constructor(public message: string, { problemCode }: ConnectionProblemReportErrorOptions) {
+  public constructor(
+    public message: string,
+    { problemCode }: ConnectionProblemReportErrorOptions
+  ) {
     super(message, { problemCode })
     this.problemReport = new ConnectionProblemReportMessage({
       description: {

@@ -1,5 +1,5 @@
+import type { Constructor, DependencyManager, EmptyModuleMap, Module, ModulesMap, Update } from '@credo-ts/core'
 import type { TenantsModuleConfigOptions } from './TenantsModuleConfig'
-import type { Constructor, ModulesMap, DependencyManager, Module, EmptyModuleMap, Update } from '@credo-ts/core'
 
 import { AgentConfig, InjectionSymbols } from '@credo-ts/core'
 

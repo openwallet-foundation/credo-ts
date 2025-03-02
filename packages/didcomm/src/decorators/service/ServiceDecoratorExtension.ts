@@ -1,5 +1,5 @@
-import type { ServiceDecoratorOptions } from './ServiceDecorator'
 import type { BaseMessageConstructor } from '../../BaseMessage'
+import type { ServiceDecoratorOptions } from './ServiceDecorator'
 
 import { Expose, Type } from 'class-transformer'
 import { IsOptional, ValidateNested } from 'class-validator'

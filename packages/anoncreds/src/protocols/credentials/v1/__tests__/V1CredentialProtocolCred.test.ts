@@ -1,26 +1,26 @@
-import type { AgentContext, AgentConfig } from '@credo-ts/core'
-import type { CustomCredentialTags, CredentialPreviewAttribute, CredentialStateChangedEvent } from '@credo-ts/didcomm'
+import type { AgentConfig, AgentContext } from '@credo-ts/core'
+import type { CredentialPreviewAttribute, CredentialStateChangedEvent, CustomCredentialTags } from '@credo-ts/didcomm'
 
-import { EventEmitter, JsonEncoder, CredoError, JsonTransformer } from '@credo-ts/core'
+import { CredoError, EventEmitter, JsonEncoder, JsonTransformer } from '@credo-ts/core'
 import {
-  DidExchangeState,
+  AckStatus,
   Attachment,
   AttachmentData,
-  DidCommMessageRecord,
-  DidCommMessageRole,
-  CredentialState,
+  AutoAcceptCredential,
+  CredentialEventTypes,
   CredentialExchangeRecord,
   CredentialFormatSpec,
-  AutoAcceptCredential,
-  InboundMessageContext,
-  CredentialEventTypes,
-  AckStatus,
   CredentialProblemReportReason,
   CredentialRole,
+  CredentialState,
+  DidCommMessageRecord,
+  DidCommMessageRole,
+  DidExchangeState,
+  InboundMessageContext,
 } from '@credo-ts/didcomm'
 import { Subject } from 'rxjs'
 
-import { getMockConnection, getAgentConfig, getAgentContext, mockFunction } from '../../../../../../core/tests/helpers'
+import { getAgentConfig, getAgentContext, getMockConnection, mockFunction } from '../../../../../../core/tests/helpers'
 import { ConnectionService } from '../../../../../../didcomm/src/modules/connections/services/ConnectionService'
 import { CredentialRepository } from '../../../../../../didcomm/src/modules/credentials/repository/CredentialRepository'
 import { DidCommMessageRepository } from '../../../../../../didcomm/src/repository/DidCommMessageRepository'
@@ -32,12 +32,12 @@ import {
   INDY_CREDENTIAL_OFFER_ATTACHMENT_ID,
   INDY_CREDENTIAL_REQUEST_ATTACHMENT_ID,
   V1CredentialAckMessage,
+  V1CredentialPreview,
   V1CredentialProblemReportMessage,
   V1IssueCredentialMessage,
   V1OfferCredentialMessage,
   V1ProposeCredentialMessage,
   V1RequestCredentialMessage,
-  V1CredentialPreview,
 } from '../messages'
 
 // Mock classes
@@ -58,7 +58,6 @@ const didCommMessageRepository = new DidCommMessageRepositoryMock()
 const legacyIndyCredentialFormatService = new LegacyIndyCredentialFormatServiceMock()
 const connectionService = new ConnectionServiceMock()
 
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore
 legacyIndyCredentialFormatService.credentialRecordType = 'w3c'
 
@@ -123,7 +122,7 @@ const didCommMessageRecord = new DidCommMessageRecord({
   role: DidCommMessageRole.Receiver,
 })
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+// biome-ignore lint/suspicious/noExplicitAny: <explanation>
 const getAgentMessageMock = async (_agentContext: AgentContext, options: { messageClass: any }) => {
   if (options.messageClass === V1ProposeCredentialMessage) {
     return credentialProposalMessage
@@ -299,7 +298,7 @@ describe('V1CredentialProtocol', () => {
 
     const validState = CredentialState.OfferReceived
     const invalidCredentialStates = Object.values(CredentialState).filter((state) => state !== validState)
-    test(`throws an error when state transition is invalid`, async () => {
+    test('throws an error when state transition is invalid', async () => {
       await Promise.all(
         invalidCredentialStates.map(async (state) => {
           await expect(
@@ -363,7 +362,7 @@ describe('V1CredentialProtocol', () => {
 
     const validState = CredentialState.OfferSent
     const invalidCredentialStates = Object.values(CredentialState).filter((state) => state !== validState)
-    test(`throws an error when state transition is invalid`, async () => {
+    test('throws an error when state transition is invalid', async () => {
       await Promise.all(
         invalidCredentialStates.map(async (state) => {
           mockFunction(credentialRepository.getSingleByQuery).mockReturnValue(
@@ -598,7 +597,7 @@ describe('V1CredentialProtocol', () => {
 
     const validState = CredentialState.CredentialReceived
     const invalidCredentialStates = Object.values(CredentialState).filter((state) => state !== validState)
-    test(`throws an error when state transition is invalid`, async () => {
+    test('throws an error when state transition is invalid', async () => {
       await Promise.all(
         invalidCredentialStates.map(async (state) => {
           await expect(
@@ -713,7 +712,7 @@ describe('V1CredentialProtocol', () => {
       messageContext = new InboundMessageContext(credentialProblemReportMessage, { agentContext, connection })
     })
 
-    test(`updates problem report error message and returns credential record`, async () => {
+    test('updates problem report error message and returns credential record', async () => {
       const repositoryUpdateSpy = jest.spyOn(credentialRepository, 'update')
 
       // given

@@ -1,11 +1,11 @@
-import type {
-  MdocSignOptions,
-  MdocDeviceResponseOpenId4VpOptions,
-  MdocDeviceResponseVerifyOptions,
-  MdocVerifyOptions,
-  MdocDeviceResponseOptions,
-} from './MdocOptions'
 import type { Query, QueryOptions } from '../../storage/StorageService'
+import type {
+  MdocDeviceResponseOpenId4VpOptions,
+  MdocDeviceResponseOptions,
+  MdocDeviceResponseVerifyOptions,
+  MdocSignOptions,
+  MdocVerifyOptions,
+} from './MdocOptions'
 
 import { injectable } from 'tsyringe'
 

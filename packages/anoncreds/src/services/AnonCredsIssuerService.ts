@@ -1,18 +1,18 @@
+import type { AgentContext } from '@credo-ts/core'
+import type { AnonCredsCredentialOffer } from '../models/exchange'
+import type { AnonCredsRevocationStatusList, AnonCredsSchema } from '../models/registry'
 import type {
-  CreateSchemaOptions,
   CreateCredentialDefinitionOptions,
-  CreateCredentialOfferOptions,
-  CreateCredentialReturn,
-  CreateCredentialOptions,
   CreateCredentialDefinitionReturn,
+  CreateCredentialOfferOptions,
+  CreateCredentialOptions,
+  CreateCredentialReturn,
   CreateRevocationRegistryDefinitionOptions,
   CreateRevocationRegistryDefinitionReturn,
   CreateRevocationStatusListOptions,
+  CreateSchemaOptions,
   UpdateRevocationStatusListOptions,
 } from './AnonCredsIssuerServiceOptions'
-import type { AnonCredsCredentialOffer } from '../models/exchange'
-import type { AnonCredsRevocationStatusList, AnonCredsSchema } from '../models/registry'
-import type { AgentContext } from '@credo-ts/core'
 
 export const AnonCredsIssuerServiceSymbol = Symbol('AnonCredsIssuerService')
 

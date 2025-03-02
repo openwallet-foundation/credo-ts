@@ -1,6 +1,6 @@
+import type { AgentContext, Query, QueryOptions } from '@credo-ts/core'
 import type { InboundMessageContext } from '../../../models'
 import type { BasicMessageStateChangedEvent } from '../BasicMessageEvents'
-import type { AgentContext, Query, QueryOptions } from '@credo-ts/core'
 
 import { EventEmitter, injectable } from '@credo-ts/core'
 

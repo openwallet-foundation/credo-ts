@@ -1,5 +1,5 @@
-import type { DocumentLoader } from './jsonld'
 import type { AgentContext } from '../../../../agent/context/AgentContext'
+import type { DocumentLoader } from './jsonld'
 
 import { CredoError } from '../../../../error/CredoError'
 import { isDid } from '../../../../utils'
@@ -47,7 +47,6 @@ export function defaultDocumentLoader(agentContext: AgentContext): DocumentLoade
           '@embed': '@never',
           id: url,
         },
-        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
         // @ts-ignore
         { documentLoader: this }
       )

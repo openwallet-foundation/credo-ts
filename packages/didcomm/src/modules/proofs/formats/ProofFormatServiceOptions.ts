@@ -1,8 +1,8 @@
-import type { ProofFormat, ProofFormatCredentialForRequestPayload, ProofFormatPayload } from './ProofFormat'
-import type { ProofFormatService } from './ProofFormatService'
 import type { Attachment } from '../../../decorators/attachment/Attachment'
 import type { ProofFormatSpec } from '../models/ProofFormatSpec'
 import type { ProofExchangeRecord } from '../repository/ProofExchangeRecord'
+import type { ProofFormat, ProofFormatCredentialForRequestPayload, ProofFormatPayload } from './ProofFormat'
+import type { ProofFormatService } from './ProofFormatService'
 
 /**
  * Infer the {@link ProofFormat} based on a {@link ProofFormatService}.

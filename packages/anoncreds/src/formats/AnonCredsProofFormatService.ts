@@ -1,45 +1,45 @@
-import type { AnonCredsProofFormat, AnonCredsGetCredentialsForProofRequestOptions } from './AnonCredsProofFormat'
+import type { AgentContext } from '@credo-ts/core'
+import type {
+  FormatCreateRequestOptions,
+  ProofFormatAcceptProposalOptions,
+  ProofFormatAcceptRequestOptions,
+  ProofFormatAutoRespondPresentationOptions,
+  ProofFormatAutoRespondProposalOptions,
+  ProofFormatAutoRespondRequestOptions,
+  ProofFormatCreateProposalOptions,
+  ProofFormatCreateReturn,
+  ProofFormatGetCredentialsForRequestOptions,
+  ProofFormatGetCredentialsForRequestReturn,
+  ProofFormatProcessOptions,
+  ProofFormatProcessPresentationOptions,
+  ProofFormatSelectCredentialsForRequestOptions,
+  ProofFormatSelectCredentialsForRequestReturn,
+  ProofFormatService,
+} from '@credo-ts/didcomm'
 import type {
   AnonCredsCredentialDefinition,
   AnonCredsProof,
+  AnonCredsProofRequest,
   AnonCredsSchema,
   AnonCredsSelectedCredentials,
-  AnonCredsProofRequest,
 } from '../models'
 import type { AnonCredsHolderService, AnonCredsVerifierService } from '../services'
-import type { AgentContext } from '@credo-ts/core'
-import type {
-  ProofFormatService,
-  ProofFormatCreateReturn,
-  FormatCreateRequestOptions,
-  ProofFormatCreateProposalOptions,
-  ProofFormatProcessOptions,
-  ProofFormatAcceptProposalOptions,
-  ProofFormatAcceptRequestOptions,
-  ProofFormatProcessPresentationOptions,
-  ProofFormatGetCredentialsForRequestOptions,
-  ProofFormatGetCredentialsForRequestReturn,
-  ProofFormatSelectCredentialsForRequestOptions,
-  ProofFormatSelectCredentialsForRequestReturn,
-  ProofFormatAutoRespondProposalOptions,
-  ProofFormatAutoRespondRequestOptions,
-  ProofFormatAutoRespondPresentationOptions,
-} from '@credo-ts/didcomm'
+import type { AnonCredsGetCredentialsForProofRequestOptions, AnonCredsProofFormat } from './AnonCredsProofFormat'
 
 import { CredoError, JsonEncoder, JsonTransformer } from '@credo-ts/core'
 import { Attachment, AttachmentData, ProofFormatSpec } from '@credo-ts/didcomm'
 
 import { AnonCredsProofRequest as AnonCredsProofRequestClass } from '../models/AnonCredsProofRequest'
-import { AnonCredsVerifierServiceSymbol, AnonCredsHolderServiceSymbol } from '../services'
+import { AnonCredsHolderServiceSymbol, AnonCredsVerifierServiceSymbol } from '../services'
 import {
-  createRequestFromPreview,
   areAnonCredsProofRequestsEqual,
-  checkValidCredentialValueEncoding,
   assertNoDuplicateGroupsNamesInProofRequest,
-  getRevocationRegistriesForRequest,
-  getRevocationRegistriesForProof,
-  fetchSchema,
+  checkValidCredentialValueEncoding,
+  createRequestFromPreview,
   fetchCredentialDefinition,
+  fetchSchema,
+  getRevocationRegistriesForProof,
+  getRevocationRegistriesForRequest,
 } from '../utils'
 import { encodeCredentialValue } from '../utils/credential'
 import { getCredentialsForAnonCredsProofRequest } from '../utils/getCredentialsForAnonCredsRequest'
@@ -78,7 +78,7 @@ export class AnonCredsProofFormatService implements ProofFormatService<AnonCreds
     return { attachment, format }
   }
 
-  public async processProposal(agentContext: AgentContext, { attachment }: ProofFormatProcessOptions): Promise<void> {
+  public async processProposal(_agentContext: AgentContext, { attachment }: ProofFormatProcessOptions): Promise<void> {
     const proposalJson = attachment.getDataAsJson<AnonCredsProofRequest>()
 
     // fromJson also validates
@@ -141,7 +141,7 @@ export class AnonCredsProofFormatService implements ProofFormatService<AnonCreds
     return { attachment, format }
   }
 
-  public async processRequest(agentContext: AgentContext, { attachment }: ProofFormatProcessOptions): Promise<void> {
+  public async processRequest(_agentContext: AgentContext, { attachment }: ProofFormatProcessOptions): Promise<void> {
     const requestJson = attachment.getDataAsJson<AnonCredsProofRequest>()
 
     // fromJson also validates
@@ -283,7 +283,7 @@ export class AnonCredsProofFormatService implements ProofFormatService<AnonCreds
   }
 
   public async shouldAutoRespondToRequest(
-    agentContext: AgentContext,
+    _agentContext: AgentContext,
     { proposalAttachment, requestAttachment }: ProofFormatAutoRespondRequestOptions
   ): Promise<boolean> {
     const proposalJson = proposalAttachment.getDataAsJson<AnonCredsProofRequest>()
@@ -293,9 +293,7 @@ export class AnonCredsProofFormatService implements ProofFormatService<AnonCreds
   }
 
   public async shouldAutoRespondToPresentation(
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     _agentContext: AgentContext,
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     _options: ProofFormatAutoRespondPresentationOptions
   ): Promise<boolean> {
     // The presentation is already verified in processPresentation, so we can just return true here.
@@ -321,7 +319,7 @@ export class AnonCredsProofFormatService implements ProofFormatService<AnonCreds
       selfAttestedAttributes: {},
     }
 
-    Object.keys(credentialsForRequest.attributes).forEach((attributeName) => {
+    for (const attributeName of Object.keys(credentialsForRequest.attributes)) {
       const attributeArray = credentialsForRequest.attributes[attributeName]
 
       if (attributeArray.length === 0) {
@@ -329,15 +327,14 @@ export class AnonCredsProofFormatService implements ProofFormatService<AnonCreds
       }
 
       selectedCredentials.attributes[attributeName] = attributeArray[0]
-    })
+    }
 
-    Object.keys(credentialsForRequest.predicates).forEach((attributeName) => {
+    for (const attributeName of Object.keys(credentialsForRequest.predicates)) {
       if (credentialsForRequest.predicates[attributeName].length === 0) {
         throw new CredoError('Unable to automatically select requested predicates.')
-      } else {
-        selectedCredentials.predicates[attributeName] = credentialsForRequest.predicates[attributeName][0]
       }
-    })
+      selectedCredentials.predicates[attributeName] = credentialsForRequest.predicates[attributeName][0]
+    }
 
     return selectedCredentials
   }

@@ -1,11 +1,11 @@
+import type { W3cJsonLdVerifiableCredential } from '@credo-ts/core'
 import type { AnonCredsNonRevokedInterval } from './exchange'
 import type {
-  AnonCredsSchema,
   AnonCredsCredentialDefinition,
   AnonCredsRevocationRegistryDefinition,
   AnonCredsRevocationStatusList,
+  AnonCredsSchema,
 } from './registry'
-import type { W3cJsonLdVerifiableCredential } from '@credo-ts/core'
 
 export interface AnonCredsSchemas {
   [schemaId: string]: AnonCredsSchema

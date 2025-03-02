@@ -1,3 +1,4 @@
+import type { AnonCredsCredentialDefinition } from '../../models/registry'
 import type {
   AnonCredsOperationStateAction,
   AnonCredsOperationStateFailed,
@@ -6,7 +7,6 @@ import type {
   AnonCredsResolutionMetadata,
   Extensible,
 } from './base'
-import type { AnonCredsCredentialDefinition } from '../../models/registry'
 
 export interface GetCredentialDefinitionReturn {
   credentialDefinition?: AnonCredsCredentialDefinition

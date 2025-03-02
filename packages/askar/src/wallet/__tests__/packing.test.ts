@@ -1,6 +1,6 @@
 import type { WalletConfig } from '@credo-ts/core'
 
-import { JsonTransformer, KeyType, SigningProviderRegistry, KeyDerivationMethod } from '@credo-ts/core'
+import { JsonTransformer, KeyDerivationMethod, KeyType, SigningProviderRegistry } from '@credo-ts/core'
 
 import { agentDependencies } from '../../../../core/tests/helpers'
 import testLogger from '../../../../core/tests/logger'

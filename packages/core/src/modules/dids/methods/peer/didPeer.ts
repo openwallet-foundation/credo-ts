@@ -2,9 +2,8 @@ import { CredoError } from '../../../../error'
 
 import { getAlternativeDidsForNumAlgo4Did } from './peerDidNumAlgo4'
 
-const PEER_DID_REGEX = new RegExp(
-  '^did:peer:(([01](z)([1-9a-km-zA-HJ-NP-Z]{5,200}))|(2((.[AEVID](z)([1-9a-km-zA-HJ-NP-Z]{5,200}))+(.(S)[0-9a-zA-Z=]*)*))|([4](z[1-9a-km-zA-HJ-NP-Z]{46})(:z[1-9a-km-zA-HJ-NP-Z]{6,}){0,1}))$'
-)
+const PEER_DID_REGEX =
+  /^did:peer:(([01](z)([1-9a-km-zA-HJ-NP-Z]{5,200}))|(2((.[AEVID](z)([1-9a-km-zA-HJ-NP-Z]{5,200}))+(.(S)[0-9a-zA-Z=]*)*))|([4](z[1-9a-km-zA-HJ-NP-Z]{46})(:z[1-9a-km-zA-HJ-NP-Z]{6,}){0,1}))$/
 
 export function isValidPeerDid(did: string): boolean {
   const isValid = PEER_DID_REGEX.test(did)

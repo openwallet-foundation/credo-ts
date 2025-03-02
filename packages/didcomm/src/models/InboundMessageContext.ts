@@ -1,9 +1,9 @@
-import type { OutboundMessageContext } from './OutboundMessageContext'
+import type { AgentContext, Key } from '@credo-ts/core'
 import type { AgentMessage } from '../AgentMessage'
 import type { MessageHandler } from '../handlers'
 import type { ConnectionRecord } from '../modules/connections/repository'
 import type { EncryptedMessage } from '../types'
-import type { AgentContext, Key } from '@credo-ts/core'
+import type { OutboundMessageContext } from './OutboundMessageContext'
 
 import { CredoError } from '@credo-ts/core'
 

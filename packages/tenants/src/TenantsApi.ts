@@ -1,3 +1,4 @@
+import type { DefaultAgentModules, ModulesMap, Query, QueryOptions } from '@credo-ts/core'
 import type {
   CreateTenantOptions,
   GetTenantAgentOptions,
@@ -5,16 +6,15 @@ import type {
   WithTenantAgentCallback,
 } from './TenantsApiOptions'
 import type { TenantRecord } from './repository'
-import type { DefaultAgentModules, ModulesMap, Query, QueryOptions } from '@credo-ts/core'
 
 import {
-  isStorageUpToDate,
   AgentContext,
-  inject,
-  injectable,
   InjectionSymbols,
   Logger,
   UpdateAssistant,
+  inject,
+  injectable,
+  isStorageUpToDate,
 } from '@credo-ts/core'
 
 import { TenantAgent } from './TenantAgent'

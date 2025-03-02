@@ -1,6 +1,6 @@
+import type { AgentContext, Key } from '@credo-ts/core'
 import type { Routing } from '../../../models'
 import type { RoutingCreatedEvent } from '../RoutingEvents'
-import type { AgentContext, Key } from '@credo-ts/core'
 
 import { EventEmitter, KeyType, injectable } from '@credo-ts/core'
 

@@ -1,5 +1,5 @@
-import type { IndyVdrPoolConfig } from './pool'
 import type { IndyVdr } from '@hyperledger/indy-vdr-shared'
+import type { IndyVdrPoolConfig } from './pool'
 
 export interface IndyVdrModuleConfigOptions {
   /**

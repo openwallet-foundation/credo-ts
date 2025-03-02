@@ -11,8 +11,8 @@ import { Buffer } from '../../../../utils/buffer'
 import { DidDocument } from '../../domain'
 import { parseDid } from '../../domain/parse'
 
-const LONG_RE = new RegExp(`^did:peer:4(z[1-9a-km-zA-HJ-NP-Z]{46}):(z[1-9a-km-zA-HJ-NP-Z]{6,})$`)
-const SHORT_RE = new RegExp(`^did:peer:4(z[1-9a-km-zA-HJ-NP-Z]{46})$`)
+const LONG_RE = /^did:peer:4(z[1-9a-km-zA-HJ-NP-Z]{46}):(z[1-9a-km-zA-HJ-NP-Z]{6,})$/
+const SHORT_RE = /^did:peer:4(z[1-9a-km-zA-HJ-NP-Z]{46})$/
 const JSON_MULTICODEC_VARINT = 0x0200
 
 export const isShortFormDidPeer4 = (did: string) => SHORT_RE.test(did)
@@ -46,7 +46,7 @@ export function didToNumAlgo4DidDocument(did: string) {
   const { data } = MultiBaseEncoder.decode(encodedDocument)
   const [multiCodecValue] = VarintEncoder.decode(data.subarray(0, 2))
   if (multiCodecValue !== JSON_MULTICODEC_VARINT) {
-    throw new CredoError(`Not a JSON multicodec data`)
+    throw new CredoError('Not a JSON multicodec data')
   }
   const didDocumentJson = JsonEncoder.fromBuffer(data.subarray(2))
 
@@ -80,13 +80,14 @@ export function didDocumentToNumAlgo4Did(didDocument: DidDocument) {
   // reference to controller
   const deleteControllerIfPresent = (item: unknown) => {
     if (Array.isArray(item)) {
+      // biome-ignore lint/complexity/noForEach: <explanation>
       item.forEach((method: { controller?: string }) => {
-        if (method.controller === '#id' || method.controller === didDocument.id) delete method.controller
+        if (method.controller === '#id' || method.controller === didDocument.id) method.controller = undefined
       })
     }
   }
-  delete didDocumentJson.id
-  delete didDocumentJson.alsoKnownAs
+  didDocumentJson.id = undefined
+  didDocumentJson.alsoKnownAs = undefined
   deleteControllerIfPresent(didDocumentJson.verificationMethod)
   deleteControllerIfPresent(didDocumentJson.authentication)
   deleteControllerIfPresent(didDocumentJson.assertionMethod)

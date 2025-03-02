@@ -1,15 +1,15 @@
-import type { CredentialExchangeRecord } from '../../modules/credentials'
 import type { BaseAgent } from '@credo-ts/core'
+import type { CredentialExchangeRecord } from '../../modules/credentials'
 
 import { CredoError } from '@credo-ts/core'
 
 import {
-  V2RequestCredentialMessage,
-  V2ProposeCredentialMessage,
-  V2OfferCredentialMessage,
-  CredentialRole,
   CredentialRepository,
+  CredentialRole,
   CredentialState,
+  V2OfferCredentialMessage,
+  V2ProposeCredentialMessage,
+  V2RequestCredentialMessage,
 } from '../../modules/credentials'
 import { DidCommMessageRepository, DidCommMessageRole } from '../../repository'
 import { parseMessageType } from '../../util/messageType'
@@ -26,7 +26,7 @@ export async function migrateCredentialExchangeRecordToV0_5<Agent extends BaseAg
   agent.config.logger.info('Migrating credential exchange records to storage version 0.5')
   const credentialRepository = agent.dependencyManager.resolve(CredentialRepository)
 
-  agent.config.logger.debug(`Fetching all credential records from storage`)
+  agent.config.logger.debug('Fetching all credential records from storage')
   const credentialRecords = await credentialRepository.getAll(agent.context)
 
   agent.config.logger.debug(`Found a total of ${credentialRecords.length} credential exchange records to update.`)
@@ -67,15 +67,15 @@ export async function getCredentialRole(agent: BaseAgent, credentialRecord: Cred
     return CredentialRole.Holder
   }
   // If credentialRecord.credentials doesn't have any values, and we're also not in state done it means we're the issuer.
-  else if (credentialRecord.state === CredentialState.Done) {
+  if (credentialRecord.state === CredentialState.Done) {
     return CredentialRole.Issuer
   }
   // For these states we know for certain that we're the holder
-  else if (holderCredentialStates.includes(credentialRecord.state)) {
+  if (holderCredentialStates.includes(credentialRecord.state)) {
     return CredentialRole.Holder
   }
   // For these states we know for certain that we're the issuer
-  else if (issuerCredentialStates.includes(credentialRecord.state)) {
+  if (issuerCredentialStates.includes(credentialRecord.state)) {
     return CredentialRole.Issuer
   }
 

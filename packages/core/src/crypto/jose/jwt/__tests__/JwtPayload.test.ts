@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { JwtPayload } from '../JwtPayload'
 
 describe('JwtPayload', () => {
@@ -50,20 +49,31 @@ describe('JwtPayload', () => {
   })
 
   test('throws error for invalid values', () => {
+    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
     expect(() => JwtPayload.fromJson({ iss: {} } as any)).toThrowError('JWT payload iss must be a string')
+    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
     expect(() => JwtPayload.fromJson({ sub: {} } as any)).toThrowError('JWT payload sub must be a string')
+    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
     expect(() => JwtPayload.fromJson({ aud: {} } as any)).toThrowError(
       'JWT payload aud must be a string or an array of strings'
     )
+    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
     expect(() => JwtPayload.fromJson({ aud: [1, 'string'] } as any)).toThrowError(
       'JWT payload aud must be a string or an array of strings'
     )
+    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
     expect(() => JwtPayload.fromJson({ exp: '10' } as any)).toThrowError('JWT payload exp must be a positive number')
+    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
     expect(() => JwtPayload.fromJson({ exp: -1 } as any)).toThrowError('JWT payload exp must be a positive number')
+    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
     expect(() => JwtPayload.fromJson({ nbf: '10' } as any)).toThrowError('JWT payload nbf must be a positive number')
+    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
     expect(() => JwtPayload.fromJson({ nbf: -1 } as any)).toThrowError('JWT payload nbf must be a positive number')
+    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
     expect(() => JwtPayload.fromJson({ iat: '10' } as any)).toThrowError('JWT payload iat must be a positive number')
+    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
     expect(() => JwtPayload.fromJson({ iat: -1 } as any)).toThrowError('JWT payload iat must be a positive number')
+    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
     expect(() => JwtPayload.fromJson({ jti: {} } as any)).toThrowError('JWT payload jti must be a string')
   })
 

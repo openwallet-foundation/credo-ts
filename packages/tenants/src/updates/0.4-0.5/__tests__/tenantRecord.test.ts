@@ -1,4 +1,4 @@
-import { JsonTransformer, Agent } from '@credo-ts/core'
+import { Agent, JsonTransformer } from '@credo-ts/core'
 
 import { getAgentConfig, getAgentContext, mockFunction } from '../../../../../core/tests'
 import { TenantRecord } from '../../../repository'

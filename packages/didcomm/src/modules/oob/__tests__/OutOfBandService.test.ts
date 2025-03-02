@@ -3,7 +3,7 @@ import type { DidCommDocumentService } from '../../../services'
 import { Subject } from 'rxjs'
 
 import { EventEmitter } from '../../../../../core/src/agent/EventEmitter'
-import { KeyType, Key } from '../../../../../core/src/crypto'
+import { Key, KeyType } from '../../../../../core/src/crypto'
 import { CredoError } from '../../../../../core/src/error'
 import {
   agentDependencies,
@@ -363,7 +363,7 @@ describe('OutOfBandService', () => {
       mockFunction(outOfBandRepository.findSingleByQuery).mockResolvedValue(mockOob)
 
       await expect(outOfBandService.processHandshakeReuseAccepted(messageContext)).rejects.toThrowError(
-        new CredoError(`handshake-reuse-accepted is not in response to a handshake-reuse message.`)
+        new CredoError('handshake-reuse-accepted is not in response to a handshake-reuse message.')
       )
     })
 

@@ -1,8 +1,8 @@
-import type { DummyStateChangedEvent } from './DummyEvents'
-import type { Query, QueryOptions, AgentContext } from '@credo-ts/core'
+import type { AgentContext, Query, QueryOptions } from '@credo-ts/core'
 import type { ConnectionRecord, InboundMessageContext } from '@credo-ts/didcomm'
+import type { DummyStateChangedEvent } from './DummyEvents'
 
-import { injectable, EventEmitter } from '@credo-ts/core'
+import { EventEmitter, injectable } from '@credo-ts/core'
 
 import { DummyModuleConfig } from '../DummyModuleConfig'
 import { DummyRequestMessage, DummyResponseMessage } from '../messages'
@@ -59,7 +59,7 @@ export class DummyService {
    * @param record the dummy record for which to create a dummy response
    * @returns outbound message containing dummy response
    */
-  public async createResponse(agentContext: AgentContext, record: DummyRecord) {
+  public async createResponse(_agentContext: AgentContext, record: DummyRecord) {
     const responseMessage = new DummyResponseMessage({
       threadId: record.threadId,
     })

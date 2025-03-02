@@ -17,7 +17,7 @@ describe('mdoc service test', () => {
     wallet = new InMemoryWallet()
     agentContext = getAgentContext({ wallet, registerInstances: [[X509ModuleConfig, new X509ModuleConfig()]] })
 
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    // biome-ignore lint/style/noNonNullAssertion: <explanation>
     await wallet.createAndOpen(agentConfig.walletConfig!)
   })
 

@@ -1,16 +1,16 @@
-/* eslint-disable @typescript-eslint/no-non-null-assertion */
+import type { Observable } from 'rxjs'
 import type { AskarWalletSqliteStorageConfig } from '../../askar/src/wallet'
 import type {
+  AgentMessageProcessedEvent,
   BasicMessage,
   BasicMessageStateChangedEvent,
+  ConnectionDidRotatedEvent,
   ConnectionRecordProps,
+  ConnectionStateChangedEvent,
+  CredentialState,
   CredentialStateChangedEvent,
   ProofStateChangedEvent,
-  CredentialState,
-  ConnectionStateChangedEvent,
-  AgentMessageProcessedEvent,
   RevocationNotificationReceivedEvent,
-  ConnectionDidRotatedEvent,
 } from '../../didcomm/src'
 import type { DidCommModuleConfigOptions } from '../../didcomm/src/DidCommModuleConfig'
 import type {
@@ -20,36 +20,35 @@ import type {
 import type { ProofState } from '../../didcomm/src/modules/proofs'
 import type { DefaultAgentModulesInput } from '../../didcomm/src/util/modules'
 import type {
+  Agent,
   AgentDependencies,
   BaseEvent,
+  Buffer,
   InitConfig,
   InjectionToken,
-  Wallet,
-  Agent,
-  Buffer,
   KeyDidCreateOptions,
+  Wallet,
 } from '../src'
 import type { AgentModulesInput, EmptyModuleMap } from '../src/agent/AgentModules'
 import type { WalletConfig } from '../src/types'
-import type { Observable } from 'rxjs'
 
 import { readFileSync } from 'fs'
 import path from 'path'
-import { lastValueFrom, firstValueFrom, ReplaySubject } from 'rxjs'
+import { ReplaySubject, firstValueFrom, lastValueFrom } from 'rxjs'
 import { catchError, filter, map, take, timeout } from 'rxjs/operators'
 
 import { InMemoryWalletModule } from '../../../tests/InMemoryWalletModule'
 import {
   AgentEventTypes,
-  OutOfBandDidCommService,
-  ConnectionsModule,
-  ConnectionEventTypes,
   BasicMessageEventTypes,
+  ConnectionEventTypes,
   ConnectionRecord,
+  ConnectionsModule,
   CredentialEventTypes,
   DidExchangeRole,
   DidExchangeState,
   HandshakeProtocol,
+  OutOfBandDidCommService,
   ProofEventTypes,
   TrustPingEventTypes,
 } from '../../didcomm/src'
@@ -60,13 +59,13 @@ import { OutOfBandRecord } from '../../didcomm/src/modules/oob/repository'
 import { getDefaultDidcommModules } from '../../didcomm/src/util/modules'
 import { agentDependencies } from '../../node/src'
 import {
-  DidsApi,
-  X509Api,
-  TypedArrayEncoder,
   AgentConfig,
   AgentContext,
   DependencyManager,
+  DidsApi,
   InjectionSymbols,
+  TypedArrayEncoder,
+  X509Api,
 } from '../src'
 import { Key, KeyType } from '../src/crypto'
 import { DidKey } from '../src/modules/dids/methods/key'
@@ -152,7 +151,7 @@ export function getAgentOptions<AgentModules extends AgentModulesInput | EmptyMo
 }
 
 export function getInMemoryAgentOptions<
-  AgentModules extends DefaultAgentModulesInput | AgentModulesInput | EmptyModuleMap
+  AgentModules extends DefaultAgentModulesInput | AgentModulesInput | EmptyModuleMap,
 >(
   name: string,
   didcommExtraConfig: Partial<DidCommModuleConfigOptions> = {},
@@ -701,7 +700,7 @@ export function getMockOutOfBand({
     handshakeProtocols: [HandshakeProtocol.DidExchange],
     services: [
       new OutOfBandDidCommService({
-        id: `#inline-0`,
+        id: '#inline-0',
         serviceEndpoint: serviceEndpoint ?? 'http://example.com',
         recipientKeys,
         routingKeys: [],
@@ -732,9 +731,10 @@ export async function makeConnection(agentA: Agent<DefaultAgentModulesInput>, ag
     agentAOutOfBand.outOfBandInvitation
   )
 
-  agentBConnection = await agentB.modules.connections.returnWhenIsConnected(agentBConnection!.id)
+  // biome-ignore lint/style/noNonNullAssertion: <explanation>
+  agentBConnection = await agentB.modules.connections.returnWhenIsConnected(agentBConnection?.id!)
   let [agentAConnection] = await agentA.modules.connections.findAllByOutOfBandId(agentAOutOfBand.id)
-  agentAConnection = await agentA.modules.connections.returnWhenIsConnected(agentAConnection!.id)
+  agentAConnection = await agentA.modules.connections.returnWhenIsConnected(agentAConnection?.id)
 
   return [agentAConnection, agentBConnection]
 }
@@ -746,7 +746,7 @@ export async function makeConnection(agentA: Agent<DefaultAgentModulesInput>, ag
  * @param fn function you want to mock
  * @returns mock function with type annotations
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+// biome-ignore lint/suspicious/noExplicitAny: <explanation>
 export function mockFunction<T extends (...args: any[]) => any>(fn: T): jest.MockedFunction<T> {
   return fn as jest.MockedFunction<T>
 }
@@ -754,7 +754,6 @@ export function mockFunction<T extends (...args: any[]) => any>(fn: T): jest.Moc
 /**
  * Set a property using a getter value on a mocked oject.
  */
-// eslint-disable-next-line @typescript-eslint/ban-types
 export function mockProperty<T extends {}, K extends keyof T>(object: T, property: K, value: T[K]) {
   Object.defineProperty(object, property, { get: () => value })
 }

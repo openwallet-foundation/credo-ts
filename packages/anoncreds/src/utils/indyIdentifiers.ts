@@ -85,9 +85,8 @@ export function parseIndyDid(did: string) {
   if (match) {
     const [, namespace, namespaceIdentifier] = match
     return { namespace, namespaceIdentifier }
-  } else {
-    throw new CredoError(`${did} is not a valid did:indy did`)
   }
+  throw new CredoError(`${did} is not a valid did:indy did`)
 }
 
 interface ParsedIndySchemaId {
@@ -226,10 +225,12 @@ export function getUnQualifiedDidIndyDid(identifier: string): string {
   if (isDidIndySchemaId(identifier)) {
     const { schemaName, schemaVersion, namespaceIdentifier } = parseIndySchemaId(identifier)
     return getUnqualifiedSchemaId(namespaceIdentifier, schemaName, schemaVersion)
-  } else if (isDidIndyCredentialDefinitionId(identifier)) {
+  }
+  if (isDidIndyCredentialDefinitionId(identifier)) {
     const { schemaSeqNo, tag, namespaceIdentifier } = parseIndyCredentialDefinitionId(identifier)
     return getUnqualifiedCredentialDefinitionId(namespaceIdentifier, schemaSeqNo, tag)
-  } else if (isDidIndyRevocationRegistryId(identifier)) {
+  }
+  if (isDidIndyRevocationRegistryId(identifier)) {
     const { namespaceIdentifier, schemaSeqNo, credentialDefinitionTag, revocationRegistryTag } =
       parseIndyRevocationRegistryId(identifier)
     return getUnqualifiedRevocationRegistryDefinitionId(
@@ -259,20 +260,22 @@ export function getQualifiedDidIndyDid(identifier: string, namespace: string): s
     const { namespaceIdentifier, schemaName, schemaVersion } = parseIndySchemaId(identifier)
     const schemaId = `did:indy:${namespace}:${namespaceIdentifier}/anoncreds/v0/SCHEMA/${schemaName}/${schemaVersion}`
     return schemaId
-  } else if (isUnqualifiedCredentialDefinitionId(identifier)) {
+  }
+  if (isUnqualifiedCredentialDefinitionId(identifier)) {
     const { namespaceIdentifier, schemaSeqNo, tag } = parseIndyCredentialDefinitionId(identifier)
     const credentialDefinitionId = `did:indy:${namespace}:${namespaceIdentifier}/anoncreds/v0/CLAIM_DEF/${schemaSeqNo}/${tag}`
     return credentialDefinitionId
-  } else if (isUnqualifiedRevocationRegistryId(identifier)) {
+  }
+  if (isUnqualifiedRevocationRegistryId(identifier)) {
     const { namespaceIdentifier, schemaSeqNo, credentialDefinitionTag, revocationRegistryTag } =
       parseIndyRevocationRegistryId(identifier)
     const revocationRegistryId = `did:indy:${namespace}:${namespaceIdentifier}/anoncreds/v0/REV_REG_DEF/${schemaSeqNo}/${credentialDefinitionTag}/${revocationRegistryTag}`
     return revocationRegistryId
-  } else if (isUnqualifiedIndyDid(identifier)) {
-    return `did:indy:${namespace}:${identifier}`
-  } else {
-    throw new CredoError(`Cannot created qualified indy identifier for '${identifier}' with namespace '${namespace}'`)
   }
+  if (isUnqualifiedIndyDid(identifier)) {
+    return `did:indy:${namespace}:${identifier}`
+  }
+  throw new CredoError(`Cannot created qualified indy identifier for '${identifier}' with namespace '${namespace}'`)
 }
 
 // -- schema -- //

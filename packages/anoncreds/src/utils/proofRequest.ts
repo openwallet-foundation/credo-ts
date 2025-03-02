@@ -2,9 +2,9 @@ import type { AnonCredsProofRequest } from '../models/exchange'
 
 import {
   isUnqualifiedCredentialDefinitionId,
-  isUnqualifiedSchemaId,
   isUnqualifiedIndyDid,
   isUnqualifiedRevocationRegistryId,
+  isUnqualifiedSchemaId,
 } from './indyIdentifiers'
 
 export function proofRequestUsesUnqualifiedIdentifiers(proofRequest: AnonCredsProofRequest) {

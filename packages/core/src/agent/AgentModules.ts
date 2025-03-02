@@ -1,4 +1,4 @@
-import type { Module, DependencyManager, ApiModule } from '../plugins'
+import type { ApiModule, DependencyManager, Module } from '../plugins'
 import type { IsAny } from '../types'
 import type { Constructor } from '../utils/mixins'
 
@@ -17,7 +17,7 @@ import { WalletModule } from '../wallet'
  */
 export type ModulesMap = { [key: string]: Module }
 
-// eslint-disable-next-line @typescript-eslint/ban-types
+// biome-ignore lint/complexity/noBannedTypes: <explanation>
 export type EmptyModuleMap = {}
 
 /**
@@ -87,14 +87,14 @@ export type AgentApi<Modules extends ModulesMap> = {
  */
 export type CustomOrDefaultApi<
   CustomModuleType,
-  DefaultModuleType extends ApiModule
+  DefaultModuleType extends ApiModule,
 > = IsAny<CustomModuleType> extends true
   ? InstanceType<DefaultModuleType['api']>
   : CustomModuleType extends ApiModule
-  ? InstanceType<CustomModuleType['api']>
-  : CustomModuleType extends Module
-  ? never
-  : InstanceType<DefaultModuleType['api']>
+    ? InstanceType<CustomModuleType['api']>
+    : CustomModuleType extends Module
+      ? never
+      : InstanceType<DefaultModuleType['api']>
 
 /**
  * Method to get the default agent modules to be registered on any agent instance. It doens't configure the modules in any way,
@@ -129,7 +129,7 @@ export function extendModulesWithDefaultModules<AgentModules extends AgentModule
   // Register all default modules, if not registered yet
   for (const [moduleKey, getConfiguredModule] of Object.entries(defaultAgentModules)) {
     // Do not register if the module is already registered.
-    if (modules && modules[moduleKey]) continue
+    if (modules?.[moduleKey]) continue
 
     extendedModules[moduleKey] = getConfiguredModule()
   }
@@ -185,6 +185,7 @@ export function getAgentApi<AgentModules extends ModulesMap>(
 
     // Api is excluded
     if (excludedApis.includes(apiInstance)) return api
+    // biome-ignore lint/performance/noAccumulatingSpread: <explanation>
     return { ...api, [moduleKey]: apiInstance }
   }, {}) as AgentApi<AgentModules>
 

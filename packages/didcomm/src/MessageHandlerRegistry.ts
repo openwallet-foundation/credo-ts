@@ -5,7 +5,7 @@ import type { ParsedDidCommProtocolUri } from './util/messageType'
 
 import { injectable } from '@credo-ts/core'
 
-import { supportsIncomingDidCommProtocolUri, canHandleMessageType, parseMessageType } from './util/messageType'
+import { canHandleMessageType, parseMessageType, supportsIncomingDidCommProtocolUri } from './util/messageType'
 
 @injectable()
 export class MessageHandlerRegistry {
@@ -64,9 +64,12 @@ export class MessageHandlerRegistry {
    * Message type format is MTURI specified at https://github.com/hyperledger/aries-rfcs/blob/main/concepts/0003-protocols/README.md#mturi.
    */
   public get supportedMessageTypes() {
-    return this.messageHandlers
-      .reduce<(typeof AgentMessage)[]>((all, cur) => [...all, ...cur.supportedMessages], [])
-      .map((m) => m.type)
+    return (
+      this.messageHandlers
+        // biome-ignore lint/performance/noAccumulatingSpread: <explanation>
+        .reduce<(typeof AgentMessage)[]>((all, cur) => [...all, ...cur.supportedMessages], [])
+        .map((m) => m.type)
+    )
   }
 
   /**
@@ -82,7 +85,6 @@ export class MessageHandlerRegistry {
         seenProtocolUris.add(m.protocolUri)
         return !has
       })
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       .map(({ messageName, messageTypeUri, ...parsedProtocolUri }) => parsedProtocolUri)
 
     return protocolUris

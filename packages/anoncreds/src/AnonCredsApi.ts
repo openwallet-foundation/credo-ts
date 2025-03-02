@@ -1,3 +1,4 @@
+import type { SimpleQuery } from '@credo-ts/core'
 import type {
   AnonCredsCreateLinkSecretOptions,
   AnonCredsRegisterCredentialDefinitionOptions,
@@ -14,27 +15,26 @@ import type {
   GetRevocationStatusListReturn,
   GetSchemaReturn,
   RegisterCredentialDefinitionReturn,
-  RegisterSchemaReturn,
   RegisterRevocationRegistryDefinitionReturn,
   RegisterRevocationStatusListReturn,
+  RegisterSchemaReturn,
 } from './services'
 import type { Extensible } from './services/registry/base'
-import type { SimpleQuery } from '@credo-ts/core'
 
 import { AgentContext, inject, injectable } from '@credo-ts/core'
 
 import { AnonCredsModuleConfig } from './AnonCredsModuleConfig'
 import { AnonCredsStoreRecordError } from './error'
 import {
-  AnonCredsRevocationRegistryDefinitionPrivateRecord,
-  AnonCredsRevocationRegistryDefinitionPrivateRepository,
-  AnonCredsRevocationRegistryDefinitionRepository,
   AnonCredsCredentialDefinitionPrivateRecord,
   AnonCredsCredentialDefinitionPrivateRepository,
   AnonCredsKeyCorrectnessProofRecord,
   AnonCredsKeyCorrectnessProofRepository,
   AnonCredsLinkSecretRepository,
+  AnonCredsRevocationRegistryDefinitionPrivateRecord,
+  AnonCredsRevocationRegistryDefinitionPrivateRepository,
   AnonCredsRevocationRegistryDefinitionRecord,
+  AnonCredsRevocationRegistryDefinitionRepository,
   AnonCredsRevocationRegistryState,
 } from './repository'
 import { AnonCredsCredentialDefinitionRecord } from './repository/AnonCredsCredentialDefinitionRecord'
@@ -658,7 +658,7 @@ export class AnonCredsApi {
         }
       }
     } catch (error) {
-      throw new AnonCredsStoreRecordError(`Error storing revocation registry definition records`, { cause: error })
+      throw new AnonCredsStoreRecordError('Error storing revocation registry definition records', { cause: error })
     }
   }
 
@@ -690,7 +690,7 @@ export class AnonCredsApi {
         await this.anonCredsKeyCorrectnessProofRepository.save(this.agentContext, keyCorrectnessProofRecord)
       }
     } catch (error) {
-      throw new AnonCredsStoreRecordError(`Error storing credential definition key-correctness-proof and private`, {
+      throw new AnonCredsStoreRecordError('Error storing credential definition key-correctness-proof and private', {
         cause: error,
       })
     }
@@ -729,7 +729,7 @@ export class AnonCredsApi {
 
       await this.anonCredsCredentialDefinitionRepository.save(this.agentContext, credentialDefinitionRecord)
     } catch (error) {
-      throw new AnonCredsStoreRecordError(`Error storing credential definition records`, { cause: error })
+      throw new AnonCredsStoreRecordError('Error storing credential definition records', { cause: error })
     }
   }
 
@@ -747,7 +747,7 @@ export class AnonCredsApi {
         await this.anonCredsSchemaRepository.save(this.agentContext, schemaRecord)
       }
     } catch (error) {
-      throw new AnonCredsStoreRecordError(`Error storing schema record`, { cause: error })
+      throw new AnonCredsStoreRecordError('Error storing schema record', { cause: error })
     }
   }
 

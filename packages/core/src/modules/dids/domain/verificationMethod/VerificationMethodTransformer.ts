@@ -1,7 +1,7 @@
 import type { ValidationOptions } from 'class-validator'
 
 import { Transform, TransformationType } from 'class-transformer'
-import { isString, ValidateBy, isInstance, buildMessage } from 'class-validator'
+import { ValidateBy, buildMessage, isInstance, isString } from 'class-validator'
 
 import { JsonTransformer } from '../../../../utils/JsonTransformer'
 
@@ -17,7 +17,7 @@ function IsStringOrVerificationMethod(validationOptions?: ValidationOptions): Pr
       validator: {
         validate: (value): boolean => isString(value) || isInstance(value, VerificationMethod),
         defaultMessage: buildMessage(
-          (eachPrefix) => eachPrefix + '$property must be a string or instance of VerificationMethod',
+          (eachPrefix) => `${eachPrefix}$property must be a string or instance of VerificationMethod`,
           validationOptions
         ),
       },
@@ -47,7 +47,8 @@ function VerificationMethodTransformer() {
         // embedded verification method
         return JsonTransformer.fromJSON(auth, VerificationMethod)
       })
-    } else if (type === TransformationType.CLASS_TO_PLAIN) {
+    }
+    if (type === TransformationType.CLASS_TO_PLAIN) {
       return value?.map((auth) => (typeof auth === 'string' ? auth : JsonTransformer.toJSON(auth)))
     }
 

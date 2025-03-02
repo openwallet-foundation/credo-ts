@@ -1,6 +1,6 @@
+import type { EncryptedMessage } from '../../types'
 import type { MessagePickupProtocol } from './protocol/MessagePickupProtocol'
 import type { QueuedMessage } from './storage'
-import type { EncryptedMessage } from '../../types'
 
 /**
  * Get the supported protocol versions based on the provided message pickup protocols

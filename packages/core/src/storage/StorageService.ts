@@ -1,17 +1,18 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-import type { BaseRecord, TagsBase } from './BaseRecord'
 import type { AgentContext } from '../agent'
 import type { Constructor } from '../utils/mixins'
+import type { BaseRecord, TagsBase } from './BaseRecord'
 
 // https://stackoverflow.com/questions/51954558/how-can-i-remove-a-wider-type-from-a-union-type-without-removing-its-subtypes-in/51955852#51955852
+// biome-ignore lint/suspicious/noExplicitAny: <explanation>
 export type SimpleQuery<T extends BaseRecord<any, any, any>> = T extends BaseRecord<infer DefaultTags, infer CustomTags>
   ? DefaultTags extends TagsBase
     ? Partial<ReturnType<T['getTags']>> & TagsBase
     : CustomTags extends TagsBase
-    ? Partial<ReturnType<T['getTags']>> & TagsBase
-    : Partial<DefaultTags & CustomTags> & TagsBase
+      ? Partial<ReturnType<T['getTags']>> & TagsBase
+      : Partial<DefaultTags & CustomTags> & TagsBase
   : Partial<ReturnType<T['getTags']>> & TagsBase
 
+// biome-ignore lint/suspicious/noExplicitAny: <explanation>
 interface AdvancedQuery<T extends BaseRecord<any, any, any>> {
   $and?: Query<T>[]
   $or?: Query<T>[]
@@ -23,12 +24,14 @@ export type QueryOptions = {
   offset?: number
 }
 
+// biome-ignore lint/suspicious/noExplicitAny: <explanation>
 export type Query<T extends BaseRecord<any, any, any>> = AdvancedQuery<T> | SimpleQuery<T>
 
 export interface BaseRecordConstructor<T> extends Constructor<T> {
   type: string
 }
 
+// biome-ignore lint/suspicious/noExplicitAny: <explanation>
 export interface StorageService<T extends BaseRecord<any, any, any>> {
   /**
    * Save record in storage

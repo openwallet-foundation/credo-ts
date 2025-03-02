@@ -59,7 +59,7 @@ export function createRequestFromPreview({
   // Transform attributes by referent to requested attributes
   for (const [referent, proposedAttributes] of Object.entries(attributesByReferent)) {
     // Either attributeName or attributeNames will be undefined
-    const attributeName = proposedAttributes.length == 1 ? proposedAttributes[0].name : undefined
+    const attributeName = proposedAttributes.length === 1 ? proposedAttributes[0].name : undefined
     const attributeNames = proposedAttributes.length > 1 ? proposedAttributes.map((a) => a.name) : undefined
 
     proofRequest.requested_attributes[referent] = {

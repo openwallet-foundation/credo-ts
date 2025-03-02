@@ -1,0 +1,142 @@
+{
+  "$schema": "https://biomejs.dev/schemas/1.9.4/schema.json",
+  "vcs": {
+    "enabled": true,
+    "clientKind": "git",
+    "useIgnoreFile": true
+  },
+  "files": {
+    "maxSize": 10000000
+  },
+  "formatter": {
+    "indentStyle": "space",
+    "lineWidth": 120,
+    "ignore": ["**/node_modules", "**/build", "**/.idea", "**/coverage", "**/pnpm-lock.yaml", "**/.changeset"]
+  },
+  "javascript": {
+    "parser": {
+      "unsafeParameterDecoratorsEnabled": true
+    },
+    "formatter": {
+      "semicolons": "asNeeded",
+      "quoteStyle": "single",
+      "trailingCommas": "es5",
+      "lineWidth": 120,
+      "indentStyle": "space"
+    }
+  },
+  "json": {
+    "parser": {
+      "allowComments": true
+    }
+  },
+  "organizeImports": {
+    "enabled": true
+  },
+  "linter": {
+    "rules": {
+      "style": {
+        "useImportType": {
+          "fix": "none",
+          "level": "warn"
+        },
+        "useNodejsImportProtocol": "off",
+        "noNonNullAssertion": "error"
+      },
+      "correctness": {
+        "noUnusedVariables": {
+          "level": "error",
+          "fix": "safe"
+        },
+        "noUnusedFunctionParameters": "off",
+        "noUnusedImports": "error",
+        "noUndeclaredDependencies": "warn",
+        "noInvalidUseBeforeDeclaration": "error"
+      },
+      "suspicious": {
+        "noConfusingVoidType": "off",
+        "noConsole": "error",
+        "noUnsafeDeclarationMerging": "off"
+      },
+      "complexity": {
+        "noBannedTypes": "error"
+      },
+      "nursery": {
+        "noRestrictedImports": {
+          "level": "error",
+          "options": {
+            "paths": {
+              "packages/*": "using imports from packages/* is not allowed"
+            }
+          }
+        }
+      },
+      "performance": {
+        "noDelete": {
+          "fix": "none",
+          "level": "warn"
+        }
+      }
+    }
+  },
+  "overrides": [
+    {
+      "include": ["packages/core/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedGlobals": {
+              "level": "error",
+              "options": {
+                "deniedGlobals": ["Buffer"]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "include": ["jest.config.ts", "./scripts/**"],
+      "linter": {
+        "rules": {
+          "correctness": {
+            "noUndeclaredVariables": "off"
+          }
+        }
+      }
+    },
+    {
+      "include": ["demo/**", "demo-openid/**"],
+      "linter": {
+        "rules": {
+          "suspicious": {
+            "noConsole": "off"
+          }
+        }
+      }
+    },
+    {
+      "include": [
+        "*.test.ts",
+        "**/__tests__/**",
+        "jest.*.ts",
+        "samples/**",
+        "demo/**",
+        "demo-openid/**",
+        "scripts/**",
+        "**/tests/**",
+        "tests/**"
+      ],
+      "linter": {
+        "rules": {
+          "correctness": {
+            "noUndeclaredDependencies": "off"
+          },
+          "nursery": {
+            "useImportRestrictions": "off"
+          }
+        }
+      }
+    }
+  ]
+}

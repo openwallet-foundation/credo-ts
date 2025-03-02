@@ -1,5 +1,5 @@
-import type { FeatureRegistry } from '../../../FeatureRegistry'
 import type { DependencyManager } from '@credo-ts/core'
+import type { FeatureRegistry } from '../../../FeatureRegistry'
 
 import { BasicMessagesModule } from '../BasicMessagesModule'
 import { BasicMessageRepository } from '../repository'

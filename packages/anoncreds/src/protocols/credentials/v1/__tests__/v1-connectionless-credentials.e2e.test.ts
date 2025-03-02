@@ -1,10 +1,10 @@
+import type { AcceptCredentialOfferOptions, AcceptCredentialRequestOptions } from '@credo-ts/didcomm'
 import type { EventReplaySubject } from '../../../../../../core/tests'
 import type { AnonCredsTestsAgent } from '../../../../../tests/legacyAnonCredsSetup'
-import type { AcceptCredentialOfferOptions, AcceptCredentialRequestOptions } from '@credo-ts/didcomm'
 
 import { AutoAcceptCredential, CredentialExchangeRecord, CredentialState, MessageReceiver } from '@credo-ts/didcomm'
 
-import { waitForCredentialRecordSubject, testLogger } from '../../../../../../core/tests'
+import { testLogger, waitForCredentialRecordSubject } from '../../../../../../core/tests'
 import { setupAnonCredsTests } from '../../../../../tests/legacyAnonCredsSetup'
 import { V1CredentialPreview } from '../messages'
 
@@ -47,7 +47,6 @@ describe('V1 Connectionless Credentials', () => {
   test('Faber starts with connection-less credential offer to Alice', async () => {
     testLogger.test('Faber sends credential offer to Alice')
 
-    // eslint-disable-next-line prefer-const
     let { message, credentialRecord: faberCredentialRecord } = await faberAgent.modules.credentials.createOffer({
       comment: 'V1 Out of Band offer',
       credentialFormats: {
@@ -148,7 +147,6 @@ describe('V1 Connectionless Credentials', () => {
   })
 
   test('Faber starts with connection-less credential offer to Alice with auto-accept enabled', async () => {
-    // eslint-disable-next-line prefer-const
     let { message, credentialRecord: faberCredentialRecord } = await faberAgent.modules.credentials.createOffer({
       comment: 'V1 Out of Band offer',
       credentialFormats: {

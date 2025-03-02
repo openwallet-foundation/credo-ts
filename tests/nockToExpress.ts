@@ -1,12 +1,12 @@
 import type { Express } from 'express'
-import type { ReplyFnContext, Body } from 'nock'
+import type { Body, ReplyFnContext } from 'nock'
 
 import nock, { cleanAll } from 'nock'
 import request from 'supertest'
 
 // Helper function to forward requests from nock to express
 export function setupNockToExpress(baseUrl: string, app: Express) {
-  async function reply(this: ReplyFnContext, uri: string, body: Body) {
+  async function reply(this: ReplyFnContext, _uri: string, body: Body) {
     // Get the original request details
     const { method, path, headers } = this.req
 
@@ -16,11 +16,11 @@ export function setupNockToExpress(baseUrl: string, app: Express) {
     let testRequest = supertestInstance[method.toLowerCase() as 'post'](path)
 
     // Add original headers (excluding some that might interfere)
-    Object.entries(headers).forEach(([key, value]) => {
+    for (const [key, value] of Object.entries(headers)) {
       if (!['host', 'content-length'].includes(key.toLowerCase())) {
         testRequest = testRequest.set(key, value)
       }
-    })
+    }
 
     // Add marker header to prevent infinite loops
     testRequest = testRequest.set('x-forwarded-from-nock', 'true')
@@ -36,7 +36,7 @@ export function setupNockToExpress(baseUrl: string, app: Express) {
       res.on('data', (chunk) => {
         data = Buffer.concat([data, chunk])
       })
-      res.on('end', function () {
+      res.on('end', () => {
         cb(null, data.toString())
       })
     })
@@ -44,9 +44,7 @@ export function setupNockToExpress(baseUrl: string, app: Express) {
     try {
       const response = await testRequest
       return [response.status, response.body, response.headers]
-    } catch (error) {
-      // eslint-disable-next-line no-console
-      console.error('Error forwarding request:', error)
+    } catch (_error) {
       return [500, { error: 'Internal Server Error' }]
     }
   }

@@ -1,5 +1,5 @@
-import type { VerifyProofOptions, VerifyW3cPresentationOptions } from './AnonCredsVerifierServiceOptions'
 import type { AgentContext } from '@credo-ts/core'
+import type { VerifyProofOptions, VerifyW3cPresentationOptions } from './AnonCredsVerifierServiceOptions'
 
 export const AnonCredsVerifierServiceSymbol = Symbol('AnonCredsVerifierService')
 

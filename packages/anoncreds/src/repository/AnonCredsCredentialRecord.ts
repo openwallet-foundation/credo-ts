@@ -1,5 +1,5 @@
-import type { AnonCredsCredential } from '../models'
 import type { Tags } from '@credo-ts/core'
+import type { AnonCredsCredential } from '../models'
 
 import { BaseRecord, utils } from '@credo-ts/core'
 

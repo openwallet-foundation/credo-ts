@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 export enum LogLevel {
   test = 0,
   trace = 1,
@@ -14,11 +12,18 @@ export enum LogLevel {
 export interface Logger {
   logLevel: LogLevel
 
+  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
   test(message: string, data?: Record<string, any>): void
+  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
   trace(message: string, data?: Record<string, any>): void
+  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
   debug(message: string, data?: Record<string, any>): void
+  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
   info(message: string, data?: Record<string, any>): void
+  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
   warn(message: string, data?: Record<string, any>): void
+  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
   error(message: string, data?: Record<string, any>): void
+  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
   fatal(message: string, data?: Record<string, any>): void
 }

@@ -1,10 +1,10 @@
-import type { ConnectionType } from './models'
-import type { ConnectionRecord } from './repository'
+import type { Query, QueryOptions } from '@credo-ts/core'
 import type { Routing } from '../../models'
 import type { OutOfBandRecord } from '../oob/repository'
-import type { Query, QueryOptions } from '@credo-ts/core'
+import type { ConnectionType } from './models'
+import type { ConnectionRecord } from './repository'
 
-import { AgentContext, CredoError, injectable, DidResolverService, DidRepository } from '@credo-ts/core'
+import { AgentContext, CredoError, DidRepository, DidResolverService, injectable } from '@credo-ts/core'
 
 import { MessageHandlerRegistry } from '../../MessageHandlerRegistry'
 import { MessageSender } from '../../MessageSender'
@@ -18,18 +18,18 @@ import { ConnectionsModuleConfig } from './ConnectionsModuleConfig'
 import { DidExchangeProtocol } from './DidExchangeProtocol'
 import {
   AckMessageHandler,
+  ConnectionProblemReportHandler,
   ConnectionRequestHandler,
   ConnectionResponseHandler,
   DidExchangeCompleteHandler,
   DidExchangeRequestHandler,
   DidExchangeResponseHandler,
-  TrustPingMessageHandler,
-  TrustPingResponseMessageHandler,
-  ConnectionProblemReportHandler,
-  DidRotateHandler,
   DidRotateAckHandler,
+  DidRotateHandler,
   DidRotateProblemReportHandler,
   HangupHandler,
+  TrustPingMessageHandler,
+  TrustPingResponseMessageHandler,
 } from './handlers'
 import { HandshakeProtocol } from './models'
 import { ConnectionService, DidRotateService, TrustPingService } from './services'
@@ -110,6 +110,7 @@ export class ConnectionsApi {
       routing = await this.routingService.getRouting(this.agentContext, { mediatorId: outOfBandRecord.mediatorId })
     }
 
+    // biome-ignore lint/suspicious/noImplicitAnyLet: <explanation>
     let result
     if (protocol === HandshakeProtocol.DidExchange) {
       result = await this.didExchangeProtocol.createRequest(this.agentContext, outOfBandRecord, {
@@ -179,6 +180,7 @@ export class ConnectionsApi {
         ? await this.routingService.getRouting(this.agentContext)
         : undefined
 
+    // biome-ignore lint/suspicious/noImplicitAnyLet: <explanation>
     let outboundMessageContext
     if (connectionRecord.protocol === HandshakeProtocol.DidExchange) {
       const message = await this.didExchangeProtocol.createResponse(
@@ -226,6 +228,7 @@ export class ConnectionsApi {
   public async acceptResponse(connectionId: string): Promise<ConnectionRecord> {
     const connectionRecord = await this.connectionService.getById(this.agentContext, connectionId)
 
+    // biome-ignore lint/suspicious/noImplicitAnyLet: <explanation>
     let outboundMessageContext
     if (connectionRecord.protocol === HandshakeProtocol.DidExchange) {
       if (!connectionRecord.outOfBandId) {

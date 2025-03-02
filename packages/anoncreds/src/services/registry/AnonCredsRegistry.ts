@@ -1,3 +1,4 @@
+import type { AgentContext } from '@credo-ts/core'
 import type {
   GetCredentialDefinitionReturn,
   RegisterCredentialDefinitionOptions,
@@ -14,7 +15,6 @@ import type {
   RegisterRevocationStatusListReturn,
 } from './RevocationStatusListOptions'
 import type { GetSchemaReturn, RegisterSchemaOptions, RegisterSchemaReturn } from './SchemaOptions'
-import type { AgentContext } from '@credo-ts/core'
 
 /**
  * @public

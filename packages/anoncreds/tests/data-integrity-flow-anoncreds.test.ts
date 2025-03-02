@@ -15,12 +15,12 @@ import {
   W3cCredentialsModuleConfig,
 } from '@credo-ts/core'
 import {
-  ProofRole,
-  CredentialRole,
   CredentialExchangeRecord,
   CredentialPreviewAttribute,
+  CredentialRole,
   CredentialState,
   ProofExchangeRecord,
+  ProofRole,
   ProofState,
 } from '@credo-ts/didcomm'
 import { Subject } from 'rxjs'

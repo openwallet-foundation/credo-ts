@@ -1,8 +1,3 @@
-import type {
-  OpenId4VcSiopAcceptAuthorizationRequestOptions,
-  OpenId4VcSiopResolvedAuthorizationRequest,
-} from './OpenId4vcSiopHolderServiceOptions'
-import type { OpenId4VcJwtIssuer } from '../shared'
 import type { AgentContext, EncodedX509Certificate, JwkJson, VerifiablePresentation } from '@credo-ts/core'
 import type {
   AuthorizationResponsePayload,
@@ -10,6 +5,11 @@ import type {
   RequestObjectPayload,
   VerifiedAuthorizationRequest,
 } from '@sphereon/did-auth-siop'
+import type { OpenId4VcJwtIssuer } from '../shared'
+import type {
+  OpenId4VcSiopAcceptAuthorizationRequestOptions,
+  OpenId4VcSiopResolvedAuthorizationRequest,
+} from './OpenId4vcSiopHolderServiceOptions'
 
 import {
   Buffer,
@@ -18,6 +18,7 @@ import {
   DifPresentationExchangeSubmissionLocation,
   Hasher,
   KeyType,
+  MdocDeviceResponse,
   TypedArrayEncoder,
   W3cJsonLdVerifiablePresentation,
   W3cJwtVerifiablePresentation,
@@ -25,7 +26,6 @@ import {
   getJwkFromJson,
   injectable,
   parseDid,
-  MdocDeviceResponse,
 } from '@credo-ts/core'
 import { OP, ResponseIss, ResponseMode, ResponseType, SupportedVersion, VPTokenLocation } from '@sphereon/did-auth-siop'
 

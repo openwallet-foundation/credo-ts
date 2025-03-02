@@ -1,7 +1,7 @@
-import type { OpenId4VcSiopAuthorizationEndpointConfig } from './router/authorizationEndpoint'
-import type { OpenId4VcSiopAuthorizationRequestEndpointConfig } from './router/authorizationRequestEndpoint'
 import type { Optional } from '@credo-ts/core'
 import type { Router } from 'express'
+import type { OpenId4VcSiopAuthorizationEndpointConfig } from './router/authorizationEndpoint'
+import type { OpenId4VcSiopAuthorizationRequestEndpointConfig } from './router/authorizationRequestEndpoint'
 
 import { importExpress } from '../shared/router'
 

@@ -12,8 +12,8 @@
  * to the mediator, request mediation and set the mediator as default.
  */
 
-import type { InitConfig } from '@credo-ts/core'
 import type { Socket } from 'net'
+import type { InitConfig } from '@credo-ts/core'
 
 import { askar } from '@openwallet-foundation/askar-nodejs'
 import express from 'express'
@@ -24,16 +24,16 @@ import { TestLogger } from '../packages/core/tests/logger'
 import { AskarModule } from '@credo-ts/askar'
 import { Agent, LogLevel } from '@credo-ts/core'
 import {
-  ConnectionsModule,
-  MediatorModule,
-  HttpOutboundTransport,
   ConnectionInvitationMessage,
-  WsOutboundTransport,
+  ConnectionsModule,
   DidCommModule,
+  HttpOutboundTransport,
+  MediatorModule,
   MessagePickupModule,
   OutOfBandModule,
+  WsOutboundTransport,
 } from '@credo-ts/didcomm'
-import { HttpInboundTransport, agentDependencies, WsInboundTransport } from '@credo-ts/node'
+import { HttpInboundTransport, WsInboundTransport, agentDependencies } from '@credo-ts/node'
 
 const port = process.env.AGENT_PORT ? Number(process.env.AGENT_PORT) : 3001
 
@@ -93,7 +93,7 @@ httpInboundTransport.app.get('/invitation', async (req, res) => {
   } else {
     const { outOfBandInvitation } = await agent.modules.oob.createInvitation()
     const httpEndpoint = endpoints.find((e) => e.startsWith('http'))
-    res.send(outOfBandInvitation.toUrl({ domain: httpEndpoint + '/invitation' }))
+    res.send(outOfBandInvitation.toUrl({ domain: `${httpEndpoint}/invitation` }))
   }
 })
 

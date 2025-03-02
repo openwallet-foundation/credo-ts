@@ -3,13 +3,13 @@ import type { ValidationOptions } from 'class-validator'
 import { ValidateBy, ValidationError, buildMessage } from 'class-validator'
 
 export function IsValidDrpcResponse(validationOptions?: ValidationOptions): PropertyDecorator {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
   return (target: any, propertyKey: string | symbol) => {
     ValidateBy(
       {
         name: 'isValidDrpcResponse',
         validator: {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          // biome-ignore lint/suspicious/noExplicitAny: <explanation>
           validate: (value: any): boolean => {
             // Check if value is a valid DrpcResponseObject, an array of DrpcResponseObject (possibly mixed with empty objects), or an empty object
             let isValid = false
@@ -26,7 +26,7 @@ export function IsValidDrpcResponse(validationOptions?: ValidationOptions): Prop
             return isValid
           },
           defaultMessage: buildMessage(
-            (eachPrefix) => eachPrefix + '$property is not a valid DrpcResponse',
+            (eachPrefix) => `${eachPrefix}$property is not a valid DrpcResponse`,
             validationOptions
           ),
         },
@@ -36,7 +36,7 @@ export function IsValidDrpcResponse(validationOptions?: ValidationOptions): Prop
   }
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+// biome-ignore lint/suspicious/noExplicitAny: <explanation>
 export function isValidDrpcResponse(value: any): boolean {
   // Check if value is an object
   if (typeof value !== 'object' || value === null) {
@@ -63,7 +63,7 @@ export function isValidDrpcResponse(value: any): boolean {
   return false
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+// biome-ignore lint/suspicious/noExplicitAny: <explanation>
 function isValidDrpcResponseError(error: any): boolean {
   return typeof error === 'object' && error !== null && 'code' in error && 'message' in error
 }

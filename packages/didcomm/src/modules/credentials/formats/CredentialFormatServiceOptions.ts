@@ -1,9 +1,9 @@
-import type { CredentialFormat, CredentialFormatPayload } from './CredentialFormat'
-import type { CredentialFormatService } from './CredentialFormatService'
 import type { Attachment } from '../../../decorators/attachment/Attachment'
 import type { CredentialFormatSpec } from '../models/CredentialFormatSpec'
 import type { CredentialPreviewAttributeOptions } from '../models/CredentialPreviewAttribute'
 import type { CredentialExchangeRecord } from '../repository/CredentialExchangeRecord'
+import type { CredentialFormat, CredentialFormatPayload } from './CredentialFormat'
+import type { CredentialFormatService } from './CredentialFormatService'
 
 /**
  * Infer the {@link CredentialFormat} based on a {@link CredentialFormatService}.

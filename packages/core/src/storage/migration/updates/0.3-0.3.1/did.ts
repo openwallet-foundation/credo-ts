@@ -15,7 +15,7 @@ export async function migrateDidRecordToV0_3_1<Agent extends BaseAgent>(agent: A
   agent.config.logger.info('Migrating did records to storage version 0.3.1')
   const didRepository = agent.dependencyManager.resolve(DidRepository)
 
-  agent.config.logger.debug(`Fetching all did records from storage`)
+  agent.config.logger.debug('Fetching all did records from storage')
   const allDids = await didRepository.getAll(agent.context)
 
   agent.config.logger.debug(`Found a total of ${allDids.length} did records to update.`)

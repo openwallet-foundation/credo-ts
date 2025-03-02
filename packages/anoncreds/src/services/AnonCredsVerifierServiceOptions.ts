@@ -1,11 +1,11 @@
+import type { W3cJsonLdVerifiablePresentation } from '@credo-ts/core'
 import type { AnonCredsProof, AnonCredsProofRequest } from '../models/exchange'
-import type { AnonCredsRevocationStatusList, AnonCredsRevocationRegistryDefinition } from '../models/registry'
+import type { AnonCredsRevocationRegistryDefinition, AnonCredsRevocationStatusList } from '../models/registry'
 import type {
-  AnonCredsSchemas,
   AnonCredsCredentialDefinitions,
+  AnonCredsSchemas,
   CredentialWithRevocationMetadata,
 } from '../models/utils'
-import type { W3cJsonLdVerifiablePresentation } from '@credo-ts/core'
 
 export interface VerifyProofOptions {
   proofRequest: AnonCredsProofRequest

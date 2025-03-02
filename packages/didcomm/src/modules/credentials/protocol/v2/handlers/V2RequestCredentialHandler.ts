@@ -34,7 +34,7 @@ export class V2RequestCredentialHandler implements MessageHandler {
     credentialRecord: CredentialExchangeRecord,
     messageContext: InboundMessageContext<V2RequestCredentialMessage>
   ) {
-    messageContext.agentContext.config.logger.info(`Automatically sending credential with autoAccept`)
+    messageContext.agentContext.config.logger.info('Automatically sending credential with autoAccept')
 
     const offerMessage = await this.credentialProtocol.findOfferMessage(
       messageContext.agentContext,

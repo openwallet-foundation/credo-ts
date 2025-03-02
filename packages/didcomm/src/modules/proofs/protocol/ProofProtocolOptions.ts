@@ -1,4 +1,3 @@
-import type { ProofProtocol } from './ProofProtocol'
 import type { AgentMessage } from '../../../AgentMessage'
 import type { ConnectionRecord } from '../../connections'
 import type {
@@ -10,6 +9,7 @@ import type {
 } from '../formats'
 import type { AutoAcceptProof } from '../models'
 import type { ProofExchangeRecord } from '../repository'
+import type { ProofProtocol } from './ProofProtocol'
 
 /**
  * Get the format data payload for a specific message from a list of ProofFormat interfaces and a message
@@ -35,7 +35,7 @@ import type { ProofExchangeRecord } from '../repository'
  */
 export type ProofFormatDataMessagePayload<
   CFs extends ProofFormat[] = ProofFormat[],
-  M extends keyof ProofFormat['formatData'] = keyof ProofFormat['formatData']
+  M extends keyof ProofFormat['formatData'] = keyof ProofFormat['formatData'],
 > = {
   [ProofFormat in CFs[number] as ProofFormat['formatKey']]?: ProofFormat['formatData'][M]
 }

@@ -1,9 +1,9 @@
+import type { AgentContext } from '@credo-ts/core'
 import type { DecryptedMessageContext } from './EnvelopeService'
 import type { TransportSession } from './TransportService'
 import type { ConnectionRecord } from './modules/connections/repository'
 import type { InboundTransport } from './transport'
 import type { EncryptedMessage, PlaintextMessage } from './types'
-import type { AgentContext } from '@credo-ts/core'
 
 import {
   AgentContextProvider,
@@ -94,7 +94,7 @@ export class MessageReceiver {
       receivedAt?: Date
     } = {}
   ) {
-    this.logger.debug(`Agent received message`)
+    this.logger.debug('Agent received message')
 
     // Find agent context for the inbound message
     const agentContext = await this.agentContextProvider.getContextForInboundMessage(inboundMessage, {

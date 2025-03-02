@@ -1,14 +1,14 @@
-import type { TenantAgent } from '../src/TenantAgent'
 import type { InitConfig } from '@credo-ts/core'
 import type { DidCommModuleConfigOptions } from '@credo-ts/didcomm'
+import type { TenantAgent } from '../src/TenantAgent'
 
 import { Agent, CacheModule, InMemoryLruCache } from '@credo-ts/core'
 import {
   ConnectionsModule,
-  OutOfBandRecord,
   DidCommModule,
   MessagePickupModule,
   OutOfBandModule,
+  OutOfBandRecord,
 } from '@credo-ts/didcomm'
 import { agentDependencies } from '@credo-ts/node'
 
@@ -23,7 +23,7 @@ const agent1Config: InitConfig = {
   label: 'Tenant Agent 1',
   walletConfig: {
     id: `tenants e2e agent 1 - ${uuid().slice(0, 4)}`,
-    key: `tenants e2e agent 1`,
+    key: 'tenants e2e agent 1',
   },
   logger: testLogger,
 }
@@ -36,7 +36,7 @@ const agent2Config: InitConfig = {
   label: 'Tenant Agent 2',
   walletConfig: {
     id: `tenants e2e agent 2 - ${uuid().slice(0, 4)}`,
-    key: `tenants e2e agent 2`,
+    key: 'tenants e2e agent 2',
   },
   logger: testLogger,
 }
@@ -58,7 +58,7 @@ const getTenantsAgentModules = (didcommConfig: DidCommModuleConfigOptions) =>
     cache: new CacheModule({
       cache: new InMemoryLruCache({ limit: 500 }),
     }),
-  } as const)
+  }) as const
 
 // Create multi-tenant agents
 const agent1 = new Agent({

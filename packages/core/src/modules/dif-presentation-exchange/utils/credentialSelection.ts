@@ -1,15 +1,15 @@
+import type { IPresentationDefinition, PEX, SelectResults, SubmissionRequirementMatch } from '@animo-id/pex'
+import type {
+  SubmissionRequirementMatchFrom,
+  SubmissionRequirementMatchInputDescriptor,
+} from '@animo-id/pex/dist/main/lib/evaluation/core'
+import type { InputDescriptorV1, InputDescriptorV2, SubmissionRequirement } from '@sphereon/pex-models'
 import type {
   DifPexCredentialsForRequest,
   DifPexCredentialsForRequestRequirement,
   DifPexCredentialsForRequestSubmissionEntry,
   SubmissionEntryCredential,
 } from '../models'
-import type { IPresentationDefinition, SelectResults, SubmissionRequirementMatch, PEX } from '@animo-id/pex'
-import type {
-  SubmissionRequirementMatchFrom,
-  SubmissionRequirementMatchInputDescriptor,
-} from '@animo-id/pex/dist/main/lib/evaluation/core'
-import type { InputDescriptorV1, InputDescriptorV2, SubmissionRequirement } from '@sphereon/pex-models'
 
 import { Status } from '@animo-id/pex'
 import { SubmissionRequirementMatchType } from '@animo-id/pex/dist/main/lib/evaluation/core'
@@ -59,20 +59,21 @@ export async function getCredentialsForRequest(
             credentialRecord,
             disclosedPayload: prettyClaims as Record<string, unknown>,
           }
-        } else if (credentialRecord instanceof MdocRecord) {
+        }
+        if (credentialRecord instanceof MdocRecord) {
           return {
             type: ClaimFormat.MsoMdoc,
             credentialRecord,
             disclosedPayload: {},
           }
-        } else if (credentialRecord instanceof W3cCredentialRecord) {
+        }
+        if (credentialRecord instanceof W3cCredentialRecord) {
           return {
             type: credentialRecord.credential.claimFormat,
             credentialRecord,
           }
-        } else {
-          throw new CredoError(`Unrecognized credential record type`)
         }
+        throw new CredoError('Unrecognized credential record type')
       }) ?? [],
   }
 

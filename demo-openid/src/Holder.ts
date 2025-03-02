@@ -1,33 +1,33 @@
-import type { OpenId4VciResolvedCredentialOffer, OpenId4VcSiopResolvedAuthorizationRequest } from '@credo-ts/openid4vc'
+import type { OpenId4VcSiopResolvedAuthorizationRequest, OpenId4VciResolvedCredentialOffer } from '@credo-ts/openid4vc'
 
 import { AskarModule } from '@credo-ts/askar'
 import {
-  W3cJwtVerifiableCredential,
-  W3cJsonLdVerifiableCredential,
+  DidJwk,
+  DidKey,
   DifPresentationExchangeService,
   Mdoc,
-  DidKey,
-  DidJwk,
-  getJwkFromKey,
+  W3cJsonLdVerifiableCredential,
+  W3cJwtVerifiableCredential,
   X509Module,
+  getJwkFromKey,
 } from '@credo-ts/core'
 import {
-  authorizationCodeGrantIdentifier,
   OpenId4VcHolderModule,
   OpenId4VciAuthorizationFlow,
+  authorizationCodeGrantIdentifier,
   preAuthorizedCodeGrantIdentifier,
 } from '@credo-ts/openid4vc'
 import { askar } from '@openwallet-foundation/askar-nodejs'
 
 import { BaseAgent } from './BaseAgent'
-import { greenText, Output } from './OutputClass'
+import { Output, greenText } from './OutputClass'
 
 function getOpenIdHolderModules() {
   return {
     askar: new AskarModule({ askar }),
     openId4VcHolder: new OpenId4VcHolderModule(),
     x509: new X509Module({
-      getTrustedCertificatesForVerification: (agentContext, { certificateChain, verification }) => {
+      getTrustedCertificatesForVerification: (_agentContext, { certificateChain, verification }) => {
         console.log(
           greenText(
             `dyncamically trusting certificate ${certificateChain[0].getIssuerNameField('C')} for verification of ${
@@ -54,7 +54,7 @@ export class Holder extends BaseAgent<ReturnType<typeof getOpenIdHolderModules>>
   }
 
   public static async build(): Promise<Holder> {
-    const holder = new Holder(3000, 'OpenId4VcHolder ' + Math.random().toString())
+    const holder = new Holder(3000, `OpenId4VcHolder ${Math.random().toString()}`)
     await holder.initializeAgent('96213c3d7fc8d4d6754c7a0fd969598e')
 
     return holder
@@ -79,7 +79,8 @@ export class Holder extends BaseAgent<ReturnType<typeof getOpenIdHolderModules>>
         authorizationFlow: 'PreAuthorized',
         preAuthorizedCode: grants[preAuthorizedCodeGrantIdentifier]['pre-authorized_code'],
       } as const
-    } else if (resolvedCredentialOffer.credentialOfferPayload.grants?.[authorizationCodeGrantIdentifier]) {
+    }
+    if (resolvedCredentialOffer.credentialOfferPayload.grants?.[authorizationCodeGrantIdentifier]) {
       const resolvedAuthorizationRequest = await this.agent.modules.openId4VcHolder.resolveIssuanceAuthorizationRequest(
         resolvedCredentialOffer,
         {
@@ -96,12 +97,11 @@ export class Holder extends BaseAgent<ReturnType<typeof getOpenIdHolderModules>>
           ...resolvedAuthorizationRequest,
           authorizationFlow: `${OpenId4VciAuthorizationFlow.PresentationDuringIssuance}`,
         } as const
-      } else {
-        return {
-          ...resolvedAuthorizationRequest,
-          authorizationFlow: `${OpenId4VciAuthorizationFlow.Oauth2Redirect}`,
-        } as const
       }
+      return {
+        ...resolvedAuthorizationRequest,
+        authorizationFlow: `${OpenId4VciAuthorizationFlow.Oauth2Redirect}`,
+      } as const
     }
 
     throw new Error('Unsupported grant type')
@@ -174,11 +174,11 @@ export class Holder extends BaseAgent<ReturnType<typeof getOpenIdHolderModules>>
         const credential = response.credentials[0]
         if (credential instanceof W3cJwtVerifiableCredential || credential instanceof W3cJsonLdVerifiableCredential) {
           return this.agent.w3cCredentials.storeCredential({ credential })
-        } else if (credential instanceof Mdoc) {
-          return this.agent.mdoc.store(credential)
-        } else {
-          return this.agent.sdJwtVc.store(credential.compact)
         }
+        if (credential instanceof Mdoc) {
+          return this.agent.mdoc.store(credential)
+        }
+        return this.agent.sdJwtVc.store(credential.compact)
       })
     )
 

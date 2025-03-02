@@ -3,7 +3,7 @@ import { JsonTransformer } from '../../../../utils/JsonTransformer'
 import didExample123Fixture from '../../__tests__/__fixtures__/didExample123.json'
 import didExample456Invalid from '../../__tests__/__fixtures__/didExample456Invalid.json'
 import { DidDocument, findVerificationMethodByKeyType } from '../DidDocument'
-import { DidDocumentService, IndyAgentService, DidCommV1Service } from '../service'
+import { DidCommV1Service, DidDocumentService, IndyAgentService } from '../service'
 import { VerificationMethod } from '../verificationMethod'
 
 const didDocumentInstance = new DidDocument({

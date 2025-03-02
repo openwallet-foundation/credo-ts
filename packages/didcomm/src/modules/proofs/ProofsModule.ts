@@ -1,6 +1,6 @@
+import type { AgentContext, ApiModule, Constructor, DependencyManager, Optional } from '@credo-ts/core'
 import type { ProofsModuleConfigOptions } from './ProofsModuleConfig'
 import type { ProofProtocol } from './protocol/ProofProtocol'
-import type { AgentContext, ApiModule, DependencyManager, Optional, Constructor } from '@credo-ts/core'
 
 import { FeatureRegistry } from '../../FeatureRegistry'
 import { MessageHandlerRegistry } from '../../MessageHandlerRegistry'

@@ -4,17 +4,17 @@ import type { CustomProofTags, ProofStateChangedEvent } from '../../../../../../
 import { Subject } from 'rxjs'
 
 import { EventEmitter } from '../../../../../../core/src'
-import { getMockConnection, getAgentConfig, getAgentContext, mockFunction } from '../../../../../../core/tests'
+import { getAgentConfig, getAgentContext, getMockConnection, mockFunction } from '../../../../../../core/tests'
 import {
-  ProofRole,
-  DidExchangeState,
   Attachment,
   AttachmentData,
-  ProofState,
-  ProofExchangeRecord,
+  DidExchangeState,
   InboundMessageContext,
-  ProofEventTypes,
   PresentationProblemReportReason,
+  ProofEventTypes,
+  ProofExchangeRecord,
+  ProofRole,
+  ProofState,
 } from '../../../../../../didcomm/src'
 import { ConnectionService } from '../../../../../../didcomm/src/modules/connections/services/ConnectionService'
 import { ProofRepository } from '../../../../../../didcomm/src/modules/proofs/repository/ProofRepository'
@@ -231,7 +231,7 @@ describe('V1ProofProtocol', () => {
       })
     })
 
-    test(`updates problem report error message and returns proof record`, async () => {
+    test('updates problem report error message and returns proof record', async () => {
       const repositoryUpdateSpy = jest.spyOn(proofRepository, 'update')
 
       // given

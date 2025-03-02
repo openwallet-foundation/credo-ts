@@ -1,8 +1,8 @@
 import type { AnonCredsCredential } from '../../../../models'
 
-import { Attachment, AgentMessage, IsValidMessageType, parseMessageType } from '@credo-ts/didcomm'
+import { AgentMessage, Attachment, IsValidMessageType, parseMessageType } from '@credo-ts/didcomm'
 import { Expose, Type } from 'class-transformer'
-import { IsString, IsOptional, IsArray, ValidateNested, IsInstance } from 'class-validator'
+import { IsArray, IsInstance, IsOptional, IsString, ValidateNested } from 'class-validator'
 
 export const INDY_CREDENTIAL_ATTACHMENT_ID = 'libindy-cred-0'
 

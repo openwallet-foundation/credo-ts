@@ -1,6 +1,6 @@
-import type { OpenId4VcIssuanceRequest } from './requestContext'
+import type { Response, Router } from 'express'
 import type { OpenId4VciCredentialIssuerMetadata } from '../../shared'
-import type { Router, Response } from 'express'
+import type { OpenId4VcIssuanceRequest } from './requestContext'
 
 import { getAuthorizationServerMetadataFromList } from '@animo-id/oauth2'
 

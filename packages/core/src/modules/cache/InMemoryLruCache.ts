@@ -1,5 +1,5 @@
-import type { Cache } from './Cache'
 import type { AgentContext } from '../../agent/context'
+import type { Cache } from './Cache'
 
 import { LRUMap } from 'lru_map'
 
@@ -21,7 +21,7 @@ export class InMemoryLruCache implements Cache {
     this.cache = new LRUMap<string, CacheItem>(limit)
   }
 
-  public async get<CacheValue>(agentContext: AgentContext, key: string) {
+  public async get<CacheValue>(_agentContext: AgentContext, key: string) {
     this.removeExpiredItems()
     const item = this.cache.get(key)
 
@@ -32,7 +32,7 @@ export class InMemoryLruCache implements Cache {
   }
 
   public async set<CacheValue>(
-    agentContext: AgentContext,
+    _agentContext: AgentContext,
     key: string,
     value: CacheValue,
     expiresInSeconds?: number
@@ -55,7 +55,7 @@ export class InMemoryLruCache implements Cache {
     this.cache.clear()
   }
 
-  public async remove(agentContext: AgentContext, key: string): Promise<void> {
+  public async remove(_agentContext: AgentContext, key: string): Promise<void> {
     this.removeExpiredItems()
     this.cache.delete(key)
   }

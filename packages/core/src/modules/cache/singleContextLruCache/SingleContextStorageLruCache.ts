@@ -1,6 +1,6 @@
-import type { SingleContextLruCacheItem } from './SingleContextLruCacheRecord'
 import type { AgentContext } from '../../../agent/context'
 import type { Cache } from '../Cache'
+import type { SingleContextLruCacheItem } from './SingleContextLruCacheRecord'
 
 import { LRUMap } from 'lru_map'
 
@@ -124,9 +124,8 @@ export class SingleContextStorageLruCache implements Cache {
           // the record already exists, which is our intended end state
           // we can ignore this error and fetch the existing record
           return cacheRepository.getById(agentContext, CONTEXT_STORAGE_LRU_CACHE_ID)
-        } else {
-          throw error
         }
+        throw error
       }
     }
 

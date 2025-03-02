@@ -1,16 +1,16 @@
 import type {
   AgentContext,
-  DidRegistrar,
-  DidResolver,
-  DidDocument,
   DidCreateOptions,
   DidCreateResult,
-  DidUpdateResult,
   DidDeactivateResult,
+  DidDocument,
+  DidRegistrar,
   DidResolutionResult,
+  DidResolver,
+  DidUpdateResult,
 } from '@credo-ts/core'
 
-import { DidRecord, DidDocumentRole, DidRepository } from '@credo-ts/core'
+import { DidDocumentRole, DidRecord, DidRepository } from '@credo-ts/core'
 
 export class InMemoryDidRegistry implements DidRegistrar, DidResolver {
   public readonly supportedMethods = ['inmemory']
@@ -61,7 +61,7 @@ export class InMemoryDidRegistry implements DidRegistrar, DidResolver {
       didRegistrationMetadata: {},
       didState: {
         state: 'failed',
-        reason: `notImplemented: updating did:inmemory not implemented yet`,
+        reason: 'notImplemented: updating did:inmemory not implemented yet',
       },
     }
   }
@@ -72,12 +72,12 @@ export class InMemoryDidRegistry implements DidRegistrar, DidResolver {
       didRegistrationMetadata: {},
       didState: {
         state: 'failed',
-        reason: `notImplemented: deactivating did:inmemory not implemented yet`,
+        reason: 'notImplemented: deactivating did:inmemory not implemented yet',
       },
     }
   }
 
-  public async resolve(agentContext: AgentContext, did: string): Promise<DidResolutionResult> {
+  public async resolve(_agentContext: AgentContext, did: string): Promise<DidResolutionResult> {
     const didDocument = this.dids[did]
 
     if (!didDocument) {

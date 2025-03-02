@@ -16,7 +16,7 @@ export async function migrateCredentialExchangeRecordToV0_4<Agent extends BaseAg
   agent.config.logger.info('Migrating credential exchange records to storage version 0.4')
   const credentialRepository = agent.dependencyManager.resolve(CredentialRepository)
 
-  agent.config.logger.debug(`Fetching all credential records from storage`)
+  agent.config.logger.debug('Fetching all credential records from storage')
   const credentialRecords = await credentialRepository.getAll(agent.context)
 
   agent.config.logger.debug(`Found a total of ${credentialRecords.length} credential exchange records to update.`)

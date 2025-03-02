@@ -2,20 +2,20 @@ import type { AnonCredsCredentialRequest } from '@credo-ts/anoncreds'
 import type { DidRepository, Wallet } from '@credo-ts/core'
 
 import {
+  DidResolverService,
+  DidsModuleConfig,
   InjectionSymbols,
   SignatureSuiteToken,
   W3cCredentialsModuleConfig,
-  DidResolverService,
-  DidsModuleConfig,
 } from '@credo-ts/core'
 import {
-  CredentialRole,
-  ProofRole,
-  CredentialState,
   CredentialExchangeRecord,
   CredentialPreviewAttribute,
-  ProofState,
+  CredentialRole,
+  CredentialState,
   ProofExchangeRecord,
+  ProofRole,
+  ProofState,
 } from '@credo-ts/didcomm'
 import { Subject } from 'rxjs'
 
@@ -23,31 +23,31 @@ import { InMemoryStorageService } from '../../../tests/InMemoryStorageService'
 import { AnonCredsRegistryService } from '../../anoncreds/src/services/registry/AnonCredsRegistryService'
 import { InMemoryAnonCredsRegistry } from '../../anoncreds/tests/InMemoryAnonCredsRegistry'
 import { agentDependencies, getAgentConfig, getAgentContext, testLogger } from '../../core/tests'
-import { AnonCredsRsVerifierService, AnonCredsRsIssuerService, AnonCredsRsHolderService } from '../src/anoncreds-rs'
+import { AnonCredsRsHolderService, AnonCredsRsIssuerService, AnonCredsRsVerifierService } from '../src/anoncreds-rs'
 
 import { anoncreds } from './helpers'
 
 import {
-  getUnqualifiedSchemaId,
-  parseIndySchemaId,
-  getUnqualifiedCredentialDefinitionId,
-  parseIndyCredentialDefinitionId,
-  AnonCredsModuleConfig,
-  LegacyIndyCredentialFormatService,
+  AnonCredsCredentialDefinitionPrivateRecord,
+  AnonCredsCredentialDefinitionPrivateRepository,
+  AnonCredsCredentialDefinitionRecord,
+  AnonCredsCredentialDefinitionRepository,
   AnonCredsHolderServiceSymbol,
   AnonCredsIssuerServiceSymbol,
-  AnonCredsVerifierServiceSymbol,
+  AnonCredsKeyCorrectnessProofRecord,
+  AnonCredsKeyCorrectnessProofRepository,
+  AnonCredsLinkSecretRecord,
+  AnonCredsLinkSecretRepository,
+  AnonCredsModuleConfig,
   AnonCredsSchemaRecord,
   AnonCredsSchemaRepository,
-  AnonCredsCredentialDefinitionRepository,
-  AnonCredsCredentialDefinitionRecord,
-  AnonCredsCredentialDefinitionPrivateRepository,
-  AnonCredsCredentialDefinitionPrivateRecord,
-  AnonCredsKeyCorrectnessProofRepository,
-  AnonCredsKeyCorrectnessProofRecord,
-  AnonCredsLinkSecretRepository,
-  AnonCredsLinkSecretRecord,
+  AnonCredsVerifierServiceSymbol,
+  LegacyIndyCredentialFormatService,
   LegacyIndyProofFormatService,
+  getUnqualifiedCredentialDefinitionId,
+  getUnqualifiedSchemaId,
+  parseIndyCredentialDefinitionId,
+  parseIndySchemaId,
 } from '@credo-ts/anoncreds'
 
 const registry = new InMemoryAnonCredsRegistry()

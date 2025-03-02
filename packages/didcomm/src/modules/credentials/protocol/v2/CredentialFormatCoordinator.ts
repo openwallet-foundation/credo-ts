@@ -1,19 +1,19 @@
+import type { AgentContext } from '@credo-ts/core'
 import type { Attachment } from '../../../../decorators/attachment/Attachment'
 import type { CredentialFormatPayload, CredentialFormatService, ExtractCredentialFormats } from '../../formats'
 import type { CredentialFormatSpec } from '../../models'
 import type { CredentialExchangeRecord } from '../../repository/CredentialExchangeRecord'
-import type { AgentContext } from '@credo-ts/core'
 
 import { CredoError } from '@credo-ts/core'
 
 import { DidCommMessageRepository, DidCommMessageRole } from '../../../../repository'
 
 import {
+  V2CredentialPreview,
   V2IssueCredentialMessage,
   V2OfferCredentialMessage,
   V2ProposeCredentialMessage,
   V2RequestCredentialMessage,
-  V2CredentialPreview,
 } from './messages'
 
 export class CredentialFormatCoordinator<CFs extends CredentialFormatService[]> {

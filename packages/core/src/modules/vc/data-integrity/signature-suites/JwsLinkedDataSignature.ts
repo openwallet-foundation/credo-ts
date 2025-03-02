@@ -5,7 +5,7 @@ import type { DocumentLoader, Proof, VerificationMethod } from '../jsonldUtil'
 import type { LdKeyPair } from '../models/LdKeyPair'
 
 import { CredoError } from '../../../../error'
-import { TypedArrayEncoder, JsonEncoder } from '../../../../utils'
+import { JsonEncoder, TypedArrayEncoder } from '../../../../utils'
 import { suites } from '../libraries/jsonld-signatures'
 
 const LinkedDataSignature = suites.LinkedDataSignature
@@ -104,7 +104,7 @@ export class JwsLinkedDataSignature extends LinkedDataSignature {
 
     // create detached content signature
     const encodedSignature = TypedArrayEncoder.toBase64URL(signature)
-    options.proof.jws = encodedHeader + '..' + encodedSignature
+    options.proof.jws = `${encodedHeader}..${encodedSignature}`
     return options.proof
   }
 
@@ -127,11 +127,12 @@ export class JwsLinkedDataSignature extends LinkedDataSignature {
     // add payload into detached content signature
     const [encodedHeader /*payload*/, , encodedSignature] = options.proof.jws.split('.')
 
+    // biome-ignore lint/suspicious/noImplicitAnyLet: <explanation>
     let header
     try {
       header = JsonEncoder.fromBase64(encodedHeader)
     } catch (e) {
-      throw new Error('Could not parse JWS header; ' + e)
+      throw new Error(`Could not parse JWS header; ${e}`)
     }
     if (!(header && typeof header === 'object')) {
       throw new Error('Invalid JWS header.')
@@ -212,7 +213,7 @@ export class JwsLinkedDataSignature extends LinkedDataSignature {
   public async matchProof(options: {
     proof: Proof
     document: VerificationMethod
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
     purpose: any
     documentLoader?: DocumentLoader
   }) {
@@ -251,7 +252,7 @@ export class JwsLinkedDataSignature extends LinkedDataSignature {
  * @returns {Uint8Array} A combined byte array for signing.
  */
 function _createJws(options: { encodedHeader: string; verifyData: Uint8Array }): Uint8Array {
-  const encodedHeaderBytes = TypedArrayEncoder.fromString(options.encodedHeader + '.')
+  const encodedHeaderBytes = TypedArrayEncoder.fromString(`${options.encodedHeader}.`)
 
   // concatenate the two uint8arrays
   const data = new Uint8Array(encodedHeaderBytes.length + options.verifyData.length)

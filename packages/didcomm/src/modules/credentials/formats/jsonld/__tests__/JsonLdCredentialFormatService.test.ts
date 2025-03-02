@@ -2,15 +2,15 @@ import type { AgentContext } from '../../../../../../../core/src/agent'
 import type { CredentialPreviewAttribute } from '../../../models/CredentialPreviewAttribute'
 import type { CustomCredentialTags } from '../../../repository/CredentialExchangeRecord'
 import type { CredentialFormatService } from '../../CredentialFormatService'
-import type { JsonCredential, JsonLdCredentialFormat, JsonLdCredentialDetailFormat } from '../JsonLdCredentialFormat'
+import type { JsonCredential, JsonLdCredentialDetailFormat, JsonLdCredentialFormat } from '../JsonLdCredentialFormat'
 
 import { DidDocument } from '../../../../../../../core/src/modules/dids'
 import { DidResolverService } from '../../../../../../../core/src/modules/dids/services/DidResolverService'
 import {
   CREDENTIALS_CONTEXT_V1_URL,
   W3cCredentialRecord,
-  W3cJsonLdVerifiableCredential,
   W3cCredentialService,
+  W3cJsonLdVerifiableCredential,
 } from '../../../../../../../core/src/modules/vc'
 import { W3cJsonLdCredentialService } from '../../../../../../../core/src/modules/vc/data-integrity/W3cJsonLdCredentialService'
 import { Ed25519Signature2018Fixtures } from '../../../../../../../core/src/modules/vc/data-integrity/__tests__/fixtures'
@@ -18,7 +18,7 @@ import { JsonTransformer } from '../../../../../../../core/src/utils'
 import { JsonEncoder } from '../../../../../../../core/src/utils/JsonEncoder'
 import { getAgentConfig, getAgentContext, mockFunction } from '../../../../../../../core/tests/helpers'
 import { Attachment, AttachmentData } from '../../../../../decorators/attachment/Attachment'
-import { CredentialState, CredentialRole } from '../../../models'
+import { CredentialRole, CredentialState } from '../../../models'
 import { V2CredentialPreview } from '../../../protocol/v2/messages'
 import { CredentialExchangeRecord } from '../../../repository/CredentialExchangeRecord'
 import { JsonLdCredentialFormatService } from '../JsonLdCredentialFormatService'
@@ -140,7 +140,7 @@ const inputDocAsJson: JsonCredential = {
     alumniOf: 'oops',
   },
 }
-const verificationMethod = `8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K#8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K`
+const verificationMethod = '8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K#8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K'
 
 const signCredentialOptions: JsonLdCredentialDetailFormat = {
   credential: inputDocAsJson,
@@ -182,7 +182,7 @@ describe('JsonLd CredentialFormatService', () => {
   })
 
   describe('Create JsonLd Credential Proposal / Offer', () => {
-    test(`Creates JsonLd Credential Proposal`, async () => {
+    test('Creates JsonLd Credential Proposal', async () => {
       // when
       const { attachment, format } = await jsonLdFormatService.createProposal(agentContext, {
         credentialRecord: mockCredentialRecord(),
@@ -215,7 +215,7 @@ describe('JsonLd CredentialFormatService', () => {
       })
     })
 
-    test(`Creates JsonLd Credential Offer`, async () => {
+    test('Creates JsonLd Credential Offer', async () => {
       // when
       const { attachment, previewAttributes, format } = await jsonLdFormatService.createOffer(agentContext, {
         credentialFormats: {
@@ -299,11 +299,12 @@ describe('JsonLd CredentialFormatService', () => {
         'Ed25519VerificationKey2018',
       ])
 
-      const service = jsonLdFormatService as JsonLdCredentialFormatService
+      // biome-ignore lint/suspicious/noExplicitAny: derive verification method is private from JsonLdCredentialFormatService
+      const service = jsonLdFormatService as any
       const credentialRequest = requestAttachment.getDataAsJson<JsonLdCredentialDetailFormat>()
 
       // calls private method in the format service
-      const verificationMethod = await service['deriveVerificationMethod'](
+      const verificationMethod = await service.deriveVerificationMethod(
         agentContext,
         signCredentialOptions.credential,
         credentialRequest
@@ -434,7 +435,6 @@ describe('JsonLd CredentialFormatService', () => {
 
     test('throws error if credential domain not equal to request domain', async () => {
       // this property is not supported yet by us, but could be in the credential we received
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-expect-error
       signCredentialOptionsWithProperty.options.domain = 'https://test.com'
       const requestAttachmentWithDomain = new Attachment({
@@ -459,7 +459,6 @@ describe('JsonLd CredentialFormatService', () => {
 
     test('throws error if credential challenge not equal to request challenge', async () => {
       // this property is not supported yet by us, but could be in the credential we received
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-expect-error
       signCredentialOptionsWithProperty.options.challenge = '7bf32d0b-39d4-41f3-96b6-45de52988e4c'
 

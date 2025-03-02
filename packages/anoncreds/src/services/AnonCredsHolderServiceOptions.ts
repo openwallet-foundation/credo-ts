@@ -1,3 +1,4 @@
+import type { W3cJsonLdVerifiableCredential } from '@credo-ts/core'
 import type { AnonCredsCredentialInfo, AnonCredsSelectedCredentials } from '../models'
 import type {
   AnonCredsCredential,
@@ -12,13 +13,12 @@ import type {
   AnonCredsSchema,
 } from '../models/registry'
 import type {
-  AnonCredsSchemas,
   AnonCredsCredentialDefinitions,
   AnonCredsRevocationRegistries,
+  AnonCredsSchemas,
   CredentialWithRevocationMetadata,
 } from '../models/utils'
 import type { AnonCredsCredentialRequestMetadata } from '../utils/metadata'
-import type { W3cJsonLdVerifiableCredential } from '@credo-ts/core'
 
 export interface AnonCredsAttributeInfo {
   name?: string

@@ -10,7 +10,7 @@ import testLogger from '../../../../../../../core/tests/logger'
 import { Attachment, AttachmentData, LinkedAttachment } from '../../../../../../../didcomm'
 import { ProofState } from '../../../models'
 import { ProofExchangeRecord } from '../../../repository'
-import { V2ProposePresentationMessage, V2RequestPresentationMessage, V2PresentationMessage } from '../messages'
+import { V2PresentationMessage, V2ProposePresentationMessage, V2RequestPresentationMessage } from '../messages'
 
 describe('Present Proof', () => {
   let faberAgent: AnonCredsTestsAgent

@@ -1,3 +1,4 @@
+import type { AgentContext } from '@credo-ts/core'
 import type { Attachment } from '../../../../decorators/attachment/Attachment'
 import type {
   ExtractProofFormats,
@@ -7,7 +8,6 @@ import type {
 } from '../../formats'
 import type { ProofFormatSpec } from '../../models/ProofFormatSpec'
 import type { ProofExchangeRecord } from '../../repository'
-import type { AgentContext } from '@credo-ts/core'
 
 import { CredoError } from '@credo-ts/core'
 
@@ -534,11 +534,10 @@ export class ProofFormatCoordinator<PFs extends ProofFormatService[]> {
         isValid,
         message: undefined,
       }
-    } else {
-      return {
-        isValid,
-        message: 'Not all presentations are valid',
-      }
+    }
+    return {
+      isValid,
+      message: 'Not all presentations are valid',
     }
   }
 

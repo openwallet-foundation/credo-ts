@@ -1,7 +1,7 @@
 import type { Key } from '@credo-ts/core'
 
-import { TypedArrayEncoder, KeyType } from '@credo-ts/core'
-import { GetNymRequest, NymRequest, SchemaRequest, CredentialDefinitionRequest } from '@hyperledger/indy-vdr-shared'
+import { KeyType, TypedArrayEncoder } from '@credo-ts/core'
+import { CredentialDefinitionRequest, GetNymRequest, NymRequest, SchemaRequest } from '@hyperledger/indy-vdr-shared'
 
 import { InMemoryWallet } from '../../../tests/InMemoryWallet'
 import { genesisTransactions, getAgentConfig, getAgentContext } from '../../core/tests/helpers'
@@ -20,7 +20,7 @@ const agentContext = getAgentContext({ wallet, agentConfig })
 const config = {
   isProduction: false,
   genesisTransactions,
-  indyNamespace: `pool:localtest`,
+  indyNamespace: 'pool:localtest',
   transactionAuthorAgreement: { version: '1', acceptanceMechanism: 'accept' },
 } as const
 

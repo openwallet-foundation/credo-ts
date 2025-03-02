@@ -45,7 +45,7 @@ describe('Decorators | Signature | SignatureDecoratorUtils', () => {
   beforeAll(async () => {
     const config = getAgentConfig('SignatureDecoratorUtilsTest')
     wallet = new InMemoryWallet()
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    // biome-ignore lint/style/noNonNullAssertion: <explanation>
     await wallet.createAndOpen(config.walletConfig!)
   })
 

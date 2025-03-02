@@ -16,12 +16,12 @@ const backupDate = new Date('2023-01-21T22:50:20.522Z')
 jest.useFakeTimers().setSystemTime(backupDate)
 
 const walletConfig = {
-  id: `Wallet: 0.2 Update`,
-  key: `Key: 0.2 Update`,
+  id: 'Wallet: 0.2 Update',
+  key: 'Key: 0.2 Update',
 }
 
 describe('UpdateAssistant | v0.2 - v0.3.1', () => {
-  it(`should correctly update proof records and create didcomm records`, async () => {
+  it('should correctly update proof records and create didcomm records', async () => {
     // We need to mock the uuid generation to make sure we generate consistent uuids for the new records created.
     let uuidCounter = 1
     const uuidSpy = jest.spyOn(uuid, 'uuid').mockImplementation(() => `${uuidCounter++}-4e4f-41d9-94c4-f49351b811f1`)
@@ -92,7 +92,7 @@ describe('UpdateAssistant | v0.2 - v0.3.1', () => {
     uuidSpy.mockReset()
   })
 
-  it(`should correctly update the proofs records and create didcomm records with auto update`, async () => {
+  it('should correctly update the proofs records and create didcomm records with auto update', async () => {
     // We need to mock the uuid generation to make sure we generate consistent uuids for the new records created.
     let uuidCounter = 1
     const uuidSpy = jest.spyOn(uuid, 'uuid').mockImplementation(() => `${uuidCounter++}-4e4f-41d9-94c4-f49351b811f1`)
@@ -146,7 +146,7 @@ describe('UpdateAssistant | v0.2 - v0.3.1', () => {
     uuidSpy.mockReset()
   })
 
-  it(`should correctly update the did records`, async () => {
+  it('should correctly update the did records', async () => {
     // We need to mock the uuid generation to make sure we generate consistent uuids for the new records created.
     let uuidCounter = 1
     const uuidSpy = jest.spyOn(uuid, 'uuid').mockImplementation(() => `${uuidCounter++}-4e4f-41d9-94c4-f49351b811f1`)

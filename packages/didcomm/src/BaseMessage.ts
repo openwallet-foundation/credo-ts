@@ -1,5 +1,5 @@
-import type { ParsedMessageType } from './util/messageType'
 import type { Constructor } from '@credo-ts/core'
+import type { ParsedMessageType } from './util/messageType'
 
 import { utils } from '@credo-ts/core'
 import { Expose } from 'class-transformer'

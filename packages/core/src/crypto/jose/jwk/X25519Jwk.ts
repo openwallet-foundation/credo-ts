@@ -1,9 +1,9 @@
-import type { JwkJson } from './Jwk'
 import type { JwaSignatureAlgorithm } from '../jwa'
+import type { JwkJson } from './Jwk'
 
 import { TypedArrayEncoder } from '../../../utils'
 import { KeyType } from '../../KeyType'
-import { JwaCurve, JwaKeyType, JwaEncryptionAlgorithm } from '../jwa'
+import { JwaCurve, JwaEncryptionAlgorithm, JwaKeyType } from '../jwa'
 
 import { Jwk } from './Jwk'
 import { hasCrv, hasKty, hasValidUse, hasX } from './validate'

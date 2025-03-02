@@ -1,13 +1,15 @@
 import type { InboundMessageContext } from '../models/InboundMessageContext'
 
-export interface MessageHandlerMiddleware {
-  (inboundMessageContext: InboundMessageContext, next: () => Promise<void>): Promise<void>
-}
+export type MessageHandlerMiddleware = (
+  inboundMessageContext: InboundMessageContext,
+  next: () => Promise<void>
+) => Promise<void>
 
+// biome-ignore lint/complexity/noStaticOnlyClass: <explanation>
 export class MessageHandlerMiddlewareRunner {
   public static async run(middlewares: MessageHandlerMiddleware[], inboundMessageContext: InboundMessageContext) {
     const compose = (middlewares: MessageHandlerMiddleware[]) => {
-      return async function (inboundMessageContext: InboundMessageContext) {
+      return async (inboundMessageContext: InboundMessageContext) => {
         let index = -1
         async function dispatch(i: number): Promise<void> {
           if (i <= index) throw new Error('next() called multiple times')

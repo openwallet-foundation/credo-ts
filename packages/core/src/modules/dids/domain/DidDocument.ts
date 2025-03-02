@@ -10,8 +10,8 @@ import { JsonTransformer } from '../../../utils/JsonTransformer'
 import { IsStringOrStringArray } from '../../../utils/transformers'
 
 import { getKeyFromVerificationMethod } from './key-type'
-import { IndyAgentService, ServiceTransformer, DidCommV1Service } from './service'
-import { VerificationMethodTransformer, VerificationMethod, IsStringOrVerificationMethod } from './verificationMethod'
+import { DidCommV1Service, IndyAgentService, ServiceTransformer } from './service'
+import { IsStringOrVerificationMethod, VerificationMethod, VerificationMethodTransformer } from './verificationMethod'
 
 export type DidPurpose =
   | 'authentication'
@@ -139,7 +139,8 @@ export class DidDocument {
       for (const key of this[purpose] ?? []) {
         if (typeof key === 'string' && key.endsWith(keyId)) {
           return this.dereferenceVerificationMethod(key)
-        } else if (typeof key !== 'string' && key.id.endsWith(keyId)) {
+        }
+        if (typeof key !== 'string' && key.id.endsWith(keyId)) {
           return key
         }
       }
@@ -230,7 +231,7 @@ export async function findVerificationMethodByKeyType(
   ]
   for await (const purpose of didVerificationMethods) {
     const key: VerificationMethod[] | (string | VerificationMethod)[] | undefined = didDocument[purpose]
-    if (key instanceof Array) {
+    if (Array.isArray(key)) {
       for await (const method of key) {
         if (typeof method !== 'string') {
           if (method.type === keyType) {

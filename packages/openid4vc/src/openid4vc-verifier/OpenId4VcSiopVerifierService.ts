@@ -1,14 +1,4 @@
 import type {
-  OpenId4VcSiopCreateAuthorizationRequestOptions,
-  OpenId4VcSiopCreateAuthorizationRequestReturn,
-  OpenId4VcSiopCreateVerifierOptions,
-  OpenId4VcSiopVerifiedAuthorizationResponse,
-  OpenId4VcSiopVerifyAuthorizationResponseOptions,
-  ResponseMode,
-} from './OpenId4VcSiopVerifierServiceOptions'
-import type { OpenId4VcVerificationSessionRecord } from './repository'
-import type { OpenId4VcSiopAuthorizationResponsePayload } from '../shared'
-import type {
   AgentContext,
   DifPresentationExchangeDefinition,
   JwkJson,
@@ -18,49 +8,59 @@ import type {
   RecordUpdatedEvent,
 } from '@credo-ts/core'
 import type { ClientIdScheme, JarmClientMetadata, PresentationVerificationCallback } from '@sphereon/did-auth-siop'
+import type { OpenId4VcSiopAuthorizationResponsePayload } from '../shared'
+import type {
+  OpenId4VcSiopCreateAuthorizationRequestOptions,
+  OpenId4VcSiopCreateAuthorizationRequestReturn,
+  OpenId4VcSiopCreateVerifierOptions,
+  OpenId4VcSiopVerifiedAuthorizationResponse,
+  OpenId4VcSiopVerifyAuthorizationResponseOptions,
+  ResponseMode,
+} from './OpenId4VcSiopVerifierServiceOptions'
+import type { OpenId4VcVerificationSessionRecord } from './repository'
 
 import {
-  EventEmitter,
-  RepositoryEventTypes,
   CredoError,
-  inject,
-  injectable,
+  DidsApi,
+  EventEmitter,
+  Hasher,
   InjectionSymbols,
-  joinUriParts,
   JsonTransformer,
+  Jwt,
+  KeyType,
   Logger,
+  MdocDeviceResponse,
+  RepositoryEventTypes,
   SdJwtVcApi,
   SignatureSuiteRegistry,
-  utils,
+  TypedArrayEncoder,
   W3cCredentialService,
   W3cJsonLdVerifiablePresentation,
-  Hasher,
-  DidsApi,
-  X509Service,
-  getDomainFromUrl,
-  KeyType,
-  getJwkFromKey,
-  MdocDeviceResponse,
-  TypedArrayEncoder,
-  Jwt,
-  extractPresentationsWithDescriptorsFromSubmission,
-  X509ModuleConfig,
-  extractX509CertificatesFromJwt,
   W3cJwtVerifiablePresentation,
   X509Certificate,
+  X509ModuleConfig,
+  X509Service,
+  extractPresentationsWithDescriptorsFromSubmission,
+  extractX509CertificatesFromJwt,
+  getDomainFromUrl,
+  getJwkFromKey,
+  inject,
+  injectable,
   isMdocSupportedSignatureAlgorithm,
+  joinUriParts,
+  utils,
 } from '@credo-ts/core'
 import {
   AuthorizationRequest,
   AuthorizationResponse,
   PassBy,
   PropertyTarget,
+  RP,
   RequestAud,
   ResponseIss,
-  ResponseMode as SphereonResponseMode,
   ResponseType,
   RevocationVerification,
-  RP,
+  ResponseMode as SphereonResponseMode,
   SupportedVersion,
 } from '@sphereon/did-auth-siop'
 import { extractPresentationsFromVpToken } from '@sphereon/did-auth-siop/dist/authorization-response/OpenID4VP'
@@ -639,8 +639,8 @@ export class OpenId4VcSiopVerifierService {
   ): PresentationVerificationCallback {
     return async (encodedPresentation, presentationSubmission) => {
       try {
-        this.logger.debug(`Presentation response`, JsonTransformer.toJSON(encodedPresentation))
-        this.logger.debug(`Presentation submission`, presentationSubmission)
+        this.logger.debug('Presentation response', JsonTransformer.toJSON(encodedPresentation))
+        this.logger.debug('Presentation submission', presentationSubmission)
 
         if (!encodedPresentation) throw new CredoError('Did not receive a presentation for verification.')
         const x509Config = agentContext.dependencyManager.resolve(X509ModuleConfig)
@@ -714,7 +714,7 @@ export class OpenId4VcSiopVerifierService {
               )
             )
               .filter((c): c is string[] => c !== undefined)
-              .flatMap((c) => c)
+              .flat()
 
             await mdocDeviceResponse.verify(agentContext, {
               sessionTranscriptOptions: {

@@ -6,7 +6,7 @@ export const validDid = 'did:cheqd:testnet:SiVQgrFZ7jFZFrTGstT4ZD'
 
 export function validVerificationMethod(did: string) {
   return new VerificationMethod({
-    id: did + '#key-1',
+    id: `${did}#key-1`,
     type: 'Ed25519VerificationKey2020',
     controller: did,
     publicKeyMultibase: 'z6MkkBaWtQKyx7Mr54XaXyMAEpNKqphK4x7ztuBpSfR6Wqwr',
@@ -15,7 +15,7 @@ export function validVerificationMethod(did: string) {
 
 export function validService(did: string) {
   return new DidDocumentService({
-    id: did + '#service-1',
+    id: `${did}#service-1`,
     type: 'CustomType',
     serviceEndpoint: 'https://rand.io',
   })

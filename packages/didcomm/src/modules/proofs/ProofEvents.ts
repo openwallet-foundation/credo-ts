@@ -1,6 +1,6 @@
+import type { BaseEvent } from '@credo-ts/core'
 import type { ProofState } from './models/ProofState'
 import type { ProofExchangeRecord } from './repository'
-import type { BaseEvent } from '@credo-ts/core'
 
 export enum ProofEventTypes {
   ProofStateChanged = 'ProofStateChanged',

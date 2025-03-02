@@ -7,7 +7,10 @@ export function areCredentialPreviewAttributesEqual(
   if (firstAttributes.length !== secondAttributes.length) return false
 
   const secondAttributeMap = secondAttributes.reduce<Record<string, CredentialPreviewAttributeOptions>>(
-    (attributeMap, attribute) => ({ ...attributeMap, [attribute.name]: attribute }),
+    (attributeMap, attribute) => {
+      attributeMap[attribute.name] = attribute
+      return attributeMap
+    },
     {}
   )
 

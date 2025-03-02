@@ -1,40 +1,40 @@
-import type { LegacyIndyCredentialFormat, LegacyIndyCredentialProposalFormat } from './LegacyIndyCredentialFormat'
-import type { AnonCredsCredential, AnonCredsCredentialOffer, AnonCredsCredentialRequest } from '../models'
-import type { AnonCredsIssuerService, AnonCredsHolderService } from '../services'
-import type { AnonCredsCredentialMetadata, AnonCredsCredentialRequestMetadata } from '../utils/metadata'
 import type { AgentContext } from '@credo-ts/core'
 import type {
-  CredentialFormatService,
+  CredentialExchangeRecord,
+  CredentialFormatAcceptOfferOptions,
+  CredentialFormatAcceptProposalOptions,
+  CredentialFormatAcceptRequestOptions,
+  CredentialFormatAutoRespondCredentialOptions,
+  CredentialFormatAutoRespondOfferOptions,
+  CredentialFormatAutoRespondProposalOptions,
+  CredentialFormatAutoRespondRequestOptions,
+  CredentialFormatCreateOfferOptions,
+  CredentialFormatCreateOfferReturn,
   CredentialFormatCreateProposalOptions,
   CredentialFormatCreateProposalReturn,
-  CredentialFormatProcessOptions,
-  CredentialFormatAcceptProposalOptions,
-  CredentialFormatCreateOfferReturn,
-  CredentialFormatCreateOfferOptions,
-  CredentialFormatAcceptOfferOptions,
   CredentialFormatCreateReturn,
-  CredentialFormatAcceptRequestOptions,
   CredentialFormatProcessCredentialOptions,
-  CredentialFormatAutoRespondProposalOptions,
-  CredentialFormatAutoRespondOfferOptions,
-  CredentialFormatAutoRespondRequestOptions,
-  CredentialFormatAutoRespondCredentialOptions,
-  CredentialExchangeRecord,
+  CredentialFormatProcessOptions,
+  CredentialFormatService,
   CredentialPreviewAttributeOptions,
   LinkedAttachment,
 } from '@credo-ts/didcomm'
+import type { AnonCredsCredential, AnonCredsCredentialOffer, AnonCredsCredentialRequest } from '../models'
+import type { AnonCredsHolderService, AnonCredsIssuerService } from '../services'
+import type { AnonCredsCredentialMetadata, AnonCredsCredentialRequestMetadata } from '../utils/metadata'
+import type { LegacyIndyCredentialFormat, LegacyIndyCredentialProposalFormat } from './LegacyIndyCredentialFormat'
 
-import { MessageValidator, CredoError, JsonEncoder, JsonTransformer } from '@credo-ts/core'
-import { ProblemReportError, CredentialFormatSpec, Attachment, CredentialProblemReportReason } from '@credo-ts/didcomm'
+import { CredoError, JsonEncoder, JsonTransformer, MessageValidator } from '@credo-ts/core'
+import { Attachment, CredentialFormatSpec, CredentialProblemReportReason, ProblemReportError } from '@credo-ts/didcomm'
 
 import { AnonCredsCredentialProposal } from '../models/AnonCredsCredentialProposal'
-import { AnonCredsIssuerServiceSymbol, AnonCredsHolderServiceSymbol } from '../services'
+import { AnonCredsHolderServiceSymbol, AnonCredsIssuerServiceSymbol } from '../services'
 import { fetchCredentialDefinition, fetchRevocationRegistryDefinition, fetchSchema } from '../utils'
 import {
-  convertAttributesToCredentialValues,
+  assertAttributesMatch,
   assertCredentialValuesMatch,
   checkCredentialValuesMatch,
-  assertAttributesMatch,
+  convertAttributesToCredentialValues,
   createAndLinkAttachmentsToPreview,
 } from '../utils/credential'
 import { isUnqualifiedCredentialDefinitionId, isUnqualifiedSchemaId } from '../utils/indyIdentifiers'
@@ -65,7 +65,7 @@ export class LegacyIndyCredentialFormatService implements CredentialFormatServic
    *
    */
   public async createProposal(
-    agentContext: AgentContext,
+    _agentContext: AgentContext,
     { credentialFormats, credentialRecord }: CredentialFormatCreateProposalOptions<LegacyIndyCredentialFormat>
   ): Promise<CredentialFormatCreateProposalReturn> {
     const format = new CredentialFormatSpec({
@@ -80,13 +80,12 @@ export class LegacyIndyCredentialFormatService implements CredentialFormatServic
 
     // We want all properties except for `attributes` and `linkedAttachments` attributes.
     // The easiest way is to destructure and use the spread operator. But that leaves the other properties unused
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { attributes, linkedAttachments, ...indyCredentialProposal } = indyFormat
     const proposal = new AnonCredsCredentialProposal(indyCredentialProposal)
 
     try {
       MessageValidator.validateSync(proposal)
-    } catch (error) {
+    } catch (_error) {
       throw new CredoError(`Invalid proposal supplied: ${indyCredentialProposal} in Indy Format Service`)
     }
 
@@ -107,7 +106,7 @@ export class LegacyIndyCredentialFormatService implements CredentialFormatServic
   }
 
   public async processProposal(
-    agentContext: AgentContext,
+    _agentContext: AgentContext,
     { attachment }: CredentialFormatProcessOptions
   ): Promise<void> {
     const proposalJson = attachment.getDataAsJson()
@@ -261,8 +260,7 @@ export class LegacyIndyCredentialFormatService implements CredentialFormatServic
   /**
    * We don't have any models to validate an indy request object, for now this method does nothing
    */
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  public async processRequest(agentContext: AgentContext, options: CredentialFormatProcessOptions): Promise<void> {
+  public async processRequest(_agentContext: AgentContext, _options: CredentialFormatProcessOptions): Promise<void> {
     // not needed for Indy
   }
 
@@ -420,7 +418,7 @@ export class LegacyIndyCredentialFormatService implements CredentialFormatServic
   }
 
   public async shouldAutoRespondToProposal(
-    agentContext: AgentContext,
+    _agentContext: AgentContext,
     { offerAttachment, proposalAttachment }: CredentialFormatAutoRespondProposalOptions
   ) {
     const proposalJson = proposalAttachment.getDataAsJson<LegacyIndyCredentialProposalFormat>()
@@ -433,7 +431,7 @@ export class LegacyIndyCredentialFormatService implements CredentialFormatServic
   }
 
   public async shouldAutoRespondToOffer(
-    agentContext: AgentContext,
+    _agentContext: AgentContext,
     { offerAttachment, proposalAttachment }: CredentialFormatAutoRespondOfferOptions
   ) {
     const proposalJson = proposalAttachment.getDataAsJson<LegacyIndyCredentialProposalFormat>()
@@ -446,7 +444,7 @@ export class LegacyIndyCredentialFormatService implements CredentialFormatServic
   }
 
   public async shouldAutoRespondToRequest(
-    agentContext: AgentContext,
+    _agentContext: AgentContext,
     { offerAttachment, requestAttachment }: CredentialFormatAutoRespondRequestOptions
   ) {
     const credentialOfferJson = offerAttachment.getDataAsJson<AnonCredsCredentialOffer>()
@@ -456,7 +454,7 @@ export class LegacyIndyCredentialFormatService implements CredentialFormatServic
   }
 
   public async shouldAutoRespondToCredential(
-    agentContext: AgentContext,
+    _agentContext: AgentContext,
     { credentialRecord, requestAttachment, credentialAttachment }: CredentialFormatAutoRespondCredentialOptions
   ) {
     const credentialJson = credentialAttachment.getDataAsJson<AnonCredsCredential>()

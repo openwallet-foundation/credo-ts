@@ -1,8 +1,8 @@
 export * from './DifPexCredentialsForRequest'
+import type { PresentationDefinitionV1, PresentationDefinitionV2, PresentationSubmission } from '@sphereon/pex-models'
 import type { Mdoc, MdocDeviceResponse } from '../../mdoc'
 import type { SdJwtVc } from '../../sd-jwt-vc'
 import type { W3cVerifiableCredential, W3cVerifiablePresentation } from '../../vc'
-import type { PresentationDefinitionV1, PresentationDefinitionV2, PresentationSubmission } from '@sphereon/pex-models'
 
 import { PresentationSubmissionLocation } from '@animo-id/pex'
 

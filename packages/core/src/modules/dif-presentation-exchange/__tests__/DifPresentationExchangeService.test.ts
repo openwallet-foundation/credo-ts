@@ -11,7 +11,7 @@ import { sprindFunkeTestVectorBase64Url } from '../../mdoc/__tests__/mdoc.fixtur
 import { SdJwtVcRecord, SdJwtVcRepository } from '../../sd-jwt-vc'
 import { SignatureSuiteToken, W3cCredentialService, W3cCredentialsModuleConfig } from '../../vc'
 import { DifPresentationExchangeService } from '../DifPresentationExchangeService'
-import { DifPresentationExchangeSubmissionLocation, type DifPresentationExchangeDefinitionV2 } from '../models'
+import { type DifPresentationExchangeDefinitionV2, DifPresentationExchangeSubmissionLocation } from '../models'
 
 const wallet = new InMemoryWallet()
 const agentContext = getAgentContext({
@@ -383,7 +383,7 @@ describe('DifPresentationExchangeService', () => {
   test('handles request with request for one of two mdocs with submission requirements', async () => {
     await mdocRepository.save(agentContext, randomMdoc)
     const presentationDefinition = {
-      id: `OverAgeCheck`,
+      id: 'OverAgeCheck',
       purpose: 'Age check',
       submission_requirements: [
         {
@@ -508,7 +508,7 @@ describe('DifPresentationExchangeService', () => {
     await mdocRepository.save(agentContext, randomMdoc)
 
     const presentationDefinition = {
-      id: `OverAgeCheck`,
+      id: 'OverAgeCheck',
       purpose: 'Age check',
       submission_requirements: [
         {

@@ -1,5 +1,5 @@
-import type { AnonCredsModuleConfigOptions } from './AnonCredsModuleConfig'
 import type { DependencyManager, Module, Update } from '@credo-ts/core'
+import type { AnonCredsModuleConfigOptions } from './AnonCredsModuleConfig'
 
 import { AnonCredsDataIntegrityServiceSymbol } from '@credo-ts/core'
 

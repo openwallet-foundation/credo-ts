@@ -1,13 +1,13 @@
+import type { Server } from 'http'
+import type { Express } from 'express'
 import type { AgentType } from '../../../tests/utils'
 import type { OpenId4VcVerifierRecord } from '../../openid4vc-verifier/repository'
-import type { Express } from 'express'
-import type { Server } from 'http'
 
 import express from 'express'
 
 import { AskarModule } from '../../../../askar/src'
 import { askarModuleConfig } from '../../../../askar/tests/helpers'
-import { waitForVerificationSessionRecordSubject, createAgentFromModules } from '../../../tests/utils'
+import { createAgentFromModules, waitForVerificationSessionRecordSubject } from '../../../tests/utils'
 import { OpenId4VcVerificationSessionState, OpenId4VcVerifierModule } from '../../openid4vc-verifier'
 import { OpenId4VcHolderModule } from '../OpenId4VcHolderModule'
 
@@ -38,7 +38,7 @@ describe('OpenId4VcHolder | OpenID4VP', () => {
   let holder: AgentType<typeof holderModules>
   let verifierApp: Express
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
   let verifierServer: Server<any, any>
 
   beforeEach(async () => {
@@ -69,9 +69,8 @@ describe('OpenId4VcHolder | OpenID4VP', () => {
         verifierId: openIdVerifier.verifierId,
       })
 
-    const resolvedAuthorizationRequest = await holder.agent.modules.openId4VcHolder.resolveSiopAuthorizationRequest(
-      authorizationRequest
-    )
+    const resolvedAuthorizationRequest =
+      await holder.agent.modules.openId4VcHolder.resolveSiopAuthorizationRequest(authorizationRequest)
 
     const { submittedResponse, serverResponse } =
       await holder.agent.modules.openId4VcHolder.acceptSiopAuthorizationRequest({

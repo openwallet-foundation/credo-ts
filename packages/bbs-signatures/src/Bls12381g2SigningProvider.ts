@@ -1,7 +1,7 @@
-import type { SigningProvider, CreateKeyPairOptions, KeyPair, SignOptions, VerifyOptions } from '@credo-ts/core'
+import type { CreateKeyPairOptions, KeyPair, SignOptions, SigningProvider, VerifyOptions } from '@credo-ts/core'
 
-import { KeyType, injectable, TypedArrayEncoder, SigningProviderError, Buffer } from '@credo-ts/core'
-import { bls12381toBbs, verify, sign, generateBls12381G2KeyPair } from '@mattrglobal/bbs-signatures'
+import { Buffer, KeyType, SigningProviderError, TypedArrayEncoder, injectable } from '@credo-ts/core'
+import { bls12381toBbs, generateBls12381G2KeyPair, sign, verify } from '@mattrglobal/bbs-signatures'
 
 /**
  * This will be extracted to the bbs package.

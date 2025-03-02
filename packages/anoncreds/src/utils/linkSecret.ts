@@ -30,7 +30,7 @@ export async function storeLinkSecret(
   return linkSecretRecord
 }
 
-export function assertLinkSecretsMatch(agentContext: AgentContext, linkSecretIds: string[]) {
+export function assertLinkSecretsMatch(_agentContext: AgentContext, linkSecretIds: string[]) {
   // Get all requested credentials and take linkSecret. If it's not the same for every credential, throw error
   const linkSecretsMatch = linkSecretIds.every((linkSecretId) => linkSecretId === linkSecretIds[0])
   if (!linkSecretsMatch) {

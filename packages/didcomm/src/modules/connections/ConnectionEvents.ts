@@ -1,6 +1,6 @@
+import type { BaseEvent } from '@credo-ts/core'
 import type { DidExchangeState } from './models'
 import type { ConnectionRecord } from './repository'
-import type { BaseEvent } from '@credo-ts/core'
 
 export enum ConnectionEventTypes {
   ConnectionStateChanged = 'ConnectionStateChanged',

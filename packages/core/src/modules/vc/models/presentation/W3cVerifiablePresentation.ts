@@ -6,5 +6,5 @@ export type W3cVerifiablePresentation<Format extends ClaimFormat.JwtVp | ClaimFo
   Format extends ClaimFormat.JwtVp
     ? W3cJwtVerifiablePresentation
     : Format extends ClaimFormat.LdpVp
-    ? W3cJsonLdVerifiablePresentation
-    : W3cJsonLdVerifiablePresentation | W3cJwtVerifiablePresentation
+      ? W3cJsonLdVerifiablePresentation
+      : W3cJsonLdVerifiablePresentation | W3cJwtVerifiablePresentation

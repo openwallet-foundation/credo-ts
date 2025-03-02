@@ -1,7 +1,7 @@
-import type { RevocationRegistryDelta } from '../transform'
 import type { AnonCredsRevocationRegistryDefinition } from '@credo-ts/anoncreds'
+import type { RevocationRegistryDelta } from '../transform'
 
-import { indyVdrCreateLatestRevocationDelta, anonCredsRevocationStatusListFromIndyVdr } from '../transform'
+import { anonCredsRevocationStatusListFromIndyVdr, indyVdrCreateLatestRevocationDelta } from '../transform'
 
 const createRevocationRegistryDefinition = (maxCreds: number): AnonCredsRevocationRegistryDefinition => ({
   value: {

@@ -1,5 +1,5 @@
 import type { Buffer } from '../../../utils/buffer'
-import type { SigningProvider, KeyPair } from '../SigningProvider'
+import type { KeyPair, SigningProvider } from '../SigningProvider'
 
 import { KeyType } from '../../KeyType'
 import { SigningProviderRegistry } from '../SigningProviderRegistry'

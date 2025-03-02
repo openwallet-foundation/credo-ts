@@ -15,7 +15,7 @@ import { MessageHandlerRegistry } from '../../../../../../MessageHandlerRegistry
 import { InboundMessageContext } from '../../../../../../models'
 import { DidExchangeState } from '../../../../../connections'
 import { CredentialEventTypes } from '../../../../CredentialEvents'
-import { CredentialState, CredentialRole } from '../../../../models'
+import { CredentialRole, CredentialState } from '../../../../models'
 import { CredentialExchangeRecord } from '../../../../repository'
 import { CredentialRepository } from '../../../../repository/CredentialRepository'
 import { V1RevocationNotificationMessage, V2RevocationNotificationMessage } from '../../messages'
@@ -67,7 +67,6 @@ describe('RevocationNotificationService', () => {
 
       const date = new Date('2020-01-01T00:00:00.000Z')
 
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-ignore
       const dateSpy = jest.spyOn(global, 'Date').mockImplementation(() => date)
 
@@ -181,7 +180,6 @@ describe('RevocationNotificationService', () => {
 
       const date = new Date('2020-01-01T00:00:00.000Z')
 
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-ignore
       const dateSpy = jest.spyOn(global, 'Date').mockImplementation(() => date)
 

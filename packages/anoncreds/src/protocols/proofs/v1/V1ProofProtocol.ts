@@ -1,33 +1,33 @@
-import type { LegacyIndyProofFormatService } from '../../../formats'
 import type { AgentContext } from '@credo-ts/core'
 import type {
+  AgentMessage,
+  FeatureRegistry,
+  GetProofFormatDataReturn,
+  InboundMessageContext,
+  MessageHandlerRegistry,
+  ProblemReportMessage,
+  ProofFormat,
   ProofProtocol,
   ProofProtocolOptions,
-  InboundMessageContext,
-  AgentMessage,
-  ProblemReportMessage,
-  GetProofFormatDataReturn,
-  ProofFormat,
-  FeatureRegistry,
-  MessageHandlerRegistry,
 } from '@credo-ts/didcomm'
+import type { LegacyIndyProofFormatService } from '../../../formats'
 
 import { CredoError, JsonEncoder, JsonTransformer, MessageValidator, utils } from '@credo-ts/core'
 import {
-  ProofRole,
-  BaseProofProtocol,
-  Protocol,
-  ProofRepository,
-  DidCommMessageRepository,
-  ProofExchangeRecord,
-  ProofState,
-  DidCommMessageRole,
-  ConnectionService,
-  Attachment,
-  PresentationProblemReportReason,
   AckStatus,
-  ProofsModuleConfig,
+  Attachment,
   AutoAcceptProof,
+  BaseProofProtocol,
+  ConnectionService,
+  DidCommMessageRepository,
+  DidCommMessageRole,
+  PresentationProblemReportReason,
+  ProofExchangeRecord,
+  ProofRepository,
+  ProofRole,
+  ProofState,
+  ProofsModuleConfig,
+  Protocol,
 } from '@credo-ts/didcomm'
 
 import { composeProofAutoAccept, createRequestFromPreview } from '../../../utils'

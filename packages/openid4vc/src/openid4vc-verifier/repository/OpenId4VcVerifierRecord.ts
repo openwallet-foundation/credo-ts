@@ -1,5 +1,5 @@
-import type { OpenId4VcSiopVerifierClientMetadata } from '../OpenId4VcSiopVerifierServiceOptions'
 import type { RecordTags, TagsBase } from '@credo-ts/core'
+import type { OpenId4VcSiopVerifierClientMetadata } from '../OpenId4VcSiopVerifierServiceOptions'
 
 import { BaseRecord, utils } from '@credo-ts/core'
 

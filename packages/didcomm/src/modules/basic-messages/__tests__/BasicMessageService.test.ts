@@ -29,7 +29,7 @@ describe('BasicMessageService', () => {
   })
 
   describe('createMessage', () => {
-    it(`creates message and record, and emits message and basic message record`, async () => {
+    it('creates message and record, and emits message and basic message record', async () => {
       const { message } = await basicMessageService.createMessage(agentContext, 'hello', mockConnectionRecord)
 
       expect(message.content).toBe('hello')
@@ -52,7 +52,7 @@ describe('BasicMessageService', () => {
   })
 
   describe('save', () => {
-    it(`stores record and emits message and basic message record`, async () => {
+    it('stores record and emits message and basic message record', async () => {
       const basicMessage = new BasicMessage({
         id: '123',
         content: 'message',

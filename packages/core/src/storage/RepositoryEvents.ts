@@ -1,5 +1,5 @@
-import type { BaseRecord } from './BaseRecord'
 import type { BaseEvent } from '../agent/Events'
+import type { BaseRecord } from './BaseRecord'
 
 export enum RepositoryEventTypes {
   RecordSaved = 'RecordSaved',
@@ -7,7 +7,7 @@ export enum RepositoryEventTypes {
   RecordDeleted = 'RecordDeleted',
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+// biome-ignore lint/suspicious/noExplicitAny: <explanation>
 export interface RecordSavedEvent<T extends BaseRecord<any, any, any>> extends BaseEvent {
   type: typeof RepositoryEventTypes.RecordSaved
   payload: {
@@ -15,7 +15,7 @@ export interface RecordSavedEvent<T extends BaseRecord<any, any, any>> extends B
   }
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+// biome-ignore lint/suspicious/noExplicitAny: <explanation>
 export interface RecordUpdatedEvent<T extends BaseRecord<any, any, any>> extends BaseEvent {
   type: typeof RepositoryEventTypes.RecordUpdated
   payload: {
@@ -23,7 +23,7 @@ export interface RecordUpdatedEvent<T extends BaseRecord<any, any, any>> extends
   }
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+// biome-ignore lint/suspicious/noExplicitAny: <explanation>
 export interface RecordDeletedEvent<T extends BaseRecord<any, any, any>> extends BaseEvent {
   type: typeof RepositoryEventTypes.RecordDeleted
   payload: {

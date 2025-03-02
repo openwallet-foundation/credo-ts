@@ -1,20 +1,20 @@
 import type { DummyRecord, DummyStateChangedEvent } from './dummy'
 
 import { AskarModule } from '@credo-ts/askar'
-import { Agent, CredoError, ConsoleLogger, LogLevel } from '@credo-ts/core'
+import { Agent, ConsoleLogger, CredoError, LogLevel } from '@credo-ts/core'
 import {
-  HttpOutboundTransport,
-  WsOutboundTransport,
   ConnectionsModule,
   DidCommModule,
-  OutOfBandModule,
+  HttpOutboundTransport,
   MessagePickupModule,
+  OutOfBandModule,
+  WsOutboundTransport,
 } from '@credo-ts/didcomm'
 import { agentDependencies } from '@credo-ts/node'
 import { askar } from '@openwallet-foundation/askar-nodejs'
-import { filter, first, firstValueFrom, map, ReplaySubject, timeout } from 'rxjs'
+import { ReplaySubject, filter, first, firstValueFrom, map, timeout } from 'rxjs'
 
-import { DummyEventTypes, DummyState, DummyModule } from './dummy'
+import { DummyEventTypes, DummyModule, DummyState } from './dummy'
 
 const run = async () => {
   // Create transports
