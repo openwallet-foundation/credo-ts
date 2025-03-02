@@ -1,7 +1,7 @@
-import type { IssuerSignedDocument, PresentationDefinition } from '@animo-id/mdoc'
+import type { PresentationDefinition } from '@animo-id/mdoc'
 import type { InputDescriptorV2 } from '@sphereon/pex-models'
 import type { AgentContext } from '../../agent'
-import type { JwkJson } from '../../crypto'
+import type { Jwk } from '../../crypto'
 import type { DifPresentationExchangeDefinition } from '../dif-presentation-exchange'
 import type {
   MdocDeviceResponseOpenId4VpOptions,
@@ -10,7 +10,6 @@ import type {
 } from './MdocOptions'
 
 import {
-  COSEKey,
   DeviceRequest,
   DeviceResponse,
   DeviceSignedDocument,
@@ -23,9 +22,6 @@ import {
   parseDeviceResponse,
   parseIssuerSigned,
 } from '@animo-id/mdoc'
-
-import { getJwkFromJson } from '../../crypto'
-import { CredoError } from '../../error'
 import { uuid } from '../../utils/uuid'
 
 import { TypedArrayEncoder } from './../../utils'
@@ -173,30 +169,28 @@ export class MdocDeviceResponse {
       options.presentationDefinition
     ).mdocPresentationDefinition
 
-    const issuerSignedDocuments = options.mdocs.map((mdoc) =>
-      parseIssuerSigned(TypedArrayEncoder.fromBase64(mdoc.base64Url), mdoc.docType)
-    )
-    const docTypes = issuerSignedDocuments.map((i) => i.docType)
+    const docTypes = options.mdocs.map((i) => i.docType)
 
     const combinedDeviceResponseMdoc = new MDoc()
 
-    for (const issuerSignedDocument of issuerSignedDocuments) {
-      const { publicDeviceJwk, alg } = MdocDeviceResponse.parseDeviceKeyFromIssuerSigned(issuerSignedDocument)
-      const deviceKey = issuerSignedDocument.issuerSigned.issuerAuth.decodedPayload.deviceKeyInfo?.deviceKey
-      if (!deviceKey) throw new MdocError(`Device key is missing in mdoc with doctype ${issuerSignedDocument.docType}`)
+    for (const document of options.mdocs) {
+      const deviceKeyJwk = document.deviceKeyJwk
+      if (!deviceKeyJwk) throw new MdocError(`Device key is missing in mdoc with doctype ${document.docType}`)
+      const alg = MdocDeviceResponse.getAlgForDeviceKeyJwk(deviceKeyJwk)
 
       // We do PEX filtering on a different layer, so we only include the needed input descriptor here
       const presentationDefinitionForDocument = {
         ...presentationDefinition,
         input_descriptors: presentationDefinition.input_descriptors.filter(
-          (inputDescriptor) => inputDescriptor.id === issuerSignedDocument.docType
+          (inputDescriptor) => inputDescriptor.id === document.docType
         ),
       }
 
+      const issuerSignedDocument = parseIssuerSigned(TypedArrayEncoder.fromBase64(document.base64Url), document.docType)
       const deviceResponseBuilder = DeviceResponse.from(new MDoc([issuerSignedDocument]))
         .usingPresentationDefinition(presentationDefinitionForDocument)
         .usingSessionTranscriptForOID4VP(sessionTranscriptOptions)
-        .authenticateWithSignature(publicDeviceJwk, alg)
+        .authenticateWithSignature(deviceKeyJwk.toJson(), alg)
 
       for (const [nameSpace, nameSpaceValue] of Object.entries(options.deviceNameSpaces ?? {})) {
         deviceResponseBuilder.addDeviceNameSpace(nameSpace, nameSpaceValue)
@@ -219,16 +213,14 @@ export class MdocDeviceResponse {
   }
 
   public static async createDeviceResponse(agentContext: AgentContext, options: MdocDeviceResponseOptions) {
-    const issuerSignedDocuments = options.mdocs.map((mdoc) =>
-      parseIssuerSigned(TypedArrayEncoder.fromBase64(mdoc.base64Url), mdoc.docType)
-    )
-
     const combinedDeviceResponseMdoc = new MDoc()
 
-    for (const issuerSignedDocument of issuerSignedDocuments) {
-      const { publicDeviceJwk, alg } = MdocDeviceResponse.parseDeviceKeyFromIssuerSigned(issuerSignedDocument)
-      const deviceKey = issuerSignedDocument.issuerSigned.issuerAuth.decodedPayload.deviceKeyInfo?.deviceKey
-      if (!deviceKey) throw new CredoError(`Device key is missing in mdoc with doctype ${issuerSignedDocument.docType}`)
+    for (const document of options.mdocs) {
+      const deviceKeyJwk = document.deviceKeyJwk
+      if (!deviceKeyJwk) throw new MdocError(`Device key is missing in mdoc with doctype ${document.docType}`)
+      const alg = MdocDeviceResponse.getAlgForDeviceKeyJwk(deviceKeyJwk)
+
+      const issuerSignedDocument = parseIssuerSigned(TypedArrayEncoder.fromBase64(document.base64Url), document.docType)
 
       const deviceRequestForDocument = new DeviceRequest(
         options.deviceRequest.version,
@@ -240,7 +232,7 @@ export class MdocDeviceResponse {
       const deviceResponseBuilder = DeviceResponse.from(new MDoc([issuerSignedDocument]))
         .usingSessionTranscriptBytes(options.sessionTranscriptBytes)
         .usingDeviceRequest(deviceRequestForDocument)
-        .authenticateWithSignature(publicDeviceJwk, alg)
+        .authenticateWithSignature(deviceKeyJwk.toJson(), alg)
 
       for (const [nameSpace, nameSpaceValue] of Object.entries(options.deviceNameSpaces ?? {})) {
         deviceResponseBuilder.addDeviceNameSpace(nameSpace, nameSpaceValue)
@@ -273,7 +265,7 @@ export class MdocDeviceResponse {
 
       await document.verify(agentContext, {
         now: options.now,
-        trustedCertificates: options.trustedCertificates
+        trustedCertificates: options.trustedCertificates,
       })
 
       if (!(rawDocument instanceof DeviceSignedDocument)) {
@@ -308,27 +300,18 @@ export class MdocDeviceResponse {
     return this.documents
   }
 
-  private static parseDeviceKeyFromIssuerSigned(issuerSignedDocument: IssuerSignedDocument) {
-    const deviceKey = issuerSignedDocument.issuerSigned.issuerAuth.decodedPayload.deviceKeyInfo?.deviceKey
-    if (!deviceKey) throw new MdocError(`Device key is missing in mdoc with doctype ${issuerSignedDocument.docType}`)
-
-    const publicDeviceJwk = COSEKey.import(deviceKey).toJWK()
-
-    const jwkInstance = getJwkFromJson(publicDeviceJwk as JwkJson)
-    const signatureAlgorithm = jwkInstance.supportedSignatureAlgorithms.find(isMdocSupportedSignatureAlgorithm)
+  private static getAlgForDeviceKeyJwk(jwk: Jwk) {
+    const signatureAlgorithm = jwk.supportedSignatureAlgorithms.find(isMdocSupportedSignatureAlgorithm)
     if (!signatureAlgorithm) {
       throw new MdocError(
         `Unable to create mdoc device response. No supported signature algorithm found to sign device response for jwk with key type ${
-          jwkInstance.keyType
-        }. Key supports algs ${jwkInstance.supportedSignatureAlgorithms.join(
+          jwk.keyType
+        }. Key supports algs ${jwk.supportedSignatureAlgorithms.join(
           ', '
         )}. mdoc supports algs ${mdocSupporteSignatureAlgorithms.join(', ')}`
       )
     }
 
-    return {
-      publicDeviceJwk,
-      alg: signatureAlgorithm,
-    }
+    return signatureAlgorithm
   }
 }

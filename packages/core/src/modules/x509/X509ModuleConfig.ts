@@ -1,7 +1,6 @@
 import type { AgentContext } from '../../agent'
 import type { JwtPayload } from '../../crypto'
 import type { Mdoc } from '../mdoc/Mdoc'
-import type { MdocDeviceResponse } from '../mdoc/MdocDeviceResponse'
 import type { SdJwtVc } from '../sd-jwt-vc'
 import type { W3cJwtVerifiableCredential, W3cJwtVerifiablePresentation } from '../vc'
 
