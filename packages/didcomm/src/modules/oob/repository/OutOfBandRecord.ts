@@ -1,9 +1,9 @@
-import type { OutOfBandRecordMetadata } from './outOfBandRecordMetadataTypes'
+import type { TagsBase } from '@credo-ts/core'
 import type { OutOfBandRole } from '../domain/OutOfBandRole'
 import type { OutOfBandState } from '../domain/OutOfBandState'
-import type { TagsBase } from '@credo-ts/core'
+import type { OutOfBandRecordMetadata } from './outOfBandRecordMetadataTypes'
 
-import { CredoError, BaseRecord, utils } from '@credo-ts/core'
+import { BaseRecord, CredoError, utils } from '@credo-ts/core'
 import { Type } from 'class-transformer'
 
 import { getThreadIdFromPlainTextMessage } from '../../../util/thread'
@@ -98,6 +98,7 @@ export class OutOfBandRecord extends BaseRecord<
 
   public assertState(expectedStates: OutOfBandState | OutOfBandState[]) {
     if (!Array.isArray(expectedStates)) {
+      // biome-ignore lint/style/noParameterAssign: <explanation>
       expectedStates = [expectedStates]
     }
 

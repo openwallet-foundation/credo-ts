@@ -1,13 +1,13 @@
 import type { PlaintextMessage } from '../../../types'
 
-import { CredoError, JsonEncoder, JsonTransformer, IsStringOrInstance } from '@credo-ts/core'
+import { CredoError, IsStringOrInstance, JsonEncoder, JsonTransformer } from '@credo-ts/core'
 import { Exclude, Expose, Transform, TransformationType, Type } from 'class-transformer'
 import { ArrayNotEmpty, IsArray, IsInstance, IsOptional, IsUrl, ValidateNested } from 'class-validator'
 import { parseUrl } from 'query-string'
 
 import { AgentMessage } from '../../../AgentMessage'
 import { Attachment, AttachmentData } from '../../../decorators/attachment/Attachment'
-import { replaceLegacyDidSovPrefix, IsValidMessageType, parseMessageType } from '../../../util/messageType'
+import { IsValidMessageType, parseMessageType, replaceLegacyDidSovPrefix } from '../../../util/messageType'
 import { OutOfBandDidCommService } from '../domain/OutOfBandDidCommService'
 import { outOfBandServiceToNumAlgo2Did } from '../helpers'
 
@@ -72,17 +72,16 @@ export class OutOfBandInvitation extends AgentMessage {
 
   public static fromUrl(invitationUrl: string) {
     const parsedUrl = parseUrl(invitationUrl).query
-    const encodedInvitation = parsedUrl['oob']
+    const encodedInvitation = parsedUrl.oob
     if (typeof encodedInvitation === 'string') {
       const invitationJson = JsonEncoder.fromBase64(encodedInvitation)
-      const invitation = this.fromJson(invitationJson)
+      const invitation = OutOfBandInvitation.fromJson(invitationJson)
 
       return invitation
-    } else {
-      throw new CredoError(
-        'InvitationUrl is invalid. It needs to contain one, and only one, of the following parameters; `oob`'
-      )
     }
+    throw new CredoError(
+      'InvitationUrl is invalid. It needs to contain one, and only one, of the following parameters; `oob`'
+    )
   }
 
   public static fromJson(json: Record<string, unknown>) {
@@ -146,8 +145,7 @@ export class OutOfBandInvitation extends AgentMessage {
   @ArrayNotEmpty()
   @OutOfBandServiceTransformer()
   @IsStringOrInstance(OutOfBandDidCommService, { each: true })
-  // eslint-disable-next-line @typescript-eslint/ban-types
-  private services!: Array<OutOfBandDidCommService | string | String>
+  private services!: Array<OutOfBandDidCommService | string | string>
 
   /**
    * Custom property. It is not part of the RFC.
@@ -171,7 +169,8 @@ function OutOfBandServiceTransformer() {
         // inline didcomm service
         return JsonTransformer.fromJSON(service, OutOfBandDidCommService)
       })
-    } else if (type === TransformationType.CLASS_TO_PLAIN) {
+    }
+    if (type === TransformationType.CLASS_TO_PLAIN) {
       return value.map((service) =>
         typeof service === 'string' || service instanceof String ? service.toString() : JsonTransformer.toJSON(service)
       )

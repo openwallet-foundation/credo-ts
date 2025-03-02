@@ -1,8 +1,8 @@
+import type { DidDocumentService } from '@credo-ts/core'
 import type { Authentication } from './authentication'
 import type { PublicKey } from './publicKey'
-import type { DidDocumentService } from '@credo-ts/core'
 
-import { ServiceTransformer, DidCommV1Service, IndyAgentService } from '@credo-ts/core'
+import { DidCommV1Service, IndyAgentService, ServiceTransformer } from '@credo-ts/core'
 import { Expose } from 'class-transformer'
 import { Equals, IsArray, IsString, ValidateNested } from 'class-validator'
 

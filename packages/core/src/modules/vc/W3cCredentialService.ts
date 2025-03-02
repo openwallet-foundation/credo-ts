@@ -1,3 +1,5 @@
+import type { AgentContext } from '../../agent/context'
+import type { Query, QueryOptions } from '../../storage/StorageService'
 import type {
   StoreCredentialOptions,
   W3cCreatePresentationOptions,
@@ -16,8 +18,6 @@ import type {
   W3cVerifyCredentialResult,
   W3cVerifyPresentationResult,
 } from './models'
-import type { AgentContext } from '../../agent/context'
-import type { Query, QueryOptions } from '../../storage/StorageService'
 
 import { CredoError } from '../../error'
 import { injectable } from '../../plugins'
@@ -61,12 +61,12 @@ export class W3cCredentialService {
     if (options.format === ClaimFormat.JwtVc) {
       const signed = await this.w3cJwtCredentialService.signCredential(agentContext, options)
       return signed as W3cVerifiableCredential<Format>
-    } else if (options.format === ClaimFormat.LdpVc) {
+    }
+    if (options.format === ClaimFormat.LdpVc) {
       const signed = await this.w3cJsonLdCredentialService.signCredential(agentContext, options)
       return signed as W3cVerifiableCredential<Format>
-    } else {
-      throw new CredoError(`Unsupported format in options. Format must be either 'jwt_vc' or 'ldp_vc'`)
     }
+    throw new CredoError(`Unsupported format in options. Format must be either 'jwt_vc' or 'ldp_vc'`)
   }
 
   /**
@@ -78,13 +78,13 @@ export class W3cCredentialService {
   ): Promise<W3cVerifyCredentialResult> {
     if (options.credential instanceof W3cJsonLdVerifiableCredential) {
       return this.w3cJsonLdCredentialService.verifyCredential(agentContext, options as W3cJsonLdVerifyCredentialOptions)
-    } else if (options.credential instanceof W3cJwtVerifiableCredential || typeof options.credential === 'string') {
-      return this.w3cJwtCredentialService.verifyCredential(agentContext, options as W3cJwtVerifyCredentialOptions)
-    } else {
-      throw new CredoError(
-        `Unsupported credential type in options. Credential must be either a W3cJsonLdVerifiableCredential or a W3cJwtVerifiableCredential`
-      )
     }
+    if (options.credential instanceof W3cJwtVerifiableCredential || typeof options.credential === 'string') {
+      return this.w3cJwtCredentialService.verifyCredential(agentContext, options as W3cJwtVerifyCredentialOptions)
+    }
+    throw new CredoError(
+      'Unsupported credential type in options. Credential must be either a W3cJsonLdVerifiableCredential or a W3cJwtVerifiableCredential'
+    )
   }
 
   /**
@@ -119,12 +119,12 @@ export class W3cCredentialService {
     if (options.format === ClaimFormat.JwtVp) {
       const signed = await this.w3cJwtCredentialService.signPresentation(agentContext, options)
       return signed as W3cVerifiablePresentation<Format>
-    } else if (options.format === ClaimFormat.LdpVp) {
+    }
+    if (options.format === ClaimFormat.LdpVp) {
       const signed = await this.w3cJsonLdCredentialService.signPresentation(agentContext, options)
       return signed as W3cVerifiablePresentation<Format>
-    } else {
-      throw new CredoError(`Unsupported format in options. Format must be either 'jwt_vp' or 'ldp_vp'`)
     }
+    throw new CredoError(`Unsupported format in options. Format must be either 'jwt_vp' or 'ldp_vp'`)
   }
 
   /**
@@ -142,16 +142,13 @@ export class W3cCredentialService {
         agentContext,
         options as W3cJsonLdVerifyPresentationOptions
       )
-    } else if (
-      options.presentation instanceof W3cJwtVerifiablePresentation ||
-      typeof options.presentation === 'string'
-    ) {
-      return this.w3cJwtCredentialService.verifyPresentation(agentContext, options as W3cJwtVerifyPresentationOptions)
-    } else {
-      throw new CredoError(
-        'Unsupported credential type in options. Presentation must be either a W3cJsonLdVerifiablePresentation or a W3cJwtVerifiablePresentation'
-      )
     }
+    if (options.presentation instanceof W3cJwtVerifiablePresentation || typeof options.presentation === 'string') {
+      return this.w3cJwtCredentialService.verifyPresentation(agentContext, options as W3cJwtVerifyPresentationOptions)
+    }
+    throw new CredoError(
+      'Unsupported credential type in options. Presentation must be either a W3cJsonLdVerifiablePresentation or a W3cJwtVerifiablePresentation'
+    )
   }
 
   /**

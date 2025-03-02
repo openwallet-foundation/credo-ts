@@ -2,8 +2,8 @@ import type { Extension as AsnExtension } from '@peculiar/asn1-x509'
 import type { JsonGeneralNames, TextObject } from '@peculiar/x509'
 
 import { AsnConvert } from '@peculiar/asn1-schema'
-import { id_ce_issuerAltName, IssueAlternativeName } from '@peculiar/asn1-x509'
-import { Extension, GeneralNames, ExtensionFactory } from '@peculiar/x509'
+import { IssueAlternativeName, id_ce_issuerAltName } from '@peculiar/asn1-x509'
+import { Extension, ExtensionFactory, GeneralNames } from '@peculiar/x509'
 
 export class IssuerAlternativeNameExtension extends Extension {
   public names!: GeneralNames

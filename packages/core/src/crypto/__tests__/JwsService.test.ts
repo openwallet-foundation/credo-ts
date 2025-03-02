@@ -1,5 +1,5 @@
+import type { Key, Wallet, X509Certificate } from '@credo-ts/core'
 import type { AgentContext } from '../../agent'
-import type { X509Certificate, Key, Wallet } from '@credo-ts/core'
 
 import { InMemoryWallet } from '../../../../../tests/InMemoryWallet'
 import { getAgentConfig, getAgentContext } from '../../../tests/helpers'

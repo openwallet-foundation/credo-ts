@@ -1,42 +1,42 @@
 import type {
   EncryptedMessage,
-  WalletConfig,
-  WalletCreateKeyOptions,
-  WalletSignOptions,
-  UnpackedMessageContext,
-  WalletVerifyOptions,
-  Wallet,
-  WalletConfigRekey,
   KeyPair,
-  WalletExportImportConfig,
   Logger,
   SigningProviderRegistry,
+  UnpackedMessageContext,
+  Wallet,
+  WalletConfig,
+  WalletConfigRekey,
+  WalletCreateKeyOptions,
   WalletDirectEncryptCompactJwtEcdhEsOptions,
+  WalletExportImportConfig,
+  WalletSignOptions,
+  WalletVerifyOptions,
 } from '@credo-ts/core'
 import type { Session } from '@openwallet-foundation/askar-shared'
 
 import {
-  WalletKeyExistsError,
-  isValidSeed,
-  isValidPrivateKey,
-  JsonEncoder,
   Buffer,
   CredoError,
-  WalletError,
+  JsonEncoder,
   Key,
-  TypedArrayEncoder,
   KeyBackend,
   KeyType,
+  TypedArrayEncoder,
+  WalletError,
+  WalletKeyExistsError,
+  isValidPrivateKey,
+  isValidSeed,
   utils,
 } from '@credo-ts/core'
 import {
-  CryptoBox,
-  Store,
   Key as AskarKey,
-  keyAlgorithmFromString,
+  CryptoBox,
   EcdhEs,
-  KeyAlgorithm,
   Jwk,
+  KeyAlgorithm,
+  Store,
+  keyAlgorithmFromString,
 } from '@openwallet-foundation/askar-shared'
 
 import { importSecureEnvironment } from '../secureEnvironment'
@@ -173,8 +173,8 @@ export abstract class AskarBaseWallet implements Wallet {
           const _key = privateKey
             ? AskarKey.fromSecretBytes({ secretKey: privateKey, algorithm })
             : seed
-            ? AskarKey.fromSeed({ seed, algorithm })
-            : AskarKey.generate(algorithm)
+              ? AskarKey.fromSeed({ seed, algorithm })
+              : AskarKey.generate(algorithm)
 
           // FIXME: we need to create a separate const '_key' so TS definitely knows _key is defined in the session callback.
           // This will be fixed once we use the new 'using' syntax
@@ -256,9 +256,7 @@ export abstract class AskarBaseWallet implements Wallet {
       if (isKeyTypeSupportedByAskarForPurpose(key.keyType, AskarKeyTypePurpose.KeyManagement)) {
         askarKey = await this.withSession(
           async (session) =>
-            (
-              await session.fetchKey({ name: TypedArrayEncoder.toBase58(key.compressedPublicKey) })
-            )?.key
+            (await session.fetchKey({ name: TypedArrayEncoder.toBase58(key.compressedPublicKey) }))?.key
         )
       }
 
@@ -308,7 +306,7 @@ export abstract class AskarBaseWallet implements Wallet {
       // Not all keys are supported for signing
       if (isKeyTypeSupportedByAskarForPurpose(key.keyType, AskarKeyTypePurpose.Signing)) {
         if (!TypedArrayEncoder.isTypedArray(data)) {
-          throw new WalletError(`Currently not supporting signing of multiple messages`)
+          throw new WalletError('Currently not supporting signing of multiple messages')
         }
 
         askarKey =
@@ -326,30 +324,29 @@ export abstract class AskarBaseWallet implements Wallet {
 
         const signed = askarKey.signMessage({ message: data as Buffer })
         return Buffer.from(signed)
-      } else {
-        // Check if there is a signing key provider for the specified key type.
-        if (this.signingKeyProviderRegistry.hasProviderForKeyType(key.keyType)) {
-          const signingKeyProvider = this.signingKeyProviderRegistry.getProviderForKeyType(key.keyType)
-
-          // It could be that askar supports storing the key, but can't sign with it
-          // (in case of bls)
-          const privateKeyBase58 =
-            keyPair?.privateKeyBase58 ??
-            (askarKey?.secretBytes ? TypedArrayEncoder.toBase58(askarKey.secretBytes) : undefined)
-
-          if (!privateKeyBase58) {
-            throw new WalletError('Key entry not found')
-          }
-          const signed = await signingKeyProvider.sign({
-            data,
-            privateKeyBase58: privateKeyBase58,
-            publicKeyBase58: key.publicKeyBase58,
-          })
-
-          return signed
-        }
-        throw new WalletError(`Unsupported keyType: ${key.keyType}`)
       }
+      // Check if there is a signing key provider for the specified key type.
+      if (this.signingKeyProviderRegistry.hasProviderForKeyType(key.keyType)) {
+        const signingKeyProvider = this.signingKeyProviderRegistry.getProviderForKeyType(key.keyType)
+
+        // It could be that askar supports storing the key, but can't sign with it
+        // (in case of bls)
+        const privateKeyBase58 =
+          keyPair?.privateKeyBase58 ??
+          (askarKey?.secretBytes ? TypedArrayEncoder.toBase58(askarKey.secretBytes) : undefined)
+
+        if (!privateKeyBase58) {
+          throw new WalletError('Key entry not found')
+        }
+        const signed = await signingKeyProvider.sign({
+          data,
+          privateKeyBase58: privateKeyBase58,
+          publicKeyBase58: key.publicKeyBase58,
+        })
+
+        return signed
+      }
+      throw new WalletError(`Unsupported keyType: ${key.keyType}`)
     } catch (error) {
       if (!isError(error)) {
         throw new CredoError('Attempted to throw error, but it was not of type Error', { cause: error })
@@ -382,7 +379,7 @@ export abstract class AskarBaseWallet implements Wallet {
     try {
       if (isKeyTypeSupportedByAskarForPurpose(key.keyType, AskarKeyTypePurpose.Signing)) {
         if (!TypedArrayEncoder.isTypedArray(data)) {
-          throw new WalletError(`Currently not supporting verification of multiple messages`)
+          throw new WalletError('Currently not supporting verification of multiple messages')
         }
 
         askarKey = AskarKey.fromPublicBytes({
@@ -392,7 +389,8 @@ export abstract class AskarBaseWallet implements Wallet {
         const verified = askarKey.verifySignature({ message: data as Buffer, signature })
         askarKey.handle.free()
         return verified
-      } else if (this.signingKeyProviderRegistry.hasProviderForKeyType(key.keyType)) {
+      }
+      if (this.signingKeyProviderRegistry.hasProviderForKeyType(key.keyType)) {
         // Check if there is a signing key provider for the specified key type.
         const signingKeyProvider = this.signingKeyProviderRegistry.getProviderForKeyType(key.keyType)
         const signed = await signingKeyProvider.verify({
@@ -402,9 +400,8 @@ export abstract class AskarBaseWallet implements Wallet {
         })
 
         return signed
-      } else {
-        throw new WalletError(`Unsupported keyType: ${key.keyType}`)
       }
+      throw new WalletError(`Unsupported keyType: ${key.keyType}`)
     } catch (error) {
       askarKey?.handle.free()
       if (!isError(error)) {
@@ -435,7 +432,7 @@ export abstract class AskarBaseWallet implements Wallet {
 
     try {
       if (senderVerkey && !senderKey) {
-        throw new WalletError(`Sender key not found`)
+        throw new WalletError('Sender key not found')
       }
 
       const envelope = didcommV1Pack(payload, recipientKeys, senderKey?.key)
@@ -454,7 +451,7 @@ export abstract class AskarBaseWallet implements Wallet {
    */
   public async unpack(messagePackage: EncryptedMessage): Promise<UnpackedMessageContext> {
     const protectedJson = JsonEncoder.fromBase64(messagePackage.protected)
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
     const recipientKids: string[] = protectedJson.recipients.map((r: any) => r.header.kid)
 
     // TODO: how long should sessions last? Just for the duration of the unpack? Or should each item in the recipientKids get a separate session?
@@ -571,9 +568,7 @@ export abstract class AskarBaseWallet implements Wallet {
     if (isKeyTypeSupportedByAskarForPurpose(recipientKey.keyType, AskarKeyTypePurpose.KeyManagement)) {
       askarKey = await this.withSession(
         async (session) =>
-          (
-            await session.fetchKey({ name: TypedArrayEncoder.toBase58(recipientKey.compressedPublicKey) })
-          )?.key
+          (await session.fetchKey({ name: TypedArrayEncoder.toBase58(recipientKey.compressedPublicKey) }))?.key
       )
     }
     if (!askarKey) {

@@ -1,8 +1,8 @@
 import type { Agent } from '../../../../../../../core'
 import type { getJsonLdModules } from '../../../../../../../core/tests'
 
-import { KeyType, TypedArrayEncoder, CREDENTIALS_CONTEXT_V1_URL } from '../../../../../../../core'
-import { waitForCredentialRecord, setupJsonLdTests, waitForProofExchangeRecord } from '../../../../../../../core/tests'
+import { CREDENTIALS_CONTEXT_V1_URL, KeyType, TypedArrayEncoder } from '../../../../../../../core'
+import { setupJsonLdTests, waitForCredentialRecord, waitForProofExchangeRecord } from '../../../../../../../core/tests'
 import testLogger from '../../../../../../../core/tests/logger'
 import { DidCommMessageRepository } from '../../../../../repository'
 import { AutoAcceptCredential, CredentialState } from '../../../../credentials'
@@ -83,7 +83,7 @@ describe('Present Proof', () => {
     await verifierAgent.wallet.delete()
   })
 
-  test(`Prover Creates and sends Proof Proposal to a Verifier`, async () => {
+  test('Prover Creates and sends Proof Proposal to a Verifier', async () => {
     testLogger.test('Prover sends proof proposal to a Verifier')
 
     const verifierPresentationRecordPromise = waitForProofExchangeRecord(verifierAgent, {
@@ -145,7 +145,7 @@ describe('Present Proof', () => {
     })
   })
 
-  test(`Verifier accepts the Proposal send by the Prover`, async () => {
+  test('Verifier accepts the Proposal send by the Prover', async () => {
     testLogger.test('Prover sends proof proposal to a Verifier')
 
     let proverProofExchangeRecord = await proverAgent.modules.proofs.proposeProof({
@@ -228,7 +228,7 @@ describe('Present Proof', () => {
     })
   })
 
-  test(`Prover accepts presentation request from the Verifier`, async () => {
+  test('Prover accepts presentation request from the Verifier', async () => {
     testLogger.test('Prover sends proof proposal to a Verifier')
 
     let proverProofExchangeRecord = await proverAgent.modules.proofs.proposeProof({
@@ -365,7 +365,7 @@ describe('Present Proof', () => {
     })
   })
 
-  test(`Verifier accepts the presentation provided by the Prover`, async () => {
+  test('Verifier accepts the presentation provided by the Prover', async () => {
     testLogger.test('Prover sends proof proposal to a Verifier')
 
     let proverProofExchangeRecord = await proverAgent.modules.proofs.proposeProof({

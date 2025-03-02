@@ -3,12 +3,12 @@ import type { X509CertificateExtensionsOptions } from '../X509ServiceOptions'
 
 import {
   AuthorityKeyIdentifierExtension,
-  ExtendedKeyUsageExtension,
-  KeyUsagesExtension,
-  SubjectKeyIdentifierExtension,
-  SubjectAlternativeNameExtension,
   BasicConstraintsExtension,
   CRLDistributionPointsExtension,
+  ExtendedKeyUsageExtension,
+  KeyUsagesExtension,
+  SubjectAlternativeNameExtension,
+  SubjectKeyIdentifierExtension,
 } from '@peculiar/x509'
 
 import { TypedArrayEncoder } from '../../../utils'

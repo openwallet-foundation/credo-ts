@@ -1,8 +1,8 @@
-import type { DidCommMessageRole } from './DidCommMessageRole'
 import type { ConstructableAgentMessage } from '../AgentMessage'
 import type { PlaintextMessage } from '../types'
+import type { DidCommMessageRole } from './DidCommMessageRole'
 
-import { CredoError, BaseRecord, JsonTransformer, isJsonObject, utils } from '@credo-ts/core'
+import { BaseRecord, CredoError, JsonTransformer, isJsonObject, utils } from '@credo-ts/core'
 
 import { canHandleMessageType, parseMessageType } from '../util/messageType'
 

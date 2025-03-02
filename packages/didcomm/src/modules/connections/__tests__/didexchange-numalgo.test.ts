@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-non-null-assertion */
 import type { ConnectionStateChangedEvent } from '../ConnectionEvents'
 
 import { firstValueFrom } from 'rxjs'
@@ -140,7 +139,10 @@ async function didExchangeNumAlgoBaseTest(options: {
 
   const waitForAliceRequest = waitForRequest(faberAgent, 'alice')
 
-  let ourDid, routing
+  // biome-ignore lint/suspicious/noImplicitAnyLet: <explanation>
+  let ourDid
+  // biome-ignore lint/suspicious/noImplicitAnyLet: <explanation>
+  let routing
   if (options.createExternalDidForRequester) {
     // Create did externally
     const didRouting = await aliceAgent.modules.mediationRecipient.getRouting({})
@@ -173,16 +175,17 @@ async function didExchangeNumAlgoBaseTest(options: {
 
   let faberAliceConnectionRecord = await waitForAliceRequest
 
-  const waitForAliceResponse = waitForResponse(aliceAgent, aliceConnectionRecord!.id)
+  // biome-ignore lint/style/noNonNullAssertion: <explanation>
+  const waitForAliceResponse = waitForResponse(aliceAgent, aliceConnectionRecord?.id!)
 
   await faberAgent.modules.connections.acceptRequest(faberAliceConnectionRecord.id)
 
   aliceConnectionRecord = await waitForAliceResponse
-  await aliceAgent.modules.connections.acceptResponse(aliceConnectionRecord!.id)
+  await aliceAgent.modules.connections.acceptResponse(aliceConnectionRecord?.id)
 
-  aliceConnectionRecord = await aliceAgent.modules.connections.returnWhenIsConnected(aliceConnectionRecord!.id)
+  aliceConnectionRecord = await aliceAgent.modules.connections.returnWhenIsConnected(aliceConnectionRecord?.id)
   faberAliceConnectionRecord = await faberAgent.modules.connections.returnWhenIsConnected(
-    faberAliceConnectionRecord!.id
+    faberAliceConnectionRecord?.id
   )
 
   expect(aliceConnectionRecord).toBeConnectedWith(faberAliceConnectionRecord)

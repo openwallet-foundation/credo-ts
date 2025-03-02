@@ -1,7 +1,7 @@
-import type { AgentDependencies } from './AgentDependencies'
-import type { AgentModulesInput } from './AgentModules'
 import type { Module } from '../plugins'
 import type { InitConfig } from '../types'
+import type { AgentDependencies } from './AgentDependencies'
+import type { AgentModulesInput } from './AgentModules'
 
 import { Subject } from 'rxjs'
 
@@ -25,7 +25,7 @@ interface AgentOptions<AgentModules extends AgentModulesInput> {
 }
 
 // Any makes sure you can use Agent as a type without always needing to specify the exact generics for the agent
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+// biome-ignore lint/suspicious/noExplicitAny: <explanation>
 export class Agent<AgentModules extends AgentModulesInput = any> extends BaseAgent<AgentModules> {
   public constructor(options: AgentOptions<AgentModules>, dependencyManager = new DependencyManager()) {
     const agentConfig = new AgentConfig(options.config, options.dependencies)

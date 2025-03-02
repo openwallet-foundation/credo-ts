@@ -15,7 +15,7 @@ import { Ed25519Signature2018Fixtures } from '../data-integrity/__tests__/fixtur
 import jsonld from '../data-integrity/libraries/jsonld'
 import { W3cJwtCredentialService } from '../jwt-vc'
 import { W3cPresentation } from '../models'
-import { W3cCredentialRepository, W3cCredentialRecord } from '../repository'
+import { W3cCredentialRecord, W3cCredentialRepository } from '../repository'
 
 jest.mock('../repository/W3cCredentialRepository')
 const W3cCredentialsRepositoryMock = W3cCredentialRepository as jest.Mock<W3cCredentialRepository>

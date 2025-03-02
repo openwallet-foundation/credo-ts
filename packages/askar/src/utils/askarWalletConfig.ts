@@ -29,7 +29,7 @@ export const uriFromWalletConfig = (
   credoDataPath: string
 ): { uri: string; path?: string } => {
   let uri = ''
-  let path
+  let path: string | undefined
 
   // By default use sqlite as database backend
   if (!walletConfig.storage) {

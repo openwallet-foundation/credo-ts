@@ -9,7 +9,6 @@ describe('ConnectionRequestMessage', () => {
       label: 'test-label',
     })
 
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore
     delete connectionRequest.connection
 

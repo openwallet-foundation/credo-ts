@@ -1,14 +1,14 @@
-import type { BaseRecord } from './BaseRecord'
-import type { RecordSavedEvent, RecordUpdatedEvent, RecordDeletedEvent } from './RepositoryEvents'
-import type { BaseRecordConstructor, Query, QueryOptions, StorageService } from './StorageService'
 import type { AgentContext } from '../agent'
 import type { EventEmitter } from '../agent/EventEmitter'
+import type { BaseRecord } from './BaseRecord'
+import type { RecordDeletedEvent, RecordSavedEvent, RecordUpdatedEvent } from './RepositoryEvents'
+import type { BaseRecordConstructor, Query, QueryOptions, StorageService } from './StorageService'
 
 import { RecordDuplicateError, RecordNotFoundError } from '../error'
 
 import { RepositoryEventTypes } from './RepositoryEvents'
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+// biome-ignore lint/suspicious/noExplicitAny: <explanation>
 export class Repository<T extends BaseRecord<any, any, any>> {
   private storageService: StorageService<T>
   private recordClass: BaseRecordConstructor<T>

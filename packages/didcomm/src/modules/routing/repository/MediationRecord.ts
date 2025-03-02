@@ -1,6 +1,6 @@
 import type { MediationRole } from '../models/MediationRole'
 
-import { CredoError, BaseRecord, utils } from '@credo-ts/core'
+import { BaseRecord, CredoError, utils } from '@credo-ts/core'
 import { Transform } from 'class-transformer'
 
 import { MediatorPickupStrategy } from '../MediatorPickupStrategy'
@@ -46,9 +46,8 @@ export class MediationRecord
   @Transform(({ value }) => {
     if (value === 'Explicit') {
       return MediatorPickupStrategy.PickUpV1
-    } else {
-      return value
     }
+    return value
   })
   public pickupStrategy?: MediatorPickupStrategy
 
@@ -112,6 +111,7 @@ export class MediationRecord
 
   public assertState(expectedStates: MediationState | MediationState[]) {
     if (!Array.isArray(expectedStates)) {
+      // biome-ignore lint/style/noParameterAssign: <explanation>
       expectedStates = [expectedStates]
     }
 

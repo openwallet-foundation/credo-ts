@@ -1,8 +1,7 @@
+import type { HashName } from '../crypto'
 import type { BaseName } from './MultiBaseEncoder'
 import type { Buffer } from './buffer'
-import type { HashName } from '../crypto'
 
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore ts is giving me headaches because this package has no types
 import cbor from 'borc'
 
@@ -24,6 +23,7 @@ const hexTable = {
   contentType: 0x0e,
 }
 
+// biome-ignore lint/complexity/noStaticOnlyClass: <explanation>
 export class HashlinkEncoder {
   /**
    * Encodes a buffer, with optional metadata, into a hashlink
@@ -41,8 +41,9 @@ export class HashlinkEncoder {
     baseEncoding: BaseName = 'base58btc',
     metadata?: Metadata
   ) {
-    const checksum = this.encodeMultiHash(buffer, hashAlgorithm, baseEncoding)
-    const mbMetadata = metadata && Object.keys(metadata).length > 0 ? this.encodeMetadata(metadata, baseEncoding) : null
+    const checksum = HashlinkEncoder.encodeMultiHash(buffer, hashAlgorithm, baseEncoding)
+    const mbMetadata =
+      metadata && Object.keys(metadata).length > 0 ? HashlinkEncoder.encodeMetadata(metadata, baseEncoding) : null
     return mbMetadata ? `hl:${checksum}:${mbMetadata}` : `hl:${checksum}`
   }
 
@@ -54,13 +55,12 @@ export class HashlinkEncoder {
    * @returns object the decoded hashlink
    */
   public static decode(hashlink: string): HashlinkData {
-    if (this.isValid(hashlink)) {
+    if (HashlinkEncoder.isValid(hashlink)) {
       const hashlinkList = hashlink.split(':')
       const [, checksum, encodedMetadata] = hashlinkList
-      return encodedMetadata ? { checksum, metadata: this.decodeMetadata(encodedMetadata) } : { checksum }
-    } else {
-      throw new Error(`Invalid hashlink: ${hashlink}`)
+      return encodedMetadata ? { checksum, metadata: HashlinkEncoder.decodeMetadata(encodedMetadata) } : { checksum }
     }
+    throw new Error(`Invalid hashlink: ${hashlink}`)
   }
 
   /**
@@ -79,7 +79,7 @@ export class HashlinkEncoder {
     }
     const { data } = MultiBaseEncoder.decode(hashlinkList[1])
     const validMultiHash = MultiHashEncoder.isValid(data)
-    return validMultiHash ? true : false
+    return !!validMultiHash
   }
 
   private static encodeMultiHash(
@@ -114,7 +114,7 @@ export class HashlinkEncoder {
     const obj = { urls: [] as string[], contentType: '' }
     const { data } = MultiBaseEncoder.decode(mb)
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      // biome-ignore lint/suspicious/noExplicitAny: <explanation>
       const cborData: Map<number, any> = cbor.decode(data)
       cborData.forEach((value, key) => {
         if (key === hexTable.urls) {

@@ -1,8 +1,8 @@
+import type { DidDocument } from '@credo-ts/core'
 import type { AgentMessage } from './AgentMessage'
 import type { EnvelopeKeys } from './EnvelopeService'
 import type { TransportSessionRemovedEvent, TransportSessionSavedEvent } from './transport'
 import type { EncryptedMessage } from './types'
-import type { DidDocument } from '@credo-ts/core'
 
 import { AgentContext, CredoError, EventEmitter, injectable } from '@credo-ts/core'
 
@@ -23,11 +23,11 @@ export class TransportService {
   public saveSession(session: TransportSession) {
     if (session.connectionId) {
       const oldSessions = this.getExistingSessionsForConnectionIdAndType(session.connectionId, session.type)
-      oldSessions.forEach((oldSession) => {
+      for (const oldSession of oldSessions) {
         if (oldSession && oldSession.id !== session.id) {
           this.removeSession(oldSession)
         }
-      })
+      }
     }
     this.transportSessionTable[session.id] = session
 

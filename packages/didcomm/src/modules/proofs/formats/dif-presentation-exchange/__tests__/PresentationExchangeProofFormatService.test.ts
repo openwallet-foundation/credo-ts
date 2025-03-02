@@ -10,10 +10,10 @@ import {
   DifPresentationExchangeService,
 } from '../../../../../../../core/src/modules/dif-presentation-exchange'
 import {
-  W3cJsonLdVerifiableCredential,
+  CREDENTIALS_CONTEXT_V1_URL,
   W3cCredentialRecord,
   W3cCredentialRepository,
-  CREDENTIALS_CONTEXT_V1_URL,
+  W3cJsonLdVerifiableCredential,
   W3cJsonLdVerifiablePresentation,
 } from '../../../../../../../core/src/modules/vc'
 import { getInMemoryAgentOptions } from '../../../../../../../core/tests'

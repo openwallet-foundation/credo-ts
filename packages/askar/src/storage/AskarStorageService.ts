@@ -1,13 +1,13 @@
 import type {
-  BaseRecordConstructor,
   AgentContext,
   BaseRecord,
+  BaseRecordConstructor,
   Query,
   QueryOptions,
   StorageService,
 } from '@credo-ts/core'
 
-import { RecordDuplicateError, WalletError, RecordNotFoundError, injectable, JsonTransformer } from '@credo-ts/core'
+import { JsonTransformer, RecordDuplicateError, RecordNotFoundError, WalletError, injectable } from '@credo-ts/core'
 import { Scan } from '@openwallet-foundation/askar-shared'
 
 import { AskarErrorCode, isAskarError } from '../utils/askarError'

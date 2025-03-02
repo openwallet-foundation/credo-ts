@@ -1,7 +1,7 @@
+import type { JsonObject, JsonValue } from '../../../types'
 import type { GetProofsOptions } from './models/GetProofsOptions'
 import type { GetProofsResult } from './models/GetProofsResult'
 import type { GetTypeOptions } from './models/GetTypeOptions'
-import type { JsonObject, JsonValue } from '../../../types'
 
 import { CredoError } from '../../../error'
 import { SECURITY_CONTEXT_URL } from '../constants'
@@ -70,6 +70,7 @@ export const getProofs = async (options: GetProofsOptions): Promise<GetProofsRes
   const { proofType, skipProofCompaction, documentLoader } = options
   let { document } = options
 
+  // biome-ignore lint/suspicious/noImplicitAnyLet: <explanation>
   let proofs
   if (!skipProofCompaction) {
     // If we must compact the proof then we must first compact the input
@@ -80,13 +81,12 @@ export const getProofs = async (options: GetProofsOptions): Promise<GetProofsRes
     })
   }
 
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
   // @ts-ignore - needed because getValues is not part of the public API.
   proofs = jsonld.getValues(document, PROOF_PROPERTY)
   delete document[PROOF_PROPERTY]
 
   if (typeof proofType === 'string') {
-    proofs = proofs.filter((_: Record<string, unknown>) => _.type == proofType)
+    proofs = proofs.filter((_: Record<string, unknown>) => _.type === proofType)
   }
   if (Array.isArray(proofType)) {
     proofs = proofs.filter((_: Record<string, unknown>) => proofType.includes(_.type))
@@ -117,7 +117,6 @@ export const getTypeInfo = async (
   const { documentLoader } = options
 
   // determine `@type` alias, if any
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
   // @ts-ignore - needed because getValues is not part of the public API.
   const context = jsonld.getValues(document, '@context')
 
@@ -130,16 +129,13 @@ export const getTypeInfo = async (
   const alias = Object.keys(compacted)[0]
 
   // optimize: expand only `@type` and `type` values
-  /* eslint-disable prefer-const */
-  let toExpand: Record<string, unknown> = { '@context': context }
+  const toExpand: Record<string, unknown> = { '@context': context }
 
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
   // @ts-ignore - needed because getValues is not part of the public API.
   toExpand['@type'] = jsonld.getValues(document, '@type').concat(jsonld.getValues(document, alias))
 
   const expanded = (await jsonld.expand(toExpand, { documentLoader }))[0] || {}
 
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
   // @ts-ignore - needed because getValues is not part of the public API.
   return { types: jsonld.getValues(expanded, '@type'), alias }
 }

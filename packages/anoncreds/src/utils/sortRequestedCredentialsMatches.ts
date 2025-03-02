@@ -7,7 +7,7 @@ import type { AnonCredsRequestedAttributeMatch, AnonCredsRequestedPredicateMatch
  *  - then credentials with `revoked` set to true, this means the credentials are revoked
  */
 export function sortRequestedCredentialsMatches<
-  Requested extends Array<AnonCredsRequestedAttributeMatch> | Array<AnonCredsRequestedPredicateMatch>
+  Requested extends Array<AnonCredsRequestedAttributeMatch> | Array<AnonCredsRequestedPredicateMatch>,
 >(credentials: Requested) {
   const credentialGoUp = -1
   const credentialGoDown = 1

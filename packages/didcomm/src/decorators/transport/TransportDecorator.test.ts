@@ -1,6 +1,6 @@
 import { ClassValidationError, JsonTransformer, MessageValidator } from '../../../../core'
 
-import { TransportDecorator, ReturnRouteTypes } from './TransportDecorator'
+import { ReturnRouteTypes, TransportDecorator } from './TransportDecorator'
 
 const validTransport = (transportJson: Record<string, unknown>) =>
   MessageValidator.validateSync(JsonTransformer.fromJSON(transportJson, TransportDecorator))

@@ -1,20 +1,20 @@
+import type { AgentContext, DidDocument, PeerDidNumAlgo, ResolvedDidCommService } from '@credo-ts/core'
 import type { Routing } from '../../../models'
 import type { DidDoc, PublicKey } from '../models'
-import type { AgentContext, DidDocument, PeerDidNumAlgo, ResolvedDidCommService } from '@credo-ts/core'
 
 import {
-  Key,
-  KeyType,
   CredoError,
-  IndyAgentService,
   DidCommV1Service,
   DidDocumentBuilder,
-  getEd25519VerificationKey2018,
+  DidDocumentRole,
   DidRepository,
   DidsApi,
+  IndyAgentService,
+  Key,
+  KeyType,
   createPeerDidDocumentFromServices,
-  DidDocumentRole,
   didDocumentJsonToNumAlgo1Did,
+  getEd25519VerificationKey2018,
 } from '@credo-ts/core'
 
 import { EmbeddedAuthentication } from '../models'
@@ -24,6 +24,7 @@ export function convertToNewDidDocument(didDoc: DidDoc): DidDocument {
 
   const oldIdNewIdMapping: { [key: string]: string } = {}
 
+  // biome-ignore lint/complexity/noForEach: <explanation>
   didDoc.authentication.forEach((auth) => {
     const { publicKey: pk } = auth
 
@@ -43,6 +44,7 @@ export function convertToNewDidDocument(didDoc: DidDoc): DidDocument {
     }
   })
 
+  // biome-ignore lint/complexity/noForEach: <explanation>
   didDoc.publicKey.forEach((pk) => {
     if (pk.type === 'Ed25519VerificationKey2018' && pk.value) {
       const ed25519VerificationMethod = convertPublicKeyToVerificationMethod(pk)
@@ -57,6 +59,7 @@ export function convertToNewDidDocument(didDoc: DidDoc): DidDocument {
   // and we need to keep the same order to not break the did creation process.
   // When we implement the migration to did:peer:2 and did:peer:3 according to the
   // RFCs we can change it.
+  // biome-ignore lint/complexity/noForEach: <explanation>
   didDoc.didCommServices.reverse().forEach((service) => {
     const serviceId = normalizeId(service.id)
 
@@ -67,6 +70,7 @@ export function convertToNewDidDocument(didDoc: DidDoc): DidDocument {
         return oldIdNewIdMapping[oldKeyId]
       })
 
+      // biome-ignore lint/style/noParameterAssign: <explanation>
       service = new DidCommV1Service({
         id: serviceId,
         recipientKeys,
@@ -76,6 +80,7 @@ export function convertToNewDidDocument(didDoc: DidDoc): DidDocument {
         priority: service.priority,
       })
     } else if (service instanceof IndyAgentService) {
+      // biome-ignore lint/style/noParameterAssign: <explanation>
       service = new IndyAgentService({
         id: serviceId,
         recipientKeys: service.recipientKeys,

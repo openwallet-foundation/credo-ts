@@ -1,31 +1,36 @@
-import type { AnonCredsCredentialFormat, AnonCredsCredentialProposalFormat } from './AnonCredsCredentialFormat'
-import type { AnonCredsCredential, AnonCredsCredentialOffer, AnonCredsCredentialRequest } from '../models'
-import type { AnonCredsIssuerService, AnonCredsHolderService } from '../services'
-import type { AnonCredsCredentialMetadata, AnonCredsCredentialRequestMetadata } from '../utils/metadata'
 import type { AgentContext } from '@credo-ts/core'
 import type {
-  CredentialFormatService,
+  CredentialExchangeRecord,
+  CredentialFormatAcceptOfferOptions,
+  CredentialFormatAcceptProposalOptions,
+  CredentialFormatAcceptRequestOptions,
+  CredentialFormatAutoRespondCredentialOptions,
+  CredentialFormatAutoRespondOfferOptions,
+  CredentialFormatAutoRespondProposalOptions,
+  CredentialFormatAutoRespondRequestOptions,
+  CredentialFormatCreateOfferOptions,
+  CredentialFormatCreateOfferReturn,
   CredentialFormatCreateProposalOptions,
   CredentialFormatCreateProposalReturn,
-  CredentialFormatProcessOptions,
-  CredentialFormatAcceptProposalOptions,
-  CredentialFormatCreateOfferReturn,
-  CredentialFormatCreateOfferOptions,
-  CredentialFormatAcceptOfferOptions,
   CredentialFormatCreateReturn,
-  CredentialFormatAcceptRequestOptions,
   CredentialFormatProcessCredentialOptions,
-  CredentialFormatAutoRespondProposalOptions,
-  CredentialFormatAutoRespondOfferOptions,
-  CredentialFormatAutoRespondRequestOptions,
-  CredentialFormatAutoRespondCredentialOptions,
-  CredentialExchangeRecord,
+  CredentialFormatProcessOptions,
+  CredentialFormatService,
   CredentialPreviewAttributeOptions,
   LinkedAttachment,
 } from '@credo-ts/didcomm'
+import type {
+  AnonCredsCredential,
+  AnonCredsCredentialOffer,
+  AnonCredsCredentialRequest,
+  AnonCredsRevocationStatusList,
+} from '../models'
+import type { AnonCredsHolderService, AnonCredsIssuerService } from '../services'
+import type { AnonCredsCredentialMetadata, AnonCredsCredentialRequestMetadata } from '../utils/metadata'
+import type { AnonCredsCredentialFormat, AnonCredsCredentialProposalFormat } from './AnonCredsCredentialFormat'
 
-import { MessageValidator, CredoError, JsonEncoder, utils, JsonTransformer } from '@credo-ts/core'
-import { ProblemReportError, CredentialFormatSpec, Attachment, CredentialProblemReportReason } from '@credo-ts/didcomm'
+import { CredoError, JsonEncoder, JsonTransformer, MessageValidator, utils } from '@credo-ts/core'
+import { Attachment, CredentialFormatSpec, CredentialProblemReportReason, ProblemReportError } from '@credo-ts/didcomm'
 
 import { AnonCredsCredentialProposal } from '../models/AnonCredsCredentialProposal'
 import {
@@ -33,7 +38,7 @@ import {
   AnonCredsRevocationRegistryDefinitionPrivateRepository,
   AnonCredsRevocationRegistryState,
 } from '../repository'
-import { AnonCredsIssuerServiceSymbol, AnonCredsHolderServiceSymbol } from '../services'
+import { AnonCredsHolderServiceSymbol, AnonCredsIssuerServiceSymbol } from '../services'
 import {
   dateToTimestamp,
   fetchCredentialDefinition,
@@ -42,10 +47,10 @@ import {
   fetchSchema,
 } from '../utils'
 import {
-  convertAttributesToCredentialValues,
+  assertAttributesMatch,
   assertCredentialValuesMatch,
   checkCredentialValuesMatch,
-  assertAttributesMatch,
+  convertAttributesToCredentialValues,
   createAndLinkAttachmentsToPreview,
 } from '../utils/credential'
 import { AnonCredsCredentialMetadataKey, AnonCredsCredentialRequestMetadataKey } from '../utils/metadata'
@@ -74,7 +79,7 @@ export class AnonCredsCredentialFormatService implements CredentialFormatService
    *
    */
   public async createProposal(
-    agentContext: AgentContext,
+    _agentContext: AgentContext,
     { credentialFormats, credentialRecord }: CredentialFormatCreateProposalOptions<AnonCredsCredentialFormat>
   ): Promise<CredentialFormatCreateProposalReturn> {
     const format = new CredentialFormatSpec({
@@ -89,13 +94,12 @@ export class AnonCredsCredentialFormatService implements CredentialFormatService
 
     // We want all properties except for `attributes` and `linkedAttachments` attributes.
     // The easiest way is to destructure and use the spread operator. But that leaves the other properties unused
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { attributes, linkedAttachments, ...anoncredsCredentialProposal } = anoncredsFormat
     const proposal = new AnonCredsCredentialProposal(anoncredsCredentialProposal)
 
     try {
       MessageValidator.validateSync(proposal)
-    } catch (error) {
+    } catch (_error) {
       throw new CredoError(`Invalid proposal supplied: ${anoncredsCredentialProposal} in AnonCredsFormatService`)
     }
 
@@ -116,7 +120,7 @@ export class AnonCredsCredentialFormatService implements CredentialFormatService
   }
 
   public async processProposal(
-    agentContext: AgentContext,
+    _agentContext: AgentContext,
     { attachment }: CredentialFormatProcessOptions
   ): Promise<void> {
     const proposalJson = attachment.getDataAsJson()
@@ -258,8 +262,7 @@ export class AnonCredsCredentialFormatService implements CredentialFormatService
   /**
    * We don't have any models to validate an anoncreds request object, for now this method does nothing
    */
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  public async processRequest(agentContext: AgentContext, options: CredentialFormatProcessOptions): Promise<void> {
+  public async processRequest(_agentContext: AgentContext, _options: CredentialFormatProcessOptions): Promise<void> {
     // not needed for anoncreds
   }
 
@@ -297,9 +300,9 @@ export class AnonCredsCredentialFormatService implements CredentialFormatService
         .getByCredentialDefinitionId(agentContext, credentialRequest.cred_def_id)
     ).credentialDefinition.value
 
-    let revocationRegistryDefinitionId
-    let revocationRegistryIndex
-    let revocationStatusList
+    let revocationRegistryDefinitionId: string | undefined
+    let revocationRegistryIndex: number | undefined
+    let revocationStatusList: AnonCredsRevocationStatusList | undefined
 
     if (credentialDefinition.revocation) {
       const credentialMetadata =
@@ -479,7 +482,7 @@ export class AnonCredsCredentialFormatService implements CredentialFormatService
   }
 
   public async shouldAutoRespondToProposal(
-    agentContext: AgentContext,
+    _agentContext: AgentContext,
     { offerAttachment, proposalAttachment }: CredentialFormatAutoRespondProposalOptions
   ) {
     const proposalJson = proposalAttachment.getDataAsJson<AnonCredsCredentialProposalFormat>()
@@ -492,7 +495,7 @@ export class AnonCredsCredentialFormatService implements CredentialFormatService
   }
 
   public async shouldAutoRespondToOffer(
-    agentContext: AgentContext,
+    _agentContext: AgentContext,
     { offerAttachment, proposalAttachment }: CredentialFormatAutoRespondOfferOptions
   ) {
     const proposalJson = proposalAttachment.getDataAsJson<AnonCredsCredentialProposalFormat>()
@@ -505,7 +508,7 @@ export class AnonCredsCredentialFormatService implements CredentialFormatService
   }
 
   public async shouldAutoRespondToRequest(
-    agentContext: AgentContext,
+    _agentContext: AgentContext,
     { offerAttachment, requestAttachment }: CredentialFormatAutoRespondRequestOptions
   ) {
     const credentialOfferJson = offerAttachment.getDataAsJson<AnonCredsCredentialOffer>()
@@ -515,7 +518,7 @@ export class AnonCredsCredentialFormatService implements CredentialFormatService
   }
 
   public async shouldAutoRespondToCredential(
-    agentContext: AgentContext,
+    _agentContext: AgentContext,
     { credentialRecord, requestAttachment, credentialAttachment }: CredentialFormatAutoRespondCredentialOptions
   ) {
     const credentialJson = credentialAttachment.getDataAsJson<AnonCredsCredential>()

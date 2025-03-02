@@ -1,12 +1,11 @@
-/* eslint-disable @typescript-eslint/no-non-null-assertion */
 import type { OutOfBandInvitation } from '../../didcomm/src/modules/oob/messages'
 
 import { DidExchangeState, HandshakeProtocol } from '../../didcomm/src/modules/connections'
 import {
+  MediationRecipientModule,
   MediationState,
   MediatorModule,
   MediatorPickupStrategy,
-  MediationRecipientModule,
 } from '../../didcomm/src/modules/routing'
 import { Agent } from '../src/agent/Agent'
 
@@ -67,7 +66,8 @@ describe('out of band with mediation set up with provision method', () => {
     mediatorOutOfBandInvitation = mediationOutOfBandRecord.outOfBandInvitation
 
     let { connectionRecord } = await aliceAgent.modules.oob.receiveInvitation(mediatorOutOfBandInvitation)
-    connectionRecord = await aliceAgent.modules.connections.returnWhenIsConnected(connectionRecord!.id)
+    connectionRecord = await aliceAgent.modules.connections.returnWhenIsConnected(connectionRecord?.id)
+    // biome-ignore lint/style/noNonNullAssertion: <explanation>
     await aliceAgent.modules.mediationRecipient.provision(connectionRecord!)
     await aliceAgent.modules.mediationRecipient.initialize()
   })
@@ -94,11 +94,11 @@ describe('out of band with mediation set up with provision method', () => {
 
     let { connectionRecord: aliceFaberConnection } = await aliceAgent.modules.oob.receiveInvitationFromUrl(urlMessage)
 
-    aliceFaberConnection = await aliceAgent.modules.connections.returnWhenIsConnected(aliceFaberConnection!.id)
+    aliceFaberConnection = await aliceAgent.modules.connections.returnWhenIsConnected(aliceFaberConnection?.id)
     expect(aliceFaberConnection.state).toBe(DidExchangeState.Completed)
 
     let [faberAliceConnection] = await faberAgent.modules.connections.findAllByOutOfBandId(outOfBandRecord.id)
-    faberAliceConnection = await faberAgent.modules.connections.returnWhenIsConnected(faberAliceConnection!.id)
+    faberAliceConnection = await faberAgent.modules.connections.returnWhenIsConnected(faberAliceConnection?.id)
     expect(faberAliceConnection.state).toBe(DidExchangeState.Completed)
 
     expect(aliceFaberConnection).toBeConnectedWith(faberAliceConnection)
@@ -116,6 +116,7 @@ describe('out of band with mediation set up with provision method', () => {
     const [reusedAliceMediatorConnection] = reusedOutOfBandRecord
       ? await aliceAgent.modules.connections.findAllByOutOfBandId(reusedOutOfBandRecord.id)
       : []
+    // biome-ignore lint/style/noNonNullAssertion: <explanation>
     await aliceAgent.modules.mediationRecipient.provision(reusedAliceMediatorConnection!)
     const mediators = await aliceAgent.modules.mediationRecipient.getMediators()
     expect(mediators).toHaveLength(1)

@@ -3,12 +3,12 @@ import type { BaseAgent } from '@credo-ts/core'
 import { CredoError } from '@credo-ts/core'
 
 import {
+  type ProofExchangeRecord,
   ProofRepository,
   ProofRole,
   ProofState,
   V2ProposePresentationMessage,
   V2RequestPresentationMessage,
-  type ProofExchangeRecord,
 } from '../../modules/proofs'
 import { DidCommMessageRepository, DidCommMessageRole } from '../../repository'
 import { parseMessageType } from '../../util/messageType'
@@ -25,7 +25,7 @@ export async function migrateProofExchangeRecordToV0_5<Agent extends BaseAgent>(
   agent.config.logger.info('Migrating proof exchange records to storage version 0.5')
   const proofRepository = agent.dependencyManager.resolve(ProofRepository)
 
-  agent.config.logger.debug(`Fetching all proof records from storage`)
+  agent.config.logger.debug('Fetching all proof records from storage')
   const proofRecords = await proofRepository.getAll(agent.context)
 
   agent.config.logger.debug(`Found a total of ${proofRecords.length} proof exchange records to update.`)
@@ -57,7 +57,7 @@ export async function getProofRole(agent: BaseAgent, proofRecord: ProofExchangeR
     return ProofRole.Prover
   }
   // For these states we know for certain that we're the verifier
-  else if (verifierProofStates.includes(proofRecord.state)) {
+  if (verifierProofStates.includes(proofRecord.state)) {
     return ProofRole.Verifier
   }
 

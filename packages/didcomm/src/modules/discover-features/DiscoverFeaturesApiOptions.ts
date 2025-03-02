@@ -1,5 +1,5 @@
-import type { DiscoverFeaturesService } from './services'
 import type { FeatureQueryOptions } from '../../models'
+import type { DiscoverFeaturesService } from './services'
 
 /**
  * Get the supported protocol versions based on the provided discover features services.

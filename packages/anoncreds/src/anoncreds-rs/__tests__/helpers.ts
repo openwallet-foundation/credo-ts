@@ -1,5 +1,3 @@
-import type { W3cAnonCredsCredentialMetadata } from '../../utils/metadata'
-import type { AnonCredsCredentialTags } from '../../utils/w3cAnonCredsUtils'
 import type {
   AnonCredsCredentialDefinition,
   AnonCredsCredentialInfo,
@@ -8,6 +6,8 @@ import type {
 } from '@credo-ts/anoncreds'
 import type { AgentContext } from '@credo-ts/core'
 import type { JsonObject } from '@hyperledger/anoncreds-shared'
+import type { W3cAnonCredsCredentialMetadata } from '../../utils/metadata'
+import type { AnonCredsCredentialTags } from '../../utils/w3cAnonCredsUtils'
 
 import {
   JsonTransformer,

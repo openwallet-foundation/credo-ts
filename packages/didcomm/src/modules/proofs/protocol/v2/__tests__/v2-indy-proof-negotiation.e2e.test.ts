@@ -9,7 +9,7 @@ import {
   setupAnonCredsTests,
 } from '../../../../../../../anoncreds/tests/legacyAnonCredsSetup'
 import { JsonTransformer } from '../../../../../../../core/src/utils/JsonTransformer'
-import { waitForProofExchangeRecordSubject, testLogger } from '../../../../../../../core/tests'
+import { testLogger, waitForProofExchangeRecordSubject } from '../../../../../../../core/tests'
 import { ProofState } from '../../../models/ProofState'
 
 describe('V2 Proofs Negotiation - Indy', () => {
@@ -68,7 +68,7 @@ describe('V2 Proofs Negotiation - Indy', () => {
     await aliceAgent.wallet.delete()
   })
 
-  test(`Proof negotiation between Alice and Faber`, async () => {
+  test('Proof negotiation between Alice and Faber', async () => {
     testLogger.test('Alice sends proof proposal to Faber')
 
     let aliceProofExchangeRecord = await aliceAgent.modules.proofs.proposeProof({
@@ -120,7 +120,7 @@ describe('V2 Proofs Negotiation - Indy', () => {
       comment: 'V2 propose proof test 1',
     })
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
     const proposalAttach = (
       proposal as V2ProposePresentationMessage
     )?.proposalAttachments?.[0].getDataAsJson<AnonCredsProofRequest>()
@@ -380,7 +380,8 @@ describe('V2 Proofs Negotiation - Indy', () => {
       proofRequestMessage.requestAttachments[0].getDataAsJson(),
       AnonCredsProofRequestClass
     )
-    const predicateKey = proofRequest.requestedPredicates?.keys().next().value
+    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+    const predicateKey = proofRequest.requestedPredicates?.keys().next().value as any
 
     expect(JsonTransformer.toJSON(proofRequest)).toMatchObject({
       name: 'proof-request',

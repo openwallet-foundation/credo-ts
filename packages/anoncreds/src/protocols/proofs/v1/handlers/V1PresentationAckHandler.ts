@@ -1,5 +1,5 @@
-import type { V1ProofProtocol } from '../V1ProofProtocol'
 import type { MessageHandler, MessageHandlerInboundMessage } from '@credo-ts/didcomm'
+import type { V1ProofProtocol } from '../V1ProofProtocol'
 
 import { V1PresentationAckMessage } from '../messages'
 

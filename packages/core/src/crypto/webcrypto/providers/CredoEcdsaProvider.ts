@@ -1,9 +1,9 @@
 import type { CredoWalletWebCrypto } from '../CredoWalletWebCrypto'
 import type {
   CredoWebCryptoKeyPair,
-  EcdsaParams,
   EcKeyGenParams,
   EcKeyImportParams,
+  EcdsaParams,
   JsonWebKey,
   KeyFormat,
   KeyUsage,

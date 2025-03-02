@@ -1,16 +1,16 @@
 import { Agent, DidDocumentRole, DidRecord, DidRepository, JsonTransformer } from '../../../../../core'
 import { getAgentConfig, getAgentContext, mockFunction } from '../../../../../core/tests/helpers'
 import {
-  ConnectionRepository,
-  OutOfBandRepository,
   ConnectionRecord,
-  OutOfBandRole,
-  OutOfBandState,
-  OutOfBandRecord,
-  DidExchangeRole,
-  DidExchangeState,
+  ConnectionRepository,
   ConnectionRole,
   ConnectionState,
+  DidExchangeRole,
+  DidExchangeState,
+  OutOfBandRecord,
+  OutOfBandRepository,
+  OutOfBandRole,
+  OutOfBandState,
 } from '../../../modules'
 import * as testModule from '../connection'
 
@@ -43,9 +43,11 @@ jest.mock('../../../../../core/src/agent/Agent', () => {
         resolve: jest.fn((cls) => {
           if (cls === ConnectionRepository) {
             return connectionRepository
-          } else if (cls === DidRepository) {
+          }
+          if (cls === DidRepository) {
             return didRepository
-          } else if (cls === OutOfBandRepository) {
+          }
+          if (cls === OutOfBandRepository) {
             return outOfBandRepository
           }
 

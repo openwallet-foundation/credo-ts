@@ -1,9 +1,9 @@
 import type { ValidationOptions } from 'class-validator'
 
-import { buildMessage, isString, IsString, ValidateBy } from 'class-validator'
+import { IsString, ValidateBy, buildMessage, isString } from 'class-validator'
 
 import { CredoError } from '../../../../error'
-import { isJsonObject, SingleOrArray } from '../../../../utils'
+import { SingleOrArray, isJsonObject } from '../../../../utils'
 import { getProtocolScheme } from '../../../../utils/uri'
 
 type ServiceEndpointType = SingleOrArray<string | Record<string, unknown>>
@@ -53,7 +53,7 @@ function IsStringOrJsonObjectSingleOrArray(validationOptions?: Omit<ValidationOp
           (Array.isArray(value) && value.every((v) => isString(v) || isJsonObject(v))),
         defaultMessage: buildMessage(
           (eachPrefix) =>
-            eachPrefix + '$property must be a string, JSON object, or an array consisting of strings and JSON objects',
+            `${eachPrefix}$property must be a string, JSON object, or an array consisting of strings and JSON objects`,
           validationOptions
         ),
       },

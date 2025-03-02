@@ -3,7 +3,7 @@ import { CredoError } from '../../../../error'
 import { getDidDocumentForKey } from '../../domain/keyDidDocument'
 import { parseDid } from '../../domain/parse'
 
-import { getNumAlgoFromPeerDid, isValidPeerDid, PeerDidNumAlgo } from './didPeer'
+import { PeerDidNumAlgo, getNumAlgoFromPeerDid, isValidPeerDid } from './didPeer'
 
 export function keyToNumAlgo0DidDocument(key: Key) {
   const did = `did:peer:0${key.fingerprint}`

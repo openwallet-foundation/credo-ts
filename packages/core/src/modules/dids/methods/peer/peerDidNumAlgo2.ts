@@ -6,7 +6,7 @@ import { CredoError } from '../../../../error'
 import { JsonEncoder, JsonTransformer } from '../../../../utils'
 import { DidDocumentService } from '../../domain'
 import { DidDocumentBuilder } from '../../domain/DidDocumentBuilder'
-import { getKeyFromVerificationMethod, getKeyDidMappingByKeyType } from '../../domain/key-type'
+import { getKeyDidMappingByKeyType, getKeyFromVerificationMethod } from '../../domain/key-type'
 import { parseDid } from '../../domain/parse'
 
 enum DidPeerPurpose {
@@ -114,6 +114,7 @@ export function didDocumentToNumAlgo2Did(didDocument: DidDocument) {
     )
 
     // Transform all verification methods into a fingerprint (multibase, multicodec)
+    // biome-ignore lint/complexity/noForEach: <explanation>
     dereferenced.forEach((entry) => {
       const key = getKeyFromVerificationMethod(entry)
 
@@ -146,7 +147,7 @@ export function didDocumentToNumAlgo2Did(didDocument: DidDocument) {
     const abbreviatedServices = didDocument.service.map((service) => {
       // Transform to JSON, remove id property
       const serviceJson = JsonTransformer.toJSON(service)
-      delete serviceJson.id
+      serviceJson.id = undefined
 
       return abbreviateServiceJson(serviceJson)
     })
@@ -170,6 +171,7 @@ function expandServiceAbbreviations(service: JsonObject) {
     if (typeof json === 'object')
       return Object.entries(json as Record<string, unknown>).reduce(
         (jsonBody, [key, value]) => ({
+          // biome-ignore lint/performance/noAccumulatingSpread: <explanation>
           ...jsonBody,
           [expand(key)]: expandJson(value),
         }),
@@ -196,6 +198,7 @@ function abbreviateServiceJson(service: JsonObject) {
 
   const abbreviatedService = Object.entries(service).reduce(
     (serviceBody, [key, value]) => ({
+      // biome-ignore lint/performance/noAccumulatingSpread: <explanation>
       ...serviceBody,
       [abbreviate(key)]: abbreviate(value as string),
     }),

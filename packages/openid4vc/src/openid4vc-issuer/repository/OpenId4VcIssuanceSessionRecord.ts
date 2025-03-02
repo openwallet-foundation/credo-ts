@@ -1,8 +1,8 @@
-import type { OpenId4VciCredentialOfferPayload } from '../../shared'
 import type { RecordTags, TagsBase } from '@credo-ts/core'
+import type { OpenId4VciCredentialOfferPayload } from '../../shared'
 
 import { PkceCodeChallengeMethod } from '@animo-id/oauth2'
-import { CredoError, BaseRecord, utils, isJsonObject } from '@credo-ts/core'
+import { BaseRecord, CredoError, isJsonObject, utils } from '@credo-ts/core'
 import { Transform, TransformationType } from 'class-transformer'
 
 import { OpenId4VcIssuanceSessionState } from '../OpenId4VcIssuanceSessionState'
@@ -246,6 +246,7 @@ export class OpenId4VcIssuanceSessionRecord extends BaseRecord<DefaultOpenId4VcI
 
   public assertState(expectedStates: OpenId4VcIssuanceSessionState | OpenId4VcIssuanceSessionState[]) {
     if (!Array.isArray(expectedStates)) {
+      // biome-ignore lint/style/noParameterAssign: <explanation>
       expectedStates = [expectedStates]
     }
 

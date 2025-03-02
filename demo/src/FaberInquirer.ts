@@ -83,7 +83,8 @@ export class FaberInquirer extends BaseInquirer {
     const confirm = await prompt([this.inquireConfirmation(title)])
     if (confirm.options === ConfirmOptions.No) {
       return false
-    } else if (confirm.options === ConfirmOptions.Yes) {
+    }
+    if (confirm.options === ConfirmOptions.Yes) {
       return true
     }
   }
@@ -113,7 +114,8 @@ export class FaberInquirer extends BaseInquirer {
     const confirm = await prompt([this.inquireConfirmation(Title.ConfirmTitle)])
     if (confirm.options === ConfirmOptions.No) {
       return
-    } else if (confirm.options === ConfirmOptions.Yes) {
+    }
+    if (confirm.options === ConfirmOptions.Yes) {
       await this.faber.exit()
     }
   }
@@ -123,7 +125,8 @@ export class FaberInquirer extends BaseInquirer {
     if (confirm.options === ConfirmOptions.No) {
       await this.processAnswer()
       return
-    } else if (confirm.options === ConfirmOptions.Yes) {
+    }
+    if (confirm.options === ConfirmOptions.Yes) {
       await this.faber.restart()
       await runFaber()
     }

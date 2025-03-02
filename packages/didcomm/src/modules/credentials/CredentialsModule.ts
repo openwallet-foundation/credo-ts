@@ -1,6 +1,6 @@
+import type { AgentContext, ApiModule, Constructor, DependencyManager, Optional } from '@credo-ts/core'
 import type { CredentialsModuleConfigOptions } from './CredentialsModuleConfig'
 import type { CredentialProtocol } from './protocol/CredentialProtocol'
-import type { AgentContext, ApiModule, DependencyManager, Constructor, Optional } from '@credo-ts/core'
 
 import { FeatureRegistry } from '../../FeatureRegistry'
 import { MessageHandlerRegistry } from '../../MessageHandlerRegistry'

@@ -1,8 +1,8 @@
+import type { ConnectionRecord } from '@credo-ts/didcomm'
 import type { ActionMenuRole } from '../ActionMenuRole'
 import type { ActionMenuSelection } from '../models'
 import type { ActionMenu } from '../models/ActionMenu'
 import type { ActionMenuRecord } from '../repository'
-import type { ConnectionRecord } from '@credo-ts/didcomm'
 
 /**
  * @internal

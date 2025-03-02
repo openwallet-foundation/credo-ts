@@ -1,15 +1,15 @@
-import type { QuestionAnswerStateChangedEvent } from '../QuestionAnswerEvents'
-import type { ValidResponse } from '../models'
 import type { AgentContext, Query, QueryOptions } from '@credo-ts/core'
 import type { InboundMessageContext } from '@credo-ts/didcomm'
+import type { QuestionAnswerStateChangedEvent } from '../QuestionAnswerEvents'
+import type { ValidResponse } from '../models'
 
-import { CredoError, EventEmitter, inject, injectable, InjectionSymbols, Logger } from '@credo-ts/core'
+import { CredoError, EventEmitter, InjectionSymbols, Logger, inject, injectable } from '@credo-ts/core'
 
 import { QuestionAnswerEventTypes } from '../QuestionAnswerEvents'
 import { QuestionAnswerRole } from '../QuestionAnswerRole'
 import { AnswerMessage, QuestionMessage } from '../messages'
 import { QuestionAnswerState } from '../models'
-import { QuestionAnswerRepository, QuestionAnswerRecord } from '../repository'
+import { QuestionAnswerRecord, QuestionAnswerRepository } from '../repository'
 
 @injectable()
 export class QuestionAnswerService {
@@ -132,7 +132,7 @@ export class QuestionAnswerService {
     if (questionAnswerRecord.validResponses.some((e) => e.text === response)) {
       await this.updateState(agentContext, questionAnswerRecord, QuestionAnswerState.AnswerSent)
     } else {
-      throw new CredoError(`Response does not match valid responses`)
+      throw new CredoError('Response does not match valid responses')
     }
     return { answerMessage, questionAnswerRecord }
   }

@@ -1,14 +1,14 @@
 import type { Key, SdJwtVc } from '@credo-ts/core'
 
 import {
-  getJwkFromKey,
   Agent,
   DidKey,
   JwaSignatureAlgorithm,
   KeyType,
   TypedArrayEncoder,
-  W3cJwtVerifiableCredential,
   W3cCredentialService,
+  W3cJwtVerifiableCredential,
+  getJwkFromKey,
 } from '@credo-ts/core'
 import nock, { cleanAll, enableNetConnect } from 'nock'
 
