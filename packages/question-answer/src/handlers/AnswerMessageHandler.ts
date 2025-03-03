@@ -13,5 +13,7 @@ export class AnswerMessageHandler implements MessageHandler {
 
   public async handle(messageContext: MessageHandlerInboundMessage<AnswerMessageHandler>) {
     await this.questionAnswerService.receiveAnswer(messageContext)
+
+    return undefined
   }
 }

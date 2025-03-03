@@ -13,5 +13,7 @@ export class V1RevocationNotificationHandler implements MessageHandler {
 
   public async handle(messageContext: MessageHandlerInboundMessage<V1RevocationNotificationHandler>) {
     await this.revocationService.v1ProcessRevocationNotification(messageContext)
+
+    return undefined
   }
 }

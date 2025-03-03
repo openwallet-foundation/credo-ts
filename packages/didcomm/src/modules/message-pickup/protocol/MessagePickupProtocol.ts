@@ -22,7 +22,7 @@ export interface MessagePickupProtocol {
   createDeliveryMessage(
     agentContext: AgentContext,
     options: DeliverMessagesProtocolOptions
-  ): Promise<DeliverMessagesProtocolReturnType<AgentMessage> | void>
+  ): Promise<DeliverMessagesProtocolReturnType<AgentMessage> | undefined>
 
   setLiveDeliveryMode(
     agentContext: AgentContext,

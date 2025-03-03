@@ -228,14 +228,13 @@ export class OutOfBandApi {
     })
 
     if (messages) {
-      // biome-ignore lint/complexity/noForEach: <explanation>
-      messages.forEach((message) => {
+      for (const message of messages) {
         if (message.service) {
           // We can remove `~service` attribute from message. Newer OOB messages have `services` attribute instead.
           message.service = undefined
         }
         outOfBandInvitation.addRequest(message)
-      })
+      }
     }
 
     const recipientKeyFingerprints = await this.resolveInvitationRecipientKeyFingerprints(outOfBandInvitation)

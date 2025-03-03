@@ -114,15 +114,14 @@ export function didDocumentToNumAlgo2Did(didDocument: DidDocument) {
     )
 
     // Transform all verification methods into a fingerprint (multibase, multicodec)
-    // biome-ignore lint/complexity/noForEach: <explanation>
-    dereferenced.forEach((entry) => {
+    for (const entry of dereferenced) {
       const key = getKeyFromVerificationMethod(entry)
 
       // Encode as '.PurposeFingerprint'
       const encoded = `.${purpose}${key.fingerprint}`
 
       keys.push({ id: entry.id, encoded })
-    })
+    }
   }
 
   const prefix = 'key-'

@@ -15,5 +15,7 @@ export class DummyResponseHandler implements MessageHandler {
     inboundMessage.assertReadyConnection()
 
     await this.dummyService.processResponse(inboundMessage)
+
+    return undefined
   }
 }
