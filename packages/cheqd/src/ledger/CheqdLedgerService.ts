@@ -4,7 +4,7 @@ import type { MsgCreateResourcePayload } from '@cheqd/ts-proto/cheqd/resource/v2
 import type { DirectSecp256k1HdWallet, DirectSecp256k1Wallet } from '@cosmjs/proto-signing'
 import type { DidDocumentMetadata } from '@credo-ts/core'
 
-import { CheqdNetwork, DIDModule, ResourceModule, createCheqdSDK } from '@cheqd/sdk'
+import { CheqdNetwork, DIDModule, FeemarketModule, ResourceModule, createCheqdSDK } from '@cheqd/sdk'
 import { CredoError, InjectionSymbols, Logger, inject, injectable } from '@credo-ts/core'
 
 import { CheqdModuleConfig } from '../CheqdModuleConfig'
@@ -82,7 +82,11 @@ export class CheqdLedgerService {
     try {
       // Initialize cheqd sdk with promise
       network.sdk = createCheqdSDK({
-        modules: [DIDModule as unknown as AbstractCheqdSDKModule, ResourceModule as unknown as AbstractCheqdSDKModule],
+        modules: [
+          FeemarketModule as unknown as AbstractCheqdSDKModule,
+          DIDModule as unknown as AbstractCheqdSDKModule,
+          ResourceModule as unknown as AbstractCheqdSDKModule,
+        ],
         rpcUrl: network.rpcUrl,
         wallet: await network.cosmosPayerWallet.catch((error) => {
           throw new CredoError(`Error initializing cosmos payer wallet: ${error.message}`, { cause: error })
