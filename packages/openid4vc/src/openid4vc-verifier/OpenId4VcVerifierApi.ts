@@ -112,7 +112,7 @@ export class OpenId4VcVerifierApi {
 
   public async getVerifiedAuthorizationResponse(verificationSessionId: string) {
     const verificationSession = await this.getVerificationSessionById(verificationSessionId)
-    return this.openId4VcSiopVerifierService.getVerifiedAuthorizationResponse(verificationSession)
+    return this.openId4VcSiopVerifierService.getVerifiedAuthorizationResponse(this.agentContext, verificationSession)
   }
 
   public async findVerificationSessionForAuthorizationResponse(options: {

@@ -193,10 +193,11 @@ describe('mdoc device-response openid4vp test', () => {
 
       //  This is the Device side
       {
-        const result = await MdocDeviceResponse.createOpenId4VpDeviceResponse(agent.context, {
+        const result = await MdocDeviceResponse.createPresentationDefinitionDeviceResponse(agent.context, {
           mdocs: [mdoc],
           presentationDefinition: PRESENTATION_DEFINITION_1,
           sessionTranscriptOptions: {
+            type: 'openId4Vp',
             clientId,
             responseUri,
             verifierGeneratedNonce,
@@ -228,6 +229,7 @@ describe('mdoc device-response openid4vp test', () => {
       const res = await mdocDeviceResponse.verify(agent.context, {
         trustedCertificates: [ISSUER_CERTIFICATE_P256],
         sessionTranscriptOptions: {
+          type: 'openId4Vp',
           clientId,
           responseUri,
           verifierGeneratedNonce,
@@ -254,6 +256,7 @@ describe('mdoc device-response openid4vp test', () => {
             await mdocDeviceResponse.verify(agent.context, {
               trustedCertificates: [ISSUER_CERTIFICATE_P256],
               sessionTranscriptOptions: {
+                type: 'openId4Vp',
                 clientId: values.clientId,
                 responseUri: values.responseUri,
                 verifierGeneratedNonce: values.verifierGeneratedNonce,
@@ -355,10 +358,11 @@ describe('mdoc device-response openid4vp test', () => {
 
       //  This is the Device side
 
-      const result = await MdocDeviceResponse.createOpenId4VpDeviceResponse(agent.context, {
+      const result = await MdocDeviceResponse.createPresentationDefinitionDeviceResponse(agent.context, {
         mdocs: [mdoc],
         presentationDefinition: PRESENTATION_DEFINITION_1,
         sessionTranscriptOptions: {
+          type: 'openId4Vp',
           clientId,
           responseUri,
           verifierGeneratedNonce,
@@ -387,6 +391,7 @@ describe('mdoc device-response openid4vp test', () => {
       await MdocDeviceResponse.fromBase64Url(result.deviceResponseBase64Url).verify(agent.context, {
         trustedCertificates: [issuerCertificate.toString('pem')],
         sessionTranscriptOptions: {
+          type: 'openId4Vp',
           clientId,
           responseUri,
           verifierGeneratedNonce,

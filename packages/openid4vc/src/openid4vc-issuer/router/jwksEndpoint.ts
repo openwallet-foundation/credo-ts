@@ -1,4 +1,4 @@
-import type { JwkSet } from '@animo-id/oauth2'
+import type { JwkSet } from '@openid4vc/oauth2'
 import type { Response, Router } from 'express'
 import type { OpenId4VcIssuerModuleConfig } from '../OpenId4VcIssuerModuleConfig'
 import type { OpenId4VcIssuanceRequest } from './requestContext'
