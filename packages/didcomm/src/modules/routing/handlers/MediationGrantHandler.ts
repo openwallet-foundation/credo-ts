@@ -15,5 +15,7 @@ export class MediationGrantHandler implements MessageHandler {
     messageContext.assertReadyConnection()
 
     await this.mediationRecipientService.processMediationGrant(messageContext)
+
+    return undefined
   }
 }

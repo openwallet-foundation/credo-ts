@@ -16,5 +16,7 @@ export class HandshakeReuseAcceptedHandler implements MessageHandler {
     messageContext.assertReadyConnection()
 
     await this.outOfBandService.processHandshakeReuseAccepted(messageContext)
+
+    return undefined
   }
 }

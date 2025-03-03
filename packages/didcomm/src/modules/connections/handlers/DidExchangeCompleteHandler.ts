@@ -51,5 +51,7 @@ export class DidExchangeCompleteHandler implements MessageHandler {
       await this.outOfBandService.updateState(messageContext.agentContext, outOfBandRecord, OutOfBandState.Done)
     }
     await this.didExchangeProtocol.processComplete(messageContext, outOfBandRecord)
+
+    return undefined
   }
 }

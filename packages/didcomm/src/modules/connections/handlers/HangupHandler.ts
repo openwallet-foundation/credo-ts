@@ -13,5 +13,7 @@ export class HangupHandler implements MessageHandler {
 
   public async handle(inboundMessage: MessageHandlerInboundMessage<HangupHandler>) {
     await this.didRotateService.processHangup(inboundMessage)
+
+    return undefined
   }
 }

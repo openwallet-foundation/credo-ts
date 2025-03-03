@@ -14,5 +14,7 @@ export class BasicMessageHandler implements MessageHandler {
   public async handle(messageContext: MessageHandlerInboundMessage<BasicMessageHandler>) {
     const connection = messageContext.assertReadyConnection()
     await this.basicMessageService.save(messageContext, connection)
+
+    return undefined
   }
 }

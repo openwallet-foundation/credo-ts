@@ -36,12 +36,15 @@
   "linter": {
     "rules": {
       "style": {
-        "useImportType": {
-          "fix": "none",
-          "level": "warn"
-        },
+        "useImportType": "off",
         "useNodejsImportProtocol": "off",
-        "noNonNullAssertion": "error"
+        "noNonNullAssertion": "error",
+        "noRestrictedGlobals": {
+          "level": "error",
+          "options": {
+            "deniedGlobals": ["Buffer"]
+          }
+        }
       },
       "correctness": {
         "noUnusedVariables": {
@@ -50,13 +53,11 @@
         },
         "noUnusedFunctionParameters": "off",
         "noUnusedImports": "error",
-        "noUndeclaredDependencies": "warn",
+        "noUndeclaredDependencies": "off",
         "noInvalidUseBeforeDeclaration": "error"
       },
       "suspicious": {
-        "noConfusingVoidType": "off",
-        "noConsole": "error",
-        "noUnsafeDeclarationMerging": "off"
+        "noConsole": "error"
       },
       "complexity": {
         "noBannedTypes": "error"
@@ -80,21 +81,6 @@
     }
   },
   "overrides": [
-    {
-      "include": ["packages/core/**"],
-      "linter": {
-        "rules": {
-          "style": {
-            "noRestrictedGlobals": {
-              "level": "error",
-              "options": {
-                "deniedGlobals": ["Buffer"]
-              }
-            }
-          }
-        }
-      }
-    },
     {
       "include": ["jest.config.ts", "./scripts/**"],
       "linter": {

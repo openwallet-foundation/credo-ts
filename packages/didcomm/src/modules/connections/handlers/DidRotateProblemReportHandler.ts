@@ -13,5 +13,7 @@ export class DidRotateProblemReportHandler implements MessageHandler {
 
   public async handle(messageContext: MessageHandlerInboundMessage<DidRotateProblemReportHandler>) {
     await this.didRotateService.processProblemReport(messageContext)
+
+    return undefined
   }
 }
