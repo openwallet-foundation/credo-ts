@@ -13,5 +13,7 @@ export class V1PresentationProblemReportHandler implements MessageHandler {
 
   public async handle(messageContext: MessageHandlerInboundMessage<V1PresentationProblemReportHandler>) {
     await this.proofProtocol.processProblemReport(messageContext)
+
+    return undefined
   }
 }

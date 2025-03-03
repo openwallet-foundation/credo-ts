@@ -13,5 +13,7 @@ export class ConnectionProblemReportHandler implements MessageHandler {
 
   public async handle(messageContext: MessageHandlerInboundMessage<ConnectionProblemReportHandler>) {
     await this.connectionService.processProblemReport(messageContext)
+
+    return undefined
   }
 }

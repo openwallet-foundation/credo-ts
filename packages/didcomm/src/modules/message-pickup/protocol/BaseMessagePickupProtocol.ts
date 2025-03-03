@@ -27,7 +27,7 @@ export abstract class BaseMessagePickupProtocol implements MessagePickupProtocol
   public abstract createDeliveryMessage(
     agentContext: AgentContext,
     options: DeliverMessagesProtocolOptions
-  ): Promise<DeliverMessagesProtocolReturnType<AgentMessage> | void>
+  ): Promise<DeliverMessagesProtocolReturnType<AgentMessage> | undefined>
 
   public abstract setLiveDeliveryMode(
     agentContext: AgentContext,

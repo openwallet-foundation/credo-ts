@@ -47,8 +47,8 @@ export function createKeyAgreementKey(verkey: string) {
 
 const deepMerge = (a: Record<string, unknown>, b: Record<string, unknown>) => {
   const output: Record<string, unknown> = {}
-  // biome-ignore lint/complexity/noForEach: <explanation>
-  ;[...new Set([...Object.keys(a), ...Object.keys(b)])].forEach((key) => {
+
+  for (const key of [...new Set([...Object.keys(a), ...Object.keys(b)])]) {
     // Only an object includes a given key: just output it
     if (a[key] && !b[key]) {
       output[key] = a[key]
@@ -60,10 +60,15 @@ const deepMerge = (a: Record<string, unknown>, b: Record<string, unknown>) => {
       if (Array.isArray(a[key])) {
         if (Array.isArray(b[key])) {
           const element = new Set()
-          // biome-ignore lint/complexity/noForEach: <explanation>
-          ;(a[key] as Array<unknown>).forEach((item: unknown) => element.add(item))
-          // biome-ignore lint/complexity/noForEach: <explanation>
-          ;(b[key] as Array<unknown>).forEach((item: unknown) => element.add(item))
+
+          for (const item of a[key] as Array<unknown>) {
+            element.add(item)
+          }
+
+          for (const item of b[key] as Array<unknown>) {
+            element.add(item)
+          }
+
           output[key] = Array.from(element)
         } else {
           // biome-ignore lint/suspicious/noExplicitAny: <explanation>
@@ -79,7 +84,7 @@ const deepMerge = (a: Record<string, unknown>, b: Record<string, unknown>) => {
         output[key] = deepMerge(a, b)
       }
     }
-  })
+  }
   return output
 }
 

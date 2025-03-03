@@ -37,8 +37,7 @@ export class WsOutboundTransport implements OutboundTransport {
 
     const stillOpenSocketClosingPromises: Array<Promise<void>> = []
 
-    // biome-ignore lint/complexity/noForEach: <explanation>
-    this.transportTable.forEach((socket) => {
+    for (const [, socket] of this.transportTable) {
       socket.removeEventListener('message', this.handleMessageEvent)
       if (socket.readyState !== this.WebSocketClass.CLOSED) {
         stillOpenSocketClosingPromises.push(
@@ -54,7 +53,7 @@ export class WsOutboundTransport implements OutboundTransport {
 
         socket.close()
       }
-    })
+    }
 
     // Wait for all open websocket connections to have been closed
     await Promise.all(stillOpenSocketClosingPromises)

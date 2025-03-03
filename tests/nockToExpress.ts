@@ -1,6 +1,7 @@
 import type { Express } from 'express'
 import type { Body, ReplyFnContext } from 'nock'
 
+import { Buffer } from '@credo-ts/core'
 import nock, { cleanAll } from 'nock'
 import request from 'supertest'
 

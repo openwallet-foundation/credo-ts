@@ -67,7 +67,7 @@ export class V1DiscoverFeaturesService extends DiscoverFeaturesService {
 
   public async processQuery(
     messageContext: InboundMessageContext<V1QueryMessage>
-  ): Promise<DiscoverFeaturesProtocolMsgReturnType<AgentMessage> | void> {
+  ): Promise<DiscoverFeaturesProtocolMsgReturnType<AgentMessage> | undefined> {
     const { query, threadId } = messageContext.message
 
     const connection = messageContext.assertReadyConnection()

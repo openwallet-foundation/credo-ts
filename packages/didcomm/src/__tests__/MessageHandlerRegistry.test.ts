@@ -38,8 +38,9 @@ class TestHandler implements MessageHandler {
   public supportedMessages
 
   // We don't need an implementation in test handler so we can disable lint.
-  // biome-ignore lint/suspicious/noEmptyBlockStatements: <explanation>
-  public async handle() {}
+  public async handle() {
+    return undefined
+  }
 }
 
 describe('MessageHandlerRegistry', () => {

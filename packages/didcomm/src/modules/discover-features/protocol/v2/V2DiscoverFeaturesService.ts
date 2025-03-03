@@ -53,7 +53,7 @@ export class V2DiscoverFeaturesService extends DiscoverFeaturesService {
 
   public async processQuery(
     messageContext: InboundMessageContext<V2QueriesMessage>
-  ): Promise<DiscoverFeaturesProtocolMsgReturnType<V2DisclosuresMessage> | void> {
+  ): Promise<DiscoverFeaturesProtocolMsgReturnType<V2DisclosuresMessage> | undefined> {
     const { queries, threadId } = messageContext.message
 
     const connection = messageContext.assertReadyConnection()

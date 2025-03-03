@@ -12,6 +12,8 @@ export class TrustPingResponseMessageHandler implements MessageHandler {
   }
 
   public async handle(inboundMessage: MessageHandlerInboundMessage<TrustPingResponseMessageHandler>) {
-    return this.trustPingService.processPingResponse(inboundMessage)
+    await this.trustPingService.processPingResponse(inboundMessage)
+
+    return undefined
   }
 }

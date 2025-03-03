@@ -32,7 +32,7 @@ export abstract class DiscoverFeaturesService {
   public abstract createQuery(options: CreateQueryOptions): Promise<DiscoverFeaturesProtocolMsgReturnType<AgentMessage>>
   public abstract processQuery(
     messageContext: InboundMessageContext<AgentMessage>
-  ): Promise<DiscoverFeaturesProtocolMsgReturnType<AgentMessage> | void>
+  ): Promise<DiscoverFeaturesProtocolMsgReturnType<AgentMessage> | undefined>
 
   public abstract createDisclosure(
     options: CreateDisclosureOptions

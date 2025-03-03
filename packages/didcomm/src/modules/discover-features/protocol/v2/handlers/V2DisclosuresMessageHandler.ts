@@ -13,5 +13,7 @@ export class V2DisclosuresMessageHandler implements MessageHandler {
 
   public async handle(inboundMessage: MessageHandlerInboundMessage<V2DisclosuresMessageHandler>) {
     await this.discoverFeaturesService.processDisclosure(inboundMessage)
+
+    return undefined
   }
 }

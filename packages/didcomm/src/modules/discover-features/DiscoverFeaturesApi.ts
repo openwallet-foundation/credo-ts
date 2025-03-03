@@ -28,6 +28,7 @@ export interface DiscoverFeaturesApi<DFSs extends DiscoverFeaturesService[]> {
   discloseFeatures(options: DiscloseFeaturesOptions<DFSs>): Promise<void>
 }
 @injectable()
+// biome-ignore lint/suspicious/noUnsafeDeclarationMerging: <explanation>
 export class DiscoverFeaturesApi<
   DFSs extends DiscoverFeaturesService[] = [V1DiscoverFeaturesService, V2DiscoverFeaturesService],
 > implements DiscoverFeaturesApi<DFSs>

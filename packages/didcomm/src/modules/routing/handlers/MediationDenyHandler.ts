@@ -15,5 +15,7 @@ export class MediationDenyHandler implements MessageHandler {
     messageContext.assertReadyConnection()
 
     await this.mediationRecipientService.processMediationDeny(messageContext)
+
+    return undefined
   }
 }

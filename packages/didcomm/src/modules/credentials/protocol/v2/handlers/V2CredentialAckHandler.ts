@@ -13,5 +13,7 @@ export class V2CredentialAckHandler implements MessageHandler {
 
   public async handle(messageContext: MessageHandlerInboundMessage<V2CredentialAckHandler>) {
     await this.credentialProtocol.processAck(messageContext)
+
+    return undefined
   }
 }

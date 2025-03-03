@@ -250,10 +250,9 @@ describe('connections', () => {
 
     const keylistAddEvents: KeylistUpdate[] = []
     keyAddMessageObservable.subscribe((value) => {
-      // biome-ignore lint/complexity/noForEach: <explanation>
-      value.updates.forEach((update) =>
+      for (const update of value.updates) {
         keylistAddEvents.push({ action: update.action, recipientKey: didKeyToVerkey(update.recipientKey) })
-      )
+      }
     })
 
     // Now create invitations that will be mediated

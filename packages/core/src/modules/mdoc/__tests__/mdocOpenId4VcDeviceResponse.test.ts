@@ -240,8 +240,7 @@ describe('mdoc device-response openid4vp test', () => {
     describe('should not be verifiable', () => {
       const testCases = ['clientId', 'responseUri', 'verifierGeneratedNonce', 'mdocGeneratedNonce']
 
-      // biome-ignore lint/complexity/noForEach: <explanation>
-      testCases.forEach((name) => {
+      for (const name of testCases) {
         const values = {
           clientId,
           responseUri,
@@ -268,7 +267,7 @@ describe('mdoc device-response openid4vp test', () => {
             )
           }
         })
-      })
+      }
     })
 
     it('should contain the validity info', () => {

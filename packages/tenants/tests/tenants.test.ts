@@ -270,6 +270,8 @@ describe('Tenants E2E', () => {
 
     const fallbackFunction = async () => {
       // empty
+
+      return undefined
     }
 
     agent1.modules.didcomm.setFallbackMessageHandler(fallbackFunction)

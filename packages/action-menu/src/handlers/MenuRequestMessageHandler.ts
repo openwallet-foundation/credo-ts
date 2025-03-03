@@ -18,5 +18,7 @@ export class MenuRequestMessageHandler implements MessageHandler {
     inboundMessage.assertReadyConnection()
 
     await this.actionMenuService.processRequest(inboundMessage)
+
+    return undefined
   }
 }
