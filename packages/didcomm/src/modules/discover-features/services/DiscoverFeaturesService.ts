@@ -1,3 +1,4 @@
+import type { EventEmitter, Logger } from '@credo-ts/core'
 import type { AgentMessage } from '../../../AgentMessage'
 import type { FeatureRegistry } from '../../../FeatureRegistry'
 import type { InboundMessageContext } from '../../../models'
@@ -7,7 +8,6 @@ import type {
   CreateQueryOptions,
   DiscoverFeaturesProtocolMsgReturnType,
 } from '../DiscoverFeaturesServiceOptions'
-import type { Logger, EventEmitter } from '@credo-ts/core'
 
 export abstract class DiscoverFeaturesService {
   protected featureRegistry: FeatureRegistry
@@ -32,7 +32,7 @@ export abstract class DiscoverFeaturesService {
   public abstract createQuery(options: CreateQueryOptions): Promise<DiscoverFeaturesProtocolMsgReturnType<AgentMessage>>
   public abstract processQuery(
     messageContext: InboundMessageContext<AgentMessage>
-  ): Promise<DiscoverFeaturesProtocolMsgReturnType<AgentMessage> | void>
+  ): Promise<DiscoverFeaturesProtocolMsgReturnType<AgentMessage> | undefined>
 
   public abstract createDisclosure(
     options: CreateDisclosureOptions

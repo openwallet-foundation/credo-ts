@@ -220,7 +220,7 @@ describe('V2ProofProtocol', () => {
       messageContext = new InboundMessageContext(presentationProblemReportMessage, { agentContext, connection })
     })
 
-    test(`updates problem report error message and returns proof record`, async () => {
+    test('updates problem report error message and returns proof record', async () => {
       const repositoryUpdateSpy = jest.spyOn(proofRepository, 'update')
 
       // given

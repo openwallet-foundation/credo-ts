@@ -1,5 +1,5 @@
-import type { ActionMenuService } from '../services'
 import type { MessageHandler, MessageHandlerInboundMessage } from '@credo-ts/didcomm'
+import type { ActionMenuService } from '../services'
 
 import { ActionMenuProblemReportMessage } from '../messages'
 
@@ -16,5 +16,7 @@ export class ActionMenuProblemReportHandler implements MessageHandler {
 
   public async handle(messageContext: MessageHandlerInboundMessage<ActionMenuProblemReportHandler>) {
     await this.actionMenuService.processProblemReport(messageContext)
+
+    return undefined
   }
 }

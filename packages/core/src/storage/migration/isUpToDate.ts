@@ -1,5 +1,5 @@
-import type { UpdateToVersion } from './updates'
 import type { VersionString } from '../../utils/version'
+import type { UpdateToVersion } from './updates'
 
 import { isFirstVersionEqualToSecond, isFirstVersionHigherThanSecond, parseVersionString } from '../../utils/version'
 

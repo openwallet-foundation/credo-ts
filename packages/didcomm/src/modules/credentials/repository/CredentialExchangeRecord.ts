@@ -1,10 +1,10 @@
+import type { TagsBase } from '@credo-ts/core'
 import type { CredentialRole } from '../models'
 import type { AutoAcceptCredential } from '../models/CredentialAutoAcceptType'
 import type { CredentialState } from '../models/CredentialState'
 import type { RevocationNotification } from '../models/RevocationNotification'
-import type { TagsBase } from '@credo-ts/core'
 
-import { CredoError, BaseRecord, utils } from '@credo-ts/core'
+import { BaseRecord, CredoError, utils } from '@credo-ts/core'
 import { Type } from 'class-transformer'
 
 import { Attachment } from '../../../decorators/attachment/Attachment'
@@ -103,7 +103,7 @@ export class CredentialExchangeRecord extends BaseRecord<DefaultCredentialTags, 
   }
 
   public assertProtocolVersion(version: string) {
-    if (this.protocolVersion != version) {
+    if (this.protocolVersion !== version) {
       throw new CredoError(
         `Credential record has invalid protocol version ${this.protocolVersion}. Expected version ${version}`
       )
@@ -112,6 +112,7 @@ export class CredentialExchangeRecord extends BaseRecord<DefaultCredentialTags, 
 
   public assertState(expectedStates: CredentialState | CredentialState[]) {
     if (!Array.isArray(expectedStates)) {
+      // biome-ignore lint/style/noParameterAssign: <explanation>
       expectedStates = [expectedStates]
     }
 
@@ -125,9 +126,10 @@ export class CredentialExchangeRecord extends BaseRecord<DefaultCredentialTags, 
   public assertConnection(currentConnectionId: string) {
     if (!this.connectionId) {
       throw new CredoError(
-        `Credential record is not associated with any connection. This is often the case with connection-less credential exchange`
+        'Credential record is not associated with any connection. This is often the case with connection-less credential exchange'
       )
-    } else if (this.connectionId !== currentConnectionId) {
+    }
+    if (this.connectionId !== currentConnectionId) {
       throw new CredoError(
         `Credential record is associated with connection '${this.connectionId}'. Current connection is '${currentConnectionId}'`
       )

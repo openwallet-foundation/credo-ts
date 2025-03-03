@@ -4,9 +4,9 @@ import type {
   DiscoverFeaturesQueryReceivedEvent,
 } from '../../DiscoverFeaturesEvents'
 import type {
+  CreateDisclosureOptions,
   CreateQueryOptions,
   DiscoverFeaturesProtocolMsgReturnType,
-  CreateDisclosureOptions,
 } from '../../DiscoverFeaturesServiceOptions'
 
 import { EventEmitter, InjectionSymbols, Logger, inject, injectable } from '@credo-ts/core'
@@ -18,7 +18,7 @@ import { DiscoverFeaturesModuleConfig } from '../../DiscoverFeaturesModuleConfig
 import { DiscoverFeaturesService } from '../../services'
 
 import { V2DisclosuresMessageHandler, V2QueriesMessageHandler } from './handlers'
-import { V2QueriesMessage, V2DisclosuresMessage } from './messages'
+import { V2DisclosuresMessage, V2QueriesMessage } from './messages'
 
 @injectable()
 export class V2DiscoverFeaturesService extends DiscoverFeaturesService {
@@ -53,7 +53,7 @@ export class V2DiscoverFeaturesService extends DiscoverFeaturesService {
 
   public async processQuery(
     messageContext: InboundMessageContext<V2QueriesMessage>
-  ): Promise<DiscoverFeaturesProtocolMsgReturnType<V2DisclosuresMessage> | void> {
+  ): Promise<DiscoverFeaturesProtocolMsgReturnType<V2DisclosuresMessage> | undefined> {
     const { queries, threadId } = messageContext.message
 
     const connection = messageContext.assertReadyConnection()

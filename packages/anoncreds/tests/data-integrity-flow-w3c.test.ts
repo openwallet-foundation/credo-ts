@@ -1,5 +1,5 @@
-import type { CreateDidKidVerificationMethodReturn } from '../../core/tests'
 import type { DidRepository } from '@credo-ts/core'
+import type { CreateDidKidVerificationMethodReturn } from '../../core/tests'
 
 import {
   AgentContext,
@@ -21,8 +21,8 @@ import {
 import {
   CredentialExchangeRecord,
   CredentialPreviewAttribute,
-  CredentialState,
   CredentialRole,
+  CredentialState,
 } from '@credo-ts/didcomm'
 import { Subject } from 'rxjs'
 
@@ -33,10 +33,10 @@ import { AnonCredsRegistryService } from '../../anoncreds/src/services/registry/
 import { InMemoryAnonCredsRegistry } from '../../anoncreds/tests/InMemoryAnonCredsRegistry'
 import {
   agentDependencies,
+  createDidKidVerificationMethod,
   getAgentConfig,
   getAgentContext,
   testLogger,
-  createDidKidVerificationMethod,
 } from '../../core/tests'
 import {
   AnonCredsHolderServiceSymbol,

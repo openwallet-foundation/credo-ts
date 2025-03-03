@@ -2,10 +2,10 @@ import type { AnonCredsTestsAgent } from '../../../../../../../anoncreds/tests/l
 import type { EventReplaySubject } from '../../../../../../../core/tests'
 
 import {
-  setupAnonCredsTests,
   issueLegacyAnonCredsCredential,
+  setupAnonCredsTests,
 } from '../../../../../../../anoncreds/tests/legacyAnonCredsSetup'
-import { waitForProofExchangeRecordSubject, testLogger } from '../../../../../../../core/tests'
+import { testLogger, waitForProofExchangeRecordSubject } from '../../../../../../../core/tests'
 import { ProofState } from '../../../models/ProofState'
 import { ProofExchangeRecord } from '../../../repository/ProofExchangeRecord'
 
@@ -65,7 +65,7 @@ describe('V2 Proofs - Indy', () => {
     await aliceAgent.wallet.delete()
   })
 
-  test(`Alice Creates and sends Proof Proposal to Faber`, async () => {
+  test('Alice Creates and sends Proof Proposal to Faber', async () => {
     testLogger.test('Alice sends proof proposal to Faber')
 
     let aliceProofExchangeRecord = await aliceAgent.modules.proofs.proposeProof({

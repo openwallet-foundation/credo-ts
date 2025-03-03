@@ -1,5 +1,5 @@
-import type { MediationRecipientModuleConfigOptions } from './MediationRecipientModuleConfig'
 import type { AgentContext, DependencyManager, Module } from '@credo-ts/core'
+import type { MediationRecipientModuleConfigOptions } from './MediationRecipientModuleConfig'
 
 import { FeatureRegistry } from '../../FeatureRegistry'
 import { Protocol } from '../../models'

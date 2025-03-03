@@ -7,11 +7,11 @@ import { e2eTest } from './e2e-test'
 
 import { Agent } from '@credo-ts/core'
 import {
-  HttpOutboundTransport,
   AutoAcceptCredential,
-  MediatorPickupStrategy,
+  HttpOutboundTransport,
   MediationRecipientModule,
   MediatorModule,
+  MediatorPickupStrategy,
 } from '@credo-ts/didcomm'
 import { HttpInboundTransport } from '@credo-ts/node'
 

@@ -1,10 +1,10 @@
-import type { OutOfBandDidCommService } from './domain'
-import type { HandshakeReusedEvent, OutOfBandStateChangedEvent } from './domain/OutOfBandEvents'
+import type { AgentContext, Key, Query, QueryOptions } from '@credo-ts/core'
 import type { InboundMessageContext } from '../../models'
 import type { ConnectionRecord, HandshakeProtocol } from '../connections'
-import type { AgentContext, Key, Query, QueryOptions } from '@credo-ts/core'
+import type { OutOfBandDidCommService } from './domain'
+import type { HandshakeReusedEvent, OutOfBandStateChangedEvent } from './domain/OutOfBandEvents'
 
-import { EventEmitter, CredoError, injectable, DidsApi, parseDid } from '@credo-ts/core'
+import { CredoError, DidsApi, EventEmitter, injectable, parseDid } from '@credo-ts/core'
 
 import { DidCommDocumentService } from '../../services'
 

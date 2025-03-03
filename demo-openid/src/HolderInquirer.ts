@@ -1,13 +1,13 @@
 import type { MdocRecord, SdJwtVcRecord, W3cCredentialRecord } from '@credo-ts/core'
 import type {
-  OpenId4VciCredentialConfigurationsSupportedWithFormats,
   OpenId4VcSiopResolvedAuthorizationRequest,
+  OpenId4VciCredentialConfigurationsSupportedWithFormats,
   OpenId4VciResolvedCredentialOffer,
 } from '@credo-ts/openid4vc'
 
+import console, { clear } from 'console'
 import { DifPresentationExchangeService, Mdoc } from '@credo-ts/core'
 import { preAuthorizedCodeGrantIdentifier } from '@credo-ts/openid4vc'
-import console, { clear } from 'console'
 import { textSync } from 'figlet'
 
 import { BaseInquirer } from './BaseInquirer'
@@ -102,7 +102,7 @@ export class HolderInquirer extends BaseInquirer {
     const resolvedCredentialOffer = await this.holder.resolveCredentialOffer(credentialOffer)
     this.resolvedCredentialOffer = resolvedCredentialOffer
 
-    console.log(greenText(`Received credential offer for the following credentials.`))
+    console.log(greenText('Received credential offer for the following credentials.'))
     console.log(greenText(Object.keys(resolvedCredentialOffer.offeredCredentialConfigurations).join('\n')))
   }
 
@@ -129,7 +129,7 @@ export class HolderInquirer extends BaseInquirer {
       ) as OpenId4VciCredentialConfigurationsSupportedWithFormats,
     }
 
-    console.log(greenText(`We can request authorization for the following credentials.`))
+    console.log(greenText('We can request authorization for the following credentials.'))
     console.log(greenText(configurationsWithScope.map(([id]) => id).join('\n')))
   }
 
@@ -137,7 +137,7 @@ export class HolderInquirer extends BaseInquirer {
     const trustedCertificate = await this.inquireInput('Enter trusted certificate: ')
     await this.holder.agent.x509.addTrustedCertificate(trustedCertificate)
 
-    console.log(greenText(`Added trusted certificate`))
+    console.log(greenText('Added trusted certificate'))
   }
 
   public async requestCredential() {
@@ -157,7 +157,7 @@ export class HolderInquirer extends BaseInquirer {
     let txCode: string | undefined = undefined
 
     if (resolvedAuthorization.authorizationFlow === 'Oauth2Redirect') {
-      console.log(redText(`Authorization required for credential issuance`, true))
+      console.log(redText('Authorization required for credential issuance', true))
       console.log("Open the following url in your browser to authorize. Once you're done come back here")
       console.log(resolvedAuthorization.authorizationRequestUrl)
 
@@ -175,7 +175,7 @@ export class HolderInquirer extends BaseInquirer {
             )
             res.send('Success! You can now go back to the terminal')
           } else {
-            console.log(redText(`Error during authorization`, true))
+            console.log(redText('Error during authorization', true))
             console.log(JSON.stringify(req.query, null, 2))
             res.status(500).send('Error during authentication')
             reject()
@@ -188,7 +188,7 @@ export class HolderInquirer extends BaseInquirer {
       authorizationCode = await code
       console.log(greenText('Authorization complete', true))
     } else if (resolvedAuthorization.authorizationFlow === 'PresentationDuringIssuance') {
-      console.log(redText(`Presentation during issuance not supported yet`, true))
+      console.log(redText('Presentation during issuance not supported yet', true))
       return
     } else if (resolvedAuthorization.authorizationFlow === 'PreAuthorized') {
       if (this.resolvedCredentialOffer.credentialOfferPayload.grants?.[preAuthorizedCodeGrantIdentifier]?.tx_code) {
@@ -207,7 +207,7 @@ export class HolderInquirer extends BaseInquirer {
       txCode,
     })
 
-    console.log(greenText(`Received and stored the following credentials.`, true))
+    console.log(greenText('Received and stored the following credentials.', true))
     this.resolvedCredentialOffer = undefined
 
     credentials.forEach(this.printCredential)
@@ -225,23 +225,23 @@ export class HolderInquirer extends BaseInquirer {
         this.holder.agent.dependencyManager
           .resolve(DifPresentationExchangeService)
           .selectCredentialsForRequest(this.resolvedPresentationRequest.presentationExchange.credentialsForRequest)
-      ).flatMap((e) => e)
+      ).flat()
       console.log(
         greenText(
-          `All requirements for creating the presentation are satisfied. The following credentials will be shared`,
+          'All requirements for creating the presentation are satisfied. The following credentials will be shared',
           true
         )
       )
       selectedCredentials.forEach(this.printCredential)
     } else {
-      console.log(redText(`No credentials available that satisfy the proof request.`))
+      console.log(redText('No credentials available that satisfy the proof request.'))
     }
   }
 
   public async acceptPresentationRequest() {
     if (!this.resolvedPresentationRequest) throw new Error('No presentation request resolved yet.')
 
-    console.log(greenText(`Accepting the presentation request.`))
+    console.log(greenText('Accepting the presentation request.'))
 
     const serverResponse = await this.holder.acceptPresentationRequest(this.resolvedPresentationRequest)
 
@@ -276,12 +276,12 @@ export class HolderInquirer extends BaseInquirer {
       console.log(JSON.stringify(credential.credential.jsonCredential, null, 2))
       console.log('')
     } else if (credential.type === 'MdocRecord') {
-      console.log(greenText(`MdocRecord`, true))
+      console.log(greenText('MdocRecord', true))
       const namespaces = Mdoc.fromBase64Url(credential.base64Url).issuerSignedNamespaces
       console.log(JSON.stringify(namespaces, null, 2))
       console.log('')
     } else {
-      console.log(greenText(`SdJwtVcRecord`, true))
+      console.log(greenText('SdJwtVcRecord', true))
       const prettyClaims = this.holder.agent.sdJwtVc.fromCompact(credential.compactSdJwtVc).prettyClaims
       console.log(JSON.stringify(prettyClaims, null, 2))
       console.log('')

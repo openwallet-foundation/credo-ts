@@ -1,9 +1,9 @@
-import type { DrpcRequest, DrpcResponse, DrpcRequestMessage, DrpcResponseMessage } from './messages'
-import type { DrpcRecord } from './repository/DrpcRecord'
 import type { ConnectionRecord } from '@credo-ts/didcomm'
+import type { DrpcRequest, DrpcRequestMessage, DrpcResponse, DrpcResponseMessage } from './messages'
+import type { DrpcRecord } from './repository/DrpcRecord'
 
 import { AgentContext, injectable } from '@credo-ts/core'
-import { MessageHandlerRegistry, MessageSender, OutboundMessageContext, ConnectionService } from '@credo-ts/didcomm'
+import { ConnectionService, MessageHandlerRegistry, MessageSender, OutboundMessageContext } from '@credo-ts/didcomm'
 
 import { DrpcRequestHandler, DrpcResponseHandler } from './handlers'
 import { DrpcRole } from './models'

@@ -3,13 +3,13 @@ import type { ValidationOptions } from 'class-validator'
 import { ValidateBy, ValidationError, buildMessage } from 'class-validator'
 
 export function IsValidDrpcRequest(validationOptions?: ValidationOptions): PropertyDecorator {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
   return (target: any, propertyKey: string | symbol) => {
     ValidateBy(
       {
         name: 'isValidDrpcRequest',
         validator: {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          // biome-ignore lint/suspicious/noExplicitAny: <explanation>
           validate: (value: any): boolean => {
             // Check if value is a DrpcRequestObject or an array of DrpcRequestObject
             let isValid = false
@@ -26,7 +26,7 @@ export function IsValidDrpcRequest(validationOptions?: ValidationOptions): Prope
             return isValid
           },
           defaultMessage: buildMessage(
-            (eachPrefix) => eachPrefix + '$property is not a valid DrpcRequest',
+            (eachPrefix) => `${eachPrefix}$property is not a valid DrpcRequest`,
             validationOptions
           ),
         },
@@ -36,7 +36,7 @@ export function IsValidDrpcRequest(validationOptions?: ValidationOptions): Prope
   }
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+// biome-ignore lint/suspicious/noExplicitAny: <explanation>
 export function isValidDrpcRequest(value: any): boolean {
   if (typeof value !== 'object' || value === null || Array.isArray(value)) {
     return false

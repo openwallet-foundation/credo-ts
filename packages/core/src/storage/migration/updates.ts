@@ -60,6 +60,5 @@ export const CURRENT_FRAMEWORK_STORAGE_VERSION = supportedUpdates[supportedUpdat
   typeof supportedUpdates
 >['toVersion']
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 type LastItem<T extends readonly unknown[]> = T extends readonly [...infer _, infer U] ? U : T[0] | undefined
 export type UpdateToVersion = (typeof supportedUpdates)[number]['toVersion']

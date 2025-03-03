@@ -1,5 +1,5 @@
-import type { W3cCredentialsModuleConfigOptions } from './W3cCredentialsModuleConfig'
 import type { DependencyManager, Module } from '../../plugins'
+import type { W3cCredentialsModuleConfigOptions } from './W3cCredentialsModuleConfig'
 
 import { KeyType } from '../../crypto'
 import {

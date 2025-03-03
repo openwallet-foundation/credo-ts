@@ -102,7 +102,7 @@ describe('credentialTransformer', () => {
       )
     })
 
-    test(`throw error if jwt vc credentialSubject does not have a single credentialSubject`, () => {
+    test('throw error if jwt vc credentialSubject does not have a single credentialSubject', () => {
       const vc: Record<string, unknown> = {}
       const jwtPayload = new JwtPayload({
         iss: 'iss',
@@ -142,7 +142,7 @@ describe('credentialTransformer', () => {
       )
     })
 
-    test(`throw error if jwt vc has an id and it does not match the jti`, () => {
+    test('throw error if jwt vc has an id and it does not match the jti', () => {
       const vc: Record<string, unknown> = {
         credentialSubject: {},
         id: '13',
@@ -159,7 +159,7 @@ describe('credentialTransformer', () => {
       expect(() => getCredentialFromJwtPayload(jwtPayload)).toThrowError('JWT jti and vc.id do not match')
     })
 
-    test(`throw error if jwt vc has an issuer id and it does not match the iss`, () => {
+    test('throw error if jwt vc has an issuer id and it does not match the iss', () => {
       const vc: Record<string, unknown> = {
         credentialSubject: {},
         issuer: '123',
@@ -179,7 +179,7 @@ describe('credentialTransformer', () => {
       expect(() => getCredentialFromJwtPayload(jwtPayload)).toThrowError('JWT iss and vc.issuer(.id) do not match')
     })
 
-    test(`throw error if jwt vc has an issuanceDate and it does not match the nbf`, () => {
+    test('throw error if jwt vc has an issuanceDate and it does not match the nbf', () => {
       const vc: Record<string, unknown> = {
         credentialSubject: {},
         issuanceDate: '2010-01-01T19:23:24Z', // 1262373804
@@ -198,7 +198,7 @@ describe('credentialTransformer', () => {
       expect(() => getCredentialFromJwtPayload(jwtPayload)).toThrowError('JWT vc.issuanceDate must be a string')
     })
 
-    test(`throw error if jwt vc has an expirationDate and it does not match the exp`, () => {
+    test('throw error if jwt vc has an expirationDate and it does not match the exp', () => {
       const vc: Record<string, unknown> = {
         credentialSubject: {},
         expirationDate: '2010-01-01T19:23:24Z', // 1262373804
@@ -218,7 +218,7 @@ describe('credentialTransformer', () => {
       expect(() => getCredentialFromJwtPayload(jwtPayload)).toThrowError('JWT vc.expirationDate must be a string')
     })
 
-    test(`throw error if jwt vc has a credentialSubject.id and it does not match the sub`, () => {
+    test('throw error if jwt vc has a credentialSubject.id and it does not match the sub', () => {
       const vc: Record<string, unknown> = {}
       const jwtPayload = new JwtPayload({
         iss: 'iss',
@@ -241,7 +241,7 @@ describe('credentialTransformer', () => {
       )
     })
 
-    test(`throw validation error if vc is not a valid w3c vc`, () => {
+    test('throw validation error if vc is not a valid w3c vc', () => {
       const vc: Record<string, unknown> = {
         '@context': ['https://www.w3.org/2018/credentials/v1'],
         type: ['VerifiableCredential2'],

@@ -22,7 +22,7 @@ import {
 import { DidDocumentRole } from '../domain/DidDocumentRole'
 import { PeerDidResolver } from '../methods'
 import { DidKey } from '../methods/key'
-import { getNumAlgoFromPeerDid, PeerDidNumAlgo } from '../methods/peer/didPeer'
+import { PeerDidNumAlgo, getNumAlgoFromPeerDid } from '../methods/peer/didPeer'
 import { didDocumentJsonToNumAlgo1Did } from '../methods/peer/peerDidNumAlgo1'
 import { DidRecord, DidRepository } from '../repository'
 import { DidResolverService } from '../services'
@@ -82,7 +82,7 @@ describe('peer dids', () => {
       // The id can either be the first 8 characters of the key data (for ed25519 it's publicKeyBase58)
       // uuid is easier as it is consistent between different key types. Normally you would dynamically
       // generate the uuid, but static for testing purposes
-      id: `#d0d32199-851f-48e3-b178-6122bd4216a4`,
+      id: '#d0d32199-851f-48e3-b178-6122bd4216a4',
       key: ed25519Key,
       // For peer dids generated with method 1, the controller MUST be #id as we don't know the did yet
       controller: '#id',
@@ -91,7 +91,7 @@ describe('peer dids', () => {
       // The id can either be the first 8 characters of the key data (for ed25519 it's publicKeyBase58)
       // uuid is easier as it is consistent between different key types. Normally you would dynamically
       // generate the uuid, but static for testing purposes
-      id: `#08673492-3c44-47fe-baa4-a1780c585d75`,
+      id: '#08673492-3c44-47fe-baa4-a1780c585d75',
       key: x25519Key,
       // For peer dids generated with method 1, the controller MUST be #id as we don't know the did yet
       controller: '#id',

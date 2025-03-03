@@ -7,7 +7,7 @@ import type {
 } from './ActionMenuApiOptions'
 
 import { AgentContext, CredoError, injectable } from '@credo-ts/core'
-import { ConnectionService, MessageSender, getOutboundMessageContext, MessageHandlerRegistry } from '@credo-ts/didcomm'
+import { ConnectionService, MessageHandlerRegistry, MessageSender, getOutboundMessageContext } from '@credo-ts/didcomm'
 
 import { ActionMenuRole } from './ActionMenuRole'
 import {

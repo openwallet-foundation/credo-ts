@@ -1,18 +1,18 @@
-import type { OpenId4VcVerificationSessionStateChangedEvent } from '../OpenId4VcVerifierEvents'
 import type { AgentContext } from '@credo-ts/core'
 import type { AuthorizationEvent, AuthorizationRequest, AuthorizationResponse } from '@sphereon/did-auth-siop'
+import type { OpenId4VcVerificationSessionStateChangedEvent } from '../OpenId4VcVerifierEvents'
 
+import { EventEmitter as NativeEventEmitter } from 'events'
 import {
-  CredoError,
-  injectable,
   AgentContextProvider,
-  inject,
-  InjectionSymbols,
-  EventEmitter,
   AgentDependencies,
+  CredoError,
+  EventEmitter,
+  InjectionSymbols,
+  inject,
+  injectable,
 } from '@credo-ts/core'
 import { AuthorizationEvents } from '@sphereon/did-auth-siop'
-import { EventEmitter as NativeEventEmitter } from 'events'
 
 import { OpenId4VcVerificationSessionState } from '../OpenId4VcVerificationSessionState'
 import { OpenId4VcVerifierEvents } from '../OpenId4VcVerifierEvents'
@@ -219,7 +219,7 @@ class OpenId4VcRelyingPartyEventEmitter implements NativeEventEmitter {
     private verifierId: string
   ) {}
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
   public emit(eventName: string | symbol, ...args: any[]): boolean {
     return this.nativeEventEmitter.emit(eventName, ...args, {
       contextCorrelationId: this.contextCorrelationId,
@@ -227,36 +227,37 @@ class OpenId4VcRelyingPartyEventEmitter implements NativeEventEmitter {
     } satisfies RelyingPartyEventEmitterContext)
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
   public [NativeEventEmitter.captureRejectionSymbol]?(error: Error, event: string, ...args: any[]): void {
+    // biome-ignore lint/correctness/noVoidTypeReturn: <explanation>
     return this.nativeEventEmitter[NativeEventEmitter.captureRejectionSymbol]?.(error, event, ...args)
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
   public addListener(eventName: string | symbol, listener: (...args: any[]) => void): this {
     this.nativeEventEmitter.addListener(eventName, listener)
     return this
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
   public on(eventName: string | symbol, listener: (...args: any[]) => void): this {
     this.nativeEventEmitter.on(eventName, listener)
     return this
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
   public once(eventName: string | symbol, listener: (...args: any[]) => void): this {
     this.nativeEventEmitter.once(eventName, listener)
     return this
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
   public removeListener(eventName: string | symbol, listener: (...args: any[]) => void): this {
     this.nativeEventEmitter.removeListener(eventName, listener)
     return this
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
   public off(eventName: string | symbol, listener: (...args: any[]) => void): this {
     this.nativeEventEmitter.off(eventName, listener)
     return this
@@ -276,28 +277,28 @@ class OpenId4VcRelyingPartyEventEmitter implements NativeEventEmitter {
     return this.nativeEventEmitter.getMaxListeners()
   }
 
-  // eslint-disable-next-line @typescript-eslint/ban-types
+  // biome-ignore lint/complexity/noBannedTypes: <explanation>
   public listeners(eventName: string | symbol): Function[] {
     return this.nativeEventEmitter.listeners(eventName)
   }
 
-  // eslint-disable-next-line @typescript-eslint/ban-types
+  // biome-ignore lint/complexity/noBannedTypes: <explanation>
   public rawListeners(eventName: string | symbol): Function[] {
     return this.nativeEventEmitter.rawListeners(eventName)
   }
 
-  // eslint-disable-next-line @typescript-eslint/ban-types
+  // biome-ignore lint/complexity/noBannedTypes: <explanation>
   public listenerCount(eventName: string | symbol, listener?: Function | undefined): number {
     return this.nativeEventEmitter.listenerCount(eventName, listener)
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
   public prependListener(eventName: string | symbol, listener: (...args: any[]) => void): this {
     this.nativeEventEmitter.prependListener(eventName, listener)
     return this
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
   public prependOnceListener(eventName: string | symbol, listener: (...args: any[]) => void): this {
     this.nativeEventEmitter.prependOnceListener(eventName, listener)
     return this

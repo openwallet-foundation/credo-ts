@@ -1,6 +1,6 @@
+import type { BaseEvent } from '@credo-ts/core'
 import type { TrustPingMessage, TrustPingResponseMessage } from './messages'
 import type { ConnectionRecord } from './repository'
-import type { BaseEvent } from '@credo-ts/core'
 
 export enum TrustPingEventTypes {
   TrustPingReceivedEvent = 'TrustPingReceivedEvent',

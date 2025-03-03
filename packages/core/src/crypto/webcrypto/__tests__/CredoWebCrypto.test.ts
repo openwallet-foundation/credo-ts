@@ -22,7 +22,7 @@ describe('CredoWebCrypto', () => {
     const wallet = new InMemoryWallet()
     const agentContext = getAgentContext({ wallet })
 
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    // biome-ignore lint/style/noNonNullAssertion: <explanation>
     await wallet.createAndOpen(agentConfig.walletConfig!)
 
     webCrypto = new CredoWebCrypto(agentContext)

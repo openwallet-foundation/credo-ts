@@ -1,4 +1,4 @@
-import type { ProblemReportErrorOptions, PresentationProblemReportReason } from '@credo-ts/didcomm'
+import type { PresentationProblemReportReason, ProblemReportErrorOptions } from '@credo-ts/didcomm'
 
 import { ProblemReportError } from '@credo-ts/didcomm'
 
@@ -11,7 +11,10 @@ interface V1PresentationProblemReportErrorOptions extends ProblemReportErrorOpti
 export class V1PresentationProblemReportError extends ProblemReportError {
   public problemReport: V1PresentationProblemReportMessage
 
-  public constructor(public message: string, { problemCode }: V1PresentationProblemReportErrorOptions) {
+  public constructor(
+    public message: string,
+    { problemCode }: V1PresentationProblemReportErrorOptions
+  ) {
     super(message, { problemCode })
     this.problemReport = new V1PresentationProblemReportMessage({
       description: {

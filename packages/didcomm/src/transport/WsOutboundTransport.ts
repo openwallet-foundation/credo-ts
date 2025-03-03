@@ -1,11 +1,11 @@
-import type { OutboundTransport } from './OutboundTransport'
-import type { OutboundWebSocketClosedEvent, OutboundWebSocketOpenedEvent } from './TransportEventTypes'
-import type { AgentMessageReceivedEvent } from '../Events'
-import type { OutboundPackage } from '../types'
 import type { AgentContext, Logger } from '@credo-ts/core'
 import type { WebSocket } from 'ws'
+import type { AgentMessageReceivedEvent } from '../Events'
+import type { OutboundPackage } from '../types'
+import type { OutboundTransport } from './OutboundTransport'
+import type { OutboundWebSocketClosedEvent, OutboundWebSocketOpenedEvent } from './TransportEventTypes'
 
-import { EventEmitter, CredoError, JsonEncoder, Buffer } from '@credo-ts/core'
+import { Buffer, CredoError, EventEmitter, JsonEncoder } from '@credo-ts/core'
 
 import { AgentEventTypes } from '../Events'
 import { isValidJweStructure } from '../util/JWE'
@@ -37,7 +37,7 @@ export class WsOutboundTransport implements OutboundTransport {
 
     const stillOpenSocketClosingPromises: Array<Promise<void>> = []
 
-    this.transportTable.forEach((socket) => {
+    for (const [, socket] of this.transportTable) {
       socket.removeEventListener('message', this.handleMessageEvent)
       if (socket.readyState !== this.WebSocketClass.CLOSED) {
         stillOpenSocketClosingPromises.push(
@@ -53,7 +53,7 @@ export class WsOutboundTransport implements OutboundTransport {
 
         socket.close()
       }
-    })
+    }
 
     // Wait for all open websocket connections to have been closed
     await Promise.all(stillOpenSocketClosingPromises)
@@ -125,7 +125,7 @@ export class WsOutboundTransport implements OutboundTransport {
 
   // NOTE: Because this method is passed to the event handler this must be a lambda method
   // so 'this' is scoped to the 'WsOutboundTransport' class instance
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
   private handleMessageEvent = (event: any) => {
     this.logger.trace('WebSocket message event received.', { url: event.target.url })
     const payload = JsonEncoder.fromBuffer(event.data)

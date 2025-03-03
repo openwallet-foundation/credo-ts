@@ -1,7 +1,7 @@
 import type { ValidationOptions } from 'class-validator'
 
 import { Transform, TransformationType } from 'class-transformer'
-import { isString, ValidateBy, buildMessage } from 'class-validator'
+import { ValidateBy, buildMessage, isString } from 'class-validator'
 
 import { Metadata } from '../storage/Metadata'
 
@@ -53,7 +53,7 @@ export function IsMap(validationOptions?: ValidationOptions): PropertyDecorator 
       name: 'isMap',
       validator: {
         validate: (value: unknown): boolean => value instanceof Map,
-        defaultMessage: buildMessage((eachPrefix) => eachPrefix + '$property must be a Map', validationOptions),
+        defaultMessage: buildMessage((eachPrefix) => `${eachPrefix}$property must be a Map`, validationOptions),
       },
     },
     validationOptions
@@ -70,7 +70,7 @@ export function IsStringOrStringArray(validationOptions?: Omit<ValidationOptions
       validator: {
         validate: (value): boolean => isString(value) || (Array.isArray(value) && value.every((v) => isString(v))),
         defaultMessage: buildMessage(
-          (eachPrefix) => eachPrefix + '$property must be a string or string array',
+          (eachPrefix) => `${eachPrefix}$property must be a string or string array`,
           validationOptions
         ),
       },

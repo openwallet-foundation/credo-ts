@@ -1,15 +1,15 @@
-import type { AnonCredsSchema, AnonCredsCredentialDefinition } from '../src'
 import type { Agent } from '@credo-ts/core'
+import type { AnonCredsCredentialDefinition, AnonCredsSchema } from '../src'
 
 import {
-  AnonCredsCredentialDefinitionRepository,
-  AnonCredsCredentialDefinitionRecord,
-  AnonCredsCredentialDefinitionPrivateRepository,
   AnonCredsCredentialDefinitionPrivateRecord,
-  AnonCredsKeyCorrectnessProofRepository,
+  AnonCredsCredentialDefinitionPrivateRepository,
+  AnonCredsCredentialDefinitionRecord,
+  AnonCredsCredentialDefinitionRepository,
   AnonCredsKeyCorrectnessProofRecord,
-  AnonCredsSchemaRepository,
+  AnonCredsKeyCorrectnessProofRepository,
   AnonCredsSchemaRecord,
+  AnonCredsSchemaRepository,
 } from '../src'
 
 export interface PreCreatedAnonCredsDefinition {

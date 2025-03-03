@@ -1,3 +1,4 @@
+import type { AgentContext } from '../agent'
 import type {
   Jws,
   JwsDetachedFormat,
@@ -8,12 +9,11 @@ import type {
 import type { Key } from './Key'
 import type { Jwk } from './jose/jwk'
 import type { JwkJson } from './jose/jwk/Jwk'
-import type { AgentContext } from '../agent'
 
 import { CredoError } from '../error'
 import { EncodedX509Certificate, X509ModuleConfig } from '../modules/x509'
 import { injectable } from '../plugins'
-import { Buffer, isJsonObject, JsonEncoder, TypedArrayEncoder } from '../utils'
+import { Buffer, JsonEncoder, TypedArrayEncoder, isJsonObject } from '../utils'
 import { WalletError } from '../wallet/error'
 
 import { X509Service } from './../modules/x509/X509Service'
@@ -34,7 +34,7 @@ export class JwsService {
         certificate.publicKey.keyType !== options.key.keyType ||
         !Buffer.from(certificate.publicKey.publicKey).equals(Buffer.from(options.key.publicKey))
       ) {
-        throw new CredoError(`Protected header x5c does not match key for signing.`)
+        throw new CredoError('Protected header x5c does not match key for signing.')
       }
     }
 
@@ -44,7 +44,7 @@ export class JwsService {
       (jwk.key.keyType !== options.key.keyType ||
         !Buffer.from(jwk.key.publicKey).equals(Buffer.from(options.key.publicKey)))
     ) {
-      throw new CredoError(`Protected header JWK does not match key for signing.`)
+      throw new CredoError('Protected header JWK does not match key for signing.')
     }
 
     // Validate the options.key used for signing against the jws options
@@ -211,8 +211,15 @@ export class JwsService {
   }
 
   private buildProtected(options: JwsProtectedHeaderOptions) {
-    if ([options.jwk, options.kid, options.x5c].filter(Boolean).length != 1) {
-      throw new CredoError('Only one of JWK, kid or x5c can and must be provided.')
+    // FIXME: checking for kid starting with '#' is not good.
+    // but now we don't really limit that kid (did key reference)
+    // cannot be combined with x5c/jwk
+    if (options.kid?.startsWith('did:')) {
+      if (options.jwk || options.x5c) {
+        throw new CredoError("When 'kid' is a did, 'jwk' and 'x5c' cannot be provided.")
+      }
+    } else if ((options.jwk && options.x5c) || (!options.jwk && !options.x5c && !options.kid)) {
+      throw new CredoError("Header must contain one of 'x5c', 'jwk' or 'kid' with a did value.")
     }
 
     return {
@@ -241,8 +248,15 @@ export class JwsService {
       trustedCertificates: trustedCertificatesFromOptions = [],
     } = options
 
-    if ([protectedHeader.jwk, protectedHeader.kid, protectedHeader.x5c].filter(Boolean).length > 1) {
-      throw new CredoError('Only one of jwk, kid and x5c headers can and must be provided.')
+    // FIXME: checking for kid starting with '#' is not good.
+    // but now we don't really limit that kid (did key reference)
+    // cannot be combined with x5c/jwk
+    if (typeof protectedHeader.kid === 'string' && protectedHeader.kid?.startsWith('did:')) {
+      if (protectedHeader.jwk || protectedHeader.x5c) {
+        throw new CredoError("When 'kid' is a did, 'jwk' and 'x5c' cannot be provided.")
+      }
+    } else if (protectedHeader.jwk && protectedHeader.x5c) {
+      throw new CredoError("Header must contain one of 'x5c', 'jwk' or 'kid' with a did value.")
     }
 
     if (protectedHeader.x5c) {
@@ -250,7 +264,7 @@ export class JwsService {
         !Array.isArray(protectedHeader.x5c) ||
         protectedHeader.x5c.some((certificate) => typeof certificate !== 'string')
       ) {
-        throw new CredoError('x5c header is not a valid JSON array of string.')
+        throw new CredoError('x5c header is not a valid JSON array of strings.')
       }
 
       const trustedCertificatesFromConfig =
@@ -278,7 +292,9 @@ export class JwsService {
     }
 
     if (!jwkResolver) {
-      throw new CredoError(`jwkResolver is required when the JWS protected header does not contain a 'jwk' property.`)
+      throw new CredoError(
+        `jwkResolver is required when the JWS protected header does not contain a 'jwk' or 'x5c' property.`
+      )
     }
 
     try {

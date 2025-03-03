@@ -1,7 +1,7 @@
 import type { DocumentLoader } from './jsonld'
 
 export function getNativeDocumentLoader(): () => DocumentLoader {
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  // biome-ignore lint/correctness/noUndeclaredDependencies: <explanation>
   const loader = require('@digitalcredentials/jsonld/lib/documentLoaders/node')
 
   return loader as () => DocumentLoader

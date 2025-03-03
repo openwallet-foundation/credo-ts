@@ -1,6 +1,6 @@
-import type { JwkJson, Jwk } from './Jwk'
 import type { Key } from '../../Key'
 import type { JwaSignatureAlgorithm } from '../jwa'
+import type { Jwk, JwkJson } from './Jwk'
 
 import { CredoError } from '../../../error'
 import { KeyType } from '../../KeyType'

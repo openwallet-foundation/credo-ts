@@ -4,7 +4,7 @@ import { InjectionSymbols } from '../../../../constants'
 import { JwsService, KeyType } from '../../../../crypto'
 import { JwaSignatureAlgorithm } from '../../../../crypto/jose/jwa'
 import { getJwkFromKey } from '../../../../crypto/jose/jwk'
-import { CredoError, ClassValidationError } from '../../../../error'
+import { ClassValidationError, CredoError } from '../../../../error'
 import { JsonTransformer } from '../../../../utils'
 import { DidJwk, DidKey, DidRepository, DidsModuleConfig } from '../../../dids'
 import { X509ModuleConfig } from '../../../x509'
@@ -113,7 +113,7 @@ describe('W3cJwtCredentialService', () => {
       // Throw when verificationMethod id does not exist in did document
       await expect(
         w3cJwtCredentialService.signCredential(agentContext, {
-          verificationMethod: issuerDidJwk.verificationMethodId + 'extra',
+          verificationMethod: `${issuerDidJwk.verificationMethodId}extra`,
           alg: JwaSignatureAlgorithm.ES256,
           credential: JsonTransformer.fromJSON(credentialJson, W3cCredential),
           format: ClaimFormat.JwtVc,
@@ -198,7 +198,6 @@ describe('W3cJwtCredentialService', () => {
     test('returns invalid result when credential is not according to data model', async () => {
       const jwtVc = W3cJwtVerifiableCredential.fromSerializedJwt(CredoEs256DidJwkJwtVc)
 
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-ignore
       delete jwtVc.credential.issuer
 
@@ -244,7 +243,7 @@ describe('W3cJwtCredentialService', () => {
     })
 
     test('returns invalid result when signature is not valid', async () => {
-      const jwtVc = W3cJwtVerifiableCredential.fromSerializedJwt(CredoEs256DidJwkJwtVc + 'a')
+      const jwtVc = W3cJwtVerifiableCredential.fromSerializedJwt(`${CredoEs256DidJwkJwtVc}a`)
 
       const result = await w3cJwtCredentialService.verifyCredential(agentContext, {
         credential: jwtVc,

@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-non-null-assertion */
-
 import type { AgentContext } from '../../../agent'
 
 import { id_ce_basicConstraints, id_ce_extKeyUsage, id_ce_keyUsage } from '@peculiar/asn1-x509'
@@ -8,12 +6,12 @@ import * as x509 from '@peculiar/x509'
 import { InMemoryWallet } from '../../../../../../tests/InMemoryWallet'
 import { getAgentConfig, getAgentContext } from '../../../../tests'
 import { KeyType } from '../../../crypto/KeyType'
-import { getJwkFromKey, P256Jwk } from '../../../crypto/jose/jwk'
+import { P256Jwk, getJwkFromKey } from '../../../crypto/jose/jwk'
 import { CredoWebCrypto } from '../../../crypto/webcrypto'
 import { X509Error } from '../X509Error'
 import { X509Service } from '../X509Service'
 
-import { X509KeyUsage, TypedArrayEncoder, X509ExtendedKeyUsage, Key } from '@credo-ts/core'
+import { Key, TypedArrayEncoder, X509ExtendedKeyUsage, X509KeyUsage } from '@credo-ts/core'
 
 /**
  *
@@ -23,7 +21,7 @@ import { X509KeyUsage, TypedArrayEncoder, X509ExtendedKeyUsage, Key } from '@cre
 const getNextMonth = () => {
   const now = new Date()
   let nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1)
-  if (now.getMonth() == 11) {
+  if (now.getMonth() === 11) {
     nextMonth = new Date(now.getFullYear() + 1, 0, 1)
   }
 
@@ -38,7 +36,7 @@ const getNextMonth = () => {
 const getLastMonth = () => {
   const now = new Date()
   let lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1)
-  if (now.getMonth() == 0) {
+  if (now.getMonth() === 0) {
     lastMonth = new Date(now.getFullYear() - 1, 0, 1)
   }
   return lastMonth
@@ -54,7 +52,7 @@ describe('X509Service', () => {
     wallet = new InMemoryWallet()
     agentContext = getAgentContext({ wallet })
 
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    // biome-ignore lint/style/noNonNullAssertion: <explanation>
     await wallet.createAndOpen(agentConfig.walletConfig!)
 
     const rootKey = await wallet.createKey({ keyType: KeyType.P256 })
@@ -246,6 +244,7 @@ describe('X509Service', () => {
           name: [{ type: 'url', value: 'paradym.id' }],
         },
         issuerAlternativeName: {
+          // biome-ignore lint/style/noNonNullAssertion: <explanation>
           name: mdocRootCertificate.issuerAlternativeNames!,
         },
         extendedKeyUsage: {
@@ -342,6 +341,82 @@ describe('X509Service', () => {
         keyType: KeyType.P256,
       }),
       privateKey: undefined,
+    })
+  })
+
+  it('should verify a certificate chain where the root certificate is not in the provided chain, but is in trusted certificates', async () => {
+    const authorityKey = await wallet.createKey({ keyType: KeyType.P256 })
+    const documentSignerKey = await wallet.createKey({ keyType: KeyType.P256 })
+
+    const mdocRootCertificate = await X509Service.createCertificate(agentContext, {
+      authorityKey,
+      issuer: { commonName: 'credo', countryName: 'NL' },
+      validity: {
+        notBefore: getLastMonth(),
+        notAfter: getNextMonth(),
+      },
+      extensions: {
+        subjectKeyIdentifier: {
+          include: true,
+        },
+        keyUsage: {
+          usages: [X509KeyUsage.KeyCertSign, X509KeyUsage.CrlSign],
+          markAsCritical: true,
+        },
+        issuerAlternativeName: {
+          name: [{ type: 'url', value: 'animo.id' }],
+        },
+        basicConstraints: {
+          ca: true,
+          pathLenConstraint: 0,
+          markAsCritical: true,
+        },
+        crlDistributionPoints: {
+          urls: ['https://animo.id'],
+        },
+      },
+    })
+
+    const mdocDocumentSignerCertificate = await X509Service.createCertificate(agentContext, {
+      authorityKey,
+      subjectPublicKey: new Key(documentSignerKey.publicKey, KeyType.P256),
+      issuer: mdocRootCertificate.issuer,
+      subject: { commonName: 'credo dcs', countryName: 'NL' },
+      validity: {
+        notBefore: getLastMonth(),
+        notAfter: getNextMonth(),
+      },
+      extensions: {
+        authorityKeyIdentifier: {
+          include: true,
+        },
+        subjectKeyIdentifier: {
+          include: true,
+        },
+        keyUsage: {
+          usages: [X509KeyUsage.DigitalSignature],
+          markAsCritical: true,
+        },
+        subjectAlternativeName: {
+          name: [{ type: 'url', value: 'paradym.id' }],
+        },
+        issuerAlternativeName: {
+          // biome-ignore lint/style/noNonNullAssertion: <explanation>
+          name: mdocRootCertificate.issuerAlternativeNames!,
+        },
+        extendedKeyUsage: {
+          usages: [X509ExtendedKeyUsage.MdlDs],
+          markAsCritical: true,
+        },
+        crlDistributionPoints: {
+          urls: ['https://animo.id'],
+        },
+      },
+    })
+
+    await X509Service.validateCertificateChain(agentContext, {
+      certificateChain: [mdocDocumentSignerCertificate.toString('base64url')],
+      trustedCertificates: [mdocRootCertificate.toString('pem')],
     })
   })
 

@@ -1,5 +1,5 @@
-import type { ActionMenuService } from '../services'
 import type { MessageHandler, MessageHandlerInboundMessage } from '@credo-ts/didcomm'
+import type { ActionMenuService } from '../services'
 
 import { MenuRequestMessage } from '../messages'
 
@@ -18,5 +18,7 @@ export class MenuRequestMessageHandler implements MessageHandler {
     inboundMessage.assertReadyConnection()
 
     await this.actionMenuService.processRequest(inboundMessage)
+
+    return undefined
   }
 }

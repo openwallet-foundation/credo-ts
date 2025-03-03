@@ -15,7 +15,7 @@ export async function migrateDidRecordToV0_4<Agent extends BaseAgent>(agent: Age
   agent.config.logger.info('Migrating did records to storage version 0.4')
   const didRepository = agent.dependencyManager.resolve(DidRepository)
 
-  agent.config.logger.debug(`Fetching all did records with did method did:sov from storage`)
+  agent.config.logger.debug('Fetching all did records with did method did:sov from storage')
   const allSovDids = await didRepository.findByQuery(agent.context, {
     method: 'sov',
     role: DidDocumentRole.Created,

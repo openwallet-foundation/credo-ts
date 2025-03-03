@@ -1,23 +1,24 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 import {
-  suites as JsonLdSuites,
-  purposes as JsonLdPurposes,
   constants as JsonLdConstants,
+  purposes as JsonLdPurposes,
+  suites as JsonLdSuites,
   // No type definitions available for this library
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
   //@ts-ignore
 } from '@digitalcredentials/jsonld-signatures'
 
 export interface Suites {
+  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
   LinkedDataSignature: any
+  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
   LinkedDataProof: any
 }
 
 export interface Purposes {
+  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
   AssertionProofPurpose: any
 }
 
+// biome-ignore lint/suspicious/noExplicitAny: <explanation>
 type Constants = any
 
 export const suites = JsonLdSuites as Suites

@@ -1,9 +1,9 @@
-import type { OpenId4VcJwtIssuer, OpenId4VcSiopVerifiedAuthorizationRequest } from '../shared'
 import type {
   DifPexCredentialsForRequest,
   DifPexInputDescriptorToCredentials,
   DifPresentationExchangeDefinition,
 } from '@credo-ts/core'
+import type { OpenId4VcJwtIssuer, OpenId4VcSiopVerifiedAuthorizationRequest } from '../shared'
 
 export interface OpenId4VcSiopResolvedAuthorizationRequest {
   /**

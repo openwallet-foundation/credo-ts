@@ -1,8 +1,8 @@
+import type { Router } from 'express'
 import type {
   OpenId4VciCredentialRequestToCredentialMapper,
   OpenId4VciGetVerificationSessionForIssuanceSessionAuthorization,
 } from './OpenId4VcIssuerServiceOptions'
-import type { Router } from 'express'
 
 import { importExpress } from '../shared/router'
 

@@ -1,19 +1,19 @@
 import type { WalletConfig, WalletConfigRekey, WalletExportImportConfig } from '@credo-ts/core'
 
 import {
-  WalletExportPathExistsError,
-  WalletInvalidKeyError,
-  WalletDuplicateError,
   CredoError,
-  Logger,
-  WalletError,
-  InjectionSymbols,
-  SigningProviderRegistry,
   FileSystem,
-  WalletNotFoundError,
+  InjectionSymbols,
   KeyDerivationMethod,
-  WalletImportPathExistsError,
+  Logger,
+  SigningProviderRegistry,
+  WalletDuplicateError,
+  WalletError,
+  WalletExportPathExistsError,
   WalletExportUnsupportedError,
+  WalletImportPathExistsError,
+  WalletInvalidKeyError,
+  WalletNotFoundError,
 } from '@credo-ts/core'
 import { Store } from '@openwallet-foundation/askar-shared'
 import { inject, injectable } from 'tsyringe'
@@ -225,7 +225,8 @@ export class AskarWallet extends AskarBaseWallet {
           walletType: 'AskarWallet',
           cause: error,
         })
-      } else if (isAskarError(error) && error.code === AskarErrorCode.Encryption) {
+      }
+      if (isAskarError(error) && error.code === AskarErrorCode.Encryption) {
         const errorMessage = `Incorrect key for wallet '${walletConfig.id}'`
         this.logger.debug(errorMessage)
         throw new WalletInvalidKeyError(errorMessage, {
