@@ -1,6 +1,6 @@
-import type { AgentType } from './utils'
-import type { OpenId4VcVerifierRecord } from '../src'
 import type { DcqlQuery } from '@credo-ts/core'
+import type { OpenId4VcVerifierRecord } from '../src'
+import type { AgentType } from './utils'
 
 import {
   ClaimFormat,
@@ -8,9 +8,9 @@ import {
   KeyType,
   MdocDeviceResponse,
   MdocRecord,
-  parseDid,
   SdJwtVcRecord,
   X509Service,
+  parseDid,
 } from '@credo-ts/core'
 
 import { AskarModule } from '../../askar/src'

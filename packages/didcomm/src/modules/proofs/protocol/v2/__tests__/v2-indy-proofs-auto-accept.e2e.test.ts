@@ -5,7 +5,7 @@ import {
   issueLegacyAnonCredsCredential,
   setupAnonCredsTests,
 } from '../../../../../../../anoncreds/tests/legacyAnonCredsSetup'
-import { waitForProofExchangeRecord, testLogger } from '../../../../../../../core/tests'
+import { testLogger, waitForProofExchangeRecord } from '../../../../../../../core/tests'
 import { AutoAcceptProof, ProofState } from '../../../models'
 
 describe('Auto accept present proof', () => {

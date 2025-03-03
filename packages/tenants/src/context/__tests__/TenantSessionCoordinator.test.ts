@@ -1,5 +1,5 @@
-import type { TenantAgentContextMapping } from '../TenantSessionCoordinator'
 import type { DependencyManager } from '@credo-ts/core'
+import type { TenantAgentContextMapping } from '../TenantSessionCoordinator'
 
 import { AgentConfig, AgentContext, WalletApi } from '@credo-ts/core'
 import { Mutex, withTimeout } from 'async-mutex'

@@ -4,7 +4,7 @@ import type { ClaimFormat } from '../ClaimFormat'
 import { Transform, TransformationType } from 'class-transformer'
 import { ValidationError } from 'class-validator'
 
-import { CredoError, ClassValidationError } from '../../../../error'
+import { ClassValidationError, CredoError } from '../../../../error'
 import { JsonTransformer } from '../../../../utils'
 import { W3cJsonLdVerifiableCredential } from '../../data-integrity/models/W3cJsonLdVerifiableCredential'
 import { W3cJwtVerifiableCredential } from '../../jwt-vc/W3cJwtVerifiableCredential'
@@ -28,7 +28,8 @@ export function W3cVerifiableCredentialTransformer() {
   return Transform(({ value, type }: { value: SingleOrArray<unknown>; type: TransformationType }) => {
     if (type === TransformationType.PLAIN_TO_CLASS) {
       return Array.isArray(value) ? value.map(getCredential) : getCredential(value)
-    } else if (type === TransformationType.CLASS_TO_PLAIN) {
+    }
+    if (type === TransformationType.CLASS_TO_PLAIN) {
       if (Array.isArray(value)) return value.map(getEncoded)
       return getEncoded(value)
     }
@@ -41,5 +42,5 @@ export type W3cVerifiableCredential<Format extends ClaimFormat.JwtVc | ClaimForm
   Format extends ClaimFormat.JwtVc
     ? W3cJwtVerifiableCredential
     : Format extends ClaimFormat.LdpVc
-    ? W3cJsonLdVerifiableCredential
-    : W3cJsonLdVerifiableCredential | W3cJwtVerifiableCredential
+      ? W3cJsonLdVerifiableCredential
+      : W3cJsonLdVerifiableCredential | W3cJwtVerifiableCredential

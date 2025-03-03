@@ -13,5 +13,7 @@ export class DidRotateAckHandler implements MessageHandler {
 
   public async handle(inboundMessage: MessageHandlerInboundMessage<DidRotateAckHandler>) {
     await this.didRotateService.processRotateAck(inboundMessage)
+
+    return undefined
   }
 }

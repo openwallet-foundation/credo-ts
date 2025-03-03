@@ -1,4 +1,9 @@
 import type {
+  OpenId4VcCredentialHolderBindingWithKey,
+  OpenId4VciCredentialConfigurationsSupportedWithFormats,
+  OpenId4VciMetadata,
+} from '../shared'
+import type {
   OpenId4VciAuthorizationCodeFlowConfig,
   OpenId4VciCreateCredentialOfferOptions,
   OpenId4VciCreateCredentialResponseOptions,
@@ -9,21 +14,11 @@ import type {
   OpenId4VciPreAuthorizedCodeFlowConfig,
   OpenId4VciSignW3cCredentials,
 } from './OpenId4VcIssuerServiceOptions'
-import type {
-  OpenId4VcCredentialHolderBindingWithKey,
-  OpenId4VciCredentialConfigurationsSupportedWithFormats,
-  OpenId4VciMetadata,
-} from '../shared'
-import type { AgentContext, Query, QueryOptions } from '@credo-ts/core'
 
 import {
   ClaimFormat,
   CredoError,
   EventEmitter,
-  getJwkFromJson,
-  getJwkFromKey,
-  injectable,
-  joinUriParts,
   JwsService,
   Jwt,
   JwtPayload,
@@ -32,8 +27,12 @@ import {
   MdocApi,
   SdJwtVcApi,
   TypedArrayEncoder,
-  utils,
   W3cCredentialService,
+  getJwkFromJson,
+  getJwkFromKey,
+  injectable,
+  joinUriParts,
+  utils,
 } from '@credo-ts/core'
 import {
   AuthorizationServerMetadata,
@@ -49,10 +48,10 @@ import {
 import {
   CredentialIssuerMetadata,
   CredentialRequestFormatSpecific,
-  extractScopesForCredentialConfigurationIds,
-  getCredentialConfigurationsMatchingRequestFormat,
   Openid4vciDraftVersion,
   Openid4vciIssuer,
+  extractScopesForCredentialConfigurationIds,
+  getCredentialConfigurationsMatchingRequestFormat,
 } from '@openid4vc/openid4vci'
 
 import { OpenId4VcVerifierApi } from '../openid4vc-verifier'
@@ -770,7 +769,7 @@ export class OpenId4VcIssuerService {
           configurationsMatchingRequestAndOfferNotIssued as OpenId4VciCredentialConfigurationsSupportedWithFormats,
         credentialConfigurationIds: Object.keys(configurationsMatchingRequestAndOfferNotIssued) as [
           string,
-          ...string[]
+          ...string[],
         ],
       }
     }
@@ -919,7 +918,8 @@ export class OpenId4VcIssuerService {
           )
         )) as string[] | Record<string, unknown>[],
       }
-    } else if (signOptions.format === ClaimFormat.SdJwtVc) {
+    }
+    if (signOptions.format === ClaimFormat.SdJwtVc) {
       if (signOptions.format !== requestFormat.format) {
         throw new CredoError(
           `Invalid credential format returned by sign options. Expected '${requestFormat.format}', received '${signOptions.format}'.`
@@ -942,7 +942,8 @@ export class OpenId4VcIssuerService {
           signOptions.credentials.map((credential) => sdJwtVcApi.sign(credential).then((signed) => signed.compact))
         ),
       }
-    } else if (signOptions.format === ClaimFormat.MsoMdoc) {
+    }
+    if (signOptions.format === ClaimFormat.MsoMdoc) {
       if (signOptions.format !== requestFormat.format) {
         throw new CredoError(
           `Invalid credential format returned by sign options. Expected '${requestFormat.format}', received '${signOptions.format}'.`
@@ -964,9 +965,8 @@ export class OpenId4VcIssuerService {
           signOptions.credentials.map((credential) => mdocApi.sign(credential).then((signed) => signed.base64Url))
         ),
       }
-    } else {
-      throw new CredoError(`Unsupported credential format ${signOptions.format}`)
     }
+    throw new CredoError(`Unsupported credential format ${signOptions.format}`)
   }
 
   private async signW3cCredential(
@@ -992,15 +992,14 @@ export class OpenId4VcIssuerService {
         verificationMethod: options.verificationMethod,
         alg,
       })
-    } else {
-      const proofType = getProofTypeFromKey(agentContext, key)
-
-      return await this.w3cCredentialService.signCredential(agentContext, {
-        format: ClaimFormat.LdpVc,
-        credential: options.credential,
-        verificationMethod: options.verificationMethod,
-        proofType: proofType,
-      })
     }
+    const proofType = getProofTypeFromKey(agentContext, key)
+
+    return await this.w3cCredentialService.signCredential(agentContext, {
+      format: ClaimFormat.LdpVc,
+      credential: options.credential,
+      verificationMethod: options.verificationMethod,
+      proofType: proofType,
+    })
   }
 }

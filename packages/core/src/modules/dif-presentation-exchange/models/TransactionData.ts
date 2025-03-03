@@ -1,7 +1,7 @@
-import type { DifPexCredentialsForRequestSubmissionEntry } from './DifPexCredentialsForRequest'
 import type { MdocRecord } from '../../mdoc/index'
 import type { SdJwtVcRecord } from '../../sd-jwt-vc/index'
 import type { W3cCredentialRecord } from '../../vc/index'
+import type { DifPexCredentialsForRequestSubmissionEntry } from './DifPexCredentialsForRequest'
 
 export type TransactionDataEntry = {
   type: string
@@ -27,11 +27,10 @@ export type TransactionDataAuthorization = {
   transactionData: TransactionDataEntry[]
 }
 
-export type TransactionDataRequest =
-  | {
-      transactionDataEntry: TransactionDataEntry
-      submissionEntry: DifPexCredentialsForRequestSubmissionEntry
-    }[]
+export type TransactionDataRequest = {
+  transactionDataEntry: TransactionDataEntry
+  submissionEntry: DifPexCredentialsForRequestSubmissionEntry
+}[]
 
 export type DcqlTransactionDataRequest = {
   transactionDataEntry: TransactionDataEntry

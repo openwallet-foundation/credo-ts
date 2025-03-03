@@ -15,7 +15,7 @@ export interface SdJwtVcPresentationToCreate {
       credential: SdJwtVcRecord
       inputDescriptorId: string
       transactionData?: TransactionData
-    }
+    },
   ] // only one credential supported for SD-JWT-VC
 }
 
@@ -46,7 +46,7 @@ export interface MdocPresentationToCreate {
     {
       credential: MdocRecord
       inputDescriptorId: string
-    }
+    },
   ] // only one credential supported for MDOC
 }
 

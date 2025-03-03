@@ -1,16 +1,16 @@
-import type { TenantRecord } from '../repository'
 import type { MutexInterface } from 'async-mutex'
+import type { TenantRecord } from '../repository'
 
 import {
   AgentConfig,
   AgentContext,
   CredoError,
-  inject,
-  injectable,
   InjectionSymbols,
   Logger,
   WalletApi,
   WalletError,
+  inject,
+  injectable,
 } from '@credo-ts/core'
 import { Mutex, withTimeout } from 'async-mutex'
 
@@ -214,7 +214,6 @@ export class TenantSessionCoordinator {
   private async createAgentContext(tenantRecord: TenantRecord) {
     const tenantDependencyManager = this.rootAgentContext.dependencyManager.createChild()
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { id, key, keyDerivationMethod, ...strippedWalletConfig } = this.rootAgentContext.config?.walletConfig ?? {}
     const tenantConfig = this.rootAgentContext.config.extend({
       ...tenantRecord.config,

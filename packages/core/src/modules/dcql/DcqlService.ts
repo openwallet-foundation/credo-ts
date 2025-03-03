@@ -24,7 +24,6 @@ import { dcqlGetPresentationsToCreate as getDcqlVcPresentationsToCreate } from '
 
 @injectable()
 export class DcqlService {
-  public constructor() {}
   /**
    * Queries the wallet for credentials that match the given dcql query. This only does an initial query based on the
    * schema of the input descriptors. It does not do any further filtering based on the constraints in the input descriptors.
@@ -108,7 +107,8 @@ export class DcqlService {
         vct: presentation.prettyClaims.vct,
         claims: presentation.prettyClaims as DcqlSdJwtVcCredential.Claims,
       } satisfies DcqlSdJwtVcCredential
-    } else if (presentation.claimFormat === ClaimFormat.MsoMdoc) {
+    }
+    if (presentation.claimFormat === ClaimFormat.MsoMdoc) {
       if (presentation.documents.length !== 1) {
         throw new DcqlError('MDOC presentations must contain exactly one document')
       }
@@ -135,7 +135,8 @@ export class DcqlService {
           doctype: record.getTags().docType,
           namespaces: mdoc.issuerSignedNamespaces,
         } satisfies DcqlMdocCredential
-      } else if (record.type === 'SdJwtVcRecord') {
+      }
+      if (record.type === 'SdJwtVcRecord') {
         // FIXME: support vc+sd-jwt
         return {
           credential_format: 'dc+sd-jwt',
@@ -143,10 +144,9 @@ export class DcqlService {
           claims: this.getSdJwtVcApi(agentContext).fromCompact(record.compactSdJwtVc)
             .prettyClaims as DcqlSdJwtVcCredential.Claims,
         } satisfies DcqlSdJwtVcCredential
-      } else {
-        // TODO:
-        throw new DcqlError('W3C credentials are not supported yet')
       }
+      // TODO:
+      throw new DcqlError('W3C credentials are not supported yet')
     })
 
     const queryResult = DcqlQuery.query(DcqlQuery.parse(dcqlQuery), dcqlCredentials)

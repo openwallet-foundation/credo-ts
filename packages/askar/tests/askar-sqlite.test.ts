@@ -1,16 +1,15 @@
-/* eslint-disable @typescript-eslint/no-non-null-assertion */
+import { tmpdir } from 'os'
+import path from 'path'
 import {
   Agent,
   KeyDerivationMethod,
   TypedArrayEncoder,
-  utils,
   WalletDuplicateError,
   WalletInvalidKeyError,
   WalletNotFoundError,
+  utils,
 } from '@credo-ts/core'
 import { Store } from '@openwallet-foundation/askar-shared'
-import { tmpdir } from 'os'
-import path from 'path'
 
 import { BasicMessageRecord, BasicMessageRepository, BasicMessageRole } from '../..//didcomm'
 
@@ -123,8 +122,7 @@ describe('Askar SQLite agents', () => {
 
     // Initialize the wallet again and assert record does not exist
     // This should create a new wallet
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    await bobAgent.wallet.initialize(bobAgent.config.walletConfig!)
+    await bobAgent.wallet.initialize(bobAgent.config.walletConfig)
     expect(await bobBasicMessageRepository.findById(bobAgent.context, basicMessageRecord.id)).toBeNull()
     await bobAgent.wallet.delete()
 

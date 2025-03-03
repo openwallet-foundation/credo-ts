@@ -1,5 +1,5 @@
-import type { SdJwtVc } from './SdJwtVcService'
 import type { TransactionData } from '../dif-presentation-exchange/index'
+import type { SdJwtVc } from './SdJwtVcService'
 
 import { Hasher } from '../../crypto/index'
 import { JsonEncoder } from '../../utils/JsonEncoder'

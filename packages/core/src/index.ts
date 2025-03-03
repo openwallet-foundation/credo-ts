@@ -94,7 +94,7 @@ import { indyDidFromPublicKeyBase58 } from './utils/did'
 import { areObjectsEqual } from './utils/objectEquality'
 import timestamp from './utils/timestamp'
 import { getProtocolScheme } from './utils/uri'
-import { uuid, isValidUuid } from './utils/uuid'
+import { isValidUuid, uuid } from './utils/uuid'
 
 const utils = {
   areObjectsEqual,

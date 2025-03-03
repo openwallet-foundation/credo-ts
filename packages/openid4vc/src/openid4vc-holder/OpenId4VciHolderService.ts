@@ -1,3 +1,9 @@
+import type { AgentContext, JwaSignatureAlgorithm, KeyType } from '@credo-ts/core'
+import type {
+  OpenId4VciCredentialConfigurationSupported,
+  OpenId4VciCredentialIssuerMetadata,
+  OpenId4VciMetadata,
+} from '../shared'
 import type {
   OpenId4VciAcceptCredentialOfferOptions,
   OpenId4VciAuthCodeFlowOptions,
@@ -12,39 +18,33 @@ import type {
   OpenId4VciSupportedCredentialFormats,
   OpenId4VciTokenRequestOptions,
 } from './OpenId4VciHolderServiceOptions'
-import type {
-  OpenId4VciCredentialConfigurationSupported,
-  OpenId4VciCredentialIssuerMetadata,
-  OpenId4VciMetadata,
-} from '../shared'
-import type { AgentContext, JwaSignatureAlgorithm, KeyType } from '@credo-ts/core'
 
 import {
   CredoError,
+  InjectionSymbols,
+  Jwk,
+  Logger,
+  Mdoc,
+  MdocApi,
+  SdJwtVcApi,
+  SignatureSuiteRegistry,
+  W3cCredentialService,
+  W3cJsonLdVerifiableCredential,
+  W3cJwtVerifiableCredential,
   getJwkClassFromJwaSignatureAlgorithm,
   getJwkFromJson,
   getJwkFromKey,
   getSupportedVerificationMethodTypesFromKeyType,
   inject,
   injectable,
-  InjectionSymbols,
-  Jwk,
-  Logger,
-  Mdoc,
-  MdocApi,
   parseDid,
-  SdJwtVcApi,
-  SignatureSuiteRegistry,
-  W3cCredentialService,
-  W3cJsonLdVerifiableCredential,
-  W3cJwtVerifiableCredential,
 } from '@credo-ts/core'
 import {
-  getAuthorizationServerMetadataFromList,
   JwtSigner,
   Oauth2Client,
-  preAuthorizedCodeGrantIdentifier,
   RequestDpopOptions,
+  getAuthorizationServerMetadataFromList,
+  preAuthorizedCodeGrantIdentifier,
 } from '@openid4vc/oauth2'
 import {
   AuthorizationFlow,
@@ -339,7 +339,7 @@ export class OpenId4VciHolderService {
     if (possibleProofOfPossessionSigAlgs.length === 0) {
       throw new CredoError(
         [
-          `No possible proof of possession signature algorithm found.`,
+          'No possible proof of possession signature algorithm found.',
           `Signature algorithms supported by the Agent '${supportedJwaSignatureAlgorithms.join(', ')}'`,
           `Allowed Signature algorithms '${allowedProofOfPossessionSigAlgs?.join(', ')}'`,
         ].join('\n')
@@ -398,7 +398,7 @@ export class OpenId4VciHolderService {
     // If number not 0: use the number
     // Else: use 1
     const batchSize =
-      requestBatch === true ? metadata.credentialIssuer.batch_credential_issuance?.batch_size ?? 1 : requestBatch || 1
+      requestBatch === true ? (metadata.credentialIssuer.batch_credential_issuance?.batch_size ?? 1) : requestBatch || 1
     if (typeof requestBatch === 'number' && requestBatch > 1 && !metadata.credentialIssuer.batch_credential_issuance) {
       throw new CredoError(
         `Credential issuer '${metadata.credentialIssuer.credential_issuer}' does not support batch credential issuance using the 'proofs' request property. Onlt 'proof' supported.`
@@ -684,7 +684,7 @@ export class OpenId4VciHolderService {
           })
           break
         default:
-          throw new CredoError(`Unsupported credential format.`)
+          throw new CredoError('Unsupported credential format.')
       }
     }
 
@@ -768,7 +768,8 @@ export class OpenId4VciHolderService {
         notificationId,
         credentialConfigurationId,
       }
-    } else if (
+    }
+    if (
       options.format === OpenId4VciCredentialFormatProfile.JwtVcJson ||
       options.format === OpenId4VciCredentialFormatProfile.JwtVcJsonLd
     ) {
@@ -803,7 +804,8 @@ export class OpenId4VciHolderService {
       }
 
       return { credentials: result.map((r) => r.credential), notificationId, credentialConfigurationId }
-    } else if (format === OpenId4VciCredentialFormatProfile.LdpVc) {
+    }
+    if (format === OpenId4VciCredentialFormatProfile.LdpVc) {
       if (!credentials.every((c) => typeof c === 'object')) {
         throw new CredoError(
           `Received credential(s) of format ${format}, but not all credential(s) are an object. ${JSON.stringify(
@@ -834,7 +836,8 @@ export class OpenId4VciHolderService {
       }
 
       return { credentials: result.map((r) => r.credential), notificationId, credentialConfigurationId }
-    } else if (format === OpenId4VciCredentialFormatProfile.MsoMdoc) {
+    }
+    if (format === OpenId4VciCredentialFormatProfile.MsoMdoc) {
       if (!credentials.every((c) => typeof c === 'string')) {
         throw new CredoError(
           `Received credential(s) of format ${format}, but not all credential(s) are a string. ${JSON.stringify(

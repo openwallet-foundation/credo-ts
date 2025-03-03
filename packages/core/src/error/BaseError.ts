@@ -30,13 +30,16 @@ import inspect from 'object-inspect'
 /**
  * @internal
  */
-export const SEPARATOR_TEXT = `\n\nThe following exception was the direct cause of the above exception:\n\n`
+export const SEPARATOR_TEXT = '\n\nThe following exception was the direct cause of the above exception:\n\n'
 
 /**
  * Create a new error instance of `cause` property support.
  */
 export class BaseError extends makeError.BaseError {
-  protected constructor(message?: string, public cause?: Error) {
+  protected constructor(
+    message?: string,
+    public cause?: Error
+  ) {
     super(message)
 
     Object.defineProperty(this, 'cause', {

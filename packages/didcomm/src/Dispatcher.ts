@@ -3,7 +3,7 @@ import type { AgentMessageProcessedEvent } from './Events'
 import type { MessageHandlerMiddleware } from './handlers/MessageHandlerMiddleware'
 import type { InboundMessageContext } from './models/InboundMessageContext'
 
-import { CredoError, EventEmitter, injectable, inject, InjectionSymbols, Logger } from '@credo-ts/core'
+import { CredoError, EventEmitter, InjectionSymbols, Logger, inject, injectable } from '@credo-ts/core'
 
 import { AgentEventTypes } from './Events'
 import { MessageHandlerRegistry } from './MessageHandlerRegistry'

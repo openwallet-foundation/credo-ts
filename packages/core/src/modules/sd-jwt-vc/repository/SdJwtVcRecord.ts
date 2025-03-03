@@ -61,9 +61,9 @@ export class SdJwtVcRecord extends BaseRecord<DefaultSdJwtVcRecordTags> {
 
   public getTags() {
     const sdjwt = decodeSdJwtSync(this.compactSdJwtVc, Hasher.hash)
-    const vct = sdjwt.jwt.payload['vct'] as string
-    const sdAlg = sdjwt.jwt.payload['_sd_alg'] as string | undefined
-    const alg = sdjwt.jwt.header['alg'] as JwaSignatureAlgorithm
+    const vct = sdjwt.jwt.payload.vct as string
+    const sdAlg = sdjwt.jwt.payload._sd_alg as string | undefined
+    const alg = sdjwt.jwt.header.alg as JwaSignatureAlgorithm
 
     return {
       ...this._tags,

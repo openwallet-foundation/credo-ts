@@ -13,5 +13,7 @@ export class ForwardHandler implements MessageHandler {
 
   public async handle(messageContext: MessageHandlerInboundMessage<ForwardHandler>) {
     await this.mediatorService.processForwardMessage(messageContext)
+
+    return undefined
   }
 }

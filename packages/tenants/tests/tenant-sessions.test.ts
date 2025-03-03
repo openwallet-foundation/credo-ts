@@ -15,7 +15,7 @@ const agentConfig: InitConfig = {
   label: 'Tenant Agent 1',
   walletConfig: {
     id: `tenant sessions e2e agent 1 - ${uuid().slice(0, 4)}`,
-    key: `tenant sessions e2e agent 1`,
+    key: 'tenant sessions e2e agent 1',
   },
   logger: testLogger,
 }

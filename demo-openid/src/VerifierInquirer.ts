@@ -3,7 +3,7 @@ import { textSync } from 'figlet'
 
 import { BaseInquirer } from './BaseInquirer'
 import { Title, purpleText } from './OutputClass'
-import { Verifier, presentationDefinitions, dcqls } from './Verifier'
+import { Verifier, dcqls, presentationDefinitions } from './Verifier'
 
 export const runVerifier = async () => {
   clear()

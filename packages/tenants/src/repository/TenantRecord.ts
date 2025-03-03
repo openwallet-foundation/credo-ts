@@ -1,5 +1,5 @@
-import type { TenantConfig } from '../models/TenantConfig'
 import type { RecordTags, TagsBase, VersionString } from '@credo-ts/core'
+import type { TenantConfig } from '../models/TenantConfig'
 
 import { BaseRecord, utils } from '@credo-ts/core'
 

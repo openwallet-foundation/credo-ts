@@ -1,8 +1,7 @@
-import type { Mdoc } from './Mdoc'
+import type { ValidityInfo } from '@animo-id/mdoc'
 import type { Key } from '../../crypto/Key'
 import type { DifPresentationExchangeDefinition } from '../dif-presentation-exchange'
 import type { EncodedX509Certificate } from '../x509'
-import type { ValidityInfo } from '@animo-id/mdoc'
 
 export { DateOnly } from '@animo-id/mdoc'
 
@@ -68,7 +67,6 @@ export type MdocDeviceResponseVerifyOptions = {
 }
 
 export type MdocSignOptions = {
-  // eslint-disable-next-line @typescript-eslint/ban-types
   docType: 'org.iso.18013.5.1.mDL' | (string & {})
   validityInfo?: Partial<ValidityInfo>
   namespaces: MdocNameSpaces

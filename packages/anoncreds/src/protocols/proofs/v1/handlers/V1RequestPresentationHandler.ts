@@ -1,5 +1,5 @@
-import type { V1ProofProtocol } from '../V1ProofProtocol'
 import type { MessageHandler, MessageHandlerInboundMessage, ProofExchangeRecord } from '@credo-ts/didcomm'
+import type { V1ProofProtocol } from '../V1ProofProtocol'
 
 import { getOutboundMessageContext } from '@credo-ts/didcomm'
 
@@ -30,7 +30,7 @@ export class V1RequestPresentationHandler implements MessageHandler {
     proofRecord: ProofExchangeRecord,
     messageContext: MessageHandlerInboundMessage<V1RequestPresentationHandler>
   ) {
-    messageContext.agentContext.config.logger.info(`Automatically sending presentation with autoAccept on`)
+    messageContext.agentContext.config.logger.info('Automatically sending presentation with autoAccept on')
 
     const { message } = await this.proofProtocol.acceptRequest(messageContext.agentContext, {
       proofRecord,

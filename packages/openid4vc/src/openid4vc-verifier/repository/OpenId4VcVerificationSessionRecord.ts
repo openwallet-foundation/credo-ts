@@ -3,9 +3,8 @@ import type {
   OpenId4VcSiopAuthorizationResponsePayload,
 } from '../../shared/models'
 import type { OpenId4VcVerificationSessionState } from '../OpenId4VcVerificationSessionState'
-import type { RecordTags, TagsBase } from '@credo-ts/core'
 
-import { Jwt, CredoError, BaseRecord, utils } from '@credo-ts/core'
+import { BaseRecord, CredoError, Jwt, utils } from '@credo-ts/core'
 
 export type OpenId4VcVerificationSessionRecordTags = RecordTags<OpenId4VcVerificationSessionRecord>
 
@@ -126,6 +125,7 @@ export class OpenId4VcVerificationSessionRecord extends BaseRecord<DefaultOpenId
 
   public assertState(expectedStates: OpenId4VcVerificationSessionState | OpenId4VcVerificationSessionState[]) {
     if (!Array.isArray(expectedStates)) {
+      // biome-ignore lint/style/noParameterAssign: <explanation>
       expectedStates = [expectedStates]
     }
 

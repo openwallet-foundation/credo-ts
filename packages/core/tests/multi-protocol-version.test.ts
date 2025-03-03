@@ -4,11 +4,11 @@ import { filter, firstValueFrom, timeout } from 'rxjs'
 
 import {
   AgentEventTypes,
-  OutboundMessageContext,
-  parseMessageType,
-  MessageSender,
   AgentMessage,
   IsValidMessageType,
+  MessageSender,
+  OutboundMessageContext,
+  parseMessageType,
 } from '../../didcomm/src'
 import { Agent } from '../src/agent/Agent'
 

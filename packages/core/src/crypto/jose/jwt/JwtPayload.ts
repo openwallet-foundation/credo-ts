@@ -172,37 +172,37 @@ export class JwtPayload {
 
     // Validate iss
     if (iss && typeof iss !== 'string') {
-      throw new CredoError(`JWT payload iss must be a string`)
+      throw new CredoError('JWT payload iss must be a string')
     }
 
     // Validate sub
     if (sub && typeof sub !== 'string') {
-      throw new CredoError(`JWT payload sub must be a string`)
+      throw new CredoError('JWT payload sub must be a string')
     }
 
     // Validate aud
     if (aud && typeof aud !== 'string' && !(Array.isArray(aud) && aud.every((aud) => typeof aud === 'string'))) {
-      throw new CredoError(`JWT payload aud must be a string or an array of strings`)
+      throw new CredoError('JWT payload aud must be a string or an array of strings')
     }
 
     // Validate exp
     if (exp && (typeof exp !== 'number' || exp < 0)) {
-      throw new CredoError(`JWT payload exp must be a positive number`)
+      throw new CredoError('JWT payload exp must be a positive number')
     }
 
     // Validate nbf
     if (nbf && (typeof nbf !== 'number' || nbf < 0)) {
-      throw new CredoError(`JWT payload nbf must be a positive number`)
+      throw new CredoError('JWT payload nbf must be a positive number')
     }
 
     // Validate iat
     if (iat && (typeof iat !== 'number' || iat < 0)) {
-      throw new CredoError(`JWT payload iat must be a positive number`)
+      throw new CredoError('JWT payload iat must be a positive number')
     }
 
     // Validate jti
     if (jti && typeof jti !== 'string') {
-      throw new CredoError(`JWT payload jti must be a string`)
+      throw new CredoError('JWT payload jti must be a string')
     }
 
     const jwtPayload = new JwtPayload({

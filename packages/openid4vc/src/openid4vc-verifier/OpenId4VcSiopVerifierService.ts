@@ -1,13 +1,4 @@
 import type {
-  OpenId4VcSiopCreateAuthorizationRequestOptions,
-  OpenId4VcSiopCreateAuthorizationRequestReturn,
-  OpenId4VcSiopCreateVerifierOptions,
-  OpenId4VcSiopVerifiedAuthorizationResponse,
-  OpenId4VcSiopVerifiedAuthorizationResponseDcql,
-  OpenId4VcSiopVerifyAuthorizationResponseOptions,
-  ResponseMode,
-} from './OpenId4VcSiopVerifierServiceOptions'
-import type {
   AgentContext,
   DcqlQuery,
   DifPresentationExchangeDefinition,
@@ -21,6 +12,15 @@ import type {
   TransactionDataResult,
   VerifiablePresentation,
 } from '@credo-ts/core'
+import type {
+  OpenId4VcSiopCreateAuthorizationRequestOptions,
+  OpenId4VcSiopCreateAuthorizationRequestReturn,
+  OpenId4VcSiopCreateVerifierOptions,
+  OpenId4VcSiopVerifiedAuthorizationResponse,
+  OpenId4VcSiopVerifiedAuthorizationResponseDcql,
+  OpenId4VcSiopVerifyAuthorizationResponseOptions,
+  ResponseMode,
+} from './OpenId4VcSiopVerifierServiceOptions'
 
 import {
   CredoError,
@@ -28,16 +28,8 @@ import {
   DidsApi,
   DifPresentationExchangeService,
   EventEmitter,
-  extractPresentationsWithDescriptorsFromSubmission,
-  extractX509CertificatesFromJwt,
-  getDomainFromUrl,
-  getJwkFromKey,
   Hasher,
-  inject,
-  injectable,
   InjectionSymbols,
-  isMdocSupportedSignatureAlgorithm,
-  joinUriParts,
   JsonEncoder,
   JsonTransformer,
   Jwt,
@@ -47,31 +39,39 @@ import {
   SdJwtVcApi,
   SignatureSuiteRegistry,
   TypedArrayEncoder,
-  utils,
   W3cCredentialService,
   W3cJsonLdVerifiablePresentation,
   W3cJwtVerifiablePresentation,
   X509Certificate,
   X509ModuleConfig,
   X509Service,
+  extractPresentationsWithDescriptorsFromSubmission,
+  extractX509CertificatesFromJwt,
+  getDomainFromUrl,
+  getJwkFromKey,
+  inject,
+  injectable,
+  isMdocSupportedSignatureAlgorithm,
+  joinUriParts,
+  utils,
 } from '@credo-ts/core'
 import { Oauth2ErrorCodes, Oauth2ServerErrorResponseError } from '@openid4vc/oauth2'
 import {
   ClientIdScheme,
-  isJarmResponseMode,
   JarmClientMetadata,
   Openid4vpVerifier,
   ParsedOpenid4vpAuthorizationResponse,
+  VpTokenPresentationParseResult,
+  isJarmResponseMode,
   parseOpenid4vpAuthorizationRequestPayload,
   parseOpenid4vpAuthorizationResponse,
-  VpTokenPresentationParseResult,
   zOpenid4vpAuthorizationResponse,
 } from '@openid4vc/openid4vp'
 
 import { getOid4vcCallbacks } from '../shared/callbacks'
 import { OpenId4VcSiopAuthorizationResponsePayload } from '../shared/index'
 import { storeActorIdForContextCorrelationId } from '../shared/router'
-import { getSupportedJwaSignatureAlgorithms, requestSignerToJwtIssuer, parseIfJson } from '../shared/utils'
+import { getSupportedJwaSignatureAlgorithms, parseIfJson, requestSignerToJwtIssuer } from '../shared/utils'
 
 import { OpenId4VcVerificationSessionState } from './OpenId4VcVerificationSessionState'
 import { OpenId4VcVerificationSessionStateChangedEvent, OpenId4VcVerifierEvents } from './OpenId4VcVerifierEvents'
@@ -123,11 +123,11 @@ export class OpenId4VcSiopVerifierService {
       options.requestSigner.method === 'none'
         ? undefined
         : options.requestSigner.method === 'x5c'
-        ? await requestSignerToJwtIssuer(agentContext, {
-            ...options.requestSigner,
-            issuer: authorizationResponseUrl,
-          })
-        : await requestSignerToJwtIssuer(agentContext, options.requestSigner)
+          ? await requestSignerToJwtIssuer(agentContext, {
+              ...options.requestSigner,
+              issuer: authorizationResponseUrl,
+            })
+          : await requestSignerToJwtIssuer(agentContext, options.requestSigner)
 
     let clientIdScheme: ClientIdScheme
     let clientId: string | undefined
@@ -385,15 +385,14 @@ export class OpenId4VcSiopVerifierService {
 
   public async verifyAuthorizationResponse(
     agentContext: AgentContext,
-    options:
-      | OpenId4VcSiopVerifyAuthorizationResponseOptions &
-          (
-            | {
-                verifierId: string
-                verificationSession?: never
-              }
-            | { verificationSession: OpenId4VcVerificationSessionRecord; verifierId?: never }
-          )
+    options: OpenId4VcSiopVerifyAuthorizationResponseOptions &
+      (
+        | {
+            verifierId: string
+            verificationSession?: never
+          }
+        | { verificationSession: OpenId4VcVerificationSessionRecord; verifierId?: never }
+      )
   ): Promise<OpenId4VcSiopVerifiedAuthorizationResponse & { verificationSession: OpenId4VcVerificationSessionRecord }> {
     const openid4vpVerifier = this.getOpenid4vpVerifier(agentContext)
 
@@ -473,7 +472,7 @@ export class OpenId4VcSiopVerifierService {
           result.pex.presentationSubmission as DifPresentationExchangeSubmission
         ).descriptor_map.find((descriptorMapEntry) => descriptorMapEntry.path === presentation.path)
         if (!inputDescriptor) {
-          throw new CredoError(`Could not map transaction data entry to input descriptor.`)
+          throw new CredoError('Could not map transaction data entry to input descriptor.')
         }
 
         return this.verifyPresentations(agentContext, {
@@ -518,12 +517,15 @@ export class OpenId4VcSiopVerifierService {
         const dcql = agentContext.dependencyManager.resolve(DcqlService)
 
         const presentations = presentationVerificationResults.reduce(
-          (all, p) => (p.verified ? { ...all, [p.credentialId]: p.presentation } : all),
-          {}
+          (all, p) => {
+            if (p.verified) all[p.credentialId] = p.presentation
+            return all
+          },
+          {} as Record<string, VerifiablePresentation>
         )
 
         // FIXME: type for this parameter
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        // biome-ignore lint/suspicious/noExplicitAny: <explanation>
         dcql.assertValidDcqlPresentation(presentations, result.dcql.query as any)
       }
 
@@ -824,11 +826,14 @@ export class OpenId4VcSiopVerifierService {
     if (vpTokenPresentationParseResult.format === 'dc+sd-jwt') {
       const sdJwtVcApi = agentContext.dependencyManager.resolve(SdJwtVcApi)
       return sdJwtVcApi.fromCompact(vpTokenPresentationParseResult.presentation)
-    } else if (vpTokenPresentationParseResult.format === 'mso_mdoc') {
+    }
+    if (vpTokenPresentationParseResult.format === 'mso_mdoc') {
       return MdocDeviceResponse.fromBase64Url(vpTokenPresentationParseResult.presentation)
-    } else if (vpTokenPresentationParseResult.format === 'jwt_vp_json') {
+    }
+    if (vpTokenPresentationParseResult.format === 'jwt_vp_json') {
       return W3cJwtVerifiablePresentation.fromSerializedJwt(vpTokenPresentationParseResult.presentation)
-    } else if (vpTokenPresentationParseResult.format === 'ldp_vp') {
+    }
+    if (vpTokenPresentationParseResult.format === 'ldp_vp') {
       return JsonTransformer.fromJSON(vpTokenPresentationParseResult.presentation, W3cJsonLdVerifiablePresentation)
     }
 
@@ -882,14 +887,15 @@ export class OpenId4VcSiopVerifierService {
 
       const sdJwtVc = sdJwtVcApi.fromCompact(vpTokenPresentationParseResult.presentation)
       return sdJwtVc
-    } else if (vpTokenPresentationParseResult.format === 'mso_mdoc') {
+    }
+    if (vpTokenPresentationParseResult.format === 'mso_mdoc') {
       const mdocDeviceResponse = MdocDeviceResponse.fromBase64Url(vpTokenPresentationParseResult.presentation)
       return mdocDeviceResponse
-    } else if (vpTokenPresentationParseResult.format === 'jwt_vp_json') {
-      return W3cJwtVerifiablePresentation.fromSerializedJwt(vpTokenPresentationParseResult.presentation)
-    } else {
-      return JsonTransformer.fromJSON(vpTokenPresentationParseResult.presentation, W3cJsonLdVerifiablePresentation)
     }
+    if (vpTokenPresentationParseResult.format === 'jwt_vp_json') {
+      return W3cJwtVerifiablePresentation.fromSerializedJwt(vpTokenPresentationParseResult.presentation)
+    }
+    return JsonTransformer.fromJSON(vpTokenPresentationParseResult.presentation, W3cJsonLdVerifiablePresentation)
   }
 
   private async verifyPresentations(
@@ -920,7 +926,7 @@ export class OpenId4VcSiopVerifierService {
     let transactionDataMeta: TransactionDataMeta | undefined = undefined
 
     try {
-      this.logger.debug(`Presentation response`, JsonTransformer.toJSON(vpTokenPresentationParseResult.presentation))
+      this.logger.debug('Presentation response', JsonTransformer.toJSON(vpTokenPresentationParseResult.presentation))
 
       if (!vpTokenPresentationParseResult) throw new CredoError('Did not receive a presentation for verification.')
       const x509Config = agentContext.dependencyManager.resolve(X509ModuleConfig)
@@ -1001,7 +1007,7 @@ export class OpenId4VcSiopVerifierService {
           )
         )
           .filter((c): c is string[] => c !== undefined)
-          .flatMap((c) => c)
+          .flat()
 
         let sessionTranscriptOptions: MdocSessionTranscriptOptions
         if (options.origin) {

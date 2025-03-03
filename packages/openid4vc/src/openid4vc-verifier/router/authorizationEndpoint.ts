@@ -1,5 +1,5 @@
-import type { OpenId4VcVerificationRequest } from './requestContext'
 import type { Response, Router } from 'express'
+import type { OpenId4VcVerificationRequest } from './requestContext'
 
 import { Oauth2ServerErrorResponseError } from '@openid4vc/oauth2'
 

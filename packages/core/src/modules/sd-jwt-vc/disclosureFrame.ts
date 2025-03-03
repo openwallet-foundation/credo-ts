@@ -12,12 +12,12 @@ export function buildDisclosureFrameForPayload(input: JsonObject): DisclosureFra
       // TODO: Array disclosure frames are not yet supported - treating entire array as disclosed
       if (Array.isArray(value)) {
         return [key, true]
-      } else if (isObject(value)) {
+      }
+      if (isObject(value)) {
         if (Object.keys.length === 0) return [key, false]
         return [key, buildDisclosureFrameForPayload(value)]
-      } else {
-        return [key, true]
       }
+      return [key, true]
     })
   )
 }

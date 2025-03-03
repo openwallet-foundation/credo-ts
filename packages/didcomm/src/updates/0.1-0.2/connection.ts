@@ -1,24 +1,24 @@
-import type { ConnectionRecord } from '../../modules/connections'
 import type { BaseAgent, JsonObject } from '@credo-ts/core'
+import type { ConnectionRecord } from '../../modules/connections'
 
 import {
-  DidKey,
   DidDocumentRole,
+  DidKey,
   DidRecord,
-  DidRepository,
   DidRecordMetadataKeys,
+  DidRepository,
   JsonEncoder,
   JsonTransformer,
 } from '@credo-ts/core'
 
 import {
-  DidExchangeState,
-  ConnectionState,
   ConnectionInvitationMessage,
-  ConnectionRole,
-  DidDoc,
   ConnectionRepository,
+  ConnectionRole,
+  ConnectionState,
+  DidDoc,
   DidExchangeRole,
+  DidExchangeState,
 } from '../../modules/connections'
 import { convertToNewDidDocument } from '../../modules/connections/services/helpers'
 import { convertToNewInvitation } from '../../modules/oob/converters'
@@ -41,7 +41,7 @@ export async function migrateConnectionRecordToV0_2<Agent extends BaseAgent>(age
   agent.config.logger.info('Migrating connection records to storage version 0.2')
   const connectionRepository = agent.dependencyManager.resolve(ConnectionRepository)
 
-  agent.config.logger.debug(`Fetching all connection records from storage`)
+  agent.config.logger.debug('Fetching all connection records from storage')
   const allConnections = await connectionRepository.getAll(agent.context)
 
   agent.config.logger.debug(`Found a total of ${allConnections.length} connection records to update.`)
@@ -197,13 +197,13 @@ export async function extractDidDocument<Agent extends BaseAgent>(agent: Agent, 
       agent.config.logger.debug(`Found existing did record for did ${newOurDidDocument.id}, not creating did record.`)
     }
 
-    agent.config.logger.debug(`Deleting old did document from connection record and storing new did:peer did`)
+    agent.config.logger.debug('Deleting old did document from connection record and storing new did:peer did')
     // Remove didDoc and assign the new did:peer did to did
     delete untypedConnectionRecord.didDoc
     connectionRecord.did = newOurDidDocument.id
   } else {
     agent.config.logger.debug(
-      `Did not find a did document in connection record didDoc. Not converting it to a peer did document.`
+      'Did not find a did document in connection record didDoc. Not converting it to a peer did document.'
     )
   }
 
@@ -248,13 +248,13 @@ export async function extractDidDocument<Agent extends BaseAgent>(agent: Agent, 
       )
     }
 
-    agent.config.logger.debug(`Deleting old theirDidDoc from connection record and storing new did:peer theirDid`)
+    agent.config.logger.debug('Deleting old theirDidDoc from connection record and storing new did:peer theirDid')
     // Remove theirDidDoc and assign the new did:peer did to theirDid
     delete untypedConnectionRecord.theirDidDoc
     connectionRecord.theirDid = newTheirDidDocument.id
   } else {
     agent.config.logger.debug(
-      `Did not find a did document in connection record theirDidDoc. Not converting it to a peer did document.`
+      'Did not find a did document in connection record theirDidDoc. Not converting it to a peer did document.'
     )
   }
 
@@ -317,7 +317,7 @@ export async function migrateToOobRecord<Agent extends BaseAgent>(
   if (oldInvitationJson) {
     const oldInvitation = JsonTransformer.fromJSON(oldInvitationJson, ConnectionInvitationMessage)
 
-    agent.config.logger.debug(`Found a legacy invitation in connection record. Migrating it to an out of band record.`)
+    agent.config.logger.debug('Found a legacy invitation in connection record. Migrating it to an out of band record.')
 
     const outOfBandInvitation = convertToNewInvitation(oldInvitation)
 
@@ -325,6 +325,7 @@ export async function migrateToOobRecord<Agent extends BaseAgent>(
     const recipientKeyFingerprints = outOfBandInvitation
       .getInlineServices()
       .map((s) => s.recipientKeys)
+      // biome-ignore lint/performance/noAccumulatingSpread: <explanation>
       .reduce((acc, curr) => [...acc, ...curr], [])
       .map((didKey) => DidKey.fromDid(didKey).key.fingerprint)
 
@@ -338,7 +339,7 @@ export async function migrateToOobRecord<Agent extends BaseAgent>(
     let oobRecord: OutOfBandRecord | undefined = oobRecords[0]
 
     if (!oobRecord) {
-      agent.config.logger.debug(`Create out of band record.`)
+      agent.config.logger.debug('Create out of band record.')
 
       const connectionRole = connectionRecord.role as DidExchangeRole
       const connectionState = connectionRecord.state as DidExchangeState
@@ -381,7 +382,7 @@ export async function migrateToOobRecord<Agent extends BaseAgent>(
       return
     }
 
-    agent.config.logger.debug(`Setting invitationDid and outOfBand Id, and removing invitation from connection record`)
+    agent.config.logger.debug('Setting invitationDid and outOfBand Id, and removing invitation from connection record')
     // All connections have been made using the connection protocol, which means we can be certain
     // that there was only one service, thus we can use the first oob message service
     // Note: since this is an update from 0.1 to 0.2, we use former way of calculating numAlgo2Dids

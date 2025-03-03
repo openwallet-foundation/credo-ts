@@ -1,16 +1,16 @@
-import type { DataIntegrityProofOptions } from './DataIntegrityProof'
-import type { LinkedDataProofOptions } from './LinkedDataProof'
 import type { W3cCredentialOptions } from '../../models/credential/W3cCredential'
 import type { W3cJsonCredential } from '../../models/credential/W3cJsonCredential'
+import type { DataIntegrityProofOptions } from './DataIntegrityProof'
+import type { LinkedDataProofOptions } from './LinkedDataProof'
 
 import { ValidateNested } from 'class-validator'
 
 import {
   IsInstanceOrArrayOfInstances,
+  JsonTransformer,
   SingleOrArray,
   asArray,
   mapSingleOrArray,
-  JsonTransformer,
 } from '../../../../utils'
 import { ClaimFormat } from '../../models/ClaimFormat'
 import { W3cCredential } from '../../models/credential/W3cCredential'
@@ -29,7 +29,7 @@ export class W3cJsonLdVerifiableCredential extends W3cCredential {
     if (options) {
       this.proof = mapSingleOrArray(options.proof, (proof) => {
         if (proof.cryptosuite) return new DataIntegrityProof(proof)
-        else return new LinkedDataProof(proof as LinkedDataProofOptions)
+        return new LinkedDataProof(proof as LinkedDataProofOptions)
       })
     }
   }

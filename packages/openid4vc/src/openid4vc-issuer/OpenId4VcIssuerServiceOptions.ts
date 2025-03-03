@@ -1,30 +1,29 @@
-import type { OpenId4VcIssuanceSessionRecord, OpenId4VcIssuerRecordProps } from './repository'
+import type {
+  AgentContext,
+  ClaimFormat,
+  JwaSignatureAlgorithm,
+  KeyType,
+  MdocSignOptions,
+  SdJwtVcSignOptions,
+  W3cCredential,
+} from '@credo-ts/core'
+import type { AccessTokenProfileJwtPayload, TokenIntrospectionResponse } from '@openid4vc/oauth2'
 import type {
   OpenId4VcSiopCreateAuthorizationRequestReturn,
+  OpenId4VcSiopVerifiedAuthorizationResponseDcql,
   OpenId4VcSiopVerifiedAuthorizationResponsePresentationExchange,
   OpenId4VcVerificationSessionRecord,
-  OpenId4VcSiopVerifiedAuthorizationResponseDcql,
 } from '../openid4vc-verifier'
 import type {
   OpenId4VcCredentialHolderBindingWithKey,
   OpenId4VciCredentialConfigurationsSupportedWithFormats,
+  OpenId4VciCredentialIssuerMetadataDisplay,
   OpenId4VciCredentialOfferPayload,
   OpenId4VciCredentialRequest,
   OpenId4VciCredentialRequestFormatSpecific,
-  OpenId4VciCredentialIssuerMetadataDisplay,
   OpenId4VciTxCode,
 } from '../shared'
 import type { OpenId4VciAuthorizationServerConfig } from '../shared/models/OpenId4VciAuthorizationServerConfig'
-import type {
-  AgentContext,
-  ClaimFormat,
-  W3cCredential,
-  SdJwtVcSignOptions,
-  JwaSignatureAlgorithm,
-  MdocSignOptions,
-  KeyType,
-} from '@credo-ts/core'
-import type { AccessTokenProfileJwtPayload, TokenIntrospectionResponse } from '@openid4vc/oauth2'
 
 export interface OpenId4VciCredentialRequestAuthorization {
   authorizationServer: string

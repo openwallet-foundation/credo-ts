@@ -11,24 +11,24 @@
  * limitations under the License.
  */
 
+import type { DocumentLoader, JsonObject, Proof, VerificationMethod } from '@credo-ts/core'
 import type {
-  SignatureSuiteOptions,
-  CreateProofOptions,
-  VerifyProofOptions,
   CanonizeOptions,
+  CreateProofOptions,
   CreateVerifyDataOptions,
+  SignatureSuiteOptions,
   SuiteSignOptions,
+  VerifyProofOptions,
   VerifySignatureOptions,
 } from '../types'
-import type { VerificationMethod, JsonObject, DocumentLoader, Proof } from '@credo-ts/core'
 
 import {
   CredoError,
-  TypedArrayEncoder,
   SECURITY_CONTEXT_BBS_URL,
   SECURITY_CONTEXT_URL,
-  w3cDate,
+  TypedArrayEncoder,
   vcLibraries,
+  w3cDate,
 } from '@credo-ts/core'
 
 const { jsonld, jsonldSignatures } = vcLibraries
@@ -87,7 +87,7 @@ export class BbsBlsSignature2020 extends LinkedDataProof {
     if (date) {
       this.date = new Date(date)
 
-      if (isNaN(this.date)) {
+      if (Number.isNaN(this.date)) {
         throw TypeError(`"date" "${date}" is not a valid date.`)
       }
     }
@@ -102,9 +102,7 @@ export class BbsBlsSignature2020 extends LinkedDataProof {
       // document already includes the required context
       return
     }
-    throw new TypeError(
-      `The document to be signed must contain this suite's @context, ` + `"${SECURITY_CONTEXT_BBS_URL}".`
-    )
+    throw new TypeError(`The document to be signed must contain this suite's @context, "${SECURITY_CONTEXT_BBS_URL}".`)
   }
 
   /**
@@ -250,6 +248,7 @@ export class BbsBlsSignature2020 extends LinkedDataProof {
 
   public async canonizeProof(proof: Record<string, unknown>, options: CanonizeOptions): Promise<string> {
     const { documentLoader } = options
+    // biome-ignore lint/style/noParameterAssign: <explanation>
     proof = { ...proof }
     delete proof[this.proofSignatureKey]
     return this.canonize(proof, {

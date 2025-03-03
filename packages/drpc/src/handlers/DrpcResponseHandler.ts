@@ -1,5 +1,5 @@
-import type { DrpcService } from '../services/DrpcService'
 import type { MessageHandler, MessageHandlerInboundMessage } from '@credo-ts/didcomm'
+import type { DrpcService } from '../services/DrpcService'
 
 import { DrpcResponseMessage } from '../messages'
 
@@ -13,5 +13,7 @@ export class DrpcResponseHandler implements MessageHandler {
 
   public async handle(messageContext: MessageHandlerInboundMessage<DrpcResponseHandler>) {
     await this.drpcMessageService.receiveResponse(messageContext)
+
+    return undefined
   }
 }

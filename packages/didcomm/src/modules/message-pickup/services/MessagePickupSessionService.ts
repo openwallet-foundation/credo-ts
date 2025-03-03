@@ -1,10 +1,10 @@
+import type { AgentContext } from '@credo-ts/core'
 import type { TransportSessionRemovedEvent } from '../../../transport'
 import type { MessagePickupLiveSessionRemovedEvent, MessagePickupLiveSessionSavedEvent } from '../MessagePickupEvents'
 import type { MessagePickupSession, MessagePickupSessionRole } from '../MessagePickupSession'
-import type { AgentContext } from '@credo-ts/core'
 
 import { EventEmitter, InjectionSymbols, injectable, utils } from '@credo-ts/core'
-import { takeUntil, type Subject } from 'rxjs'
+import { type Subject, takeUntil } from 'rxjs'
 
 import { TransportEventTypes } from '../../../transport'
 import { MessagePickupEventTypes } from '../MessagePickupEvents'
@@ -40,12 +40,12 @@ export class MessagePickupSessionService {
       })
   }
 
-  public getLiveSession(agentContext: AgentContext, sessionId: string) {
+  public getLiveSession(_agentContext: AgentContext, sessionId: string) {
     return this.sessions.find((session) => session.id === sessionId)
   }
 
   public getLiveSessionByConnectionId(
-    agentContext: AgentContext,
+    _agentContext: AgentContext,
     options: { connectionId: string; role?: MessagePickupSessionRole }
   ) {
     const { connectionId, role } = options

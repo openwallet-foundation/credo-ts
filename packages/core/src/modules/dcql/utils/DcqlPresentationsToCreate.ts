@@ -1,12 +1,12 @@
+import type { DcqlMdocCredential, DcqlSdJwtVcCredential, DcqlW3cVcCredential } from 'dcql'
 import type { TransactionData } from '../../dif-presentation-exchange/index'
 import type { TransactionDataAuthorization } from '../../dif-presentation-exchange/models/TransactionData'
 import type { SdJwtVcRecord } from '../../sd-jwt-vc'
 import type { DcqlCredentialsForRequest } from '../models'
-import type { DcqlSdJwtVcCredential, DcqlMdocCredential, DcqlW3cVcCredential } from 'dcql'
 
 import { CredoError } from '../../../error/CredoError'
 import { MdocRecord } from '../../mdoc'
-import { W3cCredentialRecord, ClaimFormat } from '../../vc'
+import { ClaimFormat, W3cCredentialRecord } from '../../vc'
 
 //  - the credentials included in the presentation
 export interface DcqlSdJwtVcPresentationToCreate {

@@ -1,6 +1,6 @@
 import type { EncryptedMessage } from '../types'
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+// biome-ignore lint/suspicious/noExplicitAny: <explanation>
 export function isValidJweStructure(message: any): message is EncryptedMessage {
   return Boolean(
     message &&

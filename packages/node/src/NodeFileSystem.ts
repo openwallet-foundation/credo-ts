@@ -1,12 +1,12 @@
 import type { DownloadToFileOptions, FileSystem } from '@credo-ts/core'
 
-import { CredoError, TypedArrayEncoder } from '@credo-ts/core'
 import { createHash } from 'crypto'
 import fs, { promises } from 'fs'
 import http from 'http'
 import https from 'https'
-import { tmpdir, homedir } from 'os'
+import { homedir, tmpdir } from 'os'
 import { dirname } from 'path'
+import { CredoError, TypedArrayEncoder } from '@credo-ts/core'
 
 const { access, readFile, writeFile, mkdir, rm, unlink, copyFile } = promises
 

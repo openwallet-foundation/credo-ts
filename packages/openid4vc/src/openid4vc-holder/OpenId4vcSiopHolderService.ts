@@ -1,9 +1,4 @@
 import type {
-  OpenId4VcSiopAcceptAuthorizationRequestOptions,
-  OpenId4VcSiopResolvedAuthorizationRequest,
-  ResolveSiopAuthorizationRequestOptions,
-} from './OpenId4vcSiopHolderServiceOptions'
-import type {
   AgentContext,
   DcqlCredentialsForRequest,
   DcqlQuery,
@@ -19,15 +14,20 @@ import type {
   TransactionData,
   TransactionDataRequest,
 } from '@credo-ts/core'
+import type {
+  OpenId4VcSiopAcceptAuthorizationRequestOptions,
+  OpenId4VcSiopResolvedAuthorizationRequest,
+  ResolveSiopAuthorizationRequestOptions,
+} from './OpenId4vcSiopHolderServiceOptions'
 
 import {
   CredoError,
-  DifPresentationExchangeService,
   DcqlService,
+  DifPresentationExchangeService,
   DifPresentationExchangeSubmissionLocation,
   injectable,
 } from '@credo-ts/core'
-import { isJarmResponseMode, isOpenid4vpAuthorizationRequestDcApi, Openid4vpClient } from '@openid4vc/openid4vp'
+import { Openid4vpClient, isJarmResponseMode, isOpenid4vpAuthorizationRequestDcApi } from '@openid4vc/openid4vp'
 
 import { getOid4vcCallbacks } from '../shared/callbacks'
 
@@ -161,7 +161,7 @@ export class OpenId4VcSiopHolderService {
       ? await this.handleDcqlRequest(agentContext, dcql.query, transactionData)
       : { dcql: undefined }
 
-    agentContext.config.logger.debug(`verified Authorization Request`)
+    agentContext.config.logger.debug('verified Authorization Request')
     agentContext.config.logger.debug(`request '${request}'`)
 
     return {

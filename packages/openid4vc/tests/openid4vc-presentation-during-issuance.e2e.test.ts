@@ -1,10 +1,10 @@
-import type { AgentType } from './utils'
+import type { DcqlQuery, DifPresentationExchangeDefinitionV2, SdJwtVc, SdJwtVcIssuer } from '@credo-ts/core'
 import type {
   OpenId4VciGetVerificationSessionForIssuanceSessionAuthorization,
   OpenId4VciSignSdJwtCredentials,
 } from '../src'
 import type { OpenId4VciCredentialBindingResolver } from '../src/openid4vc-holder'
-import type { DcqlQuery, DifPresentationExchangeDefinitionV2, SdJwtVc, SdJwtVcIssuer } from '@credo-ts/core'
+import type { AgentType } from './utils'
 
 import { ClaimFormat, getJwkFromKey } from '@credo-ts/core'
 import { AuthorizationFlow } from '@openid4vc/openid4vci'
@@ -14,14 +14,14 @@ import { setupNockToExpress } from '../../../tests/nockToExpress'
 import { AskarModule } from '../../askar/src'
 import { askarModuleConfig } from '../../askar/tests/helpers'
 import {
-  OpenId4VcVerifierModule,
   OpenId4VcHolderModule,
   OpenId4VcIssuanceSessionState,
   OpenId4VcIssuerModule,
+  OpenId4VcVerifierModule,
   getScopesFromCredentialConfigurationsSupported,
 } from '../src'
 
-import { waitForCredentialIssuanceSessionRecordSubject, createAgentFromModules } from './utils'
+import { createAgentFromModules, waitForCredentialIssuanceSessionRecordSubject } from './utils'
 import { universityDegreeCredentialConfigurationSupported } from './utilsVci'
 
 const dcqlQuery = {
@@ -192,9 +192,8 @@ describe('OpenId4Vc Presentation During Issuance', () => {
                 },
               })),
             } satisfies OpenId4VciSignSdJwtCredentials
-          } else {
-            throw new Error('Invalid request')
           }
+          throw new Error('Invalid request')
         },
       }),
       openId4VcVerifier: new OpenId4VcVerifierModule({

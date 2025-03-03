@@ -2,7 +2,7 @@ import type { Logger } from '@credo-ts/core'
 import type { MutexInterface } from 'async-mutex'
 
 import { CredoError } from '@credo-ts/core'
-import { withTimeout, Mutex } from 'async-mutex'
+import { Mutex, withTimeout } from 'async-mutex'
 
 /**
  * Keep track of the total number of tenant sessions currently active. This doesn't actually manage the tenant sessions itself, or have anything to do with
@@ -11,11 +11,11 @@ import { withTimeout, Mutex } from 'async-mutex'
  */
 export class TenantSessionMutex {
   private _currentSessions = 0
-  public readonly maxSessions = Infinity
+  public readonly maxSessions = Number.POSITIVE_INFINITY
   private sessionMutex: MutexInterface
   private logger: Logger
 
-  public constructor(logger: Logger, maxSessions = Infinity, sessionAcquireTimeout: number) {
+  public constructor(logger: Logger, maxSessions: number, sessionAcquireTimeout: number) {
     this.logger = logger
 
     this.maxSessions = maxSessions

@@ -1,3 +1,7 @@
+import type { SDJwt } from '@sd-jwt/core'
+import type { DisclosureFrame, PresentationFrame, Signer, Verifier } from '@sd-jwt/types'
+import type { JwkJson, Key } from '../../crypto'
+import type { Query, QueryOptions } from '../../storage/StorageService'
 import type {
   SdJwtVcHeader,
   SdJwtVcHolderBinding,
@@ -7,10 +11,6 @@ import type {
   SdJwtVcSignOptions,
   SdJwtVcVerifyOptions,
 } from './SdJwtVcOptions'
-import type { JwkJson, Key } from '../../crypto'
-import type { Query, QueryOptions } from '../../storage/StorageService'
-import type { SDJwt } from '@sd-jwt/core'
-import type { DisclosureFrame, PresentationFrame, Signer, Verifier } from '@sd-jwt/types'
 
 import { decodeSdJwtSync } from '@sd-jwt/decode'
 import { selectDisclosures } from '@sd-jwt/present'
@@ -41,7 +41,7 @@ type SdJwtVcConfig = SDJwtVcInstance['userConfig']
 
 export interface SdJwtVc<
   Header extends SdJwtVcHeader = SdJwtVcHeader,
-  Payload extends SdJwtVcPayload = SdJwtVcPayload
+  Payload extends SdJwtVcPayload = SdJwtVcPayload,
 > {
   /**
    * claim format is convenience method added to all credential instances
@@ -368,7 +368,7 @@ export class SdJwtVcService {
             returnSdJwtVc.typeMetadata = typeMetadata as SdJwtVcTypeMetadata
           }
         }
-      } catch (error) {
+      } catch (_error) {
         // we allow vct without type metadata for now
       }
     } catch (error) {
@@ -381,7 +381,6 @@ export class SdJwtVcService {
       }
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { isValid: _, ...allVerifications } = verificationResult
     verificationResult.isValid = Object.values(allVerifications).every((verification) => verification === true)
 
@@ -529,11 +528,11 @@ export class SdJwtVcService {
       throw new SdJwtVcError('Credential not exist')
     }
 
-    if (!sdJwtVc.jwt?.payload['iss']) {
+    if (!sdJwtVc.jwt?.payload.iss) {
       throw new SdJwtVcError('Credential does not contain an issuer')
     }
 
-    const iss = sdJwtVc.jwt.payload['iss'] as string
+    const iss = sdJwtVc.jwt.payload.iss as string
 
     if (sdJwtVc.jwt.header?.x5c) {
       if (!Array.isArray(sdJwtVc.jwt.header.x5c)) {
@@ -586,11 +585,11 @@ export class SdJwtVcService {
         throw new SdJwtVcError('Credential does not contain a header')
       }
 
-      if (!sdJwtVc.jwt.header['kid']) {
+      if (!sdJwtVc.jwt.header.kid) {
         throw new SdJwtVcError('Credential does not contain a kid in the header')
       }
 
-      const issuerKid = sdJwtVc.jwt.header['kid'] as string
+      const issuerKid = sdJwtVc.jwt.header.kid as string
 
       let didUrl: string
       if (issuerKid.startsWith('#')) {
@@ -625,17 +624,18 @@ export class SdJwtVcService {
       throw new SdJwtVcError('Credential not exist')
     }
 
-    if (!sdJwtVc.jwt?.payload['cnf']) {
+    if (!sdJwtVc.jwt?.payload.cnf) {
       return null
     }
-    const cnf: CnfPayload = sdJwtVc.jwt.payload['cnf']
+    const cnf: CnfPayload = sdJwtVc.jwt.payload.cnf
 
     if (cnf.jwk) {
       return {
         method: 'jwk',
         jwk: cnf.jwk,
       }
-    } else if (cnf.kid) {
+    }
+    if (cnf.kid) {
       if (!cnf.kid.startsWith('did:') || !cnf.kid.includes('#')) {
         throw new SdJwtVcError('Invalid holder kid for did. Only absolute KIDs for cnf are supported')
       }
@@ -674,7 +674,8 @@ export class SdJwtVcService {
           kid: holder.didUrl,
         },
       }
-    } else if (holder.method === 'jwk') {
+    }
+    if (holder.method === 'jwk') {
       const jwk = holder.jwk instanceof Jwk ? holder.jwk : getJwkFromJson(holder.jwk)
       const key = jwk.key
       const alg = jwk.supportedSignatureAlgorithms[0]

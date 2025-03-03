@@ -1,5 +1,5 @@
 // Any is used to prevent frustrating TS errors if we just want to store arbitrary json data
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+// biome-ignore lint/suspicious/noExplicitAny: <explanation>
 type MetadataValue = Record<string, any>
 
 export type MetadataBase = {

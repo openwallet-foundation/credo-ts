@@ -1,8 +1,10 @@
+import type { Query, QueryOptions } from '@credo-ts/core'
 import type {
   AcceptProofOptions,
   AcceptProofProposalOptions,
   AcceptProofRequestOptions,
   CreateProofRequestOptions,
+  DeclineProofRequestOptions,
   DeleteProofOptions,
   FindProofPresentationMessageReturn,
   FindProofProposalMessageReturn,
@@ -17,12 +19,10 @@ import type {
   SelectCredentialsForProofRequestOptions,
   SelectCredentialsForProofRequestReturn,
   SendProofProblemReportOptions,
-  DeclineProofRequestOptions,
 } from './ProofsApiOptions'
 import type { ProofProtocol } from './protocol/ProofProtocol'
 import type { ProofFormatsFromProtocols } from './protocol/ProofProtocolOptions'
 import type { ProofExchangeRecord } from './repository/ProofExchangeRecord'
-import type { Query, QueryOptions } from '@credo-ts/core'
 
 import { AgentContext, CredoError, injectable } from '@credo-ts/core'
 
@@ -84,6 +84,7 @@ export interface ProofsApi<PPs extends ProofProtocol[]> {
 }
 
 @injectable()
+// biome-ignore lint/suspicious/noUnsafeDeclarationMerging: <explanation>
 export class ProofsApi<PPs extends ProofProtocol[]> implements ProofsApi<PPs> {
   /**
    * Configuration for the proofs module

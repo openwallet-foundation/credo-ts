@@ -1,23 +1,23 @@
-import type { W3cCredentialRepository } from '../../core/src/modules/vc/repository/W3cCredentialRepository'
 import type { AgentContext, W3cJwtCredentialService, Wallet } from '@credo-ts/core'
+import type { W3cCredentialRepository } from '../../core/src/modules/vc/repository/W3cCredentialRepository'
 
 import {
   ClaimFormat,
-  W3cCredentialService,
-  W3cJsonLdVerifiablePresentation,
-  VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2018,
-  KeyType,
-  JsonTransformer,
-  DidKey,
-  SigningProviderRegistry,
-  W3cCredential,
   CredentialIssuancePurpose,
-  VERIFICATION_METHOD_TYPE_BLS12381G2_KEY_2020,
-  vcLibraries,
-  W3cPresentation,
+  DidKey,
   Ed25519Signature2018,
+  JsonTransformer,
+  KeyType,
+  SigningProviderRegistry,
   TypedArrayEncoder,
+  VERIFICATION_METHOD_TYPE_BLS12381G2_KEY_2020,
+  VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2018,
+  W3cCredential,
+  W3cCredentialService,
   W3cJsonLdVerifiableCredential,
+  W3cJsonLdVerifiablePresentation,
+  W3cPresentation,
+  vcLibraries,
 } from '@credo-ts/core'
 
 import { RegisteredAskarTestWallet } from '../../askar/tests/helpers'

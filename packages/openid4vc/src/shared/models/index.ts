@@ -13,10 +13,10 @@ import type {
   ParseCredentialRequestReturn,
 } from '@openid4vc/openid4vci'
 import type {
-  Openid4vpAuthorizationResponse,
-  ResolvedOpenid4vpAuthRequest,
   Openid4vpAuthorizationRequest,
   Openid4vpAuthorizationRequestDcApi,
+  Openid4vpAuthorizationResponse,
+  ResolvedOpenid4vpAuthRequest,
 } from '@openid4vc/openid4vp'
 
 export { authorizationCodeGrantIdentifier, preAuthorizedCodeGrantIdentifier } from '@openid4vc/oauth2'

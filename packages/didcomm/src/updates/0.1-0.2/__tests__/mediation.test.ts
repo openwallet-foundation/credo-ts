@@ -1,7 +1,7 @@
 import { Agent } from '../../../../../core/src/agent/Agent'
 import { JsonTransformer } from '../../../../../core/src/utils'
 import { getAgentConfig, getAgentContext, mockFunction } from '../../../../../core/tests/helpers'
-import { MediationRole, MediationRecord } from '../../../modules/routing'
+import { MediationRecord, MediationRole } from '../../../modules/routing'
 import { MediationRepository } from '../../../modules/routing/repository/MediationRepository'
 import * as testModule from '../mediation'
 

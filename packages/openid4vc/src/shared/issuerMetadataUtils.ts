@@ -11,7 +11,7 @@ import { type CredentialConfigurationsSupported } from '@openid4vc/openid4vci'
 export function getOfferedCredentials<
   Configurations extends
     | OpenId4VciCredentialConfigurationsSupported
-    | OpenId4VciCredentialConfigurationsSupportedWithFormats
+    | OpenId4VciCredentialConfigurationsSupportedWithFormats,
 >(
   offeredCredentialConfigurationIds: Array<string>,
   credentialConfigurationsSupported: Configurations,

@@ -2,7 +2,7 @@ import type { CheqdModuleConfigOptions } from '../src'
 
 import { DidsModule } from '@credo-ts/core'
 
-import { CheqdModule, CheqdDidRegistrar, CheqdDidResolver } from '../src'
+import { CheqdDidRegistrar, CheqdDidResolver, CheqdModule } from '../src'
 
 export const cheqdPayerSeeds = [
   'sketch mountain erode window enact net enrich smoke claim kangaroo another visual write meat latin bacon pulp similar forum guilt father state erase bright',
@@ -28,7 +28,7 @@ export const getCheqdModuleConfig = (seed?: string, rpcUrl?: string) =>
           'sketch mountain erode window enact net enrich smoke claim kangaroo another visual write meat latin bacon pulp similar forum guilt father state erase bright',
       },
     ],
-  } satisfies CheqdModuleConfigOptions)
+  }) satisfies CheqdModuleConfigOptions
 
 export const getCheqdModules = (seed?: string, rpcUrl?: string) => ({
   cheqdSdk: new CheqdModule(getCheqdModuleConfig(seed, rpcUrl)),

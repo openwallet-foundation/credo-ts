@@ -19,20 +19,20 @@ import {
   CheqdModule,
   CheqdModuleConfig,
 } from '@credo-ts/cheqd'
-import { DidsModule, Agent } from '@credo-ts/core'
+import { Agent, DidsModule } from '@credo-ts/core'
 import {
-  ConnectionsModule,
-  V2ProofProtocol,
-  V2CredentialProtocol,
-  ProofsModule,
-  AutoAcceptProof,
   AutoAcceptCredential,
+  AutoAcceptProof,
+  ConnectionsModule,
   CredentialsModule,
   HttpOutboundTransport,
+  ProofsModule,
+  V2CredentialProtocol,
+  V2ProofProtocol,
   getDefaultDidcommModules,
 } from '@credo-ts/didcomm'
-import { IndyVdrIndyDidResolver, IndyVdrAnonCredsRegistry, IndyVdrModule } from '@credo-ts/indy-vdr'
-import { agentDependencies, HttpInboundTransport } from '@credo-ts/node'
+import { IndyVdrAnonCredsRegistry, IndyVdrIndyDidResolver, IndyVdrModule } from '@credo-ts/indy-vdr'
+import { HttpInboundTransport, agentDependencies } from '@credo-ts/node'
 import { anoncreds } from '@hyperledger/anoncreds-nodejs'
 import { indyVdr } from '@hyperledger/indy-vdr-nodejs'
 import { askar } from '@openwallet-foundation/askar-nodejs'

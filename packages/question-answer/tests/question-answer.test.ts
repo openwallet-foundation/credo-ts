@@ -2,7 +2,7 @@ import type { ConnectionRecord } from '@credo-ts/didcomm'
 
 import { Agent } from '@credo-ts/core'
 
-import { setupSubjectTransports, testLogger, makeConnection, getInMemoryAgentOptions } from '../../core/tests'
+import { getInMemoryAgentOptions, makeConnection, setupSubjectTransports, testLogger } from '../../core/tests'
 
 import { waitForQuestionAnswerRecord } from './helpers'
 

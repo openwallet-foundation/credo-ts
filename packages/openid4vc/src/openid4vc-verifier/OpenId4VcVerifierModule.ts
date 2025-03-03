@@ -1,7 +1,7 @@
-import type { OpenId4VcVerifierModuleConfigOptions } from './OpenId4VcVerifierModuleConfig'
-import type { OpenId4VcVerificationRequest } from './router'
 import type { AgentContext, DependencyManager, Module } from '@credo-ts/core'
 import type { NextFunction } from 'express'
+import type { OpenId4VcVerifierModuleConfigOptions } from './OpenId4VcVerifierModuleConfig'
+import type { OpenId4VcVerificationRequest } from './router'
 
 import { AgentConfig } from '@credo-ts/core'
 import { setGlobalConfig } from '@openid4vc/oauth2'

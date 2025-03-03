@@ -1,6 +1,6 @@
-import type { Routing } from '../../../models'
 import type { AgentContext } from '@credo-ts/core/src/agent'
 import type { Wallet } from '@credo-ts/core/src/wallet/Wallet'
+import type { Routing } from '../../../models'
 
 import { Subject } from 'rxjs'
 
@@ -35,10 +35,10 @@ import { ConnectionRequestMessage, ConnectionResponseMessage, TrustPingMessage }
 import {
   Connection,
   DidDoc,
-  EmbeddedAuthentication,
-  Ed25119Sig2018,
   DidExchangeRole,
   DidExchangeState,
+  Ed25119Sig2018,
+  EmbeddedAuthentication,
   ReferencedAuthentication,
   authenticationTypes,
 } from '../models'
@@ -131,7 +131,7 @@ describe('ConnectionService', () => {
       expect(message.connection.did).toBe('XpwgBjsC2wh3eHcMW6ZRJT')
 
       const publicKey = new Ed25119Sig2018({
-        id: `XpwgBjsC2wh3eHcMW6ZRJT#1`,
+        id: 'XpwgBjsC2wh3eHcMW6ZRJT#1',
         controller: 'XpwgBjsC2wh3eHcMW6ZRJT',
         publicKeyBase58: 'HoVPnpfUjrDECoMZy8vu4U6dwEcLhbzjNwyS3gwLDCG8',
       })
@@ -144,7 +144,7 @@ describe('ConnectionService', () => {
 
           service: [
             new IndyAgentService({
-              id: `XpwgBjsC2wh3eHcMW6ZRJT#IndyAgentService-1`,
+              id: 'XpwgBjsC2wh3eHcMW6ZRJT#IndyAgentService-1',
               serviceEndpoint: endpoint,
               recipientKeys: ['HoVPnpfUjrDECoMZy8vu4U6dwEcLhbzjNwyS3gwLDCG8'],
               routingKeys: [],
@@ -349,7 +349,7 @@ describe('ConnectionService', () => {
       const outOfBand = getMockOutOfBand({ role: OutOfBandRole.Sender, state: OutOfBandState.AwaitResponse })
 
       return expect(connectionService.processRequest(messageContext, outOfBand)).rejects.toThrowError(
-        `Public DIDs are not supported yet`
+        'Public DIDs are not supported yet'
       )
     })
 
@@ -423,7 +423,7 @@ describe('ConnectionService', () => {
         ],
       })
 
-      const { message, connectionRecord: connectionRecord } = await connectionService.createResponse(
+      const { message, connectionRecord } = await connectionService.createResponse(
         agentContext,
         mockConnection,
         outOfBand
@@ -536,7 +536,7 @@ describe('ConnectionService', () => {
 
       const processedConnection = await connectionService.processResponse(messageContext, outOfBandRecord)
 
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      // biome-ignore lint/style/noNonNullAssertion: <explanation>
       const peerDid = didDocumentJsonToNumAlgo1Did(convertToNewDidDocument(otherPartyConnection.didDoc!).toJSON())
 
       expect(processedConnection.state).toBe(DidExchangeState.ResponseReceived)
@@ -621,9 +621,7 @@ describe('ConnectionService', () => {
       })
 
       return expect(connectionService.processResponse(messageContext, outOfBandRecord)).rejects.toThrowError(
-        new RegExp(
-          'Connection object in connection response message is not signed with same key as recipient key in invitation'
-        )
+        /Connection object in connection response message is not signed with same key as recipient key in invitation/
       )
     })
 
@@ -656,7 +654,7 @@ describe('ConnectionService', () => {
       })
 
       return expect(connectionService.processResponse(messageContext, outOfBandRecord)).rejects.toThrowError(
-        `DID Document is missing.`
+        'DID Document is missing.'
       )
     })
   })
@@ -667,10 +665,7 @@ describe('ConnectionService', () => {
 
       const mockConnection = getMockConnection({ state: DidExchangeState.ResponseReceived })
 
-      const { message, connectionRecord: connectionRecord } = await connectionService.createTrustPing(
-        agentContext,
-        mockConnection
-      )
+      const { message, connectionRecord } = await connectionService.createTrustPing(agentContext, mockConnection)
 
       expect(connectionRecord.state).toBe(DidExchangeState.Completed)
       expect(message).toEqual(expect.any(TrustPingMessage))

@@ -1,6 +1,6 @@
+import type { EncryptedMessage } from '../../types'
 import type { MessagePickupProtocol } from './protocol/MessagePickupProtocol'
 import type { QueuedMessage } from './storage'
-import type { EncryptedMessage } from '../../types'
 
 /**
  * Get the supported protocol versions based on the provided message pickup protocols
@@ -39,12 +39,12 @@ export interface SetLiveDeliveryModeOptions<MPPs extends MessagePickupProtocol[]
   liveDelivery: boolean
 }
 
-export type QueueMessageReturnType = void
+export type QueueMessageReturnType = undefined
 
-export type PickupMessagesReturnType = void
+export type PickupMessagesReturnType = undefined
 
-export type DeliverMessagesReturnType = void
+export type DeliverMessagesReturnType = undefined
 
-export type DeliverMessagesFromQueueReturnType = void
+export type DeliverMessagesFromQueueReturnType = undefined
 
-export type SetLiveDeliveryModeReturnType = void
+export type SetLiveDeliveryModeReturnType = undefined

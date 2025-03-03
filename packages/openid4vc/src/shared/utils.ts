@@ -1,6 +1,6 @@
-import type { OpenId4VcJwtIssuer } from './models'
 import type { AgentContext, DidPurpose, JwaSignatureAlgorithm, Key } from '@credo-ts/core'
 import type { JwtSigner, JwtSignerX5c } from '@openid4vc/oauth2'
+import type { OpenId4VcJwtIssuer } from './models'
 
 import {
   CredoError,
@@ -62,7 +62,8 @@ export async function requestSignerToJwtIssuer(
       didUrl: requestSigner.didUrl,
       alg,
     }
-  } else if (requestSigner.method === 'x5c') {
+  }
+  if (requestSigner.method === 'x5c') {
     const leafCertificate = X509Service.getLeafCertificate(agentContext, {
       certificateChain: requestSigner.x5c,
     })
@@ -101,7 +102,8 @@ export async function requestSignerToJwtIssuer(
       ...requestSigner,
       alg,
     }
-  } else if (requestSigner.method === 'jwk') {
+  }
+  if (requestSigner.method === 'jwk') {
     const alg = requestSigner.jwk.supportedSignatureAlgorithms[0]
     if (!alg) {
       throw new CredoError(`No supported signature algorithms for key type: '${requestSigner.jwk.keyType}'`)
@@ -143,7 +145,7 @@ export function parseIfJson<T>(input: T): T | Record<string, unknown> {
   try {
     // Try to parse the string as JSON
     return JSON.parse(input)
-  } catch (error) {
+  } catch (_error) {
     /* empty */
   }
 

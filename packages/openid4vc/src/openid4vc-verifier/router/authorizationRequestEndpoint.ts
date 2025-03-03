@@ -1,5 +1,5 @@
+import type { Response, Router } from 'express'
 import type { OpenId4VcVerificationRequest } from './requestContext'
-import type { Router, Response } from 'express'
 
 import { joinUriParts } from '@credo-ts/core'
 

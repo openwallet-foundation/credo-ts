@@ -72,9 +72,9 @@ export class ConnectionsModuleConfig {
   }
 
   /** See {@link ConnectionsModuleConfigOptions.peerNumAlgoForDidRotation} */
-  public set peerNumAlgoForDidRotation(
-    peerNumAlgoForDidRotation: PeerDidNumAlgo.MultipleInceptionKeyWithoutDoc | PeerDidNumAlgo.ShortFormAndLongForm
-  ) {
+  public set peerNumAlgoForDidRotation(peerNumAlgoForDidRotation:
+    | PeerDidNumAlgo.MultipleInceptionKeyWithoutDoc
+    | PeerDidNumAlgo.ShortFormAndLongForm) {
     this.#peerNumAlgoForDidRotation = peerNumAlgoForDidRotation
   }
 }

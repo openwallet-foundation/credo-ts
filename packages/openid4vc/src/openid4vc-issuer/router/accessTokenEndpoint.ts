@@ -1,13 +1,13 @@
-import type { OpenId4VcIssuanceRequest } from './requestContext'
-import type { OpenId4VcIssuerModuleConfig } from '../OpenId4VcIssuerModuleConfig'
 import type { HttpMethod, VerifyAccessTokenRequestReturn } from '@openid4vc/oauth2'
 import type { NextFunction, Response, Router } from 'express'
+import type { OpenId4VcIssuerModuleConfig } from '../OpenId4VcIssuerModuleConfig'
+import type { OpenId4VcIssuanceRequest } from './requestContext'
 
-import { getJwkFromKey, joinUriParts, Key, utils } from '@credo-ts/core'
+import { Key, getJwkFromKey, joinUriParts, utils } from '@credo-ts/core'
 import {
-  authorizationCodeGrantIdentifier,
   Oauth2ErrorCodes,
   Oauth2ServerErrorResponseError,
+  authorizationCodeGrantIdentifier,
   preAuthorizedCodeGrantIdentifier,
 } from '@openid4vc/oauth2'
 

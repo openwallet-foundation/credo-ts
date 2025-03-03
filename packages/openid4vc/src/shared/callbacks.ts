@@ -1,27 +1,27 @@
-import type { OpenId4VcIssuerRecord } from '../openid4vc-issuer/repository'
 import type { AgentContext } from '@credo-ts/core'
 import type {
   CallbackContext,
   ClientAuthenticationCallback,
-  SignJwtCallback,
-  VerifyJwtCallback,
   DecryptJweCallback,
   EncryptJweCallback,
+  SignJwtCallback,
+  VerifyJwtCallback,
 } from '@openid4vc/oauth2'
+import type { OpenId4VcIssuerRecord } from '../openid4vc-issuer/repository'
 
 import {
   Buffer,
-  Key,
-  TypedArrayEncoder,
   CredoError,
-  getJwkFromJson,
-  getJwkFromKey,
   Hasher,
   JsonEncoder,
   JwsService,
   JwtPayload,
+  Key,
   KeyType,
+  TypedArrayEncoder,
   X509Service,
+  getJwkFromJson,
+  getJwkFromKey,
 } from '@credo-ts/core'
 import { clientAuthenticationDynamic, clientAuthenticationNone } from '@openid4vc/oauth2'
 
@@ -41,7 +41,8 @@ export function getOid4vcJwtVerifyCallback(
       jwkResolver: async () => {
         if (signer.method === 'jwk') {
           return getJwkFromJson(signer.publicJwk)
-        } else if (signer.method === 'did') {
+        }
+        if (signer.method === 'did') {
           const key = await getKeyFromDid(agentContext, signer.didUrl)
           return getJwkFromKey(key)
         }
@@ -123,7 +124,7 @@ export function getOid4vcDecryptJweCallback(agentContext: AgentContext): Decrypt
     try {
       const decrypted = await agentContext.wallet.directDecryptCompactJweEcdhEs({ compactJwe: jwe, recipientKey: key })
       decryptedPayload = TypedArrayEncoder.toUtf8String(decrypted.data)
-    } catch (error) {
+    } catch (_error) {
       return {
         decrypted: false,
         encryptionJwk: options?.jwk,

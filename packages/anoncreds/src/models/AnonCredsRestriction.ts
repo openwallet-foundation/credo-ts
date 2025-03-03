@@ -132,7 +132,7 @@ export function AnonCredsRestrictionTransformer() {
             const r = restriction as AnonCredsRestriction
 
             for (const [attributeName, attributeValue] of Object.entries(r)) {
-              const match = new RegExp('^attr::([^:]+)::(value|marker)$').exec(attributeName)
+              const match = /^attr::([^:]+)::(value|marker)$/.exec(attributeName)
 
               if (match && match[2] === 'marker' && attributeValue === '1') {
                 r.attributeMarkers[match[1]] = true

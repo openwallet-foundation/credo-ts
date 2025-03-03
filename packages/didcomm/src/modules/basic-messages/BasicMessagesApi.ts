@@ -1,5 +1,5 @@
-import type { BasicMessageRecord } from './repository/BasicMessageRecord'
 import type { Query, QueryOptions } from '@credo-ts/core'
+import type { BasicMessageRecord } from './repository/BasicMessageRecord'
 
 import { AgentContext, injectable } from '@credo-ts/core'
 

@@ -1,5 +1,5 @@
-import type { DummyModuleConfigOptions } from './DummyModuleConfig'
 import type { AgentContext, DependencyManager, Module } from '@credo-ts/core'
+import type { DummyModuleConfigOptions } from './DummyModuleConfig'
 
 import { FeatureRegistry, MessageHandlerRegistry, Protocol } from '@credo-ts/didcomm'
 

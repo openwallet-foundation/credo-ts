@@ -1,3 +1,5 @@
+import type { Query, QueryOptions } from '@credo-ts/core'
+import type { OpenId4VcSiopAuthorizationResponsePayload } from '../shared'
 import type {
   OpenId4VcSiopCreateAuthorizationRequestOptions,
   OpenId4VcSiopCreateAuthorizationRequestReturn,
@@ -6,8 +8,6 @@ import type {
   OpenId4VcUpdateVerifierRecordOptions,
 } from './OpenId4VcSiopVerifierServiceOptions'
 import type { OpenId4VcVerificationSessionRecord } from './repository'
-import type { OpenId4VcSiopAuthorizationResponsePayload } from '../shared'
-import type { Query, QueryOptions } from '@credo-ts/core'
 
 import { AgentContext, injectable } from '@credo-ts/core'
 

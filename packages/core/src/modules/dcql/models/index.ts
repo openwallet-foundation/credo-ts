@@ -1,18 +1,18 @@
 export * from './DcqlCredentialsForRequest'
+import type {
+  DcqlCredential as _DcqlCredential,
+  DcqlMdocCredential as _DcqlMdocCredential,
+  DcqlPresentation as _DcqlPresentation,
+  DcqlPresentationResult as _DcqlPresentationResult,
+  DcqlQuery as _DcqlQuery,
+  DcqlQueryResult as _DcqlQueryResult,
+  DcqlSdJwtVcCredential as _DcqlSdJwtVcCredential,
+  DcqlW3cVcCredential as _DcqlW3cVcCredential,
+} from 'dcql'
 import type { VerifiablePresentation } from '../../dif-presentation-exchange'
 import type { MdocRecord } from '../../mdoc'
 import type { SdJwtVcRecord } from '../../sd-jwt-vc'
 import type { W3cCredentialRecord } from '../../vc'
-import type {
-  DcqlQueryResult as _DcqlQueryResult,
-  DcqlQuery as _DcqlQuery,
-  DcqlCredential as _DcqlCredential,
-  DcqlMdocCredential as _DcqlMdocCredential,
-  DcqlW3cVcCredential as _DcqlW3cVcCredential,
-  DcqlSdJwtVcCredential as _DcqlSdJwtVcCredential,
-  DcqlPresentation as _DcqlPresentation,
-  DcqlPresentationResult as _DcqlPresentationResult,
-} from 'dcql'
 
 export type DcqlQuery = _DcqlQuery.Input | _DcqlQuery.Output
 export type DcqlCredential = _DcqlCredential.Model['Input']

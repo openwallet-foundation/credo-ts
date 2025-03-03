@@ -2,7 +2,7 @@ import { Jwt } from '@credo-ts/core'
 
 import { AskarModule } from '../../../../askar/src'
 import { askarModuleConfig } from '../../../../askar/tests/helpers'
-import { createAgentFromModules, type AgentType } from '../../../tests/utils'
+import { type AgentType, createAgentFromModules } from '../../../tests/utils'
 import { universityDegreePresentationDefinition } from '../../../tests/utilsVp'
 import { OpenId4VcVerifierModule } from '../OpenId4VcVerifierModule'
 

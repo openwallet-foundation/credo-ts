@@ -1,3 +1,16 @@
+import type { PresentationSignCallBackParams, Validated, VerifiablePresentationResult } from '@animo-id/pex'
+import type { InputDescriptorV2 } from '@sphereon/pex-models'
+import type {
+  SdJwtDecodedVerifiableCredential,
+  W3CVerifiablePresentation as SphereonW3cVerifiablePresentation,
+  W3CVerifiablePresentation,
+} from '@sphereon/ssi-types'
+import type { AgentContext } from '../../agent'
+import type { Query } from '../../storage/StorageService'
+import type { VerificationMethod } from '../dids'
+import type { SdJwtVcRecord } from '../sd-jwt-vc'
+import type { W3cCredentialRecord, W3cJsonPresentation } from '../vc'
+import type { IAnonCredsDataIntegrityService } from '../vc/data-integrity/models/IAnonCredsDataIntegrityService'
 import type {
   DifPexCredentialsForRequest,
   DifPexInputDescriptorToCredentials,
@@ -8,19 +21,6 @@ import type {
   VerifiablePresentation,
 } from './models'
 import type { PresentationToCreate } from './utils'
-import type { AgentContext } from '../../agent'
-import type { Query } from '../../storage/StorageService'
-import type { VerificationMethod } from '../dids'
-import type { SdJwtVcRecord } from '../sd-jwt-vc'
-import type { W3cCredentialRecord, W3cJsonPresentation } from '../vc'
-import type { IAnonCredsDataIntegrityService } from '../vc/data-integrity/models/IAnonCredsDataIntegrityService'
-import type { PresentationSignCallBackParams, Validated, VerifiablePresentationResult } from '@animo-id/pex'
-import type { InputDescriptorV2 } from '@sphereon/pex-models'
-import type {
-  SdJwtDecodedVerifiableCredential,
-  W3CVerifiablePresentation as SphereonW3cVerifiablePresentation,
-  W3CVerifiablePresentation,
-} from '@sphereon/ssi-types'
 
 import { PEVersion, PEX, Status } from '@animo-id/pex'
 import { PartialSdJwtDecodedVerifiableCredential } from '@animo-id/pex/dist/main/lib'
@@ -111,7 +111,7 @@ export class DifPresentationExchangeService {
     const validation = PEX.validateDefinition(presentationDefinition)
     const errorMessages = this.formatValidated(validation)
     if (errorMessages.length > 0) {
-      throw new DifPresentationExchangeError(`Invalid presentation definition`, { additionalMessages: errorMessages })
+      throw new DifPresentationExchangeError('Invalid presentation definition', { additionalMessages: errorMessages })
     }
   }
 
@@ -119,7 +119,7 @@ export class DifPresentationExchangeService {
     const validation = PEX.validateSubmission(presentationSubmission)
     const errorMessages = this.formatValidated(validation)
     if (errorMessages.length > 0) {
-      throw new DifPresentationExchangeError(`Invalid presentation submission`, { additionalMessages: errorMessages })
+      throw new DifPresentationExchangeError('Invalid presentation submission', { additionalMessages: errorMessages })
     }
   }
 
@@ -142,7 +142,7 @@ export class DifPresentationExchangeService {
     if (errors) {
       const errorMessages = this.formatValidated(errors as Validated)
       if (errorMessages.length > 0) {
-        throw new DifPresentationExchangeError(`Invalid presentation`, { additionalMessages: errorMessages })
+        throw new DifPresentationExchangeError('Invalid presentation', { additionalMessages: errorMessages })
       }
     }
   }
@@ -335,7 +335,7 @@ export class DifPresentationExchangeService {
       if (!possibleAlgorithms || possibleAlgorithms.length === 0) {
         throw new DifPresentationExchangeError(
           [
-            `Found no suitable signing algorithm.`,
+            'Found no suitable signing algorithm.',
             `Algorithms supported by Verification method: ${jwk.supportedSignatureAlgorithms.join(', ')}`,
             `Suitable algorithms: ${suitableAlgorithms.join(', ')}`,
           ].join('\n')
@@ -367,13 +367,13 @@ export class DifPresentationExchangeService {
       algorithmsSatisfyingPdAndDescriptorRestrictions.length === 0
     ) {
       throw new DifPresentationExchangeError(
-        `No signature algorithm found for satisfying restrictions of the presentation definition and input descriptors`
+        'No signature algorithm found for satisfying restrictions of the presentation definition and input descriptors'
       )
     }
 
     if (allDescriptorAlgorithms.length > 0 && algorithmsSatisfyingDescriptors.length === 0) {
       throw new DifPresentationExchangeError(
-        `No signature algorithm found for satisfying restrictions of the input descriptors`
+        'No signature algorithm found for satisfying restrictions of the input descriptors'
       )
     }
 
@@ -501,7 +501,7 @@ export class DifPresentationExchangeService {
 
       if (presentationToCreate.claimFormat === ClaimFormat.JwtVp) {
         if (!presentationToCreate.subjectIds) {
-          throw new DifPresentationExchangeError(`Cannot create presentation for credentials without subject id`)
+          throw new DifPresentationExchangeError('Cannot create presentation for credentials without subject id')
         }
 
         // Determine a suitable verification method for the presentation
@@ -523,7 +523,8 @@ export class DifPresentationExchangeService {
         })
 
         return signedPresentation.encoded as W3CVerifiablePresentation
-      } else if (presentationToCreate.claimFormat === ClaimFormat.LdpVp) {
+      }
+      if (presentationToCreate.claimFormat === ClaimFormat.LdpVp) {
         if (this.shouldSignUsingAnonCredsDataIntegrity(presentationToCreate, presentationSubmission)) {
           // make sure the descriptors format properties are set correctly
           presentationSubmission.descriptor_map = presentationSubmission.descriptor_map.map((descriptor) => ({
@@ -546,7 +547,7 @@ export class DifPresentationExchangeService {
         }
 
         if (!presentationToCreate.subjectIds) {
-          throw new DifPresentationExchangeError(`Cannot create presentation for credentials without subject id`)
+          throw new DifPresentationExchangeError('Cannot create presentation for credentials without subject id')
         }
         // Determine a suitable verification method for the presentation
         const verificationMethod = await this.getVerificationMethodForSubjectId(
@@ -571,7 +572,8 @@ export class DifPresentationExchangeService {
         })
 
         return signedPresentation.encoded as W3CVerifiablePresentation
-      } else if (presentationToCreate.claimFormat === ClaimFormat.SdJwtVc) {
+      }
+      if (presentationToCreate.claimFormat === ClaimFormat.SdJwtVc) {
         const sdJwtInput = presentationInput as
           | SdJwtDecodedVerifiableCredential
           | PartialSdJwtDecodedVerifiableCredential
@@ -595,11 +597,10 @@ export class DifPresentationExchangeService {
         })
 
         return sdJwtVc
-      } else {
-        throw new DifPresentationExchangeError(
-          `Only JWT, SD-JWT-VC, JSONLD credentials are supported for a single presentation`
-        )
       }
+      throw new DifPresentationExchangeError(
+        'Only JWT, SD-JWT-VC, JSONLD credentials are supported for a single presentation'
+      )
     }
   }
 
@@ -647,7 +648,7 @@ export class DifPresentationExchangeService {
 
     if (!presentationDefinitionVersion.version) {
       throw new DifPresentationExchangeError(
-        `Unable to determine the Presentation Exchange version from the presentation definition`,
+        'Unable to determine the Presentation Exchange version from the presentation definition',
         presentationDefinitionVersion.error ? { additionalMessages: [presentationDefinitionVersion.error] } : {}
       )
     }
