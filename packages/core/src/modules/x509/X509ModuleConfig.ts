@@ -1,7 +1,6 @@
 import type { AgentContext } from '../../agent'
 import type { JwtPayload } from '../../crypto'
 import type { Mdoc } from '../mdoc/Mdoc'
-import type { MdocDeviceResponse } from '../mdoc/MdocDeviceResponse'
 import type { SdJwtVc } from '../sd-jwt-vc'
 import type { W3cJwtVerifiableCredential, W3cJwtVerifiablePresentation } from '../vc'
 
@@ -9,7 +8,7 @@ import { X509Certificate } from './X509Certificate'
 
 type X509VerificationTypeCredential = {
   type: 'credential'
-  credential: SdJwtVc | Mdoc | MdocDeviceResponse | W3cJwtVerifiableCredential | W3cJwtVerifiablePresentation
+  credential: SdJwtVc | Mdoc | W3cJwtVerifiableCredential | W3cJwtVerifiablePresentation
 
   /**
    * The `id` of the `DidCommProofRecord` that this verification is bound to.
