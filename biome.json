@@ -75,7 +75,7 @@
       "performance": {
         "noDelete": {
           "fix": "none",
-          "level": "warn"
+          "level": "error"
         }
       }
     }

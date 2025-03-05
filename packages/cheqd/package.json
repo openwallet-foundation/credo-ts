@@ -24,11 +24,11 @@
     "test": "jest"
   },
   "dependencies": {
-    "@cheqd/sdk": "~2.6.0",
-    "@cheqd/ts-proto": "~2.4.0",
-    "@cosmjs/crypto": "~0.30.0",
-    "@cosmjs/proto-signing": "~0.30.0",
-    "@cosmjs/stargate": "~0.30.0",
+    "@cheqd/sdk": "5.1.0",
+    "@cheqd/ts-proto": "~2.4.1",
+    "@cosmjs/crypto": "~0.30.1",
+    "@cosmjs/proto-signing": "~0.30.1",
+    "@cosmjs/stargate": "~0.30.1",
     "@credo-ts/anoncreds": "workspace:*",
     "@credo-ts/core": "workspace:*",
     "@stablelib/ed25519": "^1.0.3",

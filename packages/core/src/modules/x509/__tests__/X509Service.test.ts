@@ -7,11 +7,10 @@ import { InMemoryWallet } from '../../../../../../tests/InMemoryWallet'
 import { getAgentConfig, getAgentContext } from '../../../../tests'
 import { KeyType } from '../../../crypto/KeyType'
 import { P256Jwk, getJwkFromKey } from '../../../crypto/jose/jwk'
-import { CredoWebCrypto } from '../../../crypto/webcrypto'
 import { X509Error } from '../X509Error'
 import { X509Service } from '../X509Service'
 
-import { Key, TypedArrayEncoder, X509ExtendedKeyUsage, X509KeyUsage } from '@credo-ts/core'
+import { CredoWebCrypto, Hasher, Key, TypedArrayEncoder, X509ExtendedKeyUsage, X509KeyUsage } from '@credo-ts/core'
 
 /**
  *
@@ -169,13 +168,13 @@ describe('X509Service', () => {
       },
     })
 
-    expect(certificate).toMatchObject({
-      sanDnsNames: expect.arrayContaining(['paradym.id']),
-      sanUriNames: expect.arrayContaining(['animo.id']),
-      keyUsage: expect.arrayContaining([X509KeyUsage.DigitalSignature]),
-      extendedKeyUsage: expect.arrayContaining([X509ExtendedKeyUsage.MdlDs]),
-      subjectKeyIdentifier: TypedArrayEncoder.toHex(authorityKey.publicKey),
-    })
+    expect(certificate.sanDnsNames).toStrictEqual(expect.arrayContaining(['paradym.id']))
+    expect(certificate.sanUriNames).toStrictEqual(expect.arrayContaining(['animo.id']))
+    expect(certificate.keyUsage).toStrictEqual(expect.arrayContaining([X509KeyUsage.DigitalSignature]))
+    expect(certificate.extendedKeyUsage).toStrictEqual(expect.arrayContaining([X509ExtendedKeyUsage.MdlDs]))
+    expect(certificate.subjectKeyIdentifier).toStrictEqual(
+      TypedArrayEncoder.toHex(Hasher.hash(authorityKey.publicKey, 'SHA-1'))
+    )
   })
 
   it('should create a valid self-signed certifcate as IACA Root + DCS for mDoc', async () => {
@@ -217,7 +216,7 @@ describe('X509Service', () => {
     expect(mdocRootCertificate).toMatchObject({
       ianUriNames: expect.arrayContaining(['animo.id']),
       keyUsage: expect.arrayContaining([X509KeyUsage.KeyCertSign, X509KeyUsage.CrlSign]),
-      subjectKeyIdentifier: TypedArrayEncoder.toHex(authorityKey.publicKey),
+      subjectKeyIdentifier: TypedArrayEncoder.toHex(Hasher.hash(authorityKey.publicKey, 'SHA-1')),
     })
 
     const mdocDocumentSignerCertificate = await X509Service.createCertificate(agentContext, {
@@ -265,8 +264,8 @@ describe('X509Service', () => {
       sanUriNames: expect.arrayContaining(['paradym.id']),
       keyUsage: expect.arrayContaining([X509KeyUsage.DigitalSignature]),
       extendedKeyUsage: expect.arrayContaining([X509ExtendedKeyUsage.MdlDs]),
-      subjectKeyIdentifier: TypedArrayEncoder.toHex(documentSignerKey.publicKey),
-      authorityKeyIdentifier: TypedArrayEncoder.toHex(authorityKey.publicKey),
+      subjectKeyIdentifier: TypedArrayEncoder.toHex(Hasher.hash(documentSignerKey.publicKey, 'SHA-1')),
+      authorityKeyIdentifier: TypedArrayEncoder.toHex(Hasher.hash(authorityKey.publicKey, 'SHA-1')),
     })
   })
 
@@ -285,15 +284,15 @@ describe('X509Service', () => {
       },
     })
 
-    expect(certificate.subjectKeyIdentifier).toStrictEqual(TypedArrayEncoder.toHex(subjectKey.publicKey))
-    expect(certificate.authorityKeyIdentifier).toStrictEqual(TypedArrayEncoder.toHex(authorityKey.publicKey))
+    expect(certificate.subjectKeyIdentifier).toStrictEqual(
+      TypedArrayEncoder.toHex(Hasher.hash(subjectKey.publicKey, 'SHA-1'))
+    )
+    expect(certificate.authorityKeyIdentifier).toStrictEqual(
+      TypedArrayEncoder.toHex(Hasher.hash(authorityKey.publicKey, 'SHA-1'))
+    )
     expect(certificate.publicKey.keyType).toStrictEqual(KeyType.P256)
     expect(certificate.publicKey.publicKey.length).toStrictEqual(65)
     expect(certificate.subject).toStrictEqual('CN=DCS credo')
-    expect(certificate).toMatchObject({
-      subjectKeyIdentifier: TypedArrayEncoder.toHex(subjectKey.publicKey),
-      authorityKeyIdentifier: TypedArrayEncoder.toHex(authorityKey.publicKey),
-    })
   })
 
   it('should correctly parse an X.509 certificate with an uncompressed key to a JWK', async () => {

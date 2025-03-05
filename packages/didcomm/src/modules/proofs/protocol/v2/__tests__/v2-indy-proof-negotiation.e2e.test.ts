@@ -120,7 +120,6 @@ describe('V2 Proofs Negotiation - Indy', () => {
       comment: 'V2 propose proof test 1',
     })
 
-    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
     const proposalAttach = (
       proposal as V2ProposePresentationMessage
     )?.proposalAttachments?.[0].getDataAsJson<AnonCredsProofRequest>()
