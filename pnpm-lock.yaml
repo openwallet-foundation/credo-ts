@@ -727,12 +727,6 @@ importers:
       '@credo-ts/core':
         specifier: workspace:*
         version: link:../core
-      '@openid4vc/utils':
-        specifier: 0.2.0
-        version: 0.2.0(typescript@5.5.4)
-      '@sinclair/typebox':
-        specifier: 0.34.28
-        version: 0.34.28
       '@sphereon/did-auth-siop':
         specifier: 0.16.1-fix.173
         version: 0.16.1-fix.173(ts-node@10.9.2(@types/node@18.18.8)(typescript@5.5.4))(typescript@5.5.4)
@@ -2729,9 +2723,6 @@ packages:
   '@open-draft/until@2.1.0':
     resolution: {integrity: sha512-U69T3ItWHvLwGg5eJ0n3I62nWuE6ilHlmz7zM0npLBRvPRd7e6NYmg54vvRtP5mZG7kZqZCFVdsTWo7BPtBujg==}
 
-  '@openid4vc/utils@0.2.0':
-    resolution: {integrity: sha512-CvZxy9eH8582Yb/gzc+XPiaQIbC7Y0IT3F14szGS++o6373dUN12KZQzey4hoRrVO92D04vCXyJY9xctw4zgMw==}
-
   '@openwallet-foundation/askar-nodejs@0.3.1':
     resolution: {integrity: sha512-m3L8KEPC+qgA3MAFssMtjSqJiAQtrawZEWPmW6eiB7OPjZvkKjodMhx/cuUV5YTl4eQlSix2EY4vXMzk4vt+cQ==}
     engines: {node: '>= 18'}
@@ -2949,9 +2940,6 @@ packages:
 
   '@sinclair/typebox@0.27.8':
     resolution: {integrity: sha512-+Fj43pSMwJs4KRrH/938Uf+uAELIgVBmQzg/q1YG10djyfA3TnrU8N8XzqCh/okZdszqBQTZf96idMfE5lnwTA==}
-
-  '@sinclair/typebox@0.34.28':
-    resolution: {integrity: sha512-e2B9vmvaa5ym5hWgCHw5CstP54au6AOLXrhZErLsOyyRzuWJtXl/8TszKtc5x8rw/b+oY7HKS9m9iRI53RK0WQ==}
 
   '@sindresorhus/is@5.6.0':
     resolution: {integrity: sha512-TV7t8GKYaJWsn00tFDqBw8+Uqmr8A0fRU1tvTQhyZzGv0sJCGRQL3JGMI3ucuKo3XIZdUP+Lx7/gh2t3lewy7g==}
@@ -10854,13 +10842,6 @@ snapshots:
 
   '@open-draft/until@2.1.0': {}
 
-  '@openid4vc/utils@0.2.0(typescript@5.5.4)':
-    dependencies:
-      buffer: 6.0.3
-      valibot: 0.42.1(typescript@5.5.4)
-    transitivePeerDependencies:
-      - typescript
-
   '@openwallet-foundation/askar-nodejs@0.3.1':
     dependencies:
       '@2060.io/ffi-napi': 4.0.9
@@ -11339,8 +11320,6 @@ snapshots:
   '@sideway/pinpoint@2.0.0': {}
 
   '@sinclair/typebox@0.27.8': {}
-
-  '@sinclair/typebox@0.34.28': {}
 
   '@sindresorhus/is@5.6.0': {}
 
