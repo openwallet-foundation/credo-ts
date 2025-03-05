@@ -1,4 +1,5 @@
 import type { HttpMethod } from '@animo-id/oauth2'
+import type { BaseOpenId4VcIssuerModuleConfig } from '../OpenId4VcIssuerModuleConfig'
 import type { OpenId4VcIssuancePostRequest } from './requestContext'
 
 import {
@@ -15,7 +16,6 @@ import { getCredentialConfigurationsSupportedForScopes } from '../../shared'
 import { CredoRouter, getRequestContext } from '../../shared/router'
 import { addSecondsToDate } from '../../shared/utils'
 import { OpenId4VcIssuanceSessionState } from '../OpenId4VcIssuanceSessionState'
-import type { BaseOpenId4VcIssuerModuleConfig } from '../OpenId4VcIssuerModuleConfig'
 import { OpenId4VcIssuerService } from '../OpenId4VcIssuerService'
 import { OpenId4VcIssuanceSessionRecord, OpenId4VcIssuanceSessionRepository } from '../repository'
 

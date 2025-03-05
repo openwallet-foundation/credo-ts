@@ -1,5 +1,5 @@
 import type { NextFunction, Response, Router } from 'express'
-import { BaseOpenId4VcIssuerModuleConfig } from '../OpenId4VcIssuerModuleConfig'
+import type { BaseOpenId4VcIssuerModuleConfig } from '../OpenId4VcIssuerModuleConfig'
 import type { OpenId4VcIssuanceRequest } from './requestContext'
 
 import { getRequestContext, sendJsonResponse, sendUnknownServerErrorResponse } from '../../shared/router'
