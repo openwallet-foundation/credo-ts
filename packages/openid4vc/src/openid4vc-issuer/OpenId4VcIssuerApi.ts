@@ -8,7 +8,7 @@ import type {
 
 import { AgentContext, injectable } from '@credo-ts/core'
 
-import { OpenId4VcIssuerModuleConfig } from './OpenId4VcIssuerModuleConfig'
+import { BaseOpenId4VcIssuerModuleConfig } from './OpenId4VcIssuerModuleConfig'
 import { OpenId4VcIssuerService } from './OpenId4VcIssuerService'
 
 /**
@@ -20,7 +20,7 @@ import { OpenId4VcIssuerService } from './OpenId4VcIssuerService'
 @injectable()
 export class OpenId4VcIssuerApi {
   public constructor(
-    public readonly config: OpenId4VcIssuerModuleConfig,
+    public readonly config: BaseOpenId4VcIssuerModuleConfig,
     private agentContext: AgentContext,
     private openId4VcIssuerService: OpenId4VcIssuerService
   ) {}
