@@ -1,4 +1,4 @@
-import type { Key } from '../../../crypto'
+import { Hasher, type Key } from '../../../crypto'
 import type { X509CertificateExtensionsOptions } from '../X509ServiceOptions'
 
 import {
@@ -20,7 +20,9 @@ export const createSubjectKeyIdentifierExtension = (
 ) => {
   if (!options || !options.include) return
 
-  return new SubjectKeyIdentifierExtension(TypedArrayEncoder.toHex(additionalOptions.key.publicKey))
+  const hash = Hasher.hash(additionalOptions.key.publicKey, 'SHA-1')
+
+  return new SubjectKeyIdentifierExtension(TypedArrayEncoder.toHex(hash))
 }
 
 export const createKeyUsagesExtension = (options: X509CertificateExtensionsOptions['keyUsage']) => {
@@ -43,10 +45,9 @@ export const createAuthorityKeyIdentifierExtension = (
 ) => {
   if (!options) return
 
-  return new AuthorityKeyIdentifierExtension(
-    TypedArrayEncoder.toHex(additionalOptions.key.publicKey),
-    options.markAsCritical
-  )
+  const hash = Hasher.hash(additionalOptions.key.publicKey, 'SHA-1')
+
+  return new AuthorityKeyIdentifierExtension(TypedArrayEncoder.toHex(hash), options.markAsCritical)
 }
 
 export const createIssuerAlternativeNameExtension = (
