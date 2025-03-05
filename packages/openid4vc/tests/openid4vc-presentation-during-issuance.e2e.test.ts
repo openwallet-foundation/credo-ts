@@ -13,11 +13,12 @@ import { askarModuleConfig } from '../../askar/tests/helpers'
 import {
   OpenId4VcHolderModule,
   OpenId4VcIssuanceSessionState,
-  OpenId4VcIssuerModule,
+  OpenId4VcIssuerExpressModule,
   OpenId4VcVerifierModule,
   getScopesFromCredentialConfigurationsSupported,
 } from '../src'
 
+import { importExpress } from '../src/shared/router'
 import { createAgentFromModules, waitForCredentialIssuanceSessionRecordSubject } from './utils'
 import { universityDegreeCredentialConfigurationSupported } from './utilsVci'
 
@@ -65,7 +66,7 @@ describe('OpenId4Vc Presentation During Issuance', () => {
   let clearNock: () => void
 
   let issuer: AgentType<{
-    openId4VcIssuer: OpenId4VcIssuerModule
+    openId4VcIssuer: OpenId4VcIssuerExpressModule
     openId4VcVerifier: OpenId4VcVerifierModule
     askar: AskarModule
   }>
@@ -79,7 +80,8 @@ describe('OpenId4Vc Presentation During Issuance', () => {
     expressApp = express()
 
     issuer = await createAgentFromModules('issuer', {
-      openId4VcIssuer: new OpenId4VcIssuerModule({
+      openId4VcIssuer: new OpenId4VcIssuerExpressModule({
+        router: importExpress().Router(),
         baseUrl: issuerBaseUrl,
         getVerificationSessionForIssuanceSessionAuthorization: async ({ issuanceSession, scopes }) => {
           if (scopes.includes(universityDegreeCredentialConfigurationSupported.scope)) {

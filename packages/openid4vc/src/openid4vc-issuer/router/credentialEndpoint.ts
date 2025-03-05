@@ -1,7 +1,5 @@
 import type { HttpMethod } from '@animo-id/oauth2'
-import type { Response, Router } from 'express'
-import type { OpenId4VcIssuerModuleConfig } from '../OpenId4VcIssuerModuleConfig'
-import type { OpenId4VcIssuanceRequest } from './requestContext'
+import type { OpenId4VcIssuancePostRequest } from './requestContext'
 
 import {
   Oauth2ErrorCodes,
@@ -9,25 +7,22 @@ import {
   Oauth2ServerErrorResponseError,
   SupportedAuthenticationScheme,
 } from '@animo-id/oauth2'
-import { getCredentialConfigurationsMatchingRequestFormat } from '@animo-id/oid4vci'
+import { CredentialRequest, getCredentialConfigurationsMatchingRequestFormat } from '@animo-id/oid4vci'
 import { joinUriParts } from '@credo-ts/core'
 
+import { BaseOpenId4VcIssuerModuleConfig } from '@credo-ts/openid4vc'
+import createHttpError from 'http-errors'
 import { getCredentialConfigurationsSupportedForScopes } from '../../shared'
-import {
-  getRequestContext,
-  sendJsonResponse,
-  sendOauth2ErrorResponse,
-  sendUnauthorizedError,
-  sendUnknownServerErrorResponse,
-} from '../../shared/router'
+import { CredoRouter, getRequestContext } from '../../shared/router'
 import { addSecondsToDate } from '../../shared/utils'
 import { OpenId4VcIssuanceSessionState } from '../OpenId4VcIssuanceSessionState'
 import { OpenId4VcIssuerService } from '../OpenId4VcIssuerService'
 import { OpenId4VcIssuanceSessionRecord, OpenId4VcIssuanceSessionRepository } from '../repository'
 
-export function configureCredentialEndpoint(router: Router, config: OpenId4VcIssuerModuleConfig) {
-  router.post(config.credentialEndpointPath, async (request: OpenId4VcIssuanceRequest, response: Response, next) => {
+export function configureCredentialEndpoint(router: CredoRouter, config: BaseOpenId4VcIssuerModuleConfig) {
+  router.post(config.credentialEndpointPath, async (request: OpenId4VcIssuancePostRequest<CredentialRequest>) => {
     const { agentContext, issuer } = getRequestContext(request)
+
     const openId4VcIssuerService = agentContext.dependencyManager.resolve(OpenId4VcIssuerService)
     const issuerMetadata = await openId4VcIssuerService.getIssuerMetadata(agentContext, issuer, true)
     const vcIssuer = openId4VcIssuerService.getIssuer(agentContext)
@@ -47,8 +42,22 @@ export function configureCredentialEndpoint(router: Router, config: OpenId4VcIss
           url: fullRequestUrl,
         },
       })
-      .catch((error) => {
-        sendUnauthorizedError(response, next, agentContext.config.logger, error)
+      .catch((error: unknown) => {
+        throw createHttpError(
+          403,
+          error instanceof Oauth2ResourceUnauthorizedError ? error.message : 'Unknown error occured',
+          {
+            headers: {
+              'WWW-Authenticate':
+                error instanceof Oauth2ResourceUnauthorizedError
+                  ? error.toHeaderValue()
+                  : new Oauth2ResourceUnauthorizedError(
+                      'No credential configurations match credential request and access token scope',
+                      [{ scheme: SupportedAuthenticationScheme.DPoP }, { scheme: SupportedAuthenticationScheme.Bearer }]
+                    ).toHeaderValue(),
+            },
+          }
+        )
       })
     if (!resourceRequestResult) return
     const { tokenPayload, accessToken, scheme, authorizationServer } = resourceRequestResult
@@ -67,35 +76,31 @@ export function configureCredentialEndpoint(router: Router, config: OpenId4VcIss
 
     const subject = tokenPayload.sub
     if (!subject) {
-      return sendOauth2ErrorResponse(
-        response,
-        next,
-        agentContext.config.logger,
-        new Oauth2ServerErrorResponseError(
-          {
-            error: Oauth2ErrorCodes.ServerError,
-          },
-          {
-            internalMessage: `Received token without 'sub' claim. Subject is required for binding issuance session`,
-          }
-        )
+      throw createHttpError(
+        400,
+        `Received token without 'sub' claim. Subject is required for binding issuance session`,
+        {
+          type: 'oauth2_error',
+          errorResponse: { error: Oauth2ErrorCodes.ServerError },
+        }
       )
     }
 
     // Already handle request without format. Simplifies next code sections
     if (!parsedCredentialRequest.format) {
-      return sendOauth2ErrorResponse(
-        response,
-        next,
-        agentContext.config.logger,
-        new Oauth2ServerErrorResponseError({
-          error: parsedCredentialRequest.credentialIdentifier
-            ? Oauth2ErrorCodes.InvalidCredentialRequest
-            : Oauth2ErrorCodes.UnsupportedCredentialFormat,
-          error_description: parsedCredentialRequest.credentialIdentifier
-            ? `Credential request containing 'credential_identifier' not supported`
-            : `Credential format '${parsedCredentialRequest.credentialRequest.format}' not supported`,
-        })
+      throw createHttpError(
+        400,
+        parsedCredentialRequest.credentialIdentifier
+          ? `Credential request containing 'credential_identifier' not supported`
+          : `Credential format '${parsedCredentialRequest.credentialRequest.format}' not supported`,
+        {
+          type: 'oauth2_error',
+          errorResponse: {
+            error: parsedCredentialRequest.credentialIdentifier
+              ? Oauth2ErrorCodes.InvalidCredentialRequest
+              : Oauth2ErrorCodes.UnsupportedCredentialFormat,
+          },
+        }
       )
     }
 
@@ -118,36 +123,26 @@ export function configureCredentialEndpoint(router: Router, config: OpenId4VcIss
           }
         )
 
-        return sendOauth2ErrorResponse(
-          response,
-          next,
-          agentContext.config.logger,
-          new Oauth2ServerErrorResponseError(
-            {
-              error: Oauth2ErrorCodes.CredentialRequestDenied,
-            },
-            {
-              internalMessage: `No issuance session found for incoming credential request for issuer ${issuer.issuerId} and access token data`,
-            }
-          )
+        throw createHttpError(
+          400,
+          `No issuance session found for incoming credential request for issuer ${issuer.issuerId} and access token data`,
+          {
+            type: 'oauth2_error',
+            errorResponse: { error: Oauth2ErrorCodes.CredentialRequestDenied },
+          }
         )
       }
 
       // Verify the issuance session subject
       if (issuanceSession.authorization?.subject) {
         if (issuanceSession.authorization.subject !== tokenPayload.sub) {
-          return sendOauth2ErrorResponse(
-            response,
-            next,
-            agentContext.config.logger,
-            new Oauth2ServerErrorResponseError(
-              {
-                error: Oauth2ErrorCodes.CredentialRequestDenied,
-              },
-              {
-                internalMessage: `Issuance session authorization subject does not match with the token payload subject for issuance session '${issuanceSession.id}'. Returning error response`,
-              }
-            )
+          throw createHttpError(
+            400,
+            `Issuance session authorization subject does not match with the token payload subject for issuance session '${issuanceSession.id}'. Returning error response`,
+            {
+              type: 'oauth2_error',
+              errorResponse: { error: Oauth2ErrorCodes.CredentialRequestDenied },
+            }
           )
         }
       }
@@ -158,10 +153,9 @@ export function configureCredentialEndpoint(router: Router, config: OpenId4VcIss
       ) {
         issuanceSession.errorMessage = 'Credential offer has expired'
         await openId4VcIssuerService.updateState(agentContext, issuanceSession, OpenId4VcIssuanceSessionState.Error)
-        throw new Oauth2ServerErrorResponseError({
-          // What is the best error here?
-          error: Oauth2ErrorCodes.CredentialRequestDenied,
-          error_description: 'Session expired',
+        throw createHttpError(400, 'Session expired', {
+          type: 'oauth2_error',
+          errorResponse: { error: Oauth2ErrorCodes.CredentialRequestDenied },
         })
       } else {
         issuanceSession.authorization = {
@@ -191,20 +185,17 @@ export function configureCredentialEndpoint(router: Router, config: OpenId4VcIss
       })
 
       if (Object.keys(credentialConfigurationsForToken).length === 0) {
-        return sendUnauthorizedError(
-          response,
-          next,
-          agentContext.config.logger,
-          new Oauth2ResourceUnauthorizedError(
-            'No credential configurationss match credential request and access token scope',
-            {
-              scheme,
-              error: Oauth2ErrorCodes.InsufficientScope,
-            }
-          ),
-          // Forbidden for InsufficientScope
-          403
-        )
+        throw createHttpError(403, 'No credential configurations match credential request and access token scope', {
+          headers: {
+            'WWW-Authenticate': new Oauth2ResourceUnauthorizedError(
+              'No credential configurationss match credential request and access token scope',
+              {
+                scheme,
+                error: Oauth2ErrorCodes.InsufficientScope,
+              }
+            ).toHeaderValue(),
+          },
+        })
       }
 
       issuanceSession = new OpenId4VcIssuanceSessionRecord({
@@ -224,18 +215,13 @@ export function configureCredentialEndpoint(router: Router, config: OpenId4VcIss
       await issuanceSessionRepository.save(agentContext, issuanceSession)
       openId4VcIssuerService.emitStateChangedEvent(agentContext, issuanceSession, null)
     } else if (!issuanceSession) {
-      return sendOauth2ErrorResponse(
-        response,
-        next,
-        agentContext.config.logger,
-        new Oauth2ServerErrorResponseError(
-          {
-            error: Oauth2ErrorCodes.CredentialRequestDenied,
-          },
-          {
-            internalMessage: `Access token without 'issuer_state' or 'pre-authorized_code' issued by external authorization server provided, but 'allowDynamicIssuanceSessions' is disabled. Either bind the access token to a stateful credential offer, or enable 'allowDynamicIssuanceSessions'.`,
-          }
-        )
+      throw createHttpError(
+        400,
+        `Access token without 'issuer_state' or 'pre-authorized_code' issued by external authorization server provided, but 'allowDynamicIssuanceSessions' is disabled. Either bind the access token to a stateful credential offer, or enable 'allowDynamicIssuanceSessions'.`,
+        {
+          type: 'oauth2_error',
+          errorResponse: { error: Oauth2ErrorCodes.CredentialRequestDenied },
+        }
       )
     }
 
@@ -252,16 +238,16 @@ export function configureCredentialEndpoint(router: Router, config: OpenId4VcIss
         },
       })
 
-      return sendJsonResponse(response, next, credentialResponse)
+      return credentialResponse
     } catch (error) {
       if (error instanceof Oauth2ServerErrorResponseError) {
-        return sendOauth2ErrorResponse(response, next, agentContext.config.logger, error)
+        throw createHttpError(400, error.message, { type: 'oauth2_error', errorResponse: error.errorResponse })
       }
       if (error instanceof Oauth2ResourceUnauthorizedError) {
-        return sendUnauthorizedError(response, next, agentContext.config.logger, error)
+        throw createHttpError(403, error.message, {})
       }
 
-      return sendUnknownServerErrorResponse(response, next, agentContext.config.logger, error)
+      throw createHttpError(500, error)
     }
   })
 }
