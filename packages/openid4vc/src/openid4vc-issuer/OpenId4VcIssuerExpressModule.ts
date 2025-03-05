@@ -2,11 +2,15 @@ import type { AgentContext, DependencyManager, Module } from '@credo-ts/core'
 import type { NextFunction, Response } from 'express'
 import type { OpenId4VcIssuerModuleConfigOptions } from './OpenId4VcIssuerModuleConfig'
 import type { OpenId4VcIssuanceRequest } from './router'
-
-import { setGlobalConfig } from '@animo-id/oauth2'
+import { setGlobalConfig} from '@animo-id/oauth2'
 import { AgentConfig } from '@credo-ts/core'
 
-import { getAgentContextForActorId, getRequestContext, importExpress } from '../shared/router'
+import {
+  getAgentContextForActorId,
+  getLogger,
+  getRequestContext,
+  importExpress,
+} from '../shared/router'
 
 import { OpenId4VcIssuerApi } from './OpenId4VcIssuerApi'
 import { OpenId4VcIssuerModuleConfig } from './OpenId4VcIssuerModuleConfig'
@@ -23,6 +27,7 @@ import {
   configureNonceEndpoint,
   configureOAuthAuthorizationServerMetadataEndpoint,
 } from './router'
+import {HttpError} from "http-errors";
 
 /**
  * @public
@@ -82,14 +87,15 @@ export class OpenId4VcIssuerModule implements Module {
     // We use separate context router and endpoint router. Context router handles the linking of the request
     // to a specific agent context. Endpoint router only knows about a single context
     const endpointRouter = Router()
-    const contextRouter = this.config.router
+    // @ts-ignore
+    const contextRouter = this.config.router as Router
 
     // parse application/x-www-form-urlencoded
     contextRouter.use(urlencoded({ extended: false }))
     // parse application/json
     contextRouter.use(json())
 
-    contextRouter.param('issuerId', async (req: OpenId4VcIssuanceRequest, _res, next, issuerId: string) => {
+    contextRouter.param('issuerId', async (req: OpenId4VcIssuanceRequest, _res: Response, next: NextFunction, issuerId: string) => {
       if (!issuerId) {
         rootAgentContext.config.logger.debug('No issuerId provided for incoming oid4vci request, returning 404')
         _res.status(404).send('Not found')
@@ -136,7 +142,7 @@ export class OpenId4VcIssuerModule implements Module {
     configureCredentialEndpoint(endpointRouter, this.config)
 
     // First one will be called for all requests (when next is called)
-    contextRouter.use(async (req: OpenId4VcIssuanceRequest, _res: unknown, next) => {
+    contextRouter.use(async (req: OpenId4VcIssuanceRequest, _res: unknown, next: NextFunction) => {
       const { agentContext } = getRequestContext(req)
       await agentContext.endSession()
 
@@ -144,22 +150,60 @@ export class OpenId4VcIssuerModule implements Module {
     })
 
     // This one will be called for all errors that are thrown
-    contextRouter.use(async (_error: unknown, req: OpenId4VcIssuanceRequest, res: Response, next: NextFunction) => {
+    contextRouter.use(async (error: HttpError | unknown, req: OpenId4VcIssuanceRequest, res: Response, next: NextFunction) => {
       const { agentContext } = getRequestContext(req)
 
-      if (!res.headersSent) {
-        agentContext.config.logger.warn(
-          'Error was thrown but openid4vci endpoint did not send a response. Sending generic server_error.'
-        )
+      const statusCode = error instanceof HttpError ? error.statusCode : 500
 
-        res.status(500).json({
-          error: 'server_error',
-          error_description: 'An unexpected error occurred on the server.',
-        })
+      res.status(statusCode)
+
+      if (error instanceof HttpError && error.headers != null) {
+        for (const [name, value] of Object.entries(error.headers)) {
+          res.setHeader(name, value)
+        }
       }
 
+      if (error instanceof HttpError && error.errorResponse != null) {
+        res.json(error.errorResponse)
+      } else if (error instanceof Error && statusCode == 500) {
+        res.json({ error: error.message ?? 'server_error', error_description: 'An unexpected error occurred on the server.' })
+      } else if (error instanceof String) {
+        res.json({ error: error ?? 'server_error', error_description: 'An unexpected error occurred on the server.' })
+      } else {
+        res.send()
+      }
+
+      logError(error, req, res);
       await agentContext.endSession()
       next()
+    })
+  }
+}
+
+export function logError(error: HttpError | unknown, request: OpenId4VcIssuanceRequest, response: Response, ) {
+  const logger = getLogger(request);
+  if (error instanceof HttpError) {
+    if (error.type === 'oauth2_error') {
+      logger.warn(`[OID4VC] Sending oauth2 error response: ${JSON.stringify(error.message)}`, {
+        error,
+      })
+    } else if ([401, 403].includes(error.statusCode)) {
+      logger.warn(`[OID4VC] Sending authorization error response: ${JSON.stringify(error.message)}`, {
+        error,
+      })
+    } else if (error.statusCode === 404) {
+      logger.debug(`[OID4VC] Sending not found response: ${error.message}`, {
+        error,
+      })
+    } else if (error.statusCode === 500) {
+      logger.error('[OID4VC] Sending unknown server error response', {
+        error,
+      })
+    }
+  }
+  else {
+    logger.warn(`[OID4VC] Sending error response`, {
+      error,
     })
   }
 }
