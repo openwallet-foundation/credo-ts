@@ -10,6 +10,7 @@ describe('ConnectionRequestMessage', () => {
     })
 
     // @ts-ignore
+    // biome-ignore lint/performance/noDelete: <explanation>
     delete connectionRequest.connection
 
     expect(() => MessageValidator.validateSync(connectionRequest)).toThrowError(ClassValidationError)

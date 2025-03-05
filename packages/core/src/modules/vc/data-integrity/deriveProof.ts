@@ -109,6 +109,7 @@ export const deriveProof = async (
     })
 
     delete compactProof[alias]
+    // biome-ignore lint/performance/noDelete: <explanation>
     delete compactProof['@context']
 
     /**
@@ -124,6 +125,7 @@ export const deriveProof = async (
     const key = Object.keys(compactProof)[0]
     jsonld.addValue(derivedProof.document, key, compactProof[key])
   } else {
+    // biome-ignore lint/performance/noDelete: <explanation>
     delete derivedProof.proof['@context']
     jsonld.addValue(derivedProof.document, 'proof', derivedProof.proof)
   }

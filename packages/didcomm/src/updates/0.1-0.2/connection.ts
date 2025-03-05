@@ -199,6 +199,7 @@ export async function extractDidDocument<Agent extends BaseAgent>(agent: Agent, 
 
     agent.config.logger.debug('Deleting old did document from connection record and storing new did:peer did')
     // Remove didDoc and assign the new did:peer did to did
+    // biome-ignore lint/performance/noDelete: <explanation>
     delete untypedConnectionRecord.didDoc
     connectionRecord.did = newOurDidDocument.id
   } else {
@@ -250,6 +251,7 @@ export async function extractDidDocument<Agent extends BaseAgent>(agent: Agent, 
 
     agent.config.logger.debug('Deleting old theirDidDoc from connection record and storing new did:peer theirDid')
     // Remove theirDidDoc and assign the new did:peer did to theirDid
+    // biome-ignore lint/performance/noDelete: <explanation>
     delete untypedConnectionRecord.theirDidDoc
     connectionRecord.theirDid = newTheirDidDocument.id
   } else {
@@ -259,6 +261,7 @@ export async function extractDidDocument<Agent extends BaseAgent>(agent: Agent, 
   }
 
   // Delete legacy verkey property
+  // biome-ignore lint/performance/noDelete: <explanation>
   delete untypedConnectionRecord.verkey
 }
 
@@ -393,12 +396,14 @@ export async function migrateToOobRecord<Agent extends BaseAgent>(
     connectionRecord.invitationDid = invitationDid
 
     // Remove invitation and assign the oob id to the connection record
+    // biome-ignore lint/performance/noDelete: <explanation>
     delete untypedConnectionRecord.invitation
     connectionRecord.outOfBandId = oobRecord.id
   }
 
   agent.config.logger.debug('Removing multiUseInvitation property from connection record')
   // multiUseInvitation is now stored as reusable in the out of band record
+  // biome-ignore lint/performance/noDelete: <explanation>
   delete untypedConnectionRecord.multiUseInvitation
 
   return connectionRecord
