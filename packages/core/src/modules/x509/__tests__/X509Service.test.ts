@@ -10,7 +10,7 @@ import { P256Jwk, getJwkFromKey } from '../../../crypto/jose/jwk'
 import { X509Error } from '../X509Error'
 import { X509Service } from '../X509Service'
 
-import { Hasher, Key, TypedArrayEncoder, X509ExtendedKeyUsage, X509KeyUsage } from '@credo-ts/core'
+import { CredoWebCrypto, Hasher, Key, TypedArrayEncoder, X509ExtendedKeyUsage, X509KeyUsage } from '@credo-ts/core'
 
 /**
  *
@@ -57,6 +57,8 @@ describe('X509Service', () => {
     const rootKey = await wallet.createKey({ keyType: KeyType.P256 })
     const intermediateKey = await wallet.createKey({ keyType: KeyType.P256 })
     const leafKey = await wallet.createKey({ keyType: KeyType.P256 })
+
+    x509.cryptoProvider.set(new CredoWebCrypto(agentContext))
 
     const rootCert = await X509Service.createCertificate(agentContext, {
       serialNumber: '01',
