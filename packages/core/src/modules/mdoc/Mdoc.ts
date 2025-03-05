@@ -44,8 +44,6 @@ export class Mdoc {
     deviceSignedBase64Url: string,
     expectedDocType?: string
   ): Mdoc {
-    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
-
     return new Mdoc(
       parseDeviceSigned(
         TypedArrayEncoder.fromBase64(deviceSignedBase64Url),
