@@ -1,5 +1,5 @@
 import type { Response, Router } from 'express'
-import type { OpenId4VcIssuerModuleConfig } from '../OpenId4VcIssuerModuleConfig'
+import type { BaseOpenId4VcIssuerModuleConfig } from '../OpenId4VcIssuerModuleConfig'
 import type { OpenId4VcIssuanceRequest } from './requestContext'
 
 import { joinUriParts } from '@credo-ts/core'
@@ -15,7 +15,7 @@ import { OpenId4VcIssuanceSessionState } from '../OpenId4VcIssuanceSessionState'
 import { OpenId4VcIssuerService } from '../OpenId4VcIssuerService'
 import { OpenId4VcIssuanceSessionRepository } from '../repository'
 
-export function configureCredentialOfferEndpoint(router: Router, config: OpenId4VcIssuerModuleConfig) {
+export function configureCredentialOfferEndpoint(router: Router, config: BaseOpenId4VcIssuerModuleConfig) {
   router.get(
     joinUriParts(config.credentialOfferEndpointPath, [':credentialOfferId']),
     async (request: OpenId4VcIssuanceRequest, response: Response, next) => {

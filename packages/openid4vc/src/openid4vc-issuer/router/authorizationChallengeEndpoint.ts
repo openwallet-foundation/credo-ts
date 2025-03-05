@@ -27,10 +27,10 @@ import {
 } from '../../shared/router'
 import { addSecondsToDate } from '../../shared/utils'
 import { OpenId4VcIssuanceSessionState } from '../OpenId4VcIssuanceSessionState'
-import { OpenId4VcIssuerModuleConfig } from '../OpenId4VcIssuerModuleConfig'
+import { BaseOpenId4VcIssuerModuleConfig } from '../OpenId4VcIssuerModuleConfig'
 import { OpenId4VcIssuerService } from '../OpenId4VcIssuerService'
 
-export function configureAuthorizationChallengeEndpoint(router: Router, config: OpenId4VcIssuerModuleConfig) {
+export function configureAuthorizationChallengeEndpoint(router: Router, config: BaseOpenId4VcIssuerModuleConfig) {
   router.post(
     config.authorizationChallengeEndpointPath,
     async (request: OpenId4VcIssuanceRequest, response: Response, next: NextFunction) => {
@@ -85,7 +85,7 @@ async function handleAuthorizationChallengeNoAuthSession(options: {
   // First call, no auth_sesion yet
 
   const openId4VcIssuerService = agentContext.dependencyManager.resolve(OpenId4VcIssuerService)
-  const config = agentContext.dependencyManager.resolve(OpenId4VcIssuerModuleConfig)
+  const config = agentContext.dependencyManager.resolve(BaseOpenId4VcIssuerModuleConfig)
   const issuerMetadata = await openId4VcIssuerService.getIssuerMetadata(agentContext, issuer)
   const authorizationServer = openId4VcIssuerService.getOauth2AuthorizationServer(agentContext)
 
@@ -227,7 +227,7 @@ async function handleAuthorizationChallengeWithAuthSession(options: {
   const { agentContext, issuer, authorizationChallengeRequest, response, next } = options
 
   const openId4VcIssuerService = agentContext.dependencyManager.resolve(OpenId4VcIssuerService)
-  const config = agentContext.dependencyManager.resolve(OpenId4VcIssuerModuleConfig)
+  const config = agentContext.dependencyManager.resolve(BaseOpenId4VcIssuerModuleConfig)
   const authorizationServer = openId4VcIssuerService.getOauth2AuthorizationServer(agentContext)
   const verifierApi = agentContext.dependencyManager.resolve(OpenId4VcVerifierApi)
 

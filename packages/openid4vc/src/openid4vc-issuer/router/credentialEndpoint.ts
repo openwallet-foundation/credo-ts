@@ -10,12 +10,12 @@ import {
 import { CredentialRequest, getCredentialConfigurationsMatchingRequestFormat } from '@animo-id/oid4vci'
 import { joinUriParts } from '@credo-ts/core'
 
-import { BaseOpenId4VcIssuerModuleConfig } from '@credo-ts/openid4vc'
 import createHttpError from 'http-errors'
 import { getCredentialConfigurationsSupportedForScopes } from '../../shared'
 import { CredoRouter, getRequestContext } from '../../shared/router'
 import { addSecondsToDate } from '../../shared/utils'
 import { OpenId4VcIssuanceSessionState } from '../OpenId4VcIssuanceSessionState'
+import type { BaseOpenId4VcIssuerModuleConfig } from '../OpenId4VcIssuerModuleConfig'
 import { OpenId4VcIssuerService } from '../OpenId4VcIssuerService'
 import { OpenId4VcIssuanceSessionRecord, OpenId4VcIssuanceSessionRepository } from '../repository'
 
