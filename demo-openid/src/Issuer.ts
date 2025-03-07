@@ -28,7 +28,7 @@ import {
   w3cDate,
 } from '@credo-ts/core'
 import {
-  OpenId4VcIssuerModule,
+  OpenId4VcIssuerExpressModule,
   OpenId4VcVerifierApi,
   OpenId4VcVerifierModule,
   OpenId4VciCredentialFormatProfile,
@@ -194,7 +194,7 @@ function getCredentialRequestToCredentialMapper({
 
 export class Issuer extends BaseAgent<{
   askar: AskarModule
-  openId4VcIssuer: OpenId4VcIssuerModule
+  openId4VcIssuer: OpenId4VcIssuerExpressModule
   openId4VcVerifier: OpenId4VcVerifierModule
 }> {
   public issuerRecord!: OpenId4VcIssuerRecord
@@ -213,7 +213,7 @@ export class Issuer extends BaseAgent<{
           baseUrl: `${url}/oid4vp`,
           router: openId4VpRouter,
         }),
-        openId4VcIssuer: new OpenId4VcIssuerModule({
+        openId4VcIssuer: new OpenId4VcIssuerExpressModule({
           baseUrl: `${url}/oid4vci`,
           router: openId4VciRouter,
           credentialRequestToCredentialMapper: (...args) =>
