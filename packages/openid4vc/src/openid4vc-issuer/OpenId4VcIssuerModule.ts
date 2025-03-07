@@ -1,8 +1,5 @@
-import type { Router } from 'express'
-import type { FastifyInstance } from 'fastify'
-
 import { setGlobalConfig } from '@animo-id/oauth2'
-import { AgentConfig, type AgentContext, DependencyManager, InjectionSymbols, type Module } from '@credo-ts/core'
+import { AgentConfig, type AgentContext, type DependencyManager, InjectionSymbols, type Module } from '@credo-ts/core'
 import createHttpError from 'http-errors'
 import {
   OpenId4VcIssuerApi,
@@ -10,10 +7,10 @@ import {
   type OpenId4VcIssuerModuleConfigOptions,
   OpenId4VcIssuerService,
 } from '.'
-import { RouterFactory, getAgentContextForActorId } from '../shared/router'
+import { type RouterFactory, type SupportedRouterTypes, getAgentContextForActorId } from '../shared/router'
 import { OpenId4VcIssuanceSessionRepository, OpenId4VcIssuerRepository } from './repository'
 
-export abstract class OpenId4VcIssuerModule<RouterType extends Router | FastifyInstance> implements Module {
+export abstract class OpenId4VcIssuerModule<RouterType extends SupportedRouterTypes> implements Module {
   public readonly api = OpenId4VcIssuerApi<RouterType>
   public readonly config: OpenId4VcIssuerModuleConfig<RouterType>
 

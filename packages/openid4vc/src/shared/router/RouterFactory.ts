@@ -1,6 +1,5 @@
-import type { Router } from 'express'
-import type { FastifyInstance } from 'fastify'
+import type { SupportedRouterTypes } from './context'
 
-export interface RouterFactory<RouterType extends Router | FastifyInstance> {
+export interface RouterFactory<RouterType extends SupportedRouterTypes> {
   create(): RouterType
 }

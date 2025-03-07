@@ -1,9 +1,10 @@
 import type { Oauth2ErrorCodes, Oauth2ServerErrorResponseError } from '@animo-id/oauth2'
 import type { AgentContext, Logger } from '@credo-ts/core'
-import type { NextFunction, Request, Response } from 'express'
+import type { NextFunction, Request, Response, Router } from 'express'
 
 import * as http from 'node:http'
 import { CredoError } from '@credo-ts/core'
+import { FastifyInstance } from 'fastify'
 
 export interface HasRequestContext<RC extends Record<string, unknown>> {
   requestContext?: RC & OpenId4VcRequestContext
@@ -23,6 +24,9 @@ export interface OpenId4VcRequestContext {
   agentContext: AgentContext
 }
 
+export type SupportedRouterTypes = Router | FastifyInstance
+
+/* TODO move out of context to express specific helpers */
 export function sendOauth2ErrorResponse(
   response: Response,
   next: NextFunction,

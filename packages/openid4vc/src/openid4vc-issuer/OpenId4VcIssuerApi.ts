@@ -1,5 +1,4 @@
-import type { Router } from 'express'
-import type { FastifyInstance } from 'fastify'
+import type { SupportedRouterTypes } from '../shared/router'
 import type { OpenId4VcIssuerModuleConfig } from './OpenId4VcIssuerModuleConfig'
 import type { OpenId4VcIssuerService } from './OpenId4VcIssuerService'
 import type {
@@ -19,7 +18,7 @@ import { type AgentContext, injectable } from '@credo-ts/core'
  * and retrieving a credential offer from a URI.
  */
 @injectable()
-export class OpenId4VcIssuerApi<RouterType extends Router | FastifyInstance> {
+export class OpenId4VcIssuerApi<RouterType extends SupportedRouterTypes> {
   public constructor(
     public readonly config: OpenId4VcIssuerModuleConfig<RouterType>,
     private agentContext: AgentContext,

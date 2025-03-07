@@ -1,6 +1,4 @@
-import type { Router } from 'express'
-import type { FastifyInstance } from 'fastify'
-import { RouterFactory } from '../shared/router'
+import type { RouterFactory, SupportedRouterTypes } from '../shared/router'
 import type {
   OpenId4VciCredentialRequestToCredentialMapper,
   OpenId4VciGetVerificationSessionForIssuanceSessionAuthorization,
@@ -254,7 +252,7 @@ export class BaseOpenId4VcIssuerModuleConfig {
   }
 }
 
-export interface OpenId4VcIssuerModuleConfigOptions<RouterType extends Router | FastifyInstance>
+export interface OpenId4VcIssuerModuleConfigOptions<RouterType extends SupportedRouterTypes>
   extends BaseOpenId4VcIssuerModuleConfigOptions {
   /**
    * Express router or Fastify instance which the openid4vci endpoints will be registered. If
@@ -267,7 +265,7 @@ export interface OpenId4VcIssuerModuleConfigOptions<RouterType extends Router | 
 }
 
 export class OpenId4VcIssuerModuleConfig<
-  RouterType extends Router | FastifyInstance,
+  RouterType extends SupportedRouterTypes,
 > extends BaseOpenId4VcIssuerModuleConfig {
   public readonly router: RouterType
 
