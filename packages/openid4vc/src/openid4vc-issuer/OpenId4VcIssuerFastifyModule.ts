@@ -1,15 +1,13 @@
 import type { AgentContext, Module } from '@credo-ts/core'
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify'
-import type { OpenId4VcIssuerModuleConfig } from './OpenId4VcIssuerModuleConfig'
-import type { OpenId4VcIssuerRecord } from './repository'
-
 import { HttpError } from 'http-errors'
-import { type HasRequestContext, getRequestContext } from '../shared/router'
-import { IssuerIdParam } from './IssuerIdParam'
+import { FastifyRouterFactory, type HasRequestContext, getRequestContext } from '../shared/router'
+import type { IssuerIdParam } from './IssuerIdParam'
 import { logError } from './LogError'
 import { OpenId4VcIssuerModule, buildOpenId4VcIssuanceRequestContext } from './OpenId4VcIssuerModule'
+import type { OpenId4VcIssuerModuleConfig, OpenId4VcIssuerModuleConfigOptions } from './OpenId4VcIssuerModuleConfig'
+import type { OpenId4VcIssuerRecord } from './repository'
 import { configureCredentialEndpoint } from './router'
-
 declare module 'fastify' {
   interface FastifyRequest extends HasRequestContext<{ issuer: OpenId4VcIssuerRecord }> {}
 }
@@ -17,6 +15,10 @@ declare module 'fastify' {
  * @public
  */
 export class OpenId4VcIssuerFastifyModule extends OpenId4VcIssuerModule<FastifyInstance> implements Module {
+  constructor(options: OpenId4VcIssuerModuleConfigOptions<FastifyInstance>) {
+    super(options, new FastifyRouterFactory())
+  }
+
   public async initialize(rootAgentContext: AgentContext): Promise<void> {
     const rootFastify = this.config.router as FastifyInstance
     rootFastify.register(openId4VcIssuerPlugin, { rootAgentContext, config: this.config, prefix: '/:issuerId' })

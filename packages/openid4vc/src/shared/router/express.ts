@@ -1,4 +1,5 @@
-import type { default as Express } from 'express'
+import type { default as Express, Router } from 'express'
+import { RouterFactory } from './RouterFactory'
 
 export function importExpress() {
   try {
@@ -7,5 +8,11 @@ export function importExpress() {
     return express
   } catch (_error) {
     throw new Error('Express must be installed as a peer dependency')
+  }
+}
+
+export class ExpressRouterFactory implements RouterFactory<Router> {
+  public create(): Router {
+    return importExpress().Router()
   }
 }

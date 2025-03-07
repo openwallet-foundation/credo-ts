@@ -51,8 +51,6 @@ import {
   OpenId4VcVerifierModule,
 } from '../src'
 import { getOid4vciCallbacks } from '../src/shared/callbacks'
-
-import { importExpress } from '../src/shared/router'
 import {
   createAgentFromModules,
   createTenantForAgent,
@@ -104,7 +102,6 @@ describe('OpenId4Vc', () => {
       {
         x509: new X509Module(),
         openId4VcIssuer: new OpenId4VcIssuerExpressModule({
-          router: importExpress().Router(),
           baseUrl: issuanceBaseUrl,
           credentialRequestToCredentialMapper: async ({
             agentContext,

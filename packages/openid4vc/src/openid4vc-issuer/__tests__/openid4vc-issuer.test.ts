@@ -39,7 +39,6 @@ import { AskarModule } from '../../../../askar/src'
 import { askarModuleConfig } from '../../../../askar/tests/helpers'
 import { agentDependencies } from '../../../../node/src'
 import { OpenId4VciCredentialFormatProfile } from '../../shared'
-import { importExpress } from '../../shared/router'
 import { dateToSeconds, getKeyFromDid } from '../../shared/utils'
 import { OpenId4VcIssuanceSessionState } from '../OpenId4VcIssuanceSessionState'
 import { OpenId4VcIssuerExpressModule } from '../OpenId4VcIssuerExpressModule'
@@ -83,7 +82,6 @@ const modules = {
     credentialRequestToCredentialMapper: () => {
       throw new Error('Not implemented')
     },
-    router: importExpress().Router(),
   }),
   askar: new AskarModule(askarModuleConfig),
 }

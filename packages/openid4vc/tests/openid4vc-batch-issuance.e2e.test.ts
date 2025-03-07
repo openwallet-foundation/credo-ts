@@ -13,8 +13,6 @@ import {
   OpenId4VcIssuerExpressModule,
   OpenId4VciCredentialFormatProfile,
 } from '../src'
-
-import { importExpress } from '../src/shared/router'
 import { createAgentFromModules, waitForCredentialIssuanceSessionRecordSubject } from './utils'
 import { universityDegreeCredentialConfigurationSupportedMdoc } from './utilsVci'
 
@@ -40,7 +38,6 @@ describe('OpenId4Vc Presentation During Issuance', () => {
 
     issuer = await createAgentFromModules('issuer', {
       openId4VcIssuer: new OpenId4VcIssuerExpressModule({
-        router: importExpress().Router(),
         baseUrl: issuerBaseUrl,
         credentialRequestToCredentialMapper: async ({
           credentialRequestFormat,

@@ -17,8 +17,6 @@ import {
   OpenId4VcVerifierModule,
   getScopesFromCredentialConfigurationsSupported,
 } from '../src'
-
-import { importExpress } from '../src/shared/router'
 import { createAgentFromModules, waitForCredentialIssuanceSessionRecordSubject } from './utils'
 import { universityDegreeCredentialConfigurationSupported } from './utilsVci'
 
@@ -81,7 +79,6 @@ describe('OpenId4Vc Presentation During Issuance', () => {
 
     issuer = await createAgentFromModules('issuer', {
       openId4VcIssuer: new OpenId4VcIssuerExpressModule({
-        router: importExpress().Router(),
         baseUrl: issuerBaseUrl,
         getVerificationSessionForIssuanceSessionAuthorization: async ({ issuanceSession, scopes }) => {
           if (scopes.includes(universityDegreeCredentialConfigurationSupported.scope)) {

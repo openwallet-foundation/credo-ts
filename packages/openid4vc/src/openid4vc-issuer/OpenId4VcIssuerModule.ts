@@ -10,15 +10,15 @@ import {
   type OpenId4VcIssuerModuleConfigOptions,
   OpenId4VcIssuerService,
 } from '.'
-import { getAgentContextForActorId } from '../shared/router'
+import { RouterFactory, getAgentContextForActorId } from '../shared/router'
 import { OpenId4VcIssuanceSessionRepository, OpenId4VcIssuerRepository } from './repository'
 
 export abstract class OpenId4VcIssuerModule<RouterType extends Router | FastifyInstance> implements Module {
   public readonly api = OpenId4VcIssuerApi<RouterType>
   public readonly config: OpenId4VcIssuerModuleConfig<RouterType>
 
-  constructor(options: OpenId4VcIssuerModuleConfigOptions<RouterType>) {
-    this.config = new OpenId4VcIssuerModuleConfig(options)
+  constructor(options: OpenId4VcIssuerModuleConfigOptions<RouterType>, routerFactory: RouterFactory<RouterType>) {
+    this.config = new OpenId4VcIssuerModuleConfig(options, routerFactory)
   }
 
   /**

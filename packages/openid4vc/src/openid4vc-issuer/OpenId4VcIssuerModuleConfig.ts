@@ -1,5 +1,6 @@
 import type { Router } from 'express'
 import type { FastifyInstance } from 'fastify'
+import { RouterFactory } from '../shared/router'
 import type {
   OpenId4VciCredentialRequestToCredentialMapper,
   OpenId4VciGetVerificationSessionForIssuanceSessionAuthorization,
@@ -262,15 +263,19 @@ export interface OpenId4VcIssuerModuleConfigOptions<RouterType extends Router | 
    * NOTE: you must manually register the router on your express app and
    * expose this on a public url that is reachable when `baseUrl` is called.
    */
-  router: RouterType
+  router?: RouterType
 }
 
 export class OpenId4VcIssuerModuleConfig<
   RouterType extends Router | FastifyInstance,
 > extends BaseOpenId4VcIssuerModuleConfig {
   public readonly router: RouterType
-  public constructor(options: OpenId4VcIssuerModuleConfigOptions<RouterType>) {
+
+  public constructor(
+    options: OpenId4VcIssuerModuleConfigOptions<RouterType>,
+    routerFactory: RouterFactory<RouterType>
+  ) {
     super(options)
-    this.router = options.router
+    this.router = options.router ?? routerFactory?.create()
   }
 }

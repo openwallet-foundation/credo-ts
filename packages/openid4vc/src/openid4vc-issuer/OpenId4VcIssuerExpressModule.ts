@@ -2,8 +2,9 @@ import type { AgentContext, Module } from '@credo-ts/core'
 import type { NextFunction, Response, Router } from 'express'
 import type { OpenId4VcIssuanceRequest } from './router'
 
+import type { OpenId4VcIssuerModuleConfigOptions } from '@credo-ts/openid4vc'
 import { HttpError } from 'http-errors'
-import { getRequestContext, importExpress } from '../shared/router'
+import { ExpressRouterFactory, getRequestContext, importExpress } from '../shared/router'
 import { ExpressCredoRouter } from '../shared/router/ExpressCredoRouter'
 import { logError } from './LogError'
 import { OpenId4VcIssuerModule, buildOpenId4VcIssuanceRequestContext } from './OpenId4VcIssuerModule'
@@ -22,6 +23,10 @@ import {
  * @public
  */
 export class OpenId4VcIssuerExpressModule extends OpenId4VcIssuerModule<Router> implements Module {
+  constructor(options: OpenId4VcIssuerModuleConfigOptions<Router>) {
+    super(options, new ExpressRouterFactory())
+  }
+
   public async initialize(rootAgentContext: AgentContext): Promise<void> {
     this.configureRouter(rootAgentContext)
   }

@@ -18,8 +18,7 @@ import {
   createX509Certificate,
   setupEventReplaySubjects,
 } from '../../core/tests'
-import { OpenId4VcIssuerEvents, OpenId4VcVerifierEvents, OpenId4VcVerifierModule } from '../src'
-import { OpenId4VcIssuerModule } from '../src/openid4vc-issuer/OpenId4VcIssuerModule'
+import { OpenId4VcIssuerEvents, OpenId4VcIssuerModule, OpenId4VcVerifierEvents, OpenId4VcVerifierModule } from '../src'
 
 export async function createAgentFromModules<MM extends ModulesMap>(
   label: string,
