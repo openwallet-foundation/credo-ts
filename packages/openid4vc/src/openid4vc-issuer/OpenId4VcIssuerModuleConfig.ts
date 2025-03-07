@@ -1,5 +1,5 @@
-import { Router } from 'express'
-import { FastifyInstance } from 'fastify'
+import type { Router } from 'express'
+import type { FastifyInstance } from 'fastify'
 import type {
   OpenId4VciCredentialRequestToCredentialMapper,
   OpenId4VciGetVerificationSessionForIssuanceSessionAuthorization,

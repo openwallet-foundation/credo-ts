@@ -1,4 +1,4 @@
-import type { AgentContext, Query, QueryOptions } from '@credo-ts/core'
+import { AgentContext, InjectionSymbols, Query, QueryOptions } from '@credo-ts/core'
 import type {
   OpenId4VcCredentialHolderBindingWithKey,
   OpenId4VciCredentialConfigurationsSupportedWithFormats,
@@ -438,7 +438,9 @@ export class OpenId4VcIssuerService {
     issuerRecord: OpenId4VcIssuerRecord,
     fetchExternalAuthorizationServerMetadata = false
   ): Promise<OpenId4VciMetadata> {
-    const config = agentContext.dependencyManager.resolve(BaseOpenId4VcIssuerModuleConfig)
+    const config: BaseOpenId4VcIssuerModuleConfig = agentContext.dependencyManager.resolve(
+      InjectionSymbols.OpenId4VcIssuerModuleConfig
+    )
     const issuerUrl = joinUriParts(config.baseUrl, [issuerRecord.issuerId])
     const oauth2Client = this.getOauth2Client(agentContext)
 

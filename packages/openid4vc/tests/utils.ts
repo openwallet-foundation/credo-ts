@@ -18,7 +18,8 @@ import {
   createX509Certificate,
   setupEventReplaySubjects,
 } from '../../core/tests'
-import { OpenId4VcIssuerEvents, OpenId4VcIssuerExpressModule, OpenId4VcVerifierEvents, OpenId4VcVerifierModule } from '../src'
+import { OpenId4VcIssuerEvents, OpenId4VcVerifierEvents, OpenId4VcVerifierModule } from '../src'
+import { OpenId4VcIssuerModule } from '../src/openid4vc-issuer/OpenId4VcIssuerModule'
 
 export async function createAgentFromModules<MM extends ModulesMap>(
   label: string,
@@ -41,7 +42,7 @@ export async function createAgentFromModules<MM extends ModulesMap>(
   })
 
   let dns = 'localhost'
-  if (modulesMap.openId4VcIssuer instanceof OpenId4VcIssuerExpressModule) {
+  if (modulesMap.openId4VcIssuer instanceof OpenId4VcIssuerModule) {
     dns = getDomainFromUrl(modulesMap.openId4VcIssuer.config.baseUrl)
   } else if (modulesMap.openId4VcVerifier instanceof OpenId4VcVerifierModule) {
     dns = getDomainFromUrl(modulesMap.openId4VcVerifier.config.baseUrl)

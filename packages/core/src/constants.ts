@@ -4,6 +4,7 @@ export const InjectionSymbols = {
   Logger: Symbol('Logger'),
   AgentContextProvider: Symbol('AgentContextProvider'),
   AgentDependencies: Symbol('AgentDependencies'),
+  OpenId4VcIssuerModuleConfig: Symbol('OpenId4VcIssuerModuleConfig'),
   Stop$: Symbol('Stop$'),
   FileSystem: Symbol('FileSystem'),
   Wallet: Symbol('Wallet'),

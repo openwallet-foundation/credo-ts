@@ -2,27 +2,21 @@ import type { Oauth2ErrorCodes, Oauth2ServerErrorResponseError } from '@animo-id
 import type { AgentContext, Logger } from '@credo-ts/core'
 import type { NextFunction, Request, Response } from 'express'
 
+import * as http from 'node:http'
 import { CredoError } from '@credo-ts/core'
-import * as http from "node:http";
-
-export interface CredoHttpResponse<HttpResponseBodyType> {
-  statusCode: number
-  headers?: { [key: string]: string }
-  body?: HttpResponseBodyType
-}
-
-export interface CredoRouter {
-  post<HttpRequestType extends http.IncomingMessage, HttpResponseBodyType>(path: string, handler: (req: HttpRequestType) => Promise<HttpResponseBodyType | CredoHttpResponse<HttpResponseBodyType> | undefined>): CredoRouter
-}
 
 export interface HasRequestContext<RC extends Record<string, unknown>> {
   requestContext?: RC & OpenId4VcRequestContext
 }
 
-export interface OpenId4VcRequest<RC extends Record<string, unknown> = Record<string, never>> extends Request, HasRequestContext<RC> {}
+export interface OpenId4VcRequest<RC extends Record<string, unknown> = Record<string, never>>
+  extends Request,
+    HasRequestContext<RC> {}
 
-export interface OpenId4VcPostRequest<BodyType, RC extends Record<string, unknown> = Record<string, never>> extends http.IncomingMessage, HasRequestContext<RC> {
-  body: BodyType,
+export interface OpenId4VcPostRequest<BodyType, RC extends Record<string, unknown> = Record<string, never>>
+  extends http.IncomingMessage,
+    HasRequestContext<RC> {
+  body: BodyType
 }
 
 export interface OpenId4VcRequestContext {
@@ -106,9 +100,4 @@ export function getRequestContext<T extends HasRequestContext<any>>(request: T):
   if (!requestContext) throw new CredoError('Request context not set.')
 
   return requestContext
-}
-
-export function getLogger<T extends HasRequestContext<any>>(request: T): Logger {
-  const requestContext = getRequestContext(request)
-  return requestContext.agentContext.config.logger
 }

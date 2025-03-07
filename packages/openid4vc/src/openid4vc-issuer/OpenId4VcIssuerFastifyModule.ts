@@ -1,109 +1,79 @@
-import type { AgentContext, DependencyManager, Module } from '@credo-ts/core'
+import type { AgentContext, Module } from '@credo-ts/core'
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify'
-import type {OpenId4VcIssuerModuleConfigOptions} from './OpenId4VcIssuerModuleConfig'
+import type { OpenId4VcIssuerModuleConfig } from './OpenId4VcIssuerModuleConfig'
+import type { OpenId4VcIssuerRecord } from './repository'
 
-import { setGlobalConfig } from '@animo-id/oauth2'
-import { AgentConfig } from '@credo-ts/core'
-
-import {getAgentContextForActorId, getRequestContext, HasRequestContext, importFastify} from '../shared/router'
-
-import { OpenId4VcIssuerApi } from './OpenId4VcIssuerApi'
-import { OpenId4VcIssuerModuleConfig } from './OpenId4VcIssuerModuleConfig'
-import { OpenId4VcIssuerService } from './OpenId4VcIssuerService'
-import {OpenId4VcIssuanceSessionRepository, type OpenId4VcIssuerRecord} from './repository'
-import { OpenId4VcIssuerRepository } from './repository/OpenId4VcIssuerRepository'
-import {
-    configureAccessTokenEndpoint,
-    configureAuthorizationChallengeEndpoint,
-    configureCredentialEndpoint,
-    configureCredentialOfferEndpoint,
-    configureIssuerMetadataEndpoint,
-    configureJwksEndpoint,
-    configureNonceEndpoint,
-    configureOAuthAuthorizationServerMetadataEndpoint, type OpenId4VcIssuanceRequest,
-} from './router'
-import {OpenId4VcIssuancePostRequest} from "./router/requestContext";
-
-
-
-export interface IssuerIdParams {
-  issuerId: string
-}
+import { HttpError } from 'http-errors'
+import { type HasRequestContext, getRequestContext } from '../shared/router'
+import { IssuerIdParam } from './IssuerIdParam'
+import { logError } from './LogError'
+import { OpenId4VcIssuerModule, buildOpenId4VcIssuanceRequestContext } from './OpenId4VcIssuerModule'
+import { configureCredentialEndpoint } from './router'
 
 declare module 'fastify' {
-    interface FastifyRequest extends HasRequestContext<{ issuer: OpenId4VcIssuerRecord }> {}
+  interface FastifyRequest extends HasRequestContext<{ issuer: OpenId4VcIssuerRecord }> {}
 }
 /**
  * @public
  */
-export class OpenId4VcIssuerModule implements Module {
-    public readonly api = OpenId4VcIssuerApi
-    public readonly config: OpenId4VcIssuerModuleConfig<FastifyInstance>
+export class OpenId4VcIssuerFastifyModule extends OpenId4VcIssuerModule<FastifyInstance> implements Module {
+  public async initialize(rootAgentContext: AgentContext): Promise<void> {
+    const rootFastify = this.config.router as FastifyInstance
+    rootFastify.register(openId4VcIssuerPlugin, { rootAgentContext, config: this.config, prefix: '/:issuerId' })
+  }
+}
 
-    public constructor(options: OpenId4VcIssuerModuleConfigOptions<FastifyInstance>) {
-        this.config = new OpenId4VcIssuerModuleConfig(options)
-    }
+async function openId4VcIssuerPlugin(
+  fastify: FastifyInstance,
+  { rootAgentContext, config }: { rootAgentContext: AgentContext; config: OpenId4VcIssuerModuleConfig<FastifyInstance> }
+) {
+  fastify
+    .decorateRequest('requestContext', null)
+    .addHook<{ Params: IssuerIdParam }>('preHandler', async (request, reply) => {
+      try {
+        request.requestContext = await buildOpenId4VcIssuanceRequestContext(request.params.issuerId, rootAgentContext)
+      } catch (error) {
+        return reply.status(error.statusCode).send(error.message)
+      }
+    })
+    .setErrorHandler(async (error, request: FastifyRequest, reply: FastifyReply) => {
+      const { agentContext } = getRequestContext(request)
 
-    public register(dependencyManager: DependencyManager) {
-        const agentConfig = dependencyManager.resolve(AgentConfig)
+      const statusCode = error instanceof HttpError ? error.statusCode : 500
+      reply.status(statusCode)
 
-        agentConfig.logger.warn(
-            "The '@credo-ts/openid4vc' Issuer module is experimental and may have breaking changes. Use strict versions for all @credo-ts packages."
-        )
-
-        if (agentConfig.allowInsecureHttpUrls) {
-            setGlobalConfig({
-                allowInsecureUrls: true,
-            })
+      if (error instanceof HttpError && error.headers != null) {
+        for (const [name, value] of Object.entries(error.headers)) {
+          reply.header(name, value)
         }
+      }
 
-        dependencyManager.registerInstance(OpenId4VcIssuerModuleConfig, this.config)
-        dependencyManager.registerSingleton(OpenId4VcIssuerService)
-        dependencyManager.registerSingleton(OpenId4VcIssuerRepository)
-        dependencyManager.registerSingleton(OpenId4VcIssuanceSessionRepository)
-    }
-
-    public async initialize(rootAgentContext: AgentContext): Promise<void> {
-        this.configureRouter(rootAgentContext)
-    }
-
-    private configureRouter(rootAgentContext: AgentContext) {
-        const fastify = this.config.router as FastifyInstance
-
-        fastify.decorateRequest('requestContext', null);
-        fastify.addHook<{Params: IssuerIdParams}>('preHandler', async (request, reply) => {
-            try {
-                const issuerId = request.params.issuerId as string
-                if (!issuerId) {
-                    rootAgentContext.config.logger.debug('No issuerId provided for incoming request, returning 404')
-                    return reply.status(404).send('Not found')
-                }
-
-                const agentContext = await getAgentContextForActorId(rootAgentContext, issuerId)
-                const issuerApi = agentContext.dependencyManager.resolve(OpenId4VcIssuerApi)
-                const issuer = await issuerApi.getIssuerByIssuerId(issuerId)
-
-                request.requestContext = { agentContext, issuer }
-            } catch (error) {
-                rootAgentContext.config.logger.error('Failed to correlate request to existing tenant and issuer', { error })
-                return reply.status(404).send('Not found')
-            }
+      if (error instanceof HttpError && error.errorResponse != null) {
+        reply.send(error.errorResponse)
+      } else if (statusCode === 500) {
+        reply.send({
+          error: error.message ?? 'server_error',
+          error_description: 'An unexpected error occurred on the server.',
         })
+      } else {
+        reply.send()
+      }
 
-        // Register endpoints
-        // configureIssuerMetadataEndpoint(fastify)
-        // configureJwksEndpoint(fastify, this.config)
-        // configureNonceEndpoint(fastify, this.config)
-        // configureOAuthAuthorizationServerMetadataEndpoint(fastify)
-        // configureCredentialOfferEndpoint(fastify, this.config)
-        // configureAccessTokenEndpoint(fastify, this.config)
-        // configureAuthorizationChallengeEndpoint(fastify, this.config)
-        configureCredentialEndpoint(fastify, this.config)
+      logError(error, getRequestContext(request))
+      await agentContext.endSession()
+    })
+    .addHook('onResponse', async (request) => {
+      const { agentContext } = getRequestContext(request)
+      await agentContext.endSession()
+    })
 
-        // Global cleanup hook
-        fastify.addHook('onResponse', async (request) => {
-            const { agentContext } = getRequestContext(request)
-            await agentContext.endSession()
-        })
-    }
+  // Register endpoints
+  // configureIssuerMetadataEndpoint(fastify)
+  // configureJwksEndpoint(fastify, this.config)
+  // configureNonceEndpoint(fastify, this.config)
+  // configureOAuthAuthorizationServerMetadataEndpoint(fastify)
+  // configureCredentialOfferEndpoint(fastify, this.config)
+  // configureAccessTokenEndpoint(fastify, this.config)
+  // configureAuthorizationChallengeEndpoint(fastify, this.config)
+  configureCredentialEndpoint(fastify, config)
 }
