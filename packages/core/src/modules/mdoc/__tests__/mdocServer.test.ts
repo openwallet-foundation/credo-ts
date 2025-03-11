@@ -6,8 +6,8 @@ import { KeyType } from '../../../crypto'
 import { X509ModuleConfig, X509Service } from '../../x509'
 import { Mdoc } from '../Mdoc'
 
-import { sprindFunkeTestVectorBase64Url, sprindFunkeX509TrustedCertificate } from './mdoc.fixtures'
 import { MdocDeviceResponse } from '../MdocDeviceResponse'
+import { sprindFunkeTestVectorBase64Url, sprindFunkeX509TrustedCertificate } from './mdoc.fixtures'
 
 describe('mdoc service test', () => {
   let wallet: InMemoryWallet
