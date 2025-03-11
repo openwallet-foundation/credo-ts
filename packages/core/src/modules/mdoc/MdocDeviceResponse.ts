@@ -258,7 +258,7 @@ export class MdocDeviceResponse {
     const deviceResponse = parseDeviceResponse(TypedArrayEncoder.fromBase64(this.base64Url))
 
     // NOTE: we do not use the verification from mdoc library, as it checks all documents
-    // based on the same trusted certificates. Rather, we want to
+    // based on the same trusted certificates
     for (const documentIndex in this.documents) {
       const rawDocument = deviceResponse.documents[documentIndex]
       const document = this.documents[documentIndex]
@@ -279,7 +279,7 @@ export class MdocDeviceResponse {
 
       await verifier.verifyDeviceSignature(
         {
-          sessionTranscriptBytes: await DeviceResponse.calculateSessionTranscriptForOID4VP({
+          sessionTranscriptBytes: await DeviceResponse.calculateSessionTranscriptBytesForOID4VP({
             ...options.sessionTranscriptOptions,
             context: mdocContext,
           }),
