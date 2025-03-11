@@ -26,23 +26,40 @@ services:
       "
 
   cheqd-ledger:
-    image: ghcr.io/cheqd/cheqd-testnet:latest
+    image: ghcr.io/cheqd/cheqd-node:production-latest
     platform: linux/amd64
     ports:
       - '26657:26657'
     command: >
       /bin/bash -c '
-      run-testnet &
-      export RUN_TESTNET_PID=$! &&
+      cheqd-noded init "validator-node" --chain-id "testnet" --home "/tmp/.single-node" &&
+      (echo "12345678") | cheqd-noded keys add validator --keyring-backend test --home "/tmp/.single-node" &&
+      cheqd-noded genesis add-genesis-account $(cheqd-noded keys show validator -a --keyring-backend test --home "/tmp/.single-node") 100000000000000000ncheq --home "/tmp/.single-node" &&
+      cheqd-noded genesis gentx validator 5000000000000000ncheq --chain-id testnet --keyring-backend test --home "/tmp/.single-node" &&
+      cheqd-noded genesis collect-gentxs --home "/tmp/.single-node" &&
+      sed -i 's/"stake"/"ncheq"/' "/tmp/.single-node/config/genesis.json" &&
+      sed -i "s/minimum-gas-prices = \"\"/minimum-gas-prices = \"50ncheq\"/g" "/tmp/.single-node/config/app.toml" &&
+      sed -i "s/enable = false/enable = true/g" "/tmp/.single-node/config/app.toml" &&
+      sed -i "s|laddr = \"tcp://127.0.0.1:26657\"|laddr = \"tcp://0.0.0.0:26657\"|g" "/tmp/.single-node/config/config.toml" &&
+      sed -i "s|addr_book_strict = true|addr_book_strict = false|g" "/tmp/.single-node/config/config.toml" &&
+      sed -i "s/timeout_propose = \"3s\"/timeout_propose = \"500ms\"/g" "/tmp/.single-node/config/config.toml" &&
+      sed -i "s/timeout_prevote = \"1s\"/timeout_prevote = \"500ms\"/g" "/tmp/.single-node/config/config.toml" &&
+      sed -i "s/timeout_precommit = \"1s\"/timeout_precommit = \"500ms\"/g" "/tmp/.single-node/config/config.toml" &&
+      sed -i "s/timeout_commit = \"5s\"/timeout_commit = \"500ms\"/g" "/tmp/.single-node/config/config.toml" &&
+      sed -i "s/log_level = \"info\"/log_level = \"debug\"/g" "/tmp/.single-node/config/config.toml" &&
+      cheqd-noded start --home "/tmp/.single-node" &
+      RUN_TESTNET_PID=$! &&
       sleep 10 &&
-      (echo "sketch mountain erode window enact net enrich smoke claim kangaroo another visual write meat latin bacon pulp similar forum guilt father state erase bright"; echo "12345678"; echo "12345678";) | cheqd-noded keys add base --recover &&
-      (echo "silk theme damp share lens select artefact orbit artwork weather mixture alarm remain oppose own wolf reduce melody cheap venture lady spy wise loud"; echo "12345678";) | cheqd-noded keys add extra1 --recover &&
-      (echo "lobster pizza cost soft else rather rich find rose pride catch bar cube switch help joy stable dirt stumble voyage bind cabbage cram exist"; echo "12345678";) | cheqd-noded keys add extra2 --recover &&
-      (echo "state online hedgehog turtle daring lab panda bottom agent pottery mixture venue letter decade bridge win snake mandate trust village emerge awkward fire mimic"; echo "12345678";) | cheqd-noded keys add extra3 --recover &&
-      (echo "12345678";) | cheqd-noded tx bank send cheqd1rnr5jrt4exl0samwj0yegv99jeskl0hsxmcz96 cheqd1yeahnxhfa583wwpm9xt452xzet4xsgsqacgjkr 10000000000000000ncheq --from base --gas auto --fees 100000000ncheq --chain-id cheqd -y &&
+      (echo "sketch mountain erode window enact net enrich smoke claim kangaroo another visual write meat latin bacon pulp similar forum guilt father state erase bright"; echo "12345678";) | cheqd-noded keys add base --recover --keyring-backend test --home "/tmp/.single-node" &&
+      (echo "silk theme damp share lens select artefact orbit artwork weather mixture alarm remain oppose own wolf reduce melody cheap venture lady spy wise loud"; echo "12345678") | cheqd-noded keys add extra1 --recover --keyring-backend test --home "/tmp/.single-node" &&
+      (echo "lobster pizza cost soft else rather rich find rose pride catch bar cube switch help joy stable dirt stumble voyage bind cabbage cram exist"; echo "12345678") | cheqd-noded keys add extra2 --recover --keyring-backend test --home "/tmp/.single-node" &&
+      (echo "state online hedgehog turtle daring lab panda bottom agent pottery mixture venue letter decade bridge win snake mandate trust village emerge awkward fire mimic"; echo "12345678") | cheqd-noded keys add extra3 --recover --keyring-backend test --home "/tmp/.single-node" &&
+      (echo "12345678") | cheqd-noded tx bank send $(cheqd-noded keys show validator -a --keyring-backend test --home "/tmp/.single-node") cheqd1rnr5jrt4exl0samwj0yegv99jeskl0hsxmcz96 10000000000000000ncheq --from validator --gas auto --gas-adjustment=1.8 --fees 10000000000ncheq --chain-id testnet --keyring-backend test --home "/tmp/.single-node" -y &&
       sleep 2 &&
-      (echo "12345678";) | cheqd-noded tx bank send cheqd1rnr5jrt4exl0samwj0yegv99jeskl0hsxmcz96 cheqd14y3xeqd2xmhl9sxn8cf974k6nntqrveufqpqrs 10000000000000000ncheq --from base --gas auto --fees 100000000ncheq --chain-id cheqd -y &&
+      (echo "12345678") | cheqd-noded tx bank send $(cheqd-noded keys show validator -a --keyring-backend test --home "/tmp/.single-node") cheqd1yeahnxhfa583wwpm9xt452xzet4xsgsqacgjkr 10000000000000000ncheq --from validator --gas auto --gas-adjustment=1.8 --fees 10000000000ncheq --chain-id testnet --keyring-backend test --home "/tmp/.single-node" -y &&
       sleep 2 &&
-      (echo "12345678";) | cheqd-noded tx bank send cheqd1rnr5jrt4exl0samwj0yegv99jeskl0hsxmcz96 cheqd10qh2vl0jrax6yh2mzes03cm6vt27vd47geu375 10000000000000000ncheq --from base --gas auto --fees 100000000ncheq --chain-id cheqd -y &&
-      wait $RUN_TESTNET_PID
-      '
+      (echo "12345678") | cheqd-noded tx bank send $(cheqd-noded keys show validator -a --keyring-backend test --home "/tmp/.single-node") cheqd14y3xeqd2xmhl9sxn8cf974k6nntqrveufqpqrs 10000000000000000ncheq --from validator --gas auto --gas-adjustment=1.8 --fees 10000000000ncheq --chain-id testnet --keyring-backend test --home "/tmp/.single-node" -y &&
+      sleep 2 &&
+      (echo "12345678") | cheqd-noded tx bank send $(cheqd-noded keys show validator -a --keyring-backend test --home "/tmp/.single-node") cheqd10qh2vl0jrax6yh2mzes03cm6vt27vd47geu375 10000000000000000ncheq --from validator --gas auto --gas-adjustment=1.8 --fees 10000000000ncheq --chain-id testnet --keyring-backend test --home "/tmp/.single-node" -y &&
+      wait $RUN_TESTNET_PID;
+      ' 
