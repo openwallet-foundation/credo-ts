@@ -3,6 +3,7 @@ import type { AgentContext } from '../../agent'
 import type { MdocNameSpaces, MdocSignOptions, MdocVerifyOptions } from './MdocOptions'
 
 import {
+  COSEKey,
   DeviceSignedDocument,
   Document,
   Verifier,
@@ -11,7 +12,7 @@ import {
   parseIssuerSigned,
 } from '@animo-id/mdoc'
 
-import { JwaSignatureAlgorithm, getJwkFromKey } from '../../crypto'
+import { JwaSignatureAlgorithm, JwkJson, getJwkFromJson, getJwkFromKey } from '../../crypto'
 import { X509Certificate, X509ModuleConfig } from '../x509'
 
 import { TypedArrayEncoder } from './../../utils'
@@ -25,7 +26,8 @@ import { isMdocSupportedSignatureAlgorithm, mdocSupporteSignatureAlgorithms } fr
  */
 export class Mdoc {
   public base64Url: string
-  private constructor(private issuerSignedDocument: IssuerSignedDocument) {
+
+  private constructor(private issuerSignedDocument: IssuerSignedDocument | DeviceSignedDocument) {
     const issuerSigned = issuerSignedDocument.prepare().get('issuerSigned')
     this.base64Url = TypedArrayEncoder.toBase64URL(cborEncode(issuerSigned))
   }
@@ -96,6 +98,16 @@ export class Mdoc {
         Object.fromEntries(Array.from(value.entries())),
       ])
     )
+  }
+
+  public get deviceKeyJwk() {
+    const deviceKey = this.issuerSignedDocument.issuerSigned.issuerAuth.decodedPayload.deviceKeyInfo?.deviceKey
+    if (!deviceKey) return null
+
+    const publicDeviceJwk = COSEKey.import(deviceKey).toJWK()
+    const jwkInstance = getJwkFromJson(publicDeviceJwk as JwkJson)
+
+    return jwkInstance
   }
 
   public static async sign(agentContext: AgentContext, options: MdocSignOptions) {
