@@ -290,7 +290,7 @@ export class MdocDeviceResponse {
     const result = await verifier.verifyDeviceResponse(
       {
         encodedDeviceResponse: TypedArrayEncoder.fromBase64(this.base64Url),
-        encodedSessionTranscript: await DeviceResponse.calculateSessionTranscriptForOID4VP({
+        encodedSessionTranscript: await DeviceResponse.calculateSessionTranscriptBytesForOID4VP({
           ...options.sessionTranscriptOptions,
           context: mdocContext,
         }),
