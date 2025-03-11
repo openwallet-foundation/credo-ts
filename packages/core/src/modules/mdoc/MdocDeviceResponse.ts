@@ -263,10 +263,14 @@ export class MdocDeviceResponse {
       const rawDocument = deviceResponse.documents[documentIndex]
       const document = this.documents[documentIndex]
 
-      await document.verify(agentContext, {
+      const verificationResult = await document.verify(agentContext, {
         now: options.now,
         trustedCertificates: options.trustedCertificates,
       })
+
+      if (!verificationResult.isValid) {
+        throw new MdocError(`Mdoc at index ${documentIndex} is not valid. ${verificationResult.error}`)
+      }
 
       if (!(rawDocument instanceof DeviceSignedDocument)) {
         onCheck({
