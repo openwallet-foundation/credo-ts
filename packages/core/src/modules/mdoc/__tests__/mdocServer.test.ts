@@ -6,6 +6,7 @@ import { KeyType } from '../../../crypto'
 import { X509ModuleConfig, X509Service } from '../../x509'
 import { Mdoc } from '../Mdoc'
 
+import { MdocDeviceResponse } from '../MdocDeviceResponse'
 import { sprindFunkeTestVectorBase64Url, sprindFunkeX509TrustedCertificate } from './mdoc.fixtures'
 
 describe('mdoc service test', () => {
@@ -82,6 +83,109 @@ describe('mdoc service test', () => {
       trustedCertificates: [certificate.toString('base64')],
     })
     expect(isValid).toBeTruthy()
+  })
+
+  test('throws error when mdoc is invalid (missing C= in cert)', async () => {
+    const holderKey = await agentContext.wallet.createKey({
+      keyType: KeyType.P256,
+    })
+    const issuerKey = await agentContext.wallet.createKey({
+      keyType: KeyType.P256,
+    })
+
+    const currentDate = new Date()
+    currentDate.setDate(currentDate.getDate() - 1)
+    const nextDay = new Date(currentDate)
+    nextDay.setDate(currentDate.getDate() + 2)
+
+    const certificate = await X509Service.createCertificate(agentContext, {
+      authorityKey: issuerKey,
+      validity: {
+        notBefore: currentDate,
+        notAfter: nextDay,
+      },
+      issuer: { commonName: 'hello' },
+    })
+
+    const issuerCertificate = certificate.toString('pem')
+
+    const mdoc = await Mdoc.sign(agentContext, {
+      docType: 'org.iso.18013.5.1.mDL',
+      holderKey: holderKey,
+      namespaces: {
+        hello: {
+          world: 'world',
+          nicer: 'dicer',
+        },
+      },
+      issuerCertificate,
+    })
+
+    expect(mdoc.alg).toBe('ES256')
+    expect(mdoc.docType).toBe('org.iso.18013.5.1.mDL')
+    expect(mdoc.issuerSignedNamespaces).toStrictEqual({
+      hello: {
+        world: 'world',
+        nicer: 'dicer',
+      },
+    })
+
+    expect(() => mdoc.deviceSignedNamespaces).toThrow()
+
+    const verifyResult = await mdoc.verify(agentContext, {
+      trustedCertificates: [certificate.toString('base64')],
+    })
+    expect(verifyResult).toEqual({
+      error: "Country name (C) must be present in the issuer certificate's subject distinguished name",
+      isValid: false,
+    })
+
+    const { deviceResponseBase64Url } = await MdocDeviceResponse.createOpenId4VpDeviceResponse(agentContext, {
+      mdocs: [mdoc],
+      presentationDefinition: {
+        id: 'something',
+        input_descriptors: [
+          {
+            id: 'org.iso.18013.5.1.mDL',
+            format: {
+              mso_mdoc: {
+                alg: ['EdDSA', 'ES256'],
+              },
+            },
+            constraints: {
+              limit_disclosure: 'required',
+              fields: [
+                {
+                  path: ["$['hello']['world']"],
+                  intent_to_retain: false,
+                },
+              ],
+            },
+          },
+        ],
+      },
+      sessionTranscriptOptions: {
+        mdocGeneratedNonce: 'something',
+        verifierGeneratedNonce: 'something-else',
+        clientId: 'something',
+        responseUri: 'something',
+      },
+    })
+
+    const deviceResponse = MdocDeviceResponse.fromBase64Url(deviceResponseBase64Url)
+    expect(
+      deviceResponse.verify(agentContext, {
+        sessionTranscriptOptions: {
+          mdocGeneratedNonce: 'something',
+          verifierGeneratedNonce: 'something-else',
+          clientId: 'something',
+          responseUri: 'something',
+        },
+        trustedCertificates: [certificate.toString('pem')],
+      })
+    ).rejects.toThrow(
+      "Mdoc at index 0 is not valid. Country name (C) must be present in the issuer certificate's subject distinguished name"
+    )
   })
 
   test('can decode claims from namespaces', async () => {
