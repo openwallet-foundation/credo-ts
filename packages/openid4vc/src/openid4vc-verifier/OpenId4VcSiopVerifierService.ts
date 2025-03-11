@@ -691,30 +691,23 @@ export class OpenId4VcSiopVerifierService {
             reason = 'Mdoc device response verification failed. Response uri and the mdocGeneratedNonce are not set'
           } else {
             const mdocDeviceResponse = MdocDeviceResponse.fromBase64Url(encodedPresentation)
+            if (mdocDeviceResponse.documents.length !== 1) {
+              throw new CredoError('Only a single mdoc is supported per device response for OpenID4VP verification')
+            }
 
-            const trustedCertificates = (
-              await Promise.all(
-                mdocDeviceResponse.documents.map(async (mdoc) => {
-                  const certificateChain = mdoc.issuerSignedCertificateChain.map((cert) =>
-                    X509Certificate.fromRawCertificate(cert)
-                  )
-
-                  const trustedCertificates = await x509Config.getTrustedCertificatesForVerification?.(agentContext, {
-                    certificateChain,
-                    verification: {
-                      type: 'credential',
-                      credential: mdoc,
-                      openId4VcVerificationSessionId: options.verificationSessionRecordId,
-                    },
-                  })
-
-                  // TODO: could have some duplication but not a big issue
-                  return trustedCertificates ?? x509Config.trustedCertificates
-                })
-              )
+            const document = mdocDeviceResponse.documents[0]
+            const certificateChain = document.issuerSignedCertificateChain.map((cert) =>
+              X509Certificate.fromRawCertificate(cert)
             )
-              .filter((c): c is string[] => c !== undefined)
-              .flat()
+
+            const trustedCertificates = await x509Config.getTrustedCertificatesForVerification?.(agentContext, {
+              certificateChain,
+              verification: {
+                type: 'credential',
+                credential: document,
+                openId4VcVerificationSessionId: options.verificationSessionRecordId,
+              },
+            })
 
             await mdocDeviceResponse.verify(agentContext, {
               sessionTranscriptOptions: {

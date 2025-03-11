@@ -124,6 +124,7 @@ export const getTypeInfo = async (
     documentLoader,
   })
 
+  // biome-ignore lint/performance/noDelete: <explanation>
   delete compacted['@context']
 
   const alias = Object.keys(compacted)[0]
