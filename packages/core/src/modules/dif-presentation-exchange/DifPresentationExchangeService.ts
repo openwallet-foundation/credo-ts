@@ -293,7 +293,7 @@ export class DifPresentationExchangeService {
           if(resultWithFormat.verifiablePresentationResult.verifiablePresentations) {
               return resultWithFormat.verifiablePresentationResult.verifiablePresentations.map((vp) => getVerifiablePresentationFromEncoded(agentContext, vp))
           } else {
-              return  getVerifiablePresentationFromEncoded(agentContext, vp)
+              return  getVerifiablePresentationFromEncoded(agentContext, resultWithFormat.verifiablePresentationResult.verifiablePresentation)
           }
         }
       ),
