@@ -289,9 +289,13 @@ export class DifPresentationExchangeService {
 
     return {
       verifiablePresentations: verifiablePresentationResultsWithFormat.flatMap((resultWithFormat) =>
-        resultWithFormat.verifiablePresentationResult.verifiablePresentations.map((vp) =>
-          getVerifiablePresentationFromEncoded(agentContext, vp)
-        )
+        {
+          if(resultWithFormat.verifiablePresentationResult.verifiablePresentations) {
+              return resultWithFormat.verifiablePresentationResult.verifiablePresentations.map((vp) => getVerifiablePresentationFromEncoded(agentContext, vp))
+          } else {
+              return  getVerifiablePresentationFromEncoded(agentContext, vp)
+          }
+        }
       ),
       presentationSubmission,
       presentationSubmissionLocation:
