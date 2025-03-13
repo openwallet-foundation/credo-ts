@@ -42,6 +42,7 @@ import { OutOfBandRole } from '../oob/domain/OutOfBandRole'
 import { OutOfBandState } from '../oob/domain/OutOfBandState'
 import { getMediationRecordForDidDocument } from '../routing/services/helpers'
 
+import { DidCommDocumentService } from '../../services'
 import { ConnectionsModuleConfig } from './ConnectionsModuleConfig'
 import { DidExchangeStateMachine } from './DidExchangeStateMachine'
 import { DidExchangeProblemReportError, DidExchangeProblemReportReason } from './errors'
@@ -49,7 +50,6 @@ import { DidExchangeCompleteMessage, DidExchangeRequestMessage, DidExchangeRespo
 import { DidExchangeRole, DidExchangeState, HandshakeProtocol } from './models'
 import { ConnectionService } from './services'
 import { createPeerDidFromServices, getDidDocumentForCreatedDid, routingToServices } from './services/helpers'
-import { DidCommDocumentService } from '../../services'
 
 interface DidExchangeRequestParams {
   label?: string
