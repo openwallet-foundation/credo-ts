@@ -49,6 +49,7 @@ import { DidExchangeCompleteMessage, DidExchangeRequestMessage, DidExchangeRespo
 import { DidExchangeRole, DidExchangeState, HandshakeProtocol } from './models'
 import { ConnectionService } from './services'
 import { createPeerDidFromServices, getDidDocumentForCreatedDid, routingToServices } from './services/helpers'
+import { DidCommDocumentService } from '../../services'
 
 interface DidExchangeRequestParams {
   label?: string
@@ -286,6 +287,7 @@ export class DidExchangeProtocol {
       ? getNumAlgoFromPeerDid(theirDid)
       : config.peerNumAlgoForDidExchangeRequests
 
+    const didcommDocumentService = agentContext.dependencyManager.resolve(DidCommDocumentService)
     const didDocument = await createPeerDidFromServices(agentContext, services, numAlgo)
     const message = new DidExchangeResponseMessage({ did: didDocument.id, threadId })
 
@@ -298,8 +300,8 @@ export class DidExchangeProtocol {
     // Consider also pure-DID services, used when DID Exchange is started with an implicit invitation or a public DID
     for (const did of outOfBandRecord.outOfBandInvitation.getDidServices()) {
       invitationRecipientKeys.push(
-        ...(await getDidDocumentForCreatedDid(agentContext, parseDid(did).did)).recipientKeys.map(
-          (key) => key.publicKeyBase58
+        ...(await didcommDocumentService.resolveServicesFromDid(agentContext, parseDid(did).did)).flatMap((service) =>
+          service.recipientKeys.map((key) => key.publicKeyBase58)
         )
       )
     }
