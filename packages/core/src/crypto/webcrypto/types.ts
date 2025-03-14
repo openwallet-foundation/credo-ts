@@ -11,7 +11,7 @@ export type CredoWebCryptoKeyPair = {
   privateKey: CredoWebCryptoKey
 }
 
-type HashAlgorithmIdentifier = 'SHA-256'
+type HashAlgorithmIdentifier = 'SHA-256' | 'SHA-384'
 
 /*
  *
