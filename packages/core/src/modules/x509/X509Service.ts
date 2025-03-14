@@ -26,6 +26,11 @@ export class X509Service {
    *
    * The leaf certificate should be the 0th index and the root the last
    *
+   * The Issuer of the certificate is found with the following algorithm:
+   * - Check if there is an AuthorityKeyIdentifierExtension
+   * - Go through all the other certificates and see if the SubjectKeyIdentifier is equal to thje AuthorityKeyIdentifier
+   * - If they are equal, the certificate is verified and returned as the issuer
+   *
    * Additional validation:
    *   - Make sure atleast a single certificate is in the chain
    *   - Check whether a certificate in the chain matches with a trusted certificate
@@ -39,8 +44,8 @@ export class X509Service {
       trustedCertificates,
     }: X509ValidateCertificateChainOptions
   ) {
-    const webCrypto = new CredoWebCrypto(agentContext)
     if (certificateChain.length === 0) throw new X509Error('Certificate chain is empty')
+    const webCrypto = new CredoWebCrypto(agentContext)
 
     const parsedLeafCertificate = new x509.X509Certificate(certificate)
 
