@@ -300,7 +300,9 @@ export class BbsBlsSignatureProof2020 extends LinkedDataProof {
     // biome-ignore lint/style/noParameterAssign: <explanation>
     proof = { ...proof }
 
+    // biome-ignore lint/performance/noDelete: <explanation>
     delete proof.nonce
+    // biome-ignore lint/performance/noDelete: <explanation>
     delete proof.proofValue
 
     return this.canonize(proof, {

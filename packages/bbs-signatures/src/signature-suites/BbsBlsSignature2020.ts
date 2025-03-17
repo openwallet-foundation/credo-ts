@@ -176,6 +176,8 @@ export class BbsBlsSignature2020 extends LinkedDataProof {
       proof,
       documentLoader,
     })
+
+    // biome-ignore lint/performance/noDelete: <explanation>
     delete proof['@context']
 
     return proof

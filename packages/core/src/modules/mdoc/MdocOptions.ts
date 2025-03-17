@@ -2,6 +2,7 @@ import type { ValidityInfo } from '@animo-id/mdoc'
 import type { Key } from '../../crypto/Key'
 import type { DifPresentationExchangeDefinition } from '../dif-presentation-exchange'
 import type { EncodedX509Certificate } from '../x509'
+import { Mdoc } from './Mdoc'
 
 export { DateOnly } from '@animo-id/mdoc'
 
