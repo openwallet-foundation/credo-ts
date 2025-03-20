@@ -16,7 +16,7 @@ import type {
   Openid4vpAuthorizationRequest,
   Openid4vpAuthorizationRequestDcApi,
   Openid4vpAuthorizationResponse,
-  ResolvedOpenid4vpAuthRequest,
+  ResolvedOpenid4vpAuthorizationRequest,
 } from '@openid4vc/openid4vp'
 
 export { authorizationCodeGrantIdentifier, preAuthorizedCodeGrantIdentifier } from '@openid4vc/oauth2'
@@ -47,11 +47,9 @@ export type OpenId4VciCredentialRequestWithFormats = CredentialRequestWithFormat
 
 export type OpenId4VciCredentialOfferPayload = CredentialOfferObject
 
-export type OpenId4VcSiopVerifiedAuthorizationRequest = ResolvedOpenid4vpAuthRequest
-export type OpenId4VcSiopAuthorizationRequestPayload =
-  | Openid4vpAuthorizationRequest
-  | Openid4vpAuthorizationRequestDcApi
-export type OpenId4VcSiopAuthorizationResponsePayload = Openid4vpAuthorizationResponse
+export type OpenId4VpVerifiedAuthorizationRequest = ResolvedOpenid4vpAuthorizationRequest
+export type OpenId4VpAuthorizationRequestPayload = Openid4vpAuthorizationRequest | Openid4vpAuthorizationRequestDcApi
+export type OpenId4VpAuthorizationResponsePayload = Openid4vpAuthorizationResponse
 
 export * from './CredentialHolderBinding'
 export * from './OpenId4VciAuthorizationServerConfig'

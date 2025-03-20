@@ -153,7 +153,7 @@ export class Verifier extends BaseAgent<{ askar: AskarModule; openId4VcVerifier:
   public verifierRecord!: OpenId4VcVerifierRecord
 
   public constructor(url: string, port: number, name: string) {
-    const openId4VcSiopRouter = Router()
+    const openId4VpRouter = Router()
 
     super({
       port,
@@ -161,13 +161,13 @@ export class Verifier extends BaseAgent<{ askar: AskarModule; openId4VcVerifier:
       modules: {
         askar: new AskarModule({ askar }),
         openId4VcVerifier: new OpenId4VcVerifierModule({
-          baseUrl: `${url}/siop`,
-          router: openId4VcSiopRouter,
+          baseUrl: `${url}/oid4vp`,
+          router: openId4VpRouter,
         }),
       },
     })
 
-    this.app.use('/siop', openId4VcSiopRouter)
+    this.app.use('/oid4vp', openId4VpRouter)
   }
 
   public static async build(): Promise<Verifier> {

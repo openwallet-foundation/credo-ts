@@ -6,15 +6,6 @@ import type { W3cVerifiableCredential, W3cVerifiablePresentation } from '../../v
 
 import { PresentationSubmissionLocation } from '@animo-id/pex'
 
-export {
-  InputDescriptorToTransactionDataEntry,
-  TransactionData,
-  TransactionDataEntry,
-  TransactionDataMeta,
-  TransactionDataRequest,
-  TransactionDataResult,
-  DcqlTransactionDataRequest,
-} from './TransactionData'
 export { PresentationSubmissionLocation as DifPresentationExchangeSubmissionLocation }
 
 // Re-export some types from sphereon library, but under more explicit names

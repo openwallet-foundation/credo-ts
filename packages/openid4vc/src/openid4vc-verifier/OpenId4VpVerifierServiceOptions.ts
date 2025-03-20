@@ -6,16 +6,16 @@ import type {
   DifPresentationExchangeDefinition,
   DifPresentationExchangeDefinitionV2,
   DifPresentationExchangeSubmission,
-  TransactionData,
+  HashName,
   VerifiablePresentation,
 } from '@credo-ts/core'
-import type { createOpenid4vpAuthorizationRequest } from '@openid4vc/openid4vp'
+import type { TransactionDataEntry, createOpenid4vpAuthorizationRequest } from '@openid4vc/openid4vp'
 import type { OpenId4VcIssuerX5c, OpenId4VcJwtIssuerDid } from '../shared'
 import type { OpenId4VcVerificationSessionRecord, OpenId4VcVerifierRecordProps } from './repository'
 
 export type ResponseMode = 'direct_post' | 'direct_post.jwt' | 'dc_api' | 'dc_api.jwt'
 
-export interface OpenId4VcSiopCreateAuthorizationRequestOptions {
+export interface OpenId4VpCreateAuthorizationRequestOptions {
   /**
    * Signing information for the request JWT. This will be used to sign the request JWT
    * and to set the client_id and client_id_scheme for registration of client_metadata.
@@ -30,7 +30,7 @@ export interface OpenId4VcSiopCreateAuthorizationRequestOptions {
         method: 'none'
       }
 
-  transactionData?: TransactionData
+  transactionData?: TransactionDataEntry[]
 
   /**
    * A DIF Presentation Definition (v2) can be provided to request a Verifiable Presentation using OpenID4VP.
@@ -62,51 +62,107 @@ export interface OpenId4VcSiopCreateAuthorizationRequestOptions {
   expectedOrigins?: string[]
 }
 
-export interface OpenId4VcSiopVerifyAuthorizationResponseOptions {
+export interface OpenId4VpVerifyAuthorizationResponseOptions {
   /**
    * The authorization response received from the OpenID Provider (OP).
    */
   authorizationResponse: Record<string, unknown>
-  jarmHeader?: { apu?: string; apv?: string }
+
+  /**
+   * The origin of the verification session, if Digital Credentials API was used.
+   */
   origin?: string
 }
 
-export interface OpenId4VcSiopCreateAuthorizationRequestReturn {
+export interface OpenId4VpCreateAuthorizationRequestReturn {
   authorizationRequest: string
   verificationSession: OpenId4VcVerificationSessionRecord
   // TODO: type needs to be exported. It can also be a JAR object, so we use
   // return value for now
-  authorizationRequestObject: Awaited<ReturnType<typeof createOpenid4vpAuthorizationRequest>>['authRequestObject']
+  authorizationRequestObject: Awaited<
+    ReturnType<typeof createOpenid4vpAuthorizationRequest>
+  >['authorizationRequestObject']
 }
 
-export interface OpenId4VcSiopVerifiedAuthorizationResponsePresentationExchange {
+export interface OpenId4VpVerifiedAuthorizationResponsePresentationExchange {
   submission: DifPresentationExchangeSubmission
   definition: DifPresentationExchangeDefinition
+  // TODO: we can also make this an object, where the keys are the input descriptors?
+  // Might not work as well with PEX. Or at least the object apporach is moslty focused on
+  // 1 credential 1 presentation
   presentations: Array<VerifiablePresentation>
   descriptors: DifPexPresentationWithDescriptor[]
 }
 
-export interface OpenId4VcSiopVerifiedAuthorizationResponseDcql {
+export interface OpenId4VpVerifiedAuthorizationResponseTransactionData {
+  /**
+   * The index of the transaction data entry in the openid4vp authorization request
+   */
+  transactionDataIndex: number
+
+  /**
+   * The base64url encoded transaction data
+   */
+  encoded: string
+
+  /**
+   * The decoded transaction data entry
+   */
+  decoded: TransactionDataEntry
+
+  /**
+   * The credential id to which the hash applies.
+   * - Matches with an input descriptor id for PEX
+   * - Matches with a credential query id for DCQL
+   */
+  credentialId: string
+
+  /**
+   * The hash of the transaction data
+   */
+  hash: string
+
+  /**
+   * The hash algorithm that was used to hash the transaction data
+   */
+  hashAlg: HashName
+
+  /**
+   * The index of the hash within the credential.
+   */
+  credentialHashIndex: number
+}
+
+export interface OpenId4VpVerifiedAuthorizationResponseDcql {
   query: DcqlQuery
-  presentation: DcqlPresentation
+  presentations: DcqlPresentation
   presentationResult: DcqlPresentationResult
 }
 
-export interface OpenId4VcSiopVerifiedAuthorizationResponse {
-  presentationExchange?: OpenId4VcSiopVerifiedAuthorizationResponsePresentationExchange
-  dcql?: OpenId4VcSiopVerifiedAuthorizationResponseDcql
-  transactionData?: TransactionData
+export interface OpenId4VpVerifiedAuthorizationResponse {
+  presentationExchange?: OpenId4VpVerifiedAuthorizationResponsePresentationExchange
+  dcql?: OpenId4VpVerifiedAuthorizationResponseDcql
+
+  /**
+   * The verified transaction data entries from the request
+   */
+  transactionData?: OpenId4VpVerifiedAuthorizationResponseTransactionData[]
+
+  /**
+   * The verification session associated with the response
+   */
+  verificationSession: OpenId4VcVerificationSessionRecord
 }
 
 /**
  * Verifier metadata that will be send when creating a request
  */
-export interface OpenId4VcSiopVerifierClientMetadata {
+export interface OpenId4VpVerifierClientMetadata {
   client_name?: string
   logo_uri?: string
 }
 
-export interface OpenId4VcSiopCreateVerifierOptions {
+export interface OpenId4VpCreateVerifierOptions {
   /**
    * Id of the verifier, not the id of the verifier record. Will be exposed publicly
    */
@@ -115,7 +171,7 @@ export interface OpenId4VcSiopCreateVerifierOptions {
   /**
    * Optional client metadata that will be included in requests
    */
-  clientMetadata?: OpenId4VcSiopVerifierClientMetadata
+  clientMetadata?: OpenId4VpVerifierClientMetadata
 }
 
 export type OpenId4VcUpdateVerifierRecordOptions = Pick<OpenId4VcVerifierRecordProps, 'verifierId' | 'clientMetadata'>

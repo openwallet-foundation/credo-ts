@@ -1,10 +1,7 @@
-import type {
-  OpenId4VcSiopAuthorizationRequestPayload,
-  OpenId4VcSiopAuthorizationResponsePayload,
-} from '../../shared/models'
+import type { OpenId4VpAuthorizationRequestPayload, OpenId4VpAuthorizationResponsePayload } from '../../shared/models'
 import type { OpenId4VcVerificationSessionState } from '../OpenId4VcVerificationSessionState'
 
-import { BaseRecord, CredoError, Jwt, utils } from '@credo-ts/core'
+import { BaseRecord, CredoError, Jwt, RecordTags, TagsBase, utils } from '@credo-ts/core'
 
 export type OpenId4VcVerificationSessionRecordTags = RecordTags<OpenId4VcVerificationSessionRecord>
 
@@ -14,6 +11,7 @@ export type DefaultOpenId4VcVerificationSessionRecordTags = {
   nonce: string
   payloadState?: string
   authorizationRequestUri?: string
+  authorizationRequestId?: string
 }
 
 export interface OpenId4VcVerificationSessionRecordProps {
@@ -27,9 +25,10 @@ export interface OpenId4VcVerificationSessionRecordProps {
 
   authorizationRequestJwt?: string
   authorizationRequestUri?: string
-  authorizationRequestPayload?: OpenId4VcSiopAuthorizationRequestPayload
+  authorizationRequestId: string
+  authorizationRequestPayload?: OpenId4VpAuthorizationRequestPayload
 
-  authorizationResponsePayload?: OpenId4VcSiopAuthorizationResponsePayload
+  authorizationResponsePayload?: OpenId4VpAuthorizationResponsePayload
 
   /**
    * Presentation during issuance session. This is used when issuance of a credential requires a presentation, and helps
@@ -65,7 +64,7 @@ export class OpenId4VcVerificationSessionRecord extends BaseRecord<DefaultOpenId
   /**
    * Authorization request payload. This should be used only for unsigned requests
    */
-  public authorizationRequestPayload?: OpenId4VcSiopAuthorizationRequestPayload
+  public authorizationRequestPayload?: OpenId4VpAuthorizationRequestPayload
 
   /**
    * URI of the authorization request. This is the url that can be used to
@@ -76,9 +75,17 @@ export class OpenId4VcVerificationSessionRecord extends BaseRecord<DefaultOpenId
   public authorizationRequestUri?: string
 
   /**
+   * The public id for the authorization request. This is used in the authorization
+   * request uri.
+   *
+   * @since 0.6
+   */
+  public authorizationRequestId?: string
+
+  /**
    * The payload of the received authorization response
    */
-  public authorizationResponsePayload?: OpenId4VcSiopAuthorizationResponsePayload
+  public authorizationResponsePayload?: OpenId4VpAuthorizationResponsePayload
 
   /**
    * Presentation during issuance session. This is used when issuance of a credential requires a presentation, and helps
@@ -100,24 +107,25 @@ export class OpenId4VcVerificationSessionRecord extends BaseRecord<DefaultOpenId
       this.authorizationRequestPayload = props.authorizationRequestPayload
       this.authorizationRequestJwt = props.authorizationRequestJwt
       this.authorizationRequestUri = props.authorizationRequestUri
+      this.authorizationRequestId = props.authorizationRequestId
       this.authorizationResponsePayload = props.authorizationResponsePayload
 
       this.presentationDuringIssuanceSession = props.presentationDuringIssuanceSession
     }
   }
 
-  public get request(): string | OpenId4VcSiopAuthorizationRequestPayload {
+  public get request(): string | OpenId4VpAuthorizationRequestPayload {
     if (this.authorizationRequestJwt) return this.authorizationRequestJwt
     if (this.authorizationRequestPayload) return this.authorizationRequestPayload
 
     throw new CredoError('Unable to extract authorization payload from openid4vc session record')
   }
 
-  public get requestPayload(): OpenId4VcSiopAuthorizationRequestPayload {
+  public get requestPayload(): OpenId4VpAuthorizationRequestPayload {
     if (this.authorizationRequestJwt)
       return Jwt.fromSerializedJwt(
         this.authorizationRequestJwt
-      ).payload.toJson() as OpenId4VcSiopAuthorizationRequestPayload
+      ).payload.toJson() as OpenId4VpAuthorizationRequestPayload
     if (this.authorizationRequestPayload) return this.authorizationRequestPayload
 
     throw new CredoError('Unable to extract authorization payload from openid4vc session record')
@@ -142,8 +150,6 @@ export class OpenId4VcVerificationSessionRecord extends BaseRecord<DefaultOpenId
     const request = this.requestPayload
 
     const nonce = request.nonce
-    if (!nonce || typeof nonce !== 'string') throw new CredoError('Expected nonce in authorization request payload')
-
     const payloadState = 'state' in request ? (request.state as string) : undefined
 
     return {
@@ -153,6 +159,7 @@ export class OpenId4VcVerificationSessionRecord extends BaseRecord<DefaultOpenId
       nonce,
       payloadState,
       authorizationRequestUri: this.authorizationRequestUri,
+      authorizationRequestId: this.authorizationRequestId,
     }
   }
 }

@@ -1,6 +1,5 @@
 import type { AgentContext } from '../../agent'
 import type { VerifiablePresentation } from '../dif-presentation-exchange/index'
-import type { TransactionDataAuthorization } from '../dif-presentation-exchange/models/TransactionData'
 
 import { DcqlCredential, DcqlMdocCredential, DcqlPresentationResult, DcqlQuery, DcqlSdJwtVcCredential } from 'dcql'
 import { injectable } from 'tsyringe'
@@ -295,8 +294,8 @@ export class DcqlService {
     return credentials
   }
 
-  public validateDcqlQuery(dcqlQuery: DcqlQuery.Input | DcqlQuery) {
-    return DcqlQuery.parse(dcqlQuery)
+  public validateDcqlQuery(dcqlQuery: DcqlQuery | DcqlQuery.Input | unknown) {
+    return DcqlQuery.parse(dcqlQuery as DcqlQuery)
   }
 
   public async createPresentation(
@@ -308,7 +307,6 @@ export class DcqlService {
       openid4vp?:
         | Omit<MdocOpenId4VpSessionTranscriptOptions, 'verifierGeneratedNonce'>
         | Omit<MdocOpenId4VpDcApiSessionTranscriptOptions, 'verifierGeneratedNonce'>
-      transactionDataAuthorization?: TransactionDataAuthorization
     }
   ): Promise<{
     dcqlPresentation: DcqlPresentation
@@ -319,10 +317,7 @@ export class DcqlService {
     const dcqlPresentation: DcqlPresentation = {}
     const encodedDcqlPresentation: Record<string, string> = {}
 
-    const vcPresentationsToCreate = getDcqlVcPresentationsToCreate(
-      options.credentialQueryToCredential,
-      options.transactionDataAuthorization
-    )
+    const vcPresentationsToCreate = getDcqlVcPresentationsToCreate(options.credentialQueryToCredential)
     for (const [credentialQueryId, presentationToCreate] of Object.entries(vcPresentationsToCreate)) {
       if (presentationToCreate.claimFormat === ClaimFormat.MsoMdoc) {
         const mdocRecord = presentationToCreate.credentialRecord
@@ -367,8 +362,8 @@ export class DcqlService {
             audience: domain,
             nonce: challenge,
             issuedAt: Math.floor(Date.now() / 1000),
-            transactionData: presentationToCreate.transactionData,
           },
+          additionalPayload: presentationToCreate.additionalPayload,
         })
 
         encodedDcqlPresentation[credentialQueryId] = presentation

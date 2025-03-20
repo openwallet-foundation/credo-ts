@@ -147,42 +147,47 @@ describe('mdoc service test', () => {
       isValid: false,
     })
 
-    const { deviceResponseBase64Url } = await MdocDeviceResponse.createOpenId4VpDeviceResponse(agentContext, {
-      mdocs: [mdoc],
-      presentationDefinition: {
-        id: 'something',
-        input_descriptors: [
-          {
-            id: 'org.iso.18013.5.1.mDL',
-            format: {
-              mso_mdoc: {
-                alg: ['EdDSA', 'ES256'],
+    const { deviceResponseBase64Url } = await MdocDeviceResponse.createPresentationDefinitionDeviceResponse(
+      agentContext,
+      {
+        mdocs: [mdoc],
+        presentationDefinition: {
+          id: 'something',
+          input_descriptors: [
+            {
+              id: 'org.iso.18013.5.1.mDL',
+              format: {
+                mso_mdoc: {
+                  alg: ['EdDSA', 'ES256'],
+                },
+              },
+              constraints: {
+                limit_disclosure: 'required',
+                fields: [
+                  {
+                    path: ["$['hello']['world']"],
+                    intent_to_retain: false,
+                  },
+                ],
               },
             },
-            constraints: {
-              limit_disclosure: 'required',
-              fields: [
-                {
-                  path: ["$['hello']['world']"],
-                  intent_to_retain: false,
-                },
-              ],
-            },
-          },
-        ],
-      },
-      sessionTranscriptOptions: {
-        mdocGeneratedNonce: 'something',
-        verifierGeneratedNonce: 'something-else',
-        clientId: 'something',
-        responseUri: 'something',
-      },
-    })
+          ],
+        },
+        sessionTranscriptOptions: {
+          type: 'openId4Vp',
+          mdocGeneratedNonce: 'something',
+          verifierGeneratedNonce: 'something-else',
+          clientId: 'something',
+          responseUri: 'something',
+        },
+      }
+    )
 
     const deviceResponse = MdocDeviceResponse.fromBase64Url(deviceResponseBase64Url)
     expect(
       deviceResponse.verify(agentContext, {
         sessionTranscriptOptions: {
+          type: 'openId4Vp',
           mdocGeneratedNonce: 'something',
           verifierGeneratedNonce: 'something-else',
           clientId: 'something',

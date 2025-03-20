@@ -79,11 +79,16 @@ export function sendErrorResponse(
   next: NextFunction,
   logger: Logger,
   status: number,
-  message: Oauth2ErrorCodes | string,
-  error: unknown,
-  additionalPayload?: Record<string, unknown>
+  errorCode: Oauth2ErrorCodes | string,
+  errorDescription?: string,
+  additionalPayload?: Record<string, unknown>,
+  error?: Error
 ) {
-  const body = { error: message, ...(error instanceof Error && { cause: error.message }), ...additionalPayload }
+  const body = {
+    error: errorCode,
+    error_description: errorDescription,
+    ...additionalPayload,
+  }
   logger.warn(`[OID4VC] Sending error response: ${JSON.stringify(body)}`, {
     error,
   })

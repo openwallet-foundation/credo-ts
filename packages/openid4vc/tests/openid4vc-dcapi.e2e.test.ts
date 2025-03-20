@@ -110,37 +110,37 @@ const expectedDcqlResult = {
     },
     credential_sets: undefined,
   },
-  transactionData: [
-    {
-      transactionDataEntry: {
-        type: 'OpenBadgeTx',
-        credential_ids: ['OpenBadgeCredentialDescriptor'],
-        transaction_data_hashes_alg: ['sha-256'],
-      },
-      dcql: {
-        record: {
-          _tags: {
-            alg: 'EdDSA',
-            sdAlg: 'sha-256',
-            vct: 'OpenBadgeCredential',
-          },
-          type: 'SdJwtVcRecord',
-          metadata: {
-            data: {},
-          },
-          id: expect.any(String),
-          createdAt: expect.any(Date),
-          compactSdJwtVc: expect.any(String),
-          updatedAt: expect.any(Date),
-        },
-        credentialQueryId: 1,
-        claimSetId: undefined,
-      },
-    },
-  ],
+  // transactionData: [
+  //   {
+  //     transactionDataEntry: {
+  //       type: 'OpenBadgeTx',
+  //       credential_ids: ['OpenBadgeCredentialDescriptor'],
+  //       transaction_data_hashes_alg: ['sha-256'],
+  //     },
+  //     dcql: {
+  //       record: {
+  //         _tags: {
+  //           alg: 'EdDSA',
+  //           sdAlg: 'sha-256',
+  //           vct: 'OpenBadgeCredential',
+  //         },
+  //         type: 'SdJwtVcRecord',
+  //         metadata: {
+  //           data: {},
+  //         },
+  //         id: expect.any(String),
+  //         createdAt: expect.any(Date),
+  //         compactSdJwtVc: expect.any(String),
+  //         updatedAt: expect.any(Date),
+  //       },
+  //       credentialQueryId: 1,
+  //       claimSetId: undefined,
+  //     },
+  //   },
+  // ],
 }
 
-describe('OpenId4Vc', () => {
+describe('OpenId4VP DC API', () => {
   let holder: AgentType<{
     openId4VcHolder: OpenId4VcHolderModule
     tenants: TenantsModule<{ openId4VcHolder: OpenId4VcHolderModule }>
@@ -198,7 +198,7 @@ describe('OpenId4Vc', () => {
     const selfSignedCertificate = await X509Service.createCertificate(verifier.agent.context, {
       authorityKey: await verifier.agent.context.wallet.createKey({ keyType: KeyType.P256 }),
       issuer: {
-        commonName: 'DE',
+        commonName: 'Credo',
         countryName: 'DE',
       },
     })
@@ -230,7 +230,7 @@ describe('OpenId4Vc', () => {
 
     const certificate = await verifier.agent.x509.createCertificate({
       authorityKey: await verifier.agent.wallet.createKey({ keyType: KeyType.Ed25519 }),
-      extensions: { subjectAlternativeName: { name: [{ type: 'dns', value: 'localhost:1234' }] } },
+      extensions: { subjectAlternativeName: { name: [{ type: 'dns', value: 'localhost' }] } },
       issuer: { commonName: 'Something', countryName: 'Something' },
     })
 
@@ -269,13 +269,14 @@ describe('OpenId4Vc', () => {
       },
     })
 
-    const resolvedAuthorizationRequest = await holder.agent.modules.openId4VcHolder.resolveSiopAuthorizationRequest(
-      // FIXME: using authorization request fails here, due to incorrect decoding of url encoded
-      // we need to be aware of object types and parse those from string to object
-      // https://github.com/openwallet-foundation-labs/oid4vc-ts/issues/42
-      authorizationRequestObject,
-      { origin: 'https://example.com' }
-    )
+    const resolvedAuthorizationRequest =
+      await holder.agent.modules.openId4VcHolder.resolveOpenId4VpAuthorizationRequest(
+        // FIXME: using authorization request fails here, due to incorrect decoding of url encoded
+        // we need to be aware of object types and parse those from string to object
+        // https://github.com/openwallet-foundation-labs/oid4vc-ts/issues/42
+        authorizationRequestObject,
+        { origin: 'https://example.com' }
+      )
 
     expect(resolvedAuthorizationRequest.dcql).toEqual(expectedDcqlResult)
     if (!resolvedAuthorizationRequest.dcql) throw new Error('Dcql not defined')
@@ -283,12 +284,18 @@ describe('OpenId4Vc', () => {
       resolvedAuthorizationRequest.dcql.queryResult
     )
 
-    const result = await holder.agent.modules.openId4VcHolder.acceptSiopAuthorizationRequest({
-      authorizationRequest: resolvedAuthorizationRequest.authorizationRequest,
+    const result = await holder.agent.modules.openId4VcHolder.acceptOpenId4VpAuthorizationRequest({
+      authorizationRequestPayload: resolvedAuthorizationRequest.authorizationRequestPayload,
       dcql: {
         credentials: selectedCredentials,
       },
       origin: resolvedAuthorizationRequest.origin,
+      transactionData: [
+        {
+          // Sign with first possible credential
+          credentialId: resolvedAuthorizationRequest.transactionData?.[0].matchedCredentialIds[0] as string,
+        },
+      ],
     })
 
     expect(result).toEqual({
@@ -321,10 +328,10 @@ describe('OpenId4Vc', () => {
         },
       })
 
-    const resolvedAuthorizationRequest = await holder.agent.modules.openId4VcHolder.resolveSiopAuthorizationRequest(
-      authorizationRequestObject,
-      { origin: 'https://example.com' }
-    )
+    const resolvedAuthorizationRequest =
+      await holder.agent.modules.openId4VcHolder.resolveOpenId4VpAuthorizationRequest(authorizationRequestObject, {
+        origin: 'https://example.com',
+      })
 
     expect(resolvedAuthorizationRequest.dcql).toEqual(expectedDcqlResult)
     if (!resolvedAuthorizationRequest.dcql) throw new Error('Dcql not defined')
@@ -332,12 +339,18 @@ describe('OpenId4Vc', () => {
       resolvedAuthorizationRequest.dcql.queryResult
     )
 
-    const result = await holder.agent.modules.openId4VcHolder.acceptSiopAuthorizationRequest({
-      authorizationRequest: resolvedAuthorizationRequest.authorizationRequest,
+    const result = await holder.agent.modules.openId4VcHolder.acceptOpenId4VpAuthorizationRequest({
+      authorizationRequestPayload: resolvedAuthorizationRequest.authorizationRequestPayload,
       dcql: {
         credentials: selectedCredentials,
       },
       origin: resolvedAuthorizationRequest.origin,
+      transactionData: [
+        {
+          // Sign with first possible credential
+          credentialId: resolvedAuthorizationRequest.transactionData?.[0].matchedCredentialIds[0] as string,
+        },
+      ],
     })
 
     expect(result).toEqual({
@@ -364,7 +377,7 @@ describe('OpenId4Vc', () => {
     expect(updatedVerificationSession.state).toEqual(OpenId4VcVerificationSessionState.ResponseVerified)
     expect(dcql).toEqual({
       query: expect.any(Object),
-      presentation: {
+      presentations: {
         orgeuuniversity: expect.any(MdocDeviceResponse),
         OpenBadgeCredentialDescriptor: expect.objectContaining({
           compact: expect.stringContaining('~'),
@@ -376,9 +389,18 @@ describe('OpenId4Vc', () => {
     })
     expect(transactionData).toEqual([
       {
-        type: 'OpenBadgeTx',
-        credential_ids: ['OpenBadgeCredentialDescriptor'],
-        transaction_data_hashes_alg: ['sha-256'],
+        decoded: {
+          type: 'OpenBadgeTx',
+          credential_ids: ['OpenBadgeCredentialDescriptor'],
+          transaction_data_hashes_alg: ['sha-256'],
+        },
+        credentialHashIndex: 0,
+        credentialId: 'OpenBadgeCredentialDescriptor',
+        encoded:
+          'eyJ0eXBlIjoiT3BlbkJhZGdlVHgiLCJjcmVkZW50aWFsX2lkcyI6WyJPcGVuQmFkZ2VDcmVkZW50aWFsRGVzY3JpcHRvciJdLCJ0cmFuc2FjdGlvbl9kYXRhX2hhc2hlc19hbGciOlsic2hhLTI1NiJdfQ',
+        hash: 'XwyVd7wFREdVWLpni5QNHggNWXo2J4Ln58t2_ecJ73s',
+        hashAlg: 'sha-256',
+        transactionDataIndex: 0,
       },
     ])
   })

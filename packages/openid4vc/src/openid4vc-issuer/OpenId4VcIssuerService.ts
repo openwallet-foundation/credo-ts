@@ -16,6 +16,7 @@ import type {
 } from './OpenId4VcIssuerServiceOptions'
 
 import {
+  AgentContext,
   ClaimFormat,
   CredoError,
   EventEmitter,
@@ -25,6 +26,8 @@ import {
   Key,
   KeyType,
   MdocApi,
+  Query,
+  QueryOptions,
   SdJwtVcApi,
   TypedArrayEncoder,
   W3cCredentialService,
@@ -166,10 +169,10 @@ export class OpenId4VcIssuerService {
     }
 
     // We always use shortened URIs currently
+    const credentialOfferId = utils.uuid()
     const hostedCredentialOfferUri = joinUriParts(issuerMetadata.credentialIssuer.credential_issuer, [
       this.openId4VcIssuerConfig.credentialOfferEndpointPath,
-      // It doesn't really matter what the url is, as long as it's unique
-      utils.uuid(),
+      credentialOfferId,
     ])
 
     // Check if all the offered credential configuration ids have a scope value. If not, it won't be possible to actually request
@@ -204,6 +207,7 @@ export class OpenId4VcIssuerService {
     const issuanceSession = new OpenId4VcIssuanceSessionRecord({
       credentialOfferPayload: credentialOfferObject,
       credentialOfferUri: hostedCredentialOfferUri,
+      credentialOfferId,
       issuerId: issuer.issuerId,
       state: OpenId4VcIssuanceSessionState.OfferCreated,
       authorization: credentialOfferObject.grants?.authorization_code?.issuer_state

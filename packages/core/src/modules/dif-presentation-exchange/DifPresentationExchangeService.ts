@@ -53,7 +53,6 @@ import {
 
 import { DifPresentationExchangeError } from './DifPresentationExchangeError'
 import { DifPresentationExchangeSubmissionLocation } from './models'
-import { TransactionDataAuthorization } from './models/TransactionData'
 import {
   getCredentialsForRequest,
   getPresentationsToCreate,
@@ -100,7 +99,7 @@ export class DifPresentationExchangeService {
         }
 
         // We pick the first matching VC if we are auto-selecting
-        credentials[submission.inputDescriptorId].push(submission.verifiableCredentials[0].credentialRecord)
+        credentials[submission.inputDescriptorId].push(submission.verifiableCredentials[0])
       }
     }
 
@@ -169,7 +168,6 @@ export class DifPresentationExchangeService {
       openid4vp?:
         | Omit<MdocOpenId4VpSessionTranscriptOptions, 'verifierGeneratedNonce'>
         | Omit<MdocOpenId4VpDcApiSessionTranscriptOptions, 'verifierGeneratedNonce'>
-      transactionDataAuthorization?: TransactionDataAuthorization
     }
   ) {
     const { presentationDefinition, domain, challenge, openid4vp } = options
@@ -181,10 +179,7 @@ export class DifPresentationExchangeService {
       claimFormat: PresentationToCreate['claimFormat']
     }> = []
 
-    const presentationsToCreate = getPresentationsToCreate(
-      options.credentialsForInputDescriptor,
-      options.transactionDataAuthorization
-    )
+    const presentationsToCreate = getPresentationsToCreate(options.credentialsForInputDescriptor)
     for (const presentationToCreate of presentationsToCreate) {
       // We create a presentation for each subject
       // Thus for each subject we need to filter all the related input descriptors and credentials
@@ -590,10 +585,10 @@ export class DifPresentationExchangeService {
           verifierMetadata: {
             audience: domain,
             nonce: challenge,
-            transactionData: presentationToCreate.verifiableCredentials[0].transactionData,
             // TODO: we should make this optional
             issuedAt: Math.floor(Date.now() / 1000),
           },
+          additionalPayload: presentationToCreate.verifiableCredentials[0].additionalPayload,
         })
 
         return sdJwtVc

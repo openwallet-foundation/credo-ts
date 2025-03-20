@@ -31,7 +31,6 @@ import { ClaimFormat } from '../vc/index'
 import { EncodedX509Certificate, X509Certificate, X509ModuleConfig } from '../x509'
 
 import { SdJwtVcError } from './SdJwtVcError'
-import { getTransactionDataHashes, getTransactionDataVerifierMetadata } from './SdJwtVcTransactionData'
 import { decodeSdJwtVc, sdJwtVcHasher } from './decodeSdJwtVc'
 import { buildDisclosureFrameForPayload } from './disclosureFrame'
 import { SdJwtVcRecord, SdJwtVcRepository } from './repository'
@@ -58,9 +57,9 @@ export interface SdJwtVc<
   payload: Payload
   prettyClaims: Payload
 
-  transactionData?: {
-    hashes: string[]
-    hashes_alg?: string
+  kbJwt?: {
+    header: Record<string, unknown>
+    payload: Record<string, unknown>
   }
 
   typeMetadata?: SdJwtVcTypeMetadata
@@ -154,7 +153,6 @@ export class SdJwtVcService {
       payload: sdjwtPayload,
       claimFormat: ClaimFormat.SdJwtVc,
       encoded: compact,
-      ...(a.kbJwt?.payload && { transactionData: getTransactionDataHashes(a.kbJwt.payload) }),
     } satisfies SdJwtVc<typeof header, Payload>
   }
 
@@ -193,7 +191,7 @@ export class SdJwtVcService {
 
   public async present<Payload extends SdJwtVcPayload = SdJwtVcPayload>(
     agentContext: AgentContext,
-    { compactSdJwtVc, presentationFrame, verifierMetadata }: SdJwtVcPresentOptions<Payload>
+    { compactSdJwtVc, presentationFrame, verifierMetadata, additionalPayload }: SdJwtVcPresentOptions<Payload>
   ): Promise<string> {
     const sdjwt = new SDJwtVcInstance(this.getBaseSdJwtConfig(agentContext))
 
@@ -210,14 +208,6 @@ export class SdJwtVcService {
       kbSignAlg: holder?.alg,
     })
 
-    const transactionVerifierMetadata = verifierMetadata?.transactionData
-      ? getTransactionDataVerifierMetadata(verifierMetadata.transactionData)
-      : undefined
-
-    if (transactionVerifierMetadata && !holder) {
-      throw new SdJwtVcError('Cannot sign transaction data without including a holder binding')
-    }
-
     const compactDerivedSdJwtVc = await sdjwt.present(compactSdJwtVc, presentationFrame as PresentationFrame<Payload>, {
       kb: verifierMetadata
         ? {
@@ -225,7 +215,7 @@ export class SdJwtVcService {
               iat: verifierMetadata.issuedAt,
               nonce: verifierMetadata.nonce,
               aud: verifierMetadata.audience,
-              ...transactionVerifierMetadata,
+              ...additionalPayload,
             },
           }
         : undefined,
@@ -283,7 +273,13 @@ export class SdJwtVcService {
       header: sdJwtVc.jwt.header as Header,
       compact: compactSdJwtVc,
       prettyClaims: await sdJwtVc.getClaims(sdJwtVcHasher),
-      ...(sdJwtVc.kbJwt?.payload && { transactionData: getTransactionDataHashes(sdJwtVc.kbJwt.payload) }),
+
+      kbJwt: sdJwtVc.kbJwt
+        ? {
+            payload: sdJwtVc.kbJwt.payload as Record<string, unknown>,
+            header: sdJwtVc.kbJwt.header as Record<string, unknown>,
+          }
+        : undefined,
       claimFormat: ClaimFormat.SdJwtVc,
       encoded: compactSdJwtVc,
     } satisfies SdJwtVc<Header, Payload>

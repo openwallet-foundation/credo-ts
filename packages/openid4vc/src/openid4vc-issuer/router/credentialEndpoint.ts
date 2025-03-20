@@ -3,7 +3,7 @@ import type { Response, Router } from 'express'
 import type { OpenId4VcIssuerModuleConfig } from '../OpenId4VcIssuerModuleConfig'
 import type { OpenId4VcIssuanceRequest } from './requestContext'
 
-import { joinUriParts } from '@credo-ts/core'
+import { joinUriParts, utils } from '@credo-ts/core'
 import {
   Oauth2ErrorCodes,
   Oauth2ResourceUnauthorizedError,
@@ -212,6 +212,7 @@ export function configureCredentialEndpoint(router: Router, config: OpenId4VcIss
           credential_configuration_ids: Object.keys(credentialConfigurationsForToken),
           credential_issuer: issuerMetadata.credentialIssuer.credential_issuer,
         },
+        credentialOfferId: utils.uuid(),
         issuerId: issuer.issuerId,
         state: OpenId4VcIssuanceSessionState.CredentialRequestReceived,
         clientId: tokenPayload.client_id,

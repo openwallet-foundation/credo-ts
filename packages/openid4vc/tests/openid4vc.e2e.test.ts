@@ -37,7 +37,13 @@ import {
   parseDid,
   w3cDate,
 } from '@credo-ts/core'
-import {} from '@openid4vc/oauth2'
+import {
+  HashAlgorithm,
+  Oauth2AuthorizationServer,
+  calculateJwkThumbprint,
+  clientAuthenticationNone,
+  preAuthorizedCodeGrantIdentifier,
+} from '@openid4vc/oauth2'
 import { AuthorizationFlow } from '@openid4vc/openid4vci'
 import express, { type Express } from 'express'
 
@@ -559,7 +565,7 @@ describe('OpenId4Vc', () => {
     await issuerTenant.endSession()
 
     const resolvedCredentialOffer = await holderTenant.modules.openId4VcHolder.resolveCredentialOffer(credentialOffer)
-    const resolvedAuthorization = await holderTenant.modules.openId4VcHolder.resolveIssuanceAuthorizationRequest(
+    const resolvedAuthorization = await holderTenant.modules.openId4VcHolder.resolveOpenId4VciAuthorizationRequest(
       resolvedCredentialOffer,
       {
         clientId: 'foo',
@@ -676,7 +682,7 @@ describe('OpenId4Vc', () => {
     await verifierTenant2.endSession()
 
     const resolvedProofRequest1 =
-      await holderTenant.modules.openId4VcHolder.resolveSiopAuthorizationRequest(authorizationRequestUri1)
+      await holderTenant.modules.openId4VcHolder.resolveOpenId4VpAuthorizationRequest(authorizationRequestUri1)
 
     expect(resolvedProofRequest1.presentationExchange?.credentialsForRequest).toMatchObject({
       areRequirementsSatisfied: true,
@@ -686,7 +692,7 @@ describe('OpenId4Vc', () => {
             {
               verifiableCredentials: [
                 {
-                  type: ClaimFormat.JwtVc,
+                  claimFormat: ClaimFormat.JwtVc,
                   credentialRecord: {
                     credential: {
                       type: ['VerifiableCredential', 'OpenBadgeCredential'],
@@ -701,7 +707,7 @@ describe('OpenId4Vc', () => {
     })
 
     const resolvedProofRequest2 =
-      await holderTenant.modules.openId4VcHolder.resolveSiopAuthorizationRequest(authorizationRequestUri2)
+      await holderTenant.modules.openId4VcHolder.resolveOpenId4VpAuthorizationRequest(authorizationRequestUri2)
 
     expect(resolvedProofRequest2.presentationExchange?.credentialsForRequest).toMatchObject({
       areRequirementsSatisfied: true,
@@ -711,7 +717,7 @@ describe('OpenId4Vc', () => {
             {
               verifiableCredentials: [
                 {
-                  type: ClaimFormat.JwtVc,
+                  claimFormat: ClaimFormat.JwtVc,
                   credentialRecord: {
                     credential: {
                       type: ['VerifiableCredential', 'UniversityDegreeCredential'],
@@ -733,15 +739,15 @@ describe('OpenId4Vc', () => {
       resolvedProofRequest1.presentationExchange.credentialsForRequest
     )
 
-    const { authorizationResponse: authorizationResponse1, serverResponse: serverResponse1 } =
-      await holderTenant.modules.openId4VcHolder.acceptSiopAuthorizationRequest({
-        authorizationRequest: resolvedProofRequest1.authorizationRequest,
+    const { authorizationResponsePayload: authorizationREsponsePayload1, serverResponse: serverResponse1 } =
+      await holderTenant.modules.openId4VcHolder.acceptOpenId4VpAuthorizationRequest({
+        authorizationRequestPayload: resolvedProofRequest1.authorizationRequestPayload,
         presentationExchange: {
           credentials: selectedCredentials,
         },
       })
 
-    expect(authorizationResponse1).toEqual({
+    expect(authorizationREsponsePayload1).toEqual({
       presentation_submission: {
         definition_id: 'OpenBadgeCredential',
         descriptor_map: [
@@ -799,8 +805,8 @@ describe('OpenId4Vc', () => {
     )
 
     const { serverResponse: serverResponse2 } =
-      await holderTenant.modules.openId4VcHolder.acceptSiopAuthorizationRequest({
-        authorizationRequest: resolvedProofRequest2.authorizationRequest,
+      await holderTenant.modules.openId4VcHolder.acceptOpenId4VpAuthorizationRequest({
+        authorizationRequestPayload: resolvedProofRequest2.authorizationRequestPayload,
         presentationExchange: {
           credentials: selectedCredentials2,
         },
@@ -859,9 +865,9 @@ describe('OpenId4Vc', () => {
     })
 
     const certificate = await verifier.agent.x509.createCertificate({
-      issuer: 'CN=credo',
+      issuer: { commonName: 'Credo', countryName: 'NL' },
       authorityKey: await verifier.agent.wallet.createKey({ keyType: KeyType.Ed25519 }),
-      extensions: { subjectAlternativeName: { name: [{ type: 'dns', value: `localhost:${serverPort}` }] } },
+      extensions: { subjectAlternativeName: { name: [{ type: 'dns', value: 'localhost' }] } },
     })
 
     const rawCertificate = certificate.toString('base64')
@@ -899,13 +905,6 @@ describe('OpenId4Vc', () => {
       ],
     } satisfies DifPresentationExchangeDefinitionV2
 
-    const transactionData = [
-      {
-        type: 'OpenBadgeTx',
-        credential_ids: ['OpenBadgeCredentialDescriptor'],
-        transaction_data_hashes_alg: ['sha-256'],
-      },
-    ]
     const { authorizationRequest, verificationSession } =
       await verifier.agent.modules.openId4VcVerifier.createAuthorizationRequest({
         verifierId: openIdVerifier.verifierId,
@@ -914,21 +913,28 @@ describe('OpenId4Vc', () => {
           method: 'x5c',
           x5c: [rawCertificate],
         },
-        transactionData,
+        // transactionData,
+        transactionData: [
+          {
+            type: 'OpenBadgeTx',
+            credential_ids: ['OpenBadgeCredentialDescriptor'],
+            transaction_data_hashes_alg: ['sha-256'],
+          },
+        ],
         presentationExchange: {
           definition: presentationDefinition,
         },
       })
 
     expect(authorizationRequest).toEqual(
-      `openid4vp://?client_id=x509_san_dns%3Alocalhost%3A1234&request_uri=${encodeURIComponent(
+      `openid4vp://?client_id=x509_san_dns%3Alocalhost&request_uri=${encodeURIComponent(
         verificationSession.authorizationRequestUri as string
       )}`
     )
 
     const resolvedAuthorizationRequest =
-      await holder.agent.modules.openId4VcHolder.resolveSiopAuthorizationRequest(authorizationRequest)
-    expect(resolvedAuthorizationRequest.authorizationRequest.payload.response_mode).toEqual('direct_post.jwt')
+      await holder.agent.modules.openId4VcHolder.resolveOpenId4VpAuthorizationRequest(authorizationRequest)
+    expect(resolvedAuthorizationRequest.authorizationRequestPayload.response_mode).toEqual('direct_post.jwt')
 
     expect(resolvedAuthorizationRequest.presentationExchange?.credentialsForRequest).toEqual({
       areRequirementsSatisfied: true,
@@ -946,7 +952,7 @@ describe('OpenId4Vc', () => {
               inputDescriptorId: 'OpenBadgeCredentialDescriptor',
               verifiableCredentials: [
                 {
-                  type: ClaimFormat.SdJwtVc,
+                  claimFormat: ClaimFormat.SdJwtVc,
                   credentialRecord: expect.objectContaining({
                     compactSdJwtVc: signedSdJwtVc.compact,
                   }),
@@ -977,17 +983,18 @@ describe('OpenId4Vc', () => {
       resolvedAuthorizationRequest.presentationExchange.credentialsForRequest
     )
 
-    const { serverResponse, authorizationResponse } =
-      await holder.agent.modules.openId4VcHolder.acceptSiopAuthorizationRequest({
-        authorizationRequest: resolvedAuthorizationRequest.authorizationRequest,
+    const { serverResponse, authorizationResponsePayload } =
+      await holder.agent.modules.openId4VcHolder.acceptOpenId4VpAuthorizationRequest({
+        authorizationRequestPayload: resolvedAuthorizationRequest.authorizationRequestPayload,
         presentationExchange: {
           credentials: selectedCredentials,
         },
+        transactionData: [{ credentialId: 'OpenBadgeCredentialDescriptor' }],
       })
 
     // path_nested should not be used for sd-jwt
-    expect(authorizationResponse.presentation_submission?.descriptor_map[0].path_nested).toBeUndefined()
-    expect(authorizationResponse).toEqual({
+    expect(authorizationResponsePayload.presentation_submission?.descriptor_map[0].path_nested).toBeUndefined()
+    expect(authorizationResponsePayload).toEqual({
       presentation_submission: {
         definition_id: 'OpenBadgeCredential',
         descriptor_map: [
@@ -1018,13 +1025,28 @@ describe('OpenId4Vc', () => {
       await verifier.agent.modules.openId4VcVerifier.getVerifiedAuthorizationResponse(verificationSession.id)
 
     const presentation = presentationExchange?.presentations[0] as SdJwtVc
-    expect(transactionData).toEqual(_transactionData)
+    expect(_transactionData).toEqual([
+      {
+        credentialHashIndex: 0,
+        credentialId: 'OpenBadgeCredentialDescriptor',
+        decoded: {
+          credential_ids: ['OpenBadgeCredentialDescriptor'],
+          transaction_data_hashes_alg: ['sha-256'],
+          type: 'OpenBadgeTx',
+        },
+        encoded:
+          'eyJ0eXBlIjoiT3BlbkJhZGdlVHgiLCJjcmVkZW50aWFsX2lkcyI6WyJPcGVuQmFkZ2VDcmVkZW50aWFsRGVzY3JpcHRvciJdLCJ0cmFuc2FjdGlvbl9kYXRhX2hhc2hlc19hbGciOlsic2hhLTI1NiJdfQ',
+        hash: 'XwyVd7wFREdVWLpni5QNHggNWXo2J4Ln58t2_ecJ73s',
+        hashAlg: 'sha-256',
+        transactionDataIndex: 0,
+      },
+    ])
 
     const signedTransactionDataHashes = {
-      hashes: ['XwyVd7wFREdVWLpni5QNHggNWXo2J4Ln58t2_ecJ73s'],
-      hashes_alg: 'sha-256',
+      transaction_data_hashes: ['XwyVd7wFREdVWLpni5QNHggNWXo2J4Ln58t2_ecJ73s'],
+      transaction_data_hashes_alg: 'sha-256',
     }
-    expect(presentation?.transactionData).toEqual(signedTransactionDataHashes)
+    expect(presentation?.kbJwt?.payload).toMatchObject(signedTransactionDataHashes)
 
     // name SHOULD NOT be disclosed
     expect(presentation.prettyClaims).not.toHaveProperty('name')
@@ -1067,6 +1089,20 @@ describe('OpenId4Vc', () => {
             vct: 'OpenBadgeCredential',
             degree: 'bachelor',
           },
+          kbJwt: {
+            header: {
+              alg: 'EdDSA',
+              typ: 'kb+jwt',
+            },
+            payload: {
+              aud: 'x509_san_dns:localhost',
+              iat: expect.any(Number),
+              nonce: verificationSession.requestPayload.nonce,
+              sd_hash: expect.any(String),
+              transaction_data_hashes: ['XwyVd7wFREdVWLpni5QNHggNWXo2J4Ln58t2_ecJ73s'],
+              transaction_data_hashes_alg: 'sha-256',
+            },
+          },
           // university SHOULD be disclosed
           prettyClaims: {
             cnf: {
@@ -1078,7 +1114,6 @@ describe('OpenId4Vc', () => {
             degree: 'bachelor',
             university: 'innsbruck',
           },
-          transactionData: signedTransactionDataHashes,
         },
       ],
       descriptors: expect.any(Array),
@@ -1106,9 +1141,9 @@ describe('OpenId4Vc', () => {
     })
 
     const certificate = await verifier.agent.x509.createCertificate({
-      issuer: 'CN=credo',
+      issuer: { commonName: 'Credo', countryName: 'NL' },
       authorityKey: await verifier.agent.wallet.createKey({ keyType: KeyType.Ed25519 }),
-      extensions: { subjectAlternativeName: { name: [{ type: 'dns', value: `localhost:${serverPort}` }] } },
+      extensions: { subjectAlternativeName: { name: [{ type: 'dns', value: 'localhost' }] } },
     })
 
     const rawCertificate = certificate.toString('base64')
@@ -1166,13 +1201,13 @@ describe('OpenId4Vc', () => {
       })
 
     expect(authorizationRequest).toEqual(
-      `openid4vp://?client_id=x509_san_dns%3Alocalhost%3A1234&request_uri=${encodeURIComponent(
+      `openid4vp://?client_id=x509_san_dns%3Alocalhost&request_uri=${encodeURIComponent(
         verificationSession.authorizationRequestUri as string
       )}`
     )
 
     const resolvedAuthorizationRequest =
-      await holder.agent.modules.openId4VcHolder.resolveSiopAuthorizationRequest(authorizationRequest)
+      await holder.agent.modules.openId4VcHolder.resolveOpenId4VpAuthorizationRequest(authorizationRequest)
 
     expect(resolvedAuthorizationRequest.presentationExchange?.credentialsForRequest).toEqual({
       areRequirementsSatisfied: true,
@@ -1190,7 +1225,7 @@ describe('OpenId4Vc', () => {
               inputDescriptorId: 'OpenBadgeCredentialDescriptor',
               verifiableCredentials: [
                 {
-                  type: ClaimFormat.SdJwtVc,
+                  claimFormat: ClaimFormat.SdJwtVc,
                   credentialRecord: expect.objectContaining({
                     compactSdJwtVc: signedSdJwtVc.compact,
                   }),
@@ -1221,17 +1256,18 @@ describe('OpenId4Vc', () => {
       resolvedAuthorizationRequest.presentationExchange.credentialsForRequest
     )
 
-    const { serverResponse, authorizationResponse } =
-      await holder.agent.modules.openId4VcHolder.acceptSiopAuthorizationRequest({
-        authorizationRequest: resolvedAuthorizationRequest.authorizationRequest,
+    const { serverResponse, authorizationResponsePayload } =
+      await holder.agent.modules.openId4VcHolder.acceptOpenId4VpAuthorizationRequest({
+        authorizationRequestPayload: resolvedAuthorizationRequest.authorizationRequestPayload,
         presentationExchange: {
           credentials: selectedCredentials,
         },
+        transactionData: [{ credentialId: 'OpenBadgeCredentialDescriptor' }],
       })
 
     // path_nested should not be used for sd-jwt
-    expect(authorizationResponse.presentation_submission?.descriptor_map[0].path_nested).toBeUndefined()
-    expect(authorizationResponse).toEqual({
+    expect(authorizationResponsePayload.presentation_submission?.descriptor_map[0].path_nested).toBeUndefined()
+    expect(authorizationResponsePayload).toEqual({
       presentation_submission: {
         definition_id: 'OpenBadgeCredential',
         descriptor_map: [
@@ -1265,10 +1301,10 @@ describe('OpenId4Vc', () => {
     const presentation = presentationExchange?.presentations[0] as SdJwtVc
 
     const signedTransactionDataHashes = {
-      hashes: ['XwyVd7wFREdVWLpni5QNHggNWXo2J4Ln58t2_ecJ73s'],
-      hashes_alg: 'sha-256',
+      transaction_data_hashes: ['XwyVd7wFREdVWLpni5QNHggNWXo2J4Ln58t2_ecJ73s'],
+      transaction_data_hashes_alg: 'sha-256',
     }
-    expect(presentation.transactionData).toEqual(signedTransactionDataHashes)
+    expect(presentation.kbJwt?.payload).toMatchObject(signedTransactionDataHashes)
 
     // name SHOULD NOT be disclosed
     expect(presentation.prettyClaims).not.toHaveProperty('name')
@@ -1300,6 +1336,20 @@ describe('OpenId4Vc', () => {
             kid: '#z6MkrzQPBr4pyqC776KKtrz13SchM5ePPbssuPuQZb5t4uKQ',
             typ: 'vc+sd-jwt',
           },
+          kbJwt: {
+            header: {
+              alg: 'EdDSA',
+              typ: 'kb+jwt',
+            },
+            payload: {
+              aud: 'x509_san_dns:localhost',
+              iat: expect.any(Number),
+              nonce: verificationSession.requestPayload.nonce,
+              sd_hash: expect.any(String),
+              transaction_data_hashes: ['XwyVd7wFREdVWLpni5QNHggNWXo2J4Ln58t2_ecJ73s'],
+              transaction_data_hashes_alg: 'sha-256',
+            },
+          },
           payload: {
             _sd: [expect.any(String), expect.any(String)],
             _sd_alg: 'sha-256',
@@ -1322,7 +1372,6 @@ describe('OpenId4Vc', () => {
             degree: 'bachelor',
             university: 'innsbruck',
           },
-          transactionData: signedTransactionDataHashes,
         },
       ],
       descriptors: expect.any(Array),
@@ -1367,9 +1416,9 @@ describe('OpenId4Vc', () => {
     })
 
     const certificate = await verifier.agent.x509.createCertificate({
-      issuer: 'CN=credo',
+      issuer: { commonName: 'Credo', countryName: 'NL' },
       authorityKey: await verifier.agent.wallet.createKey({ keyType: KeyType.Ed25519 }),
-      extensions: { subjectAlternativeName: { name: [{ type: 'dns', value: `localhost:${serverPort}` }] } },
+      extensions: { subjectAlternativeName: { name: [{ type: 'dns', value: 'localhost' }] } },
     })
 
     const rawCertificate = certificate.toString('base64')
@@ -1431,10 +1480,6 @@ describe('OpenId4Vc', () => {
       ],
     } satisfies DifPresentationExchangeDefinitionV2
 
-    const transactionData = [
-      { type: 'type1', credential_ids: ['OpenBadgeCredentialDescriptor'] },
-      { type: 'type2', credential_ids: ['OpenBadgeCredentialDescriptor2'] },
-    ]
     const { authorizationRequest, verificationSession } =
       await verifier.agent.modules.openId4VcVerifier.createAuthorizationRequest({
         verifierId: openIdVerifier.verifierId,
@@ -1446,88 +1491,45 @@ describe('OpenId4Vc', () => {
         presentationExchange: {
           definition: presentationDefinition,
         },
-        transactionData,
+        transactionData: [
+          { type: 'type1', credential_ids: ['OpenBadgeCredentialDescriptor'] },
+          { type: 'type2', credential_ids: ['OpenBadgeCredentialDescriptor2'] },
+        ],
       })
 
     expect(authorizationRequest).toEqual(
-      `openid4vp://?client_id=x509_san_dns%3Alocalhost%3A1234&request_uri=${encodeURIComponent(
+      `openid4vp://?client_id=x509_san_dns%3Alocalhost&request_uri=${encodeURIComponent(
         verificationSession.authorizationRequestUri as string
       )}`
     )
 
     const resolvedAuthorizationRequest =
-      await holder.agent.modules.openId4VcHolder.resolveSiopAuthorizationRequest(authorizationRequest)
+      await holder.agent.modules.openId4VcHolder.resolveOpenId4VpAuthorizationRequest(authorizationRequest)
 
-    const receivedTd = [
+    expect(resolvedAuthorizationRequest.transactionData).toEqual([
       {
-        transactionDataEntry: {
-          type: 'type1',
-          credential_ids: ['OpenBadgeCredentialDescriptor'],
-        },
-        submissionEntry: {
-          inputDescriptorId: 'OpenBadgeCredentialDescriptor',
-          name: undefined,
-          purpose: undefined,
-          verifiableCredentials: [
-            {
-              type: 'vc+sd-jwt',
-              credentialRecord: {
-                _tags: { alg: 'EdDSA', sdAlg: 'sha-256', vct: 'OpenBadgeCredential' },
-                type: 'SdJwtVcRecord',
-                metadata: { data: {} },
-                id: expect.any(String),
-                createdAt: expect.any(Date),
-                compactSdJwtVc: expect.any(String),
-                updatedAt: expect.any(Date),
-              },
-              disclosedPayload: {
-                vct: 'OpenBadgeCredential',
-                degree: 'bachelor',
-                cnf: { kid: expect.any(String) },
-                iss: expect.any(String),
-                iat: expect.any(Number),
-                university: 'innsbruck',
-              },
-            },
-          ],
+        matchedCredentialIds: ['OpenBadgeCredentialDescriptor'],
+        entry: {
+          encoded: 'eyJ0eXBlIjoidHlwZTEiLCJjcmVkZW50aWFsX2lkcyI6WyJPcGVuQmFkZ2VDcmVkZW50aWFsRGVzY3JpcHRvciJdfQ',
+          transactionData: {
+            credential_ids: ['OpenBadgeCredentialDescriptor'],
+            type: 'type1',
+          },
+          transactionDataIndex: 0,
         },
       },
       {
-        transactionDataEntry: {
-          type: 'type2',
-          credential_ids: ['OpenBadgeCredentialDescriptor2'],
+        entry: {
+          encoded: 'eyJ0eXBlIjoidHlwZTIiLCJjcmVkZW50aWFsX2lkcyI6WyJPcGVuQmFkZ2VDcmVkZW50aWFsRGVzY3JpcHRvcjIiXX0',
+          transactionData: {
+            credential_ids: ['OpenBadgeCredentialDescriptor2'],
+            type: 'type2',
+          },
+          transactionDataIndex: 1,
         },
-        submissionEntry: {
-          inputDescriptorId: 'OpenBadgeCredentialDescriptor2',
-          name: undefined,
-          purpose: undefined,
-          verifiableCredentials: [
-            {
-              type: 'vc+sd-jwt',
-              credentialRecord: {
-                _tags: { alg: 'EdDSA', sdAlg: 'sha-256', vct: 'OpenBadgeCredential2' },
-                type: 'SdJwtVcRecord',
-                metadata: { data: {} },
-                id: expect.any(String),
-                createdAt: expect.any(Date),
-                compactSdJwtVc: expect.any(String),
-                updatedAt: expect.any(Date),
-              },
-              disclosedPayload: {
-                vct: 'OpenBadgeCredential2',
-                degree: 'bachelor2',
-                cnf: { kid: expect.any(String) },
-                iss: expect.any(String),
-                iat: expect.any(Number),
-                name: 'John Doe2',
-              },
-            },
-          ],
-        },
+        matchedCredentialIds: ['OpenBadgeCredentialDescriptor2'],
       },
-    ]
-
-    expect(resolvedAuthorizationRequest.presentationExchange?.transactionData).toMatchObject(receivedTd)
+    ])
 
     expect(resolvedAuthorizationRequest.presentationExchange?.credentialsForRequest).toEqual({
       areRequirementsSatisfied: true,
@@ -1545,7 +1547,7 @@ describe('OpenId4Vc', () => {
               inputDescriptorId: 'OpenBadgeCredentialDescriptor',
               verifiableCredentials: [
                 {
-                  type: ClaimFormat.SdJwtVc,
+                  claimFormat: ClaimFormat.SdJwtVc,
                   credentialRecord: expect.objectContaining({
                     compactSdJwtVc: signedSdJwtVc.compact,
                   }),
@@ -1576,7 +1578,7 @@ describe('OpenId4Vc', () => {
               inputDescriptorId: 'OpenBadgeCredentialDescriptor2',
               verifiableCredentials: [
                 {
-                  type: ClaimFormat.SdJwtVc,
+                  claimFormat: ClaimFormat.SdJwtVc,
                   credentialRecord: expect.objectContaining({
                     compactSdJwtVc: signedSdJwtVc2.compact,
                   }),
@@ -1606,17 +1608,25 @@ describe('OpenId4Vc', () => {
       resolvedAuthorizationRequest.presentationExchange.credentialsForRequest
     )
 
-    const { serverResponse, authorizationResponse } =
-      await holder.agent.modules.openId4VcHolder.acceptSiopAuthorizationRequest({
-        authorizationRequest: resolvedAuthorizationRequest.authorizationRequest,
+    const { serverResponse, authorizationResponsePayload } =
+      await holder.agent.modules.openId4VcHolder.acceptOpenId4VpAuthorizationRequest({
+        authorizationRequestPayload: resolvedAuthorizationRequest.authorizationRequestPayload,
         presentationExchange: {
           credentials: selectedCredentials,
         },
+        transactionData: [
+          {
+            credentialId: 'OpenBadgeCredentialDescriptor',
+          },
+          {
+            credentialId: 'OpenBadgeCredentialDescriptor2',
+          },
+        ],
       })
 
     // path_nested should not be used for sd-jwt
-    expect(authorizationResponse.presentation_submission?.descriptor_map[0].path_nested).toBeUndefined()
-    expect(authorizationResponse).toEqual({
+    expect(authorizationResponsePayload.presentation_submission?.descriptor_map[0].path_nested).toBeUndefined()
+    expect(authorizationResponsePayload).toEqual({
       presentation_submission: {
         definition_id: 'OpenBadgeCredentials',
         descriptor_map: [
@@ -1651,17 +1661,50 @@ describe('OpenId4Vc', () => {
     const { presentationExchange, transactionData: tdResult } =
       await verifier.agent.modules.openId4VcVerifier.getVerifiedAuthorizationResponse(verificationSession.id)
 
-    expect(transactionData).toEqual(tdResult)
+    expect(tdResult).toEqual([
+      {
+        credentialHashIndex: 0,
+        credentialId: 'OpenBadgeCredentialDescriptor',
+        decoded: {
+          credential_ids: ['OpenBadgeCredentialDescriptor'],
+          type: 'type1',
+        },
+        encoded: 'eyJ0eXBlIjoidHlwZTEiLCJjcmVkZW50aWFsX2lkcyI6WyJPcGVuQmFkZ2VDcmVkZW50aWFsRGVzY3JpcHRvciJdfQ',
+        hash: 'TU8fKqfA_X6SXn3RCGR9ENeO1h4KXacyAPpxxhzBwJ4',
+        hashAlg: 'sha-256',
+        transactionDataIndex: 0,
+      },
+      {
+        credentialHashIndex: 0,
+        credentialId: 'OpenBadgeCredentialDescriptor2',
+        decoded: {
+          credential_ids: ['OpenBadgeCredentialDescriptor2'],
+          type: 'type2',
+        },
+        encoded: 'eyJ0eXBlIjoidHlwZTIiLCJjcmVkZW50aWFsX2lkcyI6WyJPcGVuQmFkZ2VDcmVkZW50aWFsRGVzY3JpcHRvcjIiXX0',
+        hash: '_W3dA7YK86o2y2JjRzgbsWnc8IJD3OJd9Rk7sGUlars',
+        hashAlg: 'sha-256',
+        transactionDataIndex: 1,
+      },
+    ])
 
     const presentation = presentationExchange?.presentations[0] as SdJwtVc
     // name SHOULD NOT be disclosed
     expect(presentation.prettyClaims).not.toHaveProperty('name')
 
     const signedTransactionDataHashes = {
-      hashes: ['TU8fKqfA_X6SXn3RCGR9ENeO1h4KXacyAPpxxhzBwJ4', '_W3dA7YK86o2y2JjRzgbsWnc8IJD3OJd9Rk7sGUlars'],
-      hashes_alg: 'sha-256',
+      transaction_data_hashes: ['TU8fKqfA_X6SXn3RCGR9ENeO1h4KXacyAPpxxhzBwJ4'],
+      transaction_data_hashes_alg: 'sha-256',
     }
-    expect(presentation.transactionData).toEqual(signedTransactionDataHashes)
+    expect(presentation.kbJwt?.payload).toMatchObject(signedTransactionDataHashes)
+
+    const signedTransactionDataHashes2 = {
+      transaction_data_hashes: ['_W3dA7YK86o2y2JjRzgbsWnc8IJD3OJd9Rk7sGUlars'],
+      transaction_data_hashes_alg: 'sha-256',
+    }
+    expect((presentationExchange?.presentations[1] as SdJwtVc).kbJwt?.payload).toMatchObject(
+      signedTransactionDataHashes2
+    )
 
     // university and name SHOULD NOT be in the signed payload
     expect(presentation.payload).not.toHaveProperty('university')
@@ -1695,6 +1738,20 @@ describe('OpenId4Vc', () => {
             kid: '#z6MkrzQPBr4pyqC776KKtrz13SchM5ePPbssuPuQZb5t4uKQ',
             typ: 'vc+sd-jwt',
           },
+          kbJwt: {
+            header: {
+              alg: 'EdDSA',
+              typ: 'kb+jwt',
+            },
+            payload: {
+              aud: 'x509_san_dns:localhost',
+              iat: expect.any(Number),
+              nonce: verificationSession.requestPayload.nonce,
+              sd_hash: expect.any(String),
+              transaction_data_hashes: ['TU8fKqfA_X6SXn3RCGR9ENeO1h4KXacyAPpxxhzBwJ4'],
+              transaction_data_hashes_alg: 'sha-256',
+            },
+          },
           payload: {
             _sd: [expect.any(String), expect.any(String)],
             _sd_alg: 'sha-256',
@@ -1717,7 +1774,6 @@ describe('OpenId4Vc', () => {
             degree: 'bachelor',
             university: 'innsbruck',
           },
-          transactionData: signedTransactionDataHashes,
         },
         {
           encoded: expect.any(String),
@@ -1739,6 +1795,20 @@ describe('OpenId4Vc', () => {
             vct: 'OpenBadgeCredential2',
             degree: 'bachelor2',
           },
+          kbJwt: {
+            header: {
+              alg: 'EdDSA',
+              typ: 'kb+jwt',
+            },
+            payload: {
+              aud: 'x509_san_dns:localhost',
+              iat: expect.any(Number),
+              nonce: verificationSession.requestPayload.nonce,
+              sd_hash: expect.any(String),
+              transaction_data_hashes: ['_W3dA7YK86o2y2JjRzgbsWnc8IJD3OJd9Rk7sGUlars'],
+              transaction_data_hashes_alg: 'sha-256',
+            },
+          },
           prettyClaims: {
             cnf: {
               kid: 'did:key:z6MkpGR4gs4Rc3Zph4vj8wRnjnAxgAPSxcR8MAVKutWspQzc#z6MkpGR4gs4Rc3Zph4vj8wRnjnAxgAPSxcR8MAVKutWspQzc',
@@ -1749,7 +1819,6 @@ describe('OpenId4Vc', () => {
             name: 'John Doe2',
             degree: 'bachelor2',
           },
-          transactionData: signedTransactionDataHashes,
         },
       ],
       descriptors: expect.any(Array),
@@ -1930,8 +1999,8 @@ describe('OpenId4Vc', () => {
 
     const certificate = await verifier.agent.x509.createCertificate({
       authorityKey: await verifier.agent.wallet.createKey({ keyType: KeyType.Ed25519 }),
-      extensions: { subjectAlternativeName: { name: [{ type: 'dns', value: 'localhost:1234' }] } },
-      issuer: 'CN=credo',
+      extensions: { subjectAlternativeName: { name: [{ type: 'dns', value: 'localhost' }] } },
+      issuer: { commonName: 'Credo', countryName: 'NL' },
     })
 
     const rawCertificate = certificate.toString('base64')
@@ -1978,7 +2047,7 @@ describe('OpenId4Vc', () => {
     })
 
     const resolvedAuthorizationRequest =
-      await holder.agent.modules.openId4VcHolder.resolveSiopAuthorizationRequest(authorizationRequest)
+      await holder.agent.modules.openId4VcHolder.resolveOpenId4VpAuthorizationRequest(authorizationRequest)
 
     if (!resolvedAuthorizationRequest.presentationExchange) {
       throw new Error('Presentation exchange not defined')
@@ -1988,16 +2057,12 @@ describe('OpenId4Vc', () => {
       resolvedAuthorizationRequest.presentationExchange.credentialsForRequest
     )
 
-    const requestPayload = await resolvedAuthorizationRequest.authorizationRequest.payload
-    if (!requestPayload) {
-      throw new Error('No payload')
-    }
-
+    const requestPayload = resolvedAuthorizationRequest.authorizationRequestPayload
     // setting this to direct_post to simulate the result of sending a non encrypted response to an authorization request that requires enryption
     requestPayload.response_mode = 'direct_post'
 
-    const result = await holder.agent.modules.openId4VcHolder.acceptSiopAuthorizationRequest({
-      authorizationRequest: resolvedAuthorizationRequest.authorizationRequest,
+    const result = await holder.agent.modules.openId4VcHolder.acceptOpenId4VpAuthorizationRequest({
+      authorizationRequestPayload: resolvedAuthorizationRequest.authorizationRequestPayload,
       presentationExchange: {
         credentials: selectedCredentials,
       },
@@ -2060,9 +2125,9 @@ describe('OpenId4Vc', () => {
     })
 
     const certificate = await verifier.agent.x509.createCertificate({
-      issuer: 'CN=credo',
+      issuer: { commonName: 'Credo', countryName: 'NL' },
       authorityKey: await verifier.agent.wallet.createKey({ keyType: KeyType.Ed25519 }),
-      extensions: { subjectAlternativeName: { name: [{ type: 'dns', value: 'localhost:1234' }] } },
+      extensions: { subjectAlternativeName: { name: [{ type: 'dns', value: 'localhost' }] } },
     })
 
     const rawCertificate = certificate.toString('base64')
@@ -2135,13 +2200,13 @@ describe('OpenId4Vc', () => {
       })
 
     expect(authorizationRequest).toEqual(
-      `openid4vp://?client_id=x509_san_dns%3Alocalhost%3A1234&request_uri=${encodeURIComponent(
+      `openid4vp://?client_id=x509_san_dns%3Alocalhost&request_uri=${encodeURIComponent(
         verificationSession.authorizationRequestUri as string
       )}`
     )
 
     const resolvedAuthorizationRequest =
-      await holder.agent.modules.openId4VcHolder.resolveSiopAuthorizationRequest(authorizationRequest)
+      await holder.agent.modules.openId4VcHolder.resolveOpenId4VpAuthorizationRequest(authorizationRequest)
 
     expect(resolvedAuthorizationRequest.presentationExchange?.credentialsForRequest).toEqual({
       areRequirementsSatisfied: true,
@@ -2159,7 +2224,7 @@ describe('OpenId4Vc', () => {
               inputDescriptorId: 'org.eu.university',
               verifiableCredentials: [
                 {
-                  type: ClaimFormat.MsoMdoc,
+                  claimFormat: ClaimFormat.MsoMdoc,
                   credentialRecord: expect.objectContaining({
                     base64Url: expect.any(String),
                   }),
@@ -2187,7 +2252,7 @@ describe('OpenId4Vc', () => {
               inputDescriptorId: 'OpenBadgeCredentialDescriptor',
               verifiableCredentials: [
                 {
-                  type: ClaimFormat.SdJwtVc,
+                  claimFormat: ClaimFormat.SdJwtVc,
                   credentialRecord: expect.objectContaining({
                     compactSdJwtVc: signedSdJwtVc.compact,
                   }),
@@ -2218,17 +2283,17 @@ describe('OpenId4Vc', () => {
       resolvedAuthorizationRequest.presentationExchange.credentialsForRequest
     )
 
-    const { serverResponse, authorizationResponse } =
-      await holder.agent.modules.openId4VcHolder.acceptSiopAuthorizationRequest({
-        authorizationRequest: resolvedAuthorizationRequest.authorizationRequest,
+    const { serverResponse, authorizationResponsePayload } =
+      await holder.agent.modules.openId4VcHolder.acceptOpenId4VpAuthorizationRequest({
+        authorizationRequestPayload: resolvedAuthorizationRequest.authorizationRequestPayload,
         presentationExchange: {
           credentials: selectedCredentials,
         },
       })
 
     // path_nested should not be used for sd-jwt
-    expect(authorizationResponse.presentation_submission?.descriptor_map[0].path_nested).toBeUndefined()
-    expect(authorizationResponse).toEqual({
+    expect(authorizationResponsePayload.presentation_submission?.descriptor_map[0].path_nested).toBeUndefined()
+    expect(authorizationResponsePayload).toEqual({
       presentation_submission: {
         id: expect.any(String),
         definition_id: 'mDL-sample-req',
@@ -2321,6 +2386,18 @@ describe('OpenId4Vc', () => {
             kid: '#z6MkrzQPBr4pyqC776KKtrz13SchM5ePPbssuPuQZb5t4uKQ',
             typ: 'vc+sd-jwt',
           },
+          kbJwt: {
+            header: {
+              alg: 'EdDSA',
+              typ: 'kb+jwt',
+            },
+            payload: {
+              aud: 'x509_san_dns:localhost',
+              iat: expect.any(Number),
+              nonce: verificationSession.requestPayload.nonce,
+              sd_hash: expect.any(String),
+            },
+          },
           payload: {
             _sd: [expect.any(String), expect.any(String)],
             _sd_alg: 'sha-256',
@@ -2387,9 +2464,9 @@ describe('OpenId4Vc', () => {
     })
 
     const certificate = await verifier.agent.x509.createCertificate({
-      issuer: 'CN=credo',
+      issuer: { commonName: 'Credo', countryName: 'NL' },
       authorityKey: await verifier.agent.wallet.createKey({ keyType: KeyType.Ed25519 }),
-      extensions: { subjectAlternativeName: { name: [{ type: 'dns', value: 'localhost:1234' }] } },
+      extensions: { subjectAlternativeName: { name: [{ type: 'dns', value: 'localhost' }] } },
     })
 
     const rawCertificate = certificate.toString('base64')
@@ -2465,13 +2542,13 @@ describe('OpenId4Vc', () => {
       })
 
     expect(authorizationRequest).toEqual(
-      `openid4vp://?client_id=x509_san_dns%3Alocalhost%3A1234&request_uri=${encodeURIComponent(
+      `openid4vp://?client_id=x509_san_dns%3Alocalhost&request_uri=${encodeURIComponent(
         verificationSession.authorizationRequestUri as string
       )}`
     )
 
     const resolvedAuthorizationRequest =
-      await holder.agent.modules.openId4VcHolder.resolveSiopAuthorizationRequest(authorizationRequest)
+      await holder.agent.modules.openId4VcHolder.resolveOpenId4VpAuthorizationRequest(authorizationRequest)
 
     expect(resolvedAuthorizationRequest.presentationExchange?.credentialsForRequest).toEqual({
       areRequirementsSatisfied: true,
@@ -2489,7 +2566,7 @@ describe('OpenId4Vc', () => {
               inputDescriptorId: 'OpenBadgeCredentialDescriptor',
               verifiableCredentials: [
                 {
-                  type: ClaimFormat.SdJwtVc,
+                  claimFormat: ClaimFormat.SdJwtVc,
                   credentialRecord: expect.objectContaining({
                     compactSdJwtVc: signedSdJwtVc.compact,
                   }),
@@ -2520,7 +2597,7 @@ describe('OpenId4Vc', () => {
               inputDescriptorId: 'OpenBadgeCredentialDescriptor2',
               verifiableCredentials: [
                 {
-                  type: ClaimFormat.SdJwtVc,
+                  claimFormat: ClaimFormat.SdJwtVc,
                   credentialRecord: expect.objectContaining({
                     compactSdJwtVc: signedSdJwtVc2.compact,
                   }),
@@ -2550,17 +2627,17 @@ describe('OpenId4Vc', () => {
       resolvedAuthorizationRequest.presentationExchange.credentialsForRequest
     )
 
-    const { serverResponse, authorizationResponse } =
-      await holder.agent.modules.openId4VcHolder.acceptSiopAuthorizationRequest({
-        authorizationRequest: resolvedAuthorizationRequest.authorizationRequest,
+    const { serverResponse, authorizationResponsePayload } =
+      await holder.agent.modules.openId4VcHolder.acceptOpenId4VpAuthorizationRequest({
+        authorizationRequestPayload: resolvedAuthorizationRequest.authorizationRequestPayload,
         presentationExchange: {
           credentials: selectedCredentials,
         },
       })
 
     // path_nested should not be used for sd-jwt
-    expect(authorizationResponse.presentation_submission?.descriptor_map[0].path_nested).toBeUndefined()
-    expect(authorizationResponse).toEqual({
+    expect(authorizationResponsePayload.presentation_submission?.descriptor_map[0].path_nested).toBeUndefined()
+    expect(authorizationResponsePayload).toEqual({
       presentation_submission: {
         definition_id: 'OpenBadgeCredentials',
         descriptor_map: [
@@ -2633,6 +2710,18 @@ describe('OpenId4Vc', () => {
             kid: '#z6MkrzQPBr4pyqC776KKtrz13SchM5ePPbssuPuQZb5t4uKQ',
             typ: 'vc+sd-jwt',
           },
+          kbJwt: {
+            header: {
+              alg: 'EdDSA',
+              typ: 'kb+jwt',
+            },
+            payload: {
+              aud: 'x509_san_dns:localhost',
+              iat: expect.any(Number),
+              nonce: verificationSession.requestPayload.nonce,
+              sd_hash: expect.any(String),
+            },
+          },
           payload: {
             _sd: [expect.any(String), expect.any(String)],
             _sd_alg: 'sha-256',
@@ -2676,6 +2765,18 @@ describe('OpenId4Vc', () => {
             vct: 'OpenBadgeCredential2',
             degree: 'bachelor2',
           },
+          kbJwt: {
+            header: {
+              alg: 'EdDSA',
+              typ: 'kb+jwt',
+            },
+            payload: {
+              aud: 'x509_san_dns:localhost',
+              iat: expect.any(Number),
+              nonce: verificationSession.requestPayload.nonce,
+              sd_hash: expect.any(String),
+            },
+          },
           prettyClaims: {
             cnf: {
               kid: 'did:key:z6MkpGR4gs4Rc3Zph4vj8wRnjnAxgAPSxcR8MAVKutWspQzc#z6MkpGR4gs4Rc3Zph4vj8wRnjnAxgAPSxcR8MAVKutWspQzc',
@@ -2716,7 +2817,7 @@ describe('OpenId4Vc', () => {
     const selfSignedCertificate = await X509Service.createCertificate(issuer.agent.context, {
       authorityKey: await issuer.agent.context.wallet.createKey({ keyType: KeyType.P256 }),
       issuer: {
-        commonName: 'DE',
+        countryName: 'DE',
       },
     })
 
@@ -2729,7 +2830,7 @@ describe('OpenId4Vc', () => {
 
     const holderKey = await holder.agent.context.wallet.createKey({ keyType: KeyType.P256 })
 
-    const date = new DateOnly()
+    const date = new DateOnly(new DateOnly().toISOString())
 
     const signedMdoc = await issuer.agent.mdoc.sign({
       docType: 'org.eu.university',
@@ -2751,7 +2852,7 @@ describe('OpenId4Vc', () => {
       issuer: { commonName: 'Test' },
       extensions: {
         subjectAlternativeName: {
-          name: [{ type: 'dns', value: 'localhost:1234' }],
+          name: [{ type: 'dns', value: 'localhost' }],
         },
       },
     })
@@ -2804,7 +2905,7 @@ describe('OpenId4Vc', () => {
       })
 
     const resolvedAuthorizationRequest =
-      await holder.agent.modules.openId4VcHolder.resolveSiopAuthorizationRequest(authorizationRequest)
+      await holder.agent.modules.openId4VcHolder.resolveOpenId4VpAuthorizationRequest(authorizationRequest)
 
     expect(resolvedAuthorizationRequest.dcql).toEqual({
       queryResult: {
@@ -2872,34 +2973,6 @@ describe('OpenId4Vc', () => {
         },
         credential_sets: undefined,
       },
-      transactionData: [
-        {
-          transactionDataEntry: {
-            type: 'OpenBadgeTx',
-            credential_ids: ['OpenBadgeCredentialDescriptor'],
-            transaction_data_hashes_alg: ['sha-256'],
-          },
-          dcql: {
-            record: {
-              _tags: {
-                alg: 'EdDSA',
-                sdAlg: 'sha-256',
-                vct: 'OpenBadgeCredential',
-              },
-              type: 'SdJwtVcRecord',
-              metadata: {
-                data: {},
-              },
-              id: expect.any(String),
-              createdAt: expect.any(Date),
-              compactSdJwtVc: expect.any(String),
-              updatedAt: expect.any(Date),
-            },
-            credentialQueryId: 1,
-            claimSetId: undefined,
-          },
-        },
-      ],
     })
 
     if (!resolvedAuthorizationRequest.dcql) {
@@ -2910,17 +2983,18 @@ describe('OpenId4Vc', () => {
       resolvedAuthorizationRequest.dcql.queryResult
     )
 
-    const { serverResponse, authorizationResponse } =
-      await holder.agent.modules.openId4VcHolder.acceptSiopAuthorizationRequest({
-        authorizationRequest: resolvedAuthorizationRequest.authorizationRequest,
+    const { serverResponse, authorizationResponsePayload } =
+      await holder.agent.modules.openId4VcHolder.acceptOpenId4VpAuthorizationRequest({
+        authorizationRequestPayload: resolvedAuthorizationRequest.authorizationRequestPayload,
         dcql: {
           credentials: selectedCredentials,
         },
+        transactionData: [{ credentialId: 'OpenBadgeCredentialDescriptor' }],
       })
 
     // path_nested should not be used for sd-jwt
-    expect(authorizationResponse.presentation_submission).toBeUndefined()
-    expect(authorizationResponse).toEqual({ state: expect.any(String), vp_token: expect.any(Object) })
+    expect(authorizationResponsePayload.presentation_submission).toBeUndefined()
+    expect(authorizationResponsePayload).toEqual({ state: expect.any(String), vp_token: expect.any(Object) })
     expect(serverResponse).toMatchObject({ status: 200 })
 
     // The RP MUST validate that the aud (audience) Claim contains the value of the client_id
@@ -2938,16 +3012,25 @@ describe('OpenId4Vc', () => {
 
     expect(transactionData).toEqual([
       {
-        credential_ids: ['OpenBadgeCredentialDescriptor'],
-        transaction_data_hashes_alg: ['sha-256'],
-        type: 'OpenBadgeTx',
+        credentialHashIndex: 0,
+        credentialId: 'OpenBadgeCredentialDescriptor',
+        decoded: {
+          credential_ids: ['OpenBadgeCredentialDescriptor'],
+          transaction_data_hashes_alg: ['sha-256'],
+          type: 'OpenBadgeTx',
+        },
+        encoded:
+          'eyJ0eXBlIjoiT3BlbkJhZGdlVHgiLCJjcmVkZW50aWFsX2lkcyI6WyJPcGVuQmFkZ2VDcmVkZW50aWFsRGVzY3JpcHRvciJdLCJ0cmFuc2FjdGlvbl9kYXRhX2hhc2hlc19hbGciOlsic2hhLTI1NiJdfQ',
+        hash: 'XwyVd7wFREdVWLpni5QNHggNWXo2J4Ln58t2_ecJ73s',
+        hashAlg: 'sha-256',
+        transactionDataIndex: 0,
       },
     ])
-    const sdJwtPresentation = dcql?.presentation.OpenBadgeCredentialDescriptor as SdJwtVc
+    const sdJwtPresentation = dcql?.presentations.OpenBadgeCredentialDescriptor as SdJwtVc
 
-    expect(sdJwtPresentation.transactionData).toEqual({
-      hashes: ['XwyVd7wFREdVWLpni5QNHggNWXo2J4Ln58t2_ecJ73s'],
-      hashes_alg: 'sha-256',
+    expect(sdJwtPresentation.kbJwt?.payload).toMatchObject({
+      transaction_data_hashes: ['XwyVd7wFREdVWLpni5QNHggNWXo2J4Ln58t2_ecJ73s'],
+      transaction_data_hashes_alg: 'sha-256',
     })
     expect(sdJwtPresentation.prettyClaims).toEqual({
       vct: 'OpenBadgeCredential',
@@ -2958,7 +3041,7 @@ describe('OpenId4Vc', () => {
       university: 'innsbruck', // TODO: I Think this should be disclosed
     })
 
-    const presentation = dcql?.presentation.orgeuuniversity as MdocDeviceResponse
+    const presentation = dcql?.presentations.orgeuuniversity as MdocDeviceResponse
     expect(presentation.documents).toHaveLength(1)
 
     expect(presentation.documents[0].issuerSignedNamespaces).toEqual({

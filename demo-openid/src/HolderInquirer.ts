@@ -1,14 +1,15 @@
 import type { MdocRecord, SdJwtVcRecord, W3cCredentialRecord } from '@credo-ts/core'
 import type {
-  OpenId4VcSiopResolvedAuthorizationRequest,
   OpenId4VciCredentialConfigurationsSupportedWithFormats,
   OpenId4VciResolvedCredentialOffer,
+  OpenId4VpResolvedAuthorizationRequest,
 } from '@credo-ts/openid4vc'
 
 import { Mdoc } from '@credo-ts/core'
 import { preAuthorizedCodeGrantIdentifier } from '@credo-ts/openid4vc'
 import { textSync } from 'figlet'
 
+import { clear } from 'console'
 import { BaseInquirer } from './BaseInquirer'
 import { Holder } from './Holder'
 import { Title, greenText, redText } from './OutputClass'
@@ -34,7 +35,7 @@ enum PromptOptions {
 export class HolderInquirer extends BaseInquirer {
   public holder: Holder
   public resolvedCredentialOffer?: OpenId4VciResolvedCredentialOffer
-  public resolvedPresentationRequest?: OpenId4VcSiopResolvedAuthorizationRequest
+  public resolvedPresentationRequest?: OpenId4VpResolvedAuthorizationRequest
 
   public constructor(holder: Holder) {
     super()
@@ -234,7 +235,7 @@ export class HolderInquirer extends BaseInquirer {
             true
           )
         )
-        selectedCredentials.forEach(this.printCredential)
+        selectedCredentials.map((e) => e.credentialRecord).forEach(this.printCredential)
       } else {
         console.log(redText('No credentials available that satisfy the proof request.'))
       }

@@ -8,9 +8,9 @@ import { setGlobalConfig } from '@openid4vc/oauth2'
 
 import { getAgentContextForActorId, getRequestContext, importExpress } from '../shared/router'
 
-import { OpenId4VcSiopVerifierService } from './OpenId4VcSiopVerifierService'
 import { OpenId4VcVerifierApi } from './OpenId4VcVerifierApi'
 import { OpenId4VcVerifierModuleConfig } from './OpenId4VcVerifierModuleConfig'
+import { OpenId4VpVerifierService } from './OpenId4VpVerifierService'
 import { OpenId4VcVerifierRepository } from './repository'
 import { configureAuthorizationEndpoint } from './router'
 import { configureAuthorizationRequestEndpoint } from './router/authorizationRequestEndpoint'
@@ -47,7 +47,7 @@ export class OpenId4VcVerifierModule implements Module {
     dependencyManager.registerInstance(OpenId4VcVerifierModuleConfig, this.config)
 
     // Services
-    dependencyManager.registerSingleton(OpenId4VcSiopVerifierService)
+    dependencyManager.registerSingleton(OpenId4VpVerifierService)
 
     // Repository
     dependencyManager.registerSingleton(OpenId4VcVerifierRepository)

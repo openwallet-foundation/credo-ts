@@ -17,6 +17,12 @@ export type DcqlCredentialsForRequest = Record<
       claimFormat: ClaimFormat.SdJwtVc
       credentialRecord: SdJwtVcRecord
       disclosedPayload: JsonObject
+
+      /**
+       * Additional payload that will be added to the Key Binding JWT. This can overwrite
+       * existing parameters for KB-JWT so ensure you are only using this for non-default properties.
+       */
+      additionalPayload?: JsonObject
     }
   | {
       claimFormat: ClaimFormat.JwtVc | ClaimFormat.LdpVc

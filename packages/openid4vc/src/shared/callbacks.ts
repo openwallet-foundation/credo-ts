@@ -23,7 +23,7 @@ import {
   getJwkFromJson,
   getJwkFromKey,
 } from '@credo-ts/core'
-import { clientAuthenticationDynamic, clientAuthenticationNone } from '@openid4vc/oauth2'
+import { clientAuthenticationDynamic, clientAuthenticationNone, decodeJwtHeader } from '@openid4vc/oauth2'
 
 import { getKeyFromDid } from './utils'
 
@@ -111,10 +111,14 @@ export function getOid4vcEncryptJweCallback(agentContext: AgentContext): Encrypt
 
 export function getOid4vcDecryptJweCallback(agentContext: AgentContext): DecryptJweCallback {
   return async (jwe, options) => {
-    const [header] = jwe.split('.')
-    const decodedHeader = JsonEncoder.fromBase64(header)
+    const { header } = decodeJwtHeader({ jwt: jwe })
 
-    const key = Key.fromFingerprint(options?.jwk.kid ?? decodedHeader.kid)
+    const kid = options?.jwk?.kid ?? header.kid
+    if (!kid) {
+      throw new CredoError('Uanbel to decrypt jwe. No kid or jwk found')
+    }
+
+    const key = Key.fromFingerprint(kid)
     if (!agentContext.wallet.directDecryptCompactJweEcdhEs) {
       throw new CredoError('Cannot decrypt Jarm Response, wallet does not support directDecryptCompactJweEcdhEs')
     }
@@ -129,7 +133,7 @@ export function getOid4vcDecryptJweCallback(agentContext: AgentContext): Decrypt
         decrypted: false,
         encryptionJwk: options?.jwk,
         payload: undefined,
-        header: decodedHeader,
+        header,
       }
     }
 
@@ -137,7 +141,7 @@ export function getOid4vcDecryptJweCallback(agentContext: AgentContext): Decrypt
       decrypted: true,
       decryptionJwk: getJwkFromKey(key).toJson(),
       payload: decryptedPayload,
-      header: decodedHeader,
+      header,
     }
   }
 }

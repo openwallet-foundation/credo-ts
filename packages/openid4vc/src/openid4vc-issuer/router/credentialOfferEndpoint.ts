@@ -47,6 +47,16 @@ export function configureCredentialOfferEndpoint(router: Router, config: OpenId4
         const openId4VcIssuanceSession = await openId4VcIssuanceSessionRepository.findSingleByQuery(agentContext, {
           issuerId: issuer.issuerId,
           credentialOfferUri: fullCredentialOfferUri,
+          $or: [
+            {
+              credentialOfferId: request.params.credentialOfferId,
+            },
+            // NOTE: this can soon be removed, credenial offer id is cleaner,
+            // but only introduced since 0.6
+            {
+              credentialOfferUri: fullCredentialOfferUri,
+            },
+          ],
         })
         if (!openId4VcIssuanceSession) {
           return sendNotFoundResponse(response, next, agentContext.config.logger, 'Credential offer not found')

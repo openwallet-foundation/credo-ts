@@ -3,9 +3,9 @@ import type { OpenId4VcVerifierModuleConfigOptions } from '../OpenId4VcVerifierM
 
 import { Router } from 'express'
 
-import { OpenId4VcSiopVerifierService } from '../OpenId4VcSiopVerifierService'
 import { OpenId4VcVerifierModule } from '../OpenId4VcVerifierModule'
 import { OpenId4VcVerifierModuleConfig } from '../OpenId4VcVerifierModuleConfig'
+import { OpenId4VpVerifierService } from '../OpenId4VpVerifierService'
 import { OpenId4VcVerifierRepository } from '../repository'
 
 const dependencyManager = {
@@ -36,7 +36,7 @@ describe('OpenId4VcVerifierModule', () => {
     )
 
     expect(dependencyManager.registerSingleton).toHaveBeenCalledTimes(3)
-    expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(OpenId4VcSiopVerifierService)
+    expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(OpenId4VpVerifierService)
     expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(OpenId4VcVerifierRepository)
   })
 })

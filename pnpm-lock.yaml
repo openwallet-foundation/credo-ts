@@ -404,8 +404,8 @@ importers:
         specifier: ^0.5.0
         version: 0.5.0
       '@animo-id/pex':
-        specifier: 4.1.1-alpha.1
-        version: 4.1.1-alpha.1
+        specifier: 4.1.1
+        version: 4.1.1
       '@astronautlabs/jsonpath':
         specifier: ^1.1.2
         version: 1.1.2
@@ -571,8 +571,8 @@ importers:
         version: 7.8.1
     devDependencies:
       '@animo-id/pex':
-        specifier: 4.1.1-alpha.1
-        version: 4.1.1-alpha.1
+        specifier: 4.1.1
+        version: 4.1.1
       '@sphereon/pex-models':
         specifier: ^2.3.1
         version: 2.3.2
@@ -728,14 +728,17 @@ importers:
         specifier: workspace:*
         version: link:../core
       '@openid4vc/oauth2':
-        specifier: 0.3.0-alpha-20250227094616
-        version: 0.3.0-alpha-20250227094616
+        specifier: 0.3.0-alpha-20250320222745
+        version: 0.3.0-alpha-20250320222745
       '@openid4vc/openid4vci':
-        specifier: 0.3.0-alpha-20250227094616
-        version: 0.3.0-alpha-20250227094616
+        specifier: 0.3.0-alpha-20250320222745
+        version: 0.3.0-alpha-20250320222745
       '@openid4vc/openid4vp':
-        specifier: 0.3.0-alpha-20250227094616
-        version: 0.3.0-alpha-20250227094616
+        specifier: 0.3.0-alpha-20250320222745
+        version: 0.3.0-alpha-20250320222745
+      '@openid4vc/utils':
+        specifier: 0.3.0-alpha-20250320222745
+        version: 0.3.0-alpha-20250320222745
       class-transformer:
         specifier: ^0.5.1
         version: 0.5.1
@@ -941,8 +944,8 @@ packages:
   '@animo-id/mdoc@0.5.0':
     resolution: {integrity: sha512-obrT1Qpy6tbaS9WSBJYoNvcj4CkToDV2t4GZqKnR6DiUIhWP3kaCQTDU/uvLofb3AJeUj0NKvGNNWDCA+W+VnA==}
 
-  '@animo-id/pex@4.1.1-alpha.1':
-    resolution: {integrity: sha512-b1VH2y3EYnLir7wiu4sap2iajmGmG05j0O+3AiAMSuLSWDeRyiTR+BumUmAxYDTZuXuoe3L82mJ5VTXPUNFM1g==}
+  '@animo-id/pex@4.1.1':
+    resolution: {integrity: sha512-czaKNF7wLPHmx79y8ujm+/aMrAX3oGvdTVzjX3aLqw4J5IvePKXboiEntuyjh+z6zhP3gRmu1+BWHJR+JWB9DA==}
     engines: {node: '>=18'}
 
   '@animo-id/react-native-bbs-signatures@0.1.0':
@@ -2438,17 +2441,17 @@ packages:
   '@open-draft/until@2.1.0':
     resolution: {integrity: sha512-U69T3ItWHvLwGg5eJ0n3I62nWuE6ilHlmz7zM0npLBRvPRd7e6NYmg54vvRtP5mZG7kZqZCFVdsTWo7BPtBujg==}
 
-  '@openid4vc/oauth2@0.3.0-alpha-20250227094616':
-    resolution: {integrity: sha512-3a46X9WAntfIsT2QvFxk59o6ti6bBvlj+D572idq3/6fQDtQN5MvdHzYrsfblKJptOK1ToX1sDvW22DIUel5zw==}
+  '@openid4vc/oauth2@0.3.0-alpha-20250320222745':
+    resolution: {integrity: sha512-EYLcT5Qfro+9FXQYWlHI+QhO8ZyXyNmDL4m1fsUTInnbTYD2QBxfiU0x9sQ6ZmDWO61CrUUv8+j6N39VA/ATPA==}
 
-  '@openid4vc/openid4vci@0.3.0-alpha-20250227094616':
-    resolution: {integrity: sha512-q1hOR411/5Zcszce5Fd03KZKqj5dGBFyM1N31qZ+lWjCITv+EZvPlB2dpkiUZSGg5YUP9J6LLVZy1y0G9Tldng==}
+  '@openid4vc/openid4vci@0.3.0-alpha-20250320222745':
+    resolution: {integrity: sha512-qfpe0l7AtZsoBFoMBB4Bgdshm7UO6CEtiKEY1m3Dj20Sm4rgLQC15/ww214jiI0B0vJs59EudV/v2mOscw1oGQ==}
 
-  '@openid4vc/openid4vp@0.3.0-alpha-20250227094616':
-    resolution: {integrity: sha512-YZzwK1VYewJEqSNB6clUvCSMfL2MVqemDqfdggTHpNUBywb+CqwsOzY7KDBCL3PzRddT4vWI/x6dGATnRX9vig==}
+  '@openid4vc/openid4vp@0.3.0-alpha-20250320222745':
+    resolution: {integrity: sha512-ie+7igQ5rvhE9xE7tXCG/q/oDN53kC070vqPK+XfKXy9/vSKQ9WtxPvX+xFLQz+XoAb6+86cLqxLpnp+iztcbA==}
 
-  '@openid4vc/utils@0.3.0-alpha-20250227094616':
-    resolution: {integrity: sha512-HbQ4B6EEEA8Yepe4K75rdDvgk2EaEe6hFj5ri6hNFPvA32Gf2fInsR11Xpf6/Uo50dhESx/yPHFtwaj8DQsbFw==}
+  '@openid4vc/utils@0.3.0-alpha-20250320222745':
+    resolution: {integrity: sha512-blVgexJ8LPV34V6NZ8U5TdJ1uvnBdOs9eHeiV3N3KywghmcC2zrjiTmEKDUmxC5TPK89fBHIUVXgTGyNA0qMrQ==}
 
   '@openwallet-foundation/askar-nodejs@0.3.1':
     resolution: {integrity: sha512-m3L8KEPC+qgA3MAFssMtjSqJiAQtrawZEWPmW6eiB7OPjZvkKjodMhx/cuUV5YTl4eQlSix2EY4vXMzk4vt+cQ==}
@@ -7439,7 +7442,7 @@ snapshots:
     dependencies:
       compare-versions: 6.1.1
 
-  '@animo-id/pex@4.1.1-alpha.1':
+  '@animo-id/pex@4.1.1':
     dependencies:
       '@astronautlabs/jsonpath': 1.1.2
       '@sd-jwt/decode': 0.7.2
@@ -9771,24 +9774,24 @@ snapshots:
 
   '@open-draft/until@2.1.0': {}
 
-  '@openid4vc/oauth2@0.3.0-alpha-20250227094616':
+  '@openid4vc/oauth2@0.3.0-alpha-20250320222745':
     dependencies:
-      '@openid4vc/utils': 0.3.0-alpha-20250227094616
+      '@openid4vc/utils': 0.3.0-alpha-20250320222745
       zod: 3.24.1
 
-  '@openid4vc/openid4vci@0.3.0-alpha-20250227094616':
+  '@openid4vc/openid4vci@0.3.0-alpha-20250320222745':
     dependencies:
-      '@openid4vc/oauth2': 0.3.0-alpha-20250227094616
-      '@openid4vc/utils': 0.3.0-alpha-20250227094616
+      '@openid4vc/oauth2': 0.3.0-alpha-20250320222745
+      '@openid4vc/utils': 0.3.0-alpha-20250320222745
       zod: 3.24.1
 
-  '@openid4vc/openid4vp@0.3.0-alpha-20250227094616':
+  '@openid4vc/openid4vp@0.3.0-alpha-20250320222745':
     dependencies:
-      '@openid4vc/oauth2': 0.3.0-alpha-20250227094616
-      '@openid4vc/utils': 0.3.0-alpha-20250227094616
+      '@openid4vc/oauth2': 0.3.0-alpha-20250320222745
+      '@openid4vc/utils': 0.3.0-alpha-20250320222745
       zod: 3.24.1
 
-  '@openid4vc/utils@0.3.0-alpha-20250227094616':
+  '@openid4vc/utils@0.3.0-alpha-20250320222745':
     dependencies:
       buffer: 6.0.3
       zod: 3.24.1

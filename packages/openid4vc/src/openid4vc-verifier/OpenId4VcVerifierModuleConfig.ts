@@ -1,7 +1,7 @@
 import type { Optional } from '@credo-ts/core'
 import type { Router } from 'express'
-import type { OpenId4VcSiopAuthorizationEndpointConfig } from './router/authorizationEndpoint'
-import type { OpenId4VcSiopAuthorizationRequestEndpointConfig } from './router/authorizationRequestEndpoint'
+import type { OpenId4VpAuthorizationEndpointConfig } from './router/authorizationEndpoint'
+import type { OpenId4VpAuthorizationRequestEndpointConfig } from './router/authorizationRequestEndpoint'
 
 import { importExpress } from '../shared/router'
 
@@ -22,8 +22,8 @@ export interface OpenId4VcVerifierModuleConfigOptions {
   router?: Router
 
   endpoints?: {
-    authorization?: Optional<OpenId4VcSiopAuthorizationEndpointConfig, 'endpointPath'>
-    authorizationRequest?: Optional<OpenId4VcSiopAuthorizationRequestEndpointConfig, 'endpointPath'>
+    authorization?: Optional<OpenId4VpAuthorizationEndpointConfig, 'endpointPath'>
+    authorizationRequest?: Optional<OpenId4VpAuthorizationRequestEndpointConfig, 'endpointPath'>
   }
 }
 
@@ -41,7 +41,7 @@ export class OpenId4VcVerifierModuleConfig {
     return this.options.baseUrl
   }
 
-  public get authorizationRequestEndpoint(): OpenId4VcSiopAuthorizationRequestEndpointConfig {
+  public get authorizationRequestEndpoint(): OpenId4VpAuthorizationRequestEndpointConfig {
     // Use user supplied options, or return defaults.
     const userOptions = this.options.endpoints?.authorizationRequest
 
@@ -51,7 +51,7 @@ export class OpenId4VcVerifierModuleConfig {
     }
   }
 
-  public get authorizationEndpoint(): OpenId4VcSiopAuthorizationEndpointConfig {
+  public get authorizationEndpoint(): OpenId4VpAuthorizationEndpointConfig {
     // Use user supplied options, or return defaults.
     const userOptions = this.options.endpoints?.authorization
 

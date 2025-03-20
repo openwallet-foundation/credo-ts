@@ -3,12 +3,12 @@ import type { OpenId4VcVerificationRequest } from './requestContext'
 
 import { joinUriParts } from '@credo-ts/core'
 
-import { getRequestContext, sendErrorResponse } from '../../shared/router'
-import { OpenId4VcSiopVerifierService } from '../OpenId4VcSiopVerifierService'
+import { getRequestContext, sendErrorResponse, sendUnknownServerErrorResponse } from '../../shared/router'
 import { OpenId4VcVerificationSessionState } from '../OpenId4VcVerificationSessionState'
 import { OpenId4VcVerifierModuleConfig } from '../OpenId4VcVerifierModuleConfig'
+import { OpenId4VpVerifierService } from '../OpenId4VpVerifierService'
 
-export interface OpenId4VcSiopAuthorizationRequestEndpointConfig {
+export interface OpenId4VpAuthorizationRequestEndpointConfig {
   /**
    * The path at which the authorization request should be made available. Note that it will be
    * hosted at a subpath to take into account multiple tenants and verifiers.
@@ -20,7 +20,7 @@ export interface OpenId4VcSiopAuthorizationRequestEndpointConfig {
 
 export function configureAuthorizationRequestEndpoint(
   router: Router,
-  config: OpenId4VcSiopAuthorizationRequestEndpointConfig
+  config: OpenId4VpAuthorizationRequestEndpointConfig
 ) {
   router.get(
     joinUriParts(config.endpointPath, [':authorizationRequestId']),
@@ -39,7 +39,7 @@ export function configureAuthorizationRequestEndpoint(
       }
 
       try {
-        const verifierService = agentContext.dependencyManager.resolve(OpenId4VcSiopVerifierService)
+        const verifierService = agentContext.dependencyManager.resolve(OpenId4VpVerifierService)
         const verifierConfig = agentContext.dependencyManager.resolve(OpenId4VcVerifierModuleConfig)
 
         // We always use shortened URIs currently
@@ -51,7 +51,16 @@ export function configureAuthorizationRequestEndpoint(
 
         const [verificationSession] = await verifierService.findVerificationSessionsByQuery(agentContext, {
           verifierId: verifier.verifierId,
-          authorizationRequestUri: fullAuthorizationRequestUri,
+          $or: [
+            {
+              authorizationRequestId: request.params.authorizationRequestId,
+            },
+            // NOTE: this can soon be removed, authorization request id is cleaner,
+            // but only introduced since 0.6
+            {
+              authorizationRequestUri: fullAuthorizationRequestUri,
+            },
+          ],
         })
 
         // Not all requets are signed, and those are not fetcheable
@@ -94,7 +103,7 @@ export function configureAuthorizationRequestEndpoint(
         response.type('application/oauth-authz-req+jwt').status(200).send(verificationSession.authorizationRequestJwt)
         next()
       } catch (error) {
-        return sendErrorResponse(response, next, agentContext.config.logger, 500, 'invalid_request', error)
+        return sendUnknownServerErrorResponse(response, next, agentContext.config.logger, error)
       }
     }
   )

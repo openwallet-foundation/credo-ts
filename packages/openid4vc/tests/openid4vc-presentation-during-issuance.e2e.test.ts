@@ -158,13 +158,13 @@ describe('OpenId4Vc Presentation During Issuance', () => {
               (descriptor) => descriptor.descriptor.id === presentationDefinition.input_descriptors[0].id
             )
 
-            if (!descriptor || descriptor.format !== ClaimFormat.SdJwtVc) {
+            if (!descriptor || descriptor.claimFormat !== ClaimFormat.SdJwtVc) {
               throw new Error('Expected descriptor with sd-jwt vc format')
             }
 
             credential = descriptor.credential
           } else {
-            const presentation = verification.dcql.presentation[verification.dcql.presentationResult.credentials[0].id]
+            const presentation = verification.dcql.presentations[verification.dcql.presentationResult.credentials[0].id]
 
             if (presentation.claimFormat !== ClaimFormat.SdJwtVc) {
               throw new Error('Expected preentation with sd-jwt vc format')
@@ -279,7 +279,7 @@ describe('OpenId4Vc Presentation During Issuance', () => {
 
     // Resolve offer
     const resolvedCredentialOffer = await holder.agent.modules.openId4VcHolder.resolveCredentialOffer(credentialOffer)
-    const resolvedAuthorization = await holder.agent.modules.openId4VcHolder.resolveIssuanceAuthorizationRequest(
+    const resolvedAuthorization = await holder.agent.modules.openId4VcHolder.resolveOpenId4VciAuthorizationRequest(
       resolvedCredentialOffer,
       {
         clientId: 'foo',
@@ -292,7 +292,7 @@ describe('OpenId4Vc Presentation During Issuance', () => {
     if (resolvedAuthorization.authorizationFlow !== AuthorizationFlow.PresentationDuringIssuance) {
       throw new Error('Not supported')
     }
-    const resolvedPresentationRequest = await holder.agent.modules.openId4VcHolder.resolveSiopAuthorizationRequest(
+    const resolvedPresentationRequest = await holder.agent.modules.openId4VcHolder.resolveOpenId4VpAuthorizationRequest(
       resolvedAuthorization.openid4vpRequestUrl
     )
     if (!resolvedPresentationRequest.presentationExchange) {
@@ -303,15 +303,15 @@ describe('OpenId4Vc Presentation During Issuance', () => {
     const selectedCredentials = holder.agent.modules.openId4VcHolder.selectCredentialsForPresentationExchangeRequest(
       resolvedPresentationRequest.presentationExchange.credentialsForRequest
     )
-    const siopResult = await holder.agent.modules.openId4VcHolder.acceptSiopAuthorizationRequest({
-      authorizationRequest: resolvedPresentationRequest.authorizationRequest,
+    const openId4VpResult = await holder.agent.modules.openId4VcHolder.acceptOpenId4VpAuthorizationRequest({
+      authorizationRequestPayload: resolvedPresentationRequest.authorizationRequestPayload,
       presentationExchange: {
         credentials: selectedCredentials,
       },
     })
-    expect(siopResult.serverResponse?.status).toEqual(200)
-    expect(siopResult.ok).toEqual(true)
-    if (!siopResult.ok) {
+    expect(openId4VpResult.serverResponse?.status).toEqual(200)
+    expect(openId4VpResult.ok).toEqual(true)
+    if (!openId4VpResult.ok) {
       throw new Error('not ok')
     }
 
@@ -320,7 +320,7 @@ describe('OpenId4Vc Presentation During Issuance', () => {
       {
         authSession: resolvedAuthorization.authSession,
         resolvedCredentialOffer,
-        presentationDuringIssuanceSession: siopResult.presentationDuringIssuanceSession,
+        presentationDuringIssuanceSession: openId4VpResult.presentationDuringIssuanceSession,
       }
     )
 
@@ -402,7 +402,7 @@ describe('OpenId4Vc Presentation During Issuance', () => {
 
     // Resolve offer
     const resolvedCredentialOffer = await holder.agent.modules.openId4VcHolder.resolveCredentialOffer(credentialOffer)
-    const resolvedAuthorization = await holder.agent.modules.openId4VcHolder.resolveIssuanceAuthorizationRequest(
+    const resolvedAuthorization = await holder.agent.modules.openId4VcHolder.resolveOpenId4VciAuthorizationRequest(
       resolvedCredentialOffer,
       {
         clientId: 'foo',
@@ -415,7 +415,7 @@ describe('OpenId4Vc Presentation During Issuance', () => {
     if (resolvedAuthorization.authorizationFlow !== AuthorizationFlow.PresentationDuringIssuance) {
       throw new Error('Not supported')
     }
-    const resolvedPresentationRequest = await holder.agent.modules.openId4VcHolder.resolveSiopAuthorizationRequest(
+    const resolvedPresentationRequest = await holder.agent.modules.openId4VcHolder.resolveOpenId4VpAuthorizationRequest(
       resolvedAuthorization.openid4vpRequestUrl
     )
     if (!resolvedPresentationRequest.dcql) {
@@ -426,15 +426,15 @@ describe('OpenId4Vc Presentation During Issuance', () => {
     const selectedCredentials = holder.agent.modules.openId4VcHolder.selectCredentialsForDcqlRequest(
       resolvedPresentationRequest.dcql.queryResult
     )
-    const siopResult = await holder.agent.modules.openId4VcHolder.acceptSiopAuthorizationRequest({
-      authorizationRequest: resolvedPresentationRequest.authorizationRequest,
+    const openId4VpResult = await holder.agent.modules.openId4VcHolder.acceptOpenId4VpAuthorizationRequest({
+      authorizationRequestPayload: resolvedPresentationRequest.authorizationRequestPayload,
       dcql: {
         credentials: selectedCredentials,
       },
     })
-    expect(siopResult.serverResponse?.status).toEqual(200)
-    expect(siopResult.ok).toEqual(true)
-    if (!siopResult.ok) {
+    expect(openId4VpResult.serverResponse?.status).toEqual(200)
+    expect(openId4VpResult.ok).toEqual(true)
+    if (!openId4VpResult.ok) {
       throw new Error('not ok')
     }
 
@@ -443,7 +443,7 @@ describe('OpenId4Vc Presentation During Issuance', () => {
       {
         authSession: resolvedAuthorization.authSession,
         resolvedCredentialOffer,
-        presentationDuringIssuanceSession: siopResult.presentationDuringIssuanceSession,
+        presentationDuringIssuanceSession: openId4VpResult.presentationDuringIssuanceSession,
       }
     )
 
@@ -522,7 +522,7 @@ describe('OpenId4Vc Presentation During Issuance', () => {
 
     // Resolve offer
     const resolvedCredentialOffer = await holder.agent.modules.openId4VcHolder.resolveCredentialOffer(credentialOffer)
-    const resolvedAuthorization = await holder.agent.modules.openId4VcHolder.resolveIssuanceAuthorizationRequest(
+    const resolvedAuthorization = await holder.agent.modules.openId4VcHolder.resolveOpenId4VciAuthorizationRequest(
       resolvedCredentialOffer,
       {
         clientId: 'foo',
@@ -535,7 +535,7 @@ describe('OpenId4Vc Presentation During Issuance', () => {
     if (resolvedAuthorization.authorizationFlow !== AuthorizationFlow.PresentationDuringIssuance) {
       throw new Error('Not supported')
     }
-    const resolvedPresentationRequest = await holder.agent.modules.openId4VcHolder.resolveSiopAuthorizationRequest(
+    const resolvedPresentationRequest = await holder.agent.modules.openId4VcHolder.resolveOpenId4VpAuthorizationRequest(
       resolvedAuthorization.openid4vpRequestUrl
     )
     if (!resolvedPresentationRequest.presentationExchange) {

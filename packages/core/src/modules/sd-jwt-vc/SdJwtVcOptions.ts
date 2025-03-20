@@ -1,5 +1,4 @@
 import type { HashName, Jwk, JwkJson } from '../../crypto'
-import type { TransactionData } from '../../index'
 import type { EncodedX509Certificate } from '../x509'
 
 // TODO: extend with required claim names for input (e.g. vct)
@@ -93,8 +92,12 @@ export type SdJwtVcPresentOptions<_Payload extends SdJwtVcPayload = SdJwtVcPaylo
     audience: string
     nonce: string
     issuedAt: number
-    transactionData?: TransactionData
   }
+
+  /**
+   * Additional payload to include in the KB JWT
+   */
+  additionalPayload?: Record<string, unknown>
 }
 
 export type SdJwtVcVerifyOptions = {

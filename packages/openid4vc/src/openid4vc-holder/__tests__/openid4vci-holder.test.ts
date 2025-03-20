@@ -318,7 +318,7 @@ describe('OpenId4VcHolder', () => {
         fixture.credentialOfferAuth
       )
 
-      const resolvedAuthorizationRequest = await holder.modules.openId4VcHolder.resolveIssuanceAuthorizationRequest(
+      const resolvedAuthorizationRequest = await holder.modules.openId4VcHolder.resolveOpenId4VciAuthorizationRequest(
         resolvedCredentialOffer,
         {
           clientId: 'test-client',

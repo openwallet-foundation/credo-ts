@@ -1,12 +1,9 @@
 import type { DcqlMdocCredential, DcqlSdJwtVcCredential, DcqlW3cVcCredential } from 'dcql'
-import type { TransactionData } from '../../dif-presentation-exchange/index'
-import type { TransactionDataAuthorization } from '../../dif-presentation-exchange/models/TransactionData'
-import type { SdJwtVcRecord } from '../../sd-jwt-vc'
-import type { DcqlCredentialsForRequest } from '../models'
-
-import { CredoError } from '../../../error/CredoError'
+import { JsonObject } from '../../../types'
 import { MdocRecord } from '../../mdoc'
+import { SdJwtVcRecord } from '../../sd-jwt-vc'
 import { ClaimFormat, W3cCredentialRecord } from '../../vc'
+import type { DcqlCredentialsForRequest } from '../models'
 
 //  - the credentials included in the presentation
 export interface DcqlSdJwtVcPresentationToCreate {
@@ -14,7 +11,11 @@ export interface DcqlSdJwtVcPresentationToCreate {
   subjectIds: [] // subject is included in the cnf of the sd-jwt and automatically extracted by PEX
   credentialRecord: SdJwtVcRecord
   disclosedPayload: DcqlSdJwtVcCredential.Claims
-  transactionData?: TransactionData
+
+  /**
+   * Additional payload to include in the Key Binding JWT
+   */
+  additionalPayload?: JsonObject
 }
 
 export interface DcqlJwtVpPresentationToCreate {
@@ -49,26 +50,20 @@ export type DcqlPresentationToCreate = Record<
 >
 
 export function dcqlGetPresentationsToCreate(
-  credentialsForInputDescriptor: DcqlCredentialsForRequest,
-  transactionDataAuthorization?: TransactionDataAuthorization
+  credentialsForInputDescriptor: DcqlCredentialsForRequest
 ): DcqlPresentationToCreate {
   const presentationsToCreate: DcqlPresentationToCreate = {}
 
   for (const [credentialQueryId, match] of Object.entries(credentialsForInputDescriptor)) {
-    const transactionData = transactionDataAuthorization?.credentials.includes(credentialQueryId)
-    if (transactionData && match.credentialRecord.type !== 'SdJwtVcRecord') {
-      throw new CredoError('Transaction data is currently only supported for SD-JWT-VC')
-    }
-
-    if (match.credentialRecord instanceof W3cCredentialRecord) {
+    if (match.claimFormat === ClaimFormat.SdJwtVc) {
       presentationsToCreate[credentialQueryId] = {
-        claimFormat:
-          match.credentialRecord.credential.claimFormat === ClaimFormat.JwtVc ? ClaimFormat.JwtVp : ClaimFormat.LdpVp,
-        subjectIds: [match.credentialRecord.credential.credentialSubjectIds[0]],
+        claimFormat: ClaimFormat.SdJwtVc,
+        subjectIds: [],
         credentialRecord: match.credentialRecord,
         disclosedPayload: match.disclosedPayload as DcqlW3cVcCredential.Claims,
+        additionalPayload: match.additionalPayload,
       }
-    } else if (match.credentialRecord instanceof MdocRecord) {
+    } else if (match.claimFormat === ClaimFormat.MsoMdoc) {
       presentationsToCreate[credentialQueryId] = {
         claimFormat: ClaimFormat.MsoMdoc,
         subjectIds: [],
@@ -77,11 +72,11 @@ export function dcqlGetPresentationsToCreate(
       }
     } else {
       presentationsToCreate[credentialQueryId] = {
-        claimFormat: ClaimFormat.SdJwtVc,
-        subjectIds: [],
+        claimFormat:
+          match.credentialRecord.credential.claimFormat === ClaimFormat.JwtVc ? ClaimFormat.JwtVp : ClaimFormat.LdpVp,
+        subjectIds: [match.credentialRecord.credential.credentialSubjectIds[0]],
         credentialRecord: match.credentialRecord,
         disclosedPayload: match.disclosedPayload as DcqlW3cVcCredential.Claims,
-        transactionData: transactionDataAuthorization?.transactionData,
       }
     }
   }
