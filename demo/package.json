@@ -14,7 +14,7 @@
   },
   "dependencies": {
     "@hyperledger/indy-vdr-nodejs": "^0.2.2",
-    "@hyperledger/anoncreds-nodejs": "^0.2.2",
+    "@hyperledger/anoncreds-nodejs": "^0.3.1",
     "@openwallet-foundation/askar-nodejs": "^0.3.1",
     "inquirer": "^8.2.5"
   },

@@ -34,13 +34,13 @@
   },
   "devDependencies": {
     "@credo-ts/node": "workspace:*",
-    "@hyperledger/anoncreds-nodejs": "^0.2.2",
-    "@hyperledger/anoncreds-shared": "^0.2.2",
+    "@hyperledger/anoncreds-nodejs": "^0.3.1",
+    "@hyperledger/anoncreds-shared": "^0.3.1",
     "rimraf": "^4.4.0",
     "rxjs": "^7.8.0",
     "typescript": "~5.5.2"
   },
   "peerDependencies": {
-    "@hyperledger/anoncreds-shared": "^0.2.2"
+    "@hyperledger/anoncreds-shared": "^0.3.1"
   }
 }
