@@ -34,17 +34,6 @@ export class DcqlService {
     const w3cCredentialRepository = agentContext.dependencyManager.resolve(W3cCredentialRepository)
 
     const formats = new Set(dcqlQuery.credentials.map((c) => c.format))
-    for (const format of formats) {
-      if (
-        format !== 'vc+sd-jwt' &&
-        format !== 'dc+sd-jwt' &&
-        format !== 'jwt_vc_json' &&
-        format !== 'jwt_vc_json-ld' &&
-        format !== 'mso_mdoc'
-      ) {
-        throw new DcqlError(`Unsupported credential format ${format}.`)
-      }
-    }
 
     const allRecords: Array<SdJwtVcRecord | W3cCredentialRecord | MdocRecord> = []
 
@@ -57,13 +46,12 @@ export class DcqlService {
     const mdocDoctypes = dcqlQuery.credentials
       .filter((credentialQuery) => credentialQuery.format === 'mso_mdoc')
       .map((c) => c.meta?.doctype_value)
-    const allMdocCredentialQueriesSpecifyDoctype = mdocDoctypes.every((doctype) => doctype)
 
     const mdocApi = this.getMdocApi(agentContext)
-    if (allMdocCredentialQueriesSpecifyDoctype) {
+    if (mdocDoctypes.every((doctype) => doctype !== undefined)) {
       const mdocRecords = await mdocApi.findAllByQuery({
         $or: mdocDoctypes.map((docType) => ({
-          docType: docType as string,
+          docType: docType,
         })),
       })
       allRecords.push(...mdocRecords)
@@ -79,10 +67,8 @@ export class DcqlService {
       )
       .flatMap((c) => c.meta?.vct_values)
 
-    const allSdJwtVcQueriesSpecifyDoctype = sdJwtVctValues.every((vct) => vct)
-
     const sdJwtVcApi = this.getSdJwtVcApi(agentContext)
-    if (allSdJwtVcQueriesSpecifyDoctype) {
+    if (sdJwtVctValues.every((vct) => vct !== undefined)) {
       const sdjwtVcRecords = await sdJwtVcApi.findAllByQuery({
         $or: sdJwtVctValues.map((vct) => ({
           vct: vct as string,
