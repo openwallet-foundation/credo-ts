@@ -4,6 +4,7 @@ import type { OpenId4VcIssuanceRequest } from './requestContext'
 
 import { joinUriParts } from '@credo-ts/core'
 
+import { addSecondsToDate } from '@openid4vc/utils'
 import {
   getRequestContext,
   sendErrorResponse,
@@ -47,6 +48,16 @@ export function configureCredentialOfferEndpoint(router: Router, config: OpenId4
         const openId4VcIssuanceSession = await openId4VcIssuanceSessionRepository.findSingleByQuery(agentContext, {
           issuerId: issuer.issuerId,
           credentialOfferUri: fullCredentialOfferUri,
+          $or: [
+            {
+              credentialOfferId: request.params.credentialOfferId,
+            },
+            // NOTE: this can soon be removed, credenial offer id is cleaner,
+            // but only introduced since 0.6
+            {
+              credentialOfferUri: fullCredentialOfferUri,
+            },
+          ],
         })
         if (!openId4VcIssuanceSession) {
           return sendNotFoundResponse(response, next, agentContext.config.logger, 'Credential offer not found')
@@ -57,6 +68,16 @@ export function configureCredentialOfferEndpoint(router: Router, config: OpenId4
           openId4VcIssuanceSession.state !== OpenId4VcIssuanceSessionState.OfferUriRetrieved
         ) {
           return sendNotFoundResponse(response, next, agentContext.config.logger, 'Invalid state for credential offer')
+        }
+
+        if (
+          Date.now() >
+          addSecondsToDate(
+            openId4VcIssuanceSession.createdAt,
+            config.statefulCredentialOfferExpirationInSeconds
+          ).getTime()
+        ) {
+          return sendNotFoundResponse(response, next, agentContext.config.logger, 'Session expired')
         }
 
         // It's okay to retrieve the offer multiple times. So we only update the state if it's not already retrieved
