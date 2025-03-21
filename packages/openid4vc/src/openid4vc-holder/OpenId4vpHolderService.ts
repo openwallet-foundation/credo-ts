@@ -149,6 +149,13 @@ export class OpenId4VpHolderService {
       presentationExchange: pexResult?.pex,
       dcql: dcqlResult?.dcql,
       origin: options?.origin,
+      signedAuthorizationRequest: verifiedAuthorizationRequest.jar
+        ? {
+            signer: verifiedAuthorizationRequest.jar?.signer,
+            payload: verifiedAuthorizationRequest.jar.jwt.payload,
+            header: verifiedAuthorizationRequest.jar.jwt.header,
+          }
+        : undefined,
     }
   }
 

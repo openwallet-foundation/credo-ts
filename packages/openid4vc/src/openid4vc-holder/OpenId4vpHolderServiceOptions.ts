@@ -17,6 +17,8 @@ export interface ResolveOpenId4VpAuthorizationRequestOptions {
   origin?: string
 }
 
+type VerifiedJarRequest = NonNullable<ResolvedOpenid4vpAuthorizationRequest['jar']>
+
 export interface OpenId4VpResolvedAuthorizationRequest {
   /**
    * Parameters related to DIF Presentation Exchange. Only defined when
@@ -50,6 +52,17 @@ export interface OpenId4VpResolvedAuthorizationRequest {
    * The authorization request payload
    */
   authorizationRequestPayload: OpenId4VpAuthorizationRequestPayload
+
+  /**
+   * Metadata about the signed authorization request.
+   *
+   * Only present if the authorization request was signed
+   */
+  signedAuthorizationRequest?: {
+    signer: VerifiedJarRequest['signer']
+    payload: VerifiedJarRequest['jwt']['payload']
+    header: VerifiedJarRequest['jwt']['header']
+  }
 
   /**
    * Origin of the request, to be used with Digital Credentials API
