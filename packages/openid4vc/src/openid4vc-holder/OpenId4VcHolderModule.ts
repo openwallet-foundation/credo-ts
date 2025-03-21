@@ -1,11 +1,11 @@
 import type { DependencyManager, Module } from '@credo-ts/core'
 
-import { setGlobalConfig } from '@animo-id/oauth2'
 import { AgentConfig } from '@credo-ts/core'
+import { setGlobalConfig } from '@openid4vc/oauth2'
 
 import { OpenId4VcHolderApi } from './OpenId4VcHolderApi'
 import { OpenId4VciHolderService } from './OpenId4VciHolderService'
-import { OpenId4VcSiopHolderService } from './OpenId4vcSiopHolderService'
+import { OpenId4VpHolderService } from './OpenId4vpHolderService'
 
 /**
  * @public @module OpenId4VcHolderModule
@@ -33,6 +33,6 @@ export class OpenId4VcHolderModule implements Module {
 
     // Services
     dependencyManager.registerSingleton(OpenId4VciHolderService)
-    dependencyManager.registerSingleton(OpenId4VcSiopHolderService)
+    dependencyManager.registerSingleton(OpenId4VpHolderService)
   }
 }
