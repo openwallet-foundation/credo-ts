@@ -45,8 +45,14 @@ export class OpenId4VpHolderService {
     private dcqlService: DcqlService
   ) {}
 
-  private getOpenid4vpClient(agentContext: AgentContext, trustedCertificates?: EncodedX509Certificate[]) {
-    const callbacks = getOid4vcCallbacks(agentContext, trustedCertificates)
+  private getOpenid4vpClient(
+    agentContext: AgentContext,
+    options?: { trustedCertificates?: EncodedX509Certificate[]; isVerifyOpenId4VpAuthorizationRequest?: boolean }
+  ) {
+    const callbacks = getOid4vcCallbacks(agentContext, {
+      trustedCertificates: options?.trustedCertificates,
+      isVerifyOpenId4VpAuthorizationRequest: options?.isVerifyOpenId4VpAuthorizationRequest,
+    })
     return new Openid4vpClient({ callbacks })
   }
 
@@ -111,7 +117,10 @@ export class OpenId4VpHolderService {
     authorizationRequest: string | Record<string, unknown>,
     options?: ResolveOpenId4VpAuthorizationRequestOptions
   ): Promise<OpenId4VpResolvedAuthorizationRequest> {
-    const openid4vpClient = this.getOpenid4vpClient(agentContext, options?.trustedCertificates)
+    const openid4vpClient = this.getOpenid4vpClient(agentContext, {
+      trustedCertificates: options?.trustedCertificates,
+      isVerifyOpenId4VpAuthorizationRequest: true,
+    })
     const { params } = openid4vpClient.parseOpenid4vpAuthorizationRequest({ authorizationRequest })
 
     const verifiedAuthorizationRequest = await openid4vpClient.resolveOpenId4vpAuthorizationRequest({

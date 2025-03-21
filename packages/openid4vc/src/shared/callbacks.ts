@@ -19,6 +19,8 @@ import {
   Key,
   KeyType,
   TypedArrayEncoder,
+  X509Certificate,
+  X509ModuleConfig,
   X509Service,
   getJwkFromJson,
   getJwkFromKey,
@@ -29,11 +31,42 @@ import { getKeyFromDid } from './utils'
 
 export function getOid4vcJwtVerifyCallback(
   agentContext: AgentContext,
-  trustedCertificates?: string[]
+  options?: {
+    trustedCertificates?: string[]
+
+    /**
+     * Whether this verification callback should assume a JAR authorization is verified
+     * Starting from OID4VP draft 24 the JAR must use oauth-authz-req+jwt header typ
+     * but for backwards compatiblity we need to also handle the case where the header typ is different
+     * @default false
+     */
+    isAuthorizationRequestJwt?: boolean
+  }
 ): VerifyJwtCallback {
   const jwsService = agentContext.dependencyManager.resolve(JwsService)
 
-  return async (signer, { compact }) => {
+  return async (signer, { compact, header, payload }) => {
+    let trustedCertificates = options?.trustedCertificates
+    if (
+      signer.method === 'x5c' &&
+      (header.typ === 'oauth-authz-req+jwt' || options?.isAuthorizationRequestJwt) &&
+      !trustedCertificates
+    ) {
+      const x509Config = agentContext.dependencyManager.resolve(X509ModuleConfig)
+      const certificateChain = signer.x5c?.map((cert) => X509Certificate.fromEncodedCertificate(cert))
+
+      trustedCertificates = await x509Config.getTrustedCertificatesForVerification?.(agentContext, {
+        certificateChain,
+        verification: {
+          type: 'oauth2SecuredAuthorizationRequest',
+          authorizationRequest: {
+            jwt: compact,
+            payload: JwtPayload.fromJson(payload),
+          },
+        },
+      })
+    }
+
     const { isValid, signerKeys } = await jwsService.verifyJws(agentContext, {
       jws: compact,
       trustedCertificates,
@@ -187,13 +220,22 @@ export function getOid4vcJwtSignCallback(agentContext: AgentContext): SignJwtCal
   }
 }
 
-export function getOid4vcCallbacks(agentContext: AgentContext, trustedCertificates?: string[]) {
+export function getOid4vcCallbacks(
+  agentContext: AgentContext,
+  options?: {
+    trustedCertificates?: string[]
+    isVerifyOpenId4VpAuthorizationRequest?: boolean
+  }
+) {
   return {
     hash: (data, alg) => Hasher.hash(data, alg.toLowerCase()),
     generateRandom: (length) => agentContext.wallet.getRandomValues(length),
     signJwt: getOid4vcJwtSignCallback(agentContext),
     clientAuthentication: clientAuthenticationNone(),
-    verifyJwt: getOid4vcJwtVerifyCallback(agentContext, trustedCertificates),
+    verifyJwt: getOid4vcJwtVerifyCallback(agentContext, {
+      trustedCertificates: options?.trustedCertificates,
+      isAuthorizationRequestJwt: options?.isVerifyOpenId4VpAuthorizationRequest,
+    }),
     fetch: agentContext.config.agentDependencies.fetch,
     encryptJwe: getOid4vcEncryptJweCallback(agentContext),
     decryptJwe: getOid4vcDecryptJweCallback(agentContext),
