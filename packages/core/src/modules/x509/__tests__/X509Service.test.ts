@@ -469,6 +469,7 @@ describe('X509Service', () => {
         })
     ).rejects.toThrow(X509Error)
   })
+
   it('should correctly parse test vector from verifier.eudiw.dev', async () => {
     const x5c = [
       'MIIDKjCCArCgAwIBAgIUfy9u6SLtgNuf9PXYbh/QDquXz50wCgYIKoZIzj0EAwIwXDEeMBwGA1UEAwwVUElEIElzc3VlciBDQSAtIFVUIDAxMS0wKwYDVQQKDCRFVURJIFdhbGxldCBSZWZlcmVuY2UgSW1wbGVtZW50YXRpb24xCzAJBgNVBAYTAlVUMB4XDTI0MDIyNjAyMzYzM1oXDTI2MDIyNTAyMzYzMlowaTEdMBsGA1UEAwwURVVESSBSZW1vdGUgVmVyaWZpZXIxDDAKBgNVBAUTAzAwMTEtMCsGA1UECgwkRVVESSBXYWxsZXQgUmVmZXJlbmNlIEltcGxlbWVudGF0aW9uMQswCQYDVQQGEwJVVDBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABMbWBAC1Gj+GDO/yCSbgbFwpivPYWLzEvILNtdCv7Tx1EsxPCxBp3DZB4FIr4BlmVYtGaUboVIihRBiQDo3MpWijggFBMIIBPTAMBgNVHRMBAf8EAjAAMB8GA1UdIwQYMBaAFLNsuJEXHNekGmYxh0Lhi8BAzJUbMCUGA1UdEQQeMByCGnZlcmlmaWVyLWJhY2tlbmQuZXVkaXcuZGV2MBIGA1UdJQQLMAkGByiBjF0FAQYwQwYDVR0fBDwwOjA4oDagNIYyaHR0cHM6Ly9wcmVwcm9kLnBraS5ldWRpdy5kZXYvY3JsL3BpZF9DQV9VVF8wMS5jcmwwHQYDVR0OBBYEFFgmAguBSvSnm68Zzo5IStIv2fM2MA4GA1UdDwEB/wQEAwIHgDBdBgNVHRIEVjBUhlJodHRwczovL2dpdGh1Yi5jb20vZXUtZGlnaXRhbC1pZGVudGl0eS13YWxsZXQvYXJjaGl0ZWN0dXJlLWFuZC1yZWZlcmVuY2UtZnJhbWV3b3JrMAoGCCqGSM49BAMCA2gAMGUCMQDGfgLKnbKhiOVF3xSU0aeju/neGQUVuNbsQw0LeDDwIW+rLatebRgo9hMXDc3wrlUCMAIZyJ7lRRVeyMr3wjqkBF2l9Yb0wOQpsnZBAVUAPyI5xhWX2SAazom2JjsN/aKAkQ==',
@@ -476,6 +477,22 @@ describe('X509Service', () => {
     ]
 
     const chain = await X509Service.validateCertificateChain(agentContext, { certificateChain: x5c })
+
+    expect(chain.length).toStrictEqual(2)
+    expect(chain[0].publicKey.keyType).toStrictEqual(KeyType.P384)
+    expect(chain[1].publicKey.keyType).toStrictEqual(KeyType.P256)
+  })
+
+  it('should correctly parse test vector from ws.davidz25.net', async () => {
+    const x5c = [
+      'MIIBvTCCAUOgAwIBAgIBATAKBggqhkjOPQQDAzAlMSMwIQYDVQQDDBpPV0YgSUMgVGVzdEFwcCBSZWFkZXIgUm9vdDAeFw0yNTAzMjEyMjEyNDBaFw0yNTAzMjEyMjMyNDBaMDcxNTAzBgNVBAMMLE9XRiBJQyBPbmxpbmUgVmVyaWZpZXIgU2luZ2xlLVVzZSBSZWFkZXIgS2V5MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEuDXThD1zImM3KfAzJqFVrMT7a0Io0vNfv4/ZaD9inUib9BGPgZ/QbDaTzB71td8hwl8ao2YuQs1BZJTDaVPqh6NSMFAwHwYDVR0jBBgwFoAUq2Ub4FbCkFPx3X9s5Ie+aN5gyfUwDgYDVR0PAQH/BAQDAgeAMB0GA1UdDgQWBBS7v3hFCgJmXtpqJY8xCroK+aD8OjAKBggqhkjOPQQDAwNoADBlAjAa+qdP84Gv4MeSzfOGaKaJYQ2lQuVMFgJBl/Fwh5VtJKFnxs1tRSXilzG0/957xY0CMQDPChxTVcGYaroaOm2XPYTfrwcMBSnGIuz4IbgWQVsx9EI0jFR2XeoHIP9LkEu6wUo=',
+      'MIIBujCCAUGgAwIBAgIBATAKBggqhkjOPQQDAzAlMSMwIQYDVQQDDBpPV0YgSUMgVGVzdEFwcCBSZWFkZXIgUm9vdDAeFw0yNDEyMDEwMDAwMDBaFw0zNDEyMDEwMDAwMDBaMCUxIzAhBgNVBAMMGk9XRiBJQyBUZXN0QXBwIFJlYWRlciBSb290MHYwEAYHKoZIzj0CAQYFK4EEACIDYgAE+QDye70m2O0llPXMjVjxVZz3m5k6agT+wih+L79b7jyqUl99sbeUnpxaLD+cmB3HK3twkA7fmVJSobBc+9CDhkh3mx6n+YoH5RulaSWThWBfMyRjsfVODkosHLCDnbPVo0UwQzAOBgNVHQ8BAf8EBAMCAQYwEgYDVR0TAQH/BAgwBgEB/wIBADAdBgNVHQ4EFgQUq2Ub4FbCkFPx3X9s5Ie+aN5gyfUwCgYIKoZIzj0EAwMDZwAwZAIweZ71amQTYTv5uegmHkKYNdgfJvWk7Dbuh+YSiUL/yMNDORurXjmmio4mxxHR+wudAjAfQr1dk9vigdhlE4dsglgYtsBbGl/1hCqigHVjZQqS/bpV3aj9zgpAypcYI13vUUU=',
+    ]
+
+    const chain = await X509Service.validateCertificateChain(agentContext, {
+      certificateChain: x5c,
+      verificationDate: new Date('2025-03-21'),
+    })
 
     expect(chain.length).toStrictEqual(2)
     expect(chain[0].publicKey.keyType).toStrictEqual(KeyType.P384)

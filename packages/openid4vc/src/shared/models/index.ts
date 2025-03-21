@@ -1,4 +1,4 @@
-import type { AccessTokenResponse } from '@animo-id/oauth2'
+import type { AccessTokenResponse } from '@openid4vc/oauth2'
 import type {
   CredentialConfigurationSupported,
   CredentialConfigurationSupportedWithFormats,
@@ -11,15 +11,16 @@ import type {
   CredentialRequestWithFormats,
   IssuerMetadataResult,
   ParseCredentialRequestReturn,
-} from '@animo-id/oid4vci'
+} from '@openid4vc/openid4vci'
 import type {
-  AuthorizationRequestPayload,
-  AuthorizationResponsePayload,
-  IDTokenPayload,
-  VerifiedAuthorizationRequest,
-} from '@sphereon/did-auth-siop'
+  Openid4vpAuthorizationRequest,
+  Openid4vpAuthorizationRequestDcApi,
+  Openid4vpAuthorizationResponse,
+  ResolvedOpenid4vpAuthorizationRequest,
+} from '@openid4vc/openid4vp'
 
-export { preAuthorizedCodeGrantIdentifier, authorizationCodeGrantIdentifier } from '@animo-id/oauth2'
+export { authorizationCodeGrantIdentifier, preAuthorizedCodeGrantIdentifier } from '@openid4vc/oauth2'
+export { Openid4vpAuthorizationRequest } from '@openid4vc/openid4vp'
 
 export type OpenId4VciCredentialConfigurationSupportedWithFormats = CredentialConfigurationSupportedWithFormats
 export type OpenId4VciCredentialConfigurationSupported = CredentialConfigurationSupported
@@ -46,12 +47,11 @@ export type OpenId4VciCredentialRequestWithFormats = CredentialRequestWithFormat
 
 export type OpenId4VciCredentialOfferPayload = CredentialOfferObject
 
-export type OpenId4VcSiopVerifiedAuthorizationRequest = VerifiedAuthorizationRequest
-export type OpenId4VcSiopAuthorizationRequestPayload = AuthorizationRequestPayload
-export type OpenId4VcSiopAuthorizationResponsePayload = AuthorizationResponsePayload
-export type OpenId4VcSiopIdTokenPayload = IDTokenPayload
+export type OpenId4VpVerifiedAuthorizationRequest = ResolvedOpenid4vpAuthorizationRequest
+export type OpenId4VpAuthorizationRequestPayload = Openid4vpAuthorizationRequest | Openid4vpAuthorizationRequestDcApi
+export type OpenId4VpAuthorizationResponsePayload = Openid4vpAuthorizationResponse
 
-export * from './OpenId4VcJwtIssuer'
 export * from './CredentialHolderBinding'
-export * from './OpenId4VciCredentialFormatProfile'
 export * from './OpenId4VciAuthorizationServerConfig'
+export * from './OpenId4VciCredentialFormatProfile'
+export * from './OpenId4VcJwtIssuer'
