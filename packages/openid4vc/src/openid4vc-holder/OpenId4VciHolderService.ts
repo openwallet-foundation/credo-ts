@@ -364,7 +364,7 @@ export class OpenId4VciHolderService {
     // If we don't have a nonce yet, we need to first get one
     if (!cNonce) {
       // Best option is to use nonce endpoint (draft 14+)
-      if (!metadata.credentialIssuer.nonce_endpoint) {
+      if (metadata.credentialIssuer.nonce_endpoint) {
         const nonceResponse = await client.requestNonce({ issuerMetadata: metadata })
         cNonce = nonceResponse.c_nonce
       } else {
