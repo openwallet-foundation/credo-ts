@@ -297,8 +297,8 @@ importers:
         version: 4.8.0
     devDependencies:
       '@animo-id/expo-secure-environment':
-        specifier: ^0.1.0-alpha.12
-        version: 0.1.0-alpha.12(expo@51.0.14(@babel/core@7.26.0)(@babel/preset-env@7.26.0(@babel/core@7.26.0)))(react-native@0.71.19(@babel/core@7.26.0)(@babel/preset-env@7.26.0(@babel/core@7.26.0))(react@18.3.1))(react@18.3.1)
+        specifier: ^0.1.0
+        version: 0.1.0(expo@51.0.14(@babel/core@7.26.0)(@babel/preset-env@7.26.0(@babel/core@7.26.0)))(react-native@0.71.19(@babel/core@7.26.0)(@babel/preset-env@7.26.0(@babel/core@7.26.0))(react@18.3.1))(react@18.3.1)
       '@openwallet-foundation/askar-nodejs':
         specifier: ^0.3.1
         version: 0.3.1
@@ -934,8 +934,8 @@ packages:
     resolution: {integrity: sha512-30iZtAPgz+LTIYoeivqYo853f02jBYSd5uGnGpkFV0M3xOt9aN73erkgYAmZU43x4VfqcnLxW9Kpg3R5LC4YYw==}
     engines: {node: '>=6.0.0'}
 
-  '@animo-id/expo-secure-environment@0.1.0-alpha.12':
-    resolution: {integrity: sha512-7bvLSwRWHWs7m4Y7J/ptvmPW9FqmwPkmwaJcOcOwqrM5HPwCU6ZiS7CSQ+b3fRXpvAHhYiMq88SCHNt2DycK1A==}
+  '@animo-id/expo-secure-environment@0.1.0':
+    resolution: {integrity: sha512-JNCyj+vY+1I/BXBCGQBtgyegNp78RnGHnmfUgwmGATq8Y6oLC/NeMAyggam5WWW+GTMg1NlR7Gl3nUnEe1uLaw==}
     peerDependencies:
       expo: '*'
       react: '*'
@@ -2695,6 +2695,7 @@ packages:
 
   '@sphereon/kmp-mdoc-core@0.2.0-SNAPSHOT.26':
     resolution: {integrity: sha512-QXJ6R8ENiZV2rPMbn06cw5JKwqUYN1kzVRbYfONqE1PEXx1noQ4md7uxr2zSczi0ubKkNcbyYDNtIMTZIhGzmQ==}
+    bundledDependencies: []
 
   '@sphereon/pex-models@2.3.2':
     resolution: {integrity: sha512-foFxfLkRwcn/MOp/eht46Q7wsvpQGlO7aowowIIb5Tz9u97kYZ2kz6K2h2ODxWuv5CRA7Q0MY8XUBGE2lfOhOQ==}
@@ -7474,7 +7475,7 @@ snapshots:
       '@jridgewell/gen-mapping': 0.3.5
       '@jridgewell/trace-mapping': 0.3.25
 
-  '@animo-id/expo-secure-environment@0.1.0-alpha.12(expo@51.0.14(@babel/core@7.26.0)(@babel/preset-env@7.26.0(@babel/core@7.26.0)))(react-native@0.71.19(@babel/core@7.26.0)(@babel/preset-env@7.26.0(@babel/core@7.26.0))(react@18.3.1))(react@18.3.1)':
+  '@animo-id/expo-secure-environment@0.1.0(expo@51.0.14(@babel/core@7.26.0)(@babel/preset-env@7.26.0(@babel/core@7.26.0)))(react-native@0.71.19(@babel/core@7.26.0)(@babel/preset-env@7.26.0(@babel/core@7.26.0))(react@18.3.1))(react@18.3.1)':
     dependencies:
       '@peculiar/asn1-ecc': 2.3.14
       '@peculiar/asn1-schema': 2.3.13
