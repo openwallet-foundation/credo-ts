@@ -1,5 +1,6 @@
 import type { IssuerSignedDocument } from '@animo-id/mdoc'
 import type { AgentContext } from '../../agent'
+import type { Key } from '../../crypto'
 import type { MdocNameSpaces, MdocSignOptions, MdocVerifyOptions } from './MdocOptions'
 
 import {
@@ -11,8 +12,8 @@ import {
   parseDeviceSigned,
   parseIssuerSigned,
 } from '@animo-id/mdoc'
-
 import { JwaSignatureAlgorithm, JwkJson, getJwkFromJson, getJwkFromKey } from '../../crypto'
+import { ClaimFormat } from '../vc/index'
 import { X509Certificate, X509ModuleConfig } from '../x509'
 
 import { TypedArrayEncoder } from './../../utils'
@@ -30,6 +31,30 @@ export class Mdoc {
   private constructor(private issuerSignedDocument: IssuerSignedDocument | DeviceSignedDocument) {
     const issuerSigned = issuerSignedDocument.prepare().get('issuerSigned')
     this.base64Url = TypedArrayEncoder.toBase64URL(cborEncode(issuerSigned))
+  }
+
+  /**
+   * claim format is convenience method added to all credential instances
+   */
+  public get claimFormat() {
+    return ClaimFormat.MsoMdoc as const
+  }
+
+  /**
+   * Encoded is convenience method added to all credential instances
+   */
+  public get encoded() {
+    return this.base64Url
+  }
+
+  /**
+   * Get the device key to which the mdoc is bound
+   */
+  public get deviceKey(): Key | null {
+    const deviceKeyRaw = this.issuerSignedDocument.issuerSigned.issuerAuth.decodedPayload.deviceKeyInfo?.deviceKey
+    if (!deviceKeyRaw) return null
+
+    return getJwkFromJson(COSEKey.import(deviceKeyRaw).toJWK() as JwkJson).key
   }
 
   public static fromBase64Url(mdocBase64Url: string, expectedDocType?: string): Mdoc {
@@ -74,9 +99,9 @@ export class Mdoc {
     return this.issuerSignedDocument.issuerSigned.issuerAuth.decodedPayload.validityInfo
   }
 
-  public get deviceSignedNamespaces(): MdocNameSpaces {
+  public get deviceSignedNamespaces(): MdocNameSpaces | null {
     if (this.issuerSignedDocument instanceof DeviceSignedDocument === false) {
-      throw new MdocError(`Cannot get 'device-namespaces from a IssuerSignedDocument. Must be a DeviceSignedDocument.`)
+      return null
     }
 
     return Object.fromEntries(
