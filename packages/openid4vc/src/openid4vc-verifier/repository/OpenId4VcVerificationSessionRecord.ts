@@ -1,7 +1,7 @@
 import type { OpenId4VpAuthorizationRequestPayload, OpenId4VpAuthorizationResponsePayload } from '../../shared/models'
 import type { OpenId4VcVerificationSessionState } from '../OpenId4VcVerificationSessionState'
 
-import { BaseRecord, CredoError, Jwt, RecordTags, TagsBase, utils } from '@credo-ts/core'
+import { BaseRecord, CredoError, DateTransformer, Jwt, RecordTags, TagsBase, utils } from '@credo-ts/core'
 
 export type OpenId4VcVerificationSessionRecordTags = RecordTags<OpenId4VcVerificationSessionRecord>
 
@@ -27,6 +27,8 @@ export interface OpenId4VcVerificationSessionRecordProps {
   authorizationRequestUri?: string
   authorizationRequestId: string
   authorizationRequestPayload?: OpenId4VpAuthorizationRequestPayload
+
+  expiresAt: Date
 
   authorizationResponsePayload?: OpenId4VpAuthorizationResponsePayload
 
@@ -83,6 +85,14 @@ export class OpenId4VcVerificationSessionRecord extends BaseRecord<DefaultOpenId
   public authorizationRequestId?: string
 
   /**
+   * The time at which the authorization request expires.
+   *
+   * @since 0.6
+   */
+  @DateTransformer()
+  public expiresAt?: Date
+
+  /**
    * The payload of the received authorization response
    */
   public authorizationResponsePayload?: OpenId4VpAuthorizationResponsePayload
@@ -109,6 +119,7 @@ export class OpenId4VcVerificationSessionRecord extends BaseRecord<DefaultOpenId
       this.authorizationRequestUri = props.authorizationRequestUri
       this.authorizationRequestId = props.authorizationRequestId
       this.authorizationResponsePayload = props.authorizationResponsePayload
+      this.expiresAt = props.expiresAt
 
       this.presentationDuringIssuanceSession = props.presentationDuringIssuanceSession
     }

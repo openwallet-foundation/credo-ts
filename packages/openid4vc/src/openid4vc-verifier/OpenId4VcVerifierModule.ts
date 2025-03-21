@@ -117,8 +117,8 @@ export class OpenId4VcVerifierModule implements Module {
     contextRouter.use('/:verifierId', endpointRouter)
 
     // Configure endpoints
-    configureAuthorizationEndpoint(endpointRouter, this.config.authorizationEndpoint)
-    configureAuthorizationRequestEndpoint(endpointRouter, this.config.authorizationRequestEndpoint)
+    configureAuthorizationEndpoint(endpointRouter, this.config)
+    configureAuthorizationRequestEndpoint(endpointRouter, this.config)
 
     // First one will be called for all requests (when next is called)
     contextRouter.use(async (req: OpenId4VcVerificationRequest, _res: unknown, next) => {

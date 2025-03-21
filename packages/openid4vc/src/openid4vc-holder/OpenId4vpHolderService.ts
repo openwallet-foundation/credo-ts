@@ -284,7 +284,9 @@ export class OpenId4VpHolderService {
     const openid4vpClient = this.getOpenid4vpClient(agentContext)
     const authorizationResponseNonce = await agentContext.wallet.generateNonce()
     const { nonce } = authorizationRequestPayload
-    const clientId = getOpenid4vpClientId({ authorizationRequestPayload, origin: options.origin })
+    const parsedClientId = getOpenid4vpClientId({ authorizationRequestPayload, origin: options.origin })
+    // If client_id_scheme was used we need to use the legacy client id.
+    const clientId = parsedClientId.legacyClientId ?? parsedClientId.clientId
 
     let openid4vpOptions: MdocOpenId4VpSessionTranscriptOptions | MdocOpenId4VpDcApiSessionTranscriptOptions
     if (isOpenid4vpAuthorizationRequestDcApi(authorizationRequestPayload)) {
@@ -392,7 +394,7 @@ export class OpenId4VpHolderService {
           ? {
               encryption: { nonce: authorizationResponseNonce },
               serverMetadata: {
-                authorization_signing_alg_values_supported: ['RS256'],
+                authorization_signing_alg_values_supported: [],
                 authorization_encryption_alg_values_supported: ['ECDH-ES'],
                 authorization_encryption_enc_values_supported: ['A128GCM', 'A256GCM', 'A128CBC-HS256'],
               },
@@ -408,7 +410,7 @@ export class OpenId4VpHolderService {
       : authorizationResponsePayload
 
     // TODO: we should include more typing here that the user
-    // still needs to submit the resposne. or as we discussed, split
+    // still needs to submit the response. or as we discussed, split
     // this method up in create and submit
     if (isOpenid4vpAuthorizationRequestDcApi(authorizationRequestPayload)) {
       return {

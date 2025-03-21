@@ -25,7 +25,6 @@ import type {
 import {
   CredoError,
   DcqlService,
-  DidsApi,
   DifPresentationExchangeService,
   EventEmitter,
   InjectionSymbols,
@@ -57,6 +56,7 @@ import {
 import { Oauth2ErrorCodes, Oauth2ServerErrorResponseError } from '@openid4vc/oauth2'
 import {
   ClientIdScheme,
+  ClientMetadata,
   JarmClientMetadata,
   Openid4vpVerifier,
   ParsedOpenid4vpAuthorizationResponse,
@@ -71,7 +71,7 @@ import {
 import { getOid4vcCallbacks } from '../shared/callbacks'
 import { OpenId4VpAuthorizationRequestPayload } from '../shared/index'
 import { storeActorIdForContextCorrelationId } from '../shared/router'
-import { getSupportedJwaSignatureAlgorithms, requestSignerToJwtIssuer } from '../shared/utils'
+import { addSecondsToDate, getSupportedJwaSignatureAlgorithms, requestSignerToJwtIssuer } from '../shared/utils'
 
 import { getSdJwtVcTransactionDataHashes } from '../shared/transactionData'
 import { OpenId4VcVerificationSessionState } from './OpenId4VcVerificationSessionState'
@@ -111,13 +111,38 @@ export class OpenId4VpVerifierService {
     const nonce = await agentContext.wallet.generateNonce()
     const state = await agentContext.wallet.generateNonce()
 
-    const isDcApiRequest = options.responseMode === 'dc_api' || options.responseMode === 'dc_api.jwt'
     const responseMode = options.responseMode ?? 'direct_post.jwt'
+    const isDcApiRequest = responseMode === 'dc_api' || responseMode === 'dc_api.jwt'
+
+    const version = options.version ?? 'v1.draft24'
+    if (version === 'v1.draft21' && isDcApiRequest) {
+      throw new CredoError(
+        `OpenID4VP version '${version}' cannot be used with responseMode '${options.responseMode}'. Use version 'v1.draft24' instead.`
+      )
+    }
+    if (version === 'v1.draft21' && options.transactionData) {
+      throw new CredoError(
+        `OpenID4VP version '${version}' cannot be used with transactionData. Use version 'v1.draft24' instead.`
+      )
+    }
+    if (version === 'v1.draft21' && options.dcql) {
+      throw new CredoError(`OpenID4VP version '${version}' cannot be used with dcql. Use version 'v1.draft24' instead.`)
+    }
+
+    // Check to prevent direct_post from being used with mDOC
+    const hasMdocRequest =
+      options.presentationExchange?.definition.input_descriptors.some((i) => i.format?.mso_mdoc) ||
+      options.dcql?.query.credentials.some((c) => c.format === 'mso_mdoc')
+    if (responseMode === 'direct_post' && hasMdocRequest) {
+      throw new CredoError(
+        "Unable to create authorization request with response mode 'direct_post' containing mDOC credentials. ISO 18013-7 requires the usage of response mode 'direct_post.jwt', and needs parameters from the encrypted response header to verify the mDOC sigature."
+      )
+    }
 
     const authorizationRequestId = utils.uuid()
     // We include the `session=` in the url so we can still easily
     // find the session an encrypted response
-    const authorizationResponseUrl = `${joinUriParts(this.config.baseUrl, [options.verifier.verifierId, this.config.authorizationEndpoint.endpointPath])}?session=${authorizationRequestId}`
+    const authorizationResponseUrl = `${joinUriParts(this.config.baseUrl, [options.verifier.verifierId, this.config.authorizationEndpoint])}?session=${authorizationRequestId}`
 
     const jwtIssuer =
       options.requestSigner.method === 'none'
@@ -163,14 +188,22 @@ export class OpenId4VpVerifierService {
     const hostedAuthorizationRequestUri = !isDcApiRequest
       ? joinUriParts(this.config.baseUrl, [
           options.verifier.verifierId,
-          this.config.authorizationRequestEndpoint.endpointPath,
+          this.config.authorizationRequestEndpoint,
           authorizationRequestId,
         ])
       : // No hosted request needed when using DC API
         undefined
 
     const client_id =
-      clientIdScheme === 'did' || (clientIdScheme as string) === 'https' ? clientId : `${clientIdScheme}:${clientId}`
+      // For did/https and draft 21 the client id has no special prefix
+      clientIdScheme === 'did' || (clientIdScheme as string) === 'https' || version === 'v1.draft21'
+        ? clientId
+        : `${clientIdScheme}:${clientId}`
+
+    // for did the client_id is same in draft 21 and 24 so we could support both at the same time
+    const legacyClientIdScheme =
+      version === 'v1.draft21' && clientIdScheme !== 'web-origin' ? clientIdScheme : undefined
+
     const client_metadata = await this.getClientMetadata(agentContext, {
       responseMode,
       verifier: options.verifier,
@@ -187,41 +220,45 @@ export class OpenId4VpVerifierService {
       client_metadata,
     } as const
 
-    const authorizationRequestPayload =
-      requestParamsBase.response_mode === 'dc_api.jwt' || requestParamsBase.response_mode === 'dc_api'
-        ? {
-            ...requestParamsBase,
-            // No client_id for unsigned requests
-            client_id: jwtIssuer ? client_id : undefined,
-            response_mode: requestParamsBase.response_mode,
-            expected_origins: options.expectedOrigins,
-          }
-        : {
-            ...requestParamsBase,
-            client_id: client_id as string,
-            state,
-            response_uri: authorizationResponseUrl,
-          }
-
     const openid4vpVerifier = this.getOpenid4vpVerifier(agentContext)
     const authorizationRequest = await openid4vpVerifier.createOpenId4vpAuthorizationRequest({
       jar: jwtIssuer
         ? {
             jwtSigner: jwtIssuer,
             requestUri: hostedAuthorizationRequestUri,
+            expiresInSeconds: this.config.authorizationRequestExpiresInSeconds,
           }
         : undefined,
-      authorizationRequestPayload,
+      authorizationRequestPayload:
+        requestParamsBase.response_mode === 'dc_api.jwt' || requestParamsBase.response_mode === 'dc_api'
+          ? {
+              ...requestParamsBase,
+              // No client_id for unsigned requests
+              client_id: jwtIssuer ? client_id : undefined,
+              response_mode: requestParamsBase.response_mode,
+              expected_origins: options.expectedOrigins,
+            }
+          : {
+              ...requestParamsBase,
+              response_mode: requestParamsBase.response_mode,
+              client_id: client_id as string,
+              state,
+              response_uri: authorizationResponseUrl,
+              client_id_scheme: legacyClientIdScheme,
+            },
     })
 
     const verificationSession = new OpenId4VcVerificationSessionRecord({
       // Only store payload for unsiged requests
-      authorizationRequestPayload: authorizationRequest.jar ? undefined : authorizationRequestPayload,
+      authorizationRequestPayload: authorizationRequest.jar
+        ? undefined
+        : authorizationRequest.authorizationRequestPayload,
       authorizationRequestJwt: authorizationRequest.jar?.authorizationRequestJwt,
       authorizationRequestUri: hostedAuthorizationRequestUri,
       authorizationRequestId,
       state: OpenId4VcVerificationSessionState.RequestCreated,
       verifierId: options.verifier.verifierId,
+      expiresAt: addSecondsToDate(new Date(), this.config.authorizationRequestExpiresInSeconds),
     })
     await this.openId4VcVerificationSessionRepository.save(agentContext, verificationSession)
     this.emitStateChangedEvent(agentContext, verificationSession, null)
@@ -331,35 +368,43 @@ export class OpenId4VpVerifierService {
       verificationSession: OpenId4VcVerificationSessionRecord
     }
   ): Promise<OpenId4VpVerifiedAuthorizationResponse> {
-    const openid4vpVerifier = this.getOpenid4vpVerifier(agentContext)
-
+    const { verificationSession, authorizationResponse, origin } = options
     const authorizationRequest = options.verificationSession.requestPayload
 
-    const result = await this.parseAuthorizationResponse(agentContext, {
-      verificationSession: options.verificationSession,
-      authorizationResponse: options.authorizationResponse,
-      origin: options.origin,
-    })
-
-    result.verificationSession.assertState([
+    verificationSession.assertState([
       OpenId4VcVerificationSessionState.RequestUriRetrieved,
       OpenId4VcVerificationSessionState.RequestCreated,
     ])
+
+    if (verificationSession.expiresAt && Date.now() > verificationSession.expiresAt.getTime()) {
+      throw new Oauth2ServerErrorResponseError({
+        error: Oauth2ErrorCodes.InvalidRequest,
+        error_description: 'session expired',
+      })
+    }
+
+    const result = await this.parseAuthorizationResponse(agentContext, {
+      verificationSession,
+      authorizationResponse,
+      origin,
+    })
 
     let dcqlResponse: OpenId4VpVerifiedAuthorizationResponseDcql | undefined = undefined
     let pexResponse: OpenId4VpVerifiedAuthorizationResponsePresentationExchange | undefined = undefined
     let transactionData: OpenId4VpVerifiedAuthorizationResponseTransactionData[] | undefined = undefined
 
     try {
-      const clientId = getOpenid4vpClientId({
+      const parsedClientId = getOpenid4vpClientId({
         authorizationRequestPayload: authorizationRequest,
         origin: options.origin,
       })
+
+      // If client_id_scheme was used we need to use the legacy client id.
+      const clientId = parsedClientId.legacyClientId ?? parsedClientId.clientId
+
       const responseUri = isOpenid4vpAuthorizationRequestDcApi(authorizationRequest)
         ? undefined
         : authorizationRequest.response_uri
-
-      openid4vpVerifier.validateOpenid4vpAuthorizationResponsePayload
 
       // NOTE: apu is needed for mDOC over OID4VP without DC API
       const mdocGeneratedNonce = result.jarm?.jarmHeader.apu
@@ -697,11 +742,6 @@ export class OpenId4VpVerifierService {
     const supportedMdocAlgs = supportedAlgs.filter(isMdocSupportedSignatureAlgorithm)
     const supportedProofTypes = signatureSuiteRegistry.supportedProofTypes
 
-    // FIXME: we now manually remove did:peer, we should probably allow the user to configure this
-    const supportedDidMethods = agentContext.dependencyManager
-      .resolve(DidsApi)
-      .supportedResolverMethods.filter((m) => m !== 'peer')
-
     type JarmEncryptionJwk = JwkJson & { kid: string; use: 'enc' }
     let jarmEncryptionJwk: JarmEncryptionJwk | undefined
 
@@ -710,26 +750,20 @@ export class OpenId4VpVerifierService {
       jarmEncryptionJwk = { ...getJwkFromKey(key).toJson(), kid: key.fingerprint, use: 'enc' }
     }
 
-    const jarmClientMetadata: (JarmClientMetadata & { jwks: { keys: JarmEncryptionJwk[] } }) | undefined =
-      jarmEncryptionJwk
-        ? {
-            jwks: { keys: [jarmEncryptionJwk] },
-            authorization_encrypted_response_alg: 'ECDH-ES',
-            // FIXME: we need to allow setting this, but also to fetch it based on the `request_uri` and
-            // `request_uri_method`
-            authorization_encrypted_response_enc: 'A128GCM',
-          }
-        : undefined
+    const jarmClientMetadata: (JarmClientMetadata & Pick<ClientMetadata, 'jwks'>) | undefined = jarmEncryptionJwk
+      ? {
+          jwks: { keys: [jarmEncryptionJwk] },
+          authorization_encrypted_response_alg: 'ECDH-ES',
+          // FIXME: we need to allow setting this, but also to fetch it based on the `request_uri` and
+          // `request_uri_method`
+          authorization_encrypted_response_enc: 'A128GCM',
+        }
+      : undefined
 
     return {
       ...jarmClientMetadata,
       ...verifier.clientMetadata,
       response_types_supported: ['vp_token'],
-      subject_syntax_types_supported: [
-        'urn:ietf:params:oauth:jwk-thumbprint',
-        ...supportedDidMethods.map((m) => `did:${m}`),
-      ],
-      authorization_signed_response_alg: 'RS256',
       vp_formats: {
         mso_mdoc: {
           alg: supportedMdocAlgs,

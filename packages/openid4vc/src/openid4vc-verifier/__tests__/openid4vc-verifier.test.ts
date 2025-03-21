@@ -58,9 +58,9 @@ describe('OpenId4VcVerifier', () => {
       expect(jwt.payload.additionalClaims.scope).toEqual(undefined)
       expect(jwt.payload.additionalClaims.client_id).toEqual(verifier.did)
       expect(jwt.payload.additionalClaims.response_uri).toEqual(
-        `http://redirect-uri/${openIdVerifier.verifierId}/authorize`
+        `http://redirect-uri/${openIdVerifier.verifierId}/authorize?session=${verificationSession.authorizationRequestId}`
       )
-      expect(jwt.payload.additionalClaims.response_mode).toEqual('direct_post')
+      expect(jwt.payload.additionalClaims.response_mode).toEqual('direct_post.jwt')
       expect(jwt.payload.additionalClaims.nonce).toBeDefined()
       expect(jwt.payload.additionalClaims.state).toBeDefined()
       expect(jwt.payload.additionalClaims.response_type).toEqual('vp_token')

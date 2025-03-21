@@ -25,11 +25,14 @@ export interface OpenId4VpCreateAuthorizationRequestOptions {
     | Omit<OpenId4VcIssuerX5c, 'issuer'>
     | {
         /**
-         * Do not sign the request. Only available for DC API
+         * Do not sign the request. Only available for DC API (responseMode is `dc_api` or `dc_api.jwt`)
          */
         method: 'none'
       }
 
+  /**
+   * Transaction data entries that need to be hashes and signed over by a specific credential
+   */
   transactionData?: TransactionDataEntry[]
 
   /**
@@ -48,10 +51,13 @@ export interface OpenId4VpCreateAuthorizationRequestOptions {
 
   /**
    * The response mode to use for the authorization request.
-   * @default to `direct_post`.
+   * @default to `direct_post.jwt`.
    *
    * With response_mode `direct_post` the response will be posted directly to the `response_uri` provided in the request.
-   * With response_mode `direct_post.jwt` the response will be `signed` `encrypted` or `signed and encrypted` and then posted to the `response_uri` provided in the request.
+   * With response_mode `direct_post.jwt` the response will be encrypted and then posted to the `response_uri` provided in the request.
+   * The response mode `dc_api` and `dc_api.jwt` should only be used if the request will be passed over the W3C Digital Credentials API. In this case
+   *    the response must be manually submitted when a response is received using `verifyAuthorizationResponse`.
+   *
    */
   responseMode?: ResponseMode
 
@@ -60,6 +66,16 @@ export interface OpenId4VpCreateAuthorizationRequestOptions {
    * REQUIRED when signed requests defined in Appendix A.3.2 are used with the Digital Credentials API (DC API). An array of strings, each string representing an Origin of the Verifier that is making the request.
    */
   expectedOrigins?: string[]
+
+  /**
+   * The draft version of OpenID4VP to use for the authorization request.
+   *
+   * - For alignment with ISO 18013-7 (remote mDOC) `v1.draft21` should be used.
+   * - When responseMode is `dc_api` or `dc_api.jwt` version `v1.draft21` is not supported.
+   *
+   * @default `v1.draft24`
+   */
+  version?: 'v1.draft21' | 'v1.draft24'
 }
 
 export interface OpenId4VpVerifyAuthorizationResponseOptions {

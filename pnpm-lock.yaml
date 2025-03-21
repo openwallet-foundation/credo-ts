@@ -247,7 +247,7 @@ importers:
         specifier: workspace:*
         version: link:../didcomm
       '@sphereon/pex-models':
-        specifier: ^2.3.1
+        specifier: ^2.3.2
         version: 2.3.2
       class-transformer:
         specifier: 0.5.1
@@ -401,11 +401,11 @@ importers:
   packages/core:
     dependencies:
       '@animo-id/mdoc':
-        specifier: ^0.5.0
-        version: 0.5.0
+        specifier: ^0.5.1
+        version: 0.5.1
       '@animo-id/pex':
-        specifier: 4.1.1
-        version: 4.1.1
+        specifier: 5.0.0
+        version: 5.0.0
       '@astronautlabs/jsonpath':
         specifier: ^1.1.2
         version: 1.1.2
@@ -571,10 +571,10 @@ importers:
         version: 7.8.1
     devDependencies:
       '@animo-id/pex':
-        specifier: 4.1.1
-        version: 4.1.1
+        specifier: 5.0.0
+        version: 5.0.0
       '@sphereon/pex-models':
-        specifier: ^2.3.1
+        specifier: ^2.3.2
         version: 2.3.2
       '@types/luxon':
         specifier: ^3.2.0
@@ -728,17 +728,17 @@ importers:
         specifier: workspace:*
         version: link:../core
       '@openid4vc/oauth2':
-        specifier: 0.3.0-alpha-20250320222745
-        version: 0.3.0-alpha-20250320222745
+        specifier: 0.3.0-alpha-20250321150652
+        version: 0.3.0-alpha-20250321150652
       '@openid4vc/openid4vci':
-        specifier: 0.3.0-alpha-20250320222745
-        version: 0.3.0-alpha-20250320222745
+        specifier: 0.3.0-alpha-20250321150652
+        version: 0.3.0-alpha-20250321150652
       '@openid4vc/openid4vp':
-        specifier: 0.3.0-alpha-20250320222745
-        version: 0.3.0-alpha-20250320222745
+        specifier: 0.3.0-alpha-20250321150652
+        version: 0.3.0-alpha-20250321150652
       '@openid4vc/utils':
-        specifier: 0.3.0-alpha-20250320222745
-        version: 0.3.0-alpha-20250320222745
+        specifier: 0.3.0-alpha-20250321150652
+        version: 0.3.0-alpha-20250321150652
       class-transformer:
         specifier: ^0.5.1
         version: 0.5.1
@@ -941,11 +941,11 @@ packages:
       react: '*'
       react-native: '*'
 
-  '@animo-id/mdoc@0.5.0':
-    resolution: {integrity: sha512-obrT1Qpy6tbaS9WSBJYoNvcj4CkToDV2t4GZqKnR6DiUIhWP3kaCQTDU/uvLofb3AJeUj0NKvGNNWDCA+W+VnA==}
+  '@animo-id/mdoc@0.5.1':
+    resolution: {integrity: sha512-RYAfTN/ot4WB7esVMHRxKGrU9IINuyHIX5KVCWRUU0qNkrDMCp+IlW3BMCC6R3zZk8tW3XPA61JYzzmjbPKARg==}
 
-  '@animo-id/pex@4.1.1':
-    resolution: {integrity: sha512-czaKNF7wLPHmx79y8ujm+/aMrAX3oGvdTVzjX3aLqw4J5IvePKXboiEntuyjh+z6zhP3gRmu1+BWHJR+JWB9DA==}
+  '@animo-id/pex@5.0.0':
+    resolution: {integrity: sha512-X5gdMKF+pTt64BldrE1LJ35OKc5mT3tsuw3j2SPAGv6gVS1RutNFLtR5+TaSsmXZ2NpJY3yvXQpSvxmkw/e36Q==}
     engines: {node: '>=18'}
 
   '@animo-id/react-native-bbs-signatures@0.1.0':
@@ -2441,17 +2441,17 @@ packages:
   '@open-draft/until@2.1.0':
     resolution: {integrity: sha512-U69T3ItWHvLwGg5eJ0n3I62nWuE6ilHlmz7zM0npLBRvPRd7e6NYmg54vvRtP5mZG7kZqZCFVdsTWo7BPtBujg==}
 
-  '@openid4vc/oauth2@0.3.0-alpha-20250320222745':
-    resolution: {integrity: sha512-EYLcT5Qfro+9FXQYWlHI+QhO8ZyXyNmDL4m1fsUTInnbTYD2QBxfiU0x9sQ6ZmDWO61CrUUv8+j6N39VA/ATPA==}
+  '@openid4vc/oauth2@0.3.0-alpha-20250321150652':
+    resolution: {integrity: sha512-1GBx0nRfGZD7BKPP5rODhSgL1Mb1Gv1WqCTWMb/+YUBzxk9l7vZFEQaO94m6cEXvuHE1q+mRBWxd4aSTr1UQtg==}
 
-  '@openid4vc/openid4vci@0.3.0-alpha-20250320222745':
-    resolution: {integrity: sha512-qfpe0l7AtZsoBFoMBB4Bgdshm7UO6CEtiKEY1m3Dj20Sm4rgLQC15/ww214jiI0B0vJs59EudV/v2mOscw1oGQ==}
+  '@openid4vc/openid4vci@0.3.0-alpha-20250321150652':
+    resolution: {integrity: sha512-bql3hzezthvJUAwk3WkY/2zNmpYHPSsu86Nif7zcoFgBqIp/6J20iGi8F4Na7giXqUIsmFWbxtfEKD4V1NQAZQ==}
 
-  '@openid4vc/openid4vp@0.3.0-alpha-20250320222745':
-    resolution: {integrity: sha512-ie+7igQ5rvhE9xE7tXCG/q/oDN53kC070vqPK+XfKXy9/vSKQ9WtxPvX+xFLQz+XoAb6+86cLqxLpnp+iztcbA==}
+  '@openid4vc/openid4vp@0.3.0-alpha-20250321150652':
+    resolution: {integrity: sha512-fRtsVPbJi8zN9SCa9JQRt4sMbJzCgb4bX97HFWPsct1OTSrXpzFpSUr/92hc7GlNzt0IW0n7MfAIPb7b6xoG4g==}
 
-  '@openid4vc/utils@0.3.0-alpha-20250320222745':
-    resolution: {integrity: sha512-blVgexJ8LPV34V6NZ8U5TdJ1uvnBdOs9eHeiV3N3KywghmcC2zrjiTmEKDUmxC5TPK89fBHIUVXgTGyNA0qMrQ==}
+  '@openid4vc/utils@0.3.0-alpha-20250321150652':
+    resolution: {integrity: sha512-OIfhvUJCDgvHfc8HE8rn4VhZedncPrynBsW3mnoSVO2pw7BFE6CWls33l2i1VVM4tdFz6Vez4WpdCYJxCoEP/A==}
 
   '@openwallet-foundation/askar-nodejs@0.3.1':
     resolution: {integrity: sha512-m3L8KEPC+qgA3MAFssMtjSqJiAQtrawZEWPmW6eiB7OPjZvkKjodMhx/cuUV5YTl4eQlSix2EY4vXMzk4vt+cQ==}
@@ -2624,6 +2624,10 @@ packages:
     resolution: {integrity: sha512-dan2LSvK63SKwb62031G4r7TE4TaiI0EK1KbPXqS+LCXNkNDUHqhtYp9uOpj+grXceCsMtMa2f8VnUfsjmwHHg==}
     engines: {node: '>=18'}
 
+  '@sd-jwt/decode@0.9.2':
+    resolution: {integrity: sha512-jHY7hqk7EMkp6E2cB13QmXvRZN7njvAveVh+zKKy0kxpAM7DmcR4TqcDA4mc5y4lP8zWFUgbk7oGLCx2wiBq+w==}
+    engines: {node: '>=18'}
+
   '@sd-jwt/jwt-status-list@0.7.2':
     resolution: {integrity: sha512-o/Mg/Zg21poFsPXuxtPD9sdXq2b/0L+rb9gxU2k1rp1aT+DWmqD0k8v0Ttr2tlMc8l1xXQNA8FLXbL1AdLRmbQ==}
     engines: {node: '>=18'}
@@ -2640,8 +2644,16 @@ packages:
     resolution: {integrity: sha512-1NRKowiW0ZiB9SGLApLPBH4Xk8gDQJ+nA9NdZ+uy6MmJKLEwjuJxO7yTvRIv/jX/0/Ebh339S7Kq4RD2AiFuRg==}
     engines: {node: '>=18'}
 
+  '@sd-jwt/types@0.9.2':
+    resolution: {integrity: sha512-eV/MY80ekeTrqaohzPpkrgwPki6Igx69D6RniduV1Ehv6o/zaJQ2F0hY/RqBAkJhQtBQoOzouwKYHme40k1Dlw==}
+    engines: {node: '>=18'}
+
   '@sd-jwt/utils@0.7.2':
     resolution: {integrity: sha512-aMPY7uHRMgyI5PlDvEiIc+eBFGC1EM8OCQRiEjJ8HGN0pajWMYj0qwSw7pS90A49/DsYU1a5Zpvb7nyjgGH0Yg==}
+    engines: {node: '>=18'}
+
+  '@sd-jwt/utils@0.9.2':
+    resolution: {integrity: sha512-GpTD0isav2f+JyMyzeyf6wV3nYcD5e3oL+sVVr/61Y3oaIBGMWLtGGGhBRMCimSnd8kbb0P9jLxvp7ioASk6vw==}
     engines: {node: '>=18'}
 
   '@sec-ant/readable-stream@0.4.1':
@@ -2680,11 +2692,17 @@ packages:
     resolution: {integrity: sha512-uAZZExVy+ug9JLircejWa5eLtAZ7bnBP6xb7DO2+86LRsHNLh2k2jMWJYxp+iWtGHTsh6RYsZl14ScQLvjiQ/A==}
     bundledDependencies: []
 
+  '@sphereon/kmp-mdoc-core@0.2.0-SNAPSHOT.26':
+    resolution: {integrity: sha512-QXJ6R8ENiZV2rPMbn06cw5JKwqUYN1kzVRbYfONqE1PEXx1noQ4md7uxr2zSczi0ubKkNcbyYDNtIMTZIhGzmQ==}
+
   '@sphereon/pex-models@2.3.2':
     resolution: {integrity: sha512-foFxfLkRwcn/MOp/eht46Q7wsvpQGlO7aowowIIb5Tz9u97kYZ2kz6K2h2ODxWuv5CRA7Q0MY8XUBGE2lfOhOQ==}
 
   '@sphereon/ssi-types@0.30.2-next.135':
     resolution: {integrity: sha512-YLQfFMPUlOJUxHbOS9v01nG3cgLwTk3d95/rTnOmEQx9kXgXjoXdvt7D0uGcMRL3RHeQ9biT/jWY//mDvCirVQ==}
+
+  '@sphereon/ssi-types@0.33.0':
+    resolution: {integrity: sha512-OQnWLKZQU6lHlMw3JS5308q5Kctv1eT/NNQthGNXETarsgJFiD711pWMOJvi0p5kLpU8N1e7/okaH3mXsVAW0A==}
 
   '@stablelib/binary@1.0.1':
     resolution: {integrity: sha512-ClJWvmL6UBM/wjkvv/7m5VP3GMr9t0osr4yVgLZsLCOz4hGN9gIAFEqnJ0TsSMAN+n840nf2cHZnA5/KFqHC7Q==}
@@ -5125,6 +5143,10 @@ packages:
   jwt-decode@3.1.2:
     resolution: {integrity: sha512-UfpWE/VZn0iP50d8cz9NrZLM9lSWhcJ+0Gt/nm4by88UL+J1SiKN8/5dkjMmbEzwL2CAe+67GsegCbIKtbp75A==}
 
+  jwt-decode@4.0.0:
+    resolution: {integrity: sha512-+KJGIyHgkGuIq3IEBNftfhW/LfWhXUIY6OmyVWjliu5KH1y0fw7VQ8YndE2O4qZdMSd9SqbnC8GOcZEy0Om7sA==}
+    engines: {node: '>=18'}
+
   keygrip@1.1.0:
     resolution: {integrity: sha512-iYSchDJ+liQ8iwbSI2QqsQOvqv58eJCEanyJPJi+Khyu8smkcKSFUCbPwzFcL7YVtZ6eONjqRX/38caJ7QjRAQ==}
     engines: {node: '>= 0.6'}
@@ -7438,18 +7460,18 @@ snapshots:
       react: 18.3.1
       react-native: 0.71.19(@babel/core@7.26.0)(@babel/preset-env@7.26.0(@babel/core@7.26.0))(react@18.3.1)
 
-  '@animo-id/mdoc@0.5.0':
+  '@animo-id/mdoc@0.5.1':
     dependencies:
       compare-versions: 6.1.1
 
-  '@animo-id/pex@4.1.1':
+  '@animo-id/pex@5.0.0':
     dependencies:
       '@astronautlabs/jsonpath': 1.1.2
       '@sd-jwt/decode': 0.7.2
       '@sd-jwt/present': 0.7.2
       '@sd-jwt/types': 0.7.2
       '@sphereon/pex-models': 2.3.2
-      '@sphereon/ssi-types': 0.30.2-next.135
+      '@sphereon/ssi-types': 0.33.0
       ajv: 8.16.0
       ajv-formats: 2.1.1(ajv@8.16.0)
       jwt-decode: 3.1.2
@@ -9774,24 +9796,24 @@ snapshots:
 
   '@open-draft/until@2.1.0': {}
 
-  '@openid4vc/oauth2@0.3.0-alpha-20250320222745':
+  '@openid4vc/oauth2@0.3.0-alpha-20250321150652':
     dependencies:
-      '@openid4vc/utils': 0.3.0-alpha-20250320222745
+      '@openid4vc/utils': 0.3.0-alpha-20250321150652
       zod: 3.24.1
 
-  '@openid4vc/openid4vci@0.3.0-alpha-20250320222745':
+  '@openid4vc/openid4vci@0.3.0-alpha-20250321150652':
     dependencies:
-      '@openid4vc/oauth2': 0.3.0-alpha-20250320222745
-      '@openid4vc/utils': 0.3.0-alpha-20250320222745
+      '@openid4vc/oauth2': 0.3.0-alpha-20250321150652
+      '@openid4vc/utils': 0.3.0-alpha-20250321150652
       zod: 3.24.1
 
-  '@openid4vc/openid4vp@0.3.0-alpha-20250320222745':
+  '@openid4vc/openid4vp@0.3.0-alpha-20250321150652':
     dependencies:
-      '@openid4vc/oauth2': 0.3.0-alpha-20250320222745
-      '@openid4vc/utils': 0.3.0-alpha-20250320222745
+      '@openid4vc/oauth2': 0.3.0-alpha-20250321150652
+      '@openid4vc/utils': 0.3.0-alpha-20250321150652
       zod: 3.24.1
 
-  '@openid4vc/utils@0.3.0-alpha-20250320222745':
+  '@openid4vc/utils@0.3.0-alpha-20250321150652':
     dependencies:
       buffer: 6.0.3
       zod: 3.24.1
@@ -10223,6 +10245,11 @@ snapshots:
       '@sd-jwt/types': 0.7.2
       '@sd-jwt/utils': 0.7.2
 
+  '@sd-jwt/decode@0.9.2':
+    dependencies:
+      '@sd-jwt/types': 0.9.2
+      '@sd-jwt/utils': 0.9.2
+
   '@sd-jwt/jwt-status-list@0.7.2':
     dependencies:
       '@sd-jwt/types': 0.7.2
@@ -10243,9 +10270,16 @@ snapshots:
 
   '@sd-jwt/types@0.7.2': {}
 
+  '@sd-jwt/types@0.9.2': {}
+
   '@sd-jwt/utils@0.7.2':
     dependencies:
       '@sd-jwt/types': 0.7.2
+      js-base64: 3.7.7
+
+  '@sd-jwt/utils@0.9.2':
+    dependencies:
+      '@sd-jwt/types': 0.9.2
       js-base64: 3.7.7
 
   '@sec-ant/readable-stream@0.4.1': {}
@@ -10283,6 +10317,12 @@ snapshots:
       '@js-joda/timezone': 2.3.0(@js-joda/core@5.6.3)
       format-util: 1.0.5
 
+  '@sphereon/kmp-mdoc-core@0.2.0-SNAPSHOT.26':
+    dependencies:
+      '@js-joda/core': 5.6.3
+      '@js-joda/timezone': 2.3.0(@js-joda/core@5.6.3)
+      format-util: 1.0.5
+
   '@sphereon/pex-models@2.3.2': {}
 
   '@sphereon/ssi-types@0.30.2-next.135':
@@ -10292,6 +10332,18 @@ snapshots:
       debug: 4.4.0
       events: 3.3.0
       jwt-decode: 3.1.2
+    transitivePeerDependencies:
+      - supports-color
+
+  '@sphereon/ssi-types@0.33.0':
+    dependencies:
+      '@noble/hashes': 1.6.1
+      '@sd-jwt/decode': 0.9.2
+      '@sphereon/kmp-mdoc-core': 0.2.0-SNAPSHOT.26
+      debug: 4.4.0
+      events: 3.3.0
+      jwt-decode: 4.0.0
+      uint8arrays: 3.1.1
     transitivePeerDependencies:
       - supports-color
 
@@ -13298,6 +13350,8 @@ snapshots:
       - web-streams-polyfill
 
   jwt-decode@3.1.2: {}
+
+  jwt-decode@4.0.0: {}
 
   keygrip@1.1.0:
     dependencies:

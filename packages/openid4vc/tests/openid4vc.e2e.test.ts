@@ -1,4 +1,3 @@
-import type { Server } from 'http'
 import type {
   DcqlQuery,
   DifPresentationExchangeDefinitionV2,
@@ -17,7 +16,6 @@ import {
   CredoError,
   DateOnly,
   DidsApi,
-  Hasher,
   JwaSignatureAlgorithm,
   Jwk,
   JwsService,
@@ -41,7 +39,6 @@ import {
   HashAlgorithm,
   Oauth2AuthorizationServer,
   calculateJwkThumbprint,
-  clientAuthenticationNone,
   preAuthorizedCodeGrantIdentifier,
 } from '@openid4vc/oauth2'
 import { AuthorizationFlow } from '@openid4vc/openid4vci'
@@ -71,6 +68,7 @@ import {
   universityDegreeCredentialSdJwt2,
 } from './utilsVci'
 import { openBadgePresentationDefinition, universityDegreePresentationDefinition } from './utilsVp'
+import { setupNockToExpress } from '../../../tests/nockToExpress'
 
 const serverPort = 1234
 const baseUrl = `http://localhost:${serverPort}`
@@ -79,7 +77,7 @@ const verificationBaseUrl = `${baseUrl}/oid4vp`
 
 describe('OpenId4Vc', () => {
   let expressApp: Express
-  let expressServer: Server
+  let clearNock: () => void
 
   let issuer: AgentType<{
     openId4VcIssuer: OpenId4VcIssuerModule
@@ -170,7 +168,8 @@ describe('OpenId4Vc', () => {
         askar: new AskarModule(askarModuleConfig),
         tenants: new TenantsModule(),
       },
-      '96213c3d7fc8d4d6754c7a0fd969598g'
+      '96213c3d7fc8d4d6754c7a0fd969598g',
+      global.fetch
     )) as unknown as typeof issuer
     issuer1 = await createTenantForAgent(issuer.agent, 'iTenant1')
     issuer2 = await createTenantForAgent(issuer.agent, 'iTenant2')
@@ -183,7 +182,8 @@ describe('OpenId4Vc', () => {
         tenants: new TenantsModule(),
         x509: new X509Module(),
       },
-      '96213c3d7fc8d4d6754c7a0fd969598e'
+      '96213c3d7fc8d4d6754c7a0fd969598e',
+      global.fetch
     )) as unknown as typeof holder
     holder1 = await createTenantForAgent(holder.agent, 'hTenant1')
 
@@ -196,7 +196,8 @@ describe('OpenId4Vc', () => {
         askar: new AskarModule(askarModuleConfig),
         tenants: new TenantsModule(),
       },
-      '96213c3d7fc8d4d6754c7a0fd969598f'
+      '96213c3d7fc8d4d6754c7a0fd969598f',
+      global.fetch
     )) as unknown as typeof verifier
     verifier1 = await createTenantForAgent(verifier.agent, 'vTenant1')
     verifier2 = await createTenantForAgent(verifier.agent, 'vTenant2')
@@ -205,11 +206,11 @@ describe('OpenId4Vc', () => {
     expressApp.use('/oid4vci', issuer.agent.modules.openId4VcIssuer.config.router)
     expressApp.use('/oid4vp', verifier.agent.modules.openId4VcVerifier.config.router)
 
-    expressServer = expressApp.listen(serverPort)
+    clearNock = setupNockToExpress(baseUrl, expressApp)
   })
 
   afterEach(async () => {
-    expressServer?.close()
+    clearNock()
 
     await issuer.agent.shutdown()
     await issuer.agent.wallet.delete()
@@ -475,13 +476,8 @@ describe('OpenId4Vc', () => {
     const authorizationServerJwk = getJwkFromKey(authorizationServerKey).toJson()
     const authorizationServer = new Oauth2AuthorizationServer({
       callbacks: {
-        clientAuthentication: clientAuthenticationNone(),
-        generateRandom: issuer.agent.context.wallet.getRandomValues,
-        hash: Hasher.hash,
-        fetch: issuer.agent.config.agentDependencies.fetch,
-        verifyJwt: () => {
-          throw new Error('not implemented')
-        },
+        ...getOid4vcCallbacks(issuer.agent.context),
+
         signJwt: async (_signer, { header, payload }) => {
           const jwsService = issuer.agent.dependencyManager.resolve(JwsService)
           const compact = await jwsService.createJwsCompact(issuer.agent.context, {
@@ -538,7 +534,8 @@ describe('OpenId4Vc', () => {
         })
       )
     )
-    const server = app.listen(4747)
+
+    const clearNock = setupNockToExpress('http://localhost:4747', app)
 
     const openIdIssuerTenant = await issuerTenant.modules.openId4VcIssuer.createIssuer({
       issuerId: '8bc91672-6a32-466c-96ec-6efca8760068',
@@ -604,7 +601,7 @@ describe('OpenId4Vc', () => {
     expect(sdJwtVcTenant1.payload.vct).toEqual('UniversityDegreeCredential')
 
     await holderTenant.endSession()
-    server.close()
+    clearNock()
   })
 
   it('e2e flow with tenants, verifier endpoints verifying a jwt-vc', async () => {

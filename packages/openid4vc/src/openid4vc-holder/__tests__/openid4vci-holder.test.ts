@@ -77,14 +77,14 @@ describe('OpenId4VcHolder', () => {
         .get('/.well-known/did.json')
         .reply(200, fixture.wellKnownDid)
 
-        .get('/.well-known/openid-configuration')
-        .reply(404)
+        .get('/.well-known/openid-credential-issuer')
+        .reply(200, fixture.getMetadataResponse)
 
         .get('/.well-known/oauth-authorization-server')
         .reply(404)
 
-        .get('/.well-known/openid-credential-issuer')
-        .reply(200, fixture.getMetadataResponse)
+        .get('/.well-known/openid-configuration')
+        .reply(404)
 
         // setup access token response
         .post('/oidc/v1/auth/token')
@@ -93,9 +93,6 @@ describe('OpenId4VcHolder', () => {
         // setup credential request response
         .post('/oidc/v1/auth/credential')
         .reply(200, fixture.credentialResponse)
-
-        .get('/.well-known/did.json')
-        .reply(200, fixture.wellKnownDid)
 
       const resolved = await holder.modules.openId4VcHolder.resolveCredentialOffer(fixture.credentialOffer)
       const accessTokenResponse = await holder.modules.openId4VcHolder.requestToken({
@@ -178,6 +175,10 @@ describe('OpenId4VcHolder', () => {
 
     it('Should successfully receive credential from animo openid4vc playground using the pre-authorized flow using a jwk EdDSA subject and vc+sd-jwt credential', async () => {
       const fixture = animoOpenIdPlaygroundDraft11SdJwtVc
+
+      nock('https://openid4vc.animo.id')
+        .get('/.well-known/oauth-authorization-server/oid4vci/0bbfb1c0-9f45-478c-a139-08f6ed610a37')
+        .reply(404)
 
       // setup server metadata response
       nock('https://openid4vc.animo.id/oid4vci/0bbfb1c0-9f45-478c-a139-08f6ed610a37')
@@ -298,10 +299,10 @@ describe('OpenId4VcHolder', () => {
       nock('https://issuer.portal.walt.id')
         .get('/.well-known/openid-credential-issuer')
         .reply(200, fixture.getMetadataResponse)
-        .get('/.well-known/openid-configuration')
-        .reply(200, fixture.getMetadataResponse)
         .get('/.well-known/oauth-authorization-server')
         .reply(404)
+        .get('/.well-known/openid-configuration')
+        .reply(200, fixture.getMetadataResponse)
         .post('/par')
         .reply(200, fixture.par)
         // setup access token response

@@ -83,12 +83,15 @@ export class DcqlService {
     return allRecords
   }
 
-  public getDcqlCredentialRepresentation(presentation: VerifiablePresentation): DcqlQueryResult['credentials'] {
+  public getDcqlCredentialRepresentation(
+    presentation: VerifiablePresentation,
+    queryCredential: DcqlQuery['credentials'][number]
+  ): DcqlQueryResult['credentials'] {
+    // SD-JWT credential can be used as both dc+sd-jwt and vc+sd-jwt
+    // At some point we might want to look at the header value of the sd-jwt (vc+sd-jwt vc dc+sd-jwt)
     if (presentation.claimFormat === ClaimFormat.SdJwtVc) {
       return {
-        // FIXME: we hardcode it to dc+sd-jwt for now. Need to think about backwards compat
-        // We can either handle both in dcql library. Or we derive it  based on the query value
-        credential_format: 'dc+sd-jwt',
+        credential_format: queryCredential.format === 'dc+sd-jwt' ? 'dc+sd-jwt' : 'vc+sd-jwt',
         vct: presentation.prettyClaims.vct,
         claims: presentation.prettyClaims as DcqlSdJwtVcCredential.Claims,
       } satisfies DcqlSdJwtVcCredential
@@ -103,6 +106,7 @@ export class DcqlService {
         namespaces: presentation.documents[0].issuerSignedNamespaces,
       } satisfies DcqlMdocCredential
     }
+
     throw new DcqlError('W3C credentials are not supported yet')
   }
 
@@ -111,9 +115,11 @@ export class DcqlService {
     dcqlQuery: DcqlQuery.Input
   ): Promise<DcqlQueryResult> {
     const credentialRecords = await this.queryCredentialsForDcqlQuery(agentContext, dcqlQuery)
+    const credentialRecordsWithFormatDuplicates: typeof credentialRecords = []
 
-    const dcqlCredentials: DcqlCredential[] = credentialRecords.map((record) => {
+    const dcqlCredentials: DcqlCredential[] = credentialRecords.flatMap((record) => {
       if (record.type === 'MdocRecord') {
+        credentialRecordsWithFormatDuplicates.push(record)
         const mdoc = Mdoc.fromBase64Url(record.base64Url)
         return {
           credential_format: 'mso_mdoc',
@@ -122,13 +128,23 @@ export class DcqlService {
         } satisfies DcqlMdocCredential
       }
       if (record.type === 'SdJwtVcRecord') {
-        // FIXME: support vc+sd-jwt
-        return {
-          credential_format: 'dc+sd-jwt',
-          vct: record.getTags().vct,
-          claims: this.getSdJwtVcApi(agentContext).fromCompact(record.compactSdJwtVc)
-            .prettyClaims as DcqlSdJwtVcCredential.Claims,
-        } satisfies DcqlSdJwtVcCredential
+        const claims = this.getSdJwtVcApi(agentContext).fromCompact(record.compactSdJwtVc)
+          .prettyClaims as DcqlSdJwtVcCredential.Claims
+
+        // To keep correct mapping of input credential index, we add it twice here (for dc+sd-jwt and vc+sd-jwt)
+        credentialRecordsWithFormatDuplicates.push(record, record)
+        return [
+          {
+            credential_format: 'dc+sd-jwt',
+            vct: record.getTags().vct,
+            claims,
+          } satisfies DcqlSdJwtVcCredential,
+          {
+            credential_format: 'vc+sd-jwt',
+            vct: record.getTags().vct,
+            claims,
+          } satisfies DcqlSdJwtVcCredential,
+        ]
       }
       // TODO:
       throw new DcqlError('W3C credentials are not supported yet')
@@ -141,7 +157,7 @@ export class DcqlService {
           entry.map((inner) => {
             if (!inner || !inner.success) return inner
 
-            const record = credentialRecords[inner.input_credential_index]
+            const record = credentialRecordsWithFormatDuplicates[inner.input_credential_index]
 
             return {
               ...inner,
@@ -155,14 +171,14 @@ export class DcqlService {
                         .applyDisclosuresForPayload(record.compactSdJwtVc, inner.output.claims).prettyClaims,
                     }
                   : inner.output,
-              record: credentialRecords[inner.input_credential_index],
+              record: credentialRecordsWithFormatDuplicates[inner.input_credential_index],
             }
           })
         )
 
         if (result.success) {
           if (result.output.credential_format === 'vc+sd-jwt' || result.output.credential_format === 'dc+sd-jwt') {
-            const sdJwtVcRecord = credentialRecords[result.input_credential_index] as SdJwtVcRecord
+            const sdJwtVcRecord = credentialRecordsWithFormatDuplicates[result.input_credential_index] as SdJwtVcRecord
             const claims = agentContext.dependencyManager
               .resolve(SdJwtVcService)
               .applyDisclosuresForPayload(sdJwtVcRecord.compactSdJwtVc, result.output.claims).prettyClaims
@@ -173,12 +189,15 @@ export class DcqlService {
                 ...result,
                 all,
                 output: { ...result.output, claims },
-                record: credentialRecords[result.input_credential_index],
+                record: credentialRecordsWithFormatDuplicates[result.input_credential_index],
               },
             ]
           }
 
-          return [credential_query_id, { ...result, record: credentialRecords[result.input_credential_index], all }]
+          return [
+            credential_query_id,
+            { ...result, record: credentialRecordsWithFormatDuplicates[result.input_credential_index], all },
+          ]
         }
 
         return [credential_query_id, { ...result, all }]
@@ -193,8 +212,15 @@ export class DcqlService {
 
   public assertValidDcqlPresentation(dcqlPresentation: DcqlPresentation, dcqlQuery: DcqlQuery) {
     const internalDcqlPresentation = Object.fromEntries(
-      Object.entries(dcqlPresentation).map(([key, value]) => {
-        return [key, this.getDcqlCredentialRepresentation(value)]
+      Object.entries(dcqlPresentation).map(([credentialId, value]) => {
+        const queryCredential = dcqlQuery.credentials.find((c) => c.id === credentialId)
+        if (!queryCredential) {
+          throw new DcqlError(
+            `DCQL presentation contains presentation entry for credential id '${credentialId}', but this id is not present in the DCQL query`
+          )
+        }
+
+        return [credentialId, this.getDcqlCredentialRepresentation(value, queryCredential)]
       })
     )
     const presentationResult = DcqlPresentationResult.fromDcqlPresentation(internalDcqlPresentation, { dcqlQuery })

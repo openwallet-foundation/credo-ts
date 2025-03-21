@@ -66,10 +66,6 @@ export function setupNockToExpress(baseUrl: string, app: Express) {
     .patch(() => true)
     .reply(reply)
 
-  jest.mock('cross-fetch', () => ({
-    fetch,
-  }))
-
   return () => {
     cleanAll()
     jest.clearAllMocks()

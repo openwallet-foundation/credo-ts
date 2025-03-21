@@ -21,19 +21,10 @@ import {
 } from '../repository'
 
 import { ValidationError } from '@openid4vc/utils'
-export interface OpenId4VpAuthorizationEndpointConfig {
-  /**
-   * The path at which the authorization endpoint should be made available. Note that it will be
-   * hosted at a subpath to take into account multiple tenants and verifiers. An additional
-   * `session` query component will be added to the path to enable correlation of the session.
-   *
-   * @default /authorize
-   */
-  endpointPath: string
-}
+import { OpenId4VcVerifierModuleConfig } from '../OpenId4VcVerifierModuleConfig'
 
-export function configureAuthorizationEndpoint(router: Router, config: OpenId4VpAuthorizationEndpointConfig) {
-  router.post(config.endpointPath, async (request: OpenId4VcVerificationRequest, response: Response, next) => {
+export function configureAuthorizationEndpoint(router: Router, config: OpenId4VcVerifierModuleConfig) {
+  router.post(config.authorizationEndpoint, async (request: OpenId4VcVerificationRequest, response: Response, next) => {
     const { agentContext, verifier } = getRequestContext(request)
     const openId4VcVerifierService = agentContext.dependencyManager.resolve(OpenId4VpVerifierService)
 

@@ -20,9 +20,7 @@ describe('OpenId4VcVerifierModule', () => {
     const options = {
       baseUrl: 'http://localhost:3000',
       endpoints: {
-        authorization: {
-          endpointPath: '/hello',
-        },
+        authorization: '/hello',
       },
       router: Router(),
     } satisfies OpenId4VcVerifierModuleConfigOptions
@@ -35,7 +33,7 @@ describe('OpenId4VcVerifierModule', () => {
       new OpenId4VcVerifierModuleConfig(options)
     )
 
-    expect(dependencyManager.registerSingleton).toHaveBeenCalledTimes(3)
+    expect(dependencyManager.registerSingleton).toHaveBeenCalledTimes(2)
     expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(OpenId4VpVerifierService)
     expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(OpenId4VcVerifierRepository)
   })

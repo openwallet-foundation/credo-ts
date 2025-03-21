@@ -3,27 +3,19 @@ import type { OpenId4VcVerificationRequest } from './requestContext'
 
 import { joinUriParts } from '@credo-ts/core'
 
-import { getRequestContext, sendErrorResponse, sendUnknownServerErrorResponse } from '../../shared/router'
+import {
+  getRequestContext,
+  sendErrorResponse,
+  sendNotFoundResponse,
+  sendUnknownServerErrorResponse,
+} from '../../shared/router'
 import { OpenId4VcVerificationSessionState } from '../OpenId4VcVerificationSessionState'
 import { OpenId4VcVerifierModuleConfig } from '../OpenId4VcVerifierModuleConfig'
 import { OpenId4VpVerifierService } from '../OpenId4VpVerifierService'
 
-export interface OpenId4VpAuthorizationRequestEndpointConfig {
-  /**
-   * The path at which the authorization request should be made available. Note that it will be
-   * hosted at a subpath to take into account multiple tenants and verifiers.
-   *
-   * @default /authorization-requests
-   */
-  endpointPath: string
-}
-
-export function configureAuthorizationRequestEndpoint(
-  router: Router,
-  config: OpenId4VpAuthorizationRequestEndpointConfig
-) {
+export function configureAuthorizationRequestEndpoint(router: Router, config: OpenId4VcVerifierModuleConfig) {
   router.get(
-    joinUriParts(config.endpointPath, [':authorizationRequestId']),
+    joinUriParts(config.authorizationRequestEndpoint, [':authorizationRequestId']),
     async (request: OpenId4VcVerificationRequest, response: Response, next) => {
       const { agentContext, verifier } = getRequestContext(request)
 
@@ -45,7 +37,7 @@ export function configureAuthorizationRequestEndpoint(
         // We always use shortened URIs currently
         const fullAuthorizationRequestUri = joinUriParts(verifierConfig.baseUrl, [
           verifier.verifierId,
-          verifierConfig.authorizationRequestEndpoint.endpointPath,
+          verifierConfig.authorizationRequestEndpoint,
           request.params.authorizationRequestId,
         ])
 
@@ -89,6 +81,10 @@ export function configureAuthorizationRequestEndpoint(
             'invalid_request',
             'Invalid state for authorization request'
           )
+        }
+
+        if (verificationSession.expiresAt && Date.now() > verificationSession.expiresAt.getTime()) {
+          return sendNotFoundResponse(response, next, agentContext.config.logger, 'Session expired')
         }
 
         // It's okay to retrieve the offer multiple times. So we only update the state if it's not already retrieved

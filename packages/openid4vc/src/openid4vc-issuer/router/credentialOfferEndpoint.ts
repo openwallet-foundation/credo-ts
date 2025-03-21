@@ -14,6 +14,7 @@ import {
 import { OpenId4VcIssuanceSessionState } from '../OpenId4VcIssuanceSessionState'
 import { OpenId4VcIssuerService } from '../OpenId4VcIssuerService'
 import { OpenId4VcIssuanceSessionRepository } from '../repository'
+import { addSecondsToDate } from '@openid4vc/utils'
 
 export function configureCredentialOfferEndpoint(router: Router, config: OpenId4VcIssuerModuleConfig) {
   router.get(
@@ -67,6 +68,16 @@ export function configureCredentialOfferEndpoint(router: Router, config: OpenId4
           openId4VcIssuanceSession.state !== OpenId4VcIssuanceSessionState.OfferUriRetrieved
         ) {
           return sendNotFoundResponse(response, next, agentContext.config.logger, 'Invalid state for credential offer')
+        }
+
+        if (
+          Date.now() >
+          addSecondsToDate(
+            openId4VcIssuanceSession.createdAt,
+            config.statefulCredentialOfferExpirationInSeconds
+          ).getTime()
+        ) {
+          return sendNotFoundResponse(response, next, agentContext.config.logger, 'Session expired')
         }
 
         // It's okay to retrieve the offer multiple times. So we only update the state if it's not already retrieved
