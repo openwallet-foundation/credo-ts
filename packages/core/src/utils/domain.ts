@@ -4,6 +4,6 @@ export function getDomainFromUrl(url: string): string {
   }
 
   const regex = /[#/?]/
-  const domain = url.split('://')[1].split(regex)[0]
+  const domain = url.split('://')[1].split(regex)[0].split(':')[0]
   return domain
 }

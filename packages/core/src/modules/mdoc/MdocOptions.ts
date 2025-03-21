@@ -1,8 +1,10 @@
-import type { DeviceRequest, ValidityInfo } from '@animo-id/mdoc'
+import type { ValidityInfo } from '@animo-id/mdoc'
 import type { Key } from '../../crypto/Key'
 import type { DifPresentationExchangeDefinition } from '../dif-presentation-exchange'
 import type { EncodedX509Certificate } from '../x509'
-import type { Mdoc } from './Mdoc'
+import { Mdoc } from './Mdoc'
+
+export { DateOnly } from '@animo-id/mdoc'
 
 export type MdocNameSpaces = Record<string, Record<string, unknown>>
 
@@ -12,29 +14,52 @@ export type MdocVerifyOptions = {
 }
 
 export type MdocOpenId4VpSessionTranscriptOptions = {
+  type: 'openId4Vp'
   responseUri: string
   clientId: string
   verifierGeneratedNonce: string
   mdocGeneratedNonce: string
 }
 
-export type MdocDeviceResponseOpenId4VpOptions = {
-  mdocs: [Mdoc, ...Mdoc[]]
-  presentationDefinition: DifPresentationExchangeDefinition
-  deviceNameSpaces?: MdocNameSpaces
-  sessionTranscriptOptions: MdocOpenId4VpSessionTranscriptOptions
+export type MdocSessionTranscriptByteOptions = {
+  type: 'sesionTranscriptBytes'
+  sessionTranscriptBytes: Uint8Array
+}
+
+export type MdocOpenId4VpDcApiSessionTranscriptOptions = {
+  type: 'openId4VpDcApi'
+  clientId: string
+  origin: string
+  verifierGeneratedNonce: string
+}
+
+export type MdocSessionTranscriptOptions =
+  | MdocOpenId4VpSessionTranscriptOptions
+  | MdocSessionTranscriptByteOptions
+  | MdocOpenId4VpDcApiSessionTranscriptOptions
+
+export type MdocDocumentRequest = {
+  docType: string
+  nameSpaces: Record<string, Record<string, boolean>>
 }
 
 export type MdocDeviceResponseOptions = {
   mdocs: [Mdoc, ...Mdoc[]]
-  deviceRequest: DeviceRequest
+  documentRequests: MdocDocumentRequest[]
   deviceNameSpaces?: MdocNameSpaces
-  sessionTranscriptBytes: Uint8Array
+  sessionTranscriptOptions: MdocSessionTranscriptOptions
+}
+
+export type MdocDeviceResponsePresentationDefinitionOptions = {
+  mdocs: [Mdoc, ...Mdoc[]]
+  presentationDefinition: DifPresentationExchangeDefinition
+  deviceNameSpaces?: MdocNameSpaces
+  sessionTranscriptOptions: MdocSessionTranscriptOptions
 }
 
 export type MdocDeviceResponseVerifyOptions = {
   trustedCertificates?: EncodedX509Certificate[]
-  sessionTranscriptOptions: MdocOpenId4VpSessionTranscriptOptions
+  sessionTranscriptOptions: MdocSessionTranscriptOptions
   /**
    * The base64Url-encoded device response string.
    */
