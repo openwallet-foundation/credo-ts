@@ -1,7 +1,7 @@
 import type { DifPresentationExchangeDefinitionV2, MdocDeviceResponse, SdJwtVc } from '@credo-ts/core'
 import type { AgentType } from './utils'
 
-import { ClaimFormat, KeyType, parseDid, X509Module, X509Service } from '@credo-ts/core'
+import { ClaimFormat, KeyType, X509Module, X509Service, parseDid } from '@credo-ts/core'
 import express, { type Express } from 'express'
 
 import { AskarModule } from '../../askar/src'
@@ -9,8 +9,8 @@ import { askarModuleConfig } from '../../askar/tests/helpers'
 import { TenantsModule } from '../../tenants/src'
 import { OpenId4VcHolderModule, OpenId4VcVerificationSessionState, OpenId4VcVerifierModule } from '../src'
 
-import { createAgentFromModules, waitForVerificationSessionRecordSubject } from './utils'
 import { Server } from 'http'
+import { createAgentFromModules, waitForVerificationSessionRecordSubject } from './utils'
 
 const serverPort = 1236
 const baseUrl = `http://localhost:${serverPort}`

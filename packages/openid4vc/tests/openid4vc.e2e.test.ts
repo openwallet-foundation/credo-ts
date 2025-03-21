@@ -56,6 +56,7 @@ import {
 } from '../src'
 import { getOid4vcCallbacks } from '../src/shared/callbacks'
 
+import { setupNockToExpress } from '../../../tests/nockToExpress'
 import {
   createAgentFromModules,
   createTenantForAgent,
@@ -68,7 +69,6 @@ import {
   universityDegreeCredentialSdJwt2,
 } from './utilsVci'
 import { openBadgePresentationDefinition, universityDegreePresentationDefinition } from './utilsVp'
-import { setupNockToExpress } from '../../../tests/nockToExpress'
 
 const serverPort = 1234
 const baseUrl = `http://localhost:${serverPort}`

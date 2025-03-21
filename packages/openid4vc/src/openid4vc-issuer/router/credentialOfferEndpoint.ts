@@ -4,6 +4,7 @@ import type { OpenId4VcIssuanceRequest } from './requestContext'
 
 import { joinUriParts } from '@credo-ts/core'
 
+import { addSecondsToDate } from '@openid4vc/utils'
 import {
   getRequestContext,
   sendErrorResponse,
@@ -14,7 +15,6 @@ import {
 import { OpenId4VcIssuanceSessionState } from '../OpenId4VcIssuanceSessionState'
 import { OpenId4VcIssuerService } from '../OpenId4VcIssuerService'
 import { OpenId4VcIssuanceSessionRepository } from '../repository'
-import { addSecondsToDate } from '@openid4vc/utils'
 
 export function configureCredentialOfferEndpoint(router: Router, config: OpenId4VcIssuerModuleConfig) {
   router.get(
