@@ -16,7 +16,7 @@
     "proxies": "ngrok --config ngrok.yml,ngrok.auth.yml start provider issuer verifier"
   },
   "dependencies": {
-    "@hyperledger/anoncreds-nodejs": "^0.2.2",
+    "@hyperledger/anoncreds-nodejs": "^0.3.1",
     "@hyperledger/indy-vdr-nodejs": "^0.2.2",
     "@koa/bodyparser": "^5.1.1",
     "@openwallet-foundation/askar-nodejs": "^0.3.1",
