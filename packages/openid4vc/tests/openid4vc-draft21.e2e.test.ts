@@ -9,8 +9,8 @@ import { askarModuleConfig } from '../../askar/tests/helpers'
 import { TenantsModule } from '../../tenants/src'
 import { OpenId4VcHolderModule, OpenId4VcVerificationSessionState, OpenId4VcVerifierModule } from '../src'
 
-import { Server } from 'http'
 import { createAgentFromModules, waitForVerificationSessionRecordSubject } from './utils'
+import { setupNockToExpress } from '../../../tests/nockToExpress'
 
 const serverPort = 1236
 const baseUrl = `http://localhost:${serverPort}`
@@ -18,7 +18,7 @@ const verificationBaseUrl = `${baseUrl}/oid4vp`
 
 describe('OpenID4VP Draft 21', () => {
   let expressApp: Express
-  let expressServer: Server
+  let clearNock: () => void
 
   let holder: AgentType<{
     openId4VcHolder: OpenId4VcHolderModule
@@ -38,7 +38,8 @@ describe('OpenID4VP Draft 21', () => {
         askar: new AskarModule(askarModuleConfig),
         x509: new X509Module(),
       },
-      '96213c3d7fc8d4d6754c7a0fd969598e'
+      '96213c3d7fc8d4d6754c7a0fd969598e',
+      global.fetch
     )) as unknown as typeof holder
 
     verifier = (await createAgentFromModules(
@@ -50,16 +51,17 @@ describe('OpenID4VP Draft 21', () => {
         askar: new AskarModule(askarModuleConfig),
         tenants: new TenantsModule(),
       },
-      '96213c3d7fc8d4d6754c7a0fd969598f'
+      '96213c3d7fc8d4d6754c7a0fd969598f',
+      global.fetch
     )) as unknown as typeof verifier
 
     // We let AFJ create the router, so we have a fresh one each time
     expressApp.use('/oid4vp', verifier.agent.modules.openId4VcVerifier.config.router)
-    expressServer = expressApp.listen(serverPort)
+    clearNock = setupNockToExpress(baseUrl, expressApp)
   })
 
   afterEach(async () => {
-    expressServer.close()
+    clearNock()
 
     await holder.agent.shutdown()
     await holder.agent.wallet.delete()
