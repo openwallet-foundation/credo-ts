@@ -9,8 +9,8 @@ import { askarModuleConfig } from '../../askar/tests/helpers'
 import { TenantsModule } from '../../tenants/src'
 import { OpenId4VcHolderModule, OpenId4VcVerificationSessionState, OpenId4VcVerifierModule } from '../src'
 
-import { createAgentFromModules, waitForVerificationSessionRecordSubject } from './utils'
 import { setupNockToExpress } from '../../../tests/nockToExpress'
+import { createAgentFromModules, waitForVerificationSessionRecordSubject } from './utils'
 
 const serverPort = 1236
 const baseUrl = `http://localhost:${serverPort}`
