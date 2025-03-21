@@ -84,7 +84,7 @@ describe('mdoc service test', () => {
       },
     })
 
-    expect(() => mdoc.deviceSignedNamespaces).toBeNull()
+    expect(mdoc.deviceSignedNamespaces).toBeNull()
 
     const { isValid } = await mdoc.verify(agentContext, {
       trustedCertificates: [certificate.toString('base64')],
@@ -137,7 +137,7 @@ describe('mdoc service test', () => {
       },
     })
 
-    expect(() => mdoc.deviceSignedNamespaces).toThrow()
+    expect(mdoc.deviceSignedNamespaces).toBeNull()
 
     const verifyResult = await mdoc.verify(agentContext, {
       trustedCertificates: [certificate.toString('base64')],

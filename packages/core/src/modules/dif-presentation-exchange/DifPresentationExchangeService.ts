@@ -26,7 +26,7 @@ import { PEVersion, PEX, Status } from '@animo-id/pex'
 import { PartialSdJwtDecodedVerifiableCredential } from '@animo-id/pex/dist/main/lib'
 import { injectable } from 'tsyringe'
 
-import { Hasher, getJwkFromKey } from '../../crypto'
+import { getJwkFromKey } from '../../crypto'
 import { CredoError } from '../../error'
 import { JsonTransformer } from '../../utils'
 import { DidsApi, getKeyFromVerificationMethod } from '../dids'
@@ -66,7 +66,7 @@ import {
  */
 @injectable()
 export class DifPresentationExchangeService {
-  private pex = new PEX({ hasher: Hasher.hash })
+  private pex = new PEX()
 
   public constructor(private w3cCredentialService: W3cCredentialService) {}
 

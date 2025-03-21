@@ -461,11 +461,11 @@ importers:
         specifier: ^0.7.2
         version: 0.7.2
       '@sphereon/pex-models':
-        specifier: ^2.3.1
+        specifier: ^2.3.2
         version: 2.3.2
       '@sphereon/ssi-types':
-        specifier: 0.30.2-next.135
-        version: 0.30.2-next.135
+        specifier: 0.33.0
+        version: 0.33.0
       '@stablelib/ed25519':
         specifier: ^1.0.2
         version: 1.0.3
@@ -2693,19 +2693,11 @@ packages:
     resolution: {integrity: sha512-kQpk267uxB19X3X2T1mvNMjyvIEonpNSHrMlK5ZaBU6aZxw7wPbpgKJOjHN3+/GPVpXgAV9soVT2oyHpLkLtyw==}
     engines: {node: '>= 8'}
 
-  '@sphereon/kmp-mdl-mdoc@0.2.0-SNAPSHOT.22':
-    resolution: {integrity: sha512-uAZZExVy+ug9JLircejWa5eLtAZ7bnBP6xb7DO2+86LRsHNLh2k2jMWJYxp+iWtGHTsh6RYsZl14ScQLvjiQ/A==}
-    bundledDependencies: []
-
   '@sphereon/kmp-mdoc-core@0.2.0-SNAPSHOT.26':
     resolution: {integrity: sha512-QXJ6R8ENiZV2rPMbn06cw5JKwqUYN1kzVRbYfONqE1PEXx1noQ4md7uxr2zSczi0ubKkNcbyYDNtIMTZIhGzmQ==}
-    bundledDependencies: []
 
   '@sphereon/pex-models@2.3.2':
     resolution: {integrity: sha512-foFxfLkRwcn/MOp/eht46Q7wsvpQGlO7aowowIIb5Tz9u97kYZ2kz6K2h2ODxWuv5CRA7Q0MY8XUBGE2lfOhOQ==}
-
-  '@sphereon/ssi-types@0.30.2-next.135':
-    resolution: {integrity: sha512-YLQfFMPUlOJUxHbOS9v01nG3cgLwTk3d95/rTnOmEQx9kXgXjoXdvt7D0uGcMRL3RHeQ9biT/jWY//mDvCirVQ==}
 
   '@sphereon/ssi-types@0.33.0':
     resolution: {integrity: sha512-OQnWLKZQU6lHlMw3JS5308q5Kctv1eT/NNQthGNXETarsgJFiD711pWMOJvi0p5kLpU8N1e7/okaH3mXsVAW0A==}
@@ -10346,12 +10338,6 @@ snapshots:
 
   '@sovpro/delimited-stream@1.1.0': {}
 
-  '@sphereon/kmp-mdl-mdoc@0.2.0-SNAPSHOT.22':
-    dependencies:
-      '@js-joda/core': 5.6.3
-      '@js-joda/timezone': 2.3.0(@js-joda/core@5.6.3)
-      format-util: 1.0.5
-
   '@sphereon/kmp-mdoc-core@0.2.0-SNAPSHOT.26':
     dependencies:
       '@js-joda/core': 5.6.3
@@ -10359,16 +10345,6 @@ snapshots:
       format-util: 1.0.5
 
   '@sphereon/pex-models@2.3.2': {}
-
-  '@sphereon/ssi-types@0.30.2-next.135':
-    dependencies:
-      '@sd-jwt/decode': 0.7.2
-      '@sphereon/kmp-mdl-mdoc': 0.2.0-SNAPSHOT.22
-      debug: 4.4.0
-      events: 3.3.0
-      jwt-decode: 3.1.2
-    transitivePeerDependencies:
-      - supports-color
 
   '@sphereon/ssi-types@0.33.0':
     dependencies:
