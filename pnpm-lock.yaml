@@ -401,11 +401,11 @@ importers:
   packages/core:
     dependencies:
       '@animo-id/mdoc':
-        specifier: ^0.5.1
-        version: 0.5.1
+        specifier: ^0.5.2
+        version: 0.5.2
       '@animo-id/pex':
-        specifier: 5.0.0
-        version: 5.0.0
+        specifier: 5.2.0
+        version: 5.2.0
       '@astronautlabs/jsonpath':
         specifier: ^1.1.2
         version: 1.1.2
@@ -571,8 +571,8 @@ importers:
         version: 7.8.1
     devDependencies:
       '@animo-id/pex':
-        specifier: 5.0.0
-        version: 5.0.0
+        specifier: 5.2.0
+        version: 5.2.0
       '@sphereon/pex-models':
         specifier: ^2.3.2
         version: 2.3.2
@@ -941,11 +941,11 @@ packages:
       react: '*'
       react-native: '*'
 
-  '@animo-id/mdoc@0.5.1':
-    resolution: {integrity: sha512-RYAfTN/ot4WB7esVMHRxKGrU9IINuyHIX5KVCWRUU0qNkrDMCp+IlW3BMCC6R3zZk8tW3XPA61JYzzmjbPKARg==}
+  '@animo-id/mdoc@0.5.2':
+    resolution: {integrity: sha512-EQVsNOOeXFfBaEHkiKoh24jbSEQ1MORB/kUu0rnNrAEETpY5GK/H9iWevYFdmNDIqQTIEJlkU7S+sIj3pe66eA==}
 
-  '@animo-id/pex@5.0.0':
-    resolution: {integrity: sha512-X5gdMKF+pTt64BldrE1LJ35OKc5mT3tsuw3j2SPAGv6gVS1RutNFLtR5+TaSsmXZ2NpJY3yvXQpSvxmkw/e36Q==}
+  '@animo-id/pex@5.2.0':
+    resolution: {integrity: sha512-W0nopdAS1boDOuhH1L5yUyNOo4LJwIqVc3x90ua0ypNXuOv6gDkr78nNTqIjaF0eBKakagTYegbDZrfQrlmRBQ==}
     engines: {node: '>=18'}
 
   '@animo-id/react-native-bbs-signatures@0.1.0':
@@ -7691,11 +7691,11 @@ snapshots:
       react: 18.3.1
       react-native: 0.78.1(@babel/core@7.26.0)(@babel/preset-env@7.26.0(@babel/core@7.26.0))(@react-native-community/cli@10.2.7(@babel/core@7.26.0))(react@18.3.1)
 
-  '@animo-id/mdoc@0.5.1':
+  '@animo-id/mdoc@0.5.2':
     dependencies:
       compare-versions: 6.1.1
 
-  '@animo-id/pex@5.0.0':
+  '@animo-id/pex@5.2.0':
     dependencies:
       '@astronautlabs/jsonpath': 1.1.2
       '@sd-jwt/decode': 0.7.2
