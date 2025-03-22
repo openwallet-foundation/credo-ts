@@ -110,34 +110,6 @@ const expectedDcqlResult = {
     },
     credential_sets: undefined,
   },
-  // transactionData: [
-  //   {
-  //     transactionDataEntry: {
-  //       type: 'OpenBadgeTx',
-  //       credential_ids: ['OpenBadgeCredentialDescriptor'],
-  //       transaction_data_hashes_alg: ['sha-256'],
-  //     },
-  //     dcql: {
-  //       record: {
-  //         _tags: {
-  //           alg: 'EdDSA',
-  //           sdAlg: 'sha-256',
-  //           vct: 'OpenBadgeCredential',
-  //         },
-  //         type: 'SdJwtVcRecord',
-  //         metadata: {
-  //           data: {},
-  //         },
-  //         id: expect.any(String),
-  //         createdAt: expect.any(Date),
-  //         compactSdJwtVc: expect.any(String),
-  //         updatedAt: expect.any(Date),
-  //       },
-  //       credentialQueryId: 1,
-  //       claimSetId: undefined,
-  //     },
-  //   },
-  // ],
 }
 
 describe('OpenId4VP DC API', () => {

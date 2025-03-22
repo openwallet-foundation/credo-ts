@@ -910,12 +910,12 @@ describe('OpenId4Vc', () => {
           method: 'x5c',
           x5c: [rawCertificate],
         },
-        // transactionData,
         transactionData: [
           {
             type: 'OpenBadgeTx',
             credential_ids: ['OpenBadgeCredentialDescriptor'],
             transaction_data_hashes_alg: ['sha-256'],
+            some_extra_prop: 'is_allowed',
           },
         ],
         presentationExchange: {
@@ -1030,6 +1030,7 @@ describe('OpenId4Vc', () => {
           credential_ids: ['OpenBadgeCredentialDescriptor'],
           transaction_data_hashes_alg: ['sha-256'],
           type: 'OpenBadgeTx',
+          some_extra_prop: 'is_allowed',
         },
         encoded:
           'eyJ0eXBlIjoiT3BlbkJhZGdlVHgiLCJjcmVkZW50aWFsX2lkcyI6WyJPcGVuQmFkZ2VDcmVkZW50aWFsRGVzY3JpcHRvciJdLCJ0cmFuc2FjdGlvbl9kYXRhX2hhc2hlc19hbGciOlsic2hhLTI1NiJdfQ',
