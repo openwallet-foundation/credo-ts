@@ -77,14 +77,14 @@ describe('OpenId4VcHolder', () => {
         .get('/.well-known/did.json')
         .reply(200, fixture.wellKnownDid)
 
-        .get('/.well-known/openid-configuration')
-        .reply(404)
+        .get('/.well-known/openid-credential-issuer')
+        .reply(200, fixture.getMetadataResponse)
 
         .get('/.well-known/oauth-authorization-server')
         .reply(404)
 
-        .get('/.well-known/openid-credential-issuer')
-        .reply(200, fixture.getMetadataResponse)
+        .get('/.well-known/openid-configuration')
+        .reply(404)
 
         // setup access token response
         .post('/oidc/v1/auth/token')
@@ -93,9 +93,6 @@ describe('OpenId4VcHolder', () => {
         // setup credential request response
         .post('/oidc/v1/auth/credential')
         .reply(200, fixture.credentialResponse)
-
-        .get('/.well-known/did.json')
-        .reply(200, fixture.wellKnownDid)
 
       const resolved = await holder.modules.openId4VcHolder.resolveCredentialOffer(fixture.credentialOffer)
       const accessTokenResponse = await holder.modules.openId4VcHolder.requestToken({
@@ -179,6 +176,10 @@ describe('OpenId4VcHolder', () => {
     it('Should successfully receive credential from animo openid4vc playground using the pre-authorized flow using a jwk EdDSA subject and vc+sd-jwt credential', async () => {
       const fixture = animoOpenIdPlaygroundDraft11SdJwtVc
 
+      nock('https://openid4vc.animo.id')
+        .get('/.well-known/oauth-authorization-server/oid4vci/0bbfb1c0-9f45-478c-a139-08f6ed610a37')
+        .reply(404)
+
       // setup server metadata response
       nock('https://openid4vc.animo.id/oid4vci/0bbfb1c0-9f45-478c-a139-08f6ed610a37')
         .get('/.well-known/openid-configuration')
@@ -235,7 +236,10 @@ describe('OpenId4VcHolder', () => {
       expect(credentialResponse.credentials).toHaveLength(1)
       const credential = credentialResponse.credentials[0].credentials[0] as SdJwtVc
       expect(credential).toEqual({
+        claimFormat: 'vc+sd-jwt',
         compact:
+          'eyJhbGciOiJFZERTQSIsInR5cCI6InZjK3NkLWp3dCIsImtpZCI6IiN6Nk1raDVITlBDQ0pXWm42V1JMalJQdHR5dllaQnNrWlVkU0pmVGlad2NVU2llcXgifQ.eyJ2Y3QiOiJBbmltb09wZW5JZDRWY1BsYXlncm91bmQiLCJwbGF5Z3JvdW5kIjp7ImZyYW1ld29yayI6IkFyaWVzIEZyYW1ld29yayBKYXZhU2NyaXB0IiwiY3JlYXRlZEJ5IjoiQW5pbW8gU29sdXRpb25zIiwiX3NkIjpbImZZM0ZqUHpZSEZOcHlZZnRnVl9kX25DMlRHSVh4UnZocE00VHdrMk1yMDQiLCJwTnNqdmZJeVBZOEQwTks1c1l0alR2Nkc2R0FNVDNLTjdaZDNVNDAwZ1pZIl19LCJjbmYiOnsiandrIjp7Imt0eSI6Ik9LUCIsImNydiI6IkVkMjU1MTkiLCJ4Ijoia2MydGxwaGNadzFBSUt5a3pNNnBjY2k2UXNLQW9jWXpGTC01RmUzNmg2RSJ9fSwiaXNzIjoiZGlkOmtleTp6Nk1raDVITlBDQ0pXWm42V1JMalJQdHR5dllaQnNrWlVkU0pmVGlad2NVU2llcXgiLCJpYXQiOjE3MDU4NDM1NzQsIl9zZF9hbGciOiJzaGEtMjU2In0.2iAjaCFcuiHXTfQsrxXo6BghtwzqTrfDmhmarAAJAhY8r9yKXY3d10JY1dry2KnaEYWpq2R786thjdA5BXlPAQ~WyI5MzM3MTM0NzU4NDM3MjYyODY3NTE4NzkiLCJsYW5ndWFnZSIsIlR5cGVTY3JpcHQiXQ~WyIxMTQ3MDA5ODk2Nzc2MDYzOTc1MDUwOTMxIiwidmVyc2lvbiIsIjEuMCJd~',
+        encoded:
           'eyJhbGciOiJFZERTQSIsInR5cCI6InZjK3NkLWp3dCIsImtpZCI6IiN6Nk1raDVITlBDQ0pXWm42V1JMalJQdHR5dllaQnNrWlVkU0pmVGlad2NVU2llcXgifQ.eyJ2Y3QiOiJBbmltb09wZW5JZDRWY1BsYXlncm91bmQiLCJwbGF5Z3JvdW5kIjp7ImZyYW1ld29yayI6IkFyaWVzIEZyYW1ld29yayBKYXZhU2NyaXB0IiwiY3JlYXRlZEJ5IjoiQW5pbW8gU29sdXRpb25zIiwiX3NkIjpbImZZM0ZqUHpZSEZOcHlZZnRnVl9kX25DMlRHSVh4UnZocE00VHdrMk1yMDQiLCJwTnNqdmZJeVBZOEQwTks1c1l0alR2Nkc2R0FNVDNLTjdaZDNVNDAwZ1pZIl19LCJjbmYiOnsiandrIjp7Imt0eSI6Ik9LUCIsImNydiI6IkVkMjU1MTkiLCJ4Ijoia2MydGxwaGNadzFBSUt5a3pNNnBjY2k2UXNLQW9jWXpGTC01RmUzNmg2RSJ9fSwiaXNzIjoiZGlkOmtleTp6Nk1raDVITlBDQ0pXWm42V1JMalJQdHR5dllaQnNrWlVkU0pmVGlad2NVU2llcXgiLCJpYXQiOjE3MDU4NDM1NzQsIl9zZF9hbGciOiJzaGEtMjU2In0.2iAjaCFcuiHXTfQsrxXo6BghtwzqTrfDmhmarAAJAhY8r9yKXY3d10JY1dry2KnaEYWpq2R786thjdA5BXlPAQ~WyI5MzM3MTM0NzU4NDM3MjYyODY3NTE4NzkiLCJsYW5ndWFnZSIsIlR5cGVTY3JpcHQiXQ~WyIxMTQ3MDA5ODk2Nzc2MDYzOTc1MDUwOTMxIiwidmVyc2lvbiIsIjEuMCJd~',
         header: {
           alg: 'EdDSA',
@@ -295,10 +299,10 @@ describe('OpenId4VcHolder', () => {
       nock('https://issuer.portal.walt.id')
         .get('/.well-known/openid-credential-issuer')
         .reply(200, fixture.getMetadataResponse)
-        .get('/.well-known/openid-configuration')
-        .reply(200, fixture.getMetadataResponse)
         .get('/.well-known/oauth-authorization-server')
         .reply(404)
+        .get('/.well-known/openid-configuration')
+        .reply(200, fixture.getMetadataResponse)
         .post('/par')
         .reply(200, fixture.par)
         // setup access token response
@@ -315,7 +319,7 @@ describe('OpenId4VcHolder', () => {
         fixture.credentialOfferAuth
       )
 
-      const resolvedAuthorizationRequest = await holder.modules.openId4VcHolder.resolveIssuanceAuthorizationRequest(
+      const resolvedAuthorizationRequest = await holder.modules.openId4VcHolder.resolveOpenId4VciAuthorizationRequest(
         resolvedCredentialOffer,
         {
           clientId: 'test-client',
