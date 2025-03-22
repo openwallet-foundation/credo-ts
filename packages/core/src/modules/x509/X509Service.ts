@@ -82,16 +82,17 @@ export class X509Service {
         throw new X509Error('No trusted certificate was found while validating the X.509 chain')
       }
 
-      // Pop everything off above the index of the trusted as it is not relevant for validation
-      parsedChain = parsedChain.slice(0, trustedCertificateIndex)
+      // Pop everything off before the index of the trusted certificate (those are more root) as it is not relevant for validation
+      parsedChain = parsedChain.slice(trustedCertificateIndex)
     }
 
+    let previousCertificate: X509Certificate | undefined = undefined
     // Verify the certificate with the publicKey of the certificate above
     for (let i = 0; i < parsedChain.length; i++) {
       const cert = parsedChain[i]
-      const previousCertificate = parsedChain[i - 1]
       const publicKey = previousCertificate ? previousCertificate.publicKey : undefined
       await cert.verify({ publicKey, verificationDate }, webCrypto)
+      previousCertificate = cert
     }
 
     return parsedChain
