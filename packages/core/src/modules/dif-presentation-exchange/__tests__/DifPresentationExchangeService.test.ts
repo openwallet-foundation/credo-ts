@@ -537,7 +537,7 @@ describe('DifPresentationExchangeService', () => {
                   type: 'number',
                   minimum: 18,
                 },
-                optional: true,
+                optional: false,
                 intent_to_retain: false,
               },
             ],
@@ -554,6 +554,11 @@ describe('DifPresentationExchangeService', () => {
               {
                 optional: true,
                 path: [`$['hello']['not_available']`],
+                intent_to_retain: false,
+              },
+              {
+                optional: false,
+                path: [`$['hello']['world']`],
                 intent_to_retain: false,
               },
             ],
