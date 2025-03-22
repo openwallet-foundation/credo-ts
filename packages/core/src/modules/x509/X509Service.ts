@@ -82,8 +82,8 @@ export class X509Service {
         throw new X509Error('No trusted certificate was found while validating the X.509 chain')
       }
 
-      // Pop everything off above the index of the trusted as it is not relevant for validation
-      parsedChain = parsedChain.slice(0, trustedCertificateIndex)
+      // Pop everything off before the index of the trusted certificate (those are more root) as it is not relevant for validation
+      parsedChain = parsedChain.slice(trustedCertificateIndex)
     }
 
     // Verify the certificate with the publicKey of the certificate above
@@ -91,7 +91,19 @@ export class X509Service {
       const cert = parsedChain[i]
       const previousCertificate = parsedChain[i - 1]
       const publicKey = previousCertificate ? previousCertificate.publicKey : undefined
-      await cert.verify({ publicKey, verificationDate }, webCrypto)
+
+      await cert.verify(
+        {
+          publicKey,
+          verificationDate,
+          // If trusted certificates were provided, the first certificate will always
+          // be the trusted certificate and thus doesn't require verification. If we use
+          // a non-self-signed certificate as the trusted certificate we can't verify the
+          // first certificate, as we don't have the public key to verify it.
+          skipSignatureVerification: i === 0 && trustedCertificates !== undefined && cert.issuer !== cert.subject,
+        },
+        webCrypto
+      )
     }
 
     return parsedChain
