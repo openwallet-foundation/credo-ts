@@ -86,12 +86,13 @@ export class X509Service {
       parsedChain = parsedChain.slice(trustedCertificateIndex)
     }
 
+    let previousCertificate: X509Certificate | undefined = undefined
     // Verify the certificate with the publicKey of the certificate above
     for (let i = 0; i < parsedChain.length; i++) {
       const cert = parsedChain[i]
-      const previousCertificate = parsedChain[i - 1]
       const publicKey = previousCertificate ? previousCertificate.publicKey : undefined
       await cert.verify({ publicKey, verificationDate }, webCrypto)
+      previousCertificate = cert
     }
 
     return parsedChain
