@@ -1,15 +1,15 @@
-import type { HttpMethod, VerifyAccessTokenRequestReturn } from '@animo-id/oauth2'
+import type { HttpMethod, VerifyAccessTokenRequestReturn } from '@openid4vc/oauth2'
 import type { NextFunction, Response, Router } from 'express'
 import type { OpenId4VcIssuerModuleConfig } from '../OpenId4VcIssuerModuleConfig'
 import type { OpenId4VcIssuanceRequest } from './requestContext'
 
+import { Key, getJwkFromKey, joinUriParts, utils } from '@credo-ts/core'
 import {
   Oauth2ErrorCodes,
   Oauth2ServerErrorResponseError,
   authorizationCodeGrantIdentifier,
   preAuthorizedCodeGrantIdentifier,
-} from '@animo-id/oauth2'
-import { Key, getJwkFromKey, joinUriParts, utils } from '@credo-ts/core'
+} from '@openid4vc/oauth2'
 
 import {
   getRequestContext,
