@@ -208,6 +208,7 @@ export class OpenId4VpVerifierService {
       responseMode,
       verifier: options.verifier,
       authorizationResponseUrl,
+      version,
     })
 
     const requestParamsBase = {
