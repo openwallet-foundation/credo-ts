@@ -69,6 +69,8 @@ export class X509Service {
       throw new X509Error('Could not parse the full chain. Likely due to incorrect ordering')
     }
 
+    let previousCertificate: X509Certificate | undefined = undefined
+
     if (trustedCertificates) {
       const parsedTrustedCertificates = trustedCertificates.map((trustedCertificate) =>
         X509Certificate.fromEncodedCertificate(trustedCertificate)
@@ -82,14 +84,20 @@ export class X509Service {
         throw new X509Error('No trusted certificate was found while validating the X.509 chain')
       }
 
-      // Pop everything off before the index of the trusted certificate (those are more root) as it is not relevant for validation
-      parsedChain = parsedChain.slice(trustedCertificateIndex)
+      if (trustedCertificateIndex > 0) {
+        // When we trust a certificate other than the first certificate in the provided chain we keep a reference to the
+        // previous certificate as we need the key of this certificate to verify the first certificate in the chain as
+        // it's not self-sigend. We already trust the first certificate, so theoretically we could skip the validation as well
+        previousCertificate = parsedChain[trustedCertificateIndex - 1]
+
+        // Pop everything off before the index of the trusted certificate (those are more root) as it is not relevant for validation
+        parsedChain = parsedChain.slice(trustedCertificateIndex)
+      }
     }
 
     // Verify the certificate with the publicKey of the certificate above
     for (let i = 0; i < parsedChain.length; i++) {
       const cert = parsedChain[i]
-      const previousCertificate = parsedChain[i - 1]
       const publicKey = previousCertificate ? previousCertificate.publicKey : undefined
 
       await cert.verify(
@@ -100,10 +108,12 @@ export class X509Service {
           // be the trusted certificate and thus doesn't require verification. If we use
           // a non-self-signed certificate as the trusted certificate we can't verify the
           // first certificate, as we don't have the public key to verify it.
-          skipSignatureVerification: i === 0 && trustedCertificates !== undefined && cert.issuer !== cert.subject,
+          skipSignatureVerification:
+            i === 0 && !publicKey && trustedCertificates !== undefined && cert.issuer !== cert.subject,
         },
         webCrypto
       )
+      previousCertificate = cert
     }
 
     return parsedChain
