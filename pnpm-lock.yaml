@@ -728,17 +728,17 @@ importers:
         specifier: workspace:*
         version: link:../core
       '@openid4vc/oauth2':
-        specifier: 0.3.0-alpha-20250322161816
-        version: 0.3.0-alpha-20250322161816
+        specifier: 0.3.0-alpha-20250322171044
+        version: 0.3.0-alpha-20250322171044
       '@openid4vc/openid4vci':
-        specifier: 0.3.0-alpha-20250322161816
-        version: 0.3.0-alpha-20250322161816
+        specifier: 0.3.0-alpha-20250322171044
+        version: 0.3.0-alpha-20250322171044
       '@openid4vc/openid4vp':
-        specifier: 0.3.0-alpha-20250322161816
-        version: 0.3.0-alpha-20250322161816
+        specifier: 0.3.0-alpha-20250322171044
+        version: 0.3.0-alpha-20250322171044
       '@openid4vc/utils':
-        specifier: 0.3.0-alpha-20250322161816
-        version: 0.3.0-alpha-20250322161816
+        specifier: 0.3.0-alpha-20250322171044
+        version: 0.3.0-alpha-20250322171044
       class-transformer:
         specifier: ^0.5.1
         version: 0.5.1
@@ -2484,17 +2484,17 @@ packages:
   '@open-draft/until@2.1.0':
     resolution: {integrity: sha512-U69T3ItWHvLwGg5eJ0n3I62nWuE6ilHlmz7zM0npLBRvPRd7e6NYmg54vvRtP5mZG7kZqZCFVdsTWo7BPtBujg==}
 
-  '@openid4vc/oauth2@0.3.0-alpha-20250322161816':
-    resolution: {integrity: sha512-QHA2UH1Hdh8nOOJvNCuV7SrIPfC6tHL13VJnNAhffxcMkV+KbcAUEEC8TrHPXoEawlRoj2ZjRIEBqB2Ofj//Ug==}
+  '@openid4vc/oauth2@0.3.0-alpha-20250322171044':
+    resolution: {integrity: sha512-NylLLsYhj2239CgQW20WyR5bHfyqm+8VpMeXKrN0b9ds+ViHaNMpwtouYCK2rGzg8lnY7ugacfdo8RmnC49T3Q==}
 
-  '@openid4vc/openid4vci@0.3.0-alpha-20250322161816':
-    resolution: {integrity: sha512-Iq8AJ+bx7tkZ3owhplwYFRI7CG8RwbuZcG3dGnggXjVdVCEX2o3CfneHUEqsXYsQwBbh9LdqklA6Roj37oaDyg==}
+  '@openid4vc/openid4vci@0.3.0-alpha-20250322171044':
+    resolution: {integrity: sha512-mhNNuI6xinAX7VOFqnhoUGr9IFQswU/5ZCWNW++INbNAJxgjIDYLwCnpx2F4Nx0B+jbZbUpOwnHnVEIGdQAP8A==}
 
-  '@openid4vc/openid4vp@0.3.0-alpha-20250322161816':
-    resolution: {integrity: sha512-vlOPcAkfOxnMgaIThGNZXsFj/fSbHpc6B+g976U4lGiuwF7meu5hcgs43K/o/k9Vc1tzq2Qk20WsHuXbvlMcZA==}
+  '@openid4vc/openid4vp@0.3.0-alpha-20250322171044':
+    resolution: {integrity: sha512-BkvTegk4hsULPXRf7qOJrcFRevg2fziE79DlmAUa2xOmn+9V9VVZO5PMBfpEp0wKvBNkXyCZ0C6A24U9z75TuA==}
 
-  '@openid4vc/utils@0.3.0-alpha-20250322161816':
-    resolution: {integrity: sha512-PLuCW33hxBZawXQcAXX8oyjPEVZMH/qunyGJY9Szk6WodxlFT3knu89c/g1YlrxreYYBPNLJmmz9nOsYRo43qg==}
+  '@openid4vc/utils@0.3.0-alpha-20250322171044':
+    resolution: {integrity: sha512-OBYnixgHR+NA5ssQBUnfyq/9Gq7xaICaJk3OmlAFMfxxhZmkCcSbeCkR2q9DSbmwCucmu6pEqHaSI8A7WGGP9Q==}
 
   '@openwallet-foundation/askar-nodejs@0.3.1':
     resolution: {integrity: sha512-m3L8KEPC+qgA3MAFssMtjSqJiAQtrawZEWPmW6eiB7OPjZvkKjodMhx/cuUV5YTl4eQlSix2EY4vXMzk4vt+cQ==}
@@ -10073,24 +10073,24 @@ snapshots:
 
   '@open-draft/until@2.1.0': {}
 
-  '@openid4vc/oauth2@0.3.0-alpha-20250322161816':
+  '@openid4vc/oauth2@0.3.0-alpha-20250322171044':
     dependencies:
-      '@openid4vc/utils': 0.3.0-alpha-20250322161816
+      '@openid4vc/utils': 0.3.0-alpha-20250322171044
       zod: 3.24.1
 
-  '@openid4vc/openid4vci@0.3.0-alpha-20250322161816':
+  '@openid4vc/openid4vci@0.3.0-alpha-20250322171044':
     dependencies:
-      '@openid4vc/oauth2': 0.3.0-alpha-20250322161816
-      '@openid4vc/utils': 0.3.0-alpha-20250322161816
+      '@openid4vc/oauth2': 0.3.0-alpha-20250322171044
+      '@openid4vc/utils': 0.3.0-alpha-20250322171044
       zod: 3.24.1
 
-  '@openid4vc/openid4vp@0.3.0-alpha-20250322161816':
+  '@openid4vc/openid4vp@0.3.0-alpha-20250322171044':
     dependencies:
-      '@openid4vc/oauth2': 0.3.0-alpha-20250322161816
-      '@openid4vc/utils': 0.3.0-alpha-20250322161816
+      '@openid4vc/oauth2': 0.3.0-alpha-20250322171044
+      '@openid4vc/utils': 0.3.0-alpha-20250322171044
       zod: 3.24.1
 
-  '@openid4vc/utils@0.3.0-alpha-20250322161816':
+  '@openid4vc/utils@0.3.0-alpha-20250322171044':
     dependencies:
       buffer: 6.0.3
       zod: 3.24.1

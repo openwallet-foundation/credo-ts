@@ -733,6 +733,7 @@ export class OpenId4VpVerifierService {
       responseMode: ResponseMode
       verifier: OpenId4VcVerifierRecord
       authorizationResponseUrl: string
+      version: NonNullable<OpenId4VpCreateAuthorizationRequestOptions['version']>
     }
   ) {
     const { responseMode, verifier } = options
@@ -754,9 +755,10 @@ export class OpenId4VpVerifierService {
       ? {
           jwks: { keys: [jarmEncryptionJwk] },
           authorization_encrypted_response_alg: 'ECDH-ES',
-          // FIXME: we need to allow setting this, but also to fetch it based on the `request_uri` and
-          // `request_uri_method`
-          authorization_encrypted_response_enc: 'A128GCM',
+          // FIXME: we need to support dynamically setting this by letting the wallet post their supported values
+          // by posting to `request_uri`
+          // For ISO 18013-7 compliance we use A128GCM. But otherwise we use the value described in HAIP.
+          authorization_encrypted_response_enc: options.version === 'v1.draft24' ? 'A128GCM' : 'A256GCM',
         }
       : undefined
 
