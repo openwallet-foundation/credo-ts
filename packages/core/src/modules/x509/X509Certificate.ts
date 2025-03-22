@@ -291,7 +291,8 @@ export class X509Certificate {
        * as whether the certificate is not expired).
        *
        * This can be useful when an non-self-signed certificate is directly trusted, and it may
-       * not be possible to verify the certifcate as the root certificate is not present.
+       * not be possible to verify the certifcate as the root/intermediate certificate containing
+       * the key of the signer/intermediate is not present.
        *
        * @default false
        */

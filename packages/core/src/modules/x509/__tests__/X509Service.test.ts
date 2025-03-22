@@ -267,6 +267,23 @@ describe('X509Service', () => {
       subjectKeyIdentifier: TypedArrayEncoder.toHex(Hasher.hash(documentSignerKey.publicKey, 'SHA-1')),
       authorityKeyIdentifier: TypedArrayEncoder.toHex(Hasher.hash(authorityKey.publicKey, 'SHA-1')),
     })
+
+    // Verify chain where the root cert is trusted, but not in the chain
+    // This is the case in ISO 18013-5 mDL
+    await expect(
+      X509Service.validateCertificateChain(agentContext, {
+        certificateChain: [mdocDocumentSignerCertificate.toString('pem'), mdocRootCertificate.toString('pem')],
+        trustedCertificates: [mdocRootCertificate.toString('pem')],
+      })
+    ).resolves.toHaveLength(2)
+
+    // Can verify it with only the signer certificate trusted.
+    await expect(
+      X509Service.validateCertificateChain(agentContext, {
+        certificateChain: [mdocDocumentSignerCertificate.toString('pem')],
+        trustedCertificates: [mdocDocumentSignerCertificate.toString('pem')],
+      })
+    ).resolves.toHaveLength(1)
   })
 
   it('should create a valid leaf certificate', async () => {
