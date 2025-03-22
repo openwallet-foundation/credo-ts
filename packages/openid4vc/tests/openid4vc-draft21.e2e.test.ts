@@ -147,7 +147,7 @@ describe('OpenID4VP Draft 21', () => {
     expect(authorizationRequest).toEqual(
       `openid4vp://?client_id=localhost&request_uri=${encodeURIComponent(
         verificationSession.authorizationRequestUri as string
-      )}`
+      )}&client_id_scheme=x509_san_dns`
     )
 
     const resolvedAuthorizationRequest =
@@ -441,7 +441,7 @@ describe('OpenID4VP Draft 21', () => {
     expect(authorizationRequest).toEqual(
       `openid4vp://?client_id=localhost&request_uri=${encodeURIComponent(
         verificationSession.authorizationRequestUri as string
-      )}`
+      )}&client_id_scheme=x509_san_dns`
     )
 
     const resolvedAuthorizationRequest =
