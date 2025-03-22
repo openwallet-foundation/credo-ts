@@ -6,8 +6,8 @@ import type {
 } from '../../shared'
 import type { OpenId4VciBatchCredentialIssuanceOptions } from '../OpenId4VcIssuerServiceOptions'
 
-import { credentialsSupportedToCredentialConfigurationsSupported } from '@animo-id/oid4vci'
 import { BaseRecord, utils } from '@credo-ts/core'
+import { credentialsSupportedToCredentialConfigurationsSupported } from '@openid4vc/openid4vci'
 import { Transform, TransformationType } from 'class-transformer'
 
 export type OpenId4VcIssuerRecordTags = RecordTags<OpenId4VcIssuerRecord>

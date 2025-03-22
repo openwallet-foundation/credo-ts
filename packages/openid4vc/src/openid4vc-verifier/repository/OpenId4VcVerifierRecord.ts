@@ -1,5 +1,5 @@
 import type { RecordTags, TagsBase } from '@credo-ts/core'
-import type { OpenId4VcSiopVerifierClientMetadata } from '../OpenId4VcSiopVerifierServiceOptions'
+import type { OpenId4VpVerifierClientMetadata } from '../OpenId4VpVerifierServiceOptions'
 
 import { BaseRecord, utils } from '@credo-ts/core'
 
@@ -16,7 +16,7 @@ export interface OpenId4VcVerifierRecordProps {
 
   verifierId: string
 
-  clientMetadata?: OpenId4VcSiopVerifierClientMetadata
+  clientMetadata?: OpenId4VpVerifierClientMetadata
 }
 
 /**
@@ -29,7 +29,7 @@ export class OpenId4VcVerifierRecord extends BaseRecord<DefaultOpenId4VcVerifier
   public readonly type = OpenId4VcVerifierRecord.type
 
   public verifierId!: string
-  public clientMetadata?: OpenId4VcSiopVerifierClientMetadata
+  public clientMetadata?: OpenId4VpVerifierClientMetadata
 
   public constructor(props: OpenId4VcVerifierRecordProps) {
     super()

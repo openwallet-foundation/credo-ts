@@ -1,8 +1,7 @@
-import type { RecordTags, TagsBase } from '@credo-ts/core'
-import type { OpenId4VcSiopAuthorizationResponsePayload } from '../../shared/models'
+import type { OpenId4VpAuthorizationRequestPayload, OpenId4VpAuthorizationResponsePayload } from '../../shared/models'
 import type { OpenId4VcVerificationSessionState } from '../OpenId4VcVerificationSessionState'
 
-import { BaseRecord, CredoError, Jwt, utils } from '@credo-ts/core'
+import { BaseRecord, CredoError, DateTransformer, Jwt, RecordTags, TagsBase, utils } from '@credo-ts/core'
 
 export type OpenId4VcVerificationSessionRecordTags = RecordTags<OpenId4VcVerificationSessionRecord>
 
@@ -10,8 +9,9 @@ export type DefaultOpenId4VcVerificationSessionRecordTags = {
   verifierId: string
   state: OpenId4VcVerificationSessionState
   nonce: string
-  payloadState: string
-  authorizationRequestUri: string
+  payloadState?: string
+  authorizationRequestUri?: string
+  authorizationRequestId?: string
 }
 
 export interface OpenId4VcVerificationSessionRecordProps {
@@ -23,10 +23,14 @@ export interface OpenId4VcVerificationSessionRecordProps {
   state: OpenId4VcVerificationSessionState
   errorMessage?: string
 
-  authorizationRequestUri: string
-  authorizationRequestJwt: string
+  authorizationRequestJwt?: string
+  authorizationRequestUri?: string
+  authorizationRequestId: string
+  authorizationRequestPayload?: OpenId4VpAuthorizationRequestPayload
 
-  authorizationResponsePayload?: OpenId4VcSiopAuthorizationResponsePayload
+  expiresAt: Date
+
+  authorizationResponsePayload?: OpenId4VpAuthorizationResponsePayload
 
   /**
    * Presentation during issuance session. This is used when issuance of a credential requires a presentation, and helps
@@ -57,18 +61,41 @@ export class OpenId4VcVerificationSessionRecord extends BaseRecord<DefaultOpenId
   /**
    * The signed JWT containing the authorization request
    */
-  public authorizationRequestJwt!: string
+  public authorizationRequestJwt?: string
+
+  /**
+   * Authorization request payload. This should be used only for unsigned requests
+   */
+  public authorizationRequestPayload?: OpenId4VpAuthorizationRequestPayload
 
   /**
    * URI of the authorization request. This is the url that can be used to
-   * retrieve the authorization request
+   * retrieve the authorization request.
+   *
+   * Not used for requests with response_mode of dc_api or dc_api.jwt
    */
-  public authorizationRequestUri!: string
+  public authorizationRequestUri?: string
+
+  /**
+   * The public id for the authorization request. This is used in the authorization
+   * request uri.
+   *
+   * @since 0.6
+   */
+  public authorizationRequestId?: string
+
+  /**
+   * The time at which the authorization request expires.
+   *
+   * @since 0.6
+   */
+  @DateTransformer()
+  public expiresAt?: Date
 
   /**
    * The payload of the received authorization response
    */
-  public authorizationResponsePayload?: OpenId4VcSiopAuthorizationResponsePayload
+  public authorizationResponsePayload?: OpenId4VpAuthorizationResponsePayload
 
   /**
    * Presentation during issuance session. This is used when issuance of a credential requires a presentation, and helps
@@ -87,12 +114,32 @@ export class OpenId4VcVerificationSessionRecord extends BaseRecord<DefaultOpenId
       this.verifierId = props.verifierId
       this.state = props.state
       this.errorMessage = props.errorMessage
+      this.authorizationRequestPayload = props.authorizationRequestPayload
       this.authorizationRequestJwt = props.authorizationRequestJwt
       this.authorizationRequestUri = props.authorizationRequestUri
+      this.authorizationRequestId = props.authorizationRequestId
       this.authorizationResponsePayload = props.authorizationResponsePayload
+      this.expiresAt = props.expiresAt
 
       this.presentationDuringIssuanceSession = props.presentationDuringIssuanceSession
     }
+  }
+
+  public get request(): string | OpenId4VpAuthorizationRequestPayload {
+    if (this.authorizationRequestJwt) return this.authorizationRequestJwt
+    if (this.authorizationRequestPayload) return this.authorizationRequestPayload
+
+    throw new CredoError('Unable to extract authorization payload from openid4vc session record')
+  }
+
+  public get requestPayload(): OpenId4VpAuthorizationRequestPayload {
+    if (this.authorizationRequestJwt)
+      return Jwt.fromSerializedJwt(
+        this.authorizationRequestJwt
+      ).payload.toJson() as OpenId4VpAuthorizationRequestPayload
+    if (this.authorizationRequestPayload) return this.authorizationRequestPayload
+
+    throw new CredoError('Unable to extract authorization payload from openid4vc session record')
   }
 
   public assertState(expectedStates: OpenId4VcVerificationSessionState | OpenId4VcVerificationSessionState[]) {
@@ -111,23 +158,19 @@ export class OpenId4VcVerificationSessionRecord extends BaseRecord<DefaultOpenId
   }
 
   public getTags() {
-    const parsedAuthorizationRequest = Jwt.fromSerializedJwt(this.authorizationRequestJwt)
+    const request = this.requestPayload
 
-    const nonce = parsedAuthorizationRequest.payload.additionalClaims.nonce
-    if (!nonce || typeof nonce !== 'string') throw new CredoError('Expected nonce in authorization request payload')
-
-    const payloadState = parsedAuthorizationRequest.payload.additionalClaims.state
-    if (!payloadState || typeof payloadState !== 'string')
-      throw new CredoError('Expected state in authorization request payload')
+    const nonce = request.nonce
+    const payloadState = 'state' in request ? (request.state as string) : undefined
 
     return {
       ...this._tags,
       verifierId: this.verifierId,
       state: this.state,
       nonce,
-      // FIXME: how do we call this property so it doesn't conflict with the record state?
       payloadState,
       authorizationRequestUri: this.authorizationRequestUri,
+      authorizationRequestId: this.authorizationRequestId,
     }
   }
 }

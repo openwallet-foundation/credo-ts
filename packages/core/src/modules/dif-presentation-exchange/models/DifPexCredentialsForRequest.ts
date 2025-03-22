@@ -1,3 +1,4 @@
+import { JsonObject } from '../../../types'
 import type { MdocNameSpaces, MdocRecord } from '../../mdoc'
 import type { SdJwtVcRecord } from '../../sd-jwt-vc'
 import type { ClaimFormat, W3cCredentialRecord } from '../../vc'
@@ -113,21 +114,27 @@ export interface DifPexCredentialsForRequestSubmissionEntry {
 
 export type SubmissionEntryCredential =
   | {
-      type: ClaimFormat.SdJwtVc
+      claimFormat: ClaimFormat.SdJwtVc
       credentialRecord: SdJwtVcRecord
 
       /**
        * The payload that will be disclosed, including always disclosed attributes
        * and disclosures for the presentation definition
        */
-      disclosedPayload: Record<string, unknown>
+      disclosedPayload: JsonObject
+
+      /**
+       * Additional payload that will be added to the Key Binding JWT. This can overwrite
+       * existing parameters for KB-JWT so ensure you are only using this for non-default properties.
+       */
+      additionalPayload?: JsonObject
     }
   | {
-      type: ClaimFormat.JwtVc | ClaimFormat.LdpVc
+      claimFormat: ClaimFormat.JwtVc | ClaimFormat.LdpVc
       credentialRecord: W3cCredentialRecord
     }
   | {
-      type: ClaimFormat.MsoMdoc
+      claimFormat: ClaimFormat.MsoMdoc
       credentialRecord: MdocRecord
       disclosedPayload: MdocNameSpaces
     }
@@ -135,4 +142,4 @@ export type SubmissionEntryCredential =
 /**
  * Mapping of selected credentials for an input descriptor
  */
-export type DifPexInputDescriptorToCredentials = Record<string, Array<W3cCredentialRecord | SdJwtVcRecord | MdocRecord>>
+export type DifPexInputDescriptorToCredentials = Record<string, SubmissionEntryCredential[]>

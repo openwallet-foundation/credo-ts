@@ -476,7 +476,7 @@ export abstract class AskarBaseWallet implements Wallet {
   }
 
   /**
-   * Method that enables JWE encryption using ECDH-ES and AesA256Gcm and returns it as a compact JWE.
+   * Method that enables JWE encryption using ECDH-ES and A256GCM/A128GCM,/A128CBC-HS256 and returns it as a compact JWE.
    * This method is specifically added to support OpenID4VP response encryption using JARM and should later be
    * refactored into a more generic method that supports encryption/decryption.
    *
@@ -490,13 +490,22 @@ export abstract class AskarBaseWallet implements Wallet {
     data,
     header,
   }: WalletDirectEncryptCompactJwtEcdhEsOptions) {
-    if (encryptionAlgorithm !== 'A256GCM' && encryptionAlgorithm !== 'A128CBC-HS256') {
+    if (
+      encryptionAlgorithm !== 'A256GCM' &&
+      encryptionAlgorithm !== 'A128GCM' &&
+      encryptionAlgorithm !== 'A128CBC-HS256'
+    ) {
       throw new WalletError(
-        `Encryption algorithm ${encryptionAlgorithm} is not supported. Only A256GCM and A128CBC-HS256 are supported`
+        `Encryption algorithm ${encryptionAlgorithm} is not supported. Only A128GCM, A256GCM and A128CBC-HS256 are supported`
       )
     }
 
-    const encAlg = encryptionAlgorithm === 'A256GCM' ? KeyAlgorithm.AesA256Gcm : KeyAlgorithm.AesA128CbcHs256
+    const encAlg =
+      encryptionAlgorithm === 'A256GCM'
+        ? KeyAlgorithm.AesA256Gcm
+        : encryptionAlgorithm === 'A128GCM'
+          ? KeyAlgorithm.AesA128Gcm
+          : KeyAlgorithm.AesA128CbcHs256
 
     // Create ephemeral key
     const ephemeralKey = AskarKey.generate(keyAlgorithmFromString(recipientKey.keyType))
@@ -537,7 +546,7 @@ export abstract class AskarBaseWallet implements Wallet {
   }
 
   /**
-   * Method that enables JWE decryption using ECDH-ES and AesA256Gcm and returns it as plaintext buffer with the header.
+   * Method that enables JWE decryption using ECDH-ES and A256GCM/A128GCM,/A128CBC-HS256 and returns it as plaintext buffer with the header.
    * The apv and apu values are extracted from the heaader, and thus on a higher level it should be checked that these
    * values are correct.
    */
@@ -556,7 +565,7 @@ export abstract class AskarBaseWallet implements Wallet {
     if (header.alg !== 'ECDH-ES') {
       throw new WalletError('Only ECDH-ES alg value is supported')
     }
-    if (header.enc !== 'A256GCM' && header.enc !== 'A128CBC-HS256') {
+    if (header.enc !== 'A128GCM' && header.enc !== 'A256GCM' && header.enc !== 'A128CBC-HS256') {
       throw new WalletError('Only A256GCM and A128CBC-HS256 enc values are supported')
     }
     if (!header.epk || typeof header.epk !== 'object') {
@@ -575,7 +584,12 @@ export abstract class AskarBaseWallet implements Wallet {
       throw new WalletError('Key entry not found')
     }
 
-    const encAlg = header.enc === 'A256GCM' ? KeyAlgorithm.AesA256Gcm : KeyAlgorithm.AesA128CbcHs256
+    const encAlg =
+      header.enc === 'A256GCM'
+        ? KeyAlgorithm.AesA256Gcm
+        : header.enc === 'A128GCM'
+          ? KeyAlgorithm.AesA128Gcm
+          : KeyAlgorithm.AesA128CbcHs256
     const ecdh = new EcdhEs({
       algId: Uint8Array.from(Buffer.from(header.enc)),
       apu: header.apu ? Uint8Array.from(TypedArrayEncoder.fromBase64(header.apu)) : Uint8Array.from([]),

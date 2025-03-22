@@ -32,6 +32,10 @@ const keyTypeToAskarAlg = {
     keyAlg: KeyAlgorithm.EcSecp256r1,
     purposes: [AskarKeyTypePurpose.KeyManagement, AskarKeyTypePurpose.Signing, AskarKeyTypePurpose.Encryption],
   },
+  [KeyType.P384]: {
+    keyAlg: KeyAlgorithm.EcSecp384r1,
+    purposes: [AskarKeyTypePurpose.KeyManagement, AskarKeyTypePurpose.Signing, AskarKeyTypePurpose.Encryption],
+  },
   [KeyType.K256]: {
     keyAlg: KeyAlgorithm.EcSecp256k1,
     purposes: [AskarKeyTypePurpose.KeyManagement, AskarKeyTypePurpose.Signing],

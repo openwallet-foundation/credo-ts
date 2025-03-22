@@ -1,4 +1,3 @@
-import type { AccessTokenProfileJwtPayload, TokenIntrospectionResponse } from '@animo-id/oauth2'
 import type {
   AgentContext,
   ClaimFormat,
@@ -8,10 +7,12 @@ import type {
   SdJwtVcSignOptions,
   W3cCredential,
 } from '@credo-ts/core'
+import type { AccessTokenProfileJwtPayload, TokenIntrospectionResponse } from '@openid4vc/oauth2'
 import type {
-  OpenId4VcSiopCreateAuthorizationRequestReturn,
-  OpenId4VcSiopVerifiedAuthorizationResponsePresentationExchange,
   OpenId4VcVerificationSessionRecord,
+  OpenId4VpCreateAuthorizationRequestReturn,
+  OpenId4VpVerifiedAuthorizationResponseDcql,
+  OpenId4VpVerifiedAuthorizationResponsePresentationExchange,
 } from '../openid4vc-verifier'
 import type {
   OpenId4VcCredentialHolderBindingWithKey,
@@ -23,7 +24,7 @@ import type {
   OpenId4VciTxCode,
 } from '../shared'
 import type { OpenId4VciAuthorizationServerConfig } from '../shared/models/OpenId4VciAuthorizationServerConfig'
-import type { OpenId4VcIssuanceSessionRecord, OpenId4VcIssuerRecordProps } from './repository'
+import { OpenId4VcIssuanceSessionRecord, OpenId4VcIssuerRecordProps } from './repository'
 
 export interface OpenId4VciCredentialRequestAuthorization {
   authorizationServer: string
@@ -161,7 +162,7 @@ export type OpenId4VciGetVerificationSessionForIssuanceSessionAuthorization = (o
    */
   scopes: string[]
 }) => Promise<
-  OpenId4VcSiopCreateAuthorizationRequestReturn & {
+  OpenId4VpCreateAuthorizationRequestReturn & {
     /**
      * The scopes which will be granted by successfully completing the verification
      * session.
@@ -188,8 +189,16 @@ export interface OpenId4VciCredentialRequestToCredentialMapperOptions {
    */
   verification?: {
     session: OpenId4VcVerificationSessionRecord
-    presentationExchange: OpenId4VcSiopVerifiedAuthorizationResponsePresentationExchange
-  }
+  } & (
+    | {
+        presentationExchange: OpenId4VpVerifiedAuthorizationResponsePresentationExchange
+        dcql?: never
+      }
+    | {
+        dcql: OpenId4VpVerifiedAuthorizationResponseDcql
+        presentationExchange?: never
+      }
+  )
 
   /**
    * The issuance session associated with the credential request. You can extract the

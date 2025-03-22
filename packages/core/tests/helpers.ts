@@ -808,7 +808,9 @@ export async function createX509Certificate(agentContext: AgentContext, dns: str
       (await agentContext.wallet.createKey({
         keyType: KeyType.Ed25519,
       })),
-    issuer: 'C=DE',
+    issuer: {
+      countryName: 'DE',
+    },
     extensions: {
       subjectAlternativeName: {
         name: [{ type: 'dns', value: dns }],

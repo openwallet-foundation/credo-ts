@@ -32,6 +32,13 @@ describe('mdoc service test', () => {
     expect(mdoc.docType).toBe('eu.europa.ec.eudi.pid.1')
   })
 
+  test('can get device key', async () => {
+    const mdoc = Mdoc.fromBase64Url(sprindFunkeTestVectorBase64Url)
+    const deviceKey = mdoc.deviceKey
+    expect(deviceKey?.keyType).toBe(KeyType.P256)
+    expect(deviceKey?.fingerprint).toBe('zDnaeq8nbXthvXNTYAzxdyvdWXgm5ev5xLEUtjZpfj1YtQ5g2')
+  })
+
   test('can create and verify mdoc', async () => {
     const holderKey = await agentContext.wallet.createKey({
       keyType: KeyType.P256,
@@ -77,7 +84,7 @@ describe('mdoc service test', () => {
       },
     })
 
-    expect(() => mdoc.deviceSignedNamespaces).toThrow()
+    expect(mdoc.deviceSignedNamespaces).toBeNull()
 
     const { isValid } = await mdoc.verify(agentContext, {
       trustedCertificates: [certificate.toString('base64')],
@@ -130,7 +137,7 @@ describe('mdoc service test', () => {
       },
     })
 
-    expect(() => mdoc.deviceSignedNamespaces).toThrow()
+    expect(mdoc.deviceSignedNamespaces).toBeNull()
 
     const verifyResult = await mdoc.verify(agentContext, {
       trustedCertificates: [certificate.toString('base64')],
@@ -140,42 +147,47 @@ describe('mdoc service test', () => {
       isValid: false,
     })
 
-    const { deviceResponseBase64Url } = await MdocDeviceResponse.createOpenId4VpDeviceResponse(agentContext, {
-      mdocs: [mdoc],
-      presentationDefinition: {
-        id: 'something',
-        input_descriptors: [
-          {
-            id: 'org.iso.18013.5.1.mDL',
-            format: {
-              mso_mdoc: {
-                alg: ['EdDSA', 'ES256'],
+    const { deviceResponseBase64Url } = await MdocDeviceResponse.createPresentationDefinitionDeviceResponse(
+      agentContext,
+      {
+        mdocs: [mdoc],
+        presentationDefinition: {
+          id: 'something',
+          input_descriptors: [
+            {
+              id: 'org.iso.18013.5.1.mDL',
+              format: {
+                mso_mdoc: {
+                  alg: ['EdDSA', 'ES256'],
+                },
+              },
+              constraints: {
+                limit_disclosure: 'required',
+                fields: [
+                  {
+                    path: ["$['hello']['world']"],
+                    intent_to_retain: false,
+                  },
+                ],
               },
             },
-            constraints: {
-              limit_disclosure: 'required',
-              fields: [
-                {
-                  path: ["$['hello']['world']"],
-                  intent_to_retain: false,
-                },
-              ],
-            },
-          },
-        ],
-      },
-      sessionTranscriptOptions: {
-        mdocGeneratedNonce: 'something',
-        verifierGeneratedNonce: 'something-else',
-        clientId: 'something',
-        responseUri: 'something',
-      },
-    })
+          ],
+        },
+        sessionTranscriptOptions: {
+          type: 'openId4Vp',
+          mdocGeneratedNonce: 'something',
+          verifierGeneratedNonce: 'something-else',
+          clientId: 'something',
+          responseUri: 'something',
+        },
+      }
+    )
 
     const deviceResponse = MdocDeviceResponse.fromBase64Url(deviceResponseBase64Url)
     expect(
       deviceResponse.verify(agentContext, {
         sessionTranscriptOptions: {
+          type: 'openId4Vp',
           mdocGeneratedNonce: 'something',
           verifierGeneratedNonce: 'something-else',
           clientId: 'something',

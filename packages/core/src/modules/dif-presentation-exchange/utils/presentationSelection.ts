@@ -45,7 +45,7 @@ export function extractPresentationsWithDescriptorsFromSubmission(
       }
 
       return {
-        format: ClaimFormat.MsoMdoc,
+        claimFormat: ClaimFormat.MsoMdoc,
         descriptor,
         presentation,
         credential: document,
@@ -75,7 +75,7 @@ export function extractPresentationsWithDescriptorsFromSubmission(
       }
 
       return {
-        format: presentation.claimFormat,
+        claimFormat: presentation.claimFormat,
         descriptor,
         presentation,
         credential: verifiableCredential,
@@ -83,7 +83,7 @@ export function extractPresentationsWithDescriptorsFromSubmission(
       } as const
     }
     return {
-      format: ClaimFormat.SdJwtVc,
+      claimFormat: ClaimFormat.SdJwtVc,
       descriptor,
       presentation,
       credential: presentation,
