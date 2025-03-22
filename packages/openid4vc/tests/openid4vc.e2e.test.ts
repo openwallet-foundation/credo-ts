@@ -1033,15 +1033,15 @@ describe('OpenId4Vc', () => {
           some_extra_prop: 'is_allowed',
         },
         encoded:
-          'eyJ0eXBlIjoiT3BlbkJhZGdlVHgiLCJjcmVkZW50aWFsX2lkcyI6WyJPcGVuQmFkZ2VDcmVkZW50aWFsRGVzY3JpcHRvciJdLCJ0cmFuc2FjdGlvbl9kYXRhX2hhc2hlc19hbGciOlsic2hhLTI1NiJdfQ',
-        hash: 'XwyVd7wFREdVWLpni5QNHggNWXo2J4Ln58t2_ecJ73s',
+          'eyJ0eXBlIjoiT3BlbkJhZGdlVHgiLCJjcmVkZW50aWFsX2lkcyI6WyJPcGVuQmFkZ2VDcmVkZW50aWFsRGVzY3JpcHRvciJdLCJ0cmFuc2FjdGlvbl9kYXRhX2hhc2hlc19hbGciOlsic2hhLTI1NiJdLCJzb21lX2V4dHJhX3Byb3AiOiJpc19hbGxvd2VkIn0',
+        hash: 'PJEyHCQYjSKqKyd1mIpBPWs8ocD5GvBhxvAR_opoM0Y',
         hashAlg: 'sha-256',
         transactionDataIndex: 0,
       },
     ])
 
     const signedTransactionDataHashes = {
-      transaction_data_hashes: ['XwyVd7wFREdVWLpni5QNHggNWXo2J4Ln58t2_ecJ73s'],
+      transaction_data_hashes: ['PJEyHCQYjSKqKyd1mIpBPWs8ocD5GvBhxvAR_opoM0Y'],
       transaction_data_hashes_alg: 'sha-256',
     }
     expect(presentation?.kbJwt?.payload).toMatchObject(signedTransactionDataHashes)
@@ -1097,7 +1097,7 @@ describe('OpenId4Vc', () => {
               iat: expect.any(Number),
               nonce: verificationSession.requestPayload.nonce,
               sd_hash: expect.any(String),
-              transaction_data_hashes: ['XwyVd7wFREdVWLpni5QNHggNWXo2J4Ln58t2_ecJ73s'],
+              transaction_data_hashes: ['PJEyHCQYjSKqKyd1mIpBPWs8ocD5GvBhxvAR_opoM0Y'],
               transaction_data_hashes_alg: 'sha-256',
             },
           },

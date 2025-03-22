@@ -6,6 +6,10 @@ export function getSdJwtVcTransactionDataHashes(sdJwtVc: SdJwtVc) {
   }
 
   const transactionDataHashes = sdJwtVc.kbJwt.payload.transaction_data_hashes
+  if (!transactionDataHashes) {
+    return undefined
+  }
+
   if (!Array.isArray(transactionDataHashes) || !transactionDataHashes.every((hash) => typeof hash === 'string')) {
     throw new CredoError("Property 'transaction_data_hashes' in SD-JWT VC KB-JWT payload must be an array of strings")
   }
