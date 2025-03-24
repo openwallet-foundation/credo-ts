@@ -183,8 +183,8 @@ export function getOid4vcJwtSignCallback(agentContext: AgentContext): SignJwtCal
   const jwsService = agentContext.dependencyManager.resolve(JwsService)
 
   return async (signer, { payload, header }) => {
-    if (signer.method === 'custom' || signer.method === 'trustChain') {
-      throw new CredoError(`Jwt signer method 'custom' and 'x5c' are not supported for jwt signer.`)
+    if (signer.method === 'custom' || signer.method === 'federation') {
+      throw new CredoError(`Jwt signer method 'federation' and 'custom' are not supported for jwt signer.`)
     }
 
     if (signer.method === 'x5c') {
