@@ -95,7 +95,6 @@ export class X509Service {
       }
     }
 
-    let previousCertificate: X509Certificate | undefined = undefined
     // Verify the certificate with the publicKey of the certificate above
     for (let i = 0; i < parsedChain.length; i++) {
       const cert = parsedChain[i]
