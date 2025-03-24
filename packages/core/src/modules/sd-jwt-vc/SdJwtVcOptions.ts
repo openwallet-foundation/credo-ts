@@ -93,6 +93,11 @@ export type SdJwtVcPresentOptions<_Payload extends SdJwtVcPayload = SdJwtVcPaylo
     nonce: string
     issuedAt: number
   }
+
+  /**
+   * Additional payload to include in the KB JWT
+   */
+  additionalPayload?: Record<string, unknown>
 }
 
 export type SdJwtVcVerifyOptions = {

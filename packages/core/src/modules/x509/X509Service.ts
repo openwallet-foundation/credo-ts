@@ -69,6 +69,8 @@ export class X509Service {
       throw new X509Error('Could not parse the full chain. Likely due to incorrect ordering')
     }
 
+    let _previousCertificate: X509Certificate | undefined = undefined
+
     if (trustedCertificates) {
       const parsedTrustedCertificates = trustedCertificates.map((trustedCertificate) =>
         X509Certificate.fromEncodedCertificate(trustedCertificate)
@@ -82,16 +84,51 @@ export class X509Service {
         throw new X509Error('No trusted certificate was found while validating the X.509 chain')
       }
 
-      // Pop everything off above the index of the trusted as it is not relevant for validation
-      parsedChain = parsedChain.slice(0, trustedCertificateIndex)
+      if (trustedCertificateIndex > 0) {
+        // When we trust a certificate other than the first certificate in the provided chain we keep a reference to the
+        // previous certificate as we need the key of this certificate to verify the first certificate in the chain as
+        // it's not self-sigend.
+        _previousCertificate = parsedChain[trustedCertificateIndex - 1]
+
+        // Pop everything off before the index of the trusted certificate (those are more root) as it is not relevant for validation
+        parsedChain = parsedChain.slice(trustedCertificateIndex)
+      }
     }
 
+    let previousCertificate: X509Certificate | undefined = undefined
     // Verify the certificate with the publicKey of the certificate above
     for (let i = 0; i < parsedChain.length; i++) {
       const cert = parsedChain[i]
-      const previousCertificate = parsedChain[i - 1]
       const publicKey = previousCertificate ? previousCertificate.publicKey : undefined
-      await cert.verify({ publicKey, verificationDate }, webCrypto)
+
+      // The only scenario where this will trigger is if the trusted certificates and the x509 chain both do not contain the
+      // intermediate/root certificate needed. E.g. for ISO 18013-5 mDL the root cert MUST NOT be in the chain. If the signer
+      // certificate is then trusted, it will fail, as we can't verify the signer certifciate without having access to the signer
+      // key of the root certificate.
+      // See also https://github.com/openid/OpenID4VCI/issues/62
+      //
+      // In this case we could skip the signature verification (not other verifications), as we already trust the signer certificate,
+      // but i think the purpose of ISO 18013-5 mDL is that you trust the root certificate. If we can't verify the whole chain e.g.
+      // when we receive a credential we have the chance it will fail later on.
+      const skipSignatureVerification = i === 0 && trustedCertificates && cert.issuer !== cert.subject && !publicKey
+      // NOTE: at some point we might want to change this to throw an error instead of skipping the signature verification of the trusted
+      // but it would basically prevent mDOCs from unknown issuers to be verified in the wallet. Verifiers should only trust the root certificate
+      // anyway.
+      // if (i === 0 && trustedCertificates && cert.issuer !== cert.subject && !publicKey) {
+      //   throw new X509Error(
+      //     'Unable to verify the certificate chain. A non-self-signed certificate is the first certificate in the chain, and no parent certificate was found in the trusted certificates, meaning the first certificate in the chain cannot be verified. Ensure the certificate is added '
+      //   )
+      // }
+
+      await cert.verify(
+        {
+          publicKey,
+          verificationDate,
+          skipSignatureVerification,
+        },
+        webCrypto
+      )
+      previousCertificate = cert
     }
 
     return parsedChain

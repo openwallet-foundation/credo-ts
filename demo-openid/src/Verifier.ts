@@ -1,4 +1,4 @@
-import type { DifPresentationExchangeDefinitionV2 } from '@credo-ts/core'
+import type { DcqlQuery, DifPresentationExchangeDefinitionV2 } from '@credo-ts/core'
 import type { OpenId4VcVerifierRecord } from '@credo-ts/openid4vc'
 
 import { AskarModule } from '@credo-ts/askar'
@@ -11,8 +11,92 @@ import { Output } from './OutputClass'
 
 const VERIFIER_HOST = process.env.VERIFIER_HOST ?? 'http://localhost:4000'
 
+const universityDegreeDcql = {
+  credential_sets: [
+    {
+      required: true,
+      options: [
+        ['UniversityDegreeCredential-vc+sd-jwt'],
+        ['UniversityDegreeCredential-jwt_vc_json-ld'],
+        ['UniversityDegreeCredential-jwt_vc_json'],
+      ],
+    },
+  ],
+  credentials: [
+    {
+      id: 'UniversityDegreeCredential-vc+sd-jwt',
+      format: 'vc+sd-jwt',
+      meta: {
+        vct_values: ['UniversityDegree'],
+      },
+    },
+    {
+      id: 'UniversityDegreeCredential-jwt_vc_json-ld',
+      format: 'jwt_vc_json-ld',
+      claims: [
+        {
+          path: ['vc', 'type'],
+          values: ['UniversityDegree'],
+        },
+      ],
+    },
+    {
+      id: 'UniversityDegreeCredential-jwt_vc_json',
+      format: 'jwt_vc_json',
+      claims: [
+        {
+          path: ['vc', 'type'],
+          values: ['UniversityDegree'],
+        },
+      ],
+    },
+  ],
+} satisfies DcqlQuery
+
+const openBadgeCredentialDcql = {
+  credential_sets: [
+    {
+      required: true,
+      options: [
+        ['OpenBadgeCredential-vc+sd-jwt'],
+        ['OpenBadgeCredential-jwt_vc_json-ld'],
+        ['OpenBadgeCredential-jwt_vc_json'],
+      ],
+    },
+  ],
+  credentials: [
+    {
+      id: 'OpenBadgeCredential-vc+sd-jwt',
+      format: 'vc+sd-jwt',
+      meta: {
+        vct_values: ['OpenBadgeCredential'],
+      },
+    },
+    {
+      id: 'OpenBadgeCredential-jwt_vc_json-ld',
+      format: 'jwt_vc_json-ld',
+      claims: [
+        {
+          path: ['vc', 'type'],
+          values: ['OpenBadgeCredential'],
+        },
+      ],
+    },
+    {
+      id: 'OpenBadgeCredential-jwt_vc_json',
+      format: 'jwt_vc_json',
+      claims: [
+        {
+          path: ['vc', 'type'],
+          values: ['OpenBadgeCredential'],
+        },
+      ],
+    },
+  ],
+} satisfies DcqlQuery
+
 const universityDegreePresentationDefinition = {
-  id: 'UniversityDegreeCredential',
+  id: 'UniversityDegreeCredential - DIF Presentation Exchange',
   purpose: 'Present your UniversityDegreeCredential to verify your education level.',
   input_descriptors: [
     {
@@ -34,7 +118,7 @@ const universityDegreePresentationDefinition = {
 }
 
 const openBadgeCredentialPresentationDefinition = {
-  id: 'OpenBadgeCredential',
+  id: 'OpenBadgeCredential - DIF Presentation Exchange',
   purpose: 'Provide proof of employment to confirm your employment status.',
   input_descriptors: [
     {
@@ -55,6 +139,11 @@ const openBadgeCredentialPresentationDefinition = {
   ],
 }
 
+export const dcqls = [
+  { id: 'UniversityDegreeCredential - DCQL', dcql: universityDegreeDcql },
+  { id: 'OpenBadgeCredential - DCQL', dcql: openBadgeCredentialDcql },
+]
+
 export const presentationDefinitions = [
   universityDegreePresentationDefinition,
   openBadgeCredentialPresentationDefinition,
@@ -64,7 +153,7 @@ export class Verifier extends BaseAgent<{ askar: AskarModule; openId4VcVerifier:
   public verifierRecord!: OpenId4VcVerifierRecord
 
   public constructor(url: string, port: number, name: string) {
-    const openId4VcSiopRouter = Router()
+    const openId4VpRouter = Router()
 
     super({
       port,
@@ -72,13 +161,13 @@ export class Verifier extends BaseAgent<{ askar: AskarModule; openId4VcVerifier:
       modules: {
         askar: new AskarModule({ askar }),
         openId4VcVerifier: new OpenId4VcVerifierModule({
-          baseUrl: `${url}/siop`,
-          router: openId4VcSiopRouter,
+          baseUrl: `${url}/oid4vp`,
+          router: openId4VpRouter,
         }),
       },
     })
 
-    this.app.use('/siop', openId4VcSiopRouter)
+    this.app.use('/oid4vp', openId4VpRouter)
   }
 
   public static async build(): Promise<Verifier> {
@@ -90,16 +179,29 @@ export class Verifier extends BaseAgent<{ askar: AskarModule; openId4VcVerifier:
   }
 
   // TODO: add method to show the received presentation submission
-  public async createProofRequest(presentationDefinition: DifPresentationExchangeDefinitionV2) {
+  public async createProofRequest({
+    presentationDefinition,
+    dcql,
+  }: {
+    presentationDefinition?: DifPresentationExchangeDefinitionV2
+    dcql?: DcqlQuery
+  }) {
     const { authorizationRequest } = await this.agent.modules.openId4VcVerifier.createAuthorizationRequest({
       requestSigner: {
         method: 'did',
         didUrl: this.verificationMethod.id,
       },
       verifierId: this.verifierRecord.verifierId,
-      presentationExchange: {
-        definition: presentationDefinition,
-      },
+      presentationExchange: presentationDefinition
+        ? {
+            definition: presentationDefinition,
+          }
+        : undefined,
+      dcql: dcql
+        ? {
+            query: dcql,
+          }
+        : undefined,
     })
 
     return authorizationRequest

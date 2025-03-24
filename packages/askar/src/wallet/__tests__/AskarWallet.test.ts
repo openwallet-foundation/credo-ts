@@ -65,6 +65,7 @@ describe('AskarWallet basic operations', () => {
       KeyType.Bls12381g2,
       KeyType.Bls12381g1g2,
       KeyType.P256,
+      KeyType.P384,
       KeyType.K256,
     ])
   })

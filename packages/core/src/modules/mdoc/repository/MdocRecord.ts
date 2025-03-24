@@ -55,4 +55,18 @@ export class MdocRecord extends BaseRecord<DefaultMdocRecordTags> {
   public clone(): this {
     return JsonTransformer.fromJSON(JsonTransformer.toJSON(this), this.constructor as Constructable<this>)
   }
+
+  /**
+   * credential is convenience method added to all credential records
+   */
+  public get credential(): Mdoc {
+    return Mdoc.fromBase64Url(this.base64Url)
+  }
+
+  /**
+   * encoded is convenience method added to all credential records
+   */
+  public get encoded(): string {
+    return this.base64Url
+  }
 }

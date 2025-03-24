@@ -1,4 +1,3 @@
-import type { AgentContext, Query, QueryOptions } from '@credo-ts/core'
 import type {
   OpenId4VcCredentialHolderBindingWithKey,
   OpenId4VciCredentialConfigurationsSupportedWithFormats,
@@ -17,25 +16,7 @@ import type {
 } from './OpenId4VcIssuerServiceOptions'
 
 import {
-  AuthorizationServerMetadata,
-  JwtSigner,
-  Oauth2AuthorizationServer,
-  Oauth2Client,
-  Oauth2ErrorCodes,
-  Oauth2ResourceServer,
-  Oauth2ServerErrorResponseError,
-  PkceCodeChallengeMethod,
-  preAuthorizedCodeGrantIdentifier,
-} from '@animo-id/oauth2'
-import {
-  CredentialIssuerMetadata,
-  CredentialRequestFormatSpecific,
-  Oid4vciDraftVersion,
-  Oid4vciIssuer,
-  extractScopesForCredentialConfigurationIds,
-  getCredentialConfigurationsMatchingRequestFormat,
-} from '@animo-id/oid4vci'
-import {
+  AgentContext,
   ClaimFormat,
   CredoError,
   EventEmitter,
@@ -45,6 +26,8 @@ import {
   Key,
   KeyType,
   MdocApi,
+  Query,
+  QueryOptions,
   SdJwtVcApi,
   TypedArrayEncoder,
   W3cCredentialService,
@@ -54,10 +37,29 @@ import {
   joinUriParts,
   utils,
 } from '@credo-ts/core'
+import {
+  AuthorizationServerMetadata,
+  JwtSigner,
+  Oauth2AuthorizationServer,
+  Oauth2Client,
+  Oauth2ErrorCodes,
+  Oauth2ResourceServer,
+  Oauth2ServerErrorResponseError,
+  PkceCodeChallengeMethod,
+  preAuthorizedCodeGrantIdentifier,
+} from '@openid4vc/oauth2'
+import {
+  CredentialIssuerMetadata,
+  CredentialRequestFormatSpecific,
+  Openid4vciDraftVersion,
+  Openid4vciIssuer,
+  extractScopesForCredentialConfigurationIds,
+  getCredentialConfigurationsMatchingRequestFormat,
+} from '@openid4vc/openid4vci'
 
 import { OpenId4VcVerifierApi } from '../openid4vc-verifier'
 import { OpenId4VciCredentialFormatProfile } from '../shared'
-import { dynamicOid4vciClientAuthentication, getOid4vciCallbacks } from '../shared/callbacks'
+import { dynamicOid4vciClientAuthentication, getOid4vcCallbacks } from '../shared/callbacks'
 import { getCredentialConfigurationsSupportedForScopes, getOfferedCredentials } from '../shared/issuerMetadataUtils'
 import { storeActorIdForContextCorrelationId } from '../shared/router'
 import { addSecondsToDate, dateToSeconds, getKeyFromDid, getProofTypeFromKey } from '../shared/utils'
@@ -167,10 +169,10 @@ export class OpenId4VcIssuerService {
     }
 
     // We always use shortened URIs currently
+    const credentialOfferId = utils.uuid()
     const hostedCredentialOfferUri = joinUriParts(issuerMetadata.credentialIssuer.credential_issuer, [
       this.openId4VcIssuerConfig.credentialOfferEndpointPath,
-      // It doesn't really matter what the url is, as long as it's unique
-      utils.uuid(),
+      credentialOfferId,
     ])
 
     // Check if all the offered credential configuration ids have a scope value. If not, it won't be possible to actually request
@@ -195,7 +197,8 @@ export class OpenId4VcIssuerService {
       credentialOfferUri: hostedCredentialOfferUri,
       credentialOfferScheme: options.baseUri,
       issuerMetadata: {
-        originalDraftVersion: version === 'v1.draft11-13' ? Oid4vciDraftVersion.Draft11 : Oid4vciDraftVersion.Draft14,
+        originalDraftVersion:
+          version === 'v1.draft11-13' ? Openid4vciDraftVersion.Draft11 : Openid4vciDraftVersion.Draft14,
         ...issuerMetadata,
       },
     })
@@ -204,6 +207,7 @@ export class OpenId4VcIssuerService {
     const issuanceSession = new OpenId4VcIssuanceSessionRecord({
       credentialOfferPayload: credentialOfferObject,
       credentialOfferUri: hostedCredentialOfferUri,
+      credentialOfferId,
       issuerId: issuer.issuerId,
       state: OpenId4VcIssuanceSessionState.OfferCreated,
       authorization: credentialOfferObject.grants?.authorization_code?.issuer_state
@@ -566,27 +570,27 @@ export class OpenId4VcIssuerService {
   }
 
   public getIssuer(agentContext: AgentContext) {
-    return new Oid4vciIssuer({
-      callbacks: getOid4vciCallbacks(agentContext),
+    return new Openid4vciIssuer({
+      callbacks: getOid4vcCallbacks(agentContext),
     })
   }
 
   public getOauth2Client(agentContext: AgentContext) {
     return new Oauth2Client({
-      callbacks: getOid4vciCallbacks(agentContext),
+      callbacks: getOid4vcCallbacks(agentContext),
     })
   }
 
   public getOauth2AuthorizationServer(agentContext: AgentContext) {
     return new Oauth2AuthorizationServer({
-      callbacks: getOid4vciCallbacks(agentContext),
+      callbacks: getOid4vcCallbacks(agentContext),
     })
   }
 
   public getResourceServer(agentContext: AgentContext, issuerRecord: OpenId4VcIssuerRecord) {
     return new Oauth2ResourceServer({
       callbacks: {
-        ...getOid4vciCallbacks(agentContext),
+        ...getOid4vcCallbacks(agentContext),
         clientAuthentication: dynamicOid4vciClientAuthentication(agentContext, issuerRecord),
       },
     })
@@ -639,7 +643,7 @@ export class OpenId4VcIssuerService {
     const { preAuthorizedCodeFlowConfig, authorizationCodeFlowConfig, issuerMetadata } = config
 
     // TOOD: export type
-    const grants: Parameters<Oid4vciIssuer['createCredentialOffer']>[0]['grants'] = {}
+    const grants: Parameters<Openid4vciIssuer['createCredentialOffer']>[0]['grants'] = {}
 
     // Pre auth
     if (preAuthorizedCodeFlowConfig) {
@@ -839,15 +843,21 @@ export class OpenId4VcIssuerService {
       const response = await verifierApi.getVerifiedAuthorizationResponse(
         issuanceSession.presentation.openId4VcVerificationSessionId
       )
-      if (!response.presentationExchange) {
-        throw new CredoError(
-          `Verified authorization response for verification session with id '${session.id}' does not have presenationExchange defined.`
-        )
-      }
 
-      verification = {
-        session,
-        presentationExchange: response.presentationExchange,
+      if (response.presentationExchange) {
+        verification = {
+          session,
+          presentationExchange: response.presentationExchange,
+        }
+      } else if (response.dcql) {
+        verification = {
+          session,
+          dcql: response.dcql,
+        }
+      } else {
+        throw new CredoError(
+          `Verified authorization response for verification session with id '${session.id}' does not have presenationExchange or dcql defined.`
+        )
       }
     }
 

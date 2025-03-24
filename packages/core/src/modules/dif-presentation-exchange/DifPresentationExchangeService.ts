@@ -9,7 +9,7 @@ import type { AgentContext } from '../../agent'
 import type { Query } from '../../storage/StorageService'
 import type { VerificationMethod } from '../dids'
 import type { SdJwtVcRecord } from '../sd-jwt-vc'
-import type { W3cCredentialRecord } from '../vc'
+import type { W3cCredentialRecord, W3cJsonPresentation } from '../vc'
 import type { IAnonCredsDataIntegrityService } from '../vc/data-integrity/models/IAnonCredsDataIntegrityService'
 import type {
   DifPexCredentialsForRequest,
@@ -26,11 +26,17 @@ import { PEVersion, PEX, Status } from '@animo-id/pex'
 import { PartialSdJwtDecodedVerifiableCredential } from '@animo-id/pex/dist/main/lib'
 import { injectable } from 'tsyringe'
 
-import { Hasher, getJwkFromKey } from '../../crypto'
+import { getJwkFromKey } from '../../crypto'
 import { CredoError } from '../../error'
 import { JsonTransformer } from '../../utils'
 import { DidsApi, getKeyFromVerificationMethod } from '../dids'
-import { Mdoc, MdocApi, MdocOpenId4VpSessionTranscriptOptions, MdocRecord } from '../mdoc'
+import {
+  Mdoc,
+  MdocApi,
+  MdocOpenId4VpDcApiSessionTranscriptOptions,
+  MdocOpenId4VpSessionTranscriptOptions,
+  MdocRecord,
+} from '../mdoc'
 import { MdocDeviceResponse } from '../mdoc/MdocDeviceResponse'
 import { SdJwtVcApi } from '../sd-jwt-vc'
 import {
@@ -60,7 +66,7 @@ import {
  */
 @injectable()
 export class DifPresentationExchangeService {
-  private pex = new PEX({ hasher: Hasher.hash })
+  private pex = new PEX()
 
   public constructor(private w3cCredentialService: W3cCredentialService) {}
 
@@ -93,7 +99,7 @@ export class DifPresentationExchangeService {
         }
 
         // We pick the first matching VC if we are auto-selecting
-        credentials[submission.inputDescriptorId].push(submission.verifiableCredentials[0].credentialRecord)
+        credentials[submission.inputDescriptorId].push(submission.verifiableCredentials[0])
       }
     }
 
@@ -118,13 +124,17 @@ export class DifPresentationExchangeService {
 
   public validatePresentation(
     presentationDefinition: DifPresentationExchangeDefinition,
-    presentation: VerifiablePresentation
+    presentations: VerifiablePresentation | VerifiablePresentation[],
+    presentationSubmission?: DifPresentationExchangeSubmission
   ) {
     const { errors } = this.pex.evaluatePresentation(
       presentationDefinition,
-      getSphereonOriginalVerifiablePresentation(presentation),
+      Array.isArray(presentations)
+        ? presentations.map(getSphereonOriginalVerifiablePresentation)
+        : getSphereonOriginalVerifiablePresentation(presentations),
       {
         limitDisclosureSignatureSuites: ['BbsBlsSignatureProof2020', 'DataIntegrityProof.anoncreds-2023'],
+        presentationSubmission,
       }
     )
 
@@ -155,7 +165,9 @@ export class DifPresentationExchangeService {
       presentationSubmissionLocation?: DifPresentationExchangeSubmissionLocation
       challenge: string
       domain?: string
-      openid4vp?: Omit<MdocOpenId4VpSessionTranscriptOptions, 'verifierGeneratedNonce' | 'clientId'>
+      openid4vp?:
+        | Omit<MdocOpenId4VpSessionTranscriptOptions, 'verifierGeneratedNonce'>
+        | Omit<MdocOpenId4VpDcApiSessionTranscriptOptions, 'verifierGeneratedNonce'>
     }
   ) {
     const { presentationDefinition, domain, challenge, openid4vp } = options
@@ -201,7 +213,7 @@ export class DifPresentationExchangeService {
         }
 
         const { deviceResponseBase64Url, presentationSubmission } =
-          await MdocDeviceResponse.createOpenId4VpDeviceResponse(agentContext, {
+          await MdocDeviceResponse.createPresentationDefinitionDeviceResponse(agentContext, {
             mdocs: [Mdoc.fromBase64Url(mdocRecord.base64Url)],
             presentationDefinition: presentationDefinition,
             sessionTranscriptOptions: {
@@ -292,6 +304,13 @@ export class DifPresentationExchangeService {
         resultWithFormat.verifiablePresentationResult.verifiablePresentations.map((vp) =>
           getVerifiablePresentationFromEncoded(agentContext, vp)
         )
+      ),
+      encodedVerifiablePresentations: verifiablePresentationResultsWithFormat.flatMap(
+        (resultWithFormat) =>
+          resultWithFormat.verifiablePresentationResult.verifiablePresentations as unknown as (
+            | string
+            | W3cJsonPresentation
+          )[]
       ),
       presentationSubmission,
       presentationSubmissionLocation:
@@ -569,6 +588,7 @@ export class DifPresentationExchangeService {
             // TODO: we should make this optional
             issuedAt: Math.floor(Date.now() / 1000),
           },
+          additionalPayload: presentationToCreate.verifiableCredentials[0].additionalPayload,
         })
 
         return sdJwtVc

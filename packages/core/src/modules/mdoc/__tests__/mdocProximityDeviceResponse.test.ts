@@ -7,6 +7,7 @@ import { getJwkFromJson } from '../../../crypto/jose/jwk/transform'
 import { Buffer, TypedArrayEncoder } from '../../../utils'
 import { Mdoc } from '../Mdoc'
 import { MdocDeviceResponse } from '../MdocDeviceResponse'
+import { namespacesMapToRecord } from '../mdocUtil'
 
 const DEVICE_JWK_PUBLIC = {
   kty: 'EC',
@@ -140,9 +141,17 @@ describe('mdoc device-response proximity test', () => {
     {
       const result = await MdocDeviceResponse.createDeviceResponse(agent.context, {
         mdocs: [mdoc],
-        deviceRequest: DEVICE_REQUEST_1,
-        // TODO: we should also add methods for Credo to create device requests with session transcript bytes.
-        sessionTranscriptBytes: cborEncode(new Uint8Array([1, 2, 3])),
+
+        documentRequests: DEVICE_REQUEST_1.docRequests.map((v) => {
+          return {
+            docType: v.itemsRequest.data.docType,
+            nameSpaces: namespacesMapToRecord(v.itemsRequest.data.nameSpaces),
+          }
+        }),
+        sessionTranscriptOptions: {
+          type: 'sesionTranscriptBytes',
+          sessionTranscriptBytes: cborEncode(new Uint8Array([1, 2, 3])),
+        },
         deviceNameSpaces: {
           'com.foobar-device': { test: 1234 },
         },

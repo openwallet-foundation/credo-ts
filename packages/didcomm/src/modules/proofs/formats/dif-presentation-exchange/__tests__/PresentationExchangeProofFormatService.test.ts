@@ -72,22 +72,22 @@ const mockCredentialRecord = new W3cCredentialRecord({
 })
 
 const presentationSubmission = { id: 'did:id', definition_id: 'my-id', descriptor_map: [] }
+const verifiablePresentation = new W3cJsonLdVerifiablePresentation({
+  verifiableCredential: [mockCredentialRecord.credential],
+  proof: {
+    type: 'Ed25519Signature2020',
+    created: '2021-11-13T18:19:39Z',
+    verificationMethod: 'https://example.edu/issuers/14#key-1',
+    proofPurpose: 'assertionMethod',
+    proofValue: 'z58DAdFfa9SkqZMVPxAQpic7ndSayn1PzZs6ZjWp1CktyGesjuTSwRdoWhAfGFCF5bppETSTojQCrfFPP2oumHKtz',
+  },
+})
 jest.spyOn(W3cCredentialRepository.prototype, 'findByQuery').mockResolvedValue([mockCredentialRecord])
 jest.spyOn(DifPresentationExchangeService.prototype, 'createPresentation').mockResolvedValue({
   presentationSubmission,
-  verifiablePresentations: [
-    new W3cJsonLdVerifiablePresentation({
-      verifiableCredential: [mockCredentialRecord.credential],
-      proof: {
-        type: 'Ed25519Signature2020',
-        created: '2021-11-13T18:19:39Z',
-        verificationMethod: 'https://example.edu/issuers/14#key-1',
-        proofPurpose: 'assertionMethod',
-        proofValue: 'z58DAdFfa9SkqZMVPxAQpic7ndSayn1PzZs6ZjWp1CktyGesjuTSwRdoWhAfGFCF5bppETSTojQCrfFPP2oumHKtz',
-      },
-    }),
-  ],
+  verifiablePresentations: [verifiablePresentation],
   presentationSubmissionLocation: PresentationSubmissionLocation.PRESENTATION,
+  encodedVerifiablePresentations: [verifiablePresentation.toJSON()],
 })
 
 describe('Presentation Exchange ProofFormatService', () => {

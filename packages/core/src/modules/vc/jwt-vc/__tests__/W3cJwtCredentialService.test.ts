@@ -199,8 +199,7 @@ describe('W3cJwtCredentialService', () => {
       const jwtVc = W3cJwtVerifiableCredential.fromSerializedJwt(CredoEs256DidJwkJwtVc)
 
       // @ts-ignore
-      // biome-ignore lint/performance/noDelete: <explanation>
-      delete jwtVc.credential.issuer
+      jwtVc.credential.issuer = undefined
 
       const result = await w3cJwtCredentialService.verifyCredential(agentContext, {
         credential: jwtVc,

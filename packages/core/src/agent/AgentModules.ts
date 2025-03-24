@@ -3,6 +3,7 @@ import type { IsAny } from '../types'
 import type { Constructor } from '../utils/mixins'
 
 import { CacheModule } from '../modules/cache'
+import { DcqlModule } from '../modules/dcql/DcqlModule'
 import { DidsModule } from '../modules/dids'
 import { DifPresentationExchangeModule } from '../modules/dif-presentation-exchange'
 import { GenericRecordsModule } from '../modules/generic-records'
@@ -102,6 +103,7 @@ export type CustomOrDefaultApi<
  */
 function getDefaultAgentModules() {
   return {
+    dcql: () => new DcqlModule(),
     genericRecords: () => new GenericRecordsModule(),
     dids: () => new DidsModule(),
     wallet: () => new WalletModule(),

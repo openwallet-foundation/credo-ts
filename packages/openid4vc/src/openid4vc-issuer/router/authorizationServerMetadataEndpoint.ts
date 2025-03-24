@@ -1,7 +1,7 @@
 import type { Response, Router } from 'express'
 import type { OpenId4VcIssuanceRequest } from './requestContext'
 
-import { getAuthorizationServerMetadataFromList } from '@animo-id/oauth2'
+import { getAuthorizationServerMetadataFromList } from '@openid4vc/oauth2'
 
 import { getRequestContext, sendJsonResponse, sendUnknownServerErrorResponse } from '../../shared/router'
 import { OpenId4VcIssuerService } from '../OpenId4VcIssuerService'
