@@ -15,6 +15,7 @@ import {
   Hasher,
   JsonEncoder,
   JwsService,
+  Jwt,
   JwtPayload,
   Key,
   KeyType,
@@ -27,7 +28,7 @@ import {
 } from '@credo-ts/core'
 import { clientAuthenticationDynamic, clientAuthenticationNone, decodeJwtHeader } from '@openid4vc/oauth2'
 
-import { fetchEntityConfiguration, resolveTrustChains } from '@openid-federation/core'
+import { resolveTrustChains } from '@openid-federation/core'
 import { getKeyFromDid } from './utils'
 
 export function getOid4vcJwtVerifyCallback(
@@ -78,9 +79,18 @@ export function getOid4vcJwtVerifyCallback(
         return { verified: false }
       }
 
-      // TODO: we need to extract the entity Id in OpenID Federation
-      const entityId = 'TODO'
+      // FIXME: Need an util to parse an encoded trust_chain in federation lib
+      const leafChain = Jwt.fromSerializedJwt(signer.trustChain[0])
+      const entityId = leafChain.payload.sub
 
+      if (!entityId) {
+        agentContext.config.logger.error(
+          "Missing subject federation entity id in leaf entity configuration from 'trust_chain'"
+        )
+        return { verified: false }
+      }
+
+      // FIXME: need option to pass a trust chain to the library
       const validTrustChains = await resolveTrustChains({
         entityId,
         trustAnchorEntityIds: trustedEntityIds,
@@ -101,11 +111,20 @@ export function getOid4vcJwtVerifyCallback(
 
       // Pick the first valid trust chain for validation of the leaf entity jwks
       const { leafEntityConfiguration } = validTrustChains[0]
+
       // TODO: No support yet for signed jwks and external jwks
       const rpSigningKeys = leafEntityConfiguration?.metadata?.openid_relying_party?.jwks?.keys
-      if (!rpSigningKeys || rpSigningKeys.length === 0)
-        throw new CredoError('No rp signing keys found in the entity configuration.')
-      const rpSignerJwk = getJwkFromJson(rpSigningKeys[0])
+      const rpSignerKeyJwkJson = rpSigningKeys?.find((key) => key.kid === signer.kid)
+      if (!rpSignerKeyJwkJson) {
+        agentContext.config.logger.error(
+          `Key with kid '${signer.kid}' not found in jwks of openid_relying_party configuration for entity ${entityId}.`
+        )
+        return {
+          verified: false,
+        }
+      }
+
+      const rpSignerJwk = getJwkFromJson(rpSignerKeyJwkJson)
 
       const res = await jwsService.verifyJws(agentContext, {
         jws: compact,
@@ -117,8 +136,12 @@ export function getOid4vcJwtVerifyCallback(
         agentContext.config.logger.error(`${entityId} does not match the expected signing key.`)
       }
 
+      if (!res.isValid) {
+        return { verified: false }
+      }
+
       // TODO: There is no check yet for the policies
-      return res.isValid ? { verified: res.isValid, signerJwk: rpSignerJwk.toJson() } : { verified: false }
+      return { verified: true, signerJwk: rpSignerJwk.toJson() }
     }
 
     const { isValid, signerKeys } = await jwsService.verifyJws(agentContext, {
@@ -242,33 +265,18 @@ export function getOid4vcJwtSignCallback(agentContext: AgentContext): SignJwtCal
     }
 
     if (signer.method === 'trustChain') {
-      const entityId = 'TODO'
-
-      const entityConfiguration = await fetchEntityConfiguration({
-        entityId,
-        verifyJwtCallback: async ({ jwt, jwk }) => {
-          const res = await jwsService.verifyJws(agentContext, { jws: jwt, jwkResolver: () => getJwkFromJson(jwk) })
-          return res.isValid
-        },
-      })
-
-      // TODO: Not really sure if this is also used for the issuer so if so we need to change this logic. But currently it's not possible to specify a issuer method with issuance so I think it's fine.
-      // NOTE: Hardcoded part for the verifier
-      const openIdRelyingParty = entityConfiguration.metadata?.openid_relying_party
-      if (!openIdRelyingParty) throw new CredoError('No openid-relying-party found in the entity configuration.')
-
-      // NOTE: No support for signed jwks and external jwks
-      const jwks = openIdRelyingParty.jwks
-      if (!jwks) throw new CredoError('No jwks found in the openid-relying-party.')
-
-      const jwkJson = jwks.keys.find((jwk) => jwk.kid === signer.kid)
-      if (!jwkJson) {
-        throw new CredoError(`Could not find jwk with kid '${signer.kid}' in openid_relying_party metadata jwks.`)
-      }
-      const jwk = getJwkFromJson(jwkJson)
+      // We use the fingerprint as the kid. This will need to be updated in the future
+      const key = Key.fromFingerprint(signer.kid)
+      const jwk = getJwkFromKey(key)
 
       const jws = await jwsService.createJwsCompact(agentContext, {
-        protectedHeaderOptions: { ...header, alg: signer.alg, jwk },
+        protectedHeaderOptions: {
+          ...header,
+          alg: signer.alg,
+          kid: signer.kid,
+          trust_chain: signer.trustChain,
+          jwk: undefined,
+        },
         payload: JwtPayload.fromJson(payload),
         key: jwk.key,
       })

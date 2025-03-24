@@ -5,13 +5,16 @@ import type { OpenId4VcJwtIssuer } from './models'
 import {
   CredoError,
   DidsApi,
+  JwsService,
   SignatureSuiteRegistry,
   X509Service,
   getDomainFromUrl,
   getJwkClassFromKeyType,
+  getJwkFromJson,
   getJwkFromKey,
   getKeyFromVerificationMethod,
 } from '@credo-ts/core'
+import { fetchEntityConfiguration } from '@openid-federation/core'
 
 /**
  * Returns the JWA Signature Algorithms that are supported by the wallet.
@@ -124,15 +127,46 @@ export async function requestSignerToJwtIssuer(
   }
 
   if (requestSigner.method === 'federation') {
+    const jwsService = agentContext.dependencyManager.resolve(JwsService)
+
+    // TODO: we need to retrieve the openid federation record / some persistent state
+    // that contains the key to be used for verification. It does not make sense to fetch
+    // and verify our own metadata.
+
+    const entityConfiguration = await fetchEntityConfiguration({
+      entityId: requestSigner.entityId,
+      // Why do we need to fetch/verify our own entity configuration?
+      verifyJwtCallback: async ({ jwt, jwk }) => {
+        const res = await jwsService.verifyJws(agentContext, { jws: jwt, jwkResolver: () => getJwkFromJson(jwk) })
+        return res.isValid
+      },
+    })
+
+    // TODO: Not really sure if this is also used for the issuer so if so we need to change this logic.
+    // But currently it's not possible to specify a issuer method with issuance so I think it's fine.
+    const openIdRelyingParty = entityConfiguration.metadata?.openid_relying_party
+    if (!openIdRelyingParty) throw new CredoError('No openid_relying_party metadata found in the entity configuration.')
+
+    // NOTE: No support for signed jwks and external jwks
+    const jwks = openIdRelyingParty.jwks
+    if (!jwks) throw new CredoError('No jwks found in the openid-relying-party.')
+
+    // TODO: we should specifically store which keys to use for signing
+    const jwkJson = jwks.keys.find((jwk) => jwk.use === 'sig' && jwk.kid !== undefined)
+    if (!jwkJson) {
+      throw new CredoError(`Could not find jwk with use 'sig' and kid defined in openid_relying_party metadata jwks.`)
+    }
+    const jwk = getJwkFromJson(jwkJson)
+    const alg = jwkJson.alg ?? jwk.supportedSignatureAlgorithms[0]
+
     return {
       ...requestSigner,
       method: 'trustChain',
+      // TODO: ?
       trustChain: [],
       entityId: requestSigner.entityId,
-
-      // TODO: fetch key here already
-      kid: 'todo',
-      alg: 'TODO',
+      kid: jwkJson.kid,
+      alg,
     }
   }
 

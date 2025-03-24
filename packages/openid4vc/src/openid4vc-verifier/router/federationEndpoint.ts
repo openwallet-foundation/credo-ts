@@ -8,6 +8,7 @@ import { createEntityConfiguration, createEntityStatement, fetchEntityConfigurat
 import { getRequestContext, sendErrorResponse } from '../../shared/router'
 import { OpenId4VcVerifierModuleConfig } from '../OpenId4VcVerifierModuleConfig'
 import { OpenId4VpVerifierService } from '../OpenId4VpVerifierService'
+import { addSecondsToDate } from '../../shared/utils'
 
 export function configureFederationEndpoint(
   router: Router,
@@ -43,12 +44,6 @@ export function configureFederationEndpoint(
           rpSigningKeyMapping.set(verifier.verifierId, rpSigningKey)
         }
 
-        // const relyingParty = await verifierService.getRelyingParty(agentContext, verifier, {
-        //   clientId: verifierConfig.baseUrl,
-        //   clientIdScheme: 'entity_id',
-        //   authorizationResponseUrl: `${verifierConfig.baseUrl}/siop/${verifier.verifierId}/authorize`,
-        // })
-
         const verifierEntityId = `${verifierConfig.baseUrl}/${verifier.verifierId}`
 
         const clientMetadata = await verifierService.getClientMetadata(agentContext, {
@@ -60,7 +55,7 @@ export function configureFederationEndpoint(
         // TODO: We also need to cache the entity configuration until it expires
         const now = new Date()
         // TODO: We also need to check if the x509 certificate is still valid until this expires
-        const expires = new Date(now.getTime() + 1000 * 60 * 60 * 24) // 1 day
+        const expires = addSecondsToDate(now, 60 * 60 * 24) // 1 day
 
         const jwk = getJwkFromKey(federationKey)
         const alg = jwk.supportedSignatureAlgorithms[0]
@@ -70,6 +65,8 @@ export function configureFederationEndpoint(
           verifierId: verifier.verifierId,
           issuerEntityId: verifierEntityId,
         })
+
+        const clientMetadataKeys = clientMetadata.jwks?.keys ?? []
 
         const entityConfiguration = await createEntityConfiguration({
           header: {
@@ -96,8 +93,14 @@ export function configureFederationEndpoint(
                 ...clientMetadata,
                 jwks: {
                   keys: [
-                    { kid: rpSigningKey.fingerprint, alg, ...getJwkFromKey(rpSigningKey).toJson() },
-                    ...(clientMetadata.jwks?.keys ?? []),
+                    {
+                      ...getJwkFromKey(rpSigningKey).toJson(),
+                      kid: rpSigningKey.fingerprint,
+                      alg,
+                      use: 'sig',
+                    },
+                    // @ts-expect-error federation library expects kid to be defined, but this is optional
+                    ...clientMetadataKeys,
                   ],
                 },
                 client_registration_types: ['automatic'], // TODO: Not really sure why we need to provide this manually
