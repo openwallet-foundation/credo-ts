@@ -208,7 +208,7 @@ describe('OpenId4Vc-federation', () => {
       await verifierTenant1.modules.openId4VcVerifier.createAuthorizationRequest({
         verifierId: openIdVerifierTenant1.verifierId,
         requestSigner: {
-          method: 'openid-federation',
+          method: 'federation',
         },
         presentationExchange: {
           definition: openBadgePresentationDefinition,
@@ -218,13 +218,13 @@ describe('OpenId4Vc-federation', () => {
     expect(authorizationRequestUri1).toEqual(
       `openid4vp://?client_id=${encodeURIComponent(
         `http://localhost:1234/oid4vp/${openIdVerifierTenant1.verifierId}`
-      )}&request_uri=${encodeURIComponent(verificationSession1.authorizationRequestUri)}`
+      )}&request_uri=${encodeURIComponent(verificationSession1.authorizationRequestUri as string)}`
     )
 
     const { authorizationRequest: authorizationRequestUri2, verificationSession: verificationSession2 } =
       await verifierTenant2.modules.openId4VcVerifier.createAuthorizationRequest({
         requestSigner: {
-          method: 'openid-federation',
+          method: 'federation',
         },
         presentationExchange: {
           definition: universityDegreePresentationDefinition,
@@ -235,18 +235,16 @@ describe('OpenId4Vc-federation', () => {
     expect(authorizationRequestUri2).toEqual(
       `openid4vp://?client_id=${encodeURIComponent(
         `http://localhost:1234/oid4vp/${openIdVerifierTenant2.verifierId}`
-      )}&request_uri=${encodeURIComponent(verificationSession2.authorizationRequestUri)}`
+      )}&request_uri=${encodeURIComponent(verificationSession2.authorizationRequestUri as string)}`
     )
 
     await verifierTenant1.endSession()
     await verifierTenant2.endSession()
 
-    const resolvedProofRequest1 = await holderTenant.modules.openId4VcHolder.resolveSiopAuthorizationRequest(
+    const resolvedProofRequest1 = await holderTenant.modules.openId4VcHolder.resolveOpenId4VpAuthorizationRequest(
       authorizationRequestUri1,
       {
-        federation: {
-          trustedEntityIds: [`http://localhost:1234/oid4vp/${openIdVerifierTenant1.verifierId}`],
-        },
+        trustedFederationEntityIds: [`http://localhost:1234/oid4vp/${openIdVerifierTenant1.verifierId}`],
       }
     )
 
@@ -258,7 +256,7 @@ describe('OpenId4Vc-federation', () => {
             {
               verifiableCredentials: [
                 {
-                  type: ClaimFormat.JwtVc,
+                  claimFormat: ClaimFormat.JwtVc,
                   credentialRecord: {
                     credential: {
                       type: ['VerifiableCredential', 'OpenBadgeCredential'],
@@ -272,12 +270,10 @@ describe('OpenId4Vc-federation', () => {
       ],
     })
 
-    const resolvedProofRequest2 = await holderTenant.modules.openId4VcHolder.resolveSiopAuthorizationRequest(
+    const resolvedProofRequest2 = await holderTenant.modules.openId4VcHolder.resolveOpenId4VpAuthorizationRequest(
       authorizationRequestUri2,
       {
-        federation: {
-          trustedEntityIds: [`http://localhost:1234/oid4vp/${openIdVerifierTenant2.verifierId}`],
-        },
+        trustedFederationEntityIds: [`http://localhost:1234/oid4vp/${openIdVerifierTenant2.verifierId}`],
       }
     )
 
@@ -289,7 +285,7 @@ describe('OpenId4Vc-federation', () => {
             {
               verifiableCredentials: [
                 {
-                  type: ClaimFormat.JwtVc,
+                  claimFormat: ClaimFormat.JwtVc,
                   credentialRecord: {
                     credential: {
                       type: ['VerifiableCredential', 'UniversityDegreeCredential'],
@@ -312,9 +308,9 @@ describe('OpenId4Vc-federation', () => {
       resolvedProofRequest1.presentationExchange.credentialsForRequest
     )
 
-    const { submittedResponse: submittedResponse1, serverResponse: serverResponse1 } =
-      await holderTenant.modules.openId4VcHolder.acceptSiopAuthorizationRequest({
-        authorizationRequest: resolvedProofRequest1.authorizationRequest,
+    const { authorizationResponsePayload: submittedResponse1, serverResponse: serverResponse1 } =
+      await holderTenant.modules.openId4VcHolder.acceptOpenId4VpAuthorizationRequest({
+        authorizationRequestPayload: resolvedProofRequest1.authorizationRequestPayload,
         presentationExchange: {
           credentials: selectedCredentials,
         },
@@ -354,10 +350,9 @@ describe('OpenId4Vc-federation', () => {
       verificationSessionId: verificationSession1.id,
     })
 
-    const { idToken: idToken1, presentationExchange: presentationExchange1 } =
+    const { presentationExchange: presentationExchange1 } =
       await verifierTenant1_2.modules.openId4VcVerifier.getVerifiedAuthorizationResponse(verificationSession1.id)
 
-    expect(idToken1).toBeUndefined()
     expect(presentationExchange1).toMatchObject({
       definition: openBadgePresentationDefinition,
       submission: {
@@ -379,8 +374,8 @@ describe('OpenId4Vc-federation', () => {
     )
 
     const { serverResponse: serverResponse2 } =
-      await holderTenant.modules.openId4VcHolder.acceptSiopAuthorizationRequest({
-        authorizationRequest: resolvedProofRequest2.authorizationRequest,
+      await holderTenant.modules.openId4VcHolder.acceptOpenId4VpAuthorizationRequest({
+        authorizationRequestPayload: resolvedProofRequest2.authorizationRequestPayload,
         presentationExchange: {
           credentials: selectedCredentials2,
         },
@@ -398,9 +393,8 @@ describe('OpenId4Vc-federation', () => {
       state: OpenId4VcVerificationSessionState.ResponseVerified,
       verificationSessionId: verificationSession2.id,
     })
-    const { idToken: idToken2, presentationExchange: presentationExchange2 } =
+    const { presentationExchange: presentationExchange2 } =
       await verifierTenant2_2.modules.openId4VcVerifier.getVerifiedAuthorizationResponse(verificationSession2.id)
-    expect(idToken2).toBeUndefined()
 
     expect(presentationExchange2).toMatchObject({
       definition: universityDegreePresentationDefinition,
@@ -458,7 +452,7 @@ describe('OpenId4Vc-federation', () => {
       await verifierTenant1.modules.openId4VcVerifier.createAuthorizationRequest({
         verifierId: openIdVerifierTenant1.verifierId,
         requestSigner: {
-          method: 'openid-federation',
+          method: 'federation',
         },
         presentationExchange: {
           definition: openBadgePresentationDefinition,
@@ -468,13 +462,13 @@ describe('OpenId4Vc-federation', () => {
     expect(authorizationRequestUri1).toEqual(
       `openid4vp://?client_id=${encodeURIComponent(
         `http://localhost:1234/oid4vp/${openIdVerifierTenant1.verifierId}`
-      )}&request_uri=${encodeURIComponent(verificationSession1.authorizationRequestUri)}`
+      )}&request_uri=${encodeURIComponent(verificationSession1.authorizationRequestUri as string)}`
     )
 
     const { authorizationRequest: authorizationRequestUri2, verificationSession: verificationSession2 } =
       await verifierTenant2.modules.openId4VcVerifier.createAuthorizationRequest({
         requestSigner: {
-          method: 'openid-federation',
+          method: 'federation',
         },
         presentationExchange: {
           definition: universityDegreePresentationDefinition,
@@ -485,7 +479,7 @@ describe('OpenId4Vc-federation', () => {
     expect(authorizationRequestUri2).toEqual(
       `openid4vp://?client_id=${encodeURIComponent(
         `http://localhost:1234/oid4vp/${openIdVerifierTenant2.verifierId}`
-      )}&request_uri=${encodeURIComponent(verificationSession2.authorizationRequestUri)}`
+      )}&request_uri=${encodeURIComponent(verificationSession2.authorizationRequestUri as string)}`
     )
 
     await verifierTenant1.endSession()
@@ -505,12 +499,10 @@ describe('OpenId4Vc-federation', () => {
     }
 
     // Gets a request from verifier 1 but we trust verifier 2 so if the verifier 1 is in the subordinate entity list of verifier 2 it should succeed
-    const resolvedProofRequest1 = await holderTenant.modules.openId4VcHolder.resolveSiopAuthorizationRequest(
+    const resolvedProofRequest1 = await holderTenant.modules.openId4VcHolder.resolveOpenId4VpAuthorizationRequest(
       authorizationRequestUri1,
       {
-        federation: {
-          trustedEntityIds: [`http://localhost:1234/oid4vp/${openIdVerifierTenant2.verifierId}`],
-        },
+        trustedFederationEntityIds: [`http://localhost:1234/oid4vp/${openIdVerifierTenant2.verifierId}`],
       }
     )
 
@@ -522,7 +514,7 @@ describe('OpenId4Vc-federation', () => {
             {
               verifiableCredentials: [
                 {
-                  type: ClaimFormat.JwtVc,
+                  claimFormat: ClaimFormat.JwtVc,
                   credentialRecord: {
                     credential: {
                       type: ['VerifiableCredential', 'OpenBadgeCredential'],
@@ -536,12 +528,10 @@ describe('OpenId4Vc-federation', () => {
       ],
     })
 
-    const resolvedProofRequest2 = await holderTenant.modules.openId4VcHolder.resolveSiopAuthorizationRequest(
+    const resolvedProofRequest2 = await holderTenant.modules.openId4VcHolder.resolveOpenId4VpAuthorizationRequest(
       authorizationRequestUri2,
       {
-        federation: {
-          trustedEntityIds: [`http://localhost:1234/oid4vp/${openIdVerifierTenant2.verifierId}`],
-        },
+        trustedFederationEntityIds: [`http://localhost:1234/oid4vp/${openIdVerifierTenant2.verifierId}`],
       }
     )
 
@@ -553,7 +543,7 @@ describe('OpenId4Vc-federation', () => {
             {
               verifiableCredentials: [
                 {
-                  type: ClaimFormat.JwtVc,
+                  claimFormat: ClaimFormat.JwtVc,
                   credentialRecord: {
                     credential: {
                       type: ['VerifiableCredential', 'UniversityDegreeCredential'],
@@ -576,9 +566,9 @@ describe('OpenId4Vc-federation', () => {
       resolvedProofRequest1.presentationExchange.credentialsForRequest
     )
 
-    const { submittedResponse: submittedResponse1, serverResponse: serverResponse1 } =
-      await holderTenant.modules.openId4VcHolder.acceptSiopAuthorizationRequest({
-        authorizationRequest: resolvedProofRequest1.authorizationRequest,
+    const { authorizationResponsePayload: submittedResponse1, serverResponse: serverResponse1 } =
+      await holderTenant.modules.openId4VcHolder.acceptOpenId4VpAuthorizationRequest({
+        authorizationRequestPayload: resolvedProofRequest1.authorizationRequestPayload,
         presentationExchange: {
           credentials: selectedCredentials,
         },
@@ -618,10 +608,9 @@ describe('OpenId4Vc-federation', () => {
       verificationSessionId: verificationSession1.id,
     })
 
-    const { idToken: idToken1, presentationExchange: presentationExchange1 } =
+    const { presentationExchange: presentationExchange1 } =
       await verifierTenant1_2.modules.openId4VcVerifier.getVerifiedAuthorizationResponse(verificationSession1.id)
 
-    expect(idToken1).toBeUndefined()
     expect(presentationExchange1).toMatchObject({
       definition: openBadgePresentationDefinition,
       submission: {
@@ -643,8 +632,8 @@ describe('OpenId4Vc-federation', () => {
     )
 
     const { serverResponse: serverResponse2 } =
-      await holderTenant.modules.openId4VcHolder.acceptSiopAuthorizationRequest({
-        authorizationRequest: resolvedProofRequest2.authorizationRequest,
+      await holderTenant.modules.openId4VcHolder.acceptOpenId4VpAuthorizationRequest({
+        authorizationRequestPayload: resolvedProofRequest2.authorizationRequestPayload,
         presentationExchange: {
           credentials: selectedCredentials2,
         },
@@ -662,9 +651,8 @@ describe('OpenId4Vc-federation', () => {
       state: OpenId4VcVerificationSessionState.ResponseVerified,
       verificationSessionId: verificationSession2.id,
     })
-    const { idToken: idToken2, presentationExchange: presentationExchange2 } =
+    const { presentationExchange: presentationExchange2 } =
       await verifierTenant2_2.modules.openId4VcVerifier.getVerifiedAuthorizationResponse(verificationSession2.id)
-    expect(idToken2).toBeUndefined()
 
     expect(presentationExchange2).toMatchObject({
       definition: universityDegreePresentationDefinition,
@@ -722,7 +710,7 @@ describe('OpenId4Vc-federation', () => {
       await verifierTenant1.modules.openId4VcVerifier.createAuthorizationRequest({
         verifierId: openIdVerifierTenant1.verifierId,
         requestSigner: {
-          method: 'openid-federation',
+          method: 'federation',
         },
         presentationExchange: {
           definition: openBadgePresentationDefinition,
@@ -732,13 +720,13 @@ describe('OpenId4Vc-federation', () => {
     expect(authorizationRequestUri1).toEqual(
       `openid4vp://?client_id=${encodeURIComponent(
         `http://localhost:1234/oid4vp/${openIdVerifierTenant1.verifierId}`
-      )}&request_uri=${encodeURIComponent(verificationSession1.authorizationRequestUri)}`
+      )}&request_uri=${encodeURIComponent(verificationSession1.authorizationRequestUri as string)}`
     )
 
     const { authorizationRequest: authorizationRequestUri2, verificationSession: verificationSession2 } =
       await verifierTenant2.modules.openId4VcVerifier.createAuthorizationRequest({
         requestSigner: {
-          method: 'openid-federation',
+          method: 'federation',
         },
         presentationExchange: {
           definition: universityDegreePresentationDefinition,
@@ -749,29 +737,23 @@ describe('OpenId4Vc-federation', () => {
     expect(authorizationRequestUri2).toEqual(
       `openid4vp://?client_id=${encodeURIComponent(
         `http://localhost:1234/oid4vp/${openIdVerifierTenant2.verifierId}`
-      )}&request_uri=${encodeURIComponent(verificationSession2.authorizationRequestUri)}`
+      )}&request_uri=${encodeURIComponent(verificationSession2.authorizationRequestUri as string)}`
     )
 
     await verifierTenant1.endSession()
     await verifierTenant2.endSession()
 
     const resolvedProofRequestWithFederationPromise =
-      holderTenant.modules.openId4VcHolder.resolveSiopAuthorizationRequest(authorizationRequestUri1, {
-        federation: {
-          // This will look for a whole different trusted entity
-          trustedEntityIds: [`http://localhost:1234/oid4vp/${openIdVerifierTenant2.verifierId}`],
-        },
+      holderTenant.modules.openId4VcHolder.resolveOpenId4VpAuthorizationRequest(authorizationRequestUri1, {
+        // This will look for a whole different trusted entity
+        trustedFederationEntityIds: [`http://localhost:1234/oid4vp/${openIdVerifierTenant2.verifierId}`],
       })
 
     // TODO: Look into this error see if we can make it more specific
-    await expect(resolvedProofRequestWithFederationPromise).rejects.toThrow(
-      'Error verifying the DID Auth Token signature.'
-    )
+    await expect(resolvedProofRequestWithFederationPromise).rejects.toThrow('Error during verification of jwt.')
 
     const resolvedProofRequestWithoutFederationPromise =
-      holderTenant.modules.openId4VcHolder.resolveSiopAuthorizationRequest(authorizationRequestUri2)
-    await expect(resolvedProofRequestWithoutFederationPromise).rejects.toThrow(
-      'Error verifying the DID Auth Token signature.'
-    )
+      holderTenant.modules.openId4VcHolder.resolveOpenId4VpAuthorizationRequest(authorizationRequestUri2)
+    await expect(resolvedProofRequestWithoutFederationPromise).rejects.toThrow('Error during verification of jwt.')
   })
 })

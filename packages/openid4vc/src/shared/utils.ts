@@ -161,10 +161,7 @@ export async function requestSignerToJwtIssuer(
 
     return {
       ...requestSigner,
-      method: 'trustChain',
-      // TODO: ?
-      trustChain: [],
-      entityId: requestSigner.entityId,
+      method: 'federation',
       kid: jwkJson.kid,
       alg,
     }

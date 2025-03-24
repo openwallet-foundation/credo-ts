@@ -15,7 +15,6 @@ import {
   Hasher,
   JsonEncoder,
   JwsService,
-  Jwt,
   JwtPayload,
   Key,
   KeyType,
@@ -70,7 +69,29 @@ export function getOid4vcJwtVerifyCallback(
       })
     }
 
-    if (signer.method === 'trustChain') {
+    // FIXME: extend signer to include entityId (`iss` field or `client_id`)
+    if (signer.method === 'federation') {
+      // We use the `client_id`
+      if (!options?.isAuthorizationRequestJwt) {
+        agentContext.config.logger.error(
+          'Verifying JWTs signed as a federation entity is only allow for signed authorization requests'
+        )
+        return { verified: false }
+      }
+
+      // I think this check is already in oid4vp lib
+      if (
+        !payload.client_id ||
+        typeof payload.client_id !== 'string' ||
+        !(
+          payload.client_id.startsWith('https:') ||
+          (payload.client_id.startsWith('http:') && agentContext.config.allowInsecureHttpUrls)
+        )
+      ) {
+        agentContext.config.logger.error("Expected 'client_id' to be a valid OpenID Federation entity id.")
+        return { verified: false }
+      }
+
       const trustedEntityIds = options?.trustedFederationEntityIds
       if (!trustedEntityIds) {
         agentContext.config.logger.error(
@@ -79,20 +100,11 @@ export function getOid4vcJwtVerifyCallback(
         return { verified: false }
       }
 
-      // FIXME: Need an util to parse an encoded trust_chain in federation lib
-      const leafChain = Jwt.fromSerializedJwt(signer.trustChain[0])
-      const entityId = leafChain.payload.sub
-
-      if (!entityId) {
-        agentContext.config.logger.error(
-          "Missing subject federation entity id in leaf entity configuration from 'trust_chain'"
-        )
-        return { verified: false }
-      }
-
-      // FIXME: need option to pass a trust chain to the library
+      const entityId = payload.client_id
       const validTrustChains = await resolveTrustChains({
         entityId,
+        // FIXME: need option to pass a trust chain to the library
+        // trustChain: payload.trust_chain,
         trustAnchorEntityIds: trustedEntityIds,
         verifyJwtCallback: async ({ jwt, jwk }) => {
           const res = await jwsService.verifyJws(agentContext, {
@@ -264,7 +276,7 @@ export function getOid4vcJwtSignCallback(agentContext: AgentContext): SignJwtCal
       throw new CredoError(`Jwt signer method 'custom' is not supported for jwt signer.`)
     }
 
-    if (signer.method === 'trustChain') {
+    if (signer.method === 'federation') {
       // We use the fingerprint as the kid. This will need to be updated in the future
       const key = Key.fromFingerprint(signer.kid)
       const jwk = getJwkFromKey(key)
@@ -332,7 +344,7 @@ export function getOid4vcCallbacks(
     clientAuthentication: clientAuthenticationNone(),
     verifyJwt: getOid4vcJwtVerifyCallback(agentContext, {
       trustedCertificates: options?.trustedCertificates,
-      trustedFederationEntityIds: options?.trustedCertificates,
+      trustedFederationEntityIds: options?.trustedFederationEntityIds,
       isAuthorizationRequestJwt: options?.isVerifyOpenId4VpAuthorizationRequest,
     }),
     fetch: agentContext.config.agentDependencies.fetch,

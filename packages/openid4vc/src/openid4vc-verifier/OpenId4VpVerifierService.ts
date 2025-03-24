@@ -143,6 +143,7 @@ export class OpenId4VpVerifierService {
     // We include the `session=` in the url so we can still easily
     // find the session an encrypted response
     const authorizationResponseUrl = `${joinUriParts(this.config.baseUrl, [options.verifier.verifierId, this.config.authorizationEndpoint])}?session=${authorizationRequestId}`
+    const federationEntityId = joinUriParts(this.config.baseUrl, [options.verifier.verifierId])
 
     const jwtIssuer =
       options.requestSigner.method === 'none'
@@ -155,7 +156,7 @@ export class OpenId4VpVerifierService {
           : options.requestSigner.method === 'federation'
             ? await requestSignerToJwtIssuer(agentContext, {
                 ...options.requestSigner,
-                entityId: joinUriParts(this.config.baseUrl, [options.verifier.verifierId]),
+                entityId: federationEntityId,
               })
             : await requestSignerToJwtIssuer(agentContext, options.requestSigner)
 
@@ -183,8 +184,8 @@ export class OpenId4VpVerifierService {
     } else if (jwtIssuer?.method === 'did') {
       clientId = jwtIssuer.didUrl.split('#')[0]
       clientIdScheme = 'did'
-    } else if (jwtIssuer.method === 'trustChain') {
-      clientId = jwtIssuer.entityId
+    } else if (jwtIssuer.method === 'federation') {
+      clientId = federationEntityId
       clientIdScheme = 'https'
     } else {
       throw new CredoError(
@@ -407,7 +408,9 @@ export class OpenId4VpVerifierService {
 
     try {
       const parsedClientId = getOpenid4vpClientId({
-        authorizationRequestPayload: authorizationRequest,
+        clientId: authorizationRequest.client_id,
+        legacyClientIdScheme: authorizationRequest.client_id_scheme,
+        responseMode: authorizationRequest.response_mode,
         origin: options.origin,
       })
 
