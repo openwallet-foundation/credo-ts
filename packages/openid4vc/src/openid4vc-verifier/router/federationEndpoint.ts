@@ -1,8 +1,8 @@
+import type { Buffer, Key } from '@credo-ts/core'
+import type { Response, Router } from 'express'
 import type { OpenId4VcVerificationRequest } from './requestContext'
-import type { Key, Buffer } from '@credo-ts/core'
-import type { Router, Response } from 'express'
 
-import { getJwkFromJson, getJwkFromKey, JwsService, KeyType } from '@credo-ts/core'
+import { JwsService, KeyType, getJwkFromJson, getJwkFromKey } from '@credo-ts/core'
 import { createEntityConfiguration, createEntityStatement, fetchEntityConfiguration } from '@openid-federation/core'
 
 import { getRequestContext, sendErrorResponse } from '../../shared/router'

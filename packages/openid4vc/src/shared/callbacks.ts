@@ -27,8 +27,8 @@ import {
 } from '@credo-ts/core'
 import { clientAuthenticationDynamic, clientAuthenticationNone, decodeJwtHeader } from '@openid4vc/oauth2'
 
-import { getKeyFromDid } from './utils'
 import { fetchEntityConfiguration, resolveTrustChains } from '@openid-federation/core'
+import { getKeyFromDid } from './utils'
 
 export function getOid4vcJwtVerifyCallback(
   agentContext: AgentContext,

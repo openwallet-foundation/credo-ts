@@ -12,8 +12,8 @@ import type {
 import type {
   OpenId4VpAcceptAuthorizationRequestOptions,
   OpenId4VpFetchEntityConfigurationOptions,
-  OpenId4VpResolvedAuthorizationRequest,
   OpenId4VpResolveTrustChainsOptions,
+  OpenId4VpResolvedAuthorizationRequest,
   ParsedTransactionDataEntry,
   ResolveOpenId4VpAuthorizationRequestOptions,
 } from './OpenId4vpHolderServiceOptions'
@@ -31,6 +31,10 @@ import {
   injectable,
 } from '@credo-ts/core'
 import {
+  fetchEntityConfiguration as federationFetchEntityConfiguration,
+  resolveTrustChains as federationResolveTrustChains,
+} from '@openid-federation/core'
+import {
   Openid4vpAuthorizationResponse,
   Openid4vpClient,
   VpToken,
@@ -39,10 +43,6 @@ import {
   isOpenid4vpAuthorizationRequestDcApi,
   parseTransactionData,
 } from '@openid4vc/openid4vp'
-import {
-  fetchEntityConfiguration as federationFetchEntityConfiguration,
-  resolveTrustChains as federationResolveTrustChains,
-} from '@openid-federation/core'
 
 import { getOid4vcCallbacks } from '../shared/callbacks'
 

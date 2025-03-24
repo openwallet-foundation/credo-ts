@@ -1,8 +1,8 @@
-import type { OpenId4VcIssuanceRequest } from './requestContext'
 import type { Buffer } from '@credo-ts/core'
-import type { Router, Response } from 'express'
+import type { Response, Router } from 'express'
+import type { OpenId4VcIssuanceRequest } from './requestContext'
 
-import { Key, getJwkFromKey, KeyType } from '@credo-ts/core'
+import { Key, KeyType, getJwkFromKey } from '@credo-ts/core'
 import { createEntityConfiguration } from '@openid-federation/core'
 
 import { getRequestContext, sendErrorResponse } from '../../shared/router'

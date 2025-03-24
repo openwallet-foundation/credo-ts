@@ -1,16 +1,16 @@
-import type { AgentType, TenantType } from './utils'
-import type { OpenId4VcVerifierModuleConfig } from '../src'
 import type { Server } from 'http'
+import type { OpenId4VcVerifierModuleConfig } from '../src'
+import type { AgentType, TenantType } from './utils'
 
 import {
   ClaimFormat,
   DidsApi,
+  DifPresentationExchangeService,
   JwaSignatureAlgorithm,
   W3cCredential,
   W3cCredentialSubject,
-  w3cDate,
   W3cIssuer,
-  DifPresentationExchangeService,
+  w3cDate,
 } from '@credo-ts/core'
 import express, { type Express } from 'express'
 
@@ -96,9 +96,8 @@ describe('OpenId4Vc-federation', () => {
                   disclosureFrame: { _sd: ['university', 'degree'] },
                 })),
               }
-            } else {
-              throw new Error('Invalid request')
             }
+            throw new Error('Invalid request')
           },
         }),
         askar: new AskarModule(askarModuleConfig),
@@ -127,13 +126,13 @@ describe('OpenId4Vc-federation', () => {
           baseUrl: verificationBaseUrl,
           federation: {
             async isSubordinateEntity(agentContext, options) {
-              if (federationConfig && federationConfig.isSubordinateEntity) {
+              if (federationConfig?.isSubordinateEntity) {
                 return federationConfig.isSubordinateEntity(agentContext, options)
               }
               return false
             },
             async getAuthorityHints(agentContext, options) {
-              if (federationConfig && federationConfig.getAuthorityHints) {
+              if (federationConfig?.getAuthorityHints) {
                 return federationConfig.getAuthorityHints(agentContext, options)
               }
               return undefined
@@ -493,11 +492,11 @@ describe('OpenId4Vc-federation', () => {
     await verifierTenant2.endSession()
 
     federationConfig = {
-      isSubordinateEntity: async (agentContext, options) => {
+      isSubordinateEntity: async (_agentContext, options) => {
         // When the verifier 2 gets asked if verifier 1 is a subordinate entity, it should return true
         return options.verifierId === openIdVerifierTenant2.verifierId
       },
-      getAuthorityHints: async (agentContext, options) => {
+      getAuthorityHints: async (_agentContext, options) => {
         // The verifier 1 says that the verifier 2 is above him
         return options.verifierId === openIdVerifierTenant1.verifierId
           ? [`http://localhost:1234/oid4vp/${openIdVerifierTenant2.verifierId}`]
@@ -766,13 +765,13 @@ describe('OpenId4Vc-federation', () => {
 
     // TODO: Look into this error see if we can make it more specific
     await expect(resolvedProofRequestWithFederationPromise).rejects.toThrow(
-      `Error verifying the DID Auth Token signature.`
+      'Error verifying the DID Auth Token signature.'
     )
 
     const resolvedProofRequestWithoutFederationPromise =
       holderTenant.modules.openId4VcHolder.resolveSiopAuthorizationRequest(authorizationRequestUri2)
     await expect(resolvedProofRequestWithoutFederationPromise).rejects.toThrow(
-      `Error verifying the DID Auth Token signature.`
+      'Error verifying the DID Auth Token signature.'
     )
   })
 })
